@@ -439,6 +439,35 @@
    ],
    "success_metric": "by pilot day-30 (~2026-08-15): scale-or-not decided from survivors-per-1000 evidence; zero doctrine regressions (no CAGR targeting, no DD-budget creep above the rail)",
    "reversal_condition": "pilot shows >=1 forward-validated survivor from generation throughput -> re-open the scaling question with rented compute sized by EV, and revisit the factory blueprint's throughput sections component by component"
+  },
+  {
+   "id": "2026-07-16-audit-max-roi-upgrade",
+   "decision": "Principal directive: maximize audit intelligence + ROI, consider daily cadence, close gaps. Shipped: (1) VERIFIED max intelligence already enforced (reasoning.effort=high, 20k budget on every panel call since 07-12; deepseek-v4-pro et al. run in deep-think mode). (2) Roster refreshed via refresh_panel_roster --apply: dead openai/gpt-oss-120b:free replaced; +cohere/command-a, +microsoft/wizardlm-2-8x22b, +openai/gpt-5.6-luna-pro = 13 models/12 labs. Auto-suggested 'upgrades' REJECTED per conservative rule (e.g. gemini-3.1-pro -> gemma-4-26b is a downgrade -- catalog metadata cannot judge capability; scorecards decide swaps). kimi-k2.6 failed once 07-16 -- watch, not swap. (3) DAILY MICRO-AUDIT: new cycle step (scripts/run_micro_audit.py + micro.txt mission) -- 3-of-13 models rotate by day-of-year, audit only the 24H DELTA brief (~6-9k chars, sanitizer-gated), flaw/improvement/blind-spot or PASS; inbox triaged by the daily AI cycle (run_cro_ai.sh extended). Cost ~$0.05/day (~$1.5/mo) vs weekly-panel $0.25/wk. Rationale: the desk's worst failures were single-day changes no fresh eyes saw (07-13 sizing bug sat 3 days; 07-15 panel edits deployed unverified) -- the DELTA is where audit ROI concentrates; full-system daily re-audits would re-bill the same findings. (4) BRAIN-DOWN PAGER: run_alerts.py now pages brain_down (no AI cycle >26h), brain_noop (near-empty cycle log = auth failure), deadman_latched (DEADMAN_FIRED standing) -- the 3-day untriaged incident becomes impossible to miss. (5) GIT BASELINE: repo init + .gitignore (secrets/state excluded, 719 files tracked) + daily git_snapshot cycle step -- the 07-15 mystery-diff class is closed forever.",
+   "hypothesis": "audit ROI is maximized by auditing the delta daily and the system weekly at max reasoning, with scorecards (not catalog metadata) driving roster changes",
+   "expected_benefit": "single-day regressions get fresh-eyes review within 24h instead of days; brain/rail outages page within hours; every code change is diffable forever",
+   "expected_cost": "~$1.5/mo LLM spend + ~8 min/day cycle time + 3 new small scripts to maintain",
+   "confidence": 0.8,
+   "assumptions": [
+    "desk_digest/health/ledger inputs stay secret-free (sanitizer hard-gate enforced anyway)",
+    "3 rotating auditors on a delta brief produce nonzero actionable findings",
+    "panel scorecards at monthly governance remain the roster-change mechanism"
+   ],
+   "success_metric": "30d: >=1 micro-audit finding leads to a verified fix or a logged ruling; brain_down pager fires within 26h in any future auth/timer outage; zero secret leaks in git or briefs",
+   "reversal_condition": "30d of micro-audits with zero actionable findings (all PASS or all wrong) -> drop to weekly or retire the step per sunset discipline; pager false-positive rate >1/week -> tune thresholds"
+  },
+  {
+   "id": "2026-07-16-pager-silent-death-backoff-fix",
+   "decision": "Discovered while sending a principal-requested test page: ntfy.sh returned HTTP 429 -- the desk's pager has been effectively DEAD since ~07-11. Root cause: run_alerts.py recorded only SUCCESSFUL pushes in its dedupe state, so a failed push retried every 3-minute refresh tick forever; several standing alerts x 20 ticks/hour kept the free ntfy quota permanently exhausted (39 failed pushes in one 2h window), and ALL pages -- including the 07-13 dead-man fire page and 3 days of kill_switch_stuck -- were silently dropped. Last successful kill page: 07-11. FIX: per-key 30-minute attempt backoff (state records attempts, not just successes) -> total volume falls far below quota and it refills. Test page scheduled +2h post-fix. NOTE: deadman's own _page uses the same endpoint/IP -- unfixable there (Tier-3 never-touch) but it recovers automatically once run_alerts stops exhausting the quota.",
+   "hypothesis": "with attempt-level backoff the quota refills and pages deliver; the pager becomes trustworthy again as the desk's silent-failure backstop",
+   "expected_benefit": "restores the entire alerting layer, incl. dead-man fire pages",
+   "expected_cost": "worst-case 30min added latency on a retried page (acceptable vs none)",
+   "confidence": 0.9,
+   "assumptions": [
+    "ntfy.sh free-tier quota refills within hours once request volume drops",
+    "the principal is actually subscribed to the topic on their phone (verify via test page)"
+   ],
+   "success_metric": "test page received by principal; alert state shows successful pushes resuming",
+   "reversal_condition": "429s persist for >24h after volume drops -> move to a paid/alternate push channel (ntfy pro / self-hosted / Telegram bot) via EV gate"
   }
  ]
 }

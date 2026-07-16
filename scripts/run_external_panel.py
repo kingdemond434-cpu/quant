@@ -36,9 +36,11 @@ _LOG = Path("data/external_panel_log.jsonl")
 _INBOX = Path("docs/research/panel_inbox.md")
 _CTX = ssl.create_default_context(cafile=certifi.where())
 
-# weekly MISSION ROTATION (2026-07-12): 11 frontier models are wasted on one job. Each 7th
-# cycle rotates the panel's mission so the same ~$0.25 buys 4x the diversity of value.
-_ROTATION = ["audit", "generate", "data", "premortem", "synthesize"]
+# weekly MISSION ROTATION (2026-07-12): frontier models are wasted on one job. Each 7th
+# cycle rotates the panel's mission so the same ~$0.25 buys 6x the diversity of value.
+# "benchmark" added 2026-07-16 (principal's gap-elimination override): weekly tier-1
+# benchmark on the currently-weakest dimension, self-selected from the dossier.
+_ROTATION = ["audit", "generate", "data", "premortem", "synthesize", "benchmark"]
 
 # CONSENSUS pre-pass themes: how many independent models raise each -> agreement = signal.
 # Lightweight keyword tally only; the CRO does the real semantic triage. Kept in sync with the

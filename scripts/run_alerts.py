@@ -122,6 +122,13 @@ def main() -> None:
     for key, msg in _checks():
         if now - float(state.get(key, 0)) < _DEDUPE_S:
             continue
+        # FAILURE BACKOFF (2026-07-16): a failed push used to retry every 3-min tick forever --
+        # the sustained hammering kept the free ntfy.sh quota exhausted from 07-11 on, so EVERY
+        # page (including the 07-13 dead-man fire) was silently dropped. One attempt per key per
+        # 30min keeps total volume far under quota and lets it refill.
+        if now - float(state.get(f"_try_{key}", 0)) < 1800:
+            continue
+        state[f"_try_{key}"] = now
         try:
             _push(topic, f"Quant desk: {key}", msg)
             state[key] = now

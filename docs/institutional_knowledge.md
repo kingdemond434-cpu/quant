@@ -286,3 +286,19 @@ hypotheses and EV-score them; only the top few enter research.
   The 2026-07-12 external-review hardening (single-writer, versioned state) held: no double-fire,
   no zombie writer. Reset remains the principal's documented operator action
   (delete `data/deadman_state.json` + `data/DEADMAN_FIRED`, then remove `data/CASHCARRY_KILL`).
+
+
+## OPS LESSON 2026-07-16 — the pager itself died silently (429 retry spiral); alerting was OFF during the 07-13 incident
+
+- The alert layer's own failure mode was the one it exists to prevent. `run_alerts.py` deduped
+  on SUCCESS only, so any failed push retried every 3-min tick; standing alerts kept ntfy.sh's
+  free quota exhausted from ~07-11 onward and **every page after that was dropped** — including
+  the dead-man's 07-13 fire page (same endpoint, same IP). The principal was never paged, and
+  the incident sat 3 days. 39 failed pushes were observed in a single 2h window.
+- **Meta-lesson: a watchdog needs a watchdog-of-delivery.** Liveness of the alert *process*
+  (it ran fine every 3 min) says nothing about DELIVERY. Success-only dedupe + fixed-interval
+  retry against a rate-limited endpoint is a self-sustaining outage: the retries themselves
+  keep the quota at zero. Always back off ATTEMPTS, not successes, and treat "pushes succeed"
+  as a monitored condition (the alert state file's newest success timestamp is the signal).
+- Fixed 2026-07-16: per-key 30-min attempt backoff in run_alerts.py. The dead-man's `_page`
+  is Tier-3 never-touch and unchanged — it recovers automatically once quota refills.

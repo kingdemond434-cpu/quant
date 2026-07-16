@@ -35,7 +35,7 @@ _STEPS = [
     ("stablecoin_flows",  "scripts/run_stablecoin_flows.py", 180),  # daily on-chain clock tick
     ("root_cause",        "scripts/run_root_cause.py",       120),  # classify losses pre-reaction
     ("desk_digest",       "scripts/render_desk_digest.py",    60),  # Obsidian-readable daily brief
-    ("micro_audit",       "scripts/run_micro_audit.py",      480),  # 3 rotating cold LLMs on 24h delta
+    ("micro_audit",       "scripts/run_micro_audit.py",      480),  # 3 cold LLMs on 24h delta
     ("research_feed",     "scripts/collect_research_feed.py", 120),  # arXiv q-fin -> vault inbox
     ("growth_audit",      "scripts/run_growth_audit.py",       60),  # under-utilization = defect
     ("research_pipeline", "scripts/run_daily_research.py",  7200),
