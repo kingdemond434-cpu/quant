@@ -44,3 +44,16 @@ after your 3-5 moves):
   priors, sunset/forced-removal reviews, Frankenstein synthesizer, gap register) most likely
   producing zero measurable improvement, and how the desk would verify that in <=30 days --
   a loop that cannot show a documented positive change in a quarter should be retired.
+
+TIER SCORECARD (every tier1 run -- output as a compact table AFTER the riders):
+Rate each dimension 1-10 against the SOLO CEILING (best achievable for one operator + AI on
+free/public data, a small VPS, ~$5k capital) -- NOT against institutional resources. Every
+score MUST cite one resolvable evidence location from the dossier (a number, a ledger id, a
+gap-register row); a score without a citation is invalid and is discarded at triage.
+Dimensions: validation/statistics, risk rails, governance/honesty, audit stack,
+ops/resilience, execution, data, alpha, live readiness. One line each:
+  dimension | score | evidence | the single change that would raise it one point (or
+  "time-gated" / "live-data-gated" if no build closes it).
+Do not inflate and do not flatter: a 10 claims nothing is left to discover -- treat any 10 as
+suspicious and justify it explicitly. The desk tracks these scores across runs for DRIFT, not
+for celebration; a falling score with evidence is more valuable than a rising one without.

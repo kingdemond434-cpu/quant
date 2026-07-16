@@ -524,6 +524,19 @@
    ],
    "success_metric": "external heartbeat pings green within 48h of operator signup; live-connector spec review includes all four absorbed requirements; recorder go/no-go decided by the brain within 7 days with disk/CPU numbers",
    "reversal_condition": "if the pilot or live phase shows idea-flow (not data) became the bottleneck, re-open the OSINT lane at its 8.14.8 actionability-gated design"
+  },
+  {
+   "id": "2026-07-17-tier1-scorecard-rider",
+   "decision": "Principal-approved: every monthly tier1 panel run now outputs a 9-dimension tier scorecard (1-10 vs the SOLO ceiling, evidence citation mandatory per score, uncited scores discarded at triage). Purpose: institutionalize the tier/gap analysis the CRO produced manually 2026-07-16 and track score DRIFT across quarters.",
+   "hypothesis": "evidence-cited numeric scores tracked over time surface slow regressions (drift) that per-finding audits miss",
+   "expected_benefit": "longitudinal drift signal at zero marginal cost (same panel run)",
+   "expected_cost": "risk of score-anchoring/score-chasing; ~100 tokens per model per run",
+   "confidence": 0.7,
+   "assumptions": [
+    "models comply with the citation mandate (verify_findings-style triage applies)"
+   ],
+   "success_metric": "first two tier1 runs produce >=7 validly-cited dimension scores per model; scores correlate with known state (e.g., alpha scored low, validation high)",
+   "reversal_condition": "scores degrade into uncited or flattering numbers for 2 consecutive runs -> drop the rider, keep ranked-gap-only output"
   }
  ]
 }
