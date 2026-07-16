@@ -28,7 +28,8 @@ _BLOCK = [re.compile(p, re.I) for p in (
     r"ntfy\.sh/\S+",
     r"data[/\\]secrets",
     r"ngrok|netlify\.app|trycloudflare",
-)]
+    r"\b\d{1,3}(?:\.\d{1,3}){3}\b",  # IP addresses (2026-07-16: gap register carries the VPS
+)]                                   # IP -- must never reach external labs)
 
 
 def sanitize(text: str) -> str:
@@ -107,6 +108,16 @@ def build() -> str:
         "2. Testnet->live execution transfer (TCA pipeline queued, not yet live).",
         "3. Capacity ceiling of top-10 Binance perps (cross-venue study queued).",
     ]
+    # GAP REGISTER (2026-07-16): auditors were benchmarking blind to the desk's own queue --
+    # feeding them the ranked register lets them attack the ranking itself (missing gaps,
+    # wrong priorities) instead of rediscovering known items. Sanitizer still gates everything.
+    try:
+        reg = Path("docs/GAP_REGISTER.md").read_text("utf-8")
+        rows = [ln for ln in reg.splitlines() if ln.startswith("| ") and "---" not in ln]
+        lines += ["", "## Current gap register (self-assessed, ranked -- attack the ranking)",
+                  *rows[1:11]]
+    except OSError:
+        pass
     return sanitize("\n".join(lines))
 
 

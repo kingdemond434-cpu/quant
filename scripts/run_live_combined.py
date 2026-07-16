@@ -282,6 +282,24 @@ def main() -> None:
                  "8-hourly). Perp L/S = PAPER (shadow-marked) so its directional risk never hits "
                  "the carry account. Molded = carry (real) + perp (paper)."),
     }
+    # VENUE-TRUTH EQUITY (2026-07-16 incident: mark-based books recorded -$55 while venue cash
+    # fell 41% from HWM -- the dead-man's independent measure was invisible outside its state
+    # file). Surface it beside the molded numbers so mark-vs-venue divergence is always on the
+    # dashboard and in audit briefs. Read-only: the rail's state is never written from here.
+    try:
+        dm = json.loads(Path("data/deadman_state.json").read_text("utf-8"))
+        hw = float(dm.get("high_water", 0.0))
+        out["venue_truth"] = {
+            "equity": round(float(dm.get("last_eq", 0.0)), 2), "high_water": round(hw, 2),
+            "fire_line": round(0.65 * hw, 2), "breaches": int(dm.get("breaches", 0)),
+            "fired": bool(dm.get("fired", False)),
+            "kind": ("dead-man measure: fut margin + tracked spot legs + USDT delta -- venue "
+                     "ground truth, immune to mark-based accounting blindness"),
+        }
+        Path("web/venue_equity.json").write_text(
+            json.dumps({"updated": now, **out["venue_truth"]}, indent=2), "utf-8")
+    except (OSError, json.JSONDecodeError, TypeError, ValueError):
+        pass
     _OUT.write_text(json.dumps(out, indent=2), "utf-8")
     print(f"MOLDED ${m_eq} (start ${m_start}, net {net:+.2f}) | carry: fut ${fut_eq} "
           f"spot ${spot_usdt} | perp(paper) ${perp_book} active={perp_active}")

@@ -468,6 +468,20 @@
    ],
    "success_metric": "test page received by principal; alert state shows successful pushes resuming",
    "reversal_condition": "429s persist for >24h after volume drops -> move to a paid/alternate push channel (ntfy pro / self-hosted / Telegram bot) via EV gate"
+  },
+  {
+   "id": "2026-07-16-gap-elimination-override-adoption",
+   "decision": "Principal's 'Maximum Efficiency & Gap Elimination Override' triaged and the achievable core ADOPTED same-day: (1) micro-audit mission v2 -- adds daily highest-ROI-missing-action (or local-maximum justification), tier-1 blind-spot scan, and PASS-with-reason (bare PASS = failed audit, scorecard-relevant). (2) NEW weekly 'benchmark' mission in the panel rotation (now 6 missions): one-page tier-1 benchmark on the SELF-SELECTED weakest dimension (data quality/execution/research depth/operational resilience/governance/alpha diversity), closable-vs-structural split, costed + falsifiable plans only. (3) tier1 monthly mission gains two riders: LLM-utilisation review + self-improvement-loop audit (retire loops with no documented positive change per quarter). (4) GAP REGISTER created (docs/GAP_REGISTER.md, seeded 12 ranked items) + run_cro_ai.sh duty: re-rank at cycle start, escalate items stale >7d (implement/defer-with-deadline/retire), never empty without justification. (5) Pager rewired to principal's topic ntfy.sh/Quant_Alerts per explicit request; dedupe state reset; SECURITY CAVEAT logged: guessable public topic = third parties can subscribe AND publish fake pages; rotation to a suffixed topic recommended after delivery confirmation. NOT adopted (standing verdicts unchanged): 24/7 continuous audit throughput (pilot ~08-15 arbitrates; ledger 2026-07-16-level5-factory-prompt-triage), unconditional implement-within-24h (EV gate remains arbiter -- the override's own text concedes this). LIVE API KEYS: principal request NOTED and DECLINED for now per the desk's own gates -- 7-day VPS stability gate ends ~07-19, carry validation gate ~08-05 at the earliest (fast-track), live connector not yet built (gap #2), book restarted 07-16 post-incident; keys are a HUMAN step via SSH, never chat.",
+   "hypothesis": "structured daily/weekly/monthly self-interrogation (missing-action, benchmark, loop audit, gap register) converts the principal's push-the-ceiling energy into EV-gated improvements instead of throughput maximalism",
+   "expected_benefit": "a permanently non-empty, ranked improvement queue with staleness escalation; audits that must either find something or justify the local maximum",
+   "expected_cost": "~zero marginal LLM spend (same calls, better prompts); slight prompt bloat risk",
+   "confidence": 0.8,
+   "assumptions": [
+    "mission prompts stay under model attention limits (all <=42 lines)",
+    "the brain honors the gap-register duty each cycle (verifiable in cycle logs)"
+   ],
+   "success_metric": "14d: >=1 benchmark-mission plan or micro-audit missing-action survives code verification and ships; gap register shows re-rank timestamps + zero items stale >7d",
+   "reversal_condition": "mission v2 outputs degrade into generic advice (2 weeks of zero verified findings) -> revert to v1 prompts; gap-register duty skipped 3 cycles -> escalate to principal"
   }
  ]
 }
