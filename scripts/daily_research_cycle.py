@@ -33,6 +33,7 @@ _LOG = _ROOT / "data" / "cro_cycle_log.json"
 _STEPS = [
     ("ci_gate",           "scripts/run_ci.py",              300),
     ("stablecoin_flows",  "scripts/run_stablecoin_flows.py", 180),  # daily on-chain clock tick
+    ("fred_macro",        "scripts/collect_fred_macro.py",   120),  # free US-macro (key-gated)
     ("root_cause",        "scripts/run_root_cause.py",       120),  # classify losses pre-reaction
     ("desk_digest",       "scripts/render_desk_digest.py",    60),  # Obsidian-readable daily brief
     ("micro_audit",       "scripts/run_micro_audit.py",      480),  # 3 cold LLMs on 24h delta

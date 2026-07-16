@@ -482,6 +482,20 @@
    ],
    "success_metric": "14d: >=1 benchmark-mission plan or micro-audit missing-action survives code verification and ships; gap register shows re-rank timestamps + zero items stale >7d",
    "reversal_condition": "mission v2 outputs degrade into generic advice (2 weeks of zero verified findings) -> revert to v1 prompts; gap-register duty skipped 3 cycles -> escalate to principal"
+  },
+  {
+   "id": "2026-07-16-fred-macro-collector-wired",
+   "decision": "FRED macro collector built + wired into the daily cycle (gap register #8; principal obtained a free API key). scripts/collect_fred_macro.py fetches 6 crypto-relevant series (DGS10, T10Y2Y, VIXCLS, DTWEXBGS, WALCL, M2SL), ~3y history, idempotent overwrite, graceful no-key skip; data/fred_macro.json + web/fred_macro.json; data_health monitors staleness; registry status blocked->reachable (api host verified from the VPS -- the old blocked note was the website host). Key placement = operator via SSH (data/secrets/fred.json), never chat. IMPORTANT: FRED serves deep history day-one, so the macro-crypto family is backtestable IMMEDIATELY -- but only via pre-registered hypotheses through the standard gauntlet (no sweeping a new data family; the graveyard discipline applies).",
+   "hypothesis": "US liquidity/risk-appetite context (dollar, curve, VIX, Fed balance sheet) carries exploitable relative-value or regime-gating information for crypto carry sizing",
+   "expected_benefit": "one genuinely orthogonal free data family; immediate backtestability",
+   "expected_cost": "~5s/day API time; one more collector to maintain; FRED key rate limits",
+   "confidence": 0.7,
+   "assumptions": [
+    "key remains free-tier sufficient (120 req/min >> 6 req/day)",
+    "pre-registration discipline holds when the family opens"
+   ],
+   "success_metric": "first pre-registered macro-crypto hypothesis clears or fails the gauntlet honestly within 30d of key placement; collector uptime >95% in health.json",
+   "reversal_condition": "two quarters with zero surviving or informative macro hypotheses -> retire the collector per data-feed ROI discipline"
   }
  ]
 }

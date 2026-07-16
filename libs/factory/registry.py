@@ -72,8 +72,9 @@ DATASETS: tuple[Dataset, ...] = (
             ("carry", "macro"), 0.4, 0.6, 0.4, "rates curve; SSL-blocked here, retry path"),
     Dataset("ECB / central-bank rates", "data-api.ecb.europa.eu", "daily", "free", True,
             "reachable", ("carry", "macro"), 0.45, 0.65, 0.5, "EUR reachable; FX carry"),
-    Dataset("FRED macro series", "stlouisfed.org", "daily", "free", True, "blocked",
-            ("macro", "carry"), 0.5, 0.7, 0.4, "timeouts on this host; needs proxy/key"),
+    Dataset("FRED macro series", "api.stlouisfed.org", "daily", "free", True, "reachable",
+            ("macro", "carry"), 0.5, 0.7, 0.4,
+            "collector wired 2026-07-16 (api host OK from VPS); key pending (operator)"),
     # ---- FREE expansion candidates (no budget): the real remaining levers ----
     Dataset("MT5 ETF CFDs (TLT/IEF/SHY/LQD/EMB + sectors)", "IC Markets MT5", "D1", "free", True,
             "in_use", ("trend", "macro", "structural", "flow"), 0.15, 0.7, 0.3,

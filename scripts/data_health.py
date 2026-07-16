@@ -26,6 +26,7 @@ _DATASETS = {
 # JSON daily archives -> (path, date-key, max age hours before STALE)
 _JSON_ARCHIVES = {
     "stablecoin_flows": ("data/stablecoin_flows_archive.json", "ts", 36),
+    "fred_macro": ("data/fred_macro.json", "updated", 36),
 }
 
 
