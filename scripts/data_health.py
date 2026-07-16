@@ -100,7 +100,11 @@ def main() -> None:
             if not rows:
                 checks.append({"name": name, "status": "EMPTY", "age_h": None, "days": 0})
                 continue
-            last = datetime.fromisoformat(rows[-1][col])
+            if isinstance(rows, dict):                    # dict-style archive (e.g. fred_macro):
+                last = datetime.fromisoformat(str(rows[col]))   # timestamp at the top level;
+                rows = rows.get("series", rows)                 # "days" = distinct sub-series
+            else:
+                last = datetime.fromisoformat(rows[-1][col])
             if last.tzinfo is None:
                 last = last.replace(tzinfo=UTC)
             age_h = (now - last).total_seconds() / 3600
