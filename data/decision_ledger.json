@@ -510,6 +510,20 @@
    ],
    "success_metric": "brain root-causes the confidence jump within 3 cycles; no position ever exceeds cap_frac x operator capital while the clamp stands; HFT exits without a thin-book burn",
    "reversal_condition": "confidence pipeline verified honest (>=30 live days, uncontaminated window, principal sign-off) -> remove the clamp in favour of the designed gate"
+  },
+  {
+   "id": "2026-07-16-v8-master-blueprint-triage",
+   "decision": "Principal's third mega-blueprint today ('MASTER BUILD PROMPT v8 FINAL': Lanes A-C, 14-seat panel, monthly self-improvement engine, staged arming, OSINT lane, data-moat recorder, host-death survivorship) triaged per constitution -- NOT executed verbatim. (A) ALREADY EXISTS hardened (would be DUPLICATES, complexity-budget violation): deadman.py (Tier-3 rail exists; a SECOND deadman violates the single-writer invariant that caused the 07-11 false fire -- permanent refusal), pager (run_alerts+ntfy), kill (CASHCARRY_KILL), drills (black-swan library), seats (panel missions + micro-audit), learning ledger (decision ledger + KB), trials/DSR/PBO rigor floor (gauntlet enforces it), shadow books, EV gate, complexity discipline, rollback guard, witness summary (digest + dashboard). (B) ADOPTED NOW: 8.13 external heartbeat -- ping wired into the 3-min refresh tick, graceful until operator creates a free healthchecks-class check (gap #17). (C) ABSORBED INTO THE LIVE-CONNECTOR SPEC (gap #2, build pre-08-05): 8.1 staged arming S0/S1/S2 with numeric promotion/demotion criteria; 8.13 venue-side reduce-only protective stops + no-naked-position reconcile invariant (positions must survive host death); 8.9 pager de-risk ladder + canary round-trip; 8.3 numeric ramp gate (cost<=1.25x modeled, live Sharpe>=0.6x backtest, KS p>0.05). These are the blueprint's real value -- they define what LIVE must look like. (D) QUEUED, EV-gated (gap #18): mainnet L2/trade data-moat recorder -- the one asset that cannot be backfilled; brain sizes disk/CPU against the 4GB box before building. (E) REJECTED for now: OSINT lane 8.14 (idea-flow is not the bottleneck -- 390/0 says data/mechanism is; big LLM spend; revisit at live for venue-risk monitoring only), market-memory 8.15.4 (needs recorder first + research capacity to consume it), from-scratch Lane A/B/C rebuild (duplicate machinery). (F) HARD-STOP ITEMS never automated regardless of blueprint text: capital sweeps to cold storage (fund movement), key provisioning/rotation, Telegram bot credentials -- human-only forever.",
+   "hypothesis": "the blueprint's durable value is its live-phase safety architecture (8.13/8.1/8.9/8.3) and the unbackfillable data-moat idea -- not its parallel rebuild of existing rails",
+   "expected_benefit": "host-death class closed cheaply; live-connector build now has a complete, numeric safety spec; recorder decision gets made on evidence",
+   "expected_cost": "~10 lines in run_alerts; one human signup; brain design time for gap #2/#18",
+   "confidence": 0.85,
+   "assumptions": [
+    "principal accepts triage-over-verbatim (precedent: level5 + gap-elimination triages)",
+    "testnet positions carry no host-death monetary risk, so venue-side stops belong in the live connector, not tonight"
+   ],
+   "success_metric": "external heartbeat pings green within 48h of operator signup; live-connector spec review includes all four absorbed requirements; recorder go/no-go decided by the brain within 7 days with disk/CPU numbers",
+   "reversal_condition": "if the pilot or live phase shows idea-flow (not data) became the bottleneck, re-open the OSINT lane at its 8.14.8 actionability-gated design"
   }
  ]
 }

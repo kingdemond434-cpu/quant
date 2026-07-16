@@ -136,6 +136,18 @@ def main() -> None:
         except Exception as e:  # pager failing must never break the tick
             print(f"pager push failed: {e!r}"[:120])
     _STATE.write_text(json.dumps(state), "utf-8")
+    # EXTERNAL HEARTBEAT (2026-07-16, v8-blueprint triage 8.13): an off-box dead-man for the
+    # box itself. Everything above -- deadman, pager, watchdog -- dies WITH the host; a 3-min
+    # ping to an external healthchecks-class URL makes the outside world notice silence and
+    # page the principal directly. Graceful skip until the operator creates the free check and
+    # drops its URL into data/secrets/heartbeat_url.json ({"url": "https://hc-ping.com/..."}).
+    try:
+        hb = json.loads(Path("data/secrets/heartbeat_url.json").read_text("utf-8")).get("url")
+        if hb:
+            with urllib.request.urlopen(hb, timeout=10):
+                pass
+    except Exception:
+        pass
     print(f"alerts: {sent} page(s) sent "
           f"({datetime.now(tz=UTC).isoformat()[:16]}Z)")
 
