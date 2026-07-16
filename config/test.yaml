@@ -1,0 +1,10 @@
+# Test environment — deterministic seed, quiet logs.
+environment: test
+
+logging:
+  level: WARNING
+  json: true
+
+reproducibility:
+  default_seed: 0
+  require_clean_git: false

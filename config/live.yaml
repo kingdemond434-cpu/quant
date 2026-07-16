@@ -1,0 +1,9 @@
+# Live environment — JSON logs, reproducibility requires a clean git tree.
+environment: live
+
+logging:
+  level: INFO
+  json: true
+
+reproducibility:
+  require_clean_git: true

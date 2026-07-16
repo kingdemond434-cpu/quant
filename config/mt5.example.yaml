@@ -1,0 +1,9 @@
+# MetaTrader5 connection template — copy to config/mt5.yaml and fill in DEMO credentials.
+# config/mt5.yaml must NOT be committed (add to .gitignore). Use a DEMO account only.
+mt5:
+  login: 0                 # your MT5 demo account number
+  password: "CHANGE_ME"    # demo account password
+  server: "Broker-Demo"    # demo server name from your broker
+  terminal_path: ""        # optional: full path to terminal64.exe; blank = auto-detect
+  timeframe: "H1"
+  bars: 500

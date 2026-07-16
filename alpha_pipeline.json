@@ -1,0 +1,107 @@
+{
+  "generated": "2026-07-16T08:23:50.427105+00:00",
+  "n_alphas": 8,
+  "n_survived": 0,
+  "deployed": [
+    "cash_and_carry"
+  ],
+  "alphas": [
+    {
+      "alpha": "crypto::ls_contrarian",
+      "category": "derivative-data",
+      "expected_sharpe": 9.91,
+      "gates": "8/9",
+      "survived": false,
+      "stage": "backtest",
+      "orthogonality": "unknown",
+      "crowding_risk": "medium",
+      "expected_half_life": "unknown-until-forward",
+      "retire_check": "REJECT: fails gates"
+    },
+    {
+      "alpha": "crypto::xsec_price_mom",
+      "category": "crypto-sleeve",
+      "expected_sharpe": 0.65,
+      "gates": "5/9",
+      "survived": false,
+      "stage": "backtest",
+      "orthogonality": "unknown",
+      "crowding_risk": "medium",
+      "expected_half_life": "unknown-until-forward",
+      "retire_check": "REJECT: fails gates"
+    },
+    {
+      "alpha": "crypto::ts_trend",
+      "category": "crypto-sleeve",
+      "expected_sharpe": 0.49,
+      "gates": "4/9",
+      "survived": false,
+      "stage": "backtest",
+      "orthogonality": "unknown",
+      "crowding_risk": "medium",
+      "expected_half_life": "unknown-until-forward",
+      "retire_check": "REJECT: fails gates"
+    },
+    {
+      "alpha": "crypto::basis_carry",
+      "category": "crypto-sleeve",
+      "expected_sharpe": 0.48,
+      "gates": "5/9",
+      "survived": false,
+      "stage": "backtest",
+      "orthogonality": "unknown",
+      "crowding_risk": "medium",
+      "expected_half_life": "unknown-until-forward",
+      "retire_check": "REJECT: fails gates"
+    },
+    {
+      "alpha": "crypto::funding_carry",
+      "category": "crypto-sleeve",
+      "expected_sharpe": 0.4,
+      "gates": "5/9",
+      "survived": false,
+      "stage": "backtest",
+      "orthogonality": "unknown",
+      "crowding_risk": "medium",
+      "expected_half_life": "unknown-until-forward",
+      "retire_check": "REJECT: fails gates"
+    },
+    {
+      "alpha": "crypto::funding_momentum",
+      "category": "crypto-sleeve",
+      "expected_sharpe": 0.4,
+      "gates": "5/9",
+      "survived": false,
+      "stage": "backtest",
+      "orthogonality": "unknown",
+      "crowding_risk": "medium",
+      "expected_half_life": "unknown-until-forward",
+      "retire_check": "REJECT: fails gates"
+    },
+    {
+      "alpha": "crypto::taker_flow",
+      "category": "crypto-sleeve",
+      "expected_sharpe": 0.1,
+      "gates": "4/9",
+      "survived": false,
+      "stage": "backtest",
+      "orthogonality": "unknown",
+      "crowding_risk": "medium",
+      "expected_half_life": "unknown-until-forward",
+      "retire_check": "REJECT: fails gates"
+    },
+    {
+      "alpha": "crypto::oi_divergence",
+      "category": "derivative-data",
+      "expected_sharpe": -5.71,
+      "gates": "4/9",
+      "survived": false,
+      "stage": "backtest",
+      "orthogonality": "unknown",
+      "crowding_risk": "medium",
+      "expected_half_life": "unknown-until-forward",
+      "retire_check": "REJECT: fails gates"
+    }
+  ],
+  "note": "Every alpha carries a retire_check, not just a promote check. Data-blocked edges accrue forward days before they can be validated -- calendar time, not engineering, is the gate."
+}

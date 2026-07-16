@@ -1,0 +1,6 @@
+{
+  "top": 10,
+  "hold_top": 3000,
+  "capital": 4500,
+  "_note": "LIVE-tunable cash-carry params. Edit + save -> the running executor picks it up next rebalance (no restart). hold_top=3000 = hold-while-funding-positive (churn fix)."
+}

@@ -1,0 +1,8 @@
+# Tradeable universe + contract specs.
+# RESERVED for Stage 3 (data pipeline) / risk sizing. Not loaded by the Settings model.
+# v1.0 trades XAUUSD alone at go-live; ingest broadly, trade narrowly.
+
+anchor: XAUUSD
+
+# Research universe (data ingestion is cheap; storage is broad, trading is narrow).
+research_universe: []   # populated in Stage 3.

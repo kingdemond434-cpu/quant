@@ -1,0 +1,444 @@
+{
+ "policy": "Every significant decision is logged BEFORE implementation with hypothesis, expected benefit/cost, confidence, assumptions, success metric, and reversal condition. The monthly governance review scores each matured entry (correct / wrong / unclear + which assumption failed) so decision QUALITY compounds, not just trading results. Governance freeze: no policy may be modified immediately after losses -- require statistical significance + documented root cause + the monthly review.",
+ "decisions": [
+  {
+   "id": "2026-07-04-cashcarry-top10-4500",
+   "decision": "Scale cash-carry deployment --top 6/$3000 -> --top 10/$4500 (churn-free, via new names only)",
+   "hypothesis": "More capital at top-funding names raises funding income ~50% with bounded delta-neutral risk",
+   "expected_benefit": "+~$20-25/mo funding at current rates",
+   "expected_cost": "thinner USDT buffer ($2.5k left); more names = more rotation surface",
+   "confidence": 0.75,
+   "assumptions": [
+    "funding rates hold near 17% APR",
+    "reconcile keeps hedge tight at 10 names"
+   ],
+   "success_metric": "funding/day rises ~50% without new drift losses by 2026-08-04",
+   "reversal_condition": "buffer < $800 or drift losses exceed added funding",
+   "review_due": "2026-08-04",
+   "outcome": null
+  },
+  {
+   "id": "2026-07-04-levered-lab-3x",
+   "decision": "3x levered molded SIM (fresh clock) as main dashboard card; real book shown separately",
+   "hypothesis": "Side-by-side 1x real vs 3x sim teaches whether leverage amplifies edge or friction, without corrupting validation",
+   "expected_benefit": "evidence-based leverage decision at validation end",
+   "expected_cost": "dashboard headline is a simulation (labelled); no liquidation modelling",
+   "confidence": 0.8,
+   "assumptions": [
+    "user reads SIM label",
+    "sim tracks book P&L faithfully"
+   ],
+   "success_metric": "by day 90: sim vs real comparison decisively answers the leverage question",
+   "reversal_condition": "sim mistaken for real money in any decision",
+   "review_due": "2026-10-02",
+   "outcome": null
+  },
+  {
+   "id": "2026-07-04-trend-promotion",
+   "decision": "Promote trend_30d (majors TS-momentum) to shadow + molded(paper) + 3x sim per Alpha Promotion Policy",
+   "hypothesis": "Directional trend on majors w/ 30d lookback survived the gauntlet (Sharpe~1.4, PBO 0.079) and decorrelates the book",
+   "expected_benefit": "second validated sleeve -> portfolio Sharpe up if forward holds",
+   "expected_cost": "90d clock + paper drag on molded optics; bull-flattered backtest risk",
+   "confidence": 0.25,
+   "assumptions": [
+    "backtest not purely bull-beta",
+    "majors trend persistence continues"
+   ],
+   "success_metric": "forward Sharpe >= 0.7 (>=0.5x backtest) at day 90",
+   "reversal_condition": "forward Sharpe < 0 at day 90 -> kill + graveyard as regime_artifact",
+   "review_due": "2026-10-02",
+   "outcome": null
+  },
+  {
+   "id": "2026-07-04-reconcile-limit-fallback",
+   "decision": "Reconcile guard: market-first -> post-only limit fallback on PERCENT_PRICE rejects",
+   "hypothesis": "Orphans on thin books were stranded forever by market-only covers (EDUUSDT); a resting maker cover clears them",
+   "expected_benefit": "eliminates the stranded-orphan class of hedge-drift loss (the dominant realized loss)",
+   "expected_cost": "resting orders may fill slowly on dead testnet books",
+   "confidence": 0.85,
+   "assumptions": [
+    "real-market books are tight so fallback rarely needed live"
+   ],
+   "success_metric": "zero stranded orphans > 24h by 2026-08-04",
+   "reversal_condition": "fallback orders cause duplicate/oversized covers",
+   "review_due": "2026-08-04",
+   "outcome": null
+  },
+  {
+   "id": "2026-07-09-trend-unblend-and-regime-challenger",
+   "decision": "Exclude trend from molded + 3x totals (own 90d shadow + card only); build regime-gated trend challenger in parallel",
+   "hypothesis": "(a) unvalidated day-5 candidate distorts combined P&L optics; (b) gating trend flat in weak-BTC-trend regimes may cut whipsaw losses",
+   "expected_benefit": "honest molded totals; evidence-based champion/challenger resolution at day 90",
+   "expected_cost": "challenger build ~2h; risk of regime-filter overfit (well-known trap)",
+   "confidence": 0.2,
+   "assumptions": [
+    "|BTC 30d|>=10pct is an economic trend proxy, not a fit to last week",
+    "incumbent stays frozen"
+   ],
+   "success_metric": "challenger fwd Sharpe > incumbent fwd Sharpe AND >=0.5 at day 90",
+   "reversal_condition": "challenger fwd < incumbent at day 90 -> kill challenger, graveyard as regime_artifact",
+   "review_due": "2026-10-07",
+   "ev_gate_verdict": "REJECT (EV 0.0087, p_survive 7.2%) \u2014 OVERRIDDEN by explicit principal instruction",
+   "outcome": null
+  },
+  {
+   "id": "2026-07-09-carry-accounting-symmetric-realized",
+   "decision": "Fix carry-book accounting: bank realized spot PnL of closed legs in state; net = open spot marks + banked realized + futures equity delta. Backfilled +337.26 (trade-log combined realized minus paginated venue REALIZED_PNL).",
+   "hypothesis": "net_pnl was asymmetric: futures equity delta keeps closed perp realized, closed spot realized vanished -> phantom -$394 on a ~breakeven book",
+   "expected_benefit": "truthful deployed PnL/Sharpe -> every downstream gate (leverage, retirement, promotion) sizes on reality, not a fabricated loss",
+   "expected_cost": "backfill is mark-vs-fill estimate (~$10 noise); one-time curve rebase",
+   "confidence": 0.95,
+   "assumptions": [
+    "trade log covers all executor closes",
+    "venue REALIZED_PNL covers only this book (futures account is dedicated)"
+   ],
+   "success_metric": "net_pnl ~= funding - fees +- basis drift as closes accumulate",
+   "reversal_condition": "spot-wallet audit contradicts the banked realized by > $50"
+  },
+  {
+   "id": "2026-07-09-income-pagination",
+   "decision": "Paginate /fapi/v1/income past the 1000-row cap (dedupe on tranId/type/symbol/time)",
+   "hypothesis": "income endpoint truncated at 1000 rows (ended Jul 7 21:39 while book ran to Jul 8 23:30) -> funding/realized/commission all silently understated",
+   "expected_benefit": "correct funding/fees/winrate forever; error grows with book age otherwise",
+   "expected_cost": "a few extra API calls per mark",
+   "confidence": 0.98,
+   "assumptions": [
+    "tranId+type+symbol+time uniquely identify an income event"
+   ],
+   "success_metric": "income totals stable vs manual venue export",
+   "reversal_condition": "n/a (pure correctness fix, CI-tested)"
+  },
+  {
+   "id": "2026-07-09-carry-hysteresis-hold-while-positive",
+   "decision": "Widen carry hysteresis --hold-top 60 -> 3000 (= hold while funding stays positive)",
+   "hypothesis": "277 positive-funding names with big same-rate tie groups made top-60 membership a lottery -> 159 closes/wk, median hold 2.9h, fees -$60 vs funding +$39. Funding pays 8-hourly; sub-8h churn is pure cost.",
+   "expected_benefit": "fee drag -> ~0; funding harvest becomes the visible net edge",
+   "expected_cost": "book stops rotating toward marginally-higher funding names (correct: rotation gain ~bp/8h < round-trip fee)",
+   "confidence": 0.85,
+   "assumptions": [
+    "names exit promptly when funding flips negative (close rule unchanged)"
+   ],
+   "success_metric": "closes/day < 3 and commissions < 20% of funding by 2026-07-23",
+   "reversal_condition": "avg held-name funding decays materially below the open-candidate set for >1wk (then add a fee-aware rotation rule instead)"
+  },
+  {
+   "id": "2026-07-09-liquidation-source-swap-binance-to-bybit",
+   "decision": "Switch liquidation_listener.py from Binance mainnet WS (fstream.binance.com) to Bybit public WS (allLiquidation.<symbol>, 15 majors); reset data/liquidation_since clock to 2026-07-09T07:40Z; escalate data_health.py liquidation status to STUCK (alert) if listening >24h with 0 events.",
+   "hypothesis": "The liquidation_reversal forward clock (research_state.json showed 12-13/40d archived) was fake progress: Binance mainnet fstream WS completes the handshake but delivers ZERO data frames from this network on ANY stream (verified on BTCUSDT aggTrade, normally many msgs/sec, over 150s+ combined, with and without permessage-deflate) -- a silent geo/network block, not a code bug. REST to fapi.binance.com works fine; Binance TESTNET WS works fine; a generic echo WS works fine; Bybit public WS subscribe/ping-pong round-trips correctly. There is no Binance REST liquidation history to fall back to, so the sleeve was accumulating zero real signal for 14 days while reporting healthy LISTENING status.",
+   "expected_benefit": "Unblocks one of the three data-blocked forward-clock sleeves (liquidation_reversal) that would otherwise reach day 40 with an empty/degenerate dataset and either error or silently validate on nothing; also closes the monitoring blind spot (heartbeat liveness was being read as data liveness) for future listeners.",
+   "expected_cost": "Bybit liquidations are not identical flow to Binance (different venue, still same forced-deleveraging mean-reversion mechanism); clock restarts from day 0 (real days, honestly), losing no real information since the prior 14 days never had real data despite appearing to.",
+   "confidence": 0.7,
+   "assumptions": [
+    "Bybit allLiquidation stream is not geo/network-blocked from this machine (subscribe ack + ping/pong confirmed structurally working; actual liquidation event throughput unconfirmed within the ~5min smoke-test window since liquidations are a sparse event -- not yet proof of sustained data flow)",
+    "Binance mainnet WS block is a persistent network/geo condition, not a transient blip (evidenced by 0 rows over 14 days of continuous heartbeat-alive operation, consistent with the live smoke test)"
+   ],
+   "success_metric": "data/liquidations.parquet shows events > 0 within 72h and a steady accumulation rate thereafter (data_health.py will flag STUCK if not)",
+   "reversal_condition": "If Bybit source also shows 0 events after 72h (STUCK), the venue is not the bottleneck -- deprioritize liquidation_reversal as implementation_impossible from this network rather than trying a third venue",
+   "review_due": "2026-07-12",
+   "outcome": null
+  },
+  {
+   "id": "2026-07-09-duplicate-live-executor-killed",
+   "decision": "Terminated a duplicate run_cashcarry_executor.py --live process (PID 28876, running under the system Python312 install, NOT the maintained/CI-tested .venv) that had been running concurrently with the legitimate venv-managed executor (PID 11732) since at least 2026-07-09T00:39:49, both polling/managing the SAME live testnet account every 600s. CORRECTION (same session, after further testing): the same venv-vs-Python312 pairing recurred on the LOW-STAKES liquidation_listener when relaunched via a fully-qualified venv path (confirmed via WMI ParentProcessId: the Python312 process was a genuine CHILD of the venv process, not an independent launch), and separately, plain \"python\" on this machine's bash PATH resolves to system Python312, not the venv (confirmed: it lacks pyarrow). This means the venv/system-Python pairing may be a structural property of how processes launch on this machine (parent stub + real worker, or a PATH/App-Execution-Alias interaction) rather than a rogue, independently-scheduled duplicate. The original kill of PID 28876 may therefore have been killing one half of a SINGLE logical executor, not a genuinely independent competing process.",
+   "hypothesis": "A historical process (likely a manual run or a pre-migration Scheduled Task launch, since only QuantWatchdog -- venv-based -- is currently enabled; QuantDaily/QuantResearchTick/QuantShadow are disabled and last ran 2026-06-24) was never terminated and kept re-spawning its own child research/shadow processes via sys.executable under system Python, creating a fully parallel, unmanaged process tree alongside the real architecture.",
+   "expected_benefit": "Removes the risk of two uncoordinated writers issuing conflicting orders / rebalance decisions on the same live account; the single-instance heartbeat lock in run_cashcarry_executor.py should prevent a NEW duplicate from starting (it only checks freshness once at startup, so this specific race needed a manual kill, not a code fix)",
+   "expected_cost": "Killing PID 28876 unexpectedly also ended PID 11732 (mechanism unconfirmed -- possibly a shared job object from how both were originally spawned); watchdog.py auto-respawned a clean single venv executor within its next ~3min tick (confirmed: heartbeat gap was brief, ~08:34-08:37, no orders were missed since rebalance cadence is 600s and the kill switch was never triggered)",
+   "confidence": 0.4,
+   "assumptions": [
+    "Ground-truth account state (web/cashcarry_live.json: deployed_notional 980.87, n_carries=10) was NOT doubled at the time of the kill, i.e. no real double-order damage had yet occurred",
+    "No other system-Python-rooted process lineage remains; three orphaned trailing children (daily_research_cycle/run_daily_research/run_crypto_shadow under Python312) were left to exit naturally since they are read-mostly research/shadow scripts, not order-placing, and killing more processes right after an unexplained cascade was judged higher-risk than letting harmless orphans finish",
+    "UNCONFIRMED: whether the original 11732/28876 pair was two independent writers or one logical process split across two OS PIDs by a launch-mechanism quirk -- could not be conclusively root-caused within this cycle's effort budget without risking further live-executor disruption"
+   ],
+   "success_metric": "No further Python312-rooted process appears in Get-CimInstance Win32_Process going forward; cashcarry_exec_heartbeat stays single-sourced (no renewed duplication); ground-truth account state (deployed_notional, n_carries) checked before and after and showed no doubling at any point in this session -- no evidence of actual financial harm from either the original state or the kill",
+   "reversal_condition": "If a new system-Python duplicate reappears, the root cause is not \"an old orphan\" but something actively re-spawning under system Python -- escalate to a full audit of any manual/legacy launch mechanism on this machine",
+   "review_due": "2026-07-10",
+   "outcome": null
+  },
+  {
+   "id": "2026-07-09-live-autodeploy-preauthorization",
+   "decision": "Pre-authorize automatic live deployment of every 90d-surviving, all-gates-passing sleeve at 5% base, confidence/time-laddered to Kelly target; no per-sleeve human approval (principal instruction) | AMENDED same day: evidence-gated aggressive ladder (neutral 20% base, 14d/7d-fast-track steps, Kelly in ~2-4wk); safety = same-day asymmetric demotion",
+   "hypothesis": "graduated auto-deploy captures validated edge faster than per-sleeve approval friction, with size laddering bounding false-positive cost to ~5% x small live account",
+   "expected_benefit": "zero promotion latency; compounding starts the day validation completes",
+   "expected_cost": "false-positive live sleeve can cost up to ~20% of live equity (neutral base) before same-day demotion; bounded by trade-only keys + kill switches",
+   "confidence": 0.6,
+   "assumptions": [
+    "live keys will be trade-only (no withdrawal)",
+    "kill switches + ladder demotion catch live failures within ~30d",
+    "one-time setup done deliberately at small capital"
+   ],
+   "success_metric": "first auto-deployed sleeve reaches step-2 (10%) without gate breach",
+   "reversal_condition": "any live sleeve loses > its base allocation before demotion fires -> re-instate per-sleeve approval",
+   "review_due": "at live connect + 60d",
+   "outcome": null
+  },
+  {
+   "id": "2026-07-09-adaptive-validation-windows",
+   "decision": "Replace fixed 90d validation with evidence-based windows: fast-track at >=40d when forward t-stat >=1.65 AND fwd>=0.5x backtest; standard 90d otherwise; 40d absolute floor",
+   "hypothesis": "window an alpha needs is set by its signal-to-noise; a Sharpe-13 carry is provable in 40d, a Sharpe-1.4 trend is not -- calendar-uniform windows waste time on strong edges without protecting weak ones",
+   "expected_benefit": "carry live-eligible ~Aug 5 instead of ~Sep 24 (7 weeks earlier compounding) when evidence holds",
+   "expected_cost": "40d of regime diversity < 90d; a strong-but-regime-lucky edge can fast-track (mitigated by ladder base sizing + same-day demotion + black-swan sizing)",
+   "confidence": 0.7,
+   "assumptions": [
+    "t>=1.65 + 0.5x-backtest jointly filter luck adequately at 40d",
+    "ladder demotion catches live failures fast"
+   ],
+   "success_metric": "first fast-tracked sleeve survives its first 30 live days without demotion",
+   "reversal_condition": "any fast-tracked sleeve demoted within 30 live days -> restore 90d standard for its class",
+   "review_due": "first fast-track + 30d",
+   "outcome": null
+  },
+  {
+   "id": "2026-07-10-carry-executor-restart-apply-holdtop",
+   "decision": "Force-restarted the live cash-carry executor to apply the --hold-top 3000 churn fix that had been INERT since 2026-07-08 (running process dated 2026-07-03, never respawned). Method: _KILL flatten -> drained watchdog spawns -> clean respawn with --hold-top 3000.",
+   "hypothesis": "The committed churn fix never reached the running executor; live behavior (48% of closes held <8h, closes 20-38/day, positive-funding names closed in minutes) proved it ran pre-fix argv.",
+   "expected_benefit": "Eliminate churn fee drag (was ~= half the funding harvest) -> truthful, higher forward carry Sharpe -> unblocks the leverage gate. Post-restart: 0 closes in 20 min (vs ~1.5/hr).",
+   "expected_cost": "One-time full book flatten+reopen (~10 carries, testnet fees ~$1); ~40 min of executor downtime while draining the _KILL/watchdog spawn interaction and dodging an intermittent GIL startup crash.",
+   "assumptions": [
+    "hold_top=3000 hysteresis = hold-while-funding-positive (code line 249)",
+    "positions persist on the exchange across restart and are reconciled",
+    "testnet only (no real capital)"
+   ],
+   "confidence": 0.9,
+   "success_metric": "closes/day < 3 and commissions < 20% of funding sustained (the 2026-07-09-carry-hysteresis metric, now actually achievable since the fix is LIVE); verify 2026-07-12+",
+   "reversal_condition": "if churn returns (executor reverts to pre-fix behavior) the restart did not stick -> inspect running cmdline again",
+   "outcome": "APPLIED + VERIFIED same day: single executor (hold-top 3000), 10 carries held, 0 churn in first 20 min, heartbeat sustained, watchdog maintaining.",
+   "review_due": "2026-07-12"
+  },
+  {
+   "id": "2026-07-10-phantom-spot-realized-permanent-fix",
+   "decision": "Root-caused the '-$900 on the 3x molded' as a PHANTOM (stale realized_spot_pnl=337.26 vs symmetric-correct 711.85). Backfilled it; then made the accounting SELF-HEALING: realized_spot_pnl is now DERIVED from exchange ground truth (deduped trade-log basis - venue futures REALIZED_PNL) in libs/execution/carry_accounting, reconciled by the executor each rebalance/restart AND independently by run_live_combined for the dashboard. Reset the phantom-contaminated lab + molded curves. Also shipped executor config-reload (data/cashcarry_config.json tunes top/hold_top/capital with no restart).",
+   "hypothesis": "The 2026-07-03 executor (live until the 2026-07-10 restart) lacked the 2026-07-09 bank-at-close code, so ~222 closed spot legs' realized gains were dropped while the matching short losses (-650.68) stayed booked -> one-sided phantom, 3x-magnified to -865 on the lab.",
+   "expected_benefit": "Dashboard shows the TRUTH (molded ~+114, book is profitable on funding) and can never again fabricate a loss from accounting drift, regardless of executor restarts/crashes/duplicate-logs. Params tunable without the disruptive flatten+restart.",
+   "expected_cost": "One-time curve reset (loses phantom-contaminated history, which was not real); executor-side reconcile activates on next natural respawn (dashboard already self-heals now).",
+   "assumptions": [
+    "book is delta-neutral so price_pnl=spot_real+perp_real and venue REALIZED_PNL=sum(perp_real)",
+    "basis term is small; venue realized is exact"
+   ],
+   "confidence": 0.9,
+   "success_metric": "molded/lab never show a phantom loss again; realized_spot_pnl stays within $5 of exchange-derived across restarts",
+   "reversal_condition": "if derived value diverges materially from an independent spot-wallet audit -> revisit the identity",
+   "outcome": "SHIPPED + CI green + verified: molded +114 (was -297), 3x lab reset to fresh 15000 (was -865). Helpers unit-tested; reconcile + config-reload smoke-tested.",
+   "review_due": "2026-07-17"
+  },
+  {
+   "id": "2026-07-10-max-growth-mandate-discovery-engine",
+   "decision": "Growth Audit engine (under-utilization = defect, daily) + Maximum Growth Mandate (asymmetry-of-errors, same-cycle defect closure) + Alpha Discovery Engine (>=3 new hypotheses/cycle quota, 6-source generator checklist, widen funnel never filter) + autodiscovery crypto adapter queued as top open backlog item",
+   "hypothesis": "conservatism accretes silently unless under-sizing is policed like a risk breach; discovery throughput (wide funnel x brutal filter) is the Tier-1 model and the #1 closable gap",
+   "expected_benefit": "zero silent conservatism; steady hypothesis flow -> more validated sleeves -> higher portfolio Sharpe ceiling",
+   "expected_cost": "audit false-positives could pressure unjustified size-ups (mitigated: survival/evidence justifications are valid exits); hypothesis quota could tempt low-quality generation (mitigated: EV gate unchanged)",
+   "confidence": 0.75,
+   "assumptions": [
+    "EV gate + gauntlet strictness truly unchanged",
+    "growth audit justifications stay honest"
+   ],
+   "success_metric": "0 unresolved NONE-defects older than 1 cycle; >=90 hypotheses scored by 2026-08-10 with graveyard growth",
+   "reversal_condition": "audit drives a size-up that breaches a survival constraint, or quota measurably degrades hypothesis quality",
+   "review_due": "2026-08-10",
+   "outcome": null
+  },
+  {
+   "id": "2026-07-11-crypto-autodiscovery-factory-wired",
+   "decision": "Industrialize the 12-generator autodiscovery factory over crypto: build libs/autodiscovery/crypto_adapter.py (lake bars + Level-3 funding -> MarketSeries, offline liquidity ranking), refactor run_crypto_research.py to emit web/autodiscovery_crypto.json, and wire an 'autodiscovery' step into daily_research_cycle.py. Universe capped to top-30 liquid perps.",
+   "hypothesis": "Industrialized hypothesis throughput (same gauntlet, cross-campaign DSR deflation, auto-tests each new data axis as its clock matures) is the #1 closable Tier-1/2 breadth gap and beats hand-crafting one backtest at a time -- while the strict filter is unchanged so no false survivor slips through.",
+   "expected_benefit": "Reusable factory that auto-gauntlets every future free data axis (OI/LS/liquidations/stablecoin) on arrival; the crypto-native funding_stress_reversal hypothesis gets its first rigorous test; engineering backlog now empty (frontier exhausted -> research capital = WAIT on clocks).",
+   "expected_cost": "~2h build; daily-cycle runtime +a few min on first sweep then near-instant via dedup; risk of breadth-mining false survivors (mitigated: unchanged DSR/PBO/RC gauntlet rejected all 390 trials).",
+   "confidence": 0.7,
+   "assumptions": [
+    "lake D1 bars carry non-zero funding (verified ~2497 bars BTC)",
+    "content-hash dedup makes daily re-runs cheap (verified skipped 195/390)",
+    "top-30 liquid perps hold essentially all real research capacity",
+    "gauntlet strictness unchanged -> 0 survivors is the honest expectation"
+   ],
+   "success_metric": "factory runs green in the daily cycle and auto-produces gauntleted candidates for each new data axis without bespoke code; any future survivor is DSR/PBO/RC-clean, not a breadth-mining artifact",
+   "reversal_condition": "if the factory ever promotes a candidate that later fails forward validation as a multiple-testing artifact, or if daily runtime/instability becomes material -> narrow the universe further or gate the step behind new-symbol detection",
+   "review_due": "2026-08-10",
+   "outcome": "pending"
+  },
+  {
+   "id": "2026-07-11-rail-autonomy-tiers",
+   "decision": "Principal pre-authorizes: Tier-1 autonomous DD-pause corridor 10-25%; Tier-2 default-yes-after-72h-veto for DD beyond corridor + ruin-flatten 30-45%; Tier-3 (rail removal / ruin >45%) stays explicit-yes forever",
+   "hypothesis": "sign-off friction ~0 (principal would approve anyway) while retaining one independent check on the unrecoverable tier",
+   "expected_benefit": "zero growth foregone to approval latency; corridor lets evidence move rails same-month",
+   "expected_cost": "Tier-2 silence-as-consent means a missed page auto-applies a moderate rail change after 72h",
+   "confidence": 0.7,
+   "assumptions": [
+    "pager reaches principal within 72h normally",
+    "72h cooling + governance freeze blocks post-loss rail creep"
+   ],
+   "success_metric": "first Tier-1/2 rail move is evidence-clean at its 30d review",
+   "reversal_condition": "any rail move followed within 30d by a breach it would have prevented -> revert tier system to explicit-yes",
+   "review_due": "first rail move + 30d",
+   "outcome": null
+  },
+  {
+   "id": "2026-07-12-external-review-fixes",
+   "decision": "Implement 5-model external adversarial review package: NW-corrected forward t-stat + Holm cohort correction + regime-event fast-track gate (carry Holm-exempt as pre-registered primary); shrunk-Kelly continuous sizing v4 (S^2/(S^2+SE^2), replaces discrete time-ladder); live-specific demotion trigger; isolated dead-man switch (Tier-3 never-touch); ADL-flatten + basis-blowout stop in executor; root-cause unknown_novel class; 7 black-swan scenarios; EV-gate audit ledger; quarterly external review",
+   "hypothesis": "same-author review has a ceiling; independent models found 4 consensus leaks (t-stat inflation, over-fast Kelly top rung, testnet-contaminated gates, missing venue tails) all at boundaries, none in the core loop",
+   "expected_benefit": "honest promotion statistics; higher E[log] sizing (overbet removed); tail survival in ADL/basis/depeg scenarios",
+   "expected_cost": "carry fast-track may honestly fail day-40 if no regime event observed -> live at day 90; that branch was never real growth",
+   "confidence": 0.85,
+   "assumptions": [
+    "NW/Holm corrections implemented correctly (tested)",
+    "dead-man consecutive-reading guard prevents false fires"
+   ],
+   "success_metric": "zero false dead-man fires in 90d; first promotion decision uses NW t + regime evidence; live 30d demotion trigger armed at go-live",
+   "reversal_condition": "any rail fires falsely twice, or corrected gates reject an edge that then validates at 90d twice in a row"
+  },
+  {
+   "id": "2026-07-12-first-inversion-rule-declined",
+   "decision": "Principal DECLINED the proposed carry first-inversion sizing cap (below top rung until one funding inversion survived or 60 live days)",
+   "hypothesis": "principal judges the bounded foregone-funding cost not worth it at current capital scale",
+   "expected_benefit": "no sizing drag in the first 60 live days",
+   "expected_cost": "first live funding inversion may be met at full shrunk-Kelly size",
+   "confidence": 0.5,
+   "assumptions": [
+    "shrunk-Kelly + 15% DD-pause + funding-exit hysteresis + dead-man switch bound the inversion tail adequately"
+   ],
+   "success_metric": "first live inversion episode: realized DD <= 2x model expectation",
+   "reversal_condition": "first live funding-inversion episode with DD > 2x model expectation -> rule goes back to the principal with the realized numbers"
+  },
+  {
+   "id": "2026-07-12-first-inversion-rule-adopted",
+   "decision": "Principal REVERSED his same-day decline and ADOPTED the carry first-inversion probation: live carry at 0.5x authorized shrunk-Kelly fraction until one funding-inversion episode survived (episode DD <= 2x model) OR 60 live days, whichever first. Implemented as kelly_shrink.first_inversion_cap; armed in live_deployment_policy.json.",
+   "hypothesis": "near-EV-neutral in dollars; log-wealth tail weighting + information value of first live inversion observation break the tie toward insurance; zero permanent drag (self-expiring)",
+   "expected_benefit": "first live inversion, if early, met at half size (~halves episode damage); regime observed before max exposure",
+   "expected_cost": "worst case ~$50-70 foregone funding on ~$5k book (~1-1.5% NAV, once)",
+   "confidence": 0.7,
+   "assumptions": [
+    "inversion episodes detectable from venue income truth",
+    "live engine routes carry sizing through first_inversion_cap"
+   ],
+   "success_metric": "first live inversion episode DD <= model expectation at capped size; cap lifts correctly on survival or day-60",
+   "reversal_condition": "none needed -- rule self-expires at day 60; supersedes 2026-07-12-first-inversion-rule-declined"
+  },
+  {
+   "id": "2026-07-12-round2-review-fixes",
+   "decision": "Round-2 external review (4 models) triaged: CONFIRMED+FIXED same day: (1) shrunk-Kelly SE now uses NW-adjusted effective N (vif) -- the sizing/significance sample-size mismatch was the round-1 fix's own critical bug; (2) NW t-stat on ALL forward days (zero-filter bias); (3) regime gate v2: event OR funding-vol >= 25th pct (fast-track was a dead letter); (4) Holm family = trailing-180d entrants incl. killed (attrition loophole + kill-committee Goodhart); (5) shadow/live pooling discounted (0.25x shadow, live-only after 60 live days); (6) unknown_novel materiality gate (> max($25, 0.3% NAV)) -- anti pager-fatigue; (7) dead-man: median-of-3 baseline, zero-margin invalid-read guard, stale-feed detector pages (never auto-fires); (8) executor cadence jitter +-15%; (9) survival-engines-outrank-growth-audit priority rule; (10) graveyard kill-basis rule (economic vs infra kills); backlog: carry crowding monitor. REBUTTED with code evidence: partial-ADL bypass claim (trigger is deficit-based at 2%, not missing-based), dead-man slow-bleed/HWM-mask claims (level-based trigger), Lo-SE 0.978-at-n15 arithmetic (real value 0.157 -- reviewer forgot annualization), 57%-return leverage claim (HW = margin+legs, not a return), cross-sleeve ADL contamination (one-strategy-per-account collision rule), primary-exemption-invalid-due-to-churn-fix (execution policy changed, frozen shadow spec did not).",
+   "hypothesis": "auditing the repairs finds the repairs' own bugs; consensus-on-visible-design is signal, claims-about-internals need code verification",
+   "expected_benefit": "sizing no longer over-trusts sticky returns; fast-track reachable again (growth-positive); rail false-fire/missed-fire surface reduced",
+   "expected_cost": "vif shrink slightly reduces authorized size on highly autocorrelated series (correct: those were overbets)",
+   "confidence": 0.85,
+   "assumptions": [
+    "vif estimate at n>=40 is stable enough for sizing",
+    "25th-pct funding-vol bar is a meaningful regime floor"
+   ],
+   "success_metric": "carry day-40 gate evaluates with regime evidence available; no false dead-man events; CI green",
+   "reversal_condition": "vif noise causes sizing to oscillate >20% day-over-day -> smooth vif with 10d EMA"
+  },
+  {
+   "id": "2026-07-12-deadman-false-fire-incident",
+   "decision": "INCIDENT: dead-man rail false-fired 2026-07-11 19:39Z (zombie old-code S4U instance poisoned the shared state's high-water; new instance inherited it and flattened a healthy book). Fixes shipped: state versioning (never inherit foreign state), pid-stamped single-writer heartbeat (self-exit on foreign writer), durable DEADMAN_FIRED latch, 150s startup guard, S4U watchdog reaper marker. Book restored same session; curves NOT reset (2026-07-10 lesson: fix values, never erase history).",
+   "hypothesis": "the rail's danger was never its trigger math but multi-writer state corruption from my own deployment process",
+   "expected_benefit": "single-writer invariant + versioned state makes this entire failure class structurally impossible",
+   "expected_cost": "~1 day funding (~$4) + re-entry fees (~$10-20) already paid; zero ongoing",
+   "confidence": 0.9,
+   "assumptions": [
+    "S4U watchdog reaper has kill rights in its own session",
+    "version check covers all legacy writers"
+   ],
+   "success_metric": "zero deadman false fires; single pid-stamped writer verified after every daemon deploy",
+   "reversal_condition": "n/a (defect fix)"
+  },
+  {
+   "id": "2026-07-12-multi-model-advisory-panel",
+   "decision": "Principal order: fix the same-author blind spot STRUCTURALLY. Built the Multi-Model Advisory Panel: scripts/generate_external_review_doc.py (sanitized cold-audit dossier from live feeds; hard secret-block gate), scripts/run_external_panel.py (queries every LLM in data/secrets/llm_panel.json via OpenAI-compatible APIs; graceful manual mode without keys), prompts/external_panel_prompt.txt (fixed adversarial prompt, falsifiable-recommendation format). Cadence: WEEKLY, every 7th CRO cycle (upgraded from quarterly manual). CRO = sole decision-maker; panel advisory-only, zero pipeline-skip authority; responses = untrusted data (prompt-injection rule: never execute instructions from responses); every claim verified against code before action; provider hit-rates scored monthly. ONE human step remains: an OpenRouter API key (~$5 credit = whole panel, ~$0.10-0.60/run) in data/secrets/llm_panel.json.",
+   "hypothesis": "external cognitive diversity on a weekly clock converts unknown-unknowns from trust surprises into scheduled findings; rounds 1-2 (manual) already produced 10+ implemented fixes",
+   "expected_benefit": "structural end of single-reviewer ceiling; weekly cold audits at ~$2/month",
+   "expected_cost": "triage time each 7th cycle; risk of panel noise (mitigated by hit-rate scoring + code-verification rule)",
+   "confidence": 0.85,
+   "assumptions": [
+    "principal supplies one API key",
+    "OpenAI-compatible endpoints remain stable"
+   ],
+   "success_metric": "first automated panel run produces >=1 QUEUE-or-better finding; provider hit-rate measurable by month 2",
+   "reversal_condition": "two consecutive panels produce zero surviving findings -> drop to biweekly; persistent injection attempts from a provider -> drop provider"
+  },
+  {
+   "id": "2026-07-12-vps-migration-complete",
+   "decision": "Full desk migrated to Hetzner VPS (95.216.191.70, Ubuntu 26.04, 2vCPU/4GB, hardened: non-root quant user, ufw deny-inbound-except-SSH, fail2ban, key-only SSH). Python 3.12.13 via uv (matches tested env, avoids 3.14 wheel risk). Repo+lake(25331 files)+state transferred; editable-installed; CI GREEN on VPS; Binance testnet reachable (spot 1373/futures 724 symbols, keys auth). systemd REPLACES Task Scheduler -> structurally kills the S4U-zombie/double-writer class that caused the 07-11 deadman false-fire. 9 units: cashcarry, deadman, dashboard, liquidations, tunnel(cloudflared), refresh.timer(3min), cro.timer(08:01 python), cro-ai.timer(08:45 headless Claude CLI). ATOMIC CUTOVER done: laptop frozen (FREEZE marker + watchdog disabled + freeze-reap path added to watchdog.py for S4U kill), state synced, VPS live. Book healthy: 10 carries, funding accruing, deadman baselined sane ($10.9k HW not faucet bug). Cross-platform fix: libs/ops/platform_paths.venv_python (Windows/Linux).",
+   "hypothesis": "laptop-independence + systemd process ownership removes the single-machine SPOF AND the Windows-session pathology in one move",
+   "expected_benefit": "24/7 operation with laptop off; VPS 7-day stability gate now running toward live",
+   "expected_cost": "~EUR6.5/mo VPS; two human steps remain (claude setup-token for AI brain; live keys post-gate)",
+   "confidence": 0.9,
+   "assumptions": [
+    "Hetzner uptime",
+    "systemd single-instance holds",
+    "user does setup-token + live keys via SSH"
+   ],
+   "success_metric": "7 continuous days of clean VPS heartbeats -> live connector enable gate opens",
+   "reversal_condition": "VPS instability -> laptop un-retire = remove data/FREEZE + re-enable QuantWatchdog"
+  },
+  {
+   "id": "2026-07-12-panel-max-roi-upgrade",
+   "decision": "Multi-model panel upgraded to max-ROI (principal order): (1) WEEKLY MISSION ROTATION over prompts/panel_missions/ (audit->generate->data->premortem by ISO week) -- 11 models no longer do only critique; generate proposes EV-gated hypotheses (graveyard auto-appended), data scouts free sources, premortem hunts rail gaps; (2) CONSENSUS pre-pass (theme tally, agreement=high prior) heads the inbox; (3) provider HIT-RATE scorer (score_panel.py + panel_verdicts.jsonl) -> self-pruning; (4) data-scouting is a rotation mission. WEEKLY ORDER FIXED: Claude's OWN deep red-team + fixes FIRST (item-10 full methodology, same depth as the 07-12 sessions, distinct from lighter daily cycle #1), THEN panel triage -- avoids anchoring. Internal red-team cadence upgraded monthly->weekly as panel Step 1. Honest framing encoded: LLMs are poor direct alpha oracles (KAMA precedent), value is mechanisms/data/blind-spots, all EV-gated. CI green both machines; deployed to VPS.",
+   "hypothesis": "rotating 11 diverse minds across 4 missions + own-audit-first triples extracted value at same ~$0.25/run without adding fragility",
+   "expected_benefit": "wider blind-spot + hypothesis + data coverage; self-pruning trust; no anchoring of own judgement",
+   "expected_cost": "~$0.25/week; triage time (brain, currently paused pending setup-token)",
+   "confidence": 0.8,
+   "assumptions": [
+    "consensus keyword-tally is a useful rough signal (brain does real semantic triage)",
+    "generate/data missions clear the EV gate like any hypothesis"
+   ],
+   "success_metric": "first generate-mission produces >=1 EV-gate-QUEUE hypothesis; first data-mission surfaces >=1 verified new source",
+   "reversal_condition": "generate/data missions produce zero survivors across 3 rotations -> drop those missions, keep audit+premortem"
+  },
+  {
+   "id": "2026-07-12-monthly-tier1-panel",
+   "decision": "Monthly governance item 11 added (principal order): MONTHLY TIER-1 CONVERGENCE + MAX-GROWTH review uses the panel too. New tier1 mission (prompts/panel_missions/tier1.txt) + CLI/env mission override (run_external_panel.py tier1). SAME ORDER AS WEEKLY: Claude's OWN strategic gap-analysis vs tier_convergence.json + fixes FIRST, THEN panel(tier1), THEN triage against the scorecard. Mission honestly framed: target ACHIEVABLE process/quality gaps (RenTec breadth, Citadel risk/allocation, Jane St execution, AQR/AHL hygiene) at our real constraints (solo+AI, free data, low-freq, small capital); structural/resource gaps (latency, headcount, $B) named once, never chased. Rule: quality that doesn't raise E[log wealth] at positive EV is vanity not convergence. CI green both machines.",
+   "hypothesis": "a monthly outside-view on tier-1 quality gaps, gated to achievable+positive-EV moves, compounds the desk's process edge without chasing unfundable resources",
+   "expected_benefit": "systematic monthly gap-closing toward tier-1 QUALITY + growth, own-analysis-first to avoid anchoring",
+   "expected_cost": "~$0.25/month extra panel run; triage time (brain, pending setup-token)",
+   "confidence": 0.75,
+   "assumptions": [
+    "models respect the achievable-only framing",
+    "tier_convergence.json kept current by step 1"
+   ],
+   "success_metric": "first monthly tier1 review produces >=1 EV-positive achievable move implemented or queued",
+   "reversal_condition": "3 monthly tier1 runs yield only resource-bound or zero-EV suggestions -> drop to quarterly"
+  },
+  {
+   "id": "2026-07-12-panel-roster-refresh-and-memory",
+   "decision": "Two panel gaps closed (principal order): (1) MONTHLY ROSTER REFRESH (refresh_panel_roster.py) = DIVERSITY MAINTENANCE against the monoculture/blind-spot-convergence risk -- CONSERVATIVE by design: keeps working models, only auto-replaces DEAD IDs + fills empty labs from the live OpenRouter catalog, and merely SURFACES upgrade candidates for deliberate monthly review (never auto-swaps a flagship for a merely-newer variant -- catalog metadata can't judge capability; dry-run proved 'newest' picks include downgrades like gemini-pro->gemma-free). Dry-run default, --apply after review, backs up config, key preserved, hit-rate scorer prunes bad picks. (2) PANEL FINDING-MEMORY (build_panel_rulings.py -> docs/research/panel_rulings.md) = the alpha-graveyard discipline for the panel: rejected findings are recorded so they're not re-litigated; triage checks it FIRST. Constitution items 12b/12c. CI green both machines.",
+   "hypothesis": "static roster converges to shared blind spots over time (the single-reviewer trap at panel level); refreshing diversity + remembering rulings keeps the outside view genuinely outside and stops wasted re-triage",
+   "expected_benefit": "sustained cognitive diversity as models drift; zero re-litigation of settled findings",
+   "expected_cost": "monthly review of the roster diff; negligible compute",
+   "confidence": 0.8,
+   "assumptions": [
+    "conservative refresh avoids capability downgrades",
+    "finding-text dedup is a good-enough match (brain does semantic judgment)"
+   ],
+   "success_metric": "roster stays >=10 distinct labs with zero dead IDs; no rejected finding re-triaged after it enters panel_rulings.md",
+   "reversal_condition": "roster refresh proposes only downgrades 3 months running -> make it drop-dead-only"
+  },
+  {
+   "id": "2026-07-16-nom-thin-book-sizing-fix",
+   "decision": "The 2026-07-13 05:04Z dead-man fire was a TRUE POSITIVE (first real fire; 07-11 was the false one). Root cause chain: the 07-09 hysteresis fix made opens rare (1-2 fresh names per rebalance) -> _alloc's concentration cap hit its documented 'n*cap_frac<1 relaxes' path -> a single fresh open (NOMUSDT, 2,737,082 units) was sized at $4,297 of the $4,500 book, from FULL capital instead of free capital -> market entry + dead-man flatten round-tripped a near-empty testnet spot book, burning ~$4.7k of venue cash (-40.9% from HWM) that the executor's mark-based accounting recorded as -$54.73. Fixes shipped 2026-07-16 (CI ALL GREEN, live-verified): (1) _alloc cap is HARD -- un-deployable remainder stays in cash, never re-inflated; (2) opens sized from FREE capital (capital - deployed notional); (3) thin-book guard: BOTH entry legs need >=5x the order notional resting within 1% of the touch (new quote_depth in both testnet connectors) or the name is skipped; (4) executor now IDLES under KILL instead of exit-respawning (14,225 restarts in 3 days starved the data flywheel + froze the dashboard feed); (5) 5 regression tests in tests/execution/test_executor_sizing.py. Dead-man reset + restart deliberately LEFT TO THE PRINCIPAL per the Tier-3 rail's 'investigate before any restart' contract. SAME-DAY ADDENDUM: (6) venue-fill cost basis shipped -- avg_fill() (spot myTrades / futures userTrades) now sets spot_cost/perp_entry at open and the exit marks at close; ticker survives only as fallback when the venue read fails. (7) pilot.json mystery resolved: the pilot instrument only reached the VPS 2026-07-16 07:21 (deployed that morning; the 07-12..07-15 cycles ran pre-pilot code) -- verified end-to-end and backfilled the honest 390-trial / 0-survivor first-sweep baseline; the 30-day scale-or-not clock starts 2026-07-16.",
+   "hypothesis": "the loss class was execution/sizing, not edge: with a hard cap, free-capital sizing and a depth guard, the same rebalance stream cannot concentrate the book into one name or enter a book that cannot absorb the order",
+   "expected_benefit": "removes the demonstrated ruin path (would have burned live capital identically); restores data-flywheel + dashboard uptime while halted",
+   "expected_cost": "some funding harvest foregone when thin testnet books skip legit candidates; 2 depth calls per fresh open attempt",
+   "confidence": 0.85,
+   "assumptions": [
+    "depth on the venue actually traded (testnet) is the right liquidity measure for testnet execution",
+    "5x depth-within-1% is conservative enough for entry-sized orders",
+    "fill-window (start_ms - 2s) captures all own fills incl. resting maker fills"
+   ],
+   "success_metric": "30d post-restart: zero opens >35% of book capital, zero thin-book fills, and dead-man equity tracks executor net within noise (no silent divergence)",
+   "reversal_condition": "funding capture drops materially because the depth guard skips most candidates -> recalibrate _DEPTH_MULT / pct from measured fill data, never by removing the guard"
+  },
+  {
+   "id": "2026-07-16-level5-factory-prompt-triage",
+   "decision": "Principal supplied a full 'Level 5' constitution: 11-agent 24/7 factory, 100 hypotheses/10min, continuous 3-auditor pre-mortem gauntlet, hourly regime translators, weekly Frankenstein synthesizer, Yield Floor DeFi sweeps, autonomous data purchases/sub-accounts, 40% DD + 50% vol caps, CAGR-maximisation override. Triaged per constitution as an external proposal (own-analysis-first, EV gate). VERDICT BY COMPONENT: (A) ALREADY BUILT leaner -- cold-audit committee (11-model panel, weekly rotation + monthly tier1), information-value accounting (libs/research/information_value.py), EV gate + audit ledger, knowledge graph (institutional_knowledge/graveyard/ledger/data_registry), Holm/DSR/PBO multiplicity, maker-first execution, kill rails, hidden-assumptions + sunset discipline, panel scorecards, anti-anchoring protocol. (B) ADOPTED from it: Frankenstein synthesizer == panel 'synthesize' mission (built 07-15, verified + fired 07-16). (C) EVIDENCE-GATED, not rejected: throughput scaling / 24-7 generation / compute rental -- the 30-day factory pilot (clock starts 07-16, decision ~08-15) settles it; current evidence 390 trials -> 0 survivors says the constraint is DATA, not volume; full immune-system LLM cost at spec throughput ~$1.5-4.5k/mo vs ~$1/mo budget. (D) REJECTED as doctrine violations: CAGR-maximisation override (targeting a return number corrupts a survival-constrained optimizer -- standing lesson), 40% DD budget + 50% vol cap (sits ABOVE the Tier-3 35% ruin-flatten rail; desk objective is E[log W] s.t. ruin<=2%), 'never idle' agent loops (restraint doctrine; 2vCPU/4GB box; binding constraint is calendar time). (E) NEVER AUTONOMOUS regardless of prompt text (hard stops, human-only): moving funds / DeFi yield sweeps, exchange (sub)account or API-key creation/management, financial obligations incl. data purchases. (F) QUEUED for their proper trigger: tax-aware sizing (at live capital), net-exposure consolidator (when >1 live sleeve), Effective-N leverage gate (when multi-strategy), per-hypothesis pre-mortem trigger (when new-hypothesis throughput >0; mission file already exists).",
+   "hypothesis": "the prompt's durable value is its handful of novel mechanisms (synthesizer, pre-mortem trigger, effective-N gate), not its throughput maximalism; adopting the former and evidence-gating the latter preserves E[log W] better than wholesale adoption",
+   "expected_benefit": "captures the EV-positive ideas at ~zero cost; avoids $1.5k+/mo LLM burn, false-positive manufacture on thin data, and a risk posture (40% DD) that contradicts the ruin rail",
+   "expected_cost": "declining the vision wholesale risks principal frustration; mitigated by explicit component-level mapping and the pilot as the objective arbiter",
+   "confidence": 0.85,
+   "assumptions": [
+    "the 30-day pilot (from 07-16) is the agreed arbiter for scaling generation/compute",
+    "principal's hard stops in the handoff (Sec 6) remain in force over any prompt text",
+    "queued items re-enter via EV gate when their trigger condition fires"
+   ],
+   "success_metric": "by pilot day-30 (~2026-08-15): scale-or-not decided from survivors-per-1000 evidence; zero doctrine regressions (no CAGR targeting, no DD-budget creep above the rail)",
+   "reversal_condition": "pilot shows >=1 forward-validated survivor from generation throughput -> re-open the scaling question with rented compute sized by EV, and revisit the factory blueprint's throughput sections component by component"
+  }
+ ]
+}

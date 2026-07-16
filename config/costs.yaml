@@ -1,0 +1,7 @@
+# Fusion all-in cost parameters (spread + commission + slippage + gap).
+# RESERVED for Stage 4 (cost model). Not loaded by the Settings model.
+# Model realized all-in cost, never the advertised "zero spread" (red team W2.3).
+
+defaults:
+  commission_per_lot_usd: null
+  slippage_model: null

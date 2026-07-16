@@ -1,0 +1,167 @@
+{
+  "generated": "2026-07-16T08:23:50.428127+00:00",
+  "master_objective": "maximize expected lifetime geometric growth (log wealth), survival-c",
+  "deployed": {
+    "sleeves": [
+      "cash_and_carry (real)",
+      "perp_ls (paper)"
+    ],
+    "start_capital": 15000.0,
+    "equity": 15053.01,
+    "net_pnl": 53.01,
+    "return_pct": 0.353,
+    "days_live": 14.13,
+    "winrate_pct": 57.1,
+    "n_closed_trades": 275,
+    "deployed_sharpe": 2.02,
+    "funding": 75.16,
+    "n_carries": 0,
+    "perp_paper_net": 103.5
+  },
+  "binding_constraint": "calendar-time data accumulation (not engineering throughput)",
+  "bottleneck_rankings": [
+    {
+      "rank": 1,
+      "bottleneck": "calendar-time data accumulation",
+      "evidence": [
+        {
+          "edge": "oi_divergence",
+          "have_days": 18,
+          "needs_days": 40
+        },
+        {
+          "edge": "ls_contrarian",
+          "have_days": 18,
+          "needs_days": 40
+        },
+        {
+          "edge": "liquidation_reversal",
+          "have_days": 18,
+          "needs_days": 40
+        }
+      ],
+      "lever": "keep the flywheel alive + verify archives append; cannot be engineered away"
+    },
+    {
+      "rank": 2,
+      "bottleneck": "single deployed edge (concentration)",
+      "evidence": "2 deployed sleeve(s)",
+      "lever": "decorrelated survivors -- blocked on #1 (need forward data to validate)"
+    },
+    {
+      "rank": 3,
+      "bottleneck": "flywheel reliability (PC sleep / reboot)",
+      "evidence": "watchdog enabled; run-logged-off pending",
+      "lever": "carry_crowding_monitor"
+    }
+  ],
+  "retirement_candidates": [
+    {
+      "sleeve": "taker_flow",
+      "marginal_sharpe": -0.12
+    },
+    {
+      "sleeve": "basis_carry",
+      "marginal_sharpe": -0.07
+    },
+    {
+      "sleeve": "funding_momentum",
+      "marginal_sharpe": -0.06
+    },
+    {
+      "sleeve": "ts_trend",
+      "marginal_sharpe": -0.06
+    }
+  ],
+  "retirement_note": "SIGNAL ONLY \u2014 marginal-Sharpe swings ~\u00b10.15 between runs, so a single negative sign is within noise. Retire only on PERSISTENT negative contribution across runs, with promotion-grade rigor. No whipsaw.",
+  "architecture_review_due": false,
+  "cycles_logged": 27,
+  "completed_this_cycle": [
+    "archive_integrity_ok",
+    "watchdog_run_logged_off",
+    "honest_deployed_sharpe",
+    "single_portfolio_object",
+    "trade_logging",
+    "state_files_infra",
+    "cashcarry_capacity_sizing",
+    "bayesian_roi_calibration",
+    "dynamic_leverage",
+    "combined_perp_carry",
+    "execution_maker_carry",
+    "hedge_reconcile",
+    "growth_positive_risk_controls",
+    "test_suite_ci",
+    "stress_harness",
+    "stablecoin_flows_archiver",
+    "alpha_economics_gate",
+    "institutional_knowledge_base",
+    "reconcile_limit_fallback",
+    "root_cause_engine",
+    "decision_ledger",
+    "data_registry",
+    "executive_kpis",
+    "black_swan_library",
+    "growth_audit_engine",
+    "autodiscovery_crypto_throughput"
+  ],
+  "engineering_backlog_top": [
+    {
+      "id": "carry_crowding_monitor",
+      "roi": 0.153,
+      "effort_h": 2.5
+    },
+    {
+      "id": "execution_tca_fill_log",
+      "roi": 0.128,
+      "effort_h": 3.0
+    },
+    {
+      "id": "live_connector_prebuild",
+      "roi": 0.09,
+      "effort_h": 4.0
+    },
+    {
+      "id": "cross_venue_funding_study",
+      "roi": 0.064,
+      "effort_h": 3.0
+    },
+    {
+      "id": "funding_decay_predictor",
+      "roi": 0.037,
+      "effort_h": 4.0
+    }
+  ],
+  "research_backlog": [
+    {
+      "edge": "oi_divergence",
+      "status": "data-blocked 18/40d",
+      "info_value": "positive but not yet actionable"
+    },
+    {
+      "edge": "ls_contrarian",
+      "status": "data-blocked 18/40d",
+      "info_value": "positive but not yet actionable"
+    },
+    {
+      "edge": "liquidation_reversal",
+      "status": "data-blocked 18/40d",
+      "info_value": "positive but not yet actionable"
+    }
+  ],
+  "decisions_log": [
+    "REJECT ls_contrarian for deployment: Sharpe 10+ artifact, fails DSR (correct).",
+    "PIVOT executed book to delta-neutral cash-and-carry; perp L/S -> shadow.",
+    "DEFER new-hypothesis generation: lower marginal ROI than protecting the data clock.",
+    "DEFER heavy external paper search: info value < top backlog item this cycle."
+  ],
+  "forecast_calibration": {
+    "n_resolved": 28,
+    "status": "calibrated",
+    "brier": 0.0762,
+    "reliability": 0.9238,
+    "bias": -0.2054,
+    "bias_label": "under-confident",
+    "hit_rate_posterior": 0.9,
+    "note": "Brier lower=better; reliability=1-Brier; bias>0 means forecasts were too high. Applied as a shrinkage on future p_success when |bias| is material."
+  }
+}

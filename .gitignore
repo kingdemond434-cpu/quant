@@ -1,0 +1,18 @@
+.venv/
+__pycache__/
+*.pyc
+.ruff_cache/
+.pytest_cache/
+.mypy_cache/
+*.bak*
+*.log
+
+# secrets + generated state + data lake: never in history (the journal is data/, not git)
+data/*
+!data/decision_ledger.json
+!data/cashcarry_config.json
+web/*
+!web/index.html
+reports/
+lake/
+docs/EXTERNAL_PANEL_DOSSIER.md

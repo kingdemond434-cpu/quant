@@ -1,0 +1,28 @@
+# Project charter — PRE-COMMITTED, timestamped governance for the whole endeavour.
+# This file is NOT loaded by the Settings model; it is read by the research/governance
+# layer in later stages. Treat the values here as binding once set.
+
+charter_version: 1
+committed_at_utc: "2026-06-15T00:00:00Z"
+
+# Maximum capital that may ever be at risk on-platform. Treated as R&D money that can be lost.
+max_at_risk_capital_usd: null   # FILL IN before any live capital.
+
+# Honesty multiplier applied to the self-reported trials count in the Deflated Sharpe Ratio.
+# Red team W3.1: self-reported trials are always undercounted.
+trials_honesty_multiplier: 7.0
+
+# Cost stress band applied during validation (multiply base Fusion costs).
+cost_stress_multiplier_range: [2.0, 5.0]
+
+# Pre-committed project-level kill criteria. These cannot be moved after commit.
+kill_criteria:
+  stop_if_no_edge_by_utc: null            # FILL IN: a hard date.
+  stop_after_n_honest_hypotheses: 25      # if N pre-registered hypotheses fail the gauntlet, stop.
+  leakage_red_flag_backtest_sharpe: 1.5   # backtest Sharpe above this is suspect, not a triumph.
+
+# Broker counterparty controls (red team W2.1 / W2.3).
+broker_controls:
+  withdraw_profits: true
+  keep_minimal_capital_on_platform: true
+  model_all_in_costs_from_fills: true

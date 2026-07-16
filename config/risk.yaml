@@ -1,0 +1,7 @@
+# Risk limits and sizing parameters.
+# RESERVED for Stage 8/9 (risk math + gate). Not loaded by the Settings model.
+# Illustrative defaults only — calibrate to validated alphas' real distributions.
+
+kelly_fraction_max: 0.25          # lambda <= 1/4 (CRO mandate)
+drawdown_ladder_pct: [5, 10, 15, 20]
+gap_aware_sizing: true            # size for gap-through, not the stop (red team W10.1)

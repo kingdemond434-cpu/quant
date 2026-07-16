@@ -1,0 +1,11 @@
+# Runtime deps for the autonomous daemon + dashboard API on Linux/Docker.
+# NOTE: MetaTrader5 is Windows-only and NOT required here -- the daemon researches the Parquet lake
+# offline. Ingest history on Windows (scripts/ingest_history.py), then the lake is portable.
+numpy>=1.26
+pandas>=2.2
+pyarrow>=16
+duckdb>=1.0
+scipy>=1.13
+pydantic>=2.7
+fastapi>=0.110
+uvicorn[standard]>=0.29

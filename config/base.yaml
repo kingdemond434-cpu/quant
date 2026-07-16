@@ -1,0 +1,29 @@
+# Base configuration — shared defaults for all environments.
+# Overlaid by config/<environment>.yaml, then environment variables (QP_ prefix),
+# then explicit overrides passed to load_settings().
+# Only keys defined on the Settings model are permitted here (extra = forbid).
+
+logging:
+  level: INFO
+  json: true
+  include_caller: false
+  # Keys whose values are redacted from structured log context.
+  redact_keys:
+    - password
+    - passwd
+    - token
+    - secret
+    - api_key
+    - apikey
+    - key
+    - credential
+    - login
+    - mt5_password
+    - authorization
+
+reproducibility:
+  default_seed: 12345
+  require_clean_git: false
+
+# Paths are derived from the project root when left unset.
+paths: {}

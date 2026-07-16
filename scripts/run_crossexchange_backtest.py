@@ -1,0 +1,139 @@
+"""NEW ALPHA FAMILY -- cross-exchange funding dispersion (Binance vs Bybit vs OKX).
+
+ECONOMIC HYPOTHESIS: when a perp's funding on ONE venue is rich relative to the cross-venue
+consensus, longs are crowded on that venue -> fade it; when relatively cheap, lean long.
+This is VENUE-RELATIVE crowding -- orthogonal to the market-wide leverage demand the existing
+single-venue carry sleeve trades. Two sleeves are built on the same 8h panel:
+  * xexch_dispersion  -- the new signal, -zscore(binance_funding - cross_venue_mean)
+  * single_venue_carry -- baseline, -zscore(binance_funding); used to MEASURE orthogonality
+Both run the real gauntlet (DSR/PBO/Reality-Check via the validator), net of cost + funding.
+HONESTY: ~90-day overlap = ~1 regime -> PRELIMINARY; forward validation still required. Nothing
+fabricated. Writes web/crossexchange_backtest.json and registers the candidate.
+
+    python scripts/run_crossexchange_backtest.py
+"""
+
+from __future__ import annotations
+
+import json
+from datetime import UTC, datetime
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+from libs.autodiscovery.models import Family, Hypothesis
+from libs.autodiscovery.validation import campaign_pbo_rc, validate
+from libs.data.crypto_source import fetch_funding, fetch_klines
+from libs.data.multiexchange import fetch_bybit_funding, fetch_okx_funding
+from libs.research.ic import evaluate_signal
+from libs.validation.dsr import sharpe_ratio
+from libs.validation.economic_prior import MechanismType
+
+_OUT = Path("web/crossexchange_backtest.json")
+_PPY = 3 * 365.0                              # 8h funding periods per year
+_COST = 0.0005
+_UNIVERSE = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT", "DOGEUSDT", "BNBUSDT", "ADAUSDT",
+             "AVAXUSDT", "LINKUSDT", "LTCUSDT", "DOTUSDT", "TRXUSDT", "BCHUSDT", "NEARUSDT"]
+_FAIL = ["edge crowds/decays", "venue convergence", "thin sample (~1 regime)", "cost exceeds edge"]
+
+
+def _panel() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """Aligned 8h panels: cross-venue funding dispersion, binance funding, next-period return."""
+    disp, bfund, fwd = {}, {}, {}
+    start_ms = int((pd.Timestamp.now(tz="UTC") - pd.Timedelta(days=110)).timestamp() * 1000)
+    for sym in _UNIVERSE:
+        try:
+            bn = fetch_funding(sym, start_ms=start_ms).set_index("timestamp")["funding"]
+            by = fetch_bybit_funding(sym).set_index("timestamp")["funding"]
+            ok = fetch_okx_funding(sym).set_index("timestamp")["funding"]
+            k = fetch_klines(sym, interval="8h", start_ms=start_ms)
+        except Exception:
+            continue
+        if bn.empty or by.empty or ok.empty or k.empty:
+            continue
+        idx = bn.index.union(by.index).union(ok.index)
+        f = pd.DataFrame({"bn": bn.reindex(idx).ffill(), "by": by.reindex(idx).ffill(),
+                          "ok": ok.reindex(idx).ffill()}).dropna()
+        mean = f.mean(axis=1)
+        disp[sym] = f["bn"] - mean                    # venue-relative crowding (the new signal)
+        bfund[sym] = f["bn"]
+        px = k.set_index("timestamp")["close"].astype(float).reindex(f.index).ffill()
+        fwd[sym] = px.pct_change().shift(-1)
+    d = pd.DataFrame(disp).sort_index()
+    return d, pd.DataFrame(bfund).reindex(d.index), pd.DataFrame(fwd).reindex(d.index)
+
+
+def _xs_weights(signal: pd.DataFrame) -> pd.DataFrame:
+    z = signal.sub(signal.mean(axis=1), axis=0).div(signal.std(axis=1) + 1e-9, axis=0)
+    w = -z                                            # fade the (relatively) rich-funding names
+    w = w.sub(w.mean(axis=1), axis=0)                 # market-neutral
+    return w.div(w.abs().sum(axis=1) + 1e-9, axis=0)
+
+
+def _ret(weights: pd.DataFrame, fwd: pd.DataFrame, bfund: pd.DataFrame) -> np.ndarray:
+    price = (weights * fwd).sum(axis=1)
+    funding = -(weights * bfund).sum(axis=1)          # earn/pay binance funding on the book
+    cost = _COST * weights.diff().abs().sum(axis=1)
+    return (price + funding - cost).dropna().to_numpy()
+
+
+def main() -> None:
+    disp, bfund, fwd = _panel()
+    if disp.shape[1] < 6:
+        raise SystemExit("insufficient cross-venue panel")
+    sleeves = {
+        "xexch_dispersion": _ret(_xs_weights(disp), fwd, bfund),
+        "single_venue_carry": _ret(_xs_weights(bfund), fwd, bfund),
+    }
+    n = min(len(v) for v in sleeves.values())
+    matrix = np.column_stack([v[-n:] for v in sleeves.values()])
+    sharpes = np.array([sharpe_ratio(v[v != 0.0]) for v in sleeves.values()])
+    pbo, rc = campaign_pbo_rc(matrix)
+    corr = float(np.corrcoef(matrix[:, 0], matrix[:, 1])[0, 1])
+
+    fwd_arr = fwd.to_numpy()                              # IC = rank-corr of signal vs fwd return
+    sig = {"xexch_dispersion": (-disp).to_numpy(), "single_venue_carry": (-bfund).to_numpy()}
+
+    results = []
+    for name, r in sleeves.items():
+        active = r[r != 0.0]
+        ann = round(float(sharpe_ratio(active) * np.sqrt(_PPY)), 2) if len(active) > 5 else 0.0
+        v = (validate(active, hypothesis=Hypothesis(
+            family=Family.CARRY, subtype=name, symbol="CRYPTO", params={},
+            mechanism=MechanismType.RISK_PREMIUM, edge_source=name, failure_modes=_FAIL),
+            n_trials=2, sharpe_estimates=sharpes, returns_matrix=matrix, pbo=pbo, rc=rc)
+            if len(active) >= 250 else None)
+        ic = evaluate_signal(sig[name], fwd_arr, periods_per_year=_PPY)
+        results.append({"sleeve": name, "ann_sharpe": ann, "n_obs": len(active),
+                        "gates": f"{sum(v.gates.values())}/{len(v.gates)}" if v else "n<250",
+                        "survived": bool(v.survived) if v else False,
+                        "failed_gates": [k for k, ok in v.gates.items() if not ok] if v else [],
+                        "ic": ic["mean_ic"], "ic_ir": ic["ic_ir"], "hit_rate": ic["hit_rate"],
+                        "ic_decay": ic["ic_decay"]})
+
+    bars = int(disp.shape[0])
+    out = {
+        "updated": datetime.now(tz=UTC).isoformat(),
+        "family": "cross-exchange funding dispersion", "venues": ["binance", "bybit", "okx"],
+        "frequency": "8h", "symbols": int(disp.shape[1]), "bars": bars,
+        "calendar_days": round(bars / 3, 1),
+        "dispersion_vs_carry_correlation": round(corr, 3),
+        "orthogonal": abs(corr) < 0.4,
+        "pbo": round(float(pbo.pbo), 3) if pbo else None,
+        "reality_check_p": round(float(rc.p_value), 3) if rc else None,
+        "results": results,
+        "honesty": ("~90-day venue overlap = ~1 regime; PRELIMINARY. The point is BREADTH: a new "
+                    "orthogonal data family. Forward validation still required before production."),
+    }
+    _OUT.parent.mkdir(parents=True, exist_ok=True)
+    _OUT.write_text(json.dumps(out, indent=2), "utf-8")
+    for r in results:
+        print(f"  {r['sleeve']:20} annSharpe~{r['ann_sharpe']:6} n={r['n_obs']:4} "
+              f"gates={r['gates']:5} survived={r['survived']}")
+    print(f"dispersion vs carry corr = {corr:.2f} -> orthogonal={out['orthogonal']} "
+          f"over {out['calendar_days']}d (PRELIMINARY)")
+
+
+if __name__ == "__main__":
+    main()

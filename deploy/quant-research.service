@@ -1,0 +1,25 @@
+# systemd unit for the autonomous supervisor (Linux VPS). Resurrects the daemon on any exit.
+# Install:
+#   sudo cp deploy/quant-research.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now quant-research
+#   journalctl -u quant-research -f        # live logs
+[Unit]
+Description=Quant Autonomous Research Supervisor
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=quant
+WorkingDirectory=/opt/quant-platform
+ExecStart=/opt/quant-platform/.venv/bin/python scripts/run_supervisor.py --workers 3 --db data/sor_research.sqlite --lake data/lake
+Restart=always
+RestartSec=5
+# Resource caps (runtime safety; the supervisor recovers any killed work).
+CPUQuota=300%
+MemoryMax=6G
+TimeoutStopSec=30
+KillSignal=SIGTERM
+
+[Install]
+WantedBy=multi-user.target

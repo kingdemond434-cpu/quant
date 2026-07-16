@@ -1,0 +1,108 @@
+"""Daily institutional research cycle -- the CRO everyday loop.
+
+ONE complete cycle, run daily by Task Scheduler:
+  1. run_daily_research.py   -- forward-accumulating pipeline: candidate generation + validation +
+                                data archiving (feeds the research system for testing)
+  2. research_cycle.py       -- regenerate the 3 state files, ROI reprioritization, calibration
+  3. run_leverage_opt.py     -- recompute growth-optimal leverage per sleeve + joint
+  4. run_live_combined.py    -- refresh the molded book
+Then it appends a DATED entry to data/cro_cycle_log.json (bottleneck, next highest-ROI task,
+deployed metrics, calibration, candidates tested) and prints the next action. Continuous process:
+no terminal state except the absence of positive expected-Research-ROI work.
+
+Each step is isolated -- one failure never aborts the cycle. Idempotent + safe to re-run.
+
+    python scripts/daily_research_cycle.py
+"""
+
+from __future__ import annotations
+
+import json
+import subprocess
+import sys
+from datetime import UTC, datetime
+from pathlib import Path
+
+from libs.ops.platform_paths import venv_python
+
+_ROOT = Path(__file__).resolve().parent.parent
+_PY = venv_python(_ROOT)
+_LOG = _ROOT / "data" / "cro_cycle_log.json"
+
+# ordered pipeline; (label, script, timeout_s). Heavy research first, then bookkeeping.
+_STEPS = [
+    ("ci_gate",           "scripts/run_ci.py",              300),
+    ("stablecoin_flows",  "scripts/run_stablecoin_flows.py", 180),  # daily on-chain clock tick
+    ("root_cause",        "scripts/run_root_cause.py",       120),  # classify losses pre-reaction
+    ("desk_digest",       "scripts/render_desk_digest.py",    60),  # Obsidian-readable daily brief
+    ("micro_audit",       "scripts/run_micro_audit.py",      480),  # 3 rotating cold LLMs on 24h delta
+    ("research_feed",     "scripts/collect_research_feed.py", 120),  # arXiv q-fin -> vault inbox
+    ("growth_audit",      "scripts/run_growth_audit.py",       60),  # under-utilization = defect
+    ("research_pipeline", "scripts/run_daily_research.py",  7200),
+    ("autodiscovery",     "scripts/run_crypto_research.py", 1800),  # industrialized crypto factory
+    ("state_files",       "scripts/research_cycle.py",      300),
+    ("leverage_opt",      "scripts/run_leverage_opt.py",    120),
+    ("molded_refresh",    "scripts/run_live_combined.py",   120),
+    ("git_snapshot",      "scripts/git_snapshot.py",        120),  # daily forensic code history
+]
+
+
+def _run(script: str, timeout: int) -> dict[str, object]:
+    try:
+        r = subprocess.run([_PY, script], cwd=str(_ROOT), timeout=timeout,
+                           capture_output=True, text=True, check=False)
+        tail = (r.stdout or r.stderr or "").strip().splitlines()[-1:] or [""]
+        return {"ok": r.returncode == 0, "rc": r.returncode, "tail": tail[0][:160]}
+    except subprocess.TimeoutExpired:
+        return {"ok": False, "rc": "timeout", "tail": f"timeout after {timeout}s"}
+    except Exception as e:
+        return {"ok": False, "rc": "error", "tail": repr(e)[:160]}
+
+
+def _load(p: Path, d: object) -> object:
+    try:
+        return json.loads(p.read_text("utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return d
+
+
+def main() -> None:
+    steps: dict[str, object] = {}
+    for label, script, timeout in _STEPS:
+        steps[label] = _run(script, timeout)
+        print(f"[{label}] {steps[label]}")
+
+    # read resulting institutional state for the dated cycle log
+    eng = _load(_ROOT / "engineering_backlog.json", {})
+    state = _load(_ROOT / "research_state.json", {})
+    port = _load(_ROOT / "web" / "portfolio.json", {}).get("deployed", {})
+    cal = _load(_ROOT / "web" / "calibration.json", {})
+    disc = _load(_ROOT / "web" / "discovery.json", {})
+    nxt = eng.get("next_action")
+
+    entry = {
+        "date": datetime.now(tz=UTC).strftime("%Y-%m-%d"),
+        "ts": datetime.now(tz=UTC).isoformat(),
+        "steps_ok": {k: v.get("ok") for k, v in steps.items()},
+        "binding_constraint": state.get("binding_constraint"),
+        "next_highest_roi_task": ({"id": nxt.get("id"), "roi": nxt.get("roi")} if nxt else None),
+        "open_backlog": [i.get("id") for i in eng.get("open", [])],
+        "deployed": {k: port.get(k) for k in ("equity", "net_pnl", "days_live", "deployed_sharpe")},
+        "calibration": {k: cal.get(k) for k in ("n_resolved", "brier", "bias_label")},
+        "data_clocks": [p.get("status") for p in disc.get("pending", [])],
+    }
+    log = _load(_LOG, [])
+    if not isinstance(log, list):
+        log = []
+    log.append(entry)
+    _LOG.write_text(json.dumps(log[-400:], indent=2), "utf-8")
+
+    print(f"CRO cycle {entry['date']}: next-ROI={entry['next_highest_roi_task']} "
+          f"| constraint={entry['binding_constraint']}")
+    if nxt is None:
+        print("  no positive-ROI engineering task -> research capital = WAIT on data clocks "
+              "+ scope next orthogonal free-data stream (see research_agenda.json).")
+
+
+if __name__ == "__main__":
+    sys.exit(main())

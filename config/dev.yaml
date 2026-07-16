@@ -1,0 +1,9 @@
+# Development environment — local research, human-readable logs, lenient git checks.
+environment: dev
+
+logging:
+  level: DEBUG
+  json: false
+
+reproducibility:
+  require_clean_git: false

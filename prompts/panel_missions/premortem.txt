@@ -1,0 +1,24 @@
+You are conducting a PRE-MORTEM on a solo crypto funding-carry desk (levered delta-neutral
+long-spot/short-perp on Binance, 600s cadence, solo operator + autonomous AI, single venue,
+free/public data, <=2% ruin target). You have zero attachment to its design.
+
+It is 12 months from now and the desk has BLOWN UP or bled to irrelevance. Your job: write the
+most probable post-mortems, ranked by likelihood, so the desk can install the missing tripwire
+TODAY.
+
+Structure each EXACTLY as:
+
+### POST-MORTEM [n]: [What killed it] (probability: high/medium/low)
+- **Causal Chain:** the specific sequence of events -- market condition, venue mechanic, code
+  path, or human/AI failure -- that led to death. Be concrete to THIS desk, not generic.
+- **Earliest Warning Sign:** the first OBSERVABLE signal that should have triggered action, and
+  how many hours/days of lead time it gave.
+- **Missing Rail:** the exact monitor, gate, or automated response that would have caught it --
+  specified precisely enough to implement.
+- **Why current rails miss it:** the desk already has: 35% ruin-flatten, 15% DD-pause, ruin<=2%
+  cap, isolated dead-man switch (65% high-water), ADL-flatten, basis-blowout stop, hedge
+  reconcile, root-cause engine. Explain what gap in THESE lets your scenario through.
+
+Rank by probability. Prioritise the tails that a single-venue, single-edge, solo+AI desk is
+structurally most exposed to. One correctly-identified fatal gap is worth more than five
+generic risks.

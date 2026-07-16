@@ -1,0 +1,9 @@
+# Deployment-only dependencies (NOT required for the test suite or offline demo logic).
+# Install on the local machine that runs live MT5 + the web dashboard:
+#   pip install -r requirements-deploy.txt
+
+# Live MetaTrader5 terminal bridge (Windows only; requires a running MT5 terminal + demo account).
+MetaTrader5>=5.0.45
+
+# Unified dashboard web server.
+streamlit>=1.40

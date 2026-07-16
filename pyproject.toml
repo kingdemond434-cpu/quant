@@ -1,0 +1,96 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "quant-platform"
+version = "0.1.0"
+description = "Solo Python -> MT5 quant platform (Architecture v1.0). Stage 1: core infrastructure."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Proprietary" }
+authors = [{ name = "Solo Quant" }]
+dependencies = [
+    "pydantic>=2.6",
+    "pydantic-settings>=2.2",
+    "pyyaml>=6.0",
+    "numpy>=1.26",
+    "pandas>=2.2",
+    "pyarrow>=16.0",
+    "duckdb>=1.0",
+    "scipy>=1.13",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.5",
+    "mypy>=1.10",
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "hypothesis>=6.100",
+    "types-PyYAML>=6.0",
+    "pre-commit>=3.7",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["libs", "app"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["libs", "app", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "I",   # isort
+    "W",   # pycodestyle warnings
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "C4",  # comprehensions
+    "SIM", # simplify
+    "TID", # tidy imports
+    "RUF",
+]
+ignore = ["B008"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["libs", "app"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+disallow_untyped_defs = true
+no_implicit_optional = true
+plugins = ["pydantic.mypy"]
+mypy_path = "."
+files = ["libs", "app", "migrations"]
+
+[[tool.mypy.overrides]]
+module = [
+    "numpy.*",
+    "pandas.*",
+    "pyarrow.*",
+    "duckdb.*",
+    "scipy.*",
+    "MetaTrader5.*",
+    "vectorbt.*",
+    "backtrader.*",
+    "streamlit.*",
+    "fastapi.*",
+    "uvicorn.*",
+]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+addopts = "-ra -q --strict-markers"
+filterwarnings = ["error"]
+
+[tool.coverage.run]
+source = ["libs"]
+branch = true

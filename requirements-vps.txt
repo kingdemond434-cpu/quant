@@ -1,0 +1,25 @@
+# VPS runtime — pinned to the exact versions the desk was built and tested on (Python 3.12).
+# Generated 2026-07-12 for the Hetzner migration. Reproduce with: uv pip install -r this.
+numpy==2.4.6
+pandas==2.3.3
+pyarrow==24.0.0
+scipy==1.17.1
+duckdb==1.5.3
+pydantic==2.13.4
+pydantic-settings==2.14.1
+PyYAML==6.0.3
+certifi==2026.5.20
+requests==2.34.2
+urllib3==2.7.0
+idna==3.18
+psutil==7.2.2
+websockets==16.0
+python-dateutil==2.9.0.post0
+pytz==2026.2
+tzdata==2026.2
+# dev / CI (the desk runs its own CI gate on every cycle)
+ruff==0.15.17
+pytest==9.1.0
+pytest-cov==7.1.0
+hypothesis==6.155.2
+mypy==2.1.0
