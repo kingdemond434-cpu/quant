@@ -537,6 +537,19 @@
    ],
    "success_metric": "first two tier1 runs produce >=7 validly-cited dimension scores per model; scores correlate with known state (e.g., alpha scored low, validation high)",
    "reversal_condition": "scores degrade into uncited or flattering numbers for 2 consecutive runs -> drop the rider, keep ranked-gap-only output"
+  },
+  {
+   "id": "2026-07-17-data-triggered-generation",
+   "decision": "Principal proposed daily 13-LLM alpha generation with immediate testing. DECLINED as specified (models redraw the exhausted public-knowledge pool -- 390/0 evidence; each test deflates future DSR bars; 4GB box OOM class; pilot ~08-15 arbitrates any generation scaling). ADOPTED the refinement: generation becomes DATA-TRIGGERED -- on any new family maturing (OI/LS ~07-29, stablecoin ~08-12, FRED now, recorder later) the brain fires a scoped generate mission for that family only, graveyard-excluded, pre-registered hypotheses only.",
+   "hypothesis": "LLM generation has positive EV exactly when pointed at data it has not already exhausted",
+   "expected_benefit": "fresh-family hypotheses arrive the day the data can test them, zero idle spend",
+   "expected_cost": "~$0.25 per triggered run",
+   "confidence": 0.8,
+   "assumptions": [
+    "brain honors the trigger via gap-register row 5"
+   ],
+   "success_metric": "first matured family (OI/LS ~07-29) gets its scoped generate run within 2 cycles",
+   "reversal_condition": "two triggered runs produce zero EV-gate-QUEUE hypotheses -> drop to synthesize-only"
   }
  ]
 }
