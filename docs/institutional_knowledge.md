@@ -302,3 +302,28 @@ hypotheses and EV-score them; only the top few enter research.
   as a monitored condition (the alert state file's newest success timestamp is the signal).
 - Fixed 2026-07-16: per-key 30-min attempt backoff in run_alerts.py. The dead-man's `_page`
   is Tier-3 never-touch and unchanged — it recovers automatically once quota refills.
+
+
+## INCIDENT 2026-07-16 19:06Z — leverage-optimizer runaway sized the book from $40k; caught same evening by the venue-truth sweep
+
+- **What happened:** the dynamic-leverage optimizer's confidence went 0 → 0.89 within hours of
+  the morning's incident reset and flipped `active` (gate: confidence > 0). The executor then
+  sized from `notional_per_leg` $40,122 instead of the operator's $4,500. Two single-name
+  rebalances ballooned: HFTUSDT $5,741 (real, hedged, 1.28× book) and COOKIEUSDT $7,475
+  intended — where BOTH legs failed to fill but the state recorded the full pair, and the
+  reconciler retried + failed **silently** every 10 minutes for over an hour.
+- **Meta-lesson 1 (the day's theme, third occurrence):** *a fix changes the operating regime of
+  its neighbours.* The morning's free-capital sizing was correct — against the capital it was
+  handed. The capital PIPE was the unaudited neighbour. After any incident reset, every
+  statistic downstream of the reset (variance, SE, confidence) is contaminated until enough
+  fresh data accumulates — gates that read those statistics must be frozen or re-based.
+- **Meta-lesson 2:** *silent failure is never neutral.* `_mkt_or_limit` returns '' on failure
+  and the reconciler logs nothing — a broken pair sat invisible for 75 minutes. Any retry loop
+  that can fail must surface its failure count (now in the gap register).
+- **Meta-lesson 3:** the same-day catch happened ONLY because venue-truth equity became a
+  surfaced feed this afternoon (gap #10). Instrumentation built from incident #1 caught
+  incident #2 within hours. This is what the compounding-lessons flywheel looks like.
+- **Fixes:** executor `_dynamic_capital` clamped (de-risk below operator capital allowed,
+  levering above it forbidden) pending root-cause + a ≥30-live-day re-enable gate; phantom
+  COOKIE pair surgically removed (venue truth restored); HFT de-risk escalated rather than
+  midnight-churned. Root-cause of the confidence jump = top brain task.

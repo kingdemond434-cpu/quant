@@ -112,7 +112,13 @@ def _dynamic_capital(default: float) -> float:
     try:
         t = json.loads(_LEV_TGT.read_text("utf-8"))
         if t.get("active") and float(t.get("notional_per_leg", 0)) > 0:
-            return float(t["notional_per_leg"])
+            # CLAMPED (2026-07-16 incident #2): optimizer confidence jumped 0 -> 0.89 within a
+            # day of the incident reset (re-anchored curve, 18 fwd days) and handed the executor
+            # $40k against the operator's $4.5k -- single fresh opens ballooned to $5.7k/$7.5k.
+            # Until the confidence pipeline is root-caused and a >=30-live-day re-enable gate
+            # ships (ledger 2026-07-16-leverage-optimizer-runaway), dynamic sizing may DE-RISK
+            # below the operator's capital but never lever above it.
+            return min(float(t["notional_per_leg"]), default)
     except (OSError, json.JSONDecodeError, TypeError, ValueError):
         pass
     return default

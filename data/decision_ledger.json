@@ -496,6 +496,20 @@
    ],
    "success_metric": "first pre-registered macro-crypto hypothesis clears or fails the gauntlet honestly within 30d of key placement; collector uptime >95% in health.json",
    "reversal_condition": "two quarters with zero surviving or informative macro hypotheses -> retire the collector per data-feed ROI discipline"
+  },
+  {
+   "id": "2026-07-16-leverage-optimizer-runaway",
+   "decision": "INCIDENT #2 (caught same day by the new venue-truth sweep): the dynamic-leverage optimizer flipped active during the evening (confidence 0 -> 0.8916, leverage 8.024x, notional_per_leg $40,122, status 'DYNAMIC (validated)') on a post-incident re-anchored equity curve at forward day 18. The executor's _dynamic_capital honoured it (gate is just confidence>0), so free-capital sizing -- working exactly as designed -- allocated from $40k instead of the operator's $4.5k: 19:06Z close GTC/open HFTUSDT $5,741 (REAL, both legs filled, hedged, 1.28x the intended book); 21:05Z close ZEN/open COOKIEUSDT $7,475 INTENDED but BOTH legs failed (spot filled 18,446/849,476 units ~$162, perp zero, no resting orders) while the state recorded the full pair -- the reconciler then failed SILENTLY every 10min for 1h+ (rejected orders return '' and log nothing). Venue-truth equity -$625 from HWM (-8.6%), no deadman breach. RESPONSE (22:20-22:30Z): (1) executor _dynamic_capital CLAMPED: dynamic sizing may de-risk below operator capital but never lever above it until the confidence pipeline is root-caused and a >=30-live-day re-enable gate ships; (2) phantom COOKIE pair removed from tracked state during a controlled respawn (orphan $162 spot left, harmless by design); (3) HFT position deliberately LEFT (real, delta-neutral, funding-positive; churning it back through a thin book costs more than the concentration risk under a watching deadman) -- de-risk decision escalated to principal + brain; (4) with the clamp, deployed ($8.4k) > capital ($4.5k) -> free=0 -> new opens auto-frozen until the book shrinks. ROOT-CAUSE TASK (brain, priority): why did confidence jump 0->0.89 in one day -- suspect the incident reset / fill-based accounting changed the forward-curve variance the kelly-shrink confidence reads.",
+   "hypothesis": "the confidence input is contaminated by the 07-16 curve re-anchoring (variance collapse on a short window), not by genuine validation evidence",
+   "expected_benefit": "sizing authority returns to the operator's number until evidence is real",
+   "expected_cost": "genuine dynamic upside foregone while clamped (acceptable: at day 18/90 the doctrine says there IS no proven upside yet)",
+   "confidence": 0.85,
+   "assumptions": [
+    "HFT book depth seen at entry persists for an eventual orderly exit",
+    "orphan COOKIE spot (~$162) stays harmless per reconciler design (never sells untracked)"
+   ],
+   "success_metric": "brain root-causes the confidence jump within 3 cycles; no position ever exceeds cap_frac x operator capital while the clamp stands; HFT exits without a thin-book burn",
+   "reversal_condition": "confidence pipeline verified honest (>=30 live days, uncontaminated window, principal sign-off) -> remove the clamp in favour of the designed gate"
   }
  ]
 }
