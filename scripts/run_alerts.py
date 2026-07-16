@@ -67,6 +67,12 @@ def _checks() -> list[tuple[str, str]]:
         out.append(("deadman_latched", "DEADMAN_FIRED latch present -- the ruin rail fired and "
                     "the book stays flat until the operator investigates and resets "
                     "(rm data/deadman_state.json data/DEADMAN_FIRED data/CASHCARRY_KILL)"))
+    try:
+        v = json.loads(Path("data/cadence_violation.json").read_text("utf-8"))
+        out.append(("cadence_floor_violation", "review/safety cadence FLOOR breached: "
+                    + "; ".join(str(x)[:70] for x in v.get("violations", [])[:3])))
+    except (OSError, json.JSONDecodeError):
+        pass
     # BRAIN-DOWN (2026-07-16 incident: the AI CRO was unauthenticated for 3 days and the 07-13
     # dead-man fire sat untriaged -- rails page instantly, but nothing paged about the missing
     # brain). A real cycle writes a multi-KB log; a no-auth run writes a near-empty one.

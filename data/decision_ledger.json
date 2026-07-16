@@ -550,6 +550,19 @@
    ],
    "success_metric": "first matured family (OI/LS ~07-29) gets its scoped generate run within 2 cycles",
    "reversal_condition": "two triggered runs produce zero EV-gate-QUEUE hypotheses -> drop to synthesize-only"
+  },
+  {
+   "id": "2026-07-17-cadence-engine",
+   "decision": "Principal directive: review frequency must adjust to max-ROI schedule automatically. Built scripts/run_cadence.py as a daily-cycle step -- cadence is now CODE, not brain memory (reliability fix: the weekly panel previously fired only if the AI remembered). Rules: S0 pre-live = panel 7d rotation, tier1 28d, generation data-triggered (40d clock maturity / new family -> flagged in docs/research/generation_due.md for scoped brain-executed runs); S1/S2 (auto-flips via data/stage_state.json at live-connector deployment) = adds weekly generation vs live-minted data. run_cro_ai.sh updated: brain triages + executes scoped runs, never schedules. State: data/cadence_state.json.",
+   "hypothesis": "deterministic cadence removes both missed reviews and duplicate spend",
+   "expected_benefit": "zero-stress scheduling; stage transitions change cadence with no human step",
+   "expected_cost": "one more cycle step; panel spend unchanged (same runs, now guaranteed)",
+   "confidence": 0.85,
+   "assumptions": [
+    "stage_state.json is flipped by the live-connector deployment (in its spec)"
+   ],
+   "success_metric": "4 weeks: panels fired 7.0+-0.5d apart with zero brain involvement; no double-fires",
+   "reversal_condition": "double-fires or missed windows observed -> revert to brain-scheduled with checklist"
   }
  ]
 }
