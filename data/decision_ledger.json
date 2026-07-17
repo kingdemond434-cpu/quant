@@ -766,6 +766,19 @@
    ],
    "success_metric": "7 consecutive days of gap-free hourly partitions for 5 symbols; recorder survives a cycle restart + pages on induced staleness",
    "reversal_condition": "disk or rate-limit pressure -> reduce cadence/symbols, never delete history"
+  },
+  {
+   "id": "2026-07-18-literature-deep-miner",
+   "decision": "Principal order (CRO-decided target): the desk's SECOND external-information organ -- the literature intake -- upgraded from passive collection to a monthly DEEP-MINER brain duty (docs/research/LITERATURE_SPEC.md): inbox triaged to MECHANISMS never summaries, 2-level citation-chain digs both directions, replication scans (McLean-Pontiff post-publication decay as standing prior), 7-family source universe (full arXiv q-fin, SSRN, practitioner research AQR/Man/TwoSigma/BIS, journal preprints, theses, failed-replication literature, non-English academic) with coverage rotation >=40% to least-covered; <=3 mechanism cards/session -> EV gate; ZERO cards valid. Cadence-flagged 28d, rot floor 35d. Principal's one rule recorded at the top of the spec: more information gained, to the core, always. Complements the Prospector (practitioners/records) without overlap. Sunset: zero accepted cards in 2 quarters -> fold back into the passive daily feed.",
+   "hypothesis": "formal research mined to mechanism depth (especially practitioner research and failed replications) yields testable priors the passive feed never surfaces",
+   "expected_benefit": "second organ at Prospector depth; replication scans save DSR budget",
+   "expected_cost": "one brain duty/month; zero new infra",
+   "confidence": 0.8,
+   "assumptions": [
+    "inbox + web fetch suffice; no paywall spend without EV case"
+   ],
+   "success_metric": ">=1 mechanism card surviving to pre-registration within 3 sessions",
+   "reversal_condition": "sunset clause above"
   }
  ]
 }

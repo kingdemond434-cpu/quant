@@ -55,7 +55,8 @@ _FLOORS_S1_EXTRA: dict[str, float] = {           # live adds floors; never remov
 }
 # state-tracked floors (days): review cycles may never stretch past these
 _STATE_FLOORS_D = {"last_panel": 8.0, "last_tier1": 32.0, "last_prompt_review": 35.0,
-                   "last_prospector": 35.0, "last_blind_rediscovery": 100.0}
+                   "last_prospector": 35.0, "last_blind_rediscovery": 100.0,
+                   "last_lit_deepdive": 35.0}
 
 
 def _load(p: Path, default: dict) -> dict:
@@ -152,6 +153,12 @@ def main() -> None:
             "search -- max 15 queries, provenance-graded mechanism cards -> EV gate + "
             "pre-registration; update docs/research/prospector_watchlist.md; mark done: "
             "last_prospector in data/cadence_state.json.")
+    if _days_since(state, "last_lit_deepdive") >= 28:
+        due.append(
+            "LITERATURE DEEP-MINER (monthly): execute docs/research/LITERATURE_SPEC.md -- "
+            "inbox triage to MECHANISMS (never summaries), 2-level citation-chain digs, "
+            "replication scans, coverage rotation; cards -> EV gate + pre-registration; "
+            "mark done: last_lit_deepdive.")
     if _days_since(state, "last_blind_rediscovery") >= 90:
         due.append(
             "BLIND REDISCOVERY (quarterly): NO external search -- per the companion section "
