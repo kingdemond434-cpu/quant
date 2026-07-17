@@ -57,3 +57,5 @@ ops/resilience, execution, data, alpha, live readiness. One line each:
 Do not inflate and do not flatter: a 10 claims nothing is left to discover -- treat any 10 as
 suspicious and justify it explicitly. The desk tracks these scores across runs for DRIFT, not
 for celebration; a falling score with evidence is more valuable than a rising one without.
+
+ARCHITECT-OWNER QUESTION (answer last, <=120 words): you inherit this desk TOMORROW as sole owner -- your money, your years. Would you have built it this way? State: (1) the ONE thing you would have built in a different ORDER and the cost of the actual order; (2) the ONE component you would delete outright as not earning its complexity; (3) the ONE thing you would keep exactly as-is that a naive rebuild would lose. Regret analysis, not flaw-hunting -- assume everything works as documented; the question is whether it should exist and in this sequence at all.
