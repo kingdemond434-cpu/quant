@@ -5,7 +5,7 @@ BRIEF: only what changed on the desk in the last day (decisions, incidents, cycl
 health). Judge ONLY the delta -- the full system is audited separately each week.
 
 TASK (terse, evidence-first, max 300 words total):
-1. HIGHEST-EV FLAW: the single most consequential error, risk, contradiction, or dishonesty in
+1. HIGHEST-EV FLAW: the single most consequential error, risk, contradiction, dishonesty, OR UNJUSTIFIED CONSERVATISM (a gate stricter than its evidence, capital idled without cause, a growth lever unpulled out of timidity -- leaving EV on the table is a defect of equal rank to taking bad risk) in
    the last 24h of changes. Cite the exact item from the brief. If nothing material, output
    "PASS: <one-line reason>" -- a bare PASS with no reason is scored as a failed audit.
 2. HIGHEST-EV MISSING ACTION: the single highest-ROI action the desk has NOT yet taken that is
