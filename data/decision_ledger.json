@@ -563,6 +563,19 @@
    ],
    "success_metric": "4 weeks: panels fired 7.0+-0.5d apart with zero brain involvement; no double-fires",
    "reversal_condition": "double-fires or missed windows observed -> revert to brain-scheduled with checklist"
+  },
+  {
+   "id": "2026-07-17-no-change-cap-principal-order",
+   "decision": "Principal ORDER: no numeric limit on structural changes, ever -- the brain implements whatever and however much the EV gate + CI + reversibility + ledger discipline justify. CRO formally recommended a steady-state change budget (1/cycle, 3/wk non-incident, tightening at live), citing that all three 2026-07-16 incidents were change-induced; principal declined -- dissent recorded, order stands. Kept as change QUALITIES (not limits): every ledger entry names the neighbour systems whose operating regime the change alters; every change reaches the next micro-audit brief within 24h. Hard rails / Tier-3 / cadence floors unaffected (they are not change-count limits).",
+   "hypothesis": "quality gates without count caps suffice to keep the change-induced incident rate acceptable",
+   "expected_benefit": "maximum velocity; no EV-positive change ever queued behind a quota",
+   "expected_cost": "change-induced incident risk stays at the demonstrated weekly rate or higher",
+   "confidence": 0.5,
+   "assumptions": [
+    "neighbour-naming + next-day micro-audit catch regime shifts fast enough"
+   ],
+   "success_metric": "30d: zero change-induced incidents despite unrestricted velocity",
+   "reversal_condition": "any change-induced incident AFTER live capital deploys -> principal revisits this order with the incident on the table"
   }
  ]
 }
