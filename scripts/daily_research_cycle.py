@@ -32,6 +32,7 @@ _LOG = _ROOT / "data" / "cro_cycle_log.json"
 # ordered pipeline; (label, script, timeout_s). Heavy research first, then bookkeeping.
 _STEPS = [
     ("ci_gate",           "scripts/run_ci.py",              300),
+    ("recorder_watch",    "scripts/ensure_recorder.py",      60),  # data moat must never sleep
     ("stablecoin_flows",  "scripts/run_stablecoin_flows.py", 180),  # daily on-chain clock tick
     ("fred_macro",        "scripts/collect_fred_macro.py",   120),  # free US-macro (key-gated)
     ("root_cause",        "scripts/run_root_cause.py",       120),  # classify losses pre-reaction
@@ -40,7 +41,6 @@ _STEPS = [
     ("cadence",           "scripts/run_cadence.py",          900),  # stage-aware review scheduler
     ("research_feed",     "scripts/collect_research_feed.py", 120),  # arXiv q-fin -> vault inbox
     ("growth_audit",      "scripts/run_growth_audit.py",       60),  # under-utilization = defect
-    ("carry_crowding",    "scripts/run_carry_crowding.py",     120),  # funding-compression warning
     ("research_pipeline", "scripts/run_daily_research.py",  7200),
     ("autodiscovery",     "scripts/run_crypto_research.py", 1800),  # industrialized crypto factory
     ("state_files",       "scripts/research_cycle.py",      300),

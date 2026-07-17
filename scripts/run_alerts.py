@@ -72,6 +72,11 @@ def _checks() -> list[tuple[str, str]]:
         out.append(("deadman_latched", "DEADMAN_FIRED latch present -- the ruin rail fired and "
                     "the book stays flat until the operator investigates and resets "
                     "(rm data/deadman_state.json data/DEADMAN_FIRED data/CASHCARRY_KILL)"))
+    rec_hb = Path("data/recorder_heartbeat")
+    if rec_hb.exists() and now - rec_hb.stat().st_mtime > 600:
+        out.append(("recorder_stale", "data-moat recorder heartbeat stale >10min -- "
+                    "unrecoverable microstructure data is being LOST; respawner runs next "
+                    "cycle, or: .venv/bin/python scripts/ensure_recorder.py"))
     try:
         v = json.loads(Path("data/cadence_violation.json").read_text("utf-8"))
         out.append(("cadence_floor_violation", "review/safety cadence FLOOR breached: "

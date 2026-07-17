@@ -43,6 +43,23 @@ hard deadline, or retire with a reason -- never silently carry it), add anything
 surfaced, and never leave it empty without an explicit written justification. End by explicitly
 confirming each of the 6 contract points. The venv python is .venv/bin/python. NEVER touch the
 dead-man switch. GROWTH MANDATE (principal order 2026-07-17): the objective is MAXIMUM long-term geometric growth subject to ruin<=2% -- never institutional cosplay. Unjustified conservatism is a defect of equal rank to unjustified risk: every gate, haircut, clamp and pause must carry evidence for its strictness and a condition that lifts it (the leverage clamp included -- re-enabling honest dynamic sizing when its gate opens is a GROWTH DUTY, not an option). Tier-1 gap-closing exists to RAISE the growth ceiling (breadth, cost, capacity, orthogonality) and the realized fraction of it -- never to add drag. Rails enable aggression; they do not replace it. SPEC-PREBUILD RULE (principal 2026-07-17): when anything enters a queue, pre-build its full max-ROI implementation spec (module design, tests, complexity cost, verification plan, falsification, independence class) BEFORE its window -- execution must never wait on design. SIX-DIMENSION GATE: every addition must demonstrably raise >=1 of: validated-learning rate, research breadth, statistical confidence, portfolio robustness, execution realism, operational resilience -- with evidence, else reject regardless of sophistication. Simplicity that increases discovery beats complexity that looks institutional.
+EXECUTION LOCKDOWN (principal terminal directive 2026-07-18): the architecture phase is
+CLOSED. No new structural proposals are triaged, queued, or implemented until Gate 0 completes
+AND >=4 weeks of live fills exist AND the execution-cost model is populated from live
+measurements AND >=10 calibration rows are resolved AND no critical incidents are open.
+Maintenance exception (patch immediately, it is not architecture): verified safety bugs, drill
+failures, production defects, live-operation blockers. STRICT PRIORITY ORDER: (1) data-moat
+recorder -- v1 is LIVE (run_recorder.py, kept alive by ensure_recorder + a staleness pager);
+upgrade per its spec across cycles; (2) live connector built to docs/LIVE_CONNECTOR_SPEC.md
+with property tests, mutation testing, a breaker report, failure injection, and end-to-end
+dry runs -- not complete until every critical failure mode has been exercised; (3) Gate 0:
+\$100-200 across 4-5 liquid symbols for >=1 week -- success is MEASURED TRUTH (fills,
+slippage, fees, funding, latency, incidents), never profitability; a flat or slightly losing
+first week is a SUCCESS. The improvement inbox and expansion packages remain QUEUED and
+frozen. Audits, panels, governance, and the gap-register duty continue unchanged. 200% CAGR
+is an aspirational ceiling under evidence, NEVER a target -- aggression is earned from
+evidence, never borrowed from optimism. Post-freeze unlock is automatic on the exit criteria;
+evidence alone authorizes progression.
 
 === CONSTITUTION ===
 $(cat ops/CRO_CONSTITUTION.md)"

@@ -753,6 +753,19 @@
    ],
    "success_metric": ">=1 provenance-SEMI-or-better card reaching pre-registration within 2 runs; watchlist alive by run 2",
    "reversal_condition": "zero accepted cards in 2 quarters -> retire per sunset discipline"
+  },
+  {
+   "id": "2026-07-18-execution-lockdown-and-recorder-live",
+   "decision": "Principal TERMINAL DIRECTIVE adopted: architecture phase CLOSED; structural freeze until Gate 0 + >=4wk live fills + populated execution-cost model + >=10 resolved calibration rows + zero open critical incidents (maintenance exception for safety bugs/production defects). Strict priorities: (1) RECORDER -- v1 BUILT AND LIVE same night (scripts/run_recorder.py: Binance USD-M mainnet, top-5 perps, top-20 depth @1s + all aggTrades, gzip-jsonl hourly partitions under data/moat/fut/, disk-guarded 80%, heartbeat + 10-min staleness pager + daily respawner; moat clock started 2026-07-17 23:16Z; ~40-110MB/day; brain upgrades to websocket/parquet per spec-prebuild); (2) live connector to frozen spec with property/mutation/breaker/failure-injection verification; (3) Gate 0 $100-200 x 4-5 symbols >=1wk, success = measured truth not profit. 200% CAGR recorded as ASPIRATIONAL CEILING under evidence, never a target -- the anti-target doctrine survives verbatim in the directive's own text. Post-freeze unlock automatic on criteria. Expansion packages + improvement inbox remain queued-frozen; audits/governance continue.",
+   "hypothesis": "measured execution truth (fills, slippage, microstructure) is now the binding input to every downstream decision; recording cannot be deferred because the data cannot be backfilled",
+   "expected_benefit": "the moat compounds from tonight; the desk's next epoch runs on evidence",
+   "expected_cost": "~40-110MB/day disk (32GB free), 5-10 req/s public API (well under limits)",
+   "confidence": 0.9,
+   "assumptions": [
+    "fapi public endpoints remain reachable from the VPS (verified in use)"
+   ],
+   "success_metric": "7 consecutive days of gap-free hourly partitions for 5 symbols; recorder survives a cycle restart + pages on induced staleness",
+   "reversal_condition": "disk or rate-limit pressure -> reduce cadence/symbols, never delete history"
   }
  ]
 }
