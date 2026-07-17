@@ -779,6 +779,19 @@
    ],
    "success_metric": ">=1 mechanism card surviving to pre-registration within 3 sessions",
    "reversal_condition": "sunset clause above"
+  },
+  {
+   "id": "2026-07-18-digging-doctrine-and-autopsy-spec",
+   "decision": "Principal max-digging order generalized into the DIGGING DOCTRINE (brain contract): every online-research organ, present and future, must have a named source-universe map (incl. ex-employee/insider accounts + non-English), coverage rotation >=40% to least-covered, depth minimums (chains >=2 levels, primaries over narratives, auditable DONE claims), provenance grading, the one-rule (max info to the core, always), and gauntlet-only paths to the ledger -- an organ missing any element is out of spec and must be fixed before running. CRISIS AUTOPSY LIBRARY spec PRE-BUILT per standing rule (docs/research/CRISIS_AUTOPSY_SPEC.md): FBI-depth collapse forensics -- court records/examiner reports (chat logs in evidence = highest-provenance leaks), SEC/CFTC complaints, EX-EMPLOYEE layer, community forensics with warning timestamps; one collapse per session mined to auditable DONE; outputs = early-warning indicators mapped to desk monitors, guard gaps -> register, drill scenarios, CLAIM-grade mechanisms. QUEUED under lockdown: activates at S1 or instantly on a live-collapse event trigger.",
+   "hypothesis": "collapse paper-trails encode the exact early-warning indicators and guard gaps a live desk needs before it needs them",
+   "expected_benefit": "uniform FBI-depth across all organs; instant-activation autopsy organ",
+   "expected_cost": "spec maintenance only until activation",
+   "confidence": 0.85,
+   "assumptions": [
+    "S1 activation timing per lockdown; event trigger overrides"
+   ],
+   "success_metric": "first dossier produces >=1 new monitored indicator + >=1 drill scenario",
+   "reversal_condition": "3 dossiers with zero new indicators/guards/drills -> fold into OSINT lane"
   }
  ]
 }

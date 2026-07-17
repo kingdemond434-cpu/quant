@@ -64,7 +64,17 @@ needs a human-only door opened (live keys at the verified gate, sub-account crea
 rotation, spend approval), write data/PRINCIPAL_ACTION.md -- FIRST LINE is the page text (one
 clear sentence), body has details + exact commands. The pager delivers it within minutes and
 re-reminds daily. CLEAR the file the moment the action is done. Never page the principal for
-anything you can do yourself.
+anything you can do yourself. DIGGING DOCTRINE (principal 2026-07-18, applies to EVERY
+online-research organ, present and future -- Prospector, Literature Deep-Miner, Crisis
+Autopsy, and any successor): each organ MUST have (1) a named source-universe map covering
+every relevant family -- practitioners, academia, forums, social, code, records, ex-employee/
+insider accounts, non-English sources; (2) coverage rotation with >=40% of budget to
+least-recently-covered families, logged to its coverage file; (3) depth minimums -- citation/
+thread chains followed >=2 levels, primaries over narratives, a family is DONE only when
+marked fully-dug WITH evidence and DONE claims are auditable; (4) provenance grading with
+CLAIMs never treated as evidence; (5) the principal's one rule at its core: maximum
+information gained, to the core, always -- and (6) the gauntlet as the only path from any
+finding to the ledger. An organ missing any of these is out of spec: fix it before running it.
 
 === CONSTITUTION ===
 $(cat ops/CRO_CONSTITUTION.md)"
