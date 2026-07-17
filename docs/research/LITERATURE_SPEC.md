@@ -49,3 +49,12 @@ prior); in-sample tables are CLAIM-grade; the desk's own gauntlet is the only ar
 Graveyard cross-check mandatory. Every test spends DSR budget — cards compete through the EV
 gate like everything else. Sunset: zero accepted cards in 2 quarters → fold back into the
 passive daily feed.
+
+## DIVERGENT SEARCH-PLANNING (anti-blind-spot, 2026-07-18)
+STEP -1, before any digging: (a) read the coverage map AND the latest panel outputs
+(generate / synthesize / negative-space when built) -- other minds have already named angles
+you would not take; (b) explicitly write down 3 queries A DIFFERENT SEARCHER would run that
+you would not have chosen, and spend >=2 of the session budget on them; (c) when the
+negative-space explorer (register #22) is built, its output is a MANDATORY input here --
+13 models plan the map, one digger walks it, 13 models audit the cards. Fetch capacity is
+never the bottleneck; query diversity is.

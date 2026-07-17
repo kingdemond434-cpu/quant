@@ -124,3 +124,12 @@ gauntlet like any candidate. Log them dated in `docs/research/blind_rediscovery_
 twelve months later, compare against external literature to measure whether the research
 engine is becoming genuinely creative rather than an excellent summarizer. Results feed the
 meta-research review.
+
+## DIVERGENT SEARCH-PLANNING (anti-blind-spot, 2026-07-18)
+STEP -1, before any digging: (a) read the coverage map AND the latest panel outputs
+(generate / synthesize / negative-space when built) -- other minds have already named angles
+you would not take; (b) explicitly write down 3 queries A DIFFERENT SEARCHER would run that
+you would not have chosen, and spend >=2 of the session budget on them; (c) when the
+negative-space explorer (register #22) is built, its output is a MANDATORY input here --
+13 models plan the map, one digger walks it, 13 models audit the cards. Fetch capacity is
+never the bottleneck; query diversity is.
