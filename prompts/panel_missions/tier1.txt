@@ -13,7 +13,7 @@ needing capital/headcount the desk does not have):
 
 REFERENCE FIRMS (match their PROCESS/QUALITY where achievable at positive EV, NOT their
 resources): RenTec = signal breadth + statistical rigor; Citadel/Millennium = risk allocation +
-capital efficiency; Jane Street = execution quality; AQR/Man-AHL = research hygiene + capacity
+capital efficiency; Jane Street = execution quality; Two Sigma = data/ML engineering; DE Shaw = systematic multi-strategy discipline; AQR/Man-AHL = research hygiene + capacity
 discipline. Crypto-native growth path: Wintermute/GSR/QCP; early-Alameda-carry as the trajectory.
 
 YOUR TASK: EXACTLY 3-5 highest-EV moves that would most raise this desk's QUALITY toward those
