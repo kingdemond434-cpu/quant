@@ -59,7 +59,12 @@ first week is a SUCCESS. The improvement inbox and expansion packages remain QUE
 frozen. Audits, panels, governance, and the gap-register duty continue unchanged. 200% CAGR
 is an aspirational ceiling under evidence, NEVER a target -- aggression is earned from
 evidence, never borrowed from optimism. Post-freeze unlock is automatic on the exit criteria;
-evidence alone authorizes progression.
+evidence alone authorizes progression. PRINCIPAL-ACTION CHANNEL (2026-07-18): whenever a step
+needs a human-only door opened (live keys at the verified gate, sub-account creation, key
+rotation, spend approval), write data/PRINCIPAL_ACTION.md -- FIRST LINE is the page text (one
+clear sentence), body has details + exact commands. The pager delivers it within minutes and
+re-reminds daily. CLEAR the file the moment the action is done. Never page the principal for
+anything you can do yourself.
 
 === CONSTITUTION ===
 $(cat ops/CRO_CONSTITUTION.md)"

@@ -30,7 +30,7 @@ _DEDUPE_S = 6 * 3600
 # wolf is worse than none). Slow-moving conditions remind daily, not 4x/day. deadman_latched
 # stays at 6h deliberately -- a latched ruin rail SHOULD nag until the operator acts.
 _DEDUPE_OVERRIDES_S = {"growth_defect": 24 * 3600, "data_health": 24 * 3600,
-                       "brain_noop": 24 * 3600}
+                       "brain_noop": 24 * 3600, "principal_action_needed": 24 * 3600}
 _HB = Path("data/cashcarry_exec_heartbeat")
 _KILL = Path("data/CASHCARRY_KILL")
 _ERR = Path("data/cashcarry_error.log")
@@ -72,6 +72,16 @@ def _checks() -> list[tuple[str, str]]:
         out.append(("deadman_latched", "DEADMAN_FIRED latch present -- the ruin rail fired and "
                     "the book stays flat until the operator investigates and resets "
                     "(rm data/deadman_state.json data/DEADMAN_FIRED data/CASHCARRY_KILL)"))
+    # PRINCIPAL-ACTION channel (2026-07-18): the brain writes data/PRINCIPAL_ACTION.md
+    # whenever a human-only door must be opened (live keys at the gate, sub-account
+    # proposal, key rotation...). First line = the page text. Re-pages daily until the
+    # brain clears the file on resolution. This is how "notify me if you need me" works.
+    try:
+        pa = Path("data/PRINCIPAL_ACTION.md").read_text("utf-8").strip().splitlines()
+        if pa:
+            out.append(("principal_action_needed", "the desk needs YOU: " + pa[0][:160]))
+    except OSError:
+        pass
     rec_hb = Path("data/recorder_heartbeat")
     if rec_hb.exists() and now - rec_hb.stat().st_mtime > 600:
         out.append(("recorder_stale", "data-moat recorder heartbeat stale >10min -- "
