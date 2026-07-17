@@ -142,7 +142,9 @@ def main() -> None:
     for ds in health.get("datasets", []):
         name, days = str(ds.get("name")), int(ds.get("days") or 0)
         if days >= _CLOCK_MATURITY_D and not state.get(f"gen_done_{name}"):
-            due.append(f"{name}: clock matured ({days}d) -- scoped generate run owed")
+            due.append(f"{name}: clock matured ({days}d) -- scoped generate run owed, PLUS a "
+                       "graveyard re-mine pass: any killed entry whose kill-reason this new "
+                       "data invalidates gets a fresh pre-registration (no silent revivals)")
     if Path("data/fred_macro.json").exists() and not state.get("gen_done_fred_macro_family"):
         due.append("fred_macro family: deep history available -- scoped generate run owed")
     if stage in ("S1", "S2") and _days_since(state, "last_live_generate") >= 7:
