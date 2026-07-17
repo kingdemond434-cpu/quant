@@ -54,7 +54,8 @@ _FLOORS_S1_EXTRA: dict[str, float] = {           # live adds floors; never remov
     "data/canary_state.json": 12.0,              # 6h canary round-trip (post-connector)
 }
 # state-tracked floors (days): review cycles may never stretch past these
-_STATE_FLOORS_D = {"last_panel": 8.0, "last_tier1": 32.0, "last_prompt_review": 35.0}
+_STATE_FLOORS_D = {"last_panel": 8.0, "last_tier1": 32.0, "last_prompt_review": 35.0,
+                   "last_prospector": 35.0, "last_blind_rediscovery": 100.0}
 
 
 def _load(p: Path, default: dict) -> dict:
@@ -145,6 +146,18 @@ def main() -> None:
         due.append("fred_macro family: deep history available -- scoped generate run owed")
     if stage in ("S1", "S2") and _days_since(state, "last_live_generate") >= 7:
         due.append("LIVE (S1+): weekly generation vs fresh fills/slippage/tape is due")
+    if _days_since(state, "last_prospector") >= 28:
+        due.append(
+            "PROSPECTOR (monthly): execute docs/research/PROSPECTOR_SPEC.md with real web "
+            "search -- max 15 queries, provenance-graded mechanism cards -> EV gate + "
+            "pre-registration; update docs/research/prospector_watchlist.md; mark done: "
+            "last_prospector in data/cadence_state.json.")
+    if _days_since(state, "last_blind_rediscovery") >= 90:
+        due.append(
+            "BLIND REDISCOVERY (quarterly): NO external search -- per the companion section "
+            "of PROSPECTOR_SPEC.md, invent up to 5 unpublished mechanisms from internal "
+            "artifacts only; pre-register via the gauntlet; log for the 12-month literature "
+            "comparison; mark done: last_blind_rediscovery.")
     if _days_since(state, "last_prompt_review") >= _PROMPT_REVIEW_D:
         due.append(
             "PROMPT SELF-IMPROVEMENT (monthly): score every mission prompt + auditor against "
