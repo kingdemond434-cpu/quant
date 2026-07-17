@@ -48,10 +48,23 @@ def _recent_decisions(hours: float = 26.0) -> str:
         return "(ledger unreadable)"
 
 
+_LENSES = (("RenTec", "statistical rigor / signal hygiene"),
+           ("Jane Street", "execution quality"),
+           ("Citadel/Millennium", "risk allocation & capital efficiency"),
+           ("Two Sigma", "data & ML engineering"),
+           ("DE Shaw", "systematic multi-strategy discipline"),
+           ("AQR/Man-AHL", "research hygiene & capacity"),
+           ("Wintermute/GSR", "crypto-native operations"))
+
+
 def build_brief() -> str:
     """Assemble the 24h delta brief from already-sanitized desk artifacts."""
     now = datetime.now(tz=UTC)
+    lens = _LENSES[now.timetuple().tm_yday % len(_LENSES)]
     parts = [f"# 24-HOUR DELTA BRIEF -- {now.isoformat()[:16]}Z",
+             f"TODAY'S TIER-1 LENS: {lens[0]} ({lens[1]}) -- apply THIS firm's standard for "
+             "the blind-spot question; the lens rotates daily so every dimension gets "
+             "interrogated weekly.",
              "", "## Decisions logged in the last ~24h", _recent_decisions() or "(none)"]
     incid = [f for f in ("data/DEADMAN_FIRED", "data/CASHCARRY_KILL", "data/FREEZE")
              if Path(f).exists()]

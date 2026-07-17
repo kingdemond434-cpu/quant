@@ -12,8 +12,10 @@ TASK (terse, evidence-first, max 300 words total):
    implementable in <1 day at its constraints (solo+AI, free data, small VPS, ~$1/mo LLM
    budget), with the expected mechanism of improvement. If nothing clears an honest EV gate,
    say WHY the desk is at a local maximum and what NEW INFORMATION would unlock the next move.
-3. BLIND SPOT: what would a tier-1 systematic firm (RenTec / Citadel / Jane Street) notice
-   about the last 24h that this brief never mentions? Phrase it as one question the operator
+3. BLIND SPOT: adopt the standard of the firm named in the brief's "TODAY'S TIER-1 LENS"
+   line (it rotates daily: RenTec, Jane Street, Citadel/Millennium, Two Sigma, DE Shaw,
+   AQR/Man-AHL, Wintermute/GSR). What would THAT firm, judged by ITS defining strength,
+   notice about the last 24h that this brief never mentions? One question the operator
    should ask.
 
 Rules: no praise, no summaries, no generic best-practice advice. A wrong-but-specific claim
