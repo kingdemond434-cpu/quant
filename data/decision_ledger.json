@@ -675,6 +675,45 @@
    ],
    "success_metric": "next weekly architecture review (within 7 cycles) finds the same conclusion or identifies a genuinely new migration candidate from fresh evidence",
    "reversal_condition": "if live capital deploys and the governance-apparatus-to-capital cost ratio becomes materially unfavorable, revisit"
+  },
+  {
+   "id": "2026-07-17-hwm-contamination-false-fire",
+   "decision": "INCIDENT #3 (dead-man fire 14:01Z, latched): FALSE IN SUBSTANCE -- venue equity (~$4,720 at latch) sits ABOVE the 07-16 segment start (~$4,171); no new losses. The high-water mark ($7,233) was INFLATED during the 07-16 leverage-runaway hours (oversized HFT/COOKIE book marked at tickers), so the rail measured -35% from a contaminated reference point. Rail behaved per rules; reference was poisoned -- the post-reset-statistics lesson now includes the HWM itself. Cause (optimizer runaway) was already clamped 07-16 22:20; executor idled safely under KILL (design working). RESPONSE: (1) pager spam tamed -- growth_defect/data_health/brain_noop dedup 6h->24h (deadman_latched deliberately stays 6h); (2) wallet hygiene sweep: ~$84,263 of carry-history spot residuals consolidated to USDT (incl. faucet BTC caught by the history filter -- broader than intended, harmless on testnet, few-% thin-book spread cost, futures/realized accounting untouched) -> deadman re-baselines cleanly on reset; (3) Tier-3 RESET OFFERED to principal, NOT ANSWERED -> book stays FLAT and latched until explicit approval. NOTE for the rail's quarterly review (never-touch otherwise): HWM ratchet inherits contamination from any anomalous-book period; the documented operator reset is the designed cure.",
+   "hypothesis": "post-anomaly reference points must be re-baselined or every rail reading after an incident is suspect",
+   "expected_benefit": "third incident class documented; pager signal/noise restored",
+   "expected_cost": "book earns nothing while flat awaiting principal decision",
+   "confidence": 0.9,
+   "assumptions": [
+    "principal will answer the reset question when ready"
+   ],
+   "success_metric": "post-reset baseline forms on clean wallet; no fourth false fire from stale references",
+   "reversal_condition": "n/a (incident record)"
+  },
+  {
+   "id": "2026-07-17-spec-prebuild-standing-rule",
+   "decision": "Principal STANDING RULE adopted into the brain contract: whenever any structural proposal enters a queue (gap register, monthly queue, improvement inbox), the CRO pre-builds its full implementation spec at max-ROI ceiling -- module design, test plan, complexity cost, shadow/verification plan, falsification hypothesis, independence-gate class -- BEFORE its implementation window, so execution never waits on design. Domain gaps route to the next panel slot. Precedent: LIVE_CONNECTOR_SPEC.md.",
+   "hypothesis": "design-ahead converts queue latency into zero-cost parallel work",
+   "expected_benefit": "implementation windows execute at full throughput without design delay",
+   "expected_cost": "spec effort on items that may be retired unimplemented",
+   "confidence": 0.8,
+   "assumptions": [
+    "specs kept honest-sized; a spec is not a commitment to build"
+   ],
+   "success_metric": "next 3 implemented register items each had a complete spec before their build began",
+   "reversal_condition": "spec backlog itself becomes the bottleneck -> spec only top-5 ranked items"
+  },
+  {
+   "id": "2026-07-17-research-pack-triage",
+   "decision": "External advisor research pack (15 recs: feature factory, knowledge graph, decay lab, negative-space explorer, etc.) triaged. IMPORTANT RECORD-KEEPING: the pasted text included a 'completed triage' referencing Seats/coverage-map/'MAX-ROI SURGE PACKAGE' -- an ARCHITECTURE THAT DOES NOT EXIST on this desk (v8-blueprint fiction); those 'already queued with specs' claims are void; only THIS ledger + register are authoritative. HONEST MAPPING -- already live: mechanism-first hypotheses (EV gate), graveyard failure-taxonomy learning, regime-conditioned research (regime gates/shadows), counter-hypothesis discipline (panel premortem/audit), information-gain accounting (information_value.py), family map (registry+graveyard), meta-research metrics (pilot survivors-per-1000, panel scorecards), dedup-before-test (content-hash). NEW -> register rows 22-24: negative-space explorer, semantic clustering pre-gauntlet, edge-decay laboratory (formalizes carry_crowding_monitor, the standing #1 research-ROI item). ADOPTED into contract: the advisor's six-dimension gate one-liner (every addition must demonstrably raise validated-learning rate, breadth, statistical confidence, robustness, execution realism, or resilience -- else rejected regardless of sophistication). Feature-library-over-strategy-library orientation deferred to the pilot verdict (~08-15) where factory design is re-decided on evidence.",
+   "hypothesis": "the pack's durable value is the decay lab + negative-space + clustering; the rest is our system under other names",
+   "expected_benefit": "three ranked additions; zero duplicate machinery",
+   "expected_cost": "specs per the new standing rule",
+   "confidence": 0.8,
+   "assumptions": [
+    "pilot verdict remains the factory-design arbiter"
+   ],
+   "success_metric": "decay-lab spec complete before monthly window; clustering live before next factory expansion",
+   "reversal_condition": "per-row sunset clauses"
   }
  ]
 }

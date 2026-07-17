@@ -26,6 +26,11 @@ from pathlib import Path
 _SECRETS = Path("data/secrets/ntfy.json")
 _STATE = Path("data/.last_alerts.json")
 _DEDUPE_S = 6 * 3600
+# per-key dedupe overrides (2026-07-17 principal: pager spam is noise; a pager that cries
+# wolf is worse than none). Slow-moving conditions remind daily, not 4x/day. deadman_latched
+# stays at 6h deliberately -- a latched ruin rail SHOULD nag until the operator acts.
+_DEDUPE_OVERRIDES_S = {"growth_defect": 24 * 3600, "data_health": 24 * 3600,
+                       "brain_noop": 24 * 3600}
 _HB = Path("data/cashcarry_exec_heartbeat")
 _KILL = Path("data/CASHCARRY_KILL")
 _ERR = Path("data/cashcarry_error.log")
@@ -126,7 +131,7 @@ def main() -> None:
     now = time.time()
     sent = 0
     for key, msg in _checks():
-        if now - float(state.get(key, 0)) < _DEDUPE_S:
+        if now - float(state.get(key, 0)) < _DEDUPE_OVERRIDES_S.get(key, _DEDUPE_S):
             continue
         # FAILURE BACKOFF (2026-07-16): a failed push used to retry every 3-min tick forever --
         # the sustained hammering kept the free ntfy.sh quota exhausted from 07-11 on, so EVERY

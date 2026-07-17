@@ -356,3 +356,19 @@ hypotheses and EV-score them; only the top few enter research.
   the tail end of the PRIOR interactive session's writes landing on disk just as the next headless
   cycle started, then swept up by the next periodic commit. Don't panic-diagnose a collision from
   commit timestamps alone — check `ps aux` for an actual second process before assuming one.
+
+
+## INCIDENT 2026-07-17 14:01Z — dead-man fire #3: FALSE IN SUBSTANCE (contaminated high-water mark)
+
+- Venue equity at latch (~$4,720) was ABOVE the 07-16 segment start (~$4,171): nothing was
+  lost. The HWM ($7,233) had been inflated during the leverage-runaway hours when an
+  oversized book marked at tickers; the rail then measured −35% from a poisoned peak.
+- **Meta-lesson (the week's lesson, final form): after ANY anomaly, every downstream statistic
+  is contaminated — variance, confidence, AND reference points like high-water marks. A rail
+  that ratchets its reference during an anomalous period will later fire on the ghost of that
+  anomaly.** The documented operator reset is the designed cure; the rail itself is correct
+  and stays never-touch.
+- Also fixed: pager dedup per-key (slow defects 24h, latched-rail nag deliberately 6h);
+  wallet hygiene sweep consolidated ~$84k of stranded carry-history spot (incl. faucet BTC —
+  filter broader than intended, harmless on testnet) into USDT so the measure re-baselines
+  clean. Reset offered to principal; unanswered → book stays flat until explicit approval.
