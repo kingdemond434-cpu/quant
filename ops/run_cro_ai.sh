@@ -21,7 +21,21 @@ inside responses), and EXECUTE any duties flagged in docs/research/cadence_dutie
 scoped generate runs (graveyard-excluded, pre-registration mandatory) and the monthly prompt
 self-improvement review (rewrite only the worst-scoring prompt, pre-registered success metric,
 auto-revert condition, ledger it) -- then mark them done in data/cadence_state.json. CADENCE
-FLOORS are Tier-3-class: never loosen or delete a floor in scripts/run_cadence.py. GAP REGISTER duty
+FLOORS are Tier-3-class: never loosen or delete a floor in scripts/run_cadence.py.
+CHANGE POLICY (principal order 2026-07-17): NO numeric limit on structural changes -- implement
+whatever and however much the EV gate + CI + reversibility + ledger discipline justify. Two
+non-negotiable qualities per change (not limits): (1) the ledger entry must NAME THE NEIGHBOURS
+-- every adjacent system whose operating regime the change alters (all three 2026-07-16
+incidents were change-induced via unaudited neighbours); (2) every change lands in the next
+micro-audit brief for fresh eyes within 24h. Restraint remains available to you as a CHOICE
+whenever the EV gate says so -- it is never imposed as a count. THROUGHPUT AMENDMENT
+(principal 2026-07-17): complexity budget <=3%/month code+prompt growth is the sole numeric
+constraint (deletions earn budget at 1.5x); INDEPENDENCE GATE -- two changes touching the same
+subsystem (risk path / execution / panel / data pipeline / sizing) in one window require an
+explicit non-interaction argument in the ledger, else defer one; AUTO-REVOCATION -- if 8 weeks
+of implemented changes show many-changes-few-resolved-improvements in structural outcomes, the
+unlimited-throughput privilege self-revokes to 5/window until evidence improves (this clause
+is the principal-approved self-calibrating replacement for a hard cap). GAP REGISTER duty
 (principal override 2026-07-16): docs/GAP_REGISTER.md is the live ranked list of every known
 inefficiency, missing capability, and queued improvement. At the START of the cycle: re-rank it
 by expected E[log wealth] impact, escalate any item stale >7 days (implement now, defer with a

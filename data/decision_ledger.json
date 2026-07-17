@@ -576,6 +576,19 @@
    ],
    "success_metric": "30d: zero change-induced incidents despite unrestricted velocity",
    "reversal_condition": "any change-induced incident AFTER live capital deploys -> principal revisits this order with the incident on the table"
+  },
+  {
+   "id": "2026-07-17-throughput-amendment-and-connector-spec",
+   "decision": "Principal's throughput amendment triaged + adopted. NOTE: the 'max 3/month' cap it deletes never existed on the running desk (v8 engine was not adopted verbatim); the amendment's real content is three NEW rules, all adopted into the brain contract: (1) complexity budget <=3%/month code+prompt growth as the sole numeric constraint, deletion credits at 1.5x; (2) INDEPENDENCE GATE -- two changes to the same subsystem in one window need an explicit non-interaction argument or one defers (mechanizes the neighbour-regime lesson from all three 07-16 incidents); (3) AUTO-REVOCATION -- 8 weeks of many-changes-few-improvements self-revokes unlimited throughput to 5/window (the principal-designed self-calibrating throttle; notably it re-introduces at S1 the cooling-off the CRO recommended and the principal declined hours earlier -- adopted from HIS text, dissent closed). BUILD-ALL-QUEUED order executed with sequencing honesty: docs/LIVE_CONNECTOR_SPEC.md FROZEN (consolidates staged arming, venue-side stops, pager ladder, canary, numeric ramp gates, breaker-test bar) so the connector build is turnkey; the connector CODE itself is deliberately NOT built in this session tail -- the principal's own v8 8.2 requires property/mutation/breaker testing for risk-path files, which demands a dedicated fresh build (brain cycles or next session). Data-gated items stay data-gated per their register rows (fill-quality needs ~2wk of fills; recorder needs the EV numbers). Brain-owned rows (#10 tile, #14 root-cause, #16 counter, #18 recorder gate) hand over to the brain whose first cycle starts today 08:45.",
+   "hypothesis": "budget+independence+auto-revocation is a better throttle than any count cap; freezing the connector spec now converts gate-waiting time into build time without rushing risk-path code",
+   "expected_benefit": "unlimited safe velocity; connector build de-risked and turnkey",
+   "expected_cost": "none material; spec maintenance",
+   "confidence": 0.85,
+   "assumptions": [
+    "brain honors independence gate per contract text"
+   ],
+   "success_metric": "connector built to spec + breaker-tested before 2026-08-05; zero same-subsystem collision incidents under unlimited throughput",
+   "reversal_condition": "auto-revocation clause fires -> throughput drops to 5/window automatically"
   }
  ]
 }
