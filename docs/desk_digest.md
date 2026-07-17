@@ -1,17 +1,17 @@
 # Desk digest (auto-generated daily -- do not hand-edit)
-_updated 2026-07-16T08:01Z · companion to [[institutional_knowledge]]_
+_updated 2026-07-17T08:01Z · companion to [[institutional_knowledge]]_
 
 ## Book
-- Molded net: **$-16.73** | funding **$75.16** | run-rate APR 31.7% | day 14.11
-- Root cause: **unknown_novel** (pause_and_page) | tracking error $-195.39
+- Molded net: **$-116.01** | funding **$80.55** | run-rate APR 17.8% | day 15.11
+- Root cause: **unknown_novel** (pause_and_page) | tracking error $-217.56
 
 ## Validation clocks
-- **carry (DEPLOYED)**: 19/90d | bt 3.27 fwd 10.1
-- **perp L/S**: 12/90d | bt 0.48 fwd 4.31
-- **trend**: 12/90d | bt 1.41 fwd -10.92
-- **trend regime-gated**: 7/90d | bt 1.36 fwd 0.0
-- **OI/LS data**: 17/40d
-- **stablecoin data**: 14/40d
+- **carry (DEPLOYED)**: 21/90d | bt 3.68 fwd 15.24
+- **perp L/S**: 14/90d | bt 0.62 fwd 0.81
+- **trend**: 14/90d | bt 1.42 fwd -6.58
+- **trend regime-gated**: 9/90d | bt 1.36 fwd 0.0
+- **OI/LS data**: 19/40d
+- **stablecoin data**: 15/40d
 
 ## Open decisions (ledger)
 - `2026-07-04-cashcarry-top10-4500` -- review 2026-08-04: funding/day rises ~50% without new drift losses by 2026-08-04
@@ -38,6 +38,17 @@ _updated 2026-07-16T08:01Z · companion to [[institutional_knowledge]]_
 - `2026-07-12-panel-max-roi-upgrade` -- review ?: first generate-mission produces >=1 EV-gate-QUEUE hypothesis; first data-mission surfaces 
 - `2026-07-12-monthly-tier1-panel` -- review ?: first monthly tier1 review produces >=1 EV-positive achievable move implemented or queued
 - `2026-07-12-panel-roster-refresh-and-memory` -- review ?: roster stays >=10 distinct labs with zero dead IDs; no rejected finding re-triaged after i
+- `2026-07-16-nom-thin-book-sizing-fix` -- review ?: 30d post-restart: zero opens >35% of book capital, zero thin-book fills, and dead-man equi
+- `2026-07-16-level5-factory-prompt-triage` -- review ?: by pilot day-30 (~2026-08-15): scale-or-not decided from survivors-per-1000 evidence; zero
+- `2026-07-16-audit-max-roi-upgrade` -- review ?: 30d: >=1 micro-audit finding leads to a verified fix or a logged ruling; brain_down pager 
+- `2026-07-16-pager-silent-death-backoff-fix` -- review ?: test page received by principal; alert state shows successful pushes resuming
+- `2026-07-16-gap-elimination-override-adoption` -- review ?: 14d: >=1 benchmark-mission plan or micro-audit missing-action survives code verification a
+- `2026-07-16-fred-macro-collector-wired` -- review ?: first pre-registered macro-crypto hypothesis clears or fails the gauntlet honestly within 
+- `2026-07-16-leverage-optimizer-runaway` -- review ?: brain root-causes the confidence jump within 3 cycles; no position ever exceeds cap_frac x
+- `2026-07-16-v8-master-blueprint-triage` -- review ?: external heartbeat pings green within 48h of operator signup; live-connector spec review i
+- `2026-07-17-tier1-scorecard-rider` -- review ?: first two tier1 runs produce >=7 validly-cited dimension scores per model; scores correlat
+- `2026-07-17-data-triggered-generation` -- review ?: first matured family (OI/LS ~07-29) gets its scoped generate run within 2 cycles
+- `2026-07-17-cadence-engine` -- review ?: 4 weeks: panels fired 7.0+-0.5d apart with zero brain involvement; no double-fires
 
 ## Executive KPI snapshot
 - CRO: {"hypotheses_tested_lifetime": 20, "validated_survivors": 1, "survivor_note": "cash-carry (fwd 8/90); trend candidate gauntlet-passed (fwd 1/90); all else graveyarded", "survival_r
