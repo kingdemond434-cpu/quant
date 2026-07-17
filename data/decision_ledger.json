@@ -727,6 +727,32 @@
    ],
    "success_metric": "5 specs complete within 5 cycles; liquidation-cascade hypothesis pre-registered within 2 weeks",
    "reversal_condition": "inbox items rot >14d unprocessed -> escalate to principal"
+  },
+  {
+   "id": "2026-07-17-deadman-reset-2-principal-approved",
+   "decision": "Tier-3 operator reset #2 executed ~23:0xZ on EXPLICIT principal approval (verbatim: reset it) after incident-3 investigation complete: false fire from HWM contamination, no substantive loss, cause (optimizer runaway) already clamped, wallet swept clean (9.5k USDT visible to the measure). Sequence: state+latch deleted -> re-baseline on clean wallet -> kill file cleared -> executor auto-resume at clamped $4,500 under hard cap + depth guard + fill-truth accounting.",
+   "hypothesis": "fresh baseline on the swept wallet ends the contaminated-reference fire class",
+   "expected_benefit": "book resumes compounding funding; latched-nag pages stop",
+   "expected_cost": "entry costs on re-opened carries (~$50-80, funding overcomes in days)",
+   "confidence": 0.85,
+   "assumptions": [
+    "no fourth reference-contamination source remains post-sweep"
+   ],
+   "success_metric": "48h: no deadman breach counts; positions ~$300-450/name; measured eq stable vs new HW",
+   "reversal_condition": "any new fire -> book stays down pending full re-investigation"
+  },
+  {
+   "id": "2026-07-18-prospector-seat-adopted",
+   "decision": "Principal FINAL Prospector spec ADOPTED as a monthly BRAIN duty (not a panel mission -- OpenRouter models cannot web-search; the brain CLI can). Spec at docs/research/PROSPECTOR_SPEC.md, verbatim-adapted to the real desk: cards -> EV gate + pre-registration + gauntlet; docs/graveyard.md attached; watchlist persisted at prospector_watchlist.md; off-cycle runs only on named logged events; sunset = zero accepted cards in 2 quarters. Quarterly BLIND REDISCOVERY companion adopted (internal-only invention, pre-registered, 12-month literature comparison, blind_rediscovery_log.md). Cadence engine flags both (28d/90d) with rot floors (35d/100d).",
+   "hypothesis": "obscure verified mechanisms and capacity-bound edges are the solo desk's structural hunting ground; provenance + graveyard + gauntlet discipline keeps external search from becoming idea spam",
+   "expected_benefit": "a real external-search research organ + creativity measurement",
+   "expected_cost": "one brain duty per month; DSR budget spent only via pre-registration",
+   "confidence": 0.8,
+   "assumptions": [
+    "brain web-search quality suffices for citation-chain digging"
+   ],
+   "success_metric": ">=1 provenance-SEMI-or-better card reaching pre-registration within 2 runs; watchlist alive by run 2",
+   "reversal_condition": "zero accepted cards in 2 quarters -> retire per sunset discipline"
   }
  ]
 }
