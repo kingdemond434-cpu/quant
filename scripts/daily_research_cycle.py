@@ -40,6 +40,7 @@ _STEPS = [
     ("cadence",           "scripts/run_cadence.py",          900),  # stage-aware review scheduler
     ("research_feed",     "scripts/collect_research_feed.py", 120),  # arXiv q-fin -> vault inbox
     ("growth_audit",      "scripts/run_growth_audit.py",       60),  # under-utilization = defect
+    ("carry_crowding",    "scripts/run_carry_crowding.py",     120),  # funding-compression warning
     ("research_pipeline", "scripts/run_daily_research.py",  7200),
     ("autodiscovery",     "scripts/run_crypto_research.py", 1800),  # industrialized crypto factory
     ("state_files",       "scripts/research_cycle.py",      300),

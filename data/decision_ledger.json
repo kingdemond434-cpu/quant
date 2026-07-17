@@ -589,6 +589,92 @@
    ],
    "success_metric": "connector built to spec + breaker-tested before 2026-08-05; zero same-subsystem collision incidents under unlimited throughput",
    "reversal_condition": "auto-revocation clause fires -> throughput drops to 5/window automatically"
+  },
+  {
+   "id": "2026-07-17-shadow-clock-contamination-ruling",
+   "decision": "RULED (per GAP register #1's open 'brain must RULE' item, surfaced independently by tier1 panel model grok/x-ai): the 2026-07-13 dead-man incident/3-day-flat-book does NOT contaminate the carry forward-shadow clock that gates fast-track promotion. Verified in code (scripts/run_cashcarry_shadow.py): forward returns are computed from cashcarry_returns(funding, basis) applied to the continuous market-data panel, fully decoupled from the live executor's operational state -- the strategy is re-evaluated against what the market ACTUALLY DID during the shadow window, not against what the (separate, informational) testnet executor happened to be doing. The 3-day flat book only affected web/portfolio.json's deployed-equity tracker (an illustrative P&L display), never the promotion gate. No haircut applied; clock stands at day 21/40, NW-t=1.86, regime_ok=False (unchanged).",
+   "neighbours": [
+    "forward-validation promotion gate (GAP#1/#2, the ~08-05 fast-track date)",
+    "web/portfolio.json deployed-equity display (unaffected, confirmed separate)",
+    "growth_audit.json promotion_latency check (reads the same shadow file, unaffected by this ruling since it already reflected the correct number)"
+   ],
+   "hypothesis": "the shadow clock's market-data-only design means operational incidents on the executor cannot bias the statistical promotion gate -- a structural feature, not a coincidence",
+   "expected_benefit": "closes an open GAP register item with zero risk (pure verification); removes uncertainty that could otherwise cause a defensive over-conservative haircut on the primary edge's promotion timeline",
+   "expected_cost": "none -- no code changed",
+   "confidence": 0.95,
+   "assumptions": [
+    "run_cashcarry_shadow.py's _panels()/cashcarry_returns() code path is the actual mechanism gating fast-track (verified by direct code read, not inference)"
+   ],
+   "success_metric": "no future cycle re-litigates this contamination question without new code/market evidence",
+   "reversal_condition": "if the shadow computation is ever changed to read live executor fills instead of the market-data panel, this ruling must be re-evaluated"
+  },
+  {
+   "id": "2026-07-17-carry-crowding-monitor",
+   "decision": "Implemented engineering_backlog's top-ROI open item (carry_crowding_monitor, roi 0.153, effort 2.5h) -- built scripts/run_carry_crowding.py, wired into daily_research_cycle.py's _STEPS. Detector-only: writes web/crowding.json (top-20 funding/basis 30d trend vs prior 30d, 25th-percentile-of-backtest breach streak, informational OI-growth from the immature 19/40d crypto_metrics.parquet clock). Mirrors run_cashcarry_shadow.py's panel construction and backtest/forward split (shadow_start) for methodological consistency. Deliberately does NOT auto-haircut Kelly on a decay_warning -- an untested new signal must not touch sizing the same cycle it is built; that wiring is a separate, dedicated, EV-gated follow-up. Ran clean: decay_warning=False, funding trend flat (+2e-06), no crowding signal currently.",
+   "neighbours": [
+    "daily_research_cycle.py step list (added one entry, no reordering of existing steps, no shared state with other steps)",
+    "monthly governance review (new input this feeds, no immediate autonomous consumer)",
+    "carry sizing/Kelly (explicitly NOT touched -- named as the neighbour this change does NOT alter, by design)"
+   ],
+   "hypothesis": "a market-data-driven crowding detector, reviewed monthly, catches secular funding compression before it shows up in realized Sharpe -- closing the round-2 external review's identified blind spot",
+   "expected_benefit": "early warning on the desk's single most probable failure mode (crowding decay of the lone validated edge family); ~0.45 impact x 0.85 p per engineering_backlog scoring",
+   "expected_cost": "~120s/day CI/pipeline time; zero risk (pure read + JSON write, no trading-path code touched)",
+   "confidence": 0.85,
+   "assumptions": [
+    "top-20 equal-weighted funding is a reasonable crowding proxy (matches the executor's own methodology)",
+    "25th-pct-of-backtest bar is a meaningful threshold (unvalidated by design -- informational monitor, not a gauntletted alpha)"
+   ],
+   "success_metric": "web/crowding.json refreshes daily without error; monthly governance references it at least once before 2026-08-16",
+   "reversal_condition": "if the detector produces persistent false decay_warnings unsupported by realized funding, recalibrate or retire the bar"
+  },
+  {
+   "id": "2026-07-17-reconciler-silent-failure-counter",
+   "decision": "Implemented GAP register #16 (reconciler fails silently -- the exact defect class that let COOKIEUSDT's broken pair sit unhedged 75 minutes on 2026-07-16). scripts/run_cashcarry_executor.py: _reconcile() now routes every _mkt_or_limit call through a local _do() wrapper that tracks consecutive failures per symbol in a new persisted state field (state['reconcile_fail_counts'], mirrors the existing 'cooldown' pattern). 3rd consecutive failure on a symbol emits a RECONCILE-FAIL action line (surfaces in the journal/dashboard feed via the existing 'actions' plumbing) and writes data/cashcarry_error.log (existing visible-error-log convention). Success resets the streak to zero -- no alarm fatigue on a single transient venue hiccup. Purely additive: the success path (if how:) is byte-for-byte unchanged; only the previously-silent failure branch gains behavior. Added 2 regression tests (tests/execution/test_reconcile_fail_counter.py) pinning both the 3-strike threshold and the reset-on-success semantics via a mocked fut/spot connector. CI green.",
+   "neighbours": [
+    "_reconcile()'s existing cooldown/ADL-flatten logic (unchanged -- the adl-flatten path's two _mkt_or_limit calls were deliberately left un-wrapped since that path already unconditionally logs an action string, it is a one-shot flatten not a silent retry loop)",
+    "executor state persistence (data/cashcarry_state.json gains one new key, same read/write pattern as cooldown, no schema-version bump needed since it's additive/optional with .get() defaults)",
+    "data/cashcarry_error.log (existing consumer: the executor's own cycle-error handler at the main loop; now has a second writer -- both use single-shot write_text/overwrite, consistent with existing convention, no two-writers-on-a-rail hazard since this is a diagnostics log, not a risk-control state file like the dead-man's)"
+   ],
+   "hypothesis": "surfacing consecutive reconcile failures at the 3rd strike (not the 1st, to avoid alarm fatigue on transient venue blips) converts an invisible 75-minute-class incident into a same-cycle visible one",
+   "expected_benefit": "prevents recurrence of the 2026-07-16 COOKIE-class silent failure; near-zero cost (a counter + conditional log line) for a real survival-adjacent gap",
+   "expected_cost": "negligible -- no behavior change on the success path, small state file growth",
+   "confidence": 0.9,
+   "assumptions": [
+    "3 consecutive cycles (each ~600s) = ~30min is an acceptable detection latency, faster than the 75min the COOKIE incident took to surface via audit"
+   ],
+   "success_metric": "next time a hedge order is persistently rejected, a RECONCILE-FAIL line appears within 3 cycles instead of staying silent for 75+ minutes",
+   "reversal_condition": "if the 3-strike threshold produces false alarms on normal transient rejections, raise the threshold or add a time-window instead of a pure consecutive-count"
+  },
+  {
+   "id": "2026-07-17-growth-audit-capital-utilization-deferral",
+   "decision": "DEFERRED (not closed) the sole growth_audit.json conservatism defect this cycle: carry_capital_utilization (58.8% utilized, $8,697/$14,798). Deferral reason is SURVIVAL-RISK, not session length (Deferral Discipline requires naming one of the two valid reasons): (1) GAP#15 HFTUSDT position sits at ~3.7x the 35% concentration cap, unresolved, decision-pending; (2) GAP#14 leverage-optimizer confidence-jump root cause is still open (currently floored at confidence=0/inactive, but the underlying pipeline defect that let confidence jump 0->0.89 in one day is not yet understood); (3) venue-truth equity sits at $5,163.81 vs high-water $7,233.32 (fire_line $4,701.66, ~9.8% buffer, 0 breaches) -- a real but not imminent drawdown. Raising capital allocation into a book carrying an unresolved concentration defect and an unresolved sizing-confidence-pipeline defect is not the max-EV asymmetric bet available: under-sizing costs are bounded and recoverable, compounding exposure on top of a live, not-yet-understood defect is not (this is exactly the capital-pipe-is-the-unaudited-neighbour lesson from all three 2026-07-16 incidents).",
+   "neighbours": [
+    "GAP#15 HFTUSDT concentration (named as the blocking risk)",
+    "GAP#14 leverage-optimizer confidence pipeline (named as the blocking risk)",
+    "dead-man venue-truth equity/high-water (monitored, not breached, cited as supporting evidence for the deferral)"
+   ],
+   "hypothesis": "resolving the concentration and confidence-pipeline defects first is higher expected-log-wealth than raising capital utilization now, because compounding exposure on a live defect has asymmetric downside vs the bounded, recoverable cost of temporary under-allocation",
+   "expected_benefit": "avoids adding capital-at-risk on top of two unresolved defects; preserves optionality to raise capital cleanly once GAP#14/#15 close",
+   "expected_cost": "foregone growth from ~41% idle-above-buffer capital until GAP#14/#15 resolve -- explicitly named as a cost, not ignored",
+   "confidence": 0.7,
+   "assumptions": [
+    "GAP#14/#15 will resolve within weeks, not months, keeping the foregone-growth cost bounded"
+   ],
+   "success_metric": "once GAP#14 is root-caused and GAP#15 is resolved (trim or natural close), capital utilization gap closes same-cycle with no further deferral",
+   "reversal_condition": "if GAP#14/#15 remain open >14 more days with no progress, re-examine whether the deferral itself has become the conservatism defect (Aggression Clause: conservatism beyond survival constraints is itself a cost)"
+  },
+  {
+   "id": "2026-07-17-weekly-architecture-review",
+   "decision": "WEEKLY ARCHITECTURE REVIEW (constitution step 8, first-ever explicit instance found in ledger history despite 28 cycles logged -- research_state.json architecture_review_due=True). Blank-slate question: 'if rebuilt today with everything now known, what maximizes E[log wealth]?' Verdict: the current architecture is broadly RIGHT-SIZED and does not warrant migration. Reasoning: (1) the governance/audit apparatus (11-model weekly panel, 3-model daily micro-audit, decision ledger, EV gate, gap register) is arguably AHEAD of the trading edge portfolio it governs (1 validated family, $15k paper book) in sophistication -- but this is intentional under the standing tier-convergence doctrine (process quality first, resources later) and the panels are cheap (~$0.25/run), so it is not over-investment, it is the desk's actual differentiator. (2) The single-sleeve concentration (funding carry only) is a real structural gap, but it is DATA-gated (OI/LS/stablecoin clocks maturing 07-29/08-11), not architecture-gated -- no rebuild closes it faster than the calendar. (3) The one genuine remaining structural gap is the live connector (GAP#2, spec frozen, build owed pre-08-05) -- this cycle's engineering picks (crowding monitor = breadth/decay protection, reconciler fail-counter = execution reliability) already match what a fresh-eyes prioritization would pick over more governance machinery. No migration identified whose expected lifetime utility exceeds its cost. This review itself surfaced the meta-finding that architecture reviews were never being logged despite the 7-cycle cadence -- fixed by this entry establishing the pattern.",
+   "hypothesis": "the desk's actual constraint is data-calendar-time + one remaining build (live connector), not architecture -- no rebuild beats waiting + building the connector",
+   "expected_benefit": "confirms engineering effort is correctly allocated; avoids a costly speculative rebuild",
+   "expected_cost": "none -- no code changed, review-only",
+   "confidence": 0.75,
+   "assumptions": [
+    "the governance apparatus's cost (LLM API spend, brain-cycle time) remains cheap relative to the capital at stake, which holds at $15k paper but should be re-checked as capital scales"
+   ],
+   "success_metric": "next weekly architecture review (within 7 cycles) finds the same conclusion or identifies a genuinely new migration candidate from fresh evidence",
+   "reversal_condition": "if live capital deploys and the governance-apparatus-to-capital cost ratio becomes materially unfavorable, revisit"
   }
  ]
 }

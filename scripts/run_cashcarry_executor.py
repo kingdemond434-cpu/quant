@@ -189,7 +189,8 @@ def _mkt_or_limit(conn: Any, sym: str, side: str, qty: float) -> str:
 
 
 def _reconcile(pos: dict[str, dict], *, dry: bool,
-               cooldown: dict[str, float] | None = None) -> list[str]:
+               cooldown: dict[str, float] | None = None,
+               fail_counts: dict[str, int] | None = None) -> list[str]:
     """Heal hedge drift every cycle -- survival is priority #1. Two invariants restored:
 
       * ORPHAN futures short (a short with no tracked carry) -> cover it (close to flat).
@@ -201,7 +202,11 @@ def _reconcile(pos: dict[str, dict], *, dry: bool,
 
     Idempotent: does nothing when the book is already consistent, and self-corrects the moment a
     transient venue outage (that caused the drift) clears. A failed leg is swallowed, retried next
-    cycle."""
+    cycle -- but NOT silently: `fail_counts` (persisted in executor state, keyed by symbol) tracks
+    consecutive `_mkt_or_limit` failures, and 3+ in a row surfaces a RECONCILE-FAIL action line +
+    a visible error-log write (2026-07-17 gap-register #16 fix -- a broken pair silently sat
+    unhedged for 75 minutes on 2026-07-16 because a rejected re-hedge order returned '' and logged
+    nothing)."""
     if dry or not fut.has_keys():
         return []
     try:
@@ -209,10 +214,27 @@ def _reconcile(pos: dict[str, dict], *, dry: bool,
     except Exception:
         return []                                          # venue read down -> try again next cycle
     acts: list[str] = []
+    fails = fail_counts if fail_counts is not None else {}
+
+    def _do(conn: Any, sym: str, side: str, qty: float) -> str:
+        how = _mkt_or_limit(conn, sym, side, qty)
+        if how:
+            fails.pop(sym, None)
+        else:
+            n = fails.get(sym, 0) + 1
+            fails[sym] = n
+            if n >= 3:
+                with _safe():
+                    _ERR.write_text(f"{datetime.now(tz=UTC).isoformat()} reconcile fail x{n} "
+                                    f"{sym}: both market and post-only limit rejected\n")
+                acts.append(f"RECONCILE-FAIL {sym} x{n} (both market+limit rejected, see "
+                           f"{_ERR})")
+        return how
+
     tracked = set(pos)
     for sym, qty in actual.items():                        # cover orphan shorts/longs not tracked
         if sym not in tracked and abs(float(qty)) > 0:
-            how = _mkt_or_limit(fut, sym, "BUY" if float(qty) < 0 else "SELL", abs(float(qty)))
+            how = _do(fut, sym, "BUY" if float(qty) < 0 else "SELL", abs(float(qty)))
             if how:
                 acts.append(f"cover-orphan {sym} ({how})")
     dead: list[str] = []
@@ -241,13 +263,13 @@ def _reconcile(pos: dict[str, dict], *, dry: bool,
                 continue
             with _safe():
                 fut.set_leverage(sym, 3)
-            how = _mkt_or_limit(fut, sym, "SELL", round(want - have, 8))
+            how = _do(fut, sym, "SELL", round(want - have, 8))
             if how:
                 acts.append(f"re-hedge {sym} +{round(want - have, 4)} ({how})")
         elif have > want * 1.02:                           # EXCESS short beyond the tracked leg --
             # an orphan absorbed into a tracked symbol (or a failed partial close) is naked
             # directional short the spot leg does NOT cover -> trim back to the tracked size.
-            how = _mkt_or_limit(fut, sym, "BUY", round(have - want, 8))
+            how = _do(fut, sym, "BUY", round(have - want, 8))
             if how:
                 acts.append(f"trim-excess {sym} -{round(have - want, 4)} ({how})")
     for sym in dead:
@@ -266,7 +288,7 @@ def _reconcile(pos: dict[str, dict], *, dry: bool,
                 fl = sfl.get(sym, {})
                 deficit = _round(want - held, fl.get("step", 0.0), int(fl.get("qty_prec", 6)))
                 if deficit > 0:
-                    how = _mkt_or_limit(spot, sym, "BUY", deficit)
+                    how = _do(spot, sym, "BUY", deficit)
                     if how:
                         acts.append(f"spot-rehedge {sym} +{deficit} ({how})")
     return acts
@@ -297,7 +319,10 @@ def _rebalance(top: int, hold_top: int, capital: float, *, dry: bool) -> dict[st
     cool: dict[str, float] = {s: float(t) for s, t in state.get("cooldown", {}).items()
                               if float(t) > time.time()}   # ADL/basis-stop names: 24h no re-entry
     state["cooldown"] = cool
-    recon = _reconcile(pos, dry=dry, cooldown=cool)         # heal hedge drift FIRST (survival #1)
+    fails: dict[str, int] = {s: int(n) for s, n in state.get("reconcile_fail_counts", {}).items()}
+    state["reconcile_fail_counts"] = fails
+    recon = _reconcile(pos, dry=dry, cooldown=cool,          # heal hedge drift FIRST (survival #1)
+                       fail_counts=fails)
     if cool:
         target -= set(cool)
         cands = [c for c in cands if c[0] not in cool]

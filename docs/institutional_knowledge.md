@@ -327,3 +327,32 @@ hypotheses and EV-score them; only the top few enter research.
   levering above it forbidden) pending root-cause + a ≥30-live-day re-enable gate; phantom
   COOKIE pair surgically removed (venue truth restored); HFT de-risk escalated rather than
   midnight-churned. Root-cause of the confidence jump = top brain task.
+- **2026-07-17 follow-up:** the silent-reconciler-failure gap (meta-lesson 2 above) is FIXED --
+  `_reconcile`'s `_do()` wrapper counts consecutive `_mkt_or_limit` failures per symbol, surfaces
+  a `RECONCILE-FAIL` line + error-log write on the 3rd strike, resets on success. Regression tests
+  in `tests/execution/test_reconcile_fail_counter.py`.
+
+## Architecture fact — 2026-07-17 (forward-shadow clocks are market-data-driven, NOT executor-state-driven)
+- **The carry forward-shadow clock (`web/cashcarry_shadow.json`, the file that actually gates
+  fast-track promotion) computes forward returns from the market-data funding/basis PANEL via
+  `cashcarry_returns()`, applied continuously since `shadow_start` — it is completely decoupled
+  from the live testnet executor's operational state.** An operational incident that flattens or
+  restarts the executor (e.g. the 2026-07-13 dead-man fire, 3 days flat) does NOT create a gap or
+  contamination in this clock; it only affects the separate, informational `web/portfolio.json`
+  deployed-equity tracker. Ruled explicitly 2026-07-17 (ledger
+  `2026-07-17-shadow-clock-contamination-ruling`) after an external panel model raised the
+  contamination question — verify this architectural fact from code before re-litigating it.
+- **Meta-lesson:** know which of the desk's two equity/return series a question is actually about
+  before reasoning about contamination, resets, or incident impact — "the strategy's forward
+  track record" (market-data shadow) and "the executor's live P&L" (operational, incident-exposed)
+  are different measurements of different things, and only the first one gates promotion today.
+
+## Ops note — 2026-07-17 (periodic auto-commit is a background service, not a competing session)
+- Commits named `desk snapshot <timestamp>` appear every few minutes throughout the day, even
+  mid-cycle while the AI brain is actively working. This is a periodic background snapshot
+  (tied to the 3-min `quant-refresh.timer` / cadence machinery) that commits whatever is dirty in
+  the working tree, NOT a second concurrent Claude session editing the repo. Confirmed 2026-07-17:
+  `ps aux` showed no second `claude` process; the file changes attributed to "another session" were
+  the tail end of the PRIOR interactive session's writes landing on disk just as the next headless
+  cycle started, then swept up by the next periodic commit. Don't panic-diagnose a collision from
+  commit timestamps alone — check `ps aux` for an actual second process before assuming one.
