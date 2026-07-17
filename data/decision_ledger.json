@@ -792,6 +792,19 @@
    ],
    "success_metric": "first dossier produces >=1 new monitored indicator + >=1 drill scenario",
    "reversal_condition": "3 dossiers with zero new indicators/guards/drills -> fold into OSINT lane"
+  },
+  {
+   "id": "2026-07-18-digging-cadence-biweekly",
+   "decision": "Principal cadence decision (CRO-shaped): digging organs (Prospector + Literature Deep-Miner) upgraded monthly -> BIWEEKLY (14d) during the backlog-mining phase, auto-relaxing to 28d when the brain sets digging_saturated (criteria: every coverage family >=2 sessions AND 2 consecutive zero-card sessions). WEEKLY rejected: the brain has ~90 min/day and the lockdown priorities (recorder, connector) own the cycle first -- weekly digging would starve Gate-0 progress. Duty text now carries the priority reminder. Rot floors unchanged at 35d (floors bound rot, not speed).",
+   "hypothesis": "dig frequency should track unmined inventory, then information arrival rate",
+   "expected_benefit": "2x coverage speed over the huge unmined corpus now; zero waste later",
+   "expected_cost": "~2 extra brain-duty slots/month during backlog phase",
+   "confidence": 0.85,
+   "assumptions": [
+    "brain honors priority ordering within cycles"
+   ],
+   "success_metric": "all coverage families visited >=1x within 6 weeks; connector progress unimpeded",
+   "reversal_condition": "connector milestones slip due to digging time -> revert to 28d immediately"
   }
  ]
 }

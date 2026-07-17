@@ -147,18 +147,24 @@ def main() -> None:
         due.append("fred_macro family: deep history available -- scoped generate run owed")
     if stage in ("S1", "S2") and _days_since(state, "last_live_generate") >= 7:
         due.append("LIVE (S1+): weekly generation vs fresh fills/slippage/tape is due")
-    if _days_since(state, "last_prospector") >= 28:
+    # Digging cadence tracks UNMINED INVENTORY (principal 2026-07-18): 14d while the source
+    # backlog is being mined; the brain sets digging_saturated=true when every coverage
+    # family has >=2 sessions AND 2 consecutive sessions produced zero cards -> relax to 28d.
+    dig_every = 28 if state.get("digging_saturated") else 14
+    if _days_since(state, "last_prospector") >= dig_every:
         due.append(
-            "PROSPECTOR (monthly): execute docs/research/PROSPECTOR_SPEC.md with real web "
-            "search -- max 15 queries, provenance-graded mechanism cards -> EV gate + "
-            "pre-registration; update docs/research/prospector_watchlist.md; mark done: "
-            "last_prospector in data/cadence_state.json.")
-    if _days_since(state, "last_lit_deepdive") >= 28:
+            f"PROSPECTOR (every {dig_every}d): execute docs/research/PROSPECTOR_SPEC.md with "
+            "real web search -- max 15 queries, provenance-graded mechanism cards -> EV gate "
+            "+ pre-registration; update docs/research/prospector_watchlist.md; mark done: "
+            "last_prospector in data/cadence_state.json. NEVER at the expense of the lockdown "
+            "priorities (recorder/connector) -- they own the cycle first.")
+    if _days_since(state, "last_lit_deepdive") >= dig_every:
         due.append(
-            "LITERATURE DEEP-MINER (monthly): execute docs/research/LITERATURE_SPEC.md -- "
-            "inbox triage to MECHANISMS (never summaries), 2-level citation-chain digs, "
-            "replication scans, coverage rotation; cards -> EV gate + pre-registration; "
-            "mark done: last_lit_deepdive.")
+            f"LITERATURE DEEP-MINER (every {dig_every}d): execute "
+            "docs/research/LITERATURE_SPEC.md -- inbox triage to MECHANISMS (never "
+            "summaries), 2-level citation-chain digs, replication scans, coverage rotation; "
+            "cards -> EV gate + pre-registration; mark done: last_lit_deepdive. Lockdown "
+            "priorities own the cycle first.")
     if _days_since(state, "last_blind_rediscovery") >= 90:
         due.append(
             "BLIND REDISCOVERY (quarterly): NO external search -- per the companion section "
