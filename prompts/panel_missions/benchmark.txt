@@ -22,3 +22,5 @@ STEP 2 -- ONE-PAGE BENCHMARK on that dimension only:
 
 Rules: one dimension only, no resource fantasies, no generic advice. Costed and falsifiable or
 it does not count. Max 400 words.
+
+OWNER TEST (one sentence, answer last): if this desk were YOURS -- your money, same objective (max E[log wealth], ruin<=2%) -- would you have built the dimension you just benchmarked THIS way? If no, name the one structural difference you would have made and what it would have cost to do it that way from day one.

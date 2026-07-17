@@ -1,10 +1,19 @@
 # Panel rulings -- cross-run finding memory (the panel's graveyard)
 Updated 2026-07-17. CHECK THIS BEFORE triaging new panel output: a finding matching a prior REJECT with no NEW evidence is already ruled -- skip it, log 'already ruled', do not re-litigate. Supersede a ruling only with new code/market evidence.
 
-## REJECTED (0)
+## REJECTED (2)
+- [moonshotai (kimi-k2.6) + deepseek (deepseek-v4-pro)/tier1] hard monthly cap of 3 pre-registered generation tests -- superseded by principal's 2026-07-17 throughput amendment (ledger 2026-07-17-throughput-amendment-and-connector-spec) which replaces numeric change/test caps with complexity budget + independence gate + auto-revocation
+- [moonshotai (kimi-k2.6)/tier1] permanently retire/delete the dynamic-leverage optimizer, replace with deterministic hard-coded sizing -- over-correction: 07-16 incident already mitigated by the executor clamp (scripts/run_cashcarry_executor.py _dynamic_capital, verified in code -- can de-risk below but never lever above operator capital). Permanent deletion forecloses the Dynamic Leverage doctrine + AGGRESSION CLAUSE. GAP#14's root-cause-then-30-day-gated-reenable is the proportionate fix, already adopted and brain-owned.
 
-## IMPLEMENTED (0)
+## IMPLEMENTED (3)
+- [multiple(3/3: llama,openai-gpt5.6-luna,cohere)/micro_audit] leverage-optimizer gate is structurally weak (confidence>0 only); recommend hard leverage/notional cap independent of optimizer confidence -- already fixed 2026-07-16 (same day as the incident, before this 07-17T08:01 audit ran): verified in code at scripts/run_cashcarry_executor.py:106-124 (_dynamic_capital) -- min(optimizer_notional, operator_default), can de-risk below but never lever above operator capital, regardless of confidence. The auditors' dossier context did not make the shipped fix visible; no further action needed. GAP#14 (root-cause the confidence-jump itself + design the >=30-live-day re-enable gate) remains open and brain-owned.
+- [grok (x-ai/grok-4.5)/tier1] brain must rule whether 07-13 dead-man incident/restart contaminates the deployed forward-shadow clock -- ruled NOT contaminated -- verified in scripts/run_cashcarry_shadow.py that the shadow clock computes forward returns from the market-data funding/basis panel via cashcarry_returns(), fully decoupled from the live executor's operational state; the 3-day flat book affected only the informational web/portfolio.json deployed-equity tracker, not the promotion gate. Ledgered 2026-07-17-shadow-clock-contamination-ruling.
+- [grok (x-ai/grok-4.5)/tier1] crowding/capacity decay monitor with automatic Kelly haircut on funding compression -- matches engineering_backlog top-ROI open item carry_crowding_monitor (roi 0.153); implemented this cycle 2026-07-17
 
-## QUEUED (0)
+## QUEUED (3)
+- [google (gemini-3.1-pro-preview) + moonshotai (kimi-k2.6)/tier1] venue-truth disconnect circuit breaker: |mark_NAV - exchange_NAV| > 1-2% triggers halt+flatten -- genuinely new (2/11 corroborated), not yet in gap register -- added as GAP#19. Deferred from same-cycle implementation: risk-path code needing a dedicated build with property/mutation testing (v8 8.2 bar), architected to NOT duplicate/race the Tier-3 dead-man rail (two-writers-on-one-rail was the 07-11 false-fire root cause) -- a books-vs-venue RECONCILIATION check, distinct from the dead-man's drawdown-from-HW SURVIVAL check.
+- [multiple(7/11)/tier1] build TCA / recalibrate execution cost model from realized fills -- matches GAP#4 + engineering_backlog execution_tca_fill_log (roi 0.128), data-gated on ~2wk fills
+- [multiple(8/11)/tier1] ship staged-arming live connector + $100 canary before ~08-05 gate -- matches GAP#2 (docs/LIVE_CONNECTOR_SPEC.md frozen 2026-07-17); already queued, no new action
 
-## FLAGGED (0)
+## FLAGGED (1)
+- [multiple(9/11)/tier1] Frankenstein synthesizer likely producing zero measurable improvement; recommend 30-60 day falsification test -- strong cross-model consensus; not actioned this cycle (not the monthly governance window, cycles_logged=28/~30) -- flagged for next monthly governance review item 6
