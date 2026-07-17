@@ -714,6 +714,19 @@
    ],
    "success_metric": "decay-lab spec complete before monthly window; clustering live before next factory expansion",
    "reversal_condition": "per-row sunset clauses"
+  },
+  {
+   "id": "2026-07-17-master-expansion-package-triage",
+   "decision": "Principal package #4 (61-item menu + amendments) triaged into docs/research/improvement_inbox.md: ~24 items already live under other names (do nothing), TOP-5 designated for spec-prebuild (liquidation cascade forecaster -- proprietary-ish live stream day 14+; funding term structure; FRED cross-asset lead-lag; blind-research rider; API deprecation watch), rest queued on their prerequisites (recorder / Gate 0 / pilot / multi-venue), tail dashboards batched into ONE monthly research-analytics review instead of ten subsystems. Adopted same-day: conservatism-drift metric in the tier1 scorecard. Acceleration directive answered honestly: factory/compute scaling stays pilot-gated (~08-15) per twice-ratified verdicts; its own never-touch guardrails affirmed. Package dead-man note superseded by the completed incident-3 diagnosis.",
+   "hypothesis": "the brain processing a ranked inbox one spec per cycle beats a midnight 61-item build",
+   "expected_benefit": "every idea captured, zero duplicate machinery, top alpha candidates spec-first",
+   "expected_cost": "inbox maintenance",
+   "confidence": 0.85,
+   "assumptions": [
+    "brain honors inbox header protocol"
+   ],
+   "success_metric": "5 specs complete within 5 cycles; liquidation-cascade hypothesis pre-registered within 2 weeks",
+   "reversal_condition": "inbox items rot >14d unprocessed -> escalate to principal"
   }
  ]
 }
