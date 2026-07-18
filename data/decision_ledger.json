@@ -1161,6 +1161,19 @@
    ],
    "success_metric": "4 scenarios answered + recorded; first real incident follows the pre-committed plan",
    "reversal_condition": "n/a (ops-hardening artifact)"
+  },
+  {
+   "id": "2026-07-18-structural-edges-deduplicated",
+   "decision": "Structural-edge ideas RECONCILED against the queue (principal caught the CRO listing overlaps -- the dedup discipline the CRO should have applied itself). NEW and spec'd (docs/research/STRUCTURAL_EDGE_IDEAS.md): N1 AI-readable public-text data, N2 sub-institutional-capacity catalog (clearest moat), N3 digger-feed sentiment (near-free), N4 session/time-zone handoff, N5 minor-stablecoin depeg micro-arb, N6 pre-listing detection (public signals only), N7 failed-tx/revert intent mining. FOLDED as enhancements (NOT re-queued): own-fill corpus -> Market Memory #9; dead-strategy resurrection -> graveyard re-mine #5; crowding-exit -> Edge Decay Lab #20; whale reverse-eng -> Whale Alert #13; enforcement-mining -> Crisis Autopsy. AI-Capability Frontier Scanner already queued -- not re-queued. LESSON LOGGED: check the queue before listing ideas; dedup is part of the standing discipline, and the CRO missed it this round.",
+   "hypothesis": "checked-distinct advantage-extraction ideas beat a bigger list with hidden duplicates",
+   "expected_benefit": "7 genuinely-new edge sources + 5 sharpened existing items; zero redundant entries",
+   "expected_cost": "specs; builds sized by the monthly engine post-Gate-0",
+   "confidence": 0.8,
+   "assumptions": [
+    "dedup accurate; owned advantages hold un-extracted edge"
+   ],
+   "success_metric": ">=1 of N1/N2 produces a gauntlet-surviving card within 2 quarters of build",
+   "reversal_condition": "per-idea falsification clauses in the spec"
   }
  ]
 }

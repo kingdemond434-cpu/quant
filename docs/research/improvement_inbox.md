@@ -300,3 +300,9 @@ not more guessing, decide any further expansion.
 
 NOTE: MEV stays quarantined behind the sub-50ms latency gate. No further search expansions or
 governance layers -- this is the last polish before Gate 0.
+
+
+---
+
+# STRUCTURAL-EDGE IDEAS (deduplicated)
+See docs/research/STRUCTURAL_EDGE_IDEAS.md -- 7 genuinely-NEW advantage-extraction ideas fully spec'd (AI-readable public data, sub-institutional-capacity catalog, digger-feed sentiment, session-handoff, minor-stable depeg, pre-listing detection, failed-tx intent) + 5 folded as enhancements to existing items. Priority N2+N1.
