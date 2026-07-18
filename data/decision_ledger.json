@@ -844,6 +844,19 @@
    ],
    "success_metric": "within 2 dig cycles, >=1 non-alpha improvement finding captured and spec-queued",
    "reversal_condition": "inbox floods with low-value process trivia -> raise the capture bar to material-only"
+  },
+  {
+   "id": "2026-07-18-ai-methods-digging-gap-closed",
+   "decision": "Honest digging-coverage audit (principal asked 'is it genuinely missing something'): found ONE real gap -- no digger sourced the AI/agent/LLM-methods frontier. The desk is an AI-operated research agent, yet the fastest-moving field relevant to improving its OWN engine (cs.LG/cs.AI, agent frameworks, LLM eval/prompting/RAG/tool-use, multi-agent research, model releases) was covered by nobody -- Prospector mines AI-in-TRADING, Literature mined only q-fin, Autopsy mines collapses. CLOSED: added AI/agent/LLM-methods as a Literature Deep-Miner source family + coverage row + doctrine line making the desk's own engine a valid dig target (findings -> improvement inbox, never the trading gauntlet). Highest compounding leverage because engine improvements multiply all future discovery. Minor gaps noted-not-critical: dedicated new-data-source hunting (partly covered by data-value-engine, queued), adjacent-field discovery methods (drug-discovery/ad-tech experimentation -- speculative, watchlist-level).",
+   "hypothesis": "improving how an AI desk discovers compounds faster than any single discovered edge",
+   "expected_benefit": "the engine now researches itself against the fastest-moving relevant field",
+   "expected_cost": "one more coverage family in the biweekly literature rotation",
+   "confidence": 0.85,
+   "assumptions": [
+    "AI-methods findings route to improvement inbox, not the gauntlet"
+   ],
+   "success_metric": "within 2 literature cycles, >=1 concrete engine/prompt/eval improvement captured",
+   "reversal_condition": "AI-methods digs yield only hype with no adoptable method in 2 quarters -> drop the family"
   }
  ]
 }

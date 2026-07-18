@@ -11,3 +11,4 @@ _Seeded 2026-07-18; rotation rule: >=40% of budget to least-recently-covered._
 | Theses & dissertations | never | 0 | |
 | Failed-replication literature | never | 0 | |
 | Non-English academic | never | 0 | |
+| AI/agent/LLM methods (cs.LG/cs.AI/evals) | never | 0 | engine self-improvement -- highest compounding leverage |
