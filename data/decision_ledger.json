@@ -857,6 +857,19 @@
    ],
    "success_metric": "within 2 literature cycles, >=1 concrete engine/prompt/eval improvement captured",
    "reversal_condition": "AI-methods digs yield only hype with no adoptable method in 2 quarters -> drop the family"
+  },
+  {
+   "id": "2026-07-18-digger-coverage-self-audit",
+   "decision": "Principal push to max digger breadth+depth. Honest finding: breadth and depth TRADE OFF against a fixed 15-query budget -- fully maxing both is not achievable and chasing it dilutes depth-per-family. Correct answer adopted: make breadth SELF-MAXING via a quarterly coverage-completeness audit -- diggers re-derive (blind) the families a world-class scout should cover, diff vs the coverage maps, add any missing (candidates: public trading-firm filings, patents, adjacent-field discovery methods, data-vendor catalogs). Universe self-expands like the tier-1 gap map; no hand-maxing. DEPTH rules are already institutional-max (>=2-level chains, primaries-over-narratives, auditable DONE, rotation, divergent planning); the one unmaxed depth lever is query budget, deliberately held by the lockdown (brain time -> connector/recorder first), raisable post-Gate-0. Restraint on adding more families/budget now is the correct max-ROI call, not a limitation.",
+   "hypothesis": "self-auditing coverage guarantees completeness better than any hand-maintained source list",
+   "expected_benefit": "breadth completeness without a human bottleneck; depth preserved per family",
+   "expected_cost": "one quarterly meta-audit duty",
+   "confidence": 0.85,
+   "assumptions": [
+    "quarterly cadence catches new families before they matter"
+   ],
+   "success_metric": "first coverage audit adds >=1 genuinely missing family OR credibly confirms completeness",
+   "reversal_condition": "audits add only trivial families 2 quarters running -> fold into annual"
   }
  ]
 }
