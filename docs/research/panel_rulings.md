@@ -1,9 +1,10 @@
 # Panel rulings -- cross-run finding memory (the panel's graveyard)
-Updated 2026-07-17. CHECK THIS BEFORE triaging new panel output: a finding matching a prior REJECT with no NEW evidence is already ruled -- skip it, log 'already ruled', do not re-litigate. Supersede a ruling only with new code/market evidence.
+Updated 2026-07-18. CHECK THIS BEFORE triaging new panel output: a finding matching a prior REJECT with no NEW evidence is already ruled -- skip it, log 'already ruled', do not re-litigate. Supersede a ruling only with new code/market evidence.
 
-## REJECTED (2)
+## REJECTED (3)
 - [moonshotai (kimi-k2.6) + deepseek (deepseek-v4-pro)/tier1] hard monthly cap of 3 pre-registered generation tests -- superseded by principal's 2026-07-17 throughput amendment (ledger 2026-07-17-throughput-amendment-and-connector-spec) which replaces numeric change/test caps with complexity budget + independence gate + auto-revocation
 - [moonshotai (kimi-k2.6)/tier1] permanently retire/delete the dynamic-leverage optimizer, replace with deterministic hard-coded sizing -- over-correction: 07-16 incident already mitigated by the executor clamp (scripts/run_cashcarry_executor.py _dynamic_capital, verified in code -- can de-risk below but never lever above operator capital). Permanent deletion forecloses the Dynamic Leverage doctrine + AGGRESSION CLAUSE. GAP#14's root-cause-then-30-day-gated-reenable is the proportionate fix, already adopted and brain-owned.
+- [multiple(2/3: grok,openai-gpt5.6-terra)/micro_audit 07-18] HFTUSDT concentration breach (~3.7x the 35% cap) remains unresolved/decision-pending -- force-trim now -- FALSIFIED against code: HFTUSDT was already closed 2026-07-17T14:03:56Z (net +$21.71), swept up in the dead-man fire #3 flatten, BEFORE this audit ran. The audit dossier carried stale gap-register text rather than a live position check. Book verified clean 07-18 (largest name 26.0% of deployed notional). GAP#15 closed.
 
 ## IMPLEMENTED (3)
 - [multiple(3/3: llama,openai-gpt5.6-luna,cohere)/micro_audit] leverage-optimizer gate is structurally weak (confidence>0 only); recommend hard leverage/notional cap independent of optimizer confidence -- already fixed 2026-07-16 (same day as the incident, before this 07-17T08:01 audit ran): verified in code at scripts/run_cashcarry_executor.py:106-124 (_dynamic_capital) -- min(optimizer_notional, operator_default), can de-risk below but never lever above operator capital, regardless of confidence. The auditors' dossier context did not make the shipped fix visible; no further action needed. GAP#14 (root-cause the confidence-jump itself + design the >=30-live-day re-enable gate) remains open and brain-owned.
@@ -15,5 +16,6 @@ Updated 2026-07-17. CHECK THIS BEFORE triaging new panel output: a finding match
 - [multiple(7/11)/tier1] build TCA / recalibrate execution cost model from realized fills -- matches GAP#4 + engineering_backlog execution_tca_fill_log (roi 0.128), data-gated on ~2wk fills
 - [multiple(8/11)/tier1] ship staged-arming live connector + $100 canary before ~08-05 gate -- matches GAP#2 (docs/LIVE_CONNECTOR_SPEC.md frozen 2026-07-17); already queued, no new action
 
-## FLAGGED (1)
+## FLAGGED (2)
 - [multiple(9/11)/tier1] Frankenstein synthesizer likely producing zero measurable improvement; recommend 30-60 day falsification test -- strong cross-model consensus; not actioned this cycle (not the monthly governance window, cycles_logged=28/~30) -- flagged for next monthly governance review item 6
+- [ai (grok-4.5) + openai (gpt-5.6-terra)/micro_audit 07-18] blind spot: no schema-contract/freshness-SLA/drift checks on the newly-live recorder + crowding.json feeds; can a deterministic replay reproduce the HWM/latch-equity/rebaseline figures from raw retained events? -- legitimate data-lineage question, not urgent (recorder v1 is 1 day old, nothing yet promotes on it). Logged to GAP register for a future cycle.

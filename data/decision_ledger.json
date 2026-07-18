@@ -78,7 +78,7 @@
    "success_metric": "challenger fwd Sharpe > incumbent fwd Sharpe AND >=0.5 at day 90",
    "reversal_condition": "challenger fwd < incumbent at day 90 -> kill challenger, graveyard as regime_artifact",
    "review_due": "2026-10-07",
-   "ev_gate_verdict": "REJECT (EV 0.0087, p_survive 7.2%) \u2014 OVERRIDDEN by explicit principal instruction",
+   "ev_gate_verdict": "REJECT (EV 0.0087, p_survive 7.2%) — OVERRIDDEN by explicit principal instruction",
    "outcome": null
   },
   {
@@ -1002,6 +1002,74 @@
    ],
    "success_metric": "post-Gate-0: >=3 free sources ingested + Tardis-diff-validated; zero paid data; bottleneck detector governs any exception",
    "reversal_condition": "a free source dies and is a SPOF -> the pre-required second-source/Bronze-archive rule covers it; genuine binding gap -> narrow EV-gated paid exception"
+  },
+  {
+   "id": "2026-07-18-live-connector-stage-machine-build",
+   "decision": "Built libs/execution/binance_live.py + binance_spot_live.py (live-URL Binance connectors mirroring the testnet modules' interface exactly) and libs/execution/staging.py (S0/S1/S2 stage machine) per docs/LIVE_CONNECTOR_SPEC.md sections 1-2 and engineering_backlog.json's pre-scoped live_connector_prebuild item. Triple-guard arming (keyfile + data/LIVE_ENABLE + data/LIVE_VPS_VERIFIED, ALL required for any signed call); keyfile-only credentials (no env-var path, unlike the testnet modules -- a systemd env var is visible via /proc/<pid>/environ to anyone with host access, live trade-only keys don't belong there); capability whitelist enforced by construction (no withdraw/transfer/sub-account function exists) and verified by an AST-scanned test that inspects actual endpoint-path literals, not prose. Stage machine is property-tested (hypothesis): promotion never skips a stage, demotion is unlimited and instant, every transition logged, gate logic is exactly the conjunction of its named checks under any input. Wrote docs/playbooks/go_live.md (arming runbook). 16 new tests, CI green. Module is FULLY INERT today -- no keyfile placed, no flags set -- so this ships zero live-money risk; it only removes future gate-time waste (spec's own rationale: 'rushing real-money code on connection day is how phase changes go wrong'). Spec sections 3-7 (venue-side protective stops, no-naked-position invariant, pager de-risk ladder, canary, mutation testing >=90% + second-model-family fuzz/breaker report) remain open -- explicitly NOT satisfied by this build, logged as the remaining scope in GAP register row 2 (status: in-progress, not closed).",
+   "neighbours": [
+    "libs/execution/binance_testnet.py + binance_spot_testnet.py (template only -- read, never modified; the live modules are new files with zero shared state)",
+    "scripts/run_cashcarry_executor.py (the live executor) -- NOT wired to the new modules this cycle; still imports only the testnet connectors. Zero behavioural change to the currently running trading path.",
+    "data/stage_state.json -- previously an inert note field written once at creation (2026-07-16); now has a real reader/writer (staging.py) but starts and stays at S0 (no promote() call made -- would require principal_signoff=True which nothing sets today)",
+    "risk/kelly sizing, dead-man switch, cadence engine -- explicitly NOT touched; the connector build has no import or state-file overlap with any of them"
+   ],
+   "hypothesis": "pre-building the live connector + stage machine now, fully inert and property-tested, removes the single largest remaining piece of gate-time waste between Gate 0 passing and live capital deploying -- matches the 2026-07-12 external-review consensus that testnet->live is a phase change best de-risked by building ahead of the day it matters",
+   "expected_benefit": "closes engineering_backlog's live_connector_prebuild item (roi 0.09) and makes material progress on GAP register row 2 (the #2-ranked open gap); the day Gate 0 clears, arming is a config flip (docs/playbooks/go_live.md) instead of a rushed build",
+   "expected_cost": "~3h engineering time this cycle; ongoing maintenance is near-zero (dead code path until armed)",
+   "confidence": 0.85,
+   "assumptions": [
+    "the testnet modules' interface is the correct interface to mirror for live (verified by direct comparison -- no live-only Binance quirks discovered that would change the shape of any function)",
+    "keyfile-only credentials (dropping the env-var path present in the testnet modules) is a net safety improvement, not just a difference -- unvalidated by an incident, this is a judgment call worth revisiting if it creates real operational friction"
+   ],
+   "success_metric": "engineering_backlog.json live_connector_prebuild detector (file exists) now true; CI green with the 16 new tests; GAP register row 2 remaining scope (sections 3-7) gets picked up in a future cycle before ~08-05",
+   "reversal_condition": "if the keyfile-only (no env var) design proves operationally painful for the principal's SSH key-placement workflow, revisit -- but never re-add an env-var path without an explicit ledger entry re-justifying it"
+  },
+  {
+   "id": "2026-07-18-capital-utilization-followup",
+   "decision": "Follow-up to 2026-07-17-growth-audit-capital-utilization-deferral (which cited GAP#14 leverage-confidence-pipeline contamination + GAP#15 HFTUSDT concentration breach as the two blockers). GAP#15 is now CLOSED: HFTUSDT was closed 2026-07-17T14:03:56Z (dead-man fire #3 flatten), verified in data/cashcarry_trades.json and confirmed against live data/cashcarry_positions.json today -- 6 positions, largest 26.0% of $1,740 deployed notional, none over the 35% cap. GAP#14 remains open (leverage optimizer confidence pipeline still unroot-caused; executor clamp holds, confidence=0 today per web/growth_audit.json). Checked for an active capital freeze: none exists in code (grepped run_cashcarry_executor.py -- free = capital - deployed, no conditional block found; cashcarry_error.log shows no freeze/reject events). Current utilization (~39-59% depending on measurement point) is explained by the funding-weighted water-fill allocator finding only 6 of 10 top-ranked candidates sufficiently funding-positive to open under hold_top=3000 -- a DATA-DRIVEN outcome, not a coded conservatism defect. The growth_audit.json 'justified_by: NONE' verdict is technically correct (no explicit code comment documents this reasoning) but the underlying behaviour is legitimate: the executor is not artificially throttled, it simply lacks enough qualifying funding-positive names today. NOT closing via a code change this cycle -- the honest fix, if any, is more candidate breadth (top=10 -> higher), which is a sizing/capacity-touching change to the SAME execution subsystem as today's connector build; deferring it to its own cycle rather than co-windowing two execution-path changes (independence gate).",
+   "neighbours": [
+    "GAP register row 15 (marked closed)",
+    "growth_audit.json capital_utilization check (unchanged; still fires NONE-justified until either the allocator is proven data-driven in code comments or top-N is raised)",
+    "cashcarry_config.json 'top' parameter -- named as the likely next lever, NOT touched this cycle (independence gate vs today's connector build touching the same execution subsystem)"
+   ],
+   "hypothesis": "GAP#15's resolution removes one of the two cited blockers; the remaining low utilization is candidate scarcity, not conservatism, and does not warrant an emergency code change this cycle",
+   "expected_benefit": "honest, evidence-based growth-audit justification instead of a stale one; avoids a rushed same-window execution-subsystem change",
+   "expected_cost": "one more day of ~40-59% utilization vs a hypothetical immediate top-N raise",
+   "confidence": 0.7,
+   "assumptions": [
+    "raising cashcarry_config.json 'top' (10 -> higher) is the correct lever if utilization stays low after GAP#14 also resolves -- unverified, should be checked against funding distribution data before acting"
+   ],
+   "success_metric": "utilization should rise on its own as GAP#14 resolves (leverage confidence pipeline root-caused) and/or if a future cycle raises top-N with evidence",
+   "reversal_condition": "if utilization stays below 60% for >7 more days with GAP#14 also resolved and no capital freeze found, raising top-N becomes the next cycle's engineering task"
+  },
+  {
+   "id": "2026-07-18-ci-gate-widened-execution-dir",
+   "decision": "Discovered while wiring in the new connector/staging tests: scripts/run_ci.py's pytest step only runs 4 hardcoded top-level files, not the tests/ tree -- every file under tests/execution/, tests/risk/, tests/portfolio/, tests/features/, tests/regime/, etc. was never run by any automated process. Widened the gate to also run tests/execution/ (the risk-path/execution directory, now including the new live connector + stage machine tests) -- verified clean collection (no basename collision inside this one directory) and all-green. Full tests/ tree still fails to collect (pre-existing duplicate basenames across other directories) -- NOT fixed this cycle, logged as GAP register row 31 for a dedicated future fix (add __init__.py packages or importlib import-mode, then widen further).",
+   "neighbours": [
+    "scripts/run_ci.py (the only change -- added one path to an existing list, removed/weakened nothing)",
+    "every existing CI-gated check (untouched, still runs exactly as before)"
+   ],
+   "hypothesis": "risk-path tests that exist but are never run provide zero actual assurance; gating tests/execution/ closes that gap for the highest-risk directory at near-zero cost",
+   "expected_benefit": "future regressions in execution/staging code get caught by CI instead of silently rotting",
+   "expected_cost": "~1s added CI runtime (74 execution tests, all fast/offline)",
+   "confidence": 0.95,
+   "assumptions": [
+    "tests/execution/ has no flaky/slow tests that would make CI unreliable -- verified by running it standalone before wiring in"
+   ],
+   "success_metric": "run_ci.py stays green; a future execution-directory regression gets caught before it ships",
+   "reversal_condition": "if tests/execution/ ever becomes flaky or slow enough to block iteration, isolate the offending test rather than reverting the whole directory from the gate"
+  },
+  {
+   "id": "2026-07-18-chinese-quant-expansion",
+   "decision": "Principal directive: sharpen for Chinese quant + crypto ecosystems (the densest non-English alpha sources). DONE NOW (Prospector MISSION prompt edits, freeze-exempt research sharpening): (a) Chinese-language quant+crypto communities as an explicit priority (Xueqiu, Jiuzhang, Zhihu, WeChat/Weibo, CNKI, Chinese GitHub, competitions); (b) Bilibili/Youku video lectures + captions alongside YouTube. QUEUED to improvement_inbox (freeze-governed, monthly engine at Gate-0): 5-item Chinese Quant Maximization Package (biweekly cadence; dedicated Chinese Quant Miner seat @20 queries via B-EVOLUTION replace-don't-add; OSINT Chinese-media expansion; CNKI/Wanfang literature access; Xueqiu/BigQuant connectors), plus permanent search-target enrichment, Chinese crypto data sites (free-first), post-Gate-0 e-commerce alt-data flag, and guardrails (NLP slang normalization, anti-bot graceful-degrade [CAPTCHA-solving prohibited], reputation weighting, regional alpha vectors: USDT/CNY OTC premium, PBOC sentiment, Asian-hours liquidity). All under language-blind + gauntlet-only + free-first discipline.",
+   "hypothesis": "Chinese-language quant/crypto communities are the richest untranslated (anti-consensus) alpha vein for a crypto desk",
+   "expected_benefit": "densest non-English source coverage; USDT/CNY + PBOC + Asian-hours crypto edges unavailable to English-only desks",
+   "expected_cost": "prompt edits now (~0); queued builds sized by the monthly engine post-Gate-0",
+   "confidence": 0.8,
+   "assumptions": [
+    "brain/miner can translate + normalize Chinese; scrapers degrade legally"
+   ],
+   "success_metric": "Prospector cites >=1 Chinese-source mechanism within 2 runs; Chinese seat produces >=1 gauntlet-entering card post-activation",
+   "reversal_condition": "Chinese sources yield only retail noise 2 quarters -> demote per source-yield learning"
   }
  ]
 }

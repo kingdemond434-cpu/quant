@@ -1,0 +1,201 @@
+"""Binance SPOT LIVE connector -- the spot leg of cash-and-carry, real money, no alpha here.
+
+Mirrors libs/execution/binance_spot_testnet.py's interface EXACTLY; pinned to the LIVE spot
+base URL. Same arming contract as libs/execution/binance_live.py (the futures leg) -- see that
+module's docstring for the full rationale. Every signed call is inert unless
+``data/secrets/binance_live_spot.json`` exists, ``data/LIVE_ENABLE`` exists, and
+``data/LIVE_VPS_VERIFIED`` exists. Keyfile-only credentials (no env var path -- see futures
+module docstring for why). No withdrawal/transfer/sub-account function exists in this module and
+never will; the capability surface is order-placement, order-cancellation, and reads only.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import hmac
+import json
+import time
+import urllib.parse
+import urllib.request
+from pathlib import Path
+from typing import Any
+
+_BASE = "https://api.binance.com"                # PINNED live spot -- verified against docs
+_KEYFILE = Path("data/secrets/binance_live_spot.json")
+_ENABLE_FLAG = Path("data/LIVE_ENABLE")
+_VPS_MARKER = Path("data/LIVE_VPS_VERIFIED")
+
+
+def _creds() -> tuple[str | None, str | None]:
+    if not _KEYFILE.exists():
+        return None, None
+    try:
+        d = json.loads(_KEYFILE.read_text("utf-8"))
+        return d.get("key"), d.get("secret")
+    except (json.JSONDecodeError, OSError):
+        return None, None
+
+
+def has_keys() -> bool:
+    k, s = _creds()
+    return bool(k and s)
+
+
+def is_armed() -> tuple[bool, str]:
+    checks = {
+        "keys_present": has_keys(),
+        "live_enable_flag": _ENABLE_FLAG.exists(),
+        "vps_verified": _VPS_MARKER.exists(),
+    }
+    return all(checks.values()), ", ".join(f"{k}={v}" for k, v in checks.items())
+
+
+def _get(path: str, params: dict[str, Any] | None = None) -> Any:
+    url = f"{_BASE}{path}"
+    if params:
+        url += "?" + urllib.parse.urlencode(params)
+    req = urllib.request.Request(url, headers={"User-Agent": "quant-live-spot/1.0"})
+    with urllib.request.urlopen(req, timeout=20) as r:
+        return json.loads(r.read())
+
+
+def _signed(path: str, params: dict[str, Any], *, method: str = "GET") -> Any:
+    armed, why = is_armed()
+    if not armed:
+        raise RuntimeError(f"binance_spot_live not armed ({why}) -- refusing signed call {path}")
+    key, secret = _creds()
+    params = {**params, "timestamp": int(time.time() * 1000), "recvWindow": 5000}
+    query = urllib.parse.urlencode(params)
+    sig = hmac.new(secret.encode(), query.encode(), hashlib.sha256).hexdigest()  # type: ignore[union-attr]
+    body = f"{query}&signature={sig}".encode()
+    if method == "GET":
+        req = urllib.request.Request(f"{_BASE}{path}?{body.decode()}",
+                                     headers={"X-MBX-APIKEY": key})
+    else:
+        req = urllib.request.Request(f"{_BASE}{path}", data=body, method=method,
+                                     headers={"X-MBX-APIKEY": key})
+    with urllib.request.urlopen(req, timeout=20) as r:
+        return json.loads(r.read())
+
+
+def prices() -> dict[str, float]:
+    """Latest spot price per symbol (public)."""
+    data = _get("/api/v3/ticker/price")
+    return {d["symbol"]: float(d["price"]) for d in data} if isinstance(data, list) else {}
+
+
+def _prec_of(step: float) -> int:
+    s = f"{step:.10f}".rstrip("0")
+    return len(s.split(".")[1]) if "." in s and step < 1 else 0
+
+
+def exchange_filters() -> dict[str, dict[str, float]]:
+    """Per-symbol step, min qty, base precision, price tick + precision (for valid spot sizing)."""
+    info = _get("/api/v3/exchangeInfo")
+    out: dict[str, dict[str, float]] = {}
+    for s in info.get("symbols", []):
+        f = {flt["filterType"]: flt for flt in s.get("filters", [])}
+        lot = f.get("LOT_SIZE", {})
+        tick = float(f.get("PRICE_FILTER", {}).get("tickSize", 0.0) or 0.0)
+        out[s["symbol"]] = {
+            "step": float(lot.get("stepSize", 0.0001)), "min_qty": float(lot.get("minQty", 0.0)),
+            "qty_prec": int(s.get("baseAssetPrecision", 6)),
+            "tick": tick, "price_prec": _prec_of(tick) if tick else 8,
+        }
+    return out
+
+
+def book_ticker() -> dict[str, tuple[float, float]]:
+    """Best (bid, ask) per symbol (public) -- for passive maker quoting."""
+    data = _get("/api/v3/ticker/bookTicker")
+    return {d["symbol"]: (float(d["bidPrice"]), float(d["askPrice"]))
+            for d in data} if isinstance(data, list) else {}
+
+
+def quote_depth(symbol: str, side: str, pct: float = 0.01) -> float:
+    """Resting book liquidity: total QUOTE (USDT) value within ``pct`` of the touch on one side."""
+    try:
+        d = _get("/api/v3/depth", {"symbol": symbol, "limit": 100})
+        levels = d.get("asks" if side == "BUY" else "bids", [])
+        if not levels:
+            return 0.0
+        touch = float(levels[0][0])
+        if side == "BUY":
+            return sum(float(p) * float(q) for p, q in levels if float(p) <= touch * (1.0 + pct))
+        return sum(float(p) * float(q) for p, q in levels if float(p) >= touch * (1.0 - pct))
+    except Exception:
+        return 0.0
+
+
+def avg_fill(symbol: str, side: str, start_ms: int) -> float | None:
+    """Venue-truth average fill price of OUR trades since ``start_ms``. None if unarmed/no fills."""
+    try:
+        trades = _signed("/api/v3/myTrades", {"symbol": symbol, "startTime": start_ms,
+                                              "limit": 100})
+        fills = [t for t in trades if bool(t.get("isBuyer")) == (side == "BUY")]
+        base = sum(float(t["qty"]) for t in fills)
+        quote = sum(float(t["quoteQty"]) for t in fills)
+        return quote / base if base > 0 and quote > 0 else None
+    except Exception:
+        return None
+
+
+def balances() -> dict[str, float]:
+    """Free balance per asset (non-zero only)."""
+    a = _signed("/api/v3/account", {})
+    return {b["asset"]: float(b["free"]) for b in a.get("balances", []) if float(b["free"]) > 0.0}
+
+
+def usdt_balance() -> float:
+    return balances().get("USDT", 0.0)
+
+
+def account_value_usdt() -> float:
+    """Approximate total account value in USDT (free balances marked at spot price)."""
+    px = prices()
+    total = 0.0
+    for asset, qty in balances().items():
+        if asset == "USDT":
+            total += qty
+        else:
+            total += qty * px.get(f"{asset}USDT", 0.0)
+    return round(total, 2)
+
+
+def place_market(symbol: str, side: str, qty: float) -> dict[str, Any]:
+    """Spot MARKET order. side in {BUY, SELL}; qty in base asset units (e.g. BTC)."""
+    res = _signed("/api/v3/order", {
+        "symbol": symbol, "side": side, "type": "MARKET", "quantity": qty,
+    }, method="POST")
+    return dict(res) if isinstance(res, dict) else {"raw": res}
+
+
+def place_market_quote(symbol: str, side: str, quote_usdt: float) -> dict[str, Any]:
+    """Spot MARKET order sized in QUOTE (USDT) -- convenient for buying $X of an asset."""
+    res = _signed("/api/v3/order", {
+        "symbol": symbol, "side": side, "type": "MARKET", "quoteOrderQty": quote_usdt,
+    }, method="POST")
+    return dict(res) if isinstance(res, dict) else {"raw": res}
+
+
+def place_post_only(symbol: str, side: str, qty: float, price: float) -> dict[str, Any]:
+    """Post-only spot LIMIT order (type=LIMIT_MAKER) -- guaranteed MAKER."""
+    res = _signed("/api/v3/order", {
+        "symbol": symbol, "side": side, "type": "LIMIT_MAKER", "quantity": qty, "price": price,
+    }, method="POST")
+    return dict(res) if isinstance(res, dict) else {"raw": res}
+
+
+def open_orders(symbol: str | None = None) -> list[dict[str, Any]]:
+    """Resting open orders (signed). Used to detect whether a maker quote has filled."""
+    res = _signed("/api/v3/openOrders", {"symbol": symbol} if symbol else {})
+    return list(res) if isinstance(res, list) else []
+
+
+def cancel_all(symbol: str) -> dict[str, Any]:
+    """Cancel all open orders on a symbol (signed) -- to pull an unfilled maker quote."""
+    try:
+        res = _signed("/api/v3/openOrders", {"symbol": symbol}, method="DELETE")
+        return {"code": 200, "res": res}
+    except Exception as e:  # nothing to cancel / transient -- non-fatal
+        return {"code": 0, "msg": repr(e)[:80]}

@@ -70,3 +70,72 @@ pilot verdict is the authorization to scale it.
 
 ## FREE DATA STACK (principal 2026-07-18, freeze-governed -> post-Gate-0 or as time-sensitive maintenance)
 Full catalog: data/data_universe_map.json. Build order post-freeze by EV/complexity: (1) Coinalyze daily OI/funding/liq backfill (Binance+Bybit, free, unlimited daily history); (2) data.binance.vision bulk trades/klines/metrics + bookDepth/liquidationSnapshot history; (3) self-computed on-chain flows (Arkham/eth-labels + Dune/Flipside/BigQuery = owned Nansen-class metrics); (4) Bybit L2 community repos; (5) DefiLlama stablecoin + Coin Metrics community daily; (6) Deribit DVOL/options; (7) CoinGecko universe snapshots; (8) Tardis-free-sample validation harness diffing ALL of the above. Each: ingestion + integrity + license/usage-scope stored + monthly liveness + immutable Bronze archive. TIME-SENSITIVE EXCEPTION: any FORWARD-ONLY-unrecoverable capture (Coinalyze intraday) may build under the maintenance exception if the brain judges the daily loss material -- same logic that allowed the recorder. Also queue: data-quality scoring system + Data Value Engine integration.
+
+
+---
+
+# CHINESE QUANT MAXIMIZATION PACKAGE (queued 2026-07-18, freeze-governed; monthly engine at Gate-0 clearance)
+_Ranked by EV/complexity; implement highest-ROI subset in order. None override the Execution
+Lockdown or the >=10-live-calibration-rows requirement. Rationale: Chinese-language communities
+are the densest non-English quant + crypto-native alpha sources on the web, and anti-consensus
+(untranslated) = exactly where unpriced edge hides. Subsumes/extends the non-English portion of
+the crypto-native source family._
+
+1. **Chinese digging cadence = BIWEEKLY** (like all diggers) once activated, NOT monthly.
+
+2. **CHINESE QUANT MINER (dedicated seat)** — seat focused solely on Chinese-language quant
+   communities (Xueqiu 雪球, Jiuzhang 九章算法, Zhihu 知乎,
+   Bilibili, Youku, Weibo quant threads, Chinese GitHub repos, Chinese quant competitions).
+   Larger budget (20 queries) for deep thread-following. Output → Overfit Prosecutor →
+   gauntlet. B-EVOLUTION replace-don't-add (displaces lowest-scoring seat).
+
+3. **OSINT CHINESE-LANGUAGE EXPANSION** — add Chinese crypto-news (WuBlockchain 吴说,
+   ChainNews 链闻), quant/crypto WeChat official accounts, Zhihu trending quant topics
+   to the OSINT scanner source list. No new seat; extend the existing scanner.
+
+4. **LITERATURE DEEP-MINER: CNKI / Wanfang** — explicitly search CNKI (China National
+   Knowledge Infrastructure) + Wanfang Data for Chinese quant-finance papers, theses,
+   conference proceedings. Respect legal access; if free access is limited, note the gap +
+   flag for future paid consideration (free-first protocol governs any purchase).
+
+5. **COMMUNITY-SPECIFIC CONNECTORS** — lightweight connectors/scrapers for Xueqiu public API
+   and BigQuant public strategy library; supplement generic search with structured access.
+   Sustainability rule applies (monthly liveness check + immutable Bronze archive).
+
+## SEARCH-TARGET ENRICHMENT (permanent, for Prospector + future Chinese Quant Miner)
+- Public Chinese Telegram channels (algo/crypto trading).
+- Weibo supertopics: #量化交易#, #程序化交易#, #数字货币量化#.
+- CNKI theses with detailed futures/crypto backtests (search "量化策略 回测").
+- Chinese quant meetup recordings on Bilibili (often with full slide decks).
+- Strategy-sharing data platforms: Tushare, Baostock, UQER, RiceQuant 米楋 community forums.
+- Chinese quant podcasts ("量化投资", "宽客江湖") — web-searchable transcripts.
+- Regional: Hong Kong Quant Society, Taiwan algo forums, Singapore Chinese quant groups.
+- Chinese gov-funded financial research (often free on cnki.net).
+- Chinese patent databases for trading algorithms (CNKI patent search).
+
+## CHINESE CRYPTO DATA SITES (free-data discovery, feeds data_universe_map)
+Search Chinese-language crypto data platforms — free historical tick data, on-chain
+dashboards, sentiment indices, alt-data APIs not widely known outside China. Start:
+AKShare (量化 data lib), Chinese exchange public data dumps, Chinese academic crypto
+datasets on CNKI. Free-first protocol governs any paid step.
+
+## POST-GATE-0 (flag for Discovery Bottleneck Detector, not now)
+Chinese e-commerce alt-data (Taobao 淘宝, JD 京东, Pinduoduo 拼多多)
+for consumer-sentiment / macro-crypto linkages — evaluate only if it becomes the binding
+constraint after live edge validation.
+
+## DIGESTION + INFRASTRUCTURE GUARDRAILS (apply when the Chinese seat/scrapers are built)
+1. **NLP NORMALIZATION**: normalize Chinese quant slang to internal concepts before the Overfit
+   Prosecutor — e.g. 打板 (limit-up chasing), 贴水 (discount/contango),
+   割肉 (cutting losses).
+2. **ANTI-BOT DEGRADATION**: Xueqiu/Zhihu/Bilibili scrapers use rotating proxy/UA; on anti-bot
+   walls or CAPTCHAs, gracefully degrade to public RSS/API and flag missed data — never burn
+   the 20-query budget on login walls. (CAPTCHA solving is prohibited; degrade, don't defeat.)
+3. **REPUTATION WEIGHTING**: prioritize CNKI academic authors, Zhihu Level 6+ users, Xueqiu
+   verified fund managers; filter retail noise for signal-to-noise.
+4. **REGIONAL ALPHA VECTORS** (OSINT): USDT/CNY OTC premium/discount, PBOC regulatory sentiment,
+   Asian-banking-hours liquidity gaps — Chinese-unique crypto edges.
+
+RULES UNCHANGED: everything CLAIM-grade until provenance-graded; language-blind (value is
+language-independent); gauntlet is the only path to the ledger; extreme claims get
+research-priority-not-credibility.

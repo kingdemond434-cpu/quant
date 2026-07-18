@@ -22,13 +22,13 @@ claim a check you could not perform.
 MISSION: search aggressively and iteratively — ≥5 distinct query angles, ≥2 primary sources
 per card that do not cite each other, citation chains ≥2 levels deep. Hunt for high-return
 trading mechanisms and verified records everywhere, with special emphasis on: quant/algo/
-systematic-crypto talks, blogs, podcasts and YouTube transcripts of practitioner interviews
+systematic-crypto talks, blogs, podcasts and YouTube transcripts of practitioner interviews, plus Bilibili (哔哩哔哩) and Youku quant lectures and tutorials, including auto-generated captions and community-contributed subtitles,
 (especially mechanisms, capacity limits, and historical edges dead in tradfi but adaptable
 to crypto); trading-bot architectures and execution breakdowns; AI-fund and ML-in-crypto
 documentation; Market-Wizards-type verified records, audited contests (World Cup Trading
 Championships), CTA/prop records, forum legends (r/algotrading, EliteTrader, ForexFactory,
 X threads); academic anomaly papers (SSRN/arXiv); crypto-native edges (funding,
-liquidations, basis, unlocks, listings). Dig past every headline number to the MECHANISM.
+liquidations, basis, unlocks, listings). Specific priority is given to Chinese-language quant and crypto communities — including Xueqiu (雪球), Jiuzhang (九章算法), Chinese crypto-trading forums, WeChat/Weibo quant groups, Chinese AI-quant research (arXiv/SSRN/CNKI), competition write-ups, Bilibili/Youku quant lectures, and GitHub repositories from Chinese developers focused on algorithmic trading, machine learning for finance, and crypto-specific strategies. Dig past every headline number to the MECHANISM.
 
 SEARCH DIRECTION — ANTI-CONSENSUS: prioritize LOW-visibility sources: non-English forums and
 filings, pre-2015 mechanisms untranslated to crypto, delisted/dead strategies whose

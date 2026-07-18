@@ -84,13 +84,18 @@ naming a paid vendor, ask **"can 90% of this be approximated for free?"** — us
 
 ## Alpha map (search for the MISSING branches; grep before building)
 ```
-Funding → Carry (DEPLOYED) → Cross-venue funding (HL archive) → Basis (level ✓, momentum ?) → Options VRP (breadth-starved)
-Trend   → TS-momentum majors (shadow 1/90) → Breakout ? → Regime-switch ?
-Flow    → OI divergence (fwd) → Liquidations (fwd) → Whale/large-holder ? → Taker flow ✓
-On-chain→ Stablecoin exchange reserves (fwd) → DEX volume ? → Gas/fees ? → Mint/burn ?
-Macro   → Rates ? → DXY ? → BTC-correlation regime ?
+Funding → Carry (DEPLOYED) → Cross-venue funding (HL archive) → Basis (level ✓, momentum ✗) → Options VRP (breadth-starved)
+Trend   → TS-momentum majors (shadow 1/90) → Breakout ✗ → Regime-switch ✗
+Flow    → OI divergence (fwd) → Liquidations (fwd) → Whale/large-holder ⧗ → Taker flow ✓
+On-chain→ Stablecoin exchange reserves (fwd) → DEX volume ? → Gas/fees ✗ → Mint/burn ?
+Macro   → Rates ✗ → DXY ✗ → BTC-correlation regime ?
 ```
-`?` = unbuilt branch worth an EV score. `✓` = built. `fwd` = forward-accumulating clock.
+`?` = unbuilt branch worth an EV score. `✓` = built. `✗` = tested + rejected (see
+research_agenda.json do_not_repeat -- do not re-test without new evidence). `⧗` = tested,
+EV-gate verdict is data-availability-limited not an economic kill (revisit when its data
+matures). `fwd` = forward-accumulating clock. 2026-07-18 mined 3 branches (Breakout,
+Regime-switch, Whale/large-holder via recorder aggTrades) -- 2 permanent rejects, 1 pending
+recorder history (`large_print_flow_clustering`, revisit at >=30d aggTrades).
 
 ## Economic stress checklist (how each edge dies — economically, not statistically)
 For every deployed/candidate edge, pre-mortem: Binance delists the pair · funding goes to zero/negative ·
@@ -372,3 +377,28 @@ hypotheses and EV-score them; only the top few enter research.
   wallet hygiene sweep consolidated ~$84k of stranded carry-history spot (incl. faucet BTC —
   filter broader than intended, harmless on testnet) into USDT so the measure re-baselines
   clean. Reset offered to principal; unanswered → book stays flat until explicit approval.
+
+## Ops lesson — 2026-07-18 (cadence-duty state-key mismatches silently perpetuate; audit dossiers can be stale relative to live state)
+- **A cadence duty can re-fire forever if the code checks one state key but a prior cycle wrote
+  a different one.** `run_cadence.py` gates the fred_macro family-generate duty on
+  `gen_done_fred_macro_family`, but the 2026-07-17 cycle set `gen_done_fred_macro` (no
+  `_family` suffix) — a one-character mismatch that made `cadence_duties.md` re-flag already-
+  completed work every day. Fixed by setting the correct key (work itself was not re-done).
+  **Rule: when marking a cadence duty done, grep the exact key name run_cadence.py checks —
+  don't infer it from the duty's prose description.**
+- **A panel/micro-audit dossier can describe a STALE gap-register state, not live reality.**
+  Two 07-18 micro-auditors flagged HFTUSDT concentration as "unresolved, decision-pending"
+  because the dossier generator apparently carried forward the 07-16 gap-register text; the
+  position had actually been closed 07-17T14:03:56Z in the dead-man fire #3 flatten, verified
+  directly against `data/cashcarry_trades.json` and `data/cashcarry_positions.json`. **Rule:
+  ALWAYS verify a panel/audit finding about position/portfolio state against the live state
+  file, not just the dossier's narrative — the dossier is a snapshot, the state files are truth.**
+- Built `libs/execution/binance_live.py` + `binance_spot_live.py` + `libs/execution/staging.py`
+  (S0/S1/S2 stage machine) — see ledger `2026-07-18-live-connector-stage-machine-build`.
+  Fully inert (no keyfile placed); triple-guard arming; capability whitelist AST-verified.
+  Remaining connector spec scope (venue-side stops, pager ladder, canary, mutation testing +
+  fuzz breaker report) tracked in GAP register row 2.
+- **`docs/institutional_knowledge.md` is 379 lines, well past the ~200-line active-lesson
+  budget** (memory-compression governance item, monthly). GAP register row 29 already tracks
+  that the quarterly memory-consolidation cadence duty has never executed — this line is the
+  cross-reference so the next cycle with spare capacity picks it up rather than rediscovering it.

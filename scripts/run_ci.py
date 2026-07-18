@@ -5,6 +5,14 @@ it can gate a commit or a deploy. This is the always-available substitute for ho
 of the survival-critical logic (hedge reconcile, risk controls, sizing, leverage) is checked
 mechanically, not by hand.
 
+NOTE (2026-07-18): the pytest step names specific files/dirs rather than the whole `tests/` tree
+-- a full-tree collection currently fails on pre-existing duplicate test-module basenames across
+directories (e.g. two unrelated `test_regime.py`, two unrelated `test_registry.py`; see GAP
+register). `tests/execution/` (the risk-path/execution directory, incl. the live connector +
+stage machine) was added to the gate 2026-07-18 since that code must never silently go untested;
+other directories (risk/, portfolio/, features/, regime/, ...) are NOT yet gated here -- a real
+open gap, tracked separately, not fixed by this comment.
+
     python scripts/run_ci.py
 """
 
@@ -23,7 +31,7 @@ _STEPS = [
     ("lint (ruff)", [_PY, "-m", "ruff", "check", "scripts", "libs", "tests"]),
     ("tests (pytest)", [_PY, "-m", "pytest", "tests/test_hedge_and_risk.py",
                         "tests/test_root_cause.py", "tests/test_alpha_economics.py",
-                        "tests/test_review_fixes.py", "-q"]),
+                        "tests/test_review_fixes.py", "tests/execution/", "-q"]),
     ("stress harness", [_PY, "scripts/run_stress.py"]),
 ]
 

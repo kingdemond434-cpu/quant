@@ -13,16 +13,6 @@
       "done": false
     },
     {
-      "id": "live_connector_prebuild",
-      "title": "Pre-build live connector + go-live runbook behind interlocks (phase-change de-risk)",
-      "impact": 0.4,
-      "p": 0.9,
-      "effort_h": 4.0,
-      "why": "2026-07-12: testnet->live is a PHASE CHANGE (external-review consensus). Build libs/execution/binance_live.py NOW mirroring the testnet connector (same interface; live base URLs; refuses to init unless data/secrets/binance_live.json exists AND data/LIVE_ENABLE flag file present AND VPS precondition marker set), plus a go-live runbook in docs/playbooks/. Unit-test the guard interlocks. Rushing real-money code on connection day is how phase changes go wrong; this makes go-live a config flip. Detector: libs/execution/binance_live.py exists.",
-      "roi": 0.09,
-      "done": false
-    },
-    {
       "id": "cross_venue_funding_study",
       "title": "Cross-venue funding arb study: Binance vs Hyperliquid spread persistence",
       "impact": 0.55,
@@ -70,7 +60,8 @@
     "black_swan_library",
     "growth_audit_engine",
     "carry_crowding_monitor",
-    "autodiscovery_crypto_throughput"
+    "autodiscovery_crypto_throughput",
+    "live_connector_prebuild"
   ],
   "next_action": {
     "id": "execution_tca_fill_log",
