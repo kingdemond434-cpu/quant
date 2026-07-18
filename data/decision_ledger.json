@@ -1135,6 +1135,32 @@
    ],
    "success_metric": "first region built from the template + CN profile produces a well-formed card through the full pipeline; no per-region code duplication",
    "reversal_condition": "a region needs bespoke logic the template cannot express -> extend the template, never fork per-region"
+  },
+  {
+   "id": "2026-07-18-final-ideas-and-paid-data-rule",
+   "decision": "Final pre-Gate-0 idea package. QUEUED (improvement_inbox, freeze-governed): 4 CRO-generated structural-advantage ideas -- AI-Capability Frontier Scanner (novel; activate a new data source as each AI capability unlocks), Abandoned-by-Capacity Scanner (hunt 'fund ran it then dropped it for being sub-scale' = pre-validated solo edge), Cross-Language Crowding-Stage signal (propagation-lag as a how-early-am-I gauge), False-Consensus Mining (fade crowded-wrong beliefs, lower-priority/riskier); + 2 principal ideas -- Recorder Yield Estimator (Literature task, pre-Gate-0) and Operator Pre-Mortem. ADOPTED NOW: Paid-Data Trigger Rule into the contract (quantified: validated-edge-blocked AND free-scan-exhausted AND >10x cost uplift AND narrowest scope; <=$300 via PRINCIPAL_ACTION, larger needs full EV gate). CRO honest self-note: idea #1 is genuinely novel; #2-3 extend the principal's own insights; the principal remains stronger at zero-to-one creative sourcing, the CRO at systematizing it.",
+   "hypothesis": "small cheap accelerators + a quantified spend rule beat more expansions/governance at this stage",
+   "expected_benefit": "sharper edge-hunting + hardened operator + zero spend ambiguity, all freeze-safe",
+   "expected_cost": "queue items sized by monthly engine; contract paragraph",
+   "confidence": 0.8,
+   "assumptions": [
+    "these are the last additions pre-Gate-0; no more expansions"
+   ],
+   "success_metric": "AI-frontier scanner unlocks >=1 new source in 2 quarters; paid-data rule invoked correctly on first real data need",
+   "reversal_condition": "per-item falsification clauses in the inbox"
+  },
+  {
+   "id": "2026-07-18-operator-premortem-opened",
+   "decision": "OPERATOR PRE-MORTEM opened 2026-07-18 (hardens the 6/10 operator = largest residual risk). CRO posed the 4 core crisis scenarios to the principal for pre-committed responses; principal's answers to be recorded here as a durable artifact, and the CRO holds the principal to them if the incident occurs (deviation = flagged near-miss). Scenarios: (1) deadman fired -- first action; (2) live connector deploys $500 not $100 -- immediate action; (3) venue outage with open positions -- action; (4) -25% week -- action (hold vs intervene). AWAITING principal answers; this entry is amended with them.",
+   "hypothesis": "pre-committed crisis responses reduce panic-driven operator error, the desk's top residual risk",
+   "expected_benefit": "the operator acts from a plan, not adrenaline; deviations become auditable near-misses",
+   "expected_cost": "one session",
+   "confidence": 0.9,
+   "assumptions": [
+    "principal answers honestly + is held to it"
+   ],
+   "success_metric": "4 scenarios answered + recorded; first real incident follows the pre-committed plan",
+   "reversal_condition": "n/a (ops-hardening artifact)"
   }
  ]
 }

@@ -59,7 +59,7 @@ first week is a SUCCESS. The improvement inbox and expansion packages remain QUE
 frozen. Audits, panels, governance, and the gap-register duty continue unchanged. 200% CAGR
 is an aspirational ceiling under evidence, NEVER a target -- aggression is earned from
 evidence, never borrowed from optimism. Post-freeze unlock is automatic on the exit criteria;
-evidence alone authorizes progression. PRINCIPAL-ACTION CHANNEL (2026-07-18): whenever a step
+evidence alone authorizes progression. PAID-DATA TRIGGER RULE (principal amendment 2026-07-18, quantified): a paid data purchase may be PROPOSED only when ALL hold -- (a) a VALIDATED edge cannot be tested/deployed without it (not 'would be convenient'); (b) the max-depth free-alternative scan has been run and exhausted (report attached); (c) expected annualized E[log-wealth]/CAGR uplift exceeds 10x the annualized data cost; (d) scope is the narrowest that closes the gap. A qualifying purchase <=$300 the CRO may propose to the principal via the PRINCIPAL_ACTION pager (spend is always a human yes); anything larger needs a full EV-gate review. This closes the 'when do we spend' ambiguity in both directions -- no premature spend, no unjustified refusal (the anti-conservatism mandate applies to data spend once the 10x bar is cleared). PRINCIPAL-ACTION CHANNEL (2026-07-18): whenever a step
 needs a human-only door opened (live keys at the verified gate, sub-account creation, key
 rotation, spend approval), write data/PRINCIPAL_ACTION.md -- FIRST LINE is the page text (one
 clear sentence), body has details + exact commands. The pager delivers it within minutes and

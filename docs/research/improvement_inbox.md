@@ -252,3 +252,51 @@ The source-yield telemetry (Alpha Discovery Multiplier Report) is the arbiter: i
 per-region yield and defunds any region -- including CN/JP/RU if they underperform -- so region
 allocation is evidence-driven, never faith-driven. Add JP + the flow tier; then let the data,
 not more guessing, decide any further expansion.
+
+
+---
+
+# FINAL IDEAS PACKAGE (queued 2026-07-18) — pre-Gate-0 polish, no new expansions/governance
+
+## CRO-GENERATED (structural-advantage / anti-consensus, in the principal's vein)
+1. **AI-CAPABILITY FRONTIER SCANNER** (high-ROI, novel) — a standing monthly duty that watches
+   AI-capability progress and ACTIVATES a new data source the moment it becomes feasible
+   (vision models → forum chart-screenshots; cheap audio → podcasts; better translation → a new
+   language; video-frame analysis → chart tutorials). The desk is early to AI-enabled research;
+   this makes it first to EACH new slice as it unlocks. EV: compounds (frontier keeps moving),
+   cheap (a monitoring duty), pure expression of the solo+AI edge. Falsification: 2 quarters, no
+   newly-unlocked source yields a card → drop to quarterly. Independence: research only.
+2. **ABANDONED-BY-CAPACITY SCANNER** (extends ex-quant priority) — hunt the specific pattern in
+   ex-fund content: "we used to run X, stopped when we got big / too small to matter." That
+   sentence = an edge a fund VALIDATED with real money then VACATED for being sub-scale —
+   pre-validated, pre-uncrowded, perfect for solo size. A targeted Prospector query family + NLP
+   pattern-match. EV: higher signal than generic mining (institution-validated pointers).
+   Falsification: no such-sourced card survives in 2 quarters → fold into base Prospector.
+3. **CROSS-LANGUAGE CROWDING-STAGE SIGNAL** (meta on the language edge) — measure how fast a
+   mechanism propagates across languages as a crowding-TIMING gauge: heavy in CN, absent in EN =
+   early in its crowding curve = runway left. Turns the language edge from binary to a
+   continuous "how early am I" meter. Feeds the telemetry + OSINT. EV: sharpens entry timing on
+   found edges. Falsification: propagation lag shows no relation to realized decay → drop.
+4. **FALSE-CONSENSUS MINING** (different angle, higher-risk) — extract crowd-consensus BELIEFS
+   from communities ("X always pumps before Y"), test whether they're true, fade the
+   crowded-false ones. The crowd publishes its beliefs free; trading a confidently-wrong crowd
+   is an edge. EV: novel source; RISK: hard to test cleanly (belief ≠ clean signal). Lower
+   priority; pre-register carefully. Falsification: consensus-fade hypotheses don't survive the
+   gauntlet → graveyard.
+
+## PRINCIPAL-GENERATED (pre-Gate-0 polish — freeze-safe)
+5. **RECORDER YIELD ESTIMATOR** (queue as a Literature Deep-Miner task, runnable pre-Gate-0) —
+   one-time survey of academic microstructure literature to estimate how many predictive
+   features the recorder's L2 data can realistically yield (e.g. "~15-30 tradeable microstructure
+   features from 6mo BTC L2"). Sets an evidence-based TARGET, prioritizes the Feature Discovery
+   Factory, prevents the "collecting for months, found nothing" morale spiral. EV: high (cheap,
+   sets expectations, one Literature task). Independence: research only.
+6. **OPERATOR PRE-MORTEM** (scheduled brain duty + principal session — STARTED 2026-07-18, see
+   ledger) — a documented session forcing the principal to pre-COMMIT crisis responses (deadman
+   fired / connector deploys wrong size / venue outage / big drawdown), recorded in the ledger;
+   if the incident later occurs, the CRO holds the principal to their own pre-committed response
+   and flags deviation as a near-miss. Directly hardens the 6/10 operator (the largest residual
+   risk). EV: high (hardens the weakest link, zero cost, auditable artifact). Independence: ops.
+
+NOTE: MEV stays quarantined behind the sub-50ms latency gate. No further search expansions or
+governance layers -- this is the last polish before Gate 0.
