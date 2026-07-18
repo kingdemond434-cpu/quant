@@ -55,6 +55,9 @@ blueprint-triage`, `2026-07-17-no-change-cap-principal-order`; principal through
   build fails. A second model family fuzzes the five risk-path files against synthetic paths
   and writes a breaker report; CI asserts zero criticals. Dry-run harness on testnet first.
 
+## 7b. GATE-0 PRE-MORTEM (mandatory, blocking -- principal 2026-07-18)
+Before the PRINCIPAL_ACTION key request: the FULL 13-model panel pre-mortems the verified connector, breaker report, and arming plan. Mandate: argue this go-live fails; find the bug the tests missed. Unresolved critical findings block the request.
+
 ## 8. Explicitly out of scope for the connector build
 - Key creation/rotation, deposits, withdrawals, capital sweeps: principal-only, forever.
 - Any relaxation of Tier-3 rails, deadman, cadence floors.

@@ -805,6 +805,19 @@
    ],
    "success_metric": "all coverage families visited >=1x within 6 weeks; connector progress unimpeded",
    "reversal_condition": "connector milestones slip due to digging time -> revert to 28d immediately"
+  },
+  {
+   "id": "2026-07-18-full-panel-event-rules",
+   "decision": "Principal question (all 13 LLMs on more audits?) resolved: daily stays 3-of-13 rotating (small delta, triage load, statelessness already gives fresh eyes); ADDED two full-panel EVENT rules where 13 cold minds pay max: (1) incident autopsy within 24h of any post-mortem; (2) mandatory BLOCKING Gate-0 pre-mortem of connector+breaker+arming plan before the live-key request -- unresolved criticals block keys. Wired in contract + connector spec.",
+   "hypothesis": "full-panel value concentrates at events, not cadence",
+   "expected_benefit": "13 fresh minds at the two highest-stakes moments; ~$0.25/event",
+   "expected_cost": "one panel run per incident + one at Gate 0",
+   "confidence": 0.9,
+   "assumptions": [
+    "brain routes event runs off-rotation as specified"
+   ],
+   "success_metric": "Gate-0 pre-mortem produces >=1 finding worth addressing before keys",
+   "reversal_condition": "n/a (event-scoped, self-limiting)"
   }
  ]
 }

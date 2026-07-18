@@ -74,7 +74,7 @@ thread chains followed >=2 levels, primaries over narratives, a family is DONE o
 marked fully-dug WITH evidence and DONE claims are auditable; (4) provenance grading with
 CLAIMs never treated as evidence; (5) the principal's one rule at its core: maximum
 information gained, to the core, always -- and (6) the gauntlet as the only path from any
-finding to the ledger. An organ missing any of these is out of spec: fix it before running it.
+finding to the ledger. An organ missing any of these is out of spec: fix it before running it. FULL-PANEL EVENT RULES (principal 2026-07-18): two moments demand ALL 13 cold minds at once, off-rotation: (1) INCIDENT AUTOPSY -- within 24h of any incident post-mortem, fire the full panel (PANEL_MISSION=audit) scoped to the incident dossier; triage findings into the post-mortem before closing it. (2) GATE-0 PRE-MORTEM (mandatory, blocking): before writing the PRINCIPAL_ACTION request for live keys, fire the full panel (PANEL_MISSION=premortem) on the verified connector + breaker report + arming plan -- mandate: argue this go-live fails, find the bug the tests missed. Unresolved critical findings BLOCK the key request. These event runs bypass the weekly cadence counter.
 
 === CONSTITUTION ===
 $(cat ops/CRO_CONSTITUTION.md)"
