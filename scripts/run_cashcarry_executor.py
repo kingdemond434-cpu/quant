@@ -109,18 +109,15 @@ def _dynamic_capital(default: float) -> float:
     Until forward validation gives confidence>0 the optimizer's number is unproven, so we keep the
     operator's --capital. When validated, deployed size = growth-optimal notional (constitution:
     leverage is a continuously optimized control variable, sized to proven edge)."""
-    try:
-        t = json.loads(_LEV_TGT.read_text("utf-8"))
-        if t.get("active") and float(t.get("notional_per_leg", 0)) > 0:
-            # CLAMPED (2026-07-16 incident #2): optimizer confidence jumped 0 -> 0.89 within a
-            # day of the incident reset (re-anchored curve, 18 fwd days) and handed the executor
-            # $40k against the operator's $4.5k -- single fresh opens ballooned to $5.7k/$7.5k.
-            # Until the confidence pipeline is root-caused and a >=30-live-day re-enable gate
-            # ships (ledger 2026-07-16-leverage-optimizer-runaway), dynamic sizing may DE-RISK
-            # below the operator's capital but never lever above it.
-            return min(float(t["notional_per_leg"]), default)
-    except (OSError, json.JSONDecodeError, TypeError, ValueError):
-        pass
+    # QUARANTINED (2026-07-18 deep audit): the leverage optimizer's confidence pipeline is
+    # contaminated (gap #14, unroot-caused). Incident #2 (07-16) was it sizing UP to $40k on
+    # bad confidence; the 07-18 audit found the SAME bad confidence (conf 0.92) sizing the book
+    # DOWN to ~$1,250 (25% deployed) -- $3,250 of authorized capital idled, a real
+    # under-deployment (the growth_defect alert was a TRUE positive). The 07-16 clamp only
+    # capped the UPSIDE ("may de-risk below operator capital"), letting the contaminated signal
+    # under-deploy. Until the confidence pipeline is root-caused AND a >=30-live-day re-enable
+    # gate ships, the optimizer is IGNORED IN BOTH DIRECTIONS -- the executor deploys the
+    # operator's authorized --capital. (Re-enabling honest dynamic sizing = the gap #14 duty.)
     return default
 
 

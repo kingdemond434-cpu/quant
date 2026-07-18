@@ -1213,6 +1213,20 @@
    ],
    "success_metric": ">=5 bps items always built; <5 bps items build if cheap-and-rising else expire; no queue bloat",
    "reversal_condition": "evidence that sub-5-bps items are consistently worth it -> lower the threshold (the built-in lever)"
+  },
+  {
+   "id": "2026-07-18-dynamic-capital-quarantine-both-directions",
+   "decision": "Deep-audit finding + FIX (maintenance exception -- production sizing defect). The leverage optimizer (contaminated pipeline, gap #14) wrote notional_per_leg=1250 on conf 0.92; `_dynamic_capital` returned min(1250, 4500)=1250, capping the whole book at 25% of the operator's authorized $4,500 -- $3,350 idled. Root cause: the 07-16 incident-#2 clamp `min(notional_per_leg, default)` only capped the UPSIDE ('may de-risk below operator capital'), so the SAME broken confidence that over-levered to $40k in incident #2 was now under-deploying. Two prior misdiagnoses corrected: I had called the growth_defect alert 'justified depth-limited under-deployment' -- it was a TRUE positive. FIX: `_dynamic_capital` now returns `default` unconditionally (optimizer QUARANTINED in BOTH directions) until gap #14 is root-caused and a >=30-live-day re-enable gate ships. Deployed, py_compile + ruff clean, controlled systemd restart (waited out the 150s heartbeat single-instance guard), verified live: _dynamic_capital(4500)=4500, positions intact (10 carries, $1,150), heartbeat fresh. SECONDARY gap #32 logged: held carries never resize up, so the 8 tiny carries stay small until rotation -- book redeploys to ~$4,500 via rotation (8/10 names rotated today), NOT hot-patched (ruin-incident function, needs a tested guarded resize-up).",
+   "hypothesis": "ignoring a known-contaminated optimizer in both directions and deploying the operator's authorized capital removes an unjustified 75% under-deployment without adding risk",
+   "expected_benefit": "book redeploys toward full $4,500 (funding harvest scales with notional); growth_defect clears legitimately; no contaminated signal moves size either way",
+   "expected_cost": "existing tiny held carries redeploy only via rotation (gap #32); dynamic sizing stays OFF until gap #14 root-caused (correct -- it is contaminated)",
+   "confidence": 0.9,
+   "assumptions": [
+    "operator's $4,500 is the correct unlevered authorized size",
+    "rotation stays active enough to redeploy the frozen tiny carries"
+   ],
+   "success_metric": "VERIFIED 07-18: fix removes the hard $1,250 cap (confirmed live, _dynamic_capital=4500) but does NOT reach full deployment -- only one name opens per rotation at its funding-weighted slice (~$200-350), frozen tiny carries persist, so the book plateaus below $4,500. Full deployment REQUIRES the gap #32 guarded resize-up (tested build, not a hot-patch). Under-deployment on a PAPER book is the safe direction and low-cost; matters materially only at live capital.",
+   "reversal_condition": "book fails to converge toward $4,500 within a few days (would confirm gap #32 needs the resize-up fix sooner) OR gap #14 root-cause invalidates using full --capital"
   }
  ]
 }
