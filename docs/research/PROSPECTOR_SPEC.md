@@ -1,3 +1,5 @@
+> BINDING: this organ obeys docs/DIGGING_CHARTER.md in full (language-blind, GitHub-maximal incl. Discussions+Issues+forks, info-value-over-prestige, self-optimizing, cross-domain, synthesis, extreme-claims).
+
 # THE PROSPECTOR — external-edge scout (principal spec FINAL, 2026-07-18)
 
 _Executed by the BRAIN (it has real web search; the OpenRouter panel does not). Cadence:

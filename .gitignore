@@ -16,3 +16,5 @@ web/*
 reports/
 lake/
 docs/EXTERNAL_PANEL_DOSSIER.md
+*.exe
+tools/*.exe

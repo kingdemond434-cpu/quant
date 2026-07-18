@@ -1,3 +1,5 @@
+> BINDING: this organ obeys docs/DIGGING_CHARTER.md in full (language-blind, GitHub-maximal incl. Discussions+Issues+forks, info-value-over-prestige, self-optimizing, cross-domain, synthesis, extreme-claims).
+
 # LITERATURE DEEP-MINER — the second external-information organ (2026-07-18)
 
 _PRINCIPAL'S ONE RULE, verbatim spirit: the more information gained, to the core, the better —

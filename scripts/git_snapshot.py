@@ -30,6 +30,9 @@ def main() -> None:
     r = _git("commit", "-m", msg)
     if r.returncode == 0:
         print(f"git-snapshot: committed -- {msg}")
+        pr = _git("push", "origin", "HEAD")
+        print("git-snapshot: pushed to GitHub" if pr.returncode == 0
+              else f"git-snapshot: push failed (offsite deferred): {(pr.stderr or '')[:80]}")
     else:
         print(f"git-snapshot: commit failed: {(r.stderr or r.stdout)[:140]}")
 

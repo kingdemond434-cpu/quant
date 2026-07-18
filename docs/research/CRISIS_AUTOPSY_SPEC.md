@@ -1,3 +1,5 @@
+> BINDING: this organ obeys docs/DIGGING_CHARTER.md in full (language-blind, GitHub-maximal incl. Discussions+Issues+forks, info-value-over-prestige, self-optimizing, cross-domain, synthesis, extreme-claims).
+
 # CRISIS AUTOPSY LIBRARY — collapse forensics organ (spec pre-built 2026-07-18, per standing rule)
 
 _Status: QUEUED under the execution lockdown — activates at S1 (when venue/counterparty risk

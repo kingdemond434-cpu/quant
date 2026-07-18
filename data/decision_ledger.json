@@ -974,6 +974,20 @@
    ],
    "success_metric": "no unjustified cap survives its measurement cycle; zero sizing-on-unproven-edge incidents",
    "reversal_condition": "aggression-default produces a ruin-risk breach traceable to the philosophy -> re-scope with the incident"
+  },
+  {
+   "id": "2026-07-18-digging-charter-and-github-memory",
+   "decision": "Principal directives adopted. (1) DIGGING CHARTER (docs/DIGGING_CHARTER.md) binds EVERY digger present+future: language-blind (value is language-independent -- Chinese/Russian/Korean/any equal to English), GitHub-maximalism (repos + READMEs + Discussions + Issues + forks/stars/cross-refs as PRIMARY sources every cycle), breadth+depth maximization (metric = previously-unknown plausible mechanisms per session), info-value-over-prestige (2-star repo may beat a journal), search-engine-as-self-optimizing-asset (source-yield allocation + never-complete universe + knowledge-gaps-as-search-targets), cross-domain transfer (any field improving alpha/execution/robustness/infra/method), synthesis objective (recombine validated mechanisms across disciplines), extreme-claims (research-priority not credibility). Referenced from all 3 organ specs + contract. Much was already live (non-English priority, source-yield, coverage audit, synthesize mission) -- now consolidated + binding + explicit incl. the genuinely-new GitHub Discussions/Issues/forks depth and full language-agnosticism. Freeze-subject (monthly engine only). (2) GITHUB MEMORY: private repo kingdemond434-cpu/quant wired as offsite remote; 52 commits pushed; git_snapshot now auto-pushes each cycle -> memory permanently offsite (ledger append-only + local git + Hetzner snapshots + GitHub = 4-way redundancy). SECURITY: token was pasted in CHAT -> exposed; principal must ROTATE it (GitHub Settings > Developer > PAT). Repo verified PRIVATE before push; secrets gitignored + verified none tracked.",
+   "hypothesis": "language-blind GitHub-deep self-optimizing digging maximizes validated info gain; 4-way memory redundancy makes loss near-impossible",
+   "expected_benefit": "widest+deepest reachable search posture; permanent offsite memory",
+   "expected_cost": "GitHub push per cycle (seconds); token rotation (principal)",
+   "confidence": 0.85,
+   "assumptions": [
+    "repo stays private",
+    "principal rotates the chat-exposed token"
+   ],
+   "success_metric": "diggers cite GitHub/non-English sources within 2 runs; every cycle pushes to GitHub; zero secret leak",
+   "reversal_condition": "push failures persist -> diagnose credentials; charter yields only noise 2 quarters -> retune per source-yield"
   }
  ]
 }
