@@ -1070,6 +1070,19 @@
    ],
    "success_metric": "Prospector cites >=1 Chinese-source mechanism within 2 runs; Chinese seat produces >=1 gauntlet-entering card post-activation",
    "reversal_condition": "Chinese sources yield only retail noise 2 quarters -> demote per source-yield learning"
+  },
+  {
+   "id": "2026-07-18-self-heal-and-frontier-batch",
+   "decision": "BUILT (self-healing, freeze-exempt maintenance, CI-green + drill-tested): (1) BRAIN AUTO-RETRY -- run_alerts watchdog re-triggers a failed daily brain cycle after ~11:00 UTC (fixes the 07-18 session-limit lost-day), rate-limited 1/3h, never two brains. (2) EVENT-TRIGGERED REMEDIATION -- a brain-remediable alert (cadence_floor_violation/root_cause_critical/recorder_stale) triggers the brain within minutes; human-only + justified/slow alerts (deadman/growth_defect) deliberately never loop it. (3) RESOLUTION '✅ FIXED' PAGES -- every ⚠️ alert now pairs with a ✅ RESOLVED page when it clears, so the operator only looks when a warning arrives with NO fix behind it. (4) DRILL -- tests/execution/test_brain_watchdog.py (6 tests) proves auto-retry fires on a failed cycle, rate-limits, and never triggers on human-only conditions. CHARTER refined (comment/reply layer first-class + debunking-as-falsification; crypto-native source family; new-data-sources as logged per-dig deliverable). QUEUED (improvement_inbox, freeze-governed): Frontier Expansion Menu (8 language/domain frontiers: Russian/Korean/MidEast/Brazilian miners, DeFi-event miner, GitHub archeologist, cross-asset, MEV behind a sub-50ms hardware gate) + operationalization mandate + the growth_audit depth-context fix (needs a controlled executor restart).",
+   "hypothesis": "auto-retry + event-trigger + resolution-pairing make the desk self-heal so the operator only intervenes when auto-fix fails",
+   "expected_benefit": "no lost brain days; alerts resolve without the operator; frontiers queued at depth",
+   "expected_cost": "brain triggers cost session budget (rate-limited 1/3h); doc/inbox growth",
+   "confidence": 0.85,
+   "assumptions": [
+    "brain CI + escalation keep auto-triggered cycles safe; growth_audit fix waits for a controlled restart"
+   ],
+   "success_metric": "next failed 08:45 cycle auto-recovers same day; a clearing alert produces a ✅ page; drill stays green",
+   "reversal_condition": "auto-retry loops or over-triggers -> tighten the rate limit / conditions"
   }
  ]
 }

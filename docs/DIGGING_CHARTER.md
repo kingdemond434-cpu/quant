@@ -27,3 +27,28 @@ Highest EV often comes from COMBINING independently-validated mechanisms from di
 Extraordinary performance claims receive HIGHER RESEARCH PRIORITY (high expected value of investigation) but NEVER higher evidential CREDIBILITY from the claim itself. Convert every claim to testable hypotheses, prioritize by expected information gain, accept/reject SOLELY on reproducible empirical evidence. No economically-plausible idea is ignored for where it came from, what language it is in, or how extraordinary its claim.
 
 PRIMARY OBJECTIVE: maximize cumulative VALIDATED information gain over time -- by improving source coverage, query generation, source discovery, citation exploration, multilingual understanding, and triage quality -- while preserving exploration to discover entirely new edge areas. All findings flow to the same triage: EV gate -> pre-registration -> gauntlet -> forward shadow. Discovery is aggressive and boundless; PROMOTION is empirical-only.
+
+## 9. COMMENT / REPLY LAYER IS FIRST-CLASS
+The gold is often NOT the original post -- it is the reply. Ex-quants comment more than they
+post; the real mechanism, the refinement, and the debunking live in the thread, not the
+headline. Mine GitHub Issues + Discussions, forum reply chains, Reddit/X/YouTube comment
+threads to their depth (>=2 levels). The BEST comment can outrank the OP. And mine DEBUNKING
+replies as pre-emptive falsification -- "this fails because costs/crowding/look-ahead" is a free
+graveyard entry that saves a test slot. Read the whole discussion, always.
+
+## 10. CRYPTO-NATIVE SOURCE FAMILY (first-class -- the desk is crypto-only)
+Heavily weight crypto-native sources: crypto Twitter/fintwit; crypto media (Rekt News, DL News,
+The Block, Messari, Delphi, Glassnode/CryptoQuant blogs); crypto GitHub frameworks (Hummingbot,
+Freqtrade, Jesse, MEV/searcher bots, perp-DEX + DeFi protocol repos + their Issues/Discussions);
+crypto communities (r/defi, r/ethfinance, r/CryptoCurrency, Discords/Telegrams, TradingView
+crypto ideas); perp-DEX / on-chain mechanism communities (Hyperliquid, GMX, funding-arb,
+liquidation-hunting, airdrop/farming); and NON-ENGLISH crypto (Chinese/Korean/Russian/Arabic/
+Portuguese -- see the frontier packages in the improvement inbox). Crypto-native edges
+(funding, liquidations, basis, unlocks, listings, MEV, governance events) are the center of
+gravity.
+
+## 11. NEW DATA SOURCES ARE A LOGGED PER-DIG DELIVERABLE
+Every dig also hunts new FREE DATA sources (exchange dumps, free APIs, community data lakes,
+data-collector repos, in any language) -- and logs anything found to data/data_universe_map.json
+as an explicit deliverable, not an afterthought. Data discovery is dug as deep as edge discovery
+and governed by the free-first protocol.

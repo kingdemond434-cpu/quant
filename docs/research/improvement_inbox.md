@@ -139,3 +139,52 @@ constraint after live edge validation.
 RULES UNCHANGED: everything CLAIM-grade until provenance-graded; language-blind (value is
 language-independent); gauntlet is the only path to the ledger; extreme claims get
 research-priority-not-credibility.
+
+
+---
+
+# FRONTIER EXPANSION MENU (queued 2026-07-18, POST-GATE-0 evaluation, freeze-governed)
+_Candidates for the Discovery Bottleneck Detector + Creative Exploration Engine after the
+freeze lifts. None override the Execution Lockdown. Ranked by EV/complexity by the monthly
+engine. Language items reuse the Chinese NLP Normalization Layer._
+
+1. **RUSSIAN QUANT COMMUNITIES** (Med-High) — Smart-Lab, MQL5 Russian sections; strong math
+   tradition, isolated forums, large retail CFD/crypto culture. Mirror the Chinese expansion:
+   Russian → language-blind priority, enrich OSINT+Prospector, queue a "Russian Quant Miner"
+   seat if hit-rate justifies.
+2. **KOREAN QUANT & CRYPTO** (Med) — Kimchi premium, extreme retail, Naver Cafe / Ruliweb algo
+   communities. Add Korean sources + "Kimchi premium / regional flow" OSINT alpha vectors.
+3. **MIDDLE EAST / UAE CRYPTO FLOW** (Med) — Dubai/Abu Dhabi hub, OTC + SWF activity, Arabic
+   forums/Telegram nearly unmonitored. Add Arabic to language-blind; enrich OSINT with regional
+   flow news.
+4. **DEFI GOVERNANCE & PROTOCOL EVENT MINING** (High) — capacity-bound, institution-ignored;
+   on-chain votes, upgrades, treasury moves are public + price-moving. Dedicated "DeFi Event
+   Miner" seat for time-bound events.
+5. **GITHUB ARCHEOLOGIST** (Med) — abandoned repos, obscure Jupyter notebooks with full
+   strategies never posted elsewhere. Deeper commit-history + fork-network + NLP-over-notebooks.
+6. **CROSS-ASSET CONTAGION (non-crypto)** (Med) — extend FRED with free commodities/FX/equity
+   (Yahoo, Stooq); hunt lead-lag with crypto. Extends the queued Cross-Asset Contagion Mapper.
+7. **ON-CHAIN MEV & SANDWICH RESEARCH** (High IF feasible) — crypto-native, capacity-bound;
+   sandwiches, DEX-DEX arb, liq-frontrunning. HARDWARE LATENCY GATE: do NOT evaluate unless the
+   engine has verified sub-50ms exchange/relay connectivity; if cloud-bound, flag MEV
+   structurally unviable and SKIP to preserve compute. Post-Gate-0, post-live-TCA.
+8. **BRAZILIAN / PORTUGUESE CRYPTO** (Low-Med, lightweight seed) — BRL/USD OTC premium, active
+   PT-language Telegram/forums/YouTube. Add Prospector priority + OSINT BRL-premium tracking.
+   Seed only, not a full miner yet.
+
+## FRONTIER GOVERNANCE
+- NLP REUSE: items 1,2,3,8 reuse the Chinese NLP Normalization Layer (map local slang → internal
+  concepts before the Overfit Prosecutor).
+- MEV HARDWARE GATE: item 7 quarantined behind the sub-50ms latency gate above.
+- OPERATIONALIZATION MANDATE: on Gate-0 clearance + EV-gate approval of ANY frontier item, the
+  monthly engine must produce an Operationalization Profile at Chinese-Expansion depth: dedicated
+  query budget, top-5 local slang terms for NLP normalization, 3 regional alpha vectors, and the
+  region-specific anti-bot degradation protocol (graceful degrade to public RSS/API; CAPTCHA
+  solving prohibited). No frontier seat goes live without this profile.
+
+## QUEUED FIX (needs a controlled executor restart, not rushed)
+- **growth_audit depth-context** — carry_capital_utilization currently flags under-deployment as
+  a conservatism defect even when the DEPTH GUARD is correctly refusing thin testnet books
+  (justified, not timid). Fix: executor exposes a depth-skip count (monitoring-only, no
+  trading-logic change) on its web feed; growth_audit treats under-deployment-with-active-
+  depth-skips as JUSTIFIED. Do with a controlled executor respawn, not at session-tail.

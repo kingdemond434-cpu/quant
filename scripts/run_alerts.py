@@ -17,11 +17,17 @@ from __future__ import annotations
 
 import json
 import secrets
+import subprocess
 import sys
 import time
 import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
+
+# alerts that a brain cycle can actually REMEDIATE (auto-heal event trigger). Deliberately
+# EXCLUDES growth_defect/data_health (slow/justified -- would loop the brain forever) and
+# deadman_latched/kill/principal_action (human-only -- the brain cannot resolve them).
+_EVENT_TRIGGER = {"cadence_floor_violation", "root_cause_critical", "recorder_stale"}
 
 _SECRETS = Path("data/secrets/ntfy.json")
 _STATE = Path("data/.last_alerts.json")
@@ -132,6 +138,60 @@ def _checks() -> list[tuple[str, str]]:
     return out
 
 
+def _brain_running() -> bool:
+    try:
+        return subprocess.run(["pgrep", "-f", "run_cro_ai.sh"],
+                              capture_output=True).returncode == 0
+    except Exception:
+        return False
+
+
+def _brain_should_trigger(state: dict, active: set, *, healthy_today: bool, hour: int,
+                          now: float) -> str | None:
+    """PURE decision (drill-testable): should the brain be auto-triggered? Rate-limited to one
+    trigger per 3h. AUTO-RETRY when today's cycle failed/near-empty and it is past ~11:00 UTC
+    (session limit likely reset). EVENT when a brain-remediable alert is live and no healthy
+    cycle ran since. Human-only + slow/justified conditions never trigger (see _EVENT_TRIGGER)."""
+    if now - float(state.get("_brain_trigger", 0)) < 3 * 3600:
+        return None
+    if (not healthy_today) and hour >= 11:
+        return "auto-retry"
+    if bool(active & _EVENT_TRIGGER) and not healthy_today:
+        return "event"
+    return None
+
+
+def _brain_watchdog(state: dict, active: set) -> str | None:
+    """Self-heal the AI brain WITHOUT the operator (2026-07-18): auto-retry a failed daily cycle
+    (e.g. the 07-18 session-limit lost-day) + event-trigger on a remediable alert. Never two
+    brains; the brain's own CI + escalation keep it safe; risk/money still page the operator."""
+    if _brain_running():
+        return None
+    now = time.time()
+    healthy_today = False
+    try:
+        logs = sorted(Path("data/cro_ai_logs").glob("*.log"), key=lambda p: p.stat().st_mtime)
+        if logs:
+            last = logs[-1]
+            healthy_today = (last.stat().st_size >= 2048
+                            and now - last.stat().st_mtime < 20 * 3600)
+    except OSError:
+        pass
+    reason = _brain_should_trigger(state, active, healthy_today=healthy_today,
+                                   hour=datetime.now(tz=UTC).hour, now=now)
+    if not reason:
+        return None
+    try:
+        subprocess.Popen(["setsid", "nohup", "bash", "ops/run_cro_ai.sh"],
+                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                        stdin=subprocess.DEVNULL, start_new_session=True)
+        state["_brain_trigger"] = now
+        return reason
+    except Exception as e:
+        print(f"brain-watchdog: trigger failed {e!r}"[:100])
+        return None
+
+
 def main() -> None:
     topic = _topic()
     if "--test" in sys.argv:
@@ -145,8 +205,12 @@ def main() -> None:
         state = {}
     now = time.time()
     sent = 0
-    for key, msg in _checks():
+    checks = _checks()
+    active = {k for k, _ in checks}
+    paged = set(state.get("_paged", []))
+    for key, msg in checks:
         if now - float(state.get(key, 0)) < _DEDUPE_OVERRIDES_S.get(key, _DEDUPE_S):
+            paged.add(key)                                 # still-alerting, still track for resolve
             continue
         # FAILURE BACKOFF (2026-07-16): a failed push used to retry every 3-min tick forever --
         # the sustained hammering kept the free ntfy.sh quota exhausted from 07-11 on, so EVERY
@@ -156,11 +220,29 @@ def main() -> None:
             continue
         state[f"_try_{key}"] = now
         try:
-            _push(topic, f"Quant desk: {key}", msg)
+            _push(topic, f"⚠️ Quant desk: {key}", msg)
             state[key] = now
+            paged.add(key)
             sent += 1
         except Exception as e:  # pager failing must never break the tick
             print(f"pager push failed: {e!r}"[:120])
+    # RESOLUTION / "FIXED" PAGES (2026-07-18 principal idea): pair every alert with a "cleared"
+    # notification, so the operator only has to LOOK when a warning arrives with NO fix behind
+    # it. A previously-paged condition that is no longer active -> one "resolved" page.
+    import contextlib
+    for key in list(paged):
+        if key not in active:
+            with contextlib.suppress(Exception):
+                _push(topic, f"✅ Quant desk RESOLVED: {key}",
+                      "auto-fixed / cleared -- no action needed")
+            paged.discard(key)
+            state.pop(key, None)
+    state["_paged"] = sorted(paged)
+    # SELF-HEAL: auto-retry a failed daily brain cycle + event-trigger the brain on a remediable
+    # alert -- so the desk fixes itself without waiting for the operator (2026-07-18).
+    trig = _brain_watchdog(state, active)
+    if trig:
+        print(f"brain-watchdog: triggered brain cycle ({trig})")
     _STATE.write_text(json.dumps(state), "utf-8")
     # EXTERNAL HEARTBEAT (2026-07-16, v8-blueprint triage 8.13): an off-box dead-man for the
     # box itself. Everything above -- deadman, pager, watchdog -- dies WITH the host; a 3-min
