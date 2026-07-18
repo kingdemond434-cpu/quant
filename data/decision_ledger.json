@@ -1200,6 +1200,19 @@
    ],
    "success_metric": "small net-positive items get built in EV order; no net-negative small item is built; complexity does not creep without matching value",
    "reversal_condition": "low-value items accrete complexity faster than deletion credits prune -> raise the 1 bps floor"
+  },
+  {
+   "id": "2026-07-18-threshold-5bps-final",
+   "decision": "Guarantee threshold SET TO 5 bps (CRO recommended, principal approved after asking the CRO's honest view and accepting it). 12-month expiry KEPT for <5 bps items as the healthy pruning mechanism. Rationale (CRO, adopted as own): a guarantee only distinguishes if the threshold is meaningful; 1 bps guaranteed everything forever and turned the queue into an immortal junk drawer, removing the expiry's healthy self-cleaning; nothing genuinely valuable is ever at risk (EV-ordering builds the best first), so the guarantee's fear was already solved. 5 bps makes the guarantee mean something while small cheap net-positive items still build in EV order and trivia expires. Not-picky clarification retained (net-positive small items ARE built; net-negative complexity is not). Freeze still governs.",
+   "hypothesis": "a meaningful guarantee threshold (5 bps) + expiry beats guarantee-everything, preventing junk-drawer bloat without losing real wins",
+   "expected_benefit": "guarantee protects genuinely-meaningful items; trivia self-prunes; queue stays healthy",
+   "expected_cost": "some <5 bps items expire (correctly -- they never rose in the EV order in a year)",
+   "confidence": 0.85,
+   "assumptions": [
+    "EV-ordering reliably surfaces genuine value; 5 bps is a sane meaningful floor"
+   ],
+   "success_metric": ">=5 bps items always built; <5 bps items build if cheap-and-rising else expire; no queue bloat",
+   "reversal_condition": "evidence that sub-5-bps items are consistently worth it -> lower the threshold (the built-in lever)"
   }
  ]
 }
