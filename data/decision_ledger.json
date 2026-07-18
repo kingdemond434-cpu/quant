@@ -1083,6 +1083,19 @@
    ],
    "success_metric": "next failed 08:45 cycle auto-recovers same day; a clearing alert produces a ✅ page; drill stays green",
    "reversal_condition": "auto-retry loops or over-triggers -> tighten the rate limit / conditions"
+  },
+  {
+   "id": "2026-07-18-discovery-multiplier-telemetry",
+   "decision": "Principal telemetry proposal queued (Lane-A, lockdown-compatible, no risk-path): Alpha Discovery Multiplier Report -- tag every mined card with source_region / source_type / pipeline_status; monthly engine computes data-breadth multiplier, raw intake rate by region, Prosecutor survival by region, net live-ready alpha by region, and a rolling English-vs-non-English Discovery Probability Index; witness digest + tier-1 scorecard carry a one-line asymmetry summary; live strategies permanently record provenance. Purpose: PROVE each frontier expansion's ROI so under-performing regions get defunded on evidence -- the reporting layer atop the existing source-yield learning. Implement at CRO discretion once the digging pipeline runs (post-Gate-0 for the live-calibration segments).",
+   "hypothesis": "explicit per-region discovery telemetry turns frontier allocation into an evidence-driven decision instead of a guess",
+   "expected_benefit": "provable frontier ROI; auto-defunding of dead regions; honest asymmetry reporting",
+   "expected_cost": "attribution tagging on cards + a monthly report (cheap; no trading impact)",
+   "confidence": 0.8,
+   "assumptions": [
+    "diggers tag cards consistently; information_value.jsonl carries the tags"
+   ],
+   "success_metric": "first multiplier report segments intake + survival by region with real counts",
+   "reversal_condition": "telemetry adds cost without informing allocation for 2 quarters -> simplify to intake+survival only"
   }
  ]
 }

@@ -188,3 +188,40 @@ engine. Language items reuse the Chinese NLP Normalization Layer._
   (justified, not timid). Fix: executor exposes a depth-skip count (monitoring-only, no
   trading-logic change) on its web feed; growth_audit treats under-deployment-with-active-
   depth-skips as JUSTIFIED. Do with a controlled executor respawn, not at session-tail.
+
+
+---
+
+# ALPHA DISCOVERY MULTIPLIER REPORT (queued 2026-07-18, telemetry/Lane-A — lockdown-compatible)
+_Instrumentation only: no risk-path/trading/frozen-component change. Implementable at CRO
+discretion. This is the REPORTING layer on top of the charter's source-yield learning —
+measurement drives allocation; a region that consistently underperforms gets defunded by the
+Discovery Bottleneck Detector on evidence, not vibes._
+
+## 1. DISCOVERY MULTIPLIER METRICS (tagged on every mined card, all diggers present+future)
+- source_region: CN | RU | KR | AE | BR | US | EU | Other
+- source_type: Academic | Forum | Social | Video | GitHub | OSINT
+- pipeline_status: Ingested | NLP_Normalized | Prosecutor_Rejected | Gauntlet_Passed |
+  Live_Calibration
+(Store on the card + in data/information_value.jsonl so the whole funnel is attributable.)
+
+## 2. MULTIPLIER CALCULATION (monthly engine → appended to ledger)
+- **Data Breadth Multiplier**: active unstructured sources pre- vs post-expansion ("4.2×").
+- **Raw Alpha Intake Rate**: unique mechanism cards/month, by source_region.
+- **Prosecutor Survival Rate by Region**: % of cards surviving the Overfit Prosecutor, by region.
+- **Net Live-Ready Alpha**: strategies reaching ≥10 live calibration rows, by region.
+- **Discovery Probability Index**: rolling 3-month English-only vs non-English yield
+  (live-ready candidates per 100 queries).
+
+## 3. REPORTING OUTPUT
+Weekly witness/digest + monthly tier-1 scorecard carry a one-line asymmetry summary, e.g.:
+"CN Expansion: 450 raw cards → 120 NLP-normalized → 15 Prosecutor-passed → 2 live-calibration.
+ CN discovery probability 3.4× English."
+
+## 4. ATTRIBUTION PERMANENCE
+Any live-deployed strategy permanently records its source_region + source_type in the decision
+ledger and (once built) the Alpha Knowledge Graph. Provenance of every edge is never lost.
+
+NOTE: leverages the existing source-yield learning + information_value.py + coverage maps —
+this makes their output a first-class monthly report so frontier ROI is provable, and honest
+about which expansions earn their keep.
