@@ -948,6 +948,19 @@
    ],
    "success_metric": "freeze-exit status logged each cycle; on the real Gate 0, activation flags automatically and every manifest item is worked + ledgered",
    "reversal_condition": "n/a (reliability infrastructure)"
+  },
+  {
+   "id": "2026-07-18-evidence-gated-progressions-registry",
+   "decision": "Principal: is EVERYTHING set to advance on evidence (growth unlock, aggressiveness ramp ~8wk, S1->S2, etc.), not memory? Built docs/EVIDENCE_GATED_PROGRESSIONS.md -- the single auditable registry of all 15 progressions with trigger + mechanism (CODED / BRAIN-cadence-duty / PRINCIPAL-gated) + location. Verification found the POST_GATE0_MANIFEST was MISSING explicit entries for the growth/aggressiveness ramp and the S1->S2 stage machine (the exact things asked about) -> added as explicit activation items. Confirmed: every progression fires on evidence via code or a cadence-flagged brain duty; only fund-movement/key/survival-clamp-lift are deliberately PRINCIPAL-gated. Monthly governance now re-checks the registry -- any progression that degrades to memory-dependent is a defect.",
+   "hypothesis": "a single progressions registry makes 'everything advances on evidence' auditable and prevents silent memory-dependence",
+   "expected_benefit": "provable evidence-gating; the growth ramp guaranteed to arm at freeze-exit",
+   "expected_cost": "one registry file, reviewed monthly",
+   "confidence": 0.9,
+   "assumptions": [
+    "the coded/specced triggers behave as written when live data arrives"
+   ],
+   "success_metric": "at freeze-exit, growth ramp + stage machine arm automatically; monthly review finds zero memory-dependent progressions",
+   "reversal_condition": "n/a (auditability infrastructure)"
   }
  ]
 }
