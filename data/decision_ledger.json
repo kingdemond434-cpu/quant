@@ -922,6 +922,19 @@
    ],
    "success_metric": "by the 2nd scoring run, EV priors measurably shift from realized hit-rate; memory line-count/signal-density improves after 1st consolidation",
    "reversal_condition": "outcome scores stay uninformative (too few resolved) -> lengthen the review horizon; never drop the loop"
+  },
+  {
+   "id": "2026-07-18-compression-safety-and-audit-depth",
+   "decision": "Two principal concerns addressed. (1) Memory compression harming ROI: made ARCHIVE-NEVER-DELETE explicit in the consolidation duty -- consolidation relocates stale narrative to a dated cold file, git keeps every prior version, ledger+graveyard append-only; zero info destroyed, only moved out of the brain hot path (which RAISES ROI -- a bloated hot memory buries signal). (2) Do audits see everything: HONEST -- no single reviewer sees all (cold panel = sanitized summary for security + context limits; brain = full code/state daily; CI = execution; breaker/build-auditor = diffs). Layered defense-in-depth covers everything, but per-component DEPTH varied -> queued row 28 full-depth random-component audit (brain pulls one component to raw code + lineage + logs monthly), the internal-auditor complement to the external summary panel.",
+   "hypothesis": "archive-not-delete + git makes compression lossless-in-practice; a deep random audit adds bone-depth the summary panel cannot",
+   "expected_benefit": "compression fear resolved structurally; per-component audit depth raised",
+   "expected_cost": "one monthly deep-audit duty",
+   "confidence": 0.85,
+   "assumptions": [
+    "git history stays intact (backups); brain honestly audits its own components"
+   ],
+   "success_metric": "first full-depth audit either confirms a component clean OR finds a real defect; zero compression-caused info loss (git-verifiable)",
+   "reversal_condition": "deep audits never find anything in 3 quarters -> drop to quarterly"
   }
  ]
 }
