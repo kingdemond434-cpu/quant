@@ -1109,6 +1109,19 @@
    ],
    "success_metric": "JP produces >=1 gauntlet-entering card within 2 runs post-activation; no low-moat region miner is built without telemetry justification",
    "reversal_condition": "telemetry shows a stop-line region unexpectedly yielding -> reconsider that specific region on data"
+  },
+  {
+   "id": "2026-07-18-spec-prebuild-honest-reconciliation",
+   "decision": "HONEST audit (principal asked 'are all queued specs built'): NO. Full specs exist for the major organs (connector, 3 diggers, recorder) but NOT for the ~40 inbox items + 31 register rows -- those have descriptions + EV cases, not full implementation specs (module design/test plan/complexity/shadow-proof/falsification/independence class). Reasons: brain correctly prioritized the connector under lockdown; rule deadline is before-the-window (post-Gate-0) not overdue; and a REAL MISS -- the rule as literally stated ('spec every queued item immediately') is unrealistic since spec-ing items the EV gate will retire is wasted work; I over-stated it. RECONCILED: spec-prebuild is HIGHEST-EV-FIRST and required-before-each-item's-own-window, not all-at-once; explicit brain duty AFTER the connector so surviving items get specs before their window and retired items waste no spec effort. Surfaced honestly, not hidden -- a stated-rule-vs-reality drift caught by the principal's own audit question.",
+   "hypothesis": "highest-EV-first before-window spec-prebuild beats spec-everything-now which wastes effort on EV-retired items",
+   "expected_benefit": "specs exist when actually needed; zero wasted specs on retired items; the rule matches reality",
+   "expected_cost": "none -- a saner rule plus a tracked brain duty",
+   "confidence": 0.85,
+   "assumptions": [
+    "brain works the spec-prebuild queue post-connector, highest-EV first"
+   ],
+   "success_metric": "every item reaching an implementation window has a full spec by then; no spec written for a later-retired item",
+   "reversal_condition": "an item reaches its window without a spec -> lengthen the spec lead time"
   }
  ]
 }
