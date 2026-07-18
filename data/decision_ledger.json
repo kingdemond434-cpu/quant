@@ -909,6 +909,19 @@
    ],
    "success_metric": "by the 2nd coverage audit, budget measurably shifted toward a proven-productive family",
    "reversal_condition": "too few survivors to yield signal -> keep equal-weight rotation, revisit at more data"
+  },
+  {
+   "id": "2026-07-18-self-improvement-closed-loops",
+   "decision": "Rigorous self-improvement + memory scan (principal, lifetime concern) found TWO genuine foundational gaps -- both closed. (1) DECISION-OUTCOME CALIBRATION was MISSING: 63 decisions carried predicted benefit + success_metric + reversal_condition, but nothing ever scored predicted-vs-actual, so the EV gate never learned if its predictions were good. Built as a monthly brain duty -> data/decision_outcomes.jsonl + EV-prior updates from realized hit-rate. (2) MEMORY CONSOLIDATION was MISSING: memory grew monotonically (bloat/stale-fact/context-dilution risk over a lifetime). Built as a quarterly brain duty -- merge/compress/prune the NARRATIVE layer, ledger+graveyard stay append-only. Both cadence-flagged with rot floors (35d/100d) + wired into the contract as the loops that make the desk self-IMPROVING, not just self-DOCUMENTING.",
+   "hypothesis": "a desk that scores its own past predictions and compresses its own memory compounds its judgment; one that only accumulates does not",
+   "expected_benefit": "EV-prediction accuracy improves over time; memory stays lean + high-signal for the brain each cycle",
+   "expected_cost": "two brain duties (monthly + quarterly); a small outcomes log",
+   "confidence": 0.85,
+   "assumptions": [
+    "brain honestly scores outcomes incl. its own misses; consolidation never touches append-only truth"
+   ],
+   "success_metric": "by the 2nd scoring run, EV priors measurably shift from realized hit-rate; memory line-count/signal-density improves after 1st consolidation",
+   "reversal_condition": "outcome scores stay uninformative (too few resolved) -> lengthen the review horizon; never drop the loop"
   }
  ]
 }

@@ -56,7 +56,8 @@ _FLOORS_S1_EXTRA: dict[str, float] = {           # live adds floors; never remov
 # state-tracked floors (days): review cycles may never stretch past these
 _STATE_FLOORS_D = {"last_panel": 8.0, "last_tier1": 32.0, "last_prompt_review": 35.0,
                    "last_prospector": 35.0, "last_blind_rediscovery": 100.0,
-                   "last_lit_deepdive": 35.0}
+                   "last_lit_deepdive": 35.0, "last_decision_scoring": 35.0,
+                   "last_memory_consolidation": 100.0}
 
 
 def _load(p: Path, default: dict) -> dict:
@@ -173,6 +174,24 @@ def main() -> None:
             "of PROSPECTOR_SPEC.md, invent up to 5 unpublished mechanisms from internal "
             "artifacts only; pre-register via the gauntlet; log for the 12-month literature "
             "comparison; mark done: last_blind_rediscovery.")
+    if _days_since(state, "last_decision_scoring") >= 28:
+        due.append(
+            "DECISION OUTCOME SCORING (monthly -- closes the self-improvement loop): "
+            "for every ledger decision past its review horizon (>=30d old) not yet "
+            "scored, judge predicted-vs-ACTUAL: did expected_benefit materialize? was "
+            "success_metric met? did reversal_condition fire? Append to "
+            "data/decision_outcomes.jsonl (id, predicted, actual, hit/miss, lesson), "
+            "then update EV-gate priors from the hit-rate -- the desk must learn "
+            "whether its OWN predictions are any good. Mark done: last_decision_scoring.")
+    if _days_since(state, "last_memory_consolidation") >= 90:
+        due.append(
+            "MEMORY CONSOLIDATION (quarterly -- anti-bloat for a lifetime system): "
+            "consolidate ops/memory + knowledge base -- merge superseded/duplicate "
+            "addenda, archive resolved items to a dated file, compress recurring "
+            "lessons into principles, fix stale facts, keep MEMORY.md lean. Memory "
+            "must get SIMPLER as it learns, not only longer. NEVER delete the ledger "
+            "or graveyard (append-only truth) -- consolidate the NARRATIVE layer only. "
+            "Mark done: last_memory_consolidation.")
     if _days_since(state, "last_prompt_review") >= _PROMPT_REVIEW_D:
         due.append(
             "PROMPT SELF-IMPROVEMENT (monthly): score every mission prompt + auditor against "
