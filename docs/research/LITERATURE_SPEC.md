@@ -58,3 +58,6 @@ you would not have chosen, and spend >=2 of the session budget on them; (c) when
 negative-space explorer (register #22) is built, its output is a MANDATORY input here --
 13 models plan the map, one digger walks it, 13 models audit the cards. Fetch capacity is
 never the bottleneck; query diversity is.
+
+## SECONDARY OUTPUT -- IMPROVEMENT FINDINGS (Digging Doctrine breadth, 2026-07-18)
+Beyond mechanism cards, capture ANY non-alpha improvement found while digging -- structure, governance, data sources, LLM/prompt/process methods, research methodology, committee/panel design, execution, risk -- to docs/research/improvement_inbox.md, dug to its core with evidence, routed per the Digging Doctrine (structural/process -> improvement inbox + register; guard -> register + drills). Never discard an informative finding for not being a tradeable strategy. The same coverage-rotation + provenance + core-depth rules apply.

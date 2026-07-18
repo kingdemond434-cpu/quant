@@ -49,3 +49,6 @@ A collapse is DONE when all five sections cite primary sources; DONE is auditabl
 Primary sources over narratives; provenance grading per the Prospector scale; no edgelording
 -- the output is indicators, guards, and drills, not stories. Sunset: if 3 dossiers produce
 zero new indicators/guards/drills, fold remaining targets into the OSINT lane at live.
+
+## SECONDARY OUTPUT -- IMPROVEMENT FINDINGS (Digging Doctrine breadth, 2026-07-18)
+Beyond mechanism cards, capture ANY non-alpha improvement found while digging -- structure, governance, data sources, LLM/prompt/process methods, research methodology, committee/panel design, execution, risk -- to docs/research/improvement_inbox.md, dug to its core with evidence, routed per the Digging Doctrine (structural/process -> improvement inbox + register; guard -> register + drills). Never discard an informative finding for not being a tradeable strategy. The same coverage-rotation + provenance + core-depth rules apply.

@@ -831,6 +831,19 @@
    ],
    "success_metric": "zero growth_defect pages while book is fully deployed at authorized size",
    "reversal_condition": "n/a (defect fix)"
+  },
+  {
+   "id": "2026-07-18-digging-breadth-all-improvement-classes",
+   "decision": "Principal order: ALL digging organs (Prospector, Literature Deep-Miner, Crisis Autopsy, future twins) now hunt EVERY improvement class -- structural, governance, data, LLM/prompt/process, research methodology, committee/panel design, execution, risk -- not only tradeable alpha, each dug to core with evidence. Routing: mechanisms -> gauntlet; guards -> register + drills; structural/process -> improvement inbox + register -> monthly window (post-freeze). Added to the Digging Doctrine (contract) + all three organ specs. Note: this WIDENS what diggers surface; it does NOT bypass the lockdown -- structural findings queue and wait for the monthly window like every other structural change.",
+   "hypothesis": "the best process/governance ideas are also published somewhere; only alpha was being harvested",
+   "expected_benefit": "research breadth (six-dimension gate) across the whole desk, not just its book",
+   "expected_cost": "more inbox items to triage; the monthly window paces implementation",
+   "confidence": 0.8,
+   "assumptions": [
+    "improvement inbox + register absorb the added flow; brain triages per header"
+   ],
+   "success_metric": "within 2 dig cycles, >=1 non-alpha improvement finding captured and spec-queued",
+   "reversal_condition": "inbox floods with low-value process trivia -> raise the capture bar to material-only"
   }
  ]
 }
