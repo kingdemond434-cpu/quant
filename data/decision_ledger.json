@@ -1122,6 +1122,19 @@
    ],
    "success_metric": "every item reaching an implementation window has a full spec by then; no spec written for a later-retired item",
    "reversal_condition": "an item reaches its window without a spec -> lengthen the spec lead time"
+  },
+  {
+   "id": "2026-07-18-expansion-specs-prebuilt",
+   "decision": "Principal: build all expansion specs at max-ROI ceiling so they function as discussed. DONE — 4 full implementation specs (each with module design, test plan, complexity cost, shadow-proof, falsification hypothesis, independence class): (1) FRONTIER_MINER_TEMPLATE.md — ONE parameterized generic miner (run_frontier_miner.py --region) that every region (CN/RU/KR/JP/AE/BR) instantiates identically via an Operationalization Profile JSON (region, query_budget 20, sources, >=5 slang terms, >=3 regional alpha vectors, anti-bot protocol); build-once-instantiate-per-region = max ROI, deletion-credit-friendly; reference data/frontier_profiles/CN.json created + validated. (2) NLP_NORMALIZATION_SPEC.md — shared slang→concept layer, two-stage (deterministic glossary + LLM-proposed mappings that are FLAGGED and only learned after a card survives the Prosecutor). (3) DISCOVERY_TELEMETRY_SPEC.md — attribution tags (region/type/pipeline_status) on every card → information_value.jsonl + monthly multiplier report (breadth multiplier, per-region intake/survival, Discovery Probability Index English-vs-region). (4) SPECIALIZED_SEATS_SPEC.md — DeFi Event Miner (high-ROI, time-bound on-chain events), GitHub Archeologist (extended Prospector duty), OSINT regional-flow tier (flow signals not miners); MEV quarantined behind the sub-50ms latency gate (no spec effort until precondition met). All research/discovery — zero risk-path/frozen-component touch; freeze-governed, monthly engine builds highest-EV first. Every regional miner now 'functions the same way as described' via the single template.",
+   "hypothesis": "one parameterized template + shared infra specs make every regional/seat expansion functionally identical and cheap to instantiate",
+   "expected_benefit": "spec-prebuild rule now satisfied for the expansion set; regions are config, not code; build is turnkey post-Gate-0",
+   "expected_cost": "spec maintenance; ~200-line generic miner + per-region profiles when built",
+   "confidence": 0.85,
+   "assumptions": [
+    "profile-driven generic miner covers all regions; NLP layer generalizes across languages"
+   ],
+   "success_metric": "first region built from the template + CN profile produces a well-formed card through the full pipeline; no per-region code duplication",
+   "reversal_condition": "a region needs bespoke logic the template cannot express -> extend the template, never fork per-region"
   }
  ]
 }
