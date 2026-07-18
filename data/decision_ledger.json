@@ -883,6 +883,19 @@
    ],
    "success_metric": "Prospector cites >=1 video-sourced mechanism via text mirror within 2 runs",
    "reversal_condition": "coverage log shows video-locked blockers recurring -> trigger the EV-gated proxy decision"
+  },
+  {
+   "id": "2026-07-18-ex-solo-quant-priority",
+   "decision": "Prospector sharpening (principal): ex-quant + solo-quant long-form content elevated to an EXPLICIT PRIORITY category -- not incidental. Rationale: ex-institutional quants reveal capacity-bound mechanisms their funds abandoned (= the solo desk exact edge), and solo quants share sub-institutional setups that work because they are too small to crowd. Long-form (podcasts, interviews, talks, Substacks) prioritized over short/retail. Roster self-expands via the coverage-completeness audit. Still mechanism-first + provenance-graded + gauntlet-gated.",
+   "hypothesis": "capacity-bound mechanisms revealed by ex/solo quants are the desk richest realistic vein",
+   "expected_benefit": "targets the highest-relevance human sources instead of generic trading media",
+   "expected_cost": "none (priority weighting within existing budget)",
+   "confidence": 0.8,
+   "assumptions": [
+    "ex/solo-quant content is discussed in reachable text / transcripts"
+   ],
+   "success_metric": "within 3 Prospector runs, >=1 card sourced from an ex/solo-quant long-form piece",
+   "reversal_condition": "ex/solo-quant sources yield only known/retail material 2 quarters -> demote to normal weight"
   }
  ]
 }
