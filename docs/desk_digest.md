@@ -1,17 +1,17 @@
 # Desk digest (auto-generated daily -- do not hand-edit)
-_updated 2026-07-17T08:01Z · companion to [[institutional_knowledge]]_
+_updated 2026-07-18T08:01Z · companion to [[institutional_knowledge]]_
 
 ## Book
-- Molded net: **$-116.01** | funding **$80.55** | run-rate APR 17.8% | day 15.11
-- Root cause: **unknown_novel** (pause_and_page) | tracking error $-217.56
+- Molded net: **$-73.76** | funding **$84.52** | run-rate APR 20.5% | day 16.11
+- Root cause: **expected_variance** (monitor_only) | tracking error $-147.78
 
 ## Validation clocks
-- **carry (DEPLOYED)**: 21/90d | bt 3.68 fwd 15.24
-- **perp L/S**: 14/90d | bt 0.62 fwd 0.81
-- **trend**: 14/90d | bt 1.42 fwd -6.58
-- **trend regime-gated**: 9/90d | bt 1.36 fwd 0.0
-- **OI/LS data**: 19/40d
-- **stablecoin data**: 15/40d
+- **carry (DEPLOYED)**: 22/90d | bt 3.28 fwd 10.26
+- **perp L/S**: 15/90d | bt 0.81 fwd -0.82
+- **trend**: 15/90d | bt 1.3 fwd -11.58
+- **trend regime-gated**: 10/90d | bt 1.28 fwd 0.0
+- **OI/LS data**: 20/40d
+- **stablecoin data**: 16/40d
 
 ## Open decisions (ledger)
 - `2026-07-04-cashcarry-top10-4500` -- review 2026-08-04: funding/day rises ~50% without new drift losses by 2026-08-04
@@ -49,6 +49,31 @@ _updated 2026-07-17T08:01Z · companion to [[institutional_knowledge]]_
 - `2026-07-17-tier1-scorecard-rider` -- review ?: first two tier1 runs produce >=7 validly-cited dimension scores per model; scores correlat
 - `2026-07-17-data-triggered-generation` -- review ?: first matured family (OI/LS ~07-29) gets its scoped generate run within 2 cycles
 - `2026-07-17-cadence-engine` -- review ?: 4 weeks: panels fired 7.0+-0.5d apart with zero brain involvement; no double-fires
+- `2026-07-17-no-change-cap-principal-order` -- review ?: 30d: zero change-induced incidents despite unrestricted velocity
+- `2026-07-17-throughput-amendment-and-connector-spec` -- review ?: connector built to spec + breaker-tested before 2026-08-05; zero same-subsystem collision 
+- `2026-07-17-shadow-clock-contamination-ruling` -- review ?: no future cycle re-litigates this contamination question without new code/market evidence
+- `2026-07-17-carry-crowding-monitor` -- review ?: web/crowding.json refreshes daily without error; monthly governance references it at least
+- `2026-07-17-reconciler-silent-failure-counter` -- review ?: next time a hedge order is persistently rejected, a RECONCILE-FAIL line appears within 3 c
+- `2026-07-17-growth-audit-capital-utilization-deferral` -- review ?: once GAP#14 is root-caused and GAP#15 is resolved (trim or natural close), capital utiliza
+- `2026-07-17-weekly-architecture-review` -- review ?: next weekly architecture review (within 7 cycles) finds the same conclusion or identifies 
+- `2026-07-17-hwm-contamination-false-fire` -- review ?: post-reset baseline forms on clean wallet; no fourth false fire from stale references
+- `2026-07-17-spec-prebuild-standing-rule` -- review ?: next 3 implemented register items each had a complete spec before their build began
+- `2026-07-17-research-pack-triage` -- review ?: decay-lab spec complete before monthly window; clustering live before next factory expansi
+- `2026-07-17-master-expansion-package-triage` -- review ?: 5 specs complete within 5 cycles; liquidation-cascade hypothesis pre-registered within 2 w
+- `2026-07-17-deadman-reset-2-principal-approved` -- review ?: 48h: no deadman breach counts; positions ~$300-450/name; measured eq stable vs new HW
+- `2026-07-18-prospector-seat-adopted` -- review ?: >=1 provenance-SEMI-or-better card reaching pre-registration within 2 runs; watchlist aliv
+- `2026-07-18-execution-lockdown-and-recorder-live` -- review ?: 7 consecutive days of gap-free hourly partitions for 5 symbols; recorder survives a cycle 
+- `2026-07-18-literature-deep-miner` -- review ?: >=1 mechanism card surviving to pre-registration within 3 sessions
+- `2026-07-18-digging-doctrine-and-autopsy-spec` -- review ?: first dossier produces >=1 new monitored indicator + >=1 drill scenario
+- `2026-07-18-digging-cadence-biweekly` -- review ?: all coverage families visited >=1x within 6 weeks; connector progress unimpeded
+- `2026-07-18-full-panel-event-rules` -- review ?: Gate-0 pre-mortem produces >=1 finding worth addressing before keys
+- `2026-07-18-growth-audit-denominator-fix` -- review ?: zero growth_defect pages while book is fully deployed at authorized size
+- `2026-07-18-digging-breadth-all-improvement-classes` -- review ?: within 2 dig cycles, >=1 non-alpha improvement finding captured and spec-queued
+- `2026-07-18-ai-methods-digging-gap-closed` -- review ?: within 2 literature cycles, >=1 concrete engine/prompt/eval improvement captured
+- `2026-07-18-digger-coverage-self-audit` -- review ?: first coverage audit adds >=1 genuinely missing family OR credibly confirms completeness
+- `2026-07-18-youtube-transcript-reality` -- review ?: Prospector cites >=1 video-sourced mechanism via text mirror within 2 runs
+- `2026-07-18-ex-solo-quant-priority` -- review ?: within 3 Prospector runs, >=1 card sourced from an ex/solo-quant long-form piece
+- `2026-07-18-source-yield-learning` -- review ?: by the 2nd coverage audit, budget measurably shifted toward a proven-productive family
 
 ## Executive KPI snapshot
 - CRO: {"hypotheses_tested_lifetime": 20, "validated_survivors": 1, "survivor_note": "cash-carry (fwd 8/90); trend candidate gauntlet-passed (fwd 1/90); all else graveyarded", "survival_r
