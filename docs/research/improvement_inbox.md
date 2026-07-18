@@ -225,3 +225,30 @@ ledger and (once built) the Alpha Knowledge Graph. Provenance of every edge is n
 NOTE: leverages the existing source-yield learning + information_value.py + coverage maps —
 this makes their output a first-class monthly report so frontier ROI is provable, and honest
 about which expansions earn their keep.
+
+
+---
+
+# FRONTIER MENU ADDENDUM (2026-07-18): the last worthwhile regions + the STOP line
+
+9. **JAPANESE QUANT & CRYPTO (JP)** — full frontier, same tier as CN/KR/RU. Major crypto market
+   (Mt.Gox legacy, bitFlyer/Coincheck, deep retail derivatives), genuine systematic tradition,
+   authentically language-siloed communities (5ch trading boards, Japanese crypto forums,
+   Note.com quant writers, Japanese GitHub). Reuses the NLP Normalization Layer. Add JP to
+   language-blind priority; queue a Japanese Quant Miner seat if hit-rate justifies.
+   Expected ROI: Med-High (comparable to KR; strong quant density + real language moat).
+
+10. **OSINT REGIONAL-FLOW TIER (NOT strategy miners): Turkish, Vietnamese, Indonesian, Nigerian**
+    — highest crypto-ADOPTION markets but LOW quant/strategy density (retail/P2P/remittance).
+    Value is FLOW SIGNALS only, added to the OSINT lane as regional alpha vectors: TRY/crypto
+    premium, Nigerian P2P premium, IDR/VND on-off-ramp dynamics. Do NOT build full Prospector
+    miners for these -- flow vectors only. Expected ROI: Low-Med (flow), ~zero (strategy mining).
+
+## STOP LINE (diminishing returns -- do NOT add language miners here)
+German, French, Hindi, and most European/Indian languages: quant communities are largely
+ENGLISH-INTEGRATED (they publish/work in English), so the anti-consensus language moat is
+weak-to-nonexistent -- expanding there is translation overhead with thin marginal yield.
+The source-yield telemetry (Alpha Discovery Multiplier Report) is the arbiter: it MEASURES
+per-region yield and defunds any region -- including CN/JP/RU if they underperform -- so region
+allocation is evidence-driven, never faith-driven. Add JP + the flow tier; then let the data,
+not more guessing, decide any further expansion.

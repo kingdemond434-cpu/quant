@@ -1096,6 +1096,19 @@
    ],
    "success_metric": "first multiplier report segments intake + survival by region with real counts",
    "reversal_condition": "telemetry adds cost without informing allocation for 2 quarters -> simplify to intake+survival only"
+  },
+  {
+   "id": "2026-07-18-frontier-jp-and-stop-line",
+   "decision": "Region-expansion assessment (principal). ADDED to frontier menu: (9) JAPANESE full frontier -- the clear remaining gap (major crypto market, systematic tradition, genuinely language-siloed 5ch/forums), same tier as CN/KR/RU; (10) OSINT REGIONAL-FLOW TIER (Turkish/Vietnamese/Indonesian/Nigerian) -- flow signals only (TRY/Nigerian-P2P/IDR-VND premiums), NOT strategy miners (high adoption, low quant density). STOP LINE drawn: German/French/Hindi/most European+Indian languages are ENGLISH-integrated -> weak language moat -> diminishing returns, do NOT add miners. Region allocation henceforth arbitrated by the Discovery Multiplier telemetry (measures per-region yield, defunds underperformers incl. CN/JP if they flop) -- evidence-driven, not faith-driven.",
+   "hypothesis": "JP is the last high-moat region worth a full miner; adoption-not-quant markets are OSINT-flow-only; the rest is diminishing returns arbitrated by telemetry",
+   "expected_benefit": "completes the worthwhile region set; prevents over-expansion into low-moat languages",
+   "expected_cost": "JP miner (queued); flow vectors (cheap)",
+   "confidence": 0.8,
+   "assumptions": [
+    "English-integration of EU/IN quant communities holds; telemetry measures region yield"
+   ],
+   "success_metric": "JP produces >=1 gauntlet-entering card within 2 runs post-activation; no low-moat region miner is built without telemetry justification",
+   "reversal_condition": "telemetry shows a stop-line region unexpectedly yielding -> reconsider that specific region on data"
   }
  ]
 }
