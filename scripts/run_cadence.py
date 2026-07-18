@@ -122,6 +122,34 @@ def _assert_floors(state: dict, stage: str) -> None:
         print("cadence: floor violation cleared")
 
 
+def _freeze_exit_met() -> tuple[bool, str]:
+    """The 5 lockdown exit criteria. All must hold. Returns (met, human-status)."""
+    import time
+    checks = {}
+    checks["gate0"] = Path("data/gate0_complete").exists()
+    fills = Path("data/fills.csv")
+    checks["fills_4wk"] = (fills.exists()
+                           and time.time() - fills.stat().st_mtime < 1e9
+                           and sum(1 for _ in fills.open()) > 50
+                           and (time.time() - _oldest_line_age(fills)) > 28 * 86400)
+    checks["cost_model"] = Path("data/weekly_cost_summary.json").exists()
+    try:
+        calib = Path("data/calibration.csv")
+        n = sum(1 for ln in calib.open() if "resolved" in ln.lower()) if calib.exists() else 0
+        checks["calib_10"] = n >= 10
+    except OSError:
+        checks["calib_10"] = False
+    checks["no_criticals"] = not Path("data/DEADMAN_FIRED").exists()
+    met = all(checks.values())
+    return met, ", ".join(f"{k}={v}" for k, v in checks.items())
+
+
+def _oldest_line_age(p: Path) -> float:
+    """Best-effort mtime proxy for oldest fill; refined when fills.csv exists."""
+    import time
+    return p.stat().st_mtime if p.exists() else time.time()
+
+
 def main() -> None:
     now = datetime.now(tz=UTC)
     state = _load(_STATE, {})
@@ -210,6 +238,18 @@ def main() -> None:
             + "\n".join(f"- {d}" for d in due) + "\n", "utf-8")
         print(f"cadence: {len(due)} generation trigger(s) flagged -> {_DUE_NOTE}")
 
+    # FREEZE-EXIT (deterministic; principal 2026-07-18): evaluate the 5 lockdown exit
+    # criteria every cycle so the freeze lifts on EVIDENCE, not on memory. Pre-Gate-0
+    # these read cleanly as not-met; the moment live data satisfies them, the manifest
+    # is flagged for activation. No human or brain memory is the trigger -- the code is.
+    if stage == "S0" and not state.get("post_gate0_activated"):
+        met, why = _freeze_exit_met()
+        if met:
+            due.append("FREEZE-EXIT CRITERIA MET -- activate docs/POST_GATE0_MANIFEST.md "
+                       "top to bottom; flip stage_state to S1; set post_gate0_activated. "
+                       "Nothing deferred may be skipped.")
+        else:
+            state["freeze_exit_status"] = why
     _assert_floors(state, stage)
     _STATE.write_text(json.dumps(state, indent=2), "utf-8")
     print(f"cadence[{stage}]: fired={fired or 'nothing due'} | "

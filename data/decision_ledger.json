@@ -935,6 +935,19 @@
    ],
    "success_metric": "first full-depth audit either confirms a component clean OR finds a real defect; zero compression-caused info loss (git-verifiable)",
    "reversal_condition": "deep audits never find anything in 3 quarters -> drop to quarterly"
+  },
+  {
+   "id": "2026-07-18-deterministic-freeze-exit",
+   "decision": "Principal reliability concern: guarantee ALL deferred items activate post-Gate-0, not dependent on memory. Built: (1) docs/POST_GATE0_MANIFEST.md -- single deterministic source of truth for everything the lockdown deferred (improvement inbox, all queued register rows, stage-accelerations, monthly engine on full queue, live-phase organs) with activation order + all-or-by-rank rule. (2) run_cadence _freeze_exit_met() -- evaluates the 5 exit criteria (Gate 0 done, 4wk fills, cost model, >=10 calib rows, no criticals) EVERY cycle; the freeze lifts on EVIDENCE not memory -- the moment live data satisfies them the manifest is flagged for activation and stage flips S1. No brain/human memory is the trigger; the code is. Pre-Gate-0 it reads cleanly not-met. This closes the 'post-Gate-0 items orphaned/forgotten' hole -- same class as the cadence-by-memory hole fixed for the panel.",
+   "hypothesis": "a coded exit-criteria check + manifest makes freeze-lift deterministic; memory-based activation would silently drop items",
+   "expected_benefit": "zero deferred items forgotten; freeze lifts exactly when evidence permits, automatically",
+   "expected_cost": "one manifest file + a cheap per-cycle criteria check",
+   "confidence": 0.9,
+   "assumptions": [
+    "exit-criteria data files (fills.csv, calibration.csv, gate0_complete) get written by the live phase as specced"
+   ],
+   "success_metric": "freeze-exit status logged each cycle; on the real Gate 0, activation flags automatically and every manifest item is worked + ledgered",
+   "reversal_condition": "n/a (reliability infrastructure)"
   }
  ]
 }
