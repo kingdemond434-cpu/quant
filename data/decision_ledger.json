@@ -870,6 +870,19 @@
    ],
    "success_metric": "first coverage audit adds >=1 genuinely missing family OR credibly confirms completeness",
    "reversal_condition": "audits add only trivial families 2 quarters running -> fold into annual"
+  },
+  {
+   "id": "2026-07-18-youtube-transcript-reality",
+   "decision": "Principal push for max YouTube-transcript coverage: TESTED end-to-end from the VPS -- YouTube IP-blocks the datacenter (youtube-transcript-api RequestBlocked; no yt-dlp; youtube.com itself HTTP 200). Not a code gap; an IP-reputation wall (same class as FRED-site + Binance-WS blocks). HONEST RESOLUTION: YouTube mined via text mirrors the brain search reaches (transcript sites, show notes, forum dissections) with top channels named in the Prospector spec (Chat With Traders, Flirting with Models, Better System Trader, Top Traders Unplugged, QuantMinds/CQF talks). Direct-caption-at-scale = register #26: residential proxy / paid transcript API, EV-GATED + principal-approved SPEND, triggered only if video-locked mechanisms prove a recurring blocker -- never bought pre-emptively. youtube-transcript-api left installed (proxy-ready). Honest over impressive: did not fake a working fetcher.",
+   "hypothesis": "text mirrors capture most high-signal video content; direct capture is a marginal paid upgrade",
+   "expected_benefit": "honest YouTube coverage now; a clean paid trigger if it proves worth it",
+   "expected_cost": "0 now; ~-20/mo IF the blocker recurs and is EV-approved",
+   "confidence": 0.85,
+   "assumptions": [
+    "high-signal videos are discussed in reachable text somewhere"
+   ],
+   "success_metric": "Prospector cites >=1 video-sourced mechanism via text mirror within 2 runs",
+   "reversal_condition": "coverage log shows video-locked blockers recurring -> trigger the EV-gated proxy decision"
   }
  ]
 }
