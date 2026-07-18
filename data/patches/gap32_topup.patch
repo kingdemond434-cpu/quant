@@ -1,0 +1,91 @@
+diff --git a/scripts/run_cashcarry_executor.py b/scripts/run_cashcarry_executor.py
+index 1587e24..9557fb4 100644
+--- a/scripts/run_cashcarry_executor.py
++++ b/scripts/run_cashcarry_executor.py
+@@ -157,6 +157,40 @@ def _alloc(cands: list[tuple[str, float]], capital: float,
+     return {cands[i][0]: capital * w[i] for i in range(n)}
+ 
+ 
++def _topup_plan(pos: dict[str, dict], capital: float, *, cap_frac: float = 0.35,
++                min_frac: float = 0.02, min_usd: float = 20.0) -> dict[str, float]:
++    """Extra notional to bring each HELD carry UP toward its funding-weighted share of the FULL
++    capital -- never DOWN (closes are the target-set's job; this only fills idle authorized
++    capital that held carries would otherwise leave frozen from a low-free-capital open window).
++
++    Pure (no venue calls) so the risk-path sizing is unit-testable. Invariants that keep this in
++    the SAFE direction only (operator-directed 2026-07-19, gap #32):
++      * aggregate adds never exceed the free headroom (capital - deployed) -> the book can never
++        lever past the operator's --capital (the quarantined leverage optimizer stays ignored);
++      * each name is held under cap_frac*capital -> the 2026-07-13 single-name concentration rail;
++      * only MATERIAL shortfalls (>= max(min_frac*capital, min_usd)) top up -> a book already near
++        target does not churn on rounding noise.
++    """
++    if not pos:
++        return {}
++    funded = [(sym, max(float(p.get("funding", 0.0)), 0.0)) for sym, p in pos.items()]
++    tgt = _alloc(funded, capital, cap_frac=cap_frac)
++    deployed = sum(float(p["spot_qty"]) * float(p["spot_cost"]) for p in pos.values())
++    room = max(0.0, capital - deployed)
++    floor = max(min_frac * capital, min_usd)
++    plan: dict[str, float] = {}
++    for sym in sorted(pos, key=lambda k: max(float(pos[k].get("funding", 0.0)), 0.0), reverse=True):
++        if room <= 0.0:
++            break
++        cur = float(pos[sym]["spot_qty"]) * float(pos[sym]["spot_cost"])
++        add = min(min(tgt.get(sym, 0.0), cap_frac * capital) - cur, room)
++        if add < floor:
++            continue
++        plan[sym] = add
++        room -= add
++    return plan
++
++
+ def _mkt_or_limit(conn: Any, sym: str, side: str, qty: float) -> str:
+     """Close/hedge ``qty``: MARKET first, LIMIT fallback. On a thin/broken book a market order is
+     rejected by the venue PERCENT_PRICE filter (-4131) -- and a market-only cover can then NEVER
+@@ -452,6 +486,45 @@ def _rebalance(top: int, hold_top: int, capital: float, *, dry: bool) -> dict[st
+                         "opened": pos[sym]["opened"]})
+         actions.append(f"open {sym} {qty}")
+ 
++    # TOP UP undersized held carries toward the FULL-capital target so authorized capital is not
++    # left idle (operator-directed 2026-07-19; gap #32). Held carries are otherwise never resized,
++    # so a carry opened in a low-free-capital window stayed frozen small. Runs ONLY in normal state
++    # (never while a risk rail flattens/pauses), ADDS only (never sizes down), through the SAME
++    # 0.35 cap + thin-book depth guard as opens; _topup_plan bounds the aggregate to the free
++    # headroom so the book never levers past `capital`.
++    if risk is None or risk.action == "none":
++        for sym, add in _topup_plan(pos, capital).items():
++            px, ffl, sfl = spot_px.get(sym), fut_fl.get(sym), spot_fl.get(sym)
++            if not px or not ffl or not sfl:
++                continue
++            step = max(ffl["step"], sfl["step"])
++            qty = _round(add / px, step, int(min(ffl["qty_prec"], sfl["qty_prec"])))
++            if qty < max(ffl["min_qty"], sfl["min_qty"]) or qty <= 0:
++                continue
++            want = qty * px
++            s_depth, f_depth = spot.quote_depth(sym, "BUY"), fut.quote_depth(sym, "SELL")
++            if min(s_depth, f_depth) < want * _DEPTH_MULT:
++                actions.append(f"skip topup {sym}: thin book")
++                continue
++            p = pos[sym]
++            fpe = fut_px.get(sym, px)
++            if not dry:
++                t0 = int(time.time() * 1000) - 2000
++                _execute_pair(sym, qty, "BUY", "SELL")     # add matched legs: long spot, short perp
++                px = spot.avg_fill(sym, "BUY", t0) or px
++                fpe = fut.avg_fill(sym, "SELL", t0) or fpe
++            old_q = float(p["spot_qty"])
++            new_q = old_q + qty
++            p["spot_cost"] = (old_q * float(p["spot_cost"]) + qty * px) / new_q
++            p["perp_entry"] = (old_q * float(p["perp_entry"]) + qty * fpe) / new_q
++            p["spot_qty"] = new_q
++            p["perp_qty"] = -new_q
++            if not dry:
++                _log_trade({"event": "topup", "symbol": sym, "qty": qty,
++                            "notional": round(qty * px, 2), "funding_rate": p.get("funding"),
++                            "opened": p.get("opened")})
++            actions.append(f"topup {sym} +{qty}")
++
+     state["positions"] = pos
+     if not dry:                                           # only persist REAL (executed) positions
+         _reconcile_spot_realized(state)                   # self-heal accounting from exchange truth

@@ -306,3 +306,37 @@ governance layers -- this is the last polish before Gate 0.
 
 # STRUCTURAL-EDGE IDEAS (deduplicated)
 See docs/research/STRUCTURAL_EDGE_IDEAS.md -- 7 genuinely-NEW advantage-extraction ideas fully spec'd (AI-readable public data, sub-institutional-capacity catalog, digger-feed sentiment, session-handoff, minor-stable depeg, pre-listing detection, failed-tx intent) + 5 folded as enhancements to existing items. Priority N2+N1.
+
+---
+
+# PROSPECTOR SESSION 1 FINDINGS (2026-07-19, first manual run — structural/method, not alpha)
+Full session: docs/research/prospector_watchlist.md (0 cards survived graveyard+EV gate — logged
+honestly, not papered over). Two non-alpha findings worth routing here:
+
+1. **Operator-named GitHub-maximal targets (Qbot, QuantDinger, Vibe-Trading, ai_quant_trade) are
+   NOT strategy-logic sources — they are infra/agent-framework shells or equity-market factor
+   zoos.** QuantDinger and Vibe-Trading are 2026-era "AI trading agent" platforms (LLM-driven
+   strategy generation/execution scaffolding) with zero disclosed concrete strategy logic in
+   their docs. Qbot and ai_quant_trade are Chinese A-share/equity ML mega-repos (technical
+   indicators, Alpha101/GTJA191 factor libraries, TSFresh 5000-factor auto-mining, RL/GBDT
+   model zoos) with no crypto-perp-specific content found. **Recommendation: do not re-mine
+   these 4 repos for strategy logic in future Prospector runs** — treat as a checked, closed
+   branch unless one ships a new crypto-specific module. One reusable byproduct: Vibe-Trading's
+   "Alpha Zoo" (452 factors: Qlib158 + Kakushadze Alpha101 + GTJA191 + academic
+   Fama-French/Carhart/betting-against-beta) is a candidate REFERENCE factor library for the
+   desk's own gated Feature Discovery Factory (improvement_inbox items #8/9/10/26) once that
+   gate opens post-recorder — equity-focused, so still needs a crypto-relevance filter, but
+   free and pre-catalogued (vibetrading.wiki/alpha-library/).
+2. **Chinese-language search yield this session skewed heavily toward A-share/equity content
+   even under crypto-specific query framing** (RSRS is A-share sell-side research; ai_quant_trade/
+   Qbot are equity-first). The desk's "Chinese Quant Maximization" assumption (improvement_inbox,
+   queued 2026-07-18) should be read as CN-quant-general, not CN-crypto-native — the two have
+   different density. Source-yield telemetry, when built, should track CN-crypto vs. CN-equity
+   yield SEPARATELY rather than pooling "Chinese-language" as one bucket, since equity-only finds
+   (like RSRS) require a full crypto-port-and-backtest before they're even testable, structurally
+   penalizing them vs. crypto-native finds in the effort_h term.
+3. **Coverage gap for next Prospector session (2026-08 cadence):** Podcasts/interviews, YouTube/
+   talks, Forums (deep+legacy — r/algotrading, EliteTrader, Wilmott, Nuclear Phynance), Academic
+   (SSRN/arXiv), Records (contest/CTA archives), and AI/HF documentation were weakly or not
+   covered this first run (see prospector_coverage.md) — the >=40% least-recently-covered bias
+   rule should route the next session there before repeating Code/Non-English/Social.

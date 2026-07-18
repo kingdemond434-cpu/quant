@@ -1,0 +1,17 @@
+panel: 87 names x 2506 daily bars
+
+sleeve                annSh   gates maxcorr  orth  status
+funding_carry          0.89     6/9    0.28  True  SHADOW
+funding_momentum       0.39     6/9    0.28  True  REJECTED
+xsec_price_mom         0.87     7/9    0.34  True  SHADOW
+ts_trend               0.78     7/9    0.73 False  CANDIDATE
+xsec_reversal         -1.62     2/9    0.34  True  REJECTED
+xsec_lowvol           -0.92     3/9    0.34  True  REJECTED
+basis_carry            0.34     5/9    0.26  True  REJECTED
+taker_flow             0.62     6/9    0.29  True  SHADOW
+tftrailbreakout        0.82     6/9    0.91 False  CANDIDATE  <== TEST
+tfatrexitbreakout      0.94     7/9    0.91 False  CANDIDATE  <== TEST
+
+=== EV gate (pre-registered economics) ===
+  {'name': 'tftrailbreakout', 'ev': 0.0003, 'p_survive': 0.0158, 'breadth_f': 1.732, 'verdict': 'REJECT (EV below thresh)', 'tags': ['price_only', 'crowded_known']}
+  {'name': 'tfatrexitbreakout', 'ev': 0.0004, 'p_survive': 0.0158, 'breadth_f': 1.732, 'verdict': 'REJECT (EV below thresh)', 'tags': ['price_only', 'crowded_known']}

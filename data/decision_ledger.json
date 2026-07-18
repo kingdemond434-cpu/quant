@@ -1227,6 +1227,61 @@
    ],
    "success_metric": "VERIFIED 07-18: fix removes the hard $1,250 cap (confirmed live, _dynamic_capital=4500) but does NOT reach full deployment -- only one name opens per rotation at its funding-weighted slice (~$200-350), frozen tiny carries persist, so the book plateaus below $4,500. Full deployment REQUIRES the gap #32 guarded resize-up (tested build, not a hot-patch). Under-deployment on a PAPER book is the safe direction and low-cost; matters materially only at live capital.",
    "reversal_condition": "book fails to converge toward $4,500 within a few days (would confirm gap #32 needs the resize-up fix sooner) OR gap #14 root-cause invalidates using full --capital"
+  },
+  {
+   "id": "2026-07-19-gap14-forensic-rootcause",
+   "decision": "Gap #14 forensic root-cause (read-only, no code changed per freeze). CONFIRMED with fresh reads: forward_ann_sharpe=16.09 (variance collapse -- molded curve smooths basis/MtM noise on a delta-neutral carry so the Sharpe denominator collapses); shrink_fraction S^2/(S^2+SE^2) can't shrink a false-huge point estimate -> conf 0.92; fwd_days=22 vs ~2.7d actual post-reset curve (counter never reset at the 07-16 incident); active=conf>0 flipped the executor onto the 0.25x floor notional ($1,250) off the operator's $4,500. Predicted by the 07-11 kimi panel (Forward-Shadow Basis-Risk Censorship). Fix queued post-Gate-0.",
+   "hypothesis": "the confidence contamination is a variance-collapsed forward Sharpe + stale fwd_days, not a bug in the shrink math itself",
+   "expected_benefit": "root cause is now precise and evidence-backed, so the post-Gate-0 fix targets the real defect (MtM fwd returns + plausibility rail + counter reset)",
+   "expected_cost": "none (forensic only)",
+   "confidence": 0.9,
+   "assumptions": [],
+   "success_metric": "post-Gate-0 fix ships all 4 items + property/mutation tests before `active` may drive sizing again",
+   "reversal_condition": "if MtM forward returns still show an implausible Sharpe, the collapse source is elsewhere -> re-open forensic"
+  },
+  {
+   "id": "2026-07-19-gap19-gap32-specs-queued",
+   "decision": "Gap #19 (venue-truth reconcile guard) spec pre-built; Gap #32 (guarded resize-up) built + unit-tested (7 tests) + exec suite green, then REVERTED from live to honor the freeze per operator instruction ('queue for post-Gate-0'). #32 was implemented earlier the same day under the 'capital is never idle' push -- reverting aligns the desk with its own execution lockdown (a structural change to the ruin-incident sizing fn must not perturb the calibration rows Gate 0 depends on). Both specs + the #32 tested patch preserved for verbatim re-apply at Gate-0.",
+   "hypothesis": "specs-now / implement-post-Gate-0 captures the value without taking freeze risk",
+   "expected_benefit": "#19 catches book-vs-venue drift; #32 fills idle authorized capital -- both ready at Gate-0 with zero design delay",
+   "expected_cost": "#32 reverted -> book stays ~20%% deployed during the freeze (safe direction, paper book)",
+   "confidence": 0.85,
+   "assumptions": [],
+   "success_metric": "both re-applied cleanly at Gate-0, tests green, no freeze contamination in the calibration window",
+   "reversal_condition": "operator directs immediate implementation -> re-apply #32 from data/patches/gap32_topup.patch"
+  },
+  {
+   "id": "2026-07-19-verify-then-claim-contract",
+   "decision": "Added VERIFY-THEN-CLAIM as a HARD contract rule (ops/run_cro_ai.sh): before asserting any system state to the principal/ledger/gap-register/dashboard, the brain must READ the relevant files FRESH this cycle. Origin: this session's twice-repeated growth_defect misdiagnosis (claimed 'justified/false-positive' without reading live positions -- it was a TRUE bug).",
+   "hypothesis": "forcing a fresh read before every state claim prevents the claim-without-verify error class",
+   "expected_benefit": "ledger + status claims become trustworthy; the desk stops asserting stale/aspirational state as fact",
+   "expected_cost": "marginal extra reads per cycle (cheap)",
+   "confidence": 0.9,
+   "assumptions": [],
+   "success_metric": "no future ledger/register entry asserts state that a fresh read contradicts",
+   "reversal_condition": "rule proves to add material cost without catching errors over 2 quarters -> soften to spot-check"
+  },
+  {
+   "id": "2026-07-19-prospector-firstrun",
+   "decision": "Prospector FIRST RUN ever executed (operator-triggered), via the VPS brain (claude -p, web search verified working). Bounded, freeze-safe (docs-only writes). RESULT: zero cards survived -- honest 'nothing new'. Operator-named Chinese frameworks (Qbot/QuantDinger/Vibe-Trading/ai_quant_trade) = AI-agent infra shells or CN A-share equity factor zoos (Alpha101/GTJA191), no crypto-perp strategy logic -> logged as closed branch. RSRS ev=0.0002 reject; Zhihu ML-funding graveyard-matched funding_momentum. Closes gap #29's core (a digger has now actually run).",
+   "hypothesis": "the digging engine works and is honest -- it ran, cross-checked the graveyard, EV-gated, and reported nothing new rather than fabricating",
+   "expected_benefit": "gap #29 core closed; source-yield data logged; Chinese-framework branch honestly assessed + closed",
+   "expected_cost": "one bounded run's tokens; found no new alpha (expected -- price-only/crowded space is mined out)",
+   "confidence": 0.85,
+   "assumptions": [],
+   "success_metric": "future cadence runs execute without hand-triggering once connector/recorder free the cycle",
+   "reversal_condition": "if the run had fabricated survivors that fail the gauntlet -> tighten the prospector prompt's graveyard/EV discipline"
+  },
+  {
+   "id": "2026-07-19-breakout-variants-tested-rejected",
+   "decision": "Operator-requested test of tftrailbreakout + tfatrexitbreakout (TF Donchian-20 breakout with 10% trailing-stop / ATR14x3 Chandelier exit). Implemented faithfully to the trend_basket conventions (lagged, inverse-vol, gross-normalized, no-look-ahead, cost) with CANONICAL un-tuned params, run through the REAL gauntlet (87 names x 2506d) + EV gate. RESULT: annSh 0.82/0.94, 6-7/9 gates, but max_corr 0.91 vs the ts_trend sleeve (redundant trend exposure) -> NOT orthogonal; EV 0.0003/0.0004 vs 0.05 -> both REJECT. The exit rule does not manufacture orthogonality or edge on a crowded price-only breakout entry. Graveyarded + do_not_repeat. Test artifact: data/patches/test_breakouts_20260719.py.",
+   "hypothesis": "a trailing/ATR exit might rescue the already-rejected breakout entry into orthogonality or gauntlet-survival",
+   "expected_benefit": "definitive data-grounded verdict on the operator's two strategies; no re-test needed",
+   "expected_cost": "one free historical backtest",
+   "confidence": 0.9,
+   "assumptions": [],
+   "success_metric": "verdict is reproducible from the archived test script + params",
+   "reversal_condition": "a genuinely new filter/venue (not just an exit rule) changes the orthogonality -> re-test"
   }
  ]
 }
