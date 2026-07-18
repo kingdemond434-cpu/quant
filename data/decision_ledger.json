@@ -961,6 +961,19 @@
    ],
    "success_metric": "at freeze-exit, growth ramp + stage machine arm automatically; monthly review finds zero memory-dependent progressions",
    "reversal_condition": "n/a (auditability infrastructure)"
+  },
+  {
+   "id": "2026-07-18-principal-design-philosophy",
+   "decision": "Principal STANDING DESIGN PHILOSOPHY adopted into the brain contract: run as hot as evidence allows; aggression is default; burden of proof on the conservative impulse (blocked increases in deployment/exploration/structure/speed must cite demonstrated+quantified ruin risk, not mere uncertainty); ambiguity resolved by cheapest measurement; unsupported caps default to relaxation post-measurement; simplicity is for speed not timidity. Adopted essentially verbatim -- it is consistent with the objective (max E[log W] s.t. survival) and the growth mandate. ONE CARVE-OUT added (the philosophy applied consistently, not weakened): burden does NOT invert for LEVERAGE/SIZING beyond PROVEN edge -- null is no-edge-until-proven, sizing on unproven edge is a demonstrated (incident #2) + quantified (Kelly/ruin) ruin path that fails the philosophy own ruin-risk test. Everywhere else: push the ceiling immediately on clean evidence. Rails stay absolute.",
+   "hypothesis": "aggression-as-default within absolute rails, minus sizing-on-unproven-edge, is the max-E[logW] posture",
+   "expected_benefit": "removes reflexive timidity everywhere it is unjustified; preserves the one place caution is math",
+   "expected_cost": "none -- it is framing that sharpens existing mandates",
+   "confidence": 0.85,
+   "assumptions": [
+    "brain distinguishes deploy-authorized-capital (push) from size-beyond-proven-edge (prove first)"
+   ],
+   "success_metric": "no unjustified cap survives its measurement cycle; zero sizing-on-unproven-edge incidents",
+   "reversal_condition": "aggression-default produces a ruin-risk breach traceable to the philosophy -> re-scope with the incident"
   }
  ]
 }
