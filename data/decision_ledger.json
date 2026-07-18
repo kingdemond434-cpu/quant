@@ -896,6 +896,19 @@
    ],
    "success_metric": "within 3 Prospector runs, >=1 card sourced from an ex/solo-quant long-form piece",
    "reversal_condition": "ex/solo-quant sources yield only known/retail material 2 quarters -> demote to normal weight"
+  },
+  {
+   "id": "2026-07-18-source-yield-learning",
+   "decision": "Principal asked for more source priorities. HONEST answer: NO more hand-picked ones -- priorities trade off against the fixed 15-query budget, and a third/fourth would dilute the two strong veins (anti-consensus obscurity + ex/solo-quant). Instead adopted the correct mechanism: SOURCE-YIELD LEARNING -- log each surviving card to its source family, and at the quarterly coverage audit re-weight budget toward empirically-productive families, demote noise-only ones. Priority becomes evidence-earned, self-tuning, not guessed -- the meta-learning layer for the diggers. Hand-picked priority count is CAPPED at 2.",
+   "hypothesis": "empirical source hit-rate beats human-guessed priorities and does not dilute the budget",
+   "expected_benefit": "self-tuning prioritization; the diggers learn where alpha actually comes from",
+   "expected_cost": "logging yield per family (cheap); a re-weight step in the quarterly audit",
+   "confidence": 0.85,
+   "assumptions": [
+    "enough surviving cards accrue over quarters to make yield signal meaningful"
+   ],
+   "success_metric": "by the 2nd coverage audit, budget measurably shifted toward a proven-productive family",
+   "reversal_condition": "too few survivors to yield signal -> keep equal-weight rotation, revisit at more data"
   }
  ]
 }
