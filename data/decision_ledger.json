@@ -1174,6 +1174,19 @@
    ],
    "success_metric": ">=1 of N1/N2 produces a gauntlet-surviving card within 2 quarters of build",
    "reversal_condition": "per-idea falsification clauses in the spec"
+  },
+  {
+   "id": "2026-07-18-guaranteed-implementation-amendment",
+   "decision": "Principal amendment (v2, supersedes v1 'guarantee ALL positive-EV' which the principal correctly refined): GUARANTEED IMPLEMENTATION for proposals with >=2 bps expected annualized CAGR uplift -- permanent queue, no expiry, no queue-depth drop, ordered by EV/complexity. Sub-threshold (<2 bps positive) get a 12-month window then expire unless evidence lifts them. Threshold evidence-adjustable (CRO note: expect it to RISE with maturity -- 2 bps is very low, near guarantee-all-positive, so deletion-credits + sunset must keep pruning the accumulated low-value complexity; the complexity budget caps the RATE but not the TOTAL, so the threshold is the real long-run discipline lever). Prerequisite-gated items skipped-but-place-kept. Freeze still governs (Gate 0 + >=10 live rows); specs may be pre-built now. Compatible with the no-numeric-cap throughput regime (#40) -- this refines WHICH items are guaranteed vs expire, on top of it.",
+   "hypothesis": "a threshold-gated guarantee (not guarantee-everything) maximizes built high-ROI work while the threshold + sunset keep low-value complexity from accreting",
+   "expected_benefit": "no high-ROI proposal is ever lost to queue depth; trivial ones don't immortalize themselves",
+   "expected_cost": "risk of low-value complexity accretion if the threshold stays too low -> mitigated by evidence-adjustability + deletion credits",
+   "confidence": 0.8,
+   "assumptions": [
+    "EV per proposal is estimable in bps; monthly engine raises the threshold if complexity accretes without value"
+   ],
+   "success_metric": "every >=2 bps item eventually built in EV order; sub-threshold items expire or graduate cleanly; net complexity does not creep upward without matching value",
+   "reversal_condition": "guaranteed low-value items accrete complexity faster than deletion credits prune -> raise the threshold (the built-in lever)"
   }
  ]
 }
