@@ -818,6 +818,19 @@
    ],
    "success_metric": "Gate-0 pre-mortem produces >=1 finding worth addressing before keys",
    "reversal_condition": "n/a (event-scoped, self-limiting)"
+  },
+  {
+   "id": "2026-07-18-growth-audit-denominator-fix",
+   "decision": "Maintenance under lockdown (pager-integrity defect): growth_audit utilization denominator was the RAW spot USDT wallet -- faucet-fed, and post-sweep (~$99.5k) it made carry_capital_utilization a permanent phantom GAP whose suggested remediation (deploy the wallet) was the leverage-runaway class via the back door. Fixed: utilization = deployed / AUTHORIZED capital (cashcarry_config), idle wallet surfaced as INFO for the principal (authorizing more = principal/gate decision, never an audit demand). NEIGHBOURS: run_alerts growth_defect check (now goes silent when book is fully deployed), desk digest + micro-audit briefs (consume growth_audit.json), growth-mandate doctrine (unchanged: under-deployment of AUTHORIZED size remains a first-class defect).",
+   "hypothesis": "conservatism must be measured against authorization, not against faucet balances",
+   "expected_benefit": "growth_defect pages become true signals; phantom class closed",
+   "expected_cost": "none",
+   "confidence": 0.9,
+   "assumptions": [
+    "config capital remains the authorization source until dynamic sizing re-gates"
+   ],
+   "success_metric": "zero growth_defect pages while book is fully deployed at authorized size",
+   "reversal_condition": "n/a (defect fix)"
   }
  ]
 }

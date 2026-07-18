@@ -47,20 +47,32 @@ def main() -> None:
     pol = _load("data/live_deployment_policy.json")
     items: list[dict[str, Any]] = []
 
-    # 1) CAPITAL UTILIZATION: idle USDT beyond the reconcile buffer is un-deployed growth.
+    # 1) CAPITAL UTILIZATION vs AUTHORIZED capital (2026-07-18 fix: the old denominator was
+    # the RAW spot USDT wallet -- on a faucet-fed testnet that is not authorized capital, and
+    # after the 07-17 hygiene sweep (~$99.5k consolidated) it made this defect a permanent
+    # phantom whose "remediation" was the leverage-runaway class through the back door.
+    # Utilization = deployed / the operator's authorized capital (config). Idle wallet is
+    # surfaced as INFO for the principal: AUTHORIZING more is a principal/gate decision,
+    # never an audit demand.
     dep = _num(cc.get("deployed_notional"))
     idle = _num(lc.get("spot", {}).get("usdt"))
-    total = dep + idle
-    util = round(dep / total, 3) if total > 0 else None
+    try:
+        authorized = _num(_load("data/cashcarry_config.json").get("capital")) or 4500.0
+    except Exception:
+        authorized = 4500.0
+    util = round(dep / authorized, 3) if authorized > 0 else None
     items.append({
         "check": "carry_capital_utilization",
-        "utilized": f"${dep:,.0f} deployed", "authorized": f"${total:,.0f} deployable",
+        "utilized": f"${dep:,.0f} deployed", "authorized": f"${authorized:,.0f} authorized "
+        f"(config) | wallet idle ${idle:,.0f} (info: raising authorized capital is a "
+        "principal decision)",
         "utilization": util,
         "verdict": ("OK" if util is None or util >= _UTIL_TARGET else "GAP"),
-        "justified_by": ("survival (reconcile/slippage buffer ~$1k is required)"
+        "justified_by": ("fully deployed to the authorized ceiling"
                          if util is not None and util >= _UTIL_TARGET else
-                         "NONE -- idle capital above buffer earns nothing: raise capital in "
-                         "data/cashcarry_config.json (live-reload, no restart)"),
+                         "NONE -- authorized capital is not fully deployed: the executor "
+                         "should be using its full config capital (check free-capital sizing "
+                         "/ open blocks)"),
     })
 
     # 2) LEVERAGE vs the growth-optimal target: floored is OK ONLY while confidence == 0.
