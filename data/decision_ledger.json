@@ -988,6 +988,20 @@
    ],
    "success_metric": "diggers cite GitHub/non-English sources within 2 runs; every cycle pushes to GitHub; zero secret leak",
    "reversal_condition": "push failures persist -> diagnose credentials; charter yields only noise 2 quarters -> retune per source-yield"
+  },
+  {
+   "id": "2026-07-18-free-first-data-stack",
+   "decision": "Principal FREE DATA STACK directive (+Addendum A + constitutional amendment) adopted per the freeze clause. NOW (governance, non-build): (a) FREE-FIRST DATA PROTOCOL added to the contract as constitutional -- 6-step max-depth free scan (source-of-truth, wide+deep, RECONSTRUCTION self-compute, verify-vs-ground-truth, honest residue grading, sustainability) mandatory before any paid data enters the EV gate; paid only when the Discovery Bottleneck Detector proves a binding gap. (b) data/data_universe_map.json catalog created (~25 free sources across trades/L2/OI-funding-liq/onchain/options/universe/validation + unpurchasable residual gaps). QUEUED (freeze -> post-Gate-0, improvement inbox + manifest): all ~30 pipeline integrations in EV order, each with integrity+license+liveness+immutable-Bronze-archive; Tardis-free-sample validation harness; data-quality scoring -> Data Value Engine. Directive self-corrected orig item6 (Binance bookDepth/liquidationSnapshot history IS free) -- captured. Honest residue on record: pre-recorder Binance L2 ticks + 2021-2025 liq cascades destroyed-at-source (never purchasable); recorder solves forward tick gap (already LIVE). ~$1.5k paid basket replaced at $0. TIME-SENSITIVE exception noted for forward-only-unrecoverable captures (recorder precedent).",
+   "hypothesis": "free-first + self-computed metrics cover every needed data domain at $0; capital saved compounds in the book",
+   "expected_benefit": "full data moat at zero cost; owned-methodology metrics that beat black-box vendors",
+   "expected_cost": "post-Gate-0 pipeline build effort; cents of S3 egress for HL archives",
+   "confidence": 0.85,
+   "assumptions": [
+    "free tiers/dumps stay available (mitigated: monthly liveness + Bronze archive)",
+    "brain builds per EV order post-freeze"
+   ],
+   "success_metric": "post-Gate-0: >=3 free sources ingested + Tardis-diff-validated; zero paid data; bottleneck detector governs any exception",
+   "reversal_condition": "a free source dies and is a SPOF -> the pre-required second-source/Bronze-archive rule covers it; genuine binding gap -> narrow EV-gated paid exception"
   }
  ]
 }

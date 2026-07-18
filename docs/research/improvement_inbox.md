@@ -66,3 +66,7 @@ ratified twice. The directive's own guardrail ("never touch the forward shadow m
 regime-event gate") is affirmed and already Tier-3-adjacent. Clustering (#23/reg 23) is
 spec-first in queue. When the Discovery Bottleneck line in the cycle log says compute, the
 pilot verdict is the authorization to scale it.
+
+
+## FREE DATA STACK (principal 2026-07-18, freeze-governed -> post-Gate-0 or as time-sensitive maintenance)
+Full catalog: data/data_universe_map.json. Build order post-freeze by EV/complexity: (1) Coinalyze daily OI/funding/liq backfill (Binance+Bybit, free, unlimited daily history); (2) data.binance.vision bulk trades/klines/metrics + bookDepth/liquidationSnapshot history; (3) self-computed on-chain flows (Arkham/eth-labels + Dune/Flipside/BigQuery = owned Nansen-class metrics); (4) Bybit L2 community repos; (5) DefiLlama stablecoin + Coin Metrics community daily; (6) Deribit DVOL/options; (7) CoinGecko universe snapshots; (8) Tardis-free-sample validation harness diffing ALL of the above. Each: ingestion + integrity + license/usage-scope stored + monthly liveness + immutable Bronze archive. TIME-SENSITIVE EXCEPTION: any FORWARD-ONLY-unrecoverable capture (Coinalyze intraday) may build under the maintenance exception if the brain judges the daily loss material -- same logic that allowed the recorder. Also queue: data-quality scoring system + Data Value Engine integration.
