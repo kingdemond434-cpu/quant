@@ -1187,6 +1187,19 @@
    ],
    "success_metric": "every >=2 bps item eventually built in EV order; sub-threshold items expire or graduate cleanly; net complexity does not creep upward without matching value",
    "reversal_condition": "guaranteed low-value items accrete complexity faster than deletion credits prune -> raise the threshold (the built-in lever)"
+  },
+  {
+   "id": "2026-07-18-threshold-1bps-not-picky",
+   "decision": "Principal lowered the guaranteed-implementation threshold 2 bps -> 1 bps and directed 'no picky bot leaving small-benefit ideas unbuilt.' Adopted, WITH the honest clarification now in the contract: the 1 bps threshold is on BENEFIT, but implementation still requires POSITIVE EV, and EV already prices complexity + maintenance. Therefore -- small-benefit + low-cost = net-positive = MUST be built (never skipped for smallness; no pickiness on genuine small wins). Small-benefit + maintenance-cost-exceeds-benefit = net-NEGATIVE = correctly not built (arithmetic, not pickiness; it is the exact complexity that caused this week's change-induced incidents). Net: leave NO net-positive benefit on the table however small; take on NO net-negative complexity however small its apparent benefit. 1 bps is near-symbolic (real filter is always EV-per-complexity + the budget); it signals 'build the small stuff too' while the EV gate keeps the desk from drowning in low-value maintenance.",
+   "hypothesis": "guaranteeing all net-POSITIVE items (benefit>cost) at a 1 bps benefit floor captures every real small win without accreting net-negative complexity",
+   "expected_benefit": "no genuine small edge lost to pickiness; no incident-prone low-value complexity taken on",
+   "expected_cost": "more small items built (rate-capped by complexity budget); threshold may need to rise later",
+   "confidence": 0.8,
+   "assumptions": [
+    "EV genuinely prices maintenance so net-negative small items are caught"
+   ],
+   "success_metric": "small net-positive items get built in EV order; no net-negative small item is built; complexity does not creep without matching value",
+   "reversal_condition": "low-value items accrete complexity faster than deletion credits prune -> raise the 1 bps floor"
   }
  ]
 }
