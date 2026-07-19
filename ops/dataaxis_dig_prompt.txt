@@ -27,3 +27,6 @@ OUTPUTS
 - Set "last_data_axis_dig" to today's date (UTC ISO) in data/cadence_state.json.
 
 CLOSE: be blunt. Verified small beats unverified impressive. Grade un-reconstructable residues destroyed-at-source and move on. Exhaustion means no KNOWN family skipped -- not a pile of UNVERIFIED links.
+
+CHINESE/CJK PRIORITY (high-yield, every run): the LEGITIMATE Chinese open-source ecosystem (Gitee, Chinese GitHub, open community datasets, open-access academic) is a first-class target -- English-only research misses it; translate as needed.
+LICENSE/LEGITIMACY GATE (DIGGING_CHARTER 13, HARD): adopt ONLY clearly-licensed/permitted sources. NEVER seek, download, run, or adopt pirated datasets, cracked or 'shared' premium software/platforms, paywall-circumvented papers, or mirrors of paid databases (CNKI/Wind/Bloomberg). Grade such finds 'excluded-illegitimate' in data_universe_map.json (awareness only) -- never adopt, never download, never execute cracked code (malware + un-deployable + contamination).

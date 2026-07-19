@@ -1355,6 +1355,20 @@
    ],
    "success_metric": "each timer fires on schedule + produces graded output; prospector honestly reports nothing-new rather than fabricating; no two claude runs collide",
    "reversal_condition": "session collisions or token cost unacceptable -> stagger further or revert to brain-cycle execution; sustained zero yield on a digger -> demote its cadence per source-yield learning"
+  },
+  {
+   "id": "2026-07-19-cjk-priority-license-gate",
+   "decision": "Operator flagged the Chinese 'free/cheap' digital culture as a massive standing advantage to exploit always. ADOPTED the legitimate half: CJK open-source ecosystem (Gitee, Chinese GitHub, open community datasets, open-access academic) elevated to a standing high-yield priority for all diggers (charter §13 note + free-data spec section + data-axis prompt). DECLINED the illegitimate half: added a UNIVERSAL LICENSE/LEGITIMACY GATE (DIGGING_CHARTER §13) -- the desk never seeks/downloads/runs/adopts pirated datasets, cracked/shared premium software, paywall-circumvented papers, or paid-DB mirrors (CNKI/Wind/Bloomberg). Reasons practical not only legal: (1) un-deployable at live/commercial scale so worthless now; (2) cracked software = top malware vector, must never run on the box holding keys/ledger/live-creds (hard security boundary); (3) highest contamination/fabrication tier. Illegitimate finds graded 'excluded-illegitimate' (awareness only), never adopted. Strengthens the Data Genealogy license-scope discipline rather than limiting it.",
+   "hypothesis": "the legitimate CJK open-source layer is a real under-mined edge; a hard legitimacy gate captures it without the legal/malware/contamination liability of the pirated layer",
+   "expected_benefit": "high-yield legitimately-free CJK sources + a clean, live-deployable, malware-safe data foundation",
+   "expected_cost": "some genuinely-useful-but-illegitimate sources are deliberately left on the table (correct -- they are un-deployable + unsafe)",
+   "confidence": 0.85,
+   "assumptions": [
+    "legitimate CJK open-source is genuinely rich",
+    "the gate is enforceable by the digger's own grading"
+   ],
+   "success_metric": "CJK legitimate sources enter the map graded/verified; zero pirated/cracked sources ever adopted or downloaded to the box",
+   "reversal_condition": "n/a on the gate (hard security/legal boundary); CJK priority demoted only if it yields sustained low validated value"
   }
  ]
 }

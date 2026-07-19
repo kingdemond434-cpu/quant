@@ -103,6 +103,10 @@ findings → improvement_inbox. Cadence-done key: `last_data_axis_dig`. Honest t
 accepted): a weekly, uncapped, exhaustive dig consumes more shared brain-cycle time than the connector
 build — operator has chosen data-breadth weight here; the executor/risk path stays untouched.
 
+## CHINESE / CJK OPEN-SOURCE ECOSYSTEM — standing high-yield priority (operator 2026-07-19)
+
+The Chinese-language internet carries a disproportionately large layer of LEGITIMATELY-free quant resources English-only research never sees: prolific open-source on Gitee + Chinese GitHub (full trading systems, backtest frameworks, factor libraries, ML models, Chinese-language READMEs), open community datasets, and open-access academic content. A genuine structural edge and a first-class recurring target every run (translate as needed). STRICTLY subject to the universal LICENSE / LEGITIMACY GATE (DIGGING_CHARTER §13): the open-source half is gold; the desk does NOT seek, download, run, or adopt the pirated / cracked / paywall-circumvented / institutional-mirror half (un-deployable + malware + contamination) — those are graded 'excluded-illegitimate' for awareness only. Legitimately-free only.
+
 ## SEARCH-SPACE EXPANSION (DIGGING_CHARTER §12 — universal, all diggers)
 The source universe is permanently incomplete; a defined budget share every session hunts entirely NEW
 source classes/communities/ecosystems, catalogued on validated value, retired-but-archived on sustained
