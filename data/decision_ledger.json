@@ -1440,6 +1440,19 @@
    ],
    "success_metric": "brain cycles run 7 consecutive days with zero quota no-ops alongside normal interactive use",
    "reversal_condition": "any quota-starved brain cycle during an open incident -> activate Option A via ops/setup_brain_api_key.sh (pre-built, one command)"
+  },
+  {
+   "id": "2026-07-19-cro-script-unbound-dollar-fix",
+   "decision": "PRODUCTION DEFECT patched (maintenance exception, freeze-exempt): ops/run_cro_ai.sh line 63 contained an unescaped literal '$300' inside the double-quoted PROMPT string; under set -u bash expanded it as ${3}00 -> 'line 81: $3: unbound variable' -> the DAILY BRAIN SCRIPT HAS BEEN CRASHING BEFORE CALLING CLAUDE (no 20260719_0845 log exists -- this morning's timer run died the same way; the brain was double-dead today: quota AND this). Same class as the escaped \\$100-200 on line 57 (someone escaped that one, then a later prompt edit introduced $300 unescaped). Fix: one-char escape. RULE (KB-worthy): any dollar-amount added to a double-quoted shell prompt string MUST be \\$-escaped; bash -n does NOT catch it (expansion-time, not parse-time) -- after editing PROMPT text, smoke-run the script far enough to create its log file. NEIGHBOURS: watchdog auto-retry + event triggers (all call this script -- all were silently dying); brain_noop alert (fired correctly, but was attributed to quota alone -- a masked second cause).",
+   "hypothesis": "escaping the literal restores the PROMPT build and the brain cycle end-to-end",
+   "expected_benefit": "daily cycle + retries actually reach claude again",
+   "expected_cost": "none (one character)",
+   "confidence": 0.97,
+   "assumptions": [
+    "no other unescaped $N remains (grepped: only $100 escaped, $300 now escaped)"
+   ],
+   "success_metric": "next run creates a growing data/cro_ai_logs/<ts>.log and exits 0",
+   "reversal_condition": "n/a (syntax fix)"
   }
  ]
 }
