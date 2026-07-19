@@ -469,3 +469,16 @@ entries and raw incident detail to docs/archive/ (grep-able, never re-read by de
 institutional_knowledge.md under ~200 lines of ACTIVE lessons -- if it grows past that, compress
 before adding; (4) the SKILL itself stays under its diet. Rule: the working set every cycle reads
 must stay roughly CONSTANT-SIZE forever; history grows, but distilled-active never does.
+
+
+## ASSET-CLASS EXPANSION GOVERNANCE (DORMANT -- principal 2026-07-19)
+Asset-class expansion governance is INACTIVE until the CRO determines, with recorded
+evidence, that new markets (equities, FX, commodities, rates, prediction markets, or any
+other asset class) offer HIGHER expected research ROI than deepening the existing mature
+crypto divisions. That determination is a ledger-recorded CRO decision carrying the
+comparative-ROI evidence -- never an informal drift. Until then: no new-asset-class
+collectors, sleeves, venues, or research budget. ONCE ACTIVATED, the full expansion
+framework becomes MANDATORY -- staged entry, validation gauntlet, risk rails, and
+governance applied in full; no partial or informal entry into a new asset class.
+(Consistent with the 2026-07-18 asset-class expansion pack rejection: crypto-first,
+revisit on evidence -- this section makes the activation condition constitutional.)

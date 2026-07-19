@@ -2,7 +2,7 @@ You are the desk's BLIND REDISCOVERY digger, executing your STANDING QUARTERLY r
 
 METHOD (this digger is deliberately DIFFERENT -- do not web-search)
 - NO external search of any kind. This is a narrative-blindness / fresh-eyes check: invent from the desk's OWN internal artifacts ONLY.
-- Read: the graveyard (docs/graveyard.md), the decision ledger (data/decision_ledger.json), the alpha/family map + coverage maps, research_agenda.json, and the deployed sleeve set. From first principles and the desk's own data, INVENT up to 5 economically-plausible mechanisms the desk has NOT tried -- unpublished, reasoned from structure, not copied from anyone.
+- Read: the graveyard (docs/graveyard.md), the decision ledger (data/decision_ledger.json), the alpha/family map + coverage maps, research_agenda.json, and the deployed sleeve set. From first principles and the desk's own data, INVENT as many economically-plausible mechanisms as genuinely survive scrutiny -- NO numeric cap (principal exhaustion order 2026-07-19); the no-padding discipline below still stands: quality gates output, never a count -- mechanisms the desk has NOT tried -- unpublished, reasoned from structure, not copied from anyone.
 - RESEARCH ONLY (freeze): WRITE only to docs/research/* and data/* catalogs. NEVER touch scripts/, libs/, executor, risk rails, live/state files. No code, trades, installs.
 
 DISCIPLINE

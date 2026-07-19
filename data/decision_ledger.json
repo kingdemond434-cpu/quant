@@ -1453,6 +1453,19 @@
    ],
    "success_metric": "next run creates a growing data/cro_ai_logs/<ts>.log and exits 0",
    "reversal_condition": "n/a (syntax fix)"
+  },
+  {
+   "id": "2026-07-19-exhaustion-verified-assetclass-dormant",
+   "decision": "Principal verification order executed (fresh reads, not memory). VERIFIED #1 -- discovery doctrine complete: DIGGING_CHARTER sections 15-24 present verbatim (operator library SSOT, propagation mechanics, counterfactuals, negative knowledge, frontier estimation, option value+asymmetry, ecology monitor+canaries, hypothesis engine, weak signals, regret+independent rediscovery); all 5 registries seeded on disk (search_operator_library 6036b, negative_knowledge 2668b, weak_signal_registry 967b, discovery_hypotheses 2196b, canary_searches 1845b); universe map carries search_operator_library + discovery_registries pointers; doctrine ledger entry 2026-07-19-discovery-doctrine-expansion present; CI was ALL GREEN at the doctrine commit (5d10053) and the currently-running brain cycle re-runs CI per contract. VERIFIED #2 -- digger exhaustion by name: PROSPECTOR (biweekly timer, next 2026-08-01 18:00Z) prompt carries UNCAPPED/EXHAUSTION/operator-accepts-token-cost + language-blind refs; LITERATURE DEEP-MINER (biweekly timer, next 2026-07-22 18:00Z) same; DATA-AXIS/FREE-DATA MISSION (weekly timer, next 2026-07-26 14:00Z) same, NOTE its 2026-07-19 14:00Z weekly run DIED on old-account quota (58-byte log) -- make-up refire queued post-brain-cycle; BLIND REDISCOVERY (quarterly timer, next 2026-10-05 20:00Z) is BY DESIGN no-external-search (fresh-eyes internal inventor) so search caps N/A, but its 'up to 5 inventions' numeric cap LIFTED this entry per the exhaustion order (no-padding discipline retained); DAILY BRAIN CYCLE (08:45Z + 3h watchdog retries) digging remains subordinated to lockdown priority (recorder+connector first) -- resource allocation, not a search cap. HONEST NOTE: no organ named 'OSINT lane' exists; the OSINT function is distributed across prospector (communities/repos/forums), litminer (papers/replications), dataaxis (dumps/community lakes/regional venues) -- creating a dedicated OSINT organ would be new design, outside this verification order. ADDED #3 -- constitutional: ASSET-CLASS EXPANSION GOVERNANCE (DORMANT): inactive until a ledger-recorded CRO determination that new markets beat deepening mature crypto divisions on expected research ROI; once activated the full expansion framework is mandatory. NEIGHBOURS: blindrediscovery prompt (cap text edited -- .txt cat'd into prompt, not shell-expanded, so no $-escape class risk); CRO_CONSTITUTION.md (appended section, read by next cycle); 07-18 asset-class-pack rejection (consistent, now constitutional).",
+   "hypothesis": "verification-by-fresh-read catches drift that memory-based confirmation would miss",
+   "expected_benefit": "principal has named, dated, per-organ confirmation; one real gap (dataaxis lost run) surfaced and queued",
+   "expected_cost": "one prompt line + one constitution section",
+   "confidence": 0.9,
+   "assumptions": [
+    "brain cycle running concurrently does not rewrite these files mid-append"
+   ],
+   "success_metric": "next fires of all 4 diggers produce full-size logs; asset-class dormancy holds until a ledger-recorded activation",
+   "reversal_condition": "blindrediscovery output degrades to padding -> restore a soft cap with explicit reasoning"
   }
  ]
 }
