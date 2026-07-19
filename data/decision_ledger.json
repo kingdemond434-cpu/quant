@@ -1466,6 +1466,19 @@
    ],
    "success_metric": "next fires of all 4 diggers produce full-size logs; asset-class dormancy holds until a ledger-recorded activation",
    "reversal_condition": "blindrediscovery output degrades to padding -> restore a soft cap with explicit reasoning"
+  },
+  {
+   "id": "2026-07-19-admission-count-uncapped-constitutional",
+   "decision": "Principal ordered removal of the 3-cards/month gauntlet admission cap. FRESH-READ FINDING: no such cap exists on the running desk -- the 2026-07-18 throughput-amendment triage entry states verbatim that the v8 'max 3/month' cap 'never existed on the running desk'; the PROJECT_HANDOFF.md section describing a 3->+1/month->10 ladder was stale v8 text (zombie doc). ACTIONS: (1) handoff doc corrected; (2) the principal's intent made CONSTITUTIONAL (new section VALIDATION ADMISSION IS COUNT-UNCAPPED): admissions by EV rank, gates are EV gate + rigor floor with trials-count-scaled multiplicity (Holm/DSR/PBO over the true cumulative N) + compute only; integrity tripwires pause admissions entirely; no count quota may be reintroduced without principal sign-off. Seat-side note: digger session budgets were already uncapped by the 07-19 exhaustion orders. NEIGHBOURS: gauntlet stats pack (rigor floor now constitutionally load-bearing -- next brain cycle must VERIFY the trials-count wiring feeds the true cumulative N into DSR/Holm, flagged for the micro-audit brief); PROJECT_HANDOFF.md (corrected); watchlist semantics (overflow-by-quota abolished; watchlist remains only for below-EV-gate leads).",
+   "hypothesis": "with multiplicity corrections scaling on true trials count, count-uncapped admission raises validated-learning rate without inflating false discoveries",
+   "expected_benefit": "zero genuinely net-positive candidates queued behind an arbitrary count; watchlist flooding class abolished",
+   "expected_cost": "higher evidence bar per candidate as N grows (correct and intended); more compute per month",
+   "confidence": 0.85,
+   "assumptions": [
+    "DSR/Holm wiring actually consumes the cumulative trials count -- brain verifies next cycle"
+   ],
+   "success_metric": "gauntlet admissions track EV-gate passes 1:1; FDR detector shows no inflation over 8 weeks",
+   "reversal_condition": "detector-evidenced FDR inflation or shadow-vs-backtest calibration drift -> admissions PAUSE (tripwire), never a quota"
   }
  ]
 }

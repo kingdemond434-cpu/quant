@@ -482,3 +482,17 @@ framework becomes MANDATORY -- staged entry, validation gauntlet, risk rails, an
 governance applied in full; no partial or informal entry into a new asset class.
 (Consistent with the 2026-07-18 asset-class expansion pack rejection: crypto-first,
 revisit on evidence -- this section makes the activation condition constitutional.)
+
+
+## VALIDATION ADMISSION IS COUNT-UNCAPPED (principal 2026-07-19)
+No numeric monthly quota on gauntlet admissions exists or may be introduced without
+explicit principal sign-off. Candidates enter validation by EV-gate rank -- best expected
+ROI first, every genuinely net-positive candidate admitted. The ONLY admission gates are:
+(1) the EV gate; (2) the statistical rigor floor -- multiplicity corrections (Holm/DSR/PBO)
+MUST scale with the true cumulative trials count including every admitted candidate, so
+breadth is paid for in evidence, never rationed by an arbitrary count; (3) compute/token
+budget as a physical constraint, not a policy one. Tripwires (validation-integrity drift,
+shadow-vs-backtest calibration failure, detector-flagged FDR inflation) PAUSE admissions
+entirely until resolved -- a live integrity problem stops the line; a count quota never
+does. Rationale: 390 tested / 0 survivors shows the gauntlet bar does the protecting;
+count caps only add queue latency and watchlist flooding (principal 2026-07-19).
