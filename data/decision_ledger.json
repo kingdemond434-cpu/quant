@@ -1282,6 +1282,49 @@
    "assumptions": [],
    "success_metric": "verdict is reproducible from the archived test script + params",
    "reversal_condition": "a genuinely new filter/venue (not just an exit rule) changes the orthogonality -> re-test"
+  },
+  {
+   "id": "2026-07-19-data-axis-mission-standing",
+   "decision": "Free-data-alternative + new-orthogonal-axis mining ELEVATED to a first-class, PERMANENT, dig-to-exhaustion mission with its own cadence duty (last_data_axis_dig, own budget, does not dilute the alpha Prospector's 2-priority cap) + spec (FREE_DATA_ALTERNATIVES_SPEC.md) + contract clause. Origin: principal correctly flagged the CRO under-weighting this -- the CRO had (a) conflated exhausted STRATEGY space with exhausted DATA-AXIS space (different axes) and (b) imported a human-engineering-hours cost model invalid for an AI-run desk. Corrected: most 'paid' crypto data is repackaged free/reconstructable; language-expanded (CN/KR/JP/RU) forum/GitHub digging opens NEW orthogonal free axes (non-English venue data, on-chain reconstruction) that vendors don't cover; cost is token budget + mandatory verify-don't-trust, not hours. Includes explicit data-clock accelerants (reconstructed history front-loads OOS; data-validation != edge-validation; anytime-valid inference; cross-sectional breadth).",
+   "hypothesis": "a permanent, exhaustive, language-expanded free-data-axis dig opens orthogonal breadth that paid data does not, at ~token cost",
+   "expected_benefit": "new orthogonal free data axes (highest survival prior) -> genuine breadth the picked-clean price space cannot yield",
+   "expected_cost": "token/query budget per cadence run; mandatory verification effort per source (cannot be skipped)",
+   "confidence": 0.7,
+   "assumptions": [
+    "free reconstructions verify clean against ground truth",
+    "non-English venues carry orthogonal information"
+   ],
+   "success_metric": ">=1 verified new orthogonal free data axis enters the hypothesis pipeline within 2 cadence cycles post-connector",
+   "reversal_condition": "3 consecutive data-axis digs yield only unverifiable/contaminated sources -> demote cadence frequency per source-yield learning"
+  },
+  {
+   "id": "2026-07-19-freedata-mission-full-spec",
+   "decision": "Free-Data-Alternatives mission EXPANDED to full operator spec (12 pillars: 6 source categories + language-blind + clock-accelerants + verification + DATA GENEALOGY + auto replacement-monitoring + source-failure intelligence + query evolution w/ 25% exploration quota + cross-source synthesis + temporal rediscovery + discovery-ROI + maintainer intelligence). Cadence fixed to BIWEEKLY 14d (own budget, never relaxed -- the source universe never saturates). SEARCH-SPACE EXPANSION added as a UNIVERSAL standing rule (DIGGING_CHARTER section 12 + contract) binding ALL diggers present + future, not just this mission. All spec now; execution on cadence, deployment authority zero (gauntlet decides).",
+   "hypothesis": "a fully-specified, self-optimizing, permanently-expanding free-data mission continuously grows orthogonal breadth the picked-clean price space cannot",
+   "expected_benefit": "verified new orthogonal free axes + reconstructions + cross-source pairs; a data stack that is never 'complete' and improves its own search",
+   "expected_cost": "biweekly token budget; mandatory verification + genealogy overhead per adopted source",
+   "confidence": 0.7,
+   "assumptions": [
+    "free reconstructions verify clean",
+    "non-English/regional venues carry orthogonal info",
+    "query-evolution actually raises hit-rate"
+   ],
+   "success_metric": ">=1 verified new orthogonal free axis enters the pipeline within 2 cycles post-connector; data_universe_map grows with graded lineage",
+   "reversal_condition": "sustained low validated yield across cycles -> source-yield learning demotes families (never deletes -- archived + temporally re-evaluated)"
+  },
+  {
+   "id": "2026-07-19-gap32-reapplied-live-fulldeploy",
+   "decision": "Operator directed FULL DEPLOYMENT ('run it fully deployed'), reversing the earlier queue-for-post-Gate-0 decision (this was the ledgered reversal_condition). Re-applied the tested #32 topup patch live. LIVE VERIFICATION caught a risk-gate bug the unit tests missed (gated on action=='none'; real normal state is 'ok' -> topups never fired); fixed to not-in-(flatten,pause_opens). Book deployed 20% -> 100% ($4,504), balanced legs; a one-time trim-excess/topup settling transient occurred on the deploy tick (reconcile + topup racing to target) but does NOT recur (_topup_plan returns empty at target; later work ticks clean, verified). This is the verify-then-claim rule proving its worth twice in one session.",
+   "hypothesis": "full deployment of authorized capital on the paper book is safe (delta-neutral, concentration-capped, depth-guarded) and stable once legs settle",
+   "expected_benefit": "authorized capital fully utilized per operator directive; calibration realism",
+   "expected_cost": "one-time settling churn on deploy; risk-path change live during freeze (operator-authorized)",
+   "confidence": 0.85,
+   "assumptions": [
+    "legs stay balanced",
+    "_topup_plan empty at target prevents re-churn"
+   ],
+   "success_metric": "book holds ~100% with no recurring trim/topup churn across work ticks (verified this session)",
+   "reversal_condition": "recurring trim<->topup churn on later ticks -> revert to the reconcile-aware version or back to safe under-deploy"
   }
  ]
 }

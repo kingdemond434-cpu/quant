@@ -189,6 +189,20 @@ def main() -> None:
             "+ pre-registration; update docs/research/prospector_watchlist.md; mark done: "
             "last_prospector in data/cadence_state.json. NEVER at the expense of the lockdown "
             "priorities (recorder/connector) -- they own the cycle first.")
+    if _days_since(state, "last_data_axis_dig") >= 14:                    # biweekly (never relaxed)
+        due.append(
+            "DATA-AXIS / FREE-DATA-ALTERNATIVE DIG (biweekly/14d, OWN budget -- does NOT dilute "
+            "the alpha Prospector's two-priority cap): execute the FULL "
+            "docs/research/FREE_DATA_ALTERNATIVES_SPEC.md -- 6 source categories (exchange-native "
+            "dumps, on-chain reconstruction, non-English/regional venues, community lakes, "
+            "alt/sentiment, vendor-replacement); language-blind; VERIFY-DON'T-TRUST vs ground "
+            "truth; DATA GENEALOGY on every adopted set; automatic replacement monitoring; "
+            "source-failure intelligence; query evolution (>=25% exploration quota); cross-source "
+            "synthesis; temporal rediscovery; discovery-ROI + maintainer tracking; SEARCH-SPACE "
+            "EXPANSION quota. Catalog -> data/data_universe_map.json "
+            "(source+grade+lineage+failure-modes+yield); verified axes -> EV gate "
+            "(new_orthogonal_data). Mark done: last_data_axis_dig. Lockdown priorities own the "
+            "cycle first.")
     if _days_since(state, "last_lit_deepdive") >= dig_every:
         due.append(
             f"LITERATURE DEEP-MINER (every {dig_every}d): execute "

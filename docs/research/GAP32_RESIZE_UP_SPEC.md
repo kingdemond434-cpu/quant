@@ -1,5 +1,8 @@
 # Gap #32 — Guarded Resize-Up (capital-utilization) — SPEC, TESTED, QUEUED FOR POST-GATE-0
 
+**LIVE UPDATE 2026-07-19:** operator directed FULL DEPLOYMENT -> this is now RE-APPLIED LIVE (no longer queued). A risk-gate bug was caught by LIVE verification (the topup pass gated on `risk.action == "none"` but the normal-state action is `"ok"`, so it never fired; unit tests missed it because they tested the pure `_topup_plan` only). Fixed to `not in ("flatten","pause_opens")`. Book deployed 20%% -> 100%% ($4,504), balanced legs, a one-time trim/topup settling transient, no ongoing churn (verified: `_topup_plan` returns empty at target, later work ticks clean).
+
+
 **Status:** implementation written + unit-tested (7 tests) + full execution suite green on
 2026-07-19, then **reverted from live to honor the freeze** (operator instruction 2026-07-19:
 "Queue implementation for post-Gate-0"). Re-apply verbatim at Gate-0. Do NOT deploy during the

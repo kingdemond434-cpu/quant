@@ -52,3 +52,7 @@ Every dig also hunts new FREE DATA sources (exchange dumps, free APIs, community
 data-collector repos, in any language) -- and logs anything found to data/data_universe_map.json
 as an explicit deliverable, not an afterthought. Data discovery is dug as deep as edge discovery
 and governed by the free-first protocol.
+
+## 12. SEARCH-SPACE EXPANSION (universal standing rule — ALL expansion miners & diggers)
+
+The source universe is assumed PERMANENTLY INCOMPLETE. Every digging session reserves a defined portion of its exploration budget to discover entirely NEW source classes: communities, repositories, conferences, public datasets, developer ecosystems, APIs, documentation sites, archives, regional knowledge networks, and other previously-untracked information ecosystems. Newly discovered classes are evaluated, catalogued, and folded into future search cycles ONLY on demonstrated validated research value. Sources with sustained low validated information gain, persistent quality issues, or repeated failures may be deprioritized or retired — but remain ARCHIVED in the Data Universe Map for historical reference. Retirement is evidence-based and REVERSIBLE if new evidence emerges (see Temporal Rediscovery). This rule binds every digger present and future: the strategy Prospector, the Literature Deep-Miner, the Free-Data-Alternatives mission, Blind Rediscovery, and any future miner. Obscurity is never itself evidence of value; empirical validated quality is the only currency.
