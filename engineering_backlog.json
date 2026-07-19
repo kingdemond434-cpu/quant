@@ -1,5 +1,5 @@
 {
-  "generated": "2026-07-18T08:24:04.909336+00:00",
+  "generated": "2026-07-19T08:26:25.292822+00:00",
   "roi_formula": "impact * p_success / effort_hours",
   "open": [
     {
@@ -60,8 +60,8 @@
     "black_swan_library",
     "growth_audit_engine",
     "carry_crowding_monitor",
-    "autodiscovery_crypto_throughput",
-    "live_connector_prebuild"
+    "live_connector_prebuild",
+    "autodiscovery_crypto_throughput"
   ],
   "next_action": {
     "id": "execution_tca_fill_log",

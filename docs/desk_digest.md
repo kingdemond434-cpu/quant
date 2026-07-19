@@ -1,17 +1,17 @@
 # Desk digest (auto-generated daily -- do not hand-edit)
-_updated 2026-07-18T08:01Z · companion to [[institutional_knowledge]]_
+_updated 2026-07-19T08:01Z · companion to [[institutional_knowledge]]_
 
 ## Book
-- Molded net: **$-73.76** | funding **$84.52** | run-rate APR 20.5% | day 16.11
-- Root cause: **expected_variance** (monitor_only) | tracking error $-147.78
+- Molded net: **$-53.84** | funding **$84.76** | run-rate APR 12.7% | day 17.11
+- Root cause: **unknown_novel** (pause_and_page) | tracking error $-184.6
 
 ## Validation clocks
-- **carry (DEPLOYED)**: 22/90d | bt 3.28 fwd 10.26
-- **perp L/S**: 15/90d | bt 0.81 fwd -0.82
-- **trend**: 15/90d | bt 1.3 fwd -11.58
+- **carry (DEPLOYED)**: 22/90d | bt 3.37 fwd 16.09
+- **perp L/S**: 15/90d | bt 0.41 fwd 1.26
+- **trend**: 15/90d | bt 1.3 fwd -12.27
 - **trend regime-gated**: 10/90d | bt 1.28 fwd 0.0
 - **OI/LS data**: 20/40d
-- **stablecoin data**: 16/40d
+- **stablecoin data**: 17/40d
 
 ## Open decisions (ledger)
 - `2026-07-04-cashcarry-top10-4500` -- review 2026-08-04: funding/day rises ~50% without new drift losses by 2026-08-04
@@ -74,6 +74,35 @@ _updated 2026-07-18T08:01Z · companion to [[institutional_knowledge]]_
 - `2026-07-18-youtube-transcript-reality` -- review ?: Prospector cites >=1 video-sourced mechanism via text mirror within 2 runs
 - `2026-07-18-ex-solo-quant-priority` -- review ?: within 3 Prospector runs, >=1 card sourced from an ex/solo-quant long-form piece
 - `2026-07-18-source-yield-learning` -- review ?: by the 2nd coverage audit, budget measurably shifted toward a proven-productive family
+- `2026-07-18-self-improvement-closed-loops` -- review ?: by the 2nd scoring run, EV priors measurably shift from realized hit-rate; memory line-cou
+- `2026-07-18-compression-safety-and-audit-depth` -- review ?: first full-depth audit either confirms a component clean OR finds a real defect; zero comp
+- `2026-07-18-deterministic-freeze-exit` -- review ?: freeze-exit status logged each cycle; on the real Gate 0, activation flags automatically a
+- `2026-07-18-evidence-gated-progressions-registry` -- review ?: at freeze-exit, growth ramp + stage machine arm automatically; monthly review finds zero m
+- `2026-07-18-principal-design-philosophy` -- review ?: no unjustified cap survives its measurement cycle; zero sizing-on-unproven-edge incidents
+- `2026-07-18-digging-charter-and-github-memory` -- review ?: diggers cite GitHub/non-English sources within 2 runs; every cycle pushes to GitHub; zero 
+- `2026-07-18-free-first-data-stack` -- review ?: post-Gate-0: >=3 free sources ingested + Tardis-diff-validated; zero paid data; bottleneck
+- `2026-07-18-live-connector-stage-machine-build` -- review ?: engineering_backlog.json live_connector_prebuild detector (file exists) now true; CI green
+- `2026-07-18-capital-utilization-followup` -- review ?: utilization should rise on its own as GAP#14 resolves (leverage confidence pipeline root-c
+- `2026-07-18-ci-gate-widened-execution-dir` -- review ?: run_ci.py stays green; a future execution-directory regression gets caught before it ships
+- `2026-07-18-chinese-quant-expansion` -- review ?: Prospector cites >=1 Chinese-source mechanism within 2 runs; Chinese seat produces >=1 gau
+- `2026-07-18-self-heal-and-frontier-batch` -- review ?: next failed 08:45 cycle auto-recovers same day; a clearing alert produces a ✅ page; drill 
+- `2026-07-18-discovery-multiplier-telemetry` -- review ?: first multiplier report segments intake + survival by region with real counts
+- `2026-07-18-frontier-jp-and-stop-line` -- review ?: JP produces >=1 gauntlet-entering card within 2 runs post-activation; no low-moat region m
+- `2026-07-18-spec-prebuild-honest-reconciliation` -- review ?: every item reaching an implementation window has a full spec by then; no spec written for 
+- `2026-07-18-expansion-specs-prebuilt` -- review ?: first region built from the template + CN profile produces a well-formed card through the 
+- `2026-07-18-final-ideas-and-paid-data-rule` -- review ?: AI-frontier scanner unlocks >=1 new source in 2 quarters; paid-data rule invoked correctly
+- `2026-07-18-operator-premortem-opened` -- review ?: 4 scenarios answered + recorded; first real incident follows the pre-committed plan
+- `2026-07-18-structural-edges-deduplicated` -- review ?: >=1 of N1/N2 produces a gauntlet-surviving card within 2 quarters of build
+- `2026-07-18-guaranteed-implementation-amendment` -- review ?: every >=2 bps item eventually built in EV order; sub-threshold items expire or graduate cl
+- `2026-07-18-threshold-1bps-not-picky` -- review ?: small net-positive items get built in EV order; no net-negative small item is built; compl
+- `2026-07-18-threshold-5bps-final` -- review ?: >=5 bps items always built; <5 bps items build if cheap-and-rising else expire; no queue b
+- `2026-07-18-dynamic-capital-quarantine-both-directions` -- review ?: VERIFIED 07-18: fix removes the hard $1,250 cap (confirmed live, _dynamic_capital=4500) bu
+- `2026-07-19-gap14-forensic-rootcause` -- review ?: post-Gate-0 fix ships all 4 items + property/mutation tests before `active` may drive sizi
+- `2026-07-19-gap19-gap32-specs-queued` -- review ?: both re-applied cleanly at Gate-0, tests green, no freeze contamination in the calibration
+- `2026-07-19-verify-then-claim-contract` -- review ?: no future ledger/register entry asserts state that a fresh read contradicts
+- `2026-07-19-prospector-firstrun` -- review ?: future cadence runs execute without hand-triggering once connector/recorder free the cycle
+- `2026-07-19-breakout-variants-tested-rejected` -- review ?: verdict is reproducible from the archived test script + params
+- `2026-07-19-data-axis-mission-standing` -- review ?: >=1 verified new orthogonal free data axis enters the hypothesis pipeline within 2 cadence
 
 ## Executive KPI snapshot
 - CRO: {"hypotheses_tested_lifetime": 20, "validated_survivors": 1, "survivor_note": "cash-carry (fwd 8/90); trend candidate gauntlet-passed (fwd 1/90); all else graveyarded", "survival_r
