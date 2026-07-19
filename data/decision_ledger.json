@@ -1412,6 +1412,20 @@
    ],
    "success_metric": "operator-library entries grow with per-region adaptation rows filled within one session of origin; zero diggers lag the frontier at the quarterly parity audit; negative-knowledge reopens on triggers rather than never; weak-signal convergences produce >=1 promoted hypothesis per quarter",
    "reversal_condition": "if library/registry upkeep measurably displaces validated discovery output over 2 cycles, compress the per-session checklist (never delete records -- archive discipline)"
+  },
+  {
+   "id": "2026-07-19-brain-api-billing-option-a",
+   "decision": "Principal chose Option A: the AI brain (daily CRO cycle + all 4 digger timers) moves from consumer-subscription auth to a METERED Console API key with a monthly spend cap. Rationale: (1) kills the subscription-starvation class permanently (07-18 lost day; 07-19 brain quota-dead ALL DAY during an open deadman incident -- event triggers fired but every cycle no-op'd); (2) principal FIRST proposed dual-account limit-hit rotation -- REFUSED and not built: rotating accounts to dodge usage limits is circumvention under the provider usage policy with ban risk on both accounts = brain-dead-mid-incident tail, negative-EV under desk ruin doctrine. BUILT: ops/brain_env.sh (exports ANTHROPIC_API_KEY from 600-perm gitignored data/secrets/anthropic_api_key at spawn time -- NEVER systemd Environment=, /proc-visible; falls back to OAuth login when keyfile absent so nothing breaks pre-placement) sourced by all 5 claude-invoking scripts (run_cro_ai + prospector/litminer/dataaxis/blindrediscovery digs); ops/setup_brain_api_key.sh (one-time principal step: reads key from stdin over SSH -- never chat -- writes keyfile, pre-approves key for headless Claude Code, retires the old OAuth credentials reversibly, then VERIFIES with a live AUTH-OK call before claiming done). PRINCIPAL_ACTION pager armed. NEIGHBOURS NAMED: run_alerts brain_noop/brain_down alerts (unchanged -- they catch auth failure post-switch); watchdog auto-retry (goes through run_cro_ai.sh, inherits env); systemd units untouched (env injected by script, not unit); model selection unchanged (CLI default, Opus-tier) -- cost lever if bills run hot is a --model switch, principal decides after first weeks' measured spend.",
+   "hypothesis": "metered API billing with a spend cap makes brain availability independent of interactive usage, at predictable bounded cost",
+   "expected_benefit": "no weekly limit; brain never starves; auth failures page within hours via existing brain_noop alert",
+   "expected_cost": "metered spend, est $15-90/mo Sonnet-tier or ~2.5x Opus-tier (unmeasured -- $50 cap + measure first weeks)",
+   "confidence": 0.85,
+   "assumptions": [
+    "Claude Code headless honors pre-approved ANTHROPIC_API_KEY",
+    "daily cycle token spend lands near estimate under prompt caching"
+   ],
+   "success_metric": "AUTH-OK verify passes; next 7 days of cycles run with zero quota no-ops; first-month spend within cap",
+   "reversal_condition": "if spend exceeds cap or API auth proves flaky: restore .credentials.json.retired-* (subscription auth) and revisit"
   }
  ]
 }
