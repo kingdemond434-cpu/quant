@@ -1,0 +1,7 @@
+[Unit]
+Description=Quarterly Blind Rediscovery dig (5th of Jan/Apr/Jul/Oct, 20:00 UTC)
+[Timer]
+OnCalendar=*-01,04,07,10-05 20:00:00
+Persistent=true
+[Install]
+WantedBy=timers.target
