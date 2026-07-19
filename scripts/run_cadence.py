@@ -185,7 +185,7 @@ def main() -> None:
     if _days_since(state, "last_prospector") >= dig_every:
         due.append(
             f"PROSPECTOR (every {dig_every}d): execute docs/research/PROSPECTOR_SPEC.md with "
-            "real web search -- max 15 queries, provenance-graded mechanism cards -> EV gate "
+            "real web search -- UNCAPPED/exhaustive (dedicated quant-prospector.timer, biweekly), provenance-graded mechanism cards -> EV gate "
             "+ pre-registration; update docs/research/prospector_watchlist.md; mark done: "
             "last_prospector in data/cadence_state.json. NEVER at the expense of the lockdown "
             "priorities (recorder/connector) -- they own the cycle first.")
@@ -205,7 +205,7 @@ def main() -> None:
             "cycle first.")
     if _days_since(state, "last_lit_deepdive") >= dig_every:
         due.append(
-            f"LITERATURE DEEP-MINER (every {dig_every}d): execute "
+            f"LITERATURE DEEP-MINER (every {dig_every}d, UNCAPPED/exhaustive, dedicated quant-litminer.timer biweekly): execute "
             "docs/research/LITERATURE_SPEC.md -- inbox triage to MECHANISMS (never "
             "summaries), 2-level citation-chain digs, replication scans, coverage rotation; "
             "cards -> EV gate + pre-registration; mark done: last_lit_deepdive. Lockdown "

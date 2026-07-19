@@ -1,0 +1,7 @@
+[Unit]
+Description=Biweekly Literature dig (8th+22nd 18:00 UTC)
+[Timer]
+OnCalendar=*-*-08,22 18:00:00
+Persistent=true
+[Install]
+WantedBy=timers.target

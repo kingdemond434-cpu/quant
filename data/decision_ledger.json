@@ -1340,6 +1340,21 @@
    ],
    "success_metric": "quant-dataaxis.timer fires weekly + produces graded data_universe_map entries; >=1 verified new axis to the pipeline within 2 months post-connector",
    "reversal_condition": "token cost or brain-time contention proves unacceptable -> revert to biweekly or flagged-only; or sustained zero verified yield -> demote per source-yield learning"
+  },
+  {
+   "id": "2026-07-19-all-diggers-exhaustive-timered",
+   "decision": "Applied uncapped/EXHAUSTIVE depth + DEDICATED reliability timers to ALL search diggers (operator: 'same for all if u agree, excluding costs'). Agreed on depth+reliability; DIVERGED from uniform-weekly cadence on NON-cost grounds and matched cadence to refresh rate: Free-Data=WEEKLY (sources refresh fast, done), Literature Deep-Miner=BIWEEKLY (quant-litminer.timer 8th+22nd 18:00), strategy Prospector=BIWEEKLY (quant-prospector.timer 1st+15th 18:00), Blind Rediscovery=QUARTERLY unchanged (no external search -- weekly would break its fresh-eyes design). Rationale for not-weekly-everywhere: (1) the strategy space is picked-clean/slow-refreshing so weekly = pure re-traversal of the graveyard for ~zero new info; (2) more looks at an exhausted space raise the multiple-testing burden the DSR/PBO/Holm stack fights, for no signal; (3) refresh rate, not calendar uniformity, is what should set cadence. Dedicated timers fix gap #29 (flagged duties get starved under lockdown). All research-only/freeze-safe; unit files DR-copied to ops/. Timers offset (08:45 brain / Sun14:00 data / 1,15@18:00 prospector / 8,22@18:00 lit) so no two claude -p overlap (session-limit safety).",
+   "hypothesis": "exhaustive depth + guaranteed timers + refresh-rate-matched cadence maximizes real digger yield without the re-traversal/multiplicity waste of forcing uniform weekly",
+   "expected_benefit": "every digger reliably runs deep on schedule; no gap-#29 starvation; cadence spent where the space actually refreshes",
+   "expected_cost": "material recurring token spend (operator-accepted); brain-cycle-time competition (offset-scheduled to avoid session collisions)",
+   "confidence": 0.75,
+   "assumptions": [
+    "timers fire cleanly headless",
+    "offset scheduling prevents claude session collisions",
+    "graveyard cross-check keeps exhaustive prospector from re-litigating dead mechanisms"
+   ],
+   "success_metric": "each timer fires on schedule + produces graded output; prospector honestly reports nothing-new rather than fabricating; no two claude runs collide",
+   "reversal_condition": "session collisions or token cost unacceptable -> stagger further or revert to brain-cycle execution; sustained zero yield on a digger -> demote its cadence per source-yield learning"
   }
  ]
 }

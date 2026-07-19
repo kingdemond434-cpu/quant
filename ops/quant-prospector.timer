@@ -1,0 +1,7 @@
+[Unit]
+Description=Biweekly Prospector dig (1st+15th 18:00 UTC)
+[Timer]
+OnCalendar=*-*-01,15 18:00:00
+Persistent=true
+[Install]
+WantedBy=timers.target
