@@ -1369,6 +1369,20 @@
    ],
    "success_metric": "CJK legitimate sources enter the map graded/verified; zero pirated/cracked sources ever adopted or downloaded to the box",
    "reversal_condition": "n/a on the gate (hard security/legal boundary); CJK priority demoted only if it yields sustained low validated value"
+  },
+  {
+   "id": "2026-07-19-public-shared-data-surgical",
+   "decision": "Refined the license gate to be SURGICAL after operator pushed back that it should not make the desk ignore publicly-shared data. Rule: publicly-shared data (forums/comments/file-hosts/lakes) is EVALUATED by license, not skipped for provenance. Genuinely-open (free tiers, vendor samples, open/CC/public-domain, released subsets) -> ADOPT. Raw facts a vendor repackages -> collect directly + reconstruct (facts not copyrightable; vendor's curated product is). Genuinely-proprietary LEAKED file -> not adopted into a live signal, but its information is NOT ignored -> reconstruct the valuable component from public raw (vendor-replacement). Corrected operator's 'shared publicly = legal' (unauthorized sharing of a proprietary product is still infringement to use) while ensuring the gate blocks only ADOPTION of proprietary/cracked material, never legitimate-shared-data pickup. Cracked-software / malware boundary from the prior entry stands unchanged.",
+   "hypothesis": "a surgical gate captures all legitimately-usable shared data + the info-value of proprietary finds (via reconstruction) with zero un-deployable/unsafe adoption",
+   "expected_benefit": "no good information ignored; everything adopted is clean + live-deployable",
+   "expected_cost": "proprietary leaked files must be reconstructed rather than used directly (extra step, but the only deployable path)",
+   "confidence": 0.8,
+   "assumptions": [
+    "digger can distinguish open vs proprietary license",
+    "reconstruction from public raw is feasible for most valuable finds"
+   ],
+   "success_metric": "open shared datasets get adopted; proprietary finds spawn reconstruction targets; nothing proprietary/cracked adopted into live",
+   "reversal_condition": "n/a on the security/adoption boundary; grading tuned if open sources get wrongly excluded"
   }
  ]
 }
