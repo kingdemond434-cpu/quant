@@ -1,7 +1,7 @@
 # Shared brain auth environment -- sourced by EVERY claude-invoking script
-# (run_cro_ai.sh + all digger scripts). Decision 2026-07-19 (Option A): the brain
-# runs on METERED API billing (Console key, monthly spend cap, no weekly limit)
-# so interactive subscription use can never starve it again (07-18 lost-day class).
+# (run_cro_ai.sh + all digger scripts). Option A (metered API key) was SUPERSEDED by
+# Option B (Max subscription) same day -- see ledger #102. This hook stays as the
+# DORMANT fallback: inert without the keyfile (OAuth login is then used), and the
 #
 # Key lives in data/secrets/anthropic_api_key (chmod 600, gitignored) -- read here
 # at spawn time, NEVER in a systemd Environment= line (visible via /proc/<pid>/environ,

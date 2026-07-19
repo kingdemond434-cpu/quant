@@ -1426,6 +1426,20 @@
    ],
    "success_metric": "AUTH-OK verify passes; next 7 days of cycles run with zero quota no-ops; first-month spend within cap",
    "reversal_condition": "if spend exceeds cap or API auth proves flaky: restore .credentials.json.retired-* (subscription auth) and revisit"
+  },
+  {
+   "id": "2026-07-19-brain-auth-option-b-supersedes",
+   "decision": "Principal REVERSED to Option B minutes after choosing Option A (supersedes ledger 2026-07-19-brain-api-billing-option-a, which was never activated -- no API key was ever placed): the brain stays on SUBSCRIPTION auth via the new account, which the principal will upgrade to Max. Steps (principal): (1) upgrade the new account to Max in claude.ai billing (5x $100/mo is the sensible start for a budget-constrained desk; 20x $200/mo if limits still bind); (2) run `claude setup-token` on the VPS with that account (browser code flow, principal-only) -- this alone revives the brain TODAY even before the Max upgrade; (3) verify with `claude -p` per the never-trust-done rule. Option A infrastructure KEPT DORMANT as a documented fallback: ops/brain_env.sh is inert without data/secrets/anthropic_api_key (verified: no export when keyfile absent) and its PATH export is a strict improvement for the digger scripts that lacked it; ops/setup_brain_api_key.sh stays as the one-command activation path if Max limits ever starve the brain again. HONEST RESIDUAL (stated to principal): Option B shrinks but does NOT eliminate the shared-pool starvation class (07-18 lost-day) -- brain and interactive sessions still draw one quota; if a marathon session drains a Max pool during an incident, the pre-built Option A path is the escape hatch. NEIGHBOURS NAMED: brain_env.sh fallback branch (now the PRIMARY path -- OAuth login from ~/.claude); setup_brain_api_key.sh's retire-old-credentials step never runs; brain_noop/brain_down alerts unchanged; PRINCIPAL_ACTION pager rewritten to the Option B steps.",
+   "hypothesis": "a Max-tier shared pool is large enough that interactive use rarely starves the daily brain cycle, at flat predictable cost",
+   "expected_benefit": "flat monthly cost, zero metering anxiety, one account to manage; brain revives immediately on setup-token",
+   "expected_cost": "$100-200/mo flat; residual starvation tail (shared pool) accepted by principal with Option A as pre-built escape hatch",
+   "confidence": 0.7,
+   "assumptions": [
+    "Max weekly limits comfortably exceed one brain cycle/day + digger timers + typical interactive use",
+    "principal completes setup-token promptly (brain is dead until then)"
+   ],
+   "success_metric": "brain cycles run 7 consecutive days with zero quota no-ops alongside normal interactive use",
+   "reversal_condition": "any quota-starved brain cycle during an open incident -> activate Option A via ops/setup_brain_api_key.sh (pre-built, one command)"
   }
  ]
 }
