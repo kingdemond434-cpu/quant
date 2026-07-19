@@ -53,8 +53,15 @@ def _topic() -> str:
 
 
 def _push(topic: str, title: str, body: str) -> None:
+    # HTTP headers must be latin-1 (urllib/http.client encode them that way); a title with an
+    # emoji or other non-latin-1 char raises UnicodeEncodeError BEFORE the request is ever sent,
+    # silently killing this and every future push (2026-07-19: broke ALL paging for 29h+,
+    # including a live dead-man fire, because the resolved title carried a raw "⚠️").
+    # ntfy already renders an icon from Tags, so titles stay plain ASCII; this encode is a
+    # defense-in-depth backstop against the same class recurring via a future non-ASCII edit.
+    safe_title = title.encode("latin-1", "ignore").decode("latin-1")
     req = urllib.request.Request(f"https://ntfy.sh/{topic}", data=body.encode(),
-                                 headers={"Title": title, "Priority": "high",
+                                 headers={"Title": safe_title, "Priority": "high",
                                           "Tags": "rotating_light"})
     with urllib.request.urlopen(req, timeout=15):
         pass
@@ -220,7 +227,7 @@ def main() -> None:
             continue
         state[f"_try_{key}"] = now
         try:
-            _push(topic, f"⚠️ Quant desk: {key}", msg)
+            _push(topic, f"WARNING Quant desk: {key}", msg)
             state[key] = now
             paged.add(key)
             sent += 1
@@ -233,7 +240,7 @@ def main() -> None:
     for key in list(paged):
         if key not in active:
             with contextlib.suppress(Exception):
-                _push(topic, f"✅ Quant desk RESOLVED: {key}",
+                _push(topic, f"RESOLVED Quant desk: {key}",
                       "auto-fixed / cleared -- no action needed")
             paged.discard(key)
             state.pop(key, None)

@@ -87,15 +87,24 @@ naming a paid vendor, ask **"can 90% of this be approximated for free?"** — us
 Funding → Carry (DEPLOYED) → Cross-venue funding (HL archive) → Basis (level ✓, momentum ✗) → Options VRP (breadth-starved)
 Trend   → TS-momentum majors (shadow 1/90) → Breakout ✗ → Regime-switch ✗
 Flow    → OI divergence (fwd) → Liquidations (fwd) → Whale/large-holder ⧗ → Taker flow ✓
-On-chain→ Stablecoin exchange reserves (fwd) → DEX volume ? → Gas/fees ✗ → Mint/burn ?
-Macro   → Rates ✗ → DXY ✗ → BTC-correlation regime ?
+On-chain→ Stablecoin exchange reserves (fwd) → DEX volume ✗ → Gas/fees ✗ → Mint/burn ✗
+Macro   → Rates ✗ → DXY ✗ → BTC-correlation regime ✗
 ```
 `?` = unbuilt branch worth an EV score. `✓` = built. `✗` = tested + rejected (see
 research_agenda.json do_not_repeat -- do not re-test without new evidence). `⧗` = tested,
 EV-gate verdict is data-availability-limited not an economic kill (revisit when its data
 matures). `fwd` = forward-accumulating clock. 2026-07-18 mined 3 branches (Breakout,
 Regime-switch, Whale/large-holder via recorder aggTrades) -- 2 permanent rejects, 1 pending
-recorder history (`large_print_flow_clustering`, revisit at >=30d aggTrades).
+recorder history (`large_print_flow_clustering`, revisit at >=30d aggTrades). 2026-07-19
+closed the last 3 open `?` branches (hypothesis quota, pre-research EV-gate, all rejected
+below threshold -- honest expected outcome, zero survivors is normal): `dex_cex_volume_ratio_
+flow` (no strong mechanism, EV 0.0039), `stablecoin_mint_burn_supply_signal` (narrow breadth +
+adjacent to the already-running stablecoin_flows family, EV 0.0005), `btc_correlation_regime_
+carry_conditioning` (overlay-on-existing-book, same structural class as the rejected vol-target
+overlay, EV 0.0003). The alpha map currently has NO open `?` branches -- next generation cycle
+should lean on recombination (signal x filter x sizing x regime x venue x horizon variants) and
+newly-maturing data clocks (OI/LS ~07-29, stablecoin ~08-11) per the generator checklist rather
+than inventing new top-level branches from nothing.
 
 ## Economic stress checklist (how each edge dies — economically, not statistically)
 For every deployed/candidate edge, pre-mortem: Binance delists the pair · funding goes to zero/negative ·
@@ -402,3 +411,30 @@ hypotheses and EV-score them; only the top few enter research.
   budget** (memory-compression governance item, monthly). GAP register row 29 already tracks
   that the quarterly memory-consolidation cadence duty has never executed — this line is the
   cross-reference so the next cycle with spare capacity picks it up rather than rediscovering it.
+
+## INCIDENT 2026-07-19 14:27Z — dead-man fire #4; a same-author diagnosis error caught by the panel, and a 29h pager blackout
+
+- **Full facts/autopsy/panel corrections:** `data/INCIDENT_20260719_DEADMAN.md`, GAP register
+  rows 34/37/38, ledger `2026-07-19-deadman-fire4-incident-autopsy`, `2026-07-19-pager-unicode-
+  fix-and-neighbours`. Book is testnet-only; zero real capital at risk. Compressed lessons only:
+- **A same-author "no catastrophic loss" call was WRONG and the 13-model panel caught it same
+  cycle.** My first-pass read of a $1.8-2.6k (36-52% of HW) unattributed equity gap as "modest
+  slippage" was near-unanimously rejected by the panel as premature — treat any unattributed
+  equity gap that size as an UNRESOLVED accounting break requiring double-entry reconciliation,
+  never as slippage-by-assertion. Direct evidence for the 2026-07-12 lesson ("the designer is
+  part of the attack surface") recurring in a NEW guise: diagnosis quality, not just design.
+- **My proposed dead-man fix ("couple equity to executor position state") was also wrong** — the
+  panel's counter (venue-native, all-spot-balance valuation, zero executor coupling, plus
+  quiescence bounds) is the correct direction: coupling the isolated rail to the exact subsystem
+  whose bugs it exists to catch trades false-positives for false-negatives, a strictly worse
+  failure mode under the ruin constraint. Generalizable rule: when proposing a fix to an
+  isolation-designed rail, the fix must never re-introduce the dependency the isolation exists to
+  remove — verify this explicitly before proposing, not just before implementing.
+- **A pager can die from ONE non-ASCII character and stay dark for 29h+ with zero signal.** An
+  emoji added to an alert Title (2026-07-18T18:05Z) broke HTTP header encoding and silently
+  killed all 39 subsequent pushes across every alert category — including this dead-man fire
+  itself. The `--test` self-check used different (ASCII-only) text and never exercised the
+  broken path. Rule: a self-test that doesn't send exactly what production sends verifies
+  nothing about production. Fixed (ASCII markers + defensive latin-1 encode), but end-to-end
+  delivery is still unconfirmed (a real ntfy 429 hit immediately after) — single-channel
+  alerting is now confirmed insufficient by near-unanimous panel consensus (GAP row 38).
