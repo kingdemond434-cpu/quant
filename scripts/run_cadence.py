@@ -185,14 +185,16 @@ def main() -> None:
     if _days_since(state, "last_prospector") >= dig_every:
         due.append(
             f"PROSPECTOR (every {dig_every}d): execute docs/research/PROSPECTOR_SPEC.md with "
-            "real web search -- UNCAPPED/exhaustive (dedicated quant-prospector.timer, biweekly), provenance-graded mechanism cards -> EV gate "
+            "real web search -- UNCAPPED/exhaustive (dedicated quant-prospector.timer, "
+            "biweekly), provenance-graded mechanism cards -> EV gate "
             "+ pre-registration; update docs/research/prospector_watchlist.md; mark done: "
             "last_prospector in data/cadence_state.json. NEVER at the expense of the lockdown "
             "priorities (recorder/connector) -- they own the cycle first.")
     if _days_since(state, "last_data_axis_dig") >= 7:                     # WEEKLY (never relaxed)
         due.append(
             "DATA-AXIS / FREE-DATA-ALTERNATIVE DIG (WEEKLY/7d, UNCAPPED budget -- operator accepts "
-            "token cost; dig ALL 6 categories to EXHAUSTION every run, no rotating subset): execute the FULL "
+            "token cost; dig ALL 6 categories to EXHAUSTION every run, no rotating "
+            "subset): execute the FULL "
             "docs/research/FREE_DATA_ALTERNATIVES_SPEC.md -- 6 source categories (exchange-native "
             "dumps, on-chain reconstruction, non-English/regional venues, community lakes, "
             "alt/sentiment, vendor-replacement); language-blind; VERIFY-DON'T-TRUST vs ground "
@@ -205,7 +207,8 @@ def main() -> None:
             "cycle first.")
     if _days_since(state, "last_lit_deepdive") >= dig_every:
         due.append(
-            f"LITERATURE DEEP-MINER (every {dig_every}d, UNCAPPED/exhaustive, dedicated quant-litminer.timer biweekly): execute "
+            f"LITERATURE DEEP-MINER (every {dig_every}d, UNCAPPED/exhaustive, dedicated "
+            "quant-litminer.timer biweekly): execute "
             "docs/research/LITERATURE_SPEC.md -- inbox triage to MECHANISMS (never "
             "summaries), 2-level citation-chain digs, replication scans, coverage rotation; "
             "cards -> EV gate + pre-registration; mark done: last_lit_deepdive. Lockdown "

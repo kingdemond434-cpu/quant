@@ -68,3 +68,121 @@ Adopt ONLY sources with a clear permitted-usage license. The desk NEVER seeks, d
 ## 14. DIGGER PARITY & UPGRADE PROPAGATION (universal — no digger left behind)
 
 The diggers are ONE FAMILY and advance TOGETHER. Every digger/miner maintains EQUIVALENT depth, breadth, language/region coverage, verification rigor, cadence-reliability, and capability — each in ITS OWN domain equivalent (the data miner's regions are regional exchange/on-chain ecosystems; the strategy Prospector's are regional quant-CODE ecosystems — Gitee + Chinese GitHub quant repos/factor libraries/backtest frameworks, Korean/Japanese/Russian/CIS algo communities; the Literature miner's are non-English academic + methods venues and open-access mirrors). LANGUAGE-BLIND + REGION-RICH (CJK + Korean, Japanese, Russian/CIS, Arabic, Portuguese, and every frontier) applies to ALL of them, not just the data mission. UPGRADE PROPAGATION (standing rule): whenever ANY digger is upgraded — deeper depth, a new source class, a new region/language layer, a new technique, a new cadence/reliability mechanism (e.g. a dedicated timer) — the SAME upgrade is applied to EVERY other digger where it has a meaningful equivalent, in the same cycle. No digger is left behind or allowed to drift ahead: if one gets a dedicated timer, all do; if one gets uncapped exhaustive depth, all do; if one gains a regional-language layer, all gain their equivalent. Goal: max out data + strategies + information gathering as exhaustively as possible across the whole family, uniformly. Parity is audited in the quarterly Coverage-Completeness Audit; any digger lagging another is brought to par that cycle.
+
+## 15. SEARCH OPERATOR LIBRARY (single source of truth for ALL search capability)
+
+The desk maintains ONE growing library of validated search capability: search operators, query
+templates, multilingual search patterns, citation-following techniques, repository-discovery
+strategies, source-expansion heuristics, community-discovery methods, verification protocols,
+and data-reconstruction approaches. Canonical home: `docs/research/search_operator_library.md`
+(git = the versioning; every prior version recoverable), pointered from
+`data/data_universe_map.json`. Operators are evaluated on VALIDATED information gain and
+continuously refined, combined, or retired (retired entries stay archived, never deleted).
+Every digger, miner, and expansion — present and future — DRAWS from this library equally at
+the start of every session and CONTRIBUTES back to it before the session ends. The library is
+seeded with region-specific, non-English operators (Yandex for Russian, Baidu for Chinese,
+Naver for Korean, Yahoo!JP for Japanese, plus Arabic and Portuguese forum patterns) and
+expands with every new language/region added to the search surface. No digger maintains a
+private operator collection: capability lives in the library or it does not exist.
+
+## 16. CROSS-DIGGER UPGRADE PROPAGATION — MECHANICS (extends §14; permanent, self-enforcing)
+
+When ANY digger/miner/expansion develops or discovers a capability improvement of any kind
+(new operator, query template, multilingual pattern, citation technique, repo-discovery
+strategy, source-expansion heuristic, community-discovery method, verification protocol,
+reconstruction approach, cadence/reliability mechanism, …) AND it passes the desk's standard
+evidence gates, it is IMMEDIATELY added to the Search Operator Library as a permanent,
+versioned asset. Every other digger MUST then adopt and ADAPT it to its own regional,
+linguistic, and domain context within its NEXT session. Adaptation means TRANSLATION into the
+local language + platform ecosystem, never verbatim copying: a Baidu operator from the Chinese
+miner becomes a Yandex operator for the Russian miner, a Naver operator for the Korean miner,
+a Gitee strategy becomes a GitHub-JP / Qiita strategy, and so on. No digger may fall behind
+the capability frontier established by any other. If a digger cannot adapt a specific
+improvement to its context, it LOGS the reason and the blocking condition in the library entry
+itself; those logs are reviewed by the Discovery Bottleneck Detector duty each cycle for
+resolution. The fleet upgrades together or not at all. This rule binds every current and
+future digger from birth.
+
+## 17. DISCOVERY COUNTERFACTUALS
+
+Every major discovery records: "Would this have been found anyway if this search had never
+run?" Estimate uniqueness and dependence on the specific operator, language, region, and
+maintainer/community that surfaced it. LOW counterfactual probability = HIGHER strategic value
+(genuine information advantage, not widely accessible knowledge). Recorded in the discovery's
+card/log and used in source-yield learning and budget allocation.
+
+## 18. NEGATIVE KNOWLEDGE (standing, REVERSIBLE — never a permanent exclusion)
+
+Search areas, source classes, repositories, communities, query patterns, and discovery
+strategies repeatedly explored with low validated information gain are documented in
+`docs/research/negative_knowledge.md`. Their exploration priority MAY be reduced for
+efficiency but they are NEVER permanently excluded. Each record stores: exploration history +
+search coverage; reason for low value (no sources / poor quality / duplication / licensing /
+abandoned / …); confidence the area was adequately explored; conditions justifying immediate
+re-exploration; scheduled review date. Under Temporal Rediscovery, ALL records re-evaluate on
+a recurring cadence (quarterly default) or SOONER on trigger evidence: new repos, APIs,
+maintainers, conferences, acquisitions, ecosystem growth, citations, forks, mirrors, or
+community activity. A past lack of discoveries is evidence about the PAST, never proof about
+the future — every negative conclusion is provisional and fully reversible.
+
+## 19. DISCOVERY FRONTIER ESTIMATION (standing)
+
+Continuously estimate the frontier of the searchable information universe: coverage measured
+across source classes, regions, languages, asset classes, institutions, developer ecosystems,
+publication venues, and data types (extends the coverage maps + quarterly
+Coverage-Completeness Audit). Search allocation weighs BOTH expected validated information
+gain AND estimated frontier coverage, so heavily-explored areas never indefinitely crowd out
+poorly-explored ones.
+
+## 20. INFORMATION OPTION VALUE + INFORMATION ASYMMETRY SCORE
+
+OPTION VALUE: potential discoveries are valued for future OPTIONALITY, not only immediate use.
+Sources that unlock new research directions, enable future reconstructions, or expose
+previously inaccessible ecosystems earn additional strategic value because they expand the
+future search space — a small obscure dataset opening a new regional exchange ecosystem can
+outrank a large high-quality dataset in an already-covered domain. ASYMMETRY SCORE: score each
+source on expected informational uniqueness (language accessibility, regional concentration,
+technical specialization, discoverability, indexing quality, popularity). Higher asymmetry
+raises exploration PRIORITY but never substitutes for empirical validation.
+
+## 21. INFORMATION ECOLOGY MONITOR + CANARY SEARCHES
+
+The information ecosystem EVOLVES; the mission evolves with it. Continuously monitor
+structural changes: new exchanges, repository migrations, API deprecations, licensing changes,
+organization formation, acquisitions, conferences, community fragmentation, new publication
+venues. Major ecosystem changes trigger TARGETED rediscovery immediately, cadence or not.
+CANARIES: maintain a small representative set of canary searches spanning multiple ecosystems
+(`docs/research/canary_searches.md`); unexpected changes in results, repo counts, API
+behaviour, maintainer activity, publication rates, or documentation structure trigger broader
+rediscovery before the next cadence. Emergence indicators watched: publication velocity,
+contributor growth, repo activity, citations, forks, mirrors, community expansion, conference
+appearances, ecosystem adoption.
+
+## 22. DISCOVERY HYPOTHESIS ENGINE
+
+The mission does not only search known categories — it continuously generates EXPLICIT
+hypotheses about where valuable information might exist but has not yet been observed
+(`docs/research/discovery_hypotheses.md`). Each hypothesis records rationale, expected
+information value, supporting evidence, search plan, confidence, and validation outcome. Both
+successful AND failed hypotheses are permanent learning records: the search process itself is
+a falsifiable, self-improving research programme. Every newly validated + adopted dataset is
+IMMEDIATELY queued for hypothesis generation by the Prospector, the feature/generation
+pipeline, and any relevant digger — no new data axis sits idle.
+
+## 23. WEAK SIGNAL REGISTRY
+
+Individually weak but repeatedly observed signals — patterns, source leads, or hypotheses
+below the validation threshold on their own — are RETAINED in
+`docs/research/weak_signal_registry.md`, never discarded. When multiple weak signals from
+INDEPENDENT discovery paths converge on the same direction, they auto-promote to combined
+hypothesis generation and full adversarial validation. What is noise in isolation may be
+signal in aggregation.
+
+## 24. SEARCH REGRET ANALYSIS + INDEPENDENT REDISCOVERY
+
+REGRET: after every cycle, estimate which searches produced unexpectedly little value, which
+unexpectedly produced major discoveries, which opportunities were missed, and whether a
+different allocation would probably have helped. Historical regret INFORMS future allocation
+(probabilistic, never deterministic). REDISCOVERY: high-value discoveries should, whenever
+practical, be independently rediscovered through UNRELATED search paths to confirm they are
+genuinely discoverable rather than artifacts of a single route or community.
