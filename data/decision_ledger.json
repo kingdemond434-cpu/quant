@@ -1325,6 +1325,21 @@
    ],
    "success_metric": "book holds ~100% with no recurring trim/topup churn across work ticks (verified this session)",
    "reversal_condition": "recurring trim<->topup churn on later ticks -> revert to the reconcile-aware version or back to safe under-deploy"
+  },
+  {
+   "id": "2026-07-19-freedata-weekly-uncapped-timer",
+   "decision": "Free-Data-Alternatives mission cranked per operator: query budget UNCAPPED (operator accepts token cost), ALL 6 categories dug to EXHAUSTION every run (no rotating subset), cadence -> WEEKLY. Given gap #29 (flagged duties can sit un-run under lockdown), gave it a DEDICATED weekly trigger: systemd quant-dataaxis.timer (Sun 14:00 UTC, clear of the 08:45 brain) -> quant-dataaxis.service -> ops/run_dataaxis_dig.sh (claude -p ops/dataaxis_dig_prompt.txt). Research-only/freeze-safe (docs+data catalogs only). Unit files DR-copied into ops/. Honest tradeoff operator accepted: heavier weekly dig competes with the connector for brain-cycle time; the executor/risk path stays untouched. Verification + genealogy remain mandatory (uncapped SEARCH does not waive the verify-diff).",
+   "hypothesis": "a guaranteed weekly, uncapped, exhaustive dig with a dedicated timer actually runs (unlike flagged-only duties) and continuously grows verified free-data breadth",
+   "expected_benefit": "reliable weekly exhaustion of all known source families + search-space expansion; no gap-#29 starvation",
+   "expected_cost": "material weekly token spend (operator-accepted); brain-cycle-time competition with the connector",
+   "confidence": 0.75,
+   "assumptions": [
+    "claude -p weekly runs cleanly headless",
+    "token cost acceptable to operator",
+    "verification keeps unverified sources out of live"
+   ],
+   "success_metric": "quant-dataaxis.timer fires weekly + produces graded data_universe_map entries; >=1 verified new axis to the pipeline within 2 months post-connector",
+   "reversal_condition": "token cost or brain-time contention proves unacceptable -> revert to biweekly or flagged-only; or sustained zero verified yield -> demote per source-yield learning"
   }
  ]
 }

@@ -1,0 +1,7 @@
+[Unit]
+Description=Weekly free-data-alternatives dig (Sundays 14:00 UTC, clear of the 08:45 brain slot)
+[Timer]
+OnCalendar=Sun *-*-* 14:00:00
+Persistent=true
+[Install]
+WantedBy=timers.target

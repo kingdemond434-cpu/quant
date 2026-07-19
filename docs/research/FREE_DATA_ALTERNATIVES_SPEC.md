@@ -1,12 +1,22 @@
-# PERMANENT FREE-DATA-ALTERNATIVES MISSION — Standing Cadence Duty (biweekly)
+# PERMANENT FREE-DATA-ALTERNATIVES MISSION — Standing Cadence Duty (WEEKLY, uncapped)
 
 **Status:** operator-mandated permanent mission (2026-07-19). Sole target: discovering,
 reconstructing, and verifying **free** data sources that replace, match, or exceed paid vendor
-products. Separate from the strategy-logic Prospector, with its **own query budget** (does not dilute
-the alpha dig's two-priority cap). Cadence: **biweekly (every 14d, never relaxed** — the source
-universe is permanently incomplete). Research/reconstruction is freeze-safe now; anything feeding
-LIVE sizing waits on the connector/Gate-0. Zero deployment authority — the gauntlet/Prosecutor/engine
-decide what any discovered axis is worth.
+products. Separate from the strategy-logic Prospector, with its **own query budget**.
+
+**Cadence: WEEKLY (every 7d, never relaxed** — the source universe is permanently incomplete).
+**Query budget: UNCAPPED (operator accepts token cost, 2026-07-19).** Every run digs **all 6 source
+categories to EXHAUSTION** — no rotating subset, no per-run query cap, no known source family left
+un-dug. Rotation/yield-weighting now governs only *within-category ORDER* (which venues/languages get
+attention first), never *whether* a category is covered. Research/reconstruction is freeze-safe now;
+anything feeding LIVE sizing waits on the connector/Gate-0. Zero deployment authority — the
+gauntlet/Prosecutor/engine decide what any discovered axis is worth.
+
+**What "exhausted" means (and doesn't):** each run drives every KNOWN source family to the point of
+no new information; SEARCH-SPACE EXPANSION simultaneously discovers NEW families, so the universe
+grows and is never "finished" — but no known family is ever skipped for budget. Uncapped *search*
+does NOT waive verification: every source still gets the full verify-don't-trust diff + genealogy
+before it counts. An exhaustive list of UNVERIFIED sources is not exhaustion — it is noise.
 
 ## Thesis
 Most "paid" crypto data is repackaged free originals or reconstructable from raw, and
@@ -14,7 +24,7 @@ reconstructed-with-owned-methodology **outranks** the black-box vendor (point-in
 look-ahead, no silent revisions). Proven already: the desk replaced a Tardis-class tick subscription
 with the free mainnet recorder + exchange-native dumps. This is the PRIMARY data posture, not a fallback.
 
-## 1. Source categories (all mandatory search targets every cycle, coverage-rotated)
+## 1. Source categories (ALL dug to exhaustion EVERY run — none skipped)
 1. **Exchange-native dumps & archives** — public historical trades, klines, aggTrades, bookDepth,
    bookTicker, liquidationSnapshot, funding, OI, metrics from every major AND regional venue. Source-
    of-truth first: the exchange's own public bucket / S3 archive / official download page.
@@ -31,16 +41,16 @@ with the free mainnet recorder + exchange-native dumps. This is the PRIMARY data
    reconstruct its research-valuable component from free sources; the report honestly grades the residual.
 
 ## 2. Language-blind & anti-consensus direction
-All languages are equally valid and mandatory surfaces (EN, 中文, Русский, 한국어, 日本語, العربية,
+All languages equally valid and mandatory surfaces (EN, 中文, Русский, 한국어, 日本語, العربية,
 Português, and every other). Low-visibility / non-English sources get **active attention** because
 they more often hold overlooked information — BUT every source is judged **solely on empirical
 quality, validation, and expected research value. Obscurity is NOT evidence of value.**
 
 ## 3. 40-day clock accelerants (for DATA — the clock is days-to-weeks, not 40 days)
 Reconstructed history front-loads out-of-sample (immediate multi-year backtest, not a wait from zero);
-**data-validation ≠ edge-validation** (source quality is verifiable in days by ground-truth diffing;
-only the alpha needs forward time); anytime-valid inference (e-values/mSPRT, gap #25) graduates a
-decisive edge in weeks; cross-sectional breadth substitutes for calendar time.
+**data-validation ≠ edge-validation** (source quality verifiable in days by ground-truth diffing; only
+the alpha needs forward time); anytime-valid inference (e-values/mSPRT, gap #25) graduates a decisive
+edge in weeks; cross-sectional breadth substitutes for calendar time.
 
 ## 4. Verification discipline (non-negotiable — makes aggressive free-data SAFE)
 Diff every source vs ground truth (exchange-native / Tardis free samples) BEFORE any pipeline trusts
@@ -51,29 +61,27 @@ are stamped **UNVERIFIED** and never feed a live signal.
 
 ## 5. Data Genealogy (every adopted dataset carries full lineage)
 Original source URL · mirror location · download/collection method + date · transformation pipeline
-(scripts, schema changes) · validation evidence (diff results vs ground truth) · license + permitted-
-usage scope · version / last-updated timestamp. Every feature built on the data is thus fully
-traceable and reproducible.
+(scripts, schema changes) · validation evidence (diff vs ground truth) · license + permitted-usage
+scope · version / last-updated timestamp. Every feature built on the data is fully traceable/reproducible.
 
 ## 6. Automatic Replacement Monitoring
 Every session compares currently-adopted sources against newly-discovered alternatives and flags any
-offering superior coverage / quality / latency / sustainability / validation. The data stack is never
-"complete" — it is continuously challenged.
+offering superior coverage / quality / latency / sustainability / validation. The stack is never "complete".
 
 ## 7. Source Failure Intelligence
 Discover not only sources but **why sources fail**: timestamp drift, missing intervals, survivorship
-bias, schema changes, silent corrections, API throttling, exchange bugs. A documented weakness saves
-months of wasted research and is logged beside the source in the Data Universe Map.
+bias, schema changes, silent corrections, API throttling, exchange bugs. Logged beside the source in
+the Data Universe Map — a documented weakness saves months of wasted research.
 
 ## 8. Query Evolution
-Query generation is optimized by **historical validated information gain** — search paths that
-consistently yield novel high-value discoveries get more budget within a session; a **minimum 25%
-exploration quota** is reserved for under-represented areas. The mission learns to search better.
+Query generation is optimized by **historical validated information gain** — paths that consistently
+yield novel high-value discoveries get proportionally more attention within a session; a **minimum 25%
+exploration quota** goes to under-represented areas. (Uncapped budget = this governs ORDER/emphasis,
+not a ceiling.)
 
 ## 9. Cross-Source Synthesis
 Actively identify **combinations** of independently-validated free datasets whose joint information
-content exceeds any single source (many top predictive features come from combining two ordinary
-datasets, not finding one extraordinary one) → flag pairs for the Feature Discovery Factory.
+exceeds any single source → flag pairs for the Feature Discovery Factory.
 
 ## 10. Temporal Rediscovery (quarterly)
 Previously rejected/retired sources are re-evaluated quarterly — APIs improve, datasets expand,
@@ -81,21 +89,21 @@ licenses change, mirrors emerge. No rejection is permanent without periodic re-a
 
 ## 11. Discovery ROI Tracking
 Track discoveries/search, validated discoveries, reusable discoveries, downstream alpha contribution,
-engineering effort, maintenance burden. Search allocation is optimized on these metrics + validated
-information gain.
+engineering effort, maintenance burden. Search emphasis optimized on these + validated information gain.
 
 ## 12. Maintainer Intelligence
 Link high-value datasets to their maintainers/labs/research-groups/companies/communities and track
-those entities as first-class recurring discovery targets — they repeatedly publish valuable work.
+those entities as first-class recurring discovery targets.
 
 ## Integration & routing
 Catalog every source + grade + lineage + failure-modes + yield into `data/data_universe_map.json`.
 Governed by the Free-First Protocol. A verified new axis with an economic story → pre-register on the
 EV gate (`new_orthogonal_data`) → the standard gauntlet decides. Tooling/reconstruction/method
-findings → improvement_inbox. Cadence-done key: `last_data_axis_dig`.
+findings → improvement_inbox. Cadence-done key: `last_data_axis_dig`. Honest tradeoff (operator-
+accepted): a weekly, uncapped, exhaustive dig consumes more shared brain-cycle time than the connector
+build — operator has chosen data-breadth weight here; the executor/risk path stays untouched.
 
-## SEARCH-SPACE EXPANSION (see DIGGING_CHARTER §12 — universal, all diggers)
-This mission obeys the universal rule: the source universe is permanently incomplete; a defined
-portion of every session's budget hunts entirely NEW source classes/communities/ecosystems, evaluated
-and catalogued on validated value, retired-but-archived on sustained low yield (reversible on new
-evidence).
+## SEARCH-SPACE EXPANSION (DIGGING_CHARTER §12 — universal, all diggers)
+The source universe is permanently incomplete; a defined budget share every session hunts entirely NEW
+source classes/communities/ecosystems, catalogued on validated value, retired-but-archived on sustained
+low yield (reversible on new evidence).

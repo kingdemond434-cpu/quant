@@ -1,0 +1,11 @@
+[Unit]
+Description=Quant free-data-alternatives weekly dig (headless Claude Code, research-only)
+After=network-online.target
+[Service]
+User=quant
+WorkingDirectory=/home/quant/quant-platform
+Environment=PATH=/home/quant/.local/bin:/home/quant/quant-platform/.venv/bin:/usr/bin:/bin
+EnvironmentFile=-/home/quant/.claude_token.env
+Type=oneshot
+TimeoutStartSec=7200
+ExecStart=/bin/bash /home/quant/quant-platform/ops/run_dataaxis_dig.sh
