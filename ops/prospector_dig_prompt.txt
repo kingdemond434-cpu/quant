@@ -16,3 +16,5 @@ OUTPUTS / ROUTING
 - Set "last_prospector" to today's UTC ISO in data/cadence_state.json.
 
 CLOSE: be blunt. Verified-nothing-new beats a fabricated list. Log dead ends so future runs don't re-mine them.
+
+REGION-RICH (parity, DIGGING_CHARTER 14): mine the strategy/quant-CODE ecosystems of every language/region with the SAME depth as English -- Gitee + Chinese GitHub (quant repos, factor libraries, backtest frameworks, Chinese-language READMEs), Korean/Japanese/Russian/CIS algo communities, etc. Translate as needed. The legitimate CJK open-source layer is a standing high-yield priority. Subject to the license/legitimacy gate (charter 13): open-source = adopt; pirated/cracked = never.

@@ -1383,6 +1383,20 @@
    ],
    "success_metric": "open shared datasets get adopted; proprietary finds spawn reconstruction targets; nothing proprietary/cracked adopted into live",
    "reversal_condition": "n/a on the security/adoption boundary; grading tuned if open sources get wrongly excluded"
+  },
+  {
+   "id": "2026-07-19-digger-parity-propagation",
+   "decision": "Added DIGGER PARITY & UPGRADE PROPAGATION as a universal standing rule (DIGGING_CHARTER section 14 + contract): all diggers advance together with equivalent depth/breadth/language-region/verification/cadence/capability, each in its own domain; ANY upgrade to one propagates to EVERY other where meaningful, same cycle; no digger left behind or ahead. Applied region-rich breadth to the Prospector (regional quant-CODE ecosystems: Gitee/Chinese-GitHub/KR/JP/RU algo communities) and the Literature miner (non-English academic + open mirrors), matching the data mission's CJK/regional depth -- all subject to the section-13 legitimacy gate. Parity audited quarterly in the Coverage-Completeness Audit.",
+   "hypothesis": "a family-wide parity + upgrade-propagation rule prevents diggers drifting in sophistication and maxes total info-gathering uniformly",
+   "expected_benefit": "every digger stays at the frontier depth/breadth/region-coverage; upgrades compound across the whole family, not one miner",
+   "expected_cost": "each upgrade now costs applying its equivalent to all diggers (that is the point)",
+   "confidence": 0.8,
+   "assumptions": [
+    "upgrades usually have meaningful cross-digger equivalents",
+    "quarterly audit catches drift"
+   ],
+   "success_metric": "no digger persistently lags another in depth/region/cadence; new upgrades appear across all diggers within a cycle",
+   "reversal_condition": "an upgrade genuinely has no equivalent for a digger -> applied only where meaningful (rule already scoped 'where meaningful')"
   }
  ]
 }

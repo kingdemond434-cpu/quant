@@ -15,3 +15,5 @@ OUTPUTS / ROUTING
 - Update the literature coverage map (visits + yield). Set "last_lit_deepdive" to today's UTC ISO in data/cadence_state.json.
 
 CLOSE: be blunt about replication failures and crowded/published signals. An honest, replicated mechanism or a genuine engine upgrade beats a pile of citations.
+
+REGION-RICH (parity, DIGGING_CHARTER 14): mine non-English academic + AI/quant-methods venues with the SAME depth as English -- Chinese open-access, Japanese/Korean journals, Russian, arXiv + open mirrors. Translate as needed. Subject to the license/legitimacy gate (charter 13: open-access = adopt; paywall-circumvented = never; reconstruct value legitimately).
