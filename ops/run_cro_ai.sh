@@ -3,6 +3,7 @@
 # daily cycle via Claude Code CLI against the constitution. Auth: `claude setup-token` once.
 set -uo pipefail
 cd /home/quant/quant-platform
+source ops/brain_env.sh
 export PATH="$HOME/.local/bin:$PATH"
 mkdir -p data/cro_ai_logs
 LOG="data/cro_ai_logs/$(date -u +%Y%m%d_%H%M).log"
