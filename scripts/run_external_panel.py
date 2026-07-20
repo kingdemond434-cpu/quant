@@ -159,9 +159,28 @@ def main() -> None:
     mission, system = _mission()
     dossier = _DOSSIER.read_text("utf-8")
     # GENERATE mission: append the graveyard so models don't re-propose already-killed ideas
-    if mission == "generate" and _GRAVEYARD.exists():
-        dossier += "\n\n## GRAVEYARD (already falsified -- do NOT propose any of these)\n" \
-            + _GRAVEYARD.read_text("utf-8")
+    # SETTLED-QUESTIONS FEED (2026-07-21): the panel is deliberately STATELESS -- fresh
+    # context every run is exactly why it can overturn the CRO without defending a prior
+    # position. But statelessness was also making models re-propose findings the desk had
+    # already rejected with reasons (7 of 27 rulings rejected in the 07-20 run). Feed the
+    # OUTCOMES on every mission -- what was settled and why -- while still withholding the
+    # reasoning history. Cold eyes, not amnesia.
+    _RULINGS = Path("docs/research/panel_rulings.md")
+    if _RULINGS.exists():
+        _r = _RULINGS.read_text("utf-8")
+        if len(_r) > 50_000:
+            _r = _r[-50_000:]                        # most recent rulings win the budget
+        dossier += ("\n\n## ALREADY-SETTLED FINDINGS (panel rulings to date)\n"
+                    "These were raised by previous panels and RULED ON with reasons. Do NOT "
+                    "re-propose anything here unless you have NEW evidence that defeats the "
+                    "stated reason -- if you do have such evidence, say so explicitly and cite "
+                    "it. Re-raising a settled finding without new evidence wastes the desk's "
+                    "triage budget and will be rejected again.\n" + _r)
+    if _GRAVEYARD.exists():                          # was 'generate'-only; now every mission
+        _g = _GRAVEYARD.read_text("utf-8")
+        if len(_g) > 60_000:
+            _g = _g[-60_000:]
+        dossier += ("\n\n## GRAVEYARD (already falsified -- do NOT propose any of these)\n" + _g)
     # FULL-COVERAGE AUDIT FEED (principal exception 2026-07-20): the dossier above is
     # written BY the audited system -- the auditee was choosing the auditor's evidence, so
     # anything it omitted could never be flagged. Every run now also ships the raw diff and a

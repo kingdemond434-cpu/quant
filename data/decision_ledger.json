@@ -1732,6 +1732,19 @@
    ],
    "success_metric": "first sweep completes ~22d post-funding; cadence set from measured re-review yield, not opinion",
    "reversal_condition": "if a real bug is found in a stale unchanged file before the sweep completes, tighten immediately -- that is evidence the floor is too loose"
+  },
+  {
+   "id": "2026-07-21-rulings-feed-and-stale-seat",
+   "decision": "Two fixes from principal questions. (1) STATELESSNESS AUDITED -- fresh context per run is the panel's CORE VALUE, not a defect: no anchoring, no narrative capture, and it is precisely why 12/12 models could overturn the CRO's wrong 'modest slippage' incident diagnosis today with no investment in his reasoning. The brain HAS memory and can be captured by its own story; the panel deliberately does not. BUT statelessness carried an unpriced cost: models never saw what was already SETTLED, so they re-proposed rejected findings every run (7 of 27 rulings rejected in the 07-20 run). Root cause found by fresh read: panel_rulings.md was referenced only in the INBOX HEADER (an instruction to the brain) and never sent to the models, and the graveyard was attached on the 'generate' mission ONLY. FIXED: rulings (capped 50k, most recent) + graveyard (capped 60k) now ship on EVERY mission, with an explicit instruction that re-raising a settled finding without NEW evidence will be rejected again. Models still get the OUTCOMES, never the reasoning history -- cold eyes preserved, amnesia removed. Expected effect: the ~26% reject rate falls and triage budget shifts to novel findings. (2) STALE SEAT: meta-llama/llama-4-maverick (2025-04) was 15 months old, by far the oldest seat -> meta/muse-spark-1.1 (2026-07, 1M ctx, $1.25), live-verified. ROSTER FRESHNESS AUDIT (all 13 checked against the catalog): 9 seats are 2026-05 or newer; google/gemini-3.1-pro-preview (2026-02) STAYS because Google ships no newer PRO -- 3.5 exists only in flash tier; x-ai/grok-4.3 (2026-04) STAYS as the newest xAI with >=1M context (grok-4.5 is newer but 500k, and capacity beats 3 months of freshness); qwen3.7-max (2026-05, $1.48) KEPT over the newer-dated qwen3.7-plus (2026-06, $0.32) because max is the flagship TIER and tier beats a one-month date on reasoning depth. NEIGHBOURS: payload size (rulings+graveyard add up to ~110k chars on top of the 700k coverage budget -- watch the blank telemetry; the adaptive budget will cut if seats choke), panel_rulings builder (unchanged, now consumed by models not just the brain), scorecard (muse-spark starts fresh, no history transfer).",
+   "hypothesis": "feeding settled outcomes cuts repeat findings without compromising the independence that makes cold panels valuable",
+   "expected_benefit": "lower reject rate, triage budget redirected to novel findings, freshest available seat in every chair",
+   "expected_cost": "~110k chars added per payload; one seat loses its scorecard history",
+   "confidence": 0.85,
+   "assumptions": [
+    "seats handle the larger payload -- blank telemetry + adaptive budget cover this if not"
+   ],
+   "success_metric": "next funded panel: reject rate below the 07-20 baseline of 7/27, and zero repeats of already-ruled findings",
+   "reversal_condition": "if feeding rulings visibly suppresses legitimate dissent (models deferring to past rulings instead of challenging them), cut back to graveyard-only and note it"
   }
  ]
 }
