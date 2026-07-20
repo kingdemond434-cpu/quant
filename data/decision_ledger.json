@@ -1706,6 +1706,19 @@
    ],
    "success_metric": "capacity test Friday: 13/13 ingest the full payload and correctly answer the probe",
    "reversal_condition": "any new seat blanks or answers wrong on the Friday capacity test -> swap it from the 23-lab >=1M pool, evidence-first"
+  },
+  {
+   "id": "2026-07-21-payload-sizing-decision",
+   "decision": "CRO DECISION on audit payload sizing (principal asked for the max-ROI call): TIERED, with the budget raised 4.7x to 700k chars (~178k tokens/seat, 67 files/run, ~$2.69/run, ~$27/month at 3-day cadence). REJECTED full-payload-every-run (2.29MB/572k tokens, ~$8.60/run, ~$86-100/mo). DECIDING ARGUMENT -- not cost, not attention: full-payload spends 8x to RE-READ UNCHANGED CODE. Everything that actually needs fresh eyes each run is already at 100%: changed code is in the RAW DIFF in full every run; the decision surface (all miner/digger prompts, watchlists, registries, gap register, charter) is TIER-0 in full every run; only unchanged code rotates, and it was reviewed when it last changed plus its rotation slot under staleness floors (risk-path 14d, other 30d). So full-payload buys almost nothing the tiered design lacks, while pushing every seat into long-context attention degradation where findings get vaguer -- paying 8x for WORSE reviews is negative ROI, and I would choose tiered even with unlimited credits. THE PRINCIPAL WAS RIGHT THAT COVERAGE WAS TOO THIN: the old 144k budget was sized around a 260k blank that turned out to be a FALSE ALARM (minimax was payload-sensitive, not weak, and later answered fine). With all 13 seats now >=1M context that constraint is gone, so the budget moves to the largest size still inside the good-attention zone (~175k tokens) rather than the smallest size that avoided a phantom limit. Full sweep now ~6 runs (~18 days) instead of ~12. A/B TEST STILL QUEUED for Friday funding -- if full-payload empirically produces MORE specific accepted findings, this decision reverses on evidence, which is the only thing that should reverse it. NEIGHBOURS: coverage ledger (sweep speed doubles), OpenRouter spend (~$27/mo, inside the funded envelope), capacity test (Friday, must pass before the bigger payload is trusted), attention-degradation assumption (the A/B is precisely its falsifier).",
+   "hypothesis": "the largest payload inside the good-attention zone maximises findings per dollar; beyond it, quality falls faster than coverage rises",
+   "expected_benefit": "4.7x coverage per run at 1/3 the cost of full-payload, without entering the skim zone",
+   "expected_cost": "~$27/month; full sweep 18 days rather than every run",
+   "confidence": 0.8,
+   "assumptions": [
+    "long-context attention degradation is real at 500k+ tokens -- the Friday A/B falsifies or confirms it"
+   ],
+   "success_metric": "A/B shows tiered >= full-payload on accepted-finding rate per dollar; sweep completes in ~6 runs",
+   "reversal_condition": "A/B shows full-payload wins on finding specificity -> raise to full and fund the difference"
   }
  ]
 }
