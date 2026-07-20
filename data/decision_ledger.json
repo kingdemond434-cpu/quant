@@ -1627,6 +1627,32 @@
    ],
    "success_metric": "k3 responses present in next panel run; scorecard hit-rate tracked from version boundary",
    "reversal_condition": "blank-response or format issues in next panel -> revert to kimi-k2.6 (one-line change)"
+  },
+  {
+   "id": "2026-07-20-deadman-reset-reconciled",
+   "decision": "DEAD-MAN LATCH RESET -- on EVIDENCE, closing incident #4 (2026-07-19T14:27:56Z fire). The reconciliation GAP #34 demanded was BUILT AND RUN this session (scripts/reconcile_venue.py, read-only, replicates the rail's own formula component-by-component; imports nothing from and modifies nothing in the Tier-3 file). VERDICT -- MEASUREMENT ARTIFACT CONFIRMED, panel's 'unresolved accounting break' now RESOLVED: (a) futures income over the window is +$77.68 PROFIT (realized +$106.96, funding +$10.66, commission -$39.94, 831 records) -- there was never a loss; (b) the '-$1,838 USDT gap' that drove the panel's concern is now +$290.46 ABOVE baseline -- it was in-flight settlement and it settled back, exactly the leg/cash race the docstring documents; (c) equity by the rail's OWN formula now reads $4,537.72 vs the $785.35 it latched on, and sits above the $3,280.84 fire line; (d) zero open positions, zero unrealized. SECOND FINDING (root cause of tonight's confusion): the principal reported 'session limit hitting made the deadman fire' -- mechanically impossible (the rail is a standalone Python daemon with no Claude dependency) and FALSE. What actually happened: CASHCARRY_KILL and venue_equity.json were deleted manually (a PARTIAL reset), and line 234's latch logic (`should_fire(...) or state['fired'] or _FIRED.exists()`) correctly RE-ASSERTED the kill file at 21:41:56Z. Correct fail-safe behaviour, not a new fire. LESSON (KB-worthy): the reset is ALL THREE files (deadman_state.json + DEADMAN_FIRED + CASHCARRY_KILL) or the latch re-asserts within one poll -- a partial delete looks exactly like a fresh fire. Full procedure executed; daemon verified re-forming a clean baseline (usdt_samples collecting, median-of-3 so one stale read cannot poison the reference); book free to resume. RESIDUAL RISK STATED PLAINLY: the underlying legs_v/cash race in combined_equity() is NOT fixed (Tier-3, principal-gated, GAP #34 corrected fix direction unbuilt) -- a false fire #5 during the next rapid rebalance burst remains plausible; it costs a flatten, not money (testnet, and the failure direction is safe). GAP #37 (unbounded orphan-cover market path) also still queued. NEIGHBOURS: executor (kill file gone -> resumes), deadman state (fresh baseline forming from today's $99,856 USDT, NOT the stale $99,566), GAP #34 (reconciliation deliverable now DONE -- row can move to fix-proposal stage), incident dossier (verdict appended), venue_equity.json (was deleted; regenerates on next refresh tick).",
+   "hypothesis": "the fire was a measurement artifact of the documented leg/cash race, not value loss",
+   "expected_benefit": "book resumes earning funding; incident #4 closed on evidence rather than assumption",
+   "expected_cost": "false-fire risk persists until the Tier-3 valuation fix is principal-approved",
+   "confidence": 0.95,
+   "assumptions": [
+    "futures income endpoint is complete over the window (831 records paginated)"
+   ],
+   "success_metric": "book redeploys and runs 7 days without a false fire; if one occurs, GAP #34 fix becomes top priority",
+   "reversal_condition": "any recurrence -> latch holds automatically (rail unchanged); investigate before next reset"
+  },
+  {
+   "id": "2026-07-20-flagship-roster-max",
+   "decision": "PANEL ROSTER -> MAX FLAGSHIP REASONING (principal order, supersedes the diverse-mid-tier half of ledger #115; event-run premium tier and scorecard governance UNCHANGED). Every seat is now its lab's flagship reasoning model, ALL IDs live-verified against the OpenRouter catalog before wiring (policy #115, and the reason nothing was taken from memory). SWAPS: gpt-5.6-terra -> gpt-5.6-terra-pro (pro variant, identical $2.50/M); qwen3-max-thinking -> qwen3.7-max (newer flagship, 1M ctx vs 262k); nemotron-3-ultra:free -> paid nemotron-3-ultra ($0.60/M -- the free tier rate-limits and returns blanks, which is a silent seat loss in a consensus panel: reliability bought for pennies); cohere/command-a -> minimax/minimax-m3 (command-a was Mar-2025 AND the priciest non-frontier seat at $2.50 -- replaced by a 2026-05 flagship at $0.30, 1M ctx); microsoft/wizardlm-2-8x22b -> tencent/hy3 (the DEAD seat, Apr-2024/65k ctx, ~20 months stale -> 2026-07 flagship). KEPT because already flagship: grok-4.5, gpt-5.6-luna-pro, gemini-3.1-pro-preview (verified: Google ships no newer PRO -- 3.5 exists only in flash tier), deepseek-v4-pro, glm-5.2, kimi-k3, mistral-large-2512 (large tier > the newer 'medium-3-5'), llama-4-maverick (Meta's newest flagship). DIVERSITY DELIBERATELY PRESERVED -- 13 seats, 13 distinct labs (7 Western / 6 Chinese lineages): flagship-per-seat raises depth, distinct-lab-per-seat preserves the UNCORRELATED consensus that produced every documented panel win (12/12 overturning the modest-loss framing; 2/11 independently inventing the venue-truth breaker). Upgrading depth without collapsing lineage diversity is the whole design. COST: ~$15.15/M summed across all seats, ~$0.30-0.80 per panel run, ~$5-10/mo at 3-day cadence -- within the $10-30 OpenRouter envelope already quoted to the principal. NEIGHBOURS: panel runner (reads the secrets json, zero code change), panel_scorecard (version boundary 2026-07-20 for hit-rate attribution -- 5 seats changed, prior history does not transfer), OpenRouter balance (exhaustion pages as a purchase decision per standing policy), event-run premium list (still queued in the inbox).",
+   "hypothesis": "flagship-per-lab beats mid-tier-per-lab on finding quality without sacrificing the decorrelation that makes consensus meaningful",
+   "expected_benefit": "deeper adversarial findings at every cadence run; two dead/stale seats eliminated",
+   "expected_cost": "~2-3x panel spend, still under $10/mo; scorecard history resets for 5 seats",
+   "confidence": 0.85,
+   "assumptions": [
+    "qwen3.7-max retains reasoning depth without the explicit -thinking suffix (reversal if not)"
+   ],
+   "success_metric": "next panel: 13/13 respond, no blanks; accepted-finding rate >= prior roster within 4 runs",
+   "reversal_condition": "blank/format failures from any new seat -> revert that seat only (one-line change, prior IDs in this entry)"
   }
  ]
 }
