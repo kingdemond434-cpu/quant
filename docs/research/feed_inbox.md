@@ -29,3 +29,11 @@ collector; see research_agenda.json do_not_repeat). 1 DISTILLED AS A REFERENCE (
 2607.09230 "When Does Order Flow Matter? State-Dependent L2 Liquidity-State Transitions in Crypto
 Futures" -- folded into engineering_backlog.json's execution_tca_fill_log (GAP#4) as a design
 reference for when that item is built (liquidity STATE, not just level, predicts adverse selection). -->
+
+## Existence and convergence of discrete-time Kyle models with multiple insiders
+- 2026-07-16 · http://arxiv.org/abs/2607.15057v2
+- Foster and Viswanathan (1996) extend the discrete-time setting of Kyle (1985) to multiple informed traders who have partial information about the stock's terminal dividend. We resolve two long-standing open problems in this literature. First, we prove that an equilibrium exists in the setting of Foster and Viswanathan (1996). Second, as the number of trading times goes to infinity, we prove that the discrete-time equilibrium converges to the continuous-time equilibrium already proven to exist in Back, Cao, and Willard (2000).
+
+## The Quarter-Hour Effect: Periodic Algorithmic Trading and Return Predictability in Cryptocurrency Futures
+- 2026-07-10 · http://arxiv.org/abs/2607.09426v2
+- Cryptocurrency markets exhibit periodic bursts in volatility and volume at one-minute, five-minute, and quarter-hour marks. Using trade data for six Binance perpetual contracts, we link these bursts to algorithmic participation: trade-size roundness declines sharply during them. The Autocorrelation Map, a clock-phase-resolved display, reveals serial dependence in order flow and returns at quarter-hour openings that conventional measures obscure. Opening returns are predictable out of sample, while opening order imbalance predicts returns over four to twelve hours, with much weaker effects at f

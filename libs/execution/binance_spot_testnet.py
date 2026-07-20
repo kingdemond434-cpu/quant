@@ -139,6 +139,24 @@ def avg_fill(symbol: str, side: str, start_ms: int) -> float | None:
         return None
 
 
+def my_trades(symbol: str, start_ms: int, end_ms: int | None = None,
+              limit: int = 1000) -> list[dict[str, Any]]:
+    """Raw venue-truth fill rows for ``symbol`` in [start_ms, end_ms) (signed, read-only).
+
+    Unlike ``avg_fill`` this returns every field (qty, quoteQty, commission, commissionAsset,
+    isBuyer, time) un-aggregated, for forensic reconciliation. Binance cannot combine startTime
+    and endTime beyond a 24h span on this endpoint -- callers passing a wider window get only
+    the startTime-anchored page; this is a diagnostic reader, not a paginating aggregator."""
+    params: dict[str, Any] = {"symbol": symbol, "startTime": start_ms, "limit": limit}
+    if end_ms is not None:
+        params["endTime"] = end_ms
+    try:
+        res = _signed("/api/v3/myTrades", params)
+        return list(res) if isinstance(res, list) else []
+    except Exception:
+        return []
+
+
 def balances() -> dict[str, float]:
     """Free balance per asset (non-zero only). The spot 'position' is just what you hold."""
     a = _signed("/api/v3/account", {})

@@ -1,17 +1,17 @@
 # Desk digest (auto-generated daily -- do not hand-edit)
-_updated 2026-07-19T08:01Z · companion to [[institutional_knowledge]]_
+_updated 2026-07-20T08:01Z · companion to [[institutional_knowledge]]_
 
 ## Book
-- Molded net: **$-53.84** | funding **$84.76** | run-rate APR 12.7% | day 17.11
-- Root cause: **unknown_novel** (pause_and_page) | tracking error $-184.6
+- Molded net: **$-58.24** | funding **$85.83** | run-rate APR 0.0% | day 18.11
+- Root cause: **unknown_novel** (pause_and_page) | tracking error $-231.07
 
 ## Validation clocks
-- **carry (DEPLOYED)**: 22/90d | bt 3.37 fwd 16.09
-- **perp L/S**: 15/90d | bt 0.41 fwd 1.26
-- **trend**: 15/90d | bt 1.3 fwd -12.27
-- **trend regime-gated**: 10/90d | bt 1.28 fwd 0.0
-- **OI/LS data**: 20/40d
-- **stablecoin data**: 17/40d
+- **carry (DEPLOYED)**: 24/90d | bt 3.33 fwd 13.73
+- **perp L/S**: 17/90d | bt 0.54 fwd 5.13
+- **trend**: 17/90d | bt 1.09 fwd -5.47
+- **trend regime-gated**: 12/90d | bt 1.14 fwd 0.0
+- **OI/LS data**: 22/40d
+- **stablecoin data**: 18/40d
 
 ## Open decisions (ledger)
 - `2026-07-04-cashcarry-top10-4500` -- review 2026-08-04: funding/day rises ~50% without new drift losses by 2026-08-04
@@ -103,6 +103,25 @@ _updated 2026-07-19T08:01Z · companion to [[institutional_knowledge]]_
 - `2026-07-19-prospector-firstrun` -- review ?: future cadence runs execute without hand-triggering once connector/recorder free the cycle
 - `2026-07-19-breakout-variants-tested-rejected` -- review ?: verdict is reproducible from the archived test script + params
 - `2026-07-19-data-axis-mission-standing` -- review ?: >=1 verified new orthogonal free data axis enters the hypothesis pipeline within 2 cadence
+- `2026-07-19-freedata-mission-full-spec` -- review ?: >=1 verified new orthogonal free axis enters the pipeline within 2 cycles post-connector; 
+- `2026-07-19-gap32-reapplied-live-fulldeploy` -- review ?: book holds ~100% with no recurring trim/topup churn across work ticks (verified this sessi
+- `2026-07-19-freedata-weekly-uncapped-timer` -- review ?: quant-dataaxis.timer fires weekly + produces graded data_universe_map entries; >=1 verifie
+- `2026-07-19-all-diggers-exhaustive-timered` -- review ?: each timer fires on schedule + produces graded output; prospector honestly reports nothing
+- `2026-07-19-cjk-priority-license-gate` -- review ?: CJK legitimate sources enter the map graded/verified; zero pirated/cracked sources ever ad
+- `2026-07-19-public-shared-data-surgical` -- review ?: open shared datasets get adopted; proprietary finds spawn reconstruction targets; nothing 
+- `2026-07-19-digger-parity-propagation` -- review ?: no digger persistently lags another in depth/region/cadence; new upgrades appear across al
+- `2026-07-19-discovery-doctrine-expansion` -- review ?: operator-library entries grow with per-region adaptation rows filled within one session of
+- `2026-07-19-brain-api-billing-option-a` -- review ?: AUTH-OK verify passes; next 7 days of cycles run with zero quota no-ops; first-month spend
+- `2026-07-19-brain-auth-option-b-supersedes` -- review ?: brain cycles run 7 consecutive days with zero quota no-ops alongside normal interactive us
+- `2026-07-19-cro-script-unbound-dollar-fix` -- review ?: next run creates a growing data/cro_ai_logs/<ts>.log and exits 0
+- `2026-07-19-exhaustion-verified-assetclass-dormant` -- review ?: next fires of all 4 diggers produce full-size logs; asset-class dormancy holds until a led
+- `2026-07-19-admission-count-uncapped-constitutional` -- review ?: gauntlet admissions track EV-gate passes 1:1; FDR detector shows no inflation over 8 weeks
+- `2026-07-19-pager-unicode-fix-and-neighbours` -- review ?: next successful push logs a `deadman_latched`/`principal_action_needed` success timestamp 
+- `2026-07-19-deadman-fire4-incident-autopsy` -- review ?: the read-only reconciliation script (once built) either fully attributes the $1,838 USDT d
+- `2026-07-19-founders-directives-adopted` -- review ?: next auth failure produces a page within one cycle-start; zero doctrine additions until Ga
+- `2026-07-20-implementation-caps-removed` -- review ?: 8 weeks: implemented-change yield stays healthy and zero change-induced incidents; churn t
+- `2026-07-20-hypothesis-generation-maximized` -- review ?: hypotheses/week up >=3x with FDR detector flat; compute per gauntlet survivor down; pager:
+- `2026-07-20-collapse-detector-and-exhaustion-audit` -- review ?: diversity KPIs visible in scorecard within 2 cycles; zero silent-collapse windows >1 week 
 
 ## Executive KPI snapshot
 - CRO: {"hypotheses_tested_lifetime": 20, "validated_survivors": 1, "survivor_note": "cash-carry (fwd 8/90); trend candidate gauntlet-passed (fwd 1/90); all else graveyarded", "survival_r

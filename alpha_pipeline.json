@@ -1,5 +1,5 @@
 {
-  "generated": "2026-07-19T08:26:25.302783+00:00",
+  "generated": "2026-07-20T08:27:07.915775+00:00",
   "n_alphas": 8,
   "n_survived": 0,
   "deployed": [
@@ -9,32 +9,8 @@
     {
       "alpha": "crypto::ls_contrarian",
       "category": "derivative-data",
-      "expected_sharpe": 10.98,
+      "expected_sharpe": 11.1,
       "gates": "8/9",
-      "survived": false,
-      "stage": "backtest",
-      "orthogonality": "unknown",
-      "crowding_risk": "medium",
-      "expected_half_life": "unknown-until-forward",
-      "retire_check": "REJECT: fails gates"
-    },
-    {
-      "alpha": "crypto::ts_trend",
-      "category": "crypto-sleeve",
-      "expected_sharpe": 0.83,
-      "gates": "7/9",
-      "survived": false,
-      "stage": "backtest",
-      "orthogonality": "unknown",
-      "crowding_risk": "medium",
-      "expected_half_life": "unknown-until-forward",
-      "retire_check": "REJECT: fails gates"
-    },
-    {
-      "alpha": "crypto::funding_carry",
-      "category": "crypto-sleeve",
-      "expected_sharpe": 0.77,
-      "gates": "7/9",
       "survived": false,
       "stage": "backtest",
       "orthogonality": "unknown",
@@ -45,8 +21,44 @@
     {
       "alpha": "crypto::xsec_price_mom",
       "category": "crypto-sleeve",
-      "expected_sharpe": 0.74,
+      "expected_sharpe": 0.88,
+      "gates": "5/9",
+      "survived": false,
+      "stage": "backtest",
+      "orthogonality": "unknown",
+      "crowding_risk": "medium",
+      "expected_half_life": "unknown-until-forward",
+      "retire_check": "REJECT: fails gates"
+    },
+    {
+      "alpha": "crypto::ts_trend",
+      "category": "crypto-sleeve",
+      "expected_sharpe": 0.75,
+      "gates": "7/9",
+      "survived": false,
+      "stage": "backtest",
+      "orthogonality": "unknown",
+      "crowding_risk": "medium",
+      "expected_half_life": "unknown-until-forward",
+      "retire_check": "REJECT: fails gates"
+    },
+    {
+      "alpha": "crypto::funding_momentum",
+      "category": "crypto-sleeve",
+      "expected_sharpe": 0.63,
       "gates": "6/9",
+      "survived": false,
+      "stage": "backtest",
+      "orthogonality": "unknown",
+      "crowding_risk": "medium",
+      "expected_half_life": "unknown-until-forward",
+      "retire_check": "REJECT: fails gates"
+    },
+    {
+      "alpha": "crypto::funding_carry",
+      "category": "crypto-sleeve",
+      "expected_sharpe": 0.6,
+      "gates": "7/9",
       "survived": false,
       "stage": "backtest",
       "orthogonality": "unknown",
@@ -57,8 +69,8 @@
     {
       "alpha": "crypto::taker_flow",
       "category": "crypto-sleeve",
-      "expected_sharpe": 0.5,
-      "gates": "6/9",
+      "expected_sharpe": 0.43,
+      "gates": "7/9",
       "survived": false,
       "stage": "backtest",
       "orthogonality": "unknown",
@@ -79,21 +91,9 @@
       "retire_check": "REJECT: fails gates"
     },
     {
-      "alpha": "crypto::funding_momentum",
-      "category": "crypto-sleeve",
-      "expected_sharpe": 0.24,
-      "gates": "5/9",
-      "survived": false,
-      "stage": "backtest",
-      "orthogonality": "unknown",
-      "crowding_risk": "medium",
-      "expected_half_life": "unknown-until-forward",
-      "retire_check": "REJECT: fails gates"
-    },
-    {
       "alpha": "crypto::oi_divergence",
       "category": "derivative-data",
-      "expected_sharpe": -11.42,
+      "expected_sharpe": -9.33,
       "gates": "4/9",
       "survived": false,
       "stage": "backtest",

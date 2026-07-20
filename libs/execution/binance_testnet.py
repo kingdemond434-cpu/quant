@@ -130,6 +130,23 @@ def avg_fill(symbol: str, side: str, start_ms: int) -> float | None:
         return None
 
 
+def my_trades(symbol: str, start_ms: int, end_ms: int | None = None,
+              limit: int = 1000) -> list[dict[str, Any]]:
+    """Raw venue-truth futures fill rows for ``symbol`` in [start_ms, end_ms) (signed, read-only).
+
+    Unlike ``avg_fill`` this returns every field (qty, quoteQty, commission, realizedPnl, side,
+    time) un-aggregated, for forensic reconciliation. Diagnostic reader, not a pagination
+    aggregator -- mirrors ``binance_spot_testnet.my_trades``."""
+    params: dict[str, Any] = {"symbol": symbol, "startTime": start_ms, "limit": limit}
+    if end_ms is not None:
+        params["endTime"] = end_ms
+    try:
+        res = _signed("/fapi/v1/userTrades", params)
+        return list(res) if isinstance(res, list) else []
+    except Exception:
+        return []
+
+
 def mark_prices() -> dict[str, float]:
     """Latest price per symbol (public endpoint -- no keys needed, used for sizing)."""
     data = _get("/fapi/v1/ticker/price")
@@ -157,17 +174,20 @@ def account_summary() -> dict[str, float]:
 
 
 def _income_rows(since_ms: int, income_type: str = "",
-                 fetch: Any = None) -> list[dict[str, Any]]:
+                 fetch: Any = None, symbol: str = "") -> list[dict[str, Any]]:
     """ALL income rows since ``since_ms`` -- paginated past the venue's 1000-row page cap.
 
     The endpoint serves at most 1000 rows per call; a busy book exceeds that within days, after
     which every aggregate (funding, realized PnL, commission) silently understates. Pages forward
     by advancing startTime to the last row's timestamp, de-duping on (tranId, type, symbol, time)
-    so same-millisecond rows are neither dropped nor double-counted."""
+    so same-millisecond rows are neither dropped nor double-counted. Optional ``symbol`` narrows
+    to one instrument (venue-supported filter) for per-symbol forensic reconciliation."""
     get = fetch or (lambda p: _signed("/fapi/v1/income", p))
     params: dict[str, Any] = {"limit": 1000}
     if income_type:
         params["incomeType"] = income_type
+    if symbol:
+        params["symbol"] = symbol
     if not since_ms:                                   # no anchor -> recent snapshot (one page)
         rows = get(params)
         return list(rows) if isinstance(rows, list) else []

@@ -421,7 +421,15 @@ def _rebalance(top: int, hold_top: int, capital: float, *, dry: bool) -> dict[st
             spx, fpx = spot_px.get(sym, p["spot_cost"]), fut_px.get(sym, p["perp_entry"])
             if not dry:
                 t0 = int(time.time() * 1000) - 2000       # fill window (venue clock-skew slack)
-                _execute_pair(sym, float(p["spot_qty"]), "SELL", "BUY")  # close: sell/cover
+                fill = _execute_pair(sym, float(p["spot_qty"]), "SELL", "BUY")  # close: sell/cover
+                # VERIFY-BEFORE-DELETE (2026-07-19 incident, GAP row 34): a close that isn't
+                # CONFIRMED filled on both legs must stay tracked, or its spot inventory strands
+                # forever (deleted from `pos`, no longer visible to any reconciler pass, no error
+                # anywhere). ~$2,150 of real spot inventory was lost this way before this fix.
+                if not (fill.get("spot_ok") and fill.get("fut_ok")):
+                    actions.append(f"CLOSE-FAIL {sym}: spot_ok={fill.get('spot_ok')} "
+                                   f"fut_ok={fill.get('fut_ok')} -- kept tracked, retry next cycle")
+                    continue
                 # EXIT MARKS FROM ACTUAL FILLS (2026-07-13 incident): ticker marks are blind to
                 # what a thin book actually paid us -- see the matching open-path fix below.
                 spx = spot.avg_fill(sym, "SELL", t0) or spx
@@ -471,7 +479,14 @@ def _rebalance(top: int, hold_top: int, capital: float, *, dry: bool) -> dict[st
         fpe = fut_px.get(sym, px)
         if not dry:
             t0 = int(time.time() * 1000) - 2000           # fill window (venue clock-skew slack)
-            _execute_pair(sym, qty, "BUY", "SELL")        # open: long spot, short perp
+            fill = _execute_pair(sym, qty, "BUY", "SELL")  # open: long spot, short perp
+            # VERIFY-BEFORE-TRACK (2026-07-19 incident, GAP row 34): only track a position once
+            # both legs are CONFIRMED filled -- an untracked failed/partial open is visible in the
+            # error log for follow-up rather than silently absent from every future reconcile pass.
+            if not (fill.get("spot_ok") and fill.get("fut_ok")):
+                actions.append(f"OPEN-FAIL {sym}: spot_ok={fill.get('spot_ok')} "
+                               f"fut_ok={fill.get('fut_ok')} -- not tracked, verify manually")
+                continue
             # COST BASIS FROM ACTUAL FILLS (2026-07-13 incident): ticker-at-open recorded a
             # ~$4.7k thin-book fill cost as -$55 -- entry slippage must hit the book the moment
             # it happens. Ticker remains only the fallback when the venue read fails.
@@ -510,7 +525,15 @@ def _rebalance(top: int, hold_top: int, capital: float, *, dry: bool) -> dict[st
             fpe = fut_px.get(sym, px)
             if not dry:
                 t0 = int(time.time() * 1000) - 2000
-                _execute_pair(sym, qty, "BUY", "SELL")     # add matched legs: long spot, short perp
+                fill = _execute_pair(sym, qty, "BUY", "SELL")  # add matched legs (spot+perp)
+                # VERIFY-BEFORE-TRACK (2026-07-19 incident, GAP row 34): the exact bug class that
+                # stranded ~$2,150 -- a topup that isn't CONFIRMED filled on both legs must never
+                # be added to the tracked spot_qty/perp_qty, or the excess buy becomes permanently
+                # invisible the moment this symbol is later closed against the (unchanged) old qty.
+                if not (fill.get("spot_ok") and fill.get("fut_ok")):
+                    actions.append(f"TOPUP-FAIL {sym}: spot_ok={fill.get('spot_ok')} "
+                                   f"fut_ok={fill.get('fut_ok')} -- not tracked, verify manually")
+                    continue
                 px = spot.avg_fill(sym, "BUY", t0) or px
                 fpe = fut.avg_fill(sym, "SELL", t0) or fpe
             old_q = float(p["spot_qty"])
@@ -579,16 +602,19 @@ def _passive_price(bk: dict, fl: dict, sym: str, side: str) -> float | None:
 
 
 def _maker_pair(sym: str, qty: float, spot_side: str, fut_side: str,
-                *, wait: float) -> dict[str, str]:
+                *, wait: float) -> dict[str, object]:
     """Quote BOTH legs post-only (maker), wait, then taker-fill whatever didn't rest+fill.
 
     Same qty on both legs -> the pair ends delta-neutral; the wait bounds any transient exposure.
-    """
+    Returns modes plus spot_ok/fut_ok -- a leg only counts as filled once EITHER it rested and
+    left the open-orders book (maker fill) OR its taker fallback returns a confirmed FILLED
+    order; a leg that never confirms either way is reported unfilled, never assumed."""
     sbk, fbk = spot.book_ticker(), fut.book_ticker()
     sfl = spot.exchange_filters().get(sym, {})
     ffl = fut.exchange_filters().get(sym, {})
     legs = [("spot", spot, spot_side, sbk, sfl), ("fut", fut, fut_side, fbk, ffl)]
     modes: dict[str, str] = {}
+    ok: dict[str, bool] = {"spot": False, "fut": False}
     for name, mod, side, bk, fl in legs:
         px = _passive_price(bk, fl, sym, side)
         with _safe():
@@ -603,29 +629,57 @@ def _maker_pair(sym: str, qty: float, spot_side: str, fut_side: str,
         with _safe():
             if mod.open_orders(sym):
                 mod.cancel_all(sym)
-                mod.place_market(sym, side, qty)
+                res = mod.place_market(sym, side, qty)
                 modes[name] = "taker_fallback"
+                ok[name] = _filled(res)
             elif modes.get(name) == "maker_pending":
                 modes[name] = "maker"
-    return modes
+                ok[name] = True                             # left the book with no cancel -> filled
+    if not (ok["spot"] and ok["fut"]):
+        with contextlib.suppress(Exception):
+            _ERR.write_text(f"{datetime.now(tz=UTC).isoformat()} unfilled leg (maker path) {sym} "
+                            f"ok={ok} modes={modes}\n")
+    return {**modes, "spot_ok": ok["spot"], "fut_ok": ok["fut"]}
 
 
-def _execute_pair(sym: str, qty: float, spot_side: str, fut_side: str) -> dict[str, str]:
+def _filled(res: object) -> bool:
+    """True only for a CONFIRMED-filled order response (not merely 'no exception was thrown').
+
+    2026-07-19 incident (GAP register row 34): `_safe()` swallows every exception with zero fill
+    verification, so a rejected/partial order looked identical to a successful one to every
+    caller -- three closes silently failed to sell their spot leg, stranding ~$2,150 of real
+    inventory the position tracker had already deleted and would never revisit. A response is
+    only trustworthy when the venue itself confirms FILLED."""
+    return (isinstance(res, dict) and res.get("status") == "FILLED"
+            and float(res.get("executedQty", 0.0)) > 0)
+
+
+def _execute_pair(sym: str, qty: float, spot_side: str, fut_side: str) -> dict[str, object]:
     """Fill both carry legs -- maker-first (execution alpha: lower fees) if enabled, else market.
 
-    ALWAYS ends both-filled: maker path has a taker fallback; on ANY maker error we fall back to a
-    plain market pair (guaranteed fill), so execution optimisation can never break the hedge."""
+    Returns {"spot": mode, "fut": mode, "spot_ok": bool, "fut_ok": bool} -- callers MUST check
+    the _ok flags before treating a leg as filled; a leg failing must not abort the whole
+    rebalance (that is what `_safe()` still protects), but it must never be reported as success.
+    Maker path has a taker fallback; on ANY maker error we fall back to a plain market pair."""
     if _MAKER:
         try:
             return _maker_pair(sym, qty, spot_side, fut_side, wait=_MAKER_WAIT)
         except Exception as e:  # maker machinery failed -> safe market fallback
             with contextlib.suppress(Exception):
                 _ERR.write_text(f"{datetime.now(tz=UTC).isoformat()} maker fail {sym}: {e!r}\n")
+    spot_res: object = None
+    fut_res: object = None
     with _safe():
-        spot.place_market(sym, spot_side, qty)
+        spot_res = spot.place_market(sym, spot_side, qty)
     with _safe():
-        fut.place_market(sym, fut_side, qty)
-    return {"spot": "taker", "fut": "taker"}
+        fut_res = fut.place_market(sym, fut_side, qty)
+    spot_ok, fut_ok = _filled(spot_res), _filled(fut_res)
+    if not (spot_ok and fut_ok):
+        with contextlib.suppress(Exception):
+            _ERR.write_text(f"{datetime.now(tz=UTC).isoformat()} unfilled leg {sym} "
+                            f"spot_ok={spot_ok} fut_ok={fut_ok} spot_res={spot_res!r} "
+                            f"fut_res={fut_res!r}\n")
+    return {"spot": "taker", "fut": "taker", "spot_ok": spot_ok, "fut_ok": fut_ok}
 
 
 def _mark(rb: dict[str, object]) -> dict[str, float]:
