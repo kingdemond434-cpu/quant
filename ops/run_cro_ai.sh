@@ -4,6 +4,7 @@
 set -uo pipefail
 cd /home/quant/quant-platform
 source ops/brain_env.sh
+brain_auth_check || exit 1
 export PATH="$HOME/.local/bin:$PATH"
 mkdir -p data/cro_ai_logs
 LOG="data/cro_ai_logs/$(date -u +%Y%m%d_%H%M).log"

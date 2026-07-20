@@ -496,3 +496,21 @@ shadow-vs-backtest calibration failure, detector-flagged FDR inflation) PAUSE ad
 entirely until resolved -- a live integrity problem stops the line; a count quota never
 does. Rationale: 390 tested / 0 survivors shows the gauntlet bar does the protecting;
 count caps only add queue latency and watchlist flooding (principal 2026-07-19).
+
+
+## DOCTRINE FEATURE-COMPLETE UNTIL GATE 0 (principal 2026-07-19, founders review #1)
+The constitution is years ahead of the alpha. NO new governance sections, standing rules,
+or doctrine packages until Gate 0 clears -- this section and its siblings adopted in the
+same principal order are the LAST pre-Gate-0 doctrine changes. Exceptions (unchanged):
+verified safety bugs, drill failures, production defects, live-operation blockers.
+Every session-hour goes to the connector and live execution.
+
+
+## AUTO-IMPLEMENT MANDATE + HUMAN-STEP PAGING (principal 2026-07-19)
+Every CRO recommendation is implemented AUTOMATICALLY without asking the principal --
+permission-seeking on implementable work is a defect. The ONLY exceptions are steps
+physically impossible without the principal (account sign-ups/upgrades, key/credential
+placement, payments, browser auth flows, hardware). Those are (1) written to
+data/PRINCIPAL_ACTION.md and (2) PAGED via ntfy immediately -- never left waiting in a
+chat transcript. Existing hard stops are untouched: Tier-3 rails, live-keys gates,
+deadman reset remains a principal decision.
