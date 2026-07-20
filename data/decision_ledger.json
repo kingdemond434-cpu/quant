@@ -1548,6 +1548,19 @@
    ],
    "success_metric": "hypotheses/week up >=3x with FDR detector flat; compute per gauntlet survivor down; pager: zero 429 hammer-loops in journalctl",
    "reversal_condition": "pre-filter audit shows real alphas rejected -> loosen thresholds (never a count); FDR detector inflation -> admissions tripwire pauses (existing law)"
+  },
+  {
+   "id": "2026-07-20-collapse-detector-and-exhaustion-audit",
+   "decision": "(1) GENERATOR COLLAPSE DETECTOR adopted (principal micro-addition, Lane-A instrumentation not governance): HYPOTHESIS_MAX_SPEC section 6 -- per-batch mechanism-fingerprint entropy, feature/market breadth, deterministic Jaccard semantic proxy, cross-generator near-duplicate rate; wired into build_scoreboard/panel_scorecard KPIs; >40%-below-trailing-median or >25% duplicate rate flags a weekly-panel DIVERSITY AUDIT; detector pages the process, never gates ideas. (2) EXHAUSTION AUDIT (principal verification order, fresh reads): NO policy caps remain anywhere in generation or extraction (repo grep: the one [:5] in research_cycle.py is a digest display slice, not a queue). REMAINING REAL BOTTLENECKS, by size: (a) LLM QUOTA -- single shared subscription; the Max upgrade AND the Option-A API key placement are both pending-principal; this is the #1 available throughput multiplier (more cycles+digs/day; everything else rides on it); (b) GAP #25 always-valid inference -- biggest principled extraction speedup; spec-prebuild NOW ordered (adoption stays post-freeze + replicated challenger, evidence gate untouched); (c) PHYSICS -- recorder tape age (microstructure families unlock ~30/60/90d) and forward-shadow accrual: not policy-compressible except via (b); (d) VPS COMPUTE (2vCPU/4GB) -- not yet binding; becomes binding when recorder-replay workloads start; EV-gated spend decision then, not pre-emptive; (e) NEW-AXIS DISCOVERY VELOCITY -- weekly dataaxis dig (make-up run chained tonight); cadence can rise post-(a). Under-utilised axes: none idle by policy -- open alpha-map branches were EV-scored and honestly rejected this cycle; regional-venue archives are DH-001, being dug. NEIGHBOURS: scoreboard builder (new fields), weekly panel (new audit trigger class), gap #25 row (spec-prebuild status), HYPOTHESIS_MAX_SPEC (section added).",
+   "hypothesis": "diversity telemetry catches mode collapse before it silently converts uncapped throughput into duplicated compute",
+   "expected_benefit": "information-per-hypothesis stays honest as volume scales; the two real unlock levers (quota, gap-25) are named and actioned",
+   "expected_cost": "one small scoreboard build; thresholds need tuning",
+   "confidence": 0.85,
+   "assumptions": [
+    "fingerprints from spec section 3 land first (detector reuses them)"
+   ],
+   "success_metric": "diversity KPIs visible in scorecard within 2 cycles; zero silent-collapse windows >1 week once live",
+   "reversal_condition": "if thresholds spam false diversity audits, widen them on evidence (instrumentation stays)"
   }
  ]
 }

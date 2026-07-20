@@ -342,3 +342,7 @@ honestly, not papered over). Two non-alpha findings worth routing here:
    rule should route the next session there before repeating Code/Non-English/Social.
 
 4. **Hypothesis-Max machinery (principal directive 2026-07-20, spec prebuilt):** build docs/research/HYPOTHESIS_MAX_SPEC.md components in EV order -- tiered pre-filter first (pure efficiency), then telemetry feedback, variation blocker, breeder, orthogonality seeker. Research-lane (no risk-path); each component CI-gated + reversible.
+
+5. **Generator collapse detector (principal 2026-07-20, Lane-A instrumentation):** build HYPOTHESIS_MAX_SPEC.md section 6 -- per-batch diversity telemetry (mechanism-fingerprint entropy, feature/market breadth, Jaccard semantic proxy, cross-generator overlap) into build_scoreboard.py + panel_scorecard.json; >40%-below-median or >25% duplicate rate flags a weekly-panel diversity audit. Small, no dependencies beyond spec section 3 fingerprints.
+
+6. **Gap #25 spec-prebuild NOW (exhaustion audit 2026-07-20):** anytime-valid inference (e-values/mSPRT) is the single biggest PRINCIPLED survivor-extraction speedup -- a strong edge graduates the moment evidence is decisive, type-I controlled under optional stopping. Adoption stays post-freeze + replicated-challenger (constitutional, untouched); the SPEC (estimator choice, e-process per metric, replication protocol, floor of independent observations) is owed now per the spec-prebuild standing rule so zero design delay at unlock.

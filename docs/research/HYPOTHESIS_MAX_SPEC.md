@@ -41,3 +41,25 @@ factor families first, per the 2026-07-19 standing targeting order).
 ## KPIs (factory dashboard): hypotheses generated/pre-filtered/gauntleted/surviving per week,
 compute per survivor, pre-filter false-reject audit rate. Success = gauntlet throughput up
 with FDR detector flat.
+
+## 6. Generator collapse detector (principal micro-addition 2026-07-20 -- Lane-A instrumentation)
+Uncapped generation has a known failure mode: mode collapse -- multiple generators/seats
+converging on near-identical hypotheses, so measured throughput rises while INFORMATION
+throughput falls. Track diversity explicitly per generation batch and across generators:
+- MECHANISM diversity: entropy over mechanism fingerprints (reuses #3's fingerprint =
+  feature family + signal transform + horizon bucket) -- collapse shows as entropy dropping
+  while volume holds.
+- FEATURE diversity: distribution across feature families / data axes used.
+- MARKET diversity: symbol/venue coverage breadth of the batch (cross-sectional families
+  count the universe they rank, not 1 name).
+- SEMANTIC diversity: cheap deterministic proxy -- pairwise Jaccard on normalized mechanism-
+  description token sets (no embeddings, no extra model calls); plus CROSS-GENERATOR overlap
+  rate (share of near-duplicate pairs between different seats/diggers in the same window).
+WIRING (single Lane-A task, no new governance): metrics computed per batch and appended to
+the seat scoreboard (scripts/build_scoreboard.py -> data/panel_scorecard.json fields
+`gen_diversity`); shown in factory KPIs. TRIGGER: any metric dropping >40% below its
+trailing-8-batch median, or cross-generator near-duplicate rate >25%, flags a DIVERSITY
+AUDIT in the next weekly panel (audit asks: which seats collapsed, onto what, and why --
+telemetry-induced herding, shared-prompt drift, or a genuinely dominant regime). Thresholds
+are starting values, tuned on evidence; the detector never blocks generation -- it is
+instrumentation that pages the process, not a gate on ideas.
