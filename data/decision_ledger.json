@@ -1601,6 +1601,19 @@
    ],
    "success_metric": "7 miner logs with real session notes within 48h of quota headroom; coverage map gains 7 region rows in a week",
    "reversal_condition": "recurring quota pages -> miners drop to alternate-day stagger (documented step-back), never silent death"
+  },
+  {
+   "id": "2026-07-20-panel-tier-policy",
+   "decision": "PANEL MODEL-TIER POLICY (principal-ratified): (1) EVENT RUNS -- Gate-0 pre-mortem, incident autopsies -- use PREMIUM top-tier max-reasoning models: depth-per-model dominates when the task is finding the bug the tests missed in risk-path code (one-off spend ~$5-20/event, trivially justified). (2) ROUTINE 3-day cadence panels keep the DIVERSE frontier/mid-tier roster: the panel's documented wins (12/12 overturning the modest-loss framing, 2/11 independently inventing the venue-truth breaker, rejecting the deadman-coupling fix) came from CONSENSUS ACROSS UNCORRELATED FAMILIES, not single-model brilliance -- blanket premium upgrade (~$100-300/mo) rejected as poor ROI vs ~$10-30/mo current. (3) ROSTER COMPOSITION IS EVIDENCE-GOVERNED: panel_scorecard.json per-model hit-rates decide seat changes at QUARTERLY reviews (+ a roster-freshness check each review: stale-version seats are defects). ROSTER AUDIT (fresh read of data/secrets/llm_panel.json): 11/13 seats current-generation (grok-4.5, gpt-5.6-terra + luna-pro, gemini-3.1-pro-preview, deepseek-v4-pro, qwen3-max-thinking, glm-5.2, kimi-k2.6, mistral-large-2512, nemotron-3-ultra:free, command-a aging-but-ok) -- the diverse roster IS near-optimal already; ONE dead seat: microsoft/wizardlm-2-8x22b (Apr 2024, ~20 months stale) -- directed replacement queued (live-verified ID, brain next cycle); llama-4-maverick successor check queued. IMPLEMENTATION queued to inbox (EVENT_MODELS switch on PANEL_MISSION; live-verify IDs via OpenRouter /models before wiring). SECURITY NOTE: during the roster read the OpenRouter key was printed to the operator chat transcript (nested per-provider, extraction filter missed it) -- key rotation recommended to the principal (low blast radius: spend-capped research key); lesson: never print provider dicts, extract model fields only. NEIGHBOURS: panel runner (pending EVENT_MODELS edit), panel_scorecard (now load-bearing for seats), OpenRouter balance (event runs add ~$5-25/busy-month), quarterly review checklist (roster-freshness added).",
+   "hypothesis": "premium depth where stakes concentrate + diverse consensus where breadth matters beats both blanket-premium and blanket-cheap",
+   "expected_benefit": "event-run quality up at ~$5-25/mo extra; routine spend flat; roster self-corrects on evidence",
+   "expected_cost": "premium event runs; one seat swap",
+   "confidence": 0.85,
+   "assumptions": [
+    "scorecard hit-rates accumulate enough sample by first quarterly review"
+   ],
+   "success_metric": "Gate-0 pre-mortem runs on premium tier; wizardlm seat replaced within a week; scorecard drives first quarterly seat decision",
+   "reversal_condition": "if premium event runs produce no marginal accepted findings over 3 events, drop back to diverse roster for events too"
   }
  ]
 }
