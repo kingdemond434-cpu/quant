@@ -33,8 +33,8 @@ _STAGE = Path("data/stage_state.json")
 _HEALTH = Path("web/health.json")
 _DUE_NOTE = Path("docs/research/cadence_duties.md")
 _VIOLATION = Path("data/cadence_violation.json")
-_PANEL_EVERY_D = 7
-_TIER1_EVERY_D = 28
+_PANEL_EVERY_D = 3
+_TIER1_EVERY_D = 14
 _PROMPT_REVIEW_D = 28
 _CLOCK_MATURITY_D = 40
 
@@ -54,7 +54,7 @@ _FLOORS_S1_EXTRA: dict[str, float] = {           # live adds floors; never remov
     "data/canary_state.json": 12.0,              # 6h canary round-trip (post-connector)
 }
 # state-tracked floors (days): review cycles may never stretch past these
-_STATE_FLOORS_D = {"last_panel": 8.0, "last_tier1": 32.0, "last_prompt_review": 35.0,
+_STATE_FLOORS_D = {"last_panel": 4.0, "last_tier1": 16.0, "last_prompt_review": 35.0,
                    "last_prospector": 35.0, "last_blind_rediscovery": 100.0,
                    "last_lit_deepdive": 35.0, "last_decision_scoring": 35.0,
                    "last_memory_consolidation": 100.0}
@@ -181,7 +181,7 @@ def main() -> None:
     # Digging cadence tracks UNMINED INVENTORY (principal 2026-07-18): 14d while the source
     # backlog is being mined; the brain sets digging_saturated=true when every coverage
     # family has >=2 sessions AND 2 consecutive sessions produced zero cards -> relax to 28d.
-    dig_every = 28 if state.get("digging_saturated") else 14
+    dig_every = 14 if state.get("digging_saturated") else 7
     if _days_since(state, "last_prospector") >= dig_every:
         due.append(
             f"PROSPECTOR (every {dig_every}d): execute docs/research/PROSPECTOR_SPEC.md with "

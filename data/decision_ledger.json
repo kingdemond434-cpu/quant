@@ -1561,6 +1561,20 @@
    ],
    "success_metric": "diversity KPIs visible in scorecard within 2 cycles; zero silent-collapse windows >1 week once live",
    "reversal_condition": "if thresholds spam false diversity audits, widen them on evidence (instrumentation stays)"
+  },
+  {
+   "id": "2026-07-20-max-cadence-everything",
+   "decision": "Principal MAX order (accountability for interactive burn taken; desk assumes zero manual token use): ALL cadences raised to maximum. CYCLES: 4/day (08:45 systemd + 02:45/14:45/20:45 cron, 6h spacing, bracket-guarded overlap checks). DIGS: dataaxis 4x/week (Tue/Thu/Sat cron + Sun timer), litminer ~weekly (Fri cron + biweekly timer, in-cycle dig_every 14->7), prospector ~weekly (Wed cron + timer), blindrediscovery monthly (3rd, cron) vs quarterly timer. PANELS (Tier-3 tighten-only direction respected): _PANEL_EVERY_D 7->3, _TIER1_EVERY_D 28->14, pager floors 8->4/32->16 -- note panels spend OpenRouter credits; balance-exhaustion will surface via panel-failure pages = a purchase page per the standing policy. MODEL POLICY: ANTHROPIC_MODEL=claude-fable-5 in brain_env (all 5 organs; flip-line fallback to claude-opus-4-8; failures page, never silent). SOURCE-CLASS UNIVERSALITY: charter section 25 (principal enumeration incl. video transcripts, patents, EDGAR/congressional flow, DeFi composability, energy/mining physical layer, CN dark-forest PUBLIC content -- section 13 legitimacy gate unchanged) + 4 new axes in data_axis_watchlist. REJECT-AUDIT: 3-day cadence once >=50 rejects/window (volume-gated, his correct observation). QUOTA REALITY SURFACED (bottleneck-surfacing duty): cycle2 died 07:00Z on SESSION limit (reset 11:40Z); yesterday's weekly-limit text in the dig log was the OLD account's -- current weekly headroom unknown, discovered empirically by the max schedule itself; every quota-fail pages (429-backoff-throttled to ~1/h). LESSON RE-LEARNED: monitor pgrep patterns must use the bracket trick -- tonight's monitor self-matched and reported a dead cycle as RUNNING for 80 minutes. NEIGHBOURS: watchdog auto-retry (unchanged, now redundant with 4x cron but guarded); brain_auth_check (the quota tripwire for the whole schedule); OpenRouter balance (panel spend 2.3x); ntfy backoff (page storm impossible, 1h cooldown); Tier-3 floors (tightened only).",
+   "hypothesis": "with zero interactive burn, Pro headroom supports materially higher cadence; the schedule discovers the true ceiling empirically with paged degradation instead of silent death",
+   "expected_benefit": "up to 4x reasoning cycles + ~2-4x dig/panel throughput; ceiling found by measurement",
+   "expected_cost": "OpenRouter panel spend up; quota-fail pages until ceiling learned; possible Jul-22 wait if weekly wall already hit",
+   "confidence": 0.7,
+   "assumptions": [
+    "principal genuinely stops interactive burn",
+    "brain_auth_check catches every quota fail pre-burn"
+   ],
+   "success_metric": "7 days: cycles-completed/day >= 3, zero silent no-ops, dig logs full-size, panel cadence 3d honored",
+   "reversal_condition": "quota pages recur daily -> step cron back one notch (comment lines) + page principal with the measured ceiling"
   }
  ]
 }

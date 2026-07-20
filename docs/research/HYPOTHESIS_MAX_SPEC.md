@@ -12,8 +12,7 @@ A lightweight analytical stage BEFORE recorder-replay/gauntlet compute:
 PASS -> full gauntlet (unchanged bar: Holm/DSR/PBO with true cumulative N, walk-forward,
 regime gate, shadow). FAIL -> graveyarded with reason, zero heavy compute spent.
 The pre-filter REJECTS ONLY on cheap, unambiguous evidence -- borderline always escalates to
-the full gauntlet (the pre-filter must never become a silent alpha killer: log pass/fail
-counts + spot-audit a sample of rejects in the weekly panel).
+the full gauntlet (the pre-filter must never become a silent alpha killer: log pass/fail counts + spot-audit a sample of rejects EVERY 3 DAYS once >=50 rejects accumulate in the window, weekly otherwise (principal 2026-07-20: this audit's cadence is gated by throughput volume, not data drift)).
 
 ## 2. Failed-hypothesis telemetry -> generator feedback
 Every rejection already lands in the graveyard; ADD structured fields: rejection_stage

@@ -249,3 +249,16 @@ this is the mission's first run.
    reasonable tolerance? (The single highest-value unresolved claim this session.)
 4. What is cex-list's (tradezon) actual address accuracy — cross-check a sample against the desk's
    own recorder-observed deposit/withdrawal address clustering.
+
+## NEW AXES (principal 2026-07-20 -- charter section 25; dig to exhaustion, free-first)
+5. Congressional trading disclosures (Senate/House PTR public filings; Quiver-class free
+   mirrors) + SEC EDGAR full-text -- regulatory/political flow as a crypto-adjacent axis
+   (ETF issuers, MSTR-class proxies, miner 10-Ks with BTC treasury + energy contracts).
+6. DeFi composability / forced mechanics: DefiLlama TVL flows (free API), Uniswap V3 tick-
+   range liquidity distributions (public subgraphs), Chainlink oracle update latencies
+   (on-chain, reconstructable) -- forced-flow + liquidation-adjacent mechanics.
+7. Energy/mining physical layer: regional grid spot prices for mining hubs (ERCOT public,
+   Nordpool), hashprice indices (Luxor public), ASIC resale/depreciation curves (public
+   listings) -- miner-capitulation and hashprice-breakeven signal family.
+8. Patent databases (Google Patents/WIPO, free) -- exchange/HFT infrastructure patents as
+   leading indicators of venue mechanics changes (when relevant; low cadence).

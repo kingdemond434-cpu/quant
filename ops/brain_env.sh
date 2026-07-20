@@ -51,3 +51,9 @@ brain_auth_check() {
     _brain_page "BRAIN AUTH DOWN, cycle aborted: $(printf '%s' "$out" | head -1 | cut -c1-140)"
     return 1
 }
+
+# Model policy (principal 2026-07-20): the brain, diggers, and audits run the most
+# capable model available -- Claude Fable 5 first. If the CLI/plan rejects it, flip
+# this line to claude-opus-4-8 (failures surface via brain_auth_check pages + noop
+# alerts, never silently). Thinking/effort: CLI-managed (max-tier default for these models).
+export ANTHROPIC_MODEL="claude-fable-5"

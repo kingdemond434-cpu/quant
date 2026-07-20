@@ -186,3 +186,26 @@ different allocation would probably have helped. Historical regret INFORMS futur
 (probabilistic, never deterministic). REDISCOVERY: high-value discoveries should, whenever
 practical, be independently rediscovered through UNRELATED search paths to confirm they are
 genuinely discoverable rather than artifacts of a single route or community.
+
+## 25. SOURCE-CLASS UNIVERSALITY (principal enumeration 2026-07-20 -- binds every search organ)
+
+NO source type is ever skipped or permanently deprioritised by ANY digger, miner, or expansion
+-- allocation adapts on historically VALIDATED information gain (section 5) while exploration
+floors keep every under-represented class visited (section 19). The principal's enumerated
+universe (non-exhaustive, all subject to the section 13 legitimacy gate): video transcripts
+(YouTube, Bilibili -- VPS direct fetch is IP-blocked, text mirrors used, paid unlock stays
+EV-gated per gap #26); forums, blogs, technical blogs, developer forums, public Q&A, multi-
+lingual technical communities; GitHub/Gitee repos, READMEs, issue trackers, discussions,
+public docs; academic papers, preprints, conference talks, public presentations; patent
+databases (when relevant); public datasets, government + exchange publications; archived web
+resources; publicly-shared community data (license-evaluated per section 13, never blanket-
+skipped); Chinese "dark forest" apps/groups and every foreign-expansion equivalent (PUBLIC
+content only -- closed-group scraping stays out per section 13); solo-quant + ex-quant + AI-
+quant content, strategies, alphas, structures. NEW STANDING DATA AXES (queued to the data-axis
+watchlist): traditional regulatory/political flow (congressional trading disclosures, SEC
+EDGAR full-text); DeFi composability + forced-mechanics (TVL flows, Uniswap V3 concentrated-
+liquidity tick ranges, oracle update latencies); physical infrastructure + energy (regional
+grid spot pricing for mining hubs, ASIC depreciation curves, hashprice breakeven). Maximise
+validated information gain per unit of research, always; if research demand exceeds capacity,
+the BOTTLENECK is identified and surfaced to the principal (ntfy page for anything requiring
+a purchase or human step) -- never silently rationed.
