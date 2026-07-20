@@ -42,8 +42,11 @@ TIER1_MAX_AGE_D = 14.0
 TIER2_MAX_AGE_D = 30.0
 
 # how much source to ship per run. ~200k chars ~= 50k tokens; x13 seats ~= <$1/run.
-CODE_BUDGET_CHARS = 200_000
+CODE_BUDGET_CHARS = 200_000      # ceiling; the live value adapts down on blanks
+CODE_BUDGET_MIN = 40_000         # floor -- below this the sweep is too slow to matter
 DIFF_BUDGET_CHARS = 60_000
+QUORUM_FRAC = 0.6                # >=60% of seats must answer substantively to count
+SUBSTANTIVE_CHARS = 400          # shorter than this is not a real review
 
 
 def _tier(rel: str) -> int:
@@ -126,6 +129,34 @@ def status(m: dict) -> dict:
             "pct": round(100.0 * (len(files) - len(never)) / max(1, len(files)), 1)}
 
 
+def current_budget(m: dict) -> int:
+    """Largest payload every seat has survived recently (learned, not guessed)."""
+    return int(m.get("code_budget_chars", CODE_BUDGET_CHARS))
+
+
+def tune_budget(blanked: int, total: int) -> int:
+    """Shrink hard on any blank, grow gently on a clean run. Called after every panel."""
+    m = refresh(load())
+    cur = current_budget(m)
+    if blanked:
+        new = max(CODE_BUDGET_MIN, int(cur * 0.6))   # a blank is a real failure: cut deep
+    else:
+        new = min(CODE_BUDGET_CHARS, int(cur * 1.15))  # earn size back slowly
+    m["code_budget_chars"] = new
+    m.setdefault("budget_history", []).append(
+        {"blanked": blanked, "of": total, "from": cur, "to": new})
+    m["budget_history"] = m["budget_history"][-30:]
+    save(m)
+    return new
+
+
+def record_blank(model: str) -> None:
+    """Per-seat blank tally -- turns a flaky seat into an evidence-backed swap decision."""
+    m = refresh(load())
+    m.setdefault("seat_blanks", {})[model] = int(m.get("seat_blanks", {}).get(model, 0)) + 1
+    save(m)
+
+
 def audit_payload() -> tuple[str, list[str]]:
     """Return (text_to_append_to_dossier, files_included). Sanitized, budget-bounded."""
     m = refresh(load())
@@ -152,7 +183,7 @@ def audit_payload() -> tuple[str, list[str]]:
             body = p.read_text("utf-8", errors="ignore")
         except Exception:
             continue
-        if used + len(body) > CODE_BUDGET_CHARS and included:
+        if used + len(body) > current_budget(m) and included:
             break
         chunks.append(f"\n----- FILE: {rel} ({len(body.splitlines())} lines, "
                       f"tier{_tier(rel)}, last audited: {_rec.get('last_audited') or 'NEVER'}) "
@@ -195,7 +226,20 @@ def audit_payload() -> tuple[str, list[str]]:
     return payload, included
 
 
-def mark_audited(files: list[str], ts: str, mission: str) -> None:
+def mark_audited(files: list[str], ts: str, mission: str,
+                 substantive: int = 0, total_seats: int = 0) -> None:
+    """Mark files reviewed ONLY on quorum. Coverage must reflect what was actually READ,
+    not what was sent -- a run where seats blanked must not inflate the coverage figure."""
+    if total_seats and substantive < max(1, int(QUORUM_FRAC * total_seats)):
+        m = refresh(load())
+        m.setdefault("failed_runs", []).append(
+            {"ts": ts, "mission": mission, "substantive": substantive,
+             "of": total_seats, "files_not_credited": len(files)})
+        m["failed_runs"] = m["failed_runs"][-20:]
+        save(m)
+        print(f"coverage: QUORUM FAILED ({substantive}/{total_seats} substantive) -- "
+              f"{len(files)} files NOT credited as audited")
+        return
     m = refresh(load())
     for rel in files:
         rec = m["files"].get(rel)
@@ -209,9 +253,18 @@ def mark_audited(files: list[str], ts: str, mission: str) -> None:
 
 
 def main() -> None:
+    import sys
     m = refresh(load())
     save(m)
     st = status(m)
+    if len(sys.argv) > 1 and sys.argv[1] == "verify":
+        print(f"adaptive payload budget : {current_budget(m):,} chars "
+              f"(ceiling {CODE_BUDGET_CHARS:,}, floor {CODE_BUDGET_MIN:,})")
+        print(f"seat blanks recorded    : {m.get('seat_blanks', {}) or 'none'}")
+        print(f"quorum-failed runs      : {len(m.get('failed_runs', []))}")
+        for h in m.get("budget_history", [])[-5:]:
+            print(f"  budget {h['from']:,} -> {h['to']:,} (blanked {h['blanked']}/{h['of']})")
+
     print(f"AUDIT COVERAGE: {st['covered']}/{st['total']} files ever audited ({st['pct']}%)")
     print(f"  never audited      : {len(st['never'])}")
     print(f"  stale risk-path    : {len(st['stale_tier1'])} (floor {TIER1_MAX_AGE_D:.0f}d)")

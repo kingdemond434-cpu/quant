@@ -157,6 +157,11 @@ def main() -> None:
                 print(f"panel: {name} blank ({len(txt)} chars) -- retrying once")
                 txt = _ask(pv["base_url"], pv["key"], pv["model"], system, dossier)
                 if len(txt.strip()) < 50:
+                    try:
+                        from scripts.build_audit_coverage import record_blank
+                        record_blank(pv["model"])   # evidence for the next budget tune
+                    except Exception:
+                        pass
                     raise RuntimeError("blank response twice -- likely payload size; "
                                        "seat lost this run (recorded as an error, not a pass)")
             print(f"panel: {name} responded ({len(txt)} chars)")
@@ -171,10 +176,17 @@ def main() -> None:
     with _LOG.open("a", encoding="utf-8") as f:
         for r in results:
             f.write(json.dumps({"ts": ts, "mission": mission, **r}) + "\n")
-    if _cov_files:                                   # only mark what models actually saw
+    if _cov_files:
+        # Coverage counts what was READ, not what was sent: a file is credited only when a
+        # quorum of seats returned a substantive answer. Blanks shrink the next payload.
+        _subst = sum(1 for r in results
+                     if len(r.get("response", "").strip()) >= 400)
+        _blanked = len(results) - len([r for r in results if "response" in r])
         try:
-            from scripts.build_audit_coverage import mark_audited
-            mark_audited(_cov_files, ts, mission)
+            from scripts.build_audit_coverage import mark_audited, tune_budget
+            mark_audited(_cov_files, ts, mission, _subst, len(results))
+            _nb = tune_budget(_blanked, len(results))
+            print(f"panel: {_subst}/{len(results)} substantive; next payload budget {_nb:,}")
         except Exception as _e:
             print(f"panel: could not update coverage ledger ({_e!r})")
     ok = [r for r in results if "response" in r]
