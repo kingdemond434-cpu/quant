@@ -1667,6 +1667,19 @@
    ],
    "success_metric": "coverage % rises every run; zero never-audited risk-path files within 14 days; >=1 finding per month that could ONLY have come from raw code access",
    "reversal_condition": "if payload size degrades finding quality (models skim), cut CODE_BUDGET_CHARS and lengthen the sweep -- never revert to dossier-only"
+  },
+  {
+   "id": "2026-07-20-openrouter-exhausted-purchase-page",
+   "decision": "PANEL DOWN -- OpenRouter credits exhausted ($10.00 purchased / $10.65 used / -$0.65 balance); all 13 seats return HTTP 402. Discovered while running a per-seat PAYLOAD CAPACITY TEST the principal requested (swap seats that blank on large payloads) -- the test returned 402 on every seat rather than capacity data, so THE CAPACITY QUESTION REMAINS UNANSWERED and the minimax-m3 blank is still undiagnosed (model handled a small prompt fine, blanked at 260k chars; could be provider routing, effective-context limit, or the credit exhaustion itself given the timing -- do NOT swap the seat until the test can actually run). CAUSE, OWNED: the operator-CRO fired two full-coverage panels tonight (13 seats x ~250-260k chars each) without a pre-flight balance check; combined with the 3-day cadence (2.3x) and the ~22x larger coverage payload, burn is 6-8x the old rate and the remaining balance did not survive it. The second panel produced ZERO responses -- it died on 402 before any seat answered, so tonight's 'verification run' verified nothing. PRINCIPAL PAGED per the standing purchase policy (first real firing of that policy): PRINCIPAL_ACTION.md carries the exact numbers, a $25/$50 recommendation, honest forward cost (~$1.10/run, ~$15-25/mo at current config), and three cheaper degradation options he did not ask for but deserves to see. FIX SHIPPED: pre-flight credit check in the panel runner -- it reads the balance before spending and refuses to start (paging instead) when credits cannot cover a run, so the desk never again discovers exhaustion mid-panel. NEIGHBOURS: coverage system (its climb pauses while the panel is down -- floors will start reporting stale files, correctly); micro-audit backlog (8 unaudited batches from today still queued and now blocked on the same credits); incident-autopsy full-panel rule (would also fail if an incident fired tonight -- worth the principal knowing); book/rails/pager/brain (all unaffected).",
+   "hypothesis": "a pre-flight balance check converts silent mid-run failure into an actionable page before spend",
+   "expected_benefit": "no more discovering exhaustion after burning the last credits; principal gets costed asks",
+   "expected_cost": "one extra API call per panel run",
+   "confidence": 0.95,
+   "assumptions": [
+    "principal tops up; otherwise panel stays down and coverage stalls visibly via floors"
+   ],
+   "success_metric": "next panel run either executes fully or pages BEFORE spending; zero mid-run 402s",
+   "reversal_condition": "n/a (pure safety check)"
   }
  ]
 }

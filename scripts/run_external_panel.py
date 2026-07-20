@@ -118,6 +118,34 @@ def main() -> None:
               "chat UIs (how rounds 1-2 ran). One OpenRouter key enables full automation.")
         return
     providers: list[dict[str, Any]] = json.loads(_KEYS.read_text("utf-8"))["providers"]
+    # PRE-FLIGHT CREDIT CHECK (2026-07-20): the full-coverage payload made runs ~6-8x more
+    # expensive, and the desk discovered exhaustion the worst possible way -- mid-run, after
+    # burning the last credits, with a "verification" panel that verified nothing (0/13
+    # responded, all HTTP 402). Check the balance BEFORE spending; if a run cannot be
+    # afforded, write the principal-action page and exit cleanly instead of half-running.
+    try:
+        _bal_req = urllib.request.Request(
+            "https://openrouter.ai/api/v1/credits",
+            headers={"Authorization": f"Bearer {providers[0]['key']}"})
+        with urllib.request.urlopen(_bal_req, timeout=20, context=_CTX) as _r:
+            _d = json.loads(_r.read())["data"]
+        _left = float(_d.get("total_credits", 0)) - float(_d.get("total_usage", 0))
+        _need = 0.05 * len(providers)            # ~$1.10/run at 13 seats, with headroom
+        print(f"panel: credit balance ${_left:.2f} (need ~${_need:.2f})")
+        if _left < _need:
+            Path("data/PRINCIPAL_ACTION.md").write_text(
+                f"PURCHASE DECISION: OpenRouter credits exhausted (balance ${_left:.2f}, a "
+                f"panel run needs ~${_need:.2f}). The external review panel is DOWN and the "
+                "audit-coverage sweep is stalled until topped up at openrouter.ai -> Credits. "
+                "Recommended $25 (~6 weeks) or $50 (~3 months). No key change needed. Book, "
+                "rails, pager and brain are unaffected.\n", encoding="utf-8")
+            raise SystemExit(f"panel: ABORTED before spending -- balance ${_left:.2f} "
+                             f"< ${_need:.2f}. Principal paged via PRINCIPAL_ACTION.md")
+    except SystemExit:
+        raise
+    except Exception as _e:                      # never let the check itself block a run
+        print(f"panel: credit pre-check unavailable ({_e!r}) -- proceeding")
+
     mission, system = _mission()
     dossier = _DOSSIER.read_text("utf-8")
     # GENERATE mission: append the graveyard so models don't re-propose already-killed ideas
