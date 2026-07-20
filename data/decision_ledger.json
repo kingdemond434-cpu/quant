@@ -1614,6 +1614,19 @@
    ],
    "success_metric": "Gate-0 pre-mortem runs on premium tier; wizardlm seat replaced within a week; scorecard drives first quarterly seat decision",
    "reversal_condition": "if premium event runs produce no marginal accepted findings over 3 events, drop back to diverse roster for events too"
+  },
+  {
+   "id": "2026-07-20-kimi-k3-seat-upgrade",
+   "decision": "Panel seat freshness upgrade (principal-directed, same family): moonshotai/kimi-k2.6 -> moonshotai/kimi-k3, LIVE-VERIFIED against the OpenRouter catalog before wiring per ledger #115 policy (id exists; 1M ctx; .0/M prompt vs /usr/bin/bash.684 -- ~4.4x seat cost, negligible at panel scale). Same-family version upgrade = the roster-freshness class, not a scorecard seat decision; scorecard governance unchanged for cross-family swaps. Stale wizardlm seat replacement still queued for live-verified pick next brain cycle. NEIGHBOURS: panel runner (reads secrets json, no code change), OpenRouter spend (+pennies/run), panel_scorecard (k3 inherits the moonshotai seat history -- note version boundary 2026-07-20 for hit-rate attribution).",
+   "hypothesis": "flagship k3 raises the moonshot seat quality at negligible cost",
+   "expected_benefit": "stronger reasoning on one diverse seat",
+   "expected_cost": "about 4x one seat cost, pennies per run",
+   "confidence": 0.9,
+   "assumptions": [
+    "k3 responds through the existing provider path (reasoning-param handling same as k2 line)"
+   ],
+   "success_metric": "k3 responses present in next panel run; scorecard hit-rate tracked from version boundary",
+   "reversal_condition": "blank-response or format issues in next panel -> revert to kimi-k2.6 (one-line change)"
   }
  ]
 }
