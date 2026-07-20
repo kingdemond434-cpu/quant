@@ -61,3 +61,6 @@ Before the PRINCIPAL_ACTION key request: the FULL 13-model panel pre-mortems the
 ## 8. Explicitly out of scope for the connector build
 - Key creation/rotation, deposits, withdrawals, capital sweeps: principal-only, forever.
 - Any relaxation of Tier-3 rails, deadman, cadence floors.
+
+## SECTION 7 MECHANISM (added 2026-07-21)
+The second-model-family fuzz/breaker review is executed by scripts/deep_review.py: 13 flagship seats, ONE file per pass, hostile risk-path prompt (silent failure, unbounded action, state races, fail-open direction, arithmetic, capability leaks, what tests miss). Required on all five money-path files before the Gate-0 key request. Findings route to scripts/track_findings.py so none can be silently dropped before go-live.

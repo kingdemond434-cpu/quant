@@ -1745,6 +1745,19 @@
    ],
    "success_metric": "next funded panel: reject rate below the 07-20 baseline of 7/27, and zero repeats of already-ruled findings",
    "reversal_condition": "if feeding rulings visibly suppresses legitimate dissent (models deferring to past rulings instead of challenging them), cut back to graveyard-only and note it"
+  },
+  {
+   "id": "2026-07-21-audit-loop-closed",
+   "decision": "Three audit gaps closed on principal order. (1) FINDING LIFECYCLE LEDGER (scripts/track_findings.py + data/findings_ledger.json): findings now carry raised -> triaged -> fixed -> verified with the raising model recorded. Closes a real hole -- the 07-20 panel accepted 20 of 27 findings and NOTHING tracked whether any were built; GAP #37, an unbounded market-order path on the risk lane, is exactly this shape. Accepted-and-unfixed beyond 14d now reports as a DEFECT. It also makes ledger #115 honest: that entry declared seat governance by scorecard hit-rate, but panel_scorecard.json only ever recorded whether a model RESPONDED -- never whether it was RIGHT -- so the policy was unenforceable. The new scorecard (raised/accepted/fixed per seat) is the number seat swaps were always meant to use. (2) RISK-PATH DEPTH PASS (scripts/deep_review.py): 13 seats on ONE file with a hostile risk-path prompt. In the breadth panel each seat reads ~730k chars across 67 files and returns ~8-15k covering all of them, so binance_live.py -- code that will move real money -- gets one or two paragraphs per model. Depth gives 10-50x attention per file. Filed as the LIVE_CONNECTOR_SPEC section-7 second-model-family breaker mechanism, required on all five money-path files before the Gate-0 key request: this is connector work, not audit tooling. (3) VERIFICATION PASS (PANEL_MISSION=verify): a cold panel judges the CRO's OWN triage. Rationale on record -- the panel checks the brain, 12 of 12 overturned his incident diagnosis on 07-19, but nothing checked the brain when it WRONGLY REJECTS, and 7 rejections on 07-20 were never reviewed. The mission weights rejections far more suspiciously than acceptances, since a false negative ships a bug to live capital while a false positive only wastes hours, and it names the bias patterns to test for: author defensiveness, deadline-pressure dismissal, scope burial, and confidence asserted from memory rather than a fresh read. An OVERTURN verdict re-opens the finding. All three wired as brain-contract duties. NEIGHBOURS: brain contract (3 duties added, dollar-audit clean), connector spec (section-7 mechanism now named and executable), panel_scorecard.json (superseded for governance by findings_ledger, kept for response telemetry), OpenRouter spend (depth and verify runs are additional runs at roughly 1-3 dollars each, funded Friday).",
+   "hypothesis": "tracking findings to remediation, reviewing risk-path files in depth, and auditing the auditor's rejections converts a system that produces opinions into one that produces verified fixes",
+   "expected_benefit": "no accepted finding silently dropped; money-path code gets 10-50x review attention pre-Gate-0; false-negative triage errors caught before they ship",
+   "expected_cost": "additional panel runs; triage discipline required of the brain every cycle",
+   "confidence": 0.85,
+   "assumptions": [
+    "the brain actually records findings during triage -- if it does not, the ledger stays empty and that absence is itself visible"
+   ],
+   "success_metric": "within 2 funded weeks: findings_ledger non-empty with real hit-rates; all 5 money-path files depth-reviewed before the Gate-0 request; at least 1 verify run on real rulings",
+   "reversal_condition": "if verify runs return only UPHOLDs across several panels, drop that mission to monthly -- the check is cheap but not free"
   }
  ]
 }
