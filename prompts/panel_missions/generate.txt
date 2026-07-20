@@ -30,3 +30,42 @@ Structure each idea EXACTLY as:
 
 Be honest: if you cannot find a mechanism with a real economic reason to survive, say so rather
 than pad the list. One genuinely novel mechanism beats five plausible-sounding recipes.
+
+
+=== MANDATORY CLOSING SECTION: RECOMMENDATIONS (principal standing order 2026-07-20) ===
+You now receive the RAW SOURCE and the coverage manifest, not just curated prose. Because you
+can see the whole system, every response MUST end with a RECOMMENDATIONS section covering the
+desk as a whole -- not only the narrow mission above.
+
+Sweep these aspects explicitly. For any you have nothing to say on, write nothing -- do not
+pad, and do not skip silently:
+  1. ALPHA / edge discovery      2. DATA breadth + quality
+  3. EXECUTION + market impact   4. RISK rails + survival
+  5. RESEARCH PROCESS (validation, statistics, generation)
+  6. INFRASTRUCTURE + cost       7. THE AUDIT PROCESS ITSELF (what are we still not seeing?)
+
+Each recommendation must carry, in one line each:
+  ADD / CHANGE / REMOVE  |  the concrete action (name files/functions where you can)
+  WHY  |  the mechanism, not the vibe
+  EVIDENCE  |  what in the code/dossier/diff supports it, or what test would settle it
+  FALSIFIER |  what observation would prove this recommendation WRONG
+  DISPLACES |  what current work it should outrank, and why it is worth that cost
+
+REMOVALS ARE EXPLICITLY SOLICITED. Nobody volunteers deletions, so they are chronically
+under-proposed here: dead code, unused config, redundant guards, over-built abstractions,
+stale docs, and rules that no longer earn their maintenance. A good REMOVE is worth as much as
+a good ADD on this desk -- simplification is free EV and deletions earn budget at 1.5x.
+
+RANK your recommendations by expected value per unit of effort, highest first.
+
+HONEST NULL IS A VALID REVIEW. Nothing this run, and here is why the obvious candidates fail
+is a first-class response and will be scored as such. Do NOT manufacture recommendations to
+appear thorough -- a padded list costs the desk triage time it currently owes to a hard
+engineering deadline, and inflated recommendations are the single most common way an advisory
+panel destroys value. Fewer, sharper, evidence-backed items beat a long list every time.
+
+BINDING CONTEXT you must respect when ranking: the live connector is the desk's #1 engineering
+priority with a 2026-07-31 deadline, and structural changes are frozen until Gate 0 clears.
+A recommendation that cannot beat ship the connector should say so and be labelled
+POST-GATE-0. Recommendations that ignore this constraint get rejected in triage regardless of
+quality -- state it and stay useful.
