@@ -38,6 +38,7 @@ _DEDUPE_S = 6 * 3600
 _DEDUPE_OVERRIDES_S = {"growth_defect": 24 * 3600, "data_health": 24 * 3600,
                        "brain_noop": 24 * 3600, "principal_action_needed": 24 * 3600}
 _HB = Path("data/cashcarry_exec_heartbeat")
+_PAGER_BACKOFF = Path("data/.pager_backoff")
 _KILL = Path("data/CASHCARRY_KILL")
 _ERR = Path("data/cashcarry_error.log")
 
@@ -60,11 +61,29 @@ def _push(topic: str, title: str, body: str) -> None:
     # ntfy already renders an icon from Tags, so titles stay plain ASCII; this encode is a
     # defense-in-depth backstop against the same class recurring via a future non-ASCII edit.
     safe_title = title.encode("latin-1", "ignore").decode("latin-1")
+    # 429 backoff (2026-07-20): ntfy rate-limits the topic; a due re-page retried on
+    # every 3-min tick keeps the topic throttled forever (observed self-DoS loop,
+    # journalctl 06:47Z). After any 429, cool down 1h before the next push attempt.
+    import time as _t
+    if _PAGER_BACKOFF.exists():
+        try:
+            _until = float(_PAGER_BACKOFF.read_text().strip())
+        except ValueError:
+            _until = 0.0
+        if _t.time() < _until:
+            raise RuntimeError(f"pager 429 backoff: {(_until - _t.time()) / 60:.0f}m remaining")
     req = urllib.request.Request(f"https://ntfy.sh/{topic}", data=body.encode(),
                                  headers={"Title": safe_title, "Priority": "high",
                                           "Tags": "rotating_light"})
-    with urllib.request.urlopen(req, timeout=15):
-        pass
+    try:
+        with urllib.request.urlopen(req, timeout=15):
+            pass
+        if _PAGER_BACKOFF.exists():
+            _PAGER_BACKOFF.unlink()
+    except Exception as e:
+        if getattr(e, "code", None) == 429:
+            _PAGER_BACKOFF.write_text(str(_t.time() + 3600))
+        raise
 
 
 def _checks() -> list[tuple[str, str]]:

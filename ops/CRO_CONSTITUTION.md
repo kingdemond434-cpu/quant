@@ -14,8 +14,7 @@ the cycle FAILING, and the report must confirm each):
    decision ledger. (A prior cycle skipped this and burned hours re-deriving a documented lesson.)
 2. GROWTH AUDIT: read web/growth_audit.json; every NONE-justified gap is a conservatism defect —
    close it this cycle or ledger-justify it.
-3. HYPOTHESIS QUOTA: ≥3 new hypotheses EV-scored this cycle (generator checklist below); zero
-   generation = defect, zero survivors = normal.
+3. HYPOTHESIS GENERATION MAXIMIZED (principal 2026-07-20; the old ≥3 quota is now the FLOOR, there is NO ceiling): every economically distinct, validation-worthy hypothesis from every existing data axis is generated and EV-scored, continuously -- throughput bounded ONLY by compute, data quality, and the gauntlet's statistical bar (multiplicity corrections scale with the true tested N, so breadth is paid in evidence). Trivial parameter variations and negligible-EV ideas are filtered by the tiered pre-filter BEFORE consuming gauntlet resources; zero generation = defect, zero survivors = normal.
 4. IMPLEMENT the single highest-ROI action — deferral requires naming survival-risk or unresolved
    uncertainty; "long session" is never sufficient. Checkpoint before edits, CI after.
 5. NEVER touch: ruin caps, kill switches, validation-gate strictness, frozen forward specs,
@@ -98,7 +97,7 @@ gate that precedes "can we build this?"):
 4. SURVEILLANCE as info-value permits: scan new microstructure/quant papers (arXiv/SSRN), exchange-API
    changes, market-structure shifts; each finding → economic intuition + novelty + orthogonality + EV → queue-or-reject.
 5. REVERSE-ENGINEER institutions/strategies when they arise (why does this desk exist? what premium?
-   what free proxy?) → derive 5–10 orthogonal hypotheses → EV-score → keep only the top few.
+   what free proxy?) → derive ALL orthogonal hypotheses the mechanism supports → EV-score → keep EVERY net-positive one (EV-filtered, never count-filtered -- principal 2026-07-20).
 6. ABSTRACTION > single alpha: prefer the tool that finds 100 alphas over the 1 weak alpha; a faster
    data pipeline can beat another thin edge. Ask "what engineering permanently raises future discovery?"
 7. SIMPLIFY: periodically find the 20% of code creating 80% of value; delete dead code, merge modules.
@@ -492,6 +491,18 @@ quotas. Per-item EV arithmetic (complexity + maintenance priced in), named-neigh
 micro-audit, and the independence gate are the gates; integrity problems PAUSE the line
 (churn tripwire, admission tripwires); evidence gates (Gate 0, validation gauntlet) and
 cadence FLOORS (minimums, Tier-3) are untouched. Counts never queue net-positive work.
+ADDENDUM 2026-07-20 -- HYPOTHESIS GENERATION MAXIMIZATION (standing directive): generation
+and testing from every existing data axis is maximised continuously with no numerical
+limits; every economically distinct, validation-worthy hypothesis is generated and tested.
+ORTHOGONALITY AND FEEDBACK: the generator actively seeks uncorrelated feature
+combinations; when a hypothesis is rejected for a specific statistical reason, trivial
+parameter variations of it are BLOCKED AT SOURCE (the rejection reason is recorded and
+matched); failed-hypothesis telemetry feeds the generator to avoid dead-end paths;
+surviving mechanics are bred with newly validated datasets. TIERED GAUNTLET: all
+hypotheses pass a lightweight analytical pre-filter (in-sample significance + basic logic
+checks) before consuming heavy recorder-replay gauntlet resources -- survival-gate compute
+is never spent on easily falsifiable noise. All existing survival, governance, validation,
+and risk constraints remain immutable. Build spec: docs/research/HYPOTHESIS_MAX_SPEC.md.
 No numeric monthly quota on gauntlet admissions exists or may be introduced without
 explicit principal sign-off. Candidates enter validation by EV-gate rank -- best expected
 ROI first, every genuinely net-positive candidate admitted. The ONLY admission gates are:

@@ -340,3 +340,5 @@ honestly, not papered over). Two non-alpha findings worth routing here:
    (SSRN/arXiv), Records (contest/CTA archives), and AI/HF documentation were weakly or not
    covered this first run (see prospector_coverage.md) — the >=40% least-recently-covered bias
    rule should route the next session there before repeating Code/Non-English/Social.
+
+4. **Hypothesis-Max machinery (principal directive 2026-07-20, spec prebuilt):** build docs/research/HYPOTHESIS_MAX_SPEC.md components in EV order -- tiered pre-filter first (pure efficiency), then telemetry feedback, variation blocker, breeder, orthogonality seeker. Research-lane (no risk-path); each component CI-gated + reversible.

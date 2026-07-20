@@ -1534,6 +1534,20 @@
    ],
    "success_metric": "8 weeks: implemented-change yield stays healthy and zero change-induced incidents; churn tripwire never needed or fires correctly",
    "reversal_condition": "any change-induced incident recurrence -> churn tripwire fires (pause + full-panel audit); if the audit finds rate itself was the cause, principal decides whether a budget returns"
+  },
+  {
+   "id": "2026-07-20-hypothesis-generation-maximized",
+   "decision": "Principal standing directive adopted: HYPOTHESIS GENERATION MAXIMIZATION. Constitution 6-point #3 upgraded: the >=3/cycle quota is now explicitly a FLOOR with NO ceiling -- every economically distinct, validation-worthy hypothesis from every data axis, bounded only by compute/data-quality/statistical bar (multiplicity scales with true N). Killed two residual ceilings found by fresh read: 'keep only the top few' in constitution reverse-engineering playbook (now: keep every net-positive, EV-filtered never count-filtered) and the 'monthly test-count cap' in GAP register row 2's S1 plan. Constitutional addendum carries the full directive: orthogonality-seeking generation, trivial-variation blocking at source on statistical rejections, failed-hypothesis telemetry feeding the generator, breeding survivors with newly validated datasets, TIERED GAUNTLET (cheap analytical pre-filter before recorder-replay compute; borderline always escalates -- pre-filter audited so it never becomes a silent alpha killer). Machinery spec prebuilt (HYPOTHESIS_MAX_SPEC.md, 5 components, research-lane) + inbox item; brain builds in EV order. ALSO: pager 429 self-DoS loop fixed (maintenance exemption): due re-page + ntfy topic rate-limit = retry every 3-min tick forever (observed 06:47Z journalctl); _push now honors a 1h backoff after any 429, clears it on success. NEIGHBOURS: 6-point contract (#3 semantics widened, floor preserved); generate pipeline (targeting order unchanged, factor families first); gauntlet stats (bar unchanged, N-scaling now load-bearing both for admissions AND generation); run_alerts consumers (backoff delays re-pages up to 1h under throttle -- acceptable: primary page already sent, re-page is a reminder; deadman is latched-safe regardless); doctrine freeze (principal-issued directive, research-lane, consistent with founders #4).",
+   "hypothesis": "uncapped, telemetry-fed, pre-filtered generation raises validated-discovery rate per compute-hour without FDR inflation",
+   "expected_benefit": "no net-positive hypothesis ever queued; heavy gauntlet compute spent only on pre-filtered quality; dead-end families stop recurring",
+   "expected_cost": "pre-filter build + telemetry fields; risk of pre-filter over-rejection (mitigated: borderline escalates + weekly reject audit)",
+   "confidence": 0.8,
+   "assumptions": [
+    "pre-filter false-reject rate stays low (audited weekly)",
+    "multiplicity N-wiring verified by brain (already a mandated duty)"
+   ],
+   "success_metric": "hypotheses/week up >=3x with FDR detector flat; compute per gauntlet survivor down; pager: zero 429 hammer-loops in journalctl",
+   "reversal_condition": "pre-filter audit shows real alphas rejected -> loosen thresholds (never a count); FDR detector inflation -> admissions tripwire pauses (existing law)"
   }
  ]
 }
