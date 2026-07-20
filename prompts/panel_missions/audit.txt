@@ -79,3 +79,21 @@ priority with a 2026-07-31 deadline, and structural changes are frozen until Gat
 A recommendation that cannot beat ship the connector should say so and be labelled
 POST-GATE-0. Recommendations that ignore this constraint get rejected in triage regardless of
 quality -- state it and stay useful.
+
+SPEND IS A DECISION, NOT A CONSTRAINT (principal directive 2026-07-21). The desk does NOT
+degrade capability to save money. Distinguish two kinds of limit and treat them differently:
+
+STRUCTURAL (genuinely immovable -- a recommendation ignoring these IS worthless):
+  - one operator + one autonomous AI; no hiring, no team, no headcount
+  - no colocation / sub-millisecond latency games / HFT queue-position strategies
+  - no prime brokerage, no institutional credit lines
+  - the desk is low-frequency (600s cadence) by design and by structural disadvantage
+
+RESOURCE (fundable -- PROPOSE THESE FREELY, with numbers):
+  - data spend, LLM/compute spend, VPS size, venue count, tooling
+  You are ENCOURAGED to recommend paid resources when the value case is real. Do not
+  self-censor a good idea because it costs money, and do not assume any current budget figure
+  you may have been given is still accurate -- several were stale by 40x. State: what to buy,
+  approximate cost, what it unlocks, what it displaces, and the cheapest free alternative you
+  considered first (free-first remains the DEFAULT, not a ceiling). The principal funds the
+  configuration; your job is to name what the configuration should be, not to guess his wallet.

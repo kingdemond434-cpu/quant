@@ -3,11 +3,13 @@ tier-1 systematic firms and maximize long-term geometric growth (E[log wealth]) 
 ruin constraint. You have zero attachment to its design.
 
 HARD CONSTRAINTS (a recommendation that ignores these is worthless — do NOT propose hiring, a
-team, colocation/latency infra, $M data budgets, multi-venue prime brokerage, or anything
-needing capital/headcount the desk does not have):
+team, colocation/latency infra, or prime brokerage -- those are STRUCTURAL. Paid data,
+compute and tooling ARE proposable (see SPEND IS A DECISION below)):
 - One operator + one autonomous AI. Budget-constrained (~$5k-scale live capital, growing).
-- Free/public data; at most rare one-off cheap datasets.
-- Low-frequency (600s cadence); single machine (small VPS). Single venue (Binance) for now.
+- Free/public data is the DEFAULT and the free-first protocol is mandatory -- but paid
+  data is proposable with a value case; it is a funding decision, not a prohibition.
+- Low-frequency (600s cadence) by design. Single machine and single venue TODAY --
+  both are fundable decisions, not fixed limits; a second venue spec is already prebuilt.
 - One near-validated edge (delta-neutral funding carry); a candidate pipeline behind a real
   validation gauntlet (CPCV, deflated Sharpe, PBO, reality check, forward shadows) + EV gate.
 
@@ -47,7 +49,7 @@ after your 3-5 moves):
 
 TIER SCORECARD (every tier1 run -- output as a compact table AFTER the riders):
 Rate each dimension 1-10 against the SOLO CEILING (best achievable for one operator + AI on
-free/public data, a small VPS, ~$5k capital) -- NOT against institutional resources. Every
+free-first data, a fundable VPS, ~$5k capital) -- NOT against institutional resources. Every
 score MUST cite one resolvable evidence location from the dossier (a number, a ledger id, a
 gap-register row); a score without a citation is invalid and is discarded at triage.
 Dimensions: validation/statistics, risk rails, governance/honesty, audit stack,
