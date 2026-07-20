@@ -124,6 +124,19 @@ def main() -> None:
     if mission == "generate" and _GRAVEYARD.exists():
         dossier += "\n\n## GRAVEYARD (already falsified -- do NOT propose any of these)\n" \
             + _GRAVEYARD.read_text("utf-8")
+    # FULL-COVERAGE AUDIT FEED (principal exception 2026-07-20): the dossier above is
+    # written BY the audited system -- the auditee was choosing the auditor's evidence, so
+    # anything it omitted could never be flagged. Every run now also ships the raw diff and a
+    # rotating slice of least-recently-audited SOURCE, tracked in data/audit_coverage.json.
+    _cov_files: list[str] = []
+    try:
+        from scripts.build_audit_coverage import audit_payload
+        _cov_text, _cov_files = audit_payload()
+        dossier += _cov_text
+        print(f"panel: coverage feed attached ({len(_cov_files)} files, {len(_cov_text):,} chars)")
+    except Exception as _e:                          # coverage must never kill the panel
+        print(f"panel: coverage feed unavailable ({_e!r}) -- dossier-only this run")
+
     from scripts.generate_external_review_doc import sanitize
     if sanitize(dossier) != dossier:                 # anything secret-shaped -> hard refuse
         raise SystemExit("dossier failed sanitization -- refusing to send")
@@ -146,6 +159,12 @@ def main() -> None:
     with _LOG.open("a", encoding="utf-8") as f:
         for r in results:
             f.write(json.dumps({"ts": ts, "mission": mission, **r}) + "\n")
+    if _cov_files:                                   # only mark what models actually saw
+        try:
+            from scripts.build_audit_coverage import mark_audited
+            mark_audited(_cov_files, ts, mission)
+        except Exception as _e:
+            print(f"panel: could not update coverage ledger ({_e!r})")
     ok = [r for r in results if "response" in r]
     if ok:
         _INBOX.parent.mkdir(parents=True, exist_ok=True)
