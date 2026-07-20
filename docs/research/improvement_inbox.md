@@ -25,7 +25,7 @@ taxonomy; dashboard = tail) · 52/60 exploration/moonshot budget (pilot + EV-gat
 gate + complexity doctrine, in contract 2026-07-17) · anti-conservatism amendment (growth
 mandate in contract + conservatism-as-first-class-flaw in micro mission, 2026-07-17).
 
-## TOP-5 FOR SPEC-PREBUILD NOW (brain: one spec per cycle, ranked by ROI/complexity)
+## TOP-5 FOR SPEC-PREBUILD NOW (brain: uncapped specs per cycle (2026-07-20), ranked by ROI/complexity)
 1. **#11 Liquidation cascade forecaster** — the desk already RECORDS a live liquidation
    stream (14k+ events, day 14+/40). First genuinely new testable hypothesis family with
    in-house proprietary-ish data. Pre-register via gauntlet; no sweeping.

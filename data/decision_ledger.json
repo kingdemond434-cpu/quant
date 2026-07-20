@@ -1521,6 +1521,19 @@
    ],
    "success_metric": "next auth failure produces a page within one cycle-start; zero doctrine additions until Gate 0; first post-Gate-0 month runs the Bybit build unchanged from spec",
    "reversal_condition": "self-test false-positives block cycles -> soften to warn-and-continue with page"
+  },
+  {
+   "id": "2026-07-20-implementation-caps-removed",
+   "decision": "Principal order (extends the count-uncapped principle from admissions to the WHOLE pipeline): all numeric implementation/audit caps removed. REMOVED: complexity budget <=3%/month (per-item EV arithmetic already prices complexity+maintenance -- the global rate limiter could queue net-positive work, the per-item gate cannot); 5/window auto-revocation (converted to CHURN TRIPWIRE: 8-week low-yield evidence fires a full-panel process audit + PAUSES structural changes until resolved -- pause-and-audit, never a count); monthly batching of qualifying proposals (now CONTINUOUS EV-order build); one-spec-per-cycle (uncapped); two-named-priorities cap (uncapped; weight still yield-earned). KEPT, with reasons stated: INDEPENDENCE GATE (interaction safety -- the 07-16 triple-incident evidence stands; it requires an argument, not a count); cadence FLOORS (minimums forcing MORE auditing, Tier-3); Execution Lockdown / Gate-0 (EVIDENCE gates ratified by the principal's own founders-directive #1 tonight); Tier-3 rails. CRO COUNSEL ON RECORD: the 3%/month budget was the one removed item with direct incident lineage (07-16 change-induced class); its protective content survives via named-neighbours + 24h micro-audit + independence gate + churn tripwire, which target the actual failure mechanism (unaudited neighbours) rather than rate -- but if change-induced incidents recur, the churn tripwire is the intended brake and should fire early. Edits: contract (4 regex replacements, dollar-digit audit unchanged pre/post -- the 07-19 unbound-dollar class guarded), constitution mirrors + addendum to the count-uncapped section (edit of existing section, not new doctrine -- doctrine freeze respected), improvement_inbox header. All via atomic rename; live cycle untouched. NEIGHBOURS: monthly self-improvement engine (now continuous), micro-audit brief (unchanged, still catches every change within 24h), churn detector (its consequence changed from quota to pause-audit).",
+   "hypothesis": "with per-item EV pricing + neighbour audits + pause-tripwires, removing rate caps raises implemented net-positive throughput without re-opening the 07-16 change-induced incident class",
+   "expected_benefit": "zero net-positive improvements queued by counts or calendar windows anywhere in the pipeline",
+   "expected_cost": "loss of the blunt global brake; protection now rests entirely on per-item discipline + tripwires",
+   "confidence": 0.75,
+   "assumptions": [
+    "named-neighbours + micro-audit discipline actually executes on every change (it is what failed pre-07-16)"
+   ],
+   "success_metric": "8 weeks: implemented-change yield stays healthy and zero change-induced incidents; churn tripwire never needed or fires correctly",
+   "reversal_condition": "any change-induced incident recurrence -> churn tripwire fires (pause + full-panel audit); if the audit finds rate itself was the cause, principal decides whether a budget returns"
   }
  ]
 }

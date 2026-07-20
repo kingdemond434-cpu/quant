@@ -485,6 +485,13 @@ revisit on evidence -- this section makes the activation condition constitutiona
 
 
 ## VALIDATION ADMISSION IS COUNT-UNCAPPED (principal 2026-07-19)
+ADDENDUM 2026-07-20 -- IMPLEMENTATION IS COUNT-UNCAPPED TOO: the same principle governs
+implementation and auditing. No numeric caps anywhere in the pipeline -- no monthly
+complexity budgets, no per-window change counts, no spec-per-cycle limits, no audit
+quotas. Per-item EV arithmetic (complexity + maintenance priced in), named-neighbours,
+micro-audit, and the independence gate are the gates; integrity problems PAUSE the line
+(churn tripwire, admission tripwires); evidence gates (Gate 0, validation gauntlet) and
+cadence FLOORS (minimums, Tier-3) are untouched. Counts never queue net-positive work.
 No numeric monthly quota on gauntlet admissions exists or may be introduced without
 explicit principal sign-off. Candidates enter validation by EV-gate rank -- best expected
 ROI first, every genuinely net-positive candidate admitted. The ONLY admission gates are:
