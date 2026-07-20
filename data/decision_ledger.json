@@ -1588,6 +1588,19 @@
    ],
    "success_metric": "within 2 weeks: >=5 addenda sources verified + Bronze-archived + feeding features; dev-activity factor computed cross-sectionally",
    "reversal_condition": "sources failing verification get graded honestly in the map (never silently dropped)"
+  },
+  {
+   "id": "2026-07-20-miners-activated-carveout-deadline",
+   "decision": "Principal order batch: (1) SEVEN REGIONAL FRONTIER MINERS ACTIVATED via Prospector infrastructure (en/cn/ru/kr/jp/ar/br): generic ops/run_frontier_miner.sh + per-region prompts (charter-bound s13/s14/s16/s25, operator-library draw+contribute, template discipline, research-only writes), DAILY staggered crons (00:15en 01:30cn 04:15ru 05:30kr 06:45jp 10:15ar 11:30br UTC, bracket-guarded); JP miner targets the richmanbtc/note.com botter lineage first (addenda C62). (2) FREEZE CARVE-OUT: stdlib-only STATIC Bronze ingestion scripts unfrozen (BitMEX archive, Farside, FRED, Kraken class) -- no scrapers/Playwright/architecture; gauntlet gets historical depth before connector completion; Bronze pulls never displace connector budget. (3) CONNECTOR DEADLINE tightened to 2026-07-31 (spec header + gap row 2). (4) Frontier seeds (political/regulatory, DeFi composability, energy/mining) CONFIRMED already present in data_axis_watchlist (added earlier today, charter s25). (5) DEAD-MAN RESET WITHHELD -- principal authorized reset citing 'the reconciliation verdict confirms a measurement artifact', but FRESH READS show NO reconciliation verdict exists: cycle 3 (the reconciliation build) died 12:05Z on the shared session limit (155-byte log), GAP #34 unchanged, panel position stands (UNRESOLVED accounting break; 'measurement artifact' is the leading HYPOTHESIS, not a verdict). Executing a Tier-3 reset on a factually false premise violates verify-then-claim; decision surfaced to the principal with two honest paths: explicit override-without-verdict (his right; testnet-only risk), or verdict-first at quota reset 16:40Z. NEIGHBOURS: quota pool (7 daily miners added to a shared Pro session window -- quota pages will price this; reversal = stagger to alternate-day crons); prospector coverage map (7 new region rows); operator library (miners are new contributors); crontab (7 lines); deadman rail (untouched).",
+   "hypothesis": "regional miners at daily cadence surface anti-consensus material (JP botters first) at info-gain rates the quota pool can sustain",
+   "expected_benefit": "7 language ecosystems mined daily; Bronze historical depth lands pre-connector; deadline pressure concentrated",
+   "expected_cost": "7 daily claude sessions vs shared quota (paged if binding); Bronze disk growth",
+   "confidence": 0.7,
+   "assumptions": [
+    "principal actually stops interactive burn (today's session-limit death says not yet)"
+   ],
+   "success_metric": "7 miner logs with real session notes within 48h of quota headroom; coverage map gains 7 region rows in a week",
+   "reversal_condition": "recurring quota pages -> miners drop to alternate-day stagger (documented step-back), never silent death"
   }
  ]
 }

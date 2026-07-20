@@ -1,6 +1,6 @@
 # LIVE CONNECTOR — FROZEN BUILD SPEC (gap #2; consolidates every absorbed requirement)
 
-_Frozen 2026-07-17. Build target: complete + reviewed + breaker-tested BEFORE the ~2026-08-05
+_Frozen 2026-07-17. Build target: complete + reviewed + breaker-tested BEFORE 2026-07-31 (principal deadline 2026-07-20; was ~08-05)
 validation gate so zero gate-time is wasted. Builder: the brain across dedicated cycles or the
 CRO in a dedicated session — NOT as the tail of an unrelated session; risk-path code gets
 built fresh or not at all. Sources: gap register row 2; ledgers `2026-07-16-v8-master-

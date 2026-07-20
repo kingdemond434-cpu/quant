@@ -114,3 +114,6 @@ low yield (reversible on new evidence).
 
 ## AD-HOC SCANNING CLOSED (principal, addendum D item 75, 2026-07-20)
 Four ad-hoc rounds (A-D) complete to the tail; canonical record docs/research/FREE_DATA_ADDENDA_BCD.md. Marginal listing hour < marginal ingesting hour. All future source discovery routes through THIS standing mission + the Prospector sweeps + event triggers + the free-first mandatory scan -- never a fifth ad-hoc round. Standing prospecting grounds: GitHub topics orderbook-tick-data/historical-data, Zenodo/arXiv companion repos, note.com botters + JoinQuant/myquant BBSs.
+
+## BRONZE INGESTION CARVE-OUT (principal freeze exception, 2026-07-20)
+UNFROZEN: lightweight, dependency-free (stdlib-only) Python scripts for STATIC ingestion of historical Bronze-tier data ONLY -- e.g. BitMEX public-archive CSVs, Farside ETF tables, FRED/Fed CSV pulls, Kraken dumps, Binance Vision metrics columns. Rules: no dynamic scrapers, no Playwright/selenium, no new architecture, no new dependencies; download static files to the Bronze tier + verify per ss4-6 so the gauntlet has historical depth the moment the connector finishes. The connector remains the #1 engineering priority (principal deadline 2026-07-31) -- Bronze pulls NEVER displace connector work in a cycle's budget.
