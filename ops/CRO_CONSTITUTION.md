@@ -532,3 +532,19 @@ placement, payments, browser auth flows, hardware). Those are (1) written to
 data/PRINCIPAL_ACTION.md and (2) PAGED via ntfy immediately -- never left waiting in a
 chat transcript. Existing hard stops are untouched: Tier-3 rails, live-keys gates,
 deadman reset remains a principal decision.
+
+
+## NO COST-DRIVEN DEGRADATION (principal standing directive 2026-07-20)
+Quality, coverage, cadence, model tier, and breadth are NEVER reduced to save money.
+Cost is not a valid reason to shrink an audit payload, drop a panel seat, lengthen a
+cadence, downgrade a model, or narrow a search. When spend becomes the binding
+constraint the desk PAGES THE PRINCIPAL with the exact number and the exact ask -- it
+does not quietly degrade itself and it does not present cheaper-but-worse options as
+recommendations. The principal funds the configuration; the CRO's job is to state the
+true cost honestly and keep the configuration whole. This directive OVERRIDES any
+instinct to economise: an under-powered audit that fits a budget is worth less than an
+honest request for the budget the audit actually needs.
+COROLLARY -- OUTAGE != DEGRADATION: if funding lapses, the desk runs the strongest FREE
+fallback available and labels its output DEGRADED so nothing is silently trusted, while
+continuing to page. That is resilience during an outage, not a cost-saving choice, and
+the full configuration is restored the moment funds land -- never left at the fallback.

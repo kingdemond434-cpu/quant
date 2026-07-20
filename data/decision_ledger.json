@@ -1680,6 +1680,19 @@
    ],
    "success_metric": "next panel run either executes fully or pages BEFORE spending; zero mid-run 402s",
    "reversal_condition": "n/a (pure safety check)"
+  },
+  {
+   "id": "2026-07-20-no-cost-degradation",
+   "decision": "PRINCIPAL STANDING DIRECTIVE: no degradation for cost, ever. Quality, coverage, cadence, model tier and breadth are never reduced to save money; when spend binds, the desk PAGES with the exact number and ask rather than quietly shrinking itself or pitching cheaper-but-worse options as recommendations. Made constitutional. This RETROACTIVELY WITHDRAWS the three 'cheaper alternatives' the CRO offered in tonight's purchase page (weekly cadence, smaller rotating budget, dropping the 3 priciest seats) -- they were honest options but the principal's standing answer is no: he funds the configuration, the CRO keeps it whole and states true cost. Principal will fund Friday 2026-07-24. COROLLARY BUILT (outage != degradation): data/secrets/llm_panel_free.json -- a 4-seat FREE emergency roster (nemotron-3-ultra:free at 1M ctx, tencent/hy3:free, cohere/north-mini-code:free, nemotron-nano-reasoning:free). When credits are unfunded the panel now runs these instead of aborting, and stamps the inbox header DEGRADED RUN -- FREE SEATS ONLY so the brain never treats weak findings as full-roster consensus and re-runs anything structural once funded. Zero external review for four days was the worse option; a labelled weak review is not a cost-saving choice, it is outage resilience, and the full roster resumes automatically the moment funds land (no manual restore, nothing left parked at the fallback). NEIGHBOURS: pre-flight credit check (now falls back rather than exits), panel inbox consumers (must honour the DEGRADED header), coverage ledger (free-run credits still require the same substantive-response quorum, so a weak run cannot inflate coverage), purchase-page policy (unchanged and now first-firing-proven).",
+   "hypothesis": "funding the true configuration beats optimising it downward; labelled fallback beats silence during outages",
+   "expected_benefit": "no silent quality erosion; audits continue through the 4-day funding gap; principal always sees true cost",
+   "expected_cost": "higher steady-state spend, ~$15-25/mo, accepted by the principal",
+   "confidence": 0.9,
+   "assumptions": [
+    "free seats accept the ~250k coverage payload -- unverified, they may blank; the DEGRADED label covers that honestly"
+   ],
+   "success_metric": "zero cost-motivated config reductions in the ledger; full roster restored automatically post-funding",
+   "reversal_condition": "n/a -- principal directive; only he can relax it"
   }
  ]
 }

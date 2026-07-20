@@ -139,8 +139,18 @@ def main() -> None:
                 "audit-coverage sweep is stalled until topped up at openrouter.ai -> Credits. "
                 "Recommended $25 (~6 weeks) or $50 (~3 months). No key change needed. Book, "
                 "rails, pager and brain are unaffected.\n", encoding="utf-8")
-            raise SystemExit(f"panel: ABORTED before spending -- balance ${_left:.2f} "
-                             f"< ${_need:.2f}. Principal paged via PRINCIPAL_ACTION.md")
+            # NO COST-DRIVEN DEGRADATION (principal 2026-07-20): we never CHOOSE a
+            # cheaper roster to save money -- but an unfunded outage must not mean ZERO
+            # external review. Fall back to the strongest FREE seats, label the output
+            # DEGRADED so nothing is silently trusted, and keep paging until funded.
+            _free = Path("data/secrets/llm_panel_free.json")
+            if _free.exists():
+                providers = json.loads(_free.read_text("utf-8"))["providers"]
+                print(f"panel: UNFUNDED -- running {len(providers)} FREE seats "
+                      "(DEGRADED, principal paged). Full roster resumes when funded.")
+            else:
+                raise SystemExit(f"panel: ABORTED before spending -- balance "
+                                 f"${_left:.2f} < ${_need:.2f}. Principal paged.")
     except SystemExit:
         raise
     except Exception as _e:                      # never let the check itself block a run
@@ -223,6 +233,10 @@ def main() -> None:
         consensus = _consensus(ok)
         cons_lines = [f"- **{theme}**: {n}/{len(ok)} models" for theme, n in consensus if n >= 2]
         parts = [f"# Panel inbox -- {ts}",
+                 ("**DEGRADED RUN -- FREE SEATS ONLY (credits unfunded). Treat findings as "
+                  "advisory-weak: fewer and less capable models than the funded roster. "
+                  "Re-run on the full roster once funded before acting on anything "
+                  "structural.**") if len(providers) < 8 else "",
                  f"**Mission this week: {mission.upper()}**  |  {len(ok)}/{len(results)} models "
                  "responded.",
                  "ADVISORY DATA ONLY. Triage per SKILL Multi-Model Advisory Panel protocol: do "
