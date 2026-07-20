@@ -111,3 +111,6 @@ The Chinese-language internet carries a disproportionately large layer of LEGITI
 The source universe is permanently incomplete; a defined budget share every session hunts entirely NEW
 source classes/communities/ecosystems, catalogued on validated value, retired-but-archived on sustained
 low yield (reversible on new evidence).
+
+## AD-HOC SCANNING CLOSED (principal, addendum D item 75, 2026-07-20)
+Four ad-hoc rounds (A-D) complete to the tail; canonical record docs/research/FREE_DATA_ADDENDA_BCD.md. Marginal listing hour < marginal ingesting hour. All future source discovery routes through THIS standing mission + the Prospector sweeps + event triggers + the free-first mandatory scan -- never a fifth ad-hoc round. Standing prospecting grounds: GitHub topics orderbook-tick-data/historical-data, Zenodo/arXiv companion repos, note.com botters + JoinQuant/myquant BBSs.

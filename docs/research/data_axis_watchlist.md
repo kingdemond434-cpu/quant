@@ -262,3 +262,20 @@ this is the mission's first run.
    listings) -- miner-capitulation and hashprice-breakeven signal family.
 8. Patent databases (Google Patents/WIPO, free) -- exchange/HFT infrastructure patents as
    leading indicators of venue mechanics changes (when relevant; low cadence).
+
+## HUNT NOW — ADDENDA B/C/D (principal 2026-07-20; full record: FREE_DATA_ADDENDA_BCD.md)
+Verify-don't-trust + liveness + Bronze rules (spec sections 4-6) bind every item. Priority order:
+9.  Dev-activity factor (GH Archive x crypto-ecosystems JOIN) -- best find, owned methodology.
+10. BitMEX decade archive (trades+L1 to 2014) -- longest free perp microstructure history.
+11. Spot-ETF flow tables (Farside daily, Bronze snapshots -- revised silently).
+12. Binance metrics positioning columns (ALREADY DOWNLOADED -- name in feature factory).
+13. Deribit block-print filter (institutional options flow) + Volmex/BitVol cross-checks.
+14. Fed liquidity plumbing (RRP+TGA+H.4.1 -> self-computed net-liquidity).
+15. Mempool Dumpster + Xatu (historical mempool/network events, CC-0).
+16. Venue-stress observables (insurance funds, PoR Bronze snapshots, status-page JSON).
+17. Wikipedia pageviews + prediction-market odds (Polymarket/Kalshi) as event priors.
+18. Hyperliquid position transparency + leaderboards (decaying class, forward-collect).
+19. JP botter ecosystem (richmanbtc line) via OP-017 -- Prospector co-target.
+20. Reddit corpus + firehoses (weak-signal registry class, regime markers only).
+Signup-gated (page principal only when a pull is planned): Databento credits (surgical CME
+windows), Alpaca, Kaggle datasets.

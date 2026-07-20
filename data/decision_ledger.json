@@ -1575,6 +1575,19 @@
    ],
    "success_metric": "7 days: cycles-completed/day >= 3, zero silent no-ops, dig logs full-size, panel cadence 3d honored",
    "reversal_condition": "quota pages recur daily -> step cron back one notch (comment lines) + page principal with the measured ceiling"
+  },
+  {
+   "id": "2026-07-20-addenda-bcd-integrated",
+   "decision": "Principal free-data Addenda B/C/D (items 35-75) INTEGRATED: canonical record docs/research/FREE_DATA_ADDENDA_BCD.md; 34 sources into data_universe_map.json with honest grades (adopted-pending-verify / catalogued / principal-signup-gated -- Databento credits, Alpaca, Kaggle page the principal only when a pull is planned); 11 new operators OP-009..OP-019 into the Search Operator Library (bucket probing, vendor-docs-as-map, scraper-as-evidence, free credits, BQ public datasets, successor-project, foundation-funded archives, CC-0 filter, translate-the-niche, competition post-mortems, Wayback CDX) -- cross-digger propagation per charter s16 makes every miner adapt these next session; 12-item HUNT-NOW block in data_axis_watchlist (dev-activity factor first -- round's best find); verify/liveness/Bronze rules (spec ss4-6 = principal's items 30-31) bind all. AD-HOC SCANNING CLOSED per D75 -- future discovery routes through the standing mission/Prospector/event triggers; a fifth ad-hoc round is refused BY DOCTRINE, not fatigue. Residual truth preserved verbatim (B46): pre-recorder Binance perp L2 diffs don't exist free; the approximation basket exceeds every live card's needs; the remaining gap is in a game (queue-position micro) already ruled structurally disadvantaged. Next dataaxis dig (chained behind the running reconciliation cycle + Tue/Thu/Sat crons) begins ingestion in watchlist priority order. NEIGHBOURS: universe map (34 entries + 2 keys), operator library (propagation duty for all diggers), dataaxis dig prompt (reads watchlist -- no edit needed), Prospector (knowledge mines 59-62 are its lane), Bronze archive growth (disk watch -- VPS purchase page if it binds).",
+   "hypothesis": "ingesting the addenda basket in priority order raises validated data breadth faster than any further listing",
+   "expected_benefit": "decade-scale microstructure history, self-computed dev factor, mempool history, positioning + flow layers -- all $0",
+   "expected_cost": "dig/ingest compute; Bronze disk growth (watch); a few signup-gated pulls deferred to principal",
+   "confidence": 0.85,
+   "assumptions": [
+    "sources verify against ground truth per spec s4 before pipeline use"
+   ],
+   "success_metric": "within 2 weeks: >=5 addenda sources verified + Bronze-archived + feeding features; dev-activity factor computed cross-sectionally",
+   "reversal_condition": "sources failing verification get graded honestly in the map (never silently dropped)"
   }
  ]
 }

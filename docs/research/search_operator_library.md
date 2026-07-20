@@ -85,5 +85,71 @@ technique: before ANY pipeline relies on a free source, diff a sample vs ground 
   (exchange-native / Tardis free sample); check row counts, gaps, timezone, unit scale.
 adaptations: universal verbatim — no language dependence (log n/a-with-reason per §16).
 
+### OP-009 public.<venue>.com bucket probing                      [active]
+class: source-expansion
+origin: principal addenda B (2026-07-20)   validated-gain: BitMEX decade archive, Bybit, data.binance.vision all fit the pattern
+technique: probe public data buckets on any venue: public.<venue>.com, data.<venue>.com/.vision, <venue> S3 listing.
+adaptations: universal per venue; regional miners probe their region's venues (Upbit/Bithumb/bitFlyer/OKX/Gate).
+
+### OP-010 vendor-docs-as-map                                     [active]
+class: source-expansion
+origin: principal addenda B   validated-gain: Tardis per-exchange docs = free INDEX of what exists per venue
+technique: read a paid vendor's per-exchange documentation as a catalog, then source each item free.
+adaptations: CN=Wind/Tushare doc trees; JP/KR=local vendor catalogs; universal.
+
+### OP-011 scraper-repo-as-evidence                               [active]
+class: repo-discovery
+origin: principal addenda B   validated-gain: bmoscon scraper proved BitMEX bucket exists
+technique: a GitHub scraper existing for a venue proves a hidden public source exists -- find the scraper, find the bucket.
+adaptations: Gitee scrapers for CN venues; universal.
+
+### OP-012 vendor free credits -> surgical institutional pulls    [active]
+class: reconstruction
+origin: principal addenda B   validated-gain: Databento $125 -> CME MBO/MBP windows
+technique: search "<vendor> free credits <asset>"; spend one-time credits on highest-value windows only.
+adaptations: universal; log every credit spend to ledger (one-time resource).
+
+### OP-013 BigQuery public dataset <protocol>                     [active]
+class: source-expansion
+origin: principal addenda B   validated-gain: dYdX/Numia, Solana, GDELT, HN, GH Archive all live there
+technique: protocol ecosystems fund public BQ indexing grants; the tables outlive announcements.
+adaptations: universal; CN equivalent = MaxCompute public sets (probe).
+
+### OP-014 successor-project search                               [active]
+class: community-discovery
+origin: principal addenda C   validated-gain: Pushshift -> Arctic Shift/Academic Torrents
+technique: famous dead tool -> search its community successor before declaring the data lost.
+adaptations: universal; RU/CN forums often mirror dead-tool archives.
+
+### OP-015 foundation-funded open data                            [active]
+class: source-expansion
+origin: principal addenda C+D   validated-gain: EF->Xatu, Flashbots->Mempool Dumpster, Solana->Old Faithful, dYdX->Numia
+technique: search "<foundation> open dataset grant" / "<foundation> historical archive project" FIRST when a chain matters.
+adaptations: universal per-chain.
+
+### OP-016 CC-0 / public-domain license filter                    [active]
+class: query-template
+origin: principal addenda C   validated-gain: narrows to the genuinely free + redistribution-safe
+technique: add "CC-0" / "public domain" / license:cc0 to dataset searches.
+adaptations: universal; strengthens charter s13 compliance.
+
+### OP-017 translate-the-niche                                    [active]
+class: multilingual-pattern
+origin: principal addenda C   validated-gain: JP botter ecosystem (richmanbtc et al) -- language barrier IS the moat
+technique: LLM-translate non-English practitioner communities the English crowd never reads; prioritize code-included writeups.
+adaptations: JP=note.com botters; CN=JoinQuant/myquant BBSs; KR=Naver blogs; RU=habr/smart-lab -- each miner owns its ground.
+
+### OP-018 competition post-mortems as literature                 [active]
+class: community-discovery
+origin: principal addenda C   validated-gain: Kaggle G-Research winners = applied crypto research with skin in the game
+technique: mine winning-solution threads of quant competitions as validated applied methods.
+adaptations: universal; CN=Tianchi comps; JP=SIGNATE.
+
+### OP-019 Wayback CDX API reconstruction                         [active]
+class: reconstruction
+origin: principal addenda D   validated-gain: deleted announcements/leaderboards/fee schedules recoverable
+technique: programmatic Wayback CDX queries -- data that no longer exists live often exists in the archive.
+adaptations: universal; RU/CN archives: archive.today mirrors.
+
 ## ARCHIVED
 (none yet)
