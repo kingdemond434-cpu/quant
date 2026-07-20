@@ -147,6 +147,18 @@ def main() -> None:
         name = pv.get("name", pv.get("model", "?"))
         try:
             txt = _ask(pv["base_url"], pv["key"], pv["model"], system, dossier)
+            # BLANK-RESPONSE RETRY (2026-07-20): the full-coverage feed made payloads ~5x
+            # larger, and a seat can silently return an empty string on a big prompt
+            # (observed: minimax-m3 returned a bare newline to the 260k audit payload but
+            # answered a small prompt fine). A blank is a SILENT seat loss -- consensus
+            # quietly drops 13->12 with no error logged anywhere, which corrupts every
+            # "N/13 models agreed" figure the desk reasons from. Retry once, then fail loud.
+            if len(txt.strip()) < 50:
+                print(f"panel: {name} blank ({len(txt)} chars) -- retrying once")
+                txt = _ask(pv["base_url"], pv["key"], pv["model"], system, dossier)
+                if len(txt.strip()) < 50:
+                    raise RuntimeError("blank response twice -- likely payload size; "
+                                       "seat lost this run (recorded as an error, not a pass)")
             print(f"panel: {name} responded ({len(txt)} chars)")
             return {"provider": name, "model": pv["model"], "response": txt}
         except Exception as e:                       # one dead provider never kills the panel
