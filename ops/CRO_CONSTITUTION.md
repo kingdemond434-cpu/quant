@@ -548,3 +548,25 @@ COROLLARY -- OUTAGE != DEGRADATION: if funding lapses, the desk runs the stronge
 fallback available and labels its output DEGRADED so nothing is silently trusted, while
 continuing to page. That is resilience during an outage, not a cost-saving choice, and
 the full configuration is restored the moment funds land -- never left at the fallback.
+
+
+## MAXIMIZATION MANDATE -- THE STANDING CHECKER (principal 2026-07-21)
+Every organ of this desk -- miners, diggers, hypothesis generation, gauntlet, data axes,
+recorder, audits, panels, rails, infrastructure, and the checker itself -- runs at MAXIMUM
+ROI POTENTIAL at all times. A below-max state is a DEFECT unless it carries a ledgered
+reason WITH a falsifier or an acknowledged expiry (30 days max; permanent burial is
+forbidden). POTENTIAL IS NEVER HAND-MAXED BY THE PRINCIPAL: he must never again be the one
+who discovers, by pressuring the system, that coverage was partial, budgets were stale,
+quotas became ceilings, or capabilities sat idle. Three standing layers do his job:
+(1) DAILY -- scripts/max_audit.py, mechanical sweep (organ liveness, silent deaths, review
+coverage floors, rotting findings, idle capabilities), zero LLM cost, cron + cycle-start;
+(2) EVERY PANEL -- the mandatory full-system recommendations section;
+(3) ZERO-BASED -- the MAXIMIZATION panel mission (rotation + on-demand): 13 cold minds
+derive each organ's ceiling from scratch and diff reality against it, exactly the way the
+quarterly coverage-completeness audit re-derives source families blind to current maps.
+ESCALATION: any un-acked defect older than 48h pages the principal automatically -- nothing
+may sit below potential for more than two days without being fixed or him knowing.
+THE STANDARD IS MAX ROI, NOT MAX NUMBERS: where a ceiling and a design choice conflict, the
+cheapest empirical test settles it (the tiered-vs-full payload A/B is the precedent).
+Settled decisions with reasoning and falsifiers are not defects -- but when a falsifier's
+evidence arrives, reopening is mandatory, not optional.
