@@ -1693,6 +1693,19 @@
    ],
    "success_metric": "zero cost-motivated config reductions in the ledger; full roster restored automatically post-funding",
    "reversal_condition": "n/a -- principal directive; only he can relax it"
+  },
+  {
+   "id": "2026-07-20-full-capacity-roster",
+   "decision": "FULL-CAPACITY ROSTER (principal: every reviewer must be able to see 100% of the system). Full sweep = 2.29MB ~= 572k tokens; three seats could not physically hold it and were swapped for same-or-better models with >=1M context, all live-verified against the OpenRouter catalog (85 models >=900k ctx across 23 labs are available, so capacity cost nothing in diversity): x-ai/grok-4.5 (500k) -> x-ai/grok-4.3 (1M, same lab -- trades 3 months of model freshness for 2x context, the right trade when the alternative is judging a fragment); mistralai/mistral-large-2512 (262k, Dec-2025) -> thinkingmachines/inkling (1M, Jul-2026, genuinely distinct lineage); tencent/hy3 (262k) -> meituan/longcat-2.0 (1M, Jul-2026, $0.30). All 13 seats now hold >=1M context; 13 distinct labs preserved. DELIBERATELY REFUSED: an anthropic/* seat (1M ctx, cheap, available) -- the panel's whole value is being UNCORRELATED with the brain, and the brain is Claude; auditing the desk with the lineage that built it trades the one property that makes the panel worth paying for. MINIMAX EXONERATED: panel 2 completed 12/13 substantive at the ~100k budget with minimax returning 7,718 chars -- it is payload-size sensitive, not a weak seat, so the earlier swap instinct would have removed a working model on a misdiagnosis (same error class as this morning's dead-man call). Ceiling raised to 2.4MB so the payload CAN reach the whole system; the adaptive budget still finds the safe level empirically rather than assuming it. HONEST COST OF TRUE 100%-EVERY-RUN, stated because the principal forbids cost-driven degradation but deserves the number: 572k tokens x 13 seats = ~7.4M tokens/run ~= $8.60/run ~= $86-100/month at 3-day cadence, vs ~$15-25/month tiered. CRO'S STANDING QUALITY CAVEAT (not a cost objection): long-context attention degrades -- a seat reviewing 60k tokens produces specific findings, the same seat at 572k tends to skim. Whether full-payload actually beats tier-0-plus-rotation is an EMPIRICAL question, so an A/B is queued for first funding (one full-payload run vs one tiered run on identical scope, compared on finding specificity and accepted-finding rate). Capability is shipped either way -- the desk will not be limited by seat context again. NEIGHBOURS: panel cost (up 6x if full payload becomes standard -- principal funds Friday), coverage ledger (unchanged quorum rules), capacity test (still unrun -- blocked on credits, queued for Friday), free emergency roster (unchanged, still labelled DEGRADED).",
+   "hypothesis": "no seat should ever be the reason a file goes unreviewed; capacity is a solved problem, payload size is an empirical one",
+   "expected_benefit": "every reviewer can hold the entire system; 100% coverage is now a funding/quality decision, not a technical limit",
+   "expected_cost": "~$86-100/mo if full payload becomes standard; ~$15-25/mo tiered",
+   "confidence": 0.85,
+   "assumptions": [
+    "the 3 new seats respond substantively at scale -- UNVERIFIED, capacity test blocked on credits until Friday"
+   ],
+   "success_metric": "capacity test Friday: 13/13 ingest the full payload and correctly answer the probe",
+   "reversal_condition": "any new seat blanks or answers wrong on the Friday capacity test -> swap it from the 23-lab >=1M pool, evidence-first"
   }
  ]
 }

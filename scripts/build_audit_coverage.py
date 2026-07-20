@@ -58,7 +58,9 @@ TIER0_PREFIXES = (
 )
 
 # how much source to ship per run. ~200k chars ~= 50k tokens; x13 seats ~= <$1/run.
-CODE_BUDGET_CHARS = 320_000      # TOTAL payload ceiling (tier-0 + rotating)
+CODE_BUDGET_CHARS = 2_400_000    # TOTAL payload ceiling = the WHOLE system
+                                 # (2.29MB); adaptation still finds the safe level
+                                 # empirically, so this is a ceiling not a target
 CODE_BUDGET_MIN = 40_000         # floor for the ROTATING part; tier-0 always ships
 DIFF_BUDGET_CHARS = 60_000
 QUORUM_FRAC = 0.6                # >=60% of seats must answer substantively to count
