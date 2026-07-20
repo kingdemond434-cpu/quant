@@ -36,16 +36,16 @@ INCLUDE_GLOBS = ("scripts/*.py", "libs/**/*.py", "ops/*.sh", "ops/*.txt",
 EXCLUDE_PARTS = ("secrets", "__pycache__", ".venv", ".git", "node_modules")
 EXCLUDE_SUFFIX = (".bak", ".pyc", ".log")
 
-# risk-path files are audited on a tighter clock than everything else
-TIER1_PREFIXES = ("libs/execution/", "scripts/run_deadman_switch.py", "scripts/run_cashcarry",
+# RISK-class (money path) files are audited on a tighter clock than everything else
+RISK_PREFIXES = ("libs/execution/", "scripts/run_deadman_switch.py", "scripts/run_cashcarry",
                   "scripts/run_alerts.py", "scripts/run_recorder.py", "scripts/run_ci.py")
-TIER1_MAX_AGE_D = 14.0
-TIER2_MAX_AGE_D = 30.0
+RISK_MAX_AGE_D = 14.0
+ROTATE_MAX_AGE_D = 30.0
 
-# TIER-0 = the DECISION surface: what a reviewer must see to give SPECIFIC advice rather
+# CLASS 'ALWAYS' = the DECISION surface: what a reviewer must see to give SPECIFIC advice rather
 # than generic advice ("add these 3 grounds to the JP miner" vs "consider more breadth").
 # Ships IN FULL on every run, exempt from the rotating budget, re-audited every run.
-TIER0_PREFIXES = (
+ALWAYS_PREFIXES = (
     "ops/frontier_", "ops/prospector_dig_prompt", "ops/litminer_dig_prompt",
     "ops/dataaxis_dig_prompt", "ops/blindrediscovery_dig_prompt",
     "docs/research/data_axis_watchlist.md", "docs/research/prospector_coverage.md",
@@ -67,10 +67,10 @@ QUORUM_FRAC = 0.6                # >=60% of seats must answer substantively to c
 SUBSTANTIVE_CHARS = 400          # shorter than this is not a real review
 
 
-def _tier(rel: str) -> int:
-    if any(rel.startswith(p) for p in TIER0_PREFIXES):
+def _review_class(rel: str) -> int:
+    if any(rel.startswith(p) for p in ALWAYS_PREFIXES):
         return 0                                   # decision surface: always sent
-    return 1 if any(rel.startswith(p) for p in TIER1_PREFIXES) else 2
+    return 1 if any(rel.startswith(p) for p in RISK_PREFIXES) else 2
 
 
 def _eligible() -> list[Path]:
@@ -114,7 +114,7 @@ def refresh(m: dict) -> dict:
             rec["loc"] = sum(1 for _ in p.open("r", encoding="utf-8", errors="ignore"))
         except Exception:
             rec["loc"] = 0
-        rec["tier"] = _tier(rel)
+        rec["review_class"] = _review_class(rel)
     for gone in [k for k in files if k not in seen]:
         files.pop(gone)          # deleted files leave the ledger; git keeps the history
     return m
@@ -141,12 +141,12 @@ def status(m: dict) -> dict:
     files = m["files"]
     never = [f for f, r in files.items() if not r.get("last_audited")]
     stale1 = [f for f, r in files.items()
-              if r.get("tier") == 1 and _age_days(r.get("last_audited")) > TIER1_MAX_AGE_D]
+              if r.get("review_class") == 1 and _age_days(r.get("last_audited")) > RISK_MAX_AGE_D]
     stale2 = [f for f, r in files.items()
-              if r.get("tier") == 2 and _age_days(r.get("last_audited")) > TIER2_MAX_AGE_D]
-    t0 = [f for f, r in files.items() if r.get("tier") == 0]
-    return {"total": len(files), "never": never, "stale_tier1": stale1, "stale_tier2": stale2,
-            "tier0": len(t0),
+              if r.get("review_class") == 2 and _age_days(r.get("last_audited")) > ROTATE_MAX_AGE_D]
+    t0 = [f for f, r in files.items() if r.get("review_class") == 0]
+    return {"total": len(files), "never": never, "stale_risk": stale1, "stale_rotate": stale2,
+            "always_class": len(t0),
             "covered": len(files) - len(never),
             "pct": round(100.0 * (len(files) - len(never)) / max(1, len(files)), 1)}
 
@@ -191,11 +191,11 @@ def audit_payload() -> tuple[str, list[str]]:
     if len(diff) > DIFF_BUDGET_CHARS:
         diff = diff[:DIFF_BUDGET_CHARS] + "\n... [diff truncated at budget -- ask for the rest]"
 
-    # (B0) TIER-0 decision surface -- ALWAYS, IN FULL, budget-exempt. This is what lets a
+    # (B0) ALWAYS-class decision surface -- ALWAYS, IN FULL, budget-exempt. This is what lets a
     # reviewer say "add these grounds to the KR miner" instead of "consider more breadth".
     t0_chunks, t0_files, t0_used = [], [], 0
     for rel, _rec in sorted(files.items()):
-        if _rec.get("tier") != 0:
+        if _rec.get("review_class") != 0:
             continue
         fp = ROOT / rel
         if not fp.exists():
@@ -210,8 +210,8 @@ def audit_payload() -> tuple[str, list[str]]:
         t0_used += len(body)
 
     # (B) rotating slice: risk-path staleness first, then oldest-audited, then largest
-    order = sorted(((k, v) for k, v in files.items() if v.get("tier") != 0),
-                   key=lambda kv: (kv[1].get("tier", 2),
+    order = sorted(((k, v) for k, v in files.items() if v.get("review_class") != 0),
+                   key=lambda kv: (kv[1].get("review_class", 2),
                                    -_age_days(kv[1].get("last_audited")),
                                    -kv[1].get("loc", 0)))
     chunks, included, used = [], [], 0
@@ -226,7 +226,7 @@ def audit_payload() -> tuple[str, list[str]]:
         if used + len(body) > max(0, current_budget(m) - t0_used) and included:
             break
         chunks.append(f"\n----- FILE: {rel} ({len(body.splitlines())} lines, "
-                      f"tier{_tier(rel)}, last audited: {_rec.get('last_audited') or 'NEVER'}) "
+                      f"class={_review_class(rel)}, last audited: {_rec.get('last_audited') or 'NEVER'}) "
                       f"-----\n{body}")
         included.append(rel)
         used += len(body)
@@ -242,13 +242,13 @@ def audit_payload() -> tuple[str, list[str]]:
         "thought to summarize.",
         f"\n### COVERAGE STATE: {st['covered']}/{st['total']} files ever audited "
         f"({st['pct']}%). NEVER audited: {len(st['never'])}. "
-        f"Stale risk-path (>{TIER1_MAX_AGE_D:.0f}d): {len(st['stale_tier1'])}. "
-        f"Stale other (>{TIER2_MAX_AGE_D:.0f}d): {len(st['stale_tier2'])}.",
+        f"Stale risk-path (>{RISK_MAX_AGE_D:.0f}d): {len(st['stale_risk'])}. "
+        f"Stale other (>{ROTATE_MAX_AGE_D:.0f}d): {len(st['stale_rotate'])}.",
         "If a file you would need to judge a claim is NOT included below, say so explicitly -- "
         "'I could not verify X because file Y was not provided' is a first-class finding here.",
         f"\n### (A) RAW DIFF SINCE LAST PANEL ({'since ' + sha[:8] if sha else 'last 3 days'})\n",
         "```diff\n" + (diff.strip() or "(no changes)") + "\n```",
-        f"\n### (B0) DECISION SURFACE -- ALWAYS SENT IN FULL ({len(t0_files)} files, "
+        f"\n### (B0) DECISION SURFACE [review class: ALWAYS] -- ALWAYS SENT IN FULL ({len(t0_files)} files, "
         f"{t0_used:,} chars): every miner/digger prompt, every watchlist, coverage map, "
         "operator library, hypothesis + weak-signal + negative-knowledge registries, gap "
         "register and digging charter. You are seeing 100% of what the desk uses to DECIDE. "
@@ -314,9 +314,9 @@ def main() -> None:
 
     print(f"AUDIT COVERAGE: {st['covered']}/{st['total']} files ever audited ({st['pct']}%)")
     print(f"  never audited      : {len(st['never'])}")
-    print(f"  stale risk-path    : {len(st['stale_tier1'])} (floor {TIER1_MAX_AGE_D:.0f}d)")
-    print(f"  stale other        : {len(st['stale_tier2'])} (floor {TIER2_MAX_AGE_D:.0f}d)")
-    print(f"  TIER-0 always-sent : {st['tier0']} decision-surface files (100% every run)")
+    print(f"  stale RISK (money path): {len(st['stale_risk'])} (floor {RISK_MAX_AGE_D:.0f}d)")
+    print(f"  stale ROTATE (long tail): {len(st['stale_rotate'])} (floor {ROTATE_MAX_AGE_D:.0f}d)")
+    print(f"  TIER-0 always-sent : {st['always_class']} decision-surface files (100% every run)")
     total_loc = sum(r.get("loc", 0) for r in m["files"].values())
     runs_needed = max(1, round(total_loc * 40 / CODE_BUDGET_CHARS))
     print(f"  total LOC in sweep : {total_loc:,}  (~{runs_needed} panel runs per full sweep)")
