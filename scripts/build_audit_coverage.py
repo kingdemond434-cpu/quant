@@ -30,7 +30,8 @@ ROOT = Path(__file__).resolve().parent.parent
 MANIFEST = ROOT / "data/audit_coverage.json"
 
 # what the sweep covers -- code + operator contracts (the brain's prompt lives in ops/*.sh)
-INCLUDE_GLOBS = ("scripts/*.py", "libs/**/*.py", "ops/*.sh", "tests/**/*.py")
+INCLUDE_GLOBS = ("scripts/*.py", "libs/**/*.py", "ops/*.sh", "ops/*.txt",
+                 "tests/**/*.py", "docs/*.md", "docs/research/*.md", "docs/playbooks/*.md")
 # never read, never send
 EXCLUDE_PARTS = ("secrets", "__pycache__", ".venv", ".git", "node_modules")
 EXCLUDE_SUFFIX = (".bak", ".pyc", ".log")
@@ -41,15 +42,32 @@ TIER1_PREFIXES = ("libs/execution/", "scripts/run_deadman_switch.py", "scripts/r
 TIER1_MAX_AGE_D = 14.0
 TIER2_MAX_AGE_D = 30.0
 
+# TIER-0 = the DECISION surface: what a reviewer must see to give SPECIFIC advice rather
+# than generic advice ("add these 3 grounds to the JP miner" vs "consider more breadth").
+# Ships IN FULL on every run, exempt from the rotating budget, re-audited every run.
+TIER0_PREFIXES = (
+    "ops/frontier_", "ops/prospector_dig_prompt", "ops/litminer_dig_prompt",
+    "ops/dataaxis_dig_prompt", "ops/blindrediscovery_dig_prompt",
+    "docs/research/data_axis_watchlist.md", "docs/research/prospector_coverage.md",
+    "docs/research/improvement_inbox.md", "docs/research/search_operator_library.md",
+    "docs/research/weak_signal_registry.md", "docs/research/discovery_hypotheses.md",
+    "docs/research/negative_knowledge.md", "docs/research/canary_searches.md",
+    "docs/research/prospector_watchlist.md", "docs/research/generation_due.md",
+    "docs/research/HYPOTHESIS_MAX_SPEC.md", "docs/research/video_locked_log.md",
+    "docs/GAP_REGISTER.md", "docs/DIGGING_CHARTER.md",
+)
+
 # how much source to ship per run. ~200k chars ~= 50k tokens; x13 seats ~= <$1/run.
-CODE_BUDGET_CHARS = 200_000      # ceiling; the live value adapts down on blanks
-CODE_BUDGET_MIN = 40_000         # floor -- below this the sweep is too slow to matter
+CODE_BUDGET_CHARS = 320_000      # TOTAL payload ceiling (tier-0 + rotating)
+CODE_BUDGET_MIN = 40_000         # floor for the ROTATING part; tier-0 always ships
 DIFF_BUDGET_CHARS = 60_000
 QUORUM_FRAC = 0.6                # >=60% of seats must answer substantively to count
 SUBSTANTIVE_CHARS = 400          # shorter than this is not a real review
 
 
 def _tier(rel: str) -> int:
+    if any(rel.startswith(p) for p in TIER0_PREFIXES):
+        return 0                                   # decision surface: always sent
     return 1 if any(rel.startswith(p) for p in TIER1_PREFIXES) else 2
 
 
@@ -124,7 +142,9 @@ def status(m: dict) -> dict:
               if r.get("tier") == 1 and _age_days(r.get("last_audited")) > TIER1_MAX_AGE_D]
     stale2 = [f for f, r in files.items()
               if r.get("tier") == 2 and _age_days(r.get("last_audited")) > TIER2_MAX_AGE_D]
+    t0 = [f for f, r in files.items() if r.get("tier") == 0]
     return {"total": len(files), "never": never, "stale_tier1": stale1, "stale_tier2": stale2,
+            "tier0": len(t0),
             "covered": len(files) - len(never),
             "pct": round(100.0 * (len(files) - len(never)) / max(1, len(files)), 1)}
 
@@ -169,8 +189,26 @@ def audit_payload() -> tuple[str, list[str]]:
     if len(diff) > DIFF_BUDGET_CHARS:
         diff = diff[:DIFF_BUDGET_CHARS] + "\n... [diff truncated at budget -- ask for the rest]"
 
-    # (B) rotating slice: tier-1 staleness first, then oldest-audited, then largest
-    order = sorted(files.items(),
+    # (B0) TIER-0 decision surface -- ALWAYS, IN FULL, budget-exempt. This is what lets a
+    # reviewer say "add these grounds to the KR miner" instead of "consider more breadth".
+    t0_chunks, t0_files, t0_used = [], [], 0
+    for rel, _rec in sorted(files.items()):
+        if _rec.get("tier") != 0:
+            continue
+        fp = ROOT / rel
+        if not fp.exists():
+            continue
+        try:
+            body = fp.read_text("utf-8", errors="ignore")
+        except Exception:
+            continue
+        t0_chunks.append(f"\n----- [DECISION SURFACE] {rel} "
+                         f"({len(body.splitlines())} lines) -----\n{body}")
+        t0_files.append(rel)
+        t0_used += len(body)
+
+    # (B) rotating slice: risk-path staleness first, then oldest-audited, then largest
+    order = sorted(((k, v) for k, v in files.items() if v.get("tier") != 0),
                    key=lambda kv: (kv[1].get("tier", 2),
                                    -_age_days(kv[1].get("last_audited")),
                                    -kv[1].get("loc", 0)))
@@ -183,7 +221,7 @@ def audit_payload() -> tuple[str, list[str]]:
             body = p.read_text("utf-8", errors="ignore")
         except Exception:
             continue
-        if used + len(body) > current_budget(m) and included:
+        if used + len(body) > max(0, current_budget(m) - t0_used) and included:
             break
         chunks.append(f"\n----- FILE: {rel} ({len(body.splitlines())} lines, "
                       f"tier{_tier(rel)}, last audited: {_rec.get('last_audited') or 'NEVER'}) "
@@ -208,8 +246,15 @@ def audit_payload() -> tuple[str, list[str]]:
         "'I could not verify X because file Y was not provided' is a first-class finding here.",
         f"\n### (A) RAW DIFF SINCE LAST PANEL ({'since ' + sha[:8] if sha else 'last 3 days'})\n",
         "```diff\n" + (diff.strip() or "(no changes)") + "\n```",
-        f"\n### (B) SOURCE UNDER REVIEW THIS RUN ({len(included)} files, {used:,} chars, "
-        "least-recently-audited first)\n",
+        f"\n### (B0) DECISION SURFACE -- ALWAYS SENT IN FULL ({len(t0_files)} files, "
+        f"{t0_used:,} chars): every miner/digger prompt, every watchlist, coverage map, "
+        "operator library, hypothesis + weak-signal + negative-knowledge registries, gap "
+        "register and digging charter. You are seeing 100% of what the desk uses to DECIDE. "
+        "Your recommendations here must be SPECIFIC (name the prompt, name the ground, name "
+        "the operator) -- generic advice is a failed review.\n",
+        "```\n" + "".join(t0_chunks) + "\n```",
+        f"\n### (B) ROTATING SOURCE REVIEW ({len(included)} files, {used:,} chars, "
+        "least-recently-audited first; the rest is under staleness floors)\n",
         "```\n" + "".join(chunks) + "\n```",
     ]
     payload = "\n".join(txt)
@@ -223,7 +268,7 @@ def audit_payload() -> tuple[str, list[str]]:
     except Exception as e:
         print(f"coverage: sanitize unavailable ({e!r}) -- sending nothing rather than risk it")
         return "", []
-    return payload, included
+    return payload, t0_files + included
 
 
 def mark_audited(files: list[str], ts: str, mission: str,
@@ -269,6 +314,7 @@ def main() -> None:
     print(f"  never audited      : {len(st['never'])}")
     print(f"  stale risk-path    : {len(st['stale_tier1'])} (floor {TIER1_MAX_AGE_D:.0f}d)")
     print(f"  stale other        : {len(st['stale_tier2'])} (floor {TIER2_MAX_AGE_D:.0f}d)")
+    print(f"  TIER-0 always-sent : {st['tier0']} decision-surface files (100% every run)")
     total_loc = sum(r.get("loc", 0) for r in m["files"].values())
     runs_needed = max(1, round(total_loc * 40 / CODE_BUDGET_CHARS))
     print(f"  total LOC in sweep : {total_loc:,}  (~{runs_needed} panel runs per full sweep)")
