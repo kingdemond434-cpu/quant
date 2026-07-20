@@ -1719,6 +1719,19 @@
    ],
    "success_metric": "A/B shows tiered >= full-payload on accepted-finding rate per dollar; sweep completes in ~6 runs",
    "reversal_condition": "A/B shows full-payload wins on finding specificity -> raise to full and fund the difference"
+  },
+  {
+   "id": "2026-07-21-longtail-cadence-held",
+   "decision": "CRO decision on long-tail review cadence (principal asked weekly vs biweekly): NEITHER -- HOLD at the current ~22d sweep / 30d floor and refuse to tune it yet. Reasoning: (1) cadence governs only UNCHANGED code, because changed files are captured 100% by the raw diff in the very next run regardless of rotation position; (2) second-pass yield on static code that 13 models already cleared decays fast, so weekly re-review would spend real money re-confirming still fine; (3) SEQUENCING is the deciding argument -- coverage is 7.4% and not one full first pass has completed, so tuning a re-review loop that has never run once is premature optimisation. QUEUED INSTEAD: (a) the empirical test that should settle it -- once the first sweep completes, measure accepted findings arising from re-reviews of UNCHANGED files; ~zero -> extend the tier-2 floor to 60-90d and redirect budget, material -> tighten toward 14d; (b) CHANGE-PROPAGATION PRIORITY, which is worth more than any calendar number: bump a file up the queue when its dependencies changed (import graph), because re-reviewing a file whose foundation moved is strong signal while re-reviewing it on a clock expiry is weak. Both queued behind the connector (07-31). NEIGHBOURS: staleness floors (unchanged), coverage ledger (will supply the yield data), OpenRouter spend (held flat -- no cadence change means no cost change).",
+   "hypothesis": "re-review value is driven by change and dependency movement, not elapsed time; the clock is a crude proxy that should be replaced once data exists",
+   "expected_benefit": "no money spent tuning an unmeasured loop; the eventual cadence is set by yield data",
+   "expected_cost": "none (a hold)",
+   "confidence": 0.85,
+   "assumptions": [
+    "first full sweep completes after Friday funding, producing the re-review yield sample"
+   ],
+   "success_metric": "first sweep completes ~22d post-funding; cadence set from measured re-review yield, not opinion",
+   "reversal_condition": "if a real bug is found in a stale unchanged file before the sweep completes, tighten immediately -- that is evidence the floor is too loose"
   }
  ]
 }

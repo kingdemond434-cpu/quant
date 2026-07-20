@@ -350,3 +350,15 @@ honestly, not papered over). Two non-alpha findings worth routing here:
 7. **Panel tier policy implementation (principal 2026-07-20, ledger #115):** (a) add an EVENT_MODELS premium list to scripts/run_external_panel.py used when PANEL_MISSION in {audit, premortem} -- 3-5 top-tier max-reasoning models, IDs LIVE-VERIFIED against the OpenRouter /models endpoint before wiring (never hardcode unverified IDs); routine missions keep the diverse roster. (b) Replace the stale microsoft/wizardlm-2-8x22b seat (Apr 2024) with a live-verified current diverse model; check meta-llama/llama-4-maverick for a successor. (c) Add a roster-freshness check to the quarterly scorecard review. Small, research-infra, no risk path.
 
 8. **Recorder breadth expansion (CRO boss directive 2026-07-20):** 32GB disk free, lake tiny -- every unrecorded day is unrecoverable, and forward tape is the one moat that compounds with TIME not effort. Next cycle: evaluate expanding run_recorder.py coverage (more symbols on Binance/Bybit; consider OKX as venue 3; add mark/funding/liquidation streams if absent) against disk-growth-rate math (page principal for bigger VPS only when projected 90-day growth exceeds headroom). Recorder upgrades are lockdown priority (1) work -- this displaces nothing.
+
+9. **Long-tail re-review cadence -- DECIDE ON EVIDENCE, not clock (CRO 2026-07-21):** current
+   tier-2 sweep is ~22d against a 30d floor. Do NOT tune until the FIRST full sweep completes
+   (currently 7.4% covered). Then measure: of findings accepted from a re-review of an UNCHANGED
+   file, how many were real? If ~zero, extend the tier-2 floor to 60-90d and redirect budget; if
+   material, tighten toward 14d. Changed files are already caught 100% by the raw diff every run,
+   so this only governs static code -- where second-pass yield decays fast.
+10. **Change-propagation priority (higher value than any calendar tuning):** instead of blind
+   rotation, bump a file up the review queue when its DEPENDENCIES changed (parse imports; if
+   libs/execution/engine.py changes, re-review its importers next run). Re-reviewing a static file
+   because a clock expired is weak; re-reviewing it because the thing it depends on moved is
+   strong. Small build (import graph + queue weight). QUEUED -- not before the connector ships.
