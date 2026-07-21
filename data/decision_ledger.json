@@ -1784,6 +1784,20 @@
    ],
    "success_metric": "by 07-25: all 3 directives closed on time; realized cycles/day >= 3; connector sections 3-7 in progress by my own hand",
    "reversal_condition": "n/a (audit + enforcement)"
+  },
+  {
+   "id": "2026-07-21-addall-axes-recorder",
+   "decision": "ADD-ALL round (principal: 'anything queued that is more ROI to add now -- add all'). ADDED: (1) RECORDER 5->20 symbols (BTC/ETH/SOL/BNB/XRP + DOGE/ADA/AVAX/LINK/LTC/TRX/DOT/BCH/NEAR/SUI/UNI/APT/FIL/ARB/OP) -- the single most compounding add on the board since forward tape is unrecoverable; respawn verified via ensure_recorder.py before surgery; disk math ~4GB/mo vs 31GB free; fulfills the 07-23 directive two days early. (2) GROWTH-AUDIT UNBLINDED: run_growth_audit .py is feed-only/standalone -- 30-min cron added so the anti-timidity pager can never again go stale when brain cycles die (was 13h blind today). (3) THREE MORE FREE AXES in ingest_axes (fenced): Wikipedia pageviews attention factor (7 articles, daily since 2015, official API); cross-asset layer (Stooq SPX/NASDAQ/GOLD/WTI/DXY-fut full history + CBOE official VIX + UST yield curve 2018+); mining economics (blockchain.com hashrate/miners-revenue/difficulty since 2009, keyless). (4) ingest_axes daily cron 06:40Z -- continues the ~4,500-file Binance metrics backfill automatically via skip-existing + keeps all axes current. DELIBERATELY NOT ADDED at 01:00: connector code (money-path gets a fresh session -- next session, decided in #128), GH-Archive dev factor (needs BigQuery auth -- brain-lane), Deribit block collector (new daemon, spec first), Polymarket/Kalshi (market-discovery logic -- brain-lane). NEIGHBOURS: recorder daemon (killed + respawned once, ~seconds gap, verified streaming after), disk growth watch (max_audit idle/disk checks), crontab (now 15 lines), Farside directive (unchanged, due 07-24).",
+   "hypothesis": "orthogonal ingested breadth (attention, cross-asset, mining, positioning history) + 4x recorder scope moves data breadth from ~4.5 to ~6 ingested within days",
+   "expected_benefit": "4x forward tape; anti-timidity pager unblindable; 3 new orthogonal axes flowing with history to 2009-2015",
+   "expected_cost": "~4GB/mo disk; a few daily HTTP pulls; zero dollars",
+   "confidence": 0.85,
+   "assumptions": [
+    "stooq symbol codes resolve (fenced per-symbol; failures reported not hidden)",
+    "recorder handles 20-symbol weight (public endpoints, verified post-respawn)"
+   ],
+   "success_metric": "within 48h: lake shows 20-symbol depth files growing; bronze has wikipedia/crossasset/mining populated; growth_audit.json never older than 35min",
+   "reversal_condition": "if recorder CPU/disk strains the box, trim symbol list (a purchase page for a bigger VPS is the max-order-consistent alternative)"
   }
  ]
 }

@@ -29,7 +29,13 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 _BASE = "https://fapi.binance.com"                 # LIVE public market data (read-only)
-_SYMBOLS = ("BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT")
+_SYMBOLS = ("BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT",
+            "DOGEUSDT", "ADAUSDT", "AVAXUSDT", "LINKUSDT", "LTCUSDT",
+            "TRXUSDT", "DOTUSDT", "BCHUSDT", "NEARUSDT", "SUIUSDT",
+            "UNIUSDT", "APTUSDT", "FILUSDT", "ARBUSDT", "OPUSDT")
+# 5 -> 20 (principal max order, 2026-07-21): every unrecorded day is unrecoverable;
+# disk math: ~33MB/day at 5 syms -> ~130MB/day at 20 -> ~4GB/mo vs 31GB free. Public
+# market data only, no keys; weight fine at 20.
 _ROOT = Path("data/moat/fut")
 _HB = Path("data/recorder_heartbeat")
 _DEPTH_EVERY_S = 1.0
