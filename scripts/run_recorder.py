@@ -38,8 +38,8 @@ _SYMBOLS = ("BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT",
 # market data only, no keys; weight fine at 20.
 _ROOT = Path("data/moat/fut")
 _HB = Path("data/recorder_heartbeat")
-_DEPTH_EVERY_S = 1.0
-_TRADES_EVERY_S = 5.0
+_DEPTH_EVERY_S = 4.0   # 1.0 -> 4.0 when symbols went 5 -> 20 (weight budget)
+_TRADES_EVERY_S = 20.0  # 5.0 -> 20.0 for the same reason
 _DISK_MAX_FRAC = 0.80                              # stop writing above this disk usage
 _FLUSH_ROWS = 200                                  # buffered rows per symbol before flush
 
@@ -68,7 +68,35 @@ def _flush(sym: str, rows: list[dict]) -> None:
     rows.clear()
 
 
+
+# --- BINANCE WEIGHT GUARD (added 2026-07-21 after a self-inflicted IP ban) ---
+# The USD-M futures budget is 2400 weight/min. depth(limit=20) costs 2; aggTrades(limit=1000)
+# costs 20. Expanding _SYMBOLS without widening intervals silently triples the burn and the
+# venue cuts the stream hours later with no traceback. Compute it at boot and refuse to start.
+_WEIGHT_LIMIT_PER_MIN = 2400
+_WEIGHT_TARGET_FRAC = 0.80          # stay well under; other desk processes share the IP
+
+
+def _weight_per_min() -> float:
+    depth = len(_SYMBOLS) * 2 * (60.0 / _DEPTH_EVERY_S)
+    trades = len(_SYMBOLS) * 20 * (60.0 / _TRADES_EVERY_S)
+    return depth + trades
+
+
+def _assert_weight_budget() -> None:
+    w = _weight_per_min()
+    cap = _WEIGHT_LIMIT_PER_MIN * _WEIGHT_TARGET_FRAC
+    print(f"recorder weight budget: {w:.0f}/min vs cap {cap:.0f}/min "
+          f"({len(_SYMBOLS)} symbols, depth@{_DEPTH_EVERY_S}s, trades@{_TRADES_EVERY_S}s)")
+    if w > cap:
+        raise SystemExit(
+            f"REFUSING TO START: {w:.0f} weight/min exceeds {cap:.0f}/min. Widen "
+            f"_DEPTH_EVERY_S/_TRADES_EVERY_S or cut _SYMBOLS. (2026-07-21: 20 symbols at the "
+            "old 1s/5s intervals = 7200/min got the recorder IP-banned after 6 hours.)")
+
+
 def main() -> None:
+    _assert_weight_budget()
     print(f"recorder v1 | {len(_SYMBOLS)} symbols | depth@{_DEPTH_EVERY_S}s "
           f"trades@{_TRADES_EVERY_S}s -> {_ROOT}/")
     buf: dict[str, list[dict]] = {s: [] for s in _SYMBOLS}
