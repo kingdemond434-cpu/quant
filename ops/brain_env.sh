@@ -56,4 +56,4 @@ brain_auth_check() {
 # capable model available -- Claude Fable 5 first. If the CLI/plan rejects it, flip
 # this line to claude-opus-4-8 (failures surface via brain_auth_check pages + noop
 # alerts, never silently). Thinking/effort: CLI-managed (max-tier default for these models).
-export ANTHROPIC_MODEL="claude-fable-5"
+export ANTHROPIC_MODEL="claude-opus-4-8"   # flipped 2026-07-21: fable-5 usage credits exhausted on this plan (CLI: "out of usage credits ... to keep using Fable 5"). opus-4-8 verified AUTH-OK. Flip back when fable credits return.
