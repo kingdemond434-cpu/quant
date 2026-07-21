@@ -49,7 +49,8 @@ def test_filled_helper_requires_confirmed_status_and_qty() -> None:
     assert _MOD._filled({}) is False
 
 
-def test_execute_pair_reports_success_when_both_legs_confirm_filled(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_execute_pair_reports_success_when_both_legs_confirm_filled(
+        monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(_MOD, "_MAKER", False)
     monkeypatch.setattr(_MOD, "spot", _FakeConn(_filled_order(10.0)))
     monkeypatch.setattr(_MOD, "fut", _FakeConn(_filled_order(10.0)))
@@ -58,7 +59,8 @@ def test_execute_pair_reports_success_when_both_legs_confirm_filled(monkeypatch:
     assert result["fut_ok"] is True
 
 
-def test_execute_pair_reports_failure_when_spot_leg_rejected(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def test_execute_pair_reports_failure_when_spot_leg_rejected(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     # the exact 2026-07-19 shape: futures side fine, spot side silently rejected
     monkeypatch.setattr(_MOD, "_MAKER", False)
     monkeypatch.setattr(_MOD, "spot", _FakeConn(_rejected_order()))
@@ -72,7 +74,8 @@ def test_execute_pair_reports_failure_when_spot_leg_rejected(monkeypatch: pytest
     assert "unfilled leg" in (tmp_path / "cashcarry_error.log").read_text("utf-8")
 
 
-def test_execute_pair_reports_failure_when_order_raises(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def test_execute_pair_reports_failure_when_order_raises(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     monkeypatch.setattr(_MOD, "_MAKER", False)
     monkeypatch.setattr(_MOD, "spot", _FakeConn(RuntimeError("connection reset")))
     monkeypatch.setattr(_MOD, "fut", _FakeConn(_filled_order(10.0)))
@@ -92,14 +95,14 @@ def test_close_path_never_deletes_position_on_unfilled_leg(monkeypatch: pytest.M
     monkeypatch.setattr(_MOD, "_ERR", Path("/tmp/test_cashcarry_error.log"))
 
     pos = {"GTCUSDT": {"spot_qty": 100.0, "spot_cost": 0.067, "perp_qty": -100.0,
-                       "perp_entry": 0.067, "funding": 0.0001, "opened": "2026-07-18T00:00:00+00:00"}}
+                       "perp_entry": 0.067, "funding": 0.0001,
+                       "opened": "2026-07-18T00:00:00+00:00"}}
     target: set[str] = set()   # GTCUSDT is leaving the target set -> close attempt
     actions: list[str] = []
 
     for sym in list(pos):
         if sym not in target:
             p = pos[sym]
-            spx, fpx = 0.067, 0.067
             fill = _MOD._execute_pair(sym, float(p["spot_qty"]), "SELL", "BUY")
             if not (fill.get("spot_ok") and fill.get("fut_ok")):
                 actions.append(f"CLOSE-FAIL {sym}")

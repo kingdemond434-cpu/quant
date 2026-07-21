@@ -68,7 +68,7 @@ def _spot_symbol(perp_symbol: str) -> str:
     return perp_symbol  # cash-and-carry trades the identical pair on spot + perp testnets
 
 
-_SPOT_CHUNK_MS = 20 * 3600 * 1000   # venue caps startTime..endTime at 24h on spot myTrades; 20h margin
+_SPOT_CHUNK_MS = 20 * 3600 * 1000   # venue caps spot myTrades spans at 24h; 20h leaves margin
 _FUT_CHUNK_MS = 6 * 24 * 3600 * 1000  # venue caps at 7d on futures userTrades; 6d margin
 
 
@@ -107,9 +107,12 @@ def _reconcile_symbol(sym: str, opened: datetime | None, closed: datetime | None
 
     fut_realized = sum(float(t.get("realizedPnl", 0.0)) for t in fut_fills)
     fut_commission = sum(float(t.get("commission", 0.0)) for t in fut_fills)
-    funding = sum(float(r["income"]) for r in fut_income if r.get("incomeType") == "FUNDING_FEE")
-    income_realized = sum(float(r["income"]) for r in fut_income if r.get("incomeType") == "REALIZED_PNL")
-    income_commission = sum(float(r["income"]) for r in fut_income if r.get("incomeType") == "COMMISSION")
+    def _income(kind: str) -> float:
+        return sum(float(r["income"]) for r in fut_income if r.get("incomeType") == kind)
+
+    funding = _income("FUNDING_FEE")
+    income_realized = _income("REALIZED_PNL")
+    income_commission = _income("COMMISSION")
 
     return {
         "symbol": sym,
@@ -126,7 +129,8 @@ def _reconcile_symbol(sym: str, opened: datetime | None, closed: datetime | None
         "fut_income_realized_pnl": round(income_realized, 4),
         "fut_income_commission": round(income_commission, 4),
         "fut_income_funding": round(funding, 4),
-        "combined_net_usdt": round(spot_net_usdt + income_realized - income_commission + funding, 4),
+        "combined_net_usdt": round(
+            spot_net_usdt + income_realized - income_commission + funding, 4),
     }
 
 
@@ -150,20 +154,23 @@ def main() -> None:
             rows.append({"symbol": sym, "error": repr(e)[:200]})
 
     total_combined = sum(r.get("combined_net_usdt", 0.0) for r in rows if "error" not in r)
-    total_spot_net = sum(r.get("spot_net_usdt", 0.0) for r in rows if "error" not in r)
-    total_funding = sum(r.get("fut_income_funding", 0.0) for r in rows if "error" not in r)
-    total_fut_realized = sum(r.get("fut_income_realized_pnl", 0.0) for r in rows if "error" not in r)
-    total_fut_commission = sum(r.get("fut_income_commission", 0.0) for r in rows if "error" not in r)
+    good = [r for r in rows if "error" not in r]
+    total_spot_net = sum(r.get("spot_net_usdt", 0.0) for r in good)
+    total_funding = sum(r.get("fut_income_funding", 0.0) for r in good)
+    total_fut_realized = sum(r.get("fut_income_realized_pnl", 0.0) for r in good)
+    total_fut_commission = sum(r.get("fut_income_commission", 0.0) for r in good)
 
-    observed_usdt_delta = -1837.68  # data/INCIDENT_20260719_DEADMAN.md fact #5, SPOT-only USDT baseline delta
+    # data/INCIDENT_20260719_DEADMAN.md fact #5: SPOT-only USDT baseline delta
+    observed_usdt_delta = -1837.68
     observed_equity_gap = 2409.0 - 785.35  # fact #6 vs deadman_state.json last_eq at latch
 
-    # deadman_state.json's usdt_baseline is a SPOT-wallet-only figure (see run_deadman_switch.py) --
-    # the correct like-for-like comparison is spot_net_usdt alone. Futures funding/realized/commission
-    # live on a DIFFERENT account and never move the spot USDT balance; they explain the separate
-    # combined-book equity picture, not this specific baseline delta. Comparing "combined" against a
-    # spot-only observed figure was the first-draft bug in this script -- keep both, label correctly.
+    # deadman_state.json's usdt_baseline is a SPOT-wallet-only figure (run_deadman_switch.py):
+    # the like-for-like comparison is spot_net_usdt alone. Futures funding/realized/commission
+    # live on a DIFFERENT account and never move the spot USDT balance; they inform the separate
+    # combined-book equity picture, not this baseline delta. Comparing "combined" against the
+    # spot-only observed figure was the first-draft bug here -- keep both, label correctly.
     spot_residual = round(observed_usdt_delta - total_spot_net, 4)
+    combined_vs_spot_baseline = round(observed_usdt_delta - total_combined, 4)
 
     report = {
         "generated": datetime.now(UTC).isoformat(),
@@ -183,7 +190,9 @@ def main() -> None:
             "equity_gap_latch_vs_reconstructed": round(observed_equity_gap, 4),
         },
         "spot_only_residual_usdt": spot_residual,
-        "unexplained_residual_usdt_full_book_vs_spot_baseline_INVALID_COMPARISON": round(observed_usdt_delta - total_combined, 4),
+        # NOT like-for-like (see comment above) -- kept only so the first-draft number stays
+        # visible next to its correction:
+        "combined_vs_spot_baseline_residual_INVALID_COMPARISON": combined_vs_spot_baseline,
     }
     _OUT_JSON.write_text(json.dumps(report, indent=2), encoding="utf-8")
 
@@ -196,18 +205,22 @@ def main() -> None:
         "Tier-3 state. See data/PRINCIPAL_ACTION.md for the reset decision this unblocks.",
         "",
         f"**Observed spot USDT baseline delta:** {observed_usdt_delta}",
-        f"**Observed equity gap (latch read 785.35 vs reconstructed ~2409):** {observed_equity_gap:.2f}",
+        f"**Observed equity gap (latch read 785.35 vs reconstructed ~2409):** "
+        f"{observed_equity_gap:.2f}",
         "",
         "## Totals across all reconciled symbols",
         f"- Spot net USDT (sells - buys - commission): **{total_spot_net:.4f}**",
         f"- Futures funding income: **{total_funding:.4f}**",
         f"- Futures realized PnL (income ledger): **{total_fut_realized:.4f}**",
         f"- Futures commission (income ledger): **{total_fut_commission:.4f}**",
-        f"- **Combined net USDT explained by venue records: {total_combined:.4f}**",
-        f"- **Unexplained residual vs the observed -1,837.68 delta: {report['unexplained_residual_usdt']:.4f}**",
+        f"- **SPOT-ONLY residual vs the observed -1,837.68 spot baseline delta "
+        f"(like-for-like): {spot_residual:.4f}**",
+        f"- Combined net USDT across both accounts (context, not like-for-like): "
+        f"{total_combined:.4f}",
         "",
         "## Per-symbol detail",
-        "| symbol | opened | closed | spot fills | spot net USDT | fut funding | fut realized | fut commission | combined |",
+        "| symbol | opened | closed | spot fills | spot net USDT | fut funding "
+        "| fut realized | fut commission | combined |",
         "|---|---|---|---|---|---|---|---|---|",
     ]
     for r in rows:
@@ -216,8 +229,9 @@ def main() -> None:
             continue
         lines.append(
             f"| {r['symbol']} | {r['opened']} | {r['closed']} | {r['spot_fills_n']} | "
-            f"{r['spot_net_usdt']} | {r['fut_income_funding']} | {r['fut_income_realized_pnl']} | "
-            f"{r['fut_income_commission']} | {r['combined_net_usdt']} |"
+            f"{r['spot_net_usdt']} | {r['fut_income_funding']} | "
+            f"{r['fut_income_realized_pnl']} | {r['fut_income_commission']} | "
+            f"{r['combined_net_usdt']} |"
         )
     lines.append("")
     lines.append(
@@ -230,8 +244,8 @@ def main() -> None:
     _OUT_MD.write_text("\n".join(lines), encoding="utf-8")
 
     print(f"Reconciled {len(rows)} symbols.")
-    print(f"Combined net USDT explained by venue records: {total_combined:.4f}")
-    print(f"Unexplained residual vs observed -1,837.68 delta: {report['unexplained_residual_usdt']:.4f}")
+    print(f"Spot net USDT explained by venue records: {total_spot_net:.4f}")
+    print(f"SPOT-ONLY residual vs observed -1,837.68 delta: {spot_residual:.4f}")
     print(f"Wrote {_OUT_MD} and {_OUT_JSON}")
 
 

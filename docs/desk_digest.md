@@ -1,17 +1,17 @@
 # Desk digest (auto-generated daily -- do not hand-edit)
-_updated 2026-07-20T08:01Z · companion to [[institutional_knowledge]]_
+_updated 2026-07-21T08:01Z · companion to [[institutional_knowledge]]_
 
 ## Book
-- Molded net: **$-58.24** | funding **$85.83** | run-rate APR 0.0% | day 18.11
-- Root cause: **unknown_novel** (pause_and_page) | tracking error $-231.07
+- Molded net: **$-37.31** | funding **$87.26** | run-rate APR 18.4% | day 19.11
+- Root cause: **unknown_novel** (pause_and_page) | tracking error $-289.57
 
 ## Validation clocks
-- **carry (DEPLOYED)**: 24/90d | bt 3.33 fwd 13.73
-- **perp L/S**: 17/90d | bt 0.54 fwd 5.13
-- **trend**: 17/90d | bt 1.09 fwd -5.47
-- **trend regime-gated**: 12/90d | bt 1.14 fwd 0.0
-- **OI/LS data**: 22/40d
-- **stablecoin data**: 18/40d
+- **carry (DEPLOYED)**: 25/90d | bt 3.25 fwd 11.94
+- **perp L/S**: 18/90d | bt 0.44 fwd 3.34
+- **trend**: 18/90d | bt 1.39 fwd -2.02
+- **trend regime-gated**: 13/90d | bt 1.37 fwd 0.0
+- **OI/LS data**: 23/40d
+- **stablecoin data**: 19/40d
 
 ## Open decisions (ledger)
 - `2026-07-04-cashcarry-top10-4500` -- review 2026-08-04: funding/day rises ~50% without new drift losses by 2026-08-04
@@ -122,6 +122,24 @@ _updated 2026-07-20T08:01Z · companion to [[institutional_knowledge]]_
 - `2026-07-20-implementation-caps-removed` -- review ?: 8 weeks: implemented-change yield stays healthy and zero change-induced incidents; churn t
 - `2026-07-20-hypothesis-generation-maximized` -- review ?: hypotheses/week up >=3x with FDR detector flat; compute per gauntlet survivor down; pager:
 - `2026-07-20-collapse-detector-and-exhaustion-audit` -- review ?: diversity KPIs visible in scorecard within 2 cycles; zero silent-collapse windows >1 week 
+- `2026-07-20-max-cadence-everything` -- review ?: 7 days: cycles-completed/day >= 3, zero silent no-ops, dig logs full-size, panel cadence 3
+- `2026-07-20-addenda-bcd-integrated` -- review ?: within 2 weeks: >=5 addenda sources verified + Bronze-archived + feeding features; dev-act
+- `2026-07-20-miners-activated-carveout-deadline` -- review ?: 7 miner logs with real session notes within 48h of quota headroom; coverage map gains 7 re
+- `2026-07-20-panel-tier-policy` -- review ?: Gate-0 pre-mortem runs on premium tier; wizardlm seat replaced within a week; scorecard dr
+- `2026-07-20-kimi-k3-seat-upgrade` -- review ?: k3 responses present in next panel run; scorecard hit-rate tracked from version boundary
+- `2026-07-20-deadman-reset-reconciled` -- review ?: book redeploys and runs 7 days without a false fire; if one occurs, GAP #34 fix becomes to
+- `2026-07-20-flagship-roster-max` -- review ?: next panel: 13/13 respond, no blanks; accepted-finding rate >= prior roster within 4 runs
+- `2026-07-20-full-audit-coverage` -- review ?: coverage % rises every run; zero never-audited risk-path files within 14 days; >=1 finding
+- `2026-07-20-openrouter-exhausted-purchase-page` -- review ?: next panel run either executes fully or pages BEFORE spending; zero mid-run 402s
+- `2026-07-20-no-cost-degradation` -- review ?: zero cost-motivated config reductions in the ledger; full roster restored automatically po
+- `2026-07-20-full-capacity-roster` -- review ?: capacity test Friday: 13/13 ingest the full payload and correctly answer the probe
+- `2026-07-21-payload-sizing-decision` -- review ?: A/B shows tiered >= full-payload on accepted-finding rate per dollar; sweep completes in ~
+- `2026-07-21-longtail-cadence-held` -- review ?: first sweep completes ~22d post-funding; cadence set from measured re-review yield, not op
+- `2026-07-21-rulings-feed-and-stale-seat` -- review ?: next funded panel: reject rate below the 07-20 baseline of 7/27, and zero repeats of alrea
+- `2026-07-21-audit-loop-closed` -- review ?: within 2 funded weeks: findings_ledger non-empty with real hit-rates; all 5 money-path fil
+- `2026-07-21-maximization-checker` -- review ?: next 30d: >=1 real below-max state caught by the checker BEFORE the principal notices it; 
+- `2026-07-21-ceiling-self-audit` -- review ?: by 07-25: all 3 directives closed on time; realized cycles/day >= 3; connector sections 3-
+- `2026-07-21-addall-axes-recorder` -- review ?: within 48h: lake shows 20-symbol depth files growing; bronze has wikipedia/crossasset/mini
 
 ## Executive KPI snapshot
 - CRO: {"hypotheses_tested_lifetime": 20, "validated_survivors": 1, "survivor_note": "cash-carry (fwd 8/90); trend candidate gauntlet-passed (fwd 1/90); all else graveyarded", "survival_r

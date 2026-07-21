@@ -1,5 +1,5 @@
 {
-  "generated": "2026-07-20T08:27:07.916747+00:00",
+  "generated": "2026-07-21T08:22:51.385227+00:00",
   "master_objective": "maximize expected lifetime geometric growth (log wealth), survival-c",
   "deployed": {
     "sleeves": [
@@ -7,16 +7,16 @@
       "perp_ls (paper)"
     ],
     "start_capital": 15000.0,
-    "equity": 14906.76,
-    "net_pnl": -93.24,
-    "return_pct": -0.622,
-    "days_live": 18.13,
-    "winrate_pct": 52.1,
-    "n_closed_trades": 265,
-    "deployed_sharpe": 2.07,
-    "funding": 85.83,
-    "n_carries": 0,
-    "perp_paper_net": 52.0
+    "equity": 14819.07,
+    "net_pnl": -180.93,
+    "return_pct": -1.206,
+    "days_live": 19.13,
+    "winrate_pct": 51.2,
+    "n_closed_trades": 256,
+    "deployed_sharpe": -3.6,
+    "funding": 88.1,
+    "n_carries": 10,
+    "perp_paper_net": 10.5
   },
   "binding_constraint": "calendar-time data accumulation (not engineering throughput)",
   "bottleneck_rankings": [
@@ -26,17 +26,17 @@
       "evidence": [
         {
           "edge": "oi_divergence",
-          "have_days": 22,
+          "have_days": 23,
           "needs_days": 40
         },
         {
           "edge": "ls_contrarian",
-          "have_days": 22,
+          "have_days": 23,
           "needs_days": 40
         },
         {
           "edge": "liquidation_reversal",
-          "have_days": 22,
+          "have_days": 23,
           "needs_days": 40
         }
       ],
@@ -57,21 +57,21 @@
   ],
   "retirement_candidates": [
     {
-      "sleeve": "taker_flow",
-      "marginal_sharpe": -0.14
-    },
-    {
-      "sleeve": "basis_carry",
-      "marginal_sharpe": -0.07
-    },
-    {
       "sleeve": "funding_momentum",
-      "marginal_sharpe": -0.03
+      "marginal_sharpe": -0.13
+    },
+    {
+      "sleeve": "taker_flow",
+      "marginal_sharpe": -0.11
+    },
+    {
+      "sleeve": "ts_trend",
+      "marginal_sharpe": -0.05
     }
   ],
   "retirement_note": "SIGNAL ONLY \u2014 marginal-Sharpe swings ~\u00b10.15 between runs, so a single negative sign is within noise. Retire only on PERSISTENT negative contribution across runs, with promotion-grade rigor. No whipsaw.",
   "architecture_review_due": false,
-  "cycles_logged": 31,
+  "cycles_logged": 32,
   "completed_this_cycle": [
     "archive_integrity_ok",
     "watchdog_run_logged_off",
@@ -122,17 +122,17 @@
   "research_backlog": [
     {
       "edge": "oi_divergence",
-      "status": "data-blocked 22/40d",
+      "status": "data-blocked 23/40d",
       "info_value": "positive but not yet actionable"
     },
     {
       "edge": "ls_contrarian",
-      "status": "data-blocked 22/40d",
+      "status": "data-blocked 23/40d",
       "info_value": "positive but not yet actionable"
     },
     {
       "edge": "liquidation_reversal",
-      "status": "data-blocked 22/40d",
+      "status": "data-blocked 23/40d",
       "info_value": "positive but not yet actionable"
     }
   ],
