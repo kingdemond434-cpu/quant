@@ -438,3 +438,20 @@ hypotheses and EV-score them; only the top few enter research.
   nothing about production. Fixed (ASCII markers + defensive latin-1 encode), but end-to-end
   delivery is still unconfirmed (a real ntfy 429 hit immediately after) — single-channel
   alerting is now confirmed insufficient by near-unanimous panel consensus (GAP row 38).
+
+## Ops + data lesson — 2026-07-21 (CI can be RED at HEAD; recorder now records BOTH legs)
+- **Run `scripts/run_ci.py` at CYCLE START, not just after your own edits.** This cycle CI lint
+  was already RED at HEAD — 15 pre-existing ruff errors (E501/E702/F401/F541/B023/SIM105/E402) in
+  tooling scripts committed by earlier same-day headless cycles (track_findings, build_audit_coverage,
+  deep_review, ingest_axes, capacity_test). A red gate is the desk-wide safety net down for everyone,
+  and "my change is clean" is not the same as "the gate is green." Restored to green (behavior-
+  preserving style fixes). Lesson: verify the gate is green BEFORE building on it; a green CI is a
+  monitored condition, not an assumption. (These files aren't in pytest's path, so tests passed while
+  lint rotted — CI's own lint step is the only thing that catches script-level style regressions.)
+- **Data-moat recorder now records the SPOT leg too (`run_recorder_spot.py`, gap #35).** The desk is
+  delta-neutral: every carry trade is spot+perp, so a pre-live TCA/cost model built on the perp-only
+  tape (run_recorder.py, `fapi`) silently mis-priced half of every trade. Spot (`api.binance.com`)
+  uses a SEPARATE per-IP weight bucket from USD-M futures (`fapi.binance.com`) — 6000/min vs 2400/min
+  — so the two recorders don't contend for rate budget. Both are stdlib-only, isolated (no keys, no
+  book access), gzip-jsonl hourly under data/moat/{fut,spot,bybit}/, cron pgrep self-heal. Three
+  recorders now ~12GB/mo combined vs ~31GB free — DISK is the shared neighbour, guarded at 80% in each.

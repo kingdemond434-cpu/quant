@@ -19,7 +19,6 @@ still runs its own diffs before any pipeline consumes these.
 """
 from __future__ import annotations
 
-import io
 import json
 import ssl
 import sys
@@ -94,7 +93,7 @@ def ingest_fed() -> None:
         tot = 0.0
         for k in ("mbs", "cmbs", "tips", "frn", "tipsInflationCompensation",
                   "notesbonds", "bills", "agencies"):
-            try:
+            try:  # noqa: SIM105 -- suppress import avoided in this stdlib-lean ingester
                 tot += float(row.get(k) or 0)
             except (TypeError, ValueError):
                 pass
@@ -182,7 +181,8 @@ def verify_metrics_sample() -> None:
         head = z.read(name).decode().splitlines()
     print(f"  metrics VERIFY ({zips[-1].name}): {len(head)-1} rows")
     print(f"    columns: {head[0]}")
-    need = ("sum_toptrader_long_short_ratio", "count_long_short_ratio", "sum_taker_long_short_vol_ratio")
+    need = ("sum_toptrader_long_short_ratio", "count_long_short_ratio",
+            "sum_taker_long_short_vol_ratio")
     ok = all(any(n in head[0] for n in (c,)) for c in need)
     print(f"    positioning columns present: {ok}")
 

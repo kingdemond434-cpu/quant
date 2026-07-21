@@ -110,7 +110,7 @@ def main() -> None:
     print("=" * 72)
     print("VENUE RECONCILIATION -- dead-man fire 2026-07-19T14:27:56Z (READ-ONLY)")
     print("=" * 72)
-    print(f"  formula: equity = fut_eq + legs_v + (usdt - usdt_baseline)")
+    print("  formula: equity = fut_eq + legs_v + (usdt - usdt_baseline)")
     print(f"  high_water at fire      : ${hw:>12,.2f}")
     print(f"  equity AT FIRE (latched): ${fired_eq:>12,.2f}   <- 5 consecutive polls")
     print(f"  fire line (65% of HW)   : ${hw * 0.65:>12,.2f}")

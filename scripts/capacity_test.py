@@ -20,8 +20,8 @@ import os
 
 os.chdir("/home/quant/quant-platform")
 
-from scripts.build_audit_coverage import audit_payload
-from scripts.run_external_panel import _ask
+from scripts.build_audit_coverage import audit_payload  # noqa: E402 -- after chdir/sys.path
+from scripts.run_external_panel import _ask  # noqa: E402 -- after chdir/sys.path
 
 payload, files = audit_payload()
 last_file = files[-1] if files else "?"

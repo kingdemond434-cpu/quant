@@ -22,7 +22,6 @@ from __future__ import annotations
 
 import json
 import subprocess
-import time
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -225,8 +224,9 @@ def audit_payload() -> tuple[str, list[str]]:
             continue
         if used + len(body) > max(0, current_budget(m) - t0_used) and included:
             break
+        _la = _rec.get('last_audited') or 'NEVER'
         chunks.append(f"\n----- FILE: {rel} ({len(body.splitlines())} lines, "
-                      f"class={_review_class(rel)}, last audited: {_rec.get('last_audited') or 'NEVER'}) "
+                      f"class={_review_class(rel)}, last audited: {_la}) "
                       f"-----\n{body}")
         included.append(rel)
         used += len(body)
@@ -248,7 +248,8 @@ def audit_payload() -> tuple[str, list[str]]:
         "'I could not verify X because file Y was not provided' is a first-class finding here.",
         f"\n### (A) RAW DIFF SINCE LAST PANEL ({'since ' + sha[:8] if sha else 'last 3 days'})\n",
         "```diff\n" + (diff.strip() or "(no changes)") + "\n```",
-        f"\n### (B0) DECISION SURFACE [review class: ALWAYS] -- ALWAYS SENT IN FULL ({len(t0_files)} files, "
+        f"\n### (B0) DECISION SURFACE [review class: ALWAYS] -- ALWAYS SENT IN FULL "
+        f"({len(t0_files)} files, "
         f"{t0_used:,} chars): every miner/digger prompt, every watchlist, coverage map, "
         "operator library, hypothesis + weak-signal + negative-knowledge registries, gap "
         "register and digging charter. You are seeing 100% of what the desk uses to DECIDE. "

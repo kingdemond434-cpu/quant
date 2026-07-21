@@ -70,7 +70,7 @@ def main() -> None:
                   f"```python\n{body}\n```\n\nReview it per your mandate. Depth, not breadth.")
         print(f"\n=== DEEP REVIEW: {rel} ({len(body):,} chars) x {len(providers)} seats ===")
 
-        def one(pv):
+        def one(pv, prompt=prompt):  # bind loop var per-iteration (ruff B023)
             try:
                 r = _ask(pv["base_url"], pv["key"], pv["model"], SYSTEM, prompt)
                 if len(r.strip()) < 200:
