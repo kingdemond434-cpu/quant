@@ -170,11 +170,47 @@ def check_idle_capability(defects) -> None:
                             "decision -- evidence gate met but purchase page never made?"))
 
 
+def check_directives(defects) -> None:
+    """Time-boxed work orders: registered with a due date; past-due = defect. This is how
+    'the brain will do it next cycle' gets teeth instead of drifting forever."""
+    for d in _j(ROOT / "data/max_audit_directives.json", []):
+        if d.get("due", "9999") < datetime.now(tz=UTC).isoformat():
+            defects.append((f"directive-overdue-{d['id']}",
+                            f"work order '{d['id']}' past due {d['due'][:10]}: {d['msg']}"))
+
+
+def check_verify_lag(defects) -> None:
+    """The verify pass audits the CRO's own triage -- and the CRO fires it. If triage-bearing
+    panels keep running without a verify run following, the auditee is skipping his auditor."""
+    log = ROOT / "data/external_panel_log.jsonl"
+    if not log.exists():
+        return
+    last_triage, last_verify = None, None
+    with log.open() as f:
+        for line in f:
+            try:
+                r = json.loads(line)
+            except Exception:
+                continue
+            if r.get("mission") == "verify":
+                last_verify = r.get("ts")
+            elif r.get("mission") in ("audit", "tier1", "premortem", "maximization"):
+                last_triage = r.get("ts")
+    if last_triage and (not last_verify or last_verify < last_triage):
+        age_h = (datetime.now(tz=UTC) - datetime.fromisoformat(last_triage)
+                 ).total_seconds() / 3600
+        if age_h > 48:
+            defects.append(("verify-pass-skipped",
+                            f"last triage-bearing panel ({last_triage[:16]}) has had NO verify "
+                            "pass after it for >48h -- the auditee is skipping his auditor"))
+
+
 def main() -> None:
     defects: list[tuple[str, str]] = []
     for label, fn in [("organs", check_organs), ("stubs", check_stub_deaths),
                       ("panel", check_panel), ("coverage", check_coverage),
-                      ("findings", check_findings), ("idle", check_idle_capability)]:
+                      ("findings", check_findings), ("idle", check_idle_capability),
+                      ("directives", check_directives), ("verify", check_verify_lag)]:
         _fenced(fn, defects, label)
 
     acks = _j(ACKS, {})

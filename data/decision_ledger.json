@@ -1771,6 +1771,19 @@
    ],
    "success_metric": "next 30d: >=1 real below-max state caught by the checker BEFORE the principal notices it; zero escalations older than 72h",
    "reversal_condition": "if the sweep nags about settled/acked states repeatedly, its checks get fixed -- the mandate itself only the principal can relax"
+  },
+  {
+   "id": "2026-07-21-ceiling-self-audit",
+   "decision": "RIGOROUS CEILING SELF-AUDIT (principal: 'is anything still compressed by any rule; what would you change in your own system'). CLEARED (checked, genuinely at ceiling): panel response budget (20k tokens, models use ~a third -- not the bottleneck); payload input (700k tiered, A/B queued); roster (13 flagship 1M-ctx seats, all live-verified); caps (none numeric remain anywhere); advisory censorship (removed); statelessness+rulings design. BELOW CEILING, with causes: (1) THE HEADLINE -- configured vs REALIZED throughput: the max-cadence regime is running at ~20-40% realized because Pro-quota starves the brain (yesterday: 2 cycles + all first miner fires + digs died at auth-check); every downstream max (uncapped generation, 7 miners, 4 cycles) is compressed by this ONE constraint; the honest Friday decision is Max-or-API-key, now with a week of measured death-counts behind it. (2) BUILDER ALLOCATION INVERTED -- the CRO (me) spent the week building meta-systems while connector sections 3-7, the desk's actual #1 with a 07-31 deadline, wait on a quota-starved brain; CHANGE DECIDED: the next working session builds the connector DIRECTLY, meta-work is done. (3) growth_audit.json went 12h stale because its generator lives inside the dead daily cycle -- the anti-timidity pager was blind; freshness directive registered, due 07-23. (4) recorder still 5 symbols -- compounding moat lost daily; expansion directive due 07-23 (not hot-patched at 01:00 on uncertain respawn mechanics -- that would be the hasty-fossil pattern the checker exists to prevent). (5) Bronze ingesters beyond CME unwritten; BitMEX needs a DISK-SCOPED spec (decade of tick data vs 32GB free), due 07-25. (6) verify-pass had no enforcement -- the auditee fires his own auditor and could simply not; max_audit now flags triage-without-verify >48h. (7) OpenRouter is a review-infrastructure SPOF (all 13 seats via one aggregator) -- queued post-Gate-0, redundancy costs setup. NEW TEETH: data/max_audit_directives.json -- time-boxed work orders that become DEFECTS past due (how 'next cycle will do it' stops drifting); docs/playbooks/ops_checklist.md codifies this week's six operator-error classes with their incidents. NEIGHBOURS: max_audit (2 new checks, both fenced), brain cycle (reads directives via the sweep), Friday funding page (now carries the quantified quota argument).",
+   "hypothesis": "the desk's remaining compression is concentrated in ONE fundable constraint (quota) and ONE allocation error (meta over connector); everything else is enforcement detail",
+   "expected_benefit": "realized throughput gap named with numbers; work orders can no longer drift; my own failure classes are checklist items instead of repeat incidents",
+   "expected_cost": "none material",
+   "confidence": 0.85,
+   "assumptions": [
+    "quota deaths continue until Max/API-key -- if Friday funding alone fixes panels but not brain quota, the headline compression persists and keeps escalating"
+   ],
+   "success_metric": "by 07-25: all 3 directives closed on time; realized cycles/day >= 3; connector sections 3-7 in progress by my own hand",
+   "reversal_condition": "n/a (audit + enforcement)"
   }
  ]
 }
