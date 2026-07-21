@@ -40,6 +40,19 @@ SYMBOLS = ("BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT")
 METRICS_START = date(2023, 1, 1)
 
 
+def curl(url: str, timeout: int = 90) -> bytes:
+    """Some hosts (FRED, Treasury) serve curl but hang urllib -- TLS fingerprint blocking.
+    Verified 2026-07-21: curl instant, urllib timed out twice on the same URL."""
+    import subprocess
+    r = subprocess.run(
+        ["curl", "-sSL", "--compressed", "--max-time", str(timeout),
+         "-A", "Mozilla/5.0 (research; solo quant desk)", url],
+        capture_output=True, timeout=timeout + 15)
+    if r.returncode != 0 or not r.stdout:
+        raise RuntimeError(f"curl failed rc={r.returncode}: {r.stderr[:160]!r}")
+    return r.stdout
+
+
 def fetch(url: str, timeout: int = 60) -> bytes:
     last = None
     for attempt in (1, 2):                       # one retry -- transient read timeouts
@@ -55,52 +68,79 @@ def fetch(url: str, timeout: int = 60) -> bytes:
 
 # ---------------- 1. Fed net-liquidity ----------------
 def ingest_fed() -> None:
+    """Fed liquidity plumbing from PRIMARY sources (NY Fed + Treasury). FRED is IP-blocked
+    from this host since 2026-07-21 -- these are the upstream publishers anyway."""
     out = BRONZE / "fed"
     out.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now(tz=UTC).strftime("%Y%m%d")
-    series = {}
-    for sid in ("WALCL", "RRPONTSYD", "WTREGEN"):
-        raw = fetch(f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={sid}")
-        (out / f"{sid}_{stamp}.csv").write_bytes(raw)
-        rows = [l.split(",") for l in raw.decode().strip().splitlines()[1:]]
-        series[sid] = {r[0]: r[1] for r in rows if len(r) == 2 and r[1] != "."}
-        print(f"  fed/{sid}: {len(series[sid]):,} obs (latest {rows[-1][0]} = {rows[-1][1]})")
 
-    # TGA daily from Treasury DTS (paginated)
+    # --- RRP: NY Fed repo operations (per-operation detail) ---
+    rrp_daily: dict[str, float] = {}
+    raw = curl("https://markets.newyorkfed.org/api/rp/reverserepo/propositions/"
+               "search.json?startDate=2015-01-01", timeout=120)
+    (out / f"nyfed_rrp_{stamp}.json").write_bytes(raw)
+    for op in json.loads(raw).get("repo", {}).get("operations", []):
+        if "Reverse" in (op.get("operationType") or ""):
+            d = op.get("operationDate")
+            rrp_daily[d] = rrp_daily.get(d, 0.0) + float(op.get("totalAmtAccepted") or 0)
+    print(f"  fed/RRP (NY Fed): {len(rrp_daily):,} days, latest "
+          f"{max(rrp_daily) if rrp_daily else 'n/a'}")
+
+    # --- SOMA: the Fed's actual holdings (WALCL's main component) ---
+    soma_total: dict[str, float] = {}
+    raw = curl("https://markets.newyorkfed.org/api/soma/summary.json", timeout=120)
+    (out / f"nyfed_soma_{stamp}.json").write_bytes(raw)
+    for row in json.loads(raw).get("soma", {}).get("summary", []):
+        tot = 0.0
+        for k in ("mbs", "cmbs", "tips", "frn", "tipsInflationCompensation",
+                  "notesbonds", "bills", "agencies"):
+            try:
+                tot += float(row.get(k) or 0)
+            except (TypeError, ValueError):
+                pass
+        if tot:
+            soma_total[row["asOfDate"]] = tot
+    print(f"  fed/SOMA (NY Fed): {len(soma_total):,} obs, latest "
+          f"{max(soma_total) if soma_total else 'n/a'}")
+
+    # --- TGA: Treasury DTS (recent-first, stop at 2020) ---
     tga: dict[str, str] = {}
     page = 1
     while page < 40:
         u = ("https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/"
-             "dts/operating_cash_balance?filter=account_type:in:(Treasury%20General%20Account"
-             "%20(TGA)%20Opening%20Balance,Treasury%20General%20Account%20(TGA)%20Closing%20"
-             f"Balance)&fields=record_date,account_type,open_today_bal&page%5Bsize%5D=1000&"
-             f"page%5Bnumber%5D={page}&sort=-record_date")
-        d = json.loads(fetch(u, timeout=90))
-        for rec in d.get("data", []):
-            v = rec.get("open_today_bal")
-            if v and v != "null":
-                tga[rec["record_date"]] = v
+             "dts/operating_cash_balance?fields=record_date,account_type,open_today_bal"
+             f"&page%5Bsize%5D=1000&page%5Bnumber%5D={page}&sort=-record_date")
+        d = json.loads(curl(u, timeout=120))
         recs = d.get("data", [])
-        if not d.get("links", {}).get("next") or (recs and recs[-1]["record_date"] < "2020-01-01"):
-            break                                 # recent-first; stop once pre-2020 reached
+        for rec in recs:
+            if "Treasury General Account" in (rec.get("account_type") or ""):
+                v = rec.get("open_today_bal")
+                if v and v != "null":
+                    tga[rec["record_date"]] = v
+        if not recs or not d.get("links", {}).get("next") or recs[-1]["record_date"] < "2020-01-01":
+            break
         page += 1
     (out / f"TGA_daily_{stamp}.csv").write_text(
         "date,tga_open_musd\n" + "\n".join(f"{k},{v}" for k, v in sorted(tga.items())), "utf-8")
-    print(f"  fed/TGA_daily: {len(tga):,} obs")
+    print(f"  fed/TGA (Treasury): {len(tga):,} obs")
 
-    # DERIVED net liquidity (labelled, self-computed): WALCL(ffill,w) - RRP - TGA, in $bn
-    def ffill(d: dict[str, str], on: str) -> float | None:
+    # --- DERIVED net liquidity, self-computed ---
+    def ffill(d: dict, on: str):
         ks = [k for k in d if k <= on]
-        return float(d[max(ks)]) if ks else None
-    lines = ["date,walcl_musd,rrp_busd,tga_musd,net_liquidity_busd  # DERIVED self-computed"]
+        return d[max(ks)] if ks else None
+
+    lines = ["date,soma_usd,rrp_usd,tga_musd,net_liquidity_busd  # DERIVED self-computed "
+             "(SOMA - RRP - TGA); FRED WALCL unavailable from this host"]
     for day in sorted(tga):
-        w, r = ffill(series["WALCL"], day), ffill(series["RRPONTSYD"], day)
-        if w is None or r is None:
+        so, rr = ffill(soma_total, day), ffill(rrp_daily, day)
+        if so is None:
             continue
-        net = w / 1000.0 - r - float(tga[day]) / 1000.0
-        lines.append(f"{day},{w},{r},{tga[day]},{net:.1f}")
+        net = (so - (rr or 0.0) - float(tga[day]) * 1e6) / 1e9
+        lines.append(f"{day},{so:.0f},{(rr or 0):.0f},{tga[day]},{net:.1f}")
     (out / "net_liquidity_DERIVED.csv").write_text("\n".join(lines), "utf-8")
-    print(f"  fed/net_liquidity_DERIVED: {len(lines)-1:,} rows (latest: {lines[-1]})")
+    print(f"  fed/net_liquidity_DERIVED: {len(lines)-1:,} rows")
+    if len(lines) > 1:
+        print(f"    latest: {lines[-1]}")
 
 
 # ---------------- 2. Binance metrics backfill ----------------
