@@ -30,6 +30,7 @@ import certifi
 
 _KEYS = Path("data/secrets/llm_panel.json")
 _MISSIONS = Path("prompts/panel_missions")
+_RESP_BUDGET = 20000  # widened to 40k for deep missions at runtime
 _DOSSIER = Path("docs/EXTERNAL_PANEL_DOSSIER.md")
 _GRAVEYARD = Path("docs/graveyard.md")
 _LOG = Path("data/external_panel_log.jsonl")
@@ -98,7 +99,7 @@ def _ask(base_url: str, key: str, model: str, system: str, user: str,
         # which can't be auto-judged for capability). 20k budget leaves room for reasoning +
         # answer (reasoning tokens count toward the cap; a small cap returns EMPTY -- the 07-12
         # deepseek/glm blank-response bug). Models without reasoning ignore the param.
-        "model": model, "max_tokens": 20000, "temperature": 0.7,
+        "model": model, "max_tokens": _RESP_BUDGET, "temperature": 0.7,
         "reasoning": {"effort": "high"},
         "messages": [{"role": "system", "content": system},
                      {"role": "user", "content": user}],
@@ -158,6 +159,10 @@ def main() -> None:
         print(f"panel: credit pre-check unavailable ({_e!r}) -- proceeding")
 
     mission, system = _mission()
+    # Deep/event audits get a wider response budget so red-team depth is not truncated
+    # (the OpenRouter-side analog of max effort on the brain). Routine missions stay lean.
+    global _RESP_BUDGET
+    _RESP_BUDGET = 40000 if mission in {"audit", "premortem", "tier1", "maximization"} else 20000
     dossier = _DOSSIER.read_text("utf-8")
     # GENERATE mission: append the graveyard so models don't re-propose already-killed ideas
     # SETTLED-QUESTIONS FEED (2026-07-21): the panel is deliberately STATELESS -- fresh

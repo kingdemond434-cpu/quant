@@ -570,3 +570,18 @@ THE STANDARD IS MAX ROI, NOT MAX NUMBERS: where a ceiling and a design choice co
 cheapest empirical test settles it (the tiered-vs-full payload A/B is the precedent).
 Settled decisions with reasoning and falsifiers are not defects -- but when a falsifier's
 evidence arrives, reopening is mandatory, not optional.
+
+
+## RED-TEAM PROTOCOL (standing, principal 2026-07-21)
+Every event-driven deep audit, architectural review, and Gate-0 pre-mortem mandates each
+panel model deliver three parts: (1) systemic weaknesses, (2) ROI-maximizing improvements
+(miner/digger breadth, alpha-probability boosts, data moat, capital efficiency), (3) a
+clean-slate re-architecture from first principles. The CRO consumes all three and
+IMPLEMENTS every item that survives triage and raises ROI -- unbuilt validated ROI is a
+defect, not a backlog. DEPTH TIERING (compute discipline, not cost-degradation): deep/event
+audits run the brain at --effort max and give panel models a widened response budget;
+routine 3-day cadence panels run at --effort xhigh and keep their focused mission; thinking
+stays adaptive throughout. The clean-slate question is asked routinely regardless via the
+maximization mission in rotation, so routine panels are not forced to re-derive it every
+run (correlated repetition on an unchanged system wastes triage budget -- same change-vs-
+clock logic as blind rediscovery and long-tail review).

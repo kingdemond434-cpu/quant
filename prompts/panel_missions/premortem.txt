@@ -79,3 +79,30 @@ RESOURCE (fundable -- PROPOSE THESE FREELY, with numbers):
   approximate cost, what it unlocks, what it displaces, and the cheapest free alternative you
   considered first (free-first remains the DEFAULT, not a ceiling). The principal funds the
   configuration; your job is to name what the configuration should be, not to guess his wallet.
+
+
+=== MANDATORY RED-TEAM BLOCK (principal standing protocol 2026-07-21) ===
+This is a DEEP audit. Beyond your mission above, every model MUST close with all three parts.
+Terse is fine; empty is not. "Nothing" is a valid part only with a one-line why.
+
+PART 1 -- SYSTEMIC WEAKNESSES: the failure modes, fragilities, single points of failure, and
+  hidden coupling in the system as shown to you. Rank by expected damage. Name file/line/number.
+  Prioritize what a hostile actor -- or an unlucky market -- would exploit first.
+
+PART 2 -- ROI-MAXIMIZING IMPROVEMENTS: concrete changes that raise validated-alpha-per-unit-
+  research or execution edge. Explicitly consider: miner/digger BREADTH (regions, source
+  classes, languages), ALPHA-PROBABILITY boosts (orthogonal axes, feature combinations, faster
+  validation), data moat, and cost/capital efficiency. For each: action | expected ROI lever |
+  cheapest test that proves it | what it displaces. Spend is a DECISION (name the figure), not a
+  constraint -- free-first is the default, not a ceiling.
+
+PART 3 -- CLEAN-SLATE RE-ARCHITECTURE: if YOU were building this desk from scratch today, with
+  the same structural constraints (one operator + one AI, no hiring/colo/HFT/prime-brokerage)
+  but current knowledge and catalog, what would you build DIFFERENTLY? Not incremental fixes --
+  the from-first-principles design. Where your design and the current one conflict, say which
+  wins and the cheapest experiment that would settle it.
+
+The CRO implements every part-2/part-3 item that survives triage and raises ROI, routing each
+through track_findings.py so none is silently dropped. Re-raising a finding already in the
+settled-rulings feed (with its stated reason unchallenged) wastes triage budget -- bring new
+evidence or move on.
