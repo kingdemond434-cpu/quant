@@ -55,5 +55,8 @@ brain_auth_check() {
 # Model policy (principal 2026-07-20): the brain, diggers, and audits run the most
 # capable model available -- Claude Fable 5 first. If the CLI/plan rejects it, flip
 # this line to claude-opus-4-8 (failures surface via brain_auth_check pages + noop
-# alerts, never silently). Thinking/effort: CLI-managed (max-tier default for these models).
+# alerts, never silently). EFFORT: set explicitly per-invocation via --effort xhigh in each
+# organ script (was an UNVERIFIED assumption of 'CLI-managed max default' until 2026-07-21).
+# xhigh = documented best for agentic/coding work on Opus 4.8; max is reserved for
+# risk-path depth reviews (correctness over cost) since max can overthink general work.
 export ANTHROPIC_MODEL="claude-opus-4-8"   # flipped 2026-07-21: fable-5 usage credits exhausted on this plan (CLI: "out of usage credits ... to keep using Fable 5"). opus-4-8 verified AUTH-OK. Flip back when fable credits return.

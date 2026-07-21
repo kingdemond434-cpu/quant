@@ -53,6 +53,9 @@ def main() -> None:
     if not files:
         raise SystemExit(__doc__)
     from scripts.run_external_panel import _ask
+    # risk-path depth passes run at MAX effort: this is the review standing between
+    # the desk and real money, the one place where correctness outranks token cost
+    # (elsewhere xhigh wins -- max is documented as prone to overthinking).
     providers = json.loads((ROOT / "data/secrets/llm_panel.json").read_text())["providers"]
     ts = datetime.now(tz=UTC).isoformat()
     OUT.parent.mkdir(parents=True, exist_ok=True)

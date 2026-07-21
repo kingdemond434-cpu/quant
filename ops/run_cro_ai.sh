@@ -83,7 +83,7 @@ if [ "${BRAIN_DRY_RUN:-0}" = "1" ]; then
     exit 0
 fi
 echo "=== cro-ai start $(date -u) ===" >> "$LOG"
-claude -p "$PROMPT" --dangerously-skip-permissions >> "$LOG" 2>&1
+claude --effort xhigh -p "$PROMPT" --dangerously-skip-permissions >> "$LOG" 2>&1
 echo "=== cro-ai exit $? at $(date -u) ===" >> "$LOG"
 # keep last 30 logs
 ls -1t data/cro_ai_logs/*.log | tail -n +31 | xargs -r rm -f
