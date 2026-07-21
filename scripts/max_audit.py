@@ -205,12 +205,39 @@ def check_verify_lag(defects) -> None:
                             "pass after it for >48h -- the auditee is skipping his auditor"))
 
 
+def check_blind_trigger(defects) -> None:
+    """Blind Rediscovery is state-driven, not clock-driven: fire it early when the desk has
+    materially new internal raw material (data axes / graveyard entries) since its last run."""
+    state = _j(ROOT / "data/cadence_state.json", {})
+    last = state.get("last_blind_rediscovery")
+    seen = _j(ROOT / "data/blind_trigger_baseline.json", {})
+
+    umap = _j(ROOT / "data/data_universe_map.json", {})
+    srcs = umap.get("sources", {})
+    n_sources = len(srcs) if isinstance(srcs, (dict, list)) else 0
+    gy = ROOT / "docs/graveyard.md"
+    n_grave = sum(1 for l in gy.read_text("utf-8").splitlines() if l.startswith("| ")) if gy.exists() else 0
+
+    base_src = int(seen.get("sources", 0))
+    base_grave = int(seen.get("graveyard", 0))
+    d_src, d_grave = n_sources - base_src, n_grave - base_grave
+
+    # thresholds: enough NEW material that first-principles invention has fresh ground
+    if d_src >= 5 or d_grave >= 10:
+        defects.append(("blind-rediscovery-due-by-state",
+                        f"internal state changed materially since last blind-rediscovery "
+                        f"({last or 'never'}): +{d_src} data sources, +{d_grave} graveyard "
+                        "entries. Fire ops/run_blindrediscovery_dig.sh -- fresh-eyes invention "
+                        "has new raw material; do not wait for the monthly floor."))
+
+
 def main() -> None:
     defects: list[tuple[str, str]] = []
     for label, fn in [("organs", check_organs), ("stubs", check_stub_deaths),
                       ("panel", check_panel), ("coverage", check_coverage),
                       ("findings", check_findings), ("idle", check_idle_capability),
-                      ("directives", check_directives), ("verify", check_verify_lag)]:
+                      ("directives", check_directives), ("verify", check_verify_lag),
+                      ("blind", check_blind_trigger)]:
         _fenced(fn, defects, label)
 
     acks = _j(ACKS, {})
