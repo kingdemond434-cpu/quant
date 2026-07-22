@@ -343,6 +343,39 @@ def check_interrogation(defects) -> None:
                         "evidence -- it trusted itself instead of probing. Protocol not honored."))
 
 
+def check_generation(defects) -> None:
+    """Hypothesis testing is the primary output. If SUCCESSFUL brain cycles have run since a
+    baseline but last_live_generate has not advanced, generation is being skipped -- escalate.
+    Also flags the simple case: generation owed and long-stale."""
+    cs = _j(ROOT / "data/cadence_state.json", {})
+    last_gen = cs.get("last_live_generate") or cs.get("gen_done_fred_macro")
+    # successful cycles since a fixed watch baseline
+    base_f = ROOT / "data/generation_watch_baseline"
+    if not base_f.exists():
+        base_f.write_text(str(NOW))
+    try:
+        base = float(base_f.read_text().strip())
+    except Exception:
+        base = NOW
+    good_cycles = [p for p in LOGS.glob("2026*_*.log")
+                   if p.stat().st_mtime >= base and p.stat().st_size >= 2000]
+    if not good_cycles:
+        return                                        # no successful cycle yet -- quota, not skip
+    newest_cycle = max(p.stat().st_mtime for p in good_cycles)
+    gen_ts = 0.0
+    if last_gen:
+        try:
+            gen_ts = datetime.fromisoformat(last_gen).timestamp()
+        except Exception:
+            pass
+    # a successful cycle ran AFTER the last generation -> generation was skipped
+    if newest_cycle > gen_ts + 3600:
+        defects.append(("generation-skipped",
+                        f"a successful brain cycle ran but last_live_generate has not advanced "
+                        f"(last gen {last_gen}) -- hypothesis testing, the desk's PRIMARY output, "
+                        "is being crowded out by meta-duties. Generation-first duty not honored."))
+
+
 def main() -> None:
     defects: list[tuple[str, str]] = []
     for label, fn in [("organs", check_organs), ("stubs", check_stub_deaths),
@@ -352,7 +385,8 @@ def main() -> None:
                       ("blind", check_blind_trigger),
                       ("self-application", check_self_application),
                       ("dig-depth", check_dig_depth),
-                      ("interrogation", check_interrogation)]:
+                      ("interrogation", check_interrogation),
+                      ("generation", check_generation)]:
         _fenced(fn, defects, label)
 
     acks = _j(ACKS, {})
