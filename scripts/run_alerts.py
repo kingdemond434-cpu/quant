@@ -15,6 +15,7 @@ messages carry NO account data, only alert names).
 
 from __future__ import annotations
 
+import contextlib
 import json
 import secrets
 import subprocess
@@ -72,6 +73,9 @@ def _push(topic: str, title: str, body: str) -> None:
             _until = 0.0
         if _t.time() < _until:
             raise RuntimeError(f"pager 429 backoff: {(_until - _t.time()) / 60:.0f}m remaining")
+    # second-channel mirror (gap #38): fire the independent path FIRST so a failure in
+    # the ntfy path (encoding, 429, outage) can never suppress the alert entirely.
+    _second_channel(f"{safe_title}: {body}")
     req = urllib.request.Request(f"https://ntfy.sh/{topic}", data=body.encode(),
                                  headers={"Title": safe_title, "Priority": "high",
                                           "Tags": "rotating_light"})
@@ -84,6 +88,66 @@ def _push(topic: str, title: str, body: str) -> None:
         if getattr(e, "code", None) == 429:
             _PAGER_BACKOFF.write_text(str(_t.time() + 3600))
         raise
+
+
+# --- SILENT-FAILURE DETECTION (2026-07-22) -------------------------------------------------
+# All four digger timers fired into quota/auth walls for 2 days and NOTHING noticed: systemd
+# reported "success" because the unit ran, while the log said "hit your session limit" and the
+# dig produced zero research. systemd-success != work-done. Same window: the `quant` user's
+# claude credentials were absent, so every claude organ was dead on arrival.
+_DIGGER_LOGS = {"dataaxis": "dataaxis_*.log", "prospector": "prospector_*.log",
+                "litminer": "litminer_*.log", "blindrediscovery": "blindrediscovery_*.log"}
+_BLOCK_SIGS = ("hit your session limit", "hit your weekly limit", "not logged in",
+               "please run /login", "invalid api key", "authentication_error")
+_CRED = Path("/home/quant/.claude/.credentials.json")
+
+
+def _auth_broken() -> bool:
+    """Every claude organ (brain + all diggers) runs as `quant` and reads ~/.claude. No active
+    credentials => nothing can reason. Free, definitive, no quota burned."""
+    return not _CRED.exists()
+
+
+def _digger_health() -> list[tuple[str, str]]:
+    """A dig that FIRED but produced no research is a silent failure, not a success."""
+    out: list[tuple[str, str]] = []
+    logdir = Path("data/cro_ai_logs")
+    for name, pat in _DIGGER_LOGS.items():
+        try:
+            logs = sorted(logdir.glob(pat), key=lambda p: p.stat().st_mtime)
+            if not logs:
+                continue
+            last = logs[-1]
+            age_h = (time.time() - last.stat().st_mtime) / 3600.0
+            if age_h > 24 * 10:            # long-idle cadence (e.g. quarterly) -> not a defect
+                continue
+            txt = last.read_text("utf-8", errors="ignore")[:4000].lower()
+            if any(sig in txt for sig in _BLOCK_SIGS):
+                out.append((f"digger_blocked_{name}",
+                            f"{name} dig FIRED but produced NOTHING (quota/auth block) -- "
+                            f"{last.name}; the timer 'succeeded' while doing no research"))
+            elif last.stat().st_size < 400:
+                out.append((f"digger_noop_{name}",
+                            f"{name} dig produced a near-empty log "
+                            f"({last.stat().st_size}B) -- likely blocked"))
+        except OSError:
+            pass
+    return out
+
+
+def _second_channel(text: str) -> None:
+    """INDEPENDENT alert path (gap #38). ntfy is a single point of failure -- a header-encoding
+    bug killed it silently for 29h across a live dead-man fire. healthchecks.io is already
+    configured for the heartbeat; POSTing to its /fail endpoint triggers whatever notification
+    the operator set up there, through completely different infrastructure. Best-effort: this
+    must NEVER raise into the primary alert path."""
+    with contextlib.suppress(Exception):
+        hb = json.loads(Path("data/secrets/heartbeat_url.json").read_text("utf-8")).get("url")
+        if hb:
+            req = urllib.request.Request(hb.rstrip("/") + "/fail",
+                                         data=text.encode("utf-8", "ignore")[:900])
+            with urllib.request.urlopen(req, timeout=10):
+                pass
 
 
 def _checks() -> list[tuple[str, str]]:
@@ -161,6 +225,14 @@ def _checks() -> list[tuple[str, str]]:
                         + "; ".join(str(a)[:60] for a in alerts[:3])))
     except (OSError, json.JSONDecodeError):
         pass
+    # silent-failure sweep (2026-07-22): systemd-success != work-done. A timer that fired
+    # into a quota/auth wall reports success while producing zero research.
+    if _auth_broken():
+        out.append(("auth_broken",
+                    "NO claude credentials for the `quant` user -- the brain AND all 4 "
+                    "diggers are dead on arrival. Fix on the VPS: "
+                    "sudo -u quant -i ; claude setup-token"))
+    out.extend(_digger_health())
     return out
 
 
