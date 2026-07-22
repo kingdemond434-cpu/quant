@@ -318,6 +318,31 @@ def check_dig_depth(defects) -> None:
                             "evident. Depth mandate not honored."))
 
 
+def check_interrogation(defects) -> None:
+    """The last successful brain cycle must show evidence it ran the self-interrogation battery.
+    A cycle that did not probe is a cycle that trusted itself -- the exact failure this catches.
+    Only judged on cycles that ran AFTER the protocol existed."""
+    base_f = ROOT / "data/interrogation_baseline"
+    if not base_f.exists():
+        base_f.write_text(str(NOW))
+        return
+    try:
+        base = float(base_f.read_text().strip())
+    except Exception:
+        return
+    cyc = [p for p in LOGS.glob("2026*_*.log")
+           if p.stat().st_mtime >= base and p.stat().st_size >= 2000]
+    if not cyc:
+        return                                        # no post-protocol successful cycle yet
+    newest = max(cyc, key=lambda p: p.stat().st_mtime)
+    txt = newest.read_text("utf-8", errors="ignore").lower()
+    if not any(k in txt for k in ("interrogat", "probe", "verified with a fresh read",
+                                  "self-interrog", "angle")):
+        defects.append(("cycle-skipped-interrogation",
+                        f"{newest.name}: last successful cycle shows no self-interrogation "
+                        "evidence -- it trusted itself instead of probing. Protocol not honored."))
+
+
 def main() -> None:
     defects: list[tuple[str, str]] = []
     for label, fn in [("organs", check_organs), ("stubs", check_stub_deaths),
@@ -326,7 +351,8 @@ def main() -> None:
                       ("directives", check_directives), ("verify", check_verify_lag),
                       ("blind", check_blind_trigger),
                       ("self-application", check_self_application),
-                      ("dig-depth", check_dig_depth)]:
+                      ("dig-depth", check_dig_depth),
+                      ("interrogation", check_interrogation)]:
         _fenced(fn, defects, label)
 
     acks = _j(ACKS, {})

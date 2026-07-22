@@ -1846,6 +1846,19 @@
    ],
    "success_metric": "cycles consistently close a gap or prove a ceiling each run; zero rail-loosening; no rise in change-induced incidents or padding",
    "reversal_condition": "if the doctrine drives churn or over-building past the healthily bound, tighten the clause -- never remove the max-push stance itself"
+  },
+  {
+   "id": "2026-07-21-self-interrogation-protocol",
+   "decision": "SELF-INTERROGATION PROTOCOL built -- internalize the principal's manual gap-hunting so he never has to probe. His stated frustration: he keeps finding real gaps by asking slightly-different questions and the answer is always 'yes there was a gap' (this week alone: audit coverage was ~1%, panel prompts cost-censored, effort flags unset, depth unenforced, roster-refresh orphaned, recorder overweight, model policy on dead Fable credits). Root cause: the desk checks what was ENCODED, but does not INTERROGATE ITSELF from new angles the way he does. BUILT: docs/research/self_interrogation_patterns.md -- a 10-angle adversarial probe battery (every-cycle-vs-once, verified-vs-assumed, configured-vs-realized-max, breadth-vs-depth, frontier-drift, silent-regression, ceiling-vs-good-enough, hidden-compression, blind-checker, rail-integrity) drawn from the exact angles that found gaps this week, plus a RECURSION RULE: every new probe angle that finds a gap gets added to the file permanently AND encoded as a max_audit check if mechanical -- so every manual probe becomes a standing automatic one and the principal is progressively left with nothing to catch. Wired as a cycle contract duty (BE the principal, verify with fresh reads, report angles+gaps+new-angles; dollar-audit clean) + a max_audit guard (a successful cycle showing no interrogation evidence is a defect -- baselined to post-protocol cycles). HONEST BOUNDS: (1) it is GENERATIVE and model-dependent -- only as good as the cycle running it, and it needs cycles to actually run (quota-blocked today); (2) it is belt-and-suspenders WITH the mechanical guards, not a replacement -- the guards catch known-class regressions same-day, the interrogation generates NEW angles, the maximization mission does the periodic zero-based sweep; (3) healthily-bounded -- real gaps only, within rails, evidence-gated, no manufactured busywork. NEIGHBOURS: doctrine (stance) + max_audit (mechanical) + maximization mission (periodic) + this (generative per-cycle) now form the full gap-hunting stack; cycle contract (new duty); the recursion rule makes max_audit itself grow over time.",
+   "hypothesis": "a per-cycle generative adversarial self-interrogation that VERIFIES with fresh reads and converts every new probe into a standing check drives realized gaps toward zero without the principal having to ask",
+   "expected_benefit": "the desk finds its own gaps from new angles every cycle; every manual probe the principal ever uses becomes permanent; his verification burden trends to zero",
+   "expected_cost": "cycle reasoning time; generative so imperfect; needs cycles running",
+   "confidence": 0.75,
+   "assumptions": [
+    "the running model genuinely probes+verifies rather than rubber-stamping -- the max_audit guard + verify-then-claim rule + fresh-read mandate push against rubber-stamping"
+   ],
+   "success_metric": "cycles consistently report verified probes + occasionally a new angle added to the battery; principal-found gaps become rare and each converts to a standing check",
+   "reversal_condition": "if cycles rubber-stamp the interrogation (claim probed, found nothing, repeatedly, while the principal still finds gaps), tighten the guard to require a named verified read per angle"
   }
  ]
 }
