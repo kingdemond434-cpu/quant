@@ -296,6 +296,15 @@ def check_dig_depth(defects) -> None:
         if not logs:
             continue
         newest = logs[0]
+        _mand = ROOT / "data/depth_mandate_baseline"
+        if not _mand.exists():
+            _mand.write_text(str(NOW))
+        try:
+            _base = float(_mand.read_text().strip())
+        except Exception:
+            _base = NOW
+        if newest.stat().st_mtime < _base:
+            continue                                  # pre-mandate dig -- not judged
         if (NOW - newest.stat().st_mtime) > 4 * 86400:
             continue                                  # stale digs handled by check_organs
         if newest.stat().st_size < 1500:
