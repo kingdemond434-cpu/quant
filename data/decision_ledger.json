@@ -2059,6 +2059,21 @@
    ],
    "success_metric": "post-fix, no symbol shows fut_fills/spot_fills >3x and no repeat of a concentrated unhedged loss",
    "reversal_condition": "if a similar gap recurs on symbols with clean 2/2 fill counts, the mechanism is wrong and must be re-opened"
+  },
+  {
+   "id": "2026-07-22-anytime-valid-measured-refutes-speedup",
+   "decision": "Built gap #25 (always-valid sequential testing) and then REFUTED MY OWN PROPOSAL with its own Monte Carlo. I had recommended anytime-valid inference to the principal as the principled way to get FASTER forward validation instead of cutting 90->40 days. Measured: type-I control is verified (null crossing 3/300 = 1.0% at alpha=0.01, exactly the bound), but a genuine Sharpe~2 edge graduates in a MEDIAN 132 days versus the fixed 90-day clock, and only 6/40 paths graduate at all. The cause is fundamental: daily returns at Sharpe 2 carry per-observation signal ~0.105, so the e-process grows ~0.0055/day and needs ~800 days to reach log(1/alpha). So the honest conclusion is that there is NO free lunch on validation speed -- a shorter clock lowers the bar, an always-valid test raises it, and no test can be simultaneously faster and stricter on the same data. The only real accelerants are more observations (higher frequency, cross-sectional breadth). ADOPTED as a stricter optional secondary check; the 40/90-day clock STANDS and the principal's 90->40 request stays declined -- now on measured rather than theoretical grounds.",
+   "hypothesis": "always-valid inference would let strong edges graduate sooner than a fixed clock",
+   "expected_benefit": "REFUTED -- it is slower for Sharpe-2-class edges on daily data; the value delivered is a verified-rigorous secondary check plus the knowledge that no test buys speed without lowering the bar",
+   "expected_cost": "one build; the CRO's own recommendation withdrawn on evidence",
+   "confidence": 0.9,
+   "assumptions": [
+    "daily-frequency returns",
+    "alpha=0.01",
+    "Sharpe~2 as the strong-edge case"
+   ],
+   "success_metric": "used as a secondary gate on high-stakes promotions; never cited as a speedup",
+   "reversal_condition": "if the desk validates on intraday returns, re-run the MC -- higher per-observation signal could make it genuinely fast"
   }
  ]
 }
