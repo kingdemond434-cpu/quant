@@ -42,6 +42,13 @@ _HB_TICK = 60                                    # heartbeat cadence (decoupled 
 _MAKER = True                                     # maker-first execution (set via --no-maker)
 _RSP_TOL = 5.0                                    # $ drift before realized_spot_pnl self-heals
 _DEPTH_MULT = 5.0                                # book depth within 1% of touch must cover an open
+# ORPHAN-COVER BOUNDS (gap #37, panel consensus 8+/12 on the 2026-07-19 audit): the
+# orphan cover is a live-ammo market-order path that previously fired on FIRST sight of
+# any untracked position, unbounded. A transient REST desync or partial-fill lag then
+# market-covers into a thin book, and repeated covers during a venue outage could
+# themselves breach the ruin constraint. Two bounds, both safe-direction only:
+_ORPHAN_CONFIRM = 2        # reconcile passes an orphan must PERSIST before live ammo
+_ORPHAN_MAX_USD = 1500.0   # max notional force-covered per symbol per pass
                                                  # this many times, on BOTH legs, or the name is
                                                  # skipped (2026-07-13 thin-book incident)
 
@@ -221,7 +228,8 @@ def _mkt_or_limit(conn: Any, sym: str, side: str, qty: float) -> str:
 
 def _reconcile(pos: dict[str, dict], *, dry: bool,
                cooldown: dict[str, float] | None = None,
-               fail_counts: dict[str, int] | None = None) -> list[str]:
+               fail_counts: dict[str, int] | None = None,
+               orphan_seen: dict[str, int] | None = None) -> list[str]:
     """Heal hedge drift every cycle -- survival is priority #1. Two invariants restored:
 
       * ORPHAN futures short (a short with no tracked carry) -> cover it (close to flat).
@@ -263,11 +271,32 @@ def _reconcile(pos: dict[str, dict], *, dry: bool,
         return how
 
     tracked = set(pos)
-    for sym, qty in actual.items():                        # cover orphan shorts/longs not tracked
-        if sym not in tracked and abs(float(qty)) > 0:
-            how = _do(fut, sym, "BUY" if float(qty) < 0 else "SELL", abs(float(qty)))
-            if how:
-                acts.append(f"cover-orphan {sym} ({how})")
+    seen = orphan_seen if orphan_seen is not None else {}
+    live_orphans = {s2 for s2, q2 in actual.items()
+                    if s2 not in tracked and abs(float(q2)) > 0}
+    for s2 in list(seen):                                  # a transient desync disappears -> forget
+        if s2 not in live_orphans:
+            seen.pop(s2, None)
+    for sym in sorted(live_orphans):
+        qty = float(actual[sym])
+        n = seen.get(sym, 0) + 1
+        seen[sym] = n
+        if n < _ORPHAN_CONFIRM:                            # must PERSIST before firing live ammo
+            acts.append(f"orphan {sym} seen {n}/{_ORPHAN_CONFIRM} -- awaiting confirmation "
+                        f"(transient desync is not covered)")
+            continue
+        cover = abs(qty)
+        px = 0.0
+        with _safe():                    # priced only when a confirmed orphan exists
+            px = float(fut.mark_prices().get(sym, 0.0) or 0.0)
+        if px > 0 and cover * px > _ORPHAN_MAX_USD:        # bound each pass; remainder next pass
+            acts.append(f"orphan {sym} ${cover * px:.0f} exceeds ${_ORPHAN_MAX_USD:.0f}/pass cap "
+                        f"-- covering a capped slice")
+            cover = _ORPHAN_MAX_USD / px
+        how = _do(fut, sym, "BUY" if qty < 0 else "SELL", cover)
+        if how:
+            acts.append(f"cover-orphan {sym} {round(cover, 8)} ({how})")
+            seen.pop(sym, None)
     dead: list[str] = []
     forced: dict[str, int] = {}
     if any(abs(float(actual.get(s, 0.0))) + 1e-9 < abs(float(p["perp_qty"])) * 0.98
@@ -352,8 +381,10 @@ def _rebalance(top: int, hold_top: int, capital: float, *, dry: bool) -> dict[st
     state["cooldown"] = cool
     fails: dict[str, int] = {s: int(n) for s, n in state.get("reconcile_fail_counts", {}).items()}
     state["reconcile_fail_counts"] = fails
+    orph: dict[str, int] = {s2: int(n2) for s2, n2 in state.get("orphan_seen_counts", {}).items()}
+    state["orphan_seen_counts"] = orph
     recon = _reconcile(pos, dry=dry, cooldown=cool,          # heal hedge drift FIRST (survival #1)
-                       fail_counts=fails)
+                       fail_counts=fails, orphan_seen=orph)
     if cool:
         target -= set(cool)
         cands = [c for c in cands if c[0] not in cool]
