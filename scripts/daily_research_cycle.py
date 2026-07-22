@@ -44,6 +44,7 @@ _STEPS = [
     ("research_pipeline", "scripts/run_daily_research.py",  7200),
     ("autodiscovery",     "scripts/run_crypto_research.py", 1800),  # industrialized crypto factory
     ("state_files",       "scripts/research_cycle.py",      300),
+    ("trade_forensics",   "scripts/run_trade_forensics.py",  60),  # class-bleed probe (daily)
     ("cost_model",        "scripts/run_cost_model.py",      600),  # measured exec costs (daily)
     ("shadow_8h",         "scripts/run_shadow_8h.py",       420),  # 3x-obs challenger shadow
     ("leverage_opt",      "scripts/run_leverage_opt.py",    120),

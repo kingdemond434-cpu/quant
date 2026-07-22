@@ -65,3 +65,40 @@ because every angle he has ever used is now asked automatically, every cycle, an
 CLOSE: report each cycle which angles you ran, what you VERIFIED (with the read), what gap you found
 and did about it, and any NEW angle you added. Healthily: real gaps only (no manufactured busywork),
 within the rails, evidence-gated. You are the principal's relentless verification, institutionalized.
+
+## Profit-forensic angles (recursion rule, 2026-07-22 -- every one of these found a real gap when
+## the PRINCIPAL asked it manually; the battery lacked all seven. Never again.)
+
+12. TRADE-CLASS ECONOMICS: "Bucket every closed trade by hold-time, by funding-at-open, and by
+    symbol -- does any CLASS lose money AS A CLASS?" A strategy can net positive while entire
+    classes bleed inside it. (Found #42 churn -8.1%/yr, #43 baseline-funding -92.7 bps eating ~80%
+    of gross profit, and the structural thin-name bleeders -- all in one artifact the desk already
+    owned.) MECHANIZED: scripts/run_trade_forensics.py runs daily; read web/trade_forensics.json.
+
+13. MEASURED vs GUESSED CONSTANTS: "Enumerate the numeric constants in the alpha/execution path
+    (costs, floors, thresholds, tiers, caps). For each: measured or guessed? Where a measurement
+    exists, does the constant AGREE with it?" (Found #45: the 5/8/15 bps tier guess was wrong 2x+
+    in BOTH directions vs the measured books.)
+
+14. UNIVERSE INTERSECTION: "For every measurement/data system, does its universe intersect what
+    the desk actually TRADES/needs? Compute the intersection -- do not assume it." (Found #39: the
+    recorder held 20 majors, the book held 10 small-caps, intersection ZERO -- every measured cost
+    was inapplicable.)
+
+15. RESOLUTION MATCH: "Is any validation or measurement running at coarser resolution than its
+    data-generating process?" Funding settles 8h; validating daily discarded 2/3 of the evidence.
+    (Found #44 -- the legitimate sqrt(3) validation speedup, vif 3.6 -> 1.008.)
+
+16. CROSS-MEASUREMENT AGREEMENT: "Where two independent measurements of the same quantity exist,
+    do they AGREE? Disagreement means one is lying -- find which." (Cost model ~3.8 bps RT vs
+    realized <2h loss 5.0 bps AGREED -> confirmed the churn mechanism. Molded-curve Sharpe 24 vs
+    8h-series Sharpe 8 DISAGREED -> the phantom-Sharpe class, gap #14.)
+
+17. CONCENTRATION ATTRIBUTION: "Attribute any aggregate loss/anomaly to per-symbol, per-fill level
+    BEFORE accepting a diffuse story. Concentrated = a mechanism; diffuse = noise." ('$1.8k of
+    slippage' was actually 3 symbols, one with 22 futures fills against 5 spot fills -- gap #34.)
+
+18. INTEGRATION vs UNIT: "Green unit tests on the pure function != the integration fires. Did you
+    verify the WIRED behavior live?" (The topup risk-gate compared against action=='none' when the
+    live value is 'ok': 7/7 unit tests green, zero topups fired. Caught only by reading the live
+    book.)

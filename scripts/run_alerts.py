@@ -227,6 +227,12 @@ def _checks() -> list[tuple[str, str]]:
         pass
     # silent-failure sweep (2026-07-22): systemd-success != work-done. A timer that fired
     # into a quota/auth wall reports success while producing zero research.
+    try:
+        tf = json.loads(Path("web/trade_forensics.json").read_text("utf-8"))
+        for fl in (tf.get("flags") or [])[:3]:
+            out.append(("trade_class_bleeding", str(fl)[:170]))
+    except (OSError, json.JSONDecodeError):
+        pass
     if _auth_broken():
         out.append(("auth_broken",
                     "NO claude credentials for the `quant` user -- the brain AND all 4 "
