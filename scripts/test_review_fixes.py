@@ -103,7 +103,8 @@ def test_evidenced_causes_still_classify_normally():
 def test_deadman_needs_consecutive_breaches_and_ratchets_highwater():
     from scripts.run_deadman_switch import should_fire
     st: dict = {}
-    assert not should_fire(10_000.0, st)                           # sets high-water
+    for _ in range(3):                                             # sustained peak (_HW_CONFIRM)
+        assert not should_fire(10_000.0, st)
     assert st["high_water"] == 10_000.0
     for _ in range(4):
         assert not should_fire(6_000.0, st)                        # 4 breaches: no fire yet
@@ -191,3 +192,31 @@ def test_dossier_sanitizer_blocks_tokens_keeps_ledger_ids():
     assert "quant-desk" not in s and "data/secrets" not in s
     assert "FAKEFAKE" not in s                                     # long unhyphenated token gone
     assert "2026-07-12-first-inversion-rule-adopted" in s          # ledger ids stay readable
+
+
+def test_deadman_single_spike_cannot_inflate_highwater():
+    """REGRESSION (incident #5, 2026-07-22): one noisy upward reading must NOT become the
+    high-water. Before the fix a single spike permanently raised the fire line, so ordinary
+    equity then sat below 65% of a phantom peak and the rail false-fired day after day."""
+    from scripts.run_deadman_switch import should_fire
+    st: dict = {}
+    for _ in range(3):
+        should_fire(4_000.0, st)                                   # real sustained level
+    assert st["high_water"] == 4_000.0
+    should_fire(9_000.0, st)                                       # single glitch spike
+    assert st["high_water"] == 4_000.0, "a lone spike must never ratchet the high-water"
+    for _ in range(5):                                             # normal equity, no phantom fire
+        assert not should_fire(3_600.0, st)
+
+
+def test_deadman_still_fires_on_a_real_sustained_drawdown():
+    """The fix must NOT weaken ruin protection: a genuine 35%+ drawdown from a REAL sustained
+    peak still fires within the same _CONSECUTIVE budget."""
+    from scripts.run_deadman_switch import should_fire
+    st: dict = {}
+    for _ in range(3):
+        should_fire(10_000.0, st)
+    assert st["high_water"] == 10_000.0
+    for _ in range(4):
+        assert not should_fire(6_000.0, st)
+    assert should_fire(6_000.0, st), "real ruin must still fire on the 5th breach"

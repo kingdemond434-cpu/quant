@@ -44,6 +44,8 @@ _RUIN_FACTOR = 0.65        # fire below 65% of high-water == the 35% ruin-flatte
 _CONSECUTIVE = 5           # readings required below the line (no single-glitch false fire)
 _POLL_SEC = 60.0
 _MIN_HW = 500.0            # ignore dust/empty accounts
+_HW_CONFIRM = 3            # consecutive readings required to establish a NEW high-water
+_LEG_GRACE_SEC = 3600.0    # keep crediting a real spot leg this long after its short closes
 
 
 def _creds(path: Path) -> tuple[str, str] | None:
@@ -99,6 +101,19 @@ def combined_equity(state: dict) -> float | None:
         shorts = {p["symbol"] for p in _signed(_FUT_BASE, "/fapi/v2/positionRisk", fut)
                   if float(p.get("positionAmt", 0.0)) < 0}
         state["has_positions"] = bool(shorts)
+        # SETTLEMENT GRACE (2026-07-22, incident #5): a carry unwind closes the futures short
+        # BEFORE the spot leg is sold, so a shorts-only legs_v drops still-held spot to $0 and
+        # the rail reads a phantom loss. Keep crediting a symbol's REAL spot balance at REAL
+        # market price for a bounded window after its short disappears. This corrects an
+        # UNDERCOUNT of assets that demonstrably exist on the venue: it cannot overcredit (a
+        # sold leg reads balance 0; a crashed leg marks down) and never touches the threshold.
+        _now = time.time()
+        _seen = state.setdefault("legs_seen", {})
+        for _s in shorts:
+            _seen[_s] = _now
+        for _s in [k for k, t in list(_seen.items()) if _now - float(t) > _LEG_GRACE_SEC]:
+            _seen.pop(_s, None)
+        creditable = set(shorts) | set(_seen)
         bals = _signed(_SPOT_BASE, "/api/v3/account", spt)["balances"]
         px = {t["symbol"]: float(t["price"])
               for t in _req(f"{_SPOT_BASE}/api/v3/ticker/price")}
@@ -109,7 +124,7 @@ def combined_equity(state: dict) -> float | None:
                 continue
             if b["asset"] == "USDT":
                 usdt = amt
-            elif b["asset"] + "USDT" in shorts:
+            elif b["asset"] + "USDT" in creditable:
                 legs_v += amt * px.get(b["asset"] + "USDT", 0.0)
         if "usdt_baseline" not in state:
             samples = state.setdefault("usdt_samples", [])
@@ -129,7 +144,22 @@ def should_fire(equity: float | None, state: dict) -> bool:
     Invalid readings (None) change nothing -- an API outage can neither fire nor reset."""
     if equity is None or equity <= 0:
         return False
-    hw = max(float(state.get("high_water", 0.0)), equity)
+    # HIGH-WATER RATCHET, SUSTAINED (2026-07-22, incident #5 ROOT CAUSE): firing requires
+    # _CONSECUTIVE breaches, but the high-water used to ratchet on a SINGLE reading. That
+    # asymmetry let ONE noisy upward spike permanently inflate the fire line, after which
+    # ordinary days sat below it and the rail fired again and again. A new peak must now hold
+    # for _HW_CONFIRM consecutive valid readings, and the peak recorded is the MINIMUM of those
+    # readings (the sustained level, never the spike). This makes the REFERENCE accurate; it
+    # does not touch _RUIN_FACTOR or _CONSECUTIVE, so real-ruin detection is unchanged.
+    hw = float(state.get("high_water", 0.0))
+    if equity > hw:
+        pend = state.setdefault("hw_pending", [])
+        pend.append(equity)
+        if len(pend) >= _HW_CONFIRM:
+            hw = min(pend)
+            state["hw_pending"] = []
+    else:
+        state["hw_pending"] = []
     state["high_water"] = hw
     if hw < _MIN_HW:
         state["breaches"] = 0
