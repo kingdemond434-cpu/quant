@@ -234,6 +234,18 @@ def _checks() -> list[tuple[str, str]]:
             out.append(("trade_class_bleeding", str(fl)[:170]))
     except (OSError, json.JSONDecodeError):
         pass
+    try:
+        # TWO-STAGE LAW: confirmation slots are the ONLY multiplicity that matters; the
+        # bar stays fixed for life only while the concurrent count stays <= 12.
+        _reg = json.loads(Path("data/shadow_sleeves.json").read_text("utf-8"))
+        _standing = 6      # carry, perp_ls, oi_div, ls_contrarian, liq_reversal, stables
+        if len(_reg) + _standing > 12:
+            out.append(("slot_budget_exceeded",
+                        f"{len(_reg) + _standing} concurrent confirmation slots > 12 -- "
+                        "the fixed forward bar is only fixed while the cohort is capped; "
+                        "recycle or EV-evict before enrolling more"))
+    except (OSError, json.JSONDecodeError):
+        pass
     if _auth_broken():
         out.append(("auth_broken",
                     "NO claude credentials for the `quant` user -- the brain AND all 4 "

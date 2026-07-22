@@ -2212,6 +2212,20 @@
    ],
    "success_metric": "clean_since accrues uninterrupted toward 30d; listings.jsonl populates on the next real listing",
    "reversal_condition": "if the 8h series itself proves contaminated, confidence_source flips and clean_since resets -- by design"
+  },
+  {
+   "id": "2026-07-23-two-stage-discovery-law",
+   "decision": "Principal ordered that hypothesis generation must NEVER move the DSR/validation bar -- objectives 1 and 2 must not conflict. RESOLVED PERMANENTLY with the textbook architecture, codified as the TWO-STAGE DISCOVERY LAW: Stage A (backtest gauntlet incl. fixed-wall) = SCREEN with zero promotion authority -- generation unbounded, multiplicity there affects ordering only, phantom edges impossible because nothing promotes from it; Stage B (pre-registered forward clocks) = SOLE promotion authority, where generation volume is statistically invisible (new data cannot be overfit by pre-window siblings) and the only real multiplicity -- concurrent slot count -- is Holm-corrected and hard-capped at MAX_FORWARD_SLOTS=12. The confirmation bar is thus a constant for life. Slot admission by EV-rank; anti-gaming (graveyard, content-hash, kill-basis, pre-registration) unchanged. Mechanical enforcement: slot_budget_exceeded alert (over-enrollment) pairs with the clock-saturation check (under-use) -> always-full-never-over. Side effect: the fixed-wall deflation dispute becomes low-stakes (screen ordering only); panel review stands but the promotion pathway no longer depends on its outcome.",
+   "hypothesis": "screening/confirmation separation gives unlimited generation with a life-constant confirmation bar and bounded false-promotion rate",
+   "expected_benefit": "objectives 1+2 permanently deconflicted; max generation throughput with zero added phantom risk; bar can never ratchet OR be pressured down",
+   "expected_cost": "screen survivors may queue for slots (good problem; EV-rank + recycling)",
+   "confidence": 0.9,
+   "assumptions": [
+    "forward pre-registration discipline holds",
+    "slot cap enforced by alert + audit"
+   ],
+   "success_metric": "confirmation bar unchanged across arbitrary generation volume; false-promotion rate tracks per-slot alpha x slots only",
+   "reversal_condition": "if slot queueing ever materially delays a high-EV candidate, raise MAX_FORWARD_SLOTS explicitly WITH its recomputed Holm bar -- a ledgered constant change, never a silent drift"
   }
  ]
 }
