@@ -2156,6 +2156,20 @@
    ],
    "success_metric": "zero further origin=principal rows in the objective-frame class",
    "reversal_condition": "if it recurs despite angle 19, the battery execution is the defect -- escalate to anti-rubber-stamp enforcement"
+  },
+  {
+   "id": "2026-07-23-journey-stack",
+   "decision": "Final pre-live frame-wide sweep (angle 19). Installed the JOURNEY stack -- the levers outside the trading frame that dominate realized lifetime CAGR and cannot be retrofitted: (1) OPERATOR COMPACT: bankroll policy (no withdrawals <$25k; 20%/yr-of-profits cap after; injections logged as flows), 10% profit ratchet to cold custody at each doubling above $10k (survivorship lock -- with fat tails + venue risk this beats naive Kelly), drawdown no-touch protocol, euphoria no-skip rule, absence step-down (7d unanswered = one ladder step down, 14d = base), MUTUAL tweak-freeze post-live. (2) GO-LIVE HARDENING CHECKLIST: trade-only IP-locked keys, withdrawal-whitelist+timelock, PAT-to-deploy-key rotation BEFORE live keys share the box, sub-account-per-sleeve margin isolation, pre-registered venue-diversification schedule (FTX-class counterparty concentration = same defect as name concentration), BNB fee prep, idle-cash yield EV-gated, tax jurisdiction ask moved PRE-live (activates gap #11 -- 20-30% annual tax leakage is the largest unmodeled net-CAGR variable). (3) NAV ATTESTATION live from today: hash-chained daily NAV committed to git = tamper-evident allocator-grade track record from inception -- the 100x lever, un-backfillable, hence started on paper now.",
+   "hypothesis": "behavioral, security, counterparty, tax, and provenance levers dominate realized journey CAGR once the trading stack is maxed",
+   "expected_benefit": "compounding protected from its five biggest real-world killers; track record becomes a monetizable asset from day 1",
+   "expected_cost": "ratchet drags pure Kelly slightly (chosen); checklist adds Gate-0 items",
+   "confidence": 0.85,
+   "assumptions": [
+    "principal honors the compact he requested",
+    "git history acceptable as timestamping until a third-party attestor is added"
+   ],
+   "success_metric": "zero ad-hoc withdrawals/interventions post-live; NAV chain unbroken; checklist 100% at Gate-0",
+   "reversal_condition": "compact amendable only pre-Gate-0 or via ledgered 7-day-cooling proposal, never mid-drawdown or post-win-week"
   }
  ]
 }
