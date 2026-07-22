@@ -23,6 +23,18 @@ _CURVE = Path("data/live_combined_state.json")
 _LEV_WEB = Path("web/leverage.json")
 _LEV_TGT = Path("data/leverage_target.json")
 _BASE_PER_LEG = 5000.0
+# GAP #14 MEASUREMENT FIX (2026-07-23, safe under quarantine -- the executor ignores this
+# file in both directions until the ladder re-enable gate). Root cause of incidents #2 and
+# the 07-18 under-deploy: confidence fed by the funding-smoothed MOLDED curve (variance
+# collapse -> Sharpe 16-24 phantom) and a fwd_days counter that survived incident resets.
+# Honest inputs now: the 8h-block challenger series (basis-MtM variance INCLUDED, vif~1)
+# and its true block count. PLAUSIBILITY RAIL: an annualized forward Sharpe above
+# _PLAUSIBLE_SHARPE is treated as a measurement defect -> confidence 0 + flag (a Sharpe of
+# 16 must freeze sizing, never activate it). CLEAN-DAY COUNTER: leverage_target.json now
+# carries clean_since -- the start of continuous honest-input operation -- so ladder step 1
+# (gap-14 fixed + 30 uncontaminated days) is measurable from a file read.
+_PLAUSIBLE_SHARPE = 4.0
+_SHADOW_8H = Path("web/cashcarry_shadow_8h.json")
 
 
 def _load(p: Path, d: object = None) -> object:
@@ -67,10 +79,18 @@ def main() -> None:
     exec_rel = 1.0 if exec_ok else 0.5
 
     decisions = {}
+    sh8 = _load(_SHADOW_8H, {})
+    fwd_sharpe_in = float(sh8.get("forward_ann_sharpe_8h",
+                                  ccsh.get("forward_ann_sharpe", 0.0)) or 0.0)
+    fwd_days_in = float(sh8.get("forward_days_equiv",
+                                ccsh.get("forward_days", 0)) or 0)
+    implausible = fwd_sharpe_in > _PLAUSIBLE_SHARPE
+    if implausible:                     # measurement defect, never evidence of edge
+        fwd_sharpe_in = 0.0
     decisions["cash_and_carry"] = optimize_sleeve(
         "cash_and_carry", cc_rets,
-        fwd_sharpe=float(ccsh.get("forward_ann_sharpe", 0.0) or 0.0),
-        fwd_days=float(ccsh.get("forward_days", 0) or 0),
+        fwd_sharpe=fwd_sharpe_in,
+        fwd_days=fwd_days_in,
         regime_mult=regime_mult, exec_reliability=exec_rel,
         liquidity_haircut=0.9, drawdown_ruin=0.35,    # small-cap perps -> slippage/impact haircut
     )
@@ -102,8 +122,18 @@ def main() -> None:
     # executor target: notional/leg = recommended x equity. OVERRIDES --capital only when the
     # optimizer has confidence>0 (edge proven enough) -- day-0 keeps the operator's --capital.
     cc = decisions["cash_and_carry"]
+    prev = _load(_LEV_TGT, {})
+    # clean_since counts days of HONEST-PIPELINE operation (ladder step-1 clock). The rail
+    # firing on an implausible reading IS clean operation -- the pipeline detected and
+    # zeroed a bad measurement instead of sizing on it. Only a source change resets it.
+    clean_since = (prev.get("clean_since")
+                   if prev.get("confidence_source") == "8h_challenger_honest"
+                   else out["updated"]) or out["updated"]
     _LEV_TGT.write_text(json.dumps({
         "updated": out["updated"], "sleeve": "cash_and_carry",
+        "confidence_source": "8h_challenger_honest",
+        "plausibility_rail_fired": bool(implausible),
+        "clean_since": clean_since,
         "leverage": round(cc.recommended, 3), "confidence": cc.confidence,
         "notional_per_leg": round(cc.recommended * _BASE_PER_LEG, 2),
         "active": cc.confidence > 0.0,               # executor honours it only when True
