@@ -216,7 +216,8 @@ def check_blind_trigger(defects) -> None:
     srcs = umap.get("sources", {})
     n_sources = len(srcs) if isinstance(srcs, (dict, list)) else 0
     gy = ROOT / "docs/graveyard.md"
-    n_grave = sum(1 for l in gy.read_text("utf-8").splitlines() if l.startswith("| ")) if gy.exists() else 0
+    n_grave = (sum(1 for ln in gy.read_text("utf-8").splitlines() if ln.startswith("| "))
+               if gy.exists() else 0)
 
     base_src = int(seen.get("sources", 0))
     base_grave = int(seen.get("graveyard", 0))
@@ -231,13 +232,66 @@ def check_blind_trigger(defects) -> None:
                         "has new raw material; do not wait for the monthly floor."))
 
 
+def check_self_application(defects) -> None:
+    """Each of these encodes a max-fix the principal forced this session, as a REGRESSION guard.
+    His pressure, made permanent: a future edit that undoes any becomes a same-day defect."""
+    orgs = ["run_cro_ai.sh", "run_frontier_miner.sh", "run_prospector_dig.sh",
+            "run_litminer_dig.sh", "run_dataaxis_dig.sh", "run_blindrediscovery_dig.sh"]
+    for name in orgs:
+        fp = ROOT / "ops" / name
+        if not fp.exists():
+            defects.append((f"organ-missing-{name}", f"organ script {name} vanished"))
+            continue
+        txt = fp.read_text("utf-8", errors="ignore")
+        if "claude" in txt and "-p " in txt:
+            if "--effort" not in txt:
+                defects.append((f"effort-dropped-{name}",
+                                f"{name}: claude call lost its --effort flag (max-reasoning "
+                                "regressed to CLI default) -- re-add xhigh"))
+            if "--append-system-prompt" not in txt and "_DOCTRINE" not in txt:
+                defects.append((f"doctrine-dropped-{name}",
+                                f"{name}: lost the principal-doctrine injection "
+                                "(--append-system-prompt \"$_DOCTRINE\") -- the max-push stance "
+                                "is no longer in this organ"))
+    # cost-censorship must never creep back into the advisory layer
+    for mp in (ROOT / "prompts/panel_missions").glob("*.txt"):
+        if mp.stem == "maximization":
+            continue  # legitimately quotes fossils as the anti-patterns it hunts
+        t = mp.read_text("utf-8", errors="ignore").lower()
+        for fossil in ("worthless", "$1/mo", "at most rare one-off cheap"):
+            if fossil in t and "not worthless" not in t:
+                # 'worthless' is allowed only in the sanctioned "a recommendation ignoring
+                # STRUCTURAL constraints is worthless" phrasing; flag other reappearances
+                if fossil == "worthless" and "structural" in t:
+                    continue
+                defects.append((f"cost-censorship-{mp.stem}",
+                                f"panel mission {mp.name}: cost-self-censorship language "
+                                f"'{fossil}' reappeared -- money-recs must stay proposable"))
+    # recorder scope must not silently shrink below the 20-symbol expansion
+    rp = ROOT / "scripts/run_recorder.py"
+    if rp.exists():
+        import re as _re
+        rtxt = rp.read_text("utf-8")
+        m = _re.search(r"_SYMBOLS\s*=\s*\(([^)]*)\)", rtxt)
+        cnt = len(_re.findall(r"USDT", m.group(1))) if m else 0
+        if cnt < 20:
+            defects.append(("recorder-scope-shrank",
+                            f"run_recorder.py _SYMBOLS dropped to {cnt} (expansion floor is 20) "
+                            "-- forward-tape breadth regressed"))
+    # bybit second-venue recorder must still exist
+    if not (ROOT / "scripts/run_recorder_bybit.py").exists():
+        defects.append(("bybit-recorder-gone", "second-venue (bybit) recorder script removed -- "
+                        "cross-venue tape breadth lost"))
+
+
 def main() -> None:
     defects: list[tuple[str, str]] = []
     for label, fn in [("organs", check_organs), ("stubs", check_stub_deaths),
                       ("panel", check_panel), ("coverage", check_coverage),
                       ("findings", check_findings), ("idle", check_idle_capability),
                       ("directives", check_directives), ("verify", check_verify_lag),
-                      ("blind", check_blind_trigger)]:
+                      ("blind", check_blind_trigger),
+                      ("self-application", check_self_application)]:
         _fenced(fn, defects, label)
 
     acks = _j(ACKS, {})
