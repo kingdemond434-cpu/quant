@@ -29,17 +29,35 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 _BASE = "https://fapi.binance.com"                 # LIVE public market data (read-only)
-_SYMBOLS = ("BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT",
+_CORE = ("BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT",
             "DOGEUSDT", "ADAUSDT", "AVAXUSDT", "LINKUSDT", "LTCUSDT",
             "TRXUSDT", "DOTUSDT", "BCHUSDT", "NEARUSDT", "SUIUSDT",
             "UNIUSDT", "APTUSDT", "FILUSDT", "ARBUSDT", "OPUSDT")
+# --- DYNAMIC UNIVERSE (gap #39, 2026-07-22) ------------------------------------------------
+# The cost model built from this moat was USELESS for real sizing: the recorder held 20 majors
+# while the carry book held high-funding small-caps -- ZERO intersection. You cannot calibrate
+# execution cost for a book you do not record. The carry book ROTATES, so the traded names are
+# read live rather than hardcoded, with a hard cap so a runaway book can never blow the weight
+# budget (2026-07-21: an over-wide universe got this recorder IP-banned).
+_MAX_SYMBOLS = 32
+
+
+def _book_symbols() -> tuple[str, ...]:
+    try:
+        pos = json.loads(Path("data/cashcarry_positions.json").read_text("utf-8"))["positions"]
+        return tuple(sorted(str(s) for s in pos))
+    except (OSError, json.JSONDecodeError, KeyError, TypeError):
+        return ()
+
+
+_SYMBOLS = tuple(dict.fromkeys(_CORE + _book_symbols()))[:_MAX_SYMBOLS]
 # 5 -> 20 (principal max order, 2026-07-21): every unrecorded day is unrecoverable;
 # disk math: ~33MB/day at 5 syms -> ~130MB/day at 20 -> ~4GB/mo vs 31GB free. Public
 # market data only, no keys; weight fine at 20.
 _ROOT = Path("data/moat/fut")
 _HB = Path("data/recorder_heartbeat")
-_DEPTH_EVERY_S = 4.0   # 1.0 -> 4.0 when symbols went 5 -> 20 (weight budget)
-_TRADES_EVERY_S = 20.0  # 5.0 -> 20.0 for the same reason
+_DEPTH_EVERY_S = 5.0   # 1.0 -> 4.0 when symbols went 5 -> 20 (weight budget)
+_TRADES_EVERY_S = 40.0  # 5.0 -> 20.0 for the same reason
 _DISK_MAX_FRAC = 0.80                              # stop writing above this disk usage
 _FLUSH_ROWS = 200                                  # buffered rows per symbol before flush
 
