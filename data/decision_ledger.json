@@ -2289,6 +2289,30 @@
    ],
    "success_metric": "Upbit/Bithumb collector wired post-connector; kimchi-premium hypothesis pre-registered + accrues a forward clock",
    "reversal_condition": "kimchi premium fails its Stage-A screen or the FX-adjustment noise dominates -> graveyard, axis stays ingested"
+  },
+  {
+   "id": "2026-07-23-kimchi-screened-clock",
+   "decision": "GENUINELY-NEW axis WIRED + TESTED: kimchi premium (gap #74). Built collect_kimchi_premium.py (free no-key Upbit + Binance + Yahoo USD/KRW). First construction measured it USDT-denominated and got ~0 -- self-caught: the USDT cross cancels the FX/capital-control premium; corrected to the OFFICIAL USD/KRW leg. REAL screen, 144 live days: premium std 1.42%, IC(z20, next-day BTC) +0.148, momentum Sharpe 1.3 -- best screen in weeks, beats every rejected price-only sleeve (<1.0). TWO-STAGE LAW held: SCREEN with ZERO promotion authority -- EV-gated (ev 0.0139, REJECT (EV below thresh)), pre-registered, forward clock started (kimchi_premium.jsonl, daily-cycle step). CAVEATS logged: FX-timing look-ahead (only the live timestamp-aligned clock resolves it -- why it accrues forward not deploys) + narrow breadth. NOT validated, NOT sized -- needs >=40 forward days + gauntlet + Holm slot. Objective #2 working: a new orthogonal free axis produced a real candidate the picked-clean price space could not.",
+   "hypothesis": "the FX-adjusted kimchi premium carries next-day BTC directional info orthogonal to funding/basis/price",
+   "expected_benefit": "first genuinely-new screen-interesting candidate from a new axis",
+   "expected_cost": "one daily collector step; forward accrual before promotion",
+   "confidence": 0.5,
+   "assumptions": [
+    "the in-sample IC survives timestamp-aligned forward data"
+   ],
+   "success_metric": "forward IC positive + NW-t clears bar over >=40 live days, then slot",
+   "reversal_condition": "forward IC collapses (was FX-timing artifact) -> graveyard"
+  },
+  {
+   "id": "2026-07-23-kimchi-self-caught-method",
+   "decision": "Self-caught (no principal): the first kimchi construction (USDT-denominated) cancelled the premium it hunted -> false ~0 read; fixed to FX-based before reporting. origin=self: questioned its own measurement and corrected in-session.",
+   "hypothesis": "measurement must be sanity-checked against mechanism before trusting a null",
+   "expected_benefit": "avoided burying a real signal as a false negative",
+   "expected_cost": "one extra fetch",
+   "confidence": 0.9,
+   "assumptions": [],
+   "success_metric": "n/a",
+   "reversal_condition": "n/a"
   }
  ]
 }
