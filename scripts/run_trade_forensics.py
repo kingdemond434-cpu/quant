@@ -13,12 +13,14 @@ from __future__ import annotations
 
 import json
 from collections import defaultdict
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 _TRADES = Path("data/cashcarry_trades.json")
 _OUT = Path("web/trade_forensics.json")
 _MIN_N = 15            # a class needs this many trades before its verdict is trusted
+_WINDOW_D = 14.0       # ROLLING window: all-history flags would re-page forever even
+                       # after fixes work; the question is "is it bleeding NOW"
 _BLEED_BPS = -1.0      # class net worse than this (bps of notional) = defect
 _BASELINE = 0.000100   # Binance default funding -- entry gate should keep these at zero
 # entry-gate ship time -- any open at baseline funding AFTER this is a gate regression
@@ -40,6 +42,8 @@ def _buckets(closes: list[dict]) -> dict[str, dict]:
 def main() -> None:
     trades = json.loads(_TRADES.read_text("utf-8")) if _TRADES.exists() else []
     closes = [x for x in trades if x.get("event") == "close" and x.get("held_hours") is not None]
+    cutoff = (datetime.now(tz=UTC) - timedelta(days=_WINDOW_D)).isoformat()
+    closes = [x for x in closes if str(x.get("closed", "")) >= cutoff]
     flags: list[str] = []
 
     hold = _buckets(closes)

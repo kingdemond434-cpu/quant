@@ -37,7 +37,8 @@ _DEDUPE_S = 6 * 3600
 # wolf is worse than none). Slow-moving conditions remind daily, not 4x/day. deadman_latched
 # stays at 6h deliberately -- a latched ruin rail SHOULD nag until the operator acts.
 _DEDUPE_OVERRIDES_S = {"growth_defect": 24 * 3600, "data_health": 24 * 3600,
-                       "brain_noop": 24 * 3600, "principal_action_needed": 24 * 3600}
+                       "brain_noop": 24 * 3600, "principal_action_needed": 24 * 3600,
+                       "trade_class_bleeding": 24 * 3600, "auth_broken": 12 * 3600}
 _HB = Path("data/cashcarry_exec_heartbeat")
 _PAGER_BACKOFF = Path("data/.pager_backoff")
 _KILL = Path("data/CASHCARRY_KILL")

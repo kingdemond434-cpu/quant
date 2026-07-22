@@ -9,6 +9,7 @@ __pycache__/
 
 # secrets + generated state + data lake: never in history (the journal is data/, not git)
 data/*
+!data/nav_attestation.jsonl
 !data/decision_ledger.json
 !data/cashcarry_config.json
 web/*
