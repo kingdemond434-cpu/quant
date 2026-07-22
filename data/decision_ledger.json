@@ -2005,6 +2005,19 @@
    ],
    "success_metric": "gap #41 per-fill timeline confirms or refutes an unhedged window on GTC/SHELL/ONE",
    "reversal_condition": "if the futures legs were in fact held and hedged, the loss needs a different explanation -> reopen"
+  },
+  {
+   "id": "2026-07-22-items45-orphan-bounds-factory-verified",
+   "decision": "Item 4 (gap #37) SHIPPED: orphan-cover live-ammo path bounded -- _ORPHAN_CONFIRM=2 (an orphan must PERSIST across reconcile passes before a market cover fires, so a transient REST desync/partial-fill lag is explicitly NOT covered) + _ORPHAN_MAX_USD=1500 per symbol per pass, persistence state-backed (orphan_seen_counts) mirroring reconcile_fail_counts. Ruin factor, consecutive-breach and depth guards untouched -- safe direction only. 90 execution tests green; controlled restart done; book intact at $4,499. Item 5 (quota-free discovery) NOT rebuilt -- VERIFIED already built, scheduled and working: ops/run_crypto_factory.sh has 0 claude refs (genuinely quota-free), cron 03:30 daily, ran today, run_factory_status reports Information Advantage Score 25.8 (active 4, orthogonal 3). Its own honest diagnosis independently confirms the CRO's read: price-family space is EXHAUSTED (D1 390 tested/0 survivors, H8 130/0, net-of-cost) and 'the constraint is DATA/MECHANISM, not volume'. ALSO FIXED: duplicate scheduling -- a desk cron (monthly, 3rd 20:00) and the CRO's systemd timer (quarterly) both drove run_blindrediscovery_dig.sh; disabled the systemd duplicate, cron is sole trigger. 3 digger timers remain.",
+   "hypothesis": "bounding the orphan path removes a live-ammo failure mode without weakening ruin protection; the quota-free engine already satisfies the daily-generation guarantee",
+   "expected_benefit": "no market-cover on transient desync; bounded worst-case cover; no duplicate digger runs; generation independent of Claude quota",
+   "expected_cost": "a genuine large orphan now takes multiple passes to fully cover (deliberate)",
+   "confidence": 0.85,
+   "assumptions": [
+    "2 passes is enough to distinguish transient desync from a real orphan"
+   ],
+   "success_metric": "no false orphan cover on transient desync; real orphans still fully covered within a few passes",
+   "reversal_condition": "a real orphan sits uncovered too long across passes -> lower _ORPHAN_CONFIRM to 2 or raise the per-pass cap"
   }
  ]
 }
