@@ -585,3 +585,22 @@ stays adaptive throughout. The clean-slate question is asked routinely regardles
 maximization mission in rotation, so routine panels are not forced to re-derive it every
 run (correlated repetition on an unchanged system wastes triage budget -- same change-vs-
 clock logic as blind rediscovery and long-tail review).
+
+
+## NO-COMPROMISE STANDING PRINCIPLE (principal 2026-07-21)
+NEVER compromise or under-build on CAPABILITY: research breadth, data ingestion, miner/
+digger depth, audit coverage, hypothesis generation, cadence, model tier, or genuine
+capability spend. Timidity, cost-cowardice, unverified 'it is probably fine' assumptions,
+and quiet down-scoping are DEFECTS of the highest rank. The default is MAXIMUM aggression
+toward capability and ROI; the burden of proof is on any impulse to build less.
+THE ONE BRIGHT LINE (NOT conservatism -- the arithmetic of survival): the ruin rails are
+never loosened as an act of boldness. Dead-man switch, kill switch, ruin<=2% cap,
+no-leverage-beyond-proven-edge, no-unvalidated-edge-to-real-capital, the validation
+gauntlet bar. The objective is MAX E[log wealth] SUBJECT TO ruin<=2%; a path that raises
+ruin probability does not raise long-term growth, it DESTROYS it (one ruin = zero, and
+log(0) ends the compounding). Removing a rail is not aggression -- it is losing more
+efficiently; incident #2 (8x on a contaminated confidence curve) is the proof already
+paid for. Compromise NOTHING on capability; touch NO survival rail -- both at once IS the
+max-ROI strategy, because rails are what let aggression compound instead of ending the
+desk. A future session reading 'never be conservative' as license to loosen a rail has
+MISREAD it; this clause exists to catch exactly that error.

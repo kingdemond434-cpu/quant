@@ -1822,6 +1822,17 @@
    ],
    "success_metric": "next funded deep audit: all responding models deliver 3 parts; >=1 part-2/part-3 item implemented within a week; zero unbuilt-validated-ROI defects age >14d",
    "reversal_condition": "if part 3 produces only repetition across consecutive deep audits, fold it into maximization-mission-only (part 1+2 stay everywhere)"
+  },
+  {
+   "id": "2026-07-21-no-compromise-principle",
+   "decision": "Principal standing directive: never compromise or be conservative. Adopted IN FULL for CAPABILITY -- breadth, data, digger depth, audit coverage, generation, cadence, model tier, spend: timidity, cost-cowardice, unverified assumptions, and quiet down-scoping are top-rank defects. The whole 2026-07-20/21 arc was the CRO having committed exactly these (curated 11KB audit dossier, cost-censored panel prompts, unverified effort assumption, 5-symbol recorder, 6 un-ingested axes) and the principal forcing each fix. CRO CO-SIGNS and states the ONE bright line honestly rather than sycophantically: the ruin rails are NOT conservatism to be removed for boldness -- dead-man, kill, ruin<=2%, no-leverage-beyond-proven-edge, no-unvalidated-edge-to-real-capital, the gauntlet bar. Under the log-wealth objective a higher-ruin path DESTROYS long-term growth (one ruin equals zero equals the end of compounding); loosening a rail is losing more efficiently, not winning bigger, and incident #2 (8x on a contaminated curve) already paid for that lesson. Max capability plus intact survival rails IS the max-ROI strategy. The constitution's existing carve-out (aggression default EXCEPT sizing beyond proven edge) already encodes this, now sharpened with an explicit anti-misread clause. NEIGHBOURS: growth mandate and anti-conservatism mandate (aligned -- this is their capability-side teeth); the one carve-out (unchanged, now explicitly protected); max_audit (under-build and timidity now framed as defects it surfaces).",
+   "hypothesis": "the max-ROI reading of never-compromise is max capability with intact rails; the ruinous reading is loosening rails; naming the distinction prevents the second",
+   "expected_benefit": "no future session under-builds OR talks itself into loosening a survival rail",
+   "expected_cost": "none",
+   "confidence": 0.95,
+   "assumptions": [],
+   "success_metric": "capability defects and rail-loosening proposals both flagged; neither recurs",
+   "reversal_condition": "n/a -- principal directive; the bright line is Tier-3-class, only the principal relaxes it"
   }
  ]
 }
