@@ -2143,6 +2143,19 @@
    ],
    "success_metric": "blended seed-window return lands 100%+ in yr-1 with the desk's own risk rails intact and zero ToS/sybil exposure",
    "reversal_condition": "points meta dies or venue risk exceeds subsidy -> drop layer 2-3, glidepath reverts to the ladder bands"
+  },
+  {
+   "id": "2026-07-23-frame-lock-autopsy",
+   "decision": "Principal asked why the small-capital stack was not surfaced before. Autopsy (owned as a CRO defect, not excused): (1) FRAME-LOCK -- every prior question (returns, leverage, 100%) was answered inside 'the desk = trading returns on $4.5k'; the terminal objective is the OPERATOR'S log-wealth, which includes capacity-inverse non-alpha layers at seed scale. Optimized within the frame instead of interrogating it. (2) PRESTIGE FILTER -- points/airdrop/incentive layers pattern-matched 'retail', violating the desk's own info-value-over-prestige principle, applied to data sources but not return sources. Doubly ironic: capacity-inverse subsidies are the PUREST form of the desk's own smallness-edge thesis. (3) REACTIVE ANSWERING -- answered the questions asked instead of the goal behind them, the exact opposite of the be-the-principal stance the CRO demands of the brain. Same failure class as the 07-22 baseline: principal-angled discovery. FIXES: blind-spot row (origin=principal), angle 19 OBJECTIVE-FRAME CHECK added to the battery permanently. Partial mitigant honestly noted: the incentive-routing idea became crisp only after the 07-22 cost model made turnover cost measurable -- but the stack's other layers were available knowledge all along; the core miss stands.",
+   "hypothesis": "frame-lock is a recurring CRO failure mode; a standing frame-interrogation probe catches the next one without the principal pushing",
+   "expected_benefit": "next out-of-frame value source surfaces from the battery, not from the principal",
+   "expected_cost": "none",
+   "confidence": 0.8,
+   "assumptions": [
+    "angle 19 gets executed with real reads, not rubber-stamped"
+   ],
+   "success_metric": "zero further origin=principal rows in the objective-frame class",
+   "reversal_condition": "if it recurs despite angle 19, the battery execution is the defect -- escalate to anti-rubber-stamp enforcement"
   }
  ]
 }
