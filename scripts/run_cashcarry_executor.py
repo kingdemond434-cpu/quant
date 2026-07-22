@@ -198,6 +198,32 @@ def _topup_plan(pos: dict[str, dict], capital: float, *, cap_frac: float = 0.35,
     return plan
 
 
+# --- CHURN GUARD (gap #42, 2026-07-22) -----------------------------------------------------
+# Trade audit over 250 closes: carries held <8h (38% of all trades) LOSE money as a class
+# (<2h -5.0 bps, 2-8h -4.1 bps) while 8-24h earns +6.5 and >24h earns +16.9. 42% of closes
+# re-opened the SAME symbol within 24h -- a provably wasted round-trip. Realized drag -8.1%/yr.
+# Cause is funding-sign flicker, not bad entries (funding at open is identical fast vs slow).
+# ECONOMICS: adverse funding costs ~1 bp per 8h; a round-trip costs ~4.5 bps (measured by
+# run_cost_model.py). So holding up to 24h risks <=3 bps to save 4.5 -- strictly dominant.
+# Beyond ~32h the accumulated adverse funding would exceed the saved round-trip, so 24h is the
+# profit-maximising floor, not an arbitrary constant.
+_MIN_HOLD_H = 24.0        # rotation-driven closes blocked below this age
+_FUNDING_PANIC = -0.0005  # per-8h rate: worse than this, holding costs more than the round-trip
+
+
+def _churn_guard(held_h: float, funding: float, rail_forced: bool) -> bool:
+    """True => HOLD the carry (block a rotation-driven close).
+
+    Rails ALWAYS win (basis-stop / ADL / cooldown / risk-flatten / reconcile close instantly);
+    strongly-negative funding escapes the floor; otherwise a carry younger than the minimum
+    hold is kept so it can earn back the round-trip it already paid."""
+    if rail_forced:
+        return False
+    if funding <= _FUNDING_PANIC:
+        return False
+    return held_h < _MIN_HOLD_H
+
+
 def _mkt_or_limit(conn: Any, sym: str, side: str, qty: float) -> str:
     """Close/hedge ``qty``: MARKET first, LIMIT fallback. On a thin/broken book a market order is
     rejected by the venue PERCENT_PRICE filter (-4131) -- and a market-only cover can then NEVER
@@ -445,9 +471,18 @@ def _rebalance(top: int, hold_top: int, capital: float, *, dry: bool) -> dict[st
                 actions.append("RISK-PAUSE-OPENS " + "; ".join(risk.reasons))
 
     # CLOSE carries that left the positive-funding set (sell spot, cover perp)
+    # CHURN GUARD (gap #42): a rotation-driven close on a carry that has not yet earned its
+    # round-trip is a measured -8.1%/yr drag. Rails are exempt and still close instantly.
+    _rail_forced = set(cool) | (set(pos) if (risk is not None
+                                             and risk.action == "flatten") else set())
     for sym in list(pos):
         if sym not in target:
             p = pos[sym]
+            if _churn_guard(_held_hours(p.get("opened")), float(p.get("funding", 0.0)),
+                            sym in _rail_forced):
+                actions.append(f"hold {sym}: churn-guard "
+                               f"({_held_hours(p.get('opened')):.1f}h < {_MIN_HOLD_H:g}h)")
+                continue
             # realized trade record: delta-neutral price legs (~cancel) + est funding harvested
             spx, fpx = spot_px.get(sym, p["spot_cost"]), fut_px.get(sym, p["perp_entry"])
             if not dry:
