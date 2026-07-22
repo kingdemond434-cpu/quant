@@ -224,6 +224,49 @@ def _churn_guard(held_h: float, funding: float, rail_forced: bool) -> bool:
     return held_h < _MIN_HOLD_H
 
 
+# --- ENTRY GATE (gap #43, 2026-07-22) ------------------------------------------------------
+# Trade audit over 250 closes, bucketed by funding rate AT OPEN:
+#   0.000100 (Binance BASELINE, no real premium): n=50  net -$176.24  (-92.7 bps)  <-- disaster
+#   0.000100-0.000144                           : n=50  net  +$14.71  (+12.8 bps)
+#   0.000100-0.000144                           : n=50  net  +$60.87  (+42.7 bps)
+#   0.000144-0.000219                           : n=50  net  -$22.43   (-7.5 bps)
+#   0.000219-0.001517                           : n=50  net +$179.31  (+45.9 bps)
+# `_ranked()` accepted ANY funding > 0, so the desk opened carries on symbols sitting at the
+# exchange DEFAULT rate -- i.e. names with no funding premium whatsoever -- and paid a full
+# round-trip for them. Those 50 trades ate ~80% of the desk's gross profit.
+#
+# DERIVATION (not a fitted constant): a carry must out-earn its round-trip over the minimum
+# hold. Measured median pair round-trip is ~4.5 bps (run_cost_model.py); the minimum hold is
+# 24h = 3 funding periods. Break-even funding = 4.5 / 3 = 1.5 bps = 0.00015 per 8h.
+_MIN_FUNDING = 0.00015          # per-8h floor: below this a carry cannot pay for its own exit
+_DEFAULT_RT_BPS = 4.5           # measured desk-median pair round-trip, used when unmeasured
+_COST_MODEL = Path("data/cost_model.json")
+
+
+def _rt_bps(sym: str) -> float:
+    """This symbol's MEASURED round-trip cost, else the desk median. Self-improving: as the
+    recorder accrues the traded names, the gate automatically tightens on expensive books
+    (NOMUSDT realised -149 bps, KNCUSDT -211 bps -- thin books where slippage dominates)."""
+    try:
+        m = json.loads(_COST_MODEL.read_text("utf-8"))["symbols"][sym]["pair"]["500"]
+        v = m.get("pair_roundtrip_bps")
+        return float(v) if v is not None else _DEFAULT_RT_BPS
+    except (OSError, json.JSONDecodeError, KeyError, TypeError, ValueError):
+        return _DEFAULT_RT_BPS
+
+
+def _entry_gate(sym: str, funding: float, min_hold_h: float = _MIN_HOLD_H) -> bool:
+    """True => ALLOW opening this carry.
+
+    Requires expected funding capture over the MINIMUM HOLD to beat this symbol's measured
+    round-trip. Applied to NEW OPENS ONLY -- never to the hold/target set, so raising the bar
+    can never force-close existing carries (that would itself be a churn event)."""
+    if funding < _MIN_FUNDING:
+        return False
+    periods = max(1.0, min_hold_h / 8.0)
+    return funding * 1e4 * periods > _rt_bps(sym)
+
+
 def _mkt_or_limit(conn: Any, sym: str, side: str, qty: float) -> str:
     """Close/hedge ``qty``: MARKET first, LIMIT fallback. On a thin/broken book a market order is
     rejected by the venue PERCENT_PRICE filter (-4131) -- and a market-only cover can then NEVER
@@ -414,6 +457,14 @@ def _rebalance(top: int, hold_top: int, capital: float, *, dry: bool) -> dict[st
     if cool:
         target -= set(cool)
         cands = [c for c in cands if c[0] not in cool]
+    # ENTRY GATE (gap #43): opens only -- never filters hold_set/target, so raising the
+    # bar cannot force-close existing carries.
+    _pre = len(cands)
+    cands = [c for c in cands if _entry_gate(c[0], c[1])]
+    if len(cands) < _pre:
+        actions_gate = f"entry-gate: {_pre - len(cands)} cand(s) below funding/cost bar"
+    else:
+        actions_gate = ""
     spot_px, fut_px = spot.prices(), fut.mark_prices()
     # BASIS-BLOWOUT STOP (2026-07-12 external review): the pair is delta-neutral to PRICE, not
     # to BASIS -- it marks against us when the perp trades at a large PREMIUM to spot (short
@@ -440,6 +491,8 @@ def _rebalance(top: int, hold_top: int, capital: float, *, dry: bool) -> dict[st
     alloc = _alloc(cands, free)                             # funding-weighted, concentration-capped
     per = free / max(1, len(cands))                        # equal-weight fallback
     actions: list[str] = list(recon)                       # surface reconcile actions in the feed
+    if actions_gate:
+        actions.append(actions_gate)
 
     # GROWTH-POSITIVE risk controls (ruin-boundary sized). Flatten ONLY at the 35% ruin threshold
     # the leverage optimizer uses; PAUSE (not flatten) new opens in stress so existing carries keep

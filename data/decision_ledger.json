@@ -2032,6 +2032,20 @@
    ],
    "success_metric": "after the fix, <8h closes fall to rail-driven only, and net bps by bucket stops being negative",
    "reversal_condition": "if forced holds accumulate adverse funding exceeding the saved round-trip cost, raise the band or shorten the minimum hold"
+  },
+  {
+   "id": "2026-07-22-entry-gate-funding-and-cost",
+   "decision": "Second and larger execution leak found + fixed (gap #43). The desk had NO minimum funding threshold -- `_ranked()` took any funding>0 -- so it opened carries on symbols sitting at Binance's BASELINE 0.0001 rate, i.e. names with no funding premium at all. Those 50 trades lost $176.24 (-92.7 bps) while every other funding bucket combined earned +$232; against a total net of +$56 that is ~80% of gross profit consumed. FIX: `_entry_gate()` requires expected funding capture over the 24h minimum hold to exceed the symbol's MEASURED round-trip cost. The floor is derived, not fitted: 4.5 bps round-trip / 3 funding periods = 1.5 bps = _MIN_FUNDING 0.00015. Per-symbol cost is read from run_cost_model.py so the gate is automatically stricter on thin books (OPUSDT 20.6 bps RT) and looser on liquid ones (BTCUSDT 0.018 bps) -- and self-tightens as the recorder accrues the traded universe. Deliberately applied to NEW OPENS ONLY, never to hold/target, so the higher bar cannot force-close existing carries (that would itself be a churn event). 6 unit tests. Together with the #42 churn guard this is the second of three compounding EXECUTION leaks -- the carry edge was largely real and was leaking out through entry quality and round-trips, not through absent alpha.",
+   "hypothesis": "most of the carry's underperformance is entry quality + churn, not missing edge",
+   "expected_benefit": "removes the -92.7 bps baseline-funding bucket and gates thin books by measured cost; combined with #42 targets the bulk of realised drag",
+   "expected_cost": "smaller tradeable universe (fewer, better carries); some genuine-but-marginal names skipped",
+   "confidence": 0.8,
+   "assumptions": [
+    "measured round-trip generalises to the traded names once recorded",
+    "funding at open is predictive of funding captured"
+   ],
+   "success_metric": "baseline-rate opens fall to zero; net bps by funding bucket stops being negative; realised net/notional improves",
+   "reversal_condition": "if the gate starves the book (too few candidates) or blocks names that would have been profitable, lower _MIN_FUNDING toward the derived break-even rather than removing the gate"
   }
  ]
 }
