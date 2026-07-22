@@ -5,4 +5,4 @@ source ops/brain_env.sh
 brain_auth_check || exit 1
 mkdir -p data/cro_ai_logs
 LOG="data/cro_ai_logs/prospector_$(date -u +%Y%m%dT%H%M).log"
-claude --effort xhigh -p "$(cat ops/prospector_dig_prompt.txt)" --dangerously-skip-permissions >> "$LOG" 2>&1
+claude --effort xhigh --append-system-prompt "$_DOCTRINE" -p "$(cat ops/prospector_dig_prompt.txt)" --dangerously-skip-permissions >> "$LOG" 2>&1

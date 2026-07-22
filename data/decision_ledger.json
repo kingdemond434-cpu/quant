@@ -1833,6 +1833,19 @@
    "assumptions": [],
    "success_metric": "capability defects and rail-loosening proposals both flagged; neither recurs",
    "reversal_condition": "n/a -- principal directive; the bright line is Tier-3-class, only the principal relaxes it"
+  },
+  {
+   "id": "2026-07-21-principal-doctrine-injected",
+   "decision": "PRINCIPAL DOCTRINE injected permanently into every reasoning organ (principal: bake my aggressive max-pushing personality into cycles, miners, diggers, audits, self-improvement -- believe nothing is ever maxed or complete, leave no ROI gap, push every detail, healthily). BUILT: ops/principal_doctrine.txt (dollar-free, verified) loaded once in brain_env.sh as _DOCTRINE and passed via --append-system-prompt on every claude-CLI organ; all 6 organ scripts plus every future one inherit it by sourcing brain_env. CONTENT: nothing is ever maxed or complete -- treat every aspect as below ceiling until proven otherwise with evidence; fine/sufficient/done are red flags; each cycle closes a real ROI gap OR proves a ceiling and logs its lifting condition, else it stalled; push every net-positive detail; no assumption ships unverified; restlessness toward higher ceilings is the default; the principal never has to be the one who notices. HEALTHILY (the anti-thrash clause, per ledger no-compromise): real validated ROI only since padding destroys ROI via triage cost; within survival rails always since aggression on capability is unbounded but rails are untouchable and loosening one is losing efficiently not winning; sustainable since re-deriving settled work or re-litigating a decision that has a ledgered reason and falsifier without new evidence just exhausts the pool. Added a NOTHING-IS-COMPLETE DUTY to the cycle contract (dollar-audit clean). DELIBERATELY EXCLUDED: the external panel and deep_review, which are OpenRouter adversarial reviewers whose value IS cold independence from the desk stance -- doctrining them would defeat the point, since the 12-of-12 incident overturn happened precisely because they held no allegiance to the desk view. So the doctrine drives the ACTING brain organs while the panels stay independent to check them. NEIGHBOURS: brain_env _DOCTRINE var, 6 organ scripts (flag added, dollar-audited), cycle contract new duty, max_audit (already treats under-build as a defect -- this is its prompt-side twin), the no-compromise principle (this is its operational injection), panels untouched by design.",
+   "hypothesis": "baking the never-satisfied max-ROI stance into every organ system prompt makes below-ceiling detection intrinsic to the reasoning, not dependent on principal pressure or an external checker alone",
+   "expected_benefit": "every cycle/miner/dig actively hunts the next ROI lever; no organ treats itself as done; principal stops being the maximization backstop",
+   "expected_cost": "~1.5KB appended per prompt; risk of over-eager change bounded by the healthily clause, survival rails, and evidence gates",
+   "confidence": 0.85,
+   "assumptions": [
+    "the healthily clause plus rails plus the independence gate plus the gauntlet bar prevent aggression from becoming churn"
+   ],
+   "success_metric": "cycles consistently close a gap or prove a ceiling each run; zero rail-loosening; no rise in change-induced incidents or padding",
+   "reversal_condition": "if the doctrine drives churn or over-building past the healthily bound, tighten the clause -- never remove the max-push stance itself"
   }
  ]
 }

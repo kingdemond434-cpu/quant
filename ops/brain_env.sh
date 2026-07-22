@@ -60,3 +60,8 @@ brain_auth_check() {
 # xhigh = documented best for agentic/coding work on Opus 4.8; max is reserved for
 # risk-path depth reviews (correctness over cost) since max can overthink general work.
 export ANTHROPIC_MODEL="claude-opus-4-8"   # flipped 2026-07-21: fable-5 usage credits exhausted on this plan (CLI: "out of usage credits ... to keep using Fable 5"). opus-4-8 verified AUTH-OK. Flip back when fable credits return.
+
+# PRINCIPAL DOCTRINE (2026-07-21): the desk's permanent max-ROI personality, injected
+# into every claude organ via --append-system-prompt. Read once here; every organ script
+# sources this file, so all present AND future organs inherit it. Read at spawn time.
+_DOCTRINE="$(cat /home/quant/quant-platform/ops/principal_doctrine.txt 2>/dev/null)"
