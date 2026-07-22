@@ -1992,6 +1992,19 @@
    ],
    "success_metric": "re-run run_cost_model.py in >=24h and get non-null pair costs for the traded names",
    "reversal_condition": "weight budget or disk pressure -> lower _MAX_SYMBOLS or widen intervals further"
+  },
+  {
+   "id": "2026-07-22-gap34-forensic-resolved-hedge-failure",
+   "decision": "Gap #34 forensic complete (docs/research/GAP34_FORENSIC.md). The '$1.8-2.6k unexplained' conflated three numbers. (1) USDT movement -1837.68 is 100% ATTRIBUTED to reconciled fills, residual -$0.0019 -- nothing is missing; the unattributed framing was false. (2) equity_gap_latch_vs_reconstructed 1623.65 is the legs_v MEASUREMENT artifact, mechanism independently confirmed by incident #5. (3) What is REAL: combined_net -1804.82 concentrated in 3 symbols (GTC -1057.60, SHELL -424.80, ONE -367.26 = -1849.66) with futures P&L ~=0 against large spot losses and heavy futures churn -- a HEDGE FAILURE, not slippage. Opened gap #41 for it. CRO SELF-IMPLICATION: those 3 are exactly the names my 07-19 full-deployment topup deployed into, and that deploy caused the trim<->topup churn that #34 names as the trigger; causation unproven but the overlap is too specific to omit.",
+   "hypothesis": "the unexplained gap is not missing money but a hedge that was not on during churn",
+   "expected_benefit": "closes a 13-model-panel-flagged open item and replaces it with the sharper, money-losing defect it was hiding",
+   "expected_cost": "none (read-only forensic)",
+   "confidence": 0.85,
+   "assumptions": [
+    "reconciliation fill data is complete for the scan window"
+   ],
+   "success_metric": "gap #41 per-fill timeline confirms or refutes an unhedged window on GTC/SHELL/ONE",
+   "reversal_condition": "if the futures legs were in fact held and hedged, the loss needs a different explanation -> reopen"
   }
  ]
 }
