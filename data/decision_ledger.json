@@ -2046,6 +2046,19 @@
    ],
    "success_metric": "baseline-rate opens fall to zero; net bps by funding bucket stops being negative; realised net/notional improves",
    "reversal_condition": "if the gate starves the book (too few candidates) or blocks names that would have been profitable, lower _MIN_FUNDING toward the derived break-even rather than removing the gate"
+  },
+  {
+   "id": "2026-07-22-gap34-attributed",
+   "decision": "Gap #34 ($1.8-2.6k unexplained, flagged UNRESOLVED by a near-unanimous 13-model panel) is now ATTRIBUTED at fill level. The USDT is fully accounted (spot_only_residual -$0.0019) so nothing is missing, but it IS a real economic loss, not slippage: spot_net -1,837.68 against futures realized of only +13.41, i.e. the hedge did not offset. It concentrates almost entirely in three symbols -- GTCUSDT -1,057.88, SHELLUSDT -429.62, ONEUSDT -363.46 = -1,849.66 -- while every other carry nets ~zero. The mechanism is visible in fill counts: a clean carry is 2 spot / 2 futures (ASTRUSDT 2/2, pair -0.05); GTCUSDT ran 5 spot / 22 futures, SHELL 4/12, ONE 7/8. The futures leg was repeatedly covered and re-shorted while the spot leg sat, leaving spot intermittently UNHEDGED so adverse moves landed with no offset. This is the SAME pathology as #42/#43 -- GTC and ONE are the exact names the churn audit flagged -- so the shipped churn guard, entry gate and orphan cooldown attack its root. The CRO original modest-slippage framing was wrong and the panel was right to reject it.",
+   "hypothesis": "the unexplained equity gap is leg-thrash cost concentrated in unstable symbols, not missing funds or measurement error",
+   "expected_benefit": "a panel-blocking UNRESOLVED gap is attributed to specific fills; confirms the execution-leak thesis and that shipped fixes target it",
+   "expected_cost": "none (read-only attribution)",
+   "confidence": 0.85,
+   "assumptions": [
+    "the reconciliation fill records are complete for the window"
+   ],
+   "success_metric": "post-fix, no symbol shows fut_fills/spot_fills >3x and no repeat of a concentrated unhedged loss",
+   "reversal_condition": "if a similar gap recurs on symbols with clean 2/2 fill counts, the mechanism is wrong and must be re-opened"
   }
  ]
 }
