@@ -2018,6 +2018,20 @@
    ],
    "success_metric": "no false orphan cover on transient desync; real orphans still fully covered within a few passes",
    "reversal_condition": "a real orphan sits uncovered too long across passes -> lower _ORPHAN_CONFIRM to 2 or raise the per-pass cap"
+  },
+  {
+   "id": "2026-07-22-churn-drag-finding",
+   "decision": "Deep profit audit found the single largest economic defect yet: CHURN DRAG. Across 250 closed trades, carries held <8h (38% of all trades, 95 of 250) lose money as a class (<2h: -5.0 bps, 2-8h: -4.1 bps) while carries held longer earn (8-24h: +6.5 bps, >24h: +16.9 bps). A <2h carry captured $0.43 funding on $20,388 notional and paid a full round-trip. Realized drag -$20.14 over 20 days on $4,500 = -8.1%/yr, against a deployed Sharpe of -0.06 -- i.e. this defect is plausibly the difference between a losing and a working carry. CROSS-VALIDATION: the independently-measured cost model predicts ~3.8 bps round-trip; the realized <2h loss is 5.0 bps -- the churn loss IS execution cost paid for nothing. CAUSE is funding-sign flicker, NOT bad entries (median abs funding at open identical fast vs slow: 0.000114 vs 0.000111); COOKIEUSDT opened 22x with 16 fast closes. Logged as gap #42 TOP-RANK with a 2-part fix (minimum-hold >=8h with rails exempt; funding-sign hysteresis). NOT implemented this cycle: it changes close logic on the risk path and this session already produced two CRO-introduced risk-path bugs caught only by live verification -- it gets a test before it ships, which is discipline, not timidity.",
+   "hypothesis": "most of the carry's underperformance is execution churn, not absent edge -- the funding edge is real but is being spent on round-trips",
+   "expected_benefit": "removing the <8h bucket recovers ~8.1%/yr of drag; positions surviving into the 8-24h bucket earn +6.5 bps instead of losing 4-5",
+   "expected_cost": "holding through adverse funding for up to 8h (~1 bp) -- an order of magnitude cheaper than the round-trip it avoids",
+   "confidence": 0.85,
+   "assumptions": [
+    "hold-time buckets are not confounded by regime",
+    "rails remain able to close instantly"
+   ],
+   "success_metric": "after the fix, <8h closes fall to rail-driven only, and net bps by bucket stops being negative",
+   "reversal_condition": "if forced holds accumulate adverse funding exceeding the saved round-trip cost, raise the band or shorten the minimum hold"
   }
  ]
 }
