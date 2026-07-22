@@ -1883,6 +1883,19 @@
    ],
    "success_metric": "self-sufficiency climbs from the 36% baseline toward >=70% over the first weeks of running cycles",
    "reversal_condition": "if self-sufficiency does not climb, the maximization apparatus failed and needs redesign, not more layers -- the honest signal to stop building meta and rethink"
+  },
+  {
+   "id": "2026-07-21-self-activating-antirubberstamp",
+   "decision": "SELF-ACTIVATING ANTI-RUBBER-STAMP built (principal: build it if the desk notices itself it needs it). Resolves the CRO's stated dilemma -- adding the enforcement now is guessing, waiting for the principal defeats the purpose -- by making the desk DETECT and ACTIVATE it on evidence. DETECTOR (max_audit, always on): watches for the rubber-stamp signature -- >=3 successful cycles that CLAIMED to run the self-interrogation but found ZERO gaps themselves while the principal found >=2 in the same 7d window (probing theater). On signature it AUTO-WRITES data/ANTIRUBBERSTAMP_ACTIVE, pages the principal that it self-activated, and logs a guard-origin blind-spot entry. ENFORCEMENT (dormant until the flag exists): once active, the newest cycle must show NAMED VERIFIED READS (>=5 file-path citations proving it actually looked) or it is a defect; and the cycle contract, gated on the flag, tells the brain that for every probe angle it must cite the specific file+value it read, bare 'verified' claims rejected. REVERSIBLE: the bar auto-lifts (contract wording) when the desk resumes finding its own gaps; the flag can be cleared by the brain/principal once self-sufficiency recovers. WHY THIS SHAPE: it is the honest middle path between guessing (build now) and negligence (never build) -- the desk raises its own verification bar exactly when the blind-spot metric proves it is going through the motions, and not before, so no overhead is paid unless earned. NEIGHBOURS: blind-spot ledger (the signal source), self-interrogation duty (what it enforces), cycle contract (flag-gated bar), max_audit (2 new fenced checks). Currently DORMANT -- correct, since no cycle has run yet.",
+   "hypothesis": "an evidence-triggered self-activating enforcement raises the verification bar exactly when rubber-stamping is proven, paying overhead only when earned",
+   "expected_benefit": "the desk polices its own interrogation quality without the principal deciding or the CRO guessing; genuine verified reads forced only if theater is detected",
+   "expected_cost": "two fenced checks; a proxy (file-citation count) that is directional not perfect",
+   "confidence": 0.8,
+   "assumptions": [
+    "cycle logs record the interrogation + reads in-band so the detector/enforcement can see them"
+   ],
+   "success_metric": "detector stays dormant while cycles genuinely probe; activates within a window if they rubber-stamp; enforcement then raises cited-read counts",
+   "reversal_condition": "if the detector false-activates on genuinely-at-ceiling cycles (real 0-gap runs), widen the signature (require the principal-found count higher) -- do not remove the mechanism"
   }
  ]
 }

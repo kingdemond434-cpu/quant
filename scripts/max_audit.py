@@ -402,6 +402,82 @@ def check_self_sufficiency(defects) -> None:
                         "maximization system is not yet doing its job. TOP defect."))
 
 
+def _blind_rows_window(days=7):
+    lg = ROOT / "data/blind_spot_ledger.jsonl"
+    if not lg.exists():
+        return []
+    cut = NOW - days * 86400
+    out = []
+    for line in lg.read_text("utf-8").splitlines():
+        try:
+            r = json.loads(line)
+        except Exception:
+            continue
+        if r.get("baseline"):
+            continue
+        try:
+            if datetime.fromisoformat(r["ts"]).timestamp() >= cut:
+                out.append(r)
+        except Exception:
+            pass
+    return out
+
+
+def check_rubberstamp_detector(defects) -> None:
+    """Signature: >=3 successful cycles CLAIMED interrogation, found ZERO gaps themselves, yet
+    the principal found >=2 in the same window. That is probing theater. Auto-activate the
+    enforcement, page, and log -- the desk deciding for itself that it needs the higher bar."""
+    flag = ROOT / "data/ANTIRUBBERSTAMP_ACTIVE"
+    if flag.exists():
+        return                                        # already active
+    cyc = [p for p in LOGS.glob("2026*_*.log") if p.stat().st_size >= 2000
+           and (NOW - p.stat().st_mtime) < 7 * 86400]
+    interrogated = 0
+    for p in cyc:
+        t = p.read_text("utf-8", errors="ignore").lower()
+        if any(k in t for k in ("interrogat", "probe", "self-interrog")):
+            interrogated += 1
+    rows = _blind_rows_window(7)
+    self_ct = sum(1 for r in rows if r.get("origin") == "self")
+    princ_ct = sum(1 for r in rows if r.get("origin") == "principal")
+    if interrogated >= 3 and self_ct == 0 and princ_ct >= 2:
+        flag.write_text(f"auto-activated {datetime.now(tz=UTC).isoformat()}: {interrogated} "
+                        f"cycles claimed interrogation, 0 self-gaps, {princ_ct} principal-gaps "
+                        "-- rubber-stamp signature")
+        defects.append(("rubberstamp-detected-ACTIVATED",
+                        f"RUBBER-STAMP SIGNATURE: {interrogated} cycles claimed to interrogate but "
+                        f"found 0 gaps while the principal found {princ_ct}. Anti-rubber-stamp "
+                        "enforcement AUTO-ACTIVATED -- cycles must now cite named reads per angle."))
+        try:
+            import subprocess
+            subprocess.run(["python", "scripts/blind_spot.py", "log", "--origin", "guard",
+                            "--summary", "auto-activated anti-rubber-stamp: interrogation was "
+                            "probing theater (claimed, found nothing, principal found real gaps)"],
+                           cwd=str(ROOT), timeout=20)
+        except Exception:
+            pass
+
+
+def check_rubberstamp_enforcement(defects) -> None:
+    """Active only when the flag exists: the newest successful cycle must show NAMED VERIFIED
+    READS (file-path citations proving it actually looked), not bare 'verified' prose."""
+    flag = ROOT / "data/ANTIRUBBERSTAMP_ACTIVE"
+    if not flag.exists():
+        return
+    cyc = [p for p in LOGS.glob("2026*_*.log")
+           if p.stat().st_size >= 2000 and (NOW - p.stat().st_mtime) < 2 * 86400]
+    if not cyc:
+        return
+    newest = max(cyc, key=lambda p: p.stat().st_mtime)
+    t = newest.read_text("utf-8", errors="ignore")
+    cites = len(set(re.findall(r"[\w/]+\.(?:py|json|md|sh|txt)", t)))
+    if cites < 5:
+        defects.append(("rubberstamp-enforced",
+                        f"{newest.name}: anti-rubber-stamp ACTIVE but the cycle cites only {cites} "
+                        "named reads -- interrogation lacks verified-read evidence. Cite the "
+                        "specific file+value per probe angle, do not rubber-stamp."))
+
+
 def main() -> None:
     defects: list[tuple[str, str]] = []
     for label, fn in [("organs", check_organs), ("stubs", check_stub_deaths),
@@ -413,7 +489,9 @@ def main() -> None:
                       ("dig-depth", check_dig_depth),
                       ("interrogation", check_interrogation),
                       ("generation", check_generation),
-                      ("self-sufficiency", check_self_sufficiency)]:
+                      ("self-sufficiency", check_self_sufficiency),
+                      ("rs-detect", check_rubberstamp_detector),
+                      ("rs-enforce", check_rubberstamp_enforcement)]:
         _fenced(fn, defects, label)
 
     acks = _j(ACKS, {})
