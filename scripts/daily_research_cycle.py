@@ -44,6 +44,7 @@ _STEPS = [
     ("research_pipeline", "scripts/run_daily_research.py",  7200),
     ("autodiscovery",     "scripts/run_crypto_research.py", 1800),  # industrialized crypto factory
     ("state_files",       "scripts/research_cycle.py",      300),
+    ("shadow_8h",         "scripts/run_shadow_8h.py",       420),  # 3x-obs challenger shadow
     ("leverage_opt",      "scripts/run_leverage_opt.py",    120),
     ("molded_refresh",    "scripts/run_live_combined.py",   120),
     ("git_snapshot",      "scripts/git_snapshot.py",        120),  # daily forensic code history

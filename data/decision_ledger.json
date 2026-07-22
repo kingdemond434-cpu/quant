@@ -2074,6 +2074,20 @@
    ],
    "success_metric": "used as a secondary gate on high-stakes promotions; never cited as a speedup",
    "reversal_condition": "if the desk validates on intraday returns, re-run the MC -- higher per-observation signal could make it genuinely fast"
+  },
+  {
+   "id": "2026-07-22-8h-block-challenger-shadow",
+   "decision": "Answered the principal's push to 'find a way to implement validation acceleration that harms nothing'. BOSS VERDICT: REJECT cutting 90->40 (lowers the bar; unchanged), REJECT anytime-valid as a speedup (own MC: slower), APPROVE the third path -- INCREASE OBSERVATION FREQUENCY. Built run_shadow_8h.py: the identical audited strategy function on true 8h funding-period blocks (exchange-native free history; 4h-settlement symbols summed into 8h buckets -- first run exposed the mixed-settlement inflation, 233 rows for a 26d window, fixed and now consistent at 81~=3x27). KEY MEASUREMENT: vif collapses from ~3.6 (daily, sticky) to 1.008 (8h, nearly independent) so the sqrt(3) speedup is nearly fully realized -- 40-day-bar evidence in ~23 calendar days, 90-day in ~52, at an UNCHANGED bar. Bonus honesty: the 8h series includes basis-MtM variance the molded curve hides (annSh 8.11 vs 24.42), partially defusing the gap-#14 phantom-Sharpe class at the source. Constitution respected: challenger runs alongside the incumbent in the daily cycle; adoption only after the comparison window; no consumer changed.",
+   "hypothesis": "8h funding-period blocks triple observations at an unchanged evidence bar, and block-level autocorrelation is low enough that the speedup survives NW correction",
+   "expected_benefit": "same 40/90-day evidence bars reached in ~23/~52 calendar days; more honest variance (basis MtM included) defuses phantom-Sharpe at source",
+   "expected_cost": "one extra daily-cycle step (~2min, ~120 free API calls); a comparison window before adoption",
+   "confidence": 0.8,
+   "assumptions": [
+    "8h blocks stay near-independent (vif~1) as the window grows",
+    "exchange-native funding/kline history remains free and complete"
+   ],
+   "success_metric": "challenger tracks incumbent direction over the comparison window; on adoption, promotion decisions cite 8h NW-t with vif~1",
+   "reversal_condition": "if vif at 8h drifts materially above ~1.5 the speedup is partly illusory -- recompute the calendar equivalents before any adoption"
   }
  ]
 }
