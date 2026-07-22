@@ -2275,6 +2275,20 @@
    "assumptions": [],
    "success_metric": "zero redundant catalogs/builds going forward",
    "reversal_condition": "n/a"
+  },
+  {
+   "id": "2026-07-23-genuine-new-datasets",
+   "decision": "Free-dig for GENUINELY-NEW datasets, angle-14 self-applied FIRST (checked the ~40-source map + all collectors before cataloging -- the discipline missed on the prior dig). Three real gaps found, language-blind: (74) KOREAN VENUES Upbit/Bithumb free no-key APIs -> KIMCHI PREMIUM (KRW-BTC vs global, FX-adj) = a documented Korean-retail capital-flow signal, genuinely orthogonal to funding/basis, and the desk has ZERO Korean/regional-fiat coverage (all collectors USD/USDT) -- HIGH value, real mechanism, free, single-identity clean. (75) PERP-DEX FUNDING TAIL via Loris Tools -> ~14 DEXs (Drift/Vest/Lighter/Paradex/Bluefin/...) the desk lacks; extends the queued cross-venue dispersion sleeve from CEX+HL to the DEX long tail -- MEDIUM breadth, use Loris as the discovery map and pull DEX APIs direct for the pipeline. (76) USDT/CNY OTC PREMIUM -> mainland capital-flow proxy, orthogonal but weak free-data path (OTC not an exchange API) -- parked until a clean source appears. Grades honest: 74 needs-verification (APIs free-confirmed, verify the FX-adjusted spread computes), 75/76 unverified. The STANDOUT is the kimchi premium -- a real orthogonal axis with a real mechanism the desk genuinely does not have; when the connector lands, an Upbit/Bithumb collector + kimchi-premium hypothesis is a clean objective-#2 build.",
+   "hypothesis": "regional-fiat venues (Korean KRW, Chinese CNY) carry capital-flow signals orthogonal to the desk's USD/USDT-only coverage",
+   "expected_benefit": "kimchi premium = a genuinely new free orthogonal axis; perp-DEX tail extends dispersion breadth",
+   "expected_cost": "verification + a collector build post-connector (Upbit/Bithumb no-key, trivial)",
+   "confidence": 0.75,
+   "assumptions": [
+    "kimchi premium retains predictive content net of FX",
+    "no-key APIs stay free"
+   ],
+   "success_metric": "Upbit/Bithumb collector wired post-connector; kimchi-premium hypothesis pre-registered + accrues a forward clock",
+   "reversal_condition": "kimchi premium fails its Stage-A screen or the FX-adjustment noise dominates -> graveyard, axis stays ingested"
   }
  ]
 }
