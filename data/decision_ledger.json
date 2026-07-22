@@ -1978,6 +1978,20 @@
    ],
    "success_metric": "cost_model criterion moves to True once the recorder covers traded names and the model re-runs on them",
    "reversal_condition": "realized fills diverge materially from modelled slippage -> recalibrate against actual fill data"
+  },
+  {
+   "id": "2026-07-22-recorder-universe-and-liveness",
+   "decision": "Closed gap #39: recorder universe is now DYNAMIC -- stable majors _CORE + the LIVE carry book read from cashcarry_positions.json (follows rotation), capped at 32 symbols; intervals widened depth 4s->5s and trades 20s->40s to fit the Binance weight budget (1620/min vs 1920 cap at 30 symbols). Verified live: 30 symbol dirs, all 10 traded names (AAVE/AGLD/BICO/CELR/COOKIE/EDU/EGLD/MANA/PEOPLE/XLM) now recording on both fut and spot, new code confirmed by process-start vs file-mtime, no duplicate processes. This makes the cost model applicable to the book the desk actually trades. FOUND EN ROUTE (gap #40): ensure_recorder.py treats heartbeat-age<600s as 'alive', so a dead process with a fresh heartbeat is reported alive and not respawned for up to 10 minutes -- observed directly. Same failure CLASS as the digger finding: an indirect proxy reporting success while the real thing is dead. CRO note: I caused a ~15min recorder outage restarting it (pkill self-matched my own SSH cmdline twice); data gap is unrecoverable but small.",
+   "hypothesis": "recording the traded universe makes execution-cost calibration real; proxy-based liveness checks hide dead processes",
+   "expected_benefit": "cost model applicable to actual sizing once >=24h of traded-name depth accrues; liveness gap documented",
+   "expected_cost": "depth resolution 4s->5s and trades 20s->40s on majors; ~15min recorder outage during the change",
+   "confidence": 0.9,
+   "assumptions": [
+    "book rotation stays within the 32-symbol cap",
+    "5s depth sampling is sufficient for slippage curves"
+   ],
+   "success_metric": "re-run run_cost_model.py in >=24h and get non-null pair costs for the traded names",
+   "reversal_condition": "weight budget or disk pressure -> lower _MAX_SYMBOLS or widen intervals further"
   }
  ]
 }
