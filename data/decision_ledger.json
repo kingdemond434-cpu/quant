@@ -1896,6 +1896,19 @@
    ],
    "success_metric": "detector stays dormant while cycles genuinely probe; activates within a window if they rubber-stamp; enforcement then raises cited-read counts",
    "reversal_condition": "if the detector false-activates on genuinely-at-ceiling cycles (real 0-gap runs), widen the signature (require the principal-found count higher) -- do not remove the mechanism"
+  },
+  {
+   "id": "2026-07-21-antirubberstamp-active-from-start",
+   "decision": "Principal overruled the CROs dormant-until-triggered design and ACTIVATED anti-rubber-stamp from the start -- and the CRO concedes the argument was correct. Reassessment: requiring a named verified read per probe angle is NOT overhead paid on a guess; it is the constitutional verify-then-claim rule (read the file fresh, derive the claim from what you read) made AUDITABLE. A genuine cycle already does the reads; citing them is near-free, and a thorough cycle easily clears the >=5-citation bar, so false-positive risk is low. Activating now removes the detection WINDOW where rubber-stamping could hide before the detector caught it. This is consistent with the CROs restraint stance because it is NOT new machinery -- the enforcement was already built; this is a one-flag config decision turning on a near-free, existing-rule-aligned good. The detector stays on as a DEEPER backstop: if cycles rubber-stamp even WITH enforcement active while the principal still finds gaps, that is a redesign signal. Reversible: clear the flag if it false-flags genuine cycles (then widen the citation bar, do not remove the mechanism). LESSON: the CRO defaulted to over-clever evidence-gating where the honest move was to just turn on a good thing.",
+   "hypothesis": "a near-free, verify-then-claim-aligned enforcement is better active from cycle 1 than gated behind a detection window",
+   "expected_benefit": "rubber-stamping impossible from the first cycle; verify-then-claim becomes auditable",
+   "expected_cost": "slightly longer cycle reports (citations); low false-positive risk",
+   "confidence": 0.85,
+   "assumptions": [
+    "genuine cycles cite >=5 files, which a full verified interrogation easily does"
+   ],
+   "success_metric": "cycles cite named reads per angle from the start; no false-flags on genuine full cycles",
+   "reversal_condition": "if it false-flags a genuine cycle, widen the citation bar; do not remove"
   }
  ]
 }
