@@ -49,6 +49,13 @@ _DEPTH_MULT = 5.0                                # book depth within 1% of touch
 # themselves breach the ruin constraint. Two bounds, both safe-direction only:
 _ORPHAN_CONFIRM = 2        # reconcile passes an orphan must PERSIST before live ammo
 _ORPHAN_MAX_USD = 1500.0   # max notional force-covered per symbol per pass
+# CASCADE GUARD (gap #37): the confirm-window and per-pass cap bound a SINGLE cover, but
+# `seen.pop()` reset the symbol immediately, so a persistent desync (exactly what a venue
+# outage looks like) could re-fire live ammo every pass with no rate limit. A cooldown
+# bounds repeats per symbol; the hourly circuit stops the whole path when MANY symbols go
+# orphan at once -- that pattern means "the venue is sick", not "we have N real orphans".
+_ORPHAN_COOLDOWN_S = 1800.0   # per-symbol quiet period after a cover
+_ORPHAN_MAX_PER_HOUR = 3      # covers/hour across all symbols before the path halts
                                                  # this many times, on BOTH legs, or the name is
                                                  # skipped (2026-07-13 thin-book incident)
 
@@ -298,7 +305,8 @@ def _mkt_or_limit(conn: Any, sym: str, side: str, qty: float) -> str:
 def _reconcile(pos: dict[str, dict], *, dry: bool,
                cooldown: dict[str, float] | None = None,
                fail_counts: dict[str, int] | None = None,
-               orphan_seen: dict[str, int] | None = None) -> list[str]:
+               orphan_seen: dict[str, int] | None = None,
+               orphan_cool: dict[str, float] | None = None) -> list[str]:
     """Heal hedge drift every cycle -- survival is priority #1. Two invariants restored:
 
       * ORPHAN futures short (a short with no tracked carry) -> cover it (close to flat).
@@ -346,7 +354,18 @@ def _reconcile(pos: dict[str, dict], *, dry: bool,
     for s2 in list(seen):                                  # a transient desync disappears -> forget
         if s2 not in live_orphans:
             seen.pop(s2, None)
+    _cool = orphan_cool if orphan_cool is not None else {}
+    _now = time.time()
+    _recent = sum(1 for t0 in _cool.values() if _now - t0 < 3600.0)
     for sym in sorted(live_orphans):
+        if _recent >= _ORPHAN_MAX_PER_HOUR:        # cascade -> venue is sick, stand down
+            acts.append(f"orphan-CIRCUIT: {_recent} covers in the last hour "
+                        f">= {_ORPHAN_MAX_PER_HOUR} -- halting live-ammo cover, page")
+            break
+        if _now - _cool.get(sym, 0.0) < _ORPHAN_COOLDOWN_S:
+            acts.append(f"orphan {sym} in cover-cooldown "
+                        f"({(_ORPHAN_COOLDOWN_S - (_now - _cool[sym])) / 60:.0f}m left)")
+            continue
         qty = float(actual[sym])
         n = seen.get(sym, 0) + 1
         seen[sym] = n
@@ -366,6 +385,8 @@ def _reconcile(pos: dict[str, dict], *, dry: bool,
         if how:
             acts.append(f"cover-orphan {sym} {round(cover, 8)} ({how})")
             seen.pop(sym, None)
+            _cool[sym] = _now                      # start the quiet period
+            _recent += 1
     dead: list[str] = []
     forced: dict[str, int] = {}
     if any(abs(float(actual.get(s, 0.0))) + 1e-9 < abs(float(p["perp_qty"])) * 0.98
@@ -450,6 +471,8 @@ def _rebalance(top: int, hold_top: int, capital: float, *, dry: bool) -> dict[st
     state["cooldown"] = cool
     fails: dict[str, int] = {s: int(n) for s, n in state.get("reconcile_fail_counts", {}).items()}
     state["reconcile_fail_counts"] = fails
+    ocool: dict[str, float] = {s: float(t) for s, t in state.get("orphan_cooldown", {}).items()}
+    state["orphan_cooldown"] = ocool
     orph: dict[str, int] = {s2: int(n2) for s2, n2 in state.get("orphan_seen_counts", {}).items()}
     state["orphan_seen_counts"] = orph
     recon = _reconcile(pos, dry=dry, cooldown=cool,          # heal hedge drift FIRST (survival #1)
