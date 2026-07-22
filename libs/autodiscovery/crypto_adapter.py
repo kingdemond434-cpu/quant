@@ -45,6 +45,7 @@ DEFAULT_FAMILIES: tuple[Family, ...] = (
     Family.TREND,
     Family.VOLATILITY_EXPANSION,
     Family.VOLATILITY_COMPRESSION,
+    Family.CROSS_ASSET,  # BTC-relative; ref_close populated below (no-lookahead)
 )
 
 
@@ -69,17 +70,31 @@ def _read_frames(symbols: Sequence[str], timeframe: Timeframe, lake_root: str) -
 
 
 def _provider_from_frames(frames: dict, min_bars: int) -> DataProvider:
+    # BTC is the cross-asset reference (feeds MarketSeries.ref_close -> the CROSS_ASSET generator).
+    # NO-LOOKAHEAD: reindex BTC's close onto each symbol's bar index with PAST-ONLY ffill (a bar's
+    # ref is BTC's contemporaneous close, gaps filled from the last KNOWN past close); net_returns
+    # then applies lag-1, so the position never sees future data. Leading gaps (symbol older than
+    # BTC -- effectively never) leave ref_close None so the generator honestly skips (zeros).
+    btc = frames.get("BTCUSDT")
+    btc_close = btc["close"] if btc is not None else None
+
     def provider(symbol: str) -> MarketSeries | None:
         df = frames.get(symbol)
         if df is None or len(df) < min_bars:
             return None
         funding = df["funding"].to_numpy("float64") if "funding" in df.columns else None
+        ref_close = None
+        if btc_close is not None and symbol != "BTCUSDT":
+            ref = btc_close.reindex(df.index).ffill()
+            if not ref.isna().any():
+                ref_close = ref.to_numpy("float64")
         return MarketSeries(
             close=df["close"].to_numpy("float64"),
             high=df["high"].to_numpy("float64"),
             low=df["low"].to_numpy("float64"),
             volume=df["volume"].to_numpy("float64"),
             hour=np.array([t.hour for t in df.index], dtype="float64"),
+            ref_close=ref_close,
             funding=funding,
         )
 

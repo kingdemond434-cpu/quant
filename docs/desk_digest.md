@@ -1,17 +1,17 @@
 # Desk digest (auto-generated daily -- do not hand-edit)
-_updated 2026-07-21T08:01Z · companion to [[institutional_knowledge]]_
+_updated 2026-07-22T08:01Z · companion to [[institutional_knowledge]]_
 
 ## Book
-- Molded net: **$-37.31** | funding **$87.26** | run-rate APR 18.4% | day 19.11
-- Root cause: **unknown_novel** (pause_and_page) | tracking error $-289.57
+- Molded net: **$7.81** | funding **$91.03** | run-rate APR 17.9% | day 20.11
+- Root cause: **unknown_novel** (pause_and_page) | tracking error $-280.72
 
 ## Validation clocks
-- **carry (DEPLOYED)**: 25/90d | bt 3.25 fwd 11.94
-- **perp L/S**: 18/90d | bt 0.44 fwd 3.34
-- **trend**: 18/90d | bt 1.39 fwd -2.02
-- **trend regime-gated**: 13/90d | bt 1.37 fwd 0.0
-- **OI/LS data**: 23/40d
-- **stablecoin data**: 19/40d
+- **carry (DEPLOYED)**: 26/90d | bt 3.86 fwd 17.63
+- **perp L/S**: 19/90d | bt -0.04 fwd 2.72
+- **trend**: 19/90d | bt 1.4 fwd -3.52
+- **trend regime-gated**: 14/90d | bt 1.38 fwd 0.0
+- **OI/LS data**: 24/40d
+- **stablecoin data**: 20/40d
 
 ## Open decisions (ledger)
 - `2026-07-04-cashcarry-top10-4500` -- review 2026-08-04: funding/day rises ~50% without new drift losses by 2026-08-04
@@ -140,6 +140,16 @@ _updated 2026-07-21T08:01Z · companion to [[institutional_knowledge]]_
 - `2026-07-21-maximization-checker` -- review ?: next 30d: >=1 real below-max state caught by the checker BEFORE the principal notices it; 
 - `2026-07-21-ceiling-self-audit` -- review ?: by 07-25: all 3 directives closed on time; realized cycles/day >= 3; connector sections 3-
 - `2026-07-21-addall-axes-recorder` -- review ?: within 48h: lake shows 20-symbol depth files growing; bronze has wikipedia/crossasset/mini
+- `2026-07-21-recorder-spot-leg-gap35` -- review ?: data/moat/spot/ accumulates continuous hourly partitions for >=1 week with <5% gap; spot-l
+- `2026-07-21-redteam-protocol` -- review ?: next funded deep audit: all responding models deliver 3 parts; >=1 part-2/part-3 item impl
+- `2026-07-21-no-compromise-principle` -- review ?: capability defects and rail-loosening proposals both flagged; neither recurs
+- `2026-07-21-principal-doctrine-injected` -- review ?: cycles consistently close a gap or prove a ceiling each run; zero rail-loosening; no rise 
+- `2026-07-21-self-interrogation-protocol` -- review ?: cycles consistently report verified probes + occasionally a new angle added to the battery
+- `2026-07-21-growth-probe-angle` -- review ?: cycles report on geometric-growth realization; under-deployment or drag surfaced; leverage
+- `2026-07-21-blind-spot-origin-ledger` -- review ?: self-sufficiency climbs from the 36% baseline toward >=70% over the first weeks of running
+- `2026-07-21-self-activating-antirubberstamp` -- review ?: detector stays dormant while cycles genuinely probe; activates within a window if they rub
+- `2026-07-21-antirubberstamp-active-from-start` -- review ?: cycles cite named reads per angle from the start; no false-flags on genuine full cycles
+- `2026-07-22-crypto-generation-diagnosis` -- review ?: cross-asset generators add genuinely-new gauntlet-passable hypotheses; as OI/LS axes cross
 
 ## Executive KPI snapshot
 - CRO: {"hypotheses_tested_lifetime": 20, "validated_survivors": 1, "survivor_note": "cash-carry (fwd 8/90); trend candidate gauntlet-passed (fwd 1/90); all else graveyarded", "survival_r
