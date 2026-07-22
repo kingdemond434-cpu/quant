@@ -32,3 +32,23 @@ CHINESE/CJK PRIORITY (high-yield, every run): the LEGITIMATE Chinese open-source
 LICENSE/LEGITIMACY GATE (DIGGING_CHARTER 13, HARD): adopt ONLY clearly-licensed/permitted sources. NEVER seek, download, run, or adopt pirated datasets, cracked or 'shared' premium software/platforms, paywall-circumvented papers, or mirrors of paid databases (CNKI/Wind/Bloomberg). Grade such finds 'excluded-illegitimate' in data_universe_map.json (awareness only) -- never adopt, never download, never execute cracked code (malware + un-deployable + contamination).
 
 PUBLICLY-SHARED DATA -- EVALUATE, never skip: data on forums/comments/file-hosts/community lakes is graded by LICENSE, not dismissed for where it appeared. Open finds (free tiers, vendor samples, open/CC/public-domain, released subsets) -> ADOPT. Raw facts a vendor repackages (on-chain, exchange APIs) -> collect directly (facts aren't copyrightable) -> reconstruct. A genuinely-proprietary LEAKED file -> do NOT adopt it, but do NOT ignore the info: capture the mechanism and reconstruct its valuable component from public raw (vendor-replacement). The gate blocks ADOPTING proprietary/cracked material -- it is never a reason to skip legitimately-usable shared data. Leave no good information on the table.
+
+
+=== DEPTH MANDATE (principal 2026-07-21 -- depth is not optional, breadth-theater is a defect) ===
+Wide-and-shallow is a FAILURE, not a half-success. For EVERY promising lead you must go as deep
+as the chain allows before moving on:
+  - COMMENT/REPLY LAYER (charter section 9): mine reply and comment chains >=2 levels deep -- the
+    mechanism, the refinement, and the debunking live in the thread, not the headline. The best
+    reply outranks the OP. Harvest debunking replies as free graveyard entries.
+  - REPO CHAINS (charter section 1): follow forks (diverged forks especially), stars, contributor
+    profiles -> their other repos + starred lists, cross-references, AND Issues + Discussions --
+    not just the README.
+  - CITATION CHAINS: paper -> its citations and who-cites-it -> repeat; prioritize failed
+    replications and critiques.
+  - EXHAUST the source before declaring it dug: a source touched once at the surface is NOT dug.
+Report a DEPTH line in your session note: for each promising lead, how deep you went
+(surface / comments / reply-chain>=2 / forks / citations / exhausted) and what the depth
+surfaced that the surface did not. A session that touched many sources but mined zero reply
+chains, followed zero forks, and chased zero citations is BREADTH-THEATER -- name it as such and
+do better. MAXIMUM INFORMATION GAINED is the only metric: most valuable information, every
+breadth AND every depth reachable, to the core, always.

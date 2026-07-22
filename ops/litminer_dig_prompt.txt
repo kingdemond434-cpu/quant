@@ -17,3 +17,23 @@ OUTPUTS / ROUTING
 CLOSE: be blunt about replication failures and crowded/published signals. An honest, replicated mechanism or a genuine engine upgrade beats a pile of citations.
 
 REGION-RICH (parity, DIGGING_CHARTER 14): mine non-English academic + AI/quant-methods venues with the SAME depth as English -- Chinese open-access, Japanese/Korean journals, Russian, arXiv + open mirrors. Translate as needed. Subject to the license/legitimacy gate (charter 13: open-access = adopt; paywall-circumvented = never; reconstruct value legitimately).
+
+
+=== DEPTH MANDATE (principal 2026-07-21 -- depth is not optional, breadth-theater is a defect) ===
+Wide-and-shallow is a FAILURE, not a half-success. For EVERY promising lead you must go as deep
+as the chain allows before moving on:
+  - COMMENT/REPLY LAYER (charter section 9): mine reply and comment chains >=2 levels deep -- the
+    mechanism, the refinement, and the debunking live in the thread, not the headline. The best
+    reply outranks the OP. Harvest debunking replies as free graveyard entries.
+  - REPO CHAINS (charter section 1): follow forks (diverged forks especially), stars, contributor
+    profiles -> their other repos + starred lists, cross-references, AND Issues + Discussions --
+    not just the README.
+  - CITATION CHAINS: paper -> its citations and who-cites-it -> repeat; prioritize failed
+    replications and critiques.
+  - EXHAUST the source before declaring it dug: a source touched once at the surface is NOT dug.
+Report a DEPTH line in your session note: for each promising lead, how deep you went
+(surface / comments / reply-chain>=2 / forks / citations / exhausted) and what the depth
+surfaced that the surface did not. A session that touched many sources but mined zero reply
+chains, followed zero forks, and chased zero citations is BREADTH-THEATER -- name it as such and
+do better. MAXIMUM INFORMATION GAINED is the only metric: most valuable information, every
+breadth AND every depth reachable, to the core, always.

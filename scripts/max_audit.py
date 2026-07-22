@@ -284,6 +284,31 @@ def check_self_application(defects) -> None:
                         "cross-venue tape breadth lost"))
 
 
+def check_dig_depth(defects) -> None:
+    """Depth guard: a substantial dig log that shows NO depth markers (never mined a reply
+    chain, followed a fork, or chased a citation) is breadth-theater -- flag it. Depth quality
+    ultimately shows in output and is judged by red-team/maximization; this catches the gross
+    wide-and-shallow case mechanically."""
+    markers = ("repl", "comment", "thread", "fork", "citation", "issue", "discussion",
+               ">=2", "deep", "exhaust", "debunk")
+    for pat in ("frontier_*.log", "dataaxis_*.log", "prospector_*.log", "litminer_*.log"):
+        logs = sorted(LOGS.glob(pat), key=lambda p: p.stat().st_mtime, reverse=True)
+        if not logs:
+            continue
+        newest = logs[0]
+        if (NOW - newest.stat().st_mtime) > 4 * 86400:
+            continue                                  # stale digs handled by check_organs
+        if newest.stat().st_size < 1500:
+            continue                                  # stub/quota-death handled elsewhere
+        txt = newest.read_text("utf-8", errors="ignore").lower()
+        hits = sum(1 for m in markers if m in txt)
+        if hits < 2:
+            defects.append((f"dig-shallow-{newest.stem}",
+                            f"{newest.name}: substantial dig with <2 depth markers "
+                            f"({hits}) -- breadth-theater, no reply/fork/citation mining "
+                            "evident. Depth mandate not honored."))
+
+
 def main() -> None:
     defects: list[tuple[str, str]] = []
     for label, fn in [("organs", check_organs), ("stubs", check_stub_deaths),
@@ -291,7 +316,8 @@ def main() -> None:
                       ("findings", check_findings), ("idle", check_idle_capability),
                       ("directives", check_directives), ("verify", check_verify_lag),
                       ("blind", check_blind_trigger),
-                      ("self-application", check_self_application)]:
+                      ("self-application", check_self_application),
+                      ("dig-depth", check_dig_depth)]:
         _fenced(fn, defects, label)
 
     acks = _j(ACKS, {})
