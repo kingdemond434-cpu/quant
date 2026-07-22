@@ -362,3 +362,32 @@ honestly, not papered over). Two non-alpha findings worth routing here:
    libs/execution/engine.py changes, re-review its importers next run). Re-reviewing a static file
    because a clock expired is weak; re-reviewing it because the thing it depends on moved is
    strong. Small build (import graph + queue weight). QUEUED -- not before the connector ships.
+
+---
+
+## SMALL-CAPITAL STACK (principal 2026-07-22 -- capacity-inverse return layers, seed-scale only)
+
+**52. INCENTIVE-AWARE VENUE ROUTING (spec-prebuild, HIGH priority post-connector).** The desk's
+delta-neutral carry turnover is currently pure cost (~4.5 bps/RT measured). Venues with
+points/rebate programs (Hyperliquid-class perp DEXes, promo CEX tiers) PAY for the same
+turnover: run the identical hedged carry where activity is subsidized -> effective fees go
+negative and the hedged book earns an incentive stream on top of funding. Capacity-INVERSE
+(per-account caps -> % yield collapses with size) = a genuine seed-scale-only edge no
+institution can farm. Pre-register as a routing overlay hypothesis: same sleeve, venue-split
+execution, incentive stream logged as its own PnL line (never commingled with funding edge --
+it must not contaminate carry validation). GUARDRAILS: single identity, genuine desk volume
+only, NO sybil/multi-wallet (ToS + endgame-audit poison); venue custody risk sized like any
+venue (concentration caps apply to incentive venues too); data-axis digger verifies CURRENT
+live programs before any build (points metas rot fast).
+
+**53. NEW-LISTING FUNDING-SPIKE SLEEVE (pre-registration-ready alpha family).** Day-1/week-1
+perp listings routinely print extreme funding (crowded one-sided spec flow, no arb capital in
+place yet) -- a structurally recurring, capacity-tiny dislocation: exactly the desk's niche.
+Mechanism: delta-neutral carry entered ONLY on new listings whose funding clears the entry
+gate at a stricter thin-book cost bar (measured depth guard mandatory -- new books are the
+thinnest; NOM class risk is highest exactly here, so depth/cost gates are the edge, not an
+afterthought). Feeds objective #2 as a NEW family: pre-register via alpha_economics
+(new_orthogonal_data? no -- funding_family + narrow_breadth tags, honest), falsification: 20
+listings tracked, net-of-measured-cost capture must beat the standing book per unit of risk.
+Data need: listing calendar collector (free, exchange announcements) + the recorder's dynamic
+universe already follows the book.

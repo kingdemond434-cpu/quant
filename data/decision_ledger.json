@@ -2129,6 +2129,20 @@
    ],
    "success_metric": "each ladder step fires within 24h of its evidence; cycle reports score both objectives; clock slots stay saturated",
    "reversal_condition": "principal revokes the seed ruin schedule, or a step-1/2 period shows realized dd approaching the ruin definition -> immediate downshift + schedule review"
+  },
+  {
+   "id": "2026-07-22-small-capital-stack",
+   "decision": "Principal asked for a GENUINE path to ~200%/yr at his capacity. Boss answer: consistent-forever = no (Sharpe/capacity/persistence walls stand); 200%-CLASS FOR THE SEED WINDOW ($4.5k -> ~$50-100k, ~2-3yrs) = yes, via the capacity-INVERSE stack, not levered alpha: (1) validated desk as base; (2) incentive-aware venue routing -- the same hedged carry run where turnover earns points/rebates instead of costing fees (inbox #52); (3) clean single-identity airdrop/points harvest as a byproduct of genuine desk usage -- NO sybil, ever (ToS + audit-endgame poison); (4) capacity-only alpha families, first: new-listing funding-spike sleeve (inbox #53); (5) external income injections dominate compounding at seed ($750/mo = +200%/yr equivalent). Honest shape: a GLIDEPATH that self-destructs ~$50-100k BY DESIGN, handing off to the step-3 machine (60-120%) exactly when subsidies dilute. Layers 2-3 are labor-priced and meta-dependent (digger verifies live programs); incentive PnL logged separately so it never contaminates edge validation.",
+   "hypothesis": "capacity-inverse subsidy + micro-edge layers can sustain 200%-class total returns only while equity is small; cleanly separable from alpha validation",
+   "expected_benefit": "a genuine, honest seed-escape path at the principal's target rate without touching leverage or validation bars",
+   "expected_cost": "operator labor hours; venue/custody risk on incentive venues; points-meta decay risk; strict no-sybil discipline",
+   "confidence": 0.6,
+   "assumptions": [
+    "incentive metas persist in some form (venue-verified before build)",
+    "incentive PnL kept separate from edge PnL"
+   ],
+   "success_metric": "blended seed-window return lands 100%+ in yr-1 with the desk's own risk rails intact and zero ToS/sybil exposure",
+   "reversal_condition": "points meta dies or venue risk exceeds subsidy -> drop layer 2-3, glidepath reverts to the ladder bands"
   }
  ]
 }
