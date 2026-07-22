@@ -1870,6 +1870,19 @@
    "assumptions": [],
    "success_metric": "cycles report on geometric-growth realization; under-deployment or drag surfaced; leverage never pushed beyond proven edge",
    "reversal_condition": "n/a"
+  },
+  {
+   "id": "2026-07-21-blind-spot-origin-ledger",
+   "decision": "BLIND-SPOT ORIGIN LEDGER built (principal request) -- the objective, falsifiable readout of whether the entire maximization apparatus actually works: does the DESK find its own gaps, or does the PRINCIPAL still have to. scripts/blind_spot.py logs every gap tagged self / guard / principal; the metric is self-sufficiency = (self+guard)/total, target climbing to ~100%. Wired as a per-cycle brain duty (log every gap by origin, run the report, and if the principal is still the primary finder that is itself the TOP defect) + a max_audit check_self_sufficiency meta-defect. HONEST BASELINE seeded from this session, and it is damning-but-true: 14 gaps, self-sufficiency 36% -- the principal found 9, the desk found 5 (4 self + 1 guard). VERDICT: principal is STILL the primary gap-finder, the system is NOT yet working. That is the correct starting number: the whole week built the machinery, and this ledger now MEASURES whether it flips. FALSIFIABILITY (the point): in a week of running cycles, if self-sufficiency climbs toward 100% the maximization system worked; if it stays ~36% it did not, and check_self_sufficiency will keep flagging it as the top defect until it does. This converts 'I hope this fixes it' into a number the principal can hold the desk to. NEIGHBOURS: self-interrogation (feeds 'self' origins), max_audit guards (feed 'guard'), the whole maximization stack (this is its report card), brain contract (new logging duty).",
+   "hypothesis": "an origin-tagged gap ledger makes the maximization system's success objectively measurable, converting hope into a falsifiable self-sufficiency trend",
+   "expected_benefit": "the principal gets a number, not a promise; the desk gets a top-level defect that fires until it finds its own gaps",
+   "expected_cost": "one log line per gap; needs running cycles to move the number",
+   "confidence": 0.9,
+   "assumptions": [
+    "the brain honestly tags origins -- principal-surfaced gaps must be logged principal, not quietly self, or the metric lies"
+   ],
+   "success_metric": "self-sufficiency climbs from the 36% baseline toward >=70% over the first weeks of running cycles",
+   "reversal_condition": "if self-sufficiency does not climb, the maximization apparatus failed and needs redesign, not more layers -- the honest signal to stop building meta and rethink"
   }
  ]
 }

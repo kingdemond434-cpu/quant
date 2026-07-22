@@ -376,6 +376,32 @@ def check_generation(defects) -> None:
                         "is being crowded out by meta-duties. Generation-first duty not honored."))
 
 
+def check_self_sufficiency(defects) -> None:
+    """The meta-check: is the desk finding its own gaps, or is the principal still doing it?
+    Reads the blind-spot ledger; if over the recent window the principal is the primary finder,
+    the whole maximization apparatus is not yet working -- the top-level defect."""
+    lg = ROOT / "data/blind_spot_ledger.jsonl"
+    if not lg.exists():
+        return
+    rows = []
+    for line in lg.read_text("utf-8").splitlines():
+        try:
+            rows.append(json.loads(line))
+        except Exception:
+            pass
+    live = [r for r in rows if not r.get("baseline")]  # judge post-baseline gaps only
+    if len(live) < 8:
+        return                                          # not enough signal yet
+    by = {"self": 0, "guard": 0, "principal": 0}
+    for r in live:
+        by[r.get("origin", "principal")] = by.get(r.get("origin", "principal"), 0) + 1
+    if by["principal"] > by["self"] + by["guard"]:
+        defects.append(("system-not-self-sufficient",
+                        f"blind-spot ledger: principal still the primary gap-finder "
+                        f"({by['principal']} vs self {by['self']} + guard {by['guard']}) -- the "
+                        "maximization system is not yet doing its job. TOP defect."))
+
+
 def main() -> None:
     defects: list[tuple[str, str]] = []
     for label, fn in [("organs", check_organs), ("stubs", check_stub_deaths),
@@ -386,7 +412,8 @@ def main() -> None:
                       ("self-application", check_self_application),
                       ("dig-depth", check_dig_depth),
                       ("interrogation", check_interrogation),
-                      ("generation", check_generation)]:
+                      ("generation", check_generation),
+                      ("self-sufficiency", check_self_sufficiency)]:
         _fenced(fn, defects, label)
 
     acks = _j(ACKS, {})
