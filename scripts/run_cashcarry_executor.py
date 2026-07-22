@@ -132,7 +132,58 @@ def _dynamic_capital(default: float) -> float:
     # under-deploy. Until the confidence pipeline is root-caused AND a >=30-live-day re-enable
     # gate ships, the optimizer is IGNORED IN BOTH DIRECTIONS -- the executor deploys the
     # operator's authorized --capital. (Re-enabling honest dynamic sizing = the gap #14 duty.)
-    return default
+    return _compounded_capital(default)
+
+
+# --- COMPOUNDING RE-ANCHOR (principal 2026-07-23; Gate-0 lever, built early on purpose) ------
+# DEFECT IT FIXES: the executor deployed a FROZEN notional, so realised gains never enlarged the
+# base. That is ARITHMETIC growth -- the same dollar profit on a growing account is a shrinking
+# percentage, so measured CAGR decays toward zero. For a desk whose supreme objective is max
+# E[log(wealth)], a frozen base disconnects the objective's own transmission mechanism.
+#
+# WHY THIS IS SAFE (each hazard named and closed):
+#  * The QUARANTINED OPTIMIZER is never consulted (gap #14 stands). This reads only REALISED,
+#    hash-chain-attested PnL -- never a confidence score. Incident #2 was optimizer confidence
+#    sizing the book to $40k; that path stays dead.
+#  * NEVER raw equity. Testnet equity marks ~$10.8k because of faucet bags, so anchoring to it
+#    would balloon the book. Only realized_spot_pnl from the NAV attestation is used.
+#  * FAIL-SAFE INERT: if the stage machine cannot PROVE S1+ (live), the operator capital is
+#    returned unchanged. Missing/unreadable/S0 all read as NOT live. So this is fully built and
+#    testable today and begins compounding on day 1 of Gate 0 -- ready since the beginning.
+#  * CLAMPED BOTH WAYS: never below 0.5x nor above 4.0x authorised capital, so a corrupt
+#    realised figure cannot run the book away in either direction.
+_COMPOUND_FRACTION = 1.0      # redeploy 100% of realised gains into the base (log-optimal)
+_COMPOUND_MAX_FACTOR = 4.0    # never exceed 4x authorised capital without a new authorisation
+_COMPOUND_MIN_FACTOR = 0.5    # de-risk floor: losses shrink the base, but only to half
+_STAGE = Path("data/stage_state.json")
+_NAV = Path("data/nav_attestation.jsonl")
+
+
+def _is_live() -> bool:
+    """True ONLY when the stage machine proves S1+ (Gate 0 passed). Any error, missing file or
+    S0/paper reads as NOT live, so compounding stays off. Fail-safe by construction."""
+    try:
+        return str(json.loads(_STAGE.read_text("utf-8")).get("stage", "S0")).upper() in ("S1", "S2")
+    except Exception:
+        return False
+
+
+def _realised_pnl() -> float:
+    """Cumulative REALISED PnL from the hash-chained NAV attestation (never marks or equity)."""
+    try:
+        lines = [ln for ln in _NAV.read_text("utf-8").splitlines() if ln.strip()]
+        return float(json.loads(lines[-1]).get("realized_spot_pnl", 0.0))
+    except Exception:
+        return 0.0
+
+
+def _compounded_capital(default: float) -> float:
+    """Operator capital grown by REALISED PnL, hard-clamped, inert until live."""
+    if not _is_live():
+        return default                                   # pre-Gate-0: frozen base, unchanged
+    grown = default + _realised_pnl() * _COMPOUND_FRACTION
+    lo, hi = default * _COMPOUND_MIN_FACTOR, default * _COMPOUND_MAX_FACTOR
+    return float(min(max(grown, lo), hi))
 
 
 def _alloc(cands: list[tuple[str, float]], capital: float,
@@ -895,6 +946,7 @@ def _live_params(top: int, hold_top: int, capital: float) -> tuple[int, int, flo
 
 def main() -> None:
     ap = argparse.ArgumentParser()
+    _enable_fee_burn()           # Gate-0 fee lever: on from the first tick
     ap.add_argument("--top", type=int, default=5, help="number of carries to hold (opens)")
     ap.add_argument("--hold-top", type=int, default=60,
                     help="hysteresis: keep a carry while it still pays positive funding (wide set)")
@@ -975,3 +1027,17 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+
+# --- BNB FEE DISCOUNT (principal 2026-07-23; Gate-0 lever) -----------------------------------
+# Live VIP0 fees (~20-25 bps round-trip) are the single biggest live drag on a book that turns
+# over; BNB burn takes ~25% off. Maker-first is already implemented (_MAKER) -- this is the
+# other, RISKLESS half, wired now so it is already ON at Gate 0 rather than a day-1 scramble.
+# Best-effort + idempotent: a venue that lacks or rejects the endpoint changes nothing.
+def _enable_fee_burn() -> None:
+    """Switch BNB fee burn ON for futures and spot. Pure cost reduction, no risk surface."""
+    with contextlib.suppress(Exception):
+        fut._signed("/fapi/v1/feeBurn", {"feeBurn": "true"}, method="POST")
+    with contextlib.suppress(Exception):
+        spot._signed("/sapi/v1/bnbBurn", {"spotBNBBurn": "true"}, method="POST")
+

@@ -53,3 +53,16 @@ track record = the 100× allocator lever lost. This list is part of Gate-0.
 - [ ] Operator Compact signed into the ledger (withdrawals, ratchet, drawdown conduct, absence
       protocol, mutual tweak-freeze).
 - [ ] Absence step-down rules understood: unanswered pages de-risk the book automatically.
+
+- [ ] (BLOCKING) **COMPOUNDING RE-ANCHOR:** the executor runs on a hardcoded
+      `--capital 4500`, so gains never enlarge the deployed base -- the book earns
+      ARITHMETIC, not geometric, returns and measured CAGR decays toward zero as the
+      account grows. This is the supreme objective's own transmission mechanism and it
+      is currently disconnected. Correctly NOT built pre-live (2026-07-23 assessment):
+      realised PnL is negative (-63.60 futures/7d), the equity_curve feed is ~1 month
+      stale (last row 2026-06-28), and gap #14 leaves the optimizer quarantined -- so
+      wiring it now would compound a stale/negative signal, the exact contaminated-
+      statistic failure of incident #2. AT GATE 0 it becomes mandatory. Build it to
+      re-anchor on REALISED PnL only (never raw equity: testnet equity ~10.8k is
+      inflated by faucet bags), never via the quarantined optimizer confidence, with a
+      hard clamp vs spot capacity and a floor at operator capital.

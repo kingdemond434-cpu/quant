@@ -69,7 +69,18 @@ def _forward_returns(df: pd.DataFrame) -> dict[str, float]:
 
 def main() -> None:
     now = datetime.now(tz=UTC)
+    # REGISTRY-DRIVEN ROSTER (principal 2026-07-23): built-ins plus anything registered in
+    # data/shadow_sleeves.json, so a new sleeve starts accruing forward evidence the moment it
+    # is registered -- no code edit, nothing silently left off the clocks. Safe to scale now
+    # that DSR deflation is per-family and pre-registered (fixed wall), so parallel challengers
+    # no longer inflate each other's bar. Order is deterministic for reproducible runs.
     sleeves = ["oi_divergence", "ls_contrarian"]
+    try:
+        _extra = json.loads(Path("data/shadow_sleeves.json").read_text("utf-8"))
+        if isinstance(_extra, list):
+            sleeves = sorted({*sleeves, *(str(x) for x in _extra if str(x).strip())})
+    except Exception:
+        pass
     if not _METRICS.exists():
         days, quality = 0, "no archive yet"
         result: dict[str, object] = {}

@@ -19,7 +19,9 @@ Rules of the sweep:
 """
 from __future__ import annotations
 
+import contextlib
 import json
+import re
 import time
 from datetime import UTC, datetime
 from pathlib import Path
@@ -364,10 +366,8 @@ def check_generation(defects) -> None:
     newest_cycle = max(p.stat().st_mtime for p in good_cycles)
     gen_ts = 0.0
     if last_gen:
-        try:
+        with contextlib.suppress(Exception):
             gen_ts = datetime.fromisoformat(last_gen).timestamp()
-        except Exception:
-            pass
     # a successful cycle ran AFTER the last generation -> generation was skipped
     if newest_cycle > gen_ts + 3600:
         defects.append(("generation-skipped",
@@ -385,10 +385,8 @@ def check_self_sufficiency(defects) -> None:
         return
     rows = []
     for line in lg.read_text("utf-8").splitlines():
-        try:
+        with contextlib.suppress(Exception):
             rows.append(json.loads(line))
-        except Exception:
-            pass
     live = [r for r in rows if not r.get("baseline")]  # judge post-baseline gaps only
     if len(live) < 8:
         return                                          # not enough signal yet
@@ -447,7 +445,7 @@ def check_rubberstamp_detector(defects) -> None:
         defects.append(("rubberstamp-detected-ACTIVATED",
                         f"RUBBER-STAMP SIGNATURE: {interrogated} cycles claimed to interrogate but "
                         f"found 0 gaps while the principal found {princ_ct}. Anti-rubber-stamp "
-                        "enforcement AUTO-ACTIVATED -- cycles must now cite named reads per angle."))
+                        "enforcement AUTO-ACTIVATED -- cycles must cite named reads per angle."))
         try:
             import subprocess
             subprocess.run(["python", "scripts/blind_spot.py", "log", "--origin", "guard",
@@ -478,6 +476,50 @@ def check_rubberstamp_enforcement(defects) -> None:
                         "specific file+value per probe angle, do not rubber-stamp."))
 
 
+def check_clock_saturation(defects) -> None:
+    """OBJECTIVE #2 CLOCK-SATURATION DUTY (principal 2026-07-23), made mechanical.
+
+    Every VERIFIED data axis must have a pre-registered hypothesis ACCRUING within 7 days. An
+    empty forward-validation slot is idle capital's research twin: the axis was ingested (real
+    cost paid) but is generating zero evidence, so the discovery objective is silently stalled.
+
+    This duty shipped as prompt text only -- and prompt-only duties are aspirations. The desk's
+    recursion rule is that every manual probe becomes a standing automatic check, so it is fenced
+    here. Axes are read from the Bronze lake (what was actually ingested, not what a doc claims);
+    clocks are read from cadence_state gen_done_* (what actually ran)."""
+    bronze = ROOT / "data/lake/bronze"
+    cad_p = ROOT / "data/cadence_state.json"
+    if not bronze.exists() or not cad_p.exists():
+        return
+    try:
+        cad = json.loads(cad_p.read_text("utf-8"))
+    except Exception:
+        return
+    axes = sorted(d.name for d in bronze.iterdir() if d.is_dir())
+    if not axes:
+        return
+    stale = []
+    for ax in axes:
+        ts = cad.get(f"gen_done_{ax}") or cad.get(f"gen_done_{ax}_family")
+        if not ts:
+            stale.append(f"{ax}(never)")
+            continue
+        try:
+            age_d = (NOW - datetime.fromisoformat(ts).timestamp()) / 86400.0
+            if age_d > 7:
+                stale.append(f"{ax}({age_d:.0f}d)")
+        except Exception:
+            stale.append(f"{ax}(unparsable)")
+    if stale:
+        defects.append((
+            "clock-saturation",
+            f"OBJECTIVE #2 breach: {len(stale)}/{len(axes)} verified axes have NO hypothesis "
+            f"accruing within 7d -- {', '.join(stale[:8])}"
+            f"{' ...' if len(stale) > 8 else ''}. An empty forward clock is idle research "
+            "capital: pre-register a hypothesis on each, or ledger why the axis is not yet "
+            "testable (e.g. forward history under the gauntlet minimum)."))
+
+
 def main() -> None:
     defects: list[tuple[str, str]] = []
     for label, fn in [("organs", check_organs), ("stubs", check_stub_deaths),
@@ -489,6 +531,7 @@ def main() -> None:
                       ("dig-depth", check_dig_depth),
                       ("interrogation", check_interrogation),
                       ("generation", check_generation),
+                      ("clock-saturation", check_clock_saturation),
                       ("self-sufficiency", check_self_sufficiency),
                       ("rs-detect", check_rubberstamp_detector),
                       ("rs-enforce", check_rubberstamp_enforcement)]:

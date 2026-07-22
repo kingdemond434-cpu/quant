@@ -49,6 +49,7 @@ class AutoDiscoveryLab:
         cost_provider: CostProvider | None = None,
         families: Sequence[Family] | None = None,
         execution_gap: ExecutionGap | None = None,
+        family_trial_budget: int = 120,
     ) -> None:
         self.db = db
         self.data_provider = data_provider
@@ -62,6 +63,8 @@ class AutoDiscoveryLab:
         # Demo->live execution-gap stress (committee Lever 2/T4): a REGISTRY-eligible candidate must
         # also stay net-positive when cost is multiplied to a conservative live estimate.
         self.execution_gap = execution_gap or ExecutionGap()
+        # pre-registered per-family search size -> the FIXED wall (see _family_trials)
+        self.family_trial_budget = int(family_trial_budget)
 
     def _cost_for(self, symbol: str) -> float:
         return self.cost_provider(symbol) if self.cost_provider is not None else self.cost
@@ -69,6 +72,29 @@ class AutoDiscoveryLab:
     def _effective_trials(self, n_new: int) -> int:
         """Cumulative trial count for cross-campaign DSR deflation: this cycle + all prior."""
         return n_new + self.store.total()
+
+    def _family_trials(self, family: str, n_new_in_family: int, prior: dict) -> int:
+        """FIXED-WALL DEFLATION (principal 2026-07-23). The DSR bar must be a WALL, not a ratchet
+        that rises every time the desk tests anything -- otherwise objective #2 (maximize
+        discovery) mechanically sabotages objective #1 by making every new test harder to pass.
+
+        Two changes make a fixed bar STATISTICALLY LEGITIMATE rather than phantom-edge bait:
+
+        (1) PARTITIONED -- a family is deflated by ITS OWN trials, never the global pool. Testing
+            cross-asset can no longer harshen the funding-mechanism bar. This is standard
+            per-family error budgeting: the families are pre-registered and economically
+            distinct, so their error budgets are genuinely separate.
+
+        (2) PRE-REGISTERED BUDGET -- within a family the deflation uses the DECLARED search size
+            (a CONSTANT), so re-running the same space does not move the bar. That is correct on
+            the merits: content-hash dedup means a re-run is not new information, and paying a
+            deflation penalty for re-running identical hypotheses is double-counting.
+
+        The correction is NOT removed -- it prices the search you PRE-REGISTERED instead of an
+        ever-growing global tally. If a family genuinely EXCEEDS its declared budget the bar does
+        rise (max() below), because that is real additional searching and hiding it would be
+        exactly the meta-overfitting the cumulative counter existed to catch."""
+        return max(self.family_trial_budget, n_new_in_family + int(prior.get(str(family), 0)))
 
     def cycle(self, symbols: Sequence[str]) -> CycleResult:
         campaign_id = generate_id("camp")
@@ -122,6 +148,19 @@ class AutoDiscoveryLab:
         # number of trials ever run, not just this campaign's -- otherwise re-running the lab until
         # something passes is undetected meta-overfitting that funds a false survivor.
         n_trials = self._effective_trials(len(prepared))
+        # FIXED WALL: group this cycle by family so each hypothesis is judged against its OWN
+        # pre-registered budget and its OWN family's Sharpe distribution (internally consistent
+        # DSR), never against the global pool of everything the desk has ever tested.
+        _fam_new: dict[str, int] = {}
+        for _h, _r, _s in prepared:
+            _fam_new[str(_h.family)] = _fam_new.get(str(_h.family), 0) + 1
+        _fam_prior = self.store.family_counts()
+        _fam_trials = {f: self._family_trials(f, n, _fam_prior) for f, n in _fam_new.items()}
+        _fam_sharpes = {
+            f: np.array([sharpe_ratio(r) for h, r, _ in prepared if str(h.family) == f],
+                        dtype="float64")
+            for f in _fam_new
+        }
         min_len = min(len(r) for _, r, _ in prepared)
         matrix = np.column_stack([r[-min_len:] for _, r, _ in prepared])  # T x N (selection-aware)
         sharpe_estimates = np.array([sharpe_ratio(r) for _, r, _ in prepared], dtype="float64")
@@ -130,8 +169,11 @@ class AutoDiscoveryLab:
 
         counts = dict.fromkeys(CandidateStatus, 0)
         for hyp, rets, stressed in prepared:
+            _f = str(hyp.family)
             verdict = validate(
-                rets, hypothesis=hyp, n_trials=n_trials, sharpe_estimates=sharpe_estimates,
+                rets, hypothesis=hyp,
+                n_trials=_fam_trials.get(_f, n_trials),
+                sharpe_estimates=_fam_sharpes.get(_f, sharpe_estimates),
                 returns_matrix=matrix, pbo=pbo_once, rc=rc_once,
             )
             status = promote(rets, validation_survived=verdict.survived)
