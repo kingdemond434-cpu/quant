@@ -2088,6 +2088,20 @@
    ],
    "success_metric": "challenger tracks incumbent direction over the comparison window; on adoption, promotion decisions cite 8h NW-t with vif~1",
    "reversal_condition": "if vif at 8h drifts materially above ~1.5 the speedup is partly illusory -- recompute the calendar equivalents before any adoption"
+  },
+  {
+   "id": "2026-07-22-cost-truth-and-peek",
+   "decision": "Last two squeezes shipped. (A) COST TRUTH in discovery (gap #45): screening charged a guessed 5/8/15 bps tier curve; measurement shows majors overcharged ~2x+ (phantom ~3%/yr on daily-turnover sleeves -- kills real marginal candidates) and thin names undercharged (NOM -149 realized vs 15 assumed -- flatters junk). run_discovery now uses measured per-side costs (3 bps maker-first fee + measured book-walk, tier fallback), and run_cost_model.py runs daily so coverage self-grows with the recorder. Running forward windows deliberately untouched. (B) PEEK-SAFE EARLY EVIDENCE: derivative shadow now publishes anytime-valid e-values on the accruing OI/LS forward clocks -- the only peek-safe statistic -- while Sharpe stays unpublished until day 40. First peek (24d): ls_contrarian 0.357, oi_divergence 0.598 -- both mildly AGAINST, where a genuine backtest-class edge would already read ~20+. The principal's 'what if DSR is being harsh' question now has a live dial, and the dial currently says DSR was right.",
+   "hypothesis": "replacing guessed costs with measured ones raises honest discovery odds on liquid names and kills thin-name mirages sooner; e-value peeks surface forward verdicts early without spending alpha",
+   "expected_benefit": "screening reflects reality both directions; early forward evidence visible daily; ls_contrarian question answerable live",
+   "expected_cost": "one daily cost-model step (~2min); statuses may shift as costs correct (that is the point)",
+   "confidence": 0.8,
+   "assumptions": [
+    "measured $500-leg book-walk generalizes to sleeve turnover sizes",
+    "3 bps blended maker-first fee is a fair documented constant"
+   ],
+   "success_metric": "measured-cost coverage grows with the recorder; peek e-values track the day-40 verdicts",
+   "reversal_condition": "if realized sleeve costs diverge from modelled, recalibrate the fee constant against actual fills"
   }
  ]
 }

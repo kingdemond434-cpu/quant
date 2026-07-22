@@ -101,11 +101,40 @@ def _candidates(close, funding, basis, taker, adv, cost) -> dict[str, np.ndarray
     return {k: v for k, v in lib.items() if np.isfinite(v).all()}
 
 
+# --- COST TRUTH (gap #45, 2026-07-22) -------------------------------------------------------
+# adv_tier_cost GUESSES 5/8/15 bps per side by ADV tier. The measured cost model
+# (run_cost_model.py, real recorded books) shows that guess is wrong in BOTH directions:
+# majors overcharged (BTC pair-slippage 0.009 bps vs 5 bps/side assumed -- a daily-turnover
+# sleeve pays ~3%/yr of phantom cost, enough to kill real 0.6-0.9-Sharpe candidates), thin
+# names undercharged (NOMUSDT realized -149 bps vs 15 assumed). Screening candidates against
+# a mis-measured cost is a silent thumb on the scale either way. Per-side here = maker-first
+# futures fee (2 bps VIP0 maker, taker fallback -> 3 bps blended, documented constant) +
+# MEASURED per-leg book-walk at $500. Unmeasured symbols keep the tier guess -- and the
+# recorder now records the traded universe, so measurement coverage grows on its own.
+_FEE_SIDE = 3e-4
+_COST_MODEL = Path("data/cost_model.json")
+
+
+def _measured_side_cost(sym: str, adv_usd: float) -> float:
+    try:
+        m = json.loads(_COST_MODEL.read_text("utf-8"))["symbols"][sym]
+        slip = m["fut_sell"]["500"]["median_bps"]
+        if slip is None:
+            return adv_tier_cost(adv_usd)
+        return max(2.5e-4, _FEE_SIDE + float(slip) / 1e4)
+    except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError):
+        return adv_tier_cost(adv_usd)
+
+
 def main() -> None:
     close, funding, basis, taker, adv = _panels()
     if close.shape[1] < 12:
         raise SystemExit("need a liquid perp panel")
-    cost = {s: adv_tier_cost(a) for s, a in adv.items()}
+    cost = {s: _measured_side_cost(s, a) for s, a in adv.items()}
+    n_meas = sum(1 for s2, a in adv.items()
+                 if abs(cost[s2] - adv_tier_cost(a)) > 1e-9)
+    print(f"cost truth: {n_meas}/{len(cost)} symbols on MEASURED cost, "
+          f"rest on tier fallback")
     lib = _candidates(close, funding, basis, taker, adv, cost)
 
     df = pd.DataFrame(lib, index=close.index)

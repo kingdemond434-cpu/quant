@@ -24,6 +24,7 @@ import numpy as np
 import pandas as pd
 
 from libs.data.crypto_source import fetch_klines
+from libs.research.anytime_valid import e_value
 
 _METRICS = Path("data/crypto_metrics.parquet")
 _OUT = Path("web/derivative_shadow.json")
@@ -62,8 +63,7 @@ def _forward_returns(df: pd.DataFrame) -> dict[str, float]:
     for name, sig in (("oi_divergence", oi_sig), ("ls_contrarian", ls_sig)):
         w = sig.sub(sig.mean(axis=1), axis=0)                 # market-neutral
         w = w.div(w.abs().sum(axis=1) + 1e-9, axis=0)
-        r = (w * pr_ret).sum(axis=1).dropna().to_numpy()
-        out[name] = _sharpe(r) if len(r) > 5 else 0.0
+        out[name] = (w * pr_ret).sum(axis=1).dropna().to_numpy()
     return out
 
 
@@ -79,8 +79,14 @@ def main() -> None:
         nsym = int(df["symbol"].nunique())
         nan_ls = float(df["ls_ratio"].isna().mean())
         quality = f"{nsym} symbols/day, L/S NaN {nan_ls:.0%}"
-        result = _forward_returns(df) if days >= _MIN_DAYS else {}
+        # PEEK RULE (2026-07-22): the e-process is anytime-valid (Ville) -- reading it
+        # daily spends NO alpha, so it may be published while the clock accrues. The
+        # interim Sharpe is NOT peek-safe and stays unpublished until min_days.
+        series = _forward_returns(df) if days >= 12 else {}
     ready = days >= _MIN_DAYS
+    result = {k: _sharpe(v) if len(v) > 5 else 0.0 for k, v in series.items()} if ready else {}
+    peek = {k: {"e_value": round(e_value(v), 3), "n": len(v), "threshold": 100.0,
+                "decisive": bool(e_value(v) >= 100.0)} for k, v in series.items()}
     eta = (now + timedelta(days=max(0, _MIN_DAYS - days))).date().isoformat()
     out = {
         "updated": now.isoformat(),
@@ -92,6 +98,11 @@ def main() -> None:
         "expected_ready_date": eta,
         "status": "VALIDATING" if ready else "ACCUMULATING (no backtest fabricated)",
         "forward_sharpe": result,
+        "anytime_peek": peek,
+        "peek_rule": "e_value is anytime-valid: safe to read daily. decisive=True at "
+                     "alpha=0.01 BEFORE day 40 = early evidence; Sharpe stays "
+                     "unpublished until min_days (not peek-safe). Promotion still "
+                     "requires the full gauntlet.",
     }
     _OUT.parent.mkdir(parents=True, exist_ok=True)
     _OUT.write_text(json.dumps(out, indent=2), "utf-8")
