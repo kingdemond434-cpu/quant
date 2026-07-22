@@ -2115,6 +2115,20 @@
    ],
    "success_metric": "blind-spot ledger origin=principal rate falls toward zero over the next 2 weeks of cycles",
    "reversal_condition": "if the principal again finds a gap these angles should have caught, the battery execution (not the angles) is the defect -- escalate to anti-rubber-stamp enforcement"
+  },
+  {
+   "id": "2026-07-22-dual-objective-growth-ladder",
+   "decision": "Principal ordered (a) alpha-discovery maximization installed as a CO-SUPREME objective co-equal with E[log wealth] on every prompt/audit/cycle, and (b) the 80-120%/yr path unlocked with every lever short of faking validation. BOTH APPROVED with guards. (a) CO-SUPREME OBJECTIVE #2 appended to ops/principal_doctrine.txt (injected into every organ) + external panel prompt + all panel missions: hunt new datasets/breadth/depth/families every cycle, clock-saturation duty (empty forward slot = defect, new axis must have a hypothesis accruing within 7d), max honest throughput, cycles scored on BOTH objectives -- with the HONESTY GUARD: maximize discovery never declaration, gauntlet bars are part of the objective. (b) GROWTH UNLOCK LADDER pre-registered: seed ruin schedule 6%/4%/2% by equity tier (Kelly on lifetime wealth -- $4.5k seed is a recoverable fraction of the operator's lifetime bankroll at 18); steps 1.5x/2.5x/4.0x gated on carry-validation+30-clean-days / first-new-survivor+10-live-rows / 3-sleeves+live-Sharpe-1.2-over-60d; SAME-DAY unlock on evidence (latency = scored defect); AUTOMATIC downshift on dead-man fire, ruin breach, or Sharpe decay; rails untouchable at every step. Step-3 arithmetic: Sharpe 1.4-1.8 at 3-4x under the 6% seed budget compounds ~60-130%/yr rich years, 30-60% lean -- the principal's band, honestly reachable ONLY by stacking validated sleeves. REJECTED as boss: leverage now (contaminated pipe, unvalidated edge, testnet leverage adds zero information while risking Gate-0 calibration), rail loosening, decree-shortened windows (measured refutation stands).",
+   "hypothesis": "pre-registering the aggression (ladder + ruin schedule) converts every future validation event into same-day compounding, and the dual objective maximizes the rate those events arrive",
+   "expected_benefit": "zero evidence-to-deployment latency at each unlock; discovery rate scored as hard as growth; the 80-120% band reachable at step 3 without touching a rail",
+   "expected_cost": "seed ruin budget consciously raised to 6% below $25k equity -- a real, chosen increase in P(35% drawdown) while the stake is recoverable",
+   "confidence": 0.75,
+   "assumptions": [
+    "operator's lifetime-bankroll framing holds (seed loss is recoverable)",
+    "sleeves actually validate -- the ladder cannot manufacture edges"
+   ],
+   "success_metric": "each ladder step fires within 24h of its evidence; cycle reports score both objectives; clock slots stay saturated",
+   "reversal_condition": "principal revokes the seed ruin schedule, or a step-1/2 period shows realized dd approaching the ruin definition -> immediate downshift + schedule review"
   }
  ]
 }
