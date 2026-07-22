@@ -41,6 +41,20 @@ THE PROBE BATTERY (run every angle each cycle; extend it -- see the recursion ru
     Aggression maxes capability; it NEVER touches dead-man / kill / ruin-cap / no-unproven-leverage /
     gauntlet bar. Confirm they are untouched -- loosening one is not a gap to close, it is ruin.
 
+11. GEOMETRIC-GROWTH REALIZATION (the objective function itself): "Is the MAXIMUM FRACTION of
+    E[log wealth] being realized, within ruin<=2%?" This is the desk's whole purpose, so probe it
+    directly every cycle: (a) is all AUTHORIZED capital deployed, or is the book under-deployed out
+    of timidity (a growth defect -- check web/growth_audit.json)? (b) is sizing at the log-optimal
+    shrunk-Kelly fraction, neither under nor over? (c) is compounding leaking to avoidable cost/fee/
+    funding/tax drag? CRITICAL -- max geometric growth is NOT max leverage: over-betting an
+    ESTIMATED edge compounds SLOWER and risks ruin (which permanently zeros the compounding), so on
+    an UNPROVEN edge the growth-maximizing size is near-zero and that is CORRECT, not timid (the one
+    carve-out). Push deployment of authorized capital and log-optimal sizing hard; NEVER push
+    leverage beyond proven edge. And the honest floor: realized compounding is ~zero until a proven
+    edge and live capital exist -- so this angle also asks "what is the single fastest path to the
+    FIRST unit of proven live edge" (currently: connector -> Gate 0), because nothing compounds until
+    then.
+
 THE RECURSION RULE (this is what makes the desk stop needing the principal to probe): whenever the
 principal -- or you -- finds a gap by asking a NEW angle not in this battery, you MUST (a) fix or
 track the gap, AND (b) add the new probe angle to this file as a permanent question, AND (c) if it

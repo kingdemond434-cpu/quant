@@ -1859,6 +1859,17 @@
    ],
    "success_metric": "cycles consistently report verified probes + occasionally a new angle added to the battery; principal-found gaps become rare and each converts to a standing check",
    "reversal_condition": "if cycles rubber-stamp the interrogation (claim probed, found nothing, repeatedly, while the principal still finds gaps), tighten the guard to require a named verified read per angle"
+  },
+  {
+   "id": "2026-07-21-growth-probe-angle",
+   "decision": "Self-interrogation gap closed (principal asked: does the prompt max geometric growth too). FOUND: the 10-angle probe battery had NO angle for the OBJECTIVE FUNCTION itself -- E[log wealth] max subject to ruin<=2% -- a real blind spot in the very tool meant to catch blind spots. ADDED angle 11 GEOMETRIC-GROWTH REALIZATION: every cycle probes whether the max FRACTION of E[log wealth] is realized -- authorized capital fully deployed (under-deployment = growth defect per growth_audit), sizing at log-optimal shrunk-Kelly, compounding not leaking to cost/fee/funding/tax drag -- with the CRITICAL guard that max growth is NOT max leverage: over-betting an estimated edge compounds slower and risks ruin (permanent zero), so near-zero sizing on unproven edge is CORRECT not timid (the one carve-out, #132). The angle also asks the honest floor question -- realized compounding is ~zero until proven edge + live capital, so the fastest path to the FIRST proven live edge (connector -> Gate 0) is itself the growth-max move right now. NEIGHBOURS: growth_audit (the numeric organ this angle reads), growth mandate (constitutional objective), the one carve-out (protected), self-interrogation battery (now 11 angles + recursion).",
+   "hypothesis": "making the objective function an explicit per-cycle probe angle keeps realized-geometric-growth maximization actively interrogated, not just assumed by the mandate",
+   "expected_benefit": "every cycle checks deployment + sizing-optimality + compounding drag against the log-wealth objective, within the rails",
+   "expected_cost": "none",
+   "confidence": 0.85,
+   "assumptions": [],
+   "success_metric": "cycles report on geometric-growth realization; under-deployment or drag surfaced; leverage never pushed beyond proven edge",
+   "reversal_condition": "n/a"
   }
  ]
 }
