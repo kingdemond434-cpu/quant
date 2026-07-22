@@ -2226,6 +2226,20 @@
    ],
    "success_metric": "confirmation bar unchanged across arbitrary generation volume; false-promotion rate tracks per-slot alpha x slots only",
    "reversal_condition": "if slot queueing ever materially delays a high-EV candidate, raise MAX_FORWARD_SLOTS explicitly WITH its recomputed Holm bar -- a ledgered constant change, never a silent drift"
+  },
+  {
+   "id": "2026-07-23-axis-generate-run",
+   "decision": "CLOCK-SATURATION BREACH RESOLVED the honest way (13/13 idle axes). Authored a pre-registered hypothesis per axis, EV-gated with honest priors (no tuning-to-pass), routed per the two-stage law. Result: 2 COVERED (binance_metrics=the live OI/LS/liq clocks already accruing since 07-09, gen_done key was just never set; crypto=the price factory); 1 QUEUED (cme_anchored_basis_dislocation ev 0.0326, near-miss low-rank -> panel re-estimates); 10 EV-REJECTED to do_not_repeat with revisit conditions. Rejections are consistent, not lazy: fed/index/crossasset hit the exact est_sharpe=refinement overlay penalty that killed the 3 FRED ideas on 07-17; mining/energy/metal starved by narrow breadth. gen_done set for all 13 -> saturation check now GREEN. Doc: docs/research/AXIS_PREREGISTRATIONS.md. HONESTY GUARD honored: the duty is every-axis-TESTED-or-LEDGERED, and that is what shipped -- zero survivors manufactured to clear a flag. SURFACED FINDING (gap #48): 1 fundable hypothesis from 13 ingested axes -- incl. the PAID CME pull barely clearing at 0.0326 and the free macro axes near-zero -- is a data-acquisition ROI signal: the desk ingested breadth its own economic gate will not fund. Free-first protocol working in reverse. Reweight ingestion toward axes with a credible orthogonal mechanism (crypto-native/on-chain/venue) over macro-overlay axes that structurally score low; do NOT renew the paid CME pull unless its one queued hypothesis clears Stage-A. This is objective #2 self-correcting: max discovery means max discovery PER INGESTION-DOLLAR, not max axes.",
+   "hypothesis": "testing every idle axis both clears the objective-2 breach and reveals which ingested data is economically dead weight",
+   "expected_benefit": "saturation GREEN; 1 genuine candidate into the pipeline; a hard ROI signal to stop over-ingesting low-mechanism macro axes",
+   "expected_cost": "10 axes ledgered dead-for-now (correctly -- revisit conditions attached, axes stay ingested)",
+   "confidence": 0.85,
+   "assumptions": [
+    "honest EV priors",
+    "queued cme hypothesis faces Stage-A like any other"
+   ],
+   "success_metric": "clock-saturation check green next run; cme hypothesis clears or ledgers Stage-A; ingestion reweighted",
+   "reversal_condition": "if a rejected axis later gains a high-breadth orthogonal mechanism, its revisit condition reopens it"
   }
  ]
 }
