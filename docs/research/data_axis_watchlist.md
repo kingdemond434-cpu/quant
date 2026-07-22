@@ -279,3 +279,18 @@ Verify-don't-trust + liveness + Bronze rules (spec sections 4-6) bind every item
 20. Reddit corpus + firehoses (weak-signal registry class, regime markers only).
 Signup-gated (page principal only when a pull is planned): Databento credits (surgical CME
 windows), Alpaca, Kaggle datasets.
+
+
+## FREE-ALTERNATIVES DIG (manual, CRO web search) -- 2026-07-22T23:21Z
+
+Triggered by gap #48 (paid CME barely cleared; free axes ~0). Verify-don't-trust grades; nothing adopted until diffed vs ground truth.
+
+| source | replaces | cost | grade | value |
+|---|---|---|---|---|
+| [coinalyze_api](https://api.coinalyze.net/v1/doc/) | Coinglass ($29-699/mo) | FREE (free key, 40 req/min) | needs-monitoring | HIGH |
+| [cme_free_futures](https://finance.yahoo.com/quote/BTC=F) | the PAID CME pull flagged in gap #48 | FREE (Yahoo Finance BTC=F/ET | needs-verification | HIGH |
+| [farside_etf_flows](https://farside.co.uk/btc/) | Coinglass ETF endpoint / any paid ETF-flow feed | FREE (Farside table; also Th | needs-monitoring | MEDIUM |
+| [dune_flipside_onchain](https://dune.com) | Glassnode / CryptoQuant exchange-flow + stablecoin products | FREE (Dune free SQL tier, 10 | needs-monitoring | HIGH |
+| [fundingpulse_apify](https://apify.com/fraktalapi/funding-pulse) | Coinglass | claims FREE public API | UNVERIFIED | LOW-until-verified (redundant with Coinalyze which is doc-verified free) |
+
+**Headline:** the PAID CME feed (gap #48) is replaceable with FREE daily settlement (Yahoo BTC=F / Investing / Nasdaq Data Link) -- do not renew it; build the one queued cme hypothesis on free data. **Best NEW axis:** Coinalyze free API = cross-exchange funding/OI/liquidations (the desk is Binance-only today) -- feeds the queued cross-venue-dispersion sleeve at zero cost. On-chain reconstruction (Dune/Flipside/DefiLlama free) covers the Glassnode/CryptoQuant flow+stablecoin products.

@@ -2240,6 +2240,19 @@
    ],
    "success_metric": "clock-saturation check green next run; cme hypothesis clears or ledgers Stage-A; ingestion reweighted",
    "reversal_condition": "if a rejected axis later gains a high-breadth orthogonal mechanism, its revisit condition reopens it"
+  },
+  {
+   "id": "2026-07-23-free-alternatives-dig",
+   "decision": "Manual free-alternatives dig (CRO web search, brain auth-dead) triggered by gap #48. Cataloged 5 graded sources into data_universe_map. HEADLINE: the PAID CME pull is REPLACEABLE with FREE daily CME settlement (Yahoo BTC=F/ETH=F, Investing.com, Nasdaq Data Link free CME datasets, cme.com delayed-free) -- gap #48's paid-feed concern is resolvable at zero cost; the one queued cme hypothesis builds on free data, do NOT renew the subscription. BEST NEW AXIS: Coinalyze free API (doc-VERIFIED free, 40/min) = cross-exchange funding/OI/liquidations/LS -- the desk holds Binance-only derivatives today, so this is a genuinely orthogonal multi-venue axis feeding the queued cross-venue-dispersion sleeve at zero cost. On-chain: Dune/Flipside/DefiLlama free tiers reconstruct the Glassnode/CryptoQuant exchange-flow + stablecoin products (owned methodology OUTRANKS black-box per free-first). ETF flows: Farside/TheBlock/BitBo free (scrape) rerun the etf_flows near-miss axis. All graded needs-verification/monitoring except Coinalyze -- NOTHING adopted until diffed vs ground truth (verify-don't-trust). Objective #2 self-correction from gap #48 executed: stop over-ingesting low-mechanism PAID axes, replace with free equivalents + reweight toward the orthogonal Coinalyze axis.",
+   "hypothesis": "every paid feed the desk touches has a free equal-or-better replacement; the CME paid pull specifically is pure waste",
+   "expected_benefit": "paid CME renewal avoided; a free cross-exchange derivatives axis added (new orthogonal breadth at zero cost); on-chain vendor products reconstructable free",
+   "expected_cost": "verification labor (diff each vs ground truth before trust)",
+   "confidence": 0.8,
+   "assumptions": [
+    "Coinalyze free tier persists; free CME OHLC sufficient for a daily basis anchor"
+   ],
+   "success_metric": "paid CME feed retired; Coinalyze verified + wired as a collector post-connector; >=1 free source diffed-clean and adopted",
+   "reversal_condition": "a free source fails its ground-truth diff -> stamped UNVERIFIED, not adopted; paid only re-enters via the free-first EXCEPTION"
   }
  ]
 }
