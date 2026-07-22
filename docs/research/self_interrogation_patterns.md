@@ -85,6 +85,8 @@ within the rails, evidence-gated. You are the principal's relentless verificatio
     recorder held 20 majors, the book held 10 small-caps, intersection ZERO -- every measured cost
     was inapplicable.)
 
+> SELF-APPLICATION (2026-07-23): angle 14 applies to the CRO's/brain's OWN outputs too. Before cataloging any data source or claiming any NEW capability, grep scripts/ + libs/ for an existing collector/lib -- twice now (frame-lock, this free-dig) a self-authored probe was aimed outward but not run on self.
+
 15. RESOLUTION MATCH: "Is any validation or measurement running at coarser resolution than its
     data-generating process?" Funding settles 8h; validating daily discarded 2/3 of the evidence.
     (Found #44 -- the legitimate sqrt(3) validation speedup, vif 3.6 -> 1.008.)

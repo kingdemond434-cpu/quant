@@ -2253,6 +2253,28 @@
    ],
    "success_metric": "paid CME feed retired; Coinalyze verified + wired as a collector post-connector; >=1 free source diffed-clean and adopted",
    "reversal_condition": "a free source fails its ground-truth diff -> stamped UNVERIFIED, not adopted; paid only re-enters via the free-first EXCEPTION"
+  },
+  {
+   "id": "2026-07-23-free-dig-overlap-correction",
+   "decision": "CORRECTION to 2026-07-23-free-alternatives-dig (principal caught it). The free dig was LARGELY REDUNDANT with existing collectors, and two claims were wrong: (1) Coinalyze is NOT a new cross-exchange axis -- multiexchange.py already pulls Bybit+OKX, collect_hyperliquid_funding.py adds Hyperliquid, Binance is native = 4 venues already; Coinalyze only adds Bitget/dYdX + convenience (incremental). (2) CME is NOT a renewable subscription -- pull_cme.py is a one-time $2 Databento foundation pull already completed (credits reserved for surgical microstructure days); 'do not renew' had no referent. Farside/ETF (ingest_etfs.py), Dune/stablecoin (run_stablecoin_flows.py + run_onchain_history_backtest.py), Coinglass-alts (bybit recorder + liquidation_listener) all already covered. ROOT CAUSE (owned, not excused): I did not run angle-14 UNIVERSE-INTERSECTION on my OWN dig before cataloging -- the exact probe I added to the battery on 07-22 and then failed to apply to myself, same class as the frame-lock (angle 19). What genuinely survives: Yahoo BTC=F as a free ONGOING CME daily-update source (small); Coinalyze Bitget/dYdX as marginal venue breadth; free-reconstruction posture for NEW on-chain metrics only. Catalog entries downgraded to REDUNDANT-with-correction; gap #48's real lesson stands (stop over-ingesting low-mechanism axes) but its CME-specific 'paid feed' framing was already a one-time sunk $2, not ongoing waste.",
+   "hypothesis": "the CRO's own digs need the same universe-intersection check as any data claim",
+   "expected_benefit": "record corrected to truth; the always-check-existing-first lesson reinforced mechanically",
+   "expected_cost": "none (correction is free; the wasted dig was ~5 web searches)",
+   "confidence": 0.95,
+   "assumptions": [],
+   "success_metric": "no future dig catalogs a source without an existing-collector check first",
+   "reversal_condition": "n/a -- this is a correction"
+  },
+  {
+   "id": "2026-07-23-angle14-self-apply-guard",
+   "decision": "RECURSION: angle-14 (universe intersection) must run on the CRO's/brain's OWN outputs, not only on the system's. Added to self_interrogation_patterns as an explicit self-application note on angle 14: before cataloging ANY data source or claiming ANY new capability, grep existing scripts/libs for a collector/lib that already does it. This is the second time in two days a self-authored probe was not self-applied (frame-lock #19, now #14) -- the pattern is 'probes are aimed outward, not at the CRO's own work'.",
+   "hypothesis": "self-authored probes decay unless explicitly self-applied",
+   "expected_benefit": "stops redundant-build/redundant-catalog errors",
+   "expected_cost": "one grep before any 'new source/capability' claim",
+   "confidence": 0.85,
+   "assumptions": [],
+   "success_metric": "zero redundant catalogs/builds going forward",
+   "reversal_condition": "n/a"
   }
  ]
 }
