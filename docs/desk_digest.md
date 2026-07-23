@@ -1,14 +1,14 @@
 # Desk digest (auto-generated daily -- do not hand-edit)
-_updated 2026-07-23T00:37Z · companion to [[institutional_knowledge]]_
+_updated 2026-07-23T08:01Z · companion to [[institutional_knowledge]]_
 
 ## Book
-- Molded net: **$-309.05** | funding **$90.28** | run-rate APR 12.3% | day 20.8
-- Root cause: **unknown_novel** (pause_and_page) | tracking error $-392.83
+- Molded net: **$-238.39** | funding **$90.28** | run-rate APR 12.3% | day 21.11
+- Root cause: **unknown_novel** (pause_and_page) | tracking error $-326.67
 
 ## Validation clocks
-- **carry (DEPLOYED)**: 27/90d | bt 3.33 fwd 12.5
-- **perp L/S**: 20/90d | bt 0.63 fwd -0.44
-- **trend**: 20/90d | bt 1.42 fwd -4.21
+- **carry (DEPLOYED)**: 27/90d | bt 3.34 fwd 13.25
+- **perp L/S**: 20/90d | bt 0.63 fwd -0.12
+- **trend**: 20/90d | bt 1.42 fwd -4.28
 - **trend regime-gated**: 15/90d | bt 1.4 fwd 0.0
 - **OI/LS data**: 25/40d
 - **stablecoin data**: 21/40d
@@ -184,6 +184,8 @@ _updated 2026-07-23T00:37Z · companion to [[institutional_knowledge]]_
 - `2026-07-23-turkey-premium-fails-niche-narrow` -- review ?: future axis hunting targets new mechanism TYPES, not more FX premiums; kimchi forward cloc
 - `2026-07-23-reusable-axis-screen-harness` -- review ?: every future axis screen calls stage_a_screen and reports same-period corr + residual IC
 - `2026-07-23-screen-on-discovery-duty` -- review ?: share of newly-surfaced axes carrying a same-run Stage-A verdict approaches 100%; new forw
+- `2026-07-23-research-cycle-scheduler-restored` -- review ?: kimchi and future axis clocks gain one row per calendar day without any human session; cro
+- `2026-07-23-gap19-shadow-finding` -- review ?: >=200 clean samples accumulate; increment p95 stays small and stable, giving a defensible 
 
 ## Executive KPI snapshot
 - CRO: {"hypotheses_tested_lifetime": 20, "validated_survivors": 1, "survivor_note": "cash-carry (fwd 8/90); trend candidate gauntlet-passed (fwd 1/90); all else graveyarded", "survival_r

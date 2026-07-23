@@ -1,5 +1,5 @@
 {
-  "generated": "2026-07-23T01:01:21.112612+00:00",
+  "generated": "2026-07-23T08:25:52.368213+00:00",
   "n_alphas": 8,
   "n_survived": 0,
   "deployed": [
@@ -21,7 +21,7 @@
     {
       "alpha": "crypto::xsec_price_mom",
       "category": "crypto-sleeve",
-      "expected_sharpe": 0.85,
+      "expected_sharpe": 0.84,
       "gates": "7/9",
       "survived": false,
       "stage": "backtest",
@@ -33,7 +33,7 @@
     {
       "alpha": "crypto::funding_carry",
       "category": "crypto-sleeve",
-      "expected_sharpe": 0.81,
+      "expected_sharpe": 0.8,
       "gates": "7/9",
       "survived": false,
       "stage": "backtest",
@@ -55,10 +55,10 @@
       "retire_check": "REJECT: fails gates"
     },
     {
-      "alpha": "crypto::taker_flow",
+      "alpha": "crypto::basis_carry",
       "category": "crypto-sleeve",
-      "expected_sharpe": 0.48,
-      "gates": "6/9",
+      "expected_sharpe": 0.44,
+      "gates": "5/9",
       "survived": false,
       "stage": "backtest",
       "orthogonality": "unknown",
@@ -67,10 +67,10 @@
       "retire_check": "REJECT: fails gates"
     },
     {
-      "alpha": "crypto::basis_carry",
+      "alpha": "crypto::taker_flow",
       "category": "crypto-sleeve",
-      "expected_sharpe": 0.41,
-      "gates": "5/9",
+      "expected_sharpe": 0.43,
+      "gates": "6/9",
       "survived": false,
       "stage": "backtest",
       "orthogonality": "unknown",
@@ -81,7 +81,7 @@
     {
       "alpha": "crypto::funding_momentum",
       "category": "crypto-sleeve",
-      "expected_sharpe": 0.21,
+      "expected_sharpe": 0.25,
       "gates": "6/9",
       "survived": false,
       "stage": "backtest",
