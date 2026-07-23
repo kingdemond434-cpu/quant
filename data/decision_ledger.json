@@ -2348,6 +2348,19 @@
    ],
    "success_metric": "future axis hunting targets new mechanism TYPES, not more FX premiums; kimchi forward clock arbitrates",
    "reversal_condition": "a regional premium with strict capital controls (e.g. Argentina/Nigeria P2P) shows kimchi-class std + low contamination -> re-open that specific market"
+  },
+  {
+   "id": "2026-07-23-reusable-axis-screen-harness",
+   "decision": "Answered honestly whether the diggers find+test new axes immediately like the CRO just did: NO, not fully. The data-axis digger FINDS/CATALOGS sources (web) automatically and the factory TESTS lake data automatically, but turning a NEW external source into a wired collector + de-contaminated screen was code-gen + judgment done by hand (the CRO even made a USDT-vs-FX method error and caught it manually). CLOSED the analytical half of the gap: built libs/research/axis_screen.py -- a reusable Stage-A screen with the angle-20 de-contamination gate BAKED IN and impossible to skip. Verified it reproduces the by-hand verdicts exactly (kimchi SCREEN-INTERESTING residual-IC 0.142; coinbase TIMING-ARTIFACT same-period 0.243). The brain (when authed) or the CRO now passes an aligned signal/target series and gets the honest verdict + a started forward clock, instead of re-deriving the screen and re-forgetting the artifact gate each time. HONEST RESIDUAL GAP (not closed): the per-source COLLECTOR authoring -- each new venue fetch/schema -- is still bespoke code the brain must write per source, and it is error-prone; the harness makes the SCREENING reliable, not the FETCHING. So diggers find+catalog automatically and can now screen reliably, but end-to-end onboard-a-new-API-and-test still needs the brain writing code, gated on auth.",
+   "hypothesis": "baking the de-contamination gate into a reusable harness makes brain-run new-axis screening as disciplined as the by-hand version",
+   "expected_benefit": "the angle-20 artifact filter can never be skipped on any future axis screen; onboarding a new axis drops to fetch + one call",
+   "expected_cost": "per-source collector authoring stays bespoke + error-prone (unchanged)",
+   "confidence": 0.85,
+   "assumptions": [
+    "callers pass correctly-aligned same-period series"
+   ],
+   "success_metric": "every future axis screen calls stage_a_screen and reports same-period corr + residual IC",
+   "reversal_condition": "n/a -- tooling"
   }
  ]
 }
