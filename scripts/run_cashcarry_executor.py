@@ -810,6 +810,11 @@ class _safe:
 
 
 _MAKER_WAIT = 8.0                                          # seconds a post-only quote may rest
+# OPENS are patient (2026-07-23 fee audit): measured 75.8% taker fills paying 96.5% of all
+# commissions; resting them as maker saves ~86% of fees. A carry open has no urgency (funding
+# accrues on 8h boundaries) so waiting minutes for the maker rebate is nearly free. CLOSES keep
+# the 8s wait -- the rails must exit fast and this must never slow the risk path.
+_MAKER_WAIT_OPEN = 240.0                                   # seconds a post-only OPEN may rest
 
 
 def _passive_price(bk: dict, fl: dict, sym: str, side: str) -> float | None:
@@ -884,7 +889,10 @@ def _execute_pair(sym: str, qty: float, spot_side: str, fut_side: str) -> dict[s
     Maker path has a taker fallback; on ANY maker error we fall back to a plain market pair."""
     if _MAKER:
         try:
-            return _maker_pair(sym, qty, spot_side, fut_side, wait=_MAKER_WAIT)
+            # patient on OPENS (spot BUY = entering a carry), fast on CLOSES (spot SELL =
+            # unwinding, where the rails need speed). See the fee audit note above.
+            _w = _MAKER_WAIT_OPEN if spot_side == "BUY" else _MAKER_WAIT
+            return _maker_pair(sym, qty, spot_side, fut_side, wait=_w)
         except Exception as e:  # maker machinery failed -> safe market fallback
             with contextlib.suppress(Exception):
                 _ERR.write_text(f"{datetime.now(tz=UTC).isoformat()} maker fail {sym}: {e!r}\n")
