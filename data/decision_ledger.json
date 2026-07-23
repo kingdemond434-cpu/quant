@@ -2584,6 +2584,19 @@
    ],
    "success_metric": "premium 30d std lands nearer KRW-class than TRY-class AND the forward clock clears the Holm bar at 40d",
    "reversal_condition": "TRY-class std or FAILING clock -> retire to graveyard as the second confirmed kimchi-analog failure; do NOT re-fit direction or construction"
+  },
+  {
+   "id": "2026-07-24-vendor-replacement-fenced",
+   "decision": "FREE-ALTERNATIVES-TO-PAID hunt made MECHANICAL (principal: all discovery must always find free alternatives of paid at max ROI). VERIFIED FIRST: the prompt side is already strong -- dataaxis dig pillar 6 (vendor-replacement reconstruction of Tardis/Glassnode/CryptoQuant/Kaiko/Coinglass/Amberdata), weekly replacement monitoring, the legitimacy gate, and the leaked-info-reconstruct rule; adding more prompt text would dilute, so none was added. THE GAP WAS ENFORCEMENT: nothing checked the OUTPUT. Fenced as max_audit check_vendor_replacement (daily + cycle-start): every vendor_replacement entry must have a free_path AND a ground_truth_for_diff (verify-dont-trust is impossible without one); UNVERIFIED grades may not sit while the dig runs daily; last_free_dig older than 3d = the hunt is not landing updates. FIRST RUN CAUGHT REAL ROT: Glassnode entry UNVERIFIED with no ground truth, Kaiko no ground truth -- now standing defects under the 48h auto-escalation, so the brain must verify or ledger them. Recursion rule applied: prompt duties are aspirations, fenced checks are guarantees.",
+   "hypothesis": "fencing the vendor-replacement output makes the free-alternatives hunt self-sustaining: rot surfaces as defects instead of sitting silently in the map",
+   "expected_benefit": "every paid product the diggers encounter ends up decomposed, verified against ground truth, or honestly graded residual -- permanently, without the principal asking",
+   "expected_cost": "three standing defects until the brain verifies Glassnode/Kaiko ground truths",
+   "confidence": 0.9,
+   "assumptions": [
+    "universe map remains the single source of truth for vendor decompositions"
+   ],
+   "success_metric": "vendor-replacement defect count reaches 0 and stays there as new vendors get entries with ground truths on first contact",
+   "reversal_condition": "if the check produces chronic false positives on genuinely-unverifiable vendors, add an explicit graded residual_gap escape -- never delete the check"
   }
  ]
 }

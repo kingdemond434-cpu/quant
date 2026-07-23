@@ -541,6 +541,52 @@ def check_clock_saturation(defects) -> None:
             "testable (e.g. forward history under the gauntlet minimum)."))
 
 
+def check_vendor_replacement(defects) -> None:
+    """FREE-ALTERNATIVES-TO-PAID enforcement (principal 2026-07-24). The dataaxis dig's pillar 6
+    mandates decomposing every paid vendor into a free reconstruction with a ground-truth diff;
+    this check makes that output rot-proof: entries must be complete, UNVERIFIED grades must not
+    sit while a daily dig runs, and the free-hunt itself must keep landing updates."""
+    ump = ROOT / "data/data_universe_map.json"
+    if not ump.exists():
+        defects.append(("vendor-replacement", "data_universe_map.json MISSING"))
+        return
+    try:
+        d = json.loads(ump.read_text("utf-8"))
+    except Exception as e:
+        defects.append(("vendor-replacement", f"universe map unreadable: {e!r}"))
+        return
+    vr = (d.get("sources") or {}).get("vendor_replacement") or []
+    if not isinstance(vr, list) or not vr:
+        defects.append(("vendor-replacement",
+                        "no vendor_replacement entries -- the free-alternatives hunt has "
+                        "recorded zero paid-vendor decompositions"))
+        return
+    for e in vr:
+        v = str(e.get("vendor", "?"))[:40]
+        if not e.get("free_path"):
+            defects.append(("vendor-replacement",
+                            f"{v}: NO free_path -- a paid product with no owned reconstruction"))
+        if not e.get("ground_truth_for_diff"):
+            defects.append(("vendor-replacement",
+                            f"{v}: NO ground_truth_for_diff -- verify-don't-trust is impossible; "
+                            "find a free sample/reference to diff the reconstruction against"))
+        g = str(e.get("grade", "")).lower()
+        if "unverified" in g:
+            defects.append(("vendor-replacement",
+                            f"{v}: grade UNVERIFIED while the free-data dig runs DAILY -- "
+                            "verify the free path this cycle or ledger why it cannot be"))
+    # the hunt itself must keep landing: daily dig -> map bookkeeping must move
+    try:
+        lfd = datetime.fromisoformat(str(d.get("last_free_dig")))
+        age_d = (NOW - lfd.timestamp()) / 86400.0
+        if age_d > 3:
+            defects.append(("vendor-replacement",
+                            f"last_free_dig {age_d:.1f}d old while the data-axis dig is DAILY -- "
+                            "the free-alternatives hunt is not landing updates to the map"))
+    except Exception:
+        defects.append(("vendor-replacement", "last_free_dig missing/unparsable in universe map"))
+
+
 def main() -> None:
     defects: list[tuple[str, str]] = []
     for label, fn in [("organs", check_organs), ("stubs", check_stub_deaths),
@@ -553,6 +599,7 @@ def main() -> None:
                       ("interrogation", check_interrogation),
                       ("generation", check_generation),
                       ("clock-saturation", check_clock_saturation),
+                      ("vendor-replacement", check_vendor_replacement),
                       ("self-sufficiency", check_self_sufficiency),
                       ("rs-detect", check_rubberstamp_detector),
                       ("rs-enforce", check_rubberstamp_enforcement)]:
