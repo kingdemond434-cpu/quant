@@ -1,0 +1,8 @@
+[Unit]
+Description=Regional frontier miners -- 3 regions/day rotation (DIGGER PARITY, DIGGING_CHARTER s14)
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/quant/quant-platform
+ExecStart=/home/quant/quant-platform/ops/run_frontier_rotation.sh

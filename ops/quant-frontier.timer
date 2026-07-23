@@ -1,0 +1,7 @@
+[Unit]
+Description=Frontier miners daily rotation (15:00 UTC -- parity with the daily data-axis dig)
+[Timer]
+OnCalendar=*-*-* 15:00:00
+Persistent=true
+[Install]
+WantedBy=timers.target
