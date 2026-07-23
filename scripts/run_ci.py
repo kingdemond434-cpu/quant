@@ -18,8 +18,11 @@ open gap, tracked separately, not fixed by this comment.
 
 from __future__ import annotations
 
+import contextlib
+import json
 import subprocess
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 
 from libs.ops.platform_paths import venv_python
@@ -46,6 +49,13 @@ def main() -> int:
         if not ok:
             failed.append(label)
     print("CI:", "ALL GREEN" if not failed else f"FAILED -> {failed}")
+    # Freshest-truth CI status marker (2026-07-23): a red desk-wide gate sat undetected 81h
+    # because the brain cycle that runs run_ci was quota-dead; max_audit now surfaces this
+    # marker so a red gate always enters the escalation path. Additive; never affects the gate.
+    with contextlib.suppress(OSError):
+        (_ROOT / "data/.ci_last_run.json").write_text(
+            json.dumps({"ok": not failed, "ts": datetime.now(tz=UTC).isoformat(),
+                        "failed": failed}), "utf-8")
     return 1 if failed else 0
 
 

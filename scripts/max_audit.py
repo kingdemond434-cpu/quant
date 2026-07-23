@@ -269,21 +269,42 @@ def check_self_application(defects) -> None:
                 defects.append((f"cost-censorship-{mp.stem}",
                                 f"panel mission {mp.name}: cost-self-censorship language "
                                 f"'{fossil}' reappeared -- money-recs must stay proposable"))
-    # recorder scope must not silently shrink below the 20-symbol expansion
-    rp = ROOT / "scripts/run_recorder.py"
-    if rp.exists():
-        import re as _re
-        rtxt = rp.read_text("utf-8")
-        m = _re.search(r"_SYMBOLS\s*=\s*\(([^)]*)\)", rtxt)
-        cnt = len(_re.findall(r"USDT", m.group(1))) if m else 0
-        if cnt < 20:
+    # recorder scope + liveness -- measure the GROUND-TRUTH tape, not the source code.
+    # Until 2026-07-23 this regex-scanned run_recorder.py for a literal `_SYMBOLS = (...)`
+    # tuple; gap #39 (2026-07-22) made _SYMBOLS a dynamic expression, so the regex matched
+    # nothing, read 0, and FALSE-fired "dropped to 0" while 30 symbols were actively
+    # recording. Counting the symbol directories that received a fresh write is the true
+    # breadth measure AND catches a silent write-stall the source regex could never see --
+    # the desk's own "heartbeat liveness != data liveness" lesson applied to the breadth
+    # check (a stalled recorder keeps a fresh heartbeat but stops writing files).
+    fut_root = ROOT / "data/moat/fut"
+    if fut_root.exists():
+        cutoff = time.time() - 1800.0   # a symbol counts only if written in the last 30 min
+        live = sum(1 for d in fut_root.iterdir()
+                   if d.is_dir() and any(f.stat().st_mtime > cutoff
+                                         for f in d.glob("*.jsonl.gz")))
+        if live < 20:
             defects.append(("recorder-scope-shrank",
-                            f"run_recorder.py _SYMBOLS dropped to {cnt} (expansion floor is 20) "
-                            "-- forward-tape breadth regressed"))
+                            f"recorder futures tape has {live} symbols written in the last "
+                            "30min (expansion floor is 20) -- forward-tape breadth regressed "
+                            "or the recorder stalled"))
     # bybit second-venue recorder must still exist
     if not (ROOT / "scripts/run_recorder_bybit.py").exists():
         defects.append(("bybit-recorder-gone", "second-venue (bybit) recorder script removed -- "
                         "cross-venue tape breadth lost"))
+    # CI GATE must be GREEN -- a red desk-wide gate is the safety net down for everyone and
+    # sat UNDETECTED for 81h (2026-07-22..23: a stale deadman test failed at HEAD while the
+    # brain cycle that runs run_ci was quota-dead, so nothing surfaced the red). run_ci writes
+    # data/.ci_last_run.json on every run; surface a red result mechanically so it enters the
+    # 48h escalation path instead of hiding until a human notices.
+    ci_marker = ROOT / "data/.ci_last_run.json"
+    if ci_marker.exists():
+        with contextlib.suppress(OSError, json.JSONDecodeError):
+            ci = json.loads(ci_marker.read_text("utf-8"))
+            if ci.get("ok") is False:
+                defects.append(("ci-gate-red",
+                                f"last CI run ({ci.get('ts')}) was RED -> {ci.get('failed')}; "
+                                "the desk-wide safety gate is down. Run scripts/run_ci.py + fix"))
 
 
 def check_dig_depth(defects) -> None:

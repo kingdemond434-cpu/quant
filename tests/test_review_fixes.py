@@ -101,19 +101,25 @@ def test_evidenced_causes_still_classify_normally():
 
 # ---------------- dead-man switch: pure trigger logic ---------------------------------------
 def test_deadman_needs_consecutive_breaches_and_ratchets_highwater():
-    from scripts.run_deadman_switch import should_fire
+    from scripts.run_deadman_switch import _HW_CONFIRM, should_fire
     st: dict = {}
-    assert not should_fire(10_000.0, st)                           # sets high-water
+    # High-water is SUSTAINED, not set on a single spike (incident #5 fix, 2026-07-22,
+    # commit b158b8b): a new peak establishes only after _HW_CONFIRM consecutive valid
+    # readings, so one upward glitch can no longer inflate the fire line.
+    for _ in range(_HW_CONFIRM):
+        assert not should_fire(10_000.0, st)                       # establishes high-water
     assert st["high_water"] == 10_000.0
     for _ in range(4):
         assert not should_fire(6_000.0, st)                        # 4 breaches: no fire yet
     assert not should_fire(None, st)                               # API outage changes nothing
     assert should_fire(6_000.0, st)                                # 5th valid breach fires
     st2: dict = {}
-    should_fire(10_000.0, st2)
+    for _ in range(_HW_CONFIRM):
+        should_fire(10_000.0, st2)                                 # establish high-water
     for _ in range(3):
-        should_fire(6_000.0, st2)
-    assert not should_fire(9_000.0, st2)                           # recovery resets the count
+        should_fire(6_000.0, st2)                                  # 3 breaches accrue
+    assert st2["breaches"] == 3
+    assert not should_fire(9_000.0, st2)                           # recovery (>=65%) resets
     assert st2["breaches"] == 0
 
 

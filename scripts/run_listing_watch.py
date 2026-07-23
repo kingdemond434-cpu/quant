@@ -47,7 +47,7 @@ def main() -> None:
     if fresh:
         try:
             prem = {p["symbol"]: p for p in _get(f"{_FAPI}/fapi/v1/premiumIndex")}
-        except Exception:                         # noqa: BLE001 -- funding enrich is best-effort
+        except Exception:                         # funding enrich is best-effort
             prem = {}
         with _LOG.open("a", encoding="utf-8") as fh:
             for sym in fresh:

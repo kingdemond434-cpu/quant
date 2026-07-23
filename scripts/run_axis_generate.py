@@ -153,7 +153,8 @@ def main() -> None:
     queued, rejected = [], []
     for axis, name, mech, constr, r in results:
         if r["ev"] >= QUEUE_MIN or r["ev"] >= NEAR_MISS:
-            rank = "standard" if r["ev"] >= QUEUE_MIN else "low-rank (near-miss; re-estimate at panel)"
+            rank = ("standard" if r["ev"] >= QUEUE_MIN
+                    else "low-rank (near-miss; re-estimate at panel)")
             queue.append({"id": name, "axis": axis, "mechanism": mech, "construction": constr,
                           "ev": r["ev"], "p_survive": r["p_survive"], "rank": rank,
                           "preregistered": NOW,
@@ -195,7 +196,7 @@ def main() -> None:
 
     print(f"\nqueued: {len(queued)} {queued}")
     print(f"rejected->dnr: {len(rejected)}")
-    print(f"gen_done set for all 13 axes")
+    print("gen_done set for all 13 axes")
 
 
 if __name__ == "__main__":

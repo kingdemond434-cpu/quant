@@ -54,7 +54,7 @@ def _yahoo_usdkrw() -> dict[str, float]:
     res = r["chart"]["result"][0]
     ts, cl = res["timestamp"], res["indicators"]["quote"][0]["close"]
     return {_dt.datetime.fromtimestamp(int(t), tz=UTC).date().isoformat(): float(c)
-            for t, c in zip(ts, cl) if c}
+            for t, c in zip(ts, cl, strict=False) if c}
 
 
 def main() -> None:
