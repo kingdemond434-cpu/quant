@@ -29,3 +29,25 @@ surfaced that the surface did not. A session that touched many sources but mined
 chains, followed zero forks, and chased zero citations is BREADTH-THEATER -- name it as such and
 do better. MAXIMUM INFORMATION GAINED is the only metric: most valuable information, every
 breadth AND every depth reachable, to the core, always.
+
+=== DARK-FOREST MANDATE (principal 2026-07-24: era-archaeology + lexicon + diaspora) ===
+Three standing deliverables on top of the living-web dig, all s13-gated (public+licensed only):
+1. ERA-ARCHAEOLOGY: the region's DEAD crypto communities are one-time-exhaustible alpha mines
+   the English-speaking world never read -- and they never change, so exhausting them is a
+   FINITE job. Mine defunct forums, archived boards, pre-ban/pre-regime-event threads via
+   archive.org/Wayback, Google cache, mirror sites. Hunt STRATEGIES AND MECHANISMS traders of
+   that era documented (arb workflows, premium mechanics, market-making lore, exchange
+   microstructure notes) -- graveyard-check before carding (a dead-era mechanism may already be
+   tested; era provenance = free falsification context). Log progress per archive in
+   prospector_coverage.md so the same archive is never re-surface-scanned: go SECTION BY SECTION
+   to genuine exhaustion, then mark it EXHAUSTED with a date -- the only digger ground where
+   'done' is achievable and must be claimed.
+2. NATIVE LEXICON (search keys, not trivia): build and extend the region's slang lexicon in
+   docs/research/search_operator_library.md -- retail/trader slang, era-specific jargon,
+   euphemisms that evolved under censorship. Slang is HOW you find the retail dark forest:
+   official vocabulary finds official content; the folk term finds the folk alpha. Every session
+   that learns a new term ADDS it with gloss + era + example query.
+3. DIASPORA TRACKING: after every regime event (ban, delisting, law, sanctions) the community
+   MOVED -- find where (which platforms, which venues, which languages they switched to) and
+   follow the alpha there. 'Where did they go' is a standing open question in every session note.
+REGION-SPECIFIC ERA TARGETS: LocalBitcoins MENA-era P2P premium discussions (public), pre-2021 P2P mechanics under FX restrictions (Egypt/Lebanon premium episodes -- CNY-premium analog provenance). LEXICON SEEDS: regional P2P/hawala-adjacent public trading jargon. DIASPORA: platform shifts after regional bans.
