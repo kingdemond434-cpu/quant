@@ -2527,6 +2527,20 @@
    ],
    "success_metric": "OI/LS OOS runs faithfully once universe metrics are ingested; daily diggers resume producing discoveries under Max",
    "reversal_condition": "if the daily diggers still produce nothing under Max, discovery IS the gap and a dedup-scored registry becomes the build"
+  },
+  {
+   "id": "2026-07-24-panel-capacity-sweep-and-seat-swap",
+   "decision": "PANEL RESTORED + CAPACITY-PROVEN after the principal funded OpenRouter ($50, balance ~$48.42). Friday order executed same-day. CAPACITY TEST (measured, never trusted): 12/13 seats PASSED the full 750,805-char audit payload, proven by answering with the exact last-file name -- the full-coverage mandate is now demonstrated end-to-end, not asserted. DEAD SEAT: meta/muse-spark-1.1 returned 403 Forbidden despite a 1M-ctx catalog listing (catalog presence != usability). REPLACEMENT SEARCH, all candidates MEASURED on the same payload: llama-4-maverick RESPONDED-WRONG twice (ignores the probe -- cannot prove full ingestion); llama-4-scout HTTP 400; sakana/fugu-ultra 403-gated; amazon/nova-premier-v1 HALLUCINATED a plausible-but-wrong filename (docs/SYSTEM_REVIEW.md) -- confident fabrication, the worst failure class for an auditor seat; 3x openai models PASSED but a third openai seat over-concentrates one lab; gemini-3.1-customtools is a near-duplicate of the seated google model; grok-4.20-multi-agent has ambiguous versioning vs the seated grok-4.3. SEATED: google/gemini-3.6-flash -- capacity-PASSED, newest Google generation (3.6 vs the seated 3.1-pro), distinct model line, lab concentration stays at 2 max (matching the openai pair precedent). Roster: 13 seats, 11 labs, every seat capacity-proven. anthropic remains excluded by the independence policy. A/B full-vs-tiered queued as a directive (panel-full-vs-tiered-ab) for the Max-powered brain cycle. PRINCIPAL_ACTION purchase-decision page cleared.",
+   "hypothesis": "a measured capacity bar (name the last file) is the only reliable seat-admission test; catalog metadata and even PASS-adjacent responses (reviews, hallucinated names) are not proof of ingestion",
+   "expected_benefit": "panel back online with every seat proven to ingest 100% coverage payloads; the hallucinating candidate was kept OUT of the auditor pool",
+   "expected_cost": "~$3-5 of capacity-test input tokens; gemini-3.6-flash is unproven on finding QUALITY until its first scorecarded panels",
+   "confidence": 0.9,
+   "assumptions": [
+    "the probe (last-file name) genuinely requires full-payload ingestion",
+    "gemini-3.6-flash review quality is at least flash-tier competent -- scorecards will decide retention"
+   ],
+   "success_metric": "next panels: 13/13 non-blank with named-file findings; gemini-3.6-flash earns a positive hit-rate on track_findings within 2 weeks",
+   "reversal_condition": "if gemini-3.6-flash blanks or scores zero validated findings over 2 weeks, swap to openai/gpt-5.6-sol-pro (capacity-PASSED backup) and accept the concentration cost"
   }
  ]
 }
