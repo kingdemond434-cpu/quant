@@ -2513,6 +2513,20 @@
    ],
    "success_metric": "axes that pass held-out OOS then also pass the forward clock; axes that fail held-out are dropped without spending 40 forward days",
    "reversal_condition": "if a held-out-OOS PASS later fails the forward clock, the reconstruction window overlapped the screen (contamination) -- widen the held-out gap"
+  },
+  {
+   "id": "2026-07-23-backfill-is-axis-limited",
+   "decision": "HONEST META-FINDING on the reconstructed-history backfill (MAX_SURVIVORS_PROGRAM Part 1 #1, ranked #1 by two accounts): it is a REAL lever but AXIS-LIMITED, not the universal quick win the program framing implied. Per-axis reality, verified tonight: (1) ON-CHAIN throughput -- deep free single-asset history (blockchain.info, 11y) -> held-out OOS RAN and KILLED the axis (IC ~0, only-recent-era Sharpe = overfit). A genuine win: 40-day wait -> same-day reject. (2) KIMCHI -- BLOCKED: the collector construction is KRW-BTC/KRW-USDT and Upbit KRW-USDT has ~no history; the FX-route reconstruction (KRW-BTC/USDKRW) is a DIFFERENT construction, so diff-verify would mismatch -- forcing it is the exact kimchi USDT-vs-FX construction bug the program warns about. Forward clock must accrue. (3) OI/LS -- BIGGER BUILD: the registered hypotheses (oi_divergence, ls_contrarian in run_derivative_shadow) are CROSS-SECTIONAL over 291 perp symbols; a single-asset backfill is a construction mismatch. Faithful backfill needs full-universe metrics history from data.binance.vision (available back to 2021, confirmed) -- a scheduled Bronze-ingestion project (directive oi-ls-universe-metrics-backfill), not a 3am hand-crank. BTCUSDT history started downloading as the template. CONCLUSION: the backfill converts candidates to same-day verdicts ONLY where deep free history exists AND matches the registered construction; otherwise it needs a real data-ingestion investment or the forward clock. This tempers the program lever ranking with ground truth: on-chain done (killed), the rest need data work now unblocked by Max plan. SEPARATELY, big reframe for the principal QRIS/discovery ask: the daily LLM discovery layer he wants ALREADY EXISTS (run_dataaxis_dig = standing exhaustive free-data-source hunt; 7 frontier expansion miners; prospector/litminer; discovery_registries + universe map = the exclude-done dedup) -- it produced nothing for 4 days ONLY because the brain was quota-dead (163-byte stubs). Max plan + the daily cadence just set unblocks it. The bottleneck was never missing discovery infra; it is quota (now fixed) + conversion (backfill, axis-limited). Building another LLM scout would duplicate run_dataaxis_dig and violate the NO-swarm discipline.",
+   "hypothesis": "the backfill lever is genuine but bounded by per-axis data availability and construction-match; discovery infrastructure already exists and was quota-limited, not absent",
+   "expected_benefit": "prevents forcing phantom reconstructions (kimchi/OI-LS construction mismatch) and prevents building duplicate discovery scouts; focuses effort on the real unblocks (Max quota + universe metrics ingestion)",
+   "expected_cost": "OI/LS OOS waits on a universe-wide metrics download; kimchi waits on forward accrual",
+   "confidence": 0.85,
+   "assumptions": [
+    "data.binance.vision retains full-universe metrics back to 2021",
+    "the daily diggers actually produce once Max-unblocked"
+   ],
+   "success_metric": "OI/LS OOS runs faithfully once universe metrics are ingested; daily diggers resume producing discoveries under Max",
+   "reversal_condition": "if the daily diggers still produce nothing under Max, discovery IS the gap and a dedup-scored registry becomes the build"
   }
  ]
 }
