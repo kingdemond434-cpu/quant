@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
-from libs.execution.carry_accounting import dedup_basis, derive_spot_realized
+from libs.execution.carry_accounting import (
+    carry_bleed_report,
+    dedup_basis,
+    derive_spot_realized,
+)
 
 
 def _closes() -> list[dict]:
@@ -40,3 +44,34 @@ def test_derive_is_robust_to_bad_rows() -> None:
     ]
     assert derive_spot_realized(0.0, trades) == 5.0
     assert derive_spot_realized(None, trades) == 5.0  # type: ignore[arg-type]
+
+
+def test_carry_bleed_clean_when_legs_cancel() -> None:
+    r = carry_bleed_report(funding=100.0, spot_pnl=60.0, fut_pnl=42.0)  # non-funding +2
+    assert not r.alert
+    assert bool(r) is True
+    assert r.non_funding_pnl == 2.0
+    assert "clean" in r.verdict
+
+
+def test_carry_bleed_ok_when_small_drain() -> None:
+    r = carry_bleed_report(funding=100.0, spot_pnl=10.0, fut_pnl=70.0)  # non-funding -20 (20%)
+    assert not r.alert
+    assert r.non_funding_pnl == -20.0
+    assert r.harvest_eaten_frac == 0.2
+
+
+def test_carry_bleed_alarms_when_hedge_loses_more_than_it_earns() -> None:
+    # the live shape: +90 funding, real legs -252 -> non-funding -342 = ~382% of harvest
+    r = carry_bleed_report(funding=89.65, spot_pnl=-200.0, fut_pnl=-52.84)
+    assert r.alert
+    assert bool(r) is False
+    assert r.non_funding_pnl == -342.49
+    assert r.harvest_eaten_frac > 3.0
+    assert "BLEED" in r.verdict
+
+
+def test_carry_bleed_alarms_on_any_drain_with_no_harvest() -> None:
+    r = carry_bleed_report(funding=-5.0, spot_pnl=-10.0, fut_pnl=0.0)
+    assert r.alert
+    assert r.harvest_eaten_frac == float("inf")

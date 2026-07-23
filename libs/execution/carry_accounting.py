@@ -24,6 +24,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from pydantic import BaseModel, ConfigDict
+
 
 def dedup_basis(trades: list[dict[str, Any]]) -> float:
     """Sum ``price_pnl`` over closed carries, deduped by ``(symbol, opened)``.
@@ -53,3 +55,58 @@ def derive_spot_realized(venue_realized_pnl: float, trades: list[dict[str, Any]]
     except (TypeError, ValueError):
         vr = 0.0
     return round(dedup_basis(trades) - vr, 2)
+
+
+class CarryBleedReport(BaseModel):
+    """The standing carry-leak alarm: how much of the funding harvest survives to the net."""
+
+    model_config = ConfigDict(frozen=True)
+
+    real_net: float  # spot_pnl + fut_pnl -- the real delta-neutral book (excludes paper legs)
+    funding: float  # the harvest, the reason the book exists
+    non_funding_pnl: float  # real_net - funding = basis + fees + hedge drift/incidents (the leak)
+    harvest_eaten_frac: float  # share of harvest lost to the leak (0 = clean, >=1 = all eaten)
+    alert: bool
+    verdict: str
+
+    def __bool__(self) -> bool:
+        return not self.alert
+
+
+def carry_bleed_report(
+    *, funding: float, spot_pnl: float, fut_pnl: float, alert_frac: float = 0.5
+) -> CarryBleedReport:
+    """Attribute the delta-neutral book's non-funding PnL and raise an alarm if the leak is eating
+    the funding harvest.
+
+    A tight cash-and-carry earns ``funding`` and its price legs cancel, so the honest target is
+    ``non_funding_pnl ~= 0`` (only small fees). ``non_funding_pnl = (spot_pnl + fut_pnl) - funding``
+    captures everything else -- basis convergence, fees/slippage, and hedge-drift incidents. The
+    alarm fires when that leak is a drain worth at least ``alert_frac`` of the harvest (or any drain
+    at all when there is no harvest to offset it), so a hedge quietly losing more than it earns can
+    never again slide by unnoticed on the dashboard. Diagnose the dominant cause only when it fires.
+    """
+    real_net = round(spot_pnl + fut_pnl, 2)
+    non_funding = round(real_net - funding, 2)
+    if funding > 0:
+        eaten = round(max(0.0, -non_funding) / funding, 3)
+    else:
+        eaten = float("inf") if non_funding < 0 else 0.0
+    alert = non_funding < 0.0 and (funding <= 0.0 or -non_funding >= alert_frac * funding)
+    if non_funding >= 0.0:
+        verdict = f"clean: non-funding PnL {non_funding:+.2f} not a drain; harvest survives"
+    elif not alert:
+        verdict = f"ok: {eaten:.0%} of the {funding:+.2f} funding harvest lost to non-funding PnL"
+    else:
+        verdict = (
+            f"BLEED: non-funding PnL {non_funding:+.2f} is {eaten:.0%} of {funding:+.2f} funding "
+            "harvest -- hedge losing more than it earns; attribute basis/fees/incidents"
+        )
+    return CarryBleedReport(
+        real_net=real_net,
+        funding=funding,
+        non_funding_pnl=non_funding,
+        harvest_eaten_frac=eaten,
+        alert=alert,
+        verdict=verdict,
+    )

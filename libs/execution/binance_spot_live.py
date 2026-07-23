@@ -64,9 +64,10 @@ def _signed(path: str, params: dict[str, Any], *, method: str = "GET") -> Any:
     if not armed:
         raise RuntimeError(f"binance_spot_live not armed ({why}) -- refusing signed call {path}")
     key, secret = _creds()
+    assert key is not None and secret is not None  # armed (checked above) => creds present
     params = {**params, "timestamp": int(time.time() * 1000), "recvWindow": 5000}
     query = urllib.parse.urlencode(params)
-    sig = hmac.new(secret.encode(), query.encode(), hashlib.sha256).hexdigest()  # type: ignore[union-attr]
+    sig = hmac.new(secret.encode(), query.encode(), hashlib.sha256).hexdigest()
     body = f"{query}&signature={sig}".encode()
     if method == "GET":
         req = urllib.request.Request(f"{_BASE}{path}?{body.decode()}",

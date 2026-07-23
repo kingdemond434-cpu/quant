@@ -19,6 +19,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Sequence
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 
@@ -59,7 +60,7 @@ def crypto_symbols(
     return sorted(d.name for d in root.iterdir() if (d / timeframe.value).exists())
 
 
-def _read_frames(symbols: Sequence[str], timeframe: Timeframe, lake_root: str) -> dict:
+def _read_frames(symbols: Sequence[str], timeframe: Timeframe, lake_root: str) -> dict[str, Any]:
     """Read + cache each symbol's lake frame once (indexed by timestamp)."""
     lake = ParquetLake(lake_root)
     frames = {}
@@ -69,7 +70,7 @@ def _read_frames(symbols: Sequence[str], timeframe: Timeframe, lake_root: str) -
     return frames
 
 
-def _provider_from_frames(frames: dict, min_bars: int) -> DataProvider:
+def _provider_from_frames(frames: dict[str, Any], min_bars: int) -> DataProvider:
     # BTC is the cross-asset reference (feeds MarketSeries.ref_close -> the CROSS_ASSET generator).
     # NO-LOOKAHEAD: reindex BTC's close onto each symbol's bar index with PAST-ONLY ffill (a bar's
     # ref is BTC's contemporaneous close, gaps filled from the last KNOWN past close); net_returns

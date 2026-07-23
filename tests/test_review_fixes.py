@@ -197,3 +197,35 @@ def test_dossier_sanitizer_blocks_tokens_keeps_ledger_ids():
     assert "quant-desk" not in s and "data/secrets" not in s
     assert "FAKEFAKE" not in s                                     # long unhyphenated token gone
     assert "2026-07-12-first-inversion-rule-adopted" in s          # ledger ids stay readable
+
+
+def test_deadman_single_spike_cannot_inflate_highwater():
+    """REGRESSION (incident #5, 2026-07-22, commit b158b8b): ONE noisy upward reading must not
+    become the high-water. Before the fix a single spike permanently raised the fire line, so
+    ordinary equity then sat below 65% of a phantom peak and the rail false-fired day after day.
+
+    NOTE: this test previously lived in scripts/test_review_fixes.py, which pytest never collects
+    (pyproject testpaths=["tests"]) -- so it could not catch the regression it exists to prevent.
+    Relocated here 2026-07-23."""
+    from scripts.run_deadman_switch import _HW_CONFIRM, should_fire
+    st: dict = {}
+    for _ in range(_HW_CONFIRM):
+        should_fire(4_000.0, st)                                   # real sustained level
+    assert st["high_water"] == 4_000.0
+    should_fire(9_000.0, st)                                       # single glitch spike
+    assert st["high_water"] == 4_000.0, "a lone spike must never ratchet the high-water"
+    for _ in range(5):                                             # normal equity, no phantom fire
+        assert not should_fire(3_600.0, st)
+
+
+def test_deadman_still_fires_on_a_real_sustained_drawdown():
+    """The incident-#5 fix must NOT weaken ruin protection: a genuine 35%+ drawdown from a REAL
+    sustained peak still fires within the same _CONSECUTIVE budget."""
+    from scripts.run_deadman_switch import _HW_CONFIRM, should_fire
+    st: dict = {}
+    for _ in range(_HW_CONFIRM):
+        should_fire(10_000.0, st)
+    assert st["high_water"] == 10_000.0
+    for _ in range(4):
+        assert not should_fire(6_000.0, st)
+    assert should_fire(6_000.0, st), "real ruin must still fire on the 5th breach"

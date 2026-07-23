@@ -10,6 +10,7 @@ is testable offline; in production it pulls from MT5.
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
+from typing import Any
 
 import numpy as np
 
@@ -73,7 +74,7 @@ class AutoDiscoveryLab:
         """Cumulative trial count for cross-campaign DSR deflation: this cycle + all prior."""
         return n_new + self.store.total()
 
-    def _family_trials(self, family: str, n_new_in_family: int, prior: dict) -> int:
+    def _family_trials(self, family: str, n_new_in_family: int, prior: dict[str, Any]) -> int:
         """FIXED-WALL DEFLATION (principal 2026-07-23). The DSR bar must be a WALL, not a ratchet
         that rises every time the desk tests anything -- otherwise objective #2 (maximize
         discovery) mechanically sabotages objective #1 by making every new test harder to pass.

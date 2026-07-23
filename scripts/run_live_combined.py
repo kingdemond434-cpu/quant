@@ -15,7 +15,7 @@ from typing import Any
 
 from libs.execution import binance_spot_testnet as spot
 from libs.execution import binance_testnet as fut
-from libs.execution.carry_accounting import derive_spot_realized
+from libs.execution.carry_accounting import carry_bleed_report, derive_spot_realized
 from libs.portfolio.live_book import LivePortfolio
 
 _CC = Path("web/cashcarry_live.json")
@@ -149,6 +149,8 @@ def main() -> None:
     m_start = round(n_books * _BASE, 2)
     m_eq = round(fut_book + spot_book + (perp_book if perp_active else 0.0), 2)
     net = round(fut_pnl + spot_pnl + perp_net, 2)     # carry (real) + perp (paper); NO trend
+    # standing carry-leak alarm: is the funding harvest surviving, or is the hedge bleeding it?
+    bleed = carry_bleed_report(funding=funding, spot_pnl=spot_pnl, fut_pnl=fut_pnl)
 
     # gross P&L for the COMBINED book: split each book's net P&L by sign -> total gains vs total
     # losses. They sum EXACTLY to the molded net.
@@ -233,6 +235,9 @@ def main() -> None:
             "unrealized": round(fut_unrl + _num(cc.get("spot_leg_pnl")), 2), "realized": realized,
             "gross_profit": gross_profit, "gross_loss": gross_loss,
             "max_dd_pct": dd, "funding": funding,
+            "non_funding_pnl": bleed.non_funding_pnl,
+            "harvest_eaten_frac": bleed.harvest_eaten_frac,
+            "bleed_alert": bleed.alert, "bleed_verdict": bleed.verdict,
             "run_rate_apr_pct": round(avg_f * 3 * 365 * 100, 1),
             "days_live": port.days_live, "winrate_pct": port.winrate,
             "n_closed_trades": port.n_closed, "deployed_sharpe": port.deployed_sharpe,

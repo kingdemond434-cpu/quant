@@ -21,7 +21,8 @@ _LOG = Path("data/forecast_log.json")
 
 def _load() -> dict[str, Any]:
     try:
-        return json.loads(_LOG.read_text("utf-8"))
+        data: dict[str, Any] = json.loads(_LOG.read_text("utf-8"))
+        return data
     except (OSError, json.JSONDecodeError):
         return {"forecasts": {}}
 
