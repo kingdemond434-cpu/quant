@@ -136,7 +136,7 @@ def main() -> None:
     _OUT.parent.mkdir(parents=True, exist_ok=True)
     _OUT.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
-    print(f"\n=== RECONSTRUCTED HELD-OUT OOS: onchain throughput ===")
+    print("\n=== RECONSTRUCTED HELD-OUT OOS: onchain throughput ===")
     print(f"  held-out: {held_start}..{held_end} ({len(strat)} days), diff-verified {verified}d")
     print(f"  IC {ic:+.4f} | ann Sharpe {ann:+.3f} | deflated {float(dsr.dsr):+.3f} "
           f"(pass={dsr.passed})")
