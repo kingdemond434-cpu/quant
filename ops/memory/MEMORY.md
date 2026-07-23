@@ -1,4 +1,20 @@
-# Memory index
+# Memory index (refreshed 2026-07-23 -- READ THE TOP BLOCK FIRST)
+
+**CURRENT STATE 2026-07-23 (supersedes stale hooks below):** Principal = **Zaid** (NOT Saqib -- old
+name, corrected 2026-07-17). Max plan ACTIVE; ALL organs fable-5 + --effort max (verified). All
+diggers DAILY via systemd; 7 frontier miners daily (one 15:00Z rotation). OpenRouter funded,
+budget envelope $120/mo HARD (page-abort, never degrade -- data/panel_budget.json). Dual supreme
+objectives + FREE-FRONTIER + NO-CEILING axioms in principal_doctrine (every organ). Dead-man
+PATCHED (sustained-HW + legs grace, systemd-owned) -- reset = ALL THREE files. Executor runs
+patient-maker (240s opens) + BNB burn; carry harvest ~28%/yr gross vs fees was 66%/yr ->
+verify maker fill-rate weekly (integrity-watch duty). 4 forward clocks accruing (kimchi,
+onchain-throughput, stablecoin-supply, cny_premium m=4). Held-out OOS harness live
+(backfill_onchain_oos killed onchain reversal on 11y; OI/LS cross-sectional OOS chained on the
+139-symbol universe download -- check reports/reconstructed_oos/). Generation-ROI harness PROVED
+mass generation self-defeating -> new data axes only. Latest duties in the cycle contract:
+DAILY INTEGRITY WATCH (both-signs bleed, phantom reconcile, hedge asymmetry, maker-rate),
+NOVELTY GATE (screen vs graveyard BEFORE compute), clock-saturation, vendor-replacement,
+forensics-freshness. Ledger ~190 entries -- ALWAYS fresh-read the tail before appending.
 
 - [User profile](user-profile.md) — Saqib, 18 (as of 2026-07), solo, budget-constrained; huge time runway, quant-seat path strong; wants blunt numbers.
 - [Quant platform v1.0](quant-platform-v1.md) — solo MT5+Python alpha platform; consolidated Architecture v1.0 decisions, edge-first build order, what was removed/deferred.

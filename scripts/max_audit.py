@@ -608,6 +608,40 @@ def check_forensics_fresh(defects) -> None:
                         "bleed/PnL analysis is not landing; check daily_research_cycle"))
 
 
+def check_memory_hygiene(defects) -> None:
+    """MEMORY layer fences (principal 2026-07-24): institutional memory must be written, fresh,
+    and retrievable -- a memory system nobody writes to or that outgrows retrieval is theater.
+    Found at audit time: research_memory had 0 rows ever while mission directives claim to write
+    it; the brain memory index was a week stale and used the principal old name."""
+    # (a) the brain's own memory index must stay fresh (it is the first thing cycles read)
+    mi = ROOT / "ops/memory/MEMORY.md"
+    if mi.exists():
+        age_d = (NOW - mi.stat().st_mtime) / 86400.0
+        if age_d > 7:
+            defects.append(("memory-index-stale",
+                            f"ops/memory/MEMORY.md {age_d:.0f}d old -- the brain memory index "
+                            "must be refreshed weekly with current desk state (cycle duty)"))
+    # (b) research_memory must actually be written by the analyst missions that cite it
+    try:
+        import sqlite3
+        n = sqlite3.connect(str(ROOT / "data/sor_research.sqlite")).execute(
+            "SELECT COUNT(*) FROM research_memory").fetchone()[0]
+        if n == 0:
+            defects.append(("research-memory-unused",
+                            "research_memory has 0 rows EVER while mission directives claim "
+                            "every analyst pass writes to it -- either write it (hypothesis ID + "
+                            "economic logic + EV score per mission) or remove the claim"))
+    except Exception:
+        pass
+    # (c) ledger bloat: append-only is sacred, but retrieval must survive growth
+    lp = ROOT / "data/decision_ledger.json"
+    if lp.exists() and lp.stat().st_size > 1_500_000:
+        defects.append(("ledger-bloat",
+                        f"decision_ledger.json {lp.stat().st_size/1e6:.1f}MB -- run the memory-"
+                        "consolidation duty (archive-never-delete, index the archive) before "
+                        "tail-reads go lossy"))
+
+
 def main() -> None:
     defects: list[tuple[str, str]] = []
     for label, fn in [("organs", check_organs), ("stubs", check_stub_deaths),
@@ -622,6 +656,7 @@ def main() -> None:
                       ("clock-saturation", check_clock_saturation),
                       ("vendor-replacement", check_vendor_replacement),
                       ("forensics-fresh", check_forensics_fresh),
+                      ("memory-hygiene", check_memory_hygiene),
                       ("self-sufficiency", check_self_sufficiency),
                       ("rs-detect", check_rubberstamp_detector),
                       ("rs-enforce", check_rubberstamp_enforcement)]:
