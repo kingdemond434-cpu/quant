@@ -48,6 +48,7 @@ _STEPS = [
     ("nav_attest",        "scripts/run_nav_attest.py",       60),  # hash-chained track record
     ("listing_watch",     "scripts/run_listing_watch.py",    60),  # gap-53 data clock
     ("kimchi_premium",    "scripts/collect_kimchi_premium.py", 90),  # gap-74 forward clock
+    ("axis_shadows",      "scripts/run_axis_shadows.py",     120),  # Stage-B forward eval
     ("cost_model",        "scripts/run_cost_model.py",      600),  # measured exec costs (daily)
     ("shadow_8h",         "scripts/run_shadow_8h.py",       420),  # 3x-obs challenger shadow
     ("leverage_opt",      "scripts/run_leverage_opt.py",    120),
