@@ -2456,6 +2456,20 @@
    ],
    "success_metric": "post-auth digger works T1 sources through axis_screen; T4 not monitored; no T5 free-sourced",
    "reversal_condition": "if a T4 narrative source ever yields a gauntlet-surviving mechanism, promote that specific one -- evidence over category"
+  },
+  {
+   "id": "2026-07-23-orthogonal-axis-batch-onchain-wired",
+   "decision": "Batch-tested 10 free structured sources through the axis_screen harness in two classes. (A) 4 REGIONAL PREMIUMS (bithumb/coinone KR, bitbank JP, mercado BR): 0 new orthogonal axes -- bithumb was a TIMEZONE-LOOKAHEAD artifact (KST candle ~1.6d ahead of UTC; IC 0.72/Sharpe 10, shift-test confirmed), coinone redundant with kimchi, bitbank/mercado weak. This HARDENED the harness with a SUSPECT-LOOKAHEAD rail (|IC|>0.35 or best Sharpe>6 auto-artifact) mirroring the leverage plausibility rail. (B) 6 ON-CHAIN USAGE/CONGESTION metrics via blockchain.info (hash-rate/difficulty/miner-revenue EXCLUDED -- already ingested): active-addresses + economic-throughput passed the de-contam gate (same-period ~-0.05 = genuinely orthogonal, unlike the desk's all-derivative data). They are one construct (z20 corr 0.64) and their composite degraded to Sharpe 0.39, so the reversal is weak+fragile. Wired the single cleanest (economic throughput) as a Stage-A forward-tracked axis (direction=-1 reversal) in run_axis_shadows._AXES (m now 2) + collect_onchain_activity.py in the daily cycle. First genuinely on-chain-USAGE (non-price) forward clock on the desk.",
+   "hypothesis": "high on-chain economic throughput (z20) precedes lower next-day BTC return (activity/throughput spikes cluster near local tops); genuinely orthogonal to funding/carry",
+   "expected_benefit": "a real NON-PRICE edge if it survives forward under the Holm bar; even a FAILING verdict is useful breadth-exhaustion evidence. Harness rail now blocks the timezone-lookahead class for the digger at scale.",
+   "expected_cost": "raises kimchi's Holm bar slightly (m 1->2); signal is weak (IC ~-0.05) + fragile (composite Sharpe 0.39) so most-likely reads FAILING forward -- accepted, zero capital",
+   "confidence": 0.35,
+   "assumptions": [
+    "blockchain.info throughput series is not itself lagged/revised",
+    "reversal direction is stable out-of-sample (composite check says maybe not)"
+   ],
+   "success_metric": "onchain_activity_throughput reaches 40 forward days and nw_t >= holm_bar(2) -> ELIGIBLE",
+   "reversal_condition": "FAILING at >=40 forward days, or same-period corr drifts above the de-contam max -> graveyard as regional-premium-class exhausted"
   }
  ]
 }

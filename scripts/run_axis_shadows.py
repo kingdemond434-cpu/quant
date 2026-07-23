@@ -42,6 +42,10 @@ _BINANCE = "https://fapi.binance.com/fapi/v1/klines"
 # direction: +1 = momentum (long when z>0), -1 = reversal
 _AXES: dict[str, tuple[str, str, str, int]] = {
     "kimchi_premium": ("data/kimchi_premium.jsonl", "BTCUSDT", "z20", +1),
+    # orthogonal on-chain USAGE axis (not price/derivative): economic throughput,
+    # reversal. Weak+fragile in-sample (composite Sharpe collapsed) -> forward clock
+    # under the Holm bar decides. same-period corr ~-0.06 = genuinely leading.
+    "onchain_activity_throughput": ("data/onchain_activity.jsonl", "BTCUSDT", "z20", -1),
 }
 
 
