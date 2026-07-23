@@ -591,6 +591,23 @@ def check_vendor_replacement(defects) -> None:
         defects.append(("vendor-replacement", "last_free_dig missing/unparsable in universe map"))
 
 
+def check_forensics_fresh(defects) -> None:
+    """DAILY PnL/churn/loss analysis is GUARANTEED, not assumed (principal 2026-07-24): the
+    trade-forensics probe (the mechanical version of the probes that found gaps #42/#43/#34)
+    must have produced a fresh verdict within 26h, or the desk is flying without its daily
+    bleed detection -- the exact silent-leak failure mode the integrity watch exists to kill."""
+    fj = ROOT / "web/trade_forensics.json"
+    if not fj.exists():
+        defects.append(("forensics-stale", "web/trade_forensics.json MISSING -- daily "
+                        "trade-class bleed analysis has never produced output"))
+        return
+    age_h = (NOW - fj.stat().st_mtime) / 3600.0
+    if age_h > 26:
+        defects.append(("forensics-stale",
+                        f"trade_forensics.json {age_h:.0f}h old (>26h) -- the daily churn/"
+                        "bleed/PnL analysis is not landing; check daily_research_cycle"))
+
+
 def main() -> None:
     defects: list[tuple[str, str]] = []
     for label, fn in [("organs", check_organs), ("stubs", check_stub_deaths),
@@ -604,6 +621,7 @@ def main() -> None:
                       ("generation", check_generation),
                       ("clock-saturation", check_clock_saturation),
                       ("vendor-replacement", check_vendor_replacement),
+                      ("forensics-fresh", check_forensics_fresh),
                       ("self-sufficiency", check_self_sufficiency),
                       ("rs-detect", check_rubberstamp_detector),
                       ("rs-enforce", check_rubberstamp_enforcement)]:
