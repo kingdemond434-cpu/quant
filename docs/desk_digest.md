@@ -1,17 +1,17 @@
 # Desk digest (auto-generated daily -- do not hand-edit)
-_updated 2026-07-22T08:01Z · companion to [[institutional_knowledge]]_
+_updated 2026-07-23T00:37Z · companion to [[institutional_knowledge]]_
 
 ## Book
-- Molded net: **$7.81** | funding **$91.03** | run-rate APR 17.9% | day 20.11
-- Root cause: **unknown_novel** (pause_and_page) | tracking error $-280.72
+- Molded net: **$-309.05** | funding **$90.28** | run-rate APR 12.3% | day 20.8
+- Root cause: **unknown_novel** (pause_and_page) | tracking error $-392.83
 
 ## Validation clocks
-- **carry (DEPLOYED)**: 26/90d | bt 3.86 fwd 17.63
-- **perp L/S**: 19/90d | bt -0.04 fwd 2.72
-- **trend**: 19/90d | bt 1.4 fwd -3.52
-- **trend regime-gated**: 14/90d | bt 1.38 fwd 0.0
-- **OI/LS data**: 24/40d
-- **stablecoin data**: 20/40d
+- **carry (DEPLOYED)**: 27/90d | bt 3.33 fwd 12.5
+- **perp L/S**: 20/90d | bt 0.63 fwd -0.44
+- **trend**: 20/90d | bt 1.42 fwd -4.21
+- **trend regime-gated**: 15/90d | bt 1.4 fwd 0.0
+- **OI/LS data**: 25/40d
+- **stablecoin data**: 21/40d
 
 ## Open decisions (ledger)
 - `2026-07-04-cashcarry-top10-4500` -- review 2026-08-04: funding/day rises ~50% without new drift losses by 2026-08-04
@@ -150,6 +150,40 @@ _updated 2026-07-22T08:01Z · companion to [[institutional_knowledge]]_
 - `2026-07-21-self-activating-antirubberstamp` -- review ?: detector stays dormant while cycles genuinely probe; activates within a window if they rub
 - `2026-07-21-antirubberstamp-active-from-start` -- review ?: cycles cite named reads per angle from the start; no false-flags on genuine full cycles
 - `2026-07-22-crypto-generation-diagnosis` -- review ?: cross-asset generators add genuinely-new gauntlet-passable hypotheses; as OI/LS axes cross
+- `2026-07-22-deadman-incident-5-artifact` -- review ?: after the panel-reviewed fix, unwind bursts no longer latch the rail while genuine ruin st
+- `2026-07-22-deadman-permanent-fix` -- review ?: no false fire across the next unwind/rebalance bursts, while the regression test proving r
+- `2026-07-22-objective-on-every-prompt` -- review ?: organ outputs justify recommendations by growth-rate impact; low-ROI activity is declined 
+- `2026-07-22-cost-model-built-universe-mismatch` -- review ?: cost_model criterion moves to True once the recorder covers traded names and the model re-
+- `2026-07-22-recorder-universe-and-liveness` -- review ?: re-run run_cost_model.py in >=24h and get non-null pair costs for the traded names
+- `2026-07-22-gap34-forensic-resolved-hedge-failure` -- review ?: gap #41 per-fill timeline confirms or refutes an unhedged window on GTC/SHELL/ONE
+- `2026-07-22-items45-orphan-bounds-factory-verified` -- review ?: no false orphan cover on transient desync; real orphans still fully covered within a few p
+- `2026-07-22-churn-drag-finding` -- review ?: after the fix, <8h closes fall to rail-driven only, and net bps by bucket stops being nega
+- `2026-07-22-entry-gate-funding-and-cost` -- review ?: baseline-rate opens fall to zero; net bps by funding bucket stops being negative; realised
+- `2026-07-22-gap34-attributed` -- review ?: post-fix, no symbol shows fut_fills/spot_fills >3x and no repeat of a concentrated unhedge
+- `2026-07-22-anytime-valid-measured-refutes-speedup` -- review ?: used as a secondary gate on high-stakes promotions; never cited as a speedup
+- `2026-07-22-8h-block-challenger-shadow` -- review ?: challenger tracks incumbent direction over the comparison window; on adoption, promotion d
+- `2026-07-22-cost-truth-and-peek` -- review ?: measured-cost coverage grows with the recorder; peek e-values track the day-40 verdicts
+- `2026-07-22-recursion-angles-12-18` -- review ?: blind-spot ledger origin=principal rate falls toward zero over the next 2 weeks of cycles
+- `2026-07-22-dual-objective-growth-ladder` -- review ?: each ladder step fires within 24h of its evidence; cycle reports score both objectives; cl
+- `2026-07-22-small-capital-stack` -- review ?: blended seed-window return lands 100%+ in yr-1 with the desk's own risk rails intact and z
+- `2026-07-23-frame-lock-autopsy` -- review ?: zero further origin=principal rows in the objective-frame class
+- `2026-07-23-journey-stack` -- review ?: zero ad-hoc withdrawals/interventions post-live; NAV chain unbroken; checklist 100% at Gat
+- `2026-07-23-fixed-wall-and-clock-saturation` -- review ?: survivors can emerge from a family without being deflated by unrelated families' trial cou
+- `2026-07-23-gate0-levers-built-early` -- review ?: at S1 the deployed base tracks operator capital + realised PnL within clamps; fee burn sho
+- `2026-07-23-gap14-measurement-fix-and-listing-clock` -- review ?: clean_since accrues uninterrupted toward 30d; listings.jsonl populates on the next real li
+- `2026-07-23-two-stage-discovery-law` -- review ?: confirmation bar unchanged across arbitrary generation volume; false-promotion rate tracks
+- `2026-07-23-axis-generate-run` -- review ?: clock-saturation check green next run; cme hypothesis clears or ledgers Stage-A; ingestion
+- `2026-07-23-free-alternatives-dig` -- review ?: paid CME feed retired; Coinalyze verified + wired as a collector post-connector; >=1 free 
+- `2026-07-23-free-dig-overlap-correction` -- review ?: no future dig catalogs a source without an existing-collector check first
+- `2026-07-23-angle14-self-apply-guard` -- review ?: zero redundant catalogs/builds going forward
+- `2026-07-23-genuine-new-datasets` -- review ?: Upbit/Bithumb collector wired post-connector; kimchi-premium hypothesis pre-registered + a
+- `2026-07-23-kimchi-screened-clock` -- review ?: forward IC positive + NW-t clears bar over >=40 live days, then slot
+- `2026-07-23-kimchi-self-caught-method` -- review ?: n/a
+- `2026-07-23-venue-premium-decontam` -- review ?: every future premium/spread screen reports same-period corr + residual IC
+- `2026-07-23-coinbase-artifact-selfcaught` -- review ?: n/a
+- `2026-07-23-turkey-premium-fails-niche-narrow` -- review ?: future axis hunting targets new mechanism TYPES, not more FX premiums; kimchi forward cloc
+- `2026-07-23-reusable-axis-screen-harness` -- review ?: every future axis screen calls stage_a_screen and reports same-period corr + residual IC
+- `2026-07-23-screen-on-discovery-duty` -- review ?: share of newly-surfaced axes carrying a same-run Stage-A verdict approaches 100%; new forw
 
 ## Executive KPI snapshot
 - CRO: {"hypotheses_tested_lifetime": 20, "validated_survivors": 1, "survivor_note": "cash-carry (fwd 8/90); trend candidate gauntlet-passed (fwd 1/90); all else graveyarded", "survival_r

@@ -15,7 +15,6 @@ needs no 48h wait), but will not verdict before a minimum clean-observation wind
 from __future__ import annotations
 
 import json
-import time
 from datetime import UTC, datetime
 from pathlib import Path
 

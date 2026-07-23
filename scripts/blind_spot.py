@@ -19,6 +19,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 from datetime import UTC, datetime
 from pathlib import Path
@@ -43,10 +44,8 @@ def _rows():
         return []
     out = []
     for line in LEDGER.read_text("utf-8").splitlines():
-        try:
+        with contextlib.suppress(Exception):
             out.append(json.loads(line))
-        except Exception:
-            pass
     return out
 
 
