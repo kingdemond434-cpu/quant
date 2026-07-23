@@ -42,7 +42,7 @@ def _save(state: dict[str, Any]) -> None:
 
 
 def current_stage() -> str:
-    return _load().get("stage", "S0")
+    return str(_load().get("stage", "S0"))
 
 
 def s1_entry_met(evidence: dict[str, Any]) -> tuple[bool, str]:

@@ -19,6 +19,7 @@ dependencies = [
     "pyarrow>=16.0",
     "duckdb>=1.0",
     "scipy>=1.13",
+    "scikit-learn>=1.4",  # libs/regime (GMM/HMM probabilistic regimes) — a LIVE entrypoint dep
 ]
 
 [project.optional-dependencies]
@@ -30,6 +31,18 @@ dev = [
     "hypothesis>=6.100",
     "types-PyYAML>=6.0",
     "pre-commit>=3.7",
+]
+# Independent backtest cross-check (adversarial finding W3.2 — never trust a single bespoke
+# engine). Optional: libs/backtest/cross_engine imports these lazily and degrades gracefully.
+crosscheck = [
+    "vectorbt>=0.26",
+    "backtrader>=1.9",
+]
+# Battle-tested statistics for cointegration/stationarity (stat-arb cards) and GARCH volatility.
+# Optional: libs/research/stationarity import-guards these; hand-rolling ADF/GARCH is banned.
+stats = [
+    "statsmodels>=0.14",
+    "arch>=6.3",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -76,6 +89,8 @@ module = [
     "pyarrow.*",
     "duckdb.*",
     "scipy.*",
+    "statsmodels.*",
+    "arch.*",
     "MetaTrader5.*",
     "vectorbt.*",
     "backtrader.*",
@@ -88,7 +103,9 @@ ignore_missing_imports = true
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
-addopts = "-ra -q --strict-markers"
+# importlib mode lets same-named test files coexist across dirs (tests/features/test_registry.py
+# vs tests/factory/test_registry.py) without __init__.py churn or basename collisions.
+addopts = "-ra -q --strict-markers --import-mode=importlib"
 filterwarnings = ["error"]
 
 [tool.coverage.run]

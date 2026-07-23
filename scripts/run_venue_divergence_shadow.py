@@ -24,6 +24,8 @@ appends to its own log.
 from __future__ import annotations
 
 import argparse
+import contextlib
+import itertools
 import json
 from datetime import UTC, datetime
 from pathlib import Path
@@ -85,10 +87,8 @@ def report() -> None:
         return
     rows = []
     for line in _LOG.read_text("utf-8").splitlines():
-        try:
+        with contextlib.suppress(Exception):
             rows.append(json.loads(line))
-        except Exception:
-            pass
     clean = [r for r in rows if not r.get("stale")
              and r.get("venue_nav") is not None and r.get("mark_nav") is not None]
     usable = [abs(float(r["pct_diff"])) for r in clean if r.get("pct_diff") is not None]
@@ -100,7 +100,7 @@ def report() -> None:
     # and permanently on that definitional offset. What genuinely signals a reconciliation
     # break is the two measures DRIFTING APART between ticks.
     incs = []
-    for a, b in zip(clean, clean[1:]):
+    for a, b in itertools.pairwise(clean):
         dv = float(b["venue_nav"]) - float(a["venue_nav"])
         dm = float(b["mark_nav"]) - float(a["mark_nav"])
         base = abs(float(b["venue_nav"])) or 1.0
@@ -110,7 +110,8 @@ def report() -> None:
         m = len(incs)
         print(f"  INCREMENT divergence |d(mark)-d(venue)|: p50={incs[m // 2]:.4f}%  "
               f"p95={incs[min(m - 1, int(m * 0.95))]:.4f}%  max={incs[-1]:.4f}%  (n={m})")
-        print(f"  ARMABLE BAND (~2x observed increment noise) => ~{2 * incs[min(m - 1, int(m * 0.95))]:.3f}%")
+        band = 2 * incs[min(m - 1, int(m * 0.95))]
+        print(f"  ARMABLE BAND (~2x observed increment noise) => ~{band:.3f}%")
     else:
         print("  INCREMENT divergence: need >=2 clean consecutive samples")
     print(f"venue-divergence shadow: {len(rows)} samples, {len(usable)} usable "

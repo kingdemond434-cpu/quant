@@ -49,7 +49,7 @@ def _closes(symbol: str, n: int = 400) -> dict[str, float]:
     """Daily closes keyed by ISO date (UTC), from the venue the desk actually trades."""
     url = f"{_BINANCE}?symbol={symbol}&interval=1d&limit={n}"
     req = urllib.request.Request(url, headers={"User-Agent": "quant-desk/1.0"})
-    with urllib.request.urlopen(req, timeout=30) as r:  # noqa: S310
+    with urllib.request.urlopen(req, timeout=30) as r:
         rows = json.loads(r.read())
     return {datetime.fromtimestamp(k[0] / 1000, tz=UTC).date().isoformat(): float(k[4])
             for k in rows}
