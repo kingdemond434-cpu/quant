@@ -2313,6 +2313,28 @@
    "assumptions": [],
    "success_metric": "n/a",
    "reversal_condition": "n/a"
+  },
+  {
+   "id": "2026-07-23-venue-premium-decontam",
+   "decision": "Tested 2 more venue-premium axes; a DE-CONTAMINATION check killed one and vindicated kimchi. COINBASE premium (US institutional): in-sample momentum Sharpe 2.7 looked great BUT premium std is 0.06% (Coinbase USD ~= Binance USDT, arbitraged flat) and corr(z, SAME-day BTC return)=+0.256 -- the signal is largely a close-timestamp artifact bleeding into next-day via autocorrelation. Confirmed timing artifact, GRAVEYARDED (collapsed-variance red flag: fat Sharpe on a near-zero-variance quantity). BITFLYER (JP): no free daily-candle history (ticker-only API) -- data-blocked, ledgered not fabricated. CRUCIAL: I applied the SAME check to KIMCHI (which I had NOT de-contaminated before celebrating it) -- kimchi PASSED: corr(z, same-day)=-0.136 (LEADS, opposite of Coinbase's coincident +0.256), and residual IC after orthogonalizing to same-day return is +0.142 vs raw +0.148 -- the edge survives de-contamination almost fully. This also substantially ANSWERS the FX-timing look-ahead caveat: an FX-timing artifact would show POSITIVE same-day contamination like Coinbase; kimchi shows NEGATIVE. Kimchi is a genuine leading signal, strengthened. RECURSION: de-contamination (corr with same-period target + residual IC) is now a MANDATORY Stage-A screen gate -- it just caught an artifact AND validated a real signal in one pass; added as probe angle 20.",
+   "hypothesis": "a leading indicator must LEAD not COINCIDE; same-period correlation + residual IC separates genuine signal from timing artifact",
+   "expected_benefit": "killed a false positive (Coinbase), raised confidence in a real one (kimchi), added a permanent artifact filter",
+   "expected_cost": "one extra correlation per screen",
+   "confidence": 0.85,
+   "assumptions": [],
+   "success_metric": "every future premium/spread screen reports same-period corr + residual IC",
+   "reversal_condition": "n/a -- methodology hardening"
+  },
+  {
+   "id": "2026-07-23-coinbase-artifact-selfcaught",
+   "decision": "origin=self: caught the Coinbase 2.7-Sharpe as a timing artifact BEFORE promoting it (contamination +0.256), via a check I then fairly applied to my own prior kimchi celebration. The collapsed-variance instinct (fat Sharpe + tiny premium std) fired correctly.",
+   "hypothesis": "fat Sharpe on a near-zero-variance quantity is an artifact until de-contaminated",
+   "expected_benefit": "no false positive promoted",
+   "expected_cost": "none",
+   "confidence": 0.9,
+   "assumptions": [],
+   "success_metric": "n/a",
+   "reversal_condition": "n/a"
   }
  ]
 }

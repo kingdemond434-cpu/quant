@@ -116,3 +116,5 @@ within the rails, evidence-gated. You are the principal's relentless verificatio
     argument. (Origin: the CRO spent days answering maximize-everything pushes inside the
     trading frame; the seed-window stack -- the honest answer to the principal's actual goal --
     surfaced only when he asked the exact open question. Principal-angled, logged.)
+
+20. CONTAMINATION / LEAD-vs-COINCIDE (recursion rule, 2026-07-23): for ANY predictive signal, before trusting its forward IC/Sharpe, compute corr(signal, SAME-period target) and the RESIDUAL IC after orthogonalizing the signal to the same-period target. A genuine LEADING indicator has low/negative same-period correlation and its edge SURVIVES de-contamination; a timing/microstructure artifact has high positive same-period correlation and its edge VANISHES. (2026-07-23: killed coinbase_premium_timing -- Sharpe 2.7 but same-period corr +0.256 on a 0.06%-std premium; vindicated kimchi -- same-period -0.136, residual IC 0.142 vs raw 0.148. Pairs with angle 16 cross-measurement + the collapsed-variance red flag: fat Sharpe on a near-zero-variance quantity is guilty until de-contaminated.)
