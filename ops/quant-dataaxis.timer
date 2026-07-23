@@ -1,7 +1,7 @@
 [Unit]
-Description=Free-data-alternatives dig 3x/week (Mon/Wed/Fri 14:00 UTC, clear of the 08:45 brain slot)
+Description=Free-data-alternatives dig DAILY (14:00 UTC, clear of the 08:45 brain slot)
 [Timer]
-OnCalendar=Mon,Wed,Fri *-*-* 14:00:00
+OnCalendar=*-*-* 14:00:00
 Persistent=true
 [Install]
 WantedBy=timers.target
