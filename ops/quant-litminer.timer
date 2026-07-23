@@ -1,7 +1,9 @@
 [Unit]
-Description=Literature dig 3x/week (Tue/Thu/Sat 18:00 UTC)
+Description=Literature dig DAILY (19:00 UTC -- max frequency, principal 2026-07-23)
+
 [Timer]
-OnCalendar=Tue,Thu,Sat *-*-* 18:00:00
+OnCalendar=*-*-* 19:00:00
 Persistent=true
+
 [Install]
 WantedBy=timers.target

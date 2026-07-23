@@ -1,7 +1,9 @@
 [Unit]
-Description=Prospector dig 3x/week (Mon/Wed/Fri 18:00 UTC)
+Description=Prospector dig DAILY (18:00 UTC -- max frequency, principal 2026-07-23)
+
 [Timer]
-OnCalendar=Mon,Wed,Fri *-*-* 18:00:00
+OnCalendar=*-*-* 18:00:00
 Persistent=true
+
 [Install]
 WantedBy=timers.target
