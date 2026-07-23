@@ -642,6 +642,35 @@ def check_memory_hygiene(defects) -> None:
                         "tail-reads go lossy"))
 
 
+def check_prompt_layer(defects) -> None:
+    """PROMPT-LAYER hygiene (principal 2026-07-24 prompt audit): the prompts are organs too.
+    (a) Doctrine bloat: the doctrine is prepended to EVERY organ call; past ~16k chars the
+    stacked supreme-blocks start diluting mission instructions -- consolidate, never just stack.
+    (b) State-triggered prompt review: the 28d review cadence is calendar-based, but when the
+    contract/doctrine change materially the review is due by STATE (the blind-rediscovery
+    precedent) -- a week of unreviewed prompt mutations is how contradictions accrete."""
+    doc = ROOT / "ops/principal_doctrine.txt"
+    if doc.exists() and doc.stat().st_size > 16000:
+        defects.append(("prompt-doctrine-bloat",
+                        f"principal_doctrine.txt {doc.stat().st_size/1000:.1f}k chars (>16k) -- "
+                        "consolidate the stacked axiom blocks into tighter prose (preserve every "
+                        "commitment, cut the repetition); every organ pays this context"))
+    try:
+        cad = json.loads((ROOT / "data/cadence_state.json").read_text("utf-8"))
+        last_rev = datetime.fromisoformat(cad["last_prompt_review"]).timestamp()
+        contract = (ROOT / "ops/run_cro_ai.sh").stat().st_mtime
+        doc_m = doc.stat().st_mtime if doc.exists() else 0
+        newest_change = max(contract, doc_m)
+        if newest_change > last_rev and (NOW - newest_change) / 86400.0 > 7:
+            defects.append(("prompt-review-due-by-state",
+                            "contract/doctrine changed materially since the last prompt review "
+                            f"({cad['last_prompt_review'][:10]}) and the newest change is >7d "
+                            "old -- run the prompt-review duty NOW (check for duty collisions, "
+                            "stale numbers, contradictions), do not wait for the 28d floor"))
+    except Exception:
+        pass
+
+
 def main() -> None:
     defects: list[tuple[str, str]] = []
     for label, fn in [("organs", check_organs), ("stubs", check_stub_deaths),
@@ -657,6 +686,7 @@ def main() -> None:
                       ("vendor-replacement", check_vendor_replacement),
                       ("forensics-fresh", check_forensics_fresh),
                       ("memory-hygiene", check_memory_hygiene),
+                      ("prompt-layer", check_prompt_layer),
                       ("self-sufficiency", check_self_sufficiency),
                       ("rs-detect", check_rubberstamp_detector),
                       ("rs-enforce", check_rubberstamp_enforcement)]:
