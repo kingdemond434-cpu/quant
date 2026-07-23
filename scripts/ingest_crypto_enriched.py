@@ -19,7 +19,10 @@ from libs.data.timeframe import Timeframe
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--top", type=int, default=80)
+    ap.add_argument("--top", type=int, default=150)  # wider screening panel = more cross-sectional
+    # observations/day = faster statistical power (the only real validation accelerant, per
+    # libs/research/anytime_valid). Screening breadth only; the live trade universe + depth guard
+    # are separate, so wider ingest cannot pull illiquid names into the book.
     ap.add_argument("--start", default="2019-01-01")
     args = ap.parse_args()
 
