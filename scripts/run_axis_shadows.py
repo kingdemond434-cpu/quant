@@ -46,6 +46,10 @@ _AXES: dict[str, tuple[str, str, str, int]] = {
     # reversal. Weak+fragile in-sample (composite Sharpe collapsed) -> forward clock
     # under the Holm bar decides. same-period corr ~-0.06 = genuinely leading.
     "onchain_activity_throughput": ("data/onchain_activity.jsonl", "BTCUSDT", "z20", -1),
+    # macro dollar-liquidity: total stablecoin supply (all issuers, DefiLlama),
+    # momentum. Weak (IC 0.067) but economically grounded + orthogonal. SAME construct
+    # as the supply field in run_stablecoin_flows -> ONE hypothesis, this is the tracked one.
+    "stablecoin_supply_momentum": ("data/stablecoin_supply.jsonl", "BTCUSDT", "z20", +1),
 }
 
 

@@ -2470,6 +2470,21 @@
    ],
    "success_metric": "onchain_activity_throughput reaches 40 forward days and nw_t >= holm_bar(2) -> ELIGIBLE",
    "reversal_condition": "FAILING at >=40 forward days, or same-period corr drifts above the de-contam max -> graveyard as regional-premium-class exhausted"
+  },
+  {
+   "id": "2026-07-23-altdata-batch-stablecoin-supply-wired",
+   "decision": "Third orthogonal batch from the principal's ~2000-source dump: screened 9 free daily-history alt-data channels the desk lacked -- 5 multilingual Wikipedia BTC pageviews (en/ja/ko/ru/zh retail attention, different geographic user bases) + 4 DefiLlama protocol-health/flow series (total TVL, DEX volume, protocol fees, total stablecoin supply). RESULT: 8 of 9 SCREEN-WEAK. Multilingual attention is genuinely orthogonal (same-period ~0.01-0.08) but has NO daily-horizon timing edge (Sharpe <0.35) -> kills the whole search-trends category as daily alpha (graveyarded). DeFi TVL/DEX/fees = same dead 'activity' family as n-transactions/fees/mempool -> graveyarded. The ONE survivor, total stablecoin supply (IC +0.067, momentum Sharpe 0.88, same-period +0.08, residual +0.072 STRENGTHENS -> genuinely leading), is by angle-14 the SAME construct run_stablecoin_flows already records (USDT+USDC totalSupply) but never screened or forward-tracked. Wired the BROAD version (collect_stablecoin_supply.py, all issuers incl DAI/USDe/FDUSD/PYUSD) as the formally-tracked momentum axis in run_axis_shadows._AXES (m now 3) + daily cycle -- the evaluation the archived field lacked, NOT a second independent evidence source.",
+   "hypothesis": "rising aggregate stablecoin supply (net minting = new dollar capital entering crypto) precedes higher forward BTC return; macro-liquidity signal orthogonal to funding/carry",
+   "expected_benefit": "an economically-grounded macro-liquidity forward clock, now formally Holm-tracked (was collected but un-evaluated). Two whole alt-data categories (attention, DeFi-health) proven dead at daily horizon -> future digs skip them.",
+   "expected_cost": "raises the shadow Holm bar to m=3; signal is weak (IC 0.067) so may read FAILING forward. Overlaps the stablecoin_flows supply field -> must be counted as ONE hypothesis, not independent corroboration.",
+   "confidence": 0.4,
+   "assumptions": [
+    "DefiLlama aggregate supply is not materially lagged/revised",
+    "net-minting->inflow mechanism is stable out-of-sample"
+   ],
+   "success_metric": "stablecoin_supply_momentum reaches 40 forward days and nw_t >= holm_bar(3) -> ELIGIBLE",
+   "reversal_condition": "FAILING at >=40 forward days, or same-period corr drifts above the de-contam max",
+   "flagged_gap": "run_stablecoin_flows collects a supply figure but does not screen or forward-track it; this axis closes that for the broad aggregate. Brain may retire the redundant archived supply field or reconcile the two so evidence is not double-counted."
   }
  ]
 }
