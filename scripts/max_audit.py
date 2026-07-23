@@ -516,7 +516,11 @@ def check_clock_saturation(defects) -> None:
         cad = json.loads(cad_p.read_text("utf-8"))
     except Exception:
         return
-    axes = sorted(d.name for d in bronze.iterdir() if d.is_dir())
+    # INPUT STORES are not axes: raw price/metrics lakes feed constructions but cannot carry
+    # a hypothesis themselves (the constructions built FROM them do). Excluding them keeps this
+    # check pointed at genuinely idle research axes instead of manufacturing false defects.
+    _input_stores = {"futclose_daily", "oi_ls_daily", "fx", "index", "crypto", "binance_metrics"}
+    axes = sorted(d.name for d in bronze.iterdir() if d.is_dir() and d.name not in _input_stores)
     if not axes:
         return
     stale = []
