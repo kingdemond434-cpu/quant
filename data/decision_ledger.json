@@ -2485,6 +2485,21 @@
    "success_metric": "stablecoin_supply_momentum reaches 40 forward days and nw_t >= holm_bar(3) -> ELIGIBLE",
    "reversal_condition": "FAILING at >=40 forward days, or same-period corr drifts above the de-contam max",
    "flagged_gap": "run_stablecoin_flows collects a supply figure but does not screen or forward-track it; this axis closes that for the broad aggregate. Brain may retire the redundant archived supply field or reconcile the two so evidence is not double-counted."
+  },
+  {
+   "id": "2026-07-23-dev-momentum-factor-v1-insignificant",
+   "decision": "Re-ran the GitHub developer-activity idea the CORRECT way after the principal's reframe: NOT 'commits -> next-week BTC' (that was a hypothesis generator, ~1.2sigma noise) but CROSS-SECTIONAL ecosystem selection. Ranked 35 assets (winners + slow survivors LTC/BCH/XLM/ETC/XTZ/DASH/ZEC/NEO/QTUM + dead/declining EOS/ALGO/ZIL/ONE/FTM/ONT/KAVA -- survivorship-bias-aware) each month by 6mo commit-velocity z-score, tested vs forward RELATIVE token return (return minus cross-sectional mean) at 1/3/6mo lagged horizons. Monthly commits via GitHub Link-header count trick (66mo history/repo). RESULT: insignificant at every horizon -- 1mo CS-IC -0.018 (t -0.68), 3mo +0.033 (t 1.21), 6mo +0.014 (t 0.55, L/S NW-t 1.53). Direction turns thesis-consistent (positive) at 3/6mo but nothing clears |t|>=2. Did NOT wire. Did NOT fish further commit-count variants (would be the exact multiplicity/p-hacking trap just flagged to the principal). tooling: scripts/build_dev_factor.py (reusable cross-sectional harness).",
+   "hypothesis": "developer-momentum RANK predicts cross-sectional relative token performance at 3-6mo (ecosystem selection), even though it does not time BTC",
+   "expected_benefit": "a free, orthogonal ecosystem-rotation factor if a stronger dev proxy clears the bar; reusable cross-sectional test harness built either way",
+   "expected_cost": "commit velocity is the weakest proxy -> likely needed retention/breadth",
+   "confidence": 0.3,
+   "assumptions": [
+    "Binance-listed universe still tilts to survivors (v2: source CoinGecko)",
+    "effective N ~= 54-59 months, not 1900 obs"
+   ],
+   "success_metric": "n/a -- rejected at Stage-A screen (insignificant)",
+   "reversal_condition": "the PRE-REGISTERED retention/migration factor clears |t|>=2 at 3/6mo",
+   "pre_registered_next": "DEVELOPER RETENTION / MIGRATION factor (the principal's a-priori-strongest hypothesis: 'developer migration predicts ecosystem decline before token weakness'). Factor = author-level: active-contributor breadth momentum + retention (share of authors active in trailing 3mo who remain active) + net contributor migration. SAME cross-sectional test, SAME bar (|t|>=2 at 3/6mo forward relative return). Requires an AUTHOR-LEVEL commit miner (heavy pagination) -- routed to the brain's discovery-layer build. If it also fails the bar, GRAVEYARD the whole developer-factor line as tested-and-dead."
   }
  ]
 }
