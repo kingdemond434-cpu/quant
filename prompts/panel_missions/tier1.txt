@@ -43,7 +43,7 @@ upgrade beats five aspirations the desk cannot fund.
 MONTHLY GOVERNANCE RIDERS (2026-07-16 principal override -- answer in <=6 bullets total,
 after your 3-5 moves):
 - LLM UTILISATION REVIEW: given the desk's audit stack described in the dossier (13-model
-  weekly panel at max reasoning, 3-model daily delta micro-audit, monthly tier-1), name the ONE
+  panel every ~3 days at max reasoning, 3-model daily delta micro-audit, tier-1 every 14 days (cadences tightened 2026-07-20; verify current values in scripts/run_cadence.py rather than assuming these)), name the ONE
   place it under-uses frontier-model capability (model choice, context, prompt quality,
   cadence) and the cheapest falsifiable test of your claim.
 - SELF-IMPROVEMENT LOOP AUDIT: name the ONE desk feedback loop (panel scorecards, EV-gate
