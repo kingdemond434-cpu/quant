@@ -19,6 +19,7 @@ docs/research/panel_inbox.md. Panel hit-rate is scored at monthly governance.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import ssl
 import urllib.request
@@ -134,6 +135,56 @@ def main() -> None:
         _left = float(_d.get("total_credits", 0)) - float(_d.get("total_usage", 0))
         _need = 0.05 * len(providers)            # ~$1.10/run at 13 seats, with headroom
         print(f"panel: credit balance ${_left:.2f} (need ~${_need:.2f})")
+        # MONTHLY ENVELOPE GUARD (principal 2026-07-24: <=$100-150/mo, NO degradation).
+        # Month-to-date spend = lifetime usage minus the snapshot taken at month start.
+        # At the envelope: PAGE + ABORT the paid run (explicit principal decision) -- never a
+        # silent quality cut. 2026-07-24 lesson: one capacity-probing session burned $21.48 by
+        # sending the full 750k payload 20x; unbounded spend must be impossible, not unlikely.
+        try:
+            from datetime import UTC as _UTC
+            from datetime import datetime as _dt
+            _bcfg = json.loads(Path("data/panel_budget.json").read_text("utf-8"))
+            _bstp = Path("data/panel_budget_state.json")
+            _month = _dt.now(tz=_UTC).strftime("%Y-%m")
+            _usage_now = float(_d.get("total_usage", 0))
+            try:
+                _bst = json.loads(_bstp.read_text("utf-8"))
+            except Exception:
+                _bst = {}
+            if _bst.get("month") != _month:
+                _bst = {"month": _month, "usage_at_month_start": _usage_now, "alerted": False}
+            _mtd = _usage_now - float(_bst.get("usage_at_month_start", _usage_now))
+            _env = float(_bcfg.get("monthly_envelope_usd", 120.0))
+            _alert = float(_bcfg.get("alert_at_usd", 90.0))
+            print(f"panel: month-to-date spend ${_mtd:.2f} of ${_env:.2f} envelope")
+            if _mtd + _need > _env:
+                Path("data/PRINCIPAL_ACTION.md").write_text(
+                    f"BUDGET DECISION: OpenRouter month-to-date ${_mtd:.2f} + this run "
+                    f"~${_need:.2f} would exceed the ${_env:.2f}/mo envelope you set "
+                    "(2026-07-24). Per your no-degradation order this run was ABORTED rather "
+                    "than degraded -- raise the envelope in data/panel_budget.json or skip "
+                    "this cycle's paid panel.\n", encoding="utf-8")
+                _bstp.write_text(json.dumps(_bst, indent=1), encoding="utf-8")
+                raise SystemExit(
+                    f"panel: ABORTED -- monthly envelope (${_env:.2f}) would be exceeded "
+                    f"(MTD ${_mtd:.2f} + ~${_need:.2f}); paged the principal, NOT degraded")
+            if _mtd > _alert and not _bst.get("alerted"):
+                _bst["alerted"] = True
+                with contextlib.suppress(Exception):
+                    _topic = json.loads(
+                        Path("data/secrets/ntfy.json").read_text("utf-8")).get("topic")
+                    if _topic:
+                        import urllib.request as _ur
+                        _ur.urlopen(_ur.Request(
+                            f"https://ntfy.sh/{_topic}",
+                            data=(f"OpenRouter month-to-date ${_mtd:.2f} passed the "
+                                  f"${_alert:.0f} alert line (envelope ${_env:.0f})"
+                                  ).encode(), method="POST"), timeout=10)
+            _bstp.write_text(json.dumps(_bst, indent=1), encoding="utf-8")
+        except SystemExit:
+            raise
+        except Exception as _be:
+            print(f"panel: budget guard unavailable ({_be!r}) -- proceeding on balance check")
         if _left < _need:
             Path("data/PRINCIPAL_ACTION.md").write_text(
                 f"PURCHASE DECISION: OpenRouter credits exhausted (balance ${_left:.2f}, a "
