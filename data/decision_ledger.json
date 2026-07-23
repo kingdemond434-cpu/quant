@@ -2335,6 +2335,19 @@
    "assumptions": [],
    "success_metric": "n/a",
    "reversal_condition": "n/a"
+  },
+  {
+   "id": "2026-07-23-turkey-premium-fails-niche-narrow",
+   "decision": "Tested the strongest kimchi-analog -- Turkish Lira capital-control premium (BtcTurk BTC/TRY at official USD/TRY vs Binance, 212 days). FAILS: premium std 0.23% (vs Korea's 1.42%), IC -0.063, and the de-contamination gate (angle 20) flags it TIMING-ARTIFACT at same-day corr -0.495. Graveyarded. META-CONCLUSION (the honest value here): kimchi is RARE, not a generic 'regional premium works' pattern -- Korea's capital controls on KRW outflow are uniquely strict, producing a large (1.42% std), persistent, genuinely-arb-constrained, LOW-contamination premium (-0.136 same-day). Turkey (freer TRY, tighter arb) collapses to timing noise; Coinbase (USD~=USDT) collapses to zero. So the correct read is NOT 'spray more regional-premium tests' (diminishing, mostly artifacts caught by angle 20) -- it is: kimchi is the one genuine find, let its forward clock arbitrate, and pursue genuinely DIFFERENT axis TYPES (on-chain lending-rate/leverage-demand, DEX pool stress, cross-venue funding dispersion) rather than more FX-gated premiums. Discipline over volume: 4 axes tested this session (1 real, 3 artifact/blocked) is the honest hit rate, and manufacturing more marginal tests to lengthen the list is the anti-pattern.",
+   "hypothesis": "most regional/venue premiums are timing artifacts; kimchi's strict-capital-control regime makes it a rare genuine exception",
+   "expected_benefit": "avoided a false positive; established that the regional-premium niche is narrow so effort redirects to different axis TYPES",
+   "expected_cost": "none (screen only)",
+   "confidence": 0.8,
+   "assumptions": [
+    "angle-20 gate reliably separates lead from coincide"
+   ],
+   "success_metric": "future axis hunting targets new mechanism TYPES, not more FX premiums; kimchi forward clock arbitrates",
+   "reversal_condition": "a regional premium with strict capital controls (e.g. Argentina/Nigeria P2P) shows kimchi-class std + low contamination -> re-open that specific market"
   }
  ]
 }
