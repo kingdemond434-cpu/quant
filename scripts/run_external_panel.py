@@ -38,7 +38,7 @@ _LOG = Path("data/external_panel_log.jsonl")
 _INBOX = Path("docs/research/panel_inbox.md")
 _CTX = ssl.create_default_context(cafile=certifi.where())
 
-# MISSION ROTATION (2026-07-12; cadence now ~3d, was weekly): frontier models are wasted on one job. Each
+# MISSION ROTATION (2026-07-12; cadence now ~3d): frontier models are wasted on one job. Each
 # cycle rotates the panel's mission so the same ~$0.25 buys 6x the diversity of value.
 # "benchmark" added 2026-07-16 (principal's gap-elimination override): rotating tier-1
 # benchmark on the currently-weakest dimension, self-selected from the dossier.
