@@ -170,10 +170,18 @@ class AutoDiscoveryLab:
         counts = dict.fromkeys(CandidateStatus, 0)
         for hyp, rets, stressed in prepared:
             _f = str(hyp.family)
+            # The FIXED WALL is the family-scoped TRIAL COUNT. The sharpe array is only the
+            # dispersion input for the DSR variance term: a family contributing a single
+            # hypothesis this cycle cannot estimate a variance from one point, so fall back to
+            # the campaign-wide dispersion. That keeps the wall fixed without ever handing
+            # deflated_sharpe_ratio a degenerate (len<2) sample.
+            _sh = _fam_sharpes.get(_f)
+            if _sh is None or len(_sh) < 2:
+                _sh = sharpe_estimates
             verdict = validate(
                 rets, hypothesis=hyp,
                 n_trials=_fam_trials.get(_f, n_trials),
-                sharpe_estimates=_fam_sharpes.get(_f, sharpe_estimates),
+                sharpe_estimates=_sh,
                 returns_matrix=matrix, pbo=pbo_once, rc=rc_once,
             )
             status = promote(rets, validation_survived=verdict.survived)
