@@ -299,6 +299,32 @@ def _churn_guard(held_h: float, funding: float, rail_forced: bool) -> bool:
 _MIN_FUNDING = 0.00015          # per-8h floor: below this a carry cannot pay for its own exit
 _DEFAULT_RT_BPS = 4.5           # measured desk-median pair round-trip, used when unmeasured
 _COST_MODEL = Path("data/cost_model.json")
+_FORENSICS = Path("web/trade_forensics.json")
+# STRUCTURAL-BLEED DENYLIST (2026-07-23). run_trade_forensics.py already PROVED which
+# names lose money as a class (NOMUSDT -149bps/5 trades, PEOPLEUSDT -73/5, BNBUSDT
+# -67/11, GTCUSDT -29/10) but nothing consumed its output, so the desk kept re-opening
+# them. The funding+cost gate does not catch these: their funding clears the floor and
+# their modelled cost looks fine -- the loss is realised execution, visible only in the
+# closed-trade record. Evidence-driven, self-updating, and strictly RESTRICTIVE:
+# NEW OPENS ONLY, so it can never force-close a held carry (that would be churn).
+_BLEED_BPS = -20.0        # realised net bps at which a symbol is structurally bleeding
+_BLEED_MIN_N = 5          # minimum closed trades before the verdict is trusted
+
+
+def _structurally_bleeding(sym: str) -> bool:
+    """True => this symbol has PROVEN it loses money for the desk; block new opens."""
+    try:
+        rows = json.loads(_FORENSICS.read_text("utf-8")).get("worst_symbols", [])
+    except (OSError, json.JSONDecodeError, TypeError, ValueError):
+        return False
+    for r in rows:
+        try:
+            if (r.get("symbol") == sym and int(r.get("n", 0)) >= _BLEED_MIN_N
+                    and float(r.get("bps", 0.0)) <= _BLEED_BPS):
+                return True
+        except (TypeError, ValueError):
+            continue
+    return False
 
 
 def _rt_bps(sym: str) -> float:
@@ -319,6 +345,8 @@ def _entry_gate(sym: str, funding: float, min_hold_h: float = _MIN_HOLD_H) -> bo
     Requires expected funding capture over the MINIMUM HOLD to beat this symbol's measured
     round-trip. Applied to NEW OPENS ONLY -- never to the hold/target set, so raising the bar
     can never force-close existing carries (that would itself be a churn event)."""
+    if _structurally_bleeding(sym):
+        return False                      # proven money-loser: never re-open it
     if funding < _MIN_FUNDING:
         return False
     periods = max(1.0, min_hold_h / 8.0)
@@ -1025,8 +1053,6 @@ def main() -> None:
     print("cash-carry executor done.")
 
 
-if __name__ == "__main__":
-    main()
 
 
 # --- BNB FEE DISCOUNT (principal 2026-07-23; Gate-0 lever) -----------------------------------
@@ -1041,3 +1067,6 @@ def _enable_fee_burn() -> None:
     with contextlib.suppress(Exception):
         spot._signed("/sapi/v1/bnbBurn", {"spotBNBBurn": "true"}, method="POST")
 
+
+if __name__ == "__main__":
+    main()

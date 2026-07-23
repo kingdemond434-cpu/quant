@@ -10,13 +10,23 @@ watchdog keeps the always-on processes up, and those processes own data accumula
 
 from __future__ import annotations
 
+import os
 import socket
 import subprocess
 import time
 from pathlib import Path
 
 _ROOT = Path(__file__).resolve().parent.parent
-_PYW = _ROOT / ".venv" / "Scripts" / "pythonw.exe"
+_IS_WIN = os.name == "nt"
+# PLATFORM FIX (2026-07-23): this watchdog was written for Windows Task Scheduler.
+# On the Linux VPS the Scripts/pythonw.exe path does not exist AND creationflags
+# raises ValueError, so _spawn() crashed on its FIRST call -- killing the watchdog
+# on 07-11 and leaving the daily research cycle unscheduled (forward clocks frozen)
+# and run_alerts un-ticked (pager silent) for 11.5 days.
+_PYW = (_ROOT / ".venv" / "Scripts" / "pythonw.exe") if _IS_WIN \
+    else (_ROOT / ".venv" / "bin" / "python")
+_PY = (_ROOT / ".venv" / "Scripts" / "python.exe") if _IS_WIN \
+    else (_ROOT / ".venv" / "bin" / "python")
 _HB = _ROOT / "data" / "executor_heartbeat"
 _CC_HB = _ROOT / "data" / "cashcarry_exec_heartbeat"
 _LIQ_HB = _ROOT / "data" / "liquidation_heartbeat"
@@ -45,8 +55,10 @@ def _fresh(p: Path, max_sec: float) -> bool:
 
 
 def _spawn(args: list[str], label: str) -> None:
-    subprocess.Popen([str(_PYW), *args], cwd=str(_ROOT), creationflags=_DETACHED,
-                     stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    _kw = {"creationflags": _DETACHED} if _IS_WIN else {"start_new_session": True}
+    subprocess.Popen([str(_PYW), *args], cwd=str(_ROOT),
+                     stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                     stderr=subprocess.DEVNULL, **_kw)
     print(f"watchdog: (re)started {label}")
 
 
@@ -155,7 +167,7 @@ def main() -> None:
         acted.append("tunnel")
     # recompute dynamic leverage (cheap) so executor + dashboard use fresh growth-optimal sizing,
     # then refresh the molded headline feed (reads JSON + one futures call).
-    py = str(_ROOT / ".venv" / "Scripts" / "python.exe")
+    py = str(_PY)
     subprocess.run([py, "scripts/run_leverage_opt.py"], cwd=str(_ROOT), timeout=60,
                    capture_output=True, check=False)
     subprocess.run([py, "scripts/run_live_combined.py"], cwd=str(_ROOT), timeout=60,
@@ -178,7 +190,7 @@ def main() -> None:
     # permanent Netlify link: THROTTLED to every 30 min (free tier meters deploys -> don't burn it).
     netlify_marker = _ROOT / "data" / ".last_netlify_publish"
     if (_ROOT / "data" / "secrets" / "netlify.json").exists() and not _fresh(netlify_marker, 1800):
-        subprocess.run([str(_ROOT / ".venv" / "Scripts" / "python.exe"),
+        subprocess.run([str(_PY),
                         "scripts/publish_netlify.py"], cwd=str(_ROOT), timeout=120,
                        capture_output=True, check=False)
         netlify_marker.write_text(str(time.time()), "utf-8")
