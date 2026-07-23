@@ -2388,6 +2388,20 @@
    ],
    "success_metric": "kimchi and future axis clocks gain one row per calendar day without any human session; cro_cycle_log gains a dated entry daily",
    "reversal_condition": "if the daily cycle ever collides with a revived watchdog spawn, gate one of them on a shared marker -- do not remove the cron"
+  },
+  {
+   "id": "2026-07-23-gap19-shadow-finding",
+   "decision": "GAP #19 (venue-truth divergence breaker) PUT ON SHADOW, and the shadow immediately proved the spec unarmable as written. CONTEXT: gap #19 is the one accepted kimi-attributed tier1 finding (moonshotai 'Venue-Truth-First Risk Measurement', corroborated unprompted by google/gemini 'Venue-Truth Disconnect Circuit Breaker' -- kimi's other two tier1 findings were rejected). It was spec'd (GAP19_RECONCILE_GUARD_SPEC.md) and queued post-Gate-0 but never observed. APPROVED SHADOW-FIRST because the spec calibrates its band at '~2x OBSERVED noise' and the noise had never been measured -- arming a threshold against unmeasured noise is EXACTLY what produced the 2026-07-22 dead-man false fires. Shipped scripts/run_venue_divergence_shadow.py: strictly read-only, never pauses/pages/flattens, and NEVER writes the dead-man state (two-writers-on-one-rail was the 07-11 false-fire root cause). Cron */5. FINDING (immediate, decisive): the two NAV feeds are BOTH FRESH and identically timestamped, yet sit ~36.4% apart BY CONSTRUCTION -- live_combined marks a 15,000-based book while the dead-man measure is fut margin + TRACKED legs + USDT delta, deliberately excluding untracked faucet spot ('immune to mark-based accounting blindness'). So the spec's LEVEL comparison would have tripped INSTANTLY AND PERMANENTLY on a definitional offset, not a reconciliation break -- it was broken-on-arrival and would have looked like a real venue divergence. CORRECTED SIGNAL: divergence of INCREMENTS, |d(mark)-d(venue)| per tick, which measures the two measures DRIFTING APART (the real break) while ignoring a harmless constant offset. Measured 0.0071% early -> armable band ~0.014% (2x observed increment noise). The sampler now reports level offset as DEFINITIONAL-do-not-band and increments as the calibration signal. STILL QUEUED: arming needs >=200 clean samples spanning rebalances and >=1 regime event, plus the property/mutation bar and the independence gate (I had already touched the rail and executor today). LESSON GENERALISED: a risk trigger whose band is defined relative to 'observed noise' must be shadow-measured before it is armed; and two feeds must be proven to share a BASIS before they are differenced.",
+   "hypothesis": "shadow-measuring a proposed risk trigger before arming it surfaces basis mismatches and gives a real calibration, at zero risk",
+   "expected_benefit": "prevented arming a breaker that would have tripped permanently on a definitional offset; produced a genuine band (~0.014%) and the correct signal (increments)",
+   "expected_cost": "one read-only sampler on a 5-min cron; arming still waits on sample count",
+   "confidence": 0.9,
+   "assumptions": [
+    "increment divergence is the right reconciliation signal once a constant basis offset is accepted",
+    "both feeds keep updating on the same 3-min tick"
+   ],
+   "success_metric": ">=200 clean samples accumulate; increment p95 stays small and stable, giving a defensible band before Gate 0",
+   "reversal_condition": "if increment divergence proves unstable/regime-dependent, the breaker needs a basis-reconciled NAV pair instead of a band -- do NOT widen the band to silence it"
   }
  ]
 }
