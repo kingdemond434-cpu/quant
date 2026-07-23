@@ -2375,6 +2375,19 @@
    ],
    "success_metric": "share of newly-surfaced axes carrying a same-run Stage-A verdict approaches 100%; new forward clocks started per week rises; graveyard grows with reasoned negatives",
    "reversal_condition": "if screens start being reported with only winning constructions, or artifact-gate bypasses appear, tighten to requiring the harness output verbatim -- do not remove the duty"
+  },
+  {
+   "id": "2026-07-23-research-cycle-scheduler-restored",
+   "decision": "FORWARD CLOCKS WERE NOT TICKING -- root cause found and fixed. The principal asked how to make screen->shadow->live faster; the honest answer was that the pipeline was not slow, it was UNSCHEDULED. scripts/daily_research_cycle.py advances EVERY forward clock (kimchi gap-74), the cost model, shadow_8h, nav_attest, listing_watch, stablecoin/FRED collectors, the crypto factory and git_snapshot -- 22 steps -- and its ONLY invoker was scripts/watchdog.py, which is DEAD (no process, systemd quant-watchdog inactive, not in crontab). data/.last_cro_cycle sat 11.5 days stale (07-11) while cro_cycle_log showed 07-19..07-22 entries: those runs came from INTERACTIVE SESSIONS, not automation. So Stage-B forward evidence accrued only when a human happened to have a session open -- the kimchi clock had exactly 1 row (its creation day) and would never have reached the 40-day bar. FIX: a direct pgrep-guarded cron (02:00Z daily, detached, logged) for daily_research_cycle.py -- deterministic, with NO dependency on the dead watchdog. VERIFIED by triggering a run: all 22 steps green, kimchi clock advanced 1->2 rows, cro_cycle_log gained its 2026-07-23 entry. NOTABLE from that run: shadow_8h reached NW-t 1.87 (above the 1.65 bar) at 82 blocks (~27d) with vif 1.20 -- the 8h-block challenger delivering the ~1.7x validation compression in production, where the daily path would still be accruing. This is a ZERO-STATISTICAL-COST speedup: no window was shortened, no bar lowered; clocks simply now advance autonomously instead of on human presence. RESIDUAL FLAGGED: (a) the watchdog remains dead -- its respawn duties for recorders/deadman are already covered by their own crons and systemd, but if it is ever revived it will immediately spawn a DUPLICATE cycle because .last_cro_cycle is stale (it is only written by the watchdog, not by this cron); (b) NOTHING still reads the accruing clock files to compute Stage-B stats (nw_tstat/holm_bar exist in libs/validation/forward_stats.py but no caller) -- so eligibility will not be detected automatically even once the evidence lands. That is the next latency to remove.",
+   "hypothesis": "forward validation latency was operational (unscheduled clocks), not statistical; restoring a deterministic scheduler makes evidence accrue on calendar time instead of human presence",
+   "expected_benefit": "forward clocks advance every day autonomously; Stage-B eligibility becomes reachable at all, at zero statistical cost",
+   "expected_cost": "one heavy detached cycle per day (~20-40min, isolated steps, idempotent)",
+   "confidence": 0.95,
+   "assumptions": [
+    "the cron survives; steps stay isolated so one failure never aborts the cycle"
+   ],
+   "success_metric": "kimchi and future axis clocks gain one row per calendar day without any human session; cro_cycle_log gains a dated entry daily",
+   "reversal_condition": "if the daily cycle ever collides with a revived watchdog spawn, gate one of them on a shared marker -- do not remove the cron"
   }
  ]
 }
