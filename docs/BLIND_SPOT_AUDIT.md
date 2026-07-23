@@ -50,10 +50,17 @@ adoption list; it recommends protecting the data clock and holding the validatio
 
 Everything else is covered or a real constraint. What actually remains, ranked:
 
-1. **Reconcile the live↔backtest inverse-vol convention** (found this session). `_book` lags vol one
-   bar; `latest_weights` doesn't. Low urgency (leg membership + neutrality already match), but it
-   means backtest Sharpe slightly misrepresents live sizing. Operator decides which convention wins;
-   a `_book` change implies a full backtest re-run.
+1. **Reconcile the live↔backtest signal/vol timing** (found this session; refined on closer look).
+   The inverse-vol shift is NOT a bug — `_book` lags vol because it applies weights same-bar, while
+   `latest_weights` applies them to the next (forward) bar; that's the same rule in two conventions.
+   The genuine residual is narrower: `latest_weights` reads the **signal** at `iloc[-2]` but
+   inverse-vol at `iloc[-1]` — a one-bar signal/vol offset the aligned `_book` doesn't have. The
+   correct fix direction depends on whether the lake's last D1 bar is complete or forming at runtime
+   (if complete, the signal is one bar stale; if forming, the vol wrongly uses a partial bar), which
+   is a runtime fact not visible in code. Because closing it moves live positions and the direction
+   is genuinely ambiguous, it is **not auto-changed** (profit-preservation). Current behavior is now
+   pinned by a characterization test (`test_live_backtest_parity.py`) so it cannot drift silently;
+   the operator should confirm the bar-completeness semantics and backtest the aligned variant.
 2. **Wire the orphaned Research OS** (`libs/store/*` reproducibility + experiment registry) **only if
    sleeve count crosses the documented >5–10-survivor trigger.** Until then, flat JSON state is the
    correct, cheaper choice (per `GAP_ANALYSIS.md`) — not a gap, a deliberate deferral.

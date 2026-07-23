@@ -57,3 +57,25 @@ def test_leg_membership_matches_the_backtest_ranking() -> None:
     got_shorts = {name for name, v in w.items() if v < 0}
     assert got_longs == expected_longs
     assert got_shorts == expected_shorts
+
+
+def test_latest_weights_uses_the_lagged_signal_not_the_current_bar() -> None:
+    """CHARACTERIZATION of a P&L-affecting timing convention (flagged, deliberately NOT changed).
+
+    ``latest_weights`` reads the signal at ``signal.shift(1).iloc[-1]`` (== ``iloc[-2]``) but reads
+    inverse-vol through ``iloc[-1]`` — a one-bar signal/vol offset the aligned backtest ``_book``
+    lacks. Whether to close it depends on whether the lake's last D1 bar is complete or forming at
+    runtime (not visible in code), and changing it moves live positions, so it is left as-is. This
+    test pins current behavior so the timing cannot drift silently."""
+    n, names = 40, [f"S{i}" for i in range(15)]
+    idx = pd.date_range("2026-01-01", periods=n, freq="D", tz="UTC")
+    rng = np.random.default_rng(7)
+    close = pd.DataFrame(
+        100.0 * np.exp(np.cumsum(rng.normal(0.0, 0.01, (n, 15)), axis=0)), index=idx, columns=names
+    )
+    signal = pd.DataFrame(0.0, index=idx, columns=names)
+    signal.iloc[-2] = np.arange(15, dtype="float64")           # S0 lowest ... S14 highest
+    signal.iloc[-1] = np.arange(15, dtype="float64")[::-1]     # reversed on the very last bar
+    w = latest_weights(close, signal, q=0.2, vol_window=30, min_names=5, long_low=True)
+    longs = {name for name, v in w.items() if v > 0}
+    assert longs == {"S0", "S1", "S2"}  # follows signal.iloc[-2], not the reversed last bar

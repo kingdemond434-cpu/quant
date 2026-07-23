@@ -42,6 +42,26 @@ def _sleeve_weights(names: list[str]) -> dict[str, float]:
     return {k: 1.0 / len(names) for k in names}    # robust fallback: equal weight
 
 
+def merge_sleeve_books(
+    named: dict[str, dict[str, float]], sleeve_w: dict[str, float]
+) -> dict[str, float]:
+    """Combine per-sleeve target books into ONE gross-normalized (sum|w| = 1) net book.
+
+    Each sleeve's per-symbol weight is scaled by its cross-sleeve capital weight and summed per
+    symbol; the net book is then normalized so gross exposure is 1. Dust positions (|w| <= 1e-6)
+    are dropped. Returns ``{}`` when the combined gross is 0. Pure function (extracted from ``main``
+    for testability) — the live per-perp decision the testnet executor consumes.
+    """
+    merged: dict[str, float] = {}
+    for name, book in named.items():
+        for sym, w in book.items():
+            merged[sym] = merged.get(sym, 0.0) + w * sleeve_w[name]
+    gross = sum(abs(v) for v in merged.values())
+    if gross <= 0:
+        return {}
+    return {k: round(v / gross, 5) for k, v in merged.items() if abs(v) > 1e-6}
+
+
 def _panels() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     lake = ParquetLake("data/lake")
     closes, fundings, bases, takers = {}, {}, {}, {}
@@ -83,12 +103,7 @@ def main() -> None:
                                         q=0.2, long_low=False)
 
     sleeve_w = _sleeve_weights(list(named))            # HRP if it beat equal (gated), else equal
-    merged: dict[str, float] = {}
-    for name, b in named.items():
-        for sym, w in b.items():
-            merged[sym] = merged.get(sym, 0.0) + w * sleeve_w[name]
-    gross = sum(abs(v) for v in merged.values())
-    target = {k: round(v / gross, 5) for k, v in merged.items() if gross > 0 and abs(v) > 1e-6}
+    target = merge_sleeve_books(named, sleeve_w)
 
     payload = {"generated": datetime.now(tz=UTC).isoformat(),
                "as_of": close.index[-1].date().isoformat(), "sleeves": len(named),
