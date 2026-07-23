@@ -59,7 +59,7 @@ brain_auth_check() {
 # organ script (was an UNVERIFIED assumption of 'CLI-managed max default' until 2026-07-21).
 # xhigh = documented best for agentic/coding work on Opus 4.8; max is reserved for
 # risk-path depth reviews (correctness over cost) since max can overthink general work.
-export ANTHROPIC_MODEL="claude-opus-4-8"   # flipped 2026-07-21: fable-5 usage credits exhausted on this plan (CLI: "out of usage credits ... to keep using Fable 5"). opus-4-8 verified AUTH-OK. Flip back when fable credits return.
+export ANTHROPIC_MODEL="claude-fable-5"    # 2026-07-24: Max plan active, fable-5 LIVE-VERIFIED on this box (FABLE-OK). Fallback if fable ever starves: claude-opus-4-8 (verified AUTH-OK 07-21).
 
 # PRINCIPAL DOCTRINE (2026-07-21): the desk's permanent max-ROI personality, injected
 # into every claude organ via --append-system-prompt. Read once here; every organ script

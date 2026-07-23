@@ -2555,6 +2555,20 @@
    ],
    "success_metric": "no month exceeds the envelope without an explicit principal decision; zero silent degradations",
    "reversal_condition": "if the envelope blocks a genuinely critical incident panel, add an incident-class exemption (page + proceed) rather than raising the envelope silently"
+  },
+  {
+   "id": "2026-07-24-fable5-and-max-effort-everywhere",
+   "decision": "ALL ORGANS -> claude-fable-5 + --effort max (principal explicit order, Max plan active). VERIFY-THEN-FLIP: fable-5 LIVE-TESTED on the VPS through the brain env (FABLE-OK) before any config change -- the 07-21 flip to opus-4-8 was CREDIT exhaustion under the old plan, superseded by the Max subscription. FLIPPED (7 files, each dollar-audited, bash -n green): brain_env.sh ANTHROPIC_MODEL -> claude-fable-5 (fallback opus-4-8 documented in-line); run_cro_ai.sh cycle invocation xhigh -> max (+ the now-stale prompt parenthetical corrected); run_frontier_miner.sh xhigh -> max (applies to all 7 regional miners); 4 digger scripts _DIG_EFFORT=max always (supersedes same-day Saturday-only max). END-TO-END PROOF: source brain_env -> model=claude-fable-5, doctrine 9,601 chars, live claude -p MAXED-OK. HONEST TRIPWIRE: even Max has session windows; 4 cycles + 4 digs + 7 miners daily at max effort is the heaviest load this desk has ever scheduled. quota_verdict (3h cron) measures throughput; if session-limit stubs return, the notch-back order is: miners -> xhigh first, then diggers, cycles last -- effort before frequency, and page the principal with the evidence before any notch.",
+   "hypothesis": "under Max, model quality (fable-5) and effort ceiling on every organ raise discovery/review depth at zero marginal dollar cost",
+   "expected_benefit": "deepest available reasoning on every dig, mine, cycle and audit; no organ left on a lower model or effort tier",
+   "expected_cost": "longer per-run wall time; possible session-window pressure at the heaviest hours",
+   "confidence": 0.85,
+   "assumptions": [
+    "Max subscription includes fable-5 sustainably (verified today)",
+    "session windows absorb the full daily schedule at max effort"
+   ],
+   "success_metric": "48h of cycles/digs completing (no 163-byte stubs) at fable-5/max; quota_verdict stays clean",
+   "reversal_condition": "session-limit stubs return -> notch miners to xhigh first with a page, never silently"
   }
  ]
 }
