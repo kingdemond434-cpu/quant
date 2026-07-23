@@ -53,3 +53,25 @@ gauntlet), TIER 3 on cadence (code mining), skims TIER 4 for named mechanisms on
 free-sources TIER 5. Realistic yield from 500 sources ≈ a handful of Tier-1 survivors — the same
 1-in-40 rate kimchi came from. All gated on: brain auth + connector. Building the intake while the
 engine is off is premature; this roadmap is what the digger executes when it wakes.
+
+## 2026-07-24 dump triage (principal's mempool/MEV/CN list -- ChatGPT-sourced, entries UNVERIFIED until probed)
+
+**BUILT NOW (verified live first):** USDT/CNY P2P premium (ledger #76 unparked) --
+`collect_cny_premium.py`, OKX P2P keyless (190 quotes verified from this box) vs open.er-api
+USD/CNY; forward clock m=4, direction +1 pre-registered from mechanism; TRY-falsifier logged.
+
+**QUEUED (real, free, one-at-a-time as clocks free up):** CN cross-venue flow axis -- OKX/Gate/
+MEXC/HTX free public APIs (funding/taker-ratio spread vs Binance as CN-retail positioning proxy).
+Distinct mechanism from price premiums (NOT the graveyarded regional-premium class). One
+pre-registered construct when built; do not axis-spam.
+
+**DEPRIORITIZED (free != worth it):** mempool/MEV stack (mempool.space, Ethernow, EigenPhi, MEV
+dashboards, Xatu) -- latency-gated behind the 50ms gate per the frontier menu; not the desk's
+daily-horizon cadence. Revisit only at live if venue-toxicity context is needed.
+
+**CATALOG-ONLY (do not build without a mechanism hypothesis):** BRK/Bitview (8,000+ BTC on-chain
+metrics) -- the desk's own screens graveyarded on-chain usage at daily horizon (throughput killed
+by 11y held-out OOS); a bigger metrics menu does not revive a dead class. Aggregators
+(tckr, coin-mcp, crypto-yfinance, free-crypto-news, cryptocurrency.cv) -- unverified ChatGPT
+entries; wrappers around sources the desk already pulls direct (free-first doctrine prefers
+direct pulls with owned methodology). Probe only if a specific gap appears.

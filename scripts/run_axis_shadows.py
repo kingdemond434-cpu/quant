@@ -50,6 +50,10 @@ _AXES: dict[str, tuple[str, str, str, int]] = {
     # momentum. Weak (IC 0.067) but economically grounded + orthogonal. SAME construct
     # as the supply field in run_stablecoin_flows -> ONE hypothesis, this is the tracked one.
     "stablecoin_supply_momentum": ("data/stablecoin_supply.jsonl", "BTCUSDT", "z20", +1),
+    # USDT/CNY P2P premium (capital-control pressure; kimchi CN-analog). Direction +1
+    # PRE-REGISTERED from mechanism 2026-07-24 (peek-safe: chosen before any forward
+    # return existed). TRY-falsifier logged in the collector: thin 30d std => FAILING.
+    "cny_premium": ("data/cny_premium.jsonl", "BTCUSDT", "z20", +1),
 }
 
 

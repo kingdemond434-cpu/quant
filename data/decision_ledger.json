@@ -2569,6 +2569,21 @@
    ],
    "success_metric": "48h of cycles/digs completing (no 163-byte stubs) at fable-5/max; quota_verdict stays clean",
    "reversal_condition": "session-limit stubs return -> notch miners to xhigh first with a page, never silently"
+  },
+  {
+   "id": "2026-07-24-cny-premium-axis-unparked",
+   "decision": "USDT/CNY P2P PREMIUM AXIS BUILT + WIRED (principal approved his dump's doctrine call; ledger #76 'parked until a clean source appears' -- claim VERIFIED in the ledger before building, and the clean source now exists). VERIFIED LIVE FIRST: OKX P2P CNY order book keyless from this box (190 merchant quotes); frankfurter.app 403s here so official USD/CNY comes from open.er-api.com (verified 6.7815). First real datapoint: p2p 6.7500 vs fx 6.7815 = -0.46% premium -- realistic magnitude, not arbitraged-flat. CONSTRUCTION (owned methodology): median of top-10 OKX P2P SELL quotes / official USD/CNY - 1; collect_cny_premium.py mirrors the kimchi collector; wired into daily_research_cycle + run_axis_shadows._AXES (m 3->4, Holm bar auto-tightens). HONESTY GATES pre-registered: NO Stage-A screen (no free history exists -- forward-only clock; z20 null until 20 real observations so the evaluator skips rather than ingesting manufactured zeros); direction +1 chosen from MECHANISM ONLY before any forward return existed (kimchi-analog momentum: premium z-up = mainland capital-flight demand surge), never re-fit; THE TRY FALSIFIER logged prominently -- graveyard row try_premium_timing killed the best previous kimchi-analog ('kimchi is RARE, not a generic regional-premium pattern'), so if the 30d premium std lands TRY-class (<0.3%) this axis is EXPECTED to fail and the collector itself prints that warning; success cannot be quietly redefined. China's strictly-binding controls (total ban + 50k USD/yr quota, P2P the only on-ramp) are the mechanism argument for KRW-class fatness -- that is the hypothesis the clock tests. Timezone-lookahead class structurally impossible (live quotes, no candles). REST OF THE DUMP TRIAGED into DIGGER_TARGET_ROADMAP (not cataloged as-is): CN cross-venue flow QUEUED (real, distinct mechanism); mempool/MEV DEPRIORITIZED (latency-gated, not our horizon); BRK/aggregators CATALOG-ONLY (on-chain usage class already graveyarded at daily horizon; unverified ChatGPT entries; free-first prefers direct pulls). Zero promotion authority: the forward clock decides.",
+   "hypothesis": "the USDT/CNY P2P premium is a KRW-class (fat, structural) capital-control signal rather than TRY-class arbitraged noise, and its z-momentum leads BTC at daily horizon",
+   "expected_benefit": "a genuinely orthogonal CN-retail axis at zero data cost, in the desk's one surviving construct family, with the failure mode pre-registered",
+   "expected_cost": "one collector on the daily cycle; 4th concurrent clock tightens the Holm bar for all axes (honest multiplicity price)",
+   "confidence": 0.6,
+   "assumptions": [
+    "OKX P2P stays keyless-accessible from Hetzner",
+    "er-api official rate is a fair daily CNY reference",
+    "sell-side median is a stable construction"
+   ],
+   "success_metric": "premium 30d std lands nearer KRW-class than TRY-class AND the forward clock clears the Holm bar at 40d",
+   "reversal_condition": "TRY-class std or FAILING clock -> retire to graveyard as the second confirmed kimchi-analog failure; do NOT re-fit direction or construction"
   }
  ]
 }
