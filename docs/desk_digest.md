@@ -1,17 +1,17 @@
 # Desk digest (auto-generated daily -- do not hand-edit)
-_updated 2026-07-23T08:01Z · companion to [[institutional_knowledge]]_
+_updated 2026-07-24T07:33Z · companion to [[institutional_knowledge]]_
 
 ## Book
-- Molded net: **$-238.39** | funding **$90.28** | run-rate APR 12.3% | day 21.11
-- Root cause: **unknown_novel** (pause_and_page) | tracking error $-326.67
+- Molded net: **$-375.55** | funding **$92.55** | run-rate APR 12.3% | day 22.09
+- Root cause: **unknown_novel** (pause_and_page) | tracking error $-450.6
 
 ## Validation clocks
-- **carry (DEPLOYED)**: 27/90d | bt 3.34 fwd 13.25
-- **perp L/S**: 20/90d | bt 0.63 fwd -0.12
+- **carry (DEPLOYED)**: 28/90d | bt 3.55 fwd 10.34
+- **perp L/S**: 21/90d | bt 0.74 fwd -0.76
 - **trend**: 20/90d | bt 1.42 fwd -4.28
-- **trend regime-gated**: 15/90d | bt 1.4 fwd 0.0
-- **OI/LS data**: 25/40d
-- **stablecoin data**: 21/40d
+- **trend regime-gated**: 16/90d | bt 1.29 fwd 0.0
+- **OI/LS data**: 26/40d
+- **stablecoin data**: 22/40d
 
 ## Open decisions (ledger)
 - `2026-07-04-cashcarry-top10-4500` -- review 2026-08-04: funding/day rises ~50% without new drift losses by 2026-08-04
@@ -186,6 +186,20 @@ _updated 2026-07-23T08:01Z · companion to [[institutional_knowledge]]_
 - `2026-07-23-screen-on-discovery-duty` -- review ?: share of newly-surfaced axes carrying a same-run Stage-A verdict approaches 100%; new forw
 - `2026-07-23-research-cycle-scheduler-restored` -- review ?: kimchi and future axis clocks gain one row per calendar day without any human session; cro
 - `2026-07-23-gap19-shadow-finding` -- review ?: >=200 clean samples accumulate; increment p95 stays small and stable, giving a defensible 
+- `2026-07-23-ci-red-at-head-restore-and-maxaudit-groundtruth` -- review ?: run_ci exit 0 (achieved); rollback_guard evaluate OK (achieved); next daily python cycle l
+- `2026-07-23-review-branch-merged-and-cadence-deployed` -- review ?: digs complete instead of stubbing once Max lands; no duplicate concurrent digs; CI stays g
+- `2026-07-23-integrity-watch-carry-harvest-finding` -- review ?: post-BNB-burn and post-churn-guard, funding harvest exceeds commissions by a clear margin 
+- `2026-07-23-500-source-roadmap-triage` -- review ?: post-auth digger works T1 sources through axis_screen; T4 not monitored; no T5 free-source
+- `2026-07-23-orthogonal-axis-batch-onchain-wired` -- review ?: onchain_activity_throughput reaches 40 forward days and nw_t >= holm_bar(2) -> ELIGIBLE
+- `2026-07-23-altdata-batch-stablecoin-supply-wired` -- review ?: stablecoin_supply_momentum reaches 40 forward days and nw_t >= holm_bar(3) -> ELIGIBLE
+- `2026-07-23-dev-momentum-factor-v1-insignificant` -- review ?: n/a -- rejected at Stage-A screen (insignificant)
+- `2026-07-23-backfill-oos-onchain-killed` -- review ?: axes that pass held-out OOS then also pass the forward clock; axes that fail held-out are 
+- `2026-07-23-backfill-is-axis-limited` -- review ?: OI/LS OOS runs faithfully once universe metrics are ingested; daily diggers resume produci
+- `2026-07-24-panel-capacity-sweep-and-seat-swap` -- review ?: next panels: 13/13 non-blank with named-file findings; gemini-3.6-flash earns a positive h
+- `2026-07-24-budget-incident-and-envelope-guard` -- review ?: no month exceeds the envelope without an explicit principal decision; zero silent degradat
+- `2026-07-24-fable5-and-max-effort-everywhere` -- review ?: 48h of cycles/digs completing (no 163-byte stubs) at fable-5/max; quota_verdict stays clea
+- `2026-07-24-cny-premium-axis-unparked` -- review ?: premium 30d std lands nearer KRW-class than TRY-class AND the forward clock clears the Hol
+- `2026-07-24-vendor-replacement-fenced` -- review ?: vendor-replacement defect count reaches 0 and stays there as new vendors get entries with 
 
 ## Executive KPI snapshot
 - CRO: {"hypotheses_tested_lifetime": 20, "validated_survivors": 1, "survivor_note": "cash-carry (fwd 8/90); trend candidate gauntlet-passed (fwd 1/90); all else graveyarded", "survival_r

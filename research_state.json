@@ -1,5 +1,5 @@
 {
-  "generated": "2026-07-23T08:25:52.369469+00:00",
+  "generated": "2026-07-24T07:56:58.661097+00:00",
   "master_objective": "maximize expected lifetime geometric growth (log wealth), survival-c",
   "deployed": {
     "sleeves": [
@@ -7,16 +7,16 @@
       "perp_ls (paper)"
     ],
     "start_capital": 15000.0,
-    "equity": 14706.66,
-    "net_pnl": -293.34,
-    "return_pct": -1.956,
-    "days_live": 21.13,
+    "equity": 14599.61,
+    "net_pnl": -400.39,
+    "return_pct": -2.669,
+    "days_live": 22.11,
     "winrate_pct": 46.8,
     "n_closed_trades": 250,
-    "deployed_sharpe": -7.36,
-    "funding": 89.65,
+    "deployed_sharpe": -20.0,
+    "funding": 92.55,
     "n_carries": 10,
-    "perp_paper_net": -40.5
+    "perp_paper_net": -62.0
   },
   "binding_constraint": "calendar-time data accumulation (not engineering throughput)",
   "bottleneck_rankings": [
@@ -26,17 +26,17 @@
       "evidence": [
         {
           "edge": "oi_divergence",
-          "have_days": 25,
+          "have_days": 26,
           "needs_days": 40
         },
         {
           "edge": "ls_contrarian",
-          "have_days": 25,
+          "have_days": 26,
           "needs_days": 40
         },
         {
           "edge": "liquidation_reversal",
-          "have_days": 25,
+          "have_days": 26,
           "needs_days": 40
         }
       ],
@@ -57,25 +57,17 @@
   ],
   "retirement_candidates": [
     {
-      "sleeve": "taker_flow",
-      "marginal_sharpe": -0.16
-    },
-    {
       "sleeve": "ts_trend",
-      "marginal_sharpe": -0.06
+      "marginal_sharpe": -0.04
     },
     {
-      "sleeve": "basis_carry",
-      "marginal_sharpe": -0.06
-    },
-    {
-      "sleeve": "funding_momentum",
-      "marginal_sharpe": -0.05
+      "sleeve": "taker_flow",
+      "marginal_sharpe": -0.04
     }
   ],
   "retirement_note": "SIGNAL ONLY \u2014 marginal-Sharpe swings ~\u00b10.15 between runs, so a single negative sign is within noise. Retire only on PERSISTENT negative contribution across runs, with promotion-grade rigor. No whipsaw.",
-  "architecture_review_due": true,
-  "cycles_logged": 35,
+  "architecture_review_due": false,
+  "cycles_logged": 36,
   "completed_this_cycle": [
     "archive_integrity_ok",
     "watchdog_run_logged_off",
@@ -126,17 +118,17 @@
   "research_backlog": [
     {
       "edge": "oi_divergence",
-      "status": "data-blocked 25/40d",
+      "status": "data-blocked 26/40d",
       "info_value": "positive but not yet actionable"
     },
     {
       "edge": "ls_contrarian",
-      "status": "data-blocked 25/40d",
+      "status": "data-blocked 26/40d",
       "info_value": "positive but not yet actionable"
     },
     {
       "edge": "liquidation_reversal",
-      "status": "data-blocked 25/40d",
+      "status": "data-blocked 26/40d",
       "info_value": "positive but not yet actionable"
     }
   ],
