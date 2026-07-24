@@ -45,7 +45,12 @@ _AXES: dict[str, tuple[str, str, str, int]] = {
     # orthogonal on-chain USAGE axis (not price/derivative): economic throughput,
     # reversal. Weak+fragile in-sample (composite Sharpe collapsed) -> forward clock
     # under the Holm bar decides. same-period corr ~-0.06 = genuinely leading.
-    "onchain_activity_throughput": ("data/onchain_activity.jsonl", "BTCUSDT", "z20", -1),
+    # onchain_activity_throughput RETIRED 2026-07-24: killed by 11y reconstructed held-out
+    # OOS (IC ~0, ann Sharpe -0.03, regime thirds [-0.3,-0.08,+0.37] = recent-era overfit;
+    # reports/reconstructed_oos/onchain_throughput.json). A permanently-unpromotable axis
+    # holding a Holm slot raises the confirmation bar on the LIVE axes for zero benefit.
+    # Collector keeps archiving (input store); the CLOCK slot is freed. Re-admission needs
+    # a NEW construction that passes held-out OOS first.
     # macro dollar-liquidity: total stablecoin supply (all issuers, DefiLlama),
     # momentum. Weak (IC 0.067) but economically grounded + orthogonal. SAME construct
     # as the supply field in run_stablecoin_flows -> ONE hypothesis, this is the tracked one.

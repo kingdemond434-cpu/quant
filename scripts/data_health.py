@@ -126,7 +126,25 @@ def main() -> None:
         if name == "cashcarry_executor" and not alive:
             all_ok = False                             # executor down is the only hard alert
         hbs.append({"name": name, "alive": bool(alive), "age_s": age_s})
-    out = {"updated": now.isoformat(), "all_ok": all_ok, "datasets": checks, "heartbeats": hbs}
+    # ORGANS visibility (2026-07-24 external-audit finding: health said all_ok while every AI
+    # organ was dead -- this surface only ever covered datasets/heartbeats). organs_ok is shown
+    # SEPARATELY, not folded into all_ok: the brain_noop pager already alarms on cycle death, so
+    # folding would double-alert; blindness is ended by REPORTING, not re-alarming.
+    organs = {}
+    try:
+        logs = sorted(Path("data/cro_ai_logs").glob("2026*_*.log"),
+                      key=lambda q: q.stat().st_mtime)
+        good = [q for q in logs if q.stat().st_size >= 2000]
+        organs["last_cycle_success_h"] = (
+            round((now.timestamp() - good[-1].stat().st_mtime) / 3600.0, 1) if good else None)
+        organs["last_cycle_attempt_h"] = (
+            round((now.timestamp() - logs[-1].stat().st_mtime) / 3600.0, 1) if logs else None)
+    except Exception:
+        pass
+    organs_ok = bool(organs.get("last_cycle_success_h") is not None
+                     and organs["last_cycle_success_h"] <= 26.0)
+    out = {"updated": now.isoformat(), "all_ok": all_ok, "organs_ok": organs_ok,
+           "organs": organs, "datasets": checks, "heartbeats": hbs}
     _OUT.parent.mkdir(parents=True, exist_ok=True)
     _OUT.write_text(json.dumps(out, indent=2), "utf-8")
     flag = "OK" if all_ok else "ALERT"
