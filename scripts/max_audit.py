@@ -70,14 +70,34 @@ def _acquired_axes() -> list[str]:
     return list(dict.fromkeys(names))  # de-dup, preserve order
 
 
-def _screened_axes() -> list[str]:
-    """Distinct axis tags among non-method research_memory hypotheses (metrics_json.axis).
+def _converted_axes() -> list[str]:
+    """Every axis the desk has actually CONVERTED, from the real conversion artifacts.
 
-    A hypothesis is 'coverage' for an axis only if it was TAGGED with that axis -- untagged
-    conversion cannot prove an axis was screened, so it does not count (the CLI's --axis flag
-    writes this tag). Returns lowercased tags for tolerant matching against acquired-axis names.
+    An axis is 'converted' (covered) if a tested-hypothesis artifact exists for it -- regardless of
+    outcome (tested-and-rejected is still converted; the graveyard is coverage). Three sources, all
+    the desk's real conversion record, so the coverage metric credits work that genuinely happened
+    instead of only the new --axis tag: (1) forward-clock shadows (web/axis_shadows.json), (2)
+    reconstructed held-out OOS reports (reports/reconstructed_oos/*.json), (3) research_memory
+    hypotheses tagged with --axis. Lowercased for tolerant matching against acquired-axis names.
     """
     tags: set[str] = set()
+    # (1) forward-clock shadow registry -- each axis under a live forward clock
+    shadows = _j(ROOT / "web/axis_shadows.json", {})
+    for rec in (shadows.get("axes", []) if isinstance(shadows, dict) else []):
+        ax = rec.get("axis") if isinstance(rec, dict) else None
+        if isinstance(ax, str) and ax.strip():
+            tags.add(ax.strip().lower())
+    # (2) reconstructed held-out OOS reports -- each backfilled + diff-verified axis
+    oos_dir = ROOT / "reports/reconstructed_oos"
+    if oos_dir.exists():
+        for rep in oos_dir.glob("*.json"):
+            tags.add(rep.stem.lower())
+            d = _j(rep, {})
+            for r in (d.get("results", []) if isinstance(d, dict) else []):
+                s = r.get("sleeve") if isinstance(r, dict) else None
+                if isinstance(s, str) and s.strip():
+                    tags.add(s.strip().lower())
+    # (3) research_memory hypotheses tagged with the axis they screen (the --axis flag)
     try:
         import sqlite3
         con = sqlite3.connect(str(ROOT / "data/sor_research.sqlite"))
@@ -93,7 +113,7 @@ def _screened_axes() -> list[str]:
                 tags.add(axis.strip().lower())
         con.close()
     except Exception:
-        return []
+        pass
     return sorted(tags)
 
 
@@ -861,8 +881,9 @@ def check_data_utilization(defects) -> None:
     acquired = _acquired_axes()
     if len(acquired) < 8:
         return  # too small a surface to judge parity
-    tags = _screened_axes()
-    # tolerant match: an acquired axis is 'covered' if any screened tag shares its normalized name
+    tags = _converted_axes()
+    # tolerant match: an acquired axis is 'covered' if any converted-axis name shares its normalized
+    # name (handles collector-store vs axis-name drift, e.g. cny_premium.jsonl <-> cny_premium)
     def _covered(axis: str) -> bool:
         a = axis.lower()
         return any(t == a or t in a or a in t for t in tags)

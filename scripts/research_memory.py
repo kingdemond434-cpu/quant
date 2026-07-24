@@ -78,37 +78,22 @@ def report(a) -> None:
 
 
 def coverage(a) -> None:
-    """Report axis-coverage parity: how many ingested axes carry >=1 tagged screened hypothesis.
+    """Report axis-coverage parity: how many ingested axes have been converted (tested once).
 
     The data-utilization law reconciled with gate-optimality: paralysis is a COVERAGE gap, never a
-    volume gap. This is the read-side of the same metric max_audit enforces -- run it to see which
-    idle axes still need one mechanism-first hypothesis each (tag with `log --axis`)."""
+    volume gap. An axis counts as converted from any real conversion artifact -- a forward-clock
+    shadow, a reconstructed held-out OOS report, or a research_memory hypothesis tagged with the
+    axis. This is the read-side of the metric max_audit enforces -- run it to see which idle axes
+    still need one mechanism-first hypothesis each (tag a new screen with `log --axis`)."""
     import sys
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+    # single source of truth for the acquired surface + real conversion artifacts
+    from scripts.max_audit import _acquired_axes, _converted_axes
+
     from libs.autodiscovery.extraction_parity import axis_coverage
 
-    root = Path(__file__).resolve().parent.parent
-    names: list[str] = []
-    lake = root / "data/lake/bronze"
-    if lake.exists():
-        names += [p.name for p in lake.iterdir() if p.is_dir()]
-    for pat in ("data/*_premium.jsonl", "data/*_supply.jsonl", "data/*_activity.jsonl"):
-        names += [p.stem for p in root.glob(pat)]
-    acquired = list(dict.fromkeys(names))
-    tags: set[str] = set()
-    try:
-        con = sqlite3.connect(_DB)
-        for (mj,) in con.execute("SELECT metrics_json FROM research_memory "
-                                 "WHERE category!='method' AND metrics_json IS NOT NULL"):
-            try:
-                ax = (json.loads(mj) or {}).get("axis")
-            except Exception:
-                ax = None
-            if isinstance(ax, str) and ax.strip():
-                tags.add(ax.strip().lower())
-        con.close()
-    except sqlite3.OperationalError:
-        pass  # no research_memory table yet -- coverage is simply 0, not an error
+    acquired = _acquired_axes()
+    tags = _converted_axes()
     covered = [ax for ax in acquired
                if any(t == ax.lower() or t in ax.lower() or ax.lower() in t for t in tags)]
     rep = axis_coverage(axes=acquired, screened_axes=covered)
