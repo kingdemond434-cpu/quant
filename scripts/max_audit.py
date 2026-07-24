@@ -671,6 +671,25 @@ def check_prompt_layer(defects) -> None:
         pass
 
 
+def check_bnb_funded(defects) -> None:
+    """BNB fee-burn is enabled (feeBurn:True) but only DISCOUNTS when BNB is held. Audit 2026-07-24:
+    balance 0 -> the whole commission line was paid at rack rate while the desk believed the ~25%
+    discount was active. feeBurn:True is STATE; a funded BNB balance is the OUTCOME that matters."""
+    try:
+        from libs.execution import binance_testnet as _fut
+        bal = 0.0
+        for b in _fut._signed("/fapi/v2/balance", {}):
+            if b.get("asset") == "BNB":
+                bal = float(b.get("balance", 0.0))
+        if bal <= 0.0:
+            defects.append(("bnb-burn-unfunded",
+                            "fee-burn is ON (feeBurn:True) but BNB balance is 0 -- the ~25% "
+                            "discount is INERT and commissions are paid at rack rate. Fund a small "
+                            "BNB balance (or accept it as a testnet limitation and ledger why)."))
+    except Exception:
+        pass
+
+
 def check_production(defects) -> None:
     """OUTCOME-LEVEL fence (principal 2026-07-24): does each scheduled organ actually PRODUCE its
     output artifact within cadence? State-freshness checks miss the class where a scheduler fires
@@ -712,8 +731,9 @@ def check_production(defects) -> None:
     try:
         import sqlite3
         n = sqlite3.connect(str(ROOT / "data/sor_research.sqlite")).execute(
-            "SELECT COUNT(*) FROM research_memory WHERE created_at >= datetime('now','-7 days')"
-        ).fetchone()[0]
+            "SELECT COUNT(*) FROM research_memory WHERE created_at >= datetime('now','-7 days') "
+            "AND category != 'method'"   # exclude meta/seed rows -- a self-referential seed must
+            "").fetchone()[0]             # not green the guard (2026-07-24 audit: 1 seed did)
         if n == 0:
             defects.append(("production-research-memory-flat",
                             "research_memory added 0 rows in 7d -- the conversion loop is not "
@@ -740,6 +760,7 @@ def main() -> None:
                       ("memory-hygiene", check_memory_hygiene),
                       ("prompt-layer", check_prompt_layer),
                       ("production", check_production),
+                      ("bnb-funded", check_bnb_funded),
                       ("self-sufficiency", check_self_sufficiency),
                       ("rs-detect", check_rubberstamp_detector),
                       ("rs-enforce", check_rubberstamp_enforcement)]:
@@ -775,15 +796,25 @@ def main() -> None:
     overdue = [(d, m) for d, m in live
                if (datetime.now(tz=UTC) - datetime.fromisoformat(first_seen[d])
                    ).total_seconds() / 3600 > ESCALATE_H]
+    # DELIVERY FIX (2026-07-24 external audit): the pager reads only PRINCIPAL_ACTION line 1.
+    # The old code appended the escalation BELOW existing content (a stale RESOLVED line stayed
+    # at line 1) AND only wrote once ever (one-shot latch), so 24 live defects never paged. Now
+    # the escalation OWNS line 1 whenever defects are overdue, and is CLEARED when none are --
+    # so the pager surfaces the truth and stops crying resolved-wolf.
+    _MARK = "MAX-AUDIT ESCALATION"
+    existing = PA.read_text("utf-8") if PA.exists() else ""
+    # strip any prior escalation block so it never stacks / goes stale
+    body = existing.split("\n" + _MARK)[0].split(_MARK)[0].rstrip()
     if overdue:
-        existing = PA.read_text("utf-8") if PA.exists() else ""
-        if "MAX-AUDIT ESCALATION" not in existing:
-            block = ("\nMAX-AUDIT ESCALATION: the following below-max states persisted >48h "
-                     "without fix or acknowledged reason -- the desk is running under "
-                     "potential and self-healing has not resolved it:\n" +
-                     "".join(f"  - {d}: {m}\n" for d, m in overdue[:8]))
-            PA.write_text(existing + block, "utf-8")
-            print(f"ESCALATED to principal page: {len(overdue)} defect(s) >48h")
+        head = (f"{_MARK}: {len(overdue)} below-max state(s) >48h unfixed/unacked -- "
+                + "; ".join(f"{d}" for d, _ in overdue[:6])
+                + (" ..." if len(overdue) > 6 else "") + "\n"
+                + "".join(f"  - {d}: {m}\n" for d, m in overdue[:8]))
+        PA.write_text(head + "\n" + body, "utf-8")   # escalation OWNS line 1
+        print(f"ESCALATED to principal page (line 1): {len(overdue)} defect(s) >48h")
+    elif existing != body + ("\n" if body else ""):
+        PA.write_text(body + ("\n" if body else ""), "utf-8")  # cleared: drop stale escalation
+        print("escalation cleared: no overdue defects")
 
 
 if __name__ == "__main__":
