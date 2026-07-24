@@ -901,6 +901,49 @@ def check_data_utilization(defects) -> None:
             "its single-axis screen shows signal (else it is pure DSR deflation)."))
 
 
+def check_depth_parity(defects) -> None:
+    """DEPTH-BREADTH PARITY LAW enforcement (charter §32): depth must keep pace with breadth,
+    never lag it. A forward-clock axis that sits SHALLOW (< DEEP_DAYS of history) while the desk
+    keeps widening breadth is a defect -- a shallow axis waits weeks on the forward clock and
+    cannot validate, so breadth without depth is unconverted potential (the utilisation-without-
+    conversion trap). Flags shallow clock axes as backfill targets (reconstruct to archive depth,
+    MAX_SURVIVORS Part 1 #1). An axis already backfilled (has a reconstructed_oos report) is deep;
+    an archive-thin axis that has logged its measured depth ceiling is exempt -- depth is never
+    faked to clear this flag."""
+    deep_days = 180
+    clocks: list[Path] = []
+    for pat in ("data/*_premium.jsonl", "data/*_supply.jsonl", "data/*_activity.jsonl"):
+        clocks += list(ROOT.glob(pat))
+    if len(clocks) < 3:
+        return  # too few series to judge depth-vs-breadth
+    deep_names: set[str] = set()
+    oos = ROOT / "reports/reconstructed_oos"
+    if oos.exists():
+        for r in oos.glob("*.json"):
+            deep_names.add(r.stem.lower())
+    shallow: list[tuple[str, int]] = []
+    for c in clocks:
+        stem = c.stem.lower()
+        if any(stem in d or d in stem for d in deep_names):
+            continue  # already backfilled to archive depth
+        try:
+            with c.open("r", encoding="utf-8") as fh:
+                n = sum(1 for _ in fh)
+        except Exception:
+            continue
+        if n < deep_days:
+            shallow.append((c.stem, n))
+    if shallow:
+        shown = ", ".join(f"{s}({n}d)" for s, n in sorted(shallow, key=lambda x: x[1])[:8])
+        defects.append((
+            "depth-parity",
+            f"{len(shallow)} axis(es) shallow (<{deep_days}d) while breadth widens: {shown} -- "
+            "DEPTH LAGGING BREADTH (§32). A shallow axis waits weeks on the forward clock and "
+            "cannot validate; breadth without depth is unconverted potential. Backfill each to its "
+            "archive-depth ceiling and diff-verify (MAX_SURVIVORS Part 1 #1) -- never fake depth; "
+            "an archive-thin axis logs its measured ceiling and is exempt."))
+
+
 def main() -> None:
     defects: list[tuple[str, str]] = []
     for label, fn in [("organs", check_organs), ("stubs", check_stub_deaths),
@@ -919,6 +962,7 @@ def main() -> None:
                       ("prompt-layer", check_prompt_layer),
                       ("gate-optimality", check_gate_optimality),
                       ("data-utilization", check_data_utilization),
+                      ("depth-parity", check_depth_parity),
                       ("production", check_production),
                       ("bnb-funded", check_bnb_funded),
                       ("self-sufficiency", check_self_sufficiency),
