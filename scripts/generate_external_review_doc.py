@@ -24,7 +24,8 @@ _OUT = Path("docs/EXTERNAL_PANEL_DOSSIER.md")
 # ledger ids like 2026-07-12-first-inversion-... are hyphen-segmented and stay readable).
 _BLOCK = [re.compile(p, re.I) for p in (
     r"(?:sk|pk|oat|api|key|tok|ghp|xox|AKIA)[-_][A-Za-z0-9-]{16,}",  # prefixed real tokens
-    r"\b(?=[A-Za-z0-9]*[a-z])(?=[A-Za-z0-9]*[A-Z])(?=[A-Za-z0-9]*\d)[A-Za-z0-9]{28,}\b",  # mixed-class token body
+    # mixed-class token body: 28+ run with lower+upper+digit, no underscore
+    r"\b(?=[A-Za-z0-9]*[a-z])(?=[A-Za-z0-9]*[A-Z])(?=[A-Za-z0-9]*\d)[A-Za-z0-9]{28,}\b",
     r"quant-desk-[0-9a-f]+",         # pager topic
     r"ntfy\.sh/\S+",
     r"data[/\\]secrets",
