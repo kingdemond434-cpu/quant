@@ -22,6 +22,7 @@ import json
 from pathlib import Path
 
 from libs.autodiscovery.memory import CandidateStore
+from libs.self_improvement.adaptive_thresholds import ThresholdBook
 from libs.store.connection import Database
 from libs.validation.rejection_shadow import build_shadow_report
 
@@ -31,12 +32,17 @@ _OUT = _ROOT / "web/reject_shadow.json"
 
 
 def main() -> None:
+    book = ThresholdBook(_ROOT / "data/adaptive_thresholds.json")
     p = argparse.ArgumentParser()
     p.add_argument("--db", default="data/sor_autodiscovery.sqlite")
-    p.add_argument("--threshold", type=float, default=0.5,
-                   help="forward metric a reject must clear to count as 'would have paid'")
+    p.add_argument("--threshold", type=float, default=None,
+                   help="forward metric a reject must clear to count as 'would have paid' "
+                        "(default: the evidence-adjusted reject_deploy_threshold)")
     p.add_argument("--min-age-days", type=float, default=30.0)
     a = p.parse_args()
+    threshold = a.threshold if a.threshold is not None else book.get("reject_deploy_threshold")
+    leak_tol = book.get("reject_leak_tolerance")
+    min_sample = int(book.get("reject_min_sample"))
 
     db_path = _ROOT / a.db if not Path(a.db).is_absolute() else Path(a.db)
     if not db_path.exists():
@@ -54,7 +60,8 @@ def main() -> None:
             scores = {}
 
     report = build_shadow_report(
-        rejects, scores, deploy_threshold=a.threshold, min_age_days=a.min_age_days,
+        rejects, scores, deploy_threshold=threshold, min_age_days=a.min_age_days,
+        leak_tolerance=leak_tol, min_sample=min_sample,
     )
     _OUT.parent.mkdir(parents=True, exist_ok=True)
     _OUT.write_text(report.model_dump_json(indent=1), "utf-8")

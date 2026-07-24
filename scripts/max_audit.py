@@ -941,7 +941,9 @@ def check_depth_parity(defects) -> None:
     MAX_SURVIVORS Part 1 #1). An axis already backfilled (has a reconstructed_oos report) is deep;
     an archive-thin axis that has logged its measured depth ceiling is exempt -- depth is never
     faked to clear this flag."""
-    deep_days = 180
+    # deep_days is evidence-adjustable within hard bounds (self-tuning, not a free knob)
+    from libs.self_improvement.adaptive_thresholds import ThresholdBook
+    deep_days = ThresholdBook(ROOT / "data/adaptive_thresholds.json").get("depth_deep_days")
     clocks: list[Path] = []
     for pat in ("data/*_premium.jsonl", "data/*_supply.jsonl", "data/*_activity.jsonl"):
         clocks += list(ROOT.glob(pat))
@@ -952,6 +954,10 @@ def check_depth_parity(defects) -> None:
     if oos.exists():
         for r in oos.glob("*.json"):
             deep_names.add(r.stem.lower())
+    # archive-relative exemption: an axis whose archive genuinely maxes out below deep_days logs its
+    # measured ceiling here (axis -> max available days); at/above it, the axis is as deep as its
+    # archive allows and is NOT flagged (§32: 'as deep as the archive legitimately allows').
+    ceilings = _j(ROOT / "data/depth_ceilings.json", {})
     shallow: list[tuple[str, int]] = []
     for c in clocks:
         stem = c.stem.lower()
@@ -962,14 +968,17 @@ def check_depth_parity(defects) -> None:
                 n = sum(1 for _ in fh)
         except Exception:
             continue
+        ceiling = ceilings.get(c.stem) if isinstance(ceilings, dict) else None
+        if isinstance(ceiling, (int, float)) and n >= int(ceiling):
+            continue  # as deep as its own archive allows -- exempt, never faked
         if n < deep_days:
             shallow.append((c.stem, n))
     if shallow:
         shown = ", ".join(f"{s}({n}d)" for s, n in sorted(shallow, key=lambda x: x[1])[:8])
         defects.append((
             "depth-parity",
-            f"{len(shallow)} axis(es) shallow (<{deep_days}d) while breadth widens: {shown} -- "
-            "DEPTH LAGGING BREADTH (§32). A shallow axis waits weeks on the forward clock and "
+            f"{len(shallow)} axis(es) shallow (<{int(deep_days)}d) while breadth widens: {shown} "
+            "-- DEPTH LAGGING BREADTH (§32). A shallow axis waits weeks on the forward clock and "
             "cannot validate; breadth without depth is unconverted potential. Backfill each to its "
             "archive-depth ceiling and diff-verify (MAX_SURVIVORS Part 1 #1) -- never fake depth; "
             "an archive-thin axis logs its measured ceiling and is exempt."))
