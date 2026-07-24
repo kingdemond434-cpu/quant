@@ -671,6 +671,58 @@ def check_prompt_layer(defects) -> None:
         pass
 
 
+def check_production(defects) -> None:
+    """OUTCOME-LEVEL fence (principal 2026-07-24): does each scheduled organ actually PRODUCE its
+    output artifact within cadence? State-freshness checks miss the class where a scheduler fires
+    but nothing is produced (cron self-match), an organ runs but refuses to emit (panel
+    sanitizer), or a duty is claimed but writes nothing (research_memory). Product artifacts, not
+    state files -- state can be touched without producing."""
+    import glob as _glob
+    # (label, product glob, max_age_h, min_bytes). Products, not state files.
+    manifest = [
+        ("cron-cycle", "data/cro_ai_logs/2026*_????.log", 26, 2000),
+        ("panel-verdicts", "data/panel_verdicts.jsonl", 96, 100),
+        ("dataaxis-product", "docs/research/data_axis_watchlist.md", 30, 100),
+        ("prospector-product", "docs/research/prospector_watchlist.md", 30, 100),
+        ("litminer-product", "docs/research/*iterature*coverage*.md", 30, 50),
+        ("frontier-product", "docs/research/prospector_coverage.md", 30, 100),
+        ("crypto-factory", "web/autodiscovery_crypto.json", 30, 100),
+        ("forensics", "web/trade_forensics.json", 30, 50),
+    ]
+    for label, pat, max_h, min_b in manifest:
+        hits = [Path(q) for q in _glob.glob(str(ROOT / pat))]
+        if not hits:
+            defects.append(("production-missing",
+                            f"{label}: NO product artifact exists ({pat}) -- the organ has never "
+                            "produced output, only (maybe) been scheduled"))
+            continue
+        newest = max(hits, key=lambda q: q.stat().st_mtime)
+        age_h = (NOW - newest.stat().st_mtime) / 3600.0
+        sz = newest.stat().st_size
+        if age_h > max_h:
+            defects.append(("production-stale",
+                            f"{label}: product {newest.name} is {age_h:.0f}h old (cadence {max_h}h) "
+                            "-- scheduled but not PRODUCING; verify the organ actually runs end-to-"
+                            "end, not just that its timer/cron fires (the cron-self-match class)"))
+        elif sz < min_b:
+            defects.append(("production-stub",
+                            f"{label}: product {newest.name} is {sz}b (<{min_b}b) -- ran but "
+                            "produced a stub, not real output (the quota-stub / refuse class)"))
+    # research_memory must GROW, not just be non-zero (the null-pipe class)
+    try:
+        import sqlite3
+        n = sqlite3.connect(str(ROOT / "data/sor_research.sqlite")).execute(
+            "SELECT COUNT(*) FROM research_memory WHERE created_at >= datetime('now','-7 days')"
+        ).fetchone()[0]
+        if n == 0:
+            defects.append(("production-research-memory-flat",
+                            "research_memory added 0 rows in 7d -- the conversion loop is not "
+                            "recording experiments (writable via scripts/research_memory.py; the "
+                            "duty exists, verify missions actually call it)"))
+    except Exception:
+        pass
+
+
 def main() -> None:
     defects: list[tuple[str, str]] = []
     for label, fn in [("organs", check_organs), ("stubs", check_stub_deaths),
@@ -687,6 +739,7 @@ def main() -> None:
                       ("forensics-fresh", check_forensics_fresh),
                       ("memory-hygiene", check_memory_hygiene),
                       ("prompt-layer", check_prompt_layer),
+                      ("production", check_production),
                       ("self-sufficiency", check_self_sufficiency),
                       ("rs-detect", check_rubberstamp_detector),
                       ("rs-enforce", check_rubberstamp_enforcement)]:
