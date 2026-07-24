@@ -743,6 +743,69 @@ def check_production(defects) -> None:
         pass
 
 
+def check_gate_optimality(defects) -> None:
+    """GATE-OPTIMALITY MONITOR (principal 2026-07-24): the DSR/gauntlet bar must stay OPTIMAL --
+    a gate that rejects ~100pct or accepts ~100pct of candidates carries ZERO information and is
+    a defect (good alphas lost to an accidentally-too-high bar cost as much as false ones
+    admitted). Reads the per-gate rejection histogram; flags any gate at >=98pct reject over a
+    non-trivial sample as suspect (mis-applied campaign-level veto, mis-calibration, or a bar
+    that has silently become unclearable)."""
+    wf = ROOT / "web/autodiscovery_crypto.json"
+    if not wf.exists():
+        return
+    try:
+        d = json.loads(wf.read_text("utf-8"))
+    except Exception:
+        return
+    tested = int(d.get("cumulative_tested", 0) or 0)
+    hist = d.get("rejection_by_gate", {}) or {}
+    if tested < 30 or not hist:
+        return
+    pegged = [g for g, n in hist.items() if tested and (int(n) / tested) >= 0.98]
+    if pegged:
+        defects.append((
+            "gate-optimality",
+            f"gate(s) rejecting >=98pct of {tested} candidates: {', '.join(sorted(pegged))} -- "
+            "a ~100pct-constant gate carries zero information. Verify it is genuinely "
+            "discriminating, not a campaign-level statistic mis-applied per-candidate or a bar "
+            "risen unclearable; real alphas may be dying at it. Audit effective-vs-raw n_trials."))
+    if int(d.get("cumulative_survivors", 0) or 0) == 0 and tested >= 200:
+        defects.append((
+            "gate-optimality-zero-survivors",
+            f"0 survivors across {tested} tested -- expected on picked-clean price space, but "
+            "confirm the funnel can EVER promote: is any single gate the 100pct bottleneck, and "
+            "is the walk-forward/per-candidate path able to pass a genuinely-good synthetic?"))
+
+
+def check_data_utilization(defects) -> None:
+    """DATA-UTILIZATION LAW enforcement (principal 2026-07-24): ingested data that produces no
+    tested hypotheses is DATA PARALYSIS -- a defect. Approximates the Data-to-Alpha Conversion
+    Ratio: if the lake has grown but research_memory (hypothesis/experiment activity) has not,
+    extraction is lagging acquisition (1:1 parity broken) -- scale extraction, never mine less."""
+    try:
+        import sqlite3
+        n_rm = sqlite3.connect(str(ROOT / "data/sor_research.sqlite")).execute(
+            "SELECT COUNT(*) FROM research_memory WHERE category!='method'").fetchone()[0]
+    except Exception:
+        n_rm = 0
+    # crude acquisition proxy: distinct axis stores under the lake + forward-clock jsonls
+    axes = 0
+    lake = ROOT / "data/lake/bronze"
+    if lake.exists():
+        axes = sum(1 for _ in lake.iterdir())
+    clocks = len(list(ROOT.glob("data/*_premium.jsonl")) + list(ROOT.glob("data/*_supply.jsonl"))
+                 + list(ROOT.glob("data/*_activity.jsonl")))
+    acquired = axes + clocks
+    # parity: non-method research-memory rows should be growing toward the data surface, not 0
+    if acquired >= 8 and n_rm == 0:
+        defects.append((
+            "data-utilization-paralysis",
+            f"{acquired} data axes/clocks ingested but 0 non-method research_memory rows -- "
+            "DATA PARALYSIS: raw data sitting idle with zero tested-hypothesis output violates "
+            "the 1:1 extraction-parity law. Scale extraction (combinatorial/mutation/forced-"
+            "mechanism generation on the idle axes), do not mine less."))
+
+
 def main() -> None:
     defects: list[tuple[str, str]] = []
     for label, fn in [("organs", check_organs), ("stubs", check_stub_deaths),
@@ -759,6 +822,8 @@ def main() -> None:
                       ("forensics-fresh", check_forensics_fresh),
                       ("memory-hygiene", check_memory_hygiene),
                       ("prompt-layer", check_prompt_layer),
+                      ("gate-optimality", check_gate_optimality),
+                      ("data-utilization", check_data_utilization),
                       ("production", check_production),
                       ("bnb-funded", check_bnb_funded),
                       ("self-sufficiency", check_self_sufficiency),
