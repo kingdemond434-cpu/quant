@@ -125,3 +125,32 @@ class TestRejectionShadowCheck:
         defects: list[tuple[str, str]] = []
         m.check_rejection_shadow(defects)
         assert defects == []
+
+
+class TestPostGate0Activation:
+    def test_pre_gate0_silent(self, tmp_path: Path, monkeypatch) -> None:
+        _mk(tmp_path)  # no data/gate0_complete
+        monkeypatch.setattr(m, "ROOT", tmp_path)
+        defects: list[tuple[str, str]] = []
+        m.check_post_gate0_activation(defects)
+        assert defects == []  # freeze correctly holds; manifest not due
+
+    def test_gate0_done_but_unactivated_fires(self, tmp_path: Path, monkeypatch) -> None:
+        _mk(tmp_path)
+        (tmp_path / "data/gate0_complete").write_text("")
+        (tmp_path / "data/cadence_state.json").write_text(json.dumps({"stage": "S0"}))
+        monkeypatch.setattr(m, "ROOT", tmp_path)
+        defects: list[tuple[str, str]] = []
+        m.check_post_gate0_activation(defects)
+        assert defects and defects[0][0] == "post-gate0-activation"
+        assert "un-built" in defects[0][1]
+
+    def test_activated_clears(self, tmp_path: Path, monkeypatch) -> None:
+        _mk(tmp_path)
+        (tmp_path / "data/gate0_complete").write_text("")
+        (tmp_path / "data/cadence_state.json").write_text(
+            json.dumps({"post_gate0_activated": True}))
+        monkeypatch.setattr(m, "ROOT", tmp_path)
+        defects: list[tuple[str, str]] = []
+        m.check_post_gate0_activation(defects)
+        assert defects == []

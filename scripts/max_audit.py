@@ -901,6 +901,28 @@ def check_data_utilization(defects) -> None:
             "its single-axis screen shows signal (else it is pure DSR deflation)."))
 
 
+def check_post_gate0_activation(defects) -> None:
+    """POST-GATE-0 ACTIVATION INTERLOCK (enforces 'nothing deferred may be skipped').
+
+    The freeze-exit is auto-detected by run_cadence and the POST_GATE0 manifest is flagged for
+    activation -- but activation itself was a DIRECTIVE the brain cycle had to obey, with no check
+    that it actually happened. This closes that: the moment Gate 0 is complete
+    (``data/gate0_complete``) but the cadence state has not set ``post_gate0_activated``, the entire
+    deferred queue (docs/POST_GATE0_MANIFEST.md) is sitting un-built -- a defect that escalates to
+    the principal at 48h. So the automatic build is VERIFIED to fire, never silently missed."""
+    if not (ROOT / "data/gate0_complete").exists():
+        return  # pre-Gate-0: the freeze correctly holds, the manifest is not due yet
+    state = _j(ROOT / "data/cadence_state.json", {})
+    if not (isinstance(state, dict) and state.get("post_gate0_activated")):
+        defects.append((
+            "post-gate0-activation",
+            "Gate 0 is COMPLETE (data/gate0_complete) but post_gate0_activated is NOT set -- the "
+            "POST_GATE0 manifest has not activated, so every deferred item (data collectors, "
+            "growth ramp, live organs, runtime-gated research completions) is sitting un-built. "
+            "Activate docs/POST_GATE0_MANIFEST.md top-to-bottom in EV order THIS cycle; nothing "
+            "deferred may be skipped."))
+
+
 def check_rejection_shadow(defects) -> None:
     """REJECTION-SHADOW standing duty (gate-calibration, MAX_SURVIVORS Part 1.2): the gauntlet
     rejects most candidates -- correct on picked-clean price space -- but a gate that drifted
@@ -1004,6 +1026,7 @@ def main() -> None:
                       ("data-utilization", check_data_utilization),
                       ("depth-parity", check_depth_parity),
                       ("rejection-shadow", check_rejection_shadow),
+                      ("post-gate0-activation", check_post_gate0_activation),
                       ("production", check_production),
                       ("bnb-funded", check_bnb_funded),
                       ("self-sufficiency", check_self_sufficiency),
