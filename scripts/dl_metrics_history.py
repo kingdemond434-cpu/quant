@@ -2,6 +2,7 @@
 """Bulk-download Binance futures metrics history (OI + long/short) for the OI/LS backfill OOS.
 data.binance.vision daily metrics zips, BTCUSDT, 2021-06 -> today. Aggregates 5-min -> daily.
 Bronze static ingestion (dependency-free stdlib). Idempotent, resilient to missing days."""
+import contextlib
 import io
 import json
 import urllib.request
@@ -17,10 +18,8 @@ end = datetime.now(tz=UTC).date() - timedelta(days=1)
 done = set()
 if OUT.exists():
     for ln in OUT.read_text("utf-8").splitlines():
-        try:
+        with contextlib.suppress(Exception):
             done.add(json.loads(ln)["date"])
-        except Exception:
-            pass
 
 d = start
 n_new = n_miss = 0
@@ -28,7 +27,8 @@ rows = []
 while d <= end:
     ds = d.isoformat()
     if ds in done:
-        d += timedelta(days=1); continue
+        d += timedelta(days=1)
+        continue
     url = f"{BASE}/BTCUSDT-metrics-{ds}.zip"
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "quant-metrics"})
@@ -43,7 +43,9 @@ while d <= end:
         for ln in lines[1:]:
             p = ln.split(",")
             try:
-                ois.append(float(p[oi_i])); lss.append(float(p[ls_i])); tks.append(float(p[tk_i]))
+                ois.append(float(p[oi_i]))
+                lss.append(float(p[ls_i]))
+                tks.append(float(p[tk_i]))
             except Exception:
                 pass
         if ois:
@@ -56,11 +58,13 @@ while d <= end:
         n_miss += 1
     if len(rows) >= 50:
         with OUT.open("a", encoding="utf-8") as f:
-            for r in rows: f.write(json.dumps(r) + "\n")
+            for r in rows:
+                f.write(json.dumps(r) + "\n")
         rows = []
     d += timedelta(days=1)
 
 if rows:
     with OUT.open("a", encoding="utf-8") as f:
-        for r in rows: f.write(json.dumps(r) + "\n")
+        for r in rows:
+            f.write(json.dumps(r) + "\n")
 print(f"DONE: {n_new} new days, {n_miss} missing, total file {OUT}")

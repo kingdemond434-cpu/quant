@@ -78,7 +78,7 @@ def _llama_stables() -> dict[str, float]:
     return out
 
 
-SOURCES = [(f, a) for f, a in _WIKI_ARTS.items()]  # wiki handled specially below
+SOURCES = list(_WIKI_ARTS.items())  # wiki handled specially below
 LLAMA = {"defi_tvl": _llama_tvl, "dex_volume": _llama_dex,
          "protocol_fees": _llama_fees, "stablecoin_supply": _llama_stables}
 
@@ -109,7 +109,7 @@ def main() -> None:
     for name, (proj, art) in _WIKI_ARTS.items():
         try:
             s = _wiki(proj, art)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             print(f"{name:22s} DATA-BLOCKED ({type(e).__name__}: {e})")
             continue
         r = _screen(name, s, gb, retmap)
@@ -118,7 +118,7 @@ def main() -> None:
     for name, fetch in LLAMA.items():
         try:
             s = fetch()
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             print(f"{name:22s} DATA-BLOCKED ({type(e).__name__}: {e})")
             continue
         r = _screen(name, s, gb, retmap)

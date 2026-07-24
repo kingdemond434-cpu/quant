@@ -33,7 +33,8 @@ def _yahoo(sym: str) -> dict[str, float]:
     r = _get(f"https://query1.finance.yahoo.com/v8/finance/chart/{sym}?interval=1d&range=300d")
     res = r["chart"]["result"][0]
     return {datetime.fromtimestamp(int(t), tz=UTC).date().isoformat(): float(c)
-            for t, c in zip(res["timestamp"], res["indicators"]["quote"][0]["close"]) if c}
+            for t, c in zip(res["timestamp"], res["indicators"]["quote"][0]["close"],
+                            strict=False) if c}
 
 
 # --- per-venue local-price fetchers (return {date: local_currency_price}) -------------------
@@ -57,18 +58,20 @@ def bitbank() -> dict[str, float]:  # Japan JPY
             d = _get(f"https://public.bitbank.cc/btc_jpy/candlestick/1day/{yr}")
             cs = d["data"]["candlestick"][0]["ohlcv"]
             for r in cs:
-                out[datetime.fromtimestamp(int(r[5]) / 1000, tz=UTC).date().isoformat()] = float(r[3])
-        except Exception as e:  # noqa: BLE001
+                ds = datetime.fromtimestamp(int(r[5]) / 1000, tz=UTC).date().isoformat()
+                out[ds] = float(r[3])
+        except Exception as e:
             print(f"    bitbank {yr}: {type(e).__name__}")
     return out
 
 
 def mercado() -> dict[str, float]:  # Brazil BRL
-    now = int(time.time()); frm = now - 300 * 86400
+    now = int(time.time())
+    frm = now - 300 * 86400
     d = _get(f"https://api.mercadobitcoin.net/api/v4/candles?symbol=BTC-BRL&resolution=1d"
              f"&from={frm}&to={now}")
     return {datetime.fromtimestamp(int(t), tz=UTC).date().isoformat(): float(c)
-            for t, c in zip(d["t"], d["c"])}
+            for t, c in zip(d["t"], d["c"], strict=False)}
 
 
 VENUES = [("bithumb_KR", bithumb, "KRW=X"), ("coinone_KR", coinone, "KRW=X"),
@@ -82,7 +85,7 @@ def main() -> None:
     for name, fetch, fxsym in VENUES:
         try:
             local = fetch()
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             print(f"{name:14s} DATA-BLOCKED ({type(e).__name__})")
             continue
         if not local:
@@ -97,8 +100,9 @@ def main() -> None:
             continue
         prem = np.array([local[d] / fx[d] / gb[d] - 1.0 for d in dates])
         btc = np.array([gb[d] for d in dates])
-        ret = np.zeros(len(btc)); ret[1:] = btc[1:] / btc[:-1] - 1.0
-        r = stage_a_screen(prem, ret, name=name)   # pure screen -- no clock (screens don't pre-register)
+        ret = np.zeros(len(btc))
+        ret[1:] = btc[1:] / btc[:-1] - 1.0
+        r = stage_a_screen(prem, ret, name=name)  # pure screen -- no clock pre-registration
         r["premium_std_pct"] = round(float(prem.std() * 100), 3)
         results.append(r)
         print(f"{name:14s} {len(dates)}d | std {r['premium_std_pct']}% | IC {r.get('ic')} | "

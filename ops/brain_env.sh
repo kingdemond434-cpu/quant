@@ -34,10 +34,21 @@ _brain_page() {
 }
 brain_auth_check() {
     # Cheap auth self-test at cycle start: fail LOUD (page), never silently no-op.
-    # On subscription-quota errors, auto-fall back to the dormant API key if placed.
-    local out
-    out="$(claude -p 'Reply with exactly: PING-OK' --dangerously-skip-permissions 2>&1 | tail -3)"
-    if printf '%s' "$out" | grep -q "PING-OK"; then return 0; fi
+    # MODEL FALLBACK CHAIN (principal 2026-07-24): a STARVED MODEL must never kill the organ.
+    # fable-5 draws a metered credit pool; on exhaustion we walk _BRAIN_MODEL_CHAIN to the next
+    # model (opus-5, then opus-4-8 -- both on the Max subscription seat) and only then try the
+    # metered API key. Tonight every organ died out-of-credits because no model fallback existed.
+    local out m
+    for m in ${_BRAIN_MODEL_CHAIN:-claude-fable-5 claude-opus-5 claude-opus-4-8}; do
+        export ANTHROPIC_MODEL="$m"
+        out="$(claude -p 'Reply with exactly: PING-OK' --dangerously-skip-permissions 2>&1 | tail -3)"
+        if printf '%s' "$out" | grep -q "PING-OK"; then
+            if [ "$m" != "${_BRAIN_MODEL_CHAIN%% *}" ]; then
+                _brain_page "model fallback ACTIVE: primary starved, organs running on $m"
+            fi
+            return 0
+        fi
+    done
     if printf '%s' "$out" | grep -qi "limit" && [ -f "$_BRAIN_KEYFILE" ]; then
         unset CLAUDE_CODE_OAUTH_TOKEN
         ANTHROPIC_API_KEY="$(cat "$_BRAIN_KEYFILE")"
@@ -59,7 +70,8 @@ brain_auth_check() {
 # organ script (was an UNVERIFIED assumption of 'CLI-managed max default' until 2026-07-21).
 # xhigh = documented best for agentic/coding work on Opus 4.8; max is reserved for
 # risk-path depth reviews (correctness over cost) since max can overthink general work.
-export ANTHROPIC_MODEL="claude-fable-5"    # 2026-07-24: Max plan active, fable-5 LIVE-VERIFIED on this box (FABLE-OK). Fallback if fable ever starves: claude-opus-4-8 (verified AUTH-OK 07-21).
+export ANTHROPIC_MODEL="${ANTHROPIC_MODEL:-claude-fable-5}"  # primary; _BRAIN_MODEL_CHAIN below auto-falls-back at runtime (principal 2026-07-24: fable starves -> opus-5). Fable draws a metered credit pool that CAN exhaust; opus-5/opus-4-8 sit on the Max subscription seat.
+export _BRAIN_MODEL_CHAIN="claude-fable-5 claude-opus-5 claude-opus-4-8"
 
 # PRINCIPAL DOCTRINE (2026-07-21): the desk's permanent max-ROI personality, injected
 # into every claude organ via --append-system-prompt. Read once here; every organ script

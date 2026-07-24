@@ -56,7 +56,7 @@ def stage_a_screen(signal: np.ndarray, target_ret: np.ndarray, *, name: str,
         z[t] = (s[t] - w.mean()) / sd if sd > 0 else 0.0
     zv, fv, tv = z[zwin:-1], fwd[zwin:-1], r[zwin:-1]
     if len(zv) < 30 or zv.std() == 0:
-        return {"name": name, "verdict": "INSUFFICIENT-DATA", "n": int(len(zv))}
+        return {"name": name, "verdict": "INSUFFICIENT-DATA", "n": len(zv)}
 
     ic = float(np.corrcoef(zv, fv)[0, 1]) if fv.std() else 0.0
     same = float(np.corrcoef(zv, tv)[0, 1]) if tv.std() else 0.0
@@ -81,7 +81,7 @@ def stage_a_screen(signal: np.ndarray, target_ret: np.ndarray, *, name: str,
     else:
         verdict = "SCREEN-INTERESTING"
 
-    out = {"name": name, "n": int(len(zv)), "ic": round(ic, 4),
+    out = {"name": name, "n": len(zv), "ic": round(ic, 4),
            "sharpe_momentum": sh_mom, "sharpe_reversal": sh_rev,
            "same_period_corr": round(same, 3), "residual_ic": round(ic_res, 4),
            "decontam_passed": not decontam_fail, "implausible_leak": implausible,

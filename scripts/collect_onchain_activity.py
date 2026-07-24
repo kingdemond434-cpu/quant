@@ -16,7 +16,7 @@ under the Holm bar and cost nothing; if it holds it is a real non-price edge. Di
 (high-throughput z -> lower forward return; activity/throughput spikes cluster near local tops).
 
 hash-rate / difficulty / miner-revenue are DELIBERATELY not here -- already ingested by
-scripts/ingest_axes.py (miner-economics) + hypothesised in run_axis_generate (hashrate_capitulation).
+scripts/ingest_axes.py (miner-economics) + hypothesised in run_axis_generate (hashrate_capit).
 Free blockchain.info charts, no key. stdlib + numpy. Run from repo root.
 """
 from __future__ import annotations
@@ -92,7 +92,8 @@ def main() -> None:
     print(f"  current z20: {z[-1]:+.2f}   throughput ${sig[-1]:,.0f}")
     print(f"  IC {scr['ic']:+.4f} | same-period {scr['same_period_corr']:+.3f} "
           f"| residual IC {scr['residual_ic']:+.4f}")
-    print(f"  timing Sharpe -- MOMENTUM {scr['sharpe_momentum']}  REVERSAL {scr['sharpe_reversal']}")
+    print(f"  timing Sharpe -- MOMENTUM {scr['sharpe_momentum']}  "
+          f"REVERSAL {scr['sharpe_reversal']}")
     print(f"  VERDICT (Stage-A, zero promotion authority): {scr['verdict']}  "
           f"[reversal, direction=-1; weak+fragile per composite check -- forward clock decides]")
 

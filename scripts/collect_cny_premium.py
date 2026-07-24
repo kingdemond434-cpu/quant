@@ -93,7 +93,7 @@ def main() -> None:
         f.write(json.dumps(rec) + "\n")
 
     n = len(prem_hist) + 1
-    std30 = statistics.pstdev(prem_hist[-30:] + [premium]) if n >= 10 else None
+    std30 = statistics.pstdev([*prem_hist[-30:], premium]) if n >= 10 else None
     print(f"CNY-PREMIUM  {today}  p2p {p2p:.4f} vs fx {fx:.4f} -> {premium*100:+.2f}%  "
           f"(z20 {z20 if z20 is not None else 'null until n>=20'}; n={n})")
     if std30 is not None:

@@ -69,7 +69,8 @@ TOK = _token()
 
 
 def _months(start=(2021, 1), end=(2026, 6)):
-    y, m = start; out = []
+    y, m = start
+    out = []
     while (y, m) <= end:
         ny, nm = (y + 1, 1) if m == 12 else (y, m + 1)
         out.append((f"{y:04d}-{m:02d}", f"{y:04d}-{m:02d}-01T00:00:00Z",
@@ -103,7 +104,7 @@ def _binance_monthly(sym: str) -> dict[str, float]:
             rows = json.loads(r.read().decode())
         return {datetime.fromtimestamp(int(k[0]) / 1000, tz=UTC).strftime("%Y-%m"): float(k[4])
                 for k in rows}
-    except Exception:  # noqa: BLE001
+    except Exception:
         return {}
 
 
@@ -152,18 +153,21 @@ def main() -> None:
         for i in range(6, len(mk) - h):
             rows = []
             for sym, _ in UNIVERSE:
-                z = zmom(sym, i); fr = cum_ret(sym, i, h)
+                z = zmom(sym, i)
+                fr = cum_ret(sym, i, h)
                 if z is not None and fr is not None:
                     rows.append((z, fr))
             if len(rows) < 8:
                 continue
-            zar = np.array([x[0] for x in rows]); far = np.array([x[1] for x in rows])
+            zar = np.array([x[0] for x in rows])
+            far = np.array([x[1] for x in rows])
             rel = far - far.mean()
             ics.append(_spearman(zar, rel))
             k = max(1, len(rows) // 3)
             order = np.argsort(zar)
             ls.append(rel[order[-k:]].mean() - rel[order[:k]].mean())
-        ics = np.array(ics); ls = np.array(ls)
+        ics = np.array(ics)
+        ls = np.array(ls)
         ic_m = float(ics.mean()) if len(ics) else 0.0
         ic_t = float(ic_m / (ics.std() / np.sqrt(len(ics)))) if len(ics) > 2 and ics.std() else 0.0
         ls_m = float(ls.mean()) if len(ls) else 0.0
@@ -179,10 +183,11 @@ def main() -> None:
     out = {"updated": datetime.now(tz=UTC).isoformat(), "factor": "commit_velocity_momentum",
            "universe": len(UNIVERSE), "by_horizon": results}
     Path("data/dev_factor_result.json").write_text(json.dumps(out, indent=1), "utf-8")
-    print("\n=== DEVELOPER MOMENTUM FACTOR v1 (cross-sectional, ecosystem selection) ===", flush=True)
+    print("\n=== DEVELOPER MOMENTUM FACTOR v1 (cross-sectional, ecosystem sel) ===", flush=True)
     print(f"universe={len(UNIVERSE)} assets", flush=True)
     for h, r in results.items():
-        print(f"  horizon {h}: n={r['n_months']}mo | CS-IC {r['cs_ic_mean']:+.4f} (t {r['ic_t']:+.2f}) "
+        print(f"  horizon {h}: n={r['n_months']}mo | CS-IC {r['cs_ic_mean']:+.4f} "
+              f"(t {r['ic_t']:+.2f}) "
               f"| L/S mean {r['ls_monthly_mean']:+.4f} Sharpe {r['ls_sharpe']:+.2f} "
               f"(NW t {r['ls_nw_t']:+.2f}) | {r['verdict']}", flush=True)
 

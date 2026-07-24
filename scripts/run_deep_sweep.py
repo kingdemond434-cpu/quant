@@ -10,6 +10,7 @@ class) -- the audit that hunts config-vs-outcome must never itself be config-vs-
 """
 from __future__ import annotations
 
+import contextlib
 import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
@@ -93,7 +94,8 @@ def run_auditor(key: str, brief: str, stamp: str) -> bool:
         r = None
     ok = report.exists() and report.stat().st_size >= 2500
     if not ok:
-        tail = ((r.stdout or "")[-900:] + "\n--stderr--\n" + (r.stderr or "")[-400:]) if r else "TIMEOUT"
+        tail = ((r.stdout or "")[-900:] + "\n--stderr--\n" + (r.stderr or "")[-400:]) \
+            if r else "TIMEOUT"
         report.write_text(f"# AUDITOR FAILED ({key})\n{tail}\n", "utf-8")
     return ok
 
@@ -138,10 +140,8 @@ def main() -> None:
             "ONLY if a human decision/spend is required. Blunt; portfolio-prioritized, never "
             "'implement everything'; nothing high-value lost to neglect."
         )
-        try:
+        with contextlib.suppress(subprocess.TimeoutExpired):
             _run(sp, 2400)
-        except subprocess.TimeoutExpired:
-            pass
     n_ok = sum(1 for _, ok in results if ok)
     print(f"[deep-sweep] done: {n_ok}/{len(results)} produced; "
           f"synthesis={'yes' if synth.exists() else 'NO'}", flush=True)

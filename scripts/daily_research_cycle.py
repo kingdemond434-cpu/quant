@@ -48,9 +48,9 @@ _STEPS = [
     ("nav_attest",        "scripts/run_nav_attest.py",       60),  # hash-chained track record
     ("listing_watch",     "scripts/run_listing_watch.py",    60),  # gap-53 data clock
     ("kimchi_premium",    "scripts/collect_kimchi_premium.py", 90),  # gap-74 forward clock
-    ("onchain_activity",  "scripts/collect_onchain_activity.py", 120),  # orthogonal on-chain throughput clock
-    ("stablecoin_supply", "scripts/collect_stablecoin_supply.py", 120),
-    ("cny_premium",       "scripts/collect_cny_premium.py", 60),   # USDT/CNY P2P capital-control premium (ledger #76 unparked)  # broad stablecoin-supply momentum clock
+    ("onchain_activity",  "scripts/collect_onchain_activity.py", 120),  # on-chain throughput
+    ("stablecoin_supply", "scripts/collect_stablecoin_supply.py", 120),  # supply momentum clock
+    ("cny_premium",       "scripts/collect_cny_premium.py", 60),  # USDT/CNY P2P premium (#76)
     ("axis_shadows",      "scripts/run_axis_shadows.py",     120),  # Stage-B forward eval
     ("cost_model",        "scripts/run_cost_model.py",      600),  # measured exec costs (daily)
     ("shadow_8h",         "scripts/run_shadow_8h.py",       420),  # 3x-obs challenger shadow

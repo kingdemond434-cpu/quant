@@ -54,7 +54,7 @@ def main() -> None:
     for name in CHARTS:
         try:
             series = _chart(name)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             print(f"{name:34s} DATA-BLOCKED ({type(e).__name__})")
             continue
         dates = sorted(set(series) & set(gb))
@@ -63,7 +63,7 @@ def main() -> None:
             continue
         sig = np.array([series[d] for d in dates])
         ret = np.array([retmap[d] for d in dates])
-        r = stage_a_screen(sig, ret, name=name)   # pure screen -- no clock (screens don't pre-register)
+        r = stage_a_screen(sig, ret, name=name)  # pure screen -- no clock pre-registration
         results.append(r)
         print(f"{name:34s} {len(dates)}d | IC {r.get('ic')} | same {r.get('same_period_corr')} "
               f"| resid {r.get('residual_ic')} | momSh {r.get('sharpe_momentum')} "

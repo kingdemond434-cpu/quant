@@ -90,7 +90,8 @@ def main() -> None:
     print(f"  current z20: {z[-1]:+.2f}   total supply ${sig[-1]:,.0f}")
     print(f"  IC {scr['ic']:+.4f} | same-period {scr['same_period_corr']:+.3f} "
           f"| residual IC {scr['residual_ic']:+.4f}")
-    print(f"  timing Sharpe -- MOMENTUM {scr['sharpe_momentum']}  REVERSAL {scr['sharpe_reversal']}")
+    print(f"  timing Sharpe -- MOMENTUM {scr['sharpe_momentum']}  "
+          f"REVERSAL {scr['sharpe_reversal']}")
     print(f"  VERDICT (Stage-A, zero promotion authority): {scr['verdict']}  "
           f"[momentum, direction=+1; SAME construct as stablecoin_flows supply field -- one "
           f"hypothesis, this is the formally-tracked version]")
