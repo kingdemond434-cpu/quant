@@ -701,7 +701,7 @@ def check_production(defects) -> None:
         sz = newest.stat().st_size
         if age_h > max_h:
             defects.append(("production-stale",
-                            f"{label}: product {newest.name} is {age_h:.0f}h old (cadence {max_h}h) "
+                            f"{label}: {newest.name} {age_h:.0f}h old (cad {max_h}h) "
                             "-- scheduled but not PRODUCING; verify the organ actually runs end-to-"
                             "end, not just that its timer/cron fires (the cron-self-match class)"))
         elif sz < min_b:
