@@ -42,8 +42,8 @@ _CTX = ssl.create_default_context(cafile=certifi.where())
 # cycle rotates the panel's mission so the same ~$0.25 buys 6x the diversity of value.
 # "benchmark" added 2026-07-16 (principal's gap-elimination override): rotating tier-1
 # benchmark on the currently-weakest dimension, self-selected from the dossier.
-_ROTATION = ["audit", "generate", "data", "premortem", "synthesize", "benchmark",
-             "maximization"]   # zero-based below-ceiling hunt (principal 2026-07-21)
+_ROTATION = ["audit", "production", "generate", "data", "premortem", "synthesize",
+             "benchmark", "maximization"]  # production = cold outcome-vs-state hunt (2026-07-24)   # zero-based below-ceiling hunt (principal 2026-07-21)
 
 # CONSENSUS pre-pass themes: how many independent models raise each -> agreement = signal.
 # Lightweight keyword tally only; the CRO does the real semantic triage. Kept in sync with the

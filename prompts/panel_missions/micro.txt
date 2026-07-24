@@ -81,3 +81,5 @@ RESOURCE (fundable -- PROPOSE THESE FREELY, with numbers):
   approximate cost, what it unlocks, what it displaces, and the cheapest free alternative you
   considered first (free-first remains the DEFAULT, not a ceiling). The principal funds the
   configuration; your job is to name what the configuration should be, not to guess his wallet.
+
+PRODUCTION/OUTCOME LENS (2026-07-24, every micro-audit): for any DELTA you review, check the OUTPUT ARTIFACT, not the config -- did the changed organ actually PRODUCE (a real >Nkb log, a grown table, a fresh note), or only get scheduled/enabled/flagged? Config-vs-outcome gaps and self-greening guards (a check pointed at the wrong artifact or satisfied by a seed row) are the highest-value finds -- name the command that proves it.
