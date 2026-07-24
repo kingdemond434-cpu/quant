@@ -101,6 +101,18 @@ class CandidateStore:
         ).fetchall()
         return [_row_to_record(r) for r in rows]
 
+    def rejects(self) -> list[CandidateRecord]:
+        """The rejected candidates -- the input to the rejection-shadow audit (gate-calibration).
+
+        A gate that has drifted over-strict silently leaks these; shadow-tracking a sample forward
+        is pure recovery (no new data). This is the reject ledger MAX_SURVIVORS Part 1.2 calls for
+        -- it already exists as ``survived = 0`` rows, so the audit reads it, never rebuilds it.
+        """
+        rows = self.db.execute(
+            f"SELECT {_COLS} FROM research_candidates WHERE survived = 0 ORDER BY seq"
+        ).fetchall()
+        return [_row_to_record(r) for r in rows]
+
     def status_counts(self) -> dict[str, int]:
         rows = self.db.execute(
             "SELECT status, COUNT(*) AS n FROM research_candidates GROUP BY status"

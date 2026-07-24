@@ -901,6 +901,37 @@ def check_data_utilization(defects) -> None:
             "its single-axis screen shows signal (else it is pure DSR deflation)."))
 
 
+def check_rejection_shadow(defects) -> None:
+    """REJECTION-SHADOW standing duty (gate-calibration, MAX_SURVIVORS Part 1.2): the gauntlet
+    rejects most candidates -- correct on picked-clean price space -- but a gate that drifted
+    over-strict silently LEAKS real edges. run_rejection_shadow.py shadow-tracks a sample of rejects
+    forward and writes web/reject_shadow.json. This check surfaces its verdict every cycle: (a) an
+    OVER-STRICT gate is a defect (recover the leaked edges); (b) rejects piling up with the audit
+    never run / stale is itself a defect (the recovery loop is off). Pure recovery, no new data."""
+    rf = ROOT / "web/reject_shadow.json"
+    d = _j(rf, None)
+    if not isinstance(d, dict):
+        return  # runner has never produced output yet -- surfaced by production/organ checks
+    audit = d.get("audit", {}) if isinstance(d.get("audit"), dict) else {}
+    if audit.get("over_strict"):
+        leak = audit.get("leak_frac", 0.0)
+        n = audit.get("n_rejects", 0)
+        defects.append((
+            "rejection-shadow-overstrict",
+            f"gate OVER-STRICT: {audit.get('n_would_have_paid', 0)}/{n} shadowed rejects "
+            f"({float(leak):.0%}) would have paid out-of-sample -- the gate is leaking survivors. "
+            "Re-calibrate (effective-trial count, per-gate bar) and re-examine the leaked ids; "
+            "this is pure recovery, no new data."))
+    n_elig = int(d.get("n_eligible", 0) or 0)
+    n_pending = int(d.get("n_pending_rescore", 0) or 0)
+    if n_elig >= 5 and n_pending == n_elig:
+        defects.append((
+            "rejection-shadow-unscored",
+            f"{n_elig} rejects are old enough to judge but NONE are forward-scored -- the reject "
+            "forward-evaluator is not feeding data/reject_forward_scores.json, so the gate-leak "
+            "audit cannot run. Wire the re-score so wrongly-rejected edges can be recovered."))
+
+
 def check_depth_parity(defects) -> None:
     """DEPTH-BREADTH PARITY LAW enforcement (charter §32): depth must keep pace with breadth,
     never lag it. A forward-clock axis that sits SHALLOW (< DEEP_DAYS of history) while the desk
@@ -963,6 +994,7 @@ def main() -> None:
                       ("gate-optimality", check_gate_optimality),
                       ("data-utilization", check_data_utilization),
                       ("depth-parity", check_depth_parity),
+                      ("rejection-shadow", check_rejection_shadow),
                       ("production", check_production),
                       ("bnb-funded", check_bnb_funded),
                       ("self-sufficiency", check_self_sufficiency),

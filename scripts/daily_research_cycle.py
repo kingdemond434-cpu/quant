@@ -52,6 +52,7 @@ _STEPS = [
     ("stablecoin_supply", "scripts/collect_stablecoin_supply.py", 120),
     ("cny_premium",       "scripts/collect_cny_premium.py", 60),   # USDT/CNY P2P capital-control premium (ledger #76 unparked)  # broad stablecoin-supply momentum clock
     ("axis_shadows",      "scripts/run_axis_shadows.py",     120),  # Stage-B forward eval
+    ("rejection_shadow",  "scripts/run_rejection_shadow.py",  60),  # gate-leak recovery audit
     ("cost_model",        "scripts/run_cost_model.py",      600),  # measured exec costs (daily)
     ("shadow_8h",         "scripts/run_shadow_8h.py",       420),  # 3x-obs challenger shadow
     ("leverage_opt",      "scripts/run_leverage_opt.py",    120),

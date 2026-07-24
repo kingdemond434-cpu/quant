@@ -83,3 +83,45 @@ class TestDataUtilizationCoverage:
         assert "kimchi_premium" in conv  # forward shadow
         assert "onchain_activity" in conv  # OOS sleeve
         assert "onchain_throughput" in conv  # OOS report stem
+
+
+class TestRejectionShadowCheck:
+    def test_flags_over_strict_gate(self, tmp_path: Path, monkeypatch) -> None:
+        _mk(tmp_path)
+        (tmp_path / "web/reject_shadow.json").write_text(json.dumps({
+            "n_eligible": 6, "n_pending_rescore": 0,
+            "audit": {"over_strict": True, "n_rejects": 6, "n_would_have_paid": 4,
+                      "leak_frac": 0.667}}))
+        monkeypatch.setattr(m, "ROOT", tmp_path)
+        defects: list[tuple[str, str]] = []
+        m.check_rejection_shadow(defects)
+        ids = [d[0] for d in defects]
+        assert "rejection-shadow-overstrict" in ids
+        assert "leaking survivors" in dict(defects)["rejection-shadow-overstrict"]
+
+    def test_flags_unscored_backlog(self, tmp_path: Path, monkeypatch) -> None:
+        _mk(tmp_path)
+        (tmp_path / "web/reject_shadow.json").write_text(json.dumps({
+            "n_eligible": 8, "n_pending_rescore": 8,
+            "audit": {"over_strict": False}}))
+        monkeypatch.setattr(m, "ROOT", tmp_path)
+        defects: list[tuple[str, str]] = []
+        m.check_rejection_shadow(defects)
+        assert "rejection-shadow-unscored" in [d[0] for d in defects]
+
+    def test_no_report_no_op(self, tmp_path: Path, monkeypatch) -> None:
+        _mk(tmp_path)
+        monkeypatch.setattr(m, "ROOT", tmp_path)
+        defects: list[tuple[str, str]] = []
+        m.check_rejection_shadow(defects)
+        assert defects == []
+
+    def test_calibrated_gate_no_defect(self, tmp_path: Path, monkeypatch) -> None:
+        _mk(tmp_path)
+        (tmp_path / "web/reject_shadow.json").write_text(json.dumps({
+            "n_eligible": 6, "n_pending_rescore": 0,
+            "audit": {"over_strict": False, "n_rejects": 6, "n_would_have_paid": 0}}))
+        monkeypatch.setattr(m, "ROOT", tmp_path)
+        defects: list[tuple[str, str]] = []
+        m.check_rejection_shadow(defects)
+        assert defects == []
