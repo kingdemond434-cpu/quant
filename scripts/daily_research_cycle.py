@@ -35,6 +35,7 @@ _STEPS = [
     ("recorder_watch",    "scripts/ensure_recorder.py",      60),  # data moat must never sleep
     ("stablecoin_flows",  "scripts/run_stablecoin_flows.py", 180),  # daily on-chain clock tick
     ("fred_macro",        "scripts/collect_fred_macro.py",   120),  # free US-macro (key-gated)
+    ("naver_krsearch",    "scripts/collect_naver_krsearch.py", 60),  # KR attention (key-gated)
     ("root_cause",        "scripts/run_root_cause.py",       120),  # classify losses pre-reaction
     ("desk_digest",       "scripts/render_desk_digest.py",    60),  # Obsidian-readable daily brief
     ("micro_audit",       "scripts/run_micro_audit.py",      480),  # 3 cold LLMs on 24h delta
@@ -52,6 +53,8 @@ _STEPS = [
     ("stablecoin_supply", "scripts/collect_stablecoin_supply.py", 120),  # supply momentum clock
     ("cny_premium",       "scripts/collect_cny_premium.py", 60),  # USDT/CNY P2P premium (#76)
     ("axis_shadows",      "scripts/run_axis_shadows.py",     120),  # Stage-B forward eval
+    ("reject_rescore",    "scripts/run_rejection_rescore.py", 300),  # feed near-miss reject scores
+    ("rejection_shadow",  "scripts/run_rejection_shadow.py",  60),  # gate-leak recovery audit
     ("cost_model",        "scripts/run_cost_model.py",      600),  # measured exec costs (daily)
     ("shadow_8h",         "scripts/run_shadow_8h.py",       420),  # 3x-obs challenger shadow
     ("leverage_opt",      "scripts/run_leverage_opt.py",    120),

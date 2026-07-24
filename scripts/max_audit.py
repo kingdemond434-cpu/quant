@@ -59,6 +59,86 @@ def _j(path: Path, default):
         return default
 
 
+def _acquired_axes() -> list[str]:
+    """The ingested-data surface as NAMES (not a count): bronze lake stores + forward clocks."""
+    names: list[str] = []
+    lake = ROOT / "data/lake/bronze"
+    if lake.exists():
+        names += [p.name for p in lake.iterdir() if p.is_dir()]
+    for pat in ("data/*_premium.jsonl", "data/*_supply.jsonl", "data/*_activity.jsonl"):
+        names += [p.stem for p in ROOT.glob(pat)]
+    return list(dict.fromkeys(names))  # de-dup, preserve order
+
+
+def _converted_axes() -> list[str]:
+    """Every axis the desk has actually CONVERTED, from the real conversion artifacts.
+
+    An axis is 'converted' (covered) if a tested-hypothesis artifact exists for it -- regardless of
+    outcome (tested-and-rejected is still converted; the graveyard is coverage). Three sources, all
+    the desk's real conversion record, so the coverage metric credits work that genuinely happened
+    instead of only the new --axis tag: (1) forward-clock shadows (web/axis_shadows.json), (2)
+    reconstructed held-out OOS reports (reports/reconstructed_oos/*.json), (3) research_memory
+    hypotheses tagged with --axis. Lowercased for tolerant matching against acquired-axis names.
+    """
+    tags: set[str] = set()
+    # (1) forward-clock shadow registry -- each axis under a live forward clock
+    shadows = _j(ROOT / "web/axis_shadows.json", {})
+    for rec in (shadows.get("axes", []) if isinstance(shadows, dict) else []):
+        ax = rec.get("axis") if isinstance(rec, dict) else None
+        if isinstance(ax, str) and ax.strip():
+            tags.add(ax.strip().lower())
+    # (2) reconstructed held-out OOS reports -- each backfilled + diff-verified axis
+    oos_dir = ROOT / "reports/reconstructed_oos"
+    if oos_dir.exists():
+        for rep in oos_dir.glob("*.json"):
+            tags.add(rep.stem.lower())
+            d = _j(rep, {})
+            for r in (d.get("results", []) if isinstance(d, dict) else []):
+                s = r.get("sleeve") if isinstance(r, dict) else None
+                if isinstance(s, str) and s.strip():
+                    tags.add(s.strip().lower())
+    # (3) research_memory hypotheses tagged with the axis they screen (the --axis flag)
+    try:
+        import sqlite3
+        con = sqlite3.connect(str(ROOT / "data/sor_research.sqlite"))
+        for (mj,) in con.execute(
+            "SELECT metrics_json FROM research_memory WHERE category != 'method' "
+            "AND metrics_json IS NOT NULL"
+        ):
+            try:
+                axis = (json.loads(mj) or {}).get("axis")
+            except Exception:
+                axis = None
+            if isinstance(axis, str) and axis.strip():
+                tags.add(axis.strip().lower())
+        con.close()
+    except Exception:
+        pass
+    return sorted(tags)
+
+
+def _trial_mechanisms() -> list[str]:
+    """The trials-ledger ``family`` column (the mechanism key) across candidate runtime DBs.
+
+    Feeds the effective (independence-clustered) trial count. Robust to the ledger living in any of
+    the sor databases; returns [] if unreachable so the monitor degrades to its prior behavior.
+    """
+    import sqlite3
+    for name in ("sor_research.sqlite", "sor.sqlite", "sor_demo.sqlite", "sor_live.sqlite"):
+        db = ROOT / "data" / name
+        if not db.exists():
+            continue
+        try:
+            con = sqlite3.connect(str(db))
+            rows = con.execute("SELECT family FROM trials_ledger").fetchall()
+            con.close()
+            if rows:
+                return [str(r[0]) for r in rows if r[0] is not None]
+        except Exception:
+            continue
+    return []
+
+
 def _fenced(fn, defects, label):
     try:
         fn(defects)
@@ -763,12 +843,21 @@ def check_gate_optimality(defects) -> None:
         return
     pegged = [g for g, n in hist.items() if tested and (int(n) / tested) >= 0.98]
     if pegged:
+        # Reconciliation rule 3: COMPUTE effective-vs-raw n_trials instead of only asking a human
+        # to "audit" it. A raw tally that inflates far past the independent-mechanism count sets
+        # the DSR bar unclearable -- the concrete way a pegged gate becomes a survivor-killer.
+        from libs.autodiscovery.extraction_parity import effective_trial_count
+        eff = effective_trial_count(_trial_mechanisms())
+        infl = (f" Effective-vs-raw n_trials: raw {eff.raw} vs {eff.effective} independent "
+                f"mechanisms ({eff.inflation:.1f}x inflation) -- "
+                + ("deflate DSR by the EFFECTIVE count." if eff.inflation > 1.5
+                   else "count is not the cause here.")) if eff.raw else ""
         defects.append((
             "gate-optimality",
             f"gate(s) rejecting >=98pct of {tested} candidates: {', '.join(sorted(pegged))} -- "
             "a ~100pct-constant gate carries zero information. Verify it is genuinely "
             "discriminating, not a campaign-level statistic mis-applied per-candidate or a bar "
-            "risen unclearable; real alphas may be dying at it. Audit effective-vs-raw n_trials."))
+            f"risen unclearable; real alphas may be dying at it.{infl}"))
     if int(d.get("cumulative_survivors", 0) or 0) == 0 and tested >= 200:
         defects.append((
             "gate-optimality-zero-survivors",
@@ -778,32 +867,171 @@ def check_gate_optimality(defects) -> None:
 
 
 def check_data_utilization(defects) -> None:
-    """DATA-UTILIZATION LAW enforcement (principal 2026-07-24): ingested data that produces no
-    tested hypotheses is DATA PARALYSIS -- a defect. Approximates the Data-to-Alpha Conversion
-    Ratio: if the lake has grown but research_memory (hypothesis/experiment activity) has not,
-    extraction is lagging acquisition (1:1 parity broken) -- scale extraction, never mine less."""
-    try:
-        import sqlite3
-        n_rm = sqlite3.connect(str(ROOT / "data/sor_research.sqlite")).execute(
-            "SELECT COUNT(*) FROM research_memory WHERE category!='method'").fetchone()[0]
-    except Exception:
-        n_rm = 0
-    # crude acquisition proxy: distinct axis stores under the lake + forward-clock jsonls
-    axes = 0
-    lake = ROOT / "data/lake/bronze"
-    if lake.exists():
-        axes = sum(1 for _ in lake.iterdir())
-    clocks = len(list(ROOT.glob("data/*_premium.jsonl")) + list(ROOT.glob("data/*_supply.jsonl"))
-                 + list(ROOT.glob("data/*_activity.jsonl")))
-    acquired = axes + clocks
-    # parity: non-method research-memory rows should be growing toward the data surface, not 0
-    if acquired >= 8 and n_rm == 0:
+    """DATA-UTILIZATION LAW, reconciled with the GATE-OPTIMALITY MONITOR (principal 2026-07-24).
+
+    The naive law ("idle data is paralysis; scale extraction") conflicts with gate-optimality:
+    mass combinatorial/genetic generation to clear the flag explodes the trial count and deflates
+    the DSR bar unclearable (the 420->0 dynamic). Binding reconciliation (extraction_parity.py):
+    paralysis is a COVERAGE gap, NOT a volume gap. It clears when every ingested axis carries >=1
+    screened, economically-motivated hypothesis (~one mechanism-first trial per axis, ~20 trials),
+    never on hypothesis count. So this check measures COVERAGE of the acquired surface, and its
+    remedy is mechanism-first coverage of the idle axes -- explicitly NOT volume."""
+    from libs.autodiscovery.extraction_parity import axis_coverage
+
+    acquired = _acquired_axes()
+    if len(acquired) < 8:
+        return  # too small a surface to judge parity
+    tags = _converted_axes()
+    # tolerant match: an acquired axis is 'covered' if any converted-axis name shares its normalized
+    # name (handles collector-store vs axis-name drift, e.g. cny_premium.jsonl <-> cny_premium)
+    def _covered(axis: str) -> bool:
+        a = axis.lower()
+        return any(t == a or t in a or a in t for t in tags)
+    covered = [a for a in acquired if _covered(a)]
+    rep = axis_coverage(axes=acquired, screened_axes=covered)
+    if not rep.cleared:
+        shown = ", ".join(rep.idle[:8]) + (" ..." if len(rep.idle) > 8 else "")
         defects.append((
             "data-utilization-paralysis",
-            f"{acquired} data axes/clocks ingested but 0 non-method research_memory rows -- "
-            "DATA PARALYSIS: raw data sitting idle with zero tested-hypothesis output violates "
-            "the 1:1 extraction-parity law. Scale extraction (combinatorial/mutation/forced-"
-            "mechanism generation on the idle axes), do not mine less."))
+            f"{len(rep.idle)}/{rep.n_axes} ingested axes have 0 screened hypothesis "
+            f"({rep.coverage_frac:.0%} coverage): {shown} -- DATA PARALYSIS is a COVERAGE gap. "
+            "Convert each idle axis MECHANISM-FIRST: one screened, economically-motivated "
+            "hypothesis per axis (tag it via research_memory.py --axis). Do NOT clear this by "
+            "generating volume -- combinatorial/genetic expansion is EARNED per axis only after "
+            "its single-axis screen shows signal (else it is pure DSR deflation)."))
+
+
+def check_post_gate0_activation(defects) -> None:
+    """POST-GATE-0 ACTIVATION INTERLOCK (enforces 'nothing deferred may be skipped').
+
+    The freeze-exit is auto-detected by run_cadence and the POST_GATE0 manifest is flagged for
+    activation -- but activation itself was a DIRECTIVE the brain cycle had to obey, with no check
+    that it actually happened. This closes that: the moment Gate 0 is complete
+    (``data/gate0_complete``) but the cadence state has not set ``post_gate0_activated``, the entire
+    deferred queue (docs/POST_GATE0_MANIFEST.md) is sitting un-built -- a defect that escalates to
+    the principal at 48h. So the automatic build is VERIFIED to fire, never silently missed."""
+    if not (ROOT / "data/gate0_complete").exists():
+        return  # pre-Gate-0: the freeze correctly holds, the manifest is not due yet
+    state = _j(ROOT / "data/cadence_state.json", {})
+    if not (isinstance(state, dict) and state.get("post_gate0_activated")):
+        defects.append((
+            "post-gate0-activation",
+            "Gate 0 is COMPLETE (data/gate0_complete) but post_gate0_activated is NOT set -- the "
+            "POST_GATE0 manifest has not activated, so every deferred item (data collectors, "
+            "growth ramp, live organs, runtime-gated research completions) is sitting un-built. "
+            "Activate docs/POST_GATE0_MANIFEST.md top-to-bottom in EV order THIS cycle; nothing "
+            "deferred may be skipped."))
+
+
+def check_rejection_shadow(defects) -> None:
+    """REJECTION-SHADOW standing duty (gate-calibration, MAX_SURVIVORS Part 1.2): the gauntlet
+    rejects most candidates -- correct on picked-clean price space -- but a gate that drifted
+    over-strict silently LEAKS real edges. run_rejection_shadow.py shadow-tracks a sample of rejects
+    forward and writes web/reject_shadow.json. This check surfaces its verdict every cycle: (a) an
+    OVER-STRICT gate is a defect (recover the leaked edges); (b) rejects piling up with the audit
+    never run / stale is itself a defect (the recovery loop is off). Pure recovery, no new data."""
+    rf = ROOT / "web/reject_shadow.json"
+    d = _j(rf, None)
+    if not isinstance(d, dict):
+        return  # runner has never produced output yet -- surfaced by production/organ checks
+    audit = d.get("audit", {}) if isinstance(d.get("audit"), dict) else {}
+    if audit.get("over_strict"):
+        leak = audit.get("leak_frac", 0.0)
+        n = audit.get("n_rejects", 0)
+        defects.append((
+            "rejection-shadow-overstrict",
+            f"gate OVER-STRICT: {audit.get('n_would_have_paid', 0)}/{n} shadowed rejects "
+            f"({float(leak):.0%}) would have paid out-of-sample -- the gate is leaking survivors. "
+            "Re-calibrate (effective-trial count, per-gate bar) and re-examine the leaked ids; "
+            "this is pure recovery, no new data."))
+    n_elig = int(d.get("n_eligible", 0) or 0)
+    n_pending = int(d.get("n_pending_rescore", 0) or 0)
+    if n_elig >= 5 and n_pending == n_elig:
+        defects.append((
+            "rejection-shadow-unscored",
+            f"{n_elig} rejects are old enough to judge but NONE are forward-scored -- the reject "
+            "forward-evaluator is not feeding data/reject_forward_scores.json, so the gate-leak "
+            "audit cannot run. Wire the re-score so wrongly-rejected edges can be recovered."))
+
+
+def check_source_backlog(defects) -> None:
+    """SOURCE-VERIFICATION BACKLOG DUTY: the catalogue (data_axis_watchlist.md) already grows
+    faster than it gets verified -- prospector/litminer run daily and add candidate source cards;
+    verifying one (real docs read, real endpoint test) is the actual bottleneck, not discovery.
+    Flags a STALE backlog: pending cards exist but the watchlist file hasn't been touched (a card
+    resolved/added) in a long time -- the verification loop has stopped, silently, while discovery
+    keeps running. This is the coverage-not-volume discipline applied to sourcing: the fix is
+    working scripts/source_backlog_next.py's queue, never cataloguing more."""
+    from libs.research.source_backlog import backlog_from_file
+
+    wf = ROOT / "docs/research/data_axis_watchlist.md"
+    if not wf.exists():
+        return
+    rep = backlog_from_file(wf, limit=1)
+    pending = rep.n_verification_pending + rep.n_legitimacy_pending
+    if pending == 0:
+        return
+    stale_days = 14.0
+    age_h = (NOW - wf.stat().st_mtime) / 3600.0
+    if age_h / 24.0 > stale_days:
+        defects.append((
+            "source-backlog-stale",
+            f"{pending} catalogued source(s) still pending (verification or legitimacy decision) "
+            f"and the watchlist has not been touched in {age_h / 24.0:.0f}d -- discovery is "
+            "outrunning verification. Run scripts/source_backlog_next.py and clear the next item, "
+            "do not catalogue more."))
+
+
+def check_depth_parity(defects) -> None:
+    """DEPTH-BREADTH PARITY LAW enforcement (charter §32): depth must keep pace with breadth,
+    never lag it. A forward-clock axis that sits SHALLOW (< DEEP_DAYS of history) while the desk
+    keeps widening breadth is a defect -- a shallow axis waits weeks on the forward clock and
+    cannot validate, so breadth without depth is unconverted potential (the utilisation-without-
+    conversion trap). Flags shallow clock axes as backfill targets (reconstruct to archive depth,
+    MAX_SURVIVORS Part 1 #1). An axis already backfilled (has a reconstructed_oos report) is deep;
+    an archive-thin axis that has logged its measured depth ceiling is exempt -- depth is never
+    faked to clear this flag."""
+    # deep_days is evidence-adjustable within hard bounds (self-tuning, not a free knob)
+    from libs.self_improvement.adaptive_thresholds import ThresholdBook
+    deep_days = ThresholdBook(ROOT / "data/adaptive_thresholds.json").get("depth_deep_days")
+    clocks: list[Path] = []
+    for pat in ("data/*_premium.jsonl", "data/*_supply.jsonl", "data/*_activity.jsonl"):
+        clocks += list(ROOT.glob(pat))
+    if len(clocks) < 3:
+        return  # too few series to judge depth-vs-breadth
+    deep_names: set[str] = set()
+    oos = ROOT / "reports/reconstructed_oos"
+    if oos.exists():
+        for r in oos.glob("*.json"):
+            deep_names.add(r.stem.lower())
+    # archive-relative exemption: an axis whose archive genuinely maxes out below deep_days logs its
+    # measured ceiling here (axis -> max available days); at/above it, the axis is as deep as its
+    # archive allows and is NOT flagged (§32: 'as deep as the archive legitimately allows').
+    ceilings = _j(ROOT / "data/depth_ceilings.json", {})
+    shallow: list[tuple[str, int]] = []
+    for c in clocks:
+        stem = c.stem.lower()
+        if any(stem in d or d in stem for d in deep_names):
+            continue  # already backfilled to archive depth
+        try:
+            with c.open("r", encoding="utf-8") as fh:
+                n = sum(1 for _ in fh)
+        except Exception:
+            continue
+        ceiling = ceilings.get(c.stem) if isinstance(ceilings, dict) else None
+        if isinstance(ceiling, (int, float)) and n >= int(ceiling):
+            continue  # as deep as its own archive allows -- exempt, never faked
+        if n < deep_days:
+            shallow.append((c.stem, n))
+    if shallow:
+        shown = ", ".join(f"{s}({n}d)" for s, n in sorted(shallow, key=lambda x: x[1])[:8])
+        defects.append((
+            "depth-parity",
+            f"{len(shallow)} axis(es) shallow (<{int(deep_days)}d) while breadth widens: {shown} "
+            "-- DEPTH LAGGING BREADTH (§32). A shallow axis waits weeks on the forward clock and "
+            "cannot validate; breadth without depth is unconverted potential. Backfill each to its "
+            "archive-depth ceiling and diff-verify (MAX_SURVIVORS Part 1 #1) -- never fake depth; "
+            "an archive-thin axis logs its measured ceiling and is exempt."))
 
 
 def main() -> None:
@@ -824,6 +1052,10 @@ def main() -> None:
                       ("prompt-layer", check_prompt_layer),
                       ("gate-optimality", check_gate_optimality),
                       ("data-utilization", check_data_utilization),
+                      ("depth-parity", check_depth_parity),
+                      ("source-backlog", check_source_backlog),
+                      ("rejection-shadow", check_rejection_shadow),
+                      ("post-gate0-activation", check_post_gate0_activation),
                       ("production", check_production),
                       ("bnb-funded", check_bnb_funded),
                       ("self-sufficiency", check_self_sufficiency),

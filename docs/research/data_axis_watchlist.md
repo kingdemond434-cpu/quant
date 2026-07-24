@@ -294,3 +294,56 @@ Triggered by gap #48 (paid CME barely cleared; free axes ~0). Verify-don't-trust
 | [fundingpulse_apify](https://apify.com/fraktalapi/funding-pulse) | Coinglass | claims FREE public API | UNVERIFIED | LOW-until-verified (redundant with Coinalyze which is doc-verified free) |
 
 **Headline:** the PAID CME feed (gap #48) is replaceable with FREE daily settlement (Yahoo BTC=F / Investing / Nasdaq Data Link) -- do not renew it; build the one queued cme hypothesis on free data. **Best NEW axis:** Coinalyze free API = cross-exchange funding/OI/liquidations (the desk is Binance-only today) -- feeds the queued cross-venue-dispersion sleeve at zero cost. On-chain reconstruction (Dune/Flipside/DefiLlama free) covers the Glassnode/CryptoQuant flow+stablecoin products.
+
+---
+
+## SESSION SUMMARY — 2026-07-24 (CN/KR/JP retail-attention batch; coverage-not-volume applied to sourcing)
+
+A 35-item external list (CN/KR/JP social+search, on-chain graph, MEV, dev, NFT, prediction-market,
+regulatory, macro sources) was reviewed against the existing catalogue. ~18 items were already
+logged under different vendor names (Arkham/Dune/Flipside = on-chain flows; EigenPhi/Blocknative =
+MEV/mempool; GitLab/StackOverflow/NPM = developer-activity factor #65; Telegram/Discord/Farcaster =
+"crypto-native social firehoses" #49; Manifold/Metaculus = prediction markets #57; SEC EDGAR/BIS/IMF
+= macro/regulatory families already ingested or catalogued). Of the genuinely-new CN/KR/JP
+retail-attention layer, **one** source was built (mechanism-first, not volume); the rest are logged
+here as excluded, not silently dropped (charter s27 "log every negative").
+
+### 21. NAVER DataLab (Korean search-attention) — grade: needs-monitoring (built, unrun)
+- **Provides:** relative daily search-interest index for KR crypto terms (비트코인/암호화폐/코인),
+  official NAVER Developers / NAVER Cloud Platform API.
+- **Mechanism:** Korean retail sentiment/positioning propagates through a distinct information
+  ecosystem from Western Crypto Twitter -- a natural attention-layer companion to the kimchi-premium
+  axis the desk already treats as real and orthogonal (both Korean-venue-sourced, neither price-
+  derived from the same construction).
+- **Legitimacy (s13):** clean -- official keyed developer API (client_id/client_secret via free
+  registration), not scraped HTML, not a login-gated session token.
+- **Verify-don't-trust:** collector built (`scripts/collect_naver_krsearch.py`), wired into daily
+  cadence (key-gated, graceful no-op without credentials -- same convention as collect_fred_macro.py),
+  screened via the audited `libs.research.axis_screen.stage_a_screen` harness (never hand-rolled,
+  charter s26). NOT yet run against the live API -- needs a free NAVER Developers key dropped at
+  `data/secrets/naver.json`. Grade upgrades to verified-clean/UNVERIFIED once the first live screen
+  result lands.
+- **Grade: needs-monitoring** (mechanism-first, single hypothesis, zero promotion authority --
+  Stage-A screen only, exactly like every other axis onboarded this way).
+
+### EXCLUDED this round (found, explicitly NOT built — logged so nothing is silently dropped)
+- **Baidu Index** — grade: needs-legitimacy-review. Requires a Baidu-account OAuth token refreshed
+  via manual login (24h expiry, "non-Baidu-Index-authorized users get error 9016002"). This is
+  credentialed/account-gated access, not a clean public API -- fails s13 the same way a paywalled
+  vendor feed would. Not built without an explicit legitimacy decision (and would need the
+  principal's personal Baidu account, which the desk should not request lightly).
+- **Weibo / Zhihu crypto sentiment** — grade: needs-legitimacy-review. No official low-friction
+  public API for either; genuine access is either paid enterprise API or HTML-scraping a
+  platform-hosted community, which sits in real ToS grey zone. Not built.
+- **Korean forums (Coinpan, DCInside crypto boards)** — grade: needs-legitimacy-review. Same class
+  as Weibo/Zhihu -- public-but-platform-hosted community scraping, ToS-grey. Not built.
+- **Japanese forums (5ch crypto boards) / Yahoo Japan realtime search trends** — grade:
+  needs-legitimacy-review. 5ch is community-board scraping (ToS-grey); Yahoo Japan's "realtime
+  search trends" is a portal feature with no confirmed official low-friction developer API (unlike
+  NAVER, which has one) -- unconfirmed, not asserted clean.
+- **Jin10 (Chinese financial news)** — grade: UNVERIFIED. Typically an app/paid-tier product;
+  no confirmed free official API found this round.
+
+**Headline:** coverage-not-volume applied to the SOURCING layer, not just hypotheses -- one clean,
+mechanism-first, legitimately-public source built and queued for its first live screen, rather than
+five source cards racing to add scraped social data to an already-~50-deep verification backlog.
