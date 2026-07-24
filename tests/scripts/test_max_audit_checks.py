@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import json
+import os
+import time
 from pathlib import Path
 
 import scripts.max_audit as m
@@ -154,3 +156,47 @@ class TestPostGate0Activation:
         defects: list[tuple[str, str]] = []
         m.check_post_gate0_activation(defects)
         assert defects == []
+
+
+class TestSourceBacklog:
+    def test_no_watchlist_no_op(self, tmp_path: Path, monkeypatch) -> None:
+        _mk(tmp_path)
+        monkeypatch.setattr(m, "ROOT", tmp_path)
+        defects: list[tuple[str, str]] = []
+        m.check_source_backlog(defects)
+        assert defects == []
+
+    def test_all_resolved_no_op(self, tmp_path: Path, monkeypatch) -> None:
+        _mk(tmp_path)
+        wf = tmp_path / "docs/research/data_axis_watchlist.md"
+        wf.parent.mkdir(parents=True, exist_ok=True)
+        wf.write_text("### 1. X — grade: verified-clean\n")
+        monkeypatch.setattr(m, "ROOT", tmp_path)
+        defects: list[tuple[str, str]] = []
+        m.check_source_backlog(defects)
+        assert defects == []
+
+    def test_pending_but_fresh_no_op(self, tmp_path: Path, monkeypatch) -> None:
+        _mk(tmp_path)
+        wf = tmp_path / "docs/research/data_axis_watchlist.md"
+        wf.parent.mkdir(parents=True, exist_ok=True)
+        wf.write_text("### 1. X — grade: UNVERIFIED\n")  # just written -- fresh mtime
+        monkeypatch.setattr(m, "ROOT", tmp_path)
+        monkeypatch.setattr(m, "NOW", time.time())
+        defects: list[tuple[str, str]] = []
+        m.check_source_backlog(defects)
+        assert defects == []
+
+    def test_pending_and_stale_fires(self, tmp_path: Path, monkeypatch) -> None:
+        _mk(tmp_path)
+        wf = tmp_path / "docs/research/data_axis_watchlist.md"
+        wf.parent.mkdir(parents=True, exist_ok=True)
+        wf.write_text("### 1. X — grade: UNVERIFIED\n")
+        old = time.time() - 20 * 86400
+        os.utime(wf, (old, old))
+        monkeypatch.setattr(m, "ROOT", tmp_path)
+        monkeypatch.setattr(m, "NOW", time.time())
+        defects: list[tuple[str, str]] = []
+        m.check_source_backlog(defects)
+        assert defects and defects[0][0] == "source-backlog-stale"
+        assert "outrunning verification" in defects[0][1]

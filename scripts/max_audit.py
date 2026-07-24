@@ -954,6 +954,34 @@ def check_rejection_shadow(defects) -> None:
             "audit cannot run. Wire the re-score so wrongly-rejected edges can be recovered."))
 
 
+def check_source_backlog(defects) -> None:
+    """SOURCE-VERIFICATION BACKLOG DUTY: the catalogue (data_axis_watchlist.md) already grows
+    faster than it gets verified -- prospector/litminer run daily and add candidate source cards;
+    verifying one (real docs read, real endpoint test) is the actual bottleneck, not discovery.
+    Flags a STALE backlog: pending cards exist but the watchlist file hasn't been touched (a card
+    resolved/added) in a long time -- the verification loop has stopped, silently, while discovery
+    keeps running. This is the coverage-not-volume discipline applied to sourcing: the fix is
+    working scripts/source_backlog_next.py's queue, never cataloguing more."""
+    from libs.research.source_backlog import backlog_from_file
+
+    wf = ROOT / "docs/research/data_axis_watchlist.md"
+    if not wf.exists():
+        return
+    rep = backlog_from_file(wf, limit=1)
+    pending = rep.n_verification_pending + rep.n_legitimacy_pending
+    if pending == 0:
+        return
+    stale_days = 14.0
+    age_h = (NOW - wf.stat().st_mtime) / 3600.0
+    if age_h / 24.0 > stale_days:
+        defects.append((
+            "source-backlog-stale",
+            f"{pending} catalogued source(s) still pending (verification or legitimacy decision) "
+            f"and the watchlist has not been touched in {age_h / 24.0:.0f}d -- discovery is "
+            "outrunning verification. Run scripts/source_backlog_next.py and clear the next item, "
+            "do not catalogue more."))
+
+
 def check_depth_parity(defects) -> None:
     """DEPTH-BREADTH PARITY LAW enforcement (charter §32): depth must keep pace with breadth,
     never lag it. A forward-clock axis that sits SHALLOW (< DEEP_DAYS of history) while the desk
@@ -1025,6 +1053,7 @@ def main() -> None:
                       ("gate-optimality", check_gate_optimality),
                       ("data-utilization", check_data_utilization),
                       ("depth-parity", check_depth_parity),
+                      ("source-backlog", check_source_backlog),
                       ("rejection-shadow", check_rejection_shadow),
                       ("post-gate0-activation", check_post_gate0_activation),
                       ("production", check_production),
