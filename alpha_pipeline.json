@@ -1,5 +1,5 @@
 {
-  "generated": "2026-07-24T07:56:58.659429+00:00",
+  "generated": "2026-07-24T08:24:56.932111+00:00",
   "n_alphas": 8,
   "n_survived": 0,
   "deployed": [
@@ -9,7 +9,7 @@
     {
       "alpha": "crypto::ls_contrarian",
       "category": "derivative-data",
-      "expected_sharpe": 3.17,
+      "expected_sharpe": 4.78,
       "gates": "6/9",
       "survived": false,
       "stage": "backtest",
@@ -21,19 +21,7 @@
     {
       "alpha": "crypto::xsec_price_mom",
       "category": "crypto-sleeve",
-      "expected_sharpe": 0.8,
-      "gates": "7/9",
-      "survived": false,
-      "stage": "backtest",
-      "orthogonality": "unknown",
-      "crowding_risk": "medium",
-      "expected_half_life": "unknown-until-forward",
-      "retire_check": "REJECT: fails gates"
-    },
-    {
-      "alpha": "crypto::ts_trend",
-      "category": "crypto-sleeve",
-      "expected_sharpe": 0.76,
+      "expected_sharpe": 0.79,
       "gates": "7/9",
       "survived": false,
       "stage": "backtest",
@@ -45,8 +33,20 @@
     {
       "alpha": "crypto::funding_carry",
       "category": "crypto-sleeve",
-      "expected_sharpe": 0.75,
+      "expected_sharpe": 0.77,
       "gates": "6/9",
+      "survived": false,
+      "stage": "backtest",
+      "orthogonality": "unknown",
+      "crowding_risk": "medium",
+      "expected_half_life": "unknown-until-forward",
+      "retire_check": "REJECT: fails gates"
+    },
+    {
+      "alpha": "crypto::ts_trend",
+      "category": "crypto-sleeve",
+      "expected_sharpe": 0.77,
+      "gates": "7/9",
       "survived": false,
       "stage": "backtest",
       "orthogonality": "unknown",
@@ -69,7 +69,7 @@
     {
       "alpha": "crypto::funding_momentum",
       "category": "crypto-sleeve",
-      "expected_sharpe": 0.42,
+      "expected_sharpe": 0.39,
       "gates": "5/9",
       "survived": false,
       "stage": "backtest",
@@ -93,7 +93,7 @@
     {
       "alpha": "crypto::oi_divergence",
       "category": "derivative-data",
-      "expected_sharpe": -5.64,
+      "expected_sharpe": -5.29,
       "gates": "3/9",
       "survived": false,
       "stage": "backtest",
