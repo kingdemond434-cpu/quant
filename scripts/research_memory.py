@@ -38,6 +38,11 @@ def log(a) -> None:
         except Exception:
             metrics = {"raw": a.metrics}
     metrics.setdefault("status_granular", a.result)
+    # --axis tags WHICH ingested data axis this hypothesis screens. Coverage (not volume) is the
+    # data-utilization parity metric: the paralysis flag clears only when every axis has >=1 such
+    # tagged hypothesis, so tagging is what converts an idle axis on the record.
+    if getattr(a, "axis", None):
+        metrics["axis"] = a.axis.strip()
     con = sqlite3.connect(_DB)
     con.execute(
         "INSERT INTO research_memory (id, created_at, category, statement, result, "
@@ -72,6 +77,47 @@ def report(a) -> None:
     con.close()
 
 
+def coverage(a) -> None:
+    """Report axis-coverage parity: how many ingested axes carry >=1 tagged screened hypothesis.
+
+    The data-utilization law reconciled with gate-optimality: paralysis is a COVERAGE gap, never a
+    volume gap. This is the read-side of the same metric max_audit enforces -- run it to see which
+    idle axes still need one mechanism-first hypothesis each (tag with `log --axis`)."""
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+    from libs.autodiscovery.extraction_parity import axis_coverage
+
+    root = Path(__file__).resolve().parent.parent
+    names: list[str] = []
+    lake = root / "data/lake/bronze"
+    if lake.exists():
+        names += [p.name for p in lake.iterdir() if p.is_dir()]
+    for pat in ("data/*_premium.jsonl", "data/*_supply.jsonl", "data/*_activity.jsonl"):
+        names += [p.stem for p in root.glob(pat)]
+    acquired = list(dict.fromkeys(names))
+    tags: set[str] = set()
+    try:
+        con = sqlite3.connect(_DB)
+        for (mj,) in con.execute("SELECT metrics_json FROM research_memory "
+                                 "WHERE category!='method' AND metrics_json IS NOT NULL"):
+            try:
+                ax = (json.loads(mj) or {}).get("axis")
+            except Exception:
+                ax = None
+            if isinstance(ax, str) and ax.strip():
+                tags.add(ax.strip().lower())
+        con.close()
+    except sqlite3.OperationalError:
+        pass  # no research_memory table yet -- coverage is simply 0, not an error
+    covered = [ax for ax in acquired
+               if any(t == ax.lower() or t in ax.lower() or ax.lower() in t for t in tags)]
+    rep = axis_coverage(axes=acquired, screened_axes=covered)
+    print(f"AXIS COVERAGE: {rep.n_covered}/{rep.n_axes} converted ({rep.coverage_frac:.0%})")
+    print(f"  {rep.verdict}")
+    if rep.idle:
+        print(f"  idle (need one mechanism-first hypothesis each): {', '.join(rep.idle)}")
+
+
 def main() -> None:
     p = argparse.ArgumentParser()
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -86,10 +132,14 @@ def main() -> None:
     lg.add_argument("--lessons", default=None)
     lg.add_argument("--metrics", default=None)
     lg.add_argument("--predecessor", default=None)
+    lg.add_argument("--axis", default=None,
+                    help="the ingested data axis this hypothesis screens (coverage parity metric)")
     lg.set_defaults(fn=log)
     rp = sub.add_parser("report")
     rp.add_argument("--days", type=int, default=30)
     rp.set_defaults(fn=report)
+    cv = sub.add_parser("coverage", help="axis-coverage parity: which ingested axes are converted")
+    cv.set_defaults(fn=coverage)
     a = p.parse_args()
     a.fn(a)
 

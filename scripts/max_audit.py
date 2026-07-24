@@ -59,6 +59,66 @@ def _j(path: Path, default):
         return default
 
 
+def _acquired_axes() -> list[str]:
+    """The ingested-data surface as NAMES (not a count): bronze lake stores + forward clocks."""
+    names: list[str] = []
+    lake = ROOT / "data/lake/bronze"
+    if lake.exists():
+        names += [p.name for p in lake.iterdir() if p.is_dir()]
+    for pat in ("data/*_premium.jsonl", "data/*_supply.jsonl", "data/*_activity.jsonl"):
+        names += [p.stem for p in ROOT.glob(pat)]
+    return list(dict.fromkeys(names))  # de-dup, preserve order
+
+
+def _screened_axes() -> list[str]:
+    """Distinct axis tags among non-method research_memory hypotheses (metrics_json.axis).
+
+    A hypothesis is 'coverage' for an axis only if it was TAGGED with that axis -- untagged
+    conversion cannot prove an axis was screened, so it does not count (the CLI's --axis flag
+    writes this tag). Returns lowercased tags for tolerant matching against acquired-axis names.
+    """
+    tags: set[str] = set()
+    try:
+        import sqlite3
+        con = sqlite3.connect(str(ROOT / "data/sor_research.sqlite"))
+        for (mj,) in con.execute(
+            "SELECT metrics_json FROM research_memory WHERE category != 'method' "
+            "AND metrics_json IS NOT NULL"
+        ):
+            try:
+                axis = (json.loads(mj) or {}).get("axis")
+            except Exception:
+                axis = None
+            if isinstance(axis, str) and axis.strip():
+                tags.add(axis.strip().lower())
+        con.close()
+    except Exception:
+        return []
+    return sorted(tags)
+
+
+def _trial_mechanisms() -> list[str]:
+    """The trials-ledger ``family`` column (the mechanism key) across candidate runtime DBs.
+
+    Feeds the effective (independence-clustered) trial count. Robust to the ledger living in any of
+    the sor databases; returns [] if unreachable so the monitor degrades to its prior behavior.
+    """
+    import sqlite3
+    for name in ("sor_research.sqlite", "sor.sqlite", "sor_demo.sqlite", "sor_live.sqlite"):
+        db = ROOT / "data" / name
+        if not db.exists():
+            continue
+        try:
+            con = sqlite3.connect(str(db))
+            rows = con.execute("SELECT family FROM trials_ledger").fetchall()
+            con.close()
+            if rows:
+                return [str(r[0]) for r in rows if r[0] is not None]
+        except Exception:
+            continue
+    return []
+
+
 def _fenced(fn, defects, label):
     try:
         fn(defects)
@@ -763,12 +823,21 @@ def check_gate_optimality(defects) -> None:
         return
     pegged = [g for g, n in hist.items() if tested and (int(n) / tested) >= 0.98]
     if pegged:
+        # Reconciliation rule 3: COMPUTE effective-vs-raw n_trials instead of only asking a human
+        # to "audit" it. A raw tally that inflates far past the independent-mechanism count sets
+        # the DSR bar unclearable -- the concrete way a pegged gate becomes a survivor-killer.
+        from libs.autodiscovery.extraction_parity import effective_trial_count
+        eff = effective_trial_count(_trial_mechanisms())
+        infl = (f" Effective-vs-raw n_trials: raw {eff.raw} vs {eff.effective} independent "
+                f"mechanisms ({eff.inflation:.1f}x inflation) -- "
+                + ("deflate DSR by the EFFECTIVE count." if eff.inflation > 1.5
+                   else "count is not the cause here.")) if eff.raw else ""
         defects.append((
             "gate-optimality",
             f"gate(s) rejecting >=98pct of {tested} candidates: {', '.join(sorted(pegged))} -- "
             "a ~100pct-constant gate carries zero information. Verify it is genuinely "
             "discriminating, not a campaign-level statistic mis-applied per-candidate or a bar "
-            "risen unclearable; real alphas may be dying at it. Audit effective-vs-raw n_trials."))
+            f"risen unclearable; real alphas may be dying at it.{infl}"))
     if int(d.get("cumulative_survivors", 0) or 0) == 0 and tested >= 200:
         defects.append((
             "gate-optimality-zero-survivors",
@@ -778,32 +847,37 @@ def check_gate_optimality(defects) -> None:
 
 
 def check_data_utilization(defects) -> None:
-    """DATA-UTILIZATION LAW enforcement (principal 2026-07-24): ingested data that produces no
-    tested hypotheses is DATA PARALYSIS -- a defect. Approximates the Data-to-Alpha Conversion
-    Ratio: if the lake has grown but research_memory (hypothesis/experiment activity) has not,
-    extraction is lagging acquisition (1:1 parity broken) -- scale extraction, never mine less."""
-    try:
-        import sqlite3
-        n_rm = sqlite3.connect(str(ROOT / "data/sor_research.sqlite")).execute(
-            "SELECT COUNT(*) FROM research_memory WHERE category!='method'").fetchone()[0]
-    except Exception:
-        n_rm = 0
-    # crude acquisition proxy: distinct axis stores under the lake + forward-clock jsonls
-    axes = 0
-    lake = ROOT / "data/lake/bronze"
-    if lake.exists():
-        axes = sum(1 for _ in lake.iterdir())
-    clocks = len(list(ROOT.glob("data/*_premium.jsonl")) + list(ROOT.glob("data/*_supply.jsonl"))
-                 + list(ROOT.glob("data/*_activity.jsonl")))
-    acquired = axes + clocks
-    # parity: non-method research-memory rows should be growing toward the data surface, not 0
-    if acquired >= 8 and n_rm == 0:
+    """DATA-UTILIZATION LAW, reconciled with the GATE-OPTIMALITY MONITOR (principal 2026-07-24).
+
+    The naive law ("idle data is paralysis; scale extraction") conflicts with gate-optimality:
+    mass combinatorial/genetic generation to clear the flag explodes the trial count and deflates
+    the DSR bar unclearable (the 420->0 dynamic). Binding reconciliation (extraction_parity.py):
+    paralysis is a COVERAGE gap, NOT a volume gap. It clears when every ingested axis carries >=1
+    screened, economically-motivated hypothesis (~one mechanism-first trial per axis, ~20 trials),
+    never on hypothesis count. So this check measures COVERAGE of the acquired surface, and its
+    remedy is mechanism-first coverage of the idle axes -- explicitly NOT volume."""
+    from libs.autodiscovery.extraction_parity import axis_coverage
+
+    acquired = _acquired_axes()
+    if len(acquired) < 8:
+        return  # too small a surface to judge parity
+    tags = _screened_axes()
+    # tolerant match: an acquired axis is 'covered' if any screened tag shares its normalized name
+    def _covered(axis: str) -> bool:
+        a = axis.lower()
+        return any(t == a or t in a or a in t for t in tags)
+    covered = [a for a in acquired if _covered(a)]
+    rep = axis_coverage(axes=acquired, screened_axes=covered)
+    if not rep.cleared:
+        shown = ", ".join(rep.idle[:8]) + (" ..." if len(rep.idle) > 8 else "")
         defects.append((
             "data-utilization-paralysis",
-            f"{acquired} data axes/clocks ingested but 0 non-method research_memory rows -- "
-            "DATA PARALYSIS: raw data sitting idle with zero tested-hypothesis output violates "
-            "the 1:1 extraction-parity law. Scale extraction (combinatorial/mutation/forced-"
-            "mechanism generation on the idle axes), do not mine less."))
+            f"{len(rep.idle)}/{rep.n_axes} ingested axes have 0 screened hypothesis "
+            f"({rep.coverage_frac:.0%} coverage): {shown} -- DATA PARALYSIS is a COVERAGE gap. "
+            "Convert each idle axis MECHANISM-FIRST: one screened, economically-motivated "
+            "hypothesis per axis (tag it via research_memory.py --axis). Do NOT clear this by "
+            "generating volume -- combinatorial/genetic expansion is EARNED per axis only after "
+            "its single-axis screen shows signal (else it is pure DSR deflation)."))
 
 
 def main() -> None:
