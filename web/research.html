@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8" /><title>QUANT DESK · Research</title>
+<style>
+:root{--bg:#04070a;--ln:#11331f;--neon:#39ff14;--dim:#5f8f73;--txt:#cfeede;--red:#ff4d5e;--amb:#ffd23f}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--txt);font-family:ui-sans-serif,system-ui,sans-serif;
+  background-image:radial-gradient(1000px 400px at 70% -10%,#0c2a17 0,transparent 60%),
+    linear-gradient(#ffffff0d 1px,transparent 1px),linear-gradient(90deg,#ffffff0d 1px,transparent 1px);
+  background-size:auto,30px 30px,30px 30px}
+.mono{font-family:ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums}
+header{display:flex;justify-content:space-between;align-items:center;padding:16px 26px;border-bottom:1px solid var(--ln)}
+.brand{font-weight:800;letter-spacing:.18em;display:flex;gap:10px;align-items:center}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--neon);box-shadow:0 0 10px var(--neon),0 0 22px var(--neon)}
+main{max-width:1100px;margin:0 auto;padding:22px 26px}
+.card{background:linear-gradient(180deg,#0a1014,#0d161b);border:1px solid var(--ln);border-radius:12px;margin-bottom:18px}
+.ph{padding:11px 16px;border-bottom:1px solid var(--ln);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:9px 14px;text-align:left;border-bottom:1px solid #0c241544}
+th{color:var(--dim);font-size:10px;letter-spacing:.1em;text-transform:uppercase}
+.pos{color:var(--neon)}.dim{color:var(--dim)}.red{color:var(--red)}.amb{color:var(--amb)}
+.tag{display:inline-block;padding:1px 7px;border-radius:5px;font-size:10px;border:1px solid #1e5a36;color:var(--neon)}
+.tag.red{border-color:#5a1e22;color:var(--red)}.tag.amb{border-color:#5a4a11;color:var(--amb)}
+.k{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:16px}
+.kk{background:#06140d;border:1px solid var(--ln);border-radius:9px;padding:10px 12px}
+.kk .l{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+.kk .v{font-size:20px;font-weight:700;margin-top:3px}
+svg text{fill:var(--dim);font-size:9px}
+.note{padding:0 16px 14px;font-size:11px;color:var(--dim)}
+</style></head><body>
+<header><div class="brand"><span class="dot"></span>QUANT&nbsp;DESK · RESEARCH RECORD</div>
+  <div style="display:flex;gap:18px;align-items:center">
+    <a href="index.html" style="color:var(--dim);font-size:12px;text-decoration:none">◂ Performance</a>
+    <a href="research.html" style="color:var(--neon);font-size:12px;text-decoration:none;border-bottom:1px solid var(--neon)">Research &amp; Shadow</a>
+    <a href="factory.html" style="color:var(--dim);font-size:12px;text-decoration:none">Factory</a>
+    <span class="mono dim" id="ts" style="font-size:12px">loading…</span>
+  </div></header>
+<main>
+  <div class="card"><div class="ph">● LIVE demo execution · IC Markets (Python brain → MT5)</div>
+    <div class="k" id="livek"></div>
+    <table id="livetbl"><thead><tr><th>Instrument</th><th>Side</th><th>Lots</th><th>Status</th></tr></thead><tbody></tbody></table>
+    <div class="note" id="livenote"></div></div>
+
+  <div class="card"><div class="ph">Strategy scoreboard (net-of-cost, full validation)</div>
+    <table id="board"><thead><tr><th>Strategy</th><th>Universe</th><th>Best Sharpe</th>
+      <th>Survivors</th><th>Status</th></tr></thead><tbody></tbody></table>
+    <div class="note" id="boardnote"></div></div>
+
+  <div class="card"><div class="ph">Forward shadow · cross-sectional funding candidate (zero capital)</div>
+    <div class="k" id="shadowk"></div>
+    <div id="shadowchart"></div>
+    <div class="note" id="verdict"></div></div>
+
+  <div class="card"><div class="ph">Forward shadow · MT5 cross-asset combo — Python brain → MT5 EA (zero capital)</div>
+    <div class="k" id="xak"></div>
+    <div id="xachart"></div>
+    <div class="ph" style="border-top:1px solid var(--ln)">Target portfolio (today) · what the EA would execute on approval</div>
+    <table id="xaweights"><thead><tr><th>Instrument</th><th>Target weight</th></tr></thead><tbody></tbody></table>
+    <div class="note" id="xaverdict"></div></div>
+
+  <div class="card"><div class="ph">Stage-B forward clocks · orthogonal data axes (zero capital, Holm-gated)</div>
+    <div style="padding:10px 14px"><table id="axtab" style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead><tr style="text-align:left;opacity:.7">
+        <th>axis</th><th>verdict</th><th>fwd days</th><th>cum ret</th><th>ann Sharpe</th><th>NW-t</th><th>Holm bar</th>
+      </tr></thead><tbody></tbody></table>
+      <div id="axnote" style="opacity:.65;margin-top:8px;font-size:12px"></div></div>
+  </div>
+  <div class="card"><div class="ph">Growth-optimal leverage · geometric CAGR (assumes edge persists; edges UNVALIDATED)</div>
+    <table id="levtbl"><thead><tr><th>Strategy</th><th>Growth-opt L</th><th>Rec. L</th>
+      <th>CAGR @rec</th><th>maxDD @rec</th><th>Ruin @rec</th><th>CAGR @aggr</th><th>Ruin @aggr</th></tr></thead><tbody></tbody></table>
+    <div class="note" id="levnote"></div></div>
+</main>
+<script>
+function fmt(v){return v===null||v===undefined?"—":(typeof v==="number"?v.toFixed(2):v);}
+async function load(){
+  try{
+    const L=await (await fetch("live.json",{cache:"no-store"})).json();
+    const a=L.account||{};
+    const k=[["Account",a.login],["Server",a.server],["Equity",fmt(a.equity)],
+      ["Gross notional","$"+fmt(L.gross_notional)],["Gross leverage",fmt(L.gross_leverage)+"x"],
+      ["Margin used","$"+fmt(L.margin_used_est)],["Positions",L.n_target],["Mode",(L.mode||"").toUpperCase()]];
+    document.getElementById("livek").innerHTML=k.map(([l,v])=>
+      `<div class="kk"><div class="l">${l}</div><div class="v mono">${v}</div></div>`).join("");
+    document.querySelector("#livetbl tbody").innerHTML=(L.orders||[]).map(o=>
+      `<tr><td>${o.symbol}</td><td class="${o.side==='buy'?'pos':'red'}">${o.side}</td>
+       <td class="mono">${o.lots}</td><td class="mono ${String(o.status).startsWith('REJ')?'red':'dim'}">${o.status}</td></tr>`).join("");
+    document.getElementById("livenote").textContent="updated "+(L.updated||"").slice(0,16).replace("T"," ")+
+      " · "+(L.mode==="live"?"sending real demo orders":"dry-run (no orders sent)");
+  }catch(e){document.getElementById("livenote").textContent="live.json not found — run run_portfolio_live.py";}
+  try{
+    const s=await (await fetch("strategies.json",{cache:"no-store"})).json();
+    document.querySelector("#board tbody").innerHTML=s.strategies.map(r=>{
+      const t=r.status.startsWith("SHADOW")?"amb":(r.survivors>0?"":"red");
+      return `<tr><td>${r.name}</td><td class="dim">${r.universe}</td>
+        <td class="mono ${r.best_sharpe>0?'pos':'dim'}">${fmt(r.best_sharpe)}</td>
+        <td class="mono">${r.survivors}</td><td><span class="tag ${t}">${r.status}</span></td></tr>`;
+    }).join("");
+    document.getElementById("boardnote").textContent=s.note||"";
+  }catch(e){document.getElementById("boardnote").textContent="strategies.json not found — run build_scoreboard.py";}
+
+  try{
+    const d=await (await fetch("shadow.json",{cache:"no-store"})).json();
+    document.getElementById("ts").textContent="updated "+(d.updated||"").slice(0,16).replace("T"," ");
+    const k=[["Shadow start",(d.shadow_start||"").slice(0,10)],["Forward days",d.forward_days],
+      ["Forward Sharpe",fmt(d.forward_ann_sharpe)],["Backtest Sharpe",fmt(d.backtest_ann_sharpe)]];
+    document.getElementById("shadowk").innerHTML=k.map(([l,v])=>
+      `<div class="kk"><div class="l">${l}</div><div class="v mono">${v}</div></div>`).join("");
+    document.getElementById("shadowchart").innerHTML=curve(d.equity||[]);
+    document.getElementById("verdict").textContent="VERDICT: "+(d.verdict||"");
+  }catch(e){document.getElementById("verdict").textContent="shadow.json not found — run run_shadow_forward.py";}
+
+  try{
+    const x=await (await fetch("crossasset_shadow.json",{cache:"no-store"})).json();
+    const k=[["Shadow start",(x.shadow_start||"").slice(0,10)],["Forward days",x.forward_days],
+      ["Forward Sharpe",fmt(x.forward_ann_sharpe)],["Backtest Sharpe",fmt(x.backtest_ann_sharpe)],
+      ["Gauntlet",x.gates_passed],["Deployable",x.deployable?"yes":"no"],
+      ["Instruments",x.symbols],["Net of cost","yes"]];
+    document.getElementById("xak").innerHTML=k.map(([l,v])=>
+      `<div class="kk"><div class="l">${l}</div><div class="v mono">${v}</div></div>`).join("");
+    document.getElementById("xachart").innerHTML=curve(x.equity||[]);
+    const w=x.target_weights||{};
+    document.querySelector("#xaweights tbody").innerHTML=Object.entries(w).map(([s,v])=>
+      `<tr><td>${s}</td><td class="mono ${v>=0?'pos':'red'}">${(v>=0?'+':'')+v.toFixed(4)}</td></tr>`).join("");
+    document.getElementById("xaverdict").textContent="VERDICT: "+(x.verdict||"");
+  }catch(e){document.getElementById("xaverdict").textContent="crossasset_shadow.json not found — run run_crossasset_shadow.py";}
+
+  try{
+    const L=await (await fetch("leverage.json",{cache:"no-store"})).json();
+    const pct=v=>v===null||v===undefined?"—":(v*100).toFixed(0)+"%";
+    const ent=Object.entries(L.leverage||{}).sort((a,b)=>(b[1].points.recommended.cagr)-(a[1].points.recommended.cagr));
+    document.querySelector("#levtbl tbody").innerHTML=ent.map(([nm,a])=>{
+      const r=a.points.recommended, g=a.points.aggressive;
+      return `<tr><td>${nm.startsWith("portfolio")?"<b>"+nm+"</b>":nm}</td>
+        <td class="mono">${a.growth_optimal_leverage}x</td><td class="mono pos">${a.recommended_leverage}x</td>
+        <td class="mono ${r.cagr>=0?'pos':'red'}">${pct(r.cagr)}</td><td class="mono amb">${pct(r.max_dd)}</td>
+        <td class="mono ${r.risk_of_ruin>0.05?'red':'dim'}">${pct(r.risk_of_ruin)}</td>
+        <td class="mono dim">${pct(g.cagr)}</td><td class="mono red">${pct(g.risk_of_ruin)}</td></tr>`;
+    }).join("");
+    document.getElementById("levnote").textContent=L.note||"";
+  }catch(e){document.getElementById("levnote").textContent="leverage.json not found — run run_mt5_portfolio.py";}
+  try{
+    const A=await (await fetch("axis_shadows.json",{cache:"no-store"})).json();
+    const tb=document.querySelector("#axtab tbody"); tb.innerHTML="";
+    (A.axes||[]).forEach(a=>{
+      const tr=document.createElement("tr");
+      const col=a.verdict==="ELIGIBLE"?"#7ee787":(a.verdict==="FAILING"?"#ff7b72":"#d8dee9");
+      tr.innerHTML=`<td>${a.axis}</td><td style="color:${col}">${a.verdict}</td>`+
+        `<td>${a.forward_days}/${a.need||A.min_forward_days}</td><td>${a.cum_return===undefined?"—":(a.cum_return*100).toFixed(2)+"%"}</td>`+
+        `<td>${fmt(a.ann_sharpe)}</td><td>${fmt(a.nw_t)}</td><td>${fmt(a.holm_bar)}</td>`;
+      tb.appendChild(tr);
+    });
+    document.getElementById("axnote").textContent =
+      `updated ${(A.updated||"").slice(0,16)} · ${A.note||""}`;
+  }catch(e){document.getElementById("axnote").textContent="axis_shadows.json not found — run run_axis_shadows.py";}
+}
+function curve(eq){
+  if(!eq.length) return "<div class='note'>no shadow track yet</div>";
+  const W=1040,H=200,P=26,vs=eq.map(p=>p.v),mn=Math.min(...vs),mx=Math.max(...vs);
+  const x=i=>P+i/(eq.length-1)*(W-2*P),y=v=>H-P-(v-mn)/((mx-mn)||1)*(H-2*P);
+  // backtest (dim) vs forward (neon) segments
+  let d="",seg=null;
+  const path=eq.map((p,i)=>`${x(i).toFixed(1)},${y(p.v).toFixed(1)}`);
+  const fStart=eq.findIndex(p=>p.fwd);
+  const bt=fStart<0?path:path.slice(0,fStart+1), fw=fStart<0?[]:path.slice(fStart);
+  d=`<path d="M${bt.join(" L")}" fill="none" stroke="#2a4a37" stroke-width="1.3"/>`;
+  if(fw.length>1) d+=`<path d="M${fw.join(" L")}" fill="none" stroke="var(--neon)" stroke-width="1.8" style="filter:drop-shadow(0 0 4px var(--neon))"/>`;
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" preserveAspectRatio="none">
+    <line x1="${P}" x2="${W-P}" y1="${y(1)}" y2="${y(1)}" stroke="#2a4a37" stroke-dasharray="3 4"/>
+    ${d}<text x="${P}" y="14">${eq[0].t} · grey = backtest, green = forward (live OOS)</text></svg>`;
+}
+load();setInterval(load,10000);
+</script></body></html>
