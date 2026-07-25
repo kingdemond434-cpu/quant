@@ -1643,7 +1643,7 @@ def check_no_mining_throttle(defects) -> None:
                             "the §33 verdict text tells a dig to 'catalogue nothing new' -- that "
                             "string is injected into the dig prompt and throttles mining through "
                             "LANGUAGE. Conversion preempts priority, never acquisition."))
-    for sh in sorted((ROOT / "ops").glob("run_*dig*.sh")) + [ROOT / "ops/run_frontier_miner.sh"]:
+    for sh in [*sorted((ROOT / "ops").glob("run_*dig*.sh")), ROOT / "ops/run_frontier_miner.sh"]:
         try:
             txt = sh.read_text("utf-8", errors="ignore")
         except OSError:

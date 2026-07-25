@@ -89,7 +89,8 @@ def next_pending(cards: Sequence[SourceCard], *, limit: int = 0) -> BacklogRepor
     corroborated -- cheaper to finish) before bare ``UNVERIFIED`` ones (found, nothing confirmed --
     more work), then by card id (oldest backlog first, so a shiny new catalogue entry never jumps a
     card that has been waiting -- the same anti-hype-bias reasoning as near-miss-first reject
-    scoring). ``limit`` <= 0 (the default) surfaces ALL pending cards -- conversion is never throttled; a positive value caps the batch for human-scale display only.
+    scoring). ``limit`` <= 0 (the default) surfaces ALL pending cards --
+    conversion is never throttled; a positive value caps the batch for display only.
     """
     resolved = [c for c in cards if c.category == "resolved"]
     verif = [c for c in cards if c.category == "verification"]
