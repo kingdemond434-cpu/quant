@@ -1185,6 +1185,13 @@ _DIG_DOCS = (
     "docs/research/discovery_hypotheses.md",
     "docs/research/literature_coverage.md",
 )
+#: Card-bearing docs deliberately OUT of §33 scope, each with its reason. Kept explicit so the
+#: scope check below can tell "consciously excluded" from "quietly unmonitored".
+_DIG_DOCS_EXCLUDED = {
+    "docs/research/micro_audit_inbox.md":
+        "audit findings, not mined finds -- own rotting-findings check",
+    "docs/research/panel_inbox.md": "external panel output -- own rulings/scoring loop",
+}
 #: Committed-state is checked over the whole research surface, including the excluded docs above:
 #: a graveyard entry is self-dispositioning but still has to reach git to exist.
 _DIG_TRACKED = ("docs/research", "docs/graveyard.md")
@@ -1446,6 +1453,39 @@ def check_mine_flow(defects) -> None:
             "failure as a law with no monitor."))
 
 
+def check_mine_scope(defects) -> None:
+    """A find written somewhere unscanned is a find outside the law -- with no code change needed.
+
+    §33 reads a FIXED list of docs. That list is the law's blast radius, and a digger that writes
+    its cards to any other file evades every check in the family without touching tracked code --
+    the one bypass that does not show up in a diff. So the scope itself is audited: any
+    docs/research markdown carrying numbered cards must be either IN the scanned set or in the
+    explicit exclusion list with a stated reason. Consciously excluded is fine; quietly unmonitored
+    is not. Same shape as check_review_risks_tracked -- a thing named in one place must inherit the
+    discipline of the other, and nothing may fall between them by omission.
+    """
+    research = ROOT / "docs/research"
+    if not research.is_dir():
+        return
+    card = re.compile(r"^### \d+\.", re.MULTILINE)
+    rogue = []
+    for p in sorted(research.glob("*.md")):
+        rel = p.relative_to(ROOT).as_posix()
+        if rel in _DIG_DOCS or rel in _DIG_DOCS_EXCLUDED:
+            continue
+        with contextlib.suppress(OSError):
+            n = len(card.findall(p.read_text("utf-8", errors="ignore")))
+            if n:
+                rogue.append(f"{p.name}({n} cards)")
+    if rogue:
+        defects.append((
+            "mine-scope-unmonitored",
+            f"§33 scope: card-bearing research doc(s) outside the law -- {', '.join(rogue[:8])}. "
+            "Findings written here owe no disposition and are invisible to every §33 check, which "
+            "is the one bypass that needs no code change. Add each to _DIG_DOCS (in scope) or to "
+            "_DIG_DOCS_EXCLUDED with a stated reason -- never leave it decided by omission."))
+
+
 def check_mine_gate(defects) -> None:
     """The gate must be DERIVED, not a deletable flag -- and it must actually run.
 
@@ -1543,6 +1583,7 @@ def main() -> None:
                       ("mine-conversion", check_mine_conversion),
                       ("mine-flow", check_mine_flow),
                       ("mine-gate", check_mine_gate),
+                      ("mine-scope", check_mine_scope),
                       ("dig-uncommitted", check_dig_uncommitted),
                       ("depth-parity", check_depth_parity),
                       ("source-backlog", check_source_backlog),

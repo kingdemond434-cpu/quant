@@ -297,3 +297,38 @@ class TestTamperChecks:
         defects: list[tuple[str, str]] = []
         m.check_mine_flow(defects)
         assert "mine-ledger-truncated" in [d[0] for d in defects]
+
+
+class TestMineScope:
+    def test_rogue_card_bearing_doc_is_flagged(self, tmp_path: Path, monkeypatch) -> None:
+        # writing finds to an unscanned file is the ONE bypass needing no code change
+        _mk(tmp_path)
+        (tmp_path / "docs/research/secret_finds.md").write_text("### 1. A\n### 2. B\n")
+        monkeypatch.setattr(m, "ROOT", tmp_path)
+        defects: list[tuple[str, str]] = []
+        m.check_mine_scope(defects)
+        assert defects and defects[0][0] == "mine-scope-unmonitored"
+        assert "secret_finds.md(2 cards)" in defects[0][1]
+
+    def test_scanned_doc_is_not_flagged(self, tmp_path: Path, monkeypatch) -> None:
+        _mk(tmp_path).write_text("### 1. A\n")
+        monkeypatch.setattr(m, "ROOT", tmp_path)
+        defects: list[tuple[str, str]] = []
+        m.check_mine_scope(defects)
+        assert defects == []
+
+    def test_explicitly_excluded_doc_is_not_flagged(self, tmp_path: Path, monkeypatch) -> None:
+        _mk(tmp_path)
+        (tmp_path / "docs/research/panel_inbox.md").write_text("### 1. A\n")
+        monkeypatch.setattr(m, "ROOT", tmp_path)
+        defects: list[tuple[str, str]] = []
+        m.check_mine_scope(defects)
+        assert defects == []   # consciously excluded, with a reason on record
+
+    def test_doc_without_cards_is_ignored(self, tmp_path: Path, monkeypatch) -> None:
+        _mk(tmp_path)
+        (tmp_path / "docs/research/prose.md").write_text("# notes\nsome prose\n")
+        monkeypatch.setattr(m, "ROOT", tmp_path)
+        defects: list[tuple[str, str]] = []
+        m.check_mine_scope(defects)
+        assert defects == []
