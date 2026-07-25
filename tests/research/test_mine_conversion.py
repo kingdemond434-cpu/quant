@@ -3,6 +3,7 @@ illegal, a deferral expires, and a conversion CLAIM without a backing artifact n
 
 from __future__ import annotations
 
+import os
 from datetime import UTC, date, datetime
 from pathlib import Path
 
@@ -19,11 +20,13 @@ from libs.research.mine_conversion import (
     fuzzy_credited,
     infer_tier,
     is_disposed,
+    ledger_regressed,
     load_ledger,
     parse_dispositions,
     priors_payload,
     unbacked,
     update_ratchet,
+    vanished,
 )
 
 _TODAY = date(2026, 7, 25)
@@ -351,3 +354,83 @@ class TestExactArtifactCredit:
         assert [x.name for x in fuzzy_credited(i)] == ["Loose"]
         rep = conversion_report(i, as_of=_TODAY, backing={"wired": ["loose"]}, root=tmp_path)
         assert rep.n_fuzzy_credited == 1 and rep.n_unbacked == 0
+
+
+class TestTamperResistance:
+    """Every remaining §33 bypass was the same shape: state that could be deleted or forged."""
+
+    def _led(self, tmp: Path, names: list[str], *, disposed: tuple[str, ...] = ()) -> Path:
+        lg = tmp / "l.jsonl"
+        append_snapshot(lg, [
+            MinedItem(source="d", name=n, disposition="wired" if n in disposed else "")
+            for n in names], now=datetime(2026, 7, 1, tzinfo=UTC))
+        return lg
+
+    def test_deleting_the_card_does_not_delete_the_obligation(self, tmp_path: Path) -> None:
+        lg = self._led(tmp_path, ["Tardis fence", "Upbit"])
+        after = parse_dispositions("### 2. Upbit\n", source="d")   # card 1 edited away
+        assert vanished(after, load_ledger(lg), as_of=_TODAY) == ("Tardis fence",)
+
+    def test_disposing_an_item_is_not_an_erasure(self, tmp_path: Path) -> None:
+        lg = self._led(tmp_path, ["Tardis"])
+        done = parse_dispositions("### 1. Tardis [§33: killed]\n", source="d")
+        assert vanished(done, load_ledger(lg), as_of=_TODAY) == ()
+
+    def test_already_disposed_items_are_not_reported_as_vanished(self, tmp_path: Path) -> None:
+        lg = self._led(tmp_path, ["A"], disposed=("A",))
+        assert vanished([], load_ledger(lg), as_of=_TODAY) == ()
+
+    def test_no_ledger_means_no_vanish_claims(self) -> None:
+        assert vanished([], [], as_of=_TODAY) == ()
+
+    def test_preexisting_file_cannot_receipt_a_new_find(self, tmp_path: Path) -> None:
+        # `-> pyproject.toml` used to be credited: any old non-empty file was a valid receipt
+        old = tmp_path / "old.json"
+        old.write_text("{}")
+        past = datetime(2026, 1, 1, tzinfo=UTC).timestamp()
+        os.utime(old, (past, past))
+        i = parse_dispositions("### 1. Tardis [§33: wired -> old.json]\n", source="d")
+        fs = {"Tardis": datetime(2026, 7, 1, tzinfo=UTC).timestamp()}
+        assert unbacked(i, backing={}, root=tmp_path, first_seen=fs) == tuple(i)
+
+    def test_artifact_written_after_the_find_is_credited(self, tmp_path: Path) -> None:
+        new = tmp_path / "new.json"
+        new.write_text("{}")
+        fs = {"Tardis": datetime(2026, 1, 1, tzinfo=UTC).timestamp()}
+        i = parse_dispositions("### 1. Tardis [§33: wired -> new.json]\n", source="d")
+        assert unbacked(i, backing={}, root=tmp_path, first_seen=fs) == ()
+
+    def test_recency_is_skipped_when_the_find_has_no_history(self, tmp_path: Path) -> None:
+        old = tmp_path / "old.json"
+        old.write_text("{}")
+        past = datetime(2026, 1, 1, tzinfo=UTC).timestamp()
+        os.utime(old, (past, past))
+        i = parse_dispositions("### 1. New [§33: wired -> old.json]\n", source="d")
+        assert unbacked(i, backing={}, root=tmp_path, first_seen={}) == ()
+
+    def test_truncated_ledger_is_detected(self, tmp_path: Path) -> None:
+        lg = self._led(tmp_path, ["A"])
+        r = Ratchet(n_snapshots=5, earliest_ts=1000.0)
+        bad, why = ledger_regressed(r, load_ledger(lg))
+        assert bad and "truncated" in why
+
+    def test_rewritten_history_is_detected(self, tmp_path: Path) -> None:
+        lg = self._led(tmp_path, ["A"])   # ts = 2026-07-01
+        r = Ratchet(n_snapshots=1, earliest_ts=1.0)   # record says history began long ago
+        bad, why = ledger_regressed(r, load_ledger(lg))
+        assert bad and "rewritten" in why
+
+    def test_intact_ledger_passes(self, tmp_path: Path) -> None:
+        lg = self._led(tmp_path, ["A"])
+        led = load_ledger(lg)
+        r = Ratchet(n_snapshots=1, earliest_ts=float(led[0]["ts"]))
+        assert ledger_regressed(r, led)[0] is False
+
+    def test_first_record_has_nothing_to_compare(self, tmp_path: Path) -> None:
+        assert ledger_regressed(Ratchet(), load_ledger(self._led(tmp_path, ["A"])))[0] is False
+
+    def test_ratchet_captures_ledger_high_water_marks(self, tmp_path: Path) -> None:
+        led = load_ledger(self._led(tmp_path, ["A"]))
+        flow = flow_stats(led)
+        r, _ = update_ratchet(Ratchet(), flow, conversion_rate=0.0, ledger=led)
+        assert r.n_snapshots == 1 and r.earliest_ts == float(led[0]["ts"])

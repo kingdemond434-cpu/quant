@@ -1213,7 +1213,11 @@ def _conversion_artifacts() -> list[str]:
 
 
 MINE_LEDGER = ROOT / "data/mine_conversion_log.jsonl"
-MINE_RATCHET = ROOT / "data/mine_conversion_ratchet.json"
+#: TRACKED on purpose (docs/, not gitignored data/). The ratchet's whole guarantee is that the
+#: bar never loosens -- stored under data/* it was one `rm` from a fresh record, so the monotonic
+#: standard was erasable by an organ that wanted an easier bar. In docs/ a reset shows up in
+#: `git status`, in the diff, and in check_dig_uncommitted. Tampering becomes visible, not silent.
+MINE_RATCHET = ROOT / "docs/research/conversion_record.json"
 MINE_PRIORS = ROOT / "data/mine_generation_priors.json"
 
 
@@ -1284,14 +1288,30 @@ def check_mine_conversion(defects) -> None:
     (closing the mass-kill escape hatch), the backlog is TIER-WEIGHTED, and a priority inversion
     (cheap work finished while a Tier-1 defect-closer still owes) is its own defect.
     """
-    from libs.research.mine_conversion import append_snapshot, conversion_report
+    from libs.research.mine_conversion import (
+        append_snapshot,
+        conversion_report,
+        first_seen_map,
+        load_ledger,
+        vanished,
+    )
 
     items = _mine_items()
     if not items:
         return  # nothing carded -- nothing owed (a fresh clone, not a defect)
     thr = _mine_thresholds()
-    rep = conversion_report(items, as_of=datetime.now(UTC).date(),
-                            backing=_mine_backing(), root=ROOT)
+    today = datetime.now(UTC).date()
+    ledger = load_ledger(MINE_LEDGER)
+    rep = conversion_report(items, as_of=today, backing=_mine_backing(), root=ROOT,
+                            first_seen=first_seen_map(ledger))
+    gone = vanished(items, ledger, as_of=today)
+    if gone:
+        defects.append((
+            "mine-item-vanished",
+            f"§33: {len(gone)} find(s) owed a disposition in the last snapshot and have "
+            f"DISAPPEARED from the docs -- {', '.join(gone[:8])}. Deleting the card does not "
+            "delete the obligation: the ledger remembers. Restore the item and dispose of it "
+            "properly, or record the deletion as a `killed` with its graveyard mechanism."))
     with contextlib.suppress(OSError):
         append_snapshot(MINE_LEDGER, items)
 
@@ -1365,6 +1385,7 @@ def check_mine_flow(defects) -> None:
         class_priors,
         feedback_applied,
         flow_stats,
+        ledger_regressed,
         load_ledger,
         load_ratchet,
         priors_payload,
@@ -1385,8 +1406,16 @@ def check_mine_flow(defects) -> None:
             MINE_PRIORS.parent.mkdir(parents=True, exist_ok=True)
             MINE_PRIORS.write_text(json.dumps(priors_payload(priors), indent=2), "utf-8")
 
+    prior = load_ratchet(MINE_RATCHET)
+    truncated, why_trunc = ledger_regressed(prior, ledger)
+    if truncated:
+        defects.append((
+            "mine-ledger-truncated",
+            f"§33: {why_trunc}. The ledger is the evidence base for latency, the per-class priors "
+            "and the ratchet itself -- erasing it resets all three and hands back an easier bar. "
+            "The high-water marks in docs/research/conversion_record.json are what caught this."))
     new_ratchet, verdict = update_ratchet(
-        load_ratchet(MINE_RATCHET), flow, conversion_rate=rate, regress_mult=thr["regress"])
+        prior, flow, conversion_rate=rate, regress_mult=thr["regress"], ledger=ledger)
     with contextlib.suppress(OSError):
         MINE_RATCHET.write_text(new_ratchet.model_dump_json(indent=2), "utf-8")
 

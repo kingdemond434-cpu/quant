@@ -19,8 +19,10 @@ def _mk(tmp: Path) -> Path:
 def _point_at(monkeypatch, tmp: Path) -> None:
     monkeypatch.setattr(m, "ROOT", tmp)
     monkeypatch.setattr(m, "MINING_SUSPENDED", tmp / "data/mining_suspended")
-    # isolate from the real repo's artifacts so credit comes only from the fixture
+    # isolate from the real repo's artifacts AND its snapshot ledger -- the conversion check now
+    # reads history, so an un-isolated fixture inherits the live desk's vanished-item state
     monkeypatch.setattr(m, "_conversion_artifacts", lambda: [])
+    monkeypatch.setattr(m, "MINE_LEDGER", tmp / "data/ledger.jsonl")
 
 
 class TestMineConversion:
@@ -251,3 +253,47 @@ class TestGateScript:
         r = subprocess.run([sys.executable, "scripts/mine_gate.py", "--explain"],
                            capture_output=True, text=True, timeout=120)
         assert r.returncode == 0
+
+
+class TestTamperChecks:
+    def test_vanished_card_fires(self, tmp_path: Path, monkeypatch) -> None:
+        from libs.research.mine_conversion import MinedItem, append_snapshot
+        w = _mk(tmp_path)
+        lg = tmp_path / "data/l.jsonl"
+        append_snapshot(lg, [MinedItem(source="docs/research/data_axis_watchlist.md",
+                                       name="Tardis fence"),
+                             MinedItem(source="docs/research/data_axis_watchlist.md",
+                                       name="Upbit")])
+        w.write_text("### 2. Upbit\n")   # the Tardis card is simply edited away
+        _point_at(monkeypatch, tmp_path)
+        monkeypatch.setattr(m, "MINE_LEDGER", lg)
+        defects: list[tuple[str, str]] = []
+        m.check_mine_conversion(defects)
+        d = dict(defects)
+        assert "mine-item-vanished" in d
+        assert "Tardis fence" in d["mine-item-vanished"]
+
+    def test_ratchet_record_lives_in_a_tracked_path(self) -> None:
+        # under data/* it was one `rm` from a fresh, easier bar; in docs/ a reset shows in git
+        assert "docs/research" in str(m.MINE_RATCHET)
+        assert "data/" not in str(m.MINE_RATCHET)
+
+    def test_truncated_ledger_fires(self, tmp_path: Path, monkeypatch) -> None:
+        from datetime import datetime
+
+        from libs.research.mine_conversion import MinedItem, Ratchet, append_snapshot
+        _mk(tmp_path)
+        lg = tmp_path / "data/l.jsonl"
+        base = datetime(2026, 7, 1, tzinfo=UTC)
+        append_snapshot(lg, [MinedItem(source="s", name="A")], now=base)
+        append_snapshot(lg, [MinedItem(source="s", name="A")],
+                        now=datetime.fromtimestamp(base.timestamp() + 86400, UTC))
+        rec = tmp_path / "docs/research/conversion_record.json"
+        rec.write_text(Ratchet(n_snapshots=9, earliest_ts=1.0).model_dump_json())
+        monkeypatch.setattr(m, "ROOT", tmp_path)
+        monkeypatch.setattr(m, "MINE_LEDGER", lg)
+        monkeypatch.setattr(m, "MINE_RATCHET", rec)
+        monkeypatch.setattr(m, "MINE_PRIORS", tmp_path / "data/p.json")
+        defects: list[tuple[str, str]] = []
+        m.check_mine_flow(defects)
+        assert "mine-ledger-truncated" in [d[0] for d in defects]

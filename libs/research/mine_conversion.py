@@ -184,6 +184,7 @@ def unbacked(
     *,
     backing: Mapping[str, Sequence[str]],
     root: Path | None = None,
+    first_seen: Mapping[str, float] | None = None,
 ) -> tuple[MinedItem, ...]:
     """Terminal claims that could not be corroborated by a real artifact.
 
@@ -208,7 +209,16 @@ def unbacked(
         if i.artifact:
             p = base / i.artifact
             try:
-                if p.is_file() and p.stat().st_size > 0:
+                ok = p.is_file() and p.stat().st_size > 0
+                # ...and it must POSTDATE the find. Exact was not enough: `-> pyproject.toml`
+                # named a real non-empty file and was credited, so any pre-existing file in the
+                # repo was a valid receipt for any claim. A file that has not been touched since
+                # before the discovery cannot be evidence OF that discovery. Doing the actual
+                # work satisfies this for free -- including a graveyard entry, which touches
+                # graveyard.md. Skipped when the find has no ledger history yet.
+                if ok and first_seen and i.name in first_seen:
+                    ok = p.stat().st_mtime > first_seen[i.name]
+                if ok:
                     continue
             except OSError:
                 pass
@@ -268,6 +278,7 @@ def conversion_report(
     as_of: date,
     backing: Mapping[str, Sequence[str]] | None = None,
     root: Path | None = None,
+    first_seen: Mapping[str, float] | None = None,
     max_shown: int = 8,
 ) -> ConversionReport:
     """Build the §33 report and decide whether mining is SUSPENDED this cycle.
@@ -280,7 +291,7 @@ def conversion_report(
     backing = backing or {}
     bl = backlog(items, as_of=as_of)
     illegal = tuple(i for i in items if i.illegal_reason)
-    ub = unbacked(items, backing=backing, root=root)
+    ub = unbacked(items, backing=backing, root=root, first_seen=first_seen)
     fuzzy = fuzzy_credited(items)
     counts = {v: sum(1 for i in items if i.disposition == v and is_disposed(i, as_of=as_of))
               for v in LEGAL}
@@ -505,6 +516,10 @@ class Ratchet(BaseModel):
     best_conversion_rate: float = 0.0
     best_at: str = ""
     n_records: int = 0
+    #: Ledger high-water marks. Snapshot count only grows and the earliest ts only moves back;
+    #: either going the wrong way proves the evidence base was truncated or rewritten.
+    n_snapshots: int = 0
+    earliest_ts: float = 0.0
 
 
 class RatchetVerdict(BaseModel):
@@ -534,6 +549,7 @@ def update_ratchet(
     *,
     conversion_rate: float,
     regress_mult: float = 1.5,
+    ledger: Sequence[LedgerRow] = (),
     now: datetime | None = None,
 ) -> tuple[Ratchet, RatchetVerdict]:
     """Compare this cycle to the best ever, tighten on a record, and flag regression.
@@ -560,6 +576,11 @@ def update_ratchet(
         best_conversion_rate=(conversion_rate if rate_record else ratchet.best_conversion_rate),
         best_at=(ts if improved else ratchet.best_at),
         n_records=ratchet.n_records + (1 if improved else 0),
+        # high-water marks only ever ratchet the safe way, so a shrunken ledger stays detectable
+        n_snapshots=max(ratchet.n_snapshots, len(ledger)),
+        earliest_ts=(min(float(r["ts"]) for r in ledger)
+                     if ledger and not ratchet.earliest_ts
+                     else ratchet.earliest_ts),
     )
     # the bar the next cycle must beat: the (possibly new) record, tightened by the tolerance
     next_bar = (new.best_median_latency_days * regress_mult
@@ -618,3 +639,67 @@ def feedback_applied(
                        f"conversion rate ({', '.join(sorted(starve))}) -- the priors were "
                        "published and IGNORED. Generation must follow measured conversion.")
     return True, f"new finds skew away from starved classes ({share:.0%} from them)"
+
+
+# --------------------------------------------------------------------------------------------
+# TAMPER-RESISTANCE -- the lesson of the gate file, generalised. Every remaining bypass in §33 was
+# the same shape: state that could be DELETED or FORGED. A card can be deleted from the doc; an
+# artifact path can point at a file that has been there for months; the ratchet's "never loosens"
+# guarantee lived in a gitignored file one `rm` deep. Enforcement is only as strong as its weakest
+# erasable surface, so each of these is closed the same way -- derive it, or put it where deleting
+# it is VISIBLE.
+# --------------------------------------------------------------------------------------------
+
+def first_seen_map(ledger: Sequence[LedgerRow]) -> dict[str, float]:
+    """Earliest snapshot timestamp per item name -- when the desk first knew about the find."""
+    out: dict[str, float] = {}
+    for row in ledger:
+        ts = float(row["ts"])
+        for it in row["items"]:
+            n = str(it.get("n", ""))
+            if n:
+                out.setdefault(n, ts)
+    return out
+
+
+def vanished(
+    current: Sequence[MinedItem], ledger: Sequence[LedgerRow], *, as_of: date
+) -> tuple[str, ...]:
+    """Finds that were owed a disposition in the last snapshot and have since DISAPPEARED.
+
+    Deleting the card must not delete the obligation. Without this, the cheapest way to clear the
+    backlog is an editor: remove the line, and the item stops being counted entirely. The ledger
+    remembers, so a name that was undisposed yesterday and is absent today is an erasure, reported
+    immediately and by name rather than surfacing weeks later as a confusing rot warning about an
+    item nobody can find.
+    """
+    if not ledger:
+        return ()
+    prev = ledger[-1]
+    was_owing = {str(i.get("n", "")) for i in prev["items"]
+                 if i.get("d") not in _TERMINAL and str(i.get("n", ""))}
+    now_present = {i.name for i in current}
+    # a terminal disposition in THIS pass is a legitimate exit, not an erasure
+    now_done = {i.name for i in current if is_disposed(i, as_of=as_of)}
+    return tuple(sorted(was_owing - now_present - now_done))
+
+
+def ledger_regressed(ratchet: Ratchet, ledger: Sequence[LedgerRow]) -> tuple[bool, str]:
+    """Has the snapshot history been truncated or rewritten since the last recorded state?
+
+    The ledger is the evidence base for latency, priors and the ratchet itself; erasing it resets
+    every one of them. Snapshot count only ever grows and the earliest timestamp only ever moves
+    BACKWARD (never forward), so either statistic going the wrong way is proof of tampering or of
+    data loss -- both of which invalidate the record and must be seen, not silently absorbed.
+    """
+    if not ratchet.n_snapshots:
+        return False, "no prior record -- nothing to compare"
+    n = len(ledger)
+    earliest = min((float(r["ts"]) for r in ledger), default=0.0)
+    if n < ratchet.n_snapshots:
+        return True, (f"snapshot count fell {ratchet.n_snapshots} -> {n}: the conversion ledger "
+                      "has been truncated or deleted")
+    if ratchet.earliest_ts and earliest > ratchet.earliest_ts + 1.0:
+        return True, ("the ledger's earliest snapshot moved forward in time: history was "
+                      "rewritten, not appended")
+    return False, "ledger intact"
