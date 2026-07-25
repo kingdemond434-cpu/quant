@@ -53,7 +53,7 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--explain", action="store_true",
                     help="print the verdict but always exit 0 (for humans, not for the shells)")
-    a = ap.parse_args()
+    ap.parse_args()  # --help/validation only; the gate always exits 0 post-amendment
     try:
         suspended, reason = evaluate()
     except Exception as exc:

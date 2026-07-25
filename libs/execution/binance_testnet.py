@@ -21,7 +21,7 @@ from typing import Any
 
 _BASE = "https://testnet.binancefuture.com"   # PINNED testnet -- never live
 _KEY_ENV = "BINANCE_TESTNET_KEY"
-_SECRET_ENV = "BINANCE_TESTNET_SECRET"
+_SECRET_ENV = "BINANCE_TESTNET_SECRET"  # noqa: S105 -- env-var name, not the secret
 # Convenience: keys may live in env (preferred) OR a local untracked file (set once). NOT in code.
 _KEYFILE = Path("data/secrets/binance_testnet.json")
 

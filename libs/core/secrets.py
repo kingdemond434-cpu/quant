@@ -12,7 +12,7 @@ from typing import Protocol, runtime_checkable
 
 from libs.core.errors import SecretsError
 
-SECRET_ENV_PREFIX = "QP_SECRET_"
+SECRET_ENV_PREFIX = "QP_SECRET_"  # noqa: S105 -- an env-var NAME prefix, not a credential
 
 
 @runtime_checkable
