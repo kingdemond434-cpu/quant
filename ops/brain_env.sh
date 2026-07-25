@@ -49,7 +49,7 @@ brain_auth_check() {
             return 0
         fi
     done
-    if printf '%s' "$out" | grep -qi "limit" && [ -f "$_BRAIN_KEYFILE" ]; then
+    if printf '%s' "$out" | grep -qiE "limit|usage credits" && [ -f "$_BRAIN_KEYFILE" ]; then
         unset CLAUDE_CODE_OAUTH_TOKEN
         ANTHROPIC_API_KEY="$(cat "$_BRAIN_KEYFILE")"
         export ANTHROPIC_API_KEY
