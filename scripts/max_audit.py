@@ -1211,19 +1211,32 @@ def _conversion_artifacts() -> list[str]:
     return sorted(n for n in names if n)
 
 
-def check_mine_conversion(defects) -> None:
-    """§33 MINED-TO-WIRED: no carded find sleeps twice; a backlog SUSPENDS mining.
+MINE_LEDGER = ROOT / "data/mine_conversion_log.jsonl"
+MINE_RATCHET = ROOT / "data/mine_conversion_ratchet.json"
+MINE_PRIORS = ROOT / "data/mine_generation_priors.json"
 
-    Mined intelligence is inventory, and un-converted inventory depreciates -- it consumed a
-    cycle, it inflates the capability inventory, and it makes every later audit read the desk as
-    richer than it is. Mining is not the product; conversion is. This check makes the backlog
-    impossible to not see, and writes the gate file the digger shells refuse to start against, so
-    an organ producing faster than the desk converts pays the cost itself. Flow control, not
-    punishment: mining resumes the instant the backlog clears.
-    """
-    from libs.research.mine_conversion import conversion_report, parse_dispositions
+
+def _mine_thresholds() -> dict:
+    """§33 bars, evidence-adjustable within hard tighten-only bounds (the desk's ThresholdBook)."""
+    out = {"kill": 0.60, "stale": 14.0, "regress": 1.5}
+    try:
+        from libs.self_improvement.adaptive_thresholds import ThresholdBook
+        b = ThresholdBook(ROOT / "data/adaptive_thresholds.json")
+        out = {"kill": b.get("mine_kill_share_bar"),
+               "stale": b.get("mine_stale_owing_days"),
+               "regress": b.get("mine_latency_regress_mult")}
+    except Exception:
+        pass
+    return out
+
+
+def _mine_items():
+    """Parse every owing carded find, tiered against the axes the desk has ALREADY ingested."""
+    from libs.research.mine_conversion import parse_dispositions
     from libs.research.source_backlog import parse_watchlist
-
+    axes = []
+    with contextlib.suppress(Exception):
+        axes = _acquired_axes()
     items = []
     for rel in _DIG_DOCS:
         p = ROOT / rel
@@ -1231,11 +1244,11 @@ def check_mine_conversion(defects) -> None:
             continue
         with contextlib.suppress(Exception):
             text = p.read_text("utf-8")
-            found = parse_dispositions(text, source=rel)
+            found = parse_dispositions(text, source=rel, ingested_axes=axes)
             # A source card's OWN grade is already a disposition -- 'verified-clean' and
             # 'destroyed-at-source' are terminal in the existing taxonomy, so demanding a second
-            # §33 tag on top would be paperwork, not conversion. Reuse the graded classifier the
-            # desk already has rather than duplicating the grade rules here.
+            # §33 tag would be paperwork, not conversion. Reuse the graded classifier the desk
+            # already has rather than duplicating the grade rules here.
             with contextlib.suppress(Exception):
                 resolved = {c.name.lower() for c in parse_watchlist(text)
                             if c.category == "resolved"}
@@ -1243,11 +1256,42 @@ def check_mine_conversion(defects) -> None:
                     found = [i for i in found
                              if not any(r in i.name.lower() for r in resolved)]
             items += found
+    return items
+
+
+def _mine_backing() -> dict:
+    """Artifact-only credit, per disposition. `killed` is backed by the GRAVEYARD -- which is what
+    makes mass-killing the backlog cost more than converting it, rather than less."""
+    arte = _conversion_artifacts()
+    grave = []
+    gp = ROOT / "docs/graveyard.md"
+    if gp.exists():
+        with contextlib.suppress(Exception):
+            grave = [ln.strip(" #-*").lower() for ln in gp.read_text("utf-8").splitlines()
+                     if ln.strip()]
+    return {"wired": arte, "screened": arte, "killed": grave}
+
+
+def check_mine_conversion(defects) -> None:
+    """§33 MINED-TO-WIRED (stock + quality + value): no carded find sleeps twice, a backlog
+    SUSPENDS mining, and the backlog is PRICED so it cannot be cleared by doing only easy work.
+
+    Mined intelligence is inventory, and un-converted inventory depreciates. Mining is not the
+    product; conversion is. This writes the gate file the digger shells refuse to start against,
+    so an organ producing faster than the desk converts pays the cost itself -- flow control, not
+    punishment. Three teeth beyond mere reporting: `killed` is corroborated against the graveyard
+    (closing the mass-kill escape hatch), the backlog is TIER-WEIGHTED, and a priority inversion
+    (cheap work finished while a Tier-1 defect-closer still owes) is its own defect.
+    """
+    from libs.research.mine_conversion import append_snapshot, conversion_report
+
+    items = _mine_items()
     if not items:
         return  # nothing carded -- nothing owed (a fresh clone, not a defect)
-
-    rep = conversion_report(items, as_of=datetime.now(UTC).date(),
-                            artifact_backed=_conversion_artifacts())
+    thr = _mine_thresholds()
+    rep = conversion_report(items, as_of=datetime.now(UTC).date(), backing=_mine_backing())
+    with contextlib.suppress(OSError):
+        append_snapshot(MINE_LEDGER, items)
 
     # the gate file IS the enforcement -- a reported backlog that stops nothing is a wish
     try:
@@ -1262,13 +1306,12 @@ def check_mine_conversion(defects) -> None:
     if rep.n_backlog:
         defects.append((
             "mine-conversion-backlog",
-            f"§33: {rep.n_backlog}/{rep.n_items} carded find(s) owe a disposition -- "
+            f"§33: {rep.n_backlog}/{rep.n_items} carded find(s) owe a disposition (weighted "
+            f"{rep.weighted_backlog}, highest tier owing T{rep.top_tier_owing}) -- "
             f"{', '.join(rep.backlog_names)}. MINING IS SUSPENDED (data/mining_suspended): the "
-            "whole dig slot reassigns to conversion, catalogue nothing new until it clears. Every "
-            "item takes exactly one of wired / screened / killed / deferred(DATE) -- silence is "
-            "the defect. Priority: defect-closers first (a permanently-firing gate made "
-            "satisfiable), then mechanism priors on axes ALREADY ingested, then new surfaces, "
-            "then operators."))
+            "whole dig slot reassigns to conversion, HIGHEST TIER FIRST, catalogue nothing new "
+            "until it clears. Every item takes exactly one of wired / screened / killed / "
+            "deferred(DATE) -- silence is the defect."))
     if rep.n_illegal:
         defects.append((
             "mine-conversion-illegal",
@@ -1278,10 +1321,90 @@ def check_mine_conversion(defects) -> None:
     if rep.n_unbacked:
         defects.append((
             "mine-conversion-unbacked",
-            f"§33: {rep.n_unbacked} item(s) CLAIM wired/screened with no corroborating artifact "
-            f"-- {', '.join(rep.unbacked_names)}. Conversion is credited from artifacts on disk, "
-            "never from a report; otherwise the cheapest way to clear a backlog is to type the "
-            "word 'wired'. Produce the artifact or downgrade the claim."))
+            f"§33: {rep.n_unbacked} item(s) CLAIM a terminal disposition with no corroborating "
+            f"artifact -- {', '.join(rep.unbacked_names)}. Conversion is credited from artifacts "
+            "on disk, never from a report; a 'killed' needs its GRAVEYARD entry with the mechanism "
+            "of death. Produce the artifact or downgrade the claim."))
+    if rep.kill_share > thr["kill"] and (rep.n_killed + rep.n_wired + rep.n_screened) >= 4:
+        defects.append((
+            "mine-conversion-killspike",
+            f"§33 quality: {rep.kill_share:.0%} of terminal dispositions are 'killed' (bar "
+            f"{thr['kill']:.0%}) -- the backlog is being cleared by GRAVEYARD rather than by "
+            "conversion. A disposition is not automatically a conversion; a bad batch is real but "
+            "so is the cheap exit, and this is its signature. Justify each kill's mechanism."))
+    if rep.priority_inversion:
+        defects.append((
+            "mine-conversion-inversion",
+            f"§33.6 priority inversion: a T{rep.top_tier_owing} item still owes while cheaper-tier "
+            "work was completed. Defect-closers (a permanently-firing gate made satisfiable) "
+            "outrank mechanism priors, which outrank new surfaces, which outrank operators. Work "
+            "the expensive tier FIRST -- clearing the easy tail is how a backlog looks like "
+            "progress while the valuable item rots."))
+
+
+def check_mine_flow(defects) -> None:
+    """§33 FLOW + FEEDBACK + RATCHET: is conversion getting FASTER, and does it steer generation?
+
+    A stock check says whether inventory exists; only a flow check says whether the desk is
+    improving. And conversion outcomes that dead-end in an audit report are a fence -- fed back as
+    per-class priors they become a control system, which is what maximum utilisation actually
+    means. The bar is the desk's OWN BEST-EVER performance: every record tightens it permanently
+    and it never loosens, so there is no "good enough", only better-than-our-best or a regression.
+    """
+    from libs.research.mine_conversion import (
+        class_priors,
+        feedback_applied,
+        flow_stats,
+        load_ledger,
+        load_ratchet,
+        priors_payload,
+        update_ratchet,
+    )
+
+    ledger = load_ledger(MINE_LEDGER)
+    if len(ledger) < 2:
+        return  # a single snapshot cannot measure flow -- not a defect, just no history yet
+    thr = _mine_thresholds()
+    flow = flow_stats(ledger)
+    n_names = len({str(i.get("n", "")) for r in ledger for i in r["items"]})
+    rate = (flow.n_converted / n_names) if n_names else 0.0
+
+    priors = class_priors(ledger)
+    if priors:
+        with contextlib.suppress(OSError):
+            MINE_PRIORS.parent.mkdir(parents=True, exist_ok=True)
+            MINE_PRIORS.write_text(json.dumps(priors_payload(priors), indent=2), "utf-8")
+
+    new_ratchet, verdict = update_ratchet(
+        load_ratchet(MINE_RATCHET), flow, conversion_rate=rate, regress_mult=thr["regress"])
+    with contextlib.suppress(OSError):
+        MINE_RATCHET.write_text(new_ratchet.model_dump_json(indent=2), "utf-8")
+
+    if flow.oldest_owing_days > thr["stale"]:
+        defects.append((
+            "mine-flow-rotting",
+            f"§33: '{flow.oldest_owing_name}' has owed a disposition for "
+            f"{flow.oldest_owing_days:.0f}d (bar {thr['stale']:.0f}d). Age IS the damage -- a "
+            "finding depreciates while it waits, and the desk has been faster than this."))
+    if verdict.regressed:
+        defects.append((
+            "mine-flow-regression",
+            f"§33 RATCHET: {verdict.verdict} Next-cycle bar {verdict.next_bar_days:.1f}d. The "
+            "standard is the desk's own record and it only moves down -- recover the pace or "
+            "log the measured reason it is no longer achievable."))
+    if flow.latency_worsening and not verdict.regressed:
+        defects.append((
+            "mine-flow-slowing",
+            f"§33: conversion latency is TRENDING worse (median {flow.median_latency_days:.1f}d, "
+            "recent half >1.5x the earlier half). Catch it as a trend, before it becomes a "
+            "regression against the record."))
+    ok, why = feedback_applied(ledger, priors)
+    if not ok:
+        defects.append((
+            "mine-feedback-ignored",
+            f"§33.4 closed loop: {why} data/mine_generation_priors.json is published every "
+            "sweep -- generation MUST read it and reweight. A prior nothing acts on is the same "
+            "failure as a law with no monitor."))
 
 
 def check_dig_uncommitted(defects) -> None:
@@ -1338,6 +1461,7 @@ def main() -> None:
                       ("review-risks", check_review_risks_tracked),
                       ("orphan-code", check_orphan_code),
                       ("mine-conversion", check_mine_conversion),
+                      ("mine-flow", check_mine_flow),
                       ("dig-uncommitted", check_dig_uncommitted),
                       ("depth-parity", check_depth_parity),
                       ("source-backlog", check_source_backlog),

@@ -4,6 +4,7 @@ reported backlog that stops nothing is a wish, so these lock BOTH the defect and
 from __future__ import annotations
 
 import subprocess
+from datetime import UTC
 from pathlib import Path
 
 import scripts.max_audit as m
@@ -35,6 +36,9 @@ class TestMineConversion:
     def test_full_disposition_clears_gate_file(self, tmp_path: Path, monkeypatch) -> None:
         _mk(tmp_path).write_text(
             "### 1. Tardis [§33: killed]\n### 2. Upbit [§33: deferred(2099-01-01)]\n")
+        # a kill is only credited with its graveyard entry -- the cheap exit stays closed
+        (tmp_path / "docs/graveyard.md").write_text(
+            "- Tardis -- mechanism: vendor withdrew the free tier\n")
         _point_at(monkeypatch, tmp_path)
         (tmp_path / "data/mining_suspended").write_text("stale")  # left from a previous cycle
         defects: list[tuple[str, str]] = []
@@ -59,6 +63,25 @@ class TestMineConversion:
         defects: list[tuple[str, str]] = []
         m.check_mine_conversion(defects)
         assert defects == []
+
+    def test_mass_kill_without_graveyard_does_not_clear(self, tmp_path: Path, monkeypatch) -> None:
+        # killing everything must cost MORE than converting it, not less
+        _mk(tmp_path).write_text("".join(
+            f"### {i}. find{i} [§33: killed]\n" for i in range(1, 6)))
+        _point_at(monkeypatch, tmp_path)
+        defects: list[tuple[str, str]] = []
+        m.check_mine_conversion(defects)
+        assert "mine-conversion-unbacked" in [d[0] for d in defects]
+        assert (tmp_path / "data/mining_suspended").exists()
+
+    def test_priority_inversion_fires(self, tmp_path: Path, monkeypatch) -> None:
+        _mk(tmp_path).write_text(
+            "### 1. diff-verify fence ground truth\n### 2. search operator [§33: killed]\n")
+        (tmp_path / "docs/graveyard.md").write_text("- search operator -- mechanism: no signal\n")
+        _point_at(monkeypatch, tmp_path)
+        defects: list[tuple[str, str]] = []
+        m.check_mine_conversion(defects)
+        assert "mine-conversion-inversion" in [d[0] for d in defects]
 
     def test_illegal_undated_deferral_fires(self, tmp_path: Path, monkeypatch) -> None:
         _mk(tmp_path).write_text("### 1. Quantopian archive [§33: deferred]\n")
@@ -125,3 +148,37 @@ class TestDigUncommitted:
         defects: list[tuple[str, str]] = []
         m.check_dig_uncommitted(defects)
         assert defects == []
+
+
+class TestMineFlow:
+    def test_no_history_no_op(self, tmp_path: Path, monkeypatch) -> None:
+        _mk(tmp_path)
+        monkeypatch.setattr(m, "MINE_LEDGER", tmp_path / "data/led.jsonl")
+        defects: list[tuple[str, str]] = []
+        m.check_mine_flow(defects)
+        assert defects == []  # one snapshot cannot measure flow
+
+    def test_rotting_item_fires_and_priors_are_published(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        from datetime import datetime
+
+        from libs.research.mine_conversion import MinedItem, append_snapshot
+        _mk(tmp_path)
+        lg = tmp_path / "data/led.jsonl"
+        old = datetime(2026, 1, 1, tzinfo=UTC)
+        items = [MinedItem(source="w.md", name=f"rot{i}") for i in range(3)]
+        items += [MinedItem(source="ok.md", name=f"done{i}", disposition="wired")
+                  for i in range(3)]
+        append_snapshot(lg, items, now=old)
+        append_snapshot(lg, items)
+        monkeypatch.setattr(m, "MINE_LEDGER", lg)
+        monkeypatch.setattr(m, "MINE_RATCHET", tmp_path / "data/r.json")
+        monkeypatch.setattr(m, "MINE_PRIORS", tmp_path / "data/p.json")
+        monkeypatch.setattr(m, "ROOT", tmp_path)
+        defects: list[tuple[str, str]] = []
+        m.check_mine_flow(defects)
+        assert "mine-flow-rotting" in [d[0] for d in defects]
+        # the closed loop must actually emit its artifact, not just compute it
+        assert (tmp_path / "data/p.json").exists()
+        assert (tmp_path / "data/r.json").exists()   # ratchet persisted

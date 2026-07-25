@@ -60,6 +60,23 @@ _REGISTRY: dict[str, ThresholdSpec] = {
         direction="tighten_only", tighten_is_up=True,
         rationale="decided rejects needed before judging the gate; raise-only, so a verdict always "
                   "rests on at least as much evidence, never less"),
+    "mine_kill_share_bar": ThresholdSpec(
+        name="mine_kill_share_bar", default=0.60, floor=0.20, ceiling=0.80,
+        direction="tighten_only", tighten_is_up=False,
+        rationale="share of terminal §33 dispositions that may be 'killed' before the backlog is "
+                  "being cleared by graveyard rather than by conversion; tighten-only (LOWER is "
+                  "stricter) so the mass-kill escape hatch can never be widened"),
+    "mine_stale_owing_days": ThresholdSpec(
+        name="mine_stale_owing_days", default=14.0, floor=2.0, ceiling=60.0,
+        direction="tighten_only", tighten_is_up=False,
+        rationale="days a carded find may owe a disposition before it is a rotting-inventory "
+                  "defect; tighten-only (FEWER days is stricter) -- the desk gets faster or holds, "
+                  "never slower, which is the §33 ratchet expressed as a bound"),
+    "mine_latency_regress_mult": ThresholdSpec(
+        name="mine_latency_regress_mult", default=1.5, floor=1.05, ceiling=3.0,
+        direction="tighten_only", tighten_is_up=False,
+        rationale="multiple of the BEST-EVER median conversion latency that counts as regression; "
+                  "tighten-only so the ratchet's tolerance narrows as the desk improves"),
 }
 
 

@@ -3,18 +3,30 @@ illegal, a deferral expires, and a conversion CLAIM without a backing artifact n
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import UTC, date, datetime
+from pathlib import Path
 
 from libs.research.mine_conversion import (
+    FlowStats,
     MinedItem,
+    Ratchet,
+    append_snapshot,
     backlog,
+    class_priors,
     conversion_report,
+    feedback_applied,
+    flow_stats,
+    infer_tier,
     is_disposed,
+    load_ledger,
     parse_dispositions,
+    priors_payload,
     unbacked,
+    update_ratchet,
 )
 
 _TODAY = date(2026, 7, 25)
+_BACKING = {"wired": ["upbit"], "screened": ["barrier-rent"], "killed": ["kaiko"]}
 
 _DOC = """# Dig output 2026-07-25
 
@@ -108,25 +120,30 @@ class TestDisposition:
 class TestUnbacked:
     def test_claim_without_artifact_is_unbacked(self) -> None:
         items = [MinedItem(source="d", name="Upbit 1m candles", disposition="wired")]
-        assert unbacked(items, artifact_backed=[]) == tuple(items)
+        assert unbacked(items, backing={}) == tuple(items)
 
     def test_substring_match_in_either_direction_counts(self) -> None:
         items = [MinedItem(source="d", name="Tardis", disposition="wired")]
-        assert unbacked(items, artifact_backed=["tardis_l2_backfill.json"]) == ()
+        assert unbacked(items, backing={"wired": ["tardis_l2_backfill.json"]}) == ()
         items2 = [MinedItem(source="d", name="Upbit KRW-BTC 1m backfill", disposition="screened")]
-        assert unbacked(items2, artifact_backed=["upbit"]) == ()
+        assert unbacked(items2, backing={"screened": ["upbit"]}) == ()
 
-    def test_killed_and_deferred_are_never_artifact_checked(self) -> None:
-        items = [MinedItem(source="d", name="X", disposition="killed"),
-                 MinedItem(source="d", name="Y", disposition="deferred",
+    def test_killed_IS_artifact_checked_closing_the_cheap_exit(self) -> None:
+        # mass-killing must cost MORE than converting, not less: a kill needs its graveyard entry
+        killed = MinedItem(source="d", name="X", disposition="killed")
+        assert unbacked([killed], backing={}) == (killed,)
+        assert unbacked([killed], backing={"killed": ["x -- mechanism: no counterparty"]}) == ()
+
+    def test_deferred_is_never_artifact_checked(self) -> None:
+        items = [MinedItem(source="d", name="Y", disposition="deferred",
                            deferred_until="2026-09-01")]
-        assert unbacked(items, artifact_backed=[]) == ()
+        assert unbacked(items, backing={}) == ()
 
 
 class TestReport:
     def test_backlog_suspends_mining(self) -> None:
         rep = conversion_report(parse_dispositions(_DOC, source="d"), as_of=_TODAY,
-                                artifact_backed=["upbit", "barrier-rent"])
+                                backing=_BACKING)
         assert rep.suspend_mining is True
         assert rep.n_backlog == 4
         assert "MINING SUSPENDED" in rep.verdict
@@ -134,13 +151,14 @@ class TestReport:
     def test_unbacked_claim_alone_suspends_mining(self) -> None:
         # the cheapest way to clear a backlog must NOT be typing the word "wired"
         items = [MinedItem(source="d", name="Upbit", disposition="wired")]
-        rep = conversion_report(items, as_of=_TODAY, artifact_backed=[])
+        rep = conversion_report(items, as_of=_TODAY, backing={})
         assert rep.suspend_mining is True and rep.n_unbacked == 1
 
     def test_fully_disposed_and_backed_authorises_mining(self) -> None:
         items = [MinedItem(source="d", name="Upbit", disposition="wired"),
                  MinedItem(source="d", name="Kaiko", disposition="killed")]
-        rep = conversion_report(items, as_of=_TODAY, artifact_backed=["upbit_1m.jsonl"])
+        rep = conversion_report(items, as_of=_TODAY,
+                                backing={"wired": ["upbit_1m.jsonl"], "killed": ["kaiko index"]})
         assert rep.suspend_mining is False
         assert "backlog clear" in rep.verdict and rep.n_wired == 1 and rep.n_killed == 1
 
@@ -150,6 +168,142 @@ class TestReport:
 
     def test_counts_are_reported(self) -> None:
         rep = conversion_report(parse_dispositions(_DOC, source="d"), as_of=_TODAY,
-                                artifact_backed=["upbit", "barrier-rent"])
+                                backing=_BACKING)
         assert (rep.n_wired, rep.n_screened, rep.n_killed, rep.n_deferred) == (1, 1, 1, 1)
         assert rep.n_illegal == 2  # undated deferral + unknown verb
+
+
+class TestTierWeighting:
+    def test_defect_closer_is_tier1(self) -> None:
+        assert infer_tier("Tardis ground truth for the diff-verify fence") == 1
+        assert infer_tier("Upbit 1m backfill to 2017") == 1
+
+    def test_prior_on_ingested_axis_is_tier2(self) -> None:
+        assert infer_tier("premium-as-barrier-rent prior") == 2
+        assert infer_tier("Naver attention thing", ingested_axes=["naver"]) == 2
+
+    def test_operator_is_tier4(self) -> None:
+        assert infer_tier("SMF printpage search operator") == 4
+
+    def test_explicit_tag_overrides_the_heuristic(self) -> None:
+        items = parse_dispositions("### 1. some operator [§33: deferred(2099-01-01) tier:1]\n",
+                                   source="d")
+        assert items[0].tier == 1  # heuristic would have said 4
+
+    def test_weighted_backlog_prices_the_expensive_item(self) -> None:
+        cheap = [MinedItem(source="d", name=f"op{i}", tier=4) for i in range(4)]
+        one_t1 = [MinedItem(source="d", name="fence", tier=1)]
+        assert conversion_report(one_t1, as_of=_TODAY).weighted_backlog > \
+            conversion_report(cheap, as_of=_TODAY).weighted_backlog
+
+    def test_priority_inversion_detected(self) -> None:
+        items = [MinedItem(source="d", name="fence", tier=1),  # owes
+                 MinedItem(source="d", name="op", tier=4, disposition="killed")]
+        rep = conversion_report(items, as_of=_TODAY, backing={"killed": ["op"]})
+        assert rep.priority_inversion is True and rep.top_tier_owing == 1
+
+
+class TestKillQuality:
+    def test_kill_spike_is_measured(self) -> None:
+        items = [MinedItem(source="d", name=f"k{i}", disposition="killed") for i in range(4)]
+        items.append(MinedItem(source="d", name="w", disposition="wired"))
+        rep = conversion_report(items, as_of=_TODAY,
+                                backing={"killed": [f"k{i}" for i in range(4)], "wired": ["w"]})
+        assert rep.kill_share == 0.8  # 4 of 5 terminal
+
+
+class TestFlowAndRatchet:
+    def _ledger(self, tmp: Path) -> Path:
+        lg = tmp / "led.jsonl"
+        day = 86400.0
+        base = datetime(2026, 7, 1, tzinfo=UTC)
+        append_snapshot(lg, [MinedItem(source="w.md", name="A"),
+                             MinedItem(source="w.md", name="B")], now=base)
+        append_snapshot(lg, [MinedItem(source="w.md", name="A", disposition="wired"),
+                             MinedItem(source="w.md", name="B")],
+                        now=datetime.fromtimestamp(base.timestamp() + 2 * day, UTC))
+        return lg
+
+    def test_latency_derived_from_snapshots(self, tmp_path: Path) -> None:
+        f = flow_stats(load_ledger(self._ledger(tmp_path)),
+                       now=datetime(2026, 7, 10, tzinfo=UTC))
+        assert f.n_converted == 1 and f.median_latency_days == 2.0
+
+    def test_oldest_owing_is_tracked(self, tmp_path: Path) -> None:
+        f = flow_stats(load_ledger(self._ledger(tmp_path)),
+                       now=datetime(2026, 7, 10, tzinfo=UTC))
+        assert f.oldest_owing_name == "B" and f.oldest_owing_days == 9.0
+
+    def test_corrupt_line_does_not_lose_history(self, tmp_path: Path) -> None:
+        lg = self._ledger(tmp_path)
+        lg.write_text(lg.read_text("utf-8") + "{not json\n")
+        assert len(load_ledger(lg)) == 2
+
+    def test_ratchet_sets_a_record_then_tightens(self, tmp_path: Path) -> None:
+        f = flow_stats(load_ledger(self._ledger(tmp_path)),
+                       now=datetime(2026, 7, 10, tzinfo=UTC))
+        r, v = update_ratchet(Ratchet(), f, conversion_rate=0.5)
+        assert v.improved and r.best_median_latency_days == 2.0 and r.n_records == 1
+        assert "RECORD" in v.verdict
+
+    def test_ratchet_never_loosens_on_a_worse_cycle(self, tmp_path: Path) -> None:
+        good = Ratchet(best_median_latency_days=2.0, best_conversion_rate=0.9)
+        slow = FlowStats(n_snapshots=3, median_latency_days=20.0, p90_latency_days=20.0,
+                         oldest_owing_days=0.0, oldest_owing_name="", n_converted=3,
+                         latency_worsening=False)
+        r, v = update_ratchet(good, slow, conversion_rate=0.1)
+        assert v.regressed is True
+        assert r.best_median_latency_days == 2.0   # record untouched by a bad cycle
+        assert r.best_conversion_rate == 0.9
+
+    def test_regression_measured_against_record_not_last_cycle(self, tmp_path: Path) -> None:
+        # a slow drift downhill must not read as "fine" at every step
+        best = Ratchet(best_median_latency_days=2.0)
+        mid = FlowStats(n_snapshots=3, median_latency_days=3.5, p90_latency_days=4.0,
+                        oldest_owing_days=0.0, oldest_owing_name="", n_converted=3,
+                        latency_worsening=False)
+        _, v = update_ratchet(best, mid, conversion_rate=0.0, regress_mult=1.5)
+        assert v.regressed is True  # 3.5 > 2.0 * 1.5
+
+
+class TestClosedLoop:
+    def _mixed(self, tmp: Path) -> Path:
+        lg = tmp / "l.jsonl"
+        base = datetime(2026, 7, 1, tzinfo=UTC)
+        good = [MinedItem(source="good.md", name=f"g{i}", disposition="wired") for i in range(4)]
+        bad = [MinedItem(source="bad.md", name=f"b{i}") for i in range(4)]
+        append_snapshot(lg, good + bad, now=base)
+        append_snapshot(lg, good + bad,
+                        now=datetime.fromtimestamp(base.timestamp() + 86400, UTC))
+        return lg
+
+    def test_priors_rank_by_measured_conversion(self, tmp_path: Path) -> None:
+        priors = class_priors(load_ledger(self._mixed(tmp_path)))
+        assert priors[0].source == "good.md" and priors[0].conversion_rate == 1.0
+        assert priors[-1].source == "bad.md" and priors[-1].conversion_rate == 0.0
+
+    def test_thin_class_is_omitted_not_shown_at_a_noisy_rate(self, tmp_path: Path) -> None:
+        lg = tmp_path / "t.jsonl"
+        append_snapshot(lg, [MinedItem(source="thin.md", name="x", disposition="wired")])
+        assert class_priors(load_ledger(lg), min_seen=3) == ()
+
+    def test_payload_names_what_to_favour_and_starve(self, tmp_path: Path) -> None:
+        pay = priors_payload(class_priors(load_ledger(self._mixed(tmp_path))))
+        assert "good.md" in pay["favour"] and "bad.md" in pay["starve"]
+
+    def test_ignoring_the_priors_is_a_defect(self, tmp_path: Path) -> None:
+        lg = self._mixed(tmp_path)
+        priors = class_priors(load_ledger(lg))
+        # next cycle piles MORE finds into the starved class
+        append_snapshot(lg, [MinedItem(source="bad.md", name=f"new{i}") for i in range(5)],
+                        now=datetime(2026, 8, 1, tzinfo=UTC))
+        ok, why = feedback_applied(load_ledger(lg), priors, lookback=1)
+        assert ok is False and "IGNORED" in why
+
+    def test_following_the_priors_passes(self, tmp_path: Path) -> None:
+        lg = self._mixed(tmp_path)
+        priors = class_priors(load_ledger(lg))
+        append_snapshot(lg, [MinedItem(source="good.md", name=f"new{i}") for i in range(5)],
+                        now=datetime(2026, 8, 1, tzinfo=UTC))
+        ok, _ = feedback_applied(load_ledger(lg), priors, lookback=1)
+        assert ok is True
