@@ -47,7 +47,65 @@ No prior data-axis watchlist exists (this is this mission's first run). Nothing 
 
 ## SOURCE CARDS (graded; full genealogy in `data/data_universe_map.json`)
 
-### 1. Upbit Historical Market Data portal — grade: needs-monitoring
+### 1. Upbit Historical Market Data portal — grade: needs-legitimacy-review (data itself verified-clean; commercial-use licence is the open question, re-graded 2026-07-25)
+> **RE-VERIFIED 2026-07-25 (EN frontier miner, backlog burn-down). File downloaded, checksum
+> verified, values ground-truthed against the live API. 4 of 5 factual claims in the old card were
+> WRONG. The blocker has MOVED from "is the data real?" to "are we allowed to use it?"**
+>
+> **DIRECT FILE PATHS FOUND** (the old card's "JS shell, no detail" blocker is solved — the real API
+> was extracted from the portal's webpack chunk `sri-v2-chunk-gJZ6LcBG.js`):
+> - Listing API (200, JSON, unauthenticated): `https://crix-data-api.upbit.com/api/v1/market-data/listing?prefix=`
+> - File host (200, application/zip): `https://crix-data.upbit.com/<key>`
+> - Tree: `{candle|trade}/<MARKET>/{daily|monthly}/<interval>/<year>/` → `.zip` + `.zip.checksum`
+> - Intervals: `1s 1m 3m 5m 10m 15m 30m 60m 240m day week month`; **786 markets (KRW 270, BTC 308, USDT 208)**
+> - Integrity: published SHA256 `.checksum` sidecars — one verified, **computed hash matched exactly**
+>
+> **REFUTED CLAIMS (4 of 5):**
+> 1. **"candle depth from 2022-05-01" → WRONG. Actual: 2017-10-24** (Upbit's launch day), confirmed
+>    by Upbit's own guide string and by the 2017 bucket files.
+> 2. **"1m from 2023-07-01" → WRONG, AND IT WAS A TRANSLATION ERROR. 1m goes back to 2017-10-24.**
+>    The source notice says **초봉 = SECOND-bars (1s)**, which someone read as 분봉 (minute-bars).
+>    Only 1s starts 2023-07. Opened the 2017 1m file: 10,232 real minute bars,
+>    2017-10-24T00:00:00 → 2017-10-31T23:59:00. **A 5.7-year understatement of the best free
+>    Korean-venue dataset — caused by one mistranslated Korean character.**
+> 3. The **2022-05** date is real but belongs to a DIFFERENT product — **trade/tick data**, not
+>    candles. The old card conflated the two.
+> 4. **"daily 14:00 KST upload" → WRONG. Observed 01:00 UTC (10:00 KST)**, five consecutive
+>    `lastModified` stamps. Korean **매일 14시 전까지** = "BY 14:00" — a DEADLINE, misread as a
+>    schedule. Cadence is T+1 and complete (205 files for 205 elapsed days of 2026).
+> 5. **"license unstated" → WRONG. It is explicitly and restrictively stated** (see below).
+>
+> **VERIFY-DON'T-TRUST: DONE — the old card's own diff plan is now CLOSED.** `KRW-BTC_candle-day_201710.csv`
+> vs `api.upbit.com/v1/candles/days` → **all 8 overlapping days matched to the last decimal on
+> O/H/L/C/volume.** Public REST candle API works unauthenticated, `count` max 200, `to=` pagination
+> reaches 2017-10-24, self-reported limit `600/min, ~10/sec` for the candles group.
+>
+> **⚠️ LICENSE — CHARTER §13 DECISION REQUIRED, NOT A TECHNICAL GATE. DO NOT BUILD A COLLECTOR YET.**
+> Upbit's "Copyright and usage restrictions" guide states data may be used **"only for personal
+> purposes"** and that the ToS **"prohibit the use of such data for commercial use, redistribution,
+> processing, and sale."** Prohibited acts explicitly include *"Using it for services or platforms to
+> help others make investment decisions"* and *"all actions that involve third-party use, profit
+> generation, or violation of laws... beyond personal use."* Cutting the OTHER way, explicitly
+> PERMITTED: *"Use for non-commercial and private purposes such as developing one's own strategy and
+> backtesting"* and *"storing and utilizing data on a personal PC."* **A prop desk trading its own
+> capital sits exactly on that line. This is a human/legal ruling, not an agent call** — routed to
+> the legitimacy queue, deliberately NOT self-approved.
+> **LICENSED ALTERNATIVE ALREADY IN HAND:** entry 6 confirms **Tardis covers `upbit` since
+> 2021-03-03**, and Tardis's ToS explicitly permits internal research use. For verification/diffing
+> purposes the desk can use the Tardis first-of-month upbit files with a clean licence while the
+> Upbit-portal question is decided.
+>
+> **TWO HAZARDS THE OLD CARD NEVER FLAGGED:**
+> - **SURVIVORSHIP BIAS, STRUCTURAL:** guide states *"Data for delisted coins is not provided."*
+>   Every backtest on this dataset is survivorship-biased by construction — a research-VALIDITY
+>   defect, not a plumbing one. (Compare the desk's own survivorship-aware L1 commit-velocity test.)
+> - **FILES ARE MUTABLE:** *"data for the relevant period may be modified and re-uploaded without
+>   prior notice."* Checksums verify a download; they do NOT pin a version. Archive on ingest.
+> - `www.upbit.com/robots.txt` = `Disallow: /` (allowlists Googlebot/Yeti/etc). The *file* hosts
+>   serve no robots.txt, so a direct-file collector never touches a disallowed host — but note it.
+
+_Superseded original grading below (kept for the record):_
+### 1-OLD. Upbit Historical Market Data portal — grade: needs-monitoring
 - **Provides / replaces:** Korean-venue klines + trade/execution history, CSV/ZIP. Serves the
   regional exchange-native dump target; would substitute for a Korean-venue leg of any consolidated
   vendor feed (Kaiko-class).
@@ -78,7 +136,52 @@ No prior data-axis watchlist exists (this is this mission's first run). Nothing 
   failure modes: non-uniform start dates per data type (do not assume uniform depth).
 - **Grade: verified-clean** (portal existence + categories), pending format/auth confirmation.
 
-### 3. bitFlyer getexecutions + self-recorded candles — grade: needs-monitoring
+### 3. bitFlyer getexecutions + self-recorded candles — grade: needs-legitimacy-review (mechanism verified-clean, destroyed-at-source residual confirmed; ToS host WAF-blocked so licence is unread, re-graded 2026-07-25)
+> **RE-VERIFIED 2026-07-25 (EN frontier miner, backlog burn-down). First-party docs opened AND the
+> live API probed. This entry was graded on ">=4 Japanese blog posts" with no primary source — and
+> the bloggers were RIGHT on all three load-bearing claims. NO refutations. Logged as a case where
+> cross-source consensus earned its keep (the opposite outcome to entries 1/6/8).**
+>
+> - **"NO native candle API" — CONFIRMED** from `lightning.bitflyer.com/docs?lang=en`. Full public
+>   endpoint scrape: `/v1/{markets,getmarkets,ticker,getticker,gethealth,getfundingratehistory,`
+>   `getfundingrate,getexecutions,getcorporateleverage,getboardstate,getboard,executions,board}` —
+>   **zero candle/OHLC/kline endpoints.** Self-bucketing from executions is genuinely the only path.
+> - **"31-day hard lookback" — CONFIRMED THREE WAYS.** (i) Docs: *"As of December 19, 2018, the
+>   execution history obtainable through the before parameter will be limited to the most recent 31
+>   days."* (ii) API error: `{"status":-156,"error_message":"Execution history is limited to the most
+>   recent 31 days."}` (iii) **Empirically binary-searched to the exact execution** (31 iterations):
+>   oldest reachable `id 2646808096` @ `2026-06-24T04:00:02.637`; `before=2646808096` → -156. The wall
+>   is one id wide and exact, and sits **exactly 31 days** back from probe date 2026-07-25.
+> - **ESCAPE-HATCH TESTED AND CLOSED.** The docs scope the limit to `before`, which reads like a
+>   loophole; the `after` parameter was probed at 5 values (1 … 2646000000) and every one returned the
+>   same NEWEST execution (results sort descending; `after` only raises the floor).
+>   **No parameter combination reaches older data — the destroyed-at-source framing is CORRECT.**
+> - **"~500 calls/5min" — CONFIRMED exactly.** Docs: *"Same IP Address: 500 queries per 5 minutes"*;
+>   live headers `x-ratelimit-period: 300`, `x-ratelimit-remaining: 499`. `count` max 500 (1000
+>   silently caps), default 100.
+> - **CAPACITY MATH (new, actionable):** BTC_JPY runs **~51.5k executions/day** (1,597,767 over the
+>   31-day window). Recorder ceiling is 500 calls × 500 exec = 250k executions/5min — **the rate limit
+>   is nowhere near binding.** A full 31-day backfill is ~3,200 calls ≈ **32 minutes**.
+> - **LICENSE: UNCONFIRMED, and here is exactly what blocked it.** `bitflyer.com` (the ToS host) is
+>   unreachable from this VPS — 403 via curl and WebFetch, connection dropped with a browser UA.
+>   Looks like a WAF/geo-block, NOT an auth wall; no login was presented and **no attempt was made to
+>   defeat it** (§13). `lightning.bitflyer.com` and `api.bitflyer.com` serve fine, so it is
+>   host-specific. The docs page carries no data-licensing/redistribution language at all — only a
+>   load restriction. **So: nothing yet prohibits use, but nothing yet permits it either.** Fetch the
+>   ToS from a non-blocked egress to close this field.
+> - **NEXT STEP — TIME-SENSITIVE:** the 31-day wall means **every day of delay is history permanently
+>   destroyed.** Start the forward recorder as soon as the licence field is closed; the ~32-minute
+>   backfill captures the only 31 days that will ever be recoverable.
+> - **LICENCE-CLOSE ATTEMPT #2 FAILED (2026-07-25, session B): Wayback route exhausted.**
+>   `archive.org/wayback/available` empty for all 5 candidate terms URLs (en-jp/ja-jp/api-terms/
+>   terms, lightning docs path); CDX domain queries for `bitflyer.com/{en-jp,ja-jp}/*` return no
+>   terms/policy captures — bitFlyer's JS app was never usefully archived. **Two independent
+>   failed routes now logged (direct = WAF/geo-block; archive = no snapshots). Lifting
+>   condition: fetch the ToS from any non-blocked egress (different IP/organ or human) — one
+>   page-read closes the field and starts the clock on the ~32-minute backfill.**
+
+_Superseded original grading below (kept for the record):_
+### 3-OLD. bitFlyer getexecutions + self-recorded candles — grade: needs-monitoring
 - **Provides / replaces:** Japanese-venue trade executions, self-bucketed into OHLC (bitFlyer has NO
   native candle API). Serves the regional exchange-native target, same "recorder" shape as the desk's
   existing forward-only philosophy.
@@ -93,7 +196,38 @@ No prior data-axis watchlist exists (this is this mission's first run). Nothing 
 - **Grade: needs-monitoring** (mechanism), but logged as a destroyed-at-source residual for anything
   before a recorder start date.
 
-### 4. Bithumb (spot + futures) — grade: UNVERIFIED
+### 4. Bithumb (spot + futures) — grade: **spot VERIFIED-CLEAN-MECHANISM, DEEPEST free Korean-venue minute archive known to the desk (re-graded 2026-07-25); futures lead DEAD**
+> **RE-VERIFIED 2026-07-25 (EN frontier miner, backlog burn-down). Live API probed directly —
+> the "no free bulk archive, paid-Amberdata-only" gap is REFUTED, and by a wide margin.**
+>
+> - **Bithumb's v1 REST API is Upbit-SCHEMA-COMPATIBLE, keyless, and paginates to venue launch:**
+>   `api.bithumb.com/v1/candles/days?market=KRW-BTC&count=N&to=<ISO>` returns Upbit-style JSON
+>   (`candle_date_time_utc`, `opening_price`, …) — the desk's Upbit pagination code shape works
+>   nearly verbatim (option value: one collector pattern, two Korean venues).
+> - **DEPTH, probed empirically:** daily candles reach **2014-01-13** (`to=2013-06-01` → clean
+>   empty `[]`; epoch ≈ Bithumb/Xcoin launch). **1-minute candles reach at least 2014-05-31**
+>   (probed 2019/2017/2015/2014 — all served). That is **4.7 years DEEPER than the Amberdata
+>   paid mirror (2018-10-09)** the old card cited as the only deep source, and **3.5 years deeper
+>   than Upbit's portal (2017-10-24)** — the deepest free KRW minute data known to the desk.
+> - **VERIFY-DON'T-TRUST:** same-venue two-API diff — legacy `public/candlestick/BTC_KRW/24h`
+>   vs v1 for 2026-07-24: **O/H/L/C/volume identical to the last decimal** (93667000/94090000/
+>   93404000/93920000/137.36337738). Deep-history plausibility consistent (2014 ≈ 464k, 2015 ≈
+>   506k, 2016-12 ≈ 1,192k KRW). **HONEST LIMIT: the deep diff is SAME-SOURCE only** — the
+>   planned independent diff via CryptoCompare failed because **min-api.cryptocompare.com now
+>   requires an API key** (Coindesk-era change; ecology shift logged). Kimchi premium makes
+>   cross-venue price diffs unusable as exact checks.
+> - **RATE LIMIT (headers):** `x-ratelimit-burst-capacity: 150, replenish-rate: 150` — a full
+>   1m backfill 2014→now ≈ 6.3M bars ≈ ~32k calls at 200/call: tractable in hours.
+> - **FUTURES LEAD DEAD:** `bithumbfutures.github.io/bithumb-futures-api-doc/` → **404**. The
+>   old card's futures claim now has no living source; retry via `apidocs.bithumb.com` next
+>   cycle.
+> - **OPEN FIELDS:** licence/ToS for bulk collection not yet read (apidocs.bithumb.com was a JS
+>   shell last session — re-probe or fetch its API-terms path before building a collector);
+>   delisted-market survivorship behaviour unknown; whether v1 serves non-KRW quote markets
+>   unprobed.
+>
+_Superseded original grading below (kept for the record):_
+### 4-OLD. Bithumb (spot + futures) — grade: UNVERIFIED
 - **Provides / replaces:** would serve as the second Korean-venue leg alongside Upbit.
 - **Provenance:** search surfaced a Bithumb Futures API docs page (bar/candle history) and a Bithumb
   spot API docs site, but WebFetch of `apidocs.bithumb.com` returned only a navigation shell — no
@@ -110,7 +244,46 @@ No prior data-axis watchlist exists (this is this mission's first run). Nothing 
 - **Grade: destroyed-at-source for this session's search depth** (not a permanent claim — retry with
   narrower Japanese-language queries next cycle per Temporal Rediscovery).
 
-### 6. Tardis vendor-replacement — grade: needs-monitoring (forward) / destroyed-at-source (backfill)
+### 6. Tardis vendor-replacement — grade: **VERIFIED-CLEAN (re-graded 2026-07-25)** — backfill claim REFUTED
+> **RE-VERIFIED 2026-07-25 (EN frontier miner, backlog burn-down). The prior grade was written from
+> search summaries and was WRONG in the desk's DISFAVOUR. Files were actually downloaded this time.**
+> - **OP-008's dependency is SOUND** — the free first-of-month tier is real and primary-confirmed.
+>   Docs (`docs.tardis.dev/downloadable-csv-files`, 200): *"Historical datasets for the first day of
+>   each month are available to download without API key."* Strongest artifact = the API's own 401
+>   body: *"For unauthorized requests, only historical CSV market datasets for the first day of each
+>   month are available."* Negative control: day 02 and day 15 → 401. Day 01 → 200.
+> - **THE "destroyed-at-source (backfill)" GRADE IS REFUTED AS WRITTEN.** Downloaded
+>   `deribit/incremental_book_L2/2020/04/01/BTC-PERPETUAL.csv.gz` → 200, 159,259,129 B,
+>   **19,239,595 rows**, initial snapshot **2,115 price levels (1,149 bid / 966 ask)** — FULL-DEPTH,
+>   tick-by-tick, a complete UTC day, free. Also pulled binance trades 2020-06-01 (826,963 rows),
+>   upbit KRW-BTC 2024-01-01 (111,522 rows), bitflyer FX_BTC_JPY 2024-01-01 (10,491 rows).
+>   The real residual gap is **GRANULARITY (1 day per month), NOT AVAILABILITY** — that is a
+>   materially different and much smaller gap than "destroyed at source".
+> - **SCOPE was understated:** all 9 CSV types free on the 1st (`trades, incremental_book_L2, quotes,
+>   book_snapshot_5/25, book_ticker, derivative_ticker, liquidations, options_chain`), across every
+>   venue tested (binance, binance-futures, deribit, bybit, okex, coinbase, kraken, kucoin, gate-io,
+>   bitstamp, bitget, hyperliquid, mexc, upbit, bitflyer), for **every month 2019-04 → 2026-07**.
+>   ⇒ ~88 monthly full-depth L2 days exist for research the desk believed it did not have.
+> - **NEW FREE DIFF TARGETS for entries 1 and 3:** Tardis covers `upbit` (since 2021-03-03) and
+>   `bitflyer` (since 2019-08-30) — neither entry previously had an identified ground-truth target.
+> - **CORROBORATES entries 4 and 5:** `bithumb` and `coincheck` are ABSENT from Tardis's 62-venue
+>   catalog — independent support for those two honest gaps.
+> - **LICENSE (binds free users; `docs.tardis.dev/legal/terms-of-service`):** internal business /
+>   research / educational use **PERMITTED** (desk diffing is fine). Redistribution barred except
+>   aggregated Derived Data at **≥10-minute** resolution where raw data cannot be reconstructed;
+>   reformatted/filtered/resampled ticks explicitly do NOT count as Derived Data. **Clause 23:
+>   Coinbase venue data must be treated as QUARANTINED** (no third-party display/redistribution, no
+>   use to create financial products). Charter §13 note: free ≠ unrestricted — honour these terms.
+> - **HONEST LIMIT:** OP-008 diffs anchor ONLY on first-of-month dates. A pipeline verified on the
+>   1st is UNVERIFIED for the other ~29 days. The prior wording hid this; state it explicitly.
+> - **DEFECT FOUND ELSEWHERE (flagged, not edited — freeze):** `data/data_registry.json` lists Tardis
+>   at ~$599/mo. **No such tier exists.** Published: Academic $350–650, Solo $700–1,200, Professional
+>   $1,000–2,200, Business $3,000–6,000/mo, $300 min order. Brain should correct the registry.
+> - **NEXT STEP:** run OP-008 for real — diff `binance/trades/2026/07/01/BTCUSDT` against the desk's
+>   own recorder for that date. That is the first true ground-truth diff and it is now unblocked.
+
+_Superseded original grading below (kept for the record):_
+### 6-OLD. Tardis vendor-replacement — grade: needs-monitoring (forward) / destroyed-at-source (backfill)
 - **Provides / replaces:** Tardis.dev tick/L2 history subscription.
 - **Free path:** exchange-native dumps (Binance/OKX/Upbit portals + Bybit bucket) for anything before
   the recorder's start, plus the desk's own mainnet recorder (LIVE, forward-only since 2026-07-17
@@ -123,7 +296,48 @@ No prior data-axis watchlist exists (this is this mission's first run). Nothing 
 - **Residual gap: pre-recorder-start L2 tick diffs are destroyed at source** — no free or paid
   provider reconstructs history the recorder didn't capture forward. Already logged, unchanged.
 
-### 7. Glassnode / CryptoQuant vendor-replacement — grade: UNVERIFIED
+### 7. Glassnode / CryptoQuant vendor-replacement — grade: **VERIFIED FREE PRIMARY FOUND for the metric class (Coin Metrics community), needs-legitimacy-review for production use (CC BY-NC) — re-graded 2026-07-25**
+> **RE-VERIFIED 2026-07-25 (EN frontier miner, backlog burn-down — the inbox #54 handoff, last
+> search-summary-provenance card). The claimed Dune path is key-gated and stays unverified; a
+> BETTER free primary was found, downloaded, and live-probed instead.**
+>
+> - **THE CLAIMED PATH (Dune) IS NOT KEYLESS-VERIFIABLE:** `api.dune.com` → 401 `invalid API Key`
+>   keyless; `dune.com/queries/<id>` → 403 to this VPS. Dune's free tier exists but requires
+>   registration (human step). DEMOTED to secondary path; the claim "Dune replicates CryptoQuant"
+>   remains unverified as written.
+> - **VENDOR APIS 401 KEYLESS** (no free diff target without login): `api.cryptoquant.com` → 401
+>   token-required; `api.glassnode.com` → 401 nginx.
+> - **THE FIND — COIN METRICS COMMUNITY DATA covers the metric CLASS free:**
+>   `raw.githubusercontent.com/coinmetrics/data/master/csv/btc.csv` → 200, **2,482,497 B, 6,352
+>   rows, 2009-01-03 → 2026-05-23**, columns include **FlowInExNtv/FlowInExUSD/FlowOutExNtv/
+>   FlowOutExUSD (aggregate exchange in/out flows → netflow = in − out), SplyExNtv/SplyExUSD
+>   (supply on exchanges), CapMVRVCur (MVRV), CapMrktCurUSD, HashRate, AdrActCnt, SplyCur**.
+>   Flow columns populated 2011-04-24 →; MVRV 2010-07-18 →. `eth.csv` carries the same flow
+>   columns. **Repo is STALE (last commit 2026-05-24) — the live path is the keyless community
+>   API:** `community-api.coinmetrics.io/v4/timeseries/asset-metrics?assets=btc&metrics=
+>   FlowInExNtv,FlowOutExNtv,SplyExNtv` → 200 unauthenticated, current through T+1 (2026-07-20
+>   values observed, status "flash", completion ~01:44-02:50Z next day). Note: metric name
+>   `FlowNetExNtv` is NOT served — request in/out and difference locally.
+> - **⚠️ LICENSE — CC BY-NC 4.0** (repo LICENSE file read; community API terms page redirects —
+>   read the current terms before any ruling). NonCommercial is a REAL question for a prop desk:
+>   using it as a production signal input needs a legitimacy ruling (same queue as Upbit).
+>   Internal verification/diff use during research is the defensible interim scope. NOT
+>   self-approved — routed to the legitimacy queue.
+> - **SCREEN-ON-DISCOVERY DONE IN SAME RUN (charter §26):** the new MVRV axis was Stage-A
+>   screened via `libs.research.axis_screen` → **TIMING-ARTIFACT** (same-period corr 0.416; the
+>   20d-z of a price-numerator ratio is momentum in disguise) — graveyarded with escalation
+>   pre-registration (weekly/orthogonalized construction). Netflow is NOT a new axis (desk
+>   already owns `onchain_flows.py`); CM's series is its **backfill + independent diff target**
+>   — 15 years of history the desk's own collector cannot reach (started 2026-07).
+> - **RESIDUAL GAP (unchanged, honest):** CryptoQuant's real-time granular per-exchange
+>   indicators and Glassnode's curated composite models are NOT replicated; CM community is
+>   aggregate + T+1. The metric CLASS (netflow/exchange-supply/MVRV family) is what's covered.
+> - **NEXT STEP:** diff desk `onchain_flows.py` netflow vs CM FlowIn−FlowOut for the overlapping
+>   window (both exist since 2026-07) — two INDEPENDENT constructions of the same quantity; then
+>   the legitimacy ruling decides production use.
+>
+_Superseded original grading below (kept for the record):_
+### 7-OLD. Glassnode / CryptoQuant vendor-replacement — grade: UNVERIFIED
 - **Provides / replaces:** Glassnode $799/mo, CryptoQuant $799/mo (both already blocked from
   purchase by the desk's free-proxy rule).
 - **Claimed free path:** Dune Analytics community dashboards + self-written SQL over labeled chain
@@ -141,7 +355,36 @@ No prior data-axis watchlist exists (this is this mission's first run). Nothing 
   formulas are not.
 - **Grade: UNVERIFIED.** Do not present as an adopted replacement yet.
 
-### 8. Kaiko vendor-replacement — grade: needs-monitoring (raw ticks) / destroyed-at-source (index methodology)
+### 8. Kaiko vendor-replacement — grade: **needs-monitoring (raw ticks) / RECONSTRUCTABLE (index methodology — re-graded 2026-07-25)**
+> **RE-VERIFIED 2026-07-25 (EN frontier miner, backlog burn-down). Same root defect as entry 6:
+> the grade had been written from search summaries. Two claims refuted.**
+> - **"Index methodology is proprietary and not reconstructable" — REFUTED.** Kaiko is an
+>   **EU-BMR-registered benchmark administrator under AMF supervision**, and BMR/IOSCO status makes
+>   methodology publication effectively mandatory. The rulebook is public and unauthenticated:
+>   `25446524.fs1.hubspotusercontent-eu1.net/hubfs/25446524/Factsheets/Kaiko%20Indices%20Rulebook.pdf`
+>   → 200, application/pdf, 2,527,759 B ("Rulebook — Kaiko Benchmark Indices — April 2025 — v2.0").
+>   `kaiko.com/resources/categories/methodologies` → 200, lists 6 further methodology PDFs.
+>   The outlier rule is stated in plain text on `kaiko.com/indices/reference-rates/crypto-rates`:
+>   **Volume-Weighted Median (VWM) + TWAP, outlier rejection at the 50% cumulative-volume mark,
+>   trades only, no order-book data.** That is reconstructable by the desk's own normalizer.
+> - **"$1,000–2,500/mo" — REFUTED / STRIKE IT.** `kaiko.com/pricing` → **404**; the contracts page
+>   states pricing is custom/quote-only. The figure had zero primary support (the only dollar amount
+>   published anywhere on kaiko.com is a $60/yr research promo). Do not repeat search-derived pricing.
+> - **Free/open surfaces confirmed:** `explorer.kaiko.com` (200, no login — live index levels and
+>   constituents), `instruments.kaiko.com` (200), public Q3-2025 rebalancing report PDF (200).
+>   `github.com/kaikodata` = 12 public repos, but SDKs/protobufs/icons only — **no market data**.
+> - **LICENSE: unstated** on the methodology PDFs — openly published, but no redistribution grant
+>   found. Read them, reconstruct the method, do not rehost the PDFs.
+> - **HONEST LIMITS (what was NOT confirmed):** the rulebook's *interior* text was not independently
+>   re-extracted (no PDF tooling on this box) — the refutation rests on the reference-rates HTML page,
+>   which states the methodology on its own, not on those quotes. **ESMA register not independently
+>   checked** (JS-driven UI), so BMR-registered status rests on Kaiko's own documents — precisely the
+>   single-source failure mode that produced the bad pricing figure. Flagged, not papered over.
+> - **NEXT STEP:** price the published VWM+TWAP rule against the desk's own cross-venue normalizer;
+>   if they agree, Kaiko's core value-add is fully replaced at $0.
+
+_Superseded original grading below (kept for the record):_
+### 8-OLD. Kaiko vendor-replacement — grade: needs-monitoring (raw ticks) / destroyed-at-source (index methodology)
 - **Provides / replaces:** Kaiko consolidated L1/L2 aggregations, $1,000–2,500/mo tiers.
 - **Free path:** the desk's own multi-exchange native recorder + REST/WS collection per venue,
   normalized in-house — Kaiko's core value-add (cross-venue normalization) is exactly what the desk
@@ -154,7 +397,34 @@ No prior data-axis watchlist exists (this is this mission's first run). Nothing 
 - **Grade: needs-monitoring** for raw consolidated ticks (self-collectable); **destroyed-at-source**
   for the exact index methodology.
 
-### 9. Stablecoin mint/burn self-computation — grade: needs-monitoring
+### 9. Stablecoin mint/burn self-computation — grade: **verified-clean (mechanism; integer-exact on-chain reconciliation, 2026-07-25)** — but the registry's RPC chain is DEAD for logs
+> **RE-VERIFIED 2026-07-25 (EN frontier miner, backlog burn-down). The query was actually RUN
+> (ad-hoc research, no code shipped — freeze respected).**
+> - **MECHANISM VERIFIED END-TO-END, EXACTLY:** over a 24h window (blocks 25,602,972→25,610,172),
+>   USDC Transfer-from-0x0 (mints) = 2,404 events / 375,834,141 USDC; Transfer-to-0x0 (burns) =
+>   1,656 events / 564,594,019 USDC; net −188,759,878 vs on-chain `totalSupply()` delta
+>   −188,760,098 — residual 219.879396 USDC **fully explained by the boundary block** (block
+>   `frm` held exactly one 219.8794-USDC mint already inside the "then" supply). **CONVENTION,
+>   load-bearing: supply(now) − supply(then) = events in blocks (then, now] — fromBlock must be
+>   then+1.** After the fix the reconciliation is integer-exact.
+> - **FAILURE MODE CONFIRMED LIVE:** top mint recipient of the day = `0x55fe002a…` (Circle's own
+>   treasury/operator wallet, 300.7M of 375.8M) — mints land treasury-FIRST, so mint events ≠
+>   immediate exchange flow. The card's treasury-shuffle warning is real, not theoretical.
+> - **⚠️ CRITICAL DEFECT FOR THE COLLECTOR PLAN (flagged, not fixed — freeze):**
+>   `data_registry.json`'s `eth_public_rpc` chain (publicnode/llamarpc/cloudflare/ankr) is
+>   **effectively dead for `eth_getLogs`**: publicnode now demands a personal token for
+>   non-recent log queries and intermittently 403s; **ankr requires an API key outright**;
+>   llamarpc is Cloudflare-challenged from this VPS; cloudflare-eth returns internal error.
+>   `balanceOf`-at-latest (what `onchain_flows.py` does) still works — the LIVE collector is
+>   unaffected — but any event-based or historical backfill collector needs a new chain.
+>   **Working keyless getLogs set (probed 2026-07-25): rpc.flashbots.net and rpc.mevblocker.io
+>   (≥700-block ranges), eth-pokt.nodies.app (250), 1rpc.io/eth (50), blastapi (10);
+>   eth.meowrpc.com serves no getLogs at all.**
+> - **USDT NOTE:** USDT's mint mechanics differ (Issue/treasury events, not clean 0x0
+>   transfers) — do NOT copy the USDC construction blind; verify per-token event models.
+>
+_Superseded original grading below (kept for the record):_
+### 9-OLD. Stablecoin mint/burn self-computation — grade: needs-monitoring
 - **Provides / replaces:** CryptoQuant/Glassnode stablecoin supply and mint-burn-flow metrics.
 - **Free path:** filter ERC-20 Transfer events to/from the null address on the canonical USDC
   contract (`0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48`) and the USDT contract, using the desk's
@@ -188,7 +458,34 @@ No prior data-axis watchlist exists (this is this mission's first run). Nothing 
 - **Grade: verified-clean.** See SEARCH-SPACE EXPANSION below — this is a materially new access
   pattern for the desk's on-chain data posture.
 
-### 11. eth-labels (dawsbot/eth-labels) — grade: needs-monitoring
+### 11. eth-labels (dawsbot/eth-labels) — grade: **verified-clean (verification complete 2026-07-25) — dataset DOWNGRADED to supplementary-only: systematic label corruption found**
+> **RE-VERIFIED 2026-07-25 (EN frontier miner, backlog burn-down). The CSV was actually
+> downloaded and cross-diffed — the old card's gentle "labels can mislabel/lag" caveat
+> understates what's wrong.**
+> - **Artifact:** `data/csv/accounts.csv` @ branch **v1** (the default branch is `v1`, NOT
+>   `main` — raw links against main 404; this cost a probe) → 200, **12,262,957 B, 144,379
+>   rows** (86,924 chainId=1), schema `address,chainId,label,nameTag`.
+> - **CROSS-DIFF vs tradezon/cex-list** (`data/ethereum-mainnet.json`, 373 addrs / 23
+>   exchanges): 276/373 present in eth-labels (74%), name-agreement 237/276 with most
+>   disagreements benign taxonomy (HTX≡Huobi rebrand, Paxos-BUSD, Tether-multisig-at-Bitfinex).
+> - **BUT — SYSTEMATIC DEFECTS FOUND:**
+>   (a) **all three canonical Binance wallets are ABSENT** from eth-labels chainId=1: Binance 8
+>   cold `0xF977814e…`, Binance 1 `0x3f5CE5FB…`, Binance 14 `0x28C6c062…` — these are
+>   2018-era-famous addresses, so this is scrape INCOMPLETENESS, not label lag;
+>   (b) **label/nameTag columns contradict each other at scale**: thousands of rows carry label
+>   `bilaxy` with nameTag "Binance Dep: 0x…" (deposit addresses mis-attributed at the label
+>   level); top labels are polluted (bitget 19,067 rows, bilaxy 5,005 — deposit-address dumps).
+> - **On-chain check:** `0x3f5CE5FB…` balance today = 0.17 ETH — Binance rotated away from it,
+>   so for CURRENT flows its absence is survivable; for HISTORICAL netflow reconstruction the
+>   era-correct wallet set is missing entirely.
+> - **VERDICT:** usable as a SUPPLEMENTARY tag source only. **NEVER the primary wallet set for
+>   exchange-netflow construction.** cex-list is cleaner but tiny (hot wallets, 20+ venues incl.
+>   KR). The desk's own `onchain_flows.py` wallet set should be diffed against BOTH — flagged as
+>   the follow-up.
+> - MIT licence confirmed (unchanged). Live re-scraper remains fragile/ToS-adjacent — unchanged.
+>
+_Superseded original grading below (kept for the record):_
+### 11-OLD. eth-labels (dawsbot/eth-labels) — grade: needs-monitoring
 - **Provides / replaces:** 169k+ labeled addresses (115k+ accounts, 54k+ tokens) across
   Ethereum/Base/Arbitrum/Optimism/BSC/Gnosis/Celo. Feeds exchange-netflow / whale-transfer labeling
   (Nansen/Arkham-class labels at $0).
@@ -203,7 +500,21 @@ No prior data-axis watchlist exists (this is this mission's first run). Nothing 
   curation is the ultimate root.
 - **Grade: needs-monitoring.**
 
-### 12. cex-list (tradezon/cex-list) — grade: UNVERIFIED
+### 12. cex-list (tradezon/cex-list) — grade: **verified-clean (content cross-checked 2026-07-25) — STALE-frozen snapshot (last commit 2023-07-27), no licence file: use as REFERENCE, not adopted dependency**
+> **RE-VERIFIED 2026-07-25 (EN frontier miner, in the eth-labels cross-diff):**
+> `data/ethereum-mainnet.json` downloaded (200, 22,482 B) → **373 addresses / 23 exchanges**
+> (incl. the KR venues). Content quality CONFIRMED against eth-labels + spot on-chain checks:
+> it carries the canonical Binance wallets eth-labels is MISSING (0x3f5CE5FB…, 0xF977814e…,
+> 0x28C6c062…) and its labels agreed on 237 of the 276 overlapping addresses (disagreements
+> mostly benign taxonomy: HTX≡Huobi, Paxos-BUSD). **The staleness the old card feared is real
+> but cuts differently than assumed: last commit 2023-07-27 means NO post-2023 wallets, so
+> treat as an era-correct 2023 snapshot** — good for historical reconstruction, must be
+> supplemented for current flows. No LICENSE file (unchanged): raw addresses are facts (not
+> copyrightable), but do not redistribute the file itself. Verdict: the cleaner of the two
+> label sources per-address, the smaller by 230x — use BOTH plus desk-owned wallet curation.
+>
+_Superseded original grading below (kept for the record):_
+### 12-OLD. cex-list (tradezon/cex-list) — grade: UNVERIFIED
 - **Provides / replaces:** would fill the ONE gap eth-labels' Etherscan-only lineage doesn't cover
   directly — curated CEX hot-wallet addresses for 20 exchanges **including Bithumb, Coinone, Korbit**
   (regional Korean coverage).
@@ -325,6 +636,13 @@ here as excluded, not silently dropped (charter s27 "log every negative").
   result lands.
 - **Grade: needs-monitoring** (mechanism-first, single hypothesis, zero promotion authority --
   Stage-A screen only, exactly like every other axis onboarded this way).
+> **VERIFICATION ADDENDUM 2026-07-25 (EN frontier miner):** endpoint LIVE-CONFIRMED —
+> unauthenticated POST to `openapi.naver.com/v1/datalab/search` returns HTTP 401 with NAVER's
+> own error body (`errorCode 024, "Not Exist Client ID"`), exactly the expected shape for a
+> real keyed API. `data/secrets/naver.json` does NOT exist. **Zero technical work remains; the
+> SOLE blocker is a free NAVER Developers key (human step — NAVER account registration).**
+> Surfaced per the bottleneck-surfacing rule: one registration unlocks an already-built,
+> already-wired, already-screen-harnessed collector.
 
 ### EXCLUDED this round (found, explicitly NOT built — logged so nothing is silently dropped)
 - **Baidu Index** — grade: needs-legitimacy-review. Requires a Baidu-account OAuth token refreshed

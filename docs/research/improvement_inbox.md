@@ -391,3 +391,107 @@ afterthought). Feeds objective #2 as a NEW family: pre-register via alpha_econom
 listings tracked, net-of-measured-cost capture must beat the standing book per unit of risk.
 Data need: listing calendar collector (free, exchange announcements) + the recorder's dynamic
 universe already follows the book.
+
+**54. GRADE-PROVENANCE RAIL: no source grade may rest on a search summary (EN frontier miner,
+2026-07-25 — CONFIRMED ROOT CAUSE, not a hypothesis).** Two backlog entries were re-verified by
+actually downloading files/opening primary docs, and BOTH were wrong — in OPPOSITE directions.
+Tardis was graded `destroyed-at-source (backfill)` when full-depth L2 (2,115 price levels,
+19.2M rows/day) is free for the 1st of every month back to 2019-04 — the desk had written off
+~88 months of ground-truth L2 it actually owns access to. Kaiko's index methodology was graded
+`destroyed-at-source` when the rulebook is a public unauthenticated PDF (BMR/IOSCO registration
+makes publication effectively mandatory), and its "$1,000–2,500/mo" pricing had ZERO primary
+support (pricing page is a 404; pricing is quote-only). Both defects share ONE root cause: the
+grade was written from search-engine summaries rather than from the artifact. THE FIX (cheap,
+mechanical): the watchlist card schema gains a required `primary_artifact` field — the URL that
+was actually opened/downloaded plus HTTP code and a byte/row count — and any card lacking it is
+auto-graded UNVERIFIED regardless of how confident the prose sounds. A search summary is a LEAD,
+never evidence. This is the same discipline OP-008 applies to data; it was simply never applied
+to the grades themselves. NOTE THE ASYMMETRY AND WHY IT MATTERS FOR THE GROWTH OBJECTIVE: the
+error direction was DEFENSIVE both times — the desk believed it had LESS free data than it does.
+Pessimistic-unverified grades are not "safe"; they silently shrink the research surface and cost
+compounding exactly like an unjustified sizing clamp. Burn down §7 (Glassnode/CryptoQuant) next:
+it carries the identical search-summary provenance and is the last one flagged.
+
+**55. FILL-RATE DECAY AS THE ALPHA-DECAY DISCRIMINATOR (EN frontier miner, 2026-07-25; source:
+HN 9642325, practitioner `harmegido`, 2015, depth-2 reply — the OP had nothing, the reply had
+this).** When a strategy stops working the desk currently sees ONE number going down (P&L) and
+must guess why. The practitioner diagnostic separates the causes BEFORE re-fitting anything:
+(a) if FILL RATE collapsed (was ~100% filled, now ~30%) you have become too slow / are being
+adversely selected — "the only fills you are getting now are the bad ones"; (b) if fill rate is
+UNCHANGED but P&L died, check whether realized VOL fell off a cliff — the strategy is
+vol-regime-dependent and should be KEPT (vol returns) while diversifying into a low-vol sleeve.
+These two failures demand OPPOSITE responses — (a) is a permanent structural kill, (b) is a
+regime pause you must NOT kill — and the desk has no instrument that distinguishes them, so it
+risks graveyarding a live vol-conditional edge during a quiet regime. IMPLEMENTATION (low
+complexity, uses data the desk already has): log per-sleeve fill-ratio and realized-vol
+alongside P&L, and make the edge-decay lab (#20, reg #24) branch on the pair rather than on P&L
+alone. Directly serves objective #2 by preventing false kills — a wrongly-graveyarded real edge
+is negative discovery, and the graveyard is sacred precisely because entries are permanent.
+
+**56. PREMIUM-AS-BARRIER-RENT PRIOR — a mechanism screen for the whole regional-premium family
+(EN frontier miner era-archaeology, 2026-07-25).** Bitcointalk 2013 documents two independent
+cross-venue premium operations (topics 171349, 330209) whose own operators state the edge was
+RAIL ACCESS, not price inefficiency: the China-premium fund's stated advantage was "as Shenzhen
+citizens we have several bank accounts in Hong Kong", and the MtGox premium's binding constraint
+was payment-processor reserves and withdrawal time — the premium was the market correctly pricing
+withdrawal/insolvency risk, and it resolved to zero when Gox failed in Feb 2014. GENERALIZED
+PRIOR, and it is PREDICTIVE not merely descriptive: **a persistent cross-venue premium's magnitude
+tracks the HEIGHT OF THE CAPITAL-CONTROL / WITHDRAWAL BARRIER around that venue, and it is rent
+collectable only by whoever holds the specific rail access.** This retro-EXPLAINS the desk's own
+regional-premium result set rather than contradicting it: kimchi survives (KRW controls, premium
+std 1.42%) while Japan (std 0.37%, free capital flows), Brazil, Turkey (std 0.23%, arbs globally)
+and Coinbase (USD≈USDT, std 0.06%) all died — the desk found the barrier-height ordering
+empirically without naming the mechanism. TWO USES: (1) SCREEN NEW PREMIUM AXES BY BARRIER HEIGHT
+FIRST — check the venue's capital-control/withdrawal regime BEFORE spending a screen slot; this
+is a free mechanism prior that would have deprioritized JP/BR ahead of testing (a discovery-rate
+win under the mechanism-prior-first duty). (2) STANDING CONSTRAINT ON THE LIVE KIMCHI CLOCK:
+kimchi is legitimate as an INFORMATION/timing signal (which is exactly how the desk runs it) and
+must NEVER be sized as an arb — the era evidence is that the barrier which creates the premium is
+the same barrier that stops you realizing it, and the last people to treat it as riskless were
+holding balances at an insolvent venue. Candidate high-barrier axes to screen next: NGN
+(Nigeria), ARS (Argentina), and any venue under active withdrawal restriction.
+
+**57. PHANTOM-ARB RAIL: side-correctness + depth are preconditions of ANY cross-venue spread screen
+(EN frontier miner era-archaeology, 2026-07-25; source: Bitcointalk topic 14466 "Eliminating
+Arbitrage", 2011, reply #19 by `BkkCoins` — again the DEBUNKING is in the reply, not the OP).**
+The OP shipped a cross-venue arbitrage scanner advertising up to 37.90% opportunities. A reader
+audited it and found two defects that fully explain the signal: **(a) SIDE CONFUSION** — *"Your
+chart says BUY BTC on bitcoinmarket.com at 13.90 then SELL on BitMarket.eu for 12.00 GBP...
+Except on BitMarket.eu 12.00 GBP is the SELL price (ASK) not the BUY price"* — comparing the wrong
+side of two books manufactures a spread that cannot be traded in either direction; and **(b) NO
+DEPTH TERM** — *"this really needs an indicator of depth - how many BTC can be traded... going to
+the effort to pick up a 0.001 BTC trade would be silly"* — a spread at the top of a 0.001-size book
+is not an opportunity. He also flags stale/unrealistic FX marks (*"real market values you could get
+or those ones you never get close to shown on places like Yahoo"*). WHY THIS IS WORTH A RAIL RATHER
+THAN A SHRUG: this is structurally the SAME defect class the desk already caught twice with its own
+hardened harness — bithumb_kr_premium_lookahead (KST-vs-UTC candle misalignment) and
+coinbase_premium_timing (near-zero-variance premium = close-timing artifact). All three are
+"the premium series is not measuring what its name says". The desk has a timestamp-alignment rail
+and a de-contamination rail; it does NOT yet have an explicit **side/depth** rail. PROPOSAL: extend
+the axis_screen artifact gate so any premium or cross-venue spread axis must declare (i) which side
+of each book each leg uses and that they are opposite sides, (ii) the depth available at the quoted
+level, and (iii) that both legs' marks are executable quotes rather than index/mid/FX-reference
+prices. Cheap, mechanical, and it closes the last of the three ways a premium series lies.
+
+**58. FREE-RPC ECOLOGY SHIFT: the registry's eth_public_rpc fallback chain is dead for logs, and
+the working set is MEV-relay RPCs (EN frontier miner, 2026-07-25 — probed, not surmised).** While
+verifying the stablecoin mint/burn mechanism, the entire `data_registry.json` `eth_public_rpc`
+chain (publicnode/llamarpc/cloudflare/ankr) failed for `eth_getLogs`: publicnode now demands a
+personal token for non-recent log ranges and intermittently 403s under repeated calls; **ankr
+requires an API key outright** (free tier gone); llamarpc sits behind a Cloudflare challenge from
+this VPS; cloudflare-eth returns internal errors on getLogs. `balanceOf`-at-latest still works, so
+the LIVE onchain_flows.py collector is unaffected — but any event-based or backfill collector
+built on the registry chain would silently fail. Probed working keyless set for heavy getLogs:
+**rpc.flashbots.net and rpc.mevblocker.io serve ≥700-block ranges keyless** (MEV-protection relays
+proxying full nodes — generous limits because their business is order-flow, not RPC monetization);
+eth-pokt.nodies.app caps at 250, 1rpc.io/eth at 50, blastapi at 10, meowrpc serves none.
+ACTIONS FOR BRAIN: (1) update data_registry.json eth_public_rpc to the probed reality (registry
+currently records a fallback chain that does not fall back); (2) add an RPC capability probe
+(one cheap getLogs per endpoint) to canary_searches.md per charter §21 — this ecology shifts
+every few months and the desk should notice BEFORE a collector breaks; (3) related ecology
+shifts logged same day: CryptoCompare min-api now key-walled (Coindesk era — killed the planned
+independent Bithumb diff) and the coinmetrics/data GitHub repo went stale 2026-05-24 (live path
+is the community API). Two structural notes: free-tier enclosure is a TREND (ankr, CryptoCompare
+both key-walled within months) — the free-frontier axiom holds (replacements found same-day) but
+each enclosure should trigger a targeted rediscovery, not a shrug; and MEV-relay RPCs are a
+structurally-stable free class because their incentive is to RECEIVE traffic.
