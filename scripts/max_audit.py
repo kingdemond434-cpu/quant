@@ -1239,6 +1239,63 @@ def check_findings_tracked(defects) -> None:
             "somewhere is not the same as being driven."))
 
 
+#: TRACKED (docs/, not gitignored data/) -- a coverage floor stored where `rm` resets it is not a
+#: floor. In git, a reset shows in `git status`, in the diff, and in check_dig_uncommitted.
+FINDINGS_RECORD = ROOT / "docs/research/findings_coverage_record.json"
+
+
+def check_findings_ratchet(defects) -> None:
+    """§35(7): coverage holds at 100% and the FLOOR ONLY RISES -- over a scope that cannot shrink.
+
+    A one-off 100% is a snapshot. The law needs a floor, and the floor needs an honest denominator:
+    the cheapest way to reach 100% is not to row the findings but to SHRINK THE DENOMINATOR --
+    exclude a doc from scope, or delete the finding. Same loophole §34 closed for mining (fake a
+    conversion rate by mining less), closed the same way: coverage, open-finding count and
+    docs-scanned all ratchet UP together, and a worse cycle produces a defect rather than a
+    relaxed bar.
+    """
+    from libs.research.finding_registry import (
+        CoverageRatchet,
+        coverage_report,
+        parse_findings,
+        update_coverage_ratchet,
+    )
+
+    gr = ROOT / "docs/GAP_REGISTER.md"
+    if not gr.exists():
+        return
+    findings, n_docs = [], 0
+    for rel in _FINDING_DOCS:
+        p = ROOT / rel
+        if p.exists():
+            n_docs += 1
+            with contextlib.suppress(OSError):
+                findings += parse_findings(p.read_text("utf-8"), source=rel)
+    if not findings:
+        return
+    rep = coverage_report(findings, gr.read_text("utf-8"))
+
+    prior = CoverageRatchet()
+    with contextlib.suppress(Exception):
+        prior = CoverageRatchet.model_validate_json(FINDINGS_RECORD.read_text("utf-8"))
+    new, verdict = update_coverage_ratchet(
+        prior, rep, n_docs=n_docs, at=datetime.now(UTC).isoformat())
+    with contextlib.suppress(OSError):
+        FINDINGS_RECORD.parent.mkdir(parents=True, exist_ok=True)
+        FINDINGS_RECORD.write_text(new.model_dump_json(indent=2), "utf-8")
+
+    if verdict.scope_shrank:
+        defects.append(("findings-scope-shrank", f"§35(7): {verdict.verdict}"))
+    if verdict.coverage_regressed:
+        defects.append(("findings-coverage-regressed", f"§35(7): {verdict.verdict}"))
+    if rep.coverage < 1.0 and not verdict.coverage_regressed:
+        defects.append((
+            "findings-coverage-below-100",
+            f"§35(7): {verdict.verdict} The standing target is 100% -- every finding the desk has "
+            "made reaches the loop that drives it, or is recorded closed. Anything less means the "
+            "cycle is provably blind to work it already knows about."))
+
+
 def check_findings_scope(defects) -> None:
     """The finding-scan's own scope is audited -- a new findings doc must not appear unmonitored.
 
@@ -1801,6 +1858,7 @@ def main() -> None:
                       ("review-risks", check_review_risks_tracked),
                       ("findings-tracked", check_findings_tracked),
                       ("findings-scope", check_findings_scope),
+                      ("findings-ratchet", check_findings_ratchet),
                       ("orphan-code", check_orphan_code),
                       ("mine-conversion", check_mine_conversion),
                       ("mine-flow", check_mine_flow),

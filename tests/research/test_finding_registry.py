@@ -8,11 +8,14 @@ coverage."""
 from __future__ import annotations
 
 from libs.research.finding_registry import (
+    CoverageRatchet,
+    CoverageReport,
     Finding,
     coverage_report,
     is_tracked,
     parse_findings,
     untracked,
+    update_coverage_ratchet,
 )
 
 _PROSE = """# Review
@@ -105,3 +108,47 @@ class TestCoverage:
     def test_no_findings_owes_nothing(self) -> None:
         rep = coverage_report([], "")
         assert rep.coverage == 1.0 and "nothing owed" in rep.verdict
+
+
+def _rep(open_: int, ut: int) -> CoverageReport:
+    return CoverageReport(n_findings=open_, n_settled=0, n_open=open_, n_untracked=ut,
+                          coverage=round(1 - ut / open_, 3) if open_ else 1.0,
+                          untracked_names=(), verdict="")
+
+
+class TestCoverageRatchet:
+    """The floor only rises -- and the denominator cannot be shrunk to fake it."""
+
+    PRIOR = CoverageRatchet(best_coverage=0.83, max_open_findings=71, max_docs_scanned=5)
+
+    def test_deleting_findings_to_reach_100_is_caught(self) -> None:
+        _, v = update_coverage_ratchet(self.PRIOR, _rep(20, 0), n_docs=5)
+        assert v.scope_shrank is True and "SCOPE SHRANK" in v.verdict
+
+    def test_dropping_a_doc_from_scope_is_caught(self) -> None:
+        _, v = update_coverage_ratchet(self.PRIOR, _rep(71, 0), n_docs=3)
+        assert v.scope_shrank is True
+
+    def test_coverage_falling_is_a_regression(self) -> None:
+        _, v = update_coverage_ratchet(self.PRIOR, _rep(80, 25), n_docs=5)
+        assert v.coverage_regressed is True and "REGRESSED" in v.verdict
+
+    def test_honest_100_percent_sets_the_floor(self) -> None:
+        n, v = update_coverage_ratchet(self.PRIOR, _rep(71, 0), n_docs=5)
+        assert n.best_coverage == 1.0 and "100%" in v.verdict
+        assert v.scope_shrank is False and v.coverage_regressed is False
+
+    def test_a_worse_cycle_never_lowers_the_floor(self) -> None:
+        good = CoverageRatchet(best_coverage=1.0, max_open_findings=71, max_docs_scanned=5)
+        n, _ = update_coverage_ratchet(good, _rep(71, 30), n_docs=5)
+        assert n.best_coverage == 1.0            # record untouched by a bad cycle
+        assert n.max_open_findings == 71
+
+    def test_growing_the_scope_counts_as_improvement(self) -> None:
+        n, v = update_coverage_ratchet(self.PRIOR, _rep(90, 15), n_docs=6)
+        assert v.improved is True                # more findings in scope is progress
+        assert n.max_open_findings == 90 and n.max_docs_scanned == 6
+
+    def test_first_run_has_no_floor_to_break(self) -> None:
+        _, v = update_coverage_ratchet(CoverageRatchet(), _rep(10, 2), n_docs=2)
+        assert v.coverage_regressed is False and v.scope_shrank is False

@@ -105,5 +105,10 @@ CONVERSION is. A perfect dig with zero conversions is a FAILED cycle; say so in 
     panel ruling or a chat and NOT rowed is invisible to you forever -- it will never be worked,
     however good it was. When you find something, ROW IT before you move on; when findings-untracked
     fires, row or close each named item. Being written down is not being driven.
+  - COVERAGE IS 100% AND THE FLOOR ONLY RISES. Best-ever coverage, open-finding count and
+    docs-scanned all ratchet UP together in docs/research/findings_coverage_record.json. Do NOT
+    reach 100% by deleting findings or dropping a doc from scope -- that is a blinder desk, it
+    fires findings-scope-shrank, and it is the same denominator trick §34 forbids for mining.
+    The only way up is to row the findings and GROW the scope.
   - Before ending any cycle answer in writing: "Which artifact on disk is different because of
     what was mined?" If the answer is none, the cycle failed.

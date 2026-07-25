@@ -153,3 +153,96 @@ def coverage_report(
                               for f in ut[:max_shown]),
         verdict=verdict,
     )
+
+
+# --------------------------------------------------------------------------------------------
+# THE COVERAGE RATCHET. A one-off 100% is a snapshot; the law needs a floor that only ever rises.
+# And the cheapest way to reach 100% is NOT to row the findings -- it is to SHRINK THE DENOMINATOR:
+# exclude a doc from scope, or delete the finding. That is the same loophole §34 closed for mining
+# (fake a conversion rate by mining less), so it is closed the same way: scope size and finding
+# count ratchet UP alongside coverage, and all three are held against the desk's own best.
+# --------------------------------------------------------------------------------------------
+
+class CoverageRatchet(BaseModel):
+    """Best-ever finding→register coverage AND the scope it was achieved over."""
+
+    model_config = ConfigDict(frozen=True)
+
+    best_coverage: float = 0.0
+    max_open_findings: int = 0   # denominator high-water mark -- scope may never shrink
+    max_docs_scanned: int = 0
+    best_at: str = ""
+    n_records: int = 0
+
+
+class RatchetVerdict(BaseModel):
+    """Did coverage hold, improve, or regress -- and was the denominator honest?"""
+
+    model_config = ConfigDict(frozen=True)
+
+    improved: bool
+    coverage_regressed: bool
+    scope_shrank: bool
+    verdict: str
+
+
+def update_coverage_ratchet(
+    prior: CoverageRatchet,
+    report: CoverageReport,
+    *,
+    n_docs: int,
+    at: str = "",
+) -> tuple[CoverageRatchet, RatchetVerdict]:
+    """Hold coverage against the desk's own best, over a scope that may never shrink.
+
+    THREE things ratchet, because any one alone is gameable:
+      COVERAGE        -- the share of open findings the cycle can see; never allowed to fall.
+      OPEN FINDINGS   -- the denominator. Deleting findings raises coverage arithmetically while
+                        making the desk blinder, so the count is a high-water mark too.
+      DOCS SCANNED    -- excluding a findings doc raises coverage the same dishonest way.
+
+    A worse cycle NEVER relaxes any of the three; it produces a defect instead. That asymmetry is
+    the whole mechanism -- a standard that can fall is a standard the desk drifts past.
+    """
+    cov_record = report.coverage > prior.best_coverage
+    cov_regressed = bool(prior.best_coverage and report.coverage < prior.best_coverage - 1e-9)
+    shrank = bool(
+        (prior.max_open_findings and report.n_open < prior.max_open_findings)
+        or (prior.max_docs_scanned and n_docs < prior.max_docs_scanned)
+    )
+    improved = bool(cov_record or report.n_open > prior.max_open_findings
+                    or n_docs > prior.max_docs_scanned)
+
+    new = CoverageRatchet(
+        best_coverage=max(prior.best_coverage, report.coverage),
+        max_open_findings=max(prior.max_open_findings, report.n_open),
+        max_docs_scanned=max(prior.max_docs_scanned, n_docs),
+        best_at=(at or prior.best_at) if improved else prior.best_at,
+        n_records=prior.n_records + (1 if improved else 0),
+    )
+
+    if shrank:
+        verdict = (
+            f"SCOPE SHRANK: {report.n_open} open findings over {n_docs} docs vs a high-water "
+            f"{prior.max_open_findings} over {prior.max_docs_scanned}. Coverage rises "
+            "arithmetically when findings or docs disappear -- that is a blinder desk, not a "
+            "better one. Restore the scope or record why the items are legitimately closed."
+        )
+    elif cov_regressed:
+        verdict = (
+            f"COVERAGE REGRESSED: {report.coverage:.0%} vs best-ever {prior.best_coverage:.0%}. "
+            "New findings were written without register rows. Row them; the floor only rises."
+        )
+    elif report.coverage >= 1.0:
+        verdict = (
+            f"100% -- all {report.n_open} open finding(s) across {n_docs} docs reach the register. "
+            "Hold it: the bar is now this, permanently."
+        )
+    elif cov_record:
+        verdict = (f"coverage record {report.coverage:.0%} (prev {prior.best_coverage:.0%}) -- "
+                   "floor raised, it never lowers. Target is 100%.")
+    else:
+        verdict = (f"coverage {report.coverage:.0%} holding at the floor. Holding is not reaching: "
+                   f"{report.n_untracked} finding(s) are still invisible to the cycle.")
+    return new, RatchetVerdict(improved=improved, coverage_regressed=cov_regressed,
+                               scope_shrank=shrank, verdict=verdict)
