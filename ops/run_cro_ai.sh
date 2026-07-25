@@ -13,7 +13,16 @@ fi
 export PATH="$HOME/.local/bin:$PATH"
 mkdir -p data/cro_ai_logs
 LOG="data/cro_ai_logs/$(date -u +%Y%m%d_%H%M).log"
-PROMPT="You are the CRO of this autonomous quant desk, now running HEADLESS on the Linux VPS
+# §37 CARRY-OVER: work owed from previous cycles, recorded and handed back. The brain is a
+# metered session -- it dies on quota, and until now the cycle's owed work died with it. This
+# records the current sweep and prints what has been owed, how long, and how many of those
+# sweeps ran with the brain AWAKE (shown the work and skipped) versus lost to an outage.
+# Never blocks: always exits 0, steers PRIORITY only.
+_CARRYOVER="$(.venv/bin/python scripts/carryover_brief.py --record 2>/dev/null || \
+              python3 scripts/carryover_brief.py --record 2>/dev/null || echo '')"
+PROMPT="$_CARRYOVER
+
+You are the CRO of this autonomous quant desk, now running HEADLESS on the Linux VPS
 (systemd, not the laptop). Execute exactly ONE daily research cycle NOW, following your
 constitution below VERBATIM, including the 6-point NON-NEGOTIABLES contract. Before anything,
 read ops/memory/MEMORY.md and the memory files it indexes for prior context and lessons. Work

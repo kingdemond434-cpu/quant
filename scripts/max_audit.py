@@ -1654,9 +1654,42 @@ def check_no_mining_throttle(defects) -> None:
                             "must never be skipped for a conversion backlog."))
 
 
-def main() -> None:
-    defects: list[tuple[str, str]] = []
-    for label, fn in [("organs", check_organs), ("stubs", check_stub_deaths),
+CARRYOVER_LEDGER = ROOT / "data/carryover_sweeps.jsonl"
+
+
+def check_carryover_skipped(defects) -> None:
+    """§37: work the brain was SHOWN and did not do -- distinct from work it never saw.
+
+    The brain is a metered session; it dies on quota, and the cycle's owed work used to die with
+    it. §37 records every sweep and hands the backlog back on return. This check closes the other
+    half: an item that survived sweeps the brain was AWAKE for was not missed, it was SKIPPED --
+    and a plain queue cannot tell the two apart, because a long queue looks identical whether
+    nobody was home or everybody walked past it. Only the second is a defect: blaming the desk for
+    an outage is unfair, and excusing avoidance is expensive.
+    """
+    from libs.ops.carryover import carryover_state, load_sweeps
+
+    sweeps = load_sweeps(CARRYOVER_LEDGER)
+    if len(sweeps) < 3:
+        return  # too little history to distinguish a skip from a fresh item
+    st = carryover_state(sweeps, now=NOW)
+    skipped = st.skipped_items
+    if not skipped:
+        return
+    worst = ", ".join(f"{i.defect_id}({i.seen_by_live_brain}x awake, {i.age_days:.0f}d)"
+                      for i in skipped[:6])
+    defects.append((
+        "carryover-skipped",
+        f"§37: {len(skipped)} item(s) survived sweeps the brain was AWAKE for -- {worst}. "
+        f"{st.n_dead_sweeps} cycle(s) were lost to quota and are NOT the excuse for these: the "
+        "brain ran, was handed the item, and carried it anyway. Do them, or record in the ledger "
+        "why not -- silently carrying an item a third time is what this exists to stop."))
+
+
+#: Every check the sweep runs. Module-level so other organs (§37 carry-over) can
+#: enumerate the same set instead of keeping a second copy that silently drifts.
+CHECKS = [("carryover-skipped", check_carryover_skipped),
+          ("organs", check_organs), ("stubs", check_stub_deaths),
                       ("panel", check_panel), ("coverage", check_coverage),
                       ("findings", check_findings), ("idle", check_idle_capability),
                       ("directives", check_directives), ("verify", check_verify_lag),
@@ -1690,7 +1723,12 @@ def main() -> None:
                       ("bnb-funded", check_bnb_funded),
                       ("self-sufficiency", check_self_sufficiency),
                       ("rs-detect", check_rubberstamp_detector),
-                      ("rs-enforce", check_rubberstamp_enforcement)]:
+                      ("rs-enforce", check_rubberstamp_enforcement)]
+
+
+def main() -> None:
+    defects: list[tuple[str, str]] = []
+    for label, fn in CHECKS:
         _fenced(fn, defects, label)
 
     acks = _j(ACKS, {})

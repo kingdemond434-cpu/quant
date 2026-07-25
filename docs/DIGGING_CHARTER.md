@@ -315,3 +315,18 @@ may carry a blocking early-exit, and the verdict text may not tell a dig to stop
 (4) BOTH HALVES ARE MAXED, NEITHER TRADED. The objective is maximum information surface area
 MULTIPLIED BY maximum extraction efficiency. A rise in either that is bought with a fall in the
 other is a REGRESSION, reported as one, regardless of how the headline rate reads.
+
+
+## 37. CARRY-OVER — WORK OWED SURVIVES AN OUTAGE (2026-07-25, principal directive)
+
+The brain is a metered LLM session. It dies on quota, on session limits, on a bad model route — and when it did, the cycle's owed work died with it: the next cycle started from whatever the sweep happened to report at that instant, with no memory that anything was already owed, for how long, or how many cycles had run past it. DETECTION of the death already existed (`check_stub_deaths` reads the markers out of the logs). The other half did not: the work PILING UP across the outage and being HANDED BACK on return.
+
+(1) EVERY SWEEP IS RECORDED. `data/carryover_sweeps.jsonl` appends what was owed and whether the brain was up to see it. Age and skip-count are DERIVED from consecutive snapshots — never demanded from a human, because a timestamp somebody has to remember to write is a timestamp that goes missing.
+
+(2) THE BRAIN IS HANDED THE BACKLOG AT CYCLE START. `scripts/carryover_brief.py --record` runs first in `ops/run_cro_ai.sh` and prepends a ranked brief to the prompt: what is owed, how old, how many sweeps it survived, and how many of those ran with the brain awake. It ALWAYS exits 0 — it steers PRIORITY, it never blocks a cycle, exactly as §33's conversion directive does after the no-throttle amendment.
+
+(3) THE DISTINCTION THAT MAKES THIS MORE THAN A QUEUE. **LOST TO OUTAGE** — sweeps where the brain died on quota; items accumulated through no fault of the cycle, and the honest response is to hand them back with their true age. **SEEN AND SKIPPED** — sweeps where the brain RAN, was handed the item, and it survived anyway. A plain queue cannot tell these apart, because a long queue looks identical whether nobody was home or everybody walked past it. Only the second is a defect (`carryover-skipped`). Conflating them either punishes the desk for an outage or excuses it for ignoring work — and the second mistake is the expensive one.
+
+(4) THE THIRD CARRY IS THE DEFECT. An item shown to a LIVE cycle twice and still open is not pending, it is avoided. Do it, or write in the ledger why it is not being done. Silently carrying it again is the exact behaviour this clause exists to stop.
+
+(5) HONEST BOUND. This guarantees nothing is LOST and everything is SURFACED, ranked, with its true age — it does not guarantee everything is FIXED IMMEDIATELY. A cycle has finite capacity, some items need a human (keys, VPS access, Tier-3 sign-off), and some need calendar time (forward clocks cannot be hurried). What §37 removes is the excuse: after it, an unfixed item is a visible decision with a reason, never a thing that quietly fell through a gap.
