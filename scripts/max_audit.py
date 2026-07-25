@@ -147,28 +147,82 @@ def _fenced(fn, defects, label):
                         f"{e!r} -- a blind checker is a defect"))
 
 
+# ARTIFACT PARITY (2026-07-25): claude writes deliverables via FILE TOOLS, so a SUCCESSFUL organ
+# run can leave only the shell's ~58-byte start/exit header in its log. Judging production by log
+# size alone made this sweep report 'organ never fired' on demonstrably working organs (the 07-25
+# frontier dig wrote prospector_coverage.md at 13:37 while its log stayed 58b). An organ counts as
+# having produced when its log is substantial OR a declared artifact advanced. Keep in sync with
+# libs/ops/organ_catchup.py ORGANS.
+ORGAN_ARTIFACTS: dict[str, tuple[str, ...]] = {
+    "brain-cycle": ("data/decision_ledger.json", "docs/research/cadence_duties.md"),
+    "dataaxis-dig": ("docs/research/data_axis_watchlist.md", "data/data_universe_map.json"),
+    "prospector-dig": ("docs/research/prospector_watchlist.md",
+                       "docs/research/prospector_coverage.md"),
+    "litminer-dig": ("docs/research/improvement_inbox.md",),
+    "frontier-en": ("docs/research/prospector_coverage.md",
+                    "docs/research/search_operator_library.md"),
+    "frontier-cn": ("docs/research/prospector_coverage.md",),
+    "frontier-ru": ("docs/research/prospector_coverage.md",),
+    "frontier-kr": ("docs/research/prospector_coverage.md",),
+    "frontier-jp": ("docs/research/prospector_coverage.md",),
+    "frontier-ar": ("docs/research/prospector_coverage.md",),
+    "frontier-br": ("docs/research/prospector_coverage.md",),
+}
+
+
+def _artifact_age_h(organ: str) -> float:
+    """Hours since this organ's freshest declared artifact advanced (inf if none)."""
+    best = 0.0
+    for rel in ORGAN_ARTIFACTS.get(organ, ()):
+        try:
+            best = max(best, (ROOT / rel).stat().st_mtime)
+        except OSError:
+            continue
+    return (NOW - best) / 3600 if best else float("inf")
+
+
 def check_organs(defects) -> None:
     for organ, (pat, min_b, max_h) in ORGANS.items():
         ok = [p for p in LOGS.glob(pat) if p.stat().st_size >= min_b]
-        if not ok:
+        art_h = _artifact_age_h(organ)
+        if not ok and art_h > max_h:
             defects.append((f"organ-never-{organ}",
-                            f"{organ}: NO successful run on record (pattern {pat}, "
-                            f"success >= {min_b}b) -- organ has never fired or always dies"))
+                            f"{organ}: no substantial log (pattern {pat}, >= {min_b}b) AND no "
+                            f"declared artifact written in {max_h}h -- organ has never fired or "
+                            "always dies"))
             continue
-        age_h = (NOW - max(p.stat().st_mtime for p in ok)) / 3600
+        if not ok:
+            continue                      # artifacts prove production; stub log is expected
+        age_h = min((NOW - max(p.stat().st_mtime for p in ok)) / 3600, art_h)
         if age_h > max_h:
             defects.append((f"organ-stale-{organ}",
                             f"{organ}: last SUCCESSFUL run {age_h:.0f}h ago "
                             f"(cadence expects <= {max_h:.0f}h) -- silently degraded"))
 
 
+# A real death SAYS so. A ~58b log is the normal signature of a SUCCESSFUL claude organ (it writes
+# deliverables via file tools, so only the shell's start/exit header reaches the log) -- the old
+# size-only rule reported 22 'deaths' in 48h while those organs were writing real artifacts.
+_DEATH_MARKERS = ("out of usage credits", "session limit", "hit your limit",
+                  "issue with the selected model", "auth", "not found", "traceback",
+                  "permission denied", "refusing to send")
+
+
 def check_stub_deaths(defects) -> None:
-    stubs = [p for p in LOGS.glob("*.log")
-             if p.stat().st_size < 600 and (NOW - p.stat().st_mtime) < 48 * 3600]
-    if len(stubs) >= 3:
+    dead = []
+    for p in LOGS.glob("*.log"):
+        try:
+            if p.stat().st_size >= 600 or (NOW - p.stat().st_mtime) >= 48 * 3600:
+                continue
+            txt = p.read_text("utf-8", errors="ignore").lower()
+        except OSError:
+            continue
+        if any(m in txt for m in _DEATH_MARKERS):
+            dead.append(p)
+    if len(dead) >= 3:
         defects.append(("stub-deaths",
-                        f"{len(stubs)} organ runs died at birth in 48h (<600b logs -- "
-                        f"auth/quota deaths): {', '.join(p.name for p in stubs[:6])}"))
+                        f"{len(dead)} organ runs died at birth in 48h (log CONTENT names a quota/"
+                        f"auth/model failure): {', '.join(p.name for p in dead[:6])}"))
 
 
 def check_panel(defects) -> None:
