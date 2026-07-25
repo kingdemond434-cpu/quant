@@ -1034,6 +1034,90 @@ def check_depth_parity(defects) -> None:
             "an archive-thin axis logs its measured ceiling and is exempt."))
 
 
+def check_ci_scope(defects) -> None:
+    """MAP-vs-TERRITORY (audit 3.1): the CI gate must run the whole test tree, not a hardcoded
+    subset. GAP #31's stated blocker (duplicate basenames) expired -- pyproject sets
+    import-mode=importlib and the tree collects cleanly. A gate that runs a handful of named
+    files certifies almost nothing: the ruin path (tests/risk) and the anti-false-positive path
+    (tests/validation) are the largest ungated directories, and freshly-shipped tests land in
+    ungated dirs by default. Parses the pytest ARGUMENT TOKENS (a comment mentioning the tree
+    must not satisfy the check)."""
+    ci = ROOT / "scripts/run_ci.py"
+    tests_dir = ROOT / "tests"
+    if not (ci.exists() and tests_dir.exists()):
+        return
+    body = ci.read_text("utf-8")
+    named = re.findall(r'"(tests/[A-Za-z0-9_./-]*)"', body)
+    if not named:
+        return
+    whole_tree = any(t.rstrip("/") == "tests" for t in named)
+    if whole_tree:
+        return
+    total = sum(1 for _ in tests_dir.rglob("test_*.py"))
+    gated_files = sum(1 for t in named if t.endswith(".py"))
+    gated_dirs = [t for t in named if not t.endswith(".py")]
+    defects.append((
+        "ci-scope-partial",
+        f"run_ci.py gates a HARDCODED subset -- {gated_files} named test files + "
+        f"{len(gated_dirs)} dir(s) {gated_dirs} -- out of ~{total} test files in the tree. The "
+        "ruin path (tests/risk) and anti-false-positive path (tests/validation) are ungated, and "
+        "new tests land ungated by default. Replace the named paths with the tests/ tree: the "
+        "importlib collection blocker (GAP #31) has expired. Freeze-legal, highest-ROI."))
+
+
+def check_review_risks_tracked(defects) -> None:
+    """MAP-vs-TERRITORY (audit 4.1): every risk NAMED in a review doc must inherit the
+    GAP_REGISTER escalation loop (weekly re-rank, 7-day staleness). Nothing reconciles the two,
+    so the desk's two largest structural risks (counterparty concentration, key-person) sit in a
+    doc that is read but never re-ranked."""
+    sr = ROOT / "docs/SYSTEM_REVIEW.md"
+    gr = ROOT / "docs/GAP_REGISTER.md"
+    if not (sr.exists() and gr.exists()):
+        return
+    reg = gr.read_text("utf-8").lower()
+    # the named structural risks the audit flagged as untracked
+    for key, label in (("counterparty", "counterparty/single-venue concentration"),
+                       ("key-person", "principal key-person risk"),
+                       ("per-venue", "per-venue exposure cap")):
+        named_in_review = key in sr.read_text("utf-8").lower()
+        tracked = key.replace("-", " ") in reg or key in reg
+        if named_in_review and not tracked:
+            defects.append(("review-risk-untracked",
+                            f"'{label}' named in SYSTEM_REVIEW, NO GAP_REGISTER row -- "
+                            "it never enters the weekly re-rank/staleness/escalation loop. Add a "
+                            "tracked row so a named risk cannot silently escape the discipline."))
+
+
+def check_orphan_code(defects) -> None:
+    """MAP-vs-TERRITORY (audit 2.x): the desk flags idle DATA/capital/clocks but not idle CODE.
+    Flags library packages that are almost entirely unreachable from any scripts/ entry point --
+    e.g. libs/backtest (the independent cross-check engine) applied to zero strategies. Bounded:
+    reports only near-fully-orphaned packages to stay cheap and low-noise."""
+    libs = ROOT / "libs"
+    scripts = ROOT / "scripts"
+    if not (libs.exists() and scripts.exists()):
+        return
+    # cheap reachability proxy: a package is 'used' if any scripts/ file imports from it
+    entry_text = "\n".join(f.read_text("utf-8", errors="ignore")
+                            for f in scripts.glob("*.py"))
+    suspicious = []
+    for pkg in sorted(d for d in libs.iterdir() if d.is_dir() and (d / "__init__.py").exists()):
+        name = pkg.name
+        mods = [m.stem for m in pkg.glob("*.py") if m.stem != "__init__"]
+        if len(mods) < 3:
+            continue
+        # imported from scripts at all?
+        if f"libs.{name}" in entry_text or f"from libs.{name}" in entry_text:
+            continue
+        suspicious.append(f"{name}({len(mods)} modules)")
+    if suspicious:
+        defects.append(("orphan-code",
+                        "library package(s) imported by NO scripts/ entry point (idle code -- "
+                        f"the class never monitored): {', '.join(suspicious[:6])}. Wire the "
+                        "safeguard (e.g. libs/backtest cross_engine) or retire on the record -- "
+                        "verify against dynamic imports before deleting."))
+
+
 def main() -> None:
     defects: list[tuple[str, str]] = []
     for label, fn in [("organs", check_organs), ("stubs", check_stub_deaths),
@@ -1052,6 +1136,9 @@ def main() -> None:
                       ("prompt-layer", check_prompt_layer),
                       ("gate-optimality", check_gate_optimality),
                       ("data-utilization", check_data_utilization),
+                      ("ci-scope", check_ci_scope),
+                      ("review-risks", check_review_risks_tracked),
+                      ("orphan-code", check_orphan_code),
                       ("depth-parity", check_depth_parity),
                       ("source-backlog", check_source_backlog),
                       ("rejection-shadow", check_rejection_shadow),

@@ -31,6 +31,7 @@ class OrganSpec:
     pattern: str         # log glob under data/cro_ai_logs/
     success_bytes: int   # a log this size or larger counts as a real run (max_audit parity)
     pgrep: str           # substring identifying a live run of this organ
+    period_days: int = 1  # 1 = daily organ; 7 = weekly (widens the owed window)
 
 
 # Priority order: the brain first (it advances clocks + triages), then diggers.
@@ -41,16 +42,24 @@ ORGANS: tuple[OrganSpec, ...] = (
     OrganSpec("prospector", "ops/run_prospector_dig.sh", "prospector_*.log", 1500,
               "run_prospector_dig.sh"),
     OrganSpec("litminer", "ops/run_litminer_dig.sh", "litminer_*.log", 1500, "run_litminer_dig.sh"),
-    OrganSpec("frontier", "ops/run_frontier_rotation.sh", "frontier_*.log", 1500, "run_frontier"),
+    OrganSpec("frontier", "ops/run_frontier_rotation.sh", "frontier_*.log", 1500,
+              "run_frontier"),
+    # WEEKLY: the deep cold audit must also complete once per INTERVAL even if its
+    # Sunday 04:00Z window dies on a session limit -- otherwise it waits a full week.
+    OrganSpec("deep_sweep", "ops/run_deep_sweep.sh", "deep_sweep_*.log", 2500,
+              "run_deep_sweep", period_days=7),
 )
 
 
-def _today_logs(logdir: Path, pattern: str, now: datetime) -> list[Path]:
-    day = now.astimezone(UTC).date()
+def _window_logs(logdir: Path, pattern: str, now: datetime, period_days: int = 1) -> list[Path]:
+    """Logs inside this organ's CURRENT scheduling interval. Daily organs look at today; a
+    weekly organ looks back over its whole period, so a sweep killed on Sunday stays owed all
+    week instead of silently waiting for the next timer."""
+    cut = now.astimezone(UTC).timestamp() - period_days * 86400
     out = []
     for p in logdir.glob(pattern):
         try:
-            if datetime.fromtimestamp(p.stat().st_mtime, tz=UTC).date() == day:
+            if p.stat().st_mtime >= cut:
                 out.append(p)
         except OSError:
             continue
@@ -58,8 +67,9 @@ def _today_logs(logdir: Path, pattern: str, now: datetime) -> list[Path]:
 
 
 def organ_owed(spec: OrganSpec, logdir: Path, now: datetime) -> bool:
-    """Owed = attempted today, no success-sized log today, newest attempt past cooldown."""
-    logs = _today_logs(logdir, spec.pattern, now)
+    """Owed = attempted within this interval, no success-sized log in it, newest
+    attempt past cooldown. Interval = spec.period_days (daily or weekly)."""
+    logs = _window_logs(logdir, spec.pattern, now, spec.period_days)
     if not logs:
         return False                      # timer has not fired yet today -- not ours to start
     if any(p.stat().st_size >= spec.success_bytes for p in logs):
