@@ -20,10 +20,12 @@ from libs.research.mine_conversion import (
     fuzzy_credited,
     infer_tier,
     is_disposed,
+    law_effectiveness,
     ledger_regressed,
     load_ledger,
     parse_dispositions,
     priors_payload,
+    tier_calibration,
     unbacked,
     update_ratchet,
     vanished,
@@ -434,3 +436,51 @@ class TestTamperResistance:
         flow = flow_stats(led)
         r, _ = update_ratchet(Ratchet(), flow, conversion_rate=0.0, ledger=led)
         assert r.n_snapshots == 1 and r.earliest_ts == float(led[0]["ts"])
+
+
+class TestLawSelfAudit:
+    def _ledger(self, tmp: Path, rows: list[list[tuple[str, int, bool]]]) -> Path:
+        lg = tmp / "sa.jsonl"
+        base = datetime(2026, 1, 1, tzinfo=UTC).timestamp()
+        for k, row in enumerate(rows):
+            append_snapshot(lg, [
+                MinedItem(source="d", name=n, tier=t,
+                          disposition="wired" if done else "")
+                for n, t, done in row],
+                now=datetime.fromtimestamp(base + k * 86400, UTC))
+        return lg
+
+    def test_inverted_tier_weights_are_detected(self, tmp_path: Path) -> None:
+        # T1 items never finish while T4 items all do -> the weighting misdirects effort
+        row = ([(f"t1_{i}", 1, False) for i in range(4)]
+               + [(f"t4_{i}", 4, True) for i in range(4)])
+        cal = tier_calibration(load_ledger(self._ledger(tmp_path, [row, row])))
+        assert cal.inverted is True and "INVERTED" in cal.verdict
+
+    def test_healthy_tiers_pass(self, tmp_path: Path) -> None:
+        row = ([(f"t1_{i}", 1, True) for i in range(4)]
+               + [(f"t4_{i}", 4, False) for i in range(4)])
+        cal = tier_calibration(load_ledger(self._ledger(tmp_path, [row, row])))
+        assert cal.inverted is False
+
+    def test_thin_history_is_not_a_defect(self, tmp_path: Path) -> None:
+        cal = tier_calibration(load_ledger(self._ledger(tmp_path, [[("a", 1, False)]])))
+        assert cal.inverted is False and "insufficient" in cal.verdict
+
+    def test_law_is_not_judged_too_early(self, tmp_path: Path) -> None:
+        eff = law_effectiveness(load_ledger(self._ledger(tmp_path, [[("a", 3, False)]])))
+        assert eff.conclusive is False and "too early" in eff.verdict
+
+    def test_flat_conversion_indicts_the_law(self, tmp_path: Path) -> None:
+        # 12 snapshots, nothing ever converts -> §33 is ceremony and must say so
+        rows = [[(f"x{i}", 3, False) for i in range(3)] for _ in range(12)]
+        eff = law_effectiveness(load_ledger(self._ledger(tmp_path, rows)))
+        assert eff.conclusive and eff.improving is False
+        assert "ceremony with good telemetry" in eff.verdict
+
+    def test_rising_conversion_clears_the_law(self, tmp_path: Path) -> None:
+        early = [[(f"e{i}", 3, False) for i in range(3)] for _ in range(6)]
+        late = [[(f"l{i}", 3, True) for i in range(3)] for _ in range(6)]
+        eff = law_effectiveness(load_ledger(self._ledger(tmp_path, early + late)))
+        assert eff.conclusive and eff.improving is True
+        assert "the law is working" in eff.verdict

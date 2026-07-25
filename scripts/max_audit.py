@@ -1392,10 +1392,12 @@ def check_mine_flow(defects) -> None:
         class_priors,
         feedback_applied,
         flow_stats,
+        law_effectiveness,
         ledger_regressed,
         load_ledger,
         load_ratchet,
         priors_payload,
+        tier_calibration,
         update_ratchet,
     )
 
@@ -1444,6 +1446,25 @@ def check_mine_flow(defects) -> None:
             f"§33: conversion latency is TRENDING worse (median {flow.median_latency_days:.1f}d, "
             "recent half >1.5x the earlier half). Catch it as a trend, before it becomes a "
             "regression against the record."))
+    # THE LAW HELD TO ITS OWN STANDARD -- everything else here pressures the desk; these two ask
+    # whether §33's own machinery earns its place, which the no-ceiling axiom demands of anything
+    # claiming to be at max.
+    cal = tier_calibration(ledger)
+    if cal.inverted:
+        defects.append((
+            "mine-tier-miscalibrated",
+            f"§33 self-audit: {cal.verdict} The T1=8..T4=1 weighting is an ASSERTION, and measured "
+            "outcomes contradict it -- priority enforcement is currently steering effort toward "
+            "work that does not finish. Re-tier the affected finds (explicit `tier:N`) or fix the "
+            "inference keywords; do not leave a weighting in force that the evidence rejects."))
+    eff = law_effectiveness(ledger)
+    if eff.conclusive and not eff.improving:
+        defects.append((
+            "mine-law-ineffective",
+            f"§33 self-audit: {eff.verdict} A law is not exempt from the evidence standard it "
+            "enforces. Trend, not counterfactual (no pre-§33 baseline exists) -- but flat is flat. "
+            "Either the gate is not biting or conversion is bottlenecked elsewhere; establish "
+            "which before adding more enforcement on top."))
     ok, why = feedback_applied(ledger, priors)
     if not ok:
         defects.append((

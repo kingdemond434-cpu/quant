@@ -703,3 +703,138 @@ def ledger_regressed(ratchet: Ratchet, ledger: Sequence[LedgerRow]) -> tuple[boo
         return True, ("the ledger's earliest snapshot moved forward in time: history was "
                       "rewritten, not appended")
     return False, "ledger intact"
+
+
+# --------------------------------------------------------------------------------------------
+# THE LAW HELD TO ITS OWN STANDARD. Everything above pressures the DESK. Nothing above asks
+# whether §33's own machinery is any good -- and a law exempt from the evidence standard it
+# enforces is exactly the hypocrisy the NO-CEILING AXIOM forbids ("we are at max" is a claim
+# requiring evidence, never a default). Two self-audits close that: the tier weights must be
+# shown to track reality, and the law must be shown to have improved conversion at all.
+# --------------------------------------------------------------------------------------------
+
+class TierCalibration(BaseModel):
+    """Measured behaviour per tier -- are the weights tracking reality or just asserted?"""
+
+    model_config = ConfigDict(frozen=True)
+
+    per_tier: Mapping[int, tuple[int, float, float]]  # tier -> (n, conversion_rate, median_days)
+    inverted: bool
+    verdict: str
+
+
+def tier_calibration(
+    ledger: Sequence[LedgerRow], *, min_per_tier: int = 4
+) -> TierCalibration:
+    """Check the TIER WEIGHTS against measured outcomes instead of trusting the heuristic.
+
+    The weighting (T1=8 .. T4=1) is an ASSERTION: it claims Tier-1 finds are the high-ROI ones.
+    If in practice Tier-1 items convert less often and slower than Tier-4 items, the weights are
+    not merely useless -- they are actively misdirecting effort toward the wrong work while
+    reporting that priority is being enforced. This does not silently re-learn the mapping (a
+    keyword heuristic quietly rewritten by its own outcomes is unauditable); it DETECTS that the
+    mapping is wrong and demands the tiering be corrected, which is the honest version of learning
+    when the sample is this thin.
+    """
+    first: dict[str, float] = {}
+    conv: dict[str, float] = {}
+    tier_of: dict[str, int] = {}
+    for row in ledger:
+        ts = float(row["ts"])
+        for it in row["items"]:
+            n = str(it.get("n", ""))
+            if not n:
+                continue
+            first.setdefault(n, ts)
+            tier_of.setdefault(n, int(it.get("t", 3) or 3))
+            if it.get("d") in _TERMINAL and n not in conv:
+                conv[n] = ts
+    per: dict[int, tuple[int, float, float]] = {}
+    for tier in (1, 2, 3, 4):
+        names = [n for n, t in tier_of.items() if t == tier]
+        if not names:
+            continue
+        done = [n for n in names if n in conv]
+        lat = sorted((conv[n] - first[n]) / 86400.0 for n in done)
+        per[tier] = (len(names), round(len(done) / len(names), 3),
+                     round(statistics.median(lat), 2) if lat else -1.0)
+
+    hi, lo = per.get(1), per.get(4)
+    enough = bool(hi and lo and hi[0] >= min_per_tier and lo[0] >= min_per_tier)
+    inverted = bool(enough and hi and lo and hi[1] < lo[1])
+    if not enough:
+        verdict = "insufficient per-tier history to judge the weights -- not a defect yet"
+    elif inverted and hi and lo:
+        verdict = (f"tier weights INVERTED: T1 converts at {hi[1]:.0%} vs T4 at {lo[1]:.0%}. The "
+                   "weighting is steering effort toward work that does not finish.")
+    else:
+        verdict = "tier weights track measured outcomes"
+    return TierCalibration(per_tier=per, inverted=inverted, verdict=verdict)
+
+
+class LawEffectiveness(BaseModel):
+    """Has §33 actually improved conversion, or is it ceremony with good telemetry?"""
+
+    model_config = ConfigDict(frozen=True)
+
+    n_snapshots: int
+    early_rate: float
+    late_rate: float
+    early_latency_days: float
+    late_latency_days: float
+    improving: bool
+    conclusive: bool
+    verdict: str
+
+
+def law_effectiveness(
+    ledger: Sequence[LedgerRow], *, min_snapshots: int = 12
+) -> LawEffectiveness:
+    """Compare the FIRST third of the ledger against the LAST third: is conversion getting better?
+
+    HONEST LIMIT, stated rather than buried: there is no control group and no pre-§33 baseline
+    (the ledger begins with the law), so this is a TREND, not a counterfactual -- it cannot prove
+    §33 caused an improvement, only that one did or did not happen while §33 was in force. That is
+    still the strongest evidence available, and it is strictly better than the alternative the desk
+    would otherwise use, which is assuming the law works because it was written carefully. If
+    conversion is flat or worse after enough cycles, §33 is ceremony with good telemetry and must
+    say so about itself in those words.
+    """
+    n = len(ledger)
+    if n < min_snapshots:
+        return LawEffectiveness(
+            n_snapshots=n, early_rate=0.0, late_rate=0.0, early_latency_days=-1.0,
+            late_latency_days=-1.0, improving=False, conclusive=False,
+            verdict=f"{n}/{min_snapshots} snapshots -- too early to judge the law itself")
+    third = max(1, n // 3)
+
+    def _window(rows: Sequence[LedgerRow]) -> tuple[float, float]:
+        first: dict[str, float] = {}
+        conv: dict[str, float] = {}
+        for row in rows:
+            ts = float(row["ts"])
+            for it in row["items"]:
+                nm = str(it.get("n", ""))
+                if not nm:
+                    continue
+                first.setdefault(nm, ts)
+                if it.get("d") in _TERMINAL and nm not in conv:
+                    conv[nm] = ts
+        rate = (len(conv) / len(first)) if first else 0.0
+        lat = sorted((conv[k] - first[k]) / 86400.0 for k in conv)
+        return round(rate, 3), (round(statistics.median(lat), 2) if lat else -1.0)
+
+    e_rate, e_lat = _window(ledger[:third])
+    l_rate, l_lat = _window(ledger[-third:])
+    faster = l_lat >= 0 and e_lat >= 0 and l_lat < e_lat
+    improving = bool(l_rate > e_rate or faster)
+    verdict = (
+        f"conversion rate {e_rate:.0%} -> {l_rate:.0%}, median latency {e_lat:.1f}d -> {l_lat:.1f}d"
+        + (" -- the law is working" if improving else
+           " -- NO improvement while §33 has been in force. It is ceremony with good telemetry: "
+           "either the enforcement is not biting or the bottleneck is elsewhere. Find out which.")
+    )
+    return LawEffectiveness(
+        n_snapshots=n, early_rate=e_rate, late_rate=l_rate,
+        early_latency_days=e_lat, late_latency_days=l_lat,
+        improving=improving, conclusive=True, verdict=verdict)
