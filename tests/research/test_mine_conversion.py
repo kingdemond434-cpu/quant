@@ -147,12 +147,21 @@ class TestUnbacked:
 
 
 class TestReport:
-    def test_backlog_suspends_mining(self) -> None:
+    def test_backlog_demands_conversion_first_but_never_throttles_mining(self) -> None:
+        """AMENDED 2026-07-25 (principal directive): a backlog must NEVER stop, pause, or reduce
+        mining -- unprocessed data is unrealized option value and living-web sources decay, so a
+        suspended miner permanently loses that day's information. The backlog preempts the dig's
+        PRIORITY (convert first, highest tier first) and the dig then keeps mining in the SAME
+        run. `suspend_mining` survives only as a reporting signal for the max_audit defects; the
+        verdict text must instruct conversion-then-continue, never 'catalogue nothing new'."""
         rep = conversion_report(parse_dispositions(_DOC, source="d"), as_of=_TODAY,
                                 backing=_BACKING)
-        assert rep.suspend_mining is True
+        assert rep.suspend_mining is True          # reporting signal only -- see mine_gate exit 0
         assert rep.n_backlog == 4
-        assert "MINING SUSPENDED" in rep.verdict
+        assert "CONVERSION FIRST" in rep.verdict
+        assert "CONTINUE MINING" in rep.verdict
+        assert "never throttled" in rep.verdict
+        assert "catalogue nothing new" not in rep.verdict
 
     def test_unbacked_claim_alone_suspends_mining(self) -> None:
         # the cheapest way to clear a backlog must NOT be typing the word "wired"

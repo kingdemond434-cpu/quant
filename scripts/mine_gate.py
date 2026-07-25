@@ -60,7 +60,8 @@ def main() -> int:
         print(f"[§33] GATE-ERROR {type(exc).__name__}: {exc} -- failing OPEN; "
               "max_audit.check_mine_gate will raise this as a defect")
         return 0
-    print(f"[§33] {'SUSPENDED' if suspended else 'AUTHORISED'} -- {reason}")
+    # Label matches the law: the backlog steers PRIORITY, it never suspends mining.
+    print(f"[§33] {'CONVERT-FIRST' if suspended else 'BACKLOG-CLEAR'} -- {reason}")
     # ALWAYS 0: mining is never throttled (principal 2026-07-25). The backlog steers the
     # dig's PRIORITY, never its existence -- unprocessed data is unrealized option value and
     # living-web sources decay, so acquisition is never cut to meet extraction. `suspended`

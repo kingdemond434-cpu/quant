@@ -313,10 +313,12 @@ def conversion_report(
         verdict = "no carded finds parsed -- nothing owed"
     elif suspend:
         verdict = (
-            f"MINING SUSPENDED -- {len(bl)} item(s) owe a disposition (weighted {weighted}, "
+            f"CONVERSION FIRST -- {len(bl)} item(s) owe a disposition (weighted {weighted}, "
             f"highest tier owing T{top_tier or '-'}), {len(ub)} claim conversion with NO backing "
-            "artifact. Reassign the ENTIRE dig slot to conversion, highest tier first; catalogue "
-            "nothing new until the backlog clears."
+            "artifact. Spend this run's FIRST effort disposing of them, highest tier first "
+            "(wired/screened/killed-with-mechanism/deferred-with-a-date), THEN CONTINUE MINING "
+            "AND EXHAUSTING NEW GROUND IN THIS SAME RUN. Mining is never throttled, paused, or "
+            "reduced -- acquisition keeps growing while extraction scales up to meet it."
         )
     else:
         verdict = f"backlog clear -- all {len(items)} carded find(s) disposed; mining authorised"
