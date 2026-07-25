@@ -51,3 +51,30 @@ def test_pick_prioritizes_brain_and_skips_running(tmp_path: Path) -> None:
     # brain running -> next owed organ is picked instead
     picked2 = pick_organ(tmp_path, NOW, lambda pat: pat == "run_cro_ai.sh")
     assert picked2 is not None and picked2.name == "dataaxis"
+
+
+def test_fresh_artifact_counts_as_production_despite_stub_log(tmp_path):
+    """REGRESSION (2026-07-25): claude writes deliverables via FILE TOOLS, so a SUCCESSFUL dig can
+    leave only the shell's ~58-byte start/exit header in its log. Judging success by log size alone
+    made max_audit report false 'never fired' defects and made catchup re-fire completed organs
+    (frontier_en ran 3x on 07-25 for exactly this reason). A declared artifact written inside the
+    interval must count as production."""
+    from libs.ops.organ_catchup import OrganSpec, organ_owed
+
+    logdir = tmp_path / "data" / "cro_ai_logs"
+    logdir.mkdir(parents=True)
+    stub = logdir / f"dataaxis_{NOW.strftime('%Y%m%dT%H%M')}.log"
+    stub.write_text("=== dataaxis start ===\n")          # attempted, stub-sized log
+
+    spec = OrganSpec("dataaxis", "ops/run_dataaxis_dig.sh", "dataaxis_*.log", 1500,
+                     "run_dataaxis_dig.sh", artifacts=("docs/research/data_axis_watchlist.md",))
+
+    # no artifact yet -> genuinely owed (past cooldown handled by the stub's fresh mtime being old
+    # enough is not guaranteed, so assert only the artifact effect below)
+    art = tmp_path / "docs" / "research"
+    art.mkdir(parents=True)
+    (art / "data_axis_watchlist.md").write_text("session note: 2 sources verified\n")
+
+    assert organ_owed(spec, logdir, NOW) is False, (
+        "a fresh declared artifact must count as production even when the log is a stub"
+    )
