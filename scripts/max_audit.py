@@ -1143,6 +1143,129 @@ def check_review_risks_tracked(defects) -> None:
                             "tracked row so a named risk cannot silently escape the discipline."))
 
 
+#: Every doc where a finding can be WRITTEN. The register is where findings are WORKED; anything
+#: written here and absent there is invisible to the daily cycle.
+_FINDING_DOCS = (
+    "docs/SYSTEM_REVIEW.md",
+    "docs/BLIND_SPOT_AUDIT.md",
+    "docs/research/micro_audit_inbox.md",
+    "docs/research/improvement_inbox.md",
+    "docs/research/panel_rulings.md",
+)
+#: Finding-bearing docs deliberately out of scope, with the reason -- so the scope check can tell
+#: "consciously excluded" from "quietly unmonitored".
+_FINDING_DOCS_EXCLUDED = {
+    "docs/research/panel_inbox.md": "raw panel transcript -- rulings are the distilled output",
+    "docs/research/feed_inbox.md": "literature feed, not desk findings",
+    "docs/research/data_axis_watchlist.md": "source cards -- governed by §33 dispositions",
+    "docs/research/discovery_hypotheses.md": "hypotheses -- governed by §33 / the trial ledger",
+    "docs/research/literature_coverage.md": "coverage log -- governed by §33",
+    "docs/POST_GATE0_MANIFEST.md": "deferred builds -- driven by check_post_gate0_activation",
+    "docs/research/DAILY_INTEGRITY_WATCH.md": "standing checklist, not findings",
+    "docs/research/FREE_DATA_ADDENDA_BCD.md": "source catalogue -- source cards, not findings",
+    "docs/research/FREE_DATA_ALTERNATIVES_SPEC.md": "spec document, not findings",
+    "docs/research/GAP14_ROOTCAUSE.md": "forensic writeup for a gap row that already exists",
+    "docs/research/GAP32_RESIZE_UP_SPEC.md": "spec for GAP #32 -- the row is the tracked item",
+    "docs/research/GAP19_RECONCILE_GUARD_SPEC.md": "spec for GAP #19 -- the row is tracked",
+    "docs/research/CRISIS_AUTOPSY_SPEC.md": "spec document, not findings",
+    "docs/research/MAX_SURVIVORS_PROGRAM.md": "programme design, not findings",
+    "docs/research/HYPOTHESIS_MAX_SPEC.md": "spec document, not findings",
+    "docs/research/SPECIALIZED_SEATS_SPEC.md": "spec document, not findings",
+    "docs/research/BYBIT_SECOND_VENUE_SPEC.md": "spec document, not findings",
+    "docs/research/DISCOVERY_TELEMETRY_SPEC.md": "spec document, not findings",
+    "docs/research/NLP_NORMALIZATION_SPEC.md": "spec document, not findings",
+    "docs/research/PROSPECTOR_SPEC.md": "spec document, not findings",
+    "docs/research/LITERATURE_SPEC.md": "spec document, not findings",
+    "docs/research/GROWTH_UNLOCK_LADDER.md": "ladder definition, not findings",
+    "docs/research/TWO_STAGE_DISCOVERY_LAW.md": "law text, not findings",
+    "docs/research/DIGGER_TARGET_ROADMAP.md": "target list -- §33 governs what it yields",
+    "docs/research/STRUCTURAL_EDGE_IDEAS.md": "idea list -- §33 / trial ledger governs",
+    "docs/research/AXIS_PREREGISTRATIONS.md": "pre-registrations -- the trial ledger governs",
+    "docs/DIGGING_CHARTER.md": "the law itself",
+    "docs/OPERATOR_COMPACT.md": "operator agreement, not findings",
+    "docs/GO_LIVE_CHECKLIST.md": "checklist -- gated by GAP #2",
+    "docs/EVIDENCE_GATED_PROGRESSIONS.md": "progression definitions, not findings",
+    "docs/KILL_THESIS.md": "kill criteria, not findings",
+    "docs/REPO_EXTRACTION.md": "adoption record, not findings",
+    "docs/RD_AGENT_AUDIT.md": "historical audit -- superseded by SYSTEM_REVIEW",
+    "docs/institutional_knowledge.md": "knowledge base, not an obligation list",
+    "docs/desk_digest.md": "generated digest",
+    "docs/graveyard.md": "terminal by construction",
+    "docs/PROJECT_HANDOFF.md": "handoff doc, not findings",
+    "docs/HOME.md": "index",
+    "docs/DASHBOARD.md": "generated status",
+    "docs/LIVE_CONNECTOR_SPEC.md": "spec for GAP #2 -- the row is the tracked item",
+    "docs/research/oss_benchmark.md": "external benchmark log -- adoption_queue governs uptake",
+    "docs/research/prospector_watchlist.md": "prospector cards -- governed by §33 dispositions",
+}
+
+
+def check_findings_tracked(defects) -> None:
+    """EVERY FINDING MUST REACH THE LOOP THAT DRIVES IT (§35).
+
+    The register is the desk's only organ that DRIVES work: weekly re-rank, 7-day staleness,
+    escalation. Every other doc is a place findings are WRITTEN. The daily cycle acts on the
+    register, so a finding absent from it is not merely slow -- it is invisible, and however
+    carefully it was found it will never be worked.
+
+    Generalises check_review_risks_tracked, which enforced this for THREE HARDCODED KEYS and so
+    could only ever catch risks somebody remembered to hardcode -- the same brittleness one level
+    up. Matching is deliberately generous (one distinctive token is enough): a false accept is
+    cheap, a false alarm trains the reader to ignore the check, and an ignored check is worse than
+    no check because it looks like coverage.
+    """
+    from libs.research.finding_registry import coverage_report, parse_findings
+
+    gr = ROOT / "docs/GAP_REGISTER.md"
+    if not gr.exists():
+        return
+    register = gr.read_text("utf-8")
+    findings = []
+    for rel in _FINDING_DOCS:
+        p = ROOT / rel
+        if p.exists():
+            with contextlib.suppress(OSError):
+                findings += parse_findings(p.read_text("utf-8"), source=rel)
+    if not findings:
+        return
+    rep = coverage_report(findings, register)
+    if rep.n_untracked:
+        defects.append((
+            "findings-untracked",
+            f"§35: {rep.n_untracked}/{rep.n_open} open finding(s) have NO GAP_REGISTER trace "
+            f"({rep.coverage:.0%} coverage) -- {'; '.join(rep.untracked_names)}. The daily cycle "
+            "works the register; a finding that never lands there is invisible to it forever. "
+            "Add a row (mechanism, trigger, owner) or record it as closed -- being written down "
+            "somewhere is not the same as being driven."))
+
+
+def check_findings_scope(defects) -> None:
+    """The finding-scan's own scope is audited -- a new findings doc must not appear unmonitored.
+
+    Same shape as check_mine_scope: a fixed doc list is the check's blast radius, and a finding
+    written outside it evades §35 with no code change and no diff. Every docs/ markdown carrying
+    numbered findings must be in scope or excluded WITH A REASON; never decided by omission.
+    """
+    from libs.research.finding_registry import parse_findings
+
+    rogue = []
+    for p in sorted((ROOT / "docs").rglob("*.md")):
+        rel = p.relative_to(ROOT).as_posix()
+        if rel in _FINDING_DOCS or rel in _FINDING_DOCS_EXCLUDED or rel.endswith("GAP_REGISTER.md"):
+            continue
+        with contextlib.suppress(OSError):
+            n = len(parse_findings(p.read_text("utf-8"), source=rel))
+            if n >= 5:  # a handful of numbered lines is prose; a pile of them is a findings doc
+                rogue.append(f"{p.name}({n})")
+    if rogue:
+        defects.append((
+            "findings-scope-unmonitored",
+            "§35 scope: doc(s) carrying numbered findings outside the scan -- "
+            f"{', '.join(rogue[:6])}. Findings written there owe no register row and are "
+            "invisible to §35 -- a bypass needing no code change and leaving no diff. Add to "
+            "_FINDING_DOCS or _FINDING_DOCS_EXCLUDED with a stated reason."))
+
+
 def check_orphan_code(defects) -> None:
     """MAP-vs-TERRITORY (audit 2.x): the desk flags idle DATA/capital/clocks but not idle CODE.
     Flags library packages that are almost entirely unreachable from any scripts/ entry point --
@@ -1676,6 +1799,8 @@ def main() -> None:
                       ("no-mining-throttle", check_no_mining_throttle),
                       ("ci-scope", check_ci_scope),
                       ("review-risks", check_review_risks_tracked),
+                      ("findings-tracked", check_findings_tracked),
+                      ("findings-scope", check_findings_scope),
                       ("orphan-code", check_orphan_code),
                       ("mine-conversion", check_mine_conversion),
                       ("mine-flow", check_mine_flow),

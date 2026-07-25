@@ -315,3 +315,22 @@ may carry a blocking early-exit, and the verdict text may not tell a dig to stop
 (4) BOTH HALVES ARE MAXED, NEITHER TRADED. The objective is maximum information surface area
 MULTIPLIED BY maximum extraction efficiency. A rise in either that is bought with a fall in the
 other is a REGRESSION, reported as one, regardless of how the headline rate reads.
+
+
+## 35. EVERY FINDING REACHES THE LOOP THAT DRIVES IT (2026-07-25, binds every audit and review)
+
+THE DESK HAS EXACTLY ONE ORGAN THAT DRIVES WORK TO COMPLETION: `docs/GAP_REGISTER.md`, with its weekly re-rank, 7-day staleness rule and escalation. Every other surface — SYSTEM_REVIEW, BLIND_SPOT_AUDIT, the micro-audit inbox, the improvement inbox, a panel ruling, an audit delivered in a chat window — is a place findings are WRITTEN, not a place they are WORKED. The daily cycle acts on the register; a finding absent from it is not merely slow, it is INVISIBLE, and however carefully it was found it will never be worked. It does not rot loudly. It simply never happened.
+
+MEASURED, NOT THEORISED (2026-07-25): a full-repo engineering audit produced eleven defects. THREE were detected by any check and ONE had a register row. The other eight existed only in a conversation and would have vanished with it — including a missing client order ID on the live order path, the one defect capable of losing money on day one. The audit was competent; the routing was absent. That is the whole failure mode.
+
+(1) THE LAW. Any finding written anywhere carries a GAP_REGISTER row or is recorded closed. Being written down is NOT the same as being driven. Enforced by `max_audit.check_findings_tracked`, which reports finding→register COVERAGE and names every open finding with no trace.
+
+(2) GENERALISED, NOT HARDCODED. This supersedes the brittleness of the first version: `check_review_risks_tracked` enforced the same rule for THREE HARDCODED KEYS, so it could only ever catch risks somebody remembered to name in the checker — the next un-tracked finding was invisible again by construction. §35 parses findings from wherever they are written and matches them against the register, so the check does not need to know in advance what will be found.
+
+(3) GENEROUS MATCHING, DELIBERATELY. A finding counts as tracked when any distinctive token from its title appears in the register; a finding with no distinctive token is UNJUDGEABLE and is never accused. False accepts are cheap — the item was probably tracked under other wording. False alarms are expensive: a check that flags everything gets ignored, and an ignored check is WORSE than no check because it looks like coverage. (The §33 card parser learned this by firing 92/92 on its first real run; §35 was built with that lesson applied from the start.)
+
+(4) SETTLED WORK IS NOT OWED. Findings under an already-live / closed / shipped heading are reported as resolved, not as backlog. A law that demands rows for finished work buries the live items and trains the reader to skim.
+
+(5) THE SCOPE IS ITSELF AUDITED. A fixed doc list is the check's blast radius, and a finding written outside it evades §35 with no code change and no diff — the one bypass that leaves no trace in review. Every `docs/**` markdown carrying numbered findings must be in `_FINDING_DOCS` or in `_FINDING_DOCS_EXCLUDED` WITH A STATED REASON (`findings-scope-unmonitored`). Consciously excluded is fine; quietly unmonitored is not. Nothing may fall between the two by omission.
+
+(6) WHY THIS MATTERS MORE THAN ANY SINGLE FINDING. The desk's self-improvement loop can only act on what it can see. Making the loop stronger raises nothing if the findings never arrive; routing them raises everything, permanently, for every future audit — including audits by organs and people that do not exist yet.
