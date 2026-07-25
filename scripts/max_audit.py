@@ -1232,6 +1232,11 @@ _TERMINAL_ARTIFACTS = {
     "docs/playbooks/carry.md": "runbook -- followed, not converted",
     "docs/playbooks/go_live.md": "runbook -- followed; the gate is GAP #2",
     "docs/playbooks/ops_checklist.md": "runbook -- followed, not converted",
+    "docs/EXTERNAL_PANEL_DOSSIER.md":
+        "derived snapshot -- REGENERATED from live state on every panel run by "
+        "generate_external_review_doc.py, never an inventory. Its findings flow panel responses "
+        "-> panel_inbox -> panel_rulings -> GAP_REGISTER rows (§35), so converting the dossier "
+        "itself is meaningless: the next run overwrites it. Terminal by construction.",
 }
 
 
