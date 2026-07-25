@@ -152,3 +152,29 @@ class TestCoverageRatchet:
     def test_first_run_has_no_floor_to_break(self) -> None:
         _, v = update_coverage_ratchet(CoverageRatchet(), _rep(10, 2), n_docs=2)
         assert v.coverage_regressed is False and v.scope_shrank is False
+
+
+class TestArtifactGovernance:
+    """§36 -- the miner problem cannot reappear because ungoverned artifacts fire on day one."""
+
+    def test_every_docs_artifact_is_claimed(self) -> None:
+        # the real repo must stay fully classified; a new artifact with no law is the miner
+        # problem waiting to happen, and this is the test that keeps it from landing quietly
+        import scripts.max_audit as m
+        defects: list[tuple[str, str]] = []
+        m.check_artifact_governance(defects)
+        assert defects == [], f"ungoverned artifacts: {defects}"
+
+    def test_law_sets_do_not_overlap_incoherently(self) -> None:
+        import scripts.max_audit as m
+        # an artifact cannot be both a cadenced producer and terminal -- that is a contradiction
+        assert not (set(m._PRODUCER_CADENCE) & set(m._TERMINAL_ARTIFACTS))
+        # nor both in-scope and excluded for the same law
+        assert not (set(m._FINDING_DOCS) & set(m._FINDING_DOCS_EXCLUDED))
+        assert not (set(m._DIG_DOCS) & set(m._DIG_DOCS_EXCLUDED))
+
+    def test_every_cadenced_producer_states_a_reason(self) -> None:
+        import scripts.max_audit as m
+        for rel, (days, why) in m._PRODUCER_CADENCE.items():
+            assert days > 0, rel
+            assert len(why) > 30, f"{rel} needs a real reason, not a label"

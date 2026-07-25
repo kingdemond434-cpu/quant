@@ -1200,6 +1200,106 @@ _FINDING_DOCS_EXCLUDED = {
 }
 
 
+#: §36 PRODUCERS: artifacts that accumulate inventory under a cadence STATED IN THEIR OWN PROSE
+#: and, until now, enforced by nothing. Each maps to the max age its own text promises. This is
+#: the miner failure in its purest form -- a conversion rule written down, with no clock behind it.
+_PRODUCER_CADENCE = {
+    "docs/research/weak_signal_registry.md": (
+        3.0, "§23: >=2 weak signals from INDEPENDENT paths auto-promote to hypothesis generation, "
+             "'checked each cycle during inbox triage' -- convention, never verified"),
+    "docs/research/canary_searches.md": (
+        4.0, "re-run each digging session; an unexpected shift triggers targeted rediscovery "
+             "BEFORE the normal cadence -- nothing confirmed the canaries were re-run"),
+    "docs/research/generation_due.md": (
+        8.0, "the cadence engine flags scoped generate runs and the brain executes then marks "
+             "them -- nothing checked a flagged run was ever executed"),
+    "docs/research/adoption_queue.md": (
+        35.0, "trigger-gated methods (fracdiff, dollar bars, ...) -- nothing notices when a "
+              "precondition ARRIVES, so a due adoption waits forever"),
+}
+#: Artifacts that are terminal by nature: templates, forensic write-ups, protocol libraries. They
+#: accumulate no inventory, so they owe no cadence -- recorded here so "no law" is a DECISION.
+_TERMINAL_ARTIFACTS = {
+    "docs/research/FRONTIER_MINER_TEMPLATE.md": "template spec -- instantiated, not converted",
+    "docs/research/GAP34_FORENSIC.md": "forensic write-up for a closed gap",
+    "docs/research/self_interrogation_patterns.md": "protocol library -- applied, not converted",
+    "docs/playbooks/carry.md": "runbook -- followed, not converted",
+    "docs/playbooks/go_live.md": "runbook -- followed; the gate is GAP #2",
+    "docs/playbooks/ops_checklist.md": "runbook -- followed, not converted",
+}
+
+
+def check_producer_cadence(defects) -> None:
+    """§36: an artifact that accumulates inventory declares a cadence and is HELD to it.
+
+    The miner failure, in its purest form: four artifacts state a conversion rule in their own
+    prose -- 'auto-promote on convergence', 're-run each digging session', 'the brain executes and
+    marks them', 'monthly trigger re-check' -- and NOTHING checked any of it. A rule written in a
+    document it governs is a rule with no clock; it is obeyed exactly as long as somebody
+    remembers, which is the failure §33 and §35 each closed for their own surface.
+
+    Age is measured from the last COMMIT, not mtime: a fresh clone stamps every file at checkout,
+    and this check must mean the same thing on the VPS and in a sandbox.
+    """
+    import subprocess
+
+    stale = []
+    for rel, (max_days, why) in _PRODUCER_CADENCE.items():
+        p = ROOT / rel
+        if not p.exists():
+            continue
+        try:
+            out = subprocess.run(["git", "log", "-1", "--format=%ct", "--", rel],
+                                 cwd=ROOT, capture_output=True, text=True, timeout=15)
+        except (OSError, subprocess.SubprocessError):
+            return  # no git -- the check does not apply here
+        if out.returncode != 0 or not out.stdout.strip():
+            continue
+        with contextlib.suppress(ValueError):
+            age_d = (NOW - float(out.stdout.strip())) / 86400.0
+            if age_d > max_days:
+                stale.append(f"{Path(rel).name} {age_d:.0f}d (bar {max_days:.0f}d) -- {why}")
+    for s in stale:
+        defects.append((
+            "producer-cadence-stale",
+            f"§36: {s}. The artifact's own text promises this cadence; nothing enforced it until "
+            "now. Work it and commit, or amend the stated cadence to one the desk actually keeps "
+            "-- a promise nobody checks is how inventory rots in plain sight."))
+
+
+def check_artifact_governance(defects) -> None:
+    """§36(2): EVERY artifact is claimed by a law -- so the miner problem cannot reappear anywhere.
+
+    §33 governs mined cards, §35 governs findings, §36 governs cadenced producers. Each closed the
+    same failure on its own surface, one surface at a time -- which is a losing game, because the
+    NEXT artifact arrives ungoverned by default and nobody notices until it has rotted. This
+    inverts it: every docs/ markdown must be claimed by some law, or explicitly recorded as
+    terminal WITH A REASON. An unclaimed artifact is the miner problem waiting to happen, and it
+    now fires on the day it appears rather than months later.
+    """
+    claimed = (set(_DIG_DOCS) | set(_DIG_DOCS_EXCLUDED) | set(_FINDING_DOCS)
+               | set(_FINDING_DOCS_EXCLUDED) | set(_PRODUCER_CADENCE) | set(_TERMINAL_ARTIFACTS))
+    audit_src = ""
+    with contextlib.suppress(OSError):
+        audit_src = Path(__file__).read_text("utf-8")
+    unclaimed = []
+    for p in sorted((ROOT / "docs").rglob("*.md")):
+        rel = p.relative_to(ROOT).as_posix()
+        if rel in claimed or rel.endswith("GAP_REGISTER.md"):
+            continue
+        if p.name in audit_src:      # named by some other check -- already governed
+            continue
+        unclaimed.append(p.name)
+    if unclaimed:
+        defects.append((
+            "artifact-ungoverned",
+            f"§36(2): {len(unclaimed)} docs artifact(s) claimed by NO law -- "
+            f"{', '.join(unclaimed[:8])}. Every artifact is governed by §33 (mined cards), §35 "
+            "(findings), §36 (cadenced producers), or recorded terminal with a reason. Ungoverned "
+            "is how the miner problem reappears: inventory accumulates and nothing ever converts "
+            "it. Classify each -- 'no law' must be a DECISION, never a default."))
+
+
 def check_findings_tracked(defects) -> None:
     """EVERY FINDING MUST REACH THE LOOP THAT DRIVES IT (§35).
 
@@ -1859,6 +1959,8 @@ def main() -> None:
                       ("findings-tracked", check_findings_tracked),
                       ("findings-scope", check_findings_scope),
                       ("findings-ratchet", check_findings_ratchet),
+                      ("producer-cadence", check_producer_cadence),
+                      ("artifact-governance", check_artifact_governance),
                       ("orphan-code", check_orphan_code),
                       ("mine-conversion", check_mine_conversion),
                       ("mine-flow", check_mine_flow),
