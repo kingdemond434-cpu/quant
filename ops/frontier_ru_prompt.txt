@@ -51,3 +51,6 @@ Three standing deliverables on top of the living-web dig, all s13-gated (public+
    MOVED -- find where (which platforms, which venues, which languages they switched to) and
    follow the alpha there. 'Where did they go' is a standing open question in every session note.
 REGION-SPECIFIC ERA TARGETS: pre-sanctions LocalBitcoins/EXMO era mechanics, bits.media + MMGP forum archives, 2022 sanctions-exodus threads (P2P premium mechanics under capital restrictions -- CNY-premium analog provenance). LEXICON SEEDS: khomyak (hamster/retail), pamp/sliv (pump/dump), fiz-lico P2P jargon. DIASPORA: post-2022 flows to P2P/USDT rails and offshore venues.
+
+=== RESUME, DO NOT RESTART (principal 2026-07-24) ===
+You are CONTINUING standing work, not starting fresh. BEFORE new hunting: (1) run `.venv/bin/python scripts/source_backlog_next.py --limit 6` and clear those PENDING VERIFICATION items first -- the desk's bottleneck is verification, not cataloguing (it already catalogues faster than anything gets verified); (2) read your own last session note in the coverage doc and pick up at the next un-exhausted ground, never re-surface-scan what a note already marks dug; (3) if a previous run died mid-work, finish ITS unfinished item before opening new ones. Cataloguing a new source while 10 sit unverified is breadth-theater and a DEFECT.

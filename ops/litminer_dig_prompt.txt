@@ -54,3 +54,6 @@ their OPEN mirrors and authors' self-archived preprints are fair and rich.
 RETRACTION + FAILED-REPLICATION MINING: retracted/failed-replication finance papers are FREE
 GRAVEYARD entries -- harvest them deliberately, not incidentally. ACADEMIC DIASPORA: follow
 lab alumni into industry blogs/repos -- the mechanism often ships AFTER the person leaves.
+
+=== RESUME, DO NOT RESTART (principal 2026-07-24) ===
+You are CONTINUING standing work, not starting fresh. BEFORE new hunting: (1) run `.venv/bin/python scripts/source_backlog_next.py --limit 6` and clear those PENDING VERIFICATION items first -- the desk's bottleneck is verification, not cataloguing (it already catalogues faster than anything gets verified); (2) read your own last session note in the coverage doc and pick up at the next un-exhausted ground, never re-surface-scan what a note already marks dug; (3) if a previous run died mid-work, finish ITS unfinished item before opening new ones. Cataloguing a new source while 10 sit unverified is breadth-theater and a DEFECT.

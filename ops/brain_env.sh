@@ -70,8 +70,10 @@ brain_auth_check() {
 # organ script (was an UNVERIFIED assumption of 'CLI-managed max default' until 2026-07-21).
 # xhigh = documented best for agentic/coding work on Opus 4.8; max is reserved for
 # risk-path depth reviews (correctness over cost) since max can overthink general work.
-export ANTHROPIC_MODEL="${ANTHROPIC_MODEL:-claude-fable-5}"  # primary; _BRAIN_MODEL_CHAIN below auto-falls-back at runtime (principal 2026-07-24: fable starves -> opus-5). Fable draws a metered credit pool that CAN exhaust; opus-5/opus-4-8 sit on the Max subscription seat.
-export _BRAIN_MODEL_CHAIN="claude-fable-5 claude-opus-5 claude-opus-4-8"
+export ANTHROPIC_MODEL="${ANTHROPIC_MODEL:-claude-opus-5}"  # primary; _BRAIN_MODEL_CHAIN below auto-falls-back at runtime (principal 2026-07-24: fable starves -> opus-5). Fable draws a metered credit pool that CAN exhaust; opus-5/opus-4-8 sit on the Max subscription seat.
+# EVIDENCE 2026-07-24: one max-effort dig drained the whole fable-5 METERED pool
+# (frontier-en 23:07-23:29 -> out-of-credits). Max-seat models lead; fable is last.
+export _BRAIN_MODEL_CHAIN="claude-opus-5 claude-opus-4-8 claude-fable-5"
 
 # PRINCIPAL DOCTRINE (2026-07-21): the desk's permanent max-ROI personality, injected
 # into every claude organ via --append-system-prompt. Read once here; every organ script

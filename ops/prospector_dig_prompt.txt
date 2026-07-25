@@ -56,3 +56,6 @@ threads -- the moment practitioners stop being paid for silence. Track WHERE dea
 members went (diaspora) and mine their later blogs/repos.
 JARGON LEXICON: maintain quant-slang search keys per era and region in the operator library
 (the folk term finds the folk thread; textbook vocabulary finds textbooks).
+
+=== RESUME, DO NOT RESTART (principal 2026-07-24) ===
+You are CONTINUING standing work, not starting fresh. BEFORE new hunting: (1) run `.venv/bin/python scripts/source_backlog_next.py --limit 6` and clear those PENDING VERIFICATION items first -- the desk's bottleneck is verification, not cataloguing (it already catalogues faster than anything gets verified); (2) read your own last session note in the coverage doc and pick up at the next un-exhausted ground, never re-surface-scan what a note already marks dug; (3) if a previous run died mid-work, finish ITS unfinished item before opening new ones. Cataloguing a new source while 10 sit unverified is breadth-theater and a DEFECT.
