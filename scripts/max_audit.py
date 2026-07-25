@@ -22,6 +22,7 @@ from __future__ import annotations
 import contextlib
 import json
 import re
+import sys
 import time
 from datetime import UTC, datetime
 from pathlib import Path
@@ -1172,6 +1173,413 @@ def check_orphan_code(defects) -> None:
                         "verify against dynamic imports before deleting."))
 
 
+#: Docs where mined finds ACCUMULATE UN-DISPOSITIONED -- the only place §33 inventory can rot.
+#: Deliberately excluded, each for a reason (the check must flag rot, not paperwork):
+#:   graveyard.md              -- a graveyard entry IS a disposition; terminal by construction
+#:   negative_knowledge.md     -- own terminal schema (``[priority: ...] review-due: <date>``)
+#:   search_operator_library.md-- own terminal schema (``[status: active|watch|archived]``)
+#:   prospector_watchlist.md   -- prose STEP headers, not carded finds
+_DIG_DOCS = (
+    "docs/research/data_axis_watchlist.md",
+    "docs/research/feed_inbox.md",
+    "docs/research/discovery_hypotheses.md",
+    "docs/research/literature_coverage.md",
+)
+#: Card-bearing docs deliberately OUT of §33 scope, each with its reason. Kept explicit so the
+#: scope check below can tell "consciously excluded" from "quietly unmonitored".
+_DIG_DOCS_EXCLUDED = {
+    "docs/research/micro_audit_inbox.md":
+        "audit findings, not mined finds -- own rotting-findings check",
+    "docs/research/panel_inbox.md": "external panel output -- own rulings/scoring loop",
+}
+#: Committed-state is checked over the whole research surface, including the excluded docs above:
+#: a graveyard entry is self-dispositioning but still has to reach git to exist.
+_DIG_TRACKED = ("docs/research", "docs/graveyard.md")
+#: Written when the backlog is non-empty; every ops/run_*_dig.sh refuses to start while it exists.
+MINING_SUSPENDED = ROOT / "data/mining_suspended"
+
+
+def _conversion_artifacts() -> list[str]:
+    """Names the desk can CORROBORATE on disk -- the artifact-only credit set for §33.
+
+    Mirrors ``_converted_axes``: a conversion is credited from things that exist (a collector's
+    output, a reconstructed-OOS report, a screened axis in research memory), never from a claim in
+    a document. An organ does not grade its own homework.
+    """
+    names: set[str] = set()
+    with contextlib.suppress(Exception):
+        names.update(_converted_axes())
+    for pat in ("data/*.jsonl", "data/batch_*.json", "reports/reconstructed_oos/*.json"):
+        with contextlib.suppress(Exception):
+            names.update(p.stem.lower() for p in ROOT.glob(pat))
+    for pat in ("scripts/collect_*.py", "scripts/backfill_*.py"):
+        with contextlib.suppress(Exception):
+            names.update(p.stem.replace("collect_", "").replace("backfill_", "").lower()
+                         for p in ROOT.glob(pat))
+    return sorted(n for n in names if n)
+
+
+MINE_LEDGER = ROOT / "data/mine_conversion_log.jsonl"
+#: TRACKED on purpose (docs/, not gitignored data/). The ratchet's whole guarantee is that the
+#: bar never loosens -- stored under data/* it was one `rm` from a fresh record, so the monotonic
+#: standard was erasable by an organ that wanted an easier bar. In docs/ a reset shows up in
+#: `git status`, in the diff, and in check_dig_uncommitted. Tampering becomes visible, not silent.
+MINE_RATCHET = ROOT / "docs/research/conversion_record.json"
+MINE_PRIORS = ROOT / "data/mine_generation_priors.json"
+
+
+def _mine_thresholds() -> dict:
+    """§33 bars, evidence-adjustable within hard tighten-only bounds (the desk's ThresholdBook)."""
+    out = {"kill": 0.60, "stale": 14.0, "regress": 1.5}
+    try:
+        from libs.self_improvement.adaptive_thresholds import ThresholdBook
+        b = ThresholdBook(ROOT / "data/adaptive_thresholds.json")
+        out = {"kill": b.get("mine_kill_share_bar"),
+               "stale": b.get("mine_stale_owing_days"),
+               "regress": b.get("mine_latency_regress_mult")}
+    except Exception:
+        pass
+    return out
+
+
+def _mine_items():
+    """Parse every owing carded find, tiered against the axes the desk has ALREADY ingested."""
+    from libs.research.mine_conversion import parse_dispositions
+    from libs.research.source_backlog import parse_watchlist
+    axes = []
+    with contextlib.suppress(Exception):
+        axes = _acquired_axes()
+    items = []
+    for rel in _DIG_DOCS:
+        p = ROOT / rel
+        if not p.exists():
+            continue
+        with contextlib.suppress(Exception):
+            text = p.read_text("utf-8")
+            found = parse_dispositions(text, source=rel, ingested_axes=axes)
+            # A source card's OWN grade is already a disposition -- 'verified-clean' and
+            # 'destroyed-at-source' are terminal in the existing taxonomy, so demanding a second
+            # §33 tag would be paperwork, not conversion. Reuse the graded classifier the desk
+            # already has rather than duplicating the grade rules here.
+            with contextlib.suppress(Exception):
+                resolved = {c.name.lower() for c in parse_watchlist(text)
+                            if c.category == "resolved"}
+                if resolved:
+                    found = [i for i in found
+                             if not any(r in i.name.lower() for r in resolved)]
+            items += found
+    return items
+
+
+def _mine_backing() -> dict:
+    """Artifact-only credit, per disposition. `killed` is backed by the GRAVEYARD -- which is what
+    makes mass-killing the backlog cost more than converting it, rather than less."""
+    arte = _conversion_artifacts()
+    grave = []
+    gp = ROOT / "docs/graveyard.md"
+    if gp.exists():
+        with contextlib.suppress(Exception):
+            grave = [ln.strip(" #-*").lower() for ln in gp.read_text("utf-8").splitlines()
+                     if ln.strip()]
+    return {"wired": arte, "screened": arte, "killed": grave}
+
+
+def check_mine_conversion(defects) -> None:
+    """§33 MINED-TO-WIRED (stock + quality + value): no carded find sleeps twice, a backlog
+    SUSPENDS mining, and the backlog is PRICED so it cannot be cleared by doing only easy work.
+
+    Mined intelligence is inventory, and un-converted inventory depreciates. Mining is not the
+    product; conversion is. This writes the gate file the digger shells refuse to start against,
+    so an organ producing faster than the desk converts pays the cost itself -- flow control, not
+    punishment. Three teeth beyond mere reporting: `killed` is corroborated against the graveyard
+    (closing the mass-kill escape hatch), the backlog is TIER-WEIGHTED, and a priority inversion
+    (cheap work finished while a Tier-1 defect-closer still owes) is its own defect.
+    """
+    from libs.research.mine_conversion import (
+        append_snapshot,
+        conversion_report,
+        first_seen_map,
+        load_ledger,
+        vanished,
+    )
+
+    items = _mine_items()
+    if not items:
+        return  # nothing carded -- nothing owed (a fresh clone, not a defect)
+    thr = _mine_thresholds()
+    today = datetime.now(UTC).date()
+    ledger = load_ledger(MINE_LEDGER)
+    rep = conversion_report(items, as_of=today, backing=_mine_backing(), root=ROOT,
+                            first_seen=first_seen_map(ledger))
+    gone = vanished(items, ledger, as_of=today)
+    if gone:
+        defects.append((
+            "mine-item-vanished",
+            f"§33: {len(gone)} find(s) owed a disposition in the last snapshot and have "
+            f"DISAPPEARED from the docs -- {', '.join(gone[:8])}. Deleting the card does not "
+            "delete the obligation: the ledger remembers. Restore the item and dispose of it "
+            "properly, or record the deletion as a `killed` with its graveyard mechanism."))
+    with contextlib.suppress(OSError):
+        append_snapshot(MINE_LEDGER, items)
+
+    # the gate file IS the enforcement -- a reported backlog that stops nothing is a wish
+    try:
+        if rep.suspend_mining:
+            MINING_SUSPENDED.parent.mkdir(parents=True, exist_ok=True)
+            MINING_SUSPENDED.write_text(rep.verdict + "\n", "utf-8")
+        elif MINING_SUSPENDED.exists():
+            MINING_SUSPENDED.unlink()
+    except OSError:
+        pass  # a read-only checkout still reports; it just cannot gate
+
+    if rep.n_backlog:
+        defects.append((
+            "mine-conversion-backlog",
+            f"§33: {rep.n_backlog}/{rep.n_items} carded find(s) owe a disposition (weighted "
+            f"{rep.weighted_backlog}, highest tier owing T{rep.top_tier_owing}) -- "
+            f"{', '.join(rep.backlog_names)}. MINING IS SUSPENDED (data/mining_suspended): the "
+            "whole dig slot reassigns to conversion, HIGHEST TIER FIRST, catalogue nothing new "
+            "until it clears. Every item takes exactly one of wired / screened / killed / "
+            "deferred(DATE) -- silence is the defect."))
+    if rep.n_illegal:
+        defects.append((
+            "mine-conversion-illegal",
+            f"§33: {rep.n_illegal} disposition(s) are not legal -- {', '.join(rep.illegal_names)}."
+            " An UNDATED deferral is the hiding place every rotting backlog uses: name the blocker"
+            " and give a date, or pick a terminal disposition."))
+    if rep.n_unbacked:
+        defects.append((
+            "mine-conversion-unbacked",
+            f"§33: {rep.n_unbacked} item(s) CLAIM a terminal disposition with no corroborating "
+            f"artifact -- {', '.join(rep.unbacked_names)}. Conversion is credited from artifacts "
+            "on disk, never from a report; a 'killed' needs its GRAVEYARD entry with the mechanism "
+            "of death. Produce the artifact or downgrade the claim."))
+    if rep.kill_share > thr["kill"] and (rep.n_killed + rep.n_wired + rep.n_screened) >= 4:
+        defects.append((
+            "mine-conversion-killspike",
+            f"§33 quality: {rep.kill_share:.0%} of terminal dispositions are 'killed' (bar "
+            f"{thr['kill']:.0%}) -- the backlog is being cleared by GRAVEYARD rather than by "
+            "conversion. A disposition is not automatically a conversion; a bad batch is real but "
+            "so is the cheap exit, and this is its signature. Justify each kill's mechanism."))
+    if rep.n_fuzzy_credited and not rep.n_unbacked:
+        defects.append((
+            "mine-conversion-fuzzy",
+            f"§33 evidence standard: {rep.n_fuzzy_credited} terminal claim(s) are credited by "
+            "NAME MATCHING, not by a named artifact. Fuzzy credit breaks silently on a rename and "
+            "grants silently on a coincidence. Use the exact form -- "
+            "`[§33: wired -> data/upbit_1m.jsonl]` -- which must exist and be non-empty. Not a "
+            "backlog defect; a standard the desk should be ratcheting up."))
+    if rep.priority_inversion:
+        defects.append((
+            "mine-conversion-inversion",
+            f"§33.6 priority inversion: a T{rep.top_tier_owing} item still owes while cheaper-tier "
+            "work was completed. Defect-closers (a permanently-firing gate made satisfiable) "
+            "outrank mechanism priors, which outrank new surfaces, which outrank operators. Work "
+            "the expensive tier FIRST -- clearing the easy tail is how a backlog looks like "
+            "progress while the valuable item rots."))
+
+
+def check_mine_flow(defects) -> None:
+    """§33 FLOW + FEEDBACK + RATCHET: is conversion getting FASTER, and does it steer generation?
+
+    A stock check says whether inventory exists; only a flow check says whether the desk is
+    improving. And conversion outcomes that dead-end in an audit report are a fence -- fed back as
+    per-class priors they become a control system, which is what maximum utilisation actually
+    means. The bar is the desk's OWN BEST-EVER performance: every record tightens it permanently
+    and it never loosens, so there is no "good enough", only better-than-our-best or a regression.
+    """
+    from libs.research.mine_conversion import (
+        class_priors,
+        feedback_applied,
+        flow_stats,
+        law_effectiveness,
+        ledger_regressed,
+        load_ledger,
+        load_ratchet,
+        priors_payload,
+        tier_calibration,
+        update_ratchet,
+    )
+
+    ledger = load_ledger(MINE_LEDGER)
+    if len(ledger) < 2:
+        return  # a single snapshot cannot measure flow -- not a defect, just no history yet
+    thr = _mine_thresholds()
+    flow = flow_stats(ledger)
+    n_names = len({str(i.get("n", "")) for r in ledger for i in r["items"]})
+    rate = (flow.n_converted / n_names) if n_names else 0.0
+
+    priors = class_priors(ledger)
+    if priors:
+        with contextlib.suppress(OSError):
+            MINE_PRIORS.parent.mkdir(parents=True, exist_ok=True)
+            MINE_PRIORS.write_text(json.dumps(priors_payload(priors), indent=2), "utf-8")
+
+    prior = load_ratchet(MINE_RATCHET)
+    truncated, why_trunc = ledger_regressed(prior, ledger)
+    if truncated:
+        defects.append((
+            "mine-ledger-truncated",
+            f"§33: {why_trunc}. The ledger is the evidence base for latency, the per-class priors "
+            "and the ratchet itself -- erasing it resets all three and hands back an easier bar. "
+            "The high-water marks in docs/research/conversion_record.json are what caught this."))
+    new_ratchet, verdict = update_ratchet(
+        prior, flow, conversion_rate=rate, regress_mult=thr["regress"], ledger=ledger)
+    with contextlib.suppress(OSError):
+        MINE_RATCHET.write_text(new_ratchet.model_dump_json(indent=2), "utf-8")
+
+    if flow.oldest_owing_days > thr["stale"]:
+        defects.append((
+            "mine-flow-rotting",
+            f"§33: '{flow.oldest_owing_name}' has owed a disposition for "
+            f"{flow.oldest_owing_days:.0f}d (bar {thr['stale']:.0f}d). Age IS the damage -- a "
+            "finding depreciates while it waits, and the desk has been faster than this."))
+    if verdict.regressed:
+        defects.append((
+            "mine-flow-regression",
+            f"§33 RATCHET: {verdict.verdict} Next-cycle bar {verdict.next_bar_days:.1f}d. The "
+            "standard is the desk's own record and it only moves down -- recover the pace or "
+            "log the measured reason it is no longer achievable."))
+    if flow.latency_worsening and not verdict.regressed:
+        defects.append((
+            "mine-flow-slowing",
+            f"§33: conversion latency is TRENDING worse (median {flow.median_latency_days:.1f}d, "
+            "recent half >1.5x the earlier half). Catch it as a trend, before it becomes a "
+            "regression against the record."))
+    # THE LAW HELD TO ITS OWN STANDARD -- everything else here pressures the desk; these two ask
+    # whether §33's own machinery earns its place, which the no-ceiling axiom demands of anything
+    # claiming to be at max.
+    cal = tier_calibration(ledger)
+    if cal.inverted:
+        defects.append((
+            "mine-tier-miscalibrated",
+            f"§33 self-audit: {cal.verdict} The T1=8..T4=1 weighting is an ASSERTION, and measured "
+            "outcomes contradict it -- priority enforcement is currently steering effort toward "
+            "work that does not finish. Re-tier the affected finds (explicit `tier:N`) or fix the "
+            "inference keywords; do not leave a weighting in force that the evidence rejects."))
+    eff = law_effectiveness(ledger)
+    if eff.conclusive and not eff.improving:
+        defects.append((
+            "mine-law-ineffective",
+            f"§33 self-audit: {eff.verdict} A law is not exempt from the evidence standard it "
+            "enforces. Trend, not counterfactual (no pre-§33 baseline exists) -- but flat is flat. "
+            "Either the gate is not biting or conversion is bottlenecked elsewhere; establish "
+            "which before adding more enforcement on top."))
+    ok, why = feedback_applied(ledger, priors)
+    if not ok:
+        defects.append((
+            "mine-feedback-ignored",
+            f"§33.4 closed loop: {why} data/mine_generation_priors.json is published every "
+            "sweep -- generation MUST read it and reweight. A prior nothing acts on is the same "
+            "failure as a law with no monitor."))
+
+
+def check_mine_scope(defects) -> None:
+    """A find written somewhere unscanned is a find outside the law -- with no code change needed.
+
+    §33 reads a FIXED list of docs. That list is the law's blast radius, and a digger that writes
+    its cards to any other file evades every check in the family without touching tracked code --
+    the one bypass that does not show up in a diff. So the scope itself is audited: any
+    docs/research markdown carrying numbered cards must be either IN the scanned set or in the
+    explicit exclusion list with a stated reason. Consciously excluded is fine; quietly unmonitored
+    is not. Same shape as check_review_risks_tracked -- a thing named in one place must inherit the
+    discipline of the other, and nothing may fall between them by omission.
+    """
+    research = ROOT / "docs/research"
+    if not research.is_dir():
+        return
+    card = re.compile(r"^### \d+\.", re.MULTILINE)
+    rogue = []
+    for p in sorted(research.glob("*.md")):
+        rel = p.relative_to(ROOT).as_posix()
+        if rel in _DIG_DOCS or rel in _DIG_DOCS_EXCLUDED:
+            continue
+        with contextlib.suppress(OSError):
+            n = len(card.findall(p.read_text("utf-8", errors="ignore")))
+            if n:
+                rogue.append(f"{p.name}({n} cards)")
+    if rogue:
+        defects.append((
+            "mine-scope-unmonitored",
+            f"§33 scope: card-bearing research doc(s) outside the law -- {', '.join(rogue[:8])}. "
+            "Findings written here owe no disposition and are invisible to every §33 check, which "
+            "is the one bypass that needs no code change. Add each to _DIG_DOCS (in scope) or to "
+            "_DIG_DOCS_EXCLUDED with a stated reason -- never leave it decided by omission."))
+
+
+def check_mine_gate(defects) -> None:
+    """The gate must be DERIVED, not a deletable flag -- and it must actually run.
+
+    `data/mining_suspended` was a file, and a file is something `rm` defeats: deleting it would
+    have restored mining without converting anything, making the law advisory again. The shells
+    now RUN scripts/mine_gate.py, which recomputes the backlog from the docs. Two failure modes
+    are checked here because the gate fails OPEN by design (a bug must never freeze the desk's
+    entire research intake for a week): the script must exist, and it must execute cleanly.
+    """
+    import subprocess
+
+    gate = ROOT / "scripts/mine_gate.py"
+    if not gate.exists():
+        defects.append(("mine-gate-missing",
+                        "§33: scripts/mine_gate.py is absent -- the digger shells call it to "
+                        "recompute the backlog, and without it the gate degrades to whatever the "
+                        "shells do on a missing command. Restore it."))
+        return
+    shells = [*sorted(ROOT.glob("ops/run_*dig*.sh")), ROOT / "ops/run_frontier_miner.sh"]
+    untrusting = [s.name for s in shells if s.exists() and "mine_gate.py" not in
+                  s.read_text("utf-8", errors="ignore")]
+    if untrusting:
+        defects.append(("mine-gate-bypassed",
+                        f"§33: digger shell(s) do NOT invoke the derived gate -- "
+                        f"{', '.join(untrusting)}. A shell that skips mine_gate.py mines "
+                        "regardless of the backlog; that is the law switched off for that organ."))
+    try:
+        r = subprocess.run([sys.executable, str(gate), "--explain"], cwd=ROOT,
+                           capture_output=True, text=True, timeout=120)
+    except (OSError, subprocess.SubprocessError) as exc:
+        defects.append(("mine-gate-broken",
+                        f"§33: the gate script could not be executed ({type(exc).__name__}). It "
+                        "fails OPEN by design, so a broken gate silently authorises mining -- "
+                        "this defect is the only thing that surfaces it. Fix before the next dig."))
+        return
+    if "GATE-ERROR" in (r.stdout + r.stderr):
+        defects.append(("mine-gate-broken",
+                        f"§33: the gate script raised and failed OPEN -- {r.stdout.strip()[:220]}. "
+                        "Mining is currently UNGATED. Fix before the next dig."))
+
+
+def check_dig_uncommitted(defects) -> None:
+    """A dig finding not in git DID NOT HAPPEN -- VPS disk is not institutional memory.
+
+    The best output of a cycle is one disk failure from never having existed, and an audit that
+    reads only the repo cannot see it at all (the map-vs-territory failure, applied to the desk's
+    own research). Compares each dig doc's mtime against the last commit that touched it.
+    """
+    import subprocess
+
+    # Asked exactly, via git's own index -- NOT file mtimes. A fresh clone stamps every file with
+    # the checkout time, so an mtime-vs-commit-time comparison reports the entire research surface
+    # as uncommitted on any re-clone. `git status --porcelain` answers the real question.
+    try:
+        out = subprocess.run(["git", "status", "--porcelain", "--", *_DIG_TRACKED],
+                             cwd=ROOT, capture_output=True, text=True, timeout=20)
+    except (OSError, subprocess.SubprocessError):
+        return  # no git available -- the check simply does not apply here
+    if out.returncode != 0:
+        return
+    stale = []
+    for line in out.stdout.splitlines():
+        if len(line) > 3:
+            code, path = line[:2].strip() or "??", line[3:].strip()
+            stale.append(f"{Path(path).name}[{code}]")
+    if stale:
+        defects.append((
+            "dig-output-uncommitted",
+            f"§33: dig output UNCOMMITTED -- {', '.join(stale[:8])}. Output not "
+            "committed and pushed by end of cycle DID NOT HAPPEN and earns zero credit: git is "
+            "the institutional memory, VPS disk is not. Commit, push, and VERIFY the push."))
+
+
 def main() -> None:
     defects: list[tuple[str, str]] = []
     for label, fn in [("organs", check_organs), ("stubs", check_stub_deaths),
@@ -1193,6 +1601,11 @@ def main() -> None:
                       ("ci-scope", check_ci_scope),
                       ("review-risks", check_review_risks_tracked),
                       ("orphan-code", check_orphan_code),
+                      ("mine-conversion", check_mine_conversion),
+                      ("mine-flow", check_mine_flow),
+                      ("mine-gate", check_mine_gate),
+                      ("mine-scope", check_mine_scope),
+                      ("dig-uncommitted", check_dig_uncommitted),
                       ("depth-parity", check_depth_parity),
                       ("source-backlog", check_source_backlog),
                       ("rejection-shadow", check_rejection_shadow),

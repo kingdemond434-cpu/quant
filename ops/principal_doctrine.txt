@@ -45,3 +45,58 @@ HEALTHILY -- this is what separates aggression from thrash, and it is not option
      or move on. Evidence-gated aggression compounds; blind aggression exhausts.
 
 Carry this in every action. Assume the desk is under potential right now, because it usually is.
+
+§33 MINED-TO-WIRED (BINDING, OVERRIDES ANY CADENCE THAT CONFLICTS). Mining is NOT the product --
+CONVERSION is. A perfect dig with zero conversions is a FAILED cycle; say so in those words.
+  - Every carded find you produce carries EXACTLY ONE inline disposition on its own line by the
+    END OF THE NEXT CYCLE: [§33: wired] / [§33: screened] / [§33: killed] / [§33: deferred(DATE)].
+    Silence is a DEFECT. "Interesting", "noted", "future work", re-cataloguing = NOT dispositions.
+    An UNDATED deferral is illegal; a deferral EXPIRES on its date and returns to the backlog.
+  - CONVERSION IS CREDITED FROM ARTIFACTS ON DISK, never from your own report. Claiming "wired"
+    without the artifact is reported as UNBACKED and counts as unconverted. Do not grade yourself.
+  - While anything owes a disposition, data/mining_suspended exists and EVERY dig refuses to
+    start. Your entire slot belongs to conversion; catalogue nothing new, open no new region.
+    This is flow control: an organ producing faster than the desk converts is producing DEBT.
+  - Work the backlog highest-ROI first: (1) DEFECT-CLOSERS -- make a permanently-firing gate
+    satisfiable, unblock a standing blocker; (2) mechanism priors on axes ALREADY ingested;
+    (3) new surfaces with a live collector path; (4) operators/lexicons/diaspora.
+  - DEPTH PARITY (§32) APPLIES TO CONVERSION: a token wiring is not a conversion. Full history,
+    fence actually RUN, screen on the full window. Depth of conversion never lags its breadth.
+  - COMMIT AND PUSH before the cycle ends, and VERIFY the push. Uncommitted output DID NOT HAPPEN.
+  - A KILL IS NOT A CONVERSION. `killed` is checked against the GRAVEYARD: to kill an item you
+    write its graveyard entry with the MECHANISM of death. Mass-killing the backlog costs MORE
+    than converting it. A kill-share above the bar is its own defect.
+  - WORK THE EXPENSIVE TIER FIRST. The backlog is priced (T1=8, T2=4, T3=2, T4=1). Finishing
+    cheap work while a Tier-1 defect-closer still owes is a PRIORITY INVERSION defect. Force a
+    tier with `tier:N` inside the tag when the heuristic is wrong.
+  - THE BAR IS OUR OWN RECORD, AND IT ONLY MOVES DOWN. Conversion latency and rate are ratcheted
+    in data/mine_conversion_ratchet.json: every record tightens the bar permanently, a bad cycle
+    never loosens it. Holding is not improving. Beat the record or log the measured reason it is
+    no longer achievable -- there is no "good enough" state.
+  - READ data/mine_generation_priors.json BEFORE CHOOSING WHAT TO MINE, EVERY CYCLE. It ranks
+    source classes by MEASURED conversion rate and latency. Favour the top, starve anything under
+    25%. Piling new finds into a measured-dead class fires mine-feedback-ignored. Generation
+    follows evidence, not enthusiasm.
+  - NAME THE EVIDENCE, DO NOT HINT AT IT. Strong form: [§33: wired -> data/upbit_1m.jsonl].
+    The path must exist and be non-empty. Name-matching still works for old cards but is counted
+    and pressured every sweep -- move to the exact form.
+  - The gate is RECOMPUTED by scripts/mine_gate.py at dig time, not read from a file. Deleting
+    state achieves nothing. Do not edit the gate out of a shell; that is the law switched off and
+    it shows in the diff.
+  - DELETING A CARD DOES NOT DELETE THE OBLIGATION. The ledger remembers every find; an item that
+    owed a disposition and then vanished from the docs fires mine-item-vanished by name. Dispose
+    of it, or record the deletion as a `killed` with its graveyard mechanism.
+  - THE ARTIFACT MUST POSTDATE THE FIND. Pointing at a file that already existed is not evidence
+    of anything. Real work satisfies this automatically.
+  - The conversion record is TRACKED in docs/research/conversion_record.json and carries the
+    ledger's high-water marks. Do not delete or rewrite the ledger -- it resets latency, the
+    priors and the bar at once, and it is detected.
+  - WRITE FINDS TO THE SCANNED DOCS. A card in an unscanned file owes no disposition and is
+    invisible to §33; the scope is audited, so a rogue doc fires mine-scope-unmonitored. If a new
+    doc genuinely belongs, add it to _DIG_DOCS -- do not route around the law.
+  - §33 AUDITS ITSELF. If mine-tier-miscalibrated fires, the tier weights are steering effort at
+    work that never finishes -- re-tier or fix the keywords. If mine-law-ineffective fires, §33 is
+    not improving conversion and you must find out whether the gate is not biting or the
+    bottleneck is elsewhere, BEFORE stacking more enforcement on top.
+  - Before ending any cycle answer in writing: "Which artifact on disk is different because of
+    what was mined?" If the answer is none, the cycle failed.
