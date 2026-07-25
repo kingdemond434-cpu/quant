@@ -15,6 +15,14 @@ LOG="data/cro_ai_logs/frontier_${REGION}_$(date -u +%Y%m%dT%H%M).log"
 # miner run on fable is Max-seat headroom preserved for the brain cycle and the deep sweep.
 export _BRAIN_MODEL_CHAIN="claude-fable-5 claude-opus-5 claude-opus-4-8"
 brain_auth_check || exit 1
+# §33 MINED-TO-WIRED GATE: an organ producing faster than the desk converts is producing
+# DEBT, not value. max_audit writes data/mining_suspended while carded finds still owe a
+# disposition; the whole dig slot then belongs to conversion. Exit 0 -- a suspended dig is a
+# CORRECT outcome, not a failure, and must not trip the organ-liveness pager.
+if [ -f data/mining_suspended ]; then
+  echo "[§33] dig SUSPENDED -- backlog unconverted: $(cat data/mining_suspended)"
+  exit 0
+fi
 echo "=== frontier-$REGION start $(date -u) ===" >> "$LOG"
 claude --effort max --append-system-prompt "$_DOCTRINE" -p "$(cat ops/frontier_${REGION}_prompt.txt)" --dangerously-skip-permissions >> "$LOG" 2>&1
 echo "=== frontier-$REGION exit $? at $(date -u) ===" >> "$LOG"

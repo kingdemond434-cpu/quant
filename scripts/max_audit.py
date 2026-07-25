@@ -1172,6 +1172,150 @@ def check_orphan_code(defects) -> None:
                         "verify against dynamic imports before deleting."))
 
 
+#: Docs where mined finds ACCUMULATE UN-DISPOSITIONED -- the only place §33 inventory can rot.
+#: Deliberately excluded, each for a reason (the check must flag rot, not paperwork):
+#:   graveyard.md              -- a graveyard entry IS a disposition; terminal by construction
+#:   negative_knowledge.md     -- own terminal schema (``[priority: ...] review-due: <date>``)
+#:   search_operator_library.md-- own terminal schema (``[status: active|watch|archived]``)
+#:   prospector_watchlist.md   -- prose STEP headers, not carded finds
+_DIG_DOCS = (
+    "docs/research/data_axis_watchlist.md",
+    "docs/research/feed_inbox.md",
+    "docs/research/discovery_hypotheses.md",
+    "docs/research/literature_coverage.md",
+)
+#: Committed-state is checked over the whole research surface, including the excluded docs above:
+#: a graveyard entry is self-dispositioning but still has to reach git to exist.
+_DIG_TRACKED = ("docs/research", "docs/graveyard.md")
+#: Written when the backlog is non-empty; every ops/run_*_dig.sh refuses to start while it exists.
+MINING_SUSPENDED = ROOT / "data/mining_suspended"
+
+
+def _conversion_artifacts() -> list[str]:
+    """Names the desk can CORROBORATE on disk -- the artifact-only credit set for §33.
+
+    Mirrors ``_converted_axes``: a conversion is credited from things that exist (a collector's
+    output, a reconstructed-OOS report, a screened axis in research memory), never from a claim in
+    a document. An organ does not grade its own homework.
+    """
+    names: set[str] = set()
+    with contextlib.suppress(Exception):
+        names.update(_converted_axes())
+    for pat in ("data/*.jsonl", "data/batch_*.json", "reports/reconstructed_oos/*.json"):
+        with contextlib.suppress(Exception):
+            names.update(p.stem.lower() for p in ROOT.glob(pat))
+    for pat in ("scripts/collect_*.py", "scripts/backfill_*.py"):
+        with contextlib.suppress(Exception):
+            names.update(p.stem.replace("collect_", "").replace("backfill_", "").lower()
+                         for p in ROOT.glob(pat))
+    return sorted(n for n in names if n)
+
+
+def check_mine_conversion(defects) -> None:
+    """§33 MINED-TO-WIRED: no carded find sleeps twice; a backlog SUSPENDS mining.
+
+    Mined intelligence is inventory, and un-converted inventory depreciates -- it consumed a
+    cycle, it inflates the capability inventory, and it makes every later audit read the desk as
+    richer than it is. Mining is not the product; conversion is. This check makes the backlog
+    impossible to not see, and writes the gate file the digger shells refuse to start against, so
+    an organ producing faster than the desk converts pays the cost itself. Flow control, not
+    punishment: mining resumes the instant the backlog clears.
+    """
+    from libs.research.mine_conversion import conversion_report, parse_dispositions
+    from libs.research.source_backlog import parse_watchlist
+
+    items = []
+    for rel in _DIG_DOCS:
+        p = ROOT / rel
+        if not p.exists():
+            continue
+        with contextlib.suppress(Exception):
+            text = p.read_text("utf-8")
+            found = parse_dispositions(text, source=rel)
+            # A source card's OWN grade is already a disposition -- 'verified-clean' and
+            # 'destroyed-at-source' are terminal in the existing taxonomy, so demanding a second
+            # §33 tag on top would be paperwork, not conversion. Reuse the graded classifier the
+            # desk already has rather than duplicating the grade rules here.
+            with contextlib.suppress(Exception):
+                resolved = {c.name.lower() for c in parse_watchlist(text)
+                            if c.category == "resolved"}
+                if resolved:
+                    found = [i for i in found
+                             if not any(r in i.name.lower() for r in resolved)]
+            items += found
+    if not items:
+        return  # nothing carded -- nothing owed (a fresh clone, not a defect)
+
+    rep = conversion_report(items, as_of=datetime.now(UTC).date(),
+                            artifact_backed=_conversion_artifacts())
+
+    # the gate file IS the enforcement -- a reported backlog that stops nothing is a wish
+    try:
+        if rep.suspend_mining:
+            MINING_SUSPENDED.parent.mkdir(parents=True, exist_ok=True)
+            MINING_SUSPENDED.write_text(rep.verdict + "\n", "utf-8")
+        elif MINING_SUSPENDED.exists():
+            MINING_SUSPENDED.unlink()
+    except OSError:
+        pass  # a read-only checkout still reports; it just cannot gate
+
+    if rep.n_backlog:
+        defects.append((
+            "mine-conversion-backlog",
+            f"§33: {rep.n_backlog}/{rep.n_items} carded find(s) owe a disposition -- "
+            f"{', '.join(rep.backlog_names)}. MINING IS SUSPENDED (data/mining_suspended): the "
+            "whole dig slot reassigns to conversion, catalogue nothing new until it clears. Every "
+            "item takes exactly one of wired / screened / killed / deferred(DATE) -- silence is "
+            "the defect. Priority: defect-closers first (a permanently-firing gate made "
+            "satisfiable), then mechanism priors on axes ALREADY ingested, then new surfaces, "
+            "then operators."))
+    if rep.n_illegal:
+        defects.append((
+            "mine-conversion-illegal",
+            f"§33: {rep.n_illegal} disposition(s) are not legal -- {', '.join(rep.illegal_names)}."
+            " An UNDATED deferral is the hiding place every rotting backlog uses: name the blocker"
+            " and give a date, or pick a terminal disposition."))
+    if rep.n_unbacked:
+        defects.append((
+            "mine-conversion-unbacked",
+            f"§33: {rep.n_unbacked} item(s) CLAIM wired/screened with no corroborating artifact "
+            f"-- {', '.join(rep.unbacked_names)}. Conversion is credited from artifacts on disk, "
+            "never from a report; otherwise the cheapest way to clear a backlog is to type the "
+            "word 'wired'. Produce the artifact or downgrade the claim."))
+
+
+def check_dig_uncommitted(defects) -> None:
+    """A dig finding not in git DID NOT HAPPEN -- VPS disk is not institutional memory.
+
+    The best output of a cycle is one disk failure from never having existed, and an audit that
+    reads only the repo cannot see it at all (the map-vs-territory failure, applied to the desk's
+    own research). Compares each dig doc's mtime against the last commit that touched it.
+    """
+    import subprocess
+
+    # Asked exactly, via git's own index -- NOT file mtimes. A fresh clone stamps every file with
+    # the checkout time, so an mtime-vs-commit-time comparison reports the entire research surface
+    # as uncommitted on any re-clone. `git status --porcelain` answers the real question.
+    try:
+        out = subprocess.run(["git", "status", "--porcelain", "--", *_DIG_TRACKED],
+                             cwd=ROOT, capture_output=True, text=True, timeout=20)
+    except (OSError, subprocess.SubprocessError):
+        return  # no git available -- the check simply does not apply here
+    if out.returncode != 0:
+        return
+    stale = []
+    for line in out.stdout.splitlines():
+        if len(line) > 3:
+            code, path = line[:2].strip() or "??", line[3:].strip()
+            stale.append(f"{Path(path).name}[{code}]")
+    if stale:
+        defects.append((
+            "dig-output-uncommitted",
+            f"§33: dig output UNCOMMITTED -- {', '.join(stale[:8])}. Output not "
+            "committed and pushed by end of cycle DID NOT HAPPEN and earns zero credit: git is "
+            "the institutional memory, VPS disk is not. Commit, push, and VERIFY the push."))
+
+
 def main() -> None:
     defects: list[tuple[str, str]] = []
     for label, fn in [("organs", check_organs), ("stubs", check_stub_deaths),
@@ -1193,6 +1337,8 @@ def main() -> None:
                       ("ci-scope", check_ci_scope),
                       ("review-risks", check_review_risks_tracked),
                       ("orphan-code", check_orphan_code),
+                      ("mine-conversion", check_mine_conversion),
+                      ("dig-uncommitted", check_dig_uncommitted),
                       ("depth-parity", check_depth_parity),
                       ("source-backlog", check_source_backlog),
                       ("rejection-shadow", check_rejection_shadow),
