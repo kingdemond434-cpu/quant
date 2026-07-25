@@ -1216,6 +1216,12 @@ _PRODUCER_CADENCE = {
     "docs/research/adoption_queue.md": (
         35.0, "trigger-gated methods (fracdiff, dollar bars, ...) -- nothing notices when a "
               "precondition ARRIVES, so a due adoption waits forever"),
+    # The register is a producer too -- the one every other law routes into. Its own header
+    # promises a re-rank every daily cycle; check_gap_register_health reads the self-declared
+    # stamp, and this is the file-level backstop if the stamp itself stops being written.
+    "docs/GAP_REGISTER.md": (
+        3.0, "re-ranked at the START of every daily AI cycle by its own rule -- the organ §35 and "
+             "§36 both depend on, and it was checked by nothing"),
 }
 #: Artifacts that are terminal by nature: templates, forensic write-ups, protocol libraries. They
 #: accumulate no inventory, so they owe no cadence -- recorded here so "no law" is a DECISION.
@@ -1227,6 +1233,53 @@ _TERMINAL_ARTIFACTS = {
     "docs/playbooks/go_live.md": "runbook -- followed; the gate is GAP #2",
     "docs/playbooks/ops_checklist.md": "runbook -- followed, not converted",
 }
+
+
+def check_gap_register_health(defects) -> None:
+    """§36(3): the register is held to the rules it states about ITSELF.
+
+    §35 and §36 route every finding INTO the register, which makes it the load-bearing organ for
+    both -- and it was checked by nothing. Its own header declares 're-ranked at the START of every
+    daily AI cycle', 'items stale >7 days MUST be escalated (implement / defer with deadline /
+    retire with reason)' and 'never empty without written justification'. All three were rules
+    written INSIDE the document they govern: exactly the shape §36 names as a rule with no clock.
+    Routing findings into a bucket nobody empties is not an improvement, it is a tidier backlog.
+
+    The re-rank age comes from the SELF-DECLARED stamp, never from mtime or commit time -- editing
+    the file must not be able to fake a re-rank that never happened.
+    """
+    from libs.research.finding_registry import register_health
+
+    gr = ROOT / "docs/GAP_REGISTER.md"
+    if not gr.exists():
+        return
+    h = register_health(gr.read_text("utf-8"), today=datetime.now(UTC).date())
+    if h.n_rows == 0:
+        defects.append(("gap-register-unparseable", f"§36(3): {h.verdict}"))
+        return
+    if h.rerank_breach:
+        defects.append((
+            "gap-register-rerank-breach",
+            f"§36(3): {h.verdict} Re-rank now and escalate anything genuinely stuck -- this is the "
+            "organ every other law depends on; when it stops moving, everything routed into it "
+            "stops with it, silently."))
+    elif h.rerank_stale:
+        defects.append((
+            "gap-register-rerank-stale",
+            f"§36(3): {h.verdict} Caught as DRIFT, before the 7-day escalation bar it sets for "
+            "itself."))
+    if h.undated_open:
+        defects.append((
+            "gap-register-parked-rows",
+            f"§36(3): {len(h.undated_open)} open row(s) carry NO date in their plan -- "
+            f"{', '.join(h.undated_open)}. The register's own three exits are implement / defer "
+            "WITH A DEADLINE / retire with reason; a row with no date took none of them and is "
+            "parked, which is the state the rule exists to forbid."))
+    if h.ownerless:
+        defects.append((
+            "gap-register-ownerless",
+            f"§36(3): open row(s) with no owner -- {', '.join(h.ownerless)}. Unowned work is "
+            "nobody's, and the escalation has no addressee."))
 
 
 def check_producer_cadence(defects) -> None:
@@ -1959,6 +2012,7 @@ def main() -> None:
                       ("findings-tracked", check_findings_tracked),
                       ("findings-scope", check_findings_scope),
                       ("findings-ratchet", check_findings_ratchet),
+                      ("gap-register-health", check_gap_register_health),
                       ("producer-cadence", check_producer_cadence),
                       ("artifact-governance", check_artifact_governance),
                       ("orphan-code", check_orphan_code),

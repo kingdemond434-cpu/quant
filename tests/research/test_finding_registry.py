@@ -7,6 +7,8 @@ coverage."""
 
 from __future__ import annotations
 
+from datetime import date
+
 from libs.research.finding_registry import (
     CoverageRatchet,
     CoverageReport,
@@ -14,6 +16,7 @@ from libs.research.finding_registry import (
     coverage_report,
     is_tracked,
     parse_findings,
+    register_health,
     untracked,
     update_coverage_ratchet,
 )
@@ -178,3 +181,55 @@ class TestArtifactGovernance:
         for rel, (days, why) in m._PRODUCER_CADENCE.items():
             assert days > 0, rel
             assert len(why) > 30, f"{rel} needs a real reason, not a label"
+
+
+_REG = """# GAP REGISTER
+
+_Reviewed + re-ranked at the START of every daily AI cycle; items stale >7 days MUST be escalated._
+_Re-ranked 2026-07-20T09:30Z._
+
+| # | Gap | Why | Trigger / plan | Owner | Added | Status |
+|---|-----|-----|----------------|-------|-------|--------|
+| 1 | **Live connector** | gates everything | deadline 2026-07-31 | brain | 07-16 | open |
+| 2 | **Fill-quality ledger** | cost calibration | after enough trades | brain | 07-16 | open |
+| 3 | **Recorder spot leg** | half of every trade | done | brain | 07-19 | closed |
+"""
+
+
+class TestRegisterHealth:
+    """§36(3) -- the organ every other law routes into is held to its own stated rules."""
+
+    def test_rows_and_open_count(self) -> None:
+        h = register_health(_REG, today=date(2026, 7, 22))
+        assert h.n_rows == 3 and h.n_open == 2   # the closed row is not open
+
+    def test_rerank_age_from_the_self_declared_stamp(self) -> None:
+        # NOT mtime -- editing the file must not fake a re-rank that never happened
+        h = register_health(_REG, today=date(2026, 7, 22))
+        assert h.rerank_age_days == 2.0
+
+    def test_drift_is_caught_before_the_escalation_bar(self) -> None:
+        h = register_health(_REG, today=date(2026, 7, 24))
+        assert h.rerank_stale is True and h.rerank_breach is False
+
+    def test_breach_of_its_own_seven_day_rule(self) -> None:
+        h = register_health(_REG, today=date(2026, 8, 1))
+        assert h.rerank_breach is True and "escalation bar" in h.verdict
+
+    def test_row_with_a_dated_plan_is_not_parked(self) -> None:
+        h = register_health(_REG, today=date(2026, 7, 21))
+        assert not any("Live connector" in u for u in h.undated_open)  # carries 2026-07-31
+
+    def test_row_without_a_date_is_parked(self) -> None:
+        # took none of the three exits: implement / defer WITH A DEADLINE / retire with reason
+        h = register_health(_REG, today=date(2026, 7, 21))
+        assert any("Fill-quality ledger" in u for u in h.undated_open)
+
+    def test_unparseable_register_is_loud(self) -> None:
+        h = register_health("# GAP REGISTER\n\nnothing here\n", today=date(2026, 7, 25))
+        assert h.n_rows == 0 and "drives nothing" in h.verdict
+
+    def test_missing_stamp_does_not_crash(self) -> None:
+        h = register_health(_REG.replace("_Re-ranked 2026-07-20T09:30Z._", ""),
+                            today=date(2026, 7, 25))
+        assert h.rerank_age_days == -1.0 and h.rerank_stale is False

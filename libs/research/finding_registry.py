@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import re
 from collections.abc import Iterable, Sequence
+from datetime import date
 
 from pydantic import BaseModel, ConfigDict
 
@@ -246,3 +247,120 @@ def update_coverage_ratchet(
                    f"{report.n_untracked} finding(s) are still invisible to the cycle.")
     return new, RatchetVerdict(improved=improved, coverage_regressed=cov_regressed,
                                scope_shrank=shrank, verdict=verdict)
+
+
+# --------------------------------------------------------------------------------------------
+# THE REGISTER'S OWN HEALTH. §35 and §36 route everything INTO the register, which makes it the
+# load-bearing organ for both -- and it was never checked itself. Its rules ("re-ranked at the
+# START of every daily cycle", "items stale >7 days MUST be escalated", "never empty without
+# written justification") are written INSIDE the register, which is precisely the shape §36 names
+# as a rule with no clock. Routing findings into a bucket nobody empties is not an improvement.
+# --------------------------------------------------------------------------------------------
+
+_RERANK_RE = re.compile(r"Re-ranked\s+(\d{4}-\d{2}-\d{2})")
+#: A register row: | id | **title** | mechanism | plan | owner | added | status |
+_ROW_RE = re.compile(
+    r"^\|\s*(?P<id>\d+)\s*\|\s*\*\*(?P<title>.+?)\*\*\s*\|(?P<body>.*?)\|\s*(?P<owner>[a-z+ ]*?)"
+    r"\s*\|\s*(?P<added>[\d-]*)\s*\|\s*(?P<status>[^|]*?)\s*\|\s*$",
+    re.MULTILINE | re.IGNORECASE,
+)
+_OPEN_STATUS = ("open", "in-progress", "in progress", "queued", "watch", "pending")
+#: Any date-shaped token in the plan text -- evidence the "defer WITH A DEADLINE" exit was taken.
+_HAS_DATE = re.compile(r"\d{4}-\d{2}-\d{2}|\d{2}-\d{2}\b")
+
+
+class RegisterRow(BaseModel):
+    """One tracked obligation."""
+
+    model_config = ConfigDict(frozen=True)
+
+    row_id: int
+    title: str
+    owner: str
+    added: str
+    status: str
+    plan_has_date: bool
+
+    @property
+    def is_open(self) -> bool:
+        return self.status.strip().lower().startswith(_OPEN_STATUS)
+
+
+class RegisterHealth(BaseModel):
+    """Is the desk's only work-driving organ actually being driven?"""
+
+    model_config = ConfigDict(frozen=True)
+
+    n_rows: int
+    n_open: int
+    rerank_age_days: float      # -1 when no stamp was ever written
+    rerank_stale: bool
+    rerank_breach: bool         # past the register's own 7-day escalation bar
+    undated_open: tuple[str, ...]
+    ownerless: tuple[str, ...]
+    verdict: str
+
+
+def parse_register(text: str) -> list[RegisterRow]:
+    """Extract every tracked row from the register table."""
+    out = []
+    for m in _ROW_RE.finditer(text):
+        out.append(RegisterRow(
+            row_id=int(m.group("id")), title=m.group("title").strip(),
+            owner=m.group("owner").strip(), added=m.group("added").strip(),
+            status=m.group("status").strip(),
+            plan_has_date=bool(_HAS_DATE.search(m.group("body") or "")),
+        ))
+    return out
+
+
+def register_health(
+    text: str, *, today: date, rerank_bar_days: float = 2.0, escalate_days: float = 7.0
+) -> RegisterHealth:
+    """Hold the register to the rules it states about itself.
+
+    The re-rank age is read from the register's SELF-DECLARED ``Re-ranked <date>`` stamp, never
+    from file mtime or commit time -- touching the file must not be able to fake a re-rank that
+    did not happen. Same artifact-only credit principle §33 applies to conversion claims: the
+    evidence has to be the thing itself, not a side effect of editing it.
+    """
+    rows = parse_register(text)
+    open_rows = [r for r in rows if r.is_open]
+    stamps = _RERANK_RE.findall(text)
+    age = -1.0
+    if stamps:
+        with_dates = []
+        for s in stamps:
+            try:
+                with_dates.append(date.fromisoformat(s))
+            except ValueError:  # pragma: no cover
+                continue
+        if with_dates:
+            age = float((today - max(with_dates)).days)
+
+    # An open row whose plan carries no date took NONE of the register's three exits (implement /
+    # defer WITH A DEADLINE / retire with reason) -- it is parked, which is the state the rule
+    # exists to forbid.
+    undated = tuple(f"#{r.row_id} {r.title[:48]}" for r in open_rows if not r.plan_has_date)
+    ownerless = tuple(f"#{r.row_id} {r.title[:48]}" for r in open_rows if not r.owner)
+    stale = age > rerank_bar_days
+    breach = age > escalate_days
+
+    if not rows:
+        verdict = ("register parsed ZERO rows -- either empty or the table shape changed. Its own "
+                   "rule is 'never empty without written justification'; a register that cannot "
+                   "be parsed drives nothing, and everything §35/§36 routes into it is lost.")
+    elif breach:
+        verdict = (f"re-rank {age:.0f}d old, past the register's OWN {escalate_days:.0f}-day "
+                   f"escalation bar, with {len(open_rows)} open row(s). The rule is written in the "
+                   "register and was enforced by nothing.")
+    elif stale:
+        verdict = (f"re-rank {age:.0f}d old against 'at the START of every daily cycle'. "
+                   f"{len(open_rows)} open row(s) are not being re-prioritised.")
+    else:
+        verdict = f"re-rank current ({age:.0f}d), {len(open_rows)} open row(s) under active rank"
+    return RegisterHealth(
+        n_rows=len(rows), n_open=len(open_rows), rerank_age_days=age,
+        rerank_stale=stale, rerank_breach=breach,
+        undated_open=undated[:8], ownerless=ownerless[:8], verdict=verdict,
+    )
