@@ -40,6 +40,27 @@ _KILL = _ROOT / "data" / "CASHCARRY_KILL"
 _FIRED = _ROOT / "data" / "DEADMAN_FIRED"     # durable latch OUTSIDE the racy state json
 _VERSION = 2                                   # state schema: foreign/legacy state is never read
 
+
+def _write_state(state: dict) -> None:
+    """ATOMIC state write -- principal sign-off 2026-07-25 (TIER-3 change, sole edit this commit).
+
+    `write_text` is truncate-then-write: the file is zeroed, then filled. A death in that window
+    (OOM kill, host reboot, container stop, disk full) leaves EMPTY or PARTIAL json, and the next
+    loop reads this file back every minute. The rail does not die -- the DEADMAN_FIRED latch is a
+    separate file and survives -- but the HIGH-WATER MARK is lost, so the equity anchor re-sets to
+    whatever the book is worth now and the 35% fire line silently MOVES DOWN. After a drawdown
+    that means a further 35% is needed before the rail trips, at exactly the worst moment, with no
+    signal that it happened.
+
+    `os.replace` is atomic on POSIX: readers see either the whole old file or the whole new one,
+    never a partial. Same-directory temp so the rename cannot cross filesystems. This is the
+    crash case only -- the two-writers case is already guarded by the foreign-writer check, which
+    was the 2026-07-11 false-fire root cause. No behaviour change otherwise.
+    """
+    tmp = _STATE.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(state), "utf-8")
+    os.replace(tmp, _STATE)
+
 _RUIN_FACTOR = 0.65        # fire below 65% of high-water == the 35% ruin-flatten rail
 _CONSECUTIVE = 5           # readings required below the line (no single-glitch false fire)
 _POLL_SEC = 60.0
@@ -266,7 +287,7 @@ def main() -> None:
             if not _FIRED.exists():                        # durable latch: survives state races;
                 _FIRED.write_text(time.strftime("%Y-%m-%dT%H:%M:%SZ"), "utf-8")
             _flatten()                                     # reset = delete FIRED + state + KILL
-        _STATE.write_text(json.dumps(state), "utf-8")
+        _write_state(state)
         time.sleep(_POLL_SEC)
 
 
