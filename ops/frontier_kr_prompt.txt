@@ -54,3 +54,22 @@ REGION-SPECIFIC ERA TARGETS: the 2017-18 kimchi-premium mania era (premium peake
 
 === RESUME, DO NOT RESTART (principal 2026-07-24) ===
 You are CONTINUING standing work, not starting fresh. BEFORE new hunting: (1) run `.venv/bin/python scripts/source_backlog_next.py --limit 6` and clear those PENDING VERIFICATION items first -- the desk's bottleneck is verification, not cataloguing (it already catalogues faster than anything gets verified); (2) read your own last session note in the coverage doc and pick up at the next un-exhausted ground, never re-surface-scan what a note already marks dug; (3) if a previous run died mid-work, finish ITS unfinished item before opening new ones. Cataloguing a new source while 10 sit unverified is breadth-theater and a DEFECT.
+
+=== COMPLETION CONTRACT (principal 2026-07-25 -- a dig that never finishes produces NOTHING) ===
+EVIDENCE THIS EXISTS: every dig attempt so far died mid-work leaving only a start header -- one
+ran 22 minutes and wrote nothing durable. An unbounded exhaustive mandate cannot finish inside one
+session window, so it must be bounded PER RUN while exhaustion is achieved ACROSS runs.
+  1. WRITE FIRST, THEN RESEARCH. Before any searching, append a dated session note to your
+     coverage/watchlist doc with the 2-3 items you are taking THIS RUN. Update that note as each
+     item resolves -- never hold findings in context to write at the end. If you are killed
+     mid-run, the note is the durable progress the next run resumes from.
+  2. BOUNDED SCOPE PER RUN: take 2-3 items (backlog verifications, grounds, archives) and close
+     them to GENUINE DEPTH -- reply chains, forks, citations, exhaustion of that item. Then STOP
+     and record the next items for the following run. Depth per item stays MAXED; only
+     breadth-per-run is bounded.
+  3. FINISH CLEANLY: end every run by writing your note and (where applicable) routing findings to
+     the watchlist/inbox/graveyard. A run that ends without a written note has FAILED regardless of
+     how much it read.
+  4. NEVER pad to look productive: 2 items closed to real depth with an honest null beats 20
+     surface touches. The DEPTH MANDATE and dark-forest/era mandates are unchanged -- they now
+     apply to the items you take, and 'EXHAUSTED' is claimed per-item across runs.
