@@ -287,3 +287,31 @@ MINED INTELLIGENCE IS INVENTORY, AND UN-CONVERTED INVENTORY IS WASTE THAT DEPREC
 (18) THE LAW IS HELD TO ITS OWN STANDARD. Clauses 1-17 pressure the DESK; none of them asks whether §33's own machinery earns its place, and a law exempt from the evidence standard it enforces is precisely the hypocrisy the NO-CEILING AXIOM forbids ("we are at max" is a claim requiring evidence, never a default). Two self-audits close that. (a) TIER WEIGHTS ARE VALIDATED, NOT ASSERTED — T1=8..T4=1 claims Tier-1 finds are the high-ROI ones; if measured outcomes show Tier-1 items converting less often than Tier-4, the weighting is not merely useless but actively steering effort toward work that never finishes, and `mine-tier-miscalibrated` demands it be corrected. It deliberately does NOT silently re-learn the mapping from its own outcomes — a heuristic quietly rewritten by the data it produced is unauditable — it DETECTS that the mapping is wrong and requires a human-legible fix. (b) THE LAW MUST SHOW IT WORKED — the first third of the conversion ledger is compared against the last third, and if the rate has not risen and latency has not fallen after enough cycles, `mine-law-ineffective` fires and §33 states in those words that it is ceremony with good telemetry. HONEST LIMIT, recorded rather than buried: there is no pre-§33 baseline and no control group, so this is a TREND and not a counterfactual — it cannot prove §33 caused an improvement, only that one did or did not occur while it was in force. That is still strictly better than the alternative the desk would otherwise use, which is assuming a law works because it was written carefully.
 
 (9) THE STANDING TEST. Before ending any cycle, answer in writing: "Which artifact on disk is different because of what was mined?" If the honest answer is "none", the cycle FAILED — say so in those words. A cycle that produced only reports produced nothing.
+
+## 34. MINING NEVER REGRESSES — THE TWO-DIRECTIONAL RATCHET (2026-07-25, principal, strict)
+
+§33 ratchets CONVERSION upward. This clause ratchets MINING upward too, and forbids the desk from
+ever satisfying one at the expense of the other.
+
+(1) THE LOOPHOLE THIS CLOSES. The cheapest way to raise a conversion RATE is to shrink the
+denominator — mine less. A desk under conversion pressure will find that move on its own, and it
+looks like an improvement in every metric while destroying the thing that cannot be recovered.
+Un-mined information is not deferred; living-web threads decay, forums close, archives vanish, and
+a source not dug today may not exist to dig later. Acquisition foregone is permanent.
+
+(2) THE LAW. Mining volume, breadth and depth may never fall. Conversion pressure NEVER reduces,
+pauses, throttles, shortens or narrows a dig — it reorders that dig's PRIORITY (convert first,
+highest tier first) and the dig then continues mining and exhausting new ground in the SAME run.
+Extraction scales UP to meet acquisition; acquisition is NEVER cut down to meet extraction. If the
+desk cannot convert what it mines, the answer is always a bigger engine, never a smaller intake.
+
+(3) MECHANICAL, NOT ASPIRATIONAL. `max_audit.check_mining_nonregression` ratchets carded-find
+volume against the desk's own best-ever (record in `docs/research/mining_record.json`, tracked in
+git); a materially lower cycle fires `mining-regression`. `max_audit.check_no_mining_throttle`
+re-verifies every surface a throttle could return through — the gate must exit 0, no digger shell
+may carry a blocking early-exit, and the verdict text may not tell a dig to stop cataloguing
+(a throttle through LANGUAGE is still a throttle, since that string enters the dig prompt).
+
+(4) BOTH HALVES ARE MAXED, NEITHER TRADED. The objective is maximum information surface area
+MULTIPLIED BY maximum extraction efficiency. A rise in either that is bought with a fall in the
+other is a REGRESSION, reported as one, regardless of how the headline rate reads.

@@ -1580,6 +1580,80 @@ def check_dig_uncommitted(defects) -> None:
             "the institutional memory, VPS disk is not. Commit, push, and VERIFY the push."))
 
 
+MINING_RECORD = ROOT / "docs/research/mining_record.json"   # tracked in git, like the §33 record
+
+
+def check_mining_nonregression(defects) -> None:
+    """MINING MAY NEVER REGRESS (principal 2026-07-25, strict). Conversion ratchets UP; mining
+    volume ratchets up too and is never allowed to fall. Without this, the cheapest way to raise a
+    conversion RATE is to shrink the denominator -- mine less. That is a regression in the desk's
+    single irreplaceable input (unprocessed data is unrealized option value; living-web sources
+    decay and cannot be re-mined later), so it is a defect, never an optimisation."""
+    led = ROOT / "data/mine_conversion_log.jsonl"
+    if not led.exists():
+        return
+    rows = []
+    for line in led.read_text("utf-8", errors="ignore").splitlines():
+        try:
+            rows.append(json.loads(line))
+        except Exception:
+            continue
+    if len(rows) < 3:
+        return                                    # not enough history to call a trend
+    counts = [len(r.get("items", [])) for r in rows if isinstance(r.get("items"), list)]
+    if len(counts) < 3:
+        return
+    best = max(counts)
+    recent = counts[-1]
+    try:
+        rec = json.loads(MINING_RECORD.read_text("utf-8")) if MINING_RECORD.exists() else {}
+    except Exception:
+        rec = {}
+    record = max(int(rec.get("best_finds", 0)), best)
+    if record > int(rec.get("best_finds", 0)):
+        MINING_RECORD.write_text(json.dumps(
+            {"best_finds": record, "updated": datetime.now(tz=UTC).isoformat(),
+             "note": "desk's best-ever carded-find count in one snapshot; ratchets UP only -- "
+                     "mining volume may never regress (principal 2026-07-25)"}, indent=1), "utf-8")
+    # a genuine regression: latest materially below the all-time record
+    if record >= 5 and recent < record * 0.6:
+        defects.append((
+            "mining-regression",
+            f"MINING REGRESSED: latest snapshot carries {recent} carded finds vs the desk's "
+            f"record of {record}. Mining volume must NEVER fall -- conversion pressure is never "
+            "allowed to shrink acquisition (the cheapest way to fake a conversion rate is to mine "
+            "less). Raise mining back above the record; scale extraction to meet it, never the "
+            "reverse."))
+
+
+def check_no_mining_throttle(defects) -> None:
+    """STRUCTURAL anti-throttle guard (principal 2026-07-25). Re-verifies every surface a mining
+    throttle could return through, so a future edit cannot quietly shrink the desk's intake."""
+    gate = ROOT / "scripts/mine_gate.py"
+    if gate.exists():
+        g = gate.read_text("utf-8", errors="ignore")
+        if "return 1" in g.split("def main")[-1]:
+            defects.append(("mining-throttle-returned",
+                            "scripts/mine_gate.py can exit non-zero again -- that BLOCKS diggers. "
+                            "The gate must always exit 0; the backlog steers PRIORITY, never "
+                            "whether a dig runs."))
+        v = ROOT / "libs/research/mine_conversion.py"
+        if v.exists() and "catalogue nothing new" in v.read_text("utf-8", errors="ignore"):
+            defects.append(("mining-throttle-language",
+                            "the §33 verdict text tells a dig to 'catalogue nothing new' -- that "
+                            "string is injected into the dig prompt and throttles mining through "
+                            "LANGUAGE. Conversion preempts priority, never acquisition."))
+    for sh in sorted((ROOT / "ops").glob("run_*dig*.sh")) + [ROOT / "ops/run_frontier_miner.sh"]:
+        try:
+            txt = sh.read_text("utf-8", errors="ignore")
+        except OSError:
+            continue
+        if "mine_gate.py" in txt and ("if ! " in txt and "exit 0" in txt):
+            defects.append(("mining-throttle-shell",
+                            f"{sh.name} carries a blocking early-exit on the mining gate -- a dig "
+                            "must never be skipped for a conversion backlog."))
+
+
 def main() -> None:
     defects: list[tuple[str, str]] = []
     for label, fn in [("organs", check_organs), ("stubs", check_stub_deaths),
@@ -1598,6 +1672,8 @@ def main() -> None:
                       ("prompt-layer", check_prompt_layer),
                       ("gate-optimality", check_gate_optimality),
                       ("data-utilization", check_data_utilization),
+                      ("mining-nonregression", check_mining_nonregression),
+                      ("no-mining-throttle", check_no_mining_throttle),
                       ("ci-scope", check_ci_scope),
                       ("review-risks", check_review_risks_tracked),
                       ("orphan-code", check_orphan_code),

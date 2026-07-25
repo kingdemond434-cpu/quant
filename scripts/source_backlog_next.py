@@ -23,7 +23,10 @@ from libs.research.source_backlog import backlog_from_file
 def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("--watchlist", default="docs/research/data_axis_watchlist.md")
-    p.add_argument("--limit", type=int, default=3)
+    # 0 = UNBOUNDED (default, principal 2026-07-25: no throttles on research). Conversion
+    # must always maximise and exhaust; a per-cycle cap on how many findings can even be
+    # SURFACED throttles the conversion half of the objective before work begins.
+    p.add_argument("--limit", type=int, default=0)
     a = p.parse_args()
 
     path = Path(a.watchlist)

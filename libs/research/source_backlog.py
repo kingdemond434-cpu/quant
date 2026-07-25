@@ -82,14 +82,14 @@ class BacklogReport(BaseModel):
     verdict: str
 
 
-def next_pending(cards: Sequence[SourceCard], *, limit: int = 3) -> BacklogReport:
+def next_pending(cards: Sequence[SourceCard], *, limit: int = 0) -> BacklogReport:
     """Pick the next items to work THIS cycle -- excluding anything already resolved.
 
     Priority within the verification queue: ``needs-monitoring`` cards (already partially
     corroborated -- cheaper to finish) before bare ``UNVERIFIED`` ones (found, nothing confirmed --
     more work), then by card id (oldest backlog first, so a shiny new catalogue entry never jumps a
     card that has been waiting -- the same anti-hype-bias reasoning as near-miss-first reject
-    scoring). ``limit`` caps how many are surfaced per cycle -- a bounded batch, not a dump.
+    scoring). ``limit`` <= 0 (the default) surfaces ALL pending cards -- conversion is never throttled; a positive value caps the batch for human-scale display only.
     """
     resolved = [c for c in cards if c.category == "resolved"]
     verif = [c for c in cards if c.category == "verification"]
@@ -101,8 +101,11 @@ def next_pending(cards: Sequence[SourceCard], *, limit: int = 3) -> BacklogRepor
 
     verif_sorted = sorted(verif, key=_verif_rank)
     legit_sorted = sorted(legit, key=lambda c: c.card_id)
-    next_v = tuple(c.name for c in verif_sorted[:limit])
-    next_l = tuple(c.name for c in legit_sorted[:limit])
+    # limit <= 0 means UNBOUNDED (principal 2026-07-25: conversion must always maximise and
+    # exhaust; a cap on how many findings are even SURFACED throttles conversion before work
+    # starts). Note `[:0]` is EMPTY, not unbounded -- the slice must be skipped, not zeroed.
+    next_v = tuple(c.name for c in (verif_sorted if limit <= 0 else verif_sorted[:limit]))
+    next_l = tuple(c.name for c in (legit_sorted if limit <= 0 else legit_sorted[:limit]))
 
     if not verif and not legit:
         verdict = f"backlog clear: all {len(resolved)} catalogued source(s) resolved"
@@ -119,6 +122,6 @@ def next_pending(cards: Sequence[SourceCard], *, limit: int = 3) -> BacklogRepor
     )
 
 
-def backlog_from_file(path: Path, *, limit: int = 3) -> BacklogReport:
+def backlog_from_file(path: Path, *, limit: int = 0) -> BacklogReport:
     """Convenience: parse a watchlist file straight to its next-pending report."""
     return next_pending(parse_watchlist(path.read_text("utf-8")), limit=limit)
