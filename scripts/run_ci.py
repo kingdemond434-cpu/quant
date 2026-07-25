@@ -32,9 +32,12 @@ _PY = venv_python(_ROOT)
 
 _STEPS = [
     ("lint (ruff)", [_PY, "-m", "ruff", "check", "scripts", "libs", "tests"]),
-    ("tests (pytest)", [_PY, "-m", "pytest", "tests/test_hedge_and_risk.py",
-                        "tests/test_root_cause.py", "tests/test_alpha_economics.py",
-                        "tests/test_review_fixes.py", "tests/execution/", "-q"]),
+    # WHOLE TREE (2026-07-25): was 4 named files + tests/execution = ~147 of ~1099 tests, leaving
+    # tests/risk (the ruin path) and tests/validation (the anti-false-positive path) ungated, and
+    # every newly-shipped test ungated by default. GAP 31's stated blocker -- duplicate basenames
+    # breaking collection -- EXPIRED once pyproject set --import-mode=importlib: the tree collects
+    # and was run 100% GREEN this session (only optional-dep skips), so gating it is proven safe.
+    ("tests (pytest)", [_PY, "-m", "pytest", "tests/", "-q"]),
     ("stress harness", [_PY, "scripts/run_stress.py"]),
 ]
 
