@@ -35,8 +35,10 @@ class TestMineConversion:
 
     def test_full_disposition_clears_gate_file(self, tmp_path: Path, monkeypatch) -> None:
         _mk(tmp_path).write_text(
-            "### 1. Tardis [§33: killed]\n### 2. Upbit [§33: deferred(2099-01-01)]\n")
-        # a kill is only credited with its graveyard entry -- the cheap exit stays closed
+            "### 1. Tardis [§33: killed -> docs/graveyard.md]\n"
+            "### 2. Upbit [§33: deferred(2099-01-01)]\n")
+        # a kill is only credited with its graveyard entry -- named EXACTLY, so the cheap exit
+        # stays closed and the credit cannot drift on a rename
         (tmp_path / "docs/graveyard.md").write_text(
             "- Tardis -- mechanism: vendor withdrew the free tier\n")
         _point_at(monkeypatch, tmp_path)
@@ -55,14 +57,23 @@ class TestMineConversion:
         assert "mine-conversion-unbacked" in [d[0] for d in defects]
         assert (tmp_path / "data/mining_suspended").exists()
 
-    def test_backed_claim_is_credited(self, tmp_path: Path, monkeypatch) -> None:
+    def test_exact_artifact_claim_is_credited(self, tmp_path: Path, monkeypatch) -> None:
+        _mk(tmp_path).write_text("### 1. Upbit [§33: wired -> data/upbit_1m.jsonl]\n")
+        (tmp_path / "data/upbit_1m.jsonl").write_text('{"t":1}\n')
+        _point_at(monkeypatch, tmp_path)
+        defects: list[tuple[str, str]] = []
+        m.check_mine_conversion(defects)
+        assert defects == []   # exact path, exists, non-empty -> no fuzzy nudge either
+
+    def test_fuzzy_claim_is_credited_but_nudged(self, tmp_path: Path, monkeypatch) -> None:
         _mk(tmp_path).write_text("### 1. Upbit [§33: wired]\n")
         monkeypatch.setattr(m, "ROOT", tmp_path)
         monkeypatch.setattr(m, "MINING_SUSPENDED", tmp_path / "data/mining_suspended")
         monkeypatch.setattr(m, "_conversion_artifacts", lambda: ["upbit_krw_btc_1m"])
         defects: list[tuple[str, str]] = []
         m.check_mine_conversion(defects)
-        assert defects == []
+        # credited (no backlog, no unbacked) but the weaker standard is surfaced, not silent
+        assert [d[0] for d in defects] == ["mine-conversion-fuzzy"]
 
     def test_mass_kill_without_graveyard_does_not_clear(self, tmp_path: Path, monkeypatch) -> None:
         # killing everything must cost MORE than converting it, not less
@@ -182,3 +193,61 @@ class TestMineFlow:
         # the closed loop must actually emit its artifact, not just compute it
         assert (tmp_path / "data/p.json").exists()
         assert (tmp_path / "data/r.json").exists()   # ratchet persisted
+
+
+class TestMineGate:
+    def test_missing_gate_script_fires(self, tmp_path: Path, monkeypatch) -> None:
+        (tmp_path / "scripts").mkdir(parents=True)
+        monkeypatch.setattr(m, "ROOT", tmp_path)
+        defects: list[tuple[str, str]] = []
+        m.check_mine_gate(defects)
+        assert defects and defects[0][0] == "mine-gate-missing"
+
+    def test_shell_that_skips_the_gate_is_flagged(self, tmp_path: Path, monkeypatch) -> None:
+        (tmp_path / "scripts").mkdir(parents=True)
+        (tmp_path / "scripts/mine_gate.py").write_text("print('[§33] AUTHORISED -- ok')\n")
+        (tmp_path / "ops").mkdir()
+        (tmp_path / "ops/run_rogue_dig.sh").write_text("#!/bin/bash\nclaude -p dig\n")
+        monkeypatch.setattr(m, "ROOT", tmp_path)
+        defects: list[tuple[str, str]] = []
+        m.check_mine_gate(defects)
+        assert "mine-gate-bypassed" in [d[0] for d in defects]
+
+    def test_gate_that_fails_open_is_surfaced(self, tmp_path: Path, monkeypatch) -> None:
+        # failing open is deliberate; this defect is the ONLY thing that makes it visible
+        (tmp_path / "scripts").mkdir(parents=True)
+        (tmp_path / "scripts/mine_gate.py").write_text(
+            "print('[§33] GATE-ERROR ValueError: boom -- failing OPEN')\n")
+        monkeypatch.setattr(m, "ROOT", tmp_path)
+        defects: list[tuple[str, str]] = []
+        m.check_mine_gate(defects)
+        assert "mine-gate-broken" in [d[0] for d in defects]
+        assert "UNGATED" in dict(defects)["mine-gate-broken"]
+
+    def test_healthy_gate_is_silent(self, tmp_path: Path, monkeypatch) -> None:
+        (tmp_path / "scripts").mkdir(parents=True)
+        (tmp_path / "scripts/mine_gate.py").write_text("print('[§33] AUTHORISED -- clear')\n")
+        (tmp_path / "ops").mkdir()
+        (tmp_path / "ops/run_x_dig.sh").write_text("python3 scripts/mine_gate.py || exit 0\n")
+        monkeypatch.setattr(m, "ROOT", tmp_path)
+        defects: list[tuple[str, str]] = []
+        m.check_mine_gate(defects)
+        assert defects == []
+
+
+class TestGateScript:
+    def test_real_gate_suspends_on_the_real_backlog(self) -> None:
+        import subprocess
+        import sys
+        r = subprocess.run([sys.executable, "scripts/mine_gate.py"],
+                           capture_output=True, text=True, timeout=120)
+        assert r.returncode in (0, 1)              # never crashes
+        assert "[§33]" in r.stdout
+        assert "GATE-ERROR" not in r.stdout        # and never fails open in a healthy tree
+
+    def test_explain_never_blocks(self) -> None:
+        import subprocess
+        import sys
+        r = subprocess.run([sys.executable, "scripts/mine_gate.py", "--explain"],
+                           capture_output=True, text=True, timeout=120)
+        assert r.returncode == 0

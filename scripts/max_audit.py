@@ -22,6 +22,7 @@ from __future__ import annotations
 import contextlib
 import json
 import re
+import sys
 import time
 from datetime import UTC, datetime
 from pathlib import Path
@@ -1289,7 +1290,8 @@ def check_mine_conversion(defects) -> None:
     if not items:
         return  # nothing carded -- nothing owed (a fresh clone, not a defect)
     thr = _mine_thresholds()
-    rep = conversion_report(items, as_of=datetime.now(UTC).date(), backing=_mine_backing())
+    rep = conversion_report(items, as_of=datetime.now(UTC).date(),
+                            backing=_mine_backing(), root=ROOT)
     with contextlib.suppress(OSError):
         append_snapshot(MINE_LEDGER, items)
 
@@ -1332,6 +1334,14 @@ def check_mine_conversion(defects) -> None:
             f"{thr['kill']:.0%}) -- the backlog is being cleared by GRAVEYARD rather than by "
             "conversion. A disposition is not automatically a conversion; a bad batch is real but "
             "so is the cheap exit, and this is its signature. Justify each kill's mechanism."))
+    if rep.n_fuzzy_credited and not rep.n_unbacked:
+        defects.append((
+            "mine-conversion-fuzzy",
+            f"§33 evidence standard: {rep.n_fuzzy_credited} terminal claim(s) are credited by "
+            "NAME MATCHING, not by a named artifact. Fuzzy credit breaks silently on a rename and "
+            "grants silently on a coincidence. Use the exact form -- "
+            "`[§33: wired -> data/upbit_1m.jsonl]` -- which must exist and be non-empty. Not a "
+            "backlog defect; a standard the desk should be ratcheting up."))
     if rep.priority_inversion:
         defects.append((
             "mine-conversion-inversion",
@@ -1407,6 +1417,47 @@ def check_mine_flow(defects) -> None:
             "failure as a law with no monitor."))
 
 
+def check_mine_gate(defects) -> None:
+    """The gate must be DERIVED, not a deletable flag -- and it must actually run.
+
+    `data/mining_suspended` was a file, and a file is something `rm` defeats: deleting it would
+    have restored mining without converting anything, making the law advisory again. The shells
+    now RUN scripts/mine_gate.py, which recomputes the backlog from the docs. Two failure modes
+    are checked here because the gate fails OPEN by design (a bug must never freeze the desk's
+    entire research intake for a week): the script must exist, and it must execute cleanly.
+    """
+    import subprocess
+
+    gate = ROOT / "scripts/mine_gate.py"
+    if not gate.exists():
+        defects.append(("mine-gate-missing",
+                        "§33: scripts/mine_gate.py is absent -- the digger shells call it to "
+                        "recompute the backlog, and without it the gate degrades to whatever the "
+                        "shells do on a missing command. Restore it."))
+        return
+    shells = [*sorted(ROOT.glob("ops/run_*dig*.sh")), ROOT / "ops/run_frontier_miner.sh"]
+    untrusting = [s.name for s in shells if s.exists() and "mine_gate.py" not in
+                  s.read_text("utf-8", errors="ignore")]
+    if untrusting:
+        defects.append(("mine-gate-bypassed",
+                        f"§33: digger shell(s) do NOT invoke the derived gate -- "
+                        f"{', '.join(untrusting)}. A shell that skips mine_gate.py mines "
+                        "regardless of the backlog; that is the law switched off for that organ."))
+    try:
+        r = subprocess.run([sys.executable, str(gate), "--explain"], cwd=ROOT,
+                           capture_output=True, text=True, timeout=120)
+    except (OSError, subprocess.SubprocessError) as exc:
+        defects.append(("mine-gate-broken",
+                        f"§33: the gate script could not be executed ({type(exc).__name__}). It "
+                        "fails OPEN by design, so a broken gate silently authorises mining -- "
+                        "this defect is the only thing that surfaces it. Fix before the next dig."))
+        return
+    if "GATE-ERROR" in (r.stdout + r.stderr):
+        defects.append(("mine-gate-broken",
+                        f"§33: the gate script raised and failed OPEN -- {r.stdout.strip()[:220]}. "
+                        "Mining is currently UNGATED. Fix before the next dig."))
+
+
 def check_dig_uncommitted(defects) -> None:
     """A dig finding not in git DID NOT HAPPEN -- VPS disk is not institutional memory.
 
@@ -1462,6 +1513,7 @@ def main() -> None:
                       ("orphan-code", check_orphan_code),
                       ("mine-conversion", check_mine_conversion),
                       ("mine-flow", check_mine_flow),
+                      ("mine-gate", check_mine_gate),
                       ("dig-uncommitted", check_dig_uncommitted),
                       ("depth-parity", check_depth_parity),
                       ("source-backlog", check_source_backlog),

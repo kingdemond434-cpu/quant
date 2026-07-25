@@ -16,6 +16,7 @@ from libs.research.mine_conversion import (
     conversion_report,
     feedback_applied,
     flow_stats,
+    fuzzy_credited,
     infer_tier,
     is_disposed,
     load_ledger,
@@ -307,3 +308,46 @@ class TestClosedLoop:
                         now=datetime(2026, 8, 1, tzinfo=UTC))
         ok, _ = feedback_applied(load_ledger(lg), priors, lookback=1)
         assert ok is True
+
+
+class TestExactArtifactCredit:
+    def test_arrow_syntax_parses_the_path(self) -> None:
+        i = parse_dispositions("### 1. Upbit [§33: wired -> data/upbit_1m.jsonl]\n", source="d")
+        assert i[0].artifact == "data/upbit_1m.jsonl" and i[0].disposition == "wired"
+
+    def test_at_syntax_also_parses(self) -> None:
+        i = parse_dispositions("### 1. X [§33: screened @ reports/x.json]\n", source="d")
+        assert i[0].artifact == "reports/x.json"
+
+    def test_arrow_combines_with_tier(self) -> None:
+        i = parse_dispositions("### 1. X [§33: wired tier:1 -> a/b.json]\n", source="d")
+        assert i[0].tier == 1 and i[0].artifact == "a/b.json"
+
+    def test_existing_nonempty_file_is_credited(self, tmp_path: Path) -> None:
+        (tmp_path / "a.json").write_text("{}")
+        i = parse_dispositions("### 1. X [§33: wired -> a.json]\n", source="d")
+        assert unbacked(i, backing={}, root=tmp_path) == ()
+
+    def test_missing_file_is_unbacked_even_with_a_perfect_name_match(self, tmp_path: Path) -> None:
+        # the exact path is AUTHORITATIVE -- naming a file that isn't there cannot be laundered
+        # by a fuzzy name hit
+        i = parse_dispositions("### 1. X [§33: wired -> gone.json]\n", source="d")
+        assert unbacked(i, backing={"wired": ["x"]}, root=tmp_path) == tuple(i)
+
+    def test_empty_stub_file_is_unbacked(self, tmp_path: Path) -> None:
+        (tmp_path / "stub.json").write_text("")
+        i = parse_dispositions("### 1. X [§33: wired -> stub.json]\n", source="d")
+        assert unbacked(i, backing={}, root=tmp_path) == tuple(i)
+
+    def test_directory_is_not_an_artifact(self, tmp_path: Path) -> None:
+        (tmp_path / "d").mkdir()
+        i = parse_dispositions("### 1. X [§33: wired -> d]\n", source="d")
+        assert unbacked(i, backing={}, root=tmp_path) == tuple(i)
+
+    def test_fuzzy_claims_are_counted_so_the_standard_can_ratchet(self, tmp_path: Path) -> None:
+        (tmp_path / "a.json").write_text("{}")
+        i = parse_dispositions(
+            "### 1. Exact [§33: wired -> a.json]\n### 2. Loose [§33: wired]\n", source="d")
+        assert [x.name for x in fuzzy_credited(i)] == ["Loose"]
+        rep = conversion_report(i, as_of=_TODAY, backing={"wired": ["loose"]}, root=tmp_path)
+        assert rep.n_fuzzy_credited == 1 and rep.n_unbacked == 0

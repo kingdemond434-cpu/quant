@@ -70,7 +70,8 @@ _ITEM_RE = re.compile(r"^### (?P<cid>\d+)\.\s+(?P<card>.+?)\s*$", re.MULTILINE)
 _DISP_RE = re.compile(
     r"\[(?:§|S|section\s*)33:\s*(?P<verb>[a-z-]+)\s*"
     r"(?:\(\s*(?P<until>[0-9]{4}-[0-9]{2}-[0-9]{2})\s*\))?"
-    r"(?:[\s,]*tier\s*:\s*(?P<tier>[1-4]))?\s*\]",
+    r"(?:[\s,]*tier\s*:\s*(?P<tier>[1-4]))?"
+    r"(?:\s*(?:->|@)\s*(?P<art>[^\]]+?))?\s*\]",
     re.IGNORECASE,
 )
 
@@ -123,6 +124,7 @@ class MinedItem(BaseModel):
     deferred_until: str = ""
     illegal_reason: str = ""
     tier: int = 3
+    artifact: str = ""   # explicit repo-relative path from ``-> path`` -- exact, not fuzzy
 
     @property
     def weight(self) -> int:
@@ -146,15 +148,16 @@ def parse_dispositions(
             items.append(MinedItem(source=source, name=name, tier=tier))
             continue
         verb, until = d.group("verb").lower(), (d.group("until") or "")
+        art = (d.group("art") or "").strip()
         if verb not in LEGAL:
-            items.append(MinedItem(source=source, name=name, tier=tier,
+            items.append(MinedItem(source=source, name=name, tier=tier, artifact=art,
                                    illegal_reason=f"unknown disposition '{verb}'"))
         elif verb == "deferred" and not until:
             # the hiding place: an undated deferral is indistinguishable from abandonment
-            items.append(MinedItem(source=source, name=name, tier=tier,
+            items.append(MinedItem(source=source, name=name, tier=tier, artifact=art,
                                    illegal_reason="deferred with NO date"))
         else:
-            items.append(MinedItem(source=source, name=name, tier=tier,
+            items.append(MinedItem(source=source, name=name, tier=tier, artifact=art,
                                    disposition=verb, deferred_until=until))
     return items
 
@@ -177,24 +180,55 @@ def backlog(items: Iterable[MinedItem], *, as_of: date) -> tuple[MinedItem, ...]
 
 
 def unbacked(
-    items: Iterable[MinedItem], *, backing: Mapping[str, Sequence[str]]
+    items: Iterable[MinedItem],
+    *,
+    backing: Mapping[str, Sequence[str]],
+    root: Path | None = None,
 ) -> tuple[MinedItem, ...]:
-    """Terminal claims the caller could not corroborate against a real artifact.
+    """Terminal claims that could not be corroborated by a real artifact.
 
-    ``backing`` maps disposition -> corroborating names (wired/screened from collector output and
-    research memory; killed from the graveyard). Substring match in both directions: a card name
-    and its artifact rarely agree character for character ("Tardis" vs "tardis_l2_backfill"), and
-    a false ACCEPT is far cheaper than a false alarm that trains the reader to ignore the check.
+    TWO MODES, and the strong one is preferred:
+
+    EXACT (``[§33: wired -> data/upbit_1m.jsonl]``) -- the named path must EXIST and be NON-EMPTY.
+    Authoritative: a rename, a deletion, or an empty stub file all fail loudly. This is the mode
+    the desk should converge on, because it names the evidence instead of hinting at it.
+
+    FUZZY (no path given) -- substring match in both directions against ``backing`` (wired/screened
+    from collector output and research memory; killed from the graveyard). Kept only for backward
+    compatibility with cards written before the arrow syntax: a card name and its artifact rarely
+    agree character for character ("Tardis" vs "tardis_l2_backfill"). It is genuinely weaker -- a
+    rename silently breaks credit and a coincidental substring silently grants it -- so the report
+    counts how many claims still rely on it, making the drift toward EXACT visible and pressurable.
     """
+    base = root or Path()
     out = []
     for i in items:
         if i.disposition not in _CLAIMS_ARTIFACT:
+            continue
+        if i.artifact:
+            p = base / i.artifact
+            try:
+                if p.is_file() and p.stat().st_size > 0:
+                    continue
+            except OSError:
+                pass
+            out.append(i)
             continue
         n = i.name.lower()
         cands = [b.lower() for b in backing.get(i.disposition, ()) if b]
         if not any(b in n or n in b for b in cands):
             out.append(i)
     return tuple(out)
+
+
+def fuzzy_credited(items: Iterable[MinedItem]) -> tuple[MinedItem, ...]:
+    """Terminal claims relying on NAME MATCHING rather than a named artifact path.
+
+    Not a defect on its own -- it is the weaker evidence standard, and measuring it is how the
+    desk ratchets from "roughly corroborated" to "this exact file, non-empty, or it did not
+    happen" without a flag day.
+    """
+    return tuple(i for i in items if i.disposition in _CLAIMS_ARTIFACT and not i.artifact)
 
 
 class ConversionReport(BaseModel):
@@ -210,6 +244,7 @@ class ConversionReport(BaseModel):
     n_backlog: int
     n_illegal: int
     n_unbacked: int
+    n_fuzzy_credited: int
     weighted_backlog: int
     top_tier_owing: int          # 1..4; 0 when nothing is owed
     kill_share: float            # killed / terminal -- a spike means the escape hatch is in use
@@ -232,6 +267,7 @@ def conversion_report(
     *,
     as_of: date,
     backing: Mapping[str, Sequence[str]] | None = None,
+    root: Path | None = None,
     max_shown: int = 8,
 ) -> ConversionReport:
     """Build the §33 report and decide whether mining is SUSPENDED this cycle.
@@ -244,7 +280,8 @@ def conversion_report(
     backing = backing or {}
     bl = backlog(items, as_of=as_of)
     illegal = tuple(i for i in items if i.illegal_reason)
-    ub = unbacked(items, backing=backing)
+    ub = unbacked(items, backing=backing, root=root)
+    fuzzy = fuzzy_credited(items)
     counts = {v: sum(1 for i in items if i.disposition == v and is_disposed(i, as_of=as_of))
               for v in LEGAL}
     # An EXPIRED deferral is backlog, not a deferral -- counting it in both places would let a
@@ -278,6 +315,7 @@ def conversion_report(
         n_wired=counts["wired"], n_screened=counts["screened"],
         n_killed=counts["killed"], n_deferred=counts["deferred"],
         n_backlog=len(bl), n_illegal=len(illegal), n_unbacked=len(ub),
+        n_fuzzy_credited=len(fuzzy),
         weighted_backlog=weighted, top_tier_owing=top_tier,
         kill_share=round(kill_share, 3), priority_inversion=inversion,
         backlog_names=tuple(f"T{i.tier} {i.name}" for i in bl[:max_shown]),
