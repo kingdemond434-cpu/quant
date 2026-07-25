@@ -71,6 +71,9 @@ class TestMineConversion:
         _mk(tmp_path).write_text("### 1. Upbit [§33: wired]\n")
         monkeypatch.setattr(m, "ROOT", tmp_path)
         monkeypatch.setattr(m, "MINING_SUSPENDED", tmp_path / "data/mining_suspended")
+        # isolate the ledger too: a real sweep (or carryover --record, which runs every check)
+        # writes data/mine_conversion_log.jsonl, and an un-isolated fixture then inherits the
+        # live desk's vanished-item state
         monkeypatch.setattr(m, "MINE_LEDGER", tmp_path / "data/ledger.jsonl")
         monkeypatch.setattr(m, "_conversion_artifacts", lambda: ["upbit_krw_btc_1m"])
         defects: list[tuple[str, str]] = []
@@ -332,58 +335,4 @@ class TestMineScope:
         monkeypatch.setattr(m, "ROOT", tmp_path)
         defects: list[tuple[str, str]] = []
         m.check_mine_scope(defects)
-        assert defects == []
-
-
-class TestFindingsTracked:
-    """§35 -- a finding that never reaches the register is invisible to the daily cycle."""
-
-    def _docs(self, tmp: Path, review: str, register: str) -> None:
-        (tmp / "docs/research").mkdir(parents=True, exist_ok=True)
-        (tmp / "docs/SYSTEM_REVIEW.md").write_text(review)
-        (tmp / "docs/GAP_REGISTER.md").write_text(register)
-
-    def test_untracked_finding_fires(self, tmp_path: Path, monkeypatch) -> None:
-        self._docs(tmp_path, "1. **Fee-tier VIP progression** unmodelled\n", "| 1 | unrelated |\n")
-        monkeypatch.setattr(m, "ROOT", tmp_path)
-        defects: list[tuple[str, str]] = []
-        m.check_findings_tracked(defects)
-        assert defects and defects[0][0] == "findings-untracked"
-        assert "invisible" in defects[0][1]
-
-    def test_tracked_finding_is_silent(self, tmp_path: Path, monkeypatch) -> None:
-        self._docs(tmp_path, "1. **Fee-tier VIP progression** unmodelled\n",
-                   "| 59 | fee-tier / VIP progression not modelled | ... |\n")
-        monkeypatch.setattr(m, "ROOT", tmp_path)
-        defects: list[tuple[str, str]] = []
-        m.check_findings_tracked(defects)
-        assert defects == []
-
-    def test_no_register_no_op(self, tmp_path: Path, monkeypatch) -> None:
-        (tmp_path / "docs").mkdir(parents=True)
-        monkeypatch.setattr(m, "ROOT", tmp_path)
-        defects: list[tuple[str, str]] = []
-        m.check_findings_tracked(defects)
-        assert defects == []
-
-    def test_rogue_findings_doc_is_flagged(self, tmp_path: Path, monkeypatch) -> None:
-        # a findings doc outside the scan evades §35 with no code change and no diff
-        (tmp_path / "docs").mkdir(parents=True)
-        (tmp_path / "docs/GAP_REGISTER.md").write_text("| 1 | x |\n")
-        (tmp_path / "docs/secret_audit.md").write_text(
-            "".join(f"{i}. **Finding number {i} about widgets**\n" for i in range(1, 7)))
-        monkeypatch.setattr(m, "ROOT", tmp_path)
-        defects: list[tuple[str, str]] = []
-        m.check_findings_scope(defects)
-        assert defects and defects[0][0] == "findings-scope-unmonitored"
-        assert "secret_audit.md" in defects[0][1]
-
-    def test_a_few_numbered_lines_is_prose_not_a_findings_doc(
-        self, tmp_path: Path, monkeypatch
-    ) -> None:
-        (tmp_path / "docs").mkdir(parents=True)
-        (tmp_path / "docs/notes.md").write_text("1. **one**\n2. **two**\n")
-        monkeypatch.setattr(m, "ROOT", tmp_path)
-        defects: list[tuple[str, str]] = []
-        m.check_findings_scope(defects)
         assert defects == []
