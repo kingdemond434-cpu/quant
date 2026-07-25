@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""§33 mining gate -- RECOMPUTED, never read from a flag. Exit 1 = mining suspended.
+"""§33 conversion PRIORITY directive -- RECOMPUTED from the docs, never read from a flag.
+
+MINING IS NEVER THROTTLED (principal 2026-07-25). This never blocks a dig; it tells the dig
+what to do FIRST. Unprocessed data is unrealized option value and living-web sources decay,
+so acquisition is never cut to meet extraction -- extraction is scaled up to meet acquisition.
+The backlog therefore preempts the dig's PRIORITY, not its EXISTENCE.
 
 A gate that is a file is a gate anything can delete: `rm data/mining_suspended` would have
 restored mining without converting a thing, which makes the whole law advisory again. So the
@@ -8,7 +13,7 @@ of truth the daily sweep uses. Deleting state cannot help, because there is no s
 the only way to open the gate is to actually dispose of the findings, and the only way to disable
 it is to edit tracked code, which shows up in a diff and in review.
 
-    python3 scripts/mine_gate.py            # exit 0 = authorised, 1 = SUSPENDED (reason to stdout)
+    python3 scripts/mine_gate.py            # ALWAYS exit 0; prints the conversion PRIORITY block
     python3 scripts/mine_gate.py --explain  # always exit 0; print the full §33 block
 
 FAIL-OPEN, LOUDLY. If this script itself breaks, it exits 0 (mining proceeds) and prints a
@@ -56,7 +61,12 @@ def main() -> int:
               "max_audit.check_mine_gate will raise this as a defect")
         return 0
     print(f"[§33] {'SUSPENDED' if suspended else 'AUTHORISED'} -- {reason}")
-    return 1 if (suspended and not a.explain) else 0
+    # ALWAYS 0: mining is never throttled (principal 2026-07-25). The backlog steers the
+    # dig's PRIORITY, never its existence -- unprocessed data is unrealized option value and
+    # living-web sources decay, so acquisition is never cut to meet extraction. `suspended`
+    # is retained purely as a reporting signal for the max_audit mine-conversion defects.
+    _ = suspended
+    return 0
 
 
 if __name__ == "__main__":

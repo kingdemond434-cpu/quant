@@ -111,7 +111,7 @@ def main() -> None:
     out = {
         "updated": datetime.now(tz=UTC).isoformat(),
         "axis": "cme",
-        "n_days": int(len(df)),
+        "n_days": len(df),
         "range": [str(df.index.min().date()), str(df.index.max().date())],
         "alignment": "CME session close ~22:00 UTC day t predicts Binance close-to-close day t+1"
                      " (signal ~26h old at entry; no look-ahead). 5d/20d non-overlapping.",
