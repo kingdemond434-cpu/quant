@@ -46,7 +46,7 @@ ORGANS: tuple[OrganSpec, ...] = (
               "run_frontier"),
     # WEEKLY: the deep cold audit must also complete once per INTERVAL even if its
     # Sunday 04:00Z window dies on a session limit -- otherwise it waits a full week.
-    OrganSpec("deep_sweep", "ops/run_deep_sweep.sh", "deep_sweep_*.log", 2500,
+    OrganSpec("deep_sweep", "ops/run_deep_sweep.sh", "deep_sweep_*.log", 1200,
               "run_deep_sweep", period_days=7),
 )
 

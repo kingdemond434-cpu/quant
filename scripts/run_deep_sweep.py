@@ -89,10 +89,13 @@ def run_auditor(key: str, brief: str, stamp: str) -> bool:
         f"exhaustive; token cost is not a constraint."
     )
     try:
-        r = _run(prompt, 2700)
+        r = _run(prompt, 1800)
     except subprocess.TimeoutExpired:
         r = None
-    ok = report.exists() and report.stat().st_size >= 2500
+    # 1200b: a tight, command-cited report is a PASS. The old 2500b floor rewarded
+    # padding -- the exact failure the doctrine forbids -- and would have marked
+    # honest concise audits as failures.
+    ok = report.exists() and report.stat().st_size >= 1200
     if not ok:
         tail = ((r.stdout or "")[-900:] + "\n--stderr--\n" + (r.stderr or "")[-400:]) \
             if r else "TIMEOUT"
@@ -141,7 +144,7 @@ def main() -> None:
             "'implement everything'; nothing high-value lost to neglect."
         )
         with contextlib.suppress(subprocess.TimeoutExpired):
-            _run(sp, 2400)
+            _run(sp, 1800)
     n_ok = sum(1 for _, ok in results if ok)
     print(f"[deep-sweep] done: {n_ok}/{len(results)} produced; "
           f"synthesis={'yes' if synth.exists() else 'NO'}", flush=True)

@@ -75,3 +75,21 @@ or superseded — none lost to neglect, none promoted without surviving validati
 graveyard is sacred; survival rails and proven-edge sizing are the two non-ceilings. Blunt
 always; an honest "this is at ceiling, here is the proving evidence and the lifting condition"
 is a valid finding; flattery and padding are defects.
+
+=== COMPLETION CONTRACT (2026-07-25 -- an audit that never finishes produces NOTHING) ===
+EVIDENCE: across this desk, NO organ run has ever produced a completed report; unbounded
+exhaustive instructions die mid-work leaving only a start header. Your report existing is worth
+more than your report being complete.
+  1. WRITE THE SKELETON FIRST. Before deep investigation, create your report file with the four
+     output headings and your subsystem's scores as placeholders. Then FILL IT INCREMENTALLY --
+     append each finding as you verify it. Never hold findings in context to write at the end.
+     If you are cut off, the partial report is the deliverable.
+  2. BOUND EACH PERSPECTIVE. The six perspectives are mandatory in COVERAGE, not in volume: 1-3
+     sharp evidenced findings each, or an explicit evidence-backed 'nothing found'. Depth per
+     finding stays maxed; total volume is bounded so you finish.
+  3. FINISH CLEANLY. Reserve your last effort for the four-output structure and the ranked
+     opportunities. A run that ends without a written report has FAILED regardless of how much it
+     read.
+  4. NO PADDING. A tight report with 6 verified command-cited findings beats 40 speculative
+     paragraphs -- padding eats the triage budget the doctrine protects. Byte count is never a
+     goal.
