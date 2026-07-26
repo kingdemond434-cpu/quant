@@ -1,9 +1,56 @@
 # [T1-b] Coin Metrics Community data — LICENCE RULING DOSSIER
 
-**Status:** IN PROGRESS (opened 2026-07-26)
+**Status:** COMPLETE — awaiting principal ratification (opened & closed 2026-07-26)
 **Author:** literature deep-miner, research-only under hard freeze
 **Not legal advice.** This is a DESK RECOMMENDATION with primary text quoted so a human principal
 can ratify or overturn it. No agent self-approval.
+
+---
+
+## ⏱ BOTTOM LINE (the rest of this document is the evidence)
+
+**1. OPERATIVE DOCUMENT.** Coin Metrics **Terms of Use §4.1** — not the GitHub repo LICENSE, and not
+the "Coin Metrics Master Terms" PDF (that one is a paid Order-Form contract with **zero** mentions
+of Community / Creative Commons / non-commercial). The ToU has been **deleted from the live web**:
+Coin Metrics was acquired by Talos and `coinmetrics.io/terms-of-use/` now **301s to a marketing
+page**. Recovered from the Internet Archive's last capture (2026-02-06) and confirmed **stable
+across four captures spanning 18 months**. The grant:
+
+> *"…a limited non-exclusive, non-transferable, worldwide right (i) to access and use the Services
+> **solely for non-commercial internal business purposes**, and (ii) to access, copy, display,
+> perform, and use Coin Metrics Content **for non-commercial internal business purposes** pursuant
+> to the terms of the Creative Commons Attribution-Non Commercial 4.0 International (CC BY-NC 4.0)
+> License…"*
+
+**2. RULING: 🔴 EXCLUDE for production. 🟡 RESEARCH-ONLY (winding down) for what's already done.**
+Confidence HIGH on the production half. Three reasons the "but it's purely internal" defence fails:
+CM's own gloss says *non-commercial **internal business** purposes* — it pre-empts that exact
+argument; the NC test is about **primary purpose**, and a trading signal's only purpose is money;
+and **CM's licence — unlike Upbit's — contains no affirmative permission to backtest or develop
+strategies.** **Do not rule on Upbit by analogy: Upbit is on the line, Coin Metrics is over it.**
+
+**3. ⚠️ A SECOND BLOCKER THE DESK HAS NEVER FLAGGED — ToU §6(iii) bans using the Services "TO INPUT
+INTO, DEVELOP, TRAIN, IMPROVE, GENERATE OUTPUT FROM, OR OTHERWISE USE IN RELATION TO, ANY AI SYSTEM
+… [including] MACHINE MODELS."** This is **not** a NonCommercial question, so **a favourable NC
+ruling would not clear it.** Any fitted/learned model on this data is exposed regardless.
+
+**4. THE DESK LOSES A FEED, NOT ITS FINDINGS.** The negative result — *the exchange-flow/MVRV metric
+class carries no daily-horizon edge over 15 years* — is the desk's **own measurement**. It survives
+EXCLUDE intact. The $799/mo × 2 question stays answered at $0.
+
+**5. RECONSTRUCTION IS VIABLE — this is the real deliverable.**
+- **The methodology is fully published by the vendor, with a worked numeric example** (§4.2). Nothing
+  to reverse-engineer, and it yields a free unit test.
+- **The metric telescopes into a stateless cumulative sum** — no UTXO set needed. ~1 week of work.
+- **Substrate: AWS Public Blockchain, genesis → today, keyless — and it is *more* permissive than
+  the desk's registry says (MIT-0, no citation duty, not "Apache-2.0 + citation"). Registry
+  corrected this run.**
+- **Honest residual:** no free+clean+full-history *hosted* source exists (11 candidates, all
+  graded); and the **price leg has a real ~13.5-month gap (2010-07-17 → 2011-08-29)** with a
+  documented $0-convention workaround.
+
+**6. CHEAPEST UNBLOCK, and it is Creative Commons' own advice: ASK.** One email to Coin Metrics /
+Talos could convert EXCLUDE → ADOPT in a single reply. **Human action — an agent must not send it.**
 
 ---
 
@@ -35,7 +82,7 @@ can ratify or overturn it. No agent self-approval.
 - [x] §2 Reconcile repo CC BY-NC 4.0 vs API terms. Which governs? Does staleness change it?
 - [x] §3 Rule on the NonCommercial crux (CC's own NC guidance + any CM statement). ADOPT /
       RESEARCH-ONLY / EXCLUDE.
-- [ ] §4 FREE-FRONTIER RECONSTRUCTION: realized-cap / MVRV / cost-basis from raw chain data or a
+- [x] §4 FREE-FRONTIER RECONSTRUCTION: realized-cap / MVRV / cost-basis from raw chain data or a
       cleanly-licensed alternative. Licence + history depth for each candidate.
 
 ---
@@ -779,4 +826,213 @@ all** — MVRV is served but realized cap must be backed out as `CapMrktCurUSD /
 > scraping `www.blockchain.com` by "*robots, spiders, scraping or other technology*" in general
 > terms, and betting a production dependency on the narrow reading is exactly the risk §13 exists to
 > avoid. **Graded EXCLUDE, with the ambiguity recorded rather than resolved in the desk's favour.**
+
+## 4.5 THE RECONSTRUCTION PATH — VIABLE, AND CHEAPER THAN EXPECTED
+
+### 4.5.1 The algorithm telescopes — no UTXO set required
+
+The reason this looked hard is a false assumption (that you must materialise the UTXO set at every
+date). You don't. Realized cap decomposes into two daily aggregates plus a running sum:
+
+```
+created_usd(d)   = Σ over outputs CREATED on day d of  value · P(d)
+destroyed_usd(d) = Σ over outputs SPENT   on day d of  value · P(creation_day_of_that_output)
+RealizedCap(D)   = Σ_{d ≤ D} [ created_usd(d) − destroyed_usd(d) ]
+MVRV(D)          = MarketCap(D) / RealizedCap(D)
+RealizedPrice(D) = RealizedCap(D) / CirculatingSupply(D)
+```
+
+Both aggregates fall out of one self-join `(spent_transaction_hash, spent_output_index) →
+(transaction_hash, index)`. **This is O(n) streaming, not O(UTXO-set) stateful** — which is why the
+job is roughly a week of engineering, not a quarter.
+
+### 4.5.2 Substrate — graded
+
+| Substrate | Coverage (verified) | Has creation↔spend linkage? | Licence | Access | Grade |
+|---|---|---|---|---|---|
+| **AWS Public Blockchain** `s3://aws-public-blockchain/v1.0/btc/` | **2009-01-03 (genesis) → 2026-07-26** | ✅ `inputs[].spent_transaction_hash/_output_index`, `outputs[].value/index`, `block_timestamp` | ✅ **MIT-0 — see correction below** | keyless `--no-sign-request` | ✅ **PRIMARY** |
+| **BigQuery** `bigquery-public-data.crypto_bitcoin` | genesis → now, 24h refresh | ✅ `spent_transaction_hash` confirmed | ⚠️ **no explicit licence found** — only an "AS IS" disclaimer | GCP account + billing; 1 TB/mo free then $6.25/TB | ✅ **best PROTOTYPE** |
+| **Blockchair dumps** | 2009-01-03 → 2026-07-25 | ✅ **pre-joined** — `inputs` ships creation `value_usd` AND `spending_*` on one row, plus `lifespan`, `cdd` | ⚠️ **UNSTATED** (401 bot-wall) | keyless but **10 kB/s** | ⚠️ **fastest IF licensed** |
+
+> **🔴 REGISTRY CORRECTION — `data/data_universe_map.json` IS WRONG ABOUT THE AWS LICENCE, IN THE
+> DESK'S FAVOUR.** The map currently records: *"license: Apache 2.0 per AWS's open-data-registry
+> github repo; usage requires citation 'AWS Public Blockchain Data was accessed on [DATE]' +
+> registry URL."* **Both halves are wrong.** Verified independently this run: the registry YAML
+> `https://raw.githubusercontent.com/awslabs/open-data-registry/main/datasets/aws-public-blockchain.yaml`
+> (200) has exactly one licence field — `License: https://github.com/aws-samples/digital-assets-examples/blob/main/LICENSE`
+> — and that file (200) reads:
+> > "Permission is hereby granted, free of charge, to any person obtaining a copy of this software
+> > and associated documentation files (the 'Software'), to deal in the Software **without
+> > restriction**, including without limitation the rights to use, copy, modify, merge, publish,
+> > distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the
+> > Software is furnished to do so."
+>
+> Note what is **absent**: the "subject to the following conditions… include the above copyright
+> notice" clause present in standard MIT. This is **MIT-0 (MIT No Attribution)** — *more* permissive
+> than the desk believed, **with no citation obligation**. **Honest caveat that must travel with
+> this: it is a SOFTWARE licence pointed at a DATASET**, which is a genuine ambiguity. Mitigant:
+> the payload is raw blockchain facts, the thinnest possible copyright surface. Worth a short
+> counsel check; not a blocker. **This correction is applied to the map in this run.**
+
+### 4.5.3 Open-source implementations — HONEST NEGATIVE
+
+**There is no maintained, permissively-licensed, working from-UTXO realized-cap implementation on
+GitHub.** Searched via the GitHub repo-search API (code search returned 401 — unauthenticated code
+search is not available, and no token was used). Everything found is (a) a vendor scraper,
+(b) unlicensed hobby code, or (c) infrastructure that stops short of the price join:
+
+| Repo | Licence | Computes realized cap from UTXO? | Last commit |
+|---|---|---|---|
+| `github.com/citp/BlockSci` | GPL-3.0 | No — substrate only (C++ UTXO engine) | 2021-12-13 (stale) |
+| `github.com/blockchain-etl/bitcoin-etl` | MIT | No — extraction only (**this is what generates BigQuery's tables**) | 2025-05-02 |
+| `github.com/in3rsha/bitcoin-utxo-dump` | MIT | No — *current* chainstate only, no history, no prices | 2025-05-12 |
+| `github.com/SciEcon/UTXO` | GPL-3.0 | Partial — UTXO **age** cohorts from BigQuery; **zero** `usd`/`price`/`realized` hits | 2022-05-05 |
+| `github.com/Tsunekazu/checkonchain` | ISC | No — **pulls from Coin Metrics** | 2019-10-15 (abandoned) |
+| `github.com/dhruvan2006/chaindl` | MIT | **No — it is a vendor scraper** (CheckOnChain, Glassnode Studio, Dune, Bitbo…) | 2026-03-31 |
+| `github.com/mohitbhbundey/Bitcoin_MVRV_Ratio_System` | **none** ⇒ all rights reserved | claims to; 0★, unvetted | 2025-07-31 |
+
+⚠️ **`chaindl` is the trap of this section, and it is the same trap as the Kaggle one:** MIT-licensed
+*code* that scrapes Glassnode/Dune/CheckOnChain. **An MIT licence on a scraper does not launder the
+ToS on the scraped data.** Generalised rule for the operator library: **on any "free data" repo,
+grade the DATA's upstream terms, never the CODE's licence badge.**
+
+**Why no good implementation exists** — worth stating, because it reframes the effort estimate:
+it is not that the problem is hard. It is that **everyone who wanted this number just paid
+Glassnode.** The desk is not swimming against a technical current, only a commercial habit.
+
+### 4.5.4 Academic — one genuinely usable asset, and it stops short of the price leg
+
+**Liu, Zhang & Zhao (2022), "Deciphering Bitcoin Blockchain Data by Cohort Analysis", *Scientific
+Data* 9:136** — `https://www.nature.com/articles/s41597-022-01254-0` (303 to IdP; metadata via
+`https://api.crossref.org/works/10.1038/s41597-022-01254-0`, 200).
+- **Article licence: CC BY 4.0 — commercially usable.**
+- **Code:** `github.com/SciEcon/UTXO`, GPL-3.0 — a *validated BigQuery query pattern* over
+  `crypto_bitcoin.{inputs,outputs}` using `spent_transaction_hash`. Useful scaffolding.
+- **Data:** Harvard Dataverse `doi:10.7910/DVN/XSZQWP`, 16 files, **2009-01-03 → 2021-02-10 daily
+  (n=4,421)**. Terms, verbatim from the Dataverse export API: *"CC BY — … **The license allows for
+  commercial use.**"*
+- ⚠️ **Limitation: UTXO AGE COHORTS ONLY — no price leg, hence no realized cap.** It hands the desk
+  the scaffolding under a commercially-clean licence; the desk supplies the price join.
+
+`arXiv:2512.07886` reconstructs realized cap **backwards** from a vendor MVRV × market cap — i.e.
+the exact circular dependency this section exists to break. **Cite as prior art for the shortcut,
+never as a reconstruction.** No SSRN/ScienceDirect paper found that rebuilds realized cap from
+UTXOs with released code — **honest negative.**
+
+**Dune:** public queries exist (`dune.com/queries/1936502` "Bitcoin : Realized Price";
+`.../3979995` "URPD v1") but both **403** to direct fetch and render the SQL only via an
+authenticated XHR. **The SQL is not readable without an account. No circumvention attempted.**
+A free registration is a legitimate route a human can take. Note also that Dune's Bitcoin tables are
+themselves a curated product with their own ToS — read the method, do not depend on the pipeline.
+(This also independently re-confirms card 7's earlier finding that the Dune path is key-gated.)
+
+### 4.5.5 ⚠️ THE PRICE LEG — MY TWO SUB-SEARCHES CONTRADICTED EACH OTHER. RESOLVING IT EXPLICITLY.
+
+**The conflict:** the reconstruction sweep recommended **Blockchain.com `market-price`** as the
+primary price leg (6,413 gap-free daily points, 2009-01-03 → 2026-07-25, keyless, verified spacing
+histogram: 6,412 of 6,412 gaps = exactly 1 day). The hosted-source sweep independently found that
+**Blockchain.com's own API terms forbid exactly that use** — *"You shall not commercialize …, copy,
+**store or cache** the Blockchain Content"*. I re-fetched the terms myself and **confirmed the
+restriction is real** (§4.4 verification box).
+
+**RESOLUTION: the licence finding wins. Blockchain.com is NOT the price leg.** A production price
+table is a cache by any ordinary reading, and the whole point of §4 is to stop depending on data the
+desk has no clear right to use. Adopting Blockchain.com would swap a CC BY-NC problem for a
+"shall not store or cache" problem — **no improvement, and a self-inflicted one.**
+*(Recording the disagreement rather than silently picking a winner: two independent searches
+reaching opposite conclusions is exactly the signal that a claim needed adjudication, and the one
+that looked at the licence was right.)*
+
+**What the price leg actually needs — the requirement is smaller than it looks.** Per CM's own
+published convention, coins that last moved before price discovery are valued at **$0**. So the
+series only needs to start at **first price ≈ 2010-07-17**, not at genesis. Graded candidates:
+
+| Price source | Depth (verified) | Licence | Key? | Verdict |
+|---|---|---|---|---|
+| Blockchain.com `market-price` | 2009-01-03 → 2026-07-25, gap-free daily | ⛔ **"shall not … copy, store or cache"** | no | **REJECTED** (see above) |
+| **Bitcoinity** `data.bitcoinity.org/export_data.csv` | **5,854 rows, 2010-07-17 → 2026-07-25**, per-venue columns (bitstamp/coinbase/kraken/bitfinex/cex.io/others) | ⚠️ **UNSTATED** — `/about` is **404**; footer only "(c) 2011 Bitcoinity.org" | no | ⚠️ depth is perfect, licence unread |
+| **Bitstamp public API** | **2011-08-29 → now** daily OHLCV | exchange-native ToS (desk already has a posture on these) | no | ✅ **cleanest** |
+| Coinbase Exchange API | ~2016-01 → now | exchange-native | no | ✅ clean, too shallow alone |
+| mempool.space historical-price | 2010-07-19 → now BUT **WEEKLY (168h) for 2010–2022** | code AGPL-3.0; data terms unstated | no | ⛔ **too coarse — unusable as the daily leg** |
+| CoinGecko | free tier now caps at **365 d** | — | demo key for full history | ⛔ |
+| bitcoincharts | **DEAD** — `api.bitcoincharts.com` connection failed (HTTP 000) | — | — | ⛔ do not plan around it |
+
+**🔴 RESIDUAL GAP, NAMED AND QUANTIFIED (§28 requires the honest negative):**
+**2010-07-17 → 2011-08-29 (~13.5 months) has NO cleanly-licensed daily BTC price source that this
+run could find.** Bitstamp — the cleanest source — starts 2011-08-29. Bitcoinity covers the window
+but its licence is unread (terms page 404s). Blockchain.com covers it but is rejected on terms.
+- **Impact is small but real:** it is the MtGox era, when total BTC value was a rounding error
+  against today — but those coins are *exactly* the never-moved cohort that realized cap is most
+  sensitive to. Mis-pricing them propagates forward permanently.
+- **Mitigations, in order:** (a) email Bitcoinity's operator for a one-line licence statement (the
+  site is a hobby project by a named individual — a "yes" is plausible); (b) MtGox-era archives via
+  the desk's existing era-archaeology capability (§30); (c) **document the convention and set the
+  window to $0**, which is only a mild extension of the convention every vendor already uses for
+  pre-2010-07 coins. **(c) is deployable today and is the recommended default.**
+
+### 4.5.6 GOTCHAS — the list that stops this from silently producing a wrong series
+
+Ordered by how much damage they do if missed:
+
+1. **Change outputs.** Spending 10 BTC to send 0.1 re-prices the whole 10 at today's price; the 9.9
+   change is not an economic flow but realized cap counts it. **This is inherent to the metric, not
+   a bug** — the original article concedes it. **Match the convention; do not "fix" it**, or the
+   series will reconcile with nobody.
+2. **Exchange-internal / hot-wallet consolidation** — same mechanism at industrial scale. Glassnode's
+   "entity-adjusted" variants net these out with **proprietary heuristic address clustering**, which
+   is *not* reproducible. **Target the unadjusted `CapRealUSD` definition** — it is the one that is
+   actually specified in public.
+3. **BIP30 duplicate coinbase txids** — blocks 91722/91880 and 91812/91842 contain coinbase txs with
+   *identical txids* that overwrote their predecessors. **A naive txid-keyed join will mislink or
+   double-count.** Classic silent-corruption bug; special-case it. *(This is precisely the
+   "silent-zero-data" hazard class the charter's verify-don't-trust rule exists for.)*
+4. **Genesis block's 50 BTC is unspendable** by protocol quirk and never enters the UTXO set; plus
+   OP_RETURN / provably-unspendable outputs. Decide inclusion, document it — vendors differ.
+5. **No price before ~2010-07-17** ⇒ ~1.7M BTC at $0 basis forever. **Feature, not bug** (§4.5.5).
+6. **Price-convention sensitivity.** CM uses its own reference rate at daily close. Any other price
+   source produces small but persistent divergence, worst in thin early history. **The desk will not
+   match a vendor to the basis point and should not set that as the acceptance test.**
+7. **Reorgs / chain tip** — trailing partitions can rewrite. Compute on data lagged ≥6 blocks.
+8. **Blockchair's `value_usd` is Blockchair's price opinion**, silently baked in — convenient, but
+   you inherit their convention *and* their unread ToS.
+
+### 4.5.7 EFFORT AND SCALE — measured, not guessed
+
+AWS `v1.0/btc/transactions/` daily Parquet, sampled: 2010-06 = 0.2 MB · 2012 = 74 MB · 2014 = 112 MB
+· 2016 = 493 MB · 2018 = 398 MB · 2020 = 488 MB · 2022 = 572 MB · 2024 = 541 MB · 2026 = 584 MB
+⇒ **≈2.0–2.2 TB snappy Parquet for full history.** But most of that is `script_hex`/`witness` blob:
+**columnar projection to just `block_timestamp, outputs.value, outputs.index,
+inputs.spent_transaction_hash, inputs.spent_output_index` cuts the actual read to ≈200–400 GB.**
+Blocks are trivial (~50 KB/day).
+
+**Estimate: ~1 week of competent engineering to a validated series.** Prototype on BigQuery (likely
+inside the 1 TB/month free tier); productionise on AWS Parquet + DuckDB.
+
+### 4.5.8 ✅ RECOMMENDED RECONSTRUCTION PLAN
+
+1. **Prototype on BigQuery** `crypto_bitcoin` — hours, not days; validates the query shape cheaply.
+   *(Requires a human to create a GCP account — an agent must not.)*
+2. **Productionise on AWS Public Blockchain Parquet** (`s3://aws-public-blockchain/v1.0/btc/`,
+   keyless `--no-sign-request`, **MIT-0**, genesis→today confirmed) + DuckDB.
+3. **Price leg: Bitstamp public API from 2011-08-29**, with 2010-07-17 → 2011-08-29 set to $0 by
+   documented convention until a licence for Bitcoinity is obtained. **Not Blockchain.com.**
+4. **Unit-test against CM's published toy ledger** (§4.2 — the $60,000 worked example). This is a
+   **spec-conformance test using no Coin Metrics data**, and it is the single cheapest correctness
+   gate available.
+5. **Two emails a human can send in five minutes**, both zero-risk: Blockchair
+   (`info@blockchair.com`) for a speed key **and written commercial terms** — their pre-joined
+   `inputs` dumps would reduce the whole job to a `GROUP BY`; and Bitcoinity's operator for a
+   one-line price-data licence.
+6. **Short counsel check** on two narrow points: "MIT-0 software licence applied to a dataset", and
+   whether a one-off comparison against a CC BY-NC series counts as permitted verification.
+
+> **AMENDMENT TO §4.0(4), recorded rather than silently edited.** §4.0 stated "the one legitimate
+> residual use of CM: **none**." On reflection that is stricter than the evidence supports, and the
+> reconstruction sweep independently pushed back, recommending CM as a "correctness oracle."
+> **Corrected position:** a **one-off** comparison of the reconstructed series against CM's, to
+> check for gross error, falls inside the *verification/diff* scope graded **AMBER-GREEN** in §3.4 —
+> and reading a number to check your own is not redistribution. **What remains barred: (a) fitting,
+> tuning or calibrating the reconstruction to match CM; (b) any standing/automated dependency;
+> (c) gap-filling the reconstruction with CM values.** The acceptance test must be the published
+> spec (step 4), not agreement with the vendor.
 

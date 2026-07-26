@@ -822,3 +822,42 @@ positioning assets the inventory advertises are under 30 days long. The next run
 is Finding 8 (free 26-year out-of-sample bench), and its best *unmined* vein is
 **miners-as-hedgers**, not more microstructure.
 
+---
+
+### ADDENDUM TO FINDING 5 (found while auditing for Finding 9) — crypto DOES have an inventory observable
+
+Finding 5 states "crypto has no observable inventory, and GHR's point is that you do not need one."
+**The first half is wrong and the correction upgrades the finding.** Audited on disk:
+`data/coinmetrics_flows.jsonl` is **9,866 rows — btc 5,852 (from 2010-07-18) and eth 4,014, daily to
+2026-07-25** — with `flow_in_ntv`, `flow_out_ntv`, `netflow_ntv` and **`sply_ex_ntv`** populated on
+**9,584 of 9,866 rows** (the nulls are the 2010 pre-coverage head and the current partial day; a
+head/tail glance falsely suggests the columns are empty).
+
+**`sply_ex_ntv` — supply held on exchanges — is a direct crypto analog of warehouse stocks.** It is
+the float that is immediately available for sale or delivery, which is precisely the economic content
+of "inventory" in the Theory of Storage. That makes GHR's *central* empirical claim directly testable
+on crypto for the first time: **the convenience yield is a decreasing, NON-LINEAR function of
+inventory**, steep when inventory approaches its non-negativity constraint and flat when it is
+abundant. The crypto test is `sply_ex_ntv` (inventory) against `basis` / `funding` from
+`data/lake/bronze/crypto/<SYM>/D1/` (convenience yield), BTC and ETH, ~16 and ~11 years.
+
+**Why this is interesting rather than routine.** BIS 1087 (Finding 4) established that crypto's
+convenience yield is *negative* — an **inconvenience** yield, the opposite sign to commodities — and
+attributed it to leverage demand plus limits to arbitrage. GHR's framework says the yield should be a
+non-linear function of inventory. Nobody has joined these: **if the crypto inconvenience yield still
+varies non-linearly with exchange-held supply, then the theory of storage survives a sign flip and
+exchange reserves become a state variable for funding; if it does not, BIS's leverage-demand story is
+the complete explanation and exchange-reserve metrics are noise.** Either answer is worth having, and
+it is a time-series test on data already on disk.
+
+**Two hard caveats, stated up front.** (i) **Breadth 2.** BTC and ETH only. The desk killed
+`options VRP` at breadth 2 despite the best IC of its campaign; this must be framed as a *state
+variable / mechanism test*, never as a cross-sectional sleeve. (ii) **Licence.** Coin Metrics
+community data is CC BY-NC and the graveyard's `cm_mvrv` entry records the licence ruling as
+**pending** — research use only until that resolves. (iii) Exchange-reserve series are also the
+canonical retail-dashboard metric, so expect crowding on the naive "reserves down = bullish" version;
+the non-linearity test is not the dashboard version.
+
+**Note on repo state:** `docs/research/deep_sweep/T1a_kaiko_verification.md` also shows as modified in
+this working tree. That was **not** this run — it is a concurrent agent's Kaiko/GAP-3 work. This run
+touched exactly one file: this one.

@@ -702,5 +702,74 @@ Three things the desk must register:
 a VWM+TWAP reference rate over self-collected trades today. What it cannot do without a ruling is
 benchmark that rate *against Kaiko's published values*.
 
+---
+
+## WHAT I COULD **NOT** VERIFY — stated plainly, not upgraded
+
+1. **The literal recency-weighting equation. UNVERIFIED.** The rulebook's formulas are typeset in a
+   symbol font whose glyphs my extractor renders as placeholders. I recovered the *specification*
+   ("weights inversely proportional to time", then normalised) and the *worked example* (1h window,
+   10 x 6min) but **not the exact expression** — I cannot tell you whether it is `1/k`, `1/(k+c)`, or
+   `1/t^a`. Anyone implementing this should treat the functional form as a fitted unknown with one or
+   two free parameters, not a known constant. **This is the single biggest remaining hole and I am
+   not papering over it.**
+2. **Per-rate constituent lists other than BTC. UNVERIFIED.** I have the Kaiko Bitcoin Real-Time Rate
+   set from the CFTC filing. I found no published constituent list for ETH or any other pair. Tried:
+   the two rulebooks (they describe the *selection process*, never the *output list*), the
+   methodologies index page, and the free reference-data API (catalog only, no rate composition).
+3. **The Cboe Kaiko Digital Asset Rates Rulebook (published 2025-09-02).** Referenced by name in the
+   CFTC filing; **not opened this run.** Level 3 of the chain. It is the authoritative source for the
+   Cboe-specific rates (which use a 0.5% liquidity floor, not Kaiko's house 1%).
+4. **Whether the disclaimer is legally enforceable.** Deliberately not ruled on — out of my
+   authority. Flagged, routed, not guessed.
+5. **The `en_euEeaStatus` nuance.** I report ESMA's literal field value, "Registration under Art. 34".
+   I did **not** independently verify against BMR Art. 34's text which sub-regime that implies
+   (registration vs authorisation turns on whether the administrator provides only non-significant
+   benchmarks). My reading that "registered != authorised" is an inference from the field wording and
+   should be confirmed by someone reading the Regulation before it is relied on in any compliance
+   context.
+6. **Crypto.com's exact venue identity in Kaiko's catalog.** The free `/v1/exchanges` list has no
+   entry whose `name` matches "Crypto.com" (Bitstamp, Gemini, Kraken, LMAX, Coinbase, Bitfinex all
+   matched). It is presumably listed under another code; I did not resolve it.
+7. **No diff was run.** This is a research item under freeze. Nothing was recomputed, no collector
+   built, no existing artifact re-scored. The finding that the existing reconstruction uses the wrong
+   venue set is an **analytical** finding from the constituent list — I did not re-run the rate.
+
+## LEGITIMACY GATE — clean
+Every source was open-access and unauthenticated. No paywall was circumvented, no login attempted,
+no robots directive defeated, no UA spoofing. All PDFs were served publicly at HTTP 200 by their own
+hosts. Downloads went to `/tmp` only; **nothing was rehosted into the repo**. No installs were
+performed (extraction used stdlib `zlib` only). Files written this run: this document and
+`data/data_universe_map.json` — nothing else.
+
+## EVERY URL OPENED THIS RUN
+- `https://25446524.fs1.hubspotusercontent-eu1.net/hubfs/25446524/Factsheets/Kaiko%20Indices%20Rulebook.pdf` (200)
+- `https://marketing.kaiko.com/hubfs/Factsheets/Kaiko%20Benchmark%20Rates%20Rulebook%20-%20202212%20(1).pdf` (200)
+- `https://cdn.cboe.com/resources/regulation/rule_filings/pending/2025/25-023-Bitcoin-Continuous-Futures.pdf` (200)
+- `https://www.cftc.gov/filings/orgrules/rules10202531765.pdf` (200, byte-identical to the Cboe copy)
+- `https://registers.esma.europa.eu/solr/esma_registers_bench_entities/select?q=en_fullName:*KAIKO*&rows=20&wt=json` (200)
+- `https://registers.esma.europa.eu/solr/esma_registers_bench_entities/select?q=*:*&rows=1&wt=json` (200, control)
+- `https://www.kaiko.com/resources/categories/methodologies` (200)
+- `https://docs.kaiko.com/kaiko-indices/reference-rates/historical-prices` (200)
+- `https://us.market-api.kaiko.io/v2/data/index.v1/digital_asset_rates_price/KK_BRR_BTCUSD` (**403**)
+- `https://reference-data-api.kaiko.io/v1/{exchanges,instruments,assets,pools}` (200 x4)
+- `https://explorer.kaiko.com/` (200), `https://instruments.kaiko.com/` (200)
+- `https://github.com/orgs/kaikodata/repositories` (200)
+- `https://docs.lmax.com/public-data-api/` (200) -> `https://docs.lmax.com/public-data-api/public-api-with-tutorial.yaml` (200)
+- `https://public-data-api.london-digital.lmax.com/v1/{time,instruments,ticker/btc-usd}` (200 x3)
+- `https://www.bitstamp.net/api/v2/transactions/btcusd/?time=hour` (200)
+- `https://api.kraken.com/0/public/Trades?pair=XBTUSD&count=5` (200)
+- `https://api.gemini.com/v1/trades/btcusd?limit_trades=3` (200)
+- `https://api.crypto.com/exchange/v1/public/get-trades?instrument_name=BTC_USD&count=3` (200)
+- Failed guesses (recorded so they are not retried): `https://public-data.lmaxdigital.com/api/v1/trades?instrument=btc-usd`,
+  `https://api.lmaxdigital.com/public/trades/btc-usd` — both DNS/connect failures, invented URLs, superseded by the OpenAPI spec.
+
+## STATUS: [T1-a] CLOSED
+Both owed gaps are closed against independent primary sources. The item produced **six corrections**
+to the existing card (listed in GAP 3), **one new free source** (`reference-data-api.kaiko.io`), and
+**one defect in a shipped artifact** (`data/kaiko_vwm_reference_rate.jsonl` is built on the wrong
+constituent set). The reusable capability — *this box can extract PDFs with stdlib `zlib`* — should
+outlive this item.
+
 
 

@@ -517,3 +517,173 @@ pre-killed. `confirms-existing-kill`.
 `operator-contribution` (false-friend and lexical-disjointness patterns, below).
 
 ---
+
+## SEARCH OPERATORS — CONTRIBUTED BACK (charter §15/§16)
+_Formatted to the library's OP-nnn schema for the parent to merge into
+`docs/research/search_operator_library.md`. Numbers are placeholders — renumber on merge.
+This session DREW from OP-002 (native-language query templates), OP-004 (citation-chain follow),
+OP-017 (translate-the-niche) and OP-010 (vendor/registry docs as map). It returns six._
+
+### OP-025 dependency-free PDF extraction as a primary-source unlock          [active]
+class: reconstruction
+origin: LIT-d non-English miner (2026-07-26)   validated-gain: **findings D-2 and D-3 do not exist
+  without it.** WebFetch on a PDF URL returned *"corrupted or improperly extracted PDF binary
+  stream ... no coherent Korean or English text"*; the box had no poppler, no pypdf/PyPDF2/pdfminer,
+  and an install freeze. A ~150-line pure-stdlib extractor (zlib FlateDecode + ObjStm expansion +
+  **ToUnicode CMap parsing** for CID/Identity-H fonts) then read a 10-page Korean journal PDF and an
+  8-page Japanese SRO statistics PDF, tables and CJK text intact.
+technique: parse `N 0 obj` blocks → decompress FlateDecode streams → expand `/ObjStm` containers →
+  for each font resolve `/ToUnicode`, parse `beginbfchar`/`beginbfrange` (incl. the array form) into
+  code→unicode → walk content streams for `Tf` / `Tj` / `TJ`, decoding 2-byte codes for `/Type0`
+  fonts and inserting spaces on TJ kerns < −180. Script kept at `/tmp/pdftxt.py` (outside the repo).
+adaptations: universal — the CMap layer is exactly what makes CJK (KR/JP/CN) and Cyrillic academic
+  PDFs readable, so this is the enabling operator for ALL non-English literature grounds.
+counterfactual: **LOW** — the standard failure is to fetch a PDF, get binary garbage, and silently
+  downgrade to `[ABSTRACT-ONLY]` or to a search snippet. That downgrade is what produces
+  summary-level findings instead of mechanism-level ones.
+
+### OP-026 reconstruct-the-table: numerical forensics on a published result   [active]
+class: verification
+origin: LIT-d non-English miner (2026-07-26)   validated-gain: caught a **stale-leg lookahead in a
+  peer-reviewed paper** (D-2) that its referees missed — a reported 4,709x "arbitrage" return
+- technique: never accept or dismiss an implausible published return on plausibility. Take the paper's
+  own **worked-example table**, invert it, and check it against market history:
+  (1) back out each leg's implied price in a common currency (`upbtc_krw ÷ FX` gave $6,941 on a row
+      dated Jan-4 when BTC was $7,345 — a 2-day-old price);
+  (2) line the columns up against the true daily closes and look for a **constant shift** — a
+      one-row lag in one leg is the signature of timestamp misalignment;
+  (3) sanity-bound the P&L against the traded series' own dispersion (+4.6%/cycle × 190 cycles out
+      of a premium whose sd is 1.4% is arithmetically impossible → the P&L is coming from elsewhere);
+  (4) name the single historical event the biggest cycle sits on (here the 2020-01-03 Soleimani BTC
+      rally) and check whether the "strategy" merely straddles it.
+  Also read the paper's *own* limitations section adversarially — this one admits deleting transfer
+  time and slippage, which is the whole result.
+adaptations: universal, all languages. Pairs with the desk's SUSPECT-LOOKAHEAD rail: the rail flags
+  the desk's own backtests, this operator applies the same standard to **other people's published
+  ones** before adopting or citing them.
+counterfactual: LOW — the crowd reads abstracts; almost nobody re-derives a paper's own table.
+
+### OP-027 false-friend + transliteration lexical audit before declaring empty [active]
+class: multilingual-pattern
+origin: LIT-d non-English miner (2026-07-26)   validated-gain: `криптовалюта арбитраж` returned 278
+  results that were **criminal-law papers** — because **`арбитраж` in Russian means ARBITRATION
+  (a court), not financial arbitrage.** A literal translation silently routed the whole search into
+  the wrong faculty; without the audit the corpus would have been mis-declared "covered".
+technique: before trusting ANY foreign-corpus result count, run a 3-way calibration on one concept
+  and compare result **composition**, not counts:
+  (a) literal translation, (b) the domain-correct native term, (c) the **transliteration** the
+  practitioner community actually uses. Then ask which corpus each one lands in.
+  Measured RU outcome: (a) `арбитраж` → law; (b) `межбиржевой арбитраж` → 4 hits, still law;
+  (c) `фандинг` → 266 hits **all matching фандрайзинг**, `перпетуал` → 1 hit, about Chinese diplomacy.
+  Conclusion: **RU academic and RU practitioner corpora are LEXICALLY DISJOINT** — academic search
+  cannot reach practitioner knowledge in Russian, so OP-002/OP-017 and academic mining must be run
+  as separate operators, never merged.
+adaptations: KR — 차익거래 (financial) vs 중재 (arbitration) is a clean split, low risk.
+  JP — 裁定取引 (financial) vs 仲裁 (arbitration); **do NOT reuse Chinese compounds**: J-STAGE
+  `市場微観構造` returned **zero** because Japanese uses マーケット・マイクロストラクチャー.
+  CN — 套利 (financial) vs 仲裁; and CN practitioner uses 资金费率 while academia may not.
+counterfactual: LOW — this is precisely the error an English-first searcher cannot see.
+
+### OP-028 keyless corpus-count APIs as EXHAUSTION instruments                [active]
+class: operator
+origin: LIT-d non-English miner (2026-07-26)   validated-gain: let a whole national corpus be
+  declared EXHAUSTED **with numbers** (16 queries, counts recorded) instead of with an impression
+technique: before hand-crawling a repository, probe for a keyless JSON search endpoint and script
+  the query sweep, recording `found` per query. CyberLeninka (RU), confirmed working:
+  `POST https://cyberleninka.ru/api/search` body `{"mode":"articles","q":"<ru>","size":N,"from":0}`
+  → returns count + titles + authors + year + journal + link + OCR snippets, no key.
+  A result COUNT per query is what converts "I searched and found nothing" into a defensible
+  `EXHAUSTED`, which is the difference between a creditable null and a shrug.
+adaptations: probe the same shape everywhere before crawling — SciELO `articlemeta.scielo.org/api/v1/`
+  (confirmed HTTP 200 while the HTML search is 403); DSpace repos expose `/server/api/discover/...`
+  and OAI-PMH `?verb=ListRecords`; J-STAGE has a public WebAPI. **Always probe the API before the HTML.**
+counterfactual: MED.
+
+### OP-029 self-regulatory-body statistics beat exchange-reported data        [active]
+class: source-expansion
+origin: LIT-d non-English miner (2026-07-26)   validated-gain: JVCEA (JP) — the only
+  **regulator-supervised, venue-aggregated LONG/SHORT open-interest** series found for any crypto
+  market, monthly since 2018-09, free (finding D-3)
+technique: in any regulated market, the exchanges publish positioning data that is unaudited and
+  self-serving. **Find the SRO instead.** The self-regulatory body aggregates member filings under
+  a regulator's designation, so its numbers are the audited counterpart to the venue's marketing
+  numbers — and are usually published as unloved monthly PDFs on a slow website with an
+  **address-predictable URL pattern** (`.../{YYYYMM}-KOUKAI-01-FINAL.pdf`), i.e. the whole history
+  is retrievable by iterating the date.
+  Highest use is **verification, not signal**: grade your existing exchange feed against it.
+  Capture the stock-vs-flow convention from the file's own footnote before using a single number.
+adaptations: JP=JVCEA/JFSA; KR=DAXA + FSC/FIU 가상자산사업자 실태조사; US=CFTC COT for the CME
+  complex; EU=ESMA/national registers. Each regional miner owns finding its SRO.
+counterfactual: LOW — everyone scrapes exchanges; almost nobody reads the SRO's PDFs.
+
+### OP-030 read the TAX CODE to identify a loser cohort (and its expiry date)  [active]
+class: operator
+origin: LIT-d non-English miner (2026-07-26)   validated-gain: produced the "who loses money and why
+  they persist" half of D-3 from a Japanese tax-practitioner page — a source class no finance search
+  would ever return
+technique: the mechanism test demands a named loser who persists. National **tax asymmetry** names
+  one by statute rather than by inference from returns (which is circular). Compute the statutory
+  expectation of a symmetric bet for the cohort: JP crypto = 雑所得, ≤55% marginal on gains, losses
+  **not** offsettable against other income and **not** carried forward ⇒ `0.5(1−0.55)X − 0.5X =
+  −0.275X`. A cohort trading **on margin** through a −27.5% statutory drag is structurally identified
+  as non-return-maximising, before any price data is examined.
+  Then — equally important — **find the reform date.** Tax regimes change on published schedules, so
+  this operator dates the mechanism's **expiry**: JP moves to 20% flat 申告分離課税 with 3-year
+  carryforward, enacted 2026-03-31, effective ~2028-01-01. A mechanism with a legislated end date
+  must never be fitted on history and extrapolated.
+adaptations: KR (가상자산 과세 repeatedly deferred — the deferral itself is a datable event);
+  IN (30% flat + 1% TDS on every trade — a brutal, very legible drag); DE (tax-free after 12-month
+  holding ⇒ a statutory HOLDING-PERIOD kink); US (wash-sale rules historically not applying to
+  crypto ⇒ the opposite incentive to JP). Each implies a *different* cohort behaviour.
+counterfactual: LOW — tax pages are not indexed as finance research and are usually native-language only.
+
+### FAILED — log these so the next miner does not re-pay for them
+- **WebFetch cannot read PDFs.** It returns the raw binary as "corrupted stream". Always
+  `curl` the PDF and extract locally (OP-025). Cost this session: one wasted fetch.
+- **Cross-CJK term borrowing fails.** J-STAGE `暗号資産 市場微観構造` (Chinese compound) → **0 results**;
+  Japanese requires マーケット・マイクロストラクチャー. Never reuse a CN term on a JP corpus.
+- **Long multi-concept native queries against a general web search engine dilute to SEO/blog content.**
+  `永续合约 资金费率 套利 实证研究 论文 开放获取 pdf` returned Zhihu posts and a CoinGlass page, no papers.
+  Native-language queries pay off against a **corpus's own search API**, not against general web search.
+- **JS-walled repositories:** KAIST KOASAS (`koasas.kaist.ac.kr/handle/...`) serves only
+  `"Loading... 본 사이트 이용에는 JavaScript가 필요합니다"` to both WebFetch and curl; ScienceON
+  (`scienceon.kisti.re.kr/srch/selectPORSrchArticle.do`) → **404**. Do not retry the HTML —
+  go via DSpace REST / OAI-PMH (OP-028).
+- **SciELO is access-blocked, NOT empty:** `search.scielo.org` and `scielo.br/search` both **403**
+  to WebFetch and to curl with a browser UA. `articlemeta.scielo.org/api/v1/` returns **200** —
+  that is the door.
+- **KCI landing pages are fine but DBpia is a trap:** DBpia indexes the same Korean articles behind a
+  paywall. Always route to `journal.kci.go.kr/.../articlePdf?artiId=...` or the issuing society's
+  own site. (Excluded-illegitimate, logged for awareness only: **CNKI, Wind, Wanfang, DBpia**.)
+
+---
+
+## CORPUS EXHAUSTION STATE + WHERE THE NEXT RUN RESUMES
+
+| corpus | state | basis | resume point |
+|---|---|---|---|
+| **KCI / Korean finance journals** | **PARTIALLY-MINED** | 2 papers mined to mechanism (D-1, D-2), both full-text | **HIGHEST-VALUE RESUME.** Open 오정훈 (J.H. Oh) 2019, *"The determining factors of kimchi premium in the cryptocurrency market"*, Global E-Business Assoc. 20(2) 215–228, **DOI 10.20462/TeBS.2019.4.20.2.215** — it is the cited ORIGIN of the "FX drives the kimchi premium" folk belief that D-1 and D-2 both contradict. Then KCI-search `김치프리미엄 결정요인`, `가상자산 시장미시구조`, `암호화폐 유동성` |
+| **Korean theses (KAIST/SNU/RISS)** | **NOT MINED** | blocked, not empty — KOASAS is JS-only | DSpace REST/OAI-PMH against `koasas.kaist.ac.kr`; target already identified: H.J. Yoo (2018) KAIST master's, handle `10203/267131`. NOTE: it concludes arbitrage IS possible → likely `confirms-existing-kill` on the dead cross-venue class, so **low priority despite being findable** |
+| **J-STAGE (JP)** | **EXHAUSTED** for crypto microstructure | 2 queries; `暗号資産 市場微観構造` → 0; `仮想通貨 流動性` → 62, top-20 read in full, composition is law/tax/accounting | Do not re-run. JP quant lives in the practitioner layer (OP-017) and in artificial-market simulation (和泉潔 / 水山元 clusters) — a different ground |
+| **CiNii Research (JP)** | **EXHAUSTED** for the queried concept | `暗号資産 裁定取引` → **0** papers/dissertations/datasets | Only if a specific named JP thesis surfaces via citation chain |
+| **JVCEA (JP SRO)** | **PARTIALLY-MINED** | index + 1 monthly PDF parsed first-party; fields, cadence, licence, month-end convention all confirmed | Pull the full ~94-month history by iterating `{YYYYMM}` and run the **long/short feed audit** (D-3 item 1). That audit is the single highest-value unrun task on this ground |
+| **CyberLeninka (RU)** | **EXHAUSTED-EMPTY** | **16 native queries, counts recorded** (D-4 table) | Do not re-run academically. RU value is the practitioner layer (habr/smart-lab) under OP-002/OP-017 — lexically disjoint, separate ground |
+| **SciELO (BR/LatAm)** | **NOT MINED — `residual-gap`** | HTTP 403 on every HTML route; corpus never seen | `articlemeta.scielo.org/api/v1/` (confirmed 200). Queries to run: `criptomoedas microestrutura`, `arbitragem criptoativos`, `mercado futuro perpétuo` |
+| **Chinese open-access + CN-author arXiv** | **BARELY TOUCHED — biggest remaining gap** | 1 query, returned only Zhihu/CoinGlass, no papers | Go at arXiv q-fin listings filtered by CN affiliation directly (never CNKI/Wind/Wanfang — excluded). Separately mine 知乎/雪球/JoinQuant as a **practitioner** ground under OP-017, not as academia |
+| **Thesis layer (B) generally — DiVA, theses.fr, DART-Europe, EThOS, OpenThesis** | **BARELY MINED** | only 1 thesis retrieved (Erasmus bachelor, pairs trading in crypto, reports Sharpe ~3 — almost certainly in-sample and low value; not written up) | **This is the honest shortfall of the session, stated plainly.** Layer (B) of this ground's thesis is under-delivered relative to layer (A) |
+
+## SELF-ASSESSMENT AGAINST THIS FILE'S OWN ANTI-BREADTH-THEATER CLAUSE
+Four findings, all carrying a named mechanism and a concrete mapping to desk data — no
+repository-name catalogue. Two are mined from full text read end-to-end in the original language.
+Honest defects, declared rather than buried:
+1. **Layer (B) — theses — is under-mined.** The ground is explicitly two layers and this session
+   delivered depth on (A) and almost nothing on (B). The stated rationale for the trade-off was that
+   the Korean/Japanese layer-(A) items were directly load-bearing on a LIVE desk axis; the cost is
+   that the "free graveyard entries from honest negative results" thesis remains largely untested.
+2. **Net new tradeable axes: zero.** D-2 is a kill-confirmation plus a rail upgrade; D-3 is data loot
+   plus a parked hypothesis that does not clear the EV gate on breadth; D-4 is a null. Only D-1
+   (prior run) yields a `candidate-card`. This is reported as-is rather than dressed up — but note
+   the ground's most useful output was a **live-clock audit that came back clean**, which is worth
+   more to a desk with a running kimchi signal than a fifth speculative card.
+3. **One dependency on a non-primary source:** the 2028 Japanese tax effective date comes from a tax
+   practitioner's writeup, not from 国税庁/金融庁. Flagged in D-3 and in the universe-map entry.

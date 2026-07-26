@@ -762,3 +762,94 @@ precondition, not a gate; (b) add "does this variable contain the contemporaneou
 construction?" as an explicit written question on every axis card, answered *before* data is pulled;
 (c) record the four external instances above alongside the desk's three in the graveyard's standing
 notes, so the pattern is visible to anyone proposing the eighth.
+
+**67. ⚠️ THE DESK'S ONLY REPEAT SURVIVOR IS ALREADY PUBLISHED — by the people who wrote the FX carry
+literature — AND IT HAS A DATED, CAUSALLY-IDENTIFIED 36% DECAY EVENT THE DESK IS NOT HOLDING.**
+*Class: live-book crowding / edge decay. Recommend: adopt the prior NOW; card goes on a forward clock.*
+[PRIMARY, zlib-decoded inline, open access] Schmeling, Schrimpf & Todorov, **"Crypto Carry", BIS
+Working Papers No 1087** (Apr 2023; this version Oct 2025), https://www.bis.org/publ/work1087.pdf.
+Daily BTC/ETH Mar 2019–Jul 2024 across Binance, OKEx, FTX, Huobi, BitMEX, Deribit, CME.
+**Note the authorship: Schmeling and Schrimpf are two of the four authors of the canonical FX
+carry-volatility literature. This is that literature deliberately ported to crypto by the people who
+built it — i.e. the exact arbitrage this ground exists to find has already been run, on the desk's own
+strategy.** The desk should treat its lone survivor as a *published* strategy from today.
+- **The mechanism, and it is the cleanest statement of the desk's own edge that exists anywhere:**
+  crypto carry is a large **negative convenience yield**. Losers are leverage-constrained retail longs
+  who buy futures because it is the only leveraged exposure available to them; arbitrage is limited
+  because professionals face regulatory barriers to spot and, critically, **no cross-margining between
+  legs** — so a basis move can force liquidation before convergence. Their FTX illustration: a $1m
+  short futures position liquidates on a **3% BTC rise**. They persist because the constraint is
+  structural, not a mistake they can learn out of.
+- **The number the desk must hold: the January 2024 spot-ETF launch cut carry by ~3pp across exchanges
+  and ~5pp more on CME — "very large declines of 36% and 97% of the mean crypto carry, respectively."**
+  That is a **dated, causally-identified (DiD) structural break**, not gradual crowding. Any sizing or
+  backtest spanning Jan-2024 that does not treat it as a regime boundary is mixing two different
+  worlds. The mirror DiD confirms the mechanism: CME **micro** futures (easier small-investor access)
+  *increased* carry.
+- **The desk is on the losing side of the paper's own predictive result.** Table 7: *"a rise in
+  standardized carry by 10% predicts a 22% increase in total sell liquidations (relative to total open
+  interest) over the next month"* — and carry predicts **only SELL liquidations, not buy**. The
+  cash-and-carry trader is the short. **The desk is the short.** High carry is therefore partly a
+  forecast of the desk's own liquidation risk, not purely a forecast of its return.
+- **Corroborating trader-type split:** CFTC COT for CME bitcoin shows higher carry ↔ rising net longs
+  of *smaller, less sophisticated* traders, with dealers and leveraged funds taking the short side.
+**Disposition, honest:** the regressor side is fully covered (`bronze/crypto/<SYM>/D1`, 267 symbols
+from 2019-09, funding+basis — wider and longer than BIS's own panel). The **dependent** side is not:
+`data/liquidations.parquet` is 33,867 rows over **17 days**, not a history. A Table-7 replication is
+**not runnable today** and attempting it would be a 17-day overfit. **Correct disposition is a forward
+clock, not a backtest** — the listener is live and accruing. Author caveat recorded: their liquidation
+series mixes forced and voluntary.
+
+**68. ⚠️ LIVE-BOOK RISK: the carry book adds legs for diversification, and the source literature says
+crash skew gets WORSE with breadth, not better.**
+*Class: live-book risk / portfolio construction. Recommend: measure on desk data before next resize.*
+From the BNP-2008 → Jurek → Daniel-Hodrick-Lu chain (finding 3, LIT-b). The **return-timing** half of
+that literature is largely refuted and is correctly discarded — Jurek finds crash risk explains *"at
+most 15–35%"* of carry returns, and once dollar-neutral **and** crash-hedged, returns are
+indistinguishable from zero; Daniel-Hodrick-Lu concur independently. **But the risk-structure half
+survives, and it points the wrong way for this desk:** BNP Table 2 reports carry-portfolio skew
+*worsening* as legs are added — **−0.700 at 1 leg → −0.977 at 3 legs**. Diversifying a carry book
+across more legs does **not** diversify its crash risk; it concentrates it, because the legs share the
+funding-liquidity factor that causes the crash. **The desk's book runs `top: 10` on the opposite
+assumption.** This is not a claim the desk's config is wrong — it is a claim the assumption behind it
+has never been measured on desk data and the source literature contradicts it. **Ask: before the next
+breadth increase or resize-up, measure realized skew of the carry sleeve as a function of leg count on
+the desk's own history.** Cheap, uses data already held, and it is a genuine ruin-adjacent question
+because negative skew is exactly what the log-wealth objective punishes hardest.
+
+**69. THE DATA INVENTORY REPORTS ROW COUNTS AS IF THEY WERE SPANS — and it omits the desk's best panel
+entirely.** *Class: data map / research integrity. Recommend: adopt-now (a correction, not a build).*
+Audited on disk during LIT-b, not remembered. The inventory that research organs read to decide what
+is testable is **misleading in both directions**:
+- **Overstated (row counts read as history):** `liquidations.parquet` = 33,867 rows but only **17 days
+  / 15 symbols**; `hyperliquid_funding` = **28 days**; `crypto_metrics` = **28 days**. A "14k+ events"
+  framing invites monthly-horizon regressions that the span cannot support — this run caught exactly
+  that on the BIS Table-7 replication (#67) and downgraded it to a forward clock before it became a
+  17-day overfit.
+- **Understated (omitted entirely):** `data/lake/bronze/crypto/<SYM>/D1/*.parquet` — **267 symbols,
+  daily, from 2019-09-08**, funding + basis + taker_buy_frac, all non-null — is **absent from the
+  inventory**, and it is the desk's best research panel. `oi_ls_daily` (139 symbols, from 2021-12) is
+  the second. **The binding constraint on this whole research ground is HISTORY LENGTH, not mechanism
+  supply** — and the inventory was hiding both which mechanisms are blocked and which are unblocked.
+**Ask: every inventory entry carries SPAN (first date → last date) and BREADTH (symbol count)
+alongside row count, and the bronze panel is added.** A row count without a span is not a measurement.
+
+**70. DATA PARALYSIS, NAMED: a 26-YEAR daily panel sits completely unused, and it can measure the
+desk's McLean–Pontiff decay prior instead of assuming it.** *Class: data utilization. Recommend: high
+priority — this is the cheapest real research on the list.*
+`data/cot_zcache.parquet` — **CFTC Commitments of Traders, daily, 2000 → 2026, 11 assets, 26 years** —
+is held and **not read by anything**. Under the DATA-UTILIZATION LAW that is a defect, not neutral.
+Its specific value is unusual and worth stating precisely: it is **long enough to span the
+publication dates** of the hedging-pressure and carry literatures (#67, and LIT-b findings 1/3/5).
+So it can **measure post-publication decay out-of-sample rather than assuming the −58% haircut** the
+desk just adopted as a standing prior (#61). **That converts a borrowed prior into a measured one, on
+free data the desk already owns, at zero acquisition cost.** It also gives the desk a positioning
+panel with real history while its crypto positioning series are still 17–28 days deep (#69).
+Related cheap win from the same chain: Gorton–Hayashi–Rouwenhorst explicitly **reject** the Keynesian
+hedging-pressure hypothesis (positions significant contemporaneously, **zero when lagged**) — which
+suggests a **~1-day gating test** (does `ls`/`oi` add anything over `funding`/`basis`?) that could
+**cancel or justify a multi-week data acquisition** before it is spent.
+**One nuance that must travel with the VPIN prior so it is not over-applied:** Andersen–Bondarenko
+gutted VPIN because **bulk-volume classification** is *"an imperfect realized volatility metric which,
+by construction, will have forecast power"* — but **crypto publishes true taker side**, so the defect
+that killed VPIN in equities does not automatically bind here. Kill the metric, keep the axis.
