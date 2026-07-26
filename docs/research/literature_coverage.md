@@ -91,3 +91,42 @@ alpha dead (420/0), retail TA canon dead (era natural experiment), regional-prem
 bar kimchi, multilingual attention dead at daily, DeFi aggregates dead at daily, price-numerator
 ratios contaminated by construction at daily 20d-z, conditioning overlays dead.
 
+**RUN-2 POST-MORTEM (written by run 3, from disk not memory).** Run 2 did NOT die empty — it wrote
+four durable ground files totalling ~1,120 lines with **17 resolved findings** (LIT_a: F1–F11,
+LIT_b: 2, LIT_c: 3, LIT_d: 1). It died at the *routing* step: every `STATUS: below` above is still
+unresolved, nothing reached the graveyard, the improvement inbox, or the gap register, the coverage
+table above still reads `never` in all eight rows, and `last_lit_deepdive` was never set. **That is
+the §33 mined-but-not-wired defect in its purest form: the research was DONE and the desk got zero
+of it.** Run 3's first duty is conversion, not new hunting.
+
+---
+
+## SESSION NOTE 2026-07-26 (literature deep-miner — run 3; the CONVERSION run)
+
+**Ground truth at start, recomputed not remembered.** `mine_gate.py` → **BACKLOG-CLEAR, mining
+authorised** (run 2's five carded finds were disposed). `source_backlog_next.py` → 2 pending
+technical verification (Kaiko vendor-replacement, NAVER DataLab), 3 pending legitimacy decision
+(Upbit portal, bitFlyer ToS, Glassnode/CryptoQuant→Coin Metrics). `docs/research/deep_sweep/` holds
+run 2's four LIT files **plus eight `20260726_*.md` stubs that read `# AUDITOR FAILED` — those are a
+DIFFERENT organ's (the deep-sweep auditor's) crash residue, not mine; flagged to the inbox, not
+adopted.**
+
+### ITEMS TAKEN THIS RUN (bounded to 4; depth maxed per item)
+
+1. **[CARRY, T1] ROUTE ALL 17 OF RUN 2's FINDINGS.** Unrouted research is worth exactly zero.
+   Every finding gets a disposition: graveyard entry (with mechanism of death), improvement-inbox
+   entry (methods/engine), gap-register row, or an explicit kill-with-reason. — STATUS: below.
+2. **[CARRY, T1] Kaiko rulebook INTERIOR + independent ESMA register check.** Owed since run 1;
+   run 1's stated gap was "no PDF tooling on this box". — STATUS: below.
+3. **[CARRY, T1] Coin Metrics community-API CURRENT terms → CC BY-NC ruling.** A 15-year keyless
+   backfill axis is blocked behind an unread document, and the `cm_mvrv_btc_daily_level` graveyard
+   entry already carries "licence ruling pending for production use". — STATUS: below.
+4. **[NEW GROUND] Continue the two barely-started grounds**, which run 2 left at 2 findings (LIT-b
+   forgotten-literature) and 1 finding (LIT-d non-English + theses). These are the least-mined and
+   LIT-d carries the ≥25% search-space-expansion reserve. — STATUS: below.
+
+### NEXT RUN PICKS UP AT (written now, so a kill mid-run still hands off)
+- NAVER DataLab (built-but-unrun, T3) and the two remaining legitimacy decisions (Upbit portal T3,
+  bitFlyer ToS behind WAF T2).
+- LIT-a is the closest to exhausted (11 findings); LIT-c next (3). Both named per-ground below.
+

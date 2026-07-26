@@ -495,3 +495,203 @@ is the community API). Two structural notes: free-tier enclosure is a TREND (ank
 both key-walled within months) — the free-frontier axiom holds (replacements found same-day) but
 each enclosure should trigger a targeted rediscovery, not a shrug; and MEV-relay RPCs are a
 structurally-stable free class because their incentive is to RECEIVE traffic.
+
+---
+
+# LITERATURE DEEP-MINER — run 3 routing batch (2026-07-26)
+
+_Seven items. Run 2 produced ~1,120 lines of findings across four ground files and died before
+routing ANY of them; this batch is that conversion plus what run 3 found while doing it. Items are
+consolidated deliberately — four separate papers arguing the same thing are ONE decision, not four
+inbox rows. Provenance convention: `[PRIMARY]` = full text extracted and read this desk-run;
+`[ABSTRACT]` = abstract/landing page only; `[SUMMARY-ONLY]` = search index, a LEAD not evidence
+(rail #54), never adopted on that basis._
+
+**59. ENGINE CAPABILITY UNBLOCKED — the literature organ could not read PDFs, and that was FALSE,
+not fixed. It silently capped every literature run to abstract-level evidence.**
+*Class: engine / research-capability. Cost: ~90 lines of stdlib Python. Recommend: adopt-now.*
+Two consecutive runs recorded the standing carry-over *"no PDF tooling on this box (no `pdftotext`,
+no `pypdf`/`pymupdf`/`pdfminer` in the venv) and the HARD FREEZE forbids installs"* and left **five**
+findings (F1, F3, F5, F6, F7) at abstract level. Run 3 verified the premise — genuinely zero PDF
+tooling, and `Read` on a local PDF fails too (it shells out to `pdftoppm`/poppler, absent) — and then
+noticed the premise did not imply the conclusion. **PDF text lives in FlateDecode streams and Python's
+stdlib ships `zlib`.** A ~90-line extractor (decompress every `stream…endstream`, pull the `Tj`/`TJ`
+operands, reconstruct inter-word spaces from TJ kern values more negative than −100) reads academic
+PDFs with no install of any kind. Prototype ran from `/tmp` only; it touched no repo file and is NOT
+committed — landing it belongs to the brain, outside this organ's freeze.
+**THE EVIDENCE THIS MATTERED, measured immediately and it is not flattering to the desk:** the very
+first paper extracted (Hou–Xue–Zhang, *Replicating Anomalies*) **corrected three numbers** the desk
+had recorded from a search summary the day before — recorded "64% fail / 85% at a t-cutoff of 3 /
+liquidity worst at 95 of 102 = 93%"; primary text says **65% fail at t>1.96**, **82% at the
+multiple-test hurdle of 2.78** (a different statistic, not a t-cutoff of 3), and the worst category
+is **trading frictions at 102 of 106 = 96.2%**, not liquidity. Note the shape of the error: the
+category name was wrong and the numerator/denominator were transposed, and the resulting graveyard
+prior was *narrower than the truth* — the desk was about to under-claim a kill.
+**ACTIONS.** (1) Land the extractor as `scripts/pdf_text.py` (research-lane, read-only, no deps) so
+every digger inherits primary-text access. (2) Add "PDF interior extracted?" to the literature card
+schema — a paper cited from its abstract is `[ABSTRACT]`, and the graveyard/EV gate should know the
+difference. (3) **The generalisable defect is bigger than PDFs and is the real finding here:** a
+capability limit was asserted once, inherited verbatim across runs, and never re-tested — for two
+runs it silently defined what the desk could know. Propose a standing rule: *any recorded "this box
+cannot X" carries a re-test date, and a carry-over that names a blocked capability is retried before
+it is inherited a second time.* This is the NO-CEILING axiom applied to the desk's own tooling
+claims, where it was not being applied.
+
+**60. THE CONSTRUCTION-VARIANCE CLUSTER — four independent literatures converge on one conclusion
+the desk's validation machinery does not currently model: HOW you build the test carries more
+variance than the sampling error the desk corrects for.**
+*Class: validation / GATE-OPTIMALITY. Recommend: pilot the design-grid; adopt-now the two wording
+rails (both free).*
+Presented as one item because it is one finding reached four ways — routing them separately would
+hide that convergence, which is the strongest thing about it.
+- **[ABSTRACT] Fieberg–Günther–Poddig–Zaremba, "Non-standard errors in the cryptocurrency world"
+  (IRFA 2024).** Ten prevalent research-design decisions crossed into **20,736 designs** over **43
+  sorting variables** in crypto. Result: *"Non-standard errors in cryptocurrency studies not only
+  surpass those in the stock market but also **clearly exceed standard errors**."* Read literally:
+  **in the crypto cross-section, the uncertainty from construction choice is LARGER than the
+  uncertainty from having a finite sample.** DSR/PBO correct for the number of trials RUN; they do
+  not touch this. They also find small-coin exclusion reduces NSE, and that size/momentum are
+  unusually design-robust.
+- **[PRIMARY, ar5iv] Chen & Zimmermann vs Hou–Xue–Zhang — the definitional split.** Two credible
+  teams report ~98% and ~35% success on the same corpus, and it is not a coin flip between
+  authorities: C&Z **REPRODUCE** (re-run each predictor under *the original paper's own protocol*,
+  dictionary definition, *"doing something again in exactly the same way"*), HXZ **REPLICATE UNDER A
+  STRICTER PROTOCOL** (NYSE breakpoints + value weighting). Both are right. What survives the
+  crossfire: **the published number reproduces, and does not survive a protocol change.**
+- **[ABSTRACT] Jensen–Kelly–Pedersen (JF 2023)** get a high replication rate by pooling factors into
+  **13 themes** with a hierarchical prior, where the *number* of factors becomes evidence in favour
+  rather than multiplicity to penalise. So a family can be simultaneously "82% dead as individual
+  named anomalies" and "alive as ~13 themes" — *the names are overfit and the themes are not.*
+- **[PRIMARY, HTML] Andrew Chen, "Do t-Statistic Hurdles Need to be Raised?"** guts the naive t>3.0
+  consensus on **identification**, not empirics: hurdle-raising models must extrapolate the t-stat
+  distribution into precisely the region publication bias prevents you from observing, so *"they
+  assume that t-stat hurdles need to be raised, and thus cannot answer the question of whether
+  t-hurdles need to be raised."* His constructive alternative is **empirical-Bayes shrinkage + local
+  FDR**, which "focus on the right tail of t-stats, and this portion tends to be well-observed."
+**WHY THIS IS A DESK DEFECT AND NOT A READING LIST.** The desk's §26.3 rule ("one construction tried,
+one verdict, logged") correctly stops re-rolling for a better answer — but it does NOT make the one
+draw reliable, and NSE says that single draw has an error bar wider than the one it reports. The desk
+is currently running the *most* design-fragile possible protocol (single construction) in the asset
+class with the *largest* measured design variance, and calling the output a verdict.
+**ACTIONS.** (1) **PILOT: the pre-registered design GRID.** Enumerate the defensible construction
+choices UP FRONT, run them all, judge the *distribution* — pre-registration is what keeps this from
+becoming the p-hacking §26.3 forbids. This is the only change that fixes the actual measured problem,
+and it is compatible with §26.3 rather than a loosening of it. (2) **ADOPT-NOW, free:** when any
+digger says "this replicated", the gauntlet must ask **"reproduced under the original protocol, or
+re-derived under OURS?"** — only the second counts. One line in the screening protocol. (3)
+**ADOPT-NOW, free:** the desk's screening unit should be the MECHANISM with several constructions
+pooled under one pre-registration, not N independent screens each burning a multiplicity slot — the
+desk's own history fits exactly (420 named price hypotheses died individually; the lone repeat
+survivor, funding/carry, is a *theme*). (4) **GATE-OPTIMALITY, direct hit:** do not adopt a
+literature-derived t-hurdle — it is unidentified by construction. The desk holds something better and
+rarer: **its own logged 420-hypothesis realized right tail**, on which shrinkage and local FDR ARE
+identified. Compute the hurdle from the desk's own record. (5) Cap microcap/small-coin influence
+explicitly in universe construction and log the cap — three independent teams (HXZ equities,
+Fieberg×2 crypto) reach this by different routes.
+
+**61. STANDING LITERATURE HAIRCUT for the EV gate — published effects must be haircut ~58% before
+they are worth a slot, and MORE when the published Sharpe is fat.**
+*Class: EV gate / priors. Cost: one prior. Recommend: adopt-now.*
+[ABSTRACT, verbatim JF abstract] McLean–Pontiff (JF 2016), 97 published predictors: returns are **26%
+lower out-of-sample** (post-original-sample, pre-publication) and **58% lower post-publication**. The
+26% bounds the *data-mining* component; the residual **32%** is publication-informed trading. Two
+conditionals are the actionable part: decay is **larger for predictors with higher in-sample
+returns** — the desk's own `ls_contrarian` (backtest 9.84 → DSR-killed) is this exact phenomenon
+observed internally — and surviving returns concentrate in **high-idiosyncratic-risk, low-liquidity**
+names, i.e. what survives is limits-to-arbitrage rent the desk cannot size into. **This is a hard
+prior against the desk's whole "read a paper → screen the signal" pipeline** unless the paper is
+recent AND the mechanism is structural. Recorded as a standing prior in `docs/graveyard.md`'s new
+external-literature section; proposing it also enter `alpha_economics.py` as an explicit multiplier
+on any literature-sourced candidate.
+
+**62. PANEL DESIGN — three changes, and the most valuable one is a CANCELLATION.**
+*Class: panel / committee. Cost: negative (cancels queued work) + two small edits. Recommend:
+adopt-now ×2, pilot ×1.*
+[PRIMARY, HTML] *The Cost of Consensus* (arXiv 2605.00914, N=10 agents, R=3, GSM-Hard 1,017 items +
+MMLU-Hard) and [ABSTRACT + PRIMARY blogpost] *Stop Overvaluing Multi-Agent Debate* (5 MAD frameworks
+× 9 benchmarks).
+- **KILL queued inbox item #43 "automated debate (≈ panel)".** Debate LOST to *isolated
+  self-correction* in every cell — GSM-Hard/Qwen −2.2pp, MMLU-Hard/Qwen −6.0pp, GSM-Hard/Ministral
+  −27.6pp, all p<0.001 — while burning **2.1×–3.4× more tokens**. Adding a debate round on top of the
+  desk's existing independent panel is negative-EV *and* would destroy the independence that makes
+  panel agreement meaningful. **A change not made is the cheapest possible win.**
+- **The existing panel design is already the endorsed one — record it so a future cycle does not
+  "improve" it into debate.** `run_external_panel.py` runs 13 heterogeneous seats in parallel with NO
+  cross-talk. Model heterogeneity is what the debate literature found actually works (its authors call
+  it "a universal antidote"), and a no-cross-talk panel structurally cannot suffer sycophantic
+  conformity — there is nothing to conform to.
+- **THE REAL DEFECT — plurality voting discards the panel's best findings.** *Consensus collapse*: the
+  correct answer was present in the generation pool **53.0%** of the time but team accuracy was
+  **20.7%** — a **32.3pp oracle gap**; correct→wrong "vulnerability rate" up to **70.0%**. The desk's
+  `_consensus()` only surfaces themes with `n>=2`, so **a finding raised by exactly 1 of 13 seats is
+  filtered out of the consensus summary entirely**, and the inbox header then instructs the CRO that
+  "a lone claim needs code proof." **PILOT:** keep the tally as a *prioritisation* aid, stop it acting
+  as a *filter* — add a SINGLETON CLAIMS section, and change the triage wording to *"a lone claim
+  needs code proof — and so does a consensus claim; agreement among models that read the same dossier
+  is CORRELATED, not independent, evidence."* Thirteen seats reading one dossier share its framing and
+  its omissions, so 8/13 is nowhere near 8 independent observations. Falsifier: if zero singleton
+  claims survive CRO verification over ~3 cycles, the filter was right and this reverts.
+- **ADOPT-NOW, one line:** the panel concatenates seats in provider order and the CRO reads top-down —
+  a **position bias the desk imposes on itself.** Randomise seat order per run.
+- **REJECTED after reading:** self-preference defences in `score_panel.py`. [PRIMARY, HTML] *Are LLM
+  Evaluators Really Narcissists?* shows measured self-preference is **80–99% artifact** once you
+  control for a capability-matched proxy that failed the same item (MATH-500 −98.76%, MBPP+ −89%,
+  MMLU −80%); CoT de-biasing's apparent benefit was largely that artifact. Building this defence would
+  optimise on noise. **Spend nothing here.**
+
+**63. TWO CHEAP MEASUREMENTS THE DESK IS CURRENTLY PAYING FOR ON FAITH.**
+*Class: eval / cost discipline. Recommend: pilot both.*
+- **Measure the settled-questions feed.** `run_external_panel.py` ships up to **60,000 chars of
+  graveyard + 50,000 chars of prior rulings to every seat, every run** — ~110k chars × 13 seats,
+  adopted after an observed "7 of 27 rulings rejected as re-proposals" in the 07-20 run, and never
+  measured since. Every run is logged to `data/external_panel_log.jsonl`. **The test: re-proposal rate
+  before vs after the feed landed.** If it dropped, the desk has empirical evidence for a design the
+  AI-scientist literature only *asserts* — [PRIMARY, HTML] *Dead Science Walking* (arXiv 2606.04220)
+  proposes "null-result databases" as its top remedy and concedes it has **"no controlled tests
+  comparing retrieval/generation with vs. without negative evidence."** The desk built the thing a
+  year early and can generate the evidence the field lacks. If it did NOT drop, the desk is burning
+  110k chars per seat per run on a feed that does not work. **Both outcomes are valuable — the
+  signature of a good test.**
+- **Extend rail #54 from data cards to literature citations.** #54 requires a `primary_artifact`
+  (URL + HTTP code + byte/row count) for DATA grades on the principle that "a search summary is a
+  LEAD, never evidence." It does not bind literature citations, which are exactly as forgeable — and
+  are empirically forged at scale by machines of this class: **100 confirmed hallucinated citations
+  across 51 accepted NeurIPS 2025 papers**, >50 in ICLR 2026 submissions ([SUMMARY-ONLY] — quoted
+  through 2606.04220, itself unverified, and flagged rather than relied on). Item #59 above is the
+  concrete proof this matters *internally*: three numbers wrong in a desk document, caught only by
+  fetching primary text. Proposal: a literature card without a fetch-verified URL is auto-graded
+  UNVERIFIED.
+
+**64. SOURCE-CLASS TRUST DEFECT — "highly cited" is a corrupted quality signal in exactly the corpus
+this desk mines most.** *Class: digging / source trust. Recommend: adopt-now (a prior, not a build).*
+[PRIMARY, full article + full comment thread] Retraction Watch, 2026-01-08: **twelve papers retracted
+across three Elsevier finance journals — International Review of Financial Analysis, International
+Review of Economics & Finance, and Finance Research Letters** — on the stated ground that the editor
+oversaw review of manuscripts he co-authored. Among them: **"Cryptocurrencies as a financial asset: A
+systematic analysis" with 707 WoS citations**, and "Datestamping the Bitcoin and Ethereum Bubbles"
+(FRL 2018). **Why it binds this desk specifically: FRL and IRFA are short-format fast-turnaround
+venues that carry a large share of the crypto empirical literature a literature-miner naturally
+hits** — two of run 2's own findings (F5, F10) are IRFA papers. Reply layer (charter §9, and it
+outranks the article): the editor's defence is that this is *"pretty common"* in finance, which
+generalises the problem; commenters point to a PubPeer thread alleging citation stacking, and the
+same figure helped coordinate an Elsevier "Finance Journals Ecosystem" a preprint alleged "might
+facilitate citation stacking." **Sharp edge, stated honestly: the retractions are for PROCESS, not
+fabrication — this is not a claim the findings are false. It is a claim that the filter the desk was
+implicitly relying on did not run.** Prior to adopt: never let venue or citation count substitute for
+reading the identification strategy; treat FRL/IRFA/IREF crypto results as single-source until
+independently reproduced. Also logged as a negative-knowledge source-class record.
+
+**65. SILENT-FAILURE DEFECT FOUND IN PASSING — eight deep-sweep artifacts are crash stubs, and
+nothing noticed.** *Class: infrastructure / observability. Recommend: brain triage.*
+`docs/research/deep_sweep/` contains eight files dated 2026-07-26 —
+`20260726_{alpha-discovery,data-intelligence,data-moat,execution-growth,infrastructure,
+meta-and-blindspots,research-engine,validation-stats}.md` — each **4 lines long and reading
+`# AUDITOR FAILED (<dimension>)` followed by an empty `--stderr--` block.** These are not this
+organ's output; they are another organ's (the deep-sweep auditor's) crash residue. **The defect is
+not the crash, it is that a full eight-dimension sweep failed with an empty stderr and left
+well-formed filenames on disk that a coverage check counting FILES would score as complete.** That is
+the same failure shape §33 addresses for mining — an artifact that exists but is empty reads as done.
+Two asks: (1) find out why the auditor died and whether it has been silently failing before today;
+(2) an auditor that fails should write its error or write nothing — never a stub that looks like
+coverage. Left in place deliberately rather than deleted, since deleting them would erase the only
+evidence the run happened.
