@@ -15,6 +15,7 @@ from __future__ import annotations
 import argparse
 import contextlib
 import json
+import os
 import random
 import subprocess
 import sys
@@ -980,6 +981,27 @@ def _live_params(top: int, hold_top: int, capital: float) -> tuple[int, int, flo
     return top, hold_top, capital
 
 
+
+def _foreign_executor_alive() -> bool:
+    """True when a DIFFERENT live executor owns the heartbeat.
+
+    SINGLE-BOOK INVARIANT (2026-07-26): two --live executors on one delta-neutral book
+    double-order and churn. The startup-only lock could not catch a duplicate spawned during a
+    slow heartbeat window -- both then refreshed the same file forever. Same failure the dead-man
+    rail hit on 07-11 and fixed with a per-loop PID check; the executor now does the same.
+    """
+    try:
+        parts = _HB.read_text("utf-8").split()
+        if not parts or not parts[0].isdigit():
+            return False                       # legacy/unowned heartbeat -- reclaim it
+        pid = int(parts[0])
+        if pid == os.getpid():
+            return False
+        return (time.time() - _HB.stat().st_mtime) < _HB_TICK * 2.5
+    except (OSError, ValueError):
+        return False
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     _enable_fee_burn()           # Gate-0 fee lever: on from the first tick
@@ -1012,9 +1034,16 @@ def main() -> None:
     rng = random.Random()                                 # a fixed 600s beat is detectable at size)
     killed = False
     while forever or time.monotonic() < deadline:
+        if not dry and _foreign_executor_alive():
+            print("another live executor owns the book -- exiting (single-book "
+                  "invariant)")
+            return
         if not dry:                                       # fast heartbeat (decoupled from work)
             _HB.parent.mkdir(parents=True, exist_ok=True)
-            _HB.write_text(datetime.now(tz=UTC).isoformat(), "utf-8")
+            # PID-owned: lets every OTHER executor detect that it no longer owns
+            # the book (single-book invariant, 2026-07-26).
+            _HB.write_text(f"{os.getpid()} {datetime.now(tz=UTC).isoformat()}",
+                           "utf-8")
         if _KILL.exists():
             # IDLE here instead of exiting: exiting made systemd respawn every ~17s for as long
             # as the kill file stood (14k restarts after the 2026-07-13 fire), which also starved
