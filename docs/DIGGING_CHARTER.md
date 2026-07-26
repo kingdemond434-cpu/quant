@@ -401,3 +401,32 @@ source exists".
 after acquisition; the ruling had to be recovered from the Internet Archive. A vendor that can
 delete its contract can delete your access. Treat every vendor dependency as temporary and every
 reconstruction as permanent — which is why (3) ranks primary-source reconstruction FIRST.
+
+## 39. THE PAID-DATASET TARGET REGISTRY — HUNT REPLACEMENTS BEFORE THEY BREAK (2026-07-26, principal)
+
+§38 hunts a replacement when a source FAILS. That is still reactive, and the principal named the
+deeper defect precisely: the desk recognises a gap only after a human points at it. §39 is the
+anticipatory half.
+
+(1) THE STANDING LIST. `docs/research/paid_dataset_targets.md` holds every valuable paid crypto
+dataset the desk knows of (18 at seeding) with a live free-replacement status. Every
+digger READS it every run and advances at least the top OPEN item it can. The desk should already
+know what it would do if Glassnode, Nansen or Kaiko vanished tomorrow — because it has been hunting
+that replacement all along, not starting on the day of the outage.
+
+(2) HUNT ORDER, AND IT IS NOT NEGOTIABLE. Primary-source reconstruction FIRST — facts are not
+copyrightable, and the Coin Metrics replacement was not another vendor, it was the chain itself.
+Then: differently-licensed vendors, academic and government mirrors, community datasets, regional
+venues, dead-project mirrors, archives. Search the WHOLE surface — forums, obscure repos, papers,
+channels, groups, non-English sources — never just the obvious catalogue.
+
+(3) THE LIST ITSELF MUST GROW. A fixed list is the same blind spot wearing a different hat. Any
+paid dataset a digger encounters — in a paper's methods section, a forum thread, a competitor's
+stack, a vendor's own comparison page — is ADDED with a status, in the same run. Registry growth is
+a per-dig deliverable, and `check_paid_target_registry` fires when it stagnates while digs are
+producing.
+
+(4) NEVER SHRINK, ALWAYS IMPROVE. The desk's non-noise information holdings — sources, series,
+history depth, resolution — must grow monotonically in quantity AND quality. A source removed
+without replacement, a series left to rot, or history quietly dropped is a §34 regression by
+attrition. Coverage ratchets: today's holdings are the floor, never the target.

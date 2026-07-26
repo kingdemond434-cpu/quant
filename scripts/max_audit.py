@@ -2092,6 +2092,85 @@ CHECKS = [("carryover-skipped", check_carryover_skipped),
                       ("rs-enforce", check_rubberstamp_enforcement)]
 
 
+PAID_TARGETS = ROOT / "docs/research/paid_dataset_targets.md"
+HOLDINGS_RECORD = ROOT / "docs/research/holdings_record.json"   # git-tracked, ratchets UP only
+
+
+def check_paid_target_registry(defects) -> None:
+    """§39: the paid-dataset target registry must exist, be hunted, and GROW.
+
+    §38 hunts a replacement when a source fails -- reactive. §39 keeps a standing list of every
+    valuable paid dataset with a live free-replacement status, so the desk already knows what it
+    would do if a vendor vanished. A FIXED list is the same blind spot in a different shape, so
+    the list growing is itself the deliverable.
+    """
+    if not PAID_TARGETS.exists():
+        defects.append(("paid-registry-missing",
+                        "§39: docs/research/paid_dataset_targets.md is missing -- the desk has no "
+                        "standing list of paid datasets to hunt free replacements for, so it can "
+                        "only react to failures instead of anticipating them"))
+        return
+    txt = PAID_TARGETS.read_text("utf-8", errors="ignore")
+    rows = [ln for ln in txt.splitlines() if ln.startswith("| ") and "---" not in ln]
+    n = max(0, len(rows) - 1)                      # minus the header row
+    open_items = sum(1 for ln in rows if "OPEN" in ln)
+    try:
+        rec = json.loads(HOLDINGS_RECORD.read_text("utf-8")) if HOLDINGS_RECORD.exists() else {}
+    except Exception:
+        rec = {}
+    best = int(rec.get("best_paid_targets", 0))
+    if n > best:
+        rec["best_paid_targets"] = n
+        rec["updated"] = datetime.now(tz=UTC).isoformat()
+        rec.setdefault("note", "§39 ratchet: registry size and holdings only grow; a fall is a "
+                               "regression defect, never a new normal")
+        HOLDINGS_RECORD.write_text(json.dumps(rec, indent=1), "utf-8")
+    elif n < best:
+        defects.append(("paid-registry-shrank",
+                        f"§39: paid-dataset registry fell to {n} entries from a record of {best} "
+                        "-- the hunt list may only GROW. Restore the removed targets or record "
+                        "why each is genuinely no longer a dataset worth replacing."))
+    # a registry nobody advances is a document, not a hunt
+    age_d = (NOW - PAID_TARGETS.stat().st_mtime) / 86400.0
+    if age_d > 14 and open_items:
+        defects.append(("paid-registry-stagnant",
+                        f"§39: {open_items} OPEN replacement hunts and the registry has not been "
+                        f"touched in {age_d:.0f}d. Every dig must advance the top OPEN item it "
+                        "can and ADD any paid dataset it encountered -- a list that never grows "
+                        "is the same blind spot in a different shape."))
+
+
+def check_holdings_never_shrink(defects) -> None:
+    """§39(4): non-noise information holdings grow monotonically -- quantity AND quality.
+
+    Counts the desk's live data surface (lake axis dirs + forward-clock/series jsonl files) and
+    ratchets it against the best-ever. A source removed without replacement, a series left to rot,
+    or history quietly dropped is a §34 regression arriving by attrition rather than by mining
+    less. Today's holdings are the FLOOR, never the target.
+    """
+    lake = ROOT / "data/lake/bronze"
+    axes = sum(1 for _ in lake.iterdir()) if lake.exists() else 0
+    series = len(list(ROOT.glob("data/*.jsonl")))
+    surface = axes + series
+    if surface == 0:
+        return
+    try:
+        rec = json.loads(HOLDINGS_RECORD.read_text("utf-8")) if HOLDINGS_RECORD.exists() else {}
+    except Exception:
+        rec = {}
+    best = int(rec.get("best_surface", 0))
+    if surface > best:
+        rec["best_surface"] = surface
+        rec["updated"] = datetime.now(tz=UTC).isoformat()
+        HOLDINGS_RECORD.write_text(json.dumps(rec, indent=1), "utf-8")
+    elif best >= 8 and surface < best * 0.9:
+        defects.append(("holdings-shrank",
+                        f"§39(4): information surface fell to {surface} (axes+series) from a "
+                        f"record of {best}. Holdings may NEVER shrink -- a dropped source, a "
+                        "rotted series or discarded history is a regression by attrition. Restore "
+                        "it or record the replacement that supersedes it."))
+
+
 def main() -> None:
     defects: list[tuple[str, str]] = []
     for label, fn in CHECKS:
