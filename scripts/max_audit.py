@@ -1219,6 +1219,36 @@ def check_capacity_hunt(defects) -> None:
             "arrives, which means hunting large concurrently, not afterwards."))
 
 
+def check_capacity_governor_reachable(defects) -> None:
+    """§42: the capacity clamp must be THREADED to the gate, not merely defined in the sizer.
+
+    A governor no caller passes is an orphaned artifact (§36) that tests green forever while
+    clamping nothing -- and it is the most dangerous kind, because the tests prove the mechanism
+    works and say nothing about whether it runs. This checks the join: `OrderIntent` must carry
+    `edge_capacity_usd`, and `risk_gate` must hand it to `calculate_position_size`. Structural, so
+    it survives the numbers being re-tuned and fails the moment the wire is cut.
+    """
+    gate = ROOT / "libs/risk/gate.py"
+    sizing = ROOT / "libs/risk/sizing.py"
+    if not gate.exists() or not sizing.exists():
+        return
+    g, s = gate.read_text("utf-8", errors="ignore"), sizing.read_text("utf-8", errors="ignore")
+    if "edge_capacity_usd" not in s:
+        defects.append((
+            "capacity-governor-missing",
+            "§42: libs/risk/sizing.py has no edge_capacity_usd governor. Nothing stops a sleeve "
+            "being sized past what its edge can hold, which does not lose money slowly -- it "
+            "DESTROYS the edge, because the desk's own flow becomes the counterparty."))
+        return
+    if "edge_capacity_usd" not in g:
+        defects.append((
+            "capacity-governor-orphaned",
+            "§42: the sizer HAS a capacity governor and libs/risk/gate.py never passes it, so it "
+            "clamps nothing on any real order while its tests stay green. That is exactly the "
+            "orphaned-artifact failure §36 exists to catch, in the one place it can cost capital: "
+            "thread intent.edge_capacity_usd into calculate_position_size."))
+
+
 def _funded_by_sleeve() -> dict[str, float]:
     """Live notional per sleeve, from whatever the desk actually publishes. Empty pre-Gate-0."""
     out: dict[str, float] = {}
@@ -1318,6 +1348,7 @@ def check_capacity_runway(defects) -> None:
 #: own dollar constant; they disagreed, and fixing the survival gate alone on 2026-07-26 left four
 #: of them still penalising the niche. They are enumerated so a NEW one cannot quietly appear.
 _CAPACITY_CONSUMERS = (
+    "libs/risk/sizing.py",
     "libs/discovery/objective.py",
     "libs/discovery/factory.py",
     "libs/research/alpha_economics.py",
@@ -2301,6 +2332,7 @@ CHECKS = [("carryover-skipped", check_carryover_skipped),
                       ("capacity-single-source", check_capacity_single_source),
                       ("capacity-runway", check_capacity_runway),
                       ("capacity-allocation-honesty", check_capacity_allocation_honesty),
+                      ("capacity-governor-reachable", check_capacity_governor_reachable),
                       ("mine-conversion", check_mine_conversion),
                       ("mine-flow", check_mine_flow),
                       ("mine-gate", check_mine_gate),

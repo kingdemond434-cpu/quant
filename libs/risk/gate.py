@@ -41,6 +41,12 @@ class OrderIntent(BaseModel):
     cost: float | None = None
     alpha_id: str | None = None
     confidence: float = 1.0
+    #: §42: dollars the EDGE absorbs before its own impact eats it. None = uncapped by capacity,
+    #: which is correct for a deep instrument and WRONG for a thin one -- so a sleeve trading a
+    #: capacity-bound edge must carry it, and `check_capacity_intent_coverage` fires when a
+    #: declared sleeve reaches the gate without one. Every other cap here asks how much risk the
+    #: BOOK may take; this asks how much the EDGE can hold, and the two are independent.
+    edge_capacity_usd: float | None = None
     id: str = Field(default_factory=lambda: generate_id("intent"))
 
 
@@ -167,6 +173,7 @@ def risk_gate(
             max_position_amount=position_cap,
             factor_headroom=factor_headroom,
             heat_headroom=heat_headroom,
+            edge_capacity_usd=intent.edge_capacity_usd,
         )
         checks.append(
             {"name": "sizing", "passed": not sizing.rejected, "binding": sizing.binding_constraint}

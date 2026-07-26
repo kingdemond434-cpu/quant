@@ -159,3 +159,33 @@ class TestSizerEnforcesCapacity:
         a = calculate_position_size(10_000.0, **self._kw())
         b = calculate_position_size(10_000.0, edge_capacity_usd=None, **self._kw())
         assert a == b
+
+
+class TestGovernorIsActuallyWired:
+    """A governor no caller passes is an orphaned artifact -- green tests, zero clamping."""
+
+    def test_the_gate_threads_capacity_into_the_sizer(self) -> None:
+        import inspect
+
+        from libs.risk import gate
+        src = inspect.getsource(gate)
+        assert "edge_capacity_usd=intent.edge_capacity_usd" in src, \
+            "the §42 capacity clamp is defined but never passed -- it clamps nothing"
+
+    def test_an_intent_can_carry_its_edge_capacity(self) -> None:
+        from libs.risk.gate import OrderIntent
+        oi = OrderIntent(instrument="BTCUSDT", side="buy", kelly_fraction=0.5,
+                         risk_budget=0.02, risk_per_unit=1.0, edge_capacity_usd=5_000.0)
+        assert oi.edge_capacity_usd == 5_000.0
+
+    def test_omitting_it_is_uncapped_by_capacity(self) -> None:
+        # correct for a deep instrument; the audit check is what catches a THIN one omitting it
+        from libs.risk.gate import OrderIntent
+        oi = OrderIntent(instrument="BTCUSDT", side="buy", kelly_fraction=0.5,
+                         risk_budget=0.02, risk_per_unit=1.0)
+        assert oi.edge_capacity_usd is None
+
+    def test_the_audit_catches_an_orphaned_governor(self) -> None:
+        out: list[tuple[str, str]] = []
+        m.check_capacity_governor_reachable(out)
+        assert out == [], f"governor is not wired on the live tree: {out}"
