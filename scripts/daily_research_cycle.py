@@ -73,6 +73,9 @@ _STEPS = [
     ("shadow_8h",         "scripts/run_shadow_8h.py",       420),  # 3x-obs challenger shadow
     ("leverage_opt",      "scripts/run_leverage_opt.py",    120),
     ("molded_refresh",    "scripts/run_live_combined.py",   120),
+    # the self-improvement queue: derive review dates so decisions can MATURE, and publish
+    # the matured-and-unscored worklist. Never writes an outcome -- scoring is a judgement.
+    ("decision_review",   "scripts/run_decision_review.py",  60),
     ("git_snapshot",      "scripts/git_snapshot.py",        120),  # daily forensic code history
 ]
 

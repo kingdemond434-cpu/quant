@@ -93,7 +93,9 @@
     "venue REALIZED_PNL covers only this book (futures account is dedicated)"
    ],
    "success_metric": "net_pnl ~= funding - fees +- basis drift as closes accumulate",
-   "reversal_condition": "spot-wallet audit contradicts the banked realized by > $50"
+   "reversal_condition": "spot-wallet audit contradicts the banked realized by > $50",
+   "review_due": "2026-08-08",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-09-income-pagination",
@@ -106,7 +108,9 @@
     "tranId+type+symbol+time uniquely identify an income event"
    ],
    "success_metric": "income totals stable vs manual venue export",
-   "reversal_condition": "n/a (pure correctness fix, CI-tested)"
+   "reversal_condition": "n/a (pure correctness fix, CI-tested)",
+   "review_due": "2026-08-08",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-09-carry-hysteresis-hold-while-positive",
@@ -119,7 +123,9 @@
     "names exit promptly when funding flips negative (close rule unchanged)"
    ],
    "success_metric": "closes/day < 3 and commissions < 20% of funding by 2026-07-23",
-   "reversal_condition": "avg held-name funding decays materially below the open-candidate set for >1wk (then add a fee-aware rotation rule instead)"
+   "reversal_condition": "avg held-name funding decays materially below the open-candidate set for >1wk (then add a fee-aware rotation rule instead)",
+   "review_due": "2026-08-08",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-09-liquidation-source-swap-binance-to-bybit",
@@ -282,7 +288,9 @@
     "dead-man consecutive-reading guard prevents false fires"
    ],
    "success_metric": "zero false dead-man fires in 90d; first promotion decision uses NW t + regime evidence; live 30d demotion trigger armed at go-live",
-   "reversal_condition": "any rail fires falsely twice, or corrected gates reject an edge that then validates at 90d twice in a row"
+   "reversal_condition": "any rail fires falsely twice, or corrected gates reject an edge that then validates at 90d twice in a row",
+   "review_due": "2026-10-10",
+   "review_due_source": "success_metric"
   },
   {
    "id": "2026-07-12-first-inversion-rule-declined",
@@ -295,7 +303,9 @@
     "shrunk-Kelly + 15% DD-pause + funding-exit hysteresis + dead-man switch bound the inversion tail adequately"
    ],
    "success_metric": "first live inversion episode: realized DD <= 2x model expectation",
-   "reversal_condition": "first live funding-inversion episode with DD > 2x model expectation -> rule goes back to the principal with the realized numbers"
+   "reversal_condition": "first live funding-inversion episode with DD > 2x model expectation -> rule goes back to the principal with the realized numbers",
+   "review_due": "2026-08-11",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-12-first-inversion-rule-adopted",
@@ -309,7 +319,9 @@
     "live engine routes carry sizing through first_inversion_cap"
    ],
    "success_metric": "first live inversion episode DD <= model expectation at capped size; cap lifts correctly on survival or day-60",
-   "reversal_condition": "none needed -- rule self-expires at day 60; supersedes 2026-07-12-first-inversion-rule-declined"
+   "reversal_condition": "none needed -- rule self-expires at day 60; supersedes 2026-07-12-first-inversion-rule-declined",
+   "review_due": "2026-08-11",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-12-round2-review-fixes",
@@ -323,7 +335,9 @@
     "25th-pct funding-vol bar is a meaningful regime floor"
    ],
    "success_metric": "carry day-40 gate evaluates with regime evidence available; no false dead-man events; CI green",
-   "reversal_condition": "vif noise causes sizing to oscillate >20% day-over-day -> smooth vif with 10d EMA"
+   "reversal_condition": "vif noise causes sizing to oscillate >20% day-over-day -> smooth vif with 10d EMA",
+   "review_due": "2026-08-11",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-12-deadman-false-fire-incident",
@@ -337,7 +351,9 @@
     "version check covers all legacy writers"
    ],
    "success_metric": "zero deadman false fires; single pid-stamped writer verified after every daemon deploy",
-   "reversal_condition": "n/a (defect fix)"
+   "reversal_condition": "n/a (defect fix)",
+   "review_due": "2026-08-11",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-12-multi-model-advisory-panel",
@@ -351,7 +367,9 @@
     "OpenAI-compatible endpoints remain stable"
    ],
    "success_metric": "first automated panel run produces >=1 QUEUE-or-better finding; provider hit-rate measurable by month 2",
-   "reversal_condition": "two consecutive panels produce zero surviving findings -> drop to biweekly; persistent injection attempts from a provider -> drop provider"
+   "reversal_condition": "two consecutive panels produce zero surviving findings -> drop to biweekly; persistent injection attempts from a provider -> drop provider",
+   "review_due": "2026-08-11",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-12-vps-migration-complete",
@@ -366,7 +384,9 @@
     "user does setup-token + live keys via SSH"
    ],
    "success_metric": "7 continuous days of clean VPS heartbeats -> live connector enable gate opens",
-   "reversal_condition": "VPS instability -> laptop un-retire = remove data/FREEZE + re-enable QuantWatchdog"
+   "reversal_condition": "VPS instability -> laptop un-retire = remove data/FREEZE + re-enable QuantWatchdog",
+   "review_due": "2026-08-11",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-12-panel-max-roi-upgrade",
@@ -380,7 +400,9 @@
     "generate/data missions clear the EV gate like any hypothesis"
    ],
    "success_metric": "first generate-mission produces >=1 EV-gate-QUEUE hypothesis; first data-mission surfaces >=1 verified new source",
-   "reversal_condition": "generate/data missions produce zero survivors across 3 rotations -> drop those missions, keep audit+premortem"
+   "reversal_condition": "generate/data missions produce zero survivors across 3 rotations -> drop those missions, keep audit+premortem",
+   "review_due": "2026-08-11",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-12-monthly-tier1-panel",
@@ -394,7 +416,9 @@
     "tier_convergence.json kept current by step 1"
    ],
    "success_metric": "first monthly tier1 review produces >=1 EV-positive achievable move implemented or queued",
-   "reversal_condition": "3 monthly tier1 runs yield only resource-bound or zero-EV suggestions -> drop to quarterly"
+   "reversal_condition": "3 monthly tier1 runs yield only resource-bound or zero-EV suggestions -> drop to quarterly",
+   "review_due": "2026-08-11",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-12-panel-roster-refresh-and-memory",
@@ -408,7 +432,9 @@
     "finding-text dedup is a good-enough match (brain does semantic judgment)"
    ],
    "success_metric": "roster stays >=10 distinct labs with zero dead IDs; no rejected finding re-triaged after it enters panel_rulings.md",
-   "reversal_condition": "roster refresh proposes only downgrades 3 months running -> make it drop-dead-only"
+   "reversal_condition": "roster refresh proposes only downgrades 3 months running -> make it drop-dead-only",
+   "review_due": "2026-08-11",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-16-nom-thin-book-sizing-fix",
@@ -423,7 +449,9 @@
     "fill-window (start_ms - 2s) captures all own fills incl. resting maker fills"
    ],
    "success_metric": "30d post-restart: zero opens >35% of book capital, zero thin-book fills, and dead-man equity tracks executor net within noise (no silent divergence)",
-   "reversal_condition": "funding capture drops materially because the depth guard skips most candidates -> recalibrate _DEPTH_MULT / pct from measured fill data, never by removing the guard"
+   "reversal_condition": "funding capture drops materially because the depth guard skips most candidates -> recalibrate _DEPTH_MULT / pct from measured fill data, never by removing the guard",
+   "review_due": "2026-08-15",
+   "review_due_source": "success_metric"
   },
   {
    "id": "2026-07-16-level5-factory-prompt-triage",
@@ -438,7 +466,9 @@
     "queued items re-enter via EV gate when their trigger condition fires"
    ],
    "success_metric": "by pilot day-30 (~2026-08-15): scale-or-not decided from survivors-per-1000 evidence; zero doctrine regressions (no CAGR targeting, no DD-budget creep above the rail)",
-   "reversal_condition": "pilot shows >=1 forward-validated survivor from generation throughput -> re-open the scaling question with rented compute sized by EV, and revisit the factory blueprint's throughput sections component by component"
+   "reversal_condition": "pilot shows >=1 forward-validated survivor from generation throughput -> re-open the scaling question with rented compute sized by EV, and revisit the factory blueprint's throughput sections component by component",
+   "review_due": "2026-08-15",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-16-audit-max-roi-upgrade",
@@ -453,7 +483,9 @@
     "panel scorecards at monthly governance remain the roster-change mechanism"
    ],
    "success_metric": "30d: >=1 micro-audit finding leads to a verified fix or a logged ruling; brain_down pager fires within 26h in any future auth/timer outage; zero secret leaks in git or briefs",
-   "reversal_condition": "30d of micro-audits with zero actionable findings (all PASS or all wrong) -> drop to weekly or retire the step per sunset discipline; pager false-positive rate >1/week -> tune thresholds"
+   "reversal_condition": "30d of micro-audits with zero actionable findings (all PASS or all wrong) -> drop to weekly or retire the step per sunset discipline; pager false-positive rate >1/week -> tune thresholds",
+   "review_due": "2026-08-15",
+   "review_due_source": "success_metric"
   },
   {
    "id": "2026-07-16-pager-silent-death-backoff-fix",
@@ -467,7 +499,9 @@
     "the principal is actually subscribed to the topic on their phone (verify via test page)"
    ],
    "success_metric": "test page received by principal; alert state shows successful pushes resuming",
-   "reversal_condition": "429s persist for >24h after volume drops -> move to a paid/alternate push channel (ntfy pro / self-hosted / Telegram bot) via EV gate"
+   "reversal_condition": "429s persist for >24h after volume drops -> move to a paid/alternate push channel (ntfy pro / self-hosted / Telegram bot) via EV gate",
+   "review_due": "2026-08-15",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-16-gap-elimination-override-adoption",
@@ -481,7 +515,9 @@
     "the brain honors the gap-register duty each cycle (verifiable in cycle logs)"
    ],
    "success_metric": "14d: >=1 benchmark-mission plan or micro-audit missing-action survives code verification and ships; gap register shows re-rank timestamps + zero items stale >7d",
-   "reversal_condition": "mission v2 outputs degrade into generic advice (2 weeks of zero verified findings) -> revert to v1 prompts; gap-register duty skipped 3 cycles -> escalate to principal"
+   "reversal_condition": "mission v2 outputs degrade into generic advice (2 weeks of zero verified findings) -> revert to v1 prompts; gap-register duty skipped 3 cycles -> escalate to principal",
+   "review_due": "2026-07-30",
+   "review_due_source": "success_metric"
   },
   {
    "id": "2026-07-16-fred-macro-collector-wired",
@@ -495,7 +531,9 @@
     "pre-registration discipline holds when the family opens"
    ],
    "success_metric": "first pre-registered macro-crypto hypothesis clears or fails the gauntlet honestly within 30d of key placement; collector uptime >95% in health.json",
-   "reversal_condition": "two quarters with zero surviving or informative macro hypotheses -> retire the collector per data-feed ROI discipline"
+   "reversal_condition": "two quarters with zero surviving or informative macro hypotheses -> retire the collector per data-feed ROI discipline",
+   "review_due": "2026-08-15",
+   "review_due_source": "success_metric"
   },
   {
    "id": "2026-07-16-leverage-optimizer-runaway",
@@ -509,7 +547,9 @@
     "orphan COOKIE spot (~$162) stays harmless per reconciler design (never sells untracked)"
    ],
    "success_metric": "brain root-causes the confidence jump within 3 cycles; no position ever exceeds cap_frac x operator capital while the clamp stands; HFT exits without a thin-book burn",
-   "reversal_condition": "confidence pipeline verified honest (>=30 live days, uncontaminated window, principal sign-off) -> remove the clamp in favour of the designed gate"
+   "reversal_condition": "confidence pipeline verified honest (>=30 live days, uncontaminated window, principal sign-off) -> remove the clamp in favour of the designed gate",
+   "review_due": "2026-08-15",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-16-v8-master-blueprint-triage",
@@ -523,7 +563,9 @@
     "testnet positions carry no host-death monetary risk, so venue-side stops belong in the live connector, not tonight"
    ],
    "success_metric": "external heartbeat pings green within 48h of operator signup; live-connector spec review includes all four absorbed requirements; recorder go/no-go decided by the brain within 7 days with disk/CPU numbers",
-   "reversal_condition": "if the pilot or live phase shows idea-flow (not data) became the bottleneck, re-open the OSINT lane at its 8.14.8 actionability-gated design"
+   "reversal_condition": "if the pilot or live phase shows idea-flow (not data) became the bottleneck, re-open the OSINT lane at its 8.14.8 actionability-gated design",
+   "review_due": "2026-07-23",
+   "review_due_source": "success_metric"
   },
   {
    "id": "2026-07-17-tier1-scorecard-rider",
@@ -536,7 +578,9 @@
     "models comply with the citation mandate (verify_findings-style triage applies)"
    ],
    "success_metric": "first two tier1 runs produce >=7 validly-cited dimension scores per model; scores correlate with known state (e.g., alpha scored low, validation high)",
-   "reversal_condition": "scores degrade into uncited or flattering numbers for 2 consecutive runs -> drop the rider, keep ranked-gap-only output"
+   "reversal_condition": "scores degrade into uncited or flattering numbers for 2 consecutive runs -> drop the rider, keep ranked-gap-only output",
+   "review_due": "2026-08-16",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-17-data-triggered-generation",
@@ -549,7 +593,9 @@
     "brain honors the trigger via gap-register row 5"
    ],
    "success_metric": "first matured family (OI/LS ~07-29) gets its scoped generate run within 2 cycles",
-   "reversal_condition": "two triggered runs produce zero EV-gate-QUEUE hypotheses -> drop to synthesize-only"
+   "reversal_condition": "two triggered runs produce zero EV-gate-QUEUE hypotheses -> drop to synthesize-only",
+   "review_due": "2026-08-16",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-17-cadence-engine",
@@ -562,7 +608,9 @@
     "stage_state.json is flipped by the live-connector deployment (in its spec)"
    ],
    "success_metric": "4 weeks: panels fired 7.0+-0.5d apart with zero brain involvement; no double-fires",
-   "reversal_condition": "double-fires or missed windows observed -> revert to brain-scheduled with checklist"
+   "reversal_condition": "double-fires or missed windows observed -> revert to brain-scheduled with checklist",
+   "review_due": "2026-08-14",
+   "review_due_source": "success_metric"
   },
   {
    "id": "2026-07-17-no-change-cap-principal-order",
@@ -575,7 +623,9 @@
     "neighbour-naming + next-day micro-audit catch regime shifts fast enough"
    ],
    "success_metric": "30d: zero change-induced incidents despite unrestricted velocity",
-   "reversal_condition": "any change-induced incident AFTER live capital deploys -> principal revisits this order with the incident on the table"
+   "reversal_condition": "any change-induced incident AFTER live capital deploys -> principal revisits this order with the incident on the table",
+   "review_due": "2026-08-16",
+   "review_due_source": "success_metric"
   },
   {
    "id": "2026-07-17-throughput-amendment-and-connector-spec",
@@ -588,7 +638,9 @@
     "brain honors independence gate per contract text"
    ],
    "success_metric": "connector built to spec + breaker-tested before 2026-08-05; zero same-subsystem collision incidents under unlimited throughput",
-   "reversal_condition": "auto-revocation clause fires -> throughput drops to 5/window automatically"
+   "reversal_condition": "auto-revocation clause fires -> throughput drops to 5/window automatically",
+   "review_due": "2026-08-16",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-17-shadow-clock-contamination-ruling",
@@ -606,7 +658,9 @@
     "run_cashcarry_shadow.py's _panels()/cashcarry_returns() code path is the actual mechanism gating fast-track (verified by direct code read, not inference)"
    ],
    "success_metric": "no future cycle re-litigates this contamination question without new code/market evidence",
-   "reversal_condition": "if the shadow computation is ever changed to read live executor fills instead of the market-data panel, this ruling must be re-evaluated"
+   "reversal_condition": "if the shadow computation is ever changed to read live executor fills instead of the market-data panel, this ruling must be re-evaluated",
+   "review_due": "2026-08-16",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-17-carry-crowding-monitor",
@@ -625,7 +679,9 @@
     "25th-pct-of-backtest bar is a meaningful threshold (unvalidated by design -- informational monitor, not a gauntletted alpha)"
    ],
    "success_metric": "web/crowding.json refreshes daily without error; monthly governance references it at least once before 2026-08-16",
-   "reversal_condition": "if the detector produces persistent false decay_warnings unsupported by realized funding, recalibrate or retire the bar"
+   "reversal_condition": "if the detector produces persistent false decay_warnings unsupported by realized funding, recalibrate or retire the bar",
+   "review_due": "2026-08-16",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-17-reconciler-silent-failure-counter",
@@ -643,7 +699,9 @@
     "3 consecutive cycles (each ~600s) = ~30min is an acceptable detection latency, faster than the 75min the COOKIE incident took to surface via audit"
    ],
    "success_metric": "next time a hedge order is persistently rejected, a RECONCILE-FAIL line appears within 3 cycles instead of staying silent for 75+ minutes",
-   "reversal_condition": "if the 3-strike threshold produces false alarms on normal transient rejections, raise the threshold or add a time-window instead of a pure consecutive-count"
+   "reversal_condition": "if the 3-strike threshold produces false alarms on normal transient rejections, raise the threshold or add a time-window instead of a pure consecutive-count",
+   "review_due": "2026-08-16",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-17-growth-audit-capital-utilization-deferral",
@@ -661,7 +719,9 @@
     "GAP#14/#15 will resolve within weeks, not months, keeping the foregone-growth cost bounded"
    ],
    "success_metric": "once GAP#14 is root-caused and GAP#15 is resolved (trim or natural close), capital utilization gap closes same-cycle with no further deferral",
-   "reversal_condition": "if GAP#14/#15 remain open >14 more days with no progress, re-examine whether the deferral itself has become the conservatism defect (Aggression Clause: conservatism beyond survival constraints is itself a cost)"
+   "reversal_condition": "if GAP#14/#15 remain open >14 more days with no progress, re-examine whether the deferral itself has become the conservatism defect (Aggression Clause: conservatism beyond survival constraints is itself a cost)",
+   "review_due": "2026-08-16",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-17-weekly-architecture-review",
@@ -674,7 +734,9 @@
     "the governance apparatus's cost (LLM API spend, brain-cycle time) remains cheap relative to the capital at stake, which holds at $15k paper but should be re-checked as capital scales"
    ],
    "success_metric": "next weekly architecture review (within 7 cycles) finds the same conclusion or identifies a genuinely new migration candidate from fresh evidence",
-   "reversal_condition": "if live capital deploys and the governance-apparatus-to-capital cost ratio becomes materially unfavorable, revisit"
+   "reversal_condition": "if live capital deploys and the governance-apparatus-to-capital cost ratio becomes materially unfavorable, revisit",
+   "review_due": "2026-08-16",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-17-hwm-contamination-false-fire",
@@ -687,7 +749,9 @@
     "principal will answer the reset question when ready"
    ],
    "success_metric": "post-reset baseline forms on clean wallet; no fourth false fire from stale references",
-   "reversal_condition": "n/a (incident record)"
+   "reversal_condition": "n/a (incident record)",
+   "review_due": "2026-08-16",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-17-spec-prebuild-standing-rule",
@@ -700,7 +764,9 @@
     "specs kept honest-sized; a spec is not a commitment to build"
    ],
    "success_metric": "next 3 implemented register items each had a complete spec before their build began",
-   "reversal_condition": "spec backlog itself becomes the bottleneck -> spec only top-5 ranked items"
+   "reversal_condition": "spec backlog itself becomes the bottleneck -> spec only top-5 ranked items",
+   "review_due": "2026-08-16",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-17-research-pack-triage",
@@ -713,7 +779,9 @@
     "pilot verdict remains the factory-design arbiter"
    ],
    "success_metric": "decay-lab spec complete before monthly window; clustering live before next factory expansion",
-   "reversal_condition": "per-row sunset clauses"
+   "reversal_condition": "per-row sunset clauses",
+   "review_due": "2026-08-16",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-17-master-expansion-package-triage",
@@ -726,7 +794,9 @@
     "brain honors inbox header protocol"
    ],
    "success_metric": "5 specs complete within 5 cycles; liquidation-cascade hypothesis pre-registered within 2 weeks",
-   "reversal_condition": "inbox items rot >14d unprocessed -> escalate to principal"
+   "reversal_condition": "inbox items rot >14d unprocessed -> escalate to principal",
+   "review_due": "2026-07-31",
+   "review_due_source": "success_metric"
   },
   {
    "id": "2026-07-17-deadman-reset-2-principal-approved",
@@ -739,7 +809,9 @@
     "no fourth reference-contamination source remains post-sweep"
    ],
    "success_metric": "48h: no deadman breach counts; positions ~$300-450/name; measured eq stable vs new HW",
-   "reversal_condition": "any new fire -> book stays down pending full re-investigation"
+   "reversal_condition": "any new fire -> book stays down pending full re-investigation",
+   "review_due": "2026-08-16",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-18-prospector-seat-adopted",
@@ -752,7 +824,9 @@
     "brain web-search quality suffices for citation-chain digging"
    ],
    "success_metric": ">=1 provenance-SEMI-or-better card reaching pre-registration within 2 runs; watchlist alive by run 2",
-   "reversal_condition": "zero accepted cards in 2 quarters -> retire per sunset discipline"
+   "reversal_condition": "zero accepted cards in 2 quarters -> retire per sunset discipline",
+   "review_due": "2026-08-17",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-18-execution-lockdown-and-recorder-live",
@@ -765,7 +839,9 @@
     "fapi public endpoints remain reachable from the VPS (verified in use)"
    ],
    "success_metric": "7 consecutive days of gap-free hourly partitions for 5 symbols; recorder survives a cycle restart + pages on induced staleness",
-   "reversal_condition": "disk or rate-limit pressure -> reduce cadence/symbols, never delete history"
+   "reversal_condition": "disk or rate-limit pressure -> reduce cadence/symbols, never delete history",
+   "review_due": "2026-08-17",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-18-literature-deep-miner",
@@ -778,7 +854,9 @@
     "inbox + web fetch suffice; no paywall spend without EV case"
    ],
    "success_metric": ">=1 mechanism card surviving to pre-registration within 3 sessions",
-   "reversal_condition": "sunset clause above"
+   "reversal_condition": "sunset clause above",
+   "review_due": "2026-08-17",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-18-digging-doctrine-and-autopsy-spec",
@@ -791,7 +869,9 @@
     "S1 activation timing per lockdown; event trigger overrides"
    ],
    "success_metric": "first dossier produces >=1 new monitored indicator + >=1 drill scenario",
-   "reversal_condition": "3 dossiers with zero new indicators/guards/drills -> fold into OSINT lane"
+   "reversal_condition": "3 dossiers with zero new indicators/guards/drills -> fold into OSINT lane",
+   "review_due": "2026-08-17",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-18-digging-cadence-biweekly",
@@ -804,7 +884,9 @@
     "brain honors priority ordering within cycles"
    ],
    "success_metric": "all coverage families visited >=1x within 6 weeks; connector progress unimpeded",
-   "reversal_condition": "connector milestones slip due to digging time -> revert to 28d immediately"
+   "reversal_condition": "connector milestones slip due to digging time -> revert to 28d immediately",
+   "review_due": "2026-08-29",
+   "review_due_source": "success_metric"
   },
   {
    "id": "2026-07-18-full-panel-event-rules",
@@ -817,7 +899,9 @@
     "brain routes event runs off-rotation as specified"
    ],
    "success_metric": "Gate-0 pre-mortem produces >=1 finding worth addressing before keys",
-   "reversal_condition": "n/a (event-scoped, self-limiting)"
+   "reversal_condition": "n/a (event-scoped, self-limiting)",
+   "review_due": "2026-08-17",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-18-growth-audit-denominator-fix",
@@ -830,7 +914,9 @@
     "config capital remains the authorization source until dynamic sizing re-gates"
    ],
    "success_metric": "zero growth_defect pages while book is fully deployed at authorized size",
-   "reversal_condition": "n/a (defect fix)"
+   "reversal_condition": "n/a (defect fix)",
+   "review_due": "2026-08-17",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-18-digging-breadth-all-improvement-classes",
@@ -843,7 +929,9 @@
     "improvement inbox + register absorb the added flow; brain triages per header"
    ],
    "success_metric": "within 2 dig cycles, >=1 non-alpha improvement finding captured and spec-queued",
-   "reversal_condition": "inbox floods with low-value process trivia -> raise the capture bar to material-only"
+   "reversal_condition": "inbox floods with low-value process trivia -> raise the capture bar to material-only",
+   "review_due": "2026-08-17",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-18-ai-methods-digging-gap-closed",
@@ -856,7 +944,9 @@
     "AI-methods findings route to improvement inbox, not the gauntlet"
    ],
    "success_metric": "within 2 literature cycles, >=1 concrete engine/prompt/eval improvement captured",
-   "reversal_condition": "AI-methods digs yield only hype with no adoptable method in 2 quarters -> drop the family"
+   "reversal_condition": "AI-methods digs yield only hype with no adoptable method in 2 quarters -> drop the family",
+   "review_due": "2026-08-17",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-18-digger-coverage-self-audit",
@@ -869,7 +959,9 @@
     "quarterly cadence catches new families before they matter"
    ],
    "success_metric": "first coverage audit adds >=1 genuinely missing family OR credibly confirms completeness",
-   "reversal_condition": "audits add only trivial families 2 quarters running -> fold into annual"
+   "reversal_condition": "audits add only trivial families 2 quarters running -> fold into annual",
+   "review_due": "2026-08-17",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-18-youtube-transcript-reality",
@@ -882,7 +974,9 @@
     "high-signal videos are discussed in reachable text somewhere"
    ],
    "success_metric": "Prospector cites >=1 video-sourced mechanism via text mirror within 2 runs",
-   "reversal_condition": "coverage log shows video-locked blockers recurring -> trigger the EV-gated proxy decision"
+   "reversal_condition": "coverage log shows video-locked blockers recurring -> trigger the EV-gated proxy decision",
+   "review_due": "2026-08-17",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-18-ex-solo-quant-priority",
@@ -895,7 +989,9 @@
     "ex/solo-quant content is discussed in reachable text / transcripts"
    ],
    "success_metric": "within 3 Prospector runs, >=1 card sourced from an ex/solo-quant long-form piece",
-   "reversal_condition": "ex/solo-quant sources yield only known/retail material 2 quarters -> demote to normal weight"
+   "reversal_condition": "ex/solo-quant sources yield only known/retail material 2 quarters -> demote to normal weight",
+   "review_due": "2026-08-17",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-18-source-yield-learning",
@@ -908,7 +1004,9 @@
     "enough surviving cards accrue over quarters to make yield signal meaningful"
    ],
    "success_metric": "by the 2nd coverage audit, budget measurably shifted toward a proven-productive family",
-   "reversal_condition": "too few survivors to yield signal -> keep equal-weight rotation, revisit at more data"
+   "reversal_condition": "too few survivors to yield signal -> keep equal-weight rotation, revisit at more data",
+   "review_due": "2026-08-17",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-18-self-improvement-closed-loops",
@@ -921,7 +1019,9 @@
     "brain honestly scores outcomes incl. its own misses; consolidation never touches append-only truth"
    ],
    "success_metric": "by the 2nd scoring run, EV priors measurably shift from realized hit-rate; memory line-count/signal-density improves after 1st consolidation",
-   "reversal_condition": "outcome scores stay uninformative (too few resolved) -> lengthen the review horizon; never drop the loop"
+   "reversal_condition": "outcome scores stay uninformative (too few resolved) -> lengthen the review horizon; never drop the loop",
+   "review_due": "2026-08-17",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-18-compression-safety-and-audit-depth",
@@ -934,7 +1034,9 @@
     "git history stays intact (backups); brain honestly audits its own components"
    ],
    "success_metric": "first full-depth audit either confirms a component clean OR finds a real defect; zero compression-caused info loss (git-verifiable)",
-   "reversal_condition": "deep audits never find anything in 3 quarters -> drop to quarterly"
+   "reversal_condition": "deep audits never find anything in 3 quarters -> drop to quarterly",
+   "review_due": "2026-08-17",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-18-deterministic-freeze-exit",
@@ -947,7 +1049,9 @@
     "exit-criteria data files (fills.csv, calibration.csv, gate0_complete) get written by the live phase as specced"
    ],
    "success_metric": "freeze-exit status logged each cycle; on the real Gate 0, activation flags automatically and every manifest item is worked + ledgered",
-   "reversal_condition": "n/a (reliability infrastructure)"
+   "reversal_condition": "n/a (reliability infrastructure)",
+   "review_due": "2026-08-17",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-18-evidence-gated-progressions-registry",
@@ -960,7 +1064,9 @@
     "the coded/specced triggers behave as written when live data arrives"
    ],
    "success_metric": "at freeze-exit, growth ramp + stage machine arm automatically; monthly review finds zero memory-dependent progressions",
-   "reversal_condition": "n/a (auditability infrastructure)"
+   "reversal_condition": "n/a (auditability infrastructure)",
+   "review_due": "2026-08-17",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-18-principal-design-philosophy",
@@ -973,7 +1079,9 @@
     "brain distinguishes deploy-authorized-capital (push) from size-beyond-proven-edge (prove first)"
    ],
    "success_metric": "no unjustified cap survives its measurement cycle; zero sizing-on-unproven-edge incidents",
-   "reversal_condition": "aggression-default produces a ruin-risk breach traceable to the philosophy -> re-scope with the incident"
+   "reversal_condition": "aggression-default produces a ruin-risk breach traceable to the philosophy -> re-scope with the incident",
+   "review_due": "2026-08-17",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-18-digging-charter-and-github-memory",
@@ -987,7 +1095,9 @@
     "principal rotates the chat-exposed token"
    ],
    "success_metric": "diggers cite GitHub/non-English sources within 2 runs; every cycle pushes to GitHub; zero secret leak",
-   "reversal_condition": "push failures persist -> diagnose credentials; charter yields only noise 2 quarters -> retune per source-yield"
+   "reversal_condition": "push failures persist -> diagnose credentials; charter yields only noise 2 quarters -> retune per source-yield",
+   "review_due": "2026-08-17",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-18-free-first-data-stack",
@@ -1001,7 +1111,9 @@
     "brain builds per EV order post-freeze"
    ],
    "success_metric": "post-Gate-0: >=3 free sources ingested + Tardis-diff-validated; zero paid data; bottleneck detector governs any exception",
-   "reversal_condition": "a free source dies and is a SPOF -> the pre-required second-source/Bronze-archive rule covers it; genuine binding gap -> narrow EV-gated paid exception"
+   "reversal_condition": "a free source dies and is a SPOF -> the pre-required second-source/Bronze-archive rule covers it; genuine binding gap -> narrow EV-gated paid exception",
+   "review_due": "2026-08-17",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-18-live-connector-stage-machine-build",
@@ -1021,7 +1133,9 @@
     "keyfile-only credentials (dropping the env-var path present in the testnet modules) is a net safety improvement, not just a difference -- unvalidated by an incident, this is a judgment call worth revisiting if it creates real operational friction"
    ],
    "success_metric": "engineering_backlog.json live_connector_prebuild detector (file exists) now true; CI green with the 16 new tests; GAP register row 2 remaining scope (sections 3-7) gets picked up in a future cycle before ~08-05",
-   "reversal_condition": "if the keyfile-only (no env var) design proves operationally painful for the principal's SSH key-placement workflow, revisit -- but never re-add an env-var path without an explicit ledger entry re-justifying it"
+   "reversal_condition": "if the keyfile-only (no env var) design proves operationally painful for the principal's SSH key-placement workflow, revisit -- but never re-add an env-var path without an explicit ledger entry re-justifying it",
+   "review_due": "2026-08-17",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-18-capital-utilization-followup",
@@ -1039,7 +1153,9 @@
     "raising cashcarry_config.json 'top' (10 -> higher) is the correct lever if utilization stays low after GAP#14 also resolves -- unverified, should be checked against funding distribution data before acting"
    ],
    "success_metric": "utilization should rise on its own as GAP#14 resolves (leverage confidence pipeline root-caused) and/or if a future cycle raises top-N with evidence",
-   "reversal_condition": "if utilization stays below 60% for >7 more days with GAP#14 also resolved and no capital freeze found, raising top-N becomes the next cycle's engineering task"
+   "reversal_condition": "if utilization stays below 60% for >7 more days with GAP#14 also resolved and no capital freeze found, raising top-N becomes the next cycle's engineering task",
+   "review_due": "2026-08-17",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-18-ci-gate-widened-execution-dir",
@@ -1056,7 +1172,9 @@
     "tests/execution/ has no flaky/slow tests that would make CI unreliable -- verified by running it standalone before wiring in"
    ],
    "success_metric": "run_ci.py stays green; a future execution-directory regression gets caught before it ships",
-   "reversal_condition": "if tests/execution/ ever becomes flaky or slow enough to block iteration, isolate the offending test rather than reverting the whole directory from the gate"
+   "reversal_condition": "if tests/execution/ ever becomes flaky or slow enough to block iteration, isolate the offending test rather than reverting the whole directory from the gate",
+   "review_due": "2026-08-17",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-18-chinese-quant-expansion",
@@ -1069,7 +1187,9 @@
     "brain/miner can translate + normalize Chinese; scrapers degrade legally"
    ],
    "success_metric": "Prospector cites >=1 Chinese-source mechanism within 2 runs; Chinese seat produces >=1 gauntlet-entering card post-activation",
-   "reversal_condition": "Chinese sources yield only retail noise 2 quarters -> demote per source-yield learning"
+   "reversal_condition": "Chinese sources yield only retail noise 2 quarters -> demote per source-yield learning",
+   "review_due": "2026-08-17",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-18-self-heal-and-frontier-batch",
@@ -1082,7 +1202,9 @@
     "brain CI + escalation keep auto-triggered cycles safe; growth_audit fix waits for a controlled restart"
    ],
    "success_metric": "next failed 08:45 cycle auto-recovers same day; a clearing alert produces a \u2705 page; drill stays green",
-   "reversal_condition": "auto-retry loops or over-triggers -> tighten the rate limit / conditions"
+   "reversal_condition": "auto-retry loops or over-triggers -> tighten the rate limit / conditions",
+   "review_due": "2026-08-17",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-18-discovery-multiplier-telemetry",
@@ -1095,7 +1217,9 @@
     "diggers tag cards consistently; information_value.jsonl carries the tags"
    ],
    "success_metric": "first multiplier report segments intake + survival by region with real counts",
-   "reversal_condition": "telemetry adds cost without informing allocation for 2 quarters -> simplify to intake+survival only"
+   "reversal_condition": "telemetry adds cost without informing allocation for 2 quarters -> simplify to intake+survival only",
+   "review_due": "2026-08-17",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-18-frontier-jp-and-stop-line",
@@ -1108,7 +1232,9 @@
     "English-integration of EU/IN quant communities holds; telemetry measures region yield"
    ],
    "success_metric": "JP produces >=1 gauntlet-entering card within 2 runs post-activation; no low-moat region miner is built without telemetry justification",
-   "reversal_condition": "telemetry shows a stop-line region unexpectedly yielding -> reconsider that specific region on data"
+   "reversal_condition": "telemetry shows a stop-line region unexpectedly yielding -> reconsider that specific region on data",
+   "review_due": "2026-08-17",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-18-spec-prebuild-honest-reconciliation",
@@ -1121,7 +1247,9 @@
     "brain works the spec-prebuild queue post-connector, highest-EV first"
    ],
    "success_metric": "every item reaching an implementation window has a full spec by then; no spec written for a later-retired item",
-   "reversal_condition": "an item reaches its window without a spec -> lengthen the spec lead time"
+   "reversal_condition": "an item reaches its window without a spec -> lengthen the spec lead time",
+   "review_due": "2026-08-17",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-18-expansion-specs-prebuilt",
@@ -1134,7 +1262,9 @@
     "profile-driven generic miner covers all regions; NLP layer generalizes across languages"
    ],
    "success_metric": "first region built from the template + CN profile produces a well-formed card through the full pipeline; no per-region code duplication",
-   "reversal_condition": "a region needs bespoke logic the template cannot express -> extend the template, never fork per-region"
+   "reversal_condition": "a region needs bespoke logic the template cannot express -> extend the template, never fork per-region",
+   "review_due": "2026-08-17",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-18-final-ideas-and-paid-data-rule",
@@ -1147,7 +1277,9 @@
     "these are the last additions pre-Gate-0; no more expansions"
    ],
    "success_metric": "AI-frontier scanner unlocks >=1 new source in 2 quarters; paid-data rule invoked correctly on first real data need",
-   "reversal_condition": "per-item falsification clauses in the inbox"
+   "reversal_condition": "per-item falsification clauses in the inbox",
+   "review_due": "2026-08-17",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-18-operator-premortem-opened",
@@ -1160,7 +1292,9 @@
     "principal answers honestly + is held to it"
    ],
    "success_metric": "4 scenarios answered + recorded; first real incident follows the pre-committed plan",
-   "reversal_condition": "n/a (ops-hardening artifact)"
+   "reversal_condition": "n/a (ops-hardening artifact)",
+   "review_due": "2026-08-17",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-18-structural-edges-deduplicated",
@@ -1173,7 +1307,9 @@
     "dedup accurate; owned advantages hold un-extracted edge"
    ],
    "success_metric": ">=1 of N1/N2 produces a gauntlet-surviving card within 2 quarters of build",
-   "reversal_condition": "per-idea falsification clauses in the spec"
+   "reversal_condition": "per-idea falsification clauses in the spec",
+   "review_due": "2026-08-17",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-18-guaranteed-implementation-amendment",
@@ -1186,7 +1322,9 @@
     "EV per proposal is estimable in bps; monthly engine raises the threshold if complexity accretes without value"
    ],
    "success_metric": "every >=2 bps item eventually built in EV order; sub-threshold items expire or graduate cleanly; net complexity does not creep upward without matching value",
-   "reversal_condition": "guaranteed low-value items accrete complexity faster than deletion credits prune -> raise the threshold (the built-in lever)"
+   "reversal_condition": "guaranteed low-value items accrete complexity faster than deletion credits prune -> raise the threshold (the built-in lever)",
+   "review_due": "2026-08-17",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-18-threshold-1bps-not-picky",
@@ -1199,7 +1337,9 @@
     "EV genuinely prices maintenance so net-negative small items are caught"
    ],
    "success_metric": "small net-positive items get built in EV order; no net-negative small item is built; complexity does not creep without matching value",
-   "reversal_condition": "low-value items accrete complexity faster than deletion credits prune -> raise the 1 bps floor"
+   "reversal_condition": "low-value items accrete complexity faster than deletion credits prune -> raise the 1 bps floor",
+   "review_due": "2026-08-17",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-18-threshold-5bps-final",
@@ -1212,7 +1352,9 @@
     "EV-ordering reliably surfaces genuine value; 5 bps is a sane meaningful floor"
    ],
    "success_metric": ">=5 bps items always built; <5 bps items build if cheap-and-rising else expire; no queue bloat",
-   "reversal_condition": "evidence that sub-5-bps items are consistently worth it -> lower the threshold (the built-in lever)"
+   "reversal_condition": "evidence that sub-5-bps items are consistently worth it -> lower the threshold (the built-in lever)",
+   "review_due": "2026-08-17",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-18-dynamic-capital-quarantine-both-directions",
@@ -1226,7 +1368,9 @@
     "rotation stays active enough to redeploy the frozen tiny carries"
    ],
    "success_metric": "VERIFIED 07-18: fix removes the hard $1,250 cap (confirmed live, _dynamic_capital=4500) but does NOT reach full deployment -- only one name opens per rotation at its funding-weighted slice (~$200-350), frozen tiny carries persist, so the book plateaus below $4,500. Full deployment REQUIRES the gap #32 guarded resize-up (tested build, not a hot-patch). Under-deployment on a PAPER book is the safe direction and low-cost; matters materially only at live capital.",
-   "reversal_condition": "book fails to converge toward $4,500 within a few days (would confirm gap #32 needs the resize-up fix sooner) OR gap #14 root-cause invalidates using full --capital"
+   "reversal_condition": "book fails to converge toward $4,500 within a few days (would confirm gap #32 needs the resize-up fix sooner) OR gap #14 root-cause invalidates using full --capital",
+   "review_due": "2026-08-17",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-19-gap14-forensic-rootcause",
@@ -1237,7 +1381,9 @@
    "confidence": 0.9,
    "assumptions": [],
    "success_metric": "post-Gate-0 fix ships all 4 items + property/mutation tests before `active` may drive sizing again",
-   "reversal_condition": "if MtM forward returns still show an implausible Sharpe, the collapse source is elsewhere -> re-open forensic"
+   "reversal_condition": "if MtM forward returns still show an implausible Sharpe, the collapse source is elsewhere -> re-open forensic",
+   "review_due": "2026-08-18",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-19-gap19-gap32-specs-queued",
@@ -1248,7 +1394,9 @@
    "confidence": 0.85,
    "assumptions": [],
    "success_metric": "both re-applied cleanly at Gate-0, tests green, no freeze contamination in the calibration window",
-   "reversal_condition": "operator directs immediate implementation -> re-apply #32 from data/patches/gap32_topup.patch"
+   "reversal_condition": "operator directs immediate implementation -> re-apply #32 from data/patches/gap32_topup.patch",
+   "review_due": "2026-08-18",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-19-verify-then-claim-contract",
@@ -1259,7 +1407,9 @@
    "confidence": 0.9,
    "assumptions": [],
    "success_metric": "no future ledger/register entry asserts state that a fresh read contradicts",
-   "reversal_condition": "rule proves to add material cost without catching errors over 2 quarters -> soften to spot-check"
+   "reversal_condition": "rule proves to add material cost without catching errors over 2 quarters -> soften to spot-check",
+   "review_due": "2026-08-18",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-19-prospector-firstrun",
@@ -1270,7 +1420,9 @@
    "confidence": 0.85,
    "assumptions": [],
    "success_metric": "future cadence runs execute without hand-triggering once connector/recorder free the cycle",
-   "reversal_condition": "if the run had fabricated survivors that fail the gauntlet -> tighten the prospector prompt's graveyard/EV discipline"
+   "reversal_condition": "if the run had fabricated survivors that fail the gauntlet -> tighten the prospector prompt's graveyard/EV discipline",
+   "review_due": "2026-08-18",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-19-breakout-variants-tested-rejected",
@@ -1281,7 +1433,9 @@
    "confidence": 0.9,
    "assumptions": [],
    "success_metric": "verdict is reproducible from the archived test script + params",
-   "reversal_condition": "a genuinely new filter/venue (not just an exit rule) changes the orthogonality -> re-test"
+   "reversal_condition": "a genuinely new filter/venue (not just an exit rule) changes the orthogonality -> re-test",
+   "review_due": "2026-08-18",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-19-data-axis-mission-standing",
@@ -1295,7 +1449,9 @@
     "non-English venues carry orthogonal information"
    ],
    "success_metric": ">=1 verified new orthogonal free data axis enters the hypothesis pipeline within 2 cadence cycles post-connector",
-   "reversal_condition": "3 consecutive data-axis digs yield only unverifiable/contaminated sources -> demote cadence frequency per source-yield learning"
+   "reversal_condition": "3 consecutive data-axis digs yield only unverifiable/contaminated sources -> demote cadence frequency per source-yield learning",
+   "review_due": "2026-08-18",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-19-freedata-mission-full-spec",
@@ -1310,7 +1466,9 @@
     "query-evolution actually raises hit-rate"
    ],
    "success_metric": ">=1 verified new orthogonal free axis enters the pipeline within 2 cycles post-connector; data_universe_map grows with graded lineage",
-   "reversal_condition": "sustained low validated yield across cycles -> source-yield learning demotes families (never deletes -- archived + temporally re-evaluated)"
+   "reversal_condition": "sustained low validated yield across cycles -> source-yield learning demotes families (never deletes -- archived + temporally re-evaluated)",
+   "review_due": "2026-08-18",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-19-gap32-reapplied-live-fulldeploy",
@@ -1324,7 +1482,9 @@
     "_topup_plan empty at target prevents re-churn"
    ],
    "success_metric": "book holds ~100% with no recurring trim/topup churn across work ticks (verified this session)",
-   "reversal_condition": "recurring trim<->topup churn on later ticks -> revert to the reconcile-aware version or back to safe under-deploy"
+   "reversal_condition": "recurring trim<->topup churn on later ticks -> revert to the reconcile-aware version or back to safe under-deploy",
+   "review_due": "2026-08-18",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-19-freedata-weekly-uncapped-timer",
@@ -1339,7 +1499,9 @@
     "verification keeps unverified sources out of live"
    ],
    "success_metric": "quant-dataaxis.timer fires weekly + produces graded data_universe_map entries; >=1 verified new axis to the pipeline within 2 months post-connector",
-   "reversal_condition": "token cost or brain-time contention proves unacceptable -> revert to biweekly or flagged-only; or sustained zero verified yield -> demote per source-yield learning"
+   "reversal_condition": "token cost or brain-time contention proves unacceptable -> revert to biweekly or flagged-only; or sustained zero verified yield -> demote per source-yield learning",
+   "review_due": "2026-09-17",
+   "review_due_source": "success_metric"
   },
   {
    "id": "2026-07-19-all-diggers-exhaustive-timered",
@@ -1354,7 +1516,9 @@
     "graveyard cross-check keeps exhaustive prospector from re-litigating dead mechanisms"
    ],
    "success_metric": "each timer fires on schedule + produces graded output; prospector honestly reports nothing-new rather than fabricating; no two claude runs collide",
-   "reversal_condition": "session collisions or token cost unacceptable -> stagger further or revert to brain-cycle execution; sustained zero yield on a digger -> demote its cadence per source-yield learning"
+   "reversal_condition": "session collisions or token cost unacceptable -> stagger further or revert to brain-cycle execution; sustained zero yield on a digger -> demote its cadence per source-yield learning",
+   "review_due": "2026-08-18",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-19-cjk-priority-license-gate",
@@ -1368,7 +1532,9 @@
     "the gate is enforceable by the digger's own grading"
    ],
    "success_metric": "CJK legitimate sources enter the map graded/verified; zero pirated/cracked sources ever adopted or downloaded to the box",
-   "reversal_condition": "n/a on the gate (hard security/legal boundary); CJK priority demoted only if it yields sustained low validated value"
+   "reversal_condition": "n/a on the gate (hard security/legal boundary); CJK priority demoted only if it yields sustained low validated value",
+   "review_due": "2026-08-18",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-19-public-shared-data-surgical",
@@ -1382,7 +1548,9 @@
     "reconstruction from public raw is feasible for most valuable finds"
    ],
    "success_metric": "open shared datasets get adopted; proprietary finds spawn reconstruction targets; nothing proprietary/cracked adopted into live",
-   "reversal_condition": "n/a on the security/adoption boundary; grading tuned if open sources get wrongly excluded"
+   "reversal_condition": "n/a on the security/adoption boundary; grading tuned if open sources get wrongly excluded",
+   "review_due": "2026-08-18",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-19-digger-parity-propagation",
@@ -1396,7 +1564,9 @@
     "quarterly audit catches drift"
    ],
    "success_metric": "no digger persistently lags another in depth/region/cadence; new upgrades appear across all diggers within a cycle",
-   "reversal_condition": "an upgrade genuinely has no equivalent for a digger -> applied only where meaningful (rule already scoped 'where meaningful')"
+   "reversal_condition": "an upgrade genuinely has no equivalent for a digger -> applied only where meaningful (rule already scoped 'where meaningful')",
+   "review_due": "2026-08-18",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-19-discovery-doctrine-expansion",
@@ -1411,7 +1581,9 @@
     "registry upkeep stays cheap enough not to eat dig budget"
    ],
    "success_metric": "operator-library entries grow with per-region adaptation rows filled within one session of origin; zero diggers lag the frontier at the quarterly parity audit; negative-knowledge reopens on triggers rather than never; weak-signal convergences produce >=1 promoted hypothesis per quarter",
-   "reversal_condition": "if library/registry upkeep measurably displaces validated discovery output over 2 cycles, compress the per-session checklist (never delete records -- archive discipline)"
+   "reversal_condition": "if library/registry upkeep measurably displaces validated discovery output over 2 cycles, compress the per-session checklist (never delete records -- archive discipline)",
+   "review_due": "2026-08-18",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-19-brain-api-billing-option-a",
@@ -1425,7 +1597,9 @@
     "daily cycle token spend lands near estimate under prompt caching"
    ],
    "success_metric": "AUTH-OK verify passes; next 7 days of cycles run with zero quota no-ops; first-month spend within cap",
-   "reversal_condition": "if spend exceeds cap or API auth proves flaky: restore .credentials.json.retired-* (subscription auth) and revisit"
+   "reversal_condition": "if spend exceeds cap or API auth proves flaky: restore .credentials.json.retired-* (subscription auth) and revisit",
+   "review_due": "2026-07-26",
+   "review_due_source": "success_metric"
   },
   {
    "id": "2026-07-19-brain-auth-option-b-supersedes",
@@ -1439,7 +1613,9 @@
     "principal completes setup-token promptly (brain is dead until then)"
    ],
    "success_metric": "brain cycles run 7 consecutive days with zero quota no-ops alongside normal interactive use",
-   "reversal_condition": "any quota-starved brain cycle during an open incident -> activate Option A via ops/setup_brain_api_key.sh (pre-built, one command)"
+   "reversal_condition": "any quota-starved brain cycle during an open incident -> activate Option A via ops/setup_brain_api_key.sh (pre-built, one command)",
+   "review_due": "2026-08-18",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-19-cro-script-unbound-dollar-fix",
@@ -1452,7 +1628,9 @@
     "no other unescaped $N remains (grepped: only $100 escaped, $300 now escaped)"
    ],
    "success_metric": "next run creates a growing data/cro_ai_logs/<ts>.log and exits 0",
-   "reversal_condition": "n/a (syntax fix)"
+   "reversal_condition": "n/a (syntax fix)",
+   "review_due": "2026-08-18",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-19-exhaustion-verified-assetclass-dormant",
@@ -1465,7 +1643,9 @@
     "brain cycle running concurrently does not rewrite these files mid-append"
    ],
    "success_metric": "next fires of all 4 diggers produce full-size logs; asset-class dormancy holds until a ledger-recorded activation",
-   "reversal_condition": "blindrediscovery output degrades to padding -> restore a soft cap with explicit reasoning"
+   "reversal_condition": "blindrediscovery output degrades to padding -> restore a soft cap with explicit reasoning",
+   "review_due": "2026-08-18",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-19-admission-count-uncapped-constitutional",
@@ -1478,7 +1658,9 @@
     "DSR/Holm wiring actually consumes the cumulative trials count -- brain verifies next cycle"
    ],
    "success_metric": "gauntlet admissions track EV-gate passes 1:1; FDR detector shows no inflation over 8 weeks",
-   "reversal_condition": "detector-evidenced FDR inflation or shadow-vs-backtest calibration drift -> admissions PAUSE (tripwire), never a quota"
+   "reversal_condition": "detector-evidenced FDR inflation or shadow-vs-backtest calibration drift -> admissions PAUSE (tripwire), never a quota",
+   "review_due": "2026-09-13",
+   "review_due_source": "success_metric"
   },
   {
    "id": "2026-07-19-pager-unicode-fix-and-neighbours",
@@ -1492,7 +1674,9 @@
     "ntfy.sh 429 is a rate-limit and not a permanent block or quota exhaustion (unconfirmed this cycle -- see GAP register row 38)"
    ],
    "success_metric": "next successful push logs a `deadman_latched`/`principal_action_needed` success timestamp in data/.last_alerts.json (not just a `_try_` attempt) -- unconfirmed as of this ledger entry, tracked as open verification",
-   "reversal_condition": "n/a (defect fix; the defensive encode can only ever make pushes MORE likely to succeed, never less)"
+   "reversal_condition": "n/a (defect fix; the defensive encode can only ever make pushes MORE likely to succeed, never less)",
+   "review_due": "2026-08-18",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-19-deadman-fire4-incident-autopsy",
@@ -1506,7 +1690,9 @@
     "the book is genuinely testnet-only with zero real capital at risk (verified from data/INCIDENT_20260719_DEADMAN.md and the freeze status -- Gate 0 has not started)"
    ],
    "success_metric": "the read-only reconciliation script (once built) either fully attributes the $1,838 USDT delta to specific venue records (validates the panel's caution was resolvable, not a real hole) or fails to -- either outcome is informative and gates the reset recommendation",
-   "reversal_condition": "if the reconciliation attributes the full gap to ordinary settlement lag with no residual, the panel's 'unresolved accounting break' framing downgrades to 'confirmed measurement artifact' and the original lighter-weight fix direction can be reconsidered on its merits, still principal-gated"
+   "reversal_condition": "if the reconciliation attributes the full gap to ordinary settlement lag with no residual, the panel's 'unresolved accounting break' framing downgrades to 'confirmed measurement artifact' and the original lighter-weight fix direction can be reconsidered on its merits, still principal-gated",
+   "review_due": "2026-08-18",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-19-founders-directives-adopted",
@@ -1520,7 +1706,9 @@
     "principal places API key eventually for the quota fallback to engage"
    ],
    "success_metric": "next auth failure produces a page within one cycle-start; zero doctrine additions until Gate 0; first post-Gate-0 month runs the Bybit build unchanged from spec",
-   "reversal_condition": "self-test false-positives block cycles -> soften to warn-and-continue with page"
+   "reversal_condition": "self-test false-positives block cycles -> soften to warn-and-continue with page",
+   "review_due": "2026-08-18",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-20-implementation-caps-removed",
@@ -1533,7 +1721,9 @@
     "named-neighbours + micro-audit discipline actually executes on every change (it is what failed pre-07-16)"
    ],
    "success_metric": "8 weeks: implemented-change yield stays healthy and zero change-induced incidents; churn tripwire never needed or fires correctly",
-   "reversal_condition": "any change-induced incident recurrence -> churn tripwire fires (pause + full-panel audit); if the audit finds rate itself was the cause, principal decides whether a budget returns"
+   "reversal_condition": "any change-induced incident recurrence -> churn tripwire fires (pause + full-panel audit); if the audit finds rate itself was the cause, principal decides whether a budget returns",
+   "review_due": "2026-09-14",
+   "review_due_source": "success_metric"
   },
   {
    "id": "2026-07-20-hypothesis-generation-maximized",
@@ -1547,7 +1737,9 @@
     "multiplicity N-wiring verified by brain (already a mandated duty)"
    ],
    "success_metric": "hypotheses/week up >=3x with FDR detector flat; compute per gauntlet survivor down; pager: zero 429 hammer-loops in journalctl",
-   "reversal_condition": "pre-filter audit shows real alphas rejected -> loosen thresholds (never a count); FDR detector inflation -> admissions tripwire pauses (existing law)"
+   "reversal_condition": "pre-filter audit shows real alphas rejected -> loosen thresholds (never a count); FDR detector inflation -> admissions tripwire pauses (existing law)",
+   "review_due": "2026-08-19",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-20-collapse-detector-and-exhaustion-audit",
@@ -1560,7 +1752,9 @@
     "fingerprints from spec section 3 land first (detector reuses them)"
    ],
    "success_metric": "diversity KPIs visible in scorecard within 2 cycles; zero silent-collapse windows >1 week once live",
-   "reversal_condition": "if thresholds spam false diversity audits, widen them on evidence (instrumentation stays)"
+   "reversal_condition": "if thresholds spam false diversity audits, widen them on evidence (instrumentation stays)",
+   "review_due": "2026-07-27",
+   "review_due_source": "success_metric"
   },
   {
    "id": "2026-07-20-max-cadence-everything",
@@ -1574,7 +1768,9 @@
     "brain_auth_check catches every quota fail pre-burn"
    ],
    "success_metric": "7 days: cycles-completed/day >= 3, zero silent no-ops, dig logs full-size, panel cadence 3d honored",
-   "reversal_condition": "quota pages recur daily -> step cron back one notch (comment lines) + page principal with the measured ceiling"
+   "reversal_condition": "quota pages recur daily -> step cron back one notch (comment lines) + page principal with the measured ceiling",
+   "review_due": "2026-07-27",
+   "review_due_source": "success_metric"
   },
   {
    "id": "2026-07-20-addenda-bcd-integrated",
@@ -1587,7 +1783,9 @@
     "sources verify against ground truth per spec s4 before pipeline use"
    ],
    "success_metric": "within 2 weeks: >=5 addenda sources verified + Bronze-archived + feeding features; dev-activity factor computed cross-sectionally",
-   "reversal_condition": "sources failing verification get graded honestly in the map (never silently dropped)"
+   "reversal_condition": "sources failing verification get graded honestly in the map (never silently dropped)",
+   "review_due": "2026-08-03",
+   "review_due_source": "success_metric"
   },
   {
    "id": "2026-07-20-miners-activated-carveout-deadline",
@@ -1600,7 +1798,9 @@
     "principal actually stops interactive burn (today's session-limit death says not yet)"
    ],
    "success_metric": "7 miner logs with real session notes within 48h of quota headroom; coverage map gains 7 region rows in a week",
-   "reversal_condition": "recurring quota pages -> miners drop to alternate-day stagger (documented step-back), never silent death"
+   "reversal_condition": "recurring quota pages -> miners drop to alternate-day stagger (documented step-back), never silent death",
+   "review_due": "2026-08-19",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-20-panel-tier-policy",
@@ -1613,7 +1813,9 @@
     "scorecard hit-rates accumulate enough sample by first quarterly review"
    ],
    "success_metric": "Gate-0 pre-mortem runs on premium tier; wizardlm seat replaced within a week; scorecard drives first quarterly seat decision",
-   "reversal_condition": "if premium event runs produce no marginal accepted findings over 3 events, drop back to diverse roster for events too"
+   "reversal_condition": "if premium event runs produce no marginal accepted findings over 3 events, drop back to diverse roster for events too",
+   "review_due": "2026-08-19",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-20-kimi-k3-seat-upgrade",
@@ -1626,7 +1828,9 @@
     "k3 responds through the existing provider path (reasoning-param handling same as k2 line)"
    ],
    "success_metric": "k3 responses present in next panel run; scorecard hit-rate tracked from version boundary",
-   "reversal_condition": "blank-response or format issues in next panel -> revert to kimi-k2.6 (one-line change)"
+   "reversal_condition": "blank-response or format issues in next panel -> revert to kimi-k2.6 (one-line change)",
+   "review_due": "2026-08-19",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-20-deadman-reset-reconciled",
@@ -1639,7 +1843,9 @@
     "futures income endpoint is complete over the window (831 records paginated)"
    ],
    "success_metric": "book redeploys and runs 7 days without a false fire; if one occurs, GAP #34 fix becomes top priority",
-   "reversal_condition": "any recurrence -> latch holds automatically (rail unchanged); investigate before next reset"
+   "reversal_condition": "any recurrence -> latch holds automatically (rail unchanged); investigate before next reset",
+   "review_due": "2026-07-27",
+   "review_due_source": "success_metric"
   },
   {
    "id": "2026-07-20-flagship-roster-max",
@@ -1652,7 +1858,9 @@
     "qwen3.7-max retains reasoning depth without the explicit -thinking suffix (reversal if not)"
    ],
    "success_metric": "next panel: 13/13 respond, no blanks; accepted-finding rate >= prior roster within 4 runs",
-   "reversal_condition": "blank/format failures from any new seat -> revert that seat only (one-line change, prior IDs in this entry)"
+   "reversal_condition": "blank/format failures from any new seat -> revert that seat only (one-line change, prior IDs in this entry)",
+   "review_due": "2026-08-19",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-20-full-audit-coverage",
@@ -1666,7 +1874,9 @@
     "flagship seats handle the larger payload without truncation"
    ],
    "success_metric": "coverage % rises every run; zero never-audited risk-path files within 14 days; >=1 finding per month that could ONLY have come from raw code access",
-   "reversal_condition": "if payload size degrades finding quality (models skim), cut CODE_BUDGET_CHARS and lengthen the sweep -- never revert to dossier-only"
+   "reversal_condition": "if payload size degrades finding quality (models skim), cut CODE_BUDGET_CHARS and lengthen the sweep -- never revert to dossier-only",
+   "review_due": "2026-08-03",
+   "review_due_source": "success_metric"
   },
   {
    "id": "2026-07-20-openrouter-exhausted-purchase-page",
@@ -1679,7 +1889,9 @@
     "principal tops up; otherwise panel stays down and coverage stalls visibly via floors"
    ],
    "success_metric": "next panel run either executes fully or pages BEFORE spending; zero mid-run 402s",
-   "reversal_condition": "n/a (pure safety check)"
+   "reversal_condition": "n/a (pure safety check)",
+   "review_due": "2026-08-19",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-20-no-cost-degradation",
@@ -1692,7 +1904,9 @@
     "free seats accept the ~250k coverage payload -- unverified, they may blank; the DEGRADED label covers that honestly"
    ],
    "success_metric": "zero cost-motivated config reductions in the ledger; full roster restored automatically post-funding",
-   "reversal_condition": "n/a -- principal directive; only he can relax it"
+   "reversal_condition": "n/a -- principal directive; only he can relax it",
+   "review_due": "2026-08-19",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-20-full-capacity-roster",
@@ -1705,7 +1919,9 @@
     "the 3 new seats respond substantively at scale -- UNVERIFIED, capacity test blocked on credits until Friday"
    ],
    "success_metric": "capacity test Friday: 13/13 ingest the full payload and correctly answer the probe",
-   "reversal_condition": "any new seat blanks or answers wrong on the Friday capacity test -> swap it from the 23-lab >=1M pool, evidence-first"
+   "reversal_condition": "any new seat blanks or answers wrong on the Friday capacity test -> swap it from the 23-lab >=1M pool, evidence-first",
+   "review_due": "2026-08-19",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-21-payload-sizing-decision",
@@ -1718,7 +1934,9 @@
     "long-context attention degradation is real at 500k+ tokens -- the Friday A/B falsifies or confirms it"
    ],
    "success_metric": "A/B shows tiered >= full-payload on accepted-finding rate per dollar; sweep completes in ~6 runs",
-   "reversal_condition": "A/B shows full-payload wins on finding specificity -> raise to full and fund the difference"
+   "reversal_condition": "A/B shows full-payload wins on finding specificity -> raise to full and fund the difference",
+   "review_due": "2026-08-20",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-21-longtail-cadence-held",
@@ -1731,7 +1949,9 @@
     "first full sweep completes after Friday funding, producing the re-review yield sample"
    ],
    "success_metric": "first sweep completes ~22d post-funding; cadence set from measured re-review yield, not opinion",
-   "reversal_condition": "if a real bug is found in a stale unchanged file before the sweep completes, tighten immediately -- that is evidence the floor is too loose"
+   "reversal_condition": "if a real bug is found in a stale unchanged file before the sweep completes, tighten immediately -- that is evidence the floor is too loose",
+   "review_due": "2026-08-12",
+   "review_due_source": "success_metric"
   },
   {
    "id": "2026-07-21-rulings-feed-and-stale-seat",
@@ -1744,7 +1964,9 @@
     "seats handle the larger payload -- blank telemetry + adaptive budget cover this if not"
    ],
    "success_metric": "next funded panel: reject rate below the 07-20 baseline of 7/27, and zero repeats of already-ruled findings",
-   "reversal_condition": "if feeding rulings visibly suppresses legitimate dissent (models deferring to past rulings instead of challenging them), cut back to graveyard-only and note it"
+   "reversal_condition": "if feeding rulings visibly suppresses legitimate dissent (models deferring to past rulings instead of challenging them), cut back to graveyard-only and note it",
+   "review_due": "2026-08-20",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-21-audit-loop-closed",
@@ -1757,7 +1979,9 @@
     "the brain actually records findings during triage -- if it does not, the ledger stays empty and that absence is itself visible"
    ],
    "success_metric": "within 2 funded weeks: findings_ledger non-empty with real hit-rates; all 5 money-path files depth-reviewed before the Gate-0 request; at least 1 verify run on real rulings",
-   "reversal_condition": "if verify runs return only UPHOLDs across several panels, drop that mission to monthly -- the check is cheap but not free"
+   "reversal_condition": "if verify runs return only UPHOLDs across several panels, drop that mission to monthly -- the check is cheap but not free",
+   "review_due": "2026-08-20",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-21-maximization-checker",
@@ -1770,7 +1994,9 @@
     "brain honors ack discipline (expiring acks, real reasons) -- the sweep flags its own blindness if a check breaks"
    ],
    "success_metric": "next 30d: >=1 real below-max state caught by the checker BEFORE the principal notices it; zero escalations older than 72h",
-   "reversal_condition": "if the sweep nags about settled/acked states repeatedly, its checks get fixed -- the mandate itself only the principal can relax"
+   "reversal_condition": "if the sweep nags about settled/acked states repeatedly, its checks get fixed -- the mandate itself only the principal can relax",
+   "review_due": "2026-08-20",
+   "review_due_source": "success_metric"
   },
   {
    "id": "2026-07-21-ceiling-self-audit",
@@ -1783,7 +2009,9 @@
     "quota deaths continue until Max/API-key -- if Friday funding alone fixes panels but not brain quota, the headline compression persists and keeps escalating"
    ],
    "success_metric": "by 07-25: all 3 directives closed on time; realized cycles/day >= 3; connector sections 3-7 in progress by my own hand",
-   "reversal_condition": "n/a (audit + enforcement)"
+   "reversal_condition": "n/a (audit + enforcement)",
+   "review_due": "2026-08-20",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-21-addall-axes-recorder",
@@ -1797,7 +2025,9 @@
     "recorder handles 20-symbol weight (public endpoints, verified post-respawn)"
    ],
    "success_metric": "within 48h: lake shows 20-symbol depth files growing; bronze has wikipedia/crossasset/mining populated; growth_audit.json never older than 35min",
-   "reversal_condition": "if recorder CPU/disk strains the box, trim symbol list (a purchase page for a bigger VPS is the max-order-consistent alternative)"
+   "reversal_condition": "if recorder CPU/disk strains the box, trim symbol list (a purchase page for a bigger VPS is the max-order-consistent alternative)",
+   "review_due": "2026-08-20",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-21-recorder-spot-leg-gap35",
@@ -1808,7 +2038,9 @@
    "confidence": 0.9,
    "assumptions": "(1) Binance spot and USD-M futures enforce independent per-IP weight buckets by endpoint host -- if they share a bucket, combined burn (~1740 spot + futures) must be re-checked, but futures budget (2400) has ample headroom and both self-refuse over-budget at boot. (2) Spot pairs for the 20 symbols stay listed (boot filter self-corrects on delisting). (3) The 15 lint fixes are behavior-preserving (verified by re-running each script). NEIGHBOURS NAMED: run_recorder.py (futures) -- untouched, separate process+bucket; run_recorder_bybit.py -- untouched, shares crontab+disk; DISK is the shared neighbour now (3 recorders ~12GB/mo combined, watched by each recorder's 80% guard); run_alerts.py staleness pager does NOT yet watch recorder_spot_heartbeat (spot relies on the cron pgrep-guard only, parity with Bybit -- a heartbeat-pager for spot+bybit is a small queued follow-up); audit/panel pipeline (the 5 lint-fixed tooling scripts) -- behavior verified unchanged. Independence gate: data-pipeline subsystem; no other data-pipeline/risk-path change this window -> no co-window conflict.",
    "success_metric": "data/moat/spot/ accumulates continuous hourly partitions for >=1 week with <5% gap; spot-leg slippage curves become computable per carry name; recorder_spot_heartbeat stays <10min stale (cron self-heal). Lands in the next micro-audit brief within 24h (auto via diff feed).",
-   "reversal_condition": "If spot recording triggers an IP rate-limit event (429/ban) on the shared VPS IP that impairs the futures recorder or executor market-data reads -> widen spot intervals or reduce symbols first; if that fails, stop the spot process (rm cron line + kill) -- fully reversible, no risk-path/state touched. Revert lint fixes trivially if any script regresses (none observed)."
+   "reversal_condition": "If spot recording triggers an IP rate-limit event (429/ban) on the shared VPS IP that impairs the futures recorder or executor market-data reads -> widen spot intervals or reduce symbols first; if that fails, stop the spot process (rm cron line + kill) -- fully reversible, no risk-path/state touched. Revert lint fixes trivially if any script regresses (none observed).",
+   "review_due": "2026-07-28",
+   "review_due_source": "success_metric"
   },
   {
    "id": "2026-07-21-redteam-protocol",
@@ -1821,7 +2053,9 @@
     "models give substantive 3-part output not padding -- the settled-rulings feed + anti-padding instruction guard this"
    ],
    "success_metric": "next funded deep audit: all responding models deliver 3 parts; >=1 part-2/part-3 item implemented within a week; zero unbuilt-validated-ROI defects age >14d",
-   "reversal_condition": "if part 3 produces only repetition across consecutive deep audits, fold it into maximization-mission-only (part 1+2 stay everywhere)"
+   "reversal_condition": "if part 3 produces only repetition across consecutive deep audits, fold it into maximization-mission-only (part 1+2 stay everywhere)",
+   "review_due": "2026-08-04",
+   "review_due_source": "success_metric"
   },
   {
    "id": "2026-07-21-no-compromise-principle",
@@ -1832,7 +2066,9 @@
    "confidence": 0.95,
    "assumptions": [],
    "success_metric": "capability defects and rail-loosening proposals both flagged; neither recurs",
-   "reversal_condition": "n/a -- principal directive; the bright line is Tier-3-class, only the principal relaxes it"
+   "reversal_condition": "n/a -- principal directive; the bright line is Tier-3-class, only the principal relaxes it",
+   "review_due": "2026-08-20",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-21-principal-doctrine-injected",
@@ -1845,7 +2081,9 @@
     "the healthily clause plus rails plus the independence gate plus the gauntlet bar prevent aggression from becoming churn"
    ],
    "success_metric": "cycles consistently close a gap or prove a ceiling each run; zero rail-loosening; no rise in change-induced incidents or padding",
-   "reversal_condition": "if the doctrine drives churn or over-building past the healthily bound, tighten the clause -- never remove the max-push stance itself"
+   "reversal_condition": "if the doctrine drives churn or over-building past the healthily bound, tighten the clause -- never remove the max-push stance itself",
+   "review_due": "2026-08-20",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-21-self-interrogation-protocol",
@@ -1858,7 +2096,9 @@
     "the running model genuinely probes+verifies rather than rubber-stamping -- the max_audit guard + verify-then-claim rule + fresh-read mandate push against rubber-stamping"
    ],
    "success_metric": "cycles consistently report verified probes + occasionally a new angle added to the battery; principal-found gaps become rare and each converts to a standing check",
-   "reversal_condition": "if cycles rubber-stamp the interrogation (claim probed, found nothing, repeatedly, while the principal still finds gaps), tighten the guard to require a named verified read per angle"
+   "reversal_condition": "if cycles rubber-stamp the interrogation (claim probed, found nothing, repeatedly, while the principal still finds gaps), tighten the guard to require a named verified read per angle",
+   "review_due": "2026-08-20",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-21-growth-probe-angle",
@@ -1869,7 +2109,9 @@
    "confidence": 0.85,
    "assumptions": [],
    "success_metric": "cycles report on geometric-growth realization; under-deployment or drag surfaced; leverage never pushed beyond proven edge",
-   "reversal_condition": "n/a"
+   "reversal_condition": "n/a",
+   "review_due": "2026-08-20",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-21-blind-spot-origin-ledger",
@@ -1882,7 +2124,9 @@
     "the brain honestly tags origins -- principal-surfaced gaps must be logged principal, not quietly self, or the metric lies"
    ],
    "success_metric": "self-sufficiency climbs from the 36% baseline toward >=70% over the first weeks of running cycles",
-   "reversal_condition": "if self-sufficiency does not climb, the maximization apparatus failed and needs redesign, not more layers -- the honest signal to stop building meta and rethink"
+   "reversal_condition": "if self-sufficiency does not climb, the maximization apparatus failed and needs redesign, not more layers -- the honest signal to stop building meta and rethink",
+   "review_due": "2026-08-20",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-21-self-activating-antirubberstamp",
@@ -1895,7 +2139,9 @@
     "cycle logs record the interrogation + reads in-band so the detector/enforcement can see them"
    ],
    "success_metric": "detector stays dormant while cycles genuinely probe; activates within a window if they rubber-stamp; enforcement then raises cited-read counts",
-   "reversal_condition": "if the detector false-activates on genuinely-at-ceiling cycles (real 0-gap runs), widen the signature (require the principal-found count higher) -- do not remove the mechanism"
+   "reversal_condition": "if the detector false-activates on genuinely-at-ceiling cycles (real 0-gap runs), widen the signature (require the principal-found count higher) -- do not remove the mechanism",
+   "review_due": "2026-08-20",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-21-antirubberstamp-active-from-start",
@@ -1908,7 +2154,9 @@
     "genuine cycles cite >=5 files, which a full verified interrogation easily does"
    ],
    "success_metric": "cycles cite named reads per angle from the start; no false-flags on genuine full cycles",
-   "reversal_condition": "if it false-flags a genuine cycle, widen the citation bar; do not remove"
+   "reversal_condition": "if it false-flags a genuine cycle, widen the citation bar; do not remove",
+   "review_due": "2026-08-20",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-22-crypto-generation-diagnosis",
@@ -1922,7 +2170,9 @@
     "the free-data axes keep accruing forward via existing ingest crons"
    ],
    "success_metric": "cross-asset generators add genuinely-new gauntlet-passable hypotheses; as OI/LS axes cross 250 bars, mechanism generators on them become testable; survivors-per-1000 stays the honest scaling signal",
-   "reversal_condition": "if even mechanism/cross-asset generators yield 0 survivors over months, the constraint is deeper (regime/capacity) -- escalate to the panel, do not add more price breadth"
+   "reversal_condition": "if even mechanism/cross-asset generators yield 0 survivors over months, the constraint is deeper (regime/capacity) -- escalate to the panel, do not add more price breadth",
+   "review_due": "2026-08-21",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-22-deadman-incident-5-artifact",
@@ -1936,7 +2186,9 @@
     "no catastrophic spot-side loss occurred (spot coins $228k are faucet bags + legs, not realised losses)"
    ],
    "success_metric": "after the panel-reviewed fix, unwind bursts no longer latch the rail while genuine ruin still fires within the same poll budget",
-   "reversal_condition": "if a future fire reconciles to a REAL loss, the artifact hypothesis is wrong -- treat the rail as correct and hunt the loss instead"
+   "reversal_condition": "if a future fire reconciles to a REAL loss, the artifact hypothesis is wrong -- treat the rail as correct and hunt the loss instead",
+   "review_due": "2026-08-21",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-22-deadman-permanent-fix",
@@ -1950,7 +2202,9 @@
     "no catastrophic spot-side loss can hide inside the 1h leg grace"
    ],
    "success_metric": "no false fire across the next unwind/rebalance bursts, while the regression test proving real-ruin firing stays green",
-   "reversal_condition": "if a REAL ruin event is detected late or missed, revert _HW_CONFIRM/_LEG_GRACE_SEC immediately -- protection outranks false-fire comfort"
+   "reversal_condition": "if a REAL ruin event is detected late or missed, revert _HW_CONFIRM/_LEG_GRACE_SEC immediately -- protection outranks false-fire comfort",
+   "review_due": "2026-08-21",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-22-objective-on-every-prompt",
@@ -1963,7 +2217,9 @@
     "principal_doctrine.txt continues to be appended by every claude organ"
    ],
    "success_metric": "organ outputs justify recommendations by growth-rate impact; low-ROI activity is declined explicitly",
-   "reversal_condition": "if the objective text crowds out mission-specific instruction quality, shorten it rather than dropping it"
+   "reversal_condition": "if the objective text crowds out mission-specific instruction quality, shorten it rather than dropping it",
+   "review_due": "2026-08-21",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-22-cost-model-built-universe-mismatch",
@@ -1977,7 +2233,9 @@
     "recorded snapshots sample the trading day fairly"
    ],
    "success_metric": "cost_model criterion moves to True once the recorder covers traded names and the model re-runs on them",
-   "reversal_condition": "realized fills diverge materially from modelled slippage -> recalibrate against actual fill data"
+   "reversal_condition": "realized fills diverge materially from modelled slippage -> recalibrate against actual fill data",
+   "review_due": "2026-08-21",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-22-recorder-universe-and-liveness",
@@ -1991,7 +2249,9 @@
     "5s depth sampling is sufficient for slippage curves"
    ],
    "success_metric": "re-run run_cost_model.py in >=24h and get non-null pair costs for the traded names",
-   "reversal_condition": "weight budget or disk pressure -> lower _MAX_SYMBOLS or widen intervals further"
+   "reversal_condition": "weight budget or disk pressure -> lower _MAX_SYMBOLS or widen intervals further",
+   "review_due": "2026-08-21",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-22-gap34-forensic-resolved-hedge-failure",
@@ -2004,7 +2264,9 @@
     "reconciliation fill data is complete for the scan window"
    ],
    "success_metric": "gap #41 per-fill timeline confirms or refutes an unhedged window on GTC/SHELL/ONE",
-   "reversal_condition": "if the futures legs were in fact held and hedged, the loss needs a different explanation -> reopen"
+   "reversal_condition": "if the futures legs were in fact held and hedged, the loss needs a different explanation -> reopen",
+   "review_due": "2026-08-21",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-22-items45-orphan-bounds-factory-verified",
@@ -2017,7 +2279,9 @@
     "2 passes is enough to distinguish transient desync from a real orphan"
    ],
    "success_metric": "no false orphan cover on transient desync; real orphans still fully covered within a few passes",
-   "reversal_condition": "a real orphan sits uncovered too long across passes -> lower _ORPHAN_CONFIRM to 2 or raise the per-pass cap"
+   "reversal_condition": "a real orphan sits uncovered too long across passes -> lower _ORPHAN_CONFIRM to 2 or raise the per-pass cap",
+   "review_due": "2026-08-21",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-22-churn-drag-finding",
@@ -2031,7 +2295,9 @@
     "rails remain able to close instantly"
    ],
    "success_metric": "after the fix, <8h closes fall to rail-driven only, and net bps by bucket stops being negative",
-   "reversal_condition": "if forced holds accumulate adverse funding exceeding the saved round-trip cost, raise the band or shorten the minimum hold"
+   "reversal_condition": "if forced holds accumulate adverse funding exceeding the saved round-trip cost, raise the band or shorten the minimum hold",
+   "review_due": "2026-08-21",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-22-entry-gate-funding-and-cost",
@@ -2045,7 +2311,9 @@
     "funding at open is predictive of funding captured"
    ],
    "success_metric": "baseline-rate opens fall to zero; net bps by funding bucket stops being negative; realised net/notional improves",
-   "reversal_condition": "if the gate starves the book (too few candidates) or blocks names that would have been profitable, lower _MIN_FUNDING toward the derived break-even rather than removing the gate"
+   "reversal_condition": "if the gate starves the book (too few candidates) or blocks names that would have been profitable, lower _MIN_FUNDING toward the derived break-even rather than removing the gate",
+   "review_due": "2026-08-21",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-22-gap34-attributed",
@@ -2058,7 +2326,9 @@
     "the reconciliation fill records are complete for the window"
    ],
    "success_metric": "post-fix, no symbol shows fut_fills/spot_fills >3x and no repeat of a concentrated unhedged loss",
-   "reversal_condition": "if a similar gap recurs on symbols with clean 2/2 fill counts, the mechanism is wrong and must be re-opened"
+   "reversal_condition": "if a similar gap recurs on symbols with clean 2/2 fill counts, the mechanism is wrong and must be re-opened",
+   "review_due": "2026-08-21",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-22-anytime-valid-measured-refutes-speedup",
@@ -2073,7 +2343,9 @@
     "Sharpe~2 as the strong-edge case"
    ],
    "success_metric": "used as a secondary gate on high-stakes promotions; never cited as a speedup",
-   "reversal_condition": "if the desk validates on intraday returns, re-run the MC -- higher per-observation signal could make it genuinely fast"
+   "reversal_condition": "if the desk validates on intraday returns, re-run the MC -- higher per-observation signal could make it genuinely fast",
+   "review_due": "2026-08-21",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-22-8h-block-challenger-shadow",
@@ -2087,7 +2359,9 @@
     "exchange-native funding/kline history remains free and complete"
    ],
    "success_metric": "challenger tracks incumbent direction over the comparison window; on adoption, promotion decisions cite 8h NW-t with vif~1",
-   "reversal_condition": "if vif at 8h drifts materially above ~1.5 the speedup is partly illusory -- recompute the calendar equivalents before any adoption"
+   "reversal_condition": "if vif at 8h drifts materially above ~1.5 the speedup is partly illusory -- recompute the calendar equivalents before any adoption",
+   "review_due": "2026-08-21",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-22-cost-truth-and-peek",
@@ -2101,7 +2375,9 @@
     "3 bps blended maker-first fee is a fair documented constant"
    ],
    "success_metric": "measured-cost coverage grows with the recorder; peek e-values track the day-40 verdicts",
-   "reversal_condition": "if realized sleeve costs diverge from modelled, recalibrate the fee constant against actual fills"
+   "reversal_condition": "if realized sleeve costs diverge from modelled, recalibrate the fee constant against actual fills",
+   "review_due": "2026-08-21",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-22-recursion-angles-12-18",
@@ -2114,7 +2390,9 @@
     "the angle classes generalize beyond today's instances"
    ],
    "success_metric": "blind-spot ledger origin=principal rate falls toward zero over the next 2 weeks of cycles",
-   "reversal_condition": "if the principal again finds a gap these angles should have caught, the battery execution (not the angles) is the defect -- escalate to anti-rubber-stamp enforcement"
+   "reversal_condition": "if the principal again finds a gap these angles should have caught, the battery execution (not the angles) is the defect -- escalate to anti-rubber-stamp enforcement",
+   "review_due": "2026-08-05",
+   "review_due_source": "success_metric"
   },
   {
    "id": "2026-07-22-dual-objective-growth-ladder",
@@ -2128,7 +2406,9 @@
     "sleeves actually validate -- the ladder cannot manufacture edges"
    ],
    "success_metric": "each ladder step fires within 24h of its evidence; cycle reports score both objectives; clock slots stay saturated",
-   "reversal_condition": "principal revokes the seed ruin schedule, or a step-1/2 period shows realized dd approaching the ruin definition -> immediate downshift + schedule review"
+   "reversal_condition": "principal revokes the seed ruin schedule, or a step-1/2 period shows realized dd approaching the ruin definition -> immediate downshift + schedule review",
+   "review_due": "2026-08-21",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-22-small-capital-stack",
@@ -2142,7 +2422,9 @@
     "incentive PnL kept separate from edge PnL"
    ],
    "success_metric": "blended seed-window return lands 100%+ in yr-1 with the desk's own risk rails intact and zero ToS/sybil exposure",
-   "reversal_condition": "points meta dies or venue risk exceeds subsidy -> drop layer 2-3, glidepath reverts to the ladder bands"
+   "reversal_condition": "points meta dies or venue risk exceeds subsidy -> drop layer 2-3, glidepath reverts to the ladder bands",
+   "review_due": "2026-08-21",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-23-frame-lock-autopsy",
@@ -2155,7 +2437,9 @@
     "angle 19 gets executed with real reads, not rubber-stamped"
    ],
    "success_metric": "zero further origin=principal rows in the objective-frame class",
-   "reversal_condition": "if it recurs despite angle 19, the battery execution is the defect -- escalate to anti-rubber-stamp enforcement"
+   "reversal_condition": "if it recurs despite angle 19, the battery execution is the defect -- escalate to anti-rubber-stamp enforcement",
+   "review_due": "2026-08-22",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-23-journey-stack",
@@ -2169,7 +2453,9 @@
     "git history acceptable as timestamping until a third-party attestor is added"
    ],
    "success_metric": "zero ad-hoc withdrawals/interventions post-live; NAV chain unbroken; checklist 100% at Gate-0",
-   "reversal_condition": "compact amendable only pre-Gate-0 or via ledgered 7-day-cooling proposal, never mid-drawdown or post-win-week"
+   "reversal_condition": "compact amendable only pre-Gate-0 or via ledgered 7-day-cooling proposal, never mid-drawdown or post-win-week",
+   "review_due": "2026-08-22",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-23-fixed-wall-and-clock-saturation",
@@ -2183,7 +2469,9 @@
     "Bronze lake dirs are a faithful list of verified axes"
    ],
    "success_metric": "survivors can emerge from a family without being deflated by unrelated families' trial counts; clock-saturation defect count falls as axes get hypotheses",
-   "reversal_condition": "if survivors start appearing that fail forward validation, the per-family budget is too loose -- lower family_trial_budget or re-pool, do NOT remove the correction"
+   "reversal_condition": "if survivors start appearing that fail forward validation, the per-family budget is too loose -- lower family_trial_budget or re-pool, do NOT remove the correction",
+   "review_due": "2026-08-22",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-23-gate0-levers-built-early",
@@ -2197,7 +2485,9 @@
     "realized_spot_pnl in the NAV attestation remains the correct realised measure once live accounting replaces paper"
    ],
    "success_metric": "at S1 the deployed base tracks operator capital + realised PnL within clamps; fee burn shows active on the venue; a newly registered sleeve appears in forward tracking without a code change",
-   "reversal_condition": "if realized_spot_pnl proves not to be the right live realised measure at Gate 0, repoint _realised_pnl at the live accounting source -- do NOT widen the clamps to compensate"
+   "reversal_condition": "if realized_spot_pnl proves not to be the right live realised measure at Gate 0, repoint _realised_pnl at the live accounting source -- do NOT widen the clamps to compensate",
+   "review_due": "2026-08-22",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-23-gap14-measurement-fix-and-listing-clock",
@@ -2211,7 +2501,9 @@
     "exchangeInfo diff catches listings within a day"
    ],
    "success_metric": "clean_since accrues uninterrupted toward 30d; listings.jsonl populates on the next real listing",
-   "reversal_condition": "if the 8h series itself proves contaminated, confidence_source flips and clean_since resets -- by design"
+   "reversal_condition": "if the 8h series itself proves contaminated, confidence_source flips and clean_since resets -- by design",
+   "review_due": "2026-08-22",
+   "review_due_source": "success_metric"
   },
   {
    "id": "2026-07-23-two-stage-discovery-law",
@@ -2225,7 +2517,9 @@
     "slot cap enforced by alert + audit"
    ],
    "success_metric": "confirmation bar unchanged across arbitrary generation volume; false-promotion rate tracks per-slot alpha x slots only",
-   "reversal_condition": "if slot queueing ever materially delays a high-EV candidate, raise MAX_FORWARD_SLOTS explicitly WITH its recomputed Holm bar -- a ledgered constant change, never a silent drift"
+   "reversal_condition": "if slot queueing ever materially delays a high-EV candidate, raise MAX_FORWARD_SLOTS explicitly WITH its recomputed Holm bar -- a ledgered constant change, never a silent drift",
+   "review_due": "2026-08-22",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-23-axis-generate-run",
@@ -2239,7 +2533,9 @@
     "queued cme hypothesis faces Stage-A like any other"
    ],
    "success_metric": "clock-saturation check green next run; cme hypothesis clears or ledgers Stage-A; ingestion reweighted",
-   "reversal_condition": "if a rejected axis later gains a high-breadth orthogonal mechanism, its revisit condition reopens it"
+   "reversal_condition": "if a rejected axis later gains a high-breadth orthogonal mechanism, its revisit condition reopens it",
+   "review_due": "2026-08-22",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-23-free-alternatives-dig",
@@ -2252,7 +2548,9 @@
     "Coinalyze free tier persists; free CME OHLC sufficient for a daily basis anchor"
    ],
    "success_metric": "paid CME feed retired; Coinalyze verified + wired as a collector post-connector; >=1 free source diffed-clean and adopted",
-   "reversal_condition": "a free source fails its ground-truth diff -> stamped UNVERIFIED, not adopted; paid only re-enters via the free-first EXCEPTION"
+   "reversal_condition": "a free source fails its ground-truth diff -> stamped UNVERIFIED, not adopted; paid only re-enters via the free-first EXCEPTION",
+   "review_due": "2026-08-22",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-23-free-dig-overlap-correction",
@@ -2263,7 +2561,9 @@
    "confidence": 0.95,
    "assumptions": [],
    "success_metric": "no future dig catalogs a source without an existing-collector check first",
-   "reversal_condition": "n/a -- this is a correction"
+   "reversal_condition": "n/a -- this is a correction",
+   "review_due": "2026-08-22",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-23-angle14-self-apply-guard",
@@ -2274,7 +2574,9 @@
    "confidence": 0.85,
    "assumptions": [],
    "success_metric": "zero redundant catalogs/builds going forward",
-   "reversal_condition": "n/a"
+   "reversal_condition": "n/a",
+   "review_due": "2026-08-22",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-23-genuine-new-datasets",
@@ -2288,7 +2590,9 @@
     "no-key APIs stay free"
    ],
    "success_metric": "Upbit/Bithumb collector wired post-connector; kimchi-premium hypothesis pre-registered + accrues a forward clock",
-   "reversal_condition": "kimchi premium fails its Stage-A screen or the FX-adjustment noise dominates -> graveyard, axis stays ingested"
+   "reversal_condition": "kimchi premium fails its Stage-A screen or the FX-adjustment noise dominates -> graveyard, axis stays ingested",
+   "review_due": "2026-08-22",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-23-kimchi-screened-clock",
@@ -2301,7 +2605,9 @@
     "the in-sample IC survives timestamp-aligned forward data"
    ],
    "success_metric": "forward IC positive + NW-t clears bar over >=40 live days, then slot",
-   "reversal_condition": "forward IC collapses (was FX-timing artifact) -> graveyard"
+   "reversal_condition": "forward IC collapses (was FX-timing artifact) -> graveyard",
+   "review_due": "2026-08-22",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-23-kimchi-self-caught-method",
@@ -2312,7 +2618,9 @@
    "confidence": 0.9,
    "assumptions": [],
    "success_metric": "n/a",
-   "reversal_condition": "n/a"
+   "reversal_condition": "n/a",
+   "review_due": "2026-08-22",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-23-venue-premium-decontam",
@@ -2323,7 +2631,9 @@
    "confidence": 0.85,
    "assumptions": [],
    "success_metric": "every future premium/spread screen reports same-period corr + residual IC",
-   "reversal_condition": "n/a -- methodology hardening"
+   "reversal_condition": "n/a -- methodology hardening",
+   "review_due": "2026-08-22",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-23-coinbase-artifact-selfcaught",
@@ -2334,7 +2644,9 @@
    "confidence": 0.9,
    "assumptions": [],
    "success_metric": "n/a",
-   "reversal_condition": "n/a"
+   "reversal_condition": "n/a",
+   "review_due": "2026-08-22",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-23-turkey-premium-fails-niche-narrow",
@@ -2347,7 +2659,9 @@
     "angle-20 gate reliably separates lead from coincide"
    ],
    "success_metric": "future axis hunting targets new mechanism TYPES, not more FX premiums; kimchi forward clock arbitrates",
-   "reversal_condition": "a regional premium with strict capital controls (e.g. Argentina/Nigeria P2P) shows kimchi-class std + low contamination -> re-open that specific market"
+   "reversal_condition": "a regional premium with strict capital controls (e.g. Argentina/Nigeria P2P) shows kimchi-class std + low contamination -> re-open that specific market",
+   "review_due": "2026-08-22",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-23-reusable-axis-screen-harness",
@@ -2360,7 +2674,9 @@
     "callers pass correctly-aligned same-period series"
    ],
    "success_metric": "every future axis screen calls stage_a_screen and reports same-period corr + residual IC",
-   "reversal_condition": "n/a -- tooling"
+   "reversal_condition": "n/a -- tooling",
+   "review_due": "2026-08-22",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-23-screen-on-discovery-duty",
@@ -2374,7 +2690,9 @@
     "the angle-20 artifact gate is never bypassed"
    ],
    "success_metric": "share of newly-surfaced axes carrying a same-run Stage-A verdict approaches 100%; new forward clocks started per week rises; graveyard grows with reasoned negatives",
-   "reversal_condition": "if screens start being reported with only winning constructions, or artifact-gate bypasses appear, tighten to requiring the harness output verbatim -- do not remove the duty"
+   "reversal_condition": "if screens start being reported with only winning constructions, or artifact-gate bypasses appear, tighten to requiring the harness output verbatim -- do not remove the duty",
+   "review_due": "2026-08-22",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-23-research-cycle-scheduler-restored",
@@ -2387,7 +2705,9 @@
     "the cron survives; steps stay isolated so one failure never aborts the cycle"
    ],
    "success_metric": "kimchi and future axis clocks gain one row per calendar day without any human session; cro_cycle_log gains a dated entry daily",
-   "reversal_condition": "if the daily cycle ever collides with a revived watchdog spawn, gate one of them on a shared marker -- do not remove the cron"
+   "reversal_condition": "if the daily cycle ever collides with a revived watchdog spawn, gate one of them on a shared marker -- do not remove the cron",
+   "review_due": "2026-08-22",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-23-gap19-shadow-finding",
@@ -2401,7 +2721,9 @@
     "both feeds keep updating on the same 3-min tick"
    ],
    "success_metric": ">=200 clean samples accumulate; increment p95 stays small and stable, giving a defensible band before Gate 0",
-   "reversal_condition": "if increment divergence proves unstable/regime-dependent, the breaker needs a basis-reconciled NAV pair instead of a band -- do NOT widen the band to silence it"
+   "reversal_condition": "if increment divergence proves unstable/regime-dependent, the breaker needs a basis-reconciled NAV pair instead of a band -- do NOT widen the band to silence it",
+   "review_due": "2026-08-22",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-23-ci-red-at-head-restore-and-maxaudit-groundtruth",
@@ -2416,7 +2738,9 @@
     "NEIGHBOURS: max_audit checker (recorder-scope + new ci-gate checks), run_ci marker consumers, the Tier-3 deadman test contract, the 5 lint-fixed tooling scripts, the daily python cycle's ci_gate step -- none are risk-path executors; no live sizing/hedge/rail code altered"
    ],
    "success_metric": "run_ci exit 0 (achieved); rollback_guard evaluate OK (achieved); next daily python cycle logs ci_gate=true; max_audit shows neither recorder-scope-shrank nor ci-gate-red while state is healthy (achieved); a deliberately-broken _SYMBOLS or a red CI would each fire their check.",
-   "reversal_condition": "If the tape-breadth check false-fires on a legitimate recorder state, widen the window or revert to the checkpoint 20260723T085113; if the ci-gate marker check proves noisy, remove it. rollback_guard checkpoint 20260723T085113_max-audit-recorder-scope-groundtruth restores all files."
+   "reversal_condition": "If the tape-breadth check false-fires on a legitimate recorder state, widen the window or revert to the checkpoint 20260723T085113; if the ci-gate marker check proves noisy, remove it. rollback_guard checkpoint 20260723T085113_max-audit-recorder-scope-groundtruth restores all files.",
+   "review_due": "2026-08-22",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-23-review-branch-merged-and-cadence-deployed",
@@ -2429,7 +2753,9 @@
     "pgrep guards absorb the residual cron/systemd overlap until root retires the stale timers"
    ],
    "success_metric": "digs complete instead of stubbing once Max lands; no duplicate concurrent digs; CI stays green",
-   "reversal_condition": "if digs still stub after Max is active, the constraint is not quota and the cadence must be re-examined rather than raised further"
+   "reversal_condition": "if digs still stub after Max is active, the constraint is not quota and the cadence must be re-examined rather than raised further",
+   "review_due": "2026-08-22",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-23-integrity-watch-carry-harvest-finding",
@@ -2442,7 +2768,9 @@
     "the 7d income window is representative; testnet fees mirror live VIP0 structure"
    ],
    "success_metric": "post-BNB-burn and post-churn-guard, funding harvest exceeds commissions by a clear margin before Gate 0",
-   "reversal_condition": "if a longer window shows harvest >> commissions, the 7d sample was unrepresentative -- re-measure before concluding"
+   "reversal_condition": "if a longer window shows harvest >> commissions, the 7d sample was unrepresentative -- re-measure before concluding",
+   "review_due": "2026-08-22",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-23-500-source-roadmap-triage",
@@ -2455,7 +2783,9 @@
     "digger executes the tier order when authed"
    ],
    "success_metric": "post-auth digger works T1 sources through axis_screen; T4 not monitored; no T5 free-sourced",
-   "reversal_condition": "if a T4 narrative source ever yields a gauntlet-surviving mechanism, promote that specific one -- evidence over category"
+   "reversal_condition": "if a T4 narrative source ever yields a gauntlet-surviving mechanism, promote that specific one -- evidence over category",
+   "review_due": "2026-08-22",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-23-orthogonal-axis-batch-onchain-wired",
@@ -2469,7 +2799,9 @@
     "reversal direction is stable out-of-sample (composite check says maybe not)"
    ],
    "success_metric": "onchain_activity_throughput reaches 40 forward days and nw_t >= holm_bar(2) -> ELIGIBLE",
-   "reversal_condition": "FAILING at >=40 forward days, or same-period corr drifts above the de-contam max -> graveyard as regional-premium-class exhausted"
+   "reversal_condition": "FAILING at >=40 forward days, or same-period corr drifts above the de-contam max -> graveyard as regional-premium-class exhausted",
+   "review_due": "2026-08-22",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-23-altdata-batch-stablecoin-supply-wired",
@@ -2484,7 +2816,9 @@
    ],
    "success_metric": "stablecoin_supply_momentum reaches 40 forward days and nw_t >= holm_bar(3) -> ELIGIBLE",
    "reversal_condition": "FAILING at >=40 forward days, or same-period corr drifts above the de-contam max",
-   "flagged_gap": "run_stablecoin_flows collects a supply figure but does not screen or forward-track it; this axis closes that for the broad aggregate. Brain may retire the redundant archived supply field or reconcile the two so evidence is not double-counted."
+   "flagged_gap": "run_stablecoin_flows collects a supply figure but does not screen or forward-track it; this axis closes that for the broad aggregate. Brain may retire the redundant archived supply field or reconcile the two so evidence is not double-counted.",
+   "review_due": "2026-08-22",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-23-dev-momentum-factor-v1-insignificant",
@@ -2499,7 +2833,9 @@
    ],
    "success_metric": "n/a -- rejected at Stage-A screen (insignificant)",
    "reversal_condition": "the PRE-REGISTERED retention/migration factor clears |t|>=2 at 3/6mo",
-   "pre_registered_next": "DEVELOPER RETENTION / MIGRATION factor (the principal's a-priori-strongest hypothesis: 'developer migration predicts ecosystem decline before token weakness'). Factor = author-level: active-contributor breadth momentum + retention (share of authors active in trailing 3mo who remain active) + net contributor migration. SAME cross-sectional test, SAME bar (|t|>=2 at 3/6mo forward relative return). Requires an AUTHOR-LEVEL commit miner (heavy pagination) -- routed to the brain's discovery-layer build. If it also fails the bar, GRAVEYARD the whole developer-factor line as tested-and-dead."
+   "pre_registered_next": "DEVELOPER RETENTION / MIGRATION factor (the principal's a-priori-strongest hypothesis: 'developer migration predicts ecosystem decline before token weakness'). Factor = author-level: active-contributor breadth momentum + retention (share of authors active in trailing 3mo who remain active) + net contributor migration. SAME cross-sectional test, SAME bar (|t|>=2 at 3/6mo forward relative return). Requires an AUTHOR-LEVEL commit miner (heavy pagination) -- routed to the brain's discovery-layer build. If it also fails the bar, GRAVEYARD the whole developer-factor line as tested-and-dead.",
+   "review_due": "2026-08-22",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-23-backfill-oos-onchain-killed",
@@ -2512,7 +2848,9 @@
     "blockchain.info history matches the forward collector source (same API); locked params were genuinely fit only on the recent window"
    ],
    "success_metric": "axes that pass held-out OOS then also pass the forward clock; axes that fail held-out are dropped without spending 40 forward days",
-   "reversal_condition": "if a held-out-OOS PASS later fails the forward clock, the reconstruction window overlapped the screen (contamination) -- widen the held-out gap"
+   "reversal_condition": "if a held-out-OOS PASS later fails the forward clock, the reconstruction window overlapped the screen (contamination) -- widen the held-out gap",
+   "review_due": "2026-08-22",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-23-backfill-is-axis-limited",
@@ -2526,7 +2864,9 @@
     "the daily diggers actually produce once Max-unblocked"
    ],
    "success_metric": "OI/LS OOS runs faithfully once universe metrics are ingested; daily diggers resume producing discoveries under Max",
-   "reversal_condition": "if the daily diggers still produce nothing under Max, discovery IS the gap and a dedup-scored registry becomes the build"
+   "reversal_condition": "if the daily diggers still produce nothing under Max, discovery IS the gap and a dedup-scored registry becomes the build",
+   "review_due": "2026-08-22",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-24-panel-capacity-sweep-and-seat-swap",
@@ -2540,7 +2880,9 @@
     "gemini-3.6-flash review quality is at least flash-tier competent -- scorecards will decide retention"
    ],
    "success_metric": "next panels: 13/13 non-blank with named-file findings; gemini-3.6-flash earns a positive hit-rate on track_findings within 2 weeks",
-   "reversal_condition": "if gemini-3.6-flash blanks or scores zero validated findings over 2 weeks, swap to openai/gpt-5.6-sol-pro (capacity-PASSED backup) and accept the concentration cost"
+   "reversal_condition": "if gemini-3.6-flash blanks or scores zero validated findings over 2 weeks, swap to openai/gpt-5.6-sol-pro (capacity-PASSED backup) and accept the concentration cost",
+   "review_due": "2026-08-07",
+   "review_due_source": "success_metric"
   },
   {
    "id": "2026-07-24-budget-incident-and-envelope-guard",
@@ -2554,7 +2896,9 @@
     "$0.65 tiered / ~$7-15 full-payload estimates hold with the current roster"
    ],
    "success_metric": "no month exceeds the envelope without an explicit principal decision; zero silent degradations",
-   "reversal_condition": "if the envelope blocks a genuinely critical incident panel, add an incident-class exemption (page + proceed) rather than raising the envelope silently"
+   "reversal_condition": "if the envelope blocks a genuinely critical incident panel, add an incident-class exemption (page + proceed) rather than raising the envelope silently",
+   "review_due": "2026-08-23",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-24-fable5-and-max-effort-everywhere",
@@ -2568,7 +2912,9 @@
     "session windows absorb the full daily schedule at max effort"
    ],
    "success_metric": "48h of cycles/digs completing (no 163-byte stubs) at fable-5/max; quota_verdict stays clean",
-   "reversal_condition": "session-limit stubs return -> notch miners to xhigh first with a page, never silently"
+   "reversal_condition": "session-limit stubs return -> notch miners to xhigh first with a page, never silently",
+   "review_due": "2026-08-23",
+   "review_due_source": "default"
   },
   {
    "id": "2026-07-24-cny-premium-axis-unparked",
@@ -2583,7 +2929,9 @@
     "sell-side median is a stable construction"
    ],
    "success_metric": "premium 30d std lands nearer KRW-class than TRY-class AND the forward clock clears the Holm bar at 40d",
-   "reversal_condition": "TRY-class std or FAILING clock -> retire to graveyard as the second confirmed kimchi-analog failure; do NOT re-fit direction or construction"
+   "reversal_condition": "TRY-class std or FAILING clock -> retire to graveyard as the second confirmed kimchi-analog failure; do NOT re-fit direction or construction",
+   "review_due": "2026-09-02",
+   "review_due_source": "success_metric"
   },
   {
    "id": "2026-07-24-vendor-replacement-fenced",
@@ -2596,7 +2944,9 @@
     "universe map remains the single source of truth for vendor decompositions"
    ],
    "success_metric": "vendor-replacement defect count reaches 0 and stays there as new vendors get entries with ground truths on first contact",
-   "reversal_condition": "if the check produces chronic false positives on genuinely-unverifiable vendors, add an explicit graded residual_gap escape -- never delete the check"
+   "reversal_condition": "if the check produces chronic false positives on genuinely-unverifiable vendors, add an explicit graded residual_gap escape -- never delete the check",
+   "review_due": "2026-08-23",
+   "review_due_source": "default"
   }
  ]
 }

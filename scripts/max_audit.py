@@ -2139,6 +2139,41 @@ def _module_reachability() -> tuple[set[str], dict[str, str]]:
     return reached, mods
 
 
+def check_decision_ledger_matures(defects) -> None:
+    """The self-improvement loop must have a QUEUE, not just a cadence.
+
+    The ledger's policy promises "the monthly governance review scores each matured entry so
+    decision QUALITY compounds". Measured 2026-07-26: 189 decisions, 2 scored, and 175 with no
+    review date at all -- nothing could mature, so the monthly review ran against an empty queue
+    and correctly reported no work. A cadence pointed at an empty queue looks identical to a
+    cadence with nothing to do, which is why this went unnoticed for the ledger's whole life.
+    """
+    try:
+        from datetime import date as _date
+
+        from libs.research.decision_review import health as _health
+        doc = json.loads((ROOT / "data" / "decision_ledger.json").read_text("utf-8"))
+    except (OSError, json.JSONDecodeError, ImportError):
+        return
+    rows = doc.get("decisions", []) if isinstance(doc, dict) else doc
+    rows = [r for r in rows if isinstance(r, dict)]
+    if not rows:
+        return
+    h = _health(rows, _date.today())
+    if h.no_review_date:
+        defects.append((
+            "decision-ledger-undated",
+            f"{h.no_review_date} of {h.total} logged decisions carry NO review date -- they can "
+            "never come due, so the scoring cadence has nothing to pull and reports clean "
+            "forever. Run scripts/run_decision_review.py to derive them."))
+    elif h.due:
+        defects.append((
+            "decision-ledger-unscored",
+            f"{h.due} decision(s) matured and unscored, oldest {h.oldest_overdue_d}d past due "
+            f"({h.scored}/{h.total} = {h.scored_pct}% ever scored). Scoring is a JUDGEMENT and is "
+            "never automated -- see data/decision_review.json for the worklist."))
+
+
 def check_money_path_wired(defects) -> None:
     """Every money-path module must have a PRODUCTION caller, not just a test.
 
@@ -2733,6 +2768,7 @@ CHECKS = [("carryover-skipped", check_carryover_skipped),
                       ("artifact-governance", check_artifact_governance),
                       ("orphan-code", check_orphan_code),
                       ("money-path-wired", check_money_path_wired),
+                      ("decision-maturity", check_decision_ledger_matures),
                       ("orphan-modules", check_orphan_modules),
                       ("capacity-hunt", check_capacity_hunt),
                       ("capacity-single-source", check_capacity_single_source),
