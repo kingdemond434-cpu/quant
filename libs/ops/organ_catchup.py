@@ -91,13 +91,16 @@ def organ_owed(spec: OrganSpec, logdir: Path, now: datetime) -> bool:
     # often leaves only the shell's start/exit header in the log. If any declared artifact was
     # written inside this interval, the organ produced -- re-firing it would burn a window on
     # already-completed work (frontier_en ran 3x on 07-25 for exactly this reason).
-    cut = now.astimezone(UTC).timestamp() - spec.period_days * 86400
-    # repo root derived FROM the logdir (<root>/data/cro_ai_logs) so tests passing a tmp logdir
-    # resolve artifacts inside their own tree and stay isolated.
+    # ARTIFACT MUST POSTDATE THIS ORGAN'S OWN ATTEMPT (2026-07-26). Organs SHARE artifacts --
+    # the frontier rotation and prospector both write prospector_coverage.md -- so crediting any
+    # write inside the period let frontier's dig silently mark prospector as produced, and two
+    # genuine quota deaths were never retried. An artifact only counts if it landed AT OR AFTER
+    # this organ's newest attempt, exactly as §33(17)(b) requires of a mined find's receipt.
+    newest_attempt = max(p.stat().st_mtime for p in logs)
     repo = logdir.parent.parent if logdir.name == "cro_ai_logs" else logdir
     for rel in spec.artifacts:
         try:
-            if (repo / rel).stat().st_mtime >= cut:
+            if (repo / rel).stat().st_mtime >= newest_attempt:
                 return False
         except OSError:
             continue

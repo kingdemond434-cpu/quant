@@ -42,6 +42,12 @@ def main() -> None:
     now = datetime.now(tz=UTC)
     spec = pick_organ(LOGDIR, now, _running)
     if spec is None:
+        # NEVER SILENT (2026-07-26): 'nothing owed' and 'the cron died' used to look
+        # identical -- the log just stopped. For a desk whose defining failure is
+        # state-looks-healthy/output-is-nothing, silence must never be ambiguous.
+        print(f"{datetime.now(tz=UTC).isoformat()} nothing owed -- all organs produced")
+        return
+    if spec is None:
         return
     if not _quota_ok():
         print(f"{now.isoformat()} owed={spec.name} quota=DEAD -- no fire")
