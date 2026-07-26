@@ -93,7 +93,8 @@ def _downsample(sig: np.ndarray, ret_1d: np.ndarray, step: int) -> tuple[np.ndar
 
 
 def main() -> None:
-    hr, diff, rev, px = _series("hash-rate"), _series("difficulty"), _series("miners-revenue"), _btc()
+    hr, diff, rev, px = (_series("hash-rate"), _series("difficulty"),
+                         _series("miners-revenue"), _btc())
     df = pd.DataFrame({"hr": hr, "diff": diff, "rev": rev, "px": px}).dropna()
     df = df[df["hr"] > 0]
     df["ret_1d"] = df["px"].pct_change()

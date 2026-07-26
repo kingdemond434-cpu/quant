@@ -37,7 +37,8 @@ def test_noise_at_20d_no_longer_clears_the_sharpe_floor():
 
 def test_underpowered_is_not_reported_as_refuted():
     """A weak result on too few effective observations is 'could not tell', not 'dead'. The
-    graveyard is permanent -- recording the two as one destroys hypothesis classes on no evidence."""
+    graveyard is permanent -- recording the two as one destroys hypothesis classes on no
+    evidence."""
     sig, ret = _noise(n=200)
     r = stage_a_screen(sig, ret, name="thin", horizon_days=20)
     assert r["n_eff"] < 20

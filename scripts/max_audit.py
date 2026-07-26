@@ -1206,6 +1206,11 @@ _FINDING_DOCS_EXCLUDED = {
     # new findings arrive as panel RESPONSES, which flow panel_inbox -> panel_rulings (in scope,
     # above) -> register rows. If the generator ever starts emitting desk-authored findings that
     # do not exist upstream, move it into _FINDING_DOCS.
+    # trailing slash = the whole CLASS is claimed (a generator emits dated instances)
+    "docs/research/deep_sweep/":
+        "weekly deep-cold-audit output -- CADENCED PRODUCER (§36); findings flow to\n"
+        "improvement_inbox and GAP_REGISTER rows (§35). Each dated report is one\n"
+        "sweep's snapshot, superseded by the next, never converted in place.",
     "docs/EXTERNAL_PANEL_DOSSIER.md":
         "GENERATED dossier -- its numbered block is a copy of the register table; original panel "
         "findings enter via panel_inbox -> panel_rulings, which are in scope",
@@ -1349,13 +1354,18 @@ def check_artifact_governance(defects) -> None:
     """
     claimed = (set(_DIG_DOCS) | set(_DIG_DOCS_EXCLUDED) | set(_FINDING_DOCS)
                | set(_FINDING_DOCS_EXCLUDED) | set(_PRODUCER_CADENCE) | set(_TERMINAL_ARTIFACTS))
+    # A trailing-slash claim governs a whole DIRECTORY CLASS. Generators (the weekly deep sweep)
+    # emit dated instances forever, so exact-path claims could never keep up and the check would
+    # fire permanently on correctly-governed output. Claim the class once; instances inherit it.
+    claimed_prefixes = tuple(c for c in claimed if c.endswith("/"))
     audit_src = ""
     with contextlib.suppress(OSError):
         audit_src = Path(__file__).read_text("utf-8")
     unclaimed = []
     for p in sorted((ROOT / "docs").rglob("*.md")):
         rel = p.relative_to(ROOT).as_posix()
-        if rel in claimed or rel.endswith("GAP_REGISTER.md"):
+        if (rel in claimed or rel.startswith(claimed_prefixes)
+                or rel.endswith("GAP_REGISTER.md")):
             continue
         if p.name in audit_src:      # named by some other check -- already governed
             continue

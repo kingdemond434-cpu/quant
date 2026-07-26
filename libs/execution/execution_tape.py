@@ -22,6 +22,7 @@ bad record must never take down the live executor that feeds it.
 """
 from __future__ import annotations
 
+import contextlib
 import json
 import shutil
 from collections import Counter
@@ -109,10 +110,8 @@ def coverage(*, path: Path = _TAPE) -> dict[str, Any]:
     for r in recs:
         for k in ("closed", "opened"):
             if r.get(k):
-                try:
+                with contextlib.suppress(ValueError):
                     stamps.append(datetime.fromisoformat(str(r[k])))
-                except ValueError:
-                    pass
     if not stamps:
         return {"n": len(recs), "days": 0.0, "first": None, "last": None}
     first, last = min(stamps), max(stamps)

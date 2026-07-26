@@ -97,10 +97,7 @@ def carry_bleed_report(
         eaten = round(max(0.0, -non_funding) / funding, 3)
     else:
         eaten = float("inf") if non_funding < 0 else 0.0
-    if funding > 0.0:
-        alert = abs(non_funding) >= alert_frac * funding
-    else:
-        alert = non_funding < 0.0
+    alert = (abs(non_funding) >= alert_frac * funding) if funding > 0.0 else (non_funding < 0.0)
     if alert and non_funding > 0.0:
         verdict = (
             f"BLEED(inverted): non-funding PnL {non_funding:+.2f} is "

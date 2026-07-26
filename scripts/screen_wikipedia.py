@@ -145,11 +145,13 @@ def main() -> None:
         "n_days_gateway": len(d1),
         "range": [str(d1.index.min().date()), str(d1.index.max().date())],
         "alignment": (
-            "Wikimedia daily pageviews stamp YYYYMMDD00 and count the COMPLETE UTC day [00:00,24:00) "
+            "Wikimedia daily pageviews stamp YYYYMMDD00 and count "
+            "the COMPLETE UTC day [00:00,24:00) "
             "-- the same window as the Binance D1 bar for day t. Count for day t is final only at "
             "24:00 UTC t and published ~45-60min later, so signal[t]->ret[t+1] carries a DECLARED "
             "~1h look-ahead (~4% of the 1d holding period). Every construction is therefore ALSO "
-            "run +1d-lagged (signal[t-1]->ret[t+1]), which is unambiguously knowable; a result that "
+            "run +1d-lagged (signal[t-1]->ret[t+1]), "
+            "which is unambiguously knowable; a result that "
             "dies under the lag WAS the leak. 5d/20d NON-OVERLAPPING; relative returns compounded "
             "per leg then differenced."
         ),

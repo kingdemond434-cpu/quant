@@ -16,7 +16,8 @@ the mechanism that made fx high-prior -- it can only test the weak-barrier tail 
 
 WHAT IS ALREADY DEAD AND IS **NOT** RE-RUN HERE (graveyard.md + web/axis_shadows.json)
 -------------------------------------------------------------------------------------
-  * try_premium_timing (Turkey venue premium)   -- `timing_artifact`, de-contam corr -0.495. SKIPPED.
+  * try_premium_timing (Turkey venue premium)   -- `timing_artifact`, de-contam corr -0.495.
+                                                   SKIPPED.
   * coinbase_premium_timing                     -- `timing_artifact`, contam +0.256. SKIPPED.
   * bithumb_kr_premium                          -- `lookahead_artifact`, KST candle. SKIPPED.
   * coinone_kr_premium                          -- `redundant` with kimchi. SKIPPED.
@@ -176,15 +177,18 @@ def main() -> None:
         "axis": "fx",
         "n_days": len(d),
         "range": [str(d.index.min().date()), str(d.index.max().date())],
-        "coverage_gap": ("fx lake has 57 crosses but NONE of the high-barrier currencies that drive "
+        "coverage_gap": ("fx lake has 57 crosses but NONE of the "
+                         "high-barrier currencies that drive "
                          "the proven mechanism: no KRW, CNY/CNH, BRL, ARS, NGN, VND, EGP, INR. "
                          "EURRUB feed terminates 2022-02-28 (sanctions) -> RUB excluded as "
                          "data/infra, re-testable if restored."),
         "alignment": (
             "fx D1 bars are Mon-Fri only (verified: zero Sat/Sun rows), labelled at the SESSION "
             "date, closing ~21:00-22:00 UTC on that date -- i.e. ~2-3h BEFORE the crypto 24:00 UTC "
-            "close of the same label. signal[t]->crypto ret[t+1] is ~3h old at entry: NO look-ahead. "
-            "FX reindexed onto the crypto 7-day UTC calendar with FORWARD-FILL of the last knowable "
+            "close of the same label. "
+            "signal[t]->crypto ret[t+1] is ~3h old at entry: NO look-ahead. "
+            "FX reindexed onto the crypto 7-day UTC calendar with FORWARD-FILL "
+            "of the last knowable "
             "close (stale-repeats 2/7 of days; declared). Sample ends at the FX lake end "
             "(2026-06-05 EM / 2026-06-19 majors), ~7wk short of the crypto lake. 5d/20d "
             "NON-OVERLAPPING. Shift sensitivity -1d/+1d run per rule 8."),

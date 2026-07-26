@@ -37,7 +37,6 @@ from __future__ import annotations
 import json
 import math
 import re
-from datetime import UTC, datetime
 from pathlib import Path
 
 OUT = Path(__file__).resolve().parent.parent / "reports" / "axis_screens"
@@ -65,12 +64,15 @@ def _norm_ppf(p: float) -> float:
     pl = 0.02425
     if p < pl:
         q = math.sqrt(-2 * math.log(p))
-        return (((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5]) / ((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1)
+        return ((((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])
+                / ((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1))
     if p > 1 - pl:
         q = math.sqrt(-2 * math.log(1 - p))
-        return -(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5]) / ((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1)
+        return (-(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])
+                / ((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1))
     q, r = p - 0.5, (p - 0.5) ** 2
-    return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q / (((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1)
+    return ((((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q
+            / (((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1))
 
 
 def _bar(m: int) -> float:
@@ -78,7 +80,7 @@ def _bar(m: int) -> float:
 
 
 AXES = ("mining", "wikipedia", "fx")
-TOTAL_TRIALS = 37                      # 12 mining + 13 wikipedia + 12 fx (+ etf_flows not screenable)
+TOTAL_TRIALS = 37  # 12 mining + 13 wikipedia + 12 fx (+ etf_flows not screenable)
 CAMPAIGN_BAR = _bar(TOTAL_TRIALS)
 
 VERDICTS = {
@@ -137,11 +139,13 @@ NEXT = {
     "mining": ("Do NOT clock and do NOT fish further hashrate variants -- 12 trials is already the "
                "multiplicity budget for this axis. The mechanism is not refuted, only the daily/"
                "weekly public aggregates are: hashrate and difficulty are network-wide averages "
-               "that cannot see WHICH cohort is capitulating. The honest escalation, pre-registered "
+               "that cannot see WHICH cohort is capitulating. "
+               "The honest escalation, pre-registered "
                "and on its own clock slot, is miner TREASURY OUTFLOWS (known miner wallet -> "
                "exchange transfers), which observes the forced selling directly rather than "
                "inferring it from a Poisson-noisy block-count estimate."),
-    "wikipedia": ("Do NOT clock. Recommend the graveyard entry for multilingual_wikipedia_attention "
+    "wikipedia": ("Do NOT clock. Recommend the graveyard entry for "
+                  "multilingual_wikipedia_attention "
                   "be AMENDED to record that the object arm (gateway/onboarding pages) and the "
                   "target arm (cross-sectional asset selection) have now also been tested and "
                   "failed, so the category is closed on all three arms and no future agent spends "
@@ -150,7 +154,8 @@ NEXT = {
            "deserves its high prior only if the lake carries high-barrier currencies. Request "
            "USDKRW, USDCNY/CNH, USDBRL, USDARS, USDNGN, USDVND before any further fx screening. "
            "Re-screening the majors would be breadth-mining the currencies the mechanism already "
-           "predicts pay nothing. RUB is re-testable as a data/infra kill if the feed is restored."),
+           "predicts pay nothing. "
+           "RUB is re-testable as a data/infra kill if the feed is restored."),
 }
 
 
@@ -170,7 +175,8 @@ def main() -> None:
             t["sharpe_best_corrected"] = corr
             t["sharpe_correction_note"] = (
                 "harness hardcodes sqrt(365); for k-day periods the correct factor is "
-                f"sqrt(365/{k}), so reported Sharpe is inflated by sqrt({k})={round(math.sqrt(k),2)}x"
+                f"sqrt(365/{k}), so reported Sharpe is inflated by "
+                f"sqrt({k})={round(math.sqrt(k),2)}x"
                 if k > 1 else "1d periods -- harness annualization correct, no adjustment")
             tstat = round(abs(t.get("ic", 0)) * math.sqrt(max(t["n"] - 2, 1)), 2)
             t["ic_t_stat"] = tstat
@@ -215,9 +221,11 @@ def main() -> None:
             "action": "NOT patched here -- harness is audited; flagged for CRO decision.",
         }
         rep["multiplicity"] = {"axis_trials": len(screened), "axis_bonferroni_t": axis_bar,
-                               "campaign_trials": TOTAL_TRIALS, "campaign_bonferroni_t": CAMPAIGN_BAR}
+                               "campaign_trials": TOTAL_TRIALS,
+                               "campaign_bonferroni_t": CAMPAIGN_BAR}
         rep["verdict"] = VERDICTS[axis]
-        rep["forward_clock"] = "NO -- no construction survived; Stage A has zero promotion authority"
+        rep["forward_clock"] = (
+            "NO -- no construction survived; Stage A has zero promotion authority")
         rep["next_step"] = NEXT[axis]
         p.write_text(json.dumps(rep, indent=1, default=str), "utf-8")
 

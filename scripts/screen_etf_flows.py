@@ -47,7 +47,6 @@ import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -130,7 +129,8 @@ def main() -> None:
         "range": [str(d.index.min().date()), str(d.index.max().date())] if len(d) else None,
         "flow_days_parsed": {str(k.date()): float(v) for k, v in flows.items()},
         "alignment": (
-            "Farside net flow is per US TRADING day t (US business days only; crypto trades 7d/wk). "
+            "Farside net flow is per US TRADING day t "
+            "(US business days only; crypto trades 7d/wk). "
             "Creations settle T+1 and the table for day t publishes the EVENING of t+1, so flow[t] "
             "is NOT knowable at the day-t crypto close nor at the day-t+1 open. The naive build "
             "flow[t]->ret[t+1] is therefore LOOK-AHEAD and is retained only as a labelled control. "
@@ -146,7 +146,8 @@ def main() -> None:
     }
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / "etf_flows.json").write_text(json.dumps(out, indent=1, default=str), "utf-8")
-    print(json.dumps({k: v for k, v in out.items() if k != "flow_days_parsed"}, indent=1, default=str))
+    print(json.dumps({k: v for k, v in out.items() if k != "flow_days_parsed"},
+                     indent=1, default=str))
     print(f"\nparsed flow days: {len(flows)}  joined to BTC: {len(d)}  required: {need}")
 
 

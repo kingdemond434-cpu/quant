@@ -89,7 +89,7 @@ def stack(sig: pd.DataFrame, tgt: pd.DataFrame) -> tuple[np.ndarray, np.ndarray,
         return np.array([]), np.array([]), {"blocks": 0}
     s, t = np.concatenate(ss), np.concatenate(tt)
     bleed = (blocks * 21) / max(len(s), 1)   # 20 z-window rows + 1 wrapped fwd row per block
-    return s, t, {"blocks": blocks, "rows": int(len(s)), "boundary_bleed_frac": round(bleed, 5)}
+    return s, t, {"blocks": blocks, "rows": len(s), "boundary_bleed_frac": round(bleed, 5)}
 
 
 def decile_spread(sig: pd.DataFrame, fwd_rel: pd.DataFrame) -> dict:
@@ -108,7 +108,7 @@ def decile_spread(sig: pd.DataFrame, fwd_rel: pd.DataFrame) -> dict:
     sp = (top - bot).dropna()
     if len(sp) < 30 or sp.std() == 0:
         return {"note": "insufficient spread obs"}
-    return {"dates": int(len(sp)), "mean_per_period": round(float(sp.mean()), 6),
+    return {"dates": len(sp), "mean_per_period": round(float(sp.mean()), 6),
             "spread_sharpe_per_period": round(float(sp.mean() / sp.std()), 4)}
 
 
@@ -118,7 +118,7 @@ TRIALS: list[dict] = []
 def run(name: str, sig: pd.DataFrame, tgt: pd.DataFrame, meta: dict) -> dict:
     s, t, info = stack(sig, tgt)
     if len(s) < 100:
-        out = {"name": name, "verdict": "INSUFFICIENT-DATA", "n": int(len(s))}
+        out = {"name": name, "verdict": "INSUFFICIENT-DATA", "n": len(s)}
     else:
         out = stage_a_screen(s, t, name=name)
     out.update(meta)
@@ -254,7 +254,6 @@ def screen_binance_metrics() -> dict:
           f"[{df.index.min().date()} .. {df.index.max().date()}]", flush=True)
 
     pxb = load_panel(PX, "close")["BTCUSDT"].reindex(df.index)
-    ret = pxb.pct_change()
     cons = {
         "M4_smart_minus_retail_count": df["tt_count_ls"] - df["retail_ls"],
         "M4_toptrader_position_ls": df["tt_pos_ls"],
@@ -267,7 +266,7 @@ def screen_binance_metrics() -> dict:
             j = pd.concat([s.loc[g].rename("s"), r.rename("t")], axis=1).dropna()
             if len(j) < 60:
                 TRIALS.append({"name": f"{cname}|BTC_abs|{h}d", "verdict": "INSUFFICIENT-DATA",
-                               "n": int(len(j)), "horizon_days": h})
+                               "n": len(j), "horizon_days": h})
                 continue
             o = stage_a_screen(j["s"].to_numpy("float64"), j["t"].to_numpy("float64"),
                                name=f"{cname}|BTC_abs|{h}d")
@@ -278,7 +277,7 @@ def screen_binance_metrics() -> dict:
             print(f"  {o['name']:52s} n={o['n']:>7} ic={o['ic']:+.4f} "
                   f"shR={o['sharpe_reversal']:+6.2f} same={o['same_period_corr']:+.3f} "
                   f"resIC={o['residual_ic']:+.4f}  {o['verdict']}", flush=True)
-    return {"symbols": 1, "days": int(len(df)),
+    return {"symbols": 1, "days": len(df),
             "range": [str(df.index.min().date()), str(df.index.max().date())]}
 
 
