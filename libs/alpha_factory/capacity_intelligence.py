@@ -3,7 +3,7 @@
 Reuses the discovery capacity model (square-root market impact) to estimate deployable capital,
 slippage, and a 0-100 scalability score.
 
-§39: the reference was $10m, so a $50k-capacity edge scored 0.5/100 on scalability — a 200x
+§42: the reference was $10m, so a $50k-capacity edge scored 0.5/100 on scalability — a 200x
 penalty on the capacity-bound niche the desk's own spec calls its structural advantage. "Can hold
 size" is a fund's question; the desk's question is "can hold OUR size", and the answer above
 sufficiency is yes-or-yes. `reference_capital` therefore now means the equity being deployed, and

@@ -242,6 +242,124 @@ counterfactual: LOW -- practitioner writeups diff sources against each other; cl
   against the conservation law (and refusing tolerance bands) is desk discipline, not crowd
   practice.
 
+### OP-025 stdlib-only PDF interior extraction (no install, no poppler)   [active]
+class: verification
+origin: Literature deep-miner run 3 (2026-07-26)   validated-gain: lifted a blocker that had capped
+  TWO full literature runs to abstract-level evidence and left 5 findings unverified; on first use it
+  CORRECTED THREE WRONG NUMBERS in a desk document (HXZ: actual 65% @ t>1.96, 82% @ the 2.78
+  multiple-test hurdle, worst category trading frictions 102/106=96.2% — recorded as 64% / "85% @
+  t-cutoff 3" / "liquidity 95 of 102 = 93%"). Cross-validated against an independent HTML rendering
+  of a second paper: reproduces a table of parenthesised p-values to the digit.
+technique: do NOT conclude "this box cannot read PDFs" from the absence of pypdf/fitz/pdfminer/
+  pdftotext. PDF text lives in FlateDecode streams and the stdlib ships `zlib`. ~90 lines:
+  (1) regex every `stream\r?\n ... endstream`; (2) `zlib.decompress` each (skip failures);
+  (3) in each decompressed chunk pull operands of `Tj`/`TJ` — literal `(...)` strings with PDF
+  escape/octal handling, and hex `<...>` strings (sniff UTF-16BE by counting zero bytes at even
+  positions); (4) reconstruct inter-word spaces from TJ kern numbers more negative than ~-100;
+  (5) newline on `Td`/`TD`/`T*`/`ET`. Upgrade path (worth it for CID/subset fonts): parse the xref
+  object graph + object streams, build ToUnicode CMap font maps, and render per /Type/Page.
+  ALWAYS grep-filter the output with a targeted regex — a 60-page paper will otherwise flood context.
+  Ligatures render oddly (fi -> Þ): write regexes that avoid them (`signi` not `significance`).
+  VALIDATE BEFORE TRUSTING: extract a paper whose numbers were already read from HTML and diff.
+  An unvalidated extractor that mangles digits is a phantom-evidence factory.
+  NOT DURABLE YET — /tmp prototype; landing it as `scripts/pdf_text.py` is GAP_REGISTER #70.
+adaptations: language-independent by construction (byte-level). CN/JP/KR PDFs with CID fonts need
+  the ToUnicode upgrade path above. Applies to EVERY digger, not just literature: exchange rulebooks,
+  regulator filings, central-bank PDFs, vendor methodology docs, university theses — all were
+  silently unreadable under the old false blocker.
+counterfactual: LOW — two prior runs had the same task, the same box and the same freeze, and both
+  inherited the blocker verbatim instead of testing it. This surfaced only because the premise was
+  re-tested rather than re-read.
+
+### OP-026 paywall-substitute route ladder (403 is a routing problem, not a wall)   [active]
+class: source-expansion
+origin: Literature deep-miner run 3 (2026-07-26)   validated-gain: SSRN/ScienceDirect/Wiley 403 from
+  this VPS is the single largest cause of SUMMARY-ONLY grades, and SUMMARY-ONLY claims are BARRED
+  from the graveyard — so this access gap was directly costing the desk verified negative knowledge
+  (one finding, Li & Zhu crypto SIZE, is still stranded provisional purely because of it).
+technique: on a 403/paywall, do NOT grade the paper SUMMARY-ONLY until this ladder is exhausted, in
+  order: (1) `arxiv.org/html/<id>` and `ar5iv.labs.arxiv.org/html/<id>` — full text where the PDF
+  fails; (2) NBER working-paper page (author-written abstracts, fetchable); (3) RePEc/IDEAS
+  `ideas.repec.org` — carries VERBATIM abstracts, not summaries; (4) institutional open-access
+  repositories hosting the publisher version legitimately (research-api.cbs.dk, open.icm.edu.pl,
+  university self-archives, hec.ca, fmg.ac.uk); (5) author's own homepage/lab page self-archive;
+  (6) the paper's public code+data repo (bkelly-lab/ReplicationCrisis, openassetpricing.com,
+  jkpfactors.com) — often carries the tables directly; (7) OP-025 on any PDF the ladder yields.
+  LEGITIMACY GATE (charter §13, absolute): the answer to a paywall is an OPEN mirror, an author
+  self-archive, or doing without. NEVER circumvention. Every route above is publisher-sanctioned
+  open access or an author's own posting.
+adaptations: CN=CN-author arXiv clusters + author self-archives (CNKI/Wanfang stay EXCLUDED per §13);
+  RU=CyberLeninka; JP=J-STAGE + CiNii; BR/LatAm=SciELO; KR=KCI/RISS open subsets; EU=DART-Europe +
+  DiVA + theses.fr for the thesis layer.
+counterfactual: MED — each route is individually known; the gain is making it a MANDATORY ORDERED
+  LADDER before the SUMMARY-ONLY grade is allowed, which is what converts it into verified evidence.
+
+### OP-027 false-friend / transliteration lexical audit BEFORE declaring a corpus empty   [active]
+class: multilingual-pattern
+origin: Literature deep-miner run 3, ground [LIT-d] (2026-07-26)   validated-gain: converted an
+  apparent "Russian academia has no crypto microstructure" null into a MEASURED null with a known
+  lexical cause — the difference between "we found nothing" and "we searched wrong".
+technique: before recording a non-English corpus as empty, audit the QUERY TERMS for false friends
+  and failed transliterations. Measured examples: **`арбитраж` in Russian means *arbitration*** and
+  routes into criminal/commercial law, not trading arbitrage; **`фандинг` matches only *фандрайзинг***
+  (fundraising); **`перпетуал` returns 1 hit, about Chinese diplomacy**. RU academic and practitioner
+  corpora are lexically DISJOINT — the practitioner term is not the academic term. Also measured:
+  **cross-CJK term borrowing FAILS** — the Chinese `市場微観構造` scores 0 on J-STAGE; each CJK
+  language needs its own native construction, not a borrowed one. And long native queries against
+  general web search **dilute to SEO** — keep them short and route them at the corpus's own search.
+adaptations: CN=verify the term against Chinese-language finance usage before concluding absence;
+  JP=build the term natively, never borrow from Chinese; KR=check Sino-Korean vs native-Korean forms;
+  AR/PT=check the regional register. Applies to EVERY digger running a non-English null.
+counterfactual: LOW — an English-first searcher records the null and moves on; the lexical cause is
+  invisible without native-term inspection.
+
+### OP-028 keyless corpus-count APIs as EXHAUSTION instruments                       [active]
+class: verification
+origin: Literature deep-miner run 3 (2026-07-26)   validated-gain: turned "we looked at CyberLeninka"
+  into 16 native queries with recorded hit counts, i.e. a null another run can audit and resume from.
+technique: when a corpus exposes a keyless search/count endpoint, record the QUERY AND ITS HIT COUNT,
+  not a prose impression. A null with a number is falsifiable and resumable; "found nothing" is not.
+  Distinguish **empty** from **blocked** every time — SciELO returned **403 (blocked, not empty)** and
+  its resume door is `articlemeta.scielo.org/api/v1/`, which returns 200. Recording those as the same
+  thing would have retired a live corpus.
+adaptations: RU=CyberLeninka open search API; JP=J-STAGE + CiNii result counts; KR=KCI; BR/LatAm=
+  SciELO ArticleMeta; CN=open-access aggregator counts. Same discipline for any repo/forum search.
+counterfactual: MED — the corpora are known; recording counts instead of impressions is the gain.
+
+### OP-029 SRO / regulator statistics beat exchange-reported data                    [active]
+class: source-expansion
+origin: Literature deep-miner run 3, ground [LIT-d] (2026-07-26)   validated-gain: surfaced JVCEA —
+  monthly aggregate data across ALL licensed Japanese exchanges since 2018-09, publishing 売建数/買建数
+  (long and short OI SEPARATELY), plausibly the only regulator-supervised L/S series in crypto.
+technique: hunt the SELF-REGULATORY ORGANISATION and the supervising regulator, not just the venue.
+  Exchange-reported positioning is self-reported and unaudited; SRO/regulator aggregates are neither,
+  which makes them **verification assets even when they fail the EV gate as signals** (JVCEA is
+  monthly, n≈94, breadth≈3 — correctly parked as alpha, valuable as ground truth). Also read the
+  **TAX CODE**: Japan's 雑所得 treatment (gains taxed ≤55%, losses neither offsettable nor carried
+  forward) gives a fair bet an expectation of **−27.5%**, structurally identifying a non-return-
+  maximising cohort — and reforms carry DATED EXPIRIES (enacted 2026-03-31, 20% flat + 3yr
+  carryforward, effective ~2028-01-01), so the cohort has a known end date.
+adaptations: JP=JVCEA + JFSA; KR=FSC/FSS + DAXA; US=CFTC COT + SEC; EU=ESMA registers (and note the
+  ESMA register has a public unauthenticated Solr backend); BR=CVM; RU=CBR.
+counterfactual: LOW — the desk was reading venue APIs, not SRO filings.
+
+### OP-030 negative control on every zero-hit search                                 [active]
+class: verification
+origin: Literature deep-miner run 3, ground [T1-a] (2026-07-26)   validated-gain: prevented a
+  confident FALSE refutation — `q=kaiko` on the ESMA register's default field returns **0 hits**,
+  while the core holds **28,134 docs** and the entity is in fact registered (`Kaiko Indices SAS`,
+  esmaId FRBMR2019000003). Stopping at the zero would have "disproved" a true fact.
+technique: a zero-hit result is a claim about YOUR QUERY until proven a claim about the WORLD. Before
+  recording any absence: (1) confirm the index/core is non-empty and how many docs it holds; (2) try
+  the FIELDED form, not just the default field; (3) try the entity's LEGAL name, not its brand — the
+  registered entity was `Kaiko Indices SAS`, the copyright owner a third name, `Challenger Deep SAS`;
+  (4) prefer the machine backend over the UI. Absence claims need a positive control that the search
+  works at all.
+adaptations: universal — registers, repos, corpora, APIs, in any language. Pairs with OP-027 (the
+  zero may be lexical) and OP-028 (record the count).
+counterfactual: LOW — two prior runs recorded "ESMA register not independently checked" rather than
+  a false negative, but the failure mode was one query away.
+
 ## LEXICON — EN crypto-trading era jargon (dark-forest search keys)
 _Charter dark-forest mandate deliverable #2. Slang/era-jargon is HOW you reach the folk layer:
 official vocabulary finds official content. Terms below were DERIVED EMPIRICALLY, not guessed —
@@ -277,3 +395,98 @@ RU-language user base). Each regional miner should run the same corpus-differenc
 
 ## ARCHIVED
 (none yet)
+
+### OP-031 Wayback-replay a JSON API to defeat a rolling-window cap            [active]
+class: acquisition
+origin: CN frontier miner session 1, axis #76 usdt-cny-otc-premium (2026-07-26)
+validated-gain: turned an **unscreenable 4-row** axis into a **591-row, 6.4-year** screened series.
+  `history.btc126.com/usdt/api.php` serves a daily USDT/CNY OTC series but hard-caps at a rolling
+  ~177 rows; TEN parameter guesses (`limit/all/days/page/start+end/num/count/type/year/id`) every one
+  returned the identical 177 rows. The cap is server-side and unliftable — but the ENDPOINT ITSELF is
+  archived, and each capture is a frozen 177-row window from ITS date. Replaying 4 captures recovered
+  414 additional days (2020-03-16..2021-05-07) that the live route can never serve.
+technique: when a data endpoint truncates history, stop attacking the parameters and archive the
+  ENDPOINT: (1) `web.archive.org/cdx/search/cdx?url=<host>/<path.json|.php>&output=json&filter=statuscode:200`
+  — query the API path, NOT the HTML page (people CDX the page and miss that the XHR is archived too);
+  (2) dedupe captures by the CDX `digest` column so identical snapshots aren't refetched;
+  (3) fetch each with the `id_` raw-content flag: `web.archive.org/web/<timestamp>id_/<url>`
+  (without `id_` you get Wayback's rewritten HTML wrapper, not the raw JSON);
+  (4) union the captures into a date-keyed dict — overlapping windows self-reconcile;
+  (5) **record the gaps** — capture density is the binding constraint, not the cap. Here only 4
+  captures existed, so 2021-05-08..2026-01-26 is permanently unrecoverable and is declared as such.
+adaptations: universal to any capped/rolling JSON, GraphQL or CSV endpoint in any language — regional
+  data sites are the best hunting ground because they are widely archived and rarely paywalled. Pair
+  with OP-019 (CDX on pages) — OP-019 reconstructs DOCUMENTS, OP-031 reconstructs SERIES. Check
+  `id`-like monotonic row keys to infer the true series origin (`id=10` on 2020-03-16 proved the
+  series starts ~2020-03-06, so the gap is bounded and known rather than open-ended).
+counterfactual: HIGH — the axis had been PARKED for 4 days on "no clean free API found"; without this
+  the desk would have waited ~11 months of forward recording to reach a screenable n.
+ADJACENCY TEST RUN THE SAME DAY — **NEGATIVE, and it calibrates the operator.** Applied immediately to
+  the desk's other known capped endpoint of the identical shape: `bitcoin-data.com/v1/{mvrv,realized-cap,
+  realized-price}` (keyless JSON, hard 1,461-row 4-year rolling window, `?startday=`/`?since=` accepted
+  and IGNORED — the same accepted-and-ignored signature as btc126). CDX returns **0 captures** for all
+  three API paths, so nothing is recoverable. CONCLUSION: OP-031's success rate is set by ARCHIVE
+  DENSITY, not by the cap — and API paths are archived far more sparsely than HTML pages (btc126's page
+  had captures back to 2020 while its api.php had only 4). CHECK CDX COUNT FIRST; it is one cheap call
+  and it tells you whether the operator applies before you build anything.
+
+### OP-032 search the native language FIRST, not as a fallback                  [active]
+class: discovery
+origin: CN frontier miner session 1 (2026-07-26)   validated-gain: a controlled A/B on the SAME
+  question, run in the same minute. **English** ("USDT/CNY OTC premium historical data free API") →
+  CoinGecko/CMC/Yahoo/CoinAPI generic Tether pages and the explicit conclusion *"OTC premiums and
+  China-specific USDT pricing dynamics may not be readily available through standard free APIs."*
+  **Chinese** (`USDT 场外价格 历史数据 API 人民币 溢价指数`) → the formal index DEFINITION (ChaiNext
+  折溢价指数 = OTC price ÷ **offshore CNH** × 100) plus two live data sites, one of which serves the
+  free daily history. The English search did not merely rank the source lower — it returned a
+  confident FALSE NEGATIVE that would have closed the lead.
+technique: for any region-specific quantity, issue the native query FIRST and treat an English null as
+  carrying **zero** evidential weight about existence. Compose native queries from the domain noun +
+  the data-shape noun: 场外价格 (OTC price) + 历史数据 (historical data) + API + 指数 (index). Never
+  translate an English phrase word-for-word — use the term the locals actually type.
+adaptations: the failure is language-general. KR 시세/과거 데이터, JP 過去データ/取得, RU исторические
+  данные, TR geçmiş veri, PT dados históricos, ES datos históricos. Pair with OP-027 (a zero may be
+  lexical) and OP-030 (a zero is a claim about your query until proven otherwise).
+counterfactual: HIGH — this single query is the whole reason axis #76 got un-parked.
+
+## LEXICON — CN crypto-trading jargon (dark-forest search keys)
+_Charter dark-forest mandate deliverable #2, CN region. Seeded from the principal's list; terms
+marked ✓ were CONFIRMED IN USE this run (2026-07-26) against live CN pages/APIs rather than assumed._
+
+| term | pinyin | gloss / era | use as search key |
+|---|---|---|---|
+| 场外 / 场外价格 | changwai | OTC / OTC price — the standard term for the P2P stablecoin market | ✓ the key that unlocked axis #76; pair with 历史数据 or API |
+| 折溢价指数 | zhe-yijia zhishu | discount/premium index (ChaiNext's formal name for the USDT premium) | ✓ finds the formal index definition, not retail chatter |
+| 溢价率 | yijia lü | premium rate (%) | ✓ btc126 page title |
+| 承兑商 | chengduishang | OTC "acceptor"/merchant — the professional market-making layer of the P2P book | the merchant-density variable that explains why CN premium < kimchi |
+| 搬砖 | banzhuan | lit. "moving bricks" = cross-border/cross-venue arb; the 2013-17 era's core trade | era-archaeology key for 8btc/ChainNode/Tieba archives |
+| 韭菜 / 割韭菜 | jiucai / ge jiucai | retail "leeks" / harvesting them | finds retail-behaviour and market-manipulation lore |
+| 爆仓 | baocang | liquidation/blown account | finds leverage post-mortems |
+| 插针 | chazhen | "needle insertion" = wick / stop-hunt | microstructure lore, exchange-wick disputes |
+| 庄家 | zhuangjia | the "operator"/whale manipulating a book | manipulation-mechanics threads |
+| 梭哈 | suoha | all-in (from "show hand") | retail sentiment marker |
+| 合约党 | heyue dang | the perp-contract crowd | finds derivatives-retail cohort discussion |
+| 走势图 | zoushitu | trend chart | pairs with 历史 to find chart pages that have a data endpoint behind them |
+
+### OP-033 legacy regional forums are NOT UTF-8 — decode before you judge     [active]
+class: extraction
+origin: CN frontier miner session 1, 8btc era thread (2026-07-26)
+validated-gain: prevented discarding a live find as a corrupt capture. `8btc.com/thread-53689-1-1.html`
+  (Discuz, 2017) is **GBK/GB2312**. Decoded as UTF-8 it renders as solid mojibake — the exact signature
+  of a broken/truncated archive capture, and the natural next move is to drop the source and move on.
+  Re-decoded as GBK it is clean primary text and produced a graveyard entry plus an execution rule.
+technique: for any pre-~2018 regional forum, archive capture, or national-portal page, do NOT trust the
+  default decode. (1) Read the declared charset (`<meta charset>` / `Content-Type`) — legacy Discuz,
+  phpBB and vBulletin installs commonly declare gb2312, gbk, big5, euc-kr, shift_jis, windows-1251;
+  (2) treat mojibake as an ENCODING hypothesis, never as evidence the capture is bad; (3) decode with
+  `errors='replace'` so a few bad bytes don't abort the whole page. Wayback serves the ORIGINAL bytes
+  under the `id_` raw flag, so the original charset — not UTF-8 — is what you get.
+adaptations: CN gbk/gb2312 (simplified, mainland), big5 (traditional, TW/HK); KR euc-kr; JP shift_jis /
+  euc-jp; RU windows-1251/koi8-r; TR iso-8859-9. This is a general precondition for ERA-ARCHAEOLOGY in
+  every region — the older the ground, the less likely it is UTF-8, so the dark-forest mandate and this
+  operator are permanently paired. Pair with OP-027 (a zero may be lexical) and OP-030 (a zero is a
+  claim about your method until proven otherwise): a mojibake page is the *extraction-layer* form of the
+  same false negative.
+counterfactual: MEDIUM-HIGH — the thread was the run's only era find; discarding it as corrupt would
+  have produced a false "CN era boards are unreadable" conclusion and, on the video-log precedent,
+  could have gated a purchase or a "ground unreachable" note.

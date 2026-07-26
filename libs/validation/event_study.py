@@ -2,7 +2,7 @@
 
 Every gate the desk owns scores a CONTINUOUS DAILY RETURN SERIES: Sharpe, DSR, PBO, walk-forward,
 Newey-West. That is the right shape for carry, trend and cross-sectional sleeves. It is the wrong
-shape for the edges a small book actually wants (§39): a day-1 listing funding spike is a handful
+shape for the edges a small book actually wants (§42): a day-1 listing funding spike is a handful
 of hours, happens a few times a week, and is over. Thirty such events are thirty observations --
 but strung into a daily series they are ~2 non-zero days in 30 mostly-flat ones, and every
 continuous statistic reads that as noise. The result is that the desk could COLLECT the listing

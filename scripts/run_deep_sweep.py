@@ -70,9 +70,19 @@ SUBSYSTEMS = {
 
 
 def _run(prompt: str, timeout: int) -> subprocess.CompletedProcess:
+    # DUAL-POOL (2026-07-26): try the fable metered pool FIRST, fall through to the Max seat.
+    # Each auditor is its own invocation with its own brain_auth_check, so the 8 auditors
+    # AUTO-LOAD-BALANCE across both pools -- the first ones drain fable, the rest land on opus-5.
+    # The sweep lost every auditor at 04:00 racing the cycle and diggers for a single seat.
     return subprocess.run(
         ["bash", "-c",
-         'source ops/brain_env.sh && brain_auth_check && '
+         'source ops/brain_env.sh && '
+         'export _BRAIN_MODEL_CHAIN="claude-fable-5 claude-opus-5 claude-opus-4-8" && '
+         # a silent short-circuit here is what made today's four failures
+         # undiagnosable: no model answered, claude never ran, both streams empty
+         'brain_auth_check || { echo "BRAIN_AUTH_FAILED: no model in '
+         '_BRAIN_MODEL_CHAIN answered -- pool drained or session limit"; '
+         'exit 90; } && '
          'claude --effort max --append-system-prompt "$_DOCTRINE" -p "$0" '
          '--dangerously-skip-permissions', prompt],
         cwd=ROOT, capture_output=True, text=True, timeout=timeout)
@@ -97,9 +107,25 @@ def run_auditor(key: str, brief: str, stamp: str) -> bool:
     # honest concise audits as failures.
     ok = report.exists() and report.stat().st_size >= 1200
     if not ok:
-        tail = ((r.stdout or "")[-900:] + "\n--stderr--\n" + (r.stderr or "")[-400:]) \
-            if r else "TIMEOUT"
-        report.write_text(f"# AUDITOR FAILED ({key})\n{tail}\n", "utf-8")
+        # NAME THE STAGE. "Failed with two empty streams" is what today's four auditors
+        # recorded, and it cost the reason entirely. Exit 90 is our own auth sentinel; any
+        # other non-zero came from claude itself; None means the 1800s budget ran out.
+        if r is None:
+            why = ("TIMEOUT after the 1800s budget -- this auditor's brief is too broad for one "
+                   "window; split it rather than raising the timeout")
+        elif r.returncode == 90:
+            why = ("BRAIN_AUTH_FAILED -- no model in the chain answered (pool drained or session "
+                   "limit). This is RETRYABLE: the catch-up re-fires the sweep and the resume "
+                   "logic skips every report already >=1200b, so only the failures re-run")
+        else:
+            why = f"claude exited {r.returncode}"
+        streams = (f"\n--stdout(tail)--\n{(r.stdout or '')[-900:]}"
+                   f"\n--stderr(tail)--\n{(r.stderr or '')[-600:]}") if r else ""
+        partial = report.stat().st_size if report.exists() else 0
+        report.write_text(
+            f"# AUDITOR FAILED ({key})\n\nWHY: {why}\n"
+            f"partial report bytes before overwrite: {partial} "
+            f"(floor is 1200 -- below it the auditor re-runs on resume)\n{streams}\n", "utf-8")
     return ok
 
 
@@ -108,6 +134,14 @@ def main() -> None:
     stamp = datetime.now(tz=UTC).strftime("%Y%m%d")
     results = []
     for key, brief in SUBSYSTEMS.items():
+        # RESUMABLE (2026-07-26): a real report for TODAY means this auditor is done -- skip it,
+        # so a sweep killed halfway is CONTINUED by the next invocation (organ_catchup re-fires
+        # reset-aware) instead of restarting at auditor one and re-losing the same seat race.
+        done = OUT / f"{stamp}_{key}.md"
+        if done.exists() and done.stat().st_size >= 1200:
+            print(f"[deep-sweep] {key}: already produced today -- skipping (resume)", flush=True)
+            results.append((key, True))
+            continue
         print(f"[deep-sweep] auditor: {key}", flush=True)
         ok = run_auditor(key, brief, stamp)
         results.append((key, ok))

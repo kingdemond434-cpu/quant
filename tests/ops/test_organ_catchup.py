@@ -78,3 +78,54 @@ def test_fresh_artifact_counts_as_production_despite_stub_log(tmp_path):
     assert organ_owed(spec, logdir, NOW) is False, (
         "a fresh declared artifact must count as production even when the log is a stub"
     )
+
+
+def test_artifacts_are_exclusive() -> None:
+    """No artifact may be declared by two organs.
+
+    A shared artifact silently credits one organ for another's work: the frontier rotation writing
+    prospector_coverage.md marked the prospector as produced, and two genuine quota deaths were
+    never retried. Exclusivity is what makes the artifact signal mean anything, so it is fenced
+    rather than left to review.
+    """
+    from libs.ops.organ_catchup import ORGANS
+    seen: dict[str, str] = {}
+    for spec in ORGANS:
+        for art in spec.artifacts:
+            assert art not in seen, (
+                f"{art} is declared by both {seen[art]} and {spec.name} -- a shared artifact lets "
+                "one organ's write mark the other as produced, so the dead one is never retried")
+            seen[art] = spec.name
+
+
+def test_log_patterns_match_what_the_shell_writes() -> None:
+    """Every organ's log glob must match the name its runner actually builds.
+
+    An organ whose pattern matches nothing is invisible to catch-up -- _window_logs comes back
+    empty and organ_owed takes its `if not logs: return False` branch, so the organ can die every
+    cycle forever and nothing notices. Runners build names with $(date ...), so the shell's LOG=
+    assignment is compared with expansions collapsed to a wildcard.
+    """
+    import fnmatch
+    import re
+    from datetime import UTC, datetime
+    from pathlib import Path
+
+    from libs.ops.organ_catchup import ORGANS
+    root = Path(__file__).resolve().parents[2]
+    for spec in ORGANS:
+        sh = root / spec.script
+        if not sh.exists():
+            continue
+        m = re.search(r'LOG=\"?([^\"\n]+\.log)', sh.read_text("utf-8", errors="ignore"))
+        if not m:
+            continue
+        # render $(date -u +FMT) for real -- a dummy placeholder cannot tell a %Y%m%d_%H%M
+        # name from a %Y%m%dT%H%M one, which is precisely the mismatch class being fenced
+        raw = re.sub(r"\$\(date[^+]*\+([^)]*)\)",
+                     lambda d: datetime(2026, 1, 2, 3, 4, tzinfo=UTC).strftime(d.group(1)),
+                     m.group(1))
+        name = Path(re.sub(r"\$\([^)]*\)|\$\{[^}]*\}", "X", raw)).name
+        assert fnmatch.fnmatch(name, spec.pattern), (
+            f"{spec.name}: glob {spec.pattern!r} does not match {name!r} from {spec.script} -- "
+            "an organ whose pattern never matches is invisible to catch-up and never retried")

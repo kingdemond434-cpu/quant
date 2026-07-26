@@ -11,7 +11,7 @@ _Seeded 2026-07-18; every family unvisited -- the first run biases per the rotat
 | Code (GitHub/Kaggle) | 2026-07-19 | 1 | operator-named dig: ai_quant_trade, Qbot, QuantDinger, Vibe-Trading (READMEs+issues) + Hummingbot/Freqtrade issues — all infra/framework shells or equity factor zoos, 0 crypto-perp strategy logic; 0 cards but confirmed funding-arb is now commoditized into hummingbot's v2_funding_rate_arb.py (crowding evidence) |
 | Academic (SSRN/arXiv) | never | 0 | untouched this session (RSRS is sell-side research, not SSRN/arXiv) — priority next run |
 | Records (contests/CTA) | 2026-07-25 | 1 | partial, via forum route: Bitcointalk "Automated Trading Contest" (topic 261086, CryptoTrader.org rounds #1-#5) mined as a contest RECORD — produced the in-sample-vs-forward natural experiment graveyard entry. Kaggle G-Research + Numerai post-mortems still untouched |
-| Non-English forums | 2026-07-19 | 1 | Chinese (RSRS mechanism + funding-rate-arb forums: CSDN/VeighNa/BigQuant/Zhihu/FMZ) + Japanese (note.com solo arb blog) — 1 candidate mechanism found (RSRS), EV-killed; ML-funding-rate-prediction found and graveyard-matched |
+| Non-English forums | 2026-07-26 | 2 | s1 (07-19): Chinese RSRS + funding-arb (CSDN/VeighNa/BigQuant/Zhihu/FMZ) + JP note.com — RSRS EV-killed, ML-funding-rate graveyard-matched. **s2 (07-26, CN frontier miner): axis #76 usdt-cny-otc-premium UN-PARKED — "no clean free API" REFUTED, 3 keyless routes, 591d history reconstructed (OP-031 CDX-replay of a capped JSON API), Stage-A screened 4/4 cells → no promotable edge but the catalogued mechanism's SIGN and MAGNITUDE priors both falsified. New: OP-031, OP-032, CN lexicon.** Era-archaeology (banzhuan/8btc/ChainNode/Tieba) still UNSTARTED — first item next run |
 | AI/HF documentation | 2026-07-19 | 1 | touched only incidentally via Vibe-Trading (AI trading-agent platform) + ai_quant_trade (LLM module) — both infra, not alpha-discovery-process documentation; weak coverage, revisit properly next run |
 
 ## COVERAGE REALITY vs DIRECTIVE (honesty record, 2026-07-20)
@@ -113,3 +113,188 @@ posters — next dig target, with never-touched Wilmott/EliteTrader/Nuclear Phyn
 NEXT-SESSION QUEUE: (1) Kaiko VWM+TWAP diff vs desk normalizer (fully unblocked); (2) OP-008
 binance trades 2026-07-01 Tardis-vs-recorder diff (unblocked); (3) desk-netflow vs CM-netflow
 overlap diff; (4) Quantopian archive dig; (5) re-probe apidocs.bithumb.com for ToS.
+
+### 2026-07-26 — VIDEO IS NOT BLOCKED (refutes the 07-18 finding, retires the GAP #26 purchase gate)
+The standing record said "VIDEO: direct transcript fetch is IP-BLOCKED from this VPS
+(RequestBlocked, tested 07-18)", and GAP #26 gated a PAID residential-proxy purchase on it. Half
+right, wholly misleading: the DIRECT `youtube.com/api/timedtext` route does return empty from this
+box, but PIPED instances (open-source YouTube proxies) serve the same caption tracks freely.
+VERIFIED: `api.piped.private.coffee` returned 6 subtitle tracks and 2,089–2,165 chars of real
+transcript text, keyless, first try. Bilibili is reachable through its own public API
+(view → cid → subtitle json); videos without public CC honestly report none.
+TOOL: `scripts/fetch_video_transcript.py <url|id>` (rotates 4 Piped instances) and
+`--bilibili <BVid>`. VIDEO-LOCKED LOGGING IS NO LONGER A PURCHASE TRIGGER for YouTube — log only
+genuinely unreachable platforms. LESSON: one failed route was generalised to "video is blocked" and
+then gated a purchase; a negative result is about the ROUTE TESTED, never the whole capability.
+
+### 2026-07-26 session C (EN frontier miner) — IN PROGRESS (write-first note; updated as items resolve)
+ITEMS THIS RUN (bounded per completion contract):
+1. BACKLOG BURN: (a) NAVER DataLab — re-confirm endpoint live + still key-blocked-on-human;
+   (b) Kaiko — resolve the T1-a "RE-RUN REQUIRED" blocker facts: does Kaiko publish its Reference
+   Rate FIXINGS freely (no fixings ⇒ no tracking diff is possible with ANY constituent set), and
+   does crypto.com's public REST serve a deep trades tape (adapter feasibility)? Verdict → card.
+2. QUANTOPIAN ARCHIVE DIG (era-archaeology, dark-forest mandate #1; the carried diaspora target):
+   find the durable public archive route, map the ground, mine ≥2 strategy threads to reply-depth.
+3. IF BUDGET REMAINS: apidocs.bithumb.com ToS re-probe (queue item 5).
+STATUS: item 1 CLOSED (results below, write-up in watchlist/universe map in progress); item 2 next.
+ITEM 1 RESULTS (all from live probes this run):
+- NAVER: endpoint live (error 024 keyless, re-confirmed) — still blocked ONLY on the human free-key
+  step. No change; stays pending-external.
+- crypto.com public/get-trades: keyless, `end_ts` backward pagination, count cap 150/call, archive
+  floor measured between 1370d and 1420d ago (serves 2022-10-25, empty by ~2022-09) ≈ **3.8 years
+  of free tick history on a TRUE Kaiko constituent** — adapter feasible; deeper than bitstamp's 24h
+  by ~1400×. Boundary probed at 12h/7d/30/90/365/730/1095/1250/1300/1370/1420d.
+- KAIKO FIXINGS ROUTE FOUND (the T1-a "RE-RUN REQUIRED" unblocked on the ground-truth side):
+  CFE **PBT (Continuous Bitcoin futures, settles to the Cboe Kaiko Bitcoin Index)** daily settlement
+  is FREE per-date CSV: `cboe.com/us/futures/market_statistics/settlement/csv/?dt=YYYY-MM-DD`
+  (2026-07-24: PBT/Z35 = 64156.00). Launch between 2025-12-01 (absent) and 2026-01-02 (present).
+  LICENCE DISTINCTION (s13): these are Cboe's OWN futures settlement statistics, not Kaiko's
+  key-gated index feed — no Kaiko value is redisseminated. T1a line 589 ("Published rate + index
+  VALUES: NO") upgrades to PARTIAL-daily via this route.
+- BONUS (same directory): `cdn.cboe.com/api/global/us_indices/definitions/all_indices.json` = 2,286
+  indices; free 15-min-delayed quotes at `/api/global/delayed_quotes/quotes/_SYM.json` (verified
+  _CMUSDTUSD = 0.9992 live). Includes **18 Coin Metrics reference prices (CMUSDTUSD/CMUSDCUSD peg
+  series, CMXMRUSD…), CoinRoutes RealPrice family, Lukka LKRX/LKRE** — three more BMR-class
+  administrator families disseminated free through the exchange. NOT new signal axes (redundant
+  SOURCES for prices the desk can already compute) — no Stage-A owed on those; the one genuine
+  axis-candidate is the PBT basis/regulated-funding series, handled next.
+
+## SESSION NOTES — CN frontier miner
+
+### 2026-07-26 session 1 (CN frontier miner) — IN PROGRESS (write-first note; updated as items resolve)
+PRIOR CN STATE (read before starting, per resume rule): exactly ONE prior CN session ever
+(2026-07-19, surface-layer CSDN/VeighNa/BigQuant/Zhihu/FMZ) → RSRS found + EV-killed,
+ML-funding-rate-prediction graveyard-matched. Ground is effectively unmined. Mine gate:
+BACKLOG-CLEAR. Backlog verify-queue items (Kaiko, NAVER) were both closed by EN session C this
+same day — not re-run here (that would be duplicated work, not resumption).
+
+ITEMS THIS RUN (bounded per completion contract — depth maxed, breadth bounded):
+1. **DEFECT-CLOSER, Tier-1 — universe-map axis #76 `usdt-cny-otc-premium` is CATALOGUED BUT NEVER
+   INGESTED** (cataloged 2026-07-22, grade UNVERIFIED, parked on the claim *"no clean free API
+   found; TradingView script is a lead, not a feed"*). This is the exact leak SCREEN-ON-DISCOVERY
+   was written to close, sitting in MY region. Attack the routing claim: hunt a free live
+   USDT/CNY (and USDT/RMB OTC) quote route. If one exists → catalog it, pull history, and run
+   `libs.research.axis_screen` Stage-A **in this run**. Mechanism prior is the desk's strongest:
+   kimchi premium scored IC +0.148 / timing Sharpe 1.3, and the desk's OWN graveyard entry
+   `era_crossvenue_fiat_premium_arb` establishes *premium magnitude tracks BARRIER HEIGHT* —
+   mainland China has the highest barrier in the world (capital controls + the 2021 total ban),
+   so the CNY premium is the highest-barrier premium available and, per that same entry, must be
+   used as an INFORMATION/TIMING signal and NEVER sized as arb.
+2. **ERA-ARCHAEOLOGY (dark-forest #1) — the `banzhuan` (搬砖, cross-border arb) era on the CN
+   boards** (8btc/Babbit, ChainNode old boards, Baidu Tieba bitcoin bar) via Wayback. Hunts the
+   HISTORICAL provenance + mechanics of the same premium mechanism as item 1 (deliberately paired,
+   not scattered): what drove the CNY premium, what killed each era of it, where the barrier sat.
+   Plus dark-forest #2: extend the CN lexicon in the operator library with every new term learned.
+3. IF BUDGET REMAINS: Gitee / CN-GitHub repo chain (vn.py lineage, factor libraries) per OP-001.
+STATUS: **item 1 CLOSED to depth. Item 2 OPENED after item 1 committed — ground surveyed, one thread
+mined to reply-depth, one graveyard entry + one inbox item + one operator produced. The CN era archive
+is NOT exhausted; it is now MAPPED. Item 3 not started.**
+
+#### ITEM 1 — CLOSED. Axis #76 un-parked, ingested, screened. [§33: screened -> data/cny_otc_premium_history.jsonl]
+THE PARKED CLAIM WAS WRONG. #76 sat 4 days on *"no clean free API found; TradingView script is a
+lead, not a feed."* Three keyless routes exist and all agree: OKX C2C (`/v3/c2c/tradingOrders/books`,
+393 ads both sides with full depth), Binance P2P (`/bapi/c2c/v2/friendly/c2c/adv/search`), and
+`history.btc126.com/usdt/api.php` for daily history. ECB (`api.frankfurter.app`) serves the FX leg
+free back to 1999. HTX/Huobi OTC answers 200 but `totalCount=0` — CNY OTC has **left** Huobi
+(diaspora datapoint). ChaiNext, the original index publisher, is **NXDOMAIN**: btc126 is a surviving
+mirror of a dead index family, so it is a single point of failure and the desk's own recorder must
+stay primary.
+- **WHAT UNLOCKED IT: the native-language query, and nothing else** (now OP-032). Controlled A/B in
+  the same minute: the English query returned CoinGecko/CMC boilerplate and the explicit conclusion
+  *"may not be readily available through standard free APIs"* — a confident FALSE NEGATIVE. The
+  Chinese query `USDT 场外价格 历史数据 API 人民币 溢价指数` returned the formal index definition plus
+  the site serving the free history. This is the desk's LLM-translation edge paying out literally.
+- **HISTORY RECONSTRUCTED (now OP-031).** The api.php route hard-caps at a rolling ~177 rows; ten
+  parameter guesses all returned the identical 177. The cap is unliftable — but the *endpoint* is
+  archived. CDX-replaying `api.php` itself (with the `id_` raw flag) recovered 414 more days.
+  **591 daily rows, 2020-03-16 → 2026-07-25** → `data/cny_otc_premium_history.jsonl`. Gap
+  2021-05-08→2026-01-26 is permanently unrecoverable (only 4 captures exist) and is declared, not
+  hidden. `row_id=10` on 2020-03-16 proves the series begins ~2020-03-06, so the gap is *bounded*.
+  Context for scale: the desk's live recorder `data/cny_premium.jsonl` held **4 rows** — the axis was
+  unscreenable before this run.
+- **MEASUREMENT CROSS-VALIDATED THREE WAYS** on the same date: desk-computed OKX mid ÷ ECB =
+  **−0.623%**, btc126 published = **−0.62%**, desk recorder (Binance P2P) = **−0.618%**.
+- **STAGE-A SCREEN RUN (audited harness, all 4 cells reported, no cherry-pick):** block1 h1d
+  UNDERPOWERED (IC −0.027); block1 h5d UNDERPOWERED **+ de-contam FAILED** (same-period corr −0.281);
+  block2 h1d **SCREEN-INTERESTING** (n=155, IC −0.0748, reversal Sharpe 1.39, de-contam passed) **but
+  `powered=false`** — min-detectable IC 0.157 > |IC| 0.075, i.e. **not distinguishable from zero**;
+  block2 h5d INSUFFICIENT-DATA (n=36). Alignment declared (23:55 CST = 15:55 UTC, predicts UTC-day
+  D+1; **robust to the timezone ambiguity** — forward-only either way). Quantization checked:
+  std/tick 9.5 and 4.0, above the 3.0 floor, so signal not rounding.
+- **HONEST VERDICT: no promotable edge.** No clock, no Holm slot, no capital. But two findings
+  survive the null, and BOTH contradict the catalogued prior:
+  (1) **the sign is backwards** — all 4 cells negative (premium up → next-day return *down*), against
+  #76's "premium up = inflow = bullish";
+  (2) **the magnitude prior is falsified** — premium std collapsed **1.397% (2020-21) → 0.580%
+  (2026)**, now **~4× smaller than kimchi** (2.0–2.3%). China holds the world's highest capital
+  barrier and the world's *smallest* stablecoin premium. Reconciling variable: **merchant-network
+  depth** (393 live ads on one venue). This refines the desk's own `era_crossvenue_fiat_premium_arb`
+  rule — barrier height sets the premium's *ceiling*; merchant density sets where inside it it sits.
+- **ADJACENCY MOVE (proactive battery #2), run in the same pass — NEGATIVE and informative.** Applied
+  OP-031 to the desk's other capped endpoint of identical shape (`bitcoin-data.com/v1/mvrv` etc.,
+  1,461-row window, params accepted-and-ignored): **0 CDX captures**, nothing recoverable. So
+  OP-031's success rate is set by *archive density*, not by the cap — API paths are archived far more
+  sparsely than HTML pages. Operator updated with a "check CDX count first" precondition.
+- FLEET CONTRIBUTIONS (charter §16): **OP-031** (Wayback-replay a JSON API to defeat a rolling cap),
+  **OP-032** (search the native language FIRST — with the A/B evidence), and the **CN lexicon** (12
+  terms, those confirmed in live use this run marked ✓).
+
+DEPTH LINE: axis #76 — **exhausted for this route**: live routes probed both sides (393 ads), history
+route parameter-attacked 10 ways, CDX-replayed to its floor, series cross-validated against two
+independent constructions, screened across 4 target-horizon cells, quantization and timezone
+robustness both tested, and the adjacency instance tested and closed. Not surface, not breadth-theater.
+#### ITEM 2 — OPENED, ground MAPPED, one thread mined to reply-depth. NOT exhausted. [§33: killed -> docs/graveyard.md era_crossvenue_fiat_premium_arb 4th instance]
+GROUND SURVEY (the era-archaeology precondition — do this before hunting, it is one cheap call):
+**8btc.com, chainnode.com and Baidu Tieba are ALL unreachable from this box.** This is genuine dead
+forest: the ground exists only in Wayback. CDX confirms the old Discuz structure is archived
+(`8btc.com/forum-1-1.html` back to 2013-10-26; `chainnode.com/forum-108-1.html`, `forum-110...`).
+**Note for the next run: `chainnode.com/post/70078` — a 「比特币搬砖套利攻略」 surfaced by search — has
+ZERO CDX captures. It is visible in search results but unreadable. Do not spend budget re-finding it.**
+- MINED TO DEPTH: `8btc.com/thread-53689-1-1.html` 「P网搬砖简明指南（以及一种交易策略）」(2017-05-02,
+  capture 20171019172042) — OP + reply chains at depth 1 and 2, 7 substantive posts.
+- **ENCODING TRAP HIT AND SOLVED (now OP-033):** the page is **GBK**, not UTF-8. Decoded as UTF-8 it is
+  solid mojibake — indistinguishable from a corrupt capture, and the natural move is to discard the
+  source. That would have produced a false *"CN era boards are unreadable"* conclusion. Pre-2018
+  regional forums are gb2312/gbk/big5/euc-kr/shift_jis; the dark-forest mandate and this operator are
+  now permanently paired.
+- FINDINGS ROUTED (nothing carded as tradeable — the class is already graveyarded and stays so):
+  → **graveyard**: 4th independent instance of `era_crossvenue_fiat_premium_arb`, with the mechanism
+    detail the other three lacked. Gap up to **10%**, ~3% net after fees, and the binding barrier named
+    outright: **domestic venues could not withdraw BTC**. The replies expose the permissions layer
+    (Poloniex refused mainland registration → users selected "Hong Kong"; KYC capped $2k until ID
+    upload). **The new mechanism detail: BTC was frozen but ALTCOINS WERE NOT** — the arb routed around
+    the barrier on the fastest-confirming rail (XRP worked example; XLM/ZEC/SC/NEO named at depth), and
+    the OP explicitly warns BTC itself works badly under congestion. The barrier was asset-specific.
+  → **improvement_inbox #70**: the one still-live idea. 「搬砖砸脚」 ("dropping a brick on your own
+    foot") is the era's name for **transfer latency as unhedged directional exposure**, with two
+    generalising mitigations: move on the fastest-confirming asset (a free choice), and start the move
+    only when short-term momentum favours your exposure. Open question for whoever owns execution:
+    does `cost_model` price inter-venue transfer as a fee, or as fee + in-flight variance? NOT checked
+    this run (research freeze) — filed as hypothesis, not adopted.
+  → NOT carded, recorded as era knowledge: a depth-1 reply argues the frozen-withdrawal regime made
+    domestic BTC supply **segmented and deflationary**, making the *re-opening* a predictable catalyst.
+    Sophisticated, but untestable now — dead venues, and 2026 mainland rails are more closed than 2017.
+- **CONNECTS THE TWO ITEMS (why they were paired, not scattered):** 2017's 10% gap vs 2026's 0.580%
+  premium std is exactly the barrier-vs-merchant-depth finding from item 1. In 2017 the rail was frozen
+  and the premium was enormous; in 2026 the capital barrier is *higher* yet a deep 承兑商 (OTC merchant)
+  network grinds the premium to a quarter of Korea's. **Barrier height sets the ceiling; merchant
+  density sets where inside it the premium sits.** Era archaeology paid for the live axis, as designed.
+
+DEPTH LINE (per the depth mandate — honest, per lead):
+- axis #76 (item 1): **EXHAUSTED for this route** — both sides of two live books probed (393 ads),
+  history endpoint parameter-attacked 10 ways, CDX-replayed to its floor, cross-validated against two
+  independent constructions, screened across 4 target-horizon cells, quantization + timezone robustness
+  both tested, and the adjacency instance (bitcoin-data.com) tested and closed NEGATIVE.
+- 8btc thread-53689 (item 2): **reply-chain ≥2** (quoted-reply chains at depth 2 gave the permissions
+  and KYC mechanics the OP omitted — the depth outranked the surface, exactly as the mandate predicts).
+- 8btc / ChainNode boards: **SURVEYED ONLY, explicitly NOT exhausted.** One thread of an archived
+  multi-board Discuz. This is the honest state — no "EXHAUSTED" claim is made or earned.
+NOT DONE THIS RUN (named, not buried): item 3 (Gitee/CN-GitHub repo chain, OP-001); Zhihu/Xueqiu/
+JoinQuant/BigQuant BBSs; Bilibili quant lectures (video is now readable — `fetch_video_transcript.py
+--bilibili`, and NO CN video was tried this run, so nothing is video-locked and nothing was logged).
+NEXT RUN TAKES FIRST: (1) section-by-section exhaustion of `8btc.com/forum-*` era boards via OP-021
+board-tail pagination + OP-020 whole-thread extraction, now that OP-033 makes them readable;
+(2) Gitee/CN-GitHub repo chain per OP-001.
+OPEN QUESTION CARRIED (diaspora, standing): CNY OTC has left Huobi (`totalCount=0` on a live 200) — the
+books are now on OKX C2C and Binance P2P. Where did the *discussion* go? (OKX/Bitget/Gate CN
+communities, CN-language Telegram/X, overseas Zhihu mirrors.)

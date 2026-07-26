@@ -85,6 +85,11 @@ def carry_bleed_report(
     alarm fires when that leak is a drain worth at least ``alert_frac`` of the harvest (or any drain
     at all when there is no harvest to offset it), so a hedge quietly losing more than it earns can
     never again slide by unnoticed on the dashboard. Diagnose the dominant cause only when it fires.
+
+    TWO-SIDED (2026-07-26): the target is ~0 in BOTH directions, so a large POSITIVE non-funding
+    PnL alarms just as loudly. On a delta-neutral book the price legs cancel by construction -- a
+    windfall that size is not luck, it is a BROKEN HEDGE (a naked/untracked leg carrying real
+    directional risk that will reverse). A one-sided alarm would have called that state "clean".
     """
     real_net = round(spot_pnl + fut_pnl, 2)
     non_funding = round(real_net - funding, 2)
@@ -92,8 +97,15 @@ def carry_bleed_report(
         eaten = round(max(0.0, -non_funding) / funding, 3)
     else:
         eaten = float("inf") if non_funding < 0 else 0.0
-    alert = non_funding < 0.0 and (funding <= 0.0 or -non_funding >= alert_frac * funding)
-    if non_funding >= 0.0:
+    alert = (abs(non_funding) >= alert_frac * funding) if funding > 0.0 else (non_funding < 0.0)
+    if alert and non_funding > 0.0:
+        verdict = (
+            f"BLEED(inverted): non-funding PnL {non_funding:+.2f} is "
+            f"{non_funding / funding:.0%} of {funding:+.2f} funding harvest -- delta-neutral price "
+            "legs cancel, so a gain this size means a NAKED/UNTRACKED leg, not edge; reconcile "
+            "spot vs perp qty before trusting the number"
+        )
+    elif non_funding >= 0.0:
         verdict = f"clean: non-funding PnL {non_funding:+.2f} not a drain; harvest survives"
     elif not alert:
         verdict = f"ok: {eaten:.0%} of the {funding:+.2f} funding harvest lost to non-funding PnL"

@@ -53,7 +53,7 @@ def discovery_score(
     tail_term = 1.0 - min(1.0, tail_risk_score / 100.0)
     plateau_term = min(1.0, parameter_plateau_score / 100.0)
     half_life_term = min(1.0, half_life_days / 365.0)
-    # §39 PARITY. This was `min(1, capacity_usd / 1e6)`, which handed a $1M-capacity idea a 1.9x
+    # §42 PARITY. This was `min(1, capacity_usd / 1e6)`, which handed a $1M-capacity idea a 1.9x
     # rank advantage over a $50k one -- i.e. the composite ranking quietly undid the survival
     # gate's fix and kept steering the desk at fund-shaped edges. Capacity now scores as
     # SUFFICIENCY for the book actually deployed and goes FLAT above it, because capacity you

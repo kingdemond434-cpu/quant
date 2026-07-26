@@ -317,7 +317,123 @@ MULTIPLIED BY maximum extraction efficiency. A rise in either that is bought wit
 other is a REGRESSION, reported as one, regardless of how the headline rate reads.
 
 
-## 39. CAPACITY-BOUND EDGE PRIMACY — HUNT WHAT IS TOO SMALL FOR FUNDS (2026-07-26, principal)
+## 35. EVERY FINDING REACHES THE LOOP THAT DRIVES IT (2026-07-25, binds every audit and review)
+
+THE DESK HAS EXACTLY ONE ORGAN THAT DRIVES WORK TO COMPLETION: `docs/GAP_REGISTER.md`, with its weekly re-rank, 7-day staleness rule and escalation. Every other surface — SYSTEM_REVIEW, BLIND_SPOT_AUDIT, the micro-audit inbox, the improvement inbox, a panel ruling, an audit delivered in a chat window — is a place findings are WRITTEN, not a place they are WORKED. The daily cycle acts on the register; a finding absent from it is not merely slow, it is INVISIBLE, and however carefully it was found it will never be worked. It does not rot loudly. It simply never happened.
+
+MEASURED, NOT THEORISED (2026-07-25): a full-repo engineering audit produced eleven defects. THREE were detected by any check and ONE had a register row. The other eight existed only in a conversation and would have vanished with it — including a missing client order ID on the live order path, the one defect capable of losing money on day one. The audit was competent; the routing was absent. That is the whole failure mode.
+
+(1) THE LAW. Any finding written anywhere carries a GAP_REGISTER row or is recorded closed. Being written down is NOT the same as being driven. Enforced by `max_audit.check_findings_tracked`, which reports finding→register COVERAGE and names every open finding with no trace.
+
+(2) GENERALISED, NOT HARDCODED. This supersedes the brittleness of the first version: `check_review_risks_tracked` enforced the same rule for THREE HARDCODED KEYS, so it could only ever catch risks somebody remembered to name in the checker — the next un-tracked finding was invisible again by construction. §35 parses findings from wherever they are written and matches them against the register, so the check does not need to know in advance what will be found.
+
+(3) GENEROUS MATCHING, DELIBERATELY. A finding counts as tracked when any distinctive token from its title appears in the register; a finding with no distinctive token is UNJUDGEABLE and is never accused. False accepts are cheap — the item was probably tracked under other wording. False alarms are expensive: a check that flags everything gets ignored, and an ignored check is WORSE than no check because it looks like coverage. (The §33 card parser learned this by firing 92/92 on its first real run; §35 was built with that lesson applied from the start.)
+
+(4) SETTLED WORK IS NOT OWED. Findings under an already-live / closed / shipped heading are reported as resolved, not as backlog. A law that demands rows for finished work buries the live items and trains the reader to skim.
+
+(5) THE SCOPE IS ITSELF AUDITED. A fixed doc list is the check's blast radius, and a finding written outside it evades §35 with no code change and no diff — the one bypass that leaves no trace in review. Every `docs/**` markdown carrying numbered findings must be in `_FINDING_DOCS` or in `_FINDING_DOCS_EXCLUDED` WITH A STATED REASON (`findings-scope-unmonitored`). Consciously excluded is fine; quietly unmonitored is not. Nothing may fall between the two by omission.
+
+(7) COVERAGE IS 100% AND THE FLOOR ONLY RISES. The standing target is **100%** — every finding the desk has made reaches the loop that drives it, or is recorded closed. Anything less means the cycle is provably blind to work it already knows about. This is a RATCHET, not a target: best-ever coverage is recorded in a git-tracked file (`docs/research/findings_coverage_record.json`) and a worse cycle never relaxes it, it fires `findings-coverage-regressed`.
+
+THE DENOMINATOR RATCHETS TOO, and this is the part that matters. The cheapest way to reach 100% is not to row the findings — it is to SHRINK THE DENOMINATOR: delete a finding, or drop a doc from scope. Coverage then rises arithmetically while the desk goes blinder. That is the identical loophole §34 closed for mining (fake a conversion rate by mining less), and it is closed the same way: **open-finding count and docs-scanned are high-water marks alongside coverage**, and either falling fires `findings-scope-shrank`. Three quantities ratchet together; none may be bought with another. The only way up is the honest one — row the findings, and grow the scope.
+
+(6) WHY THIS MATTERS MORE THAN ANY SINGLE FINDING. The desk's self-improvement loop can only act on what it can see. Making the loop stronger raises nothing if the findings never arrive; routing them raises everything, permanently, for every future audit — including audits by organs and people that do not exist yet.
+
+
+## 36. NO UNGOVERNED ARTIFACT — THE MINER PROBLEM CANNOT REAPPEAR (2026-07-25, standing)
+
+§33 closed it for mined cards. §35 closed it for findings. Both were the SAME failure — an organ produces, nothing converts, nobody notices — and closing it one surface at a time is a losing game: the NEXT artifact arrives ungoverned by default, and its inventory rots in plain sight for months before anyone asks. §36 inverts that.
+
+MEASURED (2026-07-25): a completeness audit over every research artifact found **seven with no conversion law**, four of which were genuine producers stating a conversion rule IN THEIR OWN PROSE with nothing behind it — `weak_signal_registry` ("≥2 independent weak signals auto-promote… checked each cycle during inbox triage"), `canary_searches` ("re-run each digging session"), `generation_due` ("the brain executes then marks them"), `adoption_queue` ("re-check on the monthly prospector sweep"). Every one of those is a law with no monitor: obeyed exactly as long as somebody remembers. One was already past its own stated cadence when the check first ran.
+
+(1) A PRODUCER DECLARES A CADENCE AND IS HELD TO IT. Any artifact that accumulates inventory carries a maximum age in `_PRODUCER_CADENCE`, taken from the cadence its own text promises, enforced by `max_audit.check_producer_cadence`. Age is measured from the last COMMIT, never mtime — a fresh clone stamps every file at checkout, and the check must mean the same thing on the VPS and in a sandbox. Exceeding it is a defect with two honest exits: work it, or amend the stated cadence to one the desk actually keeps. A promise nobody checks is how inventory rots in plain sight.
+
+(2) EVERY ARTIFACT IS CLAIMED BY A LAW. Every `docs/**` markdown is governed by §33 (mined cards), §35 (findings), §36 (cadenced producers), or is recorded TERMINAL with a stated reason — templates, forensic write-ups, protocol libraries and runbooks accumulate no inventory and owe no cadence. Anything unclaimed fires `artifact-ungoverned` **on the day it appears**, not months later. "No law" must be a DECISION, never a default.
+
+(3) COVERAGE IS NOT ASSURANCE. `adoption_queue`, `weak_signal_registry`, `generation_due` and `canary_searches` were first tested against §35 and parsed ZERO findings — their items are bullets and table rows, not the numbered form. Bringing them under §35 would have reported 100% coverage of nothing, which is strictly worse than no coverage because it manufactures confidence. A law must match the SHAPE of what it governs; when it does not, the correct move is a different law, never a comforting number.
+
+(3) THE REGISTER IS HELD TO ITS OWN RULES. §35 and §36 route every finding INTO `GAP_REGISTER.md`, which makes it the load-bearing organ for both — and it was checked by nothing. Its own header declares "re-ranked at the START of every daily AI cycle", "items stale >7 days MUST be escalated (implement / defer with deadline / retire with reason)" and "never empty without written justification". All three were rules written INSIDE the document they govern: the exact shape clause (1) names as a rule with no clock. **Routing findings into a bucket nobody empties is not an improvement, it is a tidier backlog.** Measured on the day this landed: the last re-rank was 4 days old against a daily cadence, with 40 open rows unranked, and 8 open rows carried no date in their plan — meaning they took NONE of the register's three exits and were simply parked, which is the state the rule exists to forbid. `max_audit.check_gap_register_health` now enforces all of it, and reads the re-rank age from the SELF-DECLARED stamp rather than mtime or commit time: editing the file must never be able to fake a re-rank that did not happen (the same artifact-only credit principle §33 applies to conversion claims).
+
+(4) WHY THIS IS THE LAST ONE OF ITS KIND. §33, §35 and §36 all answer "produced, but never converted." §36(2) is the closure: it does not fix a surface, it makes an ungoverned surface impossible to create silently. Every future artifact — from an organ, a person, or a model that does not exist yet — is either governed on arrival or reported.
+## 37. CARRY-OVER — WORK OWED SURVIVES AN OUTAGE (2026-07-25, principal directive)
+
+The brain is a metered LLM session. It dies on quota, on session limits, on a bad model route — and when it did, the cycle's owed work died with it: the next cycle started from whatever the sweep happened to report at that instant, with no memory that anything was already owed, for how long, or how many cycles had run past it. DETECTION of the death already existed (`check_stub_deaths` reads the markers out of the logs). The other half did not: the work PILING UP across the outage and being HANDED BACK on return.
+
+(1) EVERY SWEEP IS RECORDED. `data/carryover_sweeps.jsonl` appends what was owed and whether the brain was up to see it. Age and skip-count are DERIVED from consecutive snapshots — never demanded from a human, because a timestamp somebody has to remember to write is a timestamp that goes missing.
+
+(2) THE BRAIN IS HANDED THE BACKLOG AT CYCLE START. `scripts/carryover_brief.py --record` runs first in `ops/run_cro_ai.sh` and prepends a ranked brief to the prompt: what is owed, how old, how many sweeps it survived, and how many of those ran with the brain awake. It ALWAYS exits 0 — it steers PRIORITY, it never blocks a cycle, exactly as §33's conversion directive does after the no-throttle amendment.
+
+(3) THE DISTINCTION THAT MAKES THIS MORE THAN A QUEUE. **LOST TO OUTAGE** — sweeps where the brain died on quota; items accumulated through no fault of the cycle, and the honest response is to hand them back with their true age. **SEEN AND SKIPPED** — sweeps where the brain RAN, was handed the item, and it survived anyway. A plain queue cannot tell these apart, because a long queue looks identical whether nobody was home or everybody walked past it. Only the second is a defect (`carryover-skipped`). Conflating them either punishes the desk for an outage or excuses it for ignoring work — and the second mistake is the expensive one.
+
+(4) THE THIRD CARRY IS THE DEFECT. An item shown to a LIVE cycle twice and still open is not pending, it is avoided. Do it, or write in the ledger why it is not being done. Silently carrying it again is the exact behaviour this clause exists to stop.
+
+(5) HONEST BOUND. This guarantees nothing is LOST and everything is SURFACED, ranked, with its true age — it does not guarantee everything is FIXED IMMEDIATELY. A cycle has finite capacity, some items need a human (keys, VPS access, Tier-3 sign-off), and some need calendar time (forward clocks cannot be hurried). What §37 removes is the excuse: after it, an unfixed item is a visible decision with a reason, never a thing that quietly fell through a gap.
+
+## 38. AN EXCLUSION SPAWNS A HUNT (2026-07-26, principal, binds every digger)
+
+Excluding a source is HALF a deliverable. The other half is its REPLACEMENT.
+
+(1) WHY THIS IS LAW. A source excluded on licence, ToS, paywall or death removes a capability the
+desk previously counted on. Recording the exclusion and moving on silently SHRINKS the data
+universe — which is a §34 mining regression arriving through the back door: not by mining less,
+but by keeping less of what was mined. Measured today: Coin Metrics was correctly excluded on
+licence and its replacement was found only because a human was in the loop, while
+`Checkonchain (MVRV + realised price)` has sat `excluded-no-licence` with no hunt open at all.
+
+(2) THE RULE. Every source graded excluded / illegitimate / no-licence / blocked / destroyed-at-
+source MUST carry `replacement_hunt` in the universe map: either a FOUND alternative (with its own
+verified `free_path`) or an OPEN hunt naming what is being searched and a date. Silence is a
+defect, exactly as it is under §33.
+
+(3) HUNT WIDE, NOT NARROWLY. The replacement is rarely the same kind of thing. Look for: the
+PRIMARY SOURCE the vendor itself reads (facts are not copyrightable — reconstruct them, per the
+free-first doctrine and the charter's vendor-replacement pillar); a differently-licensed vendor;
+an academic or government mirror; a community dataset; a regional venue; an archive. Search the
+whole surface — forums, obscure repos, non-English sources, dead-project mirrors — not just the
+obvious catalogue. The Coin Metrics replacement was not another vendor: it was the chain itself.
+
+(4) TERMINAL IS ALLOWED, BUT ONLY WITH EVIDENCE. If no replacement exists, grade the residual
+`destroyed-at-source` or `unpurchasable` WITH the documented search that failed. "No replacement"
+must be a FINDING, never a default — the same standard the free-frontier axiom sets for "no free
+source exists".
+
+(5) THE LICENCE LESSON GENERALISES. Coin Metrics deleted its own Terms of Use from the live web
+after acquisition; the ruling had to be recovered from the Internet Archive. A vendor that can
+delete its contract can delete your access. Treat every vendor dependency as temporary and every
+reconstruction as permanent — which is why (3) ranks primary-source reconstruction FIRST.
+
+## 39. THE PAID-DATASET TARGET REGISTRY — HUNT REPLACEMENTS BEFORE THEY BREAK (2026-07-26, principal)
+
+§38 hunts a replacement when a source FAILS. That is still reactive, and the principal named the
+deeper defect precisely: the desk recognises a gap only after a human points at it. §39 is the
+anticipatory half.
+
+(1) THE STANDING LIST. `docs/research/paid_dataset_targets.md` holds every valuable paid crypto
+dataset the desk knows of (18 at seeding) with a live free-replacement status. Every
+digger READS it every run and advances at least the top OPEN item it can. The desk should already
+know what it would do if Glassnode, Nansen or Kaiko vanished tomorrow — because it has been hunting
+that replacement all along, not starting on the day of the outage.
+
+(2) HUNT ORDER, AND IT IS NOT NEGOTIABLE. Primary-source reconstruction FIRST — facts are not
+copyrightable, and the Coin Metrics replacement was not another vendor, it was the chain itself.
+Then: differently-licensed vendors, academic and government mirrors, community datasets, regional
+venues, dead-project mirrors, archives. Search the WHOLE surface — forums, obscure repos, papers,
+channels, groups, non-English sources — never just the obvious catalogue.
+
+(3) THE LIST ITSELF MUST GROW. A fixed list is the same blind spot wearing a different hat. Any
+paid dataset a digger encounters — in a paper's methods section, a forum thread, a competitor's
+stack, a vendor's own comparison page — is ADDED with a status, in the same run. Registry growth is
+a per-dig deliverable, and `check_paid_target_registry` fires when it stagnates while digs are
+producing.
+
+(4) NEVER SHRINK, ALWAYS IMPROVE. The desk's non-noise information holdings — sources, series,
+history depth, resolution — must grow monotonically in quantity AND quality. A source removed
+without replacement, a series left to rot, or history quietly dropped is a §34 regression by
+attrition. Coverage ratchets: today's holdings are the floor, never the target.
+
+## 42. CAPACITY-BOUND EDGE PRIMACY — HUNT WHAT IS TOO SMALL FOR FUNDS (2026-07-26, principal)
+
+_(Numbered 42, not 39: this law and the master trunk's §38/§39 were written the same day on separate branches and both claimed 38/39. The trunk landed first and keeps them; renumbering here is the only resolution that leaves every existing citation pointing at the text it was written about. Two laws sharing a number is not a formatting problem -- it is §36 'no ungoverned artifact' failing at the citation layer, since a reference to '§39' would resolve to whichever copy the reader happened to open.)_
 
 A ~$50k book has exactly ONE structural advantage over every fund on earth: it can profitably take trades that are too small to be worth anyone else's time. `PROSPECTOR_SPEC` already names this — "capacity-bound edges the fund ABANDONED for being too small… precisely this desk's one structural advantage" — and until 2026-07-26 the desk's own survival gate CONTRADICTED it: `_MIN_CAPACITY_USD = 1.0e5` hard-rejected any candidate that could not absorb $100,000, whatever its DSR, PBO or Sharpe. A perfect $20k-capacity listing dislocation failed on `capacity` alone. The niche the spec called the desk's advantage was unreachable by construction.
 

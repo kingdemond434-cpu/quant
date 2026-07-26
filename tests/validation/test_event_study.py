@@ -1,4 +1,4 @@
-"""Tests for the event-study promotion path (§39 edges are EVENTS, not time series).
+"""Tests for the event-study promotion path (§42 edges are EVENTS, not time series).
 
 The properties that decide whether this is trustworthy: a thin sample is refused outright, fat
 tails cannot buy a pass on the t-stat alone, overlapping windows are discounted rather than

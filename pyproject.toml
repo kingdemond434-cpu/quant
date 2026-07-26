@@ -80,7 +80,24 @@ disallow_untyped_defs = true
 no_implicit_optional = true
 plugins = ["pydantic.mypy"]
 mypy_path = "."
-files = ["libs", "app", "migrations"]
+# scripts/ as a whole carries 408 pre-existing errors across 87 files, so it is brought in file
+# by file rather than mass-ignored -- a gate that is green because everything is silenced is
+# worse than no gate. These can PLACE ORDERS or MOVE FUNDS and were the only fund-moving
+# code in the repo never type-checked; the pass that added them found a real _ms(None) crash in
+# the dead-man reconciliation. Add any new order-placing script here (fenced by a test).
+#
+# scripts/run_deadman_switch.py is DELIBERATELY ABSENT and must stay absent. It is the Tier-3
+# isolated ruin rail: principal sign-off only, even for improvements. Type-checking it under
+# strict mode forces `from typing import Any`, which trips the rail's own import-allowlist guard
+# (tests/scripts/test_deadman_atomic_state.py). That guard is a CHANGE-DETECTOR, not just a
+# libs/-coupling detector -- widening it to admit the import would be editing the guard to fit
+# the violation. Listing the rail here once already took CI red (2026-07-26); the rail's
+# protection is isolation, not type coverage.
+files = ["libs", "app", "migrations",
+         "scripts/run_cashcarry_executor.py",
+         "scripts/run_deadman_reconciliation.py",
+         "scripts/run_deadman_stranded_sweep.py",
+         "scripts/reconcile_venue.py", "scripts/run_trade_forensics.py"]
 
 [[tool.mypy.overrides]]
 module = [

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the pre-registered listing event study -- the §39 promotion path, end to end.
+"""Run the pre-registered listing event study -- the §42 promotion path, end to end.
 
     python3 scripts/run_event_study.py
 

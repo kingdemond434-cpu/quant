@@ -25,7 +25,8 @@ import numpy as np
 def stage_a_screen(signal: np.ndarray, target_ret: np.ndarray, *, name: str,
                    zwin: int = 20, contam_max: float = 0.20, ic_min: float = 0.03,
                    sharpe_min: float = 0.5, ic_ceiling: float = 0.35,
-                   sharpe_ceiling: float = 6.0, clock: str | None = None) -> dict[str, Any]:
+                   sharpe_ceiling: float = 6.0, clock: str | None = None,
+                   horizon_days: float = 1.0, panel_width: int = 1) -> dict[str, Any]:
     """Screen a signal against NEXT-period target returns with the mandatory angle-20 gate.
 
     signal[t], target_ret[t] must be aligned same-period arrays (target_ret[t] = return realised
@@ -44,7 +45,16 @@ def stage_a_screen(signal: np.ndarray, target_ret: np.ndarray, *, name: str,
       TIMING-ARTIFACT        -- fails de-contam: |same-period corr|>contam_max OR residual IC
                                 collapses below half the raw IC (the coinbase/turkey failure mode)
       SCREEN-INTERESTING     -- |IC|>=ic_min, best timing Sharpe>=sharpe_min, AND passes de-contam
-      SCREEN-WEAK            -- raw signal too weak to bother
+      SCREEN-WEAK            -- raw signal too weak to bother, AND the test was POWERED enough to
+                                say so. Only this verdict is graveyard-grade negative knowledge.
+      SCREEN-UNDERPOWERED    -- weak, but |IC| sat below the minimum detectable effect for the
+                                effective sample. "Could not tell" -- never record it as "refuted".
+
+    horizon_days: the period of target_ret in days. Sharpe annualises by sqrt(365/horizon_days);
+      leaving this at 1 while passing 20-day returns overstates Sharpe 4.47x (pure noise then
+      scores 0.55 against the 0.5 floor) and slackens the sharpe_ceiling rail by the same factor.
+    panel_width: number of cross-sectional units stacked into the flat arrays (1 = single series).
+      Only n_eff/power use it; it does not change IC or Sharpe.
     """
     s = np.asarray(signal, dtype="float64")
     r = np.asarray(target_ret, dtype="float64")
@@ -64,18 +74,50 @@ def stage_a_screen(signal: np.ndarray, target_ret: np.ndarray, *, name: str,
     zr = zv - (b[0] * tv + b[1])                       # signal orthogonalised to same-period return
     ic_res = float(np.corrcoef(zr, fv)[0, 1]) if zr.std() and fv.std() else 0.0
 
+    # Annualisation MUST match the target's period. target_ret are horizon_days-day returns, so a
+    # year holds 365/horizon_days of them, not 365. The old hardcoded sqrt(365) overstated Sharpe by
+    # sqrt(horizon_days) -- 2.24x at 5d, 4.47x at 20d -- which (a) made sharpe_min trivially
+    # clearable (verified: pure noise on 20d returns scored 0.55 against a 0.5 floor) and (b) left
+    # the sharpe_ceiling lookahead rail ~4.5x too loose exactly where slow signals live. Found
+    # independently by three screening passes, 2026-07-26.
+    ann = np.sqrt(365.0 / max(float(horizon_days), 1e-9))
+
     def _sh(sig: np.ndarray) -> float:
         rr = np.sign(sig) * fv
-        return round(float(rr.mean() / rr.std() * np.sqrt(365)), 2) if rr.std() else 0.0
+        return round(float(rr.mean() / rr.std() * ann), 2) if rr.std() else 0.0
     sh_mom, sh_rev = _sh(zv), _sh(-zv)
     best = max(abs(sh_mom), abs(sh_rev))
 
+    # POWER. Overlapping horizon_days returns sampled daily carry ~n/horizon_days independent
+    # observations. Reporting a null without the power to detect a real effect is not a refutation,
+    # and graveyarding it as one destroys a hypothesis class on no evidence -- the graveyard is
+    # permanent, so 'we could not tell' must never be recorded as 'it is dead'.
+    # panel_width divides out cross-sectional stacking: a 139-symbol panel passed as one flat array
+    # has n = symbol-days, and treating those as independent inflates every t-stat by
+    # sqrt(panel_width) (~11.8x at 139 -- an apparent t=3.5 is really t=0.35).
+    n_eff = max(len(zv) / max(float(horizon_days) * max(int(panel_width), 1), 1e-9), 1.0)
+    min_detectable_ic = float(1.96 / np.sqrt(n_eff))
+    # 'powered' asks whether the SAMPLE could have detected an effect worth caring about (ic_min),
+    # NOT whether the observed IC happens to be large. Only under the former does a null mean
+    # "looked and it is not there"; under the latter every null would be self-certifying.
+    powered = min_detectable_ic <= ic_min
+
+    # LOOKAHEAD RAIL. A signal observed at t should not know MORE about t+1 than about t: for a
+    # genuine lead, forward IC is normally weaker than the contemporaneous relationship. A whole-
+    # period misalignment produces the opposite signature -- strong forward IC with near-zero
+    # same-period corr -- and slips under a global ic_ceiling wherever honest contemporaneous
+    # correlation is already high (measured ~0.34 on macro->crypto, vs a 0.35 ceiling). Flagged as
+    # a diagnostic; ic_ceiling stays caller-tunable per axis rather than one global guess.
+    ic_exceeds_contemporaneous = abs(ic) > max(abs(same), ic_min) * 1.5 and abs(ic) >= 0.15
+
     decontam_fail = abs(same) > contam_max or abs(ic_res) < 0.5 * abs(ic)
     implausible = abs(ic) > ic_ceiling or best > sharpe_ceiling    # alignment/lookahead rail
-    if implausible:
+    if implausible or ic_exceeds_contemporaneous:
         verdict = "SUSPECT-LOOKAHEAD"                  # bithumb-class: too strong to be real
     elif best < sharpe_min or abs(ic) < ic_min:
-        verdict = "SCREEN-WEAK"
+        # Distinguish 'tested and refuted' from 'could not have detected it'. Only the former is
+        # graveyard-grade negative knowledge.
+        verdict = "SCREEN-WEAK" if powered else "SCREEN-UNDERPOWERED"
     elif decontam_fail:
         verdict = "TIMING-ARTIFACT"                    # angle-20 gate -- coinbase/turkey class
     else:
@@ -85,6 +127,10 @@ def stage_a_screen(signal: np.ndarray, target_ret: np.ndarray, *, name: str,
            "sharpe_momentum": sh_mom, "sharpe_reversal": sh_rev,
            "same_period_corr": round(same, 3), "residual_ic": round(ic_res, 4),
            "decontam_passed": not decontam_fail, "implausible_leak": implausible,
+           "horizon_days": float(horizon_days), "panel_width": int(panel_width),
+           "n_eff": round(n_eff, 1),
+           "min_detectable_ic": round(min_detectable_ic, 4), "powered": powered,
+           "ic_exceeds_contemporaneous": ic_exceeds_contemporaneous,
            "verdict": verdict, "current_z": round(float(z[-1]), 3),
            "stage": "A (zero promotion authority)"}
 

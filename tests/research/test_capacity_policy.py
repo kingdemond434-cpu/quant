@@ -1,4 +1,4 @@
-"""§39 PARITY: capacity is scored as sufficiency, not magnitude, EVERYWHERE.
+"""§42 PARITY: capacity is scored as sufficiency, not magnitude, EVERYWHERE.
 
 Removing the flat $100k floor from the survival gate stopped the niche being excluded. It did not
 make it equally prioritised, because four separate scorers still rewarded raw size. These lock the
@@ -120,7 +120,7 @@ class TestScorersActuallyUseIt:
         from libs.discovery import factory
         src = inspect.getsource(factory)
         assert "capacity_usd >= 1e5" not in src, \
-            "the flat $100k floor is back in acceptance -- §39 says capacity is a ratio"
+            "the flat $100k floor is back in acceptance -- §42 says capacity is a ratio"
 
 
 class TestLiveBookMakesTheRatioSelfScaling:
@@ -170,7 +170,7 @@ class TestLiveBookMakesTheRatioSelfScaling:
 
 
 class TestRunwayIsVisibleBeforeItExpires:
-    """§39(3): edge -> size -> next edge compounds only if the expiry is a number, not a shock."""
+    """§42(3): edge -> size -> next edge compounds only if the expiry is a number, not a shock."""
 
     def test_an_edge_has_a_book_size_it_dies_at(self) -> None:
         from libs.research.capacity_policy import outgrown_at

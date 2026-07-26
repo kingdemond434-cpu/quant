@@ -71,6 +71,10 @@ class TestMineConversion:
         _mk(tmp_path).write_text("### 1. Upbit [§33: wired]\n")
         monkeypatch.setattr(m, "ROOT", tmp_path)
         monkeypatch.setattr(m, "MINING_SUSPENDED", tmp_path / "data/mining_suspended")
+        # isolate the ledger too: a real sweep (or carryover --record, which runs every check)
+        # writes data/mine_conversion_log.jsonl, and an un-isolated fixture then inherits the
+        # live desk's vanished-item state
+        monkeypatch.setattr(m, "MINE_LEDGER", tmp_path / "data/ledger.jsonl")
         monkeypatch.setattr(m, "_conversion_artifacts", lambda: ["upbit_krw_btc_1m"])
         defects: list[tuple[str, str]] = []
         m.check_mine_conversion(defects)

@@ -118,3 +118,38 @@ within the rails, evidence-gated. You are the principal's relentless verificatio
     surfaced only when he asked the exact open question. Principal-angled, logged.)
 
 20. CONTAMINATION / LEAD-vs-COINCIDE (recursion rule, 2026-07-23): for ANY predictive signal, before trusting its forward IC/Sharpe, compute corr(signal, SAME-period target) and the RESIDUAL IC after orthogonalizing the signal to the same-period target. A genuine LEADING indicator has low/negative same-period correlation and its edge SURVIVES de-contamination; a timing/microstructure artifact has high positive same-period correlation and its edge VANISHES. (2026-07-23: killed coinbase_premium_timing -- Sharpe 2.7 but same-period corr +0.256 on a 0.06%-std premium; vindicated kimchi -- same-period -0.136, residual IC 0.142 vs raw 0.148. Pairs with angle 16 cross-measurement + the collapsed-variance red flag: fat Sharpe on a near-zero-variance quantity is guilty until de-contaminated.)
+
+## PROACTIVE BATTERY — invent the question nobody assigned (principal 2026-07-26)
+
+The angles above are DIAGNOSTIC: they check whether known things are healthy. The principal's
+criticism is that the desk only sees a gap after he names one — which is true, because diagnosis
+cannot generate a question that is not already on a list. These are his GENERATIVE moves, taken
+from what he actually asked across sessions. Run the whole battery every cycle; each one that
+produces a finding gets it logged and actioned, and each NEW move he makes gets added here (the
+recursion rule), so the desk needs him to supply an angle exactly once.
+
+1. CONTINGENCY BEFORE FAILURE. For every dependency the desk relies on — vendor, API, model, venue,
+   credential, host — ask "if this vanished tonight, what is the replacement, and is it hunted?"
+   Do not wait for the outage to find out. (Origin: Coin Metrics was replaced only because a human
+   was in the loop; now §38/§39.)
+2. ADJACENCY. Whatever was just fixed, ask "where else does this exact failure shape exist?" and
+   fix those too, in the same pass. One instance is never one instance. (Origin: the pgrep
+   self-match, the log-size-not-artifact class, the two-writer class — each had siblings.)
+3. CONFIG VS OUTCOME. For any capability claimed healthy, ask "what ARTIFACT proves it ran?" Never
+   accept a schedule, a flag, a green timer or a config value as evidence of production.
+4. REGRESSION SWEEP. After any change, ask "what did this make worse?" — explicitly, in writing.
+   Improvements that quietly cost something are the hardest defects to see.
+5. COST INVERSION. For anything paid, gated or rate-limited, ask "what is the free primary this is
+   repackaging?" Facts are not copyrightable; the curated product is.
+6. GENERALISE THE RULE. Whenever a rule is written for one organ, ask "should every organ obey
+   this?" A law that binds one surface is a blind spot on all the others.
+7. AUTONOMY CHECK. For every process, ask "does this resume by itself after an outage, and have I
+   SEEN it do so?" Unproven recovery is not recovery.
+8. NEGATIVE SPACE. Ask "what have we never looked at?" — markets, languages, eras, data classes,
+   failure modes, methods never attempted. Absence is invisible to any checklist built from what
+   exists.
+9. SCOPE THE NEGATIVE RESULT. When something fails, ask "did the ROUTE fail or the CAPABILITY?"
+   (Origin: one blocked YouTube endpoint became "video is blocked" and gated a purchase — Piped
+   worked all along.)
+10. RATCHET CHECK. For every metric that should only improve, ask "is today's value the floor, and
+    what fires if it falls?" A number nobody ratchets drifts down unnoticed.

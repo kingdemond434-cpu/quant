@@ -42,7 +42,7 @@ class TestCapacityRequired:
 
 
 class TestCapacityHuntCheck:
-    """§39: being ALLOWED into the small-capacity niche is not the same as hunting it."""
+    """§42: being ALLOWED into the small-capacity niche is not the same as hunting it."""
 
     def _store(self, tmp, caps: list[float]):
         import scripts.max_audit as m

@@ -84,7 +84,7 @@ _CROWD_START_USD = 10_000_000.0
 #: alphas, and a sleeve declined for its size is compounding foregone. Kept as a live, bounded
 #: knob so MEASURED decay-vs-capacity evidence could reintroduce a discount -- never a preference.
 _CROWD_FLOOR = 1.0
-#: Book size assumed when the caller does not say. NOT a fund's number -- see §39.
+#: Book size assumed when the caller does not say. NOT a fund's number -- see §42.
 DEFAULT_BOOK_USD = 50_000.0
 #: NO SINGLE EDGE GETS THE WHOLE BOOK. Judging every candidate against the full $50k silently
 #: assumes an all-in one-strategy desk -- the opposite of how this one runs -- and inflates the
@@ -131,7 +131,7 @@ def capacity_fit(capacity_usd: float, deployed_equity_usd: float = DEFAULT_BOOK_
                  n_sleeves: int = 1) -> float:
     """Score capacity in [0, 1] by SUFFICIENCY for this book -- flat above the requirement.
 
-    Below the §39 headroom requirement the score ramps linearly: an edge you would be half of is
+    Below the §42 headroom requirement the score ramps linearly: an edge you would be half of is
     worth roughly half as much as one you would be a comfortable slice of. At the requirement it
     reaches 1.0 and STAYS there -- that flat region is the parity the niche was missing. Far above
     it a bounded crowding discount applies, floored so that large edges are ranked lower on size
@@ -216,7 +216,7 @@ def live_sleeves(fallback: int = DEFAULT_SLEEVES, ledger: Path | None = None) ->
 def outgrown_at(capacity_usd: float, n_sleeves: int | None = None) -> float:
     """Book size at which this edge stops being fillable -- its EXPIRY, in dollars of equity.
 
-    §39(3) says the decay of a small edge as the desk grows into it is DEFINITIONAL, not a risk to
+    §42(3) says the decay of a small edge as the desk grows into it is DEFINITIONAL, not a risk to
     be mitigated: the sequence is edge -> size -> next edge. That only compounds if the desk can
     SEE the expiry coming, so it is a number rather than a surprise. Inverting the requirement:
     an edge is fillable while ``capacity >= headroom_mult * book / sleeves``.
@@ -237,7 +237,7 @@ def growth_runway(capacity_usd: float, book_usd: float | None = None,
 
 def niche_share(capacities: list[float], deployed_equity_usd: float = DEFAULT_BOOK_USD,
                 n_sleeves: int = DEFAULT_SLEEVES) -> float:
-    """Share of a candidate population sitting in the NICHE band -- the §39 hunt measurement.
+    """Share of a candidate population sitting in the NICHE band -- the §42 hunt measurement.
 
     Defaults to the sleeve count because this one takes a whole-BOOK figure: it judges a funnel,
     not a single allocation.

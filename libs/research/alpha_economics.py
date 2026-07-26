@@ -66,7 +66,7 @@ def ev_score(idea: Idea) -> dict[str, Any]:
     """Expected-value score + a pre-research verdict. Higher EV = more log-growth per hour."""
     p = p_survive(idea)
     breadth_f = min(idea.breadth / 20.0, 3.0) ** 0.5           # IR ~ IC*sqrt(breadth); diminishing
-    # §39 PARITY. This was `min(cap/1e6, 5)**0.25`, monotone in raw size: a $50k-capacity edge was
+    # §42 PARITY. This was `min(cap/1e6, 5)**0.25`, monotone in raw size: a $50k-capacity edge was
     # scored 0.47 and a $5M one 1.50, a 3.2x EV penalty on precisely the capacity-bound niche
     # PROSPECTOR_SPEC calls this desk's one structural advantage. Capacity you cannot fill is not
     # EV -- so it now scores as sufficiency for `book_usd` and is FLAT once sufficient.

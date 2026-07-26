@@ -15,6 +15,7 @@ from __future__ import annotations
 import argparse
 import contextlib
 import json
+import os
 import random
 import subprocess
 import sys
@@ -26,7 +27,8 @@ from typing import Any
 from libs.data.crypto_source import current_funding
 from libs.execution import binance_spot_testnet as spot
 from libs.execution import binance_testnet as fut
-from libs.execution.carry_accounting import derive_spot_realized
+from libs.execution import execution_tape
+from libs.execution.carry_accounting import carry_bleed_report, derive_spot_realized
 from libs.risk import risk_controls
 
 _STATE = Path("data/cashcarry_positions.json")
@@ -87,7 +89,7 @@ def _daily_data_tasks() -> None:
     _LAST_ARCHIVE.write_text(today, "utf-8")
 
 
-def _book_snapshot() -> dict[str, object]:
+def _book_snapshot() -> dict[str, Any]:
     """Current book (state positions + live prices), NO orders -- for frequent marking."""
     state = json.loads(_STATE.read_text("utf-8")) if _STATE.exists() else {}
     return {"state": state, "pos": state.get("positions", {}), "actions": [], "cands": [],
@@ -98,8 +100,14 @@ def _round(qty: float, step: float, prec: int) -> float:
     return round(round(qty / step) * step, prec) if step > 0 else round(qty, prec)
 
 
-def _log_trade(rec: dict[str, object]) -> None:
-    """Append a real open/close event -> cashcarry_trades.json (source of winrate + history)."""
+def _log_trade(rec: dict[str, Any]) -> None:
+    """Append a real open/close event -> cashcarry_trades.json (source of winrate + history).
+
+    The rolling file stays capped at 500 (every existing consumer depends on its shape), but the
+    same record ALSO goes to the append-only execution tape -- the cap was destroying ~27 fills/day
+    of own-fill history, which is both the data moat and the evidence Gate 0's ">=4 weeks of live
+    fills" is measured against. The tape append is exception-safe and never blocks the executor.
+    """
     try:
         log = json.loads(_TRADES.read_text("utf-8")) if _TRADES.exists() else []
     except (OSError, json.JSONDecodeError):
@@ -107,6 +115,7 @@ def _log_trade(rec: dict[str, object]) -> None:
     log.append(rec)
     _TRADES.parent.mkdir(parents=True, exist_ok=True)
     _TRADES.write_text(json.dumps(log[-500:], indent=2, default=str), "utf-8")
+    execution_tape.append(rec)
 
 
 def _held_hours(opened: object) -> float:
@@ -222,7 +231,7 @@ def _alloc(cands: list[tuple[str, float]], capital: float,
     return {cands[i][0]: capital * w[i] for i in range(n)}
 
 
-def _topup_plan(pos: dict[str, dict], capital: float, *, cap_frac: float = 0.35,
+def _topup_plan(pos: dict[str, dict[str, Any]], capital: float, *, cap_frac: float = 0.35,
                 min_frac: float = 0.02, min_usd: float = 20.0) -> dict[str, float]:
     """Extra notional to bring each HELD carry UP toward its funding-weighted share of the FULL
     capital -- never DOWN (closes are the target-set's job; this only fills idle authorized
@@ -381,7 +390,7 @@ def _mkt_or_limit(conn: Any, sym: str, side: str, qty: float) -> str:
     return ""
 
 
-def _reconcile(pos: dict[str, dict], *, dry: bool,
+def _reconcile(pos: dict[str, dict[str, Any]], *, dry: bool,
                cooldown: dict[str, float] | None = None,
                fail_counts: dict[str, int] | None = None,
                orphan_seen: dict[str, int] | None = None,
@@ -520,6 +529,15 @@ def _reconcile(pos: dict[str, dict], *, dry: bool,
                     how = _do(spot, sym, "BUY", deficit)
                     if how:
                         acts.append(f"spot-rehedge {sym} +{deficit} ({how})")
+            elif want > 0 and held > want * 1.02:
+                # STRANDED SPOT EXCESS -- REPORT ONLY (2026-07-26). A half-filled pair
+                # (`OPEN-FAIL ... spot_ok=True fut_ok=False`) leaves the BOUGHT spot leg orphaned:
+                # untracked, unhedged, and invisible to `_mark`, so it is naked long the book does
+                # not carry on its own P&L. Selling it is a money-path action -- never automatic --
+                # but it must never sit UNSEEN again, which is how it accumulated to multiples of
+                # the tracked size. Surfaced in last_actions + the dashboard feed.
+                acts.append(f"SPOT-EXCESS {sym}: wallet {held:.6g} vs tracked {want:.6g} "
+                            f"(+{held - want:.6g}) -- untracked naked long, verify/flatten by hand")
     return acts
 
 
@@ -532,7 +550,7 @@ def _ranked() -> list[tuple[str, float]]:
     return sorted(cands, key=lambda x: -x[1])
 
 
-def _rebalance(top: int, hold_top: int, capital: float, *, dry: bool) -> dict[str, object]:
+def _rebalance(top: int, hold_top: int, capital: float, *, dry: bool) -> dict[str, Any]:
     ranked = _ranked()
     cands = ranked[:top]                                   # the names we'd OPEN (top funding)
     # HYSTERESIS: a held carry is kept while it stays in the broad top-`hold_top` positive set;
@@ -540,7 +558,7 @@ def _rebalance(top: int, hold_top: int, capital: float, *, dry: bool) -> dict[st
     hold_set = {s for s, _ in ranked[:hold_top]}
     target = hold_set
     state = json.loads(_STATE.read_text("utf-8")) if _STATE.exists() else {}
-    pos: dict[str, dict] = state.get("positions", {})
+    pos: dict[str, dict[str, Any]] = state.get("positions", {})
     if "start" not in state:
         state["start"] = datetime.now(tz=UTC).isoformat()
         state["start_futures_equity"] = (fut.account_summary()["equity"] if fut.has_keys() else 0.0)
@@ -640,6 +658,7 @@ def _rebalance(top: int, hold_top: int, capital: float, *, dry: bool) -> dict[st
                 continue
             # realized trade record: delta-neutral price legs (~cancel) + est funding harvested
             spx, fpx = spot_px.get(sym, p["spot_cost"]), fut_px.get(sym, p["perp_entry"])
+            fill: dict[str, Any] = {}                    # dry places no orders -> no fill mode
             if not dry:
                 t0 = int(time.time() * 1000) - 2000       # fill window (venue clock-skew slack)
                 fill = _execute_pair(sym, float(p["spot_qty"]), "SELL", "BUY")  # close: sell/cover
@@ -670,7 +689,8 @@ def _rebalance(top: int, hold_top: int, capital: float, *, dry: bool) -> dict[st
                         "opened": p.get("opened"), "closed": datetime.now(tz=UTC).isoformat(),
                         "held_hours": held, "price_pnl": round(price_pnl, 2),
                         "est_funding": round(est_funding, 2),
-                        "net": round(price_pnl + est_funding, 2)})
+                        "net": round(price_pnl + est_funding, 2),
+                        "spot_mode": fill.get("spot"), "fut_mode": fill.get("fut")})
             actions.append(f"close {sym}")
             del pos[sym]
 
@@ -719,7 +739,8 @@ def _rebalance(top: int, hold_top: int, capital: float, *, dry: bool) -> dict[st
         if not dry:
             _log_trade({"event": "open", "symbol": sym, "qty": qty,
                         "notional": round(qty * px, 2), "funding_rate": round(fnd, 6),
-                        "opened": pos[sym]["opened"]})
+                        "opened": pos[sym]["opened"],
+                        "spot_mode": fill.get("spot"), "fut_mode": fill.get("fut")})
         actions.append(f"open {sym} {qty}")
 
     # TOP UP undersized held carries toward the FULL-capital target so authorized capital is not
@@ -766,7 +787,8 @@ def _rebalance(top: int, hold_top: int, capital: float, *, dry: bool) -> dict[st
             if not dry:
                 _log_trade({"event": "topup", "symbol": sym, "qty": qty,
                             "notional": round(qty * px, 2), "funding_rate": p.get("funding"),
-                            "opened": p.get("opened")})
+                            "opened": p.get("opened"),
+                            "spot_mode": fill.get("spot"), "fut_mode": fill.get("fut")})
             actions.append(f"topup {sym} +{qty}")
 
     state["positions"] = pos
@@ -817,18 +839,19 @@ _MAKER_WAIT = 8.0                                          # seconds a post-only
 _MAKER_WAIT_OPEN = 240.0                                   # seconds a post-only OPEN may rest
 
 
-def _passive_price(bk: dict, fl: dict, sym: str, side: str) -> float | None:
+def _passive_price(bk: dict[str, Any], fl: dict[str, Any], sym: str, side: str) -> float | None:
     """Tick-rounded passive maker price: BUY at best bid, SELL at best ask (won't cross)."""
     bid, ask = bk.get(sym, (0.0, 0.0))
     px = bid if side == "BUY" else ask
     if px <= 0:
         return None
     tick = float(fl.get("tick", 0.0) or 0.0)
-    return round(round(px / tick) * tick, int(fl.get("price_prec", 8))) if tick > 0 else px
+    return (round(round(px / tick) * tick, int(fl.get("price_prec", 8)))
+            if tick > 0 else float(px))
 
 
 def _maker_pair(sym: str, qty: float, spot_side: str, fut_side: str,
-                *, wait: float) -> dict[str, object]:
+                *, wait: float) -> dict[str, Any]:
     """Quote BOTH legs post-only (maker), wait, then taker-fill whatever didn't rest+fill.
 
     Same qty on both legs -> the pair ends delta-neutral; the wait bounds any transient exposure.
@@ -880,7 +903,7 @@ def _filled(res: object) -> bool:
             and float(res.get("executedQty", 0.0)) > 0)
 
 
-def _execute_pair(sym: str, qty: float, spot_side: str, fut_side: str) -> dict[str, object]:
+def _execute_pair(sym: str, qty: float, spot_side: str, fut_side: str) -> dict[str, Any]:
     """Fill both carry legs -- maker-first (execution alpha: lower fees) if enabled, else market.
 
     Returns {"spot": mode, "fut": mode, "spot_ok": bool, "fut_ok": bool} -- callers MUST check
@@ -911,12 +934,12 @@ def _execute_pair(sym: str, qty: float, spot_side: str, fut_side: str) -> dict[s
     return {"spot": "taker", "fut": "taker", "spot_ok": spot_ok, "fut_ok": fut_ok}
 
 
-def _mark(rb: dict[str, object]) -> dict[str, float]:
+def _mark(rb: dict[str, Any]) -> dict[str, float]:
     pos, spot_px, fut_px = rb["pos"], rb["spot_px"], rb["fut_px"]
     spot_pnl = perp_pnl = notional = 0.0
-    for _sym, p in pos.items():  # type: ignore[union-attr]
-        spx = spot_px.get(_sym, p["spot_cost"])           # type: ignore[union-attr]
-        fpx = fut_px.get(_sym, p["perp_entry"])           # type: ignore[union-attr]
+    for _sym, p in pos.items():
+        spx = spot_px.get(_sym, p["spot_cost"])
+        fpx = fut_px.get(_sym, p["perp_entry"])
         spot_pnl += float(p["spot_qty"]) * (spx - float(p["spot_cost"]))   # our long-spot legs
         perp_pnl += abs(float(p["perp_qty"])) * (float(p["perp_entry"]) - fpx)   # short (display)
         notional += float(p["spot_qty"]) * spx
@@ -925,35 +948,48 @@ def _mark(rb: dict[str, object]) -> dict[str, float]:
     # the accumulated realized PnL of closed spot legs (their proceeds sit in the spot wallet,
     # invisible to open-position marks -- omitting them fabricated a loss as carries closed).
     state = rb["state"]
-    spot_realized = float(state.get("realized_spot_pnl", 0.0))  # type: ignore[union-attr]
+    spot_realized = float(state.get("realized_spot_pnl", 0.0))
     net = spot_pnl + spot_realized
-    funding = 0.0
+    funding = fut_pnl = 0.0
     if fut.has_keys():
         with _safe():
             fut_eq = fut.account_summary()["equity"]
-            start_eq = float(state.get("start_futures_equity", fut_eq))  # type: ignore[union-attr]
-            net = spot_pnl + spot_realized + (fut_eq - start_eq)
-            start_ms = int(datetime.fromisoformat(str(state["start"])).timestamp() * 1000)  # type: ignore[index]
+            start_eq = float(state.get("start_futures_equity", fut_eq))
+            fut_pnl = fut_eq - start_eq                   # futures leg (realized+funding+fees+unrl)
+            net = spot_pnl + spot_realized + fut_pnl
+            start_ms = int(datetime.fromisoformat(str(state["start"])).timestamp() * 1000)
             funding = float(fut.income_summary(start_ms)["funding"])
     return {"spot_pnl": round(spot_pnl, 2), "perp_pnl": round(perp_pnl, 2),
-            "spot_realized": round(spot_realized, 2),
+            "spot_realized": round(spot_realized, 2), "fut_pnl": round(fut_pnl, 2),
             "funding": round(funding, 2), "net_pnl": round(net, 2),
             "notional": round(notional, 2)}
 
 
-def _emit(rb: dict[str, object], marks: dict[str, float], dry: bool) -> None:
+def _emit(rb: dict[str, Any], marks: dict[str, float], dry: bool) -> None:
     pos = rb["pos"]
+    # CARRY-LEAK ALARM ON THE BOOK THAT HOLDS THE MONEY (2026-07-26). `carry_bleed_report` was
+    # only ever wired into the MOLDED book (run_live_combined), so the PRIMARY executed book --
+    # this file -- shipped a dashboard with NO bleed alarm at all, which is exactly how a leak
+    # runs for weeks unnoticed. Same function, same thresholds, now on the executed book.
+    # spot side = open marks + realized of closed spot legs; fut side = futures-equity delta.
+    bleed = carry_bleed_report(funding=marks["funding"],
+                               spot_pnl=round(marks["spot_pnl"] + marks["spot_realized"], 2),
+                               fut_pnl=marks.get("fut_pnl", 0.0))
     out = {
         "updated": datetime.now(tz=UTC).isoformat(),
         "mode": "dry" if dry else "live-paper",
         "strategy": "delta-neutral cash-and-carry (long spot + short perp, positive funding)",
-        "executed": not dry, "n_carries": len(pos),  # type: ignore[arg-type]
+        "executed": not dry, "n_carries": len(pos),
         "deployed_notional": marks["notional"],
         "net_pnl": marks["net_pnl"], "funding_harvested": marks["funding"],
         "spot_leg_pnl": marks["spot_pnl"], "perp_leg_pnl": marks["perp_pnl"],
         "spot_realized_pnl": marks["spot_realized"],
-        "carries": [{"symbol": s, "qty": p["spot_qty"], "funding_8h": p["funding"]}  # type: ignore[union-attr]
-                    for s, p in pos.items()],  # type: ignore[union-attr]
+        "fut_leg_net": marks.get("fut_pnl", 0.0),
+        "non_funding_pnl": bleed.non_funding_pnl,
+        "harvest_eaten_frac": bleed.harvest_eaten_frac,
+        "bleed_alert": bleed.alert, "bleed_verdict": bleed.verdict,
+        "carries": [{"symbol": s, "qty": p["spot_qty"], "funding_8h": p["funding"]}
+                    for s, p in pos.items()],
         "last_actions": rb["actions"],
         "risk": rb.get("risk"),
         "note": ("PRIMARY executed book (paper). Delta-neutral: spot hedges perp, profit = funding "
@@ -978,6 +1014,27 @@ def _live_params(top: int, hold_top: int, capital: float) -> tuple[int, int, flo
     except (ValueError, TypeError, OSError):
         pass
     return top, hold_top, capital
+
+
+
+def _foreign_executor_alive() -> bool:
+    """True when a DIFFERENT live executor owns the heartbeat.
+
+    SINGLE-BOOK INVARIANT (2026-07-26): two --live executors on one delta-neutral book
+    double-order and churn. The startup-only lock could not catch a duplicate spawned during a
+    slow heartbeat window -- both then refreshed the same file forever. Same failure the dead-man
+    rail hit on 07-11 and fixed with a per-loop PID check; the executor now does the same.
+    """
+    try:
+        parts = _HB.read_text("utf-8").split()
+        if not parts or not parts[0].isdigit():
+            return False                       # legacy/unowned heartbeat -- reclaim it
+        pid = int(parts[0])
+        if pid == os.getpid():
+            return False
+        return (time.time() - _HB.stat().st_mtime) < _HB_TICK * 2.5
+    except (OSError, ValueError):
+        return False
 
 
 def main() -> None:
@@ -1012,9 +1069,16 @@ def main() -> None:
     rng = random.Random()                                 # a fixed 600s beat is detectable at size)
     killed = False
     while forever or time.monotonic() < deadline:
+        if not dry and _foreign_executor_alive():
+            print("another live executor owns the book -- exiting (single-book "
+                  "invariant)")
+            return
         if not dry:                                       # fast heartbeat (decoupled from work)
             _HB.parent.mkdir(parents=True, exist_ok=True)
-            _HB.write_text(datetime.now(tz=UTC).isoformat(), "utf-8")
+            # PID-owned: lets every OTHER executor detect that it no longer owns
+            # the book (single-book invariant, 2026-07-26).
+            _HB.write_text(f"{os.getpid()} {datetime.now(tz=UTC).isoformat()}",
+                           "utf-8")
         if _KILL.exists():
             # IDLE here instead of exiting: exiting made systemd respawn every ~17s for as long
             # as the kill file stood (14k restarts after the 2026-07-13 fire), which also starved
@@ -1049,7 +1113,7 @@ def main() -> None:
                 with contextlib.suppress(Exception):
                     subprocess.run([sys.executable, "scripts/run_live_combined.py"],
                                    timeout=60, capture_output=True, check=False)
-            print(f"[{datetime.now(UTC):%H:%M:%S}] carries={len(rb['pos'])} "  # type: ignore[arg-type]
+            print(f"[{datetime.now(UTC):%H:%M:%S}] carries={len(rb['pos'])} "
                   f"net=${marks['net_pnl']} funding=${marks['funding']} {rb['actions']}")
         except Exception as e:  # loop must survive transient errors -- but LOG them visibly
             with contextlib.suppress(Exception):

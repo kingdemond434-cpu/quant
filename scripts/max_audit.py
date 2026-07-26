@@ -1155,7 +1155,7 @@ _BAND_MIN_SHARE = 0.25
 
 
 def check_capacity_hunt(defects) -> None:
-    """§39: BOTH capacity bands must be hunted -- the funnel may not collapse onto either one.
+    """§42: BOTH capacity bands must be hunted -- the funnel may not collapse onto either one.
 
     PROSPECTOR_SPEC names capacity-bound edges -- the ones a fund abandoned for being too small --
     as "this desk's ONE structural advantage". Until 2026-07-26 the survival gate contradicted
@@ -1191,7 +1191,7 @@ def check_capacity_hunt(defects) -> None:
     if unfillable:
         defects.append((
             "capacity-hunt-unfillable",
-            f"§39: {unfillable}/{len(caps)} scored candidates cannot absorb the required headroom "
+            f"§42: {unfillable}/{len(caps)} scored candidates cannot absorb the required headroom "
             f"on a ${DESK_BOOK_USD:,.0f} book at all -- the desk would BE the edge. Small is the "
             "advantage; too small to fill is not. These should be screened out before scoring, "
             "not carried as candidates."))
@@ -1200,7 +1200,7 @@ def check_capacity_hunt(defects) -> None:
     if in_niche / fillable < _BAND_MIN_SHARE:
         defects.append((
             "capacity-hunt-fund-shaped",
-            f"§39: only {in_niche}/{fillable} fillable candidates ({in_niche / fillable:.0%}) sit "
+            f"§42: only {in_niche}/{fillable} fillable candidates ({in_niche / fillable:.0%}) sit "
             f"in the NICHE band -- below the {_BAND_MIN_SHARE:.0%} both bands must hold. The "
             "prospector has drifted onto fund-scale ground, where a book this size has NO "
             "advantage and could not fill the trade if it found one. Point it back at the niche "
@@ -1210,7 +1210,7 @@ def check_capacity_hunt(defects) -> None:
     if larger / fillable < _BAND_MIN_SHARE:
         defects.append((
             "capacity-hunt-niche-only",
-            f"§39: only {larger}/{fillable} fillable candidates ({larger / fillable:.0%}) can "
+            f"§42: only {larger}/{fillable} fillable candidates ({larger / fillable:.0%}) can "
             f"absorb size -- below the {_BAND_MIN_SHARE:.0%} both bands must hold. Hunting ONLY "
             "small is the same bias pointed the other way, and it costs twice: alphas that would "
             "have run alongside the small ones are never found, and there is no successor "
@@ -1220,9 +1220,9 @@ def check_capacity_hunt(defects) -> None:
 
 
 def check_capacity_runway(defects) -> None:
-    """§39(3): the desk must SEE itself outgrowing an edge, not discover it mid-trade.
+    """§42(3): the desk must SEE itself outgrowing an edge, not discover it mid-trade.
 
-    The sequence §39 commits to is edge -> size -> next edge, and the decay of a small edge as the
+    The sequence §42 commits to is edge -> size -> next edge, and the decay of a small edge as the
     book grows into it is DEFINITIONAL rather than a risk to be mitigated. That only compounds if
     the expiry is visible in advance. Every edge has a book size at which it stops being fillable;
     this reports how much growth the current shortlist survives, so the replacement pipeline can
@@ -1247,14 +1247,14 @@ def check_capacity_runway(defects) -> None:
     if outgrown:
         defects.append((
             "capacity-already-outgrown",
-            f"§39(3): {len(outgrown)}/{len(caps)} scored candidates can no longer be filled by "
+            f"§42(3): {len(outgrown)}/{len(caps)} scored candidates can no longer be filled by "
             f"today's ${book:,.0f} book across {sleeves} sleeves. They are inventory the desk has "
             "already grown past -- retire them and bank the mechanism, do not keep ranking them."))
     survives_2x = sum(1 for r in runways if r >= 2.0)
     if survives_2x == 0:
         defects.append((
             "capacity-no-runway",
-            f"§39(3): NOTHING on the shortlist survives a doubling of the ${book:,.0f} book "
+            f"§42(3): NOTHING on the shortlist survives a doubling of the ${book:,.0f} book "
             f"(best runway {runways[-1]:.1f}x). Outgrowing an edge is the plan, but the NEXT edge "
             "has to already be in the pipeline when it happens. Hunt one tier larger NOW, while "
             "the current sleeves still pay -- both bands at once, which is the point."))
@@ -1276,7 +1276,7 @@ _FUND_SHAPED_CONSTANTS = ("1e5", "1e6", "1e7", "100_000", "1_000_000", "100000.0
 
 
 def check_capacity_single_source(defects) -> None:
-    """§39: ONE capacity policy, imported -- never a constant re-inlined next to a scorer.
+    """§42: ONE capacity policy, imported -- never a constant re-inlined next to a scorer.
 
     The original defect was not that the number was wrong; it was that the number existed in five
     places. Fixing the survival gate did nothing to the other four, and the exclusion simply moved
@@ -1289,14 +1289,14 @@ def check_capacity_single_source(defects) -> None:
         path = ROOT / rel
         if not path.exists():
             defects.append(("capacity-consumer-missing",
-                            f"§39: {rel} is enumerated as a capacity consumer but does not exist. "
+                            f"§42: {rel} is enumerated as a capacity consumer but does not exist. "
                             "Either it moved (update the list) or the parity guard is now blind "
                             "to wherever its logic went."))
             continue
         text = path.read_text("utf-8", errors="ignore")
         if "capacity_policy" not in text:
             defects.append(("capacity-policy-not-imported",
-                            f"§39: {rel} judges capacity but does not import capacity_policy -- "
+                            f"§42: {rel} judges capacity but does not import capacity_policy -- "
                             "it is carrying its own definition again. That is exactly how the "
                             "flat $100k floor survived being 'fixed': five copies, one patched."))
         for i, line in enumerate(text.splitlines(), start=1):
@@ -1306,9 +1306,368 @@ def check_capacity_single_source(defects) -> None:
             hit = next((c for c in _FUND_SHAPED_CONSTANTS if c in line), None)
             if hit is not None:
                 defects.append(("capacity-constant-reinlined",
-                                f"§39: {rel}:{i} puts a fund-shaped constant ({hit}) on a capacity "
+                                f"§42: {rel}:{i} puts a fund-shaped constant ({hit}) on a capacity "
                                 "line. Capacity is a RATIO to deployed equity; a six/seven-figure "
                                 "literal here is the excluded-by-default bug growing back."))
+
+#: Every doc where a finding can be WRITTEN. The register is where findings are WORKED; anything
+#: written here and absent there is invisible to the daily cycle.
+_FINDING_DOCS = (
+    "docs/SYSTEM_REVIEW.md",
+    "docs/BLIND_SPOT_AUDIT.md",
+    "docs/research/micro_audit_inbox.md",
+    "docs/research/improvement_inbox.md",
+    "docs/research/panel_rulings.md",
+)
+#: Finding-bearing docs deliberately out of scope, with the reason -- so the scope check can tell
+#: "consciously excluded" from "quietly unmonitored".
+_FINDING_DOCS_EXCLUDED = {
+    "docs/research/panel_inbox.md": "raw panel transcript -- rulings are the distilled output",
+    "docs/research/feed_inbox.md": "literature feed, not desk findings",
+    "docs/research/data_axis_watchlist.md": "source cards -- governed by §33 dispositions",
+    "docs/research/discovery_hypotheses.md": "hypotheses -- governed by §33 / the trial ledger",
+    "docs/research/literature_coverage.md": "coverage log -- governed by §33",
+    "docs/POST_GATE0_MANIFEST.md": "deferred builds -- driven by check_post_gate0_activation",
+    "docs/research/DAILY_INTEGRITY_WATCH.md": "standing checklist, not findings",
+    "docs/research/FREE_DATA_ADDENDA_BCD.md": "source catalogue -- source cards, not findings",
+    "docs/research/FREE_DATA_ALTERNATIVES_SPEC.md": "spec document, not findings",
+    "docs/research/GAP14_ROOTCAUSE.md": "forensic writeup for a gap row that already exists",
+    "docs/research/GAP32_RESIZE_UP_SPEC.md": "spec for GAP #32 -- the row is the tracked item",
+    "docs/research/GAP19_RECONCILE_GUARD_SPEC.md": "spec for GAP #19 -- the row is tracked",
+    "docs/research/CRISIS_AUTOPSY_SPEC.md": "spec document, not findings",
+    "docs/research/MAX_SURVIVORS_PROGRAM.md": "programme design, not findings",
+    "docs/research/HYPOTHESIS_MAX_SPEC.md": "spec document, not findings",
+    "docs/research/SPECIALIZED_SEATS_SPEC.md": "spec document, not findings",
+    "docs/research/BYBIT_SECOND_VENUE_SPEC.md": "spec document, not findings",
+    "docs/research/DISCOVERY_TELEMETRY_SPEC.md": "spec document, not findings",
+    "docs/research/NLP_NORMALIZATION_SPEC.md": "spec document, not findings",
+    "docs/research/PROSPECTOR_SPEC.md": "spec document, not findings",
+    "docs/research/LITERATURE_SPEC.md": "spec document, not findings",
+    "docs/research/GROWTH_UNLOCK_LADDER.md": "ladder definition, not findings",
+    "docs/research/TWO_STAGE_DISCOVERY_LAW.md": "law text, not findings",
+    "docs/research/DIGGER_TARGET_ROADMAP.md": "target list -- §33 governs what it yields",
+    "docs/research/STRUCTURAL_EDGE_IDEAS.md": "idea list -- §33 / trial ledger governs",
+    "docs/research/AXIS_PREREGISTRATIONS.md": "pre-registrations -- the trial ledger governs",
+    "docs/DIGGING_CHARTER.md": "the law itself",
+    "docs/OPERATOR_COMPACT.md": "operator agreement, not findings",
+    "docs/GO_LIVE_CHECKLIST.md": "checklist -- gated by GAP #2",
+    "docs/EVIDENCE_GATED_PROGRESSIONS.md": "progression definitions, not findings",
+    "docs/KILL_THESIS.md": "kill criteria, not findings",
+    "docs/REPO_EXTRACTION.md": "adoption record, not findings",
+    "docs/RD_AGENT_AUDIT.md": "historical audit -- superseded by SYSTEM_REVIEW",
+    "docs/institutional_knowledge.md": "knowledge base, not an obligation list",
+    "docs/desk_digest.md": "generated digest",
+    "docs/graveyard.md": "terminal by construction",
+    "docs/PROJECT_HANDOFF.md": "handoff doc, not findings",
+    "docs/HOME.md": "index",
+    "docs/DASHBOARD.md": "generated status",
+    "docs/LIVE_CONNECTOR_SPEC.md": "spec for GAP #2 -- the row is the tracked item",
+    "docs/research/oss_benchmark.md": "external benchmark log -- adoption_queue governs uptake",
+    "docs/research/prospector_watchlist.md": "prospector cards -- governed by §33 dispositions",
+    # VERIFIED 2026-07-26 before excluding: the file is WRITTEN by
+    # scripts/generate_external_review_doc.py on every panel run, and its numbered block is a
+    # verbatim copy of the GAP_REGISTER table ("## Current gap register (self-assessed, ranked)").
+    # So every "finding" it carries is, by construction, already a register row -- demanding rows
+    # for them would double-count the register against itself, and the next regeneration
+    # overwrites anything written here. It is a DERIVED surface, never an original one: genuinely
+    # new findings arrive as panel RESPONSES, which flow panel_inbox -> panel_rulings (in scope,
+    # above) -> register rows. If the generator ever starts emitting desk-authored findings that
+    # do not exist upstream, move it into _FINDING_DOCS.
+    # trailing slash = the whole CLASS is claimed (a generator emits dated instances)
+    "docs/research/deep_sweep/":
+        "weekly deep-cold-audit output -- CADENCED PRODUCER (§36); findings flow to\n"
+        "improvement_inbox and GAP_REGISTER rows (§35). Each dated report is one\n"
+        "sweep's snapshot, superseded by the next, never converted in place.",
+    "docs/EXTERNAL_PANEL_DOSSIER.md":
+        "GENERATED dossier -- its numbered block is a copy of the register table; original panel "
+        "findings enter via panel_inbox -> panel_rulings, which are in scope",
+}
+
+
+#: §36 PRODUCERS: artifacts that accumulate inventory under a cadence STATED IN THEIR OWN PROSE
+#: and, until now, enforced by nothing. Each maps to the max age its own text promises. This is
+#: the miner failure in its purest form -- a conversion rule written down, with no clock behind it.
+_PRODUCER_CADENCE = {
+    "docs/research/weak_signal_registry.md": (
+        3.0, "§23: >=2 weak signals from INDEPENDENT paths auto-promote to hypothesis generation, "
+             "'checked each cycle during inbox triage' -- convention, never verified"),
+    "docs/research/canary_searches.md": (
+        4.0, "re-run each digging session; an unexpected shift triggers targeted rediscovery "
+             "BEFORE the normal cadence -- nothing confirmed the canaries were re-run"),
+    "docs/research/generation_due.md": (
+        8.0, "the cadence engine flags scoped generate runs and the brain executes then marks "
+             "them -- nothing checked a flagged run was ever executed"),
+    "docs/research/adoption_queue.md": (
+        35.0, "trigger-gated methods (fracdiff, dollar bars, ...) -- nothing notices when a "
+              "precondition ARRIVES, so a due adoption waits forever"),
+    # The register is a producer too -- the one every other law routes into. Its own header
+    # promises a re-rank every daily cycle; check_gap_register_health reads the self-declared
+    # stamp, and this is the file-level backstop if the stamp itself stops being written.
+    "docs/GAP_REGISTER.md": (
+        3.0, "re-ranked at the START of every daily AI cycle by its own rule -- the organ §35 and "
+             "§36 both depend on, and it was checked by nothing"),
+}
+#: Artifacts that are terminal by nature: templates, forensic write-ups, protocol libraries. They
+#: accumulate no inventory, so they owe no cadence -- recorded here so "no law" is a DECISION.
+_TERMINAL_ARTIFACTS = {
+    "docs/research/FRONTIER_MINER_TEMPLATE.md": "template spec -- instantiated, not converted",
+    "docs/research/GAP34_FORENSIC.md": "forensic write-up for a closed gap",
+    "docs/research/self_interrogation_patterns.md": "protocol library -- applied, not converted",
+    "docs/playbooks/carry.md": "runbook -- followed, not converted",
+    "docs/playbooks/go_live.md": "runbook -- followed; the gate is GAP #2",
+    "docs/playbooks/ops_checklist.md": "runbook -- followed, not converted",
+    "docs/EXTERNAL_PANEL_DOSSIER.md":
+        "derived snapshot -- REGENERATED from live state on every panel run by "
+        "generate_external_review_doc.py, never an inventory. Its findings flow panel responses "
+        "-> panel_inbox -> panel_rulings -> GAP_REGISTER rows (§35), so converting the dossier "
+        "itself is meaningless: the next run overwrites it. Terminal by construction.",
+}
+
+
+def check_gap_register_health(defects) -> None:
+    """§36(3): the register is held to the rules it states about ITSELF.
+
+    §35 and §36 route every finding INTO the register, which makes it the load-bearing organ for
+    both -- and it was checked by nothing. Its own header declares 're-ranked at the START of every
+    daily AI cycle', 'items stale >7 days MUST be escalated (implement / defer with deadline /
+    retire with reason)' and 'never empty without written justification'. All three were rules
+    written INSIDE the document they govern: exactly the shape §36 names as a rule with no clock.
+    Routing findings into a bucket nobody empties is not an improvement, it is a tidier backlog.
+
+    The re-rank age comes from the SELF-DECLARED stamp, never from mtime or commit time -- editing
+    the file must not be able to fake a re-rank that never happened.
+    """
+    from libs.research.finding_registry import register_health
+
+    gr = ROOT / "docs/GAP_REGISTER.md"
+    if not gr.exists():
+        return
+    h = register_health(gr.read_text("utf-8"), today=datetime.now(UTC).date())
+    if h.n_rows == 0:
+        defects.append(("gap-register-unparseable", f"§36(3): {h.verdict}"))
+        return
+    if h.rerank_breach:
+        defects.append((
+            "gap-register-rerank-breach",
+            f"§36(3): {h.verdict} Re-rank now and escalate anything genuinely stuck -- this is the "
+            "organ every other law depends on; when it stops moving, everything routed into it "
+            "stops with it, silently."))
+    elif h.rerank_stale:
+        defects.append((
+            "gap-register-rerank-stale",
+            f"§36(3): {h.verdict} Caught as DRIFT, before the 7-day escalation bar it sets for "
+            "itself."))
+    if h.undated_open:
+        defects.append((
+            "gap-register-parked-rows",
+            f"§36(3): {len(h.undated_open)} open row(s) carry NO date in their plan -- "
+            f"{', '.join(h.undated_open)}. The register's own three exits are implement / defer "
+            "WITH A DEADLINE / retire with reason; a row with no date took none of them and is "
+            "parked, which is the state the rule exists to forbid."))
+    if h.ownerless:
+        defects.append((
+            "gap-register-ownerless",
+            f"§36(3): open row(s) with no owner -- {', '.join(h.ownerless)}. Unowned work is "
+            "nobody's, and the escalation has no addressee."))
+
+
+def check_producer_cadence(defects) -> None:
+    """§36: an artifact that accumulates inventory declares a cadence and is HELD to it.
+
+    The miner failure, in its purest form: four artifacts state a conversion rule in their own
+    prose -- 'auto-promote on convergence', 're-run each digging session', 'the brain executes and
+    marks them', 'monthly trigger re-check' -- and NOTHING checked any of it. A rule written in a
+    document it governs is a rule with no clock; it is obeyed exactly as long as somebody
+    remembers, which is the failure §33 and §35 each closed for their own surface.
+
+    Age is measured from the last COMMIT, not mtime: a fresh clone stamps every file at checkout,
+    and this check must mean the same thing on the VPS and in a sandbox.
+    """
+    import subprocess
+
+    stale = []
+    for rel, (max_days, why) in _PRODUCER_CADENCE.items():
+        p = ROOT / rel
+        if not p.exists():
+            continue
+        try:
+            out = subprocess.run(["git", "log", "-1", "--format=%ct", "--", rel],
+                                 cwd=ROOT, capture_output=True, text=True, timeout=15)
+        except (OSError, subprocess.SubprocessError):
+            return  # no git -- the check does not apply here
+        if out.returncode != 0 or not out.stdout.strip():
+            continue
+        with contextlib.suppress(ValueError):
+            age_d = (NOW - float(out.stdout.strip())) / 86400.0
+            if age_d > max_days:
+                stale.append(f"{Path(rel).name} {age_d:.0f}d (bar {max_days:.0f}d) -- {why}")
+    for s in stale:
+        defects.append((
+            "producer-cadence-stale",
+            f"§36: {s}. The artifact's own text promises this cadence; nothing enforced it until "
+            "now. Work it and commit, or amend the stated cadence to one the desk actually keeps "
+            "-- a promise nobody checks is how inventory rots in plain sight."))
+
+
+def check_artifact_governance(defects) -> None:
+    """§36(2): EVERY artifact is claimed by a law -- so the miner problem cannot reappear anywhere.
+
+    §33 governs mined cards, §35 governs findings, §36 governs cadenced producers. Each closed the
+    same failure on its own surface, one surface at a time -- which is a losing game, because the
+    NEXT artifact arrives ungoverned by default and nobody notices until it has rotted. This
+    inverts it: every docs/ markdown must be claimed by some law, or explicitly recorded as
+    terminal WITH A REASON. An unclaimed artifact is the miner problem waiting to happen, and it
+    now fires on the day it appears rather than months later.
+    """
+    claimed = (set(_DIG_DOCS) | set(_DIG_DOCS_EXCLUDED) | set(_FINDING_DOCS)
+               | set(_FINDING_DOCS_EXCLUDED) | set(_PRODUCER_CADENCE) | set(_TERMINAL_ARTIFACTS))
+    # A trailing-slash claim governs a whole DIRECTORY CLASS. Generators (the weekly deep sweep)
+    # emit dated instances forever, so exact-path claims could never keep up and the check would
+    # fire permanently on correctly-governed output. Claim the class once; instances inherit it.
+    claimed_prefixes = tuple(c for c in claimed if c.endswith("/"))
+    audit_src = ""
+    with contextlib.suppress(OSError):
+        audit_src = Path(__file__).read_text("utf-8")
+    unclaimed = []
+    for p in sorted((ROOT / "docs").rglob("*.md")):
+        rel = p.relative_to(ROOT).as_posix()
+        if (rel in claimed or rel.startswith(claimed_prefixes)
+                or rel.endswith("GAP_REGISTER.md")):
+            continue
+        if p.name in audit_src:      # named by some other check -- already governed
+            continue
+        unclaimed.append(p.name)
+    if unclaimed:
+        defects.append((
+            "artifact-ungoverned",
+            f"§36(2): {len(unclaimed)} docs artifact(s) claimed by NO law -- "
+            f"{', '.join(unclaimed[:8])}. Every artifact is governed by §33 (mined cards), §35 "
+            "(findings), §36 (cadenced producers), or recorded terminal with a reason. Ungoverned "
+            "is how the miner problem reappears: inventory accumulates and nothing ever converts "
+            "it. Classify each -- 'no law' must be a DECISION, never a default."))
+
+
+def check_findings_tracked(defects) -> None:
+    """EVERY FINDING MUST REACH THE LOOP THAT DRIVES IT (§35).
+
+    The register is the desk's only organ that DRIVES work: weekly re-rank, 7-day staleness,
+    escalation. Every other doc is a place findings are WRITTEN. The daily cycle acts on the
+    register, so a finding absent from it is not merely slow -- it is invisible, and however
+    carefully it was found it will never be worked.
+
+    Generalises check_review_risks_tracked, which enforced this for THREE HARDCODED KEYS and so
+    could only ever catch risks somebody remembered to hardcode -- the same brittleness one level
+    up. Matching is deliberately generous (one distinctive token is enough): a false accept is
+    cheap, a false alarm trains the reader to ignore the check, and an ignored check is worse than
+    no check because it looks like coverage.
+    """
+    from libs.research.finding_registry import coverage_report, parse_findings
+
+    gr = ROOT / "docs/GAP_REGISTER.md"
+    if not gr.exists():
+        return
+    register = gr.read_text("utf-8")
+    findings = []
+    for rel in _FINDING_DOCS:
+        p = ROOT / rel
+        if p.exists():
+            with contextlib.suppress(OSError):
+                findings += parse_findings(p.read_text("utf-8"), source=rel)
+    if not findings:
+        return
+    rep = coverage_report(findings, register)
+    if rep.n_untracked:
+        defects.append((
+            "findings-untracked",
+            f"§35: {rep.n_untracked}/{rep.n_open} open finding(s) have NO GAP_REGISTER trace "
+            f"({rep.coverage:.0%} coverage) -- {'; '.join(rep.untracked_names)}. The daily cycle "
+            "works the register; a finding that never lands there is invisible to it forever. "
+            "Add a row (mechanism, trigger, owner) or record it as closed -- being written down "
+            "somewhere is not the same as being driven."))
+
+
+#: TRACKED (docs/, not gitignored data/) -- a coverage floor stored where `rm` resets it is not a
+#: floor. In git, a reset shows in `git status`, in the diff, and in check_dig_uncommitted.
+FINDINGS_RECORD = ROOT / "docs/research/findings_coverage_record.json"
+
+
+def check_findings_ratchet(defects) -> None:
+    """§35(7): coverage holds at 100% and the FLOOR ONLY RISES -- over a scope that cannot shrink.
+
+    A one-off 100% is a snapshot. The law needs a floor, and the floor needs an honest denominator:
+    the cheapest way to reach 100% is not to row the findings but to SHRINK THE DENOMINATOR --
+    exclude a doc from scope, or delete the finding. Same loophole §34 closed for mining (fake a
+    conversion rate by mining less), closed the same way: coverage, open-finding count and
+    docs-scanned all ratchet UP together, and a worse cycle produces a defect rather than a
+    relaxed bar.
+    """
+    from libs.research.finding_registry import (
+        CoverageRatchet,
+        coverage_report,
+        parse_findings,
+        update_coverage_ratchet,
+    )
+
+    gr = ROOT / "docs/GAP_REGISTER.md"
+    if not gr.exists():
+        return
+    findings, n_docs = [], 0
+    for rel in _FINDING_DOCS:
+        p = ROOT / rel
+        if p.exists():
+            n_docs += 1
+            with contextlib.suppress(OSError):
+                findings += parse_findings(p.read_text("utf-8"), source=rel)
+    if not findings:
+        return
+    rep = coverage_report(findings, gr.read_text("utf-8"))
+
+    prior = CoverageRatchet()
+    with contextlib.suppress(Exception):
+        prior = CoverageRatchet.model_validate_json(FINDINGS_RECORD.read_text("utf-8"))
+    new, verdict = update_coverage_ratchet(
+        prior, rep, n_docs=n_docs, at=datetime.now(UTC).isoformat())
+    with contextlib.suppress(OSError):
+        FINDINGS_RECORD.parent.mkdir(parents=True, exist_ok=True)
+        FINDINGS_RECORD.write_text(new.model_dump_json(indent=2), "utf-8")
+
+    if verdict.scope_shrank:
+        defects.append(("findings-scope-shrank", f"§35(7): {verdict.verdict}"))
+    if verdict.coverage_regressed:
+        defects.append(("findings-coverage-regressed", f"§35(7): {verdict.verdict}"))
+    if rep.coverage < 1.0 and not verdict.coverage_regressed:
+        defects.append((
+            "findings-coverage-below-100",
+            f"§35(7): {verdict.verdict} The standing target is 100% -- every finding the desk has "
+            "made reaches the loop that drives it, or is recorded closed. Anything less means the "
+            "cycle is provably blind to work it already knows about."))
+
+
+def check_findings_scope(defects) -> None:
+    """The finding-scan's own scope is audited -- a new findings doc must not appear unmonitored.
+
+    Same shape as check_mine_scope: a fixed doc list is the check's blast radius, and a finding
+    written outside it evades §35 with no code change and no diff. Every docs/ markdown carrying
+    numbered findings must be in scope or excluded WITH A REASON; never decided by omission.
+    """
+    from libs.research.finding_registry import parse_findings
+
+    rogue = []
+    for p in sorted((ROOT / "docs").rglob("*.md")):
+        rel = p.relative_to(ROOT).as_posix()
+        if rel in _FINDING_DOCS or rel in _FINDING_DOCS_EXCLUDED or rel.endswith("GAP_REGISTER.md"):
+            continue
+        with contextlib.suppress(OSError):
+            n = len(parse_findings(p.read_text("utf-8"), source=rel))
+            if n >= 5:  # a handful of numbered lines is prose; a pile of them is a findings doc
+                rogue.append(f"{p.name}({n})")
+    if rogue:
+        defects.append((
+            "findings-scope-unmonitored",
+            "§35 scope: doc(s) carrying numbered findings outside the scan -- "
+            f"{', '.join(rogue[:6])}. Findings written there owe no register row and are "
+            "invisible to §35 -- a bypass needing no code change and leaving no diff. Add to "
+            "_FINDING_DOCS or _FINDING_DOCS_EXCLUDED with a stated reason."))
 
 
 def check_orphan_code(defects) -> None:
@@ -1822,9 +2181,42 @@ def check_no_mining_throttle(defects) -> None:
                             "must never be skipped for a conversion backlog."))
 
 
-def main() -> None:
-    defects: list[tuple[str, str]] = []
-    for label, fn in [("organs", check_organs), ("stubs", check_stub_deaths),
+CARRYOVER_LEDGER = ROOT / "data/carryover_sweeps.jsonl"
+
+
+def check_carryover_skipped(defects) -> None:
+    """§37: work the brain was SHOWN and did not do -- distinct from work it never saw.
+
+    The brain is a metered session; it dies on quota, and the cycle's owed work used to die with
+    it. §37 records every sweep and hands the backlog back on return. This check closes the other
+    half: an item that survived sweeps the brain was AWAKE for was not missed, it was SKIPPED --
+    and a plain queue cannot tell the two apart, because a long queue looks identical whether
+    nobody was home or everybody walked past it. Only the second is a defect: blaming the desk for
+    an outage is unfair, and excusing avoidance is expensive.
+    """
+    from libs.ops.carryover import carryover_state, load_sweeps
+
+    sweeps = load_sweeps(CARRYOVER_LEDGER)
+    if len(sweeps) < 3:
+        return  # too little history to distinguish a skip from a fresh item
+    st = carryover_state(sweeps, now=NOW)
+    skipped = st.skipped_items
+    if not skipped:
+        return
+    worst = ", ".join(f"{i.defect_id}({i.seen_by_live_brain}x awake, {i.age_days:.0f}d)"
+                      for i in skipped[:6])
+    defects.append((
+        "carryover-skipped",
+        f"§37: {len(skipped)} item(s) survived sweeps the brain was AWAKE for -- {worst}. "
+        f"{st.n_dead_sweeps} cycle(s) were lost to quota and are NOT the excuse for these: the "
+        "brain ran, was handed the item, and carried it anyway. Do them, or record in the ledger "
+        "why not -- silently carrying an item a third time is what this exists to stop."))
+
+
+#: Every check the sweep runs. Module-level so other organs (§37 carry-over) can
+#: enumerate the same set instead of keeping a second copy that silently drifts.
+CHECKS = [("carryover-skipped", check_carryover_skipped),
+          ("organs", check_organs), ("stubs", check_stub_deaths),
                       ("panel", check_panel), ("coverage", check_coverage),
                       ("findings", check_findings), ("idle", check_idle_capability),
                       ("directives", check_directives), ("verify", check_verify_lag),
@@ -1844,6 +2236,12 @@ def main() -> None:
                       ("no-mining-throttle", check_no_mining_throttle),
                       ("ci-scope", check_ci_scope),
                       ("review-risks", check_review_risks_tracked),
+                      ("findings-tracked", check_findings_tracked),
+                      ("findings-scope", check_findings_scope),
+                      ("findings-ratchet", check_findings_ratchet),
+                      ("gap-register-health", check_gap_register_health),
+                      ("producer-cadence", check_producer_cadence),
+                      ("artifact-governance", check_artifact_governance),
                       ("orphan-code", check_orphan_code),
                       ("capacity-hunt", check_capacity_hunt),
                       ("capacity-single-source", check_capacity_single_source),
@@ -1861,7 +2259,201 @@ def main() -> None:
                       ("bnb-funded", check_bnb_funded),
                       ("self-sufficiency", check_self_sufficiency),
                       ("rs-detect", check_rubberstamp_detector),
-                      ("rs-enforce", check_rubberstamp_enforcement)]:
+                      ("rs-enforce", check_rubberstamp_enforcement)]
+
+
+PAID_TARGETS = ROOT / "docs/research/paid_dataset_targets.md"
+HOLDINGS_RECORD = ROOT / "docs/research/holdings_record.json"   # git-tracked, ratchets UP only
+
+
+def check_paid_target_registry(defects) -> None:
+    """§42: the paid-dataset target registry must exist, be hunted, and GROW.
+
+    §38 hunts a replacement when a source fails -- reactive. §42 keeps a standing list of every
+    valuable paid dataset with a live free-replacement status, so the desk already knows what it
+    would do if a vendor vanished. A FIXED list is the same blind spot in a different shape, so
+    the list growing is itself the deliverable.
+    """
+    if not PAID_TARGETS.exists():
+        defects.append(("paid-registry-missing",
+                        "§42: docs/research/paid_dataset_targets.md is missing -- the desk has no "
+                        "standing list of paid datasets to hunt free replacements for, so it can "
+                        "only react to failures instead of anticipating them"))
+        return
+    txt = PAID_TARGETS.read_text("utf-8", errors="ignore")
+    rows = [ln for ln in txt.splitlines() if ln.startswith("| ") and "---" not in ln]
+    n = max(0, len(rows) - 1)                      # minus the header row
+    open_items = sum(1 for ln in rows if "OPEN" in ln)
+    try:
+        rec = json.loads(HOLDINGS_RECORD.read_text("utf-8")) if HOLDINGS_RECORD.exists() else {}
+    except Exception:
+        rec = {}
+    best = int(rec.get("best_paid_targets", 0))
+    if n > best:
+        rec["best_paid_targets"] = n
+        rec["updated"] = datetime.now(tz=UTC).isoformat()
+        rec.setdefault("note", "§42 ratchet: registry size and holdings only grow; a fall is a "
+                               "regression defect, never a new normal")
+        HOLDINGS_RECORD.write_text(json.dumps(rec, indent=1), "utf-8")
+    elif n < best:
+        defects.append(("paid-registry-shrank",
+                        f"§42: paid-dataset registry fell to {n} entries from a record of {best} "
+                        "-- the hunt list may only GROW. Restore the removed targets or record "
+                        "why each is genuinely no longer a dataset worth replacing."))
+    # a registry nobody advances is a document, not a hunt
+    age_d = (NOW - PAID_TARGETS.stat().st_mtime) / 86400.0
+    if age_d > 14 and open_items:
+        defects.append(("paid-registry-stagnant",
+                        f"§42: {open_items} OPEN replacement hunts and the registry has not been "
+                        f"touched in {age_d:.0f}d. Every dig must advance the top OPEN item it "
+                        "can and ADD any paid dataset it encountered -- a list that never grows "
+                        "is the same blind spot in a different shape."))
+
+
+def check_holdings_never_shrink(defects) -> None:
+    """§42(4): non-noise information holdings grow monotonically -- quantity AND quality.
+
+    Counts the desk's live data surface (lake axis dirs + forward-clock/series jsonl files) and
+    ratchets it against the best-ever. A source removed without replacement, a series left to rot,
+    or history quietly dropped is a §34 regression arriving by attrition rather than by mining
+    less. Today's holdings are the FLOOR, never the target.
+    """
+    lake = ROOT / "data/lake/bronze"
+    axes = sum(1 for _ in lake.iterdir()) if lake.exists() else 0
+    series = len(list(ROOT.glob("data/*.jsonl")))
+    surface = axes + series
+    if surface == 0:
+        return
+    try:
+        rec = json.loads(HOLDINGS_RECORD.read_text("utf-8")) if HOLDINGS_RECORD.exists() else {}
+    except Exception:
+        rec = {}
+    best = int(rec.get("best_surface", 0))
+    if surface > best:
+        rec["best_surface"] = surface
+        rec["updated"] = datetime.now(tz=UTC).isoformat()
+        HOLDINGS_RECORD.write_text(json.dumps(rec, indent=1), "utf-8")
+    elif best >= 8 and surface < best * 0.9:
+        defects.append(("holdings-shrank",
+                        f"§42(4): information surface fell to {surface} (axes+series) from a "
+                        f"record of {best}. Holdings may NEVER shrink -- a dropped source, a "
+                        "rotted series or discarded history is a regression by attrition. Restore "
+                        "it or record the replacement that supersedes it."))
+
+
+FEE_RECORD = ROOT / "docs/research/fee_ratio_record.json"   # git-tracked; ratchets DOWN only
+
+
+def check_fee_carry_ratio(defects) -> None:
+    """§40: fees must always shrink RELATIVE to the carry they consume.
+
+    Absolute fees say nothing -- a bigger book pays more and earns more. The viability number is
+    what fraction of the harvest the fees eat. This desk went from fees at 2.4x funding to
+    commission -133 -> -30 over 7 days once patient-maker opens and the single-book invariant
+    landed; that gain becomes the floor, and any material worsening is a defect rather than a new
+    normal.
+    """
+    try:
+        import time as _t
+
+        from libs.execution import binance_testnet as _fut
+        rows = _fut._signed("/fapi/v1/income",
+                            {"startTime": int((_t.time() - 7 * 86400) * 1000), "limit": 1000})
+    except Exception:
+        return                                    # venue unreachable is not a fee defect
+    agg: dict[str, float] = {}
+    for r in rows:
+        try:
+            agg[r["incomeType"]] = agg.get(r["incomeType"], 0.0) + float(r["income"])
+        except Exception:
+            continue
+    funding = agg.get("FUNDING_FEE", 0.0)
+    commission = abs(agg.get("COMMISSION", 0.0))
+    if funding < 5.0:
+        # FLAT-BOOK GUARD: with almost no harvest the ratio explodes for reasons unrelated to
+        # execution quality (the 07-25 dead-man fire left funding at +2.80 for a week). Firing
+        # here would be a false defect, and false defects train the desk to ignore the check.
+        return
+    ratio = commission / funding
+    try:
+        rec = json.loads(FEE_RECORD.read_text("utf-8")) if FEE_RECORD.exists() else {}
+    except Exception:
+        rec = {}
+    best = float(rec.get("best_ratio", 9e9))
+    if ratio < best:
+        FEE_RECORD.write_text(json.dumps(
+            {"best_ratio": round(ratio, 4), "commission_7d": round(commission, 2),
+             "funding_7d": round(funding, 2),
+             "updated": datetime.now(tz=UTC).isoformat(),
+             "note": "§40 ratchet: fees as a fraction of funding earned. Ratchets DOWN only -- a "
+                     "material worsening is a defect, never a new normal."}, indent=1), "utf-8")
+        return
+    if ratio > best * 1.3 and best < 9e8:
+        defects.append((
+            "fee-ratio-regression",
+            f"§40: fees are eating {ratio:.2f}x the funding harvest (7d: commission "
+            f"{commission:.2f} vs funding {funding:.2f}) against a best-ever of {best:.2f}x. "
+            "Fees must always fall RELATIVE to carry. Check maker fill-rate (patient opens should "
+            "keep it climbing), churn (24h min-hold), BNB burn funding at live, and whether "
+            "turnover rose without a matching rise in harvest."))
+    if ratio > 1.0:
+        defects.append((
+            "fee-ratio-above-one",
+            f"§40: fees ({commission:.2f}) EXCEED the funding earned ({funding:.2f}) over 7d "
+            f"-- ratio {ratio:.2f}x. The sleeve cannot be net-positive while this holds, "
+            "regardless of how good the signal is. This is the single most direct drag on CAGR."))
+
+
+DOCTRINE = ROOT / "ops/principal_doctrine.txt"
+
+# Duties that must reach EVERY organ, not just the brain. The list is explicit rather than
+# inferred: a heuristic would either miss a renamed duty or nag about the many duties that are
+# CORRECTLY brain-only (audit coverage, red-team panels, risk-path depth, the independence gate).
+_UNIVERSAL = ("PROACTIVE BATTERY DUTY", "NO-ORPHANED-RECOMMENDATION LAW", "NOVELTY GATE",
+              "TARGET/HORIZON SWEEP DUTY", "RESEARCH-MEMORY DUTY", "FREE-FIRST DATA PROTOCOL",
+              "BLIND-SPOT ORIGIN DUTY", "FINDING LIFECYCLE DUTY", "SELF-INTERROGATION DUTY",
+              "TWO-STAGE DISCOVERY LAW", "SCREEN-ON-DISCOVERY DUTY", "MINING-NEVER-REGRESSES LAW",
+              "NO-CEILING AXIOM", "FREE-FRONTIER AXIOM", "DATA-UTILIZATION")
+
+
+def check_universal_doctrine(defects) -> None:
+    """Every universal duty must live in the SHARED doctrine, and every organ must inject it.
+
+    ORIGIN (2026-07-26): the doctrine ordered every digger to screen new axes (SCREEN-ON-DISCOVERY)
+    while the rules that keep screening honest -- novelty gate, target/horizon trial accounting,
+    research-memory -- lived only in the brain's own prompt. Diggers were commanded to do the
+    dangerous half of the job without the discipline that makes it safe. A universal law parked in
+    one organ's prompt is not a law, it is a local habit.
+    """
+    if not DOCTRINE.exists():
+        defects.append(("doctrine-missing",
+                        "ops/principal_doctrine.txt is gone -- every organ injects it as its "
+                        "system prompt, so the desk is running with no standing law at all"))
+        return
+    txt = DOCTRINE.read_text("utf-8", errors="ignore")
+    missing = [d for d in _UNIVERSAL if d not in txt]
+    if missing:
+        defects.append(("doctrine-universal-missing",
+                        f"universal duties absent from the shared doctrine: {', '.join(missing)}. "
+                        "These bind every organ; if one lives only in a single organ's prompt, "
+                        "every other organ operates without it -- which is how diggers came to be "
+                        "ordered to screen axes with no novelty gate or trial accounting."))
+    # A duty is only universal if every reasoning organ actually injects the doctrine.
+    naked = []
+    for sh in sorted(ROOT.glob("ops/run_*.sh")):
+        body = sh.read_text("utf-8", errors="ignore")
+        if re.search(r"claude .*(-p|--append-system-prompt)", body) and "_DOCTRINE" not in body:
+            naked.append(sh.name)
+    if naked:
+        defects.append(("doctrine-not-injected",
+                        f"reasoning organs invoking claude WITHOUT the doctrine: {naked}. "
+                        "An organ that does not inject it is exempt from every standing law the "
+                        "desk has, silently."))
+
+
+def main() -> None:
+    defects: list[tuple[str, str]] = []
+    for label, fn in CHECKS:
         _fenced(fn, defects, label)
 
     acks = _j(ACKS, {})

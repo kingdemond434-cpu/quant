@@ -2,7 +2,7 @@
 
 ``scripts/run_listing_watch.py`` has been logging every new USDT perp with its funding rate at
 detection. That is ACQUISITION. Nothing consumed it, so the day-1 listing dislocation -- the
-capacity-tiny, structurally recurring edge §39 calls the desk's niche -- could accumulate evidence
+capacity-tiny, structurally recurring edge §42 calls the desk's niche -- could accumulate evidence
 forever without ever being able to earn a promotion. This module is the consumer: it shapes those
 rows into ``Event`` observations that ``libs.validation.event_study`` can actually rule on.
 

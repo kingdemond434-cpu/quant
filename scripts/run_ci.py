@@ -19,6 +19,7 @@ open gap, tracked separately, not fixed by this comment.
 from __future__ import annotations
 
 import contextlib
+import fcntl
 import json
 import subprocess
 import sys
@@ -42,7 +43,34 @@ _STEPS = [
 ]
 
 
+_LOCK = _ROOT / "data/.ci_run.lock"
+
+
+def _acquire() -> object | None:
+    """Take the CI lock, or return None if another run already holds it.
+
+    Non-blocking on purpose: a second concurrent gate tests the same tree, so it adds no
+    information while doubling peak RAM on a 3.8 GiB box with no swap -- where the OOM-killer's
+    victim could be the dead-man rail. Declining beats queueing.
+    """
+    _LOCK.parent.mkdir(parents=True, exist_ok=True)
+    fh = _LOCK.open("w")
+    try:
+        fcntl.flock(fh.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        fh.close()
+        return None
+    return fh
+
+
 def main() -> int:
+    _fh = _acquire()
+    if _fh is None:
+        # Another gate is mid-run on the same tree. Exit 0 and DO NOT touch the marker:
+        # non-zero would fail an organ's cycle for the non-error of someone else already
+        # checking, and writing the marker here IS the last-writer-wins race.
+        print("CI: another run holds the lock -- skipping (marker left untouched)")
+        return 0
     failed: list[str] = []
     for label, cmd in _STEPS:
         r = subprocess.run(cmd, cwd=str(_ROOT), capture_output=True, text=True, check=False)

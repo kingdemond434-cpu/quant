@@ -65,7 +65,7 @@ class AlphaDiscoveryFactory:
         self.adv_usd = adv_usd
         self.min_observations = min_observations
         self.seed = seed
-        # §39: the REAL book, which is what capacity must be judged against. Deliberately separate
+        # §42: the REAL book, which is what capacity must be judged against. Deliberately separate
         # from `init_cash` -- that is a backtest's notional, not the equity that will be deployed,
         # and defaulting capacity checks to a $100k simulation notional is how the flat $100k
         # floor survived a rewrite in the first place.
@@ -266,7 +266,7 @@ class AlphaDiscoveryFactory:
             dsr_pass=dsr.passed, pbo_pass=pbo_pass, cpcv_pass=wf_pass, walk_forward_pass=wf_pass,
             holdout_pass=holdout_pass, cost_pass=cost_pass,
             parameter_stability_pass=stability.robust, fragility_pass=fragility.robust,
-            # §39: was a flat `>= 1e5`, the SAME categorical exclusion the survival gate had --
+            # §42: was a flat `>= 1e5`, the SAME categorical exclusion the survival gate had --
             # fixing one and leaving this one meant sub-$100k edges still failed acceptance here.
             capacity_pass=capacity.capacity_usd >= capacity_required(self.book_usd,
                                                                      self.n_sleeves),

@@ -1,4 +1,4 @@
-"""§39(5)(d): the parity guard must actually catch the failure that caused §39 in the first place.
+"""§42(5)(d): the parity guard must actually catch the failure that caused §42 in the first place.
 
 The original defect was five copies of one policy that drifted apart, so the guard checks the
 SHAPE OF THE DEPENDENCY (does this scorer import the shared policy?) rather than the value of any
@@ -22,7 +22,7 @@ class TestGuard:
     def test_the_real_tree_is_clean(self) -> None:
         out: list[tuple[str, str]] = []
         m.check_capacity_single_source(out)
-        assert out == [], f"§39 parity guard is firing on the live tree: {out}"
+        assert out == [], f"§42 parity guard is firing on the live tree: {out}"
 
     def test_a_reinlined_fund_constant_is_caught(self, tmp_path, monkeypatch) -> None:
         for rel in m._CAPACITY_CONSUMERS:
