@@ -723,3 +723,42 @@ Two asks: (1) find out why the auditor died and whether it has been silently fai
 (2) an auditor that fails should write its error or write nothing — never a stub that looks like
 coverage. Left in place deliberately rather than deleted, since deleting them would erase the only
 evidence the run happened.
+
+**66. THE POSITIONING-CONTAMINATION LAW — "a variable that claims to measure WHO IS POSITIONED almost
+always measures WHAT THE PRICE JUST DID." Four independent literatures and three of the desk's own
+kills are the same failure, and the desk's angle-20 gate is the highest-yield filter it owns.**
+*Class: validation / screening protocol. Cost: a sequencing rule, not a build. Recommend: adopt-now.*
+Surfaced by ground [LIT-b] (forgotten-literature archaeology) as a cross-source synthesis — it is not
+in any one paper, which is why it is worth an inbox slot rather than a citation.
+
+| Source | The "flow/positioning" variable | What it actually contained |
+|---|---|---|
+| Gorton–Hayashi–Rouwenhorst 2007 | commercial net long / OI | significant **contemporaneously**, ZERO when lagged |
+| Andersen–Bondarenko 2011 (vs VPIN) | VPIN via bulk-volume classification | *"an imperfect realized volatility metric which, by construction, will have forecast power"* |
+| Wardlaw 2020 (vs Coval–Stafford) | mutual-fund flow pressure | *"a direct function of the stock's actual realized return"* |
+| Brunnermeier–Nagel–Pedersen 2008 | CFTC speculator futures position | driven out entirely by past return z_t |
+| **Desk:** `cm_mvrv_btc_daily_level` | 20d-z of a market-cap ratio | same-period corr **0.416** |
+| **Desk:** `coinbase_premium_timing` | venue premium | same-period corr **+0.256** |
+| **Desk:** `bithumb_kr_premium_lookahead` | KR premium | candle timestamped ~1.6d AHEAD |
+
+**Why this is a finding and not a platitude.** The desk arrived at this independently and built the
+angle-20 de-contamination gate for it. The academic literature arrived at it **three separate times
+between 2007 and 2020**, and each time it demolished a headline result that had already been
+published and cited. Seven instances, four of them external, one mechanism.
+**TWO CONSEQUENCES, and the second is the uncomfortable one.**
+1. **The contamination gate is not conservatism — it is the single highest-yield filter in this
+   entire stratum, and it is currently applied too late.** Proposal: apply it to *every* positioning-
+   or flow-style proposal **before any backtest is run**, as an admission test rather than a
+   post-hoc screen. The cost of running it first is one correlation; the cost of running it last is
+   a full backtest plus a DSR slot plus the temptation to keep a fat in-sample number.
+2. **"Price-only alpha is dead (420/0)" is a BROADER claim than the desk has been treating it as —
+   because most "non-price" positioning data is price data wearing a hat.** This materially changes
+   how the desk should read its own orthogonality scores: an axis can be nominally new (a different
+   vendor, a different venue, an on-chain metric) and still be inside the dead class by construction.
+   It argues for orthogonality being measured against *realized returns* first and against the
+   existing book second — the reverse of the intuitive order.
+**Concrete asks:** (a) move the angle-20 check to the front of the screening protocol as a
+precondition, not a gate; (b) add "does this variable contain the contemporaneous return by
+construction?" as an explicit written question on every axis card, answered *before* data is pulled;
+(c) record the four external instances above alongside the desk's three in the graveyard's standing
+notes, so the pattern is visible to anyone proposing the eighth.
