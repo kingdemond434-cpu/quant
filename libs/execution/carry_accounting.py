@@ -22,9 +22,48 @@ into ``net = spot_open + spot_realized + (fut_eq - start_eq)`` the venue-realize
 
 from __future__ import annotations
 
+import time
+from collections.abc import Callable
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict
+
+
+def read_income(
+    fetch: Callable[[], Any],
+    *,
+    attempts: int = 3,
+    sleeper: Callable[[float], None] = time.sleep,
+) -> dict[str, Any] | None:
+    """Venue income summary, or ``None`` when it cannot be read -- NEVER a zero-filled dict.
+
+    UNKNOWN IS NOT ZERO. This exists because on 2026-07-26 the venue's ``/fapi/v1/income``
+    endpoint returned HTTP 502 for hours while the executor's ``_safe()`` context swallowed the
+    error and left ``funding`` at its initialised ``0.0``. The primary book then published a
+    $0.00 harvest -- against a ground truth of $101.96 that the molded book had recorded two
+    hours earlier -- and the carry-leak alarm divided by that fabricated zero to declare an
+    ``inf%`` total bleed. An outage was rendered as an economic verdict.
+
+    That is the same failure SHAPE as the 2026-07-19 stranded-inventory incident (GAP row 34),
+    where ``_safe()`` made a rejected order indistinguishable from a filled one. That incident
+    was fixed on the ORDER path (``_filled``) and left standing on the MEASUREMENT path.
+
+    Reads are idempotent, so a transient 5xx is retried. Orders are deliberately NOT retried
+    this way (see ``libs/execution/retry``) -- a duplicate GET is free, a duplicate POST is a
+    second position. Every failure class collapses to ``None`` on purpose: the caller's only
+    honest question is "did this measure or not", and a partially-parsed dict is not a
+    measurement.
+    """
+    for attempt in range(1, attempts + 1):
+        try:
+            out = fetch()
+        except Exception:                              # any venue/transport failure = unmeasured
+            if attempt < attempts:
+                sleeper(1.0 * attempt)
+                continue
+            return None
+        return out if isinstance(out, dict) else None
+    return None
 
 
 def dedup_basis(trades: list[dict[str, Any]]) -> float:
@@ -63,18 +102,47 @@ class CarryBleedReport(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     real_net: float  # spot_pnl + fut_pnl -- the real delta-neutral book (excludes paper legs)
-    funding: float  # the harvest, the reason the book exists
-    non_funding_pnl: float  # real_net - funding = basis + fees + hedge drift/incidents (the leak)
-    harvest_eaten_frac: float  # share of harvest lost to the leak (0 = clean, >=1 = all eaten)
+    funding: float | None  # the harvest; None = UNMEASURED (venue read failed), never "zero"
+    non_funding_pnl: float | None  # real_net - funding = basis + fees + drift (None if unmeasured)
+    harvest_eaten_frac: float | None  # share of harvest lost to the leak (0 = clean, >=1 = all)
     alert: bool
     verdict: str
+    measured: bool = True  # False = the funding read failed; the leak is UNDECIDABLE, not clean
 
     def __bool__(self) -> bool:
-        return not self.alert
+        # An UNMEASURED book is not a healthy one. Truthiness means "nothing to worry about",
+        # and a blind alarm is something to worry about -- so it must not read as fine.
+        return self.measured and not self.alert
+
+
+def attribute_non_funding(
+    non_funding_pnl: float, basis: float, fut_commission: float
+) -> dict[str, float]:
+    """Split the carry leak into ``basis``, ``fut_fees`` and an UNEXPLAINED ``residual``.
+
+    The bleed alarm answers *how much* leaked; this answers *where it went*, which is the only
+    form the desk can act on. From the book identity ``net = spot_open + basis + funding - fees``::
+
+        non_funding = basis - fees + residual   ->   residual = non_funding - basis + fees
+
+    ``basis`` is the deduped trade-log price_pnl (hedge convergence, ~0 for a tight hedge) and
+    ``fut_commission`` is the venue's exact FUTURES fee bill. The residual is everything neither
+    explains: SPOT commission (paid in the spot wallet, absent from the futures income ledger),
+    slippage, and hedge-drift incidents. It is deliberately NOT called "fees" -- naming an
+    unexplained quantity after a known one is how a phantom gets rationalised (2026-07-10).
+
+    A large residual is the phantom/broken-hedge class and deserves a page; a large ``fut_fees``
+    term is an EXECUTION problem with a known lever (maker share, churn, BNB burn). Before this
+    split the two were indistinguishable on the dashboard, so the standing duty to "attribute
+    basis/fees/incidents" could not actually be discharged.
+    """
+    fees = abs(fut_commission)
+    return {"basis": round(basis, 2), "fut_fees": round(fees, 2),
+            "residual": round(non_funding_pnl - basis + fees, 2)}
 
 
 def carry_bleed_report(
-    *, funding: float, spot_pnl: float, fut_pnl: float, alert_frac: float = 0.5
+    *, funding: float | None, spot_pnl: float, fut_pnl: float, alert_frac: float = 0.5
 ) -> CarryBleedReport:
     """Attribute the delta-neutral book's non-funding PnL and raise an alarm if the leak is eating
     the funding harvest.
@@ -90,8 +158,25 @@ def carry_bleed_report(
     PnL alarms just as loudly. On a delta-neutral book the price legs cancel by construction -- a
     windfall that size is not luck, it is a BROKEN HEDGE (a naked/untracked leg carrying real
     directional risk that will reverse). A one-sided alarm would have called that state "clean".
+
+    UNMEASURED (2026-07-26): ``funding=None`` means the venue read failed, and the leak is then
+    UNDECIDABLE -- every term of this alarm is denominated in a harvest we do not know. Passing a
+    zero instead produced a division by that zero and an ``inf%`` "hedge losing more than it
+    earns" verdict out of nothing but an HTTP 502. The report says so plainly and declines to
+    judge; ``measured=False`` is what downstream must alarm on, and it is deliberately NOT folded
+    into ``alert`` -- a venue outage and a leaking hedge need different responses, so collapsing
+    them into one boolean would just move the ambiguity rather than remove it.
     """
     real_net = round(spot_pnl + fut_pnl, 2)
+    if funding is None:
+        return CarryBleedReport(
+            real_net=real_net, funding=None, non_funding_pnl=None, harvest_eaten_frac=None,
+            alert=False, measured=False,
+            verdict=(f"UNMEASURED: funding harvest unavailable (venue income read failed) -- "
+                     f"leak undecidable on real_net {real_net:+.2f}. A swallowed venue error is "
+                     f"NOT a zero harvest; judging one as the other fabricates a total-bleed "
+                     f"verdict out of an outage."),
+        )
     non_funding = round(real_net - funding, 2)
     if funding > 0:
         eaten = round(max(0.0, -non_funding) / funding, 3)

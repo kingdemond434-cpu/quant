@@ -153,6 +153,30 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0013",
+   "source": "cycle",
+   "summary": "live_book.py:159 coerces a null funding_harvested to 0.0 via _num(), so the molded dashboard still shows a fabricated zero during a venue outage even though the executed book now emits funding_measured=false. Thread the measured flag through live_book.to_public().",
+   "roi_bps": 0.0,
+   "raised": "2026-07-26T20:26:09.605574+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0014",
+   "source": "proactive_battery",
+   "summary": "Audit every remaining shared-guard venue read for the partial-update shape: a try/_safe block wrapping two or more venue calls where an early assignment lands before a later call throws. Found 2 instances (carry _mark, run_live_combined); sweep the rest of libs/execution and scripts/run_crypto_testnet.py:181,422.",
+   "roi_bps": 0.0,
+   "raised": "2026-07-26T20:26:09.758255+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

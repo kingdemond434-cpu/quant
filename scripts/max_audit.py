@@ -22,6 +22,7 @@ from __future__ import annotations
 import contextlib
 import json
 import re
+import subprocess
 import sys
 import time
 from datetime import UTC, datetime
@@ -209,6 +210,43 @@ _DEATH_MARKERS = ("out of usage credits", "session limit", "hit your limit",
                   "permission denied", "refusing to send")
 
 
+#: label -> pgrep pattern of the organ that WRITES that product, in BRACKET-TRICK form
+#: (`run_cro_ai[.]sh`). The bracket is not decoration: the decision ledger records a monitor
+#: that self-matched its own pgrep and reported a dead cycle as RUNNING for 80 minutes, so
+#: every pattern this desk greps for a liveness answer is written so it cannot match the
+#: checker's own argv.
+_PRODUCER_PGREP = {
+    "cron-cycle":         "run_cro_ai[.]sh",
+    "prospector-product": "run_prospector_dig[.]sh",
+    "dataaxis-product":   "run_dataaxis_dig[.]sh",
+    "litminer-product":   "run_litminer_dig[.]sh",
+    "frontier-product":   "run_frontie[r]",
+}
+
+
+def _producer_running(label: str) -> bool:
+    """True while the organ that writes this product is still running.
+
+    IN-FLIGHT IS NOT A STUB (2026-07-26). check_production compared a product's size against a
+    success threshold with no liveness test, so an organ that was running CORRECTLY was reported
+    as a defect: the 15:00 brain cycle was 20 seconds old, its log held only the shell's start
+    header (53b), and the sweep filed it as `production-stub ... ran but produced a stub, not
+    real output (the quota-stub / refuse class)`. A claude organ writes deliverables via file
+    tools and its log stays tiny until exit, so EVERY healthy cycle trips that rule for its whole
+    runtime. organ_catchup already guards exactly this way (is_running + RETRY_COOLDOWN_S); the
+    audit did not, and a monitor that cries wolf on healthy work is how a desk learns to ignore
+    its own pager -- the same blindness the stub-death check exists to prevent.
+    """
+    pat = _PRODUCER_PGREP.get(label)
+    if not pat:
+        return False
+    try:
+        return subprocess.run(["pgrep", "-f", pat], capture_output=True,
+                              timeout=10, check=False).returncode == 0
+    except (OSError, subprocess.SubprocessError):
+        return False               # cannot prove it is alive -> fall through and report
+
+
 def check_stub_deaths(defects) -> None:
     dead = []
     for p in LOGS.glob("*.log"):
@@ -224,6 +262,84 @@ def check_stub_deaths(defects) -> None:
         defects.append(("stub-deaths",
                         f"{len(dead)} organ runs died at birth in 48h (log CONTENT names a quota/"
                         f"auth/model failure): {', '.join(p.name for p in dead[:6])}"))
+
+
+#: Long-lived daemons whose code is loaded ONCE at process start. Add any new always-on service.
+_DAEMONS = {
+    "quant-cashcarry": "scripts/run_cashcarry_executor.py",
+    "quant-deadman": "scripts/run_deadman_switch.py",
+    "quant-liquidations": "scripts/liquidation_listener.py",
+    "quant-dashboard": "scripts/serve_dashboard.py",
+}
+
+
+def _import_closure(entry: Path, seen: set[Path] | None = None) -> set[Path]:
+    """Repo-local modules an entry point actually imports, followed transitively.
+
+    Resolves `from libs.x.y import z` and `import libs.x.y` to files under the repo. Anything
+    unresolvable is stdlib/third-party and is skipped -- those ship with the interpreter and do
+    not change under a running process.
+    """
+    import ast
+    seen = seen if seen is not None else set()
+    if entry in seen or not entry.exists():
+        return seen
+    seen.add(entry)
+    try:
+        tree = ast.parse(entry.read_text("utf-8", errors="ignore"))
+    except (OSError, SyntaxError):
+        return seen
+    mods: set[str] = set()
+    for n in ast.walk(tree):
+        if isinstance(n, ast.Import):
+            mods |= {a.name for a in n.names}
+        elif isinstance(n, ast.ImportFrom) and n.module and not n.level:
+            mods.add(n.module)
+    for m in mods:
+        if m.split(".")[0] not in {"libs", "app", "scripts"}:
+            continue
+        for cand in (ROOT / (m.replace(".", "/") + ".py"),
+                     ROOT / m.replace(".", "/") / "__init__.py"):
+            if cand.exists():
+                _import_closure(cand, seen)
+    return seen
+
+
+def check_stale_daemons(defects) -> None:
+    """A daemon running code older than its own source is a fix that DID NOT SHIP.
+
+    Origin (2026-07-26): the carry-leak alarm was committed 02:29Z and the executor had been up
+    since 00:38Z, so python had already loaded the pre-fix module. The alarm sat inert for 8.7
+    hours over a book bleeding 510% of its funding harvest -- the dashboard read "clean" because
+    the field was simply absent. Same class as 2026-07-10, when a churn fix was inert for two
+    days. Both were caught by hand; nothing mechanical looked.
+
+    Compared against the IMPORT CLOSURE, not any-file-newer: a repo-wide mtime test fires on
+    every unrelated commit, and a check that always fires is a check nobody reads.
+    """
+    import subprocess
+    for svc, rel in _DAEMONS.items():
+        entry = ROOT / rel
+        if not entry.exists():
+            continue
+        try:
+            pid = subprocess.run(["systemctl", "show", "-p", "MainPID", "--value", svc],
+                                 capture_output=True, text=True, timeout=10).stdout.strip()
+            if not pid or pid == "0":
+                continue                                  # not running -- check_organs owns that
+            started = Path(f"/proc/{pid}").stat().st_mtime
+        except (OSError, ValueError, subprocess.SubprocessError):
+            continue
+        stale = sorted(p for p in _import_closure(entry) if p.stat().st_mtime > started)
+        if stale:
+            age = (NOW - started) / 3600.0
+            names = ", ".join(p.relative_to(ROOT).as_posix() for p in stale[:4])
+            defects.append((f"daemon-stale-code-{svc}",
+                            f"{svc} (pid {pid}, up {age:.1f}h) imports {len(stale)} file(s) "
+                            f"MODIFIED SINCE IT STARTED: {names} -- python loaded the old module "
+                            "at start, so every fix in those files is INERT in the running "
+                            "process. Restart the unit and verify the new behaviour appears in "
+                            "its output; a committed fix is not a shipped fix."))
 
 
 def check_panel(defects) -> None:
@@ -743,6 +859,37 @@ def check_forensics_fresh(defects) -> None:
                         "bleed/PnL analysis is not landing; check daily_research_cycle"))
 
 
+def check_carry_funding_measured(defects) -> None:
+    """The carry-leak alarm must be able to SEE (2026-07-26 incident).
+
+    The alarm is denominated in the funding harvest, so a failed venue read blinds it entirely.
+    Before this check the executor filled that gap with `0.0` and the alarm dutifully published an
+    `inf%` total-bleed verdict against a book that had really earned $101.96 -- an HTTP 502
+    rendered as an economic judgement. The fix makes the harvest honestly None, which means the
+    alarm now goes QUIET during an outage instead of loud-and-wrong; that trade is only safe if
+    the silence itself is a tracked defect, which is this function. A blind alarm and a clean book
+    look identical on a dashboard and must never look identical here.
+    """
+    cj = ROOT / "web/cashcarry_live.json"
+    if not cj.exists():
+        return                                        # book not running is a different check
+    try:
+        cc = json.loads(cj.read_text("utf-8"))
+    except Exception:
+        defects.append(("carry-funding-unmeasured", "web/cashcarry_live.json unparsable -- the "
+                        "carry-leak alarm cannot be read at all"))
+        return
+    # Absent key = an executor predating the fix, which is exactly the silent-zero state.
+    if cc.get("funding_measured", False) is not True:
+        age_h = (NOW - cj.stat().st_mtime) / 3600.0
+        defects.append((
+            "carry-funding-unmeasured",
+            f"carry funding harvest UNMEASURED (venue income read failing, book {age_h:.0f}h old) "
+            f"-- the leak alarm is BLIND: it cannot tell a clean hedge from a bleeding one, and "
+            f"the forward track record the sizing gate reads is accruing without its edge term. "
+            f"Verdict: {str(cc.get('bleed_verdict', ''))[:120]}"))
+
+
 def check_memory_hygiene(defects) -> None:
     """MEMORY layer fences (principal 2026-07-24): institutional memory must be written, fresh,
     and retrievable -- a memory system nobody writes to or that outgrows retrieval is theater.
@@ -858,7 +1005,7 @@ def check_production(defects) -> None:
                             f"{label}: {newest.name} {age_h:.0f}h old (cad {max_h}h) "
                             "-- scheduled but not PRODUCING; verify the organ actually runs end-to-"
                             "end, not just that its timer/cron fires (the cron-self-match class)"))
-        elif sz < min_b:
+        elif sz < min_b and not _producer_running(label):
             defects.append(("production-stub",
                             f"{label}: product {newest.name} is {sz}b (<{min_b}b) -- ran but "
                             "produced a stub, not real output (the quota-stub / refuse class)"))
@@ -2050,6 +2197,7 @@ def check_carryover_skipped(defects) -> None:
 #: enumerate the same set instead of keeping a second copy that silently drifts.
 CHECKS = [("carryover-skipped", check_carryover_skipped),
           ("organs", check_organs), ("stubs", check_stub_deaths),
+                      ("stale-daemons", check_stale_daemons),
                       ("panel", check_panel), ("coverage", check_coverage),
                       ("findings", check_findings), ("idle", check_idle_capability),
                       ("directives", check_directives), ("verify", check_verify_lag),
@@ -2061,6 +2209,7 @@ CHECKS = [("carryover-skipped", check_carryover_skipped),
                       ("clock-saturation", check_clock_saturation),
                       ("vendor-replacement", check_vendor_replacement),
                       ("forensics-fresh", check_forensics_fresh),
+                      ("carry-funding-measured", check_carry_funding_measured),
                       ("memory-hygiene", check_memory_hygiene),
                       ("prompt-layer", check_prompt_layer),
                       ("gate-optimality", check_gate_optimality),
@@ -2187,22 +2336,25 @@ def check_fee_carry_ratio(defects) -> None:
         import time as _t
 
         from libs.execution import binance_testnet as _fut
-        rows = _fut._signed("/fapi/v1/income",
-                            {"startTime": int((_t.time() - 7 * 86400) * 1000), "limit": 1000})
+        # PAGINATE (2026-07-26). This called `_signed(/fapi/v1/income, limit=1000)` directly and
+        # got back exactly 1000 rows -- the cap. Binance serves <=1000 rows/call, and this book
+        # books >1000 income rows in 7 days, so the window silently truncated to its most recent
+        # slice: funding read 2.80 against a true 13.57, commission 29.14 against a true 129.18.
+        # The understated funding then tripped this function's own flat-book guard, so §40 never
+        # fired even once it was registered. Worse, the truncated 2.80 was mistaken for a real
+        # flat book and written into the guard's comment as the 07-25 dead-man fire -- the bug
+        # manufactured its own justification. `income_summary` is the audited paginated+deduped
+        # helper and is the ONLY sanctioned way to read this endpoint (institutional_knowledge:
+        # "paginate every venue history endpoint... truncation never throws an error").
+        inc = _fut.income_summary(int((_t.time() - 7 * 86400) * 1000))
     except Exception:
         return                                    # venue unreachable is not a fee defect
-    agg: dict[str, float] = {}
-    for r in rows:
-        try:
-            agg[r["incomeType"]] = agg.get(r["incomeType"], 0.0) + float(r["income"])
-        except Exception:
-            continue
-    funding = agg.get("FUNDING_FEE", 0.0)
-    commission = abs(agg.get("COMMISSION", 0.0))
+    funding = float(inc.get("funding", 0.0))
+    commission = abs(float(inc.get("commission", 0.0)))
     if funding < 5.0:
         # FLAT-BOOK GUARD: with almost no harvest the ratio explodes for reasons unrelated to
-        # execution quality (the 07-25 dead-man fire left funding at +2.80 for a week). Firing
-        # here would be a false defect, and false defects train the desk to ignore the check.
+        # execution quality. Firing here would be a false defect, and false defects train the
+        # desk to ignore the check.
         return
     ratio = commission / funding
     try:
@@ -2217,7 +2369,10 @@ def check_fee_carry_ratio(defects) -> None:
              "updated": datetime.now(tz=UTC).isoformat(),
              "note": "§40 ratchet: fees as a fraction of funding earned. Ratchets DOWN only -- a "
                      "material worsening is a defect, never a new normal."}, indent=1), "utf-8")
-        return
+        # NO EARLY RETURN (2026-07-26): banking a new best must never suppress the ABSOLUTE alarm
+        # below. The first run on this book would otherwise record fees at 9.5x the harvest as
+        # "best ever" and report nothing at all -- a ratchet is a relative test, and a sleeve
+        # whose fees exceed its entire harvest is broken in absolute terms however it trends.
     if ratio > best * 1.3 and best < 9e8:
         defects.append((
             "fee-ratio-regression",
@@ -2279,6 +2434,49 @@ def check_universal_doctrine(defects) -> None:
                         f"reasoning organs invoking claude WITHOUT the doctrine: {naked}. "
                         "An organ that does not inject it is exempt from every standing law the "
                         "desk has, silently."))
+
+
+# Checks DEFINED BELOW the CHECKS literal must be registered here -- appending them up there is a
+# NameError, which is exactly how four of them ended up dead. Keep the order explicit (the list is
+# the run order); `check_registry_complete` below is what makes a future omission impossible.
+CHECKS += [("fee-carry-ratio", check_fee_carry_ratio),
+           ("paid-target-registry", check_paid_target_registry),
+           ("holdings-ratchet", check_holdings_never_shrink),
+           ("universal-doctrine", check_universal_doctrine)]
+
+#: Module-level `check_*` functions that are deliberately NOT swept. Empty by design: an exemption
+#: must be argued in writing here, never assumed by silence.
+_CHECKS_EXEMPT: set[str] = set()
+
+
+def check_registry_complete(defects) -> None:
+    """A written check that is never registered is a law the desk believes it is enforcing.
+
+    Origin (2026-07-26): `check_fee_carry_ratio` (§40 fee ratchet), `check_paid_target_registry`
+    and `check_holdings_never_shrink` (§39) and `check_universal_doctrine` were all authored,
+    committed, and NEVER added to CHECKS -- four consecutive charters shipped with zero
+    enforcement. The cause is structural, not careless: CHECKS is a literal defined ABOVE most of
+    the checks, so the natural "append next to the others" edit raises NameError at import and the
+    registration quietly gets dropped. Nothing mechanical looked, because the checker that would
+    have looked was itself one of the unregistered ones.
+
+    This closes the class: every module-level `check_*` callable must be in CHECKS or argued into
+    `_CHECKS_EXEMPT`. Silence is no longer a way to ship a dead law.
+    """
+    registered = {fn.__name__ for _, fn in CHECKS}
+    orphans = sorted(
+        name for name, obj in globals().items()
+        if name.startswith("check_") and callable(obj)
+        and name not in registered and name not in _CHECKS_EXEMPT)
+    if orphans:
+        defects.append((
+            "check-unregistered",
+            f"{len(orphans)} check(s) authored but NEVER RUN -- the law they enforce is inert "
+            f"while the desk believes it is enforced: {', '.join(orphans)}. Add each to CHECKS "
+            "(register BELOW its definition) or justify it in _CHECKS_EXEMPT."))
+
+
+CHECKS += [("check-registry", check_registry_complete)]
 
 
 def main() -> None:

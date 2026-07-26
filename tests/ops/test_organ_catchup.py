@@ -43,14 +43,31 @@ def test_recent_attempt_respects_cooldown(tmp_path: Path) -> None:
     assert organ_owed(DATAAXIS, tmp_path, NOW) is False
 
 
-def test_pick_prioritizes_brain_and_skips_running(tmp_path: Path) -> None:
+def test_pick_prioritizes_brain_when_the_field_is_clear(tmp_path: Path) -> None:
     _write(tmp_path, "20260724_0845.log", 162, 10 * 3600)
     _write(tmp_path, "dataaxis_20260724T1400.log", 51, 9 * 3600)
     picked = pick_organ(tmp_path, NOW, lambda pat: False)
     assert picked is not None and picked.name == "brain"
-    # brain running -> next owed organ is picked instead
-    picked2 = pick_organ(tmp_path, NOW, lambda pat: pat == "run_cro_ai.sh")
-    assert picked2 is not None and picked2.name == "dataaxis"
+
+
+def test_any_running_organ_blocks_every_retry(tmp_path: Path) -> None:
+    """REGRESSION (2026-07-26): catch-up must never stack a retry on a live organ.
+
+    The old rule skipped only the organ that was running and happily fired the NEXT owed one,
+    so a busy field still produced a launch. Observed live: the quota window reset at 15:00,
+    the frontier timer fired at 15:00:02, catch-up re-fired the brain at 15:00:05 and
+    deep_sweep at 15:05 -- three max-effort organs in one just-reopened window. All organs
+    draw the SAME pool, so a second launch does not add throughput, it turns two runs that
+    would have completed into two stub deaths (the logs show paired deaths quoting one shared
+    reset stamp). With dataaxis owed and the brain live, the answer must be "wait", not
+    "start dataaxis instead".
+    """
+    _write(tmp_path, "20260724_0845.log", 162, 10 * 3600)
+    _write(tmp_path, "dataaxis_20260724T1400.log", 51, 9 * 3600)
+    assert organ_owed(DATAAXIS, tmp_path, NOW) is True, "precondition: dataaxis is owed"
+    assert pick_organ(tmp_path, NOW, lambda pat: pat == "run_cro_ai.sh") is None
+    # and the gate is not brain-specific -- any live organ holds the field
+    assert pick_organ(tmp_path, NOW, lambda pat: pat == "run_frontier") is None
 
 
 def test_fresh_artifact_counts_as_production_despite_stub_log(tmp_path):

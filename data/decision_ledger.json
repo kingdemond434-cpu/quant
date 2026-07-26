@@ -2597,6 +2597,29 @@
    ],
    "success_metric": "vendor-replacement defect count reaches 0 and stays there as new vendors get entries with ground truths on first contact",
    "reversal_condition": "if the check produces chronic false positives on genuinely-unverifiable vendors, add an explicit graded residual_gap escape -- never delete the check"
+  },
+  {
+   "id": "2026-07-26-carry-funding-silent-zero",
+   "decision": "UNKNOWN IS NOT ZERO on the carry measurement path. FOUND BY THE DAILY INTEGRITY WATCH: the primary executed book published funding_harvested=0.00 and a bleed_verdict of 'inf% -- hedge losing more than it earns'. GROUND TRUTH CONTRADICTED IT: web/portfolio.json (molded book, 17:58Z) recorded funding=101.96 on the same book/venue. ROOT CAUSE: /fapi/v1/income returned HTTP 502 persistently (verified 3/3 live attempts this cycle); in _mark() the equity read and the income read shared ONE `_safe()` block, so the equity assignment landed and the income call then threw -- the swallowed exception left funding/commission at their initialised 0.0. A PARTIAL update: real futures PnL published next to a fabricated zero harvest, which is exactly the combination the alarm reads as a total bleed. An HTTP 502 was rendered as an economic verdict. THIS IS THE SAME FAILURE SHAPE AS THE 2026-07-19 STRANDED-INVENTORY INCIDENT (GAP row 34), where `_safe()` made a rejected order indistinguishable from a filled one; that was fixed on the ORDER path (`_filled`) and left standing on the MEASUREMENT path -- the adjacency move (proactive battery #2) is what found it. FIX: (1) new carry_accounting.read_income returns None -- never a zero-filled dict -- and retries transient 5xx (reads are idempotent; orders deliberately are NOT retried this way); (2) _mark gives the income read its OWN guard and initialises funding/commission to None; (3) carry_bleed_report accepts funding=None and returns measured=False with an UNMEASURED verdict instead of dividing by a fabricated zero -- and __bool__ now requires measured, so an unmeasured book cannot read as healthy; (4) leak_attribution is SKIPPED when the fee bill is unknown, because with commission=0 the whole fee bill lands in `residual` and manufactures precisely the phantom that function's own docstring warns against; (5) ADJACENCY: run_live_combined had the same shape half-fixed -- venue_realized already used the None-means-unknown pattern while funding two lines above still seeded 0.0, and its `except (ValueError, TypeError)` could not even catch the venue's HTTPError, so that book crashed outright (portfolio.json went 2h stale) -- now uses read_income too, plus a self-healing levered-lab baseline so a fund0 seeded during an outage is adopted on first real read rather than anchored to a fake zero. (6) The fix makes the alarm go QUIET during an outage, which is only safe if the silence is itself tracked: new max_audit check_carry_funding_measured fires whenever funding_measured is not True.",
+   "hypothesis": "A measurement that fails must be reported as unmeasured, never as zero. Zero and unknown are different states and conflating them corrupts both the alarm (false inf% bleed) and the forward track record the sizing gate reads (carry edge silently erased).",
+   "expected_benefit": "Removes a live corruption of the desk's PRIMARY evidence stream. Kills a false-alarm class that trains the desk to ignore the carry-leak alarm -- the alarm's whole value is that it is believed. Restores honest funding accrual to the forward record the growth ladder sizes on. No E[log wealth] estimate is claimed: this is measurement integrity, whose value is that every downstream number stops being wrong, not a direct return.",
+   "expected_cost": "~90 lines across 4 files + 5 regression tests. Maintenance near zero (removes a special case rather than adding one). Risk: downstream consumers must tolerate null -- see NEIGHBOURS.",
+   "confidence": "high -- root cause reproduced live (3/3 502s) and contradicted by a ground-truth reading of 101.96",
+   "assumptions": [
+    "income_summary is the only source of the funding/commission terms (verified: grepped all callers)",
+    "the 502 is venue-side and transient-class; if it persists the new max_audit check keeps it visible rather than letting it hide",
+    "JSON null is acceptable to every consumer of these fields (see neighbours -- each checked)"
+   ],
+   "neighbours": [
+    "libs/portfolio/live_book.py:159 -- _num(cc.get('funding_harvested')) coerces None->0.0. INSPECTED: still displays 0.0 during an outage, but the executed book now also emits funding_measured=false and max_audit fires on it, so the state is no longer silent. Deliberately NOT refactored this cycle to keep the change one coherent unit; logged as a follow-up.",
+    "scripts/run_live_combined.py -- FIXED in this change (same shape, half-applied)",
+    "scripts/run_micro_audit.py:82 -- reads funding_harvested for the audit payload; null renders fine",
+    "scripts/max_audit.py check_fee_ratio -- separately calls income_summary and returns silently on venue error; correct there ('venue unreachable is not a fee defect') and left unchanged",
+    "the levered lab (data/levlab) fund0 baseline -- self-heal added so an outage-seeded baseline cannot permanently overstate levered harvest",
+    "scripts/run_deadman_switch.py -- NOT TOUCHED (Tier-3 rail); verified it does not read these fields"
+   ],
+   "success_metric": "web/cashcarry_live.json carries funding_measured=true with a numeric harvest once the venue recovers; during any future income outage the verdict reads UNMEASURED and max_audit reports carry-funding-unmeasured. Falsified if a fabricated 0.00 harvest is ever published again.",
+   "reversal_condition": "If the None-valued fields break a downstream consumer not caught here, revert via checkpoint 20260726T200537_carry-funding-silent-zero-fix. Reverting restores a known-corrupt alarm, so prefer patching the consumer."
   }
  ]
 }

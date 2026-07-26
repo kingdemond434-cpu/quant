@@ -87,11 +87,36 @@ def _run_panel(mission: str | None) -> bool:
     if r1.returncode != 0:
         print(f"cadence: dossier regen failed rc={r1.returncode} -- panel skipped")
         return False
+    # PRODUCTION, NOT EXIT CODE (2026-07-26). This returned rc==0, and the caller stamps
+    # last_panel on True -- so a panel that wrote NOTHING still marked the duty done. That is
+    # how cadence_state came to claim a panel ran 2026-07-25 while panel_verdicts.jsonl had not
+    # been appended since 2026-07-21 (126h, cadence 96h). The mechanism is funding: the
+    # pre-flight check sizes a run at ~$0.05/seat and the account holds $3.40, so the run starts,
+    # exhausts mid-flight, seats return HTTP 402, the sanitizer drops the partial roster, and the
+    # process still exits clean. An exit code proves a process ended, never that it PRODUCED --
+    # the same state-touched-but-nothing-produced class check_production exists to catch. A run
+    # that appended no verdict now leaves the duty OWED (this only ever makes cadence stricter;
+    # no floor is touched).
+    _verdicts = Path("data/panel_verdicts.jsonl")   # module runs cwd=repo root, as _STATE does
+    try:
+        _before = _verdicts.stat().st_size
+    except OSError:
+        _before = -1
     r2 = subprocess.run([sys.executable, "scripts/run_external_panel.py"],
                         capture_output=True, text=True, timeout=720, check=False, env=env)
     tail = (r2.stdout or r2.stderr or "").strip().splitlines()[-1:] or [""]
-    print(f"cadence: panel[{mission or 'rotation'}] rc={r2.returncode} | {tail[0][:120]}")
-    return r2.returncode == 0
+    try:
+        _after = _verdicts.stat().st_size
+    except OSError:
+        _after = -1
+    _produced = _after > _before
+    _grew = f"+{_after - _before}b" if _produced else "+0b (NOT PRODUCED)"
+    print(f"cadence: panel[{mission or 'rotation'}] rc={r2.returncode} "
+          f"verdicts {_grew} | {tail[0][:120]}")
+    if r2.returncode == 0 and not _produced:
+        print("cadence: panel exited clean but appended NO verdict -- duty stays OWED "
+              "(check OpenRouter funding: a half-funded roster 402s mid-run and emits nothing)")
+    return r2.returncode == 0 and _produced
 
 
 def _assert_floors(state: dict, stage: str) -> None:

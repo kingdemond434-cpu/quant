@@ -65,6 +65,20 @@ _THEMES: dict[str, tuple[str, ...]] = {
 }
 
 
+def _panel_budget_state() -> dict[str, Any]:
+    """The budget/cost-history state, or an empty dict when absent or unreadable.
+
+    Read separately from the budget guard below because the pre-flight COST ESTIMATE needs the
+    observed-cost history before that guard runs, and an unreadable state file must degrade to
+    "no history" rather than take the whole pre-flight down with it.
+    """
+    try:
+        out = json.loads(Path("data/panel_budget_state.json").read_text("utf-8"))
+    except Exception:
+        return {}
+    return out if isinstance(out, dict) else {}
+
+
 def _mission() -> tuple[str, str]:
     """(name, system_prompt). A CLI arg / PANEL_MISSION env forces a specific mission (the
     MONTHLY review forces 'tier1'); otherwise rotate over _ROTATION by ISO week number."""
@@ -134,8 +148,22 @@ def main() -> None:
         with urllib.request.urlopen(_bal_req, timeout=20, context=_CTX) as _r:
             _d = json.loads(_r.read())["data"]
         _left = float(_d.get("total_credits", 0)) - float(_d.get("total_usage", 0))
-        _need = 0.05 * len(providers)            # ~$1.10/run at 13 seats, with headroom
-        print(f"panel: credit balance ${_left:.2f} (need ~${_need:.2f})")
+        # EMPIRICAL RUN COST (2026-07-26). This was a hardcoded `0.05 * len(providers)` -- $0.65
+        # at 13 seats, next to a comment claiming "~$1.10/run", so it disagreed with itself. Both
+        # numbers predate the full-coverage payload that this same file records as making runs
+        # "6-8x more expensive". Measured reality: $56.60 of lifetime usage across 12 runs, i.e.
+        # ~$3-5/run. A guard that thinks a run costs $0.65 when it costs $4 does not prevent
+        # mid-flight exhaustion -- it CAUSES it, by green-lighting a run the balance cannot
+        # cover, which is precisely the 402-mid-run failure the pre-flight was added to stop.
+        # Self-calibrating instead: each run stamps the usage counter, the next run reads the
+        # delta, and the estimate becomes the trailing MAX of observed costs. Max, not median,
+        # because the two errors are not symmetric -- over-estimating defers a run by a cycle,
+        # under-estimating burns the balance AND returns nothing.
+        _obs = [float(c) for c in _panel_budget_state().get(
+            "observed_run_costs", []) if float(c) > 0]
+        _need = max([*_obs[-6:], 0.05 * len(providers)])
+        print(f"panel: credit balance ${_left:.2f} (need ~${_need:.2f}"
+              f"{f', measured over {len(_obs)} run(s)' if _obs else ', no history yet'})")
         # MONTHLY ENVELOPE GUARD (principal 2026-07-24: <=$100-150/mo, NO degradation).
         # Month-to-date spend = lifetime usage minus the snapshot taken at month start.
         # At the envelope: PAGE + ABORT the paid run (explicit principal decision) -- never a
@@ -153,7 +181,20 @@ def main() -> None:
             except Exception:
                 _bst = {}
             if _bst.get("month") != _month:
-                _bst = {"month": _month, "usage_at_month_start": _usage_now, "alerted": False}
+                # Carry the cost history across the month boundary -- it calibrates the estimator
+                # and has nothing to do with the monthly envelope. Resetting it would make every
+                # 1st-of-the-month run fall back to the stale constant.
+                _bst = {"month": _month, "usage_at_month_start": _usage_now, "alerted": False,
+                        "observed_run_costs": _bst.get("observed_run_costs", [])}
+            # Close the loop on the PREVIOUS run: its true cost is the usage counter's advance
+            # since it stamped. Needs no extra API call and no per-seat accounting.
+            _prev = _bst.get("usage_at_run_start")
+            if _prev is not None:
+                _cost = _usage_now - float(_prev)
+                if _cost > 0:
+                    _bst["observed_run_costs"] = [
+                        *_bst.get("observed_run_costs", []), round(_cost, 2)][-24:]
+            _bst["usage_at_run_start"] = _usage_now
             _mtd = _usage_now - float(_bst.get("usage_at_month_start", _usage_now))
             _env = float(_bcfg.get("monthly_envelope_usd", 120.0))
             _alert = float(_bcfg.get("alert_at_usd", 90.0))

@@ -17,7 +17,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from libs.ops.organ_catchup import pick_organ  # noqa: E402
+from libs.ops.organ_catchup import ORGANS, pick_organ  # noqa: E402
 
 # A 5xx/overloaded is a SERVER hiccup, not an exhausted pool: no reset time will appear in
 # the log and waiting for one would strand the organ. Retry these immediately.
@@ -82,6 +82,15 @@ def _quota_ok() -> bool:
 
 def main() -> None:
     now = datetime.now(tz=UTC)
+    # UNAMBIGUOUS SILENCE (2026-07-26): pick_organ now returns None for TWO different reasons --
+    # nothing is owed, or an organ is still running and the global gate is holding the field.
+    # Logging both as "nothing owed -- all organs produced" would state something false while a
+    # retry sat waiting, the exact state-looks-healthy failure this log exists to prevent.
+    _live = [o.name for o in ORGANS if _running(o.pgrep)]
+    if _live:
+        print(f"{now.isoformat()} field busy ({', '.join(_live)} running) -- "
+              "holding retries so they do not share the window")
+        return
     spec = pick_organ(LOGDIR, now, _running)
     if spec is None:
         # NEVER SILENT (2026-07-26): 'nothing owed' and 'the cron died' used to look

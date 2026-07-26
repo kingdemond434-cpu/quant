@@ -28,7 +28,13 @@ from libs.data.crypto_source import current_funding
 from libs.execution import binance_spot_testnet as spot
 from libs.execution import binance_testnet as fut
 from libs.execution import execution_tape
-from libs.execution.carry_accounting import carry_bleed_report, derive_spot_realized
+from libs.execution.carry_accounting import (
+    attribute_non_funding,
+    carry_bleed_report,
+    dedup_basis,
+    derive_spot_realized,
+    read_income,
+)
 from libs.risk import risk_controls
 
 _STATE = Path("data/cashcarry_positions.json")
@@ -934,7 +940,7 @@ def _execute_pair(sym: str, qty: float, spot_side: str, fut_side: str) -> dict[s
     return {"spot": "taker", "fut": "taker", "spot_ok": spot_ok, "fut_ok": fut_ok}
 
 
-def _mark(rb: dict[str, Any]) -> dict[str, float]:
+def _mark(rb: dict[str, Any]) -> dict[str, float | None]:
     pos, spot_px, fut_px = rb["pos"], rb["spot_px"], rb["fut_px"]
     spot_pnl = perp_pnl = notional = 0.0
     for _sym, p in pos.items():
@@ -950,22 +956,41 @@ def _mark(rb: dict[str, Any]) -> dict[str, float]:
     state = rb["state"]
     spot_realized = float(state.get("realized_spot_pnl", 0.0))
     net = spot_pnl + spot_realized
-    funding = fut_pnl = 0.0
+    fut_pnl = 0.0
+    # None, NOT 0.0 -- these come from a separate venue call that can fail on its own, and a
+    # failed measurement must never be publishable as a measured zero (2026-07-26 incident).
+    funding: float | None = None
+    fut_commission: float | None = None
     if fut.has_keys():
         with _safe():
             fut_eq = fut.account_summary()["equity"]
             start_eq = float(state.get("start_futures_equity", fut_eq))
             fut_pnl = fut_eq - start_eq                   # futures leg (realized+funding+fees+unrl)
             net = spot_pnl + spot_realized + fut_pnl
-            start_ms = int(datetime.fromisoformat(str(state["start"])).timestamp() * 1000)
-            funding = float(fut.income_summary(start_ms)["funding"])
+        # SEPARATE guard from the equity read above. Sharing one `_safe()` made the failure
+        # PARTIAL: the equity assignment landed, then the income call threw, and the swallowed
+        # exception left funding/commission at zero -- publishing a real futures PnL next to a
+        # fabricated zero harvest, which is exactly the combination the bleed alarm reads as a
+        # total bleed. `read_income` retries transient 5xx and returns None when it truly cannot
+        # measure, so "unknown" survives all the way to the dashboard instead of decaying to 0.
+        if state.get("start"):
+            with _safe():
+                start_ms = int(datetime.fromisoformat(str(state["start"])).timestamp() * 1000)
+                # ONE income call, BOTH numbers -- `income_summary` has always returned the exact
+                # paginated `commission` and this book read only `funding`, discarding the fee
+                # bill that is the single largest term of the leak it was alarming about.
+                inc = read_income(lambda: fut.income_summary(start_ms))
+                if inc is not None:
+                    funding = float(inc.get("funding", 0.0))
+                    fut_commission = abs(float(inc.get("commission", 0.0)))
     return {"spot_pnl": round(spot_pnl, 2), "perp_pnl": round(perp_pnl, 2),
             "spot_realized": round(spot_realized, 2), "fut_pnl": round(fut_pnl, 2),
-            "funding": round(funding, 2), "net_pnl": round(net, 2),
+            "funding": None if funding is None else round(funding, 2), "net_pnl": round(net, 2),
+            "fut_commission": None if fut_commission is None else round(fut_commission, 2),
             "notional": round(notional, 2)}
 
 
-def _emit(rb: dict[str, Any], marks: dict[str, float], dry: bool) -> None:
+def _emit(rb: dict[str, Any], marks: dict[str, float | None], dry: bool) -> None:
     pos = rb["pos"]
     # CARRY-LEAK ALARM ON THE BOOK THAT HOLDS THE MONEY (2026-07-26). `carry_bleed_report` was
     # only ever wired into the MOLDED book (run_live_combined), so the PRIMARY executed book --
@@ -973,8 +998,19 @@ def _emit(rb: dict[str, Any], marks: dict[str, float], dry: bool) -> None:
     # runs for weeks unnoticed. Same function, same thresholds, now on the executed book.
     # spot side = open marks + realized of closed spot legs; fut side = futures-equity delta.
     bleed = carry_bleed_report(funding=marks["funding"],
-                               spot_pnl=round(marks["spot_pnl"] + marks["spot_realized"], 2),
-                               fut_pnl=marks.get("fut_pnl", 0.0))
+                               spot_pnl=round((marks["spot_pnl"] or 0.0)
+                                              + (marks["spot_realized"] or 0.0), 2),
+                               fut_pnl=marks.get("fut_pnl") or 0.0)
+    # Attribute the leak ONLY when both terms are real measurements. With an unknown fee bill the
+    # split would dump the entire commission into `residual`, manufacturing exactly the phantom
+    # that `attribute_non_funding`'s own docstring warns against -- an unexplained quantity that
+    # looks explained. No measurement is better than a confident wrong one.
+    fut_comm = marks.get("fut_commission")
+    leak = (attribute_non_funding(
+        bleed.non_funding_pnl,
+        dedup_basis(json.loads(_TRADES.read_text("utf-8")) if _TRADES.exists() else []),
+        fut_comm)
+        if bleed.non_funding_pnl is not None and fut_comm is not None else None)
     out = {
         "updated": datetime.now(tz=UTC).isoformat(),
         "mode": "dry" if dry else "live-paper",
@@ -988,6 +1024,14 @@ def _emit(rb: dict[str, Any], marks: dict[str, float], dry: bool) -> None:
         "non_funding_pnl": bleed.non_funding_pnl,
         "harvest_eaten_frac": bleed.harvest_eaten_frac,
         "bleed_alert": bleed.alert, "bleed_verdict": bleed.verdict,
+        # Publishes WHETHER the harvest was measured at all. Downstream (max_audit, the dashboard,
+        # the molded book) must be able to tell "earned nothing" from "could not read the venue";
+        # they are opposite states and only one of them is an execution problem.
+        "funding_measured": bleed.measured,
+        # WHERE the leak went, not just how big it is -- the alarm alone is unactionable and the
+        # integrity watch is required to attribute it every cycle.
+        "leak_attribution": leak,
+        "fut_commission": marks.get("fut_commission"),
         "carries": [{"symbol": s, "qty": p["spot_qty"], "funding_8h": p["funding"]}
                     for s, p in pos.items()],
         "last_actions": rb["actions"],

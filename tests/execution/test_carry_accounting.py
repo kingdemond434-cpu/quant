@@ -6,6 +6,7 @@ from libs.execution.carry_accounting import (
     carry_bleed_report,
     dedup_basis,
     derive_spot_realized,
+    read_income,
 )
 
 
@@ -93,3 +94,59 @@ def test_carry_bleed_small_positive_non_funding_is_still_clean() -> None:
     r = carry_bleed_report(funding=100.0, spot_pnl=60.0, fut_pnl=42.0)  # non-funding +2
     assert not r.alert
     assert "clean" in r.verdict
+
+
+# --- UNMEASURED funding: unknown is not zero (2026-07-26 incident) -------------------------
+
+
+def test_bleed_report_unmeasured_does_not_fabricate_a_verdict() -> None:
+    """A failed venue read must NOT be judged as a zero harvest.
+
+    Regression for 2026-07-26: `_safe()` swallowed an HTTP 502 on /fapi/v1/income, funding stayed
+    at its initialised 0.0, and the alarm divided by it to publish an `inf%` total-bleed verdict
+    against a book that had really harvested $101.96.
+    """
+    r = carry_bleed_report(funding=None, spot_pnl=-32.7, fut_pnl=-876.93)
+    assert r.measured is False
+    assert r.alert is False                      # an outage is not an economic bleed verdict
+    assert r.funding is None
+    assert r.non_funding_pnl is None             # undecidable, not zero
+    assert r.harvest_eaten_frac is None          # never inf from a fabricated denominator
+    assert "UNMEASURED" in r.verdict
+    assert not r                                 # unmeasured must not read as healthy
+
+
+def test_bleed_report_zero_funding_still_alarms() -> None:
+    """A genuine zero harvest is a real state and must keep alarming -- the fix must not mute it."""
+    r = carry_bleed_report(funding=0.0, spot_pnl=-10.0, fut_pnl=-5.0)
+    assert r.measured is True
+    assert r.alert is True
+    assert r.non_funding_pnl == -15.0
+
+
+def test_read_income_returns_none_after_retries_not_zero() -> None:
+    calls: list[int] = []
+
+    def boom() -> dict:
+        calls.append(1)
+        raise OSError("HTTP Error 502: Bad Gateway")
+
+    assert read_income(boom, attempts=3, sleeper=lambda _: None) is None
+    assert len(calls) == 3                       # transient 5xx is retried before giving up
+
+
+def test_read_income_retries_then_succeeds() -> None:
+    seq: list[object] = [OSError("502"), OSError("502"), {"funding": 101.96}]
+
+    def flaky() -> dict:
+        item = seq.pop(0)
+        if isinstance(item, Exception):
+            raise item
+        return item  # type: ignore[return-value]
+
+    assert read_income(flaky, attempts=3, sleeper=lambda _: None) == {"funding": 101.96}
+
+
+def test_read_income_rejects_non_dict_payload() -> None:
+    """A venue error page parsed as a list is not a measurement."""
+    assert read_income(lambda: ["unexpected"], attempts=1, sleeper=lambda _: None) is None
