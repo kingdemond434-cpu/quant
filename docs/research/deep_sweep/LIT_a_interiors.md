@@ -484,3 +484,95 @@ one of the eight designs HXZ try, including the ones deliberately rigged to favo
 nearly as bad. Any desk signal sourced from those two categories should carry a near-total prior haircut.
 
 ---
+
+# 5. Chordia, Goyal & Saretto — p-Hacking / "Anomalies and False Rejections" — **UNVERIFIABLE THIS RUN**
+
+**Status: primary text NOT reached. The desk's recorded thresholds remain SUMMARY-ONLY and must stay
+flagged unverified. I did not upgrade them.**
+
+## Bibliographic situation (this part IS established)
+
+The desk's item exists under two titles that are the same underlying work:
+- Working paper: **"p-Hacking: Evidence from Two Million Trading Strategies"**, Swiss Finance Institute
+  Research Paper No. 17-37 (Aug 2017), SSRN abstract id **3017677**, Crossref DOI `10.2139/ssrn.3017677`.
+- Published: **"Anomalies and False Rejections"**, *Review of Financial Studies* **33(5), 2134-2179 (2020)**,
+  Crossref DOI **`10.1093/rfs/hhaa018`** (note: **not** `hhaa011`, which is a different paper —
+  "Asset Price Bubbles and Systemic Risk").
+
+Incidentally this places CGS immediately after Hou–Xue–Zhang (RFS 33(5), 2019-2133) in the same issue.
+
+## Access attempts — all failed, itemised
+
+| Route | Result |
+|---|---|
+| Unpaywall `10.1093/rfs/hhaa018` | `is_oa: true`, but the **only** OA location is a Figshare *submitted version* landing page with no direct PDF URL |
+| `figshare.com/articles/journal_contribution/.../21023194` | **403** |
+| `api.figshare.com/v2/articles/21023194` | **403** (also 403 via `r.jina.ai` proxy) |
+| CORE API search | Two records found with `fullText: true`, data providers UNIL IRIS and DRO Deakin |
+| `core.ac.uk/download/688719396.pdf`, `.../691429087.pdf` | **404** both |
+| CORE `/v3/outputs/688719396` | `downloadUrl` empty; `sourceFulltextUrls` points back to the IRIS handle |
+| `iris.unil.ch/handle/iris/83856` | Angular SPA; DSpace REST `pid/find` and `discover/search/objects` both **404** |
+| `serval.unil.ch/notice/serval:BIB_28845976B9F8` | **403** |
+| `dro.deakin.edu.au/view/DU:30142055` | **403** |
+| `academic.oup.com/rfs/article-pdf/33/5/2134/.../hhaa018.pdf` | **403** (Cloudflare) |
+| `hec.unil.ch` / `www.hec.unil.ch` (Goyal self-archive) | DNS resolves to 130.223.29.225 but **connection times out** from this box (http=000) at 90s |
+| `sfi.ch` publication page | Loads, but links only to the paywalled DOI |
+| ResearchGate | "Request PDF" only |
+
+The Anubis/Referer bypass that worked for the ICM repository does not apply to any of these — they are
+IP/Cloudflare blocks and dead REST endpoints, not JS bot-gates.
+
+## Why the desk's numbers are actively suspect (evidence, not proof)
+
+I could not read the paper, so I cannot correct the numbers. But I can report that **at least three
+mutually inconsistent threshold pairs are circulating in secondary sources**, which is itself a reason
+to distrust the desk's summary-sourced record:
+
+1. Desk's recorded claim: **|t| > 3.79** six-factor alpha, **|t| > 3.12** regression, Sharpe > 0.12,
+   **~17 of 2.1M** surviving (1972-2015).
+2. A secondary source encountered this run: thresholds **"3.8 and 3.4 for time-series and
+   cross-sectional regressions, respectively."**
+3. Another secondary source encountered this run: thresholds **"3.84 and 3.38 for time-series and
+   cross-sectional regressions."**
+
+Variants 2 and 3 are plausibly the *published RFS* abstract's numbers while variant 1 is plausibly the
+*2017 working paper's* numbers — exactly the working-paper-vs-published trap that bit the
+McLean–Pontiff fallback URL in item 3 above (82/10%/35% vs 97/26%/58%). **The desk should assume the
+3.79/3.12 pair may belong to a superseded draft until someone reads the RFS version.**
+
+The "2.1 million strategies" figure and the "17 survivors" figure are the most consistently repeated
+across sources, but consistency across summaries is not verification.
+
+## RECOMMENDATION
+
+**Leave flagged UNVERIFIED.** Do not cite 3.79/3.12 in any desk protocol. The cheapest paths to
+resolution, in order, for whoever picks this up on a box with different network egress:
+1. `http://www.hec.unil.ch/agoyal/` — Goyal reliably self-archives; blocked here purely by egress.
+2. SSRN `abstract_id=3017677` delivery endpoint.
+3. Figshare article 21023194 (needs an IP that Figshare does not 403).
+
+If the paper is reached, the specific things to extract are: the exact multiple-testing threshold pair
+and which test each applies to; whether they are stated for the six-factor alpha or for something else;
+the survivor count and the universe size it is out of; and the sample period.
+
+---
+
+# Run summary
+
+| # | Paper | Verdict | Primary text reached? |
+|---|---|---|---|
+| 1 | Fieberg–Günther–Poddig–Zaremba, NSE in crypto (IRFA 2024) | **CORRECTS-DESK-RECORD** (headline confirmed, "robust" reading corrected) | Yes — full 48pp |
+| 2 | Jensen–Kelly–Pedersen, Replication Crisis (JF 2023) | **CONFIRMS-DESK-RECORD** | Yes — full 55pp |
+| 3 | McLean–Pontiff (JF 2016) | **CONFIRMS-DESK-RECORD** | Yes — accepted MS, 48pp |
+| 4 | Hou–Xue–Zhang, Replicating Anomalies (RFS 2020) | **CONFIRMS-DESK-RECORD** + new per-category detail | Yes — already on box |
+| 5 | Chordia–Goyal–Saretto, p-Hacking | **UNVERIFIABLE** — stays flagged | **No** |
+
+**Corrections the desk must action:**
+1. **Fieberg:** stop reading "size and momentum remain consistently robust" as "size and momentum are
+   safe." Their N/S > 2 is the *worst* of the 43 variables; size factor Sharpe ranges 0-to-5 and
+   momentum's sign flips on implementation. Significance is robust; payoff is not.
+2. **McLean–Pontiff:** never cite the FMG URL (`fmg.ac.uk/.../Jeffrey-Pontiff.pdf`) — it is the 2013
+   working paper with 82 characteristics and 10%/35% decay, not 97 and 26%/58%.
+3. **McLean–Pontiff:** drop citation counts as a decay proxy — *"Once we control for publication date,
+   this measure has little incremental value in explaining decay."*
+4. **Chordia–Goyal–Saretto:** 3.79/3.12 may be superseded working-paper numbers. Keep flagged.

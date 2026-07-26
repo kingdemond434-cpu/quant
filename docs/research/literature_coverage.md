@@ -288,3 +288,63 @@ and it is a stronger argument than the one I wrote when I opened the row.
 run ≥2 levels, three of them overturned something the desk had written down. But the honest ledger
 is that **two backlog items and two literature grounds is a NARROW run by design** (completion
 contract), and the largest literature family remains at zero visits.
+
+---
+
+## RUN 3 CLOSE — exhaustion state per ground, and the honest nulls
+
+**NET NEW TRADEABLE AXES THIS RUN: ZERO.** Stated first, deliberately. Every literature item resolved
+to a kill-confirmation, a methodological rail, a risk prior, or a verification asset. Under
+LITERATURE_SPEC that is a fully creditable outcome — *"the literature is mostly mined-out beta; saying
+so honestly beats manufacturing candidates"* — and this run manufactured none. **The value delivered
+was in the other three currencies: corrections to things the desk believed, rails that close real
+holes, and priors on the live book.**
+
+### Exhaustion, per ground (claimed per-item across runs, per the completion contract)
+- **[LIT-a] failed-replication + retraction** — *closest to exhausted of the eight.* 11 findings, 4
+  graveyard rows, interiors of F1/F3/F5/F6 now `[PRIMARY]`. **Carry-overs, named:** the PubPeer
+  citation-stacking thread (unopened); F11 primary text (SSRN 403); the unlocated "−0.31" digit in F4.
+- **[LIT-b] forgotten literature** — **EXHAUSTED:** FX carry crash, order flow / VPIN, fire sales,
+  lead-lag, Kyle/Amihud. **PARTIALLY-MINED:** commodity hedging pressure (Hirshleifer, Bessembinder
+  unread). **OPEN:** the 26-year COT bench (inbox #70). **NOT MINED:** settlement / expiry / calendar
+  — and check data feasibility FIRST, the desk lacks quarterly futures and strike-level option OI.
+  Stratum (b) — 2013–2017 early crypto papers — is **structurally poor** and that is a finding, not a
+  gap: perps did not exist pre-2016, so most of that layer is price-only and already dead.
+- **[LIT-c] AI/agent methods** — 3 findings, 4 inbox items, one cancellation. Least exhausted relative
+  to its value; the frontier moves monthly.
+- **[LIT-d] non-English + theses** — **Layer (A) Korean/Japanese: deep.** **Layer (B) THESES:
+  UNDER-MINED and the agent says so plainly** — it traded theses for depth on the Korean/Japanese
+  layer because those bear on a live desk axis. That was the right call and it is still a shortfall.
+  **Not mined:** Chinese open-access + CN-author arXiv (barely touched); DiVA / theses.fr /
+  DART-Europe (unsearched). **Highest-value single resume point:** 오정훈 (2019),
+  DOI `10.20462/TeBS.2019.4.20.2.215` — the cited origin of the "FX drives kimchi" folk belief that
+  D-1 and D-2 both contradict. **Corpus states recorded as MEASURED nulls, not impressions:**
+  CyberLeninka 16 native queries with counts (RU academic/practitioner corpora are lexically
+  disjoint — `арбитраж` means *arbitration*); J-STAGE `仮想通貨 流動性` → 62, top-20 all law/tax/
+  accounting; CiNii `暗号資産 裁定取引` → **0**; SciELO **BLOCKED (403), NOT empty** — resume door is
+  `articlemeta.scielo.org/api/v1/`.
+
+### What this run actually bought (no padding)
+1. **Two desk beliefs refuted by primary text** — HXZ's numbers, and the Kaiko card's three "honest
+   limits" — plus **one belief of my own** refuted the same way (inbox #60, size/momentum robustness).
+2. **A capability unblocked** that had silently capped two prior runs, with the generalisable rule
+   routed (#70).
+3. **Two live-axis results:** the kimchi clock **audited CLEAN** (positive verification, not an
+   assumption), and a **real lookahead hole** in the de-contamination rail that the clean clock does
+   not protect against (#79).
+4. **A crowding prior on the desk's only proven edge** — published by the FX-carry authors themselves,
+   with a dated causal 36% decay (#76). This is the item that most deserves the next cycle's attention.
+5. **A licence answer that costs a feed and keeps the finding** (#67 split), including a second
+   blocker — an AI-system clause — that a desk of this construction should have found first.
+
+### Honest defects in this run itself
+- **Practitioner research remains at ZERO sessions.** Rotation now forces it next run. I chose
+  conversion over new hunting and I would choose the same again given run 2's state, but the largest
+  named-untouched family stayed untouched for a third consecutive run.
+- **The PDF extractor is a `/tmp` prototype and is NOT durable.** Until #70 lands, the next literature
+  run must rebuild it or re-inherit the false blocker. That is a real risk of regression and it is the
+  single cheapest thing on this list to fix.
+- **`data/*` is gitignored**, so the five new data-universe entries and the Kaiko/CM catalog
+  corrections show **no git diff** — they exist on disk but are not versioned. Flagged because
+  "committed = it happened" does not hold for that path, and a future run should not read the absence
+  of a diff as absence of work.
