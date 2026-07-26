@@ -1148,8 +1148,14 @@ def check_review_risks_tracked(defects) -> None:
 DESK_BOOK_USD = 50_000.0
 
 
+#: Neither band may fall below this share of the screened funnel. SYMMETRIC on purpose: a funnel
+#: that is 100% niche is as defective as one that is 100% fund-shaped, because both mean a whole
+#: class of alpha is going unhunted and the objective is the MAXIMUM NUMBER of them.
+_BAND_MIN_SHARE = 0.25
+
+
 def check_capacity_hunt(defects) -> None:
-    """§39: the desk must actually HUNT the small-capacity niche, not merely be allowed into it.
+    """§39: BOTH capacity bands must be hunted -- the funnel may not collapse onto either one.
 
     PROSPECTOR_SPEC names capacity-bound edges -- the ones a fund abandoned for being too small --
     as "this desk's ONE structural advantage". Until 2026-07-26 the survival gate contradicted
@@ -1157,9 +1163,13 @@ def check_capacity_hunt(defects) -> None:
     Removing the block is necessary and NOT sufficient: a desk merely permitted to hunt small will
     still default to fund-shaped ideas, because that is what the literature is written about.
 
-    So the CAPACITY DISTRIBUTION of what actually gets screened is measured. If every candidate
-    needs six or seven figures to absorb, the desk is competing where it has no advantage and
-    could not fill the trade if it found one -- a defect, not a preference.
+    SYMMETRIC, BY PRINCIPAL DIRECTION (2026-07-26). The first version of this check enforced a
+    NICHE FLOOR, which is the same bias pointed the other way: it would have sat silent while the
+    desk hunted nothing but tiny edges, and a funnel with no large edges in it has no successor
+    inventory for the day the book outgrows the small ones. The objective is the maximum number of
+    simultaneous uncorrelated alphas, so BOTH bands are measured and EITHER one collapsing is the
+    defect. Small edges expire first -- that is arithmetic, and it is handled by
+    `check_capacity_runway`, not by preferring them here.
     """
     caps: list[float] = []
     with contextlib.suppress(Exception):
@@ -1175,24 +1185,9 @@ def check_capacity_hunt(defects) -> None:
     # perfectly tradeable small edges "unfillable" -- the flat-floor bug wearing a new hat.
     bands = [capacity_band(c, DESK_BOOK_USD, DEFAULT_SLEEVES) for c in caps]
     in_niche = sum(1 for b in bands if b == "NICHE")
+    larger = sum(1 for b in bands if b in ("SCALABLE", "FUND-SCALE"))
     unfillable = sum(1 for b in bands if b == "UNFILLABLE")
-    frac = in_niche / len(caps)
-    # PARITY, not a token floor. The bar was 25%, which permitted three quarters of the funnel to
-    # be aimed where the desk has no advantage and still called that "hunting the niche". A floor
-    # is not parity: parity is the niche getting at least as much of the funnel as everything else
-    # put together, because it is the ONE band where a $50k book is not the worst-capitalised
-    # participant in the trade. Under-filling this is a defect about where research EFFORT points,
-    # which is why it is measured on the screened population and not on what happened to pass.
-    if frac < 0.50:
-        defects.append((
-            "capacity-hunt-fund-shaped",
-            f"§39 PARITY: only {in_niche}/{len(caps)} scored candidates ({frac:.0%}) sit in the "
-            f"NICHE band a ${DESK_BOOK_USD:,.0f} book can actually exploit -- parity requires "
-            f"{'>=50%'}. The desk is hunting fund-scale edges, where it has NO advantage and "
-            "could not fill the trade if it found one. Point the prospector at the niche its own "
-            "spec calls the desk's one structural advantage: listing-event dislocations, "
-            "thin-pair cross-venue funding, low-OI tails -- edges that pay BECAUSE they are too "
-            "small to interest anyone with money."))
+    fillable = in_niche + larger
     if unfillable:
         defects.append((
             "capacity-hunt-unfillable",
@@ -1200,6 +1195,69 @@ def check_capacity_hunt(defects) -> None:
             f"on a ${DESK_BOOK_USD:,.0f} book at all -- the desk would BE the edge. Small is the "
             "advantage; too small to fill is not. These should be screened out before scoring, "
             "not carried as candidates."))
+    if fillable < 5:
+        return  # too few FILLABLE candidates to judge how the hunt is split between bands
+    if in_niche / fillable < _BAND_MIN_SHARE:
+        defects.append((
+            "capacity-hunt-fund-shaped",
+            f"§39: only {in_niche}/{fillable} fillable candidates ({in_niche / fillable:.0%}) sit "
+            f"in the NICHE band -- below the {_BAND_MIN_SHARE:.0%} both bands must hold. The "
+            "prospector has drifted onto fund-scale ground, where a book this size has NO "
+            "advantage and could not fill the trade if it found one. Point it back at the niche "
+            "its own spec names: listing-event dislocations, thin-pair cross-venue funding, "
+            "low-OI tails -- edges that pay BECAUSE they are too small to interest anyone with "
+            "money. These are ADDITIONAL sleeves, not replacements for the large ones."))
+    if larger / fillable < _BAND_MIN_SHARE:
+        defects.append((
+            "capacity-hunt-niche-only",
+            f"§39: only {larger}/{fillable} fillable candidates ({larger / fillable:.0%}) can "
+            f"absorb size -- below the {_BAND_MIN_SHARE:.0%} both bands must hold. Hunting ONLY "
+            "small is the same bias pointed the other way, and it costs twice: alphas that would "
+            "have run alongside the small ones are never found, and there is no successor "
+            "inventory for the day the book outgrows the ones being run. Every small edge has a "
+            "known expiry (`capacity-runway`); the replacement must be in the pipeline BEFORE it "
+            "arrives, which means hunting large concurrently, not afterwards."))
+
+
+def check_capacity_runway(defects) -> None:
+    """§39(3): the desk must SEE itself outgrowing an edge, not discover it mid-trade.
+
+    The sequence §39 commits to is edge -> size -> next edge, and the decay of a small edge as the
+    book grows into it is DEFINITIONAL rather than a risk to be mitigated. That only compounds if
+    the expiry is visible in advance. Every edge has a book size at which it stops being fillable;
+    this reports how much growth the current shortlist survives, so the replacement pipeline can
+    start BEFORE the edge dies rather than after. Two failures are worth a defect:
+
+      - already outgrown: an edge still being scored that today's book can no longer fill;
+      - no runway: nothing on the shortlist survives a doubling, so the desk is one good quarter
+        from having no deployable inventory and no notice that it is coming.
+    """
+    from libs.research.capacity_policy import growth_runway, live_book_usd, live_sleeves
+    caps: list[float] = []
+    with contextlib.suppress(Exception):
+        from libs.autodiscovery.memory import CandidateStore
+        store = CandidateStore(ROOT / "data/research_memory.db")
+        caps = [float(getattr(c.metrics, "capacity_usd", 0.0) or 0.0) for c in store.all()]
+    caps = [c for c in caps if c > 0]
+    if len(caps) < 5:
+        return
+    book, sleeves = live_book_usd(), live_sleeves()
+    runways = sorted(growth_runway(c, book, sleeves) for c in caps)
+    outgrown = [r for r in runways if r < 1.0]
+    if outgrown:
+        defects.append((
+            "capacity-already-outgrown",
+            f"§39(3): {len(outgrown)}/{len(caps)} scored candidates can no longer be filled by "
+            f"today's ${book:,.0f} book across {sleeves} sleeves. They are inventory the desk has "
+            "already grown past -- retire them and bank the mechanism, do not keep ranking them."))
+    survives_2x = sum(1 for r in runways if r >= 2.0)
+    if survives_2x == 0:
+        defects.append((
+            "capacity-no-runway",
+            f"§39(3): NOTHING on the shortlist survives a doubling of the ${book:,.0f} book "
+            f"(best runway {runways[-1]:.1f}x). Outgrowing an edge is the plan, but the NEXT edge "
+            "has to already be in the pipeline when it happens. Hunt one tier larger NOW, while "
+            "the current sleeves still pay -- both bands at once, which is the point."))
 
 
 #: Every scorer that has ever had to answer "is this capacity enough?". Each one used to carry its
@@ -1789,6 +1847,7 @@ def main() -> None:
                       ("orphan-code", check_orphan_code),
                       ("capacity-hunt", check_capacity_hunt),
                       ("capacity-single-source", check_capacity_single_source),
+                      ("capacity-runway", check_capacity_runway),
                       ("mine-conversion", check_mine_conversion),
                       ("mine-flow", check_mine_flow),
                       ("mine-gate", check_mine_gate),

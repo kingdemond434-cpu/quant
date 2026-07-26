@@ -74,20 +74,28 @@ class TestCapacityHuntCheck:
         assert "NO advantage" in defects[0][1]
 
     def test_niche_hunt_is_silent(self, tmp_path, monkeypatch) -> None:
-        defects = self._run(tmp_path, monkeypatch, [50e3, 120e3, 400e3, 80e3, 900e3, 9e7])
+        # both bands represented: 4 niche, 4 that can absorb size
+        defects = self._run(tmp_path, monkeypatch,
+                            [50e3, 120e3, 400e3, 80e3, 9e7, 2e7, 5e7, 3e8])
         assert defects == []
 
-    def test_a_bare_quarter_is_no_longer_enough(self, tmp_path, monkeypatch) -> None:
-        # the bar was 25%, which let three quarters of the funnel point at fund-scale and still
-        # called it "hunting the niche". Parity means the niche gets at least half.
-        caps = [50e3, 80e3] + [5e7] * 6          # 2/8 = 25% niche
+    def test_a_funnel_starved_of_niche_fires(self, tmp_path, monkeypatch) -> None:
+        caps = [50e3] + [5e7] * 7                # 1/8 niche, below the 25% both bands must hold
         ids = [d[0] for d in self._run(tmp_path, monkeypatch, caps)]
         assert "capacity-hunt-fund-shaped" in ids
 
-    def test_parity_at_half_is_accepted(self, tmp_path, monkeypatch) -> None:
-        caps = [50e3, 80e3, 200e3, 400e3, 5e7, 6e7, 7e7, 8e7]   # exactly 50%
+    def test_a_funnel_starved_of_LARGE_fires_too(self, tmp_path, monkeypatch) -> None:
+        # SYMMETRY: hunting only small is the same bias pointed the other way, and it leaves no
+        # successor inventory for the day the book outgrows the small edges
+        caps = [50e3, 80e3, 120e3, 200e3, 400e3, 900e3, 2e6, 5e7]   # 1/8 large
+        ids = [d[0] for d in self._run(tmp_path, monkeypatch, caps)]
+        assert "capacity-hunt-niche-only" in ids
+
+    def test_both_bands_present_is_silent(self, tmp_path, monkeypatch) -> None:
+        caps = [50e3, 80e3, 200e3, 400e3, 5e7, 6e7, 7e7, 8e7]   # 50/50
         ids = [d[0] for d in self._run(tmp_path, monkeypatch, caps)]
         assert "capacity-hunt-fund-shaped" not in ids
+        assert "capacity-hunt-niche-only" not in ids
 
     def test_unfillable_candidates_are_their_own_defect(self, tmp_path, monkeypatch) -> None:
         # small is the advantage; too small to fill is not -- and it must not be scored as niche

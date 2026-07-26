@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from libs.research.capacity_policy import DEFAULT_BOOK_USD, DEFAULT_SLEEVES, capacity_fit
+from libs.research.capacity_policy import capacity_fit, live_book_usd, live_sleeves
 
 
 def expected_log_growth(returns: np.ndarray, *, periods_per_year: float = 252.0) -> float:
@@ -41,8 +41,8 @@ def discovery_score(
     fragility_score: float,
     tail_risk_score: float,
     parameter_plateau_score: float,
-    deployed_equity_usd: float = DEFAULT_BOOK_USD,
-    n_sleeves: int = DEFAULT_SLEEVES,
+    deployed_equity_usd: float | None = None,
+    n_sleeves: int | None = None,
 ) -> float:
     """Composite rank score that maximizes sustainable geometric growth under robustness."""
     growth = max(0.0, log_growth)
@@ -58,7 +58,12 @@ def discovery_score(
     # gate's fix and kept steering the desk at fund-shaped edges. Capacity now scores as
     # SUFFICIENCY for the book actually deployed and goes FLAT above it, because capacity you
     # cannot fill is not an advantage you own.
-    capacity_term = capacity_fit(capacity_usd, deployed_equity_usd, n_sleeves)
+    # None means "read the live book", which is what keeps the ratio self-scaling as equity grows.
+    capacity_term = capacity_fit(
+        capacity_usd,
+        live_book_usd() if deployed_equity_usd is None else deployed_equity_usd,
+        live_sleeves() if n_sleeves is None else n_sleeves,
+    )
     diversification_term = 1.0 + max(0.0, diversification_contribution)
 
     return (

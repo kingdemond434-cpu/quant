@@ -96,12 +96,14 @@ _REGISTRY: dict[str, ThresholdSpec] = {
                   "have. Free, because where fund attention actually starts is an empirical "
                   "question the desk's own decay-vs-capacity evidence should answer, either way"),
     "capacity_crowd_floor": ThresholdSpec(
-        name="capacity_crowd_floor", default=0.75, floor=0.50, ceiling=1.0,
-        direction="loosen_only", tighten_is_up=False,
-        rationale="floor on the crowding discount: a fund-scale edge is ranked lower on size, "
-                  "NEVER scored out. Loosen-only (toward 1.0 = no discount) so this can only ever "
-                  "become MORE neutral on size -- an unbounded tilt toward small would just be "
-                  "the old $100k exclusion mirrored, and this bound makes that unreachable"),
+        name="capacity_crowd_floor", default=1.0, floor=0.50, ceiling=1.0,
+        direction="free", tighten_is_up=False,
+        rationale="crowding discount floor. DEFAULT 1.0 = NO DISCOUNT (principal 2026-07-26): the "
+                  "objective is the maximum number of simultaneous uncorrelated alphas, so a "
+                  "sleeve declined for its SIZE is compounding foregone, and crowding is already "
+                  "priced by the crowded_known prior plus DSR/PBO/persistence -- discounting it "
+                  "here charged big edges twice for one fact. Free rather than pinned so MEASURED "
+                  "decay-vs-capacity evidence could reintroduce a discount; preference may not"),
     "mine_latency_regress_mult": ThresholdSpec(
         name="mine_latency_regress_mult", default=1.5, floor=1.05, ceiling=3.0,
         direction="tighten_only", tighten_is_up=False,

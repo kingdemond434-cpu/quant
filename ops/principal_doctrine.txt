@@ -118,16 +118,29 @@ CONVERSION is. A perfect dig with zero conversions is a FAILED cycle; say so in 
   - THE SCORE GOES FLAT ABOVE SUFFICIENCY. That flat region is the parity. Do not "improve" the
     curve by making it monotone in capacity again -- rewarding capacity you cannot fill is
     preferring an option you cannot exercise, and it is what silently un-fixed the gate last time.
-  - THE CROWDING DISCOUNT IS ABSOLUTE AND FLOORED. Keyed to a dollar figure (funds' scale), never
-    to a multiple of our own book: crowding is a fact about the market. The floor is loosen-only
-    in the ThresholdBook, so the tilt toward small can only ever become MORE neutral, never a new
-    exclusion pointing the other way.
+  - NO TILT IN EITHER DIRECTION (principal 2026-07-26). Every fillable edge scores the SAME. Do
+    not reintroduce a crowding discount on large capacity: the objective is the maximum NUMBER of
+    simultaneous uncorrelated alphas, so a sleeve declined for its size is compounding foregone,
+    and crowding is already priced by crowded_known plus DSR/PBO/persistence. The knob stays live
+    and bounded so MEASURED decay-vs-capacity evidence could move it; preference may not.
   - NO EDGE GETS THE WHOLE BOOK. Judge capacity against ONE SLEEVE. Comparing a candidate to the
-    full $50k assumes a single-strategy desk and re-creates the exclusion at 8x scale.
-  - THE FUNNEL IS AT LEAST HALF NICHE. A quarter was a floor, not parity. If capacity-hunt-fund-
-    shaped fires, the prospector is pointed at ground where this book is the worst-capitalised
-    participant -- repoint it, do not acknowledge it away. UNFILLABLE candidates are a separate
-    defect: small is the advantage, too small to fill is not.
+    full book assumes a single-strategy desk and re-creates the exclusion at the sleeve count.
+  - BOTH BANDS, ALWAYS, CONCURRENTLY. capacity-hunt-fund-shaped and capacity-hunt-niche-only are
+    the SAME defect pointed opposite ways, and either one means a whole class of alpha is going
+    unhunted. Hunting only small costs twice: the large alphas that would have run alongside are
+    never found, and there is no successor inventory for the day the book outgrows what is
+    running. Never decline a large edge to make room for a small one, or the reverse.
+  - A SLEEVE STOPS ONLY WHEN THE ARITHMETIC SAYS SO. Retire an edge when the book passes its
+    capacity (growth_runway < 1), never because something bigger appeared and never because it was
+    small. If capacity-no-runway fires, nothing on the shortlist survives a doubling -- go hunt one
+    tier larger NOW, while the current sleeves still pay. That is the whole ladder.
+  - THE RATIO READS THE LIVE BOOK. live_book_usd/live_sleeves come off the NAV attestation chain,
+    so the requirement self-scales as equity compounds. Do NOT pin these to a literal "for
+    determinism" -- a ratio measured against a hardcoded number is the flat-floor bug one step
+    removed. Missing/stale/corrupt falls back to the CONSTANT, never to zero: an unreadable file
+    must never become the loosest possible gate.
+  - UNFILLABLE IS A SEPARATE DEFECT. Small is the advantage; too small to fill is not, and the two
+    must never be scored as the same thing.
   - EVENT-SHAPED EDGES GO THROUGH THE EVENT-SHAPED GATE. Do not judge a listing dislocation on a
     daily return series; ~2 non-zero days in 30 reads as noise on every continuous statistic, and
     that is how collected data stays unconvertible forever. Use libs/validation/event_study.py.

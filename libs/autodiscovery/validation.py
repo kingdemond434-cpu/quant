@@ -14,7 +14,7 @@ import numpy as np
 from libs.autodiscovery.models import Hypothesis, ValidationMetrics, ValidationVerdict
 from libs.discovery.capacity import capacity_estimate
 from libs.discovery.tail_risk import tail_risk
-from libs.research.capacity_policy import capacity_required
+from libs.research.capacity_policy import capacity_required, live_book_usd, live_sleeves
 from libs.validation.dsr import deflated_sharpe_ratio, sharpe_ratio
 from libs.validation.pbo import PBOResult, probability_backtest_overfitting
 from libs.validation.reality_check import RealityCheckResult, whites_reality_check
@@ -56,9 +56,12 @@ def validate(
     adv_usd: float = 1.0e11,
     edge_bps: float | None = None,
     # What the desk ACTUALLY deploys. The capacity gate is a ratio to this, not a fixed dollar
-    # figure -- see capacity_required(). Default 0.0 means "book size unknown", which falls back
-    # to the absolute floor alone rather than silently demanding six-figure capacity.
-    deployed_equity_usd: float = 0.0,
+    # figure -- see capacity_required(). None means "read the live book from the NAV chain", which
+    # is what makes the ratio self-scaling as the desk grows. The old default of 0.0 was a hole:
+    # it collapsed the gate to the $2k absolute floor and passed essentially any capacity, so the
+    # ratio that was supposed to protect the desk protected nothing whenever a caller omitted it.
+    deployed_equity_usd: float | None = None,
+    n_sleeves: int | None = None,
     pbo: PBOResult | None = None,
     rc: RealityCheckResult | None = None,
 ) -> ValidationVerdict:
@@ -105,7 +108,9 @@ def validate(
         "dsr": dsr.passed,
         "pbo": pbo is not None and not pbo.overfit,
         "reality_check": rc is not None and rc.significant_at_5pct,
-        "capacity": cap.capacity_usd >= capacity_required(deployed_equity_usd),
+        "capacity": cap.capacity_usd >= capacity_required(
+            live_book_usd() if deployed_equity_usd is None else deployed_equity_usd,
+            live_sleeves() if n_sleeves is None else n_sleeves),
         "fragility": tail.acceptable,
     }
     failed = [name for name, ok in gates.items() if not ok]

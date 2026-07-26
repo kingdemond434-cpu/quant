@@ -35,14 +35,16 @@ class TestSufficiencyNotMagnitude:
     def test_the_niche_is_not_penalised_against_fund_scale(self) -> None:
         # the regression this module exists to prevent: the old scorers gave 1e9 a strictly higher
         # capacity term than a comfortably-sufficient small edge
-        assert capacity_fit(300_000.0, _BOOK) >= capacity_fit(1e9, _BOOK)
+        assert capacity_fit(300_000.0, _BOOK) == capacity_fit(1e9, _BOOK)
 
-    def test_fund_scale_is_discounted_but_never_excluded(self) -> None:
-        # a bounded tilt is a crowding prior; an unbounded one would just mirror the old bug
-        assert 0.5 <= capacity_fit(1e9, _BOOK) < 1.0
+    def test_no_tilt_in_either_direction(self) -> None:
+        # principal 2026-07-26: the objective is the MAXIMUM NUMBER of simultaneous uncorrelated
+        # alphas, so a sleeve declined for its SIZE is compounding foregone. Every fillable edge
+        # scores identically -- being picky about the shape of an edge is not risk management.
+        assert capacity_fit(50_000.0, _BOOK, 8) == capacity_fit(1e9, _BOOK, 8) == 1.0
 
-    def test_the_discount_is_floored_however_large_the_edge(self) -> None:
-        assert capacity_fit(1e12, _BOOK) == capacity_fit(1e15, _BOOK)
+    def test_size_is_never_a_tiebreaker_at_any_magnitude(self) -> None:
+        assert len({capacity_fit(c, _BOOK) for c in (2e5, 1e6, 1e8, 1e12, 1e15)}) == 1
 
     def test_score_is_bounded(self) -> None:
         for cap in (0.0, 1.0, 1e4, 1e6, 1e9, 1e15):
@@ -119,3 +121,73 @@ class TestScorersActuallyUseIt:
         src = inspect.getsource(factory)
         assert "capacity_usd >= 1e5" not in src, \
             "the flat $100k floor is back in acceptance -- §39 says capacity is a ratio"
+
+
+class TestLiveBookMakesTheRatioSelfScaling:
+    """A ratio evaluated against a hardcoded literal is not a ratio -- it is the old bug, moved."""
+
+    def _ledger(self, tmp_path, equity: float, n: int, ts: str | None = None):
+        import json
+        from datetime import UTC, datetime
+        p = tmp_path / "nav.jsonl"
+        p.write_text(json.dumps({
+            "date": "2026-07-25", "ts": ts or datetime.now(tz=UTC).isoformat(),
+            "equity_marked": equity, "n_carries": n}) + "\n", "utf-8")
+        return p
+
+    def test_it_reads_the_real_book(self, tmp_path) -> None:
+        from libs.research.capacity_policy import live_book_usd
+        assert live_book_usd(ledger=self._ledger(tmp_path, 14_773.14, 10)) == 14_773.14
+
+    def test_a_missing_ledger_falls_back_to_the_constant_not_to_zero(self, tmp_path) -> None:
+        # zero would collapse the requirement to the absolute floor and pass essentially anything;
+        # an unreadable file must never be the LOOSEST possible gate
+        from libs.research.capacity_policy import live_book_usd
+        assert live_book_usd(ledger=tmp_path / "nope.jsonl") == DEFAULT_BOOK_USD
+
+    def test_a_stale_ledger_is_treated_as_unknown(self, tmp_path) -> None:
+        from libs.research.capacity_policy import live_book_usd
+        led = self._ledger(tmp_path, 999.0, 3, ts="2020-01-01T00:00:00+00:00")
+        assert live_book_usd(ledger=led) == DEFAULT_BOOK_USD
+
+    def test_corrupt_json_falls_back(self, tmp_path) -> None:
+        from libs.research.capacity_policy import live_book_usd
+        p = tmp_path / "nav.jsonl"
+        p.write_text("{not json\n", "utf-8")
+        assert live_book_usd(ledger=p) == DEFAULT_BOOK_USD
+
+    def test_growing_the_book_raises_the_requirement(self, tmp_path) -> None:
+        # THE self-scaling property: the desk outgrows small edges automatically
+        assert capacity_required(500_000.0, 8) > capacity_required(15_000.0, 8)
+
+    def test_one_live_sleeve_does_not_mean_one_edge_takes_the_book(self, tmp_path) -> None:
+        from libs.research.capacity_policy import live_sleeves
+        assert live_sleeves(ledger=self._ledger(tmp_path, 20_000.0, 1)) >= DEFAULT_SLEEVES
+
+    def test_more_live_sleeves_than_planned_is_respected(self, tmp_path) -> None:
+        from libs.research.capacity_policy import live_sleeves
+        assert live_sleeves(ledger=self._ledger(tmp_path, 20_000.0, 40)) == 40
+
+
+class TestRunwayIsVisibleBeforeItExpires:
+    """§39(3): edge -> size -> next edge compounds only if the expiry is a number, not a shock."""
+
+    def test_an_edge_has_a_book_size_it_dies_at(self) -> None:
+        from libs.research.capacity_policy import outgrown_at
+        # 4x headroom, 8 sleeves: a $10k edge is fillable until the book reaches $20k
+        assert outgrown_at(10_000.0, 8) == 20_000.0
+
+    def test_bigger_capacity_buys_more_runway(self) -> None:
+        from libs.research.capacity_policy import growth_runway
+        assert growth_runway(1e6, 15_000.0, 8) > growth_runway(50_000.0, 15_000.0, 8)
+
+    def test_an_already_outgrown_edge_reports_under_one(self) -> None:
+        from libs.research.capacity_policy import growth_runway
+        assert growth_runway(1_000.0, 500_000.0, 8) < 1.0
+
+    def test_runway_agrees_with_the_band(self) -> None:
+        # the two views must never disagree about whether an edge is fillable today
+        from libs.research.capacity_policy import capacity_band, growth_runway
+        for cap in (5e3, 5e4, 5e5, 5e6):
+            outgrown = growth_runway(cap, 100_000.0, 8) < 1.0
+            assert outgrown == (capacity_band(cap, 100_000.0, 8) == "UNFILLABLE")

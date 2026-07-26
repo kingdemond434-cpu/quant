@@ -37,7 +37,7 @@ from libs.discovery.regime_diversification import regime_diversification
 from libs.discovery.signals import build_generator
 from libs.discovery.stress_scenario import stress_scenario
 from libs.discovery.tail_risk import tail_risk
-from libs.research.capacity_policy import DEFAULT_BOOK_USD, DEFAULT_SLEEVES, capacity_required
+from libs.research.capacity_policy import capacity_required, live_book_usd, live_sleeves
 from libs.validation.dsr import deflated_sharpe_ratio, sharpe_ratio
 from libs.validation.pbo import probability_backtest_overfitting
 from libs.validation.stress_costs import stress_cost_validation
@@ -56,8 +56,8 @@ class AlphaDiscoveryFactory:
         adv_usd: float = 1e9,
         min_observations: int = 60,
         seed: int = 0,
-        book_usd: float = DEFAULT_BOOK_USD,
-        n_sleeves: int = DEFAULT_SLEEVES,
+        book_usd: float | None = None,
+        n_sleeves: int | None = None,
     ) -> None:
         self.ppy = periods_per_year
         self.init_cash = init_cash
@@ -69,8 +69,8 @@ class AlphaDiscoveryFactory:
         # from `init_cash` -- that is a backtest's notional, not the equity that will be deployed,
         # and defaulting capacity checks to a $100k simulation notional is how the flat $100k
         # floor survived a rewrite in the first place.
-        self.book_usd = book_usd
-        self.n_sleeves = n_sleeves
+        self.book_usd = live_book_usd() if book_usd is None else book_usd
+        self.n_sleeves = live_sleeves() if n_sleeves is None else n_sleeves
 
     # ------------------------------------------------------------ public API
 

@@ -323,7 +323,7 @@ A ~$50k book has exactly ONE structural advantage over every fund on earth: it c
 
 (1) CAPACITY IS A RATIO, NOT A DOLLAR FIGURE. The gate's real job is to stop the desk being a large share of its OWN edge's capacity — impact, not size. That is a ratio to deployed equity and it protects a $5k book and a $5M book identically: `capacity_usd >= max(abs_floor, headroom_mult × deployed_equity)`. Both bounds live in the ThresholdBook, bounded and evidence-adjustable. The absolute floor is deliberately FREE rather than tighten-only, because the old fixed floor was itself the defect — the desk must be able to move it DOWN as it deliberately hunts smaller.
 
-(2) PERMISSION IS NOT PURSUIT. Removing the block is necessary and NOT sufficient: a desk merely allowed to hunt small will still default to fund-shaped ideas, because that is what the literature is written about and what the models have read. So the CAPACITY DISTRIBUTION of screened candidates is measured every sweep (`max_audit.check_capacity_hunt`). If under HALF of scored candidates sit in the range a $50k book can actually exploit, the desk is competing where it has no advantage and could not fill the trade if it found one — a DEFECT, not a preference. (The bar was a quarter until the second pass below raised it to parity; a floor is not parity.)
+(2) PERMISSION IS NOT PURSUIT. Removing the block is necessary and NOT sufficient: a desk merely allowed to hunt small will still default to fund-shaped ideas, because that is what the literature is written about and what the models have read. So the CAPACITY DISTRIBUTION of screened candidates is measured every sweep (`max_audit.check_capacity_hunt`). If EITHER band — the range this book can exploit, or the larger edges that will succeed them — falls below a quarter of the fillable funnel, that is a DEFECT: one whole class of alpha is going unhunted, and the objective is the maximum NUMBER of simultaneous uncorrelated alphas, not a preferred size of alpha. See (5)(c) below for why the check is symmetric rather than a niche floor.
 
 (3) THE NAMED GROUND. Day-1 perp listing funding spikes (one-sided spec flow, no arb capital yet — the `run_listing_watch` clock already runs for this), thin-pair cross-venue funding divergence, low-OI tails of the perp universe, delisting forced-unwind dislocations. What they share is that they pay BECAUSE they are too small to interest anyone with money, and they decay as the desk grows into them. That decay is DEFINITIONAL, not a risk to be mitigated: the sequence is edge → size → next edge, which is why breadth keeps earning its cost even when depth is what converts.
 
@@ -342,27 +342,54 @@ being SCORED out of it is the same exclusion moved one layer down, where it is h
 
 The law has three parts, all mechanical:
 
-  (a) CAPACITY SCORES AS SUFFICIENCY, NEVER AS MAGNITUDE. `libs/research/capacity_policy.py` is the
-  single definition and every scorer imports it. The score ramps to the headroom requirement, then
-  goes FLAT — above sufficiency, size stops being a tiebreaker and the edge is judged on Sharpe,
-  orthogonality and persistence like everything else. That flat region IS the parity. Capacity you
-  cannot fill is not an advantage you own; rewarding it is preferring an option you cannot
-  exercise. Above an ABSOLUTE fund-scale threshold a bounded crowding discount applies — bounded,
-  and floored in the ThresholdBook as loosen-only, because an unbounded tilt toward small would
-  merely be the original bug mirrored. The crowding threshold is absolute and not a multiple of our
-  own book, because whether an edge is crowded is a fact about the market, not about how much money
-  we happen to have.
+  (a) CAPACITY SCORES AS SUFFICIENCY, NEVER AS MAGNITUDE, AND NEVER TILTED EITHER WAY.
+  `libs/research/capacity_policy.py` is the single definition and every scorer imports it. The
+  score ramps to the headroom requirement, then goes FLAT — above sufficiency, size stops being a
+  tiebreaker and the edge is judged on Sharpe, orthogonality and persistence like everything else.
+  That flat region IS the parity. Capacity you cannot fill is not an advantage you own; rewarding
+  it is preferring an option you cannot exercise.
+
+  A first pass then discounted fund-scale capacity as a crowding prior. THE PRINCIPAL STRUCK IT
+  (2026-07-26) and was right twice over. First, the objective is the MAXIMUM NUMBER OF SIMULTANEOUS
+  UNCORRELATED ALPHAS — that is what compounds — so a sleeve declined for its SIZE is geometric
+  growth foregone, and being picky about the shape of an edge is not risk management. Second, it
+  DOUBLE-COUNTED: crowding is already priced by the `crowded_known` prior and re-tested by DSR, PBO
+  and persistence, so charging it again in the capacity term punished large edges twice for one
+  fact. The score is now flat for everything fillable, full stop. The mechanism survives, defaulted
+  to neutral and bounded in the ThresholdBook, so MEASURED decay-versus-capacity evidence could
+  reintroduce a discount later — evidence may move it, preference may not.
 
   (b) NO EDGE IS FILLED WITH THE WHOLE BOOK. Capacity is judged against the equity ONE SLEEVE
   receives, not against the desk total. Comparing every candidate to the full book silently assumes
   an all-in single-strategy desk and inflates the requirement by the sleeve count — the flat-floor
   bug in miniature. The divisor is explicit (`DEFAULT_SLEEVES`), never implied.
 
-  (c) THE FUNNEL MUST BE AT LEAST HALF NICHE. `check_capacity_hunt`'s bar rises from a quarter to
-  PARITY: the niche gets at least as much of the screened population as everything else combined,
-  because it is the one band where this book is not the worst-capitalised participant in the trade.
+  (c) BOTH BANDS ARE HUNTED, BOTH ARE RUN, AND THE CHECK IS SYMMETRIC. `check_capacity_hunt` fires
+  when EITHER band falls below a quarter of the fillable funnel. The first version enforced a niche
+  FLOOR, which is the same bias pointed the other way: it would have sat silent while the desk
+  hunted nothing but tiny edges. Hunting only small costs twice — the large alphas that would have
+  run ALONGSIDE the small ones are never found, and there is no successor inventory for the day the
+  book outgrows what is running. Nothing is ever declined to make room for something smaller.
   Separately, candidates that cannot absorb even one sleeve are their own defect — small is the
   advantage, too small to fill is not, and the two must never be scored as the same thing.
+
+  (c2) THE ONLY REASON A SLEEVE EVER STOPS IS ARITHMETIC. An edge is deployed while it is fillable
+  and retired when the book genuinely passes its capacity — never because something bigger came
+  along, and never because it was small. `outgrown_at` gives every edge the exact book size it dies
+  at and `growth_runway` gives the multiple of today's equity it survives, so the expiry is a date
+  rather than a surprise, and `check_capacity_runway` fires both when an edge has ALREADY been
+  outgrown and when nothing on the shortlist survives a doubling. That second one is the real
+  discipline: the replacement must be in the pipeline BEFORE the expiry arrives, which means
+  hunting the larger band concurrently rather than afterwards.
+
+  (c3) THE RATIO IS EVALUATED AGAINST THE LIVE BOOK, NOT A LITERAL. `live_book_usd` and
+  `live_sleeves` read the hash-chained NAV attestation, so the requirement rises by itself as
+  equity compounds and the desk outgrows small edges automatically. "Capacity is a ratio" and "the
+  ratio is measured against a hardcoded $50k" are the same bug one step apart. A missing, stale
+  (>7d) or corrupt ledger falls back to the CONSTANT and never to zero — an unreadable file must
+  never be the loosest possible gate, which is exactly what the old `deployed_equity_usd = 0.0`
+  default silently was. The live sleeve count is floored at the planned count, because running one
+  sleeve today means the desk has not diversified YET, not that one edge may swallow the book.
 
   (d) THE GUARD IS STRUCTURAL, NOT NUMERIC. `check_capacity_single_source` enumerates every scorer
   that judges capacity and fails if one does not import the shared policy, or carries a
