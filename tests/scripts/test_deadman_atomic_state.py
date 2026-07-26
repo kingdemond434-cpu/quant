@@ -67,3 +67,25 @@ class TestAtomicStateWrite:
         assert "libs" not in imported, f"TIER-3 isolation broken: {imported}"
         assert imported <= {"__future__", "hashlib", "hmac", "json", "os", "time", "urllib",
                             "pathlib"}, f"unexpected dependency added to the rail: {imported}"
+
+    def test_the_rail_is_not_in_the_mypy_files_list(self) -> None:
+        """The rail must stay OUT of mypy's `files`, or the gate itself pressures a Tier-3 edit.
+
+        2026-07-26: an automated typing pass added the rail to mypy `files`. Strict mode then
+        demanded `Any` for its heterogeneous JSON state bags, so the pass added
+        `from typing import Any` -- which trips the import allowlist above -- and, while there,
+        rewrote `should_fire`'s return to `bool(int(...))`, a BEHAVIOUR change on the trigger
+        path (a corrupt `breaches: "5"` went from TypeError to firing). CI went red and stayed
+        red until the rail was reverted.
+
+        The lesson generalises: putting a never-touch file under a checker that DEMANDS edits
+        sets the two guards fighting, and the checker wins because it runs on every commit.
+        Isolation is this rail's protection; type coverage is not worth trading it for.
+        """
+        import tomllib
+        cfg = tomllib.loads((_SRC.parents[1] / "pyproject.toml").read_text("utf-8"))
+        listed = cfg["tool"]["mypy"]["files"]
+        assert not any("run_deadman_switch" in f for f in listed), (
+            "TIER-3 rail is under mypy again -- strict mode will demand an import the rail's "
+            f"allowlist forbids, taking CI red. Remove it from [tool.mypy] files: {listed}"
+        )
