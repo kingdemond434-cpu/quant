@@ -18,11 +18,117 @@
    "summary": "prompt-doctrine-bloat: principal_doctrine.txt is 27k chars against a 16k guard; consolidate the pre-existing stacked axiom blocks (supreme objective / no-ceiling / principal doctrine restate each other) preserving every commitment -- every organ pays this context on every call",
    "roi_bps": null,
    "raised": "2026-07-26T11:34:30.251443+00:00",
+   "status": "scheduled",
+   "reason": "Cut 31.5k->27.5k today by merging four genuinely redundant maximisation blocks. Reaching the 16k gate needs an architectural decision -- restructure the doctrine into principles-plus-pointers with procedures in referenced docs -- which deserves a focused pass, not a tail-end cleanup.",
+   "commit": null,
+   "due": "2026-07-27",
+   "disposed": "2026-07-26T11:53:17.481309+00:00"
+  },
+  {
+   "id": "R0003",
+   "source": "deep_sweep",
+   "summary": "O1 data-moat: screen the desk's own L2 tape \u2014 build depth-imbalance panel from data/moat (microstructure.py has zero callers) and stage_a_screen it; crown-jewel dataset has 0 research artifacts in ~1 month of recording (converges with data-intelligence sweep's moat-extraction pilot)",
+   "roi_bps": null,
+   "raised": "2026-07-26T11:45:41.959734+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null,
+   "corrections": [
+    {
+     "was": "rejected",
+     "was_reason": "Defends a state the design makes unconstructable: every write path sets breaches to 0 or int(...)+1, so it is int by construction, and main() already guards corruption twice -- json.loads wrapped to {} on error, plus a version check that resets any foreign or legacy state to a fresh baseline (the 2026-07-11 false fire came from inherited state, which is why that guard exists). The coercion would only alter behaviour on a hand-edited state file whose version still matched, and there it makes a CORRUPT value FIRE the ruin rail rather than surface as an error -- strictly worse than the status quo on the one path where being wrong flattens the book. Rejected on the merits, not deferred.",
+     "was_commit": null,
+     "was_due": null,
+     "corrected": "2026-07-26T15:04:13.352902+00:00",
+     "why": "MISFILED by me: I ran add and assumed my new row was R0003, but the weekly deep sweep had concurrently ledgered R0003-R0009, so my row was actually R0010. The rejection reasoning I attached concerned the dead-man breaches coercion and has nothing to do with this L2-tape data-moat recommendation, which has never been assessed on its merits."
+    }
+   ]
+  },
+  {
+   "id": "R0004",
+   "source": "deep_sweep",
+   "summary": "O2 data-moat: wire hypothesis_novelty into live generation + compile ONE canonical machine graveyard (data/graveyard_priors.json) from graveyard.md+research_memory+526 candidate rows; PriorIdea constructed nowhere in production; validate first via E2 recall replay on the 420 campaign",
+   "roi_bps": null,
+   "raised": "2026-07-26T11:45:42.077509+00:00",
    "status": "open",
    "reason": null,
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0005",
+   "source": "deep_sweep",
+   "summary": "O3 data-moat: mechanism-priored cross-axis interaction screen (kimchi x funding, stablecoin x breadth, OI x regime); extraction law demands cross-feature interactions and no implementation exists; every cell a logged trial, no pair without written mechanism prior",
+   "roi_bps": null,
+   "raised": "2026-07-26T11:45:42.148635+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0006",
+   "source": "deep_sweep",
+   "summary": "O4 data-moat: append-only crypto_regime_history.jsonl (3 lines in classify_regime.py + deterministic backfill); desk destroys its own daily regime fingerprint by overwrite; hmm_gmm_agree=false with confidence=1.0 currently invisible",
+   "roi_bps": null,
+   "raised": "2026-07-26T11:45:42.213912+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0007",
+   "source": "deep_sweep",
+   "summary": "O5 data-moat: event-study harness over owned event data (unlock_events, listings, liquidations + own tape around events); event-reconstruction moat class is empty while the data sits collected and idle",
+   "roi_bps": null,
+   "raised": "2026-07-26T11:45:42.272109+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0008",
+   "source": "deep_sweep",
+   "summary": "O6 data-moat: populate-or-retire the trials_ledger (0 rows in every DB while docstring claims nothing is validated without it; gauntlet no-ledger fallback n_trials=2) + build effective-vs-raw trial audit view from research_candidates rows (gate-optimality duty currently unauditable)",
+   "roi_bps": null,
+   "raised": "2026-07-26T11:45:42.344528+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0009",
+   "source": "deep_sweep",
+   "summary": "O7 data-moat hygiene: terminal-mark 340 phantom queued v1 campaign rows (frozen since 06-22) and regenerate web/discovery.json to actually mirror the full graveyard table (today it carries sleeve results only)",
+   "roi_bps": null,
+   "raised": "2026-07-26T11:45:42.421033+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0010",
+   "source": "cycle",
+   "summary": "adopt bool(int(state[breaches])) coercion on the dead-man trigger as corrupt-state hardening (raised by the f555857 revert, paged to the principal)",
+   "roi_bps": null,
+   "raised": "2026-07-26T11:53:17.291802+00:00",
+   "status": "rejected",
+   "reason": "Defends a state the design makes unconstructable: every write path sets breaches to 0 or int(...)+1, so it is int by construction, and main() already guards corruption twice -- json.loads wrapped to {} on error, plus a version check resetting foreign/legacy state to a fresh baseline (the 2026-07-11 false fire came from inherited state). The coercion would only bite on a hand-edited state whose version still matched, and there it makes a CORRUPT value FIRE the ruin rail rather than surface as an error -- strictly worse on the one path where being wrong flattens the book.",
+   "commit": null,
+   "due": null,
+   "disposed": "2026-07-26T15:04:13.419759+00:00"
   }
  ]
 }

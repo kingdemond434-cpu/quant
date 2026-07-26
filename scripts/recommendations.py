@@ -86,7 +86,16 @@ def dispose(a: argparse.Namespace) -> None:
     if row is None:
         raise SystemExit(f"no such recommendation: {a.id}")
     if row["status"] in _TERMINAL:
-        raise SystemExit(f"{a.id} is already {row['status']} -- dispositions do not revert")
+        raise SystemExit(f"{a.id} is already {row['status']} -- dispositions do not revert. "
+                         "If it was MISFILED, use `correct --id --reason`, which logs the "
+                         "reversal in the row history rather than erasing it.")
+    # GUARD AGAINST DISPOSING THE WRONG ROW (2026-07-26): ids are assigned by count, so a
+    # concurrent writer -- the weekly sweep ledgering seven rows mid-session -- shifts the id
+    # a caller assumed. --expect makes the caller name what it thinks it is deciding.
+    if a.expect and a.expect.lower() not in row["summary"].lower():
+        raise SystemExit(
+            f"{a.id} does not match --expect {a.expect!r}. Its summary is:\n  "
+            f"{row['summary'][:200]}\nAnother writer may have taken the id you assumed.")
     if a.status == "rejected" and len((a.reason or "").strip()) < _MIN_REASON:
         raise SystemExit(
             f"a rejection needs a real reason (>={_MIN_REASON} chars). The principal's "
@@ -102,6 +111,34 @@ def dispose(a: argparse.Namespace) -> None:
                disposed=datetime.now(tz=UTC).isoformat())
     _save(d)
     print(f"{a.id} -> {a.status.upper()}")
+
+
+def correct(a: argparse.Namespace) -> None:
+    """Reverse a MIS-ENTERED disposition, permanently logging that it happened.
+
+    "Dispositions never revert" is the right guard against gaming and the wrong one against error:
+    it made an honest mis-entry unfixable. What actually prevents laundering is not immovability
+    but VISIBILITY -- a correction keeps the original disposition, its reason, and the reason it
+    was wrong in the row's own history, so the record reads as "decided, then found misfiled",
+    never as "never decided". Corrections are cheap to audit and impossible to hide.
+    """
+    d = _load()
+    row = next((r for r in d["recommendations"] if r["id"] == a.id), None)
+    if row is None:
+        raise SystemExit(f"no such recommendation: {a.id}")
+    if row["status"] == "open":
+        raise SystemExit(f"{a.id} is already open -- nothing to correct")
+    if len((a.reason or "").strip()) < _MIN_REASON:
+        raise SystemExit(f"a correction needs a real reason (>={_MIN_REASON} chars): what was "
+                         "misfiled, and why the original disposition did not apply to this row")
+    row.setdefault("corrections", []).append({
+        "was": row["status"], "was_reason": row.get("reason"),
+        "was_commit": row.get("commit"), "was_due": row.get("due"),
+        "corrected": datetime.now(tz=UTC).isoformat(), "why": a.reason})
+    row.update(status="open", reason=None, commit=None, due=None, disposed=None)
+    _save(d)
+    print(f"{a.id} corrected -> OPEN (prior disposition kept in its history); "
+          "a fresh disposition is now owed")
 
 
 def owed(d: dict[str, Any]) -> tuple[list[Any], list[Any]]:
@@ -153,7 +190,14 @@ def main() -> None:
     p.add_argument("--reason")
     p.add_argument("--commit")
     p.add_argument("--due", help="YYYY-MM-DD, required for scheduled")
+    p.add_argument("--expect", help="substring the target summary must contain -- "
+                                    "guards against disposing a row another writer "
+                                    "took the id of")
     p.set_defaults(func=dispose)
+    p = sub.add_parser("correct", help="reverse a MISFILED disposition, logged")
+    p.add_argument("--id", required=True)
+    p.add_argument("--reason", required=True)
+    p.set_defaults(func=correct)
     p = sub.add_parser("report", help="orphans and overdue -- both are defects, not backlog")
     p.set_defaults(func=report)
     a = ap.parse_args()
