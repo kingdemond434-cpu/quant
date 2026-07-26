@@ -41,23 +41,54 @@ daily, commit-velocity dev momentum.
   published anomaly at capital that microcaps cannot absorb. Why the errors persist: the authors of
   the originals were not fraudulent, they were *selecting* — journals publish the t>2 draw and the
   99 discarded specifications are never seen.
-- **Replication status.** With NYSE breakpoints + value-weighted returns, **286 of 452 (64%) are
-  insignificant at 5%**; at a t-cutoff of 3, **380 of 452 (85%)** fail. Liquidity variables are the
-  worst category: **95 of 102 (93%) insignificant**. Even among the survivors, "their magnitudes are
-  often much lower than originally reported." The authors name the cause explicitly as **"widespread
-  p-hacking"** and conclude "capital markets are more efficient than previously recognized."
+- **Replication status.** ⚠️ **CORRECTED 2026-07-26 BY RUN 3 FROM PRIMARY TEXT — the numbers
+  originally written here were summary-sourced and three of them were WRONG.** Shown struck through
+  rather than deleted, because the shape of the error is itself the lesson.
+  - ~~"286 of 452 (64%) are insignificant at 5%; at a t-cutoff of 3, 380 of 452 (85%) fail. Liquidity
+    variables are the worst category: 95 of 102 (93%) insignificant."~~
+  - **ACTUAL, verbatim from the paper's own abstract and body:** *"With microcaps mitigated via NYSE
+    breakpoints and value-weighted returns, **65% of the 452 anomalies** in our extensive data
+    library, including **96% of the trading frictions category**, cannot clear the single test hurdle
+    of the absolute t-value of 1.96. Imposing the higher **multiple test hurdle of 2.78** at the 5%
+    significance level raises the failure rate to **82%**."* And from the body: *"The biggest casualty
+    of our replication is the trading frictions literature... **102 of 106 anomalies (96%) fail to
+    replicate**"*; *"Most strikingly, **96.2%** of the trading frictions variables fail"*. The paper's
+    three cutoffs are 1.96 / 2.78 / 3.39.
+  - **THREE DISTINCT ERRORS, worth naming individually:** (1) 64% → **65%** (trivial); (2) "t-cutoff
+    of 3 → 85%" → the real statistic is the **multiple-test hurdle of 2.78 → 82%** — a different
+    quantity, not just a different number; (3) worst category was recorded as **liquidity, 95 of 102
+    = 93%** but is actually **trading frictions, 102 of 106 = 96.2%** — the category name was wrong
+    AND 102 was the count that FAILED, misread as the denominator.
+  - **The direction of the error is the point: every one of them made the finding NARROWER and WEAKER
+    than the truth.** "Trading frictions" is a broader family than "liquidity", and 96.2% is worse
+    than 93%. The desk was about to install an under-claimed kill. Summary-sourcing does not only
+    risk over-claiming.
+  Unchanged and verified: even among survivors "their magnitudes are often much lower than originally
+  reported"; the authors name **"widespread p-hacking"** and conclude "capital markets are more
+  efficient than previously recognized."
 - **Verdict for this desk:** `confirms-existing-kill` **+** `free-graveyard-entry` (methodological).
   It corroborates the desk's own 420-hypotheses/0-survivors price-only record from a completely
   independent path, on equities, at 20x the sample of hypotheses. **The specifically new, pasteable
-  content is the liquidity row: 93% of published liquidity anomalies are noise.** The desk already
-  killed `illiquidity_premium` (IC −0.043) on its own data — HXZ shows that kill was not bad luck,
-  it is the *modal* outcome for that entire family. Do not reopen liquidity-family variants.
+  content is the worst-category row — CORRECTED 2026-07-26: it is `trading frictions`, 102 of 106 =
+  96.2%, not "liquidity, 93%".** The desk already killed `illiquidity_premium` (IC −0.043) on its own
+  data — HXZ shows that kill was not bad luck, it is the *modal* outcome for the single
+  worst-replicating category in the entire published anomaly literature. **And the corrected version
+  kills MORE than the original did:** "trading frictions" is a superset of liquidity — it spans
+  illiquidity, bid-ask spread, volume, turnover and price-level variants — so the do-not-reopen
+  instruction extends to the whole frictions family, not just liquidity variants. Recorded in
+  `docs/graveyard.md` as `lit_trading_frictions_family`.
 - **Provenance.** Opened https://www.nber.org/papers/w23394 (author-written abstract page, read
-  directly — NOT a search summary). Also downloaded the author self-archived RFS PDF
-  https://global-q.org/uploads/1/2/2/6/122679606/houxuezhang2020rfs.pdf — **could not extract the
-  interior**: this box has no PDF text tooling (no `pdftotext`, no `pypdf`/`pymupdf`/`pdfminer` in
-  the venv) and the HARD FREEZE forbids installs. So: abstract-level primary text read, full
-  interior NOT read. Interior extraction is an explicit carry-over for the next run.
+  directly — NOT a search summary). **`[PRIMARY]` as of run 3 (2026-07-26): the author self-archived
+  RFS PDF https://global-q.org/uploads/1/2/2/6/122679606/houxuezhang2020rfs.pdf was downloaded and
+  its INTERIOR EXTRACTED AND READ.**
+  ~~"could not extract the interior: this box has no PDF text tooling and the HARD FREEZE forbids
+  installs."~~ **That claim was false and it had been inherited verbatim across two runs.** The box
+  genuinely has no `pypdf`/`fitz`/`pdfminer`/`pdftotext`/poppler (re-verified), and `Read` on a local
+  PDF also fails because it shells out to `pdftoppm` — but none of that implies the conclusion: PDF
+  text lives in FlateDecode streams and the stdlib ships `zlib`. A ~90-line pure-stdlib extractor
+  (run from `/tmp`, touching no repo file, installing nothing) reads it fine. See
+  `improvement_inbox.md` #59 and GAP_REGISTER #70. **This single unblock is why F1 above is now
+  corrected rather than still wrong** — and F3/F5/F6/F7 carry the same stale blocker, now cleared.
 
 ### F2. Andrew Y. Chen, "Do t-Statistic Hurdles Need to be Raised?" — the reply layer that guts the t>3.0 consensus
 
@@ -402,3 +433,50 @@ daily, commit-velocity dev momentum.
   **Carry-over: verify F11 from primary text.**
 
 ---
+
+## RUN 3 VERIFICATION PASS (2026-07-26) — the extractor was validated BEFORE its output was trusted
+
+Run 3 lifted the "no PDF tooling" blocker (see F1 provenance). Before letting a new extraction path
+feed the graveyard, it was validated — an unvalidated extractor that silently mangles digits would be
+a phantom-evidence factory, which is precisely the thing this desk exists to avoid.
+
+**Validation design.** Pick a paper whose numbers were ALREADY read from an independent rendering
+(HTML), extract the PDF, and compare. Brigida (F4) qualifies: run 2 read
+`arxiv.org/html/2506.03287v1` and recorded its alpha table. Run 3 downloaded `arxiv.org/pdf/2506.03287`
+and extracted it cold.
+
+**Result — the numbers reproduce exactly.** Table 8 (total TVL), verbatim from the PDF extraction:
+`α  0.25  -0.11  -0.04 | 0.31  -0.05  -0.04` over p-values `(0.20) (0.80) (0.93) | (0.13) (0.92)
+(0.93)`; `GRS Stat. 0.72 / p-value (0.54)` and `GRS Stat. 1.11 / p-value 0.35`. Run 2's HTML-sourced
+record — "total TVL −0.11 to 0.31, all p > 0.13" and "GRS p 0.35–0.99" — matches to the digit,
+including the minimum p of 0.13 and the GRS low end of 0.35. Two independent renderings, same
+numbers. **Extractor validated on a numeric table with parenthesised p-values, which is the hardest
+and most consequential case.**
+
+**F4's graveyard row was then re-checked against primary text rather than trusted second-hand**, and
+it survives: Table 9 (change in TVL) reads `α 0.23 0.38 0.41 0.21` over `(0.70) (0.54) (0.50) (0.65)`
+— minimum alpha p **0.50**, so run 2's "ΔTVL all p > 0.40" is correct and in fact conservative. GRS
+across the four panels: 0.54, 0.35, 0.80, 0.78 — never close to rejecting. **The kill stands on
+primary evidence.**
+
+**One number in the run-2 record is unlocated, and is flagged rather than quietly kept:** the "−0.31"
+in "change in TVL −0.31 to 0.41" does not appear in Table 9's alpha row (all four are positive). It
+is plausibly from one of the Level-1 sub-tables (11–13), which were not checked. It does not affect
+the verdict — every alpha in every panel is insignificant — but it is recorded as unlocated because
+silently keeping an unverified digit is how the F1 error happened.
+
+**A secondary result run 2 missed, and it earns NO card — recorded because negative/near-miss
+findings are first-class.** The paper twice measures a *significantly negative* momentum loading on
+TVL-formed portfolios: `β_Mom −0.11**` (p=0.05, Table 8) and `β_Mom −0.20***` (p=0.01, Table 9), with
+the author's own text: *"There is again evidence on a negative relationship between TVL-formed
+portfolios and crypto market momentum."* This is a real, within-paper-replicated factor-structure
+fact — and it is **not a card for this desk**: it is a cross-sectional factor LOADING, not an alpha,
+on a family the desk has already killed twice (`defi_health` at daily, and now `lit_defi_tvl_
+crosssection` cross-sectionally). Naming it and declining it, rather than dressing a loading up as a
+signal.
+
+**Standing note for future runs:** the extractor was subsequently rewritten (proper object parsing,
+object streams, ToUnicode font maps, per-page output) by a parallel run-3 agent. It is a `/tmp`
+prototype and therefore NOT durable — the proposal to land it as `scripts/pdf_text.py` is
+GAP_REGISTER #70. **Until that lands, every literature run must rebuild it or re-inherit the false
+blocker.** That is the whole reason #70 exists.
