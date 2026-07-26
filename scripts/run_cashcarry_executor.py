@@ -658,6 +658,7 @@ def _rebalance(top: int, hold_top: int, capital: float, *, dry: bool) -> dict[st
                 continue
             # realized trade record: delta-neutral price legs (~cancel) + est funding harvested
             spx, fpx = spot_px.get(sym, p["spot_cost"]), fut_px.get(sym, p["perp_entry"])
+            fill: dict[str, Any] = {}                    # dry places no orders -> no fill mode
             if not dry:
                 t0 = int(time.time() * 1000) - 2000       # fill window (venue clock-skew slack)
                 fill = _execute_pair(sym, float(p["spot_qty"]), "SELL", "BUY")  # close: sell/cover
@@ -688,7 +689,8 @@ def _rebalance(top: int, hold_top: int, capital: float, *, dry: bool) -> dict[st
                         "opened": p.get("opened"), "closed": datetime.now(tz=UTC).isoformat(),
                         "held_hours": held, "price_pnl": round(price_pnl, 2),
                         "est_funding": round(est_funding, 2),
-                        "net": round(price_pnl + est_funding, 2)})
+                        "net": round(price_pnl + est_funding, 2),
+                        "spot_mode": fill.get("spot"), "fut_mode": fill.get("fut")})
             actions.append(f"close {sym}")
             del pos[sym]
 
@@ -737,7 +739,8 @@ def _rebalance(top: int, hold_top: int, capital: float, *, dry: bool) -> dict[st
         if not dry:
             _log_trade({"event": "open", "symbol": sym, "qty": qty,
                         "notional": round(qty * px, 2), "funding_rate": round(fnd, 6),
-                        "opened": pos[sym]["opened"]})
+                        "opened": pos[sym]["opened"],
+                        "spot_mode": fill.get("spot"), "fut_mode": fill.get("fut")})
         actions.append(f"open {sym} {qty}")
 
     # TOP UP undersized held carries toward the FULL-capital target so authorized capital is not
@@ -784,7 +787,8 @@ def _rebalance(top: int, hold_top: int, capital: float, *, dry: bool) -> dict[st
             if not dry:
                 _log_trade({"event": "topup", "symbol": sym, "qty": qty,
                             "notional": round(qty * px, 2), "funding_rate": p.get("funding"),
-                            "opened": p.get("opened")})
+                            "opened": p.get("opened"),
+                            "spot_mode": fill.get("spot"), "fut_mode": fill.get("fut")})
             actions.append(f"topup {sym} +{qty}")
 
     state["positions"] = pos

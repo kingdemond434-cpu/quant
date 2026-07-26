@@ -40,6 +40,12 @@ def _buckets(closes: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
     return out
 
 
+def _leg_share(trades: list[dict[str, Any]], key: str) -> float | None:
+    """Maker share of one leg. None when no record carries the field yet (pre-instrumentation)."""
+    modes = [x[key] for x in trades if x.get(key)]
+    return round(sum(m == "maker" for m in modes) / len(modes), 3) if modes else None
+
+
 def _tape_sync(trades: list[dict[str, Any]]) -> dict[str, Any]:
     """Mirror the rolling buffer into the permanent execution tape, and report the margin.
 
@@ -107,6 +113,28 @@ def main() -> None:
             flags.append(f"symbol {s} structurally bleeding: ${net:.0f} over {n} trades "
                          f"({bps:.0f} bps)")
 
+    # MAKER FILL-RATE ON THE PRIMARY BOOK (2026-07-26). The patient-maker opens shipped 07-24 to
+    # cut a fee bill running ~2.5x the funding harvest, and the desk carried a standing duty to
+    # "re-measure weekly until >60%" -- with NO instrument: _execute_pair returned the fill mode
+    # and _log_trade threw it away, and the only `maker_share` in the repo belongs to a different
+    # organ (run_crypto_testnet) whose web/binance.json last updated 2026-06-28. A fix whose effect
+    # cannot be measured is a fix on trust. Legs are counted independently: a pair can rest maker
+    # on spot and cross taker on futures, and that asymmetry is exactly the cost detail we need.
+    legs = [m for x in trades for m in (x.get("spot_mode"), x.get("fut_mode")) if m]
+    maker = {
+        "n_legs": len(legs),
+        "maker_share": round(sum(m == "maker" for m in legs) / len(legs), 3) if legs else None,
+        "spot": _leg_share(trades, "spot_mode"),
+        "fut": _leg_share(trades, "fut_mode"),
+        "target": 0.60,
+        "note": ("instrumented 2026-07-26; records written before that carry no mode, so n_legs "
+                 "climbs from 0 as new fills land -- a null share is thin data, not a regression"),
+    }
+    if maker["maker_share"] is not None and maker["n_legs"] >= 20 and maker["maker_share"] < 0.60:
+        flags.append(f"maker fill-rate {maker['maker_share']:.1%} below the 60% target over "
+                     f"{maker['n_legs']} legs -- patient-maker opens are not converting; fees are "
+                     "the dominant carry cost, so this is the primary unit-economics lever")
+
     if tape.get("buffer_squeezing_window"):
         flags.append(f"trade-log buffer holds {tape['buffer_days']}d < the {_WINDOW_D}d forensics "
                      "window -- this analysis is now silently losing its own tail; the permanent "
@@ -119,6 +147,7 @@ def main() -> None:
         "baseline_funding_class": {"n": len(base), "net": round(bn, 2),
                                    "bps": round(1e4 * bn / bnot, 2) if bnot else 0.0},
         "post_gate_baseline_opens": len(post_gate_base),
+        "maker_fill": maker,
         "execution_tape": tape,
         "worst_symbols": [{"symbol": s, "n": n, "net": round(net, 2), "bps": round(bps, 1)}
                           for s, n, net, bps in worst],
