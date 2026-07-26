@@ -58,6 +58,34 @@ blueprint-triage`, `2026-07-17-no-change-cap-principal-order`; principal through
 ## 7b. GATE-0 PRE-MORTEM (mandatory, blocking -- principal 2026-07-18)
 Before the PRINCIPAL_ACTION key request: the FULL 13-model panel pre-mortems the verified connector, breaker report, and arming plan. Mandate: argue this go-live fails; find the bug the tests missed. Unresolved critical findings block the request.
 
+## BUILD STATUS 2026-07-26 (sections 3–7)
+
+Everything in §3–§6 is built and wired. The single production caller is
+`scripts/run_live_guard.py`, on the daily cycle; before it, `libs/execution/staging.py` and both
+connectors were imported by their own tests and nothing else — built, green, called by nobody.
+
+| Spec | Module | Caller | Tests |
+|---|---|---|---|
+| §3 stops + no-naked invariant | `libs/execution/protective_stops.py` | `run_live_guard.py` | `tests/execution/test_protective_stops.py` (25) |
+| §4 de-risk ladder | `libs/ops/derisk_ladder.py` | `run_live_guard.py` | `tests/ops/test_derisk_ladder.py` (21) |
+| §5 canary | `libs/execution/canary.py` | `run_live_guard.py` | `tests/execution/test_canary.py` (13) |
+| §6 ramp gate | `libs/execution/ramp_gate.py` | `run_live_guard.py` | `tests/execution/test_ramp_gate.py` (22) |
+| §7 mutation testing | `scripts/run_mutation_test.py` | manual + cadence | boundary suites (81) |
+
+Deviations from the frozen text, each deliberate:
+- **§5 canary is a signed READ, not an order round-trip.** Placing a minimum-notional order is a
+  live-money action and cannot be on an unattended timer before Gate 0. The signed read exercises
+  auth, signing, IP whitelist and clock skew — everything except order placement, which the first
+  S1 trade proves. Revisit at S1.
+- **§4 flatten rungs are double-gated** on armed + `--allow-flatten`; the scheduled unit passes
+  neither, so it reports what it would do. A timer that can flatten the book unattended is a
+  larger risk than the one the rung mitigates.
+- **§7 mutation testing is a purpose-built harness, not mutmut.** mutmut edits the working tree in
+  place and one target is `run_deadman_switch.py` (TIER-3 NEVER-TOUCH); the harness mutates a
+  scratch copy so the real tree is never written to. Score is reported, not yet blocking.
+- **§7 second-model-family fuzz/breaker report is NOT done** — it is a panel task
+  (`scripts/deep_review.py`, 13 seats) and cannot be self-served by the same model.
+
 ## 8. Explicitly out of scope for the connector build
 - Key creation/rotation, deposits, withdrawals, capital sweeps: principal-only, forever.
 - Any relaxation of Tier-3 rails, deadman, cadence floors.

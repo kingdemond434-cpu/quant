@@ -63,7 +63,11 @@ def s2_entry_met(evidence: dict[str, Any]) -> tuple[bool, str]:
     checks = {
         "live_weeks_ge_8": float(evidence.get("live_weeks", 0.0)) >= 8.0,
         "calibration_rows_ge_10": int(evidence.get("calibration_rows", 0)) >= 10,
-        "critical_drill_failures_eq_0": int(evidence.get("critical_drill_failures", 0)) == 0,
+        # default 1, NOT 0: absent drill evidence must read as "a failure we cannot rule out",
+        # never as "no failures". With a 0 default this condition passed on an empty dict, so a
+        # broken drill-evidence pipeline would have silently satisfied an S2 safety gate.
+        # (Found 2026-07-26 by mutation testing: flipping the default to 1 changed no test.)
+        "critical_drill_failures_eq_0": int(evidence.get("critical_drill_failures", 1)) == 0,
         "realized_cost_le_1_25x": float(evidence.get("cost_ratio", 999.0)) <= 1.25,
     }
     return all(checks.values()), ", ".join(f"{k}={v}" for k, v in checks.items())

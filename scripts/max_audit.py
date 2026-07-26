@@ -2067,6 +2067,128 @@ def check_orphan_code(defects) -> None:
                         "verify against dynamic imports before deleting."))
 
 
+#: Modules on the MONEY PATH: the ones where "built, tested green, called by nobody" stops being
+#: untidy and becomes a safety defect. Every one of these must be reachable from a production
+#: entry point, because an S1 desk whose rails have never executed outside pytest has no rails.
+#: This list is deliberately short. `check_orphan_code` is package-granular and could not see any
+#: of it: libs/execution is reachable via ea_bridge, so staging.py sat orphaned inside a "live"
+#: package for 8 days -- imported by its own test and nothing else -- while the register carried
+#: the connector as PARTIAL and the audit reported clean.
+_MONEY_PATH_MODULES = (
+    "libs.execution.staging",
+    "libs.execution.binance_live",
+    "libs.execution.binance_spot_live",
+    "libs.execution.protective_stops",
+    "libs.execution.canary",
+    "libs.execution.ramp_gate",
+    "libs.ops.derisk_ladder",
+    "libs.risk.gate",
+    "libs.risk.sizing",
+)
+
+
+def _module_reachability() -> tuple[set[str], dict[str, str]]:
+    """Transitive MODULE-level reachability from production entry points (scripts/, app/, api/).
+
+    Package granularity is the blind spot this replaces: asking "is libs.execution used?" answers
+    yes forever while any one module in it is imported, which is why a dead stage machine inside
+    a live package was invisible. Tests are NOT entry points -- being imported by your own test
+    is exactly the condition under audit.
+    """
+    import re
+
+    mods: dict[str, str] = {}
+    for f in (ROOT / "libs").rglob("*.py"):
+        if f.stem == "__init__":
+            continue
+        with contextlib.suppress(OSError):
+            mods[".".join(f.relative_to(ROOT).with_suffix("").parts)] = \
+                f.read_text("utf-8", errors="ignore")
+
+    def _refs(text: str) -> set[str]:
+        out = {"libs." + m.group(1) for m in re.finditer(r"\blibs\.([a-z0-9_.]+)", text)}
+        # `from libs.execution import staging` names the module in the IMPORT list, not the path
+        for m in re.finditer(r"from\s+(libs[a-z0-9_.]*)\s+import\s+([^\n(]+)", text):
+            for n in m.group(2).split(","):
+                token = n.strip().split(" ")[0]
+                if token:
+                    out.add(f"{m.group(1)}.{token}")
+        return out
+
+    frontier: set[str] = set()
+    for entry in ("scripts", "app", "api"):
+        d = ROOT / entry
+        if d.exists():
+            for f in d.rglob("*.py"):
+                with contextlib.suppress(OSError):
+                    frontier |= _refs(f.read_text("utf-8", errors="ignore"))
+
+    reached: set[str] = set()
+    while frontier:
+        n = frontier.pop()
+        if n in reached:
+            continue
+        reached.add(n)
+        if n in mods:
+            frontier |= _refs(mods[n]) - reached
+        # a package __init__ that re-exports counts as a hop
+        init = ROOT / Path(n.replace(".", "/")) / "__init__.py"
+        if init.exists():
+            with contextlib.suppress(OSError):
+                frontier |= _refs(init.read_text("utf-8", errors="ignore")) - reached
+    return reached, mods
+
+
+def check_money_path_wired(defects) -> None:
+    """Every money-path module must have a PRODUCTION caller, not just a test.
+
+    This is the §36 orphaned-artifact failure in the one place it can cost the whole book, and
+    it is checked structurally -- "is there a path from an entry point to this module" -- rather
+    than by naming a caller, so it survives the callers being renamed or moved.
+    """
+    reached, mods = _module_reachability()
+    missing = [m for m in _MONEY_PATH_MODULES if m in mods and m not in reached]
+    absent = [m for m in _MONEY_PATH_MODULES if m not in mods]
+    if missing:
+        defects.append((
+            "money-path-orphaned",
+            f"money-path module(s) with NO production caller -- reachable only from their own "
+            f"tests: {', '.join(missing)}. A rail that has never executed outside pytest is not "
+            "a rail; wire it into an entry point (see scripts/run_live_guard.py) or delete it "
+            "and stop counting it as built."))
+    if absent:
+        defects.append((
+            "money-path-module-missing",
+            f"money-path module(s) named by the guard but absent from the tree: "
+            f"{', '.join(absent)}. A moved or deleted file must not silently make this check "
+            "blind to wherever the logic went."))
+
+
+def check_orphan_modules(defects) -> None:
+    """Census of individually-unreachable libs MODULES (informational, not a wall of noise).
+
+    Reported as a single number rather than 60-odd names on purpose: the package-level check
+    stays the blocking one for whole idle subsystems, this tracks the long tail so it cannot
+    grow unnoticed, and `check_money_path_wired` is what actually blocks. A check that prints a
+    list nobody can action gets acknowledged into silence and takes the useful ones with it.
+    """
+    reached, mods = _module_reachability()
+    orphans = sorted(m for m in mods if m not in reached)
+    if len(orphans) > _ORPHAN_MODULE_BUDGET:
+        defects.append((
+            "orphan-modules",
+            f"{len(orphans)} of {len(mods)} libs modules are unreachable from any production "
+            f"entry point (budget {_ORPHAN_MODULE_BUDGET}). Newest offenders: "
+            f"{', '.join(orphans[:5])}. Wire or retire -- the budget ratchets DOWN as the "
+            "backlog is worked off, never up."))
+
+
+#: Ratchet for the module-orphan census. Measured 2026-07-26 at 66 after run_live_guard.py wired
+#: the stage machine and connector back in (67 before). Lower this as the backlog clears; raising
+#: it to make the check pass is the one edit that defeats its purpose.
+_ORPHAN_MODULE_BUDGET = 66
+
+
 #: Docs where mined finds ACCUMULATE UN-DISPOSITIONED -- the only place §33 inventory can rot.
 #: Deliberately excluded, each for a reason (the check must flag rot, not paperwork):
 #:   graveyard.md              -- a graveyard entry IS a disposition; terminal by construction
@@ -2610,6 +2732,8 @@ CHECKS = [("carryover-skipped", check_carryover_skipped),
                       ("producer-cadence", check_producer_cadence),
                       ("artifact-governance", check_artifact_governance),
                       ("orphan-code", check_orphan_code),
+                      ("money-path-wired", check_money_path_wired),
+                      ("orphan-modules", check_orphan_modules),
                       ("capacity-hunt", check_capacity_hunt),
                       ("capacity-single-source", check_capacity_single_source),
                       ("capacity-runway", check_capacity_runway),

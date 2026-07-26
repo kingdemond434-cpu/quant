@@ -33,6 +33,26 @@ def _load(p: Path, d: Any = None) -> Any:
         return d if d is not None else {}
 
 
+def _live_path_wired() -> bool:
+    """Is the live path RUNNING, or merely present on disk?
+
+    Three things, all of which were false while the old `.exists()` detector said done:
+    the guard exists, the daily cycle actually calls it, and the guard actually drives the
+    stage machine. Checking the wiring rather than the file is the difference between "the
+    code was written" and "the rails execute".
+    """
+    guard = _ROOT / "scripts/run_live_guard.py"
+    cycle = _ROOT / "scripts/daily_research_cycle.py"
+    try:
+        g, c = guard.read_text("utf-8"), cycle.read_text("utf-8")
+    except OSError:
+        return False
+    return ("run_live_guard.py" in c
+            and "binance_live" in g
+            and "staging" in g
+            and "protective_stops" in g)
+
+
 def _detectors() -> dict[str, bool]:
     """Honest 'is this task actually done?' checks against files on disk."""
     lb = (_ROOT / "libs" / "portfolio" / "live_book.py")
@@ -78,7 +98,12 @@ def _detectors() -> dict[str, bool]:
         "growth_audit_engine": (_ROOT / "scripts/run_growth_audit.py").exists(),
         "execution_tca_fill_log": (_ROOT / "web/tca.json").exists(),
         "funding_decay_predictor": (_ROOT / "web/funding_decay_backtest.json").exists(),
-        "live_connector_prebuild": (_ROOT / "libs/execution/binance_live.py").exists(),
+        # A FILE-EXISTENCE detector marked this done on 2026-07-18 and kept marking it done for
+        # 8 days while the connector and the stage machine had no production caller at all --
+        # measuring the proxy (a file on disk) instead of the thing the row names (a wired live
+        # path). Now it asks whether the rails actually RUN: the guard must exist, be on the
+        # daily cycle, and drive the stage machine.
+        "live_connector_prebuild": _live_path_wired(),
         "carry_crowding_monitor": (_ROOT / "web/crowding.json").exists(),
         "cross_venue_funding_study": (_ROOT / "web/cross_venue_funding.json").exists(),
         # the #1 tier-convergence build: autodiscovery factory generating/gauntleting CRYPTO
@@ -197,7 +222,10 @@ _ENG: list[dict[str, Any]] = [
             "data/LIVE_ENABLE flag file present AND VPS precondition marker set), plus a go-live "
             "runbook in docs/playbooks/. Unit-test the guard interlocks. Rushing real-money code "
             "on connection day is how phase changes go wrong; this makes go-live a config flip. "
-            "Detector: libs/execution/binance_live.py exists."},
+            "Detector: the live path is WIRED -- scripts/run_live_guard.py exists, the daily "
+            "cycle calls it, and it drives the connector + stage machine + naked-position "
+            "reconcile. (Was 'binance_live.py exists', which read done for 8 days while nothing "
+            "called either module.)"},
     {"id": "funding_decay_predictor",
      "title": "Funding-decay predictor: rank/exit carry on PREDICTED next-window funding",
      "impact": 0.50, "p": 0.30, "effort_h": 4.0,

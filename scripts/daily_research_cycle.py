@@ -47,6 +47,11 @@ _STEPS = [
     ("state_files",       "scripts/research_cycle.py",      300),
     ("trade_forensics",   "scripts/run_trade_forensics.py",  60),  # class-bleed probe (daily)
     ("nav_attest",        "scripts/run_nav_attest.py",       60),  # hash-chained track record
+    # gap-2 §3-§6: the ONE production caller for the S1 rails (naked-position reconcile, pager
+    # de-risk ladder, 6h canary, numeric ramp gate, stage machine). Inert at S0/without keys --
+    # but it must run daily from S0 so the rails are exercised BEFORE they are load-bearing,
+    # rather than executing for the first time on the day real money is behind them.
+    ("live_guard",        "scripts/run_live_guard.py",       120),
     ("listing_watch",     "scripts/run_listing_watch.py",    60),  # gap-53 data clock
     # §42(6): the CONSUMER for that clock. Collection without a promotion path is acquisition the
     # desk can never convert, so the study runs on the same cadence as the collector rather than
