@@ -131,7 +131,74 @@ adopted.**
    LIT-d carries the ≥25% search-space-expansion reserve. — STATUS: below.
 
 ### NEXT RUN PICKS UP AT (written now, so a kill mid-run still hands off)
-- NAVER DataLab (built-but-unrun, T3) and the two remaining legitimacy decisions (Upbit portal T3,
-  bitFlyer ToS behind WAF T2).
-- LIT-a is the closest to exhausted (11 findings); LIT-c next (3). Both named per-ground below.
+- **FIRST LITERATURE PICK IS FORCED BY ROTATION: practitioner research (AQR / Man Institute / Two
+  Sigma / BIS / IMF / Fed).** It is the only family still at zero visits and the spec calls it
+  "criminally under-mined". Do not re-open a family already at 1–2 sessions ahead of it.
+- NAVER DataLab (built-but-unrun, T3) and the remaining legitimacy decisions (Upbit portal T3,
+  bitFlyer ToS behind WAF T2 — both now carry dated register rows #67/#68).
+- Carry-overs this run did NOT close, named honestly: the PubPeer citation-stacking thread (F8);
+  primary verification of F11 (Li & Zhu) which is still stranded behind SSRN 403; the unlocated
+  "−0.31" digit in F4's run-2 record; and the full arXiv q-fin subcategory sweep (only a slice touched).
+
+---
+
+## RESOLUTIONS — run 3 (written as each item closed)
+
+### ✅ ITEM 1 [T1, CARRY] — ROUTE ALL 17 OF RUN 2's FINDINGS. **CLOSED.**
+This was the run's headline defect and it is now converted. Run 2's research was *good* — the
+failure was purely that it never left the ground files.
+- **`docs/graveyard.md` +4 rows** under a NEW and explicitly-labelled third kill-basis,
+  `external-literature`, so somebody else's evidence is never silently read as the desk's own
+  backtest: `lit_trading_frictions_family`, `lit_crypto_xsec_size_and_volume`,
+  `lit_defi_tvl_crosssection`, `lit_bruteforce_ratio_mining`. Plus the McLean–Pontiff **−58%**
+  standing haircut attached to the whole section.
+- **`docs/research/improvement_inbox.md` #59–#65** (7 items, deliberately consolidated — four papers
+  arguing the same thing is ONE decision, not four rows).
+- **`docs/GAP_REGISTER.md` rows #70–#75**, each with a DATED plan (an undated row is "parked", which
+  the register's own rule forbids), and each placed in the rank with its reasoning written down.
+- **`docs/research/negative_knowledge.md` NK-004** (retracted crypto-finance venue cluster — a
+  corrupted TRUST signal, *not* a source ban) and **NK-005** (SSRN/ScienceDirect/Wiley 403, with the
+  substitute-route ladder that fixes it).
+- **`docs/research/search_operator_library.md` OP-025 / OP-026** — charter §16 propagation, so every
+  other digger inherits the capability rather than this organ hoarding it.
+- **ONE ITEM DELIBERATELY NOT ROUTED:** F11 (Li & Zhu, crypto SIZE dies out-of-sample) points the
+  same way as a row I did write and it was tempting to round up. It is SUMMARY-ONLY (SSRN 403s here),
+  and the desk's own rule bars a summary-sourced claim from the graveyard. **Abstention recorded
+  explicitly, because quietly rounding it up is precisely how a phantom prior gets installed
+  permanently.**
+
+### ✅ RUN-3 FINDING (not on the plan; found by re-testing an inherited claim) — **THE ORGAN'S PRIMARY-TEXT ACCESS WAS CAPPED BY A FALSE BLOCKER.**
+Two runs inherited *"no PDF tooling on this box... the HARD FREEZE forbids installs"* verbatim and
+left five findings at abstract level. The premise re-tested TRUE (no pypdf/fitz/pdfminer/pdftotext/
+poppler; `Read` on a local PDF also fails, it shells to `pdftoppm`) — **and the conclusion is still
+false.** PDF text lives in FlateDecode streams and the stdlib ships `zlib`. ~90 lines, zero installs,
+`/tmp` only, no repo file touched.
+- **It paid on first use and the payment was embarrassing:** the first paper opened (HXZ) **corrected
+  three numbers** written into a desk document the day before. Actual: **65%** fail at t>1.96, **82%**
+  at the **2.78 multiple-test hurdle**, worst category **trading frictions 102/106 = 96.2%**.
+  Recorded: 64% / "85% at a t-cutoff of 3" / "liquidity, 95 of 102 = 93%". Wrong category, wrong
+  statistic, and the failure-count read as the denominator.
+- **Every error made the finding NARROWER than the truth** — trading frictions is a superset of
+  liquidity, and 96.2% > 93%. The desk was about to install an under-claimed kill. Summary-sourcing
+  does not only risk over-claiming, which is the part that had gone unnoticed.
+- **VALIDATED BEFORE TRUSTED:** extracted a second paper (Brigida) cold from PDF and diffed against
+  the numbers run 2 had independently read from HTML — reproduces to the digit, including a table of
+  parenthesised p-values. An unvalidated extractor would be a phantom-evidence factory, which is the
+  one thing this desk exists to prevent.
+- **The generalisable defect is bigger than PDFs:** a capability limit was asserted once, inherited
+  without re-test, and silently defined what the desk could know for two full runs. Routed as
+  GAP_REGISTER #70 with a proposed standing rule — *any recorded "this box cannot X" carries a
+  re-test date and is retried before it is inherited a second time.* That is the NO-CEILING axiom
+  applied to the desk's own tooling claims, where it was demonstrably not being applied.
+
+### ✅ RUN-3 FINDING (found in passing) — **`docs/research/deep_sweep/` IS UNGOVERNED, AND THIS ORGAN CREATED 7 OF THE 15 FILES.**
+Re-ran `max_audit.check_artifact_governance`'s own logic: 15 artifacts claimed by no law; the string
+`deep_sweep` appears nowhere in `scripts/max_audit.py`. **Self-implicating, and that is the argument
+for fixing it:** had the tree been in §33 scope, run 2's 17 unrouted findings would have owed
+dispositions and the backlog gate would have fired on run 3's first command — instead run 3 found
+them by reading the directory. Routed as #75, recommending `_DIG_DOCS` over `_TERMINAL_ARTIFACTS`
+(terminal is only defensible if routing-out is guaranteed, and run 2 disproved that empirically).
+Separately, 8 of those 15 are another organ's `# AUDITOR FAILED` stubs with an EMPTY stderr —
+success-shaped artifacts a file-counting coverage check would score as complete (row #74). Left in
+place, not deleted: they are the only evidence the run happened.
 
