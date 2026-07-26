@@ -88,3 +88,11 @@ licensed vendors, academic and government mirrors, community datasets, regional 
 dead-project mirrors and archives -- searched across forums, obscure repos and non-English
 sources, not just the obvious catalogue. If genuinely nothing exists, grade the residual WITH
 the documented search that failed: 'no replacement' is a FINDING, never a default.
+
+=== VIDEO IS NOW READABLE (2026-07-26) ===
+The 07-18 transcript fetch is IP-BLOCKED finding was REFUTED: only the direct youtube
+timedtext route is blocked. Use scripts/fetch_video_transcript.py <url|id> (rotates public
+Piped instances) and --bilibili <BVid> for Bilibili. Video-origin mechanisms -- conference
+talks, note.com/bilibili botter walkthroughs, regional quant lectures -- are now FIRST-CLASS
+dig material, not a logged blocker. Only log video_locked for a platform you actually tried
+and failed; a negative result is about the ROUTE, never the whole capability.

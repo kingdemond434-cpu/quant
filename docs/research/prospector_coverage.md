@@ -113,3 +113,16 @@ posters — next dig target, with never-touched Wilmott/EliteTrader/Nuclear Phyn
 NEXT-SESSION QUEUE: (1) Kaiko VWM+TWAP diff vs desk normalizer (fully unblocked); (2) OP-008
 binance trades 2026-07-01 Tardis-vs-recorder diff (unblocked); (3) desk-netflow vs CM-netflow
 overlap diff; (4) Quantopian archive dig; (5) re-probe apidocs.bithumb.com for ToS.
+
+### 2026-07-26 — VIDEO IS NOT BLOCKED (refutes the 07-18 finding, retires the GAP #26 purchase gate)
+The standing record said "VIDEO: direct transcript fetch is IP-BLOCKED from this VPS
+(RequestBlocked, tested 07-18)", and GAP #26 gated a PAID residential-proxy purchase on it. Half
+right, wholly misleading: the DIRECT `youtube.com/api/timedtext` route does return empty from this
+box, but PIPED instances (open-source YouTube proxies) serve the same caption tracks freely.
+VERIFIED: `api.piped.private.coffee` returned 6 subtitle tracks and 2,089–2,165 chars of real
+transcript text, keyless, first try. Bilibili is reachable through its own public API
+(view → cid → subtitle json); videos without public CC honestly report none.
+TOOL: `scripts/fetch_video_transcript.py <url|id>` (rotates 4 Piped instances) and
+`--bilibili <BVid>`. VIDEO-LOCKED LOGGING IS NO LONGER A PURCHASE TRIGGER for YouTube — log only
+genuinely unreachable platforms. LESSON: one failed route was generalised to "video is blocked" and
+then gated a purchase; a negative result is about the ROUTE TESTED, never the whole capability.
