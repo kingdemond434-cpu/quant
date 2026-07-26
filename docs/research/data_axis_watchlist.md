@@ -468,6 +468,43 @@ _Superseded original grading below (kept for the record):_
 >   is still unextracted (no PDF tooling on this box — the same limit this card already flagged). So
 >   this reproduces the METHOD, not Kaiko's exact fixing NUMBER. Constituent set is five clean public
 >   USD venues, not Kaiko's own vetted list (not public per-rate).
+>
+> ---
+> **⚠️ CORRECTION 2026-07-26 (literature deep-miner run 3, [T1-a] verification). EVERY ONE OF THE
+> THREE "HONEST LIMITS" ABOVE IS REFUTED, AND THE HEADLINE AGREEMENT NUMBER DOES NOT MEAN WHAT THE
+> CARD IMPLIES. Left above intact; corrected here.**
+> - **"window length, partition count and recency decay are NOT published" — FALSE. All three are
+>   published**, in the *Benchmark Rates Rulebook* (reachable only via a PDF `/URI` link annotation
+>   inside the Indices Rulebook — the Indices Rulebook was the wrong document). Actual: **10 equal
+>   partitions** (not the desk's 12), **weights inversely proportional to time** (not a linear ramp),
+>   windows **static 300s real-time / 3600s fixing** for Reference Rates (not 60min). The dynamic
+>   Benchmark Rates selection rule and its thresholds are published and computable from free trade
+>   data. **The desk was running invented parameters where published ones exist.**
+> - **"the rulebook PDF interior is still unextracted (no PDF tooling on this box)" — FALSE**, and it
+>   had been inherited across three runs. Extracted with stdlib `zlib` alone, zero installs. See
+>   improvement_inbox #59 / GAP_REGISTER #70.
+> - **"Kaiko's own vetted list (not public per-rate)" — FALSE for BTC.** The Cboe rule filing to the
+>   CFTC names the constituents: **Bitstamp, Crypto.com, Gemini, Kraken, LMAX Digital.**
+> - **THEREFORE THE 1.42 bps FIGURE IS NOT EVIDENCE OF TRACKING KAIKO.** The reconstruction ran
+>   coinbase/kraken/bitfinex/bitstamp — **2-of-5 overlap** with the real constituent set. **Coinbase
+>   is 139,661 of 174,199 trades (80% of the tape) and is NOT a Kaiko constituent at all**, while
+>   **Gemini, which the card excluded for a documented and otherwise-sound reliability reason, IS
+>   one.** The number is a real measurement of "this method vs the desk's VWAP"; it is not a
+>   measurement of "this reconstruction vs Kaiko". The stress-test result (VWM 0.1 bps vs VWAP
+>   9.8 bps under an injected outlier) **stands unaffected** — that finding is about the method, not
+>   the constituents, and remains the card's genuine win.
+> - **RE-RUN REQUIRED** against Bitstamp + Crypto.com + Gemini + Kraken + LMAX before any
+>   tracking claim. **One constituent is unrecoverable historically: LMAX Digital's free API has no
+>   trades endpoint** (forward-only via WS ticker), so its history is destroyed-at-source — start a
+>   recorder now or that leg is permanently unreconstructable.
+> - ESMA independently confirmed, with two precision corrections: the registered entity is
+>   **Kaiko Indices SAS** (esmaId `FRBMR2019000003`, LEI `969500BKJ2X29T7NJH85`, France/AMF), status
+>   **"Registration under Art. 34" — registered, not authorised** — and the rulebook copyright owner
+>   is a *third* entity, **Challenger Deep SAS**.
+> - **REPLACEABILITY, correctly split** (conflating these is why this card was vague): **RATES =
+>   FULLY reconstructable. INDICES = PARTIALLY** — blocked only on Kaiko's proprietary restrictive
+>   *circulating supply* definition, which binds indices and **not** rates.
+> - Full record: `docs/research/deep_sweep/T1a_kaiko_verification.md`.
 > - **DEPTH CEILING, MEASURED NOT ASSUMED:** free public tick endpoints are ROLLING windows;
 >   bitstamp's `time=day` (24h) is the binding cap on a joint multi-venue tape. 12h is the archive
 >   floor reached, not a convenient slice (§32 bounded-honestly clause).

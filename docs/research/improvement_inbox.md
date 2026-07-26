@@ -853,3 +853,64 @@ suggests a **~1-day gating test** (does `ls`/`oi` add anything over `funding`/`b
 gutted VPIN because **bulk-volume classification** is *"an imperfect realized volatility metric which,
 by construction, will have forecast power"* — but **crypto publishes true taker side**, so the defect
 that killed VPIN in equities does not automatically bind here. Kill the metric, keep the axis.
+
+**71. A SHIPPED §33 "WIRED" ARTIFACT'S VALIDATION NUMBER DOES NOT MEAN WHAT THE CARD IMPLIES —
+the Kaiko reconstruction shares 2 of 5 constituents with Kaiko, and 80% of its tape is a venue Kaiko
+does not use.** *Class: research integrity / conversion quality. Recommend: adopt-now (correct the
+record), then re-run.*
+`data/kaiko_vwm_reference_rate.jsonl` is a Tier-1 §33 conversion marked **wired**. [T1-a] verification
+found the Cboe rule filing to the CFTC **names Kaiko's actual BTC constituents: Bitstamp, Crypto.com,
+Gemini, Kraken, LMAX Digital.** The reconstruction used coinbase/kraken/bitfinex/bitstamp —
+**Coinbase is 139,661 of 174,199 trades (80% of the tape) and is not a Kaiko constituent**, while
+**Gemini, excluded for a documented and otherwise-sound reliability reason, IS one.** So the headline
+**"median 1.42 bps agreement"** is a real measurement of *this method vs the desk's own VWAP* — it is
+**not** evidence of tracking Kaiko, which is how the card reads. **The stress-test result stands
+untouched and remains the card's genuine win** (injected 5%-off print at 2% of window volume moves
+VWM 0.1 bps vs VWAP 9.8 bps, ~100×) — that finding is about the method, not the constituents.
+All three of the card's stated "HONEST LIMITS" are also refuted: **10 partitions** (desk used 12),
+**inverse-time weighting** (desk used a linear ramp), windows **300s/3600s** (desk used 60min) — all
+published in the *Benchmark Rates Rulebook*, which is reachable only through a PDF `/URI` link
+annotation inside the Indices Rulebook. **The desk was running invented parameters where published
+ones exist.** Card corrected in place; full record in `deep_sweep/T1a_kaiko_verification.md`.
+**Two asks:** (1) re-run against the real constituent set before any tracking claim — but note
+**LMAX Digital's free API has no trades endpoint** (forward-only WS ticker), so that leg's history is
+**destroyed-at-source**: start a recorder now or it is permanently unreconstructable; (2) **the
+generalisable one — a §33 conversion can be genuinely wired and still carry a validation claim that
+does not support what it appears to.** Artifact-on-disk credit correctly proves the work happened; it
+does not check that the *comparison* was against the right thing. Worth one line in the conversion
+protocol: name what the artifact was validated AGAINST, not just that it exists.
+**Free data found in passing:** `reference-data-api.kaiko.io` is **fully keyless** — 149 exchanges,
+**2,213,397 instruments** (~676 MB) each carrying `trade_start_time` / `trade_end_time` /
+`trade_count`. No prices (those are key-gated, no free tier). That is a **vendor-grade census of
+WHERE crypto trade history exists and how deep it goes** — directly useful for the free-frontier hunt
+and for grading residual gaps in `data_universe_map.json`.
+
+**72. LIVE-AXIS RAIL GAP: a t−1 stale foreign leg passes the desk's de-contamination check and is
+still pure lookahead — and the kimchi FX denominator is an undocumented Yahoo bar.**
+*Class: validation rail / live-axis data quality. Recommend: adopt-now ×2.*
+From ground [LIT-d], which audited the desk's LIVE kimchi clock rather than only reading about it.
+- **GOOD NEWS FIRST, verified not assumed: the desk's kimchi clock is CLEAN.** Probed Upbit live —
+  `utc=2026-07-26T00:00:00 | kst=…T09:00:00` — the daily boundary **is** UTC midnight. Given the
+  desk already graveyarded `bithumb_kr_premium_lookahead` for exactly this class of defect, having
+  positive confirmation on the surviving axis is worth recording.
+- **THE RAIL GAP.** A Korean paper claiming a **4,709×** kimchi arbitrage was decomposed and its
+  result is a **stale-Korean-leg artifact**: backing out the implied USD price of its Korean leg
+  (8,038,000 KRW ÷ 1157.94 = **$6,941** on a row dated Jan-4 when BTC was $7,345) shows the Upbit
+  column lags Binance by ~1 day, so its "premium" ≈ *minus the prior Binance return* and its entry
+  rule is "buy right after BTC rallied" — its biggest cycle is the 2020-01-03 Soleimani rally
+  relabelled. **The point for the desk: a one-day-stale foreign leg PASSES the existing same-day
+  de-contamination check and is still pure lookahead.** Ask: **extend the `axis_screen` artifact gate
+  to test the t−1 lag, not only the same-day correlation.** Cheap, mechanical, and it closes a hole
+  the desk's current gate provably does not cover.
+- **FX DENOMINATOR.** The kimchi premium divides by an FX rate, and the desk uses Yahoo `KRW=X`
+  **with an undocumented bar boundary** — on an axis where the desk has already been burned once by a
+  boundary mismatch. **BOK ECOS publishes the official KRW rate** and is now catalogued. Ask: pin the
+  denominator to a source whose boundary is documented, and diff the two series before switching.
+- **JAPAN, AS A VERIFICATION ASSET RATHER THAN AN ALPHA.** JVCEA (the JFSA-designated SRO) publishes
+  monthly aggregate data across all licensed Japanese exchanges since 2018-09 including **売建数 /
+  買建数 — long and short OI reported SEPARATELY**. Plausibly **the only regulator-supervised
+  long/short OI series in crypto.** As a signal it fails the EV gate on breadth (monthly, n≈94,
+  breadth ≈3 — the same starvation that killed options VRP), and it is correctly **parked**, not
+  proposed. **Its real value is as GROUND TRUTH to grade the desk's unaudited exchange-reported L/S
+  feed against** — exchange-reported positioning is self-reported and unaudited; this is neither.
+  Licence noted: public but **copyright-asserted — internal use, no redistribution.**

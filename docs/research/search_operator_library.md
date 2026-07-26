@@ -294,6 +294,72 @@ adaptations: CN=CN-author arXiv clusters + author self-archives (CNKI/Wanfang st
 counterfactual: MED — each route is individually known; the gain is making it a MANDATORY ORDERED
   LADDER before the SUMMARY-ONLY grade is allowed, which is what converts it into verified evidence.
 
+### OP-027 false-friend / transliteration lexical audit BEFORE declaring a corpus empty   [active]
+class: multilingual-pattern
+origin: Literature deep-miner run 3, ground [LIT-d] (2026-07-26)   validated-gain: converted an
+  apparent "Russian academia has no crypto microstructure" null into a MEASURED null with a known
+  lexical cause — the difference between "we found nothing" and "we searched wrong".
+technique: before recording a non-English corpus as empty, audit the QUERY TERMS for false friends
+  and failed transliterations. Measured examples: **`арбитраж` in Russian means *arbitration*** and
+  routes into criminal/commercial law, not trading arbitrage; **`фандинг` matches only *фандрайзинг***
+  (fundraising); **`перпетуал` returns 1 hit, about Chinese diplomacy**. RU academic and practitioner
+  corpora are lexically DISJOINT — the practitioner term is not the academic term. Also measured:
+  **cross-CJK term borrowing FAILS** — the Chinese `市場微観構造` scores 0 on J-STAGE; each CJK
+  language needs its own native construction, not a borrowed one. And long native queries against
+  general web search **dilute to SEO** — keep them short and route them at the corpus's own search.
+adaptations: CN=verify the term against Chinese-language finance usage before concluding absence;
+  JP=build the term natively, never borrow from Chinese; KR=check Sino-Korean vs native-Korean forms;
+  AR/PT=check the regional register. Applies to EVERY digger running a non-English null.
+counterfactual: LOW — an English-first searcher records the null and moves on; the lexical cause is
+  invisible without native-term inspection.
+
+### OP-028 keyless corpus-count APIs as EXHAUSTION instruments                       [active]
+class: verification
+origin: Literature deep-miner run 3 (2026-07-26)   validated-gain: turned "we looked at CyberLeninka"
+  into 16 native queries with recorded hit counts, i.e. a null another run can audit and resume from.
+technique: when a corpus exposes a keyless search/count endpoint, record the QUERY AND ITS HIT COUNT,
+  not a prose impression. A null with a number is falsifiable and resumable; "found nothing" is not.
+  Distinguish **empty** from **blocked** every time — SciELO returned **403 (blocked, not empty)** and
+  its resume door is `articlemeta.scielo.org/api/v1/`, which returns 200. Recording those as the same
+  thing would have retired a live corpus.
+adaptations: RU=CyberLeninka open search API; JP=J-STAGE + CiNii result counts; KR=KCI; BR/LatAm=
+  SciELO ArticleMeta; CN=open-access aggregator counts. Same discipline for any repo/forum search.
+counterfactual: MED — the corpora are known; recording counts instead of impressions is the gain.
+
+### OP-029 SRO / regulator statistics beat exchange-reported data                    [active]
+class: source-expansion
+origin: Literature deep-miner run 3, ground [LIT-d] (2026-07-26)   validated-gain: surfaced JVCEA —
+  monthly aggregate data across ALL licensed Japanese exchanges since 2018-09, publishing 売建数/買建数
+  (long and short OI SEPARATELY), plausibly the only regulator-supervised L/S series in crypto.
+technique: hunt the SELF-REGULATORY ORGANISATION and the supervising regulator, not just the venue.
+  Exchange-reported positioning is self-reported and unaudited; SRO/regulator aggregates are neither,
+  which makes them **verification assets even when they fail the EV gate as signals** (JVCEA is
+  monthly, n≈94, breadth≈3 — correctly parked as alpha, valuable as ground truth). Also read the
+  **TAX CODE**: Japan's 雑所得 treatment (gains taxed ≤55%, losses neither offsettable nor carried
+  forward) gives a fair bet an expectation of **−27.5%**, structurally identifying a non-return-
+  maximising cohort — and reforms carry DATED EXPIRIES (enacted 2026-03-31, 20% flat + 3yr
+  carryforward, effective ~2028-01-01), so the cohort has a known end date.
+adaptations: JP=JVCEA + JFSA; KR=FSC/FSS + DAXA; US=CFTC COT + SEC; EU=ESMA registers (and note the
+  ESMA register has a public unauthenticated Solr backend); BR=CVM; RU=CBR.
+counterfactual: LOW — the desk was reading venue APIs, not SRO filings.
+
+### OP-030 negative control on every zero-hit search                                 [active]
+class: verification
+origin: Literature deep-miner run 3, ground [T1-a] (2026-07-26)   validated-gain: prevented a
+  confident FALSE refutation — `q=kaiko` on the ESMA register's default field returns **0 hits**,
+  while the core holds **28,134 docs** and the entity is in fact registered (`Kaiko Indices SAS`,
+  esmaId FRBMR2019000003). Stopping at the zero would have "disproved" a true fact.
+technique: a zero-hit result is a claim about YOUR QUERY until proven a claim about the WORLD. Before
+  recording any absence: (1) confirm the index/core is non-empty and how many docs it holds; (2) try
+  the FIELDED form, not just the default field; (3) try the entity's LEGAL name, not its brand — the
+  registered entity was `Kaiko Indices SAS`, the copyright owner a third name, `Challenger Deep SAS`;
+  (4) prefer the machine backend over the UI. Absence claims need a positive control that the search
+  works at all.
+adaptations: universal — registers, repos, corpora, APIs, in any language. Pairs with OP-027 (the
+  zero may be lexical) and OP-028 (record the count).
+counterfactual: LOW — two prior runs recorded "ESMA register not independently checked" rather than
+  a false negative, but the failure mode was one query away.
+
 ## LEXICON — EN crypto-trading era jargon (dark-forest search keys)
 _Charter dark-forest mandate deliverable #2. Slang/era-jargon is HOW you reach the folk layer:
 official vocabulary finds official content. Terms below were DERIVED EMPIRICALLY, not guessed —
