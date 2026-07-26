@@ -1219,6 +1219,60 @@ def check_capacity_hunt(defects) -> None:
             "arrives, which means hunting large concurrently, not afterwards."))
 
 
+def _funded_by_sleeve() -> dict[str, float]:
+    """Live notional per sleeve, from whatever the desk actually publishes. Empty pre-Gate-0."""
+    out: dict[str, float] = {}
+    with contextlib.suppress(Exception):
+        raw = json.loads((ROOT / "web/portfolio.json").read_text("utf-8"))
+        for name, row in (raw.get("sleeves") or {}).items():
+            with contextlib.suppress(Exception):
+                out[str(name)] = float(row["notional_usd"])
+    return out
+
+
+def check_capacity_allocation_honesty(defects) -> None:
+    """§42: a DECLARED allocation is a commitment, and this is what makes it one.
+
+    Allowing a candidate to be judged against the equity it will actually be funded with is
+    strictly correct and unblocks the small edges the desk exists to trade. It is also the easiest
+    bypass in the whole capacity policy: declare $1, pass every gate forever. So the declaration is
+    checked from both ends -- it must be possible under its own edge's capacity, and it must match
+    what the sleeve is really funded with.
+
+    "No live funding data" is reported as UNVERIFIED, never as a pass. Pre-Gate-0 that is the
+    normal state, and the distinction is the entire point: a check that prints the same thing when
+    it verified something and when it verified nothing is not a check.
+    """
+    from libs.research.sleeve_allocations import inconsistent, load, overfunded, unverified
+    allocs = load(ROOT / "data/sleeve_allocations.json")
+    if not allocs:
+        return   # nothing declared -> equal weight applies, and equal weight is STRICTER
+    funded = _funded_by_sleeve()
+    for a in inconsistent(allocs):
+        defects.append((
+            "capacity-declaration-impossible",
+            f"§42: sleeve '{a.sleeve}' declares ${a.declared_usd:,.0f} against a "
+            f"${a.capacity_usd:,.0f} edge, whose ceiling is ${a.ceiling_usd:,.0f}. The declaration "
+            "does not qualify under its own numbers -- it is asking the capacity gate for a pass "
+            "it cannot have. Fix the declaration or re-measure the capacity."))
+    for a, got in overfunded(allocs, funded):
+        defects.append((
+            "capacity-declaration-breached",
+            f"§42: sleeve '{a.sleeve}' declared ${a.declared_usd:,.0f} -- the number its capacity "
+            f"gate was PASSED on -- and is funded with ${got:,.0f}. The gate was cleared on a "
+            "commitment that is not being kept, so the edge is being traded past the size it was "
+            "ever approved for. Cut the sleeve to its declaration or re-run the gate at the real "
+            "size."))
+    n_unver = len(unverified(allocs, funded))
+    if n_unver and n_unver == len(allocs):
+        defects.append((
+            "capacity-declaration-unverified",
+            f"§42: all {n_unver} declared allocation(s) have NO live funding figure to reconcile "
+            "against, so every allocation-aware capacity pass on this desk is currently taken on "
+            "trust. Expected pre-Gate-0 and not a fault -- but it must not read as verified, "
+            "because the declaration is only a commitment while something checks it."))
+
+
 def check_capacity_runway(defects) -> None:
     """§42(3): the desk must SEE itself outgrowing an edge, not discover it mid-trade.
 
@@ -2246,6 +2300,7 @@ CHECKS = [("carryover-skipped", check_carryover_skipped),
                       ("capacity-hunt", check_capacity_hunt),
                       ("capacity-single-source", check_capacity_single_source),
                       ("capacity-runway", check_capacity_runway),
+                      ("capacity-allocation-honesty", check_capacity_allocation_honesty),
                       ("mine-conversion", check_mine_conversion),
                       ("mine-flow", check_mine_flow),
                       ("mine-gate", check_mine_gate),

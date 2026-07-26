@@ -62,7 +62,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 __all__ = ["DEFAULT_BOOK_USD", "DEFAULT_SLEEVES", "capacity_band", "capacity_fit",
-           "capacity_required", "growth_runway", "live_book_usd", "live_sleeves", "niche_share",
+           "capacity_required", "growth_runway", "live_book_usd", "live_sleeves",
+           "max_allocation", "niche_share",
            "outgrown_at", "sleeve_equity"]
 
 #: CAPACITY IS A RATIO, NOT A DOLLAR FIGURE (2026-07-26). The gate was a flat $100,000 floor, which
@@ -114,6 +115,22 @@ def sleeve_equity(book_usd: float, n_sleeves: int = 1) -> float:
     return max(0.0, float(book_usd)) / max(1, int(n_sleeves))
 
 
+def max_allocation(capacity_usd: float) -> float:
+    """Most the desk may EVER put into this edge -- the requirement, read the other way round.
+
+    ``capacity_required`` answers "how big must an edge be for my allocation?"; this answers "how
+    big may my allocation be for this edge?". Same rule, same headroom multiple, one inverse -- and
+    it is a separate function only because the sizer needs the second form and re-deriving it there
+    is precisely how five disagreeing copies of this policy appeared last time.
+
+    NOTE THE FACTOR. At 4x headroom this is 25% of capacity, NOT 100%. You never fill an edge to
+    its stated capacity: capacity is where impact has already eaten the edge, so trading up to it
+    means arriving exactly when there is nothing left to collect.
+    """
+    mult = max(1e-9, _tunable("capacity_headroom_mult", _CAPACITY_FALLBACK_MULT))
+    return max(0.0, float(capacity_usd)) / mult
+
+
 def capacity_required(deployed_equity_usd: float, n_sleeves: int = 1) -> float:
     """Minimum absorbable capacity for a candidate, given what the desk actually deploys.
 
@@ -128,17 +145,28 @@ def capacity_required(deployed_equity_usd: float, n_sleeves: int = 1) -> float:
 
 
 def capacity_fit(capacity_usd: float, deployed_equity_usd: float = DEFAULT_BOOK_USD,
-                 n_sleeves: int = 1) -> float:
+                 n_sleeves: int = 1, allocation_usd: float | None = None) -> float:
     """Score capacity in [0, 1] by SUFFICIENCY for this book -- flat above the requirement.
 
     Below the §42 headroom requirement the score ramps linearly: an edge you would be half of is
     worth roughly half as much as one you would be a comfortable slice of. At the requirement it
-    reaches 1.0 and STAYS there -- that flat region is the parity the niche was missing. Far above
-    it a bounded crowding discount applies, floored so that large edges are ranked lower on size
-    alone but never scored out.
+    reaches 1.0 and STAYS there -- that flat region is the parity the niche was missing. Nothing
+    above it is discounted; size is not a tiebreaker in either direction.
+
+    ``allocation_usd`` is the amount this sleeve will ACTUALLY be funded with. Without it the
+    requirement assumes EQUAL WEIGHT (book / sleeves), which is stricter than reality whenever a
+    sleeve is deliberately sized small -- and sizing a sleeve small is exactly what you do for a
+    small edge. A $5k edge funded with $1k is 5x headroom and perfectly safe, but equal weight on a
+    $14.8k book reads $1,477 into it and fails. That gap silently excluded the edges §42 exists to
+    keep, so a DECLARED allocation is honoured here -- and reconciled against what the sleeve is
+    really funded with by `max_audit.check_capacity_allocation_honesty`, because a declared number
+    with nothing checking it is just a way to pass any capacity gate by writing a small number.
     """
     cap = max(0.0, float(capacity_usd))
-    required = capacity_required(max(0.0, float(deployed_equity_usd)), n_sleeves)
+    if allocation_usd is not None:
+        required = capacity_required(max(0.0, float(allocation_usd)), 1)
+    else:
+        required = capacity_required(max(0.0, float(deployed_equity_usd)), n_sleeves)
     if required <= 0.0:
         return 1.0
     ratio = cap / required
@@ -155,10 +183,17 @@ def capacity_fit(capacity_usd: float, deployed_equity_usd: float = DEFAULT_BOOK_
 
 
 def capacity_band(capacity_usd: float, deployed_equity_usd: float = DEFAULT_BOOK_USD,
-                  n_sleeves: int = 1) -> str:
-    """Human-readable bucket, for audit output and dossiers rather than for arithmetic."""
+                  n_sleeves: int = 1, allocation_usd: float | None = None) -> str:
+    """Human-readable bucket, for audit output and dossiers rather than for arithmetic.
+
+    Honours ``allocation_usd`` for the same reason `capacity_fit` does: if the score says an edge
+    is fillable at a declared allocation, the band must not simultaneously call it UNFILLABLE.
+    """
     cap = max(0.0, float(capacity_usd))
-    required = capacity_required(max(0.0, float(deployed_equity_usd)), n_sleeves)
+    if allocation_usd is not None:
+        required = capacity_required(max(0.0, float(allocation_usd)), 1)
+    else:
+        required = capacity_required(max(0.0, float(deployed_equity_usd)), n_sleeves)
     if required > 0 and cap < required:
         return "UNFILLABLE"          # you would be too large a share of your own edge
     if cap <= _CROWD_START_USD:
