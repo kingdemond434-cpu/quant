@@ -1,0 +1,28 @@
+{
+ "recommendations": [
+  {
+   "id": "R0001",
+   "source": "deep_sweep",
+   "summary": "wire CPCV/SPA/FDR/lockbox: validation code exists but is never called by any gauntlet path",
+   "roi_bps": 0.0,
+   "raised": "2026-07-26T11:26:08.435892+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0002",
+   "source": "max_audit",
+   "summary": "prompt-doctrine-bloat: principal_doctrine.txt is 27k chars against a 16k guard; consolidate the pre-existing stacked axiom blocks (supreme objective / no-ceiling / principal doctrine restate each other) preserving every commitment -- every organ pays this context on every call",
+   "roi_bps": null,
+   "raised": "2026-07-26T11:34:30.251443+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  }
+ ]
+}

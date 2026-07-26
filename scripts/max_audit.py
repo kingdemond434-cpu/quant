@@ -2234,6 +2234,53 @@ def check_fee_carry_ratio(defects) -> None:
             "regardless of how good the signal is. This is the single most direct drag on CAGR."))
 
 
+DOCTRINE = ROOT / "ops/principal_doctrine.txt"
+
+# Duties that must reach EVERY organ, not just the brain. The list is explicit rather than
+# inferred: a heuristic would either miss a renamed duty or nag about the many duties that are
+# CORRECTLY brain-only (audit coverage, red-team panels, risk-path depth, the independence gate).
+_UNIVERSAL = ("PROACTIVE BATTERY DUTY", "NO-ORPHANED-RECOMMENDATION LAW", "NOVELTY GATE",
+              "TARGET/HORIZON SWEEP DUTY", "RESEARCH-MEMORY DUTY", "FREE-FIRST DATA PROTOCOL",
+              "BLIND-SPOT ORIGIN DUTY", "FINDING LIFECYCLE DUTY", "SELF-INTERROGATION DUTY",
+              "TWO-STAGE DISCOVERY LAW", "SCREEN-ON-DISCOVERY DUTY", "MINING-NEVER-REGRESSES LAW",
+              "NO-CEILING AXIOM", "FREE-FRONTIER AXIOM", "DATA-UTILIZATION")
+
+
+def check_universal_doctrine(defects) -> None:
+    """Every universal duty must live in the SHARED doctrine, and every organ must inject it.
+
+    ORIGIN (2026-07-26): the doctrine ordered every digger to screen new axes (SCREEN-ON-DISCOVERY)
+    while the rules that keep screening honest -- novelty gate, target/horizon trial accounting,
+    research-memory -- lived only in the brain's own prompt. Diggers were commanded to do the
+    dangerous half of the job without the discipline that makes it safe. A universal law parked in
+    one organ's prompt is not a law, it is a local habit.
+    """
+    if not DOCTRINE.exists():
+        defects.append(("doctrine-missing",
+                        "ops/principal_doctrine.txt is gone -- every organ injects it as its "
+                        "system prompt, so the desk is running with no standing law at all"))
+        return
+    txt = DOCTRINE.read_text("utf-8", errors="ignore")
+    missing = [d for d in _UNIVERSAL if d not in txt]
+    if missing:
+        defects.append(("doctrine-universal-missing",
+                        f"universal duties absent from the shared doctrine: {', '.join(missing)}. "
+                        "These bind every organ; if one lives only in a single organ's prompt, "
+                        "every other organ operates without it -- which is how diggers came to be "
+                        "ordered to screen axes with no novelty gate or trial accounting."))
+    # A duty is only universal if every reasoning organ actually injects the doctrine.
+    naked = []
+    for sh in sorted(ROOT.glob("ops/run_*.sh")):
+        body = sh.read_text("utf-8", errors="ignore")
+        if re.search(r"claude .*(-p|--append-system-prompt)", body) and "_DOCTRINE" not in body:
+            naked.append(sh.name)
+    if naked:
+        defects.append(("doctrine-not-injected",
+                        f"reasoning organs invoking claude WITHOUT the doctrine: {naked}. "
+                        "An organ that does not inject it is exempt from every standing law the "
+                        "desk has, silently."))
+
+
 def main() -> None:
     defects: list[tuple[str, str]] = []
     for label, fn in CHECKS:
