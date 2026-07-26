@@ -129,6 +129,30 @@
    "commit": null,
    "due": null,
    "disposed": "2026-07-26T15:04:13.419759+00:00"
+  },
+  {
+   "id": "R0011",
+   "source": "cycle",
+   "summary": "ADJACENCY (proactive battery move 2): apply OP-031 (Wayback-CDX-replay the API path, not the HTML page) to every OTHER row-capped/rolling-window endpoint in data_universe_map.json. One instance is never one instance -- btc126's 177-row cap hid 414 recoverable days; any other capped free endpoint the desk catalogued is hiding history the same way.",
+   "roi_bps": 0.0,
+   "raised": "2026-07-26T15:27:35.842054+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0012",
+   "source": "cycle",
+   "summary": "Re-screen usdt_cny_otc_premium (axis #76) when the live recorder data/cny_premium.jsonl reaches n>=400 rows (~2027-06), at which point min-detectable IC falls ~0.157->0.098 and the observed |IC|=0.075 becomes testable. Until then: no clock, no Holm slot, no capital. Keep the desk's own recorder PRIMARY -- ChaiNext (original publisher) is NXDOMAIN and btc126 is an undocumented single-point-of-failure mirror.",
+   "roi_bps": 0.0,
+   "raised": "2026-07-26T15:27:36.032282+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

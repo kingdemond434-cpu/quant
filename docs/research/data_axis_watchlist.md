@@ -845,3 +845,76 @@ here as excluded, not silently dropped (charter s27 "log every negative").
 **Headline:** coverage-not-volume applied to the SOURCING layer, not just hypotheses -- one clean,
 mechanism-first, legitimately-public source built and queued for its first live screen, rather than
 five source cards racing to add scraped social data to an already-~50-deep verification backlog.
+
+---
+
+## CARD 9 — USDT/CNY OTC PREMIUM (universe-map axis #76) — INGESTED + STAGE-A SCREENED
+_CN frontier miner, 2026-07-26. Stage A only: **ZERO promotion authority** (two-stage law)._
+
+**WHAT CHANGED.** Axis #76 sat catalogued-but-never-ingested since 2026-07-22 on the claim
+*"no clean free API found; TradingView script is a lead, not a feed; park until a clean source
+appears."* **That claim is REFUTED.** Three independent free routes exist, all keyless, all probed
+200 this run. The axis is now ingested (`data/cny_otc_premium_history.jsonl`, 591 daily rows) and
+screened through the audited harness. This is the screen-on-discovery leak closed on one axis:
+the desk already had a live recorder (`data/cny_premium.jsonl`) holding **4 rows** — unscreenable.
+
+**ROUTES (all keyless, 2026-07-26).**
+| Leg | Route | Notes |
+|---|---|---|
+| OTC quote | `okx.com/v3/c2c/tradingOrders/books?quoteCurrency=cny&baseCurrency=usdt&side={buy,sell}` | 200 buy + 193 sell ads, full depth (price, availableAmount, order min/max, merchant stats) |
+| OTC quote | POST `p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search` | 10 rows/page |
+| History | `history.btc126.com/usdt/api.php` | daily `usdt`+`usd`; **rolling ~177-row cap** — no param lifts it (10 tried) |
+| Deep history | OP-019 Wayback CDX replay of *the same api.php* | recovers 2020-03-16..2021-05-07 |
+| FX leg | `api.frankfurter.app` (ECB) | free, daily, back to 1999 |
+
+**MEASUREMENT IS REAL — three constructions agree on the same date (2026-07-25/26):**
+desk-computed OKX C2C mid ÷ ECB USD/CNY = **−0.623%**; btc126 published index = **−0.62%**;
+desk live recorder (Binance P2P, own FX leg) = **−0.618%**.
+
+**ALIGNMENT DECLARED (per screen-on-discovery rule 4).** btc126 stamps `23:55:01` daily, assumed
+23:55 CST (UTC+8) = 15:55 UTC on date D. The screen predicts the **UTC-day D+1** return
+(00:00 D+1 → 00:00 D+2): an 8h05m forward gap. **Robust to the timezone ambiguity** — if the stamp
+were really UTC the gap shrinks to 5 minutes but stays forward-only, so no cell can be
+lookahead-contaminated either way. Quantization checked: OTC px is 2-decimal, 1 tick = 0.147% of
+price; premium std/tick = 9.5 (block1) / 4.0 (block2), both above the 3.0 usable floor — signal,
+not rounding.
+
+**ALL FOUR TRIALS LOGGED (no best-cell cherry-pick — rule 3).** Blocks screened separately; the
+4.7-year gap is never bridged by the z-window.
+
+| cell | window | n | IC | Sharpe(rev) | same-per corr | resid IC | de-contam | verdict |
+|---|---|---|---|---|---|---|---|---|
+| block1 h=1d | 2020-03-16..2021-05-07 | 392 | −0.0266 | +0.95(mom) | −0.084 | −0.0315 | PASS | SCREEN-UNDERPOWERED |
+| block1 h=5d | 2020-03-16..2021-05-04 | 71 | −0.0652 | −0.16 | **−0.281** | −0.0514 | **FAIL** | SCREEN-UNDERPOWERED |
+| block2 h=1d | 2026-01-27..2026-07-25 | 155 | **−0.0748** | **+1.39** | −0.088 | −0.0659 | PASS | SCREEN-INTERESTING |
+| block2 h=5d | 2026-01-27..2026-07-25 | 36 | — | — | — | — | — | INSUFFICIENT-DATA |
+
+**HONEST VERDICT — no promotable edge, and the best cell is NOT significant.** block2 h=1d earns
+`SCREEN-INTERESTING` from the harness, but it carries `powered=false`: minimum detectable IC is
+0.157 against an observed |IC| of 0.075. The IC is **not distinguishable from zero at 95%**. The
+one genuinely notable feature is that **all four cells are negative** across a 4.7-year gap.
+
+**TWO FINDINGS THAT SURVIVE THE NULL (both contradict the catalogued prior):**
+1. **SIGN IS BACKWARDS.** Entry #76's prior was *"premium up = capital seeking crypto = bullish."*
+   Every cell says the opposite: premium up → next-day BTC return **down** (reversal). If anything
+   is here, mainland OTC premium is a *contrarian//exhaustion* mark, not an inflow confirmation.
+2. **MAGNITUDE PRIOR FALSIFIED — barrier height does not set premium size.** Dispersion collapsed
+   between eras: std **1.397% (2020-21) → 0.580% (2026)**, now **~4× smaller than kimchi**
+   (bithumb 2.269%, coinone 2.021%). Mainland China has the world's highest capital barrier and the
+   world's *smallest* stablecoin premium. The reconciling variable is **merchant-network depth** —
+   393 live ads on a single venue is a deep, professionalised arb layer that grinds the premium
+   flat despite the barrier. This refines the desk's own `era_crossvenue_fiat_premium_arb`
+   graveyard rule (*premium tracks barrier height*): barrier sets the premium's **ceiling**,
+   merchant density sets where inside it the premium actually sits.
+
+**DISPOSITION.** Stage A earns a forward clock, never capital — and given `powered=false` this one
+is weak even for a clock. Recommended: keep the existing live recorder accruing (it is already
+running and is the *primary* route — see failure mode below), revisit at n≥400 live rows
+(~2027-06) when min-detectable IC falls to ~0.098. **Do not size. Do not pre-register a Holm slot
+on this evidence.**
+
+**FAILURE MODE TO WATCH.** ChaiNext — the original publisher of this index family — is **DEAD**
+(NXDOMAIN). btc126 is a surviving mirror, so the history route is single-point-of-failure and
+undocumented. The desk's own recorder must stay primary; btc126 is backfill, not a dependency.
+
+[§33: screened -> data/cny_otc_premium_history.jsonl]

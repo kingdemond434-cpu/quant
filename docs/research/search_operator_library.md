@@ -395,3 +395,75 @@ RU-language user base). Each regional miner should run the same corpus-differenc
 
 ## ARCHIVED
 (none yet)
+
+### OP-031 Wayback-replay a JSON API to defeat a rolling-window cap            [active]
+class: acquisition
+origin: CN frontier miner session 1, axis #76 usdt-cny-otc-premium (2026-07-26)
+validated-gain: turned an **unscreenable 4-row** axis into a **591-row, 6.4-year** screened series.
+  `history.btc126.com/usdt/api.php` serves a daily USDT/CNY OTC series but hard-caps at a rolling
+  ~177 rows; TEN parameter guesses (`limit/all/days/page/start+end/num/count/type/year/id`) every one
+  returned the identical 177 rows. The cap is server-side and unliftable — but the ENDPOINT ITSELF is
+  archived, and each capture is a frozen 177-row window from ITS date. Replaying 4 captures recovered
+  414 additional days (2020-03-16..2021-05-07) that the live route can never serve.
+technique: when a data endpoint truncates history, stop attacking the parameters and archive the
+  ENDPOINT: (1) `web.archive.org/cdx/search/cdx?url=<host>/<path.json|.php>&output=json&filter=statuscode:200`
+  — query the API path, NOT the HTML page (people CDX the page and miss that the XHR is archived too);
+  (2) dedupe captures by the CDX `digest` column so identical snapshots aren't refetched;
+  (3) fetch each with the `id_` raw-content flag: `web.archive.org/web/<timestamp>id_/<url>`
+  (without `id_` you get Wayback's rewritten HTML wrapper, not the raw JSON);
+  (4) union the captures into a date-keyed dict — overlapping windows self-reconcile;
+  (5) **record the gaps** — capture density is the binding constraint, not the cap. Here only 4
+  captures existed, so 2021-05-08..2026-01-26 is permanently unrecoverable and is declared as such.
+adaptations: universal to any capped/rolling JSON, GraphQL or CSV endpoint in any language — regional
+  data sites are the best hunting ground because they are widely archived and rarely paywalled. Pair
+  with OP-019 (CDX on pages) — OP-019 reconstructs DOCUMENTS, OP-031 reconstructs SERIES. Check
+  `id`-like monotonic row keys to infer the true series origin (`id=10` on 2020-03-16 proved the
+  series starts ~2020-03-06, so the gap is bounded and known rather than open-ended).
+counterfactual: HIGH — the axis had been PARKED for 4 days on "no clean free API found"; without this
+  the desk would have waited ~11 months of forward recording to reach a screenable n.
+ADJACENCY TEST RUN THE SAME DAY — **NEGATIVE, and it calibrates the operator.** Applied immediately to
+  the desk's other known capped endpoint of the identical shape: `bitcoin-data.com/v1/{mvrv,realized-cap,
+  realized-price}` (keyless JSON, hard 1,461-row 4-year rolling window, `?startday=`/`?since=` accepted
+  and IGNORED — the same accepted-and-ignored signature as btc126). CDX returns **0 captures** for all
+  three API paths, so nothing is recoverable. CONCLUSION: OP-031's success rate is set by ARCHIVE
+  DENSITY, not by the cap — and API paths are archived far more sparsely than HTML pages (btc126's page
+  had captures back to 2020 while its api.php had only 4). CHECK CDX COUNT FIRST; it is one cheap call
+  and it tells you whether the operator applies before you build anything.
+
+### OP-032 search the native language FIRST, not as a fallback                  [active]
+class: discovery
+origin: CN frontier miner session 1 (2026-07-26)   validated-gain: a controlled A/B on the SAME
+  question, run in the same minute. **English** ("USDT/CNY OTC premium historical data free API") →
+  CoinGecko/CMC/Yahoo/CoinAPI generic Tether pages and the explicit conclusion *"OTC premiums and
+  China-specific USDT pricing dynamics may not be readily available through standard free APIs."*
+  **Chinese** (`USDT 场外价格 历史数据 API 人民币 溢价指数`) → the formal index DEFINITION (ChaiNext
+  折溢价指数 = OTC price ÷ **offshore CNH** × 100) plus two live data sites, one of which serves the
+  free daily history. The English search did not merely rank the source lower — it returned a
+  confident FALSE NEGATIVE that would have closed the lead.
+technique: for any region-specific quantity, issue the native query FIRST and treat an English null as
+  carrying **zero** evidential weight about existence. Compose native queries from the domain noun +
+  the data-shape noun: 场外价格 (OTC price) + 历史数据 (historical data) + API + 指数 (index). Never
+  translate an English phrase word-for-word — use the term the locals actually type.
+adaptations: the failure is language-general. KR 시세/과거 데이터, JP 過去データ/取得, RU исторические
+  данные, TR geçmiş veri, PT dados históricos, ES datos históricos. Pair with OP-027 (a zero may be
+  lexical) and OP-030 (a zero is a claim about your query until proven otherwise).
+counterfactual: HIGH — this single query is the whole reason axis #76 got un-parked.
+
+## LEXICON — CN crypto-trading jargon (dark-forest search keys)
+_Charter dark-forest mandate deliverable #2, CN region. Seeded from the principal's list; terms
+marked ✓ were CONFIRMED IN USE this run (2026-07-26) against live CN pages/APIs rather than assumed._
+
+| term | pinyin | gloss / era | use as search key |
+|---|---|---|---|
+| 场外 / 场外价格 | changwai | OTC / OTC price — the standard term for the P2P stablecoin market | ✓ the key that unlocked axis #76; pair with 历史数据 or API |
+| 折溢价指数 | zhe-yijia zhishu | discount/premium index (ChaiNext's formal name for the USDT premium) | ✓ finds the formal index definition, not retail chatter |
+| 溢价率 | yijia lü | premium rate (%) | ✓ btc126 page title |
+| 承兑商 | chengduishang | OTC "acceptor"/merchant — the professional market-making layer of the P2P book | the merchant-density variable that explains why CN premium < kimchi |
+| 搬砖 | banzhuan | lit. "moving bricks" = cross-border/cross-venue arb; the 2013-17 era's core trade | era-archaeology key for 8btc/ChainNode/Tieba archives |
+| 韭菜 / 割韭菜 | jiucai / ge jiucai | retail "leeks" / harvesting them | finds retail-behaviour and market-manipulation lore |
+| 爆仓 | baocang | liquidation/blown account | finds leverage post-mortems |
+| 插针 | chazhen | "needle insertion" = wick / stop-hunt | microstructure lore, exchange-wick disputes |
+| 庄家 | zhuangjia | the "operator"/whale manipulating a book | manipulation-mechanics threads |
+| 梭哈 | suoha | all-in (from "show hand") | retail sentiment marker |
+| 合约党 | heyue dang | the perp-contract crowd | finds derivatives-retail cohort discussion |
+| 走势图 | zoushitu | trend chart | pairs with 历史 to find chart pages that have a data endpoint behind them |
