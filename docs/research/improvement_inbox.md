@@ -544,14 +544,42 @@ variance than the sampling error the desk corrects for.**
 rails (both free).*
 Presented as one item because it is one finding reached four ways — routing them separately would
 hide that convergence, which is the strongest thing about it.
-- **[ABSTRACT] Fieberg–Günther–Poddig–Zaremba, "Non-standard errors in the cryptocurrency world"
-  (IRFA 2024).** Ten prevalent research-design decisions crossed into **20,736 designs** over **43
-  sorting variables** in crypto. Result: *"Non-standard errors in cryptocurrency studies not only
-  surpass those in the stock market but also **clearly exceed standard errors**."* Read literally:
-  **in the crypto cross-section, the uncertainty from construction choice is LARGER than the
-  uncertainty from having a finite sample.** DSR/PBO correct for the number of trials RUN; they do
-  not touch this. They also find small-coin exclusion reduces NSE, and that size/momentum are
-  unusually design-robust.
+- **[PRIMARY — interior extracted 2026-07-26, see `deep_sweep/LIT_a_interiors.md`]
+  Fieberg–Günther–Poddig–Zaremba, "Non-standard errors in the cryptocurrency world" (IRFA 2024).**
+  Ten prevalent research-design decisions crossed into **20,736 designs** over **43 sorting
+  variables** in crypto. **The adjective is now a number: average N/S ratio = 1.55**, versus ~1.11–1.18
+  in equity benchmarks — *"the ratio of non-standard to standard errors in cryptocurrency studies is
+  about 30-40% higher than in equity markets."* Standard errors are near-constant across anomalies
+  (0.40–0.45); non-standard errors range from <0.5 up to **>1.1**. **In the crypto cross-section the
+  uncertainty from construction choice is LARGER than the uncertainty from having a finite sample,
+  and DSR/PBO — which correct for the number of trials RUN — do not touch it.**
+  > ⚠️ **SELF-CORRECTION, same run.** This bullet originally ended *"and that size/momentum are
+  > unusually design-robust"* — written from the abstract, before the interior was extracted. **The
+  > interior says close to the opposite and the error was material enough to invert an allocation
+  > decision.** The abstract's "robust" means only that *statistical significance* survives; the
+  > *magnitude* of size and momentum is the LEAST stable of all 43 variables. Verbatim §3.4.1:
+  > *"the N/S errors for the sorting variables typically considered the most reliable - such as size
+  > or momentum - significantly exceed even those of the most error-prone equity anomalies"* (N/S
+  > **>2**). And from the Conclusion: *"the annualized Sharpe ratios of long-short size factor
+  > portfolios ... **can range from about 0 to almost 5**. Similarly, **the momentum factor can be
+  > profitable or produce substantial losses**, depending on the specific implementation."* A factor
+  > whose Sharpe spans 0-to-5 and whose sign flips on implementation choices is not "robust" in any
+  > sense that may inform sizing. **Corrected record: size and momentum stay significant across
+  > designs, but their realised Sharpe is the MOST implementation-dependent of the 43 — the design
+  > choice, not the signal, dominates the payoff.** Logged loudly because this is the second
+  > abstract-sourced error caught by primary text in a single run (the first was HXZ, item #59), and
+  > both were caught only because the PDF blocker was lifted.
+  **The NSE-reduction levers, in the paper's own ranking** (directly pasteable into universe
+  construction): value-weighted **0.68** and capped-value-weighted **0.62** vs equal-weighted **1.25**
+  — *"designs that limit the influence of the smallest and least liquid coins: value-weighted
+  portfolios, minimum capitalization thresholds, and narrower cutoff points."* Winsorising and a
+  one-day implementation lag help slightly; tercile sorts beat decile/quintile.
+  **Counter-intuitive lever the desk should absorb:** requiring a MINIMUM NUMBER OF ASSETS per
+  portfolio makes performance *less* stable, not more — it silently shortens the study period because
+  few coins existed in the early years. **And a warning that lands on any crypto benchmark:** the
+  Liu et al. (2022) three-factor model *"fails to explain the alphas of portfolios formed based on
+  various characteristics-including price, volume, illiquidity, or even size and momentum"* — the
+  standard crypto factor model does not price the portfolios built on its own factors.
 - **[PRIMARY, ar5iv] Chen & Zimmermann vs Hou–Xue–Zhang — the definitional split.** Two credible
   teams report ~98% and ~35% success on the same corpus, and it is not a coin flip between
   authorities: C&Z **REPRODUCE** (re-run each predictor under *the original paper's own protocol*,

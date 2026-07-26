@@ -499,3 +499,217 @@ recorder are tick counts over a few weeks. Audited spans:
    number that looks like evidence and is not.
 
 ---
+
+### 5. INVENTORY BEATS POSITIONS — Gorton-Hayashi-Rouwenhorst rejects hedging pressure outright
+**Verdict: `graveyard-prior` (free, and it is a LEVEL-2 FORWARD CRITIQUE OF THIS FILE'S OWN FINDING 1)
++ one `cheap-gating-test card` runnable on data already on disk.**
+
+**What it is.** Gorton, Hayashi & Rouwenhorst, *The Fundamentals of Commodity Futures Returns*,
+NBER WP 13249 (2007), published *Review of Finance* 17(1) 35-105 (2013). URL opened:
+`https://www.nber.org/system/files/working_papers/w13249/w13249.pdf` — **PRIMARY TEXT READ**
+(zlib-decoded inline). Sample: **31 commodities with hand-collected monthly PHYSICAL INVENTORY data,
+Dec 1969 – Dec 2006**; the CFTC Report-of-Traders panel (Table 10) runs **Dec 1986 – Dec 2006**.
+
+**Mechanism.** Theory of Storage, not Theory of Normal Backwardation. The convenience yield is a
+*decreasing, non-linear* function of inventories (non-linear because inventories cannot go negative).
+When inventories are low, the marginal value of having the physical good *now* spikes, the curve
+backwardates, volatility rises, and the risk premium rises. Positions are a *symptom* of this state,
+not a cause of the premium.
+
+**The kill, quoted verbatim from the abstract:** *"Positions of futures markets participants are
+correlated with prices and inventory signals, but we **reject the Keynesian 'hedging pressure'
+hypothesis** that these positions are an important determinant of risk premiums."* And from the body:
+*"The main conclusion of this section is that contrary to the existing literature, **we find no
+evidence that supports a hedging pressure explanation for risk premiums in commodity futures
+markets.** Instead, we have shown that risk premiums systematically vary with the state of
+inventories, as predicted by the Theory of Storage."*
+
+**HOW it fails is the transferable part — Table 10.** Regressing monthly futures excess returns on
+commercial net-long position / open interest: *"the slope coefficients are generally significantly
+negative when hedging pressure is measured at the end of the return interval (i.e.,
+**contemporaneously**), but **insignificantly different from zero** when hedging pressure is
+measured"* at t−1. The entire prior hedging-pressure literature was a **same-period correlation**.
+GHR then state the endogeneity problem explicitly: *"The contemporaneous correlation may simply
+reflect the response of traders to changes in futures prices and does not speak to a causal
+relationship,"* and *"these papers treat hedging pressure as exogenous, but it seems reasonable to
+assume that traders positions reflect an equilibrium response to demand and supply shocks."* They
+also observe *"non-commercials take larger long positions in high momentum commodities than in
+commodities with poor prior performance"* — **positioning is largely a lagged transform of past
+returns.** This is the identical observation BNP made independently in Finding 3 ("perhaps the past
+return is a better measure of speculator positions").
+
+**Relation to Finding 1 (does NOT kill it, but re-prices it).** KRT (2020) postdates GHR and is
+partly an answer to it: KRT's claim is about weekly position *changes* with a *trader-type split*,
+and KRT itself reports the *level* is uninformative (t = −0.43), which is exactly consistent with
+GHR. So GHR kills the naive level version and sets the bar KRT must clear. What GHR adds to Finding 1
+is a **strong prior that the crypto version will fail its de-contamination test** — which Finding 1
+already conceded was "likely" — plus a named reason.
+
+**Crypto-perp mapping — exact desk data.**
+- **The positive claim maps directly and favourably, and this is unusual external validation of the
+  desk's live book.** GHR's state variable is the **basis**, and they show price-based signals (basis,
+  prior futures returns, prior spot returns) are informative *because* they reveal inventory. The desk
+  holds `basis` and `funding` daily for **267 symbols since 2019-09-08** in
+  `data/lake/bronze/crypto/<SYM>/D1/`, and its one surviving edge already trades exactly that
+  variable. Crypto has no observable "inventory" — and GHR's whole point is that you do not need one,
+  because the basis reveals it.
+- **CHEAP GATING TEST, runnable today, ~1 day of work, and it gates a multi-week data project.**
+  Before the desk wires `topLongShortPositionRatio` (Finding 1) or CFTC crypto COT (Finding 4), run
+  the incremental test on data in hand: does `ls` / `oi` from `data/lake/bronze/oi_ls_daily/*.jsonl`
+  (**139 symbols, 2021-12-01 → 2026-07-23**) add cross-sectional predictive power for next-period
+  perp returns **over and above `funding` and `basis`**? GHR predicts no. A null here should
+  **cancel** the positioning-data acquisition, not motivate a bigger version of it.
+- **GHR's Table-10 diagnostic, run on the desk's own two positioning kills.** Regress perp returns on
+  `ls_ratio` contemporaneously and lagged. If ls is significant contemporaneously and insignificant
+  lagged — GHR's exact pattern — that is a *single named mechanical cause* for both `ls_contrarian`
+  (backtest 9.84, DSR-killed as `overfit`) and `oi_divergence` (−1.21), converting two unexplained
+  kills into one understood one and retiring the positioning family with a reason. This is
+  cheap forensic work on existing graveyard entries, not a new hypothesis, so it costs nothing
+  against the multiplicity budget.
+
+**Backward ≥2 levels** (all cited inside the decoded GHR text): Kaldor (1939) / Working (1949) theory
+of storage; Keynes (1923) / Hicks (1939) normal backwardation; **Fama & French (1987, 1988)** — the
+interest-adjusted basis as an inventory proxy, metals 1972-83; Ng & Pirrong (1994); Deaton & Laroque
+(1992); **De Roon, Nijman & Veld (2000)** — which Finding 1 cites as *support* for hedging pressure
+and which GHR is explicitly overturning. Finding 1's reference list and this finding's reference list
+are the two sides of an unresolved dispute; the desk should hold both.
+
+---
+
+### 6. THE PHANTOM FLOW VARIABLE — VPIN's failed replication, and why crypto is the exception
+**Verdict: `graveyard-prior` for the imported VPIN / order-flow-toxicity family. But the specific
+defect that killed VPIN does NOT exist in crypto data, which is worth recording precisely so the
+prior is not over-applied.**
+
+**What it is.** Easley, López de Prado & O'Hara's VPIN (volume-synchronized probability of informed
+trading) was sold as a real-time order-flow-toxicity gauge that spiked before the May 2010 Flash
+Crash. It is the single most-cited pre-2015 microstructure metric with an obvious crypto application,
+and the desk's recorder makes it trivially constructible — so it *will* be proposed.
+
+**The failed replication.** Andersen & Bondarenko, *VPIN and the Flash Crash*, CREATES Research Paper
+2011-50; published *Journal of Financial Markets* 17: 1-46 (2014). URL opened:
+`https://repec.econ.au.dk/repec/creates/rp/11/rp11_50.pdf` — **PRIMARY TEXT READ** (zlib-decoded).
+Verbatim: VPIN *"is a poor predictor of short run volatility, ... it did not reach an all-time high
+prior, but rather **after**, the flash crash, and ... its predictive content is due primarily to a
+**mechanical relation with the underlying trading intensity**."*
+- The order-imbalance component degenerates: *"as the speed of trading grows, the number of time bars
+  in the bucket declines and there is less diversification of buy and sell indicators. In the limit,
+  it becomes unity, irrespective of the actual price path"* — **"OI degenerates into a pure trading
+  intensity measure."**
+- **The root cause is the trade-signing scheme.** Bulk Volume Classification *"lets the size of the
+  concurrent price change — a realized volatility measure — directly impact the buy–sell indicator.
+  Effectively, it is a distorted volatility measure which combines trading intensity and price
+  volatility in a nonlinear fashion"*, so *"BV-VPIN constitutes an imperfect realized volatility
+  metric which, **by construction, will have forecast power, due to the persistence in the volatility
+  process**."*
+- **Honesty note:** Easley, López de Prado & O'Hara published a rejoinder (*JFM* 2014) and the dispute
+  is genuinely two-sided; A&B were answered, not conceded to. The desk should treat VPIN as
+  *contested*, which for a signal that must clear a de-contamination gate is functionally the same as
+  dead.
+
+**THE CRYPTO EXEMPTION — the genuinely new observation.** BVC exists because in equity and futures
+tapes the *direction* of a trade is not published and has to be inferred from the price change. That
+inference is the defect. **Crypto exchanges publish the taker side as ground truth.** Verified on
+disk this run: `libs/data/crypto_source.py:61` builds
+`taker_buy_frac = takerBuyQuoteAssetVolume / quoteAssetVolume` straight from the Binance kline — a
+true exchange-reported trade signing, not an inference from returns. It is also *not* a
+price-numerator ratio in the `cm_mvrv` sense: price appears in both numerator and denominator of the
+same bar's quote volume and largely cancels. **The single defect Andersen-Bondarenko identify as the
+source of VPIN's illusory forecast power does not exist in the desk's data**, and the series runs
+daily for 267 symbols since 2019-09.
+**But what survives is narrow, and the desk should not get excited.** Finding 2 already killed
+public order flow → *return* prediction (Sager-Taylor: commercially-available flow does not forecast).
+What is left is order flow → *risk* (volatility / liquidation-cascade prediction), which is (i) not
+an alpha stream and (ii) blocked by the same 17-day liquidation history as Finding 4. Disposition:
+**`graveyard-prior` for VPIN-as-imported; `unresolved / forward-clock` for a clean-taker risk model.**
+
+---
+
+### 7. COVAL-STAFFORD FORCED SELLING → WARDLAW'S CRITIQUE → crypto liquidation cascades
+**Verdict: `discard-for-now` — data-blocked (17-day liquidation history) AND graveyard-adjacent
+(`short_term_reversal`). Recorded with a precise pre-registration because the desk would otherwise
+build the WRONG version of it.**
+
+**What it is.** Coval & Stafford, *Asset Fire Sales (and Purchases) in Equity Markets*, NBER WP 11357
+(2005), *JFE* 86(2) 479-512 (2007). URL opened:
+`https://www.nber.org/system/files/working_papers/w11357/w11357.pdf` — **PRIMARY TEXT READ**
+(zlib-decoded). US equity mutual funds, 1980-2003.
+
+**Mechanism — who loses money and why they persist.** Funds hit by large capital outflows must
+liquidate existing positions *immediately*. The sale is motivated by necessity, not information, so
+it pushes price below fundamental value and reverts. The loser is the distressed fund; it persists
+because meeting redemptions is a non-discretionary mandate. Coval-Stafford's own summary: *"even in
+the most liquid markets there can be a significant premium for immediacy"* and *"short-run excess
+demand curves for stocks appear to be less than perfectly elastic."*
+
+**Numbers.**
+- |flows| > 5% and ≥ **25%** of holders net selling: CAAR from month t−2 to t+3 = **−18.13%
+  (t = −7.58)**, with a reversal of **+15.01% (t = 3.84)** over the next 3 quarters.
+- |flows| > 10% and ≥ 15% net sellers: **−13.02% (t = −6.36)**, **full reversal +14.57% (t = 4.93)**.
+- Calendar-time portfolio alphas to the piling-on strategy: **−0.47%/month (t = −2.15)** to
+  **−0.84%/month**.
+- **THE BREADTH CONDITION IS THE ENTIRE RESULT.** *Isolated* distressed selling gives only **−2.52%
+  (t = −6.66)** and the authors themselves call the magnitudes *"fairly small"*: *"The key to the
+  reversal appears to be that the selling is widespread among mutual funds that must immediately sell
+  due to capital outflows. Moreover, the effect seems to be increasing in the number of net sellers
+  and in the level of distress."*
+- Timing: *"The price effects are relatively long-lived, lasting around two quarters and taking
+  several more quarters to reverse."* **This is a slow effect, not a wick.**
+
+**Replication scan.** Wardlaw, *Measuring Mutual Fund Flow Pressure as Shock to Stock Returns*,
+*Journal of Finance* 75(6) 3221-3243 (2020). **SEARCH-SUMMARY-ONLY — flagged at the weakest provenance
+tier.** Wiley (`https://onlinelibrary.wiley.com/doi/abs/10.1111/jofi.12962`) returned **HTTP 403** and
+the author page returned **403**; no open-access copy was found and §13 forbids circumvention, so this
+is **not** primary text and carries only hazard weight, not a verdict. Reported finding: the standard
+flow-pressure measure *is inadvertently a direct function of the stock's realized return during the
+outflow quarter*; once the embedded return is removed, outflows produce a negligible decline **with no
+subsequent reversal**, and many results in the literature no longer hold.
+
+**Crypto-perp mapping, and the two reasons it is blocked.**
+- **Crypto's genuine advantage:** the forced trade is *directly observed*, not imputed. The exchange
+  publishes side and quantity of every liquidation (`data/liquidations.parquet`:
+  `ts, symbol, side, qty, price, notional`). Wardlaw's specific defect — an *imputed* pressure proxy
+  that secretly contains the realized return — is absent, because nothing is imputed.
+- **Blocker 1 — history.** The feed is **17 days, 15 symbols** (audited above). Coval-Stafford is a
+  quarterly event study. Not runnable, and a 17-day version would be a pure overfit.
+- **Blocker 2 — a different route to the same contamination.** A liquidation is *triggered by* the
+  price move, so liquidation intensity at t is mechanically a function of the return at t. Different
+  cause from Wardlaw's, identical symptom, and it lands directly on the desk's angle-20 gate.
+- **Blocker 3 — graveyard adjacency.** The naive construction ("fade the coin that just got
+  liquidated") is `short_term_reversal`: **Sharpe −1.41, gross −0.48 unprofitable at ZERO cost.**
+
+**The pre-registration worth keeping, because it is the part the desk would get wrong.**
+Coval-Stafford's effect *does not exist* without the breadth condition. So the crypto construction is
+**not** "fade the liquidated coin" — it is: *on days when forced selling is WIDESPREAD ACROSS THE
+CROSS-SECTION (a count of symbols with liquidation intensity above threshold, not a single name's
+magnitude), go long the names with the highest forced-sale intensity relative to their own open
+interest, measured in COIN UNITS (`qty`, never `notional` — `notional = qty × price` reintroduces the
+price numerator that killed `cm_mvrv`), and hold for weeks, not hours.* Revisit only when
+`liquidations.parquet` has ≥ 12 months and ≥ 50 symbols.
+
+---
+
+### SYNTHESIS — the one law this run kept rediscovering
+
+Four independent literatures, and three of the desk's own kills, are the same failure:
+
+| Source | The "flow/positioning" variable | What it actually contained |
+|---|---|---|
+| GHR 2007 (Finding 5) | commercial net long / OI | significant **contemporaneously**, zero when lagged |
+| Andersen-Bondarenko 2011 (Finding 6) | VPIN via bulk-volume classification | *"an imperfect realized volatility metric which, by construction, will have forecast power"* |
+| Wardlaw 2020 (Finding 7) | mutual-fund flow pressure | *"a direct function of the stock's actual realized return"* |
+| BNP 2008 (Finding 3) | CFTC speculator futures position | driven out entirely by past return z_t |
+| Desk: `cm_mvrv` | 20d-z of market-cap ratio | same-period corr **0.416** |
+| Desk: `coinbase_premium_timing` | venue premium | same-period corr **+0.256** |
+| Desk: `bithumb_kr_premium` | KR premium | candle timestamped 1.6d ahead |
+
+**The law: a variable that is supposed to measure WHO IS POSITIONED almost always measures WHAT THE
+PRICE JUST DID.** The desk arrived at this independently and built the angle-20 gate for it; the
+academic literature arrived at it three separate times between 2007 and 2020 and each time it
+demolished a headline result. Two consequences worth carrying: (i) the desk's contamination gate is
+not conservatism, it is the single highest-yield filter in this entire stratum and it should be
+applied to *every* positioning proposal before any backtest; (ii) the contamination is why
+"price-only alpha is dead (420/0)" is a **broader** claim than it looks — most "non-price" positioning
+data is price data wearing a hat.
+
+---

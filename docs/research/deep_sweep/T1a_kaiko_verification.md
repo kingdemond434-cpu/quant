@@ -396,4 +396,139 @@ their own bug.
 
 That sentence is the whole vendor-replacement thesis, written by the vendor.
 
+---
+
+## GAP 1c — INDEPENDENT NON-KAIKO CORROBORATION: A **CBOE RULE FILING TO THE CFTC**
+
+Everything above still came from Kaiko's own documents. The desk's stated failure mode on this card
+is single-source reading. So the methodology was checked against a document Kaiko did not write:
+**Cboe Futures Exchange's rule filing to the CFTC** for Perpetual-style Bitcoin futures (PBT),
+which settle to the Cboe Kaiko Bitcoin Index.
+
+- `https://cdn.cboe.com/resources/regulation/rule_filings/pending/2025/25-023-Bitcoin-Continuous-Futures.pdf`
+- `https://www.cftc.gov/filings/orgrules/rules10202531765.pdf`
+- **Both URLs return the byte-identical document** (654,696 bytes each, PDF-1.6). 47 pages,
+  124,734 chars extracted. This one needed `/ObjStm` object-stream expansion (187 direct objects ->
+  3,460 after expanding 47 object streams) — PDF 1.6 stores objects compressed inside streams.
+
+**It confirms the methodology independently, in a regulator's own words:**
+> "Kaiko implements an aggregation methodology that consists of a look-back that: • for the CKBRT,
+> splits the 10-second reference rate calculation periods into 10 one-second segments (referred to as
+> partitions); and • for the CKBR, splits the one-hour reference rate calculation periods into **10
+> six-minute partitions**."
+
+> "executed trades in each partition are subject to a volume-weighted median price calculation...
+> Specifically, the volume-weighted median is calculated as **the price of the trade that lies at 50%
+> of the cumulative volume for the partition**... Then, a time-weighted average price of all
+> volume-weighted median prices across the partitions in a calculation window is calculated. **A
+> time-weighted calibration method is applied which provides more weight to the most recent prices**...
+> then normalized and aggregated..."
+
+> "each constituent exchange must have at least **0.5%** of the total observed liquidity across all
+> the constituent exchanges... over the past three months."
+
+**Note the 0.5% vs the Kaiko rulebook's 1%.** The Cboe-specific product uses a 0.5% asset-specific
+liquidity floor; Kaiko's own rulebook states 1%. These are different products with different
+calibrations — do not treat the Cboe filing's numbers as Kaiko's house parameters.
+
+**CAUTION — the regulator filing contains an internal error.** It says "the ten weighted prices for
+the CKBRT partitions, and **the six weighted prices for the CKBR** partitions" — but it also says
+CKBR uses **10** six-minute partitions, and Kaiko's own rulebook maps 3600s -> 10p. "Six" is a
+drafting slip confusing *six-minute* with *six*. **10 is correct.** Recording this because it shows
+even a CFTC filing is not automatically ground truth — the two sources had to be diffed against each
+other, which is the entire point of independent verification.
+
+### AND IT PUBLISHES THE CONSTITUENT LIST — which the card said was not public
+
+The watchlist card's stated limit: *"Constituent set is five clean public USD venues, not Kaiko's own
+vetted list (not public per-rate)."* **The constituent list for the flagship BTC rate IS public**, in
+this filing (review period Oct 2024 - Sep 2025):
+
+> "The **Kaiko Bitcoin Real-Time Rate** is comprised of pricing sourced from **Bitstamp, Crypto.com,
+> Gemini, Kraken, and LMAX Digital**."
+
+(For contrast the same page lists CME CF BRR = Bitstamp, Bullish, Coinbase, Crypto.com, Gemini,
+itBit, Kraken, LMAX Digital; CoinDesk BPI = Bitstamp, Coinbase, Crypto.com, Gemini, itBit, Kraken,
+LMAX Digital.)
+
+**THIS BREAKS THE DESK'S EXISTING RECONSTRUCTION, AND THE BREAK IS LARGE.**
+`data/kaiko_vwm_reference_rate.jsonl` was built from **coinbase (139,661 trades) / kraken (13,595) /
+bitfinex (10,733) / bitstamp (10,210)**, with **Gemini deliberately excluded**.
+
+| | Kaiko's actual BTC constituents | Desk's reconstruction |
+|---|---|---|
+| Bitstamp | YES | YES |
+| Kraken | YES | YES |
+| Gemini | YES | **excluded on purpose** |
+| Crypto.com | YES | absent |
+| LMAX Digital | YES | absent |
+| Coinbase | **NOT a constituent** | **80.2% of the desk's tape** |
+| Bitfinex | **NOT a constituent** | present |
+
+Overlap is **2 of 5**, and the single largest contributor to the desk's tape (Coinbase, 80% of
+trades by count) **is not in Kaiko's rate at all**. The desk's reported "median 1.42 bps vs our own
+cross-venue VWAP" was therefore measured over a *different universe* than Kaiko prices. The
+outlier-resistance conclusion (median beats mean under a shock) still holds — that is a property of
+the estimator, not the venue set — **but the bps agreement figure is not evidence of tracking Kaiko.**
+Any future diff must use Bitstamp + Crypto.com + Gemini + Kraken + LMAX.
+
+Also referenced but not yet opened (level 3 of the chain, left as a named next step):
+**"Cboe Kaiko Digital Asset Rates Rulebook, published September 2, 2025"** — a Cboe-specific rulebook
+distinct from both documents extracted here.
+
+---
+
+## FREE KAIKO SURFACES — SEARCHED PROPERLY. ONE REAL FIND THE CARD MISSED.
+
+Per the free-frontier axiom, a documented search was run rather than assumed.
+
+### FOUND FREE (verified live, HTTP 200, keyless, this run)
+**`reference-data-api.kaiko.io` — completely unauthenticated. The card never checked this host.**
+
+| Endpoint | Status | Size | Content |
+|---|---|---|---|
+| `https://reference-data-api.kaiko.io/v1/exchanges` | 200 | 8,955 B | **149 exchanges**, `code` / `name` / `kaiko_legacy_slug` |
+| `https://reference-data-api.kaiko.io/v1/instruments` | 200 | **676,185,303 B** | **2,213,397 instruments** |
+| `https://reference-data-api.kaiko.io/v1/assets` | 200 | 2,887,846 B | asset reference data |
+| `https://reference-data-api.kaiko.io/v1/pools` | 200 | 22,747,785 B | DEX pool reference data |
+
+Each instrument record carries, free: `exchange_code`, `base_asset`, `quote_asset`, `class`
+(spot/future/...), **`trade_start_time`**, **`trade_end_time`**, and **`trade_count`**. Example:
+```
+{"exchange_code":"btrx","code":"1st-btc","class":"spot",
+ "trade_start_time":"2017-08-10T16:54:21.307Z","trade_end_time":"2020-06-22T14:38:32.7Z",
+ "trade_count":1198938}
+```
+**What this actually is: a free, vendor-grade CENSUS of where crypto trade data exists** — 2.2M
+instruments across 149 venues with exact first-trade/last-trade timestamps and trade counts,
+including dead venues (MtGox, BTC-e, FTX, Ethfinex, C-CEX...). It contains **no prices**, so it does
+not replace a data feed. But for answering "does venue X have pair Y, from when to when, and how
+thick is it" — which is a question the desk pays other vendors to answer — it is free and
+authoritative. **Recommend cataloguing it as a coverage/metadata source, not a price source.**
+(It is also a database in the EU sui-generis sense — see the licence ruling below. Query it; do not
+rehost it.)
+
+Also 200 and login-free: `https://explorer.kaiko.com/` (473,980 B) and
+`https://instruments.kaiko.com/` (70,765 B).
+
+### CONFIRMED NOT FREE
+- `https://us.market-api.kaiko.io/v2/data/index.v1/digital_asset_rates_price/{index_code}` -> **403**.
+  Docs (`https://docs.kaiko.com/kaiko-indices/reference-rates/historical-prices`) require
+  `X-API-KEY: $KAIKO_API_KEY`. **No free tier, no trial, no sample/public endpoint documented.**
+  The actual rate VALUES are gated. Only the reference/metadata layer is open.
+- `https://www.kaiko.com/pricing` -> 404 (consistent with the card's earlier refutation; pricing is
+  quote-only). **The refuted "$1,000-2,500/mo" figure remains refuted — no dollar figure was found
+  this run either. Do not resurrect it.**
+
+### GITHUB ORG — CHECKED 2 LEVELS DEEP
+`https://github.com/orgs/kaikodata/repositories` — **12 public repos, ZERO market data.** Confirms
+the card. Inventory: `kaiko-sdk-examples`, `kaiko-rust-sdk`, `kaiko-cpp-sdk`, `kaiko-go-sdk`,
+`kaiko-proto-public`, `vinter-sdk`, `canton-data-standard` ("Open Daml interfaces for the Kaiko Data
+Standard on Canton"), `canton-tooling`, `vinter-cryptoicons`, `github-action-aws-cli`,
+`github-action-pypi-publish`, `grpc-poc`.
+**New signal the card did not note:** two `vinter-*` repos — Kaiko absorbed Vinter (the Swedish
+crypto index administrator). Relevant if the desk ever tracks index-provider consolidation.
+Every SDK is a *client* for the paid API; none ships data. **No free-data path exists via GitHub.**
+
+
 
