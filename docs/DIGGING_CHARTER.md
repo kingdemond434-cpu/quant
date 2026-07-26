@@ -368,3 +368,36 @@ The brain is a metered LLM session. It dies on quota, on session limits, on a ba
 (4) THE THIRD CARRY IS THE DEFECT. An item shown to a LIVE cycle twice and still open is not pending, it is avoided. Do it, or write in the ledger why it is not being done. Silently carrying it again is the exact behaviour this clause exists to stop.
 
 (5) HONEST BOUND. This guarantees nothing is LOST and everything is SURFACED, ranked, with its true age — it does not guarantee everything is FIXED IMMEDIATELY. A cycle has finite capacity, some items need a human (keys, VPS access, Tier-3 sign-off), and some need calendar time (forward clocks cannot be hurried). What §37 removes is the excuse: after it, an unfixed item is a visible decision with a reason, never a thing that quietly fell through a gap.
+
+## 38. AN EXCLUSION SPAWNS A HUNT (2026-07-26, principal, binds every digger)
+
+Excluding a source is HALF a deliverable. The other half is its REPLACEMENT.
+
+(1) WHY THIS IS LAW. A source excluded on licence, ToS, paywall or death removes a capability the
+desk previously counted on. Recording the exclusion and moving on silently SHRINKS the data
+universe — which is a §34 mining regression arriving through the back door: not by mining less,
+but by keeping less of what was mined. Measured today: Coin Metrics was correctly excluded on
+licence and its replacement was found only because a human was in the loop, while
+`Checkonchain (MVRV + realised price)` has sat `excluded-no-licence` with no hunt open at all.
+
+(2) THE RULE. Every source graded excluded / illegitimate / no-licence / blocked / destroyed-at-
+source MUST carry `replacement_hunt` in the universe map: either a FOUND alternative (with its own
+verified `free_path`) or an OPEN hunt naming what is being searched and a date. Silence is a
+defect, exactly as it is under §33.
+
+(3) HUNT WIDE, NOT NARROWLY. The replacement is rarely the same kind of thing. Look for: the
+PRIMARY SOURCE the vendor itself reads (facts are not copyrightable — reconstruct them, per the
+free-first doctrine and the charter's vendor-replacement pillar); a differently-licensed vendor;
+an academic or government mirror; a community dataset; a regional venue; an archive. Search the
+whole surface — forums, obscure repos, non-English sources, dead-project mirrors — not just the
+obvious catalogue. The Coin Metrics replacement was not another vendor: it was the chain itself.
+
+(4) TERMINAL IS ALLOWED, BUT ONLY WITH EVIDENCE. If no replacement exists, grade the residual
+`destroyed-at-source` or `unpurchasable` WITH the documented search that failed. "No replacement"
+must be a FINDING, never a default — the same standard the free-frontier axiom sets for "no free
+source exists".
+
+(5) THE LICENCE LESSON GENERALISES. Coin Metrics deleted its own Terms of Use from the live web
+after acquisition; the ruling had to be recovered from the Internet Archive. A vendor that can
+delete its contract can delete your access. Treat every vendor dependency as temporary and every
+reconstruction as permanent — which is why (3) ranks primary-source reconstruction FIRST.

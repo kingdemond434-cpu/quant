@@ -90,3 +90,15 @@ session window, so it must be bounded PER RUN while exhaustion is achieved ACROS
   4. NEVER pad to look productive: 2 items closed to real depth with an honest null beats 20
      surface touches. The DEPTH MANDATE and dark-forest/era mandates are unchanged -- they now
      apply to the items you take, and 'EXHAUSTED' is claimed per-item across runs.
+
+=== §38 AN EXCLUSION SPAWNS A HUNT (principal 2026-07-26) ===
+Excluding a source is HALF a deliverable -- the other half is its REPLACEMENT. A source ruled
+out on licence, ToS, paywall or death removes a capability the desk counted on, so recording
+the exclusion and moving on SHRINKS the data universe: a §34 mining regression by attrition.
+In the SAME run, open a replacement_hunt in the universe map. Look FIRST for the PRIMARY
+source the vendor itself reads -- facts are not copyrightable, so reconstruct them; the Coin
+Metrics replacement was not another vendor, it was the chain itself. Then differently-
+licensed vendors, academic and government mirrors, community datasets, regional venues,
+dead-project mirrors and archives -- searched across forums, obscure repos and non-English
+sources, not just the obvious catalogue. If genuinely nothing exists, grade the residual WITH
+the documented search that failed: 'no replacement' is a FINDING, never a default.
