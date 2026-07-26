@@ -2,16 +2,21 @@
 
 _Seeded 2026-07-18; rotation rule: >=40% of budget to least-recently-covered._
 
-| Family | Last visited | Sessions | Notes |
-|---|---|---|---|
-| arXiv q-fin (full) | never | 0 | daily feed covers a slice passively |
-| SSRN (microstructure/anomalies/crypto) | never | 0 | |
-| Practitioner research (AQR/Man/TwoSigma/BIS) | never | 0 | |
-| Journals (JF/JFE/RFS/JPM preprints) | never | 0 | |
-| Theses & dissertations | never | 0 | |
-| Failed-replication literature | never | 0 | |
-| Non-English academic | never | 0 | |
-| AI/agent/LLM methods (cs.LG/cs.AI/evals) | never | 0 | engine self-improvement -- highest compounding leverage |
+| Family | Last visited | Sessions | Yield | Notes |
+|---|---|---|---|---|
+| arXiv q-fin (full) | 2026-07-26 | 1 | 1 graveyard row (`lit_defi_tvl_crosssection`, primary-verified) | Reachable and productive. HTML route (`arxiv.org/html/<id>`, `ar5iv…`) is the workhorse; PDFs now also readable (OP-025). Still only a slice touched — the full q-fin subcategory sweep is UNMINED. |
+| SSRN (microstructure/anomalies/crypto) | 2026-07-26 | 1 | 0 — **blocked** | **HTTP 403 from this box on every attempt.** Logged as NK-005 with a validated substitute-route ladder (OP-026). One finding (F11) is stranded provisional solely because of this. Not a dead corpus — a routing problem. |
+| Practitioner research (AQR/Man/TwoSigma/BIS/IMF/Fed) | never | 0 | — | **THE LARGEST UNTOUCHED FAMILY, and the spec calls it "criminally under-mined".** Explicitly NOT taken this run (bounded scope) and named as the next run's first literature pick. BIS/IMF/Fed crypto-market-structure notes are the highest-value slice. |
+| Journals (JF/JFE/RFS/JPM preprints) | 2026-07-26 | 1 | 2 graveyard rows + the McLean–Pontiff standing haircut prior | Reached via NBER pages, author self-archives and institutional OA repos, never via the publisher (Wiley 403s). HXZ interior extracted and it **corrected three numbers** in the desk's record. |
+| Theses & dissertations | 2026-07-26 | 1 | see LIT_d | Opened this run as part of the non-English ground. The genre that must report negative results is the one nobody reads — free graveyard entries. |
+| Failed-replication literature | 2026-07-26 | 2 | **11 findings; 4 graveyard rows; 3 method rails** | **Richest family by a wide margin** and the clearest validation of the ground's thesis: somebody else already paid the multiplicity cost. Includes the retraction cluster (NK-004). Closest to exhausted of the eight, but not exhausted. |
+| Non-English academic | 2026-07-26 | 2 | see LIT_d | Carries the ≥25% search-space-expansion reserve. Korean-language kimchi work is directly load-bearing on a LIVE desk clock. |
+| AI/agent/LLM methods (cs.LG/cs.AI/evals) | 2026-07-26 | 1 | **3 findings → 4 inbox items, incl. one CANCELLATION of queued work** | Engine self-improvement — highest compounding leverage, and it paid immediately: killed queued item #43 (automated debate) on measured evidence, found the panel's plurality-vote filter discarding singleton findings, and rejected a plausible-sounding build (self-preference defences) as 80–99% artifact. |
+
+**Rotation note (the ≥40%-to-least-recently-covered rule).** All eight rows read `never` at run
+start, so rotation gave no ordering and allocation went by expected compounding value. **From the
+next run rotation BINDS, and it points at practitioner research (AQR/Man/Two Sigma/BIS/IMF/Fed) —
+the only family still at zero.**
 
 ---
 
