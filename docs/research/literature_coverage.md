@@ -202,3 +202,89 @@ Separately, 8 of those 15 are another organ's `# AUDITOR FAILED` stubs with an E
 success-shaped artifacts a file-counting coverage check would score as complete (row #74). Left in
 place, not deleted: they are the only evidence the run happened.
 
+
+### ✅ ITEM 2 [T1, CARRY] — KAIKO RULEBOOK INTERIOR + INDEPENDENT ESMA CHECK. **BOTH GAPS CLOSED.**
+Owed since run 1, blocked on the same false "no PDF tooling" premise. Rulebook interior **extracted**;
+ESMA registration **independently confirmed**. Then the chain went one level deeper than asked — to
+the **Rates** rulebook — and that level is where the value was: **the card's central documented
+"honest limit" is REFUTED.** The card recorded *"window length, partition count and the recency decay
+are NOT published (60min / 12×5min / linear ramp are DESK parameters)"*. **All three ARE published**,
+in plain text, including the explicit enumerated window sets (real-time `[15s,20s,30s,60s,120s,300s]`,
+fixing `[300s…3600s]`) and per-rate-type publication intervals. Consequence: the reconstruction is
+better-specified than the desk believed — it was carrying invented parameters where published ones
+exist. Full detail + the substantive rule set in `deep_sweep/T1a_kaiko_verification.md`.
+**This is the second time in one run that a documented desk "limit" dissolved on contact with primary
+text** (the first being the PDF blocker itself). Both were inherited, neither had been re-tested.
+
+### ✅ ITEM 3 [T1, CARRY] — COIN METRICS COMMUNITY LICENCE RULING. **RESOLVED, AND IT IS A NO.**
+Recommended ruling: **EXCLUDE for any path leading to real capital** (confidence HIGH);
+**RESEARCH-ONLY, WINDING DOWN** for what is already done (confidence MODERATE, deliberately not
+self-approved — it is a human call and is framed for the principal with primary text quoted).
+Three things run 1 and run 2 both missed, all material:
+- **Coin Metrics no longer exists as an independent vendor** — the acquisition changes who the
+  counterparty is.
+- **A previously-unflagged AI-SYSTEM CLAUSE**, which the dossier argues is *arguably more binding than
+  the NonCommercial clause* and which the desk had never once considered. A desk that is itself an AI
+  research system should have found this first.
+- The operative terms grant rights *"solely for non-commercial internal business purposes"* — which
+  cannot be read to permit generating money-making trading signals.
+**Operational consequences:** the 15-year keyless daily backfill axis **must not be built on CM
+Community data**; `data/coinmetrics_flows.jsonl` (9,866 rows, collector refreshed today) should be
+**quarantined, not deleted** — it is evidence for a completed screen (untouched by this run: freeze).
+**The desk keeps its deliverable.** The negative result — *aggregate exchange-flow / MVRV metrics
+carry no daily-horizon edge over 15 years* — is the desk's OWN measurement, not CM's content, and
+survives an EXCLUDE ruling intact. **The licence problem costs a data feed, not a finding**, and that
+$799/mo × 2 question stays answered at $0. Explicitly does NOT generalise to Upbit (register #67's
+other half). Full dossier: `deep_sweep/T1b_coinmetrics_licence.md`.
+
+### ✅ ITEM 4 [NEW GROUND] — LIT-b and LIT-d extended; interiors backlog cleared.
+- **LIT-b (forgotten literature): 2 findings → 7 + a synthesis.** The synthesis is the run's sharpest
+  output and is routed as inbox **#66 — the POSITIONING-CONTAMINATION LAW**: four independent
+  literatures (Gorton–Hayashi–Rouwenhorst 2007, Andersen–Bondarenko 2011 vs VPIN, Wardlaw 2020 vs
+  Coval–Stafford, Brunnermeier–Nagel–Pedersen 2008) and three of the desk's own kills are ONE failure
+   — *a variable that claims to measure who is positioned almost always measures what the price just
+  did.* Two consequences: the angle-20 gate is the highest-yield filter the desk owns and should run
+  BEFORE any backtest as an admission test; and "price-only alpha is dead (420/0)" is **broader** than
+  it reads, because most "non-price" positioning data is price data wearing a hat.
+- **LIT-d (non-English + theses): 1 finding → several**; carries the ≥25% expansion reserve.
+- **Interiors backlog: F1/F3/F5/F6 all lifted to `[PRIMARY]`.** F3 (JKP) and F6 (McLean–Pontiff)
+  **CONFIRM** the desk record — so the −58% haircut prior now stands on primary text, not an abstract.
+  F5 **CORRECTS** it, materially (see below).
+
+### ⚠️ SECOND SELF-CORRECTION THIS RUN — and it was mine, not run 2's.
+Inbox #60 as I first wrote it said Fieberg et al. found *"size and momentum are unusually
+design-robust."* I took that from the abstract. The extracted interior says close to the opposite:
+the abstract's "robust" means only that statistical *significance* survives, while the *magnitude* of
+size and momentum is the **least** stable of all 43 variables (N/S **>2** vs 1.55 average) —
+*"the annualized Sharpe ratios of long-short size factor portfolios can range from about 0 to almost
+5. Similarly, the momentum factor can be profitable or produce substantial losses."* A factor whose
+Sharpe spans 0-to-5 and whose sign flips on implementation is not "robust" in any sense that may
+inform sizing. Corrected in place with the error shown, not silently overwritten.
+**Two abstract-sourced errors caught by primary text in a single run — one inherited, one my own —
+and both only catchable because the PDF blocker was lifted.** That is the argument for register #70,
+and it is a stronger argument than the one I wrote when I opened the row.
+
+---
+
+## DEPTH LINE (mandated per-lead, honest)
+- **HXZ (F1)** — *citations → PDF interior, exhausted for the desk's purpose.* Depth surfaced what the
+  surface did not: three wrong numbers, and a kill that is BROADER than recorded (trading frictions
+  ⊃ liquidity).
+- **Kaiko** — *surface → rulebook PDF → **level-2 Rates rulebook** → ESMA register cross-check.* The
+  second level is where the refutation lived; a one-level dig would have confirmed the wrong card.
+- **Coin Metrics** — *repo LICENSE → live docs → archived operative terms → CC's own NC guidance →
+  corporate-status check.* The AI-system clause and the acquisition were both below the surface.
+- **Fieberg NSE (F5)** — *abstract → open-repo interior.* Depth **inverted** an abstract-level claim.
+- **LIT-b** — *citation chains ≥2 levels, and the payoff was the DEBUNKING layer every time*
+  (GHR rejects hedging pressure; Andersen–Bondarenko guts VPIN; Wardlaw guts Coval–Stafford). The
+  cross-source synthesis (#66) exists only because four chains were run, not one.
+- **Retraction cluster (F8)** — *article → full comment thread.* Reply layer outranked the article,
+  exactly as charter §9 predicts. **Not exhausted: the PubPeer citation-stacking thread is still
+  unopened and is a named carry-over.**
+- **NOT DUG, named rather than hidden:** practitioner research (0 sessions), the full arXiv q-fin
+  subcategory sweep, and F11's primary text (SSRN 403).
+
+**Is this breadth-theater?** No — and the check is specific: 6 reply/citation/interior chains were
+run ≥2 levels, three of them overturned something the desk had written down. But the honest ledger
+is that **two backlog items and two literature grounds is a NARROW run by design** (completion
+contract), and the largest literature family remains at zero visits.

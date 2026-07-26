@@ -713,3 +713,112 @@ applied to *every* positioning proposal before any backtest; (ii) the contaminat
 data is price data wearing a hat.
 
 ---
+
+### 8. THE IDLE 26-YEAR BENCH — `cot_zcache.parquet` can test Findings 1/3/5 OUT-OF-SAMPLE for free
+**Verdict: `card-worthy` — a mechanism-VALIDATION bench, not an alpha stream. Zero new data, zero
+multiplicity cost, and it can kill three of this file's candidates before any crypto work is done.**
+
+**The observation.** Audited this run, `data/cot_zcache.parquet` is not the modest table the inventory
+implies. It is **8,405 daily rows spanning 2000-01-03 → 2026-06-21** across **11 assets** — XAU, XAG,
+XPT, XPD, EUR, GBP, AUD, JPY, CHF, CAD and WTI — carrying what appear to be pre-computed CFTC COT
+positioning **z-scores** (weekly COT forward-filled to daily). **This is the longest continuous
+dataset the desk owns, by a wide margin, and nothing uses it.**
+
+**Why it matters here specifically.** Three separate candidates in this file rest on the *same*
+untested premise — that trader positioning predicts something beyond price:
+- Finding 1 (KRT hedging-pressure decomposition) — wants a trader-type split the desk lacks.
+- Finding 3 (BNP carry crash risk) — wants speculator crowding → conditional skewness.
+- Finding 5 (GHR) — says the whole premise is a same-period artifact.
+
+All three were estimated on **CFTC COT data ending in 2006 (BNP), 2006 (GHR) or 2014 (KRT)**. The desk
+owns **2000-2026** of the same instrument family. That means **roughly 12-20 years of genuinely
+post-publication, out-of-sample data are already sitting on disk** for every one of these mechanisms.
+
+**The test, and why it is unusually clean.** McLean-Pontiff decay is a standing desk prior, normally
+*assumed*. Here it can be **measured**:
+1. Re-run BNP's core specification on the desk's own COT z-scores + FX spot: does high positioning
+   crowding still predict negative conditional skewness in AUD/JPY/CHF over **2007-2026** (BNP's
+   post-sample)? BNP's in-sample coefficient was **−0.26 (se 0.12)** before past-return controls and
+   **insignificant after**.
+2. Re-run GHR's Table-10 diagnostic on XAU/XAG/XTI: is the COT z-score significant *contemporaneously*
+   and insignificant *lagged*, over 26 years? GHR found exactly that on 1986-2006.
+3. Only if (1) or (2) survives does the crypto positioning programme (Binance
+   `topLongShortPositionRatio`, CFTC crypto COT) have a live prior worth the acquisition cost.
+
+**Why this is not an overlay and not a new sleeve.** It produces **no position in any instrument**.
+It is a *prior-setting* exercise on assets the desk does not trade, whose only output is a
+go/no-go on three already-logged candidates. Under charter §26.3 it is a replication, not a new
+hypothesis, so it does not consume the multiplicity budget — and it is the cheapest available way to
+avoid building a data pipeline for a mechanism that decayed twenty years ago.
+
+**Honest caveat.** The parquet holds *derived z-scores*, not raw long/short/net positions by trader
+category. BNP and KRT both require the **net position scaled by open interest** and KRT additionally
+requires the **commercial vs non-commercial split**. Before relying on this bench, verify what the
+z-score is a z-score *of* — if it collapses all trader categories into one series, it can support the
+GHR diagnostic (test 2) but **not** the KRT decomposition (test 1's split). Raw CFTC COT is free and
+keyless if the cache proves insufficient.
+
+---
+
+### 9. STRATUM (b) — 2013-2017 EARLY CRYPTO — assessed and found STRUCTURALLY POOR for this desk
+**Verdict: `mostly dead-on-arrival`, and the reason is worth recording so no future run re-opens it
+expecting riches.**
+
+The brief treats stratum (b) as a peer of stratum (a). It is not, for one hard structural reason:
+**the instrument this desk trades did not exist during most of that window.** BitMEX launched the
+perpetual swap in **May 2016** and only adopted the fixed 0.01%/8h interest component in **April
+2017**. There is therefore **almost no 2013-2017 literature on perpetual futures or funding rates** —
+the searches this run surfaced confirm the academic work on perp pricing is overwhelmingly
+**2024-2026** (Ackerer-Hugonnier-Jermann, *Perpetual Futures Pricing*, NBER WP 32936 → *Mathematical
+Finance* 2026; He et al. 2024 for the no-arbitrage perp/spot/funding relation), with commentary that
+the perp-pricing literature is *"very scarce"* and the funding rate *"surprisingly understudied."*
+(Search-level evidence; NBER WP 32936 and the Wharton author copy `https://finance.wharton.upenn.edu/~jermann/AHJ-main-10.pdf`
+were **identified but NOT read this run** — flagged as the residual, see exhaustion state.)
+
+What 2013-2017 crypto papers *do* exist cluster into families the desk has already killed:
+- Market-efficiency / Hurst / long-memory on BTC prices (Urquhart 2016 and the Nadarajah-Chu 2017
+  rebuttal, Bariviera 2017) → **price-only, 420 hypotheses / 0 survivors.**
+- Price discovery across Mt.Gox/BTC-e/Bitstamp (Brandvold et al. 2015) → **`btc_leadlag`, Sharpe −2.28.**
+- Search-attention drivers (Kristoufek 2013/2015) → **`multilingual_wikipedia_attention`, all 5
+  SCREEN-WEAK.**
+- Cross-venue premium arbitrage → **`era_crossvenue_fiat_premium_arb`, reclassified as rent on a
+  capital-control barrier.**
+The prior run's era-mining of Bitcointalk (the TA-contest natural experiment, GMVT-BOT, the China
+arb threads) already extracted the genuinely valuable content of this era, and it did so from
+*primary trader records* rather than papers — which is the correct read: **for 2013-2017 crypto, the
+forum record is richer than the journal record**, because the journals were writing about prices and
+the forums were writing about mechanisms, fees and rails.
+
+**The narrow residual worth a future hour** (named, not mined): (i) Gandal, Hamrick, Moore & Oberman,
+*Price manipulation in the Bitcoin ecosystem*, JME 95 (2018), on the Mt.Gox "Willy/Markus" bots — a
+documented case of fabricated volume, relevant as a **data-integrity prior** on any pre-2015 crypto
+series the desk might ingest, not as alpha; (ii) miner cost-of-production models (Hayes 2015), which
+are the only 2013-2017 line with a *real commercial hedger* — miners have fiat-denominated costs and
+a physical production stream, making them the closest crypto analog to the commercial short-hedger
+the entire Finding-1/Finding-5 literature is built on. That bridge is the one genuinely unmined idea
+in stratum (b).
+
+---
+
+## EXHAUSTION STATE — where the next run resumes (charter §30)
+
+| Vein | State | Precisely where to resume |
+|---|---|---|
+| **FX carry crash / crowding (BNP → Jurek → DHL)** | **EXHAUSTED** for new mechanisms. | Nothing left to read. Execution items only: Finding 3(c) skew-vs-breadth test and 3(d) common-factor decomposition, both runnable on `bronze/crypto/<SYM>/D1`. Do **not** re-open the return-timing leg. |
+| **Crypto carry / BIS 1087** | **EXHAUSTED** as literature; **OPEN** as a forward clock. | Pre-register the BIS Table-7 spec (standardized funding → next-month coin-unit sell-liquidations/OI) and wait for `liquidations.parquet` to reach ≥12 months. Next unread source in this line: He et al. (2024) and Ackerer-Hugonnier-Jermann NBER WP 32936, both identified, neither read. |
+| **Commodity hedging pressure / theory of storage** | **PARTIALLY-MINED.** KRT (Finding 1) and GHR (Finding 5) are the two poles and both are now read in primary text. | **Unread and named:** Bessembinder (1992) *RFS*, Hirshleifer (1988/1990) residual-risk-and-limited-participation, De Roon-Nijman-Veld (2000) in primary text (still ABSTRACT-ONLY in Finding 1). Hirshleifer is the highest-value of the three because his mechanism — premium ∝ hedging pressure × **residual risk**, with an endogenous number of speculators set by entry costs — predicts cross-sectional variation in *funding* by coin scarcity of risk-bearers, which is a crypto mapping nobody has made. |
+| **Order flow / microstructure (Evans-Lyons, VPIN, PIN)** | **EXHAUSTED.** | Findings 2 and 6 close it from both ends: public flow does not forecast returns (Sager-Taylor), and the toxicity metric is a volatility artifact (Andersen-Bondarenko). **Unread residual:** Duarte & Young (2009) on PIN being priced for illiquidity rather than information — would only reinforce. Not worth an hour. |
+| **Forced selling / fire sales (Coval-Stafford → Wardlaw)** | **EXHAUSTED** as literature; **BLOCKED** on data. | Finding 7 holds the pre-registration. Revisit at ≥12 months and ≥50 symbols of liquidation history. Wardlaw could not be obtained open-access — if a preprint surfaces, upgrade it from SEARCH-SUMMARY-ONLY. |
+| **COT / positioning datasets** | **OPEN — highest-ROI remaining item in this ground.** | Finding 8. Start by verifying what `cot_zcache.parquet`'s z-scores are computed *on* (all traders vs commercial/non-commercial split). That single check determines whether the desk can run the KRT decomposition out-of-sample on 26 years for free. |
+| **Settlement / expiry / calendar / roll effects** | **NOT MINED — untouched this run.** | The clean next target. Named starting points: Stoll & Whaley expiration-day effects (1987, 1997); Ni, Pearson & Poteshman (2005) *JFE* option-expiry **pinning** via delta-hedge rebalancing; the Samuelson maturity effect. Crypto hooks: funding settles 3×/day at fixed UTC times, quarterly futures expiries, monthly Deribit option expiries. **Data honesty up front:** the desk's `basis` is perp-vs-spot, so quarterly-expiry effects need quarterly futures data it does not hold, and `deribit_surface.parquet` (66 rows, no strike-level OI) cannot support pinning. Check data feasibility *before* reading, or this vein will produce another `needs-data-desk-lacks`. |
+| **Stale price / cross-venue lead-lag** | **CLOSED — do not open.** | `btc_leadlag` (−2.28), `coinone_kr_premium` (`redundant`), `bithumb` (`lookahead_artifact`). The whole class is spent. |
+| **Kyle lambda / Amihud on perps** | **CLOSED — do not open.** | `illiquidity_premium` (0.0, IC −0.043). |
+| **2013-2017 early crypto (stratum b)** | **MINED OUT except one bridge.** | Finding 9. The single unmined idea: **miners as the commercial short-hedger** (Hayes 2015 cost-of-production + the Finding-1/5 hedging-pressure frame). This is the only place in the crypto ecosystem with a genuine operational hedger — fiat costs, physical production stream, price-insensitive by mandate — which is the exact agent the entire commodity literature requires and which crypto is usually assumed to lack. Requires miner-flow data (Coin Metrics has some; `data/coinmetrics_flows.jsonl` exists and was NOT audited this run). |
+
+**One-line state of the ground:** stratum (a) is now deeply worked and its two richest veins (carry
+crash, hedging pressure) are read to primary text; the binding constraint on this entire ground has
+turned out to be **not mechanism supply but the desk's history length** — three of the four
+positioning assets the inventory advertises are under 30 days long. The next run's highest-value hour
+is Finding 8 (free 26-year out-of-sample bench), and its best *unmined* vein is
+**miners-as-hedgers**, not more microstructure.
+

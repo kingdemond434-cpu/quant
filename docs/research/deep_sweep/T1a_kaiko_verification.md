@@ -530,5 +530,177 @@ Standard on Canton"), `canton-tooling`, `vinter-cryptoicons`, `github-action-aws
 crypto index administrator). Relevant if the desk ever tracks index-provider consolidation.
 Every SDK is a *client* for the paid API; none ships data. **No free-data path exists via GitHub.**
 
+---
+
+## GAP 3 — IS KAIKO REPLACEABLE FROM FREE SOURCES? **VERDICT: (a) FULLY for the RATES. (b) PARTIALLY for the INDICES.**
+
+The card graded this as one thing. Having read the actual rules, **it is two products with two
+different answers**, and conflating them is why the card was vague.
+
+### THE FIVE CONSTITUENT VENUES — PROBED LIVE THIS RUN, NOT ASSUMED
+
+| Venue | Free keyless executed-trade data? | Evidence (probed 2026-07-26) |
+|---|---|---|
+| **Bitstamp** | **YES** | `https://www.bitstamp.net/api/v2/transactions/btcusd/?time=hour` -> 200, 61,914 B, tick-level `price`/`amount`/`date`/`tid` |
+| **Kraken** | **YES** | `https://api.kraken.com/0/public/Trades?pair=XBTUSD&count=5` -> 200, tick-level; `since` cursor paginates history |
+| **Gemini** | **YES** | `https://api.gemini.com/v1/trades/btcusd?limit_trades=3` -> 200, tick-level |
+| **Crypto.com** | **YES** | `https://api.crypto.com/exchange/v1/public/get-trades?instrument_name=BTC_USD&count=3` -> 200, tick-level |
+| **LMAX Digital** | **PARTIAL — forward only** | see below |
+
+**LMAX Digital, run to ground rather than guessed.** Two invented URLs failed, so the real spec was
+located: the docs page `https://docs.lmax.com/public-data-api/` is a Redoc shell that loads an
+OpenAPI file. Pulled it directly:
+`https://docs.lmax.com/public-data-api/public-api-with-tutorial.yaml` -> 200, 29,483 B.
+- Base URL: **`https://public-data-api.london-digital.lmax.com`** — free, no account, no key.
+- **Complete endpoint list: `/v1/orderbook/{id}`, `/v1/ticker/{id}`, `/v1/time`,
+  `/v1/instruments/{id}`, `/v1/instruments`. THERE IS NO TRADES ENDPOINT.**
+- Verified live: `/v1/time` -> 200; `/v1/instruments` -> 200, 35 instruments incl. **`btc-usd`**;
+  `/v1/ticker/btc-usd` -> 200 returning `trade_id`, `last_price`, `last_quantity`, `best_bid/ask`,
+  session OHL.
+- The spec states: *"Ticker updates are **per trade** for each instrument"* on the WebSocket Ticker
+  Channel. Rate limit on REST: **1 request/IP/second**, 429 for up to 1 hour if exceeded.
+
+=> **LMAX executed-trade data is free and complete going FORWARD via the WS ticker channel, and
+destroyed-at-source going BACKWARD** (no historical trades endpoint at any price on the public API).
+This is structurally identical to the desk's bitFlyer card: start a recorder and you own it from that
+day; you can never buy back yesterday for free.
+
+### COMPONENT-BY-COMPONENT RULING
+
+| Kaiko component | Reconstructable free? | Why |
+|---|---|---|
+| Executed-trade inputs (4 of 5 venues) | **YES, incl. history** | keyless public REST, verified live above |
+| Executed-trade inputs (LMAX) | **FORWARD ONLY** | no historical trades endpoint; WS ticker is per-trade |
+| VWM at 50% cumulative volume | **YES** | published verbatim in 2 independent documents |
+| Partition count (10; 5 for 15s) | **YES** | published in rulebook §Partitioning Scheme + CFTC filing |
+| Calculation window (300s RT / 3600s fixing, static for Reference Rates) | **YES** | published table |
+| Inverse-time recency weighting + normalisation | **YES in form, exact equation UNVERIFIED** | wording published; equation is a symbol-font image |
+| Fixing times (16:00 / 20:00 / 08:00 UTC) | **YES** | published |
+| Missing/delayed/spurious data handling | **YES** | published verbatim, all three cases |
+| Dynamic windowing (Benchmark Rates) | **YES — computable** | thresholds (10/5/15/2.5/7.5%) and the zero-volume-bucket rule are published, and zero-volume buckets are computable from free trade data |
+| Exchange liquidity gate (1% of KVEL volume, 3-month) | **YES — computable** | published; needs only free volumes |
+| Top-10 liquidity cap, up-to-5 final combination | **YES** | published |
+| Constituent list for the BTC rate | **YES** | named in the CFTC/Cboe filing |
+| Constituent lists for OTHER rates | **NO** | not systematically published per rate |
+| Qualitative exchange vetting (KYC/AML "Strong", trading policies "Significant", "stable and open country") | **NO** | Kaiko Exchange Ranking judgements, not formulas |
+| Index selection/weighting/capping/buffering maths | **YES** | 75/25 rank, 50/50 weight, 30% cap, 80/120 buffer, 2/3 & 3/2 segment buffers, Laspeyres + divisor — all published with exact numbers |
+| **Circulating supply per asset** | **NO — THIS IS THE REAL BLOCKER** | Kaiko Indices Research proprietary model; 9 published *exclusion categories* but per-asset determinations are research judgements |
+| Kaiko Asset Taxonomy / Theme classification | **NO** | proprietary classification (3 classes / 9 categories / 19 subcategories) |
+| Published rate + index VALUES | **NO** | 403, API-key gated, no free tier |
+
+### THE VERDICT, STATED PLAINLY
+
+**RATES = (a) FULLY RECONSTRUCTABLE.** Every parameter needed to compute a Kaiko-methodology
+reference rate is published, and 4 of the 5 BTC constituent venues serve tick history free and
+keyless today. This is a stronger answer than the card's — the card believed window, partition count
+and decay were unpublished; **all three are published**, they were just in a *second* PDF reachable
+only through a link annotation in the first.
+
+**INDICES = (b) PARTIALLY RECONSTRUCTABLE.** All the index *mathematics* is published to the last
+constant. The irreducible input is **circulating supply**, which drives asset selection, weighting,
+capping and the divisor. Kaiko's supply model is explicitly proprietary and explicitly restrictive
+(excludes foundation-held, staked-for-governance, lost-key, unactivated-fork, founder/employee,
+seed/private/public investor, PoS-locked, governance-locked, and legally-restricted tokens). Free
+proxies exist (CoinGecko / CoinMarketCap / Coin Metrics `SplyCur`) but **none implements that
+exclusion list**, so index levels will diverge structurally, not just numerically.
+
+### WHAT IS MISSING — NAMED EXACTLY (5 items)
+1. **Circulating supply under Kaiko's restrictive definition.** The one hard blocker. Blocks the
+   index family; does **not** block the rates.
+2. **LMAX Digital trade history** (pre-recorder-start). Free forward, gone backward.
+3. **Per-rate constituent exchange lists** for anything other than the BTC rate.
+4. **The literal recency-weighting equation** (verbal spec recovered; typeset formula not).
+5. **Kaiko Exchange Ranking qualitative scores** — irreducibly judgemental, not computable.
+
+### CORRECTIONS THE WATCHLIST CARD NOW OWES (do not let these rot)
+1. "window length, partition count and the recency decay are NOT published" -> **REFUTED, all three published.**
+2. "12x5min" -> **WRONG, it is 10 partitions** (3600s/10p = 6 min each).
+3. "linear ramp" -> **WRONG, weights are inversely proportional to time, then normalised.**
+4. "Constituent set ... not public per-rate" -> **REFUTED for the BTC rate** (Bitstamp, Crypto.com, Gemini, Kraken, LMAX Digital).
+5. The reconstruction's venue set is **2-of-5 correct** and 80% dominated by a **non-constituent**
+   (Coinbase); Gemini was excluded but is an actual constituent. The 1.42 bps agreement figure does
+   not mean what the card implies.
+6. "no PDF tooling on this box" -> true but **not a blocker**; stdlib `zlib` is sufficient.
+
+---
+
+## GAP 4 — FACTS vs LICENSED PRODUCT: WHICH SIDE EACH COMPONENT FALLS ON
+
+The task's framing is right and worth stating precisely: **facts are not copyrightable, methods are
+not copyrightable, but curated compilations and expressive text are protected — and databases get an
+extra layer in the EU.**
+
+### FREE SIDE — the desk may take these, they are not Kaiko's to license
+- **The executed trades themselves.** Prices, volumes and timestamps of real transactions are
+  *facts*. They belong to no one; the venues publish them; Kaiko merely also collects them. Pulling
+  them from Bitstamp/Kraken/Gemini/Crypto.com/LMAX touches nothing of Kaiko's. (Each venue's own ToS
+  still applies — that is a separate, per-venue question the desk already handles.)
+- **The methodology as an idea/procedure.** VWM at the 50% cumulative-volume point; 10 equal
+  partitions; inverse-time weights normalised; drop empty partitions and re-normalise; 1% liquidity
+  floor; 10%/5%/15%/2.5%/7.5% buffer thresholds; 80/120 rules; Laspeyres with a divisor. These are
+  **methods of operation**, expressly outside copyright (US 17 U.S.C. §102(b) excludes "any idea,
+  procedure, process, system, method of operation"; in the EU, ideas and principles are likewise
+  unprotected). **Kaiko publishes them because BMR/IOSCO transparency effectively compels it** — a
+  regulated administrator cannot both claim benchmark transparency and keep the method secret.
+- **Individual facts quoted for research** (e.g. "Kaiko uses 10 partitions") — reporting a fact about
+  a published document.
+
+### LICENSED / RESTRICTED SIDE — do not take these
+- **The rulebook PDFs as documents.** The prose, tables and layout are copyrightable *expression*.
+  Read them, quote briefly with attribution, **do not rehost or redistribute the files.** (Nothing
+  was rehosted this run; downloads were to `/tmp` and are not in the repo.)
+- **Kaiko's published rate values and index levels.** A curated output series. In the EU this is
+  additionally covered by the **sui generis database right** (Directive 96/9/EC), which protects
+  substantial investment in obtaining/verifying/presenting a database *independently of* copyright,
+  and bites on extraction of a substantial part. Kaiko is a French entity — EU law is the operative
+  regime.
+- **`reference-data-api.kaiko.io` bulk contents.** Free to *query*; it is still a database.
+  Systematic bulk extraction and re-publication is the classic sui-generis infringement. Query it,
+  cache what you need, do not mirror all 676 MB as a product.
+- **The names.** "Kaiko", "Kaiko Benchmark Reference Rate", the KT/KM/KS tickers and the ISINs are
+  identifiers of *their* product. A desk reconstruction must not be labelled as, or held out to be, a
+  Kaiko rate.
+
+### THE DISCLAIMER — READ IT, AND NOTE THAT IT CONTRADICTS ITSELF
+Both rulebooks carry (Indices p.30, Rates p.21):
+> "This document and all of the information contained in it... is the property of **Challenger Deep
+> SAS** or its subsidiaries (collectively, "Kaiko")... The Information may not be modified,
+> **reverse-engineered**, reproduced or redisseminated... **The Information may not be used to create
+> derivative works or to verify or correct other data or information.** For example (but without
+> limitation), the Information **may not be used to create indexes, databases, risk models,
+> analytics, software**..."
+
+Three things the desk must register:
+1. **New corporate fact:** the copyright owner is **Challenger Deep SAS**, the parent. ESMA registers
+   **Kaiko Indices SAS**. Neither name is plain "Kaiko". Three entities wear one brand.
+2. **On its face this clause purports to forbid exactly what a vendor-replacement project does** —
+   use the published methodology to build analytics/indices, or to "verify or correct other data".
+   Taken literally it forbids even *diffing* a desk series against Kaiko's.
+3. **It contradicts the notice on the very next page of the same document** (Indices Rulebook p.31):
+   > "Any use, reproduction or distribution **is permitted only if ownership and source are expressly
+   > attributed to Kaiko**."
+   That is a permission-with-attribution grant sitting one page after a blanket prohibition. **A
+   single document says both "no use" and "use with attribution".**
+
+### RULING (and the limit of my authority)
+- **The clean path needs none of this resolved.** Collecting trades directly from the five venues and
+  running an independently-implemented, publicly-documented algorithm over them uses **zero Kaiko
+  property**: not their data, not their text, not their database. The method is an unprotectable
+  procedure; the trades are facts from third parties. **That path is legitimate and is the one the
+  desk should take.**
+- **What is NOT an agent call:** whether a unilateral notice inside a freely-downloadable PDF, with
+  no clickwrap and no assent, contractually binds a party who never accepted it — and whether a
+  regulated administrator can enforce secrecy over a methodology it is obliged to publish. That is a
+  legal question. Per §13 it is **NOT self-approved.** Route to the legitimacy queue alongside the
+  Upbit and CC-BY-NC rulings (GAP_REGISTER #67).
+- **Interim discipline, adopted now:** (i) rehost no Kaiko PDF; (ii) mirror no Kaiko database; (iii)
+  never label a desk output as a Kaiko rate; (iv) attribute the *method* to Kaiko's published
+  rulebooks in internal docs; (v) treat any diff-against-Kaiko-values as blocked until the ruling,
+  since values are the API-gated, database-right-protected part.
+
+**Practical consequence: the licence question does not block the work.** The desk can build and use
+a VWM+TWAP reference rate over self-collected trades today. What it cannot do without a ruling is
+benchmark that rate *against Kaiko's published values*.
+
 
 
