@@ -966,3 +966,35 @@ economic concept similarity, and low across-theme correlation."* Their replicati
 61.3% (drop factors never significant originally) → **82.4% (alpha rather than raw return — the single
 biggest step)** → 82.4% (Bayesian multiple testing) → 82.4% (93 countries). **The disagreement is
 mostly one modelling choice, not a data dispute.**
+
+---
+
+## #70 — TRANSFER-LATENCY IS DIRECTIONAL EXPOSURE, AND ASSET CHOICE IS THE LEVER
+_CN frontier miner, 2026-07-26. Origin: primary era text — 8btc thread-53689 (2017-05-02), mined via
+Wayback; full provenance in `docs/graveyard.md` under `era_crossvenue_fiat_premium_arb` 4th instance._
+
+**THE INSIGHT, AND WHY A DEAD TRADE PRODUCED A LIVE RULE.** The trade itself (CN↔Poloniex 「搬砖」) is
+graveyarded and stays graveyarded. But the era traders had a name for a risk the desk currently treats
+as a fee: 「搬砖砸脚」 — *"moving bricks and dropping one on your own foot"* — the fact that while value
+is in flight between venues it is **unhedged, un-exited directional exposure**, not a transfer cost.
+
+**WHAT THEY DID ABOUT IT (both mitigations generalise):**
+1. **Move on the fastest-confirming asset, not the "natural" one.** They deliberately transferred via
+   XRP / XLM / NEO rather than BTC, and stated plainly that **BTC works badly, especially under network
+   congestion.** Transfer *asset* is a free choice; settlement time is the thing being optimised.
+2. **Only move when short-term momentum favours the direction you are exposed to** (they used 30-min
+   or faster candles). In-flight drift is not symmetric if you get to choose when to start.
+
+**WHY IT MATTERS HERE.** Any time the desk moves collateral between venues, rebalances across
+exchanges, or unwinds a cross-venue position, it holds exactly this exposure. Worth checking:
+- does the desk's cost model treat inter-venue transfer as a **fee**, or as **fee + in-flight variance**?
+  If the former, cross-venue rebalancing is being systematically under-priced, and the under-pricing
+  scales with the transferred notional and the chain's confirmation time;
+- is the transfer asset **chosen**, or defaulted to whatever is being moved? A stablecoin on a fast
+  chain versus BTC on-chain is a large difference in in-flight exposure for the same economic move.
+
+**STATUS: inbox item, not a rail.** This is a hypothesis about the desk's own cost model, generated
+from era text — it has NOT been checked against `data/cost_model.json` or the executor (this run is
+research-frozen and may not read/modify execution paths beyond cataloguing). The next cycle that owns
+execution should verify whether in-flight variance is priced, and either close this as already-handled
+or size the gap. **Do not treat as adopted until that check runs.**

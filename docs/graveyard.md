@@ -81,3 +81,58 @@ index (SSRN 403s from this box). Per the desk's own rule a SUMMARY-ONLY claim ma
 the graveyard. It stays provisional in `docs/research/deep_sweep/LIT_a_failed_replication.md` F11
 until primary text is read. Recording the abstention because the temptation to round it up is
 exactly how a phantom prior gets installed permanently.
+
+---
+
+### era_crossvenue_fiat_premium_arb — FOURTH INSTANCE (CN 2017, primary text) — CORROBORATED + MECHANISM REFINED
+_CN frontier miner, 2026-07-26. Basis: `economic`. Not a new kill — a fourth independent era instance
+of an already-dead class, added because it supplies the mechanism detail the other three lacked._
+
+**SOURCE (dead-forest, Wayback-only).** `8btc.com/thread-53689-1-1.html` — 「P网搬砖简明指南（以及一种
+交易策略）」("Concise guide to Poloniex banzhuan (and a trading strategy)"), 巴比特/8btc BTC forum,
+posted 2017-05-02, capture `20171019172042`. 8btc.com, chainnode.com and Baidu Tieba are ALL
+unreachable from this box — this ground exists only in the archive. Mined to reply-depth: OP + replies
+at depth 1 and 2 (quoted-reply chains), 7 substantive posts.
+
+**WHAT THE ERA TRADERS ACTUALLY DOCUMENTED.** The 2017 bull began on foreign venues (Poloniex 「P网」,
+Bittrex 「B网」), so domestic venues (比特时代 BTC Trade, 云币网 Yunbi — collectively 「果盘」) lagged by
+**up to 10%**. The OP states the binding barrier outright: **domestic platforms could not withdraw BTC**
+(「国内不能提比特币」) — which is *why* the domestic price sat below the foreign price. Claimed economics:
+gap >10%, net **~3% after fees**, called 「无风险获利」(riskless profit).
+
+**WHY THIS IS THE SAME KILL, NOT A NEW EDGE.** Identical to the three instances already recorded: the
+premium is rent on a withdrawal/permissions barrier, harvestable only by whoever holds the rail. The
+replies make the permissions barrier explicit — Poloniex **did not accept mainland registrations**, so
+the workaround was to **select "Hong Kong" as your country** (post #3), and KYC tiers capped you at
+$2,000 until you uploaded ID to reach $25,000 (posts #5/#8). Same shape as the 2013 Bitcointalk
+「fly the cash to Hong Kong」 instance: a logistics-and-permissions problem wearing a trade's clothes.
+
+**THE NEW DETAIL — HOW THE ARB ROUTED *AROUND* THE BARRIER.** The other three instances never explained
+how anyone transacted at all under a withdrawal freeze. This one does: **BTC was frozen, altcoins were
+not.** The trade moved value on the fastest-confirming altcoin rail — XRP 瑞波币 is the worked example,
+with XLM 恒星币, ZEC, SC and NEO 小蚁股 named at depth (post #9). The OP explicitly warns **using BTC
+itself works badly, especially during network congestion**. So the barrier was asset-specific, and the
+arb survived exactly as long as *some* asset had an open rail.
+
+**THE PART THAT IS STILL LIVE (routed to improvement_inbox #58, not to capital).** The OP's risk
+framing is the era's name for transfer-latency risk — 「搬砖砸脚」*"moving bricks and dropping one on
+your own foot"*: your value is in flight, unhedged, while the price moves. His two mitigations are
+real execution doctrine and generalise to any cross-venue movement the desk makes:
+  1. 天时 (right timing) — move only when the gap is large AND the transferred asset is **rising on
+     30-min-or-faster candles**, so latency drift is favourable rather than symmetric;
+  2. 地利 (right ground) — pick the **fastest-confirming asset and fastest-withdrawing venue**.
+This is the correct instinct: in-flight time is directional exposure, and asset choice is the lever.
+
+**AND ONE GENUINELY SHARP OBSERVATION (depth-1 reply, post #1) worth preserving.** A replier argues the
+spread is the *lesser* half of the trade: with domestic BTC withdrawal frozen, domestic BTC supply is
+segmented and effectively **deflationary**, while Poloniex alts are BTC-denominated — so **the
+re-opening of withdrawals is itself a predictable catalyst** that would inflate foreign alt prices.
+That is a capital-control *regime-change* trade, not an arb, and it is the most sophisticated idea in
+the thread. Recorded here as era knowledge; NOT carded — the venues are dead, mainland rails are far
+more closed in 2026 than 2017, and the desk holds no way to test a 2017-specific segmentation.
+
+**CONNECTS TO THE LIVE 2026 RESULT.** This era's 10% gap versus today's measured CNY OTC premium std of
+**0.580%** is the barrier-vs-merchant-depth finding in axis #76 (data_axis_watchlist card 9): in 2017
+the rail was frozen and the premium was enormous; in 2026 the capital barrier is *higher* but a deep
+professional 承兑商 (OTC merchant) network arbitrages it to a quarter of Korea's. Barrier height sets
+the premium's ceiling; **merchant density sets where inside that ceiling it actually sits.**

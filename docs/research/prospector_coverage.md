@@ -186,8 +186,9 @@ ITEMS THIS RUN (bounded per completion contract — depth maxed, breadth bounded
    not scattered): what drove the CNY premium, what killed each era of it, where the barrier sat.
    Plus dark-forest #2: extend the CN lexicon in the operator library with every new term learned.
 3. IF BUDGET REMAINS: Gitee / CN-GitHub repo chain (vn.py lineage, factor libraries) per OP-001.
-STATUS: **item 1 CLOSED to depth (results below). Item 2 NOT STARTED — honest, not padded; item 1
-absorbed the run. Item 2 + 3 carry to CN session 2 as the FIRST items.**
+STATUS: **item 1 CLOSED to depth. Item 2 OPENED after item 1 committed — ground surveyed, one thread
+mined to reply-depth, one graveyard entry + one inbox item + one operator produced. The CN era archive
+is NOT exhausted; it is now MAPPED. Item 3 not started.**
 
 #### ITEM 1 — CLOSED. Axis #76 un-parked, ingested, screened. [§33: screened -> data/cny_otc_premium_history.jsonl]
 THE PARKED CLAIM WAS WRONG. #76 sat 4 days on *"no clean free API found; TradingView script is a
@@ -242,7 +243,58 @@ DEPTH LINE: axis #76 — **exhausted for this route**: live routes probed both s
 route parameter-attacked 10 ways, CDX-replayed to its floor, series cross-validated against two
 independent constructions, screened across 4 target-horizon cells, quantization and timezone
 robustness both tested, and the adjacency instance tested and closed. Not surface, not breadth-theater.
-NEXT RUN TAKES FIRST: (1) era-archaeology — `搬砖` banzhuan-era threads on 8btc/Babbit + ChainNode +
-Tieba via Wayback (unstarted this run); (2) Gitee / CN-GitHub repo chain per OP-001.
-OPEN QUESTION CARRIED (diaspora): CNY OTC has left Huobi — the live books are on OKX and Binance P2P.
-Where did the *discussion* go? (OKX/Bitget/Gate CN communities, CN-language Telegram/X.)
+#### ITEM 2 — OPENED, ground MAPPED, one thread mined to reply-depth. NOT exhausted. [§33: killed -> docs/graveyard.md era_crossvenue_fiat_premium_arb 4th instance]
+GROUND SURVEY (the era-archaeology precondition — do this before hunting, it is one cheap call):
+**8btc.com, chainnode.com and Baidu Tieba are ALL unreachable from this box.** This is genuine dead
+forest: the ground exists only in Wayback. CDX confirms the old Discuz structure is archived
+(`8btc.com/forum-1-1.html` back to 2013-10-26; `chainnode.com/forum-108-1.html`, `forum-110...`).
+**Note for the next run: `chainnode.com/post/70078` — a 「比特币搬砖套利攻略」 surfaced by search — has
+ZERO CDX captures. It is visible in search results but unreadable. Do not spend budget re-finding it.**
+- MINED TO DEPTH: `8btc.com/thread-53689-1-1.html` 「P网搬砖简明指南（以及一种交易策略）」(2017-05-02,
+  capture 20171019172042) — OP + reply chains at depth 1 and 2, 7 substantive posts.
+- **ENCODING TRAP HIT AND SOLVED (now OP-033):** the page is **GBK**, not UTF-8. Decoded as UTF-8 it is
+  solid mojibake — indistinguishable from a corrupt capture, and the natural move is to discard the
+  source. That would have produced a false *"CN era boards are unreadable"* conclusion. Pre-2018
+  regional forums are gb2312/gbk/big5/euc-kr/shift_jis; the dark-forest mandate and this operator are
+  now permanently paired.
+- FINDINGS ROUTED (nothing carded as tradeable — the class is already graveyarded and stays so):
+  → **graveyard**: 4th independent instance of `era_crossvenue_fiat_premium_arb`, with the mechanism
+    detail the other three lacked. Gap up to **10%**, ~3% net after fees, and the binding barrier named
+    outright: **domestic venues could not withdraw BTC**. The replies expose the permissions layer
+    (Poloniex refused mainland registration → users selected "Hong Kong"; KYC capped $2k until ID
+    upload). **The new mechanism detail: BTC was frozen but ALTCOINS WERE NOT** — the arb routed around
+    the barrier on the fastest-confirming rail (XRP worked example; XLM/ZEC/SC/NEO named at depth), and
+    the OP explicitly warns BTC itself works badly under congestion. The barrier was asset-specific.
+  → **improvement_inbox #70**: the one still-live idea. 「搬砖砸脚」 ("dropping a brick on your own
+    foot") is the era's name for **transfer latency as unhedged directional exposure**, with two
+    generalising mitigations: move on the fastest-confirming asset (a free choice), and start the move
+    only when short-term momentum favours your exposure. Open question for whoever owns execution:
+    does `cost_model` price inter-venue transfer as a fee, or as fee + in-flight variance? NOT checked
+    this run (research freeze) — filed as hypothesis, not adopted.
+  → NOT carded, recorded as era knowledge: a depth-1 reply argues the frozen-withdrawal regime made
+    domestic BTC supply **segmented and deflationary**, making the *re-opening* a predictable catalyst.
+    Sophisticated, but untestable now — dead venues, and 2026 mainland rails are more closed than 2017.
+- **CONNECTS THE TWO ITEMS (why they were paired, not scattered):** 2017's 10% gap vs 2026's 0.580%
+  premium std is exactly the barrier-vs-merchant-depth finding from item 1. In 2017 the rail was frozen
+  and the premium was enormous; in 2026 the capital barrier is *higher* yet a deep 承兑商 (OTC merchant)
+  network grinds the premium to a quarter of Korea's. **Barrier height sets the ceiling; merchant
+  density sets where inside it the premium sits.** Era archaeology paid for the live axis, as designed.
+
+DEPTH LINE (per the depth mandate — honest, per lead):
+- axis #76 (item 1): **EXHAUSTED for this route** — both sides of two live books probed (393 ads),
+  history endpoint parameter-attacked 10 ways, CDX-replayed to its floor, cross-validated against two
+  independent constructions, screened across 4 target-horizon cells, quantization + timezone robustness
+  both tested, and the adjacency instance (bitcoin-data.com) tested and closed NEGATIVE.
+- 8btc thread-53689 (item 2): **reply-chain ≥2** (quoted-reply chains at depth 2 gave the permissions
+  and KYC mechanics the OP omitted — the depth outranked the surface, exactly as the mandate predicts).
+- 8btc / ChainNode boards: **SURVEYED ONLY, explicitly NOT exhausted.** One thread of an archived
+  multi-board Discuz. This is the honest state — no "EXHAUSTED" claim is made or earned.
+NOT DONE THIS RUN (named, not buried): item 3 (Gitee/CN-GitHub repo chain, OP-001); Zhihu/Xueqiu/
+JoinQuant/BigQuant BBSs; Bilibili quant lectures (video is now readable — `fetch_video_transcript.py
+--bilibili`, and NO CN video was tried this run, so nothing is video-locked and nothing was logged).
+NEXT RUN TAKES FIRST: (1) section-by-section exhaustion of `8btc.com/forum-*` era boards via OP-021
+board-tail pagination + OP-020 whole-thread extraction, now that OP-033 makes them readable;
+(2) Gitee/CN-GitHub repo chain per OP-001.
+OPEN QUESTION CARRIED (diaspora, standing): CNY OTC has left Huobi (`totalCount=0` on a live 200) — the
+books are now on OKX C2C and Binance P2P. Where did the *discussion* go? (OKX/Bitget/Gate CN
+communities, CN-language Telegram/X, overseas Zhihu mirrors.)

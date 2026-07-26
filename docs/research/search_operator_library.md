@@ -467,3 +467,26 @@ marked ✓ were CONFIRMED IN USE this run (2026-07-26) against live CN pages/API
 | 梭哈 | suoha | all-in (from "show hand") | retail sentiment marker |
 | 合约党 | heyue dang | the perp-contract crowd | finds derivatives-retail cohort discussion |
 | 走势图 | zoushitu | trend chart | pairs with 历史 to find chart pages that have a data endpoint behind them |
+
+### OP-033 legacy regional forums are NOT UTF-8 — decode before you judge     [active]
+class: extraction
+origin: CN frontier miner session 1, 8btc era thread (2026-07-26)
+validated-gain: prevented discarding a live find as a corrupt capture. `8btc.com/thread-53689-1-1.html`
+  (Discuz, 2017) is **GBK/GB2312**. Decoded as UTF-8 it renders as solid mojibake — the exact signature
+  of a broken/truncated archive capture, and the natural next move is to drop the source and move on.
+  Re-decoded as GBK it is clean primary text and produced a graveyard entry plus an execution rule.
+technique: for any pre-~2018 regional forum, archive capture, or national-portal page, do NOT trust the
+  default decode. (1) Read the declared charset (`<meta charset>` / `Content-Type`) — legacy Discuz,
+  phpBB and vBulletin installs commonly declare gb2312, gbk, big5, euc-kr, shift_jis, windows-1251;
+  (2) treat mojibake as an ENCODING hypothesis, never as evidence the capture is bad; (3) decode with
+  `errors='replace'` so a few bad bytes don't abort the whole page. Wayback serves the ORIGINAL bytes
+  under the `id_` raw flag, so the original charset — not UTF-8 — is what you get.
+adaptations: CN gbk/gb2312 (simplified, mainland), big5 (traditional, TW/HK); KR euc-kr; JP shift_jis /
+  euc-jp; RU windows-1251/koi8-r; TR iso-8859-9. This is a general precondition for ERA-ARCHAEOLOGY in
+  every region — the older the ground, the less likely it is UTF-8, so the dark-forest mandate and this
+  operator are permanently paired. Pair with OP-027 (a zero may be lexical) and OP-030 (a zero is a
+  claim about your method until proven otherwise): a mojibake page is the *extraction-layer* form of the
+  same false negative.
+counterfactual: MEDIUM-HIGH — the thread was the run's only era find; discarding it as corrupt would
+  have produced a false "CN era boards are unreadable" conclusion and, on the video-log precedent,
+  could have gated a purchase or a "ground unreachable" note.
