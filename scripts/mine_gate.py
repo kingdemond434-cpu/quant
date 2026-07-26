@@ -53,7 +53,9 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--explain", action="store_true",
                     help="print the verdict but always exit 0 (for humans, not for the shells)")
-    a = ap.parse_args()
+    # --explain is retained for CLI compatibility but no longer branches: BOTH paths exit 0
+    # now that mining is never throttled, so the parsed value is deliberately unused.
+    ap.parse_args()
     try:
         suspended, reason = evaluate()
     except Exception as exc:

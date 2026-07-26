@@ -66,6 +66,12 @@ _CONSECUTIVE = 5           # readings required below the line (no single-glitch 
 _POLL_SEC = 60.0
 _MIN_HW = 500.0            # ignore dust/empty accounts
 _HW_CONFIRM = 3            # consecutive readings required to establish a NEW high-water
+# ALL major stablecoins count as cash (2026-07-26, principal sign-off). A leg sold into USDC/
+# FDUSD/TUSD used to leave legs_v without arriving in the cash term -- it vanished from the
+# measure and read as a phantom loss. Stables are ~$1 and do not swing, so including them
+# preserves the faucet-noise exclusion that motivated the narrow measure (volatile faucet bags
+# like WBTC/PAXG/YFI remain excluded).
+_STABLES = ("USDT", "USDC", "FDUSD", "TUSD", "BUSD", "DAI")
 _LEG_GRACE_SEC = 3600.0    # keep crediting a real spot leg this long after its short closes
 
 
@@ -138,13 +144,13 @@ def combined_equity(state: dict) -> float | None:
         bals = _signed(_SPOT_BASE, "/api/v3/account", spt)["balances"]
         px = {t["symbol"]: float(t["price"])
               for t in _req(f"{_SPOT_BASE}/api/v3/ticker/price")}
-        legs_v, usdt = 0.0, 0.0
+        legs_v, usdt = 0.0, 0.0          # usdt = COMBINED stable cash (see _STABLES)
         for b in bals:
             amt = float(b["free"]) + float(b["locked"])
             if amt <= 0:
                 continue
-            if b["asset"] == "USDT":
-                usdt = amt
+            if b["asset"] in _STABLES:
+                usdt += amt                    # ALL stable cash, not USDT alone (2026-07-26)
             elif b["asset"] + "USDT" in creditable:
                 legs_v += amt * px.get(b["asset"] + "USDT", 0.0)
         if "usdt_baseline" not in state:
