@@ -75,3 +75,21 @@ def test_carry_bleed_alarms_on_any_drain_with_no_harvest() -> None:
     r = carry_bleed_report(funding=-5.0, spot_pnl=-10.0, fut_pnl=0.0)
     assert r.alert
     assert r.harvest_eaten_frac == float("inf")
+
+
+def test_carry_bleed_alarms_on_a_large_POSITIVE_non_funding_pnl() -> None:
+    # delta-neutral target is ~0 in BOTH signs: a windfall this size is a naked/untracked leg
+    # (the 2026-07-26 stranded-spot class), never edge. A one-sided alarm called this "clean".
+    r = carry_bleed_report(funding=100.0, spot_pnl=500.0, fut_pnl=-100.0)  # non-funding +300
+    assert r.alert
+    assert bool(r) is False
+    assert r.non_funding_pnl == 300.0
+    assert "BLEED(inverted)" in r.verdict
+    assert "NAKED" in r.verdict
+
+
+def test_carry_bleed_small_positive_non_funding_is_still_clean() -> None:
+    # only a windfall >= alert_frac of the harvest is a broken hedge; noise must not page
+    r = carry_bleed_report(funding=100.0, spot_pnl=60.0, fut_pnl=42.0)  # non-funding +2
+    assert not r.alert
+    assert "clean" in r.verdict

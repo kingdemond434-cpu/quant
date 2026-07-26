@@ -39,8 +39,35 @@ def _buckets(closes: list[dict]) -> dict[str, dict]:
     return out
 
 
+def _tape_sync(trades: list[dict]) -> dict:
+    """Mirror the rolling buffer into the permanent execution tape, and report the margin.
+
+    The buffer is capped at 500 events (run_cashcarry_executor._log_trade). At the observed event
+    rate that is ~18.6 days of tape against this script's 14-day window -- only ~4.6 days of
+    headroom before the buffer starts silently eating the window it is asked to analyse. Backfill
+    is idempotent, so running it here makes the tape self-heal daily even when the executor is on
+    an older build; the margin is surfaced so the squeeze can never arrive unannounced.
+    """
+    try:
+        from libs.execution import execution_tape
+        added = execution_tape.backfill(trades)
+        cov = execution_tape.coverage()
+        stamps = sorted(str(x.get("closed") or x.get("opened") or "") for x in trades if x)
+        buf_days = 0.0
+        if len(stamps) >= 2 and stamps[0] and stamps[-1]:
+            buf_days = (datetime.fromisoformat(stamps[-1])
+                        - datetime.fromisoformat(stamps[0])).total_seconds() / 86400
+        return {"taped": cov["n"], "tape_days": cov["days"], "backfilled": added,
+                "buffer_days": round(buf_days, 2),
+                "window_margin_days": round(buf_days - _WINDOW_D, 2),
+                "buffer_squeezing_window": bool(buf_days and buf_days < _WINDOW_D)}
+    except Exception as e:  # observer -- never break the daily forensics run
+        return {"error": f"{type(e).__name__}: {e}"}
+
+
 def main() -> None:
     trades = json.loads(_TRADES.read_text("utf-8")) if _TRADES.exists() else []
+    tape = _tape_sync(trades)
     closes = [x for x in trades if x.get("event") == "close" and x.get("held_hours") is not None]
     cutoff = (datetime.now(tz=UTC) - timedelta(days=_WINDOW_D)).isoformat()
     closes = [x for x in closes if str(x.get("closed", "")) >= cutoff]
@@ -79,6 +106,11 @@ def main() -> None:
             flags.append(f"symbol {s} structurally bleeding: ${net:.0f} over {n} trades "
                          f"({bps:.0f} bps)")
 
+    if tape.get("buffer_squeezing_window"):
+        flags.append(f"trade-log buffer holds {tape['buffer_days']}d < the {_WINDOW_D}d forensics "
+                     "window -- this analysis is now silently losing its own tail; the permanent "
+                     "tape (data/moat/execution_tape/) has the full history, read from there")
+
     out = {
         "updated": datetime.now(tz=UTC).isoformat(),
         "n_closes": len(closes),
@@ -86,6 +118,7 @@ def main() -> None:
         "baseline_funding_class": {"n": len(base), "net": round(bn, 2),
                                    "bps": round(1e4 * bn / bnot, 2) if bnot else 0.0},
         "post_gate_baseline_opens": len(post_gate_base),
+        "execution_tape": tape,
         "worst_symbols": [{"symbol": s, "n": n, "net": round(net, 2), "bps": round(bps, 1)}
                           for s, n, net, bps in worst],
         "flags": flags,

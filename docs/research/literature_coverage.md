@@ -59,3 +59,35 @@ freeze-protected `scripts/`, `libs/`, executor, or rails to close them.
 - The 3 non-T1 owing items: Upbit portal licence (T3), bitFlyer ToS behind WAF (T2), NAVER
   DataLab built-but-unrun (T3).
 - Whichever of the four literature grounds above is left un-exhausted, named per-ground below.
+
+---
+
+## SESSION NOTE 2026-07-26 (literature deep-miner — run 2; run 1 died before resolving anything)
+
+**Ground truth at start, recomputed not remembered:** the 2026-07-25 note above wrote its plan
+header and then died — all three of its items still say "STATUS: see resolution below" with no
+resolution beneath, and `docs/research/deep_sweep/` is EMPTY. That is run 1 producing zero durable
+output, exactly the failure the completion contract names. Per RESUME-DO-NOT-RESTART I finish run
+1's items before opening new ground. `mine_gate.py` → CONVERT-FIRST, 5 owing, weighted 24, top tier
+T1. `source_backlog_next.py` → 2 pending verification, 3 pending legitimacy.
+
+### ITEMS TAKEN THIS RUN
+- **[T1-a] Kaiko rulebook INTERIOR** — run 1's stated gap: interior never extracted ("no PDF
+  tooling on this box"), ESMA register never independently checked. Both are single-source failure
+  modes that already produced one refuted claim on this card. — STATUS: below.
+- **[T1-b] Coin Metrics community CC BY-NC ruling** from CURRENT primary terms (run 1 read only the
+  repo LICENSE; the API terms page redirected and was left unread). A 15-year backfill axis is
+  blocked behind an unread document. — STATUS: below.
+- **[LIT-a] Failed-replication + retraction mining** — free graveyard entries. — STATUS: below.
+- **[LIT-b] Forgotten-literature archaeology** — pre-2015 microstructure/FX mechanisms never tested
+  on crypto perps (one-time-exhaustible layer). — STATUS: below.
+- **[LIT-c] AI/agent/LLM methods frontier** — the engine-is-a-dig-target clause. — STATUS: below.
+- **[LIT-d] Non-English academic + theses** — charter §14 parity, doubles as the ≥25%
+  search-space-expansion reserve. — STATUS: below.
+
+Each LIT ground writes its own durable file under `docs/research/deep_sweep/` AS IT GOES, so a
+mid-run kill leaves artifacts rather than a header. Graveyard priors loaded and binding: price-only
+alpha dead (420/0), retail TA canon dead (era natural experiment), regional-premium class exhausted
+bar kimchi, multilingual attention dead at daily, DeFi aggregates dead at daily, price-numerator
+ratios contaminated by construction at daily 20d-z, conditioning overlays dead.
+

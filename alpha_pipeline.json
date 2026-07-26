@@ -1,5 +1,5 @@
 {
-  "generated": "2026-07-25T08:24:55.056268+00:00",
+  "generated": "2026-07-26T02:28:37.639417+00:00",
   "n_alphas": 8,
   "n_survived": 0,
   "deployed": [
@@ -9,7 +9,7 @@
     {
       "alpha": "crypto::ls_contrarian",
       "category": "derivative-data",
-      "expected_sharpe": 6.15,
+      "expected_sharpe": 4.15,
       "gates": "6/9",
       "survived": false,
       "stage": "backtest",
@@ -31,9 +31,21 @@
       "retire_check": "REJECT: fails gates"
     },
     {
+      "alpha": "crypto::xsec_price_mom",
+      "category": "crypto-sleeve",
+      "expected_sharpe": 0.83,
+      "gates": "7/9",
+      "survived": false,
+      "stage": "backtest",
+      "orthogonality": "unknown",
+      "crowding_risk": "medium",
+      "expected_half_life": "unknown-until-forward",
+      "retire_check": "REJECT: fails gates"
+    },
+    {
       "alpha": "crypto::ts_trend",
       "category": "crypto-sleeve",
-      "expected_sharpe": 0.74,
+      "expected_sharpe": 0.8,
       "gates": "7/9",
       "survived": false,
       "stage": "backtest",
@@ -45,19 +57,7 @@
     {
       "alpha": "crypto::basis_carry",
       "category": "crypto-sleeve",
-      "expected_sharpe": 0.7,
-      "gates": "7/9",
-      "survived": false,
-      "stage": "backtest",
-      "orthogonality": "unknown",
-      "crowding_risk": "medium",
-      "expected_half_life": "unknown-until-forward",
-      "retire_check": "REJECT: fails gates"
-    },
-    {
-      "alpha": "crypto::xsec_price_mom",
-      "category": "crypto-sleeve",
-      "expected_sharpe": 0.69,
+      "expected_sharpe": 0.58,
       "gates": "7/9",
       "survived": false,
       "stage": "backtest",
@@ -69,8 +69,8 @@
     {
       "alpha": "crypto::taker_flow",
       "category": "crypto-sleeve",
-      "expected_sharpe": 0.58,
-      "gates": "7/9",
+      "expected_sharpe": 0.51,
+      "gates": "6/9",
       "survived": false,
       "stage": "backtest",
       "orthogonality": "unknown",
@@ -81,7 +81,7 @@
     {
       "alpha": "crypto::funding_momentum",
       "category": "crypto-sleeve",
-      "expected_sharpe": 0.36,
+      "expected_sharpe": 0.37,
       "gates": "6/9",
       "survived": false,
       "stage": "backtest",
@@ -93,8 +93,8 @@
     {
       "alpha": "crypto::oi_divergence",
       "category": "derivative-data",
-      "expected_sharpe": -2.86,
-      "gates": "4/9",
+      "expected_sharpe": -6.14,
+      "gates": "3/9",
       "survived": false,
       "stage": "backtest",
       "orthogonality": "unknown",

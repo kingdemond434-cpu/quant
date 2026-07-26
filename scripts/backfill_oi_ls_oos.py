@@ -64,8 +64,19 @@ def _load_panel(dirp: Path, field: str) -> pd.DataFrame:
 
 
 def diff_verify() -> dict:
-    """Archive daily means vs the forward point-in-time collector. Corr is the alignment test
-    (a point snapshot vs a daily mean cannot match exactly); scale via median relative diff."""
+    """Archive vs the forward collector -- compared LIKE FOR LIKE.
+
+    The forward collector is a POINT SNAPSHOT: measured 2026-07-26, it writes 1.36 rows per
+    symbol-day, every one stamped 00:00-00:08 UTC. The archive carries two different quantities per
+    day: `oi`/`ls` are the mean of all 288 5-min buckets, and `oi_first`/`ls_first` are the 00:00
+    bucket. Diffing the snapshot against the 24h MEAN therefore compares two different statistics
+    and scores their intraday drift as misalignment -- it aborted the whole backfill at ETHUSDT
+    oi_corr 0.8403 while the reconstruction was fine. Against the matching `oi_first` field the same
+    five symbols score 0.9609-0.9964 (measured, this file's own run).
+
+    The thresholds below are UNCHANGED -- this fixes what is being compared, not how strictly.
+    The mean-based numbers are still reported alongside as a drift diagnostic.
+    """
     fwd = pd.read_parquet(FWD)
     fwd["date"] = pd.to_datetime(fwd["ts"]).dt.date.astype(str)
     daily = fwd.groupby(["date", "symbol"])[["open_interest", "ls_ratio"]].mean().reset_index()
@@ -78,21 +89,30 @@ def diff_verify() -> dict:
         for ln in f.read_text("utf-8").splitlines():
             with contextlib.suppress(Exception):
                 r = json.loads(ln)
-                arch[r["date"]] = (r["oi"], r["ls"])
+                # point-in-time first, falling back to the daily mean for older rows that predate
+                # the *_first fields (those legitimately have only the mean available)
+                arch[r["date"]] = (r.get("oi_first", r["oi"]), r.get("ls_first", r["ls"]),
+                                   r["oi"], r["ls"])
         sub = daily[daily["symbol"] == sym]
         join = [(a, b, *arch[d]) for d, a, b in
                 zip(sub["date"], sub["open_interest"], sub["ls_ratio"], strict=False)
                 if d in arch]
         if len(join) < 10:
             continue
-        j = np.array(join, dtype="float64")            # cols: fwd_oi, fwd_ls, arch_oi, arch_ls
+        # cols: fwd_oi, fwd_ls, arch_oi_pit, arch_ls_pit, arch_oi_mean, arch_ls_mean
+        j = np.array(join, dtype="float64")
         oi_corr = float(np.corrcoef(j[:, 0], j[:, 2])[0, 1])
         ls_corr = float(np.corrcoef(j[:, 1], j[:, 3])[0, 1])
         oi_rd = float(np.median(np.abs(j[:, 2] - j[:, 0]) / np.abs(j[:, 0])))
         ls_rd = float(np.median(np.abs(j[:, 3] - j[:, 1]) / np.abs(j[:, 1])))
         checks.append({"symbol": sym, "days": len(join),
                        "oi_corr": round(oi_corr, 4), "ls_corr": round(ls_corr, 4),
-                       "oi_med_rel_diff": round(oi_rd, 4), "ls_med_rel_diff": round(ls_rd, 4)})
+                       "oi_med_rel_diff": round(oi_rd, 4), "ls_med_rel_diff": round(ls_rd, 4),
+                       "compared_against": "archive point-in-time (oi_first/ls_first)",
+                       "oi_corr_vs_daily_mean": round(
+                           float(np.corrcoef(j[:, 0], j[:, 4])[0, 1]), 4),
+                       "ls_corr_vs_daily_mean": round(
+                           float(np.corrcoef(j[:, 1], j[:, 5])[0, 1]), 4)})
         worst["oi_corr"] = min(worst["oi_corr"], oi_corr)
         worst["ls_corr"] = min(worst["ls_corr"], ls_corr)
     if not checks:
@@ -142,6 +162,11 @@ def main() -> None:
     prices = _load_panel(PX_DIR, "close")
     common = piv_oi.columns.intersection(piv_ls.columns).intersection(prices.columns)
     piv_oi, piv_ls, prices = piv_oi[common], piv_ls[common], prices[common]
+    # Align the DATE index too, not just the symbol columns. The metric panels and the price panel
+    # cover different spans, so a row mask built on one (line below: `enough`) is unalignable
+    # against the others -- which crashed this backfill every run, behind the diff-verify abort.
+    idx = piv_oi.index.intersection(piv_ls.index).intersection(prices.index).sort_values()
+    piv_oi, piv_ls, prices = piv_oi.loc[idx], piv_ls.loc[idx], prices.loc[idx]
     print(f"panel: {len(common)} symbols x {len(piv_oi)} dates")
 
     cut = pd.Timestamp(HOLDOUT_END)

@@ -47,7 +47,32 @@ No prior data-axis watchlist exists (this is this mission's first run). Nothing 
 
 ## SOURCE CARDS (graded; full genealogy in `data/data_universe_map.json`)
 
-### 1. Upbit Historical Market Data portal — grade: needs-legitimacy-review (data itself verified-clean; commercial-use licence is the open question, re-graded 2026-07-25)
+### 1. Upbit Historical Market Data portal — grade: needs-legitimacy-review (data itself verified-clean; commercial-use licence is the open question, re-graded 2026-07-25) [§33: deferred(2026-08-15) tier:3]
+> **§33 DISPOSITION 2026-08-15 — DATED DEFERRAL ON A HUMAN RULING. Unlike bitFlyer, this licence
+> HAS been read; the blocker is not access, it is AUTHORITY. An agent may not self-approve it.**
+> - **THE QUESTION, STATED SO THE PRINCIPAL CAN ANSWER IT IN ONE LINE:** Upbit's usage guide
+>   explicitly PERMITS *"use for non-commercial and private purposes such as developing one's own
+>   strategy and backtesting"* and *"storing and utilizing data on a personal PC"*, and explicitly
+>   PROHIBITS *"commercial use, redistribution, processing, and sale"* including *"services or
+>   platforms to help others make investment decisions"*. **A prop desk trading only its own
+>   capital, redistributing nothing and advising no one, sits precisely on that line.** Research
+>   and backtesting read as permitted; deploying a derived signal to trade own capital is the
+>   contested half. Two rulings are possible and both are workable — research-only, or full use.
+> - **THIS CARD DEFERS RATHER THAN CONVERTS BY ITS OWN INSTRUCTION** ("DO NOT BUILD A COLLECTOR
+>   YET"). Overriding that to book a conversion would be the §33 failure mode wearing a compliance
+>   costume: an UN-DEPLOYABLE signal is worthless now, not later (§13.1).
+> - **NOT LAUNDERED THROUGH THE LICENSED ALTERNATIVE EITHER.** Tardis covers `upbit` since
+>   2021-03-03 with a ToS that permits internal research, and converting through it would produce a
+>   real artifact — but it would convert CARD 6, not this one. Pointing this card at a Tardis
+>   artifact is exactly the fuzzy-credit laundering §33.16 exists to stop.
+> - **COST OF WAITING IS ZERO, unlike card 3:** the portal is a static archive back to 2017-10-24
+>   and destroys nothing while the ruling is pending. That is why this date is the monthly
+>   governance window (2026-08-15) and card 3's is 14 days.
+> - **UNBLOCKING STEP:** principal answers "research-only" or "full use" on the personal-vs-
+>   commercial scope. **Routed to GAP_REGISTER #67 (shared legitimacy-ruling row with the CC BY-NC
+>   question — one ruling session, two answers).**
+>
+> _Pre-deferral verification notes below (unchanged, still valid):_
 > **RE-VERIFIED 2026-07-25 (EN frontier miner, backlog burn-down). File downloaded, checksum
 > verified, values ground-truthed against the live API. 4 of 5 factual claims in the old card were
 > WRONG. The blocker has MOVED from "is the data real?" to "are we allowed to use it?"**
@@ -136,7 +161,33 @@ _Superseded original grading below (kept for the record):_
   failure modes: non-uniform start dates per data type (do not assume uniform depth).
 - **Grade: verified-clean** (portal existence + categories), pending format/auth confirmation.
 
-### 3. bitFlyer getexecutions + self-recorded candles — grade: needs-legitimacy-review (mechanism verified-clean, destroyed-at-source residual confirmed; ToS host WAF-blocked so licence is unread, re-graded 2026-07-25)
+### 3. bitFlyer getexecutions + self-recorded candles — grade: needs-legitimacy-review (mechanism verified-clean, destroyed-at-source residual confirmed; ToS host WAF-blocked so licence is unread, re-graded 2026-07-25) [§33: deferred(2026-08-09) tier:2]
+> **§33 DISPOSITION 2026-08-09 — DATED DEFERRAL, BLOCKER NAMED. A THIRD AND FOURTH INDEPENDENT
+> ROUTE TO THE ToS FAILED 2026-07-26. The licence is genuinely unread, so no verdict is written:
+> fabricating one would be exactly the hand-wave §13 exists to stop.**
+> - **ROUTE 3 — A DIFFERENT EGRESS ENTIRELY (the specific thing routes 1-2 could not test):** the
+>   ToS was requested from an off-VPS fetcher, i.e. a different IP and a different network path.
+>   `bitflyer.com/en-jp/terms` → **403**; `bitflyer.com/ja-jp/terms` → **403**. This kills the
+>   "it is only this VPS's IP" hypothesis — the block is not egress-specific.
+> - **ROUTE 4 — ALTERNATE HOSTS:** `lightning.bitflyer.com/terms` → 404, `.../docs/term` → 404,
+>   `bitflyer.com/en-jp/api-terms` → connection dropped, `bitflyer.jp/en-jp/terms` → does not
+>   resolve. The reachable docs page was re-read in full and carries **rate limits only, no licence
+>   language** — so the field cannot be closed from any surface that answers.
+> - **NO ATTEMPT WAS MADE TO DEFEAT THE BLOCK** (no proxy, no reader-service laundering, no UA
+>   games beyond a plain browser UA). §13 is a hard boundary, not a hurdle.
+> - **STATE: nothing prohibits use, nothing permits it.** That fails §13's "clear permitted-usage
+>   licence" test, so a forward recorder is NOT started. Four routes have now failed (direct VPS,
+>   Wayback/CDX, off-box egress, alternate hosts) — this is a documented search that failed, which
+>   is the evidence §28 requires, not a shrug.
+> - **UNBLOCKING STEP, SPECIFIC AND SINGLE:** a human (or any organ on a non-blocked network) opens
+>   `bitflyer.com/en-jp/terms` ONCE and pastes the data-usage clause into this card. One page-read
+>   closes the field.
+> - **WHY THE DATE IS SHORT (2026-08-09, 14 days):** the 31-day rolling wall means each day of
+>   delay permanently destroys a day of the only history that will ever be recoverable, and the
+>   backfill itself is ~32 minutes once permitted. A long deferral here is not patience, it is
+>   silent data destruction. **Routed to GAP_REGISTER #68.**
+>
+> _Pre-deferral verification notes below (unchanged, still valid):_
 > **RE-VERIFIED 2026-07-25 (EN frontier miner, backlog burn-down). First-party docs opened AND the
 > live API probed. This entry was graded on ">=4 Japanese blog posts" with no primary source — and
 > the bloggers were RIGHT on all three load-bearing claims. NO refutations. Logged as a case where
@@ -296,7 +347,41 @@ _Superseded original grading below (kept for the record):_
 - **Residual gap: pre-recorder-start L2 tick diffs are destroyed at source** — no free or paid
   provider reconstructs history the recorder didn't capture forward. Already logged, unchanged.
 
-### 7. Glassnode / CryptoQuant vendor-replacement — grade: **VERIFIED FREE PRIMARY FOUND for the metric class (Coin Metrics community), needs-legitimacy-review for production use (CC BY-NC) — re-graded 2026-07-25**
+### 7. Glassnode / CryptoQuant vendor-replacement — grade: **VERIFIED FREE PRIMARY FOUND for the metric class (Coin Metrics community), needs-legitimacy-review for production use (CC BY-NC) — re-graded 2026-07-25** [§33: wired tier:1 -> data/coinmetrics_flows.jsonl]
+> **§33 CONVERSION 2026-07-26 — FOUND became WIRED. `scripts/collect_coinmetrics_flows.py`,
+> BUILT AND RUN; the free primary is now INGESTED, DIFF-VERIFIED and SCREENED, not catalogued.**
+> - **INGESTED AT FULL ARCHIVE DEPTH (§33.7 depth parity — full history, not a slice):**
+>   `data/coinmetrics_flows.jsonl`, **9,866 daily rows** — btc **2010-07-18 → 2026-07-25** (5,852d,
+>   flows populated from 2011-04-24, 5,571 flow-days) and eth **2015-07-30 → 2026-07-25** (4,014d).
+>   The live keyless community API, not the stale repo CSV. **Trap logged for the operator library:
+>   the API pages from the END by default — without `paging_from=start` a 15-year archive silently
+>   returns three days and reads as a thin source.**
+> - **VERIFY-DON'T-TRUST — TWO DIFFS RUN, NOT REFERENCED.** (i) INTERNAL: d(SplyExNtv) vs
+>   (FlowIn−FlowOut) over 5,570d btc → **corr 0.999**, median residual ~0 of median flow; eth 4,012d
+>   → corr 0.758 (weaker, expected: ETH supply nets internal exchange transfers the directional
+>   series does not). (ii) EXTERNAL: CM `PriceUSD` vs Binance BTCUSDT, **3,265 overlapping days**,
+>   median **13.2 bps**.
+> - **A FIRST-PASS ASSUMPTION WAS REFUTED BY ITS OWN CHECK (§33.8, and the reason the check exists):**
+>   the price stamp was coded to CM's documented START-of-UTC-day convention. Measured, `PriceUSD[d]`
+>   sits **13.2 bps from Binance CLOSE[d] and 150.3 bps from OPEN[d]** — it is the END-of-day price.
+>   The screen alignment was corrected and re-run; the original build would have lagged every screen
+>   by one day. The check re-runs on every execution, so a re-stamp by CM surfaces as an error.
+> - **SCREENED ON THE FULL WINDOW (§26, audited `libs.research.axis_screen`, artifact gate ON):**
+>   **all four constructions logged, win or lose (§26.3 — reporting only the printer is p-hacking).**
+>   `cm_netflow_native_btc` n=5,549 IC −0.0075 → **SCREEN-WEAK**; `cm_netflow_over_exchange_supply_btc`
+>   n=5,549 IC +0.0095 → **SCREEN-WEAK**; eth native n=3,982 IC +0.0039 → **SCREEN-WEAK**; eth
+>   normalised n=3,982 IC +0.0031 → **SCREEN-WEAK**. All in `data/batch_coinmetrics_screen.json`
+>   and in research_memory (`--axis coinmetrics_flows`, 4 hypotheses + 1 dataset row).
+> - **THE NEGATIVE IS THE DELIVERABLE (§26.6):** the aggregate exchange-flow metric class carries no
+>   daily-horizon edge over 15 years. That is precisely the information $799/mo × 2 was being asked
+>   for, now owned at $0 with the vendors' own metric class measured FLAT.
+> - **⚠️ LICENCE — CC BY-NC 4.0, STILL OPEN, DELIBERATELY NOT SELF-APPROVED.** What was done here is
+>   internal research/verification/diff use by a private desk that redistributes nothing — the
+>   defensible interim scope named on this card. Using the series as a PRODUCTION signal input is a
+>   NonCommercial question and remains a human ruling. Stage A carries zero promotion authority in
+>   any case, so nothing downstream depends on the ruling today. **Routed to GAP_REGISTER #67.**
+>
+> _Superseded pre-conversion notes below (kept for the record):_
 > **RE-VERIFIED 2026-07-25 (EN frontier miner, backlog burn-down — the inbox #54 handoff, last
 > search-summary-provenance card). The claimed Dune path is key-gated and stays unverified; a
 > BETTER free primary was found, downloaded, and live-probed instead.**
@@ -355,7 +440,43 @@ _Superseded original grading below (kept for the record):_
   formulas are not.
 - **Grade: UNVERIFIED.** Do not present as an adopted replacement yet.
 
-### 8. Kaiko vendor-replacement — grade: **needs-monitoring (raw ticks) / RECONSTRUCTABLE (index methodology — re-graded 2026-07-25)**
+### 8. Kaiko vendor-replacement — grade: **needs-monitoring (raw ticks) / RECONSTRUCTABLE (index methodology — re-graded 2026-07-25)** [§33: wired tier:1 -> data/kaiko_vwm_reference_rate.jsonl]
+> **§33 CONVERSION 2026-07-26 — RECONSTRUCTABLE became RECONSTRUCTED. This card's own NEXT STEP
+> ("price the published VWM+TWAP rule against the desk's own cross-venue normalizer") was EXECUTED:
+> `scripts/reconstruct_kaiko_reference_rate.py`, built and run.**
+> - **THE RULE WAS RE-READ FROM THE VENDOR PAGE 2026-07-26 AND QUOTED, NOT PARAPHRASED:** *"The
+>   calculation window is split into equal time partitions, with each partition subject to a
+>   volume-weighted median — the price at the 50% cumulative volume mark — which is outlier-resistant
+>   by design"*, then *"greater weight to the most recent partitions, before a final time-weighted
+>   average"*, over *"only executed trades … with no order book data used"*, *"up to five exchanges"*.
+>   **NEW vs this card's 2026-07-25 reading: the cross-partition average is RECENCY-WEIGHTED, not a
+>   flat TWAP** — the card said "VWM + TWAP", which understates the rule.
+> - **RUN, NOT DESCRIBED:** `data/kaiko_vwm_reference_rate.jsonl` — **132 fixings** over a **11.99h
+>   joint 4-venue tape, 174,199 trades** (coinbase 139,661 / kraken 13,595 / bitfinex 10,733 /
+>   bitstamp 10,210), all keyless public REST. Gemini was **EXCLUDED with its reason recorded** (its
+>   public endpoint served 0.67h of the 12h window — no working backward pagination), rather than
+>   silently truncating everyone else's window to its own; that is Kaiko's own "data reliability"
+>   vetting criterion, applied.
+> - **THE ANSWER TO "IS THE DESK'S NORMALIZER ALREADY EQUIVALENT?" IS: ONLY IN CALM TAPE.**
+>   |VWM+TWAP − desk cross-venue VWAP| = **median 1.42 bps, p95 5.83 bps, max 6.98 bps**. But the
+>   stress that actually separates a median from a mean — one injected print 5% off market at 2% of
+>   window volume — moves the **VWM+TWAP 0.1 bps and the desk's VWAP 9.8 bps (~100×)**. A comparison
+>   run only on clean tape would have concluded "already equivalent" and been WRONG: the outlier
+>   resistance IS the value-add, and it is now owned at $0.
+> - **HONEST LIMITS, STATED NOT BURIED:** window length, partition count and the recency decay are
+>   NOT published (60min / 12×5min / linear ramp are DESK parameters), and the rulebook PDF interior
+>   is still unextracted (no PDF tooling on this box — the same limit this card already flagged). So
+>   this reproduces the METHOD, not Kaiko's exact fixing NUMBER. Constituent set is five clean public
+>   USD venues, not Kaiko's own vetted list (not public per-rate).
+> - **DEPTH CEILING, MEASURED NOT ASSUMED:** free public tick endpoints are ROLLING windows;
+>   bitstamp's `time=day` (24h) is the binding cap on a joint multi-venue tape. 12h is the archive
+>   floor reached, not a convenient slice (§32 bounded-honestly clause).
+> - **LICENCE:** nothing rehosted. The methodology PDFs were not redistributed; the rule was read
+>   from the public page and re-implemented. Trade data is the venues' own keyless public REST.
+> - Logged to research_memory (`--axis kaiko_reference_rate`); summary
+>   `data/batch_kaiko_reconstruction.json`.
+>
+> _Superseded pre-conversion notes below (kept for the record):_
 > **RE-VERIFIED 2026-07-25 (EN frontier miner, backlog burn-down). Same root defect as entry 6:
 > the grade had been written from search summaries. Two claims refuted.**
 > - **"Index methodology is proprietary and not reconstructable" — REFUTED.** Kaiko is an
@@ -619,7 +740,29 @@ MEV/mempool; GitLab/StackOverflow/NPM = developer-activity factor #65; Telegram/
 retail-attention layer, **one** source was built (mechanism-first, not volume); the rest are logged
 here as excluded, not silently dropped (charter s27 "log every negative").
 
-### 21. NAVER DataLab (Korean search-attention) — grade: needs-monitoring (built, unrun)
+### 21. NAVER DataLab (Korean search-attention) — grade: needs-monitoring (built, unrun) [§33: deferred(2026-08-09) tier:3]
+> **§33 DISPOSITION 2026-08-09 — THE COLLECTOR WAS RUN 2026-07-26. It did not produce an artifact,
+> and the honest disposition is a dated deferral rather than a manufactured one.**
+> - **RUN, VERBATIM OUTPUT:** `.venv/bin/python scripts/collect_naver_krsearch.py` →
+>   `collect_naver_krsearch: no NAVER_CLIENT_ID/SECRET (env or data/secrets/naver.json) --
+>   graceful skip, cycle stays green` (exit 0). `data/batch_krsearch_screen.json` **does not
+>   exist**. Re-confirmed there is no key on the box: `data/secrets/` holds binance/databento/fred/
+>   heartbeat/llm_panel/netlify/ngrok/ntfy — **no naver.json** — and no `NAVER_*` env var is set.
+> - **THIS WAS THE CHEAPEST ITEM IN THE BACKLOG AND IT STILL COULD NOT CONVERT.** That is worth
+>   recording rather than smoothing over: "built, unrun" reads like one command away, and the
+>   remaining step is not technical at all. Zero code is owed.
+> - **NO SUBSTITUTE PATH WAS TAKEN, DELIBERATELY.** `datalab.naver.com`'s web UI has an
+>   unauthenticated endpoint behind it, and scraping it would have produced a file today. That is
+>   the exact class this same session's page EXCLUDED as ToS-grey (Baidu Index, Weibo/Zhihu,
+>   Coinpan/DCInside, 5ch). Producing an artifact by doing the thing the card refused to do is a
+>   fake conversion, and §33.2 counts a claim without legitimate backing as unconverted anyway.
+> - **UNBLOCKING STEP:** free NAVER Developers registration (a NAVER account + phone verification —
+>   a human step an agent cannot complete), then drop
+>   `data/secrets/naver.json {"client_id": "...", "client_secret": "..."}`. The collector is already
+>   wired into the daily cadence and already uses the audited `axis_screen` harness, so the first
+>   live screen lands on the next run with no further work. **Routed to GAP_REGISTER #69.**
+> - Endpoint liveness re-confirmed 2026-07-25 (401 `errorCode 024, "Not Exist Client ID"` — the
+>   shape of a real keyed API); nothing about the source has changed, only the key is missing.
 - **Provides:** relative daily search-interest index for KR crypto terms (비트코인/암호화폐/코인),
   official NAVER Developers / NAVER Cloud Platform API.
 - **Mechanism:** Korean retail sentiment/positioning propagates through a distinct information

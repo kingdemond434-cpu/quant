@@ -1197,6 +1197,18 @@ _FINDING_DOCS_EXCLUDED = {
     "docs/LIVE_CONNECTOR_SPEC.md": "spec for GAP #2 -- the row is the tracked item",
     "docs/research/oss_benchmark.md": "external benchmark log -- adoption_queue governs uptake",
     "docs/research/prospector_watchlist.md": "prospector cards -- governed by §33 dispositions",
+    # VERIFIED 2026-07-26 before excluding: the file is WRITTEN by
+    # scripts/generate_external_review_doc.py on every panel run, and its numbered block is a
+    # verbatim copy of the GAP_REGISTER table ("## Current gap register (self-assessed, ranked)").
+    # So every "finding" it carries is, by construction, already a register row -- demanding rows
+    # for them would double-count the register against itself, and the next regeneration
+    # overwrites anything written here. It is a DERIVED surface, never an original one: genuinely
+    # new findings arrive as panel RESPONSES, which flow panel_inbox -> panel_rulings (in scope,
+    # above) -> register rows. If the generator ever starts emitting desk-authored findings that
+    # do not exist upstream, move it into _FINDING_DOCS.
+    "docs/EXTERNAL_PANEL_DOSSIER.md":
+        "GENERATED dossier -- its numbered block is a copy of the register table; original panel "
+        "findings enter via panel_inbox -> panel_rulings, which are in scope",
 }
 
 

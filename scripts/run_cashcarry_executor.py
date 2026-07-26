@@ -27,7 +27,8 @@ from typing import Any
 from libs.data.crypto_source import current_funding
 from libs.execution import binance_spot_testnet as spot
 from libs.execution import binance_testnet as fut
-from libs.execution.carry_accounting import derive_spot_realized
+from libs.execution import execution_tape
+from libs.execution.carry_accounting import carry_bleed_report, derive_spot_realized
 from libs.risk import risk_controls
 
 _STATE = Path("data/cashcarry_positions.json")
@@ -100,7 +101,13 @@ def _round(qty: float, step: float, prec: int) -> float:
 
 
 def _log_trade(rec: dict[str, object]) -> None:
-    """Append a real open/close event -> cashcarry_trades.json (source of winrate + history)."""
+    """Append a real open/close event -> cashcarry_trades.json (source of winrate + history).
+
+    The rolling file stays capped at 500 (every existing consumer depends on its shape), but the
+    same record ALSO goes to the append-only execution tape -- the cap was destroying ~27 fills/day
+    of own-fill history, which is both the data moat and the evidence Gate 0's ">=4 weeks of live
+    fills" is measured against. The tape append is exception-safe and never blocks the executor.
+    """
     try:
         log = json.loads(_TRADES.read_text("utf-8")) if _TRADES.exists() else []
     except (OSError, json.JSONDecodeError):
@@ -108,6 +115,7 @@ def _log_trade(rec: dict[str, object]) -> None:
     log.append(rec)
     _TRADES.parent.mkdir(parents=True, exist_ok=True)
     _TRADES.write_text(json.dumps(log[-500:], indent=2, default=str), "utf-8")
+    execution_tape.append(rec)
 
 
 def _held_hours(opened: object) -> float:
@@ -521,6 +529,15 @@ def _reconcile(pos: dict[str, dict], *, dry: bool,
                     how = _do(spot, sym, "BUY", deficit)
                     if how:
                         acts.append(f"spot-rehedge {sym} +{deficit} ({how})")
+            elif want > 0 and held > want * 1.02:
+                # STRANDED SPOT EXCESS -- REPORT ONLY (2026-07-26). A half-filled pair
+                # (`OPEN-FAIL ... spot_ok=True fut_ok=False`) leaves the BOUGHT spot leg orphaned:
+                # untracked, unhedged, and invisible to `_mark`, so it is naked long the book does
+                # not carry on its own P&L. Selling it is a money-path action -- never automatic --
+                # but it must never sit UNSEEN again, which is how it accumulated to multiples of
+                # the tracked size. Surfaced in last_actions + the dashboard feed.
+                acts.append(f"SPOT-EXCESS {sym}: wallet {held:.6g} vs tracked {want:.6g} "
+                            f"(+{held - want:.6g}) -- untracked naked long, verify/flatten by hand")
     return acts
 
 
@@ -928,22 +945,31 @@ def _mark(rb: dict[str, object]) -> dict[str, float]:
     state = rb["state"]
     spot_realized = float(state.get("realized_spot_pnl", 0.0))  # type: ignore[union-attr]
     net = spot_pnl + spot_realized
-    funding = 0.0
+    funding = fut_pnl = 0.0
     if fut.has_keys():
         with _safe():
             fut_eq = fut.account_summary()["equity"]
             start_eq = float(state.get("start_futures_equity", fut_eq))  # type: ignore[union-attr]
-            net = spot_pnl + spot_realized + (fut_eq - start_eq)
+            fut_pnl = fut_eq - start_eq                   # futures leg (realized+funding+fees+unrl)
+            net = spot_pnl + spot_realized + fut_pnl
             start_ms = int(datetime.fromisoformat(str(state["start"])).timestamp() * 1000)  # type: ignore[index]
             funding = float(fut.income_summary(start_ms)["funding"])
     return {"spot_pnl": round(spot_pnl, 2), "perp_pnl": round(perp_pnl, 2),
-            "spot_realized": round(spot_realized, 2),
+            "spot_realized": round(spot_realized, 2), "fut_pnl": round(fut_pnl, 2),
             "funding": round(funding, 2), "net_pnl": round(net, 2),
             "notional": round(notional, 2)}
 
 
 def _emit(rb: dict[str, object], marks: dict[str, float], dry: bool) -> None:
     pos = rb["pos"]
+    # CARRY-LEAK ALARM ON THE BOOK THAT HOLDS THE MONEY (2026-07-26). `carry_bleed_report` was
+    # only ever wired into the MOLDED book (run_live_combined), so the PRIMARY executed book --
+    # this file -- shipped a dashboard with NO bleed alarm at all, which is exactly how a leak
+    # runs for weeks unnoticed. Same function, same thresholds, now on the executed book.
+    # spot side = open marks + realized of closed spot legs; fut side = futures-equity delta.
+    bleed = carry_bleed_report(funding=marks["funding"],
+                               spot_pnl=round(marks["spot_pnl"] + marks["spot_realized"], 2),
+                               fut_pnl=marks.get("fut_pnl", 0.0))
     out = {
         "updated": datetime.now(tz=UTC).isoformat(),
         "mode": "dry" if dry else "live-paper",
@@ -953,6 +979,10 @@ def _emit(rb: dict[str, object], marks: dict[str, float], dry: bool) -> None:
         "net_pnl": marks["net_pnl"], "funding_harvested": marks["funding"],
         "spot_leg_pnl": marks["spot_pnl"], "perp_leg_pnl": marks["perp_pnl"],
         "spot_realized_pnl": marks["spot_realized"],
+        "fut_leg_net": marks.get("fut_pnl", 0.0),
+        "non_funding_pnl": bleed.non_funding_pnl,
+        "harvest_eaten_frac": bleed.harvest_eaten_frac,
+        "bleed_alert": bleed.alert, "bleed_verdict": bleed.verdict,
         "carries": [{"symbol": s, "qty": p["spot_qty"], "funding_8h": p["funding"]}  # type: ignore[union-attr]
                     for s, p in pos.items()],  # type: ignore[union-attr]
         "last_actions": rb["actions"],
