@@ -30,6 +30,7 @@ import sys
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
+from typing import TypedDict
 
 _ROOT = Path(__file__).resolve().parent.parent
 _REPORT = _ROOT / "data" / "mutation_report.json"
@@ -82,6 +83,27 @@ _CMP_SWAP = {
 }
 _BIN_SWAP = {ast.Add: ast.Sub, ast.Sub: ast.Add, ast.Mult: ast.Div, ast.Div: ast.Mult}
 _BOOL_SWAP = {ast.And: ast.Or, ast.Or: ast.And}
+
+
+class FileResult(TypedDict, total=False):
+    """Per-file measurement. A TypedDict rather than a bare dict so the summary code that reads
+    `killed`/`tested` back out is type-checked -- these numbers end up in a register row."""
+
+    file: str
+    error: str
+    total_mutants: int
+    tested: int
+    killed: int
+    survived: int
+    uncompilable: int
+    equivalent_excluded: int
+    raw_score: float
+    score: float
+    passes_bar: bool
+    sampled: bool
+    survivors: list[dict[str, object]]
+    equivalent: list[dict[str, object]]
+    stale_equivalent_entries: list[str]
 
 
 @dataclass(frozen=True)
@@ -240,7 +262,7 @@ def _run_tests(tree: Path, tests: list[str], timeout: int) -> bool:
 
 
 def run_file(rel: str, tests: list[str], tree: Path, *, sample: int | None,
-             seed: int, timeout: int, baseline_ok: bool) -> dict[str, object]:
+             seed: int, timeout: int, baseline_ok: bool) -> FileResult:
     original = (_ROOT / rel).read_text("utf-8")
     all_mutants = mutants_for(original)
     chosen = list(all_mutants)
@@ -249,8 +271,9 @@ def run_file(rel: str, tests: list[str], tree: Path, *, sample: int | None,
         chosen = chosen[:sample]
 
     if not baseline_ok:
-        return {"file": rel, "error": "baseline suite is RED -- mutation score is meaningless",
-                "total_mutants": len(all_mutants), "tested": 0}
+        return FileResult(
+            file=rel, error="baseline suite is RED -- mutation score is meaningless",
+            total_mutants=len(all_mutants), tested=0)
 
     target = tree / rel
     killed, survived, equivalent, invalid = 0, [], [], 0
@@ -279,20 +302,48 @@ def run_file(rel: str, tests: list[str], tree: Path, *, sample: int | None,
     tested = killed + len(survived)              # equivalent mutants leave the denominator
     raw_tested = tested + len(equivalent)
     score = (killed / tested) if tested else 0.0
-    return {
-        "file": rel, "total_mutants": len(all_mutants), "tested": tested,
-        "killed": killed, "survived": len(survived), "uncompilable": invalid,
-        "equivalent_excluded": len(equivalent),
+    return FileResult(
+        file=rel, total_mutants=len(all_mutants), tested=tested,
+        killed=killed, survived=len(survived), uncompilable=invalid,
+        equivalent_excluded=len(equivalent),
         # BOTH numbers are reported: the adjusted score is the meaningful one, the raw score is
         # what an outside reader would compute, and hiding the gap between them would be the
         # dishonest move.
-        "raw_score": round(killed / raw_tested, 4) if raw_tested else 0.0,
-        "score": round(score, 4), "passes_bar": score >= KILL_BAR,
-        "sampled": sample is not None and len(all_mutants) > (sample or 0),
-        "survivors": survived[:25],
-        "equivalent": equivalent,
-        "stale_equivalent_entries": stale,
+        raw_score=round(killed / raw_tested, 4) if raw_tested else 0.0,
+        score=round(score, 4), passes_bar=score >= KILL_BAR,
+        sampled=sample is not None and len(all_mutants) > (sample or 0),
+        survivors=survived[:25],
+        equivalent=equivalent,
+        stale_equivalent_entries=stale,
+    )
+
+
+def _write_report(results: list[FileResult], args: argparse.Namespace,
+                  baseline_ok: bool, *, partial: bool) -> tuple[float, float, int]:
+    """Serialise what has been measured so far. Called after every file, not just at the end."""
+    tested = sum(int(r.get("tested", 0) or 0) for r in results)
+    killed = sum(int(r.get("killed", 0) or 0) for r in results)
+    excluded = sum(int(r.get("equivalent_excluded", 0) or 0) for r in results)
+    overall = (killed / tested) if tested else 0.0
+    raw_overall = (killed / (tested + excluded)) if (tested + excluded) else 0.0
+    covered = {r.get("file", "") for r in results}
+    report: dict[str, object] = {
+        "bar": KILL_BAR,
+        "overall_score": round(overall, 4),
+        "overall_raw_score": round(raw_overall, 4),
+        "equivalent_excluded": excluded,
+        "overall_passes": overall >= KILL_BAR and baseline_ok and not partial,
+        "baseline_ok": baseline_ok,
+        "sampled": args.sample is not None,
+        # a partial report must never read like a full one -- naming what is MISSING is the
+        # difference between "the desk scored 91%" and "the desk scored 91% on two of five files"
+        "partial": partial,
+        "files_not_yet_measured": sorted(set(TARGETS) - covered),
+        "files": results,
     }
+    _REPORT.parent.mkdir(parents=True, exist_ok=True)
+    _REPORT.write_text(json.dumps(report, indent=2), "utf-8")
+    return overall, raw_overall, excluded
 
 
 def main() -> int:
@@ -320,26 +371,22 @@ def main() -> int:
             print("BASELINE RED: the target tests do not pass unmutated. Mutation scores would "
                   "be meaningless (every mutant 'killed'). Fix the suite first.")
 
-        results = [run_file(rel, tests, tree, sample=args.sample, seed=args.seed,
-                            timeout=args.timeout, baseline_ok=baseline_ok)
-                   for rel, tests in targets.items()]
+        # Write the report after EACH file, not once at the end. A full sweep is tens of
+        # minutes and the first version lost every measurement when it hit its wall-clock
+        # limit -- a tool whose output only exists if it runs to completion will, in practice,
+        # mostly produce nothing.
+        results: list[FileResult] = []
+        for rel, tests in targets.items():
+            results.append(run_file(rel, tests, tree, sample=args.sample, seed=args.seed,
+                                    timeout=args.timeout, baseline_ok=baseline_ok))
+            _write_report(results, args, baseline_ok, partial=True)
+            r = results[-1]
+            if not r.get("error"):
+                print(f"  ...measured {r['file']}: {r['killed']}/{r['tested']} killed",
+                      flush=True)
 
-    tested = sum(int(r.get("tested", 0)) for r in results)
-    killed = sum(int(r.get("killed", 0)) for r in results)
-    excluded = sum(int(r.get("equivalent_excluded", 0)) for r in results)
-    overall = (killed / tested) if tested else 0.0
-    raw_overall = (killed / (tested + excluded)) if (tested + excluded) else 0.0
-    report = {
-        "bar": KILL_BAR, "overall_score": round(overall, 4),
-        "overall_raw_score": round(raw_overall, 4),
-        "equivalent_excluded": excluded,
-        "overall_passes": overall >= KILL_BAR and baseline_ok,
-        "baseline_ok": baseline_ok,
-        "sampled": args.sample is not None,
-        "files": results,
-    }
-    _REPORT.parent.mkdir(parents=True, exist_ok=True)
-    _REPORT.write_text(json.dumps(report, indent=2), "utf-8")
+    overall, raw_overall, excluded = _write_report(results, args, baseline_ok, partial=False)
+    passes = overall >= KILL_BAR and baseline_ok
 
     for r in results:
         if r.get("error"):
@@ -350,11 +397,12 @@ def main() -> int:
             else ""
         print(f"  [{flag}] {r['file']}: {r['killed']}/{r['tested']} killed "
               f"({float(r['score']):.1%}{eq}){' [sampled]' if r['sampled'] else ''}")
-        if r["stale_equivalent_entries"]:
+        stale = r["stale_equivalent_entries"]
+        if isinstance(stale, list) and stale:
             print(f"         STALE equivalent-mutant entries (re-examine): "
-                  f"{', '.join(r['stale_equivalent_entries'])}")
+                  f"{', '.join(str(s) for s in stale)}")
     print(f"mutation score {overall:.1%} vs bar {KILL_BAR:.0%} -> "
-          f"{'PASS' if report['overall_passes'] else 'FAIL'}"
+          f"{'PASS' if passes else 'FAIL'}"
           f"  (raw {raw_overall:.1%} incl. {excluded} equivalent)  "
           f"(data/mutation_report.json)")
     # Reporting the number is the job; the bar becomes blocking in CI once the survivors named
