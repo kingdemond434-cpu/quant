@@ -21,7 +21,31 @@ from libs.validation.revalidation import WalkForwardEngine, WalkForwardStatus
 
 _PERIODS_PER_YEAR = 24 * 260
 _DSR_THRESHOLD = 0.95
-_MIN_CAPACITY_USD = 1.0e5
+#: CAPACITY IS A RATIO, NOT A DOLLAR FIGURE (2026-07-26). This was a flat $100,000 floor, which
+#: hard-rejected every edge too small to absorb six figures -- i.e. exactly the capacity-bound
+#: niche `docs/research/PROSPECTOR_SPEC.md` calls "this desk's ONE structural advantage" (the
+#: edges a fund abandoned for being too small). A perfect $20k-capacity listing dislocation failed
+#: the gate on capacity alone, whatever its DSR. The gate's real job is to stop the desk being a
+#: large share of its OWN edge's capacity -- that is a ratio to deployed equity, and it protects a
+#: $5k book and a $5M book alike. Both bounds live in the ThresholdBook so they are bounded and
+#: evidence-adjustable rather than hand-edited.
+_CAPACITY_FALLBACK_MULT = 4.0        # need 4x headroom over what is actually deployed
+_CAPACITY_FALLBACK_FLOOR = 2_000.0   # below this it is a rounding error at any book size
+
+
+def capacity_required(deployed_equity_usd: float) -> float:
+    """Minimum absorbable capacity for a candidate, given what the desk actually deploys."""
+    mult, floor = _CAPACITY_FALLBACK_MULT, _CAPACITY_FALLBACK_FLOOR
+    try:
+        from pathlib import Path as _P
+
+        from libs.self_improvement.adaptive_thresholds import ThresholdBook
+        book = ThresholdBook(_P(__file__).resolve().parents[2] / "data/adaptive_thresholds.json")
+        mult = book.get("capacity_headroom_mult")
+        floor = book.get("capacity_abs_floor_usd")
+    except Exception:
+        pass
+    return max(floor, mult * max(0.0, deployed_equity_usd))
 _CPCV_MIN_POSITIVE = 0.6   # >=60% of purged folds positive
 
 
@@ -55,6 +79,10 @@ def validate(
     returns_matrix: np.ndarray,
     adv_usd: float = 1.0e11,
     edge_bps: float | None = None,
+    # What the desk ACTUALLY deploys. The capacity gate is a ratio to this, not a fixed dollar
+    # figure -- see capacity_required(). Default 0.0 means "book size unknown", which falls back
+    # to the absolute floor alone rather than silently demanding six-figure capacity.
+    deployed_equity_usd: float = 0.0,
     pbo: PBOResult | None = None,
     rc: RealityCheckResult | None = None,
 ) -> ValidationVerdict:
@@ -101,7 +129,7 @@ def validate(
         "dsr": dsr.passed,
         "pbo": pbo is not None and not pbo.overfit,
         "reality_check": rc is not None and rc.significant_at_5pct,
-        "capacity": cap.capacity_usd >= _MIN_CAPACITY_USD,
+        "capacity": cap.capacity_usd >= capacity_required(deployed_equity_usd),
         "fragility": tail.acceptable,
     }
     failed = [name for name, ok in gates.items() if not ok]

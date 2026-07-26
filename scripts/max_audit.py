@@ -1143,6 +1143,45 @@ def check_review_risks_tracked(defects) -> None:
                             "tracked row so a named risk cannot silently escape the discipline."))
 
 
+#: The desk's working book. Capacity-bound edges are the ONE structural advantage a book this
+#: size has, so the reference is explicit rather than implied.
+DESK_BOOK_USD = 50_000.0
+
+
+def check_capacity_hunt(defects) -> None:
+    """§39: the desk must actually HUNT the small-capacity niche, not merely be allowed into it.
+
+    PROSPECTOR_SPEC names capacity-bound edges -- the ones a fund abandoned for being too small --
+    as "this desk's ONE structural advantage". Until 2026-07-26 the survival gate contradicted
+    that outright with a flat $100k capacity floor, so the niche was unreachable by construction.
+    Removing the block is necessary and NOT sufficient: a desk merely permitted to hunt small will
+    still default to fund-shaped ideas, because that is what the literature is written about.
+
+    So the CAPACITY DISTRIBUTION of what actually gets screened is measured. If every candidate
+    needs six or seven figures to absorb, the desk is competing where it has no advantage and
+    could not fill the trade if it found one -- a defect, not a preference.
+    """
+    caps: list[float] = []
+    with contextlib.suppress(Exception):
+        from libs.autodiscovery.memory import CandidateStore
+        store = CandidateStore(ROOT / "data/research_memory.db")
+        caps = [float(getattr(c.metrics, "capacity_usd", 0.0) or 0.0) for c in store.all()]
+    caps = [c for c in caps if c > 0]
+    if len(caps) < 5:
+        return  # too few scored candidates to judge where the hunt is pointed
+    in_niche = sum(1 for c in caps if c <= 20.0 * DESK_BOOK_USD)
+    frac = in_niche / len(caps)
+    if frac < 0.25:
+        defects.append((
+            "capacity-hunt-fund-shaped",
+            f"§39: only {in_niche}/{len(caps)} scored candidates ({frac:.0%}) sit in the capacity "
+            f"range a ${DESK_BOOK_USD:,.0f} book can actually exploit. The desk is hunting "
+            "fund-scale edges, where it has NO advantage and could not fill the trade if it found "
+            "one. Point the prospector at the niche its own spec calls the desk's one structural "
+            "advantage: listing-event dislocations, thin-pair cross-venue funding, low-OI tails "
+            "-- edges that pay BECAUSE they are too small to interest anyone with money."))
+
+
 def check_orphan_code(defects) -> None:
     """MAP-vs-TERRITORY (audit 2.x): the desk flags idle DATA/capital/clocks but not idle CODE.
     Flags library packages that are almost entirely unreachable from any scripts/ entry point --
@@ -1677,6 +1716,7 @@ def main() -> None:
                       ("ci-scope", check_ci_scope),
                       ("review-risks", check_review_risks_tracked),
                       ("orphan-code", check_orphan_code),
+                      ("capacity-hunt", check_capacity_hunt),
                       ("mine-conversion", check_mine_conversion),
                       ("mine-flow", check_mine_flow),
                       ("mine-gate", check_mine_gate),

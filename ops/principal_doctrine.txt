@@ -46,6 +46,14 @@ HEALTHILY -- this is what separates aggression from thrash, and it is not option
      re-litigate a decision that carries a ledgered reason and a falsifier -- bring new evidence
      or move on. Evidence-gated aggression compounds; blind aggression exhausts.
 
+§39 HUNT WHAT IS TOO SMALL FOR FUNDS. A ~$50k book's ONE edge over every fund is that it can take
+trades nobody with money can be bothered with. The capacity gate is now a RATIO to deployed equity,
+not a $100k floor -- that floor was rejecting the exact niche the prospector spec calls our
+structural advantage. Being allowed there is not hunting there: if under a quarter of scored
+candidates fit a $50k book, capacity-hunt-fund-shaped fires. Named ground: day-1 listing funding
+spikes, thin-pair cross-venue funding, low-OI tails, delisting unwinds. These decay as we grow into
+them -- that is the design, not a flaw: edge -> size -> next edge.
+
 Carry this in every action. Assume the desk is under potential right now, because it usually is.
 
 §33 MINED-TO-WIRED (BINDING, OVERRIDES ANY CADENCE THAT CONFLICTS). Mining is NOT the product --

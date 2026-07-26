@@ -72,6 +72,21 @@ _REGISTRY: dict[str, ThresholdSpec] = {
         rationale="days a carded find may owe a disposition before it is a rotting-inventory "
                   "defect; tighten-only (FEWER days is stricter) -- the desk gets faster or holds, "
                   "never slower, which is the §33 ratchet expressed as a bound"),
+    "capacity_headroom_mult": ThresholdSpec(
+        name="capacity_headroom_mult", default=4.0, floor=2.0, ceiling=20.0,
+        direction="tighten_only", tighten_is_up=True,
+        rationale="an edge must absorb this multiple of DEPLOYED equity before it may be trusted "
+                  "-- the real protection is never being a large share of your own edge's "
+                  "capacity, which is a RATIO, not a dollar figure; tighten-only (higher = more "
+                  "headroom demanded)"),
+    "capacity_abs_floor_usd": ThresholdSpec(
+        name="capacity_abs_floor_usd", default=2000.0, floor=500.0, ceiling=100_000.0,
+        direction="free", tighten_is_up=True,
+        rationale="floor-of-the-floor: below this an 'edge' is a rounding error whatever the book "
+                  "size. Deliberately FREE, not tighten-only: the old fixed $100k floor was the "
+                  "very thing excluding the capacity-bound niche the desk's own PROSPECTOR_SPEC "
+                  "names as its structural advantage, so this must be able to move DOWN on "
+                  "evidence as the desk deliberately hunts smaller"),
     "mine_latency_regress_mult": ThresholdSpec(
         name="mine_latency_regress_mult", default=1.5, floor=1.05, ceiling=3.0,
         direction="tighten_only", tighten_is_up=False,

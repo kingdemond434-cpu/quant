@@ -315,3 +315,16 @@ may carry a blocking early-exit, and the verdict text may not tell a dig to stop
 (4) BOTH HALVES ARE MAXED, NEITHER TRADED. The objective is maximum information surface area
 MULTIPLIED BY maximum extraction efficiency. A rise in either that is bought with a fall in the
 other is a REGRESSION, reported as one, regardless of how the headline rate reads.
+
+
+## 39. CAPACITY-BOUND EDGE PRIMACY — HUNT WHAT IS TOO SMALL FOR FUNDS (2026-07-26, principal)
+
+A ~$50k book has exactly ONE structural advantage over every fund on earth: it can profitably take trades that are too small to be worth anyone else's time. `PROSPECTOR_SPEC` already names this — "capacity-bound edges the fund ABANDONED for being too small… precisely this desk's one structural advantage" — and until 2026-07-26 the desk's own survival gate CONTRADICTED it: `_MIN_CAPACITY_USD = 1.0e5` hard-rejected any candidate that could not absorb $100,000, whatever its DSR, PBO or Sharpe. A perfect $20k-capacity listing dislocation failed on `capacity` alone. The niche the spec called the desk's advantage was unreachable by construction.
+
+(1) CAPACITY IS A RATIO, NOT A DOLLAR FIGURE. The gate's real job is to stop the desk being a large share of its OWN edge's capacity — impact, not size. That is a ratio to deployed equity and it protects a $5k book and a $5M book identically: `capacity_usd >= max(abs_floor, headroom_mult × deployed_equity)`. Both bounds live in the ThresholdBook, bounded and evidence-adjustable. The absolute floor is deliberately FREE rather than tighten-only, because the old fixed floor was itself the defect — the desk must be able to move it DOWN as it deliberately hunts smaller.
+
+(2) PERMISSION IS NOT PURSUIT. Removing the block is necessary and NOT sufficient: a desk merely allowed to hunt small will still default to fund-shaped ideas, because that is what the literature is written about and what the models have read. So the CAPACITY DISTRIBUTION of screened candidates is measured every sweep (`max_audit.check_capacity_hunt`). If under a quarter of scored candidates sit in the range a $50k book can actually exploit, the desk is competing where it has no advantage and could not fill the trade if it found one — a DEFECT, not a preference.
+
+(3) THE NAMED GROUND. Day-1 perp listing funding spikes (one-sided spec flow, no arb capital yet — the `run_listing_watch` clock already runs for this), thin-pair cross-venue funding divergence, low-OI tails of the perp universe, delisting forced-unwind dislocations. What they share is that they pay BECAUSE they are too small to interest anyone with money, and they decay as the desk grows into them. That decay is DEFINITIONAL, not a risk to be mitigated: the sequence is edge → size → next edge, which is why breadth keeps earning its cost even when depth is what converts.
+
+(4) THE HONEST TRADE, RECORDED. Triple-digit returns and the current ruin discipline are not simultaneously available. Hunting smaller raises the ceiling for free and touches no rail. Loosening the rails also raises it, and buys the return with ruin probability. The first is doctrine; the second is a principal decision that must be made deliberately, never drifted into.
