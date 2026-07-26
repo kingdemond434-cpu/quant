@@ -37,6 +37,7 @@ from libs.discovery.regime_diversification import regime_diversification
 from libs.discovery.signals import build_generator
 from libs.discovery.stress_scenario import stress_scenario
 from libs.discovery.tail_risk import tail_risk
+from libs.research.capacity_policy import DEFAULT_BOOK_USD, DEFAULT_SLEEVES, capacity_required
 from libs.validation.dsr import deflated_sharpe_ratio, sharpe_ratio
 from libs.validation.pbo import probability_backtest_overfitting
 from libs.validation.stress_costs import stress_cost_validation
@@ -55,6 +56,8 @@ class AlphaDiscoveryFactory:
         adv_usd: float = 1e9,
         min_observations: int = 60,
         seed: int = 0,
+        book_usd: float = DEFAULT_BOOK_USD,
+        n_sleeves: int = DEFAULT_SLEEVES,
     ) -> None:
         self.ppy = periods_per_year
         self.init_cash = init_cash
@@ -62,6 +65,12 @@ class AlphaDiscoveryFactory:
         self.adv_usd = adv_usd
         self.min_observations = min_observations
         self.seed = seed
+        # §39: the REAL book, which is what capacity must be judged against. Deliberately separate
+        # from `init_cash` -- that is a backtest's notional, not the equity that will be deployed,
+        # and defaulting capacity checks to a $100k simulation notional is how the flat $100k
+        # floor survived a rewrite in the first place.
+        self.book_usd = book_usd
+        self.n_sleeves = n_sleeves
 
     # ------------------------------------------------------------ public API
 
@@ -250,13 +259,18 @@ class AlphaDiscoveryFactory:
             capacity_usd=capacity.capacity_usd, fragility_score=fragility.fragility_score,
             tail_risk_score=tail.tail_risk_score,
             parameter_plateau_score=stability.plateau_score,
+            deployed_equity_usd=self.book_usd, n_sleeves=self.n_sleeves,
         )
 
         acceptance = alpha_acceptance(
             dsr_pass=dsr.passed, pbo_pass=pbo_pass, cpcv_pass=wf_pass, walk_forward_pass=wf_pass,
             holdout_pass=holdout_pass, cost_pass=cost_pass,
             parameter_stability_pass=stability.robust, fragility_pass=fragility.robust,
-            capacity_pass=capacity.capacity_usd >= 1e5, tail_pass=tail.acceptable,
+            # §39: was a flat `>= 1e5`, the SAME categorical exclusion the survival gate had --
+            # fixing one and leaving this one meant sub-$100k edges still failed acceptance here.
+            capacity_pass=capacity.capacity_usd >= capacity_required(self.book_usd,
+                                                                     self.n_sleeves),
+            tail_pass=tail.acceptable,
             stress_pass=stress.passed, regime_pass=regime.robust,
         )
         robustness = RobustnessScores(

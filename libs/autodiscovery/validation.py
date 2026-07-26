@@ -14,6 +14,7 @@ import numpy as np
 from libs.autodiscovery.models import Hypothesis, ValidationMetrics, ValidationVerdict
 from libs.discovery.capacity import capacity_estimate
 from libs.discovery.tail_risk import tail_risk
+from libs.research.capacity_policy import capacity_required
 from libs.validation.dsr import deflated_sharpe_ratio, sharpe_ratio
 from libs.validation.pbo import PBOResult, probability_backtest_overfitting
 from libs.validation.reality_check import RealityCheckResult, whites_reality_check
@@ -21,31 +22,6 @@ from libs.validation.revalidation import WalkForwardEngine, WalkForwardStatus
 
 _PERIODS_PER_YEAR = 24 * 260
 _DSR_THRESHOLD = 0.95
-#: CAPACITY IS A RATIO, NOT A DOLLAR FIGURE (2026-07-26). This was a flat $100,000 floor, which
-#: hard-rejected every edge too small to absorb six figures -- i.e. exactly the capacity-bound
-#: niche `docs/research/PROSPECTOR_SPEC.md` calls "this desk's ONE structural advantage" (the
-#: edges a fund abandoned for being too small). A perfect $20k-capacity listing dislocation failed
-#: the gate on capacity alone, whatever its DSR. The gate's real job is to stop the desk being a
-#: large share of its OWN edge's capacity -- that is a ratio to deployed equity, and it protects a
-#: $5k book and a $5M book alike. Both bounds live in the ThresholdBook so they are bounded and
-#: evidence-adjustable rather than hand-edited.
-_CAPACITY_FALLBACK_MULT = 4.0        # need 4x headroom over what is actually deployed
-_CAPACITY_FALLBACK_FLOOR = 2_000.0   # below this it is a rounding error at any book size
-
-
-def capacity_required(deployed_equity_usd: float) -> float:
-    """Minimum absorbable capacity for a candidate, given what the desk actually deploys."""
-    mult, floor = _CAPACITY_FALLBACK_MULT, _CAPACITY_FALLBACK_FLOOR
-    try:
-        from pathlib import Path as _P
-
-        from libs.self_improvement.adaptive_thresholds import ThresholdBook
-        book = ThresholdBook(_P(__file__).resolve().parents[2] / "data/adaptive_thresholds.json")
-        mult = book.get("capacity_headroom_mult")
-        floor = book.get("capacity_abs_floor_usd")
-    except Exception:
-        pass
-    return max(floor, mult * max(0.0, deployed_equity_usd))
 _CPCV_MIN_POSITIVE = 0.6   # >=60% of purged folds positive
 
 

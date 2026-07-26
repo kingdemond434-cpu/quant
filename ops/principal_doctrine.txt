@@ -110,3 +110,30 @@ CONVERSION is. A perfect dig with zero conversions is a FAILED cycle; say so in 
     bottleneck is elsewhere, BEFORE stacking more enforcement on top.
   - Before ending any cycle answer in writing: "Which artifact on disk is different because of
     what was mined?" If the answer is none, the cycle failed.
+
+§39 CAPACITY PARITY + EVENT-STUDY PROMOTION (2026-07-26, second pass)
+  - CAPACITY IS SUFFICIENCY, NOT SIZE. There is ONE definition: libs/research/capacity_policy.py.
+    Every scorer imports it. A dollar constant next to a capacity comparison is the flat-$100k bug
+    growing back, and check_capacity_single_source fires on it by file and line.
+  - THE SCORE GOES FLAT ABOVE SUFFICIENCY. That flat region is the parity. Do not "improve" the
+    curve by making it monotone in capacity again -- rewarding capacity you cannot fill is
+    preferring an option you cannot exercise, and it is what silently un-fixed the gate last time.
+  - THE CROWDING DISCOUNT IS ABSOLUTE AND FLOORED. Keyed to a dollar figure (funds' scale), never
+    to a multiple of our own book: crowding is a fact about the market. The floor is loosen-only
+    in the ThresholdBook, so the tilt toward small can only ever become MORE neutral, never a new
+    exclusion pointing the other way.
+  - NO EDGE GETS THE WHOLE BOOK. Judge capacity against ONE SLEEVE. Comparing a candidate to the
+    full $50k assumes a single-strategy desk and re-creates the exclusion at 8x scale.
+  - THE FUNNEL IS AT LEAST HALF NICHE. A quarter was a floor, not parity. If capacity-hunt-fund-
+    shaped fires, the prospector is pointed at ground where this book is the worst-capitalised
+    participant -- repoint it, do not acknowledge it away. UNFILLABLE candidates are a separate
+    defect: small is the advantage, too small to fill is not.
+  - EVENT-SHAPED EDGES GO THROUGH THE EVENT-SHAPED GATE. Do not judge a listing dislocation on a
+    daily return series; ~2 non-zero days in 30 reads as noise on every continuous statistic, and
+    that is how collected data stays unconvertible forever. Use libs/validation/event_study.py.
+  - THE HYPOTHESIS IS PRE-REGISTERED IN CODE. Direction, window and threshold in listing_events.py
+    are CONSTANTS. If you want a second window, that is a second trial: raise VARIANTS_TRIED so
+    the Holm bar rises with it. Sweeping windows and reporting the best is data-mining our own
+    collector, and it is invisible in the output unless the trial count is honest.
+  - A PASS IS EVIDENCE, NOT AN ALLOCATION. Gate 0 and the ordinary promotion path still stand
+    between an event study and a single dollar. Real capital is never allocated automatically.

@@ -1169,17 +1169,88 @@ def check_capacity_hunt(defects) -> None:
     caps = [c for c in caps if c > 0]
     if len(caps) < 5:
         return  # too few scored candidates to judge where the hunt is pointed
-    in_niche = sum(1 for c in caps if c <= 20.0 * DESK_BOOK_USD)
+    from libs.research.capacity_policy import DEFAULT_SLEEVES, capacity_band
+    # Whole-book figure -> must be divided by the sleeve count: no single edge is filled with the
+    # entire desk. Judging candidates against all $50k would inflate the requirement 8x and mark
+    # perfectly tradeable small edges "unfillable" -- the flat-floor bug wearing a new hat.
+    bands = [capacity_band(c, DESK_BOOK_USD, DEFAULT_SLEEVES) for c in caps]
+    in_niche = sum(1 for b in bands if b == "NICHE")
+    unfillable = sum(1 for b in bands if b == "UNFILLABLE")
     frac = in_niche / len(caps)
-    if frac < 0.25:
+    # PARITY, not a token floor. The bar was 25%, which permitted three quarters of the funnel to
+    # be aimed where the desk has no advantage and still called that "hunting the niche". A floor
+    # is not parity: parity is the niche getting at least as much of the funnel as everything else
+    # put together, because it is the ONE band where a $50k book is not the worst-capitalised
+    # participant in the trade. Under-filling this is a defect about where research EFFORT points,
+    # which is why it is measured on the screened population and not on what happened to pass.
+    if frac < 0.50:
         defects.append((
             "capacity-hunt-fund-shaped",
-            f"§39: only {in_niche}/{len(caps)} scored candidates ({frac:.0%}) sit in the capacity "
-            f"range a ${DESK_BOOK_USD:,.0f} book can actually exploit. The desk is hunting "
-            "fund-scale edges, where it has NO advantage and could not fill the trade if it found "
-            "one. Point the prospector at the niche its own spec calls the desk's one structural "
-            "advantage: listing-event dislocations, thin-pair cross-venue funding, low-OI tails "
-            "-- edges that pay BECAUSE they are too small to interest anyone with money."))
+            f"§39 PARITY: only {in_niche}/{len(caps)} scored candidates ({frac:.0%}) sit in the "
+            f"NICHE band a ${DESK_BOOK_USD:,.0f} book can actually exploit -- parity requires "
+            f"{'>=50%'}. The desk is hunting fund-scale edges, where it has NO advantage and "
+            "could not fill the trade if it found one. Point the prospector at the niche its own "
+            "spec calls the desk's one structural advantage: listing-event dislocations, "
+            "thin-pair cross-venue funding, low-OI tails -- edges that pay BECAUSE they are too "
+            "small to interest anyone with money."))
+    if unfillable:
+        defects.append((
+            "capacity-hunt-unfillable",
+            f"§39: {unfillable}/{len(caps)} scored candidates cannot absorb the required headroom "
+            f"on a ${DESK_BOOK_USD:,.0f} book at all -- the desk would BE the edge. Small is the "
+            "advantage; too small to fill is not. These should be screened out before scoring, "
+            "not carried as candidates."))
+
+
+#: Every scorer that has ever had to answer "is this capacity enough?". Each one used to carry its
+#: own dollar constant; they disagreed, and fixing the survival gate alone on 2026-07-26 left four
+#: of them still penalising the niche. They are enumerated so a NEW one cannot quietly appear.
+_CAPACITY_CONSUMERS = (
+    "libs/discovery/objective.py",
+    "libs/discovery/factory.py",
+    "libs/research/alpha_economics.py",
+    "libs/alpha_factory/capacity_intelligence.py",
+    "libs/autodiscovery/validation.py",
+)
+#: Dollar magnitudes that mean "a fund's book" when they appear next to capacity. Finding one of
+#: these in a consumer is the fingerprint of a re-inlined threshold.
+_FUND_SHAPED_CONSTANTS = ("1e5", "1e6", "1e7", "100_000", "1_000_000", "100000.0", "1000000.0")
+
+
+def check_capacity_single_source(defects) -> None:
+    """§39: ONE capacity policy, imported -- never a constant re-inlined next to a scorer.
+
+    The original defect was not that the number was wrong; it was that the number existed in five
+    places. Fixing the survival gate did nothing to the other four, and the exclusion simply moved
+    to where nobody was looking. So the invariant is structural, not numeric: every scorer that
+    judges capacity must IMPORT `libs.research.capacity_policy`, and none may carry a fund-shaped
+    dollar constant on a line that mentions capacity. Checking the shape of the dependency rather
+    than the value of the threshold is what makes this survive somebody re-tuning the threshold.
+    """
+    for rel in _CAPACITY_CONSUMERS:
+        path = ROOT / rel
+        if not path.exists():
+            defects.append(("capacity-consumer-missing",
+                            f"§39: {rel} is enumerated as a capacity consumer but does not exist. "
+                            "Either it moved (update the list) or the parity guard is now blind "
+                            "to wherever its logic went."))
+            continue
+        text = path.read_text("utf-8", errors="ignore")
+        if "capacity_policy" not in text:
+            defects.append(("capacity-policy-not-imported",
+                            f"§39: {rel} judges capacity but does not import capacity_policy -- "
+                            "it is carrying its own definition again. That is exactly how the "
+                            "flat $100k floor survived being 'fixed': five copies, one patched."))
+        for i, line in enumerate(text.splitlines(), start=1):
+            low = line.lstrip()
+            if low.startswith("#") or "capacity" not in low.lower():
+                continue
+            hit = next((c for c in _FUND_SHAPED_CONSTANTS if c in line), None)
+            if hit is not None:
+                defects.append(("capacity-constant-reinlined",
+                                f"§39: {rel}:{i} puts a fund-shaped constant ({hit}) on a capacity "
+                                "line. Capacity is a RATIO to deployed equity; a six/seven-figure "
+                                "literal here is the excluded-by-default bug growing back."))
 
 
 def check_orphan_code(defects) -> None:
@@ -1717,6 +1788,7 @@ def main() -> None:
                       ("review-risks", check_review_risks_tracked),
                       ("orphan-code", check_orphan_code),
                       ("capacity-hunt", check_capacity_hunt),
+                      ("capacity-single-source", check_capacity_single_source),
                       ("mine-conversion", check_mine_conversion),
                       ("mine-flow", check_mine_flow),
                       ("mine-gate", check_mine_gate),

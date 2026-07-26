@@ -48,6 +48,10 @@ _STEPS = [
     ("trade_forensics",   "scripts/run_trade_forensics.py",  60),  # class-bleed probe (daily)
     ("nav_attest",        "scripts/run_nav_attest.py",       60),  # hash-chained track record
     ("listing_watch",     "scripts/run_listing_watch.py",    60),  # gap-53 data clock
+    # §39(6): the CONSUMER for that clock. Collection without a promotion path is acquisition the
+    # desk can never convert, so the study runs on the same cadence as the collector rather than
+    # waiting for someone to remember it exists.
+    ("event_study",       "scripts/run_event_study.py",     300),
     ("kimchi_premium",    "scripts/collect_kimchi_premium.py", 90),  # gap-74 forward clock
     ("onchain_activity",  "scripts/collect_onchain_activity.py", 120),  # on-chain throughput
     ("stablecoin_supply", "scripts/collect_stablecoin_supply.py", 120),  # supply momentum clock

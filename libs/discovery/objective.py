@@ -2,12 +2,15 @@
 
 Provides the geometric-growth objective and a composite discovery score that prefers higher log
 growth, higher diversification, lower correlation, lower failure dependency, longer half-life,
-higher capacity, wider parameter plateaus — and penalizes fragility, tail risk, and low survival.
+sufficient capacity for the book actually deployed, wider parameter plateaus — and penalizes
+fragility, tail risk, and low survival.
 """
 
 from __future__ import annotations
 
 import numpy as np
+
+from libs.research.capacity_policy import DEFAULT_BOOK_USD, DEFAULT_SLEEVES, capacity_fit
 
 
 def expected_log_growth(returns: np.ndarray, *, periods_per_year: float = 252.0) -> float:
@@ -38,6 +41,8 @@ def discovery_score(
     fragility_score: float,
     tail_risk_score: float,
     parameter_plateau_score: float,
+    deployed_equity_usd: float = DEFAULT_BOOK_USD,
+    n_sleeves: int = DEFAULT_SLEEVES,
 ) -> float:
     """Composite rank score that maximizes sustainable geometric growth under robustness."""
     growth = max(0.0, log_growth)
@@ -48,7 +53,12 @@ def discovery_score(
     tail_term = 1.0 - min(1.0, tail_risk_score / 100.0)
     plateau_term = min(1.0, parameter_plateau_score / 100.0)
     half_life_term = min(1.0, half_life_days / 365.0)
-    capacity_term = min(1.0, capacity_usd / 1_000_000.0)
+    # §39 PARITY. This was `min(1, capacity_usd / 1e6)`, which handed a $1M-capacity idea a 1.9x
+    # rank advantage over a $50k one -- i.e. the composite ranking quietly undid the survival
+    # gate's fix and kept steering the desk at fund-shaped edges. Capacity now scores as
+    # SUFFICIENCY for the book actually deployed and goes FLAT above it, because capacity you
+    # cannot fill is not an advantage you own.
+    capacity_term = capacity_fit(capacity_usd, deployed_equity_usd, n_sleeves)
     diversification_term = 1.0 + max(0.0, diversification_contribution)
 
     return (

@@ -18,6 +18,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
+from libs.research.capacity_policy import DEFAULT_BOOK_USD, DEFAULT_SLEEVES, capacity_fit
+
 # Meta-learned priors (multiplicative on P(survive)), distilled from the desk's resolved outcomes.
 # Each is an economic pattern, not a fitted parameter -- update ONLY when the graveyard teaches a
 # new durable lesson. See docs/institutional_knowledge.md for the evidence behind each.
@@ -40,7 +42,12 @@ class Idea:
     name: str
     est_sharpe: float = 0.5      # honest prior on standalone Sharpe contribution (be conservative)
     breadth: int = 20            # number of independent bets/assets the signal spans
-    capacity_usd: float = 1e6    # rough $ the edge absorbs before decay
+    # Rough $ the edge absorbs before decay. Defaulted to bare sufficiency for this book, NOT to
+    # the old $1m: an unestimated idea is not a fund-scale idea, and a seven-figure default
+    # silently assumed every unmeasured candidate was one.
+    capacity_usd: float = 200_000.0
+    book_usd: float = DEFAULT_BOOK_USD   # WHOLE book; sleeved below, since one idea is one sleeve
+    n_sleeves: int = DEFAULT_SLEEVES
     orthogonality: float = 0.5   # 0..1 correlation-complement to book (1 = fully new)
     effort_h: float = 8.0        # engineering hours to test it properly
     maintenance: float = 1.0     # ongoing upkeep multiplier (1 = light, >1 = heavy)
@@ -59,7 +66,11 @@ def ev_score(idea: Idea) -> dict[str, Any]:
     """Expected-value score + a pre-research verdict. Higher EV = more log-growth per hour."""
     p = p_survive(idea)
     breadth_f = min(idea.breadth / 20.0, 3.0) ** 0.5           # IR ~ IC*sqrt(breadth); diminishing
-    capacity_f = min(idea.capacity_usd / 1e6, 5.0) ** 0.25     # capacity matters, but sub-linearly
+    # §39 PARITY. This was `min(cap/1e6, 5)**0.25`, monotone in raw size: a $50k-capacity edge was
+    # scored 0.47 and a $5M one 1.50, a 3.2x EV penalty on precisely the capacity-bound niche
+    # PROSPECTOR_SPEC calls this desk's one structural advantage. Capacity you cannot fill is not
+    # EV -- so it now scores as sufficiency for `book_usd` and is FLAT once sufficient.
+    capacity_f = capacity_fit(idea.capacity_usd, idea.book_usd, idea.n_sleeves)
     denom = max(idea.effort_h, 0.5) * max(idea.maintenance, 0.5)
     ev = (p * max(idea.est_sharpe, 0.0) * breadth_f * capacity_f
           * max(idea.orthogonality, 0.0) / denom)

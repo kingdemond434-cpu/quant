@@ -87,6 +87,21 @@ _REGISTRY: dict[str, ThresholdSpec] = {
                   "very thing excluding the capacity-bound niche the desk's own PROSPECTOR_SPEC "
                   "names as its structural advantage, so this must be able to move DOWN on "
                   "evidence as the desk deliberately hunts smaller"),
+    "capacity_crowd_start_usd": ThresholdSpec(
+        name="capacity_crowd_start_usd", default=1.0e7, floor=1.0e6, ceiling=1.0e9,
+        direction="free", tighten_is_up=False,
+        rationale="ABSOLUTE capacity past which an edge is assumed CROWDED (big enough that funds "
+                  "trade it too) and is discounted. Absolute, not a multiple of our book: whether "
+                  "an edge is crowded is a fact about the market, not about how much money we "
+                  "have. Free, because where fund attention actually starts is an empirical "
+                  "question the desk's own decay-vs-capacity evidence should answer, either way"),
+    "capacity_crowd_floor": ThresholdSpec(
+        name="capacity_crowd_floor", default=0.75, floor=0.50, ceiling=1.0,
+        direction="loosen_only", tighten_is_up=False,
+        rationale="floor on the crowding discount: a fund-scale edge is ranked lower on size, "
+                  "NEVER scored out. Loosen-only (toward 1.0 = no discount) so this can only ever "
+                  "become MORE neutral on size -- an unbounded tilt toward small would just be "
+                  "the old $100k exclusion mirrored, and this bound makes that unreachable"),
     "mine_latency_regress_mult": ThresholdSpec(
         name="mine_latency_regress_mult", default=1.5, floor=1.05, ceiling=3.0,
         direction="tighten_only", tighten_is_up=False,

@@ -59,23 +59,41 @@ class TestCapacityHuntCheck:
 
         return m, _S
 
-    def test_fund_shaped_hunt_fires(self, tmp_path, monkeypatch) -> None:
-        # every candidate needs seven figures -> the desk is competing where it has no advantage
-        m, store = self._store(tmp_path, [5e6, 8e6, 1e7, 2e7, 9e6, 1.5e7])
+    def _run(self, tmp_path, monkeypatch, caps: list[float]) -> list[tuple[str, str]]:
+        m, store = self._store(tmp_path, caps)
         monkeypatch.setattr(m, "ROOT", tmp_path)
         monkeypatch.setattr("libs.autodiscovery.memory.CandidateStore", store)
         defects: list[tuple[str, str]] = []
         m.check_capacity_hunt(defects)
+        return defects
+
+    def test_fund_shaped_hunt_fires(self, tmp_path, monkeypatch) -> None:
+        # every candidate needs eight figures -> the desk is competing where it has no advantage
+        defects = self._run(tmp_path, monkeypatch, [5e7, 8e7, 1e8, 2e8, 9e7, 1.5e8])
         assert defects and defects[0][0] == "capacity-hunt-fund-shaped"
         assert "NO advantage" in defects[0][1]
 
     def test_niche_hunt_is_silent(self, tmp_path, monkeypatch) -> None:
-        m, store = self._store(tmp_path, [20_000, 50_000, 120_000, 80_000, 15_000, 9e6])
-        monkeypatch.setattr(m, "ROOT", tmp_path)
-        monkeypatch.setattr("libs.autodiscovery.memory.CandidateStore", store)
-        defects: list[tuple[str, str]] = []
-        m.check_capacity_hunt(defects)
+        defects = self._run(tmp_path, monkeypatch, [50e3, 120e3, 400e3, 80e3, 900e3, 9e7])
         assert defects == []
+
+    def test_a_bare_quarter_is_no_longer_enough(self, tmp_path, monkeypatch) -> None:
+        # the bar was 25%, which let three quarters of the funnel point at fund-scale and still
+        # called it "hunting the niche". Parity means the niche gets at least half.
+        caps = [50e3, 80e3] + [5e7] * 6          # 2/8 = 25% niche
+        ids = [d[0] for d in self._run(tmp_path, monkeypatch, caps)]
+        assert "capacity-hunt-fund-shaped" in ids
+
+    def test_parity_at_half_is_accepted(self, tmp_path, monkeypatch) -> None:
+        caps = [50e3, 80e3, 200e3, 400e3, 5e7, 6e7, 7e7, 8e7]   # exactly 50%
+        ids = [d[0] for d in self._run(tmp_path, monkeypatch, caps)]
+        assert "capacity-hunt-fund-shaped" not in ids
+
+    def test_unfillable_candidates_are_their_own_defect(self, tmp_path, monkeypatch) -> None:
+        # small is the advantage; too small to fill is not -- and it must not be scored as niche
+        caps = [500.0, 1_000.0, 50e3, 120e3, 400e3, 900e3]
+        ids = [d[0] for d in self._run(tmp_path, monkeypatch, caps)]
+        assert "capacity-hunt-unfillable" in ids
 
     def test_too_few_candidates_is_not_judged(self, tmp_path, monkeypatch) -> None:
         m, store = self._store(tmp_path, [1e7, 2e7])

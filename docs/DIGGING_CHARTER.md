@@ -323,8 +323,74 @@ A ~$50k book has exactly ONE structural advantage over every fund on earth: it c
 
 (1) CAPACITY IS A RATIO, NOT A DOLLAR FIGURE. The gate's real job is to stop the desk being a large share of its OWN edge's capacity — impact, not size. That is a ratio to deployed equity and it protects a $5k book and a $5M book identically: `capacity_usd >= max(abs_floor, headroom_mult × deployed_equity)`. Both bounds live in the ThresholdBook, bounded and evidence-adjustable. The absolute floor is deliberately FREE rather than tighten-only, because the old fixed floor was itself the defect — the desk must be able to move it DOWN as it deliberately hunts smaller.
 
-(2) PERMISSION IS NOT PURSUIT. Removing the block is necessary and NOT sufficient: a desk merely allowed to hunt small will still default to fund-shaped ideas, because that is what the literature is written about and what the models have read. So the CAPACITY DISTRIBUTION of screened candidates is measured every sweep (`max_audit.check_capacity_hunt`). If under a quarter of scored candidates sit in the range a $50k book can actually exploit, the desk is competing where it has no advantage and could not fill the trade if it found one — a DEFECT, not a preference.
+(2) PERMISSION IS NOT PURSUIT. Removing the block is necessary and NOT sufficient: a desk merely allowed to hunt small will still default to fund-shaped ideas, because that is what the literature is written about and what the models have read. So the CAPACITY DISTRIBUTION of screened candidates is measured every sweep (`max_audit.check_capacity_hunt`). If under HALF of scored candidates sit in the range a $50k book can actually exploit, the desk is competing where it has no advantage and could not fill the trade if it found one — a DEFECT, not a preference. (The bar was a quarter until the second pass below raised it to parity; a floor is not parity.)
 
 (3) THE NAMED GROUND. Day-1 perp listing funding spikes (one-sided spec flow, no arb capital yet — the `run_listing_watch` clock already runs for this), thin-pair cross-venue funding divergence, low-OI tails of the perp universe, delisting forced-unwind dislocations. What they share is that they pay BECAUSE they are too small to interest anyone with money, and they decay as the desk grows into them. That decay is DEFINITIONAL, not a risk to be mitigated: the sequence is edge → size → next edge, which is why breadth keeps earning its cost even when depth is what converts.
 
 (4) THE HONEST TRADE, RECORDED. Triple-digit returns and the current ruin discipline are not simultaneously available. Hunting smaller raises the ceiling for free and touches no rail. Loosening the rails also raises it, and buys the return with ruin probability. The first is doctrine; the second is a principal decision that must be made deliberately, never drifted into.
+
+(5) PARITY, NOT PERMISSION — AND ONE SOURCE OF TRUTH (2026-07-26, second pass). Clauses (1)-(2)
+removed a categorical EXCLUSION and measured the funnel. They did not deliver PARITY, and an audit
+of the scoring math showed why: the $100k floor was never one number in one place, it was FIVE
+copies of a policy that disagreed with each other. Fixing the survival gate left four intact —
+`discovery.objective` gave a $1m idea a 1.9x rank advantage over a $50k one, `alpha_economics` a
+3.2x EV advantage, `discovery.factory` still hard-failed acceptance below a flat $1e5, and
+`capacity_intelligence` scored scalability against a $10m reference so a niche edge scored ~0.5 out
+of 100. A candidate could therefore pass the fixed gate and still lose every ranking to a
+fund-shaped idea it beat on every dimension that actually pays. Being ALLOWED into the niche while
+being SCORED out of it is the same exclusion moved one layer down, where it is harder to see.
+
+The law has three parts, all mechanical:
+
+  (a) CAPACITY SCORES AS SUFFICIENCY, NEVER AS MAGNITUDE. `libs/research/capacity_policy.py` is the
+  single definition and every scorer imports it. The score ramps to the headroom requirement, then
+  goes FLAT — above sufficiency, size stops being a tiebreaker and the edge is judged on Sharpe,
+  orthogonality and persistence like everything else. That flat region IS the parity. Capacity you
+  cannot fill is not an advantage you own; rewarding it is preferring an option you cannot
+  exercise. Above an ABSOLUTE fund-scale threshold a bounded crowding discount applies — bounded,
+  and floored in the ThresholdBook as loosen-only, because an unbounded tilt toward small would
+  merely be the original bug mirrored. The crowding threshold is absolute and not a multiple of our
+  own book, because whether an edge is crowded is a fact about the market, not about how much money
+  we happen to have.
+
+  (b) NO EDGE IS FILLED WITH THE WHOLE BOOK. Capacity is judged against the equity ONE SLEEVE
+  receives, not against the desk total. Comparing every candidate to the full book silently assumes
+  an all-in single-strategy desk and inflates the requirement by the sleeve count — the flat-floor
+  bug in miniature. The divisor is explicit (`DEFAULT_SLEEVES`), never implied.
+
+  (c) THE FUNNEL MUST BE AT LEAST HALF NICHE. `check_capacity_hunt`'s bar rises from a quarter to
+  PARITY: the niche gets at least as much of the screened population as everything else combined,
+  because it is the one band where this book is not the worst-capitalised participant in the trade.
+  Separately, candidates that cannot absorb even one sleeve are their own defect — small is the
+  advantage, too small to fill is not, and the two must never be scored as the same thing.
+
+  (d) THE GUARD IS STRUCTURAL, NOT NUMERIC. `check_capacity_single_source` enumerates every scorer
+  that judges capacity and fails if one does not import the shared policy, or carries a
+  fund-shaped dollar literal on a capacity line. Checking the SHAPE OF THE DEPENDENCY rather than
+  the value of a threshold is what makes the guard survive somebody legitimately re-tuning the
+  threshold. Five copies is the failure mode; one import is the invariant.
+
+(6) EVENT-SHAPED EDGES NEED AN EVENT-SHAPED GATE. Every promotion gate the desk owns scores a
+continuous daily return series. That is the right shape for carry and trend, and the WRONG shape
+for the edges (3) names: a day-1 listing funding spike is a few hours, a few times a week, and it
+is over. Thirty such events are thirty observations, but strung into a daily series they are ~2
+non-zero days in 30 flat ones and every continuous statistic reads that as noise. The desk could
+therefore COLLECT listing data forever and never be able to PROMOTE what it found — acquired but
+not convertible, which is a §33 failure wearing a statistics costume.
+
+`libs/validation/event_study.py` is that missing path, and the unit of evidence is the EVENT. It
+is not a weaker bar, it is a denser one: 30 events are 30 largely-independent draws where 40 daily
+returns are 40 autocorrelated ones, so the clock shortens because the EVIDENCE is denser, not
+because the standard moved. It carries the same discipline as everything else — a Brown-Warner
+cross-sectional t against a Holm bar deflated by the cohort actually screened, a bootstrap CI that
+must ALSO exclude zero (a parametric t alone is defeatable by crypto's fat tails), overlap measured
+and effective-N discounted by it exactly as §31 discounts trial counts, and a hard refusal below
+20 observations. A constant return series is refused as a DATA DEFECT rather than scored, because
+`std == 0` never fires in floating point and the t-stat would otherwise explode past every bar.
+
+The hypothesis is PRE-REGISTERED in code (`libs/research/listing_events.py`): direction, holding
+window and funding threshold are module constants, not arguments, because arguments get swept and
+the best result reported — and then the multiplicity correction is a lie, since the trials are
+invisible. A second window is a NEW hypothesis and must raise `VARIANTS_TRIED` so the bar rises
+with it. A PASS is EVIDENCE and nothing more; Gate-0 and the ordinary promotion path still stand
+between it and any allocation, and real capital is never allocated automatically.
