@@ -242,6 +242,58 @@ counterfactual: LOW -- practitioner writeups diff sources against each other; cl
   against the conservation law (and refusing tolerance bands) is desk discipline, not crowd
   practice.
 
+### OP-025 stdlib-only PDF interior extraction (no install, no poppler)   [active]
+class: verification
+origin: Literature deep-miner run 3 (2026-07-26)   validated-gain: lifted a blocker that had capped
+  TWO full literature runs to abstract-level evidence and left 5 findings unverified; on first use it
+  CORRECTED THREE WRONG NUMBERS in a desk document (HXZ: actual 65% @ t>1.96, 82% @ the 2.78
+  multiple-test hurdle, worst category trading frictions 102/106=96.2% — recorded as 64% / "85% @
+  t-cutoff 3" / "liquidity 95 of 102 = 93%"). Cross-validated against an independent HTML rendering
+  of a second paper: reproduces a table of parenthesised p-values to the digit.
+technique: do NOT conclude "this box cannot read PDFs" from the absence of pypdf/fitz/pdfminer/
+  pdftotext. PDF text lives in FlateDecode streams and the stdlib ships `zlib`. ~90 lines:
+  (1) regex every `stream\r?\n ... endstream`; (2) `zlib.decompress` each (skip failures);
+  (3) in each decompressed chunk pull operands of `Tj`/`TJ` — literal `(...)` strings with PDF
+  escape/octal handling, and hex `<...>` strings (sniff UTF-16BE by counting zero bytes at even
+  positions); (4) reconstruct inter-word spaces from TJ kern numbers more negative than ~-100;
+  (5) newline on `Td`/`TD`/`T*`/`ET`. Upgrade path (worth it for CID/subset fonts): parse the xref
+  object graph + object streams, build ToUnicode CMap font maps, and render per /Type/Page.
+  ALWAYS grep-filter the output with a targeted regex — a 60-page paper will otherwise flood context.
+  Ligatures render oddly (fi -> Þ): write regexes that avoid them (`signi` not `significance`).
+  VALIDATE BEFORE TRUSTING: extract a paper whose numbers were already read from HTML and diff.
+  An unvalidated extractor that mangles digits is a phantom-evidence factory.
+  NOT DURABLE YET — /tmp prototype; landing it as `scripts/pdf_text.py` is GAP_REGISTER #70.
+adaptations: language-independent by construction (byte-level). CN/JP/KR PDFs with CID fonts need
+  the ToUnicode upgrade path above. Applies to EVERY digger, not just literature: exchange rulebooks,
+  regulator filings, central-bank PDFs, vendor methodology docs, university theses — all were
+  silently unreadable under the old false blocker.
+counterfactual: LOW — two prior runs had the same task, the same box and the same freeze, and both
+  inherited the blocker verbatim instead of testing it. This surfaced only because the premise was
+  re-tested rather than re-read.
+
+### OP-026 paywall-substitute route ladder (403 is a routing problem, not a wall)   [active]
+class: source-expansion
+origin: Literature deep-miner run 3 (2026-07-26)   validated-gain: SSRN/ScienceDirect/Wiley 403 from
+  this VPS is the single largest cause of SUMMARY-ONLY grades, and SUMMARY-ONLY claims are BARRED
+  from the graveyard — so this access gap was directly costing the desk verified negative knowledge
+  (one finding, Li & Zhu crypto SIZE, is still stranded provisional purely because of it).
+technique: on a 403/paywall, do NOT grade the paper SUMMARY-ONLY until this ladder is exhausted, in
+  order: (1) `arxiv.org/html/<id>` and `ar5iv.labs.arxiv.org/html/<id>` — full text where the PDF
+  fails; (2) NBER working-paper page (author-written abstracts, fetchable); (3) RePEc/IDEAS
+  `ideas.repec.org` — carries VERBATIM abstracts, not summaries; (4) institutional open-access
+  repositories hosting the publisher version legitimately (research-api.cbs.dk, open.icm.edu.pl,
+  university self-archives, hec.ca, fmg.ac.uk); (5) author's own homepage/lab page self-archive;
+  (6) the paper's public code+data repo (bkelly-lab/ReplicationCrisis, openassetpricing.com,
+  jkpfactors.com) — often carries the tables directly; (7) OP-025 on any PDF the ladder yields.
+  LEGITIMACY GATE (charter §13, absolute): the answer to a paywall is an OPEN mirror, an author
+  self-archive, or doing without. NEVER circumvention. Every route above is publisher-sanctioned
+  open access or an author's own posting.
+adaptations: CN=CN-author arXiv clusters + author self-archives (CNKI/Wanfang stay EXCLUDED per §13);
+  RU=CyberLeninka; JP=J-STAGE + CiNii; BR/LatAm=SciELO; KR=KCI/RISS open subsets; EU=DART-Europe +
+  DiVA + theses.fr for the thesis layer.
+counterfactual: MED — each route is individually known; the gain is making it a MANDATORY ORDERED
+  LADDER before the SUMMARY-ONLY grade is allowed, which is what converts it into verified evidence.
+
 ## LEXICON — EN crypto-trading era jargon (dark-forest search keys)
 _Charter dark-forest mandate deliverable #2. Slang/era-jargon is HOW you reach the folk layer:
 official vocabulary finds official content. Terms below were DERIVED EMPIRICALLY, not guessed —
