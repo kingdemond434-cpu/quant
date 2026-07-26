@@ -52,6 +52,9 @@ _STEPS = [
     # desk can never convert, so the study runs on the same cadence as the collector rather than
     # waiting for someone to remember it exists.
     ("event_study",       "scripts/run_event_study.py",     300),
+    # §42: cross-venue funding on the THIN tail -- where a small book is not the worst-capitalised
+    # participant. The liquid names are already screened; this starts the clock on the other end.
+    ("tail_funding",      "scripts/collect_tail_funding_divergence.py", 120),
     ("kimchi_premium",    "scripts/collect_kimchi_premium.py", 90),  # gap-74 forward clock
     ("onchain_activity",  "scripts/collect_onchain_activity.py", 120),
     # licence-clean Glassnode/Coin-Metrics replacement (facts reconstructed from chain)

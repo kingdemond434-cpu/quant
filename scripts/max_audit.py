@@ -1817,22 +1817,44 @@ def check_orphan_code(defects) -> None:
     scripts = ROOT / "scripts"
     if not (libs.exists() and scripts.exists()):
         return
-    # cheap reachability proxy: a package is 'used' if any scripts/ file imports from it
-    entry_text = "\n".join(f.read_text("utf-8", errors="ignore")
-                            for f in scripts.glob("*.py"))
+    # TRANSITIVE reachability. The old proxy checked only DIRECT imports in scripts/, so a package
+    # reached through one hop -- scripts -> libs.research.listing_events -> libs.features.labels --
+    # was reported as idle while being genuinely run. A check that cries wolf gets acknowledged
+    # into silence, which costs more than the check ever earned, and it under-reported too: a
+    # package imported ONLY by another orphan is still an orphan and used to look reachable.
+    import re
+
+    def _pkgs_in(text: str) -> set[str]:
+        return set(re.findall(r"\blibs\.([a-z_][a-z0-9_]*)", text))
+
+    pkg_text: dict[str, str] = {}
+    for d in libs.iterdir():
+        if d.is_dir() and (d / "__init__.py").exists():
+            with contextlib.suppress(OSError):
+                pkg_text[d.name] = "\n".join(
+                    f.read_text("utf-8", errors="ignore") for f in d.rglob("*.py"))
+
+    reached: set[str] = set()
+    frontier = _pkgs_in("\n".join(f.read_text("utf-8", errors="ignore")
+                                  for f in scripts.glob("*.py")))
+    while frontier:                       # BFS from the entry points, not a single hop
+        nxt = frontier.pop()
+        if nxt in reached or nxt not in pkg_text:
+            continue
+        reached.add(nxt)
+        frontier |= _pkgs_in(pkg_text[nxt]) - reached
+
     suspicious = []
     for pkg in sorted(d for d in libs.iterdir() if d.is_dir() and (d / "__init__.py").exists()):
         name = pkg.name
         mods = [m.stem for m in pkg.glob("*.py") if m.stem != "__init__"]
-        if len(mods) < 3:
-            continue
-        # imported from scripts at all?
-        if f"libs.{name}" in entry_text or f"from libs.{name}" in entry_text:
+        if len(mods) < 3 or name in reached:
             continue
         suspicious.append(f"{name}({len(mods)} modules)")
     if suspicious:
         defects.append(("orphan-code",
-                        "library package(s) imported by NO scripts/ entry point (idle code -- "
+                        "library package(s) unreachable from ANY scripts/ entry point, "
+                        "directly or transitively (idle code -- "
                         f"the class never monitored): {', '.join(suspicious[:6])}. Wire the "
                         "safeguard (e.g. libs/backtest cross_engine) or retire on the record -- "
                         "verify against dynamic imports before deleting."))

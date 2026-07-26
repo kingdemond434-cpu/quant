@@ -185,3 +185,17 @@ UNIVERSAL DUTY SET (principal 2026-07-26: "all doctrines which need to be in eve
     collector, and it is invisible in the output unless the trial count is honest.
   - A PASS IS EVIDENCE, NOT AN ALLOCATION. Gate 0 and the ordinary promotion path still stand
     between an event study and a single dollar. Real capital is never allocated automatically.
+  - AN ORPHAN IS FIXED BY A CALLER, NOT BY DELETION. Four mechanisms in one day were built,
+    unit-tested green and passed by nobody. Unit tests are what make this invisible: they prove
+    the mechanism works and say NOTHING about whether anything runs it. Before calling any knob,
+    governor or helper done, name the production caller. If there is none, it is not done.
+  - REACHABILITY IS TRANSITIVE, AND LAZY IMPORTS HIDE IT. check_orphan_code walks the import graph
+    from scripts/, not one hop. If a module must be seen as reached, import it at TOP LEVEL -- an
+    import inside a function is invisible to static analysis and keeps the checker crying wolf,
+    and a check that fires on healthy code gets acknowledged into silence.
+  - TWO EXIT RULES ARE TWO TRIALS. run_event_study runs the fixed window AND the triple barrier
+    and prints BOTH verdicts. Never run two and publish the better one; that is the garden of
+    forking paths with extra steps. VARIANTS_TRIED prices the trials CONSIDERED, not the kept.
+  - THE TAIL SCREEN FLAGS ITS OWN BAD DATA. A cross-venue spread above the credibility ceiling is
+    marked, never ranked first: the biggest number in a noisy panel is the likeliest artifact.
+    Capacity on a pair is the MINIMUM leg -- a pair is only as large as its thinner side.

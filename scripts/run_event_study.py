@@ -40,6 +40,18 @@ def _klines(symbol: str, start_ms: int, end_ms: int) -> list[list[object]]:
     return data if isinstance(data, list) else []
 
 
+def _window_path(symbol: str, t_start: float, hold_h: float) -> list[float] | None:
+    """Hourly closes across the holding window -- what a barrier exit needs to walk."""
+    start_ms, end_ms = int(t_start * 1000), int((t_start + hold_h * 3600.0) * 1000)
+    if end_ms > int(datetime.now(tz=UTC).timestamp() * 1000):
+        return None
+    try:
+        bars = _klines(symbol, start_ms, end_ms)
+        return [float(str(b[4])) for b in bars] if len(bars) >= 2 else None
+    except Exception:
+        return None
+
+
 def _window_return(symbol: str, t_start: float, hold_h: float) -> float | None:
     """Close-to-close return over the holding window, or None if the window is not complete."""
     start_ms, end_ms = int(t_start * 1000), int((t_start + hold_h * 3600.0) * 1000)
@@ -63,6 +75,7 @@ def main() -> int:
         HOLD_HOURS,
         VARIANTS_TRIED,
         build_events,
+        build_events_barrier,
         listing_rows,
         qualifying,
         study_listings,
@@ -83,17 +96,25 @@ def main() -> int:
             cache[t_start] = _window_return(_BENCH, t_start, HOLD_HOURS)
         return cache[t_start]
 
+    # BOTH pre-registered exits are run and BOTH are reported. Running two and publishing the
+    # better one would be the garden of forking paths with extra steps; VARIANTS_TRIED already
+    # prices two trials in the Holm bar, so the honest move is to show both verdicts and let the
+    # reader see the disagreement if there is one.
     events = build_events(rows, lambda s, t: _window_return(s, t, HOLD_HOURS), _bench)
     res = study_listings(events)
+    ev_bar = build_events_barrier(rows, lambda s, t: _window_path(s, t, HOLD_HOURS), _bench)
+    res_bar = study_listings(ev_bar)
     _OUT.write_text(json.dumps({
         "as_of": datetime.now(tz=UTC).isoformat(),
         "hypothesis": ("SHORT a new USDT perp whose day-1 funding >= threshold, held "
                        f"{HOLD_HOURS:.0f}h, benchmark-adjusted vs {_BENCH}"),
         "variants_tried": VARIANTS_TRIED,
         "n_logged": len(rows), "n_qualifying": len(quals),
-        **res.model_dump(),
+        "fixed_window": res.model_dump(),
+        "triple_barrier": res_bar.model_dump(),
     }, indent=2), "utf-8")
-    print(f"[event-study] {res.verdict}")
+    print(f"[event-study] fixed {HOLD_HOURS:.0f}h : {res.verdict}")
+    print(f"[event-study] barrier    : {res_bar.verdict}")
     print(f"[event-study] wrote {_OUT.relative_to(ROOT)}")
     return 0
 

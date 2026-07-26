@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import json
 
+import pytest
+
 from libs.research.listing_events import (
     FUNDING_THRESHOLD,
     HOLD_HOURS,
@@ -91,3 +93,50 @@ class TestPreRegistration:
     def test_the_trial_count_is_declared_not_assumed(self) -> None:
         # the Holm bar can only be honest if every window/direction variant is counted
         assert VARIANTS_TRIED >= 1
+
+
+class TestBarrierExit:
+    """§42: `triple_barrier_labels` had correct code, a full test file and NO production consumer.
+
+    The fix for an orphan is a real caller, not deletion -- and a fixed 48h hold is not how anyone
+    trades a dislocation anyway, so the barrier exit is both the honest model and the wiring."""
+
+    def test_the_profit_target_is_taken_when_price_falls(self) -> None:
+        from libs.research.listing_events import TP_FRAC, barrier_return
+        assert barrier_return([100.0, 98.0, 95.0, 92.0]) == TP_FRAC
+
+    def test_the_stop_is_taken_when_the_short_is_wrong(self) -> None:
+        from libs.research.listing_events import SL_FRAC, barrier_return
+        assert barrier_return([100.0, 102.0, 105.0, 107.0]) == -SL_FRAC
+
+    def test_the_time_barrier_exits_at_the_close(self) -> None:
+        from libs.research.listing_events import barrier_return
+        assert barrier_return([100.0, 100.5, 101.0]) == pytest.approx(-0.01)
+
+    def test_a_path_too_short_is_undetermined_not_zero(self) -> None:
+        from libs.research.listing_events import barrier_return
+        assert barrier_return([100.0]) is None and barrier_return([]) is None
+
+    def test_the_short_side_sign_is_not_inverted(self) -> None:
+        # the whole hypothesis is the SHORT; getting this backwards would report the exact
+        # opposite edge and still look like a clean result
+        from libs.research.listing_events import barrier_return
+        assert barrier_return([100.0, 90.0]) > 0     # price fell -> the short won
+        assert barrier_return([100.0, 110.0]) < 0    # price rose -> the short lost
+
+    def test_the_barrier_build_has_a_real_caller(self) -> None:
+        import inspect
+
+        import scripts.run_event_study as s
+        assert "build_events_barrier" in inspect.getsource(s), \
+            "the barrier exit is defined and never run -- an orphan with passing tests"
+
+    def test_both_exits_are_counted_as_trials(self) -> None:
+        from libs.research.listing_events import VARIANTS_TRIED
+        assert VARIANTS_TRIED >= 2, "two exit rules is two trials; the Holm bar must price both"
+
+    def test_it_builds_events_end_to_end(self) -> None:
+        from libs.research.listing_events import build_events_barrier
+        rows = [_row(f"S{i}", 0.002, _T0 + i * 86_400) for i in range(3)]
+        evs = build_events_barrier(rows, lambda s, t: [100.0, 97.0, 93.0], lambda t: 0.0)
+        assert len(evs) == 3 and all(e.ret > 0 for e in evs)

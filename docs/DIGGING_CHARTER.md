@@ -537,3 +537,41 @@ the best result reported — and then the multiplicity correction is a lie, sinc
 invisible. A second window is a NEW hypothesis and must raise `VARIANTS_TRIED` so the bar rises
 with it. A PASS is EVIDENCE and nothing more; Gate-0 and the ordinary promotion path still stand
 between it and any allocation, and real capital is never allocated automatically.
+
+(7) THE NAMED GROUND, BUILT (2026-07-26). §42(3) listed the hunting grounds; two are now running
+rather than described.
+
+  (a) DAY-1 LISTING DISLOCATION. `run_listing_watch` collects, `libs/research/listing_events.py`
+  converts, `scripts/run_event_study.py` rules, all on the same daily cadence. TWO pre-registered
+  exits are run and BOTH are reported: a fixed 48h close-to-close, and a triple barrier
+  (profit-take / stop / time, whichever is touched first) which is how the trade would actually be
+  run. `VARIANTS_TRIED = 2` because two exit rules are two trials — running both and publishing the
+  better one is the garden of forking paths with extra steps, so the Holm bar prices both and both
+  verdicts are printed even when they disagree.
+
+  (b) THIN-TAIL CROSS-VENUE FUNDING. `libs/research/tail_funding.py` +
+  `scripts/collect_tail_funding_divergence.py` screen Binance against Bybit on the BOTTOM half of
+  the shared perp universe by open interest. The unit is the ANNUALISED SPREAD, because only the
+  gap is harvestable delta-neutral; capacity is the MINIMUM open interest of the two legs, because
+  a pair is only as large as its thinner side — taking the fatter leg would overstate what is
+  fillable, which is the §42 error itself. A spread above the credibility ceiling is FLAGGED, never
+  ranked first: the biggest number in a noisy cross-venue panel is the likeliest artifact, and a
+  screen that sorts on magnitude surfaces its own worst data every single day.
+
+(8) AN ORPHAN IS FIXED BY A CALLER, NOT BY DELETION — AND REACHABILITY IS TRANSITIVE. Four times in
+one day a mechanism was built, unit-tested green, and passed by nobody: the crowding floor, the
+sizer governor, `allocation_usd`, and `barrier_return`. Unit tests are precisely what makes this
+invisible — they prove the mechanism works and say nothing about whether anything runs it. So:
+
+  (a) `check_capacity_knobs_are_wired` requires every capacity knob to have a PRODUCTION caller. A
+  test does not count. It caught `allocation_usd` on its first run.
+
+  (b) `check_orphan_code` is now TRANSITIVE. The one-hop proxy reported `libs/features` as idle
+  while `run_event_study -> listing_events -> features.labels` genuinely ran it, and it counted a
+  package "used" when its only importer was itself an orphan. A check that fires on healthy code
+  gets acknowledged into silence, which costs more than the check ever earned. Making it a BFS from
+  the entry points cleared five false positives and surfaced real orphans hiding behind them.
+
+  (c) Imports that exist only to be reached must be TOP-LEVEL. A lazy import inside a function is
+  invisible to static reachability, so the checker keeps reporting a false orphan — the fix is the
+  import, not an exclusion list.
