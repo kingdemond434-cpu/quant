@@ -455,3 +455,35 @@ hypotheses and EV-score them; only the top few enter research.
   — so the two recorders don't contend for rate budget. Both are stdlib-only, isolated (no keys, no
   book access), gzip-jsonl hourly under data/moat/{fut,spot,bybit}/, cron pgrep self-heal. Three
   recorders now ~12GB/mo combined vs ~31GB free — DISK is the shared neighbour, guarded at 80% in each.
+- **UNKNOWN IS NOT ZERO: a venue 502 was published as a $0.00 funding harvest (2026-07-26).** The
+  carry book reported `funding_harvested=0.00` and a bleed verdict of "inf% — hedge losing more than
+  it earns", while the molded book had recorded `funding=101.96` on the same book two hours earlier.
+  `/fapi/v1/income` was returning HTTP 502 (3/3 live attempts). In `_mark()` the equity read and the
+  income read shared ONE `_safe()` block, so the equity assignment landed and the swallowed income
+  error left funding/commission at their initialised `0.0` — a PARTIAL update publishing a real
+  futures PnL beside a fabricated zero, which is exactly the pair the alarm reads as a total bleed.
+  An HTTP error was rendered as an economic verdict on the forward record the sizing gate reads.
+  **Three durable rules.** (1) Give every venue read its OWN guard: a shared try/except across two
+  calls makes failure partial, and a partial failure is published as if both succeeded. (2) A
+  measurement that fails must surface as UNMEASURED, never as a zero — they are opposite states and
+  only one of them is an execution problem. (3) Fixing a failure SHAPE on one code path does not fix
+  its siblings: this is the SAME shape as the 2026-07-19 stranded-inventory incident (GAP row 34),
+  which was fixed on the ORDER path (`_filled`) and left standing on the MEASUREMENT path for a week.
+  Run the adjacency sweep in the same pass — it found a second live instance in run_live_combined,
+  where the pattern was half-applied (venue_realized already used None-means-unknown; funding two
+  lines above still seeded 0.0). Corollary: silencing a false alarm is only safe if the silence is
+  itself tracked (max_audit `check_carry_funding_measured`).
+- **A convention honoured by one check and ignored by its sibling is a blind spot (2026-07-26).**
+  `check_artifact_ungoverned` implements trailing-slash directory claims with a comment predicting
+  that exact-path claims "would fire permanently on correctly-governed output"; `check_findings_scope`
+  in the same file did exact matching only. So `docs/research/deep_sweep/` — excluded WITH a stated
+  reason since it was written — was never actually excluded there, and `findings-scope-unmonitored`
+  fired forever on dated reports. The defect was UNCLOSABLE by construction: satisfying it required
+  listing files that do not exist yet. When a rule is written for one organ, grep for its siblings.
+- **Guards must be calibrated against measured cost, not a constant (2026-07-26).** The panel
+  pre-flight credit check estimated `0.05/seat` = $0.65/run against a measured ~$2.93 ($56.60
+  lifetime over 12 runs), and its own inline comment claimed "~$1.10/run" — disagreeing with its own
+  arithmetic. A guard 5-7x optimistic does not prevent mid-run exhaustion, it CAUSES it by
+  green-lighting a run the balance cannot cover. Now self-calibrating from the usage counter's
+  advance. Any guard carrying a hardcoded cost/latency/size constant should be asked, once a
+  quarter, whether reality still matches it.

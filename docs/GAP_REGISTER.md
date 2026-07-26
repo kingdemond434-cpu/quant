@@ -4,7 +4,31 @@ _Principal override 2026-07-16. Reviewed + re-ranked at the START of every daily
 items stale >7 days MUST be escalated (implement / defer with deadline / retire with reason).
 Ranked by expected E[log wealth] impact. Never empty without written justification._
 
-_Re-ranked 2026-07-26T01:00Z; rows #70-#74 inserted 2026-07-26T05:20Z by the literature deep-miner
+_Re-ranked 2026-07-26T20:35Z (REAL re-rank, discharging the debt the 05:20Z stamp below recorded).
+THREE EVIDENCE-DRIVEN MOVES, each from something measured this cycle rather than re-weighed opinion:
+(1) **#71 (gate-optimality) rises 13 -> 3.** It is no longer a question, it is an ANSWERED defect
+with a named mechanism: `pbo` and `reality_check` reject 420/420 because `campaign_pbo_rc` computes
+them ONCE PER CAMPAIGN and `validate()` (lines 102-103) hands every candidate the campaign verdict
+-- its own docstring says they are "identical for every candidate in a campaign". Measured campaign
+PBO 0.6159 (gate <=0.50) and White RC p 0.4220 (gate <0.05) therefore veto all 420 regardless of
+individual merit, while the per-candidate gates discriminate normally (walk_forward 58.1%,
+fragility 47.9%, cpcv 43.3%, capacity 43.3%, expected_value 40.2%; sole-cause failures EMPTY).
+Because campaign PBO rises with generation volume, this makes the screen's bar rise with generation
+-- the exact thing TWO_STAGE_DISCOVERY_LAW forbids. A promotion path that cannot promote makes every
+research hour downstream of it worthless, which is why it now outranks everything except the two
+ruin-class rows. NOT self-fixable: touching it relaxes validation-gate strictness (constitution
+point 5), so it needs a principal/panel ruling on RANK-not-VETO. Recommendation R0016.
+(2) **#74 (deep-sweep silent failure) falls 27 -> 34** on evidence that it is materially smaller
+than written: 4 of the 8 dimensions actually PRODUCED (448/485/382/909 lines), one was cut off and
+says so in its own text, and one now names its cause ("out of usage credits") because commit
+53cda72 fixed the contract. The residue is 2 dimensions still writing empty-stderr stubs, and the
+root cause is QUOTA, not an unexplained crash -- the same pool exhaustion the organ-catchup
+concurrency gate committed this cycle exists to stop. Smaller and understood, so it ranks lower.
+(3) **#41 holds at 5, unmoved but re-verified**: still the only MEASURED money-loser here, and this
+cycle found a SECOND live measurement defect on the same book (a venue 502 published as a $0.00
+funding harvest, ledger 2026-07-26-carry-funding-silent-zero), which strengthens rather than
+changes its case -- the carry book's accounting is where this desk's real losses keep being found.
+Nothing is >7 days stale; no forced escalations. Rows #70-#74 inserted 2026-07-26T05:20Z by the literature deep-miner
 (run 3 routing batch). HONEST SCOPE OF THAT SECOND STAMP: the five new rows were ranked against the
 existing list, and the existing rows' RELATIVE order was preserved untouched — this was an insertion,
 not a full re-rank, and it is labelled as one rather than claiming a re-rank that did not happen.
@@ -24,9 +48,9 @@ calendar time does. Ranking it first every cycle made the top of this list uninf
 named here and then excluded from the effort ranking.
 
 RANK (1 = next unit of effort):
-1 #49 · 2 #2 · 3 #76 · 4 #54 · 5 #41 · 6 #78 · 7 #37 · 8 #53 · 9 #79 · 10 #72 · 11 #70 · 12 #77 ·
-13 #60 · 14 #19 · 15 #14 · 16 #38 · 17 #71 · 18 #3 · 19 #51 · 20 #23 · 21 #24 · 22 #73 · 23 #42 · 24 #32 ·
-25 #61 · 26 #48 · 27 #74 · 28 #75 · 29 #39 · 30 #64 · 31 #22 · 32 #50 · 33 #40 · 34 #58 · 35 #30 · 36 #56 ·
+1 #49 · 2 #2 · 3 #71 · 4 #76 · 5 #54 · 6 #41 · 7 #78 · 8 #37 · 9 #53 · 10 #79 · 11 #72 · 12 #70 · 13 #77 ·
+14 #60 · 15 #19 · 16 #14 · 17 #38 · 18 #3 · 19 #51 · 20 #23 · 21 #24 · 22 #73 · 23 #42 · 24 #32 ·
+25 #61 · 26 #48 · 27 #75 · 28 #39 · 29 #64 · 30 #22 · 31 #50 · 32 #40 · 33 #58 · 34 #74 · 35 #30 · 36 #56 ·
 37 #52 · 38 #29 · 39 #55 · 40 #28 · 41 #36 · 42 #62 · 43 #63 · 44 #20 · 45 #21 · 46 #4 · 47 #5 · 48 #6 ·
 49 #59 · 50 #9.
 (Row #80 is principal-owned and claims no engineering slot, so it is absent from the rank —

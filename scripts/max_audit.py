@@ -1632,10 +1632,21 @@ def check_findings_scope(defects) -> None:
     """
     from libs.research.finding_registry import parse_findings
 
+    # TRAILING-SLASH CLASS CLAIMS (2026-07-26). check_artifact_ungoverned already honours these,
+    # with a comment stating exactly why: generators emit dated instances forever, so exact-path
+    # claims "could never keep up and the check would fire permanently on correctly-governed
+    # output". This sibling check never got the same treatment, so `docs/research/deep_sweep/` --
+    # excluded WITH a stated reason since it was written -- was never actually excluded here, and
+    # every weekly sweep report re-fired findings-scope-unmonitored. The defect was therefore
+    # UNCLOSABLE by construction: the only way to satisfy it was to list files that do not exist
+    # yet. A convention honoured by one check and ignored by its sibling in the same file is the
+    # generalise-the-rule blind spot; the two now read the claims the same way.
+    _excluded_prefixes = tuple(c for c in _FINDING_DOCS_EXCLUDED if c.endswith("/"))
     rogue = []
     for p in sorted((ROOT / "docs").rglob("*.md")):
         rel = p.relative_to(ROOT).as_posix()
-        if rel in _FINDING_DOCS or rel in _FINDING_DOCS_EXCLUDED or rel.endswith("GAP_REGISTER.md"):
+        if (rel in _FINDING_DOCS or rel in _FINDING_DOCS_EXCLUDED
+                or rel.startswith(_excluded_prefixes) or rel.endswith("GAP_REGISTER.md")):
             continue
         with contextlib.suppress(OSError):
             n = len(parse_findings(p.read_text("utf-8"), source=rel))
