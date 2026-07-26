@@ -15,6 +15,7 @@ import json
 from collections import defaultdict
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 _TRADES = Path("data/cashcarry_trades.json")
 _OUT = Path("web/trade_forensics.json")
@@ -27,8 +28,8 @@ _BASELINE = 0.000100   # Binance default funding -- entry gate should keep these
 _GATE_DATE = "2026-07-22T20:00:00+00:00"
 
 
-def _buckets(closes: list[dict]) -> dict[str, dict]:
-    out: dict[str, dict] = {}
+def _buckets(closes: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    out: dict[str, dict[str, Any]] = {}
     for lbl, lo, hi in (("<2h", 0.0, 2.0), ("2-8h", 2.0, 8.0),
                         ("8-24h", 8.0, 24.0), (">24h", 24.0, 1e9)):
         g = [x for x in closes if lo <= float(x.get("held_hours") or 0) < hi]
@@ -39,7 +40,7 @@ def _buckets(closes: list[dict]) -> dict[str, dict]:
     return out
 
 
-def _tape_sync(trades: list[dict]) -> dict:
+def _tape_sync(trades: list[dict[str, Any]]) -> dict[str, Any]:
     """Mirror the rolling buffer into the permanent execution tape, and report the margin.
 
     The buffer is capped at 500 events (run_cashcarry_executor._log_trade). At the observed event

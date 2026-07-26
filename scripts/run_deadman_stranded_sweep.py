@@ -24,6 +24,7 @@ import json
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -49,7 +50,7 @@ def main() -> None:
     px = spot.prices()
     filters = spot.exchange_filters()
 
-    rows = []
+    rows: list[dict[str, Any]] = []
     for sym in _SYMBOLS:
         base = sym.replace("USDT", "")
         if sym in tracked:

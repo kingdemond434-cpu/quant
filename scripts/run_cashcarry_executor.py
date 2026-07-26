@@ -89,7 +89,7 @@ def _daily_data_tasks() -> None:
     _LAST_ARCHIVE.write_text(today, "utf-8")
 
 
-def _book_snapshot() -> dict[str, object]:
+def _book_snapshot() -> dict[str, Any]:
     """Current book (state positions + live prices), NO orders -- for frequent marking."""
     state = json.loads(_STATE.read_text("utf-8")) if _STATE.exists() else {}
     return {"state": state, "pos": state.get("positions", {}), "actions": [], "cands": [],
@@ -100,7 +100,7 @@ def _round(qty: float, step: float, prec: int) -> float:
     return round(round(qty / step) * step, prec) if step > 0 else round(qty, prec)
 
 
-def _log_trade(rec: dict[str, object]) -> None:
+def _log_trade(rec: dict[str, Any]) -> None:
     """Append a real open/close event -> cashcarry_trades.json (source of winrate + history).
 
     The rolling file stays capped at 500 (every existing consumer depends on its shape), but the
@@ -231,7 +231,7 @@ def _alloc(cands: list[tuple[str, float]], capital: float,
     return {cands[i][0]: capital * w[i] for i in range(n)}
 
 
-def _topup_plan(pos: dict[str, dict], capital: float, *, cap_frac: float = 0.35,
+def _topup_plan(pos: dict[str, dict[str, Any]], capital: float, *, cap_frac: float = 0.35,
                 min_frac: float = 0.02, min_usd: float = 20.0) -> dict[str, float]:
     """Extra notional to bring each HELD carry UP toward its funding-weighted share of the FULL
     capital -- never DOWN (closes are the target-set's job; this only fills idle authorized
@@ -390,7 +390,7 @@ def _mkt_or_limit(conn: Any, sym: str, side: str, qty: float) -> str:
     return ""
 
 
-def _reconcile(pos: dict[str, dict], *, dry: bool,
+def _reconcile(pos: dict[str, dict[str, Any]], *, dry: bool,
                cooldown: dict[str, float] | None = None,
                fail_counts: dict[str, int] | None = None,
                orphan_seen: dict[str, int] | None = None,
@@ -550,7 +550,7 @@ def _ranked() -> list[tuple[str, float]]:
     return sorted(cands, key=lambda x: -x[1])
 
 
-def _rebalance(top: int, hold_top: int, capital: float, *, dry: bool) -> dict[str, object]:
+def _rebalance(top: int, hold_top: int, capital: float, *, dry: bool) -> dict[str, Any]:
     ranked = _ranked()
     cands = ranked[:top]                                   # the names we'd OPEN (top funding)
     # HYSTERESIS: a held carry is kept while it stays in the broad top-`hold_top` positive set;
@@ -558,7 +558,7 @@ def _rebalance(top: int, hold_top: int, capital: float, *, dry: bool) -> dict[st
     hold_set = {s for s, _ in ranked[:hold_top]}
     target = hold_set
     state = json.loads(_STATE.read_text("utf-8")) if _STATE.exists() else {}
-    pos: dict[str, dict] = state.get("positions", {})
+    pos: dict[str, dict[str, Any]] = state.get("positions", {})
     if "start" not in state:
         state["start"] = datetime.now(tz=UTC).isoformat()
         state["start_futures_equity"] = (fut.account_summary()["equity"] if fut.has_keys() else 0.0)
@@ -835,18 +835,19 @@ _MAKER_WAIT = 8.0                                          # seconds a post-only
 _MAKER_WAIT_OPEN = 240.0                                   # seconds a post-only OPEN may rest
 
 
-def _passive_price(bk: dict, fl: dict, sym: str, side: str) -> float | None:
+def _passive_price(bk: dict[str, Any], fl: dict[str, Any], sym: str, side: str) -> float | None:
     """Tick-rounded passive maker price: BUY at best bid, SELL at best ask (won't cross)."""
     bid, ask = bk.get(sym, (0.0, 0.0))
     px = bid if side == "BUY" else ask
     if px <= 0:
         return None
     tick = float(fl.get("tick", 0.0) or 0.0)
-    return round(round(px / tick) * tick, int(fl.get("price_prec", 8))) if tick > 0 else px
+    return (round(round(px / tick) * tick, int(fl.get("price_prec", 8)))
+            if tick > 0 else float(px))
 
 
 def _maker_pair(sym: str, qty: float, spot_side: str, fut_side: str,
-                *, wait: float) -> dict[str, object]:
+                *, wait: float) -> dict[str, Any]:
     """Quote BOTH legs post-only (maker), wait, then taker-fill whatever didn't rest+fill.
 
     Same qty on both legs -> the pair ends delta-neutral; the wait bounds any transient exposure.
@@ -898,7 +899,7 @@ def _filled(res: object) -> bool:
             and float(res.get("executedQty", 0.0)) > 0)
 
 
-def _execute_pair(sym: str, qty: float, spot_side: str, fut_side: str) -> dict[str, object]:
+def _execute_pair(sym: str, qty: float, spot_side: str, fut_side: str) -> dict[str, Any]:
     """Fill both carry legs -- maker-first (execution alpha: lower fees) if enabled, else market.
 
     Returns {"spot": mode, "fut": mode, "spot_ok": bool, "fut_ok": bool} -- callers MUST check
@@ -929,12 +930,12 @@ def _execute_pair(sym: str, qty: float, spot_side: str, fut_side: str) -> dict[s
     return {"spot": "taker", "fut": "taker", "spot_ok": spot_ok, "fut_ok": fut_ok}
 
 
-def _mark(rb: dict[str, object]) -> dict[str, float]:
+def _mark(rb: dict[str, Any]) -> dict[str, float]:
     pos, spot_px, fut_px = rb["pos"], rb["spot_px"], rb["fut_px"]
     spot_pnl = perp_pnl = notional = 0.0
-    for _sym, p in pos.items():  # type: ignore[union-attr]
-        spx = spot_px.get(_sym, p["spot_cost"])           # type: ignore[union-attr]
-        fpx = fut_px.get(_sym, p["perp_entry"])           # type: ignore[union-attr]
+    for _sym, p in pos.items():
+        spx = spot_px.get(_sym, p["spot_cost"])
+        fpx = fut_px.get(_sym, p["perp_entry"])
         spot_pnl += float(p["spot_qty"]) * (spx - float(p["spot_cost"]))   # our long-spot legs
         perp_pnl += abs(float(p["perp_qty"])) * (float(p["perp_entry"]) - fpx)   # short (display)
         notional += float(p["spot_qty"]) * spx
@@ -943,16 +944,16 @@ def _mark(rb: dict[str, object]) -> dict[str, float]:
     # the accumulated realized PnL of closed spot legs (their proceeds sit in the spot wallet,
     # invisible to open-position marks -- omitting them fabricated a loss as carries closed).
     state = rb["state"]
-    spot_realized = float(state.get("realized_spot_pnl", 0.0))  # type: ignore[union-attr]
+    spot_realized = float(state.get("realized_spot_pnl", 0.0))
     net = spot_pnl + spot_realized
     funding = fut_pnl = 0.0
     if fut.has_keys():
         with _safe():
             fut_eq = fut.account_summary()["equity"]
-            start_eq = float(state.get("start_futures_equity", fut_eq))  # type: ignore[union-attr]
+            start_eq = float(state.get("start_futures_equity", fut_eq))
             fut_pnl = fut_eq - start_eq                   # futures leg (realized+funding+fees+unrl)
             net = spot_pnl + spot_realized + fut_pnl
-            start_ms = int(datetime.fromisoformat(str(state["start"])).timestamp() * 1000)  # type: ignore[index]
+            start_ms = int(datetime.fromisoformat(str(state["start"])).timestamp() * 1000)
             funding = float(fut.income_summary(start_ms)["funding"])
     return {"spot_pnl": round(spot_pnl, 2), "perp_pnl": round(perp_pnl, 2),
             "spot_realized": round(spot_realized, 2), "fut_pnl": round(fut_pnl, 2),
@@ -960,7 +961,7 @@ def _mark(rb: dict[str, object]) -> dict[str, float]:
             "notional": round(notional, 2)}
 
 
-def _emit(rb: dict[str, object], marks: dict[str, float], dry: bool) -> None:
+def _emit(rb: dict[str, Any], marks: dict[str, float], dry: bool) -> None:
     pos = rb["pos"]
     # CARRY-LEAK ALARM ON THE BOOK THAT HOLDS THE MONEY (2026-07-26). `carry_bleed_report` was
     # only ever wired into the MOLDED book (run_live_combined), so the PRIMARY executed book --
@@ -974,7 +975,7 @@ def _emit(rb: dict[str, object], marks: dict[str, float], dry: bool) -> None:
         "updated": datetime.now(tz=UTC).isoformat(),
         "mode": "dry" if dry else "live-paper",
         "strategy": "delta-neutral cash-and-carry (long spot + short perp, positive funding)",
-        "executed": not dry, "n_carries": len(pos),  # type: ignore[arg-type]
+        "executed": not dry, "n_carries": len(pos),
         "deployed_notional": marks["notional"],
         "net_pnl": marks["net_pnl"], "funding_harvested": marks["funding"],
         "spot_leg_pnl": marks["spot_pnl"], "perp_leg_pnl": marks["perp_pnl"],
@@ -983,8 +984,8 @@ def _emit(rb: dict[str, object], marks: dict[str, float], dry: bool) -> None:
         "non_funding_pnl": bleed.non_funding_pnl,
         "harvest_eaten_frac": bleed.harvest_eaten_frac,
         "bleed_alert": bleed.alert, "bleed_verdict": bleed.verdict,
-        "carries": [{"symbol": s, "qty": p["spot_qty"], "funding_8h": p["funding"]}  # type: ignore[union-attr]
-                    for s, p in pos.items()],  # type: ignore[union-attr]
+        "carries": [{"symbol": s, "qty": p["spot_qty"], "funding_8h": p["funding"]}
+                    for s, p in pos.items()],
         "last_actions": rb["actions"],
         "risk": rb.get("risk"),
         "note": ("PRIMARY executed book (paper). Delta-neutral: spot hedges perp, profit = funding "
@@ -1108,7 +1109,7 @@ def main() -> None:
                 with contextlib.suppress(Exception):
                     subprocess.run([sys.executable, "scripts/run_live_combined.py"],
                                    timeout=60, capture_output=True, check=False)
-            print(f"[{datetime.now(UTC):%H:%M:%S}] carries={len(rb['pos'])} "  # type: ignore[arg-type]
+            print(f"[{datetime.now(UTC):%H:%M:%S}] carries={len(rb['pos'])} "
                   f"net=${marks['net_pnl']} funding=${marks['funding']} {rb['actions']}")
         except Exception as e:  # loop must survive transient errors -- but LOG them visibly
             with contextlib.suppress(Exception):

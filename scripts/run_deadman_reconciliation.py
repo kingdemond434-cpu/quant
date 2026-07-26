@@ -17,6 +17,7 @@ import json
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -48,7 +49,7 @@ def _parse(v: str) -> datetime:
     return datetime.fromisoformat(v)
 
 
-def _relevant_trades() -> list[dict]:
+def _relevant_trades() -> list[dict[str, Any]]:
     rows = json.loads(_TRADES.read_text("utf-8"))
     out = []
     for t in rows:
@@ -56,8 +57,8 @@ def _relevant_trades() -> list[dict]:
         closed = _parse(t["closed"]) if t.get("closed") else None
         lo = opened or closed
         hi = closed or opened
-        if lo is None:
-            continue
+        if lo is None or hi is None:      # both derive from the same pair, so this
+            continue                      # is one condition -- stated so it checks
         if hi < _SCAN_START or lo > _SCAN_END:
             continue
         out.append(t)
@@ -72,13 +73,14 @@ _SPOT_CHUNK_MS = 20 * 3600 * 1000   # venue caps spot myTrades spans at 24h; 20h
 _FUT_CHUNK_MS = 6 * 24 * 3600 * 1000  # venue caps at 7d on futures userTrades; 6d margin
 
 
-def _chunked_trades(fetch_fn, sym: str, start: int, end: int, chunk_ms: int) -> list[dict]:
+def _chunked_trades(fetch_fn: Any, sym: str, start: int, end: int,
+                    chunk_ms: int) -> list[dict[str, Any]]:
     """Page a myTrades-style call across venue-imposed start/end span caps.
 
     A silent-truncation trap: querying past the cap does not error, it returns an empty (or
     partial) list -- the exact failure class documented in institutional_knowledge.md (paginate
     every venue history endpoint). De-dupes on (id) since chunk boundaries can double-fetch."""
-    out: dict[str, dict] = {}
+    out: dict[str, dict[str, Any]] = {}
     cursor = start
     while cursor < end:
         chunk_end = min(cursor + chunk_ms, end)
@@ -88,8 +90,10 @@ def _chunked_trades(fetch_fn, sym: str, start: int, end: int, chunk_ms: int) -> 
     return list(out.values())
 
 
-def _reconcile_symbol(sym: str, opened: datetime | None, closed: datetime | None) -> dict:
-    start = _ms(opened or closed) - _BUFFER_MS
+def _reconcile_symbol(sym: str, opened: datetime | None, closed: datetime | None) -> dict[str, Any]:
+    # a trade carrying NEITHER timestamp would call _ms(None) and crash the reconciliation;
+    # the end_anchor below always had the fallback, the start never did (found by mypy 07-26)
+    start = _ms(opened or closed or _INCIDENT_END) - _BUFFER_MS
     end_anchor = closed or opened or _INCIDENT_END
     end = _ms(end_anchor) + _BUFFER_MS
 
@@ -140,7 +144,7 @@ def main() -> None:
         sys.exit(1)
 
     trades = _relevant_trades()
-    by_symbol: dict[str, list[dict]] = {}
+    by_symbol: dict[str, list[dict[str, Any]]] = {}
     for t in trades:
         by_symbol.setdefault(t["symbol"], []).append(t)
 

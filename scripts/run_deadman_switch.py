@@ -27,6 +27,7 @@ import time
 import urllib.parse
 import urllib.request
 from pathlib import Path
+from typing import Any
 
 _ROOT = Path(__file__).resolve().parent.parent
 _FUT_BASE = "https://testnet.binancefuture.com"     # PINNED testnet -- never live
@@ -41,7 +42,7 @@ _FIRED = _ROOT / "data" / "DEADMAN_FIRED"     # durable latch OUTSIDE the racy s
 _VERSION = 2                                   # state schema: foreign/legacy state is never read
 
 
-def _write_state(state: dict) -> None:
+def _write_state(state: dict[str, Any]) -> None:
     """ATOMIC state write -- principal sign-off 2026-07-25 (TIER-3 change, sole edit this commit).
 
     `write_text` is truncate-then-write: the file is zeroed, then filled. A death in that window
@@ -84,7 +85,7 @@ def _creds(path: Path) -> tuple[str, str] | None:
 
 
 def _req(url: str, key: str | None = None, data: bytes | None = None,
-         method: str = "GET") -> object:
+         method: str = "GET") -> Any:
     hdr = {"User-Agent": "deadman/1.0"}
     if key:
         hdr["X-MBX-APIKEY"] = key
@@ -93,8 +94,9 @@ def _req(url: str, key: str | None = None, data: bytes | None = None,
         return json.loads(r.read())
 
 
-def _signed(base: str, path: str, creds: tuple[str, str], params: dict | None = None,
-            method: str = "GET") -> object:
+def _signed(base: str, path: str, creds: tuple[str, str],
+            params: dict[str, Any] | None = None,
+            method: str = "GET") -> Any:
     p = {**(params or {}), "timestamp": int(time.time() * 1000), "recvWindow": 5000}
     q = urllib.parse.urlencode(p)
     sig = hmac.new(creds[1].encode(), q.encode(), hashlib.sha256).hexdigest()
@@ -104,7 +106,7 @@ def _signed(base: str, path: str, creds: tuple[str, str], params: dict | None = 
     return _req(f"{base}{path}", creds[0], body.encode(), method)
 
 
-def combined_equity(state: dict) -> float | None:
+def combined_equity(state: dict[str, Any]) -> float | None:
     """BOOK equity from venue ground truth only: futures margin balance + spot value of
     exactly the assets with a live futures SHORT (the carry legs) + the CHANGE in spot
     USDT since first poll.
@@ -165,7 +167,7 @@ def combined_equity(state: dict) -> float | None:
         return None
 
 
-def should_fire(equity: float | None, state: dict) -> bool:
+def should_fire(equity: float | None, state: dict[str, Any]) -> bool:
     """Pure trigger logic: ratchet high-water, count consecutive breaches, fire at N.
 
     Invalid readings (None) change nothing -- an API outage can neither fire nor reset."""
@@ -195,7 +197,7 @@ def should_fire(equity: float | None, state: dict) -> bool:
         state["breaches"] = int(state.get("breaches", 0)) + 1
     else:
         state["breaches"] = 0
-    return state["breaches"] >= _CONSECUTIVE
+    return bool(int(state["breaches"]) >= _CONSECUTIVE)
 
 
 def _flatten() -> None:

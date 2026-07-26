@@ -21,6 +21,7 @@ import time
 import urllib.parse
 import urllib.request
 from pathlib import Path
+from typing import Any
 
 import certifi
 
@@ -33,18 +34,24 @@ STATE = ROOT / "data/deadman_state.json"
 CTX = ssl.create_default_context(cafile=certifi.where())
 
 
-def creds(p: Path):
+def creds(p: Path) -> tuple[str, str]:
+    """Fail loudly on a keyless file: the pair flows straight into hmac.new(secret.encode()),
+    so a missing key surfaced as an AttributeError deep in signing rather than here."""
     d = json.loads(p.read_text())
-    return d.get("api_key") or d.get("key"), d.get("api_secret") or d.get("secret")
+    k, sec = d.get("api_key") or d.get("key"), d.get("api_secret") or d.get("secret")
+    if not k or not sec:
+        raise SystemExit(f"{p}: no api key/secret -- cannot reconcile against the venue")
+    return str(k), str(sec)
 
 
-def req(url: str, key: str | None = None):
+def req(url: str, key: str | None = None) -> Any:
     r = urllib.request.Request(url, headers={"X-MBX-APIKEY": key} if key else {})
     with urllib.request.urlopen(r, timeout=20, context=CTX) as resp:
         return json.loads(resp.read())
 
 
-def signed(base: str, path: str, c, params: dict | None = None):
+def signed(base: str, path: str, c: tuple[str, str],
+           params: dict[str, Any] | None = None) -> Any:
     k, s = c
     p = dict(params or {})
     p["timestamp"] = int(time.time() * 1000)
