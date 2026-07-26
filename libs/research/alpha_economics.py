@@ -70,7 +70,10 @@ def ev_score(idea: Idea) -> dict[str, Any]:
     # scored 0.47 and a $5M one 1.50, a 3.2x EV penalty on precisely the capacity-bound niche
     # PROSPECTOR_SPEC calls this desk's one structural advantage. Capacity you cannot fill is not
     # EV -- so it now scores as sufficiency for `book_usd` and is FLAT once sufficient.
-    capacity_f = capacity_fit(idea.capacity_usd, idea.book_usd, idea.n_sleeves)
+    # `sleeve=idea.name` is what lets a DECLARED allocation actually reach the score. Without
+    # it the parameter exists and nothing ever passes it -- a knob wired to nothing.
+    capacity_f = capacity_fit(idea.capacity_usd, idea.book_usd, idea.n_sleeves,
+                              sleeve=idea.name)
     denom = max(idea.effort_h, 0.5) * max(idea.maintenance, 0.5)
     ev = (p * max(idea.est_sharpe, 0.0) * breadth_f * capacity_f
           * max(idea.orthogonality, 0.0) / denom)

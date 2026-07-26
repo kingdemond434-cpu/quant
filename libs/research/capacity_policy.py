@@ -62,7 +62,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 __all__ = ["DEFAULT_BOOK_USD", "DEFAULT_SLEEVES", "capacity_band", "capacity_fit",
-           "capacity_required", "growth_runway", "live_book_usd", "live_sleeves",
+           "capacity_required", "declared_allocation", "growth_runway", "live_book_usd",
+           "live_sleeves",
            "max_allocation", "niche_share",
            "outgrown_at", "sleeve_equity"]
 
@@ -115,6 +116,29 @@ def sleeve_equity(book_usd: float, n_sleeves: int = 1) -> float:
     return max(0.0, float(book_usd)) / max(1, int(n_sleeves))
 
 
+def declared_allocation(sleeve: str | None) -> float | None:
+    """This sleeve's DECLARED funding, if it committed to one -- else None (equal weight applies).
+
+    Lazy and exception-guarded because `sleeve_allocations` imports THIS module; a top-level import
+    would be a cycle. Same discipline as `_tunable`: the policy module stays a leaf, and a missing
+    or broken store degrades to "no declaration" rather than taking every scorer down with it.
+
+    A None here is the SAFE direction: no declaration means the caller falls back to equal weight,
+    which is the stricter assumption. The unsafe direction -- a declaration that lets an edge
+    through -- is the one the audit reconciles against real funding.
+    """
+    if not sleeve:
+        return None
+    try:
+        from libs.research.sleeve_allocations import load
+        for a in load(Path(__file__).resolve().parents[2] / "data/sleeve_allocations.json"):
+            if a.sleeve == sleeve:
+                return a.declared_usd if a.self_consistent else None
+    except Exception:
+        return None
+    return None
+
+
 def max_allocation(capacity_usd: float) -> float:
     """Most the desk may EVER put into this edge -- the requirement, read the other way round.
 
@@ -145,7 +169,8 @@ def capacity_required(deployed_equity_usd: float, n_sleeves: int = 1) -> float:
 
 
 def capacity_fit(capacity_usd: float, deployed_equity_usd: float = DEFAULT_BOOK_USD,
-                 n_sleeves: int = 1, allocation_usd: float | None = None) -> float:
+                 n_sleeves: int = 1, allocation_usd: float | None = None,
+                 sleeve: str | None = None) -> float:
     """Score capacity in [0, 1] by SUFFICIENCY for this book -- flat above the requirement.
 
     Below the §42 headroom requirement the score ramps linearly: an edge you would be half of is
@@ -163,8 +188,9 @@ def capacity_fit(capacity_usd: float, deployed_equity_usd: float = DEFAULT_BOOK_
     with nothing checking it is just a way to pass any capacity gate by writing a small number.
     """
     cap = max(0.0, float(capacity_usd))
-    if allocation_usd is not None:
-        required = capacity_required(max(0.0, float(allocation_usd)), 1)
+    alloc = allocation_usd if allocation_usd is not None else declared_allocation(sleeve)
+    if alloc is not None:
+        required = capacity_required(max(0.0, float(alloc)), 1)
     else:
         required = capacity_required(max(0.0, float(deployed_equity_usd)), n_sleeves)
     if required <= 0.0:
@@ -183,15 +209,17 @@ def capacity_fit(capacity_usd: float, deployed_equity_usd: float = DEFAULT_BOOK_
 
 
 def capacity_band(capacity_usd: float, deployed_equity_usd: float = DEFAULT_BOOK_USD,
-                  n_sleeves: int = 1, allocation_usd: float | None = None) -> str:
+                  n_sleeves: int = 1, allocation_usd: float | None = None,
+                  sleeve: str | None = None) -> str:
     """Human-readable bucket, for audit output and dossiers rather than for arithmetic.
 
     Honours ``allocation_usd`` for the same reason `capacity_fit` does: if the score says an edge
     is fillable at a declared allocation, the band must not simultaneously call it UNFILLABLE.
     """
     cap = max(0.0, float(capacity_usd))
-    if allocation_usd is not None:
-        required = capacity_required(max(0.0, float(allocation_usd)), 1)
+    alloc = allocation_usd if allocation_usd is not None else declared_allocation(sleeve)
+    if alloc is not None:
+        required = capacity_required(max(0.0, float(alloc)), 1)
     else:
         required = capacity_required(max(0.0, float(deployed_equity_usd)), n_sleeves)
     if required > 0 and cap < required:

@@ -1172,18 +1172,29 @@ def check_capacity_hunt(defects) -> None:
     `check_capacity_runway`, not by preferring them here.
     """
     caps: list[float] = []
+    names: list[str] = []
     with contextlib.suppress(Exception):
         from libs.autodiscovery.memory import CandidateStore
         store = CandidateStore(ROOT / "data/research_memory.db")
-        caps = [float(getattr(c.metrics, "capacity_usd", 0.0) or 0.0) for c in store.all()]
-    caps = [c for c in caps if c > 0]
+        for c in store.all():
+            cap = float(getattr(c.metrics, "capacity_usd", 0.0) or 0.0)
+            if cap > 0:
+                caps.append(cap)
+                names.append(str(getattr(getattr(c, "hypothesis", None), "subtype", "") or ""))
     if len(caps) < 5:
         return  # too few scored candidates to judge where the hunt is pointed
-    from libs.research.capacity_policy import DEFAULT_SLEEVES, capacity_band
+    from libs.research.capacity_policy import DEFAULT_SLEEVES, capacity_band, declared_allocation
     # Whole-book figure -> must be divided by the sleeve count: no single edge is filled with the
     # entire desk. Judging candidates against all $50k would inflate the requirement 8x and mark
     # perfectly tradeable small edges "unfillable" -- the flat-floor bug wearing a new hat.
-    bands = [capacity_band(c, DESK_BOOK_USD, DEFAULT_SLEEVES) for c in caps]
+    #
+    # A DECLARED sleeve is banded at its declaration, because that is how every scorer judges it.
+    # Banding at equal weight here would have the audit call an edge UNFILLABLE while the scorer
+    # calls the same edge NICHE -- two answers to one question, and the audit is meant to be the
+    # thing that catches that class of disagreement, not a source of it.
+    bands = [capacity_band(c, DESK_BOOK_USD, DEFAULT_SLEEVES,
+                           allocation_usd=declared_allocation(name))
+             for c, name in zip(caps, names, strict=True)]
     in_niche = sum(1 for b in bands if b == "NICHE")
     larger = sum(1 for b in bands if b in ("SCALABLE", "FUND-SCALE"))
     unfillable = sum(1 for b in bands if b == "UNFILLABLE")
@@ -1217,6 +1228,48 @@ def check_capacity_hunt(defects) -> None:
             "inventory for the day the book outgrows the ones being run. Every small edge has a "
             "known expiry (`capacity-runway`); the replacement must be in the pipeline BEFORE it "
             "arrives, which means hunting large concurrently, not afterwards."))
+
+
+#: Knobs on the capacity policy that exist ONLY to be passed by a caller. Each must have at least
+#: one PRODUCTION caller -- a test does not count, because a test proves the mechanism works and
+#: says nothing about whether anything runs it.
+_CAPACITY_KNOBS = ("allocation_usd", "sleeve", "edge_capacity_usd")
+
+
+def check_capacity_knobs_are_wired(defects) -> None:
+    """§42: every capacity knob must have a PRODUCTION caller, not just a passing test.
+
+    This exists because the same mistake was made three times in one day: the crowding floor, the
+    sizer governor and `allocation_usd` were each built, unit-tested green, and never passed by any
+    real caller. A parameter nothing passes is an orphaned artifact (§36) with camouflage -- the
+    tests genuinely prove the mechanism, so the gap is invisible in exactly the way review is worst
+    at catching. Reviewing harder does not fix a class of error; a check does.
+
+    The rule is deliberately blunt: for each knob, at least one call site under libs/ or scripts/
+    that is NOT the definition and NOT a test must pass it by keyword.
+    """
+    import re
+    prod: list[tuple[str, str]] = []
+    for base in ("libs", "scripts"):
+        for path in sorted((ROOT / base).rglob("*.py")):
+            rel = str(path.relative_to(ROOT))
+            if "test" in rel:
+                continue
+            with contextlib.suppress(OSError):
+                prod.append((rel, path.read_text("utf-8", errors="ignore")))
+    for knob in _CAPACITY_KNOBS:
+        # a CALL passes `knob=`; a DEFINITION writes `knob: type` or `knob=default` in a signature
+        callers = [rel for rel, text in prod
+                   if re.search(rf"\b{knob}\s*=\s*(?!None\s*[,)])[\w.\[\]()\"']", text)
+                   and "capacity_policy.py" not in rel and "/sizing.py" not in rel]
+        if not callers:
+            defects.append((
+                "capacity-knob-orphaned",
+                f"§42: `{knob}` is a capacity knob that NO production code passes -- it is wired "
+                "to nothing and clamps nothing, while its unit tests pass and make it look "
+                "finished. That is the orphaned-artifact failure (§36) in its most deceptive "
+                "form. Either thread it from a real caller or delete it; a knob that only tests "
+                "use is a false assurance, which is worse than no knob at all."))
 
 
 def check_capacity_governor_reachable(defects) -> None:
@@ -2333,6 +2386,7 @@ CHECKS = [("carryover-skipped", check_carryover_skipped),
                       ("capacity-runway", check_capacity_runway),
                       ("capacity-allocation-honesty", check_capacity_allocation_honesty),
                       ("capacity-governor-reachable", check_capacity_governor_reachable),
+                      ("capacity-knobs-wired", check_capacity_knobs_are_wired),
                       ("mine-conversion", check_mine_conversion),
                       ("mine-flow", check_mine_flow),
                       ("mine-gate", check_mine_gate),

@@ -189,3 +189,36 @@ class TestGovernorIsActuallyWired:
         out: list[tuple[str, str]] = []
         m.check_capacity_governor_reachable(out)
         assert out == [], f"governor is not wired on the live tree: {out}"
+
+
+class TestKnobsAreWiredToProduction:
+    """The class-level fix: three knobs in one day were built, tested green, wired to
+    nothing. A parameter no production caller passes is an orphan with camouflage."""
+
+    def test_no_capacity_knob_is_orphaned(self) -> None:
+        out: list[tuple[str, str]] = []
+        m.check_capacity_knobs_are_wired(out)
+        assert out == [], f"a capacity knob is wired to nothing: {[d[1][:120] for d in out]}"
+
+    def test_the_check_catches_an_orphan(self, monkeypatch) -> None:
+        # the guard must actually fire -- a check that can only pass is not a check
+        monkeypatch.setattr(m, "_CAPACITY_KNOBS", ("a_knob_nothing_passes",))
+        out: list[tuple[str, str]] = []
+        m.check_capacity_knobs_are_wired(out)
+        assert [d[0] for d in out] == ["capacity-knob-orphaned"]
+
+    def test_a_declaration_reaches_the_ev_score(self, tmp_path, monkeypatch) -> None:
+        # end to end: declaring a small allocation must change the SCORE, not just be stored
+        import json
+
+        import libs.research.capacity_policy as cp
+        from libs.research.alpha_economics import Idea, ev_score
+        store = tmp_path / "sleeve_allocations.json"
+        store.write_text(json.dumps(
+            {"tiny_edge": {"capacity_usd": 5_000.0, "declared_usd": 1_000.0}}), "utf-8")
+        monkeypatch.setattr(
+            cp, "declared_allocation",
+            lambda s: 1_000.0 if s == "tiny_edge" else None)
+        declared = ev_score(Idea("tiny_edge", capacity_usd=5_000.0))["ev"]
+        undeclared = ev_score(Idea("other_edge", capacity_usd=5_000.0))["ev"]
+        assert declared > undeclared, "the declaration never reached the scorer"

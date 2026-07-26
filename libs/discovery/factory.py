@@ -37,7 +37,12 @@ from libs.discovery.regime_diversification import regime_diversification
 from libs.discovery.signals import build_generator
 from libs.discovery.stress_scenario import stress_scenario
 from libs.discovery.tail_risk import tail_risk
-from libs.research.capacity_policy import capacity_required, live_book_usd, live_sleeves
+from libs.research.capacity_policy import (
+    capacity_required,
+    declared_allocation,
+    live_book_usd,
+    live_sleeves,
+)
 from libs.validation.dsr import deflated_sharpe_ratio, sharpe_ratio
 from libs.validation.pbo import probability_backtest_overfitting
 from libs.validation.stress_costs import stress_cost_validation
@@ -260,6 +265,7 @@ class AlphaDiscoveryFactory:
             tail_risk_score=tail.tail_risk_score,
             parameter_plateau_score=stability.plateau_score,
             deployed_equity_usd=self.book_usd, n_sleeves=self.n_sleeves,
+            sleeve=hypothesis.name,
         )
 
         acceptance = alpha_acceptance(
@@ -268,8 +274,10 @@ class AlphaDiscoveryFactory:
             parameter_stability_pass=stability.robust, fragility_pass=fragility.robust,
             # §42: was a flat `>= 1e5`, the SAME categorical exclusion the survival gate had --
             # fixing one and leaving this one meant sub-$100k edges still failed acceptance here.
-            capacity_pass=capacity.capacity_usd >= capacity_required(self.book_usd,
-                                                                     self.n_sleeves),
+            capacity_pass=capacity.capacity_usd >= capacity_required(
+                _declared if (_declared := declared_allocation(hypothesis.name)) is not None
+                else self.book_usd,
+                1 if _declared is not None else self.n_sleeves),
             tail_pass=tail.acceptable,
             stress_pass=stress.passed, regime_pass=regime.robust,
         )

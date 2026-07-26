@@ -43,6 +43,7 @@ def discovery_score(
     parameter_plateau_score: float,
     deployed_equity_usd: float | None = None,
     n_sleeves: int | None = None,
+    sleeve: str | None = None,
 ) -> float:
     """Composite rank score that maximizes sustainable geometric growth under robustness."""
     growth = max(0.0, log_growth)
@@ -63,6 +64,7 @@ def discovery_score(
         capacity_usd,
         live_book_usd() if deployed_equity_usd is None else deployed_equity_usd,
         live_sleeves() if n_sleeves is None else n_sleeves,
+        sleeve=sleeve,
     )
     diversification_term = 1.0 + max(0.0, diversification_contribution)
 
