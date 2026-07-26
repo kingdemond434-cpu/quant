@@ -62,8 +62,8 @@ def main() -> None:
         for ln in _section(txt, name, lim):
             parts.append(f"- {ln[:150]}")
     if not parts:                                   # fall back to the first bullets in the file
-        parts = [f"- {re.sub(r'[*_`]', '', l.strip()[:150])}"
-                 for l in txt.splitlines() if l.strip().startswith("-")][:5]
+        parts = [f"- {re.sub(r'[*_`]', '', ln.strip()[:150])}"
+                 for ln in txt.splitlines() if ln.strip().startswith("-")][:5]
 
     body = f"DESK DIGEST {today}\n" + "\n".join(parts[:8])
     try:
