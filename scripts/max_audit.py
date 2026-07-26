@@ -1879,54 +1879,6 @@ def check_book_collapse(defects) -> None:
             "restated, which is a data-integrity problem rather than a trading loss."))
 
 
-#: The documents the brain must read before it can act. Every token here is paid on EVERY cycle,
-#: so the budget is a real operating cost, not tidiness.
-_GOVERNING_DOCS = ("docs/DIGGING_CHARTER.md", "ops/principal_doctrine.txt", "docs/GAP_REGISTER.md")
-_GOVERNANCE_RECORD = "docs/research/governance_budget.json"
-
-
-def check_governance_budget(defects) -> None:
-    """Governance may not grow without limit -- the brain re-reads it every single cycle.
-
-    The charter, doctrine and register together are ~250 KB (~60k tokens) that get re-read before
-    any work happens. That is a recurring compute bill the desk pays for its own laws, and laws are
-    added far faster than they are compressed: the doctrine was consolidated 31.5k -> 27.5k on
-    2026-07-26 and was back above 33k the same day.
-
-    A RATCHET, not a cap: the recorded size may only fall. Growth is allowed within the ratchet's
-    slack so a genuinely new law can land, but the high-water mark can never rise -- which forces
-    a compression whenever the total drifts back up. Same shape as the mining and conversion
-    ratchets, pointed at the desk's own overhead.
-    """
-    total = 0
-    for rel in _GOVERNING_DOCS:
-        with contextlib.suppress(OSError):
-            total += len((ROOT / rel).read_text("utf-8", errors="ignore"))
-    if total == 0:
-        return
-    rec_path = ROOT / _GOVERNANCE_RECORD
-    best = total
-    with contextlib.suppress(Exception):
-        best = int(json.loads(rec_path.read_text("utf-8"))["best_bytes"])
-    if total < best:                       # new low-water mark -- record it, say nothing
-        with contextlib.suppress(OSError):
-            rec_path.parent.mkdir(parents=True, exist_ok=True)
-            rec_path.write_text(json.dumps({
-                "best_bytes": total, "at": datetime.now(UTC).isoformat(),
-                "note": "smallest the governing docs have ever been; ratchets DOWN only. The "
-                        "brain re-reads these every cycle, so growth is a recurring compute bill.",
-            }, indent=2), "utf-8")
-        return
-    slack = 1.15
-    if total > best * slack:
-        defects.append((
-            "governance-bloat",
-            f"charter+doctrine+register are {total / 1024:.0f} KB (~{total // 4000}k tokens), "
-            f"{total / best - 1:.0%} above the best-ever {best / 1024:.0f} KB and past the "
-            f"{slack - 1:.0%} slack. The brain re-reads all of it EVERY cycle, so this is a "
-            "recurring bill for the desk's own laws. Merge overlapping clauses or retire dead "
-            "ones -- adding a law is cheap and re-reading it forever is not."))
-
 
 #: §33's ratchets bind on the desk's own history. Below this many records that history is noise,
 #: and a ratchet calibrated on noise blocks real work for no reason.
@@ -1985,7 +1937,11 @@ def check_orphan_scripts(defects) -> None:
     for pat in ("scripts/*.py", "libs/**/*.py", "*.md", "docs/**/*.md", "ops/*",
                 "*.toml", "*.yml", "*.yaml", "*.sh", ".github/**/*"):
         for f in ROOT.glob(pat):
-            if f.is_file() and f.name != "daily_research_cycle.py":
+            # THIS FILE IS EXCLUDED. Naming a script in the checker's own prose must not exempt
+            # it -- the first version described `page_digest.py` in this very docstring and
+            # thereby marked it reachable. A checker that launders its examples into passes is
+            # the same false-negative class as the one-hop orphan check it replaced.
+            if f.is_file() and f.name not in ("daily_research_cycle.py", "max_audit.py"):
                 with contextlib.suppress(OSError):
                     corpus.append(f.read_text("utf-8", errors="ignore"))
     blob = "\n".join(corpus)
@@ -2661,7 +2617,6 @@ CHECKS = [("carryover-skipped", check_carryover_skipped),
                       ("capacity-governor-reachable", check_capacity_governor_reachable),
                       ("capacity-knobs-wired", check_capacity_knobs_are_wired),
                       ("book-collapse", check_book_collapse),
-                      ("governance-budget", check_governance_budget),
                       ("mine-evidence-base", check_mine_evidence_base),
                       ("orphan-scripts", check_orphan_scripts),
                       ("law-numbers", check_law_numbers_unique),

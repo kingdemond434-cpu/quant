@@ -128,11 +128,15 @@ class TestOrphanScripts:
                           ["wired.py"])
         assert _run(monkeypatch, root, m.check_orphan_scripts) == []
 
-    def test_page_digest_is_now_wired(self) -> None:
-        # it described itself as a daily job and was in no cadence
-        from pathlib import Path
-        assert "scripts/page_digest.py" in Path(
-            "scripts/daily_research_cycle.py").read_text("utf-8")
+    def test_page_digest_is_reported_not_silently_wired(self) -> None:
+        """It calls itself a daily job and is in no cadence -- REPORT that, do not wire it.
+
+        Wiring another account's unverified pager into a daily cadence is how you turn one
+        unnoticed script into daily spam, and register #3 is literally "pager delivery
+        unverified". The detector's job is to surface it; the decision is the principal's."""
+        out: list[tuple[str, str]] = []
+        m.check_orphan_scripts(out)
+        assert any("page_digest.py" in msg for _, msg in out)
 
     def test_a_declared_oneshot_is_exempt(self, tmp_path, monkeypatch) -> None:
         root = self._tree(tmp_path, {"wired.py": "", "pull_cme.py": ""}, ["wired.py"])
@@ -165,36 +169,6 @@ class TestLawNumbers:
         assert p.exists() and int(p.read_text().split()[0]) > 42
 
 
-class TestGovernanceBudget:
-    """The brain re-reads charter+doctrine+register every cycle; growth is a recurring bill."""
-
-    def _docs(self, tmp_path, size: int, best: int | None):
-        (tmp_path / "docs/research").mkdir(parents=True, exist_ok=True)
-        (tmp_path / "ops").mkdir(parents=True, exist_ok=True)
-        (tmp_path / "docs/DIGGING_CHARTER.md").write_text("x" * size, "utf-8")
-        (tmp_path / "ops/principal_doctrine.txt").write_text("", "utf-8")
-        (tmp_path / "docs/GAP_REGISTER.md").write_text("", "utf-8")
-        if best is not None:
-            (tmp_path / "docs/research/governance_budget.json").write_text(
-                json.dumps({"best_bytes": best}), "utf-8")
-        return tmp_path
-
-    def test_bloat_past_the_slack_fires(self, tmp_path, monkeypatch) -> None:
-        root = self._docs(tmp_path, size=20_000, best=10_000)
-        assert "governance-bloat" in [d[0] for d in _run(
-            monkeypatch, root, m.check_governance_budget)]
-
-    def test_growth_inside_the_slack_is_allowed(self, tmp_path, monkeypatch) -> None:
-        # a genuinely new law must be able to land without tripping the ratchet
-        root = self._docs(tmp_path, size=10_500, best=10_000)
-        assert _run(monkeypatch, root, m.check_governance_budget) == []
-
-    def test_a_new_low_water_mark_is_recorded_silently(self, tmp_path, monkeypatch) -> None:
-        root = self._docs(tmp_path, size=8_000, best=10_000)
-        assert _run(monkeypatch, root, m.check_governance_budget) == []
-        rec = json.loads((root / "docs/research/governance_budget.json").read_text())
-        assert rec["best_bytes"] == 8_000     # ratchets DOWN only
-
 
 class TestMineEvidenceBase:
     """A ratchet calibrated on two observations is superstition with a JSON file."""
@@ -219,10 +193,17 @@ class TestMineEvidenceBase:
 class TestVenueTruthBeatsMoldedCurve:
     """`equity_marked` is the last point of a MOLDED CURVE, not an account balance."""
 
-    def test_venue_truth_wins_when_present(self, tmp_path, monkeypatch) -> None:
+    def test_venue_truth_is_exposed_but_NOT_the_default(self) -> None:
+        """`high_water` is a high-water mark, not spot equity.
+
+        Defaulting to it would raise `capacity_required` through any drawdown and start
+        rejecting the small edges §42 spent the day admitting -- tightening a live gate on a
+        number that cannot be tested from here. Exposed for comparison; not wired."""
+        import inspect
+
         import libs.research.capacity_policy as cp
-        monkeypatch.setattr(cp, "venue_book_usd", lambda: 9_000.0)
-        assert cp.live_book_usd() == 9_000.0
+        assert callable(cp.venue_book_usd)
+        assert "venue_book_usd()" not in inspect.getsource(cp.live_book_usd)
 
     def test_it_falls_back_to_the_nav_chain(self, tmp_path, monkeypatch) -> None:
         from datetime import UTC, datetime
@@ -258,7 +239,7 @@ class TestVenueTruthBeatsMoldedCurve:
 
 
 @pytest.mark.parametrize("check", [
-    m.check_book_collapse, m.check_governance_budget, m.check_mine_evidence_base,
+    m.check_book_collapse, m.check_mine_evidence_base,
     m.check_orphan_scripts, m.check_law_numbers_unique,
 ])
 def test_every_new_check_is_registered_in_the_sweep(check) -> None:

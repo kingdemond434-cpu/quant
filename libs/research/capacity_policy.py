@@ -257,6 +257,13 @@ _DEADMAN_STATE = Path(__file__).resolve().parents[2] / "data/deadman_state.json"
 def venue_book_usd() -> float | None:
     """Book equity from the venue's own numbers, or None when the rail has not run here.
 
+    NOT WIRED INTO `live_book_usd` -- deliberately. `high_water` is a HIGH-WATER MARK, not spot
+    equity, so on a live VPS it would raise `capacity_required` during any drawdown and start
+    rejecting exactly the small edges §42 spent the day admitting. Tightening a gate on an
+    untestable number is a regression dressed as a correctness fix. Exposed so the principal can
+    compare it against the molded curve and decide; switching the default needs that comparison
+    on real data first.
+
     Reads the dead-man's `high_water`, which is a HIGH-WATER MARK rather than spot equity. That
     OVERSTATES the book during a drawdown, and overstating is the safe direction for a capacity
     requirement: it demands MORE headroom, never less. The alternative -- the molded curve -- can
@@ -290,10 +297,6 @@ def live_book_usd(fallback: float = DEFAULT_BOOK_USD, ledger: Path | None = None
     Returning 0.0 would collapse the requirement to the absolute floor and quietly pass everything
     -- an unreadable file must never be the loosest possible gate.
     """
-    if ledger is None:
-        venue = venue_book_usd()
-        if venue is not None:
-            return venue
     path = ledger if ledger is not None else _NAV_LEDGER
     try:
         lines = [ln for ln in path.read_text("utf-8").splitlines() if ln.strip()]

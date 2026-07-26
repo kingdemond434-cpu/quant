@@ -68,10 +68,6 @@ _STEPS = [
     ("shadow_8h",         "scripts/run_shadow_8h.py",       420),  # 3x-obs challenger shadow
     ("leverage_opt",      "scripts/run_leverage_opt.py",    120),
     ("molded_refresh",    "scripts/run_live_combined.py",   120),
-    # Built 2026-07-26 to solve "report findings when I am away", and wired to NOTHING --
-    # a delivery mechanism that is never invoked delivers nothing. Runs LAST so the digest
-    # carries the whole cycle rather than a half-finished one.
-    ("findings_page",     "scripts/page_digest.py",          90),
     ("git_snapshot",      "scripts/git_snapshot.py",        120),  # daily forensic code history
 ]
 
