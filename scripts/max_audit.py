@@ -2171,6 +2171,69 @@ def check_holdings_never_shrink(defects) -> None:
                         "it or record the replacement that supersedes it."))
 
 
+FEE_RECORD = ROOT / "docs/research/fee_ratio_record.json"   # git-tracked; ratchets DOWN only
+
+
+def check_fee_carry_ratio(defects) -> None:
+    """§40: fees must always shrink RELATIVE to the carry they consume.
+
+    Absolute fees say nothing -- a bigger book pays more and earns more. The viability number is
+    what fraction of the harvest the fees eat. This desk went from fees at 2.4x funding to
+    commission -133 -> -30 over 7 days once patient-maker opens and the single-book invariant
+    landed; that gain becomes the floor, and any material worsening is a defect rather than a new
+    normal.
+    """
+    try:
+        import time as _t
+
+        from libs.execution import binance_testnet as _fut
+        rows = _fut._signed("/fapi/v1/income",
+                            {"startTime": int((_t.time() - 7 * 86400) * 1000), "limit": 1000})
+    except Exception:
+        return                                    # venue unreachable is not a fee defect
+    agg: dict[str, float] = {}
+    for r in rows:
+        try:
+            agg[r["incomeType"]] = agg.get(r["incomeType"], 0.0) + float(r["income"])
+        except Exception:
+            continue
+    funding = agg.get("FUNDING_FEE", 0.0)
+    commission = abs(agg.get("COMMISSION", 0.0))
+    if funding < 5.0:
+        # FLAT-BOOK GUARD: with almost no harvest the ratio explodes for reasons unrelated to
+        # execution quality (the 07-25 dead-man fire left funding at +2.80 for a week). Firing
+        # here would be a false defect, and false defects train the desk to ignore the check.
+        return
+    ratio = commission / funding
+    try:
+        rec = json.loads(FEE_RECORD.read_text("utf-8")) if FEE_RECORD.exists() else {}
+    except Exception:
+        rec = {}
+    best = float(rec.get("best_ratio", 9e9))
+    if ratio < best:
+        FEE_RECORD.write_text(json.dumps(
+            {"best_ratio": round(ratio, 4), "commission_7d": round(commission, 2),
+             "funding_7d": round(funding, 2),
+             "updated": datetime.now(tz=UTC).isoformat(),
+             "note": "§40 ratchet: fees as a fraction of funding earned. Ratchets DOWN only -- a "
+                     "material worsening is a defect, never a new normal."}, indent=1), "utf-8")
+        return
+    if ratio > best * 1.3 and best < 9e8:
+        defects.append((
+            "fee-ratio-regression",
+            f"§40: fees are eating {ratio:.2f}x the funding harvest (7d: commission "
+            f"{commission:.2f} vs funding {funding:.2f}) against a best-ever of {best:.2f}x. "
+            "Fees must always fall RELATIVE to carry. Check maker fill-rate (patient opens should "
+            "keep it climbing), churn (24h min-hold), BNB burn funding at live, and whether "
+            "turnover rose without a matching rise in harvest."))
+    if ratio > 1.0:
+        defects.append((
+            "fee-ratio-above-one",
+            f"§40: fees ({commission:.2f}) EXCEED the funding earned ({funding:.2f}) over 7d "
+            f"-- ratio {ratio:.2f}x. The sleeve cannot be net-positive while this holds, "
+            "regardless of how good the signal is. This is the single most direct drag on CAGR."))
+
+
 def main() -> None:
     defects: list[tuple[str, str]] = []
     for label, fn in CHECKS:
