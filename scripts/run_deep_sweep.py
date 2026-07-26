@@ -78,7 +78,11 @@ def _run(prompt: str, timeout: int) -> subprocess.CompletedProcess:
         ["bash", "-c",
          'source ops/brain_env.sh && '
          'export _BRAIN_MODEL_CHAIN="claude-fable-5 claude-opus-5 claude-opus-4-8" && '
-         'brain_auth_check && '
+         # a silent short-circuit here is what made today's four failures
+         # undiagnosable: no model answered, claude never ran, both streams empty
+         'brain_auth_check || { echo "BRAIN_AUTH_FAILED: no model in '
+         '_BRAIN_MODEL_CHAIN answered -- pool drained or session limit"; '
+         'exit 90; } && '
          'claude --effort max --append-system-prompt "$_DOCTRINE" -p "$0" '
          '--dangerously-skip-permissions', prompt],
         cwd=ROOT, capture_output=True, text=True, timeout=timeout)
@@ -103,9 +107,25 @@ def run_auditor(key: str, brief: str, stamp: str) -> bool:
     # honest concise audits as failures.
     ok = report.exists() and report.stat().st_size >= 1200
     if not ok:
-        tail = ((r.stdout or "")[-900:] + "\n--stderr--\n" + (r.stderr or "")[-400:]) \
-            if r else "TIMEOUT"
-        report.write_text(f"# AUDITOR FAILED ({key})\n{tail}\n", "utf-8")
+        # NAME THE STAGE. "Failed with two empty streams" is what today's four auditors
+        # recorded, and it cost the reason entirely. Exit 90 is our own auth sentinel; any
+        # other non-zero came from claude itself; None means the 1800s budget ran out.
+        if r is None:
+            why = ("TIMEOUT after the 1800s budget -- this auditor's brief is too broad for one "
+                   "window; split it rather than raising the timeout")
+        elif r.returncode == 90:
+            why = ("BRAIN_AUTH_FAILED -- no model in the chain answered (pool drained or session "
+                   "limit). This is RETRYABLE: the catch-up re-fires the sweep and the resume "
+                   "logic skips every report already >=1200b, so only the failures re-run")
+        else:
+            why = f"claude exited {r.returncode}"
+        streams = (f"\n--stdout(tail)--\n{(r.stdout or '')[-900:]}"
+                   f"\n--stderr(tail)--\n{(r.stderr or '')[-600:]}") if r else ""
+        partial = report.stat().st_size if report.exists() else 0
+        report.write_text(
+            f"# AUDITOR FAILED ({key})\n\nWHY: {why}\n"
+            f"partial report bytes before overwrite: {partial} "
+            f"(floor is 1200 -- below it the auditor re-runs on resume)\n{streams}\n", "utf-8")
     return ok
 
 
