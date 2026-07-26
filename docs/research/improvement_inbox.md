@@ -914,3 +914,55 @@ From ground [LIT-d], which audited the desk's LIVE kimchi clock rather than only
   proposed. **Its real value is as GROUND TRUTH to grade the desk's unaudited exchange-reported L/S
   feed against** — exchange-reported positioning is self-reported and unaudited; this is neither.
   Licence noted: public but **copyright-asserted — internal use, no redistribution.**
+
+**73. TWO CITATION TRAPS THAT WOULD HAVE "CORRECTED" THE DESK TO WRONG NUMBERS — the
+working-paper-vs-published version problem, caught twice in one run.**
+*Class: provenance rail. Recommend: adopt-now (a checking rule, not a build).*
+Both surfaced while clearing the [LIT-a] interiors backlog, and both are the same failure wearing
+different clothes: **an author self-archive is often an EARLIER version with DIFFERENT numbers, and
+"I verified it against the PDF" does not protect you.**
+- **McLean–Pontiff.** The published JF-2016 numbers (97 predictors, **26% / 58% / 32%**) are now
+  **primary-verified** — including the conditional the desk had recorded from an abstract: Table II
+  post-sample coefficient **0.157**, interaction with in-sample mean **−0.532**, so +1 SD in-sample
+  return → **−0.210bp** extra decline. **But one of the fallback URLs in circulation
+  (`fmg.ac.uk/.../Jeffrey-Pontiff.pdf`) is the 2013 WORKING PAPER — 82 characteristics, 10% and 35%
+  decay.** Verifying the desk's standing haircut prior against it would have "corrected" −58% to −35%
+  and made the desk's literature discount **substantially too generous**. Also worth banking from the
+  primary text: citation counts have *"little incremental value in explaining decay"* once publication
+  date is controlled — so a high-citation paper is not a more-decayed one, and the desk should not
+  weight by citations.
+- **Chordia–Goyal–Saretto — the desk's quoted thresholds may be SUPERSEDED.** The widely-repeated
+  |t|>3.79 / |t|>3.12 pair appears to come from the **2017 working paper**, while **three mutually
+  inconsistent pairs circulate** in secondary sources (3.79/3.12, 3.8/3.4, 3.84/3.38) and the latter
+  two plausibly belong to the published RFS version. Twelve access routes to primary text all failed
+  and the item was **correctly left UNVERIFIABLE, not upgraded** — which is the behaviour the desk
+  wants. Correct DOI for anyone retrying: **`10.1093/rfs/hhaa018`** (not `hhaa011`, which also
+  circulates). **Do not quote 3.79/3.12 as if settled.**
+**THE RULE TO ADOPT:** a literature citation records **which VERSION** was read — working paper vs
+published, with year — and a number quoted from a self-archived PDF is checked against the published
+abstract before it enters a prior. The desk already has `[PRIMARY]`/`[ABSTRACT]`/`[SUMMARY-ONLY]`
+grades (rail #54, extended in #63); this adds the axis those grades miss, because **`[PRIMARY]` on the
+wrong version is still wrong** — and it is *more* dangerous than `[SUMMARY-ONLY]`, because it carries
+full confidence.
+
+**74. WHERE THE EQUITY LITERATURE'S RESIDUAL SIGNAL ACTUALLY LIVES — and why it does not transfer.**
+*Class: research prior. Recommend: adopt-now (prevents a wrong follow-on).*
+HXZ's per-category breakdown, extracted this run (NYSE-VW, single test / multiple test at 2.78):
+**Investment 73.7% / 50.0%, Momentum 63.2% / 49.1%**, Profitability 44.3% / 17.7%, Value-vs-growth
+42% / 10.1%, Intangibles 25.2% / 10.7%, **Trading frictions 3.8% / 1.9%.** Investment reaches 97.4%
+(All-EW) and 100% (FM-OLS) and never drops below 73.7% in any value-weighted sort.
+**Recorded specifically to PREVENT a plausible-looking follow-on.** The natural next thought —
+"investment and momentum survived, so go test those" — is wrong here: price-only momentum is already
+dead on desk data (420/0 plus the era natural experiment), and *investment* is an accounting
+characteristic with no crypto analogue for most assets. **The honest reading is that the equity
+literature's surviving signal does not transfer to this desk, not that the desk has a new lead.**
+Also banked from JKP's interior, since it is the concrete content behind the "test THEMES not names"
+adoption in #60: the 13 themes are Accruals\*, Debt Issuance\*, Investment\*, Leverage\*, Low Risk,
+Momentum, Profit Growth, Profitability, Quality, Seasonality, Size\*, Short-Term Reversal, Value —
+where **\* = the theme bets AGAINST the characteristic (six of thirteen, so sign convention is
+load-bearing)** — and a theme is defined as a cluster with *"high within-theme return correlation and
+economic concept similarity, and low across-theme correlation."* Their replication rate is **82.4%**
+(posterior SE 2.8%). The HXZ-disagreement ladder decomposes cleanly — 35% → 55.6% (longer sample) →
+61.3% (drop factors never significant originally) → **82.4% (alpha rather than raw return — the single
+biggest step)** → 82.4% (Bayesian multiple testing) → 82.4% (93 countries). **The disagreement is
+mostly one modelling choice, not a data dispute.**
