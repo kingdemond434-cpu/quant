@@ -33,13 +33,38 @@ def _load(p: Path, d: Any = None) -> Any:
         return d if d is not None else {}
 
 
-def _live_path_wired() -> bool:
-    """Is the live path RUNNING, or merely present on disk?
+def _register_row_closed(row_id: int) -> bool:
+    """Has GAP_REGISTER row ``row_id`` reached a terminal status?
 
-    Three things, all of which were false while the old `.exists()` detector said done:
-    the guard exists, the daily cycle actually calls it, and the guard actually drives the
-    stage machine. Checking the wiring rather than the file is the difference between "the
-    code was written" and "the rails execute".
+    A backlog item that mirrors a register row must never claim done while the row is still
+    open. Those two systems disagreed for 8 days on the live connector -- the register said
+    in-progress with six named blockers and a 07-31 deadline, while the backlog said completed,
+    and the backlog is the one that produces `next_action` every morning. Unknown or unparseable
+    reads as NOT closed: the failure that cost the time was a detector defaulting to done.
+    """
+    try:
+        from libs.research.finding_registry import parse_register
+        rows = parse_register((_ROOT / "docs/GAP_REGISTER.md").read_text("utf-8"))
+    except (OSError, ImportError, ValueError):
+        return False
+    for r in rows:
+        if r.row_id == row_id:
+            return not r.is_open
+    return False
+
+
+def _live_path_wired() -> bool:
+    """Is the live path RUNNING, and is the register row it mirrors actually closed?
+
+    The wiring half checks the three things that were all false while the old
+    `binance_live.py.exists()` detector said done: the guard exists, the daily cycle calls it,
+    and the guard drives the stage machine + connector + reconcile.
+
+    The register half is what stops this detector re-arming the same trap. Wiring is necessary,
+    not sufficient -- row 2 still carries the panel fuzz/breaker report, the §7b pre-mortem and
+    the host-death and ladder drills, none of which a source-text check can see. With wiring
+    alone this would have flipped to done the moment the guard shipped and dropped the connector
+    out of the backlog's open list again, exactly as it did on 07-18.
     """
     guard = _ROOT / "scripts/run_live_guard.py"
     cycle = _ROOT / "scripts/daily_research_cycle.py"
@@ -47,10 +72,11 @@ def _live_path_wired() -> bool:
         g, c = guard.read_text("utf-8"), cycle.read_text("utf-8")
     except OSError:
         return False
-    return ("run_live_guard.py" in c
-            and "binance_live" in g
-            and "staging" in g
-            and "protective_stops" in g)
+    wired = ("run_live_guard.py" in c
+             and "binance_live" in g
+             and "staging" in g
+             and "protective_stops" in g)
+    return wired and _register_row_closed(2)
 
 
 def _detectors() -> dict[str, bool]:
