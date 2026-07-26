@@ -1584,6 +1584,16 @@ def check_gap_register_health(defects) -> None:
     if h.n_rows == 0:
         defects.append(("gap-register-unparseable", f"§36(3): {h.verdict}"))
         return
+    if h.stale_rows:
+        shown = ", ".join(h.stale_rows[:5])
+        more = f" (+{len(h.stale_rows) - 5} more)" if len(h.stale_rows) > 5 else ""
+        defects.append((
+            "gap-register-rows-stale",
+            f"§36(3): {len(h.stale_rows)} OPEN row(s) past the register's own 7-day escalation "
+            f"bar, oldest {h.oldest_open_days:.0f}d: {shown}{more}. Each owes one of the three "
+            "exits the register names -- implement, defer WITH a deadline, or retire with a "
+            "reason. Re-ranking the header is not one of them: the rule is about ITEMS, and "
+            "measuring the re-rank stamp instead let a daily stamp make every row immortal."))
     if h.rerank_breach:
         defects.append((
             "gap-register-rerank-breach",
@@ -1806,6 +1816,247 @@ def check_findings_scope(defects) -> None:
             f"{', '.join(rogue[:6])}. Findings written there owe no register row and are "
             "invisible to §35 -- a bypass needing no code change and leaving no diff. Add to "
             "_FINDING_DOCS or _FINDING_DOCS_EXCLUDED with a stated reason."))
+
+
+#: Day-over-day collapse thresholds for the live book. Deliberately loose: this catches a book
+#: LOSING ITSELF, not ordinary rebalancing. A tight bar here would fire on every rotation and be
+#: acknowledged into silence, which is worse than no check.
+_BOOK_EQUITY_DROP = 0.10       # 10% marked equity in one day
+_BOOK_CARRY_DROP = 0.50        # half the positions gone in one day
+
+
+def check_book_collapse(defects) -> None:
+    """The book losing most of itself overnight must be LOUD. Nothing watched this.
+
+    On 2026-07-26 concurrent carries went 10 -> 2 and deployed notional fell 30% in a single day,
+    and no organ said a word: the desk had checks for idle code, mining regression and stale
+    findings, and none for its own positions vanishing. Either the executor unwound eight carries
+    or a state file was truncated -- both are things you want to hear about the same morning, and
+    the second one silently corrupts every downstream number that reads the book.
+
+    Reads the attestation chain only, so it works from the record rather than from live venue
+    access, and stays quiet on a single row (no prior day = nothing to compare).
+    """
+    rows = []
+    with contextlib.suppress(Exception):
+        for line in (ROOT / "data/nav_attestation.jsonl").read_text("utf-8").splitlines():
+            if line.strip():
+                rows.append(json.loads(line))
+    if len(rows) < 2:
+        return
+    prev, cur = rows[-2], rows[-1]
+
+    def _f(row, key):
+        try:
+            return float(row.get(key) or 0.0)
+        except (TypeError, ValueError):
+            return 0.0
+
+    p_eq, c_eq = _f(prev, "equity_marked"), _f(cur, "equity_marked")
+    if p_eq > 0 and (p_eq - c_eq) / p_eq > _BOOK_EQUITY_DROP:
+        defects.append((
+            "book-equity-collapse",
+            f"marked equity fell {(p_eq - c_eq) / p_eq:.0%} in one day "
+            f"(${p_eq:,.0f} -> ${c_eq:,.0f}) on {cur.get('date')}. Past the "
+            f"{_BOOK_EQUITY_DROP:.0%} bar -- establish whether this is P&L or a bad read BEFORE "
+            "any number derived from the book is trusted again."))
+
+    p_n, c_n = int(_f(prev, "n_carries")), int(_f(cur, "n_carries"))
+    if p_n >= 4 and c_n < p_n * (1.0 - _BOOK_CARRY_DROP):
+        defects.append((
+            "book-carries-collapse",
+            f"concurrent carries fell {p_n} -> {c_n} on {cur.get('date')} (deployed "
+            f"${_f(prev, 'deployed_notional'):,.0f} -> ${_f(cur, 'deployed_notional'):,.0f}). "
+            "Either the executor unwound most of the book or the position state was truncated. "
+            "The second is silent and corrupts every downstream figure -- confirm which."))
+
+    p_r, c_r = _f(prev, "realized_spot_pnl"), _f(cur, "realized_spot_pnl")
+    if p_r > 0 and c_r < p_r:
+        defects.append((
+            "book-realized-pnl-fell",
+            f"REALIZED spot P&L fell ${p_r:,.2f} -> ${c_r:,.2f} on {cur.get('date')}. Realized "
+            "P&L is banked and should only ratchet up; a fall means the accounting is being "
+            "restated, which is a data-integrity problem rather than a trading loss."))
+
+
+#: The documents the brain must read before it can act. Every token here is paid on EVERY cycle,
+#: so the budget is a real operating cost, not tidiness.
+_GOVERNING_DOCS = ("docs/DIGGING_CHARTER.md", "ops/principal_doctrine.txt", "docs/GAP_REGISTER.md")
+_GOVERNANCE_RECORD = "docs/research/governance_budget.json"
+
+
+def check_governance_budget(defects) -> None:
+    """Governance may not grow without limit -- the brain re-reads it every single cycle.
+
+    The charter, doctrine and register together are ~250 KB (~60k tokens) that get re-read before
+    any work happens. That is a recurring compute bill the desk pays for its own laws, and laws are
+    added far faster than they are compressed: the doctrine was consolidated 31.5k -> 27.5k on
+    2026-07-26 and was back above 33k the same day.
+
+    A RATCHET, not a cap: the recorded size may only fall. Growth is allowed within the ratchet's
+    slack so a genuinely new law can land, but the high-water mark can never rise -- which forces
+    a compression whenever the total drifts back up. Same shape as the mining and conversion
+    ratchets, pointed at the desk's own overhead.
+    """
+    total = 0
+    for rel in _GOVERNING_DOCS:
+        with contextlib.suppress(OSError):
+            total += len((ROOT / rel).read_text("utf-8", errors="ignore"))
+    if total == 0:
+        return
+    rec_path = ROOT / _GOVERNANCE_RECORD
+    best = total
+    with contextlib.suppress(Exception):
+        best = int(json.loads(rec_path.read_text("utf-8"))["best_bytes"])
+    if total < best:                       # new low-water mark -- record it, say nothing
+        with contextlib.suppress(OSError):
+            rec_path.parent.mkdir(parents=True, exist_ok=True)
+            rec_path.write_text(json.dumps({
+                "best_bytes": total, "at": datetime.now(UTC).isoformat(),
+                "note": "smallest the governing docs have ever been; ratchets DOWN only. The "
+                        "brain re-reads these every cycle, so growth is a recurring compute bill.",
+            }, indent=2), "utf-8")
+        return
+    slack = 1.15
+    if total > best * slack:
+        defects.append((
+            "governance-bloat",
+            f"charter+doctrine+register are {total / 1024:.0f} KB (~{total // 4000}k tokens), "
+            f"{total / best - 1:.0%} above the best-ever {best / 1024:.0f} KB and past the "
+            f"{slack - 1:.0%} slack. The brain re-reads all of it EVERY cycle, so this is a "
+            "recurring bill for the desk's own laws. Merge overlapping clauses or retire dead "
+            "ones -- adding a law is cheap and re-reading it forever is not."))
+
+
+#: §33's ratchets bind on the desk's own history. Below this many records that history is noise,
+#: and a ratchet calibrated on noise blocks real work for no reason.
+_MINE_RATCHET_MIN_RECORDS = 10
+
+
+def check_mine_evidence_base(defects) -> None:
+    """A ratchet calibrated on two observations is superstition with a JSON file.
+
+    §33's conversion ratchet, latency-regression bound and tier weights all bind against
+    best-ever values. Those are meaningful once there is a distribution and meaningless before:
+    with n=2, a single fast conversion sets a "best median latency" that every future cycle is
+    then held to. The machinery is orders of magnitude heavier than the evidence under it.
+
+    This does not weaken the ratchet -- it reports when the ratchet is running ahead of its own
+    evidence base, so a bar that starts biting can be read as "too few observations" rather than
+    "the desk got worse".
+    """
+    n = 0
+    with contextlib.suppress(Exception):
+        n = int(json.loads(
+            (ROOT / "docs/research/conversion_record.json").read_text("utf-8"))["n_records"])
+    if 0 < n < _MINE_RATCHET_MIN_RECORDS:
+        defects.append((
+            "mine-ratchet-thin-evidence",
+            f"§33 ratchets are binding on {n} record(s), under the {_MINE_RATCHET_MIN_RECORDS} "
+            "needed for a distribution. Best-ever latency and conversion rate set from a handful "
+            "of observations are noise the desk then holds itself to forever. Treat §33 bars as "
+            "ADVISORY until the base is real -- and do not tighten them on this evidence."))
+
+
+#: One-shot scripts that legitimately ran once and are kept for provenance. Anything NOT listed
+#: here must be reachable, so the exemption is a written decision rather than a silent default.
+_ONESHOT_SCRIPTS = frozenset({
+    "backfill_onchain_oos.py", "batch_onchain.py", "batch_premium.py", "build_dev_factor.py",
+    "dl_metrics_history.py", "pull_cme.py",
+})
+
+
+def check_orphan_scripts(defects) -> None:
+    """§36: a SCRIPT nothing runs is an orphan too -- and the orphan check could not see it.
+
+    `check_orphan_code` walks the import graph from `scripts/` as its ROOTS, so "is this script
+    itself reached by anything?" was unaskable by construction. The blind spot was exactly the
+    shape of scripts/: on 2026-07-26 eight scripts were written and wired to nothing, including
+    `page_digest.py`, which describes itself as a daily job and was absent from the daily cycle.
+
+    Reachability is generous on purpose -- the cycle, any other script, any lib, CI config, or a
+    documented runbook all count. What is left is genuinely unreferenced, and a one-shot that
+    honestly ran once belongs in `_ONESHOT_SCRIPTS` with that stated, not in silence.
+    """
+    import re
+    sdir, corpus = ROOT / "scripts", []
+    if not sdir.exists():
+        return
+    for pat in ("scripts/*.py", "libs/**/*.py", "*.md", "docs/**/*.md", "ops/*",
+                "*.toml", "*.yml", "*.yaml", "*.sh", ".github/**/*"):
+        for f in ROOT.glob(pat):
+            if f.is_file() and f.name != "daily_research_cycle.py":
+                with contextlib.suppress(OSError):
+                    corpus.append(f.read_text("utf-8", errors="ignore"))
+    blob = "\n".join(corpus)
+    cycle = set(re.findall(r'"scripts/([a-z_0-9]+\.py)"',
+                           (sdir / "daily_research_cycle.py").read_text("utf-8", errors="ignore")))
+    dead = []
+    for f in sorted(sdir.glob("*.py")):
+        if f.name in cycle or f.name in _ONESHOT_SCRIPTS or f.name == "daily_research_cycle.py":
+            continue
+        stem = re.escape(f.stem)
+        if not re.search(rf"scripts/{re.escape(f.name)}|scripts\.{stem}\b|\b{stem}\b", blob):
+            dead.append(f.name)
+    if dead:
+        defects.append((
+            "orphan-scripts",
+            f"§36: {len(dead)} script(s) referenced by NOTHING -- not the daily cycle, not another "
+            f"script, not a lib, not CI, not a runbook: {', '.join(dead[:8])}"
+            f"{'...' if len(dead) > 8 else ''}. check_orphan_code treats scripts/ as its ROOTS, so "
+            "it cannot see these. Wire each into a cadence, add it to _ONESHOT_SCRIPTS with the "
+            "reason it ran once, or delete it -- built-and-forgotten must not look like finished."))
+    if (sdir / "test_review_fixes.py").exists():
+        defects.append((
+            "test-outside-test-tree",
+            "scripts/test_review_fixes.py is a test file living outside tests/, so pytest never "
+            "collects it. Move it to tests/ or rename it -- a test that never runs is worse than "
+            "no test, because it reads as coverage."))
+
+
+#: Every doc that can carry a numbered law. A number must identify ONE law across all of them.
+_LAW_DOCS = ("docs/DIGGING_CHARTER.md", "ops/principal_doctrine.txt")
+
+
+def check_law_numbers_unique(defects) -> None:
+    """A law number must name exactly one law. Nothing enforced that, and it collided.
+
+    On 2026-07-26 two accounts independently wrote a §38 and a §39 for DIFFERENT laws, hours
+    apart on separate branches; it surfaced only because the merge conflicted. A citation to
+    "§39" then resolves to whichever copy the reader happens to open, which is §36's
+    no-ungoverned-artifact rule failing at the citation layer -- the law numbers themselves were
+    the ungoverned artifact.
+
+    Reports the next free number too, so allocating one is a lookup rather than a guess.
+    """
+    import re
+    from collections import defaultdict
+    titles: dict[int, set[str]] = defaultdict(set)
+    for rel in _LAW_DOCS:
+        path = ROOT / rel
+        if not path.exists():
+            continue
+        text = path.read_text("utf-8", errors="ignore")
+        for num, title in re.findall(r"^##\s*(\d+)\.\s*([^\n(]{4,60})", text, re.M):
+            titles[int(num)].add(title.strip().rstrip("—-").strip().upper()[:40])
+    clashes = {n: ts for n, ts in titles.items() if len(ts) > 1}
+    if clashes:
+        detail = "; ".join(f"§{n} claimed by {len(ts)}: {' | '.join(sorted(ts))}"
+                           for n, ts in sorted(clashes.items()))
+        defects.append((
+            "law-number-collision",
+            f"§36: {detail}. A citation to one of these resolves to whichever copy the reader "
+            "opens. Renumber the later law -- the trunk keeps the number it landed with."))
+    if titles:
+        nxt = max(titles) + 1
+        marker = ROOT / "docs/research/next_law_number.txt"
+        with contextlib.suppress(OSError):
+            marker.parent.mkdir(parents=True, exist_ok=True)
+            marker.write_text(
+                f"{nxt}\n\nNext free law number, recomputed every sweep by "
+                f"max_audit.check_law_numbers_unique. Two accounts collided on 38/39 on "
+                f"2026-07-26 because allocation was a guess; read this file instead of guessing.\n",
+                "utf-8")
 
 
 def check_orphan_code(defects) -> None:
@@ -2409,6 +2660,11 @@ CHECKS = [("carryover-skipped", check_carryover_skipped),
                       ("capacity-allocation-honesty", check_capacity_allocation_honesty),
                       ("capacity-governor-reachable", check_capacity_governor_reachable),
                       ("capacity-knobs-wired", check_capacity_knobs_are_wired),
+                      ("book-collapse", check_book_collapse),
+                      ("governance-budget", check_governance_budget),
+                      ("mine-evidence-base", check_mine_evidence_base),
+                      ("orphan-scripts", check_orphan_scripts),
+                      ("law-numbers", check_law_numbers_unique),
                       ("mine-conversion", check_mine_conversion),
                       ("mine-flow", check_mine_flow),
                       ("mine-gate", check_mine_gate),

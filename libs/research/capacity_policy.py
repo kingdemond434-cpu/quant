@@ -61,11 +61,22 @@ import math
 from datetime import UTC, datetime
 from pathlib import Path
 
-__all__ = ["DEFAULT_BOOK_USD", "DEFAULT_SLEEVES", "capacity_band", "capacity_fit",
-           "capacity_required", "declared_allocation", "growth_runway", "live_book_usd",
-           "live_sleeves",
-           "max_allocation", "niche_share",
-           "outgrown_at", "sleeve_equity"]
+__all__ = [
+    "DEFAULT_BOOK_USD",
+    "DEFAULT_SLEEVES",
+    "capacity_band",
+    "capacity_fit",
+    "capacity_required",
+    "declared_allocation",
+    "growth_runway",
+    "live_book_usd",
+    "live_sleeves",
+    "max_allocation",
+    "niche_share",
+    "outgrown_at",
+    "sleeve_equity",
+    "venue_book_usd",
+]
 
 #: CAPACITY IS A RATIO, NOT A DOLLAR FIGURE (2026-07-26). The gate was a flat $100,000 floor, which
 #: hard-rejected every edge too small to absorb six figures -- i.e. exactly the capacity-bound
@@ -236,8 +247,38 @@ _NAV_STALE_DAYS = 7.0
 _NAV_LEDGER = Path(__file__).resolve().parents[2] / "data/nav_attestation.jsonl"
 
 
+#: VENUE TRUTH, written by the dead-man rail from the exchange's own account endpoints. Preferred
+#: over the NAV chain because `equity_marked` there is the last point of the MOLDED CURVE -- its
+#: own docstring says "venue-truth lives in the deadman's file" -- and the testnet spot wallet
+#: carries ~$300k of faucet coins the molded feed does not fully exclude.
+_DEADMAN_STATE = Path(__file__).resolve().parents[2] / "data/deadman_state.json"
+
+
+def venue_book_usd() -> float | None:
+    """Book equity from the venue's own numbers, or None when the rail has not run here.
+
+    Reads the dead-man's `high_water`, which is a HIGH-WATER MARK rather than spot equity. That
+    OVERSTATES the book during a drawdown, and overstating is the safe direction for a capacity
+    requirement: it demands MORE headroom, never less. The alternative -- the molded curve -- can
+    understate and would loosen every gate at exactly the wrong moment.
+
+    Read-only. Never writes the dead-man's file: two writers on that rail caused the 07-11 false
+    fire, and it is TIER-3 NEVER-TOUCH.
+    """
+    try:
+        hw = float(json.loads(_DEADMAN_STATE.read_text("utf-8"))["high_water"])
+    except Exception:
+        return None
+    return hw if hw > 0.0 else None
+
+
 def live_book_usd(fallback: float = DEFAULT_BOOK_USD, ledger: Path | None = None) -> float:
-    """Marked equity from the NAV attestation chain -- the book the desk ACTUALLY has today.
+    """The book the desk ACTUALLY has: venue truth first, NAV chain second, constant last.
+
+    ORDER MATTERS AND WAS WRONG. This originally read `equity_marked` straight from the NAV chain,
+    which is the last point of a MOLDED CURVE, not an account balance -- so every capacity gate in
+    the desk was sized against a simulated number. Venue truth now wins; the NAV chain is a
+    fallback for machines where the rail has not run.
 
     THE POINT OF THIS FUNCTION. Every capacity threshold in the desk is a ratio to deployed equity,
     which is only self-scaling if something feeds it the real number. Pinned to a constant, the
@@ -249,11 +290,16 @@ def live_book_usd(fallback: float = DEFAULT_BOOK_USD, ledger: Path | None = None
     Returning 0.0 would collapse the requirement to the absolute floor and quietly pass everything
     -- an unreadable file must never be the loosest possible gate.
     """
+    if ledger is None:
+        venue = venue_book_usd()
+        if venue is not None:
+            return venue
     path = ledger if ledger is not None else _NAV_LEDGER
     try:
         lines = [ln for ln in path.read_text("utf-8").splitlines() if ln.strip()]
         row = json.loads(lines[-1])
-        equity = float(row["equity_marked"])
+        # accept either name: the field was renamed to say what it is, and the chain is append-only
+        equity = float(row.get("molded_curve_usd", row.get("equity_marked")))
         age_d = (datetime.now(tz=UTC) - datetime.fromisoformat(str(row["ts"]))).total_seconds()
         if equity <= 0.0 or age_d / 86_400.0 > _NAV_STALE_DAYS:
             return fallback              # stale means UNKNOWN, and unknown is not "anything goes"
