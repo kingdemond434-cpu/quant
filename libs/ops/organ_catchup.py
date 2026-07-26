@@ -41,25 +41,33 @@ class OrganSpec:
 # Patterns/thresholds mirror scripts/max_audit.py ORGANS -- keep the two in sync.
 ORGANS: tuple[OrganSpec, ...] = (
     OrganSpec("brain", "ops/run_cro_ai.sh", "20*_*.log", 2000, "run_cro_ai.sh",
-              artifacts=("data/decision_ledger.json", "docs/research/cadence_duties.md")),
+              artifacts=()),   # EXCLUSIVITY (2026-07-26): the ledger is written by every commit and
+              # several organs, and cadence_duties by run_cadence -- both made a dead cycle
+              # read as produced (the 10:20 529-Overloaded death was never retried). No
+              # exclusive artifact exists, so fall back to log size: weaker but honest.
     OrganSpec("dataaxis", "ops/run_dataaxis_dig.sh", "dataaxis_*.log", 1500,
               "run_dataaxis_dig.sh",
-              artifacts=("docs/research/data_axis_watchlist.md",
-                         "data/data_universe_map.json")),
+              artifacts=("docs/research/data_axis_watchlist.md",)),   # universe map is SHARED
     OrganSpec("prospector", "ops/run_prospector_dig.sh", "prospector_*.log", 1500,
               "run_prospector_dig.sh",
-              artifacts=("docs/research/prospector_watchlist.md",
-                         "docs/research/prospector_coverage.md")),
+                            # coverage is SHARED with frontier and the brain -- not exclusive
+              artifacts=("docs/research/prospector_watchlist.md",)),
     OrganSpec("litminer", "ops/run_litminer_dig.sh", "litminer_*.log", 1500,
               "run_litminer_dig.sh",
-              artifacts=("docs/research/improvement_inbox.md",)),
+              artifacts=()),   # improvement_inbox is appended by many organs -- not exclusive
     OrganSpec("frontier", "ops/run_frontier_rotation.sh", "frontier_*.log", 1500,
               "run_frontier",
-              artifacts=("docs/research/prospector_coverage.md",
-                         "docs/research/search_operator_library.md")),
+              artifacts=("docs/research/search_operator_library.md",)),   # coverage has THREE
+              # writers (prospector dig, the 8 frontier prompts, run_cro_ai.sh)
     # WEEKLY: the deep cold audit must also complete once per INTERVAL even if its
     # Sunday 04:00Z window dies on a session limit -- otherwise it waits a full week.
-    OrganSpec("deep_sweep", "ops/run_deep_sweep.sh", "deep_sweep_*.log", 1200,
+    # TWO paths write logs here and the glob must see both: ops/run_deep_sweep.sh (what
+    # catch-up fires) writes deep_sweep_<date>.log, while cron invokes the python directly
+    # with `>> deep_sweep.log`. The cron redirect is the BETTER attempt marker -- it exists
+    # the moment cron fires, even if the run dies before opening its own log. Matching only
+    # the dated form meant deleting the failure stubs erased every attempt marker, and
+    # organ_owed's `if not logs` branch then hid the weekly audit completely (07-26).
+    OrganSpec("deep_sweep", "ops/run_deep_sweep.sh", "deep_sweep*.log", 1200,
               "run_deep_sweep", period_days=7),
 )
 

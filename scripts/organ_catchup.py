@@ -19,6 +19,10 @@ sys.path.insert(0, str(ROOT))
 
 from libs.ops.organ_catchup import pick_organ  # noqa: E402
 
+# A 5xx/overloaded is a SERVER hiccup, not an exhausted pool: no reset time will appear in
+# the log and waiting for one would strand the organ. Retry these immediately.
+_TRANSIENT = ("529", "overloaded", "502", "503", "504", "timed out", "connection reset")
+
 _RESET_RE = re.compile(r"resets?\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?", re.I)
 
 
@@ -92,6 +96,10 @@ def main() -> None:
     # at/after it, so resume lands ~1 minute after reset instead of up to a poll late.
     _logs = sorted(LOGDIR.glob(spec.pattern), key=lambda p: p.stat().st_mtime)
     _reset = _reset_time_from_log(_logs[-1], now) if _logs else None
+    if _logs:
+        _tail = _logs[-1].read_text('utf-8', errors='ignore').lower()
+        if any(k in _tail for k in _TRANSIENT):
+            _reset = None            # transient server error -> retry now, do not wait
     if _reset is not None and now.astimezone(UTC) < _reset:
         print(f"{now.isoformat()} owed={spec.name} waiting for stated reset "
               f"{_reset.isoformat()} -- no probe")
