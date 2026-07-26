@@ -210,3 +210,292 @@ adds one, sourced entirely from other people's published failure, at zero cost t
 multiplicity budget.
 
 ---
+
+### 3. HOW CARRY DIES — Brunnermeier-Nagel-Pedersen 2008 → Jurek 2009 → Daniel-Hodrick-Lu 2017
+**Verdict: SPLIT. (a) return-timing leg = `discard (graveyard match: conditioning overlay on the
+carry book)`; (b) the SKEWNESS/DIVERSIFICATION-FAILURE leg = `risk-model card`, testable on data
+the desk already holds, and it contradicts an assumption the live book is built on.**
+
+This is the highest-priority vein named for this run because the desk's ONE repeat survivor is a
+carry strategy and this literature is specifically about *how carry dies*.
+
+**Mechanism — who loses money and why they persist.** Carry is a *liquidity-provision* premium, not
+a free lunch: speculators earn the interest differential in exchange for bearing the risk that
+their own crowded position gets unwound. Brunnermeier-Pedersen liquidity spirals: a shock that hurts
+speculators is *amplified* (funding constraint binds → unwind → price falls → margins rise →
+unwind), while a shock that helps them is *not* amplified. That asymmetry mechanically manufactures
+negative skewness. The loser is the leveraged carry trader who is forced out at the bottom; the
+winner is whoever has unencumbered capital at that moment. They persist because each individual
+trader faces *synchronization risk* (Abreu-Brunnermeier) — he does not know when the others unwind,
+so holding on is individually rational right up to the crash.
+
+**Original evidence — BNP (2008), NBER WP 14473. PRIMARY TEXT READ IN FULL** (URL opened:
+`https://www.nber.org/system/files/working_papers/w14473/w14473.pdf`; the PDF is subset-font
+encoded and was zlib-decompressed and decoded inline — every number below is quoted from the decoded
+body text, not an abstract). Sample: 8 currencies vs USD (AUD, CAD, JPY, NZD, NOK, CHF, GBP, EUR),
+daily Datastream, **1986–2006**; CFTC futures positions 1992–2006 for 5–6 currencies only.
+- Cross-section: average skewness vs average interest differential, **R² = 81%** — an almost
+  mechanical relation. JPY (funding currency) most positive skew; AUD/NZD (investment currencies)
+  most negative.
+- Table 3 (panel, country FE): interest differential predicts next-quarter **skewness −23.92
+  (se 3.87) ⇒ t ≈ −6.2**, and the coefficient stays significant out to t+9. By contrast it predicts
+  the *return* at only 2.17 (se 0.78). **The crash-risk result is far stronger than the return
+  result.**
+- Table 2, and this is the load-bearing number for the desk: skewness **does not diversify away**.
+  Quarterly carry portfolio skew is **−0.700 with 1 long/1 short, −0.748 with 2/2, −0.977 with 3/3**
+  — it gets *worse* with breadth. Sharpe 0.654 / 0.638 / 0.784.
+- Table 9: currencies with *similar* interest rates co-move, controlling for correlated monetary
+  policy and country-pair fixed effects — coefficient on |i₁−i₂| is **−10.89 (se 3.81)**, and
+  **−13.41 (se 6.41)** with country-pair FE. Selecting on carry *induces* the correlation.
+- Table 5: ΔVIX × sign(differential) predicts carry unwinding — ΔFutures_t **−1.47 (0.77)**,
+  ΔFutures_{t+1} **−1.29 (0.57)**, contemporaneous carry return **−0.43 (0.11)**.
+- Table 7 (portfolio): ΔTED_t → **next-week** return **−1.57 (se 0.56), t ≈ −2.8**; ΔVIX_t is
+  contemporaneous only (−0.94, se 0.25) with **no** next-week power (−0.07, se 0.23).
+- **BNP's own self-limitation, quoted, and it is the pivot of the crypto transfer:** the futures
+  position variable is **driven out** by the past return. Table 4 col 1 has Futures_t at −0.26
+  (se 0.12) on next-quarter skewness; add z_t and it flips to +0.13 (se 0.15), insignificant, while
+  z_t is −3.34 (se 0.60). BNP: *"Perhaps the past return is a better measure of speculator positions
+  given the problems with the position data from the CFTC."* They also concede CFTC futures are a
+  small slice — *"much of the liquidity in the currency market is in the over-the-counter forward
+  market"* — and that theirs is merely *"the best publicly available data"*.
+
+**Forward ≥2 levels — REPLICATION SCAN, and it partially guts the headline story.**
+1. **Jurek, "Crash-Neutral Currency Carry Trades"** (SSRN 1262934; JFE 113(3) 2014). Open-access
+   author copy read: `https://static1.squarespace.com/static/5e6033a4ea02d801f37e15bb/t/5f6152c31a671e2e487587c8/1600213700526/jurek_currency.pdf`
+   (**PRIMARY TEXT READ**, decoded inline). G10, Jan 1990–Dec 2007/08. Equal-weighted carry: 4.42%
+   ann. excess return, 5.05% vol, **Sharpe 0.88**; 1999–2007 EQL 1.06 / SPR 1.35. Monthly skewness
+   1990–2008 = **−1.62**, ~2× the magnitude of US equity or momentum. Then the kill: buying OTM FX
+   options to hedge the crash leaves most of the return intact — **"at most 15–35% of the excess
+   returns to currency carry trades can be interpreted as compensation for exposure to currency
+   crashes"**, and to drive crash-hedged returns to zero *"would have required implied volatilities
+   for out-of-the-money options to be nearly four times their actual observed values."* Crash risk
+   is therefore NOT the explanation for the carry premium.
+2. **Jurek's second, larger result, which almost nobody cites:** *"once portfolios are constrained
+   to simultaneously maintain a zero net dollar exposure, excess returns to crash-neutral portfolios
+   become negligible, and statistically indistinguishable from zero. Net dollar exposure is a key
+   determinant of returns to currency carry trades."* The carry premium is substantially a
+   **common-factor (short-dollar) beta**, not a cross-sectional selection alpha.
+3. **Daniel, Hodrick & Lu, "The Carry Trade: Risks and Drawdowns"**, NBER WP 20433 (2014), published
+   *Critical Finance Review* 6:211–262 (2017). Landing pages opened: `https://www.nber.org/papers/w20433`,
+   `https://business.columbia.edu/sites/default/files-efs/pubfiles/6378/Daniel.Hodrick.Lu.Carry%20Trade.Critical%20Finance%20Review.2017.pdf`
+   (**ABSTRACT/summary level only — flagged**). Independently reaches Jurek's conclusion by a
+   different route: **dollar-neutral carry trades exhibit *insignificant* abnormal returns and carry
+   all the negative skewness; the dollar-exposure component earns the significant abnormal return
+   and has *minimal* skewness.** Two independent teams, same verdict: strip the common factor and
+   the cross-sectional carry alpha largely disappears, while the skew stays behind.
+4. **Jurek's 2008 event study is the risk-management finding.** Even monthly crash-hedged investors
+   suffered in 2008 because the decline was *protracted and autocorrelated*, not a single jump:
+   *"these dynamics appear at odds with those postulated by models of extreme, but rare, disasters,
+   when viewed at the monthly frequency."* Quarterly hedging beat monthly by 1–2% ann. **A carry
+   crash is a multi-week grind, not a gap.**
+5. Jurek also independently reproduces BNP's Table 9 as a *by-product*: dollar-neutral carry
+   portfolios have *higher* volatility than plain ones, *"which may be due to excess co-movement of
+   the relatively high- (low-) interest rate currencies, limiting the amount of attainable
+   diversification."*
+
+**Crypto-perp mapping — exact data required.**
+- (a) **DISCARDED LEG — return timing.** BNP Table 7/8's tradeable claim is "signed ΔTED predicts
+  next-week carry return; signed VIX predicts it 2–8 quarters out." In crypto that is a FRED-macro
+  regime gate bolted onto the live carry book. The desk has already killed this exact structural
+  class twice: `vol-target overlay` (Sharpe 1.40 → **1.07**, HURTS) and
+  `btc_correlation_regime_carry_conditioning` (EV 0.0003, "a conditioning overlay on the EXISTING
+  carry book, not a new stream"). **Discarded without testing.** Recording it explicitly so a future
+  run does not reopen it on "but this one is from the JEP/NBER".
+- (b) **DISCARDED LEG — the underreaction VAR.** BNP's VAR says the FX rate under-reacts to an
+  interest-rate shock and the carry return keeps accruing for ~15 quarters. The crypto version is
+  "funding shock → keep holding" = **`funding_momentum`, graveyard, Sharpe −1.72.** Discarded.
+- (c) **CARD LEG — carry-selection destroys its own diversification.** BNP Table 2 + BNP Table 9 +
+  Jurek's volatility observation make one falsifiable claim the desk has never tested and which its
+  live book *assumes away*: **a basket selected on high carry is more tail-concentrated than its
+  correlation matrix implies, and adding legs does not fix it — it may worsen it.** The desk's
+  `cashcarry_config.json` runs `top: 10, hold_top: 3000` — i.e. it explicitly buys breadth in the
+  carry direction on the assumption that 10 legs diversify. Data required, **ALL HELD AND
+  COVERAGE-AUDITED THIS RUN**: `data/lake/bronze/crypto/<SYM>/D1/*.parquet` — **267 symbols, daily,
+  from 2019-09-08, with `funding`, `basis` and `taker_buy_frac` all non-null** (this, NOT
+  `hyperliquid_funding.parquet`, is the research-grade funding panel; see the inventory correction
+  below). `run_carry_crowding.py` already reads exactly this path. Test: (i) regress pairwise
+  realized correlation of perp returns within non-overlapping 13-week windows on
+  |funding₁ − funding₂| with symbol-pair fixed effects — BNP's Table 9 exactly, and the desk has
+  strictly *better* data than BNP because funding is observed continuously rather than as a weekly
+  survey; (ii) compute realized skewness of an equal-weighted top-k funding basket for k = 1,3,5,10
+  and check whether skew improves or deteriorates in k. **Falsifier: if skew improves monotonically
+  in k and the |Δfunding| correlation coefficient is insignificant, the mechanism does not transfer
+  and this dies.**
+- (d) **DIAGNOSTIC LEG (needs one decomposition, no new data) — the Jurek/DHL common-factor test.**
+  Decompose realized carry P&L into (i) a "crypto dollar carry" component = equal-weight funding
+  harvest across the whole liquid perp universe, and (ii) a selection component = top-10 minus
+  universe. DHL+Jurek predict (ii) ≈ 0 alpha and all of the skew. If that holds in crypto, the
+  desk's *top-10 selection step* is adding tail risk for no return and the honest simplification is
+  a broader, flatter basket. This is an attribution of an existing book, **not** a conditioning
+  overlay — it adds no gate and no regime switch — which is why it does not fall under the
+  overlay kill.
+
+**Why (c)/(d) are NOT in the graveyard.** Nothing in the graveyard tests *skewness* or *realized
+diversification* as the dependent variable; every carry-adjacent kill (`funding_momentum`,
+`oi_divergence`, `ls_contrarian`, vol-target) predicts *returns*. These are risk-model claims about
+the book the desk already runs.
+
+**Crowding risk.** MEDIUM-LOW for (c)/(d) — "carry has negative skew" is famous, but *"breadth does
+not reduce it"* is the part practitioners routinely get wrong, and the desk is currently on the
+wrong side of it by construction. HIGH for the discarded legs.
+
+**McLean-Pontiff note.** BNP is 2008 and Jurek/DHL are its published refutations. The honest reading
+is that the *return* half of BNP has already been decomposed away by two independent teams; only the
+*risk-structure* half survives. That is exactly why the verdict here is a risk card, not an alpha card.
+
+---
+
+### 4. THE DESK'S OWN EDGE, ALREADY PUBLISHED AND ALREADY CAUSALLY COMPRESSED — BIS WP 1087
+**Verdict: `candidate-card` (a REPLICATION-ON-DESK-DATA card for the desk's #1 self-identified
+bottleneck) + a hard, dated, causally-identified CROWDING PRIOR the desk should be holding and is
+not.**
+
+This surfaced as the mandatory replication scan on vein (a) and is more important than anything else
+found this run, because it is about the desk's live book rather than a candidate.
+
+**What it is.** Schmeling, Schrimpf & Todorov, **"Crypto Carry"**, BIS Working Papers No 1087
+(April 2023; **this version October 1, 2025**). URL opened:
+`https://www.bis.org/publ/work1087.pdf` — **PRIMARY TEXT READ** (zlib-decoded inline). Open access,
+BIS-published, no paywall. Note the authorship: Schmeling and Schrimpf are two of the four authors of
+the canonical FX-carry-volatility literature (Menkhoff-Sarno-Schmeling-Schrimpf). **This is the FX
+carry literature deliberately ported to crypto by the people who wrote it** — i.e. the exact
+arbitrage this ground exists to find has already been performed on the desk's own strategy.
+
+**Data.** Daily, **March 2019 – July 2024**, BTC and ETH. Spot, futures and options characteristics
+from Skew and Coinmetrics. Annualized constant-maturity 1M and 3M basis on **Binance, OKEx, FTX,
+Huobi, BitMEX, Deribit and the CME** (CME basis begins Aug 2020). Futures data include basis, volume,
+open interest, and **buy and sell liquidations**.
+
+**Mechanism — who loses money and why they persist (this is the cleanest statement of the desk's own
+edge that exists anywhere).** Crypto carry is a large **negative convenience yield** — an
+*inconvenience* yield on holding spot, the mirror image of commodities (Gorton-Rouwenhorst 2006,
+Koijen et al. 2018), and analogous to the documented preference for swaps/futures over cash Treasuries.
+Two forces:
+1. **Demand**: smaller, trend-chasing, leverage-constrained investors buy futures because that is the
+   only way they can get leveraged exposure (explicitly framed via Frazzini-Pedersen). Max leverage on
+   crypto-native venues "sometimes exceeding 100" — far beyond commodities or S&P.
+2. **Limits to arbitrage**: professionals cannot easily hold spot (regulatory), and even those who can
+   face **no cross-margining** between the spot and futures legs, so the two legs must be funded
+   separately and a basis move can force liquidation before convergence (explicitly Brunnermeier-Pedersen
+   2009 funding risk). Their FTX illustration: a stated max loss of USD 30,000 on a futures position
+   means **a $1m short futures position is liquidated after a 3% rise in BTC**.
+The loser is the leverage-constrained retail long. They persist because the constraint is structural
+(they cannot borrow to buy spot), not a mistake they can learn out of.
+
+**Empirical facts, quoted with numbers.**
+- Average annualized carry across exchanges **Apr 2019 – Jul 2024 ≈ 7% p.a.**, occasionally
+  **exceeding 40% p.a.**
+- Interest-rate variation explains essentially none of it; storage costs ≈ 0 ⇒ the residual is a
+  large negative convenience yield.
+- **COT evidence (the trader-type split, on crypto):** higher crypto carry is associated with a rise in
+  **net long positions of smaller, presumably less sophisticated traders** in CFTC Commitments of
+  Traders for CME bitcoin futures, who increase positions *"in times of strong price trends and
+  heightened attention"*; **dealer intermediaries and leveraged funds take the opposite (short) side.**
+- **Causal DiD #1 (demand side):** the introduction of CME **micro** bitcoin futures — a smaller
+  contract, i.e. easier small-investor access — **significantly increased** CME carry relative to other
+  exchanges.
+- **Causal DiD #2 (supply/arbitrage side), and this is the number the desk needs:** the January 2024
+  **spot bitcoin ETF** introduction **decreased crypto carry by ~3 percentage points across exchanges
+  and by an additional ~5pp on the CME — "very large declines of 36% and 97% of the mean crypto
+  carry, respectively."**
+- **Risk of the futures leg:** severe drawdowns; crypto futures returns are *"about 17% per month"*
+  volatile.
+- **Table 7 — the replicable result:** regressing monthly buy/sell liquidations (as % of open
+  interest) on lagged standardized basis, *"a rise in standardized carry by 10% predicts a **22%
+  increase in total sell liquidations** (relative to total open interest) over the next month"*, and
+  carry **significantly predicts only SELL liquidations, not buy** — exactly the asymmetry the
+  mechanism requires, since the cash-and-carry trader is the short.
+- Authors' own caveat, recorded: their liquidation series *"covers both forced and voluntary
+  liquidations since the data provider does not distinguish"*.
+
+**Crypto-perp mapping — exact desk data. VERDICT DOWNGRADED AFTER A COVERAGE AUDIT (see
+§DATA-INVENTORY CORRECTION below): `needs-data-desk-lacks (forward clock)`, not immediately testable.**
+- The regressor side is **fully covered**: `data/lake/bronze/crypto/<SYM>/D1/*.parquet` holds
+  `funding` and `basis` daily for **267 symbols from 2019-09-08**, all non-null. That is a longer and
+  wider panel than BIS's own (BTC+ETH, 7 venues, Mar 2019–Jul 2024).
+- The **dependent** side is the blocker. `data/liquidations.parquet` is **not a history** — audited
+  this run it is **33,867 rows over 17 days (2026-07-09 → 2026-07-26) across 15 symbols**. BIS
+  regress *monthly* liquidations over ~5 years. The desk has under three weeks. A Table-7
+  replication is **not runnable today** and any attempt would be a 17-day overfit.
+- **Correct disposition: put it on a forward clock.** `scripts/liquidation_listener.py` is live and
+  the feed accrues daily; the desk already uses exactly this pattern (`oi_divergence`: "forward clock
+  continues (data still accruing)"). Pre-register the BIS specification NOW — standardized funding →
+  next-month coin-denominated sell-liquidations / OI, sign-predicted **negative for buy-side and
+  positive for sell-side only** — and let it mature. Pre-registering against a *published external
+  effect size* (+10% standardized carry ⇒ +22% sell liquidations) is a far stronger test than the
+  desk's usual self-generated null, because the alternative hypothesis is specified by someone else.
+- When it is runnable, the desk's version will be **better-specified** than BIS's on two axes:
+  (i) perps make funding a continuous observable rather than a 1M/3M constant-maturity interpolation,
+  and (ii) BIS could not separate forced from voluntary liquidations — an exchange liquidation feed
+  contains **only forced** ones, removing their stated confound.
+- **CONSTRUCTION HAZARD, binding.** `notional = qty × price` puts price in the numerator. The desk's
+  own `cm_mvrv` kill is precisely this failure ("the 20d z-score of a PRICE-NUMERATOR ratio is largely
+  recent momentum in disguise"). **Normalize liquidations in COIN UNITS (`qty`) over coin-denominated
+  OI, never notional over notional**, or the contamination gate will (correctly) reject it. BIS
+  normalizes by open interest, which mostly handles this; the desk must do the same deliberately.
+- **NAMED MISSING DATA, free and keyless:** `data/cot_zcache.parquet` holds XAU/XAG/XPT/XPD, EUR/GBP/
+  AUD/JPY/CHF/CAD and XTI — **but no crypto**. The CFTC publishes CME **Bitcoin and Ether** futures COT
+  weekly, free. **This is a second and better answer to the gap Finding 1 left open.** Finding 1 named
+  Binance `topLongShortPositionRatio` as the trader-type split it lacks; CFTC crypto COT is the
+  *literal same dataset* the entire commodity hedging-pressure literature is built on, with the same
+  commercial/non-commercial/non-reportable classification, and BIS has already shown it carries signal
+  on crypto carry. It is narrower (CME only, BTC/ETH only, weekly, 3-day lag) but it is the real thing
+  rather than a proxy.
+
+**Why this is NOT a graveyard match.** It is not a new alpha sleeve and not an overlay — it is a
+*forced-exit risk model for the position the desk already holds*, with a published effect size to
+compare against. The closest graveyard neighbour is `oi_divergence` (hourly, −1.21), which predicted
+*returns* from OI at hourly frequency; this predicts *short-side liquidations* from *carry* at monthly
+frequency, a different regressor, dependent variable, and horizon.
+
+**The crowding prior the desk should be holding.** The desk's `run_carry_crowding.py` correctly
+identifies secular funding compression as the #1 failure mode and measures it against *the strategy's
+own pre-registered history*. BIS supplies something that internal history cannot: a **causally
+identified, dated, one-time structural break** — Jan 2024 spot ETF ⇒ **−36% of mean carry across
+exchanges, −97% on CME**. Consequences: (i) any backtest window spanning pre-2024 overstates forward
+edge by a knowable amount and should carry an explicit haircut rather than a vibe; (ii) the desk's
+compression detector, which benchmarks against its own history, will read a *permanent regulatory
+level shift* as gradual crowding and may mis-attribute it; (iii) the mechanism says the remaining
+carry is rent on the *cross-margining friction*, so the correct thing to monitor for the next leg down
+is not competitor entry but **the arrival of spot-futures cross-margining / regulated prime
+brokerage** — a discrete, watchable, calendar event, not a slow grind.
+
+**Crowding risk.** HIGH and explicit. A BIS working paper, a Bloomberg headline in its epigraph
+(*"The 'Risk-Free' Crypto Trade Is Back In a Big Way"*, 8 Oct 2021), and the desk's own prospector
+already logged `hummingbot v2_funding_rate_arb.py` as commoditization evidence. Per charter §8 this
+raises research priority and says nothing against credibility — but it does mean the *level* of carry
+is a public, contested quantity and the desk should expect compression, not mean reversion.
+
+---
+
+### DATA-INVENTORY CORRECTION (audited on disk 2026-07-26, run 2) — READ BEFORE ANY ADAPTATION STEP
+
+The DESK DATA INVENTORY at the top of this file lists **row counts, not coverage spans**, and that is
+actively misleading for the adaptation step this ground exists to perform. Row counts on a live
+recorder are tick counts over a few weeks. Audited spans:
+
+| Asset | Rows | **True coverage** | Research-usable? |
+|---|---|---|---|
+| `data/lake/bronze/crypto/<SYM>/D1/*.parquet` | 2,514 (BTC) | **2019-09-08 → 2026-07-26, 267 symbols**, cols `open,high,low,close,volume,taker_buy_frac,funding,basis` — all non-null | **YES — this is the desk's real funding/basis/immediacy panel and the inventory omits it entirely** |
+| `data/lake/bronze/oi_ls_daily/*.jsonl` | 139 files | **2021-12-01 → 2026-07-23**, daily `oi, ls, taker, oi_first, ls_first` | **YES** (~4.6y, 139 symbols) |
+| `data/hyperliquid_funding.parquet` | 15,044 | **2026-06-26 → 2026-07-26 = 28 days** | NO at weekly+ horizons — it is a 2-venue spread recorder, not a funding history |
+| `data/crypto_metrics.parquet` | 3,791 | **2026-06-22 → 2026-07-26 = 28 days** | NO |
+| `data/liquidations.parquet` | 33,867 | **2026-07-09 → 2026-07-26 = 17 days, 15 symbols** | NO — forward-accruing only |
+| `data/deribit_surface.parquet` | 66 | 2026-06-26 → 2026-07-26 = 25 days | NO (already known breadth-starved) |
+| `data/cot_zcache.parquet` | 8,405 | wide frame, metals + G10 FX + WTI — **no crypto column** | YES for cross-asset, but holds no BTC/ETH COT |
+
+**Consequences that bind on this ground.**
+1. Every mechanism in the pre-2015 literature worth transferring is **weekly, monthly or quarterly**
+   (KRT weekly on position changes; BIS monthly liquidations; BNP quarterly skewness; Coval-Stafford
+   quarterly). Three of the four "positioning" assets the inventory advertises cannot support any of
+   those horizons. **The binding constraint on this ground is history length, not mechanism supply.**
+2. The two assets that *can* — bronze crypto `D1` and `oi_ls_daily` — are the ones the inventory
+   describes least well. `taker_buy_frac` in the D1 lake is a **6.9-year, 267-symbol** daily
+   immediacy-demand series; Finding 1 mapped KRT's immediacy leg onto `crypto_metrics.taker_ratio`,
+   which is **28 days long**. Finding 1's data mapping should be re-pointed at `taker_buy_frac`
+   before anyone tries to run it.
+3. Any future run that writes "the desk HAS X" must state X's **span and symbol count**, not its row
+   count. This is the same class of error as the `notional = qty × price` contamination trap: a
+   number that looks like evidence and is not.
+
+---

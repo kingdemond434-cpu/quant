@@ -1,0 +1,4 @@
+# AUDITOR FAILED (infrastructure)
+
+--stderr--
+
