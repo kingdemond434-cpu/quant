@@ -434,3 +434,86 @@ as **grading that existing feed** rather than adding a parallel one.
 a legislated 2028 expiry that must be written into any future pre-registration).
 
 ---
+
+### D-4 — HONEST NULLS, QUANTIFIED: the Russian and Japanese open-access academic corpora contain NO crypto-perp microstructure literature, and the reason is LEXICAL
+**(a first-class deliverable per the quality bar — a measured absence, not a shrug; and it yields a reusable search operator)**
+
+**The claim being made.** Not "I looked and didn't find much." Rather: **CyberLeninka (the Russian
+national open-access aggregator) and J-STAGE/CiNii (the Japanese equivalents) were searched with 16
+native-language queries between them, result counts were recorded, and the crypto-perp
+microstructure literature is measurably absent — while adjacent literatures are abundant.** The
+absence is therefore about the corpora, not about the queries failing.
+
+**CyberLeninka (RU) — 16 native queries, counts recorded. `[FETCHED-PRIMARY]` via its JSON API.**
+Financially-correct Russian terms first:
+| query (RU) | results | what actually came back |
+|---|---|---|
+| `микроструктура рынка криптовалют` (crypto market microstructure) | **16** | valuation/Hurst-exponent/volatility-model papers; no order-book or flow work |
+| `ликвидность криптовалютного рынка` (crypto market liquidity) | 407 | macro-policy, national financial system, institutionalisation — "liquidity" in the systemic sense |
+| `волатильность биткоина прогнозирование` (bitcoin volatility forecasting) | 173 | GARCH/ML forecasting — the crowded, already-dead class |
+| `деривативы криптовалюты хеджирование` | 57 | legal regulation of hedging; bonds; oil & gas derivatives |
+| `бессрочный фьючерс криптовалюта` (perpetual futures) | 13 | legal regulation of margin trading; blockchain ecosystems |
+| `межбиржевой арбитраж криптовалют` (cross-exchange arb) | **4** | all legal/regulatory or financial-pyramid papers |
+| `маркет-мейкер спред криптобиржа` | **2** | neither relevant |
+| `проскальзывание криптобиржа` (slippage) | **1** | irrelevant |
+| `перпетуал` (perpetual, transliterated) | **1** | *"The formation of China's diplomacy"* |
+| `стакан заявок криптовалюта` (order book) | 8 | general "what is a crypto exchange" pieces |
+| `кимчи премия` | 10 | **all about Korean cuisine and consumer preferences in Vladivostok** |
+| `фандинг` / `ставка фандинга` | 266 / 61 | **entirely fuzzy matches on фандрайзинг / краудфандинг** — fundraising, not funding rates |
+
+**THE LEXICAL FINDING — this is the transferable part, and it cost a false start to learn.**
+The first query run was `криптовалюта арбитраж`, the literal translation, which returned 278 results
+that were **almost entirely criminal-law papers**: *"АРБИТРАЖ КРИПТОВАЛЮТ И ПРОЦЕССИНГ ПЛАТЕЖЕЙ: РИСКИ
+УГОЛОВНОГО ПРЕСЛЕДОВАНИЯ"* (Cryptocurrency arbitrage and payment processing: risks of criminal
+prosecution), *"ВОПРОСЫ НОРМАТИВНО-ПРАВОВОГО РЕГУЛИРОВАНИЯ АРБИТРАЖА КРИПТОВАЛЮТЫ ПРИ РАССЛЕДОВАНИИ
+КИБЕРПРЕСТУПЛЕНИЙ"*. Reason: **`арбитраж` in Russian means ARBITRATION — a court of arbitration —
+far more often than it means financial arbitrage.** It is a false friend, and it silently routes the
+searcher into the legal corpus. Correct financial Russian is `арбитражная торговля` /
+`арбитражные сделки` / `межбиржевой арбитраж`.
+But the deeper result is the one the transliteration test settled: `фандинг` matches only
+*фандрайзинг*, and `перпетуал` returns one paper about Chinese diplomacy. **Russian academic finance
+has no vocabulary for crypto-perp concepts at all** — while the Russian-speaking *practitioner*
+community (habr, smart-lab, Telegram) uses transliterations fluently. The academic and practitioner
+Russian corpora are therefore **lexically disjoint**: no academic query can reach practitioner
+knowledge, and vice versa. This is why OP-002/OP-017 (practitioner-community mining) and academic
+mining must be run as *separate* operators for RU, never as one.
+
+**J-STAGE + CiNii (JP) — `[FETCHED-PRIMARY]` on both search interfaces.**
+- J-STAGE `暗号資産 市場微観構造` → *"検索条件に該当する記事が見つかりません"* (**zero results**).
+- J-STAGE `仮想通貨 流動性` → **62 results**, and the top 20 were read in full. Composition:
+  accounting treatment, UK crypto tax policy, Japanese income tax on mined bitcoin, ICO securities
+  law, Libra/regulator commentary, blockchain-for-electricity-settlement, NLP fraud-token detection,
+  and — repeatedly — **prediction-market demand-forecasting papers** (水山元 et al., 2007–2009) that
+  match only because they share the word 市場. **Not one market-microstructure or trading paper.**
+- CiNii Research `暗号資産 裁定取引` (crypto arbitrage) → **0 papers, 0 dissertations, 0 datasets.**
+  It returned only two *researcher* records (藤原義久, Hyogo Pref. Univ.; 和泉潔, Univ. of Tokyo).
+- Read-through: Japan's academic crypto output sits in **law, tax and accounting faculties**, not in
+  finance/econometrics. The Japanese quantitative talent that *does* work on order books is in the
+  **practitioner** layer (the note.com / Qiita "botter" ecosystem already captured by OP-017) and in
+  artificial-market simulation, neither of which is reachable by these academic queries.
+
+**SciELO (BR/LatAm) — NOT MINED, and the distinction matters.** `search.scielo.org` returned
+**HTTP 403** to WebFetch and **HTTP 403** to direct request with a browser UA; `scielo.br/search`
+likewise **403**. This is an access block (Cloudflare-class), **not** an empty corpus. Recorded as
+`residual-gap`, explicitly **not** as a null — the honest statement is *"SciELO was not searched"*,
+and any future claim that Portuguese/Spanish literature is empty would be unfounded. A working
+route exists and was confirmed reachable: `articlemeta.scielo.org/api/v1/` responded **HTTP 200**.
+**Next run resumes there.**
+
+**Mechanism content: none, and that is the finding.** No card, no hypothesis, no adaptation — there
+is nothing to adapt. The value is (a) the desk can now stop spending cycles on RU/JP *academic*
+crypto search, with a quantified basis for that decision rather than an impression; (b) the false-friend
+and transliteration results are reusable operators (contributed below); (c) it sharpens where the
+non-English edge actually lives — **Korea (KCI, genuine quantitative finance journals, D-1/D-2) and
+Japan's regulator (JVCEA, D-3), not the RU/JP academic journals.**
+
+**Graveyard check.** Nothing proposed, nothing revived. The one substantive overlap is that the
+abundant RU literature is **GARCH/ML volatility forecasting**, which sits squarely in the desk's
+`price-only alpha (420/0)` standing kill — so even the part of the corpus that *is* quantitative is
+pre-killed. `confirms-existing-kill`.
+
+**Verdict:** `honest-null` (RU academic, JP academic — both **EXHAUSTED**, quantified) +
+`residual-gap` (SciELO, **blocked, not empty** — resume at the articlemeta API) +
+`operator-contribution` (false-friend and lexical-disjointness patterns, below).
+
+---
