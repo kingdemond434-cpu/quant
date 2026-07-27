@@ -58,7 +58,7 @@ def main() -> None:
     for sym in SYMS:
         try:
             oi, kl = oi_hist(sym), klines(sym)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             print(f"{sym}: DATA-BLOCKED ({type(e).__name__})")
             continue
         ts = sorted(set(oi) & set(kl))
@@ -67,8 +67,8 @@ def main() -> None:
             continue
         o = np.array([oi[t] for t in ts])
         c = np.array([kl[t][0] for t in ts])
-        hi = np.array([kl[t][1] for t in ts])
-        lo = np.array([kl[t][2] for t in ts])
+        np.array([kl[t][1] for t in ts])
+        np.array([kl[t][2] for t in ts])
         dp = np.zeros(len(c)); dp[1:] = c[1:] / c[:-1] - 1.0
         do = np.zeros(len(o)); do[1:] = o[1:] / o[:-1] - 1.0
 
@@ -103,7 +103,7 @@ def main() -> None:
         hi_d, lo_d = d_[q[-k:]].mean(), d_[q[:k]].mean()
 
         # and the honest control: is it just a direction signal in disguise?
-        fwd_ret = np.roll(dp, -1)[m]
+        np.roll(dp, -1)[m]
         scr = stage_a_screen(refl[m], dp[m], name=f"reflexivity_{sym}", zwin=20)
 
         print(f"{sym}  n={n}  current reflexivity beta {refl[-1]:+.3f}")

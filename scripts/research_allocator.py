@@ -26,7 +26,6 @@ Read-only. Run from repo root.
 from __future__ import annotations
 
 import json
-import re
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -79,7 +78,7 @@ def main() -> None:
 
     rng = np.random.default_rng(7)
     rows, draws = [], {}
-    for a, (kws, sat, prior_w) in AREAS.items():
+    for a, (kws, sat, _prior_w) in AREAS.items():
         t = tally[a]
         n = sum(t.values())
         gain = sum(REWARD[k] * v for k, v in t.items())
@@ -164,7 +163,7 @@ def main() -> None:
               f"{r['info_gain']:>7.1f}{r['saturation']:>6.2f}")
     print(f"\n  reward: survivor {REWARD['survivor']} | refutation {REWARD['refutation']} "
           f"| method {REWARD['method']} | inconclusive {REWARD['inconclusive']}")
-    print(f"  (refutations are PAID -- closing a family permanently prevents future waste)")
+    print("  (refutations are PAID -- closing a family permanently prevents future waste)")
 
     if prior_dominated:
         print(f"\n  *** PRIOR-DOMINATED: {total_surv} survivors across {total_n} attempts. ***")

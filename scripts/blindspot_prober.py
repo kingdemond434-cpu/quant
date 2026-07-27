@@ -87,7 +87,7 @@ def main() -> None:
     cov = {}
     if MAP.exists():
         d = json.loads(MAP.read_text("utf-8"))
-        for k, v in d.get("classes", {}).items():
+        for _k, v in d.get("classes", {}).items():
             cov.setdefault(v["modality"], {"covered": 0, "n": 0})
             cov[v["modality"]]["n"] += 1
             if v["status"] == "covered":

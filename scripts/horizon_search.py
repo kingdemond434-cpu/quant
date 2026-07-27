@@ -94,7 +94,7 @@ def main() -> None:
     for name, fn in SIGNALS.items():
         try:
             s = fn()
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             print(f"{name:16s} DATA-BLOCKED ({type(e).__name__})")
             continue
         dates = sorted(set(s) & set(gb))

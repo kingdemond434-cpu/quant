@@ -28,8 +28,6 @@ import json
 from datetime import UTC, datetime
 from pathlib import Path
 
-import numpy as np
-
 LEDGER = Path("data/decision_ledger.json")
 OUT = Path("data/research_alpha_optimizer.json")
 HIST = Path("data/method_outcomes.jsonl")

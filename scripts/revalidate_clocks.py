@@ -37,7 +37,7 @@ def yahoo(sym):
     r = _get(f"https://query1.finance.yahoo.com/v8/finance/chart/{sym}?interval=1d&range=300d")
     res = r["chart"]["result"][0]
     return {datetime.fromtimestamp(int(t), tz=UTC).date().isoformat(): float(c)
-            for t, c in zip(res["timestamp"], res["indicators"]["quote"][0]["close"]) if c}
+            for t, c in zip(res["timestamp"], res["indicators"]["quote"][0]["close"], strict=False) if c}
 
 
 def upbit():
@@ -61,7 +61,7 @@ def shift_ic(signal: dict, gb: dict, shift: int, fx: dict | None = None) -> floa
     dates = sorted(set(signal) & set(gb) & (set(fx) if fx else set(gb)))
     if len(dates) < 60:
         return float("nan")
-    idx = {d: i for i, d in enumerate(dates)}
+    {d: i for i, d in enumerate(dates)}
     btc = np.array([gb[d] for d in dates])
     ret = np.zeros(len(btc)); ret[1:] = btc[1:] / btc[:-1] - 1.0
     fwd = np.roll(ret, -1)
@@ -99,7 +99,7 @@ def main() -> None:
         print(f"  SHIFT TEST  -1d {s[-1]:+.3f} | 0d {s[0]:+.3f} | +1d {s[1]:+.3f}")
         fwd_leak = abs(s[1]) > abs(s[0]) * 1.5 and abs(s[1]) > 0.3
         print(f"  -> {'*** FORWARD-SHIFT LEAK SUSPECTED ***' if fwd_leak else 'no lookahead pattern (shift0 not dominated by +1d)'}\n")
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         print(f"KIMCHI: ERROR {type(e).__name__}: {e}\n")
 
     # ---- 2. STABLECOIN SUPPLY ----
@@ -115,7 +115,7 @@ def main() -> None:
               f"same {r.get('same_period_corr'):+.3f} resid {r.get('residual_ic'):+.4f} | {r['verdict']}")
         print(f"  SHIFT TEST  -1d {s[-1]:+.3f} | 0d {s[0]:+.3f} | +1d {s[1]:+.3f}")
         print(f"  -> {'*** FORWARD-SHIFT LEAK SUSPECTED ***' if abs(s[1])>abs(s[0])*1.5 and abs(s[1])>0.3 else 'no lookahead pattern'}\n")
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         print(f"STABLECOIN: ERROR {type(e).__name__}\n")
 
     # ---- 3. CNY premium clock health ----

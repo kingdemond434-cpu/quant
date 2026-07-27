@@ -53,6 +53,8 @@ _STEPS = [
     # licence-clean Glassnode/Coin-Metrics replacement (facts reconstructed from chain)
     ("onchain_metrics",   "scripts/collect_onchain_metrics.py", 180),  # on-chain throughput
     ("stablecoin_supply", "scripts/collect_stablecoin_supply.py", 120),  # supply momentum clock
+    ("breadth_expander", "scripts/breadth_expander.py", 420),  # external-LLM breadth scout (Stage-A only)
+    ("signal_halflife",  "scripts/signal_halflife.py", 180),  # signal ageing/decay tracker
     ("cny_premium",       "scripts/collect_cny_premium.py", 60),  # USDT/CNY P2P premium (#76)
     ("axis_shadows",      "scripts/run_axis_shadows.py",     120),  # Stage-B forward eval
     ("reject_rescore",    "scripts/run_rejection_rescore.py", 300),  # feed near-miss reject scores

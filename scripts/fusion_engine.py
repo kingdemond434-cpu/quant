@@ -68,7 +68,7 @@ def kimchi():
     res = _get("https://query1.finance.yahoo.com/v8/finance/chart/KRW=X?interval=1d&range=300d"
                )["chart"]["result"][0]
     fx = {datetime.fromtimestamp(int(t), tz=UTC).date().isoformat(): float(c)
-          for t, c in zip(res["timestamp"], res["indicators"]["quote"][0]["close"]) if c}
+          for t, c in zip(res["timestamp"], res["indicators"]["quote"][0]["close"], strict=False) if c}
     return kb, fx
 
 

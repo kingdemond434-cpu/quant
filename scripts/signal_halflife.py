@@ -16,6 +16,7 @@ else. Run from repo root, ideally on the daily cadence.
 """
 from __future__ import annotations
 
+import contextlib
 import json
 import urllib.request
 from datetime import UTC, datetime
@@ -56,7 +57,7 @@ def kimchi(gb):
     res = _get("https://query1.finance.yahoo.com/v8/finance/chart/KRW=X?interval=1d&range=300d"
                )["chart"]["result"][0]
     fx = {datetime.fromtimestamp(int(t), tz=UTC).date().isoformat(): float(c)
-          for t, c in zip(res["timestamp"], res["indicators"]["quote"][0]["close"]) if c}
+          for t, c in zip(res["timestamp"], res["indicators"]["quote"][0]["close"], strict=False) if c}
     return {d: kb[d] / fx[d] / gb[d] - 1.0 for d in (set(kb) & set(fx) & set(gb))}
 
 
@@ -86,7 +87,7 @@ def half_life(ics: list[float]) -> float | None:
     y = np.array([abs(v) for v in ics])
     y = np.where(y < 1e-4, 1e-4, y)
     x = np.arange(len(y), dtype=float)
-    b, a = np.polyfit(x, np.log(y), 1)
+    b, _a = np.polyfit(x, np.log(y), 1)
     if b >= -1e-6:
         return None                      # flat or improving -- no decay to report
     return float(-np.log(2) / b)
@@ -95,14 +96,10 @@ def half_life(ics: list[float]) -> float | None:
 def main() -> None:
     gb = binance()
     sigs = {}
-    try:
+    with contextlib.suppress(Exception):
         sigs["stablecoin_supply"] = stables()
-    except Exception:
-        pass
-    try:
+    with contextlib.suppress(Exception):
         sigs["kimchi_premium"] = kimchi(gb)
-    except Exception:
-        pass
 
     today = datetime.now(tz=UTC).date().isoformat()
     rows, report = [], []
