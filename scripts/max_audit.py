@@ -2218,10 +2218,11 @@ def check_orphan_modules(defects) -> None:
             "backlog is worked off, never up."))
 
 
-#: Ratchet for the module-orphan census. Measured 2026-07-26 at 66 after run_live_guard.py wired
-#: the stage machine and connector back in (67 before). Lower this as the backlog clears; raising
-#: it to make the check pass is the one edit that defeats its purpose.
-_ORPHAN_MODULE_BUDGET = 66
+#: Ratchet for the module-orphan census. 67 -> 66 when run_live_guard.py wired the stage machine
+#: and connectors back in; 66 -> 49 when run_alpha_factory.py gave the seventeen research engines
+#: a production caller. Lower this as the backlog clears; raising it to make the check pass is
+#: the one edit that defeats its purpose.
+_ORPHAN_MODULE_BUDGET = 49
 
 
 #: Docs where mined finds ACCUMULATE UN-DISPOSITIONED -- the only place §33 inventory can rot.

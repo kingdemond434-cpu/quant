@@ -44,6 +44,10 @@ _STEPS = [
     ("growth_audit",      "scripts/run_growth_audit.py",       60),  # under-utilization = defect
     ("research_pipeline", "scripts/run_daily_research.py",  7200),
     ("autodiscovery",     "scripts/run_crypto_research.py", 1800),  # industrialized crypto factory
+    # the research-coordination engines: rank the agenda queue, screen novelty against the
+    # do-not-repeat list, assess crowding/capacity, and flag candidates that duplicate a
+    # deployed sleeve. 17 of 21 alpha_factory modules had no caller before this.
+    ("alpha_factory",     "scripts/run_alpha_factory.py",   180),
     ("state_files",       "scripts/research_cycle.py",      300),
     ("trade_forensics",   "scripts/run_trade_forensics.py",  60),  # class-bleed probe (daily)
     ("nav_attest",        "scripts/run_nav_attest.py",       60),  # hash-chained track record

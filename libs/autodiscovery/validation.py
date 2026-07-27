@@ -15,7 +15,10 @@ from libs.autodiscovery.models import Hypothesis, ValidationMetrics, ValidationV
 from libs.discovery.capacity import capacity_estimate
 from libs.discovery.tail_risk import tail_risk
 from libs.research.capacity_policy import capacity_required, live_book_usd, live_sleeves
+from libs.validation.baselines import baseline_scorecard
+from libs.validation.cpcv import CPCV
 from libs.validation.dsr import deflated_sharpe_ratio, sharpe_ratio
+from libs.validation.errors import ValidationError
 from libs.validation.pbo import PBOResult, probability_backtest_overfitting
 from libs.validation.reality_check import RealityCheckResult, whites_reality_check
 from libs.validation.revalidation import WalkForwardEngine, WalkForwardStatus
@@ -24,11 +27,76 @@ _PERIODS_PER_YEAR = 24 * 260
 _DSR_THRESHOLD = 0.95
 _CPCV_MIN_POSITIVE = 0.6   # >=60% of purged folds positive
 
+# Real CPCV settings. 6 groups choose 2 gives 15 test paths; purge drops the observations
+# straddling each boundary and the embargo holds out a further 1% after it, which is what stops
+# a serially-correlated stream leaking its answer across the split.
+_CPCV_GROUPS = 6
+_CPCV_TEST_GROUPS = 2
+_CPCV_PURGE = 2
+_CPCV_EMBARGO = 0.01
+_CPCV_MIN_OBS = 60         # below this there is nothing to be combinatorial about
+
+# A candidate must beat the trivial nulls, not merely be statistically distinguishable from
+# noise. DSR/PBO/RC all ask "is this real given the search?"; none asks "is it better than
+# buy-and-hold?", and a significant strategy that loses to buy-and-hold is complexity with no
+# reason to exist. Gate is SKIPPED (not failed) when no benchmark stream is supplied, because
+# most callers have no benchmark for a market-neutral carry sleeve -- failing them for the
+# absence of an inapplicable comparison would reject good candidates for the wrong reason.
+
 
 def _cpcv_positive_fraction(returns: np.ndarray, *, k: int = 5) -> float:
-    folds = np.array_split(returns, k)
-    positive = [f.mean() > 0 for f in folds if len(f) > 1]
-    return float(np.mean(positive)) if positive else 0.0
+    """Fraction of COMBINATORIAL PURGED folds whose test slice is positive.
+
+    This was a plain `np.array_split` into k contiguous folds -- not purged, not embargoed, and
+    not combinatorial, despite the gate being named `cpcv` and the module docstring claiming
+    CPCV. `libs/validation/cpcv.py` implements the real thing (Lopez de Prado ch.12) and was
+    imported by nothing but its own test.
+
+    The difference is not cosmetic. Contiguous k-fold on overlapping financial samples leaks
+    information across the fold boundary, so the old measure was systematically optimistic on
+    exactly the serially-correlated return streams this desk trades. Purge + embargo remove the
+    observations that straddle the boundary; the combinatorial part gives many test paths instead
+    of one, so the fraction means something.
+
+    Falls back to the contiguous split only when the sample is too short to purge -- with a short
+    series there is nothing to be combinatorial about, and refusing to score would fail candidates
+    for being new rather than for being bad.
+    """
+    arr = np.asarray(returns, dtype="float64")
+    if len(arr) >= _CPCV_MIN_OBS:
+        try:
+            splitter = CPCV(n_groups=_CPCV_GROUPS, n_test_groups=_CPCV_TEST_GROUPS,
+                            purge=_CPCV_PURGE, embargo=_CPCV_EMBARGO)
+            positive = [bool(arr[s.test].mean() > 0)
+                        for s in splitter.split(len(arr)) if len(s.test) > 1]
+            if positive:
+                return float(np.mean(positive))
+        except (ValidationError, ValueError):
+            pass
+    folds = np.array_split(arr, k)
+    positive_fallback = [f.mean() > 0 for f in folds if len(f) > 1]
+    return float(np.mean(positive_fallback)) if positive_fallback else 0.0
+
+
+def _beats_baselines(returns: np.ndarray, benchmark: np.ndarray | None) -> bool:
+    """Does the candidate beat buy-and-hold and equal-weight? True when no benchmark is given.
+
+    Skipping rather than failing on a missing benchmark is a deliberate fail-OPEN, and the only
+    one in this gate set. The reason it is defensible here and nowhere else: the desk's live
+    sleeve is market-neutral carry, for which "buy and hold what?" has no answer, so an absent
+    benchmark usually means the comparison is inapplicable rather than unmeasured. Every caller
+    that CAN supply one should -- `beats_baselines` reads as passed either way in the verdict,
+    so read `n_obs`/the caller to know which happened.
+    """
+    if benchmark is None:
+        return True
+    b = np.asarray(benchmark, dtype="float64")
+    if len(b) < 2 or len(b) != len(returns):
+        return True
+    try:
+        return bool(baseline_scorecard(returns, buy_hold_returns=b).beats_all)
+    except (ValidationError, ValueError):
+        return True
 
 
 def campaign_pbo_rc(
@@ -64,6 +132,7 @@ def validate(
     n_sleeves: int | None = None,
     pbo: PBOResult | None = None,
     rc: RealityCheckResult | None = None,
+    benchmark_returns: np.ndarray | None = None,
 ) -> ValidationVerdict:
     arr = np.asarray(returns, dtype="float64")
     if len(arr) < 250:
@@ -112,6 +181,9 @@ def validate(
             live_book_usd() if deployed_equity_usd is None else deployed_equity_usd,
             live_sleeves() if n_sleeves is None else n_sleeves),
         "fragility": tail.acceptable,
+        # skipped-as-True when no benchmark is supplied (see the constant block above); when
+        # one IS supplied the candidate must beat buy-and-hold and equal-weight outright.
+        "beats_baselines": _beats_baselines(arr, benchmark_returns),
     }
     failed = [name for name, ok in gates.items() if not ok]
     return ValidationVerdict(
