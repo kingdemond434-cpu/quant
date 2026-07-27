@@ -1,0 +1,32 @@
+level-5 layers: signal half-life tracker + research alpha optimizer (instrument now, activate on evidence)
+
+Principal argued for building the meta-research stack EARLY for headstart. Accepted on ONE
+specific ground that changed my answer: a decay curve needs a TIME SERIES THAT STARTS NOW --
+waiting until Aug 7 permanently loses the pre-verdict baseline, and method-outcome history cannot
+be rebuilt retroactively. So the rule is INSTRUMENT NOW, ACTIVATE THE MODEL LATER. Recording is
+cheap and irreversible-if-skipped; fitting a meta-model to zero survivors is what produces
+confident noise.
+
+1) scripts/signal_halflife.py -- SIGNAL AGEING (the graveyard handles DEATH; this handles decay of
+   things that WORK, which is invisible to a pass/fail gate and is how live books quietly bleed).
+   Rolling IC over successive windows -> trend + half-life, but REFUSES to fit a decay curve below
+   8 windows. First observations:
+     stablecoin_supply  41 windows | IC +0.027 -> +0.078 | trend +0.051 | STRENGTHENING
+     kimchi_premium      4 windows | IC +0.198 -> +0.418 | STRENGTHENING (correctly refused to fit)
+
+2) scripts/research_alpha_optimizer.py -- ALPHA FOR FINDING ALPHA. Learns which RESEARCH METHODS
+   (new_data_axis / horizon_variation / fusion / cross_sectional / reconstruction /
+   literature_import / parameter_search) convert effort into knowledge, valuing refutations (0.6)
+   and method upgrades (0.5) alongside survivors (1.0) so decisive kills are not punished.
+
+   SAFETY BUG CAUGHT AND FIXED IN MY OWN BUILD -- reported because it matters: the activation gate
+   initially counted keyword hits in ledger PROSE, found "63 survivors" when the true count is
+   ZERO, and flipped itself to ACTIVE. The gate built to prevent fitting-on-noise AUTHORISED
+   ITSELF -- a fail-OPEN. Now grounded in ground truth: only axis_shadows verdict == ELIGIBLE
+   counts, and the gate FAILS CLOSED. Correctly reads INSTRUMENTING (0 confirmed edges).
+
+   Method history is recorded every cycle to data/method_outcomes.jsonl; the MODEL informs nothing
+   until >=3 confirmed edges exist. Aug 7 is the first opportunity.
+
+STANDING LESSON: any safety gate must fail CLOSED and be grounded in a structured verdict field,
+never in prose matching. A gate that can talk itself open is not a gate.
