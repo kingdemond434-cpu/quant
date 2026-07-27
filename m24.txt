@@ -1,0 +1,39 @@
+claim escalator: a false claim now BLOCKS Gate-0 automatically (detection without action is nothing)
+
+PRINCIPAL: "make sure every claim verifier fail gets built immediately". Implemented as automatic
+ESCALATION rather than automatic fixing -- a wrong claim needs a human to explain WHY the two
+numbers disagree before anyone can know what the right fix is. What must be automatic is that it
+CANNOT BE IGNORED.
+
+WHY: the NAV gap sat inside venue_divergence_shadow for FOUR DAYS, widening 36% -> 176%, while
+every dashboard read green and nobody was paged. A finding in a JSON file is not a control.
+
+scripts/claim_escalate.py -- deliberately SEPARATE from claim_verifier.py: detect and act are
+different jobs, and keeping them apart means a bug in escalation cannot corrupt detection.
+Every CRITICAL/HIGH claim failure is written to BOTH channels the desk already honours:
+  data/PRINCIPAL_ACTION.md  (the human pager -- max_audit already writes here, so it IS read)
+  docs/GATE0_QUEUE.md       (the live-capital blocker list)
+Idempotent -- verified by running twice: second run reported "already raised today" on both
+channels and duplicated nothing.
+
+LIVE RESULT: 2 blockers escalated --
+  [CRITICAL] portfolio equity reconciles with the venue  (175.8% divergence)
+  [HIGH]     health all_ok is consistent with organ logs (14 stub vs 13 real logs in 48h)
+Both now sit in the Gate-0 queue and the pager. They block live capital until EXPLAINED.
+
+TIER-1 CADENCE (principal asked whether to go biweekly) -- RECOMMENDED, NOT IMPLEMENTED:
+  Biweekly is the wrong fix. Tier-1 audits STRUCTURE, and structure normally changes slower than
+  the calendar, so a fixed 14d clock produces duplicate findings in quiet periods -- the same
+  failure as doubling the weekly panel. But today the desk changed enormously (24 commits, 20+ new
+  components) and under the 28d clock that goes unaudited until Aug 13.
+  RIGHT TRIGGER IS MATERIAL CHANGE, NOT ELAPSED TIME: fire tier-1 when N commits or M new scripts
+  have landed since the last audit, with a 7d floor (no thrashing) and a 28d ceiling (quiet
+  periods still reviewed). Today would trigger immediately; a dead fortnight would not spend the
+  ~$8. NOT IMPLEMENTED BY ME -- run_cadence.py is brain-owned scheduling logic and at today's
+  measured defect rate (9 shipped, 2 in one file) I should not edit scheduling I cannot fully test.
+
+SELF-INFLICTED DEFECT THIS ROUND, disclosed: my first attempt patched claim_verifier.py in place
+and broke it with a heredoc escaping error (unterminated string, file would not parse). Caught
+immediately, restored via git checkout, and rebuilt as a separate script. Third escaping failure
+of the session -- in-place remote patching of multi-line strings is the pattern that keeps failing
+and should be avoided in favour of writing whole files.

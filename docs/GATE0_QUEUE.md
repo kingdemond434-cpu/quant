@@ -47,3 +47,6 @@ without passing the fixed empirical validation gate. These layers make live capi
 never make it *earlier*.
 
 | G0 | **NAV RECONCILIATION GAP (TIER-1 BLOCKER, found 2026-07-27)** | venue_nav $5,262 vs mark_nav $14,508 = 175.7% divergence and GROWING (36.4% on 07-23). portfolio.json tracks the MARK not the VENUE, so the desk believes it holds ~$14.5k while the exchange reports ~$5.2k. Either different scopes or broken reconciliation. Catastrophic with real money -- every sizing/leverage/risk decision would run off a NAV that does not exist. | BEFORE any live capital |
+
+| CV | **portfolio equity reconciles with the venue** `(CV-2026-07-27-portfolio equity reconcile)` | claims `equity $14,444 (tracks MARK)` but the source says `venue $5,211 vs mark $14,461 = 177.5% divergence` -- every sizing, leverage and risk decision runs off a NAV the exchange does not confirm; at Gate-0 this is capital-destroying | BEFORE any live capital |
+| CV | **health all_ok is consistent with organ logs** `(CV-2026-07-27-health all_ok is consisten)` | claims `all_ok=True, organs_ok=True` but the source says `14 stub logs vs 13 real logs in last 48h` -- a green dashboard while organs are dead means silent research outage | BEFORE any live capital |
