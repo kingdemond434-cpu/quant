@@ -56,6 +56,7 @@ _STEPS = [
     ("breadth_expander", "scripts/breadth_expander.py", 420),  # external-LLM breadth scout (Stage-A only)
     ("signal_halflife",  "scripts/signal_halflife.py", 180),  # signal ageing/decay tracker
     ("measurement_gate",  "scripts/measurement_gate.py", 120),  # inputs must be verified before any optimisation
+    ("exec_bottleneck",   "scripts/execution_bottleneck.py", 60),  # live book vs live gate
     ("collector_monitor","scripts/collector_monitor.py", 90),  # G3 zero-trust sensor kill-switch
     ("feature_library",     "scripts/feature_library.py", 90),  # feature assets + construction coverage
     ("leakage_detector",    "scripts/leakage_detector.py", 60),  # self-validating leakage contract
