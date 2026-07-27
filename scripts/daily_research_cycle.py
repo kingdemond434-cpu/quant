@@ -55,6 +55,7 @@ _STEPS = [
     ("stablecoin_supply", "scripts/collect_stablecoin_supply.py", 120),  # supply momentum clock
     ("breadth_expander", "scripts/breadth_expander.py", 420),  # external-LLM breadth scout (Stage-A only)
     ("signal_halflife",  "scripts/signal_halflife.py", 180),  # signal ageing/decay tracker
+    ("measurement_gate",  "scripts/measurement_gate.py", 120),  # inputs must be verified before any optimisation
     ("collector_monitor","scripts/collector_monitor.py", 90),  # G3 zero-trust sensor kill-switch
     ("experiment_registry", "scripts/experiment_registry.py", 90),  # harvest experiments -> permanent objects
     ("desk_brief",          "scripts/research_exchange.py brief", 60),  # daily research board / external-LLM brief
