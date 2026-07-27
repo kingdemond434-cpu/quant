@@ -2675,6 +2675,21 @@
    "success_metric": "n/a -- hypothesis refuted at Stage-A with a confound control",
    "reversal_condition": "a GAPPED design on data that includes fully-liquidated accounts (true survivorship-free panel, e.g. reconstructed from fills history rather than a current snapshot) shows positive persistence. Any future copytrading/trader-intelligence proposal MUST use a gapped formation/holding split or it is measuring position carry, not skill.",
    "flagged_gap": "GENERAL LESSON for the desk: adjacent-window performance-persistence tests are structurally contaminated by open-position carry. The gapped-window control belongs in the standard screen toolkit alongside the de-contamination and lookahead rails."
+  },
+  {
+   "id": "2026-07-27-elite-trader-alpha-3-mechanisms-exhausted",
+   "decision": "Principal asked to search AGGRESSIVELY for any way to make trader-intelligence alpha work after two failures. Held the anti-p-hacking line: instead of re-slicing one hypothesis until something crossed 0.05, PRE-REGISTERED 3 DISTINCT ECONOMIC MECHANISMS with a multiplicity-adjusted bar (|t|>=2.7) and tested them. (1) AGGREGATE elite positioning (Binance top-trader ratios): pooled t +0.15 = zero. (2) SKILL PERSISTENCE (HL, 8,026 traders): adjacent-window rho +0.120 (t +10.9) INVERTED to -0.064 under a 3-week gap control -> the 'persistence' was open-position carry + directional beta in a trending market. (3) ELITE DIRECTIONAL ORDER FLOW (does elite flow LEAD price -- the actual copytrading mechanism, spec layer 10): designed around both circularity traps (performance-blind cohort selection; flow(t) vs ret(t+1) only). Mid-experiment self-caught design flaw: top-VOLUME selection picks HFT/market-makers (2000 fills in 30 minutes) whose flow is INVENTORY not conviction -- the spec's own layer-11 rule -- so re-selected on turnover ratio (1-25x/mo). First pass looked alive (BTC IC +0.157, pooled t +3.00) but n=2 coins is not a sample and both coins read UNDERPOWERED. The breadth/stability re-run KILLED IT: adding 60 traders to the SAME selection rule flipped BTC IC +0.157 -> -0.033 and tripped TIMING-ARTIFACT (same-period +0.202); ETH's IC (+0.110) and tercile spread (-0.524%) had OPPOSITE signs. Root cause is mechanical: taker flow is CONCURRENT with price (buying moves price), so it cannot lead it. STRUCTURAL WALL found: userFills caps at 2000 fills/address, so 14/16 coins were untestable -- historical breadth is unobtainable from the free snapshot API; only forward accumulation could build it. VERDICT: the free-data version of trader-intelligence alpha is EXHAUSTED across all 3 mechanisms. Nothing wired. 26-layer spec remains refused at its premise.",
+   "hypothesis": "elite crypto trader behaviour (positioning, skill persistence, or order flow) contains extractable predictive information usable as systematic alpha",
+   "expected_benefit": "would have opened a whole new orthogonal alpha family",
+   "expected_cost": "one session of screens; avoided 26 subsystems on a refuted premise",
+   "confidence": 0.88,
+   "assumptions": [
+    "HL public leaderboard + fills are representative of 'elite' traders",
+    "4h buckets are an appropriate horizon for flow information"
+   ],
+   "success_metric": "n/a -- all 3 mechanisms rejected at Stage-A",
+   "reversal_condition": "a FORWARD-accumulated flow panel (daily polling, >=8 coins, cohort-perturbation stable, de-contaminated) shows a leading signal. Priors now weak -> not recommended ahead of the Aug 7 OI/LS verdict.",
+   "flagged_gap": "NEW STANDARD CONTROL earned this session: COHORT-PERTURBATION STABILITY. A cross-sectional signal whose sign flips when the universe is slightly resampled is noise. Belongs in the screen toolkit beside the gapped-window, de-contamination and lookahead rails."
   }
  ]
 }
