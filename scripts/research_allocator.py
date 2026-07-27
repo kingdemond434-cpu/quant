@@ -105,7 +105,13 @@ def main() -> None:
     #   NEW    a permanent, non-negotiable slice for branches that DO NOT EXIST YET -- this is the
     #          "always be branching out" mandate; it never decays because unexplored classes have
     #          no track record to decay from. Implements DIGGING_CHARTER s12 in budget form.
-    MIN_W, MAX_W, NEW_BRANCH = 0.04, 0.28, 0.15
+    # L3 RATCHET: the new-branch slice GROWS as the known universe saturates. Saturation is a
+    # signal to EXPAND, never to stop. base 15% + up to +15% as mean saturation -> 1.0.
+    mean_sat = float(np.mean([AREAS[a][1] for a in AREAS]))
+    NEW_BRANCH = min(0.30, 0.15 + 0.15 * mean_sat)
+    # L2: MIN_W is a FLOOR ON ACTIVE WEIGHT, but depth is guaranteed by CADENCE (below), not by
+    # this share -- with N branches growing, equal shares would collapse into skimming.
+    MIN_W, MAX_W = 0.04, 0.28
     tot = sum(draws.values()) or 1.0
     for a in draws:
         draws[a] = draws[a] / tot * (1.0 - NEW_BRANCH)
@@ -121,6 +127,30 @@ def main() -> None:
                  "refutations": 0, "methods": 0, "inconclusive": 0, "info_gain": 0.0,
                  "posterior_mean": None, "saturation": 0.0,
                  "allocation_pct": round(100 * NEW_BRANCH, 1)})
+
+    # --- L1 MONOTONIC BRANCH REGISTRY: branches are never deleted, only down-weighted ---------
+    REG = Path("data/branch_registry.json")
+    reg = json.loads(REG.read_text("utf-8")) if REG.exists() else {"branches": {}}
+    now = datetime.now(tz=UTC).isoformat()
+    for r in rows:
+        b = reg["branches"].setdefault(r["area"], {"first_seen": now, "last_weight": None,
+                                                   "last_dug": None, "status": "active"})
+        b["last_weight"] = r["allocation_pct"]
+        b["last_seen"] = now
+    reg["count"] = len(reg["branches"])
+    reg["monotonic_rule"] = ("branch count never decreases; a branch may be down-weighted on "
+                             "evidence but never deleted -- zero attention is an absorbing state")
+    REG.write_text(json.dumps(reg, indent=1), "utf-8")
+
+    # --- L2 DEPTH = GUARANTEED REVISIT CADENCE (not budget share) -----------------------------
+    # weight sets frequency/intensity; cadence guarantees no branch is ever abandoned.
+    print("")
+    print("  L2 DEPTH GUARANTEE -- revisit cadence by weight band (never abandoned):")
+    for r in rows:
+        w = r["allocation_pct"]
+        cad = 7 if w >= 15 else (14 if w >= 8 else (30 if w >= 4 else 60))
+        r["revisit_days"] = cad
+        print(f"    {r['area']:<34} {w:>5.1f}%  re-dig every {cad:>2}d to exhaustion criteria")
 
     total_n = sum(r["attempts"] for r in rows)
     total_surv = sum(r["survivors"] for r in rows)

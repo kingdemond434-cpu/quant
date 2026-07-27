@@ -1,0 +1,38 @@
+doctrine: EXPLORATION DOCTRINE -- permanent never-exhausted mandate, with its boundary condition
+
+Principal mandate: "always increase diversification while maintaining full dedication to each at
+max depth, always branch out, self-improving, never an exhausted ceiling, mission of new
+information sources permanent, no matter what."
+
+Encoded as docs/research/EXPLORATION_DOCTRINE.md (freeze-subject, binds every miner/digger/
+prospector/cycle/allocator) + implemented in scripts/research_allocator.py.
+
+L1 MONOTONIC BRANCH COUNT -- branches are never deleted, only down-weighted. data/branch_registry
+.json only grows. Rationale: zero attention is an ABSORBING STATE -- a branch at 0% can never
+generate the evidence that would revive it.
+
+L2 DEPTH = CADENCE GUARANTEE, NOT BUDGET SHARE -- this is what makes "diversify a lot" and "max
+depth on each" compatible instead of contradictory. With N growing, equal shares collapse into
+skimming. So weight governs FREQUENCY/INTENSITY while a guaranteed revisit cadence (7/14/30/60d by
+band) guarantees NO BRANCH IS EVER ABANDONED, each re-dug to exhaustion criteria.
+
+L3 PERMANENT NEW-BRANCH SLICE, RATCHETED -- non-negotiable share for information classes that DO
+NOT EXIST YET; never decays (unexplored classes have no track record to decay from) and RISES as
+known branches saturate. Live proof: mean saturation 0.51 auto-raised the slice 15% -> 22.6%.
+Saturation is now a signal to EXPAND, never to stop. Budget expression of DIGGING_CHARTER s12.
+
+L4 THE BOUNDARY THAT MAKES L1-L3 SAFE -- generation, sourcing and Stage-A screening are UNLIMITED
+with ZERO promotion authority; the Stage-B forward-confirmation budget is FIXED and must NEVER
+scale with discovery volume. At alpha=0.05, 10,000 screens yield ~500 false positives; only a
+fixed Holm-corrected confirmation budget turns unlimited search into knowledge rather than
+industrial p-hacking. Anyone proposing to raise confirmation slots "because we generate more now"
+has inverted the logic.
+
+CEILING CLAUSE: there is no exhausted state. "Everything is covered" is always a stale map, never
+a finite territory. Mechanism saturation retires NEW SENSORS on that chain and simultaneously
+RAISES the new-branch slice.
+
+Self-improving is defined as getting better at knowing what is TRUE, not bigger: refutations are
+PAID in the allocator, every rail earned from a real near-miss becomes permanent and non-skippable,
+and weights come from realised information gain rather than decree. The score is validated
+discoveries per unit of CONFIRMATION budget -- breadth is the input, not the metric.
