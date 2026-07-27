@@ -1,0 +1,38 @@
+research: horizon discovery (0/96) + M5 reflexivity (inconclusive) + diversified allocator
+
+TIER-1 #1 HORIZON DISCOVERY (scripts/horizon_search.py)
+  8 signals x 12 horizons (1d..90d) = 96 tests, with BOTH guards the principal demanded:
+  Bonferroni alpha/12 AND a horizon-ADJACENCY rail (a real slow signal must hold the same sign
+  at neighbouring horizons; an isolated spike is noise). t deflated by sqrt(h) for overlapping
+  windows so long horizons cannot manufacture significance from overlap.
+
+  RESULT: 0 survivors. IMPORTANT AND OPPOSITE TO EXPECTATION -- the earlier daily-horizon kills
+  were CORRECT, not false negatives. multilingual attention and DeFi health are dead at EVERY
+  horizon 1d-90d. The resurrection hypothesis is now settled rather than assumed.
+  Honest note: dex_volume and protocol_fees show smooth same-sign IC ~+0.05 across 3-21d with
+  proper adjacency (the SHAPE of a real slow signal) but t~0.9 -- real-looking, far too weak.
+
+TIER-2 #6 M5 REFLEXIVITY (scripts/reflexivity_m5.py)
+  Deliberately NOT "do liquidations predict price" (tested, weak) but "IS THE FEEDBACK
+  COEFFICIENT RISING?" -- reflexivity = rolling beta(dOI, dPrice); >0 means leverage CHASES
+  price (self-reinforcing/fragile). Tested against forward VOL and DRAWDOWN, not direction,
+  because a regime measure is for SIZING under the log-wealth objective. Includes a direction
+  control to catch it being a return signal in disguise.
+
+  RESULT: INCONCLUSIVE, not refuted. Pooled t(vol) -0.75, t(dd) +0.38; sign consistency dd 3/3,
+  vol 2/3. BTC/ETH direction CONTRADICTS the hypothesis (high reflexivity -> LOWER forward vol).
+  BINDING CONSTRAINT IS DATA: openInterestHist caps at 500 bars (~83d) -> n=138 with only ~11
+  independent observations after overlap. Needs forward OI accumulation to become decisive.
+
+ALLOCATOR DIVERSIFICATION LAYER (principal: "diversify a lot like the S&P 500, but that doesn't
+mean low focus on all" + "always branch out, more is better")
+  Three rails added to scripts/research_allocator.py:
+    FLOOR 4%  -- no area can be defunded into an absorbing state (an area at 0% can never
+                 generate the evidence that would revive it)
+    CAP  28%  -- the research book can never become a single-mechanism bet
+    NEW_BRANCHES 15% PERMANENT -- a non-negotiable slice for information classes that DO NOT
+                 EXIST YET. It never decays, because unexplored classes have no track record to
+                 decay from. This is DIGGING_CHARTER s12 (permanently incomplete source universe)
+                 expressed as budget rather than doctrine.
+  Conviction weighting is preserved -- M4 17.7% vs M1 6.0% -- so breadth does not mean uniform
+  low focus.

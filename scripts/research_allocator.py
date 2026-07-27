@@ -96,10 +96,31 @@ def main() -> None:
                      "posterior_mean": round(samp, 4), "saturation": sat,
                      "score": round(adj, 4)})
 
+    # --- DIVERSIFICATION LAYER (principal 2026-07-27) -------------------------------------
+    # "diversify a lot like the S&P 500, but that doesn't mean low focus on all" -- i.e. broad
+    # coverage with CONVICTION WEIGHTING, not equal weight. Three rails:
+    #   FLOOR  every area keeps a minimum so a lean patch can never permanently kill a branch
+    #          (an area at 0% can never generate the evidence that would revive it -- absorbing state)
+    #   CAP    no area exceeds MAX_W, so the book can never become a single-mechanism bet
+    #   NEW    a permanent, non-negotiable slice for branches that DO NOT EXIST YET -- this is the
+    #          "always be branching out" mandate; it never decays because unexplored classes have
+    #          no track record to decay from. Implements DIGGING_CHARTER s12 in budget form.
+    MIN_W, MAX_W, NEW_BRANCH = 0.04, 0.28, 0.15
     tot = sum(draws.values()) or 1.0
+    for a in draws:
+        draws[a] = draws[a] / tot * (1.0 - NEW_BRANCH)
+    for _ in range(60):                      # iterate floor/cap to a fixed point
+        for a in draws:
+            draws[a] = min(max(draws[a], MIN_W * (1 - NEW_BRANCH)), MAX_W * (1 - NEW_BRANCH))
+        t2 = sum(draws.values()) or 1.0
+        draws = {a: v / t2 * (1.0 - NEW_BRANCH) for a, v in draws.items()}
     for r in rows:
-        r["allocation_pct"] = round(100 * draws[r["area"]] / tot, 1)
+        r["allocation_pct"] = round(100 * draws[r["area"]], 1)
     rows.sort(key=lambda r: -r["allocation_pct"])
+    rows.append({"area": "NEW_BRANCHES (unexplored classes)", "attempts": 0, "survivors": 0,
+                 "refutations": 0, "methods": 0, "inconclusive": 0, "info_gain": 0.0,
+                 "posterior_mean": None, "saturation": 0.0,
+                 "allocation_pct": round(100 * NEW_BRANCH, 1)})
 
     total_n = sum(r["attempts"] for r in rows)
     total_surv = sum(r["survivors"] for r in rows)
