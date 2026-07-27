@@ -1,0 +1,42 @@
+structural spread screen: 4 pass the structure test, ~0 survive costs -- refined the search criterion
+
+FOLLOWS THE SESSION'S STRONGEST FINDING: every candidate that survived on this desk is a SPREAD
+(cash-and-carry, kimchi, cny) and every FORECAST died (attention, dev momentum, trader skill,
+order flow, reflexivity). So the hunt is for spreads where something PHYSICALLY prevents arbitrage.
+
+scripts/structural_spreads.py -- and the TEST IS DIFFERENT from a forecast screen. For a
+harvestable spread the questions are (a) persistent non-zero level, (b) mean-reversion half-life,
+(c) boundedness -- NOT "does it predict price".
+
+RESULTS -- 4/5 passed the structural test:
+  peg USDC/USDT    mean  +1.1bps  sd  5.4bps  half-life 7.9d  tail 3.3x
+  peg FDUSD/USDT   mean -15.1bps  sd  9.3bps  half-life 5.0d  tail 2.0x
+  LSD stETH/ETH    mean -10.2bps  sd 28.7bps  half-life 0.3d  tail 9.0x
+  LSD mSOL/SOL     mean  -65bps   sd 539bps   half-life 1.6d  tail 10.5x
+  peg DAI/USDT     thin (21d)
+
+BUT I OMITTED THE GATE THAT KILLS THEM: NET OF COST. Applying it:
+  USDC/USDT  -- 1.1bps spread vs 4-10bps round-trip fees. You pay ~5x the edge to capture it. DEAD.
+  FDUSD/USDT -- persistent LEVEL (-15bps), not reversion to zero; it reverts TO -15bps, so only
+                the 9bps wiggle is harvestable = marginal vs fees. Capturing the level requires
+                actual redemption, which IS the friction that creates it.
+  stETH/ETH  -- half-life 0.3d (~7h) demands intraday execution the desk does not have.
+  mSOL/SOL   -- sd 539bps on a ratio that should track within ~100bps is IMPLAUSIBLE. This is a
+                DATA ARTIFACT (CoinGecko daily USD legs sampled non-synchronously), same class as
+                the COOKIEUSDT 59bps-flat cost entry. Measuring my pipeline, not the market.
+
+THE REAL LESSON -- why kimchi is rare:
+  kimchi runs at ~142bps std, roughly 100x the USDC peg spread. Regional premiums are not
+  conceptually special; they are simply BIG ENOUGH TO PAY FOR THEMSELVES. Stablecoin pegs and
+  liquid-staking discounts are too tightly arbitraged precisely because their constraints are
+  SOFT -- redemption is annoying not impossible, exit queues are days not months.
+
+REFINED SEARCH CRITERION for future spread hunts (the structural test alone is necessary but
+nowhere near sufficient):
+    spread std > ~50bps  AND  a named PHYSICAL constraint  AND  free daily series
+  This rules out pegs and LSDs on arrival. Large structural spreads survive where constraints are
+  HARD: capital controls (KR/CN -- both already live), regulatory segmentation (CME vs offshore --
+  cme_anchored_basis_dislocation is QUEUED AND UNTESTED, now the top candidate), and restricted
+  markets (which the s13 legitimacy gate must rule on first).
+
+Nothing wired. Stage-A only.
