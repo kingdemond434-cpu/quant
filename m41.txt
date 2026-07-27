@@ -1,0 +1,45 @@
+MICROSTRUCTURE FEATURE FACTORY: M_LIQUIDITY_WITHDRAWAL tested on the moat -- COINCIDENT, not leading
+
+P0 executed. The moat needs no reconstruction (verified: every k="d" record is a complete (20,20)
+top-20 book), so the feature factory was built directly on it. 5 futures symbols, 35 usable hours
+each, features extracted per snapshot: spread_bps, depth within 5bps/10bps both sides, queue
+imbalance, top-level concentration, depth slope -- then aggregated hourly.
+
+MECHANISM TESTED, not indicator: M_LIQUIDITY_WITHDRAWAL is the ONLY family the mechanism board
+rates UNTESTED with a live information advantage, and it reached that verdict from graveyard
+evidence WITHOUT knowing the moat existed. Its economic story: liquidity providers withdraw when
+inventory risk binds, so impact jumps. Falsifiable form: DOES LIQUIDITY VANISH BEFORE VOLATILITY,
+OR ONLY ALONGSIDE IT -- deliberately the lead-vs-coincident distinction that accounts for 38% of
+this desk's failures (C_WRONG_TIMING).
+
+RAW RESULT LOOKED LIKE A DISCOVERY:
+  pooled LEAD  rho +0.3032 (t +3.68), SAME SIGN 5/5 symbols
+  per-symbol: DOGE +0.564 (t 3.92), ETH +0.450 (t 2.90), XRP +0.285, SOL +0.128, BTC +0.085
+  high-withdrawal hours showed 1.22x-1.82x the forward realised vol of low-withdrawal hours
+That is exactly the shape of a promotable finding.
+
+IT IS NOISE. Volatility CLUSTERS -- measured persistence rho +0.438 to +0.700 across the five
+symbols. So a withdrawal measure merely COINCIDENT with vol[t] inherits a fake "lead" on vol[t+1]
+for free, contributing nothing itself. Regressing forward vol on current vol and testing withdrawal
+against the RESIDUAL:
+  pooled RESIDUAL rho +0.0154 (t +0.28), same sign 1/5
+  per-symbol residuals: BTC ~0.00, ETH +0.025, SOL +0.025, XRP +0.066, DOGE +0.166
+Withdrawal adds NOTHING beyond vol persistence. rho collapses 0.30 -> 0.015; sign agreement
+collapses 5/5 -> 1/5.
+
+WITHOUT THE DE-CONTAMINATION GATE I WOULD HAVE REPORTED A MICROSTRUCTURE EDGE THAT DOES NOT EXIST,
+on the dataset I had just called the desk's most valuable asset, with a t-stat of +3.68 and
+unanimous cross-symbol agreement behind it. This is the fourth time today the same gate has
+converted an apparent finding into a null (coinbase, turkey, elite order flow, and now this) and
+the first time it has been applied to the proprietary data.
+
+HONEST LIMITS: n=35 hours per symbol is thin, and only ONE construction of withdrawal was tested
+(negative z of near-touch depth vs 24h rolling). The mechanism is NOT refuted -- other
+constructions remain (replenishment RATE rather than level, asymmetric one-sided withdrawal,
+concentration collapse, resilience after shocks, and the ratio depth10/depth5 which measures how
+fast liquidity thins away from touch). What IS established: the OBVIOUS construction fails, and any
+future microstructure claim must clear the vol-persistence control before it means anything.
+
+FEATURE FACTORY ITSELF IS REUSABLE -- scripts/micro_factory.py extracts the state variables per
+snapshot and aggregates them; testing a different withdrawal construction is now a small edit
+rather than a new build. That is the durable output of this run, not the null.
