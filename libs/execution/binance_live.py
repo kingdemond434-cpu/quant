@@ -274,12 +274,50 @@ def set_leverage(symbol: str, leverage: int) -> None:
         return
 
 
-def place_market(symbol: str, side: str, qty: float) -> dict[str, Any]:
-    """Place a reduce-or-open market order. ``side`` in {BUY, SELL}; qty > 0."""
-    res = _signed("/fapi/v1/order", {
-        "symbol": symbol, "side": side, "type": "MARKET", "quantity": qty,
-    }, method="POST")
-    return dict(res) if isinstance(res, dict) else {"raw": res}
+_MKT_MAX_CACHE: dict[str, float] = {}
+
+
+def _market_max_qty(symbol: str) -> float:
+    """Venue MARKET_LOT_SIZE cap for ``symbol``, cached. inf when unknown (never invent a limit).
+
+    Added 2026-07-27 after COOKIEUSDT (maxQty 150,000) rejected every 183,140 market order with
+    -4005, pushing the executor onto its resting-limit fallback, whose accumulated fills walked a
+    short through zero into a +916,772 long.
+    """
+    if symbol in _MKT_MAX_CACHE:
+        return _MKT_MAX_CACHE[symbol]
+    cap = float("inf")
+    try:
+        info = _get("/fapi/v1/exchangeInfo")
+        for s in info.get("symbols", []):
+            for f in s.get("filters", []):
+                if f.get("filterType") == "MARKET_LOT_SIZE":
+                    _MKT_MAX_CACHE[s["symbol"]] = float(f["maxQty"])
+        cap = _MKT_MAX_CACHE.get(symbol, float("inf"))
+    except Exception:  # noqa: BLE001
+        pass                                  # unknown cap -> behave exactly as before
+    _MKT_MAX_CACHE[symbol] = cap
+    return cap
+
+
+def place_market(symbol: str, side: str, qty: float,
+                 reduce_only: bool = False) -> dict[str, Any]:
+    """Place a market order, SPLIT to respect the venue MARKET_LOT_SIZE cap.
+
+    ``reduce_only=True`` makes the order arithmetically incapable of passing through zero and
+    opening the opposite position -- mandatory on any cover/close leg.
+    """
+    cap = _market_max_qty(symbol)
+    remaining, last, n = float(qty), None, 0
+    while remaining > 0 and n < 50:
+        chunk = min(cap, remaining) if cap != float("inf") else remaining
+        params = {"symbol": symbol, "side": side, "type": "MARKET", "quantity": chunk}
+        if reduce_only:
+            params["reduceOnly"] = "true"
+        last = _signed("/fapi/v1/order", params, method="POST")
+        remaining -= chunk
+        n += 1
+    return dict(last) if isinstance(last, dict) else {"raw": last}
 
 
 def place_post_only(symbol: str, side: str, qty: float, price: float) -> dict[str, Any]:

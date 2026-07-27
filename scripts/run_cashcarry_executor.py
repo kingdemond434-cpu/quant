@@ -956,10 +956,15 @@ def _execute_pair(sym: str, qty: float, spot_side: str, fut_side: str) -> dict[s
                 _ERR.write_text(f"{datetime.now(tz=UTC).isoformat()} maker fail {sym}: {e!r}\n")
     spot_res: object = None
     fut_res: object = None
+    # CLOSE legs are reduceOnly (2026-07-27 incident). spot_side=="SELL" IS the close/unwind
+    # direction; the futures leg then BUYS to cover a short, which is exactly the order that
+    # walked COOKIEUSDT through zero into a +916,772 long. reduceOnly makes that impossible.
+    # Opens (spot BUY / futures SELL) must NOT be reduceOnly -- they establish the short.
+    _reduce_only_leg = spot_side == "SELL"
     with _safe():
         spot_res = spot.place_market(sym, spot_side, qty)
     with _safe():
-        fut_res = fut.place_market(sym, fut_side, qty)
+        fut_res = fut.place_market(sym, fut_side, qty, reduce_only=_reduce_only_leg)
     spot_ok, fut_ok = _filled(spot_res), _filled(fut_res)
     if not (spot_ok and fut_ok):
         with contextlib.suppress(Exception):
