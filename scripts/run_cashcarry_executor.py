@@ -945,7 +945,14 @@ def _execute_pair(sym: str, qty: float, spot_side: str, fut_side: str) -> dict[s
     the _ok flags before treating a leg as filled; a leg failing must not abort the whole
     rebalance (that is what `_safe()` still protects), but it must never be reported as success.
     Maker path has a taker fallback; on ANY maker error we fall back to a plain market pair."""
-    if _MAKER:
+    # CLOSES BYPASS THE MAKER PATH (2026-07-27, incident #6 recurrence). _MAKER=True made
+    # _maker_pair the DEFAULT, and its post-only limits carry neither reduceOnly nor a venue
+    # size cap -- so repeated close attempts accumulated resting fills that bought a short
+    # through zero into a long. Twice: COOKIEUSDT +916,772, then 1000CATUSDT +1,138,985.
+    # A close is a CERTAINTY problem, not a fee problem; the desk's own note already says
+    # "patient on OPENS, fast on CLOSES". Opens keep the maker rebate, which is where it pays.
+    _CLOSE_IS_MARKET_ONLY = spot_side == "SELL"
+    if _MAKER and not _CLOSE_IS_MARKET_ONLY:
         try:
             # patient on OPENS (spot BUY = entering a carry), fast on CLOSES (spot SELL =
             # unwinding, where the rails need speed). See the fee audit note above.
