@@ -56,6 +56,9 @@ _STEPS = [
     ("breadth_expander", "scripts/breadth_expander.py", 420),  # external-LLM breadth scout (Stage-A only)
     ("signal_halflife",  "scripts/signal_halflife.py", 180),  # signal ageing/decay tracker
     ("collector_monitor","scripts/collector_monitor.py", 90),  # G3 zero-trust sensor kill-switch
+    ("experiment_registry", "scripts/experiment_registry.py", 90),  # harvest experiments -> permanent objects
+    ("desk_brief",          "scripts/research_exchange.py brief", 60),  # daily research board / external-LLM brief
+    ("contributor_score",   "scripts/research_exchange.py score", 60),  # which intelligence source earns allocation
     ("claim_verifier",    "scripts/claim_verifier.py", 90),  # verify every published claim vs source
     ("claim_escalate",    "scripts/claim_escalate.py", 60),  # escalate false claims to pager + Gate-0
     ("data_sanity",       "scripts/data_sanity.py", 120),  # implausibility scan (2 artifacts today)
