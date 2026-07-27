@@ -557,6 +557,16 @@ def _reconcile(pos: dict[str, dict[str, Any]], *, dry: bool,
     return acts
 
 
+def _net_bps(sym: str, funding: float, min_hold_h: float = _MIN_HOLD_H) -> float:
+    """Expected NET bps over the minimum hold: funding captured MINUS measured round-trip.
+
+    This is the quantity the desk actually earns, and ranking on it rather than on gross funding
+    is the whole of the 2026-07-27 universe switch. Unmeasured symbols carry the pessimistic
+    _DEFAULT_RT_BPS, so they sink on their own without a separate denylist.
+    """
+    return funding * 1e4 * (min_hold_h / 8.0) - _rt_bps(sym)
+
+
 def _ranked() -> list[tuple[str, float]]:
     """All positive-funding USDT perps tradeable on BOTH testnets, ranked high->low funding."""
     f = current_funding()
@@ -568,7 +578,16 @@ def _ranked() -> list[tuple[str, float]]:
 
 def _rebalance(top: int, hold_top: int, capital: float, *, dry: bool) -> dict[str, Any]:
     ranked = _ranked()
-    cands = ranked[:top]                                   # the names we'd OPEN (top funding)
+    # UNIVERSE SWITCH (principal-approved 2026-07-27). Was `ranked[:top]` = top-N by RAW
+    # FUNDING. Funding is the COMPENSATION FOR ILLIQUIDITY, so funding-first ranking
+    # systematically selected the names whose round-trips destroy the carry: COOKIEUSDT was
+    # the most-traded symbol at 21 opens with a MEASURED 130.47bps pair round-trip against
+    # ~6.7bps of funding over a 24h hold -- a ~19x loss per rotation. 11 of the 16 most-
+    # traded names had no measured cost at all. That single defect explains the 7.75x
+    # cost/funding ratio with no residual mystery. Rank by NET instead; _entry_gate still
+    # has the final veto. OPENS ONLY -- `target`/`hold_set` are untouched below, so this can
+    # never force-close a held carry (whose entry cost is already sunk).
+    cands = sorted(ranked, key=lambda c: -_net_bps(c[0], c[1]))[:top]
     # HYSTERESIS: a held carry is kept while it stays in the broad top-`hold_top` positive set;
     # only names that fall out of it (or go non-positive) are closed. Kills noise-driven churn.
     hold_set = {s for s, _ in ranked[:hold_top]}
