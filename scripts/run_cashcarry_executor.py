@@ -725,7 +725,8 @@ def _rebalance(top: int, hold_top: int, capital: float, *, dry: bool) -> dict[st
                         "held_hours": held, "price_pnl": round(price_pnl, 2),
                         "est_funding": round(est_funding, 2),
                         "net": round(price_pnl + est_funding, 2),
-                        "spot_mode": fill.get("spot"), "fut_mode": fill.get("fut")})
+                        "spot_mode": fill.get("spot"), "fut_mode": fill.get("fut"),
+                        **_tca(fill, spx, fpx, "SELL")})
             actions.append(f"close {sym}")
             del pos[sym]
 
@@ -775,7 +776,8 @@ def _rebalance(top: int, hold_top: int, capital: float, *, dry: bool) -> dict[st
             _log_trade({"event": "open", "symbol": sym, "qty": qty,
                         "notional": round(qty * px, 2), "funding_rate": round(fnd, 6),
                         "opened": pos[sym]["opened"],
-                        "spot_mode": fill.get("spot"), "fut_mode": fill.get("fut")})
+                        "spot_mode": fill.get("spot"), "fut_mode": fill.get("fut"),
+                        **_tca(fill, px, fpe, "BUY")})
         actions.append(f"open {sym} {qty}")
 
     # TOP UP undersized held carries toward the FULL-capital target so authorized capital is not
@@ -823,7 +825,8 @@ def _rebalance(top: int, hold_top: int, capital: float, *, dry: bool) -> dict[st
                 _log_trade({"event": "topup", "symbol": sym, "qty": qty,
                             "notional": round(qty * px, 2), "funding_rate": p.get("funding"),
                             "opened": p.get("opened"),
-                            "spot_mode": fill.get("spot"), "fut_mode": fill.get("fut")})
+                            "spot_mode": fill.get("spot"), "fut_mode": fill.get("fut"),
+                            **_tca(fill, px, fpe, "BUY")})
             actions.append(f"topup {sym} +{qty}")
 
     state["positions"] = pos
@@ -938,7 +941,55 @@ def _filled(res: object) -> bool:
             and float(res.get("executedQty", 0.0)) > 0)
 
 
+def _mid_of(conn: Any, sym: str) -> float | None:
+    """Read-only mid quote. Returns None rather than 0.0 so a failed read is never mistaken for
+    a real price and silently turned into a 100% slippage number."""
+    try:
+        bid, ask = conn.book_ticker().get(sym, (0.0, 0.0))
+        bid, ask = float(bid), float(ask)
+        return (bid + ask) / 2.0 if bid > 0 and ask > 0 else None
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _tca(fill: dict[str, Any], spot_fill: float | None, fut_fill: float | None,
+         spot_side: str) -> dict[str, Any]:
+    """Per-leg transaction-cost attribution. POSITIVE bps ALWAYS MEANS WE PAID.
+
+    On an open the carry buys spot and sells futures; on a close it is the reverse. Paying above
+    mid when buying and receiving below mid when selling are both costs, so the sign is flipped
+    per side to make the columns directly comparable and summable across opens and closes.
+    """
+    out: dict[str, Any] = {
+        "spot_fill": spot_fill, "fut_fill": fut_fill,
+        "spot_mid": fill.get("spot_mid"), "fut_mid": fill.get("fut_mid"),
+        "wait_s": fill.get("wait_s"),
+    }
+    sm, fm = fill.get("spot_mid"), fill.get("fut_mid")
+    if sm and spot_fill:
+        s = (float(spot_fill) - sm) / sm * 1e4
+        out["spot_slip_bps"] = round(s if spot_side == "BUY" else -s, 3)
+    if fm and fut_fill:
+        f = (float(fut_fill) - fm) / fm * 1e4          # futures leg is the opposite side of spot
+        out["fut_slip_bps"] = round(-f if spot_side == "BUY" else f, 3)
+    return out
+
+
 def _execute_pair(sym: str, qty: float, spot_side: str, fut_side: str) -> dict[str, Any]:
+    """TCA WRAPPER (2026-07-27). Captures the decision-time benchmark and elapsed time around the
+    unchanged execution path, so realised slippage becomes measurable per leg, per symbol, per
+    mode. Adds no order logic; the mid reads are read-only and failures degrade to None."""
+    _t0 = time.time()
+    _sm = _mid_of(spot, sym)
+    _fm = _mid_of(fut, sym)
+    res = _execute_pair_impl(sym, qty, spot_side, fut_side)
+    res["spot_mid"] = _sm
+    res["fut_mid"] = _fm
+    res["wait_s"] = round(time.time() - _t0, 3)
+    return res
+
+
+def _execute_pair_impl(sym: str, qty: float, spot_side: str, fut_side: str) -> dict[str, Any]:
     """Fill both carry legs -- maker-first (execution alpha: lower fees) if enabled, else market.
 
     Returns {"spot": mode, "fut": mode, "spot_ok": bool, "fut_ok": bool} -- callers MUST check
