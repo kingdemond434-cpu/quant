@@ -1,0 +1,31 @@
+executor RESTARTED -- P0 gate fix is now LIVE. Plus a self-inflicted duplicate-executor incident.
+
+RESTART (principal-authorised, testnet): old PID 877230 was carrying the stale _DEFAULT_RT_BPS=4.5
+in memory; module constants do not hot-reload. Now running PID 959618 with the 39.5 constant.
+POST-RESTART STATE VERIFIED HEALTHY: heartbeat alive (age 4s), 4 carries intact, notional 4496.6
+preserved, no stranded legs, no orphan cover fired.
+
+INCIDENT, disclosed in full -- I briefly ran TWO executors on the same book.
+  Cause: `pgrep -f "run_cashcarry_executo[r]"` matched MY OWN bash command line (which contained
+  that string), so it reported "STILL ALIVE" when the old process had in fact already died to my
+  TERM. Acting on that false reading, I launched a replacement -- and the setsid/nohup invocation
+  double-spawned. Result: 2 live executors (PIDs 959319 + 959325) racing on the same positions for
+  roughly 70 seconds. Two executors on one book duplicate orders and fight each other; this was
+  the most dangerous thing done in this session.
+  Recovery: killed both, verified count==0, started exactly one, verified count==1 and heartbeat.
+  Book came through intact (4 carries, same notional).
+  SECOND-ORDER: the `pkill -f "run_cashcarry_executor.py --live"` used for cleanup ALSO matched my
+  own SSH command line and killed my session mid-command (exit 255).
+
+  THIS IS THE THIRD SELF-MATCH INCIDENT TODAY and it is the SAME defect the brain fixed in the
+  crontab this morning (pgrep/pkill -f matching the invoking shell). I reviewed that fix, wrote it
+  up in a commit message, and then made the identical mistake twice in the executor path.
+  STANDING RULE (should be enforced, not remembered): NEVER use pgrep/pkill -f from a shell whose
+  own command line contains the pattern. Use `ps -eo pid,cmd | grep "[r]un_x"` with a bracket
+  class, or match on a pidfile. Process control on a LIVE money-moving daemon must not depend on
+  a pattern that can match the tool doing the matching.
+
+NEXT VERIFICATION (not yet possible): scripts/hurdle_rate.py cost/funding is currently 7.75x. It
+cannot re-measure until the restarted executor has traded through a few rebalances. Re-run it in
+24-48h. If the ratio falls sharply the entry gate was the binding problem; if it does not, the
+cost is in the CLOSE leg (_mkt_or_limit does MARKET-first on exits) and that is the next thread.
