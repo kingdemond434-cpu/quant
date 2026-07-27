@@ -1,0 +1,40 @@
+doctrine L5: modality-blind hunting + information class map (53% of classes never visited)
+
+Principal: "always hunt aggressively for different TYPES of information, niche or anything,
+always expand classes and things not searched -- raw information is information no matter how it
+was mined, transcripts, videos, public groups etc."
+
+This is an axis the doctrine did not yet cover: the branch registry tracks MECHANISMS, L5 tracks
+MODALITY x ACCESS -- the KINDS of carrier the desk can mine. Format never determines value; only
+testable-signal-per-source ranks it.
+
+NEW: scripts/info_class_map.py -> data/information_class_map.json. 30 classes mapped across
+modalities (tabular, text, code, graph, stream, transcript, video, filing, archive).
+
+THE BIAS IS NOW MEASURED, AND IT IS SEVERE:
+  tabular    5/7 covered
+  code       1/2
+  stream     1/5
+  text       1/5
+  transcript 0/2
+  video      0/1
+  filing     0/2
+  graph      0/4
+The desk mines NUMBERS well and nearly everything else not at all.
+
+=> 16 of 30 classes (53%) are NEVER-VISITED. That is now the concrete target list the
+NEW_BRANCHES budget slice funds (currently 22.6% and ratcheting). Named targets include:
+video/podcast transcripts, public group messages (s13-gated), protocol governance, regulatory
+filings, public company reports (Virtu/Flow Traders 10-Ks = real execution economics), package
+registries, smart-contract bytecode, validator topology, social graph structure, oracle update
+timing, rpc node health, web-archive diffs.
+
+Blocked classes stay VISIBLE rather than silently dropped (bridge_flow_graph: DefiLlama bridges
+API went 402/paid). Classes retire only to low-yield-archived, never deleted (L1 monotonic), and
+the quarterly blind re-derivation re-surfaces archived classes plus any class this map never
+imagined.
+
+THE ONE BOUNDARY (DIGGING_CHARTER s13, non-negotiable): public + legitimately accessible ONLY.
+Public forums/groups/videos/transcripts/filings YES. Paywalled/pirated/cracked/private-group/
+paid-DB-mirrored NO, regardless of expected value. Not a judgement about the data -- it is what
+keeps the desk legitimate, and it is the only limit "no matter what" does not override.

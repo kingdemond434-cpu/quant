@@ -36,6 +36,23 @@ only a fixed, Holm-corrected confirmation budget converts unlimited search into 
 instead of industrial p-hacking. **This law is what makes L1–L3 safe.** Anyone proposing to raise
 confirmation slots "because we now generate more" has inverted the entire logic.
 
+**L5 — MODALITY-BLIND HUNTING (principal 2026-07-27).** Raw information is information *no matter
+how it was mined*. Text, audio, video, transcripts, public group messages, images, code, bytecode,
+tabular, graph, stream, filings, archives — the CARRIER never determines the value; only
+testable-signal-per-source ranks it. The desk's historic bias is severe and now measured:
+`data/information_class_map.json` shows **tabular 5/7 covered but transcript 0/2, video 0/1,
+filing 0/2, graph 0/4, text 1/5** — i.e. the desk mines numbers well and everything else barely.
+**16 of 30 mapped classes (53%) are never-visited**, and that list is the concrete target the
+NEW_BRANCHES slice funds. Expansion is of *classes*, not merely of sources inside classes already
+comfortable. A class is retired only to `low-yield-archived`, never deleted (L1), and the quarterly
+blind re-derivation re-surfaces archived classes plus any class the map never imagined.
+
+**THE ONE BOUNDARY ON L5** (DIGGING_CHARTER §13, non-negotiable): public and legitimately
+accessible only. Public forums, public groups, public videos/transcripts, filings, archives — YES.
+Paywalled, pirated, cracked, private-group, or paid-DB-mirrored content — NO, regardless of
+expected value. This is not a value judgement about the data; it is the boundary that keeps the
+desk legitimate, and it is the only limit "no matter what" does not override.
+
 ## Ceiling clause
 
 There is no exhausted state. "Everything is covered" is always a false report — it means the map
