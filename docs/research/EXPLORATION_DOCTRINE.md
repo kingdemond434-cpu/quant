@@ -53,6 +53,32 @@ Paywalled, pirated, cracked, private-group, or paid-DB-mirrored content — NO, 
 expected value. This is not a value judgement about the data; it is the boundary that keeps the
 desk legitimate, and it is the only limit "no matter what" does not override.
 
+**L6 — ANTI-BLIND-SPOT, BY CONSTRUCTION (principal 2026-07-27).** The class map is *itself* a blind
+spot: it holds only what someone already imagined, so "we've covered everything" is always a claim
+about the MAP, never the TERRITORY. Immunity therefore cannot come from a longer list — it comes
+from **question-generators that fail differently**. Six standing lenses (`scripts/blindspot_prober.py`):
+
+- **L6a MODALITY GAP** — which carriers are under-mined vs our comfort zone? *Catches format bias:
+  we mine numbers because numbers are easy, not because they are informative.* Measured today:
+  filing 0/2, transcript 0/2, video 0/1, graph 0/4, archive 0/2 — five structural blind spots.
+- **L6b NEGATIVE SPACE** — what matters but leaves NO public footprint, and what proxies it?
+  *Starts from what MATTERS, not from what exists* (OTC flow, MM inventory, execution algos).
+- **L6c CROSS-DOMAIN IMPORT** — what do other disciplines mine that crypto quant does not?
+  *Imports modalities the whole FIELD is blind to* (epidemiology diffusion, insurance tail models,
+  Hawkes clustering, closing-line value).
+- **L6d ADVERSARIAL** — if a competitor had an edge we lack, what information is it built on?
+  *Inverts from opponent capability rather than our inventory.*
+- **L6e INVERSION** — start from the TARGET, derive the information required, then hunt it.
+  *Refuses to be limited by what we happen to already hold.*
+- **L6f SELF-AUDIT** — what did we DECLINE to test, and is the reason still valid?
+  *Audits our own past judgement; catches stale refusals and comfort-driven skips (NLP, video,
+  non-English were skipped for being uncomfortable, never because they were refuted).*
+
+**Standing rule:** every cycle answers ≥1 probe per lens with EVIDENCE — a screened source, or a
+documented reason it is not free-obtainable. **An unanswered lens is a live blind spot, not a
+completed audit.** "No probes remain" is never a valid report; it means the lenses went stale, and
+blind re-derivation regenerates them from scratch while ignoring the existing file.
+
 ## Ceiling clause
 
 There is no exhausted state. "Everything is covered" is always a false report — it means the map

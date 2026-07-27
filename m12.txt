@@ -1,0 +1,31 @@
+doctrine L6: anti-blind-spot by construction -- 6 orthogonal question-generators
+
+Principal: "always be creative and immune to blind spots as much as possible when expanding,
+always question itself what type or source did we not mine/explore/give enough attention to yet,
+hunt everywhere and every type of info as aggressively as possible."
+
+THE FLAW THIS FIXES IS IN MY OWN PREVIOUS COMMIT: information_class_map.json is ITSELF a blind
+spot -- a hand-written map holds only what someone imagined, so listing 30 classes never proves
+the universe holds 30. Immunity cannot come from a longer list. It comes from QUESTION-GENERATORS
+THAT FAIL DIFFERENTLY.
+
+NEW: scripts/blindspot_prober.py -- 6 orthogonal lenses, 25 standing probes:
+  L6a MODALITY GAP        catches format bias (numbers are easy, not necessarily informative)
+  L6b NEGATIVE SPACE      starts from what MATTERS, not what exists (OTC, MM inventory, algos)
+  L6c CROSS-DOMAIN IMPORT modalities the whole FIELD is blind to (epidemiology diffusion,
+                          insurance tail models, Hawkes clustering, closing-line value)
+  L6d ADVERSARIAL         inverts from opponent capability, not our inventory
+  L6e INVERSION           start from the TARGET, derive required info, then hunt it
+  L6f SELF-AUDIT          audits our own past judgement -- stale refusals, comfort-driven skips
+
+MEASURED (not asserted) STRUCTURAL BLIND SPOTS, from the class map:
+  filing 0/2 | transcript 0/2 | video 0/1 | graph 0/4 | archive 0/2   <-- all zero
+  stream 1/5 | text 1/5 | code 1/2 | tabular 5/7
+The desk mines TABULAR and is structurally blind to five whole carrier families. L6f names the
+honest cause: NLP/video/non-English were skipped for being UNCOMFORTABLE, never because they
+were refuted.
+
+STANDING RULE: every cycle answers >=1 probe per lens with EVIDENCE (a screened source, or a
+documented reason it is not free-obtainable). AN UNANSWERED LENS IS A LIVE BLIND SPOT, NOT A
+COMPLETED AUDIT. "No probes remain" is never a valid report -- it means the lenses went stale;
+blind re-derivation regenerates them from scratch, ignoring the file.
