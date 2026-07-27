@@ -1,0 +1,40 @@
+P0 FIX APPLIED: carry entry gate now FAILS CLOSED (_DEFAULT_RT_BPS 4.5 -> 39.5)
+
+THE DEFECT: _rt_bps() returned the desk MEDIAN when a symbol had no measured cost. But
+"unmeasured" is not a random subset -- a symbol is missing from the cost model BECAUSE it is too
+illiquid to measure, i.e. it IS the expensive tail. Measured distribution across 30 symbols:
+median 5.72, p75 21.30, p90 39.45, max 130.47 bps. The old default of 4.5 sat at the 43RD
+PERCENTILE -- it assumed an unmeasured symbol was cheaper than 57% of measured ones.
+
+WORSE, IT WAS DECORATIVE: at 4.5 with a 24h hold (3 periods) the gate required
+funding > 4.5/3e4 = 0.00015, which is EXACTLY _MIN_FUNDING. The cost gate added literally nothing
+beyond the pre-existing floor. It looked like a control and was not one.
+
+FIX: _DEFAULT_RT_BPS = 39.5 (p90 of measured). Bar moves from 1.0x -> 8.8x the _MIN_FUNDING floor.
+A symbol must now PROVE it is cheap (by being measured) before it can clear. This also performs
+the majors migration by economics rather than by a hardcoded list.
+BLAST RADIUS IS BOUNDED BY DESIGN: _entry_gate is applied to NEW OPENS ONLY and never to the
+hold/target set (its own docstring), so raising the bar can only REFUSE opens -- it cannot
+force-close or liquidate anything. Backup at /tmp/exec_backup.py. Parses clean, ruff green.
+
+*** NOT YET LIVE: the executor is running as PID 877230 and loaded the old constant at import.
+Module constants do not hot-reload (unlike data/cashcarry_config.json, which does). A RESTART is
+required. I did not restart it -- it manages open positions and killing it mid-reconcile can
+strand legs. That is a genuine blast radius and belongs to the operator/brain. ***
+
+TWO OF MY OWN RECOMMENDATIONS CORRECTED BY READING THE CODE:
+1. "Switch taker -> maker, halve the fees" -- WRONG, ALREADY DONE. _MAKER = True is the default
+   ("maker-first execution, set via --no-maker"). I recommended a change that was already in
+   place, which means fee-tier was never the cost story.
+2. THE REAL COST HYPOTHESIS, and it is sharper: _mkt_or_limit does "MARKET first, LIMIT fallback"
+   for CLOSE/HEDGE. So ENTRIES are maker-first but EXITS are MARKET-first. On thin books a market
+   exit is exactly where slippage lives, and every carry exits. That is a far better explanation
+   of the $876 residual than fee tier, and it is testable: attribute realised cost by open vs
+   close leg in run_trade_forensics.
+   Do NOT naively flip closes to maker-only -- the docstring explains why market-first exists
+   there: a post-only close on a broken book may never fill, which previously stranded orphan
+   legs (the -4131 PERCENT_PRICE path). The right fix is likely maker-with-timeout-then-market,
+   not maker-only.
+
+VERIFICATION AFTER RESTART: re-run scripts/hurdle_rate.py. cost/funding must fall well below the
+current 7.75x. If it does not, the cost is in the close-leg slippage above, not the entry gate.
