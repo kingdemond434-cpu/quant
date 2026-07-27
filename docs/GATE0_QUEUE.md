@@ -45,3 +45,5 @@ only on evidence, and only with its safety layer built first.*
 No amount of architecture, model agreement, or apparent insight lets a hypothesis reach capital
 without passing the fixed empirical validation gate. These layers make live capital *safer*; they
 never make it *earlier*.
+
+| G0 | **NAV RECONCILIATION GAP (TIER-1 BLOCKER, found 2026-07-27)** | venue_nav $5,262 vs mark_nav $14,508 = 175.7% divergence and GROWING (36.4% on 07-23). portfolio.json tracks the MARK not the VENUE, so the desk believes it holds ~$14.5k while the exchange reports ~$5.2k. Either different scopes or broken reconciliation. Catastrophic with real money -- every sizing/leverage/risk decision would run off a NAV that does not exist. | BEFORE any live capital |
