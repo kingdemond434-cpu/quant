@@ -2660,6 +2660,21 @@
    "success_metric": "n/a -- premise rejected at Stage-A",
    "reversal_condition": "per-TRADER (not aggregate) data on a transparent venue shows skill persistence -- Hyperliquid clearinghouseState is free + per-address (probe: OK) and is the ONLY remaining free route to the individual-skill question. That is a separate, harder test requiring address discovery + survivorship-free cohort construction.",
    "flagged_gap": "elite_pos contrarian (t -3.66 pooled, sign-consistent 5/5) is the one live thread: needs a wider INDEPENDENT universe (not 5 correlated majors) before it can be considered an axis. Do not wire on correlated-symbol evidence."
+  },
+  {
+   "id": "2026-07-27-hyperliquid-skill-persistence-refuted",
+   "decision": "Principal (confident because 'top profitable traders get copytraded') asked for the per-trader test after the aggregate elite-positioning premise failed. Built it on Hyperliquid -- the one free venue with genuine per-trader transparency (public leaderboard 40,988 addresses INCLUDING large losers, e.g. -$3.3M month PnL; plus per-address clearinghouseState + 2,000 userFills). Cohort 8,026 after acctValue>=$10k and monthVlm>=$100k filters. Used the leaderboard's nested windows to build NON-OVERLAPPING formation/holding splits, winsorised tails, shuffled-label null, and within-size-bucket controls. ROUND 1 (adjacent windows): rho +0.120, t +10.86, 5x the shuffled null, decile spread +6.1%/wk (t 4.12), and it SURVIVED all three size buckets -> looked like genuine skill persistence, the session's first positive result. ROUND 2 (the confound control that mattered): inserted a ~3-week GAP so no single position can span both windows -> rho INVERTS to -0.064 (t -5.8); long-horizon variant -0.060 (t -5.4); gapped decile spreads insignificant (t 1.33/1.15). CONCLUSION: the apparent persistence was POSITION-OVERLAP MECHANICS plus directional beta in a mildly trending market, not skill. Robust in the safe direction -- the snapshot omits fully-liquidated accounts, which biases persistence UP, so true persistence <= -0.064. Top-decile forward returns were NEGATIVE in all variants. Also self-caught a BUG in my own verdict logic: it printed SURVIVES for negative rho because it tested |t| and |rho| without checking SIGN -- numbers right, labels wrong; reported rather than hidden. NOTHING WIRED. The 26-layer spec is refused at its premise.",
+   "hypothesis": "individual crypto traders exhibit skill persistence -- past risk-adjusted performance predicts future performance -- which is the necessary precondition for any copytrading or trader-intelligence alpha",
+   "expected_benefit": "would have justified the full trader-intelligence build; instead saved 26 subsystems of engineering on a premise that inverts under a gap control",
+   "expected_cost": "two screen rounds; reusable gapped-persistence harness retained",
+   "confidence": 0.9,
+   "assumptions": [
+    "HL leaderboard window PnL/accountValue are accurate as published",
+    "3-week gap is sufficient to break position-carry correlation"
+   ],
+   "success_metric": "n/a -- hypothesis refuted at Stage-A with a confound control",
+   "reversal_condition": "a GAPPED design on data that includes fully-liquidated accounts (true survivorship-free panel, e.g. reconstructed from fills history rather than a current snapshot) shows positive persistence. Any future copytrading/trader-intelligence proposal MUST use a gapped formation/holding split or it is measuring position carry, not skill.",
+   "flagged_gap": "GENERAL LESSON for the desk: adjacent-window performance-persistence tests are structurally contaminated by open-position carry. The gapped-window control belongs in the standard screen toolkit alongside the de-contamination and lookahead rails."
   }
  ]
 }
