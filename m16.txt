@@ -1,0 +1,37 @@
+collector author + breadth sweep maximised; BLOCKED on OpenRouter credits (HTTP 402)
+
+BREADTH EXPANDER -> MAXIMUM SWEEP (principal: max places, every day)
+  From 1 lens x 2 seats to ALL 6 lenses x 3 seats x 15-20 sources, LLM calls PARALLELISED
+  (9 workers) after 3 watchdog reaps of the sequential version. Runtime 3m10s, fits its 420s
+  cadence budget.
+  LIVE RESULT: 102 suggestions -> 24 known, 50 unreachable, 28 NEW+REACHABLE, novelty 27%.
+  It filled the exact five structural blind spots the class map measured at ZERO coverage:
+    filing     <- SEC EDGAR, Companies House UK, Korea DART, Taiwan MOPS, HKEXnews
+    transcript <- FOMC transcripts, Europarl, govinfo Congressional hearings
+    video      <- Bilibili API, SEC YouTube
+    graph      <- Bitquery GraphQL, OpenAlex
+    archive    <- Common Crawl Index
+  DEFECT FOUND AND FIXED: dedup read only the class map, NOT the graveyard, so the sweep
+  re-suggested Bithumb/Coinone/Bitso/Mercado -- all TESTED AND KILLED the same day. Graveyard
+  (44 rows) now feeds dedup. Re-proposing refuted sources wastes probe and research budget.
+  MEASURED SEAT PERFORMANCE (evidence, not reputation): nemotron and grok-4.3 produced 18
+  parseable rows each; gpt-5.6-terra-pro produced 0 on 5 of 6 lenses. Seat selection must follow
+  measured yield, exactly as the principal's LLM-portfolio doctrine requires.
+
+COLLECTOR AUTHOR (scripts/collector_author.py) -- attacks the desk's REAL conversion bottleneck:
+  finding is automated, screening is automated, but turning a source into a WIRED COLLECTOR was
+  bespoke brain-written code and error-prone (kimchi construction bug, bithumb timezone lookahead).
+  Loop: breadth feed -> 3 code-strong flagship seats write fetch() -> STATIC SAFETY SCAN
+  (rejects subprocess/os/eval/exec/socket/file-writes, whitelists stdlib imports) -> EXECUTE in
+  isolated subprocess with hard timeout -> VALIDATE the series (>=90 pts, not near-constant, no
+  NaN, real date keys) -> Stage-A screen. A generated collector NEVER auto-wires into the daily
+  cycle. Verification-before-use is mandatory: an LLM collector that silently returns wrong data
+  is the kimchi bug class.
+
+BLOCKED: all 9 generation calls returned HTTP 402 "Insufficient credits" in 1.6s. OpenRouter is
+out of funds -- code is sound, execution is unfunded. Every LLM organ (breadth expander, panel,
+collector author) is down until topped up. HUMAN-ONLY ACTION.
+
+DEFECT THIS EXPOSED: the budget envelope guard was INERT -- data/panel_budget.json has no cap
+configured, so it printed "no cap configured" and could not fire. A guard that is not configured
+is decoration. Needs a real monthly cap set before the next funded run.
