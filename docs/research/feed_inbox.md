@@ -101,3 +101,7 @@ reference for when that item is built (liquidity STATE, not just level, predicts
 ## Uniform-Loss Automated Market Making for Prediction Markets
 - 2026-07-19 · http://arxiv.org/abs/2607.17428v2
 - Automated market makers (AMMs) for prediction markets descend from market scoring rules, where a mechanism operator subsidizes a market to aggregate beliefs about uncertain events. The existing literature has focused on bounding the total worst-case loss to the subsidizer, but has not addressed how that loss is distributed across price states or over time. We use the framework of loss-versus-rebalancing (LVR) to study this distribution and introduce \textit{uniform AMMs}, defined by the property that instantaneous LVR is proportional to pool value and independent of the current token price. In
+
+## Are cryptocurrencies real financial bubbles? Evidence from quantitative analyses
+- 2026-07-23 · http://arxiv.org/abs/2607.21826v1
+- The growth of peer-to-peer exchanges and the blockchain technology has led to a proliferation of cryptocurrencies and to a massive increase in the number of investors who actually negotiate digital money. Cryptocurrencies trade at prices mainly driven by investor sentiment, becoming a potential source of financial bubbles and instabilities. In this work, we apply quantitative models to the study of Bitcoin and Ether, two of the most famous cryptocurrencies. Our bubble detection methodology combines the Log Periodic Power Law (LPPL) model, originally created by Johansen, Ledoit and Sornette (JL
