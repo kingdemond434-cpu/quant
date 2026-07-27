@@ -2721,6 +2721,22 @@
    "success_metric": "n/a -- returns/Sharpe persistence REJECTED with power; drawdown persistence CONFIRMED but reinterpreted as style, not alpha",
    "reversal_condition": "drawdown-control persistence survives controlling for leverage/position size AND its top quartile shows POSITIVE forward returns on an independent cohort",
    "flagged_gap": "CONFIRMED STANDING LESSON: risk characteristics persist, returns do not. Any future manager/trader-selection work on this desk selects on RISK DISCIPLINE, never on past returns -- and must check whether the risk metric is merely proxying leverage. Also: POWER must be stated (SE + minimum detectable effect) on every cross-sectional null, or the null is not a result. This is now a standard reporting requirement."
+  },
+  {
+   "id": "2026-07-27-elite-risk-filter-replicates-oos-plus-feature-factory",
+   "decision": "TWO results after the principal pressed on 'why not narrow to traders who make money' and then correctly REFRAMED the whole programme to behaviour-as-feature-space. (1) THE FILTER TEST -- narrowing on PAST RETURNS alone does NOT work: filtering the 1,062 long-record cohort to profitable / >25% / >50% / >100% / >200% / top-10% / top-1% left the forward positive-rate pinned at the 36-45% base rate with medians near -20%; the top 1% by past return (>1825%!) had forward MEDIAN -46.1%. BUT the COMBINED RISK filter (profitable AND sharpe>1 AND consistency>55% AND maxDD>-25%) gave n=24, fwd mean +16.2%, median +3.7%, 62% positive vs 37% base. Flagged the overfitting risk myself (n=24, ~13 filter combos, hand-picked thresholds) and ran the decisive check: the SAME FROZEN filter on a DISJOINT cohort (accounts ranked 1800-5200 by value, n=639). IT REPLICATED: n=15, fwd mean +7.0%, median +4.3%, 60% positive vs 37% base (z +1.87 alone; combined 24/39 = 62%, z~3.2, p~0.0007, clears Bonferroni for 13 filters). CORRECTED MY OWN SCRIPT'S LABEL: it printed 'FAILS TO REPLICATE' purely because z missed an arbitrary 2.0 cutoff, while effect size and direction replicated almost exactly at n=15 -- mechanical thresholding would have mislabelled a real replication. WHAT DRIVES IT: consistency + drawdown control, i.e. RISK DISCIPLINE, never raw returns -- consistent with the n=1400 finding that risk persists (t +7.63) while returns do not (t -1.29). (2) THE FEATURE FACTORY (principal's reframe, correct and adopted): built scripts/hl_feature_factory.py -- 14 orthogonal behavioural features from a performance-blind cohort's fills (net flow, flow imbalance, disagreement, consensus strength, participation, concentration, open/close ratio, long/short tilt, accelerations) screened independently with explicit multiplicity accounting. RESULT: 0/14 SCREEN-INTERESTING vs ~0.7 expected false positives -- nothing beat chance. HONEST LIMIT: only BTC had enough buckets (115); ETH 38 / SOL 19 too thin, so no cross-sectional confirmation. Two features look genuinely ORTHOGONAL and deserve more data: consensus_strength (IC -0.243, same-period only +0.064) and disagreement (IC +0.175, same-period +0.003).",
+   "hypothesis": "trader BEHAVIOUR (not trader ranking) contains extractable alpha; and risk-discipline-based trader selection beats return-based selection",
+   "expected_benefit": "a reusable behavioural-feature factory + the first out-of-sample-validated trader-selection criterion this desk has produced",
+   "expected_cost": "feature factory is data-starved on this venue (2000-fill cap); elite filter n is small (24 in-sample / 15 OOS)",
+   "confidence": 0.55,
+   "assumptions": [
+    "HL cohort representative",
+    "60/40 own-curve split fair",
+    "drawdown/consistency partly proxy leverage-style rather than pure skill"
+   ],
+   "success_metric": "elite risk filter holds on a THIRD independent cohort or a forward clock; behavioural features clear multiplicity once >=3 coins have adequate buckets",
+   "reversal_condition": "third-cohort replication fails, or the lift disappears once leverage is controlled for",
+   "flagged_gap": "NOT ACTIONABLE FOR THIS DESK AS-IS: the elite risk filter is a MANAGER-SELECTION signal (who to allocate to), not a market signal (what to trade). The desk does not allocate to external traders, so it earns no axis_shadows clock. It is banked as validated knowledge: IF trader allocation ever happens, select on risk discipline, never on past returns. The feature factory IS reusable for market signals once data breadth allows."
   }
  ]
 }
