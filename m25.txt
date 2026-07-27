@@ -1,0 +1,41 @@
+NAV GAP RESOLVED -- it was MY unit error, not a missing $9k. Real defect substituted.
+
+I escalated a CRITICAL "175.8% NAV divergence -- the desk does not know what it owns" and wrote it
+into the pager and the Gate-0 blocker queue. IT WAS WRONG. Correcting it here, on both surfaces.
+
+EVIDENCE, decisive:
+  venue_equity.json  = "fut margin + tracked spot legs + USDT delta"  -> FUTURES scope
+                       5,169 / start_futures_equity 5,000 = 1.03x
+  portfolio.json     = the whole book                                 -> TOTAL scope
+                       14,363 / start_capital 15,000       = 0.96x
+  high_water 7,510 and fire_line 4,882 sit in the ~$5-7.5k band, confirming the venue measure was
+  always futures-scoped.
+They were NEVER the same quantity, so comparing them and calling the result "divergence" was a
+unit error on my part. NO CAPITAL IS MISSING: futures side +3%, total capital -4%.
+
+THE REAL DEFECT UNDERNEATH (replaces G0, still Tier-1):
+  run_venue_divergence_shadow.py computes pct_diff between those two scopes every 5 minutes, and
+  its explicit stated purpose is to calibrate the GAP #19 circuit breaker at "~2x OBSERVED noise".
+  A breaker calibrated on a phantom 175% gap either NEVER FIRES or ALWAYS FIRES.
+  The script's own docstring says the 2026-07-22 dead-man false fires happened "because a trigger
+  was set without knowing the measurement noise of its own inputs". This is that exact failure one
+  level up: the noise measurement is itself measuring the wrong thing.
+  FIX REQUIRED BEFORE ARMING ANYTHING FROM IT: compare venue futures-scope against the BOOK's
+  futures-scope, like-for-like.
+
+CHANGES:
+  * claim_verifier NAV check rewritten: it no longer tests "do these two numbers agree" (they
+    should not) but "are these two numbers COMPARABLE" -- which is the property that actually
+    matters and the one that was violated. CRITICAL:1 -> 0; now HIGH:2.
+  * docs/GATE0_QUEUE.md: G0 withdrawn with full reasoning, real defect substituted in its place.
+  * data/PRINCIPAL_ACTION.md: correction prepended so the false CRITICAL cannot be read first.
+
+PRINCIPAL DECISIONS ACCEPTED THIS ROUND:
+  * 13-seat panel KEPT at 13 (principal: more independent reviewers = better gap coverage, and
+    cross-seat agreement is the signal). Per-seat yield logging should still be ADDED -- as
+    measurement, not as a cut.
+  * Universe: run BOTH majors AND micro-caps. My earlier "move to majors" advice was wrong --
+    micro-caps are where the funding actually is (majors are crowded/compressed), so abandoning
+    them may abandon the edge. The defect was never the names, it was running them on DEGENERATE
+    cost data. Prerequisite: run_cost_model over the full live universe, then size each symbol by
+    MEASURED capacity -- majors large/thin-carry, micro-caps small/fat-carry/capacity-capped.

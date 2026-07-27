@@ -50,3 +50,9 @@ never make it *earlier*.
 
 | CV | **portfolio equity reconciles with the venue** `(CV-2026-07-27-portfolio equity reconcile)` | claims `equity $14,444 (tracks MARK)` but the source says `venue $5,211 vs mark $14,461 = 177.5% divergence` -- every sizing, leverage and risk decision runs off a NAV the exchange does not confirm; at Gate-0 this is capital-destroying | BEFORE any live capital |
 | CV | **health all_ok is consistent with organ logs** `(CV-2026-07-27-health all_ok is consisten)` | claims `all_ok=True, organs_ok=True` but the source says `14 stub logs vs 13 real logs in last 48h` -- a green dashboard while organs are dead means silent research outage | BEFORE any live capital |
+
+## CORRECTION 2026-07-27 -- the NAV CRITICAL was MY ERROR, not a missing $9k
+
+G0 as originally written is WITHDRAWN. venue_equity.json measures the FUTURES scope ("fut margin + tracked spot legs + USDT delta"; 5,169 / 5,000 futures start = 1.03x) while portfolio.json measures the TOTAL book (14,363 / 15,000 = 0.96x). They were never the same quantity, so the "175.8% divergence" was a unit error on my part. NO CAPITAL IS MISSING: futures side +3%, total capital -4%.
+
+**THE REAL DEFECT REPLACING IT (still a Tier-1 blocker):** `run_venue_divergence_shadow.py` computes pct_diff between those two scopes, and that series is explicitly intended to calibrate the GAP #19 circuit breaker at "~2x OBSERVED noise". Calibrating a breaker on a phantom 175% gap yields a breaker that never fires or always fires. The shadow must compare like-for-like (venue futures-scope vs the book's futures-scope) BEFORE anything is armed from it.

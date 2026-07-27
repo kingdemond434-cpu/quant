@@ -69,22 +69,40 @@ def main() -> None:
     print("    a self-report cannot detect its own divergence. 3 dashboards lied today.\n")
     f: list[dict] = []
 
-    # ---- 1. NAV: the claim with the largest capital consequence ------------------------
+    # ---- 1. NAV SCOPE -- corrected 2026-07-27 -------------------------------------------
+    # ORIGINAL CHECK WAS WRONG and escalated a false CRITICAL. It compared venue_nav against
+    # portfolio equity as if they measured the same thing. They never did:
+    #   venue_equity.json  = "fut margin + tracked spot legs + USDT delta" (FUTURES scope, ~$5k;
+    #                        venue 5,169 / start_futures 5,000 = 1.03x)
+    #   portfolio.equity   = the whole book (TOTAL scope, ~$14.4k / start 15,000 = 0.96x)
+    # So the "175% divergence" was a UNIT ERROR of mine, not a lost $9k. No money is missing.
+    #
+    # THE REAL DEFECT IS DOWNSTREAM: run_venue_divergence_shadow.py logs pct_diff between these
+    # two scopes, and its stated purpose is calibrating the GAP #19 circuit breaker at "~2x
+    # OBSERVED noise". A breaker calibrated on a 175% phantom gap either never fires or always
+    # fires. Its own docstring says the 07-22 dead-man false fires happened "because a trigger was
+    # set without knowing the measurement noise of its own inputs" -- this is that same failure,
+    # one level up. So the check now verifies SCOPE COMPARABILITY, which is the thing that matters.
     port = load(WEB / "portfolio.json") or {}
     equity = (port.get("deployed") or {}).get("equity")
-    div = jsonl(DATA / "venue_divergence_shadow.jsonl")
-    if equity is not None and div:
-        last = div[-1]
-        vnav, mnav = last.get("venue_nav"), last.get("mark_nav")
-        if vnav and mnav:
-            gap = abs(mnav - vnav) / max(vnav, 1e-9) * 100
-            tracks = "MARK" if abs(equity - mnav) < abs(equity - vnav) else "VENUE"
-            sev = "CRITICAL" if gap > 20 else ("HIGH" if gap > 5 else "OK")
-            check(f, sev, "portfolio equity reconciles with the venue",
-                  f"equity ${equity:,.0f} (tracks {tracks})",
-                  f"venue ${vnav:,.0f} vs mark ${mnav:,.0f} = {gap:.1f}% divergence",
-                  "every sizing, leverage and risk decision runs off a NAV the exchange does not "
-                  "confirm; at Gate-0 this is capital-destroying")
+    ven = load(WEB / "venue_equity.json") or {}
+    vneq = ven.get("equity")
+    att = jsonl(DATA / "nav_attestation.jsonl")
+    fut_start = att[-1].get("start_futures_equity") if att else None
+    if equity and vneq and fut_start:
+        vratio = vneq / fut_start                      # ~1.0 => venue tracks the futures scope
+        pratio = equity / (port.get("deployed") or {}).get("start_capital", 1)
+        scope_mismatch = abs(equity - vneq) / max(vneq, 1e-9) > 0.5 and 0.5 < vratio < 2.0
+        sev = "HIGH" if scope_mismatch else "OK"
+        check(f, sev, "venue and book NAV are compared on the SAME scope",
+              f"venue ${vneq:,.0f} (={vratio:.2f}x futures start) vs "
+              f"book ${equity:,.0f} (={pratio:.2f}x total start)",
+              "venue=FUTURES scope, portfolio=TOTAL scope -- not comparable"
+              if scope_mismatch else "scopes comparable",
+              "run_venue_divergence_shadow logs pct_diff between these and that series is what "
+              "calibrates the GAP #19 breaker; calibrating on a scope mismatch produces a breaker "
+              "that never fires or always fires. Fix the shadow to compare like-for-like BEFORE "
+              "arming anything from it.")
 
     # ---- 2. HEALTH: does all_ok survive the organ logs? --------------------------------
     health = load(WEB / "health.json") or {}
