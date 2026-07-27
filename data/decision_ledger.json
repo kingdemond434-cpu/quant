@@ -2705,6 +2705,22 @@
    "success_metric": "n/a -- rejected; zero predictive power on the primary criterion",
    "reversal_condition": "drawdown-control persistence (t +2.05) replicates on an INDEPENDENT cohort and clears multiplicity -> would support RISK-based (not return-based) manager selection",
    "flagged_gap": "POSITIVE LEAD worth one cheap follow-up someday: risk/drawdown characteristics persist where returns do not. If ever revisited, select managers on RISK DISCIPLINE, never on past returns."
+  },
+  {
+   "id": "2026-07-27-highpower-skill-drawdown-persists-returns-do-not",
+   "decision": "Principal challenged the STATISTICAL POWER of the long-term skill test ('are u even testing it for long enough to judge'). CORRECT CHALLENGE, conceded with the math: n=229 gave SE(rho)~0.066 -> could only detect |rho|>=0.13, 95% CI [-0.148,+0.110], so WEAK persistence (rho 0.05-0.11) was NOT excluded. Rebuilt at 6x scale: 1,400 traders with long on-chain records (median 600d, max 1195d), SE 0.0268, minimum detectable |rho| 0.0535. Watchdog reaped the first attempt (desk hygiene working as designed) -> relaunched detached with checkpointing. RESULTS, two opposite findings. (1) THE COPYTRADING PREMISE STILL FAILS, now properly powered: formation SHARPE -> holding return rho -0.0345 (t -1.29), CI [-0.087,+0.018] -- point estimate NEGATIVE and meaningful persistence now genuinely EXCLUDED. Consistency t +1.65, return t +1.96 -- both marginal, neither clears the 4-test bar. Cohort holding mean -9.2%, median -16.1%, only 509/1400 (36%) positive. (2) DRAWDOWN CONTROL PERSISTS STRONGLY: rho +0.2001, t +7.63, CI [+0.148,+0.253], quartile spread t +4.01; Q4 holding -2.2% (median -3.8%) vs Q1 -21.9% (median -42.1%). This VALIDATES the principal's power argument -- the same effect read t +2.05 at n=229 and t +7.63 at n=1400, the signature of a real underpowered effect. HONEST DEFLATION: this is most likely LEVERAGE/STYLE persistence, not skill (low-leverage traders have small drawdowns in both periods almost mechanically), and even the BEST quartile LOST money (-2.2%) -- it selects who loses LESS, not who wins. Same family as the graveyarded xsec_lowvol 'lottery demand' finding. NOT WIRED: it is a loss-avoidance/risk-style signal, not alpha, and copying it still loses money.",
+   "hypothesis": "with adequate statistical power, long-track-record risk-adjusted trader skill predicts forward performance",
+   "expected_benefit": "decisive power-aware answer instead of an underpowered null",
+   "expected_cost": "one 1,400-account probe run",
+   "confidence": 0.9,
+   "assumptions": [
+    "HL portfolio pnlHistory accurate",
+    "60/40 own-curve split fair",
+    "drawdown metric partly proxies leverage/style rather than skill"
+   ],
+   "success_metric": "n/a -- returns/Sharpe persistence REJECTED with power; drawdown persistence CONFIRMED but reinterpreted as style, not alpha",
+   "reversal_condition": "drawdown-control persistence survives controlling for leverage/position size AND its top quartile shows POSITIVE forward returns on an independent cohort",
+   "flagged_gap": "CONFIRMED STANDING LESSON: risk characteristics persist, returns do not. Any future manager/trader-selection work on this desk selects on RISK DISCIPLINE, never on past returns -- and must check whether the risk metric is merely proxying leverage. Also: POWER must be stated (SE + minimum detectable effect) on every cross-sectional null, or the null is not a result. This is now a standard reporting requirement."
   }
  ]
 }

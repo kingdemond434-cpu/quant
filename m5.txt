@@ -1,0 +1,24 @@
+research: high-power trader-skill test -- returns do NOT persist, RISK does (n=1400)
+
+Principal challenged statistical power. Correct: n=229 had SE(rho) 0.066, could only detect
+rho>=0.13, CI [-0.148,+0.110] -- weak persistence was NOT excluded. Rebuilt at 6x scale.
+
+1,400 traders, long on-chain records (median 600d, max 1195d), own-curve 60/40 split.
+SE 0.0268, minimum detectable rho 0.0535.
+
+COPYTRADING PREMISE STILL FAILS (now properly powered):
+  formation SHARPE -> holding return: rho -0.0345 (t -1.29) CI [-0.087,+0.018] -- NEGATIVE
+  consistency t +1.65, return t +1.96 -- marginal, neither clears the 4-test bar
+  cohort holding: mean -9.2%, median -16.1%, only 36% positive
+
+DRAWDOWN CONTROL PERSISTS STRONGLY: rho +0.2001 (t +7.63) CI [+0.148,+0.253]
+  Q4 holding -2.2% (med -3.8%) vs Q1 -21.9% (med -42.1%), spread t +4.01
+  Validates the power argument: same effect read t +2.05 at n=229, t +7.63 at n=1400.
+
+HONEST DEFLATION: likely LEVERAGE/STYLE persistence, not skill (low-leverage traders have
+small drawdowns in both periods mechanically), and even the BEST quartile LOST money.
+Selects who loses less, not who wins. Same family as graveyarded xsec_lowvol lottery-demand.
+
+Not wired. STANDING LESSON: risk characteristics persist, returns do not -- future manager
+selection uses RISK DISCIPLINE, never past returns. POWER (SE + min detectable effect) is now
+a required field on every cross-sectional null.
