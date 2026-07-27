@@ -148,15 +148,26 @@ def main() -> None:
         bstate = json.loads((ROOT / "data/panel_budget_state.json").read_text("utf-8"))
     except Exception:
         bcfg, bstate = {}, {}
-    cap = float(bcfg.get("monthly_usd_cap") or bcfg.get("cap_usd") or 0) or None
-    spent = float(bstate.get("month_spend_usd") or bstate.get("spent_usd") or 0)
+    # KEY NAMES MUST MATCH THE PANEL'S OWN CONFIG. My first version read monthly_usd_cap/cap_usd,
+    # which do not exist, so it printed "no cap configured" and the guard was INERT while a real
+    # $120 envelope was sitting in the file. A guard reading the wrong key is worse than none.
+    cap = float(bcfg.get("monthly_envelope_usd") or 0) or None
+    alert = float(bcfg.get("alert_at_usd") or 0) or None
+    spent = float(bstate.get("usage_at_month_start") or 0)
+    obs = [float(c) for c in (bstate.get("observed_run_costs") or [])]
     n_calls = len(LENSES) * 3
-    need = 0.008 * n_calls
+    # MEASURED cost, not assumed: panel history is ~$2.93/run at 13 seats => ~$0.22/call.
+    # The old 0.008/call constant was 27x optimistic and is exactly how a 402 happens mid-run.
+    per_call = (max(obs) / 13.0) if obs else 0.22
+    need = per_call * n_calls
     if cap and spent + need > cap:
-        print(f"ABORT -- envelope guard: spent ${spent:.2f} + est ${need:.2f} > cap ${cap:.2f}")
+        print(f"ABORT -- envelope guard: spent ${spent:.2f} + est ${need:.2f} > envelope "
+              f"${cap:.2f}. PAGE the principal; never silently degrade quality.")
         return
-    print(f"budget: est ${need:.2f} for {n_calls} calls"
-          + (f" | month ${spent:.2f}/${cap:.2f}" if cap else " | no cap configured"))
+    if alert and spent + need > alert:
+        print(f"WARN -- past alert threshold ${alert:.2f} (spent ${spent:.2f} + est ${need:.2f})")
+    print(f"budget: est ${need:.2f} for {n_calls} calls @ ${per_call:.3f}/call (measured)"
+          + (f" | month ${spent:.2f}/${cap:.2f}" if cap else " | NO ENVELOPE CONFIGURED"))
 
     known: set[str] = set()
     # DEDUP MUST INCLUDE THE GRAVEYARD, not just the class map. The 2026-07-27 sweep re-suggested
