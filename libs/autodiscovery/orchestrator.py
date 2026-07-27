@@ -26,16 +26,22 @@ from libs.autodiscovery.models import (
 )
 from libs.autodiscovery.prioritization import prioritize
 from libs.autodiscovery.regime import regime_robust
-from libs.autodiscovery.validation import campaign_pbo_rc, validate
+from libs.autodiscovery.validation import campaign_fdr, campaign_pbo_rc, validate
 from libs.core.ids import generate_id
 from libs.costs.execution_gap import ExecutionGap, survives_execution_gap
 from libs.store.audit import AuditLog
 from libs.store.connection import Database
 from libs.validation.dsr import sharpe_ratio
+from libs.validation.lockbox import LockedHoldout
 
 DataProvider = Callable[[str], MarketSeries | None]
 CostProvider = Callable[[str], float]  # symbol -> per-turnover (per-side) cost fraction
 _MIN_BARS = 250
+# Sealed final slice, never seen by validation, opened exactly once at the promotion
+# decision. 20% rather than the module default 30%: at _MIN_BARS=250 a 30% holdout
+# would need 358 bars before any candidate qualified, so the discipline would almost
+# never apply. A holdout that never engages is not a holdout either.
+_LOCKBOX_FRACTION = 0.20
 
 
 class AutoDiscoveryLab:
@@ -168,7 +174,11 @@ class AutoDiscoveryLab:
         # PBO + Reality Check depend only on the matrix -> compute once, not per candidate (Nx).
         pbo_once, rc_once = campaign_pbo_rc(matrix)
 
-        counts = dict.fromkeys(CandidateStatus, 0)
+        # ---------------------------------------------------------------- PASS 1: validate
+        # Two passes, because the campaign-level FDR screen cannot be applied until every
+        # candidate has a p-value. Promotion moved to pass 2.
+        _Box = LockedHoldout[np.ndarray]
+        evaluated: list[tuple[Hypothesis, np.ndarray, np.ndarray, Any, _Box | None]] = []
         for hyp, rets, stressed in prepared:
             _f = str(hyp.family)
             # The FIXED WALL is the family-scoped TRIAL COUNT. The sharpe array is only the
@@ -179,14 +189,49 @@ class AutoDiscoveryLab:
             _sh = _fam_sharpes.get(_f)
             if _sh is None or len(_sh) < 2:
                 _sh = sharpe_estimates
+            # LOCKBOX (spec: a final slice openable exactly once). Validation runs on the
+            # RESEARCH portion only; the holdout is opened once in pass 2 at the promotion
+            # decision. Applied only when the research portion still clears _MIN_BARS on its
+            # own, so a candidate is never failed for being short rather than for being bad.
+            box: LockedHoldout[np.ndarray] | None = None
+            research = rets
+            if len(rets) >= int(_MIN_BARS / (1.0 - _LOCKBOX_FRACTION)) + 1:
+                box = LockedHoldout(rets, holdout_fraction=_LOCKBOX_FRACTION)
+                research = box.research()
             verdict = validate(
-                rets, hypothesis=hyp,
+                research, hypothesis=hyp,
                 n_trials=_fam_trials.get(_f, n_trials),
                 sharpe_estimates=_sh,
                 returns_matrix=matrix, pbo=pbo_once, rc=rc_once,
             )
+            evaluated.append((hyp, rets, stressed, verdict, box))
+
+        # ------------------------------------------------- CAMPAIGN FDR (Benjamini-Hochberg)
+        # Every candidate here already cleared a 0.95 per-candidate DSR bar. Run twenty past
+        # that bar and you expect one false survivor by construction: the per-candidate control
+        # says nothing about the error rate of the SET being promoted. This does.
+        fdr_pass, fdr_threshold = campaign_fdr([e[3].metrics.dsr for e in evaluated])
+
+        # ---------------------------------------------------------------- PASS 2: promote
+        counts = dict.fromkeys(CandidateStatus, 0)
+        for i, (hyp, rets, stressed, verdict, box) in enumerate(evaluated):
             status = promote(rets, validation_survived=verdict.survived)
             reason = verdict.rejection_reason
+            # FDR screen: a candidate that survived every gate but does not clear the campaign's
+            # BH threshold is demoted, not rejected -- it may be real, and paper will tell us.
+            if status is CandidateStatus.REGISTRY and not fdr_pass[i]:
+                status = CandidateStatus.PAPER
+                reason = (f"failed: campaign_fdr (BH threshold p<={fdr_threshold:.4g} across "
+                          f"{len(evaluated)} candidates)")
+            # LOCKBOX: opened exactly ONCE, here, and only for a candidate that would otherwise
+            # reach the registry. Opening it for candidates already rejected would burn the
+            # holdout's independence for no decision.
+            elif status is CandidateStatus.REGISTRY and box is not None:
+                held = box.open_lockbox()
+                if float(np.mean(held)) <= 0.0:
+                    status = CandidateStatus.PAPER
+                    reason = ("failed: lockbox (edge absent in the sealed final "
+                              f"{_LOCKBOX_FRACTION:.0%} never used for validation)")
             # Execution-gap gate (Lever 2/T4): REGISTRY requires surviving live-cost stress too.
             if status is CandidateStatus.REGISTRY and not survives_execution_gap(
                 float(np.sum(rets)), float(np.sum(stressed))

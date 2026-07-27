@@ -9,6 +9,8 @@ never relaxed.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 import numpy as np
 
 from libs.autodiscovery.models import Hypothesis, ValidationMetrics, ValidationVerdict
@@ -19,6 +21,7 @@ from libs.validation.baselines import baseline_scorecard
 from libs.validation.cpcv import CPCV
 from libs.validation.dsr import deflated_sharpe_ratio, sharpe_ratio
 from libs.validation.errors import ValidationError
+from libs.validation.fdr import benjamini_hochberg
 from libs.validation.pbo import PBOResult, probability_backtest_overfitting
 from libs.validation.reality_check import RealityCheckResult, whites_reality_check
 from libs.validation.revalidation import WalkForwardEngine, WalkForwardStatus
@@ -35,6 +38,11 @@ _CPCV_TEST_GROUPS = 2
 _CPCV_PURGE = 2
 _CPCV_EMBARGO = 0.01
 _CPCV_MIN_OBS = 60         # below this there is nothing to be combinatorial about
+
+# Benjamini-Hochberg level for the campaign screen. 0.10 = accept that up to ~10% of
+# promoted candidates are false discoveries, which is the standard screening trade-off
+# and far more powerful than family-wise control at this campaign size.
+_FDR_ALPHA = 0.10
 
 # A candidate must beat the trivial nulls, not merely be statistically distinguishable from
 # noise. DSR/PBO/RC all ask "is this real given the search?"; none asks "is it better than
@@ -97,6 +105,51 @@ def _beats_baselines(returns: np.ndarray, benchmark: np.ndarray | None) -> bool:
         return bool(baseline_scorecard(returns, buy_hold_returns=b).beats_all)
     except (ValidationError, ValueError):
         return True
+
+
+def campaign_fdr(dsr_values: Sequence[float], *,
+                 alpha: float = _FDR_ALPHA) -> tuple[list[bool], float]:
+    """Benjamini-Hochberg screen across one campaign. Returns (survives_mask, p_threshold).
+
+    Why this is NOT redundant with the per-candidate DSR gate it sits behind. DSR asks, of ONE
+    candidate, "is this Sharpe real given the trials that produced it", and passes at 0.95. Run
+    twenty candidates past a 0.95 bar and you expect one false survivor by construction -- the
+    per-candidate control says nothing about the error rate of the SET the desk promotes.
+    Benjamini-Hochberg controls exactly that: the expected proportion of false discoveries among
+    the candidates that survive.
+
+    Nor is it redundant with White's Reality Check, which tests whether the BEST performer beats
+    the benchmark -- one question about one candidate, not a rate across many. And it is a
+    different control from `forward_stats.holm_bar`: Holm bounds the probability of ANY false
+    positive (family-wise error), which across a campaign of this size is punishingly
+    conservative, where BH accepts a known false-discovery proportion in exchange for power.
+
+    p-values are 1 - DSR: the deflated Sharpe is already the probability the true Sharpe exceeds
+    zero given the search, so its complement is the p-value for "no edge" with the multiplicity
+    of the search already priced in.
+
+    An empty or single-candidate campaign passes through unchanged -- there is no multiplicity to
+    correct with one test, and rejecting a lone candidate for being alone would be nonsense.
+
+    OPERATIONAL CONSEQUENCE, measured not assumed. A uniformly strong campaign is NOT penalised
+    (20 candidates at DSR 0.96 all promote -- that is strong collective evidence). But junk
+    DILUTES: three candidates at 0.96 among seventeen at 0.50 promotes NONE, because a campaign
+    that is mostly noise does not support calling anything a discovery. Padding a cycle with weak
+    generators now costs you the good candidates in it. That is the correct incentive and it is
+    the sharpest edge of this gate, so callers demote rather than reject on an FDR failure --
+    nothing is lost, it simply does not reach the registry this cycle.
+    """
+    ps = [min(1.0, max(0.0, 1.0 - float(d))) for d in dsr_values]
+    if len(ps) < 2:
+        return [True] * len(ps), 1.0
+    try:
+        res = benjamini_hochberg(np.asarray(ps, dtype="float64"), alpha=alpha)
+    except (ValidationError, ValueError):
+        # fail-OPEN here on purpose: BH is an EXTRA screen layered on gates that already ran and
+        # already passed. A crash in the extra screen must not silently reject candidates that
+        # cleared every primary gate -- that would be a harsher desk by accident, not by decision.
+        return [True] * len(ps), 1.0
+    return [bool(x) for x in res.rejected], float(res.threshold)
 
 
 def campaign_pbo_rc(
