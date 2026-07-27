@@ -55,6 +55,7 @@ _STEPS = [
     ("stablecoin_supply", "scripts/collect_stablecoin_supply.py", 120),  # supply momentum clock
     ("breadth_expander", "scripts/breadth_expander.py", 420),  # external-LLM breadth scout (Stage-A only)
     ("signal_halflife",  "scripts/signal_halflife.py", 180),  # signal ageing/decay tracker
+    ("collector_monitor","scripts/collector_monitor.py", 90),  # G3 zero-trust sensor kill-switch
     ("cny_premium",       "scripts/collect_cny_premium.py", 60),  # USDT/CNY P2P premium (#76)
     ("axis_shadows",      "scripts/run_axis_shadows.py",     120),  # Stage-B forward eval
     ("reject_rescore",    "scripts/run_rejection_rescore.py", 300),  # feed near-miss reject scores

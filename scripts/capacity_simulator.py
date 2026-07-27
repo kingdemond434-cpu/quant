@@ -44,8 +44,10 @@ def filters(info: dict) -> dict[str, dict]:
     for s in info.get("symbols", []):
         f = {x["filterType"]: x for x in s.get("filters", [])}
         step = float(f.get("LOT_SIZE", {}).get("stepSize", 0) or 0)
-        mn = float(f.get("MIN_NOTIONAL", {}).get("minNotional", 0)
-                   or f.get("NOTIONAL", {}).get("minNotional", 0) or 0)
+        # G2 FIX: spot uses key "minNotional"; USD-M FUTURES uses "notional". Reading only
+        # "minNotional" returned 0.0 for every futures symbol -> the floor was UNDERSTATED.
+        mnf = f.get("MIN_NOTIONAL", {}) or f.get("NOTIONAL", {})
+        mn = float(mnf.get("minNotional") or mnf.get("notional") or 0)
         out[s["symbol"]] = {"step": step, "min_notional": mn}
     return out
 
@@ -112,12 +114,23 @@ def main() -> None:
 
     if COST.exists():
         cm = json.loads(COST.read_text("utf-8"))
-        sym0 = next((s for s in syms if s in cm.get("symbols", {})), None)
-        if sym0:
-            b = cm["symbols"][sym0].get("spot_buy", {})
-            pts = " ".join(f"${k}:{v['median_bps']:.2f}bps" for k, v in sorted(
-                b.items(), key=lambda kv: int(kv[0]))[:5])
-            print(f"\n  measured slippage ({sym0}): {pts}")
+        print("")
+        print("  === SLIPPAGE SANITY (a degenerate entry is worse than none) ===")
+        for sym0 in syms:
+            b = cm.get("symbols", {}).get(sym0, {}).get("spot_buy", {})
+            if not b:
+                continue
+            pts = sorted((int(k), v.get("median_bps", 0.0)) for k, v in b.items())
+            vals = [v for _, v in pts]
+            flat = len({round(v, 3) for v in vals}) == 1 and len(vals) > 2
+            worst = max(vals) if vals else 0.0
+            rt = worst * 4 / 100.0          # 4 legs: open spot, open perp, close spot, close perp
+            tag = ""
+            if flat:
+                tag = "  <-- DEGENERATE: flat across all buckets, not physically plausible"
+            elif rt > 0.7:
+                tag = f"  <-- UNPROFITABLE: {rt:.2f}% round-trip vs ~0.7%/mo harvest"
+            print(f"    {sym0:<14}" + " ".join(f"${k}:{v:.1f}" for k, v in pts[:5]) + tag)
 
     OUT.write_text(json.dumps({"updated": datetime.now(tz=UTC).isoformat(),
                                "tolerance_rounding": MAX_ROUNDING_ERR, "safety": SAFETY,
