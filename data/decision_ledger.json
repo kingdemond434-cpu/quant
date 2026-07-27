@@ -2690,6 +2690,21 @@
    "success_metric": "n/a -- all 3 mechanisms rejected at Stage-A",
    "reversal_condition": "a FORWARD-accumulated flow panel (daily polling, >=8 coins, cohort-perturbation stable, de-contaminated) shows a leading signal. Priors now weak -> not recommended ahead of the Aug 7 OI/LS verdict.",
    "flagged_gap": "NEW STANDARD CONTROL earned this session: COHORT-PERTURBATION STABILITY. A cross-sectional signal whose sign flips when the universe is slightly resampled is noise. Belongs in the screen toolkit beside the gapped-window, de-contamination and lookahead rails."
+  },
+  {
+   "id": "2026-07-27-longterm-trader-skill-zero-predictive-power",
+   "decision": "Principal objected -- correctly -- that the trader-skill tests were unfair: ONE-WEEK holding window (noise vs a long-horizon trader's signal), no track-record filter, and ranking on RAW PnL (rewards one lucky levered bet). Conceded all three and built the strongest version: 229 Hyperliquid traders with LONG verified on-chain records (median 621d, max 1195d = 3.3yr), each split on their OWN equity curve (formation = first 60%, holding = last 40% -> long horizons both sides, natural gap, no lookahead), using pnlHistory normalised by contemporaneous accountValue so deposits/withdrawals are not mistaken for returns, returns clipped to kill single-step artifacts. Ranked by RISK-ADJUSTED criteria, not PnL. RESULT: formation Sharpe -> holding return rho -0.019 (t -0.28) = ZERO predictive power. Consistency t +0.45, total return t +0.73 -- all zero. Cohort holding mean -3.3%, median -11.9%, only 92/229 positive. PARTIAL EXCEPTION: formation DRAWDOWN CONTROL -> holding return rho +0.135 (t +2.05), top-quartile +2.3% vs bottom -18.0% -- does NOT clear the 4-test multiplicity bar (~2.5), so logged not wired, but economically consistent with the classic result that RISK characteristics persist while RETURNS do not. Also answered the 'dig deeper into Chinese/niche verified traders' push: HL on-chain data is the STRONGEST evidence class available (cryptographically verifiable, includes losers, no self-reporting); curated/self-reported track records from any region are strictly WEAKER evidence, and enlarging the candidate pool AMPLIFIES the winner's curse rather than solving it. The failure is not 'could not find skilled traders' -- 229 multi-year profitable traders were found -- it is that WITHIN that population past performance does not predict future performance.",
+   "hypothesis": "traders with long verified track records and strong risk-adjusted performance continue to outperform -- i.e. genuine durable skill is identifiable ex ante",
+   "expected_benefit": "would have made trader-selection alpha real and scalable",
+   "expected_cost": "one long-history screen; reusable own-curve persistence harness retained",
+   "confidence": 0.9,
+   "assumptions": [
+    "HL portfolio pnlHistory is accurate",
+    "60/40 own-curve split is a fair test"
+   ],
+   "success_metric": "n/a -- rejected; zero predictive power on the primary criterion",
+   "reversal_condition": "drawdown-control persistence (t +2.05) replicates on an INDEPENDENT cohort and clears multiplicity -> would support RISK-based (not return-based) manager selection",
+   "flagged_gap": "POSITIVE LEAD worth one cheap follow-up someday: risk/drawdown characteristics persist where returns do not. If ever revisited, select managers on RISK DISCIPLINE, never on past returns."
   }
  ]
 }
