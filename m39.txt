@@ -1,0 +1,42 @@
+META-ARCHITECT + RESEARCH SIMPLIFIER -- and the simplifier's first finding was MY OWN BLOAT
+
+PRINCIPAL'S REFRAME ADOPTED: this is NOT "GPT suggests things". It is a MODEL-AGNOSTIC ARCHITECTURE
+REVIEW BOARD. It does not care whether a proposal comes from GPT, Claude, Grok or Nemotron; it
+cares whether the proposal names a measurable bottleneck and can be KILLED later.
+
+CHARTER (7 mandatory fields, missing any = automatic rejection):
+  PROBLEM | EVIDENCE | BENEFIT | COST | DEPENDENCIES | SUCCESS_METRIC | KILL_CONDITION
+BINDING RULE: every new component must EITHER replace an existing component OR improve a MEASURABLE
+bottleneck. A proposal that cannot name the bottleneck removed, the metric moved, and how you would
+know it FAILED, stays in the backlog. The prompt explicitly instructs "prefer DELETE/MERGE over ADD"
+because architectural bloat is the failure mode this role exists to prevent.
+It is also fed MEASURED DESK STATE (12 facts with numbers), because today proved a suggestor
+WITHOUT state re-proposes what already exists: 3 of 4 hypotheses in the principal's first slate
+were already refuted, and several items in the 15-25 list had been built an hour earlier.
+
+RESEARCH SIMPLIFIER (mechanical, needs no funding, ran immediately) -- the role the desk did not
+have. A desk that only ADDS capability loses to entropy.
+FIRST RUN, AND IT INDICTED ME: 225 scripts, 179 UNWIRED to any cadence, 26 writing artifacts
+NOTHING reads. Most of those orphans were created TODAY, by me. ~20 components added in one day
+with nothing watching for accumulation is textbook bloat, produced by the same process that
+produced the useful parts.
+
+ACTED ON IT RATHER THAN JUST REPORTING IT -- triage, not a longer list:
+  WIRED (9 recurring capabilities that were dead code unwired): claim_verifier, claim_escalate,
+    data_sanity, hurdle_rate, negative_knowledge, research_autopsy, research_erv, mechanism_board,
+    screen_auditor. These produce judgements that must be READ every cycle to have any value.
+  LEFT UNWIRED DELIBERATELY (one-off experiments): cme_basis, collateral_spread, iros_batch, hl_*,
+    build_dev_factor, batch_onchain, moat_audit. These answered a question ONCE. Wiring them would
+    be the opposite error -- paying daily for an answer already obtained.
+RESULT: cadence-attached 46 -> 55, orphan outputs 26 -> 24, and the remaining 24 are genuinely
+one-off. The distinction between "unwired because dead" and "unwired because finished" is the
+whole point; a simplifier that deleted both would be as harmful as one that wired both.
+
+SUGGESTION YIELD LEDGER (data/suggestion_ledger.jsonl): proposals tracked proposed -> accepted ->
+built -> changed-a-decision -> improved-live. Per the principal: a seat generating 200 clever
+proposals and ONE live improvement ranks BELOW one generating 20 of which five become permanent
+infrastructure. No seat by reputation, including the meta-architect itself.
+
+STATUS: simplifier LIVE and already useful. Architect written but UNTESTED (OpenRouter 402) -- the
+FOURTH untested LLM role now queued behind hypothesis_generator, llm_code_auditor and
+llm_blind_researcher. All four need one verification run before anything relies on them.

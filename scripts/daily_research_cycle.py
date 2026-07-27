@@ -56,6 +56,15 @@ _STEPS = [
     ("breadth_expander", "scripts/breadth_expander.py", 420),  # external-LLM breadth scout (Stage-A only)
     ("signal_halflife",  "scripts/signal_halflife.py", 180),  # signal ageing/decay tracker
     ("collector_monitor","scripts/collector_monitor.py", 90),  # G3 zero-trust sensor kill-switch
+    ("claim_verifier",    "scripts/claim_verifier.py", 90),  # verify every published claim vs source
+    ("claim_escalate",    "scripts/claim_escalate.py", 60),  # escalate false claims to pager + Gate-0
+    ("data_sanity",       "scripts/data_sanity.py", 120),  # implausibility scan (2 artifacts today)
+    ("hurdle_rate",       "scripts/hurdle_rate.py", 90),  # is the desk beating T-bills/BTC?
+    ("negative_knowledge", "scripts/negative_knowledge.py", 60),  # revival triggers on dead ideas
+    ("research_autopsy",  "scripts/research_autopsy.py", 60),  # failure-mode taxonomy + lessons
+    ("research_erv",      "scripts/research_erv.py", 60),  # rank hypotheses before spending slots
+    ("mechanism_board",   "scripts/mechanism_board.py", 60),  # mechanism kills + portfolio + gate
+    ("screen_auditor",    "scripts/screen_auditor.py", 60),  # missing-rail audit on screens
     ("cny_premium",       "scripts/collect_cny_premium.py", 60),  # USDT/CNY P2P premium (#76)
     ("axis_shadows",      "scripts/run_axis_shadows.py",     120),  # Stage-B forward eval
     ("reject_rescore",    "scripts/run_rejection_rescore.py", 300),  # feed near-miss reject scores
