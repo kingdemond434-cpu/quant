@@ -1,0 +1,42 @@
+cost model over 30 symbols REVERSES my universe advice + collateral-spread hypothesis tested (dead)
+
+1) COST MODEL RUN (the gap that needed no code, only running it). 30 symbols measured:
+     ETHUSDT   0.053 bps      XRPUSDT   0.906      LINKUSDT  1.176     SOLUSDT  1.316
+     MANAUSDT  9.544          OPUSDT   10.650      PEOPLE   12.773     EGLDUSDT 19.727
+     median pair-open @ $500/leg: 2.859 bps
+   ETH costs 0.053bps, EGLD costs 19.7bps -- a 372x spread. The LIVE universe (COOKIE, 1000CAT,
+   MOVE, TST) does not appear in the model at all: too illiquid to measure.
+
+   I REVERSE MY OWN CORRECTION. Earlier today I told the principal "keep the micro-caps, that is
+   where the funding is" and called my original majors advice wrong. The data says otherwise:
+   micro-cap funding is perhaps 2-5x richer than majors, but micro-cap COSTS are 20-400x higher.
+   No funding differential compensates for a 372x cost ratio. The original advice was right and I
+   should not have reversed it on reasoning alone -- this is exactly what measurement is for.
+   This also explains the 7.75x cost/funding ratio in the hurdle report: the book is trading the
+   most expensive names on the exchange.
+
+2) NEW HYPOTHESIS TESTED -- COLLATERAL-BASIS SPREAD (scripts/collateral_spread.py)
+   Chosen because every spread that failed today failed on MEASUREMENT, not mechanism (mSOL 539bps
+   = non-synchronous CoinGecko legs; CME 92bps = 23/5 vs 24/7, 16:00CT vs 00:00UTC, rolling
+   front-month). This construction makes that impossible: BTCUSDT-perp vs BTCUSDC-perp trade on
+   the SAME venue, SAME underlying, SAME funding clock, SAME timestamps. No roll, no timezone, no
+   venue gap. Mechanism is real: USDC cannot be posted as USDT margin without converting, so the
+   cost of leverage can differ and the difference persists -- kimchi's species of constraint,
+   miniature, inside one venue.
+
+   RESULT 0/3 harvestable:
+     BTCUSDT/BTCUSDC  mean -0.032 bps/8h  (-0.35%/yr)  sd 0.369  0% of periods above cost
+     ETHUSDT/ETHUSDC  mean +0.004 bps/8h  (+0.05%/yr)  sd 0.413  0%
+     SOLUSDT/SOLUSDC  mean -0.160 bps/8h  (-1.75%/yr)  sd 0.514  0%
+
+   FRAMING ERROR IN MY OWN TEST, disclosed: I gated on "spread exceeds cost PER PERIOD", which is
+   wrong for a funding differential -- that is harvested by HOLDING, paying entry cost once and
+   collecting every 8h. Re-framed correctly, SOL carries a PERSISTENT 1.75%/yr differential (USDC
+   funding runs above USDT).
+   IT STILL DIES: 1.75%/yr against a 3.81%/yr risk-free rate, while taking delta-neutral pair risk
+   and margin on both legs. Worse than T-bills. Killed cleanly by the hurdle-rate tool built an
+   hour earlier -- the first time the hurdle gate has retired a candidate on its own.
+
+   VALUE OF THE NEGATIVE: this is a TRUSTWORTHY null. No synchronisation artifact was possible by
+   construction, so "no spread" means no spread -- unlike CME/mSOL where the null is unknowable
+   until the measurement is rebuilt. Collateral segmentation inside one venue is now closed.
