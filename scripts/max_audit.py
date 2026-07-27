@@ -305,6 +305,43 @@ def _import_closure(entry: Path, seen: set[Path] | None = None) -> set[Path]:
     return seen
 
 
+def _worker_pids(rel: str) -> list[int]:
+    """PIDs actually running an entry script, discovered WITHOUT asking systemd.
+
+    Independence is the point: systemd only knows about the children it started, so an orphan
+    that outlived a unit restart is invisible in `systemctl show`. pgrep sees the process table.
+
+    ARGV-EXACT, never a substring (caught on this check's first live run): `pgrep -f` matches the
+    whole command line, and every brain/subagent process carries the full doctrine via
+    `--append-system-prompt` -- which quotes `scripts/run_cashcarry_executor.py` and
+    `scripts/run_deadman_switch.py` in the risk-path duty. A bare `pgrep -f <rel>` therefore
+    returned claude processes as executor and dead-man workers, which would have invented
+    ownership defects and measured a brain's start time as a daemon's uptime. A monitor that
+    reports the wrong process is worse than no monitor. So: argv[0] must be a python, and the
+    script must be an argv element in its own right, not text buried inside one.
+    """
+    import subprocess
+    try:
+        out = subprocess.run(["pgrep", "-f", rel], capture_output=True, text=True,
+                             timeout=10, check=False).stdout.split()
+    except (OSError, subprocess.SubprocessError):
+        return []
+    pids = []
+    for p in out:
+        if not p.isdigit():
+            continue
+        try:
+            argv = Path(f"/proc/{p}/cmdline").read_bytes().decode("utf-8", "replace").split("\0")
+        except OSError:
+            continue                                  # exited between pgrep and here
+        argv = [a for a in argv if a]
+        if not argv or "python" not in Path(argv[0]).name:
+            continue
+        if any(a == rel or a.endswith("/" + rel) for a in argv[1:]):
+            pids.append(int(p))
+    return pids
+
+
 def check_stale_daemons(defects) -> None:
     """A daemon running code older than its own source is a fix that DID NOT SHIP.
 
@@ -316,30 +353,60 @@ def check_stale_daemons(defects) -> None:
 
     Compared against the IMPORT CLOSURE, not any-file-newer: a repo-wide mtime test fires on
     every unrelated commit, and a check that always fires is a check nobody reads.
+
+    OWNERSHIP (2026-07-26, second instance the same day): the first version asked systemd for
+    MainPID and skipped on `0`. But `0` is exactly what systemd reports while a unit sits in
+    `activating (auto-restart)` -- which is the state an ORPHANED worker causes, because the
+    orphan holds the singleton lock and every supervised spawn exits on it. So the detector was
+    blind to the single most common way code goes inert: work being done by a process systemd
+    does NOT own, surviving every `systemctl restart`. Verified live: quant-cashcarry MainPID=0
+    while orphan pid 817906 (up 8.0h, pre-fix code) held the book and the unit respawned ~190
+    processes/hour against it. The worker is now discovered INDEPENDENTLY of systemd, and the
+    ownership mismatch is itself a defect -- an unsupervised worker means restarts do not ship
+    fixes and crash-recovery is an illusion.
     """
     import subprocess
     for svc, rel in _DAEMONS.items():
         entry = ROOT / rel
         if not entry.exists():
             continue
-        try:
-            pid = subprocess.run(["systemctl", "show", "-p", "MainPID", "--value", svc],
-                                 capture_output=True, text=True, timeout=10).stdout.strip()
-            if not pid or pid == "0":
-                continue                                  # not running -- check_organs owns that
-            started = Path(f"/proc/{pid}").stat().st_mtime
-        except (OSError, ValueError, subprocess.SubprocessError):
-            continue
-        stale = sorted(p for p in _import_closure(entry) if p.stat().st_mtime > started)
-        if stale:
-            age = (NOW - started) / 3600.0
-            names = ", ".join(p.relative_to(ROOT).as_posix() for p in stale[:4])
-            defects.append((f"daemon-stale-code-{svc}",
-                            f"{svc} (pid {pid}, up {age:.1f}h) imports {len(stale)} file(s) "
-                            f"MODIFIED SINCE IT STARTED: {names} -- python loaded the old module "
-                            "at start, so every fix in those files is INERT in the running "
-                            "process. Restart the unit and verify the new behaviour appears in "
-                            "its output; a committed fix is not a shipped fix."))
+        sd_pid, state = "", ""
+        with contextlib.suppress(OSError, subprocess.SubprocessError):
+            sd_pid = subprocess.run(["systemctl", "show", "-p", "MainPID", "--value", svc],
+                                    capture_output=True, text=True, timeout=10).stdout.strip()
+            state = subprocess.run(["systemctl", "show", "-p", "ActiveState", "--value", svc],
+                                   capture_output=True, text=True, timeout=10).stdout.strip()
+        workers = _worker_pids(rel)
+        if not workers:
+            continue                                  # not running -- check_organs owns that
+        # OWNERSHIP first: a fix cannot ship into a process the supervisor does not control.
+        if sd_pid not in {str(p) for p in workers}:
+            oldest = min(workers, key=lambda p: Path(f"/proc/{p}").stat().st_mtime)
+            age = (NOW - Path(f"/proc/{oldest}").stat().st_mtime) / 3600.0
+            storm = (" and the unit is stuck in auto-restart, respawning against it"
+                     if state == "activating" else "")
+            defects.append((f"daemon-unsupervised-{svc}",
+                            f"{svc} work is being done by pid {oldest} (up {age:.1f}h) which "
+                            f"systemd does NOT own (MainPID={sd_pid or 'unknown'}, "
+                            f"state={state or 'unknown'}){storm}. `systemctl restart` cannot "
+                            "replace this process, so fixes do not ship and crash-recovery is "
+                            "an illusion. Stop the unit, kill the orphan, start the unit, and "
+                            "verify MainPID matches the worker."))
+        for pid in sorted(workers, key=lambda p: Path(f"/proc/{p}").stat().st_mtime)[:1]:
+            try:
+                started = Path(f"/proc/{pid}").stat().st_mtime
+            except OSError:
+                continue
+            stale = sorted(p for p in _import_closure(entry) if p.stat().st_mtime > started)
+            if stale:
+                age = (NOW - started) / 3600.0
+                names = ", ".join(p.relative_to(ROOT).as_posix() for p in stale[:4])
+                defects.append((f"daemon-stale-code-{svc}",
+                                f"{svc} (pid {pid}, up {age:.1f}h) imports {len(stale)} file(s) "
+                                f"MODIFIED SINCE IT STARTED: {names} -- python loaded the old "
+                                "module at start, so every fix in those files is INERT in the "
+                                "running process. Restart the unit and verify the new behaviour "
+                                "appears in its output; a committed fix is not a shipped fix."))
 
 
 def check_panel(defects) -> None:

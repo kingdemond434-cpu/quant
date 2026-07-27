@@ -1,17 +1,17 @@
 # Desk digest (auto-generated daily -- do not hand-edit)
-_updated 2026-07-26T08:06Z · companion to [[institutional_knowledge]]_
+_updated 2026-07-27T02:05Z · companion to [[institutional_knowledge]]_
 
 ## Book
-- Molded net: **$-379.86** | funding **$97.64** | run-rate APR 31.8% | day 24.12
+- Molded net: **$-403.79** | funding **$None** | run-rate APR 28.7% | day 24.87
 - Root cause: **unknown_novel** (pause_and_page) | tracking error $-511.5
 
 ## Validation clocks
-- **carry (DEPLOYED)**: 30/90d | bt 3.19 fwd 12.13
-- **perp L/S**: 23/90d | bt 0.89 fwd 1.42
-- **trend**: 23/90d | bt 1.42 fwd -1.05
-- **trend regime-gated**: 18/90d | bt 1.35 fwd 0.0
-- **OI/LS data**: 28/40d
-- **stablecoin data**: 24/40d
+- **carry (DEPLOYED)**: 31/90d | bt 3.46 fwd 11.73
+- **perp L/S**: 24/90d | bt 0.57 fwd 0.96
+- **trend**: 24/90d | bt 1.35 fwd 0.49
+- **trend regime-gated**: 19/90d | bt 1.32 fwd 0.0
+- **OI/LS data**: 29/40d
+- **stablecoin data**: 25/40d
 
 ## Open decisions (ledger)
 - `2026-07-04-cashcarry-top10-4500` -- review 2026-08-04: funding/day rises ~50% without new drift losses by 2026-08-04
@@ -200,6 +200,9 @@ _updated 2026-07-26T08:06Z · companion to [[institutional_knowledge]]_
 - `2026-07-24-fable5-and-max-effort-everywhere` -- review ?: 48h of cycles/digs completing (no 163-byte stubs) at fable-5/max; quota_verdict stays clea
 - `2026-07-24-cny-premium-axis-unparked` -- review ?: premium 30d std lands nearer KRW-class than TRY-class AND the forward clock clears the Hol
 - `2026-07-24-vendor-replacement-fenced` -- review ?: vendor-replacement defect count reaches 0 and stays there as new vendors get entries with 
+- `2026-07-26-carry-funding-silent-zero` -- review ?: web/cashcarry_live.json carries funding_measured=true with a numeric harvest once the venu
+- `2026-07-26-s37-carryover-disposition` -- review ?: stub-deaths falls after the next quota window rolls with the concurrency gate live; if it 
+- `2026-07-26-carry-orphan-dual-supervision` -- review ?: Sustained: quant-cashcarry NRestarts stops climbing; heartbeat PID equals systemd MainPID 
 
 ## Executive KPI snapshot
 - CRO: {"hypotheses_tested_lifetime": 20, "validated_survivors": 1, "survivor_note": "cash-carry (fwd 8/90); trend candidate gauntlet-passed (fwd 1/90); all else graveyarded", "survival_r

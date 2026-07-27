@@ -1099,10 +1099,26 @@ def main() -> None:
     if not (spot.has_keys() and fut.has_keys()):
         raise SystemExit("need BOTH spot-testnet and futures-testnet keys")
 
-    # single-instance lock: a fresh heartbeat means another live executor runs (no double book)
-    if not dry and _HB.exists() and (time.time() - _HB.stat().st_mtime) < _HB_TICK * 2.5:
-        print("another cash-carry executor is already running (fresh heartbeat) -- exiting")
-        return
+    # single-instance lock: a fresh heartbeat means another live executor runs (no double book).
+    # STAND BY rather than exit. Exiting here returned 0, and under `Restart=always/RestartSec=15`
+    # systemd respawned this process every ~19s for as long as the foreign owner lived -- the
+    # IDENTICAL storm the kill path hit on 2026-07-13 (14,225 restarts over 3 days) and fixed by
+    # idling instead of exiting. That fix was applied to the kill exit and left standing on this
+    # one; on 2026-07-26 an orphaned pre-fix executor held the heartbeat and this path storm-
+    # spawned ~190 processes/hour while the fixed code never got to run. Standing by also means
+    # the book is picked up automatically the moment the foreign owner dies, instead of on the
+    # next storm tick. `_foreign_executor_alive` is the SAME predicate the in-loop check uses
+    # (PID-aware, reclaims a legacy/unowned heartbeat), so startup and runtime can no longer
+    # disagree about who owns the book.
+    standby_noted = False
+    while not dry and _foreign_executor_alive():
+        if not standby_noted:                     # log ONCE: a per-tick log is its own noise storm
+            with contextlib.suppress(OSError):
+                print(f"another cash-carry executor owns the book "
+                      f"({_HB.read_text('utf-8').strip()}) -- standing by, not exiting "
+                      f"(single-book invariant; will take over when it stops)")
+            standby_noted = True
+        time.sleep(_HB_TICK)
 
     forever = args.minutes <= 0
     deadline = time.monotonic() + args.minutes * 60.0

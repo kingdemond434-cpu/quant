@@ -44,11 +44,16 @@ def stage_a_screen(signal: np.ndarray, target_ret: np.ndarray, *, name: str,
                                 shift-sensitivity check before trusting anything that trips this.
       TIMING-ARTIFACT        -- fails de-contam: |same-period corr|>contam_max OR residual IC
                                 collapses below half the raw IC (the coinbase/turkey failure mode)
-      SCREEN-INTERESTING     -- |IC|>=ic_min, best timing Sharpe>=sharpe_min, AND passes de-contam
+      SCREEN-INTERESTING     -- |IC|>=ic_min, best timing Sharpe>=sharpe_min, passes de-contam,
+                                AND the sample was POWERED enough for clearing those floors to
+                                mean anything. This is the ONLY verdict that starts a forward
+                                clock, so the power condition is load-bearing, not cosmetic.
       SCREEN-WEAK            -- raw signal too weak to bother, AND the test was POWERED enough to
                                 say so. Only this verdict is graveyard-grade negative knowledge.
-      SCREEN-UNDERPOWERED    -- weak, but |IC| sat below the minimum detectable effect for the
-                                effective sample. "Could not tell" -- never record it as "refuted".
+      SCREEN-UNDERPOWERED    -- the effective sample could not resolve an effect at ic_min, so the
+                                reading is uninformative in EITHER direction -- whether |IC| landed
+                                under the floor or over it. "Could not tell": never record it as
+                                "refuted", and never start a clock on it.
 
     horizon_days: the period of target_ret in days. Sharpe annualises by sqrt(365/horizon_days);
       leaving this at 1 while passing 20-day returns overstates Sharpe 4.47x (pure noise then
@@ -120,6 +125,23 @@ def stage_a_screen(signal: np.ndarray, target_ret: np.ndarray, *, name: str,
         verdict = "SCREEN-WEAK" if powered else "SCREEN-UNDERPOWERED"
     elif decontam_fail:
         verdict = "TIMING-ARTIFACT"                    # angle-20 gate -- coinbase/turkey class
+    elif not powered:
+        # POWER CUTS BOTH WAYS. 'powered' used to gate only the negative branch, so a cell that
+        # cleared ic_min/sharpe_min on a sample the harness had ALREADY declared blind was still
+        # labelled SCREEN-INTERESTING -- announcing a find through the same instrument that just
+        # reported it could not see. Origin cell:
+        #   try_premium::T2_usdt_try_premium_vs_fxlake_eurcross::h20d
+        #   n=77 ic=-0.0543 n_eff=3.9 min_detectable_ic=0.9989 powered=false sharpe_reversal=0.87
+        # -- |IC| ~18x BELOW the harness's own detection floor, read as INTERESTING. At that n_eff
+        # ~17% of pure-noise draws clear both floors, so the label was a coin flip with a name.
+        # It matters because SCREEN-INTERESTING is the sole trigger for a forward clock (below),
+        # and clocks are capped at MAX_FORWARD_SLOTS=12 and Holm-corrected: a slot spent on noise
+        # BOTH burns a scarce slot AND raises the confirmation bar for every genuine candidate.
+        # Below the detection floor the honest verdict is the one the negative branch already
+        # gets -- could not tell -- NOT a kill (nothing was refuted) and NOT a find. Ordered after
+        # decontam_fail so the angle-20 artifact gate keeps its precedence; neither branch can
+        # reach SCREEN-INTERESTING, so this can only ever tighten the screen.
+        verdict = "SCREEN-UNDERPOWERED"
     else:
         verdict = "SCREEN-INTERESTING"
 

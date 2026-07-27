@@ -487,3 +487,29 @@ hypotheses and EV-score them; only the top few enter research.
   green-lighting a run the balance cannot cover. Now self-calibrating from the usage counter's
   advance. Any guard carrying a hardcoded cost/latency/size constant should be asked, once a
   quarter, whether reality still matches it.
+- **A daemon with two supervisors has no supervisor (2026-07-26).** `watchdog.py` (cron, every 3min)
+  Popen-spawned the cash-carry executor *and* `quant-cashcarry.service` supervised it — laptop-era
+  code that survived the 07-12 systemd migration. The watchdog's copy is owned by cron, so it
+  outlives `systemctl restart`, holds the single-instance lock, and every systemd spawn exits 0 on
+  that lock: `Restart=always` then respawned ~190x/hour (NRestarts=5354). Two supervisors do not
+  give redundancy, they give an orphan plus a storm. Rule: exactly one supervisor per singleton;
+  when a unit exists, every other starter defers to it and keeps a backstop only for the case where
+  systemd has nothing running at all.
+- **An orphan pins the process to the code it loaded at spawn (2026-07-26, third instance).** The
+  orphan started 12:48 and the funding-measurement fix was written 20:06, so the fix was INERT in
+  the only process that owned the book, which kept publishing a fabricated `inf%` BLEED from an
+  HTTP 502 for hours. This is IK:141 (2026-07-10, churn fix inert 2 days) recurring, and the storm
+  is IK:290 (2026-07-13, 14,225 restarts) recurring — the 07-13 fix was applied to the KILL exit and
+  left standing on the SINGLETON exit 380 lines away in the same file. **One instance is never one
+  instance: when you fix an exit-under-supervision, grep every other exit in that file.**
+- **A lesson that is only written down will be re-learned; only a check is a fix (2026-07-26).**
+  Both classes above were already in this file and both recurred anyway. What broke the loop was
+  making them mechanical. Note the trap in doing so: `check_stale_daemons` asked systemd for
+  MainPID and skipped on `0` — but `0` is precisely what systemd reports while a unit sits in
+  `activating (auto-restart)`, which is the state an orphan *causes*. The inert-code detector was
+  blind to the commonest way code goes inert. **A monitor that sources its ground truth from the
+  component that is failing cannot see the failure**; it now discovers workers independently via
+  the process table. Corollary found the same hour: `pgrep -f <script>` matched every claude
+  process, because the injected doctrine quotes `run_cashcarry_executor.py` and
+  `run_deadman_switch.py` in its risk-path duty — match argv elements, never a command-line
+  substring, or the monitor reports the wrong process.
