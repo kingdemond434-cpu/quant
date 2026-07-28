@@ -158,6 +158,61 @@ ITEM 1 RESULTS (all from live probes this run):
   administrator families disseminated free through the exchange. NOT new signal axes (redundant
   SOURCES for prices the desk can already compute) — no Stage-A owed on those; the one genuine
   axis-candidate is the PBT basis/regulated-funding series, handled next.
+**[SESSION D 2026-07-28: session C DIED here — the PBT axis-candidate was NEVER handled (zero
+mentions in watchlist/universe map as of session D start). Session C item 2 (Quantopian) and
+item 3 (bithumb ToS) also not started. Taken over by session D below.]**
+
+### 2026-07-28 session D (EN frontier miner) — IN PROGRESS (write-first note; updated as items resolve)
+PRIOR STATE (resume rule): mine gate BACKLOG-CLEAR (all 5 carded finds disposed). Backlog
+verify-queue surfaces Kaiko + NAVER, but BOTH were verified 2026-07-26 by session C (NAVER: §33
+deferred(2026-08-09), sole blocker = human key step — re-probing today is duplication, not
+verification; Kaiko: stays needs-monitoring on raw ticks only, fixings route found). NOT re-run.
+Session C died mid-run with its PBT deliverable unwritten — resume mandate says finish the dead
+run's item before opening new ground.
+ITEMS THIS RUN (bounded per completion contract):
+1. **FINISH SESSION C's UNFINISHED ITEM: Cboe PBT (Continuous Bitcoin futures) basis axis.**
+   Graveyard/novelty-check the regulated-basis family first; card into data_axis_watchlist +
+   universe map; pull the free daily settlement history (route session C verified:
+   `cboe.com/us/futures/market_statistics/settlement/csv/?dt=`); declare timestamp alignment;
+   run `libs.research.axis_screen` Stage-A in this run (expect UNDERPOWERED at n≈140 — an honest
+   verdict, logged, with forward accrual). Also write the T1a line-589 upgrade session C promised
+   if it is unwritten.
+2. **QUANTOPIAN ARCHIVE DIG (era-archaeology, dark-forest #1; the carried diaspora target):**
+   find the durable public archive route (s13-gated), map the ground, mine ≥2 strategy threads
+   to reply-depth. Standing diaspora question: where did the named high-value authors go.
+3. IF BUDGET REMAINS: Wilmott first touch (never visited per coverage row).
+STATUS: **items 1 and 2 CLOSED to depth; item 3 not started (named, not buried). Full results below.**
+
+#### ITEM 1 — CLOSED. Session C's dead PBT deliverable finished, and the axis is BIGGER than C knew. [§33: screened -> data/cfe_regulated_basis_screen.json]
+- **The axis is a COMPLEX, not one contract.** Session C saw PBT only. The same free CSV
+  (`cboe.com/us/futures/market_statistics/settlement/csv/?dt=`) carries the full CFE crypto suite:
+  **FBT** monthly BTC futures (4-point term structure), **PBT** Continuous BTC (funding-style,
+  2035 expiry — a US-REGULATED PERP ANALOG), **XBTF** mini, **FET/PET** the Ether pair. Launches
+  measured by probe: FBT+FET 2025-09-29, XBTF 2025-11-26, PBT+PET 2025-12-15.
+- **History pulled in full:** 2,005 rows / 207 trading days / all expiries →
+  `data/cfe_crypto_settlements.jsonl`; derived spot-referenced basis series (DST-aware 16:00-ET
+  alignment, declared) → `data/cfe_regulated_basis_daily.jsonl`.
+- **Novelty gate run BEFORE compute:** graveyard kills (`funding_momentum`, cross-exchange funding
+  dispersion) are offshore-perp constructions; live carry book = offshore funding. Regulated-venue
+  participant set is access-segmented → distinct mechanism. PASS, nearest priors logged.
+- **Stage-A (audited harness, 4 pre-declared cells, levels only, ALL logged):** PBT h1d
+  UNDERPOWERED (n=204, IC 0.007 vs min-detectable 0.137); PBT h5d INSUFFICIENT (n=24); FBT h1d
+  UNDERPOWERED (n=281, IC 0.016 vs 0.117); FBT h5d UNDERPOWERED (n=39). **Honest verdict:
+  uninformative BOTH directions — no edge, no negative; the complex is 10 months old. Accrues
+  free daily; re-screen dated on card 22 (2027).** Informative descriptives: FBT carry mean
+  +6.73% ann (range −5.67%→+15.79%); PBT premium std 0.09% — the regulated funding mechanism
+  binds tight to spot. Hazard logged: PBT prem same-period corr 0.434 (spot in denominator) —
+  future screens use the PBT-minus-FBT or regulated-minus-offshore SPREAD.
+- **TRAP CAUGHT (verify-don't-trust paying out):** `cdn.cboe.com/api/global/delayed_quotes/charts/
+  historical/{SYM}.json` returns 200 with plausible daily OHLCV for "FBT"/"PBT"/"XBTF" — but it is
+  the EQUITY namespace (First Trust Biotech ETF, Permian Basin Royalty Trust, delisted VanEck ETF).
+  Caught only by cross-checking one known settlement value (64,212 vs 246.74). Logged in universe
+  map as trap; generalization → operator library.
+- Routed: watchlist **card 22** (grade verified-clean, §33 screened) + universe map source 60
+  (`cboe_cfe_crypto_settlements`) + 3 research-memory rows (1 dataset validated, 2 hypothesis
+  screening incl. the uninformative verdicts) + **T1a line-589 upgraded** (Kaiko index values:
+  NO → PARTIAL-daily via PBT settle as a proxy with measured 0.09% error bound — session C's
+  promised upgrade, now actually written).
 
 ## SESSION NOTES — CN frontier miner
 
