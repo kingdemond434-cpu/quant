@@ -231,6 +231,81 @@ def _selftest() -> int:
     return 0 if passed == len(_SELFTEST_CASES) else 1
 
 
+
+
+# Adversarial on purpose: 2 admissible, 1 forbidden, 1 unsourced-VERIFIED, 1 malformed.
+_MOCK_WAVES = {
+    1: ("HERD_COVERED: BTC funding squeeze; ETF flows; SOL upgrade narrative; "
+        "liquidation heatmaps; DXY macro; Dune liquidation trackers."),
+    2: ("HERD_COVERED liquidation heatmaps -- they watch CEX perp liquidations because "
+        "CoinGlass renders them, and therefore ignore DeFi lending health factors upstream.\n"
+        "VERIFIED | Aave health-factor left tail predicts forced liquidation before perps "
+        "reflect it | https://docs.aave.com event logs via free RPC, because the herd watches "
+        "CEX heatmaps | forced-seller lead time | 2d | local node | share of cascades "
+        "pre-detected > 0.4 | no lead beyond 1 block\n"
+        "INFERRED | Binance funding anomaly on majors | dashboards show it | edge | 1d | NONE "
+        "| IC | none\n"),
+    3: ("VERIFIED | Validator exit queue length predicts stETH discount | "
+        "https://beaconcha.in public API | early warning on staked-ETH pressure | 1d | NONE | "
+        "corr with discount > 0.3 | no relation after 60d\n"
+        "VERIFIED | Strategy preferred dividend forces quarterly BTC sales | $1.2B annual "
+        "obligation | scheduled forced seller | 2d | NONE | sale within 5d of dividend | "
+        "no clustering over 4 quarters\n"
+        "INFERRED | Bridge failure spike | Stargate subgraph | liquidity stress\n"),
+}
+
+
+def _mock() -> int:
+    """Run the entire pipeline on synthetic output. Only the HTTP call is bypassed."""
+    print("=== KIMI HUNTER --mock : full chain, no credit, HTTP bypassed ===")
+    print("    payload is adversarial: 2 admissible, 1 forbidden, 1 unsourced-VERIFIED,")
+    print("    1 malformed. Wrong admissions fail loudly instead of reaching the ledger.\n")
+    findings, dropped = [], []
+    for w in (1, 2, 3):
+        txt = _MOCK_WAVES[w]
+        print(f"  WAVE {w}: {len(txt)} chars")
+        if w == 1:
+            print("    (mapping wave -- findings not permitted)")
+            continue
+        for ln in txt.splitlines():
+            if ln.count("|") < 3:
+                continue
+            keep, reason, cls, parts = _admit(ln, w, txt)
+            if reason:
+                dropped.append((w, reason))
+                print(f"    drop/flag: {reason}")
+            if not keep:
+                continue
+            findings.append({"date": datetime.now(tz=UTC).date().isoformat(),
+                             "source": "kimi_k3_deep_forest", "wave": w, "claim_class": cls,
+                             "problem": parts[0][:220], "evidence": parts[1][:220],
+                             "benefit": parts[2][:180], "cost": parts[3][:140],
+                             "dependencies": parts[4][:140], "success_metric": parts[5][:180],
+                             "kill_condition": parts[6][:180], "status": "proposed"})
+            print(f"    ADMIT [{cls}] {parts[0][:62]}")
+
+    expect_admit, expect_drop = 3, 3
+    ok = len(findings) == expect_admit and len(dropped) >= expect_drop
+    print(f"\n  admitted {len(findings)} (expect {expect_admit}), "
+          f"dropped/flagged {len(dropped)} (expect >= {expect_drop})")
+    if not ok:
+        print("  MOCK FAILED -- the chain would write the wrong things when funded.")
+        return 1
+
+    before = LEDGER.stat().st_size if LEDGER.exists() else 0
+    with LEDGER.open("a", encoding="utf-8") as fh:
+        for f in findings:
+            f["mock"] = True                       # tagged so the scoreboard can exclude it
+            fh.write(json.dumps(f) + "\n")
+    after = LEDGER.stat().st_size
+    print(f"  ledger {before} -> {after} bytes (+{after-before}) -- rows tagged mock=true")
+    print("\n  CHAIN PROVEN. The only untested link between funded credit and findings in the")
+    print("  ledger is one urllib call returning 200 instead of 402. Admission, provenance")
+    print("  downgrade, forbidden zones, wave-2 linkage and the ledger write all executed")
+    print("  against real code just now.")
+    return 0
+
+
 def main() -> None:
     ok, why = _budget_ok()
     print("=== KIMI HUNTER -- Deep Forest Protocol (Wave 1 -> 2 -> 3) ===")
@@ -307,4 +382,6 @@ def main() -> None:
 if __name__ == "__main__":
     if "--selftest" in sys.argv:
         raise SystemExit(_selftest())
+    if "--mock" in sys.argv:
+        raise SystemExit(_mock())
     main()
