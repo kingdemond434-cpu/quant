@@ -998,3 +998,26 @@ from era text — it has NOT been checked against `data/cost_model.json` or the 
 research-frozen and may not read/modify execution paths beyond cataloguing). The next cycle that owns
 execution should verify whether in-flight variance is priced, and either close this as already-handled
 or size the gap. **Do not treat as adopted until that check runs.**
+
+## #71 — SIGNAL SOURCES NEED PRECISION, NOT LIQUIDITY (era principle, Quantopian In&Out thread)
+_EN frontier miner session D, 2026-07-28. Provenance: Wayback `quantopian.com/posts/new-strategy-in-and-out` replies R17–R24 (Vladimir vs Tentor Testivis DBB-liquidity debate, Oct 2020)._
+
+The era community resolved a real dispute with a principle the desk can codify. Vladimir downgraded
+the strategy because its key signal ETF (DBB, ~$2M/day, 3 holdings) was too thin to trust; the
+counter ("we don't want exposure, just the price differences" — Tentor, R19) won on the merits:
+an instrument you only READ needs **precision and cleanliness** (direct futures-tracking, no
+sector dilution, daily print), NOT tradability. The debate even produced the verification method:
+correlate the candidate signal source against the ground-truth index (DBB↔copper 0.87-0.89 once a
+date-alignment bug was fixed — R37, the same asof-date hazard class as the desk's bithumb kill).
+
+**Why (desk impact):** most of the desk's premium/flow signals already come from venues it never
+trades (btc126 mirror, Cboe index families, thin regional venues, dead-index mirrors). A reviewer
+instinct of "reject: source too thin/illiquid" applied to a SIGNAL input is a category error that
+shrinks the usable signal universe for no risk reduction.
+
+**How to apply:** when a source review rejects a signal input on liquidity grounds, the rejection
+must name the TRADED leg affected. If no order ever routes there, the objection is void — the valid
+objections for signal sources are precision, staleness, construction cleanliness, and survivorship
+(single-point-of-failure mirrors), each checkable by correlation-vs-ground-truth with alignment
+declared. **STATUS: inbox item — a review-checklist rule candidate, not adopted until an owner
+wires it into the source-grading checklist.**
