@@ -35,8 +35,18 @@ _SYMBOLS = ("BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT",
             "DOGEUSDT", "ADAUSDT", "AVAXUSDT", "LINKUSDT", "LTCUSDT",
             "TRXUSDT", "DOTUSDT", "BCHUSDT", "NEARUSDT", "SUIUSDT",
             "UNIUSDT", "APTUSDT", "FILUSDT", "ARBUSDT", "OPUSDT")
-_DEPTH_EVERY_S = 4.0
-_TRADES_EVERY_S = 20.0
+# SAMPLING RESOLUTION. Was depth@4.0s / trades@20.0s = 6.0 req/s against a self-imposed cap of
+# 20.0 -- i.e. the recorder ran at 30% of its OWN conservative limit, and that limit is itself
+# far under what the venue allows. The moat is the desk's only unreplicable asset and every
+# unrecorded moment is permanently unavailable, so unused headroom here is the one ceiling whose
+# cost is irreversible: it cannot be bought back later at any price.
+#
+# depth@1.5s + trades@10s over 20 symbols = 20/1.5 + 20/10 = 15.3 req/s, still inside the cap
+# with margin. That is 2.7x the depth resolution -- microstructure withdrawal happens on second
+# scales, so this is resolution the M_LIQUIDITY_WITHDRAWAL mechanism can actually use.
+# _assert_rate_budget() below still enforces the cap, so this cannot silently exceed it.
+_DEPTH_EVERY_S = 1.5
+_TRADES_EVERY_S = 10.0
 _REQ_PER_S_CAP = 20.0            # bybit allows far more; stay modest and neighbourly
 
 
