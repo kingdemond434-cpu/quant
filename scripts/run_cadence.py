@@ -256,6 +256,12 @@ def main() -> None:
     subprocess.run([sys.executable, "scripts/record_desk_metrics.py"],
                    capture_output=True, text=True, timeout=180, check=False)
 
+    # PORTFOLIO RISK (every cycle, self-arming). Dormant below 3 sleeves and load-bearing at
+    # or above -- the gate is a DATA condition read from the shadow registry, so nobody has to
+    # notice the third sleeve landing for correlation-shock control to start running.
+    subprocess.run([sys.executable, "scripts/run_portfolio_risk.py"],
+                   capture_output=True, text=True, timeout=180, check=False)
+
     # MODEL UPGRADE (monthly). The desk's models used to be frozen literals that only ever moved
     # when a human noticed a newer flagship -- so seats aged silently (llama-4-maverick sat 15
     # months stale). This makes "are we on the best model available?" a cadence question with a
