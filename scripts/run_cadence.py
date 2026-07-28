@@ -250,6 +250,12 @@ def main() -> None:
             state["last_fill_quality"] = now.isoformat()
             fired.append("fill-quality")
 
+    # DESK METRICS (every cycle). Durable trend, not a snapshot -- libs/monitoring persists
+    # each value and raises a real Alert on threshold breach. Runs AFTER meta-research so it
+    # records that cycle's freshly computed numbers, not the previous one's.
+    subprocess.run([sys.executable, "scripts/record_desk_metrics.py"],
+                   capture_output=True, text=True, timeout=180, check=False)
+
     # MODEL UPGRADE (monthly). The desk's models used to be frozen literals that only ever moved
     # when a human noticed a newer flagship -- so seats aged silently (llama-4-maverick sat 15
     # months stale). This makes "are we on the best model available?" a cadence question with a
