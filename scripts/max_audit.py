@@ -479,6 +479,29 @@ def check_model_freshness(defects) -> None:
                             f"never applied ({names}) -- verified improvement left unbuilt"))
 
 
+def check_meta_research(defects) -> None:
+    """The CIO review must RUN. §12 of META_RESEARCH_DIRECTIVE, made mechanical.
+
+    A directive that lives only in prose is skipped on a busy cycle and the skip is invisible --
+    this desk's own recursion rule says every manual probe becomes a standing automatic check.
+    """
+    st = _j(ROOT / "data/meta_research_review.json", {})
+    ran = st.get("ran")
+    if not ran:
+        defects.append(("meta-research-never",
+                        "META_RESEARCH_DIRECTIVE review has never run -- research capital is "
+                        "being allocated without the CIO layer that prices it"))
+        return
+    try:
+        age_d = (datetime.now(tz=UTC) - datetime.fromisoformat(ran)).days
+    except (TypeError, ValueError):
+        return
+    if age_d > 3:
+        defects.append(("meta-research-stale",
+                        f"meta-research review last ran {age_d}d ago (floor 3d) -- the desk is "
+                        "allocating engineering hours without a current ERV ranking"))
+
+
 def check_coverage(defects) -> None:
     m = _j(ROOT / "data/audit_coverage.json", {})
     if not m:
@@ -2331,6 +2354,7 @@ CHECKS = [("carryover-skipped", check_carryover_skipped),
                       ("stale-daemons", check_stale_daemons),
                       ("panel", check_panel), ("coverage", check_coverage),
                       ("model-freshness", check_model_freshness),
+                      ("meta-research", check_meta_research),
                       ("findings", check_findings), ("idle", check_idle_capability),
                       ("directives", check_directives), ("verify", check_verify_lag),
                       ("blind", check_blind_trigger),

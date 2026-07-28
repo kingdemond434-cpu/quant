@@ -37,6 +37,7 @@ _PANEL_EVERY_D = 3
 _TIER1_EVERY_D = 14
 _PROMPT_REVIEW_D = 28
 _MODEL_UPGRADE_D = 30            # monthly, matching the roster-governance cadence
+_META_RESEARCH_D = 1             # CIO review: mechanical, seconds, no LLM -- every cycle
 _CLOCK_MATURITY_D = 40
 
 # CADENCE FLOORS (principal invariant 2026-07-17): the system may never get SLEEPIER where
@@ -57,7 +58,7 @@ _FLOORS_S1_EXTRA: dict[str, float] = {           # live adds floors; never remov
 # state-tracked floors (days): review cycles may never stretch past these
 _STATE_FLOORS_D = {"last_panel": 4.0, "last_tier1": 16.0, "last_prompt_review": 35.0,
                    "last_prospector": 35.0, "last_blind_rediscovery": 100.0,
-                   "last_model_upgrade": 45.0,
+                   "last_model_upgrade": 45.0, "last_meta_research": 3.0,
                    "last_lit_deepdive": 35.0, "last_decision_scoring": 35.0,
                    "last_memory_consolidation": 100.0}
 
@@ -225,6 +226,18 @@ def main() -> None:
     elif _days_since(state, "last_panel") >= _PANEL_EVERY_D and _run_panel(None):
         state["last_panel"] = now.isoformat()
         fired.append("panel")
+
+    # META-RESEARCH REVIEW (§ docs/research/META_RESEARCH_DIRECTIVE.md). Mechanical half runs
+    # EVERY cycle: it is seconds, no LLM, no context cost, and a prompt-only duty would be
+    # skipped on a busy cycle exactly as this desk's own record predicts.
+    if _days_since(state, "last_meta_research") >= _META_RESEARCH_D:
+        _r = subprocess.run([sys.executable, "scripts/meta_research_review.py"],
+                            capture_output=True, text=True, timeout=300, check=False)
+        if Path("data/meta_research_review.json").exists():
+            state["last_meta_research"] = now.isoformat()
+            fired.append("meta-research")
+        else:
+            print(f"cadence: meta-research produced nothing rc={_r.returncode} -- duty stays OWED")
 
     # MODEL UPGRADE (monthly). The desk's models used to be frozen literals that only ever moved
     # when a human noticed a newer flagship -- so seats aged silently (llama-4-maverick sat 15
