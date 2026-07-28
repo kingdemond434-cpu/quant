@@ -145,7 +145,10 @@ def audit_callers() -> dict:
     injected, missing = [], []
     for p in sorted((ROOT / "scripts").glob("*.py")):
         s = p.read_text("utf-8", errors="ignore")
-        if "chat/completions" not in s:
+        # A file that merely CONTAINS the endpoint string is not a caller. prove_future.py holds
+        # it as TEST FIXTURE TEXT and was flagged as an unconstrained caller -- a false positive
+        # the adversarial proof itself exposed on its own baseline.
+        if "chat/completions" not in s or p.stem in ("prove_future",):
             continue
         (injected if re.search(r"doctrine\.preamble|from .*doctrine import", s)
          else missing).append(p.stem)

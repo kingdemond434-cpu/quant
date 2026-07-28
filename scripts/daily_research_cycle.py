@@ -58,6 +58,7 @@ _STEPS = [
     ("measurement_gate",  "scripts/measurement_gate.py", 120),  # inputs must be verified before any optimisation
     ("exec_bottleneck",   "scripts/execution_bottleneck.py", 60),  # live book vs live gate
     ("collector_monitor","scripts/collector_monitor.py", 90),  # G3 zero-trust sensor kill-switch
+    ("enforce_proof",     "scripts/prove_future.py", 90),  # adversarial: guards must FAIL on planted violations
     ("principle_audit",   "scripts/principle_audit.py", 30),  # STRICT: all 15 principles must reach models
     ("blindspot_max",     "scripts/blindspot_max.py", 120),  # 4 classes of mechanical unknown-unknown
     ("doctrine_guard",      "scripts/doctrine.py", 30),  # STRICT: fails if any LLM caller runs without doctrine
