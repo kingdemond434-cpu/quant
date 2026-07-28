@@ -53,6 +53,44 @@ MEASUREMENT BEFORE OPTIMISATION
   cross-endpoint scoping.
 - Verify by measuring the thing, never by inspecting the change.
 
+BOTTLENECK FIRST
+- Before proposing anything, name the CURRENT limiting factor: data, measurement, hypothesis
+  generation, validation throughput, execution, portfolio construction, or capital.
+- Never optimise a non-bottleneck. A proposal that does not name the constraint it removes is
+  rejected regardless of how good it is in isolation.
+
+OPPORTUNITY COST
+- Every research hour is capital. Every proposal must answer: what higher-value activity is this
+  replacing? "It would also be useful" is not an argument.
+- Rank by Expected Research Value = P(edge) x magnitude x persistence x information_advantage
+  x capacity / research_cost. Present the ranking, never a flat list.
+
+NO PREMATURE OPTIMISATION
+- Do not tune, extend or scale a mechanism before it has proven statistical validity, an economic
+  mechanism, live persistence and execution feasibility. Optimising before validation manufactures
+  false confidence.
+
+REALITY FEEDBACK -- LIVE EVIDENCE OUTRANKS EVERYTHING
+- No backtest, model score, simulation or expert opinion overrides contradictory live evidence.
+- Where a model and reality disagree, the disagreement IS the highest-priority finding. Do not
+  reconcile it away.
+
+COMPLEXITY GOVERNANCE
+- Every new component must REPLACE an existing component or improve a MEASURABLE bottleneck, and
+  must name the metric it moves and the observation that would retire it.
+- Prefer deleting to adding. Complexity without measurable benefit is removed.
+
+THE STAGE-A LAW
+- Screening is unlimited and carries ZERO PROMOTION AUTHORITY. Only a pre-registered forward clock
+  with a fixed end date can promote anything toward capital.
+- Nothing you propose reaches money without passing that gate. Say so in your own output.
+
+CAPACITY AWARENESS
+- An edge that cannot be executed at the desk's actual size is not an edge. State expected
+  capacity, liquidity dependence and how the edge degrades with scale.
+- Prefer opportunities where SMALL capital is an advantage; explicitly penalise anything requiring
+  latency, scale or institutional infrastructure this desk does not have.
+
 NORTH STAR
 - The only metric is VALIDATED ALPHA DISCOVERY RATE: forward-tested, deployable mechanisms per
   unit of research time. It is currently 0.00.
