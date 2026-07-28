@@ -22,3 +22,4 @@ tools/*.exe
 
 # one-shot gate-optimality diagnostic scratch (6MB pickle + root-level probes)
 _audit_prepared.pkl
+docs/audit_shards/
