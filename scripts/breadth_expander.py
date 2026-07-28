@@ -39,6 +39,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
+from scripts import seats  # noqa: E402 -- after the sys.path bootstrap above
 
 KEYS = ROOT / "data/secrets/llm_panel.json"
 CLASSMAP = ROOT / "data/information_class_map.json"
@@ -139,8 +140,15 @@ def main() -> None:
     if not KEYS.exists():
         print("no llm_panel.json -- cannot run")
         return
-    provs = json.loads(KEYS.read_text("utf-8"))["providers"]
-    by_model = {p.get("model"): p for p in provs if isinstance(p, dict)}
+    # Live-roster resolution: an upgraded-away lead or pool seat is substituted (same lab first),
+    # never silently dropped. The lead is resolved on its own so it can never be crowded out of
+    # the pool's distinct-lab budget, and the pool keeps its lens-rotation diversity.
+    lead = seats.resolve([LEAD_SEAT], n=1, role="breadth_lead")
+    pool = seats.resolve(DIVERSITY_POOL, n=len(DIVERSITY_POOL), distinct_labs=False,
+                         role="breadth_pool")
+    by_model = {p["model"]: p for p in (lead + pool)}
+    LEAD = lead[0]["model"] if lead else LEAD_SEAT
+    POOL = [p["model"] for p in pool] or DIVERSITY_POOL
 
     # budget envelope -- same wallet as the panel; abort rather than silently degrade
     try:
@@ -195,11 +203,11 @@ def main() -> None:
     # watchdog three times; the sweep must fit inside its cadence budget, so fan them out.
     jobs = []
     for li, (lens_name, lens_txt) in enumerate(LENSES):
-        seats = [LEAD_SEAT] + [DIVERSITY_POOL[(day + li + k) % len(DIVERSITY_POOL)] for k in (0, 1)]
+        seats_for_lens = [LEAD] + [POOL[(day + li + k) % len(POOL)] for k in (0, 1)]
         user = (f"LENS -- {lens_name}\n{lens_txt}\n\n"
                 "Name 15-20 sources through THIS lens only. Be specific and checkable. "
                 "Prefer OBSCURE and NON-ENGLISH over well-known -- the desk has the obvious ones.")
-        for seat in seats:
+        for seat in seats_for_lens:
             prov = by_model.get(seat)
             if prov:
                 jobs.append((lens_name, seat, prov, user))

@@ -30,15 +30,29 @@ _LOG = Path("data/panel_roster_log.jsonl")
 _CATALOG = "https://openrouter.ai/api/v1/models"
 _CTX = ssl.create_default_context(cafile=certifi.where())
 
-# distinct labs to keep in the roster -- max cross-training diversity (anthropic excluded: the
-# CRO is Claude, so an external Claude adds no cognitive diversity). Order = display only.
-_LABS = ("x-ai", "openai", "google", "deepseek", "qwen", "z-ai", "moonshotai",
-         "mistralai", "meta-llama", "nvidia", "cohere", "microsoft")
+# BOOTSTRAP SEED ONLY -- used when there is no roster yet to learn the lab set from. The
+# fill-empty-labs loop targets the labs the LIVE roster actually holds (see select_roster), never
+# this literal.
+#
+# WHY: this list was the target set, and it went stale against deliberate decisions. It still
+# names mistralai, meta-llama, cohere and microsoft -- all four RETIRED on evidence (ledger #116
+# replaced cohere/command-a and microsoft/wizardlm; #118 dropped meta-llama after llama-4-maverick
+# failed the capacity probe twice and muse-spark returned 403). Because the loop fills any lab
+# "missing" from this tuple, an `--apply` run would have RE-ADDED those four -- taking the roster
+# from 13 seats to ~17 and re-seating the exact models the desk measured as broken. A refresh that
+# resurrects retired downgrades is the opposite of a refresh, so the target set is now DERIVED.
+# anthropic stays excluded everywhere: the CRO is Claude, so an external Claude adds no
+# cognitive diversity.
+_LABS = ("x-ai", "openai", "google", "deepseek", "qwen", "z-ai", "moonshotai", "nvidia")
 # variants that are NOT strong general adversarial reviewers -> never auto-pick as a fill.
 # "newest created" != "most capable" (flash/medium/mini are often newer AND weaker), so weak
 # tiers are excluded and, crucially, working models are NEVER auto-swapped (see select_roster).
 _EXCLUDE = ("image", "vision", "-vl", "audio", "tts", "whisper", "embed", "rerank", "moderation",
             "guard", "safety", "coder", "-code", "-mini", "-nano", "-lite", "lyria", "-oss",
+            # `:free` added 2026-07-28 -- ledger #116 records the free tier rate-limiting and
+            # returning BLANKS, which inside a consensus panel is a silent seat loss. A dead-seat
+            # replacement could previously pick one; reliability costs pennies, so never again.
+            ":free",
             "distill", "content-safety", "-air", "flash", "medium", "small", "phi", "haiku",
             "turbo", "-8b", "-4b", "-3b", "-1b")
 
@@ -82,7 +96,12 @@ def select_roster(models: list[dict[str, Any]], key: str, base_url: str,
                 roster.append({"name": lab.split("-")[-1], "base_url": base_url, "key": key,
                                "model": repl})
                 covered.add(lab)
-    for lab in _LABS:                                    # fill labs with no representative
+    # Fill labs with no representative. Target set = the labs THIS roster holds, plus the seed
+    # list -- so a delisted seat's lineage is restored AND the board can still grow into a lab it
+    # has never held, while the four evidence-retired labs (removed from the seed above) can
+    # never come back. Roster-first ordering keeps existing lineages ahead of new ones.
+    target_labs = tuple(dict.fromkeys([_family(m) for m in current] + list(_LABS)))
+    for lab in target_labs:
         if lab not in covered:
             pick = _newest_strong(models, lab)
             if pick:

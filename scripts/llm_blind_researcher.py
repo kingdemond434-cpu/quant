@@ -27,11 +27,15 @@ from __future__ import annotations
 import json
 import re
 import ssl
+import sys
 import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+from scripts import seats  # noqa: E402 -- after the sys.path bootstrap above
+
 KEYS = ROOT / "data/secrets/llm_panel.json"
 CLASSMAP = ROOT / "data/information_class_map.json"
 MECH = ROOT / "docs/research/MECHANISM_GRAPH.md"
@@ -85,15 +89,15 @@ def desk_vocabulary() -> set[str]:
 def main() -> None:
     if not KEYS.exists():
         print("no panel keys"); return
-    provs = {p["model"]: p for p in json.loads(KEYS.read_text("utf-8"))["providers"]
-             if isinstance(p, dict)}
+    # Live-roster resolution: an upgraded-away seat is substituted (same lab first), not lost.
+    provs = {p["model"]: p for p in seats.resolve(SEATS, n=len(SEATS), role="blind_researcher")}
     vocab = desk_vocabulary()
     print("=== ZERO-CONTEXT BLIND RESEARCHER ===")
     print("    *** UNTESTED SCRIPT -- verify output before trusting it ***")
     print(f"    desk vocabulary: {len(vocab)} terms. Models get NONE of it.\n")
 
     items, per_seat = [], {}
-    for seat in SEATS:
+    for seat in list(provs):
         prov = provs.get(seat)
         if not prov:
             continue

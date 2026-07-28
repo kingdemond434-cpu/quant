@@ -36,6 +36,7 @@ _VIOLATION = Path("data/cadence_violation.json")
 _PANEL_EVERY_D = 3
 _TIER1_EVERY_D = 14
 _PROMPT_REVIEW_D = 28
+_MODEL_UPGRADE_D = 30            # monthly, matching the roster-governance cadence
 _CLOCK_MATURITY_D = 40
 
 # CADENCE FLOORS (principal invariant 2026-07-17): the system may never get SLEEPIER where
@@ -56,6 +57,7 @@ _FLOORS_S1_EXTRA: dict[str, float] = {           # live adds floors; never remov
 # state-tracked floors (days): review cycles may never stretch past these
 _STATE_FLOORS_D = {"last_panel": 4.0, "last_tier1": 16.0, "last_prompt_review": 35.0,
                    "last_prospector": 35.0, "last_blind_rediscovery": 100.0,
+                   "last_model_upgrade": 45.0,
                    "last_lit_deepdive": 35.0, "last_decision_scoring": 35.0,
                    "last_memory_consolidation": 100.0}
 
@@ -117,6 +119,40 @@ def _run_panel(mission: str | None) -> bool:
         print("cadence: panel exited clean but appended NO verdict -- duty stays OWED "
               "(check OpenRouter funding: a half-funded roster 402s mid-run and emits nothing)")
     return r2.returncode == 0 and _produced
+
+
+def _run_model_upgrade() -> bool:
+    """Monthly: roll back regressed promotions, then auto-upgrade both model surfaces.
+
+    ROLLBACK RUNS FIRST AND UNCONDITIONALLY. It costs nothing (it reads blank telemetry, makes
+    no API call), and a seat that regressed must be healed before we consider adding another
+    change on top of it.
+
+    PRODUCTION, NOT EXIT CODE -- the same lesson _run_panel records above. Both engines exit 0
+    when the catalog is unreachable or the balance is too low to run a gauntlet, so an exit code
+    would stamp the duty done for a check that never actually looked at anything. The honest
+    signal is a FRESH `checked` timestamp in the engine's own state file: only a run that
+    genuinely evaluated the catalog writes one, so a skipped run correctly leaves the duty OWED.
+    """
+    subprocess.run([sys.executable, "scripts/model_upgrade.py", "--rollback", "--apply"],
+                   capture_output=True, text=True, timeout=300, check=False)
+    produced = 0
+    for script, state_file in (("scripts/model_upgrade.py", "data/model_upgrade.json"),
+                               ("scripts/brain_model_upgrade.py",
+                                "data/brain_model_upgrade.json")):
+        r = subprocess.run([sys.executable, script, "--apply"],
+                           capture_output=True, text=True, timeout=1800, check=False)
+        tail = (r.stdout or r.stderr or "").strip().splitlines()[-1:] or [""]
+        fresh = False
+        try:
+            checked = json.loads(Path(state_file).read_text("utf-8")).get("checked")
+            fresh = bool(checked) and _days_since({"c": checked}, "c") < 1.0
+        except (OSError, json.JSONDecodeError, TypeError, ValueError):
+            fresh = False
+        produced += int(fresh)
+        print(f"cadence: {Path(script).stem} rc={r.returncode} "
+              f"{'evaluated' if fresh else 'DID NOT EVALUATE'} | {tail[0][:110]}")
+    return produced == 2
 
 
 def _assert_floors(state: dict, stage: str) -> None:
@@ -189,6 +225,15 @@ def main() -> None:
     elif _days_since(state, "last_panel") >= _PANEL_EVERY_D and _run_panel(None):
         state["last_panel"] = now.isoformat()
         fired.append("panel")
+
+    # MODEL UPGRADE (monthly). The desk's models used to be frozen literals that only ever moved
+    # when a human noticed a newer flagship -- so seats aged silently (llama-4-maverick sat 15
+    # months stale). This makes "are we on the best model available?" a cadence question with a
+    # floor, answered by live evidence rather than by anyone remembering to ask.
+    if (_days_since(state, "last_model_upgrade") >= _MODEL_UPGRADE_D
+            and _run_model_upgrade()):
+        state["last_model_upgrade"] = now.isoformat()
+        fired.append("model-upgrade")
 
     # generation triggers -> flagged for the brain (scoped runs are a judgment task)
     due: list[str] = []

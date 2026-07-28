@@ -29,11 +29,15 @@ from __future__ import annotations
 import json
 import ssl
 import subprocess
+import sys
 import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+from scripts import seats  # noqa: E402 -- after the sys.path bootstrap above
+
 KEYS = ROOT / "data/secrets/llm_panel.json"
 OUT = ROOT / "data/code_audit.jsonl"
 CTX = ssl.create_default_context()
@@ -96,8 +100,8 @@ def recent_diff(n: int) -> str:
 def main() -> None:
     if not KEYS.exists():
         print("no panel keys"); return
-    provs = {p["model"]: p for p in json.loads(KEYS.read_text("utf-8"))["providers"]
-             if isinstance(p, dict)}
+    # Live-roster resolution: an upgraded-away seat is substituted (same lab first), not lost.
+    provs = {p["model"]: p for p in seats.resolve(SEATS, n=len(SEATS), role="llm_code_auditor")}
     diff = recent_diff(N_COMMITS)
     if not diff.strip():
         print("no python diff in the last commits"); return
@@ -108,7 +112,7 @@ def main() -> None:
 
     user = ("Review this diff. Report only defects causing SILENT WRONG BEHAVIOUR.\n\n" + diff)
     rows = []
-    for seat in SEATS:
+    for seat in list(provs):
         prov = provs.get(seat)
         if not prov:
             print(f"  {seat}: not in roster"); continue

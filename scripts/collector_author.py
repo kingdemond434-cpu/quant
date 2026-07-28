@@ -40,6 +40,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
+from scripts import seats  # noqa: E402 -- after the sys.path bootstrap above
 
 KEYS = ROOT / "data/secrets/llm_panel.json"
 FEED = ROOT / "data/breadth_expansion.jsonl"
@@ -153,8 +154,9 @@ def main() -> None:
     if not (KEYS.exists() and FEED.exists()):
         print("missing panel keys or breadth feed")
         return
-    provs = {p["model"]: p for p in json.loads(KEYS.read_text("utf-8"))["providers"]
-             if isinstance(p, dict)}
+    # Live-roster resolution: an upgraded-away seat is substituted (same lab first), not lost.
+    provs = {p["model"]: p for p in seats.resolve(SEATS, n=len(SEATS), role="collector_author")}
+    seated = list(provs)
     tried = set()
     if DONE.exists():
         tried = {json.loads(x).get("source") for x in DONE.read_text("utf-8").splitlines()
@@ -178,10 +180,10 @@ def main() -> None:
         return
     targets = cands[:N_TARGETS]
     GEN.mkdir(exist_ok=True)
-    print(f"=== COLLECTOR AUTHOR | {len(targets)} sources x {len(SEATS)} flagship seats ===")
+    print(f"=== COLLECTOR AUTHOR | {len(targets)} sources x {len(seated)} flagship seats ===")
     print("    (executes model-written code -- static scan + isolated subprocess + timeout)\n")
 
-    jobs = [(t, s) for t in targets for s in SEATS if s in provs]
+    jobs = [(t, s) for t in targets for s in seated]
 
     def _gen(j):
         t, seat = j

@@ -28,12 +28,16 @@ from __future__ import annotations
 import json
 import re
 import ssl
+import sys
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+from scripts import seats  # noqa: E402 -- after the sys.path bootstrap above
+
 KEYS = ROOT / "data/secrets/llm_panel.json"
 GRAVE = ROOT / "docs/graveyard.md"
 MECH = ROOT / "docs/research/MECHANISM_GRAPH.md"
@@ -105,8 +109,9 @@ def refuted() -> tuple[str, set[str]]:
 def main() -> None:
     if not KEYS.exists():
         print("no panel keys"); return
-    provs = {p["model"]: p for p in json.loads(KEYS.read_text("utf-8"))["providers"]
-             if isinstance(p, dict)}
+    # Live-roster resolution: an upgraded-away seat is substituted (same lab first), not lost.
+    provs = {p["model"]: p for p in seats.resolve(SEATS, n=len(SEATS), role="hypothesis_gen")}
+    seated = list(provs)
     dead_txt, dead_tok = refuted()
     mech = MECH.read_text("utf-8")[:3000] if MECH.exists() else ""
     day = datetime.now(tz=UTC).toordinal()
@@ -116,7 +121,7 @@ def main() -> None:
             f"ALREADY REFUTED ON THIS DESK (do not propose these or close variants):\n{dead_txt}\n\n"
             f"MECHANISM MAP (what is already observed):\n{mech}\n\n"
             "Give 10-15 hypotheses through THIS lens that are NOT in the refuted list.")
-    print(f"=== HYPOTHESIS GENERATOR | lens: {lens_name} | {len(SEATS)} seats ===")
+    print(f"=== HYPOTHESIS GENERATOR | lens: {lens_name} | {len(seated)} seats ===")
     print("    *** UNTESTED SCRIPT -- verify output before trusting it ***")
     print(f"    graveyard supplied: {len(dead_tok)} refuted tokens (prevents re-proposing dead)\n")
 
@@ -130,7 +135,7 @@ def main() -> None:
             return seat, "", f"{type(e).__name__} {getattr(e, 'code', '')}"
 
     with ThreadPoolExecutor(max_workers=3) as ex:
-        answers = list(ex.map(run, SEATS))
+        answers = list(ex.map(run, seated))
 
     rows = []
     for seat, txt, err in answers:

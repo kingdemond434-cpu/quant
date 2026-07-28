@@ -27,11 +27,15 @@ import json
 import re
 import ssl
 import subprocess
+import sys
 import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+from scripts import seats  # noqa: E402 -- after the sys.path bootstrap above
+
 KEYS = ROOT / "data/secrets/llm_panel.json"
 CYCLE = ROOT / "scripts/daily_research_cycle.py"
 OUT = ROOT / "data/meta_architect.json"
@@ -157,12 +161,17 @@ def main() -> None:
 
     if not KEYS.exists():
         print("\n  no panel keys -- architect cannot run"); return
-    provs = {p["model"]: p for p in json.loads(KEYS.read_text("utf-8"))["providers"]
-             if isinstance(p, dict)}
+    # Seats resolve against the LIVE roster: an upgraded-away model is substituted (same lab
+    # first), never silently dropped -- the old provs.get(seat)/continue amputated this board
+    # to zero without a word the moment a seat was swapped.
+    provs = {p["model"]: p for p in seats.resolve(SEATS, n=len(SEATS), role="meta_architect")}
+    if not provs:
+        print("\n  no panel seats resolvable -- architect cannot run")
+        return
     user = (f"{state}\n\nPropose 6-10 improvements to this RESEARCH SYSTEM. Prefer DELETE/MERGE "
             f"over ADD. All seven fields required per proposal.")
     rows = []
-    for seat in SEATS:
+    for seat in list(provs):
         prov = provs.get(seat)
         if not prov:
             continue

@@ -426,6 +426,59 @@ def check_panel(defects) -> None:
                         "-- review capability is down (credits? crash?)"))
 
 
+_MODEL_CHECK_FLOOR_D = 35      # monthly cadence + slack; a missed month is a defect, not drift
+
+
+def check_model_freshness(defects) -> None:
+    """The upgrade loop must RUN, and a verified upgrade must not sit unadopted.
+
+    Origin: the desk had NO upward path at all -- panel seats and the Claude organ chain were
+    both hand-pinned, so "are we on the best available model?" was answered only when a human
+    remembered to ask. Automating the upgrade is not enough on its own: an automation nobody
+    watches decays into the same silence. These two checks make the loop's own health visible.
+    """
+    for surface, path in (("panel", ROOT / "data/model_upgrade.json"),
+                          ("brain", ROOT / "data/brain_model_upgrade.json")):
+        st = _j(path, {})
+        checked = st.get("checked")
+        if not checked:
+            defects.append((f"model-upgrade-never-{surface}",
+                            f"{surface} model-upgrade check has never run -- the desk cannot "
+                            "know whether a better flagship shipped"))
+            continue
+        try:
+            age_d = (datetime.now(tz=UTC) - datetime.fromisoformat(checked)).days
+        except (TypeError, ValueError):
+            continue
+        if age_d > _MODEL_CHECK_FLOOR_D:
+            defects.append((f"model-upgrade-stale-{surface}",
+                            f"{surface} model-upgrade check last ran {age_d}d ago (floor "
+                            f"{_MODEL_CHECK_FLOOR_D}d) -- seats age silently past this point"))
+
+    # A candidate that PASSED the live gauntlet but was never applied is a measured, verified
+    # improvement left on the table -- exactly the class the maximization duty calls a defect.
+    log = ROOT / "data/model_upgrade_log.jsonl"
+    if log.exists():
+        passed: dict[str, str] = {}
+        for line in log.read_text("utf-8").splitlines():
+            try:
+                r = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if r.get("action") in ("gauntlet", "probe") and r.get("passed"):
+                passed[str(r.get("incumbent"))] = str(r.get("candidate"))
+            elif r.get("action") == "apply":
+                for old in (r.get("promotions") or {}):
+                    passed.pop(str(old), None)
+            elif r.get("action") == "rollback":
+                passed.clear()          # a rollback is a deliberate NO on that promotion
+        if passed:
+            names = ", ".join(f"{k}->{v}" for k, v in list(passed.items())[:3])
+            defects.append(("model-upgrade-unadopted",
+                            f"{len(passed)} model upgrade(s) passed the live gauntlet but were "
+                            f"never applied ({names}) -- verified improvement left unbuilt"))
+
+
 def check_coverage(defects) -> None:
     m = _j(ROOT / "data/audit_coverage.json", {})
     if not m:
@@ -2277,6 +2330,7 @@ CHECKS = [("carryover-skipped", check_carryover_skipped),
           ("organs", check_organs), ("stubs", check_stub_deaths),
                       ("stale-daemons", check_stale_daemons),
                       ("panel", check_panel), ("coverage", check_coverage),
+                      ("model-freshness", check_model_freshness),
                       ("findings", check_findings), ("idle", check_idle_capability),
                       ("directives", check_directives), ("verify", check_verify_lag),
                       ("blind", check_blind_trigger),
