@@ -47,9 +47,12 @@ CTX = ssl.create_default_context()
 
 MODEL = "moonshotai/kimi-k3"          # seated model; swarm-max reserved for quarterly deep dives
 
-VECTORS = ["linguistic_abyss", "github_graveyard", "protocol_documentation_sewer",
-           "mempool_infrastructure_underworld", "regulatory_legal_trench",
-           "cross_chain_shadow_roads", "obscure_perp_swamps"]
+_COVERAGE = ROOT / "data/hunt_coverage.json"
+_VECTOR_COOLDOWN_D = 45      # a forest may be re-entered only after this long
+
+# NO TARGET LIST. Seed vectors exist ONLY to bootstrap run #1 on an empty coverage file; from
+# run #2 onward the hunter generates its own and these are never consulted again.
+_SEED_VECTORS = ["anything you consider under-observed"]
 
 # Mechanically enforced. The prompt asks for these to be avoided; this drops them.
 FORBIDDEN_SETS = [
@@ -86,6 +89,8 @@ CHARTER = (
     "Your purpose: find edible information BEFORE the herd arrives. If you return 'funding rates "
     "are interesting' or 'OI is high' you have FAILED -- that is surface water.\n\n"
     "HARD CONSTRAINTS:\n"
+    "- NAME YOUR OWN TERRITORIES. Prefix each with 'VECTOR: <name>'. You are not given\n"
+    "  a search list; a fixed checklist is where everyone already looks.\n"
     "- FREE, PUBLIC, SCRAPABLE or RPC-accessible sources ONLY. Never suggest paid data APIs, "
     "institutional terminals or enterprise datasets.\n"
     "- Never suggest strategies or indicators. Suggest INFORMATION SOURCES and MECHANISMS.\n"
@@ -122,6 +127,47 @@ WAVES = {
         "Findings must be things where a typical quant would say 'I didn't know that was "
         "measurable'."),
 }
+
+
+
+def _load_coverage() -> dict:
+    try:
+        return json.loads(_COVERAGE.read_text("utf-8"))
+    except Exception:  # noqa: BLE001
+        return {"vectors": {}}
+
+
+def _exclusion_text(cov: dict) -> str:
+    """What the hunter has ALREADY covered -- fed as exclusions, never as instructions."""
+    now = datetime.now(tz=UTC)
+    live = []
+    for v, meta in cov.get("vectors", {}).items():
+        try:
+            age = (now - datetime.fromisoformat(meta["first_seen"])).days
+        except Exception:  # noqa: BLE001
+            age = 0
+        if age < _VECTOR_COOLDOWN_D:
+            live.append(f"{v} (hunted {age}d ago)")
+    if not live:
+        return ("You have no hunt history. Generate your own vectors -- name the territories "
+                "yourself. Do not ask what to search; decide.")
+    return ("ALREADY HUNTED -- do NOT return to these, they are picked over:\n  "
+            + "\n  ".join(sorted(live))
+            + "\n\nGenerate NEW vectors. Name each territory you choose and why the herd "
+              "cannot see it. A vector you have used before is a wasted run.")
+
+
+def _record_vectors(cov: dict, text: str) -> int:
+    """Harvest whatever territories the hunter named this run into permanent coverage memory."""
+    now = datetime.now(tz=UTC).isoformat()
+    found = set(re.findall(r"VECTOR:\s*([A-Za-z0-9_\- ]{4,50})", text))
+    n = 0
+    for v in found:
+        k = v.strip().lower()
+        if k and k not in cov.setdefault("vectors", {}):
+            cov["vectors"][k] = {"first_seen": now}
+            n += 1
+    return n
 
 
 def _budget_ok() -> tuple[bool, str]:
@@ -327,12 +373,12 @@ def main() -> None:
         if MECHB.exists() else set()
     print(f"  enforcing {len(FORBIDDEN_SETS)} forbidden zones + {len(kills)} family kills\n")
 
+    cov = _load_coverage()
     transcript, findings, dropped = {}, [], []
     for w in (1, 2, 3):
         name, brief = WAVES[w]
         prior = "\n\n".join(f"WAVE {k} OUTPUT:\n{v[:2500]}" for k, v in transcript.items())
-        user = (f"{brief}\n\nVECTORS: {', '.join(VECTORS)}\n\n{prior}" if prior
-                else f"{brief}\n\nVECTORS: {', '.join(VECTORS)}")
+        user = f"{brief}\n\n{_exclusion_text(cov)}" + (f"\n\n{prior}" if prior else "")
         print(f"  WAVE {w} -- {name}")
         try:
             txt = _ask(prov["base_url"], prov["key"], CHARTER, user)
@@ -344,7 +390,8 @@ def main() -> None:
                 print("    the harness is intact and fires on the next funded run.")
             raise SystemExit(3) from e
         transcript[w] = txt
-        print(f"    {len(txt)} chars returned")
+        _new_v = _record_vectors(cov, txt)
+        print(f"    {len(txt)} chars returned, {_new_v} new vector(s) recorded")
 
         if w == 1:
             continue                       # Wave 1 is mapping only; findings are not permitted
@@ -373,6 +420,8 @@ def main() -> None:
         print(f"  -> {LEDGER}  (enters the SAME gate as every other contributor)")
     print("\n  ZERO PROMOTION AUTHORITY. These are raw ore. Next stops: mechanism board "
           "(family-kill rejection), measurement gate, Stage-A screening, forward clock.")
+    _COVERAGE.write_text(json.dumps(cov, indent=1), "utf-8")
+    print(f"  coverage memory: {len(cov.get(chr(34)+chr(118)+chr(101)+chr(99)+chr(116)+chr(111)+chr(114)+chr(115)+chr(34), {}))} territories hunted to date")
     OUT.write_text(json.dumps({"updated": datetime.now(tz=UTC).isoformat(), "model": MODEL,
                                "waves": {str(k): v[:4000] for k, v in transcript.items()},
                                "findings": findings, "dropped": dropped}, indent=1), "utf-8")

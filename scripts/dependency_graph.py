@@ -79,6 +79,11 @@ EDGES = {
         "alphas": ["A004"],
         "live_decision": False,
         "note": "self-recorded; not covered by the .jsonl collectors scan"},
+    "defi_lending (Aave/Compound/Morpho)": {
+        "features": ["utilisation", "borrow_apy", "ltv_headroom"],
+        "alphas": [],
+        "live_decision": False,   # flips to True the day a hypothesis on it reaches a clock
+        "note": "new 2026-07-28; M_FORCED_DELEVERAGE; no alpha depends on it yet"},
     "binance funding (live API)": {
         "features": ["funding_rate_persistence"],
         "alphas": ["A001"],

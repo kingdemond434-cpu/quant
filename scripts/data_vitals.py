@@ -104,6 +104,22 @@ def score(p: Path) -> dict | None:
     key = next((k for k in _TIME_KEYS if k in rows[0]), None)
     ts = [t for t in (_parse_ts(r.get(key)) for r in rows) if t] if key else []
     now = datetime.now(tz=UTC)
+    # NEW-FILE GRACE. A collector's first run writes many rows at ONE timestamp, so cadence is
+    # uncomputable and latency/completeness default low -- scoring a healthy new source DEAD.
+    # defi_lending scored 0.250 DEAD on its .jsonl while its heartbeat scored 1.000 OK: the same
+    # source, two verdicts, one of them false. Fewer than 3 distinct timestamps means "not yet
+    # measurable", which is not the same as "dead" and must not page.
+    if len({t.isoformat() for t in ts}) < 3:
+        return {"source": p.name, "dqs": None,
+                "components": {"latency": None, "completeness": None,
+                               "schema_integrity": None, "temporal_alignment": None,
+                               "cross_validation_available": False},
+                "cadence_s": None, "age_s": None,
+                "provenance": PROVENANCE.get(p.name, {"collection": "UNKNOWN",
+                                                      "regenerable": None,
+                                                      "timestamp_verified": None,
+                                                      "note": "too few timestamps to score"}),
+                "action": "NEW -- not yet measurable"}
 
     # latency -- measured against the source's OWN observed cadence, not a global constant.
     # A daily archive is not "stale" at 6h; a websocket feed is dead at 6h.
@@ -168,6 +184,10 @@ EXTRA_SOURCES = {
         "kind": "JSON_STATE", "path": "data/cashcarry_positions.json",
         "field": None, "cadence_s": 900,
         "feeds": "A001 -- the live carry book; mtime is the freshness signal"},
+    "defi_lending (Aave/Compound/Morpho)": {
+        "kind": "JSON_STATE", "path": "data/defi_lending_heartbeat",
+        "field": None, "cadence_s": 3600,
+        "feeds": "M_FORCED_DELEVERAGE -- leverage build-up upstream of perp funding"},
     "cashcarry_exec_heartbeat (executor)": {
         "kind": "JSON_STATE", "path": "data/cashcarry_exec_heartbeat",
         "field": None, "cadence_s": 120,
@@ -231,16 +251,17 @@ def main() -> None:
     rows += [r for r in (score_extra(n, c) for n, c in EXTRA_SOURCES.items()) if r]
     if not rows:
         raise SystemExit("no collectors with >=20 rows")
-    rows.sort(key=lambda r: r["dqs"])
+    rows.sort(key=lambda r: (r["dqs"] is None, r["dqs"] or 0))
     print(f"  {'source':<38}{'DQS':>7}{'lat':>6}{'comp':>6}{'schm':>6}{'algn':>6}  action")
     dead = 0
     for r in rows:
         c = r["components"]
-        dead += r["dqs"] < DQS_DEAD
+        dead += (r["dqs"] is not None and r["dqs"] < DQS_DEAD)
 
         def _f(v):
             return f"{v:>6.2f}" if isinstance(v, (int, float)) else f"{'-':>6}"
-        print(f"  {r['source']:<38}{r['dqs']:>7.3f}{_f(c['latency'])}{_f(c['completeness'])}"
+        _d = f"{r['dqs']:>7.3f}" if r['dqs'] is not None else f"{'new':>7}"
+        print(f"  {r['source']:<38}{_d}{_f(c['latency'])}{_f(c['completeness'])}"
               f"{_f(c['schema_integrity'])}{_f(c['temporal_alignment'])}  {r['action']}")
     print(f"\n  {dead}/{len(rows)} collectors below DQS {DQS_DEAD} -> flagged DEAD")
     print("  NOTE: cross_validation is 0.5 for every source because NO collector currently has")
