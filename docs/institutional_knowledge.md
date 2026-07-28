@@ -513,3 +513,40 @@ hypotheses and EV-score them; only the top few enter research.
   process, because the injected doctrine quotes `run_cashcarry_executor.py` and
   `run_deadman_switch.py` in its risk-path duty — match argv elements, never a command-line
   substring, or the monitor reports the wrong process.
+- **A "success" predicate that reads a RECEIPT instead of the GOAL STATE builds a perpetual-motion
+  fee machine (2026-07-28).** The carry close checked `_filled(order)`; a reduceOnly cover against
+  an ALREADY-FLAT futures leg is rejected by the venue, so `fut_ok` was False forever, the pair
+  never retired, and `_reconcile` — blind to the KILL order — rebuilt both legs in front of every
+  retry. The book round-tripped its entire notional through market orders every 600s: 11,136 venue
+  COMMISSION events against 251 logged round-trips, $1,456 of fees in 48h against $113 of LIFETIME
+  harvest, and it ran NAKED LONG SPOT the whole time. Two lessons. (1) For any unwind, success is
+  "the leg is flat", never "an order filled" — and the check must be FAIL-CLOSED so an unreadable
+  venue leaves the flag untouched (that is what preserves the 07-19 stranded-inventory guard while
+  fixing this). (2) **A reconciler that restores invariants must know when the desired invariant
+  has CHANGED.** Under a flatten/kill order the target is FLAT, so "heal the hedge" becomes "undo
+  the rail". Any self-healing loop needs the current goal as an input, or it will faithfully fight
+  the operator.
+- **The trade log is not the fee bill; reconcile them or the leak hides in the gap (2026-07-28).**
+  The book's own log explained ~$126 of a $1,746 venue bill — 44 venue fills per logged round-trip.
+  Every diagnosis of a cost problem must start by reconciling the desk's records against the
+  venue's, because a loop that trades without logging is invisible to every tool that reads the log.
+- **Detection was never the gap; NAMING THE CAUSE was (2026-07-28).** §40's fee-ratio check fired
+  ~27h before this was diagnosed, reporting "fees are 63x the harvest" — a symptom consistent with a
+  dozen causes, so it cost a full investigation to localise and was carried as backlog meanwhile.
+  The new `check_close_retry_loop` reports the fingerprint instead (same symbol failing to close
+  while the reconciler rebuilds it). **When an alarm is true but keeps getting deferred, the fix is
+  usually to make it name the mechanism, not to make it louder.**
+- **A stale test fake silently disarms the regression test it exists to run (2026-07-28).**
+  `test_fill_verification`'s fake `place_market` never accepted the `reduce_only` kwarg production
+  started passing on 07-27, so it raised TypeError, `_safe()` swallowed it, both legs read unfilled,
+  and the guard on the 07-19 money-path incident had been failing for a day. CI reported it and the
+  desk shipped anyway. **A red CI is not a nuisance, it is every guard switched off at once** — the
+  gate was red on lint (558 ruff errors, mostly one-off `hl_*.py` research scripts) and on one
+  artifact-governance test, and commits kept landing.
+- **A gate whose instructions contradict its threshold rejects ~100% and teaches dishonesty
+  (2026-07-28).** `Idea.est_sharpe` is documented as "an honest prior — be conservative", but
+  `_EV_THRESHOLD=0.05` needs ~est_sharpe ≥1.6 at breadth 40 to QUEUE (carry ref 3.28 → 0.1171 PASS;
+  modest/broad 0.6 → 0.019 REJECT). Conservative honesty is therefore auto-rejected and optimism is
+  rewarded, and the whole "many small decorrelated sleeves" class dies at the door. Calibrate every
+  gate against a KNOWN-good reference and a known-marginal one; a reject rate near 100% is a
+  property of the gate to investigate, never evidence that the candidates were bad.
