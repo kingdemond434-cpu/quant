@@ -54,6 +54,12 @@ _AXES: dict[str, tuple[str, str, str, int]] = {
     # macro dollar-liquidity: total stablecoin supply (all issuers, DefiLlama),
     # momentum. Weak (IC 0.067) but economically grounded + orthogonal. SAME construct
     # as the supply field in run_stablecoin_flows -> ONE hypothesis, this is the tracked one.
+    # DeFi system utilisation (total borrow / total supply, Aave+Compound+Morpho+Spark).
+    # M_FORCED_DELEVERAGE -- the desk's BEST-supported mechanism (2/10 survival, holds the only
+    # confirmed edge). Direction -1: extreme utilisation = leverage crowded = fragile, so the
+    # prior is that it precedes weakness. Stated in ADVANCE; the clock decides, not the story.
+    # Stage-B slot 4 of 5 -- Holm bar rises 2.39 -> 2.52, which stageb_capacity computed as cheap.
+    "defi_utilisation": ("data/defi_util_axis.jsonl", "BTCUSDT", "z20", -1),
     "stablecoin_supply_momentum": ("data/stablecoin_supply.jsonl", "BTCUSDT", "z20", +1),
     # USDT/CNY P2P premium (capital-control pressure; kimchi CN-analog). Direction +1
     # PRE-REGISTERED from mechanism 2026-07-24 (peek-safe: chosen before any forward

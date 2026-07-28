@@ -58,6 +58,8 @@ _STEPS = [
     ("measurement_gate",  "scripts/measurement_gate.py", 120),  # inputs must be verified before any optimisation
     ("exec_bottleneck",   "scripts/execution_bottleneck.py", 60),  # live book vs live gate
     ("collector_monitor","scripts/collector_monitor.py", 90),  # G3 zero-trust sensor kill-switch
+    ("stage_a_exec",       "scripts/stage_a_executor.py", 120),  # RUN the ranked queue, not order it
+    ("defi_axis",          "scripts/build_defi_axis.py", 60),  # pool rows -> daily z20 axis feed
     ("conversion",        "scripts/conversion_engine.py", 90),  # mined data -> ranked experiments, every cycle
     ("enforce_proof",     "scripts/prove_future.py", 90),  # adversarial: guards must FAIL on planted violations
     ("principle_audit",   "scripts/principle_audit.py", 30),  # STRICT: all 15 principles must reach models
