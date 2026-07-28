@@ -28,6 +28,7 @@ Stage-A only, zero promotion authority. Run from repo root.
 from __future__ import annotations
 
 import json
+import os
 import re
 import ssl
 import subprocess
@@ -50,7 +51,11 @@ CTX = ssl.create_default_context()
 
 # code-strong flagships; yield table below is the real selection evidence
 SEATS = ["deepseek/deepseek-v4-pro", "moonshotai/kimi-k3", "x-ai/grok-4.3"]
-N_TARGETS = 3          # sources attempted per run
+# Sources attempted per run. Was 3, against a breadth feed that grows faster than 3/day -- so
+# the conversion bottleneck this script exists to close was itself throttled below the inflow
+# rate, and the backlog could only ever grow. Overridable per-run; the cost is one LLM call per
+# (source x seat) and the static-scan + isolated-subprocess safety path is unchanged.
+N_TARGETS = int(os.environ.get("COLLECTOR_N_TARGETS", "8"))
 
 BANNED = re.compile(
     r"\b(subprocess|os\s*\.\s*(system|popen|remove|unlink|environ)|eval\s*\(|exec\s*\("

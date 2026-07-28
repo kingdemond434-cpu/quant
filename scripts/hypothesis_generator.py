@@ -114,33 +114,59 @@ def main() -> None:
     seated = list(provs)
     dead_txt, dead_tok = refuted()
     mech = MECH.read_text("utf-8")[:3000] if MECH.exists() else ""
-    day = datetime.now(tz=UTC).toordinal()
-    lens_name, lens_txt = LENSES[day % len(LENSES)]
 
-    user = (f"LENS -- {lens_name}\n{lens_txt}\n\n"
-            f"ALREADY REFUTED ON THIS DESK (do not propose these or close variants):\n{dead_txt}\n\n"
-            f"MECHANISM MAP (what is already observed):\n{mech}\n\n"
-            "Give 10-15 hypotheses through THIS lens that are NOT in the refuted list.")
-    print(f"=== HYPOTHESIS GENERATOR | lens: {lens_name} | {len(seated)} seats ===")
+    # ALL LENSES EVERY RUN (was: LENSES[day % len(LENSES)] -- one lens per day).
+    #
+    # The one-lens rotation put a 5x throttle on the desk's PRIMARY output and took five days to
+    # sweep the hypothesis space once. It also contradicted its own sibling: breadth_expander
+    # runs every lens daily and states exactly why --
+    #
+    #     "ALL LENSES DAILY -- one prompt reshuffled would converge; six orthogonal framings
+    #      cannot."                                        -- breadth_expander.py
+    #
+    # That argument is about ORTHOGONALITY OF FRAMING, not about which organ is asking, so it
+    # applies here identically. Rotating lenses does not merely slow generation down: on any
+    # given day the desk can only see the space through one framing, so a hypothesis that needs
+    # PARTICIPANT CONSTRAINT thinking is invisible on a SECOND ORDER day and is never generated
+    # at all unless the idea survives four days of nobody looking for it.
+    #
+    # Cost: len(LENSES) x len(seats) calls (5 x 3 = 15) at ~$0.22 = ~$3.30/run against a stated
+    # $10-30/mo envelope. Generation is objective #2 of two co-equal supreme objectives; this is
+    # the cheapest available purchase of discovery rate on the desk.
+    print(f"=== HYPOTHESIS GENERATOR | FULL SWEEP: {len(LENSES)} lenses x {len(seated)} seats ===")
     print("    *** UNTESTED SCRIPT -- verify output before trusting it ***")
     print(f"    graveyard supplied: {len(dead_tok)} refuted tokens (prevents re-proposing dead)\n")
 
-    def run(seat):
+    def _user_for(lens_name: str, lens_txt: str) -> str:
+        return (f"LENS -- {lens_name}\n{lens_txt}\n\n"
+                f"ALREADY REFUTED ON THIS DESK (do not propose these or close variants):\n"
+                f"{dead_txt}\n\n"
+                f"MECHANISM MAP (what is already observed):\n{mech}\n\n"
+                "Give 10-15 hypotheses through THIS lens that are NOT in the refuted list.")
+
+    jobs = [(ln, lt, seat) for ln, lt in LENSES for seat in seated]
+
+    def run(job):
+        lens_name, lens_txt, seat = job
         p = provs.get(seat)
         if not p:
-            return seat, "", "not in roster"
+            return lens_name, seat, "", "not in roster"
         try:
-            return seat, _ask(p["base_url"], p["key"], seat, SYSTEM, user), None
+            return (lens_name, seat,
+                    _ask(p["base_url"], p["key"], seat, SYSTEM, _user_for(lens_name, lens_txt)),
+                    None)
         except Exception as e:
-            return seat, "", f"{type(e).__name__} {getattr(e, 'code', '')}"
+            return lens_name, seat, "", f"{type(e).__name__} {getattr(e, 'code', '')}"
 
-    with ThreadPoolExecutor(max_workers=3) as ex:
-        answers = list(ex.map(run, seated))
+    # Fanned out because the sweep is now len(LENSES)x bigger and must still fit its cadence
+    # window -- the same reason breadth_expander parallelises its full sweep.
+    with ThreadPoolExecutor(max_workers=6) as ex:
+        answers = list(ex.map(run, jobs))
 
     rows = []
-    for seat, txt, err in answers:
+    for lens_name, seat, txt, err in answers:
         if err:
-            print(f"  {seat.split('/')[-1]:<22} FAILED ({err})")
+            print(f"  {lens_name[:22]:<22} {seat.split('/')[-1]:<22} FAILED ({err})")
             continue
         kept = dup = 0
         for ln in txt.splitlines():
@@ -159,7 +185,8 @@ def main() -> None:
                          "data": parts[2][:140], "test": parts[3][:200],
                          "kill": parts[4][:160] if len(parts) > 4 else ""})
             kept += 1
-        print(f"  {seat.split('/')[-1]:<22} +{kept} new, {dup} rejected as already-refuted")
+        print(f"  {lens_name[:22]:<22} {seat.split('/')[-1]:<22} "
+              f"+{kept} new, {dup} rejected as already-refuted")
 
     if rows:
         with OUT.open("a", encoding="utf-8") as fh:
