@@ -104,6 +104,22 @@ def _load(p, d=None):
         return d
 
 
+
+def _health_for(vit: dict, src: str):
+    """Match by prefix, not exact key. data_vitals registers 'data/moat (order books)' while the
+    graph declares 'data/moat' -- same source, different spelling, and an exact lookup reported a
+    monitored source as UNMONITORED forever. Two subsystems that agree about reality but disagree
+    about naming produce a false alarm nothing detects, because both are individually correct."""
+    if src in vit:
+        return vit[src]
+    base = src.split(" (")[0].strip().lower()
+    for k, v in vit.items():
+        kb = k.split(" (")[0].strip().lower()
+        if kb == base or kb.startswith(base) or base.startswith(kb):
+            return v
+    return None
+
+
 def main() -> None:
     vit = {c["source"]: c for c in (_load(VITALS, {}) or {}).get("collectors", [])}
     gate = (_load(GATE, {}) or {}).get("datasets", {})
@@ -113,7 +129,7 @@ def main() -> None:
     print("    severity is taken from the WORST upstream input, never averaged:")
     print("    averaging is how one dead input hides behind four healthy ones\n")
 
-    rows, poisoned, degraded = [], [], []
+    rows, poisoned, degraded, contradictions = [], [], [], []
     print(f"  {'source':<34}{'DQS':>7}{'gate':>9}{'alphas':>8}  state")
     for src, e in EDGES.items():
         if e.get("static"):
@@ -122,7 +138,7 @@ def main() -> None:
                          "features": e["features"], "alphas": e["alphas"],
                          "live_decision": False, "note": e["note"]})
             continue
-        v = vit.get(src)
+        v = _health_for(vit, src)
         g = gate.get(src, {}).get("verdict")
         dqs = v["dqs"] if v else None
         dead = (dqs is not None and dqs < 0.5)
@@ -137,6 +153,12 @@ def main() -> None:
         else:
             state = "CLEAN"
 
+        # A gate PASS with a dead DQS is the silent-failure shape both systems exist to expose:
+        # structurally valid, operationally dead. Neither alone says it; the disagreement does.
+        if dead and g == "VERIFIED":
+            contradictions.append({"source": src, "dqs": dqs,
+                                   "note": "gate VERIFIED but collector DEAD -- valid structure, "
+                                           "no fresh data"})
         dstr = "n/a" if dqs is None else f"{dqs:.3f}"
         gstr = g or "-"
         print(f"  {src:<34}{dstr:>7}{gstr:>9}{len(e['alphas']):>8}  {state}")
@@ -149,6 +171,12 @@ def main() -> None:
         elif state == "DEGRADED":
             degraded.append(row)
 
+    if contradictions:
+        print("\n  === CONTRADICTIONS: gate says VERIFIED, health says DEAD ===")
+        for c2 in contradictions:
+            print(f"    {c2['source']}: {c2['note']}")
+        print("    Structurally valid and operationally dead is the exact shape a 14-day silent")
+        print("    websocket failure takes. Neither check reports it alone.")
     print(f"\n  {len(poisoned)} POISONED, {len(degraded)} DEGRADED, "
           f"{sum(1 for r in rows if r['state']=='CLEAN')} CLEAN, "
           f"{sum(1 for r in rows if r['state']=='UNMONITORED')} UNMONITORED")
@@ -187,7 +215,7 @@ def main() -> None:
             pass
 
     OUT.write_text(json.dumps({"updated": datetime.now(tz=UTC).isoformat(), "nodes": rows,
-                               "n_poisoned": len(poisoned), "n_degraded": len(degraded)},
+                               "n_poisoned": len(poisoned), "n_degraded": len(degraded), "contradictions": contradictions},
                               indent=1), "utf-8")
     print(f"  -> {OUT}")
     raise SystemExit(1 if poisoned else 0)

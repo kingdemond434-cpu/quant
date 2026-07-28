@@ -5,7 +5,7 @@ Before this, the weekly panel depended on the AI brain remembering to fire it --
 LLM memory is a reliability hole. This script runs inside the daily cycle and deterministically
 fires what is due, per stage (data/stage_state.json):
 
-  S0 (pre-live, current):  panel every 7d (mission rotation) | tier1 every 28d |
+  S0 (pre-live, current):  panel every 7d (mission rotation) | tier1 every 14d (was documented as 28d while the constant read 14 -- that contradiction produced a 34-day error in a live briefing) |
                            generation DATA-TRIGGERED (a 40d clock maturing or a new family
                            landing flags a scoped generate run for the brain)
   S1/S2 (live, flipped by the live-connector deployment): all of the above PLUS generation

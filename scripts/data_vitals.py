@@ -100,7 +100,18 @@ def _rows(p: Path):
 def score(p: Path) -> dict | None:
     rows = _rows(p)
     if len(rows) < 20:
-        return None
+        # REPORTED, NOT DROPPED. A silently skipped file vanishes from the denominator and is
+        # then indistinguishable from a file that passed -- coverage read 56.8% while the desk
+        # could not say what became of the other 43%.
+        return {"source": p.name, "dqs": None,
+                "components": {"latency": None, "completeness": None, "schema_integrity": None,
+                               "temporal_alignment": None, "cross_validation_available": False},
+                "cadence_s": None, "age_s": None,
+                "provenance": PROVENANCE.get(p.name, {"collection": "UNKNOWN",
+                                                      "regenerable": None,
+                                                      "timestamp_verified": None,
+                                                      "note": f"only {len(rows)} rows"}),
+                "action": "TOO_SMALL -- reported, not scored"}
     key = next((k for k in _TIME_KEYS if k in rows[0]), None)
     ts = [t for t in (_parse_ts(r.get(key)) for r in rows) if t] if key else []
     now = datetime.now(tz=UTC)
@@ -184,6 +195,12 @@ EXTRA_SOURCES = {
         "kind": "JSON_STATE", "path": "data/cashcarry_positions.json",
         "field": None, "cadence_s": 900,
         "feeds": "A001 -- the live carry book; mtime is the freshness signal"},
+    "binance funding (live API)": {
+        "kind": "JSON_STATE", "path": "data/cashcarry_exec_heartbeat",
+        "field": None, "cadence_s": 120,
+        "feeds": "A001 live carry entry gate. PROXY, and the link is causal: the executor calls "
+                 "current_funding() every cycle and cannot complete one without it, so a stalled "
+                 "heartbeat IS a dead funding feed"},
     "oi_ls_live (Binance positioning)": {
         "kind": "JSON_STATE", "path": "data/oi_ls_live_heartbeat",
         "field": None, "cadence_s": 3600,

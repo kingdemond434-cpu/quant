@@ -304,6 +304,12 @@ def verify_all() -> dict:
     for p in sorted((ROOT / "data").glob("*.jsonl")):
         rows = _load(p)
         if len(rows) < 25:
+            # Reported, never omitted -- same reason as data_vitals. An absent row cannot be
+            # distinguished from a passing row.
+            results[p.name] = {"rows_sampled": len(rows), "kind": "UNKNOWN",
+                               "verdict": "TOO_SMALL", "fails": [], "warns":
+                               [f"only {len(rows)} rows -- below the 25-row scoring floor"],
+                               "timestamps": {}, "correctness": {}, "features": {}, "repro": {}}
             continue
         tkey = next((k for k in _TIME_KEYS if k in rows[0]), None)
         kind = classify_kind(rows, tkey, p.name)
@@ -361,8 +367,10 @@ def main() -> None:
         print(f"    FAIL {f}")
 
     ok = [k for k, v in ds.items() if v["verdict"] == "VERIFIED"]
+    small = [k for k, v in ds.items() if v["verdict"] == "TOO_SMALL"]
     bad = [k for k, v in ds.items() if v["verdict"] == "FAILED"]
-    print(f"\n  {len(ds)} datasets gated: {len(ok)} VERIFIED, {len(bad)} FAILED\n")
+    print(f"\n  {len(ds)} datasets gated: {len(ok)} VERIFIED, {len(bad)} FAILED, "
+          f"{len(small)} TOO_SMALL (reported, not scored -- still NOT a pass)\n")
     for name in sorted(bad, key=lambda k: -len(ds[k]["fails"])):
         v = ds[name]
         print(f"  FAILED  {name}  [{v['kind']}]  ({v['rows_sampled']} rows sampled)")
