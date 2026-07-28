@@ -29,6 +29,7 @@ public sources only -- no paid data APIs, no institutional terminals.
 from __future__ import annotations
 
 import json
+import re
 import ssl
 import sys
 import urllib.request
@@ -51,9 +52,34 @@ VECTORS = ["linguistic_abyss", "github_graveyard", "protocol_documentation_sewer
            "cross_chain_shadow_roads", "obscure_perp_swamps"]
 
 # Mechanically enforced. The prompt asks for these to be avoided; this drops them.
-FORBIDDEN = ("binance funding rate", "funding rate anomal", "rsi", "macd", "bollinger",
-             "tradingview", "twitter sentiment", "google trends", "wikipedia pageview",
-             "coinglass", "dune dashboard", "moving average", "ai sentiment")
+FORBIDDEN_SETS = [
+    # Each entry is a REQUIRED TOKEN SET: the zone trips only when EVERY token is present,
+    # in any order. Exact-substring matching let "Binance funding anomaly" through while
+    # dropping "Binance funding rate anomaly" -- the same dead source, one word apart.
+    {"binance", "funding"},          # crowded beyond usefulness; 10k bots watch it
+    {"funding", "anomaly"},
+    {"open", "interest", "high"},
+    {"rsi"}, {"macd"}, {"bollinger"}, {"stochastic"},
+    {"tradingview"}, {"coinglass"},
+    {"dune", "dashboard"},
+    {"twitter", "sentiment"}, {"sentiment", "analysis"},
+    {"google", "trends"}, {"wikipedia", "pageview"},
+    {"moving", "average"},
+]
+
+
+def _forbidden(text: str) -> str | None:
+    """Return the tripped zone, or None. Token-set membership, order-independent.
+
+    NOTE the deliberate narrowness: multi-token zones require ALL tokens, so bare "funding"
+    is NOT blocked -- funding persistence is this desk's single confirmed edge and must stay
+    researchable. The zone blocks crowded FRAMINGS of it, not the subject.
+    """
+    toks = set(re.findall(r"[a-z]+", text.lower()))
+    for zone in FORBIDDEN_SETS:
+        if zone <= toks:
+            return " + ".join(sorted(zone))
+    return None
 
 CHARTER = (
     "You are an INFORMATION PREDATOR for a solo quant desk. You are not a literature reviewer.\n"
@@ -68,8 +94,17 @@ CHARTER = (
     "like errors first. Depth over breadth: 3 deep findings beat 20 shallow ones.\n"
     "- NEGATIVE KNOWLEDGE COUNTS: if you hunt a forest and find nothing, SAY SO explicitly. That "
     "prevents repeated waste and is a valid deliverable.\n\n"
-    "OUTPUT: one finding per line, fields separated by |, exactly 7 fields:\n"
-    "PROBLEM | EVIDENCE | BENEFIT | COST | DEPENDENCIES | SUCCESS_METRIC | KILL_CONDITION\n"
+    "CLAIM PROVENANCE IS MANDATORY. Every finding starts with one of:\n"
+    "  VERIFIED  -- direct quote or number WITH a URL or document reference\n"
+    "  INFERRED  -- your own mechanism construction (legitimate, but say so)\n"
+    "NEVER blend them in one finding. Split it, or drop it. A VERIFIED tag with no\n"
+    "source reference will be downgraded automatically.\n"
+    "YOUR JOB IS RAW SIGNAL, NOT MECHANISM. Mechanism construction happens at the next\n"
+    "stage. If you find yourself explaining WHY something should work, you have\n"
+    "overstepped -- report what you FOUND and let the next stage build the story.\n"
+    "If you find nothing in a forest, say so explicitly. That is a valid deliverable.\n\n"
+    "OUTPUT: one finding per line, fields separated by |, exactly 8 fields:\n"
+    "CLAIM_CLASS | PROBLEM | EVIDENCE | BENEFIT | COST | DEPENDENCIES | SUCCESS_METRIC | KILL_CONDITION\n"
     "where PROBLEM names the information gap, EVIDENCE cites the source/URL, and KILL_CONDITION "
     "states what observation would prove the source worthless."
 )
@@ -112,28 +147,62 @@ def _ask(base, key, system, user, timeout=240.0) -> str:
     return str(m.get("content") or m.get("reasoning") or "")
 
 
-def _forbidden(text: str) -> str | None:
-    low = text.lower()
-    return next((f for f in FORBIDDEN if f in low), None)
 
 
+
+
+def _admit(line: str, wave: int, wave_text: str = "") -> tuple[bool, str, str, list[str]]:
+    """SINGLE SOURCE OF TRUTH for admission. Returns (keep, reason, claim_class, fields).
+
+    main() and _selftest() both call this. Previously the selftest carried its own simplified
+    copy, scored 6/6 against a rule that does not run, and stayed green through a charter change
+    that broke it. One function means they cannot diverge again.
+    """
+    parts = [x.strip() for x in line.split("|")]
+    if len(parts) < 8:
+        return (False, f"only {len(parts)} fields, charter needs 8", "", parts)
+    cls = parts[0].upper()
+    if cls not in ("VERIFIED", "INFERRED"):
+        return (False, f"claim class {cls!r} not VERIFIED/INFERRED", cls, parts)
+    f = _forbidden(line)
+    if f:
+        return (False, f"forbidden zone {f!r}", cls, parts)
+    body = " ".join(parts[1:])
+    if cls == "VERIFIED" and not any(t in body.lower() for t in
+                                     ("http", "www.", ".gov", ".org", "10-q", "10-k",
+                                      "filing", "docs.", "github.com")):
+        # an unsourced claim of sourcing is worth exactly what an unsourced claim is worth
+        return (True, "VERIFIED downgraded to INFERRED -- no source reference", "INFERRED",
+                parts[1:])
+    if wave == 2 and "HERD_COVERED" not in wave_text.upper() and "because" not in line.lower():
+        return (False, "no linkage to Wave-1 coverage", cls, parts)
+    return (True, "", cls, parts[1:])
 
 
 _SELFTEST_CASES = [
-    ("Binance funding rate anomaly on BTC | dashboards show it | edge | 1d | NONE | IC | none",
+    ("INFERRED | Japanese tax reclassification drives offshore perp flow | FIEA 2027 timeline;"
+     " capital-flight mechanism is my construction | forced-flow lead | 3d | none |"
+     " JPY-hours perp volume share rises | no share change after 90d",
+     "KEEP", "INFERRED and labelled as such -- legitimate"),
+    ("VERIFIED | Strategy preferred dividend forces BTC sales | $1.2B annual obligation |"
+     " scheduled forced seller | 2d | none | sale within 5d of dividend date | no clustering",
+     "KEEP-DOWNGRADED", "VERIFIED with no URL -> auto-downgraded to INFERRED"),
+    ("Bridge failure spike | illustrative example | edge | 1d | none | IC | none | extra",
+     "DROP", "no CLAIM_CLASS in position 1"),
+    ("INFERRED | Binance funding anomaly | dashboards show it | edge | 1d | NONE | IC | none",
      "DROP", "forbidden zone: crowded funding"),
-    ("RSI oversold on micro caps | tradingview screener | edge | 1d | NONE | IC | none",
+    ("INFERRED | RSI oversold micro caps | tradingview | edge | 1d | NONE | IC | none",
      "DROP", "forbidden zone: RSI / TradingView"),
-    ("Twitter sentiment velocity | CT post volume | edge | 1d | NONE | IC | none",
+    ("INFERRED | Twitter sentiment velocity | CT volume | edge | 1d | NONE | IC | none",
      "DROP", "forbidden zone: twitter sentiment"),
-    ("Aave health-factor left tail predicts forced liquidation | on-chain event logs via free RPC"
+    ("VERIFIED | Aave health-factor tail predicts forced liquidation | https://docs.aave.com logs"
      " | forced-seller lead time | 2d | local node | share of cascades pre-detected > 0.4 |"
      " no lead beyond 1 block",
      "KEEP", "forced participant + free source + kill condition"),
-    ("Validator exit queue length predicts stETH discount | beaconcha.in public API | early"
+    ("VERIFIED | Validator exit queue predicts stETH discount | https://beaconcha.in API | early"
      " warning | 1d | NONE | corr with discount > 0.3 | no relation after 60d",
      "KEEP", "obscure, free, mechanism named"),
-    ("Bridge failure rate spike | Stargate public subgraph | liquidity stress",
+    ("INFERRED | Bridge failure spike | Stargate subgraph | liquidity stress",
      "DROP", "only 3 fields, charter needs 7"),
 ]
 
@@ -144,14 +213,15 @@ def _selftest() -> int:
     print()
     passed = 0
     for line, expect, why in _SELFTEST_CASES:
-        parts = [x.strip() for x in line.split("|")]
-        f = _forbidden(line)
-        got = "DROP" if (f or len(parts) < 7) else "KEEP"
+        keep, reason, cls, _ = _admit(line, 3, "")
+        got = "KEEP" if keep else "DROP"
+        if keep and "downgraded" in reason:
+            got = "KEEP-DOWNGRADED"
         ok = got == expect
         passed += ok
-        print(f"  {'PASS' if ok else 'FAIL'}  expect {expect:<5} got {got:<5}  {why}")
-        if f:
-            print(f"           tripped forbidden zone: {f!r}")
+        print(f"  {'PASS' if ok else 'FAIL'}  expect {expect:<16} got {got:<16}  {why}")
+        if reason:
+            print(f"           {reason}")
     print()
     print(f"  {passed}/{len(_SELFTEST_CASES)} enforcement cases correct")
     print("  Verified WITHOUT spending credit: forbidden zones drop crowded and dead sources,")
@@ -180,7 +250,7 @@ def main() -> None:
 
     kills = set(json.loads(MECHB.read_text("utf-8")).get("family_kills", [])) \
         if MECHB.exists() else set()
-    print(f"  enforcing {len(FORBIDDEN)} forbidden zones + {len(kills)} family kills\n")
+    print(f"  enforcing {len(FORBIDDEN_SETS)} forbidden zones + {len(kills)} family kills\n")
 
     transcript, findings, dropped = {}, [], []
     for w in (1, 2, 3):
@@ -204,20 +274,15 @@ def main() -> None:
         if w == 1:
             continue                       # Wave 1 is mapping only; findings are not permitted
         for ln in txt.splitlines():
-            parts = [x.strip() for x in ln.split("|")]
-            if len(parts) < 7:
+            if ln.count("|") < 3:
                 continue
-            f = _forbidden(ln)
-            if f:
-                dropped.append({"wave": w, "reason": f"forbidden zone '{f}'",
-                                "line": ln[:120]})
-                continue
-            if w == 2 and "HERD_COVERED" not in txt.upper() and "because" not in ln.lower():
-                dropped.append({"wave": 2, "reason": "no linkage to Wave-1 coverage",
-                                "line": ln[:120]})
+            keep, reason, cls, parts = _admit(ln, w, txt)
+            if reason:
+                dropped.append({"wave": w, "reason": reason, "line": ln[:120]})
+            if not keep:
                 continue
             findings.append({"date": datetime.now(tz=UTC).date().isoformat(),
-                             "source": "kimi_k3_deep_forest", "wave": w,
+                             "source": "kimi_k3_deep_forest", "wave": w, "claim_class": cls,
                              "problem": parts[0][:220], "evidence": parts[1][:220],
                              "benefit": parts[2][:180], "cost": parts[3][:140],
                              "dependencies": parts[4][:140], "success_metric": parts[5][:180],
