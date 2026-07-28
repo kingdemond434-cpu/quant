@@ -79,6 +79,11 @@ EDGES = {
         "alphas": ["A004"],
         "live_decision": False,
         "note": "self-recorded; not covered by the .jsonl collectors scan"},
+    "oi_ls_live (Binance positioning)": {
+        "features": ["long_short_ratio", "oi_usd", "taker_buy_sell_ratio"],
+        "alphas": [],
+        "live_decision": False,
+        "note": "new 2026-07-28; replaces a static archive that ended 2023-12-03"},
     "defi_lending (Aave/Compound/Morpho)": {
         "features": ["utilisation", "borrow_apy", "ltv_headroom"],
         "alphas": [],

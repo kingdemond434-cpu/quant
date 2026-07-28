@@ -184,6 +184,10 @@ EXTRA_SOURCES = {
         "kind": "JSON_STATE", "path": "data/cashcarry_positions.json",
         "field": None, "cadence_s": 900,
         "feeds": "A001 -- the live carry book; mtime is the freshness signal"},
+    "oi_ls_live (Binance positioning)": {
+        "kind": "JSON_STATE", "path": "data/oi_ls_live_heartbeat",
+        "field": None, "cadence_s": 3600,
+        "feeds": "M_FORCED_DELEVERAGE -- live crowding; the static archive ends 2023-12-03"},
     "defi_lending (Aave/Compound/Morpho)": {
         "kind": "JSON_STATE", "path": "data/defi_lending_heartbeat",
         "field": None, "cadence_s": 3600,
