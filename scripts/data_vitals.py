@@ -59,6 +59,22 @@ PROVENANCE = {
 }
 
 
+# Not every .jsonl is a live collector. Scoring a static archive or a git-derived artifact by
+# live-feed latency rules produced 9 DEAD flags of which only one was real -- and an alarm that
+# fires mostly on non-problems trains its reader to ignore it.
+_ARTIFACT_KIND = {
+    "oi_ls_history.jsonl": ("STATIC", "historical backfill, ends 2023-12-03 BY DESIGN"),
+    "cny_otc_premium_history.jsonl": ("STATIC", "wayback backfill; live feed is cny_premium.jsonl"),
+    "experiment_registry.jsonl": ("DERIVED", "harvested from git; timestamps are commit dates"),
+    "panel_verdicts.jsonl": ("EVENT_LOG", "appended per panel run, not a feed"),
+    "external_panel_log.jsonl": ("EVENT_LOG", "appended per panel run"),
+    "micro_audit_log.jsonl": ("EVENT_LOG", "appended per audit"),
+    "mine_conversion_log.jsonl": ("EVENT_LOG", "appended per conversion"),
+    "blind_spot_ledger.jsonl": ("EVENT_LOG", "appended per gap"),
+    "information_value.jsonl": ("DERIVED", "written by libs/research/information_value.py"),
+}
+
+
 def _parse_ts(v):
     if isinstance(v, (int, float)):
         x = float(v)
@@ -98,6 +114,16 @@ def _rows(p: Path):
 
 
 def score(p: Path) -> dict | None:
+    kind, why = _ARTIFACT_KIND.get(p.name, (None, None))
+    if kind:
+        # Reported with its true nature. DEAD must mean "a live feed stopped", nothing else.
+        return {"source": p.name, "dqs": None,
+                "components": {"latency": None, "completeness": None, "schema_integrity": None,
+                               "temporal_alignment": None, "cross_validation_available": False},
+                "cadence_s": None, "age_s": None,
+                "provenance": PROVENANCE.get(p.name, {"collection": kind, "regenerable": None,
+                                                      "timestamp_verified": None, "note": why}),
+                "action": f"{kind} -- not a live feed ({why})"}
     rows = _rows(p)
     if len(rows) < 20:
         # REPORTED, NOT DROPPED. A silently skipped file vanishes from the denominator and is
