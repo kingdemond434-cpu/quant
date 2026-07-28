@@ -101,28 +101,77 @@ def research_efficiency() -> dict[str, Any]:
 
 # ---------------------------------------------------------------- §9 complexity audit
 def complexity_audit() -> dict[str, Any]:
-    """Every subsystem justifies its existence. Orphan packages are unpaid maintenance."""
+    """Every subsystem justifies its existence -- measured by TRANSITIVE reach, not direct grep.
+
+    CORRECTED 2026-07-28 after this check produced a confidently wrong number. The first version
+    asked only `f"libs.{pkg}" in scripts_txt` -- i.e. is the package named in scripts/ -- and so
+    reported 93 "orphan" modules including libs/discovery. That was false and dangerous: acting
+    on it would have deleted a working BASE LAYER. libs/discovery is reached THROUGH other libs
+    packages, which say so in their own docstrings ("Reuses the discovery capacity model") and
+    import it explicitly:
+
+        libs/alpha_factory/capacity_intelligence.py : from libs.discovery.capacity import ...
+        libs/signal_engine/capacity.py             : from libs.discovery.capacity import ...
+        libs/alpha_factory/research_roi_engine.py  : from libs.discovery.research_roi import ...
+
+    A one-hop grep cannot see a layered architecture, and "unreferenced by scripts/" is not the
+    same claim as "dead". This now walks the import graph from every scripts/ entry point and
+    marks a package reachable if ANY path leads to it. Depth is reported so a package reached
+    only at depth 3+ can still be questioned -- reachable is not the same as load-bearing.
+    """
     libs = ROOT / "libs"
-    scripts_txt = ""
-    for p in (ROOT / "scripts").glob("*.py"):
+    pkgs = sorted(d.name for d in libs.iterdir() if d.is_dir() and not d.name.startswith("_")
+                  and list(d.glob("*.py")))
+
+    def _refs(text: str) -> set[str]:
+        return {p for p in pkgs if f"libs.{p}" in text}
+
+    # package -> packages it imports
+    edges: dict[str, set[str]] = {}
+    for p in pkgs:
+        body = ""
+        for m in (libs / p).glob("*.py"):
+            try:
+                body += m.read_text("utf-8", errors="ignore")
+            except OSError:
+                continue
+        edges[p] = _refs(body) - {p}
+
+    # seed: packages named directly by any scripts/ entry point (depth 1)
+    seed: set[str] = set()
+    for s in (ROOT / "scripts").glob("*.py"):
         try:
-            scripts_txt += p.read_text("utf-8", errors="ignore")
+            seed |= _refs(s.read_text("utf-8", errors="ignore"))
         except OSError:
             continue
+
+    depth = dict.fromkeys(seed, 1)
+    frontier, d = set(seed), 1
+    while frontier and d < 12:
+        d += 1
+        nxt: set[str] = set()
+        for p in frontier:
+            for q in edges.get(p, ()):
+                if q not in depth:
+                    depth[q] = d
+                    nxt.add(q)
+        frontier = nxt
+
     rows = []
-    for pkg in sorted(d for d in libs.iterdir() if d.is_dir() and not d.name.startswith("_")):
-        mods = list(pkg.glob("*.py"))
-        if not mods:
-            continue
-        reached = f"libs.{pkg.name}" in scripts_txt
-        rows.append({"package": pkg.name, "modules": len(mods),
-                     "reached_by_scripts": reached,
-                     "verdict": "JUSTIFY OR RETIRE" if not reached else "wired"})
-    orphan_mods = sum(r["modules"] for r in rows if not r["reached_by_scripts"])
+    for p in pkgs:
+        n = len(list((libs / p).glob("*.py")))
+        dep = depth.get(p)
+        rows.append({"package": p, "modules": n,
+                     "reached": dep is not None, "reach_depth": dep,
+                     "verdict": ("JUSTIFY OR RETIRE" if dep is None
+                                 else ("wired (direct)" if dep == 1
+                                       else f"wired (transitive, depth {dep})"))})
+    orphan_mods = sum(r["modules"] for r in rows if not r["reached"])
     return {"packages": rows, "orphan_modules": orphan_mods,
-            "note": ("§9: an orphan package is engineering cost + maintenance burden with zero "
-                     "measurable contribution. Wire it or retire it ON THE RECORD -- 'no law' "
-                     "must be a decision, never a default.")}
+            "note": ("§9: an orphan package is engineering cost with zero measurable "
+                     "contribution -- wire it or retire it ON THE RECORD. Reach is TRANSITIVE: "
+                     "a base layer imported only by other libs is load-bearing, not dead. "
+                     "Depth >= 3 is worth questioning, but is not evidence of death.")}
 
 
 # ---------------------------------------------------------------- §5 data moat review
@@ -200,12 +249,16 @@ def main() -> None:
           f"hypotheses={eff['hypotheses_generated']} validated={eff['validated']} "
           f"falsified={eff['falsified_negative_information_value']} "
           f"deployed={eff['deployed_forward_slots']}")
-    print(f"  §9 complexity   {cx['orphan_modules']} orphan modules across "
-          f"{sum(1 for r in cx['packages'] if not r['reached_by_scripts'])} package(s)")
+    print(f"  §9 complexity   {cx['orphan_modules']} genuinely-unreachable module(s) across "
+          f"{sum(1 for r in cx['packages'] if not r['reached'])} package(s)")
     for r in cx["packages"]:
-        if not r["reached_by_scripts"]:
+        if not r["reached"]:
             print(f"                    JUSTIFY OR RETIRE: libs/{r['package']} "
-                  f"({r['modules']} modules)")
+                  f"({r['modules']} modules, no import path from any entry point)")
+    _deep = [r for r in cx["packages"] if r["reached"] and (r["reach_depth"] or 0) >= 3]
+    if _deep:
+        print("                    reached only transitively (question, do not delete): "
+              + ", ".join(f"{r['package']}@d{r['reach_depth']}" for r in _deep))
     print(f"  §5 moat         {len(moat['stores'])} store(s) reviewed")
     print(f"  §8 lifecycle    {life['forward_slots_in_use']}/12 slots used, "
           f"{life['slots_free']} idle | graveyard {life['graveyard_entries']}")
