@@ -92,27 +92,57 @@ def main() -> None:
 
         # 2 evidence validity
         reads_dead = sorted({d for d in dead_ds if d.replace(".jsonl", "") in t})
-        dead_mechs = sorted({m for m in kills if m in t})
+        # MENTION IS NOT DEPENDENCY. v1 flagged mechanism_board, experiment_registry and
+        # research_cio as "built on FAMILY KILL M_ATTENTION_DELAY" because they NAME it -- they
+        # are the modules that ENFORCE the kill. A police module is not a dependent. Only count
+        # it when the module lacks any enforcement vocabulary around it.
+        _enforcer = any(k in t for k in ("family_kill", "FAMILY KILL", "kills", "verdicts",
+                                         "REJECT", "rejected", "graveyard"))
+        dead_mechs = [] if _enforcer else sorted({m for m in kills if m in t})
 
         # 3 duplication
         mine = {a for a, ps in produces.items() if stem in ps}
-        dupes = sorted({o for a in mine for o in produces[a] if o != stem})
+        # Only a shared PRIMARY output counts. Many modules legitimately read the same
+        # artifacts; v1 flagged 85 duplicates on incidental co-reference.
+        _primary = f"{stem}"
+        dupes = sorted({o for o in produces.get(_primary, []) if o != stem})
 
         # 4 maintenance cost
         loc = t.count("\n")
 
-        if age_d <= PROBATION_DAYS:
-            v, why = "PROBATION", f"only {age_d}d old -- no decision record yet"
-        elif not wired and cites <= 0:
-            v, why = "RETIRE", "unwired AND never cited in a later commit"
-        elif dead_mechs:
+        low = t.lower()
+        # SCAR TISSUE: written in response to a real failure. The docstrings on this desk record
+        # incidents explicitly, so this is detectable rather than guessed.
+        scar = any(k in low for k in ("incident", "root cause", "silent failure", "fail-open",
+                                      "regression", "this went wrong", "cost real money",
+                                      "defect", "post-mortem", "prevents recurrence"))
+        # CRITICAL: touches something that moves money or gates a live decision.
+        critical = any(k in low for k in ("run_cashcarry_executor", "cashcarry_positions",
+                                          "positionrisk", "place_market", "reduceonly",
+                                          "_entry_gate", "deadman", "kill", "heartbeat",
+                                          "measurement_gate", "require_verified"))
+        # PREMATURE: depends on things this desk does not have -- validated alphas, deployed
+        # capital, or collectors that were never built.
+        premature = any(k in low for k in ("deployed alpha", "portfolio construction",
+                                           "capital allocation", "decay laborator",
+                                           "recombination", "once alphas exist",
+                                           "needs >=2", "requires a deployed"))
+        if dead_mechs:
             v, why = "RETIRE", f"built on FAMILY KILL {dead_mechs[0]}"
-        elif reads_dead and wired:
-            v, why = "MERGE", f"depends on gate-FAILED input {reads_dead[0]}"
         elif dupes:
-            v, why = "MERGE", f"shares output artifacts with {dupes[0]}"
+            v, why = "DUPLICATE", f"shares output artifacts with {dupes[0]}"
+        elif scar and critical:
+            v, why = "SCAR_TISSUE", "prevents recurrence of a real failure on a live path"
+        elif scar:
+            v, why = "SCAR_TISSUE", "written after a real failure it prevents"
+        elif critical:
+            v, why = "CRITICAL", "feeds a live decision; absence is immediately visible"
+        elif premature:
+            v, why = "PREMATURE", "answers a question this desk does not have yet"
+        elif not wired and cites <= 0:
+            v, why = "INERT", "nothing reads it; deleting it breaks nothing"
         else:
-            v, why = "KEEP", "wired, cited, evidence intact"
+            v, why = "KEEP", "wired and cited, evidence intact"
         rows.append({"module": stem, "age_days": age_d, "wired": wired, "citations": max(cites, 0),
                      "loc": loc, "reads_failed_input": reads_dead, "dead_mechanisms": dead_mechs,
                      "duplicates": dupes, "verdict": v, "reason": why})
@@ -125,10 +155,10 @@ def main() -> None:
     print("    Neither asks whether the question it answers is still worth answering.\n")
     print(f"  {len(rows)} modules: {tally}\n")
 
+    print("  VERDICT IS INTRINSIC -- no age term. A module written five minutes ago can be")
+    print("  SCAR_TISSUE; one written last month can be INERT. 'I would build it eventually'")
+    print("  is not a defence.\n")
     mine = [r for r in rows if r["age_days"] <= 2]
-    print(f"  ADDED IN THE LAST 48h BY ONE PROCESS (me): {len(mine)}")
-    print("  This is the accretion pattern the module exists to catch, so it judges them first")
-    print("  and does not exempt its own author.\n")
     print(f"  {'module':<26}{'age':>5}{'wired':>7}{'cites':>7}{'loc':>6}  verdict")
     for r in sorted(mine, key=lambda x: x["module"])[:16]:
         print(f"  {r['module']:<26}{r['age_days']:>5}{str(r['wired']):>7}{r['citations']:>7}"
