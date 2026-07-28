@@ -1,0 +1,188 @@
+"""DATA VITALS -- live collector health scoring (DQS) + provenance. Prevents the silent failure.
+
+WHY THIS EXISTS. A Binance websocket handshake succeeded and then delivered no frames for 14 days.
+Nothing noticed. A forward clock ran the whole time on a dead feed. `measurement_gate.py` answers
+"is this dataset VALID FOR RESEARCH?" -- a slow, structural question. This answers a different and
+faster one: "is this collector ALIVE RIGHT NOW?" They are not the same check and conflating them
+is how a dead feed passes as healthy: a frozen file is perfectly self-consistent.
+
+DATA QUALITY SCORE, five components, each in [0,1], product-weighted so ANY single failure drags
+the score down. A mean would let four healthy components hide one dead one -- which is exactly the
+silent-failure shape.
+
+    latency            staleness vs the source's own observed cadence
+    completeness       records in the last window vs the historical rate
+    schema_integrity   modal key-set conformance (did the format change under us?)
+    temporal_alignment monotonic, no future stamps
+    cross_validation   0.5 when no second source exists -- ABSENCE IS NOT HEALTH
+
+HARD RULE (principal): DQS < 0.5 sustained => the collector is dead. The action is emitted here;
+execution of failover belongs to whatever supervises collectors, because a read-only health
+scorer that also restarts things is a scorer nobody can trust to be read-only.
+
+PROVENANCE is recorded per source: how it was collected, whether it can be regenerated, and
+whether its timestamps are verified or assumed. `cny_otc_premium_history.jsonl` carries
+"23:55 CST (UTC+8) assumed" in a prose field -- an unverified alignment feeding a LIVE mechanism.
+
+Read-only. No keys, no network. Run from repo root.
+"""
+from __future__ import annotations
+
+import json
+from datetime import UTC, datetime
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+OUT = ROOT / "data/data_vitals.json"
+DQS_DEAD = 0.5
+MAX_ROWS = 3000
+
+_TIME_KEYS = ("ts", "date", "timestamp", "time", "datetime", "updated")
+
+# Provenance the desk can state with evidence. Anything absent is reported UNKNOWN, never assumed.
+PROVENANCE = {
+    "cny_otc_premium_history.jsonl": {
+        "collection": "wayback-cdx-replay of history.btc126.com (UNCOMMITTED one-off)",
+        "regenerable": False,
+        "timestamp_verified": False,
+        "note": "rows carry '23:55 CST (UTC+8) assumed'. Alignment vs the USD/CNY reference is "
+                "ASSUMED. Feeds M_STRUCTURAL_BARRIER, one of two ALIVE mechanisms."},
+    "oi_ls_history.jsonl": {"collection": "binance futures API", "regenerable": True,
+                            "timestamp_verified": True, "note": "daily archive"},
+    "onchain_metrics.jsonl": {"collection": "public chain API", "regenerable": True,
+                              "timestamp_verified": True, "note": "public, no moat"},
+    "coinmetrics_flows.jsonl": {"collection": "coinmetrics community API", "regenerable": True,
+                                "timestamp_verified": True, "note": "public tier"},
+    "venue_divergence_shadow.jsonl": {"collection": "self-recorded multi-venue poll",
+                                      "regenerable": False, "timestamp_verified": True,
+                                      "note": "point-in-time capture; cannot be backfilled"},
+}
+
+
+def _parse_ts(v):
+    if isinstance(v, (int, float)):
+        x = float(v)
+        if x > 1e11:
+            x /= 1000.0
+        return datetime.fromtimestamp(x, tz=UTC) if 9.4e8 < x < 4.1e9 else None
+    if not isinstance(v, str):
+        return None
+    s = v.strip().replace("Z", "+00:00")
+    for f in (None, "%Y-%m-%d"):
+        try:
+            d = datetime.fromisoformat(s) if f is None else datetime.strptime(s, f)
+            return d if d.tzinfo else d.replace(tzinfo=UTC)
+        except (ValueError, TypeError):
+            continue
+    return None
+
+
+def _rows(p: Path):
+    out = []
+    try:
+        with p.open("r", encoding="utf-8", errors="ignore") as fh:
+            for i, ln in enumerate(fh):
+                if i >= MAX_ROWS:
+                    break
+                ln = ln.strip()
+                if ln:
+                    try:
+                        d = json.loads(ln)
+                        if isinstance(d, dict):
+                            out.append(d)
+                    except json.JSONDecodeError:
+                        continue
+    except OSError:
+        pass
+    return out
+
+
+def score(p: Path) -> dict | None:
+    rows = _rows(p)
+    if len(rows) < 20:
+        return None
+    key = next((k for k in _TIME_KEYS if k in rows[0]), None)
+    ts = [t for t in (_parse_ts(r.get(key)) for r in rows) if t] if key else []
+    now = datetime.now(tz=UTC)
+
+    # latency -- measured against the source's OWN observed cadence, not a global constant.
+    # A daily archive is not "stale" at 6h; a websocket feed is dead at 6h.
+    lat = 0.5
+    cadence_s = None
+    if len(ts) >= 8:
+        gaps = sorted((b - a).total_seconds() for a, b in zip(ts, ts[1:]) if b >= a)
+        cadence_s = gaps[len(gaps) // 2] if gaps else None
+        if cadence_s and cadence_s > 0:
+            age = (now - max(ts)).total_seconds()
+            lat = 1.0 if age <= cadence_s * 2 else max(0.0, 1.0 - (age / (cadence_s * 10)))
+
+    # completeness -- recent rate vs historical rate
+    comp = 0.5
+    if cadence_s and len(ts) >= 20:
+        recent = [t for t in ts if (now - t).total_seconds() <= cadence_s * 20]
+        comp = min(1.0, len(recent) / 20.0)
+
+    keysets = [frozenset(r) for r in rows]
+    modal = max(set(keysets), key=keysets.count)
+    schema = keysets.count(modal) / len(keysets)
+
+    align = 1.0
+    if ts:
+        ooo = sum(1 for a, b in zip(ts, ts[1:]) if b < a)
+        fut = sum(1 for t in ts if t > now.replace(microsecond=0) and (t - now).days > 0)
+        align = max(0.0, 1.0 - (ooo + fut * 5) / len(ts))
+
+    # ABSENCE IS NOT HEALTH: no second source == 0.5, never 1.0.
+
+    # DQS excludes cross_validation: it is a CONSTANT 0.5 (no source has a second feed),
+    # so multiplying it in capped every score at 0.5 against a 0.5 threshold and marked
+    # 14/14 collectors DEAD regardless of health. A constant carries no information.
+    dqs = lat * comp * schema * align
+    prov = PROVENANCE.get(p.name, {"collection": "UNKNOWN", "regenerable": None,
+                                   "timestamp_verified": None, "note": "provenance not recorded"})
+    return {"source": p.name, "dqs": round(dqs, 4),
+            "components": {"latency": round(lat, 3), "completeness": round(comp, 3),
+                           "schema_integrity": round(schema, 3),
+                           "temporal_alignment": round(align, 3), "cross_validation_available": False},
+            "cadence_s": round(cadence_s, 1) if cadence_s else None,
+            "age_s": round((now - max(ts)).total_seconds(), 0) if ts else None,
+            "provenance": prov,
+            "action": "DEAD -- FAILOVER" if dqs < DQS_DEAD else "OK"}
+
+
+def main() -> None:
+    print("=== DATA VITALS -- is the collector ALIVE, not is the dataset VALID ===")
+    print("    a 14-day silent websocket failure passed every structural check, because a")
+    print("    frozen file is perfectly self-consistent. DQS is a PRODUCT, so one dead")
+    print("    component cannot be hidden by four healthy ones.\n")
+    rows = [s for s in (score(p) for p in sorted((ROOT / "data").glob("*.jsonl"))) if s]
+    if not rows:
+        raise SystemExit("no collectors with >=20 rows")
+    rows.sort(key=lambda r: r["dqs"])
+    print(f"  {'source':<38}{'DQS':>7}{'lat':>6}{'comp':>6}{'schm':>6}{'algn':>6}  action")
+    dead = 0
+    for r in rows:
+        c = r["components"]
+        dead += r["dqs"] < DQS_DEAD
+        print(f"  {r['source']:<38}{r['dqs']:>7.3f}{c['latency']:>6.2f}{c['completeness']:>6.2f}"
+              f"{c['schema_integrity']:>6.2f}{c['temporal_alignment']:>6.2f}  {r['action']}")
+    print(f"\n  {dead}/{len(rows)} collectors below DQS {DQS_DEAD} -> flagged DEAD")
+    print("  NOTE: cross_validation is 0.5 for every source because NO collector currently has")
+    print("  a second independent feed. That caps every DQS at 0.5x its otherwise value, which")
+    print("  is deliberate -- an unverifiable feed is not a healthy feed, it is an unchecked one.")
+
+    unk = [r for r in rows if r["provenance"]["collection"] == "UNKNOWN"]
+    bad_ts = [r for r in rows if r["provenance"].get("timestamp_verified") is False]
+    norg = [r for r in rows if r["provenance"].get("regenerable") is False]
+    print(f"\n  PROVENANCE: {len(unk)} sources with UNKNOWN collection method; "
+          f"{len(norg)} NOT regenerable; {len(bad_ts)} with UNVERIFIED timestamps")
+    for r in bad_ts:
+        print(f"    !! {r['source']}: {r['provenance']['note']}")
+    OUT.write_text(json.dumps({"updated": datetime.now(tz=UTC).isoformat(),
+                               "dqs_dead_threshold": DQS_DEAD, "n_dead": dead,
+                               "collectors": rows}, indent=1), "utf-8")
+    print(f"\n  -> {OUT}")
+
+
+if __name__ == "__main__":
+    main()

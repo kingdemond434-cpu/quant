@@ -58,6 +58,8 @@ _STEPS = [
     ("measurement_gate",  "scripts/measurement_gate.py", 120),  # inputs must be verified before any optimisation
     ("exec_bottleneck",   "scripts/execution_bottleneck.py", 60),  # live book vs live gate
     ("collector_monitor","scripts/collector_monitor.py", 90),  # G3 zero-trust sensor kill-switch
+    ("data_vitals",         "scripts/data_vitals.py", 90),  # live collector DQS + provenance
+    ("alpha_lifecycle",     "scripts/alpha_lifecycle.py", 90),  # failure patterns + transfer pipeline + novelty + anomalies
     ("research_cio",        "scripts/research_cio.py", 90),  # info advantage + blind spots + north star + scheduler
     ("hedge_integrity",     "scripts/hedge_integrity.py", 60),  # venue-truth hedge invariant
     ("feature_library",     "scripts/feature_library.py", 90),  # feature assets + construction coverage
