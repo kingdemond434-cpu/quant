@@ -12,6 +12,9 @@ zero-based MAXIMIZATION panel mission re-derives each organ's ceiling from scrat
 
 Rules of the sweep:
  - a below-max state is a DEFECT unless acknowledged with a reason AND an expiry (max 30d) in
+
+#  EXHAUSTION: there is no acceptable number of un-acked below-max states. Sweep every
+#  organ every run; a check skipped for time is a defect hidden for time.
    data/max_audit_acks.json -- no permanent burial, ever
  - defects persisting >48h un-acked ESCALATE to the principal page (PRINCIPAL_ACTION.md):
    nothing can sit below max for more than two days without either being fixed or him knowing

@@ -110,3 +110,17 @@ The CRO implements every part-2/part-3 item that survives triage and raises ROI,
 through track_findings.py so none is silently dropped. Re-raising a finding already in the
 settled-rulings feed (with its stated reason unchallenged) wastes triage budget -- bring new
 evidence or move on.
+
+PREMORTEM-SPECIFIC: Assume it already failed and money is gone. Work backwards. Enumerate EVERY
+path to that outcome, not the three most likely — the one that kills this desk will be the one
+nobody listed. Include operational death (no kill switch, unmonitored feed, silent collector) not
+only market death.
+
+
+=== EXHAUSTION MANDATE (principal 2026-07-28) — NO QUOTA, NO CEILING ===
+Report EVERY finding you can substantiate. Do not rank-and-truncate to a tidy number.
+A defect omitted for brevity is a defect shipped.
+If a seam is genuinely empty, SAY SO and name what you checked — a documented empty seam stops
+this desk re-digging it and is worth as much as a find.
+Go one layer past where you would normally stop. That layer is what every other reviewer skips.
+Silence is indistinguishable from not having looked.
