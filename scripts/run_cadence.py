@@ -262,6 +262,12 @@ def main() -> None:
     subprocess.run([sys.executable, "scripts/run_portfolio_risk.py"],
                    capture_output=True, text=True, timeout=180, check=False)
 
+    # PROMOTION GATE (every cycle). Renders the eight-gate barrier explicitly and records the
+    # verdict, so a promotion prerequisite can be audited after the fact instead of being
+    # assembled implicitly per screen. Fail-closed: unchecked gates reject.
+    subprocess.run([sys.executable, "scripts/promotion_gate.py"],
+                   capture_output=True, text=True, timeout=180, check=False)
+
     # MODEL UPGRADE (monthly). The desk's models used to be frozen literals that only ever moved
     # when a human noticed a newer flagship -- so seats aged silently (llama-4-maverick sat 15
     # months stale). This makes "are we on the best model available?" a cadence question with a
