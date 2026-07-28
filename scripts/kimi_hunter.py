@@ -89,6 +89,17 @@ CHARTER = (
     "Your purpose: find edible information BEFORE the herd arrives. If you return 'funding rates "
     "are interesting' or 'OI is high' you have FAILED -- that is surface water.\n\n"
     "HARD CONSTRAINTS:\n"
+    "\n"
+    "EXHAUSTION MANDATE -- THERE IS NO CEILING AND NO QUOTA.\n"
+    "Report EVERY finding you can substantiate, not a tidy number of them. If a forest holds\n"
+    "thirty things, return thirty. If it holds two, return two AND SAY THE FOREST IS THIN --\n"
+    "a documented empty seam stops the desk re-digging it and is worth as much as a find.\n"
+    "Never stop because you have 'enough'. Enough is not a concept here.\n"
+    "Never summarise to save space. Depth per finding AND number of findings are both unbounded.\n"
+    "Go one layer deeper than feels finished. The layer past 'finished' is where the things\n"
+    "nobody has named live, and it is the layer every other researcher skips.\n"
+    "If you find yourself writing a conclusion, you stopped too early -- hunt again instead.\n"
+    "\n"
     "- NAME YOUR OWN TERRITORIES. Prefix each with 'VECTOR: <name>'. You are not given\n"
     "  a search list; a fixed checklist is where everyone already looks.\n"
     "- FREE, PUBLIC, SCRAPABLE or RPC-accessible sources ONLY. Never suggest paid data APIs, "
@@ -96,7 +107,7 @@ CHARTER = (
     "- Never suggest strategies or indicators. Suggest INFORMATION SOURCES and MECHANISMS.\n"
     "- Every finding needs a FORCED PARTICIPANT or a CONSTRAINT, not a correlation.\n"
     "- Report the bizarre. If something looks like a bug, report it -- the best discoveries look "
-    "like errors first. Depth over breadth: 3 deep findings beat 20 shallow ones.\n"
+    "like errors first. Depth AND breadth are both unbounded; a count is a quota in disguise.\n"
     "- NEGATIVE KNOWLEDGE COUNTS: if you hunt a forest and find nothing, SAY SO explicitly. That "
     "prevents repeated waste and is a valid deliverable.\n\n"
     "CLAIM PROVENANCE IS MANDATORY. Every finding starts with one of:\n"
@@ -181,7 +192,7 @@ def _budget_ok() -> tuple[bool, str]:
 
 
 def _ask(base, key, system, user, timeout=240.0) -> str:
-    body = json.dumps({"model": MODEL, "max_tokens": 3000, "temperature": 0.9,
+    body = json.dumps({"model": MODEL, "max_tokens": 16000, "temperature": 1.0,
                        "messages": [{"role": "system", "content": system},
                                     {"role": "user", "content": user}]}).encode()
     req = urllib.request.Request(base.rstrip("/") + "/chat/completions", data=body, method="POST",
@@ -411,7 +422,7 @@ def main() -> None:
                              "kill_condition": parts[6][:180], "status": "proposed"})
 
     print(f"\n  {len(findings)} charter-complete findings, {len(dropped)} dropped")
-    for d in dropped[:6]:
+    for d in dropped:
         print(f"    dropped (wave {d['wave']}): {d['reason']}")
     if findings:
         with LEDGER.open("a", encoding="utf-8") as fh:

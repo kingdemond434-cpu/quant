@@ -75,7 +75,7 @@ SYSTEM = (
 
 
 def _ask(base, key, model, system, user, timeout=240.0):
-    body = json.dumps({"model": model, "max_tokens": 3000, "temperature": 0.95,
+    body = json.dumps({"model": model, "max_tokens": 16000, "temperature": 1.05,
                        "reasoning": {"effort": "high"},
                        "messages": [{"role": "system", "content": system},
                                     {"role": "user", "content": user}]}).encode()

@@ -101,7 +101,7 @@ def simplifier() -> dict:
 
 
 def _ask(base, key, model, system, user, timeout=240.0):
-    body = json.dumps({"model": model, "max_tokens": 3000, "temperature": 0.6,
+    body = json.dumps({"model": model, "max_tokens": 12000, "temperature": 0.9,
                        "reasoning": {"effort": "high"},
                        "messages": [{"role": "system", "content": system},
                                     {"role": "user", "content": user}]}).encode()
