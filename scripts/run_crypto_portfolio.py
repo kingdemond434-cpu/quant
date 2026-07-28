@@ -25,6 +25,7 @@ from libs.data.crypto_source import list_liquid_perps
 from libs.data.instruments import AssetClass, InstrumentSpec, register_instrument
 from libs.data.lake import Layer, ParquetLake
 from libs.data.timeframe import Timeframe
+from libs.data.universe import RESEARCH_TOP_N
 from libs.portfolio.covariance import cov_forecast_portfolio
 from libs.research.crossasset import trend_basket_returns, xsec_momentum_returns
 from libs.research.crypto_regime import regime_labels, regime_performance
@@ -136,7 +137,7 @@ def _validate(name: str, r: np.ndarray, matrix: np.ndarray, sharpes: np.ndarray,
 
 
 def main() -> None:
-    universe = list_liquid_perps(top_n=120)
+    universe = list_liquid_perps(top_n=RESEARCH_TOP_N)
     close, funding, adv, basis, taker = _panels(universe)
     if close.shape[1] < 12:
         raise SystemExit("need a liquid perp panel; run ingest_crypto.py --universe liquid")

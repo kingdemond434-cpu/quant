@@ -59,6 +59,7 @@ _FLOORS_S1_EXTRA: dict[str, float] = {           # live adds floors; never remov
 _STATE_FLOORS_D = {"last_panel": 4.0, "last_tier1": 16.0, "last_prompt_review": 35.0,
                    "last_prospector": 35.0, "last_blind_rediscovery": 100.0,
                    "last_model_upgrade": 45.0, "last_meta_research": 3.0,
+                   "last_fill_quality": 10.0,
                    "last_lit_deepdive": 35.0, "last_decision_scoring": 35.0,
                    "last_memory_consolidation": 100.0}
 
@@ -238,6 +239,16 @@ def main() -> None:
             fired.append("meta-research")
         else:
             print(f"cadence: meta-research produced nothing rc={_r.returncode} -- duty stays OWED")
+
+    # FILL QUALITY (weekly). The ledger ordered "re-measure WEEKLY until >60%" after the
+    # patient-opens fix; that order never became code, so the fix has been unverified since it
+    # shipped. Cheap, read-only, no keys.
+    if _days_since(state, "last_fill_quality") >= 7:
+        subprocess.run([sys.executable, "scripts/fill_quality_monitor.py"],
+                       capture_output=True, text=True, timeout=120, check=False)
+        if Path("data/fill_quality.json").exists():
+            state["last_fill_quality"] = now.isoformat()
+            fired.append("fill-quality")
 
     # MODEL UPGRADE (monthly). The desk's models used to be frozen literals that only ever moved
     # when a human noticed a newer flagship -- so seats aged silently (llama-4-maverick sat 15
