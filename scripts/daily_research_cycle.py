@@ -58,6 +58,7 @@ _STEPS = [
     ("measurement_gate",  "scripts/measurement_gate.py", 120),  # inputs must be verified before any optimisation
     ("exec_bottleneck",   "scripts/execution_bottleneck.py", 60),  # live book vs live gate
     ("collector_monitor","scripts/collector_monitor.py", 90),  # G3 zero-trust sensor kill-switch
+    ("knowledge_engine",   "scripts/knowledge_engine.py", 90),  # memory + causal graph + genome + revival
     ("dependency_graph",   "scripts/dependency_graph.py", 60),  # impact analysis: what is poisoned now
     ("data_vitals",         "scripts/data_vitals.py", 90),  # live collector DQS + provenance
     ("alpha_lifecycle",     "scripts/alpha_lifecycle.py", 90),  # failure patterns + transfer pipeline + novelty + anomalies

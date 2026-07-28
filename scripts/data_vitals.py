@@ -150,12 +150,85 @@ def score(p: Path) -> dict | None:
             "action": "DEAD -- FAILOVER" if dqs < DQS_DEAD else "OK"}
 
 
+
+# ---------------------------------------------------------------- non-.jsonl sources
+# Added 2026-07-28 after dependency_graph showed the three sources feeding EVERY alpha were
+# entirely outside the DQS scan. Each carries its own cadence because a daily state file and an
+# hourly recorder are not "stale" at the same age.
+EXTRA_SOURCES = {
+    "axis_shadow_state.json (live clocks)": {
+        "kind": "JSON_STATE", "path": "data/axis_shadow_state.json",
+        "field": "updated", "cadence_s": 86400,
+        "feeds": "A002 -- the running forward clocks"},
+    "data/moat (order books)": {
+        "kind": "DIR_GLOB", "path": "data/moat", "glob": "**/*.jsonl.gz",
+        "cadence_s": 3600,
+        "feeds": "A004 -- the only source with a real information advantage"},
+    "cashcarry_positions.json (live book)": {
+        "kind": "JSON_STATE", "path": "data/cashcarry_positions.json",
+        "field": None, "cadence_s": 900,
+        "feeds": "A001 -- the live carry book; mtime is the freshness signal"},
+    "cashcarry_exec_heartbeat (executor)": {
+        "kind": "JSON_STATE", "path": "data/cashcarry_exec_heartbeat",
+        "field": None, "cadence_s": 120,
+        "feeds": "A001 -- executor liveness; the money-moving process itself"},
+}
+
+
+def score_extra(name: str, cfg: dict) -> dict | None:
+    """Liveness for sources the .jsonl scan cannot see. Freshness IS the signal here; there is
+    no schema or completeness to measure on a state file or a rolling directory."""
+    p = ROOT / cfg["path"]
+    now = datetime.now(tz=UTC).timestamp()
+    age = None
+    if cfg["kind"] == "JSON_STATE":
+        if not p.exists():
+            age = None
+        elif cfg.get("field"):
+            d = None
+            try:
+                d = json.loads(p.read_text("utf-8")).get(cfg["field"])
+            except Exception:  # noqa: BLE001
+                d = None
+            t = _parse_ts(d) if d else None
+            age = (now - t.timestamp()) if t else (now - p.stat().st_mtime)
+        else:
+            age = now - p.stat().st_mtime
+    elif cfg["kind"] == "DIR_GLOB":
+        if p.exists():
+            newest = max((f.stat().st_mtime for f in p.glob(cfg["glob"])), default=None)
+            age = (now - newest) if newest else None
+
+    if age is None:
+        return {"source": name, "dqs": 0.0, "components": {"latency": 0.0, "completeness": 0.0,
+                "schema_integrity": 0.0, "temporal_alignment": 0.0,
+                "cross_validation_available": False},
+                "cadence_s": cfg["cadence_s"], "age_s": None,
+                "provenance": {"collection": cfg["kind"], "regenerable": None,
+                               "timestamp_verified": None, "note": cfg["feeds"]},
+                "action": "MISSING -- source not found"}
+
+    cad = float(cfg["cadence_s"])
+    lat = 1.0 if age <= cad * 2 else max(0.0, 1.0 - (age / (cad * 10)))
+    # A state file has no schema drift or completeness to measure; scoring them 1.0 would be
+    # inventing evidence, so DQS for these is the latency term alone and is labelled as such.
+    return {"source": name, "dqs": round(lat, 4),
+            "components": {"latency": round(lat, 3), "completeness": None,
+                           "schema_integrity": None, "temporal_alignment": None,
+                           "cross_validation_available": False},
+            "cadence_s": cfg["cadence_s"], "age_s": round(age, 0),
+            "provenance": {"collection": cfg["kind"], "regenerable": None,
+                           "timestamp_verified": None, "note": cfg["feeds"]},
+            "action": "DEAD -- FAILOVER" if lat < DQS_DEAD else "OK"}
+
+
 def main() -> None:
     print("=== DATA VITALS -- is the collector ALIVE, not is the dataset VALID ===")
     print("    a 14-day silent websocket failure passed every structural check, because a")
     print("    frozen file is perfectly self-consistent. DQS is a PRODUCT, so one dead")
     print("    component cannot be hidden by four healthy ones.\n")
     rows = [s for s in (score(p) for p in sorted((ROOT / "data").glob("*.jsonl"))) if s]
+    rows += [r for r in (score_extra(n, c) for n, c in EXTRA_SOURCES.items()) if r]
     if not rows:
         raise SystemExit("no collectors with >=20 rows")
     rows.sort(key=lambda r: r["dqs"])
@@ -164,8 +237,11 @@ def main() -> None:
     for r in rows:
         c = r["components"]
         dead += r["dqs"] < DQS_DEAD
-        print(f"  {r['source']:<38}{r['dqs']:>7.3f}{c['latency']:>6.2f}{c['completeness']:>6.2f}"
-              f"{c['schema_integrity']:>6.2f}{c['temporal_alignment']:>6.2f}  {r['action']}")
+
+        def _f(v):
+            return f"{v:>6.2f}" if isinstance(v, (int, float)) else f"{'-':>6}"
+        print(f"  {r['source']:<38}{r['dqs']:>7.3f}{_f(c['latency'])}{_f(c['completeness'])}"
+              f"{_f(c['schema_integrity'])}{_f(c['temporal_alignment'])}  {r['action']}")
     print(f"\n  {dead}/{len(rows)} collectors below DQS {DQS_DEAD} -> flagged DEAD")
     print("  NOTE: cross_validation is 0.5 for every source because NO collector currently has")
     print("  a second independent feed. That caps every DQS at 0.5x its otherwise value, which")
