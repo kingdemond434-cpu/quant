@@ -106,6 +106,43 @@ def _consensus(responses: list[dict[str, str]]) -> list[tuple[str, int]]:
     return sorted(tally.items(), key=lambda kv: -kv[1])
 
 
+
+_SHARDS = Path("data/audit_shards.json")
+_SHARD_DIR = Path("docs/audit_shards")
+_SHARD_MAX_AGE_H = 24.0          # stale shards = findings against lines that no longer exist
+
+
+def _ensure_shards() -> dict[str, str]:
+    """Return {model: shard_text}. Rebuilds if missing or stale. Empty dict = degrade to dossier."""
+    import subprocess
+    import sys as _sys
+    import time as _time
+    try:
+        stale = (not _SHARDS.exists()
+                 or (_time.time() - _SHARDS.stat().st_mtime) / 3600.0 > _SHARD_MAX_AGE_H)
+        if stale:
+            print("panel: audit shards missing/stale -- rebuilding")
+            subprocess.run([_sys.executable, "scripts/build_audit_shards.py"],
+                           capture_output=True, text=True, timeout=600, check=False)
+        meta = json.loads(_SHARDS.read_text("utf-8"))
+        out: dict[str, str] = {}
+        for row in meta.get("shards", []):
+            f = _SHARD_DIR / f"shard_{row['shard']:02d}.md"
+            if f.exists():
+                out[row["seat"]] = f.read_text("utf-8", errors="ignore")
+        print(f"panel: {len(out)} audit shards loaded "
+              f"(union coverage {meta.get('union_coverage_pct')}% of merit code)")
+        return out
+    except Exception as e:  # noqa: BLE001
+        print(f"panel: shard load failed ({e!r}) -- DEGRADED to dossier-only, "
+              f"code coverage 0.42%")
+        return {}
+
+
+def _shard_for(shards: dict[str, str], model: str) -> str:
+    return shards.get(model, "")
+
+
 def _ask(base_url: str, key: str, model: str, system: str, user: str,
          timeout: float = 360.0) -> str:                # 6min: high-effort reasoning runs long
     # (a 180s cap cut deepseek mid-stream with IncompleteRead on the 2026-07-12 max-thinking run)
@@ -296,13 +333,22 @@ def main() -> None:
     from scripts.generate_external_review_doc import sanitize
     if sanitize(dossier) != dossier:                 # anything secret-shaped -> hard refuse
         raise SystemExit("dossier failed sanitization -- refusing to send")
+    _shards = _ensure_shards()
     print(f"panel: mission this week = {mission.upper()}")
     ts = datetime.now(tz=UTC).isoformat()
 
     def _one(pv: dict[str, Any]) -> dict[str, str]:
         name = pv.get("name", pv.get("model", "?"))
+        # PER-SEAT PAYLOAD: shared dossier + this seat's disjoint code shard. Tier-1 money path is
+        # inside every shard; tier-2 is unique to this seat, so its misses are total misses.
+        _sh = _shard_for(_shards, pv.get("model", ""))
+        payload = dossier + ("\n\n" + _sh if _sh else "")
+        if _sh and sanitize(payload) != payload:
+            # skip the SEAT, never send unsanitised source. A lost seat is recoverable.
+            print(f"panel: {name} SHARD FAILED SANITISATION -- seat skipped, not downgraded")
+            return {"model": pv.get("model", "?"), "text": ""}
         try:
-            txt = _ask(pv["base_url"], pv["key"], pv["model"], system, dossier)
+            txt = _ask(pv["base_url"], pv["key"], pv["model"], system, payload)
             # BLANK-RESPONSE RETRY (2026-07-20): the full-coverage feed made payloads ~5x
             # larger, and a seat can silently return an empty string on a big prompt
             # (observed: minimax-m3 returned a bare newline to the 260k audit payload but
@@ -311,7 +357,7 @@ def main() -> None:
             # "N/13 models agreed" figure the desk reasons from. Retry once, then fail loud.
             if len(txt.strip()) < 50:
                 print(f"panel: {name} blank ({len(txt)} chars) -- retrying once")
-                txt = _ask(pv["base_url"], pv["key"], pv["model"], system, dossier)
+                txt = _ask(pv["base_url"], pv["key"], pv["model"], system, payload)
                 if len(txt.strip()) < 50:
                     try:
                         from scripts.build_audit_coverage import record_blank
