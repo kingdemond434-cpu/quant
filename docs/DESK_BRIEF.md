@@ -83,4 +83,4 @@ M_LIQUIDITY_WITHDRAWAL, construction = negative z of near-touch depth vs 24h rol
 
 - OpenRouter 402: 4 written LLM roles have NEVER executed (code auditor, blind researcher, hypothesis generator, architecture board).
 - `health.json` reports all_ok=True against 14 stub vs 13 real logs (fail-open).
-- First forward-clock verdict: 2026-08-07 (OI/LS). Confirmed alphas to date: 0.
+- First forward-clock verdict: 2026-09-01 (OI/LS). Confirmed alphas to date: 0.

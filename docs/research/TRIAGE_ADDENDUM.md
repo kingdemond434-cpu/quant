@@ -69,4 +69,4 @@ blocked by missing *collectors*, four by having *no deployed alpha*, four by ord
 one by funding. Four are buildable now and total maybe two hours.
 
 That is the whole argument. The desk does not need more design — it needs unique data flowing in
-and one alpha flowing out. Aug 7 is the first date the second of those can change.
+and one alpha flowing out. Sept 1 is the first date the second of those can change.

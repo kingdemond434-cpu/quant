@@ -139,4 +139,4 @@ Verdicts are **BUILT** (exists, verified), **BUILD** (ready, unblocked, spec bel
 1. Working kill switch on `quant-cashcarry.service` (needs root — principal only)
 2. Confirm the kill-latch/re-entry defect (book re-opened with `CASHCARRY_KILL` present)
 3. TCA fills accumulating → re-measure cost/funding vs the 7.75× baseline
-4. Aug 7 forward verdict — the first chance for the north star to leave 0.00
+4. Sept 1 forward verdict — the first chance for the north star to leave 0.00
