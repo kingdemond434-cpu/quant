@@ -258,3 +258,16 @@ def test_rewrite_is_a_noop_without_approved_upgrades():
     body = 'export _BRAIN_MODEL_CHAIN="claude-opus-5 claude-opus-4-8"\n'
     out, changes = rewrite_text(body, {})
     assert out == body and changes == []
+
+
+def test_inline_shell_default_chain_is_upgraded_too():
+    """brain_auth_check's `${_BRAIN_MODEL_CHAIN:-...}` fallback is a pin, not an assignment.
+
+    The assignment regex never saw it, so it would have aged forever -- and it was already
+    stale against the export beside it. A dormant fallback that runs a model nobody chose,
+    on the one day it fires, is exactly the silent-drift class this engine exists to end.
+    """
+    body = '    for m in ${_BRAIN_MODEL_CHAIN:-claude-fable-5 claude-opus-5}; do\n'
+    out, changes = rewrite_text(body, {"claude-opus-5": "claude-opus-6"})
+    assert "${_BRAIN_MODEL_CHAIN:-claude-fable-5 claude-opus-6 claude-opus-5}" in out
+    assert changes and "inline chain default" in changes[0]

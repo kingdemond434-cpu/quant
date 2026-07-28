@@ -60,6 +60,13 @@ CTX = ssl.create_default_context()
 # Files that pin a brain model. Each keeps its OWN chain order (see module docstring).
 _CHAIN_RE = re.compile(r'(_BRAIN_MODEL_CHAIN=)(["\'])(.*?)\2')
 _DEFAULT_RE = re.compile(r'(export ANTHROPIC_MODEL="\$\{ANTHROPIC_MODEL:-)([a-z0-9.\-]+)(\}")')
+# The chain also appears as a shell parameter-expansion DEFAULT inside brain_auth_check:
+#   for m in ${_BRAIN_MODEL_CHAIN:-claude-fable-5 claude-opus-5 claude-opus-4-8}; do
+# It is not an assignment, so the assignment regex above never saw it -- a model pin that would
+# have aged forever. It only fires if the export is somehow missing, but it was ALREADY stale
+# against that export (fable-first vs opus-first), which is precisely how a dormant fallback
+# becomes a surprise: the day it fires, it runs a model nobody chose.
+_INLINE_CHAIN_RE = re.compile(r'(\$\{_BRAIN_MODEL_CHAIN:-)([^}]+)(\})')
 _PROBE = "Reply with exactly: UPGRADE-OK"
 
 
@@ -153,8 +160,16 @@ def rewrite_text(text: str, approved: dict[str, str]) -> tuple[str, list[str]]:
             changes.append(f"default ANTHROPIC_MODEL: {cur} -> {new}")
         return f"{m.group(1)}{new}{m.group(3)}"
 
+    def _inline_chain_sub(m: re.Match[str]) -> str:
+        chain = m.group(2).split()
+        new = upgrade_chain(chain, [], approved)
+        if new != chain:
+            changes.append(f"inline chain default: {' '.join(chain)}  ->  {' '.join(new)}")
+        return f"{m.group(1)}{' '.join(new)}{m.group(3)}"
+
     out = _CHAIN_RE.sub(_chain_sub, text)
     out = _DEFAULT_RE.sub(_default_sub, out)
+    out = _INLINE_CHAIN_RE.sub(_inline_chain_sub, out)
     return out, changes
 
 
@@ -182,6 +197,10 @@ def pinned_models(paths: list[Path]) -> list[str]:
         body = p.read_text("utf-8")
         for m in _CHAIN_RE.finditer(body):
             for mid in m.group(3).split():
+                if mid not in seen:
+                    seen.append(mid)
+        for m in _INLINE_CHAIN_RE.finditer(body):
+            for mid in m.group(2).split():
                 if mid not in seen:
                     seen.append(mid)
         for m in _DEFAULT_RE.finditer(body):
