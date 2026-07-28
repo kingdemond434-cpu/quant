@@ -22,6 +22,7 @@ Read-only over repo + data state. No keys, no network. Run from repo root.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import subprocess
 from datetime import UTC, datetime
@@ -80,7 +81,9 @@ def research_efficiency() -> dict[str, Any]:
     falsified = sum(1 for v in verdicts if v.get("outcome") == "falsified")
     shadow = _j(Path("data/shadow_sleeves.json"), {})
     deployed = len(shadow) if isinstance(shadow, (list, dict)) else 0
-    per = (lambda n: round(n / commits, 3) if commits else None)
+    def per(n: int) -> float | None:
+        return round(n / commits, 3) if commits else None
+
     return {
         "proxy": "commits stand in for engineering hours (labelled proxy, use the TREND)",
         "commits_30d": commits,
@@ -151,10 +154,8 @@ def lifecycle() -> dict[str, Any]:
     reg = _j(Path("data/shadow_sleeves.json"), {})
     names = list(reg) if isinstance(reg, dict) else [str(x) for x in (reg or [])]
     grave = 0
-    try:
+    with contextlib.suppress(OSError):
         grave = (ROOT / "docs/graveyard.md").read_text("utf-8").count("\n## ")
-    except OSError:
-        pass
     return {"forward_slots_in_use": len(names), "slot_cap": 12,
             "slots_free": max(0, 12 - len(names)), "graveyard_entries": grave,
             "note": ("§8 + clock-saturation: an EMPTY slot is idle research capital -- the axis "
