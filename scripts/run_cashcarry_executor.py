@@ -681,8 +681,14 @@ def _rebalance(top: int, hold_top: int, capital: float, *, dry: bool) -> dict[st
     # CLOSE carries that left the positive-funding set (sell spot, cover perp)
     # CHURN GUARD (gap #42): a rotation-driven close on a carry that has not yet earned its
     # round-trip is a measured -8.1%/yr drag. Rails are exempt and still close instantly.
-    _rail_forced = set(cool) | (set(pos) if (risk is not None
-                                             and risk.action == "flatten") else set())
+    # KILL FORCES THE RAIL (2026-07-27, Tier 0). Without this the churn guard HELD carries
+    # younger than _MIN_HOLD_H while DEADMAN_FIRED and CASHCARRY_KILL were both latched --
+    # MOVEUSDT (07:21) and TSTUSDT (08:58) were both under 24h and survived a demanded full
+    # unwind. A ruin rail a fee heuristic can veto is not a ruin rail. Opens are already
+    # impossible at top=0, so widening the forced set can only ever CLOSE.
+    _KILL_FORCES_RAIL = _KILL.exists()
+    _rail_forced = set(cool) | (set(pos) if (_KILL_FORCES_RAIL or (
+        risk is not None and risk.action == "flatten")) else set())
     for sym in list(pos):
         if sym not in target:
             p = pos[sym]
