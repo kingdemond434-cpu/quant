@@ -2470,6 +2470,58 @@ def check_fee_carry_ratio(defects) -> None:
             "regardless of how good the signal is. This is the single most direct drag on CAGR."))
 
 
+def check_close_retry_loop(defects) -> None:
+    """A carry that keeps failing to close is a CHURN ENGINE, not a stuck position.
+
+    ORIGIN (2026-07-28 incident, and the reason this is mechanical rather than a lesson): every
+    futures hedge had been force-closed out from under the book, so the close path's reduceOnly
+    cover had nothing to reduce. The venue rejects that order, `_filled` returns False, and the
+    pair stayed tracked for a retry -- every tick, forever -- while `_reconcile` rebuilt BOTH legs
+    in front of each attempt. The book round-tripped its entire notional through market orders
+    every 600s: 11,136 venue commission events against 251 logged round-trips, $1,456 of fees in
+    48h against $113 of LIFETIME funding harvest.
+
+    §40 (`check_fee_carry_ratio`) DID fire on this, ~27h before it was diagnosed -- but it reports
+    a SYMPTOM ("fees are 63x the harvest"), which is consistent with a dozen causes and cost a
+    full diagnosis to localise. This check reports the FINGERPRINT: the same symbol failing to
+    close on repeat. Detection was never the gap; NAMING THE CAUSE was.
+
+    Deliberately reads the published feed rather than re-deriving state: CLOSE-FAIL is exactly
+    what the executor itself says it did, so the check cannot disagree with the book about
+    reality (institutional_knowledge: a monitor that sources ground truth from the failing
+    component cannot see the failure -- here the feed is the executor's own testimony, and a
+    stale feed is caught by the separate liveness checks).
+    """
+    feed = ROOT / "web/cashcarry_live.json"
+    if not feed.exists():
+        return
+    try:
+        acts = json.loads(feed.read_text("utf-8")).get("last_actions") or []
+    except Exception:
+        return
+    failing = sorted({a.split()[1].rstrip(":") for a in acts
+                      if isinstance(a, str) and a.startswith("CLOSE-FAIL")})
+    if not failing:
+        return
+    rebuilding = sorted({a.split()[1] for a in acts if isinstance(a, str)
+                         and (a.startswith("re-hedge") or a.startswith("spot-rehedge"))})
+    both = [s for s in failing if s in rebuilding]
+    if both:
+        defects.append(("carry-churn-loop",
+                        f"CHURN LOOP: {', '.join(both)} are failing to CLOSE while the reconciler "
+                        f"REBUILDS the same legs in the same tick -- the book is round-tripping "
+                        f"its notional every interval and paying fees both ways for zero harvest. "
+                        f"This is unbounded: it does not self-heal and it has no position limit. "
+                        f"Stop the executor or clear the cause NOW, do not wait for the fee ratio "
+                        f"to report it."))
+    else:
+        defects.append(("carry-close-failing",
+                        f"close failing on {', '.join(failing)} -- each retry pays fees for a "
+                        f"position that never retires. Verify the leg is not ALREADY flat (a "
+                        f"reduceOnly cover against a flat position is rejected, which reads as "
+                        f"'unfilled' forever) before treating this as a transient venue error."))
+
+
 DOCTRINE = ROOT / "ops/principal_doctrine.txt"
 
 # Duties that must reach EVERY organ, not just the brain. The list is explicit rather than
@@ -2521,6 +2573,7 @@ def check_universal_doctrine(defects) -> None:
 # NameError, which is exactly how four of them ended up dead. Keep the order explicit (the list is
 # the run order); `check_registry_complete` below is what makes a future omission impossible.
 CHECKS += [("fee-carry-ratio", check_fee_carry_ratio),
+           ("close-retry-loop", check_close_retry_loop),
            ("paid-target-registry", check_paid_target_registry),
            ("holdings-ratchet", check_holdings_never_shrink),
            ("universal-doctrine", check_universal_doctrine)]

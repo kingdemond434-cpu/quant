@@ -213,6 +213,54 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0018",
+   "source": "cycle",
+   "summary": "Fix the carry churn loop: goal-state close verification (_close_goal_state) + flatten-aware reconcile (flatten_only). Removes a ~$345/day unbounded fee drain and restores the forward carry record SIZING v4 reads.",
+   "roi_bps": 120.0,
+   "raised": "2026-07-28T15:15:15.513183+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0019",
+   "source": "cycle",
+   "summary": "growth_audit must not certify utilization on a book that is unhedged or under a kill order -- add hedge-integrity + kill-state predicates to carry_capital_utilization so it cannot report 'OK -- fully deployed' on a burning book.",
+   "roi_bps": 15.0,
+   "raised": "2026-07-28T15:15:15.590903+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0020",
+   "source": "cycle",
+   "summary": "ADJACENCY: _mkt_or_limit reports 'order placed' as success, so _do() clears its reconcile-fail counter on a post-only order that may never fill -- a leg can sit unhedged with no alarm. Make the reconciler's success predicate goal-state (leg matched next tick), same fix shape as the close path.",
+   "roi_bps": 10.0,
+   "raised": "2026-07-28T15:15:15.668610+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0021",
+   "source": "cycle",
+   "summary": "CI does not fail on a stale test fake: test_fill_verification was broken for a day by an added kwarg (reduce_only) and the money-path guard it pins went unverified. Investigate whether run_ci.py surfaces these tests at all, or whether the failure was invisible.",
+   "roi_bps": 8.0,
+   "raised": "2026-07-28T15:15:15.744370+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

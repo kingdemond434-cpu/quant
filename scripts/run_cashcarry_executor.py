@@ -49,6 +49,7 @@ _LAST_ARCHIVE = Path("data/.last_metrics_archive")  # once-per-day data-flywheel
 _HB_TICK = 60                                    # heartbeat cadence (decoupled from rebalance work)
 _MAKER = True                                     # maker-first execution (set via --no-maker)
 _RSP_TOL = 5.0                                    # $ drift before realized_spot_pnl self-heals
+_FLAT_EPS = 1e-9                                  # |qty| at or below this counts as flat
 _DEPTH_MULT = 5.0                                # book depth within 1% of touch must cover an open
 # ORPHAN-COVER BOUNDS (gap #37, panel consensus 8+/12 on the 2026-07-19 audit): the
 # orphan cover is a live-ammo market-order path that previously fired on FIRST sight of
@@ -410,8 +411,16 @@ def _reconcile(pos: dict[str, dict[str, Any]], *, dry: bool,
                cooldown: dict[str, float] | None = None,
                fail_counts: dict[str, int] | None = None,
                orphan_seen: dict[str, int] | None = None,
-               orphan_cool: dict[str, float] | None = None) -> list[str]:
+               orphan_cool: dict[str, float] | None = None,
+               flatten_only: bool = False) -> list[str]:
     """Heal hedge drift every cycle -- survival is priority #1. Two invariants restored:
+
+    ``flatten_only`` (2026-07-28 incident): when the book is under a KILL or risk-flatten order
+    its target state is FLAT, so the two branches here that ADD exposure -- re-shorting a missing
+    futures leg and re-buying a sold spot leg -- are rebuilding exactly what the close path is
+    tearing down in the same tick. That loop round-tripped the entire book through market orders
+    every 600s and never terminated. Branches that move TOWARD flat (orphan cover, trim-excess,
+    adl-flatten) stay live: a flatten order never means "stop reducing risk".
 
       * ORPHAN futures short (a short with no tracked carry) -> cover it (close to flat).
       * UNHEDGED tracked carry (state expects a short but the futures leg is missing/short) ->
@@ -515,6 +524,9 @@ def _reconcile(pos: dict[str, dict[str, Any]], *, dry: bool,
                         cooldown[sym] = time.time() + 86400.0
                     acts.append(f"adl-flatten {sym} (venue force-closed short; spot sold, 24h out)")
                 continue
+            if flatten_only:      # book ordered flat -> re-shorting walks back into the position
+                acts.append(f"flatten-mode: skip re-hedge {sym} (book ordered flat)")
+                continue
             with _safe():
                 fut.set_leverage(sym, 3)
             how = _do(fut, sym, "SELL", round(want - have, 8))
@@ -539,6 +551,9 @@ def _reconcile(pos: dict[str, dict[str, Any]], *, dry: bool,
             want = float(p["spot_qty"])
             held = bal.get(sym.replace("USDT", ""), 0.0)
             if held + 1e-9 < want * 0.98:
+                if flatten_only:  # re-buying the leg the close just sold is the churn loop itself
+                    acts.append(f"flatten-mode: skip spot-rehedge {sym} (book ordered flat)")
+                    continue
                 fl = sfl.get(sym, {})
                 deficit = _round(want - held, fl.get("step", 0.0), int(fl.get("qty_prec", 6)))
                 if deficit > 0:
@@ -607,8 +622,13 @@ def _rebalance(top: int, hold_top: int, capital: float, *, dry: bool) -> dict[st
     state["orphan_cooldown"] = ocool
     orph: dict[str, int] = {s2: int(n2) for s2, n2 in state.get("orphan_seen_counts", {}).items()}
     state["orphan_seen_counts"] = orph
+    # FLATTEN MODE: a KILL file is authoritative this tick; a risk-flatten is only known AFTER
+    # prices are read, so it latches through state and binds the NEXT tick's reconcile. Both stop
+    # the reconciler rebuilding a book the close path is unwinding (2026-07-28 churn incident).
+    _flatten_only = _KILL.exists() or state.get("last_risk_action") == "flatten"
     recon = _reconcile(pos, dry=dry, cooldown=cool,          # heal hedge drift FIRST (survival #1)
-                       fail_counts=fails, orphan_seen=orph)
+                       fail_counts=fails, orphan_seen=orph,
+                       flatten_only=_flatten_only)
     if cool:
         target -= set(cool)
         cands = [c for c in cands if c[0] not in cool]
@@ -671,6 +691,7 @@ def _rebalance(top: int, hold_top: int, capital: float, *, dry: bool) -> dict[st
             gross = sum(float(p["spot_qty"]) * spot_px.get(s, float(p["spot_cost"]))
                         for s, p in pos.items())
             risk = risk_controls.evaluate(eq_c, start_eq, peak, gross, ruin_cap_lev=8.0)
+            state["last_risk_action"] = risk.action   # latches flatten into next tick's reconcile
             if risk.action == "flatten":
                 target, cands = set(), []                   # close all, open nothing (survival)
                 actions.append("RISK-FLATTEN " + "; ".join(risk.reasons))
@@ -954,7 +975,7 @@ def _mid_of(conn: Any, sym: str) -> float | None:
         bid, ask = conn.book_ticker().get(sym, (0.0, 0.0))
         bid, ask = float(bid), float(ask)
         return (bid + ask) / 2.0 if bid > 0 and ask > 0 else None
-    except Exception:  # noqa: BLE001
+    except Exception:
         return None
 
 
@@ -989,9 +1010,39 @@ def _execute_pair(sym: str, qty: float, spot_side: str, fut_side: str) -> dict[s
     _sm = _mid_of(spot, sym)
     _fm = _mid_of(fut, sym)
     res = _execute_pair_impl(sym, qty, spot_side, fut_side)
+    if spot_side == "SELL":            # a CLOSE succeeds by reaching FLAT, not by filling an order
+        res = _close_goal_state(sym, res)
     res["spot_mid"] = _sm
     res["fut_mid"] = _fm
     res["wait_s"] = round(time.time() - _t0, 3)
+    return res
+
+
+def _close_goal_state(sym: str, res: dict[str, Any]) -> dict[str, Any]:
+    """Mark a CLOSE leg that is ALREADY at its goal state (flat) as done rather than failed.
+
+    2026-07-28 incident: every futures hedge had been force-closed out from under the book, so
+    the close path's reduceOnly cover had nothing to reduce. The venue rejects that order,
+    `_filled` returns False, and `fut_ok=False` kept the pair tracked for a retry -- every tick,
+    forever, while `_reconcile` rebuilt both legs in front of each attempt. 11,136 commission
+    events against 251 logged round-trips; $1,456 of fees in 48h against $113 of LIFETIME funding
+    harvest. The bug is definitional: `_ok` meant "an order filled" when a close only ever needed
+    "the leg is flat".
+
+    Checked PER LEG against the venue, so a leg that genuinely still holds inventory still fails
+    and stays tracked -- the 2026-07-19 stranded-inventory fix (~$2,150 of real spot deleted from
+    the tracker while still held) is preserved exactly, not loosened.
+    """
+    if not res.get("fut_ok"):
+        with contextlib.suppress(Exception):
+            if abs(float(fut.positions().get(sym, 0.0))) <= _FLAT_EPS:
+                res["fut_ok"], res["fut"] = True, "already-flat"
+    if not res.get("spot_ok"):
+        with contextlib.suppress(Exception):
+            step = float(spot.exchange_filters().get(sym, {}).get("step", 0.0) or 0.0)
+            held = float(spot.balances().get(sym.replace("USDT", ""), 0.0))
+            if held <= max(step, _FLAT_EPS):   # nothing left above the venue's tradable increment
+                res["spot_ok"], res["spot"] = True, "already-flat"
     return res
 
 
