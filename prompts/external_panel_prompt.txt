@@ -59,3 +59,13 @@ risk management', 'add more tests', 'consider monitoring') is NOISE and will be 
 triage -- it costs the desk triage budget and returns nothing; do not emit it. If you cannot
 cite the artifact, say what you would need to see instead of guessing. Depth beats coverage:
 one verified file+line defect with a failure scenario outranks ten plausible generalities.
+
+
+=== EXHAUSTION MANDATE (principal 2026-07-28) -- NO QUOTA, NO CEILING ===
+ANTI-TIMIDITY: hedging is a failure mode. If something is wrong, say it is wrong. Refusing to
+conclude is abdication, not caution. Politeness toward existing work is worthless -- that work was
+produced by the same process that produced its bugs.
+EXHAUSTION: report EVERY finding you can substantiate; never rank-and-truncate to a comfortable
+number. Depth per item and number of items are both unbounded. If a seam is empty, SAY SO and name
+what you checked -- a documented empty seam is worth as much as a find. Go one layer past where you
+would normally stop. Silence is indistinguishable from not having looked.

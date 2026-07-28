@@ -58,6 +58,7 @@ _STEPS = [
     ("measurement_gate",  "scripts/measurement_gate.py", 120),  # inputs must be verified before any optimisation
     ("exec_bottleneck",   "scripts/execution_bottleneck.py", 60),  # live book vs live gate
     ("collector_monitor","scripts/collector_monitor.py", 90),  # G3 zero-trust sensor kill-switch
+    ("blindspot_max",     "scripts/blindspot_max.py", 120),  # 4 classes of mechanical unknown-unknown
     ("doctrine_guard",      "scripts/doctrine.py", 30),  # STRICT: fails if any LLM caller runs without doctrine
     ("unobserved",          "scripts/unobserved.py", 90),  # unknown-unknowns we already own and never read
     ("module_justify",      "scripts/module_justification.py", 120),  # would I build this today -- merit audit of existing code

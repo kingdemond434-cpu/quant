@@ -67,6 +67,41 @@ def preamble(role: str = "") -> str:
     return _ANTI_TIMIDITY + head
 
 
+
+_MANDATE_MARK = "EXHAUSTION MANDATE"
+
+
+def audit_prompt_files() -> dict:
+    """Every prompt FILE must also carry the mandate. Runtime injection covers code paths; a
+    human pasting a prompt into a chat UI bypasses code entirely, and that is how rounds 1-2 of
+    the panel actually ran. Files and callers are two separate enforcement surfaces."""
+    ok, missing = [], []
+    for d in ("prompts", "prompts/panel_missions"):
+        base = ROOT / d
+        if not base.exists():
+            continue
+        for f in sorted(base.glob("*.txt")):
+            (ok if _MANDATE_MARK in f.read_text("utf-8", errors="ignore")
+             else missing).append(str(f.relative_to(ROOT)))
+    return {"ok": ok, "missing": missing,
+            "coverage_pct": round(len(ok) / max(len(ok) + len(missing), 1) * 100, 1)}
+
+
+def audit_brain_instructions() -> dict:
+    """The VPS brain reads markdown, not our system prompts. If doctrine is not in the files it
+    loads, the brain operates without it -- a whole intelligence running unconstrained."""
+    targets = ["CLAUDE.md", "ops/memory/institutional-constitution.md",
+               "docs/research/OPERATING_DOCTRINE.md", "docs/research/RESEARCH_EXCELLENCE.md"]
+    ok, missing = [], []
+    for t in targets:
+        f = ROOT / t
+        if not f.exists():
+            continue
+        txt = f.read_text("utf-8", errors="ignore").lower()
+        (ok if ("anti-timidity" in txt or "exhaustion" in txt) else missing).append(t)
+    return {"ok": ok, "missing": missing}
+
+
 def audit_callers() -> dict:
     """Which LLM callers inject doctrine, and which silently do not."""
     injected, missing = [], []
@@ -81,14 +116,39 @@ def audit_callers() -> dict:
 
 
 if __name__ == "__main__":
+    import sys as _sys
+
     a = audit_callers()
-    print("=== DOCTRINE INJECTION AUDIT ===")
-    print(f"  {len(a['injected'])}/{len(a['injected'])+len(a['missing'])} LLM callers inject "
-          f"doctrine ({a['coverage_pct']}%)")
-    for m in a["injected"]:
-        print(f"    OK      {m}")
+    pf = audit_prompt_files()
+    br = audit_brain_instructions()
+
+    print("=== DOCTRINE ENFORCEMENT AUDIT -- three surfaces, all mandatory ===")
+    print("")
+    n_call = len(a["injected"]) + len(a["missing"])
+    print(f"  1. CODE CALLERS (runtime injection)   {len(a['injected'])}/{n_call}  "
+          f"({a['coverage_pct']}%)")
     for m in a["missing"]:
-        print(f"    MISSING {m}  <-- runs WITHOUT doctrine")
-    if a["missing"]:
-        print("\n  A caller that forgets is a caller running unconstrained. Pasting doctrine into")
-        print("  prompt files does not reach these -- only runtime injection does.")
+        print(f"       MISSING {m}  <-- runs WITHOUT doctrine")
+
+    n_pf = len(pf["ok"]) + len(pf["missing"])
+    print(f"  2. PROMPT FILES (human paste-path)    {len(pf['ok'])}/{n_pf}  "
+          f"({pf['coverage_pct']}%)")
+    for m in pf["missing"]:
+        print(f"       MISSING {m}")
+
+    print(f"  3. BRAIN MARKDOWN (VPS Claude reads)  {len(br['ok'])} present")
+    for m in br["missing"]:
+        print(f"       MISSING {m}")
+
+    gaps = bool(a["missing"]) or bool(pf["missing"]) or bool(br["missing"])
+    print("")
+    if gaps:
+        print("  FAIL -- STRICT ENFORCEMENT. Doctrine is not advisory.")
+        print("  All three surfaces must be covered: code callers (runtime injection), prompt")
+        print("  files (the human paste-path that rounds 1-2 of the panel actually used), and the")
+        print("  brain's markdown. A gap in any one is an intelligence operating unconstrained.")
+        print("  This runs every cycle, so a gap surfaces the day it appears -- including for")
+        print("  prompts and callers that do not exist yet.")
+    else:
+        print("  PASS -- all three enforcement surfaces covered.")
+    _sys.exit(1 if gaps else 0)

@@ -93,3 +93,18 @@ reality (COOKIE maxQty 5,000,000 vs the venue's 150,000) is the only reliable te
 Research capital allocation, confidence propagation, contributor routing and any autonomous
 meta-layer stay **blocked**: `info_bits` is a constant 0.2345 across all 810 rows, and
 per-mechanism survival samples (2/10 vs 0/10) are one coin flip apart.
+
+
+## Anti-timidity and exhaustion (enforced, not aspirational)
+
+These are checked every cycle by `scripts/doctrine.py`, which exits non-zero on any gap across
+three surfaces: code callers (runtime injection), prompt files (the human paste-path), and this
+markdown (what the VPS brain reads).
+
+**ANTI-TIMIDITY** — hedging is a failure mode. State the claim and its evidence. Refusing to
+conclude is abdication, not caution. Politeness toward existing work is worthless: that work came
+from the same process that produced its bugs.
+
+**EXHAUSTION** — no quota, no ceiling. Report everything substantiable; never truncate to a
+comfortable number. A documented empty seam is worth as much as a find. Go one layer past where
+you would normally stop — that layer is what every other reviewer skips.

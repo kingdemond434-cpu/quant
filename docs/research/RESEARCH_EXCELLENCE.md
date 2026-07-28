@@ -133,3 +133,18 @@ collector scored DEAD because cadence needs three timestamps.
 > **Verify by measuring the thing. Never by inspecting the change.**
 
 A number that disagrees with reality is the only reliable tell.
+
+
+## Anti-timidity and exhaustion (enforced, not aspirational)
+
+These are checked every cycle by `scripts/doctrine.py`, which exits non-zero on any gap across
+three surfaces: code callers (runtime injection), prompt files (the human paste-path), and this
+markdown (what the VPS brain reads).
+
+**ANTI-TIMIDITY** — hedging is a failure mode. State the claim and its evidence. Refusing to
+conclude is abdication, not caution. Politeness toward existing work is worthless: that work came
+from the same process that produced its bugs.
+
+**EXHAUSTION** — no quota, no ceiling. Report everything substantiable; never truncate to a
+comfortable number. A documented empty seam is worth as much as a find. Go one layer past where
+you would normally stop — that layer is what every other reviewer skips.

@@ -43,3 +43,18 @@ The user adopted an **Institutional Quantitative Research Constitution** as the 
 **Adaptive validation windows (2026-07-09, principal instruction):** fixed 90d replaced by evidence-based per-alpha windows — FAST-TRACK live-promotable at ≥40 forward days when forward t-stat (fwd_sharpe·√(days/365)) ≥1.65 AND fwd ≥0.5×backtest; STANDARD 90d otherwise; 40d absolute floor for everything. carry t=2.47 at day 13 → fast-track eligible ~Aug 5 (day 40) if Sharpe holds. Combined with the aggressive live ladder (neutral 20% base, 14d/7d steps, Kelly in 2-4wk): validated carry could be at full Kelly live size by ~early September given the one-time human setup (live account + trade-only keys + deposit). Never lower the t threshold or 40d floor to force promotion. Ledger `2026-07-09-adaptive-validation-windows` (reversal: fast-tracked sleeve demoted within 30 live days → restore 90d for its class).
 
 **Max-Growth Mandate + Discovery Engine (2026-07-10):** (1) `scripts/run_growth_audit.py` (daily chain) — the anti-conservatism engine: flags every gap between evidence-AUTHORIZED size and DEPLOYED size (capital utilization, leverage vs growth-optimal, live-path readiness, promotion latency); justification must be evidence/survival/human — NONE = CONSERVATISM DEFECT, closed same-cycle or ledger-justified. Asymmetry-of-errors doctrine: at equal EV prefer briefly-too-aggressive-within-ruin-caps over persistently-too-small. Never lower ruin caps/kill switches/gates for growth. (2) ALPHA DISCOVERY ENGINE in CRO loop: hypothesis QUOTA ≥3 new/cycle (zero generation = defect, zero survivors = normal), 6-source generator checklist (alpha-map ?-branches, arXiv inbox, desk reverse-engineering, component RECOMBINATION, maturing-data-clock obligations ≥2 hypotheses per dataset on arrival, autodiscovery factory); widen the funnel NEVER the filter (EV gate + gauntlet unchanged). (3) `autodiscovery_crypto_throughput` (crypto MarketSeries adapter → 12-generator factory in daily cycle) = the single open top-ROI backlog item, the #1 closable Tier-1/2 gap (edge breadth); daily CRO builds it under deferral discipline. Tier-convergence doctrine + data/tier_convergence.json scorecard reviewed monthly (CEO hat): converge every closable dimension, never leak effort into structural gaps (latency-class edges, headcount, $B capital).
+
+
+## Anti-timidity and exhaustion (enforced, not aspirational)
+
+These are checked every cycle by `scripts/doctrine.py`, which exits non-zero on any gap across
+three surfaces: code callers (runtime injection), prompt files (the human paste-path), and this
+markdown (what the VPS brain reads).
+
+**ANTI-TIMIDITY** — hedging is a failure mode. State the claim and its evidence. Refusing to
+conclude is abdication, not caution. Politeness toward existing work is worthless: that work came
+from the same process that produced its bugs.
+
+**EXHAUSTION** — no quota, no ceiling. Report everything substantiable; never truncate to a
+comfortable number. A documented empty seam is worth as much as a find. Go one layer past where
+you would normally stop — that layer is what every other reviewer skips.
