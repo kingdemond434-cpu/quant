@@ -65,6 +65,22 @@ _THEMES: dict[str, tuple[str, ...]] = {
 }
 
 
+
+def _doctrine(role: str = "") -> str:
+    """Runtime doctrine preamble. One source (scripts/doctrine.py); never a pasted copy."""
+    try:
+        from scripts.doctrine import preamble
+        return preamble(role)
+    except Exception:  # noqa: BLE001
+        try:
+            import sys as _s
+            _s.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent))
+            from doctrine import preamble  # type: ignore
+            return preamble(role)
+        except Exception:  # noqa: BLE001
+            return ""          # never break a caller over a preamble
+
+
 def _panel_budget_state() -> dict[str, Any]:
     """The budget/cost-history state, or an empty dict when absent or unreadable.
 
@@ -154,7 +170,7 @@ def _ask(base_url: str, key: str, model: str, system: str, user: str,
         # deepseek/glm blank-response bug). Models without reasoning ignore the param.
         "model": model, "max_tokens": _RESP_BUDGET, "temperature": 0.7,
         "reasoning": {"effort": "high"},
-        "messages": [{"role": "system", "content": system},
+        "messages": [{"role": "system", "content": _doctrine("run_external_panel") + system},
                      {"role": "user", "content": user}],
     }).encode()
     req = urllib.request.Request(

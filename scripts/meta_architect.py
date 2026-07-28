@@ -61,6 +61,22 @@ CHARTER = (
 
 
 # ---------------------------------------------------------------- SIMPLIFIER (mechanical)
+
+def _doctrine(role: str = "") -> str:
+    """Runtime doctrine preamble. One source (scripts/doctrine.py); never a pasted copy."""
+    try:
+        from scripts.doctrine import preamble
+        return preamble(role)
+    except Exception:  # noqa: BLE001
+        try:
+            import sys as _s
+            _s.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent))
+            from doctrine import preamble  # type: ignore
+            return preamble(role)
+        except Exception:  # noqa: BLE001
+            return ""          # never break a caller over a preamble
+
+
 def simplifier() -> dict:
     scripts = sorted((ROOT / "scripts").glob("*.py"))
     cycle_txt = CYCLE.read_text("utf-8") if CYCLE.exists() else ""
@@ -103,7 +119,7 @@ def simplifier() -> dict:
 def _ask(base, key, model, system, user, timeout=240.0):
     body = json.dumps({"model": model, "max_tokens": 12000, "temperature": 0.9,
                        "reasoning": {"effort": "high"},
-                       "messages": [{"role": "system", "content": system},
+                       "messages": [{"role": "system", "content": _doctrine("meta_architect") + system},
                                     {"role": "user", "content": user}]}).encode()
     req = urllib.request.Request(base.rstrip("/") + "/chat/completions", data=body, method="POST",
                                  headers={"Authorization": f"Bearer {key}",
