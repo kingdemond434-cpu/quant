@@ -82,7 +82,7 @@ def _weak(model_id: str) -> bool:
 # ---------------------------------------------------------------- pure selection (testable)
 
 def candidates(catalog: list[dict[str, Any]], incumbent: str,
-               limit: int = _MAX_CANDIDATES) -> list[str]:
+               limit: int = _MAX_CANDIDATES, taken: set[str] | None = None) -> list[str]:
     """Newer, same-lab, flagship-tier, >= incumbent context. Newest first, capped at `limit`.
 
     SAME LAB IS NOT A STYLE CHOICE: the roster's 13 seats are 11-13 distinct labs on purpose,
@@ -93,18 +93,28 @@ def candidates(catalog: list[dict[str, Any]], incumbent: str,
     Context must not REGRESS: the full-coverage mandate (every reviewer sees 100% of the system)
     was bought by swapping three seats for >=1M-context equivalents. A newer model with a
     smaller window would silently re-break that.
+
+    `taken` = models already seated or already claimed by another seat this run. THIS MATTERS
+    WHEN ONE LAB HOLDS TWO SEATS (the roster runs two openai and two google seats): without it,
+    both openai seats are offered the SAME newest openai model, and applying both collapses two
+    independent reviewers into one duplicated model -- a seat that contributes nothing, which is
+    the exact silent-seat-loss class this engine exists to prevent. Two seats from one lab must
+    upgrade to two DIFFERENT models or not at all.
     """
     by_id = {str(m.get("id", "")): m for m in catalog}
     cur = by_id.get(incumbent)
     if cur is None:
         return []                                  # incumbent is DEAD: dead-seat replacement is
                                                    # refresh_panel_roster's job, not an upgrade
+    taken = taken or set()
     cur_ts = float(cur.get("created") or 0)
     cur_ctx = int(cur.get("context_length") or 0)
     out = []
     for m in catalog:
         mid = str(m.get("id", ""))
         if mid == incumbent or lab(mid) != lab(incumbent) or _weak(mid):
+            continue
+        if mid in taken:                           # already seated or claimed -> never a dupe
             continue
         if lab(mid) in _EXCLUDED_LABS:
             continue
@@ -118,9 +128,18 @@ def candidates(catalog: list[dict[str, Any]], incumbent: str,
 
 
 def invariants_hold(old_ids: list[str], new_ids: list[str]) -> tuple[bool, str]:
-    """Seat count never falls, lab count never falls, anthropic never enters. Pure."""
+    """Seat count never falls, no seat is duplicated, lab count never falls, no excluded lab.
+
+    DISTINCT count, not list length: a roster of 13 entries holding 12 unique models has 13
+    seats on paper and 12 reviewers in reality. Length alone cannot see that, so it is checked
+    explicitly -- this is the backstop for the duplicate-candidate case `taken` prevents upstream.
+    """
     if len(new_ids) < len(old_ids):
         return False, f"seat count would fall {len(old_ids)} -> {len(new_ids)}"
+    if len(set(new_ids)) < len(set(old_ids)):
+        dupes = sorted({m for m in new_ids if new_ids.count(m) > 1})
+        return False, (f"distinct models would fall {len(set(old_ids))} -> {len(set(new_ids))}"
+                       + (f" (duplicated: {dupes})" if dupes else ""))
     old_labs, new_labs = {lab(m) for m in old_ids}, {lab(m) for m in new_ids}
     if len(new_labs) < len(old_labs):
         return False, f"lab diversity would fall {len(old_labs)} -> {len(new_labs)}"
@@ -346,7 +365,11 @@ def main() -> None:
         print(f"model-upgrade: catalog unreachable ({e!r}) -- keeping current roster")
         return
 
-    shortlist = {mid: candidates(catalog, mid) for mid in old_ids}
+    # `taken` = models the roster already holds, so no seat is offered one of its own siblings.
+    # Cross-seat dedupe happens at ADOPTION, not here: reserving a whole shortlist would let the
+    # first openai seat claim both openai candidates and starve the second openai seat of an
+    # upgrade it could have taken.
+    shortlist = {mid: candidates(catalog, mid, taken=set(old_ids)) for mid in old_ids}
     shortlist = {k: v for k, v in shortlist.items() if v}
     print(f"model-upgrade: {len(old_ids)} seats | {sum(len(v) for v in shortlist.values())} "
           f"candidate(s) across {len(shortlist)} seat(s)")
@@ -378,6 +401,12 @@ def main() -> None:
     promotions: dict[str, str] = {}
     for incumbent, cands in shortlist.items():
         for cand in cands:
+            # Cross-seat dedupe: two seats from the same lab must never land on one model, or
+            # a reviewer silently becomes a duplicate of its sibling. Falls through to this
+            # seat's next candidate instead of starving it.
+            if cand in promotions.values():
+                print(f"\n  skip {cand} for {incumbent}: already adopted by another seat")
+                continue
             print(f"\n  GAUNTLET {cand}  (would replace {incumbent})")
             passed, detail = gauntlet(base, key, cand, payload, last_file)
             for d in detail:

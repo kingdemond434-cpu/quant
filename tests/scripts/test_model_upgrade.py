@@ -93,6 +93,51 @@ def test_invariants_accept_a_clean_same_lab_upgrade():
     assert ok
 
 
+def test_invariants_reject_a_duplicated_seat():
+    """13 entries holding 12 unique models is 13 seats on paper and 12 reviewers in reality.
+
+    Caught in review: the roster runs TWO openai and TWO google seats, so both siblings were
+    offered their lab's single newest model. List length and lab count both looked unchanged.
+    """
+    ok, why = invariants_hold(["a/one", "a/two", "b/three"], ["a/new", "a/new", "b/three"])
+    assert not ok and "distinct models" in why
+
+
+# ---------------------------------------------------------------- two seats sharing one lab
+def test_sibling_seats_never_collapse_onto_one_model():
+    cat = [_m("a/one", 100), _m("a/two", 100), _m("a/new", 900)]
+    seated = {"a/one", "a/two"}
+    picks: dict[str, str] = {}
+    for inc in ("a/one", "a/two"):
+        for c in candidates(cat, inc, taken=seated):
+            if c in picks.values():                 # adoption-time dedupe
+                continue
+            picks[inc] = c
+            break
+    assert picks == {"a/one": "a/new"}              # only ONE seat may take the single new model
+    assert len(set(picks.values())) == len(picks)
+
+
+def test_sibling_seat_is_not_starved_when_two_upgrades_exist():
+    """The first fix over-reserved a whole shortlist and starved the sibling. Both must upgrade."""
+    cat = [_m("a/one", 100), _m("a/two", 100), _m("a/new-x", 900), _m("a/new-y", 880)]
+    seated = {"a/one", "a/two"}
+    picks: dict[str, str] = {}
+    for inc in ("a/one", "a/two"):
+        for c in candidates(cat, inc, taken=seated):
+            if c in picks.values():
+                continue
+            picks[inc] = c
+            break
+    assert picks == {"a/one": "a/new-x", "a/two": "a/new-y"}
+
+
+def test_a_seated_model_is_never_offered_as_an_upgrade():
+    """Proposing a model the roster already holds is a duplicate by another name."""
+    cat = [_m("a/one", 100), _m("a/two", 900)]
+    assert candidates(cat, "a/one", taken={"a/one", "a/two"}) == []
+
+
 # ---------------------------------------------------------------- gauntlet parsing / rollback
 def test_parse_rows_accepts_the_desk_format_and_rejects_prose():
     text = ("Here are my thoughts on the matter.\n"
