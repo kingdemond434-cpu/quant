@@ -105,3 +105,19 @@ reference for when that item is built (liquidity STATE, not just level, predicts
 ## Are cryptocurrencies real financial bubbles? Evidence from quantitative analyses
 - 2026-07-23 · http://arxiv.org/abs/2607.21826v1
 - The growth of peer-to-peer exchanges and the blockchain technology has led to a proliferation of cryptocurrencies and to a massive increase in the number of investors who actually negotiate digital money. Cryptocurrencies trade at prices mainly driven by investor sentiment, becoming a potential source of financial bubbles and instabilities. In this work, we apply quantitative models to the study of Bitcoin and Ether, two of the most famous cryptocurrencies. Our bubble detection methodology combines the Log Periodic Power Law (LPPL) model, originally created by Johansen, Ledoit and Sornette (JL
+
+## The Fundamental Structure of Risk: From Characteristics to Covariance
+- 2026-07-27 · http://arxiv.org/abs/2607.24410v1
+- Estimating the covariance structure of financial assets typically relies on his- torical returns, making risk models dependent on noisy and asset-specific time se- ries. We propose the Characteristic-Driven Dynamic Factor Model (CD-DFM), a non-linear latent factor model that instead constructs a representation of the asset cross-section directly from observable firm characteristics, primarily company funda- mentals. The learned latent space jointly determines interpretable factor exposures and a forward covariance estimator, and is trained end to end on an objective that combines a Stein covar
+
+## Optimal Control with Expectation Constraint in a Smooth Boundary Case
+- 2026-07-27 · http://arxiv.org/abs/2607.24114v1
+- As in Bouchard et al. (2010) and Bouchard and Nutz (2014), we study a utility maximization problem with expectation constraint. We first consider a uniformly elliptic case in which the endogenous state boundary associated with the constraint in expectation is proved to be smooth. This allows one to derive a proper Dirichlet condition for the value function of the optimal control problem on this boundary. We then propose a new truncation argument in the martingale representation of the expectation constraint. This leads to an approximating sequence of auxiliary systems of PDEs for which compari
+
+## Variational Quantum Conditional Boltzmann Machines for Time-Series Forecasting: Architectures, Symmetric Hyperparameter Evaluation, and a Nonlinear Benchmark
+- 2026-07-27 · http://arxiv.org/abs/2607.24065v1
+- In this study, we developed and evaluated four conditional energy-based forecasting architectures: a classical Gaussian-Bernoulli CRBM, a hybrid quantum-classical QCRBM, a full-register QQRBM, and a lag-feature QFeatureQRBM with complete derivations of their conditional distributions, Contrastive-Divergence gradients, and hybrid training, bridging the energy-based formulation and the implementation-level quantum computation. Unlike prior comparisons, our evaluation enforces symmetric hyperparameter optimisation: classical and quantum-specific hyperparameters receive an equally thorough grid se
+
+## Neural Network-Driven Volatility Drag Mitigation under Aggressive Leverage
+- 2026-07-25 · http://arxiv.org/abs/2607.23068v1
+- This paper introduces a compact reformulation of a modular end-to-end neural network for global minimum-variance portfolio optimization that decouples model complexity from both look-back window length and universe size. A five-parameter hyperbolic weighted moving average combined with a saturating exponential replaces the original 2,400-parameter lag-transformation layer, and a bidirectional gated-recurrent-unit eigencleaning module together with a streamlined marginal-volatility network reduce total learnable parameters from 39,586 to just 2,175. In out-of-sample tests against state-of-the-a
