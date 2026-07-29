@@ -2585,6 +2585,77 @@ def check_close_retry_loop(defects) -> None:
                         f"'unfilled' forever) before treating this as a transient venue error."))
 
 
+def check_book_absorbing_state(defects) -> None:
+    """A book whose risk rail can never release it is DEAD, not safe -- and reads as healthy.
+
+    ORIGIN (2026-07-29, found by hand during the STEP-0 integrity watch; encoded here under the
+    recursion rule so it is never a hand-probe again). The carry book sat at n_carries=0 /
+    deployed_notional=0 with a fresh heartbeat and NO alarm anywhere in the sweep, because every
+    existing check reads a flat book as a healthy one: the bleed alarm needs non-funding PnL, §40
+    needs >$5 of funding to divide by, and `check_close_retry_loop` needs CLOSE-FAIL actions. A
+    book doing NOTHING trips none of them.
+
+    What was actually happening: the 07-25→07-28 churn loop billed $1,750.65 of commission against
+    $113.04 of lifetime funding, driving combined equity to -37.2% from inception. `risk_controls`
+    flattens at -35% measured against a FIXED `start_equity`, and its response -- flatten -- removes
+    the only mechanism (carrying) by which equity could ever climb back. So the verdict is
+    self-sustaining: flat forever, evidence clock stopped, and the forward track record the live
+    gate sizes on silently stopped accruing.
+
+    That absorbing property is CORRECT for real capital: a book that lost a third of its equity
+    must stop and get human review, never auto-resume. The defect is not the rail, it is that
+    NOTHING SAID SO -- the rail's design assumes a human re-baselines it, and no organ ever
+    escalated that a human decision was owed. This check is that escalation.
+
+    Deliberately recomputes the verdict through the SAME pure function the executor calls, from
+    the same state file, rather than re-deriving a threshold here: a monitor that keeps its own
+    copy of the rule eventually disagrees with the book about the book's own state. Reads that
+    fail leave the check SILENT -- an unmeasurable equity must never manufacture a defect (the
+    07-26 "no measurement beats a confident wrong one" lesson).
+
+    NOT a rail change and must never become one: re-baselining a ruin rail after it fired is
+    Tier-3 (principal-only). This check reports; the principal decides.
+    """
+    feed = ROOT / "web/cashcarry_live.json"
+    st_p = ROOT / "data/cashcarry_positions.json"
+    if not (feed.exists() and st_p.exists()):
+        return
+    try:
+        from libs.risk import risk_controls
+        fd = json.loads(feed.read_text("utf-8"))
+        st = json.loads(st_p.read_text("utf-8"))
+    except Exception:
+        return
+    fut_leg = fd.get("fut_leg_net")
+    if fut_leg is None:                       # futures equity unmeasured this tick -> stay silent
+        return
+    try:
+        start = float(st["start_futures_equity"])
+        fut_eq = start + float(fut_leg)
+        # Flat book: unrealised spot is 0, so the spot side is exactly the banked realised PnL.
+        eq_c = fut_eq + float(st.get("realized_spot_pnl", 0.0))
+        peak = float(st.get("peak_combined_equity", start))
+        gross = float(fd.get("deployed_notional") or 0.0)
+        n_carries = int(fd.get("n_carries") or 0)
+    except (KeyError, TypeError, ValueError):
+        return
+    verdict = risk_controls.evaluate(eq_c, start, peak, gross, ruin_cap_lev=8.0)
+    if verdict.action != "flatten":
+        return
+    if n_carries > 0 or gross > 0:
+        # Flatten WITH inventory is the rail doing its job mid-unwind -- transient, not absorbing.
+        return
+    defects.append((
+        "book-absorbing-state",
+        f"BOOK DEAD, NOT IDLE: the carry book is flat (n_carries=0) while risk_controls still "
+        f"returns FLATTEN -- {'; '.join(verdict.reasons)}. A flat book earns no funding, so equity "
+        f"cannot rise, so the verdict never clears: this state is ABSORBING and the forward track "
+        f"record the live gate sizes on has STOPPED ACCRUING (combined equity ${eq_c:,.2f} vs "
+        f"${start:,.2f} inception). Every other check reads this as a healthy flat book. "
+        f"Re-baselining a fired ruin rail is TIER-3 (principal-only) -- do NOT self-clear it; "
+        f"page the principal with the attribution of what caused the drawdown."))
+
+
 DOCTRINE = ROOT / "ops/principal_doctrine.txt"
 
 # Duties that must reach EVERY organ, not just the brain. The list is explicit rather than
@@ -2639,6 +2710,7 @@ CHECKS += [("fee-carry-ratio", check_fee_carry_ratio),
            ("close-retry-loop", check_close_retry_loop),
            ("paid-target-registry", check_paid_target_registry),
            ("holdings-ratchet", check_holdings_never_shrink),
+           ("book-absorbing-state", check_book_absorbing_state),
            ("universal-doctrine", check_universal_doctrine)]
 
 #: Module-level `check_*` functions that are deliberately NOT swept. Empty by design: an exemption
