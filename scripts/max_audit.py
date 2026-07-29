@@ -1515,7 +1515,28 @@ _FINDING_DOCS_EXCLUDED = {
     "docs/EXTERNAL_PANEL_DOSSIER.md":
         "GENERATED dossier -- its numbered block is a copy of the register table; original panel "
         "findings enter via panel_inbox -> panel_rulings, which are in scope",
+    # SURFACED 2026-07-29, the moment check_findings_scope stopped being blind. These three
+    # carried 106 numbered items outside the §35 scan. They are NOT findings owing register rows:
+    "docs/research/MEASUREMENT_DOCTRINE.md":
+        "DOCTRINE (per ARTIFACT_GOVERNANCE) -- its 5 numbered lines are the measurement CLASSES "
+        "the law binds (timestamp integrity, data correctness, feature validity, cost realism, "
+        "attribution), not defects anyone owes a row for",
+    "docs/research/SUBSYSTEM_TRIAGE.md":
+        "SELF-DISPOSING triage register -- every numbered item sits under an explicit "
+        "BUILT/BUILD/QUEUE/REJECT verdict IN THE DOC. check_triage_disposition proves that "
+        "still holds and keeps the open (BUILD/QUEUE) items visible",
+    "docs/research/TRIAGE_ADDENDUM.md":
+        "SELF-DISPOSING triage register (items 82-101), same instrument as SUBSYSTEM_TRIAGE "
+        "and proven by the same check",
 }
+
+#: Triage registers excluded from §35 because they disposition their own items inline. The
+#: exclusion is only honest while that stays TRUE, so it is checked rather than trusted.
+_TRIAGE_DOCS = ("docs/research/SUBSYSTEM_TRIAGE.md", "docs/research/TRIAGE_ADDENDUM.md")
+_TRIAGE_VERDICTS = ("BUILT", "BUILD", "QUEUE", "REJECT")
+#: BUILD/QUEUE are OPEN work. An exclusion that let them vanish would be the bypass the scope
+#: check exists to prevent, so they are counted back out loud.
+_TRIAGE_OPEN = ("BUILD", "QUEUE")
 
 
 #: §36 PRODUCERS: artifacts that accumulate inventory under a cadence STATED IN THEIR OWN PROSE
@@ -1641,6 +1662,107 @@ def check_producer_cadence(defects) -> None:
             f"§36: {s}. The artifact's own text promises this cadence; nothing enforced it until "
             "now. Work it and commit, or amend the stated cadence to one the desk actually keeps "
             "-- a promise nobody checks is how inventory rots in plain sight."))
+
+
+def check_triage_disposition(defects) -> None:
+    """§35(8): the triage registers are excluded from the findings scan ONLY while they still
+    disposition their own items -- and their OPEN items stay counted, not hidden.
+
+    WHY THIS EXISTS AT ALL. Excluding a doc from §35 is the cheapest possible way to make 101
+    obligations disappear, and it leaves no diff anyone reviews. So the exclusion reason
+    ("every numbered item carries a BUILT/BUILD/QUEUE/REJECT verdict in the doc") is written as a
+    TESTABLE CLAIM rather than a comment. Add item #102 with no verdict and this fires; the
+    exclusion cannot quietly decay into a bypass.
+
+    THE SECOND HALF IS THE POINT. BUILT and REJECT are terminal, but BUILD and QUEUE are open
+    work. An exclusion that let those vanish would defeat the scope check it is registered
+    against, so they are surfaced with their counts and their blockers. Excluded from §35 is a
+    statement about WHICH instrument governs them -- never a statement that nothing does.
+    """
+    # ONE NUMBERING SPACE, TWO FILES. The addendum continues the register at #82, and its
+    # blockers cite items verdicted in the other file. Reading each doc in isolation made the
+    # stale-blocker scan miss #93-waits-on-17 on its first run, because 17 is BUILT "elsewhere".
+    # Parse everything first, judge second.
+    parsed: dict[str, tuple[str, dict[str, list[str]], list[str]]] = {}
+    for rel in _TRIAGE_DOCS:
+        p = ROOT / rel
+        if not p.exists():
+            defects.append((
+                "triage-doc-missing",
+                f"§35(8): {rel} is excluded from the findings scan on the grounds that it "
+                "dispositions its own items -- and it is GONE. Deleting the register deletes "
+                "the audit trail of every verdict in it. Restore it or supersede it by name."))
+            continue
+        parsed[rel] = (p.read_text("utf-8"), {}, [])
+
+    built_global: set[str] = set()
+    for text, seen_out, undisposed_out in parsed.values():
+        current: str | None = None
+        seen_out.update({v: [] for v in _TRIAGE_VERDICTS})
+        for line in text.splitlines():
+            if line.startswith("#"):
+                head = line.lstrip("# ").strip().upper()
+                current = next((v for v in _TRIAGE_VERDICTS if head.startswith(v)), None)
+                continue
+            m = re.match(r"\|\s*(\d+)\s*\|", line)
+            if not m:
+                continue
+            if current is None:
+                undisposed_out.append(m.group(1))
+            else:
+                seen_out[current].append(m.group(1))
+        built_global |= set(seen_out["BUILT"])
+
+    for rel, (text, seen, undisposed) in parsed.items():
+
+        if undisposed:
+            defects.append((
+                "triage-item-undisposed",
+                f"§35(8): {Path(rel).name} carries {len(undisposed)} numbered item(s) under NO "
+                f"verdict heading -- #{', #'.join(undisposed[:10])}. The doc is excluded from the "
+                "§35 findings scan PRECISELY because it dispositions its own items; an item with "
+                "no verdict is governed by nothing at all. Give it a BUILT/BUILD/QUEUE/REJECT "
+                "verdict, or move the doc into _FINDING_DOCS so §35 takes it."))
+
+        # STALE BLOCKERS. A QUEUE verdict is a claim that something else must land first, and that
+        # claim expires silently the moment the dependency ships -- nobody revisits a blocked item
+        # to ask whether it is still blocked. Found on its first run: #93 was queued behind
+        # "Information Advantage Score (BUILD item 17) existing first", and 17 is now BUILT.
+        stale: list[str] = []
+        if built_global:
+            current = None
+            for line in text.splitlines():
+                if line.startswith("#"):
+                    head = line.lstrip("# ").strip().upper()
+                    current = next((v for v in _TRIAGE_VERDICTS if head.startswith(v)), None)
+                    continue
+                m = re.match(r"\|\s*(\d+)\s*\|", line)
+                if current != "QUEUE" or not m:
+                    continue
+                dep = {d for d in re.findall(r"item\s+(\d+)", line, re.I) if d in built_global}
+                if dep:
+                    stale.append(f"#{m.group(1)} (waits on now-BUILT #{', #'.join(sorted(dep))})")
+        if stale:
+            defects.append((
+                "triage-blocker-stale",
+                f"§35(8): {Path(rel).name} has {len(stale)} QUEUE item(s) whose named blocker has "
+                f"SHIPPED -- {'; '.join(stale[:6])}. A blocker is a claim with an expiry date and "
+                "nobody re-reads a blocked row to check it. Re-verdict them BUILD (unblocked) or "
+                "restate the real blocker; leaving them queued is how finished dependencies keep "
+                "work frozen indefinitely."))
+
+        openwork = {v: seen[v] for v in _TRIAGE_OPEN if seen[v]}
+        if openwork:
+            parts = ", ".join(f"{v}={len(ids)} (#{', #'.join(ids[:6])})"
+                              for v, ids in openwork.items())
+            defects.append((
+                "triage-open-items",
+                f"§35(8): {Path(rel).name} still carries OPEN triage items -- {parts}. These are "
+                "excluded from §35 (the doc dispositions them) but they are not DONE: BUILD is "
+                "unblocked work nobody has done, QUEUE is blocked work whose blocker must still "
+                "be true. Ship them, or re-verdict them with the reason. Visible-and-open beats "
+                "invisible-and-forgotten -- that asymmetry is why this reports rather than "
+                "stays quiet."))
 
 
 def check_artifact_governance(defects) -> None:
@@ -2429,6 +2551,7 @@ CHECKS = [("carryover-skipped", check_carryover_skipped),
                       ("findings-ratchet", check_findings_ratchet),
                       ("gap-register-health", check_gap_register_health),
                       ("producer-cadence", check_producer_cadence),
+                      ("triage-disposition", check_triage_disposition),
                       ("artifact-governance", check_artifact_governance),
                       ("orphan-code", check_orphan_code),
                       ("mine-conversion", check_mine_conversion),

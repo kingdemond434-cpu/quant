@@ -43,6 +43,16 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "data/measurement_gate.json"
 COST = ROOT / "data/cost_model.json"
+#: Tracked in docs/, NOT data/ -- data/ is gitignored, and a provenance record that disappears
+#: with the working directory is not a record. Same reasoning as conversion_record.json.
+PROVENANCE = ROOT / "docs/research/data_provenance.json"
+
+_RISK_LEVELS = ("LOW", "MEDIUM", "HIGH")
+_SURVIVORSHIP = ("CLEAN", "UNKNOWN", "CONTAMINATED")
+#: How the bytes were obtained. Decisive for reproducibility: OUR_CAPTURE can be re-run,
+#: VENDOR_API can be revoked or silently revised, SCRAPED can break without notice, DERIVED
+#: inherits every weakness of its parents.
+_COLLECTION = ("OUR_CAPTURE", "VENDOR_API", "PUBLIC_API", "SCRAPED", "DERIVED", "MANUAL")
 
 _TIME_KEYS = ("ts", "date", "timestamp", "time", "datetime", "hour", "day", "updated")
 # fields that are legitimately constant -- flags, config, identity. Never "degenerate features".
@@ -277,6 +287,89 @@ def check_cost_realism() -> tuple[list[str], list[str], dict]:
     return fails, warns, meta
 
 
+def load_provenance() -> dict:
+    """The declared register. Tracked in docs/ because data/ is gitignored -- a provenance record
+    that vanishes with the working directory documents nothing."""
+    try:
+        d = json.loads(PROVENANCE.read_text("utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return d.get("datasets", {}) if isinstance(d, dict) else {}
+
+
+def check_provenance(p: Path, rows: list[dict], register: dict) -> tuple[list[str], list[str], dict]:
+    """FAMILY 6 -- WHERE THE NUMBERS CAME FROM (triage item #82).
+
+    The other five families interrogate the data. None of them can see the one thing that
+    invalidates a dataset without leaving a trace in it: its ORIGIN. A venue's self-reported
+    volume is perfectly regular, perfectly non-null, perfectly stable, and perfectly fabricable.
+    A universe selected on today's membership and applied backwards is clean by every
+    distributional test and manufactures returns anyway. Both pass families 1-5 untouched.
+
+    So provenance is a DECLARATION, and the gate's job is to hold it to two standards:
+
+      CONTRADICTED beats ABSENT. If the rows carry their own source/venue and it disagrees with
+      the declaration, that is a FAIL -- a wrong provenance claim is more dangerous than a missing
+      one, because it is trusted. This is what keeps the register falsifiable against the data
+      rather than a wish list nobody can check.
+
+      TWO RISKS BLOCK, THE REST REPORT. manipulation_risk=HIGH and survivorship=CONTAMINATED are
+      FAILs: research resting on either is not merely uncertain, it is invalid. Everything else
+      WARNs. Blocking every undeclared dataset on day one would convert a real control into an
+      outage and get the gate switched off -- which is how controls actually die. Undeclared is
+      counted instead, and the count is what gets ratcheted down.
+    """
+    fails: list[str] = []
+    warns: list[str] = []
+    rec = register.get(p.name)
+    if not isinstance(rec, dict):
+        return fails, [f"UNDECLARED PROVENANCE: {p.name} has no entry in "
+                       f"{PROVENANCE.relative_to(ROOT)} -- origin, collection method, "
+                       f"manipulation risk and survivorship are all unknown"], {"declared": False}
+
+    meta = {"declared": True,
+            "source": str(rec.get("source", "") or ""),
+            "collection_method": str(rec.get("collection_method", "") or "").upper(),
+            "manipulation_risk": str(rec.get("manipulation_risk", "") or "").upper(),
+            "survivorship": str(rec.get("survivorship", "") or "").upper()}
+
+    if meta["manipulation_risk"] == "HIGH":
+        fails.append(
+            "MANIPULATION RISK HIGH: the venue reporting this number can choose it (self-reported "
+            "volume is the canonical case). An edge measured on a number its counterparty "
+            "controls is not an edge")
+    elif meta["manipulation_risk"] not in _RISK_LEVELS:
+        warns.append(f"manipulation_risk {meta['manipulation_risk'] or 'unset'!r} is not one of "
+                     f"{'/'.join(_RISK_LEVELS)} -- ungraded risk is not low risk")
+
+    if meta["survivorship"] == "CONTAMINATED":
+        fails.append(
+            "SURVIVORSHIP CONTAMINATED: the universe is defined by present-day membership and "
+            "applied to history. Every delisted, halted or dead symbol is silently absent, so the "
+            "backtest is run on the survivors of the very selection it claims to test")
+    elif meta["survivorship"] not in _SURVIVORSHIP:
+        warns.append(f"survivorship {meta['survivorship'] or 'unset'!r} is not one of "
+                     f"{'/'.join(_SURVIVORSHIP)}")
+
+    if meta["collection_method"] not in _COLLECTION:
+        warns.append(f"collection_method {meta['collection_method'] or 'unset'!r} is not one of "
+                     f"{'/'.join(_COLLECTION)} -- a rerun cannot be known to reproduce it")
+
+    # CORROBORATION. Rows that name their own origin get to overrule the register.
+    observed = {str(r[k]).strip().lower()
+                for r in rows[:MAX_ROWS] for k in ("source", "venue", "exchange")
+                if isinstance(r.get(k), str) and r[k].strip()}
+    if observed and meta["source"]:
+        declared = meta["source"].lower()
+        if not any(o in declared or declared in o for o in observed):
+            fails.append(
+                f"PROVENANCE CONTRADICTED: rows report source/venue {sorted(observed)[:4]} but the "
+                f"register declares {meta['source']!r}. A wrong provenance claim is worse than an "
+                f"absent one -- absent invites a check, wrong is believed")
+        meta["observed_sources"] = sorted(observed)[:6]
+    return fails, warns, meta
+
+
 def check_reproducibility(p: Path) -> tuple[list[str], list[str], dict]:
     fails, warns = [], []
     stem = p.stem
@@ -300,6 +393,7 @@ def check_reproducibility(p: Path) -> tuple[list[str], list[str], dict]:
 
 def verify_all() -> dict:
     cost_f, cost_w, cost_m = check_cost_realism()
+    register = load_provenance()
     results = {}
     for p in sorted((ROOT / "data").glob("*.jsonl")):
         rows = _load(p)
@@ -311,15 +405,22 @@ def verify_all() -> dict:
         f2, w2, m2 = check_correctness(rows, kind)
         f3, w3, m3 = check_features(rows)
         f4, w4, m4 = check_reproducibility(p)
-        fails = f1 + f2 + f3 + f4 + cost_f
-        warns = w1 + w2 + w3 + w4
+        f5, w5, m5 = check_provenance(p, rows, register)
+        fails = f1 + f2 + f3 + f4 + f5 + cost_f
+        warns = w1 + w2 + w3 + w4 + w5
         results[p.name] = {
             "rows_sampled": len(rows), "kind": kind,
             "verdict": "FAILED" if fails else "VERIFIED",
             "fails": fails, "warns": warns,
-            "timestamps": m1, "correctness": m2, "features": m3, "repro": m4}
-    return {"updated": datetime.now(tz=UTC).isoformat(), "cost_realism": {
-        "fails": cost_f, "warns": cost_w, **cost_m}, "datasets": results}
+            "timestamps": m1, "correctness": m2, "features": m3, "repro": m4,
+            "provenance": m5}
+    undeclared = [n for n, v in results.items() if not v["provenance"].get("declared")]
+    return {"updated": datetime.now(tz=UTC).isoformat(),
+            "cost_realism": {"fails": cost_f, "warns": cost_w, **cost_m},
+            # Reported as a COUNT so it can be ratcheted down. A list of undeclared datasets that
+            # nobody sums is a list that never shrinks.
+            "provenance_undeclared": {"n": len(undeclared), "datasets": undeclared},
+            "datasets": results}
 
 
 def require_verified(dataset: str) -> dict:
@@ -372,6 +473,15 @@ def main() -> None:
         print("\n  VERIFIED:")
         for name in sorted(ok):
             print(f"      {name}  [{ds[name]['kind']}]")
+    und = rep["provenance_undeclared"]
+    print(f"\n  PROVENANCE (family 6): {len(ds) - und['n']}/{len(ds)} datasets declared in "
+          f"{PROVENANCE.relative_to(ROOT)}")
+    if und["n"]:
+        print(f"    {und['n']} UNDECLARED: {', '.join(und['datasets'][:6])}")
+        print("    Origin is the one property that invalidates a dataset without leaving a trace")
+        print("    IN it -- self-reported volume and survivorship-selected universes both pass")
+        print("    families 1-5 untouched. Declare them; this count is meant to ratchet DOWN.")
+
     warncount = sum(len(v["warns"]) for v in ds.values())
     print(f"\n  {warncount} warnings recorded (reported, non-blocking -- data_sanity.py had to be")
     print("  corrected twice for flagging config constants, so WARN and FAIL are kept separate).")
