@@ -1664,6 +1664,58 @@ def check_producer_cadence(defects) -> None:
             "-- a promise nobody checks is how inventory rots in plain sight."))
 
 
+def check_naive_datetime(defects) -> None:
+    """GAP #50, CORRECTED. Ban the calls that are genuinely naive or scheduled for removal --
+    and do NOT count the desk's own correct helper as a defect.
+
+    The register claimed "52 utcnow() calls (deprecated, naive/aware corruption risk)". Verified
+    2026-07-29 and the premise is wrong: 30 of the 31 files call `libs.core.time.utcnow`, which
+    is `datetime.now(UTC)` -- timezone-aware and correct. The finding came from grepping the
+    STRING `utcnow(`, which matches the desk's own fix as readily as the bug it replaced. Acting
+    on it would have meant "fixing" 53 correct call sites.
+
+    One instance was real but a different defect: `pd.Timestamp.utcnow()` in compute_performance
+    is tz-aware (so never a corruption risk) yet is removed in pandas 4. A scheduled breakage,
+    not a correctness bug -- fixed, and pinned here.
+
+    This checks for what actually bites: bare `datetime.utcnow()`, which returns a NAIVE datetime
+    that silently compares wrong against every aware timestamp on the desk, and the deprecated
+    pandas form. The desk's own helper is explicitly not matched.
+    """
+    # AST, NOT GREP -- and the reason is this check's own first run: a text scan matched the
+    # patterns inside this very docstring and reported 4 defects in the auditor describing the
+    # defect. Same shape as the one-hop grep that produced the false orphan-module finding
+    # earlier in the same session. Parse the code, do not read the prose.
+    import ast
+    bad: list[str] = []
+    for base in ("libs", "scripts", "app"):
+        for p in sorted((ROOT / base).rglob("*.py")):
+            rel = p.relative_to(ROOT).as_posix()
+            try:
+                tree = ast.parse(p.read_text("utf-8", errors="ignore"))
+            except (OSError, SyntaxError):
+                continue
+            for node in ast.walk(tree):
+                if not (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)):
+                    continue
+                if node.func.attr != "utcnow":
+                    continue
+                owner = getattr(node.func.value, "id", None) or getattr(
+                    node.func.value, "attr", None)
+                if owner == "datetime":
+                    bad.append(f"{rel}:{node.lineno} datetime.utcnow() -> NAIVE")
+                elif owner == "Timestamp":
+                    bad.append(f"{rel}:{node.lineno} Timestamp.utcnow() -> removed in pandas 4")
+    if bad:
+        defects.append((
+            "naive-datetime",
+            f"{len(bad)} call(s) return a naive or soon-removed timestamp -- {'; '.join(bad[:6])}."
+            " A naive datetime compares silently wrong against every aware timestamp here, "
+            "corrupting forward-clock day counts, 8h funding boundaries and §33 deferral expiry. "
+            "Use libs.core.time.utcnow (already correct, already used in 30 files) or "
+            "datetime.now(UTC)."))
+
+
 TEST_RECORD = ROOT / "docs/research/test_suite_record.json"
 
 
@@ -2610,6 +2662,7 @@ CHECKS = [("carryover-skipped", check_carryover_skipped),
                       ("findings-ratchet", check_findings_ratchet),
                       ("gap-register-health", check_gap_register_health),
                       ("producer-cadence", check_producer_cadence),
+                      ("naive-datetime", check_naive_datetime),
                       ("test-suite", check_test_suite_collectable),
                       ("triage-disposition", check_triage_disposition),
                       ("artifact-governance", check_artifact_governance),

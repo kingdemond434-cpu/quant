@@ -224,7 +224,10 @@ def main() -> None:
 
     candidates.sort(key=lambda c: c["metrics"]["sharpe"], reverse=True)
     payload = {
-        "generated_at": pd.Timestamp.utcnow().isoformat(),
+        # pd.Timestamp.utcnow() is deprecated and REMOVED in pandas 4 (Pandas4Warning).
+        # Still tz-aware, so this was never a naive/aware correctness bug -- it is a
+        # scheduled breakage. The only genuine instance behind gap #50.
+        "generated_at": pd.Timestamp.now("UTC").isoformat(),
         "universe": symbols,
         "n_candidates": len(candidates),
         "cost_model": "per-symbol per-side (FX 0.8 bps); net-of-cost",
