@@ -29,6 +29,17 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+
+# THE AUDITOR WAS THE ONE SCRIPT THAT FORGOT ITS OWN PATH. Ten of the 55 checks import `libs.*`
+# lazily inside their bodies -- the whole findings family, both mining checks, data-utilization,
+# depth-parity, source-backlog, carryover. Run as `python3 scripts/max_audit.py`, sys.path[0] is
+# scripts/, so every one of them raised ModuleNotFoundError, got caught by _fenced, and was
+# reported as ONE defect line among two dozen. A blind checker does not merely miss defects: it
+# makes the audit's coverage claim false while the report still looks healthy. 18% of the desk's
+# own auditor was dark, and the fence is what made that survivable enough to go unnoticed.
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
 LOGS = ROOT / "data/cro_ai_logs"
 REPORT = ROOT / "data/max_audit_report.json"
 ACKS = ROOT / "data/max_audit_acks.json"
