@@ -32,7 +32,19 @@ that are complete by nature and correctly have no cadence.
 | `docs/research/SUBSYSTEM_TRIAGE.md` | **TERMINAL** | The record of a completed triage pass. Superseded by a NEW triage document if one is ever run; never refreshed in place. Retaining it is the audit trail of that decision. | n/a |
 | `docs/research/TRIAGE_ADDENDUM.md` | **TERMINAL** | Addendum to the above, same class, same reasoning. | n/a |
 
-**Net: 3 cadenced, 3 doctrine, 2 terminal. Zero remain ungoverned.**
+### Added 2026-07-29 (this session's own artifacts — classified on arrival, not later)
+
+Writing a governance register and leaving the register itself unclaimed would have been the
+joke version of this exercise. The check now reads this table, so every row below is genuinely
+cleared rather than merely described.
+
+| Artifact | Class | Rationale |
+|---|---|---|
+| `META_RESEARCH_DIRECTIVE.md` | **DOCTRINE** | Standing CIO law. Changes only by principal decision; its computable half is executed by `scripts/meta_research_review.py`, which is itself cadence-enforced. |
+| `ARTIFACT_GOVERNANCE.md` | **DOCTRINE** | This register. Governs itself — a classification list that is not itself classified is the miner problem in miniature. |
+| `UNREACHABLE_LAYER_TRIAGE.md` | **TERMINAL** | Record of a completed triage with named unlock conditions. Superseded by a new triage if the conditions fire; never refreshed in place. |
+
+**Net: 3 cadenced, 5 doctrine, 3 terminal. Zero remain ungoverned.**
 
 ---
 

@@ -1644,6 +1644,18 @@ def check_artifact_governance(defects) -> None:
     """
     claimed = (set(_DIG_DOCS) | set(_DIG_DOCS_EXCLUDED) | set(_FINDING_DOCS)
                | set(_FINDING_DOCS_EXCLUDED) | set(_PRODUCER_CADENCE) | set(_TERMINAL_ARTIFACTS))
+    # docs/research/ARTIFACT_GOVERNANCE.md is the standing classification register: any artifact
+    # named in its decision table is claimed BY THAT DECISION. Without this the register was a
+    # document nobody's check consulted -- so classifying eight artifacts cleared nothing, and
+    # writing the register itself made the count WORSE by adding an unclaimed file. A governance
+    # doc that does not feed the governance check is the exact prose-only-duty failure the desk
+    # keeps re-learning.
+    _reg = ROOT / "docs/research/ARTIFACT_GOVERNANCE.md"
+    with contextlib.suppress(OSError):
+        _txt = _reg.read_text("utf-8")
+        claimed |= set(re.findall(r"`(docs/[A-Za-z0-9_./-]+\.md)`", _txt))
+        claimed |= {f"docs/research/{m}" for m in re.findall(r"`([A-Z][A-Z0-9_]+\.md)`", _txt)}
+        claimed.add("docs/research/ARTIFACT_GOVERNANCE.md")   # the register governs itself
     # A trailing-slash claim governs a whole DIRECTORY CLASS. Generators (the weekly deep sweep)
     # emit dated instances forever, so exact-path claims could never keep up and the check would
     # fire permanently on correctly-governed output. Claim the class once; instances inherit it.
@@ -1813,22 +1825,49 @@ def check_orphan_code(defects) -> None:
     scripts = ROOT / "scripts"
     if not (libs.exists() and scripts.exists()):
         return
-    # cheap reachability proxy: a package is 'used' if any scripts/ file imports from it
+    # TRANSITIVE reachability (corrected 2026-07-29). This was a one-hop grep -- "is the package
+    # named under scripts/" -- and it reported libs/discovery and libs/backtest as orphaned when
+    # both are BASE LAYERS reached through other libs packages that say so in their own
+    # docstrings ("Reuses the discovery capacity model") and import them explicitly. Acting on
+    # that would have deleted working code ten call sites depend on. meta_research_review's
+    # complexity_audit was fixed the same way; this check kept the bug, so the two disagreed
+    # about the same repo -- and a checker that contradicts another checker teaches everyone to
+    # ignore both.
+    _pkgs = [d.name for d in libs.iterdir() if d.is_dir() and (d / "__init__.py").exists()]
+
+    def _refs(text: str) -> set[str]:
+        return {x for x in _pkgs if f"libs.{x}" in text}
+
+    _edges = {}
+    for _p in _pkgs:
+        _body = ""
+        for _m in (libs / _p).glob("*.py"):
+            with contextlib.suppress(OSError):
+                _body += _m.read_text("utf-8", errors="ignore")
+        _edges[_p] = _refs(_body) - {_p}
     entry_text = "\n".join(f.read_text("utf-8", errors="ignore")
                             for f in scripts.glob("*.py"))
+    _reached, _frontier = _refs(entry_text), _refs(entry_text)
+    for _ in range(12):
+        _nxt = {q for pp in _frontier for q in _edges.get(pp, ()) if q not in _reached}
+        if not _nxt:
+            break
+        _reached |= _nxt
+        _frontier = _nxt
     suspicious = []
     for pkg in sorted(d for d in libs.iterdir() if d.is_dir() and (d / "__init__.py").exists()):
         name = pkg.name
         mods = [m.stem for m in pkg.glob("*.py") if m.stem != "__init__"]
         if len(mods) < 3:
             continue
-        # imported from scripts at all?
-        if f"libs.{name}" in entry_text or f"from libs.{name}" in entry_text:
+        # reachable by ANY import path, direct or through another libs package
+        if name in _reached:
             continue
         suspicious.append(f"{name}({len(mods)} modules)")
     if suspicious:
         defects.append(("orphan-code",
-                        "library package(s) imported by NO scripts/ entry point (idle code -- "
+                        "library package(s) unreachable from ANY entry point, directly or "
+                        "transitively (idle code -- "
                         f"the class never monitored): {', '.join(suspicious[:6])}. Wire the "
                         "safeguard (e.g. libs/backtest cross_engine) or retire on the record -- "
                         "verify against dynamic imports before deleting."))
