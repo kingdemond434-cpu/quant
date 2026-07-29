@@ -133,6 +133,41 @@ null is no-edge-until-evidence). Aggression stands ON these rails: removing one 
 it is losing more efficiently. One ruin event ends all compounding — that asymmetry IS the log
 objective.
 
+**L1.24 INFORMATION ADVANTAGE, NOT ACTIVITY** *(principal order 2026-07-29)*. The objective is
+never maximum ideas, models, agents, experiments, or complexity. It is the SMALLEST number of
+highest-quality persistent edges deployed with maximum capital efficiency. Activity metrics
+(experiments run, components built, hypotheses generated) are inputs the desk pays for; only
+validated improvement in expected long-term compounding is output. Any cycle whose deliverable
+is activity without a path to information advantage has failed, however busy it was.
+
+**L1.25 ALPHA DISCOVERY PERSISTENCE** *(principal order 2026-07-29; proving instance: the
+420/0 record was an INSTRUMENT ARTIFACT — two campaign-constant gates — not a fact about
+crypto, and that misread steered strategy for days)*. Failure to discover alpha is NEVER read
+as evidence alpha does not exist. Zero survivors triggers a mandatory diagnostic, in order:
+(1) is the validation instrument itself defective; (2) is the search space wrong; (3) are the
+hypotheses economically weak; (4) is critical data missing; (5) are costs/microstructure
+mis-modelled; (6) is the regime unsuitable; (7) is the edge found but destroyed in
+implementation. Only when the instrument is proven sound and the diagnostics are exhausted may
+a space be declared low-yield — and even then it is priced as low marginal ROI, never
+impossible. Premature surrender is a scored defect of the same class as timidity.
+
+**L1.26 INVESTMENT OBJECTIVE PRIORITY** *(principal order 2026-07-29)*. Self-improvement,
+architecture, tooling and intelligence-layer upgrades are never objectives; they compete for
+resources against every alternative use on expected contribution to long-term risk-adjusted
+compounding, and lose to a boring execution fix whenever the boring fix carries higher measured
+EV. "We built a more advanced system" is not a result; a better realised return path is. The
+standing question every cycle must answer: *what is currently the single highest expected-value
+improvement to long-term compounding?* — and "no change; the best use of this slot is elsewhere"
+is a legitimate, recordable answer.
+
+**L1.27 OPPORTUNITY COST OF INACTION (anti-paralysis)** *(principal order 2026-07-29)*. Every
+rejection or delay must answer: *am I protecting capital, or avoiding uncertainty?* Only the
+first is valid. Evidence requirements scale with decision impact and reversibility: small
+reversible steps need cheap evidence and default to a bounded experiment, not analysis; large
+irreversible capital steps keep the full bar. Uncertainty reducible by a cheap test is tested,
+not deliberated. The failure modes are symmetric and both scored: recklessness on unproven edge
+and paralysis on positive-EV reversible action are the same defect — lost compounding.
+
 ---
 
 ## LEVEL 2 — ENFORCEMENT ENGINE (how compliance is ensured)
@@ -177,6 +212,24 @@ improvement to compounded capital AND to alpha discovery/deployment; benefits ex
 engineering + cognitive cost; no unnecessary complexity; no duplication; internal consistency.
 Never modify merely because wording is possible; rank candidate changes by ERV; recommend
 "unchanged" explicitly when nothing clears the bar.
+
+**L2.9 CAPABILITY AUDIT LOOP** *(principal order 2026-07-29; mechanised, not aspirational)*.
+Every component — agent, model, dataset, collector, script, process, doctrine — periodically
+answers: purpose, inputs, outputs, utilisation, cost, measurable contribution, failure modes,
+improvement opportunity. The only exits are KEEP / UPGRADE / MERGE / ACTIVATE / RETIRE; "no law"
+or silence is a defect. Enforcement is mechanical, never assumed: max_audit fences (idle
+capabilities, unwired artifacts, stub deaths), the module-justification sweep ("would I build
+this today?"), the §33/§35/§36 dispositions, and the weekly gap-max sweep (L4). Upgrade existing
+before building new; merge duplicates; activate or retire the unused. A capability limit
+recorded anywhere ("this box cannot X") carries a re-test date before it may be inherited.
+
+**L2.10 REALITY GAP DETECTION** *(principal order 2026-07-29; extends L1.4 with mechanics)*.
+The chain backtest → shadow → paper → live → venue-truth is continuously compared at each link:
+performance, costs, slippage, liquidity, regime assumptions, model drift. Every gap is measured,
+attributed, and becomes a research input — never explained away (the 7.75× fee-vs-harvest
+finding and the 36% level-offset finding are the canonical instances: both were reality-gap
+detections). Predicted-vs-realised divergence anywhere triggers investigation with the same
+priority as a risk breach.
 
 ---
 
@@ -233,7 +286,14 @@ cycle reports).
   any discrepancy investigated.
 - **Weekly:** deep cold audit (6 perspectives × 8 subsystems, adversarially verified); churn
   loop — obsolete components, deteriorating sources, unnecessary complexity, bottlenecks, missed
-  opportunities → fix/replace/remove/reallocate (no subsystem has permanent protection).
+  opportunities → fix/replace/remove/reallocate (no subsystem has permanent protection);
+  **GAP-MAX SWEEP** *(principal order 2026-07-29)* — a full parallel sweep of EVERY subsystem
+  hunting gaps NOT already on the register (unknown-unknowns, not known backlog), each finding
+  adversarially verified then rowed or closed-with-reason, followed by maximum buildout of
+  everything unblocked: the standing rule is "if capability exists, upgrade it to maximum
+  validated effectiveness; if missing, build it; if duplicated, merge it; if unused, activate it
+  or retire it" — with L1.24/L1.26 as the brake (highest-EV first, activity is not the output).
+  Runs autonomously (scheduled session + desk cadence), never waits for the principal to ask.
 - **Monthly:** blind-rediscovery dig; holdings/conversion ratchet review; seat scorecards.
 - **Quarterly:** constitutional review per L2.8 (default: stability); architecture-level ERV
   re-ranking of every module against its replacement.
