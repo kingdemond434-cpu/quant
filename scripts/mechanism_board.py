@@ -153,7 +153,7 @@ def main() -> None:
     if not ranked:
         print("  no ERV output -- run scripts/research_erv.py first")
     else:
-        chosen, used_mech, out = [], {}, []
+        used_mech, out = {}, []
         for h in ranked:
             ms = mech_of(h.get("name", "") + " " + " ".join(h.get("concepts", []))) or ["M_UNMAPPED"]
             # correlation penalty: each prior selection in the same mechanism halves the value

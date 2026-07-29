@@ -72,7 +72,8 @@ def main() -> None:
     syms = universe()
     ser = {s: f for s in syms if len(f := funding(s)) >= 200}
     if len(ser) < 15:
-        print(f"only {len(ser)} usable symbols"); return
+        print(f"only {len(ser)} usable symbols")
+        return
     grid = sorted(set.intersection(*[set(v) for v in ser.values()]))
     costs = cost_bps()
     med_cost = float(np.median(list(costs.values()))) if costs else 5.7

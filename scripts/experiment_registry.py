@@ -38,7 +38,6 @@ Read-only w.r.t. the desk. No LLM, no keys. Run from repo root.
 from __future__ import annotations
 
 import json
-import re
 import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
@@ -94,7 +93,7 @@ def _git(*args: str) -> str:
     try:
         return subprocess.run(["git", *args], cwd=str(ROOT), capture_output=True, text=True,
                               check=False, timeout=90).stdout
-    except Exception:  # noqa: BLE001
+    except Exception:  # blind-except intentional (BLE001)
         return ""
 
 

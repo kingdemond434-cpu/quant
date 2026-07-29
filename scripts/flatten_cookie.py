@@ -22,7 +22,7 @@ import sys
 import time
 
 sys.path.insert(0, ".")
-import scripts.run_deadman_switch as D  # noqa: E402
+import scripts.run_deadman_switch as D
 
 SYM = "COOKIEUSDT"
 
@@ -36,7 +36,7 @@ def _market_max_qty(sym: str) -> float:
                 for f in s["filters"]:
                     if f["filterType"] == "MARKET_LOT_SIZE":
                         return float(f["maxQty"])
-    except Exception:  # noqa: BLE001
+    except Exception:  # blind-except intentional (BLE001)
         pass
     return 100_000.0
 
@@ -56,7 +56,8 @@ def main() -> None:
     before = pos_amt(creds)
     print(f"BEFORE  {SYM} positionAmt = {before:+,.1f}")
     if before == 0:
-        print("  already flat -- nothing to do"); return
+        print("  already flat -- nothing to do")
+        return
     if before < 0:
         raise SystemExit(f"position is SHORT ({before:+,.1f}) -- that is the CORRECT direction "
                          f"for a carry. Refusing to touch it; this script only unwinds the "
@@ -83,7 +84,7 @@ def main() -> None:
             D._signed(D._FUT_BASE, "/fapi/v1/order", creds,
                       {"symbol": SYM, "side": "SELL", "type": "MARKET",
                        "quantity": chunk, "reduceOnly": "true"}, method="POST")
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # blind-except intentional (BLE001)
             print(f"      CHUNK FAILED: {e!r} -- stopping. Position left at {pos_amt(creds):+,.1f}")
             print("      Not retrying blindly; blind retries created this incident.")
             break

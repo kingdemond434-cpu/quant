@@ -60,7 +60,8 @@ def h2_retention(res):
     except Exception:
         pass
     if not tok:
-        print("H2 contributor retention: NO PAT -- skipped"); return
+        print("H2 contributor retention: NO PAT -- skipped")
+        return
 
     UNIV = [("ETHUSDT", "ethereum/go-ethereum"), ("SOLUSDT", "solana-labs/solana"),
             ("AVAXUSDT", "ava-labs/avalanchego"), ("ATOMUSDT", "cosmos/cosmos-sdk"),
@@ -110,7 +111,8 @@ def h2_retention(res):
         ret = len(a1 & a2) / len(a1)                    # share of devs who stayed
         rows.append((sym, ret, len(a1), len(a2)))
     if len(rows) < 8:
-        print(f"H2 contributor retention: only {len(rows)} usable repos -- skipped"); return
+        print(f"H2 contributor retention: only {len(rows)} usable repos -- skipped")
+        return
 
     px = {}
     for sym, _, _, _ in rows:
@@ -121,7 +123,8 @@ def h2_retention(res):
             pass
     use = [(s, r) for s, r, _, _ in rows if s in px and len(px[s]) >= 4]
     if len(use) < 8:
-        print(f"H2: only {len(use)} with prices -- skipped"); return
+        print(f"H2: only {len(use)} with prices -- skipped")
+        return
     fwd = np.array([px[s][-1] / px[s][-4] - 1.0 for s, _ in use])   # last 3 months forward
     rel = fwd - fwd.mean()
     ret = np.array([r for _, r in use])
@@ -151,23 +154,29 @@ def h3_flow_vol(res):
         px = {datetime.fromtimestamp(int(r[0]) / 1000, tz=UTC).date().isoformat(): float(r[4])
               for r in kl}
     except Exception as e:
-        print(f"H3 exchange-flow->vol: DATA-BLOCKED ({type(e).__name__})"); return
+        print(f"H3 exchange-flow->vol: DATA-BLOCKED ({type(e).__name__})")
+        return
     dates = sorted(set(sup) & set(px))
     if len(dates) < 200:
-        print(f"H3: thin ({len(dates)})"); return
+        print(f"H3: thin ({len(dates)})")
+        return
     s = np.array([sup[d] for d in dates])
     c = np.array([px[d] for d in dates])
-    r = np.zeros(len(c)); r[1:] = c[1:] / c[:-1] - 1.0
+    r = np.zeros(len(c))
+    r[1:] = c[1:] / c[:-1] - 1.0
     # signal: 7d stablecoin-supply FLOW (proxy for capital moving to exchanges)
-    flow = np.zeros(len(s)); flow[7:] = s[7:] / s[:-7] - 1.0
+    flow = np.zeros(len(s))
+    flow[7:] = s[7:] / s[:-7] - 1.0
     # target: forward 7d REALISED VOL (not direction -- the novel part)
     fvol = np.full(len(r), np.nan)
     for i in range(len(r) - 7):
         fvol[i] = r[i + 1:i + 8].std()
-    m = ~np.isnan(fvol); m[:30] = False
+    m = ~np.isnan(fvol)
+    m[:30] = False
     z = np.zeros(len(flow))
     for i in range(30, len(flow)):
-        w_ = flow[i - 30:i]; sd = w_.std()
+        w_ = flow[i - 30:i]
+        sd = w_.std()
         z[i] = (flow[i] - w_.mean()) / sd if sd > 0 else 0.0
     zv, fv = z[m], fvol[m]
     rho, t = spearman(zv, fv)
@@ -191,7 +200,8 @@ def h4_accel(res):
         px = {datetime.fromtimestamp(int(r[0]) / 1000, tz=UTC).date().isoformat(): float(r[4])
               for r in kl}
     except Exception:
-        print("H4: price blocked"); return
+        print("H4: price blocked")
+        return
     ts_all = []
     for proj, art in arts.items():
         a = urllib.request.quote(art, safe="")
@@ -206,22 +216,28 @@ def h4_accel(res):
             s[f"{t[0:4]}-{t[4:6]}-{t[6:8]}"] = float(it["views"])
         ts_all.append(s)
     if not ts_all:
-        print("H4: no wiki data"); return
+        print("H4: no wiki data")
+        return
     dates = sorted(set.intersection(*[set(s) for s in ts_all]) & set(px))
     if len(dates) < 200:
-        print(f"H4: thin ({len(dates)})"); return
+        print(f"H4: thin ({len(dates)})")
+        return
     agg = np.array([sum(s[d] for s in ts_all) for d in dates])
     c = np.array([px[d] for d in dates])
-    r = np.zeros(len(c)); r[1:] = c[1:] / c[:-1] - 1.0
+    r = np.zeros(len(c))
+    r[1:] = c[1:] / c[:-1] - 1.0
     # ACCELERATION: second difference of log attention (level died; growth-of-growth is the claim)
     lg = np.log(np.maximum(agg, 1.0))
-    g = np.zeros(len(lg)); g[7:] = lg[7:] - lg[:-7]              # 7d growth
-    acc = np.zeros(len(g)); acc[7:] = g[7:] - g[:-7]             # acceleration
+    g = np.zeros(len(lg))
+    g[7:] = lg[7:] - lg[:-7]              # 7d growth
+    acc = np.zeros(len(g))
+    acc[7:] = g[7:] - g[:-7]             # acceleration
     best = None
     for h in (7, 14, 30):
         fwd = np.full(len(c), np.nan)
         fwd[:-h] = c[h:] / c[:-h] - 1.0
-        m = ~np.isnan(fwd); m[:40] = False
+        m = ~np.isnan(fwd)
+        m[:40] = False
         rho, t = spearman(acc[m], fwd[m])
         t_eff = t / np.sqrt(h)
         print(f"H4 ATTENTION ACCELERATION {h:>2}d  n={int(m.sum())}  rho {rho:+.3f} "

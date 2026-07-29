@@ -63,7 +63,8 @@ def shift_ic(signal: dict, gb: dict, shift: int, fx: dict | None = None) -> floa
         return float("nan")
     {d: i for i, d in enumerate(dates)}
     btc = np.array([gb[d] for d in dates])
-    ret = np.zeros(len(btc)); ret[1:] = btc[1:] / btc[:-1] - 1.0
+    ret = np.zeros(len(btc))
+    ret[1:] = btc[1:] / btc[:-1] - 1.0
     fwd = np.roll(ret, -1)
     sig, rr = [], []
     for i, d in enumerate(dates):
@@ -71,11 +72,13 @@ def shift_ic(signal: dict, gb: dict, shift: int, fx: dict | None = None) -> floa
         if 0 <= j < len(dates):
             dj = dates[j]
             v = signal[dj] / fx[d] / gb[d] - 1.0 if fx else signal[dj]
-            sig.append(v); rr.append(fwd[i])
+            sig.append(v)
+            rr.append(fwd[i])
     sig, rr = np.array(sig, float), np.array(rr, float)
     z = np.zeros(len(sig))
     for t in range(20, len(sig)):
-        w = sig[t - 20:t]; sd = w.std()
+        w = sig[t - 20:t]
+        sd = w.std()
         z[t] = (sig[t] - w.mean()) / sd if sd > 0 else 0.0
     zv, fv = z[20:-1], rr[20:-1]
     return float(np.corrcoef(zv, fv)[0, 1]) if zv.std() and fv.std() else 0.0
@@ -91,7 +94,8 @@ def main() -> None:
         dates = sorted(set(kb) & set(gb) & set(fx))
         prem = np.array([kb[d] / fx[d] / gb[d] - 1.0 for d in dates])
         btc = np.array([gb[d] for d in dates])
-        ret = np.zeros(len(btc)); ret[1:] = btc[1:] / btc[:-1] - 1.0
+        ret = np.zeros(len(btc))
+        ret[1:] = btc[1:] / btc[:-1] - 1.0
         r = stage_a_screen(prem, ret, name="kimchi_premium", zwin=20)
         s = {k: shift_ic(kb, gb, k, fx) for k in (-1, 0, 1)}
         print(f"KIMCHI n={len(dates)} | IC {r.get('ic'):+.4f} same {r.get('same_period_corr'):+.3f} "
@@ -108,7 +112,8 @@ def main() -> None:
         dates = sorted(set(sup) & set(gb))
         sig = np.array([sup[d] for d in dates])
         btc = np.array([gb[d] for d in dates])
-        ret = np.zeros(len(btc)); ret[1:] = btc[1:] / btc[:-1] - 1.0
+        ret = np.zeros(len(btc))
+        ret[1:] = btc[1:] / btc[:-1] - 1.0
         r = stage_a_screen(sig, ret, name="stablecoin_supply", zwin=20)
         s = {k: shift_ic(sup, gb, k) for k in (-1, 0, 1)}
         print(f"STABLECOIN SUPPLY n={len(dates)} | IC {r.get('ic'):+.4f} "

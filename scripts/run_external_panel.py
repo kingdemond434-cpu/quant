@@ -71,13 +71,13 @@ def _doctrine(role: str = "") -> str:
     try:
         from scripts.doctrine import preamble
         return preamble(role)
-    except Exception:  # noqa: BLE001
+    except Exception:  # blind-except intentional (BLE001)
         try:
             import sys as _s
             _s.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent))
             from doctrine import preamble  # type: ignore
             return preamble(role)
-        except Exception:  # noqa: BLE001
+        except Exception:  # blind-except intentional (BLE001)
             return ""          # never break a caller over a preamble
 
 
@@ -149,7 +149,7 @@ def _ensure_shards() -> dict[str, str]:
         print(f"panel: {len(out)} audit shards loaded "
               f"(union coverage {meta.get('union_coverage_pct')}% of merit code)")
         return out
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:  # blind-except intentional (BLE001)
         print(f"panel: shard load failed ({e!r}) -- DEGRADED to dossier-only, "
               f"code coverage 0.42%")
         return {}

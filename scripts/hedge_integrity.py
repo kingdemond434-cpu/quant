@@ -30,7 +30,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 sys.path.insert(0, ".")
-import scripts.run_deadman_switch as D  # noqa: E402
+import scripts.run_deadman_switch as D
 
 ROOT = Path(__file__).resolve().parent.parent
 STATE = ROOT / "data/cashcarry_positions.json"

@@ -550,3 +550,47 @@ hypotheses and EV-score them; only the top few enter research.
   rewarded, and the whole "many small decorrelated sleeves" class dies at the door. Calibrate every
   gate against a KNOWN-good reference and a known-marginal one; a reject rate near 100% is a
   property of the gate to investigate, never evidence that the candidates were bad.
+- **A P&L that cannot see its dominant cost will report a fee fire as break-even (2026-07-28).**
+  `_tca` records slippage-vs-mid and carries **no commission term**, so every per-trade `net` in
+  the carry trade log (= price_pnl + est_funding) was fee-blind by construction — and
+  `run_trade_forensics` summed exactly that field for its hold-class verdicts, its symbol
+  blacklist, and the forward track record Gate 0 sizes real capital on. Over 14 days the venue
+  billed **$1,628.81** while the log's aggregate net read **+$0.16**. The `>24h` class read
+  -42 bps against a true **-635 bps**. Before trusting ANY per-trade verdict, verify each cost term
+  is actually *in* the record; "realized edge = modeled edge − implementation loss" is a lie if the
+  instrument cannot see the loss. Fixed by joining venue COMMISSION events onto round-trips
+  (`commission_events` + `_fee_attribution`), publishing fee-blind and net-of-fee side by side
+  because **the divergence is the diagnostic**.
+- **An alarm without an enforcement arm is a log line (2026-07-28).** §40 fired ~27h before the
+  churn loop was diagnosed, reporting the symptom ("fees are 63x harvest") with no authority to
+  stop anything. The only mechanism that halted a $1,750 fee fire was the **equity ruin rail at
+  -35%** — i.e. after the money was gone. Detection and authority are different capabilities: pair
+  them, or the alarm is theatre. 94.1% of that ruin breach was the software defect; thesis-only PnL
+  was -2.19%, so without the bug there is no breach and no dead-man fire.
+- **Measure the FINGERPRINT, not the symptom, and make it generalise.** A sign test on P&L missed
+  the fire because the class was *already* flagged bleeding — it moved -42 → -635 bps in silence.
+  **Fee intensity** (fee as bps of notional vs the ~10 bps a futures round-trip should bill) catches
+  any case of the venue charging for fills the book never intended, whatever the mechanism. It
+  fires at **59x** on the incident.
+- **Verify your own writes, not just other people's state (2026-07-28).** `max_audit` stripped its
+  escalation with `existing.split(MARK)[0]` — which keeps only the text BEFORE the marker. Once the
+  escalation owned line 1 (every run after the first, since the 07-24 delivery fix), that returned
+  `""` and **silently deleted the entire human-written page below it**. Every `PRINCIPAL_ACTION`
+  page written since 2026-07-24 was destroyed by the next sweep, on the desk's **only**
+  human-escalation channel, with no error anywhere. Found only by re-reading the file after writing
+  it. VERIFY-THEN-CLAIM applies to the desk's own output, not merely to inherited state — and a fix
+  that solves "stale line 1" by making a generic line 1 permanent has traded one failure for
+  another (routine sweeps must never outrank an event-driven ask only a human can clear).
+- **Demand the artifact, never the flag — including inside the auditor (2026-07-28).**
+  `check_generation` read only `cadence_state.last_live_generate`, a key a cycle sets by hand. It
+  reported generation "skipped" on a day the Stage-A executor had already written real verdicts,
+  and would equally have reported it DONE for a cycle that touched nothing but the timestamp. Same
+  root as the desk's own `check_production` ("scheduled but not PRODUCING"). Likewise
+  `check_artifact_governance` walked `docs/` without a gitignore filter, demanding governance for
+  local scratch — making the check, and the CI test asserting on it, **environment-dependent**: red
+  on the box that generated the scratch, green on a clean runner. A gate whose verdict depends on
+  which machine ran it cannot be trusted in either direction.
+- **Coverage that rises because findings stopped being counted is a blinder desk.** Routing the
+  101-item subsystem triage into §35 scope raised open findings **67 → 168** and immediately
+  surfaced 4 items that had been invisible to the only organ that works a backlog. The honest
+  direction for a coverage metric is scope UP, not denominator down.

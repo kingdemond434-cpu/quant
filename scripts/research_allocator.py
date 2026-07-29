@@ -55,12 +55,12 @@ REWARD = {"survivor": 1.0, "refutation": 0.6, "method": 0.5, "inconclusive": 0.0
 
 def classify(text: str) -> str:
     t = text.lower()
-    if any(k in t for k in ("forward clock", "wired", "screen-interesting", "replicat")):
-        if "not wired" not in t and "nothing wired" not in t:
-            return "survivor"
-    if any(k in t for k in ("rail", "harness", "control", "power", "validator", "standard")):
-        if any(k in t for k in ("built", "added", "earned", "new standard")):
-            return "method"
+    if (any(k in t for k in ("forward clock", "wired", "screen-interesting", "replicat"))
+            and "not wired" not in t and "nothing wired" not in t):
+        return "survivor"
+    if (any(k in t for k in ("rail", "harness", "control", "power", "validator", "standard"))
+            and any(k in t for k in ("built", "added", "earned", "new standard"))):
+        return "method"
     if any(k in t for k in ("refut", "killed", "reject", "fails", "zero predictive",
                             "graveyard", "exhausted", "no edge")):
         return "refutation"
@@ -82,7 +82,7 @@ def main() -> None:
 
     rng = np.random.default_rng(7)
     rows, draws = [], {}
-    for a, (kws, sat, _prior_w) in AREAS.items():
+    for a, (_kws, sat, _prior_w) in AREAS.items():
         t = tally[a]
         n = sum(t.values())
         gain = sum(REWARD[k] * v for k, v in t.items())

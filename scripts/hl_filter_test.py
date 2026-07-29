@@ -4,9 +4,11 @@ describes -- at increasing strictness, and combined -- and reports what each SEL
 FORWARD (out of sample, on the later 40% of each trader's own curve).
 The filter is applied using ONLY formation-period info (what you could actually know at選択 time)."""
 from __future__ import annotations
-import json, urllib.request
-from datetime import UTC, datetime
+
+import json
+import urllib.request
 from pathlib import Path
+
 import numpy as np
 
 INFO="https://api.hyperliquid.xyz/info"; LB="https://stats-data.hyperliquid.xyz/Mainnet/leaderboard"
@@ -28,11 +30,11 @@ else:
     for r in rows:
         try:
             av=float(r.get("accountValue",0) or 0); a=r.get("ethAddress")
-            wp={w:v for w,v in r.get("windowPerformances",[])}
+            wp=dict(r.get("windowPerformances",[]))
             if a and av>=10_000 and float(wp.get("month",{}).get("vlm",0) or 0)>0: cand.append((av,a))
         except (TypeError,ValueError): continue
     cand.sort(reverse=True); recs=[]
-    for i,(av0,a) in enumerate(cand[:N_TRY]):
+    for i,(_av0,a) in enumerate(cand[:N_TRY]):
         try: pf=_post({"type":"portfolio","user":a})
         except Exception: continue
         if not isinstance(pf,list): continue

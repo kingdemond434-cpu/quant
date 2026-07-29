@@ -423,3 +423,50 @@ board-tail pagination + OP-020 whole-thread extraction, now that OP-033 makes th
 OPEN QUESTION CARRIED (diaspora, standing): CNY OTC has left Huobi (`totalCount=0` on a live 200) — the
 books are now on OKX C2C and Binance P2P. Where did the *discussion* go? (OKX/Bitget/Gate CN
 communities, CN-language Telegram/X, overseas Zhihu mirrors.)
+
+### 2026-07-28 session 2 (CN frontier miner) — IN PROGRESS (write-first note; updated as items resolve)
+Mine gate: BACKLOG-CLEAR (all 5 prior finds disposed). Generation priors read: only measured class
+is data_axis_watchlist (50% conversion, 0.25d latency) — favoured; nothing starved.
+
+ITEMS THIS RUN (bounded per completion contract):
+1. **VERIFY-QUEUE DISPOSITION (small, defect-closer):** `source_backlog_next.py` surfaces Kaiko +
+   NAVER as "VERIFY this cycle" for the 3rd straight session, though session C (07-26) verified
+   both. Confirm the artifacts, then row ONE finding on the queue-design leak (monitoring/deferred
+   cards re-surface as actionable verification forever) instead of hand-waving past it again.
+2. **ERA-ARCHAEOLOGY MAIN (carried pointer #1): section-by-section 8btc `forum-*` exhaustion via
+   Wayback** — OP-021 board-tail era-seek + OP-020 Discuz-archiver route + OP-033 GBK decode.
+   Target era: 2013-2017 搬砖/套利/庄家 strategy threads. Graveyard-check before carding.
+3. IF BUDGET REMAINS (carried pointer #2): ChainNode forum-108/110 CDX survey, or Gitee OP-001 chain.
+STATUS: run in progress — see per-item results below.
+
+#### ITEM 1 — CLOSED. Artifacts confirmed, finding rowed as F0002.
+Config-vs-outcome check run: `data/kaiko_vwm_reference_rate.jsonl` EXISTS (132 rows, 2026-07-26) —
+session C's §33 wired claim is artifact-backed; NAVER collector exists, `data/secrets/naver.json`
+still absent → genuinely credential-blocked, deferral to 2026-08-09 stands. Neither card is
+actionable by a miner. **F0002 rowed (accepted, low):** the verify-queue lists standing-monitoring
+and dated-deferred cards as "VERIFY this cycle" forever; 3 sessions re-derived non-actionability by
+hand. Fix direction ledgered (MONITORING queue + honour §33 deferral dates); parser is libs/,
+frozen for miners, so the row is the handoff.
+
+#### ITEM 2 — IN PROGRESS (durable mid-run state; final synthesis below when closed)
+GROUND SURVEY DONE: 8btc CDX = **69,124 unique thread-page captures + 866 forum-listing captures,
+2013-09 → 2018-08**; `archiver/` route NOT archived (2 captures, index only) — extraction must go
+through themed pages. Board map extracted from 2013-10-26 forum.php (GBK): forum-2 比特币 (main),
+**forum-54 汇率/行情 = the strategy board**, 36 商业/市场, 48 投资/股票, 63 经济/学院.
+LISTINGS HARVESTED (28 era captures, GBK, absolute-URL regex — see extraction traps in OP entry):
+board-2 452 unique tids (14 captures, 2013-09→2014-06), board-54 261 unique tids (13 captures,
+2013-09→2017-11, landing ON the regime events: 2013-12 PBOC, 2014-02 Gox, 2017-01 zero-fee end,
+2017-09-15 = 11 days post-'94'). Catalogs → data/8btc_era_thread_catalog.jsonl.
+THREADS MINED TO REPLY-DEPTH (7): tid 947 (2013 domestic-banzhuan workflow — XRP rail via Bitstamp
+ALREADY in 2013-09), 1101 (2013-10 cross-venue aggregator + API auto-trade tooling; 貔貅 bot
+name-drop), 10886 (2014-10 "无风险搬砖" tutorial — replies debunk: custody/venue risk dominates,
+M网=Mintpal died mid-thread; **bots crowded out manual arb by 2014-10**), 21637 (2015-08 Bitfinex
+cold-wallet flow-watching via blockmeta — retail already flow-trading in 2015 = crowding prior),
+836 (2013-09 CN translation of Hawkes/branching-ratio trade-clustering piece), 63748 (2017-06
+ideavista: **premium regime rule >10% bull / <5% bear; per-asset rail equilibrium — LTC premium
+compresses to ~3% = its rail-cost advantage; live cross-asset dispersion trade LTC+9% vs BTC+5%**),
+39588 (2016-09 inverse-premium era: foreign>domestic, arb domestic-only, 币看 monitoring).
+tid 6991 (buy/sell-wall observation thread) 404s on thread-6991-1-1.html — recorded, dropped.
+PENDING IN-RUN (screen-on-discovery duty): novelty-gate + Stage-A screen of the surfaced axis
+**per-asset premium dispersion in a barriered market (KR per-asset KRW books — CN books are
+USDT-only post-2021, mechanism not reconstructable in-region)**; graveyard/lexicon/operator routing.

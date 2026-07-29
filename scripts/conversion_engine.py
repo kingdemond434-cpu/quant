@@ -36,7 +36,7 @@ CIO = ROOT / "data/research_cio.json"
 def _j(p, d=None):
     try:
         return json.loads((ROOT / p).read_text("utf-8"))
-    except Exception:  # noqa: BLE001
+    except Exception:  # blind-except intentional (BLE001)
         return d
 
 
@@ -95,7 +95,7 @@ def main() -> None:
     print("    a queue nobody consumes is a list; utilisation means something downstream changes\n")
     print(f"  {len(cands)} candidates  {kinds}")
     print(f"  {injected} injected into the research_cio schedule -- they now compete directly")
-    print(f"  against the enumerated construction space in the one queue the desk reads.\n")
+    print("  against the enumerated construction space in the one queue the desk reads.\n")
     print(f"  {'cost':>5}  {'kind':<20}candidate")
     for c in cands[:10]:
         print(f"  {c['cost']:>5}  {c['kind']:<20}{c['target'][:56]}")

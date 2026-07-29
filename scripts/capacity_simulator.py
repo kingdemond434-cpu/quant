@@ -91,7 +91,8 @@ def main() -> None:
               f"{round_floor:>12.2f}{leg:>9.2f}")
 
     if not floors:
-        print("\nno usable symbols"); return
+        print("\nno usable symbols")
+        return
     worst = max(floors)
     median = sorted(floors)[len(floors) // 2]
     n = len(floors)

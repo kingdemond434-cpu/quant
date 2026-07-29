@@ -27,7 +27,7 @@ def crontab() -> str:
     try:
         return subprocess.run(["crontab", "-l"], capture_output=True, text=True,
                               check=False, timeout=20).stdout
-    except Exception:  # noqa: BLE001
+    except Exception:  # blind-except intentional (BLE001)
         return ""
 
 
@@ -35,7 +35,7 @@ def timers() -> str:
     try:
         return subprocess.run(["systemctl", "list-timers", "--all", "--no-pager"],
                               capture_output=True, text=True, check=False, timeout=20).stdout
-    except Exception:  # noqa: BLE001
+    except Exception:  # blind-except intentional (BLE001)
         return ""
 
 
@@ -90,7 +90,7 @@ try:
         act = c.get("action", "")
         if act.startswith(("DEAD", "MISSING")):
             print(f"    {c['source']:<42} {act}")
-except Exception as e:  # noqa: BLE001
+except Exception as e:  # blind-except intentional (BLE001)
     print(f"    vitals unreadable: {e!r}")
 
 # 5 -- this session's builds, each must be reachable
@@ -135,7 +135,7 @@ for m in BUILT:
     _how = "YES" if reach else "NO"
     if indirect:
         _how = f"via {indirect}"
-    print(f"  {m:<26}{str(inc):>10}{str(icr):>9}{str(art):>10}   {_how}")
+    print(f"  {m:<26}{inc!s:>10}{icr!s:>9}{art!s:>10}   {_how}")
 
 print(f"\n  {len(BUILT)-len(unreachable)}/{len(BUILT)} reachable from a scheduler.")
 if unreachable:

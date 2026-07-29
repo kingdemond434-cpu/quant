@@ -65,8 +65,8 @@ def main() -> None:
     for f in files:
         try:
             with f.open("r", encoding="utf-8", errors="ignore") as fh:
-                rows = [json.loads(l) for i, l in enumerate(fh) if l.strip() and i < 300]
-        except Exception:  # noqa: BLE001
+                rows = [json.loads(ln) for i, ln in enumerate(fh) if ln.strip() and i < 300]
+        except Exception:  # blind-except intentional (BLE001)
             continue
         rows = [r for r in rows if isinstance(r, dict)]
         if rows:
@@ -131,7 +131,7 @@ def main() -> None:
 
     # ---- 1 UNREAD FIELDS (summary)
     unread = 0
-    for fn, rows in samples.items():
+    for _fn, rows in samples.items():
         keys = Counter()
         for r in rows:
             keys.update(r.keys())
@@ -141,7 +141,7 @@ def main() -> None:
             if code.count(f'"{k}"') + code.count(f"'{k}'") <= 2:
                 unread += 1
 
-    print(f"\n=== TOTAL MECHANICALLY-FINDABLE BLIND SPOTS ===")
+    print("\n=== TOTAL MECHANICALLY-FINDABLE BLIND SPOTS ===")
     print(f"  1 unread fields          {unread}")
     print(f"  2 unmodelled entities    {len(unmodelled)}")
     print(f"  3 uncrossed pairs        {len(pairs)}")

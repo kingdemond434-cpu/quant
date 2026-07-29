@@ -35,6 +35,7 @@ Read-only. No keys, no LLM, no network. Run from repo root.
 """
 from __future__ import annotations
 
+import itertools
 import json
 import subprocess
 from datetime import UTC, datetime, timedelta
@@ -117,7 +118,7 @@ def classify_kind(rows: list[dict], key: str | None, name: str = "") -> str:
     if len(good) < 8:
         return "UNKNOWN"
     dup_frac = 1.0 - len({t.isoformat() for t in good}) / len(good)
-    gaps = [(b - a).total_seconds() for a, b in zip(good, good[1:]) if b >= a]
+    gaps = [(b - a).total_seconds() for a, b in itertools.pairwise(good) if b >= a]
     med = sorted(gaps)[len(gaps) // 2] if gaps else 0.0
     if dup_frac > 0.30 or med == 0.0:
         return "EVENT_LOG"
@@ -142,7 +143,7 @@ def check_timestamps(rows: list[dict], kind: str) -> tuple[list[str], list[str],
         (fails if bad > len(ts) * 0.02 else warns).append(
             f"{bad}/{len(ts)} unparseable '{key}' values ({bad/len(ts)*100:.1f}%)")
     if len(good) < 8:
-        return fails + ["fewer than 8 parseable timestamps"], warns, {"field": key}
+        return [*fails, "fewer than 8 parseable timestamps"], warns, {"field": key}
 
     now = datetime.now(tz=UTC)
     fut = sum(1 for t in good if t > now + timedelta(hours=6))
@@ -151,7 +152,7 @@ def check_timestamps(rows: list[dict], kind: str) -> tuple[list[str], list[str],
     # Ordering/uniqueness/regularity are TIME-SERIES contracts only. An event log is unordered,
     # many-per-instant and bursty BY CONSTRUCTION; asserting otherwise is the FP that v1 shipped.
     series = kind == "TIME_SERIES"
-    ooo = sum(1 for a, b in zip(good, good[1:]) if b < a)
+    ooo = sum(1 for a, b in itertools.pairwise(good) if b < a)
     if ooo and series:
         (fails if ooo > len(good) * 0.01 else warns).append(
             f"{ooo} out-of-order timestamps ({ooo/len(good)*100:.1f}%)")
@@ -160,7 +161,7 @@ def check_timestamps(rows: list[dict], kind: str) -> tuple[list[str], list[str],
         (fails if dup > len(good) * 0.05 else warns).append(
             f"{dup} duplicate timestamps ({dup/len(good)*100:.1f}%)")
 
-    gaps = sorted((b - a).total_seconds() for a, b in zip(good, good[1:]) if b >= a)
+    gaps = sorted((b - a).total_seconds() for a, b in itertools.pairwise(good) if b >= a)
     meta = {"field": key, "kind": kind, "n": len(good),
             "span_days": round((good[-1] - good[0]).days, 1)}
     if gaps and series:
@@ -218,7 +219,7 @@ def check_correctness(rows: list[dict], kind: str) -> tuple[list[str], list[str]
         if len(vals) < 30:
             continue
         run = best = 1
-        for a, b in zip(vals, vals[1:]):
+        for a, b in itertools.pairwise(vals):
             run = run + 1 if a == b else 1
             best = max(best, run)
         if best >= max(12, len(vals) * 0.15):
@@ -263,7 +264,7 @@ def check_cost_realism() -> tuple[list[str], list[str], dict]:
         c = COST
     try:
         d = json.loads(c.read_text("utf-8"))
-    except Exception:  # noqa: BLE001
+    except Exception:  # blind-except intentional (BLE001)
         return [f"cost model {c.name} unparseable"], [], {}
     age_d = (datetime.now(tz=UTC).timestamp() - c.stat().st_mtime) / 86400
     meta = {"artifact": c.name, "age_days": round(age_d, 1)}
@@ -279,14 +280,13 @@ def check_cost_realism() -> tuple[list[str], list[str], dict]:
 
 def check_reproducibility(p: Path) -> tuple[list[str], list[str], dict]:
     fails, warns = [], []
-    stem = p.stem
     # SEARCH libs/ TOO. v2 searched only scripts/ and reported information_value.jsonl as having
     # NO PRODUCER when libs/research/information_value.py writes it -- a false accusation of
     # irreproducibility against a healthy artifact. Third self-caught FP in this file.
     try:
         hits = subprocess.run(["grep", "-rl", p.name, "scripts/", "libs/"], cwd=str(ROOT),
                               capture_output=True, text=True, timeout=30, check=False).stdout
-    except Exception:  # noqa: BLE001
+    except Exception:  # blind-except intentional (BLE001)
         hits = ""
     producers = [h.strip() for h in hits.splitlines() if h.strip()]
     if not producers:

@@ -42,8 +42,8 @@ def main() -> None:
     for f in sorted((ROOT / "data").glob("*.jsonl")):
         try:
             with f.open("r", encoding="utf-8", errors="ignore") as fh:
-                sample = [json.loads(l) for i, l in enumerate(fh) if l.strip() and i < 200]
-        except Exception:  # noqa: BLE001
+                sample = [json.loads(ln) for i, ln in enumerate(fh) if ln.strip() and i < 200]
+        except Exception:  # blind-except intentional (BLE001)
             continue
         if not sample:
             continue

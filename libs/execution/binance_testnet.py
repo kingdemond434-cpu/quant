@@ -245,6 +245,27 @@ def realized_trades(since_ms: int = 0) -> list[float]:
     return [float(r.get("income", 0.0)) for r in _income_rows(since_ms, "REALIZED_PNL")]
 
 
+def commission_events(since_ms: int, symbol: str = "") -> list[dict[str, Any]]:
+    """Per-EVENT commission rows (symbol, time, commission) for per-trade fee attribution.
+
+    ``income_summary`` returns only the AGGREGATE commission, which cannot answer "what did THIS
+    round-trip cost". Per-trade attribution is what separates a bleeding hold-class from a
+    bleeding execution path, and the desk's own trade log cannot supply it: ``_tca`` records
+    slippage-vs-mid and no commission term at all, so every per-trade ``net`` in
+    data/cashcarry_trades.json is fee-blind by construction (2026-07-28 finding -- the venue
+    billed $1,750.65 while the log's aggregate net read +$0.16).
+
+    Read-only and paginated through the audited ``_income_rows`` path, which is the only
+    sanctioned way to read this endpoint (the 2026-07-26 truncation incident: a direct
+    limit=1000 call silently returned a page cap and understated commission by ~4.4x).
+    Commission is returned POSITIVE-MEANS-PAID, matching ``_tca``'s sign convention.
+    """
+    return [{"symbol": str(r.get("symbol") or ""),
+             "time": int(r.get("time") or 0),
+             "commission": abs(float(r.get("income") or 0.0))}
+            for r in _income_rows(since_ms, "COMMISSION", symbol=symbol)]
+
+
 def positions() -> dict[str, float]:
     """Current signed position quantity per symbol (long +, short -)."""
     out: dict[str, float] = {}
@@ -305,7 +326,7 @@ def _market_max_qty(symbol: str) -> float:
                 if f.get("filterType") == "MARKET_LOT_SIZE":
                     _MKT_MAX_CACHE[s["symbol"]] = float(f["maxQty"])
         cap = _MKT_MAX_CACHE.get(symbol, float("inf"))
-    except Exception:  # noqa: BLE001
+    except Exception:
         pass                                  # unknown cap -> behave exactly as before
     _MKT_MAX_CACHE[symbol] = cap
     return cap

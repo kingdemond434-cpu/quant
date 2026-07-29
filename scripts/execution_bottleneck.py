@@ -44,7 +44,7 @@ FUNDING_PERIOD_H = 8
 def _load(p, d=None):
     try:
         return json.loads(p.read_text("utf-8"))
-    except Exception:  # noqa: BLE001
+    except Exception:  # blind-except intentional (BLE001)
         return d
 
 
@@ -87,7 +87,7 @@ def main() -> None:
     print("    REALITY FEEDBACK: no backtest or model score overrides contradictory live evidence\n")
 
     # ---------------------------------------------------------------- Q1
-    print(f"Q1  WOULD THE OPEN BOOK PASS THE CURRENT ENTRY GATE?")
+    print("Q1  WOULD THE OPEN BOOK PASS THE CURRENT ENTRY GATE?")
     print(f"    gate: funding_bps_per_period x periods > round_trip_bps   "
           f"(hold {hold_h:.0f}h = {hold_h/FUNDING_PERIOD_H:.0f} periods)\n")
     periods = max(1.0, hold_h / FUNDING_PERIOD_H)
@@ -151,7 +151,7 @@ def main() -> None:
     missing = [k for k in need if k not in have]
     for k in missing:
         print(f"    MISSING  {k:<18} {need[k]}")
-    print(f"\n    Without these, cost is only ever an IMPLIED RESIDUAL (the 7.75x figure), and an")
+    print("\n    Without these, cost is only ever an IMPLIED RESIDUAL (the 7.75x figure), and an")
     print("    implied residual cannot tell you WHICH leg, WHICH symbol or WHICH mode to change.")
     print("    Adding them is ~15 lines of additive logging in run_cashcarry_executor.py and is")
     print("    the highest-ROI engineering task on this desk: it converts the single largest")

@@ -44,7 +44,7 @@ def yahoo(sym: str, rng: str = "2y") -> dict[str, float]:
     r = d["chart"]["result"][0]
     q = r["indicators"]["quote"][0]["close"]
     return {datetime.fromtimestamp(int(t), tz=UTC).date().isoformat(): float(c)
-            for t, c in zip(r["timestamp"], q) if c}
+            for t, c in zip(r["timestamp"], q, strict=False) if c}
 
 
 def binance(sym: str, base: str, n: int = 730) -> dict[str, float]:
@@ -62,7 +62,8 @@ def main() -> None:
     dates = sorted(set(cme) & set(spot) & set(perp))
     print(f"  aligned days: {len(dates)}  ({dates[0]} .. {dates[-1]})" if dates else "  no overlap")
     if len(dates) < 120:
-        print("  insufficient overlap"); return
+        print("  insufficient overlap")
+        return
 
     cb = np.array([cme[d] / spot[d] - 1.0 for d in dates])          # regulated basis
     ob = np.array([perp[d] / spot[d] - 1.0 for d in dates])         # offshore basis

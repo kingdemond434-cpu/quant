@@ -157,7 +157,7 @@ def audit(feature, fwd_ret, same_ret=None, name: str = "feature",
         notes["universe_churn"] = len(set(sets))
 
     verdict = "CLEAN" if not flags else "LEAK_SUSPECTED"
-    return {"name": name, "verdict": verdict, "n": int(len(f)), "flags": flags, "notes": notes}
+    return {"name": name, "verdict": verdict, "n": len(f), "flags": flags, "notes": notes}
 
 
 # ---------------------------------------------------------------- SELF-VALIDATION
@@ -216,7 +216,7 @@ def main() -> None:
     ok = sum(r["correct"] for r in res)
     print(f"  {'case':<20}{'expect':>8}{'got':>8}   result")
     for r in res:
-        print(f"  {r['case']:<20}{str(r['expected_flag']):>8}{str(r['flagged']):>8}   "
+        print(f"  {r['case']:<20}{r['expected_flag']!s:>8}{r['flagged']!s:>8}   "
               f"{'PASS' if r['correct'] else 'FAIL'}")
         for f in r["flags"][:2]:
             print(f"      caught: {f[:96]}")

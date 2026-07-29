@@ -164,7 +164,8 @@ def main() -> None:
         r_res, t_res = spearman(wd[m], resid)
         r_persist, _ = spearman(rv[m], fwd[m])         # how strong is vol clustering itself?
         r_spr, _ = spearman(wd[m], spr[m])
-        pooled_lead.append(r_lead); pooled_res.append(r_res)
+        pooled_lead.append(r_lead)
+        pooled_res.append(r_res)
         pooled_coin.append(r_coin)
         k = max(3, int(m.sum()) // 4)
         o = np.argsort(wd[m])

@@ -58,7 +58,7 @@ def main() -> None:
             elite_acc = _ratio("topLongShortAccountRatio", sym)
             retail = _ratio("globalLongShortAccountRatio", sym)
             px = _klines(sym)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # blind-except intentional (BLE001)
             print(f"{sym:9s} DATA-BLOCKED ({type(e).__name__})")
             continue
         ts = sorted(set(elite_pos) & set(elite_acc) & set(retail) & set(px))
@@ -84,7 +84,8 @@ def main() -> None:
 
     print("\n=== POOLED across symbols (the honest read: N = symbols, not observations) ===")
     for name, vals in pooled.items():
-        ics = np.array([v[0] for v in vals]); mom = np.array([v[1] for v in vals])
+        ics = np.array([v[0] for v in vals])
+        mom = np.array([v[1] for v in vals])
         rev = np.array([v[2] for v in vals])
         t = float(ics.mean() / (ics.std() / np.sqrt(len(ics)))) if len(ics) > 1 and ics.std() else 0.0
         print(f"  {name:18s} mean IC {ics.mean():+.4f} (t {t:+.2f}, n={len(ics)}) | "

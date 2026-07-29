@@ -690,9 +690,29 @@ def check_interrogation(defects) -> None:
 def check_generation(defects) -> None:
     """Hypothesis testing is the primary output. If SUCCESSFUL brain cycles have run since a
     baseline but last_live_generate has not advanced, generation is being skipped -- escalate.
-    Also flags the simple case: generation owed and long-stale."""
+    Also flags the simple case: generation owed and long-stale.
+
+    ARTIFACT OVER FLAG (2026-07-28). This read ONLY cadence_state.last_live_generate -- a key a
+    cycle sets by hand -- and so reported generation "skipped" on a day the Stage-A executor had
+    already screened and written real verdicts, while it would equally have reported generation
+    DONE for a cycle that touched nothing but the timestamp. Both errors have the same root: the
+    check trusted a flag instead of demanding the product, which is the exact failure the desk's
+    own check_production exists to catch (`scheduled but not PRODUCING`). The verdict ledger is
+    the artifact -- newest of {flag, last real verdict row} wins, and a run that screens without
+    updating the key is now correctly credited.
+    """
     cs = _j(ROOT / "data/cadence_state.json", {})
     last_gen = cs.get("last_live_generate") or cs.get("gen_done_fred_macro")
+    verdicts = ROOT / "data/stage_a_verdicts.jsonl"
+    last_verdict = None
+    if verdicts.exists():
+        with contextlib.suppress(Exception):
+            for ln in reversed(verdicts.read_text("utf-8").splitlines()):
+                if ln.strip() and (ts := json.loads(ln).get("ts")):
+                    last_verdict = ts                 # newest row carrying a real timestamp
+                    break
+    if last_verdict and (not last_gen or last_verdict > last_gen):
+        last_gen = last_verdict
     # successful cycles since a fixed watch baseline
     base_f = ROOT / "data/generation_watch_baseline"
     if not base_f.exists():
@@ -713,8 +733,9 @@ def check_generation(defects) -> None:
     # a successful cycle ran AFTER the last generation -> generation was skipped
     if newest_cycle > gen_ts + 3600:
         defects.append(("generation-skipped",
-                        f"a successful brain cycle ran but last_live_generate has not advanced "
-                        f"(last gen {last_gen}) -- hypothesis testing, the desk's PRIMARY output, "
+                        f"a successful brain cycle ran with no generation after it "
+                        f"(last screened verdict / gen flag: {last_gen}) -- hypothesis testing, "
+                        "the desk's PRIMARY output, "
                         "is being crowded out by meta-duties. Generation-first duty not honored."))
 
 
@@ -1368,6 +1389,15 @@ _FINDING_DOCS = (
     "docs/research/micro_audit_inbox.md",
     "docs/research/improvement_inbox.md",
     "docs/research/panel_rulings.md",
+    # 2026-07-28: the 101-item triage. Its own header is a disposition mandate -- "don't skip any
+    # -- build now, queue, or reject completely" -- which is precisely what §35 drives. Adding
+    # these RAISES the open-finding count rather than lowering it; that is the honest direction.
+    # Leaving them out kept ~101 items invisible to the only organ that works a backlog, and
+    # coverage that rises because findings stopped being counted is the denominator trick §35
+    # exists to forbid.
+    "docs/research/SUBSYSTEM_TRIAGE.md",
+    "docs/research/TRIAGE_ADDENDUM.md",
+    "docs/GATE0_QUEUE.md",
 )
 #: Finding-bearing docs deliberately out of scope, with the reason -- so the scope check can tell
 #: "consciously excluded" from "quietly unmonitored".
@@ -1377,6 +1407,11 @@ _FINDING_DOCS_EXCLUDED = {
     "docs/research/data_axis_watchlist.md": "source cards -- governed by §33 dispositions",
     "docs/research/discovery_hypotheses.md": "hypotheses -- governed by §33 / the trial ledger",
     "docs/research/literature_coverage.md": "coverage log -- governed by §33",
+    "docs/research/prospector_coverage.md": "coverage log -- governed by §33, same as its "
+                                            "literature_coverage sibling",
+    "docs/research/MEASUREMENT_DOCTRINE.md": "standing doctrine -- its numbered items are "
+                                             "principles that bind organs, not findings owing "
+                                             "a disposition",
     "docs/POST_GATE0_MANIFEST.md": "deferred builds -- driven by check_post_gate0_activation",
     "docs/research/DAILY_INTEGRITY_WATCH.md": "standing checklist, not findings",
     "docs/research/FREE_DATA_ADDENDA_BCD.md": "source catalogue -- source cards, not findings",
@@ -1466,6 +1501,22 @@ _TERMINAL_ARTIFACTS = {
     "docs/playbooks/carry.md": "runbook -- followed, not converted",
     "docs/playbooks/go_live.md": "runbook -- followed; the gate is GAP #2",
     "docs/playbooks/ops_checklist.md": "runbook -- followed, not converted",
+    # STANDING DOCTRINE (2026-07-28). These bind organs; they are not inventory awaiting
+    # conversion, and "convert the doctrine" is not a coherent action. Terminal is the DECISION
+    # the law demands, not a default -- each governs behaviour and is superseded by amendment,
+    # never worked off a queue.
+    "docs/research/EXPLORATION_DOCTRINE.md": "standing doctrine -- binds organs, not an inventory",
+    "docs/research/MEASUREMENT_DOCTRINE.md": "standing doctrine -- binds organs, not an inventory",
+    "docs/research/OPERATING_DOCTRINE.md": "standing doctrine -- governs what to build",
+    "docs/research/RESEARCH_EXCELLENCE.md": "standing doctrine -- governs how research is run",
+    "docs/DESK_BRIEF.md":
+        "derived snapshot -- machine-generated from measured state by research_exchange.py and "
+        "overwritten on each run, so converting it is meaningless. Terminal by construction, the "
+        "same reasoning already applied to EXTERNAL_PANEL_DOSSIER.md.",
+    "docs/research/MECHANISM_GRAPH.md":
+        "reference structure CONSUMED by hypothesis_generator.py + llm_blind_researcher.py to "
+        "choose what gets asked -- applied, not converted (cf. self_interrogation_patterns.md). "
+        "It declares no cadence, and inventing one would build a gate that fires forever.",
     "docs/EXTERNAL_PANEL_DOSSIER.md":
         "derived snapshot -- REGENERATED from live state on every panel run by "
         "generate_external_review_doc.py, never an inventory. Its findings flow panel responses "
@@ -1578,15 +1629,27 @@ def check_artifact_governance(defects) -> None:
     audit_src = ""
     with contextlib.suppress(OSError):
         audit_src = Path(__file__).read_text("utf-8")
+    cands = [p.relative_to(ROOT).as_posix() for p in sorted((ROOT / "docs").rglob("*.md"))]
+    # GITIGNORED PATHS ARE NOT ARTIFACTS (2026-07-28). This walked docs/ raw, so locally-generated
+    # scratch that git is explicitly told to ignore (docs/audit_shards/shard_*.md) was demanded to
+    # carry a governance claim. Those files do not exist on a clean checkout, which made this check
+    # -- and the CI test that asserts on it -- ENVIRONMENT-DEPENDENT: red on the box that generated
+    # the scratch, green on a runner that never did. A gate whose verdict depends on which machine
+    # ran it cannot be trusted in either direction. Governance applies to what is COMMITTED.
+    with contextlib.suppress(OSError, subprocess.SubprocessError):
+        ig = subprocess.run(["git", "check-ignore", "--stdin"], cwd=ROOT, input="\n".join(cands),
+                            capture_output=True, text=True, timeout=20)
+        if ig.returncode in (0, 1):        # 0 = some ignored, 1 = none ignored; 128 = no git
+            skip = {ln.strip() for ln in ig.stdout.splitlines() if ln.strip()}
+            cands = [c for c in cands if c not in skip]
     unclaimed = []
-    for p in sorted((ROOT / "docs").rglob("*.md")):
-        rel = p.relative_to(ROOT).as_posix()
+    for rel in cands:
         if (rel in claimed or rel.startswith(claimed_prefixes)
                 or rel.endswith("GAP_REGISTER.md")):
             continue
-        if p.name in audit_src:      # named by some other check -- already governed
+        if Path(rel).name in audit_src:      # named by some other check -- already governed
             continue
-        unclaimed.append(p.name)
+        unclaimed.append(Path(rel).name)
     if unclaimed:
         defects.append((
             "artifact-ungoverned",
@@ -2653,17 +2716,49 @@ def main() -> None:
     # at line 1) AND only wrote once ever (one-shot latch), so 24 live defects never paged. Now
     # the escalation OWNS line 1 whenever defects are overdue, and is CLEARED when none are --
     # so the pager surfaces the truth and stops crying resolved-wolf.
+    # URGENT CARVE-OUT (2026-07-28). Owning line 1 unconditionally fixed the stale-RESOLVED bug by
+    # creating the opposite one: with defects essentially always overdue, the ROUTINE 48h sweep
+    # permanently outranked every EVENT-DRIVEN page, so a Tier-3 ask the CRO cannot act on alone
+    # (a dead-man reset) was delivered as "20 below-max states". A standing sweep is never more
+    # urgent than a blocker only the principal can clear. A page marked `URGENT <ISO-date>:` keeps
+    # line 1 while it is FRESH -- the date is mandatory precisely so this cannot rot back into the
+    # stale line 1 the 07-24 fix removed; past _URGENT_TTL_D it is demoted automatically.
     _MARK = "MAX-AUDIT ESCALATION"
+    _URGENT_TTL_D = 7.0
     existing = PA.read_text("utf-8") if PA.exists() else ""
-    # strip any prior escalation block so it never stacks / goes stale
-    body = existing.split("\n" + _MARK)[0].split(_MARK)[0].rstrip()
+    # DATA LOSS FIX (2026-07-28). This was `existing.split(_MARK)[0]`, which keeps only the text
+    # BEFORE the marker. Once the escalation owned line 1 -- i.e. every run after the first -- that
+    # expression returned "" and SILENTLY DELETED the entire human-written page below it. Every
+    # PRINCIPAL_ACTION page the CRO wrote was destroyed by the next sweep, on the desk's only
+    # human-escalation channel, from 2026-07-24 until this fix. Found by re-reading the file after
+    # writing it rather than trusting the write. Strip the escalation BLOCK ONLY: its header line
+    # plus the indented bullets that belong to it; every other line is somebody's message and is
+    # preserved.
+    kept, skipping = [], False
+    for ln in existing.splitlines():
+        if ln.startswith(_MARK):
+            skipping = True
+            continue
+        if skipping and (ln.startswith("  - ") or not ln.strip()):
+            continue                       # bullets + the blank line that trails the block
+        skipping = False
+        kept.append(ln)
+    body = "\n".join(kept).strip()
+    urgent = ""
+    if body.startswith("URGENT "):
+        with contextlib.suppress(Exception):
+            stamp = body.split("URGENT ", 1)[1].split(":", 1)[0].strip()
+            if (NOW - datetime.fromisoformat(stamp).timestamp()) / 86400.0 <= _URGENT_TTL_D:
+                urgent, body = body.split("\n\n", 1) if "\n\n" in body else (body, "")
     if overdue:
         head = (f"{_MARK}: {len(overdue)} below-max state(s) >48h unfixed/unacked -- "
                 + "; ".join(f"{d}" for d, _ in overdue[:6])
                 + (" ..." if len(overdue) > 6 else "") + "\n"
                 + "".join(f"  - {d}: {m}\n" for d, m in overdue[:8]))
-        PA.write_text(head + "\n" + body, "utf-8")   # escalation OWNS line 1
-        print(f"ESCALATED to principal page (line 1): {len(overdue)} defect(s) >48h")
+        # a fresh urgent page keeps line 1; otherwise the escalation owns it as before
+        PA.write_text((urgent + "\n\n" if urgent else "") + head + "\n" + body, "utf-8")
+        print(f"ESCALATED to principal page (line {'2' if urgent else '1'}): "
+              f"{len(overdue)} defect(s) >48h" + (" -- behind a fresh URGENT page" if urgent else ""))
     elif existing != body + ("\n" if body else ""):
         PA.write_text(body + ("\n" if body else ""), "utf-8")  # cleared: drop stale escalation
         print("escalation cleared: no overdue defects")

@@ -24,7 +24,6 @@ from __future__ import annotations
 import json
 import pathlib
 import statistics as st
-from datetime import UTC, datetime
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SRC = ROOT / "data/defi_lending.jsonl"

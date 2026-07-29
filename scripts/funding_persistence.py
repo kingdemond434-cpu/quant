@@ -75,7 +75,8 @@ def main() -> None:
         if len(f) >= 200:
             series[s] = dict(f)
     if len(series) < 15:
-        print(f"  only {len(series)} usable symbols"); return
+        print(f"  only {len(series)} usable symbols")
+        return
     grid = sorted(set.intersection(*[set(v) for v in series.values()]))
     print(f"  {len(series)} symbols, {len(grid)} aligned funding periods "
           f"(~{len(grid)/3:.0f} days)\n")

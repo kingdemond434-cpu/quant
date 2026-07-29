@@ -77,7 +77,7 @@ def main() -> None:
     total_code = t1_bytes + t2_bytes + sum((ROOT / i).stat().st_size for i in inert)
 
     print("=== AUDIT SHARDING -- 100% coverage via aggregate seat capacity ===")
-    print(f"    current dossier coverage: 0.42% (state summaries, no source)\n")
+    print("    current dossier coverage: 0.42% (state summaries, no source)\n")
     print(f"  seats                {n_seats}")
     print(f"  TIER 1 (money path)  {len(tier1):>4} files  {t1_bytes:>10,} chars -> EVERY seat")
     print(f"  TIER 2 (merit)       {len(tier2):>4} files  {t2_bytes:>10,} chars -> sharded")
@@ -106,7 +106,7 @@ def main() -> None:
     for old in OUTDIR.glob("shard_*.md"):
         old.unlink()
 
-    covered = set(r for r, _ in tier1)
+    covered = {r for r, _ in tier1}
     rows = []
     for i in range(n_seats):
         seat = seats[i] if i < len(seats) else f"seat{i}"

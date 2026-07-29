@@ -23,6 +23,7 @@ Read-only. Touches no orders and no config. Run from repo root.
 """
 from __future__ import annotations
 
+import itertools
 import json
 import statistics as st
 from datetime import UTC, datetime
@@ -153,7 +154,7 @@ def main() -> None:
               f"median net {rec['median_net_bps']:+.2f}bps  median APR {rec['median_apr_pct']:+.1f}%")
         # MONOTONICITY TEST -- the difference between a hold-time EFFECT and noise.
         signs = [1 if b["median_net_bps"] > 0 else -1 for b in ranked]
-        flips = sum(1 for a, b in zip(signs, signs[1:]) if a != b)
+        flips = sum(1 for a, b in itertools.pairwise(signs) if a != b)
         print(f"  sign pattern across {len(ranked)} adequately-sampled buckets: "
               f"{''.join('+' if s > 0 else '-' for s in signs)}  ({flips} flips)")
         if flips >= 2:

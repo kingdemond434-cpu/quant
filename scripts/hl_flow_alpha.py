@@ -56,7 +56,7 @@ def cohort() -> list[str]:
     scored = []
     for r in rows:
         try:
-            wp = {w: v for w, v in r.get("windowPerformances", [])}
+            wp = dict(r.get("windowPerformances", []))
             vlm = float(wp.get("month", {}).get("vlm", 0) or 0)
             av = float(r.get("accountValue", 0) or 0)
             a = r.get("ethAddress")

@@ -28,6 +28,7 @@ Read-only. No keys, no network. Run from repo root.
 """
 from __future__ import annotations
 
+import itertools
 import json
 from datetime import UTC, datetime
 from pathlib import Path
@@ -163,7 +164,7 @@ def score(p: Path) -> dict | None:
     lat = 0.5
     cadence_s = None
     if len(ts) >= 8:
-        gaps = sorted((b - a).total_seconds() for a, b in zip(ts, ts[1:]) if b >= a)
+        gaps = sorted((b - a).total_seconds() for a, b in itertools.pairwise(ts) if b >= a)
         cadence_s = gaps[len(gaps) // 2] if gaps else None
         if cadence_s and cadence_s > 0:
             age = (now - max(ts)).total_seconds()
@@ -181,7 +182,7 @@ def score(p: Path) -> dict | None:
 
     align = 1.0
     if ts:
-        ooo = sum(1 for a, b in zip(ts, ts[1:]) if b < a)
+        ooo = sum(1 for a, b in itertools.pairwise(ts) if b < a)
         fut = sum(1 for t in ts if t > now.replace(microsecond=0) and (t - now).days > 0)
         align = max(0.0, 1.0 - (ooo + fut * 5) / len(ts))
 
@@ -255,16 +256,15 @@ def score_extra(name: str, cfg: dict) -> dict | None:
             d = None
             try:
                 d = json.loads(p.read_text("utf-8")).get(cfg["field"])
-            except Exception:  # noqa: BLE001
+            except Exception:  # blind-except intentional (BLE001)
                 d = None
             t = _parse_ts(d) if d else None
             age = (now - t.timestamp()) if t else (now - p.stat().st_mtime)
         else:
             age = now - p.stat().st_mtime
-    elif cfg["kind"] == "DIR_GLOB":
-        if p.exists():
-            newest = max((f.stat().st_mtime for f in p.glob(cfg["glob"])), default=None)
-            age = (now - newest) if newest else None
+    elif cfg["kind"] == "DIR_GLOB" and p.exists():
+        newest = max((f.stat().st_mtime for f in p.glob(cfg["glob"])), default=None)
+        age = (now - newest) if newest else None
 
     if age is None:
         return {"source": name, "dqs": 0.0, "components": {"latency": 0.0, "completeness": 0.0,

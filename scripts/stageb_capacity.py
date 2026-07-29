@@ -16,6 +16,7 @@ Read-only. No keys.
 """
 from __future__ import annotations
 
+import contextlib
 import json
 import math
 import pathlib
@@ -55,17 +56,15 @@ def holm_bar(m: int) -> float:
 
 def main() -> None:
     st = {}
-    try:
+    with contextlib.suppress(Exception):        # blind-except intentional
         st = json.loads((ROOT / "data/axis_shadow_state.json").read_text("utf-8"))
-    except Exception:  # noqa: BLE001
-        pass
     running = len(st.get("axes", []))
     observed = next((a.get("holm_bar") for a in st.get("axes", []) if a.get("holm_bar")), None)
 
     try:
         sched = len(json.loads((ROOT / "data/research_cio.json").read_text("utf-8"))
                     .get("schedule", []))
-    except Exception:  # noqa: BLE001
+    except Exception:  # blind-except intentional (BLE001)
         sched = 0
 
     print("=== STAGE-B CAPACITY -- how many forward clocks should run at once? ===")
@@ -100,7 +99,7 @@ def main() -> None:
     print("\n  THE ASYMMETRY THAT ANSWERS THE QUESTION: a weak hypothesis in Stage-A costs its own")
     print("  compute and nothing else. The same hypothesis in Stage-B taxes EVERY OTHER CLOCK.")
     print("  That is why Stage-A is unlimited and Stage-B is rationed -- not caution, arithmetic.")
-    print(f"\n  BUT '3' WAS NEVER DERIVED -- it is simply what happens to be running. On this")
+    print("\n  BUT '3' WAS NEVER DERIVED -- it is simply what happens to be running. On this")
     print(f"  arithmetic the desk is UNDER-USING Stage-B by roughly {rec-running} slots while")
     print(f"  {sched} candidates queue behind it. That is a real throughput bottleneck.")
 

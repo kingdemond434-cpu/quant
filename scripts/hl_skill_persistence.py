@@ -77,7 +77,7 @@ def _run(form: np.ndarray, hold: np.ndarray, label: str) -> dict:
     dec = _decile_spread(form, hold)
     rng = np.random.default_rng(7)
     null = [abs(_spearman(rng.permutation(form), hold)[0]) for _ in range(200)]
-    out = {"label": label, "n": int(len(form)), "spearman_rho": round(rho, 4),
+    out = {"label": label, "n": len(form), "spearman_rho": round(rho, 4),
            "t_stat": round(t, 2), "null_rho_p95": round(float(np.percentile(null, 95)), 4),
            "decile": dec}
     print(f"\n[{label}] n={len(form)}")
@@ -96,7 +96,7 @@ def main() -> None:
     for r in rows:
         try:
             av = float(r.get("accountValue", 0) or 0)
-            wp = {w: v for w, v in r.get("windowPerformances", [])}
+            wp = dict(r.get("windowPerformances", []))
             m, w7 = wp.get("month", {}), wp.get("week", {})
             mp, wpnl = float(m.get("pnl", 0) or 0), float(w7.get("pnl", 0) or 0)
             vlm = float(m.get("vlm", 0) or 0)

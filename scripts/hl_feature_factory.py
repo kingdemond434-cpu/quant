@@ -58,7 +58,7 @@ else:
         try:
             av = float(r.get("accountValue", 0) or 0)
             a = r.get("ethAddress")
-            wp = {w: v for w, v in r.get("windowPerformances", [])}
+            wp = dict(r.get("windowPerformances", []))
             vlm = float(wp.get("month", {}).get("vlm", 0) or 0)
             if a and av >= 50_000 and vlm > 0 and 1.0 <= vlm / av <= 25.0:
                 cand.append((av, a))
@@ -66,7 +66,7 @@ else:
             continue
     cand.sort(reverse=True)
     raw = []
-    for i, (av0, a) in enumerate(cand[:N]):
+    for i, (_av0, a) in enumerate(cand[:N]):
         try:
             f = _post({"type": "userFills", "user": a})
         except Exception:

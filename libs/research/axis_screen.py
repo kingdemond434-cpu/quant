@@ -107,17 +107,33 @@ def stage_a_screen(signal: np.ndarray, target_ret: np.ndarray, *, name: str,
     # "looked and it is not there"; under the latter every null would be self-certifying.
     powered = min_detectable_ic <= ic_min
 
-    # LOOKAHEAD RAIL. A signal observed at t should not know MORE about t+1 than about t: for a
-    # genuine lead, forward IC is normally weaker than the contemporaneous relationship. A whole-
-    # period misalignment produces the opposite signature -- strong forward IC with near-zero
-    # same-period corr -- and slips under a global ic_ceiling wherever honest contemporaneous
-    # correlation is already high (measured ~0.34 on macro->crypto, vs a 0.35 ceiling). Flagged as
-    # a diagnostic; ic_ceiling stays caller-tunable per axis rather than one global guess.
+    # LOOKAHEAD RAIL, part 2: forward-exceeds-contemporaneous. A whole-period misalignment (a
+    # KST-day candle labelled a UTC day, a close timestamped a bar early) produces strong forward
+    # IC with weak same-period corr, and slips under the global ic_ceiling wherever honest
+    # contemporaneous correlation is already high (measured ~0.34 on macro->crypto vs a 0.35
+    # ceiling). BUT that same signature is the DEFINING SHAPE of a genuine leading indicator --
+    # capital flows in at t, price answers at t+1 -- so the bare excess must not kill (2026-07-29:
+    # it briefly did, and read SUSPECT-LOOKAHEAD onto the live kimchi axis directly above its own
+    # shift test printing "no lookahead pattern"). Kill authority needs corroboration on BOTH of:
+    #   RESOLVED: the excess clears the sampling-noise band for a correlation difference at this
+    #     n_eff (1.96*sqrt(2/n_eff)); an unresolved excess at n_eff=121 is a costume, not a leak.
+    #   TRANSLATES: misalignment has a fingerprint mechanism lacks -- lag the signal ONE period
+    #     and a leaked series turns its forward skill into contemporaneous skill (same_lag1 jumps,
+    #     ic_lag1 collapses), while a genuine lead just decays smoothly. corr(z[t-1], .) below.
+    # Uncorroborated cases keep the annotation and fall through to the ordinary gates, where a
+    # thin lead lands on SCREEN-UNDERPOWERED: clock keeps accruing, nothing killed, nothing found.
     ic_exceeds_contemporaneous = abs(ic) > max(abs(same), ic_min) * 1.5 and abs(ic) >= 0.15
+    z1v = np.roll(z, 1)[zwin:-1]                       # signal lagged one period
+    ic_lag1 = float(np.corrcoef(z1v, fv)[0, 1]) if z1v.std() and fv.std() else 0.0
+    same_lag1 = float(np.corrcoef(z1v, tv)[0, 1]) if z1v.std() and tv.std() else 0.0
+    shift_translates = (abs(same_lag1) > max(abs(ic_lag1), ic_min) * 1.5
+                        and abs(same_lag1) > 0.5 * abs(ic))
+    excess = abs(ic) - max(abs(same), ic_min) * 1.5
+    resolved = excess > 1.96 * float(np.sqrt(2.0 / n_eff))
 
     decontam_fail = abs(same) > contam_max or abs(ic_res) < 0.5 * abs(ic)
     implausible = abs(ic) > ic_ceiling or best > sharpe_ceiling    # alignment/lookahead rail
-    if implausible or ic_exceeds_contemporaneous:
+    if implausible or (ic_exceeds_contemporaneous and resolved and shift_translates):
         verdict = "SUSPECT-LOOKAHEAD"                  # bithumb-class: too strong to be real
     elif best < sharpe_min or abs(ic) < ic_min:
         # Distinguish 'tested and refuted' from 'could not have detected it'. Only the former is
@@ -153,6 +169,9 @@ def stage_a_screen(signal: np.ndarray, target_ret: np.ndarray, *, name: str,
            "n_eff": round(n_eff, 1),
            "min_detectable_ic": round(min_detectable_ic, 4), "powered": powered,
            "ic_exceeds_contemporaneous": ic_exceeds_contemporaneous,
+           "ic_lag1": round(ic_lag1, 4), "same_lag1": round(same_lag1, 4),
+           "shift_translates": shift_translates,
+           "excess_resolved": resolved,
            "verdict": verdict, "current_z": round(float(z[-1]), 3),
            "stage": "A (zero promotion authority)"}
 

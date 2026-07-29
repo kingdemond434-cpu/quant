@@ -69,8 +69,10 @@ def main() -> None:
         c = np.array([kl[t][0] for t in ts])
         np.array([kl[t][1] for t in ts])
         np.array([kl[t][2] for t in ts])
-        dp = np.zeros(len(c)); dp[1:] = c[1:] / c[:-1] - 1.0
-        do = np.zeros(len(o)); do[1:] = o[1:] / o[:-1] - 1.0
+        dp = np.zeros(len(c))
+        dp[1:] = c[1:] / c[:-1] - 1.0
+        do = np.zeros(len(o))
+        do[1:] = o[1:] / o[:-1] - 1.0
 
         # rolling reflexivity beta
         refl = np.zeros(len(c))
@@ -98,7 +100,8 @@ def main() -> None:
         t_d = ic_d * np.sqrt(max(1, n / H - 2)) / np.sqrt(max(1e-9, 1 - ic_d ** 2))
 
         # tercile check: does the top-reflexivity regime actually have worse tails?
-        q = np.argsort(r_); k = max(5, len(r_) // 3)
+        q = np.argsort(r_)
+        k = max(5, len(r_) // 3)
         hi_v, lo_v = v_[q[-k:]].mean(), v_[q[:k]].mean()
         hi_d, lo_d = d_[q[-k:]].mean(), d_[q[:k]].mean()
 
@@ -121,7 +124,8 @@ def main() -> None:
                     "direction_ic": scr.get("ic"), "direction_verdict": scr["verdict"]})
 
     if len(out) >= 2:
-        tv = np.array([o["t_vol"] for o in out]); td = np.array([o["t_dd"] for o in out])
+        tv = np.array([o["t_vol"] for o in out])
+        td = np.array([o["t_dd"] for o in out])
         print(f"POOLED across {len(out)} symbols: mean t(vol) {tv.mean():+.2f} | "
               f"mean t(drawdown) {td.mean():+.2f}")
         print(f"  consistent sign vol {int((np.sign(tv)==np.sign(tv[0])).sum())}/{len(tv)} | "

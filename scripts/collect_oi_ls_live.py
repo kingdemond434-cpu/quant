@@ -58,7 +58,7 @@ def _viable_universe() -> list[str]:
     """Symbols whose MEASURED round-trip can clear ordinary funding. Never the funding ranking."""
     try:
         cm = json.loads(COST.read_text("utf-8"))["symbols"]
-    except Exception:  # noqa: BLE001
+    except Exception:  # blind-except intentional (BLE001)
         return list(_FALLBACK)
     out = []
     for sym, d in cm.items():
@@ -97,10 +97,10 @@ def main() -> None:
             if not oi or not ls:
                 failed.append(sym)
                 continue
-            o, l = oi[-1], ls[-1]
+            o, lrow = oi[-1], ls[-1]
             t = tk[-1] if tk else {}
-            lsr = float(l["longShortRatio"])
-            la = float(l["longAccount"])
+            lsr = float(lrow["longShortRatio"])
+            la = float(lrow["longAccount"])
             # sanity: ratio and account share must be internally consistent and bounded
             if not (0.01 < lsr < 100.0 and 0.0 < la < 1.0):
                 failed.append(sym)
@@ -110,11 +110,11 @@ def main() -> None:
                 "oi_contracts": float(o["sumOpenInterest"]),
                 "oi_usd": float(o["sumOpenInterestValue"]),
                 "long_short_ratio": lsr, "long_account": la,
-                "short_account": float(l["shortAccount"]),
+                "short_account": float(lrow["shortAccount"]),
                 "taker_buy_sell_ratio": float(t.get("buySellRatio", 0)) or None,
                 "src_ts": int(o["timestamp"])})
             time.sleep(0.12)                      # courteous to a free public endpoint
-        except Exception:  # noqa: BLE001
+        except Exception:  # blind-except intentional (BLE001)
             failed.append(sym)
 
     if len(rows) < _MIN_SYMBOLS:

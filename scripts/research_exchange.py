@@ -65,10 +65,7 @@ GRAVE = ROOT / "docs/graveyard.md"
 LADDER = {"proposed": 0.0, "rejected_dup": -0.5, "rejected_dead": -1.0, "accepted": 0.5,
           "built": 2.0, "changed_decision": 4.0, "improved_live": 10.0}
 
-_STOP = set("the a an and or of to in for on with is are be this that it as by from at we you "
-            "your our their its should could would may might can will not no yes if then than "
-            "more most less least very much many some any all new use used using into over under "
-            "when what which who whom whose how why where research desk system data".split())
+_STOP = {"the", "a", "an", "and", "or", "of", "to", "in", "for", "on", "with", "is", "are", "be", "this", "that", "it", "as", "by", "from", "at", "we", "you", "your", "our", "their", "its", "should", "could", "would", "may", "might", "can", "will", "not", "no", "yes", "if", "then", "than", "more", "most", "less", "least", "very", "much", "many", "some", "any", "all", "new", "use", "used", "using", "into", "over", "under", "when", "what", "which", "who", "whom", "whose", "how", "why", "where", "research", "desk", "system", "data"}
 
 
 def _toks(s: str) -> set[str]:
@@ -78,7 +75,7 @@ def _toks(s: str) -> set[str]:
 def _read(p: Path, default=None):
     try:
         return json.loads(p.read_text("utf-8"))
-    except Exception:  # noqa: BLE001
+    except Exception:  # blind-except intentional (BLE001)
         return default
 
 
@@ -214,7 +211,7 @@ def _dead_terms() -> tuple[set[str], list[str]]:
 
 def intake(path: str, source: str) -> None:
     txt = Path(path).read_text("utf-8", errors="ignore")
-    kills, dead_names = _dead_terms()
+    kills, _dead_names = _dead_terms()
     mb_kw = {
         "M_ATTENTION_DELAY": ("attention", "sentiment", "social", "twitter", "reddit", "trends"),
         "M_SKILL_PERSISTENCE": ("trader", "copytrad", "leaderboard", "smart money", "skill"),
@@ -296,7 +293,7 @@ def score() -> None:
     by: dict[str, dict] = {}
     for r in rows:
         s = r.get("source") or r.get("seat") or "unknown"
-        d = by.setdefault(s, {k: 0 for k in LADDER})
+        d = by.setdefault(s, dict.fromkeys(LADDER, 0))
         d[r.get("status", "proposed")] = d.get(r.get("status", "proposed"), 0) + 1
     print(f"  {'source':<26}{'prop':>6}{'dead':>6}{'dup':>5}{'built':>7}{'live':>6}{'score':>8}"
           f"{'yield':>8}")

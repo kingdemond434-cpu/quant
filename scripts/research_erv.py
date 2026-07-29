@@ -1,4 +1,5 @@
-"""EXPECTED RESEARCH VALUE -- score hypotheses BEFORE testing, so conversion rises instead of supply.
+"""EXPECTED RESEARCH VALUE -- score hypotheses BEFORE testing, so conversion rises instead of \
+supply.
 
 THE INSIGHT THIS IMPLEMENTS (principal, 2026-07-27): the desk does not have an idea shortage. It
 has a CONVERSION problem. ~28 hypotheses tested today, ONE survived. Adding generators raises
@@ -60,8 +61,10 @@ CONCEPTS = {
 
 # concept -> (verdict, why) from THIS desk's measured history
 HISTORY = {
-    "attention": ("DEAD", "level AND acceleration tested across 15 horizons, 5 languages; all dead"),
-    "developer": ("MOSTLY DEAD", "commit velocity CS-IC ~0 at 1/3/6mo; retention n=10 underpowered"),
+    "attention": (
+        "DEAD", "level AND acceleration tested across 15 horizons, 5 languages; all dead"),
+    "developer": (
+        "MOSTLY DEAD", "commit velocity CS-IC ~0 at 1/3/6mo; retention n=10 underpowered"),
     "trader_skill": ("DEAD", "5 mechanisms, ~50k traders, gapped persistence rho -0.064"),
     "premium_regional": ("PARTLY ALIVE", "kimchi/cny live; JP/BR/TR/pegs/LSD all died on WIDTH"),
     "funding_position": ("ALIVE", "funding persistence IC +0.432; ls_contrarian on clock to Aug 7"),
@@ -92,7 +95,8 @@ def score(h: dict) -> dict:
     # 1. archaeology -- concept-level, not token-level
     verdicts = [HISTORY.get(c, ("UNKNOWN", ""))[0] for c in cs]
     if "DEAD" in verdicts:
-        arch, arch_why = 0.05, f"concept already DEAD here: {[c for c in cs if HISTORY.get(c,('',''))[0]=='DEAD']}"
+        arch, arch_why = 0.05, (
+            f"concept already DEAD here: {[c for c in cs if HISTORY.get(c,('',''))[0]=='DEAD']}")
     elif "MOSTLY DEAD" in verdicts:
         arch, arch_why = 0.3, "concept mostly refuted; needs a materially new construction"
     elif "INCONCLUSIVE" in verdicts or "PARTLY ALIVE" in verdicts:
@@ -113,7 +117,8 @@ def score(h: dict) -> dict:
     # 3. mechanism depth -- spreads and forced flows beat forecasts (measured prior)
     mech = 1.0 if any(m in t for m in HARD_MECH) else (0.6 if "spread" in t else 0.35)
     mech_why = ("hard constraint / forced flow named" if mech == 1.0
-                else "spread construction" if mech == 0.6 else "correlational -- forecasts died here")
+                else "spread construction" if mech == 0.6
+                else "correlational -- forecasts died here")
 
     # 4. cost -- cheap falsifiable tests first
     cost = 1.0
@@ -149,7 +154,8 @@ def main() -> None:
         rows = [
             {"name": "Attention efficiency ratio", "mechanism": "return per unit social attention",
              "data": "google trends + wikipedia", "test": "cross-sectional IC", "kill": "IC<0.03"},
-            {"name": "Developer retention momentum", "mechanism": "contributors staying predicts growth",
+            {"name": "Developer retention momentum",
+             "mechanism": "contributors staying predicts growth",
              "data": "github contributors", "test": "rank vs fwd relative return", "kill": "t<2"},
             {"name": "Market maker inventory stress",
              "mechanism": "MMs FORCED to withdraw depth when inventory risk binds",

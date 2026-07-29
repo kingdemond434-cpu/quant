@@ -79,7 +79,7 @@ COVERAGE_FALLBACK = {
 def _load(p: Path, d=None):
     try:
         return json.loads(p.read_text("utf-8"))
-    except Exception:  # noqa: BLE001
+    except Exception:  # blind-except intentional (BLE001)
         return d
 
 
@@ -119,7 +119,7 @@ def main() -> None:
     print("    attention naturally goes, which is wherever the data is easiest\n")
     ms = reg.get("mechanism_survival", {})
     cov_src = {}
-    for m, g in (feat.get("proposals") and {} or {}).items():   # placeholder, real cov below
+    for m, g in ((feat.get("proposals") and {}) or {}).items():   # placeholder, real cov below
         cov_src[m] = g
     # coverage from the miner's own output where available
     covs = dict(COVERAGE_FALLBACK)
@@ -167,8 +167,8 @@ def main() -> None:
     print(f"  experiments registered     {n}")
     print(f"  reached a decision         {decided}")
     print(f"  survived screening         {surv}  ({surv/max(decided,1)*100:.1f}%)")
-    print(f"  passed FORWARD test        0   (first verdict 2026-08-07)")
-    print(f"  DEPLOYED to capital        0")
+    print("  passed FORWARD test        0   (first verdict 2026-08-07)")
+    print("  DEPLOYED to capital        0")
     print(f"\n  VALIDATED ALPHA DISCOVERY RATE = {vadr:.2f} per {days:.0f}d")
     print("  Screening survival is NOT the north star. A screen carries zero promotion")
     print("  authority, so 15 survivors and 0 deployed is a rate of zero, not 9.6%.")

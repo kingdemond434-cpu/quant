@@ -294,7 +294,7 @@ def _market_max_qty(symbol: str) -> float:
                 if f.get("filterType") == "MARKET_LOT_SIZE":
                     _MKT_MAX_CACHE[s["symbol"]] = float(f["maxQty"])
         cap = _MKT_MAX_CACHE.get(symbol, float("inf"))
-    except Exception:  # noqa: BLE001
+    except Exception:
         pass                                  # unknown cap -> behave exactly as before
     _MKT_MAX_CACHE[symbol] = cap
     return cap

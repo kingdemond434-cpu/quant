@@ -56,8 +56,8 @@ def parse(line: str):
     if not b or not a:
         return None
     try:
-        bp, bq = float(b[0][0]), float(b[0][1])
-        ap, aq = float(a[0][0]), float(a[0][1])
+        bp, _bq = float(b[0][0]), float(b[0][1])
+        ap, _aq = float(a[0][0]), float(a[0][1])
     except (TypeError, ValueError, IndexError):
         return None
     if bp <= 0 or ap <= 0:
@@ -104,7 +104,6 @@ def audit(sym_dir: Path):
     dep = np.array([r["db"] + r["da"] for r in rows])
     imb = np.array([r["db"] / max(r["db"] + r["da"], 1e-9) for r in rows])
     # hours covered vs span
-    hrs = sorted({f.stem for f in files})
     span_h = len(files)
     q = 100.0
     q -= min(40, crossed / max(1, n) * 100 * 4)         # crossed books are fatal
@@ -127,7 +126,8 @@ def audit(sym_dir: Path):
 def main() -> None:
     random.seed(7)
     if not MOAT.exists():
-        print("no data/moat"); return
+        print("no data/moat")
+        return
     print("=== MOAT PHASE 1: validate before mining ===")
     print("    clustering unvalidated books manufactures regimes from gaps -- this stops that\n")
     out = {}

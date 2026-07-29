@@ -67,13 +67,13 @@ def _doctrine(role: str = "") -> str:
     try:
         from scripts.doctrine import preamble
         return preamble(role)
-    except Exception:  # noqa: BLE001
+    except Exception:  # blind-except intentional (BLE001)
         try:
             import sys as _s
             _s.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent))
             from doctrine import preamble  # type: ignore
             return preamble(role)
-        except Exception:  # noqa: BLE001
+        except Exception:  # blind-except intentional (BLE001)
             return ""          # never break a caller over a preamble
 
 
@@ -113,7 +113,7 @@ def simplifier() -> dict:
             orphan_out.append(stem)
     return {"n_scripts": len(scripts), "wired": wired, "unwired": unwired,
             "orphan_outputs": orphan_out,
-            "touched_30d": len({l.strip() for l in recent.splitlines() if l.strip()})}
+            "touched_30d": len({ln.strip() for ln in recent.splitlines() if ln.strip()})}
 
 
 def _ask(base, key, model, system, user, timeout=240.0):
@@ -172,7 +172,8 @@ def main() -> None:
     print(state)
 
     if not KEYS.exists():
-        print("\n  no panel keys -- architect cannot run"); return
+        print("\n  no panel keys -- architect cannot run")
+        return
     provs = {p["model"]: p for p in json.loads(KEYS.read_text("utf-8"))["providers"]
              if isinstance(p, dict)}
     user = (f"{state}\n\nPropose 6-10 improvements to this RESEARCH SYSTEM. Prefer DELETE/MERGE "

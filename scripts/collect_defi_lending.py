@@ -73,7 +73,7 @@ def main() -> None:
     try:
         borrow_raw = _get(BORROW)
         pools_raw = _get(POOLS)
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:  # blind-except intentional (BLE001)
         _quarantine("upstream unreachable", {"error": f"{type(e).__name__}: {e}"})
         raise SystemExit(1) from e
 
@@ -135,7 +135,7 @@ def main() -> None:
     tot_sup = sum(r["supply_usd"] for r in rows)
     tot_bor = sum(r["borrow_usd"] for r in rows)
     hot = sorted([r for r in rows if r["supply_usd"] > 5e7], key=lambda r: -r["utilisation"])[:6]
-    print(f"  {len(rows)} pools across {len(set(r['project'] for r in rows))} protocols")
+    print(f"  {len(rows)} pools across {len({r['project'] for r in rows})} protocols")
     print(f"  aggregate supply ${tot_sup/1e9:.2f}bn  borrow ${tot_bor/1e9:.2f}bn  "
           f"system utilisation {tot_bor/max(tot_sup,1):.1%}")
     print(f"  dropped: {dropped}\n")

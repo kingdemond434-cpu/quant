@@ -32,6 +32,7 @@ h=1 -> zwin 20 (20d), h=5 -> zwin 12 (60d), h=20 -> zwin 6 (120d).
 """
 from __future__ import annotations
 
+import argparse
 import glob
 import json
 import os
@@ -244,7 +245,31 @@ ONCHAIN_MECHANISM = (
     "tested.")
 
 
-def screen_onchain(btc: pd.Series) -> None:
+def coinmetrics_btc() -> pd.Series:
+    """Coin Metrics community daily BTC reference close -- the desk's DEEPEST clean price history.
+
+    Alignment (declared, and VERIFIED against the lake before use): Coin Metrics ``PriceUSD`` dated
+    d is the fixed close as of 00:00 UTC on d+1, i.e. the same instant as the Binance D1 bar
+    labelled d. Empirical check on the 2515 overlapping days: same-date log-return corr +0.994,
+    while shifting either series by one day collapses it to -0.047 / -0.066. Same day label = same
+    instant; no look-ahead channel from the price leg.
+    """
+    out: dict = {}
+    with (ROOT / "data/coinmetrics_flows.jsonl").open(encoding="utf-8") as fh:
+        for ln in fh:
+            ln = ln.strip()
+            if not ln:
+                continue
+            try:
+                r = json.loads(ln)
+            except json.JSONDecodeError:
+                continue
+            if r.get("asset") == "btc" and r.get("price_usd") and r.get("date"):
+                out[pd.Timestamp(str(r["date"])[:10], tz="UTC")] = float(r["price_usd"])
+    return pd.Series(out).sort_index()
+
+
+def screen_onchain(btc: pd.Series, deep: pd.Series | None = None) -> None:
     series = {}
     for chart, tag in (("estimated-transaction-volume-usd", "A_usd_denominated"),
                        ("estimated-transaction-volume", "B_btc_denominated_price_free")):
@@ -256,20 +281,34 @@ def screen_onchain(btc: pd.Series) -> None:
              float(p["y"]) for p in vals}).sort_index()
         print(f"  {tag}: n={len(series[tag])} {series[tag].index.min().date()} -> "
               f"{series[tag].index.max().date()} unit={d.get('unit')}")
-    for tag, s in series.items():
-        common = s.index.intersection(btc.index)
-        sv, bv = s.reindex(common).to_numpy(), btc.reindex(common).to_numpy()
-        print(f"  aligned {tag}: {len(common)} days {common.min().date()} -> {common.max().date()}")
-        for h in HORIZONS:
-            idx = block_idx(len(common), h)
-            b_h = bv[idx]
-            ret_h = np.zeros(len(idx))
-            ret_h[1:] = b_h[1:] / b_h[:-1] - 1.0
-            sig_h = sv[idx]
-            cell("onchain_activity", tag, sig_h, ret_h, h,
-                 target_kind="absolute BTCUSDT timing return (network-wide aggregate -> timing)",
-                 extra={"aligned_days": len(common),
-                        "span": f"{common.min().date()}..{common.max().date()}"})
+
+    # price legs: the lake (2019-09 ->, matches every other axis) and, if supplied, the deep
+    # Coin Metrics history (2010-07 ->). PRE-DECLARED, before any IC is computed: the deep leg is
+    # run at h=1d ONLY. n_blocks there is ~5.8k, so 1.96/sqrt(n_blocks)=0.026 finally sits UNDER
+    # the harness's ic_min=0.03 and a null becomes a real refutation instead of "could not tell";
+    # at h=5 (1.15k blocks -> 0.058) and h=20 (288 -> 0.116) the deeper sample is still blind, so
+    # those cells could not change any verdict and are not run. This is a power calculation from
+    # sample length alone -- it does not look at the data.
+    legs = [("lake_btcusdt_2019", btc, HORIZONS)]
+    if deep is not None:
+        legs.append(("deep_coinmetrics_2010", deep, (1,)))
+    for leg, px, horizons in legs:
+        for tag, s in series.items():
+            common = s.index.intersection(px.index)
+            sv, bv = s.reindex(common).to_numpy(), px.reindex(common).to_numpy()
+            print(f"  aligned {tag} [{leg}]: {len(common)} days "
+                  f"{common.min().date()} -> {common.max().date()}")
+            for h in horizons:
+                idx = block_idx(len(common), h)
+                b_h = bv[idx]
+                ret_h = np.zeros(len(idx))
+                ret_h[1:] = b_h[1:] / b_h[:-1] - 1.0
+                sig_h = sv[idx]
+                name = tag if leg == "lake_btcusdt_2019" else f"{tag}@{leg}"
+                cell("onchain_activity", name, sig_h, ret_h, h,
+                     target_kind="absolute BTC timing return (network-wide aggregate -> timing)",
+                     extra={"aligned_days": len(common), "price_leg": leg,
+                            "span": f"{common.min().date()}..{common.max().date()}"})
 
 
 # ======================================================= AXIS 3: try_premium (lira debasement) ==
@@ -366,20 +405,34 @@ def screen_try(btc: pd.Series) -> None:
 
 
 # ------------------------------------------------------------------------------------- main ----
-def main() -> None:
+ALL_AXES = ("crypto", "onchain_activity", "try_premium")
+
+
+def main(axes: tuple[str, ...] = ALL_AXES) -> None:
+    """Screen the selected idle axes.
+
+    ``axes`` exists so a run can SKIP an axis that must not be re-tested (``try_premium`` is
+    graveyarded as ``try_premium_timing`` / ``timing_artifact``; the graveyard is permanent and
+    re-testing an identical hypothesis is forbidden). Skipping is not deleting: trials for
+    unselected axes are carried forward verbatim from the previous ``idle_axis_screen.json`` so a
+    scoped re-run can never silently drop a recorded negative.
+    """
     print("=" * 96)
     print("NOVELTY GATE (before compute) -- graveyard + live-sleeve priors")
     print("=" * 96)
-    nov = [
-        novelty("crypto::taker_flow_absorption", CRYPTO_MECHANISM,
-                ("taker_buy_frac_residualised", "price_response", "absorption",
-                 "xsec_relative_return", "perp")),
-        novelty("onchain_activity::throughput_multiweek", ONCHAIN_MECHANISM,
-                ("onchain_throughput_btc_native", "multiweek_horizon", "btc_timing",
-                 "supply_inelastic_absorption")),
-        novelty("try_premium::stablecoin_rent", TRY_MECHANISM,
-                ("usdt_try_stablecoin_premium", "capital_flight", "no_btc_leg", "btc_timing")),
-    ]
+    nov = []
+    if "crypto" in axes:
+        nov.append(novelty("crypto::taker_flow_absorption", CRYPTO_MECHANISM,
+                           ("taker_buy_frac_residualised", "price_response", "absorption",
+                            "xsec_relative_return", "perp")))
+    if "onchain_activity" in axes:
+        nov.append(novelty("onchain_activity::throughput_multiweek", ONCHAIN_MECHANISM,
+                           ("onchain_throughput_btc_native", "multiweek_horizon", "btc_timing",
+                            "supply_inelastic_absorption")))
+    if "try_premium" in axes:
+        nov.append(novelty("try_premium::stablecoin_rent", TRY_MECHANISM,
+                           ("usdt_try_stablecoin_premium", "capital_flight", "no_btc_leg",
+                            "btc_timing")))
 
     btc_fs = glob.glob(f"{ROOT}/data/lake/bronze/crypto/BTCUSDT/D1/**/*.parquet", recursive=True)
     btcdf = (pd.concat([pd.read_parquet(f) for f in btc_fs])
@@ -389,21 +442,38 @@ def main() -> None:
     print(f"\nBTCUSDT D1 (lake, Binance UTC-day close): n={len(btc)} "
           f"{btc.index.min().date()} -> {btc.index.max().date()}")
 
-    print("\n" + "=" * 96)
-    print("AXIS 1/3  crypto  --", CRYPTO_MECHANISM)
-    print("=" * 96)
-    panel = load_crypto_panel()
-    screen_crypto(panel)
+    if "crypto" in axes:
+        print("\n" + "=" * 96)
+        print("AXIS crypto  --", CRYPTO_MECHANISM)
+        print("=" * 96)
+        panel = load_crypto_panel()
+        screen_crypto(panel)
 
-    print("\n" + "=" * 96)
-    print("AXIS 2/3  onchain_activity  --", ONCHAIN_MECHANISM)
-    print("=" * 96)
-    screen_onchain(btc)
+    if "onchain_activity" in axes:
+        print("\n" + "=" * 96)
+        print("AXIS onchain_activity  --", ONCHAIN_MECHANISM)
+        print("=" * 96)
+        deep = coinmetrics_btc()
+        print(f"  deep price leg (coinmetrics BTC close): n={len(deep)} "
+              f"{deep.index.min().date()} -> {deep.index.max().date()}")
+        screen_onchain(btc, deep=deep)
 
-    print("\n" + "=" * 96)
-    print("AXIS 3/3  try_premium  --", TRY_MECHANISM)
-    print("=" * 96)
-    screen_try(btc)
+    if "try_premium" in axes:
+        print("\n" + "=" * 96)
+        print("AXIS try_premium  --", TRY_MECHANISM)
+        print("=" * 96)
+        screen_try(btc)
+
+    # carry forward every recorded trial for axes NOT re-run this pass -- a scoped run must never
+    # erase a negative someone else already paid for
+    carried, carried_nov = [], []
+    if OUT.exists():
+        prev = json.loads(OUT.read_text("utf-8"))
+        carried = [t for t in prev.get("trials", []) if t.get("axis") not in axes]
+        carried_nov = [n for n in prev.get("novelty_gate", [])
+                       if str(n.get("candidate", "")).split("::")[0] not in axes]
+        for t in carried:
+            t.setdefault("carried_from", prev.get("updated"))
 
     payload = {
         "updated": datetime.now(tz=UTC).isoformat(),
@@ -411,7 +481,8 @@ def main() -> None:
         "defect": "data-utilization-paralysis (max_audit)",
         "mechanisms": {"crypto": CRYPTO_MECHANISM, "onchain_activity": ONCHAIN_MECHANISM,
                        "try_premium": TRY_MECHANISM},
-        "novelty_gate": nov,
+        "axes_run_this_pass": list(axes),
+        "novelty_gate": nov + carried_nov,
         "sampling_convention": __doc__.split("SAMPLING CONVENTION")[1].strip(),
         "timestamp_alignment": {
             "crypto": "single source: Binance perp D1 bars, timestamp = UTC day open, close = "
@@ -434,13 +505,18 @@ def main() -> None:
                            "2026-06-05. Both FX legs are BACKWARD offsets: no look-ahead, only "
                            "attenuation. T3 uses no FX at all and is therefore alignment-exact.",
         },
-        "trials": TRIALS,
+        "trials": TRIALS + carried,
     }
     OUT.write_text(json.dumps(payload, indent=1), "utf-8")
-    print(f"\n{len(TRIALS)} DSR-counted trials written -> {OUT}")
+    print(f"\n{len(TRIALS)} DSR-counted trials this pass ({len(carried)} carried forward "
+          f"unchanged) -> {OUT}")
     for v in sorted({t["verdict"] for t in TRIALS}):
         print(f"  {v}: {sum(1 for t in TRIALS if t['verdict'] == v)}")
 
 
 if __name__ == "__main__":
-    main()
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--axes", default=",".join(ALL_AXES),
+                    help="comma-separated subset of " + ",".join(ALL_AXES))
+    a = ap.parse_args()
+    main(tuple(x.strip() for x in a.axes.split(",") if x.strip()))

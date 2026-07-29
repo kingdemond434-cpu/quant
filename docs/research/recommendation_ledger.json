@@ -297,6 +297,102 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0025",
+   "source": "cycle-2026-07-28",
+   "summary": "Cost-rate circuit breaker in the carry executor: pause OPENS (never closes) on a windowed fee-vs-harvest rate with an absolute-burn floor; fail-closed on opens since an open is always optional. Section 40 fired 27h before diagnosis with no authority to stop anything -- the only brake was the equity ruin rail at -35%, after the money was gone.",
+   "roi_bps": 40.0,
+   "raised": "2026-07-28T20:26:42.200986+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0026",
+   "source": "cycle-2026-07-28",
+   "summary": "Root-cause the -51.74 bps price_pnl on delta-neutral carry round-trips (should be ~0): decompose into leg asymmetry vs entry/exit spread vs basis drift vs the naked-long-spot incident window. Decides whether the desk's only sleeve is viable; blocks any resume decision.",
+   "roi_bps": 100.0,
+   "raised": "2026-07-28T20:26:42.266235+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0027",
+   "source": "cycle-2026-07-28",
+   "summary": "Extend fee attribution to SPOT-leg commission. /fapi income is futures-only, so every fee number the desk now produces is a labelled LOWER BOUND and the true round-trip cost is worse than measured.",
+   "roi_bps": 15.0,
+   "raised": "2026-07-28T20:26:42.334023+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0028",
+   "source": "cycle-2026-07-28",
+   "summary": "institutional_knowledge.md is 596 lines against the constitution's ~200-line ACTIVE-lessons cap ('compress before adding'). I added this cycle's lessons without compressing -- stating it rather than hiding it. Distil aged entries into _PRIORS multipliers and one-line rules at the monthly memory-compression item; archive, never delete.",
+   "roi_bps": 5.0,
+   "raised": "2026-07-28T20:27:23.876601+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0029",
+   "source": "cycle-2026-07-28-adjacency",
+   "summary": "ADJACENCY of the fee-blind defect (proactive battery move 2): libs/portfolio/live_book.py:102 computes the molded book's WIN RATE from the same fee-blind trade-log 'net' (price_pnl + est_funding, no commission term). A trade counts as a win when commission made it a net loss. Same failure shape, second organ -- one instance is never one instance. Plumb the venue-truth fee attribution built this cycle into live_book, or label the statistic fee-blind on the dashboard.",
+   "roi_bps": 8.0,
+   "raised": "2026-07-28T20:29:43.904909+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0030",
+   "source": "cycle-2026-07-28-generation",
+   "summary": "GATE-OPTIMALITY, measured: stage_a_screen needs n_eff >= (1.96/0.03)^2 = 4268 independent obs to call a cell POWERED, but for a stacked cross-sectional panel n_eff collapses to the number of DATES. The crypto lake starts 2019-09 (2516 dates, mdi 0.039), so NO daily cross-sectional screen on that axis can EVER be powered whatever the signal; fred_macro is capped ~4030 business days by BTC history. This is a gate that rejects ~100% for reasons unrelated to candidate merit -- exactly the zero-information gate the gate-optimality duty says to investigate. Do NOT loosen the threshold: fix the power calculation for panel data (n_eff should not be date-capped when breadth is real) or state the detection floor honestly per axis.",
+   "roi_bps": 60.0,
+   "raised": "2026-07-28T20:31:40.701253+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0031",
+   "source": "cycle-2026-07-28-generation",
+   "summary": "WALCL 4-week reserve impulse -> next-week BTC printed IC +0.1106 with a mechanism-consistent sign, de-contamination PASSED (resid +0.0964) and momentum Sharpe 0.82, clearing ic_min and sharpe_min and stopped ONLY by the power gate -- correctly, since a 4-week window sampled weekly carries ~204 independent obs (t~1.6), not 815 (t~3.2). NOT an edge and NOT a clock. It is the first empirical reason to revisit the WALCL axis that its six EV rejections never had: run a PRE-REGISTERED NON-OVERLAPPING re-test.",
+   "roi_bps": 25.0,
+   "raised": "2026-07-28T20:31:40.766685+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0032",
+   "source": "cycle-2026-07-28-generation",
+   "summary": "DEPTH DEFECT: collect_fred_macro.py caps at _LOOKBACK_DAYS=1200 while its own docstring claims FRED 'serves deep history on day one'. That truncation is why no fred_macro screen was ever powered -- the axis was starved of the history the gate requires. Backfill to the archive-depth ceiling and diff-verify (depth-parity class).",
+   "roi_bps": 20.0,
+   "raised": "2026-07-28T20:31:40.831864+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

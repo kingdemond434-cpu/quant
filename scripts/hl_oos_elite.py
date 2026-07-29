@@ -7,9 +7,12 @@ THIS TEST: same filter, FROZEN, applied to a DISJOINT cohort (accounts ranked 18
 never probed). No re-tuning. If the lift replicates OOS it is real; if it collapses to base rate it
 was overfitting."""
 from __future__ import annotations
-import json, urllib.request
+
+import json
+import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
+
 import numpy as np
 
 INFO="https://api.hyperliquid.xyz/info"; LB="https://stats-data.hyperliquid.xyz/Mainnet/leaderboard"
@@ -32,13 +35,13 @@ if not recs:
     for r in rows:
         try:
             av=float(r.get("accountValue",0) or 0); a=r.get("ethAddress")
-            wp={w:v for w,v in r.get("windowPerformances",[])}
+            wp=dict(r.get("windowPerformances",[]))
             if a and av>=10_000 and float(wp.get("month",{}).get("vlm",0) or 0)>0: cand.append((av,a))
         except (TypeError,ValueError): continue
     cand.sort(reverse=True)
     sel=cand[LO:HI]
     print(f"OOS cohort: accounts ranked {LO}-{HI} by value ({len(sel)}) -- DISJOINT from in-sample",flush=True)
-    for i,(av0,a) in enumerate(sel):
+    for i,(_av0,a) in enumerate(sel):
         try: pf=_post({"type":"portfolio","user":a})
         except Exception: continue
         if not isinstance(pf,list): continue

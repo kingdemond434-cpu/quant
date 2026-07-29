@@ -7,11 +7,15 @@ discretionary directional traders. Side effect: their 2000 fills span months -> 
 Still performance-blind (no PnL in selection) -> no circularity. Flow at t vs return t+1 only.
 Bar: |t| >= 2.7 (3-mechanism multiplicity)."""
 from __future__ import annotations
-import json, urllib.request
+
+import json
+import urllib.request
 from collections import defaultdict
 from datetime import UTC, datetime
 from pathlib import Path
+
 import numpy as np
+
 from libs.research.axis_screen import stage_a_screen
 
 INFO="https://api.hyperliquid.xyz/info"; LB="https://stats-data.hyperliquid.xyz/Mainnet/leaderboard"
@@ -29,7 +33,7 @@ cand=[]
 for r in rows:
     try:
         av=float(r.get("accountValue",0) or 0)
-        wp={w:v for w,v in r.get("windowPerformances",[])}
+        wp=dict(r.get("windowPerformances",[]))
         vlm=float(wp.get("month",{}).get("vlm",0) or 0)
         a=r.get("ethAddress")
         if not a or av<50_000 or vlm<=0: continue
@@ -43,7 +47,7 @@ print(f"leaderboard {len(rows)} -> directional cohort {len(sel)} "
       f"(turnover {min(x[2] for x in sel):.1f}-{max(x[2] for x in sel):.1f}x/mo, performance-blind)")
 
 flow={c:defaultdict(float) for c in COINS}; ok=0; tmin=tmax=None
-for i,(av,a,turn) in enumerate(sel):
+for i,(_av,a,_turn) in enumerate(sel):
     try: fills=_post({"type":"userFills","user":a})
     except Exception: continue
     if not isinstance(fills,list) or not fills: continue

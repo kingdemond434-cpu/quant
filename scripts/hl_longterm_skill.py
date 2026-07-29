@@ -13,9 +13,12 @@ Uses pnlHistory (cumulative PnL) normalised by contemporaneous accountValue, so 
 do not masquerade as returns. Tests whether risk-adjusted long-run skill PERSISTS into the later
 period -- the precondition for 'find genuinely good traders and follow them'."""
 from __future__ import annotations
-import json, urllib.request
+
+import json
+import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
+
 import numpy as np
 
 INFO="https://api.hyperliquid.xyz/info"; LB="https://stats-data.hyperliquid.xyz/Mainnet/leaderboard"
@@ -33,7 +36,7 @@ cand=[]
 for r in rows:
     try:
         av=float(r.get("accountValue",0) or 0); a=r.get("ethAddress")
-        wp={w:v for w,v in r.get("windowPerformances",[])}
+        wp=dict(r.get("windowPerformances",[]))
         vlm=float(wp.get("month",{}).get("vlm",0) or 0)
         if a and av>=50_000 and vlm>0: cand.append((av,a))
     except (TypeError,ValueError): continue
@@ -42,7 +45,7 @@ sel=cand[:N_TRY]
 print(f"probing {len(sel)} accounts for long equity curves",flush=True)
 
 recs=[]
-for i,(av0,a) in enumerate(sel):
+for i,(_av0,a) in enumerate(sel):
     try: pf=_post({"type":"portfolio","user":a})
     except Exception: continue
     if not isinstance(pf,list): continue

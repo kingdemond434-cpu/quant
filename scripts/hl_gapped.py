@@ -66,7 +66,7 @@ def main() -> None:
     for r in rows:
         try:
             av = float(r.get("accountValue", 0) or 0)
-            wp = {w: v for w, v in r.get("windowPerformances", [])}
+            wp = dict(r.get("windowPerformances", []))
             mp = float(wp.get("month", {}).get("pnl", 0) or 0)
             wk = float(wp.get("week", {}).get("pnl", 0) or 0)
             at = float(wp.get("allTime", {}).get("pnl", 0) or 0)

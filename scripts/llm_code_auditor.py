@@ -76,13 +76,13 @@ def _doctrine(role: str = "") -> str:
     try:
         from scripts.doctrine import preamble
         return preamble(role)
-    except Exception:  # noqa: BLE001
+    except Exception:  # blind-except intentional (BLE001)
         try:
             import sys as _s
             _s.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent))
             from doctrine import preamble  # type: ignore
             return preamble(role)
-        except Exception:  # noqa: BLE001
+        except Exception:  # blind-except intentional (BLE001)
             return ""          # never break a caller over a preamble
 
 
@@ -111,12 +111,14 @@ def recent_diff(n: int) -> str:
 
 def main() -> None:
     if not KEYS.exists():
-        print("no panel keys"); return
+        print("no panel keys")
+        return
     provs = {p["model"]: p for p in json.loads(KEYS.read_text("utf-8"))["providers"]
              if isinstance(p, dict)}
     diff = recent_diff(N_COMMITS)
     if not diff.strip():
-        print("no python diff in the last commits"); return
+        print("no python diff in the last commits")
+        return
     if len(diff) > MAX_DIFF_CHARS:
         diff = diff[:MAX_DIFF_CHARS] + "\n...[truncated]"
     print(f"=== LLM CODE AUDITOR | last {N_COMMITS} commits | {len(diff)} chars ===")
@@ -127,7 +129,8 @@ def main() -> None:
     for seat in SEATS:
         prov = provs.get(seat)
         if not prov:
-            print(f"  {seat}: not in roster"); continue
+            print(f"  {seat}: not in roster")
+            continue
         try:
             txt = _ask(prov["base_url"], prov["key"], seat, SYSTEM, user)
         except Exception as e:

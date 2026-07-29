@@ -100,7 +100,7 @@ EDGES = {
 def _load(p, d=None):
     try:
         return json.loads(p.read_text("utf-8"))
-    except Exception:  # noqa: BLE001
+    except Exception:  # blind-except intentional (BLE001)
         return d
 
 

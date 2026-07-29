@@ -48,7 +48,8 @@ def main() -> None:
     days = float(port.get("days_live") or 0)
     ret = float(port.get("return_pct") or 0) / 100.0
     if days <= 0:
-        print("no live history yet"); return
+        print("no live history yet")
+        return
 
     # --- benchmarks over the SAME window ---------------------------------------------------
     try:

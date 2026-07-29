@@ -53,7 +53,7 @@ try:
         ok_block = True
     chk("3b TOO_SMALL is not a pass", ok_block,
         f"require_verified({small[0] if small else 'n/a'}) raises as it must")
-except Exception as e:  # noqa: BLE001
+except Exception as e:  # blind-except intentional (BLE001)
     chk("3b TOO_SMALL is not a pass", False, f"import failed: {e!r}")
 
 # 4 funding API monitored

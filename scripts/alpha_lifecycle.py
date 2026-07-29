@@ -28,7 +28,6 @@ from __future__ import annotations
 
 import json
 import re
-import statistics as st
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -80,7 +79,7 @@ ALPHAS = [
 def _closes():
     try:
         t = json.loads(TRADES.read_text("utf-8"))
-    except Exception:  # noqa: BLE001
+    except Exception:  # blind-except intentional (BLE001)
         return []
     rows = t if isinstance(t, list) else t.get("trades", [])
     out = []
@@ -109,10 +108,11 @@ def failure_patterns():
     rows = _closes()
     try:
         cm = json.loads(COST.read_text("utf-8"))
-    except Exception:  # noqa: BLE001
+    except Exception:  # blind-except intentional (BLE001)
         cm = {}
     if len(rows) < 40:
-        print("  too few closes to mine"); return []
+        print("  too few closes to mine")
+        return []
     for r in rows:
         r["rt"], r["measured"] = _rt(cm, r["sym"])
         r["loss"] = r["net_bps"] < 0
@@ -182,7 +182,7 @@ def _dead_mechanism(text: str):
             best, bm = hits, m
     return bm
 
-_STOP = set("the a an of to in for and or with is are be this that it as by from at".split())
+_STOP = {"the", "a", "an", "of", "to", "in", "for", "and", "or", "with", "is", "are", "be", "this", "that", "it", "as", "by", "from", "at"}
 
 
 def novelty(candidate: str) -> dict:
@@ -192,7 +192,7 @@ def novelty(candidate: str) -> dict:
     try:
         for f in json.loads(FEAT.read_text("utf-8")).get("features", []):
             known.append((f"{f['name']} {f.get('rationale','')}", f.get("mechanism")))
-    except Exception:  # noqa: BLE001
+    except Exception:  # blind-except intentional (BLE001)
         pass
     if GRAVE.exists():
         for ln in GRAVE.read_text("utf-8").splitlines():
@@ -233,7 +233,7 @@ def main() -> None:
     reached = max((idx.get(a["state"], 0) for a in ALPHAS), default=0) + 1
     print(f"\n  furthest any alpha has reached: gate {reached}/{len(PIPELINE)} "
           f"({PIPELINE[reached-1][0]})")
-    print(f"  gates 6-11 (FORWARD_PASSED .. RETIRED) have NEVER been occupied. That is the")
+    print("  gates 6-11 (FORWARD_PASSED .. RETIRED) have NEVER been occupied. That is the")
     print("  whole distance between this desk's research output and its economic output.")
 
     print("\n=== 3. FEATURE NOVELTY DETECTOR -- stop renamed factors ===\n")

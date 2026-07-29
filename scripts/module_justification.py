@@ -45,7 +45,7 @@ def _git(*a: str) -> str:
     try:
         return subprocess.run(["git", *a], cwd=str(ROOT), capture_output=True, text=True,
                               check=False, timeout=60).stdout
-    except Exception:  # noqa: BLE001
+    except Exception:  # blind-except intentional (BLE001)
         return ""
 
 
@@ -61,7 +61,7 @@ def main() -> None:
     try:
         cron = subprocess.run(["crontab", "-l"], capture_output=True, text=True,
                               check=False, timeout=20).stdout
-    except Exception:  # noqa: BLE001
+    except Exception:  # blind-except intentional (BLE001)
         cron = ""
 
     # first-seen date per script, from git
@@ -88,7 +88,7 @@ def main() -> None:
         wired = (p.name in cycle) or (p.name in cron)
 
         # 1 decision impact: did any LATER commit message name this module?
-        cites = len([l for l in _git("log", "--format=%s%n%b").splitlines() if stem in l]) - 1
+        cites = len([ln for ln in _git("log", "--format=%s%n%b").splitlines() if stem in ln]) - 1
 
         # 2 evidence validity
         reads_dead = sorted({d for d in dead_ds if d.replace(".jsonl", "") in t})
@@ -161,7 +161,7 @@ def main() -> None:
     mine = [r for r in rows if r["age_days"] <= 2]
     print(f"  {'module':<26}{'age':>5}{'wired':>7}{'cites':>7}{'loc':>6}  verdict")
     for r in sorted(mine, key=lambda x: x["module"])[:16]:
-        print(f"  {r['module']:<26}{r['age_days']:>5}{str(r['wired']):>7}{r['citations']:>7}"
+        print(f"  {r['module']:<26}{r['age_days']:>5}{r['wired']!s:>7}{r['citations']:>7}"
               f"{r['loc']:>6}  {r['verdict']}")
 
     ret = [r for r in rows if r["verdict"] == "RETIRE"]

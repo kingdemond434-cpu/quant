@@ -6,9 +6,12 @@ Same design otherwise: multi-year on-chain records, own-curve 60/40 formation/ho
 pnlHistory normalised by contemporaneous accountValue, risk-adjusted selection criteria.
 Reports explicit CIs and minimum-detectable-effect so the conclusion is power-aware."""
 from __future__ import annotations
-import json, urllib.request
+
+import json
+import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
+
 import numpy as np
 
 INFO="https://api.hyperliquid.xyz/info"; LB="https://stats-data.hyperliquid.xyz/Mainnet/leaderboard"
@@ -26,7 +29,7 @@ cand=[]
 for r in rows:
     try:
         av=float(r.get("accountValue",0) or 0); a=r.get("ethAddress")
-        wp={w:v for w,v in r.get("windowPerformances",[])}
+        wp=dict(r.get("windowPerformances",[]))
         vlm=float(wp.get("month",{}).get("vlm",0) or 0)
         if a and av>=10_000 and vlm>0: cand.append((av,a))
     except (TypeError,ValueError): continue
@@ -34,7 +37,7 @@ cand.sort(reverse=True); sel=cand[:N_TRY]
 print(f"probing {len(sel)} of {len(cand)} eligible accounts",flush=True)
 
 recs=[]
-for i,(av0,a) in enumerate(sel):
+for i,(_av0,a) in enumerate(sel):
     try: pf=_post({"type":"portfolio","user":a})
     except Exception: continue
     if not isinstance(pf,list): continue

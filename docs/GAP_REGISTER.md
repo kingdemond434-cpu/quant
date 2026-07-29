@@ -4,6 +4,32 @@ _Principal override 2026-07-16. Reviewed + re-ranked at the START of every daily
 items stale >7 days MUST be escalated (implement / defer with deadline / retire with reason).
 Ranked by expected E[log wealth] impact. Never empty without written justification._
 
+_Re-ranked 2026-07-28T20:30Z (REAL re-rank from measured state, not re-weighed opinion).
+TWO EVIDENCE-DRIVEN MOVES this cycle, both from instruments that did not exist yesterday:
+
+(1) **NEW #85 — the carry sleeve's unit economics are unestablished, and measure NEGATIVE. Ranked
+#1.** Venue-truth fee attribution shipped this cycle (`commission_events` + `_fee_attribution`)
+and re-measured 73 churn-free round-trips at **-58.27 bps net-of-fee**. Fees are only 12 of those
+bps: the dominant term is `price_pnl` at **-51.74 bps**, which for a delta-neutral pair should be
+~0 and does NOT amortize with hold time (flat -48→-64 bps across every bucket) while funding
+accrues only ~3-9 bps/day. This outranks everything: it decides whether the desk's ONLY sleeve is
+viable, and Gate 0 would otherwise size real capital on a record whose instrument was blind to its
+own dominant cost. Not self-closable — root-causing the -52 bps (leg asymmetry vs entry/exit
+spread vs basis drift vs the incident's naked-long-spot window) is the next action. R0026.
+
+(2) **NEW #86 — no cost-rate brake exists between an alarm and the ruin rail. Ranked #2.** §40
+fired ~27h before the churn loop was diagnosed and had no authority to stop anything; the only
+mechanism that halted a $1,750 fee fire was the equity ruin rail at -35%, i.e. after the money was
+gone. 94.1% of dead-man fire #6 was that software defect. Specced in the autopsy, deliberately NOT
+built this cycle: the book is deadman-halted, so the guard cannot be exercised against live state,
+and landing unexercised money-path code during a halt is exactly how the 07-16 change-induced
+incidents happened. Deferred to the resume decision — **implement before the book trades again**.
+R0025.
+
+Staleness: #71 (gate-optimality, RANK-not-VETO) remains blocked on a principal/panel ruling since
+07-26 — it touches validation-gate strictness, which constitution point 5 forbids me to self-fix.
+Named again rather than silently carried._
+
 _Re-ranked 2026-07-26T20:35Z (REAL re-rank, discharging the debt the 05:20Z stamp below recorded).
 THREE EVIDENCE-DRIVEN MOVES, each from something measured this cycle rather than re-weighed opinion:
 (1) **#71 (gate-optimality) rises 13 -> 3.** It is no longer a question, it is an ANSWERED defect

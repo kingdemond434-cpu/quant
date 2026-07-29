@@ -5,11 +5,15 @@ alongside IC, because BTC showed IC +0.157 with momentum Sharpe -1.27 (IC living
 = the desk's known IC-trap); if the edge is real it must show in a rank-based spread, not just IC.
 Bar: pooled |t| >= 2.7 AND spread consistent in sign. Performance-blind cohort, flow(t) vs ret(t+1)."""
 from __future__ import annotations
-import json, urllib.request
+
+import json
+import urllib.request
 from collections import defaultdict
 from datetime import UTC, datetime
 from pathlib import Path
+
 import numpy as np
+
 from libs.research.axis_screen import stage_a_screen
 
 INFO="https://api.hyperliquid.xyz/info"; LB="https://stats-data.hyperliquid.xyz/Mainnet/leaderboard"
@@ -28,7 +32,7 @@ cand=[]
 for r in rows:
     try:
         av=float(r.get("accountValue",0) or 0)
-        wp={w:v for w,v in r.get("windowPerformances",[])}
+        wp=dict(r.get("windowPerformances",[]))
         vlm=float(wp.get("month",{}).get("vlm",0) or 0); a=r.get("ethAddress")
         if not a or av<50_000 or vlm<=0: continue
         turn=vlm/av
@@ -38,7 +42,7 @@ cand.sort(reverse=True); sel=cand[:N]
 print(f"directional cohort {len(sel)} (performance-blind)",flush=True)
 
 flow={c:defaultdict(float) for c in COINS}; ok=0
-for i,(av,a) in enumerate(sel):
+for i,(_av,a) in enumerate(sel):
     try: fills=_post({"type":"userFills","user":a})
     except Exception: continue
     if not isinstance(fills,list) or not fills: continue

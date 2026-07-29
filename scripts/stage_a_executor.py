@@ -123,7 +123,7 @@ def screen(file_name: str, field: str, px: dict) -> dict:
         a = audit(xs, fwd, same, name=f"{file_name}:{field}")
         flags = a.get("flags", [])
         resid = a.get("notes", {}).get("residual_ic")
-    except Exception:  # noqa: BLE001
+    except Exception:  # blind-except intentional (BLE001)
         resid = None
 
     if flags:
@@ -148,7 +148,7 @@ def main() -> None:
         for ln in LEDGER.read_text("utf-8").splitlines():
             try:
                 done.add(json.loads(ln)["candidate"])
-            except Exception:  # noqa: BLE001
+            except Exception:  # blind-except intentional (BLE001)
                 continue
 
     sched = (json.loads(CIO.read_text("utf-8")) if CIO.exists() else {}).get("schedule", [])

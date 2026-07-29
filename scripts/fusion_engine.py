@@ -117,9 +117,11 @@ def main() -> None:
     print(f"aligned dates across ALL components: {len(dates)} "
           f"(kimchi is the binding constraint at ~{len(raw['kimchi'])})")
     if len(dates) < 80:
-        print("insufficient overlap"); return
+        print("insufficient overlap")
+        return
     px = np.array([gb[d] for d in dates])
-    ret = np.zeros(len(px)); ret[1:] = px[1:] / px[:-1] - 1.0
+    ret = np.zeros(len(px))
+    ret[1:] = px[1:] / px[:-1] - 1.0
     Z = {k: z(np.array([v[d] for d in dates])) for k, v in raw.items()}
 
     print("\n--- components alone (the baseline each combo must beat) ---")

@@ -46,8 +46,7 @@ LIFE = ROOT / "data/alpha_lifecycle.json"
 REGIME = ROOT / "data/crypto_regime.json"
 OUT = ROOT / "data/knowledge_engine.json"
 
-_STOP = set("the a an of to in for and or with is are be this that it as by from at on not no "
-            "we you our their its more most less than then when what which who how why".split())
+_STOP = {"the", "a", "an", "of", "to", "in", "for", "and", "or", "with", "is", "are", "be", "this", "that", "it", "as", "by", "from", "at", "on", "not", "no", "we", "you", "our", "their", "its", "more", "most", "less", "than", "then", "when", "what", "which", "who", "how", "why"}
 
 
 def _toks(s: str) -> list[str]:
@@ -148,7 +147,7 @@ REVIVAL = [
 def main() -> None:
     docs = _corpus()
     idf = _idf(docs)
-    mech = json.loads(MECH.read_text("utf-8")) if MECH.exists() else {}
+    _mech = json.loads(MECH.read_text("utf-8")) if MECH.exists() else {}
     life = json.loads(LIFE.read_text("utf-8")) if LIFE.exists() else {}
 
     # ---------------------------------------------------------------- A

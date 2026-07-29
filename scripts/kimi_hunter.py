@@ -77,13 +77,13 @@ def _doctrine(role: str = "") -> str:
     try:
         from scripts.doctrine import preamble
         return preamble(role)
-    except Exception:  # noqa: BLE001
+    except Exception:  # blind-except intentional (BLE001)
         try:
             import sys as _s
             _s.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent))
             from doctrine import preamble  # type: ignore
             return preamble(role)
-        except Exception:  # noqa: BLE001
+        except Exception:  # blind-except intentional (BLE001)
             return ""          # never break a caller over a preamble
 
 
@@ -160,7 +160,7 @@ WAVES = {
 def _load_coverage() -> dict:
     try:
         return json.loads(_COVERAGE.read_text("utf-8"))
-    except Exception:  # noqa: BLE001
+    except Exception:  # blind-except intentional (BLE001)
         return {"vectors": {}}
 
 
@@ -171,7 +171,7 @@ def _exclusion_text(cov: dict) -> str:
     for v, meta in cov.get("vectors", {}).items():
         try:
             age = (now - datetime.fromisoformat(meta["first_seen"])).days
-        except Exception:  # noqa: BLE001
+        except Exception:  # blind-except intentional (BLE001)
             age = 0
         if age < _VECTOR_COOLDOWN_D:
             live.append(f"{v} (hunted {age}d ago)")
@@ -203,7 +203,7 @@ def _budget_ok() -> tuple[bool, str]:
         st = json.loads(BSTATE.read_text("utf-8"))
         mtd = st.get("usage_at_run_start", 0.0) - st.get("usage_at_month_start", 0.0)
         return (mtd < env, f"MTD ${mtd:.2f} of ${env:.2f} envelope")
-    except Exception:  # noqa: BLE001
+    except Exception:  # blind-except intentional (BLE001)
         return (True, "budget state unreadable -- proceeding, guard is advisory")
 
 
@@ -286,7 +286,7 @@ def _selftest() -> int:
     print()
     passed = 0
     for line, expect, why in _SELFTEST_CASES:
-        keep, reason, cls, _ = _admit(line, 3, "")
+        keep, reason, _cls, _ = _admit(line, 3, "")
         got = "KEEP" if keep else "DROP"
         if keep and "downgraded" in reason:
             got = "KEEP-DOWNGRADED"
@@ -409,7 +409,7 @@ def main() -> None:
         print(f"  WAVE {w} -- {name}")
         try:
             txt = _ask(prov["base_url"], prov["key"], CHARTER, user)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # blind-except intentional (BLE001)
             code = getattr(e, "code", "")
             print(f"    FAILED ({type(e).__name__} {code})")
             if code == 402:

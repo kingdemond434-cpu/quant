@@ -68,11 +68,13 @@ def rolling_ic(sig: dict, gb: dict, win: int = 60, step: int = 20):
         return []
     s = np.array([sig[d] for d in dates])
     px = np.array([gb[d] for d in dates])
-    ret = np.zeros(len(px)); ret[1:] = px[1:] / px[:-1] - 1.0
+    ret = np.zeros(len(px))
+    ret[1:] = px[1:] / px[:-1] - 1.0
     fwd = np.roll(ret, -1)
     z = np.zeros(len(s))
     for t in range(20, len(s)):
-        w = s[t - 20:t]; sd = w.std()
+        w = s[t - 20:t]
+        sd = w.std()
         z[t] = (s[t] - w.mean()) / sd if sd > 0 else 0.0
     out = []
     for a in range(20, len(s) - win - 1, step):
