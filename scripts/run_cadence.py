@@ -253,20 +253,44 @@ def main() -> None:
     # DESK METRICS (every cycle). Durable trend, not a snapshot -- libs/monitoring persists
     # each value and raises a real Alert on threshold breach. Runs AFTER meta-research so it
     # records that cycle's freshly computed numbers, not the previous one's.
-    subprocess.run([sys.executable, "scripts/record_desk_metrics.py"],
-                   capture_output=True, text=True, timeout=180, check=False)
+    _r = subprocess.run([sys.executable, "scripts/record_desk_metrics.py"],
+                        capture_output=True, text=True, timeout=180, check=False)
+    _tail = (_r.stdout or _r.stderr or "").strip().splitlines()[-1:] or [""]
+    if _r.returncode != 0 or not Path("data/desk_metrics.sqlite").exists():
+        # SILENT STEPS ARE UNMONITORED STEPS. These three were fired with their output
+        # discarded, so a crash or an empty run looked identical to success -- the same
+        # state-touched-but-nothing-produced class _run_panel exists to catch.
+        print(f"cadence: desk-metrics rc={_r.returncode} NO ARTIFACT | {_tail[0][:110]}")
+    else:
+        fired.append("desk-metrics")
 
     # PORTFOLIO RISK (every cycle, self-arming). Dormant below 3 sleeves and load-bearing at
     # or above -- the gate is a DATA condition read from the shadow registry, so nobody has to
     # notice the third sleeve landing for correlation-shock control to start running.
-    subprocess.run([sys.executable, "scripts/run_portfolio_risk.py"],
-                   capture_output=True, text=True, timeout=180, check=False)
+    _r = subprocess.run([sys.executable, "scripts/run_portfolio_risk.py"],
+                        capture_output=True, text=True, timeout=180, check=False)
+    _tail = (_r.stdout or _r.stderr or "").strip().splitlines()[-1:] or [""]
+    if _r.returncode != 0 or not Path("data/portfolio_risk.json").exists():
+        # SILENT STEPS ARE UNMONITORED STEPS. These three were fired with their output
+        # discarded, so a crash or an empty run looked identical to success -- the same
+        # state-touched-but-nothing-produced class _run_panel exists to catch.
+        print(f"cadence: portfolio-risk rc={_r.returncode} NO ARTIFACT | {_tail[0][:110]}")
+    else:
+        fired.append("portfolio-risk")
 
     # PROMOTION GATE (every cycle). Renders the eight-gate barrier explicitly and records the
     # verdict, so a promotion prerequisite can be audited after the fact instead of being
     # assembled implicitly per screen. Fail-closed: unchecked gates reject.
-    subprocess.run([sys.executable, "scripts/promotion_gate.py"],
-                   capture_output=True, text=True, timeout=180, check=False)
+    _r = subprocess.run([sys.executable, "scripts/promotion_gate.py"],
+                        capture_output=True, text=True, timeout=180, check=False)
+    _tail = (_r.stdout or _r.stderr or "").strip().splitlines()[-1:] or [""]
+    if _r.returncode != 0 or not Path("data/promotion_gate.json").exists():
+        # SILENT STEPS ARE UNMONITORED STEPS. These three were fired with their output
+        # discarded, so a crash or an empty run looked identical to success -- the same
+        # state-touched-but-nothing-produced class _run_panel exists to catch.
+        print(f"cadence: promotion-gate rc={_r.returncode} NO ARTIFACT | {_tail[0][:110]}")
+    else:
+        fired.append("promotion-gate")
 
     # MODEL UPGRADE (monthly). The desk's models used to be frozen literals that only ever moved
     # when a human noticed a newer flagship -- so seats aged silently (llama-4-maverick sat 15
