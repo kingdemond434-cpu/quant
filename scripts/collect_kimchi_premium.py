@@ -11,9 +11,9 @@ gauntlet like anything else. Pure stdlib + numpy. Run from repo root.
 """
 from __future__ import annotations
 
+import datetime as _dt
 import json
 import urllib.request
-import datetime as _dt
 from datetime import UTC, datetime
 from pathlib import Path
 

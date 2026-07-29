@@ -594,3 +594,38 @@ hypotheses and EV-score them; only the top few enter research.
   101-item subsystem triage into §35 scope raised open findings **67 → 168** and immediately
   surfaced 4 items that had been invisible to the only organ that works a backlog. The honest
   direction for a coverage metric is scope UP, not denominator down.
+- **Check the function SIGNATURE before debating the threshold (2026-07-29).** The gauntlet's
+  `pbo` and `reality_check` gates call `probability_backtest_overfitting(returns_matrix)` and
+  `whites_reality_check(returns_matrix)` — **neither takes the candidate's own returns as an
+  argument.** A gate that cannot see the thing it judges is not a strict gate, it is a *campaign
+  constant*: measured PBO 0.6159 and White RC p 0.4220 forced **420/420** rejections at any
+  quality. That is the whole 420-tested/0-survivors record. Both statistics are properties of a
+  SEARCH PROCEDURE — PBO ranks the in-sample-*best*, White's RC tests the *maximum* — and neither
+  was ever a per-strategy test. Before asking "is this bar too high?", ask "does this bar take the
+  candidate as input?"; the first question is unanswerable if the second answer is no.
+- **A too-strict gate and a too-loose gate can be the same gate (2026-07-29).** Everyone measured
+  the 420/0 direction and concluded "strict"; nobody measured the other. Holding 60 pure-noise
+  candidates fixed and adding ONE genuine winner to the batch flips the old gates from admitting
+  0/60 to admitting **60/60 pure nulls** — because the campaign statistic is driven by the batch's
+  best member. So the status quo was an unquantified phantom-edge hole that opens *precisely when
+  the desk starts finding real edge*, i.e. in the state it is trying to reach. **When you catch a
+  gate rejecting ~100%, do not stop at "too strict" — construct the batch where it passes
+  everything.** The one-directional measurement is what let this survive four sweeps as "blocked,
+  do not loosen".
+- **"No change to the verdict" can be the confession, not the reassurance (2026-07-29).**
+  `campaign_pbo_rc` was introduced as a caching speedup whose docstring promised "a large speedup
+  with no change to the verdict". That claim was *literally true* — and true only because the
+  per-call fallback recomputes the identical campaign statistic. The caching was a red herring: a
+  cycle that "fixed the cache" would have changed nothing. When an optimisation can prove it never
+  alters an output, check whether the output was ever a function of the input you thought.
+- **A null result is a claim about the instrument until you have ruled the instrument out
+  (2026-07-29).** 420-tested/0-survivors was read for months as *"price space is picked clean"* — a
+  conclusion about the world — and that read steered real strategy (it is cited in the
+  generation-ROI finding that mass generation is self-defeating). The measurable cause was two
+  broken gates. Scope every negative result to ROUTE-vs-CAPABILITY before letting it set direction;
+  the same error shape as the blocked-YouTube-endpoint episode that nearly bought a paid proxy.
+- **Adjacency is not optional after a fix (2026-07-29).** On 07-28 the desk learned *"a reject rate
+  near 100% is a property of the gate to investigate, never evidence that the candidates were
+  bad"* — and fixed the EV gate. It did not then sweep for the same SHAPE elsewhere, so the
+  identical defect sat one layer down in the gauntlet, at far higher stakes, for another day. A
+  lesson that stays in the file where it was learned is half a lesson.

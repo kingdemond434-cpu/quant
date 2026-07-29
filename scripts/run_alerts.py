@@ -239,11 +239,38 @@ def _checks() -> list[tuple[str, str]]:
         # bar stays fixed for life only while the concurrent count stays <= 12.
         _reg = json.loads(Path("data/shadow_sleeves.json").read_text("utf-8"))
         _standing = 6      # carry, perp_ls, oi_div, ls_contrarian, liq_reversal, stables
-        if len(_reg) + _standing > 12:
-            out.append(("slot_budget_exceeded",
-                        f"{len(_reg) + _standing} concurrent confirmation slots > 12 -- "
-                        "the fixed forward bar is only fixed while the cohort is capped; "
-                        "recycle or EV-evict before enrolling more"))
+        # The AXIS clocks (run_axis_shadows.py -> web/axis_shadows.json) are confirmation slots
+        # too, and were invisible here: the guard counted 6 while 10 were accruing, so it could
+        # never fire on the axis path at all. Same shape as the fee-blind P&L -- an instrument
+        # that cannot see the thing it exists to measure. Unreadable is reported, never read as 0.
+        try:
+            _axes = json.loads(Path("web/axis_shadows.json").read_text("utf-8"))
+            _rows = _axes.get("axes", _axes) if isinstance(_axes, dict) else _axes
+            _n_axis: int | None = sum(
+                1 for r in _rows if str(r.get("verdict", "")).upper() != "RETIRED"
+            )
+        except (OSError, json.JSONDecodeError, AttributeError):
+            _n_axis = None
+        if _n_axis is None:
+            out.append(("slot_budget_unreadable",
+                        "web/axis_shadows.json unreadable -- the concurrent-slot count is "
+                        "UNKNOWN, not zero; the Holm bar's cap cannot be verified this run"))
+        else:
+            _total = len(_reg) + _standing + _n_axis
+            if _total > 12:
+                out.append(("slot_budget_exceeded",
+                            f"{_total} concurrent confirmation slots > 12 "
+                            f"({len(_reg)} registry + {_standing} standing + {_n_axis} axis) -- "
+                            "the fixed forward bar is only fixed while the cohort is capped; "
+                            "recycle or EV-evict before enrolling more"))
+            elif _total < 12:
+                # CLOCK-SATURATION DUTY: an idle slot is idle capital's research twin. The law
+                # pins the cohort always-full-never-over, so under is a defect exactly like over.
+                out.append(("clock_slots_idle",
+                            f"only {_total}/12 confirmation slots accruing "
+                            f"({len(_reg)} registry + {_standing} standing + {_n_axis} axis) -- "
+                            f"{12 - _total} idle. Every verified axis owes a pre-registered "
+                            "hypothesis within 7 days; an empty clock discovers nothing"))
     except (OSError, json.JSONDecodeError):
         pass
     if _auth_broken():

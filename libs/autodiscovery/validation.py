@@ -18,9 +18,16 @@ from libs.validation.dsr import deflated_sharpe_ratio, sharpe_ratio
 from libs.validation.pbo import PBOResult, probability_backtest_overfitting
 from libs.validation.reality_check import RealityCheckResult, whites_reality_check
 from libs.validation.revalidation import WalkForwardEngine, WalkForwardStatus
+from libs.validation.stepwise import (
+    CSCVResult,
+    StepdownResult,
+    cscv_candidate_pbo,
+    romano_wolf_stepdown,
+)
 
 _PERIODS_PER_YEAR = 24 * 260
 _DSR_THRESHOLD = 0.95
+_PBO_THRESHOLD = 0.5       # same bar as PBOResult.overfit; only the ATTRIBUTION changed
 _MIN_CAPACITY_USD = 1.0e5
 _CPCV_MIN_POSITIVE = 0.6   # >=60% of purged folds positive
 
@@ -36,14 +43,64 @@ def campaign_pbo_rc(
 ) -> tuple[PBOResult | None, RealityCheckResult | None]:
     """Compute PBO and White's Reality Check ONCE per campaign (they depend only on the matrix).
 
-    These two gates are identical for every candidate in a campaign, so computing them once and
-    passing the results into :func:`validate` avoids O(N) redundant bootstraps -- a large speedup
-    with no change to the verdict. (Used by the orchestrator; validate() falls back to per-call
-    computation when not supplied.)
+    DEPRECATED as a GATE input -- kept for diagnostics and for call sites not yet migrated.
+
+    Both statistics take only the matrix; the candidate's own returns are never an input.  Used as
+    per-candidate gates they are therefore campaign CONSTANTS, and the "no change to the verdict"
+    that made caching them look free is exactly the defect: every candidate in a batch gets the
+    same verdict whatever its merit.  Measured 2026-07-29 on the real 420-candidate campaign --
+    PBO 0.6159 (>0.5) and White RC p 0.4220 (>=0.05) -- which alone forced 420/420 rejections.
+    Measured on a synthetic campaign containing one strong winner, the same two gates pass EVERY
+    pure-noise candidate.  Too strict and too loose, decided by the batch rather than the
+    candidate.
+
+    Use :func:`campaign_gate_stats` + ``validate(campaign=..., column=...)`` instead.
     """
     if returns_matrix.shape[1] < 2:
         return None, None
     return probability_backtest_overfitting(returns_matrix), whites_reality_check(returns_matrix)
+
+
+class CampaignGates:
+    """Per-candidate multiplicity statistics for one campaign, computed once.
+
+    Holds the candidate-aware replacements (CSCV rank-consistency, Romano-Wolf stepdown) and the
+    legacy campaign statistics, which stay available as diagnostics of the SEARCH PROCEDURE --
+    which is the thing they actually measure.
+    """
+
+    __slots__ = ("cscv", "legacy_pbo", "legacy_rc", "stepdown")
+
+    def __init__(
+        self,
+        cscv: CSCVResult,
+        stepdown: StepdownResult,
+        legacy_pbo: PBOResult | None,
+        legacy_rc: RealityCheckResult | None,
+    ) -> None:
+        self.cscv = cscv
+        self.stepdown = stepdown
+        self.legacy_pbo = legacy_pbo
+        self.legacy_rc = legacy_rc
+
+
+def campaign_gate_stats(returns_matrix: np.ndarray) -> CampaignGates | None:
+    """One pass over the campaign matrix yielding PER-CANDIDATE pbo / significance verdicts.
+
+    Same thresholds as before (PBO <= 0.5, significance at 5%) -- only the *attribution* changes,
+    from one campaign verdict imposed on everyone to a verdict each candidate earns.  Romano-Wolf
+    still controls family-wise error across all N, so multiplicity is paid for in full.
+    """
+    matrix = np.asarray(returns_matrix, dtype="float64")
+    if matrix.ndim != 2 or matrix.shape[1] < 2:
+        return None
+    legacy_pbo, legacy_rc = campaign_pbo_rc(matrix)
+    return CampaignGates(
+        cscv=cscv_candidate_pbo(matrix),
+        stepdown=romano_wolf_stepdown(matrix),
+        legacy_pbo=legacy_pbo,
+        legacy_rc=legacy_rc,
+    )
 
 
 def validate(
@@ -57,6 +114,8 @@ def validate(
     edge_bps: float | None = None,
     pbo: PBOResult | None = None,
     rc: RealityCheckResult | None = None,
+    campaign: CampaignGates | None = None,
+    column: int | None = None,
 ) -> ValidationVerdict:
     arr = np.asarray(returns, dtype="float64")
     if len(arr) < 250:
@@ -69,12 +128,26 @@ def validate(
     wf = WalkForwardEngine().evaluate(arr, n_splits=4, test_size=max(20, len(arr) // 6))
     dsr = deflated_sharpe_ratio(arr, n_trials=n_trials, sharpe_estimates=sharpe_estimates,
                                 threshold=_DSR_THRESHOLD)
-    # PBO/RC depend only on the (campaign-wide) matrix; reuse precomputed results when supplied.
+    # Overfitting / significance. PREFERRED path: per-candidate statistics from `campaign`, which
+    # this candidate earns on its own column. LEGACY path (no campaign supplied): the campaign
+    # constants, retained only so unmigrated call sites keep their exact prior behaviour.
     has_peers = returns_matrix.shape[1] >= 2
-    if pbo is None and has_peers:
-        pbo = probability_backtest_overfitting(returns_matrix)
-    if rc is None and has_peers:
-        rc = whites_reality_check(returns_matrix)
+    per_candidate = campaign is not None and column is not None
+    if per_candidate:
+        assert campaign is not None and column is not None  # narrowed by per_candidate
+        cand_pbo = campaign.cscv.candidate_pbo[column]
+        pbo_ok = cand_pbo <= _PBO_THRESHOLD
+        sig_ok = campaign.stepdown.rejected[column]
+        pbo_value, reality_value = cand_pbo, campaign.stepdown.adjusted_p[column]
+    else:
+        if pbo is None and has_peers:
+            pbo = probability_backtest_overfitting(returns_matrix)
+        if rc is None and has_peers:
+            rc = whites_reality_check(returns_matrix)
+        pbo_ok = pbo is not None and not pbo.overfit
+        sig_ok = rc is not None and rc.significant_at_5pct
+        pbo_value = pbo.pbo if pbo is not None else 1.0
+        reality_value = rc.p_value if rc is not None else 1.0
     # Candidate-aware capacity: use the strategy's OWN realized per-bar edge (bps), so a no-edge
     # strategy gets ~zero capacity (fails) while a real edge on a liquid market passes -- instead
     # of the old fixed edge_bps that made this gate a constant veto for every candidate.
@@ -87,8 +160,8 @@ def validate(
         expected_value=float(arr.mean()),
         oos_sharpe=wf.oos_sharpe,
         dsr=dsr.dsr,
-        pbo=pbo.pbo if pbo is not None else 1.0,
-        reality_p=rc.p_value if rc is not None else 1.0,
+        pbo=pbo_value,
+        reality_p=reality_value,
         capacity_usd=cap.capacity_usd,
         fragility=tail.tail_risk_score,
     )
@@ -99,8 +172,8 @@ def validate(
         "cpcv": _cpcv_positive_fraction(arr) >= _CPCV_MIN_POSITIVE,
         "walk_forward": wf.status is WalkForwardStatus.PASSED,
         "dsr": dsr.passed,
-        "pbo": pbo is not None and not pbo.overfit,
-        "reality_check": rc is not None and rc.significant_at_5pct,
+        "pbo": pbo_ok,
+        "reality_check": sig_ok,
         "capacity": cap.capacity_usd >= _MIN_CAPACITY_USD,
         "fragility": tail.acceptable,
     }

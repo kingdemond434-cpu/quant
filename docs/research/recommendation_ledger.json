@@ -393,6 +393,54 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0033",
+   "source": "cycle",
+   "summary": "GATE-OPTIMALITY ROOT CAUSE: validate()'s pbo + reality_check gates are CAMPAIGN CONSTANTS (both statistics take only the matrix; the candidate's returns are never an input), so all 420 candidates got an identical verdict -- measured campaign PBO=0.6159 and White RC p=0.4220 forced 420/420 rejections. Per-candidate replacements built + tested (libs/validation/stepwise.py: cscv_candidate_pbo, romano_wolf_stepdown; thresholds unchanged). Production flip NOT self-applied -- gate strictness is principal-gated (constitution pt 5); paged for a YES/NO ruling.",
+   "roi_bps": 50.0,
+   "raised": "2026-07-29T06:17:12.712538+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0034",
+   "source": "cycle",
+   "summary": "EV-GATE MISCALIBRATION IS UNFIXED AND IT BLOCKED THIS CYCLE'S GENERATION. The 07-28 cycle wrote the lesson ('_EV_THRESHOLD=0.05 needs est_sharpe>=1.6 at breadth 40; conservative honesty is auto-rejected, optimism rewarded, the many-small-decorrelated-sleeves class dies at the door') into institutional_knowledge.md and left the constant at 0.05. Measured today: 4 novel, mechanism-backed hypotheses on already-ingested axes scored ev=0.005-0.010 -> all REJECT. A finding written and not driven is the exact shape \u00a735/\u00a741 exist to stop. FIX NEEDS ITS OWN CAREFUL PASS: recalibrate against a known-good reference (carry 3.28 -> 0.1171) AND a known-marginal one, same method as the PBO/RC fix -- do NOT hand-tune the constant at the end of a long cycle.",
+   "roi_bps": 20.0,
+   "raised": "2026-07-29T06:25:25.355470+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0035",
+   "source": "cycle",
+   "summary": "\u00a735 coverage regression (100%->97%) resolved by DISPOSITION, not new work: of the 5 findings with no register trace, 4 were already decided and merely unrecorded -- #79 job-market data and #80 satellite/shipping carry written REJECT reasons, #26 competitor-simulation is blocked on the same $120 OpenRouter top-up already paged, and micro_audit_inbox #1 (carry-funding silent zero) was fixed 2026-07-26. Only #48 wallet behavioural fingerprinting is a live undriven finding (wallet RISK replicated OOS while wallet RETURNS were refuted at n=1400) -- rowed as GAP #88 with a mechanism-first screen plan.",
+   "roi_bps": 8.0,
+   "raised": "2026-07-29T06:26:50.644322+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0036",
+   "source": "proactive_battery",
+   "summary": "PRINCIPAL PAGE: the URGENT line-1 carve-out is opt-in by magic prefix, so any page that omits 'URGENT <ISO-date>:' is silently demoted below the routine max-audit escalation and never reaches the pager, which sends line 1 only. Its regression guard arms on the same prefix, so it skips exactly when the page is unprotected -- the guard cannot catch the failure it exists to catch. FIX: max_audit should treat any human-written page body as urgent-by-default for its TTL (or the writer path should stamp the prefix automatically), and the test should assert on ANY pending page rather than skipping when the prefix is absent.",
+   "roi_bps": 5.0,
+   "raised": "2026-07-29T06:30:58.026376+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

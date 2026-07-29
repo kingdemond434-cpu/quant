@@ -18,7 +18,7 @@ from libs.validation.reality_check import hansen_spa
 
 PPY = 365.0  # D1 crypto bars: 365 periods/year (annualisation for TRUE-Sharpe reporting)
 prepared = pickle.loads(Path("_audit_prepared.pkl").read_bytes())
-FAM_ORDER = [f for f in dict.fromkeys(p[0] for p in prepared)]
+FAM_ORDER = list(dict.fromkeys(p[0] for p in prepared))
 
 min_len = min(len(r) for *_x, r in prepared)
 matrix = np.column_stack([r[-min_len:] for *_x, r in prepared])
@@ -43,9 +43,11 @@ print("=" * 78)
 print(f"CAMPAIGN MATRIX  T={min_len}  N={matrix.shape[1]}")
 print(f"  campaign PBO            = {pbo_once.pbo:.4f}   (gate: <=0.50)  "
       f"n_comb={pbo_once.n_combinations}")
-print(f"  campaign White's RC p   = {rc_once.p_value:.4f} (gate: <0.05)  stat={rc_once.statistic:.4f}")
+print(f"  campaign White's RC p   = {rc_once.p_value:.4f} (gate: <0.05)  "
+      f"stat={rc_once.statistic:.4f}")
 print(f"  [ref] Hansen SPA p      = {spa_once.p_value:.4f} (studentized variant, NOT used here)")
-print(f"  sharpe_estimates: mean={sharpe_estimates.mean():.5f} sd={sharpe_estimates.std(ddof=1):.5f}")
+print(f"  sharpe_estimates: mean={sharpe_estimates.mean():.5f} "
+      f"sd={sharpe_estimates.std(ddof=1):.5f}")
 for f in sorted(fam_new):
     s = fam_sharpes[f]
     n = fam_trials(f, {})
@@ -60,7 +62,7 @@ HYP = Hypothesis(family=Family.LIQUIDITY, subtype="probe", symbol="BTCUSDT", par
 hist: dict[str, int] = {}
 survivors = 0
 best_dsr = 0.0
-for f, sub, sym, r in prepared:
+for f, _sub, _sym, r in prepared:
     sh = fam_sharpes[f]
     v = validate(r, hypothesis=HYP, n_trials=fam_trials(f, {}),
                  sharpe_estimates=sh if len(sh) >= 2 else sharpe_estimates,
@@ -77,7 +79,7 @@ print(f"  survivors={survivors}   best DSR observed={best_dsr:.4f} (threshold 0.
 
 # marginal analysis: how many die at EACH gate as the SOLE failure
 sole: dict[str, int] = {}
-for f, sub, sym, r in prepared:
+for f, _sub, _sym, r in prepared:
     sh = fam_sharpes[f]
     v = validate(r, hypothesis=HYP, n_trials=fam_trials(f, {}),
                  sharpe_estimates=sh if len(sh) >= 2 else sharpe_estimates,
@@ -129,7 +131,7 @@ def run_synth(rets: np.ndarray, family: str, inject_into_matrix: bool, label: st
 
 
 print("\n" + "=" * 78)
-print("SYNTHETIC SWEEP  (T = %d bars ~ %.1f years of D1)" % (min_len, min_len / PPY))
+print(f"SYNTHETIC SWEEP  (T = {min_len} bars ~ {min_len / PPY:.1f} years of D1)")
 print("=" * 78)
 rows = []
 for s in [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 7.0, 10.0, 15.0, 20.0, 30.0]:
