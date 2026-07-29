@@ -24,6 +24,7 @@ from libs.autodiscovery.models import Family, Hypothesis
 from libs.autodiscovery.validation import (
     blocking_constant_gates,
     campaign_pbo_rc,
+    counterfactual_survivors,
     gate_discrimination,
     validate,
 )
@@ -214,7 +215,17 @@ def main() -> None:
             flag = "  <-- CONSTANT" if not d["discriminates"] else ""
             print(f"  {g:20} pass {d['passed']}/{d['n']} ({d['pass_rate']:.0%}){flag}")
     if blocking:
+        # AND THE QUESTION A RULING ACTUALLY NEEDS: would waiving them promote anyone? Measured
+        # on the desk's real 420 the answer was ZERO -- every candidate also failed a gate that
+        # genuinely discriminates ("sole-cause failures EMPTY"). Computing it every run means the
+        # ruling is made against current evidence, not a probe someone ran once.
+        cf = counterfactual_survivors(gate_rows, blocking)
+        payload["counterfactual_if_waived"] = cf
+        _WEB.write_text(json.dumps(payload, indent=2, default=str), "utf-8")
         print(f"\n  {len(blocking)} gate(s) FAILED EVERY CANDIDATE: {', '.join(blocking)}")
+        print(f"  IF WAIVED -> {cf['survivors']} survivor(s) of {cf['n']} "
+              f"(naive independent estimate {cf['independent_estimate']})")
+        print(f"  {cf['note']}")
         print("  A gate that rejects all N carries zero information about any individual one --")
         print("  that is a campaign-level verdict wearing a per-candidate costume. Whether it is")
         print("  correct (the campaign really is overfit) or miscalibrated is a PRINCIPAL ruling;")

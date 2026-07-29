@@ -162,3 +162,67 @@ def blocking_constant_gates(gate_results: list[dict[str, bool]]) -> list[str]:
     impossible regardless of candidate quality. Empty is the healthy state."""
     return [g for g, d in gate_discrimination(gate_results).items()
             if not d["discriminates"] and d["passed"] == 0]
+
+
+def counterfactual_survivors(
+    gate_results: list[dict[str, bool]], waive: list[str] | tuple[str, ...],
+) -> dict:
+    """GAP #71, THE QUESTION A RULING ACTUALLY NEEDS: if these gates were waived, who survives?
+
+    "Should we relax the campaign veto?" is unanswerable in the abstract and trivially answerable
+    from the gate matrix -- but only if someone computes it. It was computed ONCE, by hand, and
+    the result lives in a recommendation-ledger entry nobody re-reads. This makes it an output of
+    every campaign, so the ruling is made against current evidence rather than a remembered one.
+
+    THE MEASURED ANSWER ON THE REAL 420: zero. Waiving `pbo` and `reality_check` produces no
+    survivors, because every candidate ALSO failed at least one genuinely per-candidate gate --
+    which is precisely what the register's "sole-cause failures EMPTY" was recording. Relaxing
+    the veto would not have promoted anything; it would only have changed which failure was
+    reported first.
+
+    That is worth knowing in both directions. It says the campaign veto is not, today, the thing
+    standing between the desk and a validated alpha -- so relaxing it buys nothing and costs a
+    statistical standard. It also says the structural objection to the veto stands on its own
+    merits (campaign PBO rises with generation volume, which contradicts the Two-Stage Discovery
+    Law's "the confirmation bar never rises with generation") rather than on a promise of
+    survivors it cannot keep.
+
+    `independent_estimate` is included as the naive counterfactual for contrast: multiply the
+    surviving gates' pass rates as if they were independent. On the real campaign it predicts
+    ~9 survivors (0.581 x 0.479 x 0.433 x 0.433 x 0.402 = 2.1% of 420) where the true count is
+    ZERO.
+
+    THAT DIRECTION IS THE INFORMATIVE PART, and it is easy to get backwards. Observed BELOW the
+    independent estimate means gate PASSES are negatively associated: a candidate that clears one
+    gate tends to fail another. Which is what a well-designed battery should look like -- the
+    gates are penalising genuinely different failure modes rather than re-measuring one latent
+    "quality" score. (If they were positively associated, the good candidates would sweep every
+    gate and survivors would EXCEED the independent estimate, which would mean the battery is
+    largely one gate wearing five hats.) Across 420 candidates, not one was simultaneously
+    profitable, walk-forward-stable, capacity-viable and tail-acceptable.
+
+    Quoting the independent number as an expected yield would badly oversell any relaxation, so
+    it is reported beside the true count, never instead of it.
+    """
+    if not gate_results:
+        return {"n": 0, "waived": list(waive), "survivors": 0, "survivor_indices": [],
+                "independent_estimate": 0.0, "note": "no candidates -- nothing to counterfact"}
+    waived = set(waive)
+    n = len(gate_results)
+    survivors = [i for i, row in enumerate(gate_results)
+                 if all(ok for g, ok in row.items() if g not in waived)]
+    remaining = [g for g in gate_results[0] if g not in waived]
+    est = 1.0
+    for g in remaining:
+        est *= sum(1 for r in gate_results if r.get(g)) / n
+    return {
+        "n": n, "waived": sorted(waived), "survivors": len(survivors),
+        "survivor_indices": survivors[:20],
+        "independent_estimate": round(est * n, 2),
+        "note": ("waiving these gates promotes NOBODY -- every candidate also fails at least one "
+                 "gate that genuinely discriminates, so the relaxation buys no survivors and "
+                 "costs a statistical standard"
+                 if not survivors else
+                 f"{len(survivors)}/{n} would survive the waiver; this is a PROMOTION-BAR change "
+                 f"and belongs to the principal, not to a screen"),
+    }

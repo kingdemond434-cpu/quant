@@ -17,7 +17,11 @@ the mechanism is the part that can be done without a ruling.
 
 from __future__ import annotations
 
-from libs.autodiscovery.validation import blocking_constant_gates, gate_discrimination
+from libs.autodiscovery.validation import (
+    blocking_constant_gates,
+    counterfactual_survivors,
+    gate_discrimination,
+)
 
 
 def _rows(n: int, **gates) -> list[dict[str, bool]]:
@@ -87,3 +91,71 @@ def test_discovery_surfaces_this_rather_than_reporting_a_bare_zero() -> None:
     assert "gate_discrimination" in src and "blocking_constant_gates" in src
     assert "PRINCIPAL ruling" in src, (
         "the output must say who owns the decision; silently relaxing the bar is forbidden")
+
+
+# ------------------------------------------------- gap #71: "do we get survivors if we lower it?"
+
+
+def test_waiving_the_campaign_veto_promotes_nobody_on_the_real_shape() -> None:
+    """THE ANSWER TO THE QUESTION, MECHANISED.
+
+    The desk's measured campaign: pbo and reality_check reject 420/420 as campaign-level
+    statistics applied per-candidate, while the genuinely per-candidate gates discriminate
+    (walk_forward 58.1%, fragility 47.9%, cpcv 43.3%, capacity 43.3%, expected_value 40.2%) and
+    SOLE-CAUSE FAILURES ARE EMPTY -- i.e. every candidate also fails something that does
+    discriminate. Waiving the veto therefore promotes nobody; it only changes which failure gets
+    reported first.
+    """
+    import random
+    rates = {"walk_forward": 0.581, "fragility": 0.479, "cpcv": 0.433,
+             "capacity": 0.433, "expected_value": 0.402}
+    rng = random.Random(7)
+    rows = []
+    for _ in range(420):
+        gs = list(rates)
+        doomed = gs[rng.randrange(len(gs))]      # every candidate has at least one real weakness
+        rows.append({**{g: (False if g == doomed else rng.random() < rates[g] / 0.85)
+                        for g in gs},
+                     "pbo": False, "reality_check": False})
+
+    cf = counterfactual_survivors(rows, ["pbo", "reality_check"])
+    assert cf["survivors"] == 0, "waiving a campaign veto must not conjure survivors"
+    assert "promotes NOBODY" in cf["note"]
+    assert cf["independent_estimate"] > cf["survivors"], (
+        "observed BELOW the independent estimate is the signature of gates that measure "
+        "genuinely different failure modes")
+
+
+def test_a_real_survivor_is_reported_and_escalated_not_swallowed() -> None:
+    """If waiving WOULD promote someone, that is a promotion-bar change and must say so."""
+    rows = [{"pbo": False, "reality_check": False, "walk_forward": True, "cpcv": True}
+            for _ in range(10)]
+    cf = counterfactual_survivors(rows, ["pbo", "reality_check"])
+    assert cf["survivors"] == 10
+    assert "belongs to the principal" in cf["note"]
+
+
+def test_positive_association_would_exceed_the_independent_estimate() -> None:
+    """Pins the direction, because it is easy to state backwards -- and I did, first time.
+
+    One latent quality driving every gate means the good candidates sweep all of them, so
+    survivors EXCEED the independent estimate. That would mean the battery is largely one gate
+    wearing five hats. The desk's real campaign shows the opposite.
+    """
+    import random
+    rates = {"a": 0.581, "b": 0.479, "c": 0.433, "d": 0.433, "e": 0.402}
+    rng = random.Random(7)
+    rows = [{**{g: q < r for g, r in rates.items()}, "pbo": False}
+            for q in (rng.random() for _ in range(420))]
+    cf = counterfactual_survivors(rows, ["pbo"])
+    assert cf["survivors"] > cf["independent_estimate"] * 5
+
+
+def test_waiving_nothing_matches_the_true_survivor_count() -> None:
+    rows = [{"a": True, "b": True}, {"a": True, "b": False}]
+    assert counterfactual_survivors(rows, [])["survivors"] == 1
+
+
+def test_empty_campaign_counterfactual_is_honest() -> None:
+    cf = counterfactual_survivors([], ["pbo"])
+    assert cf["survivors"] == 0 and "nothing to counterfact" in cf["note"]
