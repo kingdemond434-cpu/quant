@@ -1664,6 +1664,99 @@ def check_producer_cadence(defects) -> None:
             "-- a promise nobody checks is how inventory rots in plain sight."))
 
 
+VPS_PINS = ROOT / "requirements-vps.txt"
+
+
+def _pinned() -> dict[str, str]:
+    out: dict[str, str] = {}
+    with contextlib.suppress(OSError):
+        for ln in VPS_PINS.read_text("utf-8").splitlines():
+            ln = ln.strip()
+            if "==" in ln and not ln.startswith("#"):
+                name, _, ver = ln.partition("==")
+                out[name.strip().lower()] = ver.strip()
+    return out
+
+
+def check_dependency_drift(defects) -> None:
+    """GAP #51: GREEN TESTS HERE ARE NOT EVIDENCE ABOUT PRODUCTION UNLESS THE DEPS MATCH.
+
+    pyproject declares floors (`>=`) while the VPS runs 22 exact pins, so CI resolves whatever is
+    newest and production runs something else. The register records this biting once already:
+    `ruff>=0.5` resolved to 0.15.8 and produced 36 errors that production never saw.
+
+    Measured 2026-07-29 in the dev container: 18 of 22 packages differ from the pin set, and one
+    of them is a MAJOR version -- pandas 2.3.3 in production versus 3.0.5 here. A major version
+    is where behaviour changes rather than drifts, so a suite that is green against 3.0.5 says
+    very little about a desk running 2.3.3. That is not a hypothetical: `Timestamp.utcnow()`
+    raises a removal warning on 3.x and is perfectly quiet on 2.3.3, so the same code produces
+    different signals in the two environments.
+
+    MAJOR drift is a defect; minor/patch drift is reported as one line and not escalated, because
+    the point is to see divergence, not to forbid a patch bump. Absent packages are listed
+    separately -- a dependency production has and the test environment lacks means the tests
+    covering it never ran at all.
+    """
+    import importlib.metadata as md
+    pins = _pinned()
+    if not pins:
+        defects.append(("dependency-pins-missing",
+                        f"{VPS_PINS.name} has no exact pins -- production's dependency set is "
+                        "unrecorded, so no test run anywhere can be tied to what actually runs."))
+        return
+    major, minor, absent = [], [], []
+    for name, want in sorted(pins.items()):
+        try:
+            have = md.version(name)
+        except Exception:
+            absent.append(name)
+            continue
+        if have == want:
+            continue
+        if want.split(".")[0] != have.split(".")[0]:
+            major.append(f"{name} prod={want} here={have}")
+        else:
+            minor.append(f"{name} {want}->{have}")
+    if major:
+        defects.append((
+            "dependency-major-drift",
+            f"{len(major)} package(s) differ from production by a MAJOR version -- "
+            f"{'; '.join(major)}. A major version changes behaviour rather than drifting, so a "
+            "green suite in this environment is not evidence about the desk that runs "
+            f"{VPS_PINS.name}. Align the environment, or state explicitly which results are "
+            "known to be environment-specific."))
+    if absent:
+        defects.append((
+            "dependency-absent",
+            f"{len(absent)} pinned package(s) are NOT INSTALLED here -- {', '.join(absent[:8])}. "
+            "Any test that needs them did not run, and pytest reports a skipped or uncollected "
+            "module far more quietly than a failing one."))
+    if minor and not major:
+        print(f"  note: {len(minor)} minor/patch dependency drift(s) vs {VPS_PINS.name}")
+
+    # AND THE FLOORS MUST NEVER SIT BELOW PRODUCTION. A `>=` floor lower than the deployed pin
+    # lets CI legally resolve a version production has already moved past, so a green run can be
+    # testing code paths the desk retired. Raising the floor costs nothing and makes "CI resolved
+    # something older than prod" impossible rather than merely unlikely.
+    low: list[str] = []
+    with contextlib.suppress(OSError):
+        pyproj = (ROOT / "pyproject.toml").read_text("utf-8")
+        for name, floor in re.findall(r'"([A-Za-z0-9_.-]+)>=([0-9][^"]*)"', pyproj):
+            want = pins.get(name.lower())
+            if not want:
+                continue
+            fl = [int(x) for x in re.findall(r"\d+", floor)[:3]]
+            wt = [int(x) for x in re.findall(r"\d+", want)[:3]]
+            if fl < wt:
+                low.append(f"{name} floor>={floor} < prod pin {want}")
+    if low:
+        defects.append((
+            "dependency-floor-below-prod",
+            f"{len(low)} pyproject floor(s) sit BELOW the deployed pin -- {'; '.join(low[:6])}. "
+            "CI may legally resolve a version production has already moved past, so a green run "
+            "can be exercising retired code paths. Raise the floor to the pin."))
+
+
 def check_naive_datetime(defects) -> None:
     """GAP #50, CORRECTED. Ban the calls that are genuinely naive or scheduled for removal --
     and do NOT count the desk's own correct helper as a defect.
@@ -2662,6 +2755,7 @@ CHECKS = [("carryover-skipped", check_carryover_skipped),
                       ("findings-ratchet", check_findings_ratchet),
                       ("gap-register-health", check_gap_register_health),
                       ("producer-cadence", check_producer_cadence),
+                      ("dependency-drift", check_dependency_drift),
                       ("naive-datetime", check_naive_datetime),
                       ("test-suite", check_test_suite_collectable),
                       ("triage-disposition", check_triage_disposition),
