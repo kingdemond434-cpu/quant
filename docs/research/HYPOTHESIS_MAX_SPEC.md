@@ -1,4 +1,41 @@
 # HYPOTHESIS-MAX MACHINERY -- BUILD SPEC (principal directive 2026-07-20)
+
+## BUILD STATUS (added 2026-07-29 — this spec was a BUILDER'S FOSSIL for 9 days)
+
+The 2026-07-28 external panel flagged this file by name: *"HYPOTHESIS_MAX_SPEC.md built (07-20)
+but **6 components NOT implemented**"*. Verified — five of six had no implementation anywhere in
+`scripts/` or `libs/`. The panel also measured the cost: **420 candidates tested, ZERO
+survivors**, every one burning full gauntlet compute because component 1 — the one marked "build
+first" — did not exist.
+
+| # | Component | Status | Where |
+|---|---|---|---|
+| 1 | Tiered gauntlet pre-filter | **BUILT 07-29** | `libs/hypothesis/hypothesis_max.py::prefilter` |
+| 2 | Failed-hypothesis telemetry → generator feedback | **PARTIAL** | weighting rule built (`family_weight`, floored per charter s18); the graveyard field additions (`rejection_stage`, `rejection_reason`, `feature_family`, `data_axes`) still owe a writer |
+| 3 | Trivial-variation blocker at source | **BUILT 07-29** | `hypothesis_max.py::TrivialVariationBlocker` + `fingerprint` |
+| 4 | Breeder | **NOT BUILT** | blocked on a validated axis to cross against — the desk has 1 |
+| 5 | Orthogonality seeker | **NOT BUILT** | needs an existing book to score correlation against; 0 deployed alphas |
+| 6 | Generator collapse detector | **BUILT 07-29** | `hypothesis_max.py::batch_diversity` |
+
+Components 1, 3 and 6 shipped together because the spec itself makes them one object: #3's
+mechanism fingerprint is explicitly reused by #6, and #1 consumes both. 24 tests.
+
+**Why #6 became urgent rather than optional:** generation moved from one lens per day to a full
+lens × seat sweep this session (3 → 15 jobs/run). Independent seats sweeping the same lens set is
+precisely the condition that produces near-identical candidates, and mode collapse is invisible
+in throughput — measured volume rises while information falls.
+
+**The pre-filter's default is ESCALATE, not REJECT, and that inversion is deliberate.** Everywhere
+else on this desk an ambiguous branch must block. Here the failure being guarded against is a
+silently killed alpha, not a bad trade — the full gauntlet is unchanged behind it. Wasted compute
+is recoverable; a discarded edge is not. Missing evidence can therefore never contribute to a
+rejection.
+
+Items 4 and 5 are recorded with their blockers rather than left silent, which is the failure this
+status block exists to correct.
+
+---
+
 _Implements the Hypothesis Generation Maximization standing directive (constitution addendum
 2026-07-20). Research-lane tooling: no risk-path, sizing, or executor code. Brain builds in
 EV order; each component independently shippable, CI-gated, reversible._
