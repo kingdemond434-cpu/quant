@@ -21,7 +21,12 @@ import numpy as np
 import pandas as pd
 
 from libs.autodiscovery.models import Family, Hypothesis
-from libs.autodiscovery.validation import campaign_pbo_rc, validate
+from libs.autodiscovery.validation import (
+    blocking_constant_gates,
+    campaign_pbo_rc,
+    gate_discrimination,
+    validate,
+)
 from libs.data.crypto_source import list_liquid_perps
 from libs.data.instruments import AssetClass, InstrumentSpec, register_instrument
 from libs.data.lake import Layer, ParquetLake
@@ -145,6 +150,7 @@ def main() -> None:
     pbo, rc = campaign_pbo_rc(matrix)
 
     results = []
+    gate_rows: list[dict[str, bool]] = []          # gap #71: per-gate discrimination evidence
     for name, r in lib.items():
         active = r[r != 0.0]
         sh = _ann(r)
@@ -168,6 +174,8 @@ def main() -> None:
             status = "REJECTED"
         results.append({"sleeve": name, "sharpe": sh, "gates": gates, "max_corr": max_corr,
                         "orthogonal": orthogonal, "status": status})
+        if v is not None:
+            gate_rows.append(dict(v.gates))
 
     def _rank(d: dict[str, object]) -> tuple[bool, float]:
         promoted = str(d["status"]).startswith(("SHADOW", "DEPLOY"))
@@ -189,6 +197,28 @@ def main() -> None:
         print(f"  {r['sleeve']:18} sharpe~{r['sharpe']:5} gates={r['gates']:5} "
               f"corr={r['max_corr']:5} {r['status']}")
     print(f"pending (data-gated): {[p['sleeve'] for p in pending]} (archive {archive_days}d)")
+
+    # GAP #71: ZERO SURVIVORS IS AMBIGUOUS, AND THE AMBIGUITY IS THE PROBLEM. It reads either
+    # "nothing here was good enough" or "a campaign-level gate vetoed everything regardless of
+    # merit". Those demand opposite responses -- generate better candidates, versus fix the
+    # gate -- and the desk was reporting the first while (per its own numbers: 420 tested, 0
+    # survivors, campaign PBO 0.6159) living the second. Reports only; no bar is moved.
+    disc = gate_discrimination(gate_rows)
+    blocking = blocking_constant_gates(gate_rows)
+    payload["gate_discrimination"] = disc
+    payload["blocking_constant_gates"] = blocking
+    _WEB.write_text(json.dumps(payload, indent=2, default=str), "utf-8")
+    if disc:
+        print("\ngate discrimination (gap #71):")
+        for g, d in sorted(disc.items(), key=lambda kv: kv[1]["pass_rate"]):
+            flag = "  <-- CONSTANT" if not d["discriminates"] else ""
+            print(f"  {g:20} pass {d['passed']}/{d['n']} ({d['pass_rate']:.0%}){flag}")
+    if blocking:
+        print(f"\n  {len(blocking)} gate(s) FAILED EVERY CANDIDATE: {', '.join(blocking)}")
+        print("  A gate that rejects all N carries zero information about any individual one --")
+        print("  that is a campaign-level verdict wearing a per-candidate costume. Whether it is")
+        print("  correct (the campaign really is overfit) or miscalibrated is a PRINCIPAL ruling;")
+        print("  the standing directive forbids relaxing a statistical bar to make it pass.")
 
 
 if __name__ == "__main__":

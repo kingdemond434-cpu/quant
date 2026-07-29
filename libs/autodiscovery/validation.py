@@ -110,3 +110,55 @@ def validate(
         rejection_reason="" if not failed else "failed: " + ", ".join(failed),
         metrics=metrics,
     )
+
+
+def gate_discrimination(gate_results: list[dict[str, bool]]) -> dict[str, dict]:
+    """GAP #71 INSTRUMENTATION -- which gates actually DISCRIMINATE, and which are constants.
+
+    THE MEASURED PROBLEM. `pbo` and `reality_check` are computed ONCE per campaign (they are
+    properties of the returns matrix, not of any candidate) and then applied as PER-CANDIDATE
+    gates. So when campaign PBO is 0.6159 against a 0.50 bar, that gate reads False for every
+    candidate in the campaign -- all 420 of them -- no matter how good any individual one is. The
+    desk's own numbers: 420 candidates tested, ZERO survivors, while the genuinely per-candidate
+    gates discriminated normally (walk_forward 58.1%, fragility 47.9%).
+
+    WHY THIS REPORTS RATHER THAN FIXES. Turning a campaign veto into a rank would LOWER a
+    statistical bar, and this desk's standing research directive is explicit -- *"Never reduce
+    statistical standards. Only improve efficiency."* The gap register dates the redesign and
+    marks it as needing a principal ruling on RANK-not-VETO. So this measures the mechanism
+    instead of quietly relaxing it: a gate that passes everything or fails everything carries
+    zero information about any individual candidate, and the desk should be able to SEE that
+    rather than infer it from an empty survivor list.
+
+    A constant gate is not necessarily wrong. A campaign really can be overfit end to end. What
+    is wrong is not knowing which of the two you are looking at.
+    """
+    if not gate_results:
+        return {}
+    names = list(gate_results[0])
+    n = len(gate_results)
+    out: dict[str, dict] = {}
+    for g in names:
+        passed = sum(1 for r in gate_results if r.get(g))
+        rate = passed / n
+        constant = passed in (0, n)
+        out[g] = {
+            "pass_rate": round(rate, 4), "passed": passed, "n": n,
+            "discriminates": not constant,
+            "note": ("" if not constant else
+                     (f"CONSTANT: this gate {'passed' if passed else 'FAILED'} for all {n} "
+                      f"candidates, so it carries zero information about any individual one. "
+                      + ("A gate failing everything is a campaign-level verdict wearing a "
+                         "per-candidate costume -- the whole campaign is being rejected, not "
+                         "these candidates." if not passed else
+                         "A gate passing everything is not filtering; confirm it is still "
+                         "wired to anything."))),
+        }
+    return out
+
+
+def blocking_constant_gates(gate_results: list[dict[str, bool]]) -> list[str]:
+    """Gates that FAILED every candidate -- the ones that make promotion arithmetically
+    impossible regardless of candidate quality. Empty is the healthy state."""
+    return [g for g, d in gate_discrimination(gate_results).items()
+            if not d["discriminates"] and d["passed"] == 0]
