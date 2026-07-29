@@ -121,3 +121,11 @@ reference for when that item is built (liquidity STATE, not just level, predicts
 ## Neural Network-Driven Volatility Drag Mitigation under Aggressive Leverage
 - 2026-07-25 · http://arxiv.org/abs/2607.23068v1
 - This paper introduces a compact reformulation of a modular end-to-end neural network for global minimum-variance portfolio optimization that decouples model complexity from both look-back window length and universe size. A five-parameter hyperbolic weighted moving average combined with a saturating exponential replaces the original 2,400-parameter lag-transformation layer, and a bidirectional gated-recurrent-unit eigencleaning module together with a streamlined marginal-volatility network reduce total learnable parameters from 39,586 to just 2,175. In out-of-sample tests against state-of-the-a
+
+## Emergent Latent-State Computation under Stochastic Volatility
+- 2026-07-28 · http://arxiv.org/abs/2607.25459v1
+- Mechanistic interpretability has largely focused on language models and deterministic toy tasks. Much less is known about how sequence models internally represent latent stochastic dynamics under noisy, partially observed observations. We study this question in a controlled multivariate stochastic volatility setting, where models observe only returns while the ground-truth latent volatility state is known to the researcher. This setting provides a useful benchmark for mechanistic interpretability under partial observability: the latent state is hidden from the model but directly available for 
+
+## Long-memory GARCH via a two-dimensional Markov chain
+- 2026-07-28 · http://arxiv.org/abs/2607.25189v1
+- This paper proposes a GARCH-type volatility model in which level-and-slope updates of a latent power-law kernel generate state-dependent decay of past shocks within a two-dimensional Markov state. We derive a joint Foster--Lyapunov condition and establish positive Harris recurrence and uniqueness of the invariant distribution. Simulations show substantial low-frequency persistence in log-squared innovations, especially near the diagnostic stability boundary. Empirically, the model captures a substantial portion of observed volatility persistence and delivers competitive out-of-sample forecast 

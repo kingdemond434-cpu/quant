@@ -1,5 +1,5 @@
 {
-  "generated": "2026-07-29T02:34:55.361643+00:00",
+  "generated": "2026-07-29T08:45:48.221690+00:00",
   "master_objective": "maximize expected lifetime geometric growth (log wealth), survival-c",
   "deployed": {
     "sleeves": [
@@ -7,16 +7,16 @@
       "perp_ls (paper)"
     ],
     "start_capital": 15000.0,
-    "equity": 13185.36,
-    "net_pnl": -1814.64,
-    "return_pct": -12.098,
-    "days_live": 26.89,
+    "equity": 13118.86,
+    "net_pnl": -1881.14,
+    "return_pct": -12.541,
+    "days_live": 27.14,
     "winrate_pct": 44.5,
     "n_closed_trades": 254,
-    "deployed_sharpe": -22.04,
+    "deployed_sharpe": -22.6,
     "funding": 113.04,
     "n_carries": 0,
-    "perp_paper_net": 45.5
+    "perp_paper_net": -21.0
   },
   "binding_constraint": "calendar-time data accumulation (not engineering throughput)",
   "bottleneck_rankings": [
@@ -58,16 +58,16 @@
   "retirement_candidates": [
     {
       "sleeve": "basis_carry",
-      "marginal_sharpe": -0.08
+      "marginal_sharpe": -0.1
     },
     {
-      "sleeve": "xsec_price_mom",
-      "marginal_sharpe": -0.03
+      "sleeve": "ts_trend",
+      "marginal_sharpe": -0.02
     }
   ],
   "retirement_note": "SIGNAL ONLY \u2014 marginal-Sharpe swings ~\u00b10.15 between runs, so a single negative sign is within noise. Retire only on PERSISTENT negative contribution across runs, with promotion-grade rigor. No whipsaw.",
   "architecture_review_due": false,
-  "cycles_logged": 46,
+  "cycles_logged": 47,
   "completed_this_cycle": [
     "archive_integrity_ok",
     "watchdog_run_logged_off",
