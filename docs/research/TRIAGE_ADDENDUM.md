@@ -26,9 +26,13 @@ provenance record that dies with the working directory is not a record.
 
 ## BUILD — unblocked, cheap, next session
 
-**EMPTY as of 2026-07-29.** Items 86, 96, 99 and 82 are re-verdicted BUILT above. Specs
-remain in git history; a register that keeps advertising work already done is as wrong as
-one that hides work still open.
+| # | Component | Note |
+|---|---|---|
+| 93 | **Adaptive Data Acquisition Agent** | **UNBLOCKED 2026-07-29.** Its stated blocker was "depends on Information Advantage Score (item 17) existing first" — and 17 shipped, so the blocker expired. Caught mechanically by `max_audit.check_triage_disposition`, not by anyone re-reading the row: a QUEUE verdict is a claim with an expiry date and nobody revisits a blocked item to ask whether it is still blocked. Buildable now against `research_cio.py` §1. |
+
+Items 86, 96, 99 and 82 were re-verdicted BUILT above on the same pass. Specs for them remain in
+git history; a register that keeps advertising work already done is as wrong as one that hides
+work still open.
 
 ---
 
@@ -57,7 +61,7 @@ one that hides work still open.
 | 84 | Causal Discovery Engine | **Deterministic core already exists**: `leakage_detector.py` does reverse-causality and orthogonalisation-to-confound — the two tests that separate "X causes Y" from "Y causes X" and from "Z causes both". Remaining work is the graph layer, not the statistics. |
 | 85 | Data Lineage Graph | Partial: registry already pins source→commit→artifact. Missing the feature→signal→trade edges. |
 | 95 | Alpha Causal Graph | Supersedes Alpha Genome (item 76) — build one, not both. |
-| 93 | Adaptive Data Acquisition Agent | Depends on Information Advantage Score (BUILD item 17) existing first. |
+
 
 **Blocked on OpenRouter funding:**
 | # | Component |

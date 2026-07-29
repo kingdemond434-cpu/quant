@@ -1664,6 +1664,65 @@ def check_producer_cadence(defects) -> None:
             "-- a promise nobody checks is how inventory rots in plain sight."))
 
 
+TEST_RECORD = ROOT / "docs/research/test_suite_record.json"
+
+
+def check_test_suite_collectable(defects) -> None:
+    """THE SUITE MUST ACTUALLY RUN, AND MUST NOT SHRINK. Coverage theater in its purest form.
+
+    FOUND 2026-07-29, THE HARD WAY. `tests/risk/*` imports `hypothesis` and `tests/regime`
+    imports `sklearn`, neither installed here. pytest does not skip a module it cannot import --
+    it raises a COLLECTION ERROR and aborts the ENTIRE session with "Interrupted: 5 errors during
+    collection". So `pytest tests/` ran ZERO tests. Not five files' worth: zero. And hiding
+    behind that were two genuinely failing tests on the LIVE EXECUTION path -- the fill-
+    verification regression bar for the 2026-07-19 dead-man incident that stranded ~$2,150.
+
+    A suite that has silently stopped running is worse than no suite, because it is still cited
+    as evidence. This desk's own doctrine is PRODUCTION, NOT EXIT CODE; a test suite is subject
+    to exactly the same rule, and nothing was applying it to the tests themselves.
+
+    Two teeth: collection must SUCCEED, and the collected count is RATCHETED. The ratchet is the
+    important half -- a suite can rot one deleted file at a time without ever failing, and
+    "tests pass" stays true the whole way down.
+    """
+    r = subprocess.run([sys.executable, "-m", "pytest", "tests/", "--collect-only", "-q"],
+                       cwd=str(ROOT), capture_output=True, text=True, timeout=300, check=False)
+    out = (r.stdout or "") + (r.stderr or "")
+    if r.returncode != 0 or "error" in out.lower().split("short test summary")[0]:
+        why = [ln for ln in out.splitlines() if "ERROR" in ln or "ModuleNotFound" in ln][:4]
+        defects.append((
+            "test-suite-uncollectable",
+            f"pytest cannot COLLECT the suite (rc={r.returncode}) -- "
+            f"{' | '.join(why) or out[-300:]}"
+            ". A collection error aborts the WHOLE session, so this is not 'some tests skipped', "
+            "it is ZERO TESTS RUN while the desk still cites the suite as evidence. Install the "
+            "missing dependency or guard the import with pytest.importorskip, which is what "
+            "tests/research/test_stationarity.py already does correctly."))
+        return
+
+    n = sum(1 for ln in out.splitlines() if ln.strip().startswith("tests/") and ":" in ln)
+    try:
+        rec = json.loads(TEST_RECORD.read_text("utf-8"))
+    except (OSError, json.JSONDecodeError):
+        rec = {}
+    best = int(rec.get("max_collected", 0))
+    if n > best:
+        TEST_RECORD.parent.mkdir(parents=True, exist_ok=True)
+        TEST_RECORD.write_text(json.dumps({
+            "max_collected": n, "at": datetime.now(tz=UTC).isoformat(),
+            "note": "high-water mark of COLLECTABLE test modules; ratchets UP only. A suite may "
+                    "never quietly shrink -- deleting a test is a decision, not a side effect.",
+        }, indent=1), "utf-8")
+    elif n < best:
+        defects.append((
+            "test-suite-shrank",
+            f"collectable test modules fell to {n} from a high-water {best}. Tests are the only "
+            "thing standing between a refactor and a silent regression, and a suite shrinks one "
+            "deleted file at a time while 'tests pass' stays true the entire way down. Restore "
+            f"them, or record in {TEST_RECORD.relative_to(ROOT)} why the coverage is legitimately "
+            "gone."))
+
+
 def check_triage_disposition(defects) -> None:
     """§35(8): the triage registers are excluded from the findings scan ONLY while they still
     disposition their own items -- and their OPEN items stay counted, not hidden.
@@ -2551,6 +2610,7 @@ CHECKS = [("carryover-skipped", check_carryover_skipped),
                       ("findings-ratchet", check_findings_ratchet),
                       ("gap-register-health", check_gap_register_health),
                       ("producer-cadence", check_producer_cadence),
+                      ("test-suite", check_test_suite_collectable),
                       ("triage-disposition", check_triage_disposition),
                       ("artifact-governance", check_artifact_governance),
                       ("orphan-code", check_orphan_code),
