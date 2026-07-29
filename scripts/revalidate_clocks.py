@@ -19,6 +19,7 @@ from pathlib import Path
 import numpy as np
 
 from libs.research.axis_screen import stage_a_screen
+from libs.research.upbit_data import upbit_daily_close_keyed
 
 
 def _get(url, timeout=35):
@@ -41,8 +42,10 @@ def yahoo(sym):
 
 
 def upbit():
-    rows = _get("https://api.upbit.com/v1/candles/days?market=KRW-BTC&count=200")
-    return {str(r["candle_date_time_utc"])[:10]: float(r["trade_price"]) for r in rows}
+    # ONE copy of the alignment policy (see libs/research/upbit_data.py): this script carried its
+    # own open-date keying and kept printing the leaky IC after the collector was fixed -- two
+    # copies of one policy means fixing one only moves the bug.
+    return upbit_daily_close_keyed("KRW-BTC", 200)
 
 
 def stablesupply():

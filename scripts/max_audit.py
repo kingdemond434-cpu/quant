@@ -2676,6 +2676,48 @@ def check_registry_complete(defects) -> None:
 CHECKS += [("check-registry", check_registry_complete)]
 
 
+CONSTITUTION = ROOT / "docs/CONSTITUTION.md"
+CONST_REVIEW = ROOT / "docs/research/constitution_review.md"
+
+
+def check_constitution(defects) -> None:
+    """The constitution governs (installed 2026-07-29): present, injected, and reviewed.
+
+    L2.8 makes stability the default review outcome -- but an UNREVIEWED constitution is not
+    stable, it is unexamined. The quarterly cadence is enforced as an age fence rather than a new
+    scheduler: the defect fires, the brain runs the review (default verdict: unchanged, stated
+    explicitly), writes the artifact, the fence goes green. No second orchestrator.
+    """
+    if not CONSTITUTION.exists() or CONSTITUTION.stat().st_size < 8000:
+        defects.append(("constitution-missing",
+                        "docs/CONSTITUTION.md is missing or gutted -- the desk's governing "
+                        "operating system is not installed; every organ is running on doctrine "
+                        "fragments with no Level-1 objective hierarchy"))
+        return
+    doct = (ROOT / "ops/principal_doctrine.txt").read_text("utf-8", errors="ignore")
+    if "docs/CONSTITUTION.md" not in doct or "E[log(W_T)]" not in doct:
+        defects.append(("constitution-not-injected",
+                        "the doctrine no longer declares docs/CONSTITUTION.md governing (or lost "
+                        "the L1.1 objective) -- organs are being briefed without the "
+                        "constitutional core, which voids universal enforcement"))
+    if CONST_REVIEW.exists():
+        age_d = (NOW - CONST_REVIEW.stat().st_mtime) / 86400.0
+        if age_d > 92:
+            defects.append(("constitution-review-overdue",
+                            f"L4 quarterly constitutional review is {age_d:.0f}d old (>92d). Run "
+                            "it per L2.8: rank candidate changes by ERV, default outcome "
+                            "STABILITY stated explicitly, write the verdict to "
+                            "docs/research/constitution_review.md."))
+    elif (NOW - CONSTITUTION.stat().st_mtime) / 86400.0 > 92:
+        defects.append(("constitution-review-overdue",
+                        "no constitutional review artifact exists and the constitution is >92d "
+                        "old -- L4 requires the quarterly review; write "
+                        "docs/research/constitution_review.md with the ERV-ranked verdict."))
+
+
+CHECKS += [("constitution", check_constitution)]   # registered BELOW its definition
+
+
 def main() -> None:
     defects: list[tuple[str, str]] = []
     for label, fn in CHECKS:

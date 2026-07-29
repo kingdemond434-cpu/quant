@@ -13,11 +13,16 @@ from __future__ import annotations
 
 import datetime as _dt
 import json
+import sys as _sys
 import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
+from pathlib import Path as _P
 
 import numpy as np
+
+_sys.path.insert(0, str(_P(__file__).resolve().parent.parent))
+from libs.research.upbit_data import upbit_daily_close_keyed
 
 _UPBIT = "https://api.upbit.com/v1/candles/days"
 _BINANCE = "https://api.binance.com/api/v3/klines"
@@ -31,22 +36,9 @@ def _get(url: str) -> object:
         return json.loads(r.read().decode())
 
 
-def _upbit_daily(market: str, n: int = 200) -> dict[str, float]:
-    rows = _get(f"{_UPBIT}?market={market}&count={n}")
-    if not isinstance(rows, list):
-        return {}
-    # ALIGNMENT (2026-07-29, leak found by the shift test): candle_date_time_utc is the OPEN of a
-    # KST-day candle, so keying by it labels each close ~15h EARLY -- key D carried a close from
-    # 15:00 UTC on D+1, and \"forward\" IC vs day-D+1 returns was 62% contemporaneous overlap
-    # (shift test: +1d cell 0.823 vs 0d 0.225; the honest no-overlap cell read +0.018). Key by the
-    # CLOSE date instead: the candle opened 15:00 UTC (D) closes 15:00 UTC (D+1) -> label D+1.
-    # Signal labelled K then contains information only up to 15:00 UTC K, and predicting the
-    # K+1 UTC-day return leaves a 9h standoff instead of a 15h leak.
-    out = {}
-    for r in rows:
-        d = _dt.date.fromisoformat(str(r["candle_date_time_utc"])[:10]) + _dt.timedelta(days=1)
-        out[d.isoformat()] = float(r["trade_price"])
-    return out
+def _upbit_daily(market: str) -> dict[str, float]:
+    # single source of the close-date keying -- see libs/research/upbit_data.py for why
+    return upbit_daily_close_keyed(market, 200)
 
 
 def _binance_daily(sym: str, n: int = 200) -> dict[str, float]:
@@ -61,7 +53,6 @@ def _binance_daily(sym: str, n: int = 200) -> dict[str, float]:
 
 
 def _yahoo_usdkrw() -> dict[str, float]:
-    import datetime as _dt
     r = _get(_YF)
     res = r["chart"]["result"][0]
     ts, cl = res["timestamp"], res["indicators"]["quote"][0]["close"]
