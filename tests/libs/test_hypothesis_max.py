@@ -13,7 +13,7 @@ import math
 
 import pytest
 
-from libs.hypothesis.hypothesis_max import (
+from libs.hypmax.hypothesis_max import (
     COST_FLOOR_MULTIPLE,
     MIN_FAMILY_WEIGHT,
     TrivialVariationBlocker,
@@ -195,7 +195,7 @@ def test_module_stays_dependency_free() -> None:
     import sys
     r = subprocess.run(
         [sys.executable, "-c",
-         "import sys;import libs.hypothesis.hypothesis_max as m;"
+         "import sys;import libs.hypmax.hypothesis_max as m;"
          "print(sorted({x.split('.')[0] for x in sys.modules} & "
          "{'duckdb','pandas','scipy','numpy','pydantic'}))"],
         capture_output=True, text=True, timeout=120, check=False)

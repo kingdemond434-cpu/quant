@@ -22,6 +22,7 @@ CADENCE FLOORS below enforce the never-sleepier invariant; violations are paged.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import subprocess
 import sys
@@ -121,6 +122,36 @@ def _run_panel(mission: str | None) -> bool:
         print("cadence: panel exited clean but appended NO verdict -- duty stays OWED "
               "(check OpenRouter funding: a half-funded roster 402s mid-run and emits nothing)")
     return r2.returncode == 0 and _produced
+
+
+_FUNDING_STATE = Path("data/panel_funding_state.json")
+
+
+def _funding_restored() -> bool:
+    """True when the panel has been funded since the last flagship sweep ran.
+
+    A 30-day clock is the right cadence for "has a better model shipped?" -- catalogs move
+    slowly. It is the WRONG cadence for "the desk just got paid". Without this, credits landing
+    on a Friday could be followed by up to a month of running the previous roster on the new
+    money, and the whole point of funding the panel is the panel it funds.
+
+    The flag is latched by run_external_panel on the unfunded->funded edge and cleared here only
+    after a sweep actually produced, so a cadence run that skipped the upgrade leaves the debt
+    standing rather than consuming it.
+    """
+    try:
+        return bool(json.loads(_FUNDING_STATE.read_text("utf-8")).get("upgrade_owed"))
+    except (OSError, json.JSONDecodeError, TypeError, ValueError):
+        return False
+
+
+def _clear_funding_debt() -> None:
+    """Clear the latch -- ONLY after a sweep genuinely evaluated the catalog."""
+    with contextlib.suppress(OSError, json.JSONDecodeError, TypeError, ValueError):
+        d = json.loads(_FUNDING_STATE.read_text("utf-8"))
+        d["upgrade_owed"] = False
+        d["upgrade_ran"] = datetime.now(tz=UTC).isoformat()
+        _FUNDING_STATE.write_text(json.dumps(d, indent=1), "utf-8")
 
 
 def _run_model_upgrade() -> bool:
@@ -296,10 +327,20 @@ def main() -> None:
     # when a human noticed a newer flagship -- so seats aged silently (llama-4-maverick sat 15
     # months stale). This makes "are we on the best model available?" a cadence question with a
     # floor, answered by live evidence rather than by anyone remembering to ask.
-    if (_days_since(state, "last_model_upgrade") >= _MODEL_UPGRADE_D
+    # FUNDING IS ALSO A TRIGGER, not just the calendar. Credits landing is exactly when the
+    # question "what is the best model available?" becomes worth money, and the monthly clock
+    # would otherwise sit on the answer for up to 30 days after payment.
+    _funded_now = _funding_restored()
+    if ((_days_since(state, "last_model_upgrade") >= _MODEL_UPGRADE_D or _funded_now)
             and _run_model_upgrade()):
         state["last_model_upgrade"] = now.isoformat()
-        fired.append("model-upgrade")
+        fired.append("model-upgrade" + (" (FUNDING-TRIGGERED)" if _funded_now else ""))
+        _clear_funding_debt()
+    elif _funded_now:
+        # Debt deliberately NOT cleared: a sweep that could not evaluate the catalog has not
+        # answered the question, and an unanswered question must stay owed.
+        print("cadence: funding restored, flagship sweep OWED but DID NOT EVALUATE -- "
+              "debt retained for the next run")
 
     # generation triggers -> flagged for the brain (scoped runs are a judgment task)
     due: list[str] = []

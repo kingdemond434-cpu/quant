@@ -44,6 +44,31 @@ _CTX = ssl.create_default_context(cafile=certifi.where())
 # anthropic stays excluded everywhere: the CRO is Claude, so an external Claude adds no
 # cognitive diversity.
 _LABS = ("x-ai", "openai", "google", "deepseek", "qwen", "z-ai", "moonshotai", "nvidia")
+
+# MAX BREADTH (2026-07-29). The fill loop could only ever seat a lab named in `_LABS` or already
+# on the roster, so a brand-new frontier lab appearing on OpenRouter could NEVER be seated -- the
+# board's diversity was capped at labs someone had once typed into this file. Cognitive diversity
+# is the panel's entire value, so the target set is now DISCOVERED from the live catalog and the
+# exclusions are stated as an explicit deny-list instead of being implied by a short allow-list.
+#
+# Deny beats allow here because the reasons are specific and durable, and an allow-list silently
+# excludes everything nobody thought of -- which is exactly the failure being fixed.
+_DENY_LABS = {
+    # Independence policy, permanent: the CRO is Claude. An external Claude shares its training,
+    # its priors and its blind spots, so it adds a seat without adding an independent view.
+    "anthropic": "the brain is Claude -- an external Claude adds no cognitive diversity",
+    # Evidence-retired (ledger #116, #118). Re-adding these is a measured downgrade, not growth.
+    "mistralai": "retired on evidence (ledger #116)",
+    "meta-llama": "retired -- llama-4-maverick failed the capacity probe twice (ledger #118)",
+    "cohere": "retired -- command-a replaced (ledger #116)",
+    "microsoft": "retired -- wizardlm replaced (ledger #116)",
+}
+
+#: Seat cap. NOT a diversity opinion -- a budget one, and stated as such so it is revisited when
+#: the budget is. Measured cost is ~$3-5/run against a $100-150/mo envelope at weekly cadence,
+#: so ~24 seats is affordable with headroom. Growth beyond the cap is a spend decision for the
+#: principal, never a silent one taken by a refresh script.
+MAX_SEATS = 24
 # variants that are NOT strong general adversarial reviewers -> never auto-pick as a fill.
 # "newest created" != "most capable" (flash/medium/mini are often newer AND weaker), so weak
 # tiers are excluded and, crucially, working models are NEVER auto-swapped (see select_roster).
@@ -74,6 +99,30 @@ def _newest_strong(models: list[dict[str, Any]], lab: str) -> str | None:
     return best
 
 
+def discover_labs(models: list[dict[str, Any]]) -> list[str]:
+    """Every lab in the live catalog offering at least one non-excluded model, best-first.
+
+    This is what turns the roster from "the eight labs in a literal" into "every strong lab that
+    exists". Ordered by the recency of each lab's best qualifying model so that, when the seat
+    cap binds, the labs shipping current frontier work are seated ahead of dormant ones -- the
+    cap should cost the desk its least interesting seats, not its arbitrary ones.
+
+    `_DENY_LABS` is applied here AND at the fill site. Belt and braces on purpose: this list is
+    the one place a retired lab could silently walk back onto the board, and the whole reason the
+    old seed tuple carried a paragraph of warning was that it had already happened once.
+    """
+    best: dict[str, float] = {}
+    for m in models:
+        mid = str(m.get("id", ""))
+        lab = _family(mid)
+        if not lab or lab in _DENY_LABS or any(x in mid.lower() for x in _EXCLUDE):
+            continue
+        ts = float(m.get("created") or 0)
+        if ts > best.get(lab, -1.0):
+            best[lab] = ts
+    return [lab for lab, _ in sorted(best.items(), key=lambda kv: -kv[1])]
+
+
 def select_roster(models: list[dict[str, Any]], key: str, base_url: str,
                   current: list[str] | None = None) -> list[dict[str, str]]:
     """CONSERVATIVE refresh (pure -> testable): KEEP every current model that still exists, only
@@ -86,6 +135,13 @@ def select_roster(models: list[dict[str, Any]], key: str, base_url: str,
     covered: set[str] = set()
     for mid in current:                                  # keep-alive: preserve working picks
         lab = _family(mid)
+        # A denied lab is never kept alive and never replaced in-lineage. Keep-alive is the one
+        # path that could carry a retired lab -- or an anthropic seat, breaking the independence
+        # policy outright -- forward forever without any decision being made, purely because it
+        # was already there.
+        if lab in _DENY_LABS:
+            print(f"roster: DROPPING {mid} -- {_DENY_LABS[lab]}")
+            continue
         if mid in live:
             roster.append({"name": lab.split("-")[-1], "base_url": base_url, "key": key,
                            "model": mid})
@@ -96,17 +152,23 @@ def select_roster(models: list[dict[str, Any]], key: str, base_url: str,
                 roster.append({"name": lab.split("-")[-1], "base_url": base_url, "key": key,
                                "model": repl})
                 covered.add(lab)
-    # Fill labs with no representative. Target set = the labs THIS roster holds, plus the seed
-    # list -- so a delisted seat's lineage is restored AND the board can still grow into a lab it
-    # has never held, while the four evidence-retired labs (removed from the seed above) can
-    # never come back. Roster-first ordering keeps existing lineages ahead of new ones.
-    target_labs = tuple(dict.fromkeys([_family(m) for m in current] + list(_LABS)))
+    # Fill labs with no representative. Target set = the labs THIS roster holds, then the seed,
+    # then EVERY OTHER LAB THE LIVE CATALOG OFFERS A STRONG MODEL FROM. That last group is the
+    # 2026-07-29 change: previously the loop could only seat a lab someone had already typed into
+    # `_LABS`, so a new frontier lab appearing on OpenRouter was unreachable and the board's
+    # diversity was capped by this file rather than by the market. Roster-first ordering keeps
+    # existing lineages ahead of new ones, so growth never displaces a working seat.
+    target_labs = tuple(dict.fromkeys(
+        [_family(m) for m in current] + list(_LABS) + discover_labs(models)))
     for lab in target_labs:
-        if lab not in covered:
-            pick = _newest_strong(models, lab)
-            if pick:
-                roster.append({"name": lab.split("-")[-1], "base_url": base_url, "key": key,
-                               "model": pick})
+        if len(roster) >= MAX_SEATS:
+            break
+        if lab in _DENY_LABS or lab in covered:
+            continue
+        pick = _newest_strong(models, lab)
+        if pick:
+            roster.append({"name": lab.split("-")[-1], "base_url": base_url, "key": key,
+                           "model": pick})
     return roster
 
 

@@ -10,7 +10,7 @@ first" — did not exist.
 
 | # | Component | Status | Where |
 |---|---|---|---|
-| 1 | Tiered gauntlet pre-filter | **BUILT 07-29** | `libs/hypothesis/hypothesis_max.py::prefilter` |
+| 1 | Tiered gauntlet pre-filter | **BUILT 07-29** | `libs/hypmax/hypothesis_max.py::prefilter` |
 | 2 | Failed-hypothesis telemetry → generator feedback | **PARTIAL** | weighting rule built (`family_weight`, floored per charter s18); the graveyard field additions (`rejection_stage`, `rejection_reason`, `feature_family`, `data_axes`) still owe a writer |
 | 3 | Trivial-variation blocker at source | **BUILT 07-29** | `hypothesis_max.py::TrivialVariationBlocker` + `fingerprint` |
 | 4 | Breeder | **NOT BUILT** | blocked on a validated axis to cross against — the desk has 1 |
