@@ -441,6 +441,42 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0037",
+   "source": "cycle",
+   "summary": "Detect books latched into an absorbing risk state (rail returns flatten on an already-flat book that cannot self-recover) instead of reading them as healthy idle books",
+   "roi_bps": 8.0,
+   "raised": "2026-07-29T16:11:51.374868+00:00",
+   "status": "implemented",
+   "reason": null,
+   "commit": "e234078",
+   "due": null,
+   "disposed": "2026-07-29T16:11:51.442115+00:00"
+  },
+  {
+   "id": "R0038",
+   "source": "cycle",
+   "summary": "Commit and run run_venue_reconcile.py -- the double-entry organ the 13-model panel required before any rail reset; it had sat uncommitted so every rail argument since was made from assertion",
+   "roi_bps": 6.0,
+   "raised": "2026-07-29T16:11:51.514663+00:00",
+   "status": "implemented",
+   "reason": null,
+   "commit": "e234078",
+   "due": null,
+   "disposed": "2026-07-29T16:11:51.582022+00:00"
+  },
+  {
+   "id": "R0039",
+   "source": "cycle",
+   "summary": "Tier-3 principal decision: re-baseline the carry book's ruin-rail inception equity (option A documented restart) or open a fresh book (B) -- the fired rail measured a total excluding $4,399.91 of verified on-venue assets",
+   "roi_bps": 40.0,
+   "raised": "2026-07-29T16:11:51.657588+00:00",
+   "status": "scheduled",
+   "reason": "Tier-3, principal-only: re-baselining a fired ruin rail may never be self-applied. Paged with full evidence 2026-07-29 (data/PRINCIPAL_ACTION.md, A/B/C ask).",
+   "commit": null,
+   "due": "2026-08-01",
+   "disposed": "2026-07-29T16:11:51.729614+00:00"
   }
  ]
 }
