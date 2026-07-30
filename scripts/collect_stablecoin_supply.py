@@ -40,6 +40,8 @@ def _get(url: str) -> object:
 def _supply() -> dict[str, float]:
     d = _get(_STABLES)
     out: dict[str, float] = {}
+    if not isinstance(d, list):        # narrow the untyped JSON boundary, do not assume shape
+        return out
     for x in d:
         v = x.get("totalCirculatingUSD") or x.get("totalCirculating") or {}
         peg = v.get("peggedUSD") if isinstance(v, dict) else None

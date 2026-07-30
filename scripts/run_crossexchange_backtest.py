@@ -23,7 +23,7 @@ import numpy as np
 import pandas as pd
 
 from libs.autodiscovery.models import Family, Hypothesis
-from libs.autodiscovery.validation import campaign_pbo_rc, validate
+from libs.autodiscovery.validation import campaign_gate_stats, validate
 from libs.data.crypto_source import fetch_funding, fetch_klines
 from libs.data.multiexchange import fetch_bybit_funding, fetch_okx_funding
 from libs.research.ic import evaluate_signal
@@ -89,24 +89,29 @@ def main() -> None:
     n = min(len(v) for v in sleeves.values())
     matrix = np.column_stack([v[-n:] for v in sleeves.values()])
     sharpes = np.array([sharpe_ratio(v[v != 0.0]) for v in sleeves.values()])
-    pbo, rc = campaign_pbo_rc(matrix)
+    # per-candidate gates (gap #87 flip, principal-ruled 2026-07-29); thresholds unchanged
+    campaign = campaign_gate_stats(matrix)
     corr = float(np.corrcoef(matrix[:, 0], matrix[:, 1])[0, 1])
 
     fwd_arr = fwd.to_numpy()                              # IC = rank-corr of signal vs fwd return
     sig = {"xexch_dispersion": (-disp).to_numpy(), "single_venue_carry": (-bfund).to_numpy()}
 
     results = []
-    for name, r in sleeves.items():
+    # enumerate order == column_stack order over `sleeves`, so `col` is the sleeve's matrix column
+    for col, (name, r) in enumerate(sleeves.items()):
         active = r[r != 0.0]
         ann = round(float(sharpe_ratio(active) * np.sqrt(_PPY)), 2) if len(active) > 5 else 0.0
         v = (validate(active, hypothesis=Hypothesis(
             family=Family.CARRY, subtype=name, symbol="CRYPTO", params={},
             mechanism=MechanismType.RISK_PREMIUM, edge_source=name, failure_modes=_FAIL),
-            n_trials=2, sharpe_estimates=sharpes, returns_matrix=matrix, pbo=pbo, rc=rc)
+            n_trials=2, sharpe_estimates=sharpes, returns_matrix=matrix,
+            campaign=campaign, column=col)
             if len(active) >= 250 else None)
         ic = evaluate_signal(sig[name], fwd_arr, periods_per_year=_PPY)
         results.append({"sleeve": name, "ann_sharpe": ann, "n_obs": len(active),
                         "gates": f"{sum(v.gates.values())}/{len(v.gates)}" if v else "n<250",
+                        "pbo": round(float(v.metrics.pbo), 3) if v else None,
+                        "rc_p": round(float(v.metrics.reality_p), 3) if v else None,
                         "survived": bool(v.survived) if v else False,
                         "failed_gates": [k for k, ok in v.gates.items() if not ok] if v else [],
                         "ic": ic["mean_ic"], "ic_ir": ic["ic_ir"], "hit_rate": ic["hit_rate"],
@@ -120,8 +125,12 @@ def main() -> None:
         "calendar_days": round(bars / 3, 1),
         "dispersion_vs_carry_correlation": round(corr, 3),
         "orthogonal": abs(corr) < 0.4,
-        "pbo": round(float(pbo.pbo), 3) if pbo else None,
-        "reality_check_p": round(float(rc.p_value), 3) if rc else None,
+        # campaign-level legacy PBO/RC kept as SEARCH-PROCEDURE diagnostics (gap #87); the gate
+        # values are per-sleeve now -- see results[*].pbo / results[*].rc_p.
+        "pbo": (round(float(campaign.legacy_pbo.pbo), 3)
+                if campaign is not None and campaign.legacy_pbo is not None else None),
+        "reality_check_p": (round(float(campaign.legacy_rc.p_value), 3)
+                            if campaign is not None and campaign.legacy_rc is not None else None),
         "results": results,
         "honesty": ("~90-day venue overlap = ~1 regime; PRELIMINARY. The point is BREADTH: a new "
                     "orthogonal data family. Forward validation still required before production."),

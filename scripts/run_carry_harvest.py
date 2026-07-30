@@ -18,7 +18,7 @@ from pathlib import Path
 import numpy as np
 
 from libs.autodiscovery.models import Family, Hypothesis
-from libs.autodiscovery.validation import campaign_pbo_rc, validate
+from libs.autodiscovery.validation import campaign_gate_stats, validate
 from libs.data.crypto_source import fetch_spot_klines
 from libs.data.instruments import AssetClass, InstrumentSpec, register_instrument
 from libs.data.lake import Layer, ParquetLake
@@ -90,17 +90,19 @@ def main() -> None:
     matrix = np.column_stack([r[-min_len:] for _, _, r in prepared])
     sharpes = np.array([sharpe_ratio(r) for _, _, r in prepared], dtype="float64")
     n_trials = len(prepared)
-    pbo, rc = campaign_pbo_rc(matrix)
+    # per-candidate gates (gap #87 flip, principal-ruled 2026-07-29); thresholds unchanged
+    campaign = campaign_gate_stats(matrix)
 
     survivors = 0
     gate_fail: dict[str, int] = {}
     rows = []
-    for (sym, sub, rets), spr in zip(prepared, sharpes, strict=True):
+    # enumerate order == column_stack order over `prepared`, so `col` is the matrix column.
+    for col, ((sym, sub, rets), spr) in enumerate(zip(prepared, sharpes, strict=True)):
         hyp = Hypothesis(family=Family.CARRY, subtype=f"funding_carry_{sub}", symbol=sym,
                          params={}, mechanism=MechanismType.RISK_PREMIUM,
                          edge_source="perp funding carry delta-neutral", failure_modes=_FAIL_MODES)
         v = validate(rets, hypothesis=hyp, n_trials=n_trials, sharpe_estimates=sharpes,
-                     returns_matrix=matrix, pbo=pbo, rc=rc)
+                     returns_matrix=matrix, campaign=campaign, column=col)
         survivors += int(v.survived)
         for g, ok in v.gates.items():
             if not ok:

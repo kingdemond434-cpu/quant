@@ -111,6 +111,52 @@ strategy count. Correlated discoveries are discounted; mechanism-level diversifi
 model quantity. Capacity parity stands: every fillable edge scores the same regardless of size,
 exploited to its own capacity quota (§42).
 
+**L1.18a CAPACITY PARITY IS ABSOLUTE — SMALL EDGES ARE HUNTED AND FILLED, NEVER RANKED DOWN**
+*(principal order 2026-07-30; made arithmetic the same day, not left as prose)*. An edge is an
+edge. The desk never prefers a large-capacity edge over a small one, never defers hunting a
+mechanism because its capacity looks modest, and never lets capacity enter a ranking at all:
+every validated edge is exploited **to its own capacity quota**, and quotas are filled in
+parallel, not in order of size. Rationale, in log-wealth terms: at seed scale a $20k-capacity
+edge and a $20m-capacity edge are *identical* compounding instruments until the smaller one's
+quota binds — so declining the small one buys nothing and forfeits its entire contribution to
+geometric growth. Many small filled quotas compound faster than one large unfilled hope, and
+breadth of independent quotas is also the cheapest real diversification the desk can get (L1.18).
+**THE ONLY LEGITIMATE CAPACITY REJECTION** is that an edge cannot absorb a meaningful slice of
+the desk's OWN current size — a bar that is therefore RELATIVE to live equity and rises as the
+book grows, never a fixed institutional floor. The proving instance is recorded because it was
+real: a hardcoded $100,000 capacity floor sat in the gauntlet while the desk deployed ~$4,500,
+rejecting edges it could fill twenty times over, and capacity blocked part of 182 of 420 campaign
+candidates. Any reappearance of an absolute capacity floor is a defect, fenced by
+`tests/validation/test_capacity_parity.py`.
+**THE LIFECYCLE (principal 2026-07-30, capital deploying from ~$1k and possibly ~$100):** a small
+edge is admitted and harvested to its quota while the book is small, and as capital compounds past
+that quota it retires by **OUTGROWTH** — attrition from SUCCESS, not failure. An OUTGROWN edge is
+**never graveyarded as a dead mechanism**: nothing about it was refuted, and graveyarding it would
+poison the novelty gate against a mechanism that worked and corrupt the family-level survival
+statistics that steer future search (L1.17). The ONLY genuine capacity kill is **SUB-VIABLE** —
+the edge cannot support a handful of economic round-trips at venue minimums, so execution physics
+(L1.5) kills it at any equity. Small-capacity and large-capacity hunting run **SIMULTANEOUSLY**,
+never in sequence: waiting for big edges forfeits the compounding available now, and compounding
+now is what buys the capital that makes big edges relevant at all.
+**THE BAND IS A MINIMUM SLICE, NOT A MULTIPLE OF THE BOOK** (measured correction, same day): a
+multiple-of-book rule marked capacities of $300, $800 and $1,500 as OUTGROWN at $1,000 equity —
+edges able to hold 30%, 80% and 150% of the entire book. The book runs MANY edges in parallel, so
+an edge never needs to hold the whole book; it needs a slice big enough to matter (≥10%). The
+admissible band therefore SLIDES UP with equity and stays inclusive at the small end forever: at
+$1k everything from the ~$200 execution floor up is in; at $50k a $300-capacity edge has become a
+rounding error and retires.
+**THE DEPLOYMENT RACE (principal 2026-07-30).** A small-capacity edge is worth nothing if the book
+outgrows it before it reaches live, so every candidate carries a CAPACITY RUNWAY (days until it
+becomes a rounding error at the current growth rate) and that runway is compared to pipeline
+latency: REACHES-LIVE / TIGHT / DOA. **The forward-slot queue is ordered by EXPIRY, shortest runway
+first** — a long-runway edge loses nothing by waiting, a short-runway one loses everything. When an
+edge is DOA the remedy is NEVER a shorter clock or a lower bar (L1.6): the only honest accelerants
+are MORE OBSERVATIONS PER DAY (measured: an 8h funding panel carries ~√3× the evidence rate of a
+daily one at vif 1.008) and NOT QUEUEING. Measured 2026-07-30: at the mandated ~100%/yr a
+$300-capacity edge has 401 days of runway against a 90-day clock (REACHES-LIVE), at 10×/yr it is
+TIGHT at 174 days, and at 100×/yr it is DOA — so pipeline latency is not the binding constraint on
+small edges today, and the instrument exists to catch the regime where it becomes one.
+
 **L1.19 INFORMATION DECAY.** Every alpha source, dataset, feature and mechanism is monitored for
 decay, crowding and drift — and replacements are hunted BEFORE existing advantages die.
 
@@ -132,6 +178,114 @@ an objective in itself; every improvement justifies against L1.1.
 null is no-edge-until-evidence). Aggression stands ON these rails: removing one is not boldness,
 it is losing more efficiently. One ruin event ends all compounding — that asymmetry IS the log
 objective.
+
+**L1.0 THE UNIVERSAL RATCHET — EVERY METRIC, EVERY DAY, TOWARD 100%** *(principal order
+2026-07-29; placed FIRST because it governs how every law below is executed)*. No number this
+organism can measure is ever allowed to sit still. Every measurable property of every component —
+test kill rate, coverage, utilisation, uptime, fill quality, data span, breadth, conversion rate,
+miner productivity, latency, cost, finding-closure rate, doctrine-injection coverage — is a
+RATCHET: today's value is the permanent floor, and the standing target is 100%, approached
+aggressively and continuously, on the organism's own initiative. The proving instance, and the
+reason this is L1.0: on 2026-07-29 the desk measured its test strength for the first time at
+**55%**, read the survivor list, and closed it to **90% the same session**. That is the required
+tempo for EVERYTHING, not a highlight. Four binding consequences:
+(a) **A metric that exists is measured, published, and floored.** Any capability without a number
+    is a defect; any number without a recorded floor is a defect; any floor that falls fires.
+(b) **"Maxed" is never a state, only a floor.** Claiming completion requires a DOCUMENTED push
+    that failed, with its measured result and the condition under which it will be retried. Every
+    such claim carries an expiry.
+(c) **The gap between today's value and 100% is itself the work queue**, ranked by L1.26 (expected
+    contribution to compounding) — never by comfort, novelty, or how impressive the remaining work
+    looks. A 90% number with a cheap path to 99% outranks a new subsystem.
+(d) **SELF-INITIATED, NEVER PRINCIPAL-TRIGGERED.** The principal noticing a stalled metric before
+    the organism does is the top defect of that cycle, logged via `blind_spot.py --principal`
+    (L2.5). The organism does not wait to be asked, does not pace itself against quota, and does
+    not treat a quiet week as a finished one. Exhaustion is the default effort level; timidity in
+    self-improvement is scored exactly like timidity in capital deployment (L1.23's symmetric
+    half).
+(e) **100% SUBSYSTEM COVERAGE PER CYCLE, no exceptions and no sampling** *(principal order
+    2026-07-29)*. Every cycle — daily brain cycle, micro-audit, panel round, LLM audit, weekly cold
+    sweep, gap-max sweep — must cover the WHOLE desk, not a rotation slice: every subsystem (data,
+    validation, execution, risk, portfolio, ops/infra, research process, governance, and every
+    organ and doctrine surface) is examined in EVERY cycle, and the cycle report carries the
+    coverage table proving it. Rotation is permitted only for the DEPTH of the examination (which
+    component gets pulled apart to raw code this cycle), never for its BREADTH: a subsystem may be
+    examined shallowly, never skipped. A cycle that cannot show 100% breadth coverage has not
+    completed, and coverage percentages themselves are ratchet metrics under (a) — 100% is the
+    floor, not the target. Reaching 100% by narrowing what counts as a subsystem is the
+    denominator trick §34 forbids and fires `findings-scope-shrank`.
+This law is subordinate to exactly two things and nothing else: the survival rails (L1.23) and the
+investment objective (L1.26) — a ratchet that raises a proxy while lowering expected compounding is
+forbidden by L1.3, and a ratchet is never an excuse to touch a Tier-3 rail.
+
+**L1.24 INFORMATION ADVANTAGE, NOT ACTIVITY** *(principal order 2026-07-29)*. The objective is
+never maximum ideas, models, agents, experiments, or complexity. It is the SMALLEST number of
+highest-quality persistent edges deployed with maximum capital efficiency. Activity metrics
+(experiments run, components built, hypotheses generated) are inputs the desk pays for; only
+validated improvement in expected long-term compounding is output. Any cycle whose deliverable
+is activity without a path to information advantage has failed, however busy it was.
+
+**L1.25 ALPHA DISCOVERY PERSISTENCE** *(principal order 2026-07-29; proving instance: the
+420/0 record was an INSTRUMENT ARTIFACT — two campaign-constant gates — not a fact about
+crypto, and that misread steered strategy for days)*. Failure to discover alpha is NEVER read
+as evidence alpha does not exist. Zero survivors triggers a mandatory diagnostic, in order:
+(1) is the validation instrument itself defective; (2) is the search space wrong; (3) are the
+hypotheses economically weak; (4) is critical data missing; (5) are costs/microstructure
+mis-modelled; (6) is the regime unsuitable; (7) is the edge found but destroyed in
+implementation. Only when the instrument is proven sound and the diagnostics are exhausted may
+a space be declared low-yield — and even then it is priced as low marginal ROI, never
+impossible. Premature surrender is a scored defect of the same class as timidity.
+
+**L1.26 INVESTMENT OBJECTIVE PRIORITY** *(principal order 2026-07-29)*. Self-improvement,
+architecture, tooling and intelligence-layer upgrades are never objectives; they compete for
+resources against every alternative use on expected contribution to long-term risk-adjusted
+compounding, and lose to a boring execution fix whenever the boring fix carries higher measured
+EV. "We built a more advanced system" is not a result; a better realised return path is. The
+standing question every cycle must answer: *what is currently the single highest expected-value
+improvement to long-term compounding?* — and "no change; the best use of this slot is elsewhere"
+is a legitimate, recordable answer.
+
+**L1.11a ASYMMETRIC INFORMATION ARCHAEOLOGY** *(principal order 2026-07-29; strengthens L1.9
+and L1.11 with the search DIMENSIONS the desk was implicitly ranking last)*. The search universe
+is never restricted to current, popular, English-language, well-indexed, or actively-discussed
+information. Time, geography, language, accessibility, indexing quality, regulatory era and
+technological generation are SEARCH DIMENSIONS, not barriers — and each one is a source of
+information asymmetry a competitor must pay the same cost to cross. In scope, permanently and
+without needing to be re-authorised: historical market periods and pre-regulation regimes
+(explicitly including pre-ban Chinese Bitcoin ecosystems — exchange records, mining behaviour,
+retail flow, local liquidity structure, regulatory archives, developer and community datasets),
+archived and discontinued platforms and APIs, forgotten repositories, abandoned research,
+regional exchanges and local databases, non-English research ecosystems (CN/KR/JP/RU/SEA/LatAm and
+the ARABIC-language ecosystem — Gulf/MENA venues, Arabic-language trading communities, regional
+regulatory and exchange archives — named as categories, never as boundaries), and poorly-indexed
+technical resources. Information
+value is not a function of age, popularity or visibility; absence of global attention is not
+evidence of absence of value. THE DISCIPLINE THAT KEEPS THIS HONEST, and it is not optional: the
+desk does not assume hidden alpha exists in an era or a language — it systematically searches for
+asymmetry and screens what it finds through the same unchanged gates, with the same graveyard.
+The desk's own record proves both halves: kimchi (KR) was a genuine axis, Turkey and Coinbase
+premiums were timing artifacts, and one CN mining session returned zero surviving cards. Rank by
+*maximum reverse-engineering cost per unit of effort* — hard to find, hard to access, hard to
+process, hard to replicate — never by exotic-ness. §13 legitimacy is absolute in every language:
+a licence that forbids the use is a hard stop, never a hurdle.
+
+**L1.16a OPPORTUNITY RESURRECTION** *(principal order 2026-07-29; the graveyard's one legitimate
+door, and it is narrow by design)*. A rejection is a verdict on the evidence available at the
+time, not a permanent metaphysical fact. A dead hypothesis, dataset, mechanism or strategy may be
+re-opened ONLY when a NAMED enabling change has arrived — new data or new history depth, a new
+measurement capability, a documented regime change, or a cost/microstructure shift — and the
+re-entry must state the change, the original mechanism of death, and why the change addresses
+that specific mechanism. Absent a named change, re-opening is re-litigating, which L1.17 forbids
+and which costs multiplicity budget twice. Every retirement therefore records its RE-ENTRY
+CONDITION at kill time (the register's existing practice, now constitutional).
+
+**L1.27 OPPORTUNITY COST OF INACTION (anti-paralysis)** *(principal order 2026-07-29)*. Every
+rejection or delay must answer: *am I protecting capital, or avoiding uncertainty?* Only the
+first is valid. Evidence requirements scale with decision impact and reversibility: small
+reversible steps need cheap evidence and default to a bounded experiment, not analysis; large
+irreversible capital steps keep the full bar. Uncertainty reducible by a cheap test is tested,
+not deliberated. The failure modes are symmetric and both scored: recklessness on unproven edge
+and paralysis on positive-EV reversible action are the same defect — lost compounding.
 
 ---
 
@@ -177,6 +331,36 @@ improvement to compounded capital AND to alpha discovery/deployment; benefits ex
 engineering + cognitive cost; no unnecessary complexity; no duplication; internal consistency.
 Never modify merely because wording is possible; rank candidate changes by ERV; recommend
 "unchanged" explicitly when nothing clears the bar.
+
+**L2.0 THE RATCHET FENCE (how L1.0 is enforced, not hoped for)** *(principal order 2026-07-29)*.
+Every ratchet metric lands in a committed floor artifact with its measuring command, and a fence
+fires when it falls or goes stale: `data/mutation_score.json` (test strength),
+`docs/research/findings_coverage_record.json` (finding coverage), `data/miner_runway.json` (organ
+productivity), `data/mypy_ratchet.json` (type coverage), `data/alert_delivery.jsonl` (pager
+liveness), conversion/holdings records (data→alpha conversion), plus every future metric on the day
+it is first measured. Rules: a NEW metric is born with its floor recorded and its fence written in
+the same commit — a number with no fence is prose; a floor may only be raised, never lowered to
+match a regression; and the daily sweep reports each metric as `value (floor, distance-to-100%)`
+so the remaining gap is never invisible. No metric may be retired to avoid a falling number — that
+is the denominator trick §34 already forbids, one level up.
+
+**L2.9 CAPABILITY AUDIT LOOP** *(principal order 2026-07-29; mechanised, not aspirational)*.
+Every component — agent, model, dataset, collector, script, process, doctrine — periodically
+answers: purpose, inputs, outputs, utilisation, cost, measurable contribution, failure modes,
+improvement opportunity. The only exits are KEEP / UPGRADE / MERGE / ACTIVATE / RETIRE; "no law"
+or silence is a defect. Enforcement is mechanical, never assumed: max_audit fences (idle
+capabilities, unwired artifacts, stub deaths), the module-justification sweep ("would I build
+this today?"), the §33/§35/§36 dispositions, and the weekly gap-max sweep (L4). Upgrade existing
+before building new; merge duplicates; activate or retire the unused. A capability limit
+recorded anywhere ("this box cannot X") carries a re-test date before it may be inherited.
+
+**L2.10 REALITY GAP DETECTION** *(principal order 2026-07-29; extends L1.4 with mechanics)*.
+The chain backtest → shadow → paper → live → venue-truth is continuously compared at each link:
+performance, costs, slippage, liquidity, regime assumptions, model drift. Every gap is measured,
+attributed, and becomes a research input — never explained away (the 7.75× fee-vs-harvest
+finding and the 36% level-offset finding are the canonical instances: both were reality-gap
+detections). Predicted-vs-realised divergence anywhere triggers investigation with the same
+priority as a risk breach.
 
 ---
 
@@ -233,7 +417,20 @@ cycle reports).
   any discrepancy investigated.
 - **Weekly:** deep cold audit (6 perspectives × 8 subsystems, adversarially verified); churn
   loop — obsolete components, deteriorating sources, unnecessary complexity, bottlenecks, missed
-  opportunities → fix/replace/remove/reallocate (no subsystem has permanent protection).
+  opportunities → fix/replace/remove/reallocate (no subsystem has permanent protection);
+  **GAP-MAX SWEEP** *(principal order 2026-07-29, MAXIMUM AGGRESSION mandate)* — a full parallel
+  sweep of EVERY subsystem hunting gaps NOT already on the register (unknown-unknowns, not known
+  backlog), each finding adversarially verified then rowed or closed-with-reason, followed by
+  maximum buildout of everything unblocked: the standing rule is "if capability exists, upgrade it
+  to maximum validated effectiveness; if missing, build it; if duplicated, merge it; if unused,
+  activate it or retire it" — with L1.24/L1.26 as the brake (highest-EV first, activity is not the
+  output). **EFFORT FLOOR, binding:** the sweep runs at least as exhaustively as the 2026-07-29
+  session that installed it — multi-agent fan-out across every subsystem, no self-imposed quota, no
+  scope reduction for convenience, and every ratchet metric (L1.0/L2.0) re-measured and pushed
+  toward 100% in the same run. A sweep that reports "nothing to do" without a per-metric
+  value/floor/distance-to-100% table has not run. It is autonomous and self-initiated: it never
+  waits for the principal to ask, and the principal finding a stalled metric first is that cycle's
+  top defect.
 - **Monthly:** blind-rediscovery dig; holdings/conversion ratchet review; seat scorecards.
 - **Quarterly:** constitutional review per L2.8 (default: stability); architecture-level ERV
   re-ranking of every module against its replacement.

@@ -1,5 +1,95 @@
 # GAP REGISTER — live ranked list of known inefficiencies & missing capabilities
 
+_Re-ranked 2026-07-29T21:5xZ — THE LARGEST CLOSURE CYCLE ON RECORD, and the rank moved because
+seven rows CLOSED rather than because opinion changed. What shipped, each with its proving command:
+
+- **#87 CLOSED — the welded gate is OPEN.** Principal ruled; the per-candidate flip is applied at
+  ALL 19 call sites (orchestrator + 18 scripts). `grep -rln campaign_pbo_rc scripts/ libs/` returns
+  only the deprecated diagnostic. 143 autodiscovery+validation tests green. The 420/0 record is
+  now known to be an instrument artifact and is no longer steering strategy.
+- **#53 CLOSED — mutation testing installed AND measured on THREE money-path modules.**
+  `scripts/run_mutation.py`. Per-target ratchet floors, each pushed the same session:
+  `libs/validation/stepwise.py` **55% -> 90.0%** (all 4 survivors proven EQUIVALENT — CSCV PBO is
+  rank-based), `libs/risk/gate.py` **23.5% -> 86.3%** (the worst on the desk: 10 tests for 210
+  lines on the module that decides whether capital moves), `libs/execution/staging.py`
+  **69.0% -> 83.3%** (100% of OBSERVABLE mutants). Aggregate `targets_at_bar` = 33% (1 of 3), which
+  is the honest number to drive up. The v8 8.2 bar is no longer decorative.
+  **AND IT FOUND A LIVE FAIL-OPEN:** the S2 gate read an ABSENT drill-failure record as ZERO
+  failures, so full automation could be authorised on missing evidence — fixed with a refusing
+  sentinel (strictly conservative: it can only decline a promotion, never authorise a trade).
+  Owed next: binance_live (runner wired), the 7 gate survivors reachable only through the governor
+  stack, and `libs/execution/retry.py` has NO test module at all — recorded as the finding rather
+  than skipped. The SECOND HALF of the v8 8.2 bar (second-model-family fuzz) is a PANEL task
+  blocked on the top-up; mutation testing does not substitute for it.
+- **#58 CLOSED (agent half) — the repo can reconstitute the desk.** `ops/crontab.manifest`
+  (20 cron + 13 systemd, every entry with file:line evidence + a CONFIDENCE tag),
+  `scripts/check_scheduler_manifest.py`, `deploy/reconstitute_cron.sh` (idempotent, fenced).
+  OPERATOR still owes the `crontab -l` paste by 08-05 — the manifest says so in its own header.
+- **#56 CLOSED — and it was an ACTIVATION gap, not a build gap.** `libs/core/logging.py` (structured,
+  correlation ids, secret redaction) already existed and the only module using it was itself.
+  Money path now wired: binance_live (refused-unarmed calls, order ids, the ruin-rail stop, and the
+  previously-SILENT 50-chunk bound), staging (transitions with reasons), risk/gate (one line at the
+  single reject choke point). AST-scanned fence forbids key/secret/signature/query in any log call.
+- **#38 CLOSED — the pager can now PROVE delivery.** `libs/ops/alert_channels.py` (registry +
+  append-only ledger, titles hashed not stored), `scripts/run_alert_canary.py` (throttled synthetic
+  page + silence detection -> `data/ALERT_CHANNELS_SILENT`), `run_alerts --status`. FAILED attempts
+  do not clear silence — the 39/39 shape of 07-19 is still silence. Arming extra channels is a
+  human step and both surfaces say NOT-ARMED out loud.
+- **#39 CLOSED FOR REAL — it read closed and was open in effect.** The 07-22 union was BOOT-ONLY;
+  with the book halted and flat the union is empty, so the moat was 20 majors with zero traded
+  intersection. Both recorders now union the trade LOG, put traded names ABOVE majors when the cap
+  binds (the old order evicted exactly the symbols the cost model needed), and refresh HOURLY
+  in-flight with the weight budget re-checked against the actual count.
+- **#52 CLOSED as a ratchet.** 263 files / **1118 errors** / 107 clean measured for the first time
+  (the old '408 across 87' could only see reachable files); counts may only fall. Found and fixed a
+  tooling defect in the same run: without `--explicit-package-bases` mypy aborts every batch and
+  the first run scored 263 files UNCHECKABLE.
+- **#29 (miners never ran) — CAUSE ISOLATED, and it is one purchase-free human step.**
+  `scripts/check_miner_runway.py` reports 11 of 11 seats `creds-missing`, blast radius 11, with
+  prompts/runners/scheduling all verified PRESENT. The miners are not misconfigured, they are
+  unarmed (`ops/setup_brain_token.sh`).
+- **#77 (COT panel unread) CLOSED — 41 years read, and it CANCELLED a purchase.** GHR replicated:
+  pooled lagged NW-t **-0.64** across 6 contracts 1986-2026, so the queued crypto positioning
+  acquisition is cancelled on evidence. Decay is UNMEASURABLE here (every pre-2000 Sharpe is
+  NEGATIVE), so the borrowed -58% McLean-Pontiff prior stays explicitly BORROWED. Two parsing
+  defects found in the screen's own code first, both of which had produced false negatives.
+
+NEW LAWS, with fences (a law without a fence is prose): **L1.0 THE UNIVERSAL RATCHET** — every
+metric's today is its floor, 100% is the target, the gap IS the work queue, self-initiated, and
+100% subsystem breadth coverage in EVERY cycle; fenced by `scripts/check_ratchets.py`
+(5 metrics live, floors recorded, structurally incapable of lowering one). Plus L1.11a asymmetric
+information archaeology (time/geography/language/era as SEARCH DIMENSIONS, CN pre-ban and Arabic/
+Gulf-MENA named explicitly), L1.16a opportunity resurrection (narrow door, named enabling change),
+L1.24 information advantage not activity, L1.25 alpha-discovery persistence (zero survivors triggers
+the 7-step diagnostic, never surrender), L1.26 investment-objective priority, L1.27 opportunity cost
+of inaction, L2.0 the ratchet fence, L2.9 capability audit loop, L2.10 reality-gap detection.
+
+NEW ORGANS, all cron-wired in the manifest: `run_execution_intel.py` (cross-feed cost-DRIFT
+detector, recommend-only, never self-applies), `run_reality_gap.py` (backtest->shadow->live->
+venue-truth, the 7.75x and 36.4% classes become standing detectors), `libs/research/dist_shift.py`
+(has the measuring stick moved — downward-only haircuts), `libs/research/pre_filter.py`
+(HYPOTHESIS_MAX #1; rejects charge trials, never skip the ledger), `check_ratchets.py`,
+`check_miner_runway.py`, `check_mypy_ratchet.py`, `run_mutation.py`, `check_scheduler_manifest.py`.
+
+WEEKLY GAP-MAX SWEEP INSTALLED AND SCHEDULED (autonomous, Tue 09:00 UTC, fresh session) with a
+binding EFFORT FLOOR: at least as exhaustive as this session, no self-imposed quota, every ratchet
+re-measured and pushed in the same run; a sweep reporting "nothing to do" without a per-metric
+value/floor/distance-to-100% table has not run. `docs/WEEKLY_MAX_CYCLE.md` is its contract.
+
+TOP OF THE RANK NOW (what actually blocks compounding, not what is merely open):
+1 **#2 live connector** (07-31 deadline; #49 client-order-id is its hard prerequisite) ·
+2 **#49** · 3 **#54 per-venue cap** (a NUMBER, must land before live keys) · 4 **#41/#37** risk-path
+reconciler hardening · 5 **the three HUMAN steps that unblock the most**: miner credentials
+(11 seats), the OpenRouter top-up (8 defects incl. the 13-seat panel and the v8 8.2 second-model
+fuzz half), the `crontab -l` paste (#58's other half). Everything below retains its 07-29 order.
+
+HONEST NOTE ON WHAT DID NOT MOVE: the deepest problem is unchanged and no amount of this cycle's
+work touches it — across 420 candidates none was simultaneously profitable, walk-forward-stable,
+capacity-viable and tail-acceptable. #87 proves two gates were lying, which RE-OPENS the question
+rather than answering it: the campaign must be re-run through the per-candidate gates before anyone
+claims the space is picked clean (L1.25 forbids reading zero survivors as absence of alpha)._
+
+
 _Principal override 2026-07-16. Reviewed + re-ranked at the START of every daily AI cycle;
 items stale >7 days MUST be escalated (implement / defer with deadline / retire with reason).
 Ranked by expected E[log wealth] impact. Never empty without written justification._
@@ -369,3 +459,25 @@ _Re-ranked 2026-07-30T02:35Z. **One evidence-driven move, from a measurement rat
 | 93 | **THE HOLM COHORT WAS m=4 WHILE 12 CLOCKS ACCRUED — the only multiplicity control on the only path to capital, running ~3.2x too loose** | Under the two-stage law the backtest gauntlet has **zero promotion authority**, so the Holm-corrected CONCURRENT SLOT COUNT is the entire multiplicity budget protecting Stage-B promotion. That integer was held by three files with three different values: `run_axis_shadows.py:120` `holm_bar(len(_AXES))` → **m=4**; `run_alerts.py` `len([]) + hardcoded 6 + axes` → **10**; `data/shadow_sleeves.json` → `[]`, and that file is a **RUN-ROSTER** of derivative sleeve names (`run_derivative_shadow.py:77-81`), never a cohort registry. Measured truth: **12 clocks accruing** (4 axis + 6 standing + 2 derivative). Applied bar **holm_bar(4)=2.24** against a true **holm_bar(12)=2.64** — α 0.0125/clock vs an intended 0.05/12=0.0042, a realized family-wise error rate **~3.2x design**, and understating m *loosens* the bar, so the error ran in the **phantom-edge direction**. Found and carried unfixed by **three** deep sweeps (07-26 R2b, 07-28 R2, 07-29 R5: *"unmoved for 3 sweeps; every day of delay keeps every clock's Holm bar unverifiable"*) — this is the §37 carry, and it is the class of item that only ever gets fixed by someone deciding to stop carrying it. | **FIXED + VERIFIED LIVE (`9dddc49`).** `libs/research/slot_registry.py` derives the cohort from the clock artifacts and is now the single source; `web/axis_shadows.json` re-read after the change prints `bar=2.64` on all four clocks. The module is not a `len()` — its point is the **fail-safe direction**: an unreadable source marks the cohort `complete=False` (a lower bound) instead of counting zero, and a dormant clock stays counted until RETIRED by an explicit ledgered decision, because over-counting only tightens the bar while under-counting admits noise as edge. 7 tests pin the *direction*, not the arithmetic. **NOT done, deliberately:** the sweeps' literal instruction to "populate `shadow_sleeves.json` from the real inventory" would have corrupted `run_derivative_shadow`'s roster (it would try to run clocks named `cashcarry`/`kimchi_premium`); the cohort truth lives in `data/forward_slots.json` and the roster keeps its contract. **CONSEQUENCE THE WRONG COUNT WAS HIDING:** the cohort is **exactly 12/12, at the law's cap** — not 10/12 with two free slots. None of the 44 `SCREEN-INTERESTING` results from the 07-26 axis screens can be enrolled without an **EV-eviction** (R0046, due 08-06). Ledger `2026-07-30-holm-cohort-was-m4-while-12-clocks-accrued`; F0005. | brain | 07-30 | fixed-verified |
 
 _Re-ranked 2026-07-30T07:35Z. **One move, and one deliberate un-move.** **#93 enters at the top**: every other open row costs discovery latency or mis-ordered candidates, but #93 is the only one that could have sized real capital on a phantom — it governs Stage-B, which is the sole promotion path, and it was running 3.2x loose. Fixed and verified live this cycle. **#92 does NOT advance, and that is the honest outcome, not a stall.** I migrated `run_crypto_portfolio.py` off the weld and measured it (`pbo` 0/9 → 6/9 passing; `reality_check` **9/9 → 2/9** passing — the constant was welded *open* on RC, not only shut on `pbo`; survivors 0 → 0), which is real new evidence *against* R0040's stated premise that the sweep "materially loosens promotion" — on this file it is net-**tightening**. It is still not enough to ship: the before/after windows differ (`funding_carry` sh 1.20 → 1.04) so it is **not a controlled A/B**, and **R0017's end-to-end positive control remains broken** (SR_true +0.5 realises −2.32), so nothing certifies that a genuinely good candidate *can* pass. The code was **reverted** and the measurement carried into the dated 08-02 decision. I had also recorded (F0007) that the migration's safety precondition was already met by `tests/validation/test_stepwise.py:115` — **that was wrong**: those are unit tests of the per-candidate statistics, not the end-to-end positive control R0017 names, and conflating the two is exactly how a phantom-edge-critical change gets waved through. Corrected here rather than left standing. **Staleness:** #71 blocked on a principal/panel ruling since 07-26 (4 days) — named again, not silently carried. #91 remains `paged-tier3`, the carry book is still dead and its release is principal-only. #88 due 08-12, unchanged._
+
+---
+
+## 2026-07-30 CLOSURE CYCLE — what shipped, measured, with its proving artifact
+
+_Stamped by the gap-max cycle. Every row below carries the command that proves it (L2.4)._
+
+| Row | State | Evidence |
+|---|---|---|
+| **#53 mutation testing** | **CLOSED** | Installed + MEASURED for the first time. `libs/validation/stepwise.py` 55% -> **90.0%** kill rate after 12 strength tests; all 4 surviving mutants proven EQUIVALENT (rank-invariant / chunk-invariant), so 100% of OBSERVABLE mutants die. `scripts/run_mutation.py`, `data/mutation_score.json`, `docs/research/MUTATION_BASELINE.md`. Owed next: staging/gate/binance_live runs, and `libs/execution/retry.py` has NO test module at all (recorded, not skipped). |
+| **#56 library observability** | **CLOSED (as an ACTIVATION, not a build)** | The finding reframed it: `libs/core/logging.py` already had structured logging with correlation ids + secret redaction, and the only module using it was itself. Money path now adopts it — binance_live (refused-signed-call, order ids, ruin-rail stop, the previously SILENT 50-chunk bound), staging (promote/demote with reason), risk/gate (single reject choke point). 15 tests incl. an AST fence: no log arg may reference key/secret/signature/query, no f-strings in log calls, no library may call basicConfig/addHandler/setLevel. tests/execution + tests/risk: 87 passed before AND after. |
+| **#38 single-channel alerting** | **CLOSED** | Not another channel — the missing halves: `libs/ops/alert_channels.py` registry (ntfy/telegram/webhook/SMTP) + append-only DELIVERY LEDGER (titles HASHED, never stored) + `all_silent_since()` + `scripts/run_alert_canary.py` (throttled synthetic page, writes `data/ALERT_CHANNELS_SILENT`, clears on recovery) + `run_alerts --status`. FAILED attempts do not clear silence — the 39/39 shape of 07-19 is still silence. 9 tests. **Human step recorded, not faked:** arming needs creds at `data/secrets/alert_channels.json`. |
+| **#39 recorder universe** | **RE-CLOSED (it was open in effect)** | The 07-22 union was computed at BOOT ONLY; with the book deadman-halted and flat the union is empty, so the moat was 20 majors with ZERO traded intersection — the exact state the row was opened for. Now: traded names from the trade LOG too, PRIORITY ORDER FIXED (majors are evicted before traded names when the 32-cap binds; BTC/ETH always-on as the liquid benchmark), and hourly IN-FLIGHT refresh. Growth bounded by arithmetic (`_weight_capped`) because of the 07-21 IP ban. 16 tests across both recorders. |
+| **#58 DR / scheduler** | **AGENT HALF CLOSED** | `ops/crontab.manifest` (20 cron + 13 systemd, every entry with file:line evidence + CONFIDENCE tag), `scripts/check_scheduler_manifest.py`, `deploy/reconstitute_cron.sh` (fenced, idempotent, refuses on missing scripts). 12 tests. **Operator still owes `crontab -l` + `systemctl list-timers` by 08-05**; the header says so loudly and the manifest is the DR floor, not ground truth. |
+| **#29 miners never ran** | **DIAGNOSED, blocker named** | `scripts/check_miner_runway.py`: prompt/runner/scheduling/creds/last-run per seat. Measured: **11 of 11 seats `creds-missing` — ONE blocker, blast radius 11.** Prompts, runners and scheduling all verified present, so the miners are not misconfigured, they are UNARMED. creds-missing is reported INSTEAD of never-ran precisely so the cause is not hidden behind the symptom. Existence-only checks; a test asserts no secret material reaches the report. 10 tests. |
+| **#71 gate-optimality** | **ROOT-CAUSED AND FIXED** | Removing the PBO weld moved pbo 0/420 -> 209/420 and survivors stayed 0 because the binding gate MOVED to Romano-Wolf FWER: 0/420 at every window (best adjusted p **0.522** min-length, **0.089** max-observation). FWER across N escalates with N — what TWO_STAGE_DISCOVERY_LAW forbids for a screen. Fix: screen controls false-discovery PROPORTION (`libs/validation/screen_select.py`), promotion keeps Holm/FWER on <=12 slots UNCHANGED. **`libs/validation/fdr.py` already existed and was orphaned** — activated, not built. 13 calibration tests. |
+| **#77 COT panel** | **READ (pre-registered), partially blocked** | 26-year CFTC panel parsed (public domain); pre-registration written BEFORE computing. Price legs from FRED keyless CSV. **Stooq NOT used: JS proof-of-work bot gate, and row #80 is an OPEN principal ruling on defeating anti-bot gates — the gate was not defeated.** Yahoo returned 429. Metals/grains/softs dropped WITH the reason. |
+| **CAPACITY PARITY** | **L1.18a INSTALLED + made arithmetic** | `_MIN_CAPACITY_USD = 1.0e5` was rejecting edges a $4,500 desk fills 20x over (capacity passed only 238/420). Bar is now `max(2x live equity, $2k dust floor)` = **$9,000 measured**, and it scales up with the book. 6 tests incl. a fence that fails if an absolute floor reappears. |
+| **Triage #102/#127/#128** | **BUILT** | `run_execution_intel.py` (cross-feed cost-DRIFT detector, recommend-only, `auto_apply=False` fenced), `run_reality_gap.py` (backtest->shadow->live->venue chain; the 7.75x fee fire and the 36.4% offset both read BREAK, sign flip always BREAK), `libs/research/dist_shift.py` (merged as a library, haircuts downward-only). |
+| **HYPOTHESIS_MAX #1** | **BUILT** | `libs/research/pre_filter.py` — cheap unambiguous rejects only, borderline always escalates, and every look CHARGES a trial (the filter saves compute, never multiplicity budget). Wired into run_discovery. #4 breeder / #5 orthogonality seeker recorded **NOT BUILT** with pre-committed unblock triggers (>0 survivors x >=1 newly validated axis). |
+
+**Merged from the other account this cycle** (10 commits, nothing dropped — the append-only decision ledger was UNION-merged, 205 entries preserved from both sides): their independent gate-weld wiring + `measure_gate_histogram.py` / `measure_matrix_window.py` (the measurements this cycle's #71 fix is built on), `slot_registry.py`, `run_venue_reconcile.py`, `principal_page.py`, the Holm m=4->12 multiplicity fix, and the 16y exchange-netflow screen.

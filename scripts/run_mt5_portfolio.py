@@ -20,7 +20,7 @@ import numpy as np
 import pandas as pd
 
 from libs.autodiscovery.models import Family, Hypothesis
-from libs.autodiscovery.validation import campaign_pbo_rc, validate
+from libs.autodiscovery.validation import campaign_gate_stats, validate
 from libs.data.cleaning import DEFAULT_CAPS, guard_close
 from libs.data.cot_source import COT_MAP, cot_zscore_daily
 from libs.data.instruments import AssetClass, InstrumentSpec, register_instrument
@@ -263,7 +263,7 @@ def _cluster_riskparity(df: pd.DataFrame) -> np.ndarray:
 
 
 def _validate(name: str, r: np.ndarray, matrix: np.ndarray, sharpes: np.ndarray,
-              fam: Family, pbo, rc) -> dict[str, object]:  # type: ignore[no-untyped-def]
+              fam: Family, campaign, column: int) -> dict[str, object]:  # type: ignore[no-untyped-def]
     active = r[r != 0.0]
     if len(active) < 250:
         return {"sleeve": name, "ann_sharpe": _ann(r), "gates": "n<250", "survived": False,
@@ -271,7 +271,8 @@ def _validate(name: str, r: np.ndarray, matrix: np.ndarray, sharpes: np.ndarray,
     v = validate(active, hypothesis=Hypothesis(
         family=fam, subtype=name, symbol="MT5_PORT", params={},
         mechanism=MechanismType.RISK_PREMIUM, edge_source=name, failure_modes=_FAIL),
-        n_trials=matrix.shape[1], sharpe_estimates=sharpes, returns_matrix=matrix, pbo=pbo, rc=rc)
+        n_trials=matrix.shape[1], sharpe_estimates=sharpes, returns_matrix=matrix,
+        campaign=campaign, column=column)
     return {"sleeve": name, "ann_sharpe": _ann(r), "survived": bool(v.survived),
             "gates": f"{sum(v.gates.values())}/{len(v.gates)}",
             "fails": [k for k, ok in v.gates.items() if not ok], "reason": v.rejection_reason}
@@ -295,9 +296,12 @@ def main() -> None:
     names = list(all_series)
     matrix = np.column_stack([all_series[k] for k in names])
     sharpes = np.array([sharpe_ratio(all_series[k][all_series[k] != 0.0]) for k in names])
-    pbo, rc = campaign_pbo_rc(matrix)
-    results = [_validate(k, all_series[k], matrix, sharpes, fam.get(k, Family.CROSS_ASSET), pbo, rc)
-               for k in names]
+    # per-candidate gates (gap #87 flip, principal-ruled 2026-07-29); thresholds unchanged
+    campaign = campaign_gate_stats(matrix)
+    # enumerate order == column_stack order over `names`, so `i` is each sleeve's matrix column
+    results = [_validate(k, all_series[k], matrix, sharpes, fam.get(k, Family.CROSS_ASSET),
+                         campaign, i)
+               for i, k in enumerate(names)]
 
     # correlation matrix (active days only) + incremental portfolio Sharpe (leave-one-out on max)
     corr = df.replace(0.0, np.nan).corr().round(2)

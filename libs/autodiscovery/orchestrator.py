@@ -176,10 +176,14 @@ class AutoDiscoveryLab:
         # multiplicity is paid in full. Thresholds are UNCHANGED (PBO <= 0.5, significance at 5%);
         # only the attribution changed. Calibration proof: tests/validation/test_stepwise.py
         # (all-null campaign must not manufacture survivors; a known winner must be reachable).
+        # Column mapping VERIFIED (both branches independently): matrix columns are
+        # column_stack'd from `prepared` in order, and the enumerate below walks that same
+        # list, so the loop index IS the candidate's column. Wired at all 19 legacy call
+        # sites in the 07-29 closure cycle, not just here.
         gates_once = campaign_gate_stats(matrix)
 
         counts = dict.fromkeys(CandidateStatus, 0)
-        for _col, (hyp, rets, stressed) in enumerate(prepared):
+        for col, (hyp, rets, stressed) in enumerate(prepared):
             _f = str(hyp.family)
             # The FIXED WALL is the family-scoped TRIAL COUNT. The sharpe array is only the
             # dispersion input for the DSR variance term: a family contributing a single
@@ -193,7 +197,7 @@ class AutoDiscoveryLab:
                 rets, hypothesis=hyp,
                 n_trials=_fam_trials.get(_f, n_trials),
                 sharpe_estimates=_sh,
-                returns_matrix=matrix, campaign=gates_once, column=_col,
+                returns_matrix=matrix, campaign=gates_once, column=col,
             )
             status = promote(rets, validation_survived=verdict.survived)
             reason = verdict.rejection_reason

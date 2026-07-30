@@ -51,6 +51,16 @@ _CORE = ("BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT",
 # budget (2026-07-21: an over-wide universe got this recorder IP-banned).
 _MAX_SYMBOLS = 32
 
+# RESIDUAL CLOSED 2026-07-29 -- TWIN OF scripts/run_recorder.py (same ~40 lines, deliberately
+# copied: the two recorders stay standalone processes by design, so this block is diffed against
+# its twin rather than shared). The 07-22 union was computed at BOOT only, and with the book
+# deadman-halted and flat the union is empty -- so the spot moat was 20 majors while every carry
+# has a SPOT leg on a small-cap. Traded names now come from the trade LOG as well as live
+# positions, they OUTRANK majors when the cap binds, and the set is recomputed hourly in-flight.
+_BENCH = ("BTCUSDT", "ETHUSDT")          # always-on liquid benchmark, never evicted
+_TRADED_LOOKBACK_D = 30.0
+_UNIVERSE_REFRESH_S = 3600.0
+
 
 def _book_symbols() -> tuple[str, ...]:
     try:
@@ -60,7 +70,41 @@ def _book_symbols() -> tuple[str, ...]:
         return ()
 
 
-_SYMBOLS = tuple(dict.fromkeys(_CORE + _book_symbols()))[:_MAX_SYMBOLS]
+def _recently_traded() -> tuple[str, ...]:
+    """Symbols traded within the lookback, newest first. Read defensively (schema has changed)."""
+    try:
+        raw = json.loads(Path("data/cashcarry_trades.json").read_text("utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return ()
+    rows = raw if isinstance(raw, list) else raw.get("trades") if isinstance(raw, dict) else None
+    if not isinstance(rows, list):
+        return ()
+    floor_ms = (time.time() - _TRADED_LOOKBACK_D * 86400.0) * 1000.0
+    out: list[str] = []
+    for r in reversed(rows):
+        if not isinstance(r, dict):
+            continue
+        sym = r.get("symbol") or r.get("sym")
+        if not isinstance(sym, str):
+            continue
+        ts = r.get("closed_ms") or r.get("ts_ms") or r.get("opened_ms")
+        if isinstance(ts, (int, float)) and float(ts) < floor_ms:
+            continue
+        if sym not in out:
+            out.append(sym)
+        if len(out) >= _MAX_SYMBOLS:
+            break
+    return tuple(out)
+
+
+def _universe() -> tuple[str, ...]:
+    """Benchmark + traded (held, then recently traded) + majors. Order IS the priority: when the
+    cap binds, majors are dropped and traded names survive."""
+    ordered = [*_BENCH, *_book_symbols(), *_recently_traded(), *_CORE]
+    return tuple(dict.fromkeys(ordered))[:_MAX_SYMBOLS]
+
+
+_SYMBOLS = _universe()
 _ROOT = Path("data/moat/spot")
 _HB = Path("data/recorder_spot_heartbeat")
 _DEPTH_EVERY_S = 5.0    # matches the futures recorder cadence (weight budget below)
@@ -138,17 +182,45 @@ def _valid_spot_symbols(wanted: tuple[str, ...]) -> tuple[str, ...]:
         return wanted
 
 
+def _weight_capped(symbols: tuple[str, ...]) -> tuple[str, ...]:
+    """Trim from the TAIL (lowest priority = majors) until the weight budget fits. A mid-flight
+    refresh that can GROW the set is the same hazard as the 2026-07-21 IP ban, so growth is
+    bounded by arithmetic, not by trust."""
+    cap = _WEIGHT_LIMIT_PER_MIN * _WEIGHT_TARGET_FRAC
+    out = list(symbols)
+    while out and _weight_per_min(len(out)) > cap:
+        out.pop()
+    return tuple(out)
+
+
 def main() -> None:
-    symbols = _valid_spot_symbols(_SYMBOLS)
+    symbols = _weight_capped(_valid_spot_symbols(_SYMBOLS))
     _assert_weight_budget(symbols)
     print(f"spot recorder v1 | {len(symbols)} symbols | depth@{_DEPTH_EVERY_S}s "
           f"trades@{_TRADES_EVERY_S}s -> {_ROOT}/")
     buf: dict[str, list[dict]] = {s: [] for s in symbols}
     last_trade_id: dict[str, int] = {}
     last_trades_poll = 0.0
+    last_universe_poll = time.time()
     disk_warned = False
     while True:
         t0 = time.time()
+        # UNIVERSE REFRESH (gap #39 residual, 2026-07-29): twin of run_recorder.py. New spot legs
+        # start recording within the hour; departing symbols flush first; the weight budget is
+        # re-checked against the ACTUAL count, and new names are re-validated as spot pairs.
+        if t0 - last_universe_poll >= _UNIVERSE_REFRESH_S:
+            last_universe_poll = t0
+            fresh = _weight_capped(_valid_spot_symbols(_universe()))
+            if set(fresh) != set(symbols):
+                for gone in [x for x in symbols if x not in fresh]:
+                    with contextlib.suppress(OSError):
+                        _flush(gone, buf.get(gone, []))
+                    buf.pop(gone, None)
+                for new_sym in [x for x in fresh if x not in symbols]:
+                    buf[new_sym] = []
+                print(f"spot recorder universe refresh: now {len(fresh)} syms, "
+                      f"{_weight_per_min(len(fresh)):.0f} weight/min")
+                symbols = fresh
         if not _disk_ok():
             if not disk_warned:
                 print("spot recorder: DISK >80% -- writing paused (heartbeat continues)")

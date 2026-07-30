@@ -20,7 +20,7 @@ import numpy as np
 import pandas as pd
 
 from libs.autodiscovery.models import Family, Hypothesis
-from libs.autodiscovery.validation import campaign_pbo_rc, validate
+from libs.autodiscovery.validation import campaign_gate_stats, validate
 from libs.data.crypto_source import list_liquid_perps
 from libs.data.instruments import AssetClass, InstrumentSpec, register_instrument
 from libs.data.lake import Layer, ParquetLake
@@ -122,14 +122,15 @@ def _cluster_rp(df: pd.DataFrame) -> np.ndarray:
 
 
 def _validate(name: str, r: np.ndarray, matrix: np.ndarray, sharpes: np.ndarray,
-              pbo, rc) -> dict[str, object]:  # type: ignore[no-untyped-def]
+              campaign, column: int) -> dict[str, object]:  # type: ignore[no-untyped-def]
     active = r[r != 0.0]
     if len(active) < 250:
         return {"sleeve": name, "ann_sharpe": _ann(r), "gates": "n<250", "survived": False}
     v = validate(active, hypothesis=Hypothesis(
         family=_FAMILY.get(name, Family.CARRY), subtype=name, symbol="CRYPTO", params={},
         mechanism=MechanismType.RISK_PREMIUM, edge_source=name, failure_modes=_FAIL),
-        n_trials=matrix.shape[1], sharpe_estimates=sharpes, returns_matrix=matrix, pbo=pbo, rc=rc)
+        n_trials=matrix.shape[1], sharpe_estimates=sharpes, returns_matrix=matrix,
+        campaign=campaign, column=column)
     return {"sleeve": name, "ann_sharpe": _ann(r), "survived": bool(v.survived),
             "gates": f"{sum(v.gates.values())}/{len(v.gates)}",
             "fails": [k for k, ok in v.gates.items() if not ok]}
@@ -168,8 +169,11 @@ def main() -> None:
     names = list(series)
     matrix = np.column_stack([series[k] for k in names])
     sharpes = np.array([sharpe_ratio(series[k][series[k] != 0.0]) for k in names])
-    pbo, rc = campaign_pbo_rc(matrix)
-    results = [_validate(k, series[k], matrix, sharpes, pbo, rc) for k in names]
+    # per-candidate gates (gap #87 flip, principal-ruled 2026-07-29); thresholds unchanged
+    campaign = campaign_gate_stats(matrix)
+    # enumerate order == column_stack order over `names`, so `i` is each sleeve's matrix column
+    results = [_validate(k, series[k], matrix, sharpes, campaign, i)
+               for i, k in enumerate(names)]
 
     corr = df.replace(0.0, np.nan).corr().round(2)
     port_sharpe, flat_sharpe, cov_sharpe = _ann(port), _ann(port_flat), _ann(port_cov)

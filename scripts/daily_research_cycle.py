@@ -78,6 +78,14 @@ _STEPS = [
     ("leakage_detector",    "scripts/leakage_detector.py", 60),  # self-validating leakage contract
     ("experiment_registry", "scripts/experiment_registry.py", 90),  # harvest experiments -> permanent objects
     ("desk_brief",          "scripts/research_exchange.py brief", 60),  # daily research board / external-LLM brief
+    # --- installed 2026-07-29 (closure cycle). Every one of these is an organ that would
+    # otherwise be built-but-idle, which L2.9 counts as a defect. Cheap, read-only, no risk path.
+    ("ratchets",            "scripts/check_ratchets.py --ratchet", 60),  # L1.0: every metric toward 100%, floors only rise
+    ("execution_intel",     "scripts/run_execution_intel.py", 60),  # cross-feed cost-DRIFT (recommend-only)
+    ("reality_gap",         "scripts/run_reality_gap.py", 60),  # L2.10: backtest->shadow->live->venue-truth
+    ("miner_runway",        "scripts/check_miner_runway.py --report-only", 60),  # why a seat never produced
+    ("scheduler_manifest",  "scripts/check_scheduler_manifest.py --report-only", 60),  # DR floor + live drift
+    ("mypy_ratchet",        "scripts/check_mypy_ratchet.py --report-only", 900),  # type backlog is a ceiling
     ("contributor_score",   "scripts/research_exchange.py score", 60),  # which intelligence source earns allocation
     ("claim_verifier",    "scripts/claim_verifier.py", 90),  # verify every published claim vs source
     ("claim_escalate",    "scripts/claim_escalate.py", 60),  # escalate false claims to pager + Gate-0
