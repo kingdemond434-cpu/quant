@@ -130,6 +130,17 @@ QUANT_ROOT=/home/quant/quant-platform
 # CONFIDENCE: committed-script (new this cycle)
 23 */2 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_reality_gap.py >> data/cro_ai_logs/reality_gap.log 2>&1
 
+# DATA ASSET REGISTRY + LABEL FACTORY (EXECUTION_QUEUE.md RANK 4 + RANK 6). Both also run inside
+# run_intelligence_cycle (every 6h) because the organs there navigate by the registry; these daily
+# slots exist so the artifacts are fresh even if a cycle is quota-killed, and because --deep is too
+# expensive for a 6-hourly tick. GAP_REGISTER #77 is what happens when the map is stale: row counts
+# were read as spans (17 days looked like 33,867) and the desk's best panel was missing entirely.
+# EVIDENCE: scripts/build_data_registry.py + libs/research/data_registry.py,
+#   scripts/build_labels.py + libs/research/label_factory.py (built 2026-07-30)
+# CONFIDENCE: committed-script (new this cycle -- cadence chosen here, not observed on the box)
+27 4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_data_registry.lock .venv/bin/python scripts/build_data_registry.py --deep >> data/cro_ai_logs/data_registry.log 2>&1
+52 4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_labels.lock .venv/bin/python scripts/build_labels.py >> data/cro_ai_logs/label_factory.log 2>&1
+
 # INBOUND DEPLOY ("merge is deploy", EXECUTION_QUEUE.md RANK 7). git_snapshot.py pushed
 # VPS -> GitHub and NOTHING came back, so merging to master deployed nothing and every change
 # needed a manual SSH -- and on 2026-07-26 that cost the desk 8h of an orphaned executor running
