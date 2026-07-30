@@ -501,6 +501,30 @@
    "commit": null,
    "due": "2026-08-04",
    "disposed": "2026-07-30T02:31:12.446640+00:00"
+  },
+  {
+   "id": "R0042",
+   "source": "cycle-2026-07-30-generation",
+   "summary": "ROW COUNT IS NOT HISTORY DEPTH, and the depth monitor cannot see the difference: data/defi_lending.jsonl holds 11,755 rows spanning only 2026-07-28 -> 07-30 (~2 days) -- it is a cross-sectional snapshot of thousands of DeFi pools sampled a few times, not a time series. Screening it as one would produce pure garbage from an axis that looks like the deepest on disk. max_audit's depth-parity check does not list defi_lending at all, so an ingested axis with a 2-day history is INVISIBLE to the depth monitor while shallow-but-real axes (kimchi 8d, cny 7d) are correctly flagged. FIX: measure depth as DISTINCT DAYS SPANNED, never line count, and enrol every ingested jsonl axis in the depth registry so none can hide.",
+   "roi_bps": null,
+   "raised": "2026-07-30T02:42:03.033543+00:00",
+   "status": "scheduled",
+   "reason": "Cheap, mechanical, and it silently corrupts any future screen that trusts line count as depth -- exactly the class that produces a confident phantom. Small enough to build inside the next cycle's sweep step.",
+   "commit": null,
+   "due": "2026-08-01",
+   "disposed": "2026-07-30T02:42:24.907522+00:00"
+  },
+  {
+   "id": "R0043",
+   "source": "cycle-2026-07-30-generation",
+   "summary": "PROMOTE the de-contamination (angle-20) gate from one check inside axis_screen to the desk's headline screen statistic, and report residual IC beside raw IC everywhere a screen verdict is surfaced. Evidence from this cycle: exchange netflow's best cell printed IC -0.0345 with the mechanism-CORRECT negative sign on a 16-year sample -- every human heuristic said edge -- and residual IC was +0.0124, a SIGN FLIP, meaning the content was same-period contamination rather than lead. Raw IC is the number that sells a phantom; residual IC is the number that kills it. This gate has now caught kimchi (~73% artifact), Turkey premium, hl_elite_directional_order_flow and exchange netflow -- four for four. Any screen report that shows raw IC without residual IC beside it is a phantom-edge vector.",
+   "roi_bps": null,
+   "raised": "2026-07-30T02:42:03.111791+00:00",
+   "status": "scheduled",
+   "reason": "Four-for-four hit rate on catching artifacts makes this the highest-value reporting change available, and it is presentation-only -- it loosens no gate and needs no positive control, so it does not queue behind R0017 like R0040/R0041 do.",
+   "commit": null,
+   "due": "2026-08-01",
+   "disposed": "2026-07-30T02:42:24.985131+00:00"
   }
  ]
 }
