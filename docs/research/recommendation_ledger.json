@@ -525,6 +525,42 @@
    "commit": null,
    "due": "2026-08-01",
    "disposed": "2026-07-30T02:42:24.985131+00:00"
+  },
+  {
+   "id": "R0044",
+   "source": "cycle",
+   "summary": "Migrate the remaining 18 welded pbo/rc validation paths to campaign_gate_stats + validate(campaign=,column=), EV order: run_discovery.py (only DEPLOYABLE tier, 3 sleeves at 8/9), run_xsec_funding_max.py (sh 0.96 sole failing gate reality_check), then the second tier. run_options_vrp_backtest.py LAST and by hand -- its validated series is a row-mean that is not any column of the matrix, so no column index exists.",
+   "roi_bps": 0.0,
+   "raised": "2026-07-30T07:25:55.512029+00:00",
+   "status": "scheduled",
+   "reason": "MEASURED THIS CYCLE, then REVERTED on governance. Migrated run_crypto_portfolio.py and ran it: pbo went 0/9 -> 6/9 passing (information restored) but reality_check went 9/9 -> 2/9 passing -- the campaign constant was welded OPEN on RC, not only shut on pbo. Survivors 0 -> 0. This is NEW EVIDENCE against R0040's stated premise that the sweep 'materially loosens promotion' -- on this file it is net-TIGHTENING. It is NOT sufficient to ship: (a) the before/after windows differ (funding_carry sh 1.20 -> 1.04), so it is not a controlled A/B and the deltas cannot be cleanly attributed; (b) R0017's end-to-end positive control is still broken, so nothing certifies that a genuinely good candidate CAN pass. Code reverted; measurement carried into the 08-02 decision rather than pre-empting it. Sequencing behind R0017 stands.",
+   "commit": null,
+   "due": "2026-08-02",
+   "disposed": "2026-07-30T07:28:47.830314+00:00"
+  },
+  {
+   "id": "R0045",
+   "source": "cycle",
+   "summary": "Reconcile the generation clock with the generation evidence: gen_done_* carries one bulk timestamp (07-22) while the real screen artifacts are 07-26. Have the screen writer stamp gen_done in the same function that writes reports/axis_screens/<axis>.json, so the clock cannot be set without the artifact.",
+   "roi_bps": 0.0,
+   "raised": "2026-07-30T07:25:55.584559+00:00",
+   "status": "rejected",
+   "reason": "REJECTED as written -- it would weaken the check it means to fix. Anchoring gen_done to the screen artifact (reports/axis_screens/<axis>.json) makes an axis that was SCREENED but produced no forward clock look satisfied, when the clock-saturation duty is about ACCRUAL, not screen execution. Verified this cycle: the 9 flagged axes WERE screened 2026-07-26 (175 trials across 15 artifacts, 0 survivors, 44 SCREEN-INTERESTING), so the defect is substantively TRUE -- they legitimately carry no accruing clock. The real disconnect is that gen_done_* means 'a screen ran' while the duty asks 'is a hypothesis accruing'; those are different questions and one flag cannot answer both. Superseded by R0046 (EV-eviction), which is the actual blocker: the cohort is full at 12/12, so no SCREEN-INTERESTING result could be enrolled even if promoted.",
+   "commit": null,
+   "due": null,
+   "disposed": "2026-07-30T07:29:19.957760+00:00"
+  },
+  {
+   "id": "R0046",
+   "source": "cycle",
+   "summary": "Forward cohort is EXACTLY 12/12 at the law's cap -- new clocks are not free. Before enrolling any of the 44 SCREEN-INTERESTING results from the 07-26 axis screens, build an EV-eviction rule (retire the weakest accruing clock on the record) or the cap silently blocks all future Stage-B enrolment.",
+   "roi_bps": 0.0,
+   "raised": "2026-07-30T07:25:55.648875+00:00",
+   "status": "scheduled",
+   "reason": "Depends on the cohort truth landing first (shipped this cycle, 9dddc49). Now that m is derived rather than asserted, the EV-eviction rule has a real denominator to work against. Dated after R0040/R0041 so a slot-admission change does not confound two in-flight statistics changes.",
+   "commit": null,
+   "due": "2026-08-06",
+   "disposed": "2026-07-30T07:28:47.912442+00:00"
   }
  ]
 }

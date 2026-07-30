@@ -2849,6 +2849,31 @@
    "opportunity_cost": "Displaced the 19-path adjacency sweep, which is the higher-raw-ROI item but is phantom-edge critical and needs a per-file column-order assertion; shipping it rushed risks cross-assigning verdicts, which is worse than the weld. Also displaced the matrix-window fix (5.9x power) for the same reason -- it is a promotion-LOOSENING stats change and earns its own careful build. Both are rowed and dated rather than silently carried.",
    "rails_touched": "NONE -- no ruin cap, kill switch, dead-man file, or validation THRESHOLD altered. PBO<=0.5 and alpha=0.05 are unchanged; only the ATTRIBUTION moved from batch to candidate.",
    "growth_audit_link": "reports/gate_histogram.json + reports/matrix_window_measurement.json"
+  },
+  {
+   "id": "2026-07-30-holm-cohort-was-m4-while-12-clocks-accrued",
+   "ts": "2026-07-30T07:35:00+00:00",
+   "decision": "Made the CONCURRENT FORWARD-SLOT COHORT a derived quantity (libs/research/slot_registry.py) instead of an integer three files each guessed differently. Under the two-stage law the backtest gauntlet has ZERO promotion authority, so the Holm-corrected concurrent slot count is the ONLY multiplicity control on the desk's only path from research to capital. It was counted as: run_axis_shadows.py:120 holm_bar(len(_AXES))=4; run_alerts.py len([])+hardcoded 6+axes=10; data/shadow_sleeves.json=[] (and that file is a RUN-ROSTER of derivative sleeve names read by run_derivative_shadow.py:77-81, never a cohort registry). MEASURED TRUTH: 12 clocks accruing (4 axis + 6 standing + 2 derivative). Applied bar holm_bar(4)=2.24 against a true holm_bar(12)=2.64 -- alpha 0.0125/clock vs an intended 0.05/12=0.0042, a realized family-wise error rate ~3.2x design, in the PHANTOM-EDGE direction. Verified live after the fix: web/axis_shadows.json now prints bar=2.64 on all four axis clocks. ALSO REVERTED THIS CYCLE, deliberately: a migration of run_crypto_portfolio.py off the welded campaign-constant pbo/rc gate. It was measured first (pbo 0/9 -> 6/9 passing, reality_check 9/9 -> 2/9 passing, survivors 0 -> 0), which is genuine new evidence that the sweep is net-TIGHTENING on that file rather than 'materially loosening' as R0040's premise states -- but the before/after windows differ (funding_carry sh 1.20 -> 1.04) so it is not a controlled A/B, and R0017's end-to-end positive control is still broken (SR_true +0.5 realises -2.32), so nothing certifies that a genuinely good candidate CAN pass. The register had already adjudicated this class as needing a ruling first; I brought a MISREAD, not evidence, so the settled decision stands and the measurement feeds the dated 08-02 call instead of pre-empting it.",
+   "expected_benefit": "Every Stage-B promotion decision for the rest of the desk's life is computed on the true cohort. Direct effect today: the four accruing axis clocks now face 2.64 instead of 2.64-vs-2.24 ambiguity, so an axis that clears is genuinely family-wise significant. Second-order: the cohort is revealed to be EXACTLY 12/12 at the law's cap -- the old arithmetic said 10/12, so new clocks looked free when enrolling one actually requires an EV-eviction.",
+   "cost": "One new 130-line stdlib module + 7 tests; two call sites rewired; ~1 cycle-hour.",
+   "confidence": 0.9,
+   "assumptions": [
+    "the 6 standing shadow-state files each represent a live clock (counted until RETIRED by an explicit ledgered decision, since over-counting only tightens)",
+    "web/axis_shadows.json verdict!=RETIRED is the right liveness test for axis clocks"
+   ],
+   "success_metric": "web/axis_shadows.json holm_bar tracks the derived cohort; run_alerts fires slot_budget_exceeded/clock_slots_idle off one derived number; no file recomputes m independently.",
+   "reversal_condition": "If the standing-clock enumeration is shown to over-count (e.g. data/shadow_state.json is a dead duplicate of crossasset), m falls and every bar loosens -- so any retirement must be an explicit ledgered decision with the artifact showing the clock stopped, never a silent drop. rollback checkpoint 20260730T070521_slot-cohort-truth.",
+   "neighbours_named": [
+    "scripts/run_axis_shadows.py (bar 2.24->2.64, verified live)",
+    "scripts/run_alerts.py (the PAGER -- slot_registry imported LOCALLY so a bad import degrades one alert and can never silence the principal's page)",
+    "scripts/run_derivative_shadow.py (roster contract deliberately UNTOUCHED: the sweeps' literal instruction to 'populate shadow_sleeves.json from the real inventory' would have made it try to run clocks named cashcarry/kimchi_premium)",
+    "data/forward_slots.json (new artifact carrying the cohort truth)",
+    "libs/autodiscovery/validation.py (NOT touched -- Stage-A screen gates are a separate stage from Stage-B forward multiplicity; see independence argument)"
+   ],
+   "independence_argument": "Two validation-adjacent changes were in play this cycle. They do not interact: slot_registry governs STAGE-B forward multiplicity (the Holm cohort across concurrent clocks), while the pbo/rc weld governs STAGE-A screen gates. The two-stage law makes these deliberately disjoint -- the screen has zero promotion authority and shares no state with the forward clocks. The point is moot regardless: the Stage-A change was reverted, so only one shipped.",
+   "opportunity_cost": "Displaced the 19-path pbo/rc sweep (R0040) and the axis-screen backlog. Correct order: the weld governs a SCREEN with zero promotion authority, so its worst case is mis-ordered candidates; the Holm cohort governs the only path to CAPITAL, so its worst case is a phantom edge sized with real money. Fix the one that can lose money.",
+   "rails_touched": "none -- this TIGHTENS a statistical bar (2.24 -> 2.64). No ruin cap, kill switch, or Tier-3 file touched.",
+   "growth_audit_link": "objective #2 (discovery rate): the cohort is full at 12/12, so Stage-B enrolment is now capacity-blocked, not idle -- R0046 carries the EV-eviction rule."
   }
  ]
 }
