@@ -103,6 +103,16 @@ QUANT_ROOT=/home/quant/quant-platform
 # CONFIDENCE: committed-script (new this cycle)
 13 7 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/build_enforcement_matrix.py >> data/cro_ai_logs/enforcement_matrix.log 2>&1
 
+# WIRING AGENT: built things get WIRED automatically (principal order 2026-07-30). Detection
+# alone reproduced the original failure one level up -- a dormancy report nobody actions is itself
+# a dormant capability. This ACTS: auto-wires only what it can PROVE is inert-by-construction
+# (runnable main(), no money-path import, no spend capability, no writes outside data/+web/), and
+# PROPOSES everything else with the reason it was withheld. Tier-3 and the executor are NEVER
+# touched, not even proposed. Idempotent: rewrites its own fenced block, never hand-written lines.
+# EVIDENCE: scripts/run_wiring_agent.py (built 2026-07-30); docs/CONSTITUTION.md L2.9
+# CONFIDENCE: committed-script (new this cycle)
+44 9 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_wiring_agent.py --apply >> data/cro_ai_logs/wiring_agent.log 2>&1
+
 # MINER RUNWAY DOCTOR: daily. Distinguishes never-ran / creds-missing / not-scheduled / stale
 # per seat and reports the CAUSE with its blast radius -- 6 of 7 frontier regions had ZERO runs
 # ever while max_audit's freshness check technically "monitored" them (a never-run duty is exempt
@@ -380,3 +390,47 @@ SYSTEMD unit="quant-cro.timer" on="*-*-* 08:01:00" exec="scripts/daily_research_
 #   ops/memory/crypto-desk-state.md:21
 # CONFIDENCE: documented-cadence
 SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
+
+# >>> WIRING AGENT (auto-wired, idempotent) >>>
+# Written by scripts/run_wiring_agent.py -- DO NOT hand-edit inside the fence; edits
+# are replaced on the next run. To take an entry over, move it OUTSIDE the fence and
+# retune it (the agent will then leave it alone because it is already scheduled).
+# Every entry here was proven: runnable main(), no money-path import, no spend
+# capability, no writes outside data/ + web/. CONFIDENCE: auto-wired.
+# scripts/compute_performance.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
+21 8 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/compute_performance.py >> data/cro_ai_logs/compute_performance.log 2>&1
+# scripts/hold_optimizer.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
+21 8 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/hold_optimizer.py >> data/cro_ai_logs/hold_optimizer.log 2>&1
+# scripts/certify_gauntlet.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
+21 8 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/certify_gauntlet.py >> data/cro_ai_logs/certify_gauntlet.log 2>&1
+# scripts/run_autodiscovery.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
+21 8 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_autodiscovery.py >> data/cro_ai_logs/run_autodiscovery.log 2>&1
+# scripts/research_alpha_optimizer.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
+21 8 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/research_alpha_optimizer.py >> data/cro_ai_logs/research_alpha_optimizer.log 2>&1
+# scripts/run_carry_crowding.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
+21 8 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_carry_crowding.py >> data/cro_ai_logs/run_carry_crowding.log 2>&1
+# scripts/carry_viability.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
+21 8 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/carry_viability.py >> data/cro_ai_logs/carry_viability.log 2>&1
+# scripts/stageb_capacity.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
+21 8 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/stageb_capacity.py >> data/cro_ai_logs/stageb_capacity.log 2>&1
+# scripts/flatten_cookie.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
+21 8 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/flatten_cookie.py >> data/cro_ai_logs/flatten_cookie.log 2>&1
+# scripts/graveyard_resurrect.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
+21 8 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/graveyard_resurrect.py >> data/cro_ai_logs/graveyard_resurrect.log 2>&1
+# scripts/run_research_tick.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
+21 8 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_research_tick.py >> data/cro_ai_logs/run_research_tick.log 2>&1
+# scripts/build_panel_rulings.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
+21 8 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/build_panel_rulings.py >> data/cro_ai_logs/build_panel_rulings.log 2>&1
+# scripts/ops_server.py -- runnable, no money path, no spend, local writes only -- 6-hourly (reads a network source; slower cadence bounds rate-limit exposure -- the 2026-07-21 IP ban came from over-frequent polling)
+37 */6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/ops_server.py >> data/cro_ai_logs/ops_server.log 2>&1
+# scripts/bundle_all.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
+21 8 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/bundle_all.py >> data/cro_ai_logs/bundle_all.log 2>&1
+# scripts/bundle_algo.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
+21 8 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/bundle_algo.py >> data/cro_ai_logs/bundle_algo.log 2>&1
+# scripts/smoke_orchestration.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
+21 8 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/smoke_orchestration.py >> data/cro_ai_logs/smoke_orchestration.log 2>&1
+# scripts/setup_testnet_keys.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
+21 8 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/setup_testnet_keys.py >> data/cro_ai_logs/setup_testnet_keys.log 2>&1
+# scripts/setup_ngrok.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
+21 8 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/setup_ngrok.py >> data/cro_ai_logs/setup_ngrok.log 2>&1
+# <<< WIRING AGENT <<<

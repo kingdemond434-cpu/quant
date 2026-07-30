@@ -21,6 +21,47 @@ elif [ -f "$_BRAIN_TOKENFILE" ]; then
     export CLAUDE_CODE_OAUTH_TOKEN
 fi
 
+# --- GLOBAL BRAIN MUTEX (2026-07-30) ---
+# ONE claude brain at a time, desk-wide. Every organ launcher calls this immediately after
+# sourcing this file and BEFORE brain_auth_check, so a deferred organ costs ZERO quota and
+# writes no log file (it looks like "not run yet", which is the truth, not like a death).
+#
+# WHY THIS DID NOT EXIST AND HAD TO. Mutual exclusion lived only in the CRON LINES, and each
+# organ carried its OWN lock path (/tmp/cro_ai.cron.lock, /tmp/deep_sweep.lock, ...). So
+# cro_ai could not overlap cro_ai -- but cro_ai could overlap deep_sweep, and NO lock covered
+# the other launch paths at all: organ_catchup's bare Popen, the systemd timers, a manual fire.
+# organ_catchup's own "field busy" guard is a check-then-act race: it samples the field, then
+# spawns, and anything launched in between is invisible to it.
+# MEASURED 2026-07-30: catchup re-fired deep_sweep at 17:00:03 (its log line) and the CRO brain
+# started at 17:00:20 -- two full --effort max brains on one working tree and one quota.
+# Observed damage, not theoretical: scripts/max_audit.py mutated underneath a read in progress,
+# and `git status` went from 4 dirty files to clean mid-cycle -- one agent committed a working
+# tree it did not author. That contention is also the quota-famine engine behind the 7
+# stub-deaths/48h and the 12 lost cycles: brains drain the shared pool in parallel, both die,
+# more organs fall owed, and catchup then fires more of them.
+#
+# flock on a HELD FD, never a lockfile-with-pid: the KERNEL drops it when the holder dies, so a
+# crashed / OOM-killed / quota-killed brain can never leave a stale lock that starves the desk.
+# Non-blocking -- losing the race is NORMAL, not a failure (exit 0, so systemd and cron do not
+# mark it failed and thrash). organ_catchup re-fires owed organs every 5 min, so the loser
+# simply resumes in the next free window.
+# FALSIFIER: if brain_mutex.log shows the daily CRO cycle repeatedly deferred behind long
+# digs (starvation rather than protection), this needs organ priority, not a plain mutex.
+brain_mutex() {
+    if [ "${BRAIN_DRY_RUN:-0}" = "1" ]; then return 0; fi   # CI shell-hygiene path: no real lock
+    local name="${1:-brain}"
+    # append-mode open: must NOT truncate, or we would erase the current holder's identity
+    exec 9>>"/tmp/quant_brain.lock" 2>/dev/null || return 0  # cannot lock -> never block the desk
+    if ! flock -n 9; then
+        mkdir -p /home/quant/quant-platform/data/cro_ai_logs 2>/dev/null || true
+        echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) $name DEFERRED -- brain mutex held by $(cat /tmp/quant_brain.owner 2>/dev/null || echo unknown)" \
+            >> /home/quant/quant-platform/data/cro_ai_logs/brain_mutex.log 2>/dev/null || true
+        exit 0
+    fi
+    echo "$name pid=$$ since=$(date -u +%Y-%m-%dT%H:%M:%SZ)" > /tmp/quant_brain.owner 2>/dev/null || true
+    return 0
+}
+
 # --- D3 self-healing (founders directive, principal 2026-07-19) ---
 _brain_page() {
     # page the principal via the desk pager topic (ntfy.sh); never fails the caller

@@ -5,6 +5,10 @@ set -uo pipefail
 cd /home/quant/quant-platform
 source ops/brain_env.sh
 REGION="${1:?region arg required (en|cn|ru|kr|jp|ar|br)}"
+# ONE brain desk-wide. Deferring is safe here BY DESIGN: run_frontier_rotation.sh only skips a
+# region that produced a real (>=1500b) log today, so a deferred region stays owed and the next
+# rotation invocation resumes it -- the mutex composes with the existing resume point.
+brain_mutex "frontier-${REGION}"
 mkdir -p data/cro_ai_logs
 LOG="data/cro_ai_logs/frontier_${REGION}_$(date -u +%Y%m%dT%H%M).log"
 # DUAL-POOL ROUTING (principal 2026-07-25): try the fable-5 METERED pool FIRST, then fall back

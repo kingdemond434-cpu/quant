@@ -2,6 +2,7 @@
 set -uo pipefail
 cd /home/quant/quant-platform
 source ops/brain_env.sh
+brain_mutex litminer   # ONE brain desk-wide; defers (exit 0) if another organ holds it
 brain_auth_check || exit 1
 # §33 MINED-TO-WIRED GATE: an organ producing faster than the desk converts is producing DEBT,
 # not value. The gate is RECOMPUTED here, never read from a flag -- `rm data/mining_suspended`

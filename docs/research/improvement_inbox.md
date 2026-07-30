@@ -1106,3 +1106,88 @@ monthly synthetic delivery test under a simulated routine-lane 429) and routine 
 fix R0036's prefix bug in the same pass. **ROI:** the ruin-rail page is currently mutable by organ
 chatter exactly on bad mornings — this closes a small-but-unbounded tail on every future incident.
 **Dependencies:** none. **Retirement:** never; alert channels decay silently (monthly drill is the control).
+
+## #80 — SURVIVAL RAIL IS OFF: ONE EQUITY READ DISARMS THE DEADMAN *AND* KILLS THE BOOK (SYNTHESIS 2026-07-30, P0-0)
+_Source: SYNTHESIS §0/§C; evidence: exec-growth F13/F6, re-verified by synthesis lead. Ledger R0053, R0054, R0057._
+
+**Exactly-what:** `account_summary()` (`libs/execution/binance_testnet.py:169`) reads `totalMarginBalance`,
+which is USDT-only because `multiAssetsMargin=False` — so $5,000 of USDC collateral is invisible to
+every rail. Two consequences, both measured: (1) `data/deadman_state.json` `high_water=209.43` is below
+`_MIN_HW=500.0`, and `run_deadman_switch.py:191` returns `False` **before any ruin comparison**, so
+`should_fire()` is False at $209, $100, $50 and $1.00 — the Tier-3 ruin rail has been off, with
+`systemctl` green, a 21s-old heartbeat, `journalctl` empty across `NRestarts=12`, and
+`web/venue_equity.json` publishing `fire_line: 136.13` that is computed in *display* code the rail never
+consults; (2) the same read is what fired the flatten (`dd_start -37.2%`), so option (A) on the principal
+page would re-baseline **$5,000 too low**.
+**Fix:** sum per-asset `marginBalance`; add an assertion firing when `high_water < _MIN_HW` while the book
+is live; add `_MIN_HW`/`freeze_exit_status`/`hurdle_rate.verdict`/`feeBurn` to a max_audit
+"every published verdict has a consumer" check. ~10 lines + ~40 for the class fix.
+**ROI:** restores ruin protection (currently ZERO) and dissolves the absorbing state in one change —
+verified counterfactual: counting USDC gives `eq=5209.43, dd_start=+62.80%, action=ok`.
+**Dependencies:** none. **Must precede** `_MIN_FUNDING` deletion and the A/B/C reply.
+**Retirement:** never — this is a survival rail. The general form survives the specific fix: a real book
+falling $5,000 → $499 disarms the rail identically.
+
+## #81 — THE AUDIT ORGAN GRADES ITSELF ON BYTES, AND IT DELETED TWO AUDITS THIS WEEK (P0-1) ◆compounding
+_Source: SYNTHESIS §0/§C; evidence: meta M1, confirmed by the synthesis lead's own invocation. Ledger R0055._
+
+**Exactly-what:** `scripts/run_deep_sweep.py:109` (`ok = report.exists() and report.stat().st_size >= 1200`)
+and the identical resume test at `:139` grade auditors on **bytes only** — never `returncode`, never the
+1800s timeout, never content. A doctrine-conforming skeleton is 1,500–1,900 b, so an auditor that obeys the
+COMPLETION CONTRACT, writes its skeleton and dies **passes its own success test and is skipped by every
+later resume window forever**. Fired twice on 07-30 (`alpha-discovery` 1,736 b; `validation-stats` 1,889 b,
+both pure `TBD`); the log recorded `8/8 produced`. Real reports run 60–123 KB — a **60× separation a
+1,200-byte threshold cannot see**. It then corrupts synthesis: both skeletons were passed to the synthesis
+lead as reports to read.
+**Fix:** `ok = returncode==0 AND exists AND size>=1200 AND sentinel==COMPLETE`; write the failure stub to
+`<report>.FAILED` instead of **overwriting the partial report** (the current code destroys the partial the
+completion contract exists to preserve); resume must re-run any non-`COMPLETE` file. **Do NOT raise the
+byte floor** — `:106` records that the old 2,500 b floor rewarded padding.
+**ROI:** recovers ~25% of audit capacity per sweep and stops placeholders entering the desk's only
+cross-subsystem integration step. **Dependencies:** none. **Retirement:** never.
+
+## #82 — WIRE FINDINGS TO THE LEDGER (P0-2) ◆◆compounding
+_Source: SYNTHESIS §B; evidence: meta M2 + research-engine R-16, independently. Ledger R0056._
+
+**Exactly-what:** across four sweeps (~600 KB of findings) exactly **one of eight dimensions** (data-moat,
+R0003–R0009) has ever produced a ledger row. Last week's synthesis wrote P0-1 "close the audit→action loop"
+and P0-3 "fix the sweep runner" to *this inbox*; neither was rowed, neither implemented, and P0-3's absence
+cost two audits this week. **The previous synthesis's fix for the broken transmission was lost to the broken
+transmission.** Fix: a post-sweep non-LLM parser extracts `## 4. WHAT WE TEST NEXT` → `recommendations.py add
+--source deep_sweep-<dimension>`, plus a max_audit check `sweep-findings-unrowed`. Keep auditors read-only.
+**ROI:** the highest multiplier on the board — expected realised value of a deep-sweep finding is currently
+**~1.9%** (15% implementation × 1/8 rowed), so this raises the value of every past *and* future audit at once.
+**Dependencies:** #81 (there must be a COMPLETE report to parse). **Pair with disposing the 27 DEFECT rows** —
+wiring a firehose to a clogged pipe makes the clog worse.
+**Retirement:** when auditors emit structured JSON findings and the row becomes a direct insert.
+
+## #83 — PERMANENT DATA DESTRUCTION: THE EXECUTION REALITY MODEL IS ACCRUING AT 0.8% (P1-3)
+_Source: SYNTHESIS §C; evidence: data-moat D5 + exec-growth F4. Ledger R0058._
+
+**Exactly-what:** L1.11 names "an Execution Reality Model from our own fills" as a moat component. TCA fields
+(`spot_mid`, `fut_mid`, `wait_s`, `*_slip_bps`) are present on **4 of 517** tape rows (0.77%); maker/taker mode
+on 17 (3.3%). The executor **already computes them** (`run_cashcarry_executor.py:982-998`, `wait_s` at `:1017`)
+— they are dropped before the tape. `libs/execution/tca.py` (87 lines, `PostTradeTCA`) has **zero functional
+consumers** because its inputs are 99.2% missing. The ROI ranker named this #1 in **six consecutive cycles**;
+its completion gate is `web/tca.json.exists()`.
+**Fix:** make `_tca()` output unconditional and additive on every open/close/topup path; then build
+`web/tca.json`. One-off: approximate the 26 lost days from `data/moat/bybit` mids, calibrated against the 4
+genuine records, **stated as approximation, never as measured fills**.
+**ROI:** this is the only item on the board where **waiting destroys an asset** — mid-price and wait-time at
+fill are unreconstructible after the fact, and 26 days × ~20 events/day are already permanently gone.
+**Dependencies:** a 20-min read of the three open paths to decide 3-line vs 30-line fix.
+**Retirement:** never; monitor as a coverage % with a floor.
+
+## #84 — REPLACE PRESENCE GATES WITH OUTCOME GATES (P1-4) ◆compounding
+_Source: SYNTHESIS §E2; evidence: data-moat D9 (32/32 gates), exec-growth F1/F14/F18, meta M1, infra I12/I17._
+
+**Exactly-what:** **all 32** completion gates in the ROI backlog are presence checks (26 `.exists()`, 6
+substring-in-source, 2 hardcoded `True`). This is the same shape four independent auditors found in four
+subsystems: the S0→S1 gate reads files **no organ has ever written** and its verdict goes to a key nothing
+reads; the hurdle test publishes an honest `FAILS` with **zero consumers**; the novelty gate has a better
+implementation sitting unused in-repo; the audit runner checks bytes. **Capability built, capability not
+wired, guard checks existence rather than function.**
+**Fix:** convert each gate to an outcome predicate as its item reaches the top of the ROI list (incremental,
+not a 32-gate big bang); add a repo-wide max_audit check that every published verdict/threshold has a consumer.
+**ROI:** this is the generator of the failure class — fixing instances individually leaves it intact.
+**Dependencies:** none. **Retirement:** none; each predicate must be satisfiable by a stated reachable state.

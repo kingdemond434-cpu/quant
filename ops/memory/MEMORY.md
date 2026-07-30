@@ -7,8 +7,18 @@ budget envelope $120/mo HARD (page-abort, never degrade -- data/panel_budget.jso
 objectives + FREE-FRONTIER + NO-CEILING axioms in principal_doctrine (every organ). Dead-man
 PATCHED (sustained-HW + legs grace, systemd-owned) -- reset = ALL THREE files. Executor runs
 patient-maker (240s opens) + BNB burn; carry harvest ~28%/yr gross vs fees was 66%/yr ->
-verify maker fill-rate weekly (integrity-watch duty). 4 forward clocks accruing (kimchi,
-onchain-throughput, stablecoin-supply, cny_premium m=4). Held-out OOS harness live
+verify maker fill-rate weekly (integrity-watch duty). FORWARD CLOCKS (re-derived 2026-07-30, the
+old "4 accruing (kimchi, onchain-throughput, stablecoin-supply, cny_premium m=4)" line was wrong
+on 2 of 4 names AND on m): **11 accruing, 1 idle, m=11** via libs/research/slot_registry.derive_slots()
+-- 3 axis (defi_utilisation, stablecoin_supply_momentum, cny_premium), 6 standing (cashcarry,
+crossasset, crypto_combined, trend_30d, trend_regime, legacy_shadow), 2 derivative builtins
+(ls_contrarian, oi_divergence). kimchi REFUTED 07-29/de-clocked 07-30; onchain-throughput RETIRED
+07-24. **data/shadow_sleeves.json == [] is CORRECT** -- it is a run-roster of EXTRA derivative
+sleeves, never the cohort registry (slot_registry.py:12 says so; TWO_STAGE_DISCOVERY_LAW.md:27
+still miscalls it the registry). data/forward_slots.json is a stale published snapshot, read by
+nothing. max_audit's clock-saturation reads a DIFFERENT source entirely (bronze dirs +
+cadence_state gen_done stamps), so "9/9 axes unsaturated" and the slot count never agree by
+construction -- do not reconcile them, they measure different things. Held-out OOS harness live
 (backfill_onchain_oos killed onchain reversal on 11y; OI/LS cross-sectional OOS chained on the
 139-symbol universe download -- check reports/reconstructed_oos/). Generation-ROI harness PROVED
 mass generation self-defeating -> new data axes only. Latest duties in the cycle contract:
