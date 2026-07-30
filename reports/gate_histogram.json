@@ -1,0 +1,47 @@
+{
+  "generated_utc": "2026-07-30T02:15:18Z",
+  "n_candidates": 420,
+  "matrix_shape": [
+    310,
+    420
+  ],
+  "obs_retained": 130200,
+  "obs_available": 759444,
+  "legacy": {
+    "pbo": 0.6158508158508158,
+    "pbo_gate_passes_all": false,
+    "rc_p": 0.422,
+    "rc_gate_passes_all": false
+  },
+  "per_candidate": {
+    "cscv_pbo_ok": 209,
+    "rw_rejected": 0,
+    "both": 0,
+    "min_adj_p": 0.522
+  },
+  "histogram_legacy": {
+    "pass_counts": {
+      "economic_mechanism": 420,
+      "fragility": 219,
+      "expected_value": 251,
+      "cpcv": 238,
+      "capacity": 238,
+      "walk_forward": 176
+    },
+    "survivors": [],
+    "sole_blocker": {}
+  },
+  "histogram_per_candidate": {
+    "pass_counts": {
+      "economic_mechanism": 420,
+      "fragility": 219,
+      "expected_value": 251,
+      "cpcv": 238,
+      "capacity": 238,
+      "walk_forward": 176,
+      "pbo": 209
+    },
+    "survivors": [],
+    "sole_blocker": {}
+  }
+}

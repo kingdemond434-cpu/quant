@@ -1,17 +1,17 @@
 # Desk digest (auto-generated daily -- do not hand-edit)
-_updated 2026-07-29T08:06Z · companion to [[institutional_knowledge]]_
+_updated 2026-07-30T02:05Z · companion to [[institutional_knowledge]]_
 
 ## Book
-- Molded net: **$-1814.64** | funding **$113.04** | run-rate APR 0.0% | day 27.11
-- Root cause: **infrastructure_bug** (act_autonomously) | tracking error $-1973.18
+- Molded net: **$-1830.14** | funding **$113.04** | run-rate APR 0.0% | day 27.87
+- Root cause: **unknown_novel** (pause_and_page) | tracking error $-1973.18
 
 ## Validation clocks
-- **carry (DEPLOYED)**: 33/90d | bt 4.16 fwd 11.98
-- **perp L/S**: 26/90d | bt 0.72 fwd 2.75
-- **trend**: 26/90d | bt 1.32 fwd -1.54
-- **trend regime-gated**: 21/90d | bt 1.31 fwd 0.0
-- **OI/LS data**: 31/40d
-- **stablecoin data**: 27/40d
+- **carry (DEPLOYED)**: 33/90d | bt 3.85 fwd 12.58
+- **perp L/S**: 27/90d | bt 0.62 fwd 1.66
+- **trend**: 27/90d | bt 1.26 fwd -6.29
+- **trend regime-gated**: 22/90d | bt 1.29 fwd 0.0
+- **OI/LS data**: 32/40d
+- **stablecoin data**: 28/40d
 
 ## Open decisions (ledger)
 - `2026-07-04-cashcarry-top10-4500` -- review 2026-08-04: funding/day rises ~50% without new drift losses by 2026-08-04
@@ -212,6 +212,7 @@ _updated 2026-07-29T08:06Z · companion to [[institutional_knowledge]]_
 - `2026-07-28-carry-churn-loop-root-cause-and-fix` -- review ?: 7d commission/funding ratio falls from 63.42x toward the 6.84x best-ever ratchet; CLOSE-FA
 - `2026-07-28-fee-blind-pnl-and-page-destruction` -- review ?: hold_buckets_net_of_fees present in web/trade_forensics.json each run; FEE INTENSITY fires
 - `2026-07-29-pbo-rc-are-campaign-constants-not-candidate-gates` -- review ?: PRE-REGISTERED, both directions required: (a) a 100%-null synthetic campaign must admit <=
+- `2026-07-29-carry-book-absorbing-state-and-rail-undercount` -- review ?: check_book_absorbing_state fires on the live state today (VERIFIED) and goes silent within
 
 ## Executive KPI snapshot
 - CRO: {"hypotheses_tested_lifetime": 20, "validated_survivors": 1, "survivor_note": "cash-carry (fwd 8/90); trend candidate gauntlet-passed (fwd 1/90); all else graveyarded", "survival_r
