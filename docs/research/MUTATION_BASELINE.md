@@ -87,8 +87,41 @@ which is the opposite of L1.0. Fixed: each target now carries its OWN floor
 `test_strength_targets_at_bar` (share of measured targets meeting 90% — currently **50%**, 1 of 2),
 which is a coverage number that rises as work lands.
 
+## Result — `libs/risk/gate.py` (the pre-trade gate) — the worst score on the desk
+
+| pass | killed | survived | kill rate | vs 90% bar |
+|---|---:|---:|---:|---|
+| before (10 existing tests) | 12 | 39 | **23.5%** | BELOW — worst measured |
+| after (+35 boundary/contract tests) | 44 | 7 | **86.3%** | below bar, +62.8pp |
+
+**10 tests for 210 lines on the module that decides whether capital moves at all.** They covered
+the happy path plus two rejections; every fail-closed branch, governor hand-off and cap arithmetic
+term was unpinned. Three invariants nothing had asserted, each a real property rather than coverage:
+
+- **Monotonicity in drawdown** — a deeper drawdown can never authorise MORE size than a shallower
+  one. That is the entire purpose of the ladder, and it was untested.
+- **The rejection contract** — no rejected decision may carry non-zero `sized_units`, non-zero
+  `global_scalar`, an approval id, or an empty reason list. Without it, a caller that reads
+  `sized_units` without checking `approved` trades on a refusal.
+- **Clamp direction** — confidence < 0 behaves like 0, confidence > 1 cannot inflate size, and
+  crisis / exhausted-heat / loaded-factor states may only reduce or reject, never increase.
+
+`gate.py` itself was **not edited** — register #52's warning applies to risk-path code, so these
+tests pin behaviour that already exists. The 7 remaining survivors sit in sizing-synthesis
+arithmetic reached only through the governor stack; closing them needs fixtures that drive specific
+scalar combinations, which is the honest next step rather than a claim of completion.
+
+## Board (each target carries its own ratchet floor)
+
+| target | kill rate | floor | at 90% bar |
+|---|---:|---:|---|
+| `libs/validation/stepwise.py` | 90.0% | 90.0% | **yes** |
+| `libs/risk/gate.py` | 86.3% | 86.3% | no |
+| `libs/execution/staging.py` | 83.3% | 83.3% | no |
+
+Aggregate `test_strength_targets_at_bar` = **33%** (1 of 3) — the honest number to drive up.
+
 ## Owed next (targets and their blockers, so nothing is silently dropped)
-- `libs/risk/gate.py` (tests/risk/test_gate.py) — same.
 - `libs/execution/binance_live.py` (tests/execution/test_binance_live.py) — same; this is the
   #2 connector file whose bar is the 07-31 gate.
 - `libs/execution/retry.py` — **has no dedicated test module at all.** That is the finding, not a
