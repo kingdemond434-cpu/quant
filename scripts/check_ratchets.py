@@ -186,6 +186,17 @@ def evaluate() -> dict[str, Any]:
             status = "STALE"
         elif value >= 0.999:
             status = "AT-100"
+        elif value <= 1e-9 and float(floor) <= 1e-9:
+            # FLATLINE, not OK -- the fence limitation the 2026-07-30 governance audit named.
+            # A floors-only ratchet asks one question ("did it fall?"), so a metric born at zero
+            # with a zero floor answers "no" forever and reads OK while measuring a capability
+            # that has NEVER ONCE worked (miner seats 0%, pager deliveries 0%). Zero is the one
+            # value where no-regression and no-function are indistinguishable, so it gets its own
+            # status: visible on every board, ranked by run_max_push, never dressed as health.
+            # Not a hard failure -- both known flatlines are blocked on principal-side steps
+            # (credentials, channel funding), and a daily red on a human-owed item teaches the
+            # desk to ignore red.
+            status = "FLATLINE"
         else:
             status = "OK"
         return {"metric": name, "artifact": artifact, "value": value,
