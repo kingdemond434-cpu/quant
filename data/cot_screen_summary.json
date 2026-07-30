@@ -1,0 +1,233 @@
+{
+  "measured": "2026-07-30T07:14:46.639722+00:00",
+  "preregistered": "docs/research/AXIS_PREREGISTRATIONS.md (COT POSITIONING PANEL, written before this ran)",
+  "stage": "A (SCREEN -- zero promotion authority)",
+  "assets_used": [
+    "crude_oil",
+    "eur_fx",
+    "gbp_fx",
+    "jpy_fx",
+    "sp500",
+    "ust_10y"
+  ],
+  "assets_dropped": [],
+  "price_source": "FRED keyless CSV (public domain); Stooq NOT used -- JS proof-of-work bot gate, and register #80 is an OPEN principal ruling on defeating anti-bot gates; Yahoo chart endpoint returned HTTP 429",
+  "trials_charged": 24,
+  "decay": {
+    "rows": [
+      {
+        "asset": "crude_oil",
+        "construction": "commercial",
+        "n_pre": 488,
+        "n_post": 1151,
+        "sharpe_pre": -0.37,
+        "sharpe_post": -0.068,
+        "decay": null
+      },
+      {
+        "asset": "crude_oil",
+        "construction": "noncommercial",
+        "n_pre": 488,
+        "n_post": 1151,
+        "sharpe_pre": -0.561,
+        "sharpe_post": -0.136,
+        "decay": null
+      },
+      {
+        "asset": "eur_fx",
+        "construction": "commercial",
+        "n_pre": 0,
+        "n_post": 1385,
+        "sharpe_pre": 0.0,
+        "sharpe_post": 0.204,
+        "decay": null
+      },
+      {
+        "asset": "eur_fx",
+        "construction": "noncommercial",
+        "n_pre": 0,
+        "n_post": 1385,
+        "sharpe_pre": 0.0,
+        "sharpe_post": 0.268,
+        "decay": null
+      },
+      {
+        "asset": "jpy_fx",
+        "construction": "commercial",
+        "n_pre": 489,
+        "n_post": 1385,
+        "sharpe_pre": -0.796,
+        "sharpe_post": 0.179,
+        "decay": null
+      },
+      {
+        "asset": "jpy_fx",
+        "construction": "noncommercial",
+        "n_pre": 489,
+        "n_post": 1385,
+        "sharpe_pre": -0.828,
+        "sharpe_post": 0.206,
+        "decay": null
+      },
+      {
+        "asset": "gbp_fx",
+        "construction": "commercial",
+        "n_pre": 369,
+        "n_post": 1152,
+        "sharpe_pre": -0.336,
+        "sharpe_post": 0.315,
+        "decay": null
+      },
+      {
+        "asset": "gbp_fx",
+        "construction": "noncommercial",
+        "n_pre": 369,
+        "n_post": 1152,
+        "sharpe_pre": -0.519,
+        "sharpe_post": 0.357,
+        "decay": null
+      },
+      {
+        "asset": "sp500",
+        "construction": "commercial",
+        "n_pre": 311,
+        "n_post": 1090,
+        "sharpe_pre": 0.0,
+        "sharpe_post": -0.341,
+        "decay": null
+      },
+      {
+        "asset": "sp500",
+        "construction": "noncommercial",
+        "n_pre": 311,
+        "n_post": 1090,
+        "sharpe_pre": 0.0,
+        "sharpe_post": 0.226,
+        "decay": null
+      },
+      {
+        "asset": "ust_10y",
+        "construction": "commercial",
+        "n_pre": 311,
+        "n_post": 1152,
+        "sharpe_pre": -0.78,
+        "sharpe_post": 0.024,
+        "decay": null
+      },
+      {
+        "asset": "ust_10y",
+        "construction": "noncommercial",
+        "n_pre": 311,
+        "n_post": 1152,
+        "sharpe_pre": -0.566,
+        "sharpe_post": 0.173,
+        "decay": null
+      }
+    ],
+    "median_measured_decay": null,
+    "borrowed_prior": 0.58,
+    "split": "2000-01-01"
+  },
+  "ghr": {
+    "rows": [
+      {
+        "asset": "crude_oil",
+        "construction": "commercial",
+        "t_contemporaneous": -0.22,
+        "t_lagged": -0.57,
+        "beta_lagged": -0.00062,
+        "n": 1639
+      },
+      {
+        "asset": "crude_oil",
+        "construction": "noncommercial",
+        "t_contemporaneous": 0.27,
+        "t_lagged": 0.63,
+        "beta_lagged": 0.00073,
+        "n": 1639
+      },
+      {
+        "asset": "eur_fx",
+        "construction": "commercial",
+        "t_contemporaneous": -2.2,
+        "t_lagged": -2.48,
+        "beta_lagged": -0.00048,
+        "n": 1385
+      },
+      {
+        "asset": "eur_fx",
+        "construction": "noncommercial",
+        "t_contemporaneous": 2.21,
+        "t_lagged": 2.81,
+        "beta_lagged": 0.00056,
+        "n": 1385
+      },
+      {
+        "asset": "jpy_fx",
+        "construction": "commercial",
+        "t_contemporaneous": 0.95,
+        "t_lagged": 0.24,
+        "beta_lagged": 5e-05,
+        "n": 1874
+      },
+      {
+        "asset": "jpy_fx",
+        "construction": "noncommercial",
+        "t_contemporaneous": -0.93,
+        "t_lagged": -0.31,
+        "beta_lagged": -7e-05,
+        "n": 1874
+      },
+      {
+        "asset": "gbp_fx",
+        "construction": "commercial",
+        "t_contemporaneous": 0.61,
+        "t_lagged": 0.83,
+        "beta_lagged": 0.00016,
+        "n": 1521
+      },
+      {
+        "asset": "gbp_fx",
+        "construction": "noncommercial",
+        "t_contemporaneous": -0.24,
+        "t_lagged": -1.15,
+        "beta_lagged": -0.00023,
+        "n": 1521
+      },
+      {
+        "asset": "sp500",
+        "construction": "commercial",
+        "t_contemporaneous": 0.65,
+        "t_lagged": 1.13,
+        "beta_lagged": 0.00025,
+        "n": 1401
+      },
+      {
+        "asset": "sp500",
+        "construction": "noncommercial",
+        "t_contemporaneous": 1.24,
+        "t_lagged": 0.89,
+        "beta_lagged": 0.00014,
+        "n": 1401
+      },
+      {
+        "asset": "ust_10y",
+        "construction": "commercial",
+        "t_contemporaneous": 0.61,
+        "t_lagged": -0.2,
+        "beta_lagged": -0.00013,
+        "n": 1463
+      },
+      {
+        "asset": "ust_10y",
+        "construction": "noncommercial",
+        "t_contemporaneous": 0.46,
+        "t_lagged": 0.94,
+        "beta_lagged": 0.00064,
+        "n": 1463
+      }
+    ],
+    "pooled_lagged_t": -0.64,
+    "verdict": "REJECT-POSITIONING-CLASS (pooled lagged predictability indistinguishable from zero -- cancels the queued crypto positioning acquisition)"
+  }
+}
