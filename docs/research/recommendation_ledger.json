@@ -739,6 +739,78 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0061",
+   "source": "cycle",
+   "summary": "GLOBAL BRAIN MUTEX: brain_mutex() in ops/brain_env.sh, called by all 7 claude organs before brain_auth_check. flock on a held FD so the kernel releases on holder death. Stops concurrent brains sharing one tree and one quota.",
+   "roi_bps": null,
+   "raised": "2026-07-30T17:32:55.909192+00:00",
+   "status": "implemented",
+   "reason": null,
+   "commit": "fc7302d",
+   "due": null,
+   "disposed": "2026-07-30T17:33:17.671287+00:00"
+  },
+  {
+   "id": "R0062",
+   "source": "cycle",
+   "summary": "CARRY PnL ATTRIBUTION: run_cashcarry_executor.py:1117 computes the futures leg as a wallet delta (fut_eq - start_eq), so any non-trade wallet credit is booked as profit. Derive the futures leg from the /fapi/v1/income ledger (REALIZED_PNL + FUNDING_FEE + COMMISSION) like libs/execution/binance_testnet.py:222-239 already does, and make leak_attribution.residual an assertion that trips when it is non-zero rather than a number nobody reads.",
+   "roi_bps": null,
+   "raised": "2026-07-30T17:32:55.982059+00:00",
+   "status": "scheduled",
+   "reason": "Money-path correctness: the dashboard publishes fictitious profit. Not patched this cycle because it edits the live executor's PnL path while the quant-cashcarry daemon is running and a sibling brain session holds the same tree -- exactly the concurrent-write hazard this cycle just fixed. Book is flat (0 carries), so no new contaminated rows accrue meanwhile.",
+   "commit": null,
+   "due": "2026-08-01",
+   "disposed": "2026-07-30T17:33:17.734455+00:00"
+  },
+  {
+   "id": "R0063",
+   "source": "cycle",
+   "summary": "FIRE certify_gauntlet.py and commit its artifact: force-track reports/gauntlet_certification.json (reports/ is gitignored), checkpoint rows incrementally instead of writing only after all rows complete (R0052 named this exact risk), and REOPEN R0017 which was disposed IMPLEMENTED on a run that wrote 0 bytes.",
+   "roi_bps": null,
+   "raised": "2026-07-30T17:32:56.049950+00:00",
+   "status": "scheduled",
+   "reason": "Carry-over item gate-optimality-zero-survivors, 5d old. The measurement it would produce was partly taken this cycle by direct probe (a Sharpe-10 control clears dsr/cscv/Romano-Wolf on the per-candidate path, and was the only 1 of 421 admitted), so the funnel is NOT welded shut -- but the seed sweep, null false-pass rate and end-to-end validate() verdict remain untaken.",
+   "commit": null,
+   "due": "2026-08-01",
+   "disposed": "2026-07-30T17:33:17.814373+00:00"
+  },
+  {
+   "id": "R0064",
+   "source": "cycle",
+   "summary": "MAKER FILL-RATE FALSE FLAG: run_trade_forensics.py:245 counts 'already-flat' no-ops (no order placed) as non-maker legs, reporting maker_share 0.462 against a 0.60 target. On legs that actually executed it is 12/18 = 0.667, ABOVE target. Exclude already-flat from the denominator; the integrity-watch duty is currently chasing a defect that does not exist.",
+   "roi_bps": null,
+   "raised": "2026-07-30T17:32:56.119657+00:00",
+   "status": "scheduled",
+   "reason": "Cheap denominator fix, but it touches the integrity-watch instrument itself; batching it with R0062 so the forensics writer is edited once, not twice.",
+   "commit": null,
+   "due": "2026-08-02",
+   "disposed": "2026-07-30T17:33:17.878976+00:00"
+  },
+  {
+   "id": "R0065",
+   "source": "cycle",
+   "summary": "REALITY GAP (L2.10) before the day-40 carry promotion: the shadow assumes cost=8e-4 per unit turnover (libs/research/cashcarry.py:15) and reports forward Sharpe 12.56, while the live-paper twin paid commission 1750.65 against funding 113.04 over the same window. Reconcile modelled vs realised cost per unit turnover BEFORE fast-track fires at day 40 (now day 34, NW-t 2.07 vs 1.65 bar).",
+   "roi_bps": null,
+   "raised": "2026-07-30T17:32:56.191159+00:00",
+   "status": "scheduled",
+   "reason": "HARD DEADLINE: fast-track fires at forward day 40 and the sleeve is at day 34 with NW-t 2.07 already above the 1.65 bar. The reconciliation must land BEFORE the promotion, not after.",
+   "commit": null,
+   "due": "2026-08-04",
+   "disposed": "2026-07-30T17:33:17.948571+00:00"
+  },
+  {
+   "id": "R0066",
+   "source": "cycle",
+   "summary": "CARRY ENTRY FLOOR is an absolute funding level, not an EV test: _MIN_FUNDING=0.00015 (run_cashcarry_executor.py:315) refuses BTCUSDT at funding 0.000064 even though its measured net_bps is +1.90 (positive EV after costs). Book has been flat 2 days with 214 positive-funding candidates available. Growth audit scores capital_util GAP justified_by NONE. Replace the absolute floor with a net-of-cost EV threshold.",
+   "roi_bps": null,
+   "raised": "2026-07-30T17:32:56.263657+00:00",
+   "status": "scheduled",
+   "reason": "Genuine conservatism defect (growth_audit capital_util GAP, justified_by NONE) but the fix is a money-path sizing/entry change and the 07-27/28 churn loop that burned 1459.68 in fees is the standing warning against loosening entry without a net-of-cost test. Needs the EV threshold derived from measured round-trip cost, not a floor swap.",
+   "commit": null,
+   "due": "2026-08-05",
+   "disposed": "2026-07-30T17:33:18.023508+00:00"
   }
  ]
 }
