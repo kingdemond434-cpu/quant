@@ -141,6 +141,13 @@ QUANT_ROOT=/home/quant/quant-platform
 27 4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_data_registry.lock .venv/bin/python scripts/build_data_registry.py --deep >> data/cro_ai_logs/data_registry.log 2>&1
 52 4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_labels.lock .venv/bin/python scripts/build_labels.py >> data/cro_ai_logs/label_factory.log 2>&1
 
+# FUSION SEARCH (RANK 5): combinatorial dataset search, GATED so it cannot mine noise. Cheap by
+# design -- it plans, and today it correctly REFUSES because no axis has earned breadth. Daily is
+# ample: the eligible set only changes when a single-axis screen returns SCREEN-INTERESTING.
+# EVIDENCE: scripts/run_fusion_search.py + libs/research/fusion_search.py (built 2026-07-30)
+# CONFIDENCE: committed-script (new this cycle)
+8 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_fusion_search.lock .venv/bin/python scripts/run_fusion_search.py >> data/cro_ai_logs/fusion_search.log 2>&1
+
 # INBOUND DEPLOY ("merge is deploy", EXECUTION_QUEUE.md RANK 7). git_snapshot.py pushed
 # VPS -> GitHub and NOTHING came back, so merging to master deployed nothing and every change
 # needed a manual SSH -- and on 2026-07-26 that cost the desk 8h of an orphaned executor running

@@ -232,6 +232,7 @@ def main() -> int:
         _health_monitor(),
         # Standalone organs that had ZERO callers and were never scheduled.
         _subprocess_cap("label_factory", "scripts/build_labels.py"),
+        _subprocess_cap("fusion_search", "scripts/run_fusion_search.py"),
         _subprocess_cap("moat_audit", "scripts/moat_audit.py"),
         _subprocess_cap("revalidate_clocks", "scripts/revalidate_clocks.py"),
         _subprocess_cap("fusion_engine", "scripts/fusion_engine.py"),
