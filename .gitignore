@@ -16,6 +16,10 @@ data/*
 # fresh clone has nothing to compare the constitution against and the fence degrades to a no-op.
 # Its diff is also the audit trail -- a changed hash in a commit names exactly which law moved.
 !data/constitution_core.lock
+# The Gate 0 sign-off is EVIDENCE of a principal decision, not state: the live
+# guard on the VPS reads it, so it must travel with the repo or the gate never
+# sees it. Revocation = delete the file and commit that too.
+!data/gate0_signoff.json
 web/*
 !web/index.html
 reports/

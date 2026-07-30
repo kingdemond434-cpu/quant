@@ -1,0 +1,8 @@
+{
+  "signed": "2026-07-30T22:28:24+00:00",
+  "by": "principal (Zaid)",
+  "statement": "I agree to sign off",
+  "context": "Given in writing in the Claude session, in direct response to the Gate 0 readiness board (data/gate0_readiness.json) after the F1 freeze-exit rewrite, the F3 capital-event re-entry path, and the first-ever safety drills (3/3, critical_drill_failures=0) were reported. Session: https://claude.ai/code/session_01LTSs9TNkCzbPMzW66na253",
+  "what_this_does": "Satisfies the principal_signoff criterion of libs/execution/staging.py:s1_entry_met and nothing else. Capital still cannot move: keys_present, connector_verified, capital_fraction_le_010 (capital <= $1,315 at the measured $13,155 book), symbol_count_4_5 (top=4-5), and the ruin-rail deposit remain unmet, and every one of them is checked mechanically by scripts/check_gate0_ready.py.",
+  "revocation": "Delete this file. The gate re-reads it every evaluation; there is no cached state."
+}
