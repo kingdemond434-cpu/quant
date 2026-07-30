@@ -95,6 +95,14 @@ QUANT_ROOT=/home/quant/quant-platform
 # CONFIDENCE: committed-script (new this cycle)
 50 */6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_intelligence_cycle.py >> data/cro_ai_logs/intelligence_cycle.log 2>&1
 
+# ENFORCEMENT MATRIX: maps all 42 constitutional principles to the 57 mechanical fences and FAILS
+# on an unenforced principle or a mapping to a missing artifact. Every defect found 2026-07-30 was
+# an unenforced-principle defect (capacity parity written in L1.18 while a $100k floor ran in the
+# gauntlet; L2.9 activate-the-unused written while 171 capabilities sat dormant).
+# EVIDENCE: scripts/build_enforcement_matrix.py (built 2026-07-30); docs/CONSTITUTION.md L2.0/L2.2
+# CONFIDENCE: committed-script (new this cycle)
+13 7 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/build_enforcement_matrix.py >> data/cro_ai_logs/enforcement_matrix.log 2>&1
+
 # MINER RUNWAY DOCTOR: daily. Distinguishes never-ran / creds-missing / not-scheduled / stale
 # per seat and reports the CAUSE with its blast radius -- 6 of 7 frontier regions had ZERO runs
 # ever while max_audit's freshness check technically "monitored" them (a never-run duty is exempt
