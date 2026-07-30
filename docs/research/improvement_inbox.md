@@ -1021,3 +1021,88 @@ objections for signal sources are precision, staleness, construction cleanliness
 (single-point-of-failure mirrors), each checkable by correlation-vs-ground-truth with alignment
 declared. **STATUS: inbox item — a review-checklist rule candidate, not adopted until an owner
 wires it into the source-grading checklist.**
+
+## #72 — CLOSE THE AUDIT→ACTION LOOP (SYNTHESIS 2026-07-29, portfolio P0-1) ◆compounding
+_Source: 20260729_SYNTHESIS.md §C; evidence: data-intelligence #1, validation-stats F10, meta M2._
+
+**Exactly-what:** (a) auto-row every sweep/audit report's ranked items into the §41 ledger at write
+time (`recommendations.py add --source deep_sweep`); (b) first slot of every daily cycle disposes
+≥5 rows or logs the measured reason (meta T4); (c) a consumer for the report command's DEFECT lines
+(nightly page on undisposed>24h). **Evidence:** the 07-28 sweep (8 subsystems) produced ZERO ledger
+rows and zero actions; 39 rows / 31 open past grace; raises ~8/day, dispositions ~0/day. **ROI:**
+re-arms two sweep-days of paid findings + every future audit; the top compounding item on the board.
+**Dependencies:** none. **Retirement:** never (it IS §41). Success metric: open-past-grace ≤5 in 7d.
+
+## #73 — FREE THE KIMCHI HOLM SLOT + DOCTRINE RETRACTION MARKER (P0-2)
+_Source: SYNTHESIS §C; evidence: meta M3/M4; rm-20260729T111104; commit 02f2917._
+
+**Exactly-what:** retire the retracted kimchi axis's Stage-B clock (verified still ACCRUING 7/40,
+m_concurrent=4 at 08:46Z); annotate `ops/principal_doctrine.txt` ~line 89 (IC +0.148 claim) with
+RETRACTED + pointer; seed `docs/DOCTRINE_CLAIMS.json` with kimchi + the §33 ratchet-path drift as
+rows 1–2, max_audit gains doctrine-claim-stale (meta T3). **ROI:** stops a falsified claim steering
+every organ (6 days running); honest Holm m for the 3 live clocks. **Dependencies:** none — the
+retraction evidence is on disk. **Retirement:** manifest never retires; slot action is one-shot.
+A de-artifacted kimchi reconstruction may re-enter ONLY as a new pre-registration.
+
+## #74 — SWEEP-RUNNER: ROTATE SEATS + SYNTHESIS-FIRST + FAILURE-STREAK ALARM (P0-3) ◆compounding
+_Source: SYNTHESIS §C/§F; evidence: meta M1 (8th-of-8 seat 3/3 dead; synthesis 0/3 ever), research-engine I-0._
+
+**Exactly-what:** in `scripts/run_deep_sweep.py`: start seat = week# mod 8; on resume with ≥6
+reports present run SYNTHESIS before re-firing failures; count per-seat failure streaks (≥2 → own
+alarm line). ~20 lines. **ROI:** unlocks every future week's knowledge integration — the synthesis
+you are reading exists only because an interactive run substituted for the dead organ. **Failure
+mode:** rotation hides a systematically-broken seat — the streak counter is the guard.
+**Retirement:** streak alarm retires after 4 consecutive full 8/8+synthesis weeks.
+
+## #75 — EXECUTOR CORRECTNESS TRIAD BEFORE ANY BOOK RESTART (P1-5)
+_Source: SYNTHESIS §C; evidence: 20260729_execution-growth.md F1/F2/F3 (all command-cited)._
+
+**Exactly-what:** (a) tests stop writing prod logs — monkeypatch `_ERR/_KILL/_HB/_STATE/_TRADES`
+(CI currently stamps phantom "naked leg" incident lines into `cashcarry_error.log` every 30min
+window); (b) persist state atomically PER CLOSE (double-logged closes are corrupting the Gate-0
+evidence tape: same open closed 07-27 21:24 AND 07-28 15:19; truncate-then-write leaves a
+corrupt-JSON permanent-crash-loop latent); (c) try/except the KILL branch + idle poll 60s→600s
+(observed 418 IP-ban crash loop 02:30–02:42 while halted; one shared IP feeds everything).
+**ROI:** rail integrity + tape truth for the sleeve the principal is about to rule on. **Dependencies:**
+none; land before A/B/C restart decision executes. **Retirement:** one-shot fixes + a regression test each.
+
+## #76 — GATE REFERENCE BATTERY → SHADOW RE-RUN THE 420 (P1-6) ◆compounding
+_Source: SYNTHESIS §C; evidence: meta M8b/T2, R0017 (SR_true +0.5 realizes −2.32), val F8/X2, data-moat K12 (84 unadjudicated)._
+
+**Exactly-what:** fix the probe's normalization (exact-sample-SR winner + raw-noise cohort), run
+known-truth synthetics {SR 0/0.5/1/2}×{artifact classes incl. timestamp-shift} through axis_screen
+AND the gauntlet, publish per-gate false-pass/false-block; then re-run the 420 through the
+per-candidate path in SHADOW (0 capital, ~2h) and attach the survivor count to the R0033 ruling.
+**ROI:** converts GATE-OPTIMALITY from aspiration to measurement; gives the principal a measured
+counterfactual instead of prose; adjudicates the 84. **Dependencies:** none for the battery; R0033
+ruling remains principal-gated (already re-paged). **Retirement:** battery becomes quarterly (§36 row).
+
+## #77 — DR: NIGHTLY RESTIC + WEEKLY RESTORE DRILL (P1-7)
+_Source: SYNTHESIS §B/§C; evidence: infra O1/T1/U6 — ~7GB single-copy, restore never performed, BackupManager aimed at an EMPTY 0-table decoy DB._
+
+**Exactly-what:** nightly restic of data/ (exclude rollback/) to Hetzner storage box (€3.2/mo,
+paged) or B2; weekly scripted restore to scratch with sha256 manifest + `select count(*)` on 3
+sentinel tables + one jsonl row-count; retarget BackupManager at the real SoRs or retire it.
+**ROI:** removes the unbounded left tail on the desk's own named binding constraint (calendar-time
+evidence). **Dependencies:** principal YES on the spend line (data/PRINCIPAL_ACTION.md 2026-07-29).
+**Failure mode:** silent backup rot — the DRILL is the deliverable, not the backup. **Retirement:** never (rail-adjacent).
+
+## #78 — DQS TRIPLE-FIX + reset-failed (P1-8) ◆compounding
+_Source: SYNTHESIS §C; evidence: data-int #2 (three live false-DEAD mechanisms, ≥7 of 8 DEAD flags false), infra O2b._
+
+**Exactly-what:** full-pass max-timestamp per entity-group (MAX_ROWS head-sampling has a second
+victim — kr_perasset crossed 3,000 rows and instantly false-DEADed; every append-only feed is on
+countdown); cadence from DISTINCT-timestamp gaps (batch-write median-gap-zero); stage_a_verdicts →
+`_ARTIFACT_KIND`; regression fixtures per mechanism; `systemctl reset-failed` after successful
+catch-up. **ROI:** un-poisons conversion_engine's +0.5 cost bias against healthy sources (the
+research prioritizer is currently steering AWAY from coinmetrics/kr-premium/oi-ls/defi/cfe);
+restores alarm precision so the one real kill (cny) is visible. **Retirement:** fixtures in CI.
+
+## #79 — PAGER PRIORITY LANES + SYNTHETIC-PAGE DRILL (P1-9) ◆compounding
+_Source: SYNTHESIS §B/§C; evidence: infra O3 — 429 observed DURING this sweep; 7 senders, one topic, one global 1h mute; recurs (07-20, 07-29)._
+
+**Exactly-what:** one pager lib, two lanes — URGENT (separate topic/provider, never coalesced,
+monthly synthetic delivery test under a simulated routine-lane 429) and routine (coalesced digest);
+fix R0036's prefix bug in the same pass. **ROI:** the ruin-rail page is currently mutable by organ
+chatter exactly on bad mornings — this closes a small-but-unbounded tail on every future incident.
+**Dependencies:** none. **Retirement:** never; alert channels decay silently (monthly drill is the control).

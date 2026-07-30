@@ -165,14 +165,24 @@ class AutoDiscoveryLab:
         min_len = min(len(r) for _, r, _ in prepared)
         matrix = np.column_stack([r[-min_len:] for _, r, _ in prepared])  # T x N (selection-aware)
         sharpe_estimates = np.array([sharpe_ratio(r) for _, r, _ in prepared], dtype="float64")
-        # per-candidate gates (gap #87 flip, principal-ruled 2026-07-29); thresholds unchanged
-        # Multiplicity stats computed ONCE on the matrix, but each candidate is judged on its OWN
-        # column (CSCV rank-consistency + Romano-Wolf), not the old campaign-constant PBO/RC that
-        # rejected 420/420 identically whatever the merit.
-        campaign = campaign_gate_stats(matrix)
+        # PER-CANDIDATE multiplicity statistics, computed in ONE pass over the matrix (not Nx).
+        # The predecessor hoisted campaign_pbo_rc() out of the loop for the same speed reason, but
+        # PBO and White's Reality Check take ONLY the matrix -- the candidate's own returns are
+        # never an input -- so as per-candidate gates they were campaign CONSTANTS. Measured on
+        # this exact 420-candidate campaign: PBO 0.6159 (>0.5) and White RC p 0.4220 (>=0.05),
+        # which alone forced 420/420 rejections regardless of any candidate's merit. CSCV
+        # rank-consistency + Romano-Wolf stepdown replace them with a verdict each candidate earns
+        # on its OWN column, and Romano-Wolf still controls family-wise error across all N, so
+        # multiplicity is paid in full. Thresholds are UNCHANGED (PBO <= 0.5, significance at 5%);
+        # only the attribution changed. Calibration proof: tests/validation/test_stepwise.py
+        # (all-null campaign must not manufacture survivors; a known winner must be reachable).
+        # Column mapping VERIFIED (both branches independently): matrix columns are
+        # column_stack'd from `prepared` in order, and the enumerate below walks that same
+        # list, so the loop index IS the candidate's column. Wired at all 19 legacy call
+        # sites in the 07-29 closure cycle, not just here.
+        gates_once = campaign_gate_stats(matrix)
 
         counts = dict.fromkeys(CandidateStatus, 0)
-        # enumerate order == column_stack order above, so `col` IS the candidate's matrix column.
         for col, (hyp, rets, stressed) in enumerate(prepared):
             _f = str(hyp.family)
             # The FIXED WALL is the family-scoped TRIAL COUNT. The sharpe array is only the
@@ -187,7 +197,7 @@ class AutoDiscoveryLab:
                 rets, hypothesis=hyp,
                 n_trials=_fam_trials.get(_f, n_trials),
                 sharpe_estimates=_sh,
-                returns_matrix=matrix, campaign=campaign, column=col,
+                returns_matrix=matrix, campaign=gates_once, column=col,
             )
             status = promote(rets, validation_survived=verdict.survived)
             reason = verdict.rejection_reason

@@ -200,3 +200,59 @@ class TestSourceBacklog:
         m.check_source_backlog(defects)
         assert defects and defects[0][0] == "source-backlog-stale"
         assert "outrunning verification" in defects[0][1]
+
+
+class TestBookAbsorbingState:
+    """The 2026-07-29 find: a book the ruin rail can never release reads as a healthy flat book.
+
+    Locks BOTH directions. A monitor that only proves it fires can silently become a
+    fire-always alarm, which is the same zero-information failure as never firing at all.
+    """
+
+    @staticmethod
+    def _write(tmp: Path, *, fut_leg_net, realized: float, n_carries: int,
+               deployed: float, start: float = 5000.0, peak: float = 5061.38) -> None:
+        (tmp / "web").mkdir(parents=True, exist_ok=True)
+        (tmp / "data").mkdir(parents=True, exist_ok=True)
+        (tmp / "web/cashcarry_live.json").write_text(json.dumps(
+            {"fut_leg_net": fut_leg_net, "n_carries": n_carries,
+             "deployed_notional": deployed}), "utf-8")
+        (tmp / "data/cashcarry_positions.json").write_text(json.dumps(
+            {"start_futures_equity": start, "realized_spot_pnl": realized,
+             "peak_combined_equity": peak}), "utf-8")
+
+    def test_fires_when_flat_book_still_reads_flatten(self, tmp_path: Path, monkeypatch) -> None:
+        # The live 2026-07-29 state: equity 3139.86 vs 5000 inception = -37.2%, book flat.
+        self._write(tmp_path, fut_leg_net=-4790.57, realized=2930.43, n_carries=0, deployed=0.0)
+        monkeypatch.setattr(m, "ROOT", tmp_path)
+        defects: list[tuple[str, str]] = []
+        m.check_book_absorbing_state(defects)
+        assert defects and defects[0][0] == "book-absorbing-state"
+        msg = defects[0][1]
+        assert "ruin-floor breach" in msg
+        assert "ABSORBING" in msg
+        assert "TIER-3" in msg          # the remedy must never read as "self-clear it"
+
+    def test_silent_when_flatten_but_inventory_remains(self, tmp_path: Path, monkeypatch) -> None:
+        # Same breach, but the book still holds carries -> the rail is mid-unwind, not absorbing.
+        self._write(tmp_path, fut_leg_net=-4790.57, realized=2930.43, n_carries=3, deployed=1200.0)
+        monkeypatch.setattr(m, "ROOT", tmp_path)
+        defects: list[tuple[str, str]] = []
+        m.check_book_absorbing_state(defects)
+        assert defects == []
+
+    def test_silent_on_healthy_flat_book(self, tmp_path: Path, monkeypatch) -> None:
+        # Flat and solvent (no breach) -> an ordinary idle book, not this check's business.
+        self._write(tmp_path, fut_leg_net=-50.0, realized=10.0, n_carries=0, deployed=0.0)
+        monkeypatch.setattr(m, "ROOT", tmp_path)
+        defects: list[tuple[str, str]] = []
+        m.check_book_absorbing_state(defects)
+        assert defects == []
+
+    def test_silent_when_futures_equity_unmeasured(self, tmp_path: Path, monkeypatch) -> None:
+        # A failed venue read must never manufacture a defect (2026-07-26 lesson).
+        self._write(tmp_path, fut_leg_net=None, realized=2930.43, n_carries=0, deployed=0.0)
+        monkeypatch.setattr(m, "ROOT", tmp_path)
+        defects: list[tuple[str, str]] = []
+        m.check_book_absorbing_state(defects)
+        assert defects == []

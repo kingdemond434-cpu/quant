@@ -6,11 +6,11 @@
    "summary": "wire CPCV/SPA/FDR/lockbox: validation code exists but is never called by any gauntlet path",
    "roi_bps": 0.0,
    "raised": "2026-07-26T11:26:08.435892+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "PARTIALLY implemented by 8da8acd: CSCV candidate-PBO and Romano-Wolf stepdown are now genuinely CALLED on the campaign path (they were dead code). Remaining scope is real and dated: SPA (hansen_spa, higher power than whites_reality_check) + FDR + a true lockbox holdout, plus the 19 unmigrated paths. Scheduled not implemented because the remainder is promotion-LOOSENING and needs synthetic known-GOOD/known-NULL calibration first.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-03",
+   "disposed": "2026-07-30T02:30:50.815362+00:00"
   },
   {
    "id": "R0002",
@@ -196,11 +196,11 @@
    "summary": "GATE-OPTIMALITY ANSWERED (probe run this cycle): pbo and reality_check reject 420/420 (100.0%) because they are CAMPAIGN-level statistics applied as PER-CANDIDATE vetoes. campaign_pbo_rc's own docstring states they are 'identical for every candidate in a campaign', and validate() lines 102-103 assign each candidate the campaign verdict. Measured: campaign PBO 0.6159 (gate <=0.50), campaign White RC p 0.4220 (gate <0.05) -> every candidate vetoed regardless of individual merit. The genuinely per-candidate gates DO discriminate (walk_forward 58.1%, fragility 47.9%, cpcv 43.3%, capacity 43.3%, expected_value 40.2%) and sole-cause failures is EMPTY, so no gate is uniquely killing good candidates today. THE STRUCTURAL PROBLEM: campaign PBO rises with generation volume, so a large mostly-noise campaign mechanically vetoes a genuinely good candidate submitted alongside it -- which CONTRADICTS the desk's own TWO_STAGE_DISCOVERY_LAW ('generation volume is unbounded and can never create a phantom edge there'; 'the confirmation bar never rises with generation'). NOT FIXED AUTONOMOUSLY: any change here relaxes validation-gate strictness, which constitution point 5 forbids the cycle from touching. Needs a principal/panel ruling on whether the screen should RANK on campaign PBO/RC (per the law) rather than VETO on them.",
    "roi_bps": 0.0,
    "raised": "2026-07-26T20:40:57.273613+00:00",
-   "status": "open",
+   "status": "implemented",
    "reason": null,
-   "commit": null,
+   "commit": "8da8acd",
    "due": null,
-   "disposed": null
+   "disposed": "2026-07-30T02:30:50.652645+00:00"
   },
   {
    "id": "R0017",
@@ -208,11 +208,11 @@
    "summary": "Gate-optimality probe's SYNTHETIC arm is mis-wired: injecting SR_true=+0.5 realises SR=-2.32 and SR_true=+1.0 realises -1.76 (sign/magnitude inconsistent with the injected truth). Until fixed, the synthetic sweep CANNOT answer 'can the funnel ever promote a genuinely good candidate' -- a synthetic that realises -2.32 should fail every gate, so its failure is uninformative. Anyone reading those rows at face value would wrongly conclude the gate rejects good strategies. Fix the injection/alignment, then re-run; the campaign-level half of the probe (per-gate histogram) is sound and already answered the main question.",
    "roi_bps": 0.0,
    "raised": "2026-07-26T20:42:08.934795+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "CONFIRMED still broken and now BLOCKING: the synthetic arm is the acceptance test for both the 19-path migration and the matrix-window fix, and neither can ship without a trustworthy positive control. A probe where SR_true=+0.5 realises -2.32 cannot certify any gate. Dated ahead of the two builds that depend on it.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-02",
+   "disposed": "2026-07-30T02:30:50.892850+00:00"
   },
   {
    "id": "R0018",
@@ -268,11 +268,11 @@
    "summary": "CI GATE IS RED AND HAS BEEN TOLERATED: run_ci.py fails on lint (558 ruff errors, 218 of them in six hl_*.py research scripts from 07-27) and on tests/research/test_finding_registry.py::test_every_docs_artifact_is_claimed (22 ungoverned docs). The constitution calls CI 'the mechanical safety net: nothing ships that fails it' -- while it is red the net is OFF for every change including money-path ones. Fix both arms; do NOT fix by narrowing the lint scope (denominator-shrinking).",
    "roi_bps": 25.0,
    "raised": "2026-07-28T15:21:59.174213+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "rejected",
+   "reason": "FALSIFIED by fresh evidence this cycle: run_ci.py is ALL GREEN -- lint (ruff) 'All checks passed!', pytest, and the stress harness, recorded in data/.ci_last_run.json ok=true ts=2026-07-30T02:23:25Z. The 558-ruff-error claim no longer reproduces; the row's premise is stale, not deferred. Closing as rejected rather than implemented because THIS cycle did not fix it -- it was already green when measured.",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-07-30T02:30:50.741707+00:00"
   },
   {
    "id": "R0023",
@@ -441,6 +441,126 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0037",
+   "source": "cycle",
+   "summary": "Detect books latched into an absorbing risk state (rail returns flatten on an already-flat book that cannot self-recover) instead of reading them as healthy idle books",
+   "roi_bps": 8.0,
+   "raised": "2026-07-29T16:11:51.374868+00:00",
+   "status": "implemented",
+   "reason": null,
+   "commit": "e234078",
+   "due": null,
+   "disposed": "2026-07-29T16:11:51.442115+00:00"
+  },
+  {
+   "id": "R0038",
+   "source": "cycle",
+   "summary": "Commit and run run_venue_reconcile.py -- the double-entry organ the 13-model panel required before any rail reset; it had sat uncommitted so every rail argument since was made from assertion",
+   "roi_bps": 6.0,
+   "raised": "2026-07-29T16:11:51.514663+00:00",
+   "status": "implemented",
+   "reason": null,
+   "commit": "e234078",
+   "due": null,
+   "disposed": "2026-07-29T16:11:51.582022+00:00"
+  },
+  {
+   "id": "R0039",
+   "source": "cycle",
+   "summary": "Tier-3 principal decision: re-baseline the carry book's ruin-rail inception equity (option A documented restart) or open a fresh book (B) -- the fired rail measured a total excluding $4,399.91 of verified on-venue assets",
+   "roi_bps": 40.0,
+   "raised": "2026-07-29T16:11:51.657588+00:00",
+   "status": "scheduled",
+   "reason": "Tier-3, principal-only: re-baselining a fired ruin rail may never be self-applied. Paged with full evidence 2026-07-29 (data/PRINCIPAL_ACTION.md, A/B/C ask).",
+   "commit": null,
+   "due": "2026-08-01",
+   "disposed": "2026-07-29T16:11:51.729614+00:00"
+  },
+  {
+   "id": "R0040",
+   "source": "cycle-2026-07-30",
+   "summary": "ADJACENCY SWEEP: migrate the 19 remaining welded validation paths (run_cashcarry_backtest, run_trend_gauntlet, run_xsec_funding, run_funding_8h, run_carry_harvest, run_crossasset_shadow/robust, run_onchain_history_backtest, run_crossexchange_backtest, run_kama_squeeze_backtest, run_options_vrp_backtest, run_prediction_markets, run_discovery, run_crypto_portfolio, run_derivative_backtest, run_xsec_funding_max, run_mt5_portfolio/crossasset/funding_bridge) from campaign_pbo_rc() to campaign_gate_stats()+column=. ACCEPTANCE TEST, mandatory per file: assert the column index maps to that file's own matrix column_stack order -- a mis-mapped index gives one candidate ANOTHER's passing verdict, worse than the weld. Standing detector already live: max_audit.check_welded_gates (19 -> 0 is the metric).",
+   "roi_bps": null,
+   "raised": "2026-07-30T02:31:04.491810+00:00",
+   "status": "scheduled",
+   "reason": "Highest-ROI remaining conversion unlock, but gated on R0017's positive control landing first -- without a trustworthy known-GOOD synthetic there is no way to prove a migrated path admits the good and still rejects the null. Dated 08-02, immediately after R0017.",
+   "commit": null,
+   "due": "2026-08-02",
+   "disposed": "2026-07-30T02:31:12.375156+00:00"
+  },
+  {
+   "id": "R0041",
+   "source": "cycle-2026-07-30",
+   "summary": "MATRIX-WINDOW POWER FIX (5.9x, measured): orchestrator.py:165 truncates the campaign matrix to the SHORTEST candidate (min_len), so T=310 against a median candidate length of 2134 -- 130,200 of 759,444 observations (83%) discarded from the multiplicity statistic that is now the SOLE remaining blocker. Measured in reports/matrix_window_measurement.json: min_len T=310/N=420 -> min adj_p 0.5220; retained-obs-maximising T=2109/N=266 -> min adj_p 0.0890. Free power from data already on disk. PHANTOM-EDGE CRITICAL and promotion-LOOSENING: dropping short candidates SHRINKS the multiplicity family, so the retained-N must be reported beside every verdict and R0017's positive control must work first. Note honestly: rejected=0 at every window, so this alone will NOT produce a survivor.",
+   "roi_bps": null,
+   "raised": "2026-07-30T02:31:04.652044+00:00",
+   "status": "scheduled",
+   "reason": "Sequenced AFTER R0040: migrating the 19 paths changes which statistic is computed, and changing the WINDOW at the same time would confound the two effects -- if a survivor then appeared, the desk could not attribute it. One stats change at a time, per the independence gate.",
+   "commit": null,
+   "due": "2026-08-04",
+   "disposed": "2026-07-30T02:31:12.446640+00:00"
+  },
+  {
+   "id": "R0042",
+   "source": "cycle-2026-07-30-generation",
+   "summary": "ROW COUNT IS NOT HISTORY DEPTH, and the depth monitor cannot see the difference: data/defi_lending.jsonl holds 11,755 rows spanning only 2026-07-28 -> 07-30 (~2 days) -- it is a cross-sectional snapshot of thousands of DeFi pools sampled a few times, not a time series. Screening it as one would produce pure garbage from an axis that looks like the deepest on disk. max_audit's depth-parity check does not list defi_lending at all, so an ingested axis with a 2-day history is INVISIBLE to the depth monitor while shallow-but-real axes (kimchi 8d, cny 7d) are correctly flagged. FIX: measure depth as DISTINCT DAYS SPANNED, never line count, and enrol every ingested jsonl axis in the depth registry so none can hide.",
+   "roi_bps": null,
+   "raised": "2026-07-30T02:42:03.033543+00:00",
+   "status": "scheduled",
+   "reason": "Cheap, mechanical, and it silently corrupts any future screen that trusts line count as depth -- exactly the class that produces a confident phantom. Small enough to build inside the next cycle's sweep step.",
+   "commit": null,
+   "due": "2026-08-01",
+   "disposed": "2026-07-30T02:42:24.907522+00:00"
+  },
+  {
+   "id": "R0043",
+   "source": "cycle-2026-07-30-generation",
+   "summary": "PROMOTE the de-contamination (angle-20) gate from one check inside axis_screen to the desk's headline screen statistic, and report residual IC beside raw IC everywhere a screen verdict is surfaced. Evidence from this cycle: exchange netflow's best cell printed IC -0.0345 with the mechanism-CORRECT negative sign on a 16-year sample -- every human heuristic said edge -- and residual IC was +0.0124, a SIGN FLIP, meaning the content was same-period contamination rather than lead. Raw IC is the number that sells a phantom; residual IC is the number that kills it. This gate has now caught kimchi (~73% artifact), Turkey premium, hl_elite_directional_order_flow and exchange netflow -- four for four. Any screen report that shows raw IC without residual IC beside it is a phantom-edge vector.",
+   "roi_bps": null,
+   "raised": "2026-07-30T02:42:03.111791+00:00",
+   "status": "scheduled",
+   "reason": "Four-for-four hit rate on catching artifacts makes this the highest-value reporting change available, and it is presentation-only -- it loosens no gate and needs no positive control, so it does not queue behind R0017 like R0040/R0041 do.",
+   "commit": null,
+   "due": "2026-08-01",
+   "disposed": "2026-07-30T02:42:24.985131+00:00"
+  },
+  {
+   "id": "R0044",
+   "source": "cycle",
+   "summary": "Migrate the remaining 18 welded pbo/rc validation paths to campaign_gate_stats + validate(campaign=,column=), EV order: run_discovery.py (only DEPLOYABLE tier, 3 sleeves at 8/9), run_xsec_funding_max.py (sh 0.96 sole failing gate reality_check), then the second tier. run_options_vrp_backtest.py LAST and by hand -- its validated series is a row-mean that is not any column of the matrix, so no column index exists.",
+   "roi_bps": 0.0,
+   "raised": "2026-07-30T07:25:55.512029+00:00",
+   "status": "scheduled",
+   "reason": "MEASURED THIS CYCLE, then REVERTED on governance. Migrated run_crypto_portfolio.py and ran it: pbo went 0/9 -> 6/9 passing (information restored) but reality_check went 9/9 -> 2/9 passing -- the campaign constant was welded OPEN on RC, not only shut on pbo. Survivors 0 -> 0. This is NEW EVIDENCE against R0040's stated premise that the sweep 'materially loosens promotion' -- on this file it is net-TIGHTENING. It is NOT sufficient to ship: (a) the before/after windows differ (funding_carry sh 1.20 -> 1.04), so it is not a controlled A/B and the deltas cannot be cleanly attributed; (b) R0017's end-to-end positive control is still broken, so nothing certifies that a genuinely good candidate CAN pass. Code reverted; measurement carried into the 08-02 decision rather than pre-empting it. Sequencing behind R0017 stands.",
+   "commit": null,
+   "due": "2026-08-02",
+   "disposed": "2026-07-30T07:28:47.830314+00:00"
+  },
+  {
+   "id": "R0045",
+   "source": "cycle",
+   "summary": "Reconcile the generation clock with the generation evidence: gen_done_* carries one bulk timestamp (07-22) while the real screen artifacts are 07-26. Have the screen writer stamp gen_done in the same function that writes reports/axis_screens/<axis>.json, so the clock cannot be set without the artifact.",
+   "roi_bps": 0.0,
+   "raised": "2026-07-30T07:25:55.584559+00:00",
+   "status": "rejected",
+   "reason": "REJECTED as written -- it would weaken the check it means to fix. Anchoring gen_done to the screen artifact (reports/axis_screens/<axis>.json) makes an axis that was SCREENED but produced no forward clock look satisfied, when the clock-saturation duty is about ACCRUAL, not screen execution. Verified this cycle: the 9 flagged axes WERE screened 2026-07-26 (175 trials across 15 artifacts, 0 survivors, 44 SCREEN-INTERESTING), so the defect is substantively TRUE -- they legitimately carry no accruing clock. The real disconnect is that gen_done_* means 'a screen ran' while the duty asks 'is a hypothesis accruing'; those are different questions and one flag cannot answer both. Superseded by R0046 (EV-eviction), which is the actual blocker: the cohort is full at 12/12, so no SCREEN-INTERESTING result could be enrolled even if promoted.",
+   "commit": null,
+   "due": null,
+   "disposed": "2026-07-30T07:29:19.957760+00:00"
+  },
+  {
+   "id": "R0046",
+   "source": "cycle",
+   "summary": "Forward cohort is EXACTLY 12/12 at the law's cap -- new clocks are not free. Before enrolling any of the 44 SCREEN-INTERESTING results from the 07-26 axis screens, build an EV-eviction rule (retire the weakest accruing clock on the record) or the cap silently blocks all future Stage-B enrolment.",
+   "roi_bps": 0.0,
+   "raised": "2026-07-30T07:25:55.648875+00:00",
+   "status": "scheduled",
+   "reason": "Depends on the cohort truth landing first (shipped this cycle, 9dddc49). Now that m is derived rather than asserted, the EV-eviction rule has a real denominator to work against. Dated after R0040/R0041 so a slot-admission change does not confound two in-flight statistics changes.",
+   "commit": null,
+   "due": "2026-08-06",
+   "disposed": "2026-07-30T07:28:47.912442+00:00"
   }
  ]
 }

@@ -629,3 +629,27 @@ hypotheses and EV-score them; only the top few enter research.
   bad"* — and fixed the EV gate. It did not then sweep for the same SHAPE elsewhere, so the
   identical defect sat one layer down in the gauntlet, at far higher stakes, for another day. A
   lesson that stays in the file where it was learned is half a lesson.
+- **An alarm that needs activity cannot see a stopped system (2026-07-29).** The primary carry book
+  sat flat for days with a fresh heartbeat and zero defects reported, because *every* alarm guarding
+  it was conditioned on the book DOING something — the bleed alarm needs non-funding PnL, §40 needs
+  >$5 of funding to divide by, `check_close_retry_loop` needs CLOSE-FAIL actions. A book doing
+  nothing tripped none of them and read as healthy. Worse, the state was **absorbing**: the ruin
+  rail measures drawdown against a *fixed* inception equity, and its response — flatten — removes
+  the only mechanism (carrying funding) by which equity could recover, so the verdict re-fires
+  forever. **For every rail, ask what the system looks like AFTER the rail fires, and whether
+  anything can still tell you it is stuck there.** A rail that assumes a human will re-baseline it
+  must ESCALATE that a human decision is owed; otherwise "safe" and "dead" are the same reading.
+- **Check the artifact against what your own records claim about it (2026-07-29).** GAP #87 had read
+  "paged for a YES/NO (`data/PRINCIPAL_ACTION.md` §1)" for a day. The page contained no such ask —
+  `run_external_panel.py` had clobbered it with a bare `write_text` while paging an unrelated
+  credits notice, so the principal was never shown the Tier-3 decision the whole discovery pipeline
+  is blocked on. Nothing detected it: the register asserted a state, the artifact contradicted it,
+  and no organ ever compared the two. **A status field that names an artifact is a checkable claim —
+  check it.** This generalises past paging: any record of the form "X was written to Y" is a
+  falsifiable assertion the desk should verify rather than carry forward.
+- **The same fix must be swept across organs the same day, or it decays into a story (2026-07-29).**
+  The clobber above is byte-for-byte the class fixed in `max_audit` on 07-28. The adjacency lesson
+  was written into THIS file that morning — and then not applied to the one adjacent organ writing
+  the same file. Writing the lesson is not running the sweep. When a fix lands, `grep` for the
+  *mechanism* (here: `write_text` on a shared human-facing file), not for the symptom, and fix every
+  hit in the same pass — then encode it so the sweep is mechanical next time.
