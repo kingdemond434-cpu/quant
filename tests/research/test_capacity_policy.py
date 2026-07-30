@@ -114,13 +114,9 @@ class TestScorersActuallyUseIt:
         res = CapacityIntelligence().assess(adv_usd=5e7, edge_bps=15.0)
         assert res.scalability_score > 50.0
 
-    def test_acceptance_no_longer_carries_its_own_flat_floor(self) -> None:
-        import inspect
-
-        from libs.discovery import factory
-        src = inspect.getsource(factory)
-        assert "capacity_usd >= 1e5" not in src, \
-            "the flat $100k floor is back in acceptance -- §42 says capacity is a ratio"
+    # test_acceptance_no_longer_carries_its_own_flat_floor removed 2026-07-30: asserted the flat
+    # floor was absent from libs.discovery.factory, which was retired outright (see
+    # docs/graveyard.md) -- the module no longer exists to carry a floor, flat or otherwise.
 
 
 class TestLiveBookMakesTheRatioSelfScaling:

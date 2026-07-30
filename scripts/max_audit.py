@@ -1689,7 +1689,6 @@ def check_capacity_runway(defects) -> None:
 _CAPACITY_CONSUMERS = (
     "libs/risk/sizing.py",
     "libs/discovery/objective.py",
-    "libs/discovery/factory.py",
     "libs/research/alpha_economics.py",
     "libs/alpha_factory/capacity_intelligence.py",
     "libs/autodiscovery/validation.py",

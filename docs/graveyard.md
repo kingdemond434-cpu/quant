@@ -4,6 +4,46 @@ Every entry is permanent. Never re-test an identical hypothesis; a *materially n
 dataset is required to reopen a class. Tags feed the EV-gate priors in `alpha_economics.py`.
 Machine copy: `web/discovery.json`. Companion: [[institutional_knowledge]].
 
+## CODE / CAPABILITY RETIREMENTS (L2.9 RETIRE exits, distinct from hypothesis kills below)
+
+Dormancy-hunter RETIRE dispositions land here with a written mechanism-of-death, per
+`docs/EXECUTION_QUEUE.md` RANK 1. Unlike a hypothesis kill this is reversible in principle (the
+code is recoverable from git history) but is not re-activated without a fresh external importer
+appearing — reintroducing a dead import is exactly the drift this section exists to catch.
+
+### `libs/discovery/` Alpha Discovery Factory — RETIRED 2026-07-30
+
+**Mechanism of death:** zero external importers. `libs/self_improvement/dormancy.py`'s
+`_external_importers()` (full dotted-path regex, scoped to `scripts/libs/app/api/tests`, excluding
+the module's own package/tests) found 14 of the 23 modules in `libs/discovery/` — `factory.py`,
+`models.py`, `signals.py`, `hypotheses.py`, `acceptance.py`, `fragility.py`, `half_life.py`,
+`parameter_stability.py`, `correlation_engine.py`, `failure_dependency.py`,
+`family_concentration.py`, `pools.py`, `portfolio_geometry.py`, `cagr_optimizer.py` — reachable
+from nothing outside their own package. They form a complete, self-contained MT5-era alpha
+discovery pipeline that predates and was fully superseded by `libs.autodiscovery` (51 external
+importers) without ever being wired to it or torn out.
+
+**Disposition: RETIRE**, not MERGE — `libs.autodiscovery` already re-implements the equivalent
+capability with its own validation stack (CSCV/Romano-Wolf, lockbox holdout, campaign FDR); there
+is nothing here worth folding in.
+
+**What survived (7 modules, genuinely alive via non-factory callers):** `capacity.py`,
+`tail_risk.py`, `monte_carlo_survival.py`, `objective.py`, `regime_diversification.py`,
+`stress_scenario.py`, `research_roi.py` (plus `errors.py`, a dependency of `capacity.py`). These
+were individual utility functions other subsystems adopted directly, independent of the factory
+that originally housed them — `libs/discovery/__init__.py` now exports only these 7.
+
+**Verification before deletion:** whole-repo grep for every dead module's full dotted path found
+one hit outside the package's own tests — `tests/research/test_capacity_policy.py`'s
+`test_acceptance_no_longer_carries_its_own_flat_floor`, which did source-text inspection of
+`libs.discovery.factory` (not a functional dependency). That test was removed rather than
+retargeted: the property it guarded ("the flat $100k floor is not back") is trivially true forever
+once the module carrying the floor no longer exists.
+
+**Test suite change:** `tests/discovery/test_factory.py`, `test_hypotheses_signals.py`,
+`test_optimizer_acceptance_pools.py` deleted wholesale (exclusively covered retired modules);
+`tests/discovery/test_robustness_engines.py` trimmed from 14 tests to the 7 covering survivors.
+
 **Kill-basis rule (2026-07-12, round-2 external review):** every kill must record its BASIS —
 `economic` (mechanism/statistics falsified: permanent) vs `data/infra` (killed by a broken feed,
 outage, or collection bug). An infra-killed hypothesis is NOT permanently dead: it becomes
