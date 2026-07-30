@@ -1,5 +1,46 @@
 # GAP REGISTER — live ranked list of known inefficiencies & missing capabilities
 
+_Re-ranked 2026-07-30T12:45Z (R0017 cycle). **The rank moved because the instrument that was
+supposed to certify the gate turned out never to have asked its question, and because a refuted
+sleeve was found holding a capacity slot.** Two closures and one correction:
+
+- **R0017 CLOSED (was the blocking precondition for #87's remaining half, R0040/R0044).** Its stated
+  cause was WRONG and that is the substance, not a footnote: the old probe's injection arithmetic
+  (`mu = SR_true*sd/sqrt(365)` + Student-t) is CORRECT, not "mis-wired". Realised Sharpe came out
+  exactly linear in `SR_true` with a CONSTANT −2.89 offset because `seed=7` was reused for all 13
+  rows, and `SE(annualised Sharpe)` at T=310 is `sqrt(365/310)=1.085` — so "SR_true=+0.5 realises
+  −2.32" is a −2.6σ draw of ONE noise realisation, and the sweep's smoothness is exactly what
+  disguised that as a sign error. The probe handed the gauntlet a candidate whose REALISED Sharpe was
+  −2.32 and recorded that the funnel cannot promote a good candidate. The question had never been put.
+  Built `libs/validation/positive_control.py` (target sample Sharpe pinned BY CONSTRUCTION, swept over
+  INDEPENDENT seeds; null cohorts deliberately left RAW so the DSR/CSCV deflation benchmark is not
+  collapsed) + 25 tests + `scripts/certify_gauntlet.py`, which scores the legacy and per-candidate
+  paths from ONE `campaign_gate_stats` pass — the CONTROLLED A/B whose absence got the 07-30
+  migration reverted. Proving artifact: `reports/gauntlet_certification.json`.
+- **NEW #94 CLOSED SAME CYCLE — a REFUTED hypothesis was holding Stage-B slot 1 of 12.**
+  `kimchi_premium` was retracted 2026-07-29 as a ~73% timestamp artifact (registry `E-02f2917dfb`,
+  decision REFUTED) but the retraction never reached `run_axis_shadows.py` `_AXES`, so it kept
+  ACCRUING at forward `ann_sharpe −5.13`. That made `derive_slots()` read the cohort FULL
+  (`idle_slots=0`) — and **that reading is the evidence commit b70298d used to justify the
+  clock-saturation defect as "capacity-blocked at 12/12, not idle"**. Nine verified axes were denied
+  forward clocks by a dead sleeve, and the Holm bar sat at 2.64 instead of 2.61 for eleven legitimate
+  clocks. Verified live: m 12→11, `idle_slots` 1. Proving command:
+  `.venv/bin/python -c "from libs.research.slot_registry import derive_slots; print(derive_slots()['idle_slots'])"`.
+- **CORRECTION to this register's own #87 entry, found by running the proving command it cites.**
+  `grep -rln campaign_pbo_rc scripts/ libs/` returns 5 files, not "only the deprecated diagnostic":
+  `max_audit.py` (the detector, matches by design), `measure_gate_histogram.py` (diagnostic),
+  `libs/autodiscovery/validation.py` (defines the retained legacy path), `orchestrator.py`, and
+  `run_options_vrp_backtest.py` — the last being the documented R0044 exception (its validated series
+  is a row-mean that is no column of the matrix, so no column index exists). So #87 is substantially
+  closed but its wording overstates; `max_audit`'s "19 paths still welded" is the STALE side of the
+  same disagreement and needs reconciling (row it, do not re-litigate #87).
+- **CONCURRENCY CAVEAT on everything above:** a second session (branch
+  `claude/wonderful-darwin-7uiobi`) was committing to this working tree during the cycle — master
+  moved e77b4b8→be6b3d5 and `run_crypto_portfolio.py` was rewritten at 12:15 while this cycle
+  reasoned about it. R0048 rows the missing guard. Rankings below are as of this stamp only.
+
+Everything else retains its 07-29T21:5xZ ranking._
+
 _Re-ranked 2026-07-29T21:5xZ — THE LARGEST CLOSURE CYCLE ON RECORD, and the rank moved because
 seven rows CLOSED rather than because opinion changed. What shipped, each with its proving command:
 

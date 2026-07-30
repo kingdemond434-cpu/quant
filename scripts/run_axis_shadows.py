@@ -46,7 +46,20 @@ _BINANCE = "https://fapi.binance.com/fapi/v1/klines"
 # axis registry: name -> (clock file, target symbol, signal field, direction)
 # direction: +1 = momentum (long when z>0), -1 = reversal
 _AXES: dict[str, tuple[str, str, str, int]] = {
-    "kimchi_premium": ("data/kimchi_premium.jsonl", "BTCUSDT", "z20", +1),
+    # kimchi_premium RETIRED 2026-07-30: the edge was RETRACTED 2026-07-29 as a ~73% timestamp
+    # artifact (registry E-02f2917dfb, commit 02f2917db, decision REFUTED; failure modes
+    # B_WRONG_MEASUREMENT / C_WRONG_TIMING / E_DATA_QUALITY -- Upbit KST daily candles sat ahead of
+    # the Binance UTC closes, the same lookahead that killed bithumb_KR). Its own forward clock
+    # agreed: day 8/40 at ann Sharpe -5.13, nw_t -0.71. The retraction was never propagated here,
+    # so a refuted hypothesis went on holding 1 of MAX_FORWARD_SLOTS=12 -- reading the cohort FULL
+    # and blocking 9 verified axes from a clock (the clock-saturation defect), exactly the
+    # "raises the confirmation bar on the LIVE axes for zero benefit" case set by
+    # onchain_activity_throughput above. NOTE the distinction that licenses dropping m here:
+    # kimchi was refuted as an INVALID MEASUREMENT, not failed on its merits, and an invalid trial
+    # is not a trial -- a candidate that legitimately accrued and lost must STAY in the denominator
+    # (ADAPTIVE VALIDATION WINDOWS v2: attrition must never lower the bar). Collector keeps
+    # archiving (input store). Re-admission needs a NEW construction with declared UTC alignment
+    # that clears the shift-sensitivity rail in scripts/revalidate_clocks.py first.
     # orthogonal on-chain USAGE axis (not price/derivative): economic throughput,
     # reversal. Weak+fragile in-sample (composite Sharpe collapsed) -> forward clock
     # under the Holm bar decides. same-period corr ~-0.06 = genuinely leading.

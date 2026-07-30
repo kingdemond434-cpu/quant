@@ -208,11 +208,21 @@
    "summary": "Gate-optimality probe's SYNTHETIC arm is mis-wired: injecting SR_true=+0.5 realises SR=-2.32 and SR_true=+1.0 realises -1.76 (sign/magnitude inconsistent with the injected truth). Until fixed, the synthetic sweep CANNOT answer 'can the funnel ever promote a genuinely good candidate' -- a synthetic that realises -2.32 should fail every gate, so its failure is uninformative. Anyone reading those rows at face value would wrongly conclude the gate rejects good strategies. Fix the injection/alignment, then re-run; the campaign-level half of the probe (per-gate histogram) is sound and already answered the main question.",
    "roi_bps": 0.0,
    "raised": "2026-07-26T20:42:08.934795+00:00",
-   "status": "scheduled",
-   "reason": "CONFIRMED still broken and now BLOCKING: the synthetic arm is the acceptance test for both the 19-path migration and the matrix-window fix, and neither can ship without a trustworthy positive control. A probe where SR_true=+0.5 realises -2.32 cannot certify any gate. Dated ahead of the two builds that depend on it.",
+   "status": "open",
+   "reason": null,
    "commit": null,
-   "due": "2026-08-02",
-   "disposed": "2026-07-30T02:30:50.892850+00:00"
+   "due": null,
+   "disposed": null,
+   "corrections": [
+    {
+     "was": "scheduled",
+     "was_reason": "CONFIRMED still broken and now BLOCKING: the synthetic arm is the acceptance test for both the 19-path migration and the matrix-window fix, and neither can ship without a trustworthy positive control. A probe where SR_true=+0.5 realises -2.32 cannot certify any gate. Dated ahead of the two builds that depend on it.",
+     "was_commit": null,
+     "was_due": "2026-08-02",
+     "corrected": "2026-07-30T12:22:52.567556+00:00",
+     "why": "STATED CAUSE WAS WRONG, corrected on the record before closing. R0017 asserted the synthetic arm was 'mis-wired' with a 'sign/magnitude inconsistent with the injected truth'. It was not: mu = SR_true*sd/sqrt(365) is correct arithmetic. Two real defects, neither a wiring error: (1) seed=7 was reused for all 13 sweep rows, so every row shared ONE noise draw -- realised SR came out exactly linear in SR_true with a constant -2.89 offset, and that smoothness is precisely what reads as a systematic sign error; (2) SE(annualised Sharpe) at T=310 is sqrt(365/310)=1.085, so the entire 0.5-3.0 'good' range sits inside one standard error and -2.32 is a -2.6-sigma draw. The probe was not mis-wired, it was UNDERPOWERED BY CONSTRUCTION and asked its question of a candidate whose realised Sharpe was -2.32. Recording this because 'fix the injection' would have changed working code and left the real defect (no seed sweep, sample moments unpinned) in place."
+    }
+   ]
   },
   {
    "id": "R0018",
@@ -561,6 +571,54 @@
    "commit": null,
    "due": "2026-08-06",
    "disposed": "2026-07-30T07:28:47.912442+00:00"
+  },
+  {
+   "id": "R0047",
+   "source": "cycle",
+   "summary": "run_ci.py EXITS 0 WHEN IT SKIPS: a concurrent run holding the lock produces 'CI: another run holds the lock -- skipping (marker left untouched)' and return code 0. The constitution calls CI 'the mechanical safety net: nothing ships that fails it', so a skip that is indistinguishable from a pass is a FAIL-OPEN in the net -- this cycle recorded a green baseline that had executed zero tests, and any cron/agent trusting the exit code inherits the same false green. FIX: distinct non-zero exit (or an explicit --wait) for skipped-on-lock, and callers must read the body. NOT done this cycle deliberately: a second session was actively running run_ci.py in the same tree, and editing the gate under a live consumer is how the 07-16 change-induced incidents happened.",
+   "roi_bps": 3.0,
+   "raised": "2026-07-30T12:22:52.771907+00:00",
+   "status": "scheduled",
+   "reason": "Real fail-open in the mechanical safety net, and cheap. Deferred by ONE day for a concrete reason, not comfort: a second session was executing run_ci.py in this same tree during the cycle, and patching the gate under a live consumer is the exact change-induced-incident shape of 2026-07-16. Do it first thing when the tree is exclusively held.",
+   "commit": null,
+   "due": "2026-08-01",
+   "disposed": "2026-07-30T12:23:04.441891+00:00"
+  },
+  {
+   "id": "R0048",
+   "source": "cycle",
+   "summary": "NO GUARD AGAINST A SECOND BRAIN IN THE SAME WORKING TREE. On 2026-07-30 this cycle and branch claude/wonderful-darwin-7uiobi wrote /home/quant/quant-platform concurrently; master moved from e77b4b8 to be6b3d5 mid-cycle and scripts/run_crypto_portfolio.py was rewritten at 12:15 while the cycle reasoned about it (two greps of one pattern disagreed minutes apart). rollback_guard checkpoints against a HEAD that can move, the INDEPENDENCE GATE cannot see the other agent's edits, and max_audit has no check for it. FIX: a cycle-start advisory lock (pid+branch+HEAD in data/, stale-cleared) that REFUSES to start a second brain, plus a HEAD-moved-under-me assertion before commit.",
+   "roi_bps": 2.0,
+   "raised": "2026-07-30T12:22:52.941003+00:00",
+   "status": "scheduled",
+   "reason": "Needs the R0047 fix and a decision on scope (advisory lock vs branch-per-session). Scheduled rather than built because the correct design depends on whether concurrent sessions are intended -- if they are, the answer is worktree isolation, not a lock. Ask the principal at the same time as the R0049 rule.",
+   "commit": null,
+   "due": "2026-08-02",
+   "disposed": "2026-07-30T12:23:04.673245+00:00"
+  },
+  {
+   "id": "R0049",
+   "source": "cycle",
+   "summary": "ENCODE THE REFUTED-AS-INVALID vs FAILED-ON-MERITS RULE (finding F0011). slot_registry drops a retired clock from the Holm denominator (onchain_activity_throughput precedent) while ADAPTIVE VALIDATION WINDOWS v2 says attrition must never lower the bar. Both are correct about different cases and the distinguishing rule is written nowhere: a trial voided by artifact/lookahead/misalignment must LEAVE the denominator (an invalid trial is not a trial); a candidate that legitimately accrued and lost must STAY (else the desk can kill losers to make winners promotable). Until written, a future cycle can justify either action by citing law -- which is how a gate gets loosened by someone who believes they are following precedent. Encode in slot_registry docstring + a max_audit check that a dropped clock carries a REFUTED registry decision.",
+   "roi_bps": 1.0,
+   "raised": "2026-07-30T12:22:53.179692+00:00",
+   "status": "scheduled",
+   "reason": "Documentation + one max_audit check; safe but it touches how multiplicity is reasoned about on the only path to capital, so it goes in a clean cycle with the rule stated in the constitution rather than appended late in a long one. The rule itself is already recorded in docs/institutional_knowledge.md and finding F0011 so it cannot be lost.",
+   "commit": null,
+   "due": "2026-08-02",
+   "disposed": "2026-07-30T12:23:04.853247+00:00"
+  },
+  {
+   "id": "R0050",
+   "source": "cycle",
+   "summary": "RECONCILE max_audit.check_welded_gates with reality: it reported 19 welded paths at 12:01 on 2026-07-30 while grep finds 5 matches, 4 of which are the detector itself, a diagnostic, the legacy definition, and R0044's documented row-mean exception. Either the check counts import lines rather than live gate calls, or it excludes campaign_gate_stats callers it should credit. A defect counter that includes its own pattern string and cannot be zeroed even at full migration is a permanently-firing gate -- the exact GATE-OPTIMALITY defect class (a check that can never read clean carries no information and trains the desk to ignore it). Fix the check, then let 19->0 mean what the register claims it means.",
+   "roi_bps": 1.0,
+   "raised": "2026-07-30T12:24:52.659601+00:00",
+   "status": "scheduled",
+   "reason": "Bundled with R0047 (both are 'the gate lies about its own state' defects in the same two files) so one clean pass fixes the CI skip-exit-0 fail-open and the welded-gate miscount together. Not built this cycle because the count's correctness depends on whether run_options_vrp_backtest's row-mean exception should be credited as migrated -- an R0044 scoping question due 08-02, and guessing it now would just move the wrong number.",
+   "commit": null,
+   "due": "2026-08-01",
+   "disposed": "2026-07-30T12:31:28.419996+00:00"
   }
  ]
 }

@@ -2933,12 +2933,25 @@ def main() -> None:
         skipping = False
         kept.append(ln)
     body = "\n".join(kept).strip()
+    # POSITION FIX (2026-07-30). This checked only `body.startswith("URGENT ")`, so the carve-out
+    # required the URGENT block to be the FIRST paragraph. On 07-30 an unrelated PURCHASE DECISION
+    # notice was prepended above it, which silently disabled the carve-out: the routine 48h sweep
+    # retook line 1 and the principal was paged "24 below-max state(s)" while TWO Tier-3 rulings the
+    # whole discovery pipeline is blocked on (dead carry book, pbo/rc gate flip) sat below the fold.
+    # Third recurrence of one family -- 07-24 stale line 1, 07-28 silent deletion, now demotion by a
+    # neighbour's insert -- because the carve-out was POSITIONAL and no writer owns a position. Find
+    # a fresh URGENT block ANYWHERE in the body and hoist it; reordering only, nothing dropped.
     urgent = ""
-    if body.startswith("URGENT "):
+    paras = body.split("\n\n")
+    for i, para in enumerate(paras):
+        if not para.startswith("URGENT "):
+            continue
         with contextlib.suppress(Exception):
-            stamp = body.split("URGENT ", 1)[1].split(":", 1)[0].strip()
+            stamp = para.split("URGENT ", 1)[1].split(":", 1)[0].strip()
             if (NOW - datetime.fromisoformat(stamp).timestamp()) / 86400.0 <= _URGENT_TTL_D:
-                urgent, body = body.split("\n\n", 1) if "\n\n" in body else (body, "")
+                urgent = para
+                body = "\n\n".join(paras[:i] + paras[i + 1:]).strip()
+                break
     if overdue:
         head = (f"{_MARK}: {len(overdue)} below-max state(s) >48h unfixed/unacked -- "
                 + "; ".join(f"{d}" for d, _ in overdue[:6])

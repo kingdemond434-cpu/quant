@@ -653,3 +653,56 @@ hypotheses and EV-score them; only the top few enter research.
   the same file. Writing the lesson is not running the sweep. When a fix lands, `grep` for the
   *mechanism* (here: `write_text` on a shared human-facing file), not for the symptom, and fix every
   hit in the same pass — then encode it so the sweep is mechanical next time.
+
+## Validation-methodology lesson — 2026-07-30 (a positive control that was never asked; and a refuted clock that blocked nine axes)
+- **A control correct IN EXPECTATION is worthless when its standard error swamps the effect range.**
+  The gate-optimality probe built its "known-good" candidate as `mu = SR_true*sd/sqrt(365)` plus
+  Student-t noise — arithmetically CORRECT — and recorded that `SR_true=+0.5` realised `-2.32`, from
+  which R0017 concluded the injection was mis-wired (sign/magnitude error) and that the funnel could
+  not promote a good candidate. Both readings were wrong. At T=310 the standard error of an
+  annualised Sharpe is `sqrt(365/310) = 1.085`, so the *entire* 0.5–3.0 range of "good" sits inside
+  one standard error; `-2.32` is a −2.6σ draw. And because `seed=7` was reused for every row of the
+  sweep, all 13 rows shared ONE noise realisation: realised SR came out exactly linear in `SR_true`
+  with a constant −2.89 offset. **That smoothness is what disguised a single unlucky draw as a
+  systematic wiring bug.** The probe handed the gauntlet a candidate whose realised Sharpe was
+  −2.32 and asked why it failed; every gate rejected it correctly. The question was never put.
+  **Rules.** (1) A control must have its target sample moment BY CONSTRUCTION — standardise the
+  innovations, then add the drift (`libs/validation/positive_control.py`); sampling error belongs
+  nowhere near the *definition* of "good". (2) Sweep INDEPENDENT seeds; one seed is one realisation.
+  (3) The asymmetry is load-bearing: pin the moment where "good" is DEFINED, leave it RAW where
+  dispersion is MEASURED — standardising a *null cohort* destroys the cross-sectional dispersion that
+  DSR/CSCV deflate against and manufactures survivors. (4) Before believing any "the gate rejects
+  everything" result, check that the thing certifying the gate is itself certified: `434 tested /
+  0 promoted` is equally consistent with picked-clean price space and with a gate welded shut, and
+  the desk had been reasoning from the first reading without evidence for it.
+- **A retraction is not complete until every DERIVED registry is updated.** kimchi_premium was
+  retracted 2026-07-29 as a ~73% timestamp artifact (registry `E-02f2917dfb`, decision REFUTED —
+  Upbit KST candles ahead of Binance UTC closes, the same lookahead that killed bithumb_KR). The
+  graveyard and research memory were updated; `scripts/run_axis_shadows.py` `_AXES` was not. So a
+  refuted hypothesis went on ACCRUING as Stage-B slot 1 of `MAX_FORWARD_SLOTS=12` at forward
+  `ann_sharpe -5.13` — which made `derive_slots()` read the cohort FULL (`idle_slots=0`), and *that*
+  was the evidence used to justify the clock-saturation defect as "capacity-blocked at 12/12, not
+  idle". **Nine verified axes were denied forward clocks by a dead sleeve**, while the Holm bar sat at
+  2.64 instead of 2.61 for all eleven legitimate clocks. Retiring it (m 12→11, one slot freed) is a
+  ~10-line comment change; finding it required asking which registries still counted a thing already
+  declared dead. Now probe angle 13 (IS THE KILL PROPAGATED?).
+- **The distinction that licenses dropping the multiplicity denominator, which was written nowhere.**
+  `slot_registry` drops a retired clock from `m` (precedent: `onchain_activity_throughput`, "a
+  permanently-unpromotable axis holding a Holm slot raises the bar on the LIVE axes for zero
+  benefit"), while ADAPTIVE VALIDATION WINDOWS v2 says "attrition must never lower the bar". Both are
+  right, about different things: **REFUTED-AS-INVALID-MEASUREMENT** (artifact, lookahead, bad
+  alignment — the trial was void) must leave the denominator, because an invalid trial is not a
+  trial; **FAILED-ON-ITS-MERITS** (legitimately accrued and lost) must STAY, or the desk can kill
+  losers to make winners promotable, which is garden-of-forking-paths with extra steps. Absent this
+  rule a future cycle can justify either action by citing law, which is how a gate gets quietly
+  loosened by a cycle that believes it is following precedent.
+- **One integer, two uses, opposite fail-safe directions (now probe angle 12).** `m_concurrent` is
+  the Holm denominator, where over-counting is SAFE (tightens the bar), *and* the capacity count
+  against the hard cap of 12, where over-counting is a hard admission block. `slot_registry.py`
+  documents its fail-safe reasoning carefully — for the first use only. Whenever one number feeds two
+  decisions, check the safe direction of error for EACH; a value that is conservative for one use can
+  be the reckless choice for the other, and the docstring will look correct the whole time.
+- **`exit 0` from `run_ci.py` is not evidence CI ran.** This cycle's "baseline green" was
+  `CI: another run holds the lock -- skipping (marker left untouched)` — exit 0, zero tests executed,
+  because a concurrent `run_deep_sweep.py` held the lock. Nearly built on a phantom green. Read the
+  log body, never the exit status; a skip and a pass are opposite states that share a return code.
