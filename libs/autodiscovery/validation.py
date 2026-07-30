@@ -18,6 +18,7 @@ from libs.validation.dsr import deflated_sharpe_ratio, sharpe_ratio
 from libs.validation.pbo import PBOResult, probability_backtest_overfitting
 from libs.validation.reality_check import RealityCheckResult, whites_reality_check
 from libs.validation.revalidation import WalkForwardEngine, WalkForwardStatus
+from libs.validation.screen_select import ScreenSelection, screen_select
 from libs.validation.stepwise import (
     CSCVResult,
     StepdownResult,
@@ -69,7 +70,7 @@ class CampaignGates:
     which is the thing they actually measure.
     """
 
-    __slots__ = ("cscv", "legacy_pbo", "legacy_rc", "stepdown")
+    __slots__ = ("cscv", "legacy_pbo", "legacy_rc", "screen", "stepdown")
 
     def __init__(
         self,
@@ -82,6 +83,15 @@ class CampaignGates:
         self.stepdown = stepdown
         self.legacy_pbo = legacy_pbo
         self.legacy_rc = legacy_rc
+        # SCREEN-STAGE SELECTION (gap #71, 2026-07-30). Computed and REPORTED alongside the
+        # family-wise verdict; it does NOT change the survival gate here. The measured reason:
+        # Romano-Wolf FWER admits 0/420 at every window tested (best adjusted p 0.522 at min-length,
+        # 0.089 at max-observation), so as a SCREEN gate it carries zero information about candidate
+        # quality -- and a bar that rises with generation volume is what TWO_STAGE_DISCOVERY_LAW
+        # forbids. Promotion authority is untouched: forward clocks keep Holm/FWER on <=12 slots.
+        self.screen: ScreenSelection | None = None
+        with_screen = screen_select(stepdown, q=0.05, method="by") if stepdown else None
+        self.screen = with_screen
 
 
 def campaign_gate_stats(returns_matrix: np.ndarray) -> CampaignGates | None:

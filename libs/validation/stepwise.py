@@ -64,6 +64,13 @@ class StepdownResult(BaseModel):
 
     rejected: list[bool]
     adjusted_p: list[float]
+    raw_p: list[float] = []
+    """UNADJUSTED per-candidate bootstrap p-value: the fraction of that candidate's OWN bootstrap
+    null draws at least as extreme as its observed statistic. Added 2026-07-30 because the FDR
+    screen (libs/validation/screen_select.py) needs raw p-values -- feeding it `adjusted_p` is a
+    DOUBLE correction (FWER-adjusted, then FDR-adjusted again), which is statistically incoherent
+    and measurably evicted a known Sharpe-3 winner from a 60-null batch in calibration. Same one
+    bootstrap pass, no extra compute."""
     t_stat: list[float]
     alpha: float
     n_strategies: int
@@ -181,6 +188,10 @@ def romano_wolf_stepdown(
         idx = stationary_block_indices(t_obs, mean_block, rng)
         boot[b] = np.sqrt(t_obs) * (f[idx].mean(axis=0) - d_bar) / omega
 
+    # RAW per-candidate p: each candidate against its OWN bootstrap null (no max-statistic,
+    # no stepdown) -- the unadjusted input any downstream multiplicity procedure must start from.
+    raw_p = np.array([float(np.mean(boot[:, k] >= t_stat[k])) for k in range(n)], dtype="float64")
+
     rejected = np.zeros(n, dtype=bool)
     adjusted_p = np.ones(n, dtype="float64")
     active = np.ones(n, dtype=bool)
@@ -205,6 +216,7 @@ def romano_wolf_stepdown(
     return StepdownResult(
         rejected=rejected.tolist(),
         adjusted_p=adjusted_p.tolist(),
+        raw_p=raw_p.tolist(),
         t_stat=t_stat.tolist(),
         alpha=alpha,
         n_strategies=n,
