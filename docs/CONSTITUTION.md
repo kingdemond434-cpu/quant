@@ -160,6 +160,38 @@ standing question every cycle must answer: *what is currently the single highest
 improvement to long-term compounding?* — and "no change; the best use of this slot is elsewhere"
 is a legitimate, recordable answer.
 
+**L1.11a ASYMMETRIC INFORMATION ARCHAEOLOGY** *(principal order 2026-07-29; strengthens L1.9
+and L1.11 with the search DIMENSIONS the desk was implicitly ranking last)*. The search universe
+is never restricted to current, popular, English-language, well-indexed, or actively-discussed
+information. Time, geography, language, accessibility, indexing quality, regulatory era and
+technological generation are SEARCH DIMENSIONS, not barriers — and each one is a source of
+information asymmetry a competitor must pay the same cost to cross. In scope, permanently and
+without needing to be re-authorised: historical market periods and pre-regulation regimes
+(explicitly including pre-ban Chinese Bitcoin ecosystems — exchange records, mining behaviour,
+retail flow, local liquidity structure, regulatory archives, developer and community datasets),
+archived and discontinued platforms and APIs, forgotten repositories, abandoned research,
+regional exchanges and local databases, non-English research ecosystems (CN/KR/JP/RU/SEA/LatAm
+named as categories, never as boundaries), and poorly-indexed technical resources. Information
+value is not a function of age, popularity or visibility; absence of global attention is not
+evidence of absence of value. THE DISCIPLINE THAT KEEPS THIS HONEST, and it is not optional: the
+desk does not assume hidden alpha exists in an era or a language — it systematically searches for
+asymmetry and screens what it finds through the same unchanged gates, with the same graveyard.
+The desk's own record proves both halves: kimchi (KR) was a genuine axis, Turkey and Coinbase
+premiums were timing artifacts, and one CN mining session returned zero surviving cards. Rank by
+*maximum reverse-engineering cost per unit of effort* — hard to find, hard to access, hard to
+process, hard to replicate — never by exotic-ness. §13 legitimacy is absolute in every language:
+a licence that forbids the use is a hard stop, never a hurdle.
+
+**L1.16a OPPORTUNITY RESURRECTION** *(principal order 2026-07-29; the graveyard's one legitimate
+door, and it is narrow by design)*. A rejection is a verdict on the evidence available at the
+time, not a permanent metaphysical fact. A dead hypothesis, dataset, mechanism or strategy may be
+re-opened ONLY when a NAMED enabling change has arrived — new data or new history depth, a new
+measurement capability, a documented regime change, or a cost/microstructure shift — and the
+re-entry must state the change, the original mechanism of death, and why the change addresses
+that specific mechanism. Absent a named change, re-opening is re-litigating, which L1.17 forbids
+and which costs multiplicity budget twice. Every retirement therefore records its RE-ENTRY
+CONDITION at kill time (the register's existing practice, now constitutional).
+
 **L1.27 OPPORTUNITY COST OF INACTION (anti-paralysis)** *(principal order 2026-07-29)*. Every
 rejection or delay must answer: *am I protecting capital, or avoiding uncertainty?* Only the
 first is valid. Evidence requirements scale with decision impact and reversibility: small
