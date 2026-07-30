@@ -51,9 +51,23 @@ evidence for each:
   (`alpha_economics`, threshold 0.05 — with the self-contradiction found 2026-07-28 STILL OPEN:
   conservative honest priors are structurally auto-rejected). The spec'd in-sample t-stat/IC
   stage and the pass/fail + spot-audit reject trail are NOT built. Residual, not blocked.
-- **#2 telemetry feedback / #3 variation blocker: PARTIAL.** do_not_repeat carries rejection
-  routing (`scripts/run_axis_generate.py:151`); structured rejection_stage/reason fields and the
-  mechanism-fingerprint store as spec'd do not exist yet. Residual, not blocked.
+- **#2 telemetry feedback / #3 variation blocker: BUILT 2026-07-30.** Both were recorded
+  "residual, not blocked", so they were built rather than re-deferred.
+  `libs/research/mechanism_fingerprint.py` is the shared fingerprint the spec assumes (feature
+  family + signal transform + horizon bucket), bucketed COARSELY on purpose: a 20-day and a
+  21-day lookback are the same hypothesis, and treating them as two is the forking-paths failure
+  this exists to collapse. `libs/research/variation_blocker.py` blocks an exact fingerprint match
+  or a >=0.90 Jaccard near-duplicate BEFORE compute — the saving is statistical before it is
+  computational, since every look charges multiplicity against DSR and the stepdown. Every block
+  records what it duplicated, so the ledger stays a map of the searched space (the input #4 needs
+  when it unblocks). Telemetry emits `novel_rate` — the share of generated ideas that were
+  genuinely new questions — which is the number that distinguishes "420 tests" from "one question
+  asked 420 ways". 11 tests.
+  BUG FOUND BY ITS OWN TEST, recorded because it is the exact failure the module warns about:
+  the semantic proxy initially omitted the horizon, so a 7-day and a 90-day carry signal scored
+  Jaccard 1.00 and the 90-day version was BLOCKED despite a different fingerprint. The proxy was
+  overriding the structured dimension it is meant to complement, silently deleting a genuinely
+  different question. `describe()` now includes the horizon bucket.
 - **#4 breeder: NOT BUILT — BLOCKED ON EVIDENCE THAT DOES NOT EXIST YET, and building it now
   would be ceremony.** The breeder crosses SURVIVING mechanics with NEWLY VALIDATED axes. The
   desk's measured state 2026-07-29: confirmed alphas to date = 0 (DESK_BRIEF), 420 tested /
@@ -69,10 +83,16 @@ evidence for each:
   `orthogonality` field the EV gate already charges (`run_axis_generate.py` Idea fields).
   UNBLOCK TRIGGER: >1 independent validated/deployed return stream. Recording NOT BUILT with
   this trigger beats building a scorer with nothing to score against.
-- **#6 collapse detector: NOT BUILT** — generation is currently data-triggered and low-volume
-  (three pre-registered hypotheses per new axis, not uncapped batches), so the failure mode it
-  instruments (mode collapse under volume) is not yet reachable. Build it when generation
-  cadence upgrades to weekly at S1/Gate-0 entry (register #2 rider). Deferred with that trigger.
+- **#6 collapse detector: BUILT 2026-07-30 — its trigger fired.** The deferral named an
+  explicit unblock condition ("build it when generation cadence upgrades to weekly at S1/Gate-0
+  entry"), and Gate 0 entry is today, so the deferral expired on its own terms rather than being
+  re-argued. `libs/research/collapse_detector.py`: mechanism entropy (normalised by ITEM count,
+  not category count — the latter reports 2 fingerprints across 50 ideas as PERFECTLY diverse),
+  feature breadth, market breadth counting cross-sectional universes properly, semantic Jaccard,
+  cross-generator overlap. Trailing-8-batch median comparison at the spec'd 40% drop / 25%
+  cross-duplicate triggers. NEVER blocks generation — instrumentation that books a DIVERSITY
+  AUDIT for the weekly panel, per spec. Wired by `scripts/run_generation_diversity.py` into
+  `panel_scorecard.gen_diversity`. 26 tests.
 
 ## 6. Generator collapse detector (principal micro-addition 2026-07-20 -- Lane-A instrumentation)
 Uncapped generation has a known failure mode: mode collapse -- multiple generators/seats

@@ -17,7 +17,12 @@ LOG="data/cro_ai_logs/frontier_${REGION}_$(date -u +%Y%m%dT%H%M).log"
 # opus-5 automatically. Safe here and nowhere else: the rotation is RESUMABLE (a region without a
 # real log today is re-dug next invocation), so a mid-dig credit death costs nothing, and every
 # miner run on fable is Max-seat headroom preserved for the brain cycle and the deep sweep.
-export _BRAIN_MODEL_CHAIN="claude-fable-5 claude-opus-5 claude-opus-4-8"
+#
+# The chain itself is NO LONGER re-declared here (2026-07-30). It arrives from brain_env.sh, which
+# sources the generated ops/model_chain.env. Re-exporting a literal at this line would silently
+# pin the miners to yesterday's models the first time run_model_upgrade.py adopts a newer flagship
+# -- the organ doing the most model-bound work would be the last to benefit from a better one.
+# The routing INTENT above is unchanged: fable head, walk down, auto-load-balance across regions.
 brain_auth_check || exit 1
 # §33 MINED-TO-WIRED GATE: an organ producing faster than the desk converts is producing DEBT,
 # not value. The gate is RECOMPUTED here, never read from a flag -- `rm data/mining_suspended`

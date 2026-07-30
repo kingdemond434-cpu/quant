@@ -34,7 +34,10 @@ _UA = {"User-Agent": "Mozilla/5.0 (quant-desk video-transcript)"}
 
 
 def _get(url: str, timeout: int = 25) -> bytes:
-    return urllib.request.urlopen(urllib.request.Request(url, headers=_UA), timeout=timeout).read()
+    with urllib.request.urlopen(
+            urllib.request.Request(url, headers=_UA), timeout=timeout) as resp:
+        body: bytes = resp.read()
+    return body
 
 
 def _clean(raw: str) -> str:

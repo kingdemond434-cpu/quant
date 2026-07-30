@@ -38,6 +38,26 @@ MARK_END="# <<< quant-desk ops/crontab.manifest <<<"
 PY="$ROOT/.venv/bin/python"
 [ -x "$PY" ] || PY=$(command -v python3) || { echo "reconstitute: no python3" >&2; exit 2; }
 
+# IMPORTABILITY GATE (added 2026-07-30). 124 of the 145 scripts that import `libs` have no
+# sys.path guard -- they work in production only because the venv has quant-platform installed
+# (pyproject: packages = ["libs", "app"]). On a RESTORE DAY that install is exactly what is
+# missing, so reconstitution would happily write a full crontab of entries that all die on
+# ModuleNotFoundError, and the desk would look scheduled while running nothing. That is a worse
+# failure than refusing: a silent one.
+#
+# Measured here rather than assumed, and REPAIRED once before giving up -- a restore that stops
+# to ask a human for `pip install -e .` has not restored anything.
+if ! (cd "$ROOT" && "$PY" -c "import libs" >/dev/null 2>&1); then
+    echo "reconstitute: 'import libs' fails -- installing the package into $PY"
+    (cd "$ROOT" && "$PY" -m pip install -e . --quiet) || true
+fi
+if ! (cd "$ROOT" && "$PY" -c "import libs" >/dev/null 2>&1); then
+    echo "reconstitute: REFUSING -- 'import libs' still fails after 'pip install -e .'." >&2
+    echo "Most scheduled scripts would die on ModuleNotFoundError, leaving a crontab that" >&2
+    echo "looks healthy and runs nothing. Fix the environment, then re-run." >&2
+    exit 2
+fi
+
 # GATE: --report-only tolerates live-crontab drift (we are about to fix that) but still
 # exits 2 on missing scripts / rotted committed timers -- exactly the refusal we want.
 if ! "$PY" "$CHECKER" --report-only; then

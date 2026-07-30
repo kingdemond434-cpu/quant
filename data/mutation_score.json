@@ -1,8 +1,129 @@
 {
-  "measured": "2026-07-30T07:48:22Z",
+  "measured": "2026-07-30T22:00:35Z",
   "bar": 0.9,
   "method": "self-contained AST mutation harness (see module docstring); mutmut 3.6.0 is the documented path for a long VPS run over whole trees",
   "targets": [
+    {
+      "target": "libs/autodiscovery/validation.py",
+      "tests": [
+        "tests/autodiscovery/test_validation_cpcv_baselines.py",
+        "tests/autodiscovery/test_capacity_relative.py",
+        "tests/autodiscovery/test_lab.py",
+        "tests/autodiscovery/test_campaign_fdr_and_lockbox.py",
+        "tests/validation/test_capacity_parity.py"
+      ],
+      "killed": 5,
+      "survived": 9,
+      "timeout": 0,
+      "error": 0,
+      "total": 14,
+      "kill_rate": 0.3571,
+      "runtime_s": 1577.4,
+      "adjusted_kill_rate": 0.3571,
+      "equivalent_mutants": 0,
+      "equivalences_applied": [],
+      "equivalences_lapsed": [],
+      "meets_bar": false,
+      "survivors": [
+        {
+          "line": 40,
+          "kind": "binop",
+          "mutation": "Mult -> Div"
+        },
+        {
+          "line": 40,
+          "kind": "num_const",
+          "mutation": "24 -> 25"
+        },
+        {
+          "line": 40,
+          "kind": "num_const",
+          "mutation": "260 -> 261"
+        },
+        {
+          "line": 41,
+          "kind": "num_const",
+          "mutation": "0.95 -> 1.95"
+        },
+        {
+          "line": 42,
+          "kind": "num_const",
+          "mutation": "0.5 -> 1.5"
+        },
+        {
+          "line": 58,
+          "kind": "num_const",
+          "mutation": "1000.0 -> 1001.0"
+        },
+        {
+          "line": 69,
+          "kind": "num_const",
+          "mutation": "10.0 -> 11.0"
+        },
+        {
+          "line": 70,
+          "kind": "num_const",
+          "mutation": "20.0 -> 21.0"
+        },
+        {
+          "line": 101,
+          "kind": "num_const",
+          "mutation": "0 -> 1"
+        }
+      ],
+      "real_survivors": [
+        {
+          "line": 40,
+          "kind": "binop",
+          "mutation": "Mult -> Div"
+        },
+        {
+          "line": 40,
+          "kind": "num_const",
+          "mutation": "24 -> 25"
+        },
+        {
+          "line": 40,
+          "kind": "num_const",
+          "mutation": "260 -> 261"
+        },
+        {
+          "line": 41,
+          "kind": "num_const",
+          "mutation": "0.95 -> 1.95"
+        },
+        {
+          "line": 42,
+          "kind": "num_const",
+          "mutation": "0.5 -> 1.5"
+        },
+        {
+          "line": 58,
+          "kind": "num_const",
+          "mutation": "1000.0 -> 1001.0"
+        },
+        {
+          "line": 69,
+          "kind": "num_const",
+          "mutation": "10.0 -> 11.0"
+        },
+        {
+          "line": 70,
+          "kind": "num_const",
+          "mutation": "20.0 -> 21.0"
+        },
+        {
+          "line": 101,
+          "kind": "num_const",
+          "mutation": "0 -> 1"
+        }
+      ],
+      "measured": "2026-07-30T22:00:35Z",
+      "n_sites": 137,
+      "budget_truncated": true,
+      "coverage_of_sites": 0.1022,
+      "note": "budget-truncated: 14 of 137 sites attempted in 1500s. Sites run in SOURCE ORDER, so this is a prefix of the file, not a sample -- excluded from the ratchet rather than floored on partial evidence."
+    },
     {
       "target": "libs/execution/staging.py",
       "tests": [
@@ -15,8 +136,55 @@
       "error": 0,
       "total": 42,
       "kill_rate": 0.8333,
-      "runtime_s": 37.9,
-      "meets_bar": false,
+      "runtime_s": 50.2,
+      "adjusted_kill_rate": 1.0,
+      "equivalent_mutants": 7,
+      "equivalences_applied": [
+        {
+          "line": 49,
+          "kind": "num_const",
+          "mutation": "2 -> 3",
+          "justification": "JSON indentation. Changes whitespace in the state file and nothing that is parsed: json.loads is indifferent to indent, and no caller reads the raw text. Purely cosmetic."
+        },
+        {
+          "line": 61,
+          "kind": "num_const",
+          "mutation": "1.0 -> 2.0",
+          "justification": "Fail-closed DEFAULT for a missing capital_fraction. Predicate is `<= 0.10`; both 1.0 and 2.0 are False, so an absent value refuses identically either way. The value never leaves the function -- only the boolean does."
+        },
+        {
+          "line": 62,
+          "kind": "num_const",
+          "mutation": "0 -> 1",
+          "justification": "Fail-closed DEFAULT for a missing symbol_count. Predicate is `4 <= v <= 5`; both 0 and 1 are outside it, so an absent count refuses identically."
+        },
+        {
+          "line": 72,
+          "kind": "num_const",
+          "mutation": "0.0 -> 1.0",
+          "justification": "Fail-closed DEFAULT for missing live_weeks. Predicate is `>= 8.0`; both 0.0 and 1.0 are below it."
+        },
+        {
+          "line": 73,
+          "kind": "num_const",
+          "mutation": "0 -> 1",
+          "justification": "Fail-closed DEFAULT for missing calibration_rows. Predicate is `>= 10`; both 0 and 1 are below it."
+        },
+        {
+          "line": 83,
+          "kind": "num_const",
+          "mutation": "1 -> 2",
+          "justification": "The -1 SENTINEL, which the AST sees as USub(1) so the mutant is -2. Predicate is `== 0`; both -1 and -2 are False, so 'no drill record' refuses either way. NOTE: the sentinel itself is load-bearing (this defaulted to 0 and passed the S2 gate on missing evidence -- found by mutation testing twice). Its VALUE being -1 versus -2 is what is equivalent, not its being negative."
+        },
+        {
+          "line": 84,
+          "kind": "num_const",
+          "mutation": "999.0 -> 1000.0",
+          "justification": "Fail-closed DEFAULT for a missing cost_ratio. Predicate is `<= 1.25`; both 999.0 and 1000.0 are above it."
+        }
+      ],
+      "equivalences_lapsed": [],
+      "meets_bar": true,
       "survivors": [
         {
           "line": 49,
@@ -44,17 +212,18 @@
           "mutation": "0 -> 1"
         },
         {
-          "line": 81,
+          "line": 83,
           "kind": "num_const",
           "mutation": "1 -> 2"
         },
         {
-          "line": 82,
+          "line": 84,
           "kind": "num_const",
           "mutation": "999.0 -> 1000.0"
         }
       ],
-      "measured": "2026-07-30T07:40:04Z"
+      "real_survivors": [],
+      "measured": "2026-07-30T21:33:49Z"
     },
     {
       "target": "libs/risk/gate.py",
@@ -62,52 +231,16 @@
         "tests/risk/test_gate.py",
         "tests/risk/test_gate_strength.py"
       ],
-      "killed": 44,
-      "survived": 7,
+      "killed": 51,
+      "survived": 0,
       "timeout": 0,
       "error": 0,
       "total": 51,
-      "kill_rate": 0.8627,
-      "runtime_s": 75.7,
-      "meets_bar": false,
-      "survivors": [
-        {
-          "line": 135,
-          "kind": "return_none",
-          "mutation": "return <expr> -> return None"
-        },
-        {
-          "line": 144,
-          "kind": "compare",
-          "mutation": "GtE -> Gt"
-        },
-        {
-          "line": 144,
-          "kind": "num_const",
-          "mutation": "1.0 -> 2.0"
-        },
-        {
-          "line": 155,
-          "kind": "num_const",
-          "mutation": "1.0 -> 2.0"
-        },
-        {
-          "line": 157,
-          "kind": "compare",
-          "mutation": "Eq -> NotEq"
-        },
-        {
-          "line": 159,
-          "kind": "binop",
-          "mutation": "Sub -> Add"
-        },
-        {
-          "line": 187,
-          "kind": "return_none",
-          "mutation": "return <expr> -> return None"
-        }
-      ],
-      "measured": "2026-07-30T07:48:22Z"
+      "kill_rate": 1.0,
+      "runtime_s": 115.2,
+      "meets_bar": true,
+      "survivors": [],
+      "measured": "2026-07-30T21:29:25Z"
     },
     {
       "target": "libs/validation/stepwise.py",

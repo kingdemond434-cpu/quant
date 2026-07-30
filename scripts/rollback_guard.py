@@ -29,6 +29,7 @@ import sys
 import time
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 from libs.ops.platform_paths import venv_python
 
@@ -58,8 +59,8 @@ def _metrics() -> dict[str, object]:
     """Cheap, no-network health snapshot (baseline for deterioration detection)."""
     err = _ROOT / "data" / "cashcarry_error.log"
     hb = _ROOT / "data" / "cashcarry_exec_heartbeat"
-    port: dict = {}
-    cc: dict = {}
+    port: dict[str, Any] = {}
+    cc: dict[str, Any] = {}
     with contextlib.suppress(OSError, json.JSONDecodeError):
         port = json.loads((_ROOT / "web" / "portfolio.json").read_text("utf-8")).get("deployed", {})
     with contextlib.suppress(OSError, json.JSONDecodeError):

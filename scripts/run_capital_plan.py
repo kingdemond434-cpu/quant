@@ -13,6 +13,7 @@ from __future__ import annotations
 import json
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 _SHADOW = Path("web/crypto_shadow.json")
 _CC = Path("web/cashcarry_shadow.json")
@@ -25,7 +26,7 @@ _PM_EFFICIENCY = 1.8                              # Portfolio Margin cross-colla
 _CAPITAL_LEVELS = [3_846.0, 25_000.0, 100_000.0, 500_000.0, 2_000_000.0]
 
 
-def _load(p: Path) -> dict:
+def _load(p: Path) -> dict[str, Any]:
     try:
         return json.loads(p.read_text("utf-8"))
     except (OSError, json.JSONDecodeError):

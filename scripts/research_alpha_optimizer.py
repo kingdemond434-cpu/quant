@@ -27,6 +27,7 @@ from __future__ import annotations
 import json
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 LEDGER = Path("data/decision_ledger.json")
 OUT = Path("data/research_alpha_optimizer.json")
@@ -57,7 +58,7 @@ OUTCOMES = {
 VALUE = {"survivor": 1.0, "refutation": 0.6, "method_upgrade": 0.5, "inconclusive": 0.0}
 
 
-def tag(text: str, table: dict) -> list[str]:
+def tag(text: str, table: dict[str, Any]) -> list[str]:
     t = text.lower()
     return [k for k, kws in table.items() if any(w in t for w in kws)]
 

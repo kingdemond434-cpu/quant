@@ -30,6 +30,7 @@ import sys
 import time
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
 LOGS = ROOT / "data/cro_ai_logs"
@@ -2729,7 +2730,7 @@ MINE_RATCHET = ROOT / "docs/research/conversion_record.json"
 MINE_PRIORS = ROOT / "data/mine_generation_priors.json"
 
 
-def _mine_thresholds() -> dict:
+def _mine_thresholds() -> dict[str, Any]:
     """§33 bars, evidence-adjustable within hard tighten-only bounds (the desk's ThresholdBook)."""
     out = {"kill": 0.60, "stale": 14.0, "regress": 1.5}
     try:
@@ -2772,7 +2773,7 @@ def _mine_items():
     return items
 
 
-def _mine_backing() -> dict:
+def _mine_backing() -> dict[str, Any]:
     """Artifact-only credit, per disposition. `killed` is backed by the GRAVEYARD -- which is what
     makes mass-killing the backlog cost more than converting it, rather than less."""
     arte = _conversion_artifacts()

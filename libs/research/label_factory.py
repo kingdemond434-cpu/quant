@@ -122,6 +122,22 @@ class LabelValidation:
 
 # ------------------------------------------------------------------ helpers on the bronze panel
 
+
+def _mask(cond: pd.Series) -> pd.Series:
+    """A boolean event MASK, where a missing observation means "no event".
+
+    `cond.fillna(False)` on an object-dtype comparison silently DOWNCASTS. pandas 2.x deprecates
+    that and this repo runs `filterwarnings = error`, so eight label-factory tests were RED on a
+    warning -- a suite failing for a pandas-version reason teaches the desk to ignore it.
+
+    `.where(notna, False)` rather than the `infer_objects(copy=False)` the warning suggests:
+    measured on pandas 2.x, the deprecation fires INSIDE `fillna` itself, so chaining
+    infer_objects afterwards is too late and still errors. `where` never downcasts, so the mask
+    is built without the deprecated path at all. Applied ONCE so the intent -- "absent data is
+    not an event" -- lives in one place instead of ten call sites.
+    """
+    return cond.where(cond.notna(), False).astype(bool)
+
 def _need(bars: pd.DataFrame, *cols: str) -> bool:
     return all(c in bars.columns for c in cols)
 
@@ -152,9 +168,9 @@ def liquidity_stress(bars: pd.DataFrame, *, atr_win: int = 20, range_mult: float
         return np.zeros(len(bars), dtype=np.int8)
     tr = _true_range(bars)
     atr = tr.rolling(atr_win, min_periods=max(5, atr_win // 4)).mean().shift(1)  # prior ATR only
-    wide = (tr > range_mult * atr).fillna(False)
+    wide = _mask(tr > range_mult * atr)
     if _need(bars, "volume"):
-        heavy = (bars["volume"] > _roll_q(bars["volume"], vol_win, vol_q).shift(1)).fillna(False)
+        heavy = _mask(bars["volume"] > _roll_q(bars["volume"], vol_win, vol_q).shift(1))
     else:
         heavy = pd.Series(True, index=bars.index)
     return np.asarray((wide & heavy).to_numpy(), dtype=np.int8)
@@ -175,8 +191,8 @@ def forced_deleveraging(bars: pd.DataFrame, *, ret_q: float = 0.05, win: int = 6
         return np.zeros(len(bars), dtype=np.int8)
     ret = bars["close"].pct_change()
     thresh = _roll_q(ret, win, ret_q).shift(1)           # prior distribution only
-    sharp_down = (ret < thresh).fillna(False)
-    oi_falling = (bars["open_interest"].pct_change() < -abs(oi_drop)).fillna(False)
+    sharp_down = _mask(ret < thresh)
+    oi_falling = _mask(bars["open_interest"].pct_change() < -abs(oi_drop))
     return np.asarray((sharp_down & oi_falling).to_numpy(), dtype=np.int8)
 
 
@@ -193,12 +209,12 @@ def accumulation_window(bars: pd.DataFrame, *, win: int = 20, vol_q: float = 0.3
         return np.zeros(len(bars), dtype=np.int8)
     ret = bars["close"].pct_change()
     rv = ret.rolling(win, min_periods=max(5, win // 4)).std()
-    calm = (rv < _roll_q(rv, win * 5, vol_q).shift(1)).fillna(False)
+    calm = _mask(rv < _roll_q(rv, win * 5, vol_q).shift(1))
     drift = (bars["close"] / bars["close"].shift(win) - 1.0).abs()
-    flat = (drift < abs(drift_max)).fillna(False)
+    flat = _mask(drift < abs(drift_max))
     if _need(bars, "open_interest"):
         oi = bars["open_interest"]
-        building = (oi / oi.shift(win) - 1.0 > abs(oi_rise)).fillna(False)
+        building = _mask(oi / oi.shift(win) - 1.0 > abs(oi_rise))
     else:
         building = pd.Series(True, index=bars.index)
     return np.asarray((calm & flat & building).to_numpy(), dtype=np.int8)
@@ -223,12 +239,12 @@ def regime_transition(bars: pd.DataFrame, *, win: int = 20, ratio: float = 1.8,
     ret = bars["close"].pct_change()
     rv = ret.rolling(win, min_periods=max(5, win // 4)).std()
     prior = rv.shift(win)
-    stepped = (rv > ratio * prior).fillna(False)
+    stepped = _mask(rv > ratio * prior)
     # held: the step is still in force through the confirmation window
     held = stepped.copy()
     for k in range(1, max(1, confirm) + 1):
-        held &= (rv.shift(-k) > ratio * prior).fillna(False)
-    fresh = held & ~held.shift(1).fillna(False)          # mark the ONSET, not every held bar
+        held &= _mask(rv.shift(-k) > ratio * prior)
+    fresh = held & ~_mask(held.shift(1))          # mark the ONSET, not every held bar
     return np.asarray(fresh.to_numpy(), dtype=np.int8)
 
 

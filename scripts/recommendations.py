@@ -42,7 +42,8 @@ _MIN_REASON = 25          # a bare "no" / "wontfix" is not a disposition
 def _load() -> dict[str, Any]:
     if LEDGER.exists():
         try:
-            return json.loads(LEDGER.read_text("utf-8"))
+            loaded: dict[str, Any] = json.loads(LEDGER.read_text("utf-8"))
+            return loaded
         except Exception:
             pass
     return {"recommendations": []}

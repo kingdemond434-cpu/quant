@@ -35,7 +35,7 @@ from libs.execution.carry_accounting import (
     derive_spot_realized,
     read_income,
 )
-from libs.risk import risk_controls
+from libs.risk import capital_events, risk_controls
 
 _STATE = Path("data/cashcarry_positions.json")
 _TRADES = Path("data/cashcarry_trades.json")     # real open/close log -> winrate + trade history
@@ -685,7 +685,18 @@ def _rebalance(top: int, hold_top: int, capital: float, *, dry: bool) -> dict[st
                              for s, p in pos.items())
                          + float(state.get("realized_spot_pnl", 0.0)))
             eq_c = eq + spot_side
-            start_eq = float(state.get("start_futures_equity", eq))
+            # INCEPTION, honouring any RECORDED capital event (libs/risk/capital_events.py).
+            # `start_futures_equity` is written once at inception and never re-based, so after a
+            # ruin-floor breach the book entered a provably closed loop -- flatten, no opens, no
+            # funding, equity constant, flatten -- measured at 113 consecutive rebalances on
+            # 2026-07-30, and it froze Gate 0's live-fills clock at 26.42 of 28 days.
+            #
+            # This does NOT loosen the rail. effective_start_equity is read-only and returns its
+            # argument unchanged when no capital event has ever been recorded, so behaviour on an
+            # un-deposited box is byte-identical. Only a signed, ledgered deposit or an explicit
+            # principal restart moves the inception -- the desk cannot clear its own stop.
+            start_eq = float(capital_events.effective_start_equity(
+                float(state.get("start_futures_equity", eq))))
             peak = max(float(state.get("peak_combined_equity", start_eq)), eq_c)
             state["peak_combined_equity"] = peak
             gross = sum(float(p["spot_qty"]) * spot_px.get(s, float(p["spot_cost"]))

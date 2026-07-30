@@ -37,6 +37,7 @@ import ssl
 import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "data/defi_lending.jsonl"
@@ -57,7 +58,7 @@ def _get(url: str):
     return json.loads(urllib.request.urlopen(r, timeout=90, context=CTX).read())
 
 
-def _quarantine(reason: str, detail: dict) -> None:
+def _quarantine(reason: str, detail: dict[str, Any]) -> None:
     QUAR.write_text(json.dumps({"ts": datetime.now(tz=UTC).isoformat(), "reason": reason,
                                 **detail}, indent=1), "utf-8")
     print(f"  QUARANTINED: {reason}")

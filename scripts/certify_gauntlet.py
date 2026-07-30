@@ -29,6 +29,7 @@ import json
 import pickle
 import time
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 
@@ -48,8 +49,34 @@ _HYP = Hypothesis(
 )
 
 
+class CampaignUnavailable(RuntimeError):
+    """The campaign pickle is absent. Raised so the caller can record a BLOCKER, not a traceback."""
+
+
 def _load_campaign() -> tuple[np.ndarray, np.ndarray, int]:
-    """The reconstructed 420-candidate campaign the 0-survivor result was measured on."""
+    """The reconstructed 420-candidate campaign the 0-survivor result was measured on.
+
+    `_audit_prepared.pkl` is a gitignored 6MB scratch artifact with THREE READERS (this script,
+    measure_gate_histogram.py, measure_matrix_window.py) and NO WRITER anywhere in the repo -- it
+    was produced once by hand during the 2026-07-29 audit and never committed or regenerated.
+
+    So this script, scheduled daily, has been dying on a bare FileNotFoundError every run, and
+    reports/gauntlet_certification.json has never existed. The consequence is not cosmetic:
+    libs/validation/positive_control.py is the instrument that distinguishes "price space is
+    genuinely picked clean" from "the gate is welded shut", and until it produces an artifact the
+    desk cannot tell those apart -- which is the single question the 420-tested/0-survivors record
+    turns on. It is also why GAP_REGISTER R0040 and R0041 are both still gated.
+
+    Raising a NAMED exception rather than crashing means the daily run leaves EVIDENCE of why it
+    could not certify, in the artifact the max-push queue reads, instead of a stack trace at the
+    bottom of a log nobody opens.
+    """
+    if not _PREPARED.exists():
+        raise CampaignUnavailable(
+            f"{_PREPARED} is absent and NOTHING in this repo generates it (3 readers, 0 writers). "
+            "It was reconstructed by hand for the 2026-07-29 audit and never committed. Until it "
+            "is regenerated or _load_campaign() is given a fallback, the positive control cannot "
+            "run and 'welded gate' vs 'empty space' stays undecidable.")
     prepared = pickle.loads(_PREPARED.read_bytes())
     min_len = min(len(r) for *_x, r in prepared)
     matrix = np.column_stack([r[-min_len:] for *_x, r in prepared])
@@ -57,7 +84,8 @@ def _load_campaign() -> tuple[np.ndarray, np.ndarray, int]:
     return matrix, sharpes, min_len
 
 
-def _score(rets: np.ndarray, matrix: np.ndarray, peer_sharpes: np.ndarray) -> dict:
+def _score(rets: np.ndarray, matrix: np.ndarray,
+           peer_sharpes: np.ndarray) -> dict[str, Any]:
     """Inject ``rets`` as a new campaign column and score it on BOTH gate paths."""
     m = np.column_stack([matrix, rets])
     gates = campaign_gate_stats(m)
@@ -73,7 +101,7 @@ def _score(rets: np.ndarray, matrix: np.ndarray, peer_sharpes: np.ndarray) -> di
     legacy = validate(rets, pbo=gates.legacy_pbo, rc=gates.legacy_rc, **common)
     percand = validate(rets, campaign=gates, column=col, **common)
 
-    def _v(res) -> dict:
+    def _v(res: Any) -> dict[str, Any]:
         return {
             "survived": bool(res.survived),
             "failed": [g for g, ok in res.gates.items() if not ok],
@@ -93,12 +121,35 @@ def main() -> int:
     args = ap.parse_args()
     targets = [float(t) for t in args.targets.split(",")]
 
-    matrix, peer_sharpes, n_obs = _load_campaign()
+    try:
+        matrix, peer_sharpes, n_obs = _load_campaign()
+    except CampaignUnavailable as exc:
+        # RECORD THE BLOCKER, do not crash. A daily organ that dies on a traceback produces
+        # nothing an audit can read, so the gap stays invisible for as long as nobody opens the
+        # log -- which for this script was every day since it was scheduled. Writing the artifact
+        # with status BLOCKED means check_organs sees a fresh file, run_max_push sees a named
+        # blocker, and the reason is one grep away instead of one archaeology session away.
+        _OUT.parent.mkdir(parents=True, exist_ok=True)
+        _OUT.write_text(json.dumps({
+            "generated_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "status": "BLOCKED",
+            "blocker": str(exc),
+            "consequence": "The positive control has never run, so the desk cannot distinguish a "
+                           "genuinely picked-clean price space from a welded-shut gate. "
+                           "GAP_REGISTER R0040 and R0041 both depend on this answer.",
+            "resolution": "Commit a builder for _audit_prepared.pkl, or give _load_campaign() a "
+                          "fallback to positive_control.null_cohort at the shape recorded in "
+                          "reports/gate_histogram.json.",
+            "rows": [],
+        }, indent=2), "utf-8")
+        print(f"BLOCKED: {exc}")
+        print(f"-> {_OUT} (status BLOCKED -- the blocker is now an artifact, not a traceback)")
+        return 1
     se = float(np.sqrt(PPY / n_obs))
     print(f"campaign: T={n_obs} N={matrix.shape[1]}  SE(annual Sharpe)={se:.3f}")
     print("controls have their target SAMPLE Sharpe by construction (sampling error removed)\n")
 
-    rows: list[dict] = []
+    rows: list[dict[str, Any]] = []
     # target 0.0 is the NULL control -- the other half of certification.
     for target in [*targets, 0.0]:
         for k in range(args.seeds):
@@ -116,7 +167,7 @@ def main() -> int:
                 f"percand={'PASS' if pc['survived'] else 'FAIL:' + ','.join(pc['failed'])}"
             )
 
-    def _summary(path: str) -> dict:
+    def _summary(path: str) -> dict[str, Any]:
         good = [r for r in rows if r["target"] > 0.0]
         nulls = [r for r in rows if r["target"] == 0.0]
         by_t = {
@@ -144,7 +195,7 @@ def main() -> int:
             "certified_admits_good": bool(passing),
         }
 
-    out = {
+    out: dict[str, Any] = {
         "generated": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "campaign": {"T": n_obs, "N": matrix.shape[1], "se_annual_sharpe": se},
         "controls": {"targets": targets, "seeds": args.seeds,

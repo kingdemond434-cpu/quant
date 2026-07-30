@@ -110,6 +110,8 @@ def main() -> int:
         ("per_candidate", lambda i: {"campaign": gates, "column": i}),
     ):
         tally: collections.Counter[str] = collections.Counter()
+        fail_tally: collections.Counter[str] = collections.Counter()
+        seen: collections.Counter[str] = collections.Counter()
         survivors: list[str] = []
         n_fail_only: collections.Counter[str] = collections.Counter()
         t = time.time()
@@ -122,9 +124,17 @@ def main() -> int:
                 n_trials=fam_counts[fam], sharpe_estimates=_sh,
                 returns_matrix=matrix, **kwargs_fn(i),
             )
+            # BOTH OUTCOMES ARE TALLIED. Counting only passes made a gate at 0/420 byte-for-byte
+            # indistinguishable from a gate that is NOT IN THE CODE -- both simply absent from
+            # pass_counts. That ambiguity is not cosmetic on the desk's only gate-optimality
+            # artifact: it is exactly how `dsr` vetoing every single candidate and
+            # `beats_baselines` not yet existing both read as "not there". A gate rejecting 100%
+            # of candidates is the loudest possible finding and it was rendering as silence.
             for name, ok in v.gates.items():
-                if ok:
-                    tally[name] += 1
+                tally[name] += int(bool(ok))
+                seen[name] += 1
+                if not ok:
+                    fail_tally[name] += 1
             failed = [n for n, ok in v.gates.items() if not ok]
             if not failed:
                 survivors.append(f"{fam}/{sub}/{sym}")
@@ -144,8 +154,13 @@ def main() -> int:
         if n_fail_only:
             _log(f"    SOLE blocker (candidate failed exactly ONE gate): {dict(n_fail_only)}")
         report[f"histogram_{label}"] = {
-            "pass_counts": dict(tally), "survivors": survivors,
-            "sole_blocker": dict(n_fail_only),
+            "pass_counts": dict(tally), "fail_counts": dict(fail_tally),
+            "gates_evaluated": dict(seen),
+            # A gate present in `gates_evaluated` with pass_counts 0 is a TOTAL VETO; a gate
+            # missing from `gates_evaluated` entirely is not in the code. Recording both makes
+            # those two states distinguishable, which they were not.
+            "total_vetoes": sorted(g for g in seen if tally.get(g, 0) == 0),
+            "survivors": survivors, "sole_blocker": dict(n_fail_only),
         }
 
     out = "reports/gate_histogram.json"

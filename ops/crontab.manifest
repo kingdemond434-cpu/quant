@@ -95,13 +95,93 @@ QUANT_ROOT=/home/quant/quant-platform
 # CONFIDENCE: committed-script (new this cycle)
 50 */6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_intelligence_cycle.py >> data/cro_ai_logs/intelligence_cycle.log 2>&1
 
-# ENFORCEMENT MATRIX: maps all 42 constitutional principles to the 57 mechanical fences and FAILS
-# on an unenforced principle or a mapping to a missing artifact. Every defect found 2026-07-30 was
-# an unenforced-principle defect (capacity parity written in L1.18 while a $100k floor ran in the
-# gauntlet; L2.9 activate-the-unused written while 171 capabilities sat dormant).
+# ENFORCEMENT MATRIX: maps all 43 constitutional principles to the 71 mechanical fences, in BOTH
+# directions, and FAILS on any of three defects: an unenforced principle, a mapping to a missing
+# artifact, or a fence claimed by no law. Every defect found 2026-07-30 was an unenforced-principle
+# defect (capacity parity written in L1.18 while a $100k floor ran in the gauntlet; L2.9
+# activate-the-unused written while 171 capabilities sat dormant). The reverse direction was closed
+# 2026-07-30 (39 unclaimed fences -> 0) and RATCHETED: a new fence must name the law it serves.
 # EVIDENCE: scripts/build_enforcement_matrix.py (built 2026-07-30); docs/CONSTITUTION.md L2.0/L2.2
 # CONFIDENCE: committed-script (new this cycle)
 13 7 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/build_enforcement_matrix.py >> data/cro_ai_logs/enforcement_matrix.log 2>&1
+
+# IMMUTABLE CONSTITUTIONAL CORE (L2.8a): the organism may amend its own constitution, so five
+# clauses are SHA-256 sealed against it -- L1.1 (the objective function), L1.2 (the hierarchy),
+# L1.6 (never-loosen validation + the two-stage law), L1.23 (survival rails, Tier-3), and L2.8a
+# itself. THE FAILURE THIS EXISTS FOR: a self-improving optimiser permitted to rewrite its own
+# limits will eventually find that the cheapest way to raise a measured return is to lower the rail
+# constraining it. Runs BEFORE the matrix so a tampered core is the first thing the day reports.
+# Drift FAILS LOUD and is never auto-reverted -- --reseal is a principal action only.
+# EVIDENCE: scripts/check_constitution_core.py + data/constitution_core.lock (sealed 2026-07-30);
+#           tests/governance/test_constitution_core.py proves the seal discriminates
+# CONFIDENCE: committed-script (new this cycle)
+7 7 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_constitution_core.py >> data/cro_ai_logs/constitution_core.log 2>&1
+
+# PROMOTION QUEUE (L1.18a, principal concern 2026-07-30: the shadow->live process must not be so
+# slow that "by the time they reach live the capital is already outgrown its capacity").
+# capacity_race answered that question since 07-30 and EVERY CALLER WAS A TEST passing a hardcoded
+# validation_days=90 -- both un-run and run against an assumption. This is its production caller,
+# and it feeds the race a MEASURED latency (clock + queue-wait + decision lag, each with its
+# provenance). Forward slots are then ordered by EXPIRY, SHORTEST RUNWAY FIRST: a long-runway edge
+# loses nothing by waiting, a short-runway one loses everything, so arrival order systematically
+# sacrifices exactly the edges that cannot afford to wait. SUB-VIABLE and OUTGROWN candidates are
+# excluded rather than back-sorted. A DOA edge is NEVER rescued by a shorter clock or a lower bar.
+# EVIDENCE: scripts/run_promotion_queue.py + libs/research/promotion_latency.py;
+#           tests/research/test_promotion_queue.py (13 tests incl. the accelerant refusals)
+# CONFIDENCE: committed-script (new this cycle)
+53 7 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_promotion_queue.py >> data/cro_ai_logs/promotion_queue.log 2>&1
+
+# MAX PUSH (L1.0, principal order 2026-07-30: "every aspect should always aim and hunt to maximise
+# itself 100% every single day, believing it never is"). The law already said the gap to 100% IS
+# the work queue; what did not exist was the queue. Five separate "what is left" artifacts
+# (ratchets, utilisation, enforcement matrix, wiring, gap register) were each true and none
+# comparable, so the desk worked whichever one it happened to open. This merges them into ONE
+# ranked queue by declared leverage, refreshing its producers first so it ranks today's numbers.
+# THE ANTI-COMPLACENCY PROPERTY: it never reports "done". All-green escalates to
+# MEASUREMENT-SET-TOO-SMALL, because a system that reaches 100% on everything it measures is
+# measuring too little -- and UNMEASURED aspects outrank partially-complete ones, since every
+# expensive defect this desk has found lived in something that carried no number.
+# Runs LAST in the 06:xx-07:xx governance block so it reads that morning's fresh artifacts.
+# EVIDENCE: scripts/run_max_push.py -> data/max_push_queue.json; docs/CONSTITUTION.md L1.0
+# CONFIDENCE: committed-script (new this cycle)
+41 7 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_max_push.py >> data/cro_ai_logs/max_push.log 2>&1
+
+# UTILISATION (L1.28a, principal order 2026-07-30: "idleness is also timid -- never leave any
+# ceiling or capital idle"). Unused headroom is not safety, it is an unbooked loss. A wrong trade
+# costs a bounded amount and announces itself; idle capacity costs its ENTIRE forward output
+# stream and announces nothing -- an unfilled forward slot is evidence never accrued, an unread
+# dataset a hypothesis never tested, a dormant module engineering already paid for returning zero.
+# Enumerates every declared ceiling, measures it, and FAILS on idle headroom with no named binding
+# constraint. UNMEASURED counts as ZERO: a ceiling nobody measures is idle by default.
+# FIRST RUN found a real defect -- deployed capital reading 13,155/4,500 (over-limit), because
+# equity had TWO sources of truth; every capacity band is a ratio to that number.
+# EVIDENCE: scripts/check_utilisation.py -> data/utilisation.json; docs/CONSTITUTION.md L1.28a
+# CONFIDENCE: committed-script (new this cycle)
+27 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_utilisation.py >> data/cro_ai_logs/utilisation.log 2>&1
+
+# TIMIDITY FENCE (L1.28): about two thirds of the constitution's principles contain restraint
+# language, every one of which a language model can degrade into a general licence to do less.
+# The misreading is systematic, silent, and looks like good judgement. This requires every
+# scope restraint to state its non-timid reading (or be declared EVIDENCE/RISK restraint, which
+# stays strict), and it also scans the injected doctrine for timid ORDERS -- a phrase like
+# "propose rather than build" there is a direct instruction to every organ to do less.
+# EVIDENCE: scripts/check_timidity_language.py + tests/governance/test_timidity_fence.py
+# CONFIDENCE: committed-script (new this cycle)
+19 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_timidity_language.py >> data/cro_ai_logs/timidity.log 2>&1
+
+# MODEL AUTO-UPGRADE (principal order 2026-07-30: "auto-upgrade to newer flagship models, no human
+# needed"). Model capability is the one input the desk cannot improve by its own work -- it
+# improves when the vendor ships. Until today that improvement reached this desk only when a human
+# noticed and hand-edited three files; every cycle in between ran on strictly worse reasoning than
+# was available, with no error message. This discovers newer flagships, PING-VERIFIES that they
+# actually answer for this account (listing is not entitlement), and PREPENDS the winner above the
+# current head, which is RETAINED as the fallback -- so a promoted model that throttles degrades
+# to exactly what ran yesterday with nobody awake. An undeclared model FAMILY is paged, never
+# adopted. Daily at 04:11 UTC: before the 05:xx organs, after the overnight cycle.
+# EVIDENCE: scripts/run_model_upgrade.py + libs/ops/model_chain.py + ops/model_chain.env (single
+#           source, extracted from 3 hardcoded copies 2026-07-30); tests/ops/test_model_chain.py
+# CONFIDENCE: committed-script (new this cycle)
+11 4 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_model_upgrade.py --apply >> data/cro_ai_logs/model_upgrade.log 2>&1
 
 # WIRING AGENT: built things get WIRED automatically (principal order 2026-07-30). Detection
 # alone reproduced the original failure one level up -- a dormancy report nobody actions is itself
@@ -434,3 +514,45 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # scripts/setup_ngrok.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
 21 8 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/setup_ngrok.py >> data/cro_ai_logs/setup_ngrok.log 2>&1
 # <<< WIRING AGENT <<<
+
+# GATE 0 READINESS (launch day, 2026-07-30). s1_entry_met is the gate that admits real capital,
+# and NOTHING assembled its evidence dict from reality -- so "what is actually left?" required
+# reading five subsystems by hand. This measures every criterion against its proving artifact and
+# splits DESK-owed from PRINCIPAL-owed, which is the only distinction that matters on launch day.
+# An unmeasurable criterion reads BLOCKED-UNKNOWN, never READY: a gate that counts "could not
+# measure" as satisfied is how capital gets admitted it should not.
+# EVIDENCE: scripts/check_gate0_ready.py -> data/gate0_readiness.json
+# CONFIDENCE: committed-script (new this cycle)
+9 */4 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_gate0_ready.py >> data/cro_ai_logs/gate0_readiness.log 2>&1
+
+# GENERATION DIVERSITY (HYPOTHESIS_MAX #2/#3/#6, unblocked at Gate 0 entry 2026-07-30). The spec
+# deferred the collapse detector with an explicit trigger -- "build it when generation cadence
+# upgrades to weekly at S1/Gate-0 entry" -- because generation was low-volume and the failure mode
+# was unreachable. That trigger fires today.
+# WHAT IT MEASURES that nothing else could: novel_rate, the share of generated ideas that were
+# genuinely NEW questions rather than reparameterisations. "420 candidates tested" and "one
+# question asked 420 ways" are identical from a count, and 420/0 is precisely the record that
+# needed telling apart. Plus mechanism entropy (normalised by ITEM count, so 2 fingerprints across
+# 50 ideas reads ~0.18 rather than a perfect 1.0), market breadth counting cross-sectional
+# universes properly, and cross-generator herding between seats.
+# The detector NEVER blocks generation -- instrumentation that pages the weekly panel, per spec.
+# EVIDENCE: libs/research/{collapse_detector,variation_blocker,mechanism_fingerprint}.py;
+#           tests/research/test_{collapse_detector,variation_blocker}.py (37 tests)
+# CONFIDENCE: committed-script (new this cycle)
+23 9 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_generation_diversity.py >> data/cro_ai_logs/gen_diversity.log 2>&1
+
+# SAFETY DRILLS (GAP_REGISTER row #2 Gate-0 item (c): "monthly host-death and ladder DRILLS have
+# never been run"). staging.s2_entry_met reads `critical_drill_failures`, and that field defaults
+# to the REFUSING sentinel because no code had ever produced a drill record -- so the S2 gate was
+# correctly closed and had no way to open.
+# WHY DRILLS AND NOT UNIT TESTS: a unit test asks "does this function return the right value?"; a
+# drill asks "does the INVARIANT survive the event it exists for?" -- process death mid-position,
+# a pager unanswered for four hours, a clock moving backwards. Those cross function boundaries and
+# PERSISTED STATE, which is where the crash-loop-resets-the-timer class of bug lives.
+# NO DRILL PLACES OR CANCELS A LIVE ORDER: pure decision functions against temp-directory copies
+# of state. A drill that could move money would be a larger risk than the one it certifies.
+# Weekly rather than the monthly the register asked for -- the cost is seconds.
+# EVIDENCE: scripts/run_drills.py -> data/drill_report.json + data/drill_log.jsonl;
+#           tests/ops/test_drills.py breaks each rail and proves the drill catches it
+# CONFIDENCE: committed-script (new this cycle)
+40 3 * * 1 cd "$QUANT_ROOT" && .venv/bin/python scripts/run_drills.py >> data/cro_ai_logs/drills.log 2>&1

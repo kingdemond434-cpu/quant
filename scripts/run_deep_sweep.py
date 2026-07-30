@@ -69,15 +69,17 @@ SUBSYSTEMS = {
 }
 
 
-def _run(prompt: str, timeout: int) -> subprocess.CompletedProcess:
+def _run(prompt: str, timeout: int) -> subprocess.CompletedProcess[str]:
     # DUAL-POOL (2026-07-26): try the fable metered pool FIRST, fall through to the Max seat.
     # Each auditor is its own invocation with its own brain_auth_check, so the 8 auditors
     # AUTO-LOAD-BALANCE across both pools -- the first ones drain fable, the rest land on opus-5.
     # The sweep lost every auditor at 04:00 racing the cycle and diggers for a single seat.
     return subprocess.run(
         ["bash", "-c",
+         # The chain comes from brain_env.sh -> ops/model_chain.env (single source, 2026-07-30).
+         # It used to be re-exported here as a literal, which would have pinned the sweep to
+         # yesterday's models the moment run_model_upgrade.py adopted a newer flagship.
          'source ops/brain_env.sh && '
-         'export _BRAIN_MODEL_CHAIN="claude-fable-5 claude-opus-5 claude-opus-4-8" && '
          # a silent short-circuit here is what made today's four failures
          # undiagnosable: no model answered, claude never ran, both streams empty
          'brain_auth_check || { echo "BRAIN_AUTH_FAILED: no model in '
