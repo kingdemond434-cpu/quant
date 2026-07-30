@@ -168,7 +168,17 @@ class _Applier(ast.NodeTransformer):
         return node
 
     def visit_Constant(self, node: ast.Constant) -> ast.AST:
-        kind = "bool_const" if isinstance(node.value, bool) else "num_const"
+        # The APPLIER must classify constants exactly as the COLLECTOR does, or the ordinals
+        # disagree: the collector only records bool/int/float, so treating a str/None constant as
+        # "num_const" here both mis-counts the index and crashes on `str + 1` (observed 2026-07-29
+        # on libs/execution/staging.py). A mutation harness that dies mid-file reports nothing
+        # about the tests -- the same false-negative shape as a broken mirror.
+        if isinstance(node.value, bool):
+            kind = "bool_const"
+        elif isinstance(node.value, (int, float)):
+            kind = "num_const"
+        else:
+            return node
         if self._hit(node, kind):
             node.value = (not node.value) if kind == "bool_const" else node.value + 1
             self.applied = True
@@ -191,7 +201,12 @@ def _prepare(work: Path) -> None:
     # it, so omitting it made the baseline suite fail and scored all 89 mutants as ERROR on the
     # first run -- a mirror missing one package reads as "tests are worthless" rather than
     # "the mirror is wrong". Copy everything the suite can import.
-    for item in ("libs", "tests", "app", "api", "config", "pyproject.toml", "scripts"):
+    # MIRROR COMPLETENESS IS LOAD-BEARING, learned twice: omitting `app` made the stepwise
+    # baseline fail (89 mutants scored ERROR, reading as "tests are worthless"), and omitting
+    # `migrations` made tests/execution/conftest.py fail to import (43 ERRORs on staging.py).
+    # A mirror missing one package reports a fact about ITSELF as a fact about the tests.
+    for item in ("libs", "tests", "app", "api", "config", "migrations", "data",
+                 "pyproject.toml", "scripts"):
         src = _ROOT / item
         if not src.exists():
             continue
@@ -296,16 +311,38 @@ def main() -> int:
     targets = ([(args.target, args.tests)] if args.target else _DEFAULT_TARGETS)
     scores = [measure(t, tests, budget_s=args.budget_s) for t, tests in targets]
 
+    fresh = [{"target": s.target, "tests": s.tests, "killed": s.killed,
+              "survived": s.survived, "timeout": s.timeout, "error": s.error,
+              "total": s.total, "kill_rate": s.kill_rate, "runtime_s": s.runtime_s,
+              "meets_bar": s.kill_rate >= args.bar, "survivors": s.survivors,
+              "measured": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+             for s in scores]
+    # MERGE, never replace. Measuring ONE target used to overwrite the whole artifact, which
+    # (a) destroyed prior measurements and (b) fed a phantom REGRESSION to the ratchet fence --
+    # a measurement tool must never be able to lower a floor by looking at a different file.
+    # An ERROR-only result (baseline broken, nothing actually mutated) NEVER displaces a real
+    # prior score for the same target: a failed run is not evidence about the tests.
+    try:
+        prior = json.loads(_OUT.read_text("utf-8")).get("targets", [])
+    except (OSError, json.JSONDecodeError, AttributeError):
+        prior = []
+    merged: dict[str, dict[str, object]] = {str(t.get("target")): t for t in prior
+                                            if isinstance(t, dict)}
+    for row in fresh:
+        key = str(row["target"])
+        old = merged.get(key)
+        if (int(row["total"]) == int(row["error"]) and old is not None
+                and int(old.get("total", 0)) > int(old.get("error", 0))):
+            old["last_failed_run"] = row["measured"]
+            old["last_failed_reason"] = f"{row['error']} mutants scored ERROR (baseline broken)"
+            continue
+        merged[key] = row
     payload = {
         "measured": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "bar": args.bar,
         "method": "self-contained AST mutation harness (see module docstring); mutmut 3.6.0 is "
                   "the documented path for a long VPS run over whole trees",
-        "targets": [{"target": s.target, "tests": s.tests, "killed": s.killed,
-                     "survived": s.survived, "timeout": s.timeout, "error": s.error,
-                     "total": s.total, "kill_rate": s.kill_rate, "runtime_s": s.runtime_s,
-                     "meets_bar": s.kill_rate >= args.bar, "survivors": s.survivors}
-                    for s in scores],
+        "targets": [merged[k] for k in sorted(merged)],
     }
     _OUT.parent.mkdir(parents=True, exist_ok=True)
     _OUT.write_text(json.dumps(payload, indent=2), "utf-8")

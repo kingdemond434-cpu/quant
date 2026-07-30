@@ -1,8 +1,61 @@
 {
-  "measured": "2026-07-30T02:32:19Z",
+  "measured": "2026-07-30T07:40:04Z",
   "bar": 0.9,
   "method": "self-contained AST mutation harness (see module docstring); mutmut 3.6.0 is the documented path for a long VPS run over whole trees",
   "targets": [
+    {
+      "target": "libs/execution/staging.py",
+      "tests": [
+        "tests/execution/test_staging.py",
+        "tests/execution/test_staging_strength.py"
+      ],
+      "killed": 35,
+      "survived": 7,
+      "timeout": 0,
+      "error": 0,
+      "total": 42,
+      "kill_rate": 0.8333,
+      "runtime_s": 37.9,
+      "meets_bar": false,
+      "survivors": [
+        {
+          "line": 49,
+          "kind": "num_const",
+          "mutation": "2 -> 3"
+        },
+        {
+          "line": 61,
+          "kind": "num_const",
+          "mutation": "1.0 -> 2.0"
+        },
+        {
+          "line": 62,
+          "kind": "num_const",
+          "mutation": "0 -> 1"
+        },
+        {
+          "line": 72,
+          "kind": "num_const",
+          "mutation": "0.0 -> 1.0"
+        },
+        {
+          "line": 73,
+          "kind": "num_const",
+          "mutation": "0 -> 1"
+        },
+        {
+          "line": 81,
+          "kind": "num_const",
+          "mutation": "1 -> 2"
+        },
+        {
+          "line": 82,
+          "kind": "num_const",
+          "mutation": "999.0 -> 1000.0"
+        }
+      ],
+      "measured": "2026-07-30T07:40:04Z"
+    },
     {
       "target": "libs/validation/stepwise.py",
       "tests": [

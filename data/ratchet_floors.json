@@ -20,13 +20,31 @@
   "scripts_mypy_clean": {
     "artifact": "data/mypy_ratchet.json",
     "proving_command": "python scripts/check_mypy_ratchet.py",
-    "recorded": "2026-07-30T07:27:37Z",
+    "recorded": "2026-07-30T07:40:54Z",
     "value": 0.406844
+  },
+  "test_strength::libs/execution/staging.py": {
+    "artifact": "data/mutation_score.json",
+    "proving_command": "python scripts/run_mutation.py --target libs/execution/staging.py",
+    "recorded": "2026-07-30T07:40:54Z",
+    "value": 0.8333
+  },
+  "test_strength::libs/validation/stepwise.py": {
+    "artifact": "data/mutation_score.json",
+    "proving_command": "python scripts/run_mutation.py --target libs/validation/stepwise.py",
+    "recorded": "2026-07-30T07:40:54Z",
+    "value": 0.9
   },
   "test_strength_min_kill_rate": {
     "artifact": "data/mutation_score.json",
     "proving_command": "python scripts/run_mutation.py",
     "recorded": "2026-07-30T07:19:13Z",
     "value": 0.9
+  },
+  "test_strength_targets_at_bar": {
+    "artifact": "data/mutation_score.json",
+    "proving_command": "python scripts/run_mutation.py",
+    "recorded": "2026-07-30T07:40:54Z",
+    "value": 0.5
   }
 }

@@ -55,13 +55,28 @@ def _age_h(path: Path) -> float | None:
 # Every entry states the command that proves it, per L2.4: a claim without its command is not a
 # measurement. max_age None = no staleness requirement (a floor artifact that only changes when the
 # underlying work does).
-def _mutation(d: Any) -> float | None:
+def _mutation_targets(d: Any) -> dict[str, float]:
+    """Per-target kill rates. PER-TARGET IS THE CORRECT SHAPE, and the first version got it wrong:
+    a single `min()` across targets meant MEASURING A NEW FILE looked like a REGRESSION (staging
+    entered at 83.3% and dragged the aggregate down from stepwise's 90%). A fence that fires when
+    the desk measures MORE trains everyone to ignore it -- the opposite of L1.0. Each target now
+    carries its own floor, and the aggregate below is a coverage number, not a min."""
     if not isinstance(d, dict):
+        return {}
+    out: dict[str, float] = {}
+    for t in d.get("targets", []):
+        if (isinstance(t, dict) and isinstance(t.get("kill_rate"), (int, float))
+                and t.get("total")):
+            out[str(t.get("target"))] = float(t["kill_rate"])
+    return out
+
+
+def _mutation_at_bar(d: Any) -> float | None:
+    """Share of MEASURED targets meeting the v8 8.2 bar -- itself a ratchet toward 100%."""
+    rates = _mutation_targets(d)
+    if not rates:
         return None
-    rows = [t for t in d.get("targets", []) if isinstance(t, dict)]
-    rates = [float(t["kill_rate"]) for t in rows
-             if isinstance(t.get("kill_rate"), (int, float)) and t.get("total")]
-    return min(rates) if rates else None          # the WEAKEST measured target is the desk's bar
+    return sum(1 for v in rates.values() if v >= 0.90) / len(rates)
 
 
 def _findings_coverage(d: Any) -> float | None:
@@ -118,8 +133,8 @@ def _alert_delivery(path: Path) -> float | None:
 
 
 _METRICS: dict[str, tuple[str, Callable[[Any], float | None], float | None, str]] = {
-    "test_strength_min_kill_rate": (
-        "data/mutation_score.json", _mutation, None,
+    "test_strength_targets_at_bar": (
+        "data/mutation_score.json", _mutation_at_bar, None,
         "python scripts/run_mutation.py"),
     "findings_coverage": (
         "docs/research/findings_coverage_record.json", _findings_coverage, None,
@@ -171,6 +186,13 @@ def evaluate() -> dict[str, Any]:
     for name, (rel, ffn, max_age, cmd) in _FILE_METRICS.items():
         path = _ROOT / rel
         rows.append(_row(name, rel, ffn(path), _age_h(path), max_age, cmd))
+    # DYNAMIC per-target mutation rows: a metric is born with its own floor the day it is first
+    # measured (L2.0), so newly measured files enter as NO-FLOOR -> floored, never as regressions.
+    mut_path = _ROOT / "data/mutation_score.json"
+    for target, rate in sorted(_mutation_targets(_j(mut_path)).items()):
+        rows.append(_row(f"test_strength::{target}", "data/mutation_score.json", rate,
+                         _age_h(mut_path), None,
+                         f"python scripts/run_mutation.py --target {target}"))
 
     bad = [r for r in rows if r["status"] in ("REGRESSION", "STALE", "NO-FLOOR", "UNMEASURED")]
     # THE WORK QUEUE (L1.0c): measured metrics ranked by how far they sit from 100%.

@@ -51,10 +51,43 @@ rule adopted here: every published score names its survivors and classifies each
 the argument) or a real gap (with the test that now kills it). A score quoted without its survivor
 list is the same defect as a coverage percentage quoted without its denominator.
 
-## Owed next (targets and their blockers, so nothing is silently dropped)
+## Result — `libs/execution/staging.py` (the S0/S1/S2 money path) — and it found a FAIL-OPEN
 
-- `libs/execution/staging.py` (tests/execution/test_staging.py) — S0/S1/S2 money path. Runner is
-  wired for it in `_DEFAULT_TARGETS`; needs its own budgeted run (~8 min).
+| pass | killed | survived | kill rate | vs 90% bar |
+|---|---:|---:|---:|---|
+| before (10 existing tests) | 29 | 13 | **69.0%** | BELOW |
+| after (+23 boundary tests) | 35 | 7 | **83.3%** | below raw, **100% of observable** |
+
+The 13 survivors said one thing: **every numeric threshold in the promotion gates was unpinned.**
+`capital_fraction <= 0.10`, `4 <= symbol_count <= 5`, `live_weeks >= 8`, `calibration_rows >= 10`,
+`critical_drill_failures == 0`, `cost_ratio <= 1.25` — each could be nudged with the suite green.
+The existing tests proved the machine's STRUCTURE (never skips a stage, demotion unlimited,
+transitions logged); nothing proved its NUMBERS, on the gate that decides when real capital scales.
+
+**THE REAL DEFECT IT SURFACED — a fail-open on the money path.**
+`int(evidence.get("critical_drill_failures", 0)) == 0` treated an **absent drill record as zero
+failures**, so S2 (full automation) PASSED on missing evidence. Every sibling check already
+defaulted to the refusing side (`live_weeks` 0.0, `calibration_rows` 0, `cost_ratio` 999.0); this
+one alone defaulted permissive. Now a `-1` sentinel: `0 failures` still passes, `no record`
+refuses. Direction is strictly conservative — it can only DECLINE a promotion, never authorise a
+trade — which is why it was safe to land on risk-path code in the same pass that measured it.
+
+All **7 remaining survivors are provably equivalent**: five are `.get(key, default)` defaults that
+stay on the refusing side of their own bound after mutation (1.0→2.0, 0→1, 0.0→1.0, 999.0→1000.0),
+one is the new `-1`→`-2` sentinel (still ≠ 0), and one is `json.dumps(indent=2)`→`indent=3`, which
+is cosmetic. Observable kill rate: **100%**.
+
+## A design flaw this measurement found in the RATCHET FENCE itself
+
+The fence originally tracked `test_strength_min_kill_rate` = `min()` across targets. Measuring
+staging at 83.3% therefore *lowered the aggregate* from stepwise's 90% and reported a **REGRESSION**
+— i.e. the fence punished the desk for measuring MORE. That trains everyone to ignore the fence,
+which is the opposite of L1.0. Fixed: each target now carries its OWN floor
+(`test_strength::<file>`), new targets enter as NO-FLOOR → floored, and the aggregate is
+`test_strength_targets_at_bar` (share of measured targets meeting 90% — currently **50%**, 1 of 2),
+which is a coverage number that rises as work lands.
+
+## Owed next (targets and their blockers, so nothing is silently dropped)
 - `libs/risk/gate.py` (tests/risk/test_gate.py) — same.
 - `libs/execution/binance_live.py` (tests/execution/test_binance_live.py) — same; this is the
   #2 connector file whose bar is the 07-31 gate.
