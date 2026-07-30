@@ -58,6 +58,25 @@ QUANT_ROOT=/home/quant/quant-platform
 # CONFIDENCE: documented-cadence
 */5 * * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_venue_divergence_shadow.py >> data/cro_ai_logs/venue_divergence_cron.log 2>&1
 
+# ALERT CANARY: hourly tick, self-throttled to one synthetic page every 6h, and it AUDITS the
+# delivery ledger every run -- writes data/ALERT_CHANNELS_SILENT + exits 1 when no channel has
+# delivered in 24h. The pager died silently twice (5 days 07-11->07-16; 29h on 07-19) precisely
+# because alerts only fire on incidents, so a broken path looks like a quiet desk.
+# EVIDENCE: scripts/run_alert_canary.py (built 2026-07-29, gap #38); docs/GAP_REGISTER.md:246
+# CONFIDENCE: committed-script (new this cycle -- cadence chosen here, not observed on the box)
+17 * * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_alert_canary.py >> data/cro_ai_logs/alert_canary.log 2>&1
+
+# EXECUTION INTELLIGENCE: cross-feed read over hedge integrity, trade forensics, cost model and
+# TCA fills (the cost-DRIFT signal no single organ could compute). Recommend-only by design.
+# EVIDENCE: scripts/run_execution_intel.py (built 2026-07-29, triage #102)
+# CONFIDENCE: committed-script (new this cycle)
+*/20 * * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_execution_intel.py >> data/cro_ai_logs/execution_intel.log 2>&1
+
+# REALITY GAP: backtest -> shadow -> live -> venue-truth chain comparison (constitution L2.10).
+# EVIDENCE: scripts/run_reality_gap.py (built 2026-07-29, triage #127)
+# CONFIDENCE: committed-script (new this cycle)
+23 */2 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_reality_gap.py >> data/cro_ai_logs/reality_gap.log 2>&1
+
 # --------------------------------------------------------------------------------------------
 # DATA MOAT -- recorder self-heals (every unrecorded hour is permanently unrecoverable, gap #18)
 # --------------------------------------------------------------------------------------------
