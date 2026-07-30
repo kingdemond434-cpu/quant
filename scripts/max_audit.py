@@ -1159,6 +1159,54 @@ def check_gate_optimality(defects) -> None:
             "is the walk-forward/per-candidate path able to pass a genuinely-good synthetic?"))
 
 
+def check_welded_gates(defects) -> None:
+    """WELDED-GATE SCAN (RECURSION RULE, 2026-07-30): a per-candidate gate fed a CAMPAIGN CONSTANT.
+
+    Origin, measured this cycle on the real 420-candidate campaign: PBO and White's Reality Check
+    take ONLY the returns matrix -- the candidate's own returns are never an input -- so used as
+    per-candidate gates they are campaign constants. At PBO 0.6159 / RC p 0.4220 that forced
+    420/420 rejections regardless of merit, and 420-tested/0-survivors measured the instrument
+    rather than the market. The orchestrator was repaired (pbo 0/420 -> 209/420) and 21 OTHER
+    gauntlet scripts were still welded at the time of writing.
+
+    Mechanical so it can never rot back: flags any call site that computes campaign_pbo_rc() and
+    feeds the result to validate() as pbo=/rc=. Legitimate non-gate uses are exempt -- the
+    deprecated shim itself, the measurement harness that deliberately runs BOTH arms to compare,
+    and tests that assert the legacy path still behaves exactly as before.
+    """
+    exempt = {
+        "libs/autodiscovery/validation.py",      # defines the deprecated shim
+        "scripts/measure_gate_histogram.py",     # runs both arms on purpose, to compare them
+        "scripts/max_audit.py",                  # this scanner DESCRIBES the pattern in prose;
+                                                 # scanning itself is the cron-self-match class
+    }
+    welded: list[str] = []
+    for base in ("scripts", "libs"):
+        for p in sorted((ROOT / base).rglob("*.py")):
+            rel = p.relative_to(ROOT).as_posix()
+            if rel in exempt or "/tests/" in f"/{rel}" or rel.startswith("tests/"):
+                continue
+            try:
+                src = p.read_text("utf-8", errors="replace")
+            except Exception:
+                continue
+            # The weld signature: the campaign constant is computed AND handed to validate() as a
+            # per-candidate gate input. Either half alone is not the defect.
+            if "campaign_pbo_rc(" in src and re.search(r"\bpbo\s*=\s*pbo\b|\brc\s*=\s*rc\b"
+                                                       r"|pbo=pbo_once|rc=rc_once", src):
+                welded.append(rel)
+    if welded:
+        shown = ", ".join(welded[:6]) + (f" ... +{len(welded) - 6} more" if len(welded) > 6 else "")
+        defects.append((
+            "welded-gate-campaign-constant",
+            f"{len(welded)} validation path(s) still feed a CAMPAIGN CONSTANT to a per-candidate "
+            f"gate: {shown}. PBO/RC do not read the candidate's own returns, so every candidate in "
+            "a batch gets one verdict whatever its merit -- measured at 420/420 rejected. Migrate "
+            "to campaign_gate_stats() + validate(campaign=..., column=...). PHANTOM-EDGE CRITICAL: "
+            "verify the column index maps to the matrix column_stack order per file -- a mis-mapped "
+            "index hands one candidate's passing verdict to another, which is worse than the weld."))
+
+
 def check_data_utilization(defects) -> None:
     """DATA-UTILIZATION LAW, reconciled with the GATE-OPTIMALITY MONITOR (principal 2026-07-24).
 
@@ -2357,6 +2405,7 @@ CHECKS = [("carryover-skipped", check_carryover_skipped),
                       ("memory-hygiene", check_memory_hygiene),
                       ("prompt-layer", check_prompt_layer),
                       ("gate-optimality", check_gate_optimality),
+                      ("welded-gates", check_welded_gates),
                       ("data-utilization", check_data_utilization),
                       ("mining-nonregression", check_mining_nonregression),
                       ("no-mining-throttle", check_no_mining_throttle),
