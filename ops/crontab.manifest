@@ -1,0 +1,249 @@
+# ============================================================================================
+# ops/crontab.manifest -- the desk's scheduler, as source (gap #58)
+#
+# *** RECONSTRUCTED FROM IN-REPO EVIDENCE 2026-07-29 -- NOT yet verified against the live box.
+# *** The operator OWES a `crontab -l` paste + `systemctl list-timers` (register row #58,
+# *** deadline 2026-08-05). Until that verification lands, this manifest is the DR FLOOR,
+# *** not ground truth: restore-from-GitHub + deploy/reconstitute_cron.sh yields a desk that
+# *** RUNS AGAIN, not necessarily a byte-identical twin of the VPS.
+#
+# WHY THIS FILE EXISTS (docs/GAP_REGISTER.md:272, row 58): 5 systemd timers were committed but
+# the recorder, spot recorder, executor respawn, run_alerts, shadows, the */5 divergence
+# sampler and the pgrep self-heals all ran from an UNCOMMITTED VPS crontab -- 119/162 scripts
+# had no in-repo scheduler reference, so live and dead were indistinguishable from source and
+# a GitHub restore ran NOTHING. This file is the missing half of the desk's genome.
+#
+# FORMAT (parsed by scripts/check_scheduler_manifest.py; installed by
+# deploy/reconstitute_cron.sh):
+#   - real 5-field crontab lines for cron-owned jobs ($QUANT_ROOT is set by the installer;
+#     on the live VPS it is /home/quant/quant-platform);
+#   - `SYSTEMD unit="..." on="..." exec="..."` lines for systemd-owned units (the installer
+#     enables committed ones when systemctl exists; exec paths are repo-relative);
+#   - every entry carries its EVIDENCE (file:line) and a CONFIDENCE tag:
+#       committed-unit      the unit file is in this repo -- schedule is exact
+#       documented-cadence  cadence read from dated in-repo observation of the live box
+#       inferred            cadence or slot chosen here; only existence/frequency is evidenced
+#   - where only the CADENCE is documented, the command SHAPE (log path, flock lock name,
+#     exact minute) is reconstructed in the house pattern and is honestly `inferred` detail.
+#
+# KNOWN GAP, stated loudly: the live box shows ~20-22 active cron lines with flock guards
+# (docs/research/deep_sweep/20260729_infrastructure.md:44-45, .../20260729_data-intelligence.md:222-223)
+# and 21 quant-* systemd units (docs/research/deep_sweep/20260729_infrastructure.md:171); this
+# reconstruction names 17 cron lines and 13 units. The remainder is exactly what the operator
+# paste closes -- e.g. the unknown 00:02 writer of deribit_surface/crypto_regime
+# (docs/research/deep_sweep/20260729_data-intelligence.md:93-97) is NOT reconstructable from
+# the repo and is deliberately absent rather than invented.
+# ============================================================================================
+
+QUANT_ROOT=/home/quant/quant-platform
+
+# --------------------------------------------------------------------------------------------
+# MONEY-PATH SUPERVISION -- cron plane
+# --------------------------------------------------------------------------------------------
+
+# watchdog: 3-min self-heal tick. Each tick also runs run_alerts.py (the pager),
+# run_leverage_opt.py, run_live_combined.py and data_health.py, and heartbeat-gates respawn of
+# executor / deadman / liquidations / dashboard / tunnel -- deferring to systemd when a unit
+# owns the process (scripts/watchdog.py:57-100; the 2026-07-26 dual-supervision orphan is why).
+# The executor's 10-min reconciler is INSIDE the executor process (--interval 600,
+# scripts/watchdog.py:187-188; docs/institutional_knowledge.md:328), not a separate cron line.
+# EVIDENCE: docs/research/deep_sweep/20260729_infrastructure.md:55-56 ("cron (3-min) ->
+#   scripts/watchdog.py"); docs/institutional_knowledge.md:490 ("watchdog.py (cron, every 3min)")
+# CONFIDENCE: documented-cadence
+*/3 * * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/watchdog.py >> data/watchdog.log 2>&1
+
+# venue-truth divergence sampler: every 5 min, read-only (calibrates the gap-#19 breaker band).
+# EVIDENCE: docs/GAP_REGISTER.md:272 ("the */5 divergence sampler");
+#   docs/research/deep_sweep/20260729_data-intelligence.md:77 ("venue_divergence every 5m")
+# CONFIDENCE: documented-cadence
+*/5 * * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_venue_divergence_shadow.py >> data/cro_ai_logs/venue_divergence_cron.log 2>&1
+
+# --------------------------------------------------------------------------------------------
+# DATA MOAT -- recorder self-heals (every unrecorded hour is permanently unrecoverable, gap #18)
+# --------------------------------------------------------------------------------------------
+
+# futures recorder keeper: process-check + heartbeat, respawns run_recorder.py detached.
+# Also runs inside the daily cycle (scripts/daily_research_cycle.py:35) -- belt and braces.
+# EVIDENCE: docs/research/deep_sweep/20260726_data-moat.md:44-45 ("crontab -l:
+#   ensure_recorder.py + pgrep-respawn every 10 min");
+#   docs/research/deep_sweep/20260729_data-intelligence.md:77-78 ("recorders re-spawned every 10m")
+# CONFIDENCE: documented-cadence
+*/10 * * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/ensure_recorder.py >> data/cro_ai_logs/ensure_recorder_cron.log 2>&1
+
+# spot + bybit recorder pgrep-guards: bracket trick mandatory -- self-matching monitors reported
+# a dead recorder as RUNNING twice (docs/playbooks/ops_checklist.md:12).
+# EVIDENCE: scripts/run_recorder_spot.py:23-24 ("a 10-minute cron pgrep-guard respawns it
+#   (mirrors run_recorder_bybit.py)"); docs/institutional_knowledge.md:456 ("cron pgrep
+#   self-heal" for all three moat recorders); docs/GAP_REGISTER.md:272 ("spot recorder")
+# CONFIDENCE: documented-cadence
+*/10 * * * * cd "$QUANT_ROOT" && { pgrep -f "run_recorder_spo[t]" >/dev/null || setsid nohup .venv/bin/python scripts/run_recorder_spot.py >> data/recorder_spot.log 2>&1 ; }
+*/10 * * * * cd "$QUANT_ROOT" && { pgrep -f "run_recorder_bybi[t]" >/dev/null || setsid nohup .venv/bin/python scripts/run_recorder_bybit.py >> data/recorder_bybit.log 2>&1 ; }
+
+# --------------------------------------------------------------------------------------------
+# DETERMINISTIC COLLECTORS -- the desk is not all-LLM at the base layer
+# (all five cadences below were read off the live box in one dated census:
+#  docs/research/deep_sweep/20260729_data-intelligence.md:76-78)
+# --------------------------------------------------------------------------------------------
+
+# EVIDENCE: .../20260729_data-intelligence.md:76 ("defi_lending hourly (:17)")
+# CONFIDENCE: documented-cadence
+17 * * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/collect_defi_lending.py >> data/cro_ai_logs/defi_lending_cron.log 2>&1
+
+# EVIDENCE: .../20260729_data-intelligence.md:76 ("oi_ls_live hourly (:32)")
+# CONFIDENCE: documented-cadence
+32 * * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/collect_oi_ls_live.py >> data/cro_ai_logs/oi_ls_live_cron.log 2>&1
+
+# EVIDENCE: .../20260729_data-intelligence.md:76 ("coinmetrics daily 03:47")
+# CONFIDENCE: documented-cadence
+47 3 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/collect_coinmetrics_flows.py >> data/cro_ai_logs/coinmetrics_cron.log 2>&1
+
+# EVIDENCE: .../20260729_data-intelligence.md:77 ("dl_oi_ls_universe daily 06:20")
+# CONFIDENCE: documented-cadence
+20 6 * * * cd "$QUANT_ROOT" && flock -n data/.cron_oi_ls_universe.lock .venv/bin/python scripts/dl_oi_ls_universe.py >> data/cro_ai_logs/oi_ls_universe_cron.log 2>&1
+
+# EVIDENCE: .../20260729_data-intelligence.md:77 ("ingest_axes daily 06:40"); the log name is
+#   the live one (docs/research/deep_sweep/20260726_data-intelligence.md:153 "ingest_axes_cron.log")
+# CONFIDENCE: documented-cadence
+40 6 * * * cd "$QUANT_ROOT" && flock -n data/.cron_ingest_axes.lock .venv/bin/python scripts/ingest_axes.py >> data/cro_ai_logs/ingest_axes_cron.log 2>&1
+
+# --------------------------------------------------------------------------------------------
+# BRAIN / ORGANS -- cron plane
+# --------------------------------------------------------------------------------------------
+
+# daily research cycle at 02:00 UTC -- deliberately DUAL-scheduled with quant-cro.timer 08:01
+# ("absorbed by idempotency but drift-prone" -- 20260729_infrastructure.md:317-319). One cron
+# entry covers, via scripts/daily_research_cycle.py's step table, everything the register's
+# row 58 lists as cycle-owned: ensure_recorder (:35), run_cadence (:42), run_nav_attest (:49),
+# run_cost_model (:95), run_shadow_8h (:96), git_snapshot (:99), plus the forward shadows via
+# run_daily_research.py (scripts/run_daily_research.py:35-54).
+# EVIDENCE: docs/research/deep_sweep/20260729_alpha-discovery.md:465 ("daily cycle cron 02:00
+#   confirmed via crontab -l"); .../20260729_data-intelligence.md:95 ("cron-started 02:00")
+# CONFIDENCE: documented-cadence
+0 2 * * * cd "$QUANT_ROOT" && flock -n data/.cron_daily_cycle.lock .venv/bin/python scripts/daily_research_cycle.py >> data/cro_ai_logs/daily_cycle_cron.log 2>&1
+
+# organ catch-up: re-fires quota-killed claude organs, one per tick, flock-guarded.
+# The docstring still says */30 (scripts/organ_catchup.py:1) but the live box probes every
+# 5 min (dated log observation: 20260729_infrastructure.md:47-48; also
+# docs/research/deep_sweep/20260726_data-intelligence.md:100 "organ_catchup cron (every 5 min)").
+# The observed cadence wins; the stale docstring is noted, not copied.
+# CONFIDENCE: documented-cadence
+*/5 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_organ_catchup.lock .venv/bin/python scripts/organ_catchup.py >> data/cro_ai_logs/organ_catchup.log 2>&1
+
+# quota verdict: its own 3h cron so it can page the MOMENT the Pro-vs-Max signal is clear.
+# EVIDENCE: scripts/quota_verdict.py:12 ("Runs on its own 3h cron");
+#   20260729_infrastructure.md:246 ("still cron'd 8x/day" = every 3h). Minute slot inferred.
+# CONFIDENCE: documented-cadence
+0 */3 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/quota_verdict.py >> data/cro_ai_logs/quota_verdict_cron.log 2>&1
+
+# max_audit: mechanical below-potential sweep, "run by cron and at every brain-cycle start"
+# (scripts/max_audit.py:8). Cron cadence itself is not dated anywhere in-repo -> daily slot
+# chosen here (07:00, clear of the 02:00 cycle and the 06:20/06:40 collectors).
+# CONFIDENCE: inferred
+0 7 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/max_audit.py >> data/cro_ai_logs/max_audit_cron.log 2>&1
+
+# quota-free crypto hypothesis factory: pure python, 0 claude calls, so generation "always
+# runs". Its live log name is crypto_factory_cron.log (ops/run_crypto_factory.sh:17) proving
+# cron ownership; max_audit fences its product at <=30h (scripts/max_audit.py:1081), so at
+# least daily. Slot chosen here.
+# CONFIDENCE: inferred
+30 1 * * * cd "$QUANT_ROOT" && flock -n data/.cron_crypto_factory.lock /bin/bash ops/run_crypto_factory.sh
+
+# deep cold-audit organ: header says weekly (ops/run_deep_sweep.sh:2) yet dated artifacts
+# landed 07-26/07-28/07-29 (docs/research/deep_sweep/) and organ_catchup re-fires it as an
+# owed organ -- so the live cadence is at least daily-rotating perspectives. Daily slot chosen.
+# CONFIDENCE: inferred
+0 1 * * * cd "$QUANT_ROOT" && flock -n data/.cron_deep_sweep.lock /bin/bash ops/run_deep_sweep.sh
+
+# headless AI brain cycles beyond the 08:45 timer: the full schedule is 4 cycles/day
+# (scripts/quota_verdict.py:100 "4 cycles/day + 7 miners/day"), organs page on brain-auth
+# failure "per crontab header" (20260729_infrastructure.md:156-157) -- so cron fires
+# run_cro_ai.sh in slots the timer does not cover. 3 cron slots + the 08:45 timer = 4/day;
+# exact live minutes unverified.
+# CONFIDENCE: inferred
+45 2,14,20 * * * cd "$QUANT_ROOT" && flock -n data/.cron_cro_ai.lock /bin/bash ops/run_cro_ai.sh
+
+# --------------------------------------------------------------------------------------------
+# SYSTEMD PLANE -- committed units first (schedules exact, read from the unit files),
+# then units that live ONLY on the box (documented here; operator owes the unit files too).
+# deploy/reconstitute_cron.sh enables the committed five when systemctl exists.
+# --------------------------------------------------------------------------------------------
+
+# EVIDENCE: ops/quant-blindrediscovery.timer:4 (OnCalendar=*-*-01 20:00:00, monthly);
+#   ops/quant-blindrediscovery.service:12 (ExecStart). NOTE: the service Description still
+#   says "quarterly" -- the timer is the truth (monthly, principal-dated in the timer header).
+# CONFIDENCE: committed-unit
+SYSTEMD unit="quant-blindrediscovery.timer" on="*-*-01 20:00:00" exec="ops/run_blindrediscovery_dig.sh"
+
+# EVIDENCE: ops/quant-dataaxis.timer:4 (daily 14:00, "clear of the 08:45 brain slot");
+#   ops/quant-dataaxis.service:12
+# CONFIDENCE: committed-unit
+SYSTEMD unit="quant-dataaxis.timer" on="*-*-* 14:00:00" exec="ops/run_dataaxis_dig.sh"
+
+# EVIDENCE: ops/quant-frontier.timer:4 (daily 15:00); ops/quant-frontier.service:9. The
+#   rotation runs ALL 7 regions, resumable, via ops/run_frontier_miner.sh per region
+#   (ops/run_frontier_rotation.sh:21).
+# CONFIDENCE: committed-unit
+SYSTEMD unit="quant-frontier.timer" on="*-*-* 15:00:00" exec="ops/run_frontier_rotation.sh"
+
+# EVIDENCE: ops/quant-litminer.timer:5 (daily 19:00, max frequency, principal 2026-07-23);
+#   ops/quant-litminer.service:12
+# CONFIDENCE: committed-unit
+SYSTEMD unit="quant-litminer.timer" on="*-*-* 19:00:00" exec="ops/run_litminer_dig.sh"
+
+# EVIDENCE: ops/quant-prospector.timer:5 (daily 18:00, max frequency, principal 2026-07-23);
+#   ops/quant-prospector.service:12
+# CONFIDENCE: committed-unit
+SYSTEMD unit="quant-prospector.timer" on="*-*-* 18:00:00" exec="ops/run_prospector_dig.sh"
+
+# ---- units documented on the box but with NO unit file in this repo (operator owes these
+# ---- files as part of the row-58 paste; until then the watchdog cron line above is the DR
+# ---- backstop that respawns executor/deadman/liquidations/dashboard on stale heartbeats).
+
+# EVIDENCE: docs/PROJECT_HANDOFF.md:33 ("quant-cashcarry (executor)");
+#   scripts/watchdog.py:58 (unit->script map); args as spawned: scripts/watchdog.py:187-188
+# CONFIDENCE: documented-cadence
+SYSTEMD unit="quant-cashcarry.service" on="always" exec="scripts/run_cashcarry_executor.py"
+
+# EVIDENCE: docs/PROJECT_HANDOFF.md:33 ("quant-deadman (ruin rail)"); scripts/watchdog.py:59.
+#   Tier-3 NEVER-TOUCH rail -- exactly one instance ever under systemd
+#   (ops/memory/crypto-desk-state.md:21).
+# CONFIDENCE: documented-cadence
+SYSTEMD unit="quant-deadman.service" on="always" exec="scripts/run_deadman_switch.py"
+
+# EVIDENCE: docs/PROJECT_HANDOFF.md:34; scripts/watchdog.py:61
+# CONFIDENCE: documented-cadence
+SYSTEMD unit="quant-dashboard.service" on="always" exec="scripts/serve_dashboard.py"
+
+# EVIDENCE: docs/PROJECT_HANDOFF.md:34; scripts/watchdog.py:60
+# CONFIDENCE: documented-cadence
+SYSTEMD unit="quant-liquidations.service" on="always" exec="scripts/liquidation_listener.py"
+
+# cloudflared named tunnel -- NOT a repo script ("systemd quant-tunnel runs `cloudflared
+# tunnel run quant-dash`", ops/memory/crypto-desk-state.md:21). exec left empty on purpose:
+# nothing in this repo to existence-check.
+# EVIDENCE: docs/PROJECT_HANDOFF.md:34; ops/memory/crypto-desk-state.md:21
+# CONFIDENCE: documented-cadence
+SYSTEMD unit="quant-tunnel.service" on="always" exec=""
+
+# 3-min feed/commit machinery. Known duties from dated observations: runs run_alerts.py
+# (journalctl -u quant-refresh.service caught the 07-16 pager bug, docs/GAP_REGISTER.md:247;
+# 429s today, 20260729_infrastructure.md:150-151), refreshes the venue-truth feed every 3 min
+# (docs/GAP_REGISTER.md:207) and makes the "desk snapshot" commits
+# (docs/institutional_knowledge.md:365-367). Its actual ExecStart is NOT in the repo -> exec
+# empty; the watchdog cron line covers the same duties as DR backstop.
+# EVIDENCE: docs/PROJECT_HANDOFF.md:34 ("quant-refresh.timer (3-min feeds)")
+# CONFIDENCE: documented-cadence
+SYSTEMD unit="quant-refresh.timer" on="*:0/3" exec=""
+
+# python research cycle at 08:01 -- the second head of the dual schedule (cron 02:00 above).
+# EVIDENCE: docs/PROJECT_HANDOFF.md:35 ("quant-cro.timer (08:01 UTC python research cycle)");
+#   20260729_infrastructure.md:317-319 ("dual schedulers for daily_research_cycle (cron 02:00
+#   + timer 08:01, absorbed by idempotency but drift-prone)")
+# CONFIDENCE: documented-cadence
+SYSTEMD unit="quant-cro.timer" on="*-*-* 08:01:00" exec="scripts/daily_research_cycle.py"
+
+# headless AI CRO (the brain) at 08:45 -- needs `claude setup-token` auth on the box.
+# EVIDENCE: docs/PROJECT_HANDOFF.md:35-36 ("quant-cro-ai.timer (08:45 UTC headless AI CRO)");
+#   ops/memory/crypto-desk-state.md:21
+# CONFIDENCE: documented-cadence
+SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
