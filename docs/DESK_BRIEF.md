@@ -84,3 +84,31 @@ M_LIQUIDITY_WITHDRAWAL, construction = negative z of near-touch depth vs 24h rol
 - OpenRouter 402: 4 written LLM roles have NEVER executed (code auditor, blind researcher, hypothesis generator, architecture board).
 - `health.json` reports all_ok=True against 14 stub vs 13 real logs (fail-open).
 - First forward-clock verdict: 2026-09-01 (OI/LS). Confirmed alphas to date: 0.
+
+## RATCHET BOARD (constitution L1.0 -- value, floor, distance to 100%)
+
+Refreshed by `scripts/check_ratchets.py --ratchet`; floors live in `data/ratchet_floors.json` and
+can only rise. **The largest gap IS the top of the work queue.**
+
+| metric | value | floor | gap to 100% | proving command |
+|---|---:|---:|---:|---|
+| findings_coverage | **100.0%** | 100.0% | 0.0% | `max_audit.check_findings_tracked` |
+| test_strength (min kill rate) | **90.0%** | 90.0% | 10.0% | `python scripts/run_mutation.py` |
+| scripts mypy-clean | **40.7%** | 40.7% | 59.3% | `python scripts/check_mypy_ratchet.py` |
+| miner seats productive | **0.0%** | 0.0% | 100.0% | `python scripts/check_miner_runway.py` |
+| pager delivered <24h | **0.0%** | 0.0% | 100.0% | `python scripts/run_alert_canary.py` |
+
+The two 0% rows are the same shape and neither is an engineering gap: **miner seats** are blocked on
+one unarmed credential (blast radius 11 seats, `ops/setup_brain_token.sh`) and **pager delivery** is
+0% because this sandbox has no channel armed -- on the VPS the ntfy path is live and the canary will
+populate the ledger on its first run. Both are recorded rather than excused.
+
+## WHAT THE 420/0 RECORD ACTUALLY MEANS NOW (revised 2026-07-29)
+
+The line "420 candidates tested, 0 survivors" appears throughout this desk's documents as evidence
+about crypto. It is not. Two of the nine gauntlet gates (`pbo`, `reality_check`) were CAMPAIGN
+CONSTANTS -- neither took the candidate's own returns -- so all 420 were rejected identically at any
+quality (measured: campaign PBO 0.6159, White RC p 0.4220). The per-candidate replacement is now
+live at all 19 call sites. **The honest status is UNKNOWN, not exhausted**, until the campaign is
+re-run through the corrected gates. Per L1.25, zero survivors is a diagnostic trigger, never a
+verdict on the world.
