@@ -70,10 +70,25 @@ brain_auth_check() {
 # organ script (was an UNVERIFIED assumption of 'CLI-managed max default' until 2026-07-21).
 # xhigh = documented best for agentic/coding work on Opus 4.8; max is reserved for
 # risk-path depth reviews (correctness over cost) since max can overthink general work.
-export ANTHROPIC_MODEL="${ANTHROPIC_MODEL:-claude-opus-5}"  # primary; _BRAIN_MODEL_CHAIN below auto-falls-back at runtime (principal 2026-07-24: fable starves -> opus-5). Fable draws a metered credit pool that CAN exhaust; opus-5/opus-4-8 sit on the Max subscription seat.
-# EVIDENCE 2026-07-24: one max-effort dig drained the whole fable-5 METERED pool
-# (frontier-en 23:07-23:29 -> out-of-credits). Max-seat models lead; fable is last.
-export _BRAIN_MODEL_CHAIN="claude-opus-5 claude-opus-4-8 claude-fable-5"
+export ANTHROPIC_MODEL="${ANTHROPIC_MODEL:-claude-fable-5}"  # primary = FABLE 5 (principal 2026-07-30); _BRAIN_MODEL_CHAIN below walks to opus-5 on exhaustion and PAGES when it does. Fable draws a pool that CAN exhaust; opus-5/opus-4-8 sit on the Max subscription seat and carry the rest of the week.
+# MODEL ROUTING POLICY (principal 2026-07-30, supersedes the 2026-07-24 ordering):
+# "every claude cycle, mining, audit, everything uses FABLE 5 MAXIMUM always initially until the
+# full week's sessions of it end, then only OPUS 5 after that in the week."
+# So the chain is FABLE-FIRST and the walk-down IS the policy: fable is consumed to exhaustion,
+# then opus-5 carries the rest of the week, then opus-4-8. No capability is lost on a downgrade --
+# only model availability changes (effort stays --effort xhigh/max per organ).
+#
+# WHY REVERSING THIS IS NOW SAFE, and it was not on 07-24. The old order existed for a measured
+# reason: one max-effort dig drained the whole fable-5 metered pool (frontier-en 23:07-23:29 ->
+# out-of-credits) and EVERY organ died, because at that moment NO FALLBACK CHAIN EXISTED. The
+# chain above is that fallback: brain_auth_check walks it at cycle start, and pages
+# "model fallback ACTIVE: primary starved" the moment it steps past the primary. Exhaustion is
+# therefore a logged, paged, self-healing transition instead of an outage -- which is precisely
+# the behaviour the principal's policy assumes. The 07-24 evidence is preserved above, not erased:
+# it explains the failure this chain now absorbs.
+# NOTE the frontier miners already ran fable-first via their own export; this makes the global
+# default agree with them instead of contradicting them (the miners were right).
+export _BRAIN_MODEL_CHAIN="claude-fable-5 claude-opus-5 claude-opus-4-8"
 
 # PRINCIPAL DOCTRINE (2026-07-21): the desk's permanent max-ROI personality, injected
 # into every claude organ via --append-system-prompt. Read once here; every organ script
