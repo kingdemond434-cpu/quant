@@ -650,11 +650,11 @@
    "summary": "SURVIVAL RAIL OFF: Tier-3 deadman should_fire() returns False at EVERY equity (hw 209.43 < _MIN_HW 500 short-circuits before any ruin comparison). Root cause is account_summary() reading totalMarginBalance (USDT-only, multiAssetsMargin=False) so $5000 USDC is invisible. ONE ~10-line fix (sum per-asset marginBalance) re-arms the rail AND dissolves the carry book's absorbing state. Add assertion: high_water<_MIN_HW while book live = defect. [exec-growth F13/F6]",
    "roi_bps": 9999.0,
    "raised": "2026-07-30T17:08:05.711221+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "equity=max(stable-sum,totalMarginBalance) in BOTH account_summary and combined_equity; probe 209.43->5773.63; service restarted, pid 1463355 on fixed code",
+   "commit": "fccc580",
    "due": null,
-   "disposed": null
+   "disposed": "2026-07-30T22:58:30.814206+00:00"
   },
   {
    "id": "R0054",
@@ -662,11 +662,11 @@
    "summary": "PRINCIPAL DECISION IS MIS-SPECIFIED: option (A) 're-baseline to reconciled true equity' would re-baseline $5000 TOO LOW because the reconciled figure is built on futures_margin_balance=209.43, the same undercounted read. Fix the equity read BEFORE executing A/B/C, else the identical absorbing trap re-arms at a lower level within days. [exec-growth F6]",
    "roi_bps": 9000.0,
    "raised": "2026-07-30T17:08:05.772086+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "the read option (A) depends on is fixed BEFORE the decision, per the mandated ordering; A/B/C itself stays with the principal",
+   "commit": "fccc580",
    "due": null,
-   "disposed": null
+   "disposed": "2026-07-30T22:58:30.877352+00:00"
   },
   {
    "id": "R0055",
@@ -674,11 +674,11 @@
    "summary": "AUDIT ORGAN SELF-GREENS: run_deep_sweep.py:109 and :139 grade auditors on file BYTES (>=1200) only -- never returncode, never timeout, never content. A doctrine-conforming skeleton is ~1500-1900b so an auditor that dies after writing its skeleton is graded OK and skipped by every resume window forever. Fired twice on 2026-07-30 (alpha-discovery 1736b, validation-stats 1889b, both pure TBD); log claimed 8/8 produced. Fix: require returncode==0 AND a STATUS:COMPLETE sentinel; write failure stub to <report>.FAILED instead of overwriting the partial. [meta M1]",
    "roi_bps": 8000.0,
    "raised": "2026-07-30T17:08:05.831128+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "completion sentinel + .FAILED sidecars + synthesis resume check; pre-2026-07-31 reports grandfathered",
+   "commit": "fccc580",
    "due": null,
-   "disposed": null
+   "disposed": "2026-07-30T22:58:30.944172+00:00"
   },
   {
    "id": "R0056",

@@ -522,3 +522,38 @@ exist" — it is the implementation rate (8/60 = 13% today) going up.** That num
 and it is currently going *down* because I just grew the denominator.
 
 _Report complete. Synthesis lead, 2026-07-30._
+
+---
+
+## ADDENDUM — 22:45Z SEAT (5th window): VERIFICATION + CONVERSION
+
+The 22:45 resume window re-launched a synthesis seat 5h after this report completed — synthesis had
+no resume check (now it does). Rather than re-synthesize, this seat applied OUTCOME-NOT-CONFIG to the
+synthesis itself and then converted its top rows:
+
+**Verified from disk (§33: self-reported conversion is never credited):** R0053–R0060 all in the
+ledger, R0059 rejected exactly as declared; inbox #80–#84 present; PRINCIPAL_ACTION correction live
+at line 13; commit bccb5e3 pushed. Every appendix claim checked out.
+
+**Converted this seat (fccc580):**
+- **P0-0 DONE — the ruin rail is re-armed.** equity = max(stable face-value sum, totalMarginBalance)
+  in `account_summary()` AND `combined_equity()` — the rail never imported the executor's read, so
+  the USDT-only bug lived in TWO places (adjacency; the synthesis's "one fix re-arms" was optimistic
+  by one file). Measured: 209.43 → **5,773.63** — and note `multiAssetsMargin` was flipped true
+  between 08:33 and 22:53 by someone/something unrecorded, so the venue field now counts USDC + 0.01
+  BTC; `max()` is correct under either mode and never reads below either truth. New `disarmed_live`
+  flag + one-shot page whenever the dust floor guards a live book. Deadman restarted 22:57Z, pid
+  1463355 on fixed code, heartbeat verified; hw ratchets past the dust floor within 3 polls.
+- **P0-1 DONE — audits are graded on the auditor's own `STATUS: COMPLETE` sentinel**, failure stubs
+  go to `.md.FAILED` sidecars (partials preserved), synthesis resume check added. 76 tests pass.
+- **Dispositions:** R0053, R0054, R0055 → implemented (fccc580). **R0057 (`_MIN_FUNDING`)
+  deliberately left open for the execution organ** — it restarts capital deployment and its
+  cost-model claims deserve execution-context re-verification, not a synthesis seat's pen.
+
+**Post-17:11 fact the next cycle must absorb:** prospector 051fe70 proved the kimchi RETRACTION'S
+PREMISE wrong (Upbit dailies are UTC-midnight; the 07-29 close-keying "fix" itself introduced 24h
+staleness) while the kill STANDS on same-instant 8.2y IC +0.0012. Doctrine lines 89/275 remain
+contaminated; R0051 stays the owner, now with a third layer to fold in: the decontaminated text must
+cite the corrected mechanism of death, not the retracted one.
+
+_Verification seat complete, 22:59Z._
