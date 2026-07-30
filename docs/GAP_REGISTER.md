@@ -7,11 +7,20 @@ seven rows CLOSED rather than because opinion changed. What shipped, each with i
   ALL 19 call sites (orchestrator + 18 scripts). `grep -rln campaign_pbo_rc scripts/ libs/` returns
   only the deprecated diagnostic. 143 autodiscovery+validation tests green. The 420/0 record is
   now known to be an instrument artifact and is no longer steering strategy.
-- **#53 CLOSED — mutation testing installed AND measured.** `scripts/run_mutation.py`;
-  `libs/validation/stepwise.py` 55% -> **90.0%** in one session, all 4 surviving mutants proven
-  EQUIVALENT (CSCV PBO is rank-based). The v8 8.2 bar is no longer decorative. Owed next: staging,
-  risk/gate, binance_live (runner wired), and `libs/execution/retry.py` has NO test module at all —
-  recorded as the finding rather than skipped.
+- **#53 CLOSED — mutation testing installed AND measured on THREE money-path modules.**
+  `scripts/run_mutation.py`. Per-target ratchet floors, each pushed the same session:
+  `libs/validation/stepwise.py` **55% -> 90.0%** (all 4 survivors proven EQUIVALENT — CSCV PBO is
+  rank-based), `libs/risk/gate.py` **23.5% -> 86.3%** (the worst on the desk: 10 tests for 210
+  lines on the module that decides whether capital moves), `libs/execution/staging.py`
+  **69.0% -> 83.3%** (100% of OBSERVABLE mutants). Aggregate `targets_at_bar` = 33% (1 of 3), which
+  is the honest number to drive up. The v8 8.2 bar is no longer decorative.
+  **AND IT FOUND A LIVE FAIL-OPEN:** the S2 gate read an ABSENT drill-failure record as ZERO
+  failures, so full automation could be authorised on missing evidence — fixed with a refusing
+  sentinel (strictly conservative: it can only decline a promotion, never authorise a trade).
+  Owed next: binance_live (runner wired), the 7 gate survivors reachable only through the governor
+  stack, and `libs/execution/retry.py` has NO test module at all — recorded as the finding rather
+  than skipped. The SECOND HALF of the v8 8.2 bar (second-model-family fuzz) is a PANEL task
+  blocked on the top-up; mutation testing does not substitute for it.
 - **#58 CLOSED (agent half) — the repo can reconstitute the desk.** `ops/crontab.manifest`
   (20 cron + 13 systemd, every entry with file:line evidence + a CONFIDENCE tag),
   `scripts/check_scheduler_manifest.py`, `deploy/reconstitute_cron.sh` (idempotent, fenced).
