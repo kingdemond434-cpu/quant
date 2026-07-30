@@ -161,12 +161,29 @@ def account_balance() -> float:
     return 0.0
 
 
+_STABLE_COLLATERAL = ("USDT", "USDC", "FDUSD", "TUSD", "BUSD", "DAI")
+
+
 def account_summary() -> dict[str, float]:
-    """Equity, wallet, unrealized PnL, available, and margin used (the live P&L snapshot)."""
+    """Equity, wallet, unrealized PnL, available, and margin used (the live P&L snapshot).
+
+    EQUITY is the MAX of two venue-derived measures: totalMarginBalance, and the face-value
+    sum of per-asset marginBalance across stable collateral. Under multiAssetsMargin=False
+    totalMarginBalance is USDT-only -- it hid $5,000 of USDC collateral, sizing the book at
+    1/25th of true wealth and feeding the deadman a high-water below its dust floor, which
+    disarmed the ruin rail at every equity (2026-07-30 deep sweep, R0053/R0054); the stable
+    sum covers that mode. Under multiAssetsMargin=True totalMarginBalance is the venue's own
+    USD-marked total including non-stables (which the stable sum cannot price) and wins the
+    max. Max never reads below either truth; a depegged stable can overstate by its depeg,
+    second-order next to the $5,000 blindness. `available` stays venue-reported because
+    wealth and order capacity are different quantities."""
     a = _signed("/fapi/v2/account", {})
+    eq = max(sum(float(x.get("marginBalance", 0.0)) for x in a.get("assets", [])
+                 if x.get("asset") in _STABLE_COLLATERAL),
+             float(a.get("totalMarginBalance", 0.0)))
     return {
         "wallet": float(a.get("totalWalletBalance", 0.0)),
-        "equity": float(a.get("totalMarginBalance", 0.0)),
+        "equity": eq,
         "unrealized_pnl": float(a.get("totalUnrealizedProfit", 0.0)),
         "available": float(a.get("availableBalance", 0.0)),
         "margin_used": float(a.get("totalInitialMargin", 0.0)),

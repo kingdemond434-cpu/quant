@@ -5,8 +5,12 @@ auditors (fresh context each = independence; the box cannot fan out parallel age
 synthesis lead that builds the capability map, prioritizes the portfolio, and recursively
 improves the audit itself. Max effort, quota-unconstrained (Max plan). Weekly, Sunday 04:00Z.
 
-OUTCOME-ASSERTED: any report < 2500 bytes is recorded as a FAILED auditor (the quota-stub
-class) -- the audit that hunts config-vs-outcome must never itself be config-vs-outcome.
+OUTCOME-ASSERTED: an auditor is graded COMPLETE only when its report carries the
+`STATUS: COMPLETE` sentinel the auditor flips as its final act (plus a 1200-byte floor
+against empty stubs). Bytes alone are NOT completion: on 2026-07-30 two auditors died
+after writing their ~1.8KB skeletons and the old size-only gate graded both OK, skipped
+them on every resume, and handed the synthesis lead two empty files as evidence (R0055)
+-- the audit that hunts config-vs-outcome must never itself be config-vs-outcome.
 """
 from __future__ import annotations
 
@@ -90,6 +94,27 @@ def _run(prompt: str, timeout: int) -> subprocess.CompletedProcess[str]:
         cwd=ROOT, capture_output=True, text=True, timeout=timeout)
 
 
+_SENTINEL = "STATUS: COMPLETE"
+# Reports written before the sentinel convention existed are grandfathered on the byte
+# floor alone -- without this, the first post-fix resume would re-run every real report
+# from earlier the same day (6 x 30min of quota re-buying evidence that already exists).
+_SENTINEL_BORN = datetime(2026, 7, 31, tzinfo=UTC).timestamp()
+
+
+def _complete(report: Path) -> bool:
+    """COMPLETION is the auditor's own final act, not a byte count.
+
+    The 2026-07-30 sweep graded two ~1.8KB skeletons OK on `st_size >= 1200` -- a
+    doctrine-conforming skeleton clears any sane byte floor, so an auditor that dies
+    after writing its headings is invisible to a size gate forever (R0055). The 1200b
+    floor stays only to reject empty/binary stubs; the grade is the sentinel."""
+    if not report.exists() or report.stat().st_size < 1200:
+        return False
+    if _SENTINEL in report.read_text("utf-8", errors="replace"):
+        return True
+    return report.stat().st_mtime < _SENTINEL_BORN
+
+
 def run_auditor(key: str, brief: str, stamp: str) -> bool:
     report = OUT / f"{stamp}_{key}.md"
     prompt = (
@@ -97,17 +122,17 @@ def run_auditor(key: str, brief: str, stamp: str) -> bool:
         f"Work from /home/quant/quant-platform, READ-ONLY (run read/inspect commands freely; "
         f"do NOT modify code/state/cron/git). Apply ALL SIX perspectives and the five-things "
         f"search and the negative-space sweep. WRITE your full report to {report} in the "
-        f"four-output structure, every claim carrying its proving command output. Be "
+        f"four-output structure, every claim carrying its proving command output. Put "
+        f"`STATUS: IN PROGRESS` near the top of the file when you create it and flip it to "
+        f"`STATUS: COMPLETE` as your FINAL edit -- the runner grades completion by that "
+        f"sentinel and a report never flipped re-runs on the next window. Be "
         f"exhaustive; token cost is not a constraint."
     )
     try:
         r = _run(prompt, 1800)
     except subprocess.TimeoutExpired:
         r = None
-    # 1200b: a tight, command-cited report is a PASS. The old 2500b floor rewarded
-    # padding -- the exact failure the doctrine forbids -- and would have marked
-    # honest concise audits as failures.
-    ok = report.exists() and report.stat().st_size >= 1200
+    ok = _complete(report)
     if not ok:
         # NAME THE STAGE. "Failed with two empty streams" is what today's four auditors
         # recorded, and it cost the reason entirely. Exit 90 is our own auth sentinel; any
@@ -118,16 +143,20 @@ def run_auditor(key: str, brief: str, stamp: str) -> bool:
         elif r.returncode == 90:
             why = ("BRAIN_AUTH_FAILED -- no model in the chain answered (pool drained or session "
                    "limit). This is RETRYABLE: the catch-up re-fires the sweep and the resume "
-                   "logic skips every report already >=1200b, so only the failures re-run")
+                   "logic skips every COMPLETE report, so only the failures re-run")
         else:
             why = f"claude exited {r.returncode}"
         streams = (f"\n--stdout(tail)--\n{(r.stdout or '')[-900:]}"
                    f"\n--stderr(tail)--\n{(r.stderr or '')[-600:]}") if r else ""
         partial = report.stat().st_size if report.exists() else 0
-        report.write_text(
+        # Sidecar, NEVER the report itself: the old code overwrote the partial report with
+        # this stub, destroying the only evidence of how far the auditor got -- in direct
+        # contradiction of the completion contract it enforces. A partial report is the
+        # deliverable; the next window's auditor continues over it.
+        (OUT / f"{stamp}_{key}.md.FAILED").write_text(
             f"# AUDITOR FAILED ({key})\n\nWHY: {why}\n"
-            f"partial report bytes before overwrite: {partial} "
-            f"(floor is 1200 -- below it the auditor re-runs on resume)\n{streams}\n", "utf-8")
+            f"partial report bytes preserved in place: {partial} "
+            f"(re-runs on resume until its {_SENTINEL} sentinel appears)\n{streams}\n", "utf-8")
     return ok
 
 
@@ -140,8 +169,8 @@ def main() -> None:
         # so a sweep killed halfway is CONTINUED by the next invocation (organ_catchup re-fires
         # reset-aware) instead of restarting at auditor one and re-losing the same seat race.
         done = OUT / f"{stamp}_{key}.md"
-        if done.exists() and done.stat().st_size >= 1200:
-            print(f"[deep-sweep] {key}: already produced today -- skipping (resume)", flush=True)
+        if _complete(done):
+            print(f"[deep-sweep] {key}: already COMPLETE today -- skipping (resume)", flush=True)
             results.append((key, True))
             continue
         print(f"[deep-sweep] auditor: {key}", flush=True)
@@ -151,7 +180,11 @@ def main() -> None:
 
     good = [f"{stamp}_{k}.md" for k, ok in results if ok]
     synth = OUT / f"{stamp}_SYNTHESIS.md"
-    if good:
+    if _complete(synth):
+        # Synthesis had NO resume check: the 2026-07-30 22:45 window re-launched a full
+        # synthesis seat five hours after the 17:00 one wrote STATUS: COMPLETE.
+        print("[deep-sweep] synthesis: already COMPLETE today -- skipping (resume)", flush=True)
+    elif good:
         sp = (
             f"{CORE}\n\n=== YOU ARE THE SYNTHESIS LEAD ===\nRead every auditor report in "
             f"docs/research/deep_sweep/ dated {stamp}: {', '.join(good)}. Produce the honest "
@@ -182,8 +215,8 @@ def main() -> None:
         with contextlib.suppress(subprocess.TimeoutExpired):
             _run(sp, 1800)
     n_ok = sum(1 for _, ok in results if ok)
-    print(f"[deep-sweep] done: {n_ok}/{len(results)} produced; "
-          f"synthesis={'yes' if synth.exists() else 'NO'}", flush=True)
+    print(f"[deep-sweep] done: {n_ok}/{len(results)} COMPLETE; "
+          f"synthesis={'yes' if _complete(synth) else 'NO'}", flush=True)
 
 
 if __name__ == "__main__":
