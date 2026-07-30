@@ -539,3 +539,16 @@ adaptations: any Rails/Discourse-era platform archive (BigQuant, FMZ, JoinQuant 
 counterfactual: HIGH on trap 2/3 — either one silently zero-hits the whole 52k-thread archive and
   would have produced a false "Quantopian forum is not recoverable from Wayback" conclusion,
   closing the region's largest finite era mine on a method artifact.
+
+## LEXICON — KR crypto-trading jargon (dark-forest search keys)
+_Seeded by the PROSPECTOR 2026-07-30 KR ground survey (charter §15/§30). Terms marked ✓ were
+CONFIRMED IN LIVE USE this run (search results + tracker-site names), not assumed._
+
+| term | romanization | gloss / era | use as search key |
+|---|---|---|---|
+| 김프 | kimpeu | kimchi premium (the abbreviation natives actually use — not 김치프리미엄) | ✓ finds the tracker ecosystem + trading threads; pair with 사이트/차트/매매 |
+| 역프 | yeokpeu | REVERSE premium (KR below global) — the regime word English sources lack | ✓ regime-detection threads; "역프 진입" = regime-flip chatter |
+| 따리 | ttari | premium slang (tracker "더따리" is named from it) | folk term for premium-harvest trades; finds retail arb lore |
+| 코인별 / 종목별 | coinbyeol / jongmokbyeol | "per-coin / per-ticker" qualifier | ✓ 코인별 김프 = per-asset premium — the exact key that surfaced 6 live per-coin trackers |
+| 재정거래 | jaejeong-georae | arbitrage (formal/textbook register) | finds analytical/academic KR content vs retail chatter |
+| 잡코인 | japkoin | "junk coins"/alts (retail register) | KR alt-frenzy threads — the dispersion axis's behavioral layer |

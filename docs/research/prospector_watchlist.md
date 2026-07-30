@@ -106,3 +106,35 @@ QUEUE-verdict. Next session should prioritize the coverage families NOT touched 
 Podcasts/interviews (beyond one Substack), YouTube/talks, Forums (deep+legacy — r/algotrading,
 EliteTrader, Wilmott were not directly queried), Academic (SSRN/arXiv), Records
 (contests/CTA), and AI/HF documentation — see prospector_coverage.md._
+
+---
+
+## SESSION SUMMARY — 2026-07-30 (standing daily run, uncapped budget)
+
+- **STEP 0 watchlist review:** prior watchlist held ZERO entries (07-19 session) — nothing to
+  promote/hold/drop.
+- **Primary work (resume-first):** finished the 07-28 dying run's screen-on-discovery obligation
+  end-to-end. On the way through, PROVED the Upbit daily-candle boundary is UTC-midnight
+  (invalidating the 07-29 canonical keying + the kimchi retraction's stated mechanism — F0015,
+  R0067/R0068), verified the orphan per-asset KR premium series by exact reproduction (corr
+  1.0000), and ran the FULL pre-registered screen program: 5 cells on 8.2y 3-asset constructs +
+  L1.16a kimchi realignment re-test + 175-asset × 400d panel family (pre-declared).
+- **Cards kept (tradeable, survived graveyard + EV):** 0 — the panel family verdict is an honest
+  null at recent-era width; nothing cleared the bar. Kimchi's kill STANDS on corrected grounds
+  (full-depth same-instant IC +0.0012; original +0.148 was a thin-window read).
+- **Era archaeology (8btc tranche):** 4 threads mined to capture depth — OKCoin's 2014-06 retail
+  iceberg/TWAP launch (CZ-era), 2015 stop-cluster leakage suspicion, zero-fee era end + rail
+  sequencing. Era knowledge routed; no cards (all map to adjudicated mechanism families).
+- **Expansion:** KR per-coin premium tracker ecosystem (6 dashboards) catalogued + KR lexicon
+  (6 terms) seeded into the operator library. §39 advance: dawsbot/eth-labels VERIFIED (MIT,
+  169k labels, free API) — enabling ingredient for the netflow graveyard re-entry condition.
+
+## WATCHLIST (max 5 — seat memory)
+
+1. **kr_perasset_premium (dispersion / relative-tilt constructs)** — SINGLE TRIGGER: R0069
+   adjudication. If the brain ranks the full-depth panel backfill (Upbit to 2017-09, n_eff ~50k)
+   worth the fetch, that screen decides the axis permanently; family-positive → pre-register
+   forward clock per §26.5. Do NOT re-screen partial windows or new constructions meanwhile
+   (forking-paths guard). Mechanism: per-asset rail equilibrium (8btc tid 63748, 2017) + KR
+   retail per-coin premium attention (6 live dashboards). Current state: recent-era family null;
+   8.2y 3-asset cells could-not-tell with clean decontamination.

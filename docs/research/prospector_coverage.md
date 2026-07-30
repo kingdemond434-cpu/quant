@@ -470,3 +470,160 @@ tid 6991 (buy/sell-wall observation thread) 404s on thread-6991-1-1.html — rec
 PENDING IN-RUN (screen-on-discovery duty): novelty-gate + Stage-A screen of the surfaced axis
 **per-asset premium dispersion in a barriered market (KR per-asset KRW books — CN books are
 USDT-only post-2021, mechanism not reconstructable in-region)**; graveyard/lexicon/operator routing.
+
+### 2026-07-30 session (PROSPECTOR, standing daily) — IN PROGRESS (write-first note; updated as items resolve)
+Mine gate: BACKLOG-CLEAR (all 5 prior finds disposed; mining authorised). Generation priors read:
+only measured class = data_axis_watchlist (50% conv, 0.25d latency) — favoured; nothing starved.
+Verify-queue fresh check (30s, config-vs-outcome): kaiko_vwm_reference_rate.jsonl EXISTS (132 rows);
+data/secrets/naver.json ABSENT → NAVER deferral to 2026-08-09 stands; F0002 (queue-design leak)
+already rowed 07-28. Not re-derived a 4th time.
+
+ITEMS THIS RUN (bounded per completion contract):
+1. **RESUME THE DEAD RUN (§26/§33 obligation, Tier-1):** 07-28 session 2 died with the Stage-A
+   screen of **per-asset KR premium dispersion** pending. Found on disk: data/kr_perasset_premium_history.jsonl
+   (3,008 rows, 2018-05-04→2026-07-28, prem_btc/eth/xrp + disp_std + alt_minus_btc, fx_ffill flags)
+   — built by the dying run, NEVER verified, NEVER screened, NOT in git (data/ gitignored; no
+   committed builder). Plan: (a) verify-don't-trust — spot-check rows against primary sources +
+   pin down candle-label alignment (bithumb KST-label lookahead is the graveyarded hazard);
+   (b) novelty gate + manual graveyard check (aggregate KR premium retracted ~73% artifact — the
+   CROSS-SECTIONAL construct cancels common FX/timing terms by construction, but venue-close
+   mismatch is asset-specific and does NOT cancel: de-contam gate is load-bearing); (c) mechanism-
+   appropriate targets = RELATIVE alt-vs-BTC returns (1d + 5d non-overlap), every cell a logged
+   trial; (d) stage_a_screen per cell → stage_a_verdicts + research_memory + routing + commit.
+   Folds in the Upbit-portal legitimacy read (backlog DECIDE item) as the data-provenance leg.
+2. **ERA-ARCHAEOLOGY CONTINUATION (carried pointer #1):** 8btc forum-54 (汇率/行情 strategy board)
+   thread-mining from the 713-tid catalog — next tranche to reply-depth, graveyard-check, route.
+3. IF BUDGET REMAINS (search-space expansion ≥25%): KR-community ground survey (Coinpan/DCInside/
+   Naver cafe quant-crypto layer) — new source class + mechanism-prior support for item 1's axis.
+STATUS: run in progress — per-item results below.
+
+#### ITEM 1 progress (durable mid-run state, 2026-07-30)
+**(a) VERIFICATION COMPLETE, with a major institutional finding on the way through.**
+- Orphan series data/kr_perasset_premium_history.jsonl: internally consistent (0/3008 mismatches,
+  full 7-day calendar), 2021 squeeze forensics correct (+21.5% peak 2021-05-19, XRP tilt +24.4%).
+- **BOUNDARY PROOF (primary evidence, Upbit's own hourly candles):** daily candle labelled
+  `candle_date_time_utc=D` closes EXACTLY at 24:00 UTC D (match to the won on 2026-07-28 AND
+  2021-05-19; ≠ the 15:00 UTC price). Upbit dailies are UTC-midnight-boundary, NOT KST-day.
+  ⇒ open-date keying is SAME-INSTANT with Binance UTC closes; close-keying (the 2026-07-29
+  canonical "fix" in libs/research/upbit_data.py) introduces 24h STALENESS, not leak protection.
+  ⇒ live collect_kimchi_premium.py currently pairs legs 24h apart (Upbit close-keyed ∩ Binance
+  open-keyed); rows appended since 07-29 measure −r_binance(D)+noise, not the premium.
+  ⇒ kimchi retraction E-02f2917dfb's stated mechanism ("Upbit KST candles ahead of Binance UTC
+  closes") is contradicted by primary measurement; a +1d-shifted premium is contemporaneous BY
+  CONSTRUCTION (denominator mechanics), so the 0.823 +1d cell was expected, not leak evidence.
+  Finding to be rowed with evidence; kimchi re-adjudication belongs to the brain, not this organ.
+- **REBUILD = REPRODUCTION:** same-instant rebuild from primaries (Upbit open-keyed + Binance UTC
+  + ECB USDKRW via frankfurter, ffill flagged) matches the orphan EXACTLY: corr 1.0000 on
+  prem_btc/alt_minus_btc/disp_std, median diff 0, max diff 0.8bp over 3,008 common days.
+  Orphan provenance = SOLVED (open-keyed + ECB FX). Screening the rebuilt file (full manifest).
+- Construction trials logged (§26.3): T#1 close-keyed build → GARBAGE on volatile days (24h-stale
+  leg; "+65.8% XRP premium" on 2021-05-19) — recorded failed. T#2 same-instant build → verified.
+**(b) PRE-REGISTERED SCREEN GRID (declared BEFORE results; all cells logged as trials):**
+  Signal legs all ≤24:00 UTC D (Upbit close 24:00 D, Binance close 24:00 D, ECB fix ~13:15 D
+  ffilled — staleness common-mode, cancels in cross-section); target starts 24:00 UTC D. No lookahead.
+  1. alt_minus_btc → next-day mean(ETH,XRP)−BTC rel return, h=1. Prior: NEGATIVE IC (KR retail
+     alt-crowding reverts; mechanism = per-asset rail equilibrium, 8btc tid 63748 era evidence).
+  2. alt_minus_btc → h=5 non-overlapping. Prior: negative.
+  3. disp_std → h=1 rel target. Prior: negative (dispersion blowout = frenzy top).
+  4. disp_std → h=5. Prior: negative.
+  5. REALIGNMENT RE-TEST (L1.16a petition; named enabling change = boundary proof): z20(prem_btc)
+     → next-day BTC, h=1 — original kimchi construction on the same-instant-verified series.
+  ±1d shift sensitivity reported on any INTERESTING cell. Zero promotion authority throughout.
+
+#### ITEM 2 — CLOSED (bounded tranche: 4 threads from the 713-tid catalog, mined via Wayback+GBK)
+Candidates selected by strategy-term scan (21 hits; 15 skipped as one poster's daily 庄家 commentary
+noise + fee announcements). Mined:
+- **tid 5875 (capture 2014-06-26): OKCoin ships retail algo-execution tools** — 计划委托 (trigger),
+  跟踪委托 (trailing), 冰山委托 (iceberg), 时间加权委托 (TWAP); led by 赵长鹏 (CZ, ex-Bloomberg
+  Tradebook, then OKCoin CTO). ERA KNOWLEDGE: from 2014-06 the largest CN venue's tape contains
+  systematically-sliced retail/institutional flow (iceberg+TWAP) and a VENUE-HELD conditional-order
+  book. No card (execution-microstructure class already adjudicated: vpin_ofi REJECTED 2026-07-03).
+- **tid 25692 (2015-11): retail theory that the venue feeds stop-cluster data (止盈点 concentrations)
+  to short-side 庄家** who enter size at the cluster → cascade. Advice given: self-custody + never
+  pre-set stops (they reveal your hand). CLAIM-grade suspicion, zero evidence — but documents (a)
+  era belief in venue data leakage, (b) the liquidation-hunting mechanism EXISTING pre-perps
+  wherever cluster data exists, (c) measurable behavioral reaction (stop-avoidance). Corroborating
+  era provenance for the already-tracked liquidation_reversal family; no new card.
+- **tid 2232 (capture 2014-01): BTCChina restores 0.3% fee** "防止炒作" = zero-fee era END; reply
+  documents rail-closure SEQUENCING (财付通/Tenpay cut before bank cards). Adds intra-era ordering
+  detail to the graveyarded fiat-premium barrier mechanics. Era knowledge; no card.
+- **tid 37055 (2016-08): auto-trading-bot thread — capture holds the question post only, zero
+  replies archived.** Route-negative (capture too early), not a content judgment.
+DEPTH LINE item 2: 4 threads to their ARCHIVE depth (captures hold 0-2 replies — that is the
+archive's truth; reply-chain≥2 not reachable on these captures). tid 5875 template-shell defeated
+by direct postmessage-slice (regex needed attr-order-agnostic form — OP-020 refinement noted).
+Catalog now 11/713 tids mined to capture depth; board-54 systematic exhaustion continues next runs.
+[§33: screened -> docs/research/prospector_coverage.md] (era-knowledge routing, no tradeable cards)
+
+#### ITEM 3 — CLOSED (search-space expansion slice, bounded)
+NEW SOURCE CLASS: the **KR per-coin premium tracker ecosystem** — ≥6 live public dashboards
+(kimpga.com, kimp.co.kr, cryprice.com/scolkg.com, coinsect.io, 94bit.com, "더따리"), surfaced by
+the native-language key 코인별 김프 (OP-032: native language FIRST). Value: (a) BEHAVIORAL
+COUNTERPARTY EVIDENCE for the kr_perasset axis — KR retail watches per-asset 김프/역프 in real
+time, so premium tilts are attention objects, not accounting residuals; (b) catalogued to
+data_universe_map (regional_venues_kr_jp; trackers are corroboration pointers — the desk
+reconstructs from primaries, vendor-replacement doctrine); (c) KR LEXICON seeded into the
+operator library (김프/역프/따리/코인별/재정거래/잡코인 — 6 terms, 3 confirmed-in-use).
+NOT done this run (named, next-run ground): Coinpan/DCInside/Naver-cafe community deep-mining —
+the discussion layer behind the trackers; era + diaspora angles apply (KR had no ban-event, so
+the living web is the primary layer, unlike CN).
+
+#### ITEM 1 (cont.) — PANEL FAMILY SCREEN, PRE-DECLARED BEFORE RESULTS
+Universe: all fetched assets with ≥120 aligned days both legs (177 Upbit-kept, ex-BTC reference,
+ex-pegged). ONE construction (declared): per-asset signal = prem_i − prem_btc (BTC-relative tilt;
+FX + venue-close terms cancel exactly); per-asset target = next-day ret_i − ret_btc (same Binance
+legs); harness = stage_a_screen per asset, h=1, zwin=20, defaults. Aggregation (descriptive only,
+no invented verdict): N, median/mean IC, share positive, verdict-class counts, decontam pass share;
+sign-test on share-positive with the declared caveat that assets are cross-correlated (common alt
+factor only partially removed by BTC-relative construct). Multiplicity: 177 within-mechanism
+variations of ONE pre-registered mechanism ≈ 1 independent cluster (§31.3); family report is the
+deliverable; best/worst assets named as descriptives WITH the forking caveat, never promoted alone.
+Interpretation rule (pre-declared): significantly >50% positive → "consistent-positive, brain
+adjudication warranted (R-row)"; else honest null. Zero promotion authority either way.
+
+#### ITEM 1 — CLOSED. Panel family result + final routing.
+PANEL FAMILY (per pre-declaration above): N=175 assets, median IC **+0.0050**, mean +0.0053,
+share-positive 94/175 (54%, sign-z 0.98 NS), median residual IC +0.0016, decontam passed 99/175,
+verdicts {SCREEN-UNDERPOWERED:145, TIMING-ARTIFACT:30}. Tails (PUNDIX +0.24 … TFUEL −0.14) are
+noise-order at N=175×~380d — descriptive only. **Pre-declared rule fires the HONEST-NULL branch.**
+Novelty gate run for duty: 0.965 not-redundant (nearest kimchi 0.035; tool recall known weak —
+manual graveyard check was the operative gate). Routed: family verdict row + 5 cell rows →
+data/stage_a_verdicts.jsonl; rich report → reports/axis_screens/kr_perasset_premium.json;
+research_memory rm-…41045b (+5 cell rows, 2 construction rows, kimchi re-test row); watchlist
+entry with single trigger = **R0069** (brain adjudicates full-depth panel backfill + §26.5 clock).
+[§33: screened -> data/stage_a_verdicts.jsonl]
+NOTE for R0067 owner: screen_exchange_netflow.py:102 hardcodes the wrong retraction lesson text
+("KST vs UTC candle labels") in its PriorIdea — include in the derived-registry correction sweep.
+BACKLOG ANNOTATION (verify queue): Upbit REST primary route now VERIFIED at 400–1000d depth,
+195-market breadth, 0 fetch failures — the "Upbit Historical Market Data portal" DECIDE item's
+urgency drops (in-house reconstruction exists); decision still owed but nothing blocks on it.
+
+### SESSION CLOSE 2026-07-30 — DEPTH LINE, BATTERY, STANDING TEST
+DEPTH (per lead): kr_perasset axis — **exhausted for this run's declared scope**: provenance
+solved by exact reproduction (3,008d), boundary proven from primary hourly data on two eras,
+5 pre-registered cells + L1.16a re-test + 175-asset pre-declared panel run, all trials logged,
+negatives first-class. Full-depth panel backfill is the ONE named remaining move (R0069 owns it).
+8btc tranche — 4 threads to their archive depth (captures hold 0–2 replies; that is the archive's
+truth); catalog 11/713 mined; board-54 exhaustion continues. KR expansion — survey depth only
+(trackers catalogued, lexicon seeded); community layer (Coinpan/DCInside/Naver cafes) = named
+next-run ground. NOT breadth-theater: two carried obligations closed to terminal state, one
+expansion slice, zero re-surface-scanning.
+PROACTIVE BATTERY (moves run → produced): (1) contingency — ECB/frankfurter named + verified as
+KRW FX primary with Yahoo as fallback (collector currently uses Yahoo 250d; noted). (2) adjacency —
+the private-keying shape: found fusion_engine.py:66 + signal_halflife.py:55 (R0068) after
+upbit_data.py; also netflow PriorIdea stale text (noted above). (3) config-vs-outcome — the
+boundary test itself: the canonical policy's factual premise had NO artifact behind it; demanded
+one, got a refutation (F0015). (4) regression sweep — what this run made worse: two per-asset
+series files now coexist (orphan + rebuilt, identical values); manifest cross-references written,
+brain may delete the orphan at R0067 disposition. (5) cost-inversion — n/a this run (all free
+primaries). (6) generalise-the-rule — blind_spot row: every alignment/keying policy module needs a
+primary-evidence test artifact. (7) autonomy check — n/a. (8) negative space — per-asset KR
+premium had NEVER been screened at width; now it has a permanent family record. (9) scope-the-
+negative — family null scoped to recent-era-width ROUTE, not the full-depth capability (named
+decisive experiment); tid 37055 scoped to capture-too-early. (10) ratchet check — conversion
+ledger + stage_a_verdicts + research_memory + universe map + lexicon all grew; no floor fell.
+STANDING TEST — "Which artifact on disk is different because of what was mined?":
+data/kr_perasset_premium_rebuilt.jsonl + kr_perasset_legs_raw.json + kr_perasset_panel_400d.json
+(new datasets, manifested), 11 stage_a_verdicts rows, 9 research_memory rows, F0015,
+R0067/R0068/R0069, 1 blind-spot row, reports/axis_screens/kr_perasset_premium.json, universe-map
+entry, KR lexicon section, paid-target Nansen line advanced, this note, watchlist. Cycle CONVERTED.

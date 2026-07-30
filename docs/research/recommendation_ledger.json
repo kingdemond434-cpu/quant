@@ -811,6 +811,42 @@
    "commit": null,
    "due": "2026-08-05",
    "disposed": "2026-07-30T17:33:18.023508+00:00"
+  },
+  {
+   "id": "R0067",
+   "source": "cycle",
+   "summary": "KEYING-FIX BUNDLE (evidence: prospector 2026-07-30 boundary proof + exact-match reproduction): (a) revert upbit_data.py to open-date keying (same-instant, proven) + correct docstring; (b) quarantine kimchi_premium.jsonl rows appended since 2026-07-29 (24h-mispaired legs); (c) correct kimchi graveyard row mechanism-of-death to 'no edge at full depth; thin-window original screen; retraction premise refuted by boundary measurement' preserving the kill; (d) re-run revalidate_clocks with corrected keying. One coherent fix, one commit.",
+   "roi_bps": null,
+   "raised": "2026-07-30T22:33:48.795889+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0068",
+   "source": "cycle",
+   "summary": "ADJACENCY of F0015: fusion_engine.py:66 + signal_halflife.py:55 carry PRIVATE Upbit keyings (open-date, no shift) -- 4 total copies of the one-copy policy, 2 contradicting canon. After R0067 reverts canon to open-date keying, fold both call sites into libs/research/upbit_data.py import so the next keying fix moves ALL consumers.",
+   "roi_bps": null,
+   "raised": "2026-07-30T22:35:46.772156+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0069",
+   "source": "cycle",
+   "summary": "kr_perasset_premium axis ADJUDICATION (prospector 2026-07-30, zero promotion authority): recent-era 175-asset panel = pre-declared honest null; 8.2y 3-asset h1 cells underpowered-but-clean (+0.045/+0.053, residual>=raw, disp same-corr 0.01). DECISIVE EXPERIMENT if ranked worth a slot: full-depth panel backfill (Upbit paginated to 2017-09 per asset, ~30min fetch, n_eff ~50k crosses all power floors) -> family screen decides axis life/death permanently. ALSO: decide forward-clock per Sec26.5 for the 3-asset constructs or explicitly decline (12-slot Holm economics). Era mechanism prior: 8btc tid 63748 (2017 per-asset rail equilibrium) + 6 live KR per-coin premium dashboards (behavioral attention evidence).",
+   "roi_bps": null,
+   "raised": "2026-07-30T22:41:30.548159+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
