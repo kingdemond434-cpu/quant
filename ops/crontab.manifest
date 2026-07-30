@@ -514,3 +514,19 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # EVIDENCE: scripts/check_gate0_ready.py -> data/gate0_readiness.json
 # CONFIDENCE: committed-script (new this cycle)
 9 */4 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_gate0_ready.py >> data/cro_ai_logs/gate0_readiness.log 2>&1
+
+# GENERATION DIVERSITY (HYPOTHESIS_MAX #2/#3/#6, unblocked at Gate 0 entry 2026-07-30). The spec
+# deferred the collapse detector with an explicit trigger -- "build it when generation cadence
+# upgrades to weekly at S1/Gate-0 entry" -- because generation was low-volume and the failure mode
+# was unreachable. That trigger fires today.
+# WHAT IT MEASURES that nothing else could: novel_rate, the share of generated ideas that were
+# genuinely NEW questions rather than reparameterisations. "420 candidates tested" and "one
+# question asked 420 ways" are identical from a count, and 420/0 is precisely the record that
+# needed telling apart. Plus mechanism entropy (normalised by ITEM count, so 2 fingerprints across
+# 50 ideas reads ~0.18 rather than a perfect 1.0), market breadth counting cross-sectional
+# universes properly, and cross-generator herding between seats.
+# The detector NEVER blocks generation -- instrumentation that pages the weekly panel, per spec.
+# EVIDENCE: libs/research/{collapse_detector,variation_blocker,mechanism_fingerprint}.py;
+#           tests/research/test_{collapse_detector,variation_blocker}.py (37 tests)
+# CONFIDENCE: committed-script (new this cycle)
+23 9 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_generation_diversity.py >> data/cro_ai_logs/gen_diversity.log 2>&1
