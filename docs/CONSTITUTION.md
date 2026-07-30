@@ -133,6 +133,45 @@ null is no-edge-until-evidence). Aggression stands ON these rails: removing one 
 it is losing more efficiently. One ruin event ends all compounding — that asymmetry IS the log
 objective.
 
+**L1.0 THE UNIVERSAL RATCHET — EVERY METRIC, EVERY DAY, TOWARD 100%** *(principal order
+2026-07-29; placed FIRST because it governs how every law below is executed)*. No number this
+organism can measure is ever allowed to sit still. Every measurable property of every component —
+test kill rate, coverage, utilisation, uptime, fill quality, data span, breadth, conversion rate,
+miner productivity, latency, cost, finding-closure rate, doctrine-injection coverage — is a
+RATCHET: today's value is the permanent floor, and the standing target is 100%, approached
+aggressively and continuously, on the organism's own initiative. The proving instance, and the
+reason this is L1.0: on 2026-07-29 the desk measured its test strength for the first time at
+**55%**, read the survivor list, and closed it to **90% the same session**. That is the required
+tempo for EVERYTHING, not a highlight. Four binding consequences:
+(a) **A metric that exists is measured, published, and floored.** Any capability without a number
+    is a defect; any number without a recorded floor is a defect; any floor that falls fires.
+(b) **"Maxed" is never a state, only a floor.** Claiming completion requires a DOCUMENTED push
+    that failed, with its measured result and the condition under which it will be retried. Every
+    such claim carries an expiry.
+(c) **The gap between today's value and 100% is itself the work queue**, ranked by L1.26 (expected
+    contribution to compounding) — never by comfort, novelty, or how impressive the remaining work
+    looks. A 90% number with a cheap path to 99% outranks a new subsystem.
+(d) **SELF-INITIATED, NEVER PRINCIPAL-TRIGGERED.** The principal noticing a stalled metric before
+    the organism does is the top defect of that cycle, logged via `blind_spot.py --principal`
+    (L2.5). The organism does not wait to be asked, does not pace itself against quota, and does
+    not treat a quiet week as a finished one. Exhaustion is the default effort level; timidity in
+    self-improvement is scored exactly like timidity in capital deployment (L1.23's symmetric
+    half).
+(e) **100% SUBSYSTEM COVERAGE PER CYCLE, no exceptions and no sampling** *(principal order
+    2026-07-29)*. Every cycle — daily brain cycle, micro-audit, panel round, LLM audit, weekly cold
+    sweep, gap-max sweep — must cover the WHOLE desk, not a rotation slice: every subsystem (data,
+    validation, execution, risk, portfolio, ops/infra, research process, governance, and every
+    organ and doctrine surface) is examined in EVERY cycle, and the cycle report carries the
+    coverage table proving it. Rotation is permitted only for the DEPTH of the examination (which
+    component gets pulled apart to raw code this cycle), never for its BREADTH: a subsystem may be
+    examined shallowly, never skipped. A cycle that cannot show 100% breadth coverage has not
+    completed, and coverage percentages themselves are ratchet metrics under (a) — 100% is the
+    floor, not the target. Reaching 100% by narrowing what counts as a subsystem is the
+    denominator trick §34 forbids and fires `findings-scope-shrank`.
+This law is subordinate to exactly two things and nothing else: the survival rails (L1.23) and the
+investment objective (L1.26) — a ratchet that raises a proxy while lowering expected compounding is
+forbidden by L1.3, and a ratchet is never an excuse to touch a Tier-3 rail.
+
 **L1.24 INFORMATION ADVANTAGE, NOT ACTIVITY** *(principal order 2026-07-29)*. The objective is
 never maximum ideas, models, agents, experiments, or complexity. It is the SMALLEST number of
 highest-quality persistent edges deployed with maximum capital efficiency. Activity metrics
@@ -247,6 +286,18 @@ engineering + cognitive cost; no unnecessary complexity; no duplication; interna
 Never modify merely because wording is possible; rank candidate changes by ERV; recommend
 "unchanged" explicitly when nothing clears the bar.
 
+**L2.0 THE RATCHET FENCE (how L1.0 is enforced, not hoped for)** *(principal order 2026-07-29)*.
+Every ratchet metric lands in a committed floor artifact with its measuring command, and a fence
+fires when it falls or goes stale: `data/mutation_score.json` (test strength),
+`docs/research/findings_coverage_record.json` (finding coverage), `data/miner_runway.json` (organ
+productivity), `data/mypy_ratchet.json` (type coverage), `data/alert_delivery.jsonl` (pager
+liveness), conversion/holdings records (data→alpha conversion), plus every future metric on the day
+it is first measured. Rules: a NEW metric is born with its floor recorded and its fence written in
+the same commit — a number with no fence is prose; a floor may only be raised, never lowered to
+match a regression; and the daily sweep reports each metric as `value (floor, distance-to-100%)`
+so the remaining gap is never invisible. No metric may be retired to avoid a falling number — that
+is the denominator trick §34 already forbids, one level up.
+
 **L2.9 CAPABILITY AUDIT LOOP** *(principal order 2026-07-29; mechanised, not aspirational)*.
 Every component — agent, model, dataset, collector, script, process, doctrine — periodically
 answers: purpose, inputs, outputs, utilisation, cost, measurable contribution, failure modes,
@@ -321,13 +372,19 @@ cycle reports).
 - **Weekly:** deep cold audit (6 perspectives × 8 subsystems, adversarially verified); churn
   loop — obsolete components, deteriorating sources, unnecessary complexity, bottlenecks, missed
   opportunities → fix/replace/remove/reallocate (no subsystem has permanent protection);
-  **GAP-MAX SWEEP** *(principal order 2026-07-29)* — a full parallel sweep of EVERY subsystem
-  hunting gaps NOT already on the register (unknown-unknowns, not known backlog), each finding
-  adversarially verified then rowed or closed-with-reason, followed by maximum buildout of
-  everything unblocked: the standing rule is "if capability exists, upgrade it to maximum
-  validated effectiveness; if missing, build it; if duplicated, merge it; if unused, activate it
-  or retire it" — with L1.24/L1.26 as the brake (highest-EV first, activity is not the output).
-  Runs autonomously (scheduled session + desk cadence), never waits for the principal to ask.
+  **GAP-MAX SWEEP** *(principal order 2026-07-29, MAXIMUM AGGRESSION mandate)* — a full parallel
+  sweep of EVERY subsystem hunting gaps NOT already on the register (unknown-unknowns, not known
+  backlog), each finding adversarially verified then rowed or closed-with-reason, followed by
+  maximum buildout of everything unblocked: the standing rule is "if capability exists, upgrade it
+  to maximum validated effectiveness; if missing, build it; if duplicated, merge it; if unused,
+  activate it or retire it" — with L1.24/L1.26 as the brake (highest-EV first, activity is not the
+  output). **EFFORT FLOOR, binding:** the sweep runs at least as exhaustively as the 2026-07-29
+  session that installed it — multi-agent fan-out across every subsystem, no self-imposed quota, no
+  scope reduction for convenience, and every ratchet metric (L1.0/L2.0) re-measured and pushed
+  toward 100% in the same run. A sweep that reports "nothing to do" without a per-metric
+  value/floor/distance-to-100% table has not run. It is autonomous and self-initiated: it never
+  waits for the principal to ask, and the principal finding a stalled metric first is that cycle's
+  top defect.
 - **Monthly:** blind-rediscovery dig; holdings/conversion ratchet review; seat scorecards.
 - **Quarterly:** constitutional review per L2.8 (default: stability); architecture-level ERV
   re-ranking of every module against its replacement.

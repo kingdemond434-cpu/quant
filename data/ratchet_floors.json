@@ -1,0 +1,26 @@
+{
+  "findings_coverage": {
+    "artifact": "docs/research/findings_coverage_record.json",
+    "proving_command": "python scripts/max_audit.py (check_findings_tracked)",
+    "recorded": "2026-07-30T07:19:13Z",
+    "value": 1.0
+  },
+  "miner_seats_productive": {
+    "artifact": "data/miner_runway.json",
+    "proving_command": "python scripts/check_miner_runway.py --json --report-only",
+    "recorded": "2026-07-30T07:19:13Z",
+    "value": 0.0
+  },
+  "pager_delivered_24h": {
+    "artifact": "data/alert_delivery.jsonl",
+    "proving_command": "python scripts/run_alert_canary.py",
+    "recorded": "2026-07-30T07:19:13Z",
+    "value": 0.0
+  },
+  "test_strength_min_kill_rate": {
+    "artifact": "data/mutation_score.json",
+    "proving_command": "python scripts/run_mutation.py",
+    "recorded": "2026-07-30T07:19:13Z",
+    "value": 0.9
+  }
+}

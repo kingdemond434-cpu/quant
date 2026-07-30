@@ -58,6 +58,14 @@ QUANT_ROOT=/home/quant/quant-platform
 # CONFIDENCE: documented-cadence
 */5 * * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_venue_divergence_shadow.py >> data/cro_ai_logs/venue_divergence_cron.log 2>&1
 
+# RATCHET FENCE (constitution L1.0/L2.0): every measurable property of the desk reported as
+# value (floor, distance-to-100%), failing on any regression / unmeasured / unfloored metric.
+# --ratchet records improvements only; it can never lower a floor. The 55% -> 90% test-strength
+# move of 2026-07-29 is the tempo this fence exists to make permanent and self-initiated.
+# EVIDENCE: scripts/check_ratchets.py (built 2026-07-29); docs/CONSTITUTION.md L1.0
+# CONFIDENCE: committed-script (new this cycle)
+7 7 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_ratchets.py --ratchet --json >> data/cro_ai_logs/ratchets.log 2>&1
+
 # MINER RUNWAY DOCTOR: daily. Distinguishes never-ran / creds-missing / not-scheduled / stale
 # per seat and reports the CAUSE with its blast radius -- 6 of 7 frontier regions had ZERO runs
 # ever while max_audit's freshness check technically "monitored" them (a never-run duty is exempt
