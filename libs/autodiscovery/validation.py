@@ -9,6 +9,8 @@ never relaxed.
 
 from __future__ import annotations
 
+from typing import Any
+
 import numpy as np
 
 from libs.autodiscovery.models import Hypothesis, ValidationMetrics, ValidationVerdict
@@ -45,7 +47,16 @@ _PBO_THRESHOLD = 0.5       # same bar as PBOResult.overfit; only the ATTRIBUTION
 # (L1.5). Below ~20 venue-minimum notionals there is no room for a few economic round-trips, and
 # that -- not a capital-size opinion -- is the only defensible absolute floor.
 _DESK_EQUITY_FALLBACK_USD = 1.0e3     # used only when live equity is unreadable
-_CAPACITY_MULTIPLE_OF_EQUITY = 2.0    # room to size the book and to grow into it
+# THE ADMISSION BAND IS A MINIMUM SLICE, NOT A MULTIPLE OF THE BOOK (principal 2026-07-30).
+# A multiple was wrong and measurably so: at $1,000 equity a 2x rule marked capacity of $300,
+# $800 and even $1,500 as OUTGROWN -- edges that can hold 30%, 80% and 150% of the whole book.
+# The book runs MANY edges in parallel (that is the diversification the objective actually wants),
+# so an edge never needs to hold the entire book; it needs to hold a slice big enough to matter.
+# Consequence, which is the compounding point: the admissible band SLIDES UP with equity and stays
+# INCLUSIVE at the small end forever -- at $1k everything from ~$200 up is in; at $50k a
+# $300-capacity edge has finally become a rounding error and retires by OUTGROWTH.
+_MIN_SLICE_FRACTION = 0.10            # an edge must hold >=10% of the book to be worth a quota
+_CAPACITY_MULTIPLE_OF_EQUITY = 2.0    # RETAINED only for the gauntlet's own headroom bar
 _VENUE_MIN_NOTIONAL_USD = 10.0        # Binance-class minimum order notional
 _EXEC_VIABILITY_FLOOR_USD = 20.0 * _VENUE_MIN_NOTIONAL_USD   # ~$200: a handful of economic trips
 
@@ -93,9 +104,67 @@ def capacity_status(capacity_usd: float, *, equity_usd: float | None = None) -> 
     eq = _desk_equity_usd() if equity_usd is None else float(equity_usd)
     if capacity_usd < _EXEC_VIABILITY_FLOOR_USD:
         return "SUB-VIABLE"
-    if capacity_usd < eq * _CAPACITY_MULTIPLE_OF_EQUITY:
+    if capacity_usd < eq * _MIN_SLICE_FRACTION:
         return "OUTGROWN"
     return "ADMIT"
+
+
+def capacity_runway_days(capacity_usd: float, *, equity_usd: float | None = None,
+                         growth_rate_annual: float = 1.0) -> float:
+    """Days until the book grows past this edge's usable band -- its EXPIRY DATE.
+
+    THE RACE THE PRINCIPAL NAMED (2026-07-30): a small-capacity edge is only worth anything if it
+    reaches live BEFORE capital outgrows it. A validation pipeline slower than the runway delivers
+    edges that are already rounding errors on arrival, which is not caution -- it is a guaranteed
+    zero. So runway is computed and COMPARED to pipeline latency (see `capacity_race`), and the
+    forward-slot queue is ordered by EXPIRY, shortest first, because a long-runway edge loses
+    nothing by waiting and a short-runway one loses everything.
+
+    growth_rate_annual: continuous growth of equity, 1.0 = 100%/yr. The desk's own target band is
+    80-120%/yr (GROWTH_UNLOCK_LADDER), so the default is deliberately the middle of the mandate
+    rather than an optimistic number.
+    """
+    import math
+    eq = _desk_equity_usd() if equity_usd is None else float(equity_usd)
+    if eq <= 0 or growth_rate_annual <= 0:
+        return float("inf")
+    # equity at which this edge becomes a rounding error on the book
+    outgrow_at = capacity_usd / _MIN_SLICE_FRACTION
+    if outgrow_at <= eq:
+        return 0.0                                      # already outgrown
+    return 365.0 * math.log(outgrow_at / eq) / growth_rate_annual
+
+
+def capacity_race(capacity_usd: float, *, validation_days: float,
+                  equity_usd: float | None = None,
+                  growth_rate_annual: float = 1.0) -> dict[str, Any]:
+    """Does this edge reach live before the book outgrows it? Verdict + the honest remedy.
+
+    Verdicts:
+      REACHES-LIVE   runway exceeds the pipeline latency with margin -- ship it normally.
+      TIGHT          it lands with little life left; worth prioritising in the slot queue.
+      DOA            it is outgrown before validation could finish. THE REMEDY IS NEVER A SHORTER
+                     CLOCK OR A LOWER BAR (L1.6 -- the confirmation bar never loosens). The only
+                     honest accelerants are MORE OBSERVATIONS PER DAY (the desk measured this: an
+                     8h funding panel carries ~sqrt(3)x the evidence rate of a daily one at
+                     vif 1.008, gap #44) and NOT QUEUEING -- run the slot now rather than later.
+                     If neither is available the edge is structurally unreachable at this equity
+                     and is recorded as such, not silently shelved.
+    """
+    runway = capacity_runway_days(capacity_usd, equity_usd=equity_usd,
+                                  growth_rate_annual=growth_rate_annual)
+    if runway <= validation_days:
+        verdict = "DOA"
+    elif runway < validation_days * 2.0:
+        verdict = "TIGHT"
+    else:
+        verdict = "REACHES-LIVE"
+    return {"capacity_usd": capacity_usd, "runway_days": round(runway, 1),
+            "validation_days": validation_days, "verdict": verdict,
+            "slot_priority": round(runway, 1),      # ascending: shortest runway is served first
+            "remedy": ("higher-frequency evidence (8h panel ~sqrt(3)x rate) and/or an immediate "
+                       "slot -- never a shorter clock or a lower bar"
+                       if verdict != "REACHES-LIVE" else "none needed")}
 _CPCV_MIN_POSITIVE = 0.6   # >=60% of purged folds positive
 
 

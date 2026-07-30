@@ -138,6 +138,24 @@ the edge cannot support a handful of economic round-trips at venue minimums, so 
 (L1.5) kills it at any equity. Small-capacity and large-capacity hunting run **SIMULTANEOUSLY**,
 never in sequence: waiting for big edges forfeits the compounding available now, and compounding
 now is what buys the capital that makes big edges relevant at all.
+**THE BAND IS A MINIMUM SLICE, NOT A MULTIPLE OF THE BOOK** (measured correction, same day): a
+multiple-of-book rule marked capacities of $300, $800 and $1,500 as OUTGROWN at $1,000 equity —
+edges able to hold 30%, 80% and 150% of the entire book. The book runs MANY edges in parallel, so
+an edge never needs to hold the whole book; it needs a slice big enough to matter (≥10%). The
+admissible band therefore SLIDES UP with equity and stays inclusive at the small end forever: at
+$1k everything from the ~$200 execution floor up is in; at $50k a $300-capacity edge has become a
+rounding error and retires.
+**THE DEPLOYMENT RACE (principal 2026-07-30).** A small-capacity edge is worth nothing if the book
+outgrows it before it reaches live, so every candidate carries a CAPACITY RUNWAY (days until it
+becomes a rounding error at the current growth rate) and that runway is compared to pipeline
+latency: REACHES-LIVE / TIGHT / DOA. **The forward-slot queue is ordered by EXPIRY, shortest runway
+first** — a long-runway edge loses nothing by waiting, a short-runway one loses everything. When an
+edge is DOA the remedy is NEVER a shorter clock or a lower bar (L1.6): the only honest accelerants
+are MORE OBSERVATIONS PER DAY (measured: an 8h funding panel carries ~√3× the evidence rate of a
+daily one at vif 1.008) and NOT QUEUEING. Measured 2026-07-30: at the mandated ~100%/yr a
+$300-capacity edge has 401 days of runway against a 90-day clock (REACHES-LIVE), at 10×/yr it is
+TIGHT at 174 days, and at 100×/yr it is DOA — so pipeline latency is not the binding constraint on
+small edges today, and the instrument exists to catch the regime where it becomes one.
 
 **L1.19 INFORMATION DECAY.** Every alpha source, dataset, feature and mechanism is monitored for
 decay, crowding and drift — and replacements are hunted BEFORE existing advantages die.
