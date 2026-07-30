@@ -1,8 +1,555 @@
 {
-  "measured": "2026-07-30T07:48:22Z",
+  "measured": "2026-07-30T21:33:49Z",
   "bar": 0.9,
   "method": "self-contained AST mutation harness (see module docstring); mutmut 3.6.0 is the documented path for a long VPS run over whole trees",
   "targets": [
+    {
+      "target": "libs/autodiscovery/validation.py",
+      "tests": [
+        "tests/autodiscovery/test_validation_cpcv_baselines.py"
+      ],
+      "killed": 9,
+      "survived": 106,
+      "timeout": 0,
+      "error": 0,
+      "total": 115,
+      "kill_rate": 0.0783,
+      "runtime_s": 241.1,
+      "meets_bar": false,
+      "survivors": [
+        {
+          "line": 40,
+          "kind": "binop",
+          "mutation": "Mult -> Div"
+        },
+        {
+          "line": 40,
+          "kind": "num_const",
+          "mutation": "24 -> 25"
+        },
+        {
+          "line": 40,
+          "kind": "num_const",
+          "mutation": "260 -> 261"
+        },
+        {
+          "line": 41,
+          "kind": "num_const",
+          "mutation": "0.95 -> 1.95"
+        },
+        {
+          "line": 42,
+          "kind": "num_const",
+          "mutation": "0.5 -> 1.5"
+        },
+        {
+          "line": 58,
+          "kind": "num_const",
+          "mutation": "1000.0 -> 1001.0"
+        },
+        {
+          "line": 67,
+          "kind": "num_const",
+          "mutation": "0.1 -> 1.1"
+        },
+        {
+          "line": 68,
+          "kind": "num_const",
+          "mutation": "2.0 -> 3.0"
+        },
+        {
+          "line": 69,
+          "kind": "num_const",
+          "mutation": "10.0 -> 11.0"
+        },
+        {
+          "line": 70,
+          "kind": "binop",
+          "mutation": "Mult -> Div"
+        },
+        {
+          "line": 70,
+          "kind": "num_const",
+          "mutation": "20.0 -> 21.0"
+        },
+        {
+          "line": 100,
+          "kind": "num_const",
+          "mutation": "0.0 -> 1.0"
+        },
+        {
+          "line": 101,
+          "kind": "compare",
+          "mutation": "Gt -> GtE"
+        },
+        {
+          "line": 101,
+          "kind": "num_const",
+          "mutation": "0 -> 1"
+        },
+        {
+          "line": 102,
+          "kind": "return_none",
+          "mutation": "return <expr> -> return None"
+        },
+        {
+          "line": 113,
+          "kind": "boolop",
+          "mutation": "And -> Or"
+        },
+        {
+          "line": 113,
+          "kind": "compare",
+          "mutation": "Gt -> GtE"
+        },
+        {
+          "line": 113,
+          "kind": "num_const",
+          "mutation": "0 -> 1"
+        },
+        {
+          "line": 114,
+          "kind": "return_none",
+          "mutation": "return <expr> -> return None"
+        },
+        {
+          "line": 115,
+          "kind": "return_none",
+          "mutation": "return <expr> -> return None"
+        },
+        {
+          "line": 119,
+          "kind": "return_none",
+          "mutation": "return <expr> -> return None"
+        },
+        {
+          "line": 119,
+          "kind": "binop",
+          "mutation": "Mult -> Div"
+        },
+        {
+          "line": 141,
+          "kind": "compare",
+          "mutation": "Lt -> LtE"
+        },
+        {
+          "line": 143,
+          "kind": "compare",
+          "mutation": "Lt -> LtE"
+        },
+        {
+          "line": 143,
+          "kind": "binop",
+          "mutation": "Mult -> Div"
+        },
+        {
+          "line": 149,
+          "kind": "num_const",
+          "mutation": "1.0 -> 2.0"
+        },
+        {
+          "line": 165,
+          "kind": "boolop",
+          "mutation": "Or -> And"
+        },
+        {
+          "line": 165,
+          "kind": "compare",
+          "mutation": "LtE -> Lt"
+        },
+        {
+          "line": 165,
+          "kind": "num_const",
+          "mutation": "0 -> 1"
+        },
+        {
+          "line": 165,
+          "kind": "compare",
+          "mutation": "LtE -> Lt"
+        },
+        {
+          "line": 165,
+          "kind": "num_const",
+          "mutation": "0 -> 1"
+        },
+        {
+          "line": 166,
+          "kind": "return_none",
+          "mutation": "return <expr> -> return None"
+        },
+        {
+          "line": 168,
+          "kind": "binop",
+          "mutation": "Div -> Mult"
+        },
+        {
+          "line": 169,
+          "kind": "compare",
+          "mutation": "LtE -> Lt"
+        },
+        {
+          "line": 170,
+          "kind": "num_const",
+          "mutation": "0.0 -> 1.0"
+        },
+        {
+          "line": 171,
+          "kind": "return_none",
+          "mutation": "return <expr> -> return None"
+        },
+        {
+          "line": 171,
+          "kind": "binop",
+          "mutation": "Div -> Mult"
+        },
+        {
+          "line": 171,
+          "kind": "binop",
+          "mutation": "Mult -> Div"
+        },
+        {
+          "line": 171,
+          "kind": "num_const",
+          "mutation": "365.0 -> 366.0"
+        },
+        {
+          "line": 171,
+          "kind": "binop",
+          "mutation": "Div -> Mult"
+        },
+        {
+          "line": 176,
+          "kind": "num_const",
+          "mutation": "1.0 -> 2.0"
+        },
+        {
+          "line": 192,
+          "kind": "compare",
+          "mutation": "LtE -> Lt"
+        },
+        {
+          "line": 194,
+          "kind": "compare",
+          "mutation": "Lt -> LtE"
+        },
+        {
+          "line": 194,
+          "kind": "binop",
+          "mutation": "Mult -> Div"
+        },
+        {
+          "line": 194,
+          "kind": "num_const",
+          "mutation": "2.0 -> 3.0"
+        },
+        {
+          "line": 198,
+          "kind": "return_none",
+          "mutation": "return <expr> -> return None"
+        },
+        {
+          "line": 198,
+          "kind": "num_const",
+          "mutation": "1 -> 2"
+        },
+        {
+          "line": 200,
+          "kind": "num_const",
+          "mutation": "1 -> 2"
+        },
+        {
+          "line": 203,
+          "kind": "compare",
+          "mutation": "NotEq -> Eq"
+        },
+        {
+          "line": 204,
+          "kind": "num_const",
+          "mutation": "0.6 -> 1.6"
+        },
+        {
+          "line": 209,
+          "kind": "num_const",
+          "mutation": "6 -> 7"
+        },
+        {
+          "line": 210,
+          "kind": "num_const",
+          "mutation": "2 -> 3"
+        },
+        {
+          "line": 211,
+          "kind": "num_const",
+          "mutation": "2 -> 3"
+        },
+        {
+          "line": 212,
+          "kind": "num_const",
+          "mutation": "0.01 -> 1.01"
+        },
+        {
+          "line": 213,
+          "kind": "num_const",
+          "mutation": "60 -> 61"
+        },
+        {
+          "line": 218,
+          "kind": "num_const",
+          "mutation": "0.1 -> 1.1"
+        },
+        {
+          "line": 228,
+          "kind": "num_const",
+          "mutation": "5 -> 6"
+        },
+        {
+          "line": 247,
+          "kind": "compare",
+          "mutation": "GtE -> Gt"
+        },
+        {
+          "line": 251,
+          "kind": "compare",
+          "mutation": "Gt -> GtE"
+        },
+        {
+          "line": 252,
+          "kind": "compare",
+          "mutation": "Gt -> GtE"
+        },
+        {
+          "line": 252,
+          "kind": "num_const",
+          "mutation": "1 -> 2"
+        },
+        {
+          "line": 258,
+          "kind": "compare",
+          "mutation": "Gt -> GtE"
+        },
+        {
+          "line": 258,
+          "kind": "num_const",
+          "mutation": "0 -> 1"
+        },
+        {
+          "line": 258,
+          "kind": "compare",
+          "mutation": "Gt -> GtE"
+        },
+        {
+          "line": 258,
+          "kind": "num_const",
+          "mutation": "1 -> 2"
+        },
+        {
+          "line": 275,
+          "kind": "boolop",
+          "mutation": "Or -> And"
+        },
+        {
+          "line": 275,
+          "kind": "compare",
+          "mutation": "Lt -> LtE"
+        },
+        {
+          "line": 275,
+          "kind": "num_const",
+          "mutation": "2 -> 3"
+        },
+        {
+          "line": 280,
+          "kind": "bool_const",
+          "mutation": "True -> False"
+        },
+        {
+          "line": 315,
+          "kind": "num_const",
+          "mutation": "1.0 -> 2.0"
+        },
+        {
+          "line": 315,
+          "kind": "num_const",
+          "mutation": "0.0 -> 1.0"
+        },
+        {
+          "line": 315,
+          "kind": "binop",
+          "mutation": "Sub -> Add"
+        },
+        {
+          "line": 315,
+          "kind": "num_const",
+          "mutation": "1.0 -> 2.0"
+        },
+        {
+          "line": 316,
+          "kind": "compare",
+          "mutation": "Lt -> LtE"
+        },
+        {
+          "line": 316,
+          "kind": "num_const",
+          "mutation": "2 -> 3"
+        },
+        {
+          "line": 317,
+          "kind": "return_none",
+          "mutation": "return <expr> -> return None"
+        },
+        {
+          "line": 317,
+          "kind": "binop",
+          "mutation": "Mult -> Div"
+        },
+        {
+          "line": 317,
+          "kind": "bool_const",
+          "mutation": "True -> False"
+        },
+        {
+          "line": 317,
+          "kind": "num_const",
+          "mutation": "1.0 -> 2.0"
+        },
+        {
+          "line": 324,
+          "kind": "return_none",
+          "mutation": "return <expr> -> return None"
+        },
+        {
+          "line": 324,
+          "kind": "binop",
+          "mutation": "Mult -> Div"
+        },
+        {
+          "line": 324,
+          "kind": "bool_const",
+          "mutation": "True -> False"
+        },
+        {
+          "line": 324,
+          "kind": "num_const",
+          "mutation": "1.0 -> 2.0"
+        },
+        {
+          "line": 325,
+          "kind": "return_none",
+          "mutation": "return <expr> -> return None"
+        },
+        {
+          "line": 346,
+          "kind": "compare",
+          "mutation": "Lt -> LtE"
+        },
+        {
+          "line": 346,
+          "kind": "num_const",
+          "mutation": "1 -> 2"
+        },
+        {
+          "line": 346,
+          "kind": "num_const",
+          "mutation": "2 -> 3"
+        },
+        {
+          "line": 347,
+          "kind": "return_none",
+          "mutation": "return <expr> -> return None"
+        },
+        {
+          "line": 348,
+          "kind": "return_none",
+          "mutation": "return <expr> -> return None"
+        },
+        {
+          "line": 379,
+          "kind": "num_const",
+          "mutation": "0.05 -> 1.05"
+        },
+        {
+          "line": 391,
+          "kind": "boolop",
+          "mutation": "Or -> And"
+        },
+        {
+          "line": 391,
+          "kind": "compare",
+          "mutation": "NotEq -> Eq"
+        },
+        {
+          "line": 391,
+          "kind": "num_const",
+          "mutation": "2 -> 3"
+        },
+        {
+          "line": 391,
+          "kind": "compare",
+          "mutation": "Lt -> LtE"
+        },
+        {
+          "line": 391,
+          "kind": "num_const",
+          "mutation": "1 -> 2"
+        },
+        {
+          "line": 391,
+          "kind": "num_const",
+          "mutation": "2 -> 3"
+        },
+        {
+          "line": 394,
+          "kind": "return_none",
+          "mutation": "return <expr> -> return None"
+        },
+        {
+          "line": 425,
+          "kind": "compare",
+          "mutation": "Lt -> LtE"
+        },
+        {
+          "line": 425,
+          "kind": "num_const",
+          "mutation": "250 -> 251"
+        },
+        {
+          "line": 426,
+          "kind": "return_none",
+          "mutation": "return <expr> -> return None"
+        },
+        {
+          "line": 427,
+          "kind": "bool_const",
+          "mutation": "False -> True"
+        },
+        {
+          "line": 427,
+          "kind": "bool_const",
+          "mutation": "False -> True"
+        },
+        {
+          "line": 432,
+          "kind": "num_const",
+          "mutation": "4 -> 5"
+        },
+        {
+          "line": 432,
+          "kind": "num_const",
+          "mutation": "20 -> 21"
+        },
+        {
+          "line": 432,
+          "kind": "num_const",
+          "mutation": "6 -> 7"
+        },
+        {
+          "line": 438,
+          "kind": "compare",
+          "mutation": "GtE -> Gt"
+        }
+      ],
+      "measured": "2026-07-30T21:33:39Z"
+    },
     {
       "target": "libs/execution/staging.py",
       "tests": [
@@ -15,8 +562,55 @@
       "error": 0,
       "total": 42,
       "kill_rate": 0.8333,
-      "runtime_s": 37.9,
-      "meets_bar": false,
+      "runtime_s": 50.2,
+      "adjusted_kill_rate": 1.0,
+      "equivalent_mutants": 7,
+      "equivalences_applied": [
+        {
+          "line": 49,
+          "kind": "num_const",
+          "mutation": "2 -> 3",
+          "justification": "JSON indentation. Changes whitespace in the state file and nothing that is parsed: json.loads is indifferent to indent, and no caller reads the raw text. Purely cosmetic."
+        },
+        {
+          "line": 61,
+          "kind": "num_const",
+          "mutation": "1.0 -> 2.0",
+          "justification": "Fail-closed DEFAULT for a missing capital_fraction. Predicate is `<= 0.10`; both 1.0 and 2.0 are False, so an absent value refuses identically either way. The value never leaves the function -- only the boolean does."
+        },
+        {
+          "line": 62,
+          "kind": "num_const",
+          "mutation": "0 -> 1",
+          "justification": "Fail-closed DEFAULT for a missing symbol_count. Predicate is `4 <= v <= 5`; both 0 and 1 are outside it, so an absent count refuses identically."
+        },
+        {
+          "line": 72,
+          "kind": "num_const",
+          "mutation": "0.0 -> 1.0",
+          "justification": "Fail-closed DEFAULT for missing live_weeks. Predicate is `>= 8.0`; both 0.0 and 1.0 are below it."
+        },
+        {
+          "line": 73,
+          "kind": "num_const",
+          "mutation": "0 -> 1",
+          "justification": "Fail-closed DEFAULT for missing calibration_rows. Predicate is `>= 10`; both 0 and 1 are below it."
+        },
+        {
+          "line": 83,
+          "kind": "num_const",
+          "mutation": "1 -> 2",
+          "justification": "The -1 SENTINEL, which the AST sees as USub(1) so the mutant is -2. Predicate is `== 0`; both -1 and -2 are False, so 'no drill record' refuses either way. NOTE: the sentinel itself is load-bearing (this defaulted to 0 and passed the S2 gate on missing evidence -- found by mutation testing twice). Its VALUE being -1 versus -2 is what is equivalent, not its being negative."
+        },
+        {
+          "line": 84,
+          "kind": "num_const",
+          "mutation": "999.0 -> 1000.0",
+          "justification": "Fail-closed DEFAULT for a missing cost_ratio. Predicate is `<= 1.25`; both 999.0 and 1000.0 are above it."
+        }
+      ],
+      "equivalences_lapsed": [],
+      "meets_bar": true,
       "survivors": [
         {
           "line": 49,
@@ -44,17 +638,18 @@
           "mutation": "0 -> 1"
         },
         {
-          "line": 81,
+          "line": 83,
           "kind": "num_const",
           "mutation": "1 -> 2"
         },
         {
-          "line": 82,
+          "line": 84,
           "kind": "num_const",
           "mutation": "999.0 -> 1000.0"
         }
       ],
-      "measured": "2026-07-30T07:40:04Z"
+      "real_survivors": [],
+      "measured": "2026-07-30T21:33:49Z"
     },
     {
       "target": "libs/risk/gate.py",
@@ -62,52 +657,16 @@
         "tests/risk/test_gate.py",
         "tests/risk/test_gate_strength.py"
       ],
-      "killed": 44,
-      "survived": 7,
+      "killed": 51,
+      "survived": 0,
       "timeout": 0,
       "error": 0,
       "total": 51,
-      "kill_rate": 0.8627,
-      "runtime_s": 75.7,
-      "meets_bar": false,
-      "survivors": [
-        {
-          "line": 135,
-          "kind": "return_none",
-          "mutation": "return <expr> -> return None"
-        },
-        {
-          "line": 144,
-          "kind": "compare",
-          "mutation": "GtE -> Gt"
-        },
-        {
-          "line": 144,
-          "kind": "num_const",
-          "mutation": "1.0 -> 2.0"
-        },
-        {
-          "line": 155,
-          "kind": "num_const",
-          "mutation": "1.0 -> 2.0"
-        },
-        {
-          "line": 157,
-          "kind": "compare",
-          "mutation": "Eq -> NotEq"
-        },
-        {
-          "line": 159,
-          "kind": "binop",
-          "mutation": "Sub -> Add"
-        },
-        {
-          "line": 187,
-          "kind": "return_none",
-          "mutation": "return <expr> -> return None"
-        }
-      ],
-      "measured": "2026-07-30T07:48:22Z"
+      "kill_rate": 1.0,
+      "runtime_s": 115.2,
+      "meets_bar": true,
+      "survivors": [],
+      "measured": "2026-07-30T21:29:25Z"
     },
     {
       "target": "libs/validation/stepwise.py",

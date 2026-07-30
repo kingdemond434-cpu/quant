@@ -225,3 +225,111 @@ class TestModelContracts:
         b = AccountState(equity=2.0, peak_equity=2.0, forecast_vol=0.1)
         assert a.factor_exposures == b.factor_exposures == {}
         assert a.factor_exposures is not b.factor_exposures   # no shared mutable default
+
+
+# =================================================================================================
+# ROUND 2 (2026-07-30). The first pass took gate.py from 23.5% -> 86.3%; these kill the seven
+# mutants that survived it. Six are on the FACTOR-HEADROOM arithmetic and the two fail-closed
+# return paths -- i.e. the code that decides how much capital may move and what happens when the
+# gate itself errors, which is the last place a silent no-op should be possible.
+# =================================================================================================
+
+
+class TestRejectionPathsReturnADecisionNotNone:
+    """`return _reject(...) -> return None` survived on two branches.
+
+    A None return is the worst possible failure shape here: it carries no reasons, no checks and
+    no `approved=False`, so any caller doing `if decision.approved` raises AttributeError while a
+    caller doing `if not decision` silently treats a REJECTION as falsy and may proceed. Pinning
+    the object identity -- not just the boolean -- is what kills the mutant.
+    """
+
+    def test_equity_floor_breach_returns_a_rejection_object(self) -> None:
+        from libs.risk.config import PreservationConfig, RiskConfig
+        cfg = RiskConfig(preservation=PreservationConfig(equity_floor=95_000.0))
+        d = risk_gate(make_intent(), make_account(equity=94_000.0, peak_equity=100_000.0), cfg)
+        assert d is not None, "the equity-floor branch must return a decision, never None"
+        assert d.approved is False
+        assert "equity floor breached" in " ".join(d.reasons)
+        assert d.sized_units == 0.0
+        assert any(c["name"] == "preservation" for c in d.checks)
+
+    def test_internal_risk_error_fails_closed_with_a_decision(self) -> None:
+        """The except-RiskError path. An unmapped instrument raises inside the gate; the gate must
+        convert that into a REJECTION, not swallow it into None."""
+        d = risk_gate(make_intent(instrument="NOT_A_REAL_SYMBOL"), make_account())
+        assert d is not None
+        assert d.approved is False
+        assert "fail-closed" in " ".join(d.reasons)
+        assert d.sized_units == 0.0
+
+
+class TestFactorHeadroomArithmetic:
+    """Three mutants lived in one expression pair:
+
+        factor_used   = sum(abs(v) for s, v in exposures if get_factor(s) == factor)   # Eq->NotEq
+        factor_cap    = cfg.exposure.factor_caps.get(factor, 1.0) * equity             # 1.0->2.0
+        factor_headroom = factor_cap_amount - factor_used                              # Sub->Add
+
+    Together they decide how much MORE of a factor the book may take on. Each mutant loosens it,
+    and none of them is visible from a happy-path test, because the default account carries no
+    exposure at all -- zero exposure makes all three arithmetically indistinguishable.
+    """
+
+    def test_same_factor_exposure_shrinks_the_size(self) -> None:
+        """Kills `Sub -> Add`: headroom must FALL as same-factor exposure is consumed."""
+        clean = risk_gate(make_intent(), make_account()).sized_units
+        loaded = risk_gate(make_intent(),
+                           make_account(factor_exposures={"XAUUSD": 39_000.0})).sized_units
+        assert 0.0 < loaded < clean, (
+            f"same-factor exposure must consume headroom (clean={clean}, loaded={loaded}); "
+            "an ADD here would let existing exposure INCREASE the permitted size")
+
+    def test_other_factor_exposure_does_not_touch_the_size(self) -> None:
+        """Kills `Eq -> NotEq`: only the intent's OWN factor consumes its cap. EURUSD is FX,
+        XAUUSD is precious metals -- a big FX book must not shrink a gold order, and under the
+        mutant it is the only thing that would."""
+        clean = risk_gate(make_intent(), make_account()).sized_units
+        cross = risk_gate(make_intent(),
+                          make_account(factor_exposures={"EURUSD": 39_000.0})).sized_units
+        assert cross == clean, (
+            f"unrelated-factor exposure changed the size ({clean} -> {cross}) -- the cap is "
+            "per-factor, and summing the wrong side inverts the whole limit")
+
+    def test_a_factor_with_no_configured_cap_defaults_to_one_times_equity(self) -> None:
+        """Kills `1.0 -> 2.0`: the default cap for an UNCONFIGURED factor. This is the fail-closed
+        direction for a factor nobody wrote a limit for -- at 1.0x equity a book already 1.5x
+        deep in that factor has no headroom; at 2.0x it would be handed another 0.5x."""
+        from libs.risk.config import ExposureLimits, RiskConfig
+        from libs.risk.instruments import Factor
+        cfg = RiskConfig(exposure=ExposureLimits(factor_caps={Factor.FX: 0.40}))
+        d = risk_gate(make_intent(),                                    # XAUUSD: no cap configured
+                      make_account(factor_exposures={"XAUUSD": 150_000.0}), cfg)
+        assert d.approved is False, (
+            "at a 1.0x-equity default cap, $150k of exposure on a $100k book leaves no headroom; "
+            "a 2.0x default would approve and quietly double an unconfigured factor's limit")
+        assert "factor_cap" in " ".join(d.reasons)
+
+
+class TestCorrelationCheckBoundary:
+    """`passed: s_corr >= 1.0` carried two mutants (`GtE -> Gt`, `1.0 -> 2.0`).
+
+    It is a REPORTED field rather than control flow, which is exactly why it survived -- nothing
+    asserted the reported value. It still matters: `checks` is the gate's forensic record, and a
+    check that misreports at the boundary makes every post-trade review of a scaled-down day
+    wrong in the same direction.
+    """
+
+    def test_uncorrelated_book_reports_the_scalar_as_passing_at_exactly_one(self) -> None:
+        d = risk_gate(make_intent(), make_account(average_correlation=0.0))
+        corr = next(c for c in d.checks if c["name"] == "correlation")
+        assert corr["scalar"] == 1.0, "a zero-correlation book must not be scaled at all"
+        assert corr["passed"] is True, (
+            "at exactly 1.0 the check must read PASSED -- a strict '>' reports the neutral case "
+            "as a failure, and a 2.0 threshold reports every possible case as one")
+
+    def test_a_correlated_book_scales_down_and_reports_not_passed(self) -> None:
+        d = risk_gate(make_intent(), make_account(average_correlation=0.95))
+        corr = next(c for c in d.checks if c["name"] == "correlation")
+        assert corr["scalar"] < 1.0
+        assert corr["passed"] is False
