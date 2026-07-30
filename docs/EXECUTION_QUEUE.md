@@ -116,6 +116,76 @@ Recorded so they are not mistaken for done:
 4. **Binance USDC multi-asset margin** ($209 → $5,767 per the other session) — needs venue keys;
    unverified from here.
 
+## RANK 1 PROGRESS (2026-07-30, this session) — 14/40 RETIRED, 32/40 EVIDENCED-BLOCKED, 7/40 ACTIVATE-PENDING
+
+**RETIRED (14, committed `3be2e3e`):** the entire `libs/discovery/` Alpha Discovery Factory
+cluster — see `docs/graveyard.md` § CODE / CAPABILITY RETIREMENTS for the mechanism-of-death.
+Dormant count fell 171 → 158 (16,645 → 15,150 lines), confirming the item actually closed rather
+than just moving.
+
+**THE NEXT 32 (all `scripts/*.py`) — actually executed here, not just grepped, to get a real
+disposition instead of trusting the report blind.** Every one hit a real, reproducible wall in
+THIS sandbox — missing bronze data lake files, missing `data/secrets/*.json`, or outbound network
+403/Tunnel-failed to Binance/exchange APIs. That is a box-dependency, not dead code, and none of
+the 32 crashed on a code bug. **Disposition: UNLOCK-CONDITION**, trigger = "run on the live VPS
+box, which has the data lake, the venue/API secrets, and unrestricted egress" — record here so
+the next session with box access converts these to ACTIVATE/MERGE/RETIRE with real output instead
+of re-discovering the same blocker:
+
+| script | blocked on |
+|---|---|
+| `screen_idle_axes.py`, `screen_fx_debasement.py`, `screen_etf_flows.py` | no crypto/FX bronze lake locally (`pandas.concat`: no objects) |
+| `screen_mining.py` | `data/lake/bronze/mining/hash-rate.csv` missing |
+| `screen_wikipedia.py` | `data/lake/bronze/wikipedia/*.json` missing |
+| `screen_exchange_netflow.py` | `data/coinmetrics_flows.jsonl` missing (NB: this axis is already KILLED per graveyard — script's remaining value is nil, borderline RETIRE, not re-run) |
+| `screen_fred_macro_axis.py` | `data/secrets/fred.json` missing |
+| `build_axis_screen_reports.py`, `finalize_axis_screens.py` | depend on `reports/axis_screens/*.json` raw trial logs that were never generated here |
+| `run_kama_squeeze_backtest.py`, `run_carry_crowding.py`, `hl_flow_alpha.py`, `capacity_simulator.py` | outbound HTTPS to Binance/exchange APIs returns 403 (proxy/geo-block) in this sandbox |
+| `run_xsec_funding.py` | needs `ingest_crypto.py --universe all` run first (>=12 perps) |
+| `run_stranded_recovery.py` | needs spot testnet API keys |
+| `run_venue_reconcile.py`, `reconcile_venue.py` | venue credentials unreadable / `data/deadman_state.json` missing |
+| `hold_optimizer.py`, `carry_viability.py` | `data/cashcarry_trades.json` / `data/cost_model.json` missing |
+| `compute_performance.py` | "no lake data; run `scripts/ingest_history.py` first" |
+| `collector_author.py`, `meta_architect.py`, `llm_code_auditor.py` | "no panel keys" / OpenRouter 402 (llm_code_auditor.py's own docstring already says "WRITTEN BUT NEVER EXECUTED" — same OpenRouter credit blocker as RANK 3) |
+| `run_autodiscovery.py` | needs a live MetaTrader5 terminal connection (box-only, on-demand by design) |
+| `run_cot_screen.py`, `screen_oi_ls_axes.py`, `iros_batch.py` | ran to completion but logged **0 trials** — code path is sound, underlying panel data absent here |
+| `certify_gauntlet.py`, `run_trend_gauntlet.py`, `run_onchain_history_backtest.py`, `research_alpha_optimizer.py`, `reconstruct_kaiko_reference_rate.py` | CLI tools that ran cleanly to their argument parser / entry point here; genuinely on-demand-by-design (paid CSV drop, specific research campaign), not scheduler candidates — worth adding to `dormancy.py`'s `_ON_DEMAND` allowlist once someone confirms they're invoked this way in practice, rather than re-flagging them as dormant every cycle |
+
+**THE 7 `libs/` MODULES (real infrastructure, no wired caller found even outside the strict
+dotted-path scope — verified by hand, not just the tool) — disposition: ACTIVATE, with the actual
+integration point identified so this isn't a vague "wire it in somewhere":**
+
+- `libs/execution/algos.py` (TWAP/POV/Implementation-Shortfall child-order schedules) — its own
+  docstring says *"the `ExecutionEngine` submits the slices"*, but `libs/execution/engine.py`
+  **does not import it at all**. This is the clearest finding of the seven: the algo schedules
+  were built for a specific consumer that was never connected to them.
+- `libs/backtest/engine.py` (`BacktestEngine`, the actual event-driven engine) — zero callers
+  outside its own package and tests; even `cross_engine.py` only imports it for verification, not
+  to run a real backtest. Nothing in `scripts/` or `app/` runs a backtest through it.
+- `libs/backtest/cross_engine.py` — depends on the above; only reachable from `max_audit.py`'s own
+  text-inspection fence and tests. Should run automatically whenever a strategy backtest is
+  certified (`certify_gauntlet.py` is the natural caller), not be available-but-unused.
+- `libs/validation/gate_calibration.py` (rejection-shadow + backfill-safety audits) — only called
+  from `libs/validation/rejection_shadow.py` (same package) and its own test. Should run on the
+  weekly gate-audit cadence alongside the other validation-stack checks.
+- `libs/store/snapshots.py` (database/dataset snapshot-and-restore) — only referenced from its own
+  package `__init__` and test. Should be called wherever a candidate is promoted, to bind the
+  promotion to an exact, restorable data version (Stage 3's own stated purpose for it).
+- `libs/self_improvement/controller.py` (Stage 13 improvement controller) — zero external callers;
+  should be scheduled inside `run_intelligence_cycle.py` so it actually produces and journals
+  `ImprovementPlan` recommendations instead of sitting fully built and inert.
+- `libs/features/validation.py` (leakage/parity checks) — only called by `libs/features/registry.py`
+  (same package), which **itself** has zero external callers either. The whole `libs/features`
+  registry path may be shadowed by the separately-wired `scripts/leakage_detector.py` contract
+  (used by `daily_research_cycle.py`, `stage_a_executor.py`) — worth a MERGE review, not a
+  reflexive ACTIVATE, since two leakage-detection paths existing side by side is exactly the kind
+  of duplication RANK 1 exists to catch.
+
+None of these seven were wired in this pass: money-path/execution and backtest-engine code
+deserves review before connecting it to anything live, and that review is bigger than a queue
+item. Recorded here, evidenced, so the next pass starts from a concrete integration point instead
+of a bare dormancy line.
+
 ## STANDING RULE FOR WHOEVER WORKS THIS
 
 Work in rank order. Ship each item wired + scheduled + evidenced, or do not count it. Re-run the
