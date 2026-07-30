@@ -147,32 +147,90 @@ def _assert_floors(state: dict, stage: str) -> None:
         print("cadence: floor violation cleared")
 
 
+_ROOT_DIR = Path(__file__).resolve().parent.parent
+_FREEZE_STATUS = Path("data/freeze_exit_status.json")
+
+#: criterion -> (artifact it reads, the module/script that WRITES that artifact).
+#: The second element is the whole point. A deployment criterion reading a file with no writer is
+#: not a strict gate, it is an unsatisfiable one, and the two are indistinguishable from the
+#: outside: both simply read False forever. Naming the writer makes the claim checkable, and
+#: check_freeze_exit_sources() below turns it into a test.
+_FREEZE_SOURCES: dict[str, tuple[str, str]] = {
+    "gate0": ("data/gate0_complete", "scripts/max_audit.py"),
+    "fills_4wk": ("data/moat/execution_tape/cashcarry_trades.jsonl",
+                  "libs/execution/execution_tape.py"),
+    "cost_model": ("data/cost_model.json", "scripts/run_cost_model.py"),
+    "calib_10": ("data/forecast_log.json", "libs/self_improvement/forecast_calibration.py"),
+    "no_criticals": ("data/DEADMAN_FIRED", "scripts/run_deadman_switch.py"),
+}
+
+
+def check_freeze_exit_sources() -> list[str]:
+    """Every freeze-exit criterion must read an artifact something in this repo WRITES.
+
+    THE GENERALISED FORM of the 2026-07-30 defect. Three of five criteria read invented filenames
+    (fills.csv, weekly_cost_summary.json, calibration.csv) that no code anywhere produces. Each
+    read False forever, which is indistinguishable from "the desk has not earned it yet" -- so the
+    gate looked strict while being unsatisfiable, and nobody could tell the difference by looking
+    at the output. This checks the WRITER exists, not the artifact: pre-launch the artifacts are
+    legitimately absent, but their writer must be real today.
+    """
+    problems = []
+    for crit, (artifact, writer) in _FREEZE_SOURCES.items():
+        if not (_ROOT_DIR / writer).exists():
+            problems.append(f"{crit}: writer {writer} does not exist -- {artifact} can never "
+                            "appear, so this criterion is unsatisfiable, not strict")
+    return problems
+
+
 def _freeze_exit_met() -> tuple[bool, str]:
-    """The 5 lockdown exit criteria. All must hold. Returns (met, human-status)."""
-    import time
-    checks = {}
+    """The 5 lockdown exit criteria. All must hold. Returns (met, human-status).
+
+    REWRITTEN 2026-07-30. THREE of the five criteria read files that NOTHING IN THIS REPO WRITES,
+    so they could never become True no matter how well the desk performed:
+
+      fills_4wk   read `data/fills.csv`   -- no writer anywhere. Fills go to
+                  data/cashcarry_trades.json and data/moat/execution_tape/cashcarry_trades.jsonl.
+      cost_model  read `data/weekly_cost_summary.json` -- no writer. run_cost_model.py writes
+                  data/cost_model.json.
+      calib_10    read `data/calibration.csv` -- no writer. Forecast outcomes live in
+                  data/forecast_log.json via libs/self_improvement/forecast_calibration.py.
+
+    And fills_4wk was additionally INVERTED: it compared `now - file mtime > 28 days`, which reads
+    "this feed has been DEAD for a month". A healthy, actively-appended fill feed has mtime ~= now
+    and failed forever; only an abandoned one could pass. Satisfying the gate honestly would have
+    required creating a fills file and then abandoning it for four weeks.
+
+    Consequence, and it is the reason this is a launch blocker rather than a tidy-up: the desk's
+    whole research apparatus funnels into a deployment gate that was not merely unmet but
+    UNSATISFIABLE, and the only place that fact was stated was a status string nobody read. The
+    desk could have compiled a flawless track record and the freeze would never have lifted.
+
+    Every criterion now reads the artifact that actually exists, and `days` is measured from the
+    oldest ROW TIMESTAMP (execution_tape.coverage), never from a file's mtime.
+    """
+    checks: dict[str, bool] = {}
     checks["gate0"] = Path("data/gate0_complete").exists()
-    fills = Path("data/fills.csv")
-    checks["fills_4wk"] = (fills.exists()
-                           and time.time() - fills.stat().st_mtime < 1e9
-                           and sum(1 for _ in fills.open()) > 50
-                           and (time.time() - _oldest_line_age(fills)) > 28 * 86400)
-    checks["cost_model"] = Path("data/weekly_cost_summary.json").exists()
+
+    # >=4 weeks of live fills, measured on row timestamps in the tape that Gate 0 is scored on.
     try:
-        calib = Path("data/calibration.csv")
-        n = sum(1 for ln in calib.open() if "resolved" in ln.lower()) if calib.exists() else 0
-        checks["calib_10"] = n >= 10
-    except OSError:
+        from libs.execution.execution_tape import coverage
+        cov = coverage()
+        checks["fills_4wk"] = float(cov.get("days", 0.0)) >= 28.0 and int(cov.get("n", 0)) > 50
+    except (ImportError, OSError, ValueError, TypeError):
+        checks["fills_4wk"] = False
+
+    checks["cost_model"] = Path("data/cost_model.json").exists()
+
+    try:
+        from libs.self_improvement.forecast_calibration import report
+        checks["calib_10"] = int(report().get("n_resolved", 0)) >= 10
+    except (ImportError, OSError, ValueError, TypeError):
         checks["calib_10"] = False
+
     checks["no_criticals"] = not Path("data/DEADMAN_FIRED").exists()
     met = all(checks.values())
     return met, ", ".join(f"{k}={v}" for k, v in checks.items())
-
-
-def _oldest_line_age(p: Path) -> float:
-    """Best-effort mtime proxy for oldest fill; refined when fills.csv exists."""
-    import time
-    return p.stat().st_mtime if p.exists() else time.time()
 
 
 def main() -> None:
@@ -286,12 +344,24 @@ def main() -> None:
     # is flagged for activation. No human or brain memory is the trigger -- the code is.
     if stage == "S0" and not state.get("post_gate0_activated"):
         met, why = _freeze_exit_met()
+        # ALWAYS write the status, and write it where something READS it. Previously this was set
+        # only in the else-branch, into a state key with ONE writer and ZERO readers -- no fence,
+        # no page, no dashboard. That is how three unsatisfiable criteria sat in the deployment
+        # gate unnoticed: the single place the failure was stated was a string nobody opened.
+        state["freeze_exit_status"] = why
+        _FREEZE_STATUS.parent.mkdir(parents=True, exist_ok=True)
+        _FREEZE_STATUS.write_text(json.dumps({
+            "generated": datetime.now(tz=UTC).isoformat(),
+            "met": met, "why": why,
+            "criteria_sources": _FREEZE_SOURCES,
+            "note": "Every criterion must read an artifact something in this repo WRITES. "
+                    "check_freeze_exit_sources() fences that; three criteria failed it on "
+                    "2026-07-30 (fills.csv, weekly_cost_summary.json, calibration.csv).",
+        }, indent=2), "utf-8")
         if met:
             due.append("FREEZE-EXIT CRITERIA MET -- activate docs/POST_GATE0_MANIFEST.md "
                        "top to bottom; flip stage_state to S1; set post_gate0_activated. "
                        "Nothing deferred may be skipped.")
-        else:
-            state["freeze_exit_status"] = why
     _assert_floors(state, stage)
     _STATE.write_text(json.dumps(state, indent=2), "utf-8")
     print(f"cadence[{stage}]: fired={fired or 'nothing due'} | "

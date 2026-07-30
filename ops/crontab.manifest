@@ -504,3 +504,13 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # scripts/setup_ngrok.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
 21 8 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/setup_ngrok.py >> data/cro_ai_logs/setup_ngrok.log 2>&1
 # <<< WIRING AGENT <<<
+
+# GATE 0 READINESS (launch day, 2026-07-30). s1_entry_met is the gate that admits real capital,
+# and NOTHING assembled its evidence dict from reality -- so "what is actually left?" required
+# reading five subsystems by hand. This measures every criterion against its proving artifact and
+# splits DESK-owed from PRINCIPAL-owed, which is the only distinction that matters on launch day.
+# An unmeasurable criterion reads BLOCKED-UNKNOWN, never READY: a gate that counts "could not
+# measure" as satisfied is how capital gets admitted it should not.
+# EVIDENCE: scripts/check_gate0_ready.py -> data/gate0_readiness.json
+# CONFIDENCE: committed-script (new this cycle)
+9 */4 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_gate0_ready.py >> data/cro_ai_logs/gate0_readiness.log 2>&1
