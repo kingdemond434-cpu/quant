@@ -1,0 +1,122 @@
+# EXECUTION QUEUE — the ranked, unbuilt remainder (opened 2026-07-30)
+
+Principal order: *"do every single not-done not-maxxed thing, max everything."* This file is that
+order made deterministic, so it survives session boundaries and is worked in RANK ORDER by the next
+cycle, the weekly GAP-MAX sweep, or any fresh session. **Nothing here may be silently dropped: each
+item exits as implemented (with commit) / rejected (with reason) / scheduled (with date), per §41.**
+
+## THE MEASUREMENT THAT SETS THE RANKING
+
+`libs/self_improvement/dormancy.py`, first run 2026-07-30:
+**171 dormant capabilities / 16,645 paid-for unused lines** across 239 modules + 274 scripts.
+
+That number changes the priority order and must not be forgotten while working this queue: the
+desk's demonstrated failure mode is *building capability faster than it wires it*. Authoring
+subsystem #172 while 171 sit disconnected is negative-ROI by the desk's own arithmetic (L1.24
+activity-is-not-output, L2.9 activate-before-build). **So ACTIVATION outranks AUTHORING here, and
+any new build in this queue must ship wired + scheduled + evidenced or it is not done.**
+
+---
+
+## RANK 1 — DISPOSITION THE DORMANCY REPORT (activation, not authoring)
+
+The highest-EV work available, and it needs no new design.
+
+    python scripts/run_intelligence_cycle.py --json | python -c "import json,sys; \
+      d=json.load(sys.stdin); r=[c for c in d['capabilities'] if c['capability']=='dormancy_hunter'][0]; \
+      [print(x['lines'], x['path']) for x in r['report']['dormant'][:40]]"
+
+For each of the top 40 by size, take exactly one L2.9 exit and record it:
+- **ACTIVATE** — wire it into a live caller or schedule it (preferred; this is where the value is)
+- **MERGE** — fold into an existing reachable module (duplicate capability)
+- **RETIRE** — with a written mechanism-of-death, into the graveyard
+- **UNLOCK-CONDITION** — legitimately waiting on evidence (e.g. needs ≥1 validated alpha); record
+  the trigger so it auto-activates rather than being rediscovered. **This is a real exit, not an
+  excuse** — several genuinely are in this state and saying so is honest; but it may never be the
+  default, and a count of how many took this exit is reported each cycle.
+
+Acceptance: dormant count falls, and every top-40 entry has a recorded disposition.
+
+## RANK 2 — CONSTITUTION → ENFORCEMENT MATRIX (machine-readable)
+
+Named the single biggest remaining gap by the strategic review, and it is the fence that would have
+caught today's finds automatically.
+
+Build `scripts/build_enforcement_matrix.py` emitting `data/enforcement_matrix.json`:
+
+    principle_id -> requirement -> subsystem -> code_path -> scheduler -> runtime_metric
+                 -> test -> dashboard -> evidence_artifact -> last_verified
+
+Sources already on disk: `docs/CONSTITUTION.md` (L1.x/L2.x/L4 ids), `scripts/max_audit.py` (~40
+fences), `ops/crontab.manifest` (scheduling), `tests/` (test coverage), `web/*.json` (evidence).
+**Two failure directions, both required:** a principle with no enforcement is an engineering gap;
+an enforcement with no principle is unjustified complexity. Fail the check on either.
+Wire into `max_audit` so it fires; schedule daily in the manifest.
+
+Acceptance: every L1/L2 principle has a row; unenforced principles are listed and rowed on the
+register; the check runs on a schedule.
+
+## RANK 3 — GPT STRATEGIC DIRECTOR, as a runtime role not a document
+
+Principal was explicit: *"not as another dormant doctrine document."* So it ships as a **prompt +
+input dossier + output contract inside the intelligence cycle**, not as prose in the constitution.
+- INPUT: dormancy report, gate histogram, reality-gap report, register rank, DESK_BRIEF, execution
+  intel, moat audit — the artifacts that already exist.
+- OUTPUT: ranked recommendations, each with the measurable bottleneck it removes, expected impact,
+  opportunity cost, and success metric; written to the recommendation ledger so §41 forces a
+  disposition. **Priority rule encoded: find unused capability BEFORE inventing new capability.**
+- Blocked on: OpenRouter credit (same blocker as the panel). Must be activation-ready so it fires
+  the moment credit lands — no redesign.
+
+## RANK 4 — DATA ASSET REGISTRY
+
+`data/data_assets.json` + `scripts/build_data_registry.py`: one row per dataset — id, source,
+collector, span (first→last), breadth, update cadence, quality/DQS, alpha contribution,
+dependencies, maintenance cost, replication difficulty, moat score, last validation.
+Register row #77 already proved the need: the inventory reported ROW COUNTS AS SPANS and omitted
+the desk's best panel (267 symbols from 2019-09), so organs were choosing what to test from a
+misleading map. Feed `moat_audit.py` (which exists and is now scheduled).
+
+## RANK 5 — FUSION SEARCH ENGINE (distinct from the existing `fusion_engine.py`)
+
+The existing module transforms; it does not SEARCH. Build the combinatorial search: enumerate
+dataset triples from the registry (rank 4 is its prerequisite), generate candidate
+representations, screen through `libs.research.axis_screen` + the tiered pre-filter, log EVERY
+cell as a DSR-counted trial, and record survivors in the knowledge graph.
+**The multiplicity trap to respect:** combinatorial search is a trial-count explosion, and the
+desk's own law says breadth is EARNED per axis after a single-axis screen shows signal. So the
+search must be mechanism-prior-gated, not exhaustive-by-default.
+
+## RANK 6 — PROPRIETARY LABEL FACTORY
+
+Generate and validate event labels (liquidity stress, forced deleveraging, accumulation window,
+regime transition) from the bronze panel; version them; treat each as a research asset with its own
+validation record. Prerequisite: rank 4 (registry) so labels have lineage.
+
+## RANK 7 — INBOUND DEPLOY PATH (found 2026-07-30, no row yet)
+
+`git_snapshot.py` pushes VPS→GitHub; **nothing pulls GitHub→VPS.** So merging to master deploys
+NOTHING and every change needs a manual SSH. Build `deploy/pull_deploy.sh`: fetch, run the CI gate,
+refuse on red, restart only what changed, log an evidence line — then cron it. This converts
+"principal must SSH for every change" into "merge is deploy" and is a genuine autonomy multiplier.
+
+---
+
+## BOX-SIDE TRUTHS STILL UNVERIFIED (cannot be closed from a sandbox)
+
+Recorded so they are not mistaken for done:
+1. **Miner credentials** — `check_miner_runway.py` returned "No such file" on the VPS because the
+   box was on an older checkout. Master now carries it. Re-run after the box pulls.
+2. **`revalidate_clocks` / `fusion_engine`** read NO-INPUT here only because Binance is geo-blocked
+   from this sandbox (HTTP 451). They should read ACTIVE on the box.
+3. **Live crontab drift** — the 23-entry manifest is a RECONSTRUCTION; the live box was documented
+   at ~20-22 lines. `check_scheduler_manifest.py --report-only` prints the true drift.
+   ⚠️ Do not run `deploy/reconstitute_cron.sh` before reviewing that drift — the box has unfenced
+   cron lines and would double-schedule the recorders.
+4. **Binance USDC multi-asset margin** ($209 → $5,767 per the other session) — needs venue keys;
+   unverified from here.
+
+## STANDING RULE FOR WHOEVER WORKS THIS
+
+Work in rank order. Ship each item wired + scheduled + evidenced, or do not count it. Re-run the
+dormancy hunter after every item: **if the dormant count went UP, the item was not finished.**
