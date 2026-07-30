@@ -166,8 +166,26 @@ def _subprocess_cap(name: str, script: str, timeout_s: float = 240.0) -> dict[st
                 f"{script} exit={p.returncode}: {tail[-1][:180] if tail else 'no output'}")
 
 
+def _dormancy() -> dict[str, Any]:
+    """THE STANDING VERSION OF TODAY'S BIGGEST FIND. On 2026-07-30 nine 'missing' subsystems turned
+    out to be built with zero callers -- found because someone happened to grep. This makes that
+    question mechanical: what does nothing import, and what does nothing schedule?
+    Priority encoded (principal): find unused capability BEFORE inventing new capability."""
+    try:
+        from libs.self_improvement.dormancy import scan, summarise
+    except ImportError as e:
+        return _cap("dormancy_hunter", "ERROR", f"import failed: {e}")
+    rep = summarise(scan())
+    n = sum(rep["counts"].values()) if isinstance(rep.get("counts"), dict) else 0
+    return _cap("dormancy_hunter", "ACTIVE",
+                f"{n} dormant capabilities ({rep['total_dormant_lines']} paid-for unused lines) "
+                f"across {rep['scanned']['modules']} modules + {rep['scanned']['scripts']} scripts",
+                report=rep)
+
+
 def main() -> int:
     caps = [
+        _dormancy(),
         _meta_learning(),
         _research_priority(),
         _capital_reallocator(),
