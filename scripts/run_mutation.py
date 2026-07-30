@@ -111,6 +111,9 @@ class TargetScore:
     error: int = 0
     runtime_s: float = 0.0
     survivors: list[dict[str, object]] = field(default_factory=list)
+    #: mutation sites FOUND, vs `total` attempted. A budget-truncated run measures an arbitrary
+    #: PREFIX of the site list, not a sample of it, so its rate is not an estimate of the whole.
+    n_sites: int = 0
 
     @property
     def total(self) -> int:
@@ -334,8 +337,15 @@ def measure(target: str, tests: list[str], *, budget_s: float,
 
     # Same-line mutations of the same kind are distinguished by ordinal index.
     seen_key: dict[tuple[int, str], int] = {}
+    score.n_sites = len(sites)
     for site in sites:
         if time.time() - started > budget_s:
+            # BUDGET EXHAUSTED. `truncated` is recorded because a partial run is NOT a smaller
+            # measurement of the same thing: sites are attempted in source order, so the mutants
+            # that ran are the ones near the top of the file, and the rate over them says nothing
+            # about the rest. Measured 2026-07-30: validation.py got 14 of 137 sites through a
+            # 1500s budget and reported 35.7% -- a number that would have become a ratchet FLOOR
+            # the real 137-mutant score could not be compared against.
             break
         key = (site.lineno, site.kind)
         idx = seen_key.get(key, 0)
@@ -405,6 +415,9 @@ def main() -> int:
             "target": s.target, "tests": s.tests, "killed": s.killed,
             "survived": s.survived, "timeout": s.timeout, "error": s.error,
             "total": s.total, "kill_rate": s.kill_rate, "runtime_s": s.runtime_s,
+            "n_sites": s.n_sites,
+            "budget_truncated": bool(s.n_sites and s.total < s.n_sites),
+            "coverage_of_sites": (round(s.total / s.n_sites, 4) if s.n_sites else None),
             "adjusted_kill_rate": rate, "equivalent_mutants": adj["equivalent_mutants"],
             "equivalences_applied": adj["equivalences_applied"],
             "equivalences_lapsed": adj["equivalences_lapsed"],

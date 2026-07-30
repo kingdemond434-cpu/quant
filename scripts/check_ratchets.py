@@ -65,9 +65,23 @@ def _mutation_targets(d: Any) -> dict[str, float]:
         return {}
     out: dict[str, float] = {}
     for t in d.get("targets", []):
-        if (isinstance(t, dict) and isinstance(t.get("kill_rate"), (int, float))
+        if not (isinstance(t, dict) and isinstance(t.get("kill_rate"), (int, float))
                 and t.get("total")):
-            out[str(t.get("target"))] = float(t["kill_rate"])
+            continue
+        # A BUDGET-TRUNCATED RUN IS NOT A MEASUREMENT OF THIS TARGET. Sites are attempted in
+        # source order, so a truncated run scores an arbitrary PREFIX of the file -- not a sample
+        # of it -- and the rate says nothing about the rest. Measured 2026-07-30:
+        # validation.py got 14 of 137 sites through a 1500s budget and reported 35.7%. Flooring
+        # on that would pin the target to a number the complete run cannot be compared against,
+        # in either direction. Excluded entirely rather than floored low: a floor set from a
+        # partial run is a fabricated constraint.
+        if t.get("budget_truncated"):
+            continue
+        # Prefer the equivalence-adjusted rate where the register applies (staging is 35/35 on
+        # real mutants but 83.3% raw, and a permanently-red metric gets ignored).
+        rate = t.get("adjusted_kill_rate")
+        out[str(t.get("target"))] = float(
+            rate if isinstance(rate, (int, float)) else t["kill_rate"])
     return out
 
 
