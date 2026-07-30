@@ -101,3 +101,59 @@ reference for when that item is built (liquidity STATE, not just level, predicts
 ## Uniform-Loss Automated Market Making for Prediction Markets
 - 2026-07-19 · http://arxiv.org/abs/2607.17428v2
 - Automated market makers (AMMs) for prediction markets descend from market scoring rules, where a mechanism operator subsidizes a market to aggregate beliefs about uncertain events. The existing literature has focused on bounding the total worst-case loss to the subsidizer, but has not addressed how that loss is distributed across price states or over time. We use the framework of loss-versus-rebalancing (LVR) to study this distribution and introduce \textit{uniform AMMs}, defined by the property that instantaneous LVR is proportional to pool value and independent of the current token price. In
+
+## Are cryptocurrencies real financial bubbles? Evidence from quantitative analyses
+- 2026-07-23 · http://arxiv.org/abs/2607.21826v1
+- The growth of peer-to-peer exchanges and the blockchain technology has led to a proliferation of cryptocurrencies and to a massive increase in the number of investors who actually negotiate digital money. Cryptocurrencies trade at prices mainly driven by investor sentiment, becoming a potential source of financial bubbles and instabilities. In this work, we apply quantitative models to the study of Bitcoin and Ether, two of the most famous cryptocurrencies. Our bubble detection methodology combines the Log Periodic Power Law (LPPL) model, originally created by Johansen, Ledoit and Sornette (JL
+
+## The Fundamental Structure of Risk: From Characteristics to Covariance
+- 2026-07-27 · http://arxiv.org/abs/2607.24410v1
+- Estimating the covariance structure of financial assets typically relies on his- torical returns, making risk models dependent on noisy and asset-specific time se- ries. We propose the Characteristic-Driven Dynamic Factor Model (CD-DFM), a non-linear latent factor model that instead constructs a representation of the asset cross-section directly from observable firm characteristics, primarily company funda- mentals. The learned latent space jointly determines interpretable factor exposures and a forward covariance estimator, and is trained end to end on an objective that combines a Stein covar
+
+## Optimal Control with Expectation Constraint in a Smooth Boundary Case
+- 2026-07-27 · http://arxiv.org/abs/2607.24114v1
+- As in Bouchard et al. (2010) and Bouchard and Nutz (2014), we study a utility maximization problem with expectation constraint. We first consider a uniformly elliptic case in which the endogenous state boundary associated with the constraint in expectation is proved to be smooth. This allows one to derive a proper Dirichlet condition for the value function of the optimal control problem on this boundary. We then propose a new truncation argument in the martingale representation of the expectation constraint. This leads to an approximating sequence of auxiliary systems of PDEs for which compari
+
+## Variational Quantum Conditional Boltzmann Machines for Time-Series Forecasting: Architectures, Symmetric Hyperparameter Evaluation, and a Nonlinear Benchmark
+- 2026-07-27 · http://arxiv.org/abs/2607.24065v1
+- In this study, we developed and evaluated four conditional energy-based forecasting architectures: a classical Gaussian-Bernoulli CRBM, a hybrid quantum-classical QCRBM, a full-register QQRBM, and a lag-feature QFeatureQRBM with complete derivations of their conditional distributions, Contrastive-Divergence gradients, and hybrid training, bridging the energy-based formulation and the implementation-level quantum computation. Unlike prior comparisons, our evaluation enforces symmetric hyperparameter optimisation: classical and quantum-specific hyperparameters receive an equally thorough grid se
+
+## Neural Network-Driven Volatility Drag Mitigation under Aggressive Leverage
+- 2026-07-25 · http://arxiv.org/abs/2607.23068v1
+- This paper introduces a compact reformulation of a modular end-to-end neural network for global minimum-variance portfolio optimization that decouples model complexity from both look-back window length and universe size. A five-parameter hyperbolic weighted moving average combined with a saturating exponential replaces the original 2,400-parameter lag-transformation layer, and a bidirectional gated-recurrent-unit eigencleaning module together with a streamlined marginal-volatility network reduce total learnable parameters from 39,586 to just 2,175. In out-of-sample tests against state-of-the-a
+
+## Emergent Latent-State Computation under Stochastic Volatility
+- 2026-07-28 · http://arxiv.org/abs/2607.25459v1
+- Mechanistic interpretability has largely focused on language models and deterministic toy tasks. Much less is known about how sequence models internally represent latent stochastic dynamics under noisy, partially observed observations. We study this question in a controlled multivariate stochastic volatility setting, where models observe only returns while the ground-truth latent volatility state is known to the researcher. This setting provides a useful benchmark for mechanistic interpretability under partial observability: the latent state is hidden from the model but directly available for 
+
+## Long-memory GARCH via a two-dimensional Markov chain
+- 2026-07-28 · http://arxiv.org/abs/2607.25189v1
+- This paper proposes a GARCH-type volatility model in which level-and-slope updates of a latent power-law kernel generate state-dependent decay of past shocks within a two-dimensional Markov state. We derive a joint Foster--Lyapunov condition and establish positive Harris recurrence and uniqueness of the invariant distribution. Simulations show substantial low-frequency persistence in log-squared innovations, especially near the diagnostic stability boundary. Empirically, the model captures a substantial portion of observed volatility persistence and delivers competitive out-of-sample forecast 
+
+## Inverse Learning of Latent Risk-Neutral Densities from Irregular Option Quotes
+- 2026-07-29 · http://arxiv.org/abs/2607.27188v1
+- Accurate option prices do not imply accurate recovery of the latent risk-neutral density. We study this distinction with two complementary benchmarks. A controlled benchmark exposes simulator-truth densities for latent evaluation, while a chronological NIFTY benchmark tests only held-out market prices. A two-component lognormal mixture has the lowest aggregate price, $L^1$, Wasserstein, and fixed-tail errors on the synthetic benchmark. Learned operators retain narrower strengths: DeepONet reduces 1% quantile and variance error by 39.0% and 34.6% relative to the mixture, and a quote transformer
+
+## Rainfall is rough
+- 2026-07-29 · http://arxiv.org/abs/2607.27099v1
+- We propose a new approach to model rainfall by combining heterogeneous data sources at different time scales. Continuous arrivals of rain cells are incorporated into a Hawkes process formalism that encompasses the classical Bartlett-Lewis and Neyman-Scott models, thereby providing a more flexible representation of clustering. Analysis of high frequency rainfall data (at the minute scale over several years) indicates that critical Hawkes processes with heavy-tailed power-law kernels yield a superior fit relative to classical models and alternative kernel specifications. Scaling arguments inspir
+
+## Where does the criticality live? Early-warning signals are event-heterogeneous across seven crypto-perpetual liquidation cascades
+- 2026-07-29 · http://arxiv.org/abs/2607.27070v1
+- Do crypto perpetual-futures crashes carry a reproducible early-warning fingerprint of a critical transition, and in which state variable? We study seven major BTC liquidation cascades (2022-2025, including the record 19B USD event of 10 October 2025) using minute-level price and 5-minute leverage/order-flow data. On detrended residuals we compute rolling variance and lag-1 autocorrelation and test their pre-cascade trend with the Kendall-tau statistic, sweeping 39 analysis configurations per variable per event. No variable is event-invariant. Price carries the critical-slowing-down signature i
+
+## Herding, Momentum, and Reversal in China's A-Share Market: An Agent-Based Network Model with Information Diffusion
+- 2026-07-29 · http://arxiv.org/abs/2607.27063v1
+- This study develops an agent-based financial market model to explain stock-price momentum and reversal through the joint effects of local herding and delayed information diffusion. Investors form heterogeneous Gaussian beliefs about the next-period price, choose among buying, selling, and remaining inactive, and revise their action probabilities in response to neighboring investors. The local interaction structure is represented by von Neumann and Moore lattices and is later replaced by Erdős--Rényi and Watts--Strogatz networks for robustness. A separate information process updates investor be
+
+## Multi-Currency AMMs for Decentralized FOREX Markets: Feasibility & Optimal Design
+- 2026-07-29 · http://arxiv.org/abs/2607.26405v1
+- Most currency pairs lack a direct liquid market, so international foreign exchange relies on routing transactions through a dominant vehicle currency. Multi-currency automated market makers (AMMs) offer an alternative by sharing liquidity across many currency pairs, facilitating direct cross-currency trade while exploiting liquidity consolidation. This paper studies a multi-currency pool design that minimizes trading cost. Under a constant-mean AMM architecture, equilibrium trading costs reflect the trade-off between reduced price impact from consolidated liquidity and increased impermanent lo
+
+## OpenMarket: A Synchronized Polymarket-Binance Dataset for High-Frequency Prediction-Market Research
+- 2026-07-28 · http://arxiv.org/abs/2607.26245v1
+- OpenMarket began as an attempt to trade Polymarket's BTC 15-minute binary markets against Binance BTC/USDT order flow. The attempt did not produce a tradable edge: out-of-sample, a walk-forward logistic model over 43 microstructure features does not beat, and slightly underperforms, the probability already implied by Polymarket's own order book, and simulated trading nets -0.116 normalized payoff units per attempted trade under stated fee and slippage assumptions. We release the synchronized corpus and infrastructure that attempt produced and, to our knowledge, the first public millisecond-lev
+
+## Bitcoin Runs on a Clock: Why Every Price Indicator Dies and the Halving Clock Doesn't
+- 2026-07-28 · http://arxiv.org/abs/2607.26188v1
+- Every widely followed Bitcoin cycle indicator (Pi Cycle, MVRV, Mayer, Puell) called turns precisely for a decade, then degraded in one sequence: precise, then early, then silent. This is one structural phenomenon. Across the four halving epochs (2011-2026), the per-cycle maxima of five top-calling oscillators decline monotonically while minima end higher, so any threshold calibrated on past cycles must stop firing; short-horizon indicators decay toward zero and several invert sign; yet Bitcoin's time structure stays fixed, with mature-cycle tops 525/546/534 days after their halvings and bottom

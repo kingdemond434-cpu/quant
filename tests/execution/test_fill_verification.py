@@ -34,11 +34,20 @@ class _FakeConn:
         self._response = response
         self.calls: list[tuple] = []
 
-    def place_market(self, sym: str, side: str, qty: float) -> dict:
+    # `reduce_only` accepted since 2026-07-27 (incident #6): the close path passes it on the
+    # futures leg. Without it here the fake raised TypeError, `_safe()` swallowed it, and BOTH
+    # legs read as unfilled -- so these tests failed for a day while the money-path guard they
+    # pin went unverified. A stale fake silently disarms the regression test it exists to run.
+    def place_market(self, sym: str, side: str, qty: float, reduce_only: bool = False) -> dict:
         self.calls.append((sym, side, qty))
         if isinstance(self._response, Exception):
             raise self._response
         return self._response
+
+    # NOTE: deliberately exposes no `positions`/`balances`/`exchange_filters`. `_close_goal_state`
+    # probes those to see whether a leg is already flat, and must FAIL CLOSED when it cannot read
+    # the venue -- these tests pin that: an unreadable wallet leaves `_ok` exactly as the fill
+    # verification set it, so a rejected leg stays rejected and its position stays tracked.
 
 
 def test_filled_helper_requires_confirmed_status_and_qty() -> None:

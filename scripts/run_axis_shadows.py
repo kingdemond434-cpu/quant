@@ -15,8 +15,12 @@ ZERO PROMOTION AUTHORITY of its own: it reports ACCRUING / ELIGIBLE / FAILING. E
 evidence bar is met and a promotion decision may now be TAKEN by the normal gauntlet + principal
 path -- never an automatic deployment of capital.
 
-Multiplicity: m = number of concurrently-tracked axes, Holm-corrected via forward_stats.holm_bar,
-so running many shadows in parallel does not inflate the family-wise error rate.
+Multiplicity: m = the FULL concurrent forward cohort (libs.research.slot_registry), Holm-corrected
+via forward_stats.holm_bar, so running many clocks in parallel does not inflate the family-wise
+error rate. It counted len(_AXES) until 2026-07-30 -- the axis clocks only -- which applied
+holm_bar(4)=2.24 while 12 clocks were accruing (2.64): a bar ~3.2x too loose, in the phantom-edge
+direction, on the desk's only path from research to capital. The cohort spans axis + standing +
+derivative clocks, so no single file may count it.
 
     python scripts/run_axis_shadows.py
 """
@@ -29,6 +33,7 @@ from pathlib import Path
 
 import numpy as np
 
+from libs.research.slot_registry import concurrent_m
 from libs.validation.forward_stats import holm_bar, nw_tstat
 
 _ROOT = Path(__file__).resolve().parent.parent
@@ -41,7 +46,20 @@ _BINANCE = "https://fapi.binance.com/fapi/v1/klines"
 # axis registry: name -> (clock file, target symbol, signal field, direction)
 # direction: +1 = momentum (long when z>0), -1 = reversal
 _AXES: dict[str, tuple[str, str, str, int]] = {
-    "kimchi_premium": ("data/kimchi_premium.jsonl", "BTCUSDT", "z20", +1),
+    # kimchi_premium RETIRED 2026-07-30: the edge was RETRACTED 2026-07-29 as a ~73% timestamp
+    # artifact (registry E-02f2917dfb, commit 02f2917db, decision REFUTED; failure modes
+    # B_WRONG_MEASUREMENT / C_WRONG_TIMING / E_DATA_QUALITY -- Upbit KST daily candles sat ahead of
+    # the Binance UTC closes, the same lookahead that killed bithumb_KR). Its own forward clock
+    # agreed: day 8/40 at ann Sharpe -5.13, nw_t -0.71. The retraction was never propagated here,
+    # so a refuted hypothesis went on holding 1 of MAX_FORWARD_SLOTS=12 -- reading the cohort FULL
+    # and blocking 9 verified axes from a clock (the clock-saturation defect), exactly the
+    # "raises the confirmation bar on the LIVE axes for zero benefit" case set by
+    # onchain_activity_throughput above. NOTE the distinction that licenses dropping m here:
+    # kimchi was refuted as an INVALID MEASUREMENT, not failed on its merits, and an invalid trial
+    # is not a trial -- a candidate that legitimately accrued and lost must STAY in the denominator
+    # (ADAPTIVE VALIDATION WINDOWS v2: attrition must never lower the bar). Collector keeps
+    # archiving (input store). Re-admission needs a NEW construction with declared UTC alignment
+    # that clears the shift-sensitivity rail in scripts/revalidate_clocks.py first.
     # orthogonal on-chain USAGE axis (not price/derivative): economic throughput,
     # reversal. Weak+fragile in-sample (composite Sharpe collapsed) -> forward clock
     # under the Holm bar decides. same-period corr ~-0.06 = genuinely leading.
@@ -54,6 +72,12 @@ _AXES: dict[str, tuple[str, str, str, int]] = {
     # macro dollar-liquidity: total stablecoin supply (all issuers, DefiLlama),
     # momentum. Weak (IC 0.067) but economically grounded + orthogonal. SAME construct
     # as the supply field in run_stablecoin_flows -> ONE hypothesis, this is the tracked one.
+    # DeFi system utilisation (total borrow / total supply, Aave+Compound+Morpho+Spark).
+    # M_FORCED_DELEVERAGE -- the desk's BEST-supported mechanism (2/10 survival, holds the only
+    # confirmed edge). Direction -1: extreme utilisation = leverage crowded = fragile, so the
+    # prior is that it precedes weakness. Stated in ADVANCE; the clock decides, not the story.
+    # Stage-B slot 4 of 5 -- Holm bar rises 2.39 -> 2.52, which stageb_capacity computed as cheap.
+    "defi_utilisation": ("data/defi_util_axis.jsonl", "BTCUSDT", "z20", -1),
     "stablecoin_supply_momentum": ("data/stablecoin_supply.jsonl", "BTCUSDT", "z20", +1),
     # USDT/CNY P2P premium (capital-control pressure; kimchi CN-analog). Direction +1
     # PRE-REGISTERED from mechanism 2026-07-24 (peek-safe: chosen before any forward
@@ -84,7 +108,7 @@ def _clock_rows(path: Path) -> list[dict]:
     return out
 
 
-def _evaluate(name: str, clock: str, symbol: str, field: str, direction: int) -> dict:
+def _evaluate(name: str, clock: str, symbol: str, field: str, direction: int, m: int) -> dict:
     rows = _clock_rows(_ROOT / clock)
     if len(rows) < 2:
         return {"axis": name, "verdict": "ACCRUING", "forward_days": len(rows),
@@ -111,7 +135,7 @@ def _evaluate(name: str, clock: str, symbol: str, field: str, direction: int) ->
     cum = float(np.prod(1.0 + arr) - 1.0)
     sharpe = float(arr.mean() / arr.std() * np.sqrt(365)) if arr.std() > 0 else 0.0
     t = float(nw_tstat(arr)) if n >= 3 else 0.0
-    bar = float(holm_bar(len(_AXES), rank=1))
+    bar = float(holm_bar(m, rank=1))
 
     if n < _MIN_DAYS:
         verdict = "ACCRUING"
@@ -121,13 +145,16 @@ def _evaluate(name: str, clock: str, symbol: str, field: str, direction: int) ->
         verdict = "FAILING"                             # forward evidence does not support it
     return {"axis": name, "verdict": verdict, "forward_days": n, "need": _MIN_DAYS,
             "cum_return": round(cum, 5), "ann_sharpe": round(sharpe, 2),
-            "nw_t": round(t, 3), "holm_bar": round(bar, 3), "m_concurrent": len(_AXES),
+            "nw_t": round(t, 3), "holm_bar": round(bar, 3), "m_concurrent": m,
             "first_forward_day": used[0] if used else None, "last": used[-1] if used else None,
             "stage": "B (forward-only; eligibility != deployment)"}
 
 
 def main() -> None:
-    results = [_evaluate(k, *v) for k, v in _AXES.items()]
+    # One cohort read for the whole run: every clock in this file is judged against the SAME
+    # concurrent-m, and re-deriving per axis would let the bar drift mid-run.
+    m = concurrent_m()
+    results = [_evaluate(k, *v, m) for k, v in _AXES.items()]
     payload = {"updated": datetime.now(tz=UTC).isoformat(), "min_forward_days": _MIN_DAYS,
                "axes": results,
                "note": ("Forward-only Stage-B tracking. P&L starts at the clock's first row, never "

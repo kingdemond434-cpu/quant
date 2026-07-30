@@ -777,6 +777,50 @@ MEV/mempool; GitLab/StackOverflow/NPM = developer-activity factor #65; Telegram/
 retail-attention layer, **one** source was built (mechanism-first, not volume); the rest are logged
 here as excluded, not silently dropped (charter s27 "log every negative").
 
+### 22. CFE regulated crypto futures complex (Cboe settlements: FBT/PBT/XBTF + FET/PET) — grade: **verified-clean (probed + full history pulled + screened 2026-07-28) — series too young to power a screen; accruing** [§33: screened -> data/cfe_regulated_basis_screen.json]
+- **What it is:** the full CFTC-regulated crypto futures complex on Cboe Futures Exchange, free
+  daily settlements per date: `cboe.com/us/futures/market_statistics/settlement/csv/?dt=YYYY-MM-DD`
+  (keyless CSV; session C 2026-07-26 found PBT only — session D found the COMPLEX: **FBT** monthly
+  BTC futures with a 4-point term structure, **PBT** Continuous BTC futures (2035 expiry,
+  funding-style daily cash adjustment — a US-regulated perp analog), **XBTF** mini, **FET/PET**
+  the Ether pair). Launch dates measured by probe: FBT+FET 2025-09-29, XBTF 2025-11-26,
+  PBT+PET 2025-12-15.
+- **Why it matters (mechanism prior):** regulated-venue basis/funding prints come from an
+  access-segmented participant set (US institutions barred from offshore perps). The
+  PBT-vs-offshore-perp funding SPREAD and the FBT term-carry curve are institutional-positioning
+  observables the desk's carry book (offshore perp funding) cannot see. Novelty-gated 2026-07-28:
+  graveyard kills (`funding_momentum`, cross-exchange funding dispersion) are OFFSHORE-perp
+  constructions; nearest live relative is the carry book itself — distinct participant set,
+  distinct construction.
+- **History pulled:** `data/cfe_crypto_settlements.jsonl` — 2,005 rows, 207 trading days,
+  2025-09-29 → 2026-07-27, ALL five products, all listed expiries per day. Derived series
+  `data/cfe_regulated_basis_daily.jsonl`: spot-referenced PBT premium + front-FBT annualized
+  basis (front = nearest expiry ≥7d, roll rule declared).
+- **Alignment declared (charter duty):** settlement = 16:00 ET, DST-aware (20:00 UTC EDT /
+  21:00 UTC EST boundary 2025-11-02/2026-03-08); spot ref = Binance BTCUSDT 1h close at that
+  hour; signal forward-filled ≤3 calendar days over venue closures (honestly stale); predicts
+  next-UTC-day close-to-close — 4h dead gap, forward-only, no look-ahead.
+- **Stage-A screen (audited harness, ALL 4 pre-declared cells logged, levels only, no transform
+  shopping):** pbt_funding_prem h1d **SCREEN-UNDERPOWERED** (n=204, IC 0.007, min-detectable
+  0.137); h5d **INSUFFICIENT-DATA** (n=24); fbt_front_basis_ann h1d **SCREEN-UNDERPOWERED**
+  (n=281, IC 0.016, min-detectable 0.117); h5d **SCREEN-UNDERPOWERED** (n=39, IC 0.070,
+  min-detectable 0.702). **Honest verdict: uninformative in BOTH directions — no edge claimed,
+  no negative recorded; the complex is 10 months old.** Full JSON:
+  `data/cfe_regulated_basis_screen.json`.
+- **What IS informative now (descriptives):** FBT front annualized basis mean **+6.73%**
+  (std 3.78%, range **−5.67% → +15.79%** — real backwardation excursions); PBT premium to spot
+  mean −0.05%, std 0.09% (the funding mechanism binds tight). Hazard for any future screen:
+  PBT premium same-period corr 0.434 (spot in denominator) — orthogonalize or screen the
+  PBT-minus-FBT / regulated-minus-offshore SPREAD, not the raw premium.
+- **Standing plan (dated):** series accrues free daily; re-screen when powered — at current
+  min-detectable-IC trajectory that is **≈2027-H2 for h1d** (n≈500). Revisit date in the §33
+  sense: re-screen 2027-01-04 (n≈320) IF the desk wants an early underpowered read, else
+  2027-07-01. ETH pair (FET/PET vs ETHUSDT) deliberately NOT screened this run (bounded scope;
+  same mechanism, would double multiplicity) — carded here as the follow-up.
+- **Legitimacy (s13):** Cboe's own public market-statistics CSVs, keyless, no login, no ToS
+  click-through on the route; these are the exchange's OWN settlement prices (no vendor value
+  redisseminated — the Kaiko-index distinction from T1a holds).
+
 ### 21. NAVER DataLab (Korean search-attention) — grade: needs-monitoring (built, unrun) [§33: deferred(2026-08-09) tier:3]
 > **§33 DISPOSITION 2026-08-09 — THE COLLECTOR WAS RUN 2026-07-26. It did not produce an artifact,
 > and the honest disposition is a dated deferral rather than a manufactured one.**

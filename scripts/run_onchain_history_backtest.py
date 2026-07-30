@@ -10,7 +10,7 @@ daily close CSV (or it pulls free Binance) to compute forward returns.
 
 Hypothesis tested (pre-registered, economic): exchange NETFLOW predicts forward return -- stables
 flowing ONTO exchanges = dry powder / buy pressure (sign is empirical, resolved by gauntlet, not
-assumed). Runs the SAME validate + campaign_pbo_rc gauntlet every alpha uses. Nothing fabricated.
+assumed). Runs the SAME validate + campaign_gate_stats gauntlet every alpha uses. Nothing fabricated.
 
     python scripts/run_onchain_history_backtest.py --csv data/paid/exchange_netflow.csv
 """
@@ -25,7 +25,7 @@ import numpy as np
 import pandas as pd
 
 from libs.autodiscovery.models import Family, Hypothesis
-from libs.autodiscovery.validation import campaign_pbo_rc, validate
+from libs.autodiscovery.validation import campaign_gate_stats, validate
 from libs.data.crypto_source import daily_with_funding
 from libs.validation.dsr import sharpe_ratio
 from libs.validation.economic_prior import MechanismType
@@ -97,30 +97,41 @@ def main() -> None:
         strat[name] = r
 
     matrix = np.column_stack([strat["flow_momentum"], strat["flow_contrarian"]])
-    pbo, rc = campaign_pbo_rc(matrix)
+    # per-candidate gates (gap #87 flip, principal-ruled 2026-07-29); thresholds unchanged
+    campaign = campaign_gate_stats(matrix)
     results = {}
-    for name, r in strat.items():
+    # enumerate order == column_stack order over `strat`, so `col` is the strategy's matrix column
+    for col, (name, r) in enumerate(strat.items()):
         sh = round(float(sharpe_ratio(r) * np.sqrt(365)), 2)
         hyp = Hypothesis(family=Family.LIQUIDITY, subtype=name, symbol="CRYPTO", params={},
                          mechanism=MechanismType.BEHAVIORAL, edge_source="exchange_flow",
                          failure_modes=_FAIL)
         v = validate(r, hypothesis=hyp, n_trials=2, sharpe_estimates=[sh, -sh],
-                     returns_matrix=matrix, pbo=pbo, rc=rc)
+                     returns_matrix=matrix, campaign=campaign, column=col)
         gates = f"{sum(v.gates.values())}/{len(v.gates)}" if v else "n<250"
         results[name] = {"ann_sharpe": sh, "gates": gates,
+                         "pbo": round(float(v.metrics.pbo), 3) if v else None,
+                         "rc_p": round(float(v.metrics.reality_p), 3) if v else None,
                          "survived": bool(getattr(v, "survived", False))}
 
     out = {"source": str(args.csv), "aligned_days": len(df),
            "date_range": [str(df.index.min())[:10], str(df.index.max())[:10]],
-           "pbo": round(float(pbo.pbo), 3) if pbo else None,
-           "reality_check_p": round(float(rc.p_value), 3) if rc else None,
+           # campaign-level legacy PBO/RC kept as SEARCH-PROCEDURE diagnostics (gap #87); the
+           # gate values are per-strategy now -- see results[*].pbo / results[*].rc_p.
+           "pbo": (round(float(campaign.legacy_pbo.pbo), 3)
+                   if campaign is not None and campaign.legacy_pbo is not None else None),
+           "reality_check_p": (round(float(campaign.legacy_rc.p_value), 3)
+                               if campaign is not None and campaign.legacy_rc is not None
+                               else None),
            "results": results,
            "note": "paid history validates; free keyless onchain_flows.py trades it forward. "
                    "Sign chosen by gauntlet, not assumed. One-off pull -> no subscription needed."}
     _OUT.write_text(json.dumps(out, indent=2), "utf-8")
     for name, res in results.items():
-        print(f"{name}: annSharpe {res['ann_sharpe']} survived={res['survived']}")
-    print(f"aligned {len(df)}d {out['date_range']} | pbo {out['pbo']} rc {out['reality_check_p']}")
+        print(f"{name}: annSharpe {res['ann_sharpe']} pbo={res['pbo']} rc_p={res['rc_p']} "
+              f"survived={res['survived']}")
+    print(f"aligned {len(df)}d {out['date_range']} | campaign diagnostics pbo {out['pbo']} "
+          f"rc {out['reality_check_p']} (gates are per-strategy)")
 
 
 if __name__ == "__main__":

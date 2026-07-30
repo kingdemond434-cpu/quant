@@ -1,17 +1,17 @@
 # Desk digest (auto-generated daily -- do not hand-edit)
-_updated 2026-07-26T08:06Z · companion to [[institutional_knowledge]]_
+_updated 2026-07-30T08:06Z · companion to [[institutional_knowledge]]_
 
 ## Book
-- Molded net: **$-379.86** | funding **$97.64** | run-rate APR 31.8% | day 24.12
-- Root cause: **unknown_novel** (pause_and_page) | tracking error $-511.5
+- Molded net: **$-1845.14** | funding **$113.04** | run-rate APR 0.0% | day 28.12
+- Root cause: **unknown_novel** (pause_and_page) | tracking error $-1973.18
 
 ## Validation clocks
-- **carry (DEPLOYED)**: 30/90d | bt 3.19 fwd 12.13
-- **perp L/S**: 23/90d | bt 0.89 fwd 1.42
-- **trend**: 23/90d | bt 1.42 fwd -1.05
-- **trend regime-gated**: 18/90d | bt 1.35 fwd 0.0
-- **OI/LS data**: 28/40d
-- **stablecoin data**: 24/40d
+- **carry (DEPLOYED)**: 33/90d | bt 3.85 fwd 12.58
+- **perp L/S**: 27/90d | bt 0.48 fwd 1.08
+- **trend**: 27/90d | bt 1.26 fwd -6.29
+- **trend regime-gated**: 22/90d | bt 1.23 fwd 0.0
+- **OI/LS data**: 32/40d
+- **stablecoin data**: 28/40d
 
 ## Open decisions (ledger)
 - `2026-07-04-cashcarry-top10-4500` -- review 2026-08-04: funding/day rises ~50% without new drift losses by 2026-08-04
@@ -200,6 +200,21 @@ _updated 2026-07-26T08:06Z · companion to [[institutional_knowledge]]_
 - `2026-07-24-fable5-and-max-effort-everywhere` -- review ?: 48h of cycles/digs completing (no 163-byte stubs) at fable-5/max; quota_verdict stays clea
 - `2026-07-24-cny-premium-axis-unparked` -- review ?: premium 30d std lands nearer KRW-class than TRY-class AND the forward clock clears the Hol
 - `2026-07-24-vendor-replacement-fenced` -- review ?: vendor-replacement defect count reaches 0 and stays there as new vendors get entries with 
+- `2026-07-26-carry-funding-silent-zero` -- review ?: web/cashcarry_live.json carries funding_measured=true with a numeric harvest once the venu
+- `2026-07-26-s37-carryover-disposition` -- review ?: stub-deaths falls after the next quota window rolls with the concurrency gate live; if it 
+- `2026-07-26-carry-orphan-dual-supervision` -- review ?: Sustained: quant-cashcarry NRestarts stops climbing; heartbeat PID equals systemd MainPID 
+- `2026-07-27-elite-trader-intelligence-premise-tested` -- review ?: n/a -- premise rejected at Stage-A
+- `2026-07-27-hyperliquid-skill-persistence-refuted` -- review ?: n/a -- hypothesis refuted at Stage-A with a confound control
+- `2026-07-27-elite-trader-alpha-3-mechanisms-exhausted` -- review ?: n/a -- all 3 mechanisms rejected at Stage-A
+- `2026-07-27-longterm-trader-skill-zero-predictive-power` -- review ?: n/a -- rejected; zero predictive power on the primary criterion
+- `2026-07-27-highpower-skill-drawdown-persists-returns-do-not` -- review ?: n/a -- returns/Sharpe persistence REJECTED with power; drawdown persistence CONFIRMED but 
+- `2026-07-27-elite-risk-filter-replicates-oos-plus-feature-factory` -- review ?: elite risk filter holds on a THIRD independent cohort or a forward clock; behavioural feat
+- `2026-07-28-carry-churn-loop-root-cause-and-fix` -- review ?: 7d commission/funding ratio falls from 63.42x toward the 6.84x best-ever ratchet; CLOSE-FA
+- `2026-07-28-fee-blind-pnl-and-page-destruction` -- review ?: hold_buckets_net_of_fees present in web/trade_forensics.json each run; FEE INTENSITY fires
+- `2026-07-29-pbo-rc-are-campaign-constants-not-candidate-gates` -- review ?: PRE-REGISTERED, both directions required: (a) a 100%-null synthetic campaign must admit <=
+- `2026-07-29-carry-book-absorbing-state-and-rail-undercount` -- review ?: check_book_absorbing_state fires on the live state today (VERIFIED) and goes silent within
+- `2026-07-30-welded-gate-wired-and-the-other-19-paths` -- review ?: check_welded_gates count falls 19 -> 0 with each migration's column order asserted; and th
+- `2026-07-30-holm-cohort-was-m4-while-12-clocks-accrued` -- review ?: web/axis_shadows.json holm_bar tracks the derived cohort; run_alerts fires slot_budget_exc
 
 ## Executive KPI snapshot
 - CRO: {"hypotheses_tested_lifetime": 20, "validated_survivors": 1, "survivor_note": "cash-carry (fwd 8/90); trend candidate gauntlet-passed (fwd 1/90); all else graveyarded", "survival_r

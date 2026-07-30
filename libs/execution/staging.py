@@ -22,6 +22,14 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from libs.core.logging import get_logger
+
+# OBSERVABILITY (gap #56, 2026-07-29): the state file records WHERE the machine is; the log
+# records WHY it moved, at the moment it moved. state["history"] survives, but a demotion that
+# is instantly followed by a crash left no trail of the reason before this. Library never
+# configures handlers -- the owning script does.
+_log = get_logger(__name__)
+
 _STATE = Path("data/stage_state.json")
 _STAGES = ("S0", "S1", "S2")
 
@@ -63,11 +71,16 @@ def s2_entry_met(evidence: dict[str, Any]) -> tuple[bool, str]:
     checks = {
         "live_weeks_ge_8": float(evidence.get("live_weeks", 0.0)) >= 8.0,
         "calibration_rows_ge_10": int(evidence.get("calibration_rows", 0)) >= 10,
-        # default 1, NOT 0: absent drill evidence must read as "a failure we cannot rule out",
-        # never as "no failures". With a 0 default this condition passed on an empty dict, so a
-        # broken drill-evidence pipeline would have silently satisfied an S2 safety gate.
-        # (Found 2026-07-26 by mutation testing: flipping the default to 1 changed no test.)
-        "critical_drill_failures_eq_0": int(evidence.get("critical_drill_failures", 1)) == 0,
+        # FAIL-CLOSED DEFAULT. Found independently by mutation testing TWICE: this account
+        # 2026-07-26 (default flipped 0 -> 1) and the other account 2026-07-29 (default -> -1,
+        # gap #53), three days apart, same bug. This read
+        # `evidence.get("critical_drill_failures", 0) == 0`, so an ABSENT drill record was treated
+        # as "zero failures" and the S2 gate PASSED on missing evidence. Every other check here
+        # already defaults to the refusing side (live_weeks 0.0, calibration_rows 0, cost_ratio
+        # 999.0); this one alone defaulted permissive. A sentinel of -1 keeps "0 failures" as the
+        # only passing value while making "no record" a refusal. Direction is strictly
+        # conservative: this can only ever DECLINE a promotion, never authorise a trade.
+        "critical_drill_failures_eq_0": int(evidence.get("critical_drill_failures", -1)) == 0,
         "realized_cost_le_1_25x": float(evidence.get("cost_ratio", 999.0)) <= 1.25,
     }
     return all(checks.values()), ", ".join(f"{k}={v}" for k, v in checks.items())
@@ -86,6 +99,7 @@ def promote(evidence: dict[str, Any]) -> tuple[bool, str]:
     else:
         return False, "already at S2 (terminal stage)"
     if not met:
+        _log.info("promote REFUSED from %s: %s", stage, why)
         return False, f"gate not met: {why}"
     state["stage"] = target
     state["history"].append({
@@ -93,6 +107,7 @@ def promote(evidence: dict[str, Any]) -> tuple[bool, str]:
         "from": stage, "to": target, "evidence": why,
     })
     _save(state)
+    _log.warning("STAGE PROMOTED %s -> %s: %s", stage, target, why)
     return True, f"promoted {stage} -> {target}: {why}"
 
 
@@ -110,4 +125,7 @@ def demote(reason: str) -> tuple[bool, str]:
         "from": stage, "to": target, "reason": reason,
     })
     _save(state)
+    # A demotion is the risk machinery working; it is logged at WARNING because it must be
+    # visible in any live-session log without raising the level.
+    _log.warning("STAGE DEMOTED %s -> %s: %s", stage, target, reason)
     return True, target

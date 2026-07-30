@@ -23,7 +23,7 @@ import numpy as np
 import pandas as pd
 
 from libs.autodiscovery.models import Family, Hypothesis
-from libs.autodiscovery.validation import campaign_pbo_rc, validate
+from libs.autodiscovery.validation import campaign_gate_stats, validate
 from libs.data.cleaning import DEFAULT_CAPS, guard_close
 from libs.data.instruments import AssetClass, InstrumentSpec, register_instrument
 from libs.data.lake import Layer, ParquetLake
@@ -97,10 +97,11 @@ def main() -> None:
     r_mom = xsec_momentum_returns(close, cost, lookback=mlb, q=q, band=band)
     r_combo = 0.5 * r_trend + 0.5 * r_mom
 
-    # Gauntlet on the combo (peers = the two sub-books for PBO/RC)
+    # Gauntlet on the combo (peers = the two sub-books for the multiplicity stats)
     matrix = np.column_stack([r_trend, r_mom, r_combo])
     sharpes = np.array([sharpe_ratio(x[x != 0.0]) for x in (r_trend, r_mom, r_combo)])
-    pbo, rc = campaign_pbo_rc(matrix)
+    # per-candidate gates (gap #87 flip, principal-ruled 2026-07-29); thresholds unchanged
+    campaign = campaign_gate_stats(matrix)
     active = r_combo[r_combo != 0.0]
     verdict_gauntlet = validate(
         active, hypothesis=Hypothesis(
@@ -108,7 +109,7 @@ def main() -> None:
             params={}, mechanism=MechanismType.RISK_PREMIUM,
             edge_source="cross-asset trend + x-sec momentum (equal risk, costed)",
             failure_modes=_FAIL), n_trials=3, sharpe_estimates=sharpes,
-        returns_matrix=matrix, pbo=pbo, rc=rc)
+        returns_matrix=matrix, campaign=campaign, column=2)  # r_combo = matrix column 2
 
     # Forward shadow split
     dates = close.index

@@ -455,3 +455,254 @@ hypotheses and EV-score them; only the top few enter research.
   — so the two recorders don't contend for rate budget. Both are stdlib-only, isolated (no keys, no
   book access), gzip-jsonl hourly under data/moat/{fut,spot,bybit}/, cron pgrep self-heal. Three
   recorders now ~12GB/mo combined vs ~31GB free — DISK is the shared neighbour, guarded at 80% in each.
+- **UNKNOWN IS NOT ZERO: a venue 502 was published as a $0.00 funding harvest (2026-07-26).** The
+  carry book reported `funding_harvested=0.00` and a bleed verdict of "inf% — hedge losing more than
+  it earns", while the molded book had recorded `funding=101.96` on the same book two hours earlier.
+  `/fapi/v1/income` was returning HTTP 502 (3/3 live attempts). In `_mark()` the equity read and the
+  income read shared ONE `_safe()` block, so the equity assignment landed and the swallowed income
+  error left funding/commission at their initialised `0.0` — a PARTIAL update publishing a real
+  futures PnL beside a fabricated zero, which is exactly the pair the alarm reads as a total bleed.
+  An HTTP error was rendered as an economic verdict on the forward record the sizing gate reads.
+  **Three durable rules.** (1) Give every venue read its OWN guard: a shared try/except across two
+  calls makes failure partial, and a partial failure is published as if both succeeded. (2) A
+  measurement that fails must surface as UNMEASURED, never as a zero — they are opposite states and
+  only one of them is an execution problem. (3) Fixing a failure SHAPE on one code path does not fix
+  its siblings: this is the SAME shape as the 2026-07-19 stranded-inventory incident (GAP row 34),
+  which was fixed on the ORDER path (`_filled`) and left standing on the MEASUREMENT path for a week.
+  Run the adjacency sweep in the same pass — it found a second live instance in run_live_combined,
+  where the pattern was half-applied (venue_realized already used None-means-unknown; funding two
+  lines above still seeded 0.0). Corollary: silencing a false alarm is only safe if the silence is
+  itself tracked (max_audit `check_carry_funding_measured`).
+- **A convention honoured by one check and ignored by its sibling is a blind spot (2026-07-26).**
+  `check_artifact_ungoverned` implements trailing-slash directory claims with a comment predicting
+  that exact-path claims "would fire permanently on correctly-governed output"; `check_findings_scope`
+  in the same file did exact matching only. So `docs/research/deep_sweep/` — excluded WITH a stated
+  reason since it was written — was never actually excluded there, and `findings-scope-unmonitored`
+  fired forever on dated reports. The defect was UNCLOSABLE by construction: satisfying it required
+  listing files that do not exist yet. When a rule is written for one organ, grep for its siblings.
+- **Guards must be calibrated against measured cost, not a constant (2026-07-26).** The panel
+  pre-flight credit check estimated `0.05/seat` = $0.65/run against a measured ~$2.93 ($56.60
+  lifetime over 12 runs), and its own inline comment claimed "~$1.10/run" — disagreeing with its own
+  arithmetic. A guard 5-7x optimistic does not prevent mid-run exhaustion, it CAUSES it by
+  green-lighting a run the balance cannot cover. Now self-calibrating from the usage counter's
+  advance. Any guard carrying a hardcoded cost/latency/size constant should be asked, once a
+  quarter, whether reality still matches it.
+- **A daemon with two supervisors has no supervisor (2026-07-26).** `watchdog.py` (cron, every 3min)
+  Popen-spawned the cash-carry executor *and* `quant-cashcarry.service` supervised it — laptop-era
+  code that survived the 07-12 systemd migration. The watchdog's copy is owned by cron, so it
+  outlives `systemctl restart`, holds the single-instance lock, and every systemd spawn exits 0 on
+  that lock: `Restart=always` then respawned ~190x/hour (NRestarts=5354). Two supervisors do not
+  give redundancy, they give an orphan plus a storm. Rule: exactly one supervisor per singleton;
+  when a unit exists, every other starter defers to it and keeps a backstop only for the case where
+  systemd has nothing running at all.
+- **An orphan pins the process to the code it loaded at spawn (2026-07-26, third instance).** The
+  orphan started 12:48 and the funding-measurement fix was written 20:06, so the fix was INERT in
+  the only process that owned the book, which kept publishing a fabricated `inf%` BLEED from an
+  HTTP 502 for hours. This is IK:141 (2026-07-10, churn fix inert 2 days) recurring, and the storm
+  is IK:290 (2026-07-13, 14,225 restarts) recurring — the 07-13 fix was applied to the KILL exit and
+  left standing on the SINGLETON exit 380 lines away in the same file. **One instance is never one
+  instance: when you fix an exit-under-supervision, grep every other exit in that file.**
+- **A lesson that is only written down will be re-learned; only a check is a fix (2026-07-26).**
+  Both classes above were already in this file and both recurred anyway. What broke the loop was
+  making them mechanical. Note the trap in doing so: `check_stale_daemons` asked systemd for
+  MainPID and skipped on `0` — but `0` is precisely what systemd reports while a unit sits in
+  `activating (auto-restart)`, which is the state an orphan *causes*. The inert-code detector was
+  blind to the commonest way code goes inert. **A monitor that sources its ground truth from the
+  component that is failing cannot see the failure**; it now discovers workers independently via
+  the process table. Corollary found the same hour: `pgrep -f <script>` matched every claude
+  process, because the injected doctrine quotes `run_cashcarry_executor.py` and
+  `run_deadman_switch.py` in its risk-path duty — match argv elements, never a command-line
+  substring, or the monitor reports the wrong process.
+- **A "success" predicate that reads a RECEIPT instead of the GOAL STATE builds a perpetual-motion
+  fee machine (2026-07-28).** The carry close checked `_filled(order)`; a reduceOnly cover against
+  an ALREADY-FLAT futures leg is rejected by the venue, so `fut_ok` was False forever, the pair
+  never retired, and `_reconcile` — blind to the KILL order — rebuilt both legs in front of every
+  retry. The book round-tripped its entire notional through market orders every 600s: 11,136 venue
+  COMMISSION events against 251 logged round-trips, $1,456 of fees in 48h against $113 of LIFETIME
+  harvest, and it ran NAKED LONG SPOT the whole time. Two lessons. (1) For any unwind, success is
+  "the leg is flat", never "an order filled" — and the check must be FAIL-CLOSED so an unreadable
+  venue leaves the flag untouched (that is what preserves the 07-19 stranded-inventory guard while
+  fixing this). (2) **A reconciler that restores invariants must know when the desired invariant
+  has CHANGED.** Under a flatten/kill order the target is FLAT, so "heal the hedge" becomes "undo
+  the rail". Any self-healing loop needs the current goal as an input, or it will faithfully fight
+  the operator.
+- **The trade log is not the fee bill; reconcile them or the leak hides in the gap (2026-07-28).**
+  The book's own log explained ~$126 of a $1,746 venue bill — 44 venue fills per logged round-trip.
+  Every diagnosis of a cost problem must start by reconciling the desk's records against the
+  venue's, because a loop that trades without logging is invisible to every tool that reads the log.
+- **Detection was never the gap; NAMING THE CAUSE was (2026-07-28).** §40's fee-ratio check fired
+  ~27h before this was diagnosed, reporting "fees are 63x the harvest" — a symptom consistent with a
+  dozen causes, so it cost a full investigation to localise and was carried as backlog meanwhile.
+  The new `check_close_retry_loop` reports the fingerprint instead (same symbol failing to close
+  while the reconciler rebuilds it). **When an alarm is true but keeps getting deferred, the fix is
+  usually to make it name the mechanism, not to make it louder.**
+- **A stale test fake silently disarms the regression test it exists to run (2026-07-28).**
+  `test_fill_verification`'s fake `place_market` never accepted the `reduce_only` kwarg production
+  started passing on 07-27, so it raised TypeError, `_safe()` swallowed it, both legs read unfilled,
+  and the guard on the 07-19 money-path incident had been failing for a day. CI reported it and the
+  desk shipped anyway. **A red CI is not a nuisance, it is every guard switched off at once** — the
+  gate was red on lint (558 ruff errors, mostly one-off `hl_*.py` research scripts) and on one
+  artifact-governance test, and commits kept landing.
+- **A gate whose instructions contradict its threshold rejects ~100% and teaches dishonesty
+  (2026-07-28).** `Idea.est_sharpe` is documented as "an honest prior — be conservative", but
+  `_EV_THRESHOLD=0.05` needs ~est_sharpe ≥1.6 at breadth 40 to QUEUE (carry ref 3.28 → 0.1171 PASS;
+  modest/broad 0.6 → 0.019 REJECT). Conservative honesty is therefore auto-rejected and optimism is
+  rewarded, and the whole "many small decorrelated sleeves" class dies at the door. Calibrate every
+  gate against a KNOWN-good reference and a known-marginal one; a reject rate near 100% is a
+  property of the gate to investigate, never evidence that the candidates were bad.
+- **A P&L that cannot see its dominant cost will report a fee fire as break-even (2026-07-28).**
+  `_tca` records slippage-vs-mid and carries **no commission term**, so every per-trade `net` in
+  the carry trade log (= price_pnl + est_funding) was fee-blind by construction — and
+  `run_trade_forensics` summed exactly that field for its hold-class verdicts, its symbol
+  blacklist, and the forward track record Gate 0 sizes real capital on. Over 14 days the venue
+  billed **$1,628.81** while the log's aggregate net read **+$0.16**. The `>24h` class read
+  -42 bps against a true **-635 bps**. Before trusting ANY per-trade verdict, verify each cost term
+  is actually *in* the record; "realized edge = modeled edge − implementation loss" is a lie if the
+  instrument cannot see the loss. Fixed by joining venue COMMISSION events onto round-trips
+  (`commission_events` + `_fee_attribution`), publishing fee-blind and net-of-fee side by side
+  because **the divergence is the diagnostic**.
+- **An alarm without an enforcement arm is a log line (2026-07-28).** §40 fired ~27h before the
+  churn loop was diagnosed, reporting the symptom ("fees are 63x harvest") with no authority to
+  stop anything. The only mechanism that halted a $1,750 fee fire was the **equity ruin rail at
+  -35%** — i.e. after the money was gone. Detection and authority are different capabilities: pair
+  them, or the alarm is theatre. 94.1% of that ruin breach was the software defect; thesis-only PnL
+  was -2.19%, so without the bug there is no breach and no dead-man fire.
+- **Measure the FINGERPRINT, not the symptom, and make it generalise.** A sign test on P&L missed
+  the fire because the class was *already* flagged bleeding — it moved -42 → -635 bps in silence.
+  **Fee intensity** (fee as bps of notional vs the ~10 bps a futures round-trip should bill) catches
+  any case of the venue charging for fills the book never intended, whatever the mechanism. It
+  fires at **59x** on the incident.
+- **Verify your own writes, not just other people's state (2026-07-28).** `max_audit` stripped its
+  escalation with `existing.split(MARK)[0]` — which keeps only the text BEFORE the marker. Once the
+  escalation owned line 1 (every run after the first, since the 07-24 delivery fix), that returned
+  `""` and **silently deleted the entire human-written page below it**. Every `PRINCIPAL_ACTION`
+  page written since 2026-07-24 was destroyed by the next sweep, on the desk's **only**
+  human-escalation channel, with no error anywhere. Found only by re-reading the file after writing
+  it. VERIFY-THEN-CLAIM applies to the desk's own output, not merely to inherited state — and a fix
+  that solves "stale line 1" by making a generic line 1 permanent has traded one failure for
+  another (routine sweeps must never outrank an event-driven ask only a human can clear).
+- **Demand the artifact, never the flag — including inside the auditor (2026-07-28).**
+  `check_generation` read only `cadence_state.last_live_generate`, a key a cycle sets by hand. It
+  reported generation "skipped" on a day the Stage-A executor had already written real verdicts,
+  and would equally have reported it DONE for a cycle that touched nothing but the timestamp. Same
+  root as the desk's own `check_production` ("scheduled but not PRODUCING"). Likewise
+  `check_artifact_governance` walked `docs/` without a gitignore filter, demanding governance for
+  local scratch — making the check, and the CI test asserting on it, **environment-dependent**: red
+  on the box that generated the scratch, green on a clean runner. A gate whose verdict depends on
+  which machine ran it cannot be trusted in either direction.
+- **Coverage that rises because findings stopped being counted is a blinder desk.** Routing the
+  101-item subsystem triage into §35 scope raised open findings **67 → 168** and immediately
+  surfaced 4 items that had been invisible to the only organ that works a backlog. The honest
+  direction for a coverage metric is scope UP, not denominator down.
+- **Check the function SIGNATURE before debating the threshold (2026-07-29).** The gauntlet's
+  `pbo` and `reality_check` gates call `probability_backtest_overfitting(returns_matrix)` and
+  `whites_reality_check(returns_matrix)` — **neither takes the candidate's own returns as an
+  argument.** A gate that cannot see the thing it judges is not a strict gate, it is a *campaign
+  constant*: measured PBO 0.6159 and White RC p 0.4220 forced **420/420** rejections at any
+  quality. That is the whole 420-tested/0-survivors record. Both statistics are properties of a
+  SEARCH PROCEDURE — PBO ranks the in-sample-*best*, White's RC tests the *maximum* — and neither
+  was ever a per-strategy test. Before asking "is this bar too high?", ask "does this bar take the
+  candidate as input?"; the first question is unanswerable if the second answer is no.
+- **A too-strict gate and a too-loose gate can be the same gate (2026-07-29).** Everyone measured
+  the 420/0 direction and concluded "strict"; nobody measured the other. Holding 60 pure-noise
+  candidates fixed and adding ONE genuine winner to the batch flips the old gates from admitting
+  0/60 to admitting **60/60 pure nulls** — because the campaign statistic is driven by the batch's
+  best member. So the status quo was an unquantified phantom-edge hole that opens *precisely when
+  the desk starts finding real edge*, i.e. in the state it is trying to reach. **When you catch a
+  gate rejecting ~100%, do not stop at "too strict" — construct the batch where it passes
+  everything.** The one-directional measurement is what let this survive four sweeps as "blocked,
+  do not loosen".
+- **"No change to the verdict" can be the confession, not the reassurance (2026-07-29).**
+  `campaign_pbo_rc` was introduced as a caching speedup whose docstring promised "a large speedup
+  with no change to the verdict". That claim was *literally true* — and true only because the
+  per-call fallback recomputes the identical campaign statistic. The caching was a red herring: a
+  cycle that "fixed the cache" would have changed nothing. When an optimisation can prove it never
+  alters an output, check whether the output was ever a function of the input you thought.
+- **A null result is a claim about the instrument until you have ruled the instrument out
+  (2026-07-29).** 420-tested/0-survivors was read for months as *"price space is picked clean"* — a
+  conclusion about the world — and that read steered real strategy (it is cited in the
+  generation-ROI finding that mass generation is self-defeating). The measurable cause was two
+  broken gates. Scope every negative result to ROUTE-vs-CAPABILITY before letting it set direction;
+  the same error shape as the blocked-YouTube-endpoint episode that nearly bought a paid proxy.
+- **Adjacency is not optional after a fix (2026-07-29).** On 07-28 the desk learned *"a reject rate
+  near 100% is a property of the gate to investigate, never evidence that the candidates were
+  bad"* — and fixed the EV gate. It did not then sweep for the same SHAPE elsewhere, so the
+  identical defect sat one layer down in the gauntlet, at far higher stakes, for another day. A
+  lesson that stays in the file where it was learned is half a lesson.
+- **An alarm that needs activity cannot see a stopped system (2026-07-29).** The primary carry book
+  sat flat for days with a fresh heartbeat and zero defects reported, because *every* alarm guarding
+  it was conditioned on the book DOING something — the bleed alarm needs non-funding PnL, §40 needs
+  >$5 of funding to divide by, `check_close_retry_loop` needs CLOSE-FAIL actions. A book doing
+  nothing tripped none of them and read as healthy. Worse, the state was **absorbing**: the ruin
+  rail measures drawdown against a *fixed* inception equity, and its response — flatten — removes
+  the only mechanism (carrying funding) by which equity could recover, so the verdict re-fires
+  forever. **For every rail, ask what the system looks like AFTER the rail fires, and whether
+  anything can still tell you it is stuck there.** A rail that assumes a human will re-baseline it
+  must ESCALATE that a human decision is owed; otherwise "safe" and "dead" are the same reading.
+- **Check the artifact against what your own records claim about it (2026-07-29).** GAP #87 had read
+  "paged for a YES/NO (`data/PRINCIPAL_ACTION.md` §1)" for a day. The page contained no such ask —
+  `run_external_panel.py` had clobbered it with a bare `write_text` while paging an unrelated
+  credits notice, so the principal was never shown the Tier-3 decision the whole discovery pipeline
+  is blocked on. Nothing detected it: the register asserted a state, the artifact contradicted it,
+  and no organ ever compared the two. **A status field that names an artifact is a checkable claim —
+  check it.** This generalises past paging: any record of the form "X was written to Y" is a
+  falsifiable assertion the desk should verify rather than carry forward.
+- **The same fix must be swept across organs the same day, or it decays into a story (2026-07-29).**
+  The clobber above is byte-for-byte the class fixed in `max_audit` on 07-28. The adjacency lesson
+  was written into THIS file that morning — and then not applied to the one adjacent organ writing
+  the same file. Writing the lesson is not running the sweep. When a fix lands, `grep` for the
+  *mechanism* (here: `write_text` on a shared human-facing file), not for the symptom, and fix every
+  hit in the same pass — then encode it so the sweep is mechanical next time.
+
+## Validation-methodology lesson — 2026-07-30 (a positive control that was never asked; and a refuted clock that blocked nine axes)
+- **A control correct IN EXPECTATION is worthless when its standard error swamps the effect range.**
+  The gate-optimality probe built its "known-good" candidate as `mu = SR_true*sd/sqrt(365)` plus
+  Student-t noise — arithmetically CORRECT — and recorded that `SR_true=+0.5` realised `-2.32`, from
+  which R0017 concluded the injection was mis-wired (sign/magnitude error) and that the funnel could
+  not promote a good candidate. Both readings were wrong. At T=310 the standard error of an
+  annualised Sharpe is `sqrt(365/310) = 1.085`, so the *entire* 0.5–3.0 range of "good" sits inside
+  one standard error; `-2.32` is a −2.6σ draw. And because `seed=7` was reused for every row of the
+  sweep, all 13 rows shared ONE noise realisation: realised SR came out exactly linear in `SR_true`
+  with a constant −2.89 offset. **That smoothness is what disguised a single unlucky draw as a
+  systematic wiring bug.** The probe handed the gauntlet a candidate whose realised Sharpe was
+  −2.32 and asked why it failed; every gate rejected it correctly. The question was never put.
+  **Rules.** (1) A control must have its target sample moment BY CONSTRUCTION — standardise the
+  innovations, then add the drift (`libs/validation/positive_control.py`); sampling error belongs
+  nowhere near the *definition* of "good". (2) Sweep INDEPENDENT seeds; one seed is one realisation.
+  (3) The asymmetry is load-bearing: pin the moment where "good" is DEFINED, leave it RAW where
+  dispersion is MEASURED — standardising a *null cohort* destroys the cross-sectional dispersion that
+  DSR/CSCV deflate against and manufactures survivors. (4) Before believing any "the gate rejects
+  everything" result, check that the thing certifying the gate is itself certified: `434 tested /
+  0 promoted` is equally consistent with picked-clean price space and with a gate welded shut, and
+  the desk had been reasoning from the first reading without evidence for it.
+- **A retraction is not complete until every DERIVED registry is updated.** kimchi_premium was
+  retracted 2026-07-29 as a ~73% timestamp artifact (registry `E-02f2917dfb`, decision REFUTED —
+  Upbit KST candles ahead of Binance UTC closes, the same lookahead that killed bithumb_KR). The
+  graveyard and research memory were updated; `scripts/run_axis_shadows.py` `_AXES` was not. So a
+  refuted hypothesis went on ACCRUING as Stage-B slot 1 of `MAX_FORWARD_SLOTS=12` at forward
+  `ann_sharpe -5.13` — which made `derive_slots()` read the cohort FULL (`idle_slots=0`), and *that*
+  was the evidence used to justify the clock-saturation defect as "capacity-blocked at 12/12, not
+  idle". **Nine verified axes were denied forward clocks by a dead sleeve**, while the Holm bar sat at
+  2.64 instead of 2.61 for all eleven legitimate clocks. Retiring it (m 12→11, one slot freed) is a
+  ~10-line comment change; finding it required asking which registries still counted a thing already
+  declared dead. Now probe angle 13 (IS THE KILL PROPAGATED?).
+- **The distinction that licenses dropping the multiplicity denominator, which was written nowhere.**
+  `slot_registry` drops a retired clock from `m` (precedent: `onchain_activity_throughput`, "a
+  permanently-unpromotable axis holding a Holm slot raises the bar on the LIVE axes for zero
+  benefit"), while ADAPTIVE VALIDATION WINDOWS v2 says "attrition must never lower the bar". Both are
+  right, about different things: **REFUTED-AS-INVALID-MEASUREMENT** (artifact, lookahead, bad
+  alignment — the trial was void) must leave the denominator, because an invalid trial is not a
+  trial; **FAILED-ON-ITS-MERITS** (legitimately accrued and lost) must STAY, or the desk can kill
+  losers to make winners promotable, which is garden-of-forking-paths with extra steps. Absent this
+  rule a future cycle can justify either action by citing law, which is how a gate gets quietly
+  loosened by a cycle that believes it is following precedent.
+- **One integer, two uses, opposite fail-safe directions (now probe angle 12).** `m_concurrent` is
+  the Holm denominator, where over-counting is SAFE (tightens the bar), *and* the capacity count
+  against the hard cap of 12, where over-counting is a hard admission block. `slot_registry.py`
+  documents its fail-safe reasoning carefully — for the first use only. Whenever one number feeds two
+  decisions, check the safe direction of error for EACH; a value that is conservative for one use can
+  be the reckless choice for the other, and the docstring will look correct the whole time.
+- **`exit 0` from `run_ci.py` is not evidence CI ran.** This cycle's "baseline green" was
+  `CI: another run holds the lock -- skipping (marker left untouched)` — exit 0, zero tests executed,
+  because a concurrent `run_deep_sweep.py` held the lock. Nearly built on a phantom green. Read the
+  log body, never the exit status; a skip and a pass are opposite states that share a return code.

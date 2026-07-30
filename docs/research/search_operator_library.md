@@ -387,11 +387,25 @@ vocabulary is about rails. Search the RAIL, not the strategy, to find era alpha 
 | `bearwhale` | (2014, low-freq) | the 30k-BTC Oct-2014 sell wall | canonical era market-impact event study |
 | `willy` / `markus` | (post-2014) | alleged Gox wash-trading bots named in leaked logs | era wash-trade/volume-integrity discussion |
 
+**QUANTOPIAN LAYER (2015-2020 era, added 2026-07-28 session D — a different stratum than the
+Bitcointalk rows above; here the era vocabulary IS strategy names + author handles, because the
+platform pooled strategy discussion rather than venue/rail logistics):**
+
+| term | gloss / era | use as search key |
+|---|---|---|
+| `In & Out` / `in_out` / `OUT_DAY` | THE late-Quantopian collaborative strategy family (risk-off rotation, Oct 2020) | finds the QC diaspora superthread ("Amazing returns" on QuantConnect) + all ports |
+| `Quality Companies in an Uptrend` | the companion stock-selection superthread | its "Amazing returns = superior stock selection + superior in & out" post is the era's own combination experiment |
+| `magic numbers` | era term for hardcoded overfit constants (the 58/15 debate) | finds the community's OWN sensitivity/overfit debates — free falsification material |
+| `Tentor Testivis`, `Dan Whitnable`, `Vladimir`, `Thomas Chang`, `Peter Guenther`, `Guy Fleury` | the named In&Out-era leaders (shutdown-day thread R100 names exactly who the community said it would follow) | **handles are diaspora tracers** — search them on QuantConnect/Quantiacs/GitHub to find where each thread continued; `Guy Fleury` additionally finds the era's leverage-stacked-backtest pattern (61,617%-return posts — a named red-flag class) |
+
 CROSS-REGION NOTE (charter §16): the same "search the defunct RAIL, not the strategy" heuristic
 should port directly — CN era keys = 比特币中国/BTCChina, 支付宝 (Alipay) withdrawal threads, 火币
 early era; KR = 김치프리미엄 + defunct venue names; RU = BTC-e's native-language threads (a large
 RU-language user base). Each regional miner should run the same corpus-differencing method
-(era topics vs modern topics on the same board) rather than guessing at slang.
+(era topics vs modern topics on the same board) rather than guessing at slang. SECOND-STRATUM
+COROLLARY (2026-07-28): on PLATFORM archives (Quantopian, BigQuant, FMZ, Quantiacs) the heuristic
+INVERTS — there the era vocabulary is strategy names and author handles, so search the STRATEGY
+and follow the HANDLE across platforms.
 
 ## ARCHIVED
 (none yet)
@@ -490,3 +504,38 @@ adaptations: CN gbk/gb2312 (simplified, mainland), big5 (traditional, TW/HK); KR
 counterfactual: MEDIUM-HIGH — the thread was the run's only era find; discarding it as corrupt would
   have produced a false "CN era boards are unreadable" conclusion and, on the video-log precedent,
   could have gated a purchase or a "ground unreachable" note.
+
+### OP-034 Quantopian forum archaeology — the extraction recipe                [active]
+class: extraction
+origin: EN frontier miner session D (2026-07-28), first two threads mined to exhaustion
+validated-gain: 52,187 unique forum threads confirmed archived (CDX, statuscode:200, collapsed by
+  urlkey) — essentially the WHOLE forum, a finite one-time-exhaustible era mine. Two threads fully
+  extracted first try once the traps below were solved; produced 1 graveyard entry, 1 inbox
+  principle, a WS-003 confirmation, and the era's complete diaspora record.
+technique, in order of the traps actually hit:
+  (1) GROUND SURVEY: `web.archive.org/cdx/search/cdx?url=quantopian.com/posts/*&collapse=urlkey&`
+      `filter=statuscode:200` — 52,187 rows. Per-thread lookup: same query with the slug.
+  (2) STORED-GZIP: `id_` raw captures of quantopian.com are gzip-on-disk (magic `1f8b`) —
+      decompress BEFORE decoding or the page reads as mojibake indistinguishable from a corrupt
+      capture. This is OP-033's cousin at the COMPRESSION layer, same false-negative shape.
+  (3) SINGLE-QUOTE ATTRIBUTES: the markup uses `class='post-container'` — a grep for
+      `class="post` silently zero-hits. Structure: one `post-container` (OP) + N
+      `post-container response-container` blocks, each with `author-name`, `posted-at`,
+      `response-text`. Split on the response-container div and regex per block.
+  (4) OP OFTEN MISSING: late-2020 captures frequently omit the OP body (login-gated render)
+      while ALL replies survive. Do not discard the capture — reconstruct the OP from reply
+      quotes, and expect the COMPLETE final code verbatim in late replies: when the shutdown
+      was announced (2020-10-28), users began pasting full source into reply text because
+      attachments were dying. The best-preserved code is at the END of big threads.
+  (5) DIASPORA IS IN THE LAST WEEK: replies dated after the shutdown announcement are an
+      explicit, named record of where each community moved (QuantConnect canonical; Quantiacs
+      futures branch; self-host branch = yfinance + IBridgePy/PythonAnywhere/EC2; plus
+      closed-group Slacks — existence noteable, content out of s13 scope).
+adaptations: any Rails/Discourse-era platform archive (BigQuant, FMZ, JoinQuant BBSs, Quantiacs'
+  dead forum): expect the same login-walled-OP + surviving-replies shape, and mine the final
+  weeks of any DYING platform for both verbatim code and diaspora pointers. Pair with OP-021
+  (board-tail era-seek) for section-by-section exhaustion, and check CDX capture count FIRST
+  (OP-031's precondition) before promising history.
+counterfactual: HIGH on trap 2/3 — either one silently zero-hits the whole 52k-thread archive and
+  would have produced a false "Quantopian forum is not recoverable from Wayback" conclusion,
+  closing the region's largest finite era mine on a method artifact.

@@ -6,7 +6,7 @@ _Seeded 2026-07-18; every family unvisited -- the first run biases per the rotat
 |---|---|---|---|
 | Podcasts/interviews | 2026-07-19 | 1 | 1 ep (Pavel Kycek, algoadvantage.substack.com) — CLAIM-grade, generic momentum+meanrev, no mechanism; 0 cards |
 | YouTube/talks | never | 0 | untouched this session — priority next run |
-| Forums (deep+legacy) | 2026-07-25 | 1 | EN frontier miner: Bitcointalk ERA-ARCHAEOLOGY opened — boards 8 (Trading Discussion, 18,640 topics, 2011-14 era = offsets 14480-18640) + 78 (Securities, 2,376 topics) mapped via OP-021; topics 261086/95760/171349/330209/339040/14466 mined to reply-depth → 3 graveyard entries + EN era lexicon. Wilmott/EliteTrader/Nuclear Phynance still never touched |
+| Forums (deep+legacy) | 2026-07-28 | 2 | s1 (07-25): Bitcointalk ERA-ARCHAEOLOGY opened — boards 8+78 mapped via OP-021; 6 topics mined to reply-depth → 3 graveyard entries + EN era lexicon. **s2 (07-28, session D): QUANTOPIAN ARCHIVE opened + mapped — 52,187 threads confirmed in Wayback (the whole forum); In&Out thread (108 posts) + its live-trade continuation (13) mined to EXHAUSTION → graveyard `era_inout_regime_rotation` (the community's own decomposition kills the crypto port), inbox #71, WS-003 4th confirmation, OP-034 + Quantopian-stratum lexicon, and the full named diaspora record (QC canonical / Quantiacs futures / self-host branch).** Wilmott/EliteTrader/Nuclear Phynance still never touched |
 | Social (X/Discord/Substack) | 2026-07-19 | 1 | 3 Substacks fetched (Maverick Quant, quantjourney [paywalled], algoadvantage) — 0 cards, mostly explainer/content-marketing grade |
 | Code (GitHub/Kaggle) | 2026-07-19 | 1 | operator-named dig: ai_quant_trade, Qbot, QuantDinger, Vibe-Trading (READMEs+issues) + Hummingbot/Freqtrade issues — all infra/framework shells or equity factor zoos, 0 crypto-perp strategy logic; 0 cards but confirmed funding-arb is now commoditized into hummingbot's v2_funding_rate_arb.py (crowding evidence) |
 | Academic (SSRN/arXiv) | never | 0 | untouched this session (RSRS is sell-side research, not SSRN/arXiv) — priority next run |
@@ -158,6 +158,131 @@ ITEM 1 RESULTS (all from live probes this run):
   administrator families disseminated free through the exchange. NOT new signal axes (redundant
   SOURCES for prices the desk can already compute) — no Stage-A owed on those; the one genuine
   axis-candidate is the PBT basis/regulated-funding series, handled next.
+**[SESSION D 2026-07-28: session C DIED here — the PBT axis-candidate was NEVER handled (zero
+mentions in watchlist/universe map as of session D start). Session C item 2 (Quantopian) and
+item 3 (bithumb ToS) also not started. Taken over by session D below.]**
+
+### 2026-07-28 session D (EN frontier miner) — IN PROGRESS (write-first note; updated as items resolve)
+PRIOR STATE (resume rule): mine gate BACKLOG-CLEAR (all 5 carded finds disposed). Backlog
+verify-queue surfaces Kaiko + NAVER, but BOTH were verified 2026-07-26 by session C (NAVER: §33
+deferred(2026-08-09), sole blocker = human key step — re-probing today is duplication, not
+verification; Kaiko: stays needs-monitoring on raw ticks only, fixings route found). NOT re-run.
+Session C died mid-run with its PBT deliverable unwritten — resume mandate says finish the dead
+run's item before opening new ground.
+ITEMS THIS RUN (bounded per completion contract):
+1. **FINISH SESSION C's UNFINISHED ITEM: Cboe PBT (Continuous Bitcoin futures) basis axis.**
+   Graveyard/novelty-check the regulated-basis family first; card into data_axis_watchlist +
+   universe map; pull the free daily settlement history (route session C verified:
+   `cboe.com/us/futures/market_statistics/settlement/csv/?dt=`); declare timestamp alignment;
+   run `libs.research.axis_screen` Stage-A in this run (expect UNDERPOWERED at n≈140 — an honest
+   verdict, logged, with forward accrual). Also write the T1a line-589 upgrade session C promised
+   if it is unwritten.
+2. **QUANTOPIAN ARCHIVE DIG (era-archaeology, dark-forest #1; the carried diaspora target):**
+   find the durable public archive route (s13-gated), map the ground, mine ≥2 strategy threads
+   to reply-depth. Standing diaspora question: where did the named high-value authors go.
+3. IF BUDGET REMAINS: Wilmott first touch (never visited per coverage row).
+STATUS: **items 1 and 2 CLOSED to depth; item 3 not started (named, not buried). Full results below.**
+
+#### ITEM 1 — CLOSED. Session C's dead PBT deliverable finished, and the axis is BIGGER than C knew. [§33: screened -> data/cfe_regulated_basis_screen.json]
+- **The axis is a COMPLEX, not one contract.** Session C saw PBT only. The same free CSV
+  (`cboe.com/us/futures/market_statistics/settlement/csv/?dt=`) carries the full CFE crypto suite:
+  **FBT** monthly BTC futures (4-point term structure), **PBT** Continuous BTC (funding-style,
+  2035 expiry — a US-REGULATED PERP ANALOG), **XBTF** mini, **FET/PET** the Ether pair. Launches
+  measured by probe: FBT+FET 2025-09-29, XBTF 2025-11-26, PBT+PET 2025-12-15.
+- **History pulled in full:** 2,005 rows / 207 trading days / all expiries →
+  `data/cfe_crypto_settlements.jsonl`; derived spot-referenced basis series (DST-aware 16:00-ET
+  alignment, declared) → `data/cfe_regulated_basis_daily.jsonl`.
+- **Novelty gate run BEFORE compute:** graveyard kills (`funding_momentum`, cross-exchange funding
+  dispersion) are offshore-perp constructions; live carry book = offshore funding. Regulated-venue
+  participant set is access-segmented → distinct mechanism. PASS, nearest priors logged.
+- **Stage-A (audited harness, 4 pre-declared cells, levels only, ALL logged):** PBT h1d
+  UNDERPOWERED (n=204, IC 0.007 vs min-detectable 0.137); PBT h5d INSUFFICIENT (n=24); FBT h1d
+  UNDERPOWERED (n=281, IC 0.016 vs 0.117); FBT h5d UNDERPOWERED (n=39). **Honest verdict:
+  uninformative BOTH directions — no edge, no negative; the complex is 10 months old. Accrues
+  free daily; re-screen dated on card 22 (2027).** Informative descriptives: FBT carry mean
+  +6.73% ann (range −5.67%→+15.79%); PBT premium std 0.09% — the regulated funding mechanism
+  binds tight to spot. Hazard logged: PBT prem same-period corr 0.434 (spot in denominator) —
+  future screens use the PBT-minus-FBT or regulated-minus-offshore SPREAD.
+- **TRAP CAUGHT (verify-don't-trust paying out):** `cdn.cboe.com/api/global/delayed_quotes/charts/
+  historical/{SYM}.json` returns 200 with plausible daily OHLCV for "FBT"/"PBT"/"XBTF" — but it is
+  the EQUITY namespace (First Trust Biotech ETF, Permian Basin Royalty Trust, delisted VanEck ETF).
+  Caught only by cross-checking one known settlement value (64,212 vs 246.74). Logged in universe
+  map as trap; generalization → operator library.
+- Routed: watchlist **card 22** (grade verified-clean, §33 screened) + universe map source 60
+  (`cboe_cfe_crypto_settlements`) + 3 research-memory rows (1 dataset validated, 2 hypothesis
+  screening incl. the uninformative verdicts) + **T1a line-589 upgraded** (Kaiko index values:
+  NO → PARTIAL-daily via PBT settle as a proxy with measured 0.09% error bound — session C's
+  promised upgrade, now actually written).
+
+#### ITEM 2 — CLOSED to depth. Quantopian archive OPENED + GROUND MAPPED; 2 threads exhausted. [§33: killed -> docs/graveyard.md era_inout_regime_rotation]
+GROUND (the finite era mine, measured): **52,187 unique forum threads archived in Wayback**
+(CDX statuscode:200, urlkey-collapsed) — essentially the whole forum. Durable route = Wayback
+directly (GitHub mirrors checked: 2 repos, tiny/unlicensed — Wayback wins on s13 + completeness).
+Extraction traps hit and solved → **OP-034** (stored-gzip `1f8b` captures; single-quote HTML
+attributes; OP body login-walled but ALL replies survive; final code pasted verbatim in the dying
+platform's last weeks). 52,187 threads is NOT exhausted and no such claim is made — two threads
+are, and the recipe now makes the rest cheap.
+- MINED TO EXHAUSTION (all replies, full text): `posts/new-strategy-in-and-out` (108 posts,
+  Oct 4 – Nov 2020, the era's flagship collaborative strategy thread) + its explicit continuation
+  `posts/live-slash-paper-trade-the-in-out-stragegy` (13 replies, reply-chain follow from R98 —
+  the depth move, not a second surface pick).
+- FINDINGS ROUTED:
+  → **graveyard `era_inout_regime_rotation`** (pre-emptive kill of "port In&Out to crypto"): the
+    thread's OWN decomposition shows bonds out-leg = +123% (~6.5%/yr) of the 942% total; the
+    short-SPY swap collapses returns (out-signal precision too low to trade directionally); ±1
+    parameter step costs 25-40%; same-idea variants diverge 2× YTD. Crypto translation: the
+    out-leg is stables+funding — the desk's carry book ALREADY harvests it; the residual timing
+    layer is the 3×-killed overlay class. The community falsified its own strategy in-thread and
+    never named it that; era archaeology harvests the falsification for free.
+  → **inbox #71** (signal sources need PRECISION, not liquidity — "we don't want exposure, just
+    the price differences"; rejection of a signal input on liquidity grounds must name the traded
+    leg affected or it is void; includes the era's own verification method, correlation-vs-ground
+    -truth with the asof-date alignment fix — same hazard class as the desk's bithumb kill).
+  → **WS-003 post-promotion confirmation** (4th platform/era): the OP was ABSENT from the capture
+    and every load-bearing finding lived in replies — bond-beta decomposition R15/R40/R41,
+    rebalance-artifact catch R82/R83, ratio-instability demo R88, complete final code R106.
+  → **operator library**: OP-034 + the Quantopian-stratum lexicon (In&Out/OUT_DAY/magic numbers/
+    handles-as-diaspora-tracers) + the SECOND-STRATUM COROLLARY: on platform archives the
+    "search the rail" heuristic INVERTS — search the STRATEGY, follow the HANDLE.
+- **DIASPORA (standing question ANSWERED for this community, explicitly, in-thread):**
+  QuantConnect = canonical destination (R100/R104 name it; Kyle Oates explicitly organizes
+  "capture the main thread on QC", which happened — the QC "Amazing returns" superthread);
+  Quantiacs = the futures branch (Tentor Testivis, toolbox installable without signup);
+  self-host branch = yfinance/pandas_datareader + IBridgePy/PythonAnywhere/EC2 (motivated
+  in-thread by platform-risk: "dependent on external infrastructure which can be shut down any
+  day" — a lesson learned in real time); one closed-group Slack (existence noted, content out of
+  s13 scope permanently). Named leaders to trace on QC: Tentor Testivis, Dan Whitnable, Vladimir,
+  Thomas Chang, Peter Guenther, Guy Fleury.
+DEPTH LINE (per mandate, honest):
+- In&Out thread: **exhausted** — OP reconstructed from quotes (capture login-walled it), all 107
+  replies read in full, reply-chain link followed to its continuation thread, final code recovered
+  verbatim from two independent replies.
+- Live-trade thread: **exhausted** (13/13 replies).
+- Quantopian archive as a whole: **mapped, NOT exhausted** — 52,187 threads; per-item exhaustion
+  claims only, per the completion contract.
+ITEM 3 (Wilmott): **NOT STARTED** — named, not buried; remains the next-run candidate.
+NEXT RUN TAKES FIRST: (1) OLMAR thread cluster (`posts/olmar-*`, 9 archived captures located this
+run — 2013 era, on-line portfolio selection + its era debunking); (2) "Quality Companies in an
+Uptrend" (the companion superthread — its combination experiment posts); (3) Wilmott first touch.
+STANDING DIASPORA QUESTION (next layer): the QC "Amazing returns" superthread itself — mine it for
+what the In&Out community DISCOVERED after 2020 (did the strategy survive out-of-sample? The
+2022 bond crash is the natural experiment the era never saw — free forward-validation evidence).
+PROACTIVE BATTERY (moves run this session, per standing duty):
+- #2 ADJACENCY: OP-033's encoding-trap SHAPE recurred one layer down — stored-GZIP captures render
+  as identical mojibake; solved and written as a paired class into OP-034. Also applied to the
+  session-death shape: sessions A and C both died before writing, so D committed item 1 to remote
+  BEFORE opening item 2 (the note is now provably crash-proof, not just write-first).
+- #3 CONFIG-VS-OUTCOME: every "screened/pulled" claim above names its on-disk artifact; the Cboe
+  bulk route was REJECTED because one known settlement value failed to reproduce (64,212 vs
+  246.74) — a 200-with-plausible-dates response is config, not outcome.
+- #9 SCOPE-THE-NEGATIVE: the failed bulk route was scoped to "delayed_quotes serves the EQUITY
+  namespace", not "no bulk route exists"; the 4 UNDERPOWERED screen cells are recorded as
+  "could not tell", not "refuted" — both would have been capability-negatives from route-negatives.
+- #8 NEGATIVE SPACE: the Quantopian archive (52,187 threads) had never been touched by any desk
+  organ despite being a named region ground since 07-20; opened and mapped this run.
+- #4 REGRESSION SWEEP: card 22's grade text contains no pending-substring, so it parses RESOLVED —
+  the new card adds ZERO standing backlog burden (checked against source_backlog._classify rules).
+  Moves #1/#5/#6/#7/#10 produced nothing beyond the above this run — reported as such, not skipped.
 
 ## SESSION NOTES — CN frontier miner
 
@@ -298,3 +423,50 @@ board-tail pagination + OP-020 whole-thread extraction, now that OP-033 makes th
 OPEN QUESTION CARRIED (diaspora, standing): CNY OTC has left Huobi (`totalCount=0` on a live 200) — the
 books are now on OKX C2C and Binance P2P. Where did the *discussion* go? (OKX/Bitget/Gate CN
 communities, CN-language Telegram/X, overseas Zhihu mirrors.)
+
+### 2026-07-28 session 2 (CN frontier miner) — IN PROGRESS (write-first note; updated as items resolve)
+Mine gate: BACKLOG-CLEAR (all 5 prior finds disposed). Generation priors read: only measured class
+is data_axis_watchlist (50% conversion, 0.25d latency) — favoured; nothing starved.
+
+ITEMS THIS RUN (bounded per completion contract):
+1. **VERIFY-QUEUE DISPOSITION (small, defect-closer):** `source_backlog_next.py` surfaces Kaiko +
+   NAVER as "VERIFY this cycle" for the 3rd straight session, though session C (07-26) verified
+   both. Confirm the artifacts, then row ONE finding on the queue-design leak (monitoring/deferred
+   cards re-surface as actionable verification forever) instead of hand-waving past it again.
+2. **ERA-ARCHAEOLOGY MAIN (carried pointer #1): section-by-section 8btc `forum-*` exhaustion via
+   Wayback** — OP-021 board-tail era-seek + OP-020 Discuz-archiver route + OP-033 GBK decode.
+   Target era: 2013-2017 搬砖/套利/庄家 strategy threads. Graveyard-check before carding.
+3. IF BUDGET REMAINS (carried pointer #2): ChainNode forum-108/110 CDX survey, or Gitee OP-001 chain.
+STATUS: run in progress — see per-item results below.
+
+#### ITEM 1 — CLOSED. Artifacts confirmed, finding rowed as F0002.
+Config-vs-outcome check run: `data/kaiko_vwm_reference_rate.jsonl` EXISTS (132 rows, 2026-07-26) —
+session C's §33 wired claim is artifact-backed; NAVER collector exists, `data/secrets/naver.json`
+still absent → genuinely credential-blocked, deferral to 2026-08-09 stands. Neither card is
+actionable by a miner. **F0002 rowed (accepted, low):** the verify-queue lists standing-monitoring
+and dated-deferred cards as "VERIFY this cycle" forever; 3 sessions re-derived non-actionability by
+hand. Fix direction ledgered (MONITORING queue + honour §33 deferral dates); parser is libs/,
+frozen for miners, so the row is the handoff.
+
+#### ITEM 2 — IN PROGRESS (durable mid-run state; final synthesis below when closed)
+GROUND SURVEY DONE: 8btc CDX = **69,124 unique thread-page captures + 866 forum-listing captures,
+2013-09 → 2018-08**; `archiver/` route NOT archived (2 captures, index only) — extraction must go
+through themed pages. Board map extracted from 2013-10-26 forum.php (GBK): forum-2 比特币 (main),
+**forum-54 汇率/行情 = the strategy board**, 36 商业/市场, 48 投资/股票, 63 经济/学院.
+LISTINGS HARVESTED (28 era captures, GBK, absolute-URL regex — see extraction traps in OP entry):
+board-2 452 unique tids (14 captures, 2013-09→2014-06), board-54 261 unique tids (13 captures,
+2013-09→2017-11, landing ON the regime events: 2013-12 PBOC, 2014-02 Gox, 2017-01 zero-fee end,
+2017-09-15 = 11 days post-'94'). Catalogs → data/8btc_era_thread_catalog.jsonl.
+THREADS MINED TO REPLY-DEPTH (7): tid 947 (2013 domestic-banzhuan workflow — XRP rail via Bitstamp
+ALREADY in 2013-09), 1101 (2013-10 cross-venue aggregator + API auto-trade tooling; 貔貅 bot
+name-drop), 10886 (2014-10 "无风险搬砖" tutorial — replies debunk: custody/venue risk dominates,
+M网=Mintpal died mid-thread; **bots crowded out manual arb by 2014-10**), 21637 (2015-08 Bitfinex
+cold-wallet flow-watching via blockmeta — retail already flow-trading in 2015 = crowding prior),
+836 (2013-09 CN translation of Hawkes/branching-ratio trade-clustering piece), 63748 (2017-06
+ideavista: **premium regime rule >10% bull / <5% bear; per-asset rail equilibrium — LTC premium
+compresses to ~3% = its rail-cost advantage; live cross-asset dispersion trade LTC+9% vs BTC+5%**),
+39588 (2016-09 inverse-premium era: foreign>domestic, arb domestic-only, 币看 monitoring).
+tid 6991 (buy/sell-wall observation thread) 404s on thread-6991-1-1.html — recorded, dropped.
+PENDING IN-RUN (screen-on-discovery duty): novelty-gate + Stage-A screen of the surfaced axis
+**per-asset premium dispersion in a barriered market (KR per-asset KRW books — CN books are
+USDT-only post-2021, mechanism not reconstructable in-region)**; graveyard/lexicon/operator routing.

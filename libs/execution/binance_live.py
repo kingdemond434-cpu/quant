@@ -32,6 +32,18 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
+from libs.core.logging import get_logger
+
+# OBSERVABILITY (gap #56, 2026-07-29). The desk already OWNED a structured logger with
+# correlation ids and secret redaction (libs/core/logging.py) and NOTHING below the script
+# boundary used it -- 1 of 318 modules. That is an activation gap, not a missing capability, so
+# nothing new was built: this is the money path adopting the convention the desk already has.
+# The library NEVER configures handlers or levels (the owning script does, via
+# configure_logging), so importing this cannot change any current output.
+# NEVER LOG: api key, secret, signature, or the signed query string -- fenced by
+# tests/execution/test_obs_logging.py, which scans this file's log calls.
+_log = get_logger(__name__)
+
 _BASE = "https://fapi.binance.com"              # PINNED live futures -- verified against docs
 _KEYFILE = Path("data/secrets/binance_live.json")
 _ENABLE_FLAG = Path("data/LIVE_ENABLE")
@@ -76,6 +88,9 @@ def _get(path: str, params: dict[str, Any] | None = None) -> Any:
 def _signed(path: str, params: dict[str, Any], *, method: str = "GET") -> Any:
     armed, why = is_armed()
     if not armed:
+        # A refused signed call is a decision worth a trail: post-incident forensics needs to
+        # distinguish "the desk never tried" from "the venue rejected it".
+        _log.warning("signed call REFUSED, not armed: path=%s reason=%s", path, why)
         raise RuntimeError(f"binance_live not armed ({why}) -- refusing signed call {path}")
     key, secret = _creds()
     assert key is not None and secret is not None  # armed (checked above) => creds present
@@ -274,12 +289,58 @@ def set_leverage(symbol: str, leverage: int) -> None:
         return
 
 
-def place_market(symbol: str, side: str, qty: float) -> dict[str, Any]:
-    """Place a reduce-or-open market order. ``side`` in {BUY, SELL}; qty > 0."""
-    res = _signed("/fapi/v1/order", {
-        "symbol": symbol, "side": side, "type": "MARKET", "quantity": qty,
-    }, method="POST")
-    return dict(res) if isinstance(res, dict) else {"raw": res}
+_MKT_MAX_CACHE: dict[str, float] = {}
+
+
+def _market_max_qty(symbol: str) -> float:
+    """Venue MARKET_LOT_SIZE cap for ``symbol``, cached. inf when unknown (never invent a limit).
+
+    Added 2026-07-27 after COOKIEUSDT (maxQty 150,000) rejected every 183,140 market order with
+    -4005, pushing the executor onto its resting-limit fallback, whose accumulated fills walked a
+    short through zero into a +916,772 long.
+    """
+    if symbol in _MKT_MAX_CACHE:
+        return _MKT_MAX_CACHE[symbol]
+    cap = float("inf")
+    try:
+        info = _get("/fapi/v1/exchangeInfo")
+        for s in info.get("symbols", []):
+            for f in s.get("filters", []):
+                if f.get("filterType") == "MARKET_LOT_SIZE":
+                    _MKT_MAX_CACHE[s["symbol"]] = float(f["maxQty"])
+        cap = _MKT_MAX_CACHE.get(symbol, float("inf"))
+    except Exception:
+        pass                                  # unknown cap -> behave exactly as before
+    _MKT_MAX_CACHE[symbol] = cap
+    return cap
+
+
+def place_market(symbol: str, side: str, qty: float,
+                 reduce_only: bool = False) -> dict[str, Any]:
+    """Place a market order, SPLIT to respect the venue MARKET_LOT_SIZE cap.
+
+    ``reduce_only=True`` makes the order arithmetically incapable of passing through zero and
+    opening the opposite position -- mandatory on any cover/close leg.
+    """
+    cap = _market_max_qty(symbol)
+    _log.info("place_market symbol=%s side=%s qty=%s reduce_only=%s chunk_cap=%s",
+              symbol, side, qty, reduce_only, cap)
+    remaining, last, n = float(qty), None, 0
+    while remaining > 0 and n < 50:
+        chunk = min(cap, remaining) if cap != float("inf") else remaining
+        params = {"symbol": symbol, "side": side, "type": "MARKET", "quantity": chunk}
+        if reduce_only:
+            params["reduceOnly"] = "true"
+        last = _signed("/fapi/v1/order", params, method="POST")
+        remaining -= chunk
+        n += 1
+    if n >= 50:
+        # The split loop's own bound was silent: hitting it means the order did NOT fully place.
+        _log.error("place_market symbol=%s hit the 50-chunk bound with %s remaining -- "
+                   "order is INCOMPLETE", symbol, remaining)
+    _log.info("place_market DONE symbol=%s chunks=%s order_id=%s",
+              symbol, n, (last or {}).get("orderId") if isinstance(last, dict) else None)
+    return dict(last) if isinstance(last, dict) else {"raw": last}
 
 
 def place_post_only(symbol: str, side: str, qty: float, price: float) -> dict[str, Any]:
@@ -288,6 +349,9 @@ def place_post_only(symbol: str, side: str, qty: float, price: float) -> dict[st
         "symbol": symbol, "side": side, "type": "LIMIT", "timeInForce": "GTX",
         "quantity": qty, "price": price,
     }, method="POST")
+    _log.info("place_post_only symbol=%s side=%s qty=%s price=%s order_id=%s",
+              symbol, side, qty, price,
+              res.get("orderId") if isinstance(res, dict) else None)
     return dict(res) if isinstance(res, dict) else {"raw": res}
 
 
@@ -298,6 +362,11 @@ def place_stop_market(symbol: str, side: str, qty: float, stop_price: float) -> 
         "symbol": symbol, "side": side, "type": "STOP_MARKET", "quantity": qty,
         "stopPrice": stop_price, "reduceOnly": "true",
     }, method="POST")
+    # The venue-side protective stop is the rail that survives host death: its placement is the
+    # single most important line in any live-session log.
+    _log.info("place_stop_market (RUIN RAIL) symbol=%s side=%s qty=%s stop=%s order_id=%s",
+              symbol, side, qty, stop_price,
+              res.get("orderId") if isinstance(res, dict) else None)
     return dict(res) if isinstance(res, dict) else {"raw": res}
 
 

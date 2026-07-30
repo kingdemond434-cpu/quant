@@ -23,7 +23,7 @@ import numpy as np
 import pandas as pd
 
 from libs.autodiscovery.models import Family, Hypothesis
-from libs.autodiscovery.validation import campaign_pbo_rc, validate
+from libs.autodiscovery.validation import campaign_gate_stats, validate
 from libs.data.crypto_source import list_liquid_perps
 from libs.data.instruments import AssetClass, InstrumentSpec, register_instrument
 from libs.data.lake import Layer, ParquetLake
@@ -80,12 +80,14 @@ def main() -> None:
     matrix = np.column_stack([cc[-n:], fc[-n:]])
     corr = float(np.corrcoef(cc[-n:][(cc[-n:] != 0) | (fc[-n:] != 0)],
                              fc[-n:][(cc[-n:] != 0) | (fc[-n:] != 0)])[0, 1])
-    pbo, rc = campaign_pbo_rc(matrix)
+    # per-candidate gates (gap #87 flip, principal-ruled 2026-07-29); thresholds unchanged
+    campaign = campaign_gate_stats(matrix)
     sharpes = np.array([sharpe_ratio(cc[cc != 0]), sharpe_ratio(fc[fc != 0])])
     v = validate(cc[cc != 0.0], hypothesis=Hypothesis(
         family=Family.CARRY, subtype="cash_and_carry", symbol="CRYPTO", params={},
         mechanism=MechanismType.RISK_PREMIUM, edge_source="cash_and_carry", failure_modes=_FAIL),
-        n_trials=2, sharpe_estimates=sharpes, returns_matrix=matrix, pbo=pbo, rc=rc)
+        n_trials=2, sharpe_estimates=sharpes, returns_matrix=matrix,
+        campaign=campaign, column=0)  # cc = matrix column 0 (fc is the peer baseline, column 1)
 
     cc_s, fc_s = _stats(cc), _stats(fc)
     out = {
@@ -94,13 +96,20 @@ def main() -> None:
         "days": int(n), "symbols": int(close.shape[1]),
         "cash_and_carry": {**cc_s, "gates": f"{sum(v.gates.values())}/{len(v.gates)}",
                            "survived": bool(v.survived),
+                           # per-candidate gate values (gap #87): what cash_and_carry itself earned
+                           "pbo": round(float(v.metrics.pbo), 3),
+                           "reality_p": round(float(v.metrics.reality_p), 3),
                            "failed_gates": [k for k, ok in v.gates.items() if not ok]},
         "perp_only_funding_carry": fc_s,
         "sharpe_uplift": round(cc_s["ann_sharpe"] - fc_s["ann_sharpe"], 2),
         "vol_reduction": round(fc_s["ann_vol"] - cc_s["ann_vol"], 3),
         "correlation_to_perp_carry": round(corr, 3),
-        "pbo": round(float(pbo.pbo), 3) if pbo else None,
-        "reality_check_p": round(float(rc.p_value), 3) if rc else None,
+        # campaign-level legacy PBO/RC kept as SEARCH-PROCEDURE diagnostics (gap #87); the gate
+        # values are per-candidate now -- see cash_and_carry.pbo / cash_and_carry.reality_p.
+        "pbo": (round(float(campaign.legacy_pbo.pbo), 3)
+                if campaign is not None and campaign.legacy_pbo is not None else None),
+        "reality_check_p": (round(float(campaign.legacy_rc.p_value), 3)
+                            if campaign is not None and campaign.legacy_rc is not None else None),
         "verdict": ("UPGRADE: higher Sharpe / lower variance than perp-only carry -- spot hedge "
                     "removes directional MTM noise. Low corr to funding_carry, so it both upgrades "
                     "carry AND adds some breadth. Fails only fragility (edge concentrates in "

@@ -1,0 +1,7 @@
+{
+ "best_ratio": 6.8383,
+ "commission_7d": 143.97,
+ "funding_7d": 21.05,
+ "updated": "2026-07-27T12:15:11.806952+00:00",
+ "note": "\u00a740 ratchet: fees as a fraction of funding earned. Ratchets DOWN only -- a material worsening is a defect, never a new normal."
+}

@@ -23,21 +23,106 @@ _MIN_N = 15            # a class needs this many trades before its verdict is tr
 _WINDOW_D = 14.0       # ROLLING window: all-history flags would re-page forever even
                        # after fixes work; the question is "is it bleeding NOW"
 _BLEED_BPS = -1.0      # class net worse than this (bps of notional) = defect
+_FEE_RT_BPS = 10.0     # futures leg billed twice per round-trip at ~5 bps taker rack rate
+_FEE_BPS_MAX = 50.0    # 5x that -- generous for maker/taker mix + partials, so anything above
+                       # is fills the book never intended, not an execution-quality gradient
 _BASELINE = 0.000100   # Binance default funding -- entry gate should keep these at zero
 # entry-gate ship time -- any open at baseline funding AFTER this is a gate regression
 _GATE_DATE = "2026-07-22T20:00:00+00:00"
 
 
-def _buckets(closes: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+_BUCKETS = (("<2h", 0.0, 2.0), ("2-8h", 2.0, 8.0), ("8-24h", 8.0, 24.0), (">24h", 24.0, 1e9))
+
+
+def _buckets(closes: list[dict[str, Any]],
+             fees: dict[int, float] | None = None) -> dict[str, dict[str, Any]]:
+    """Hold-class economics. With ``fees`` (id(trade) -> venue commission) the net is charged the
+    actual fee bill; without it the net is the trade log's own fee-blind figure."""
     out: dict[str, dict[str, Any]] = {}
-    for lbl, lo, hi in (("<2h", 0.0, 2.0), ("2-8h", 2.0, 8.0),
-                        ("8-24h", 8.0, 24.0), (">24h", 24.0, 1e9)):
+    for lbl, lo, hi in _BUCKETS:
         g = [x for x in closes if lo <= float(x.get("held_hours") or 0) < hi]
         nt = sum(float(x.get("notional") or 0) for x in g)
         net = sum(float(x.get("net") or 0) for x in g)
-        out[lbl] = {"n": len(g), "notional": round(nt, 2), "net": round(net, 2),
-                    "bps": round(1e4 * net / nt, 2) if nt else 0.0}
+        row = {"n": len(g), "notional": round(nt, 2)}
+        if fees is not None:
+            fee = sum(fees.get(id(x), 0.0) for x in g)
+            net -= fee
+            row["fee"] = round(fee, 2)
+        row["net"] = round(net, 2)
+        row["bps"] = round(1e4 * net / nt, 2) if nt else 0.0
+        out[lbl] = row
     return out
+
+
+def _ms(stamp: Any) -> int | None:
+    try:
+        return int(datetime.fromisoformat(str(stamp)).timestamp() * 1000)
+    except Exception:
+        return None
+
+
+def _fee_attribution(closes: list[dict[str, Any]], since_ms: int) -> dict[str, Any]:
+    """Charge each logged round-trip the commission the VENUE actually billed for it.
+
+    ORIGIN (2026-07-28). Every economic verdict this organ produces was computed from the trade
+    log's ``net`` = price_pnl + est_funding. Neither term contains a fee: ``_tca`` records
+    slippage-vs-mid only. So the hold-class verdicts, the symbol blacklist, and the forward track
+    record that Gate 0 will size REAL capital on all omitted the dominant cost of the trade -- and
+    this organ's own comment already called fees "the primary unit-economics lever". Disclosed and
+    not gated is an open defect, so the gate is built here.
+
+    The join is (symbol, open<=event<=close). The book holds at most one carry per symbol at a
+    time, so those windows never overlap and each event is claimed by at most ONE trade; whatever
+    is left over is UNATTRIBUTED -- commission the venue charged against no round-trip this book
+    believes it made. That residual is the churn-loop fingerprint measured directly (the loop
+    billed $1,746.66 against ~$126 of logged round-trips), so it is reported rather than spread
+    silently over the trades that happen to be nearby.
+
+    FUTURES COMMISSION ONLY -- /fapi income cannot see spot-leg fees, so this is a LOWER BOUND on
+    the true bill and is labelled as one. A venue that cannot be read yields no fee-adjusted
+    verdict at all: an unmeasured cost reported as zero is the phantom this whole organ exists to
+    prevent.
+    """
+    try:
+        from libs.execution import binance_testnet as _fut
+        events = _fut.commission_events(since_ms)
+    except Exception as e:                       # venue unreachable is not a fee defect
+        return {"error": f"{type(e).__name__}: {e}",
+                "note": "venue unreachable -- no fee-adjusted verdict this run"}
+
+    spans: dict[str, list[tuple[int, int, dict[str, Any]]]] = defaultdict(list)
+    for x in closes:
+        o, c = _ms(x.get("opened")), _ms(x.get("closed"))
+        if o is not None and c is not None:
+            spans[str(x.get("symbol"))].append((o, c, x))
+    for v in spans.values():
+        v.sort(key=lambda r: r[0])
+
+    fees: dict[int, float] = {}
+    attributed = unattributed = 0.0
+    for ev in events:
+        amt = float(ev["commission"])
+        for o, c, tr in spans.get(ev["symbol"], ()):
+            if o <= ev["time"] <= c:
+                fees[id(tr)] = fees.get(id(tr), 0.0) + amt
+                attributed += amt
+                break
+        else:
+            unattributed += amt
+
+    venue_total = attributed + unattributed
+    logged_nt = sum(float(x.get("notional") or 0) for x in closes)
+    return {
+        "_fees": fees,                                    # popped before publish (id-keyed)
+        "venue_commission": round(venue_total, 2),
+        "attributed": round(attributed, 2),
+        "unattributed": round(unattributed, 2),
+        "unattributed_share": round(unattributed / venue_total, 3) if venue_total else None,
+        "n_events": len(events),
+        "fee_bps_of_logged_notional": (round(1e4 * venue_total / logged_nt, 2)
+                                       if logged_nt else None),
+        "scope": "futures commission only (/fapi income); spot-leg fees not visible -> LOWER BOUND",
+    }
 
 
 def _leg_share(trades: list[dict[str, Any]], key: str) -> float | None:
@@ -85,6 +170,42 @@ def main() -> None:
         if b["n"] >= _MIN_N and b["bps"] < _BLEED_BPS:
             flags.append(f"hold-class {lbl} bleeding: {b['bps']} bps over {b['n']} trades "
                          f"(net ${b['net']})")
+
+    # VENUE-TRUTH COST (2026-07-28). Everything above this line is fee-blind; everything below
+    # charges the bill the exchange actually sent. Both are published because the DIVERGENCE is
+    # the diagnostic -- replacing one number with the other would hide the measurement gap that
+    # let a $1,750 fee fire read as a break-even book.
+    since_ms = int((datetime.now(tz=UTC) - timedelta(days=_WINDOW_D)).timestamp() * 1000)
+    fee_attr = _fee_attribution(closes, since_ms)
+    fees = fee_attr.pop("_fees", None)
+    hold_nof: dict[str, dict[str, Any]] | None = None
+    if fees is not None:
+        hold_nof = _buckets(closes, fees)
+        for lbl, b in hold_nof.items():
+            if b["n"] < _MIN_N or not b["notional"]:
+                continue
+            if b["bps"] < _BLEED_BPS <= hold[lbl]["bps"]:
+                flags.append(f"hold-class {lbl} is NET-OF-FEE NEGATIVE ({b['bps']} bps, fee "
+                             f"${b['fee']}) while its fee-blind net reads {hold[lbl]['bps']} bps "
+                             "-- the logged verdict was an artifact of not charging the trade")
+            # FEE INTENSITY is the execution-integrity measure, and it generalises past the churn
+            # loop: a carry round-trip bills the futures leg twice (~5 bps taker each), so a class
+            # paying many multiples of that is being charged for fills the book never intended,
+            # whatever the mechanism. A sign test alone misses this -- the 07-28 fire landed on a
+            # class ALREADY flagged bleeding, so it moved -42 -> -635 bps in silence.
+            fbps = 1e4 * b["fee"] / b["notional"]
+            if fbps > _FEE_BPS_MAX:
+                flags.append(f"FEE INTENSITY hold-class {lbl}: ${b['fee']} on ${b['notional']:.0f} "
+                             f"= {fbps:.0f} bps, {fbps / _FEE_RT_BPS:.0f}x the ~{_FEE_RT_BPS:.0f} "
+                             "bps a futures round-trip should bill -- the venue is charging for "
+                             "fills this book did not intend (churn-loop fingerprint; see "
+                             "max_audit check_close_retry_loop)")
+        share = fee_attr.get("unattributed_share")
+        if share is not None and share > 0.25 and fee_attr["venue_commission"] > 25.0:
+            flags.append(f"UNATTRIBUTED COMMISSION {fee_attr['unattributed']} of "
+                         f"{fee_attr['venue_commission']} ({share:.0%}) matches no logged "
+                         "round-trip -- the venue is billing against no position this book "
+                         "believes it opened")
 
     # funding-at-open: the class that ate ~80% of gross profit pre-gate
     base = [x for x in closes if abs(float(x.get("funding_rate") or 0) - _BASELINE) < 1e-9]
@@ -147,6 +268,9 @@ def main() -> None:
         "updated": datetime.now(tz=UTC).isoformat(),
         "n_closes": len(closes),
         "hold_buckets": hold,
+        # fee-blind (above) vs venue-truth (below) -- see _fee_attribution
+        "hold_buckets_net_of_fees": hold_nof,
+        "fee_attribution": fee_attr,
         "baseline_funding_class": {"n": len(base), "net": round(bn, 2),
                                    "bps": round(1e4 * bn / bnot, 2) if bnot else 0.0},
         "post_gate_baseline_opens": len(post_gate_base),

@@ -54,7 +54,45 @@ def _fresh(p: Path, max_sec: float) -> bool:
         return False
 
 
+_UNITS = {                                   # script -> the systemd unit that owns it on the VPS
+    "scripts/run_cashcarry_executor.py": "quant-cashcarry.service",
+    "scripts/run_deadman_switch.py": "quant-deadman.service",
+    "scripts/liquidation_listener.py": "quant-liquidations.service",
+    "scripts/serve_dashboard.py": "quant-dashboard.service",
+}
+
+
+def _systemd_owns(script: str) -> bool:
+    """True when systemd already has a LIVE process for this script's unit.
+
+    DUAL SUPERVISION IS THE ORPHAN FACTORY (2026-07-26). This watchdog is laptop-era: it Popen's
+    daemons directly with start_new_session, so anything it starts is owned by cron, not by the
+    unit that also supervises it. On 2026-07-26 that produced an executor orphaned at 12:48 which
+    held the single-instance lock for 8h; every systemd spawn exited on that lock, and with
+    Restart=always the unit respawned against it 5,354 times. Worse, the orphan kept running
+    PRE-FIX code, so the funding-measurement fix committed that evening was inert in the process
+    that actually owned the book -- a committed fix that never shipped.
+
+    So: when systemd has a live main process, never Popen a second one. When it does not, the
+    Popen backstop still fires -- an orphan is recoverable, a dead ruin rail is not, and this box
+    denies `systemctl start` to the quant user, so deferring is the only lever available here.
+    """
+    unit = _UNITS.get(script)
+    if not unit:
+        return False                          # no unit (laptop / new script) -> watchdog owns it
+    try:
+        pid = subprocess.run(["systemctl", "show", "-p", "MainPID", "--value", unit],
+                             capture_output=True, text=True, timeout=10, check=False).stdout.strip()
+    except (OSError, subprocess.SubprocessError):
+        return False                          # cannot tell -> fall through to the backstop
+    return bool(pid) and pid != "0" and Path(f"/proc/{pid}").exists()
+
+
 def _spawn(args: list[str], label: str) -> None:
+    if args and _systemd_owns(args[0]):
+        print(f"watchdog: {label} is systemd-owned and live -- NOT spawning a duplicate "
+              f"(a second instance would orphan the book; the unit's Restart= owns recovery)")
+        return
     _kw = {"creationflags": _DETACHED} if _IS_WIN else {"start_new_session": True}
     subprocess.Popen([str(_PYW), *args], cwd=str(_ROOT),
                      stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,

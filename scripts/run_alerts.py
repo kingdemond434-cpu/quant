@@ -22,6 +22,7 @@ import subprocess
 import sys
 import time
 import urllib.request
+from collections import Counter
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -77,6 +78,13 @@ def _push(topic: str, title: str, body: str) -> None:
     # second-channel mirror (gap #38): fire the independent path FIRST so a failure in
     # the ntfy path (encoding, 429, outage) can never suppress the alert entirely.
     _second_channel(f"{safe_title}: {body}")
+    # ...and every configured channel in the registry (telegram/webhook/email), each independently
+    # wrapped so none can raise into this path. 2026-07-29: this is the half gap #38 was still
+    # missing -- not another channel, but a DELIVERY LEDGER, so "nothing arrived anywhere" becomes
+    # observable instead of being the thing nobody notices for five days.
+    with contextlib.suppress(Exception):
+        from libs.ops.alert_channels import send_all
+        send_all(safe_title, body)
     req = urllib.request.Request(f"https://ntfy.sh/{topic}", data=body.encode(),
                                  headers={"Title": safe_title, "Priority": "high",
                                           "Tags": "rotating_light"})
@@ -85,10 +93,20 @@ def _push(topic: str, title: str, body: str) -> None:
             pass
         if _PAGER_BACKOFF.exists():
             _PAGER_BACKOFF.unlink()
+        _ledger_ok("ntfy", "http 200", safe_title)
     except Exception as e:
         if getattr(e, "code", None) == 429:
             _PAGER_BACKOFF.write_text(str(_t.time() + 3600))
+        _ledger_ok("ntfy", f"{type(e).__name__}: {e}", safe_title, ok=False)
         raise
+
+
+def _ledger_ok(channel: str, detail: str, title: str, *, ok: bool = True) -> None:
+    """Record the PRIMARY path's outcome in the same ledger as the registry channels, so the
+    silence check sees one unified view. Never raises -- a logging failure must not kill a page."""
+    with contextlib.suppress(Exception):
+        from libs.ops.alert_channels import _log
+        _log(channel, ok, detail, title)
 
 
 # --- SILENT-FAILURE DETECTION (2026-07-22) -------------------------------------------------
@@ -237,14 +255,38 @@ def _checks() -> list[tuple[str, str]]:
     try:
         # TWO-STAGE LAW: confirmation slots are the ONLY multiplicity that matters; the
         # bar stays fixed for life only while the concurrent count stays <= 12.
-        _reg = json.loads(Path("data/shadow_sleeves.json").read_text("utf-8"))
-        _standing = 6      # carry, perp_ls, oi_div, ls_contrarian, liq_reversal, stables
-        if len(_reg) + _standing > 12:
+        # The cohort is DERIVED from the clock artifacts (libs.research.slot_registry), never
+        # counted here. This block used to sum an empty registry + a hardcoded `_standing = 6`
+        # + the axis count -- three files each holding a different m, none of them the truth.
+        # Imported locally on purpose: this daemon is what pages the principal, so a bad import
+        # must degrade one alert, never silence the pager.
+        from libs.research.slot_registry import MAX_FORWARD_SLOTS, derive_slots
+
+        _snap = derive_slots()
+        _total = int(_snap["m_concurrent"])
+        _by_kind = Counter(str(s["kind"]) for s in _snap["slots"])
+        _mix = " + ".join(f"{n} {k}" for k, n in sorted(_by_kind.items()))
+        if not _snap["complete"]:
+            # Unreadable is reported, never read as 0: a missing clock shrinks m and LOOSENS
+            # every bar, so silence here would be the phantom-edge direction.
+            out.append(("slot_budget_unreadable",
+                        f"forward-slot sources unreadable ({', '.join(_snap['unknown_sources'])})"
+                        f" -- the concurrent count is a LOWER BOUND ({_total}), not the truth; "
+                        "every clock's Holm bar may be too loose this run"))
+        elif _total > MAX_FORWARD_SLOTS:
             out.append(("slot_budget_exceeded",
-                        f"{len(_reg) + _standing} concurrent confirmation slots > 12 -- "
-                        "the fixed forward bar is only fixed while the cohort is capped; "
-                        "recycle or EV-evict before enrolling more"))
-    except (OSError, json.JSONDecodeError):
+                        f"{_total} concurrent confirmation slots > {MAX_FORWARD_SLOTS} "
+                        f"({_mix}) -- the fixed forward bar is only fixed while the cohort is "
+                        "capped; recycle or EV-evict before enrolling more"))
+        elif _total < MAX_FORWARD_SLOTS:
+            # CLOCK-SATURATION DUTY: an idle slot is idle capital's research twin. The law
+            # pins the cohort always-full-never-over, so under is a defect exactly like over.
+            out.append(("clock_slots_idle",
+                        f"only {_total}/{MAX_FORWARD_SLOTS} confirmation slots accruing "
+                        f"({_mix}) -- {MAX_FORWARD_SLOTS - _total} idle. Every verified axis owes "
+                        "a pre-registered hypothesis within 7 days; an empty clock discovers "
+                        "nothing"))
+    except (OSError, json.JSONDecodeError, ImportError, KeyError, TypeError):
         pass
     if _auth_broken():
         out.append(("auth_broken",
@@ -311,6 +353,23 @@ def _brain_watchdog(state: dict, active: set) -> str | None:
 
 def main() -> None:
     topic = _topic()
+    if "--status" in sys.argv:
+        # gap #38: which channels are ARMED, when each last DELIVERED, and whether everything has
+        # been silent -- the three facts nobody could read before 2026-07-29.
+        from libs.ops.alert_channels import status as _chan_status
+        st = _chan_status()
+        print(f"pager topic: https://ntfy.sh/{topic}")
+        print(f"registry channels armed: {st['armed']} {st['armed_kinds']}")
+        if st["arming_owed"]:
+            print("  NOT-ARMED (human step): data/secrets/alert_channels.json -- ntfy alone is "
+                  "the single point of failure gap #38 exists to remove")
+        print(f"last success per channel: {st['last_success_per_channel'] or 'NONE RECORDED'}")
+        print(f"all channels silent 24h: {st['all_silent_24h']}  "
+              f"SILENT flag: {st['silent_flag_present']}")
+        for row in st["ledger_tail"]:
+            print(f"  {row.get('ts', '?')} {row.get('channel', '?'):9} "
+                  f"ok={row.get('ok')} {row.get('detail', '')}")
+        return
     if "--test" in sys.argv:
         _push(topic, "Quant desk pager: TEST", "pager wired -- you will only hear from me "
               "when something is genuinely wrong")

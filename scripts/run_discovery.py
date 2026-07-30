@@ -21,7 +21,7 @@ import numpy as np
 import pandas as pd
 
 from libs.autodiscovery.models import Family, Hypothesis
-from libs.autodiscovery.validation import campaign_pbo_rc, validate
+from libs.autodiscovery.validation import campaign_gate_stats, validate
 from libs.data.crypto_source import list_liquid_perps
 from libs.data.instruments import AssetClass, InstrumentSpec, register_instrument
 from libs.data.lake import Layer, ParquetLake
@@ -34,6 +34,7 @@ from libs.research.crypto_sleeves import (
     xsec_lowvol_returns,
 )
 from libs.research.crypto_xsec import adv_tier_cost, xsec_funding_returns
+from libs.research.pre_filter import pre_filter
 from libs.validation.dsr import sharpe_ratio
 from libs.validation.economic_prior import MechanismType
 
@@ -141,19 +142,32 @@ def main() -> None:
     corr = df.replace(0.0, np.nan).corr()
     matrix = np.column_stack([lib[k] for k in lib])
     sharpes = np.array([sharpe_ratio(lib[k][lib[k] != 0.0]) for k in lib])
-    pbo, rc = campaign_pbo_rc(matrix)
+    # per-candidate gates (gap #87 flip, principal-ruled 2026-07-29); thresholds unchanged
+    campaign = campaign_gate_stats(matrix)
 
     results = []
-    for name, r in lib.items():
+    for col, (name, r) in enumerate(lib.items()):
         active = r[r != 0.0]
         sh = _ann(r)
         others = corr[name].drop(labels=[name], errors="ignore").abs()
         max_corr = round(float(others.max()), 2) if not others.empty else 0.0
         orthogonal = max_corr < _ORTHO
+        # Tiered pre-filter (HYPOTHESIS_MAX #1, 2026-07-29): cheap unambiguous rejects skip the
+        # heavy gauntlet but STILL count in n_trials -- the filter saves compute, never
+        # multiplicity budget. Borderline always escalates; the bar itself is unchanged.
+        med_cost = float(np.median(list(cost.values()))) if cost else None
+        pf = pre_filter(r, name=name,
+                        rt_cost_per_trade=(2 * med_cost) if med_cost is not None else None)
+        if pf["verdict"] == "REJECT":
+            results.append({"sleeve": name, "sharpe": sh, "gates": "pre-filter",
+                            "max_corr": max_corr, "orthogonal": orthogonal,
+                            "status": f"REJECTED (pre-filter: {pf['reason']})"})
+            continue
         v = (validate(active, hypothesis=Hypothesis(
             family=Family.CARRY, subtype=name, symbol="CRYPTO", params={},
             mechanism=MechanismType.RISK_PREMIUM, edge_source=name, failure_modes=_FAIL),
-            n_trials=len(lib), sharpe_estimates=sharpes, returns_matrix=matrix, pbo=pbo, rc=rc)
+            n_trials=len(lib), sharpe_estimates=sharpes, returns_matrix=matrix,
+            campaign=campaign, column=col)
             if len(active) >= 250 else None)
         gates = f"{sum(v.gates.values())}/{len(v.gates)}" if v else "n<250"
         survived = bool(v.survived) if v else False

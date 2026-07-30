@@ -29,6 +29,8 @@ from typing import Any
 
 import certifi
 
+from libs.ops import principal_page as _pp
+
 _KEYS = Path("data/secrets/llm_panel.json")
 _MISSIONS = Path("prompts/panel_missions")
 _RESP_BUDGET = 20000  # widened to 40k for deep missions at runtime
@@ -65,6 +67,36 @@ _THEMES: dict[str, tuple[str, ...]] = {
 }
 
 
+
+def _doctrine(role: str = "") -> str:
+    """Runtime doctrine preamble. One source (scripts/doctrine.py); never a pasted copy."""
+    try:
+        from scripts.doctrine import preamble
+        return preamble(role)
+    except Exception:  # blind-except intentional (BLE001)
+        try:
+            import sys as _s
+            _s.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent))
+            from doctrine import preamble  # type: ignore
+            return preamble(role)
+        except Exception:  # blind-except intentional (BLE001)
+            return ""          # never break a caller over a preamble
+
+
+def _panel_budget_state() -> dict[str, Any]:
+    """The budget/cost-history state, or an empty dict when absent or unreadable.
+
+    Read separately from the budget guard below because the pre-flight COST ESTIMATE needs the
+    observed-cost history before that guard runs, and an unreadable state file must degrade to
+    "no history" rather than take the whole pre-flight down with it.
+    """
+    try:
+        out = json.loads(Path("data/panel_budget_state.json").read_text("utf-8"))
+    except Exception:
+        return {}
+    return out if isinstance(out, dict) else {}
+
+
 def _mission() -> tuple[str, str]:
     """(name, system_prompt). A CLI arg / PANEL_MISSION env forces a specific mission (the
     MONTHLY review forces 'tier1'); otherwise rotate over _ROTATION by ISO week number."""
@@ -92,6 +124,43 @@ def _consensus(responses: list[dict[str, str]]) -> list[tuple[str, int]]:
     return sorted(tally.items(), key=lambda kv: -kv[1])
 
 
+
+_SHARDS = Path("data/audit_shards.json")
+_SHARD_DIR = Path("docs/audit_shards")
+_SHARD_MAX_AGE_H = 24.0          # stale shards = findings against lines that no longer exist
+
+
+def _ensure_shards() -> dict[str, str]:
+    """Return {model: shard_text}. Rebuilds if missing or stale. Empty dict = degrade to dossier."""
+    import subprocess
+    import sys as _sys
+    import time as _time
+    try:
+        stale = (not _SHARDS.exists()
+                 or (_time.time() - _SHARDS.stat().st_mtime) / 3600.0 > _SHARD_MAX_AGE_H)
+        if stale:
+            print("panel: audit shards missing/stale -- rebuilding")
+            subprocess.run([_sys.executable, "scripts/build_audit_shards.py"],
+                           capture_output=True, text=True, timeout=600, check=False)
+        meta = json.loads(_SHARDS.read_text("utf-8"))
+        out: dict[str, str] = {}
+        for row in meta.get("shards", []):
+            f = _SHARD_DIR / f"shard_{row['shard']:02d}.md"
+            if f.exists():
+                out[row["seat"]] = f.read_text("utf-8", errors="ignore")
+        print(f"panel: {len(out)} audit shards loaded "
+              f"(union coverage {meta.get('union_coverage_pct')}% of merit code)")
+        return out
+    except Exception as e:  # blind-except intentional (BLE001)
+        print(f"panel: shard load failed ({e!r}) -- DEGRADED to dossier-only, "
+              f"code coverage 0.42%")
+        return {}
+
+
+def _shard_for(shards: dict[str, str], model: str) -> str:
+    return shards.get(model, "")
+
+
 def _ask(base_url: str, key: str, model: str, system: str, user: str,
          timeout: float = 360.0) -> str:                # 6min: high-effort reasoning runs long
     # (a 180s cap cut deepseek mid-stream with IncompleteRead on the 2026-07-12 max-thinking run)
@@ -103,7 +172,7 @@ def _ask(base_url: str, key: str, model: str, system: str, user: str,
         # deepseek/glm blank-response bug). Models without reasoning ignore the param.
         "model": model, "max_tokens": _RESP_BUDGET, "temperature": 0.7,
         "reasoning": {"effort": "high"},
-        "messages": [{"role": "system", "content": system},
+        "messages": [{"role": "system", "content": _doctrine("run_external_panel") + system},
                      {"role": "user", "content": user}],
     }).encode()
     req = urllib.request.Request(
@@ -134,8 +203,22 @@ def main() -> None:
         with urllib.request.urlopen(_bal_req, timeout=20, context=_CTX) as _r:
             _d = json.loads(_r.read())["data"]
         _left = float(_d.get("total_credits", 0)) - float(_d.get("total_usage", 0))
-        _need = 0.05 * len(providers)            # ~$1.10/run at 13 seats, with headroom
-        print(f"panel: credit balance ${_left:.2f} (need ~${_need:.2f})")
+        # EMPIRICAL RUN COST (2026-07-26). This was a hardcoded `0.05 * len(providers)` -- $0.65
+        # at 13 seats, next to a comment claiming "~$1.10/run", so it disagreed with itself. Both
+        # numbers predate the full-coverage payload that this same file records as making runs
+        # "6-8x more expensive". Measured reality: $56.60 of lifetime usage across 12 runs, i.e.
+        # ~$3-5/run. A guard that thinks a run costs $0.65 when it costs $4 does not prevent
+        # mid-flight exhaustion -- it CAUSES it, by green-lighting a run the balance cannot
+        # cover, which is precisely the 402-mid-run failure the pre-flight was added to stop.
+        # Self-calibrating instead: each run stamps the usage counter, the next run reads the
+        # delta, and the estimate becomes the trailing MAX of observed costs. Max, not median,
+        # because the two errors are not symmetric -- over-estimating defers a run by a cycle,
+        # under-estimating burns the balance AND returns nothing.
+        _obs = [float(c) for c in _panel_budget_state().get(
+            "observed_run_costs", []) if float(c) > 0]
+        _need = max([*_obs[-6:], 0.05 * len(providers)])
+        print(f"panel: credit balance ${_left:.2f} (need ~${_need:.2f}"
+              f"{f', measured over {len(_obs)} run(s)' if _obs else ', no history yet'})")
         # MONTHLY ENVELOPE GUARD (principal 2026-07-24: <=$100-150/mo, NO degradation).
         # Month-to-date spend = lifetime usage minus the snapshot taken at month start.
         # At the envelope: PAGE + ABORT the paid run (explicit principal decision) -- never a
@@ -153,18 +236,33 @@ def main() -> None:
             except Exception:
                 _bst = {}
             if _bst.get("month") != _month:
-                _bst = {"month": _month, "usage_at_month_start": _usage_now, "alerted": False}
+                # Carry the cost history across the month boundary -- it calibrates the estimator
+                # and has nothing to do with the monthly envelope. Resetting it would make every
+                # 1st-of-the-month run fall back to the stale constant.
+                _bst = {"month": _month, "usage_at_month_start": _usage_now, "alerted": False,
+                        "observed_run_costs": _bst.get("observed_run_costs", [])}
+            # Close the loop on the PREVIOUS run: its true cost is the usage counter's advance
+            # since it stamped. Needs no extra API call and no per-seat accounting.
+            _prev = _bst.get("usage_at_run_start")
+            if _prev is not None:
+                _cost = _usage_now - float(_prev)
+                if _cost > 0:
+                    _bst["observed_run_costs"] = [
+                        *_bst.get("observed_run_costs", []), round(_cost, 2)][-24:]
+            _bst["usage_at_run_start"] = _usage_now
             _mtd = _usage_now - float(_bst.get("usage_at_month_start", _usage_now))
             _env = float(_bcfg.get("monthly_envelope_usd", 120.0))
             _alert = float(_bcfg.get("alert_at_usd", 90.0))
             print(f"panel: month-to-date spend ${_mtd:.2f} of ${_env:.2f} envelope")
             if _mtd + _need > _env:
-                Path("data/PRINCIPAL_ACTION.md").write_text(
+                # APPEND-SAFE (2026-07-29): a bare write_text here destroyed a pending Tier-3
+                # ask on the desk's only human-escalation channel. See libs/ops/principal_page.
+                _pp.page(
                     f"BUDGET DECISION: OpenRouter month-to-date ${_mtd:.2f} + this run "
                     f"~${_need:.2f} would exceed the ${_env:.2f}/mo envelope you set "
                     "(2026-07-24). Per your no-degradation order this run was ABORTED rather "
                     "than degraded -- raise the envelope in data/panel_budget.json or skip "
-                    "this cycle's paid panel.\n", encoding="utf-8")
+                    "this cycle's paid panel.", marker="BUDGET DECISION:")
                 _bstp.write_text(json.dumps(_bst, indent=1), encoding="utf-8")
                 raise SystemExit(
                     f"panel: ABORTED -- monthly envelope (${_env:.2f}) would be exceeded "
@@ -187,12 +285,13 @@ def main() -> None:
         except Exception as _be:
             print(f"panel: budget guard unavailable ({_be!r}) -- proceeding on balance check")
         if _left < _need:
-            Path("data/PRINCIPAL_ACTION.md").write_text(
+            # APPEND-SAFE (2026-07-29): this exact call clobbered the pbo/rc Tier-3 ask (GAP #71).
+            _pp.page(
                 f"PURCHASE DECISION: OpenRouter credits exhausted (balance ${_left:.2f}, a "
                 f"panel run needs ~${_need:.2f}). The external review panel is DOWN and the "
                 "audit-coverage sweep is stalled until topped up at openrouter.ai -> Credits. "
                 "Recommended $25 (~6 weeks) or $50 (~3 months). No key change needed. Book, "
-                "rails, pager and brain are unaffected.\n", encoding="utf-8")
+                "rails, pager and brain are unaffected.", marker="PURCHASE DECISION:")
             # NO COST-DRIVEN DEGRADATION (principal 2026-07-20): we never CHOOSE a
             # cheaper roster to save money -- but an unfunded outage must not mean ZERO
             # external review. Fall back to the strongest FREE seats, label the output
@@ -255,13 +354,22 @@ def main() -> None:
     from scripts.generate_external_review_doc import sanitize
     if sanitize(dossier) != dossier:                 # anything secret-shaped -> hard refuse
         raise SystemExit("dossier failed sanitization -- refusing to send")
+    _shards = _ensure_shards()
     print(f"panel: mission this week = {mission.upper()}")
     ts = datetime.now(tz=UTC).isoformat()
 
     def _one(pv: dict[str, Any]) -> dict[str, str]:
         name = pv.get("name", pv.get("model", "?"))
+        # PER-SEAT PAYLOAD: shared dossier + this seat's disjoint code shard. Tier-1 money path is
+        # inside every shard; tier-2 is unique to this seat, so its misses are total misses.
+        _sh = _shard_for(_shards, pv.get("model", ""))
+        payload = dossier + ("\n\n" + _sh if _sh else "")
+        if _sh and sanitize(payload) != payload:
+            # skip the SEAT, never send unsanitised source. A lost seat is recoverable.
+            print(f"panel: {name} SHARD FAILED SANITISATION -- seat skipped, not downgraded")
+            return {"model": pv.get("model", "?"), "text": ""}
         try:
-            txt = _ask(pv["base_url"], pv["key"], pv["model"], system, dossier)
+            txt = _ask(pv["base_url"], pv["key"], pv["model"], system, payload)
             # BLANK-RESPONSE RETRY (2026-07-20): the full-coverage feed made payloads ~5x
             # larger, and a seat can silently return an empty string on a big prompt
             # (observed: minimax-m3 returned a bare newline to the 260k audit payload but
@@ -270,7 +378,7 @@ def main() -> None:
             # "N/13 models agreed" figure the desk reasons from. Retry once, then fail loud.
             if len(txt.strip()) < 50:
                 print(f"panel: {name} blank ({len(txt)} chars) -- retrying once")
-                txt = _ask(pv["base_url"], pv["key"], pv["model"], system, dossier)
+                txt = _ask(pv["base_url"], pv["key"], pv["model"], system, payload)
                 if len(txt.strip()) < 50:
                     try:
                         from scripts.build_audit_coverage import record_blank

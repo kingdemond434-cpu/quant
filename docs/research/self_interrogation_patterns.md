@@ -153,3 +153,24 @@ recursion rule), so the desk needs him to supply an angle exactly once.
    worked all along.)
 10. RATCHET CHECK. For every metric that should only improve, ask "is today's value the floor, and
     what fires if it falls?" A number nobody ratchets drifts down unnoticed.
+11. SEED DISCIPLINE. For any sweep, probe or synthetic experiment, ask "is this smoothness evidence,
+    or one reused random seed?" A fixed seed across a parameter sweep measures ONE realisation, and
+    the result comes out perfectly monotone — which is precisely what makes it read as a systematic
+    wiring error instead of an unlucky draw. Then ask the companion question: "is the estimator's
+    standard error smaller than the effect range I am claiming to resolve?" (Origin 2026-07-30: the
+    gate-optimality probe reused seed=7 for 13 rows; at T=310 the SE of annualised Sharpe is 1.085,
+    so its whole 0.5–3.0 "good candidate" range sat inside one standard error. It concluded the
+    funnel cannot promote a good candidate. It had never asked one.)
+12. FAIL-SAFE DIRECTION PER USE, NOT PER VARIABLE. When one number feeds two decisions, ask "is the
+    safe direction of error the SAME for both?" If not, the number needs splitting — the conservative
+    choice for one use is silently the reckless choice for the other. (Origin 2026-07-30:
+    `m_concurrent` is both the Holm denominator, where over-counting is safe because it tightens the
+    bar, and the capacity count against MAX_FORWARD_SLOTS, where over-counting is a hard admission
+    block. A refuted clock nobody removed therefore starved 9 verified axes while the module's
+    docstring correctly argued its own fail-safety — for the other use.)
+13. IS THE KILL PROPAGATED? When anything is retracted, refuted or retired, ask "which DERIVED
+    registries still count it?" — capacity registries, multiplicity denominators, dashboards,
+    coverage maps, doctrine prose citing it as evidence. A graveyard entry is not a retirement.
+    (Origin 2026-07-30: kimchi was retracted 07-29 and spent the next day holding Stage-B slot 1 of
+    12 at forward Sharpe −5.13, and the doctrine still cites its IC +0.148 as the standing evidence
+    for SCREEN-ON-DISCOVERY.)

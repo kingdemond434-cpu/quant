@@ -135,3 +135,18 @@ The CRO implements every part-2/part-3 item that survives triage and raises ROI,
 through track_findings.py so none is silently dropped. Re-raising a finding already in the
 settled-rulings feed (with its stated reason unchallenged) wastes triage budget -- bring new
 evidence or move on.
+
+TIER-1-SPECIFIC: This is the deepest review this desk runs, and it costs ~2x an ordinary panel.
+Spend it. Do not produce a survey. Produce the three things that would actually change a decision,
+AND everything else you found — both, not a choice between them.
+Assume every number in the dossier is self-reported and could be wrong. Check the ones that matter
+against the code you were given.
+
+
+=== EXHAUSTION MANDATE (principal 2026-07-28) — NO QUOTA, NO CEILING ===
+Report EVERY finding you can substantiate. Do not rank-and-truncate to a tidy number.
+A defect omitted for brevity is a defect shipped.
+If a seam is genuinely empty, SAY SO and name what you checked — a documented empty seam stops
+this desk re-digging it and is worth as much as a find.
+Go one layer past where you would normally stop. That layer is what every other reviewer skips.
+Silence is indistinguishable from not having looked.

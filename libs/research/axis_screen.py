@@ -44,11 +44,16 @@ def stage_a_screen(signal: np.ndarray, target_ret: np.ndarray, *, name: str,
                                 shift-sensitivity check before trusting anything that trips this.
       TIMING-ARTIFACT        -- fails de-contam: |same-period corr|>contam_max OR residual IC
                                 collapses below half the raw IC (the coinbase/turkey failure mode)
-      SCREEN-INTERESTING     -- |IC|>=ic_min, best timing Sharpe>=sharpe_min, AND passes de-contam
+      SCREEN-INTERESTING     -- |IC|>=ic_min, best timing Sharpe>=sharpe_min, passes de-contam,
+                                AND the sample was POWERED enough for clearing those floors to
+                                mean anything. This is the ONLY verdict that starts a forward
+                                clock, so the power condition is load-bearing, not cosmetic.
       SCREEN-WEAK            -- raw signal too weak to bother, AND the test was POWERED enough to
                                 say so. Only this verdict is graveyard-grade negative knowledge.
-      SCREEN-UNDERPOWERED    -- weak, but |IC| sat below the minimum detectable effect for the
-                                effective sample. "Could not tell" -- never record it as "refuted".
+      SCREEN-UNDERPOWERED    -- the effective sample could not resolve an effect at ic_min, so the
+                                reading is uninformative in EITHER direction -- whether |IC| landed
+                                under the floor or over it. "Could not tell": never record it as
+                                "refuted", and never start a clock on it.
 
     horizon_days: the period of target_ret in days. Sharpe annualises by sqrt(365/horizon_days);
       leaving this at 1 while passing 20-day returns overstates Sharpe 4.47x (pure noise then
@@ -102,17 +107,33 @@ def stage_a_screen(signal: np.ndarray, target_ret: np.ndarray, *, name: str,
     # "looked and it is not there"; under the latter every null would be self-certifying.
     powered = min_detectable_ic <= ic_min
 
-    # LOOKAHEAD RAIL. A signal observed at t should not know MORE about t+1 than about t: for a
-    # genuine lead, forward IC is normally weaker than the contemporaneous relationship. A whole-
-    # period misalignment produces the opposite signature -- strong forward IC with near-zero
-    # same-period corr -- and slips under a global ic_ceiling wherever honest contemporaneous
-    # correlation is already high (measured ~0.34 on macro->crypto, vs a 0.35 ceiling). Flagged as
-    # a diagnostic; ic_ceiling stays caller-tunable per axis rather than one global guess.
+    # LOOKAHEAD RAIL, part 2: forward-exceeds-contemporaneous. A whole-period misalignment (a
+    # KST-day candle labelled a UTC day, a close timestamped a bar early) produces strong forward
+    # IC with weak same-period corr, and slips under the global ic_ceiling wherever honest
+    # contemporaneous correlation is already high (measured ~0.34 on macro->crypto vs a 0.35
+    # ceiling). BUT that same signature is the DEFINING SHAPE of a genuine leading indicator --
+    # capital flows in at t, price answers at t+1 -- so the bare excess must not kill (2026-07-29:
+    # it briefly did, and read SUSPECT-LOOKAHEAD onto the live kimchi axis directly above its own
+    # shift test printing "no lookahead pattern"). Kill authority needs corroboration on BOTH of:
+    #   RESOLVED: the excess clears the sampling-noise band for a correlation difference at this
+    #     n_eff (1.96*sqrt(2/n_eff)); an unresolved excess at n_eff=121 is a costume, not a leak.
+    #   TRANSLATES: misalignment has a fingerprint mechanism lacks -- lag the signal ONE period
+    #     and a leaked series turns its forward skill into contemporaneous skill (same_lag1 jumps,
+    #     ic_lag1 collapses), while a genuine lead just decays smoothly. corr(z[t-1], .) below.
+    # Uncorroborated cases keep the annotation and fall through to the ordinary gates, where a
+    # thin lead lands on SCREEN-UNDERPOWERED: clock keeps accruing, nothing killed, nothing found.
     ic_exceeds_contemporaneous = abs(ic) > max(abs(same), ic_min) * 1.5 and abs(ic) >= 0.15
+    z1v = np.roll(z, 1)[zwin:-1]                       # signal lagged one period
+    ic_lag1 = float(np.corrcoef(z1v, fv)[0, 1]) if z1v.std() and fv.std() else 0.0
+    same_lag1 = float(np.corrcoef(z1v, tv)[0, 1]) if z1v.std() and tv.std() else 0.0
+    shift_translates = (abs(same_lag1) > max(abs(ic_lag1), ic_min) * 1.5
+                        and abs(same_lag1) > 0.5 * abs(ic))
+    excess = abs(ic) - max(abs(same), ic_min) * 1.5
+    resolved = excess > 1.96 * float(np.sqrt(2.0 / n_eff))
 
     decontam_fail = abs(same) > contam_max or abs(ic_res) < 0.5 * abs(ic)
     implausible = abs(ic) > ic_ceiling or best > sharpe_ceiling    # alignment/lookahead rail
-    if implausible or ic_exceeds_contemporaneous:
+    if implausible or (ic_exceeds_contemporaneous and resolved and shift_translates):
         verdict = "SUSPECT-LOOKAHEAD"                  # bithumb-class: too strong to be real
     elif best < sharpe_min or abs(ic) < ic_min:
         # Distinguish 'tested and refuted' from 'could not have detected it'. Only the former is
@@ -120,6 +141,23 @@ def stage_a_screen(signal: np.ndarray, target_ret: np.ndarray, *, name: str,
         verdict = "SCREEN-WEAK" if powered else "SCREEN-UNDERPOWERED"
     elif decontam_fail:
         verdict = "TIMING-ARTIFACT"                    # angle-20 gate -- coinbase/turkey class
+    elif not powered:
+        # POWER CUTS BOTH WAYS. 'powered' used to gate only the negative branch, so a cell that
+        # cleared ic_min/sharpe_min on a sample the harness had ALREADY declared blind was still
+        # labelled SCREEN-INTERESTING -- announcing a find through the same instrument that just
+        # reported it could not see. Origin cell:
+        #   try_premium::T2_usdt_try_premium_vs_fxlake_eurcross::h20d
+        #   n=77 ic=-0.0543 n_eff=3.9 min_detectable_ic=0.9989 powered=false sharpe_reversal=0.87
+        # -- |IC| ~18x BELOW the harness's own detection floor, read as INTERESTING. At that n_eff
+        # ~17% of pure-noise draws clear both floors, so the label was a coin flip with a name.
+        # It matters because SCREEN-INTERESTING is the sole trigger for a forward clock (below),
+        # and clocks are capped at MAX_FORWARD_SLOTS=12 and Holm-corrected: a slot spent on noise
+        # BOTH burns a scarce slot AND raises the confirmation bar for every genuine candidate.
+        # Below the detection floor the honest verdict is the one the negative branch already
+        # gets -- could not tell -- NOT a kill (nothing was refuted) and NOT a find. Ordered after
+        # decontam_fail so the angle-20 artifact gate keeps its precedence; neither branch can
+        # reach SCREEN-INTERESTING, so this can only ever tighten the screen.
+        verdict = "SCREEN-UNDERPOWERED"
     else:
         verdict = "SCREEN-INTERESTING"
 
@@ -131,6 +169,9 @@ def stage_a_screen(signal: np.ndarray, target_ret: np.ndarray, *, name: str,
            "n_eff": round(n_eff, 1),
            "min_detectable_ic": round(min_detectable_ic, 4), "powered": powered,
            "ic_exceeds_contemporaneous": ic_exceeds_contemporaneous,
+           "ic_lag1": round(ic_lag1, 4), "same_lag1": round(same_lag1, 4),
+           "shift_translates": shift_translates,
+           "excess_resolved": resolved,
            "verdict": verdict, "current_z": round(float(z[-1]), 3),
            "stage": "A (zero promotion authority)"}
 

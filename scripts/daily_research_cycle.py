@@ -69,6 +69,49 @@ _STEPS = [
     # licence-clean Glassnode/Coin-Metrics replacement (facts reconstructed from chain)
     ("onchain_metrics",   "scripts/collect_onchain_metrics.py", 180),  # on-chain throughput
     ("stablecoin_supply", "scripts/collect_stablecoin_supply.py", 120),  # supply momentum clock
+    ("breadth_expander", "scripts/breadth_expander.py", 420),  # external-LLM breadth scout (Stage-A only)
+    ("signal_halflife",  "scripts/signal_halflife.py", 180),  # signal ageing/decay tracker
+    ("measurement_gate",  "scripts/measurement_gate.py", 120),  # inputs must be verified before any optimisation
+    ("exec_bottleneck",   "scripts/execution_bottleneck.py", 60),  # live book vs live gate
+    ("collector_monitor","scripts/collector_monitor.py", 90),  # G3 zero-trust sensor kill-switch
+    ("stage_a_exec",       "scripts/stage_a_executor.py", 120),  # RUN the ranked queue, not order it
+    ("defi_axis",          "scripts/build_defi_axis.py", 60),  # pool rows -> daily z20 axis feed
+    ("conversion",        "scripts/conversion_engine.py", 90),  # mined data -> ranked experiments, every cycle
+    ("enforce_proof",     "scripts/prove_future.py", 90),  # adversarial: guards must FAIL on planted violations
+    ("principle_audit",   "scripts/principle_audit.py", 30),  # STRICT: all 15 principles must reach models
+    ("blindspot_max",     "scripts/blindspot_max.py", 120),  # 4 classes of mechanical unknown-unknown
+    ("doctrine_guard",      "scripts/doctrine.py", 30),  # STRICT: fails if any LLM caller runs without doctrine
+    ("unobserved",          "scripts/unobserved.py", 90),  # unknown-unknowns we already own and never read
+    ("module_justify",      "scripts/module_justification.py", 120),  # would I build this today -- merit audit of existing code
+    ("coverage_audit",      "scripts/coverage_audit.py", 60),  # one honest coverage number per surface
+    ("knowledge_engine",   "scripts/knowledge_engine.py", 90),  # memory + causal graph + genome + revival
+    ("dependency_graph",   "scripts/dependency_graph.py", 60),  # impact analysis: what is poisoned now
+    ("data_vitals",         "scripts/data_vitals.py", 90),  # live collector DQS + provenance
+    ("alpha_lifecycle",     "scripts/alpha_lifecycle.py", 90),  # failure patterns + transfer pipeline + novelty + anomalies
+    ("research_cio",        "scripts/research_cio.py", 90),  # info advantage + blind spots + north star + scheduler
+    ("hedge_integrity",     "scripts/hedge_integrity.py", 60),  # venue-truth hedge invariant
+    ("feature_library",     "scripts/feature_library.py", 90),  # feature assets + construction coverage
+    ("leakage_detector",    "scripts/leakage_detector.py", 60),  # self-validating leakage contract
+    ("experiment_registry", "scripts/experiment_registry.py", 90),  # harvest experiments -> permanent objects
+    ("desk_brief",          "scripts/research_exchange.py brief", 60),  # daily research board / external-LLM brief
+    # --- installed 2026-07-29 (closure cycle). Every one of these is an organ that would
+    # otherwise be built-but-idle, which L2.9 counts as a defect. Cheap, read-only, no risk path.
+    ("ratchets",            "scripts/check_ratchets.py --ratchet", 60),  # L1.0: every metric toward 100%, floors only rise
+    ("execution_intel",     "scripts/run_execution_intel.py", 60),  # cross-feed cost-DRIFT (recommend-only)
+    ("reality_gap",         "scripts/run_reality_gap.py", 60),  # L2.10: backtest->shadow->live->venue-truth
+    ("miner_runway",        "scripts/check_miner_runway.py --report-only", 60),  # why a seat never produced
+    ("scheduler_manifest",  "scripts/check_scheduler_manifest.py --report-only", 60),  # DR floor + live drift
+    ("mypy_ratchet",        "scripts/check_mypy_ratchet.py --report-only", 900),  # type backlog is a ceiling
+    ("contributor_score",   "scripts/research_exchange.py score", 60),  # which intelligence source earns allocation
+    ("claim_verifier",    "scripts/claim_verifier.py", 90),  # verify every published claim vs source
+    ("claim_escalate",    "scripts/claim_escalate.py", 60),  # escalate false claims to pager + Gate-0
+    ("data_sanity",       "scripts/data_sanity.py", 120),  # implausibility scan (2 artifacts today)
+    ("hurdle_rate",       "scripts/hurdle_rate.py", 90),  # is the desk beating T-bills/BTC?
+    ("negative_knowledge", "scripts/negative_knowledge.py", 60),  # revival triggers on dead ideas
+    ("research_autopsy",  "scripts/research_autopsy.py", 60),  # failure-mode taxonomy + lessons
+    ("research_erv",      "scripts/research_erv.py", 60),  # rank hypotheses before spending slots
+    ("mechanism_board",   "scripts/mechanism_board.py", 60),  # mechanism kills + portfolio + gate
+    ("screen_auditor",    "scripts/screen_auditor.py", 60),  # missing-rail audit on screens
     ("cny_premium",       "scripts/collect_cny_premium.py", 60),  # USDT/CNY P2P premium (#76)
     ("axis_shadows",      "scripts/run_axis_shadows.py",     120),  # Stage-B forward eval
     ("reject_rescore",    "scripts/run_rejection_rescore.py", 300),  # feed near-miss reject scores

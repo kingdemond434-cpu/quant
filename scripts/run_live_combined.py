@@ -15,7 +15,11 @@ from typing import Any
 
 from libs.execution import binance_spot_testnet as spot
 from libs.execution import binance_testnet as fut
-from libs.execution.carry_accounting import carry_bleed_report, derive_spot_realized
+from libs.execution.carry_accounting import (
+    carry_bleed_report,
+    derive_spot_realized,
+    read_income,
+)
 from libs.portfolio.live_book import LivePortfolio
 
 _CC = Path("web/cashcarry_live.json")
@@ -91,21 +95,26 @@ def main() -> None:
     fut_eq = round(_num(fa.get("equity")), 2)
     fut_unrl = round(_num(fa.get("unrealized_pnl")), 2)
     fut_start_real = _num(st.get("start_futures_equity"), fut_eq)
-    funding = realized = 0.0
+    # `funding` is None until MEASURED, for the same reason `venue_realized` already was: a venue
+    # read that fails must not decay into a zero harvest. The old `0.0` seed plus an
+    # `except (ValueError, TypeError)` that could not even catch the venue's HTTPError meant this
+    # book either crashed outright or published a fabricated zero (2026-07-26 -- the executed book
+    # published $0.00 against a true $101.96). `read_income` retries transient 5xx and reports
+    # honestly when it cannot measure.
+    realized = 0.0
+    funding = None
     venue_realized = None
     fut_winrate = None
     if fut.has_keys() and st.get("start"):
-        try:
-            sms = int(datetime.fromisoformat(str(st["start"])).timestamp() * 1000)
-            inc = fut.income_summary(sms)
+        sms = int(datetime.fromisoformat(str(st["start"])).timestamp() * 1000)
+        inc = read_income(lambda: fut.income_summary(sms))
+        if inc is not None:
             funding = round(_num(inc.get("funding")), 2)            # carry income (the edge)
             venue_realized = _num(inc.get("realized_pnl"))          # exact futures realized
             realized = round(_num(inc.get("funding")) + venue_realized
                              + _num(inc.get("commission")), 2)
             _nw, _nl = _num(inc.get("n_wins")), _num(inc.get("n_losses"))
             fut_winrate = round(100.0 * _nw / (_nw + _nl), 1) if (_nw + _nl) > 0 else None
-        except (ValueError, TypeError):
-            pass
     spot_usdt = round(spot.usdt_balance(), 2) if spot.has_keys() else 0.0
 
     # spot side = OPEN long-leg marks + realized of CLOSED spot legs. DERIVE the realized from
@@ -188,7 +197,14 @@ def main() -> None:
     lfut = round(lev * (fut_pnl - _num(ls.get("fut0"))), 2)      # 3x each book's go-forward P&L
     lspot = round(lev * (spot_pnl - _num(ls.get("spot0"))), 2)
     lperp = round(lev * (perp_net - _num(ls.get("perp0"))), 2)
-    lfund = round(lev * (funding - _num(ls.get("fund0"))), 2)
+    # Self-heal a baseline seeded during a venue outage: anchoring the levered harvest to a
+    # fabricated zero would overstate it forever, so an unset fund0 is adopted on first real read
+    # rather than defaulted to 0.0.
+    if ls.get("fund0") is None and funding is not None:
+        ls["fund0"] = funding
+    f0 = ls.get("fund0")
+    lfund = (round(lev * (funding - f0), 2)
+             if funding is not None and f0 is not None else None)
     lev_net = round(lfut + lspot + lperp, 2)                     # NO trend (own shadow only)
     lev_start = round(3 * _BASE, 2)                              # 3 books x $5k, fresh
     lev_eq = round(lev_start + lev_net, 2)

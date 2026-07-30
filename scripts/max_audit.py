@@ -12,6 +12,9 @@ zero-based MAXIMIZATION panel mission re-derives each organ's ceiling from scrat
 
 Rules of the sweep:
  - a below-max state is a DEFECT unless acknowledged with a reason AND an expiry (max 30d) in
+
+#  EXHAUSTION: there is no acceptable number of un-acked below-max states. Sweep every
+#  organ every run; a check skipped for time is a defect hidden for time.
    data/max_audit_acks.json -- no permanent burial, ever
  - defects persisting >48h un-acked ESCALATE to the principal page (PRINCIPAL_ACTION.md):
    nothing can sit below max for more than two days without either being fixed or him knowing
@@ -22,6 +25,7 @@ from __future__ import annotations
 import contextlib
 import json
 import re
+import subprocess
 import sys
 import time
 from datetime import UTC, datetime
@@ -209,6 +213,43 @@ _DEATH_MARKERS = ("out of usage credits", "session limit", "hit your limit",
                   "permission denied", "refusing to send")
 
 
+#: label -> pgrep pattern of the organ that WRITES that product, in BRACKET-TRICK form
+#: (`run_cro_ai[.]sh`). The bracket is not decoration: the decision ledger records a monitor
+#: that self-matched its own pgrep and reported a dead cycle as RUNNING for 80 minutes, so
+#: every pattern this desk greps for a liveness answer is written so it cannot match the
+#: checker's own argv.
+_PRODUCER_PGREP = {
+    "cron-cycle":         "run_cro_ai[.]sh",
+    "prospector-product": "run_prospector_dig[.]sh",
+    "dataaxis-product":   "run_dataaxis_dig[.]sh",
+    "litminer-product":   "run_litminer_dig[.]sh",
+    "frontier-product":   "run_frontie[r]",
+}
+
+
+def _producer_running(label: str) -> bool:
+    """True while the organ that writes this product is still running.
+
+    IN-FLIGHT IS NOT A STUB (2026-07-26). check_production compared a product's size against a
+    success threshold with no liveness test, so an organ that was running CORRECTLY was reported
+    as a defect: the 15:00 brain cycle was 20 seconds old, its log held only the shell's start
+    header (53b), and the sweep filed it as `production-stub ... ran but produced a stub, not
+    real output (the quota-stub / refuse class)`. A claude organ writes deliverables via file
+    tools and its log stays tiny until exit, so EVERY healthy cycle trips that rule for its whole
+    runtime. organ_catchup already guards exactly this way (is_running + RETRY_COOLDOWN_S); the
+    audit did not, and a monitor that cries wolf on healthy work is how a desk learns to ignore
+    its own pager -- the same blindness the stub-death check exists to prevent.
+    """
+    pat = _PRODUCER_PGREP.get(label)
+    if not pat:
+        return False
+    try:
+        return subprocess.run(["pgrep", "-f", pat], capture_output=True,
+                              timeout=10, check=False).returncode == 0
+    except (OSError, subprocess.SubprocessError):
+        return False               # cannot prove it is alive -> fall through and report
+
+
 def check_stub_deaths(defects) -> None:
     dead = []
     for p in LOGS.glob("*.log"):
@@ -224,6 +265,151 @@ def check_stub_deaths(defects) -> None:
         defects.append(("stub-deaths",
                         f"{len(dead)} organ runs died at birth in 48h (log CONTENT names a quota/"
                         f"auth/model failure): {', '.join(p.name for p in dead[:6])}"))
+
+
+#: Long-lived daemons whose code is loaded ONCE at process start. Add any new always-on service.
+_DAEMONS = {
+    "quant-cashcarry": "scripts/run_cashcarry_executor.py",
+    "quant-deadman": "scripts/run_deadman_switch.py",
+    "quant-liquidations": "scripts/liquidation_listener.py",
+    "quant-dashboard": "scripts/serve_dashboard.py",
+}
+
+
+def _import_closure(entry: Path, seen: set[Path] | None = None) -> set[Path]:
+    """Repo-local modules an entry point actually imports, followed transitively.
+
+    Resolves `from libs.x.y import z` and `import libs.x.y` to files under the repo. Anything
+    unresolvable is stdlib/third-party and is skipped -- those ship with the interpreter and do
+    not change under a running process.
+    """
+    import ast
+    seen = seen if seen is not None else set()
+    if entry in seen or not entry.exists():
+        return seen
+    seen.add(entry)
+    try:
+        tree = ast.parse(entry.read_text("utf-8", errors="ignore"))
+    except (OSError, SyntaxError):
+        return seen
+    mods: set[str] = set()
+    for n in ast.walk(tree):
+        if isinstance(n, ast.Import):
+            mods |= {a.name for a in n.names}
+        elif isinstance(n, ast.ImportFrom) and n.module and not n.level:
+            mods.add(n.module)
+    for m in mods:
+        if m.split(".")[0] not in {"libs", "app", "scripts"}:
+            continue
+        for cand in (ROOT / (m.replace(".", "/") + ".py"),
+                     ROOT / m.replace(".", "/") / "__init__.py"):
+            if cand.exists():
+                _import_closure(cand, seen)
+    return seen
+
+
+def _worker_pids(rel: str) -> list[int]:
+    """PIDs actually running an entry script, discovered WITHOUT asking systemd.
+
+    Independence is the point: systemd only knows about the children it started, so an orphan
+    that outlived a unit restart is invisible in `systemctl show`. pgrep sees the process table.
+
+    ARGV-EXACT, never a substring (caught on this check's first live run): `pgrep -f` matches the
+    whole command line, and every brain/subagent process carries the full doctrine via
+    `--append-system-prompt` -- which quotes `scripts/run_cashcarry_executor.py` and
+    `scripts/run_deadman_switch.py` in the risk-path duty. A bare `pgrep -f <rel>` therefore
+    returned claude processes as executor and dead-man workers, which would have invented
+    ownership defects and measured a brain's start time as a daemon's uptime. A monitor that
+    reports the wrong process is worse than no monitor. So: argv[0] must be a python, and the
+    script must be an argv element in its own right, not text buried inside one.
+    """
+    import subprocess
+    try:
+        out = subprocess.run(["pgrep", "-f", rel], capture_output=True, text=True,
+                             timeout=10, check=False).stdout.split()
+    except (OSError, subprocess.SubprocessError):
+        return []
+    pids = []
+    for p in out:
+        if not p.isdigit():
+            continue
+        try:
+            argv = Path(f"/proc/{p}/cmdline").read_bytes().decode("utf-8", "replace").split("\0")
+        except OSError:
+            continue                                  # exited between pgrep and here
+        argv = [a for a in argv if a]
+        if not argv or "python" not in Path(argv[0]).name:
+            continue
+        if any(a == rel or a.endswith("/" + rel) for a in argv[1:]):
+            pids.append(int(p))
+    return pids
+
+
+def check_stale_daemons(defects) -> None:
+    """A daemon running code older than its own source is a fix that DID NOT SHIP.
+
+    Origin (2026-07-26): the carry-leak alarm was committed 02:29Z and the executor had been up
+    since 00:38Z, so python had already loaded the pre-fix module. The alarm sat inert for 8.7
+    hours over a book bleeding 510% of its funding harvest -- the dashboard read "clean" because
+    the field was simply absent. Same class as 2026-07-10, when a churn fix was inert for two
+    days. Both were caught by hand; nothing mechanical looked.
+
+    Compared against the IMPORT CLOSURE, not any-file-newer: a repo-wide mtime test fires on
+    every unrelated commit, and a check that always fires is a check nobody reads.
+
+    OWNERSHIP (2026-07-26, second instance the same day): the first version asked systemd for
+    MainPID and skipped on `0`. But `0` is exactly what systemd reports while a unit sits in
+    `activating (auto-restart)` -- which is the state an ORPHANED worker causes, because the
+    orphan holds the singleton lock and every supervised spawn exits on it. So the detector was
+    blind to the single most common way code goes inert: work being done by a process systemd
+    does NOT own, surviving every `systemctl restart`. Verified live: quant-cashcarry MainPID=0
+    while orphan pid 817906 (up 8.0h, pre-fix code) held the book and the unit respawned ~190
+    processes/hour against it. The worker is now discovered INDEPENDENTLY of systemd, and the
+    ownership mismatch is itself a defect -- an unsupervised worker means restarts do not ship
+    fixes and crash-recovery is an illusion.
+    """
+    import subprocess
+    for svc, rel in _DAEMONS.items():
+        entry = ROOT / rel
+        if not entry.exists():
+            continue
+        sd_pid, state = "", ""
+        with contextlib.suppress(OSError, subprocess.SubprocessError):
+            sd_pid = subprocess.run(["systemctl", "show", "-p", "MainPID", "--value", svc],
+                                    capture_output=True, text=True, timeout=10).stdout.strip()
+            state = subprocess.run(["systemctl", "show", "-p", "ActiveState", "--value", svc],
+                                   capture_output=True, text=True, timeout=10).stdout.strip()
+        workers = _worker_pids(rel)
+        if not workers:
+            continue                                  # not running -- check_organs owns that
+        # OWNERSHIP first: a fix cannot ship into a process the supervisor does not control.
+        if sd_pid not in {str(p) for p in workers}:
+            oldest = min(workers, key=lambda p: Path(f"/proc/{p}").stat().st_mtime)
+            age = (NOW - Path(f"/proc/{oldest}").stat().st_mtime) / 3600.0
+            storm = (" and the unit is stuck in auto-restart, respawning against it"
+                     if state == "activating" else "")
+            defects.append((f"daemon-unsupervised-{svc}",
+                            f"{svc} work is being done by pid {oldest} (up {age:.1f}h) which "
+                            f"systemd does NOT own (MainPID={sd_pid or 'unknown'}, "
+                            f"state={state or 'unknown'}){storm}. `systemctl restart` cannot "
+                            "replace this process, so fixes do not ship and crash-recovery is "
+                            "an illusion. Stop the unit, kill the orphan, start the unit, and "
+                            "verify MainPID matches the worker."))
+        for pid in sorted(workers, key=lambda p: Path(f"/proc/{p}").stat().st_mtime)[:1]:
+            try:
+                started = Path(f"/proc/{pid}").stat().st_mtime
+            except OSError:
+                continue
+            stale = sorted(p for p in _import_closure(entry) if p.stat().st_mtime > started)
+            if stale:
+                age = (NOW - started) / 3600.0
+                names = ", ".join(p.relative_to(ROOT).as_posix() for p in stale[:4])
+                defects.append((f"daemon-stale-code-{svc}",
+                                f"{svc} (pid {pid}, up {age:.1f}h) imports {len(stale)} file(s) "
+                                f"MODIFIED SINCE IT STARTED: {names} -- python loaded the old "
+                                "module at start, so every fix in those files is INERT in the "
+                                "running process. Restart the unit and verify the new behaviour "
+                                "appears in its output; a committed fix is not a shipped fix."))
 
 
 def check_panel(defects) -> None:
@@ -504,9 +690,29 @@ def check_interrogation(defects) -> None:
 def check_generation(defects) -> None:
     """Hypothesis testing is the primary output. If SUCCESSFUL brain cycles have run since a
     baseline but last_live_generate has not advanced, generation is being skipped -- escalate.
-    Also flags the simple case: generation owed and long-stale."""
+    Also flags the simple case: generation owed and long-stale.
+
+    ARTIFACT OVER FLAG (2026-07-28). This read ONLY cadence_state.last_live_generate -- a key a
+    cycle sets by hand -- and so reported generation "skipped" on a day the Stage-A executor had
+    already screened and written real verdicts, while it would equally have reported generation
+    DONE for a cycle that touched nothing but the timestamp. Both errors have the same root: the
+    check trusted a flag instead of demanding the product, which is the exact failure the desk's
+    own check_production exists to catch (`scheduled but not PRODUCING`). The verdict ledger is
+    the artifact -- newest of {flag, last real verdict row} wins, and a run that screens without
+    updating the key is now correctly credited.
+    """
     cs = _j(ROOT / "data/cadence_state.json", {})
     last_gen = cs.get("last_live_generate") or cs.get("gen_done_fred_macro")
+    verdicts = ROOT / "data/stage_a_verdicts.jsonl"
+    last_verdict = None
+    if verdicts.exists():
+        with contextlib.suppress(Exception):
+            for ln in reversed(verdicts.read_text("utf-8").splitlines()):
+                if ln.strip() and (ts := json.loads(ln).get("ts")):
+                    last_verdict = ts                 # newest row carrying a real timestamp
+                    break
+    if last_verdict and (not last_gen or last_verdict > last_gen):
+        last_gen = last_verdict
     # successful cycles since a fixed watch baseline
     base_f = ROOT / "data/generation_watch_baseline"
     if not base_f.exists():
@@ -527,8 +733,9 @@ def check_generation(defects) -> None:
     # a successful cycle ran AFTER the last generation -> generation was skipped
     if newest_cycle > gen_ts + 3600:
         defects.append(("generation-skipped",
-                        f"a successful brain cycle ran but last_live_generate has not advanced "
-                        f"(last gen {last_gen}) -- hypothesis testing, the desk's PRIMARY output, "
+                        f"a successful brain cycle ran with no generation after it "
+                        f"(last screened verdict / gen flag: {last_gen}) -- hypothesis testing, "
+                        "the desk's PRIMARY output, "
                         "is being crowded out by meta-duties. Generation-first duty not honored."))
 
 
@@ -743,6 +950,37 @@ def check_forensics_fresh(defects) -> None:
                         "bleed/PnL analysis is not landing; check daily_research_cycle"))
 
 
+def check_carry_funding_measured(defects) -> None:
+    """The carry-leak alarm must be able to SEE (2026-07-26 incident).
+
+    The alarm is denominated in the funding harvest, so a failed venue read blinds it entirely.
+    Before this check the executor filled that gap with `0.0` and the alarm dutifully published an
+    `inf%` total-bleed verdict against a book that had really earned $101.96 -- an HTTP 502
+    rendered as an economic judgement. The fix makes the harvest honestly None, which means the
+    alarm now goes QUIET during an outage instead of loud-and-wrong; that trade is only safe if
+    the silence itself is a tracked defect, which is this function. A blind alarm and a clean book
+    look identical on a dashboard and must never look identical here.
+    """
+    cj = ROOT / "web/cashcarry_live.json"
+    if not cj.exists():
+        return                                        # book not running is a different check
+    try:
+        cc = json.loads(cj.read_text("utf-8"))
+    except Exception:
+        defects.append(("carry-funding-unmeasured", "web/cashcarry_live.json unparsable -- the "
+                        "carry-leak alarm cannot be read at all"))
+        return
+    # Absent key = an executor predating the fix, which is exactly the silent-zero state.
+    if cc.get("funding_measured", False) is not True:
+        age_h = (NOW - cj.stat().st_mtime) / 3600.0
+        defects.append((
+            "carry-funding-unmeasured",
+            f"carry funding harvest UNMEASURED (venue income read failing, book {age_h:.0f}h old) "
+            f"-- the leak alarm is BLIND: it cannot tell a clean hedge from a bleeding one, and "
+            f"the forward track record the sizing gate reads is accruing without its edge term. "
+            f"Verdict: {str(cc.get('bleed_verdict', ''))[:120]}"))
+
+
 def check_memory_hygiene(defects) -> None:
     """MEMORY layer fences (principal 2026-07-24): institutional memory must be written, fresh,
     and retrievable -- a memory system nobody writes to or that outgrows retrieval is theater.
@@ -858,7 +1096,7 @@ def check_production(defects) -> None:
                             f"{label}: {newest.name} {age_h:.0f}h old (cad {max_h}h) "
                             "-- scheduled but not PRODUCING; verify the organ actually runs end-to-"
                             "end, not just that its timer/cron fires (the cron-self-match class)"))
-        elif sz < min_b:
+        elif sz < min_b and not _producer_running(label):
             defects.append(("production-stub",
                             f"{label}: product {newest.name} is {sz}b (<{min_b}b) -- ran but "
                             "produced a stub, not real output (the quota-stub / refuse class)"))
@@ -919,6 +1157,54 @@ def check_gate_optimality(defects) -> None:
             f"0 survivors across {tested} tested -- expected on picked-clean price space, but "
             "confirm the funnel can EVER promote: is any single gate the 100pct bottleneck, and "
             "is the walk-forward/per-candidate path able to pass a genuinely-good synthetic?"))
+
+
+def check_welded_gates(defects) -> None:
+    """WELDED-GATE SCAN (RECURSION RULE, 2026-07-30): a per-candidate gate fed a CAMPAIGN CONSTANT.
+
+    Origin, measured this cycle on the real 420-candidate campaign: PBO and White's Reality Check
+    take ONLY the returns matrix -- the candidate's own returns are never an input -- so used as
+    per-candidate gates they are campaign constants. At PBO 0.6159 / RC p 0.4220 that forced
+    420/420 rejections regardless of merit, and 420-tested/0-survivors measured the instrument
+    rather than the market. The orchestrator was repaired (pbo 0/420 -> 209/420) and 21 OTHER
+    gauntlet scripts were still welded at the time of writing.
+
+    Mechanical so it can never rot back: flags any call site that computes campaign_pbo_rc() and
+    feeds the result to validate() as pbo=/rc=. Legitimate non-gate uses are exempt -- the
+    deprecated shim itself, the measurement harness that deliberately runs BOTH arms to compare,
+    and tests that assert the legacy path still behaves exactly as before.
+    """
+    exempt = {
+        "libs/autodiscovery/validation.py",      # defines the deprecated shim
+        "scripts/measure_gate_histogram.py",     # runs both arms on purpose, to compare them
+        "scripts/max_audit.py",                  # this scanner DESCRIBES the pattern in prose;
+                                                 # scanning itself is the cron-self-match class
+    }
+    welded: list[str] = []
+    for base in ("scripts", "libs"):
+        for p in sorted((ROOT / base).rglob("*.py")):
+            rel = p.relative_to(ROOT).as_posix()
+            if rel in exempt or "/tests/" in f"/{rel}" or rel.startswith("tests/"):
+                continue
+            try:
+                src = p.read_text("utf-8", errors="replace")
+            except Exception:
+                continue
+            # The weld signature: the campaign constant is computed AND handed to validate() as a
+            # per-candidate gate input. Either half alone is not the defect.
+            if "campaign_pbo_rc(" in src and re.search(r"\bpbo\s*=\s*pbo\b|\brc\s*=\s*rc\b"
+                                                       r"|pbo=pbo_once|rc=rc_once", src):
+                welded.append(rel)
+    if welded:
+        shown = ", ".join(welded[:6]) + (f" ... +{len(welded) - 6} more" if len(welded) > 6 else "")
+        defects.append((
+            "welded-gate-campaign-constant",
+            f"{len(welded)} validation path(s) still feed a CAMPAIGN CONSTANT to a per-candidate "
+            f"gate: {shown}. PBO/RC do not read the candidate's own returns, so every candidate in "
+            "a batch gets one verdict whatever its merit -- measured at 420/420 rejected. Migrate "
+            "to campaign_gate_stats() + validate(campaign=..., column=...). PHANTOM-EDGE CRITICAL: "
+            "verify the column index maps to the matrix column_stack order per file -- a mis-mapped "
+            "index hands one candidate's passing verdict to another, which is worse than the weld."))
 
 
 def check_data_utilization(defects) -> None:
@@ -1456,6 +1742,15 @@ _FINDING_DOCS = (
     "docs/research/micro_audit_inbox.md",
     "docs/research/improvement_inbox.md",
     "docs/research/panel_rulings.md",
+    # 2026-07-28: the 101-item triage. Its own header is a disposition mandate -- "don't skip any
+    # -- build now, queue, or reject completely" -- which is precisely what §35 drives. Adding
+    # these RAISES the open-finding count rather than lowering it; that is the honest direction.
+    # Leaving them out kept ~101 items invisible to the only organ that works a backlog, and
+    # coverage that rises because findings stopped being counted is the denominator trick §35
+    # exists to forbid.
+    "docs/research/SUBSYSTEM_TRIAGE.md",
+    "docs/research/TRIAGE_ADDENDUM.md",
+    "docs/GATE0_QUEUE.md",
 )
 #: Finding-bearing docs deliberately out of scope, with the reason -- so the scope check can tell
 #: "consciously excluded" from "quietly unmonitored".
@@ -1465,6 +1760,11 @@ _FINDING_DOCS_EXCLUDED = {
     "docs/research/data_axis_watchlist.md": "source cards -- governed by §33 dispositions",
     "docs/research/discovery_hypotheses.md": "hypotheses -- governed by §33 / the trial ledger",
     "docs/research/literature_coverage.md": "coverage log -- governed by §33",
+    "docs/research/prospector_coverage.md": "coverage log -- governed by §33, same as its "
+                                            "literature_coverage sibling",
+    "docs/research/MEASUREMENT_DOCTRINE.md": "standing doctrine -- its numbered items are "
+                                             "principles that bind organs, not findings owing "
+                                             "a disposition",
     "docs/POST_GATE0_MANIFEST.md": "deferred builds -- driven by check_post_gate0_activation",
     "docs/research/DAILY_INTEGRITY_WATCH.md": "standing checklist, not findings",
     "docs/research/FREE_DATA_ADDENDA_BCD.md": "source catalogue -- source cards, not findings",
@@ -1544,6 +1844,11 @@ _PRODUCER_CADENCE = {
     "docs/GAP_REGISTER.md": (
         3.0, "re-ranked at the START of every daily AI cycle by its own rule -- the organ §35 and "
              "§36 both depend on, and it was checked by nothing"),
+    "docs/EXECUTION_QUEUE.md": (
+        7.0, "the ranked, unbuilt remainder (opened 2026-07-30) -- 'worked in RANK ORDER by the "
+             "next cycle, the weekly GAP-MAX sweep, or any fresh session'; its own header claims "
+             "a cadence and nothing checked it was ever re-worked, which is exactly the failure "
+             "this law exists to catch"),
 }
 #: Artifacts that are terminal by nature: templates, forensic write-ups, protocol libraries. They
 #: accumulate no inventory, so they owe no cadence -- recorded here so "no law" is a DECISION.
@@ -1554,11 +1859,53 @@ _TERMINAL_ARTIFACTS = {
     "docs/playbooks/carry.md": "runbook -- followed, not converted",
     "docs/playbooks/go_live.md": "runbook -- followed; the gate is GAP #2",
     "docs/playbooks/ops_checklist.md": "runbook -- followed, not converted",
+    # STANDING DOCTRINE (2026-07-28). These bind organs; they are not inventory awaiting
+    # conversion, and "convert the doctrine" is not a coherent action. Terminal is the DECISION
+    # the law demands, not a default -- each governs behaviour and is superseded by amendment,
+    # never worked off a queue.
+    "docs/research/EXPLORATION_DOCTRINE.md": "standing doctrine -- binds organs, not an inventory",
+    "docs/research/MEASUREMENT_DOCTRINE.md": "standing doctrine -- binds organs, not an inventory",
+    "docs/research/OPERATING_DOCTRINE.md": "standing doctrine -- governs what to build",
+    "docs/research/RESEARCH_EXCELLENCE.md": "standing doctrine -- governs how research is run",
+    "docs/DESK_BRIEF.md":
+        "derived snapshot -- machine-generated from measured state by research_exchange.py and "
+        "overwritten on each run, so converting it is meaningless. Terminal by construction, the "
+        "same reasoning already applied to EXTERNAL_PANEL_DOSSIER.md.",
+    "docs/research/MECHANISM_GRAPH.md":
+        "reference structure CONSUMED by hypothesis_generator.py + llm_blind_researcher.py to "
+        "choose what gets asked -- applied, not converted (cf. self_interrogation_patterns.md). "
+        "It declares no cadence, and inventing one would build a gate that fires forever.",
     "docs/EXTERNAL_PANEL_DOSSIER.md":
         "derived snapshot -- REGENERATED from live state on every panel run by "
         "generate_external_review_doc.py, never an inventory. Its findings flow panel responses "
         "-> panel_inbox -> panel_rulings -> GAP_REGISTER rows (§35), so converting the dossier "
         "itself is meaningless: the next run overwrites it. Terminal by construction.",
+    # CLASSIFIED 2026-07-29 (closure cycle). This check FIRED on the four documents that cycle
+    # created, which is the law working: each is classified below as a DECISION, never a default.
+    "docs/CYCLE_20260729_CLOSURE.md":
+        "CYCLE REPORT -- a dated record of one cycle's measured results with every proving command, "
+        "same class as a forensic write-up (GAP34_FORENSIC.md). Its open items are carried by "
+        "GAP_REGISTER rows and the ratchet fence, not by converting the report.",
+    "docs/WEEKLY_MAX_CYCLE.md":
+        "standing contract for the weekly gap-max sweep (constitution L4) -- it BINDS the sweep's "
+        "conduct and effort floor and is superseded by amendment, never worked off a queue. Same "
+        "class as the standing doctrines above.",
+    "docs/research/MUTATION_BASELINE.md":
+        "MEASUREMENT RECORD with a live artifact behind it (data/mutation_score.json) and a "
+        "ratchet fence that keeps it honest (check_ratchets: test_strength_min_kill_rate, floor "
+        "only rises). Its 'owed next' targets are tracked by that fence and by GAP #53's row, not "
+        "by converting the write-up -- the write-up is the evidence, the fence is the queue.",
+    "docs/research/COT_SCREEN_RESULT.md":
+        "SCREEN RESULT, terminal by construction: a Stage-A screen has zero promotion authority, "
+        "so there is nothing to convert. Its two dispositions are already routed -- the "
+        "positioning-axis REJECT is recorded against register #77 (and cancels the queued crypto "
+        "positioning acquisition), and the un-measurable decay leaves the borrowed -58% prior "
+        "labelled borrowed under register #71. Re-entry needs a named enabling change (L1.16a).",
+    "docs/research/TRIAGE_20260729_PRINCIPAL_BATCH.md":
+        "TRIAGE LEDGER in the same class as SUBSYSTEM_TRIAGE.md / TRIAGE_ADDENDUM.md: every row "
+        "already carries its disposition (BUILT / UPGRADED / BUILD / QUEUE / REJECT with reason), "
+        "so the document IS the conversion record rather than inventory awaiting one. Rows that "
+        "became work carry register rows; rows that were rejected carry their reason.",
 }
 
 
@@ -1676,15 +2023,27 @@ def check_artifact_governance(defects) -> None:
     audit_src = ""
     with contextlib.suppress(OSError):
         audit_src = Path(__file__).read_text("utf-8")
+    cands = [p.relative_to(ROOT).as_posix() for p in sorted((ROOT / "docs").rglob("*.md"))]
+    # GITIGNORED PATHS ARE NOT ARTIFACTS (2026-07-28). This walked docs/ raw, so locally-generated
+    # scratch that git is explicitly told to ignore (docs/audit_shards/shard_*.md) was demanded to
+    # carry a governance claim. Those files do not exist on a clean checkout, which made this check
+    # -- and the CI test that asserts on it -- ENVIRONMENT-DEPENDENT: red on the box that generated
+    # the scratch, green on a runner that never did. A gate whose verdict depends on which machine
+    # ran it cannot be trusted in either direction. Governance applies to what is COMMITTED.
+    with contextlib.suppress(OSError, subprocess.SubprocessError):
+        ig = subprocess.run(["git", "check-ignore", "--stdin"], cwd=ROOT, input="\n".join(cands),
+                            capture_output=True, text=True, timeout=20)
+        if ig.returncode in (0, 1):        # 0 = some ignored, 1 = none ignored; 128 = no git
+            skip = {ln.strip() for ln in ig.stdout.splitlines() if ln.strip()}
+            cands = [c for c in cands if c not in skip]
     unclaimed = []
-    for p in sorted((ROOT / "docs").rglob("*.md")):
-        rel = p.relative_to(ROOT).as_posix()
+    for rel in cands:
         if (rel in claimed or rel.startswith(claimed_prefixes)
                 or rel.endswith("GAP_REGISTER.md")):
             continue
-        if p.name in audit_src:      # named by some other check -- already governed
+        if Path(rel).name in audit_src:      # named by some other check -- already governed
             continue
-        unclaimed.append(p.name)
+        unclaimed.append(Path(rel).name)
     if unclaimed:
         defects.append((
             "artifact-ungoverned",
@@ -1800,10 +2159,21 @@ def check_findings_scope(defects) -> None:
     """
     from libs.research.finding_registry import parse_findings
 
+    # TRAILING-SLASH CLASS CLAIMS (2026-07-26). check_artifact_ungoverned already honours these,
+    # with a comment stating exactly why: generators emit dated instances forever, so exact-path
+    # claims "could never keep up and the check would fire permanently on correctly-governed
+    # output". This sibling check never got the same treatment, so `docs/research/deep_sweep/` --
+    # excluded WITH a stated reason since it was written -- was never actually excluded here, and
+    # every weekly sweep report re-fired findings-scope-unmonitored. The defect was therefore
+    # UNCLOSABLE by construction: the only way to satisfy it was to list files that do not exist
+    # yet. A convention honoured by one check and ignored by its sibling in the same file is the
+    # generalise-the-rule blind spot; the two now read the claims the same way.
+    _excluded_prefixes = tuple(c for c in _FINDING_DOCS_EXCLUDED if c.endswith("/"))
     rogue = []
     for p in sorted((ROOT / "docs").rglob("*.md")):
         rel = p.relative_to(ROOT).as_posix()
-        if rel in _FINDING_DOCS or rel in _FINDING_DOCS_EXCLUDED or rel.endswith("GAP_REGISTER.md"):
+        if (rel in _FINDING_DOCS or rel in _FINDING_DOCS_EXCLUDED
+                or rel.startswith(_excluded_prefixes) or rel.endswith("GAP_REGISTER.md")):
             continue
         with contextlib.suppress(OSError):
             n = len(parse_findings(p.read_text("utf-8"), source=rel))
@@ -2743,6 +3113,7 @@ def check_carryover_skipped(defects) -> None:
 #: enumerate the same set instead of keeping a second copy that silently drifts.
 CHECKS = [("carryover-skipped", check_carryover_skipped),
           ("organs", check_organs), ("stubs", check_stub_deaths),
+                      ("stale-daemons", check_stale_daemons),
                       ("panel", check_panel), ("coverage", check_coverage),
                       ("findings", check_findings), ("idle", check_idle_capability),
                       ("directives", check_directives), ("verify", check_verify_lag),
@@ -2754,9 +3125,11 @@ CHECKS = [("carryover-skipped", check_carryover_skipped),
                       ("clock-saturation", check_clock_saturation),
                       ("vendor-replacement", check_vendor_replacement),
                       ("forensics-fresh", check_forensics_fresh),
+                      ("carry-funding-measured", check_carry_funding_measured),
                       ("memory-hygiene", check_memory_hygiene),
                       ("prompt-layer", check_prompt_layer),
                       ("gate-optimality", check_gate_optimality),
+                      ("welded-gates", check_welded_gates),
                       ("data-utilization", check_data_utilization),
                       ("mining-nonregression", check_mining_nonregression),
                       ("no-mining-throttle", check_no_mining_throttle),
@@ -2893,22 +3266,25 @@ def check_fee_carry_ratio(defects) -> None:
         import time as _t
 
         from libs.execution import binance_testnet as _fut
-        rows = _fut._signed("/fapi/v1/income",
-                            {"startTime": int((_t.time() - 7 * 86400) * 1000), "limit": 1000})
+        # PAGINATE (2026-07-26). This called `_signed(/fapi/v1/income, limit=1000)` directly and
+        # got back exactly 1000 rows -- the cap. Binance serves <=1000 rows/call, and this book
+        # books >1000 income rows in 7 days, so the window silently truncated to its most recent
+        # slice: funding read 2.80 against a true 13.57, commission 29.14 against a true 129.18.
+        # The understated funding then tripped this function's own flat-book guard, so §40 never
+        # fired even once it was registered. Worse, the truncated 2.80 was mistaken for a real
+        # flat book and written into the guard's comment as the 07-25 dead-man fire -- the bug
+        # manufactured its own justification. `income_summary` is the audited paginated+deduped
+        # helper and is the ONLY sanctioned way to read this endpoint (institutional_knowledge:
+        # "paginate every venue history endpoint... truncation never throws an error").
+        inc = _fut.income_summary(int((_t.time() - 7 * 86400) * 1000))
     except Exception:
         return                                    # venue unreachable is not a fee defect
-    agg: dict[str, float] = {}
-    for r in rows:
-        try:
-            agg[r["incomeType"]] = agg.get(r["incomeType"], 0.0) + float(r["income"])
-        except Exception:
-            continue
-    funding = agg.get("FUNDING_FEE", 0.0)
-    commission = abs(agg.get("COMMISSION", 0.0))
+    funding = float(inc.get("funding", 0.0))
+    commission = abs(float(inc.get("commission", 0.0)))
     if funding < 5.0:
         # FLAT-BOOK GUARD: with almost no harvest the ratio explodes for reasons unrelated to
-        # execution quality (the 07-25 dead-man fire left funding at +2.80 for a week). Firing
-        # here would be a false defect, and false defects train the desk to ignore the check.
+        # execution quality. Firing here would be a false defect, and false defects train the
+        # desk to ignore the check.
         return
     ratio = commission / funding
     try:
@@ -2923,7 +3299,10 @@ def check_fee_carry_ratio(defects) -> None:
              "updated": datetime.now(tz=UTC).isoformat(),
              "note": "§40 ratchet: fees as a fraction of funding earned. Ratchets DOWN only -- a "
                      "material worsening is a defect, never a new normal."}, indent=1), "utf-8")
-        return
+        # NO EARLY RETURN (2026-07-26): banking a new best must never suppress the ABSOLUTE alarm
+        # below. The first run on this book would otherwise record fees at 9.5x the harvest as
+        # "best ever" and report nothing at all -- a ratchet is a relative test, and a sleeve
+        # whose fees exceed its entire harvest is broken in absolute terms however it trends.
     if ratio > best * 1.3 and best < 9e8:
         defects.append((
             "fee-ratio-regression",
@@ -2938,6 +3317,129 @@ def check_fee_carry_ratio(defects) -> None:
             f"§40: fees ({commission:.2f}) EXCEED the funding earned ({funding:.2f}) over 7d "
             f"-- ratio {ratio:.2f}x. The sleeve cannot be net-positive while this holds, "
             "regardless of how good the signal is. This is the single most direct drag on CAGR."))
+
+
+def check_close_retry_loop(defects) -> None:
+    """A carry that keeps failing to close is a CHURN ENGINE, not a stuck position.
+
+    ORIGIN (2026-07-28 incident, and the reason this is mechanical rather than a lesson): every
+    futures hedge had been force-closed out from under the book, so the close path's reduceOnly
+    cover had nothing to reduce. The venue rejects that order, `_filled` returns False, and the
+    pair stayed tracked for a retry -- every tick, forever -- while `_reconcile` rebuilt BOTH legs
+    in front of each attempt. The book round-tripped its entire notional through market orders
+    every 600s: 11,136 venue commission events against 251 logged round-trips, $1,456 of fees in
+    48h against $113 of LIFETIME funding harvest.
+
+    §40 (`check_fee_carry_ratio`) DID fire on this, ~27h before it was diagnosed -- but it reports
+    a SYMPTOM ("fees are 63x the harvest"), which is consistent with a dozen causes and cost a
+    full diagnosis to localise. This check reports the FINGERPRINT: the same symbol failing to
+    close on repeat. Detection was never the gap; NAMING THE CAUSE was.
+
+    Deliberately reads the published feed rather than re-deriving state: CLOSE-FAIL is exactly
+    what the executor itself says it did, so the check cannot disagree with the book about
+    reality (institutional_knowledge: a monitor that sources ground truth from the failing
+    component cannot see the failure -- here the feed is the executor's own testimony, and a
+    stale feed is caught by the separate liveness checks).
+    """
+    feed = ROOT / "web/cashcarry_live.json"
+    if not feed.exists():
+        return
+    try:
+        acts = json.loads(feed.read_text("utf-8")).get("last_actions") or []
+    except Exception:
+        return
+    failing = sorted({a.split()[1].rstrip(":") for a in acts
+                      if isinstance(a, str) and a.startswith("CLOSE-FAIL")})
+    if not failing:
+        return
+    rebuilding = sorted({a.split()[1] for a in acts if isinstance(a, str)
+                         and (a.startswith("re-hedge") or a.startswith("spot-rehedge"))})
+    both = [s for s in failing if s in rebuilding]
+    if both:
+        defects.append(("carry-churn-loop",
+                        f"CHURN LOOP: {', '.join(both)} are failing to CLOSE while the reconciler "
+                        f"REBUILDS the same legs in the same tick -- the book is round-tripping "
+                        f"its notional every interval and paying fees both ways for zero harvest. "
+                        f"This is unbounded: it does not self-heal and it has no position limit. "
+                        f"Stop the executor or clear the cause NOW, do not wait for the fee ratio "
+                        f"to report it."))
+    else:
+        defects.append(("carry-close-failing",
+                        f"close failing on {', '.join(failing)} -- each retry pays fees for a "
+                        f"position that never retires. Verify the leg is not ALREADY flat (a "
+                        f"reduceOnly cover against a flat position is rejected, which reads as "
+                        f"'unfilled' forever) before treating this as a transient venue error."))
+
+
+def check_book_absorbing_state(defects) -> None:
+    """A book whose risk rail can never release it is DEAD, not safe -- and reads as healthy.
+
+    ORIGIN (2026-07-29, found by hand during the STEP-0 integrity watch; encoded here under the
+    recursion rule so it is never a hand-probe again). The carry book sat at n_carries=0 /
+    deployed_notional=0 with a fresh heartbeat and NO alarm anywhere in the sweep, because every
+    existing check reads a flat book as a healthy one: the bleed alarm needs non-funding PnL, §40
+    needs >$5 of funding to divide by, and `check_close_retry_loop` needs CLOSE-FAIL actions. A
+    book doing NOTHING trips none of them.
+
+    What was actually happening: the 07-25→07-28 churn loop billed $1,750.65 of commission against
+    $113.04 of lifetime funding, driving combined equity to -37.2% from inception. `risk_controls`
+    flattens at -35% measured against a FIXED `start_equity`, and its response -- flatten -- removes
+    the only mechanism (carrying) by which equity could ever climb back. So the verdict is
+    self-sustaining: flat forever, evidence clock stopped, and the forward track record the live
+    gate sizes on silently stopped accruing.
+
+    That absorbing property is CORRECT for real capital: a book that lost a third of its equity
+    must stop and get human review, never auto-resume. The defect is not the rail, it is that
+    NOTHING SAID SO -- the rail's design assumes a human re-baselines it, and no organ ever
+    escalated that a human decision was owed. This check is that escalation.
+
+    Deliberately recomputes the verdict through the SAME pure function the executor calls, from
+    the same state file, rather than re-deriving a threshold here: a monitor that keeps its own
+    copy of the rule eventually disagrees with the book about the book's own state. Reads that
+    fail leave the check SILENT -- an unmeasurable equity must never manufacture a defect (the
+    07-26 "no measurement beats a confident wrong one" lesson).
+
+    NOT a rail change and must never become one: re-baselining a ruin rail after it fired is
+    Tier-3 (principal-only). This check reports; the principal decides.
+    """
+    feed = ROOT / "web/cashcarry_live.json"
+    st_p = ROOT / "data/cashcarry_positions.json"
+    if not (feed.exists() and st_p.exists()):
+        return
+    try:
+        from libs.risk import risk_controls
+        fd = json.loads(feed.read_text("utf-8"))
+        st = json.loads(st_p.read_text("utf-8"))
+    except Exception:
+        return
+    fut_leg = fd.get("fut_leg_net")
+    if fut_leg is None:                       # futures equity unmeasured this tick -> stay silent
+        return
+    try:
+        start = float(st["start_futures_equity"])
+        fut_eq = start + float(fut_leg)
+        # Flat book: unrealised spot is 0, so the spot side is exactly the banked realised PnL.
+        eq_c = fut_eq + float(st.get("realized_spot_pnl", 0.0))
+        peak = float(st.get("peak_combined_equity", start))
+        gross = float(fd.get("deployed_notional") or 0.0)
+        n_carries = int(fd.get("n_carries") or 0)
+    except (KeyError, TypeError, ValueError):
+        return
+    verdict = risk_controls.evaluate(eq_c, start, peak, gross, ruin_cap_lev=8.0)
+    if verdict.action != "flatten":
+        return
+    if n_carries > 0 or gross > 0:
+        # Flatten WITH inventory is the rail doing its job mid-unwind -- transient, not absorbing.
+        return
+    defects.append((
+        "book-absorbing-state",
+        f"BOOK DEAD, NOT IDLE: the carry book is flat (n_carries=0) while risk_controls still "
+        f"returns FLATTEN -- {'; '.join(verdict.reasons)}. A flat book earns no funding, so equity "
+        f"cannot rise, so the verdict never clears: this state is ABSORBING and the forward track "
+        f"record the live gate sizes on has STOPPED ACCRUING (combined equity ${eq_c:,.2f} vs "
+        f"${start:,.2f} inception). Every other check reads this as a healthy flat book. "
+        f"Re-baselining a fired ruin rail is TIER-3 (principal-only) -- do NOT self-clear it; "
+        f"page the principal with the attribution of what caused the drawdown."))
 
 
 DOCTRINE = ROOT / "ops/principal_doctrine.txt"
@@ -2987,6 +3489,93 @@ def check_universal_doctrine(defects) -> None:
                         "desk has, silently."))
 
 
+# Checks DEFINED BELOW the CHECKS literal must be registered here -- appending them up there is a
+# NameError, which is exactly how four of them ended up dead. Keep the order explicit (the list is
+# the run order); `check_registry_complete` below is what makes a future omission impossible.
+CHECKS += [("fee-carry-ratio", check_fee_carry_ratio),
+           ("close-retry-loop", check_close_retry_loop),
+           ("paid-target-registry", check_paid_target_registry),
+           ("holdings-ratchet", check_holdings_never_shrink),
+           ("book-absorbing-state", check_book_absorbing_state),
+           ("universal-doctrine", check_universal_doctrine)]
+
+#: Module-level `check_*` functions that are deliberately NOT swept. Empty by design: an exemption
+#: must be argued in writing here, never assumed by silence.
+_CHECKS_EXEMPT: set[str] = set()
+
+
+def check_registry_complete(defects) -> None:
+    """A written check that is never registered is a law the desk believes it is enforcing.
+
+    Origin (2026-07-26): `check_fee_carry_ratio` (§40 fee ratchet), `check_paid_target_registry`
+    and `check_holdings_never_shrink` (§39) and `check_universal_doctrine` were all authored,
+    committed, and NEVER added to CHECKS -- four consecutive charters shipped with zero
+    enforcement. The cause is structural, not careless: CHECKS is a literal defined ABOVE most of
+    the checks, so the natural "append next to the others" edit raises NameError at import and the
+    registration quietly gets dropped. Nothing mechanical looked, because the checker that would
+    have looked was itself one of the unregistered ones.
+
+    This closes the class: every module-level `check_*` callable must be in CHECKS or argued into
+    `_CHECKS_EXEMPT`. Silence is no longer a way to ship a dead law.
+    """
+    registered = {fn.__name__ for _, fn in CHECKS}
+    orphans = sorted(
+        name for name, obj in globals().items()
+        if name.startswith("check_") and callable(obj)
+        and name not in registered and name not in _CHECKS_EXEMPT)
+    if orphans:
+        defects.append((
+            "check-unregistered",
+            f"{len(orphans)} check(s) authored but NEVER RUN -- the law they enforce is inert "
+            f"while the desk believes it is enforced: {', '.join(orphans)}. Add each to CHECKS "
+            "(register BELOW its definition) or justify it in _CHECKS_EXEMPT."))
+
+
+CHECKS += [("check-registry", check_registry_complete)]
+
+
+CONSTITUTION = ROOT / "docs/CONSTITUTION.md"
+CONST_REVIEW = ROOT / "docs/research/constitution_review.md"
+
+
+def check_constitution(defects) -> None:
+    """The constitution governs (installed 2026-07-29): present, injected, and reviewed.
+
+    L2.8 makes stability the default review outcome -- but an UNREVIEWED constitution is not
+    stable, it is unexamined. The quarterly cadence is enforced as an age fence rather than a new
+    scheduler: the defect fires, the brain runs the review (default verdict: unchanged, stated
+    explicitly), writes the artifact, the fence goes green. No second orchestrator.
+    """
+    if not CONSTITUTION.exists() or CONSTITUTION.stat().st_size < 8000:
+        defects.append(("constitution-missing",
+                        "docs/CONSTITUTION.md is missing or gutted -- the desk's governing "
+                        "operating system is not installed; every organ is running on doctrine "
+                        "fragments with no Level-1 objective hierarchy"))
+        return
+    doct = (ROOT / "ops/principal_doctrine.txt").read_text("utf-8", errors="ignore")
+    if "docs/CONSTITUTION.md" not in doct or "E[log(W_T)]" not in doct:
+        defects.append(("constitution-not-injected",
+                        "the doctrine no longer declares docs/CONSTITUTION.md governing (or lost "
+                        "the L1.1 objective) -- organs are being briefed without the "
+                        "constitutional core, which voids universal enforcement"))
+    if CONST_REVIEW.exists():
+        age_d = (NOW - CONST_REVIEW.stat().st_mtime) / 86400.0
+        if age_d > 92:
+            defects.append(("constitution-review-overdue",
+                            f"L4 quarterly constitutional review is {age_d:.0f}d old (>92d). Run "
+                            "it per L2.8: rank candidate changes by ERV, default outcome "
+                            "STABILITY stated explicitly, write the verdict to "
+                            "docs/research/constitution_review.md."))
+    elif (NOW - CONSTITUTION.stat().st_mtime) / 86400.0 > 92:
+        defects.append(("constitution-review-overdue",
+                        "no constitutional review artifact exists and the constitution is >92d "
+                        "old -- L4 requires the quarterly review; write "
+                        "docs/research/constitution_review.md with the ERV-ranked verdict."))
+
+
+CHECKS += [("constitution", check_constitution)]   # registered BELOW its definition
+
+
 def main() -> None:
     defects: list[tuple[str, str]] = []
     for label, fn in CHECKS:
@@ -3027,17 +3616,62 @@ def main() -> None:
     # at line 1) AND only wrote once ever (one-shot latch), so 24 live defects never paged. Now
     # the escalation OWNS line 1 whenever defects are overdue, and is CLEARED when none are --
     # so the pager surfaces the truth and stops crying resolved-wolf.
+    # URGENT CARVE-OUT (2026-07-28). Owning line 1 unconditionally fixed the stale-RESOLVED bug by
+    # creating the opposite one: with defects essentially always overdue, the ROUTINE 48h sweep
+    # permanently outranked every EVENT-DRIVEN page, so a Tier-3 ask the CRO cannot act on alone
+    # (a dead-man reset) was delivered as "20 below-max states". A standing sweep is never more
+    # urgent than a blocker only the principal can clear. A page marked `URGENT <ISO-date>:` keeps
+    # line 1 while it is FRESH -- the date is mandatory precisely so this cannot rot back into the
+    # stale line 1 the 07-24 fix removed; past _URGENT_TTL_D it is demoted automatically.
     _MARK = "MAX-AUDIT ESCALATION"
+    _URGENT_TTL_D = 7.0
     existing = PA.read_text("utf-8") if PA.exists() else ""
-    # strip any prior escalation block so it never stacks / goes stale
-    body = existing.split("\n" + _MARK)[0].split(_MARK)[0].rstrip()
+    # DATA LOSS FIX (2026-07-28). This was `existing.split(_MARK)[0]`, which keeps only the text
+    # BEFORE the marker. Once the escalation owned line 1 -- i.e. every run after the first -- that
+    # expression returned "" and SILENTLY DELETED the entire human-written page below it. Every
+    # PRINCIPAL_ACTION page the CRO wrote was destroyed by the next sweep, on the desk's only
+    # human-escalation channel, from 2026-07-24 until this fix. Found by re-reading the file after
+    # writing it rather than trusting the write. Strip the escalation BLOCK ONLY: its header line
+    # plus the indented bullets that belong to it; every other line is somebody's message and is
+    # preserved.
+    kept, skipping = [], False
+    for ln in existing.splitlines():
+        if ln.startswith(_MARK):
+            skipping = True
+            continue
+        if skipping and (ln.startswith("  - ") or not ln.strip()):
+            continue                       # bullets + the blank line that trails the block
+        skipping = False
+        kept.append(ln)
+    body = "\n".join(kept).strip()
+    # POSITION FIX (2026-07-30). This checked only `body.startswith("URGENT ")`, so the carve-out
+    # required the URGENT block to be the FIRST paragraph. On 07-30 an unrelated PURCHASE DECISION
+    # notice was prepended above it, which silently disabled the carve-out: the routine 48h sweep
+    # retook line 1 and the principal was paged "24 below-max state(s)" while TWO Tier-3 rulings the
+    # whole discovery pipeline is blocked on (dead carry book, pbo/rc gate flip) sat below the fold.
+    # Third recurrence of one family -- 07-24 stale line 1, 07-28 silent deletion, now demotion by a
+    # neighbour's insert -- because the carve-out was POSITIONAL and no writer owns a position. Find
+    # a fresh URGENT block ANYWHERE in the body and hoist it; reordering only, nothing dropped.
+    urgent = ""
+    paras = body.split("\n\n")
+    for i, para in enumerate(paras):
+        if not para.startswith("URGENT "):
+            continue
+        with contextlib.suppress(Exception):
+            stamp = para.split("URGENT ", 1)[1].split(":", 1)[0].strip()
+            if (NOW - datetime.fromisoformat(stamp).timestamp()) / 86400.0 <= _URGENT_TTL_D:
+                urgent = para
+                body = "\n\n".join(paras[:i] + paras[i + 1:]).strip()
+                break
     if overdue:
         head = (f"{_MARK}: {len(overdue)} below-max state(s) >48h unfixed/unacked -- "
                 + "; ".join(f"{d}" for d, _ in overdue[:6])
                 + (" ..." if len(overdue) > 6 else "") + "\n"
                 + "".join(f"  - {d}: {m}\n" for d, m in overdue[:8]))
-        PA.write_text(head + "\n" + body, "utf-8")   # escalation OWNS line 1
-        print(f"ESCALATED to principal page (line 1): {len(overdue)} defect(s) >48h")
+        # a fresh urgent page keeps line 1; otherwise the escalation owns it as before
+        PA.write_text((urgent + "\n\n" if urgent else "") + head + "\n" + body, "utf-8")
+        print(f"ESCALATED to principal page (line {'2' if urgent else '1'}): "
+              f"{len(overdue)} defect(s) >48h" + (" -- behind a fresh URGENT page" if urgent else ""))
     elif existing != body + ("\n" if body else ""):
         PA.write_text(body + ("\n" if body else ""), "utf-8")  # cleared: drop stale escalation
         print("escalation cleared: no overdue defects")

@@ -121,10 +121,29 @@ def pick_organ(
     now: datetime,
     is_running: Callable[[str], bool],
 ) -> OrganSpec | None:
-    """The single highest-priority owed organ that is not currently running, else None."""
+    """The single highest-priority owed organ, else None -- and only when the field is CLEAR.
+
+    GLOBAL CONCURRENCY GATE (2026-07-26). The per-organ `is_running` test below only ever asked
+    "is THIS organ running", so catch-up would fire an organ while a DIFFERENT one was mid-run.
+    Caught in the act on 07-26: the quota window reset at 15:00, systemd's frontier timer fired
+    at 15:00:02, catch-up re-fired the brain at 15:00:05, and re-fired deep_sweep (8 cold
+    auditors) at 15:05 -- three max-effort organs launched into the same freshly-reset window
+    inside five minutes. That is how a window that just reopened is re-exhausted immediately,
+    and it is the mechanism behind the paired deaths in the logs, where two organs that started
+    the same minute died quoting the SAME reset stamp (cro_ai + dataaxis 14:00 -> "resets
+    5:20pm"; cro_ai + prospector 18:00 -> "resets 11pm"; cro_ai + litminer 19:00 -> "resets
+    11:40pm").
+
+    Every organ draws on ONE shared pool, so starting a second while any is live does not buy
+    throughput -- it converts two runs that would each have completed into two stub deaths, and
+    a stub death costs the window AND the work. Serializing retries is therefore strictly
+    throughput-POSITIVE: same cadence, same model tier, same breadth, more completions. This
+    gate slows nothing down; it stops the desk from stepping on its own runs, which is exactly
+    the "retry layer, never a scheduler" contract in this module's docstring.
+    """
+    if any(is_running(other.pgrep) for other in ORGANS):
+        return None
     for spec in ORGANS:
-        if is_running(spec.pgrep):
-            continue
         if organ_owed(spec, logdir, now):
             return spec
     return None

@@ -245,6 +245,27 @@ def realized_trades(since_ms: int = 0) -> list[float]:
     return [float(r.get("income", 0.0)) for r in _income_rows(since_ms, "REALIZED_PNL")]
 
 
+def commission_events(since_ms: int, symbol: str = "") -> list[dict[str, Any]]:
+    """Per-EVENT commission rows (symbol, time, commission) for per-trade fee attribution.
+
+    ``income_summary`` returns only the AGGREGATE commission, which cannot answer "what did THIS
+    round-trip cost". Per-trade attribution is what separates a bleeding hold-class from a
+    bleeding execution path, and the desk's own trade log cannot supply it: ``_tca`` records
+    slippage-vs-mid and no commission term at all, so every per-trade ``net`` in
+    data/cashcarry_trades.json is fee-blind by construction (2026-07-28 finding -- the venue
+    billed $1,750.65 while the log's aggregate net read +$0.16).
+
+    Read-only and paginated through the audited ``_income_rows`` path, which is the only
+    sanctioned way to read this endpoint (the 2026-07-26 truncation incident: a direct
+    limit=1000 call silently returned a page cap and understated commission by ~4.4x).
+    Commission is returned POSITIVE-MEANS-PAID, matching ``_tca``'s sign convention.
+    """
+    return [{"symbol": str(r.get("symbol") or ""),
+             "time": int(r.get("time") or 0),
+             "commission": abs(float(r.get("income") or 0.0))}
+            for r in _income_rows(since_ms, "COMMISSION", symbol=symbol)]
+
+
 def positions() -> dict[str, float]:
     """Current signed position quantity per symbol (long +, short -)."""
     out: dict[str, float] = {}
@@ -284,12 +305,51 @@ def set_leverage(symbol: str, leverage: int) -> None:
         return
 
 
-def place_market(symbol: str, side: str, qty: float) -> dict[str, Any]:
-    """Place a reduce-or-open market order. ``side`` in {BUY, SELL}; qty > 0."""
-    res = _signed("/fapi/v1/order", {
-        "symbol": symbol, "side": side, "type": "MARKET", "quantity": qty,
-    }, method="POST")
-    return dict(res) if isinstance(res, dict) else {"raw": res}
+_MKT_MAX_CACHE: dict[str, float] = {}
+
+
+def _market_max_qty(symbol: str) -> float:
+    """Venue MARKET_LOT_SIZE cap, cached. inf when unknown -- never invent a limit.
+
+    2026-07-27 incident: COOKIEUSDT maxQty is 150,000 here, and the desk was sending 183,140.
+    The venue rejected every market order with -4005, the caller fell back to a RESTING post-only
+    limit, and accumulated fills from repeated cycles bought a short through zero into a
+    +916,772 LONG carrying -$482.
+    """
+    if symbol in _MKT_MAX_CACHE:
+        return _MKT_MAX_CACHE[symbol]
+    cap = float("inf")
+    try:
+        info = _get("/fapi/v1/exchangeInfo")
+        for s in info.get("symbols", []):
+            for f in s.get("filters", []):
+                if f.get("filterType") == "MARKET_LOT_SIZE":
+                    _MKT_MAX_CACHE[s["symbol"]] = float(f["maxQty"])
+        cap = _MKT_MAX_CACHE.get(symbol, float("inf"))
+    except Exception:
+        pass                                  # unknown cap -> behave exactly as before
+    _MKT_MAX_CACHE[symbol] = cap
+    return cap
+
+
+def place_market(symbol: str, side: str, qty: float,
+                 reduce_only: bool = False) -> dict[str, Any]:
+    """Market order, SPLIT to respect the venue MARKET_LOT_SIZE cap.
+
+    ``reduce_only=True`` makes the order arithmetically incapable of crossing zero into the
+    opposite position -- mandatory on any cover/close leg. Defaults False so opens are unchanged.
+    """
+    cap = _market_max_qty(symbol)
+    remaining, last, n = float(qty), None, 0
+    while remaining > 0 and n < 50:
+        chunk = min(cap, remaining) if cap != float("inf") else remaining
+        params = {"symbol": symbol, "side": side, "type": "MARKET", "quantity": chunk}
+        if reduce_only:
+            params["reduceOnly"] = "true"
+        last = _signed("/fapi/v1/order", params, method="POST")
+        remaining -= chunk
+        n += 1
+    return dict(last) if isinstance(last, dict) else {"raw": last}
 
 
 def place_post_only(symbol: str, side: str, qty: float, price: float) -> dict[str, Any]:

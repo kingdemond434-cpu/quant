@@ -28,7 +28,13 @@ from libs.data.crypto_source import current_funding
 from libs.execution import binance_spot_testnet as spot
 from libs.execution import binance_testnet as fut
 from libs.execution import execution_tape
-from libs.execution.carry_accounting import carry_bleed_report, derive_spot_realized
+from libs.execution.carry_accounting import (
+    attribute_non_funding,
+    carry_bleed_report,
+    dedup_basis,
+    derive_spot_realized,
+    read_income,
+)
 from libs.risk import risk_controls
 
 _STATE = Path("data/cashcarry_positions.json")
@@ -43,6 +49,7 @@ _LAST_ARCHIVE = Path("data/.last_metrics_archive")  # once-per-day data-flywheel
 _HB_TICK = 60                                    # heartbeat cadence (decoupled from rebalance work)
 _MAKER = True                                     # maker-first execution (set via --no-maker)
 _RSP_TOL = 5.0                                    # $ drift before realized_spot_pnl self-heals
+_FLAT_EPS = 1e-9                                  # |qty| at or below this counts as flat
 _DEPTH_MULT = 5.0                                # book depth within 1% of touch must cover an open
 # ORPHAN-COVER BOUNDS (gap #37, panel consensus 8+/12 on the 2026-07-19 audit): the
 # orphan cover is a live-ammo market-order path that previously fired on FIRST sight of
@@ -306,7 +313,17 @@ def _churn_guard(held_h: float, funding: float, rail_forced: bool) -> bool:
 # hold. Measured median pair round-trip is ~4.5 bps (run_cost_model.py); the minimum hold is
 # 24h = 3 funding periods. Break-even funding = 4.5 / 3 = 1.5 bps = 0.00015 per 8h.
 _MIN_FUNDING = 0.00015          # per-8h floor: below this a carry cannot pay for its own exit
-_DEFAULT_RT_BPS = 4.5           # measured desk-median pair round-trip, used when unmeasured
+# FAIL CLOSED (2026-07-27). Was 4.5 = the desk MEDIAN, which sits at only the 43rd percentile
+# of measured round-trips (median 5.7, p75 21.3, p90 39.5, max 130.5 across 30 symbols).
+# 'Unmeasured' is NOT a random subset: a symbol is missing from the cost model BECAUSE it is
+# too illiquid to measure -- i.e. it is the expensive tail. Assigning it the median was a
+# fail-open on exactly the worst books (this file already records NOM -149bps, KNC -211bps).
+# Worse, at 4.5 with a 24h hold the gate required funding > 4.5/3e4 = 0.00015 = _MIN_FUNDING
+# exactly, so the cost gate added NOTHING beyond the existing floor -- it was decorative.
+# p90 makes the unmeasured case pessimistic: a symbol must prove it is cheap (by being
+# measured) before it can clear the bar. Raising it can only REFUSE NEW OPENS -- _entry_gate
+# is never applied to the hold/target set, so this cannot force-close anything.
+_DEFAULT_RT_BPS = 39.5          # p90 of measured pair round-trip; pessimistic when unmeasured
 _COST_MODEL = Path("data/cost_model.json")
 _FORENSICS = Path("web/trade_forensics.json")
 # STRUCTURAL-BLEED DENYLIST (2026-07-23). run_trade_forensics.py already PROVED which
@@ -394,8 +411,16 @@ def _reconcile(pos: dict[str, dict[str, Any]], *, dry: bool,
                cooldown: dict[str, float] | None = None,
                fail_counts: dict[str, int] | None = None,
                orphan_seen: dict[str, int] | None = None,
-               orphan_cool: dict[str, float] | None = None) -> list[str]:
+               orphan_cool: dict[str, float] | None = None,
+               flatten_only: bool = False) -> list[str]:
     """Heal hedge drift every cycle -- survival is priority #1. Two invariants restored:
+
+    ``flatten_only`` (2026-07-28 incident): when the book is under a KILL or risk-flatten order
+    its target state is FLAT, so the two branches here that ADD exposure -- re-shorting a missing
+    futures leg and re-buying a sold spot leg -- are rebuilding exactly what the close path is
+    tearing down in the same tick. That loop round-tripped the entire book through market orders
+    every 600s and never terminated. Branches that move TOWARD flat (orphan cover, trim-excess,
+    adl-flatten) stay live: a flatten order never means "stop reducing risk".
 
       * ORPHAN futures short (a short with no tracked carry) -> cover it (close to flat).
       * UNHEDGED tracked carry (state expects a short but the futures leg is missing/short) ->
@@ -499,6 +524,9 @@ def _reconcile(pos: dict[str, dict[str, Any]], *, dry: bool,
                         cooldown[sym] = time.time() + 86400.0
                     acts.append(f"adl-flatten {sym} (venue force-closed short; spot sold, 24h out)")
                 continue
+            if flatten_only:      # book ordered flat -> re-shorting walks back into the position
+                acts.append(f"flatten-mode: skip re-hedge {sym} (book ordered flat)")
+                continue
             with _safe():
                 fut.set_leverage(sym, 3)
             how = _do(fut, sym, "SELL", round(want - have, 8))
@@ -523,6 +551,9 @@ def _reconcile(pos: dict[str, dict[str, Any]], *, dry: bool,
             want = float(p["spot_qty"])
             held = bal.get(sym.replace("USDT", ""), 0.0)
             if held + 1e-9 < want * 0.98:
+                if flatten_only:  # re-buying the leg the close just sold is the churn loop itself
+                    acts.append(f"flatten-mode: skip spot-rehedge {sym} (book ordered flat)")
+                    continue
                 fl = sfl.get(sym, {})
                 deficit = _round(want - held, fl.get("step", 0.0), int(fl.get("qty_prec", 6)))
                 if deficit > 0:
@@ -541,6 +572,16 @@ def _reconcile(pos: dict[str, dict[str, Any]], *, dry: bool,
     return acts
 
 
+def _net_bps(sym: str, funding: float, min_hold_h: float = _MIN_HOLD_H) -> float:
+    """Expected NET bps over the minimum hold: funding captured MINUS measured round-trip.
+
+    This is the quantity the desk actually earns, and ranking on it rather than on gross funding
+    is the whole of the 2026-07-27 universe switch. Unmeasured symbols carry the pessimistic
+    _DEFAULT_RT_BPS, so they sink on their own without a separate denylist.
+    """
+    return funding * 1e4 * (min_hold_h / 8.0) - _rt_bps(sym)
+
+
 def _ranked() -> list[tuple[str, float]]:
     """All positive-funding USDT perps tradeable on BOTH testnets, ranked high->low funding."""
     f = current_funding()
@@ -552,7 +593,16 @@ def _ranked() -> list[tuple[str, float]]:
 
 def _rebalance(top: int, hold_top: int, capital: float, *, dry: bool) -> dict[str, Any]:
     ranked = _ranked()
-    cands = ranked[:top]                                   # the names we'd OPEN (top funding)
+    # UNIVERSE SWITCH (principal-approved 2026-07-27). Was `ranked[:top]` = top-N by RAW
+    # FUNDING. Funding is the COMPENSATION FOR ILLIQUIDITY, so funding-first ranking
+    # systematically selected the names whose round-trips destroy the carry: COOKIEUSDT was
+    # the most-traded symbol at 21 opens with a MEASURED 130.47bps pair round-trip against
+    # ~6.7bps of funding over a 24h hold -- a ~19x loss per rotation. 11 of the 16 most-
+    # traded names had no measured cost at all. That single defect explains the 7.75x
+    # cost/funding ratio with no residual mystery. Rank by NET instead; _entry_gate still
+    # has the final veto. OPENS ONLY -- `target`/`hold_set` are untouched below, so this can
+    # never force-close a held carry (whose entry cost is already sunk).
+    cands = sorted(ranked, key=lambda c: -_net_bps(c[0], c[1]))[:top]
     # HYSTERESIS: a held carry is kept while it stays in the broad top-`hold_top` positive set;
     # only names that fall out of it (or go non-positive) are closed. Kills noise-driven churn.
     hold_set = {s for s, _ in ranked[:hold_top]}
@@ -572,8 +622,13 @@ def _rebalance(top: int, hold_top: int, capital: float, *, dry: bool) -> dict[st
     state["orphan_cooldown"] = ocool
     orph: dict[str, int] = {s2: int(n2) for s2, n2 in state.get("orphan_seen_counts", {}).items()}
     state["orphan_seen_counts"] = orph
+    # FLATTEN MODE: a KILL file is authoritative this tick; a risk-flatten is only known AFTER
+    # prices are read, so it latches through state and binds the NEXT tick's reconcile. Both stop
+    # the reconciler rebuilding a book the close path is unwinding (2026-07-28 churn incident).
+    _flatten_only = _KILL.exists() or state.get("last_risk_action") == "flatten"
     recon = _reconcile(pos, dry=dry, cooldown=cool,          # heal hedge drift FIRST (survival #1)
-                       fail_counts=fails, orphan_seen=orph)
+                       fail_counts=fails, orphan_seen=orph,
+                       flatten_only=_flatten_only)
     if cool:
         target -= set(cool)
         cands = [c for c in cands if c[0] not in cool]
@@ -636,6 +691,7 @@ def _rebalance(top: int, hold_top: int, capital: float, *, dry: bool) -> dict[st
             gross = sum(float(p["spot_qty"]) * spot_px.get(s, float(p["spot_cost"]))
                         for s, p in pos.items())
             risk = risk_controls.evaluate(eq_c, start_eq, peak, gross, ruin_cap_lev=8.0)
+            state["last_risk_action"] = risk.action   # latches flatten into next tick's reconcile
             if risk.action == "flatten":
                 target, cands = set(), []                   # close all, open nothing (survival)
                 actions.append("RISK-FLATTEN " + "; ".join(risk.reasons))
@@ -646,8 +702,14 @@ def _rebalance(top: int, hold_top: int, capital: float, *, dry: bool) -> dict[st
     # CLOSE carries that left the positive-funding set (sell spot, cover perp)
     # CHURN GUARD (gap #42): a rotation-driven close on a carry that has not yet earned its
     # round-trip is a measured -8.1%/yr drag. Rails are exempt and still close instantly.
-    _rail_forced = set(cool) | (set(pos) if (risk is not None
-                                             and risk.action == "flatten") else set())
+    # KILL FORCES THE RAIL (2026-07-27, Tier 0). Without this the churn guard HELD carries
+    # younger than _MIN_HOLD_H while DEADMAN_FIRED and CASHCARRY_KILL were both latched --
+    # MOVEUSDT (07:21) and TSTUSDT (08:58) were both under 24h and survived a demanded full
+    # unwind. A ruin rail a fee heuristic can veto is not a ruin rail. Opens are already
+    # impossible at top=0, so widening the forced set can only ever CLOSE.
+    _KILL_FORCES_RAIL = _KILL.exists()
+    _rail_forced = set(cool) | (set(pos) if (_KILL_FORCES_RAIL or (
+        risk is not None and risk.action == "flatten")) else set())
     for sym in list(pos):
         if sym not in target:
             p = pos[sym]
@@ -690,7 +752,8 @@ def _rebalance(top: int, hold_top: int, capital: float, *, dry: bool) -> dict[st
                         "held_hours": held, "price_pnl": round(price_pnl, 2),
                         "est_funding": round(est_funding, 2),
                         "net": round(price_pnl + est_funding, 2),
-                        "spot_mode": fill.get("spot"), "fut_mode": fill.get("fut")})
+                        "spot_mode": fill.get("spot"), "fut_mode": fill.get("fut"),
+                        **_tca(fill, spx, fpx, "SELL")})
             actions.append(f"close {sym}")
             del pos[sym]
 
@@ -740,7 +803,8 @@ def _rebalance(top: int, hold_top: int, capital: float, *, dry: bool) -> dict[st
             _log_trade({"event": "open", "symbol": sym, "qty": qty,
                         "notional": round(qty * px, 2), "funding_rate": round(fnd, 6),
                         "opened": pos[sym]["opened"],
-                        "spot_mode": fill.get("spot"), "fut_mode": fill.get("fut")})
+                        "spot_mode": fill.get("spot"), "fut_mode": fill.get("fut"),
+                        **_tca(fill, px, fpe, "BUY")})
         actions.append(f"open {sym} {qty}")
 
     # TOP UP undersized held carries toward the FULL-capital target so authorized capital is not
@@ -788,7 +852,8 @@ def _rebalance(top: int, hold_top: int, capital: float, *, dry: bool) -> dict[st
                 _log_trade({"event": "topup", "symbol": sym, "qty": qty,
                             "notional": round(qty * px, 2), "funding_rate": p.get("funding"),
                             "opened": p.get("opened"),
-                            "spot_mode": fill.get("spot"), "fut_mode": fill.get("fut")})
+                            "spot_mode": fill.get("spot"), "fut_mode": fill.get("fut"),
+                            **_tca(fill, px, fpe, "BUY")})
             actions.append(f"topup {sym} +{qty}")
 
     state["positions"] = pos
@@ -903,14 +968,99 @@ def _filled(res: object) -> bool:
             and float(res.get("executedQty", 0.0)) > 0)
 
 
+def _mid_of(conn: Any, sym: str) -> float | None:
+    """Read-only mid quote. Returns None rather than 0.0 so a failed read is never mistaken for
+    a real price and silently turned into a 100% slippage number."""
+    try:
+        bid, ask = conn.book_ticker().get(sym, (0.0, 0.0))
+        bid, ask = float(bid), float(ask)
+        return (bid + ask) / 2.0 if bid > 0 and ask > 0 else None
+    except Exception:
+        return None
+
+
+def _tca(fill: dict[str, Any], spot_fill: float | None, fut_fill: float | None,
+         spot_side: str) -> dict[str, Any]:
+    """Per-leg transaction-cost attribution. POSITIVE bps ALWAYS MEANS WE PAID.
+
+    On an open the carry buys spot and sells futures; on a close it is the reverse. Paying above
+    mid when buying and receiving below mid when selling are both costs, so the sign is flipped
+    per side to make the columns directly comparable and summable across opens and closes.
+    """
+    out: dict[str, Any] = {
+        "spot_fill": spot_fill, "fut_fill": fut_fill,
+        "spot_mid": fill.get("spot_mid"), "fut_mid": fill.get("fut_mid"),
+        "wait_s": fill.get("wait_s"),
+    }
+    sm, fm = fill.get("spot_mid"), fill.get("fut_mid")
+    if sm and spot_fill:
+        s = (float(spot_fill) - sm) / sm * 1e4
+        out["spot_slip_bps"] = round(s if spot_side == "BUY" else -s, 3)
+    if fm and fut_fill:
+        f = (float(fut_fill) - fm) / fm * 1e4          # futures leg is the opposite side of spot
+        out["fut_slip_bps"] = round(-f if spot_side == "BUY" else f, 3)
+    return out
+
+
 def _execute_pair(sym: str, qty: float, spot_side: str, fut_side: str) -> dict[str, Any]:
+    """TCA WRAPPER (2026-07-27). Captures the decision-time benchmark and elapsed time around the
+    unchanged execution path, so realised slippage becomes measurable per leg, per symbol, per
+    mode. Adds no order logic; the mid reads are read-only and failures degrade to None."""
+    _t0 = time.time()
+    _sm = _mid_of(spot, sym)
+    _fm = _mid_of(fut, sym)
+    res = _execute_pair_impl(sym, qty, spot_side, fut_side)
+    if spot_side == "SELL":            # a CLOSE succeeds by reaching FLAT, not by filling an order
+        res = _close_goal_state(sym, res)
+    res["spot_mid"] = _sm
+    res["fut_mid"] = _fm
+    res["wait_s"] = round(time.time() - _t0, 3)
+    return res
+
+
+def _close_goal_state(sym: str, res: dict[str, Any]) -> dict[str, Any]:
+    """Mark a CLOSE leg that is ALREADY at its goal state (flat) as done rather than failed.
+
+    2026-07-28 incident: every futures hedge had been force-closed out from under the book, so
+    the close path's reduceOnly cover had nothing to reduce. The venue rejects that order,
+    `_filled` returns False, and `fut_ok=False` kept the pair tracked for a retry -- every tick,
+    forever, while `_reconcile` rebuilt both legs in front of each attempt. 11,136 commission
+    events against 251 logged round-trips; $1,456 of fees in 48h against $113 of LIFETIME funding
+    harvest. The bug is definitional: `_ok` meant "an order filled" when a close only ever needed
+    "the leg is flat".
+
+    Checked PER LEG against the venue, so a leg that genuinely still holds inventory still fails
+    and stays tracked -- the 2026-07-19 stranded-inventory fix (~$2,150 of real spot deleted from
+    the tracker while still held) is preserved exactly, not loosened.
+    """
+    if not res.get("fut_ok"):
+        with contextlib.suppress(Exception):
+            if abs(float(fut.positions().get(sym, 0.0))) <= _FLAT_EPS:
+                res["fut_ok"], res["fut"] = True, "already-flat"
+    if not res.get("spot_ok"):
+        with contextlib.suppress(Exception):
+            step = float(spot.exchange_filters().get(sym, {}).get("step", 0.0) or 0.0)
+            held = float(spot.balances().get(sym.replace("USDT", ""), 0.0))
+            if held <= max(step, _FLAT_EPS):   # nothing left above the venue's tradable increment
+                res["spot_ok"], res["spot"] = True, "already-flat"
+    return res
+
+
+def _execute_pair_impl(sym: str, qty: float, spot_side: str, fut_side: str) -> dict[str, Any]:
     """Fill both carry legs -- maker-first (execution alpha: lower fees) if enabled, else market.
 
     Returns {"spot": mode, "fut": mode, "spot_ok": bool, "fut_ok": bool} -- callers MUST check
     the _ok flags before treating a leg as filled; a leg failing must not abort the whole
     rebalance (that is what `_safe()` still protects), but it must never be reported as success.
     Maker path has a taker fallback; on ANY maker error we fall back to a plain market pair."""
-    if _MAKER:
+    # CLOSES BYPASS THE MAKER PATH (2026-07-27, incident #6 recurrence). _MAKER=True made
+    # _maker_pair the DEFAULT, and its post-only limits carry neither reduceOnly nor a venue
+    # size cap -- so repeated close attempts accumulated resting fills that bought a short
+    # through zero into a long. Twice: COOKIEUSDT +916,772, then 1000CATUSDT +1,138,985.
+    # A close is a CERTAINTY problem, not a fee problem; the desk's own note already says
+    # "patient on OPENS, fast on CLOSES". Opens keep the maker rebate, which is where it pays.
+    _CLOSE_IS_MARKET_ONLY = spot_side == "SELL"
+    if _MAKER and not _CLOSE_IS_MARKET_ONLY:
         try:
             # patient on OPENS (spot BUY = entering a carry), fast on CLOSES (spot SELL =
             # unwinding, where the rails need speed). See the fee audit note above.
@@ -921,10 +1071,15 @@ def _execute_pair(sym: str, qty: float, spot_side: str, fut_side: str) -> dict[s
                 _ERR.write_text(f"{datetime.now(tz=UTC).isoformat()} maker fail {sym}: {e!r}\n")
     spot_res: object = None
     fut_res: object = None
+    # CLOSE legs are reduceOnly (2026-07-27 incident). spot_side=="SELL" IS the close/unwind
+    # direction; the futures leg then BUYS to cover a short, which is exactly the order that
+    # walked COOKIEUSDT through zero into a +916,772 long. reduceOnly makes that impossible.
+    # Opens (spot BUY / futures SELL) must NOT be reduceOnly -- they establish the short.
+    _reduce_only_leg = spot_side == "SELL"
     with _safe():
         spot_res = spot.place_market(sym, spot_side, qty)
     with _safe():
-        fut_res = fut.place_market(sym, fut_side, qty)
+        fut_res = fut.place_market(sym, fut_side, qty, reduce_only=_reduce_only_leg)
     spot_ok, fut_ok = _filled(spot_res), _filled(fut_res)
     if not (spot_ok and fut_ok):
         with contextlib.suppress(Exception):
@@ -934,7 +1089,7 @@ def _execute_pair(sym: str, qty: float, spot_side: str, fut_side: str) -> dict[s
     return {"spot": "taker", "fut": "taker", "spot_ok": spot_ok, "fut_ok": fut_ok}
 
 
-def _mark(rb: dict[str, Any]) -> dict[str, float]:
+def _mark(rb: dict[str, Any]) -> dict[str, float | None]:
     pos, spot_px, fut_px = rb["pos"], rb["spot_px"], rb["fut_px"]
     spot_pnl = perp_pnl = notional = 0.0
     for _sym, p in pos.items():
@@ -950,22 +1105,41 @@ def _mark(rb: dict[str, Any]) -> dict[str, float]:
     state = rb["state"]
     spot_realized = float(state.get("realized_spot_pnl", 0.0))
     net = spot_pnl + spot_realized
-    funding = fut_pnl = 0.0
+    fut_pnl = 0.0
+    # None, NOT 0.0 -- these come from a separate venue call that can fail on its own, and a
+    # failed measurement must never be publishable as a measured zero (2026-07-26 incident).
+    funding: float | None = None
+    fut_commission: float | None = None
     if fut.has_keys():
         with _safe():
             fut_eq = fut.account_summary()["equity"]
             start_eq = float(state.get("start_futures_equity", fut_eq))
             fut_pnl = fut_eq - start_eq                   # futures leg (realized+funding+fees+unrl)
             net = spot_pnl + spot_realized + fut_pnl
-            start_ms = int(datetime.fromisoformat(str(state["start"])).timestamp() * 1000)
-            funding = float(fut.income_summary(start_ms)["funding"])
+        # SEPARATE guard from the equity read above. Sharing one `_safe()` made the failure
+        # PARTIAL: the equity assignment landed, then the income call threw, and the swallowed
+        # exception left funding/commission at zero -- publishing a real futures PnL next to a
+        # fabricated zero harvest, which is exactly the combination the bleed alarm reads as a
+        # total bleed. `read_income` retries transient 5xx and returns None when it truly cannot
+        # measure, so "unknown" survives all the way to the dashboard instead of decaying to 0.
+        if state.get("start"):
+            with _safe():
+                start_ms = int(datetime.fromisoformat(str(state["start"])).timestamp() * 1000)
+                # ONE income call, BOTH numbers -- `income_summary` has always returned the exact
+                # paginated `commission` and this book read only `funding`, discarding the fee
+                # bill that is the single largest term of the leak it was alarming about.
+                inc = read_income(lambda: fut.income_summary(start_ms))
+                if inc is not None:
+                    funding = float(inc.get("funding", 0.0))
+                    fut_commission = abs(float(inc.get("commission", 0.0)))
     return {"spot_pnl": round(spot_pnl, 2), "perp_pnl": round(perp_pnl, 2),
             "spot_realized": round(spot_realized, 2), "fut_pnl": round(fut_pnl, 2),
-            "funding": round(funding, 2), "net_pnl": round(net, 2),
+            "funding": None if funding is None else round(funding, 2), "net_pnl": round(net, 2),
+            "fut_commission": None if fut_commission is None else round(fut_commission, 2),
             "notional": round(notional, 2)}
 
 
-def _emit(rb: dict[str, Any], marks: dict[str, float], dry: bool) -> None:
+def _emit(rb: dict[str, Any], marks: dict[str, float | None], dry: bool) -> None:
     pos = rb["pos"]
     # CARRY-LEAK ALARM ON THE BOOK THAT HOLDS THE MONEY (2026-07-26). `carry_bleed_report` was
     # only ever wired into the MOLDED book (run_live_combined), so the PRIMARY executed book --
@@ -973,8 +1147,19 @@ def _emit(rb: dict[str, Any], marks: dict[str, float], dry: bool) -> None:
     # runs for weeks unnoticed. Same function, same thresholds, now on the executed book.
     # spot side = open marks + realized of closed spot legs; fut side = futures-equity delta.
     bleed = carry_bleed_report(funding=marks["funding"],
-                               spot_pnl=round(marks["spot_pnl"] + marks["spot_realized"], 2),
-                               fut_pnl=marks.get("fut_pnl", 0.0))
+                               spot_pnl=round((marks["spot_pnl"] or 0.0)
+                                              + (marks["spot_realized"] or 0.0), 2),
+                               fut_pnl=marks.get("fut_pnl") or 0.0)
+    # Attribute the leak ONLY when both terms are real measurements. With an unknown fee bill the
+    # split would dump the entire commission into `residual`, manufacturing exactly the phantom
+    # that `attribute_non_funding`'s own docstring warns against -- an unexplained quantity that
+    # looks explained. No measurement is better than a confident wrong one.
+    fut_comm = marks.get("fut_commission")
+    leak = (attribute_non_funding(
+        bleed.non_funding_pnl,
+        dedup_basis(json.loads(_TRADES.read_text("utf-8")) if _TRADES.exists() else []),
+        fut_comm)
+        if bleed.non_funding_pnl is not None and fut_comm is not None else None)
     out = {
         "updated": datetime.now(tz=UTC).isoformat(),
         "mode": "dry" if dry else "live-paper",
@@ -988,6 +1173,14 @@ def _emit(rb: dict[str, Any], marks: dict[str, float], dry: bool) -> None:
         "non_funding_pnl": bleed.non_funding_pnl,
         "harvest_eaten_frac": bleed.harvest_eaten_frac,
         "bleed_alert": bleed.alert, "bleed_verdict": bleed.verdict,
+        # Publishes WHETHER the harvest was measured at all. Downstream (max_audit, the dashboard,
+        # the molded book) must be able to tell "earned nothing" from "could not read the venue";
+        # they are opposite states and only one of them is an execution problem.
+        "funding_measured": bleed.measured,
+        # WHERE the leak went, not just how big it is -- the alarm alone is unactionable and the
+        # integrity watch is required to attribute it every cycle.
+        "leak_attribution": leak,
+        "fut_commission": marks.get("fut_commission"),
         "carries": [{"symbol": s, "qty": p["spot_qty"], "funding_8h": p["funding"]}
                     for s, p in pos.items()],
         "last_actions": rb["actions"],
@@ -1055,10 +1248,26 @@ def main() -> None:
     if not (spot.has_keys() and fut.has_keys()):
         raise SystemExit("need BOTH spot-testnet and futures-testnet keys")
 
-    # single-instance lock: a fresh heartbeat means another live executor runs (no double book)
-    if not dry and _HB.exists() and (time.time() - _HB.stat().st_mtime) < _HB_TICK * 2.5:
-        print("another cash-carry executor is already running (fresh heartbeat) -- exiting")
-        return
+    # single-instance lock: a fresh heartbeat means another live executor runs (no double book).
+    # STAND BY rather than exit. Exiting here returned 0, and under `Restart=always/RestartSec=15`
+    # systemd respawned this process every ~19s for as long as the foreign owner lived -- the
+    # IDENTICAL storm the kill path hit on 2026-07-13 (14,225 restarts over 3 days) and fixed by
+    # idling instead of exiting. That fix was applied to the kill exit and left standing on this
+    # one; on 2026-07-26 an orphaned pre-fix executor held the heartbeat and this path storm-
+    # spawned ~190 processes/hour while the fixed code never got to run. Standing by also means
+    # the book is picked up automatically the moment the foreign owner dies, instead of on the
+    # next storm tick. `_foreign_executor_alive` is the SAME predicate the in-loop check uses
+    # (PID-aware, reclaims a legacy/unowned heartbeat), so startup and runtime can no longer
+    # disagree about who owns the book.
+    standby_noted = False
+    while not dry and _foreign_executor_alive():
+        if not standby_noted:                     # log ONCE: a per-tick log is its own noise storm
+            with contextlib.suppress(OSError):
+                print(f"another cash-carry executor owns the book "
+                      f"({_HB.read_text('utf-8').strip()}) -- standing by, not exiting "
+                      f"(single-book invariant; will take over when it stops)")
+            standby_noted = True
+        time.sleep(_HB_TICK)
 
     forever = args.minutes <= 0
     deadline = time.monotonic() + args.minutes * 60.0

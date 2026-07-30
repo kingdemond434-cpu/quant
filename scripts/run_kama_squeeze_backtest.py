@@ -24,7 +24,7 @@ import numpy as np
 import pandas as pd
 
 from libs.autodiscovery.models import Family, Hypothesis
-from libs.autodiscovery.validation import campaign_pbo_rc, validate
+from libs.autodiscovery.validation import campaign_gate_stats, validate
 from libs.data.crypto_source import list_liquid_perps
 from libs.data.instruments import AssetClass, InstrumentSpec, register_instrument
 from libs.data.lake import Layer, ParquetLake
@@ -119,32 +119,44 @@ def main() -> None:
             np.sign((d["close"] - _kama(d["close"])).to_numpy()), index=d.index)),
     }
     matrix = np.column_stack([strat["kama_squeeze"], strat["kama_trend"]])
-    pbo, rc = campaign_pbo_rc(matrix)
+    # per-candidate gates (gap #87 flip, principal-ruled 2026-07-29); thresholds unchanged
+    campaign = campaign_gate_stats(matrix)
     results = {}
-    for name, r in strat.items():
+    # enumerate order == column_stack order over `strat`, so `col` is the strategy's matrix column
+    for col, (name, r) in enumerate(strat.items()):
         active = r[r != 0.0]
         sh = round(float(sharpe_ratio(active) * np.sqrt(365)), 2) if len(active) > 5 else 0.0
         hyp = Hypothesis(family=Family.BREAKOUT, subtype=name, symbol="CRYPTO", params={},
                          mechanism=MechanismType.BEHAVIORAL, edge_source="vol_compression",
                          failure_modes=_FAIL)
         v = validate(active, hypothesis=hyp, n_trials=2, sharpe_estimates=[sh, -sh],
-                     returns_matrix=matrix, pbo=pbo, rc=rc) if len(active) >= 250 else None
+                     returns_matrix=matrix, campaign=campaign, column=col
+                     ) if len(active) >= 250 else None
         gates = f"{sum(v.gates.values())}/{len(v.gates)}" if v else "n<250"
         results[name] = {"ann_sharpe": sh, "n_active_days": len(active), "gates": gates,
+                         "pbo": round(float(v.metrics.pbo), 3) if v else None,
+                         "rc_p": round(float(v.metrics.reality_p), 3) if v else None,
                          "survived": bool(getattr(v, "survived", False))}
 
     out = {"updated": datetime.now(tz=UTC).isoformat(), "majors": len(panels),
            "params": "KAMA(10,2,30) BB(20,2) KC(20,1.5) -- canonical, frozen a priori",
-           "pbo": round(float(pbo.pbo), 3) if pbo else None,
-           "reality_check_p": round(float(rc.p_value), 3) if rc else None,
+           # campaign-level legacy PBO/RC kept as SEARCH-PROCEDURE diagnostics (gap #87); the
+           # gate values are per-strategy now -- see results[*].pbo / results[*].rc_p.
+           "pbo": (round(float(campaign.legacy_pbo.pbo), 3)
+                   if campaign is not None and campaign.legacy_pbo is not None else None),
+           "reality_check_p": (round(float(campaign.legacy_rc.p_value), 3)
+                               if campaign is not None and campaign.legacy_rc is not None
+                               else None),
            "results": results,
            "ev_gate": "REJECT pre-test (EV 0.001, p~1.6%) -- tested on principal override",
            "note": "verdict is final: graveyard on fail, shadow-candidate path on survive"}
     _OUT.write_text(json.dumps(out, indent=2), "utf-8")
     for n, res in results.items():
         print(f"{n}: annSharpe {res['ann_sharpe']} gates {res['gates']} "
+              f"pbo={res['pbo']} rc_p={res['rc_p']} "
               f"survived={res['survived']} ({res['n_active_days']}d active)")
-    print(f"pbo {out['pbo']} | rc_p {out['reality_check_p']}")
+    print(f"campaign diagnostics: pbo {out['pbo']} | rc_p {out['reality_check_p']} "
+          f"(search procedure; gates are per-strategy)")
 
 
 if __name__ == "__main__":
