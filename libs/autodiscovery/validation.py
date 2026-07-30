@@ -29,7 +29,41 @@ from libs.validation.stepwise import (
 _PERIODS_PER_YEAR = 24 * 260
 _DSR_THRESHOLD = 0.95
 _PBO_THRESHOLD = 0.5       # same bar as PBOResult.overfit; only the ATTRIBUTION changed
-_MIN_CAPACITY_USD = 1.0e5
+# CAPACITY PARITY (principal order 2026-07-30; constitution L1.18/§42 made ARITHMETIC).
+# The old bar was a FIXED $100,000 institutional floor. On a desk deploying ~$5k that rejects
+# edges it could fill COMPLETELY -- measured 182 of 420 campaign candidates failed with capacity
+# among their blockers (reports/gate_histogram.json: capacity 238/420 pass). An edge that can
+# absorb 20x the desk's entire book was being called too small. That is capacity PICKINESS, and
+# it costs exactly the compounding the desk exists to maximise: a $20k-capacity edge at $5k of
+# equity is 100% usable and compounds identically to a $20m one until the quota binds.
+# THE RULE: an edge fails capacity ONLY if it cannot absorb a meaningful slice of the desk's OWN
+# size. It is then exploited to ITS OWN quota, never deprioritised for being small, and never
+# ranked below a larger-capacity edge (L1.18: edges are edges).
+_DESK_EQUITY_FALLBACK_USD = 5.0e3     # used only when live equity is unreadable
+_CAPACITY_MULTIPLE_OF_EQUITY = 2.0    # must hold ~2x the book, i.e. room to size and to grow
+_CAPACITY_DUST_FLOOR_USD = 2.0e3      # below this, execution frictions dominate at any equity
+
+
+def _desk_equity_usd() -> float:
+    """Live deployable equity, read defensively. The capacity bar is RELATIVE to this so it
+    scales with the desk instead of freezing an institutional assumption into a seed-stage book."""
+    import json as _json
+    from pathlib import Path as _Path
+    for src, keys in ((_Path("web/cashcarry_live.json"), ("equity", "net_equity", "deployed")),
+                      (_Path("data/cashcarry_config.json"), ("capital", "authorized_capital"))):
+        try:
+            d = _json.loads(src.read_text("utf-8"))
+        except (OSError, _json.JSONDecodeError):
+            continue
+        for k in keys:
+            v = d.get(k)
+            if isinstance(v, (int, float)) and v > 0:
+                return float(v)
+    return _DESK_EQUITY_FALLBACK_USD
+
+
+def _min_capacity_usd() -> float:
+    return max(_desk_equity_usd() * _CAPACITY_MULTIPLE_OF_EQUITY, _CAPACITY_DUST_FLOOR_USD)
 _CPCV_MIN_POSITIVE = 0.6   # >=60% of purged folds positive
 
 
@@ -184,7 +218,9 @@ def validate(
         "dsr": dsr.passed,
         "pbo": pbo_ok,
         "reality_check": sig_ok,
-        "capacity": cap.capacity_usd >= _MIN_CAPACITY_USD,
+        # capacity parity: relative to the desk's OWN size (see _min_capacity_usd), never a
+        # fixed institutional floor. Small edges are admitted and exploited to their own quota.
+        "capacity": cap.capacity_usd >= _min_capacity_usd(),
         "fragility": tail.acceptable,
     }
     failed = [name for name, ok in gates.items() if not ok]

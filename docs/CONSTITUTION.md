@@ -111,6 +111,24 @@ strategy count. Correlated discoveries are discounted; mechanism-level diversifi
 model quantity. Capacity parity stands: every fillable edge scores the same regardless of size,
 exploited to its own capacity quota (§42).
 
+**L1.18a CAPACITY PARITY IS ABSOLUTE — SMALL EDGES ARE HUNTED AND FILLED, NEVER RANKED DOWN**
+*(principal order 2026-07-30; made arithmetic the same day, not left as prose)*. An edge is an
+edge. The desk never prefers a large-capacity edge over a small one, never defers hunting a
+mechanism because its capacity looks modest, and never lets capacity enter a ranking at all:
+every validated edge is exploited **to its own capacity quota**, and quotas are filled in
+parallel, not in order of size. Rationale, in log-wealth terms: at seed scale a $20k-capacity
+edge and a $20m-capacity edge are *identical* compounding instruments until the smaller one's
+quota binds — so declining the small one buys nothing and forfeits its entire contribution to
+geometric growth. Many small filled quotas compound faster than one large unfilled hope, and
+breadth of independent quotas is also the cheapest real diversification the desk can get (L1.18).
+**THE ONLY LEGITIMATE CAPACITY REJECTION** is that an edge cannot absorb a meaningful slice of
+the desk's OWN current size — a bar that is therefore RELATIVE to live equity and rises as the
+book grows, never a fixed institutional floor. The proving instance is recorded because it was
+real: a hardcoded $100,000 capacity floor sat in the gauntlet while the desk deployed ~$4,500,
+rejecting edges it could fill twenty times over, and capacity blocked part of 182 of 420 campaign
+candidates. Any reappearance of an absolute capacity floor is a defect, fenced by
+`tests/validation/test_capacity_parity.py`.
+
 **L1.19 INFORMATION DECAY.** Every alpha source, dataset, feature and mechanism is monitored for
 decay, crowding and drift — and replacements are hunted BEFORE existing advantages die.
 
