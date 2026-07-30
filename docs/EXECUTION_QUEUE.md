@@ -157,8 +157,11 @@ integration point identified so this isn't a vague "wire it in somewhere":**
 
 - `libs/execution/algos.py` (TWAP/POV/Implementation-Shortfall child-order schedules) — its own
   docstring says *"the `ExecutionEngine` submits the slices"*, but `libs/execution/engine.py`
-  **does not import it at all**. This is the clearest finding of the seven: the algo schedules
-  were built for a specific consumer that was never connected to them.
+  **does not import it**. CORRECTED 2026-07-30 while building RANK 7: `libs/execution/__init__.py:10`
+  *does* re-export it, so the module loads and is not literally unreferenced — but no consumer ever
+  calls `ExecutionScheduler`. That is worse than plain dormancy, not better: a package-level
+  re-export makes it *look* wired to exactly the grep a reviewer would run. The schedules were
+  built for a consumer that was never connected to them.
 - `libs/backtest/engine.py` (`BacktestEngine`, the actual event-driven engine) — zero callers
   outside its own package and tests; even `cross_engine.py` only imports it for verification, not
   to run a real backtest. Nothing in `scripts/` or `app/` runs a backtest through it.

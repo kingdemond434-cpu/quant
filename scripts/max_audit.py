@@ -1698,6 +1698,75 @@ _CAPACITY_CONSUMERS = (
 _FUND_SHAPED_CONSTANTS = ("1e5", "1e6", "1e7", "100_000", "1_000_000", "100000.0", "1000000.0")
 
 
+def check_deploy_path(defects) -> None:
+    """INBOUND DEPLOY must be alive, and its OWED states must not rest (EXECUTION_QUEUE.md RANK 7).
+
+    A deploy path is only worth having if its silence is detectable. Before deploy/pull_deploy.sh
+    existed, git_snapshot pushed VPS->GitHub and nothing came back, so master could be arbitrarily
+    far ahead of the code the desk was actually running and nothing said so. Restoring that blind
+    spot by letting the puller die quietly would be the same gap wearing a newer name.
+
+    THREE FAILURES, and the last two are the ones a naive freshness check would miss:
+      * NEVER RAN / STALE -- the box stopped pulling; master is deploying nothing again.
+      * CI-RED -- the puller correctly reverted a red commit, which means the box is deliberately
+        parked on older code. Right call, but it is a HOLD, not a steady state: master and the box
+        have diverged in what they claim to be running until someone fixes the red.
+      * ACTION OWED -- the pull landed but a supervised process could not be restarted (this box
+        denies systemctl to the quant user) or the ruin rail was invalidated. New code is on disk
+        while the OLD code still owns the book: precisely the 2026-07-26 incident, where a
+        committed funding fix sat inert in an orphaned executor for 8h.
+    """
+    sj = ROOT / "data/pull_deploy_state.json"
+    if not sj.exists():
+        # Absent is only a defect on the box that actually INSTALLED the puller. Gating on the
+        # manifest instead would fire on every dev checkout and sandbox, and a fence that cries on
+        # every clone is a fence people learn to ignore -- so the discriminator is a LIVE crontab
+        # that references it, the same sandbox-vs-box signal check_scheduler_manifest.py uses.
+        try:
+            live = subprocess.run(["crontab", "-l"], capture_output=True, text=True,
+                                  timeout=10, check=False).stdout
+        except (OSError, subprocess.SubprocessError):
+            return
+        if "pull_deploy.sh" in live:
+            defects.append(("deploy-never-ran",
+                            "the live crontab installs deploy/pull_deploy.sh but "
+                            "data/pull_deploy_state.json is MISSING -- the inbound deploy path has "
+                            "never produced evidence, so 'merge is deploy' is a claim, not a "
+                            "mechanism. Check the cron log for a startup failure"))
+        return
+    try:
+        st = json.loads(sj.read_text("utf-8"))
+    except (OSError, ValueError):
+        defects.append(("deploy-state-unreadable",
+                        "data/pull_deploy_state.json is unparseable -- the deploy path's only "
+                        "evidence artifact is corrupt; treat the running code as unverified"))
+        return
+    age_h = (NOW - sj.stat().st_mtime) / 3600.0
+    status = str(st.get("status", "?"))
+    if age_h > 26:
+        defects.append(("deploy-stale",
+                        f"pull_deploy last ran {age_h:.0f}h ago (>26h, status {status!r}) -- the "
+                        "box may be running code arbitrarily far behind master, which is the exact "
+                        "blind spot the inbound path was built to close"))
+    if status == "ci-red":
+        defects.append(("deploy-blocked-ci-red",
+                        f"pull_deploy REVERTED {st.get('to', '?')} because the CI gate was red; "
+                        f"the box is parked on {st.get('from', '?')}. Correct refusal, but it is a "
+                        "HOLD: master and the desk disagree about what is running until the red is "
+                        "fixed. Fix the gate, do not bypass the puller"))
+    if status == "deployed-action-owed":
+        defects.append(("deploy-action-owed",
+                        f"pull_deploy landed {st.get('to', '?')} but a supervised process was NOT "
+                        f"restarted ({st.get('note', '')}). New code on disk, OLD code owning the "
+                        "book -- the 2026-07-26 orphaned-executor class. Run the owed systemctl "
+                        "command printed in data/cro_ai_logs/pull_deploy.log"))
+    if status in ("refused-dirty", "refused-diverged"):
+        defects.append(("deploy-refused",
+                        f"pull_deploy is REFUSING to deploy (status {status!r}): the box has "
+                        "modified tracked files or local commits. Every merge to master is a no-op "
+                        "until an operator reconciles the box"))
+
+
 def check_capacity_single_source(defects) -> None:
     """§42: ONE capacity policy, imported -- never a constant re-inlined next to a scorer.
 
@@ -3145,6 +3214,7 @@ CHECKS = [("carryover-skipped", check_carryover_skipped),
                       ("decision-maturity", check_decision_ledger_matures),
                       ("orphan-modules", check_orphan_modules),
                       ("capacity-hunt", check_capacity_hunt),
+                      ("deploy-path", check_deploy_path),
                       ("capacity-single-source", check_capacity_single_source),
                       ("capacity-runway", check_capacity_runway),
                       ("capacity-allocation-honesty", check_capacity_allocation_honesty),

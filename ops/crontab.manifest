@@ -130,6 +130,27 @@ QUANT_ROOT=/home/quant/quant-platform
 # CONFIDENCE: committed-script (new this cycle)
 23 */2 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_reality_gap.py >> data/cro_ai_logs/reality_gap.log 2>&1
 
+# INBOUND DEPLOY ("merge is deploy", EXECUTION_QUEUE.md RANK 7). git_snapshot.py pushed
+# VPS -> GitHub and NOTHING came back, so merging to master deployed nothing and every change
+# needed a manual SSH -- and on 2026-07-26 that cost the desk 8h of an orphaned executor running
+# PRE-FIX code while the fix sat committed (scripts/watchdog.py:66-76).
+#
+# Cheap when idle by construction: the up-to-date path exits after `git fetch`, BEFORE the CI gate,
+# so a 10-minute poll costs one fetch per tick and only pays for pytest when a commit actually
+# landed. That ordering matters on this box specifically -- run_ci.py:_acquire notes 3.8 GiB with no
+# swap, "where the OOM-killer's victim could be the dead-man rail", so an unconditional gate every
+# 10 min would be a ruin-rail risk, not just waste. flock -n additionally refuses to stack.
+#
+# It is safe to schedule unattended because every dangerous direction is a refusal, not a guess:
+# fast-forward ONLY, refuses on modified tracked files (an operator hotfix), REVERTS the pull when
+# the CI gate goes red, and NEVER restarts quant-deadman (the ruin rail escalates to a human).
+# FIRST RUN ON THE BOX SHOULD BE `sh deploy/pull_deploy.sh --dry-run` -- it fetches, prints the
+# full restart plan and touches nothing.
+# EVIDENCE: deploy/pull_deploy.sh + libs/ops/deploy_plan.py (built 2026-07-30); max_audit's
+#   deploy-path fence reads data/pull_deploy_state.json so a puller that dies is a DEFECT
+# CONFIDENCE: committed-script (new this cycle -- cadence chosen here, not observed on the box)
+*/10 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_pull_deploy.lock /bin/sh deploy/pull_deploy.sh >> data/cro_ai_logs/pull_deploy_cron.log 2>&1
+
 # --------------------------------------------------------------------------------------------
 # DATA MOAT -- recorder self-heals (every unrecorded hour is permanently unrecoverable, gap #18)
 # --------------------------------------------------------------------------------------------

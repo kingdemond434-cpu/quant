@@ -97,6 +97,43 @@ def _meta_learning() -> dict[str, Any]:
                 deployable=bool(governed.deployable), relationship=insight.relationship)
 
 
+def _data_registry() -> dict[str, Any]:
+    """MEASURED data inventory (EXECUTION_QUEUE.md RANK 4, GAP_REGISTER #77).
+
+    Runs here rather than only on its own cron because the map is what every OTHER organ in this
+    cycle navigates by: research_priority ranks what to test, and row #77's whole lesson is that
+    those rankings were being made off an inventory that reported row counts as spans and omitted
+    the desk's best panel. A stale map is worse than no map, so it is rebuilt in the same tick that
+    consumes it.
+    """
+    try:
+        from libs.research.data_registry import REPL_PROPRIETARY, build
+    except ImportError as e:
+        return _cap("data_registry", "ERROR", f"import failed: {e}")
+    assets = build()
+    if not assets:
+        return _cap("data_registry", "NO-INPUT",
+                    "no collector declares a data path -- discovery found nothing to measure")
+    measured = [a for a in assets if a.span.measured]
+    absent = [a for a in assets if a.span.status == "absent"]
+    unread = [a for a in assets if (a.span.days or 0) > 365 and not a.consumers]
+    longest = max(measured, key=lambda a: a.span.days or 0, default=None)
+    detail = (f"{len(assets)} assets, {len(measured)} MEASURED spans, "
+              f"{len(absent)} declared-but-absent")
+    if longest:
+        detail += f"; longest {longest.id} {longest.span.days}d"
+    if unread:
+        detail += f"; {len(unread)} with >1y history and NO reader"
+    return _cap(
+        "data_registry", "ACTIVE" if measured else "NO-INPUT", detail,
+        assets=len(assets), measured=len(measured), absent=len(absent),
+        longest_span_days=(longest.span.days if longest else 0),
+        widest_breadth=max((a.breadth or 0 for a in assets), default=0),
+        proprietary=[a.id for a in assets if a.replication == REPL_PROPRIETARY],
+        unread_long_history=[a.id for a in unread],
+    )
+
+
 def _research_priority() -> dict[str, Any]:
     """Rank research categories by decay pressure + expected yield."""
     try:
@@ -186,6 +223,9 @@ def _dormancy() -> dict[str, Any]:
 def main() -> int:
     caps = [
         _dormancy(),
+        # BEFORE the organs that navigate by it -- research_priority ranks what to test, and row
+        # #77 is what happens when that ranking is made off a stale map.
+        _data_registry(),
         _meta_learning(),
         _research_priority(),
         _capital_reallocator(),

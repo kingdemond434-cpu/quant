@@ -45,6 +45,41 @@ Research Memory → Campaign Generator → [queue] → Worker → Discovery → 
 - **Cleanup**: `queue.cleanup(keep_days)` prunes terminal campaigns each tick; workers pruned when stale.
 - **Queue prioritization**: `enqueue(spec, priority=…)`.
 
+## Inbound deploy — "merge is deploy" (`deploy/pull_deploy.sh`)
+
+`scripts/git_snapshot.py` pushes **VPS → GitHub**. Until 2026-07-30 nothing came back, so merging
+to master deployed **nothing** and every change needed a manual SSH. That gap cost the desk 8h on
+2026-07-26, when an orphaned executor ran pre-fix code while the fix sat committed.
+
+```bash
+sh deploy/pull_deploy.sh --dry-run      # fetch + print the full restart plan, change nothing
+sh deploy/pull_deploy.sh                # apply (scheduled */10 in ops/crontab.manifest)
+```
+
+Run `--dry-run` first on any box, and any time the plan might include the executor.
+
+**Every dangerous direction is a refusal, not a guess:**
+
+| Situation | Behaviour |
+|---|---|
+| Modified tracked files | **Refuse** — that's an operator hotfix a fast-forward would destroy |
+| Diverged / box has local commits | **Refuse** — fast-forward only; no unattended merge on the box that owns the book |
+| CI gate red on the new commit | **Revert** to the exact prior commit, exit non-zero, restart nothing |
+| `quant-deadman` invalidated | **Escalate to a human** — a ruin-rail restart is a window with no ruin rail |
+| Nothing new upstream | Exits after `git fetch`, *before* the CI gate — so a 10-min poll is nearly free |
+
+**What restarts is computed, not listed.** `libs/ops/deploy_plan.py` derives each supervised
+process's blast radius from its real first-party import closure (`ast`, at plan time), so adding an
+import widens it automatically. A hand-kept path list would rot silently and leave stale code
+owning the book — the same failure by a second route. Measured: only the executor has a
+first-party closure at all (53 files); the deadman, liquidation listener and dashboard import
+nothing from `libs/`, which is why an ordinary `libs/` commit cannot touch the ruin rail.
+
+**Evidence:** `data/pull_deploy_state.json` + `data/cro_ai_logs/pull_deploy.log`. `max_audit`'s
+`deploy-path` fence fails on stale / never-ran / CI-red-hold / **action-owed** — that last one is
+"new code on disk, old code still owning the book", which is the state a plain freshness check
+would call healthy.
+
 ## Deploy
 
 ### Docker / VPS (recommended for 24/7 Linux)
