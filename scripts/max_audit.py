@@ -33,6 +33,8 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:          # fences import libs; a blind checker is a defect
+    sys.path.insert(0, str(ROOT))
 LOGS = ROOT / "data/cro_ai_logs"
 REPORT = ROOT / "data/max_audit_report.json"
 ACKS = ROOT / "data/max_audit_acks.json"

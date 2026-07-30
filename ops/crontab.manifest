@@ -565,3 +565,15 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 0 18 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-prospector.timer >/dev/null 2>&1 || flock -n /tmp/seat_prospector.lock /bin/bash ops/run_prospector_dig.sh >> data/cro_ai_logs/seat_prospector.log 2>&1; }
 0 19 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-litminer.timer >/dev/null 2>&1 || flock -n /tmp/seat_litminer.lock /bin/bash ops/run_litminer_dig.sh >> data/cro_ai_logs/seat_litminer.log 2>&1; }
 0 20 1 * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-blindrediscovery.timer >/dev/null 2>&1 || flock -n /tmp/seat_blindrediscovery.lock /bin/bash ops/run_blindrediscovery_dig.sh >> data/cro_ai_logs/seat_blindrediscovery.log 2>&1; }
+
+# SUB-ACCOUNT CAPABILITY PROBE (principal order 2026-07-30: "allow our system to create automated
+# subaccounts when needed"). Binance gates sub-account APIs to corporate/broker tiers, so the
+# capability is MEASURED daily rather than assumed: the probe distinguishes NO-KEYS (launch gap,
+# principal pastes keys) from BLOCKED-TIER (Binance verification task, with the upgrade path
+# recorded) from AVAILABLE (bounded automation active: qdesk prefix, hard cap 12, transfers
+# signed+reasoned+equity-capped+ledgered -- same money-path rule as capital_events). A read-only
+# signed GET; no spend, inert without keys.
+# EVIDENCE: libs/execution/sub_accounts.py -> data/subaccounts.json;
+#           tests/execution/test_sub_accounts.py (13 tests, all guards exercised)
+# CONFIDENCE: committed-script (new this cycle)
+48 5 * * * cd "$QUANT_ROOT" && .venv/bin/python -c "from libs.execution.sub_accounts import probe; print(probe().detail)" >> data/cro_ai_logs/subaccounts.log 2>&1
