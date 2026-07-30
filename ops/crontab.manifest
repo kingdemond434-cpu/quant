@@ -148,6 +148,18 @@ QUANT_ROOT=/home/quant/quant-platform
 # CONFIDENCE: committed-script (new this cycle)
 8 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_fusion_search.lock .venv/bin/python scripts/run_fusion_search.py >> data/cro_ai_logs/fusion_search.log 2>&1
 
+# STRATEGIC DIRECTOR (RANK 3): a runtime ROLE, not a doctrine document -- dossier -> prompt ->
+# ENFORCED output contract -> accepted recommendations written to the recommendation ledger, where
+# §41 forces every row to reach implemented/rejected/scheduled. The intelligence cycle already runs
+# it --dry-run every 6h (proves the path, spends nothing); THIS is the one LIVE run per day, and it
+# is deliberately daily rather than per-cycle because each fire costs credit and the dossier it
+# reasons over changes on a daily rhythm, not a 6-hourly one.
+# Blocked on OpenRouter credit (402), same as the panel and kimi_hunter; it degrades to dry-run
+# automatically when no key file exists and fires the moment credit lands -- no redesign.
+# EVIDENCE: scripts/run_strategic_director.py + libs/research/strategic_director.py (2026-07-30)
+# CONFIDENCE: committed-script (new this cycle)
+40 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_strategic_director.lock .venv/bin/python scripts/run_strategic_director.py --ledger >> data/cro_ai_logs/strategic_director.log 2>&1
+
 # INBOUND DEPLOY ("merge is deploy", EXECUTION_QUEUE.md RANK 7). git_snapshot.py pushed
 # VPS -> GitHub and NOTHING came back, so merging to master deployed nothing and every change
 # needed a manual SSH -- and on 2026-07-26 that cost the desk 8h of an orphaned executor running

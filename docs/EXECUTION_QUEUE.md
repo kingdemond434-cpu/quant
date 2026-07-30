@@ -189,6 +189,39 @@ deserves review before connecting it to anything live, and that review is bigger
 item. Recorded here, evidenced, so the next pass starts from a concrete integration point instead
 of a bare dormancy line.
 
+## RANKS 2-7 STATUS (2026-07-30, this session) — ALL BUILT
+
+| Rank | State |
+|---|---|
+| 2 — enforcement matrix | **Was already built.** Verified: 39 ENFORCED / 1 HUMAN-ONLY / 2 STANDING / **0 unenforced** across 42 principles. Nothing owed. |
+| 3 — strategic director | **BUILT, activation-ready.** `libs/research/strategic_director.py` + `scripts/run_strategic_director.py`. Ships as dossier → prompt → *enforced* output contract → recommendation ledger, per the "not another dormant doctrine document" instruction. Execution still needs OpenRouter credit; everything but the network call is pure and tested, and `--dry-run` (the automatic default with no key) proves the whole path for free. |
+| 4 — data asset registry | **BUILT.** `libs/research/data_registry.py` + `scripts/build_data_registry.py` → `data/data_assets.json`. |
+| 5 — fusion search engine | **BUILT.** `libs/research/fusion_search.py` + `scripts/run_fusion_search.py`. |
+| 6 — label factory | **BUILT.** `libs/research/label_factory.py` + `scripts/build_labels.py` → `data/label_registry.json`. |
+| 7 — inbound deploy path | **BUILT.** `deploy/pull_deploy.sh` + `libs/ops/deploy_plan.py`, scheduled `*/10`. |
+
+All are wired into `run_intelligence_cycle` (12 capabilities, was 9) and scheduled in this manifest.
+
+**THE HONEST PART — three of these correctly do NOTHING on this box today, and that is the design:**
+- fusion search **REFUSES**: zero axes have earned breadth (it reads `exchange_netflow`'s real
+  SCREEN-WEAK verdict off disk). An engine that searched anyway would be the failure.
+- label factory reports **NO-INPUT**: no bronze lake here. The four specs and their version hashes
+  are still emitted so the catalogue is reviewable.
+- strategic director reports **READY**: no OpenRouter credit. Dossier, prompt and contract all
+  emitted so the artifact *proves* activation-readiness rather than asserting it.
+
+Each of those is a DATA/CREDIT gap reported as one, never a silent skip — and each becomes live on
+the box, or the moment credit lands, with no redesign.
+
+**Two bugs the drills caught that reading the code did not**, recorded because both classes recur:
+1. `pull_deploy.sh` counted DIRECTIVES not OUTCOMES, reporting "1 restarted" where the restart had
+   actually been refused for permissions. An evidence line that overstates what happened is the
+   same lie the deploy path exists to end. OWED is now its own reported state, fenced by max_audit.
+2. The label factory's first two causality guards both PASSED a label that openly read five bars
+   ahead — constant-multiple mutation is invisible to return-based features, and sampled-point
+   comparison is blind to sparse labels. Truncation (recompute on `bars[:t+lag+1]`) is the actual
+   definition and catches it 20/31.
+
 ## STANDING RULE FOR WHOEVER WORKS THIS
 
 Work in rank order. Ship each item wired + scheduled + evidenced, or do not count it. Re-run the

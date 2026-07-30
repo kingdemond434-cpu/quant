@@ -187,14 +187,20 @@ def _health_monitor() -> dict[str, Any]:
     return _cap("health_monitor", "ACTIVE", f"{n} alpha card(s) assessable")
 
 
-def _subprocess_cap(name: str, script: str, timeout_s: float = 240.0) -> dict[str, Any]:
-    """Run a standalone dormant script and record that it EXECUTED, with its own exit code."""
+def _subprocess_cap(name: str, script: str, timeout_s: float = 240.0,
+                    args: list[str] | None = None) -> dict[str, Any]:
+    """Run a standalone dormant script and record that it EXECUTED, with its own exit code.
+
+    ``args`` exists for capabilities that have a deliberately cheap mode inside the cycle -- the
+    strategic director runs --dry-run here so a 6-hourly tick proves its path without spending
+    OpenRouter credit on every fire.
+    """
     path = _ROOT / script
     if not path.exists():
         return _cap(name, "ERROR", f"{script} missing")
     try:
         env = {**os.environ, "PYTHONPATH": f"{_ROOT}{os.pathsep}{os.environ.get('PYTHONPATH', '')}"}
-        p = subprocess.run([sys.executable, script], cwd=_ROOT, env=env,
+        p = subprocess.run([sys.executable, script, *(args or [])], cwd=_ROOT, env=env,
                            capture_output=True, timeout=timeout_s, check=False, text=True)
     except subprocess.TimeoutExpired:
         return _cap(name, "ERROR", f"{script} exceeded {timeout_s:.0f}s")
@@ -233,6 +239,8 @@ def main() -> int:
         # Standalone organs that had ZERO callers and were never scheduled.
         _subprocess_cap("label_factory", "scripts/build_labels.py"),
         _subprocess_cap("fusion_search", "scripts/run_fusion_search.py"),
+        _subprocess_cap("strategic_director", "scripts/run_strategic_director.py",
+                        args=["--dry-run"]),
         _subprocess_cap("moat_audit", "scripts/moat_audit.py"),
         _subprocess_cap("revalidate_clocks", "scripts/revalidate_clocks.py"),
         _subprocess_cap("fusion_engine", "scripts/fusion_engine.py"),
