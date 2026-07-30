@@ -221,8 +221,35 @@ def _mutation() -> Ceiling:
         "is a silent correctness ceiling under every other guarantee.")
 
 
+def _test_suites_runnable() -> Ceiling:
+    """Test modules that can actually EXECUTE here, vs modules that skip on a missing dependency.
+
+    A `pytest.importorskip` skip prints one grey line and exits 0, so a suite covering the
+    backtest cross-engine, GARCH stationarity, or any other optional-dep path reads as GREEN while
+    testing nothing. Measured 2026-07-30: arch, backtrader and vectorbt are all DECLARED in
+    pyproject and all absent, so five test modules have been silently inert.
+
+    That is L1.28a exactly -- capability paid for (the tests are written, the deps are chosen) and
+    returning zero, with no error to notice. Unmeasured counts as zero, so it belongs on this
+    board rather than in a skip line nobody reads.
+    """
+    import importlib.util
+    declared = ("arch", "backtrader", "vectorbt")
+    have = [m for m in declared if importlib.util.find_spec(m) is not None]
+    return Ceiling(
+        "optional_test_deps", float(len(declared)), float(len(have)), "declared deps importable",
+        True,
+        "" if len(have) >= len(declared) * _EXPECT else
+        f"missing {sorted(set(declared) - set(have))} -- their test modules skip silently and "
+        "read as green; `pip install -e '.[research]'` on the box that runs CI",
+        "A test that skips on a missing dependency prints one grey line and exits 0. The suite "
+        "reports green while those paths are untested -- the same 'could not measure counted as "
+        "satisfied' failure the Gate 0 board refuses.")
+
+
 def collect() -> list[Ceiling]:
-    return [_capital(), _forward_slots(), _capability(), _data_assets(), _organs(), _mutation()]
+    return [_capital(), _forward_slots(), _capability(), _data_assets(), _organs(), _mutation(),
+            _test_suites_runnable()]
 
 
 def build() -> dict[str, Any]:
