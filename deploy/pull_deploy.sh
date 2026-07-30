@@ -90,6 +90,31 @@ if [ -n "$(git status --porcelain --untracked-files=no 2>/dev/null)" ]; then
     exit 2
 fi
 
+# SELF-INSTALLING SCHEDULER (2026-07-30). The manifest is source; the live crontab is derived
+# state -- and nothing re-derived it. A manifest change deployed by this very script sat
+# uninstalled until a human remembered deploy/reconstitute_cron.sh, which on launch day meant the
+# operator was the deployment mechanism for a desk whose whole premise is that it is not.
+# STATE-BASED, not diff-based, on purpose: the pull that DELIVERS a new manifest is executed by
+# the OLD copy of this script (cron runs whatever is on disk at tick time), so a diff hook would
+# miss exactly the change that introduces it. Comparing a stored hash of the last INSTALLED
+# manifest against the current file catches that case and every future one, including manifests
+# that arrive while the puller is broken. reconstitute_cron.sh is idempotent (fenced crontab
+# block) and needs no root for the cron half; its systemd half degrades to printed "owed" lines.
+if [ "$DRY" -eq 0 ] && [ -f "$ROOT/ops/crontab.manifest" ]; then
+    _MAN_WANT=$(cksum "$ROOT/ops/crontab.manifest" | cut -d' ' -f1)
+    _MAN_HAVE=$(cat "$ROOT/data/.crontab_installed_hash" 2>/dev/null || echo none)
+    if [ "$_MAN_WANT" != "$_MAN_HAVE" ]; then
+        say "scheduler manifest not yet installed at this hash ($_MAN_HAVE -> $_MAN_WANT)"
+        mkdir -p "$ROOT/data/cro_ai_logs"
+        if sh "$ROOT/deploy/reconstitute_cron.sh" >> "$ROOT/data/cro_ai_logs/reconstitute_auto.log" 2>&1; then
+            printf '%s\n' "$_MAN_WANT" > "$ROOT/data/.crontab_installed_hash"
+            say "crontab reinstalled from manifest (log: data/cro_ai_logs/reconstitute_auto.log)"
+        else
+            say "reconstitute refused (repo checks failed) -- crontab left as-is, retrying next tick"
+        fi
+    fi
+fi
+
 OLD=$(git rev-parse HEAD)
 OLD_SHORT=$(git rev-parse --short HEAD)
 

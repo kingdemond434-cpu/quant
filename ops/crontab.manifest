@@ -546,3 +546,22 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 #           tests/ops/test_drills.py breaks each rail and proves the drill catches it
 # CONFIDENCE: committed-script (new this cycle)
 40 3 * * 1 cd "$QUANT_ROOT" && .venv/bin/python scripts/run_drills.py >> data/cro_ai_logs/drills.log 2>&1
+
+# --------------------------------------------------------------------------------------------
+# MINER SEATS -- CRON FALLBACK, NO ROOT REQUIRED (2026-07-30). The five seats were systemd-only,
+# and installing a systemd unit needs root the operator does not have on this box ("I'm sorry
+# quant, I'm afraid I can't do that", measured live during launch setup). A capability the desk
+# owns but cannot switch on without an account it cannot access is idle by construction (L1.28a),
+# so each timer gets a user-crontab twin at the SAME schedule as its OnCalendar line.
+# DOUBLE-FIRE GUARD: each entry first asks systemd whether the real timer is enabled (is-enabled
+# is a read query -- no root needed) and stands down if so, so enabling the units later cannot
+# double-run a seat; flock guards the seat besides. Grouped with { } so a failed cd can never run
+# the seat from the wrong directory.
+# EVIDENCE: ops/quant-*.timer OnCalendar lines (dataaxis 14:00, frontier 15:00, prospector 18:00,
+#           litminer 19:00, blindrediscovery monthly 1st 20:00); runners ops/run_*_dig.sh
+# CONFIDENCE: committed-script (cadence copied from the committed timer units)
+0 14 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-dataaxis.timer >/dev/null 2>&1 || flock -n /tmp/seat_dataaxis.lock /bin/bash ops/run_dataaxis_dig.sh >> data/cro_ai_logs/seat_dataaxis.log 2>&1; }
+0 15 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-frontier.timer >/dev/null 2>&1 || flock -n /tmp/seat_frontier.lock /bin/bash ops/run_frontier_rotation.sh >> data/cro_ai_logs/seat_frontier.log 2>&1; }
+0 18 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-prospector.timer >/dev/null 2>&1 || flock -n /tmp/seat_prospector.lock /bin/bash ops/run_prospector_dig.sh >> data/cro_ai_logs/seat_prospector.log 2>&1; }
+0 19 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-litminer.timer >/dev/null 2>&1 || flock -n /tmp/seat_litminer.lock /bin/bash ops/run_litminer_dig.sh >> data/cro_ai_logs/seat_litminer.log 2>&1; }
+0 20 1 * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-blindrediscovery.timer >/dev/null 2>&1 || flock -n /tmp/seat_blindrediscovery.lock /bin/bash ops/run_blindrediscovery_dig.sh >> data/cro_ai_logs/seat_blindrediscovery.log 2>&1; }
