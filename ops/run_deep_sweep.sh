@@ -4,6 +4,7 @@
 set -uo pipefail
 cd /home/quant/quant-platform
 source ops/brain_env.sh
+brain_mutex deep_sweep   # ONE brain desk-wide; defers (exit 0) if another organ holds it
 brain_auth_check || exit 1
 LOG="data/cro_ai_logs/deep_sweep_$(date -u +%Y%m%dT%H%M).log"
 .venv/bin/python scripts/run_deep_sweep.py >> "$LOG" 2>&1
