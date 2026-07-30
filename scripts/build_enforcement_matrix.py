@@ -90,6 +90,10 @@ _MAP: dict[str, list[str]] = {
     "L2.10": ["run_reality_gap.py", "libs/research/dist_shift.py"],
     "L2.8a": ["scripts/check_constitution_core.py", "tests/governance/test_constitution_core.py",
               "data/constitution_core.lock"],
+    # L1.21a is a bar on the ORGANS' reasoning, not on an artifact, so its enforcement is the
+    # injection path: it is in principal_doctrine.txt, which check_prompt_layer proves reaches
+    # every claude invocation and check_universal_doctrine proves no organ omits.
+    "L1.21a": ["ops/principal_doctrine.txt", "check_prompt_layer", "check_universal_doctrine"],
 }
 
 # ---------------------------------------------------------------------------------------------

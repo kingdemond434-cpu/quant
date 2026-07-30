@@ -117,6 +117,20 @@ QUANT_ROOT=/home/quant/quant-platform
 # CONFIDENCE: committed-script (new this cycle)
 7 7 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_constitution_core.py >> data/cro_ai_logs/constitution_core.log 2>&1
 
+# MODEL AUTO-UPGRADE (principal order 2026-07-30: "auto-upgrade to newer flagship models, no human
+# needed"). Model capability is the one input the desk cannot improve by its own work -- it
+# improves when the vendor ships. Until today that improvement reached this desk only when a human
+# noticed and hand-edited three files; every cycle in between ran on strictly worse reasoning than
+# was available, with no error message. This discovers newer flagships, PING-VERIFIES that they
+# actually answer for this account (listing is not entitlement), and PREPENDS the winner above the
+# current head, which is RETAINED as the fallback -- so a promoted model that throttles degrades
+# to exactly what ran yesterday with nobody awake. An undeclared model FAMILY is paged, never
+# adopted. Daily at 04:11 UTC: before the 05:xx organs, after the overnight cycle.
+# EVIDENCE: scripts/run_model_upgrade.py + libs/ops/model_chain.py + ops/model_chain.env (single
+#           source, extracted from 3 hardcoded copies 2026-07-30); tests/ops/test_model_chain.py
+# CONFIDENCE: committed-script (new this cycle)
+11 4 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_model_upgrade.py --apply >> data/cro_ai_logs/model_upgrade.log 2>&1
+
 # WIRING AGENT: built things get WIRED automatically (principal order 2026-07-30). Detection
 # alone reproduced the original failure one level up -- a dormancy report nobody actions is itself
 # a dormant capability. This ACTS: auto-wires only what it can PROVE is inert-by-construction
