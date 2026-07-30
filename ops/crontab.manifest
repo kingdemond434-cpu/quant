@@ -58,6 +58,14 @@ QUANT_ROOT=/home/quant/quant-platform
 # CONFIDENCE: documented-cadence
 */5 * * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_venue_divergence_shadow.py >> data/cro_ai_logs/venue_divergence_cron.log 2>&1
 
+# MINER RUNWAY DOCTOR: daily. Distinguishes never-ran / creds-missing / not-scheduled / stale
+# per seat and reports the CAUSE with its blast radius -- 6 of 7 frontier regions had ZERO runs
+# ever while max_audit's freshness check technically "monitored" them (a never-run duty is exempt
+# from the cadence floor, which is how register #29 survived from 07-18).
+# EVIDENCE: scripts/check_miner_runway.py (built 2026-07-29); docs/GAP_REGISTER.md:226 (#29)
+# CONFIDENCE: committed-script (new this cycle)
+41 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_miner_runway.py --json >> data/cro_ai_logs/miner_runway.log 2>&1
+
 # ALERT CANARY: hourly tick, self-throttled to one synthetic page every 6h, and it AUDITS the
 # delivery ledger every run -- writes data/ALERT_CHANNELS_SILENT + exits 1 when no channel has
 # delivered in 24h. The pager died silently twice (5 days 07-11->07-16; 29h on 07-19) precisely
