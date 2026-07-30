@@ -1522,6 +1522,28 @@ _TERMINAL_ARTIFACTS = {
         "generate_external_review_doc.py, never an inventory. Its findings flow panel responses "
         "-> panel_inbox -> panel_rulings -> GAP_REGISTER rows (§35), so converting the dossier "
         "itself is meaningless: the next run overwrites it. Terminal by construction.",
+    # CLASSIFIED 2026-07-29 (closure cycle). This check FIRED on the four documents that cycle
+    # created, which is the law working: each is classified below as a DECISION, never a default.
+    "docs/WEEKLY_MAX_CYCLE.md":
+        "standing contract for the weekly gap-max sweep (constitution L4) -- it BINDS the sweep's "
+        "conduct and effort floor and is superseded by amendment, never worked off a queue. Same "
+        "class as the standing doctrines above.",
+    "docs/research/MUTATION_BASELINE.md":
+        "MEASUREMENT RECORD with a live artifact behind it (data/mutation_score.json) and a "
+        "ratchet fence that keeps it honest (check_ratchets: test_strength_min_kill_rate, floor "
+        "only rises). Its 'owed next' targets are tracked by that fence and by GAP #53's row, not "
+        "by converting the write-up -- the write-up is the evidence, the fence is the queue.",
+    "docs/research/COT_SCREEN_RESULT.md":
+        "SCREEN RESULT, terminal by construction: a Stage-A screen has zero promotion authority, "
+        "so there is nothing to convert. Its two dispositions are already routed -- the "
+        "positioning-axis REJECT is recorded against register #77 (and cancels the queued crypto "
+        "positioning acquisition), and the un-measurable decay leaves the borrowed -58% prior "
+        "labelled borrowed under register #71. Re-entry needs a named enabling change (L1.16a).",
+    "docs/research/TRIAGE_20260729_PRINCIPAL_BATCH.md":
+        "TRIAGE LEDGER in the same class as SUBSYSTEM_TRIAGE.md / TRIAGE_ADDENDUM.md: every row "
+        "already carries its disposition (BUILT / UPGRADED / BUILD / QUEUE / REJECT with reason), "
+        "so the document IS the conversion record rather than inventory awaiting one. Rows that "
+        "became work carry register rows; rows that were rejected carry their reason.",
 }
 
 
