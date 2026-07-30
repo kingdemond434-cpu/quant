@@ -62,6 +62,7 @@ import json
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -88,7 +89,8 @@ def _close(sym: str) -> pd.Series:
     return df.sort_values("day").drop_duplicates("day").set_index("day")["close"]
 
 
-def _ds_pair(sig: np.ndarray, ra: np.ndarray, rb: np.ndarray, step: int):
+def _ds_pair(sig: np.ndarray, ra: np.ndarray, rb: np.ndarray,
+             step: int) -> tuple[np.ndarray, np.ndarray]:
     """Non-overlapping downsample; relative return compounded PER LEG then differenced."""
     n = len(sig) // step
     s = np.array([sig[i * step] for i in range(n)])
@@ -98,7 +100,7 @@ def _ds_pair(sig: np.ndarray, ra: np.ndarray, rb: np.ndarray, step: int):
 
 
 def main() -> None:
-    trials: list[dict] = []
+    trials: list[dict[str, Any]] = []
     skipped = [{
         "name": "bitcoin_article_pageviews->btc_absolute_1d",
         "verdict": "NOT-RUN (GRAVEYARDED)",

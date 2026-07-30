@@ -36,6 +36,7 @@ import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -231,7 +232,7 @@ def main() -> None:
     with ThreadPoolExecutor(max_workers=9) as ex:
         answers = list(ex.map(_run, jobs))
 
-    rows: list[dict] = []
+    rows: list[dict[str, Any]] = []
     for lens_name, seat, txt, err in answers:
         if err:
             print(f"    {seat.split('/')[-1]:<24} {lens_name[:18]:<18} FAILED ({err})")

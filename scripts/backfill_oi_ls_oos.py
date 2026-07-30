@@ -28,6 +28,7 @@ import json
 import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -63,7 +64,7 @@ def _load_panel(dirp: Path, field: str) -> pd.DataFrame:
     return df.sort_index()
 
 
-def diff_verify() -> dict:
+def diff_verify() -> dict[str, Any]:
     """Archive vs the forward collector -- compared LIKE FOR LIKE.
 
     The forward collector is a POINT SNAPSHOT: measured 2026-07-26, it writes 1.36 rows per
@@ -123,7 +124,7 @@ def diff_verify() -> dict:
     return {"checks": checks, "worst": worst}
 
 
-def _sleeve_stats(rets: pd.Series, turnover: pd.Series, name: str) -> dict:
+def _sleeve_stats(rets: pd.Series, turnover: pd.Series, name: str) -> dict[str, Any]:
     gross = rets.dropna()
     cost = (turnover.reindex(gross.index).fillna(0.0)) * COST_PER_SIDE
     net = (gross - cost).to_numpy("float64")

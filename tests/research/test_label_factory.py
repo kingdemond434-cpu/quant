@@ -139,9 +139,42 @@ class TestAStateIsNotAnEvent:
             lf.FAMILIES.pop("_rare")
 
     def test_the_shipped_families_are_events_on_a_realistic_panel(self, bars: pd.DataFrame) -> None:
+        """THREE of the four ship as valid events. `regime_transition` does NOT, and that is a
+        real finding rather than a test defect -- see the dedicated test below.
+
+        It was invisible until 2026-07-30 because this whole module failed on a pandas
+        FutureWarning first (filterwarnings=error), so eight tests went red for a version reason
+        and the one genuine verdict underneath was never read. A suite that fails for the wrong
+        reason does not merely waste time; it HIDES the right reason.
+        """
         for spec in default_specs():
+            if spec.family == "regime_transition":
+                continue
             v = validate(spec, bars)
             assert v.verdict == VERDICT_VALID, f"{spec.id}: {v.verdict} {v.notes}"
+
+    def test_regime_transition_is_DEGENERATE_RARE_at_its_shipped_parameters(
+            self, bars: pd.DataFrame) -> None:
+        """The finding, pinned so it cannot be lost again.
+
+        At win=20, ratio=1.8, confirm=5 the family fires on 0.33% of bars -- below its own 0.5%
+        viability floor, i.e. too rare to carry statistical power at any horizon. The label is
+        mechanically CORRECT (a vol regime turn that persists really is rare); it is the
+        PARAMETERISATION that makes it untestable on a panel this size.
+
+        DELIBERATELY NOT FIXED BY LOOSENING THE FLOOR. The 0.5% bar is the thing that tells the
+        desk a label cannot be validated; moving it to make a label pass is the bar-loosening
+        failure L1.6 and the L2.8a immutable core forbid, and it would silently re-admit every
+        other under-powered family too. Recalibrating `ratio`/`confirm` is a research decision
+        with its own evidence requirement, so it is recorded here rather than guessed at.
+
+        strict=True: the day this family becomes viable, THIS TEST FAILS and the finding is
+        closed deliberately instead of decaying into a stale xfail nobody rechecks.
+        """
+        spec = next(s for s in default_specs() if s.family == "regime_transition")
+        v = validate(spec, bars)
+        assert v.verdict != VERDICT_VALID
+        assert any("too rare" in n for n in v.notes), v.notes
 
 
 class TestMechanismIsLoadBearing:

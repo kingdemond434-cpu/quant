@@ -14,6 +14,7 @@ from __future__ import annotations
 import json
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -85,7 +86,7 @@ def main() -> None:
     sig_ll = pd.DataFrame((btc.values[:, None] - ret.to_numpy()) if btc is not None
                           else ret.to_numpy() * 0.0, index=ret.index, columns=ret.columns).shift(1)
 
-    grids: dict[str, dict] = {}
+    grids: dict[str, dict[str, Any]] = {}
     all_maker_sharpes: list[float] = []
     for name, sig in (("short_term_reversal", sig_rev), ("btc_leadlag", sig_ll)):
         gross, _ = _ls(sig, ret, 0.0, 0.15)

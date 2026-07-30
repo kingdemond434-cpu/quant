@@ -27,6 +27,7 @@ import subprocess
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 _STATE = Path("data/cadence_state.json")
 _STAGE = Path("data/stage_state.json")
@@ -60,7 +61,7 @@ _STATE_FLOORS_D = {"last_panel": 4.0, "last_tier1": 16.0, "last_prompt_review": 
                    "last_memory_consolidation": 100.0}
 
 
-def _load(p: Path, default: dict) -> dict:
+def _load(p: Path, default: dict[str, Any]) -> dict[str, Any]:
     try:
         d = json.loads(p.read_text("utf-8"))
         return d if isinstance(d, dict) else default
@@ -68,7 +69,7 @@ def _load(p: Path, default: dict) -> dict:
         return default
 
 
-def _days_since(state: dict, key: str) -> float:
+def _days_since(state: dict[str, Any], key: str) -> float:
     try:
         then = datetime.fromisoformat(str(state[key]))
         return (datetime.now(tz=UTC) - then).total_seconds() / 86400.0
@@ -119,7 +120,7 @@ def _run_panel(mission: str | None) -> bool:
     return r2.returncode == 0 and _produced
 
 
-def _assert_floors(state: dict, stage: str) -> None:
+def _assert_floors(state: dict[str, Any], stage: str) -> None:
     """Never-sleepier invariant: page (via run_alerts pickup) if any floor is stale."""
     import time
     floors = dict(_FLOORS_S0)

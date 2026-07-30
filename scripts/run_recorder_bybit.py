@@ -23,6 +23,7 @@ import time
 import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 import certifi
 
@@ -50,7 +51,7 @@ def _assert_rate_budget() -> None:
                          "(Binance lesson 2026-07-21: silent venue cutoff after 6h.)")
 
 
-def _get(path: str, params: str) -> dict | None:
+def _get(path: str, params: str) -> dict[str, Any] | None:
     try:
         req = urllib.request.Request(f"{_BASE}{path}?{params}",
                                      headers={"User-Agent": "research-recorder/1.0"})
@@ -61,7 +62,7 @@ def _get(path: str, params: str) -> dict | None:
         return None                                   # a dropped poll is a gap, never a crash
 
 
-def _write(sym: str, rows: list[dict]) -> None:
+def _write(sym: str, rows: list[dict[str, Any]]) -> None:
     if not rows:
         return
     hour = datetime.now(tz=UTC).strftime("%Y%m%d_%H")
@@ -76,7 +77,7 @@ def main() -> None:
     _assert_rate_budget()
     _ROOT.mkdir(parents=True, exist_ok=True)
     print(f"bybit recorder v1 -> {_ROOT}/")
-    buf: dict[str, list[dict]] = {s: [] for s in _SYMBOLS}
+    buf: dict[str, list[dict[str, Any]]] = {s: [] for s in _SYMBOLS}
     last_trades = 0.0
     last_flush = time.time()
 

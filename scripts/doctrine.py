@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import pathlib
 import re
+from typing import Any
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 
@@ -109,7 +110,7 @@ def preamble(role: str = "") -> str:
 _MANDATE_MARK = "EXHAUSTION MANDATE"
 
 
-def audit_prompt_files() -> dict:
+def audit_prompt_files() -> dict[str, Any]:
     """Every prompt FILE must also carry the mandate. Runtime injection covers code paths; a
     human pasting a prompt into a chat UI bypasses code entirely, and that is how rounds 1-2 of
     the panel actually ran. Files and callers are two separate enforcement surfaces."""
@@ -125,7 +126,7 @@ def audit_prompt_files() -> dict:
             "coverage_pct": round(len(ok) / max(len(ok) + len(missing), 1) * 100, 1)}
 
 
-def audit_brain_instructions() -> dict:
+def audit_brain_instructions() -> dict[str, Any]:
     """The VPS brain reads markdown, not our system prompts. If doctrine is not in the files it
     loads, the brain operates without it -- a whole intelligence running unconstrained."""
     targets = ["CLAUDE.md", "ops/memory/institutional-constitution.md",
@@ -140,7 +141,7 @@ def audit_brain_instructions() -> dict:
     return {"ok": ok, "missing": missing}
 
 
-def audit_callers() -> dict:
+def audit_callers() -> dict[str, Any]:
     """Which LLM callers inject doctrine, and which silently do not."""
     injected, missing = [], []
     for p in sorted((ROOT / "scripts").glob("*.py")):

@@ -69,7 +69,7 @@ SUBSYSTEMS = {
 }
 
 
-def _run(prompt: str, timeout: int) -> subprocess.CompletedProcess:
+def _run(prompt: str, timeout: int) -> subprocess.CompletedProcess[str]:
     # DUAL-POOL (2026-07-26): try the fable metered pool FIRST, fall through to the Max seat.
     # Each auditor is its own invocation with its own brain_auth_check, so the 8 auditors
     # AUTO-LOAD-BALANCE across both pools -- the first ones drain fable, the rest land on opus-5.

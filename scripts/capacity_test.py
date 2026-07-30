@@ -14,6 +14,7 @@ import json
 import sys
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from typing import Any
 
 sys.path.insert(0, "/home/quant/quant-platform")
 import os
@@ -33,7 +34,7 @@ print(f"payload: {len(probe):,} chars (~{len(probe)//4:,} tokens) | {len(files)}
 print(f"expected answer contains: {last_file}\n")
 
 
-def test(pv):
+def test(pv: dict[str, Any]) -> tuple[str, str, int, str]:
     m = pv["model"]
     try:
         r = _ask(pv["base_url"], pv["key"], m, "You are a precise assistant.", probe)

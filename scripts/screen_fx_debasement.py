@@ -71,6 +71,7 @@ import json
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -98,7 +99,7 @@ def _btc() -> pd.Series:
     return df.sort_values("day").drop_duplicates("day").set_index("day")["close"]
 
 
-def _ds(sig: np.ndarray, ret: np.ndarray, step: int):
+def _ds(sig: np.ndarray, ret: np.ndarray, step: int) -> tuple[np.ndarray, np.ndarray]:
     n = len(sig) // step
     s = np.array([sig[i * step] for i in range(n)])
     r = np.array([float(np.prod(1 + ret[i * step:(i + 1) * step]) - 1) for i in range(n)])
@@ -135,7 +136,7 @@ def main() -> None:
     d = d.dropna()
 
     ret, ret_try = d["ret"].to_numpy(), d["ret_btc_in_try"].to_numpy()
-    trials: list[dict] = []
+    trials: list[dict[str, Any]] = []
     skipped = [
         {"name": n, "verdict": "NOT-RUN (GRAVEYARDED)", "reason": r} for n, r in (
             ("try_premium_timing", "graveyard `timing_artifact`, de-contam -0.495"),
