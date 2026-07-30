@@ -160,6 +160,16 @@ QUANT_ROOT=/home/quant/quant-platform
 # CONFIDENCE: committed-script (new this cycle)
 40 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_strategic_director.lock .venv/bin/python scripts/run_strategic_director.py --ledger >> data/cro_ai_logs/strategic_director.log 2>&1
 
+# BACKTEST ENGINE SELF-VERIFICATION: cross-checks the event-driven engine against an independent
+# pure-NumPy reference that shares no code path with it. Activates libs/backtest, which max_audit
+# showed was orphaned all along behind a FAKE reachability path (libs/discovery/__init__ re-exported
+# factory, and factory imported libs.backtest.engine, so any importer of libs.discovery made the
+# whole package look reachable). Cheap and deterministic; a divergence here means live P&L numbers
+# are wrong, which is the one class of bug a research desk cannot afford to find late.
+# EVIDENCE: scripts/verify_backtest_engine.py (built 2026-07-30); libs/backtest/cross_engine.py:3-4
+# CONFIDENCE: committed-script (new this cycle)
+22 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/verify_backtest_engine.py >> data/cro_ai_logs/backtest_verify.log 2>&1
+
 # INBOUND DEPLOY ("merge is deploy", EXECUTION_QUEUE.md RANK 7). git_snapshot.py pushed
 # VPS -> GitHub and NOTHING came back, so merging to master deployed nothing and every change
 # needed a manual SSH -- and on 2026-07-26 that cost the desk 8h of an orphaned executor running

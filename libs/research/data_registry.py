@@ -51,6 +51,7 @@ from __future__ import annotations
 
 import json
 import re
+from collections.abc import Mapping
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
@@ -94,6 +95,27 @@ class AssetSpan:
         return self.status == "measured"
 
 
+@dataclass(frozen=True)
+class DataQuality:
+    """DQS and its components, measured from the data. ``None`` means UNMEASURED, never "fine".
+
+    The three components are the ones moat_audit already found matter on this desk's own data
+    (``scripts/moat_audit.py``:14-19): a feed can be present and still be worthless because it has
+    HOLES (the recorder died and nobody noticed), because it is STALE (the recorder echoing its last
+    value rather than reading), or because it is full of NULLs. A row count catches none of those --
+    which is the same family of error as reporting row counts as spans.
+    """
+
+    completeness: float | None = None   #: observed days / span days -- 1.0 means no missing days
+    stale_frac: float | None = None     #: fraction of consecutive-identical rows (recorder echo)
+    null_frac: float | None = None      #: fraction of null cells
+    dqs: float | None = None            #: 0..100 composite; None when it could not be measured
+
+    @property
+    def measured(self) -> bool:
+        return self.dqs is not None
+
+
 @dataclass
 class DataAsset:
     """One row of the registry. Every numeric field is measured or explicitly absent."""
@@ -103,7 +125,9 @@ class DataAsset:
     kind: str = "flat"                       #: "flat" | "partitioned"
     collector: str | None = None             #: the script that WRITES it
     consumers: list[str] = field(default_factory=list)   #: scripts that READ it
+    dependencies: list[str] = field(default_factory=list)  #: assets its collector READS to build it
     span: AssetSpan = field(default_factory=AssetSpan)
+    quality: DataQuality = field(default_factory=DataQuality)
     rows: int | None = None                  #: reported SEPARATELY from span, never as duration
     breadth: int | None = None               #: distinct symbols / partitions
     bytes: int | None = None
@@ -111,11 +135,19 @@ class DataAsset:
     replication: str = REPL_REFETCHABLE
     moat_score: float = 0.0
     research_value: float = 0.0
+    #: ALPHA CONTRIBUTION is deliberately None, not 0.0, while the desk holds 0 validated alphas.
+    #: A zero would read as "measured and worthless"; None reads as "nothing has been attributed
+    #: yet", which is the true state and the difference organs must not have to guess at.
+    alpha_contribution: float | None = None
+    maintenance_runs_per_day: float | None = None   #: scheduled runs/day -- the real recurring cost
+    needs_credentials: bool = False          #: a feed that can silently die on an expired key
+    last_validated: str | None = None        #: ISO date the asset was last measured on disk
     notes: list[str] = field(default_factory=list)
 
     def to_json(self) -> dict[str, Any]:
         d = asdict(self)
         d["span"] = asdict(self.span)
+        d["quality"] = asdict(self.quality)
         return d
 
 
@@ -229,6 +261,55 @@ def measure_span(path: Path) -> tuple[AssetSpan, int | None, int | None]:
     return AssetSpan(status="unsupported-format"), None, None
 
 
+def measure_quality(path: Path, span: AssetSpan, rows: int | None,
+                    breadth: int | None) -> DataQuality:
+    """DQS from the data itself. Every component is measured or the whole score stays ``None``.
+
+    COMPLETENESS is the one that catches the failure this desk actually has: a recorder dies, the
+    file keeps existing, the span still looks long, and only the count of DISTINCT DAYS against the
+    span reveals the hole. STALENESS catches the other half -- a recorder that is alive but echoing
+    its previous value reads as perfect completeness and carries no information at all.
+    """
+    if not span.measured or not span.days or path.suffix != ".parquet":
+        # jsonl/absent assets: completeness is still computable from span vs rows when both exist,
+        # but a partial score invites the same false confidence a partial map does. Report None.
+        return DataQuality()
+    try:
+        import pandas as pd
+        df = pd.read_parquet(path)
+    except Exception:
+        return DataQuality()
+    if df.empty:
+        return DataQuality()
+
+    col = next((c for c in _DATE_COLS if c in df.columns), None)
+    completeness = None
+    if col is not None:
+        days_seen = df[col].map(_iso_day).dropna().nunique()
+        expected = span.days * max(1, breadth or 1) if breadth and breadth > 1 else span.days
+        # per-symbol panels have breadth*days expected rows; a flat series has days
+        completeness = min(1.0, float(days_seen) / float(span.days)) if span.days else None
+        del expected
+
+    num = df.select_dtypes(include="number")
+    stale = None
+    if len(num) > 1 and not num.empty:
+        same = (num.diff().abs().sum(axis=1) == 0)
+        stale = float(same.iloc[1:].mean())
+
+    null_frac = float(df.isna().to_numpy().mean()) if df.size else None
+
+    parts = [p for p in (completeness,
+                         None if stale is None else 1.0 - stale,
+                         None if null_frac is None else 1.0 - null_frac) if p is not None]
+    dqs = round(100.0 * sum(parts) / len(parts), 1) if parts else None
+    return DataQuality(
+        completeness=None if completeness is None else round(completeness, 4),
+        stale_frac=None if stale is None else round(stale, 4),
+        null_frac=None if null_frac is None else round(null_frac, 4),
+        dqs=dqs)
+
+
 # --------------------------------------------------------------------------- classification
 
 def classify_replication(asset_id: str) -> str:
@@ -300,6 +381,38 @@ def _writers_and_readers(root: Path) -> tuple[dict[str, str], dict[str, list[str
     return writers, readers
 
 
+def _dependencies_of(collector: str | None, own: str,
+                     readers: Mapping[str, list[str]]) -> list[str]:
+    """Assets this one is DERIVED from: paths its own collector also reads.
+
+    Lineage matters for a reason row #77 makes concrete: a derived asset can never be longer or
+    cleaner than its source, so a study sized off the derived span is really sized off the source's.
+    """
+    if not collector:
+        return []
+    return sorted({Path(src).stem for src, rdrs in readers.items()
+                   if collector in rdrs and src != own})
+
+
+def _needs_credentials(root: Path, collector: str | None) -> bool:
+    """Does the collector read a secret? Those are the feeds that die silently on key expiry."""
+    if not collector:
+        return False
+    try:
+        src = (root / collector).read_text("utf-8", errors="replace")
+    except OSError:
+        return False
+    return "data/secrets" in src or "API_KEY" in src or "api_key" in src
+
+
+def _mtime_day(p: Path) -> str | None:
+    from datetime import UTC, datetime
+    try:
+        return datetime.fromtimestamp(p.stat().st_mtime, tz=UTC).date().isoformat()
+    except OSError:
+        return None
+
+
 def _cadence_hours(root: Path) -> dict[str, float]:
     """script -> hours between runs, parsed from ops/crontab.manifest."""
     mf = root / "ops/crontab.manifest"
@@ -368,11 +481,18 @@ def build(root: Path | None = None, *, deep: bool = False) -> list[DataAsset]:
         aid = Path(rel).stem
         span, rows, breadth = measure_span(p)
         collector = writers.get(rel)
+        cad = cad_for(collector)
         a = DataAsset(
             id=aid, path=rel, kind="flat", collector=collector,
-            consumers=readers.get(rel, []), span=span, rows=rows, breadth=breadth,
+            consumers=readers.get(rel, []),
+            dependencies=_dependencies_of(collector, rel, readers),
+            span=span, quality=measure_quality(p, span, rows, breadth),
+            rows=rows, breadth=breadth,
             bytes=p.stat().st_size if p.exists() else None,
-            cadence_h=cad_for(collector), replication=classify_replication(aid),
+            cadence_h=cad, replication=classify_replication(aid),
+            maintenance_runs_per_day=(round(24.0 / cad, 2) if cad else None),
+            needs_credentials=_needs_credentials(root, collector),
+            last_validated=_mtime_day(p),
         )
         if span.status == "absent":
             a.notes.append("declared by a collector but NOT PRESENT on this box -- span "
@@ -392,15 +512,26 @@ def build(root: Path | None = None, *, deep: bool = False) -> list[DataAsset]:
         # breadth is the EXACT partition count, never the sample size
         breadth = len({f.relative_to(axis_dir).parts[0] for f in files})
         rel = axis_dir.relative_to(root).as_posix()
+        coll = writers.get(rel)
+        cad = cad_for(coll)
+        span = _span_from_days(days)
         a = DataAsset(
             id=aid, path=rel + "/**", kind="partitioned",
-            collector=writers.get(rel), consumers=readers.get(rel, []),
-            span=_span_from_days(days),
+            collector=coll, consumers=readers.get(rel, []),
+            dependencies=_dependencies_of(coll, rel, readers),
+            span=span,
+            # quality is measured on ONE representative member: reading 267 symbol files to score
+            # the panel would cost more than the score is worth, and the failure modes it catches
+            # (recorder holes, echoed values) are per-file properties anyway
+            quality=measure_quality(members[0], span, rows, breadth) if members else DataQuality(),
             rows=rows if deep else None,
             breadth=breadth,
             bytes=sum(f.stat().st_size for f in files),
-            cadence_h=cad_for(writers.get(rel)),
+            cadence_h=cad,
             replication=classify_replication(aid),
+            maintenance_runs_per_day=(round(24.0 / cad, 2) if cad else None),
+            needs_credentials=_needs_credentials(root, coll),
+            last_validated=_mtime_day(members[0]) if members else None,
         )
         a.notes.append(f"{len(files)} partition file(s) across {breadth} partition(s)"
                        + ("" if deep else f"; span sampled from {len(members)}, breadth exact"))

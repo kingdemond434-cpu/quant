@@ -241,6 +241,7 @@ def main() -> int:
         _subprocess_cap("fusion_search", "scripts/run_fusion_search.py"),
         _subprocess_cap("strategic_director", "scripts/run_strategic_director.py",
                         args=["--dry-run"]),
+        _subprocess_cap("backtest_verify", "scripts/verify_backtest_engine.py"),
         _subprocess_cap("moat_audit", "scripts/moat_audit.py"),
         _subprocess_cap("revalidate_clocks", "scripts/revalidate_clocks.py"),
         _subprocess_cap("fusion_engine", "scripts/fusion_engine.py"),

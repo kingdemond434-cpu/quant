@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 
 from libs.research.strategic_director import (
+    DOSSIER_SOURCES,
     KIND_ACTIVATE,
     KIND_BUILD,
     MIN_FIELD_CHARS,
@@ -148,7 +149,8 @@ class TestTheDossierIsHonestAboutHoles:
     def test_missing_artifacts_are_named_not_skipped(self, tmp_path) -> None:
         d = assemble_dossier(tmp_path)
         assert d.missing and not d.complete
-        assert len(d.missing) == 9, "every declared source must be accounted for"
+        # derived, not a literal: adding a dossier source must not silently shrink this assertion
+        assert len(d.missing) == len(DOSSIER_SOURCES), "every declared source must be accounted for"
 
     def test_it_reads_the_real_repo_without_crashing(self) -> None:
         d = assemble_dossier()

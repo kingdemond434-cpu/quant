@@ -31,6 +31,7 @@ import json
 import random
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 
@@ -125,10 +126,13 @@ def audit(sym_dir: Path):
 
 def main() -> None:
     random.seed(7)
-    if not MOAT.exists():
-        print("no data/moat")
-        return
-    print("=== MOAT PHASE 1: validate before mining ===")
+    have_mine = MOAT.exists()
+    if not have_mine:
+        # The order-book mine lives on the recording box. Its absence is not a reason to skip the
+        # REGISTRY half of the moat picture, which is measurable anywhere -- skipping it here is
+        # how "audit the moat" quietly came to mean "audit the one dataset this file knew about".
+        print("no data/moat -- order-book audit skipped; registry portfolio still measured")
+    print("=== MOAT PHASE 1: validate before mining ===" if have_mine else "")
     print("    clustering unvalidated books manufactures regimes from gaps -- this stops that\n")
     out = {}
     for side in ("fut", "spot"):
@@ -163,9 +167,48 @@ def main() -> None:
         for k, v in worst:
             print(f"    {k:<20} Q={v['quality']:.0f}  stale {v['stale_pct']:.1f}%  "
                   f"crossed {v['crossed']}  bad {v['bad']}")
+    # ---------------------------------------------------------------- RANK 4 registry feed
+    # THE ORDER-BOOK MINE IS NOT THE WHOLE MOAT, and auditing only what this file already knew
+    # about is how the desk ends up measuring the moat it remembers rather than the one it owns --
+    # exactly GAP_REGISTER #77's failure, one layer up. The data registry MEASURES every asset a
+    # collector writes, so it is the authority on what exists; this audit stays the authority on
+    # order-book QUALITY. Reading it here means a newly-added perishable feed appears in the moat
+    # picture automatically, with no edit to this script.
+    portfolio: dict[str, Any] = {}
+    try:
+        from libs.research.data_registry import REPL_PROPRIETARY, build
+        assets = build(ROOT)
+        moaty = [a for a in assets if a.moat_score > 0]
+        portfolio = {
+            "assets_scored": len(assets),
+            "with_moat": len(moaty),
+            "proprietary": [a.id for a in assets if a.replication == REPL_PROPRIETARY],
+            "top": [{"id": a.id, "moat": a.moat_score, "research_value": a.research_value,
+                     "span_days": a.span.days, "dqs": a.quality.dqs, "replication": a.replication}
+                    for a in sorted(moaty, key=lambda x: -x.moat_score)[:10]],
+            # Long history nobody queries is paid-for capability sitting idle (L2.9) -- the
+            # cot_zcache case row #77 called out separately.
+            "unread_long_history": [a.id for a in assets
+                                    if (a.span.days or 0) > 365 and not a.consumers],
+        }
+        print(f"\n  REGISTRY FEED: {len(assets)} assets scored, {len(moaty)} carry any moat")
+        for t in portfolio["top"][:5]:
+            print(f"    {t['id']:<26} moat={t['moat']:<6} value={t['research_value']:<6} "
+                  f"{t['span_days'] or '?'}d  {t['replication']}")
+        if portfolio["unread_long_history"]:
+            print(f"    PARALYSIS (>1y history, no reader): "
+                  f"{', '.join(portfolio['unread_long_history'])}")
+        if not moaty:
+            print("    no asset carries moat on this box -- expected where the lake is absent; "
+                  "moat is scored from MEASURED span, and an unmeasured span scores nothing")
+    except Exception as e:
+        portfolio = {"error": f"{type(e).__name__}: {str(e)[:160]}"}
+        print(f"\n  REGISTRY FEED unavailable: {portfolio['error']}")
+
     OUT.write_text(json.dumps({"updated": datetime.now(tz=UTC).isoformat(),
                                "sample_files_per_symbol": SAMPLE_FILES,
-                               "symbols": out}, indent=1), "utf-8")
+                               "symbols": out,
+                               "registry_portfolio": portfolio}, indent=1), "utf-8")
     print(f"\n  -> {OUT}")
 
 

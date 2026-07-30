@@ -53,6 +53,24 @@ def _load_panels(symbol: str | None, limit: int) -> list[tuple[str, Any]]:
     return out
 
 
+def _lineage() -> tuple[str, ...]:
+    """The RANK 4 registry asset ids these labels are built FROM.
+
+    Derived, not hardcoded: rank 4 is rank 6's stated prerequisite precisely so a label carries the
+    identity of its source panel. A hardcoded string would still say "lake_crypto" after the panel
+    moved or was renamed, and a label whose lineage points at the wrong panel is worse than one with
+    none -- it invites sizing a study off a span the data never had (GAP_REGISTER #77).
+    """
+    try:
+        from libs.research.data_registry import build
+        for asset in build(ROOT):
+            if Path(asset.path.rstrip("/*")).as_posix() in LAKE.as_posix():
+                return (asset.id,)
+    except Exception:
+        pass
+    return ()
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--symbol", default=None, help="restrict to one symbol")
@@ -63,7 +81,7 @@ def main(argv: list[str] | None = None) -> int:
     from libs.research.label_factory import build_catalogue, default_specs
 
     panels = _load_panels(a.symbol, a.limit)
-    specs = default_specs(inputs=("lake_crypto",))
+    specs = default_specs(inputs=_lineage())
 
     if not panels:
         # NO-INPUT is reported as a DATA gap, never a silent skip (L2.9). The specs and their

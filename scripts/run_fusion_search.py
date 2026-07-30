@@ -27,7 +27,8 @@ from pathlib import Path
 
 from libs.research.fusion_search import (
     DEFAULT_K,
-    eligibility_from_screens,
+    eligibility_from_registry,
+    log_trials,
     plan_search,
 )
 
@@ -84,6 +85,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--axis", action="append", default=[], metavar="NAME=VERDICT",
                     help="declare an axis verdict explicitly (repeatable)")
     ap.add_argument("--k", type=int, default=DEFAULT_K, help=f"combination width (default {DEFAULT_K})")
+    ap.add_argument("--no-ledger", action="store_true",
+                    help="do not append enumerated cells to data/fusion_trials.jsonl")
     ap.add_argument("--json", action="store_true")
     a = ap.parse_args(argv)
 
@@ -104,8 +107,15 @@ def main(argv: list[str] | None = None) -> int:
             "cells": 0, "effective_n_trials": 0,
         }
     else:
-        el = eligibility_from_screens(verdicts)
+        # REGISTRY-gated, not screen-gated alone: a verdict says an axis carries signal, the
+        # RANK 4 registry says its data actually exists and how long it is. Both are required --
+        # cells built from an absent asset would be NO-INPUT and still cost multiplicity.
+        el = eligibility_from_registry(verdicts, ROOT)
         plan = plan_search(el, k=a.k)
+        # Charged at PLAN time, before a single cell is computed, because that is when the
+        # multiplicity is actually incurred. Logging after execution would omit whatever got
+        # pruned -- the exact leak the enumeration rule exists to close.
+        n_logged = log_trials(plan) if not a.no_ledger else 0
         payload = {
             "generated": datetime.now(tz=UTC).isoformat(),
             "status": "REFUSED" if plan.refused_reason else "PLANNED",
@@ -118,6 +128,7 @@ def main(argv: list[str] | None = None) -> int:
             "eligible": plan.eligible,
             "excluded": [asdict(e) for e in plan.excluded],
             "cell_ids": [c.cell_id for c in plan.cells],
+            "trials_logged": n_logged,
         }
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
@@ -137,6 +148,7 @@ def main(argv: list[str] | None = None) -> int:
     if payload.get("cells"):
         print(f"  grid {payload['grid_hash']} -- {payload['cells']} cells, "
               f"{payload['effective_n_trials']} trials owed BEFORE any pruning")
+        print(f"  {payload.get('trials_logged', 0)} cell(s) appended to data/fusion_trials.jsonl")
     print(f"\n-> {OUT.relative_to(ROOT)}")
     return 0
 

@@ -49,9 +49,12 @@ import itertools
 import json
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
 import numpy as np
+
+_ROOT = Path(__file__).resolve().parents[2]
 
 #: Verdict from ``libs.research.axis_screen`` that earns an axis the right to be combined. Nothing
 #: weaker qualifies -- TIMING-ARTIFACT and SUSPECT-LOOKAHEAD are artifacts, and a plain miss is a
@@ -197,6 +200,103 @@ class FusionResult:
     @property
     def n_pruned(self) -> int:
         return sum(1 for r in self.results if r.pruned)
+
+
+def eligibility_from_registry(screens: Mapping[str, str],
+                              root: Path | None = None) -> list[AxisEligibility]:
+    """Eligibility over the RANK 4 registry's assets -- the queue's "triples from the registry".
+
+    TWO gates, and the registry supplies the one screens cannot. A verdict says an axis carries
+    signal; the registry says the data actually EXISTS and how long it is. Combining an axis whose
+    span is unmeasured on this box would enumerate trials against data that is not there, and the
+    resulting NO-INPUT cells would still be charged to the multiplicity budget -- paying real
+    trials for cells that were never testable.
+    """
+    try:
+        from libs.research.data_registry import build
+        assets = {a.id: a for a in build(root)}
+    except Exception:
+        return eligibility_from_screens(screens)
+
+    out: list[AxisEligibility] = []
+    for axis, verdict in sorted(screens.items()):
+        asset = assets.get(axis)
+        earned = verdict == EARNING_VERDICT
+        if not earned:
+            reason = (f"single-axis verdict was {verdict!r}, not {EARNING_VERDICT!r} -- breadth is "
+                      "EARNED per axis; combining axes that individually carry nothing is fishing "
+                      "with more hooks, not discovery")
+        elif asset is None:
+            earned, reason = False, (
+                f"passed its screen but no registry asset is named {axis!r} -- enumerating cells "
+                "against data the registry cannot find would charge real trials for untestable "
+                "cells")
+        elif not asset.span.measured:
+            earned, reason = False, (
+                f"passed its screen but its span is {asset.span.status!r} on this box, so cells "
+                "built from it would be NO-INPUT and still cost multiplicity")
+        else:
+            reason = (f"passed its own single-axis screen; registry span {asset.span.days}d "
+                      f"({asset.span.first}->{asset.span.last})")
+        out.append(AxisEligibility(axis=axis, earned=earned, reason=reason,
+                                   single_axis_verdict=verdict))
+    return out
+
+
+def log_trials(plan: FusionPlan, ledger: Path | None = None) -> int:
+    """Append EVERY enumerated cell to the trial ledger. Returns the number written.
+
+    The queue's "log EVERY cell as a DSR-counted trial", made literal. Written at PLAN time, before
+    a single cell is computed, because that is when the multiplicity is actually incurred -- logging
+    after execution would silently omit whatever got pruned, which is the exact leak rule 2 exists
+    to close. Append-only: a trial that can be un-logged is a budget that can be gamed.
+    """
+    ledger = ledger or (_ROOT / "data/fusion_trials.jsonl")
+    if not plan.cells:
+        return 0
+    from datetime import UTC, datetime
+    stamp = datetime.now(tz=UTC).isoformat()
+    ledger.parent.mkdir(parents=True, exist_ok=True)
+    with ledger.open("a", encoding="utf-8") as fh:
+        for c in plan.cells:
+            fh.write(json.dumps({
+                "ts": stamp, "grid_hash": plan.grid_hash, "cell_id": c.cell_id,
+                "axes": list(c.axes), "representation": c.representation,
+                "horizon_days": c.horizon_days,
+                "grid_size": plan.effective_n_trials,
+                "note": "enumerated -- charged to the DSR budget whether or not it was computed",
+            }) + "\n")
+    return len(plan.cells)
+
+
+def record_survivors(res: FusionResult, graph: Path | None = None) -> int:
+    """Record surviving cells in the knowledge graph as CORRELATION-grade edges, never mechanisms.
+
+    The graph's own rule is that an edge carries its EVIDENCE STATE so a correlation cannot quietly
+    become a mechanism (``scripts/knowledge_engine.py``:13-16). A fusion survivor is the weakest
+    evidence class there is -- it survived a screen inside a grid that was selected over -- so it
+    lands as ``correlational`` with its grid size attached. Anything stronger would be laundering
+    a search result into a claim.
+    """
+    graph = graph or (_ROOT / "data/knowledge_graph_edges.jsonl")
+    if not res.survivors:
+        return 0
+    from datetime import UTC, datetime
+    stamp = datetime.now(tz=UTC).isoformat()
+    graph.parent.mkdir(parents=True, exist_ok=True)
+    with graph.open("a", encoding="utf-8") as fh:
+        for cid in res.survivors:
+            fh.write(json.dumps({
+                "ts": stamp, "source": "fusion_search", "edge": cid,
+                "evidence_state": "correlational",
+                "n_trials_when_found": res.effective_n_trials,
+                "dsr_hurdle_sharpe": res.dsr_hurdle_sharpe,
+                "caveat": "survived a screen inside a grid of "
+                          f"{res.effective_n_trials} enumerated cells -- selection over that grid "
+                          "is priced into the hurdle, and this edge is NOT a mechanism until an "
+                          "independent test names the constraint that produces it",
+            }) + "\n")
+    return len(res.survivors)
 
 
 def eligibility_from_screens(screens: Mapping[str, str]) -> list[AxisEligibility]:

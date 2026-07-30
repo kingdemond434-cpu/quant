@@ -58,6 +58,10 @@ DOSSIER_SOURCES: dict[str, str] = {
     "execution_intel": "web/execution_intel.json",
     "moat_audit": "data/moat_quality.json",
     "recommendation_ledger": "docs/research/recommendation_ledger.json",
+    # the queue names "register rank" in the director's INPUT list: the GAP register is
+    # where the desk records what it already knows is broken, so a director that cannot
+    # see it will keep re-proposing rows that are already open.
+    "gap_register": "docs/GAP_REGISTER.md",
 }
 
 #: A recommendation's disposition kind. ``build`` is last on purpose: it is what the priority rule
@@ -133,6 +137,21 @@ class DirectorResult:
         return len(self.accepted) + len(self.rejected)
 
 
+def _open_register_rows(text: str, limit: int = 40) -> list[str]:
+    """Row id + title for register rows that are not closed -- what is ALREADY known broken."""
+    rows = []
+    for line in text.splitlines():
+        if not line.startswith("| "):
+            continue
+        cells = [c.strip() for c in line.split("|")]
+        if len(cells) < 3 or not cells[1].isdigit():
+            continue
+        if "CLOSED" in line.upper() or "RESOLVED" in line.upper():
+            continue
+        rows.append(f"#{cells[1]} {cells[2][:120]}")
+    return rows[-limit:]
+
+
 def assemble_dossier(root: Path | None = None) -> Dossier:
     """Read the existing artifacts. Missing ones are NAMED, not skipped."""
     root = root or _ROOT
@@ -140,8 +159,17 @@ def assemble_dossier(root: Path | None = None) -> Dossier:
     for name, rel in sorted(DOSSIER_SOURCES.items()):
         p = root / rel
         try:
-            d.present[name] = json.loads(p.read_text("utf-8"))
-        except (OSError, ValueError):
+            text = p.read_text("utf-8")
+        except OSError:
+            d.missing.append(f"{name} ({rel})")
+            continue
+        if rel.endswith(".md"):
+            # the register is markdown, not JSON; carry its OPEN rows rather than the whole file
+            d.present[name] = _open_register_rows(text)
+            continue
+        try:
+            d.present[name] = json.loads(text)
+        except ValueError:
             d.missing.append(f"{name} ({rel})")
     cyc = d.present.get("dormancy")
     if isinstance(cyc, dict):
