@@ -14,6 +14,7 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field
 
 from libs.core.ids import generate_id
+from libs.core.logging import get_logger
 from libs.risk.config import RiskConfig
 from libs.risk.correlation import correlation_scalar
 from libs.risk.crisis import crisis_controller
@@ -75,7 +76,15 @@ class RiskDecision(BaseModel):
         return self.approved
 
 
+# OBSERVABILITY (gap #56, 2026-07-29). EVERY rejection is logged here at the single choke point,
+# so "why did the desk not trade" is answerable after the fact from one place. Below the script
+# boundary there was no trail at all before this -- 1 of 318 library modules used logging, and
+# this is the module that decides whether capital moves. Library never configures handlers.
+_log = get_logger(__name__)
+
+
 def _reject(reason: str, checks: list[dict[str, Any]]) -> RiskDecision:
+    _log.warning("risk gate REJECTED: %s", reason)
     return RiskDecision(
         approved=False, risk_approval_id=None, sized_units=0.0, global_scalar=0.0,
         reasons=[reason], checks=checks,

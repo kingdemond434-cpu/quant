@@ -22,6 +22,14 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from libs.core.logging import get_logger
+
+# OBSERVABILITY (gap #56, 2026-07-29): the state file records WHERE the machine is; the log
+# records WHY it moved, at the moment it moved. state["history"] survives, but a demotion that
+# is instantly followed by a crash left no trail of the reason before this. Library never
+# configures handlers -- the owning script does.
+_log = get_logger(__name__)
+
 _STATE = Path("data/stage_state.json")
 _STAGES = ("S0", "S1", "S2")
 
@@ -82,6 +90,7 @@ def promote(evidence: dict[str, Any]) -> tuple[bool, str]:
     else:
         return False, "already at S2 (terminal stage)"
     if not met:
+        _log.info("promote REFUSED from %s: %s", stage, why)
         return False, f"gate not met: {why}"
     state["stage"] = target
     state["history"].append({
@@ -89,6 +98,7 @@ def promote(evidence: dict[str, Any]) -> tuple[bool, str]:
         "from": stage, "to": target, "evidence": why,
     })
     _save(state)
+    _log.warning("STAGE PROMOTED %s -> %s: %s", stage, target, why)
     return True, f"promoted {stage} -> {target}: {why}"
 
 
@@ -106,4 +116,7 @@ def demote(reason: str) -> tuple[bool, str]:
         "from": stage, "to": target, "reason": reason,
     })
     _save(state)
+    # A demotion is the risk machinery working; it is logged at WARNING because it must be
+    # visible in any live-session log without raising the level.
+    _log.warning("STAGE DEMOTED %s -> %s: %s", stage, target, reason)
     return True, target
