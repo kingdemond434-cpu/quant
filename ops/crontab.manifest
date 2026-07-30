@@ -117,6 +117,20 @@ QUANT_ROOT=/home/quant/quant-platform
 # CONFIDENCE: committed-script (new this cycle)
 7 7 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_constitution_core.py >> data/cro_ai_logs/constitution_core.log 2>&1
 
+# PROMOTION QUEUE (L1.18a, principal concern 2026-07-30: the shadow->live process must not be so
+# slow that "by the time they reach live the capital is already outgrown its capacity").
+# capacity_race answered that question since 07-30 and EVERY CALLER WAS A TEST passing a hardcoded
+# validation_days=90 -- both un-run and run against an assumption. This is its production caller,
+# and it feeds the race a MEASURED latency (clock + queue-wait + decision lag, each with its
+# provenance). Forward slots are then ordered by EXPIRY, SHORTEST RUNWAY FIRST: a long-runway edge
+# loses nothing by waiting, a short-runway one loses everything, so arrival order systematically
+# sacrifices exactly the edges that cannot afford to wait. SUB-VIABLE and OUTGROWN candidates are
+# excluded rather than back-sorted. A DOA edge is NEVER rescued by a shorter clock or a lower bar.
+# EVIDENCE: scripts/run_promotion_queue.py + libs/research/promotion_latency.py;
+#           tests/research/test_promotion_queue.py (13 tests incl. the accelerant refusals)
+# CONFIDENCE: committed-script (new this cycle)
+53 7 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_promotion_queue.py >> data/cro_ai_logs/promotion_queue.log 2>&1
+
 # MAX PUSH (L1.0, principal order 2026-07-30: "every aspect should always aim and hunt to maximise
 # itself 100% every single day, believing it never is"). The law already said the gap to 100% IS
 # the work queue; what did not exist was the queue. Five separate "what is left" artifacts
