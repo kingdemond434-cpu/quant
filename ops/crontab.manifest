@@ -66,6 +66,15 @@ QUANT_ROOT=/home/quant/quant-platform
 # CONFIDENCE: committed-script (new this cycle)
 7 7 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_ratchets.py --ratchet --json >> data/cro_ai_logs/ratchets.log 2>&1
 
+# KIMI HUNTER (Deep Forest Protocol, waves 1->2->3 enforced in code). BUILT and automated on the
+# box per commit a9a4dcd ("cron at 06:00 UTC + full-chain mock proves funding is the only
+# remaining variable") but ABSENT FROM THIS MANIFEST until 2026-07-30 -- i.e. live-only
+# scheduling, invisible from source, the exact class gap #58 exists to catch. Blocked on
+# OpenRouter credit (402); the harness no-ops cleanly without it and fires the moment credit lands.
+# EVIDENCE: scripts/kimi_hunter.py:3 ("cannot RUN until OpenRouter is funded"); commit a9a4dcd
+# CONFIDENCE: documented-cadence (06:00 UTC from the commit message)
+0 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/kimi_hunter.py >> data/cro_ai_logs/kimi_hunter.log 2>&1
+
 # MINER RUNWAY DOCTOR: daily. Distinguishes never-ran / creds-missing / not-scheduled / stale
 # per seat and reports the CAUSE with its blast radius -- 6 of 7 frontier regions had ZERO runs
 # ever while max_audit's freshness check technically "monitored" them (a never-run duty is exempt
