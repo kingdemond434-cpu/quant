@@ -2379,7 +2379,17 @@ def check_orphan_scripts(defects) -> None:
             # it -- the first version described `page_digest.py` in this very docstring and
             # thereby marked it reachable. A checker that launders its examples into passes is
             # the same false-negative class as the one-hop orphan check it replaced.
-            if f.is_file() and f.name not in ("daily_research_cycle.py", "max_audit.py"):
+            #
+            # AUDIT REPORTS ARE EXCLUDED FOR THE SAME REASON, one file wider (found 2026-07-30 by
+            # this check's own test going red). A deep-sweep report DESCRIBES orphans; it does not
+            # wire them. 20260730_research-engine.md:786 reads "scripts/page_digest.py: grep -> no
+            # hits" -- the report correctly IDENTIFIED the orphan, and writing that sentence down
+            # made this detector count it as referenced and fall silent. Diagnosing a problem must
+            # never be what silences its detection, or the desk's own audits become the thing that
+            # hides the findings.
+            if (f.is_file()
+                    and f.name not in ("daily_research_cycle.py", "max_audit.py")
+                    and "deep_sweep" not in f.as_posix()):
                 with contextlib.suppress(OSError):
                     corpus.append(f.read_text("utf-8", errors="ignore"))
     blob = "\n".join(corpus)
