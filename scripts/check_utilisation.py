@@ -87,7 +87,7 @@ def _forward_slots() -> Ceiling:
     try:
         from libs.research.slot_registry import MAX_FORWARD_SLOTS, derive_slots
         snap = derive_slots()
-        used, cap = len(snap.get("slots", []) or []), float(MAX_FORWARD_SLOTS)
+        used, cap = float(len(snap.get("slots", []) or [])), float(MAX_FORWARD_SLOTS)
         measured = True
     except (ImportError, OSError, ValueError, KeyError):
         used, cap, measured = 0.0, 12.0, False

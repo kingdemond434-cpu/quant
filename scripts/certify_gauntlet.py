@@ -29,6 +29,7 @@ import json
 import pickle
 import time
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 
@@ -83,7 +84,8 @@ def _load_campaign() -> tuple[np.ndarray, np.ndarray, int]:
     return matrix, sharpes, min_len
 
 
-def _score(rets: np.ndarray, matrix: np.ndarray, peer_sharpes: np.ndarray) -> dict:
+def _score(rets: np.ndarray, matrix: np.ndarray,
+           peer_sharpes: np.ndarray) -> dict[str, Any]:
     """Inject ``rets`` as a new campaign column and score it on BOTH gate paths."""
     m = np.column_stack([matrix, rets])
     gates = campaign_gate_stats(m)
@@ -99,7 +101,7 @@ def _score(rets: np.ndarray, matrix: np.ndarray, peer_sharpes: np.ndarray) -> di
     legacy = validate(rets, pbo=gates.legacy_pbo, rc=gates.legacy_rc, **common)
     percand = validate(rets, campaign=gates, column=col, **common)
 
-    def _v(res) -> dict:
+    def _v(res: Any) -> dict[str, Any]:
         return {
             "survived": bool(res.survived),
             "failed": [g for g, ok in res.gates.items() if not ok],
@@ -147,7 +149,7 @@ def main() -> int:
     print(f"campaign: T={n_obs} N={matrix.shape[1]}  SE(annual Sharpe)={se:.3f}")
     print("controls have their target SAMPLE Sharpe by construction (sampling error removed)\n")
 
-    rows: list[dict] = []
+    rows: list[dict[str, Any]] = []
     # target 0.0 is the NULL control -- the other half of certification.
     for target in [*targets, 0.0]:
         for k in range(args.seeds):
@@ -165,7 +167,7 @@ def main() -> int:
                 f"percand={'PASS' if pc['survived'] else 'FAIL:' + ','.join(pc['failed'])}"
             )
 
-    def _summary(path: str) -> dict:
+    def _summary(path: str) -> dict[str, Any]:
         good = [r for r in rows if r["target"] > 0.0]
         nulls = [r for r in rows if r["target"] == 0.0]
         by_t = {
@@ -193,7 +195,7 @@ def main() -> int:
             "certified_admits_good": bool(passing),
         }
 
-    out = {
+    out: dict[str, Any] = {
         "generated": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "campaign": {"T": n_obs, "N": matrix.shape[1], "se_annual_sharpe": se},
         "controls": {"targets": targets, "seeds": args.seeds,

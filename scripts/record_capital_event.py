@@ -28,6 +28,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
+from typing import Any
 
 _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
@@ -39,14 +40,15 @@ from libs.risk import risk_controls  # noqa: E402
 _STATE = _ROOT / "data/cashcarry_state.json"
 
 
-def _state() -> dict:
+def _state() -> dict[str, Any]:
     try:
-        return json.loads(_STATE.read_text("utf-8"))
+        loaded: dict[str, Any] = json.loads(_STATE.read_text("utf-8"))
+        return loaded
     except (OSError, ValueError):
         return {}
 
 
-def _live_equity(st: dict) -> float:
+def _live_equity(st: dict[str, Any]) -> float:
     """Combined equity as the executor computes it: futures equity + banked realised spot P&L."""
     return float(st.get("last_combined_equity",
                         st.get("start_futures_equity", 0.0))) + 0.0

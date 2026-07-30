@@ -80,7 +80,9 @@ def _cfg() -> dict[str, Any] | None:
     :1217); those are the keys, so those are what this measures.
     """
     try:
-        return json.loads((_ROOT / "data/cashcarry_config.json").read_text("utf-8"))
+        loaded: dict[str, Any] = json.loads(
+            (_ROOT / "data/cashcarry_config.json").read_text("utf-8"))
+        return loaded
     except (OSError, ValueError, TypeError):
         return None
 
