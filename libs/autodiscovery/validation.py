@@ -72,9 +72,36 @@ _EXEC_VIABILITY_FLOOR_USD = 20.0 * _VENUE_MIN_NOTIONAL_USD   # ~$200: a handful 
 
 def _desk_equity_usd() -> float:
     """Live deployable equity, read defensively. The capacity bar is RELATIVE to this so it
-    scales with the desk instead of freezing an institutional assumption into a seed-stage book."""
+    scales with the desk instead of freezing an institutional assumption into a seed-stage book.
+
+    ONE SOURCE, AND IT WAS TWO (found by check_utilisation.py, 2026-07-30). This function read
+    `data/cashcarry_config.json:capital` while `libs.research.capacity_policy.live_book_usd()` read
+    VENUE TRUTH from the NAV chain. Measured the day it was found: config said $4,500, venue truth
+    said $13,155. Every capacity band in the desk is a ratio to this number, so the whole gauntlet
+    was sizing edges against a book 2.9x smaller than the real one -- ADMITTING edges the desk had
+    already outgrown, and reporting them as healthy inventory.
+
+    That is the L1.18a $100,000-floor defect running in the opposite direction, and it is the same
+    root cause both times: a capacity threshold evaluated against a number that is not the book.
+    check_capacity_single_source fences the capacity POLICY constant; nothing fenced its INPUT.
+
+    ORDER: venue truth -> the live web artifact -> config -> constant. Never zero -- zero would
+    make every edge OUTGROWN and empty the shortlist on an unreadable file, and an unreadable file
+    must never be the most destructive possible answer.
+    """
     import json as _json
     from pathlib import Path as _Path
+    try:
+        from libs.research.capacity_policy import live_book_usd
+        # fallback=0.0 so this rung reports ONLY genuine venue truth. Calling it with its own
+        # default would return DEFAULT_BOOK_USD on an unreadable ledger, and a constant dressed as
+        # venue truth would outrank the real local config below it -- a silent downgrade of the
+        # ladder rather than a fallback through it.
+        venue = float(live_book_usd(fallback=0.0))
+        if venue > 0:
+            return venue
+    except (ImportError, OSError, ValueError, TypeError):
+        pass
     for src, keys in ((_Path("web/cashcarry_live.json"), ("equity", "net_equity", "deployed")),
                       (_Path("data/cashcarry_config.json"), ("capital", "authorized_capital"))):
         try:

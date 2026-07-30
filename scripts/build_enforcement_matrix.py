@@ -94,6 +94,13 @@ _MAP: dict[str, list[str]] = {
     # injection path: it is in principal_doctrine.txt, which check_prompt_layer proves reaches
     # every claude invocation and check_universal_doctrine proves no organ omits.
     "L1.21a": ["ops/principal_doctrine.txt", "check_prompt_layer", "check_universal_doctrine"],
+    # L1.28 fences the CONSTITUTION's own language: every scope restraint must state its non-timid
+    # reading, or an organ reading it defaults to doing less.
+    "L1.28": ["scripts/check_timidity_language.py", "tests/governance/test_timidity_fence.py",
+              "ops/principal_doctrine.txt"],
+    # L1.28a is measured, not asserted: every ceiling reports utilisation or counts as zero.
+    "L1.28a": ["scripts/check_utilisation.py", "check_idle_capability", "check_clock_saturation",
+               "check_capacity_runway"],
 }
 
 # ---------------------------------------------------------------------------------------------

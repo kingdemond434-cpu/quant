@@ -117,6 +117,29 @@ QUANT_ROOT=/home/quant/quant-platform
 # CONFIDENCE: committed-script (new this cycle)
 7 7 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_constitution_core.py >> data/cro_ai_logs/constitution_core.log 2>&1
 
+# UTILISATION (L1.28a, principal order 2026-07-30: "idleness is also timid -- never leave any
+# ceiling or capital idle"). Unused headroom is not safety, it is an unbooked loss. A wrong trade
+# costs a bounded amount and announces itself; idle capacity costs its ENTIRE forward output
+# stream and announces nothing -- an unfilled forward slot is evidence never accrued, an unread
+# dataset a hypothesis never tested, a dormant module engineering already paid for returning zero.
+# Enumerates every declared ceiling, measures it, and FAILS on idle headroom with no named binding
+# constraint. UNMEASURED counts as ZERO: a ceiling nobody measures is idle by default.
+# FIRST RUN found a real defect -- deployed capital reading 13,155/4,500 (over-limit), because
+# equity had TWO sources of truth; every capacity band is a ratio to that number.
+# EVIDENCE: scripts/check_utilisation.py -> data/utilisation.json; docs/CONSTITUTION.md L1.28a
+# CONFIDENCE: committed-script (new this cycle)
+27 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_utilisation.py >> data/cro_ai_logs/utilisation.log 2>&1
+
+# TIMIDITY FENCE (L1.28): about two thirds of the constitution's principles contain restraint
+# language, every one of which a language model can degrade into a general licence to do less.
+# The misreading is systematic, silent, and looks like good judgement. This requires every
+# scope restraint to state its non-timid reading (or be declared EVIDENCE/RISK restraint, which
+# stays strict), and it also scans the injected doctrine for timid ORDERS -- a phrase like
+# "propose rather than build" there is a direct instruction to every organ to do less.
+# EVIDENCE: scripts/check_timidity_language.py + tests/governance/test_timidity_fence.py
+# CONFIDENCE: committed-script (new this cycle)
+19 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_timidity_language.py >> data/cro_ai_logs/timidity.log 2>&1
+
 # MODEL AUTO-UPGRADE (principal order 2026-07-30: "auto-upgrade to newer flagship models, no human
 # needed"). Model capability is the one input the desk cannot improve by its own work -- it
 # improves when the vendor ships. Until today that improvement reached this desk only when a human

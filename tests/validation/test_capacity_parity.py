@@ -16,7 +16,50 @@ import pytest
 from libs.autodiscovery import validation as V
 
 
-def test_bar_is_relative_to_desk_equity(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+@pytest.fixture
+def no_venue_truth(monkeypatch: pytest.MonkeyPatch):
+    """Silence the VENUE-TRUTH rung so the lower rungs of the equity ladder can be tested.
+
+    Needed since 2026-07-30, when `_desk_equity_usd` was unified onto `live_book_usd()`. The
+    fixtures below isolate by `chdir`, which only masks RELATIVE reads; the NAV ledger is
+    absolute-pathed, so without this the real book leaks into every one of them. The ladder
+    itself is covered by `test_venue_truth_outranks_local_config`.
+    """
+    import libs.research.capacity_policy as cp
+    monkeypatch.setattr(cp, "live_book_usd", lambda fallback=0.0, ledger=None: float(fallback))
+
+
+def test_venue_truth_outranks_local_config(tmp_path: Path,
+                                           monkeypatch: pytest.MonkeyPatch) -> None:
+    """THE DEFECT THIS PINS (found by check_utilisation.py 2026-07-30): equity was read from
+    `cashcarry_config.json:capital` ($4,500) while venue truth said $13,155, so every capacity band
+    -- each a ratio to this number -- was computed against a book 2.9x too small and ADMITTED edges
+    the desk had already outgrown. Same root cause as the $100k floor, opposite direction."""
+    import libs.research.capacity_policy as cp
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data/cashcarry_config.json").write_text(json.dumps({"capital": 4500.0}), "utf-8")
+    monkeypatch.setattr(cp, "live_book_usd", lambda fallback=0.0, ledger=None: 13_154.86)
+    assert V._desk_equity_usd() == pytest.approx(13_154.86), "config must not outrank venue truth"
+    # And the consequence that actually matters: an $800 edge is OUTGROWN at the real book size.
+    assert V.capacity_status(800.0) == "OUTGROWN"
+
+
+def test_venue_fallback_constant_does_not_masquerade_as_truth(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """`live_book_usd` returns a CONSTANT when the ledger is unreadable. Called with its own
+    default that constant would outrank the real local config -- a silent downgrade dressed as
+    venue truth. It is called with fallback=0.0 so an unreadable ledger falls THROUGH the ladder."""
+    import libs.research.capacity_policy as cp
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "web").mkdir()
+    (tmp_path / "web/cashcarry_live.json").write_text(json.dumps({"equity": 777.0}), "utf-8")
+    monkeypatch.setattr(cp, "live_book_usd", lambda fallback=0.0, ledger=None: float(fallback))
+    assert V._desk_equity_usd() == 777.0
+
+
+def test_bar_is_relative_to_desk_equity(tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+                                        no_venue_truth: None) -> None:
     monkeypatch.chdir(tmp_path)
     (tmp_path / "web").mkdir()
     (tmp_path / "web/cashcarry_live.json").write_text(json.dumps({"equity": 4500.0}), "utf-8")
@@ -24,8 +67,8 @@ def test_bar_is_relative_to_desk_equity(tmp_path: Path, monkeypatch: pytest.Monk
     assert V._min_capacity_usd() == pytest.approx(9000.0)
 
 
-def test_a_small_edge_the_desk_can_fill_is_ADMITTED(tmp_path: Path,
-                                                   monkeypatch: pytest.MonkeyPatch) -> None:
+def test_a_small_edge_the_desk_can_fill_is_ADMITTED(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch, no_venue_truth: None) -> None:
     """THE DEFECT ITSELF: a $20k-capacity edge at $4.5k equity is 100% usable and used to fail."""
     monkeypatch.chdir(tmp_path)
     (tmp_path / "web").mkdir()
@@ -34,7 +77,8 @@ def test_a_small_edge_the_desk_can_fill_is_ADMITTED(tmp_path: Path,
     assert 20_000.0 < 1.0e5                            # would have been rejected before
 
 
-def test_tiny_capital_admits_tiny_edges(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_tiny_capital_admits_tiny_edges(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch, no_venue_truth: None) -> None:
     """PRINCIPAL 2026-07-30: capital may start ~$100. A $300-capacity edge is then FULLY usable
     and must be exploited -- the floor is execution physics, not a capital-size opinion."""
     monkeypatch.chdir(tmp_path)
@@ -59,7 +103,8 @@ def test_outgrown_is_distinct_from_sub_viable() -> None:
     assert "NEVER graveyarded" in src        # the rule is written where the code lives
 
 
-def test_bar_scales_up_with_the_book(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_bar_scales_up_with_the_book(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch, no_venue_truth: None) -> None:
     """As the desk grows the bar grows with it -- no retrofit needed at $1m."""
     monkeypatch.chdir(tmp_path)
     (tmp_path / "web").mkdir()
@@ -67,8 +112,8 @@ def test_bar_scales_up_with_the_book(tmp_path: Path, monkeypatch: pytest.MonkeyP
     assert V._min_capacity_usd() == pytest.approx(2.0e6)
 
 
-def test_missing_state_falls_back_without_crashing(tmp_path: Path,
-                                                   monkeypatch: pytest.MonkeyPatch) -> None:
+def test_missing_state_falls_back_without_crashing(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch, no_venue_truth: None) -> None:
     monkeypatch.chdir(tmp_path)
     assert V._desk_equity_usd() == V._DESK_EQUITY_FALLBACK_USD
     assert V._min_capacity_usd() > 0
