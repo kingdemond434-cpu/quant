@@ -128,6 +128,16 @@ real: a hardcoded $100,000 capacity floor sat in the gauntlet while the desk dep
 rejecting edges it could fill twenty times over, and capacity blocked part of 182 of 420 campaign
 candidates. Any reappearance of an absolute capacity floor is a defect, fenced by
 `tests/validation/test_capacity_parity.py`.
+**THE LIFECYCLE (principal 2026-07-30, capital deploying from ~$1k and possibly ~$100):** a small
+edge is admitted and harvested to its quota while the book is small, and as capital compounds past
+that quota it retires by **OUTGROWTH** — attrition from SUCCESS, not failure. An OUTGROWN edge is
+**never graveyarded as a dead mechanism**: nothing about it was refuted, and graveyarding it would
+poison the novelty gate against a mechanism that worked and corrupt the family-level survival
+statistics that steer future search (L1.17). The ONLY genuine capacity kill is **SUB-VIABLE** —
+the edge cannot support a handful of economic round-trips at venue minimums, so execution physics
+(L1.5) kills it at any equity. Small-capacity and large-capacity hunting run **SIMULTANEOUSLY**,
+never in sequence: waiting for big edges forfeits the compounding available now, and compounding
+now is what buys the capital that makes big edges relevant at all.
 
 **L1.19 INFORMATION DECAY.** Every alpha source, dataset, feature and mechanism is monitored for
 decay, crowding and drift — and replacements are hunted BEFORE existing advantages die.

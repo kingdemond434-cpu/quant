@@ -34,13 +34,29 @@ def test_a_small_edge_the_desk_can_fill_is_ADMITTED(tmp_path: Path,
     assert 20_000.0 < 1.0e5                            # would have been rejected before
 
 
-def test_dust_is_still_rejected(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Parity is not permissiveness: below the dust floor, frictions dominate at ANY equity."""
+def test_tiny_capital_admits_tiny_edges(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """PRINCIPAL 2026-07-30: capital may start ~$100. A $300-capacity edge is then FULLY usable
+    and must be exploited -- the floor is execution physics, not a capital-size opinion."""
     monkeypatch.chdir(tmp_path)
     (tmp_path / "web").mkdir()
     (tmp_path / "web/cashcarry_live.json").write_text(json.dumps({"equity": 100.0}), "utf-8")
-    assert V._min_capacity_usd() == pytest.approx(V._CAPACITY_DUST_FLOOR_USD)
-    assert V._min_capacity_usd() > 500.0
+    assert V._min_capacity_usd() == pytest.approx(V._EXEC_VIABILITY_FLOOR_USD)
+    assert V.capacity_status(300.0, equity_usd=100.0) == "ADMIT"
+
+
+def test_sub_viable_is_the_only_capacity_kill() -> None:
+    """Below a handful of economic round-trips at venue minimums, L1.5 kills it at ANY equity."""
+    assert V.capacity_status(50.0, equity_usd=100.0) == "SUB-VIABLE"
+    assert V.capacity_status(50.0, equity_usd=1.0e6) == "SUB-VIABLE"
+
+
+def test_outgrown_is_distinct_from_sub_viable() -> None:
+    """The lifecycle the principal specified: a real edge harvested to exhaustion retires by
+    OUTGROWTH as capital compounds past it -- success, not failure, and never a graveyard entry."""
+    assert V.capacity_status(300.0, equity_usd=1000.0) == "OUTGROWN"
+    assert V.capacity_status(300.0, equity_usd=100.0) == "ADMIT"      # same edge, smaller book
+    src = Path(V.__file__).read_text("utf-8")
+    assert "NEVER graveyarded" in src        # the rule is written where the code lives
 
 
 def test_bar_scales_up_with_the_book(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

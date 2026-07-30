@@ -39,9 +39,15 @@ _PBO_THRESHOLD = 0.5       # same bar as PBOResult.overfit; only the ATTRIBUTION
 # THE RULE: an edge fails capacity ONLY if it cannot absorb a meaningful slice of the desk's OWN
 # size. It is then exploited to ITS OWN quota, never deprioritised for being small, and never
 # ranked below a larger-capacity edge (L1.18: edges are edges).
-_DESK_EQUITY_FALLBACK_USD = 5.0e3     # used only when live equity is unreadable
-_CAPACITY_MULTIPLE_OF_EQUITY = 2.0    # must hold ~2x the book, i.e. room to size and to grow
-_CAPACITY_DUST_FLOOR_USD = 2.0e3      # below this, execution frictions dominate at any equity
+# PRINCIPAL CLARIFICATION 2026-07-30: capital deploys from ~$1k and may start as low as ~$100.
+# At $100 live, a $300-capacity edge is FULLY usable and must be exploited -- so the floor cannot
+# be an institutional round number, it can only be the point where EXECUTION PHYSICS stops working
+# (L1.5). Below ~20 venue-minimum notionals there is no room for a few economic round-trips, and
+# that -- not a capital-size opinion -- is the only defensible absolute floor.
+_DESK_EQUITY_FALLBACK_USD = 1.0e3     # used only when live equity is unreadable
+_CAPACITY_MULTIPLE_OF_EQUITY = 2.0    # room to size the book and to grow into it
+_VENUE_MIN_NOTIONAL_USD = 10.0        # Binance-class minimum order notional
+_EXEC_VIABILITY_FLOOR_USD = 20.0 * _VENUE_MIN_NOTIONAL_USD   # ~$200: a handful of economic trips
 
 
 def _desk_equity_usd() -> float:
@@ -63,7 +69,33 @@ def _desk_equity_usd() -> float:
 
 
 def _min_capacity_usd() -> float:
-    return max(_desk_equity_usd() * _CAPACITY_MULTIPLE_OF_EQUITY, _CAPACITY_DUST_FLOOR_USD)
+    return max(_desk_equity_usd() * _CAPACITY_MULTIPLE_OF_EQUITY, _EXEC_VIABILITY_FLOOR_USD)
+
+
+def capacity_status(capacity_usd: float, *, equity_usd: float | None = None) -> str:
+    """ADMIT / OUTGROWN / SUB-VIABLE -- and the distinction is a lifecycle law, not bookkeeping.
+
+    THE MODEL THE PRINCIPAL SPECIFIED (2026-07-30), and it is how small edges are supposed to end:
+    a small-capacity edge is admitted and EXPLOITED TO ITS QUOTA while the book is small; as capital
+    compounds past that quota the edge stops being able to hold a meaningful slice and retires by
+    OUTGROWTH. That is natural attrition from SUCCESS, not failure --
+
+      * OUTGROWN edges are NEVER graveyarded as dead mechanisms. Nothing was refuted: the mechanism
+        was real, it was harvested to exhaustion, and the book simply grew past it. Graveyarding it
+        would poison the novelty gate against a mechanism that WORKED, and would corrupt the
+        family-level survival statistics that steer future search (L1.17).
+      * SUB-VIABLE is the only genuine capacity rejection: the edge cannot support even a handful of
+        economic round-trips at venue minimums, so execution physics (L1.5) kills it at ANY equity.
+      * Small and large capacity are hunted SIMULTANEOUSLY and never ranked against each other
+        (L1.18a). A pipeline that waits for big-capacity edges forfeits the compounding available
+        right now, and compounding now is what buys the capital that makes big edges relevant.
+    """
+    eq = _desk_equity_usd() if equity_usd is None else float(equity_usd)
+    if capacity_usd < _EXEC_VIABILITY_FLOOR_USD:
+        return "SUB-VIABLE"
+    if capacity_usd < eq * _CAPACITY_MULTIPLE_OF_EQUITY:
+        return "OUTGROWN"
+    return "ADMIT"
 _CPCV_MIN_POSITIVE = 0.6   # >=60% of purged folds positive
 
 
