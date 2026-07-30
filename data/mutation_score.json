@@ -1,5 +1,5 @@
 {
-  "measured": "2026-07-30T22:00:35Z",
+  "measured": "2026-07-30T22:50:32Z",
   "bar": 0.9,
   "method": "self-contained AST mutation harness (see module docstring); mutmut 3.6.0 is the documented path for a long VPS run over whole trees",
   "targets": [
@@ -241,6 +241,73 @@
       "meets_bar": true,
       "survivors": [],
       "measured": "2026-07-30T21:29:25Z"
+    },
+    {
+      "target": "libs/risk/sizing.py",
+      "tests": [
+        "tests/risk/test_sizing.py",
+        "tests/risk/test_sizing_boundaries.py"
+      ],
+      "killed": 25,
+      "survived": 4,
+      "timeout": 0,
+      "error": 0,
+      "total": 29,
+      "kill_rate": 0.8621,
+      "runtime_s": 141.6,
+      "n_sites": 29,
+      "budget_truncated": false,
+      "coverage_of_sites": 1.0,
+      "adjusted_kill_rate": 0.8621,
+      "equivalent_mutants": 0,
+      "equivalences_applied": [],
+      "equivalences_lapsed": [],
+      "meets_bar": false,
+      "survivors": [
+        {
+          "line": 16,
+          "kind": "bool_const",
+          "mutation": "True -> False"
+        },
+        {
+          "line": 25,
+          "kind": "return_none",
+          "mutation": "return <expr> -> return None"
+        },
+        {
+          "line": 63,
+          "kind": "compare",
+          "mutation": "LtE -> Lt"
+        },
+        {
+          "line": 65,
+          "kind": "num_const",
+          "mutation": "0.0 -> 1.0"
+        }
+      ],
+      "real_survivors": [
+        {
+          "line": 16,
+          "kind": "bool_const",
+          "mutation": "True -> False"
+        },
+        {
+          "line": 25,
+          "kind": "return_none",
+          "mutation": "return <expr> -> return None"
+        },
+        {
+          "line": 63,
+          "kind": "compare",
+          "mutation": "LtE -> Lt"
+        },
+        {
+          "line": 65,
+          "kind": "num_const",
+          "mutation": "0.0 -> 1.0"
+        }
+      ],
+      "measured": "2026-07-30T22:50:32Z"
     },
     {
       "target": "libs/validation/stepwise.py",
