@@ -176,7 +176,11 @@ _HUMAN_ONLY: dict[str, str] = {
             "what is unfenced here is the judgement, not the safety margin",
 }
 _STANDING: dict[str, str] = {
-    "L1.0": "ratchet meta-law -- enforced by check_ratchets.py across every measured property",
+    "L1.0": "ratchet meta-law -- check_ratchets.py enforces the FLOORS across every measured "
+            "property, and run_max_push.py enforces the DIRECTION: one ranked queue of everything "
+            "not yet at 100%, which never reports done (all-green escalates to "
+            "MEASUREMENT-SET-TOO-SMALL). STANDING rather than ENFORCED because the law is a "
+            "standing duty on every cycle, not a single pass/fail condition",
     "L2.0": "enforcement meta-law -- satisfied by the existence of this matrix",
 }
 

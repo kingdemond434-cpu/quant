@@ -166,20 +166,31 @@ def _capability() -> Ceiling:
 def _data_assets() -> Ceiling:
     """Datasets acquired vs datasets actually READ by something. Paid-for and unread is the
     purest form of the defect: the cost is already sunk and the return is exactly zero."""
-    reg = _ROOT / "data/data_asset_registry.json"
+    reg = _ROOT / "data/data_assets.json"
     try:
         rows = json.loads(reg.read_text("utf-8"))
         rows = rows.get("assets", rows) if isinstance(rows, dict) else rows
-        total = float(len(rows))
-        used = float(sum(1 for r in rows if r.get("consumed_by") or r.get("readers")))
+        # PRESENT assets only. An asset absent from this box is a COLLECTION question ("is the
+        # collector scheduled, is this even the collecting box"), not an idle-capacity one --
+        # scoring the two together would blame the desk for not reading a file it never had, and
+        # the number would stop meaning anything actionable.
+        present = [r for r in rows if (r.get("rows") or r.get("bytes") or r.get("span"))]
+        total = float(len(present))
+        # THE COLLECTOR IS NOT A CONSUMER. Counting it read 97.8% -- a comfortable number meaning
+        # "almost every dataset is used" -- when many of those sole "consumers" were the very
+        # script that WRITES the file. A dataset read only by its own collector is precisely the
+        # idle asset L1.28a is about: paid for, collected on a cadence, and feeding no research.
+        used = float(sum(1 for r in present
+                         if [c for c in (r.get("consumers") or [])
+                             if Path(str(c)).name != Path(str(r.get("collector") or "")).name]))
         measured = total > 0
     except (OSError, ValueError, AttributeError, TypeError):
         total, used, measured = 0.0, 0.0, False
     return Ceiling(
-        "data_assets_read", total, used, "datasets with a reader", measured,
+        "data_assets_read", total, used, "present datasets with a consumer", measured,
         "" if measured and total > 0 and used >= total * _EXPECT else
-        "registry absent or assets unconsumed -- data_asset_registry needs a consumed_by field "
-        "per asset for this to measure rather than assume",
+        "assets present on this box with no consumer -- run scripts/build_data_registry.py and "
+        "read the `consumers` column; an absent asset is a collection gap, not an idle one",
         "An unread dataset is a hypothesis never tested against evidence already bought. The "
         "26-year CFTC COT panel sat unread for weeks -- that is the proving instance (L1.3).")
 
