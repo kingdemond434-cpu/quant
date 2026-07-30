@@ -19,7 +19,7 @@ import numpy as np
 import pandas as pd
 
 from libs.autodiscovery.models import Family, Hypothesis
-from libs.autodiscovery.validation import campaign_pbo_rc, validate
+from libs.autodiscovery.validation import campaign_gate_stats, validate
 from libs.data.prediction_markets import (
     fetch_price_history,
     fetch_resolved_markets,
@@ -100,11 +100,13 @@ def main() -> None:
     min_len = min(len(r) for _, r in series)
     matrix = np.column_stack([r[-min_len:] for _, r in series])
     sharpes = np.array([sharpe_ratio(r) for _, r in series], dtype="float64")
-    pbo, rc = campaign_pbo_rc(matrix)
+    # per-candidate gates (gap #87 flip, principal-ruled 2026-07-29); thresholds unchanged
+    campaign = campaign_gate_stats(matrix)
 
     survivors = 0
     results = []
-    for (name, rets), spr in zip(series, sharpes, strict=True):
+    # enumerate order == column_stack order over `series`, so `col` is the variant's matrix column
+    for col, ((name, rets), spr) in enumerate(zip(series, sharpes, strict=True)):
         bets = rets[rets != 0.0]
         n_bets = len(bets)
         # The gauntlet needs >=250 obs; below that we report descriptive stats, not a verdict.
@@ -113,7 +115,7 @@ def main() -> None:
                 family=Family.LIQUIDITY, subtype=f"pm_{name}", symbol="POLYMARKET", params={},
                 mechanism=MechanismType.BEHAVIORAL, edge_source="favorite-longshot bias",
                 failure_modes=_FAIL), n_trials=len(series), sharpe_estimates=sharpes,
-                returns_matrix=matrix, pbo=pbo, rc=rc)
+                returns_matrix=matrix, campaign=campaign, column=col)
             survived, reason = v.survived, v.rejection_reason
         else:
             survived, reason = False, f"below gauntlet minimum (n={n_bets}<250)"

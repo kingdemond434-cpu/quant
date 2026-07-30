@@ -24,7 +24,7 @@ import numpy as np
 import pandas as pd
 
 from libs.autodiscovery.models import Family, Hypothesis
-from libs.autodiscovery.validation import campaign_pbo_rc, validate
+from libs.autodiscovery.validation import campaign_gate_stats, validate
 from libs.data.instruments import AssetClass, InstrumentSpec, register_instrument
 from libs.data.lake import Layer, ParquetLake
 from libs.data.timeframe import Timeframe
@@ -109,17 +109,20 @@ def main() -> None:
     min_len = min(len(r) for _, r in variants)
     matrix = np.column_stack([r[-min_len:] for _, r in variants])
     sharpes = np.array([sharpe_ratio(r[r != 0.0]) for _, r in variants], dtype="float64")
-    pbo, rc = campaign_pbo_rc(matrix)
+    # per-candidate gates (gap #87 flip, principal-ruled 2026-07-29); thresholds unchanged
+    campaign = campaign_gate_stats(matrix)
 
     survivors, results = 0, []
-    for (name, r), spr in zip(variants, sharpes, strict=True):
+    # enumerate order == column_stack order over `variants`, so `col` is the matrix column
+    for col, ((name, r), spr) in enumerate(zip(variants, sharpes, strict=True)):
         active = r[r != 0.0]
         v = (validate(active, hypothesis=Hypothesis(
             family=Family.CARRY, subtype=name, symbol="MT5_CRYPTO_CFD", params={},
             mechanism=MechanismType.RISK_PREMIUM,
             edge_source="Binance funding signal -> MT5 crypto-CFD price (financed)",
             failure_modes=_FAIL), n_trials=len(variants), sharpe_estimates=sharpes,
-            returns_matrix=matrix, pbo=pbo, rc=rc) if len(active) >= 250 else None)
+            returns_matrix=matrix, campaign=campaign, column=col)
+            if len(active) >= 250 else None)
         survived = bool(v.survived) if v else False
         survivors += int(survived)
         gates = v.gates if v else {}

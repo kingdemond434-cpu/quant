@@ -18,7 +18,7 @@ import numpy as np
 import pandas as pd
 
 from libs.autodiscovery.models import Family, Hypothesis
-from libs.autodiscovery.validation import campaign_pbo_rc, validate
+from libs.autodiscovery.validation import campaign_gate_stats, validate
 from libs.data.instruments import AssetClass, InstrumentSpec, register_instrument
 from libs.data.lake import Layer, ParquetLake
 from libs.data.timeframe import Timeframe
@@ -55,13 +55,13 @@ def _load() -> tuple[pd.DataFrame, dict[str, float]]:
 
 
 def _gate(name: str, r: np.ndarray, matrix: np.ndarray, sharpes: np.ndarray,
-          pbo, rc) -> dict[str, object]:  # type: ignore[no-untyped-def]
+          campaign, column: int) -> dict[str, object]:  # type: ignore[no-untyped-def]
     active = r[r != 0.0]
     v = validate(active, hypothesis=Hypothesis(
         family=Family.CROSS_ASSET, subtype=name, symbol="MT5_XASSET", params={},
         mechanism=MechanismType.RISK_PREMIUM, edge_source="cross-asset combo (risk-engineered)",
         failure_modes=_FAIL), n_trials=matrix.shape[1], sharpe_estimates=sharpes,
-        returns_matrix=matrix, pbo=pbo, rc=rc)
+        returns_matrix=matrix, campaign=campaign, column=column)
     return {"variant": name, "ann_sharpe": round(float(sharpe_ratio(active) * np.sqrt(_PPY)), 2),
             "survived": bool(v.survived), "gates": v.gates,
             "gates_passed": f"{sum(v.gates.values())}/{len(v.gates)}",
@@ -80,9 +80,11 @@ def main() -> None:
               ("trend_only", r_trend), ("mom_only", r_mom)]
     matrix = np.column_stack([s for _, s in series])
     sharpes = np.array([sharpe_ratio(s[s != 0.0]) for _, s in series])
-    pbo, rc = campaign_pbo_rc(matrix)
+    # per-candidate gates (gap #87 flip, principal-ruled 2026-07-29); thresholds unchanged
+    campaign = campaign_gate_stats(matrix)
 
-    results = [_gate(n, r, matrix, sharpes, pbo, rc) for n, r in series]
+    # enumerate order == column_stack order over `series`, so `i` is each variant's matrix column
+    results = [_gate(n, r, matrix, sharpes, campaign, i) for i, (n, r) in enumerate(series)]
     _OUT.mkdir(parents=True, exist_ok=True)
     (_OUT / "report.json").write_text(json.dumps(results, indent=2), "utf-8")
 

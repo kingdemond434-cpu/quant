@@ -26,7 +26,7 @@ from libs.autodiscovery.models import (
 )
 from libs.autodiscovery.prioritization import prioritize
 from libs.autodiscovery.regime import regime_robust
-from libs.autodiscovery.validation import campaign_pbo_rc, validate
+from libs.autodiscovery.validation import campaign_gate_stats, validate
 from libs.core.ids import generate_id
 from libs.costs.execution_gap import ExecutionGap, survives_execution_gap
 from libs.store.audit import AuditLog
@@ -165,11 +165,15 @@ class AutoDiscoveryLab:
         min_len = min(len(r) for _, r, _ in prepared)
         matrix = np.column_stack([r[-min_len:] for _, r, _ in prepared])  # T x N (selection-aware)
         sharpe_estimates = np.array([sharpe_ratio(r) for _, r, _ in prepared], dtype="float64")
-        # PBO + Reality Check depend only on the matrix -> compute once, not per candidate (Nx).
-        pbo_once, rc_once = campaign_pbo_rc(matrix)
+        # per-candidate gates (gap #87 flip, principal-ruled 2026-07-29); thresholds unchanged
+        # Multiplicity stats computed ONCE on the matrix, but each candidate is judged on its OWN
+        # column (CSCV rank-consistency + Romano-Wolf), not the old campaign-constant PBO/RC that
+        # rejected 420/420 identically whatever the merit.
+        campaign = campaign_gate_stats(matrix)
 
         counts = dict.fromkeys(CandidateStatus, 0)
-        for hyp, rets, stressed in prepared:
+        # enumerate order == column_stack order above, so `col` IS the candidate's matrix column.
+        for col, (hyp, rets, stressed) in enumerate(prepared):
             _f = str(hyp.family)
             # The FIXED WALL is the family-scoped TRIAL COUNT. The sharpe array is only the
             # dispersion input for the DSR variance term: a family contributing a single
@@ -183,7 +187,7 @@ class AutoDiscoveryLab:
                 rets, hypothesis=hyp,
                 n_trials=_fam_trials.get(_f, n_trials),
                 sharpe_estimates=_sh,
-                returns_matrix=matrix, pbo=pbo_once, rc=rc_once,
+                returns_matrix=matrix, campaign=campaign, column=col,
             )
             status = promote(rets, validation_survived=verdict.survived)
             reason = verdict.rejection_reason
