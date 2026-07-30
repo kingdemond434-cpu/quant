@@ -1524,6 +1524,10 @@ _TERMINAL_ARTIFACTS = {
         "itself is meaningless: the next run overwrites it. Terminal by construction.",
     # CLASSIFIED 2026-07-29 (closure cycle). This check FIRED on the four documents that cycle
     # created, which is the law working: each is classified below as a DECISION, never a default.
+    "docs/CYCLE_20260729_CLOSURE.md":
+        "CYCLE REPORT -- a dated record of one cycle's measured results with every proving command, "
+        "same class as a forensic write-up (GAP34_FORENSIC.md). Its open items are carried by "
+        "GAP_REGISTER rows and the ratchet fence, not by converting the report.",
     "docs/WEEKLY_MAX_CYCLE.md":
         "standing contract for the weekly gap-max sweep (constitution L4) -- it BINDS the sweep's "
         "conduct and effort floor and is superseded by amendment, never worked off a queue. Same "
