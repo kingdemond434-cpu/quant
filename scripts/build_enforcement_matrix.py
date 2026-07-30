@@ -88,13 +88,81 @@ _MAP: dict[str, list[str]] = {
     "L2.9": ["libs/self_improvement/dormancy.py", "run_intelligence_cycle.py",
              "check_idle_capability", "check_orphan_code"],
     "L2.10": ["run_reality_gap.py", "libs/research/dist_shift.py"],
+    "L2.8a": ["scripts/check_constitution_core.py", "tests/governance/test_constitution_core.py",
+              "data/constitution_core.lock"],
 }
+
+# ---------------------------------------------------------------------------------------------
+# SECOND DIRECTION: every FENCE claimed by a law (2026-07-30).
+#
+# The first pass mapped principles -> fences and left 39 of 71 fences governed by nothing. That is
+# the failure mode this script's own docstring names -- "a check with no governing principle is
+# complexity nobody voted for" -- and it was sitting in the script's own output, unactioned, which
+# is precisely the decoration pattern L2.9 exists to kill. So the reverse index is now explicit.
+#
+# These are appended into _MAP rather than written inline above so the read direction stays clean:
+# above answers "what enforces this law", below answers "why does this check exist at all".
+_FENCE_OWNERS: dict[str, str] = {
+    # --- capacity (§42 / L1.18a): six fences, one law. Small edges are hunted, filled and RETIRED
+    # on arithmetic, never ranked down for being small.
+    "check_capacity_hunt": "L1.18a",
+    "check_capacity_knobs_are_wired": "L1.18a",
+    "check_capacity_governor_reachable": "L1.18a",
+    "check_capacity_allocation_honesty": "L1.18a",
+    "check_capacity_runway": "L1.18a",
+    "check_capacity_single_source": "L1.18a",
+    # --- artifact-over-claim (L2.4): a capability exists only if something it wrote is FRESH.
+    "check_organs": "L2.4",              # organ never fired / always dies
+    "check_stub_deaths": "L2.4",         # runs that died at birth on quota/auth still "ran"
+    "check_stale_daemons": "L2.4",       # daemon older than its source = a fix that never shipped
+    "check_producer_cadence": "L2.4",    # an inventory-accumulating artifact declares a cadence
+    "check_deploy_path": "L2.4",         # code that never reaches the box was never deployed
+    # --- forced disposition (L2.3): every finding gets a ruling, and rulings are not allowed to rot.
+    "check_findings": "L2.3",
+    "check_findings_tracked": "L2.3",
+    "check_findings_scope": "L2.3",
+    "check_review_risks_tracked": "L2.3",
+    "check_decision_ledger_matures": "L2.3",
+    # --- execution physics (L1.5): the costs that quietly eat a carry.
+    "check_bnb_funded": "L1.5",          # fee-burn discount only applies while BNB is held
+    "check_fee_carry_ratio": "L1.5",
+    "check_close_retry_loop": "L1.5",    # a carry that cannot close is a churn engine
+    # --- survival rails (L1.23): states that read HEALTHY while being terminal.
+    "check_book_collapse": "L1.23",
+    "check_book_absorbing_state": "L1.23",   # a rail that can never release the book is not safety
+    # --- injection + fence integrity (L2.1 / L2.2): the enforcement layer auditing itself.
+    "check_constitution": "L2.1",
+    "check_universal_doctrine": "L2.1",
+    "check_registry_complete": "L2.2",   # an unregistered check is a law believed-but-not-enforced
+    "check_artifact_governance": "L2.2",
+    "check_ci_scope": "L2.2",            # a CI gate on a hardcoded subset is a map, not a territory
+    "check_law_numbers_unique": "L2.8",  # a law number naming two laws breaks amendment itself
+    # --- dormancy / reachability (L2.9): built-but-unwired, in three shapes.
+    "check_orphan_scripts": "L2.9",
+    "check_orphan_modules": "L2.9",
+    "check_money_path_wired": "L2.9",    # a money-path module with only a test caller
+    # --- discovery duties (L1.8 / L1.9 / L1.11a / L1.24).
+    "check_clock_saturation": "L1.8",    # objective-#2 duty: the clock is the scarce resource
+    "check_mine_scope": "L1.8",          # a find written somewhere unscanned is outside the law
+    "check_source_backlog": "L1.9",      # a catalogue that grows faster than it is verified
+    "check_dig_uncommitted": "L1.9",     # VPS disk is not institutional memory
+    "check_paid_target_registry": "L1.11a",
+    "check_holdings_never_shrink": "L1.24",  # information advantage measured as a holding, not act
+    # --- remaining singletons.
+    "check_panel": "L1.7",               # adversarial review capability being DOWN is a defect
+    "check_memory_hygiene": "L1.17",     # research debt is only debt if it is written and findable
+    "check_mine_evidence_base": "L1.6",  # a ratchet calibrated on n=2 is superstition with a JSON
+}
+for _fence, _pid in _FENCE_OWNERS.items():
+    _MAP.setdefault(_pid, []).append(_fence)
 
 # Laws a fence cannot satisfy, each with the reason. Being explicit is the point: an unfenceable law
 # recorded as HUMAN-ONLY is a decision; one silently absent from the map is a hole.
 _HUMAN_ONLY: dict[str, str] = {
-    "L2.8": "constitutional review is a human judgement (default outcome STABILITY); a fence "
-            "would either block legitimate change or rubber-stamp it",
+    "L2.8": "the REVIEW is a human judgement (default outcome STABILITY); a fence would either "
+            "block legitimate change or rubber-stamp it. Its BOUNDARY is not human-only: L2.8a "
+            "hashes the five clauses evolution may never touch (check_constitution_core.py), so "
+            "what is unfenced here is the judgement, not the safety margin",
 }
 _STANDING: dict[str, str] = {
     "L1.0": "ratchet meta-law -- enforced by check_ratchets.py across every measured property",
@@ -191,9 +259,16 @@ def main() -> int:
         print(f"-> {_OUT.relative_to(_ROOT)}")
     if args.report_only:
         return 0
-    # Fail on an unenforced principle or a mapping to a missing artifact. Orphan fences are
-    # reported but do NOT fail: a fence predating this map is not a defect, it is unmapped work.
-    return 1 if (m["unenforced"] or m["broken_references"]) else 0
+    # Fail on an unenforced principle, a mapping to a missing artifact, OR an unclaimed fence.
+    #
+    # That last one is a RATCHET (L1.0), turned on the day the backlog hit zero (2026-07-30). While
+    # 39 fences predating this map were unclaimed, failing on them would only have taught the desk
+    # to run --report-only. Now that every fence is claimed, a NEW unclaimed fence is a real defect
+    # and it is exactly one line of work to fix: name the law it serves in _FENCE_OWNERS. If no law
+    # covers it, that is the finding -- either the fence is unvoted complexity, or the constitution
+    # is missing a principle the fence already assumes. Both need a decision, not silence.
+    return 1 if (m["unenforced"] or m["broken_references"]
+                 or m["fences_without_a_principle"]) else 0
 
 
 if __name__ == "__main__":

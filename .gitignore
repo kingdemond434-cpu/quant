@@ -12,6 +12,10 @@ data/*
 !data/nav_attestation.jsonl
 !data/decision_ledger.json
 !data/cashcarry_config.json
+# The immutable-core seal is EVIDENCE, not state: it must travel with the code it protects, or a
+# fresh clone has nothing to compare the constitution against and the fence degrades to a no-op.
+# Its diff is also the audit trail -- a changed hash in a commit names exactly which law moved.
+!data/constitution_core.lock
 web/*
 !web/index.html
 reports/
