@@ -73,7 +73,27 @@ QUANT_ROOT=/home/quant/quant-platform
 # OpenRouter credit (402); the harness no-ops cleanly without it and fires the moment credit lands.
 # EVIDENCE: scripts/kimi_hunter.py:3 ("cannot RUN until OpenRouter is funded"); commit a9a4dcd
 # CONFIDENCE: documented-cadence (06:00 UTC from the commit message)
-0 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/kimi_hunter.py >> data/cro_ai_logs/kimi_hunter.log 2>&1
+# CADENCE RAISED to maximum sustainable 2026-07-30 (principal: "as frequently as possible for
+# maximum exhaustive ROI, optimal and deep"). SIX runs/day at 4-hourly spacing + a WEEKLY DEEP
+# sweep. Frequency is deliberately bounded by SPEND, not by a hand-picked number: the monthly
+# envelope guard in run_external_panel/panel_budget ($100-150/mo HARD, page-and-abort, never a
+# silent quality cut) is what caps real usage, so the cron can be aggressive without risking the
+# 2026-07-24 incident class ($21.48 in one day from unbounded resend). Each run executes the full
+# wave 1->2->3 protocol; duplicate finds are suppressed by the graveyard + novelty gate, so extra
+# frequency cannot manufacture duplicate work.
+5 */4 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/kimi_hunter.py >> data/cro_ai_logs/kimi_hunter.log 2>&1
+# WEEKLY DEEP: longer budget, targets previously unexplored languages/regions/eras per L1.11a.
+35 5 * * 0 cd "$QUANT_ROOT" && .venv/bin/python scripts/kimi_hunter.py --deep >> data/cro_ai_logs/kimi_hunter_deep.log 2>&1
+
+# INTELLIGENCE CYCLE: activates the dormant intelligence-compounding layer. MEASURED 2026-07-30:
+# meta_learning, research_priority, capital_reallocator, health_monitor, marketplace,
+# weight_optimizer, lifecycle_actions, moat_audit and revalidate_clocks all existed with ZERO
+# CALLERS -- the principal's "highest-ROI missing subsystems" were built and never executed. One
+# organ runs them all and writes web/intelligence_cycle.json; NO-INPUT is reported as a DATA/ALPHA
+# gap, never a silent skip.
+# EVIDENCE: scripts/run_intelligence_cycle.py (built 2026-07-30); docs/CONSTITUTION.md L2.9
+# CONFIDENCE: committed-script (new this cycle)
+50 */6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_intelligence_cycle.py >> data/cro_ai_logs/intelligence_cycle.log 2>&1
 
 # MINER RUNWAY DOCTOR: daily. Distinguishes never-ran / creds-missing / not-scheduled / stale
 # per seat and reports the CAUSE with its blast radius -- 6 of 7 frontier regions had ZERO runs
