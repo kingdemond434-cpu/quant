@@ -530,3 +530,19 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 #           tests/research/test_{collapse_detector,variation_blocker}.py (37 tests)
 # CONFIDENCE: committed-script (new this cycle)
 23 9 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_generation_diversity.py >> data/cro_ai_logs/gen_diversity.log 2>&1
+
+# SAFETY DRILLS (GAP_REGISTER row #2 Gate-0 item (c): "monthly host-death and ladder DRILLS have
+# never been run"). staging.s2_entry_met reads `critical_drill_failures`, and that field defaults
+# to the REFUSING sentinel because no code had ever produced a drill record -- so the S2 gate was
+# correctly closed and had no way to open.
+# WHY DRILLS AND NOT UNIT TESTS: a unit test asks "does this function return the right value?"; a
+# drill asks "does the INVARIANT survive the event it exists for?" -- process death mid-position,
+# a pager unanswered for four hours, a clock moving backwards. Those cross function boundaries and
+# PERSISTED STATE, which is where the crash-loop-resets-the-timer class of bug lives.
+# NO DRILL PLACES OR CANCELS A LIVE ORDER: pure decision functions against temp-directory copies
+# of state. A drill that could move money would be a larger risk than the one it certifies.
+# Weekly rather than the monthly the register asked for -- the cost is seconds.
+# EVIDENCE: scripts/run_drills.py -> data/drill_report.json + data/drill_log.jsonl;
+#           tests/ops/test_drills.py breaks each rail and proves the drill catches it
+# CONFIDENCE: committed-script (new this cycle)
+40 3 * * 1 cd "$QUANT_ROOT" && .venv/bin/python scripts/run_drills.py >> data/cro_ai_logs/drills.log 2>&1
