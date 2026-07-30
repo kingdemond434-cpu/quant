@@ -170,8 +170,10 @@ without needing to be re-authorised: historical market periods and pre-regulatio
 (explicitly including pre-ban Chinese Bitcoin ecosystems — exchange records, mining behaviour,
 retail flow, local liquidity structure, regulatory archives, developer and community datasets),
 archived and discontinued platforms and APIs, forgotten repositories, abandoned research,
-regional exchanges and local databases, non-English research ecosystems (CN/KR/JP/RU/SEA/LatAm
-named as categories, never as boundaries), and poorly-indexed technical resources. Information
+regional exchanges and local databases, non-English research ecosystems (CN/KR/JP/RU/SEA/LatAm and
+the ARABIC-language ecosystem — Gulf/MENA venues, Arabic-language trading communities, regional
+regulatory and exchange archives — named as categories, never as boundaries), and poorly-indexed
+technical resources. Information
 value is not a function of age, popularity or visibility; absence of global attention is not
 evidence of absence of value. THE DISCIPLINE THAT KEEPS THIS HONEST, and it is not optional: the
 desk does not assume hidden alpha exists in an era or a language — it systematically searches for
