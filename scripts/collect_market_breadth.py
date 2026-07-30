@@ -49,7 +49,8 @@ def main() -> None:
         snap = pd.concat([pd.read_parquet(_LOG), snap], ignore_index=True)
     _LOG.parent.mkdir(parents=True, exist_ok=True)
     snap.to_parquet(_LOG)
-    print(f"breadth @ {row['ts'].date()}: >20DMA {row['pct_above_20dma']}% "
+    ts_label = pd.Timestamp(row["ts"]).date()   # mypy: row is dict[str, object]
+    print(f"breadth @ {ts_label}: >20DMA {row['pct_above_20dma']}% "
           f">50DMA {row['pct_above_50dma']}% new-high {row['pct_new_20d_high']}% (n={n})")
 
 
