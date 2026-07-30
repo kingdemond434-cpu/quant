@@ -15,8 +15,12 @@ ZERO PROMOTION AUTHORITY of its own: it reports ACCRUING / ELIGIBLE / FAILING. E
 evidence bar is met and a promotion decision may now be TAKEN by the normal gauntlet + principal
 path -- never an automatic deployment of capital.
 
-Multiplicity: m = number of concurrently-tracked axes, Holm-corrected via forward_stats.holm_bar,
-so running many shadows in parallel does not inflate the family-wise error rate.
+Multiplicity: m = the FULL concurrent forward cohort (libs.research.slot_registry), Holm-corrected
+via forward_stats.holm_bar, so running many clocks in parallel does not inflate the family-wise
+error rate. It counted len(_AXES) until 2026-07-30 -- the axis clocks only -- which applied
+holm_bar(4)=2.24 while 12 clocks were accruing (2.64): a bar ~3.2x too loose, in the phantom-edge
+direction, on the desk's only path from research to capital. The cohort spans axis + standing +
+derivative clocks, so no single file may count it.
 
     python scripts/run_axis_shadows.py
 """
@@ -29,6 +33,7 @@ from pathlib import Path
 
 import numpy as np
 
+from libs.research.slot_registry import concurrent_m
 from libs.validation.forward_stats import holm_bar, nw_tstat
 
 _ROOT = Path(__file__).resolve().parent.parent
@@ -90,7 +95,7 @@ def _clock_rows(path: Path) -> list[dict]:
     return out
 
 
-def _evaluate(name: str, clock: str, symbol: str, field: str, direction: int) -> dict:
+def _evaluate(name: str, clock: str, symbol: str, field: str, direction: int, m: int) -> dict:
     rows = _clock_rows(_ROOT / clock)
     if len(rows) < 2:
         return {"axis": name, "verdict": "ACCRUING", "forward_days": len(rows),
@@ -117,7 +122,7 @@ def _evaluate(name: str, clock: str, symbol: str, field: str, direction: int) ->
     cum = float(np.prod(1.0 + arr) - 1.0)
     sharpe = float(arr.mean() / arr.std() * np.sqrt(365)) if arr.std() > 0 else 0.0
     t = float(nw_tstat(arr)) if n >= 3 else 0.0
-    bar = float(holm_bar(len(_AXES), rank=1))
+    bar = float(holm_bar(m, rank=1))
 
     if n < _MIN_DAYS:
         verdict = "ACCRUING"
@@ -127,13 +132,16 @@ def _evaluate(name: str, clock: str, symbol: str, field: str, direction: int) ->
         verdict = "FAILING"                             # forward evidence does not support it
     return {"axis": name, "verdict": verdict, "forward_days": n, "need": _MIN_DAYS,
             "cum_return": round(cum, 5), "ann_sharpe": round(sharpe, 2),
-            "nw_t": round(t, 3), "holm_bar": round(bar, 3), "m_concurrent": len(_AXES),
+            "nw_t": round(t, 3), "holm_bar": round(bar, 3), "m_concurrent": m,
             "first_forward_day": used[0] if used else None, "last": used[-1] if used else None,
             "stage": "B (forward-only; eligibility != deployment)"}
 
 
 def main() -> None:
-    results = [_evaluate(k, *v) for k, v in _AXES.items()]
+    # One cohort read for the whole run: every clock in this file is judged against the SAME
+    # concurrent-m, and re-deriving per axis would let the bar drift mid-run.
+    m = concurrent_m()
+    results = [_evaluate(k, *v, m) for k, v in _AXES.items()]
     payload = {"updated": datetime.now(tz=UTC).isoformat(), "min_forward_days": _MIN_DAYS,
                "axes": results,
                "note": ("Forward-only Stage-B tracking. P&L starts at the clock's first row, never "
