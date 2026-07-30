@@ -80,6 +80,8 @@ _STEPS = [
     # the self-improvement queue: derive review dates so decisions can MATURE, and publish
     # the matured-and-unscored worklist. Never writes an outcome -- scoring is a judgement.
     ("decision_review",   "scripts/run_decision_review.py",  60),
+    # what the DESK costs, vs what a trade costs -- the hurdle it must clear to stand still
+    ("desk_economics",    "scripts/run_desk_economics.py",   30),
     ("git_snapshot",      "scripts/git_snapshot.py",        120),  # daily forensic code history
 ]
 

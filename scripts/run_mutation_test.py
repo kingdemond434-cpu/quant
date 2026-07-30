@@ -41,7 +41,8 @@ KILL_BAR = 0.90
 # constrain each. Narrow test targeting is what makes a full sweep affordable: running 1199
 # tests per mutant would take hours and measure nothing extra.
 TARGETS: dict[str, list[str]] = {
-    "libs/execution/binance_live.py": ["tests/execution/test_binance_live.py"],
+    "libs/execution/binance_live.py": ["tests/execution/test_binance_live.py",
+                                   "tests/execution/test_binance_live_behaviour.py"],
     "libs/execution/staging.py": ["tests/execution/test_staging.py",
                                   "tests/execution/test_staging_boundaries.py"],
     "libs/risk/gate.py": ["tests/risk/test_gate.py", "tests/risk/test_edge_gate.py"],
