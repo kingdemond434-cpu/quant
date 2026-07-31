@@ -2132,6 +2132,66 @@
    "commit": "647123f",
    "due": null,
    "disposed": "2026-07-31T18:13:46.744776+00:00"
+  },
+  {
+   "id": "R0176",
+   "source": "deep_sweep",
+   "summary": "inbox #85: rebuild quarantined anytime_valid as e-process (wealth M_t=prod(1-l+l*X), confirm at M>=1/alpha; Ville) -- daily Stage-B peeking becomes valid by construction, cures measured x4.9 alpha inflation; recipes: e-backtesting arXiv 2209.00991, AV t-test 2310.03722; caveat t-test non-Gaussian unconfirmed, default bounded e-process (litminer run4 W1)",
+   "roi_bps": 80.0,
+   "raised": "2026-07-31T19:17:29.083237+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0177",
+   "source": "deep_sweep",
+   "summary": "inbox #86: de-weld gauntlet via IRT -- run synthetic true-SR ladder 0/1/2/3/5 through each gate, fit 2PL sigma(theta-beta), drop zero-discrimination gates, tune composite to P(pass|target SR)~50% max-information point; certify_gauntlet already emits the response matrix, only the fit is missing (Fluid Benchmarking/PSN-IRT/Agent Psychometrics converge; litminer run4 W3)",
+   "roi_bps": 100.0,
+   "raised": "2026-07-31T19:17:29.165789+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0178",
+   "source": "deep_sweep",
+   "summary": "inbox #87: panel aggregation -> calibrated soft voting / Bayesian fusion; singletons kept as scored minority reports; cross-family confidences multiply (arXiv 2606.13591; debate cancellation CONFIRMED by ICLR25 MAD + 2511.07784 + 2606.03032 -- do not rebuild debate) (litminer run4 W4)",
+   "roi_bps": 40.0,
+   "raised": "2026-07-31T19:17:29.252822+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0179",
+   "source": "deep_sweep",
+   "summary": "inbox #88: verification protocol -- rubric-decomposed <=3 targeted checks per review; CAP review loops at 3-4 (gains plateau); budget for 12.8% verifier wrong-flip risk round 1 (DeepVerifier 2601.15808: F1 73.2 vs 61.5 agent-as-judge, +11.1pp end-task) (litminer run4 W5)",
+   "roi_bps": 30.0,
+   "raised": "2026-07-31T19:17:29.341133+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0180",
+   "source": "deep_sweep",
+   "summary": "inbox #89: calibration program config -- per-family per-task-type shrinkage, RE-BASELINE on every model upgrade (ConfidenceBench 2607.20526: Claude Brier 0.103 vs GPT-5 0.117-0.141, 5/15 models worse than calibrated-random; newer!=better); elicitation via self-critique+consistency (2606.03437); adopt per-claim confidence-minus-evidence-quality gap metric (2606.11851) (litminer run4 W2)",
+   "roi_bps": 35.0,
+   "raised": "2026-07-31T19:17:29.436348+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

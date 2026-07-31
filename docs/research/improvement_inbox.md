@@ -1210,3 +1210,65 @@ repair wire for a queue at λ/μ≈4 (R0075).
 **ROI:** the two P1 multipliers claim the spread between build-rate and convert-rate for every future
 finding. **Dependencies:** four principal decisions bundled on PRINCIPAL_ACTION. **Retirement:** this
 entry retires when R0070–R0095 reach dispositions.
+
+## #85 — REBUILD `anytime_valid` AS AN E-PROCESS: DAILY STAGE-B PEEKING BECOMES FREE (litminer run 4, 2026-07-31) ◆◆compounding
+_Source: litminer LIT-c W1 (deep_sweep/20260731_litC_ai_methods.md); evidence: measured ×4.9 α
+inflation from daily clock peeking; quarantined `anytime_valid` module._
+**The exact recipe, extracted at implementation grade:** per-day e-statistic X_s from forward PnL;
+wealth process M_t = ∏(1−λ_s+λ_s·X_s), predictable λ_s∈[0,1]; confirm when M_t ≥ 1/α. Ville's
+inequality gives P(sup_t M_t ≥ 1/α) ≤ α under the null FOR EVERY stopping rule — daily monitoring
+is valid by construction (×4.9 → 1.0), O(1)/day. Two instantiations: e-backtesting for VaR/ES
+(Wang–Wang–Ziegel, Mgmt Sci; arxiv.org/html/2209.00991v5 — model-free, thresholds 2/5/10) and the
+anytime-valid t-test e-process (Wang–Ramdas, arxiv.org/abs/2310.03722) = sequential Sharpe test,
+unknown variance. CAVEAT (honest): t-test robustness beyond Gaussian unconfirmed at primary level —
+safe default = bounded/winsorized returns + betting e-process. **ROI:** un-quarantines Stage-B's
+monitoring instrument; every forward clock benefits permanently. **Route:** rebuild the quarantined
+module around the wealth-process skeleton; citation chain Ramdas SAVI review arXiv:2210.01948.
+[§33: wired -> docs/research/recommendation_ledger.json R-row (this entry); build owed by validation org]
+
+## #86 — DE-WELD THE GAUNTLET WITH ITEM-RESPONSE THEORY: FIT DISCRIMINATION PER GATE (litminer run 4) ◆◆compounding
+_Source: litminer LIT-c W3; evidence: desk's own certification — true-SR-3 control fails gates
+~100% ⇒ Fisher information ≈ 0 bits/run, the measured "welded gate" defect._
+Three independent groups converge (Ai2 Fluid Benchmarking allenai.org/blog/fluid-benchmarking:
+2PL IRT + Fisher-info selection, 50× fewer items at equal quality; PSN-IRT arXiv:2505.15055;
+Agent Psychometrics arXiv:2604.00594 AUC 0.842). Transfer: each gate = an item; run the synthetic
+true-SR ladder (0/1/2/3/5) through every gate, fit σ(θ−β) per gate, DROP zero-discrimination
+gates, tune the composite so P(pass | target SR) ≈ 50% — the max-information operating point.
+**`certify_gauntlet` already produces the response matrix; only the fit is missing.** **ROI:**
+converts the gauntlet from 0-bit to max-bit per run; directly cures the L1.25 instrument-artifact
+class. [§33: wired -> docs/research/recommendation_ledger.json R-row (this entry); build owed by validation org]
+
+## #87 — PANEL AGGREGATION: CALIBRATED SOFT VOTING / BAYESIAN FUSION, KEEP SINGLETONS AS SCORED MINORITY REPORTS (litminer run 4) ◆compounding
+_Source: litminer LIT-c W4; evidence: the desk's plurality filter measurably discards singleton
+findings; arXiv:2606.13591 (soft vote/Bayesian fusion beats individuals AND standard debate on
+AUARC; magnitudes CLAIM-grade)._
+Transform per-agent confidences to a comparable scale, aggregate by soft vote or Bayesian fusion;
+cross-family (Claude+GPT) fusion falls out naturally — independent-family confidences MULTIPLY,
+which is exactly L1.33's delta-is-the-finding read. Singletons survive as scored minority reports
+instead of being discarded. CONFIRMATORY NULL, same ground: the desk's debate cancellation STANDS
+on 2025-26 evidence (ICLR-25 nine-benchmark MAD analysis; arXiv:2511.07784; arXiv:2606.03032
+"deliberation frequently degrades accuracy") — do NOT rebuild naive debate while adopting fusion.
+[§33: wired -> docs/research/recommendation_ledger.json R-row (this entry)]
+
+## #88 — VERIFICATION PROTOCOL: RUBRIC-DECOMPOSED TARGETED CHECKS, CAP REVIEW LOOPS AT 3–4 (litminer run 4) ◆compounding
+_Source: litminer LIT-c W5; DeepVerifier arxiv.org/html/2601.15808v2._
+Decompose trajectory → ≤3 targeted verification questions → tool-check → rubric judge:
+verification F1 73.2 vs 61.5 for agent-as-judge; end-task +11.1pp (GAIA-Web). TWO OPERATIONAL
+NUMBERS the desk should adopt as guardrails: verifier FLIPS correct→incorrect at 12.8% in round 1
+(verification is not free — a wrong verifier veto is a real cost), and gains PLATEAU at rounds
+3–4 (cap review loops; more rounds = spend without lift). Verifier-selection beats
+self-consistency at 1–3× fewer tokens. [§33: wired -> docs/research/recommendation_ledger.json R-row (this entry)]
+
+## #89 — CALIBRATION PROGRAM CONFIG: PER-FAMILY, PER-TASK-TYPE, RE-BASELINE ON EVERY MODEL UPGRADE (litminer run 4) ◆compounding
+_Source: litminer LIT-c W2; feeds the L1.29 forecast-calibration logger built 2026-07-31._
+ConfidenceBench (Jul 2026, arxiv.org/html/2607.20526): Brier — Claude Opus 4.6 best 0.103 (human
+0.105), GPT-5 0.117–0.141, 5/15 models WORSE than calibrated-random (0.1875); newer ≠
+better-calibrated ⇒ (a) calibrate PER FAMILY and PER TASK-TYPE, never one global shrinkage;
+(b) RE-BASELINE on every model upgrade — a calibration fitted on the old model is stale input
+steering live sizing (L1.44 class). Elicitation: self-critique + consistency sampling beat naive
+verbalization (arXiv:2606.03437; exact deltas minable from saved PDF next run). Adopt the
+per-claim (confidence − evidence-quality) gap as a logged metric (StatefulDiscovery
+arXiv:2606.11851 — the literature converged on the desk's ledger design). Secondary idea, same
+program: benchmark verbalized confidence against an EXTERNAL feature-based success predictor
+(Agent Psychometrics, AUC 0.842 on unseen tasks — honest −0.146 held-out penalty).
+[§33: wired -> docs/research/recommendation_ledger.json R-row (this entry)]

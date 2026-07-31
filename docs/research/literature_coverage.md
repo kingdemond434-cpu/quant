@@ -404,10 +404,9 @@ therefore DOWNGRADED: still free graveyard/mechanism context, no longer load-bea
    ladder.** — STATUS: below.
 
 ### NEXT RUN PICKS UP AT (written now, updated at close)
-- PubPeer citation-stacking thread (F8) — still unopened, carried twice now.
+- ~~PubPeer citation-stacking thread (F8)~~ **CLOSED THIS RUN** (see resolutions below).
 - Full arXiv q-fin subcategory sweep (only a slice ever touched).
-- Whatever practitioner sub-family this run leaves unmined (AQR/Man likely, if BIS/Fed/IMF absorb
-  the budget) — named precisely at close.
+- Whatever practitioner sub-family this run leaves unmined — named precisely at close.
 
 ---
 
