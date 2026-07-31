@@ -3140,6 +3140,23 @@ def check_dig_uncommitted(defects) -> None:
     for line in out.stdout.splitlines():
         if len(line) > 3:
             code, path = line[:2].strip() or "??", line[3:].strip()
+            # RATCHET GRACE (R0147): conversion/holdings records are re-ticked by cron every
+            # ~15min, so the working tree is dirty on them within seconds of ANY commit -- as
+            # written, this gate could never stay satisfied (measured: re-fired 60s after a
+            # commit, aged 141.8h across a day with 4 snapshot commits). "By end of cycle"
+            # means a snapshot commit exists within the cycle window, not a perpetually clean
+            # tree: a file whose last COMMIT is <6h old was snapshotted this cycle and is not
+            # debt. New/untracked files (??) get no grace -- they have never been committed.
+            if code != "??":
+                try:
+                    last = subprocess.run(["git", "log", "-1", "--format=%ct", "--", path],
+                                          cwd=ROOT, capture_output=True, text=True, timeout=20)
+                    import time
+                    if last.returncode == 0 and last.stdout.strip() and \
+                            time.time() - int(last.stdout.strip()) < 6 * 3600:
+                        continue
+                except (OSError, ValueError, subprocess.SubprocessError):
+                    pass                     # grace unreadable -> file stays counted (fail firm)
             stale.append(f"{Path(path).name}[{code}]")
     if stale:
         defects.append((

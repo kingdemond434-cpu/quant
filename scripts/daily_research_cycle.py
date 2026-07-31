@@ -37,6 +37,8 @@ _STEPS = [
     ("recorder_watch",    "scripts/ensure_recorder.py",      60),  # data moat must never sleep
     ("stablecoin_flows",  "scripts/run_stablecoin_flows.py", 180),  # daily on-chain clock tick
     ("fred_macro",        "scripts/collect_fred_macro.py",   120),  # free US-macro (key-gated)
+    ("walcl_clock",       "scripts/derive_walcl_clock.py",    60),  # R0031 forward clock, reads
+    #                      the fred archive the previous step just refreshed (phase = cadence)
     ("naver_krsearch",    "scripts/collect_naver_krsearch.py", 60),  # KR attention (key-gated)
     ("root_cause",        "scripts/run_root_cause.py",       120),  # classify losses pre-reaction
     ("desk_digest",       "scripts/render_desk_digest.py",    60),  # Obsidian-readable daily brief

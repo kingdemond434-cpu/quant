@@ -83,6 +83,16 @@ _AXES: dict[str, tuple[str, str, str, int]] = {
     # PRE-REGISTERED from mechanism 2026-07-24 (peek-safe: chosen before any forward
     # return existed). TRY-falsifier logged in the collector: thin 30d std => FAILING.
     "cny_premium": ("data/cny_premium.jsonl", "BTCUSDT", "z20", +1),
+    # WALCL reserve-quantity impulse (R0031, registered 2026-07-31 into the slot kimchi's
+    # retirement freed -- cohort 11 -> 12). Mechanism: the Fed balance sheet is the QUANTITY
+    # of system reserves, an inelastic constraint on the marginal dollar bidding risk assets;
+    # the highest-beta sink responds over weeks. Stage-A: IC +0.1106 (n=815 weekly), decontam
+    # PASSED (resid +0.0964), stopped ONLY by the power gate (n_eff 116 vs MDI 0.1816) -- the
+    # power wall closes by FORWARD ACCRUAL, nothing else. Direction +1 (momentum) stated in
+    # advance from the screen's mechanism-consistent sign. Signal = 4wk log change, +2d
+    # release lag, z20 -- construction frozen in scripts/derive_walcl_clock.py; the clock
+    # decides, not the story. Peek-safe: first forward row is the registration day.
+    "walcl_reserve_impulse": ("data/walcl_impulse.jsonl", "BTCUSDT", "z20", +1),
 }
 
 
