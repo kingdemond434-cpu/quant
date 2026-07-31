@@ -50,9 +50,18 @@ if str(_ROOT) not in sys.path:
 #: and every push: a breach here is a breach anywhere.
 _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("check_constitution_core.py", ()),        # L2.8a -- the sealed core is intact
+    # PRODUCER BEFORE CONSUMER. build_enforcement_matrix WRITES data/enforcement_matrix.json and
+    # check_law_families READS it; the matrix is gitignored (data/*), so on a VIRGIN tree the
+    # consumer ran first against a file that did not exist yet. That is why this gate was green
+    # on every machine that had run it before -- the box, a dev clone -- and RED on every clean
+    # checkout: CI failed 10 consecutive times on master (30651154078..30654344515) with
+    # "BREACH check_law_families.py (rc=2)" while the identical commit passed locally. Proven by
+    # running the gate twice in a fresh worktree: first run FAIL, second run PASS, nothing
+    # changed but the artifact the first run left behind. A gate whose verdict depends on
+    # whether the machine happened to have run it before is not a gate in either direction.
+    ("build_enforcement_matrix.py", ()),       # L2.0 -- no law is prose, no fence is an orphan
     ("check_law_families.py", ()),             # L1.36 -- families complete/fenced/reaching/guarded
     ("check_timidity_language.py", ()),        # L1.28 -- incl. all 18 prompt surfaces
-    ("build_enforcement_matrix.py", ()),       # L2.0 -- no law is prose, no fence is an orphan
     # --report-only: the LAW half is manifest<->repo integrity (exit 2). Live-crontab DRIFT
     # (exit 1) is BOX STATE -- on a red-parked box the manifest is *supposed* to be ahead of
     # the installed crontab until the puller vets the commit, so drift failing CI/pre-push

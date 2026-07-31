@@ -80,7 +80,7 @@ def exact_sharpe_series(
     if spread == 0.0:  # pathological draw; astronomically unlikely, still not silently wrong
         raise ValidationError("degenerate innovation draw (zero sample sd)")
     z = (z - z.mean()) / spread  # exact zero mean, exact unit sample sd
-    return sd * (z + target_ann_sharpe / np.sqrt(PPY))
+    return np.asarray(sd * (z + target_ann_sharpe / np.sqrt(PPY)))
 
 
 def null_cohort(
@@ -101,7 +101,7 @@ def null_cohort(
         raise ValidationError("null_cohort needs n_candidates >= 1")
     sd = ann_vol / np.sqrt(PPY)
     z = rng.standard_t(df, size=(n_obs, n_candidates)) / np.sqrt(df / (df - 2.0))
-    return sd * z
+    return np.asarray(sd * z)
 
 
 class ControlOutcome(BaseModel):

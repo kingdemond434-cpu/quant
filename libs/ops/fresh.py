@@ -54,10 +54,6 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-_ROOT = Path("/home/quant/quant-platform")
-if not _ROOT.exists():
-    _ROOT = Path(__file__).resolve().parent.parent.parent
-
 REGISTRY_REL = "data/freshness_contracts.jsonl"
 _MARKERS_REL = "data/.fresh_markers"
 CONTRACT_TTL_S = 6 * 3600     # one contract line per (caller, path) per 6h window
@@ -78,8 +74,25 @@ class FreshRead:
 
 
 def _root() -> Path:
+    """Where a RELATIVE path resolves, and where the registry is written: the CURRENT WORKING
+    DIRECTORY, not an internally-guessed install path.
+
+    WHY, because the first version guessed and that was a bug of this module's own class. Every
+    caller's paths are already cwd-relative -- `_STAGE = Path("data/stage_state.json")` and
+    `_COST_MODEL = Path("data/cost_model.json")` sit at the top of the executor, and every organ
+    on the desk is written the same way -- and every launcher pins cwd to the platform root
+    (`cd "$QUANT_ROOT" &&` opens all 113 cron lines; the systemd units set WorkingDirectory=).
+    Resolving against a guessed root instead made read_fresh the ONLY reader in its own process
+    consuming a different install's artifacts: a checkout under /home/user marking against the
+    live box's /home/quant/quant-platform/data/live_guard.json, and a test that chdir'd to a tmp
+    fixture silently scoring production state instead of its own. Two roots inside one process is
+    precisely the two-sources-of-truth class this module exists to close (the 13,155/4,500 equity
+    split in the docstring above), so the helper must not introduce a second one.
+
+    QUANT_FRESH_ROOT overrides for callers that must pin a root without moving cwd.
+    """
     env = os.environ.get("QUANT_FRESH_ROOT")
-    return Path(env) if env else _ROOT
+    return Path(env) if env else Path.cwd()
 
 
 def _age_of(path: Path) -> tuple[float | None, str, Any]:

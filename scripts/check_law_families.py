@@ -79,11 +79,31 @@ def build_report(root: Path | None = None) -> dict[str, Any]:
     root = root or _ROOT
     const = (root / "docs/CONSTITUTION.md").read_text("utf-8", errors="ignore")
     doctrine = (root / "ops/principal_doctrine.txt").read_text("utf-8", errors="ignore")
+    # A MISSING MATRIX IS NOT A VERDICT ABOUT THE LAWS. This read used to swallow OSError into
+    # `enforced = {}`, which made "the matrix has not been built on this machine" arrive at the
+    # comparison below as "the matrix says not one of these 65 laws has a fence" -- so every
+    # family reported DECORATIVE, the single most alarming state this fence has, and the cause
+    # printed nowhere. That is what a clean checkout saw. The absence of an input must be
+    # reported as the absence of an input: UNMEASURED, cause named, still exit 2 (an unreadable
+    # input can never buy a pass), but a human reading it is sent to the producer instead of to
+    # the constitution.
+    matrix_state, matrix_why = "OK", ""
     try:
         matrix = json.loads((root / "data/enforcement_matrix.json").read_text("utf-8"))
         enforced = {r.get("principle"): r for r in matrix.get("rows", matrix.get("matrix", []))}
-    except (OSError, ValueError):
+        if not enforced:
+            matrix_state, matrix_why = "UNMEASURED", "enforcement matrix parsed but holds no rows"
+    except OSError as exc:
         enforced = {}
+        matrix_state = "UNMEASURED"
+        matrix_why = (f"data/enforcement_matrix.json is not readable ({type(exc).__name__}) -- it "
+                      "is a GENERATED artifact (gitignored under data/*), so a clean checkout has "
+                      "none until scripts/build_enforcement_matrix.py runs. Build it, then re-run; "
+                      "the law gate now orders the producer ahead of this fence.")
+    except ValueError as exc:
+        enforced = {}
+        matrix_state = "UNMEASURED"
+        matrix_why = f"data/enforcement_matrix.json is corrupt ({exc}) -- rebuild it"
 
     fams: dict[str, Any] = {}
     bad: list[str] = []
@@ -97,6 +117,9 @@ def build_report(root: Path | None = None) -> dict[str, Any]:
         guarded = (root / fence).exists()
         if missing:
             state = "INCOMPLETE"
+        elif matrix_state == "UNMEASURED":
+            # the fenced-ness of every member is unknown, not false -- say so
+            state, unfenced = "UNMEASURED", []
         elif unfenced:
             state = "DECORATIVE"
         elif not guarded:
@@ -117,12 +140,16 @@ def build_report(root: Path | None = None) -> dict[str, Any]:
         "law": "L1.36 -- a family of laws is enforced as a family: complete, fenced per member, "
                "reaching every organ, and guarded by a family-level check. Per-law greenness "
                "hides family decay.",
-        "status": "OK" if not bad else "FAILING",
+        "status": "UNMEASURED" if matrix_state == "UNMEASURED" else ("OK" if not bad
+                                                                    else "FAILING"),
         "n_families": len(FAMILIES),
         "n_laws_governed": sum(len(m) for m, _f, _p in FAMILIES.values()),
         "failing": bad,
         "families": fams,
-        "detail": (f"{len(FAMILIES) - len(bad)}/{len(FAMILIES)} families fully enforced"
+        "matrix_state": matrix_state,
+        "matrix_why": matrix_why,
+        "detail": (matrix_why if matrix_state == "UNMEASURED" else
+                   f"{len(FAMILIES) - len(bad)}/{len(FAMILIES)} families fully enforced"
                    + (f"; failing: {', '.join(bad)}" if bad else "")),
     }
 

@@ -1,11 +1,29 @@
 """L1.36 -- law families enforced AS families, and the aggression family at maximum strength."""
 from __future__ import annotations
 
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
 from scripts.check_law_families import FAMILIES, build_report
 from scripts.check_timidity_language import _prompt_surfaces, audit_prompts
+
+
+@pytest.fixture(autouse=True, scope="module")
+def _matrix_built():
+    """These tests read data/enforcement_matrix.json, which is GENERATED and gitignored.
+
+    Without this they passed only on a machine that had already built it -- on CI, solely
+    because an earlier workflow step happens to run the builder before pytest. Run `pytest`
+    alone on a clean checkout and they failed, reporting six DECORATIVE families: a test
+    describing the machine's history rather than the code. A test must supply its own inputs.
+    """
+    if not Path("data/enforcement_matrix.json").exists():
+        # subprocess, not an in-process main(): the builder parses sys.argv, which under pytest
+        # is pytest's own command line.
+        subprocess.run([sys.executable, "scripts/build_enforcement_matrix.py"],
+                       check=True, capture_output=True, timeout=180)
 
 
 def test_all_six_families_fully_enforced():
@@ -147,3 +165,42 @@ def test_l39_draws_the_action_vs_validation_distinction():
     assert "a candidate is never an edge" in const
     doc = Path("ops/principal_doctrine.txt").read_text("utf-8")
     assert "THE IMMEDIACY IS IN THE ROUTING, NEVER IN THE BAR" in doc
+
+
+# --- the gate must be green on a VIRGIN tree, not only on one that has run it before -----------
+
+def test_matrix_producer_runs_before_its_consumer_in_the_law_gate():
+    """build_enforcement_matrix WRITES what check_law_families READS -- so it must run first.
+
+    REGRESSION PIN. data/enforcement_matrix.json is gitignored (data/*), so it exists on any
+    machine that has run the gate before and on no clean checkout. With the consumer ordered
+    first, the gate was green on the box and on dev clones while failing on EVERY clean checkout:
+    master CI failed 10 consecutive runs (30651154078..30654344515) on
+    "BREACH check_law_families.py (rc=2)" for commits that passed locally. Reproduced exactly by
+    running the gate twice in a fresh worktree -- first run FAIL, second run PASS, the only
+    difference being the artifact the first run left behind. Ordering is the fix; this pins it.
+    """
+    from scripts.run_law_gate import _LAW_FENCES
+    names = [n for n, _args in _LAW_FENCES]
+    assert names.index("build_enforcement_matrix.py") < names.index("check_law_families.py")
+
+
+def test_absent_matrix_reports_unmeasured_not_sixty_five_decorative_laws(tmp_path):
+    """A missing INPUT is not a verdict about the laws -- and must still never buy a pass.
+
+    The swallowed OSError made "no matrix on this machine" arrive at the comparison as "the
+    matrix says not one of these laws has a fence", so every family reported DECORATIVE -- the
+    most alarming state this fence has -- with the actual cause printed nowhere. Ordering alone
+    would hide that again the moment the producer fails for any other reason.
+    """
+    for rel in ("docs/CONSTITUTION.md", "ops/principal_doctrine.txt"):
+        src, dst = Path(rel), tmp_path / rel
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        dst.write_text(src.read_text("utf-8"), "utf-8")
+    rep = build_report(tmp_path)                       # no data/enforcement_matrix.json
+    assert rep["status"] == "UNMEASURED"
+    assert "enforcement_matrix" in rep["matrix_why"]
+    assert "build_enforcement_matrix.py" in rep["matrix_why"]
+    # UNMEASURED, never DECORATIVE: the laws' fenced-ness is unknown here, not known to be absent
+    assert {f["state"] for f in rep["families"].values()} == {"UNMEASURED"}
+    assert all(f["unfenced"] == [] for f in rep["families"].values())

@@ -52,10 +52,12 @@ def _get(url: str, *, tries: int = 4) -> Any:
             # ban, so latch a cross-process cooldown and fail fast instead of retrying.
             if exc.code in (418, 429):
                 ra = exc.headers.get("Retry-After") if exc.headers else None
+                default_wait = 7200.0 if exc.code == 418 else 120.0
                 try:
-                    wait = max(60.0, float(ra))  # honour the venue's own clock
-                except (TypeError, ValueError):
-                    wait = 7200.0 if exc.code == 418 else 120.0
+                    # honour the venue's own clock; absent/unparseable falls to the default
+                    wait = max(60.0, float(ra)) if ra else default_wait
+                except ValueError:
+                    wait = default_wait
                 try:
                     _BAN_FILE.parent.mkdir(parents=True, exist_ok=True)
                     _BAN_FILE.write_text(

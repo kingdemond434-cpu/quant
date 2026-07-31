@@ -104,8 +104,11 @@ def classify(target: str, survivor: dict[str, object]) -> Equivalence | None:
     was about that code, so it does not survive the code changing.
     """
     kind, mutation = str(survivor.get("kind", "")), str(survivor.get("mutation", ""))
+    raw = survivor.get("line", 0)
+    if not isinstance(raw, (int, float, str)):   # narrows `object`; non-numeric was already fatal
+        return None
     try:
-        lineno = int(survivor.get("line", 0))
+        lineno = int(raw)
     except (TypeError, ValueError):
         return None
     actual = _line_text(target, lineno)

@@ -111,6 +111,28 @@ def test_contract_lines_are_throttled(froot):
     assert len([e for e in _registry_events(froot) if e["event"] == "contract"]) == 1
 
 
+def test_relative_path_resolves_against_cwd_not_a_guessed_install(tmp_path, monkeypatch):
+    """A relative path means relative to cwd -- the same thing it means to every caller.
+
+    REGRESSION PIN. The first L1.44 helper resolved relatives against an internally-guessed
+    install root (/home/quant/quant-platform, else the package parent), which made it the only
+    reader in its own process consuming a DIFFERENT install's artifacts than the cwd-relative
+    reads sitting beside it in the same file. It broke test_guard_consumes_fresh_artifact
+    outright, and it broke the guard's two neighbouring tests INVISIBLY: they kept passing while
+    marking against production state instead of their own fixtures. No env var is set here on
+    purpose -- pinning the plain-cwd path is the whole point, and pinning it via
+    QUANT_FRESH_ROOT would pin the override rather than the default it is overriding."""
+    monkeypatch.chdir(tmp_path)
+    _write(tmp_path, "data/x.json", {"v": "from-cwd"})
+    fr = read_fresh("data/x.json", 1.0, caller="t.cwd")
+    assert fr.fresh and fr.data == {"v": "from-cwd"}
+    # and the self-building registry follows the same root, so a chdir'd caller cannot append
+    # contract lines to another install's telemetry.
+    assert [e["caller"] for e in _registry_events(tmp_path)] == ["t.cwd"]
+    assert not (_REPO / REGISTRY_REL).exists() or "t.cwd" not in {
+        e.get("caller") for e in _registry_events(_REPO)}
+
+
 # ------------------------------- fence verdicts -----------------------------------------------
 
 def test_fence_empty_registry_is_unmeasured_never_ok(froot):
