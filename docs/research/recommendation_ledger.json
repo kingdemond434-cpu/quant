@@ -1778,6 +1778,18 @@
    "commit": "4d77a3f",
    "due": null,
    "disposed": "2026-07-31T16:42:39.947088+00:00"
+  },
+  {
+   "id": "R0147",
+   "source": "cycle",
+   "summary": "dig-output-uncommitted can never stay satisfied: conversion_record.json/holdings_record.json are re-ticked by cron every ~15min, so any working tree is almost always dirty on them and the check re-fires seconds after every commit (aged 141.7h despite multiple same-day commits). Fix: grace window in max_audit for ratchet artifacts modified <2h (the check's own 'by end of cycle' semantics), or move ratchets to untracked live files + tracked periodic snapshots.",
+   "roi_bps": 2.0,
+   "raised": "2026-07-31T16:45:35.454376+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
