@@ -1,0 +1,16 @@
+#!/bin/sh
+# LAW GATE pre-push hook (L1.37) -- installed by deploy/pull_deploy.sh.
+# Nothing leaves this box for master without the portable law fences passing. State fences are
+# NOT run here: they measure live desk state, and a push is not the moment to judge it.
+# Bypass exists (--no-verify) and is deliberately not disabled: a hook that cannot be bypassed
+# in an emergency gets deleted entirely, which is worse. Bypassing is a recorded human act.
+set -e
+ROOT=$(git rev-parse --show-toplevel)
+PY="$ROOT/.venv/bin/python"
+[ -x "$PY" ] || PY=python3
+if ! "$PY" "$ROOT/scripts/run_law_gate.py" --laws-only; then
+    echo "" >&2
+    echo "PUSH REFUSED: a constitutional law fence is failing (L1.37)." >&2
+    echo "Fix the breach, or push with --no-verify and record why." >&2
+    exit 1
+fi

@@ -140,6 +140,28 @@ export ANTHROPIC_MODEL="${ANTHROPIC_MODEL:-claude-fable-5}"  # primary = FABLE 5
 # default agree with them instead of contradicting them (the miners were right).
 export _BRAIN_MODEL_CHAIN="${_BRAIN_MODEL_CHAIN:-claude-fable-5 claude-opus-5 claude-opus-4-8}"
 
+# LAW GATE AT ORGAN SPAWN (L1.37, principal order 2026-07-31 "enforced 24/7 with every
+# interaction"). Every organ sources this file, so this is the one place that runs before ALL of
+# them. The FAST gate only (~1s, no full battery): the sealed constitutional core is intact, and
+# the doctrine still carries every law family. Those are the two conditions under which an organ
+# must never start -- an organ running on a tampered core, or one that will never be told the
+# laws it is meant to obey, is worse than no organ at all.
+# NON-BLOCKING BY DESIGN: it PAGES and marks the breach rather than killing the cycle. A gate
+# that silently stops the whole desk on a governance fault would trade a research outage for a
+# paperwork fault, and the outage is the bigger loss (L1.2). The breach is loud, dated, and in
+# the artifact -- never silent.
+_law_gate_fast() {
+    local out
+    out="$(.venv/bin/python /home/quant/quant-platform/scripts/run_law_gate.py --fast 2>&1)" || {
+        _brain_page "LAW GATE BREACH at organ spawn: $(printf '%s' "$out" | tail -2 | head -c 200)"
+        printf '%s\n' "$out" >&2
+        echo "LAW-GATE-BREACH $(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            >> /home/quant/quant-platform/data/law_gate_breaches.log 2>/dev/null || true
+    }
+    return 0
+}
+_law_gate_fast
+
 # PRINCIPAL DOCTRINE (2026-07-21): the desk's permanent max-ROI personality, injected
 # into every claude organ via --append-system-prompt. Read once here; every organ script
 # sources this file, so all present AND future organs inherit it. Read at spawn time.

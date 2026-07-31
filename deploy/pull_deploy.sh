@@ -100,6 +100,13 @@ fi
 # manifest against the current file catches that case and every future one, including manifests
 # that arrive while the puller is broken. reconstitute_cron.sh is idempotent (fenced crontab
 # block) and needs no root for the cron half; its systemd half degrades to printed "owed" lines.
+# LAW-GATE HOOK INSTALL (L1.37): every clone of this repo gets the pre-push gate, so a breach
+# cannot leave any box for master. Idempotent; a symlink would break on Windows checkouts.
+if [ -d "$ROOT/.git/hooks" ] && [ -f "$ROOT/deploy/git_hooks/pre-push" ]; then
+    cp "$ROOT/deploy/git_hooks/pre-push" "$ROOT/.git/hooks/pre-push" 2>/dev/null || true
+    chmod +x "$ROOT/.git/hooks/pre-push" 2>/dev/null || true
+fi
+
 # ROLE SELECTION (R0107): a box with `research` in ops/role installs the research-twin
 # manifest; everything else keeps the full manifest. ops/role is gitignored per-box state.
 _ROLE=$(cat "$ROOT/ops/role" 2>/dev/null || echo primary)

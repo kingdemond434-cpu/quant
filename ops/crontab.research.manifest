@@ -62,12 +62,16 @@
 0 13 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-litminer.timer >/dev/null 2>&1 || flock -n /tmp/seat_litminer.lock /bin/bash ops/run_litminer_dig.sh >> data/cro_ai_logs/seat_litminer.log 2>&1; }
 
 # unknown-unknown organs
-10 3 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/blindspot_max.py >> data/cro_ai_logs/blindspot_max.log 2>&1
-25 21 * * 1,4 cd "$QUANT_ROOT" && .venv/bin/python scripts/blindspot_prober.py >> data/cro_ai_logs/blindspot_prober.log 2>&1
-0 20 * * 2,6 cd "$QUANT_ROOT" && { systemctl is-enabled quant-blindrediscovery.timer >/dev/null 2>&1 || flock -n /tmp/seat_blindrediscovery.lock /bin/bash ops/run_blindrediscovery_dig.sh >> data/cro_ai_logs/seat_blindrediscovery.log 2>&1; }
+10 3,11,19 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/blindspot_max.py >> data/cro_ai_logs/blindspot_max.log 2>&1
+25 21 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/blindspot_prober.py >> data/cro_ai_logs/blindspot_prober.log 2>&1
+0 20 * * 1,3,5,6 cd "$QUANT_ROOT" && { systemctl is-enabled quant-blindrediscovery.timer >/dev/null 2>&1 || flock -n /tmp/seat_blindrediscovery.lock /bin/bash ops/run_blindrediscovery_dig.sh >> data/cro_ai_logs/seat_blindrediscovery.log 2>&1; }
 
 # capability hunt (L1.31) -- on the twin this EXECUTES rather than contends for the seat
 30 9 * * * cd "$QUANT_ROOT" && flock -n data/.cron_capability_hunt.lock /bin/bash ops/run_capability_hunt.sh 0 >> data/cro_ai_logs/capability_hunt.log 2>&1
+# SIX SLOTS/DAY (principal 2026-07-31 'max out cadence for those gaps, exploration, claude+gpt duo, to max times possible a day'): every 4h, each on a DIFFERENT lens, so the day's draws span the whole 8-lens space instead of 3/8 of it. Two families x 6 slots x 2 boxes = up to 24 independent draws/day.
+30 1 * * * cd "$QUANT_ROOT" && flock -n data/.cron_capability_hunt.lock /bin/bash ops/run_capability_hunt.sh 3 >> data/cro_ai_logs/capability_hunt.log 2>&1
+30 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_capability_hunt.lock /bin/bash ops/run_capability_hunt.sh 4 >> data/cro_ai_logs/capability_hunt.log 2>&1
+30 17 * * * cd "$QUANT_ROOT" && flock -n data/.cron_capability_hunt.lock /bin/bash ops/run_capability_hunt.sh 5 >> data/cro_ai_logs/capability_hunt.log 2>&1
 
 # EXPLORATION AT MAX (principal 2026-07-31: the capability hunt IS exploration --
 # max push it). Hunting is RESOURCE-bound, not information-bound (L1.28c): the space of

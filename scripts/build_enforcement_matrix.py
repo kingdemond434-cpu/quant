@@ -137,6 +137,9 @@ _MAP: dict[str, list[str]] = {
     # L1.36: families enforced AS families -- complete, fenced per member, reaching every organ
     # via the doctrine, and guarded by a family-level check. A gate, not a report.
     "L1.36": ["scripts/check_law_families.py"],
+    # L1.37: the gate itself -- four boundaries (organ spawn, pre-push, CI, hourly cron).
+    "L1.37": ["scripts/run_law_gate.py", "deploy/git_hooks/pre-push", "ops/brain_env.sh",
+              ".github/workflows/ci.yml"],
     # L1.25a: null streaks throttle nothing -- an organ going quiet is caught by the freshness/
     # productivity wires REGARDLESS of its reason, so "stopped because nothing was working" trips
     # the same fence as "stopped because broken". The pessimism-freeze cannot hide.

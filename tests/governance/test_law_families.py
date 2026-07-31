@@ -73,3 +73,49 @@ def test_fence_is_a_gate_not_a_report():
     src = Path("scripts/check_law_families.py").read_text("utf-8")
     assert 'return 2 if rep["status"] != "OK" else 0' in src
     assert "A gate, not a report" in src or "a gate, not a report" in src.lower()
+
+
+# --- L1.37 continuous enforcement at every boundary --------------------------------------------
+
+def test_law_and_state_fences_are_separated():
+    from scripts.run_law_gate import _LAW_FENCES, _STATE_FENCES
+    law = {f for f, _ in _LAW_FENCES}
+    state = {f for f, _ in _STATE_FENCES}
+    assert law and state and not (law & state)
+    # law fences must be portable: they read the repo, so CI can run them meaningfully
+    assert "check_constitution_core.py" in law and "check_law_families.py" in law
+    # state fences measure box-only live state and must NOT gate a commit
+    assert "check_exploration.py" in state and "check_conversion.py" in state
+
+
+def test_laws_only_gate_passes_in_a_fresh_checkout():
+    from scripts.run_law_gate import full_gate
+    rep = full_gate(laws_only=True)
+    assert rep["ok"] is True, rep["failures"]
+
+
+def test_fast_gate_guards_core_and_doctrine():
+    from scripts.run_law_gate import fast_gate
+    rep = fast_gate()
+    assert rep["ok"] is True, rep["failures"]
+
+
+def test_unrunnable_fence_counts_as_failed_never_skipped():
+    src = Path("scripts/run_law_gate.py").read_text("utf-8")
+    assert "counts as FAILED, never skipped" in src
+    assert "MISSING -- an absent fence is a failed fence" in src
+
+
+def test_all_four_boundaries_are_wired():
+    assert "run_law_gate.py --laws-only" in Path(".github/workflows/ci.yml").read_text("utf-8")
+    hook = Path("deploy/git_hooks/pre-push")
+    assert hook.exists() and "run_law_gate.py" in hook.read_text("utf-8")
+    assert "_law_gate_fast" in Path("ops/brain_env.sh").read_text("utf-8")
+    assert "run_law_gate.py" in Path("ops/crontab.manifest").read_text("utf-8")
+    assert "git_hooks/pre-push" in Path("deploy/pull_deploy.sh").read_text("utf-8")
+
+
+def test_spawn_gate_pages_but_does_not_block():
+    # A governance fault must never silently stop the desk (L1.2).
+    be = Path("ops/brain_env.sh").read_text("utf-8")
+    assert "_brain_page" in be and "return 0" in be.split("_law_gate_fast()")[1][:900]

@@ -207,6 +207,16 @@ QUANT_ROOT=/home/quant/quant-platform
 # CONFIDENCE: committed-script (new this cycle)
 */5 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_live_guard.lock .venv/bin/python scripts/run_live_guard.py >> data/cro_ai_logs/live_guard.log 2>&1
 
+# THE LAW GATE, HOURLY (L1.37, principal order 2026-07-31 "enforced 24/7 with every
+# interaction"). The full battery -- portable law fences PLUS the box-only state fences whose
+# verdict is real here. This is the boundary that catches drift arriving WITHOUT a commit:
+# a stale artifact, an organ gone dark, a ledger that stopped converting. The other three
+# boundaries are CI (every push/PR), the pre-push hook (installed by pull_deploy), and the
+# fast gate at every organ spawn (ops/brain_env.sh).
+# EVIDENCE: scripts/run_law_gate.py -> data/law_gate.json; docs/CONSTITUTION.md L1.37
+# CONFIDENCE: committed-script (new this cycle)
+5 * * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_law_gate.py >> data/cro_ai_logs/law_gate.log 2>&1
+
 # LAW-FAMILY FENCE (L1.36, principal order 2026-07-31 "strict military maximum"): the six law
 # families verified AS families -- complete, every member fenced, every member reaching the
 # organs via the doctrine, and each guarded by a family-level check. Per-law greenness hides
@@ -244,6 +254,10 @@ QUANT_ROOT=/home/quant/quant-platform
 # EVIDENCE: scripts/run_capability_hunt.py -> docs/research/capability_hunt/; CONSTITUTION L1.31
 # CONFIDENCE: committed-script (new this cycle)
 30 9 * * * cd "$QUANT_ROOT" && flock -n data/.cron_capability_hunt.lock /bin/bash ops/run_capability_hunt.sh 0 >> data/cro_ai_logs/capability_hunt.log 2>&1
+# SIX SLOTS/DAY (principal 2026-07-31 'max out cadence for those gaps, exploration, claude+gpt duo, to max times possible a day'): every 4h, each on a DIFFERENT lens, so the day's draws span the whole 8-lens space instead of 3/8 of it. Two families x 6 slots x 2 boxes = up to 24 independent draws/day.
+30 1 * * * cd "$QUANT_ROOT" && flock -n data/.cron_capability_hunt.lock /bin/bash ops/run_capability_hunt.sh 3 >> data/cro_ai_logs/capability_hunt.log 2>&1
+30 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_capability_hunt.lock /bin/bash ops/run_capability_hunt.sh 4 >> data/cro_ai_logs/capability_hunt.log 2>&1
+30 17 * * * cd "$QUANT_ROOT" && flock -n data/.cron_capability_hunt.lock /bin/bash ops/run_capability_hunt.sh 5 >> data/cro_ai_logs/capability_hunt.log 2>&1
 
 # EXPLORATION AT MAX (principal 2026-07-31: the capability hunt IS exploration --
 # max push it). Hunting is RESOURCE-bound, not information-bound (L1.28c): the space of
@@ -673,7 +687,7 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 0 15 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-frontier.timer >/dev/null 2>&1 || flock -n /tmp/seat_frontier.lock /bin/bash ops/run_frontier_rotation.sh >> data/cro_ai_logs/seat_frontier.log 2>&1; }
 0 18 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-prospector.timer >/dev/null 2>&1 || flock -n /tmp/seat_prospector.lock /bin/bash ops/run_prospector_dig.sh >> data/cro_ai_logs/seat_prospector.log 2>&1; }
 0 19 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-litminer.timer >/dev/null 2>&1 || flock -n /tmp/seat_litminer.lock /bin/bash ops/run_litminer_dig.sh >> data/cro_ai_logs/seat_litminer.log 2>&1; }
-0 20 * * 2,6 cd "$QUANT_ROOT" && { systemctl is-enabled quant-blindrediscovery.timer >/dev/null 2>&1 || flock -n /tmp/seat_blindrediscovery.lock /bin/bash ops/run_blindrediscovery_dig.sh >> data/cro_ai_logs/seat_blindrediscovery.log 2>&1; }
+0 20 * * 1,3,5,6 cd "$QUANT_ROOT" && { systemctl is-enabled quant-blindrediscovery.timer >/dev/null 2>&1 || flock -n /tmp/seat_blindrediscovery.lock /bin/bash ops/run_blindrediscovery_dig.sh >> data/cro_ai_logs/seat_blindrediscovery.log 2>&1; }
 
 # SUB-ACCOUNT CAPABILITY PROBE (principal order 2026-07-30: "allow our system to create automated
 # subaccounts when needed"). Binance gates sub-account APIs to corporate/broker tiers, so the
@@ -730,8 +744,8 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 #                    funding slice, so faster produces probes nothing reads yet.
 # EVIDENCE: both executed 2026-07-31 -> data/blindspot_max.json + data/blindspot_probes.json
 # CONFIDENCE: committed-script
-10 3 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/blindspot_max.py >> data/cro_ai_logs/blindspot_max.log 2>&1
-25 21 * * 1,4 cd "$QUANT_ROOT" && .venv/bin/python scripts/blindspot_prober.py >> data/cro_ai_logs/blindspot_prober.log 2>&1
+10 3,11,19 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/blindspot_max.py >> data/cro_ai_logs/blindspot_max.log 2>&1
+25 21 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/blindspot_prober.py >> data/cro_ai_logs/blindspot_prober.log 2>&1
 
 # DAILY PRINCIPAL DIGEST -- ported from the LEGACY crontab block 2026-07-31, where it had been
 # firing since ~07-27 WITHOUT ever being a recorded decision (the orphan-scripts lock caught the

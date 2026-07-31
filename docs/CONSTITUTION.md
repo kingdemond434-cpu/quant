@@ -636,6 +636,34 @@ permits"), because *an instruction the organ may decline is not an instruction*.
 deliberately narrow: only lines that explicitly forbid the pattern, or bound breadth **per run**
 (a completion bound, legal under L1.35).
 
+**L1.37 EVERY LAW, AT EVERY BOUNDARY, CONTINUOUSLY** *(principal order 2026-07-31: "make all
+these principles enforced 24/7 with every interaction with anything")*. Every fence this desk
+owned ran on a **cron tick and nowhere else** — CI ran only pytest, and there were no git hooks
+at all. Between ticks a commit could land, a push could ship, and an organ could spawn under a
+tampered core, a stripped doctrine, or a broken law family, with nothing watching for hours.
+Laws were enforced *periodically*; they are now enforced **at every boundary**:
+
+| boundary | mode | what it stops |
+|---|---|---|
+| organ spawn (`ops/brain_env.sh`) | fast | an organ running on a tampered core, or one that will never be told the laws it must obey |
+| git push (pre-push hook) | laws | a breach leaving any box for master |
+| CI, every push and PR | laws | a breach entering the tree from anywhere |
+| hourly cron | full | drift arriving **without** a commit — a stale artifact, an organ gone dark, a ledger that stopped converting |
+
+**THREE DESIGN RULES THAT KEEP A GATE ALIVE**, each learned from how gates die. (1) **Law fences
+and state fences are separated.** Law fences read the repo and mean the same thing everywhere;
+state fences measure live desk state that exists only on the box, so running them as a commit
+gate would fail every PR for "this machine has no desk state" — *a gate that cries wolf gets
+disabled, which is how enforcement actually dies.* (2) **All failures are collected, never
+first-failure-only** — a gate that hides four breaches behind one gets run once and disbelieved.
+(3) **An unrunnable fence counts as FAILED, never skipped**: if the gate cannot prove a law
+holds, it must not claim it does — L1.28a's rule applied to enforcement itself.
+
+**THE SPAWN GATE PAGES, IT DOES NOT KILL.** A governance fault must not silently stop the whole
+desk: that trades a research outage for a paperwork fault, and the outage is the larger loss
+(L1.2). The breach is paged, dated, and logged — loud, never silent, never blocking.
+**FENCED**: `scripts/run_law_gate.py`.
+
 **L1.28c CADENCE IS AGGRESSION — EVERY SCHEDULE HUNTS ITS OWN CEILING** *(principal order
 2026-07-31)*. **Every cadence on this desk aims to increase its frequency to the maximum that
 still carries ROI, and a cadence nobody has tried to raise is idle capacity wearing a schedule.**
