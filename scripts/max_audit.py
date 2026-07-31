@@ -1831,8 +1831,12 @@ _FINDING_DOCS_EXCLUDED = {
                                       "register drives them, the snapshot is the record",
     "docs/WEEKLY_MAX_CYCLE.md": "process runbook -- its numbered steps are procedure, not "
                                 "findings owing dispositions",
-    "docs/TRIAGE_20260729_PRINCIPAL_BATCH.md": "dated triage record -- verdicts were rowed into "
-                                               "the ledger 07-29; historical artifact",
+    "docs/research/TRIAGE_20260729_PRINCIPAL_BATCH.md": "dated triage record -- verdicts were "
+                                                        "rowed into the ledger 07-29; "
+                                                        "historical artifact",
+    "docs/research/cn_oss_extraction_20260731.md": "dig extraction card -- its 5 finds are "
+                                                   "rowed as R0100 (ingest+screen) by the "
+                                                   "authoring session; §33 governs the cards",
     "docs/research/panel_inbox.md": "raw panel transcript -- rulings are the distilled output",
     "docs/research/feed_inbox.md": "literature feed, not desk findings",
     "docs/research/data_axis_watchlist.md": "source cards -- governed by §33 dispositions",
