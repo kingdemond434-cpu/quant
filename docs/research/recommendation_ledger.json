@@ -386,11 +386,11 @@
    "summary": "WALCL 4-week reserve impulse -> next-week BTC printed IC +0.1106 with a mechanism-consistent sign, de-contamination PASSED (resid +0.0964) and momentum Sharpe 0.82, clearing ic_min and sharpe_min and stopped ONLY by the power gate -- correctly, since a 4-week window sampled weekly carries ~204 independent obs (t~1.6), not 815 (t~3.2). NOT an edge and NOT a clock. It is the first empirical reason to revisit the WALCL axis that its six EV rejections never had: run a PRE-REGISTERED NON-OVERLAPPING re-test.",
    "roi_bps": 25.0,
    "raised": "2026-07-28T20:31:40.766685+00:00",
-   "status": "scheduled",
-   "reason": "TOP generation item tomorrow: pieces verified today (bronze/fed derived net-liquidity series live, idle slot confirmed m=11, construction pre-registered from the 07-28 screen). NOT wired tonight by decision: release-lag alignment declaration + revalidate_clocks shift-sensitivity rail are mandatory first and rushing a phantom-edge-critical wire at cycle end is the exact kimchi class (L1.27: this protects against a named hazard, it does not avoid uncertainty)",
-   "commit": null,
-   "due": "2026-08-01",
-   "disposed": "2026-07-31T07:29:03.316338+00:00"
+   "status": "implemented",
+   "reason": "walcl_reserve_impulse forward clock pre-registered + accruing (1/40d): derive_walcl_clock.py in the daily chain after fred_macro, _AXES entry with frozen construction (4wk log impulse, +2d release lag, z20, dir +1), build standard 26/26, matrix-mapped L1.25a(b); fills the slot kimchi's retirement freed -- cohort 12/12, idle 0",
+   "commit": "HEAD",
+   "due": null,
+   "disposed": "2026-07-31T16:51:28.158989+00:00"
   },
   {
    "id": "R0032",
@@ -1785,6 +1785,18 @@
    "summary": "dig-output-uncommitted can never stay satisfied: conversion_record.json/holdings_record.json are re-ticked by cron every ~15min, so any working tree is almost always dirty on them and the check re-fires seconds after every commit (aged 141.7h despite multiple same-day commits). Fix: grace window in max_audit for ratchet artifacts modified <2h (the check's own 'by end of cycle' semantics), or move ratchets to untracked live files + tracked periodic snapshots.",
    "roi_bps": 2.0,
    "raised": "2026-07-31T16:45:35.454376+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0148",
+   "source": "conviction-trader 2026-07-31T16:45",
+   "summary": "Trader brief said CHARTS UNAVAILABLE (FileNotFoundError) but build_chart_context.py ran OK on demand in-session (18/18). Phase the chart builder before the hourly conviction-trader spawn (L1.28c: phase counts as cadence) so the trader never opens blind on structure.",
+   "roi_bps": null,
+   "raised": "2026-07-31T16:47:40.102644+00:00",
    "status": "open",
    "reason": null,
    "commit": null,

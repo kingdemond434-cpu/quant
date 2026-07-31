@@ -3,6 +3,7 @@ reported backlog that stops nothing is a wish, so these lock BOTH the defect and
 
 from __future__ import annotations
 
+import os
 import subprocess
 from datetime import UTC
 from pathlib import Path
@@ -136,8 +137,29 @@ class TestDigUncommitted:
         subprocess.run(["git", "config", "user.name", "t"], cwd=tmp, check=True)
         f.write_text("### 1. A [§33: killed]\n")
         subprocess.run(["git", "add", "-A"], cwd=tmp, check=True)
-        subprocess.run(["git", "commit", "-qm", "x"], cwd=tmp, check=True)
+        # commit backdated past the 6h ratchet grace (R0147): a snapshot committed WITHIN the
+        # cycle window is not debt, so tests of the debt path must age the snapshot first
+        env = {**os.environ, "GIT_AUTHOR_DATE": "2020-01-01T00:00:00",
+               "GIT_COMMITTER_DATE": "2020-01-01T00:00:00"}
+        subprocess.run(["git", "commit", "-qm", "x"], cwd=tmp, check=True, env=env)
         return f
+
+    def test_a_snapshot_committed_this_cycle_is_not_debt(self, tmp_path: Path,
+                                                         monkeypatch) -> None:
+        # R0147 regression pin: conversion/holdings ratchets re-tick minutes after every
+        # commit; a file whose last commit is fresh must NOT fire, or the gate is unsatisfiable.
+        f = _mk(tmp_path)
+        subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+        subprocess.run(["git", "config", "user.email", "t@t"], cwd=tmp_path, check=True)
+        subprocess.run(["git", "config", "user.name", "t"], cwd=tmp_path, check=True)
+        f.write_text("### 1. A [§33: killed]\n")
+        subprocess.run(["git", "add", "-A"], cwd=tmp_path, check=True)
+        subprocess.run(["git", "commit", "-qm", "x"], cwd=tmp_path, check=True)  # fresh commit
+        f.write_text("### 1. A [§33: killed]\n### 2. ratchet tick\n")
+        defects: list[tuple[str, str]] = []
+        monkeypatch.setattr(m, "ROOT", tmp_path)
+        m.check_dig_uncommitted(defects)
+        assert defects == []
 
     def test_committed_output_is_silent(self, tmp_path: Path, monkeypatch) -> None:
         self._repo(tmp_path)

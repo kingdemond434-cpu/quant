@@ -60,6 +60,7 @@ _GOVERNED: tuple[str, ...] = (
     "screen_funding_spread.py", "screen_collateral_allocation.py",
     "check_build_standard.py",                              # this fence holds itself to it
     "check_fence_yield.py",
+    "derive_walcl_clock.py",                                # R0031 forward clock (2026-07-31)
     "run_llm_trader.py",
     "collect_announcements.py",
     "run_conviction_trader.py",
@@ -86,6 +87,10 @@ _SCHEDULE_EXEMPT: dict[str, str] = {
                                   "constants are actually written, not on a clock",
     "check_return_targeting.py": "reads doctrine and source, not state -- a target is written at "
                                  "commit time, so the gate that catches it is the commit gate",
+    "derive_walcl_clock.py": "runs as the walcl_clock step of daily_research_cycle's _STEPS "
+                             "chain, immediately after collect_fred_macro refreshes its input "
+                             "(phase-correct by construction); a separate cron line would race "
+                             "the archive it reads",
 }
 
 #: Organs that legitimately do not call guard(), with the reason. The gate organs THEMSELVES

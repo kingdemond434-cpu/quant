@@ -208,7 +208,10 @@ _MAP: dict[str, list[str]] = {
     # productivity wires REGARDLESS of its reason, so "stopped because nothing was working" trips
     # the same fence as "stopped because broken". The pessimism-freeze cannot hide.
     "L1.25a": ["check_organs", "check_stub_deaths", "check_idle_capability",
-               "scripts/check_ratchets.py"],
+               "scripts/check_ratchets.py",
+               # (b) forward slots fed daily: the WALCL clock (R0031) fills the slot kimchi's
+               # retirement freed and accrues via the daily chain's walcl_clock step
+               "scripts/derive_walcl_clock.py"],
 }
 
 # ---------------------------------------------------------------------------------------------
