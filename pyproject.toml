@@ -20,6 +20,13 @@ dependencies = [
     "duckdb>=1.0",
     "scipy>=1.13",
     "scikit-learn>=1.4",  # libs/regime (GMM/HMM probabilistic regimes) — a LIVE entrypoint dep
+    # scripts/reconcile_venue.py imports certifi at module scope and calls certifi.where() at
+    # import time to build its SSL context, so the venue reconciler cannot even be imported
+    # without it. It was undeclared and merely present transitively, which meant it worked on
+    # every machine that had already pulled it in for some other reason and would have been
+    # absent from a clean `pip install -e .` — a DR restore producing a desk whose reconciler
+    # crashes on import. CI, which installs exactly what is declared, is where that surfaced.
+    "certifi>=2024.2",
 ]
 
 [project.optional-dependencies]
