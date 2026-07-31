@@ -147,6 +147,9 @@ _MAP: dict[str, list[str]] = {
     # principle unifies the two existing enforcers (cross-session + same-run); no new fence.
     "L1.39": ["scripts/check_conversion.py", "ops/principal_doctrine.txt",
               "scripts/check_law_families.py"],
+    # L1.40: endless generation + defect lenses on the same 6x/day rotation, fixed in-run.
+    "L1.40": ["scripts/run_capability_hunt.py", "scripts/check_exploration.py",
+              "scripts/run_mutation.py"],
     # L1.25a: null streaks throttle nothing -- an organ going quiet is caught by the freshness/
     # productivity wires REGARDLESS of its reason, so "stopped because nothing was working" trips
     # the same fence as "stopped because broken". The pessimism-freeze cannot hide.

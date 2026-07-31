@@ -706,6 +706,38 @@ the capability-hunt proposals (build owed). **FENCED** by the conversion family 
 doctrine (same-run: no miner find sits un-screened), and `check_law_families.py` (the family is
 enforced as a whole). Unmeasured routing counts as idle (L1.28a).
 
+**L1.40 ENDLESS GENERATION, AND EVERY BUG HUNTED** *(principal order 2026-07-31: "maximum
+aggressive with an endless list of max-ROI ideas always to reach our goals" + "all bugs and flaws
+should always be hunted and fixed too")*. **There is no state in which this desk has enough
+ideas.** Generation sits at the top of every funnel, ideas are free and screening is what costs,
+so the correct number is always MORE. An empty or near-empty brainstorm is a **failed run**, not
+a thin seam: if a lens runs dry the hunter switches lens mid-run and keeps generating. No closing
+summaries, no "that covers it", no rank-and-truncate to a comfortable number (L1.35). **The only
+legitimate stop is the context window** — and hitting it obliges the run to name what it was about
+to write next, so the following run resumes generating there rather than restarting.
+
+**BUGS ARE HUNTED ON THE SAME CADENCE AS ALPHA, BY BOTH FAMILIES.** The fences catch *known*
+defect classes; nothing hunted the unknown ones. Six defect lenses now draw on the same 6×/day
+rotation — read-without-writer (this desk's most prolific class: the capital-event equity bug was
+exactly this), silent-except (a swallowed order error once stranded ~$2,150 of real inventory),
+unmeasured-reported-as-OK (**both fences built on 07-31 shipped with this bug in their first
+run**), stale-consumer, dead-branch/zero-caller, and boundary/off-by-one. Every 6-slot day draws
+3 offensive, 2 defect, 1 defensive: **a defect draw is weighted equal to a defensive one, because
+an undetected bug on the money path costs more than a missed edge.**
+
+**AND THE HUNT FIXES WHAT IT FINDS, IN THE SAME RUN** — with the test that fails without the fix
+(L1.39). A found-unfixed bug is the conversion defect in its most expensive form. Money-path fixes
+check the change window first, and **repairs always proceed even inside a freeze** (L1.38).
+
+**ITS NON-TIMID READING** *(L1.28 classification, and this law tripped its own fence on the word
+"less" — which is the fence working)*. Every restraint-shaped phrase in L1.40 restrains **the
+desk's output floor, never its ceiling**: "an empty brainstorm is a failed run" demands MORE
+generation, "no rank-and-truncate" forbids producing FEWER items, and "the only legitimate stop is
+the context window" removes every other stop. **Nothing here licenses any organ to generate less,
+hunt less, or fix less — the sole direction this law can be read in is upward.** The one genuine
+constraint is L1.6, untouched: a defect fix still ships with its test, and an idea is still an
+idea until a screen says otherwise.
+
 **L1.28c CADENCE IS AGGRESSION — EVERY SCHEDULE HUNTS ITS OWN CEILING** *(principal order
 2026-07-31)*. **Every cadence on this desk aims to increase its frequency to the maximum that
 still carries ROI, and a cadence nobody has tried to raise is idle capacity wearing a schedule.**

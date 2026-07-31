@@ -75,20 +75,33 @@ def test_lens_rotation_gives_independent_draws():
     from scripts.run_capability_hunt import _ALPHA_LENSES, _DEFENSIVE_LENSES, _lens_for
     # same slot draws a different lens day to day -- consecutive draws are independent
     assert _lens_for("20260731", 0) != _lens_for("20260801", 0)
-    # every lens of BOTH kinds is reachable over a month -- no favourite subset, yield stays
-    # measurable per lens
-    seen = {_lens_for(f"2026{m:02d}{d:02d}", s)
-            for m in (7, 8) for d in range(1, 29) for s in range(6)}
-    assert all(x in seen for x in _ALPHA_LENSES)
-    assert all(x in seen for x in _DEFENSIVE_LENSES)
+    # COVERAGE IS PROVABLE, not accidental: 6 slots x 8 days = the full 48-slot cycle, so every
+    # lens of every kind is drawn within 8 days. The first version indexed on int(stamp) and left
+    # 4 of 8 defensive lenses permanently unreachable -- this test found it.
+    from scripts.run_capability_hunt import _DEFECT_LENSES, _LENSES
+    week = {_lens_for(f"202608{d:02d}", s) for d in range(1, 9) for s in range(6)}
+    assert week == set(_LENSES)
+    for kind in (_ALPHA_LENSES, _DEFENSIVE_LENSES, _DEFECT_LENSES):
+        assert all(x in week for x in kind)
+    # and a month boundary must not skip the rotation (20260831 -> 20260901 is +70 as an int)
+    assert _lens_for("20260831", 0) != _lens_for("20260901", 0)
 
 
 def test_majority_of_daily_draws_hunt_new_alpha():
-    # Principal: exploration anchored to the growth/alpha goal -> most daily draws are offensive.
-    from scripts.run_capability_hunt import _ALPHA_LENSES, _lens_for
+    """Alpha is the single largest slice of every day (3/6), with 2 defect + 1 defensive.
+
+    Was >=4/6 before defect lenses joined (L1.40): bug-hunting took a slot from offense because
+    an undetected money-path bug costs more than a missed edge. Alpha remains the plurality and
+    the day still hunts growth first."""
+    from scripts.run_capability_hunt import (_ALPHA_LENSES, _DEFECT_LENSES, _DEFENSIVE_LENSES,
+                                             _lens_for)
     for day in ("20260731", "20260801", "20260815", "20260901"):
-        alpha = sum(1 for s in range(6) if _lens_for(day, s) in _ALPHA_LENSES)
-        assert alpha >= 4, f"{day}: only {alpha}/6 offensive"
+        slots = [_lens_for(day, s) for s in range(6)]
+        alpha = sum(1 for x in slots if x in _ALPHA_LENSES)
+        defect = sum(1 for x in slots if x in _DEFECT_LENSES)
+        defensive = sum(1 for x in slots if x in _DEFENSIVE_LENSES)
+        assert alpha >= 3, f"{day}: only {alpha}/6 offensive"
+        assert alpha >= defect and alpha >= defensive        # offense is the plurality
 
 
 def test_brief_is_anchored_to_the_growth_objective_and_brainstorms():
@@ -108,3 +121,45 @@ def test_hunt_history_is_append_only_and_lens_attributed(tmp_path):
     import json
     runs = json.loads((tmp_path / "data/capability_hunt_history.json").read_text())["runs"]
     assert [r["lens"] for r in runs] == ["L1", "L2"]   # attributable -> lens yield measurable
+
+
+# --- L1.40 endless generation + defect hunting -------------------------------------------------
+
+def test_defect_lenses_draw_on_the_same_rotation():
+    from scripts.run_capability_hunt import _DEFECT_LENSES, _lens_for
+    seen = {_lens_for(f"202608{d:02d}", s) for d in range(1, 9) for s in range(6)}
+    assert all(x in seen for x in _DEFECT_LENSES)          # every defect lens is reached
+
+
+def test_every_day_hunts_alpha_and_bugs():
+    from scripts.run_capability_hunt import _ALPHA_LENSES, _DEFECT_LENSES, _lens_for
+    for day in ("20260801", "20260815", "20260901", "20261101"):
+        slots = [_lens_for(day, s) for s in range(6)]
+        assert sum(1 for x in slots if x in _ALPHA_LENSES) >= 3    # majority offensive
+        assert sum(1 for x in slots if x in _DEFECT_LENSES) >= 2   # bugs hunted every day
+
+
+def test_defect_lenses_cover_this_desks_real_defect_classes():
+    from scripts.run_capability_hunt import _DEFECT_LENSES
+    blob = " ".join(_DEFECT_LENSES)
+    for cls in ("READ-WITHOUT-WRITER", "SILENT-EXCEPT", "UNMEASURED-REPORTED-AS-OK",
+                "STALE-CONSUMER", "DEAD-BRANCH", "BOUNDARY"):
+        assert cls in blob
+
+
+def test_brainstorm_may_never_terminate():
+    # Normalise whitespace first: the brief wraps at 100 cols, so pinned phrases span newlines.
+    # (Third time this bit me today -- assert on normalised text, never on raw wrapped prose.)
+    from scripts.run_capability_hunt import _HUNT_BRIEF
+    b = " ".join(_HUNT_BRIEF.split())
+    assert "ENDLESS AND MAY NEVER TERMINATE" in b
+    assert "SWITCH LENS mid-run" in b                       # a dry lens is not a stop condition
+    assert "the eleventh exists" in b
+    assert "only legitimate stop is your context window" in b
+
+
+def test_builder_fixes_defects_in_the_same_run():
+    from scripts.run_capability_hunt import _BUILD_BRIEF
+    assert "FIX IT IN THIS RUN" in _BUILD_BRIEF
+    assert "add the test that fails without the fix" in _BUILD_BRIEF
+    assert "proceed with repairs" in _BUILD_BRIEF           # L1.38: repairs beat freezes

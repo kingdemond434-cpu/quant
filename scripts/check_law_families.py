@@ -48,7 +48,7 @@ FAMILIES: dict[str, tuple[tuple[str, ...], str, str]] = {
         "reading of a restraint, idling a ceiling, slowing after a null, or shipping a cadence "
         "nobody ever tried to raise"),
     "exploration": (
-        ("L1.9", "L1.11a", "L1.31", "L1.32", "L1.33", "L1.34", "L1.35"),
+        ("L1.9", "L1.11a", "L1.31", "L1.32", "L1.33", "L1.34", "L1.35", "L1.40"),
         "scripts/check_exploration.py",
         "the unknown-unknown organs decaying one at a time, each decay individually "
         "unremarkable, with no number that would show it"),

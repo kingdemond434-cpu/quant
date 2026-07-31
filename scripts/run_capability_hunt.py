@@ -109,7 +109,17 @@ breadth, never one at the cost of the other (L1.35). Each: IDEA -- mechanism/why
 growth -- rough ROI tier (S/A/B) -- where it routes (axis watchlist / ledger / a fence). These
 are RAW GENERATION: they are not required to be novel-checked or built this run -- the builder
 rows the strongest into the ledger for later screening, and screen-on-discipline decides. A run
-that produces one deep proposal and an empty brainstorm has left growth ideas on the table."""
+that produces one deep proposal and an empty brainstorm has left growth ideas on the table.
+
+THE BRAINSTORM IS ENDLESS AND MAY NEVER TERMINATE (L1.40, principal 2026-07-31: "maximum
+aggressive, endless list of max-ROI ideas always"). There is no state in which this desk has
+"enough ideas": generation sits at the top of every funnel, ideas are free, and screening is what
+costs -- so the correct number of ideas is always MORE. Specifically: an empty or near-empty
+brainstorm is a FAILED run, not a thin seam -- if your lens genuinely ran dry, SWITCH LENS mid-run
+and keep generating rather than stopping. Never write a closing summary, never say "that covers
+it", never rank-and-truncate to a comfortable number (L1.35). If you produced ten, the eleventh
+exists -- go get it. The only legitimate stop is your context window, and when you hit it, say so
+and name what you were about to write next so the following run resumes generating there."""
 
 _BUILD_BRIEF = """You are the BUILDER stage of the capability hunt. Two independent model
 families each proposed a missing capability. Read BOTH proposals:
@@ -140,7 +150,12 @@ ADJUDICATE with the desk's own discipline, then BUILD.
     check_scheduler_manifest, check_timidity_language. Then commit and push to master with a
     message naming what was missing and what it would have caught.
  6. Row anything you deliberately did NOT build via scripts/recommendations.py, with the reason.
- 7. ALPHA CANDIDATES GET THE SAME TREATMENT AS CAPABILITIES (principal 2026-07-31: "this is what
+ 7. IF THE WINNING PROPOSAL IS A DEFECT (a bug/flaw found by a defect lens): FIX IT IN THIS RUN,
+    add the test that fails without the fix, and say what it would have cost. A found-unfixed bug
+    is the L1.28b defect in its most expensive form. If the fix touches the money path, check
+    scripts/check_change_window.py first -- inside a live window, stage improvements but ALWAYS
+    proceed with repairs (L1.38).
+ 8. ALPHA CANDIDATES GET THE SAME TREATMENT AS CAPABILITIES (principal 2026-07-31: "this is what
     our system should always do, 6 times a day, with GPT and Claude both"). If the winning
     proposal is a TRADEABLE AXIS rather than an engine capability, its build IS its Stage-A
     screen: write the screen script + tests, schedule it in ops/crontab.manifest, run it, and
@@ -188,6 +203,28 @@ _ALPHA_LENSES: list[str] = [
     "a bar: an evidence accelerant (8h panels, event-density), a paper-sleeve auto-spawn, a "
     "resurrection-queue consumer. Time-to-alpha is a growth term.",
 ]
+#: DEFECT LENSES (principal 2026-07-31: "all bugs flaws should always be hunted and fixed too").
+#: The fences catch KNOWN defect classes; nothing hunted for the unknown ones. These lenses hunt
+#: code, not governance -- and the hunt FIXES what it finds in the same run (L1.39), which is why
+#: a defect draw is as valuable as an alpha draw: an undetected bug on the money path costs more
+#: than a missed edge.
+_DEFECT_LENSES: list[str] = [
+    "READ-WITHOUT-WRITER -- find a key/file/artifact that code READS and nothing WRITES. This "
+    "desk's most prolific defect class (the capital-event equity bug was exactly this). grep the "
+    "readers, then prove a writer exists.",
+    "SILENT-EXCEPT -- find an except/try that swallows a failure and lets the caller proceed as "
+    "if it succeeded. A swallowed order error once stranded ~$2,150 of real inventory.",
+    "UNMEASURED-REPORTED-AS-OK -- find a check or metric that returns a PASS/zero when its input "
+    "was absent. Unmeasured must never read as fine (L1.28a); both fences built today shipped "
+    "with this bug in their first run.",
+    "STALE-CONSUMER -- find code reading an artifact without checking its age, so a frozen "
+    "producer silently feeds yesterday's number into today's decision.",
+    "DEAD-BRANCH / ZERO-CALLER -- find a function, flag or config knob nothing calls or passes. "
+    "Built-never-wired is engineering already paid for returning zero (L2.9).",
+    "BOUNDARY / OFF-BY-ONE -- find an inequality, window edge, timezone join or rounding step "
+    "that is wrong at the boundary. Cross-source timestamp joins are the desk's repeat offender.",
+]
+
 _DEFENSIVE_LENSES: list[str] = [
     "INVERT A FENCE -- find the claim no fence tests for TRUTH (only for compliance).",
     "FOLLOW A NUMBER NOBODY OWNS -- a quantity that sets terminal wealth and is computed nowhere.",
@@ -208,13 +245,29 @@ _DEFENSIVE_LENSES: list[str] = [
 #: through all 8 across days -- so a 6-slot window is 4 offensive / 2 defensive, and over a few
 #: days every lens of both kinds is drawn (yield stays measurable per lens).
 def _build_lenses() -> list[str]:
+    """Weave the three kinds so EVERY 6-slot day hunts new alpha, guards the desk, AND hunts bugs.
+
+    Pattern per 6 slots: alpha, alpha, defect, alpha, defensive, defect -> 3 offensive / 2 defect
+    / 1 defensive. Defect draws are weighted equal to defensive ones because an undetected bug on
+    the money path costs more than a missed edge, and the fences only cover KNOWN defect classes.
+    Deterministic and fully covering: each list cycles independently, so every lens of every kind
+    is drawn as the days advance and per-lens yield stays measurable."""
+    kinds = ("A", "A", "X", "A", "D", "X")                 # X = defect
     out: list[str] = []
-    ai = di = 0
-    for k in range(24):                                    # length divisible by the 6-slot day
-        if k % 3 == 2:
+    ai = di = xi = 0
+    # CYCLE LENGTH 48, and the number is load-bearing -- a 24-slot cycle (the first version)
+    # contained only 4 defensive slots, so 4 of the 8 defensive lenses were UNREACHABLE FOREVER:
+    # half the defensive space silently dead while the rotation looked fair. 48 slots = 8
+    # defensive draws (all 8 lenses), 24 alpha (4 full cycles of 6) and 16 defect (covers all 6).
+    # Any future lens list must keep this invariant -- the coverage test pins it.
+    for k in range(48):                                    # divisible by the 6-slot day
+        kind = kinds[k % len(kinds)]
+        if kind == "A":
+            out.append(_ALPHA_LENSES[ai % len(_ALPHA_LENSES)]); ai += 1
+        elif kind == "D":
             out.append(_DEFENSIVE_LENSES[di % len(_DEFENSIVE_LENSES)]); di += 1
         else:
-            out.append(_ALPHA_LENSES[ai % len(_ALPHA_LENSES)]); ai += 1
+            out.append(_DEFECT_LENSES[xi % len(_DEFECT_LENSES)]); xi += 1
     return out
 
 
@@ -222,8 +275,19 @@ _LENSES: list[str] = _build_lenses()
 
 
 def _lens_for(stamp: str, slot: int) -> str:
-    """Deterministic rotation over (day, slot) -- every lens visited, none twice in a row."""
-    return _LENSES[(int(stamp) + slot) % len(_LENSES)]
+    """Deterministic rotation over (day, slot) with PROVABLE coverage: every lens is drawn within
+    one 8-day cycle, and the same slot never repeats a lens day to day.
+
+    THE BUG THIS FIXES (found by its own coverage test): the first version indexed on
+    `int(stamp)`, so consecutive days were not consecutive integers -- 20260831 -> 20260901 jumps
+    by 70, not 1. The rotation therefore skipped a chunk of the lens list at every month boundary
+    and left several lenses effectively unreachable. A date ORDINAL makes day-to-day steps
+    exactly +1, so 48 slots (6/day x 8 days) sweep the whole list with nothing dead."""
+    try:
+        d = datetime.strptime(stamp, "%Y%m%d").date().toordinal()
+    except ValueError:                                     # non-date stamp: degrade, never crash
+        d = sum(ord(c) for c in stamp)
+    return _LENSES[(d * 6 + slot) % len(_LENSES)]
 
 
 def _record_yield(root: Path, entry: dict[str, object]) -> None:
