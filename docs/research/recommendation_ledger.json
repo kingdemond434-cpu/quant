@@ -1718,6 +1718,18 @@
    "commit": null,
    "due": null,
    "note": "first version normalised shares to 1, so two perfect duplicates received the same total heat as two independent sleeves -- the exact failure the organ exists to prevent, committed inside the organ itself and caught by its own demonstration"
+  },
+  {
+   "id": "R0142",
+   "source": "claude",
+   "summary": "CALIBRATION PROBE -- test the load-bearing assumption under the entire discretionary sizer: that the model's stated probability means anything. Kelly is f*=(pb-q)/b, so if p is noise the sizer is not aggressive or conservative, it is ARBITRARY. Checked 2026-07-31: the desk had ZERO resolved forecasts. Not few -- zero. The most consequential input to the money path had never been scored on anything, and both trading sleeves were built to consume it. Calibration is a property of the FORECASTER, not of the strategy, so it is measurable TODAY with questions that resolve from public price data in hours: no capital, no venue keys, ~50 forecasts in two days at the cost of quota alone. Poses 6 directional questions every 6h on the sleeve's own instruments -- the same KIND of judgement it makes when trading, so the measured calibration transfers -- and resolves anything due from real bars. Pre-committed verdict: Brier >= 0.25 (the score of always answering 50%) means REMOVE the Kelly sizer and run flat size, because sizing on a meaningless number is strictly worse than not sizing on it.",
+   "roi_bps": 0.0,
+   "raised": "2026-07-31T21:00:00+00:00",
+   "status": "done",
+   "reason": "built, 8 tests, every 6h; feeds L1.29 which the conviction sizer already reads",
+   "commit": null,
+   "due": null,
+   "note": "the ordering was wrong and this makes it explicit: the sizer that consumes p was built before anything checked p was meaningful"
   }
  ]
 }

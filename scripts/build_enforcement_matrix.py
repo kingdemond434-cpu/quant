@@ -196,6 +196,10 @@ _MAP: dict[str, list[str]] = {
     # R0141: more sleeves multiply growth only if INDEPENDENT. Correlated sleeves draw down
     # together -- risk scales with N, growth with 1, and the desk pays N sets of costs for one bet.
     "L1.28b-sleeves": ["scripts/run_sleeve_allocator.py"],
+    # R0142: the load-bearing assumption under the whole sizer -- that a stated probability means
+    # anything. Zero resolved forecasts existed when this was checked. L1.29 scores it; this poses
+    # the questions that give L1.29 something to score without needing capital or venue keys.
+    "L1.29-probe": ["scripts/run_calibration_probe.py"],
     # L1.25a: null streaks throttle nothing -- an organ going quiet is caught by the freshness/
     # productivity wires REGARDLESS of its reason, so "stopped because nothing was working" trips
     # the same fence as "stopped because broken". The pessimism-freeze cannot hide.
