@@ -3395,7 +3395,7 @@
    ],
    "expected_benefit": "book resume latency collapses to principal-reaction time; scheduler corruption class (R0048 shape) structurally closed; gate-leak recovery becomes measurable from 08-10; 12 screening candidates queued on starved axes",
    "confidence": 0.85,
-   "success_metric": "REARM reply observed lifting freeze + book resumes within one tick; zero duplicate-organ fires in 7d of logs; reject scores >0 rows by 08-12; >=4 of 12 queue items screened by 08-04 (R0107)",
+   "success_metric": "REARM reply observed lifting freeze + book resumes within one tick; zero duplicate-organ fires in 7d of logs; reject scores >0 rows by 08-12; >=4 of 12 queue items screened by 08-04 (R0126)",
    "reversal_condition": "reply channel abused or misfires -> revert run_alerts poll block + move to authed ntfy; stagger causes a collector collision -> re-pin explicit slots; re-opened items that fail screens return to graveyard with BOTH kill records",
    "review_due": "2026-08-12"
   }

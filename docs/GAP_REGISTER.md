@@ -17,7 +17,7 @@ crash-hammered by systemd until the ban-latch fix). Movements this cycle, each a
   (smoke 10/10 on backdated cutoffs), repointed to sor_crypto (434 rejects; June FX store
   unscorable here, ledgered), wired daily 06:50. First scoreable cohort ~08-10.
 - **Generation: 2 new QUEUEs + 10 L1.16a re-opens** (recalibrated-gate victims, EV 0.002-0.019)
-  seed 6 of 9 clock-starved axes; screens = R0107 (due 08-04, harness R0108 first). energy/mining
+  seed 6 of 9 clock-starved axes; screens = R0126 (due 08-04, harness R0127 first). energy/mining
   honestly below bar (0.0011/0.0002).
 - Max-audit page writer: newest URGENT now owns line 1 (5th demotion-family member fixed).
 
