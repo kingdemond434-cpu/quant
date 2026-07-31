@@ -282,7 +282,12 @@ QUANT_ROOT=/home/quant/quant-platform
 # automatically when no key file exists and fires the moment credit lands -- no redesign.
 # EVIDENCE: scripts/run_strategic_director.py + libs/research/strategic_director.py (2026-07-30)
 # CONFIDENCE: committed-script (new this cycle)
-40 5,17 * * * cd "$QUANT_ROOT" && flock -n data/.cron_strategic_director.lock .venv/bin/python scripts/run_strategic_director.py --ledger >> data/cro_ai_logs/strategic_director.log 2>&1
+# RAISED to the information-matched ceiling (principal 2026-07-31): one director read after
+# EVERY brain slot (02:45/08:45/14:45/20:45 + ~2h for cycle outputs and kimi fires to land)
+# instead of after two of four. Beyond 4x/day the director re-reads unchanged desk state --
+# the honest ceiling is the information-arrival rate, not the cron syntax; the path past it
+# is EVENT-DRIVEN fires (rowed), not a denser fixed grid. Dormant until OpenRouter is funded.
+40 4,10,16,22 * * * cd "$QUANT_ROOT" && flock -n data/.cron_strategic_director.lock .venv/bin/python scripts/run_strategic_director.py --ledger >> data/cro_ai_logs/strategic_director.log 2>&1
 
 # BACKTEST ENGINE SELF-VERIFICATION: cross-checks the event-driven engine against an independent
 # pure-NumPy reference that shares no code path with it. Activates libs/backtest, which max_audit

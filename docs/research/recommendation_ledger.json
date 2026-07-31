@@ -1303,6 +1303,18 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0108",
+   "source": "principal",
+   "summary": "EVENT-DRIVEN STRATEGIC DIRECTOR (max-frequency mechanism beyond the 4x/day info-matched grid): fire the GPT-9 director immediately on state-changing events -- deep-sweep synthesis landing, gate-topology ruling, rail/ruin event, first live fills, capital event -- via a small event-watcher that invokes run_strategic_director.py with the triggering artifact named. Fixed grids re-read unchanged state; events ARE the information arrival",
+   "roi_bps": 20.0,
+   "raised": "2026-07-31T09:20:08.591409+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
