@@ -81,9 +81,9 @@ QUANT_ROOT=/home/quant/quant-platform
 # 2026-07-24 incident class ($21.48 in one day from unbounded resend). Each run executes the full
 # wave 1->2->3 protocol; duplicate finds are suppressed by the graveyard + novelty gate, so extra
 # frequency cannot manufacture duplicate work.
-5 */4 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/kimi_hunter.py >> data/cro_ai_logs/kimi_hunter.log 2>&1
+5 */3 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/kimi_hunter.py >> data/cro_ai_logs/kimi_hunter.log 2>&1
 # WEEKLY DEEP: longer budget, targets previously unexplored languages/regions/eras per L1.11a.
-35 5 * * 0 cd "$QUANT_ROOT" && .venv/bin/python scripts/kimi_hunter.py --deep >> data/cro_ai_logs/kimi_hunter_deep.log 2>&1
+35 5 * * 0,3 cd "$QUANT_ROOT" && .venv/bin/python scripts/kimi_hunter.py --deep >> data/cro_ai_logs/kimi_hunter_deep.log 2>&1
 
 # INTELLIGENCE CYCLE: activates the dormant intelligence-compounding layer. MEASURED 2026-07-30:
 # meta_learning, research_priority, capital_reallocator, health_monitor, marketplace,
@@ -93,7 +93,7 @@ QUANT_ROOT=/home/quant/quant-platform
 # gap, never a silent skip.
 # EVIDENCE: scripts/run_intelligence_cycle.py (built 2026-07-30); docs/CONSTITUTION.md L2.9
 # CONFIDENCE: committed-script (new this cycle)
-50 */6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_intelligence_cycle.py >> data/cro_ai_logs/intelligence_cycle.log 2>&1
+50 */4 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_intelligence_cycle.py >> data/cro_ai_logs/intelligence_cycle.log 2>&1
 
 # ENFORCEMENT MATRIX: maps all 43 constitutional principles to the 71 mechanical fences, in BOTH
 # directions, and FAILS on any of three defects: an unenforced principle, a mapping to a missing
@@ -191,7 +191,7 @@ QUANT_ROOT=/home/quant/quant-platform
 # touched, not even proposed. Idempotent: rewrites its own fenced block, never hand-written lines.
 # EVIDENCE: scripts/run_wiring_agent.py (built 2026-07-30); docs/CONSTITUTION.md L2.9
 # CONFIDENCE: committed-script (new this cycle)
-44 9 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_wiring_agent.py --apply >> data/cro_ai_logs/wiring_agent.log 2>&1
+44 */6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_wiring_agent.py --apply >> data/cro_ai_logs/wiring_agent.log 2>&1
 
 # MINER RUNWAY DOCTOR: daily. Distinguishes never-ran / creds-missing / not-scheduled / stale
 # per seat and reports the CAUSE with its blast radius -- 6 of 7 frontier regions had ZERO runs
@@ -236,7 +236,7 @@ QUANT_ROOT=/home/quant/quant-platform
 # ample: the eligible set only changes when a single-axis screen returns SCREEN-INTERESTING.
 # EVIDENCE: scripts/run_fusion_search.py + libs/research/fusion_search.py (built 2026-07-30)
 # CONFIDENCE: committed-script (new this cycle)
-8 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_fusion_search.lock .venv/bin/python scripts/run_fusion_search.py >> data/cro_ai_logs/fusion_search.log 2>&1
+8 5,17 * * * cd "$QUANT_ROOT" && flock -n data/.cron_fusion_search.lock .venv/bin/python scripts/run_fusion_search.py >> data/cro_ai_logs/fusion_search.log 2>&1
 
 # STRATEGIC DIRECTOR (RANK 3): a runtime ROLE, not a doctrine document -- dossier -> prompt ->
 # ENFORCED output contract -> accepted recommendations written to the recommendation ledger, where
@@ -248,7 +248,7 @@ QUANT_ROOT=/home/quant/quant-platform
 # automatically when no key file exists and fires the moment credit lands -- no redesign.
 # EVIDENCE: scripts/run_strategic_director.py + libs/research/strategic_director.py (2026-07-30)
 # CONFIDENCE: committed-script (new this cycle)
-40 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_strategic_director.lock .venv/bin/python scripts/run_strategic_director.py --ledger >> data/cro_ai_logs/strategic_director.log 2>&1
+40 5,17 * * * cd "$QUANT_ROOT" && flock -n data/.cron_strategic_director.lock .venv/bin/python scripts/run_strategic_director.py --ledger >> data/cro_ai_logs/strategic_director.log 2>&1
 
 # INBOUND DEPLOY ("merge is deploy", EXECUTION_QUEUE.md RANK 7). git_snapshot.py pushed
 # VPS -> GitHub and NOTHING came back, so merging to master deployed nothing and every change
@@ -596,3 +596,30 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # CONFIDENCE: committed-script (flock-guarded against the live twins)
 45 8 * * * cd "$QUANT_ROOT" && flock -n /tmp/cro_ai.cron.lock bash ops/run_cro_ai.sh >/dev/null 2>&1
 0 3 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-frontier.timer >/dev/null 2>&1 || flock -n /tmp/seat_frontier.lock /bin/bash ops/run_frontier_rotation.sh >> data/cro_ai_logs/seat_frontier.log 2>&1; }
+
+# SECOND DAILY DIG SLOTS (principal order 2026-07-31 "do this for everything"): prospector,
+# litminer and dataaxis get a pre-dawn twin, doubling seat throughput. Same flocks as the primary
+# slots, so a long-running morning dig makes the twin a no-op rather than a double-run; resumable
+# rotations mean a mid-dig quota death costs nothing (the region re-digs next slot). Quota
+# contention is a PAGED, self-healing transition (brain_auth_check walks the model chain), not an
+# outage -- that fallback existing is what makes this raise safe where it was not on 07-24.
+# EVIDENCE: this order; ops/brain_env.sh model-chain fallback; seat flocks above
+# CONFIDENCE: committed-script
+0 6 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-prospector.timer >/dev/null 2>&1 || flock -n /tmp/seat_prospector.lock /bin/bash ops/run_prospector_dig.sh >> data/cro_ai_logs/seat_prospector.log 2>&1; }
+0 7 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-litminer.timer >/dev/null 2>&1 || flock -n /tmp/seat_litminer.lock /bin/bash ops/run_litminer_dig.sh >> data/cro_ai_logs/seat_litminer.log 2>&1; }
+0 5 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-dataaxis.timer >/dev/null 2>&1 || flock -n /tmp/seat_dataaxis.lock /bin/bash ops/run_dataaxis_dig.sh >> data/cro_ai_logs/seat_dataaxis.log 2>&1; }
+
+# BLIND-SPOT ORGANS WIRED (principal order 2026-07-31: "unknown of unknown everything too").
+# Both existed, both ran clean when invoked, NEITHER was scheduled -- unknown-unknown hunting was
+# itself a dormant capability, which is the joke L2.9 exists to stop. Both are pure-local, no LLM,
+# no credit, seconds of compute:
+#   blindspot_max    the four mechanically-findable classes of unmapped dimension (unread fields,
+#                    orphan joins, silent units, unused granularity). DAILY -- its inputs are the
+#                    code+data maps, which change daily.
+#   blindspot_prober six orthogonal lenses that GENERATE "what did we never mine and why not?"
+#                    probes. WEEKLY (Sat) -- its consumers are the weekly sweep + NEW_BRANCHES
+#                    funding slice, so faster produces probes nothing reads yet.
+# EVIDENCE: both executed 2026-07-31 -> data/blindspot_max.json + data/blindspot_probes.json
+# CONFIDENCE: committed-script
+10 3 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/blindspot_max.py >> data/cro_ai_logs/blindspot_max.log 2>&1
+25 21 * * 6 cd "$QUANT_ROOT" && .venv/bin/python scripts/blindspot_prober.py >> data/cro_ai_logs/blindspot_prober.log 2>&1
