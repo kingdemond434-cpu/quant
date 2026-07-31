@@ -31,6 +31,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 
 _ROOT = Path(__file__).resolve().parent.parent
@@ -66,6 +67,9 @@ def build_report() -> dict[str, object]:
     else:
         status = "OK"
     return {
+        # L1.44: a fence artifact without a content stamp cannot be age-checked -- mtime lies
+        # fresh after every deploy. This fence shipped without one (capability hunt 2026-07-31).
+        "generated": datetime.now(tz=UTC).isoformat(),
         "status": status,
         "n_forecasts": total,
         "n_resolved": n_resolved,

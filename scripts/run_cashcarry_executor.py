@@ -35,6 +35,7 @@ from libs.execution.carry_accounting import (
     derive_spot_realized,
     read_income,
 )
+from libs.ops.fresh import read_fresh  # L1.44: decision-path reads carry freshness contracts
 from libs.ops.lawful import guard as _law_guard  # L1.42: no act exempt
 from libs.risk import capital_events, risk_controls
 
@@ -178,9 +179,17 @@ _NAV = Path("data/nav_attestation.jsonl")
 
 def _is_live() -> bool:
     """True ONLY when the stage machine proves S1+ (Gate 0 passed). Any error, missing file or
-    S0/paper reads as NOT live, so compounding stays off. Fail-safe by construction."""
+    S0/paper reads as NOT live, so compounding stays off. Fail-safe by construction.
+
+    L1.44 state-kind contract: stage_state.json is valid-until-changed, so its own age proves
+    nothing -- the read is trustworthy iff its GUARDIAN (run_live_guard, the tripwire/demotion
+    evaluator) is alive. The decision below is unchanged either way (fail-safe already); the
+    contract makes a dead guardian visible as a consumed-state event instead of silence."""
     try:
-        return str(json.loads(_STAGE.read_text("utf-8")).get("stage", "S0")).upper() in ("S1", "S2")
+        fr = read_fresh(_STAGE, max_age_h=1.0, kind="state",
+                        guardian="data/live_guard.json",
+                        caller="run_cashcarry_executor._is_live")
+        return str((fr.data or {}).get("stage", "S0")).upper() in ("S1", "S2")
     except Exception:
         return False
 
@@ -340,10 +349,16 @@ _BLEED_MIN_N = 5          # minimum closed trades before the verdict is trusted
 
 
 def _structurally_bleeding(sym: str) -> bool:
-    """True => this symbol has PROVEN it loses money for the desk; block new opens."""
-    try:
-        rows = json.loads(_FORENSICS.read_text("utf-8")).get("worst_symbols", [])
-    except (OSError, json.JSONDecodeError, TypeError, ValueError):
+    """True => this symbol has PROVEN it loses money for the desk; block new opens.
+
+    L1.44 contract (48h: forensics is produced daily): deny-direction data never loosens with
+    age, so a STALE denylist STILL DENIES -- the fence owns chasing the dead producer. Only an
+    unreadable file falls back to allow, exactly as before, and that read is now recorded
+    instead of silent."""
+    fr = read_fresh(_FORENSICS, max_age_h=48.0,
+                    caller="run_cashcarry_executor._structurally_bleeding")
+    rows = fr.data.get("worst_symbols") if isinstance(fr.data, dict) else None
+    if not isinstance(rows, list):
         return False
     for r in rows:
         try:
@@ -359,11 +374,18 @@ def _rt_bps(sym: str) -> float:
     """This symbol's MEASURED round-trip cost, else the desk median. Self-improving: as the
     recorder accrues the traded names, the gate automatically tightens on expensive books
     (NOMUSDT realised -149 bps, KNCUSDT -211 bps -- thin books where slippage dominates)."""
+    fr = read_fresh(_COST_MODEL, max_age_h=48.0, caller="run_cashcarry_executor._rt_bps")
     try:
-        m = json.loads(_COST_MODEL.read_text("utf-8"))["symbols"][sym]["pair"]["500"]
+        m = fr.data["symbols"][sym]["pair"]["500"]
         v = m.get("pair_roundtrip_bps")
-        return float(v) if v is not None else _DEFAULT_RT_BPS
-    except (OSError, json.JSONDecodeError, KeyError, TypeError, ValueError):
+        if v is None:
+            return _DEFAULT_RT_BPS
+        # L1.44 stale degrade: a stale measured cost may only TIGHTEN this gate, never loosen
+        # it. max() keeps a proven-expensive name (KNC -211bps) expensive when the model
+        # freezes, and stops a stale "cheap" reading from admitting opens the current book
+        # would refuse. New opens only, as ever -- this can never force-close a held carry.
+        return float(v) if fr.fresh else max(float(v), _DEFAULT_RT_BPS)
+    except (KeyError, TypeError, ValueError):
         return _DEFAULT_RT_BPS
 
 
@@ -1040,13 +1062,17 @@ _GUARD: dict[str, Any] = {"size_frac": 1.0, "limit_only": False}
 
 def _refresh_guard() -> None:
     _GUARD.update({"size_frac": 1.0, "limit_only": False})
+    # L1.44 contract (0.25h = the guard's own 900s inline rule, now recorded): the fail direction
+    # stays OPEN by documented design ("stale guard is no guard" -- the KILL file is the freeze
+    # authority), but a dead guard can never write its own KILL, so run_alerts now pages
+    # live_guard_dead and this read leaves a stale_read record instead of degrading silently.
     try:
-        g = json.loads((Path("data/live_guard.json")).read_text("utf-8"))
-        at = datetime.fromisoformat(str(g.get("generated", "1970-01-01T00:00:00+00:00")))
-        if (datetime.now(tz=UTC) - at).total_seconds() > 900:
+        fr = read_fresh("data/live_guard.json", max_age_h=0.25,
+                        caller="run_cashcarry_executor._refresh_guard")
+        if not fr.fresh or not isinstance(fr.data, dict):
             return                                          # stale guard is no guard
-        _GUARD["size_frac"] = min(1.0, max(0.0, float(g.get("effective_size_fraction", 1.0))))
-        _GUARD["limit_only"] = str(g.get("canary", {}).get("mode", "")) == "limit_only"
+        _GUARD["size_frac"] = min(1.0, max(0.0, float(fr.data.get("effective_size_fraction", 1.0))))
+        _GUARD["limit_only"] = str(fr.data.get("canary", {}).get("mode", "")) == "limit_only"
     except Exception:
         return
 

@@ -348,6 +348,17 @@ QUANT_ROOT=/home/quant/quant-platform
 # CONFIDENCE: committed-script (new this cycle)
 20 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_replacement_rate.py >> data/cro_ai_logs/replacement_rate.log 2>&1
 
+# CONSUMPTION-TIME FRESHNESS (L1.44, capability hunt 2026-07-31): every decision-path read
+# declares its max tolerated age at the read site (libs.ops.fresh.read_fresh); this fence joins
+# {artifact age x consumer contract x recent reads} and FAILS on STALE-CONSUMED (a live decision
+# steered by a frozen input, caller named) and UNWIRED (an executor/alerts contract deleted).
+# Zero contracts reads UNMEASURED, never OK. CADENCE: hourly -- data-arrival bound (L1.28c):
+# contracts arrive with every executor tick, the cost of a stale-consumed hour on the money path
+# is real, and the fence is pure-CPU so denser is nearly free.
+# EVIDENCE: scripts/check_freshness.py -> data/freshness_status.json; CONSTITUTION L1.44
+# CONFIDENCE: committed-script (new this cycle)
+52 * * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_freshness.py >> data/cro_ai_logs/freshness.log 2>&1
+
 # CAPABILITY HUNT (L1.31, principal order 2026-07-31): "chatgpt and claude both hunt for what to
 # add, what's missing, and IMPLEMENT it" -- what this session did by hand, every day, unprompted.
 # TWO INDEPENDENT FAMILIES on purpose: a Claude seat and the GPT-9 seat propose the missing

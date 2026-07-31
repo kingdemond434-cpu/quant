@@ -304,14 +304,34 @@ def _from_calibration() -> list[dict[str, Any]]:
                   "data/calibration_status.json")]
 
 
+def _from_freshness() -> list[dict[str, Any]]:
+    """Are live decisions consuming frozen inputs? (L1.44)
+
+    fresh_fraction is the aspect. STALE-CONSUMED means a decision path is being steered by a
+    dead producer's last output RIGHT NOW -- money_path_correctness by definition, because the
+    bootstrap contracts are the executor's own read sites. UNMEASURED (zero contracts) reports
+    unmeasured and ranks above partially-complete work, as everywhere else."""
+    d = _json("data/freshness_status.json") or {}
+    st = str(d.get("status", "UNMEASURED"))
+    frac = d.get("fresh_fraction")
+    measured = st != "UNMEASURED" and frac is not None
+    return [_item("freshness::contracts_fresh", "money_path_correctness",
+                  float(frac) if measured else None, 1.0,
+                  str(d.get("detail", "no freshness artifact")),
+                  "revive the dead producer or re-wire the caller through "
+                  "libs.ops.fresh.read_fresh -- check_freshness.py names both ends of every "
+                  "stale edge",
+                  "data/freshness_status.json")]
+
+
 def build(*, refresh: bool = True) -> dict[str, Any]:
     if refresh:
         for s in ("check_ratchets.py", "check_utilisation.py", "build_enforcement_matrix.py",
-                  "check_conversion.py", "check_calibration.py"):
+                  "check_conversion.py", "check_calibration.py", "check_freshness.py"):
             _refresh(s)
     items = (_from_ratchets() + _from_utilisation() + _from_matrix()
              + _from_wiring() + _from_register() + _from_conversion()
-             + _from_tier_benchmark() + _from_calibration())
+             + _from_tier_benchmark() + _from_calibration() + _from_freshness())
     items.sort(key=lambda r: -float(r["score"]))
     at_ceiling = [i for i in items if i["measured"] and i["gap_fraction"] <= 0.0]
     unmeasured = [i for i in items if not i["measured"]]
