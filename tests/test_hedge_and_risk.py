@@ -97,6 +97,16 @@ def test_net_includes_realized_spot_of_closed_carries():
     assert abs(p.net_pnl - (p.fut_pnl + p.spot_leg_pnl + 400.0)) < 1e-6
 
 
+def test_unmeasured_funding_is_labelled_not_fabricated():
+    # R0013: during a venue outage the executor emits funding_measured=false; the 0.0 the
+    # dashboard then shows is an ABSENCE, not a harvest of zero. The flag must survive all the
+    # way through to_public so no surface can present a fabricated number as a measurement.
+    p = _book(funding=0.0, funding_measured=False)
+    pub = p.to_public()
+    assert pub["deployed"]["funding_measured"] is False
+    assert _book().to_public()["deployed"]["funding_measured"] is True   # default: measured
+
+
 # ---------------- income ledger: pagination past the venue's 1000-row cap ----------------
 def _income_page(t0, n, tran0):
     return [{"incomeType": "FUNDING_FEE", "income": "1.0", "time": t0 + i,

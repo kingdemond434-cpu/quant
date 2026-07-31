@@ -127,6 +127,47 @@ def _measured_side_cost(sym: str, adv_usd: float) -> float:
         return adv_tier_cost(adv_usd)
 
 
+def _graveyard() -> dict:
+    """Mirror the FULL graveyard into the discovery surface (R0009).
+
+    discovery.json carried sleeve results only, so every consumer of the web surface saw a
+    handful of live tests and none of the ~50+ buried hypotheses -- the exact amnesia the
+    do_not_repeat discipline exists to prevent. Sources: the graveyard table in
+    docs/graveyard.md (human record) and research_agenda.json's do_not_repeat (machine record).
+    Read-only best effort: a missing source is reported absent, never fabricated empty.
+    """
+    entries: list[dict[str, str]] = []
+    sources: dict[str, str] = {}
+    gy = Path("docs/graveyard.md")
+    if gy.exists():
+        rows = [ln for ln in gy.read_text("utf-8").splitlines()
+                if ln.startswith("|") and not set(ln) <= {"|", "-", " ", ":"}]
+        for ln in rows[1:]:                                   # first | row is the header
+            cells = [c.strip() for c in ln.strip("|").split("|")]
+            if cells and cells[0]:
+                entries.append({"name": cells[0][:80],
+                                "reason": (cells[1] if len(cells) > 1 else "")[:160],
+                                "source": "docs/graveyard.md"})
+        sources["docs/graveyard.md"] = f"{max(0, len(rows) - 1)} table rows"
+    else:
+        sources["docs/graveyard.md"] = "ABSENT"
+    try:
+        agenda = json.loads(Path("research_agenda.json").read_text("utf-8"))
+        dnr = agenda.get("do_not_repeat", [])
+        for item in dnr:
+            if isinstance(item, dict):
+                entries.append({"name": str(item.get("hypothesis") or item.get("name"))[:80],
+                                "reason": str(item.get("reason", ""))[:160],
+                                "source": "research_agenda.do_not_repeat"})
+            else:
+                entries.append({"name": str(item)[:80], "reason": "",
+                                "source": "research_agenda.do_not_repeat"})
+        sources["research_agenda.do_not_repeat"] = str(len(dnr))
+    except (OSError, json.JSONDecodeError):
+        sources["research_agenda.do_not_repeat"] = "UNREADABLE"
+    return {"n": len(entries), "sources": sources, "entries": entries}
+
+
 def main() -> None:
     close, funding, basis, taker, adv = _panels()
     if close.shape[1] < 12:
@@ -194,7 +235,7 @@ def main() -> None:
     shadow = [r["sleeve"] for r in results if r["status"].startswith(("SHADOW", "DEPLOY"))]
     payload = {"updated": datetime.now(tz=UTC).isoformat(), "tested": len(results),
                "shadow_eligible": shadow, "results": results, "pending": pending,
-               "ortho_threshold": _ORTHO}
+               "ortho_threshold": _ORTHO, "graveyard": _graveyard()}
     _WEB.parent.mkdir(parents=True, exist_ok=True)
     _WEB.write_text(json.dumps(payload, indent=2, default=str), "utf-8")
     print(f"discovery: tested {len(results)} sleeves; shadow-eligible (orthogonal +edge): {shadow}")

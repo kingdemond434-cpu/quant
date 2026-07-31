@@ -112,11 +112,11 @@
    "summary": "O7 data-moat hygiene: terminal-mark 340 phantom queued v1 campaign rows (frozen since 06-22) and regenerate web/discovery.json to actually mirror the full graveyard table (today it carries sleeve results only)",
    "roi_bps": null,
    "raised": "2026-07-26T11:45:42.421033+00:00",
-   "status": "scheduled",
-   "reason": "mechanical json hygiene (terminal-mark 340 frozen v1 rows); 20-minute task, next cycle's mechanical opener",
-   "commit": null,
-   "due": "2026-08-01",
-   "disposed": "2026-07-31T07:20:52.798786+00:00"
+   "status": "implemented",
+   "reason": "341 phantom v1 campaigns terminal-marked (cancelled + dated note; cleanup collects per queue design) and web/discovery.json now mirrors the full graveyard: 85 entries (43 graveyard.md table rows + 42 do_not_repeat), verified in the regenerated artifact",
+   "commit": "HEAD",
+   "due": null,
+   "disposed": "2026-07-31T16:59:39.092205+00:00"
   },
   {
    "id": "R0010",
@@ -160,11 +160,11 @@
    "summary": "live_book.py:159 coerces a null funding_harvested to 0.0 via _num(), so the molded dashboard still shows a fabricated zero during a venue outage even though the executed book now emits funding_measured=false. Thread the measured flag through live_book.to_public().",
    "roi_bps": 0.0,
    "raised": "2026-07-26T20:26:09.605574+00:00",
-   "status": "scheduled",
-   "reason": "real small bug (null coerced to fabricated 0.0 on molded dashboard); scheduled next cycle with the money-path batch R0020/R0025/R0026",
-   "commit": null,
-   "due": "2026-08-01",
-   "disposed": "2026-07-31T07:20:22.788087+00:00"
+   "status": "implemented",
+   "reason": "funding_measured threaded executor->LivePortfolio->to_public with regression pin; a venue-outage zero is now labelled absence, not measurement",
+   "commit": "HEAD",
+   "due": null,
+   "disposed": "2026-07-31T16:55:09.621838+00:00"
   },
   {
    "id": "R0014",
@@ -326,11 +326,11 @@
    "summary": "Root-cause the -51.74 bps price_pnl on delta-neutral carry round-trips (should be ~0): decompose into leg asymmetry vs entry/exit spread vs basis drift vs the naked-long-spot incident window. Decides whether the desk's only sleeve is viable; blocks any resume decision.",
    "roi_bps": 100.0,
    "raised": "2026-07-28T20:26:42.266235+00:00",
-   "status": "scheduled",
-   "reason": "gates the carry promotion decision (fast-track clock day 35/40); decomposition from owned fills, no new data needed",
-   "commit": null,
-   "due": "2026-08-01",
-   "disposed": "2026-07-31T07:20:22.992619+00:00"
+   "status": "implemented",
+   "reason": "DECOMPOSED from data/cashcarry_trades.json (254 closes): price_pnl is NOT structural -- pre-incident closes net +0.46 bps on 111k notional (n=229, delta-neutral behaving as designed); the drag concentrates in the 07-19..28 churn/incident era (07-25..28 window -54.6 bps on 18.9k; naked already-flat closes -68 bps on 4.7k; worst days 07-13/-21/-22 pre-window offset by winners). Forensics' -234 net == incident-era total. VERDICT: price leg does not block resume; binding sleeve question is fees-vs-funding (echo falsifier 08-03) + R0062 attribution fix",
+   "commit": "HEAD",
+   "due": null,
+   "disposed": "2026-07-31T16:57:27.238953+00:00"
   },
   {
    "id": "R0027",
@@ -483,10 +483,10 @@
    "roi_bps": 40.0,
    "raised": "2026-07-29T16:11:51.657588+00:00",
    "status": "scheduled",
-   "reason": "Tier-3, principal-only: re-baselining a fired ruin rail may never be self-applied. Paged with full evidence 2026-07-29 (data/PRINCIPAL_ACTION.md, A/B/C ask).",
+   "reason": "blocked on the principal's A/B/C reply (URGENT page live since 08:35Z, re-reminded daily); pre-conditions both landed and verified (deadman re-armed on true equity HW 6,257, _MIN_FUNDING deleted). Re-checks daily; escalates if unanswered 08-02",
    "commit": null,
-   "due": "2026-08-01",
-   "disposed": "2026-07-29T16:11:51.729614+00:00"
+   "due": "2026-08-02",
+   "disposed": "2026-07-31T16:57:27.306083+00:00"
   },
   {
    "id": "R0040",
@@ -518,11 +518,11 @@
    "summary": "ROW COUNT IS NOT HISTORY DEPTH, and the depth monitor cannot see the difference: data/defi_lending.jsonl holds 11,755 rows spanning only 2026-07-28 -> 07-30 (~2 days) -- it is a cross-sectional snapshot of thousands of DeFi pools sampled a few times, not a time series. Screening it as one would produce pure garbage from an axis that looks like the deepest on disk. max_audit's depth-parity check does not list defi_lending at all, so an ingested axis with a 2-day history is INVISIBLE to the depth monitor while shallow-but-real axes (kimchi 8d, cny 7d) are correctly flagged. FIX: measure depth as DISTINCT DAYS SPANNED, never line count, and enrol every ingested jsonl axis in the depth registry so none can hide.",
    "roi_bps": null,
    "raised": "2026-07-30T02:42:03.033543+00:00",
-   "status": "scheduled",
-   "reason": "Cheap, mechanical, and it silently corrupts any future screen that trusts line count as depth -- exactly the class that produces a confident phantom. Small enough to build inside the next cycle's sweep step.",
-   "commit": null,
-   "due": "2026-08-01",
-   "disposed": "2026-07-30T02:42:24.907522+00:00"
+   "status": "implemented",
+   "reason": "verified by fresh reads: build_data_registry (gap #77 fix) measures spans separately from rows -- data_assets.json shows defi_lending span=4d measured beside rows=20,439; data_vitals scores quality only; screens read the daily-aggregated defi_util_axis (4 rows). No monitor reports rows as depth for this asset any longer",
+   "commit": "HEAD",
+   "due": null,
+   "disposed": "2026-07-31T16:55:53.856829+00:00"
   },
   {
    "id": "R0043",
@@ -614,11 +614,11 @@
    "summary": "RECONCILE max_audit.check_welded_gates with reality: it reported 19 welded paths at 12:01 on 2026-07-30 while grep finds 5 matches, 4 of which are the detector itself, a diagnostic, the legacy definition, and R0044's documented row-mean exception. Either the check counts import lines rather than live gate calls, or it excludes campaign_gate_stats callers it should credit. A defect counter that includes its own pattern string and cannot be zeroed even at full migration is a permanently-firing gate -- the exact GATE-OPTIMALITY defect class (a check that can never read clean carries no information and trains the desk to ignore it). Fix the check, then let 19->0 mean what the register claims it means.",
    "roi_bps": 1.0,
    "raised": "2026-07-30T12:24:52.659601+00:00",
-   "status": "scheduled",
-   "reason": "Bundled with R0047 (both are 'the gate lies about its own state' defects in the same two files) so one clean pass fixes the CI skip-exit-0 fail-open and the welded-gate miscount together. Not built this cycle because the count's correctness depends on whether run_options_vrp_backtest's row-mean exception should be credited as migrated -- an R0044 scoping question due 08-02, and guessing it now would just move the wrong number.",
-   "commit": null,
-   "due": "2026-08-01",
-   "disposed": "2026-07-30T12:31:28.419996+00:00"
+   "status": "implemented",
+   "reason": "reconciled by fresh isolated run: check_welded_gates now reports exactly 1 real weld (run_options_vrp_backtest.py; migration R0132 due 08-02). The 19 reading was true pre-migration state on 07-30, not a counting bug -- the weld signature (campaign_pbo_rc + pbo=/rc= handoff, exemptions for shim/harness/scanner) is grep-coherent today",
+   "commit": "HEAD",
+   "due": null,
+   "disposed": "2026-07-31T16:58:35.048142+00:00"
   },
   {
    "id": "R0051",
@@ -638,11 +638,11 @@
    "summary": "scripts/certify_gauntlet.py writes reports/gauntlet_certification.json ONLY at the end, so a timeout or kill discards the whole run -- on 2026-07-30 that put ~50 minutes of Romano-Wolf bootstrap compute at risk of yielding zero artifact, on a 2-core box where the run does not comfortably fit one wall-clock window. Every row is independently meaningful (one control, both gate paths), so it should append incrementally (jsonl or rewrite-after-each-row) and support --resume by skipping rows already present. Same shape as the desk's own 'uncommitted output DID NOT HAPPEN' rule applied to compute: an expensive measurement that only persists on clean exit is one SIGTERM from never having run.",
    "roi_bps": 1.0,
    "raised": "2026-07-30T12:46:02.427501+00:00",
-   "status": "scheduled",
-   "reason": "Self-inflicted robustness gap in code shipped this cycle; cheap and clearly net-positive. Scheduled rather than patched immediately because the process is mid-run and editing the script under it would change nothing for this run while risking the one artifact still in flight.",
-   "commit": null,
-   "due": "2026-08-01",
-   "disposed": "2026-07-30T12:46:02.544336+00:00"
+   "status": "implemented",
+   "reason": "RUNNING checkpoint written after every ~50s bootstrap row; final write carries status COMPLETE; partial runs now survive kills",
+   "commit": "HEAD",
+   "due": null,
+   "disposed": "2026-07-31T16:54:10.479290+00:00"
   },
   {
    "id": "R0053",
@@ -770,11 +770,11 @@
    "summary": "FIRE certify_gauntlet.py and commit its artifact: force-track reports/gauntlet_certification.json (reports/ is gitignored), checkpoint rows incrementally instead of writing only after all rows complete (R0052 named this exact risk), and REOPEN R0017 which was disposed IMPLEMENTED on a run that wrote 0 bytes.",
    "roi_bps": null,
    "raised": "2026-07-30T17:32:56.049950+00:00",
-   "status": "scheduled",
-   "reason": "Carry-over item gate-optimality-zero-survivors, 5d old. The measurement it would produce was partly taken this cycle by direct probe (a Sharpe-10 control clears dsr/cscv/Romano-Wolf on the per-candidate path, and was the only 1 of 421 admitted), so the funnel is NOT welded shut -- but the seed sweep, null false-pass rate and end-to-end validate() verdict remain untaken.",
-   "commit": null,
-   "due": "2026-08-01",
-   "disposed": "2026-07-30T17:33:17.814373+00:00"
+   "status": "implemented",
+   "reason": "certification artifact (21 rows, 04:55Z) force-tracked past the reports/ gitignore; R0017 corrected via reopen row; incremental checkpointing shipped (R0052)",
+   "commit": "HEAD",
+   "due": null,
+   "disposed": "2026-07-31T16:54:10.556388+00:00"
   },
   {
    "id": "R0064",
@@ -1802,6 +1802,54 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0149",
+   "source": "cycle",
+   "summary": "REOPEN of R0017 substance (dispositions never revert, so this is the correction row): R0017 was disposed IMPLEMENTED against a certify_gauntlet run that wrote 0 bytes (end-only artifact write + timeout). Corrected 2026-07-31: complete 21-row certification artifact exists (04:55Z run: legacy welded path admits NOTHING to SR 15, per-candidate admits from SR>=5 with null false-pass 0.0), now force-tracked in git; certify writes RUNNING checkpoints every row so a kill can never zero a run again.",
+   "roi_bps": 3.0,
+   "raised": "2026-07-31T16:54:10.300042+00:00",
+   "status": "implemented",
+   "reason": "artifact committed + checkpointing live in the same commit",
+   "commit": "HEAD",
+   "due": null,
+   "disposed": "2026-07-31T16:54:10.408385+00:00"
+  },
+  {
+   "id": "R0150",
+   "source": "panel",
+   "summary": "tier1 panel rider (nvidia free seat, 07-31): raw-repo-access A/B for the tier1 mission -- one panel run with read-only repo access on ONE component (libs/execution/staging.py + promotion path) vs the sanitized dossier; adopt raw access iff >=2 material findings missed by sanitized AND <=1 false positive. Blocked on the same OpenRouter top-up as the payload A/B; fold both into the first funded run.",
+   "roi_bps": 2.0,
+   "raised": "2026-07-31T16:57:37.379598+00:00",
+   "status": "scheduled",
+   "reason": "runs in the first funded panel window (OpenRouter top-up on the principal page); paired with the standing full-vs-tiered payload A/B",
+   "commit": null,
+   "due": "2026-08-06",
+   "disposed": "2026-07-31T16:57:49.482389+00:00"
+  },
+  {
+   "id": "R0151",
+   "source": "panel",
+   "summary": "tier1 panel rider (07-31) + meta-blindspots memory agree: the Frankenstein synthesizer has ~30 logged cycles with no documented improvement in discovery rate/validation throughput/survivor quality, and its output routes to a write-only inbox. Verify gen_diversity metrics before/after wiring commit 8da8acd; if flat, RETIRE it (L2.9 exit) -- complexity without evidence.",
+   "roi_bps": 2.0,
+   "raised": "2026-07-31T16:57:37.455531+00:00",
+   "status": "scheduled",
+   "reason": "measurement job for the weekly sweep slot: compare gen_diversity before/after 8da8acd; retirement decision follows the numbers, not the vibe",
+   "commit": null,
+   "due": "2026-08-05",
+   "disposed": "2026-07-31T16:57:49.560509+00:00"
+  },
+  {
+   "id": "R0152",
+   "source": "cycle",
+   "summary": "TWO-BOX ID ALLOCATION RACE (3rd collision in one day: R0135-37, R0143, R0144): recommendations.py allocates from the LOCAL ledger max, so two boxes pushing concurrently mint the same id and every merge renumbers rows + repoints code comments. Durable fix: allocator reads max(local, origin/master:docs/research/recommendation_ledger.json) when origin is fetchable (git show origin/master:path), falling back to local -- one function, no id-format change.",
+   "roi_bps": 3.0,
+   "raised": "2026-07-31T16:58:35.117130+00:00",
+   "status": "implemented",
+   "reason": "allocator now max-known-id over local + fetched origin/master (git show, no network), offline fallback local-max; 3 regression tests; race window shrinks from all-day to since-last-fetch",
+   "commit": "HEAD",
+   "due": null,
+   "disposed": "2026-07-31T16:59:39.161025+00:00"
   }
  ]
 }

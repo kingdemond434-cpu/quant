@@ -3410,7 +3410,35 @@
    "assumptions": "full-tree CI green at final SHA; no other organ writes scripts/ mid-push",
    "success_metric": "within 1h of push: puller tick reports up-to-date (or deployed) with CI marker green, crontab reinstalls at new manifest hash, max_audit clears ci-gate-red + deploy-blocked-ci-red + dig-output-uncommitted",
    "reversal_condition": "if the puller flip-flops again or CI red returns on the same SHA: git revert the repair commit; rollback_guard checkpoint 20260731T144837_pre-cycle-20260731-ci-red-fix restores the pre-edit surface",
-   "verified_by_fresh_read": "max_audit 14:46 output; reflog (reset/FF loop + orphaned 80153c0); deploy/pull_deploy.sh + cron log; .ci_last_run.json 14:38/14:48/15:03; cro_cycle_log steps_ok tail; ruff outputs; test runs this session"
+   "verified_by_fresh_read": "max_audit 14:46 output; reflog (reset/FF loop + orphaned 80153c0); deploy/pull_deploy.sh + cron log; .ci_last_run.json 14:38/14:48/15:03; cro_cycle_log steps_ok tail; ruff outputs; test runs this session",
+   "review_due": "2026-08-30",
+   "review_due_source": "default"
+  },
+  {
+   "id": "2026-07-31-cycle4-recovery-merge-walcl",
+   "ts": "2026-07-31T17:01:17.146622+00:00",
+   "decision": "(1) Recover+commit the dead evening session's 35-file skip-reads-green fix set before the 10-min puller could destroy it; (2) union-merge the remote discretionary-desk program (R0135-R0143) healing its 17 ungated lint errors incl. a runtime NameError (N_SUPPORT); (3) register the WALCL reserve-impulse forward clock into the kimchi-freed Holm slot (cohort 12/12); (4) 6h ratchet grace in dig-output-uncommitted (permanently-firing gate made satisfiable); (5) ledger id allocator -> max-known-id over local+origin (3rd same-day collision).",
+   "expected_benefit": "deploy pipeline un-wedged (graded TRUE, forecast key 20260731-deploy-pipeline-repair-heals); zero idle Holm slots; conversion queue -16 rows; id-collision class ended",
+   "confidence": 0.85,
+   "assumptions": [
+    "remote session keeps merging honestly on its side",
+    "WALCL clock construction matches the screened cell (declared in derive_walcl_clock.py docstring)",
+    "6h grace matches the true inter-commit cadence of ratchet artifacts"
+   ],
+   "neighbours": [
+    "deploy pipeline (pull_deploy/run_ci/rollback_guard consumers)",
+    "law-gate fence lists (both sessions' additions merged)",
+    "slot_registry Holm m for every Stage-B clock (11->12 raises every bar correctly)",
+    "max_audit \u00a733 sweep semantics",
+    "recommendations CLI callers (id allocation)",
+    "discretionary sleeve organs (lint/bugfix touched them)"
+   ],
+   "independence": "money-path files untouched except comment renumbering; the executor recycle deployed only already-gated commits; discretionary organs are paper-only",
+   "success_metric": "next puller ticks stay green+up-to-date; walcl clock accrues daily rows; no new id collision by 08-07; dig-output-uncommitted stays clear between snapshot commits",
+   "reversal_condition": "revert the grace commit if a genuinely-unpushed dig output survives >6h unflagged; retire the walcl clock only by ledgered decision (slot law)",
+   "review_due": "2026-08-07",
+   "review_due_source": "one week of puller ticks + clock rows is decisive for all five sub-decisions",
+   "verified_by_fresh_read": "pull_deploy_state.json up-to-date@ffdf929 16:43Z; axis_shadow_state walcl ACCRUING 1/40d; forward_slots m=12 idle=0; max_audit live=[carry-bleed-alarm(acked)]; conversion_status 112 backlog 40 disp/7d"
   }
  ]
 }

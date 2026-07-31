@@ -159,6 +159,21 @@ def main() -> int:
             t0 = time.time()
             scored = _score(rets, matrix, peer_sharpes)
             rows.append({"target": target, "seed": k, "realised_ann_sharpe": realised, **scored})
+            # CHECKPOINT EVERY ROW (R0052): each row is ~50s of Romano-Wolf bootstrap on a
+            # 2-core box, and the full run does not comfortably fit one wall-clock window --
+            # a timeout or kill used to discard the WHOLE run (R0017 was disposed
+            # 'implemented' against an artifact of 0 bytes). Every row is independently
+            # meaningful, so a partial file with status RUNNING beats a perfect file that
+            # never exists.
+            _OUT.parent.mkdir(parents=True, exist_ok=True)
+            _OUT.write_text(json.dumps({
+                "generated": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                "status": "RUNNING",
+                "rows_done": len(rows),
+                "rows_planned": (len(targets) + 1) * args.seeds,
+                "campaign": {"T": n_obs, "N": matrix.shape[1], "se_annual_sharpe": se},
+                "rows": rows,
+            }, indent=2), "utf-8")
             lg, pc = scored["legacy"], scored["per_candidate"]
             print(
                 f"SR_true={target:5.1f} seed={k} realised={realised:6.2f} "
@@ -197,6 +212,7 @@ def main() -> int:
 
     out: dict[str, Any] = {
         "generated": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "status": "COMPLETE",          # RUNNING checkpoints carry partial rows; only this is final
         "campaign": {"T": n_obs, "N": matrix.shape[1], "se_annual_sharpe": se},
         "controls": {"targets": targets, "seeds": args.seeds,
                      "construction": "exact sample Sharpe (libs.validation.positive_control)"},
