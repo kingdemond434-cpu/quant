@@ -50,7 +50,10 @@ QUANT_ROOT=/home/quant/quant-platform
 # EVIDENCE: docs/research/deep_sweep/20260729_infrastructure.md:55-56 ("cron (3-min) ->
 #   scripts/watchdog.py"); docs/institutional_knowledge.md:490 ("watchdog.py (cron, every 3min)")
 # CONFIDENCE: documented-cadence
-*/3 * * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/watchdog.py >> data/watchdog.log 2>&1
+# LOCK ported 2026-07-31 from the legacy line (deep-sweep DI-1/infra-F1: two watchdogs, split locks):
+# /tmp/watchdog.lock is the lock the legacy twin held; sharing it makes the twins mutually exclusive
+# during the migration window and prevents self-overlap after.
+*/3 * * * * cd "$QUANT_ROOT" && flock -n /tmp/watchdog.lock .venv/bin/python scripts/watchdog.py >> data/watchdog.log 2>&1
 
 # venue-truth divergence sampler: every 5 min, read-only (calibrates the gap-#19 breaker band).
 # EVIDENCE: docs/GAP_REGISTER.md:272 ("the */5 divergence sampler");
@@ -310,15 +313,15 @@ QUANT_ROOT=/home/quant/quant-platform
 
 # EVIDENCE: .../20260729_data-intelligence.md:76 ("defi_lending hourly (:17)")
 # CONFIDENCE: documented-cadence
-17 * * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/collect_defi_lending.py >> data/cro_ai_logs/defi_lending_cron.log 2>&1
+17 * * * * cd "$QUANT_ROOT" && flock -n /tmp/defi_lend.lock .venv/bin/python scripts/collect_defi_lending.py >> data/cro_ai_logs/defi_lending_cron.log 2>&1
 
 # EVIDENCE: .../20260729_data-intelligence.md:76 ("oi_ls_live hourly (:32)")
 # CONFIDENCE: documented-cadence
-32 * * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/collect_oi_ls_live.py >> data/cro_ai_logs/oi_ls_live_cron.log 2>&1
+32 * * * * cd "$QUANT_ROOT" && flock -n /tmp/oils.lock .venv/bin/python scripts/collect_oi_ls_live.py >> data/cro_ai_logs/oi_ls_live_cron.log 2>&1
 
 # EVIDENCE: .../20260729_data-intelligence.md:76 ("coinmetrics daily 03:47")
 # CONFIDENCE: documented-cadence
-47 3 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/collect_coinmetrics_flows.py >> data/cro_ai_logs/coinmetrics_cron.log 2>&1
+47 3 * * * cd "$QUANT_ROOT" && flock -n /tmp/cmflows.lock .venv/bin/python scripts/collect_coinmetrics_flows.py >> data/cro_ai_logs/coinmetrics_cron.log 2>&1
 
 # EVIDENCE: .../20260729_data-intelligence.md:77 ("dl_oi_ls_universe daily 06:20")
 # CONFIDENCE: documented-cadence
@@ -327,7 +330,9 @@ QUANT_ROOT=/home/quant/quant-platform
 # EVIDENCE: .../20260729_data-intelligence.md:77 ("ingest_axes daily 06:40"); the log name is
 #   the live one (docs/research/deep_sweep/20260726_data-intelligence.md:153 "ingest_axes_cron.log")
 # CONFIDENCE: documented-cadence
-40 6 * * * cd "$QUANT_ROOT" && flock -n data/.cron_ingest_axes.lock .venv/bin/python scripts/ingest_axes.py >> data/cro_ai_logs/ingest_axes_cron.log 2>&1
+# ARGS+LOCK ported 2026-07-31 from the legacy line (deep-sweep DI-1: two 06:40 variants under
+# DIFFERENT locks would have raced on bronze partitions; --tranche 400 is the operator-proven cap).
+40 6 * * * cd "$QUANT_ROOT" && flock -n /tmp/ingest_axes.lock .venv/bin/python scripts/ingest_axes.py --tranche 400 >> data/cro_ai_logs/ingest_axes_cron.log 2>&1
 
 # --------------------------------------------------------------------------------------------
 # BRAIN / ORGANS -- cron plane
