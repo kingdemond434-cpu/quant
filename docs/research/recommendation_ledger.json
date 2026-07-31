@@ -2397,6 +2397,44 @@
   },
   {
    "id": "R0197",
+   "source": "max_audit",
+   "summary": "How far to let a winner breathe -- the trail width -- was hardcoded at extreme-minus-1R with no measurement behind it, while growth_levers ranks the winner shape it produces as the STEEPEST term in the growth identity. A guess in the highest-gradient slot. walk_ladder now takes trail_r and trail_sweep() re-walks every marked trade at 0.5/0.75/1.0/1.5/2.0/3.0R against the SAME bars, so entries, stops and trades are held fixed and only the parameter moves. Ranked by E[log] per trade, never hit rate or mean R: widening RAISES the winner multiple and LOWERS the hit rate together, so either alone can improve while compounding falls. Rejected widths stay in the output so the trade-off is visible. This is the principal's own stated method -- 'kept moving it to bank profit while letting it breathe and run further' -- turned from a preference into a measurement.",
+   "roi_bps": null,
+   "raised": "2026-07-31T19:32:27.979276+00:00",
+   "status": "implemented",
+   "reason": "walk_ladder parameterised on trail_r; trail_sweep re-walks every marked trade at six widths against the same bars, ranks by E[log], keeps rejected widths visible; verified to discriminate in both directions; pinned by four tests",
+   "commit": "28204bc",
+   "due": null,
+   "disposed": "2026-07-31T19:40:07.597906+00:00",
+   "renumbered_from": "R0187",
+   "renumber_note": "allocator race with the VPS lineage, which took R0187-R0196 for the litminer batch in 0001069. Origin keeps its ids by convention; this row moved. No references needed patching -- verified by grep below."
+  },
+  {
+   "id": "R0198",
+   "source": "max_audit",
+   "summary": "Funding is SIGNED and public but the sleeve was blind to the sign. resolve_paper_book charges funding always-adverse (correct for MARKING -- a mark must never flatter itself), and nothing anywhere read which side of a perp is being PAID to hold. On Binance USD-M positive funding means longs pay shorts, so at any moment roughly half the instrument-sides collect carry. run_cost_hunt (hourly, cadence bound to the 8h funding stamp) snapshots live signed funding for all 18 instruments, ranks paid vs paying sides, and flags the extreme regime; run_conviction_trader.trade_cost_view prices each call's cost in R BEFORE sizing (size-independent: leverage cancels) and refuses trades above COST_REFUSE_R=0.5R, derived -- at 0.5R the ladder nets 2.5R/-1.5R, a 37.5% breakeven, the sleeve's ceiling accuracy spent entirely on the venue's rake. Selection uses the sign, marking stays adverse: different jobs, different signs. Costs are the only growth lever that needs no proven edge -- known before the trade, and the whole gap between the 25.0% gross breakeven and the 31.1% net one.",
+   "roi_bps": null,
+   "raised": "2026-07-31T20:01:23.392802+00:00",
+   "status": "implemented",
+   "reason": "run_cost_hunt + trade_cost_view + COST_REFUSE_R veto + carry map in the brief; 11 tests including the sign convention and that the paid side of the same thesis is never refused; ran live against both venues",
+   "commit": "3147179",
+   "due": null,
+   "disposed": "2026-07-31T20:05:13.010136+00:00"
+  },
+  {
+   "id": "R0199",
+   "source": "max_audit",
+   "summary": "First live cost-hunt run surfaced two facts the desk did not have. (1) Binance's premiumIndex bulk endpoint returns HTTP 451 from this egress region, so all 17 measured funding rates came from the OKX fallback -- the fallback is currently the only feed, not decoration. (2) PAXGUSDT is SINGLE-VENUE: OKX lists no gold swap at all (verified against its full SWAP instrument list), so gold's funding is unmeasurable whenever Binance is unreachable and no retry fixes it. Both were only visible because fetch_funding carries each venue's error onto the NO-DATA row instead of swallowing it -- the build-standard fence caught the original except-pass. Recorded as fallback_exists=false rather than as an outage, since a structural gap and a transient failure demand different responses, and gold is the instrument the principal's own discretionary record is built on.",
+   "roi_bps": null,
+   "raised": "2026-07-31T20:01:23.445405+00:00",
+   "status": "implemented",
+   "reason": "venue errors carried onto NO-DATA rows; unlisted-contract distinguished from outage via fallback_exists; both findings recorded in DISCRETIONARY_DESK.md",
+   "commit": "3147179",
+   "due": null,
+   "disposed": "2026-07-31T20:05:13.066914+00:00"
+  },
+  {
+   "id": "R0200",
    "source": "cycle",
    "summary": "BLIND-REDISCOVERY 2026-07-31 / FINDING: the desk's central negative result ('free-data price-only alpha is dead') is SCOPED WRONG. All ~420 price hypotheses, 40 graveyard kills and 11 axis pre-registrations were evaluated at DAILY resolution, where axis_screen's mandatory angle-20 de-contamination gate kills any signal leading by less than one day as TIMING-ARTIFACT. The gate is a LOW-PASS FILTER and its output has been read as a fact about the world. Honest restatement: no SLOW price alpha exists at daily resolution. Same error class as the 420/0 welded-gate instrument artifact re-diagnosed 2026-07-30, one level up (resolution, not threshold). Desk's own measurement supports it: vif 3.6 daily (sticky) vs 1.008 at 8h (near-independent), used only for evidence-rate speedup. ACTION: run the L1.25 instrument diagnostic against the RESOLUTION of the screen, not only its thresholds. Detail: docs/research/blind_rediscovery_log.md",
    "roi_bps": 200.0,
@@ -2408,7 +2446,7 @@
    "disposed": null
   },
   {
-   "id": "R0198",
+   "id": "R0201",
    "source": "cycle",
    "summary": "BLIND-REDISCOVERY 2026-07-31 / DEFECT: data/moat/ is 7.1 GB (82% of all desk data on disk) of self-recorded Binance-fut + Binance-spot + Bybit L2 depth and full trade tape across 80 symbol-feeds since 2026-07-17, and it has ZERO return-predictive screens, NO entry in data/data_assets.json, and one consumer (micro_factory.py -> 1.8 KB micro_features.json, last written 2026-07-27). It is simultaneously the largest object on disk and the ONLY unreplicable asset the desk owns (L1.11 names it as the moat). Irreplaceable: the 07-17..07-31 book cannot be re-earned. Largest single unconverted denominator in the DATA-TO-ALPHA CONVERSION RATIO. ACTION: catalogue it in data_assets.json and run the first return-predictive screen against it (BR-07 is a ready-made design).",
    "roi_bps": 300.0,
@@ -2420,7 +2458,7 @@
    "disposed": null
   },
   {
-   "id": "R0199",
+   "id": "R0202",
    "source": "cycle",
    "summary": "BLIND-REDISCOVERY 2026-07-31 / GATE-OPTIMALITY: alpha_economics.ev_score cannot price RISK-SIDE candidates and silently rejects them. BR-04 (insurance-fund depletion -> ADL haircut on the carry sleeve's short-perp leg) scored ev 0.0009 vs the 0.002 bar, driven by est_sharpe and narrow_breadth -- but it generates NO return stream. Its value enters E[log W] through AVOIDED RUIN, for which ev_score has no term, so any left-tail-removal input is structurally rejected however valuable. Inputs were NOT tuned to pass (that would be gaming the gate). ACTION: either add a ruin-reduction term to ev_score or route risk-side candidates through a separate gate; today the EV gate is a return-alpha gate being applied to everything.",
    "roi_bps": 120.0,
@@ -2432,7 +2470,7 @@
    "disposed": null
   },
   {
-   "id": "R0200",
+   "id": "R0203",
    "source": "cycle",
    "summary": "BLIND-REDISCOVERY 2026-07-31 / IDLENESS+REPLACEMENT-RATE: forward_slots.json shows m_concurrent 12 / cap 12 / idle_slots 0 (cohort FULL) while promotion_queue.json shows n_candidates 0 (queue EMPTY) and new-candidate latency ~181 days (90 clock + 90 queue + 1 decision). Every slot occupied with NOTHING staged behind them: when a slot frees the desk waits a full pipeline latency to discover it has no inventory. L1.30 countdown nobody is watching; L1.28a idle capacity with a non-empty candidate space. ACTION: stage the 8 QUEUE-verdict blind-rediscovery cards (BR-01,02,03,05,06,07,08,09) into promotion_queue.json -- costs no slot, no capital. Stage-A screens need no slot and BR-01/02/06/08 are runnable today on data already on disk.",
    "roi_bps": 150.0,
@@ -2444,7 +2482,7 @@
    "disposed": null
   },
   {
-   "id": "R0201",
+   "id": "R0204",
    "source": "cycle",
    "summary": "BLIND-REDISCOVERY 2026-07-31 / BR-08 (highest-value card, EV 0.0260): the dominant P&L term of the ONLY deployed sleeve is UNATTRIBUTED and the desk holds two mutually contradictory measurements of it. 73 churn-free round-trips ran -58.27 bps net-of-fee with only 12 bps commission -- price_pnl -51.74 bps, which for a delta-neutral pair is the BASIS CHANGE and should be ~0, and which does NOT amortize with hold time. Meanwhile the live bleed_alert reports non-funding PnL at +3573 (+3161% of funding harvest), attributed by a prior cycle to an accounting echo. Neither reading is explained. MECHANISM that would explain the negative one: funding is computed FROM the premium index, so ranking names by highest funding is mechanically ranking by widest perp premium -- the entry shorts a basis that then keeps widening, making carry compensation for the wrong side of an ongoing squeeze rather than a free cashflow. TEST (independent of the desk's broken execution record): on lake history (funding+basis, 279 symbols, 2011-2026) condition on funding-rank at entry and measure the forward BASIS path at 1/3/8/24h and 1/5d. Pre-committed: top-rank names widen over the first funding period, effect strengthening with rank; flat or converging REFUTES and sends -51.74 bps back to the contamination explanation.",
    "roi_bps": 250.0,
@@ -2456,7 +2494,7 @@
    "disposed": null
   },
   {
-   "id": "R0202",
+   "id": "R0205",
    "source": "cycle",
    "summary": "BLIND-REDISCOVERY 2026-07-31 / BR-05 CAPABILITY GAP: every hypothesis this desk has ever tested is OBSERVATIONAL (IC/Sharpe on a correlational panel defended by de-contamination and multiplicity control). It has never once used an exogenous shock for CAUSAL identification, despite exchanges publishing hundreds of dated exogenous rule changes (funding-interval revisions, margin-tier and leverage-cap changes, fee schedules, index-constituent changes) with untreated pairs available as controls. The desk already knows natural experiments are its highest-grade evidence -- it called the Bitcointalk in-sample-vs-forward contest 'THE CLEANEST NATURAL EXPERIMENT THE DESK HAS FOUND' -- but believes they must be found abroad rather than manufactured. It is ALREADY COLLECTING the feed: data/exchange_announcements.jsonl, 111 rows, live to 2026-07-31, never tested. First experiment: funding-interval or leverage-cap change -> basis/OI/realised-vol vs matched controls, DiD. KNOWN THREAT, must be designed around: rule changes are endogenous (venues change margin tiers BECAUSE they see risk), so use only venue-wide/scheduled changes and report the endogeneity argument with the estimate.",
    "roi_bps": 180.0,
@@ -2468,7 +2506,7 @@
    "disposed": null
   },
   {
-   "id": "R0203",
+   "id": "R0206",
    "source": "cycle",
    "summary": "BLIND-REDISCOVERY 2026-07-31 / L1.16a RE-OPEN CANDIDATE (declared, not unilaterally re-opened): vpin_ofi_microstructure, do_not_repeat #13, REJECTED 2026-07-03 for 'gross +59.4bps decaying 2024->+82bps to 2026->+12bps; REQUIRES L2 TICK INFRA; IC decay kills expected ROI'. NAMED ENABLING CHANGE: the L2 tick infrastructure now exists and runs at ZERO MARGINAL COST -- 7.1 GB across three venues since 2026-07-17, recorded for other reasons. The kill was half economic (IC decay) and half INFRASTRUCTURE COST; the infrastructure half is now free and sunk. The economic half STANDS and must be re-tested honestly: +12 bps against a measured 3.8-5 bps round-trip is thin but no longer obviously negative. ACTION: re-score through the EV gate with effort_h reflecting zero infra cost; proceed only if it clears on its own merits.",
    "roi_bps": 80.0,
@@ -2480,7 +2518,7 @@
    "disposed": null
   },
   {
-   "id": "R0204",
+   "id": "R0207",
    "source": "cycle",
    "summary": "BLIND-REDISCOVERY 2026-07-31 / SCHEDULED OBLIGATION: the 12-month literature comparison for the 9 blind-invented mechanisms BR-01..BR-09 (logged in docs/research/blind_rediscovery_log.md) falls due 2027-07-31. On that date search external literature for each mechanism and record: published AFTER our date = genuine independent invention (the engine originates); published BEFORE and we missed it = the engine is a summariser with a coverage gap AND the external diggers failed to surface it; never published = novel or too weak to publish. Verdict must come from a search performed ON the check-back date, and no card may be silently edited in the interim (corrections are appended with their own date). This is the desk's ONLY direct measurement of research-engine originality.",
    "roi_bps": 40.0,
@@ -2492,7 +2530,7 @@
    "disposed": null
   },
   {
-   "id": "R0205",
+   "id": "R0208",
    "source": "cycle",
    "summary": "BLIND-REDISCOVERY 2026-07-31 / GOVERNANCE CONFLICT, surfaced not routed around: the blind-rediscovery seat's charter is 'RESEARCH ONLY (freeze) ... No code', while L1.39 (ZERO IDLE FINDINGS) requires every finding to advance its next pipeline stage IN THE SAME RUN, and for an invented mechanism that next stage is the Stage-A screen (MECHANISM_GRAPH pipeline: mechanism -> observable -> hypothesis -> EV gate -> Stage-A screen -> forward clock). This run therefore stopped at the EV gate and pre-registration and could NOT screen, even though BR-01/02/06/08 are runnable today on data already on disk. SCREEN-ON-DISCOVERY does not strictly bite (it is scoped to surfacing a new DATA AXIS; these are mechanisms on axes already ingested), so the freeze is not being violated -- but the DIGGER PARITY rule (charter: 'the diggers are ONE FAMILY and advance TOGETHER; UPGRADE PROPAGATION') is: every other digger screens in-run and this one is structurally barred from it. RESOLUTION OPTIONS: (a) grant this seat read-only screen execution via the audited libs.research.axis_screen harness (writes only to reports/ and data/), which is the parity-restoring option; (b) keep the freeze and bind a named screening owner + date to every card at pre-registration time, making the handoff explicit rather than implicit. Doing neither leaves invented mechanisms sitting at the EV gate with no clock on them, which is the found-never-fixed defect L1.28b exists to kill.",
    "roi_bps": 60.0,

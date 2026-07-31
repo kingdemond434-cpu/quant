@@ -624,7 +624,7 @@ the inventory that queue is missing**, and populating it costs no slot and no ca
 
 ---
 
-## A GOVERNANCE CONFLICT — surfaced, not routed around (R0205)
+## A GOVERNANCE CONFLICT — surfaced, not routed around (R0208)
 
 This seat's charter is **"RESEARCH ONLY (freeze) … No code"**. L1.39 (ZERO IDLE FINDINGS) requires
 every finding to advance its next pipeline stage **in the same run**, and for an invented mechanism
@@ -704,5 +704,11 @@ axis on this page.
 **Timidity check.** Nine cards, no numeric cap applied, none held back for being large or awkward.
 BR-04 was EV-rejected and is reported as rejected with its inputs untouched — the gate was named as
 mis-applied rather than gamed, which is the only honest way to disagree with a gate.
+
+**Ledger rows for this session: R0200–R0208.** They were originally written as R0197–R0205 and
+renumbered at push time: a sibling session had already taken R0197–R0199 on origin (trail-width and
+funding-sign cost-hunt rows). Both sessions' rows are preserved in full — 208 total, IDs unique and
+monotonic, origin's 199 untouched. Recorded here because a renumber that is not written down looks
+identical to a dropped row, and dropping an inconvenient row is the one thing the ledger forbids.
 
 _Session closed 2026-07-31. Next scheduled run: 2026-08-31, or earlier on due-by-state._

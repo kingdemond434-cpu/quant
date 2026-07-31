@@ -32,6 +32,40 @@ settles it rather than either opinion.
 | `resolve_paper_book.py` | hourly | walks the recorded ladder against real bars, deducts fees/slippage/funding, benchmarks vs buy-and-hold, feeds calibration, reports growth |
 | `run_trade_review.py` | after closes | reviews each closed trade against its own thesis, classifies the cause, extracts a falsifiable lesson |
 | `check_mechanism_attribution.py` | hourly | refuses "survived" for any sleeve whose P&L its mechanism cannot explain |
+| `run_cost_hunt.py` | hourly | snapshots live **signed** funding for all 18 instruments; ranks paid vs paying sides; flags the extreme-carry regime the trader's cost veto refuses |
+
+## Costs: the one lever that needs no proven edge
+
+Every other term in the growth identity — hit rate, winner shape, independent bets — needs closed
+trades before it can be improved on purpose. Costs do not. They are known **before** the trade,
+they are the entire gap between the 25.0% gross breakeven and the 31.1% net one, and near
+breakeven their effect is grotesquely leveraged: the stack is ~24% of one R, and shaving a third
+of it moves the required hit rate by more than a point — which multiplies growth severalfold at
+these margins.
+
+**The hole this closed.** The resolver charges funding **always-adverse** by design, which is
+correct for *marking* — a mark must never flatter itself. But funding is **signed and public**:
+positive funding means longs pay shorts, so at any moment roughly half the instrument-sides are
+being *paid* to hold. The sleeve was blind to which half. A discretionary trader with two
+comparable setups takes the one where carry is a tailwind; this organ is that judgement,
+mechanised.
+
+**The deliberate asymmetry**, stated so nobody "fixes" it: **selection** uses the sign (prefer the
+paid side, refuse the extreme-paying side); **marking** stays always-adverse. A mark that credited
+funding would flatter the book with carry the next regime takes away. A selector that ignored it
+would leave free money on the table. Different jobs, different signs.
+
+Cost in R is **size-independent** — `(cost/notional) ÷ (stop/price)`, leverage cancels — which is
+what lets a trade be priced *before* it is sized, the only moment refusing it is free.
+
+**First live run (2026-07-31)** surfaced two facts the desk did not have:
+
+- Binance's bulk endpoint returns **HTTP 451** from this egress region, so all 17 measured rates
+  came from the OKX fallback. The fallback is not decoration; it is currently the only feed.
+- **PAXGUSDT is single-venue.** OKX lists no gold swap at all, so gold's funding is unmeasurable
+  whenever Binance is unreachable, and no retry fixes it. That is recorded as `fallback_exists:
+  false` rather than as an outage, because the two demand different responses — and gold is
+  precisely the instrument the principal's own discretionary record is built on.
 
 ## The method, and why each piece is there
 
