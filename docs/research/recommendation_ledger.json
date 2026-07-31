@@ -2216,6 +2216,30 @@
    "commit": "c5f2ed4",
    "due": null,
    "disposed": "2026-07-31T18:51:10.911343+00:00"
+  },
+  {
+   "id": "R0183",
+   "source": "max_audit",
+   "summary": "Promotion gate certified growth it did not have: BREAKEVEN_HIT=0.311 is the ARITHMETIC breakeven (E[R]=0), but the desk maximises E[log wealth] and variance drag puts the log-breakeven at 33.5% at the 6% floor, rising to 36.0% at the 12% ceiling. A sleeve measured at 32% cleared hit_rate_above_breakeven, took rung 1's cap increase and rung 2's real money, and compounded the book DOWNWARD throughout. Criterion now solves E[log]=0 at the risk fraction actually in force (median of closed marks), so the bar rises with the sleeve's own promotions.",
+   "roi_bps": null,
+   "raised": "2026-07-31T19:14:07.291678+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0184",
+   "source": "max_audit",
+   "summary": "measured_risk_cap computed Kelly on GROSS odds b=3.0 (the ladder's winner:loser shape before costs) while resolve_paper_book marks the book NET of the fee/slippage/funding stack that moves breakeven from 25.0% to 31.1%. Sizing off a payoff the desk never receives overstates Kelly at every hit rate, and Kelly is the one input where overstating it overstates the BET in the growth-destroying direction: at a measured 38% the cap was 8.7% where net odds give 6.0%. Fixed to net odds 2.23:1. Investigated and REJECTED clamping the floor to full Kelly: a zero cap places no trades, so the book never reaches KILL_AFTER_N and the sleeve becomes unkillable; the thin-edge case is already held by the promotion gate refusing live money below breakeven. Conflict now reported in the artifact instead.",
+   "roi_bps": null,
+   "raised": "2026-07-31T19:14:07.346131+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

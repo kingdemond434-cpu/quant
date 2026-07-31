@@ -45,6 +45,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -59,9 +60,42 @@ from libs.ops.lawful import guard as _law_guard  # noqa: E402
 
 _STATE = "data/promotion_gate.json"
 
-#: Cost-adjusted breakeven hit rate, from the measured fee/slippage/funding stack in
-#: resolve_paper_book (~17% of one R at this leverage). Clearing it is necessary, never sufficient.
+#: ARITHMETIC cost-adjusted breakeven: the hit rate at which EXPECTED R is zero, from the measured
+#: fee/slippage/funding stack in resolve_paper_book (3:1 structural payoff => 25.0% gross; costs
+#: ~24% of one R at taker-in/taker-out => 31.1%). Kept because it is the number the kill floor and
+#: the desk documents are stated against -- but it is NOT the promotion standard. See below.
 BREAKEVEN_HIT = 0.311
+
+#: THE PAYOFF, from resolve_paper_book's own derivation: a structural stop is one R and the
+#: trail-and-pyramid plan pays ~3R on a runner, which is what makes 25.0% the GROSS breakeven.
+#: Costs are charged on notional regardless of outcome, so they widen the loss and shave the win.
+_R_WIN, _R_LOSS, _R_COST = 3.0, 1.0, 0.24
+
+
+def log_breakeven(risk_fraction: float) -> float:
+    """The hit rate at which E[log wealth] is zero -- the standard this desk actually maximises.
+
+    WHY THE ARITHMETIC FIGURE IS THE WRONG GATE, and in the permissive direction. 31.1% is where
+    expected R turns positive; it is NOT where the book starts compounding. Between the two lies
+    variance drag: a sequence averaging a positive R can still shrink capital geometrically,
+    because a loss removes a larger share of the base than the same-sized gain restores. Solving
+    p*ln(1 + w*f) + (1-p)*ln(1 - l*f) = 0 puts the real threshold at 33.6% at the 6% floor cap,
+    rising to 36.1% at the 12% ceiling -- the drag GROWS with size, so the sleeve's own promotions
+    raise the bar it must clear.
+
+    What it was costing: a sleeve measured at 32% cleared `hit_rate_above_breakeven`, took rung 1's
+    cap increase and then rung 2's real money, while compounding the book DOWNWARD the whole way --
+    a gate certifying growth that was not there. Every desk rule here (fractional Kelly, the heat
+    budget, survival-first sizing) is written against E[log wealth]; this criterion was the one
+    place measuring expected value instead, which is why the gap went unseen.
+
+    Derived, not chosen: the threshold is solved from the same measured payoff and cost stack the
+    resolver marks against, and moves when they move.
+    """
+    f = max(1e-6, min(0.99 / (_R_LOSS + _R_COST), float(risk_fraction)))
+    win, loss = math.log(1 + (_R_WIN - _R_COST) * f), math.log(1 - (_R_LOSS + _R_COST) * f)
+    # p*win + (1-p)*loss = 0  =>  p = -loss / (win - loss)
+    return -loss / (win - loss)
 
 #: THE LADDER. (rung, closed trades, calendar days, extra criteria, what it grants).
 #: Calendar days are NOT redundant with trade count: 50 trades in a week is ONE regime, and
@@ -104,9 +138,19 @@ def _criteria(root: Path) -> dict[str, dict[str, Any]]:
     if pnl:
         n = int(pnl.get("n_resolved") or 0)
         hit = pnl.get("win_rate")
+        # The bar is set at the risk fraction ACTUALLY IN FORCE, because variance drag grows with
+        # size: promoting the cap raises the hit rate required to keep compounding. Median of the
+        # closed marks, so one outsized trade cannot set the standard; the 6% floor if unmeasured.
+        sized = sorted(float((m.get("sizing") or {}).get("risk_fraction") or 0.0)
+                       for m in (pnl.get("marks") or []) if m.get("closed"))
+        sized = [f for f in sized if f > 0.0]
+        f_used = sized[len(sized) // 2] if sized else 0.06
+        bar = log_breakeven(f_used)
         put("hit_rate_above_breakeven",
-            None if hit is None or n < 20 else float(hit) > BREAKEVEN_HIT,
-            f"{hit} vs {BREAKEVEN_HIT:.1%} breakeven over {n} closed"
+            None if hit is None or n < 20 else float(hit) > bar,
+            f"{hit} vs {bar:.1%} LOG-breakeven at {f_used:.1%} risk over {n} closed "
+            f"(arithmetic breakeven {BREAKEVEN_HIT:.1%} is not the standard -- a positive expected "
+            f"R still shrinks the book between the two)"
             if hit is not None else "no closed trades")
         bh = pnl.get("beats_buy_and_hold")
         put("beats_buy_and_hold", None if bh is None else bool(bh),
