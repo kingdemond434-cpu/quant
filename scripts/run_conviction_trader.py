@@ -3,7 +3,9 @@
 
 PRINCIPAL REQUEST (2026-07-31, with an MT5 screenshot: a leveraged XAUUSD short, +60% in 12h):
 *"the Binance equivalent to this -- aggressive, AI shouldn't be too calculative and earn less
-than a manual trader."*
+than a manual trader."* And then the mechanism, in the principal's own words: *"use calculated SL
+to prevent it and put trades until the trend and swing hits, minimising downside and maximising
+upside."*
 
 THE DESIGN PHILOSOPHY, stated plainly because it is the whole point. A manual discretionary
 trader with no stop who is up 60% in 12 hours is not out-earning a disciplined desk -- they are
@@ -25,6 +27,24 @@ ends the account. So:
   ruined book is minus infinity, so the bet that can ruin you is never the growth-optimal bet
   however good it looks (the Alameda row in the desk's own cohort register).
 
+  THE STOP IS CALCULATED, NOT CHOSEN. A percentage stop is an arbitrary distance the market has
+  never heard of; a STRUCTURAL stop sits at the price where the thesis is factually dead -- the
+  swing the trend must not lose, the range edge, the level that was defended. This desk refuses
+  an asserted `stop_pct`: the model must name an invalidation PRICE and the structure it belongs
+  to, and the distance is DERIVED from it. That is not a formality, it is free leverage. Kelly
+  sizes `risk_budget / stop_distance`, so a stop that sits 1% away at a real swing carries FOUR
+  TIMES the size of a lazy 4% stop at the same risk budget and the same edge -- tighter honest
+  invalidation is the single cheapest source of aggression on this desk.
+
+  WINNERS ARE RIDDEN, NOT TAKEN. "Put trades until the trend and swing hits" -- so there is no
+  fixed take-profit. The position moves to breakeven at +1R, trails one R behind, and ADDS on
+  strength (1.00u -> 1.50u -> 1.75u) while the trend holds, exiting only when price closes back
+  through the trailing structure. The pyramid is not extra risk: by the time the first add goes
+  on, the original tranche's stop is at breakeven, so OPEN RISK FALLS at every stage
+  (1.00 -> 0.50 -> 0.25 -> 0.00 of the initial budget) while exposure RISES. That asymmetry is
+  the literal instruction -- minimise downside, maximise upside -- expressed as arithmetic and
+  pinned by tests rather than as an intention.
+
   IT IS SCORED. Every call is a pre-registered forecast (direction, probability, expected move,
   stop) logged to the L1.29 calibration fence. A directional trader who cannot be scored is a
   gambler with a good story; this one finds out whether its conviction is CALIBRATED. If its 70%
@@ -32,6 +52,29 @@ ends the account. So:
 
   PAPER ONLY until it earns real size the same way everything does (L1.6): a forward clock, and
   it must beat buy-and-hold AND the carry sleeve after costs. It places no orders here.
+
+WHY THE STOP ALWAYS HITS BEFORE LIQUIDATION, which is the failure mode that kills leveraged
+directional books: sizing solves leverage = risk_fraction / stop_distance, so leverage * stop
+distance == risk_fraction <= 0.20 BY CONSTRUCTION, while liquidation sits at roughly 1/leverage.
+The stop is therefore never more than ~20% of the way to liquidation at any leverage this sleeve
+can produce. It is structurally impossible for this sizer to build a position that gets
+liquidated before its stop is touched.
+
+WHAT THE NOTIONAL CEILING IS ACTUALLY FOR, since the above makes liquidation a non-argument: a
+cascade printing THROUGH the stop before the fill. That loss scales with NOTIONAL and not with
+the planned stop distance, so it is the one exposure a tighter stop does not reduce -- and it is
+therefore the only honest reason to cap leverage at all. The cap is consequently DERIVED from
+surviving a 2% slip rather than picked as a round number. The flat 10x it replaced was actively
+anti-aggression: it made a 0.9% structural stop deploy 9% of the risk budget while a lazy 2% stop
+deployed the full 20%, the desk's own ceiling penalising the exact behaviour the calculated stop
+exists to produce (L1.28).
+
+ONE THING IS DELIBERATELY WITHHELD FROM THE MODEL: where the sizing optimum sits. Because gap
+risk caps the tightest stops, deployed risk peaks around a 1.3-2% invalidation rather than at
+zero -- and a model told that would drift toward naming levels that maximise its own size instead
+of levels where its thesis is actually dead. That is the same PASS-optimisation failure the event
+sleeve had to have designed out of it. The brief asks for the honest level and nothing else; the
+sizer's shape is the desk's business, not the trader's.
 
 INSTRUMENTS: Binance perps for liquid directional exposure (BTCUSDT, ETHUSDT, SOLUSDT) and
 PAXGUSDT as the on-Binance gold analogue of the screenshot's XAUUSD.
@@ -62,34 +105,215 @@ _STATE = "data/conviction_trader.json"
 INSTRUMENTS = ("BTCUSDT", "ETHUSDT", "SOLUSDT", "PAXGUSDT")
 MIN_PROB, MAX_PROB = 0.52, 0.90        # below 52% is the other side; 90%+ is an over-confidence tell
 KELLY_FRACTION = 0.5                    # half-Kelly: aggressive but robust to estimate error
-MAX_LEVERAGE = 10.0                    # the hard aggression ceiling -- 10x, not the 100x that ruins
+MAX_LEVERAGE = 20.0                    # absolute notional ceiling -- 20x, not the 100x that ruins
 MIN_STOP_PCT = 0.5                      # a stop tighter than this is noise; 100%+ is no stop
 MAX_STOP_PCT = 15.0
 MAX_RISK_PER_TRADE = 0.20              # at most 20% of sleeve equity at risk on one call
 
+#: THE GAP-RISK STRESS, and the reason there is a notional ceiling at all. The stop being hit is
+#: priced: that is MAX_RISK_PER_TRADE and the sizer targets it exactly. What is NOT priced is a
+#: cascade printing THROUGH the stop before the fill -- and that loss scales with NOTIONAL, not
+#: with the planned stop distance, so it is the one exposure a tight stop does not reduce. The
+#: ceiling is therefore derived, not chosen: leverage may go as high as it likes provided a
+#: violent 2% slip past the stop still leaves the sleeve alive.
+#:
+#: This replaced a flat 10x cap that was actively anti-aggression: it made a 0.9% structural stop
+#: deploy 9% of the risk budget while a lazy 2% stop deployed the full 20% -- the desk's own
+#: ceiling punishing the exact behaviour the calculated stop exists to produce (L1.28).
+SLIP_STRESS_PCT = 2.0                  # a liquidation cascade prints this far through the stop
+MAX_STRESS_LOSS = 0.50                 # ...and even then the sleeve loses at most half
+MAX_PEAK_STRESS_LOSS = 0.60            # the full pyramid is allowed slightly more, measured as
+#:                                       drawdown FROM THE STAGE TRIGGER: by then the position is
+#:                                       up roughly that much unrealised, so the bound says the
+#:                                       pyramid may give back its own open gains in a cascade --
+#:                                       never the starting stake.
 
-def kelly_leverage(prob: float, reward_risk: float, stop_pct: float) -> dict[str, float]:
+#: The pyramid: (trigger in R, units added). Each rung first TRAILS the stop one R behind, THEN
+#: adds -- which is why open risk falls as size grows. Deliberately geometric-decaying: the trend
+#: that has already run 2R has less remaining runway than the one that just started, so the adds
+#: get smaller, not larger. Peak exposure 1.75u.
+ADD_LADDER: tuple[tuple[float, float], ...] = ((1.0, 0.50), (2.0, 0.25))
+
+#: A stop is only "calculated" if it sits at something the market drew. This vocabulary is how the
+#: fence tells a structural level from a number someone liked. Kept broad on purpose -- a false
+#: refusal here costs a real trade, and the binding checks are the price ones below.
+_STRUCTURE_WORDS = (
+    "swing", "range", "high", "low", "support", "resistance", "breakout", "breakdown",
+    "consolidation", "pivot", "shelf", "level", "trendline", "trend line", "channel", "gap",
+    "vwap", "liquidity", "order block", "session", "prior day", "prior week", "prior session",
+    "base", "neckline", "wick", "close", "open interest", "poc", "value area", "fib", "band",
+)
+
+#: How far the model's own asserted stop_pct may disagree with the level it named before the call
+#: is refused as internally inconsistent. A model that names a swing 1% away and then writes
+#: "stop_pct: 3" did not reason about the level; it decorated a number.
+STOP_MISMATCH_TOL = 0.25               # relative
+
+
+def slip_leverage_cap(stop_pct: float, *, stress_loss: float = MAX_STRESS_LOSS) -> float:
+    """The only honest reason to cap notional: a cascade that prints THROUGH the stop costs
+    leverage * (stop + slip), and the slip term does not shrink when the stop tightens. So the
+    ceiling is derived from survival under that stress rather than picked as a round number --
+    which is what lets a genuinely tight structural stop buy the size it has earned."""
+    return stress_loss / ((stop_pct + SLIP_STRESS_PCT) / 100.0)
+
+
+def kelly_leverage(prob: float, reward_risk: float, stop_pct: float) -> dict[str, Any]:
     """Fractional-Kelly leverage from Claude's OWN probability. Aggression is here; the caps are
-    the rail. Kelly f* = (p*b - q)/b; leverage = (fraction of equity at risk) / (stop distance)."""
+    the rail. Kelly f* = (p*b - q)/b; leverage = (fraction of equity at risk) / (stop distance).
+
+    `risk_fraction` is what the position ACTUALLY loses at its stop, not what Kelly asked for.
+    Those differ whenever MAX_LEVERAGE binds -- a 0.9% structural stop wants 22x, gets 10x, and
+    therefore risks 9% of equity, not the 20% Kelly requested. Reporting the request as though it
+    were the exposure would overstate downside everywhere it is consumed (the whole management
+    ladder is denominated in it), so the realised number is the one that carries the name."""
     p, q, b = prob, 1.0 - prob, max(reward_risk, 1e-6)
     edge = (p * b - q) / b                                  # full-Kelly fraction of equity
-    risk_frac = max(0.0, min(MAX_RISK_PER_TRADE, edge * KELLY_FRACTION))
-    lev = min(MAX_LEVERAGE, risk_frac / (stop_pct / 100.0)) if stop_pct > 0 else 0.0
-    return {"full_kelly": round(edge, 4), "risk_fraction": round(risk_frac, 4),
-            "leverage": round(lev, 2), "capped_by": (
-                "no-edge" if edge <= 0 else "max_risk" if edge * KELLY_FRACTION > MAX_RISK_PER_TRADE
-                else "max_leverage" if risk_frac / (stop_pct / 100.0) > MAX_LEVERAGE else "kelly")}
+    want = max(0.0, edge * KELLY_FRACTION)                  # half-Kelly, before any cap
+    budget = min(MAX_RISK_PER_TRADE, want)
+    if stop_pct <= 0:
+        return {"full_kelly": round(edge, 4), "kelly_risk_fraction": round(budget, 4),
+                "risk_fraction": 0.0, "leverage": 0.0, "slip_cap": 0.0, "capped_by": "no-stop"}
+    kelly_lev = budget / (stop_pct / 100.0)
+    slip_cap = slip_leverage_cap(stop_pct)
+    lev = min(MAX_LEVERAGE, slip_cap, kelly_lev)
+    realised = lev * (stop_pct / 100.0)                     # what the stop actually costs
+    caps = []
+    if want > MAX_RISK_PER_TRADE:
+        caps.append("max_risk")
+    if slip_cap < min(kelly_lev, MAX_LEVERAGE):
+        caps.append("gap_stress")
+    if MAX_LEVERAGE < min(kelly_lev, slip_cap):
+        caps.append("max_leverage")
+    return {"full_kelly": round(edge, 4), "kelly_risk_fraction": round(budget, 4),
+            "risk_fraction": round(realised, 4), "leverage": round(lev, 2),
+            "slip_cap": round(slip_cap, 2),
+            "capped_by": "no-edge" if edge <= 0 else ("+".join(caps) if caps else "kelly")}
+
+
+def derive_stop_pct(entry_ref: float, invalidation: float, direction: str) -> tuple[float, str]:
+    """THE CALCULATED STOP. Distance is derived from the named invalidation level, never asserted.
+
+    Returns (stop_pct, "") or (0.0, refusal). An invalidation on the wrong side of entry is the
+    tell that the model produced a level to satisfy the schema rather than to mark where its
+    thesis dies -- that is a target, not a stop, and it is refused."""
+    if not (entry_ref > 0 and invalidation > 0):
+        return 0.0, "REFUSED: entry_ref and invalidation must both be positive prices"
+    if direction == "LONG" and invalidation >= entry_ref:
+        return 0.0, (f"REFUSED: a LONG's invalidation ({invalidation}) must sit BELOW entry "
+                     f"({entry_ref}) -- a level above entry is a target, not a stop")
+    if direction == "SHORT" and invalidation <= entry_ref:
+        return 0.0, (f"REFUSED: a SHORT's invalidation ({invalidation}) must sit ABOVE entry "
+                     f"({entry_ref}) -- a level below entry is a target, not a stop")
+    return abs(entry_ref - invalidation) / entry_ref * 100.0, ""
+
+
+def management_plan(entry: float, invalidation: float, direction: str, *,
+                    risk_fraction: float, leverage: float) -> dict[str, Any]:
+    """"PUT TRADES UNTIL THE TREND AND SWING HITS" -- the trail-and-pyramid ladder, computed.
+
+    Every stage's open risk and locked profit are COMPUTED from the tranche book, not asserted, so
+    the asymmetry the principal asked for is arithmetic a test can check: exposure rises
+    1.00u -> 1.50u -> 1.75u while open risk falls 1.00 -> 0.50 -> 0.25 -> 0.00 of the initial
+    budget. There is no take-profit anywhere in here on purpose: the exit is the structure
+    breaking, which is what lets one trend pay for the losers."""
+    sign = 1.0 if direction == "LONG" else -1.0
+    r = abs(entry - invalidation)                            # 1R, in price
+    if r <= 0:
+        return {"status": "UNPLANNABLE", "why": "zero-width R -- entry equals invalidation"}
+    stop_pct = r / entry * 100.0
+
+    # The pyramid gets the same gap-stress test as the entry, at the looser peak bound: the adds
+    # only ever go on once the earlier tranches are stopped at or above breakeven, so a cascade
+    # through the trail hits size that is no longer risking the entry budget. If the full ladder
+    # would breach it, the ADDS shrink -- never the rail.
+    peak_cap = min(MAX_LEVERAGE, slip_leverage_cap(stop_pct, stress_loss=MAX_PEAK_STRESS_LOSS))
+    raw_peak_units = 1.0 + sum(u for _, u in ADD_LADDER)
+    add_scale = 1.0
+    if leverage > 0 and leverage * raw_peak_units > peak_cap:
+        add_scale = max(0.0, min(1.0, (peak_cap / leverage - 1.0) / (raw_peak_units - 1.0)))
+
+    def at(mult: float) -> float:                            # price at +mult R in the trade's favour
+        return entry + sign * r * mult
+
+    tranches: list[tuple[float, float]] = [(entry, 1.0)]     # (entry price, units)
+
+    def book(stop: float) -> tuple[float, float]:
+        """Open risk and locked profit at a given stop, as fractions of the initial risk budget."""
+        risk = sum(u * risk_fraction * max(0.0, (e - stop) * sign) / r for e, u in tranches)
+        locked = sum(u * risk_fraction * max(0.0, (stop - e) * sign) / r for e, u in tranches)
+        return round(risk, 4), round(locked, 4)
+
+    orisk, olock = book(invalidation)
+    stages: list[dict[str, Any]] = [{
+        "at_R": 0.0, "trigger": round(entry, 8), "stop": round(invalidation, 8),
+        "action": "ENTER 1.00u at the level; stop at the named invalidation",
+        "units": 1.0, "notional_leverage": round(leverage, 2),
+        "open_risk_frac": orisk, "locked_profit_frac": olock}]
+
+    for trig_r, add_raw in ADD_LADDER:
+        add_u = round(add_raw * add_scale, 4)
+        stop = at(trig_r - 1.0)                              # trail ONE R behind, then add
+        tranches.append((at(trig_r), add_u))
+        units = sum(u for _, u in tranches)
+        orisk, olock = book(stop)
+        where = "breakeven" if trig_r <= 1.0 else f"+{trig_r - 1.0:g}R"
+        stages.append({
+            "at_R": trig_r, "trigger": round(at(trig_r), 8), "stop": round(stop, 8),
+            "action": f"TRAIL stop to {where}, THEN ADD {add_u:.2f}u (risk falls as size grows)",
+            "units": round(units, 2), "notional_leverage": round(leverage * units, 2),
+            "open_risk_frac": orisk, "locked_profit_frac": olock})
+
+    final_r = ADD_LADDER[-1][0] + 1.0
+    stop = at(final_r - 1.0)
+    orisk, olock = book(stop)
+    units = sum(u for _, u in tranches)
+    stages.append({
+        "at_R": final_r, "trigger": round(at(final_r), 8), "stop": round(stop, 8),
+        "action": "TRAIL behind each new swing as it forms; NO further adds, NO fixed target -- "
+                  "hold until price closes back through the trailing structure",
+        "units": round(units, 2), "notional_leverage": round(leverage * units, 2),
+        "open_risk_frac": orisk, "locked_profit_frac": olock})
+
+    peak = max(s["notional_leverage"] for s in stages)
+    return {
+        "status": "OK" if add_scale >= 1.0 else "PYRAMID-SCALED",
+        "r_price": round(r, 8), "stop_pct": round(stop_pct, 4),
+        "peak_units": round(units, 2), "peak_leverage": round(peak, 2),
+        "peak_leverage_cap": round(peak_cap, 2), "add_scale": round(add_scale, 4),
+        "peak_stress_loss": round(peak * (stop_pct + SLIP_STRESS_PCT) / 100.0, 4),
+        "stages": stages,
+        "exit_rule": "structure break only -- price closing back through the trailing swing. No "
+                     "take-profit: capping the winner is what makes a stopped-out book "
+                     "negative-EV even with a real edge.",
+        "invariant": "open_risk_frac is non-increasing across stages and never exceeds the "
+                     "initial risk budget; locked_profit_frac is non-decreasing.",
+    }
 
 
 _BRIEF = """You are the desk's CONVICTION TRADER. You take AGGRESSIVE leveraged DIRECTIONAL bets --
 this is the sleeve modelled on a sharp manual trader flipping an account fast, not the cautious
-news reader. You are ENCOURAGED to size up when you have real conviction. But you carry a STOP on
-every trade (the discipline a blown manual account lacked), and you will be SCORED, so your
-confidence must be honest.
+news reader. You are ENCOURAGED to size up when you have real conviction. But you carry a
+CALCULATED STOP on every trade (the discipline a blown manual account lacked), and you will be
+SCORED, so your confidence must be honest.
 
 INSTRUMENTS: {instruments}. Take a directional view -- macro, technical, flow, positioning,
 cross-asset (gold via PAXGUSDT, risk via BTC/ETH). A VIEW is allowed here (unlike the event
 sleeve), but state the DRIVER: what makes this move happen, and what would kill it.
+
+THE STOP IS A LEVEL, NOT A PERCENTAGE. Name the PRICE at which your thesis is factually dead --
+the swing the trend must not lose, the range edge, the shelf that was defended -- and name the
+structure it is. The desk DERIVES the stop distance from that level; it will refuse an
+invalidation on the wrong side of entry, and refuse a stop that is not at a named structure.
+THIS IS WHERE YOUR SIZE COMES FROM: the desk sizes risk_budget / stop_distance, so a stop 1% away
+at a real swing carries FOUR TIMES the size of a lazy 4% stop on the same edge. Find the tightest
+HONEST invalidation, not a comfortable one -- and not one so tight that noise takes you out.
+
+YOUR WINNERS ARE RIDDEN, NOT TAKEN. There is no take-profit. The desk moves your stop to
+breakeven at +1R, trails one R behind, and ADDS on strength (1.00u -> 1.50u -> 1.75u) while the
+trend holds, exiting only when price closes back through the trailing structure. So do NOT pick a
+small nearby target: expected_move_pct is your estimate of the move if you are right, and the
+trade is held until the structure breaks, not until that number prints.
 
 TODAY'S BRIEF (numeric context; you may reason over it, the desk's pipelines handle the arithmetic):
 {brief}
@@ -99,20 +323,23 @@ OUTPUT EXACTLY ONE JSON OBJECT:
   "symbol": "one of the instruments",
   "direction": "LONG" | "SHORT",
   "probability": 0.63,             // YOUR honest P(this trade is profitable). SCORED against outcome.
-  "expected_move_pct": 4.0,        // the move you expect if right, percent
-  "stop_pct": 2.0,                 // where you are WRONG, percent from entry. REQUIRED -- no stop, no trade.
+  "entry_ref": 4107.4,             // the price you are entering at (current or your trigger)
+  "invalidation": 4190.0,          // the PRICE where the thesis is dead. Below entry if LONG, above if SHORT.
+  "structure": "the prior-session swing high that capped the last two attempts",
+  "expected_move_pct": 4.0,        // the move you expect if right, percent -- not a take-profit
   "horizon_hours": 12,
   "driver": "what forces/drives this move",
   "falsifier": "the observation that kills the thesis before the stop",
   "reasoning": "2-4 sentences"}}
 
 BE AGGRESSIVE ON CONVICTION, HONEST ON PROBABILITY. The desk sizes the trade FOR you by
-fractional-Kelly against your probability and stop -- a 0.63 with a 2% stop becomes real
-leverage automatically, so you do not need to inflate confidence to get size; inflating it only
-makes the calibration fence catch you and SHRINK your future size. reward:risk =
-expected_move_pct / stop_pct must exceed 1.2 or the trade is refused (you are risking more than
-you stand to make). PASS with a reason if there is no directional edge -- but a conviction trader
-that always passes is not doing its job. Probability must be {lo}-{hi}."""
+fractional-Kelly against your probability and your derived stop -- a 0.63 with a 2% structural
+stop becomes real leverage automatically, so you do not need to inflate confidence to get size;
+inflating it only makes the calibration fence catch you and SHRINK your future size. reward:risk
+= expected_move_pct / derived stop must exceed 1.2 or the trade is refused (you are risking more
+than you stand to make). Derived stop must land between {smin}% and {smax}%. PASS with a reason
+if there is no directional edge -- but a conviction trader that always passes is not doing its
+job. Probability must be {lo}-{hi}."""
 
 
 def build_brief(root: Path) -> dict[str, Any]:
@@ -146,8 +373,8 @@ def validate(call: dict[str, Any]) -> tuple[bool, str]:
         if not call.get("pass_reason"):
             return False, "REFUSED: a PASS must state why -- an unjustified pass is not a decision"
         return True, f"PASS: {str(call['pass_reason'])[:80]}"
-    for f in ("symbol", "direction", "probability", "expected_move_pct", "stop_pct",
-              "horizon_hours", "driver", "falsifier"):
+    for f in ("symbol", "direction", "probability", "entry_ref", "invalidation", "structure",
+              "expected_move_pct", "horizon_hours", "driver", "falsifier"):
         if call.get(f) in (None, ""):
             return False, f"REFUSED: missing {f}"
     if call["symbol"] not in INSTRUMENTS:
@@ -155,18 +382,38 @@ def validate(call: dict[str, Any]) -> tuple[bool, str]:
     if call["direction"] not in ("LONG", "SHORT"):
         return False, "REFUSED: direction LONG or SHORT"
     try:
-        p, mv, stop = float(call["probability"]), float(call["expected_move_pct"]), \
-            float(call["stop_pct"])
+        p, mv = float(call["probability"]), float(call["expected_move_pct"])
+        entry, inval = float(call["entry_ref"]), float(call["invalidation"])
     except (TypeError, ValueError):
-        return False, "REFUSED: probability/move/stop not numeric"
+        return False, "REFUSED: probability/move/entry_ref/invalidation not numeric"
     if not MIN_PROB <= p <= MAX_PROB:
         return False, f"REFUSED: probability {p} outside {MIN_PROB}-{MAX_PROB}"
+
+    structure = str(call["structure"]).lower()
+    if not any(w in structure for w in _STRUCTURE_WORDS):
+        return False, ("REFUSED: the stop must sit at a NAMED market structure (swing, range edge, "
+                       "shelf, prior-session level...) -- an arbitrary distance is a number the "
+                       "market has never heard of, and it throws away the size a real level buys")
+    stop, why = derive_stop_pct(entry, inval, call["direction"])
+    if why:
+        return False, why
     if not MIN_STOP_PCT <= stop <= MAX_STOP_PCT:
         # THE RAIL THE MANUAL ACCOUNT LACKED: a trade with no stop, or a stop so wide it is not a
         # stop, is the one that ends the account. This is not timidity -- it is the difference
-        # between compounding the aggressive bet and being ruined by it (L1.23).
-        return False, (f"REFUSED: stop_pct {stop} outside {MIN_STOP_PCT}-{MAX_STOP_PCT} -- every "
-                       "conviction trade carries a real stop, no exceptions (L1.23)")
+        # between compounding the aggressive bet and being ruined by it (L1.23). The tight end is
+        # the same rail pointed the other way: an invalidation inside the noise is not a thesis
+        # being wrong, it is a wick, and it converts a real edge into churn.
+        return False, (f"REFUSED: derived stop {stop:.2f}% outside {MIN_STOP_PCT}-{MAX_STOP_PCT} "
+                       "-- every conviction trade carries a real structural stop (L1.23)")
+    claimed = call.get("stop_pct")
+    if claimed not in (None, ""):
+        try:
+            c = float(claimed)
+        except (TypeError, ValueError):
+            return False, "REFUSED: stop_pct present but not numeric"
+        if abs(c - stop) > STOP_MISMATCH_TOL * stop:
+            return False, (f"REFUSED: asserted stop_pct {c}% disagrees with the level named "
+                           f"({stop:.2f}% from entry) -- the stop was decorated, not calculated")
     if mv / stop < 1.2:
         return False, (f"REFUSED: reward:risk {mv/stop:.2f} < 1.2 -- risking more than the "
                        "expected gain is negative-EV even when the call is right")
@@ -177,10 +424,17 @@ def validate(call: dict[str, Any]) -> tuple[bool, str]:
 
 def record(root: Path, call: dict[str, Any]) -> dict[str, Any]:
     now = datetime.now(tz=UTC)
+    entry, inval = float(call["entry_ref"]), float(call["invalidation"])
+    stop_pct, why = derive_stop_pct(entry, inval, call["direction"])
+    if why:                                    # unreachable via main(), which validates first
+        raise ValueError(why)
     sizing = kelly_leverage(float(call["probability"]),
-                            float(call["expected_move_pct"]) / float(call["stop_pct"]),
-                            float(call["stop_pct"]))
-    row = {**call, "at": now.isoformat(), "paper": True, "sizing": sizing,
+                            float(call["expected_move_pct"]) / stop_pct, stop_pct)
+    plan = management_plan(entry, inval, call["direction"],
+                           risk_fraction=sizing["risk_fraction"], leverage=sizing["leverage"])
+    row = {**call, "at": now.isoformat(), "paper": True, "stop_pct": round(stop_pct, 4),
+           "stop_source": "DERIVED from the named invalidation level", "sizing": sizing,
+           "management": plan,
            "resolve_by": (now + timedelta(hours=float(call["horizon_hours"]))).isoformat()}
     p = root / _BOOK
     p.parent.mkdir(parents=True, exist_ok=True)
@@ -190,7 +444,8 @@ def record(root: Path, call: dict[str, Any]) -> dict[str, Any]:
         from libs.self_improvement import forecast_calibration as fc
         fc.log_forecast(f"conviction:{now.isoformat()}", float(call["probability"]),
                         "directional", resolve_by=row["resolve_by"],
-                        claim=f"{call['direction']} {call['symbol']} @{sizing['leverage']}x: "
+                        claim=f"{call['direction']} {call['symbol']} @{sizing['leverage']}x "
+                              f"stop {stop_pct:.2f}% ({str(call['structure'])[:60]}): "
                               f"{str(call['driver'])[:100]}")
     except Exception as exc:                                # noqa: BLE001 -- never lose the call
         row["calibration_log_error"] = str(exc)
@@ -230,7 +485,8 @@ def main() -> int:
         return 0
     raw = _ask(_BRIEF.format(instruments=", ".join(INSTRUMENTS),
                              brief=json.dumps(brief, indent=1)[:5000],
-                             lo=MIN_PROB, hi=MAX_PROB))
+                             lo=MIN_PROB, hi=MAX_PROB,
+                             smin=MIN_STOP_PCT, smax=MAX_STOP_PCT))
     call = parse(raw)
     if call is None:
         state = {"status": "NO-CALL", "why": "no parseable JSON (auth/quota/refusal)",
@@ -244,7 +500,8 @@ def main() -> int:
         else:
             row = record(_ROOT, call)
             state = {"status": "TRADE", "why": why, "call": row,
-                     "leverage": row["sizing"]["leverage"]}
+                     "leverage": row["sizing"]["leverage"],
+                     "peak_leverage": row["management"].get("peak_leverage")}
     state.setdefault("at", datetime.now(tz=UTC).isoformat())
     (_ROOT / _STATE).write_text(json.dumps(state, indent=2), "utf-8")
     print(json.dumps(state, indent=2) if args.json else
