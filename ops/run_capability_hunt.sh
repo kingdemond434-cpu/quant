@@ -5,5 +5,6 @@ set -uo pipefail
 cd /home/quant/quant-platform
 source ops/brain_env.sh
 echo "=== capability-hunt start $(date -u) ==="
-.venv/bin/python scripts/run_capability_hunt.py
+SLOT="${1:-0}"
+.venv/bin/python scripts/run_capability_hunt.py --slot "$SLOT"
 echo "=== capability-hunt exit $? at $(date -u) ==="

@@ -61,7 +61,13 @@ being worked. You are looking for the thing that is missing from the LIST ITSELF
 nobody on this desk has asked, the failure mode no fence watches, the measurement whose absence
 is invisible precisely because nothing reports it.
 
-HOW TO FIND ONE (use all of these, they surface different things):
+YOUR PRIMARY LENS THIS RUN (rotated -- see below). Push it to exhaustion FIRST, then sweep the
+others briefly for anything it missed:
+
+    >>> {lens} <<<
+
+The full lens set (yours is above; the rotation guarantees the desk explores every region and
+never re-draws from the same distribution twice running):
  1. INVERT A FENCE: every fence checks the desk did what it said. What checks whether what it
     SAID was true? (That reasoning produced L1.29 -- calibration -- and it was worth building.)
  2. FOLLOW A NUMBER NOBODY OWNS: name a quantity that determines terminal wealth and is computed
@@ -74,6 +80,10 @@ HOW TO FIND ONE (use all of these, they surface different things):
     single capability would have caught it?
  6. CROSS-DOMAIN TRANSFER: take one idea from control theory, epidemiology, reliability
     engineering, information theory, or aviation safety that has no equivalent here.
+ 7. THE ADVERSARY: a competitor is trying to end this desk. What is their cheapest attack, and
+    what would detect it? (Includes crowding into our own edges, venue-side adverse selection.)
+ 8. THE UNASKED QUESTION: what does this desk assume so deeply it has never written down? Find
+    an assumption nobody has ever tested, and design the test.
 
 OUTPUT (strict, and keep it SHORT -- one proposal, deeply argued, beats five sketched):
   MISSING CAPABILITY: <one line>
@@ -122,6 +132,47 @@ refused, what its first run said). If you cannot finish the build, the record IS
 and the next run resumes from it -- never leave a half-built capability unrecorded."""
 
 
+#: THE LENS SET. Rotation is what makes repeated hunting EXPLORATION rather than repetition: six
+#: runs of "use every heuristic" converge on the same region because the model's own priors
+#: dominate; one deep lens per run forces genuinely different draws, and the rotation guarantees
+#: every region is visited. Deterministic on (date, slot) so a resumed run keeps its lens and the
+#: yield record stays attributable.
+_LENSES: list[str] = [
+    "INVERT A FENCE -- find the claim no fence tests for TRUTH (only for compliance).",
+    "FOLLOW A NUMBER NOBODY OWNS -- a quantity that sets terminal wealth and is computed nowhere.",
+    "TIER-1 PROCESS GAP -- what Jane Street/XTX/Jump/DRW/Optiver/HRT/Wintermute have and we do "
+    "not, with RenTech/Medallion as the ceiling exemplar. Process, never capital.",
+    "NEGATIVE EXEMPLARS -- Alameda, LTCM, Archegos: which of their deaths would this desk NOT "
+    "detect in time, today?",
+    "TIME-TRAVEL -- it is 12 months out and the desk failed. Name the cause and the one "
+    "capability that would have caught it.",
+    "CROSS-DOMAIN TRANSFER -- import one idea from control theory, epidemiology, reliability "
+    "engineering, information theory, or aviation safety that has no equivalent here.",
+    "THE ADVERSARY -- a competitor is trying to end this desk. Cheapest attack, and what detects "
+    "it? Include crowding into our own edges and venue-side adverse selection.",
+    "THE UNASKED QUESTION -- an assumption held so deeply it was never written down. Test it.",
+]
+
+
+def _lens_for(stamp: str, slot: int) -> str:
+    """Deterministic rotation over (day, slot) -- every lens visited, none twice in a row."""
+    return _LENSES[(int(stamp) + slot) % len(_LENSES)]
+
+
+def _record_yield(root: Path, entry: dict[str, object]) -> None:
+    """Append-only hunt history -- so the desk can MEASURE which lens actually produces adopted
+    capabilities and drop the ones that never do (the audit's own recursive-meta discipline,
+    applied to exploration itself)."""
+    p = root / "data/capability_hunt_history.json"
+    try:
+        hist = json.loads(p.read_text("utf-8"))
+    except (OSError, ValueError):
+        hist = {"runs": []}
+    hist["runs"].append(entry)
+    hist["runs"] = hist["runs"][-500:]
+    p.write_text(json.dumps(hist, indent=2), "utf-8")
+
+
 def _claude(prompt: str, timeout: int = 2400) -> tuple[bool, str]:
     r = subprocess.run(
         ["bash", "-c",
@@ -152,17 +203,21 @@ def _gpt(prompt: str) -> tuple[bool, str]:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true", help="write the prompts, call no model")
+    ap.add_argument("--slot", type=int, default=0,
+                    help="which daily slot this is -- selects the exploration lens")
     args = ap.parse_args()
     _OUT.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now(tz=UTC).strftime("%Y%m%d")
-    report = _OUT / f"{stamp}_hunt.md"
-    brief = _HUNT_BRIEF.format(context=_CONTEXT)
+    lens = _lens_for(stamp, args.slot)
+    report = _OUT / f"{stamp}_s{args.slot}_hunt.md"
+    brief = _HUNT_BRIEF.format(context=_CONTEXT, lens=lens)
+    print(f"[hunt] slot={args.slot} lens={lens[:60]}...", flush=True)
 
     if args.dry_run:
-        (_OUT / f"{stamp}_prompts.txt").write_text(
+        (_OUT / f"{stamp}_s{args.slot}_prompts.txt").write_text(
             brief + "\n\n=== BUILD ===\n" + _BUILD_BRIEF.format(a="<A>", b="<B>", report=report),
             "utf-8")
-        print(f"[hunt] dry-run: prompts -> {_OUT}/{stamp}_prompts.txt")
+        print(f"[hunt] dry-run: prompts -> {_OUT}/{stamp}_s{args.slot}_prompts.txt")
         return 0
 
     # STAGE 1+2: both families propose INDEPENDENTLY -- neither sees the other's answer.
@@ -175,16 +230,19 @@ def main() -> int:
         # and SAYS SO, so the record never implies cross-family agreement that never happened.
         b = (f"(GPT-9 seat unavailable: {b}. This run is SINGLE-FAMILY -- treat its proposal as "
              "unconfirmed by an independent family, and note that in the record.)")
-    (_OUT / f"{stamp}_proposals.md").write_text(
-        f"# CAPABILITY HUNT PROPOSALS {stamp}\n\n## A -- Claude family\n\n{a}\n\n"
+    (_OUT / f"{stamp}_s{args.slot}_proposals.md").write_text(
+        f"# CAPABILITY HUNT PROPOSALS {stamp} slot {args.slot}\n\nLENS: {lens}\n\n"
+        f"## A -- Claude family\n\n{a}\n\n"
         f"## B -- GPT-9 family (independent)\n\n{b}\n", "utf-8")
 
     # STAGE 3: adjudicate + BUILD. Proposal without implementation is the defect (L1.28b).
     ok_b, out = _claude(_BUILD_BRIEF.format(a=a, b=b, report=report), 3000)
-    status = {"stamp": stamp, "claude_proposed": ok_a, "gpt_proposed": ok_g,
+    status = {"stamp": stamp, "slot": args.slot, "lens": lens,
+              "claude_proposed": ok_a, "gpt_proposed": ok_g,
               "cross_family": ok_a and ok_g, "built": ok_b and report.exists(),
               "report": str(report), "generated": datetime.now(tz=UTC).isoformat()}
     (_ROOT / "data/capability_hunt.json").write_text(json.dumps(status, indent=2), "utf-8")
+    _record_yield(_ROOT, status)
     print(f"[hunt] {json.dumps(status)}")
     if not ok_b:
         print(f"[hunt] builder tail: {out[-500:]}")

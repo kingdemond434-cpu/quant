@@ -67,4 +67,13 @@
 0 20 * * 6 cd "$QUANT_ROOT" && { systemctl is-enabled quant-blindrediscovery.timer >/dev/null 2>&1 || flock -n /tmp/seat_blindrediscovery.lock /bin/bash ops/run_blindrediscovery_dig.sh >> data/cro_ai_logs/seat_blindrediscovery.log 2>&1; }
 
 # capability hunt (L1.31) -- on the twin this EXECUTES rather than contends for the seat
-30 9 * * * cd "$QUANT_ROOT" && flock -n data/.cron_capability_hunt.lock /bin/bash ops/run_capability_hunt.sh >> data/cro_ai_logs/capability_hunt.log 2>&1
+30 9 * * * cd "$QUANT_ROOT" && flock -n data/.cron_capability_hunt.lock /bin/bash ops/run_capability_hunt.sh 0 >> data/cro_ai_logs/capability_hunt.log 2>&1
+
+# EXPLORATION AT MAX (principal 2026-07-31: the capability hunt IS exploration --
+# max push it). Hunting is RESOURCE-bound, not information-bound (L1.28c): the space of
+# things we have not thought of never runs dry, so the ceiling is seat contention, and
+# flock -n makes an occupied seat a free skip. Three slots/day, each on a DIFFERENT
+# rotating lens, so the runs are independent draws rather than the same draw repeated.
+30 13 * * * cd "$QUANT_ROOT" && flock -n data/.cron_capability_hunt.lock /bin/bash ops/run_capability_hunt.sh 1 >> data/cro_ai_logs/capability_hunt.log 2>&1
+30 21 * * * cd "$QUANT_ROOT" && flock -n data/.cron_capability_hunt.lock /bin/bash ops/run_capability_hunt.sh 2 >> data/cro_ai_logs/capability_hunt.log 2>&1
+

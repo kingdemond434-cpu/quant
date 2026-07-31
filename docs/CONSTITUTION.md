@@ -489,8 +489,20 @@ and divergence as the second strongest (one family saw what the other could not)
 BUILDS in the same run** — a proposal nobody implements is the found-never-fixed defect L1.28b
 exists to kill, and at this desk's measured conversion rate a proposal-only organ is a debt
 generator. A run that degrades to one family **says so**, so the record never implies a
-cross-family agreement that never happened. **FENCED**: `scripts/run_capability_hunt.py` +
-`ops/run_capability_hunt.sh`, daily; dated artifacts under `docs/research/capability_hunt/`, and
+cross-family agreement that never happened. **EXPLORATION IS RESOURCE-BOUND, NEVER INFORMATION-BOUND** *(principal 2026-07-31: "that is
+what I meant by exploration as well — max push 100")*. The space of things this desk has not
+thought of **never runs dry**, so hunting has no information ceiling to respect (L1.28c): its
+only limit is seat contention, and `flock -n` makes an occupied seat a free skip. It therefore
+runs at **maximum slots the seats allow — three per day per box** — and **each slot draws a
+DIFFERENT rotating lens**, because six runs of "apply every heuristic" converge on the same
+region (the model's own priors dominate) while one deep lens per run forces genuinely
+independent draws. Rotation is deterministic on (date, slot), so every region is visited, none
+twice running, and each proposal is attributable to the lens that produced it — which makes
+**lens yield measurable** (`data/capability_hunt_history.json`): a lens that never produces an
+adopted capability is retired by evidence, exactly as the deep sweep retires its own questions.
+
+**FENCED**: `scripts/run_capability_hunt.py` +
+`ops/run_capability_hunt.sh`, 3x daily; dated artifacts under `docs/research/capability_hunt/`, and
 `check_organs` catches it going quiet whatever the stated reason (L1.25a).
 
 **L1.28c CADENCE IS AGGRESSION — EVERY SCHEDULE HUNTS ITS OWN CEILING** *(principal order

@@ -66,6 +66,28 @@ def test_hunt_keeps_families_independent_and_flags_degradation():
     src = Path("scripts/run_capability_hunt.py").read_text("utf-8")
     # Neither proposal prompt may contain the other's output: both are built from _HUNT_BRIEF
     # alone, and only the BUILD stage sees both.
-    assert "_HUNT_BRIEF.format(context=_CONTEXT)" in src
+    assert "_HUNT_BRIEF.format(context=_CONTEXT, lens=lens)" in src
     assert "SINGLE-FAMILY" in src                     # honest degradation when GPT seat is dead
     assert "_BUILD_BRIEF.format(a=a, b=b" in src
+
+
+def test_lens_rotation_gives_independent_draws():
+    from scripts.run_capability_hunt import _LENSES, _lens_for
+    day = "20260731"
+    slots = [_lens_for(day, i) for i in range(3)]
+    assert len(set(slots)) == 3                       # no two slots in a day share a lens
+    assert _lens_for(day, 0) != _lens_for("20260801", 0)   # nor does the same slot day-to-day
+    # every lens is reachable -- the rotation covers the whole space, never a favourite subset
+    seen = {_lens_for(f"2026{m:02d}{d:02d}", s)
+            for m in (7, 8) for d in range(1, 29) for s in range(3)}
+    assert seen == set(_LENSES)
+
+
+def test_hunt_history_is_append_only_and_lens_attributed(tmp_path):
+    from scripts.run_capability_hunt import _record_yield
+    (tmp_path / "data").mkdir()
+    _record_yield(tmp_path, {"stamp": "20260731", "slot": 0, "lens": "L1", "built": True})
+    _record_yield(tmp_path, {"stamp": "20260731", "slot": 1, "lens": "L2", "built": False})
+    import json
+    runs = json.loads((tmp_path / "data/capability_hunt_history.json").read_text())["runs"]
+    assert [r["lens"] for r in runs] == ["L1", "L2"]   # attributable -> lens yield measurable
