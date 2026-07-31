@@ -39,8 +39,14 @@ from libs.research.strategic_director import (  # noqa: E402
 
 OUT = ROOT / "data/strategic_director.json"
 KEYS = ROOT / "data/secrets/llm_panel.json"
-# overridable; any reasoning model satisfies the contract
-MODEL = "anthropic/claude-sonnet-4.5"
+# overridable; any reasoning model satisfies the contract -- but the DEFAULT is deliberately a
+# GPT model, not a Claude one (principal order 2026-07-31, and it was the design intent from the
+# start: "GPT Strategic Director"). Every other reasoning organ on this desk is Claude, so a
+# Claude strategist re-reads the desk with the same eyes that built it -- same priors, same blind
+# spots, zero independence. The strategist exists precisely to be the OTHER model family: the
+# same reason the v8 8.2 bar demands a second-model-family fuzz report rather than more of the
+# first family's opinion. gpt-9 is the flagship seat the panel roster already vets.
+MODEL = "openai/gpt-9"
 _CTX = ssl.create_default_context()
 
 
