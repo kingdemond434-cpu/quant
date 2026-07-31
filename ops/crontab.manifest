@@ -930,3 +930,18 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # EVIDENCE: scripts/check_mechanism_attribution.py -> data/mechanism_attribution.json
 # CONFIDENCE: committed-script (new this cycle; caught the live case on its first run)
 35 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_attribution.lock .venv/bin/python scripts/check_mechanism_attribution.py --report-only >> data/cro_ai_logs/attribution.log 2>&1
+
+# TRADE REVIEW (R0139): the discretionary desk's LEARNING LOOP, on BINANCE perps. Reads each closed
+# paper trade against what was claimed at entry -- thesis, named structure, falsifier, chart state
+# -- and against what price then did, then classifies the cause into something actionable
+# (THESIS-WRONG / LEVEL-WRONG / TIMING-WRONG / NOISE-STOP / RIGHT-AND-PAID / RIGHT-BUT-TRUNCATED /
+# UNLUCKY) and extracts ONE falsifiable lesson. Weights are fixed and nothing here fine-tunes:
+# what improves is the desk's evidence-weighted knowledge of WHICH SETUPS PAY, the way a journal
+# improves a human. The playbook is an EVIDENCE LADDER -- PROVISIONAL on one observation with no
+# authority, SUPPORTED only after 3 agreeing trades, RETIRED the moment one contradicts it (and the
+# contradiction recorded so it cannot return), STALE if untested for 25 closed trades. ONLY
+# SUPPORTED lessons reach the trading brief: one lucky trade must not rewrite the method.
+# 3x/day, offset from the resolver so it reads freshly-closed trades.
+# EVIDENCE: scripts/run_trade_review.py -> data/trading_playbook.json + data/trade_review.json
+# CONFIDENCE: committed-script (new this cycle)
+40 2,10,18 * * * cd "$QUANT_ROOT" && flock -n data/.cron_review.lock .venv/bin/python scripts/run_trade_review.py >> data/cro_ai_logs/trade_review.log 2>&1

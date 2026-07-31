@@ -342,6 +342,37 @@ def equity_curve(resolved: list[dict[str, Any]]) -> dict[str, Any]:
                     "path is rougher than this, never smoother"}
 
 
+def setup_performance(resolved: list[dict[str, Any]], *, min_n: int = 5) -> dict[str, Any]:
+    """Hit rate and mean return CONDITIONED ON THE SETUP -- how the desk learns what to stop doing.
+
+    A single global hit rate hides everything actionable. A sleeve that is 55% with the 4h trend
+    and 25% against it reads as a mediocre 40% overall, and the fix -- stop taking counter-trend
+    setups -- is invisible until the outcomes are conditioned. Buckets under `min_n` report
+    INSUFFICIENT rather than a number, because a 100% hit rate on two trades is not a finding and
+    publishing it as one is how a desk learns superstition."""
+    out: dict[str, Any] = {}
+    feats: dict[str, dict[Any, list[dict[str, Any]]]] = {}
+    for m in resolved:
+        for k, v in (m.get("setup") or {}).items():
+            if k in ("symbol",) or v is None:
+                continue
+            feats.setdefault(k, {}).setdefault(v, []).append(m)
+    for feat, buckets in feats.items():
+        rows = {}
+        for val, ms in buckets.items():
+            n = len(ms)
+            if n < min_n:
+                rows[str(val)] = {"n": n, "state": "INSUFFICIENT",
+                                  "why": f"{n} trades -- a rate on this many is not a finding"}
+                continue
+            wins = sum(1 for m in ms if m.get("profitable"))
+            rows[str(val)] = {
+                "n": n, "state": "MEASURED", "hit_rate": round(wins / n, 3),
+                "mean_return": round(sum(float(m.get("equity_return") or 0.0) for m in ms) / n, 5)}
+        out[feat] = rows
+    return out or {"state": "UNMEASURED", "why": "no setup tags on any closed trade"}
+
+
 def _rows(path: Path) -> list[dict[str, Any]]:
     out = []
     try:
@@ -402,6 +433,7 @@ def resolve_book(root: Path, *, now: datetime | None = None,
                           "direction": row.get("direction"),
                           "probability": row.get("probability"), "source": source,
                           "buy_and_hold": _benchmark(bars),
+                          "setup": row.get("setup"),
                           "scored_at": row.get("resolve_by"), "hard_exit_by": row.get("hard_exit_by"),
                           "closed": closed, **res})
 
@@ -442,6 +474,7 @@ def resolve_book(root: Path, *, now: datetime | None = None,
                          / max(1, len([m for m in resolved if m.get("realised_R") is not None])),
                          4) if resolved else None),
         "equity": curve,
+        "setup_performance": setup_performance(resolved),
         "costs_deducted": {"taker": TAKER_FEE, "maker": MAKER_FEE, "slippage_per_side": SLIPPAGE,
                            "funding_per_8h": FUNDING_PER_8H,
                            "note": "entry assumed MAKER (a resting order at the named level), exit "

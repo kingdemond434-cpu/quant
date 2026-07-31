@@ -184,6 +184,10 @@ _MAP: dict[str, list[str]] = {
     # desk's own two-sided bleed fence already said "naked leg" -- and gated nothing.
     "L1.6-attribution": ["scripts/check_mechanism_attribution.py",
                          "libs/execution/carry_accounting.py"],
+    # R0139: the discretionary desk's learning loop. Lessons climb an evidence ladder before they
+    # reach the trader and are retired by their own falsifier -- the same standard L1.6 applies to
+    # alpha, applied to the desk's beliefs about its own method.
+    "L1.6-playbook": ["scripts/run_trade_review.py", "docs/DISCRETIONARY_DESK.md"],
     # L1.25a: null streaks throttle nothing -- an organ going quiet is caught by the freshness/
     # productivity wires REGARDLESS of its reason, so "stopped because nothing was working" trips
     # the same fence as "stopped because broken". The pessimism-freeze cannot hide.

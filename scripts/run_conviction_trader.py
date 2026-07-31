@@ -495,6 +495,14 @@ Read them like a trader: is the 4h trend with you, is there room to the next lev
 invalidation you want to use an actual defended structure or a random pivot?
 {charts}
 
+THE DESK'S OWN PLAYBOOK -- lessons this sleeve LEARNED from its own closed Binance trades, each
+one held to {n_support}+ independent agreeing trades before it was allowed to reach you, and
+retired the moment a trade contradicted it. These are not platitudes; they are this desk's
+measured experience. Weigh them against what you see, and if the chart contradicts one, SAY SO in
+your reasoning -- a lesson that stops matching reality needs to be retired, and you are the only
+thing that can notice.
+{playbook}
+
 PICK THE BEST SETUP IN THE UNIVERSE, not the first readable one. You get one call per hour across
 18 instruments and several positions can be live at once, so a mediocre setup costs you the good
 one you would otherwise have had heat for. The right answer is often PASS.
@@ -792,6 +800,55 @@ def sleeve_drawdown(root: Path) -> dict[str, Any]:
                          f"{SLEEVE_DD_HALT:.0%} rail")}
 
 
+def _playbook_brief(root: Path) -> str:
+    """SUPPORTED lessons only. A single lucky trade must not be able to rewrite the method, so the
+    PROVISIONAL tier is deliberately invisible here (see run_trade_review.py)."""
+    try:
+        pb = json.loads((root / "data/trading_playbook.json").read_text("utf-8"))
+    except (OSError, ValueError):
+        return ("(no playbook yet -- the review loop has not closed enough trades to support a "
+                "lesson. You are trading on general reasoning alone, which is the honest state, "
+                "not a clean slate.)")
+    live = [lv for lv in pb.get("lessons", []) if lv.get("status") == "SUPPORTED"]
+    if not live:
+        prov = sum(1 for lv in pb.get("lessons", []) if lv.get("status") == "PROVISIONAL")
+        return (f"(no SUPPORTED lessons yet; {prov} provisional and deliberately withheld until "
+                f"{N_SUPPORT}+ trades agree. Trade on your own read.)")
+    live.sort(key=lambda lv: (-lv.get("support", 0), -lv.get("last_seen_at_trade", 0)))
+    return json.dumps([{"lesson": lv["text"], "when": lv.get("applies_when", ""),
+                        "evidence": f"{lv.get('support')} agreeing trades"}
+                       for lv in live[:12]], indent=1)
+
+
+def setup_features(call: dict[str, Any], charts: dict[str, Any] | None) -> dict[str, Any]:
+    """Tag the SITUATION a trade was taken in, so the desk can learn WHICH SETUPS PAY rather than
+    only whether it is globally calibrated.
+
+    A single hit rate over all trades hides everything actionable: a sleeve that is 55% with the 4h
+    trend and 25% against it looks like a mediocre 40% overall, and the fix -- stop taking
+    counter-trend setups -- is invisible until the outcomes are conditioned on the setup."""
+    f: dict[str, Any] = {"symbol": call.get("symbol"), "direction": call.get("direction")}
+    tf = ((charts or {}).get("charts", {}).get(str(call.get("symbol")), {})
+          .get("timeframes", {}).get("4h", {}))
+    trend = str(tf.get("trend", "UNKNOWN"))
+    f["trend_4h"] = trend.split(" ")[0]
+    f["with_4h_trend"] = (("UPTREND" in trend and call.get("direction") == "LONG")
+                          or ("DOWNTREND" in trend and call.get("direction") == "SHORT")
+                          if "TREND" in trend else None)
+    f["vol_regime"] = tf.get("vol_regime", "UNKNOWN")
+    pir = tf.get("position_in_range")
+    f["position_in_range"] = (None if pir is None else
+                              "low" if pir < 0.33 else "high" if pir > 0.67 else "mid")
+    struct = str(call.get("structure", "")).lower()
+    f["level_touches"] = next((int(n) for n in re.findall(r"(\d+)[ -]?touch", struct)), None)
+    try:
+        f["horizon_bucket"] = ("short" if float(call.get("horizon_hours", 0)) <= 12 else
+                               "medium" if float(call.get("horizon_hours", 0)) <= 36 else "long")
+    except (TypeError, ValueError):
+        f["horizon_bucket"] = None
+    return f
+
+
 def _chart_brief(root: Path, heat: dict[str, Any] | None = None, *, max_chars: int = 9000) -> str:
     """The charts, trimmed to what fits and honest about what did not.
 
@@ -985,7 +1042,12 @@ def record(root: Path, call: dict[str, Any], *,
                            risk_fraction=sizing["risk_fraction"], leverage=sizing["leverage"],
                            noise_pct=noise_pct)
     horizon = float(call["horizon_hours"])
-    row = {**call, "at": now.isoformat(), "paper": True, "stop_pct": round(stop_pct, 4),
+    try:
+        charts = json.loads((root / "data/chart_context.json").read_text("utf-8"))
+    except (OSError, ValueError):
+        charts = None
+    row = {**call, "at": now.isoformat(), "paper": True, "venue": "BINANCE-USDM-PERP",
+           "setup": setup_features(call, charts), "stop_pct": round(stop_pct, 4),
            "stop_source": "DERIVED from the named invalidation level", "sizing": sizing,
            "noise": noise, "management": plan,
            # the CALIBRATION clock -- when the forecast is scored
@@ -1067,6 +1129,7 @@ def main() -> int:
         floors = {"state": "UNMEASURED", "why": str(exc)}
     charts = _chart_brief(_ROOT, heat)
     raw = _ask(_BRIEF.format(instruments=", ".join(INSTRUMENTS),
+                             playbook=_playbook_brief(_ROOT), n_support=3,
                              brief=json.dumps(brief, indent=1)[:5000],
                              noise=json.dumps(floors)[:1500],
                              charts=charts,

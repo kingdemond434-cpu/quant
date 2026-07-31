@@ -1682,6 +1682,18 @@
    "commit": null,
    "due": null,
    "note": "sizing fence flagged MIN_TRADE_RISK on first run; vocabulary widened rather than the organ reworded, per its own stated rule"
+  },
+  {
+   "id": "R0139",
+   "source": "principal",
+   "summary": "THE DISCRETIONARY DESK AS A FIRST-CLASS SECTION, with a learning loop. Principal: 'train the brain to maximum to get better and more profitable at these... just as much priority as the other section... minimum consistent 300 net CAGR... this should all be BINANCE, don't mistake it for MT5.' VENUE CORRECTED throughout: the sleeve trades Binance USD-M perps; the MT5 screenshots were the origin of the idea and one data point on trail width, never the venue. run_trade_review.py reads each closed trade against what was claimed at entry and classifies the cause into something actionable (THESIS-WRONG / LEVEL-WRONG / TIMING-WRONG / NOISE-STOP / RIGHT-AND-PAID / RIGHT-BUT-TRUNCATED / UNLUCKY -- that last one load-bearing, since a desk that cannot tell right-and-unlucky from wrong will 'fix' a working process), then extracts ONE falsifiable lesson. The playbook is an EVIDENCE LADDER: PROVISIONAL on one observation with no authority, SUPPORTED after 3 agreeing trades, RETIRED the moment one contradicts it with the contradiction recorded, STALE after 25 untested trades. Only SUPPORTED lessons reach the brief. Outcomes are also CONDITIONED ON SETUP (trend alignment, vol regime, position in range, level touches, horizon) because one global hit rate hides everything actionable -- 55pct with the 4h trend and 25pct against reads as a mediocre 40pct, and the fix is invisible until it is split. docs/DISCRETIONARY_DESK.md states the section, its organs, its method and what 300pct actually requires: a ~38pct hit rate against a 31.1pct cost-adjusted breakeven.",
+   "roi_bps": 0.0,
+   "raised": "2026-07-31T18:00:00+00:00",
+   "status": "done",
+   "reason": "built, 10 review tests, 21/21 build standard, registered as a \u00a736 producer",
+   "commit": null,
+   "due": null,
+   "note": "weights are fixed and nothing here fine-tunes -- what improves is evidence-weighted knowledge of which setups pay, the way a journal improves a human trader"
   }
  ]
 }
