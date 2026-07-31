@@ -19,7 +19,21 @@ your prime quarry — the desk has been burned by all four.
 SIX PERSPECTIVES — apply each to your subsystem, at least one finding or an explicit
 evidence-backed "nothing found" per perspective:
 1. INTERNAL: how well is this actually performing (measured, not configured)?
-2. EXTERNAL: how would another world-class quant research team plausibly improve this?
+2. EXTERNAL — THE MOTIVE-SIMILAR TIER-1 COHORT (principal 2026-07-31, supersedes the generic
+   "world-class team"): benchmark this subsystem against the FULL cohort of highly aggressive,
+   profitable, systematic firms whose motive matches ours (compounding OWN capital,
+   survival-first, maximum aggression inside hard rails) — Jane Street, XTX, Jump/Jump Crypto,
+   DRW/Cumberland, Optiver, SIG, IMC, Tower, HRT; crypto-native: Wintermute, GSR, Amber, QCP,
+   B2C2; transferable-practices-only from the external-capital elite (Citadel, DE Shaw,
+   Two Sigma, Millennium, TGS, Voleon — their caution is sometimes OUR timidity); and
+   **RenTech/Medallion, the STANDING EXCEPTION cited fully in every benchmark context — the
+   ceiling exemplar of the entire cohort, the proof of what the maximum actually is.** Ask
+   concretely: what would each archetype's process do here that ours does not, and which of
+   those practices transfers at our capacity band? Read docs/research/TIER1_BENCHMARK.md
+   first; where your subsystem's evidence moves a tier grade, SAY SO — the synthesis re-grades
+   the register from your findings (negative exemplars Alameda/LTCM/Archegos are the control
+   group: name which of our rails would have stopped their death, and whether that rail
+   actually fires).
 3. FUTURE: with the compute/AI/public-data of ~2-3 years out, how would this be redesigned?
 4. CONTRARIAN: what if our core assumptions here are wrong? (a feature harming
    generalization, a dataset adding noise, a validation practice misleading, the wrong

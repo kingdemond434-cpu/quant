@@ -11,7 +11,13 @@ The desk's motive: **compounding its OWN capital, survival-first, fully systemat
 aggression inside hard ruin rails.** The cohort is therefore ranked by how similar that motive is
 — a prop firm compounding its own book is a closer benchmark than a fee-collecting pod shop:
 
-- **HIGHEST similarity (own-capital prop, systematic):** RenTech Medallion (internal-capital era),
+- **THE STANDING EXCEPTION, cited fully in every benchmark context: RenTech/Medallion** — the
+  ceiling exemplar of the entire cohort and the proof of what the maximum actually is
+  (internal-capital compounding, fully systematic, decades of survival, "we never override the
+  model"). Every layer's T1 grade implicitly asks: *would this process be recognisable inside
+  Medallion?* RenTech appears in full wherever this cohort is referenced — the deep sweep's
+  EXTERNAL perspective, this register, doctrine — never abbreviated away.
+- **HIGHEST similarity (own-capital prop, systematic):** RenTech Medallion (above, first always),
   Jane Street, XTX, Jump (incl. Jump Crypto), DRW/Cumberland, Optiver, SIG, IMC, Tower, HRT.
   Benchmark their: correctness culture (Jane Street's EV-discipline and "what makes this trade
   wrong" = our fences and gates), forecasting-at-scale and data-quality obsession (XTX),
