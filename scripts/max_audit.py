@@ -1947,14 +1947,14 @@ _PRODUCER_CADENCE = {
     "docs/research/adoption_queue.md": (
         35.0, "trigger-gated methods (fracdiff, dollar bars, ...) -- nothing notices when a "
               "precondition ARRIVES, so a due adoption waits forever"),
-    # §36(2) claim for the blind-rediscovery log (2026-07-31): it was the one docs artifact no law
-    # owned. It is a MONTHLY producer -- the organ that re-invents mechanisms blind to the desk's
-    # own history, so a silent death costs the desk its only un-anchored idea source. 35d, not 31,
-    # so an on-time monthly run never fires the check the day before it is due.
-    "docs/research/blind_rediscovery_log.md": (
-        35.0, "monthly blind-rediscovery run (cadence_state.last_blind_rediscovery); its cards are "
-              "ledgered as R-rows by the authoring session, so §36 governs the RUN happening while "
-              "the recommendation ledger governs the cards"),
+    # (A duplicate blind_rediscovery_log.md entry lived here from 2026-07-31 until a concurrent
+    # session classified the SAME file below at 31.0d. Removed rather than merged: Python keeps
+    # the LAST duplicate key silently, so two entries meant one of the two stated reasons was
+    # decorative and nobody could tell which. The surviving entry is the better-founded one --
+    # it READS the cadence from the document's own header, which is what §36 asks for, instead of
+    # inventing one here. The dropped entry's only distinct argument was a 35d-vs-31d margin so an
+    # on-time monthly run cannot fire the check on its own due date; if that ever fires
+    # spuriously, widen the surviving entry rather than re-adding a second key.)
     # The register is a producer too -- the one every other law routes into. Its own header
     # promises a re-rank every daily cycle; check_gap_register_health reads the self-declared
     # stamp, and this is the file-level backstop if the stamp itself stops being written.

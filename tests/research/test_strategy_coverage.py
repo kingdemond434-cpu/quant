@@ -186,7 +186,7 @@ def test_the_portable_half_needs_no_live_state(tmp_path):
 def test_the_fence_runs_at_both_boundaries_with_the_right_halves():
     """Portable half at every commit; the measurement only where live state exists."""
     from scripts.run_law_gate import _LAW_FENCES, _STATE_FENCES
-    law = {n: a for n, a in _LAW_FENCES}
-    state = {n: a for n, a in _STATE_FENCES}
+    law = dict(_LAW_FENCES)
+    state = dict(_STATE_FENCES)
     assert law.get("check_strategy_breadth.py") == ("--surfaces-only",)
     assert state.get("check_strategy_breadth.py") == ()
