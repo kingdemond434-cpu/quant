@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""STRATEGY-BREADTH FENCE (R0202) -- the clock behind "never limit to just one thing".
+"""STRATEGY-BREADTH FENCE (R0211) -- the clock behind "never limit to just one thing".
 
 PRINCIPAL, twice (2026-07-31): *"miners n explorers kimi etc all should find every crypto strat
 even discretionary n all n never limit to just one thing."*
