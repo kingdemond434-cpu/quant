@@ -10,7 +10,8 @@ from __future__ import annotations
 import json
 from datetime import UTC, datetime, timedelta
 
-from scripts.resolve_paper_book import (_benchmark, mark_event_row, resolve_book, walk_ladder)
+from scripts.resolve_paper_book import (_benchmark, mark_event_row, resolve_book,
+                                        trade_cost, walk_ladder)
 from scripts.run_conviction_trader import kelly_leverage, management_plan
 
 _ENTRY, _INVAL = 100.0, 98.0                  # LONG, R = 2.0
@@ -42,8 +43,23 @@ def test_a_trade_stopped_at_its_invalidation_loses_exactly_one_R():
     assert res["outcome"] == "STOPPED"
     assert abs(res["realised_R"] + 1.0) < 1e-9              # -1R, no more
     assert res["exit_price"] == _INVAL and res["stage_reached"] == 0
-    # ...and in equity terms that is exactly the risk the sizer budgeted, never more.
-    assert abs(res["equity_return"] + _row()["sizing"]["risk_fraction"]) < 1e-9
+    # GROSS is exactly the risk the sizer budgeted, never more...
+    assert abs(res["gross_return"] + _row()["sizing"]["risk_fraction"]) < 1e-9
+    # ...and NET is that plus costs, because a stop is a real fill that a real venue charges for.
+    assert res["equity_return"] < res["gross_return"]
+    assert abs(res["equity_return"] - (res["gross_return"] - res["cost"]["total"])) < 1e-9
+    assert res["cost"]["entry_side"] == "maker"          # resting order at the named level
+
+
+def test_costs_are_deducted_so_a_marginal_edge_reads_as_marginal():
+    # At 6.7x a round trip is ~24% of a full R: a gross mark shows a 30% hit rate as profitable
+    # when it is a loser. This is the self-flattery the resolver exists to prevent.
+    c = trade_cost(6.7, 1.5, 20.0)
+    assert c["total"] > 0.005 and c["total"] < 0.02
+    assert c["entry_fee"] < c["exit_fee"]                # maker in, taker out
+    taker = trade_cost(6.7, 1.5, 20.0, entry_maker=False)
+    assert taker["total"] > c["total"] * 1.3             # chasing the entry costs real money
+    assert trade_cost(0.0, 0.0, 0.0)["total"] == 0.0     # no position, no cost
 
 
 def test_intrabar_ambiguity_resolves_against_the_desk():

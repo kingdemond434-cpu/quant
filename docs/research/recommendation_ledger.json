@@ -1634,6 +1634,18 @@
    "commit": null,
    "due": null,
    "note": "the gap-stress leverage cap is now INERT at a 6pct budget and is labelled as such in code rather than counted as protection; owed next: wire measured calibration into the probability before Kelly so size scales UP as evidence arrives, not only down"
+  },
+  {
+   "id": "R0135",
+   "source": "claude",
+   "summary": "SIZING-DERIVATION FENCE + costs deducted from every paper mark. THE PATTERN THAT FORCED IT: four money-path constants were found defective in a single session, all the same shape -- a round number picked by analogy, never computed. MAX_LEVERAGE=10 (anti-aggression: made a 0.9pct stop deploy 9pct of a 20pct budget), MIN_STOP_PCT=0.5 (one number for gold and SOL; measured 0.64pct vs 1.28pct), trail=1R (sat AT the noise floor, failing the test the entry stop must pass), MAX_RISK_PER_TRADE=0.20 (chosen by analogy to a screenshot; simulated it gives P(-90pct drawdown)=96pct even when profitable). Four of four caught by hand is a missing mechanism, not bad luck. check_sizing_derivation.py now requires every module-level numeric constant in the money path to cite the simulation, measurement, law or published venue schedule that set it; it flagged 11 on its own first run including several written the same hour. In the law gate and CI, not on a clock -- it is a build-boundary fence. SEPARATELY: the resolver was reporting GROSS P&L. Costs at 6.7x are ~24pct of one R (taker) or ~17pct (maker-in, which is the correct order type since the sleeve rests an order AT a named level), moving the breakeven hit rate from 25.0pct to 31.1pct/29.3pct. equity_return is now NET with gross reported beside it.",
+   "roi_bps": 0.0,
+   "raised": "2026-07-31T15:45:00+00:00",
+   "status": "done",
+   "reason": "built, in the law gate, 9 tests; money path 23/23 constants derived",
+   "commit": null,
+   "due": null,
+   "note": "the fence cannot check that a cited derivation is CORRECT, only that one exists and is specific -- stated in its docstring rather than implied"
   }
  ]
 }

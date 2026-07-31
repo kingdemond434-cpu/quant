@@ -15,10 +15,15 @@ without a stop meets the -100% version eventually. The desk's edge is NOT being 
 trade. It is being able to take the SAME aggressive bet a thousand times without the one that
 ends the account. So:
 
-  AGGRESSION IS UNCAPPED. This sleeve takes real leverage, real directional conviction, and sizes
-  UP on high-confidence calls -- fractional-Kelly against Claude's own stated probability, which
-  at a 60% edge and a 2% stop is ~8x, exactly the leverage in the screenshot. A high-conviction
-  call is meant to be large. Timidity here is a defect (L1.28).
+  AGGRESSION LIVES IN BREADTH AND FREQUENCY, NOT IN BET SIZE, and that is a measured conclusion
+  rather than a preference. Simulated over 250 days: at 20% risk per trade this book meets a -90%
+  drawdown with near-certainty EVEN WHEN THE STRATEGY IS PROFITABLE, and past full Kelly more size
+  makes growth NEGATIVE. Holding total risk fixed at ~24% and changing only its SHAPE, one bet at
+  24% gives P(-90%)=100% while eight bets at 3% give P(-90%)=0% with a far higher median. So the
+  sleeve runs 18 instruments, hourly, up to five positions at once, 6% each -- MORE total exposure
+  than one-bet-at-20% ever ran, spread where it compounds instead of where it ruins. On a 0.9%
+  structural stop 6% is still ~6.7x, the screenshot's own range. Timidity is a defect (L1.28);
+  so is confusing bet size with aggression.
 
   RUIN IS CAPPED, and this is the one line that does not move. EVERY position carries a stop
   (the thing the manual account lacks), per-trade loss is bounded, portfolio leverage is bounded,
@@ -38,7 +43,7 @@ ends the account. So:
 
   WINNERS ARE RIDDEN, NOT TAKEN. "Put trades until the trend and swing hits" -- so there is no
   fixed take-profit. The position moves to breakeven at +1R, trails one R behind, and ADDS on
-  strength (1.00u -> 1.50u -> 1.75u) while the trend holds, exiting only when price closes back
+  strength (up to 1.75u, less when the trail is noise-widened) while the trend holds, exiting when price closes back
   through the trailing structure. The pyramid is not extra risk: by the time the first add goes
   on, the original tranche's stop is at breakeven, so OPEN RISK FALLS at every stage
   (1.00 -> 0.50 -> 0.25 -> 0.00 of the initial budget) while exposure RISES. That asymmetry is
@@ -55,8 +60,8 @@ ends the account. So:
 
 WHY THE STOP ALWAYS HITS BEFORE LIQUIDATION, which is the failure mode that kills leveraged
 directional books: sizing solves leverage = risk_fraction / stop_distance, so leverage * stop
-distance == risk_fraction <= 0.20 BY CONSTRUCTION, while liquidation sits at roughly 1/leverage.
-The stop is therefore never more than ~20% of the way to liquidation at any leverage this sleeve
+distance == risk_fraction <= 0.06 BY CONSTRUCTION, while liquidation sits at roughly 1/leverage.
+The stop is therefore never more than ~6% of the way to liquidation at any leverage this sleeve
 can produce. It is structurally impossible for this sizer to build a position that gets
 liquidated before its stop is touched.
 
@@ -76,8 +81,9 @@ of levels where its thesis is actually dead. That is the same PASS-optimisation 
 sleeve had to have designed out of it. The brief asks for the honest level and nothing else; the
 sizer's shape is the desk's business, not the trader's.
 
-INSTRUMENTS: Binance perps for liquid directional exposure (BTCUSDT, ETHUSDT, SOLUSDT) and
-PAXGUSDT as the on-Binance gold analogue of the screenshot's XAUUSD.
+INSTRUMENTS: 18 liquid Binance perps, plus PAXGUSDT as the on-Binance gold analogue of the
+screenshot's XAUUSD -- the one non-crypto-beta name, and so the one position that can be
+uncorrelated when everything else moves together.
 
     python scripts/run_conviction_trader.py [--json]
 """
@@ -114,9 +120,24 @@ INSTRUMENTS = ("BTCUSDT", "ETHUSDT", "SOLUSDT", "PAXGUSDT", "BNBUSDT", "XRPUSDT"
                "DOGEUSDT", "ADAUSDT", "AVAXUSDT", "LINKUSDT", "LTCUSDT", "DOTUSDT",
                "SUIUSDT", "NEARUSDT", "APTUSDT", "ARBUSDT", "PEPEUSDT", "HYPEUSDT")
 MIN_PROB, MAX_PROB = 0.52, 0.90        # below 52% is the other side; 90%+ is an over-confidence tell
-KELLY_FRACTION = 0.5                    # half-Kelly: aggressive but robust to estimate error
-MAX_LEVERAGE = 20.0                    # absolute notional ceiling -- 20x, not the 100x that ruins
-MIN_STOP_PCT = 0.5                      # absolute floor; the REAL floor is derived, see below
+#: HALF-Kelly. Full Kelly maximises growth but has an expected drawdown near 50% and is
+#: catastrophically sensitive to over-estimating p: betting 1.5x Kelly (what a 35% hit rate would
+#: make of a 45% assumption) turns positive growth NEGATIVE. Half-Kelly keeps 75% of the growth
+#: rate for 25% of the variance -- the standard result, and the reason the fraction is 0.5 and not
+#: 1.0 or 0.25.
+KELLY_FRACTION = 0.5
+#: 20x. DERIVED, not chosen: it is the gap-stress cap evaluated at the tightest legal stop --
+#: 0.50 stress loss / ((0.5% stop + 2% slip)/100) = 20.0x. Above that even the tightest structural
+#: stop cannot survive a 2% cascade through it. Replaced a flat 10x that was picked by taste and
+#: turned out to penalise tight stops (see MAX_RISK_PER_TRADE for the pattern).
+MAX_LEVERAGE = 20.0
+#: 0.5% absolute floor, superseded per-instrument by the MEASURED noise floor below (PAXG 24h
+#: 0.64%, SOL 24h 1.28% -- measured live 2026-07-31). This constant now only catches the case
+#: where the measurement is unavailable; it is a fallback, not the rule.
+MIN_STOP_PCT = 0.5
+#: 15%. DERIVED from the sizer's own arithmetic: at a 6% risk budget a 15% stop implies 0.4x
+#: leverage, at which point the position is no longer a leveraged directional bet and belongs in
+#: the spot/carry sleeves instead. Beyond it a "stop" is a hope, not an invalidation.
 MAX_STOP_PCT = 15.0
 
 #: THE NOISE FLOOR, and the second flat constant on this desk that turned out to be hiding a
@@ -165,6 +186,10 @@ MAX_RISK_PER_TRADE = 0.06              # at most 6% of sleeve equity at risk on 
 #: TOTAL heat across all live positions. This is the real aggression dial now, and at 30% it is
 #: HIGHER than the old design ever ran (one 20% bet at a time), while every individual bet is
 #: survivable. Enforced against the open book, not assumed.
+#: 30% = 5 concurrent positions at the 6% per-trade budget. DERIVED from the shape simulation
+#: above: at ~24% total heat, 1 bet gives P(-90%)=100%, 4 bets 1%, 8 bets 0%. Five slots sits in
+#: the safe part of that curve while keeping total exposure ABOVE what the old one-bet-at-20%
+#: design ever ran.
 MAX_PORTFOLIO_HEAT = 0.30
 
 #: THE GAP-RISK STRESS, and the reason there is a notional ceiling at all. The stop being hit is
@@ -184,8 +209,14 @@ MAX_PORTFOLIO_HEAT = 0.30
 #: the thing that must hold if MAX_RISK_PER_TRADE is ever raised again, and a test pins that
 #: leverage never exceeds it. Do not read it as active protection today.
 SLIP_STRESS_PCT = 2.0                  # a liquidation cascade prints this far through the stop
-MAX_STRESS_LOSS = 0.50                 # ...and even then the sleeve loses at most half
-MAX_PEAK_STRESS_LOSS = 0.60            # the full pyramid is allowed slightly more, measured as
+#: 0.50 -- a 2% cascade through the stop costs at most half the sleeve. Chosen against the
+#: drawdown simulation: a 50% hit is survivable and recoverable (needs +100% to restore), whereas
+#: the -90% outcomes that the 20% risk budget produced need +900% and never come back.
+MAX_STRESS_LOSS = 0.50
+#: 0.60, measured as
+MAX_PEAK_STRESS_LOSS = 0.60            # drawdown FROM THE STAGE TRIGGER, where the book is up
+#: ~0.47 unrealised (computed from the tranche ladder at the +2 rung): so the bound says a cascade
+#: may cost the pyramid its own open gains and ~13% more, never the starting stake. Derived as
 #:                                       drawdown FROM THE STAGE TRIGGER: by then the position is
 #:                                       up roughly that much unrealised, so the bound says the
 #:                                       pyramid may give back its own open gains in a cascade --
@@ -195,6 +226,11 @@ MAX_PEAK_STRESS_LOSS = 0.60            # the full pyramid is allowed slightly mo
 #: behind, THEN adds -- which is why open risk falls as size grows. Deliberately geometric-
 #: decaying: the trend that has already run two rungs has less remaining runway than the one that
 #: just started, so the adds get smaller, not larger. Peak exposure 1.75u.
+#: (0.50, 0.25) -- geometric halving, giving peak exposure 1.75u. DERIVED from the risk ladder
+#: rather than chosen: with each rung trailing one distance behind, these sizes are exactly what
+#: makes open risk fall 1.00 -> 0.50 -> 0.25 -> 0.00 of the entry budget while exposure rises, the
+#: asymmetry the tests assert. Larger adds break the monotone fall; smaller ones leave upside
+#: unclaimed for no risk reduction.
 ADD_UNITS: tuple[float, ...] = (0.50, 0.25)
 
 #: THE TRAIL DISTANCE, and the third flat constant that turned out to be a defect. The ladder used

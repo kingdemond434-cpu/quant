@@ -37,10 +37,11 @@ THREE CONVENTIONS, stated because each one decides the answer:
   trail is usually tighter, so the simulated result is, if anything, the generous version of the
   late-stage exits. It is not generous about entries or stops, which is where the money is.
 
-  FILLS ARE AT THE LEVEL, NO SLIPPAGE MODELLED HERE. Stop fills are assumed at the stop price.
-  The gap-risk stress in the sizer (run_conviction_trader.SLIP_STRESS_PCT) is what carries the
-  cost of that assumption being wrong; this resolver reports the clean number and the sizer is
-  what keeps the dirty case survivable. Do not read a resolved return as net of execution.
+  FILLS ARE AT THE LEVEL, BUT COSTS ARE REAL. Stop fills are assumed at the stop price -- the
+  gap-risk stress in the sizer (SLIP_STRESS_PCT) carries the cost of that being wrong. Fees,
+  slippage and funding, however, are DEDUCTED: at 6.7x leverage a round trip is ~24% of a full R,
+  which moves the breakeven hit rate from 25.0% to 31.1%. A gross mark would show a 30% hit rate
+  as profitable when it is a loser, so `equity_return` is NET and gross is reported beside it.
 
 REFUSES RATHER THAN GUESSES: no bars, no mark. A row whose window cannot be fetched is
 UNRESOLVABLE and is reported as such -- it never silently becomes a zero, which would drag every
@@ -75,6 +76,48 @@ _STATE = "data/paper_book_pnl.json"
 BAR = "15m"
 _BAR_MS = 15 * 60 * 1000
 MAX_PAGES = 12                              # bounded paging: ~1200 bars = 12 days at 15m
+
+#: EXECUTION COSTS, and the reason a mark without them is a flattering number rather than a
+#: result. Binance USD-M non-VIP: taker 0.045%/side, maker 0.018%/side, funding ~0.01% per 8h
+#: stamp. These are charged on NOTIONAL, so at 6.7x leverage a taker round trip costs ~0.9% of
+#: sleeve equity -- 15% of a full 6% R, before slippage. Measured against the sizer's own numbers:
+#: total realistic cost is ~24% of one R at taker-in/taker-out, which raises the breakeven hit
+#: rate from 25.0% to 31.1%. An unmarked-for-costs book would show a 30% hit rate as profitable
+#: when it is not, which is precisely the class of self-flattery this resolver exists to prevent.
+TAKER_FEE = 0.00045
+#: 0.00018 = Binance USD-M published non-VIP maker fee, 0.018%/side. A venue schedule, not a
+#: choice: it moves only when the fee tier does. Worth ~0.4% of equity per trade vs taker.
+MAKER_FEE = 0.00018
+#: 0.00015 = 1.5bp/side, the observed order-book depth cost on majors at sub-$10k clip -- top-of-
+#: book spread on BTC/ETH perps runs 0.5-1bp and this allows ~2x that for the level not being
+#: exactly where the order rests. DELIBERATELY PESSIMISTIC: understating slippage is the standard
+#: way a paper book flatters itself, and at 10x notional each 1bp is 0.1% of equity per side.
+SLIPPAGE = 0.00015
+#: 0.0001 = 0.01% per 8h stamp, the observed typical Binance USD-M funding magnitude on majors.
+#: Sign deliberately ignored and always charged AS A COST: a directional sleeve is as often on the
+#: paying side as the receiving one, and assuming the favourable sign would flatter every long in
+#: a positive-funding regime -- roughly 0.25% of equity per 20h hold at 10x notional.
+FUNDING_PER_8H = 0.0001
+
+
+def trade_cost(leverage: float, units: float, hold_hours: float, *,
+               entry_maker: bool = True) -> dict[str, float]:
+    """Round-trip cost as a fraction of sleeve equity.
+
+    entry_maker defaults TRUE because this sleeve enters with a resting order AT a named level --
+    it bids support rather than chasing, so a limit order is the correct type anyway and the maker
+    rebate is free. The EXIT is assumed taker: a stop is a taker fill by definition. Being wrong
+    about the entry costs ~0.4% of equity per trade, so it is reported separately rather than
+    buried in a single number."""
+    notional = max(0.0, leverage) * max(0.0, units)
+    entry = (MAKER_FEE if entry_maker else TAKER_FEE) * notional
+    exit_ = TAKER_FEE * notional
+    slip = (1 if entry_maker else 2) * SLIPPAGE * notional
+    funding = FUNDING_PER_8H * notional * max(0.0, hold_hours) / 8.0
+    total = entry + exit_ + slip + funding
+    return {"entry_fee": round(entry, 6), "exit_fee": round(exit_, 6), "slippage": round(slip, 6),
+            "funding": round(funding, 6), "total": round(total, 6),
+            "entry_side": "maker" if entry_maker else "taker"}
 
 
 def _http(url: str, *, timeout: int = 25) -> Any:
@@ -192,14 +235,23 @@ def walk_ladder(row: dict[str, Any], bars: list[tuple[int, float, float, float, 
         exit_px, exit_ts = bars[-1][4], bars[-1][0]
 
     r_units = sum(u * (exit_px - e) * sign / r_price for e, u in tranches)
+    units = sum(u for _, u in tranches)
+    gross = r_units * risk_fraction
+    hold_h = (exit_ts - bars[0][0]) / 3_600_000.0
+    cost = trade_cost(float((row.get("sizing") or {}).get("leverage") or 0.0), units, hold_h)
+    net = gross - cost["total"]
     return {
         "outcome": outcome, "exit_price": round(exit_px, 8),
         "exit_at": datetime.fromtimestamp(exit_ts / 1000, tz=UTC).isoformat(),
         "stage_reached": stage_i, "max_stage": len(stages) - 1,
-        "units_at_exit": round(sum(u for _, u in tranches), 4),
+        "units_at_exit": round(units, 4),
         "realised_R": round(r_units, 4),
-        "equity_return": round(r_units * risk_fraction, 6),
-        "profitable": r_units > 0,
+        "gross_return": round(gross, 6),
+        "cost": cost, "hold_hours": round(hold_h, 2),
+        # NET is the number that carries the name. A gross mark shows a 30% hit rate as profitable
+        # when costs make it a loser -- the exact self-flattery this resolver exists to prevent.
+        "equity_return": round(net, 6),
+        "profitable": net > 0,
         "bars_used": len(bars),
     }
 
@@ -211,9 +263,14 @@ def mark_event_row(row: dict[str, Any], bars: list[tuple[int, float, float, floa
         return {"outcome": "UNRESOLVABLE", "why": "no bars"}
     sign = 1.0 if row["direction"] == "LONG" else -1.0
     first, last = bars[0][1], bars[-1][4]
-    ret = (last - first) / first * sign
+    gross = (last - first) / first * sign
+    hold_h = (bars[-1][0] - bars[0][0]) / 3_600_000.0
+    cost = trade_cost(1.0, 1.0, hold_h)          # event sleeve is unlevered, 1 unit
+    net = gross - cost["total"]
     return {"outcome": "MARKED", "entry_price": first, "exit_price": last,
-            "realised_R": None, "equity_return": round(ret, 6), "profitable": ret > 0,
+            "realised_R": None, "gross_return": round(gross, 6), "cost": cost,
+            "hold_hours": round(hold_h, 2),
+            "equity_return": round(net, 6), "profitable": net > 0,
             "bars_used": len(bars)}
 
 
@@ -336,8 +393,12 @@ def resolve_book(root: Path, *, now: datetime | None = None,
                          / max(1, len([m for m in resolved if m.get("realised_R") is not None])),
                          4) if resolved else None),
         "equity": curve,
+        "costs_deducted": {"taker": TAKER_FEE, "maker": MAKER_FEE, "slippage_per_side": SLIPPAGE,
+                           "funding_per_8h": FUNDING_PER_8H,
+                           "note": "entry assumed MAKER (a resting order at the named level), exit "
+                                   "assumed TAKER (a stop is a taker fill). Returns are NET."},
         "conventions": ["adverse-first intrabar", "swing trail simulated as extreme-minus-1R",
-                        "fills at the level, no slippage modelled",
+                        "fills at the level; fees, slippage and funding ARE deducted",
                         "equity compounded in exit order despite overlapping positions"],
         "marks": marks,
     }
