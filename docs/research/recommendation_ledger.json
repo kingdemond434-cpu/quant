@@ -2199,11 +2199,11 @@
    "summary": "certifi was an UNDECLARED runtime dependency: scripts/reconcile_venue.py imports it at module scope and calls certifi.where() at import time to build its SSL context, so the venue reconciler cannot be imported without it. It was merely present transitively, so it worked on every machine that had already pulled it in and would be absent from a clean 'pip install -e .' -- a DR restore producing a desk whose reconciler crashes on import. Declared in pyproject dependencies. Swept every third-party import across scripts/ and libs/: the rest are optional and already carry mypy overrides.",
    "roi_bps": null,
    "raised": "2026-07-31T18:34:50.107795+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "certifi declared in pyproject [project] dependencies; import sweep across scripts/ and libs/ confirmed it was the only undeclared hard dependency",
+   "commit": "ea693b8",
    "due": null,
-   "disposed": null
+   "disposed": "2026-07-31T18:35:07.005218+00:00"
   }
  ]
 }
