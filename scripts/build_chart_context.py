@@ -42,6 +42,7 @@ chose.
 from __future__ import annotations
 
 import argparse
+import itertools
 import json
 import sys
 from datetime import UTC, datetime
@@ -124,7 +125,7 @@ def atr_pct(bars: list[tuple[int, float, float, float, float]], n: int = 14) -> 
     if len(bars) < n + 1:
         return None
     trs = []
-    for prev, cur in zip(bars[-n - 1:-1], bars[-n:]):
+    for prev, cur in zip(bars[-n - 1:-1], bars[-n:], strict=True):
         trs.append(max(cur[2] - cur[3], abs(cur[2] - prev[4]), abs(cur[3] - prev[4])))
     last = bars[-1][4]
     return round(sum(trs) / len(trs) / last * 100.0, 4) if last else None
@@ -199,7 +200,7 @@ def build_symbol(symbol: str, *, fetch=None, now: datetime | None = None) -> dic
 
 def _returns(bars: list[tuple[int, float, float, float, float]], n: int = 96) -> list[float]:
     closes = [b[4] for b in bars[-(n + 1):]]
-    return [(b - a) / a for a, b in zip(closes, closes[1:]) if a]
+    return [(b - a) / a for a, b in itertools.pairwise(closes) if a]
 
 
 def correlations(series: dict[str, list[float]]) -> dict[str, dict[str, float]]:
@@ -220,7 +221,7 @@ def correlations(series: dict[str, list[float]]) -> dict[str, dict[str, float]]:
                 continue
             x, y = xs[-n:], ys[-n:]
             mx, my = sum(x) / n, sum(y) / n
-            sxy = sum((i - mx) * (j - my) for i, j in zip(x, y))
+            sxy = sum((i - mx) * (j - my) for i, j in zip(x, y, strict=False))
             sxx = sum((i - mx) ** 2 for i in x)
             syy = sum((j - my) ** 2 for j in y)
             out[a][b] = round(sxy / (sxx * syy) ** 0.5, 4) if sxx > 0 and syy > 0 else 0.9

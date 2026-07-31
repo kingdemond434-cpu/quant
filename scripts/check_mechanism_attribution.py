@@ -132,7 +132,7 @@ def build_report(root: Path | None = None) -> dict[str, Any]:
                           "UNDECIDABLE, which never reads as clean",
                 "n_sleeves": 0, "sleeves": []}
 
-    named = [s for s in (deployed.get("sleeves") or deployed.get("live_sleeves") or [])]
+    named = list(deployed.get("sleeves") or deployed.get("live_sleeves") or [])
     rows = []
     for name, spec in _SLEEVES.items():
         if named and not any(name in str(s) for s in named):

@@ -93,8 +93,12 @@ def test_majority_of_daily_draws_hunt_new_alpha():
     Was >=4/6 before defect lenses joined (L1.40): bug-hunting took a slot from offense because
     an undetected money-path bug costs more than a missed edge. Alpha remains the plurality and
     the day still hunts growth first."""
-    from scripts.run_capability_hunt import (_ALPHA_LENSES, _DEFECT_LENSES, _DEFENSIVE_LENSES,
-                                             _lens_for)
+    from scripts.run_capability_hunt import (
+        _ALPHA_LENSES,
+        _DEFECT_LENSES,
+        _DEFENSIVE_LENSES,
+        _lens_for,
+    )
     for day in ("20260731", "20260801", "20260815", "20260901"):
         slots = [_lens_for(day, s) for s in range(6)]
         alpha = sum(1 for x in slots if x in _ALPHA_LENSES)

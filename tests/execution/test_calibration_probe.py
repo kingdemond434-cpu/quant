@@ -8,8 +8,14 @@ from __future__ import annotations
 import json
 from datetime import UTC, datetime, timedelta
 
-from scripts.run_calibration_probe import (MIN_FOR_VERDICT, UNINFORMATIVE_BRIER, build_questions,
-                                           pose, resolve_due, verdict)
+from scripts.run_calibration_probe import (
+    MIN_FOR_VERDICT,
+    UNINFORMATIVE_BRIER,
+    build_questions,
+    pose,
+    resolve_due,
+    verdict,
+)
 
 
 def _charts(tmp_path, price=100.0, n=3):

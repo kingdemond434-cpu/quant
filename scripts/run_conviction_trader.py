@@ -115,6 +115,8 @@ if not _ROOT.exists():
     _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
+from scripts.run_trade_review import N_SUPPORT  # noqa: E402
+
 from libs.ops.lawful import guard as _law_guard  # noqa: E402
 
 _BOOK = "data/conviction_book.jsonl"
@@ -356,7 +358,7 @@ def kelly_leverage(prob: float, reward_risk: float, stop_pct: float) -> dict[str
         caps.append("max_risk")
     if slip_cap < min(kelly_lev, MAX_LEVERAGE):
         caps.append("gap_stress")
-    if MAX_LEVERAGE < min(kelly_lev, slip_cap):
+    if min(kelly_lev, slip_cap) > MAX_LEVERAGE:
         caps.append("max_leverage")
     return {"full_kelly": round(edge, 4), "kelly_risk_fraction": round(budget, 4),
             "risk_fraction": round(realised, 4), "leverage": round(lev, 2),
@@ -586,7 +588,7 @@ def adverse_excursion(bars: list[tuple[int, float, float, float, float]], horizo
     "How far does price normally go against me before the horizon is up?" -- computed from the
     instrument's own bars rather than assumed. Returns None when there are not enough bars, which
     the caller must surface as UNMEASURED rather than treat as zero noise."""
-    w = max(1, int(round(horizon_hours * 4)))                # 15m bars
+    w = max(1, round(horizon_hours * 4))                     # 15m bars
     if len(bars) < w + 8:
         return None
     sign = 1.0 if direction == "LONG" else -1.0
@@ -1032,7 +1034,7 @@ def calibrated_p(raw_p: float) -> dict[str, Any]:
     try:
         from libs.self_improvement.forecast_calibration import calibrated_confidence
         c = calibrated_confidence(raw_p)
-    except Exception as exc:                              # noqa: BLE001 -- never lose the call
+    except Exception as exc:                              # broad by design -- never lose the call
         return {"raw": raw_p, "used": raw_p, "applied": False,
                 "why": f"UNMEASURED calibration ({type(exc).__name__}) -- sizing on the raw claim"}
     return {"raw": c["raw"], "used": c["adjusted"] if c.get("applied") else c["raw"],
@@ -1095,7 +1097,7 @@ def record(root: Path, call: dict[str, Any], *,
                         claim=f"{call['direction']} {call['symbol']} @{sizing['leverage']}x "
                               f"stop {stop_pct:.2f}% ({str(call['structure'])[:60]}): "
                               f"{str(call['driver'])[:100]}")
-    except Exception as exc:                                # noqa: BLE001 -- never lose the call
+    except Exception as exc:                                # never lose the call
         row["calibration_log_error"] = str(exc)
     return row
 

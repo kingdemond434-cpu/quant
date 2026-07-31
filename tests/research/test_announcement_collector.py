@@ -3,10 +3,8 @@ from __future__ import annotations
 
 import json
 from datetime import UTC, datetime, timedelta
-from pathlib import Path
 
-from scripts.collect_announcements import (TRADEABLE_MAX_AGE_MIN, _iso, _symbols, _tier,
-                                           collect)
+from scripts.collect_announcements import TRADEABLE_MAX_AGE_MIN, _iso, _symbols, _tier, collect
 
 
 def _item(title: str, minutes_old: float | None, **kw):

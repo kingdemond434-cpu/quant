@@ -237,7 +237,7 @@ def record_call(root: Path, call: dict[str, Any]) -> dict[str, Any]:
             fc.log_forecast(f"llm_trader:{now.isoformat()}", float(call["probability"]),
                             "discretionary", resolve_by=row["resolve_by"],
                             claim=f"{call['direction']} {call['symbol']}: {call['mechanism'][:120]}")
-        except Exception as exc:                            # noqa: BLE001 -- never lose the call
+        except Exception as exc:                            # never lose the call
             row["calibration_log_error"] = str(exc)
     return row
 

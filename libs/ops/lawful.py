@@ -35,7 +35,6 @@ organ that will never be told the laws it must obey cannot obey them.
 """
 from __future__ import annotations
 
-import json
 import os
 import subprocess
 import sys
@@ -91,7 +90,7 @@ def _doctrine_carries_families(root: Path) -> tuple[bool, str]:
         sys.path.insert(0, str(root))
         from scripts.check_law_families import FAMILIES
         doctrine = (root / "ops/principal_doctrine.txt").read_text("utf-8", errors="ignore")
-    except Exception as exc:                                  # noqa: BLE001 -- unverifiable
+    except Exception as exc:                                  # unverifiable
         return False, f"doctrine/families unreadable: {exc}"
     gaps = [f"{fam}:{[m for m in members if m not in doctrine]}"
             for fam, (members, _f, _p) in FAMILIES.items()

@@ -221,7 +221,7 @@ def _spearman(xs: list[float], ys: list[float]) -> float | None:
             out[i] = pos
         return out
     rx, ry = rank(xs), rank(ys)
-    return round(1 - 6 * sum((a - b) ** 2 for a, b in zip(rx, ry)) / (n * (n * n - 1)), 4)
+    return round(1 - 6 * sum((a - b) ** 2 for a, b in zip(rx, ry, strict=False)) / (n * (n * n - 1)), 4)
 
 
 def contaminated_persistence(leaders: list[dict[str, Any]]) -> dict[str, Any]:
@@ -252,8 +252,8 @@ def contaminated_persistence(leaders: list[dict[str, Any]]) -> dict[str, Any]:
         "disqualifiers": [
             "SELECTED ON THE OUTCOME: the cohort is drawn by sorting on pnl/pnlRatio/aum/copiers/"
             "winRatio, then measured for performance",
-            f"SURVIVORSHIP: traders who blew up are absent from the leaderboard entirely, so "
-            f"persistence here is partly manufactured by the survival filter",
+            "SURVIVORSHIP: traders who blew up are absent from the leaderboard entirely, so "
+            "persistence here is partly manufactured by the survival filter",
             f"UNDERPOWERED: n={n}, Spearman SE ~{se:.3f}",
             f"POPULATION CHECK FAILS: mean 45-day return {mean_h2:+.1%} across the whole sample "
             "-- that is a leaderboard, not a population of traders",

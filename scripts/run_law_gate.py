@@ -53,7 +53,11 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("check_law_families.py", ()),             # L1.36 -- families complete/fenced/reaching/guarded
     ("check_timidity_language.py", ()),        # L1.28 -- incl. all 18 prompt surfaces
     ("build_enforcement_matrix.py", ()),       # L2.0 -- no law is prose, no fence is an orphan
-    ("check_scheduler_manifest.py", ()),       # L1.28c -- every scheduled line is decided
+    # --report-only: the LAW half is manifest<->repo integrity (exit 2). Live-crontab DRIFT
+    # (exit 1) is BOX STATE -- on a red-parked box the manifest is *supposed* to be ahead of
+    # the installed crontab until the puller vets the commit, so drift failing CI/pre-push
+    # wedges the exact push that would heal it. The bare run lives in _STATE_FENCES.
+    ("check_scheduler_manifest.py", ("--report-only",)),  # L1.28c -- every line is decided
     ("check_build_standard.py", ()),           # L1.41 -- nothing enters below standard
     ("check_sizing_derivation.py", ()),        # L1.41 -- no money number chosen by feel
     ("check_return_targeting.py", ()),         # handoff 2026-07-12 -- no CAGR target
@@ -70,6 +74,7 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("check_calibration.py", ()),              # L1.29 -- no ungraded past-due forecast
     ("check_replacement_rate.py", ()),         # L1.30 -- births vs deaths
     ("check_change_window.py", ()),            # L1.38 -- money-path freeze windows
+    ("check_scheduler_manifest.py", ()),       # L1.28c state half -- live crontab drift (rc=1)
     ("check_mechanism_attribution.py", ()),    # L1.6 -- no survival on unexplained P&L
     ("check_organ_liveness.py", ()),           # L1.28c -- every organ actually produces
 )
@@ -102,7 +107,7 @@ def fast_gate(root: Path | None = None) -> dict[str, Any]:
             if missing:
                 failures.append(f"DOCTRINE-GAP: family '{fam}' missing {missing} -- an organ "
                                 "spawning now would never be told these laws")
-    except Exception as exc:                                # noqa: BLE001
+    except Exception as exc:
         failures.append(f"DOCTRINE-CHECK unrunnable ({exc}) -- counts as FAILED")
 
     return {"mode": "fast", "ok": not failures, "failures": failures,

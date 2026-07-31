@@ -8,9 +8,16 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from scripts.build_chart_context import (atr_pct, build, build_symbol, cluster_levels,
-                                         correlations, pivots, timeframe_view,
-                                         trend_state)
+from scripts.build_chart_context import (
+    atr_pct,
+    build,
+    build_symbol,
+    cluster_levels,
+    correlations,
+    pivots,
+    timeframe_view,
+    trend_state,
+)
 
 _NOW = datetime(2026, 7, 31, 12, 0, tzinfo=UTC)
 

@@ -105,7 +105,7 @@ def _corr(a: list[float], b: list[float]) -> float | None:
         return None
     a, b = a[-n:], b[-n:]
     ma, mb = sum(a) / n, sum(b) / n
-    sab = sum((x - ma) * (y - mb) for x, y in zip(a, b))
+    sab = sum((x - ma) * (y - mb) for x, y in zip(a, b, strict=False))
     saa = sum((x - ma) ** 2 for x in a)
     sbb = sum((y - mb) ** 2 for y in b)
     if saa <= 0 or sbb <= 0:

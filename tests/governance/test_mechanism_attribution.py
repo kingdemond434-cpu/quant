@@ -69,7 +69,8 @@ def test_no_readable_state_reports_unmeasured_not_ok(tmp_path):
 
 def test_the_report_fails_the_run_when_unattributed(tmp_path):
     (tmp_path / "research_state.json").write_text(json.dumps(
-        {"deployed": {"sleeves": ["cash_and_carry (real)"], "net_pnl": 3669.55, "funding": 113.06}}))
+        {"deployed": {"sleeves": ["cash_and_carry (real)"], "net_pnl": 3669.55,
+                      "funding": 113.06}}))
     rep = build_report(tmp_path)
     assert rep["status"] == "UNATTRIBUTED" and rep["n_unattributed"] == 1
 

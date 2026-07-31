@@ -4,8 +4,13 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from scripts.screen_funding_spread import (_hour_key, _norm_symbol, build_report,
-                                           build_spreads, summarise)
+from scripts.screen_funding_spread import (
+    _hour_key,
+    _norm_symbol,
+    build_report,
+    build_spreads,
+    summarise,
+)
 
 
 def _write(root: Path, rel: str, rows: list[dict]) -> None:

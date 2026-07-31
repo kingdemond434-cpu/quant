@@ -7,9 +7,18 @@ from __future__ import annotations
 
 import json
 
-from scripts.run_trade_review import (MAX_BRIEF_LESSONS, N_SUPPORT, STALE_AFTER, _CAUSES,
-                                      age_playbook, brief_lessons, closed_trades, file_lesson,
-                                      load_playbook, review_one)
+from scripts.run_trade_review import (
+    _CAUSES,
+    MAX_BRIEF_LESSONS,
+    N_SUPPORT,
+    STALE_AFTER,
+    age_playbook,
+    brief_lessons,
+    closed_trades,
+    file_lesson,
+    load_playbook,
+    review_one,
+)
 
 
 def _pb():
@@ -76,7 +85,7 @@ def test_the_brief_is_bounded_and_ranked_by_evidence():
     pb = _pb()
     for n in range(MAX_BRIEF_LESSONS + 5):
         for i in range(N_SUPPORT + (n % 3)):
-            file_lesson(pb, _lesson(f"lesson number {n} about a specific situation"), f"t{n}-{i}", n)
+            file_lesson(pb, _lesson(f"lesson number {n} about a situation"), f"t{n}-{i}", n)
     out = brief_lessons(pb)
     assert len(out) == MAX_BRIEF_LESSONS
     assert out == sorted(out, key=lambda lv: -lv["evidence_trades"])

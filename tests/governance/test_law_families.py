@@ -1,13 +1,11 @@
 """L1.36 -- law families enforced AS families, and the aggression family at maximum strength."""
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 import pytest
-
 from scripts.check_law_families import FAMILIES, build_report
-from scripts.check_timidity_language import audit_prompts, _prompt_surfaces
+from scripts.check_timidity_language import _prompt_surfaces, audit_prompts
 
 
 def test_all_six_families_fully_enforced():
@@ -79,13 +77,23 @@ def test_fence_is_a_gate_not_a_report():
 
 def test_law_and_state_fences_are_separated():
     from scripts.run_law_gate import _LAW_FENCES, _STATE_FENCES
-    law = {f for f, _ in _LAW_FENCES}
-    state = {f for f, _ in _STATE_FENCES}
+    # Disjoint by INVOCATION, not by filename: one fence may carry a law half and a state half
+    # (check_scheduler_manifest: manifest<->repo integrity is law, live-crontab drift is state),
+    # but the exact same invocation must never sit on both sides of the commit gate.
+    law = {(f, a) for f, a in _LAW_FENCES}
+    state = {(f, a) for f, a in _STATE_FENCES}
     assert law and state and not (law & state)
     # law fences must be portable: they read the repo, so CI can run them meaningfully
-    assert "check_constitution_core.py" in law and "check_law_families.py" in law
+    law_names = {f for f, _ in law}
+    assert "check_constitution_core.py" in law_names and "check_law_families.py" in law_names
     # state fences measure box-only live state and must NOT gate a commit
-    assert "check_exploration.py" in state and "check_conversion.py" in state
+    state_names = {f for f, _ in state}
+    assert "check_exploration.py" in state_names and "check_conversion.py" in state_names
+    # the scheduler fence's law-side invocation must suppress its state half (live drift, rc=1):
+    # on a red-parked box the manifest is SUPPOSED to lead the installed crontab, and a commit
+    # gate that fails on that wedges the exact push that heals it.
+    sched_law = [a for f, a in _LAW_FENCES if f == "check_scheduler_manifest.py"]
+    assert sched_law == [("--report-only",)]
 
 
 def test_laws_only_gate_passes_in_a_fresh_checkout():

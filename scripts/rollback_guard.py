@@ -77,7 +77,10 @@ def _metrics() -> dict[str, object]:
 
 
 def _ci_green() -> bool:
-    r = subprocess.run([_PY, "scripts/run_ci.py"], cwd=str(_ROOT),
+    # --fail-on-lock: without it, "another gate is mid-run" exits 0 and a guard deciding whether
+    # a revert restored health would count an UNVERIFIED tree as green (R0146, the skip-reads-
+    # green family). rc 3 -> False: a guard that could not verify must not claim health (L1.28a).
+    r = subprocess.run([_PY, "scripts/run_ci.py", "--fail-on-lock"], cwd=str(_ROOT),
                        capture_output=True, text=True, check=False)
     return r.returncode == 0
 

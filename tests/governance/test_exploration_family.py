@@ -4,8 +4,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from libs.research.second_family import SecondOpinion, blindspot_prompt, merge_verdict
 from scripts.check_exploration import _FAMILY, build_report
+
+from libs.research.second_family import SecondOpinion, blindspot_prompt, merge_verdict
 
 
 def _seed(root: Path, produced: list[str]) -> None:

@@ -5,7 +5,6 @@ import json
 from pathlib import Path
 
 import pytest
-
 from scripts.screen_collateral_allocation import best_lending_apy, build_report, funding_regimes
 
 

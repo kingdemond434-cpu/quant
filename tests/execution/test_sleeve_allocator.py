@@ -10,8 +10,14 @@ import json
 import math
 import random
 
-from scripts.run_sleeve_allocator import (DUPLICATE_RHO, MIN_OVERLAP, SEED_SHARE, TOTAL_HEAT,
-                                          allocate, standalone_growth)
+from scripts.run_sleeve_allocator import (
+    DUPLICATE_RHO,
+    MIN_OVERLAP,
+    SEED_SHARE,
+    TOTAL_HEAT,
+    allocate,
+    standalone_growth,
+)
 
 
 def _book(tmp_path, corr, n=30, seed=5):
@@ -46,7 +52,7 @@ def test_correlation_adjusted_risk_never_exceeds_the_cap(tmp_path):
         _book(tmp_path, corr)
         rep = allocate(tmp_path)
         w = [s["risk_budget"] for s in rep["sleeves"].values()]
-        rho = list(rep["pairs"].values())[0].get("rho", 1.0)
+        rho = next(iter(rep["pairs"].values())).get("rho", 1.0)
         adj = math.sqrt(sum(a * b * (1.0 if i == j else abs(rho))
                             for i, a in enumerate(w) for j, b in enumerate(w)))
         # tolerance is 1e-3, not 0: risk_budget is published rounded to 4dp, so two sleeves can
@@ -60,7 +66,7 @@ def test_an_unmeasured_pair_is_assumed_to_be_the_same_bet(tmp_path):
     # duplicate. The assumption that costs money when wrong is the one that gets made.
     _book(tmp_path, 0.02, n=MIN_OVERLAP - 5)
     rep = allocate(tmp_path)
-    pair = list(rep["pairs"].values())[0]
+    pair = next(iter(rep["pairs"].values()))
     assert pair["state"] == "UNMEASURED" and pair["assumed_rho"] == 1.0
     assert "DUPLICATE" in pair["why"]
     assert rep["status"] == "UNMEASURED"

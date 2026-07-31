@@ -10,9 +10,17 @@ from __future__ import annotations
 import json
 from datetime import UTC, datetime, timedelta
 
-from scripts.resolve_paper_book import (KILL_AFTER_N, KILL_HIT_RATE, _benchmark,
-                                        equity_curve, kill_check, mark_event_row,
-                                        resolve_book, trade_cost, walk_ladder)
+from scripts.resolve_paper_book import (
+    KILL_AFTER_N,
+    KILL_HIT_RATE,
+    _benchmark,
+    equity_curve,
+    kill_check,
+    mark_event_row,
+    resolve_book,
+    trade_cost,
+    walk_ladder,
+)
 from scripts.run_conviction_trader import kelly_leverage, management_plan
 
 _ENTRY, _INVAL = 100.0, 98.0                  # LONG, R = 2.0

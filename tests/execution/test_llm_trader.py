@@ -4,8 +4,14 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from scripts.run_llm_trader import (MAX_PROB, MIN_PROB, build_brief, parse_call, record_call,
-                                    validate_call)
+from scripts.run_llm_trader import (
+    MAX_PROB,
+    MIN_PROB,
+    build_brief,
+    parse_call,
+    record_call,
+    validate_call,
+)
 
 
 def _call(**kw):

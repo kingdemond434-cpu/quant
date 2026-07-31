@@ -161,7 +161,7 @@ def pose(root: Path, *, n: int = 6, ask=_ask) -> dict[str, Any]:
         for row in posed:
             fc.log_forecast(row["key"], row["p"], "calibration_probe",
                             resolve_by=row["resolve_at"], claim=row["text"])
-    except Exception as exc:                              # noqa: BLE001 -- never lose the probe
+    except Exception as exc:                              # broad by design -- never lose the probe
         return {"status": "POSED", "n": len(posed), "calibration_log_error": str(exc)}
     return {"status": "POSED", "n": len(posed),
             "questions": [{"id": r["id"], "symbol": r["symbol"], "p": r["p"]} for r in posed]}
@@ -218,7 +218,7 @@ def verdict() -> dict[str, Any]:
     try:
         from libs.self_improvement.forecast_calibration import report
         rep = report()
-    except Exception as exc:                              # noqa: BLE001
+    except Exception as exc:                              # broad by design
         return {"state": "UNMEASURED", "why": f"calibration unavailable ({exc})"}
     n, brier = rep.get("n_resolved") or 0, rep.get("brier")
     if n < MIN_FOR_VERDICT or brier is None:

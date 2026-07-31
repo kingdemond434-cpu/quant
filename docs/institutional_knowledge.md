@@ -706,3 +706,17 @@ hypotheses and EV-score them; only the top few enter research.
   `CI: another run holds the lock -- skipping (marker left untouched)` — exit 0, zero tests executed,
   because a concurrent `run_deep_sweep.py` held the lock. Nearly built on a phantom green. Read the
   log body, never the exit status; a skip and a pass are opposite states that share a return code.
+  **2026-07-31: the prose lesson had NOT stopped the class — three deciders were still reading
+  skip-as-green** (pull_deploy would deploy unvetted commits; rollback_guard would certify health it
+  never verified; the daily ci_gate's rare "True" was a skip). Now CODE: `run_ci.py --fail-on-lock`
+  returns 3 (= could-not-gate ≠ green), pull_deploy + rollback_guard opt in, and
+  tests/ops/test_ci_gate_lock.py pins both contracts. A lesson that lives only as prose decays;
+  encode it as an exit code and a test the day it is learned (R0136/R0137).
+- **A destructive step taken minutes after its precondition check must RE-VALIDATE at execution
+  time (2026-07-31).** pull_deploy captured `OLD` at tick start, ran an ~8-min CI, then
+  `git reset --hard $OLD` unconditionally — it destroyed a commit + working-tree fixes that landed
+  mid-gate (recovered only via reflog). Its own refuse-on-dirty philosophy applied at tick START
+  but not at the revert. Now guarded: revert refuses unless HEAD is still the fetched tip and the
+  tree is clean (`refused-revert-tree-moved`). The class: state captured early + destruction later
+  = a race whose window is the whole gap; the fix is always to re-check at the point of no return
+  (R0135). Same shape to watch for in any future auto-revert/auto-clean path.

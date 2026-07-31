@@ -7,21 +7,37 @@ ladder and the trail never widens it. Upside maximised = exposure rises and ther
 """
 from __future__ import annotations
 
+import itertools
 import json
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-from scripts.run_conviction_trader import (_BRIEF, MAX_LEVERAGE, MAX_PEAK_STRESS_LOSS,
-                                           MAX_RISK_PER_TRADE, MAX_STOP_PCT, MAX_STRESS_LOSS,
-                                           MIN_STOP_PCT, SLIP_STRESS_PCT, adverse_excursion,
-                                           derive_stop_pct, kelly_leverage, management_plan,
-                                           INSTRUMENTS, MAX_GROSS_HEAT,
-                                           MAX_PORTFOLIO_HEAT, _chart_brief,
-                                           calibrated_p, effective_heat,
-                                           size_into_headroom,
-                                           noise_floor, portfolio_heat, record,
-                                           sleeve_drawdown,
-                                           slip_leverage_cap, validate)
+from scripts.run_conviction_trader import (
+    _BRIEF,
+    INSTRUMENTS,
+    MAX_GROSS_HEAT,
+    MAX_LEVERAGE,
+    MAX_PEAK_STRESS_LOSS,
+    MAX_PORTFOLIO_HEAT,
+    MAX_RISK_PER_TRADE,
+    MAX_STRESS_LOSS,
+    MIN_STOP_PCT,
+    SLIP_STRESS_PCT,
+    _chart_brief,
+    adverse_excursion,
+    calibrated_p,
+    derive_stop_pct,
+    effective_heat,
+    kelly_leverage,
+    management_plan,
+    noise_floor,
+    portfolio_heat,
+    record,
+    size_into_headroom,
+    sleeve_drawdown,
+    slip_leverage_cap,
+    validate,
+)
 
 _ENTRY = 4107.4                                   # the screenshot's XAUUSD short, as PAXGUSDT
 
@@ -79,7 +95,8 @@ def test_no_size_is_left_on_the_table_at_any_stop_distance():
         binding = min(MAX_RISK_PER_TRADE / (stop / 100.0),   # kelly / per-trade risk budget
                       slip_leverage_cap(stop),               # gap stress
                       MAX_LEVERAGE,                          # absolute notional
-                      kelly_leverage(0.63, 4.0 / stop, stop)["kelly_risk_fraction"] / (stop / 100.0))
+                      kelly_leverage(0.63, 4.0 / stop, stop)["kelly_risk_fraction"]
+                      / (stop / 100.0))
         assert abs(s["leverage"] - round(binding, 2)) < 0.02, f"size left unused at {stop}%"
         assert s["capped_by"] != ""
 
@@ -90,7 +107,8 @@ def test_a_tight_structural_stop_deploys_the_whole_budget():
     # produce. No ceiling may quietly keep the budget from a tight honest level.
     for stop in (0.5, 0.9, 1.5):
         s = kelly_leverage(0.63, 4.0 / stop, stop)
-        assert abs(s["risk_fraction"] - s["kelly_risk_fraction"]) < 1e-9, f"budget stolen at {stop}%"
+        assert abs(s["risk_fraction"] - s["kelly_risk_fraction"]) < 1e-9, \
+            f"budget stolen at {stop}%"
     assert kelly_leverage(0.63, 4.0 / 0.9, 0.9)["leverage"] > 5.0      # still real leverage
 
 
@@ -182,7 +200,7 @@ def test_open_risk_never_widens_and_falls_at_every_stage():
         assert risks == sorted(risks, reverse=True)          # monotonically non-increasing
         assert risks[0] == max(risks)                        # initial budget is the ceiling
         assert risks[-1] == 0.0                              # fully de-risked once it runs
-        assert risks[1] < risks[0]                           # strictly falls once the first add is on
+        assert risks[1] < risks[0]                       # strictly falls once the first add is on
 
 
 def test_exposure_rises_while_risk_falls():
@@ -276,7 +294,7 @@ def test_a_losing_run_halts_the_sleeve(tmp_path):
     assert sleeve_drawdown(tmp_path)["halted"] is False
 
 
-# ---------------------------------------------------------- the measured, per-instrument noise floor
+# -------------------------------------------------------- the measured, per-instrument noise floor
 
 def _flat_bars(n=600, start=100.0, wiggle=0.004):
     """Bars that oscillate by a known amount and go nowhere -- pure noise, no trend."""
@@ -339,7 +357,7 @@ def test_the_trail_clears_the_noise_too_not_just_the_entry_stop():
     assert tight["trail_R"] > 1.0 and tight["trail_source"] == "noise-widened"
     # each rung's stop lands exactly where the previous rung triggered
     st = tight["stages"]
-    for a, b in zip(st, st[1:]):
+    for a, b in itertools.pairwise(st):
         assert abs(b["stop"] - a["trigger"]) < 1e-6
 
 
@@ -440,7 +458,8 @@ def test_stale_charts_are_flagged(tmp_path):
     (tmp_path / "data").mkdir()
     old = (datetime.now(tz=UTC) - timedelta(hours=9)).isoformat()
     (tmp_path / "data/chart_context.json").write_text(json.dumps(
-        {"generated": old, "status": "OK", "detail": "1/1", "charts": {"BTCUSDT": {"state": "OK"}}}))
+        {"generated": old, "status": "OK", "detail": "1/1",
+         "charts": {"BTCUSDT": {"state": "OK"}}}))
     txt = _chart_brief(tmp_path)
     assert "STALE" in txt
 
@@ -455,7 +474,7 @@ def test_charts_for_instruments_already_held_are_not_spent_on(tmp_path):
     assert "ETHUSDT" in txt and "BTCUSDT" not in txt.split("\n", 1)[1]
 
 
-# ---------------------------------------- correlation-weighted heat: real diversification, real room
+# ---------------------------------- correlation-weighted heat: real diversification, real room
 
 def _cc(tmp_path, corr):
     (tmp_path / "data").mkdir(exist_ok=True)
@@ -468,7 +487,7 @@ def _pos(sym, r=0.06):
 
 def test_identical_bets_get_no_diversification_credit(tmp_path):
     # Five copies of the same trade is one trade. The naive sum is right here and must stay right.
-    _cc(tmp_path, {s: {t: 1.0 for t in "ABCDE"} for s in "ABCDE"})
+    _cc(tmp_path, {s: dict.fromkeys("ABCDE", 1.0) for s in "ABCDE"})
     eff, _ = effective_heat(tmp_path, [_pos(s) for s in "ABCDE"])
     assert abs(eff - 0.30) < 1e-6
 

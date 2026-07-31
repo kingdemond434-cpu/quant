@@ -10,9 +10,15 @@ from __future__ import annotations
 import json
 from datetime import UTC, datetime, timedelta
 
-from scripts.screen_copytrading import (COPIER_PROFIT_SHARE, MIN_COHORT, MIN_PANEL_GAP_DAYS,
-                                        build_report, contaminated_persistence, crowding_index,
-                                        forward_persistence)
+from scripts.screen_copytrading import (
+    COPIER_PROFIT_SHARE,
+    MIN_COHORT,
+    MIN_PANEL_GAP_DAYS,
+    build_report,
+    contaminated_persistence,
+    crowding_index,
+    forward_persistence,
+)
 
 
 def _trader(code, ratios):
