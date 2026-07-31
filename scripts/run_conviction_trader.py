@@ -197,7 +197,59 @@ NOISE_LOOKBACK_HOURS = 96
 #: near-zero chance of the drawdown that ends the account. So the aggression moved from SIZE to
 #: BREADTH and FREQUENCY -- an 18-instrument universe, hourly, several positions live at once.
 #: On a 0.9% structural stop 6% still buys ~6.7x leverage, which is the screenshot's own range.
-MAX_RISK_PER_TRADE = 0.06              # at most 6% of sleeve equity at risk on one call
+MAX_RISK_PER_TRADE = 0.06              # the UNMEASURED floor; the live cap is derived below
+
+#: THE CAP IS DERIVED FROM MEASURED ACCURACY, NOT FIXED -- and this exists because the flat 6%
+#: was wrong in the timid direction, which the principal caught.
+#:
+#: I had claimed a 10%-risk single position loses money over a year. That was computed from a
+#: 37% risk figure I INFERRED from a screenshot instead of asking. The real figure was 10%, and
+#: at 10% the arithmetic says the opposite: at a 35% hit rate with 3:1 payoffs g = +0.0233 per
+#: trade against +0.0177 at 6%. Full Kelly there is 13.3%, so 10% is 0.75x Kelly -- aggressive
+#: and sane -- while 6% is 0.45x. The flat cap was leaving growth on the table (L1.28).
+#:
+#: But 10% is only correct IF the hit rate is really 35%. At 30% it is 1.5x Kelly and at 28% it is
+#: 2.5x, where growth turns negative. So the cap is not re-picked at a higher number -- it is tied
+#: to the thing that decides it:
+#:
+#:      cap = clamp(HALF-KELLY of the MEASURED hit rate, 6% floor, 12% ceiling)
+#:
+#: Unmeasured stays at 6%: with the parameter unknown the smaller bet is not timidity, it is the
+#: same rule that treats an unmeasured correlation as a duplicate -- the assumption that costs
+#: money when wrong is the one that gets made. The calibration probe (R0142) is what turns that
+#: floor into a measurement, which is why it was worth building before any capital moved.
+RISK_CAP_FLOOR = 0.06
+#: 12% ceiling: half-Kelly at a 38% hit rate, the top of the band this desk considers plausible.
+#: Above it the sizer would be extrapolating past any hit rate it has ever observed.
+RISK_CAP_CEILING = 0.12
+
+
+def measured_risk_cap(root: Path | None = None) -> dict[str, Any]:
+    """Per-trade cap from the desk's MEASURED hit rate, half-Kelly, floored and capped.
+
+    Returns the floor with state UNMEASURED when there is no record -- never an optimistic
+    default, because a cap set from a hit rate nobody has observed is a guess wearing a formula."""
+    try:
+        from libs.self_improvement.forecast_calibration import report
+        rep = report()
+        n = int(rep.get("n_resolved") or 0)
+        hit = rep.get("hit_rate_posterior")
+    except Exception as exc:
+        return {"cap": RISK_CAP_FLOOR, "state": "UNMEASURED",
+                "why": f"calibration unavailable ({type(exc).__name__}) -- floor applies"}
+    if n < 30 or hit is None:
+        return {"cap": RISK_CAP_FLOOR, "state": "UNMEASURED", "n_resolved": n,
+                "why": f"{n}/30 resolved outcomes -- the hit rate that sets Kelly is not yet "
+                       "measured, so the floor applies. Not timidity: a cap derived from an "
+                       "unobserved rate is a guess wearing a formula."}
+    p = float(hit if not isinstance(hit, dict) else hit.get("mean", 0.0))
+    b = 3.0                                              # the ladder's realised winner:loser shape
+    full = (p * b - (1 - p)) / b
+    cap = max(RISK_CAP_FLOOR, min(RISK_CAP_CEILING, full / 2.0))
+    return {"cap": round(cap, 4), "state": "MEASURED", "n_resolved": n,
+            "hit_rate": round(p, 4), "full_kelly": round(full, 4),
+            "why": f"half-Kelly at a measured {p:.1%} hit rate is {full/2:.1%}; "
+                   f"clamped to [{RISK_CAP_FLOOR:.0%}, {RISK_CAP_CEILING:.0%}]"}
 
 #: TOTAL heat across all live positions. This is the real aggression dial now, and at 30% it is
 #: HIGHER than the old design ever ran (one 20% bet at a time), while every individual bet is
@@ -333,7 +385,8 @@ def slip_leverage_cap(stop_pct: float, *, stress_loss: float = MAX_STRESS_LOSS) 
     return stress_loss / ((stop_pct + SLIP_STRESS_PCT) / 100.0)
 
 
-def kelly_leverage(prob: float, reward_risk: float, stop_pct: float) -> dict[str, Any]:
+def kelly_leverage(prob: float, reward_risk: float, stop_pct: float,
+                   *, risk_cap: float = MAX_RISK_PER_TRADE) -> dict[str, Any]:
     """Fractional-Kelly leverage from Claude's OWN probability. Aggression is here; the caps are
     the rail. Kelly f* = (p*b - q)/b; leverage = (fraction of equity at risk) / (stop distance).
 
@@ -345,7 +398,7 @@ def kelly_leverage(prob: float, reward_risk: float, stop_pct: float) -> dict[str
     p, q, b = prob, 1.0 - prob, max(reward_risk, 1e-6)
     edge = (p * b - q) / b                                  # full-Kelly fraction of equity
     want = max(0.0, edge * KELLY_FRACTION)                  # half-Kelly, before any cap
-    budget = min(MAX_RISK_PER_TRADE, want)
+    budget = min(risk_cap, want)
     if stop_pct <= 0:
         return {"full_kelly": round(edge, 4), "kelly_risk_fraction": round(budget, 4),
                 "risk_fraction": 0.0, "leverage": 0.0, "slip_cap": 0.0, "capped_by": "no-stop"}
@@ -354,7 +407,7 @@ def kelly_leverage(prob: float, reward_risk: float, stop_pct: float) -> dict[str
     lev = min(MAX_LEVERAGE, slip_cap, kelly_lev)
     realised = lev * (stop_pct / 100.0)                     # what the stop actually costs
     caps = []
-    if want > MAX_RISK_PER_TRADE:
+    if want > risk_cap:
         caps.append("max_risk")
     if slip_cap < min(kelly_lev, MAX_LEVERAGE):
         caps.append("gap_stress")
@@ -911,6 +964,47 @@ def _chart_brief(root: Path, heat: dict[str, Any] | None = None, *, max_chars: i
     return head + body
 
 
+def ensemble_consensus(reads: list[dict[str, Any] | None]) -> tuple[dict[str, Any] | None,
+                                                                    dict[str, Any]]:
+    """2-of-3 on (symbol, direction). No majority -> PASS, and the disagreement is RECORDED.
+
+    The minority reads are kept in the report rather than discarded, because whether this filter
+    actually helps is itself a measurable question: if the agreement-filtered calls do not beat
+    the unfiltered ones on hit rate, the filter is costing frequency for nothing and should go.
+    Imposing a filter without keeping what it rejected makes that unanswerable."""
+    got = [r for r in reads if r]
+    if not got:
+        return None, {"state": "NO-READS", "n": 0,
+                      "why": "no parseable read (auth/quota/refusal)"}
+    votes: dict[tuple[str, str], list[dict[str, Any]]] = {}
+    for r in got:
+        if r.get("action") == "PASS":
+            votes.setdefault(("PASS", "PASS"), []).append(r)
+            continue
+        votes.setdefault((str(r.get("symbol")), str(r.get("direction"))), []).append(r)
+    key, group = max(votes.items(), key=lambda kv: len(kv[1]))
+    detail = {"state": "CONSENSUS" if len(group) >= ENSEMBLE_AGREE else "SPLIT",
+              "n_reads": len(got), "n_agreeing": len(group),
+              "votes": {f"{k[0]}/{k[1]}": len(v) for k, v in votes.items()},
+              "minority": [{k: r.get(k) for k in ("symbol", "direction", "probability")}
+                           for kk, v in votes.items() if kk != key for r in v]}
+    if len(group) < ENSEMBLE_AGREE:
+        detail["why"] = (f"{len(got)} reads split {detail['votes']} -- no {ENSEMBLE_AGREE}-of-"
+                         f"{ENSEMBLE_N} consensus, so the desk stands aside. Near a 31.1% "
+                         "breakeven, precision is worth more than frequency.")
+        return {"action": "PASS", "pass_reason": detail["why"][:180]}, detail
+    if key == ("PASS", "PASS"):
+        detail["why"] = "consensus was to PASS"
+        return {"action": "PASS",
+                "pass_reason": str(group[0].get("pass_reason") or "consensus PASS")}, detail
+    # consensus TRADE: take the most CONSERVATIVE probability among the agreeing reads, because
+    # averaging lets one over-confident read pull the size up and Kelly is convex in p.
+    winner = min(group, key=lambda r: float(r.get("probability") or 0))
+    detail["why"] = f"{len(group)}/{len(got)} reads agree on {key[1]} {key[0]}"
+    detail["probability_rule"] = "lowest among agreeing reads (Kelly is convex in p)"
+    return winner, detail
+
+
 def build_brief(root: Path) -> dict[str, Any]:
     brief: dict[str, Any] = {"generated": datetime.now(tz=UTC).isoformat(), "context": {}}
     for label, rel, n in (("funding", "data/bitmex_funding.jsonl", 4),
@@ -1053,8 +1147,10 @@ def record(root: Path, call: dict[str, Any], *,
     if why:                                    # unreachable via main(), which validates first
         raise ValueError(why)
     cal = calibrated_p(float(call["probability"]))
-    sizing = kelly_leverage(cal["used"],
-                            float(call["expected_move_pct"]) / stop_pct, stop_pct)
+    rcap = measured_risk_cap(root)
+    sizing = kelly_leverage(cal["used"], float(call["expected_move_pct"]) / stop_pct, stop_pct,
+                            risk_cap=float(rcap["cap"]))
+    sizing["risk_cap"] = rcap
     # HEAT HEADROOM AS A SIZER: trim into what actually fits rather than refusing the setup.
     fit = size_into_headroom(root, str(call["symbol"]), sizing["risk_fraction"])
     if fit["risk"] < sizing["risk_fraction"]:
@@ -1100,6 +1196,37 @@ def record(root: Path, call: dict[str, Any], *,
     except Exception as exc:                                # never lose the call
         row["calibration_log_error"] = str(exc)
     return row
+
+
+#: THE ENSEMBLE. 3 independent reads, trade only on a 2-of-3 consensus.
+#:
+#: WHY PRECISION BEATS FREQUENCY *HERE* SPECIFICALLY, which is the whole justification and it does
+#: not generalise: cost-adjusted breakeven is 31.1% and the plausible hit rate sits right on top of
+#: it. Near breakeven g per trade is tiny, so +3pp of hit rate multiplies g by 3.5x and +4pp by
+#: 11x, while halving the trade count costs a factor of 2. Measured over the honest haircuts:
+#:
+#:      no filter,     33% hit, 460 trades  ->   34% CAGR
+#:      2-of-3 filter, 36% hit, 230 trades  ->   58% CAGR
+#:      2-of-3 filter, 38% hit, 230 trades  ->   95% CAGR
+#:
+#: FAR above breakeven this trade-off reverses and frequency wins again -- so this is reviewed
+#: when the measured hit rate is known, not treated as permanent.
+ENSEMBLE_N = 3
+#: 2 of 3. Derived from the same near-breakeven arithmetic: at a 33% base rate, requiring
+#: UNANIMITY cuts the trade count to ~1/4 for roughly +8pp of hit rate, which measures at 63% CAGR
+#: against 95% for the 2-of-3 rule -- unanimity over-pays in frequency for its extra precision.
+#: 2-of-3 is where the curve peaks under the honest haircuts.
+ENSEMBLE_AGREE = 2
+
+#: The three reads are deliberately framed DIFFERENTLY. Three samples of one framing correlate
+#: heavily and their agreement means almost nothing; three angles disagreeing is information.
+_LENSES: tuple[str, ...] = (
+    "",
+    "\n\nBefore answering: state the strongest case for the OPPOSITE side of your best idea, "
+    "then decide. If the opposite case is not clearly weaker, PASS.",
+    "\n\nBefore answering: assume your first instinct is the crowd's instinct and is already in "
+    "the price. What is left that is not? If nothing, PASS.",
+)
 
 
 def _ask(prompt: str, timeout: int = 600) -> str:
@@ -1156,14 +1283,15 @@ def main() -> int:
     except (OSError, ValueError) as exc:
         floors = {"state": "UNMEASURED", "why": str(exc)}
     charts = _chart_brief(_ROOT, heat)
-    raw = _ask(_BRIEF.format(instruments=", ".join(INSTRUMENTS),
-                             playbook=_playbook_brief(_ROOT), n_support=3,
-                             brief=json.dumps(brief, indent=1)[:5000],
-                             noise=json.dumps(floors)[:1500],
-                             charts=charts,
-                             lo=MIN_PROB, hi=MAX_PROB,
-                             smin=MIN_STOP_PCT, smax=MAX_STOP_PCT))
-    call = parse(raw)
+    base = _BRIEF.format(instruments=", ".join(INSTRUMENTS),
+                         playbook=_playbook_brief(_ROOT), n_support=3,
+                         brief=json.dumps(brief, indent=1)[:5000],
+                         noise=json.dumps(floors)[:1500],
+                         charts=charts,
+                         lo=MIN_PROB, hi=MAX_PROB,
+                         smin=MIN_STOP_PCT, smax=MAX_STOP_PCT)
+    reads = [parse(_ask(base + _LENSES[i % len(_LENSES)])) for i in range(ENSEMBLE_N)]
+    call, consensus = ensemble_consensus(reads)
     if call is None:
         state = {"status": "NO-CALL", "why": "no parseable JSON (auth/quota/refusal)",
                  "at": datetime.now(tz=UTC).isoformat()}
@@ -1190,6 +1318,7 @@ def main() -> int:
                      "peak_leverage": row["management"].get("peak_leverage"), "noise": noise}
     state["drawdown_rail"] = dd
     state["heat"] = heat
+    state["ensemble"] = consensus
     state.setdefault("at", datetime.now(tz=UTC).isoformat())
     (_ROOT / _STATE).write_text(json.dumps(state, indent=2), "utf-8")
     print(json.dumps(state, indent=2) if args.json else

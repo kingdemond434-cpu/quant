@@ -212,6 +212,10 @@ _MAP: dict[str, list[str]] = {
     # the LINE existed; nothing proved the organ emitted anything, which is how a miner goes dark
     # with the board still green.
     "L1.28c-liveness": ["scripts/check_organ_liveness.py"],
+    # R0150: the symmetric half of the kill condition. The sleeve had a defined way to DIE and no
+    # defined way to GROW, which makes expansion an improvised decision taken in the mood of a
+    # good week -- the exact moment that decision is worst.
+    "L1.6-promotion": ["scripts/check_promotion_gate.py"],
     # L1.25a: null streaks throttle nothing -- an organ going quiet is caught by the freshness/
     # productivity wires REGARDLESS of its reason, so "stopped because nothing was working" trips
     # the same fence as "stopped because broken". The pessimism-freeze cannot hide.

@@ -14,6 +14,8 @@ from pathlib import Path
 
 from scripts.run_conviction_trader import (
     _BRIEF,
+    _LENSES,
+    ENSEMBLE_N,
     INSTRUMENTS,
     MAX_GROSS_HEAT,
     MAX_LEVERAGE,
@@ -22,14 +24,18 @@ from scripts.run_conviction_trader import (
     MAX_RISK_PER_TRADE,
     MAX_STRESS_LOSS,
     MIN_STOP_PCT,
+    RISK_CAP_CEILING,
+    RISK_CAP_FLOOR,
     SLIP_STRESS_PCT,
     _chart_brief,
     adverse_excursion,
     calibrated_p,
     derive_stop_pct,
     effective_heat,
+    ensemble_consensus,
     kelly_leverage,
     management_plan,
+    measured_risk_cap,
     noise_floor,
     portfolio_heat,
     record,
@@ -630,3 +636,104 @@ def test_a_busy_book_trims_the_trade_instead_of_refusing_it(tmp_path):
 def test_nothing_fillable_is_still_refused(tmp_path):
     ok, why = validate(_t(), heat={"heat": 0.30, "fits_risk": 0.0001, "symbols": []})
     assert not ok and "no fillable size" in why
+
+
+# --------------------------------------- the per-trade cap is DERIVED, and it can go UP
+
+def test_the_cap_rises_with_a_measured_hit_rate(monkeypatch):
+    # The flat 6% was wrong in the TIMID direction and the principal caught it: at a real 35% hit
+    # rate full Kelly is 13.3%, so 6% is 0.45x Kelly and leaves growth on the table (L1.28).
+    import libs.self_improvement.forecast_calibration as fc
+    caps = []
+    for p in (0.30, 0.35, 0.42):
+        monkeypatch.setattr(fc, "report",
+                            lambda p=p: {"n_resolved": 60, "hit_rate_posterior": p})
+        caps.append(measured_risk_cap(Path("."))["cap"])
+    assert caps == sorted(caps) and caps[-1] > caps[0]
+    assert caps[-1] > RISK_CAP_FLOOR                  # a proven forecaster earns MORE size
+    assert caps[-1] <= RISK_CAP_CEILING
+
+
+def test_an_unmeasured_hit_rate_holds_the_floor_and_says_why(monkeypatch):
+    # Not timidity: a cap derived from an unobserved rate is a guess wearing a formula, and this
+    # is the same rule that treats an unmeasured correlation as a duplicate.
+    import libs.self_improvement.forecast_calibration as fc
+    monkeypatch.setattr(fc, "report", lambda: {"n_resolved": 4, "hit_rate_posterior": 0.5})
+    c = measured_risk_cap(Path("."))
+    assert c["cap"] == RISK_CAP_FLOOR and c["state"] == "UNMEASURED"
+    assert "guess wearing a formula" in c["why"]
+
+
+def test_a_poor_measured_hit_rate_never_pushes_the_cap_below_the_floor(monkeypatch):
+    # Sizing DOWN is calibrated_p's job (it shrinks the probability). The cap floor stays put so a
+    # bad patch cannot ratchet the sleeve into irrelevance before the kill condition decides.
+    import libs.self_improvement.forecast_calibration as fc
+    monkeypatch.setattr(fc, "report", lambda: {"n_resolved": 60, "hit_rate_posterior": 0.26})
+    assert measured_risk_cap(Path("."))["cap"] == RISK_CAP_FLOOR
+
+
+def test_the_sizer_actually_consumes_the_higher_cap():
+    lo = kelly_leverage(0.63, 4.0 / 2.0, 2.0, risk_cap=0.06)["risk_fraction"]
+    hi = kelly_leverage(0.63, 4.0 / 2.0, 2.0, risk_cap=0.11)["risk_fraction"]
+    assert hi > lo                                    # the cap is a real input, not decoration
+
+
+# ------------------------------------------- the ensemble: precision bought with frequency
+
+def _read(sym, direction, p, action="TRADE"):
+    return {"action": action, "symbol": sym, "direction": direction, "probability": p}
+
+
+def test_a_split_ensemble_stands_aside():
+    # Near a 31.1% breakeven, +3pp of hit rate multiplies g by 3.5x while halving the trade count
+    # costs a factor of 2. Standing aside on disagreement is the good side of that trade.
+    call, d = ensemble_consensus([_read("BTCUSDT", "LONG", 0.62),
+                                  _read("ETHUSDT", "SHORT", 0.60),
+                                  _read("SOLUSDT", "LONG", 0.55)])
+    assert d["state"] == "SPLIT" and call["action"] == "PASS"
+    assert "precision is worth more than frequency" in call["pass_reason"] + d["why"]
+
+
+def test_two_of_three_is_enough_to_trade():
+    call, d = ensemble_consensus([_read("BTCUSDT", "LONG", 0.62),
+                                  _read("ETHUSDT", "SHORT", 0.60),
+                                  _read("BTCUSDT", "LONG", 0.55)])
+    assert d["state"] == "CONSENSUS" and call["action"] == "TRADE"
+    assert call["symbol"] == "BTCUSDT" and d["n_agreeing"] == 2
+
+
+def test_the_consensus_takes_the_most_conservative_probability():
+    # Averaging lets one over-confident read pull the size up, and Kelly is CONVEX in p -- so the
+    # error from an inflated probability is not symmetric with the error from a cautious one.
+    call, d = ensemble_consensus([_read("BTCUSDT", "LONG", 0.88),
+                                  _read("BTCUSDT", "LONG", 0.54)])
+    assert call["probability"] == 0.54
+    assert "convex" in d["probability_rule"]
+
+
+def test_the_rejected_minority_is_kept_not_discarded():
+    # Whether this filter HELPS is itself measurable, and imposing it without keeping what it
+    # rejected makes that unanswerable.
+    _c, d = ensemble_consensus([_read("BTCUSDT", "LONG", 0.62),
+                                _read("ETHUSDT", "SHORT", 0.60),
+                                _read("BTCUSDT", "LONG", 0.55)])
+    assert d["minority"] and d["minority"][0]["symbol"] == "ETHUSDT"
+
+
+def test_a_consensus_to_pass_is_a_pass():
+    call, d = ensemble_consensus([{"action": "PASS", "pass_reason": "chop, no edge"},
+                                  {"action": "PASS", "pass_reason": "nothing set up"},
+                                  _read("BTCUSDT", "LONG", 0.62)])
+    assert call["action"] == "PASS" and d["state"] == "CONSENSUS"
+
+
+def test_no_readable_reads_is_not_a_trade():
+    call, d = ensemble_consensus([None, None, None])
+    assert call is None and d["state"] == "NO-READS"
+
+
+def test_the_lenses_are_actually_different():
+    # Three samples of one framing correlate heavily and their agreement means almost nothing.
+    assert len(set(_LENSES)) == len(_LENSES) == ENSEMBLE_N
+    assert any("OPPOSITE" in x for x in _LENSES)
+    assert any("already in" in x for x in _LENSES)
