@@ -60,6 +60,7 @@ _GOVERNED: tuple[str, ...] = (
     "screen_funding_spread.py", "screen_collateral_allocation.py",
     "check_build_standard.py",                              # this fence holds itself to it
     "check_fence_yield.py",
+    "run_llm_trader.py",
 )
 
 #: Organs that legitimately owe no cron line, with the reason. "No schedule" must be a DECISION.

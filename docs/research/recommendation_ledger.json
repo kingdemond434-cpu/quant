@@ -1471,6 +1471,18 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0122",
+   "source": "principal",
+   "summary": "R0122 LLM DISCRETIONARY SLEEVE (principal request: 'Claude acts like a human trader with a brain, trades 24/7'): PAPER-ONLY sleeve running 6x/day. Edge is PROSE not charts -- exchange announcements, contract-spec changes, listing notices, chain incidents, regulatory statements: information whose implication requires READING, arriving while humans sleep. Every call is a pre-registered forecast with an explicit probability, logged to forecast_calibration so L1.29 SCORES it (Brier/bias/hit-rate) automatically. Write-time refusals: no mechanism, no falsifier, chart-pattern-as-mechanism, probability outside 0.50-0.95. PASS is first-class. Zero promotion authority -- earns a forward clock the same way as every axis (L1.6). NEXT STAGES OWED: (a) build data/exchange_announcements.jsonl + news_feed.jsonl collectors -- the sleeve's actual edge is dark without them; (b) paper P&L marking vs buy-and-hold AND vs the carry sleeve; (c) after 30+ scored calls, read its Brier: if uncalibrated or below benchmark, graveyard it with the reason",
+   "roi_bps": 35.0,
+   "raised": "2026-07-31T12:33:16.979973+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
