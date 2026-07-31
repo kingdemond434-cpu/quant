@@ -215,6 +215,15 @@ QUANT_ROOT=/home/quant/quant-platform
 # CONFIDENCE: committed-script (new this cycle)
 8 * * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_change_window.py >> data/cro_ai_logs/change_window.log 2>&1
 
+# COLLATERAL ALLOCATION SCREEN (R0120, L1.39 zero-idle): tests the assumption under every
+# capacity decision the desk makes -- is cash-and-carry actually the best use of our USDT, or
+# does haircut-adjusted lending win in the flat-funding regime? defi_lending.jsonl has been
+# collected daily and read by NOTHING. Output is a REGIME MAP (which allocation wins where),
+# evidence for a principal allocation decision -- it moves no funds and never auto-switches.
+# EVIDENCE: scripts/screen_collateral_allocation.py -> data/collateral_allocation.json; R0120
+# CONFIDENCE: committed-script (new this cycle)
+50 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/screen_collateral_allocation.py >> data/cro_ai_logs/collateral_allocation.log 2>&1
+
 # FUNDING-SPREAD SCREEN (R0115, L1.39 zero-idle: the candidate advances its next stage
 # AUTOMATICALLY rather than waiting for a human to run it). Stage A only -- measures whether the
 # cross-venue funding spread exceeds its round-trip cost often enough to be harvestable. A

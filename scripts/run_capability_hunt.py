@@ -140,6 +140,14 @@ ADJUDICATE with the desk's own discipline, then BUILD.
     check_scheduler_manifest, check_timidity_language. Then commit and push to master with a
     message naming what was missing and what it would have caught.
  6. Row anything you deliberately did NOT build via scripts/recommendations.py, with the reason.
+ 7. ALPHA CANDIDATES GET THE SAME TREATMENT AS CAPABILITIES (principal 2026-07-31: "this is what
+    our system should always do, 6 times a day, with GPT and Claude both"). If the winning
+    proposal is a TRADEABLE AXIS rather than an engine capability, its build IS its Stage-A
+    screen: write the screen script + tests, schedule it in ops/crontab.manifest, run it, and
+    record the verdict -- exactly as scripts/screen_funding_spread.py (R0115) and
+    scripts/screen_collateral_allocation.py (R0120) were built. A candidate rowed but unscreened
+    is the L1.39 idle defect; the screen is how "implement immediately" applies to an axis.
+    NEVER size it -- Stage A earns a pre-registered forward clock, never capital (L1.6).
 
 Write your session record to {report} (what both families proposed, what you built, what you
 refused, what its first run said). If you cannot finish the build, the record IS the deliverable

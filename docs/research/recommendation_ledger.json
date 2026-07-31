@@ -1454,11 +1454,11 @@
    "summary": "ALPHA HUNT R2-2 (unasked-assumption lens): THE DESK HAS NEVER TESTED WHETHER ITS OWN CARRY SLEEVE IS THE BEST USE OF THE SAME COLLATERAL. Every capacity decision assumes cash-and-carry is the base allocation, but the same USDT could sit in a DeFi lending pool (defi_lending collected daily, unread) at a measurable, near-riskless rate. The screen: carry net-of-cost yield vs best-available lending APY on the same collateral, same window. If lending wins in flat-funding regimes, the correct book is REGIME-SWITCHED between them -- and nobody has ever computed the comparison. Data fully owned.",
    "roi_bps": 35.0,
    "raised": "2026-07-31T11:59:50.190000+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "Stage-A screen BUILT and scheduled daily (scripts/screen_collateral_allocation.py + 7 tests): reads the collected-but-unread defi_lending feed, splits funding into high/flat regimes, compares carry-net vs haircut-adjusted lending-net per regime, and emits CARRY-DOMINANT / LENDING-DOMINANT / REGIME-SWITCHED / UNMEASURED. Refuses to run at haircut=0 (contract/depeg/withdrawal-queue risk is real and correlated with needing the collateral back). UNMEASURED explicitly is NOT 'carry wins'. Moves no funds; the verdict is evidence for a principal allocation decision",
+   "commit": "pending",
    "due": null,
-   "disposed": null
+   "disposed": "2026-07-31T12:03:26.094486+00:00"
   },
   {
    "id": "R0121",
