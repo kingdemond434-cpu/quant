@@ -370,3 +370,20 @@ not need to get smarter this week; it needs to get connected.
 - Marked the dead 07-30 validation-stats skeleton SUPERSEDED (its completing auditor's request).
 - Certification run left computing; the 08:21 cron fire is the backstop; next cycle owes the T1
   read of `reports/gauntlet_certification.json`.
+- **Executed the R0070 narrow disarm same-session** (the 06:40Z collision would have fired before
+  any cross-session repair at measured μ≈0.6/day): ported the legacy-proven locks + `--tranche
+  400` into the managed manifest lines (commits 3f6bbb3, 738a3f8), reinstalled the fenced block,
+  and removed the 11 legacy duplicate lines for every MEASURED corruption vector — ingest_axes,
+  dl_oi_ls_universe, both recorder respawns, ensure_recorder, daily_research_cycle (the
+  signal_halflife double-append source), watchdog, venue_divergence, defi_lending, oi_ls_live,
+  coinmetrics. Verified: each scheduled exactly once, `check_scheduler_manifest` manifest-only
+  drift = 0, and `comm` against the pre-surgery backup (`data/crontab_backup_20260731T04.txt`)
+  shows zero jobs lost. Honest incident note: the dl_oi_ls_universe removal filter briefly
+  dropped BOTH twins (~1 min); the drift checker flagged it immediately and the installer
+  restored it — evidence the drift fence works, and the lesson (filter legacy lines by path
+  prefix, never by lock string) is recorded here. **R0070 stays OPEN** for the residual scope:
+  brain-organ/kimi/max_audit/quota_verdict/organ_catchup duplicates (mutex-serialized or
+  non-corrupting), the 13-job 08:21 herd stagger, dedup of the contaminated 07-30T23:00→fix
+  rows, and the standing crontab-vs-manifest duplicate fence in max_audit. Active cron lines
+  95→84; write-rate fences (R0081) must confirm collectors return to baseline at their next
+  fires (defi :17, oi_ls :32).
