@@ -2697,11 +2697,11 @@
    "summary": "The positive control could not RUN, so 0/420 stayed uninterpretable. Two defects, both found by executing rather than reading. (1) certify_gauntlet.py had NO sys.path bootstrap: python scripts/certify_gauntlet.py -- exactly how its manifest line invokes it -- died on ModuleNotFoundError, so the daily organ emitted a bare traceback and the BLOCKED artifact it was carefully written to produce was never written either; only python -m ever worked. Every other organ carries the preamble. (2) _audit_prepared.pkl has 3 readers and 0 writers -- hand-made for the 2026-07-29 audit, gitignored, never committed -- so _load_campaign always raised. Took the resolution the script named for itself: fall back to positive_control.null_cohort at the campaign shape recorded in the COMMITTED reports/gate_histogram.json (T=310, N=420). The fallback SPLITS the question honestly: synthetic peers CAN answer 'can this gate stack ever pass a genuinely good candidate' (a property of the gate machinery) and CANNOT answer 'is the real 0/420 informative' (PBO and the reality check are computed against the cohort). Status is COMPLETE-SYNTHETIC, a distinct value not a footnote, so a reader scanning for COMPLETE cannot mistake a manufactured-peer run for vindication of the real campaign. Peer seed fixed so peers do not drift between runs; injected controls still vary per row, which is the defect R0017 actually closed on.",
    "roi_bps": null,
    "raised": "2026-07-31T23:23:34.123719+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "sys.path bootstrap added so it runs as its manifest invokes it; null_cohort fallback at the committed campaign shape; COMPLETE-SYNTHETIC as a distinct status; 5 tests. FIRST RESULT: SR_true=10 PASSES both paths (dsr 1.000, pbo 0.000, rc_p 0.000) -- the gate is NOT welded shut. SR_true=3 fails on dsr+reality_check while PBO passes at 0.19. NULL control still owed (run killed at 4/6 rows).",
+   "commit": "aebc591",
    "due": null,
-   "disposed": null
+   "disposed": "2026-07-31T23:38:25.204351+00:00"
   }
  ]
 }
