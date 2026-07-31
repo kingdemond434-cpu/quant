@@ -1231,6 +1231,54 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0102",
+   "source": "principal",
+   "summary": "PAPER-SLEEVE AUTO-SPAWN: every Stage-A SCREEN-INTERESTING axis automatically gets a paper sleeve (costless execution-path testing + forward evidence accrual) -- drives forward slots toward 12/12 and tests the executor breadth-first before capital ever touches a new edge",
+   "roi_bps": 30.0,
+   "raised": "2026-07-31T08:46:45.654292+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0103",
+   "source": "principal",
+   "summary": "ORGAN GENOME EVOLUTION LOOP (NOFX practice, desk-adapted): per-organ prompt-fitness record (measured yield per session per prompt version), occasional challenger prompt/model A/B on the same brief, adopt by measured output -- generalises the deep sweep's recursive-meta to EVERY organ; prompts are versioned software, so evolve them by evidence",
+   "roi_bps": 25.0,
+   "raised": "2026-07-31T08:46:45.713152+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0104",
+   "source": "principal",
+   "summary": "ENGINE-CAGR RATCHET: the weekly capability composite (sweep output G) becomes a ratcheted metric -- research engine must strengthen week-over-week or FLATLINE with a named cause; self-improvement itself gets a floor and a fence",
+   "roi_bps": 20.0,
+   "raised": "2026-07-31T08:46:45.762112+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0105",
+   "source": "principal",
+   "summary": "PRE-GATE-0 ADVERSARIAL PRE-MORTEM (one-shot, fires before the deposit): multi-seat 'the desk died in live week 1 -- write the post-mortem' pass; cheapest possible insurance on the launch-day unknowns the readiness seat hasn't imagined",
+   "roi_bps": 40.0,
+   "raised": "2026-07-31T08:46:45.809924+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
