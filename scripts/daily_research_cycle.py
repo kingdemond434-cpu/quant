@@ -32,7 +32,7 @@ _LOG = _ROOT / "data" / "cro_cycle_log.json"
 # ordered pipeline; (label, script, timeout_s). Heavy research first, then bookkeeping.
 _STEPS = [
     # 1200s: the whole-tree gate (2026-07-25) runs ~8min; the old 300s was sized for the 4-file
-    # gate and silently killed this step by timeout every run since (R0137, stale-consumer class).
+    # gate and silently killed this step by timeout every run since (R0145, stale-consumer class).
     ("ci_gate",           "scripts/run_ci.py",             1200),
     ("recorder_watch",    "scripts/ensure_recorder.py",      60),  # data moat must never sleep
     ("stablecoin_flows",  "scripts/run_stablecoin_flows.py", 180),  # daily on-chain clock tick

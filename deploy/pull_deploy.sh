@@ -183,13 +183,13 @@ git merge --ff-only FETCH_HEAD >/dev/null 2>&1 || {
 say "fast-forwarded to $NEW_SHORT -- running the CI gate before restarting anything"
 
 # --fail-on-lock: a lock-skip exits 0 for organs, but "someone else is mid-gate" is NOT "green"
-# for a deploy decision -- without the flag this branch shipped unvetted commits (R0136).
+# for a deploy decision -- without the flag this branch shipped unvetted commits (R0144, was R0136).
 if ! "$PY" "$ROOT/scripts/run_ci.py" --fail-on-lock; then
     say "CI GATE NOT GREEN on $NEW_SHORT -- reverting to $OLD_SHORT"
     # REVERT ONLY A TREE NOBODY ELSE TOUCHED. The CI window is minutes long; a session or an
     # operator can legitimately commit or edit here mid-gate, and OLD was captured before all
     # of that. An unconditional reset --hard destroyed exactly that work live on 2026-07-31
-    # (commit 80153c0 + uncommitted fixes, R0135). Same philosophy as the refuse-on-dirty
+    # (commit 80153c0 + uncommitted fixes, R0143, was R0135). Same philosophy as the refuse-on-dirty
     # check at the top: not deploying (or not reverting) is always recoverable; destroyed
     # work is not.
     NOW_HEAD=$(git rev-parse HEAD)

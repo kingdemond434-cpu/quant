@@ -59,6 +59,7 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # wedges the exact push that would heal it. The bare run lives in _STATE_FENCES.
     ("check_scheduler_manifest.py", ("--report-only",)),  # L1.28c -- every line is decided
     ("check_build_standard.py", ()),           # L1.41 -- nothing enters below standard
+    ("check_sizing_derivation.py", ()),        # L1.41 -- no money number chosen by feel
 )
 
 #: STATE FENCES -- box-only. They measure LIVE STATE (artifacts, ledgers, organ freshness) that
@@ -73,6 +74,7 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("check_replacement_rate.py", ()),         # L1.30 -- births vs deaths
     ("check_change_window.py", ()),            # L1.38 -- money-path freeze windows
     ("check_scheduler_manifest.py", ()),       # L1.28c state half -- live crontab drift (rc=1)
+    ("check_mechanism_attribution.py", ()),    # L1.6 -- no survival on unexplained P&L
 )
 
 

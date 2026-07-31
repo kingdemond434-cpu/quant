@@ -65,6 +65,12 @@ _GOVERNED: tuple[str, ...] = (
     "run_conviction_trader.py",
     "resolve_paper_book.py",
     "build_chart_context.py",
+    "check_sizing_derivation.py",
+    "check_mechanism_attribution.py",
+    "run_trade_review.py",
+    "screen_copytrading.py",
+    "run_sleeve_allocator.py",
+    "run_calibration_probe.py",
 )
 
 #: Organs that legitimately owe no cron line, with the reason. "No schedule" must be a DECISION.
@@ -74,6 +80,9 @@ _SCHEDULE_EXEMPT: dict[str, str] = {
     "check_build_standard.py": "runs inside the law gate's battery and in CI on every push; a "
                                "separate cron line would add nothing a commit does not already "
                                "trigger",
+    "check_sizing_derivation.py": "a build-boundary fence like check_build_standard -- it reads "
+                                  "source, not state, so it belongs in the law gate and CI where "
+                                  "constants are actually written, not on a clock",
 }
 
 #: Organs that legitimately do not call guard(), with the reason. The gate organs THEMSELVES
@@ -84,6 +93,8 @@ _GUARD_EXEMPT: dict[str, str] = {
     "check_law_families.py": "guard() imports FAMILIES from this module; guarding here is a loop",
     "check_build_standard.py": "runs inside the law gate, which has already verified the core "
                                "before this fence executes",
+    "check_sizing_derivation.py": "runs inside the law gate, which has already verified the core "
+                                  "before this fence executes",
 }
 
 #: Vocabulary that proves an organ can say "I could not measure this".
@@ -94,7 +105,13 @@ _GUARD_EXEMPT: dict[str, str] = {
 _REFUSAL_WORDS = ("UNMEASURED", "REFUSED", "REFUSING", "BLOCKED", "NO-DATA", "DARK",
                   "FLATLINE", "NOTHING-REPLICATED", "UNMEASURABLE", "UNCOUNTABLE",
                   "UNFORECASTING", "BLIND", "INSUFFICIENT", "UNKNOWN", "STERILE", "ABSENT",
-                  "DYING", "BELOW-STANDARD", "INCOMPLETE", "UNREACHED", "DECORATIVE")
+                  "UNJUSTIFIED", "UNREADABLE", "UNPARSEABLE",
+                  "DYING", "BELOW-STANDARD", "INCOMPLETE", "UNREACHED", "DECORATIVE",
+                  "UNATTRIBUTED", "UNDECIDABLE",
+                  "NOTHING-TO-REVIEW", "NO-REVIEW", "STALE", "RETIRED", "PROVISIONAL",
+                  "CONTAMINATED", "UNDERPOWERED", "FORWARD-CLOCK", "NO-DATA",
+                  "DUPLICATION", "DUPLICATE",
+                  "UNINFORMATIVE", "ACCUMULATING", "UNSCORABLE", "NO-ANSWER")
 
 
 def _has_silent_swallow(tree: ast.AST) -> bool:

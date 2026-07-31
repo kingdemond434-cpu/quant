@@ -177,6 +177,29 @@ _MAP: dict[str, list[str]] = {
     # unused information source sitting under a strategy that needs it (L2.9), and a ceiling
     # reported as fine while unmeasured (L1.28a). Multi-timeframe structure, per instrument.
     "L2.9-chart-context": ["scripts/build_chart_context.py"],
+    # R0135: four money-path constants were found defective in one session, all round numbers
+    # picked by analogy rather than computed. Four of four is a missing mechanism, not bad luck.
+    "L1.41-sizing": ["scripts/check_sizing_derivation.py"],
+    # R0137: the dashboard showed carry as a SURVIVOR on P&L whose funding term was 3% of it. The
+    # desk's own two-sided bleed fence already said "naked leg" -- and gated nothing.
+    "L1.6-attribution": ["scripts/check_mechanism_attribution.py",
+                         "libs/execution/carry_accounting.py"],
+    # R0139: the discretionary desk's learning loop. Lessons climb an evidence ladder before they
+    # reach the trader and are retired by their own falsifier -- the same standard L1.6 applies to
+    # alpha, applied to the desk's beliefs about its own method.
+    "L1.6-playbook": ["scripts/run_trade_review.py", "docs/DISCRETIONARY_DESK.md"],
+    # R0140: copytrading, screened. The naive read (copy the leaderboard's best) is the 420/0
+    # selection failure in a new costume; the screen computes the tempting number AND disqualifies
+    # it, archives the only unbiased design (a forward panel counting exits as failures), and
+    # measures the derivative that does not require picking a winner.
+    "L1.6-copytrading": ["scripts/screen_copytrading.py"],
+    # R0141: more sleeves multiply growth only if INDEPENDENT. Correlated sleeves draw down
+    # together -- risk scales with N, growth with 1, and the desk pays N sets of costs for one bet.
+    "L1.28b-sleeves": ["scripts/run_sleeve_allocator.py"],
+    # R0142: the load-bearing assumption under the whole sizer -- that a stated probability means
+    # anything. Zero resolved forecasts existed when this was checked. L1.29 scores it; this poses
+    # the questions that give L1.29 something to score without needing capital or venue keys.
+    "L1.29-probe": ["scripts/run_calibration_probe.py"],
     # L1.25a: null streaks throttle nothing -- an organ going quiet is caught by the freshness/
     # productivity wires REGARDLESS of its reason, so "stopped because nothing was working" trips
     # the same fence as "stopped because broken". The pessimism-freeze cannot hide.

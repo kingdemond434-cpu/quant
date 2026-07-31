@@ -13,6 +13,7 @@ from scripts.build_chart_context import (
     build,
     build_symbol,
     cluster_levels,
+    correlations,
     pivots,
     timeframe_view,
     trend_state,
@@ -120,3 +121,25 @@ def test_every_timeframe_is_charted_not_just_one():
                        fetch=lambda *a, **k: (_bars(_zigzag([110, 118], [95, 103])), "test"))
     assert set(sym["timeframes"]) == {"15m", "1h", "4h"}          # a scalp must see the 4h trend
     assert sym["momentum_pct"] and "day_range" in sym
+
+
+def test_correlations_are_measured_across_the_universe():
+    # Breadth is only real if the bets are separate; that has to be measured, not assumed.
+    ident = [0.01, -0.02, 0.015, -0.005] * 12
+    opp = [-x for x in ident]
+    c = correlations({"A": ident, "B": ident, "C": opp})
+    assert abs(c["A"]["B"] - 1.0) < 1e-6                 # same series -> perfectly correlated
+    assert c["A"]["C"] < -0.9                            # opposite series -> negatively
+
+
+def test_too_little_history_assumes_the_worst_case_not_the_best():
+    # Assuming independence on thin data would let a blind book believe it was diversified.
+    c = correlations({"A": [0.01, -0.01], "B": [0.02, -0.02]})
+    assert c["A"]["B"] >= 0.9 and c["A"]["A"] == 1.0
+
+
+def test_the_correlation_matrix_is_published_with_the_charts():
+    rep = build(("BTCUSDT", "ETHUSDT"), now=_NOW,
+                fetch=lambda *a, **k: (_bars(_zigzag([110, 118], [95, 103])), "test"))
+    assert "correlations" in rep and "BTCUSDT" in rep["correlations"]
+    assert "_returns" not in rep["charts"]["BTCUSDT"]    # working field stripped from the artifact

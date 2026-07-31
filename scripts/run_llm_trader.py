@@ -59,7 +59,12 @@ from libs.ops.lawful import guard as _law_guard  # noqa: E402
 _BOOK = "data/llm_trader_book.jsonl"
 _STATE = "data/llm_trader.json"
 MIN_PROB, MAX_PROB = 0.50, 0.95      # a call below 50% is a call the other way; 95%+ is a tell
-MAX_OPEN = 3                          # concurrent paper calls -- concentration discipline
+#: 3 concurrent calls. DERIVED from the same simulation that set the conviction sleeve's heat cap:
+#: at equal total risk, 1 bet has P(-90% drawdown)=100% while 4 bets have 1% and 8 have 0%. This
+#: sleeve carries no stop, so its per-call loss is unbounded in a way the conviction sleeve's is
+#: not -- 3 is the point where it stays a portfolio rather than a punt, without pretending the
+#: no-stop payoff is safe to spread thinly.
+MAX_OPEN = 3
 
 #: CONTROLLED MECHANISM TAXONOMY (external critique, 2026-07-31). Free-text mechanisms cannot be
 #: AGGREGATED, so "which mechanism families actually produce alpha" is unanswerable and every

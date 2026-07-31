@@ -918,3 +918,78 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # EVIDENCE: _forward_score smoke-tested 10/10 on backdated cutoffs this cycle (log in ledger)
 # CONFIDENCE: committed-script
 50 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_rejection_rescore.py >> data/cro_ai_logs/reject_rescore.log 2>&1 && .venv/bin/python scripts/run_rejection_shadow.py >> data/cro_ai_logs/reject_rescore.log 2>&1
+
+# MECHANISM ATTRIBUTION (R0137): no sleeve may read as SURVIVED on P&L its stated mechanism cannot
+# explain. Built after a live near-miss -- the dashboard showed funding carry as a survivor on
+# +24.5pct/Sharpe 13.13 while the funding harvest behind it was 113 dollars of 3,670. A
+# cash-and-carry is delta-neutral by construction, so its price legs cancel and its P&L should be
+# funding plus basis. The desk's own two-sided carry fence already returned BLEED(inverted) on
+# those numbers -- and its verdict gated NOTHING, which is the defect this organ exists to end.
+# An unattributed WIN is treated as seriously as a loss: the exposure that produced it is still on,
+# still unhedged, and will reverse. HOURLY, alongside the other live-state fences.
+# EVIDENCE: scripts/check_mechanism_attribution.py -> data/mechanism_attribution.json
+# CONFIDENCE: committed-script (new this cycle; caught the live case on its first run)
+35 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_attribution.lock .venv/bin/python scripts/check_mechanism_attribution.py --report-only >> data/cro_ai_logs/attribution.log 2>&1
+
+# TRADE REVIEW (R0139): the discretionary desk's LEARNING LOOP, on BINANCE perps. Reads each closed
+# paper trade against what was claimed at entry -- thesis, named structure, falsifier, chart state
+# -- and against what price then did, then classifies the cause into something actionable
+# (THESIS-WRONG / LEVEL-WRONG / TIMING-WRONG / NOISE-STOP / RIGHT-AND-PAID / RIGHT-BUT-TRUNCATED /
+# UNLUCKY) and extracts ONE falsifiable lesson. Weights are fixed and nothing here fine-tunes:
+# what improves is the desk's evidence-weighted knowledge of WHICH SETUPS PAY, the way a journal
+# improves a human. The playbook is an EVIDENCE LADDER -- PROVISIONAL on one observation with no
+# authority, SUPPORTED only after 3 agreeing trades, RETIRED the moment one contradicts it (and the
+# contradiction recorded so it cannot return), STALE if untested for 25 closed trades. ONLY
+# SUPPORTED lessons reach the trading brief: one lucky trade must not rewrite the method.
+# 3x/day, offset from the resolver so it reads freshly-closed trades.
+# EVIDENCE: scripts/run_trade_review.py -> data/trading_playbook.json + data/trade_review.json
+# CONFIDENCE: committed-script (new this cycle)
+40 2,10,18 * * * cd "$QUANT_ROOT" && flock -n data/.cron_review.lock .venv/bin/python scripts/run_trade_review.py >> data/cro_ai_logs/trade_review.log 2>&1
+
+# COPYTRADING SCREEN (R0140): Stage A, ZERO promotion authority. Two hypotheses live under the
+# word "copytrading" and they get opposite verdicts. H1 FOLLOW A LEAD TRADER is NOT TESTABLE from
+# public data: the naive split-half test on an OKX leaderboard sample returns Spearman +0.33 with
+# 5/6 of the top quintile beating the median, and it is an ARTIFACT -- the cohort is drawn by
+# sorting on pnl/aum/copiers/winRatio then measured for performance, blown-up traders are absent
+# entirely, mean 45d return across the sample is +81pct (a leaderboard, not a population), and
+# n=34 puts rho at ~1.9 sigma BEFORE either bias. It is the exact shape of the 420 patterns
+# already killed here. H2 TRADE THE COPY FLOW is measurable: copy capital is FORCED flow, so
+# aggregate skew and stress are a crowding gauge that needs no winner picked.
+# DAILY, and the cadence is the point: it archives a FORWARD PANEL where traders who DISAPPEAR are
+# counted as FAILURES, which is the only unbiased design available. Until two snapshots sit 5+
+# days apart the verdict is NO-DATA, never "promising".
+# EVIDENCE: scripts/screen_copytrading.py -> data/copytrading_screen.json + copytrading_panel.jsonl
+# CONFIDENCE: committed-script (new this cycle; OKX endpoints verified live, Binance 451s here)
+50 3 * * * cd "$QUANT_ROOT" && flock -n data/.cron_copytrade.lock .venv/bin/python scripts/screen_copytrading.py >> data/cro_ai_logs/copytrading.log 2>&1
+
+# SLEEVE ALLOCATOR (R0141): risk across DISCRETIONARY sleeves by MARGINAL growth contribution.
+# Adding sleeves only multiplies growth if they are INDEPENDENT -- five sleeves all long crypto
+# beta are one sleeve wearing five names, so risk scales with N while growth scales with 1 and the
+# desk pays N sets of costs for one bet. Measured on real data this book already shows crypto-vs-
+# crypto return correlation +0.48 and gold-vs-crypto +0.15, so the difference between a real second
+# edge and a duplicate is large and measurable. Correlation scales TOTAL deployed risk, not merely
+# how a fixed total is split: two independent sleeves deploy ~41pct nominal against a 30pct
+# correlation-adjusted cap, two duplicates deploy ~30pct. UNMEASURED pairs are assumed DUPLICATE --
+# the assumption that costs money when wrong is the one that gets made. Every registered sleeve
+# keeps a seed share so it can accumulate the record that would earn it more (L1.28a).
+# DAILY, after the resolver has marked the day's closes.
+# EVIDENCE: scripts/run_sleeve_allocator.py -> data/sleeve_allocation.json
+# CONFIDENCE: committed-script (new this cycle)
+25 4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_alloc.lock .venv/bin/python scripts/run_sleeve_allocator.py >> data/cro_ai_logs/sleeve_alloc.log 2>&1
+
+# CALIBRATION PROBE (R0142): does this model family's stated probability mean ANYTHING? The whole
+# discretionary sizer consumes one number -- Kelly is f*=(pb-q)/b, so if p is noise the sizer is
+# not aggressive or conservative, it is ARBITRARY. Checked 2026-07-31 the desk had ZERO resolved
+# forecasts: the most consequential input to the money path had never been scored on anything, and
+# the sleeve was built to consume it regardless. Calibration is a property of the FORECASTER not
+# the strategy, so it is measurable TODAY with questions that resolve from public price data in
+# hours -- no capital, no venue keys, ~50 forecasts in two days at the cost of quota alone.
+# Every 6h poses 6 directional questions on the sleeve's own instruments (the same KIND of
+# judgement it makes when trading, so the calibration transfers) and resolves anything due.
+# If Brier lands at or above 0.25 -- the score of always answering 50% -- the verdict is to REMOVE
+# the Kelly sizer and run flat size, because sizing on a meaningless number is strictly worse than
+# not sizing on it. Feeds L1.29, which the conviction sleeve already reads, so a proven-
+# uncalibrated forecaster shrinks its own future size with nobody deciding to intervene.
+# EVIDENCE: scripts/run_calibration_probe.py -> data/calibration_probe.json + .jsonl
+# CONFIDENCE: committed-script (new this cycle)
+5 */6 * * * cd "$QUANT_ROOT" && flock -n data/.cron_calprobe.lock .venv/bin/python scripts/run_calibration_probe.py >> data/cro_ai_logs/cal_probe.log 2>&1

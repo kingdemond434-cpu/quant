@@ -10,7 +10,17 @@ from __future__ import annotations
 import json
 from datetime import UTC, datetime, timedelta
 
-from scripts.resolve_paper_book import _benchmark, mark_event_row, resolve_book, walk_ladder
+from scripts.resolve_paper_book import (
+    KILL_AFTER_N,
+    KILL_HIT_RATE,
+    _benchmark,
+    equity_curve,
+    kill_check,
+    mark_event_row,
+    resolve_book,
+    trade_cost,
+    walk_ladder,
+)
 from scripts.run_conviction_trader import kelly_leverage, management_plan
 
 _ENTRY, _INVAL = 100.0, 98.0                  # LONG, R = 2.0
@@ -42,8 +52,23 @@ def test_a_trade_stopped_at_its_invalidation_loses_exactly_one_R():
     assert res["outcome"] == "STOPPED"
     assert abs(res["realised_R"] + 1.0) < 1e-9              # -1R, no more
     assert res["exit_price"] == _INVAL and res["stage_reached"] == 0
-    # ...and in equity terms that is exactly the risk the sizer budgeted, never more.
-    assert abs(res["equity_return"] + _row()["sizing"]["risk_fraction"]) < 1e-9
+    # GROSS is exactly the risk the sizer budgeted, never more...
+    assert abs(res["gross_return"] + _row()["sizing"]["risk_fraction"]) < 1e-9
+    # ...and NET is that plus costs, because a stop is a real fill that a real venue charges for.
+    assert res["equity_return"] < res["gross_return"]
+    assert abs(res["equity_return"] - (res["gross_return"] - res["cost"]["total"])) < 1e-9
+    assert res["cost"]["entry_side"] == "maker"          # resting order at the named level
+
+
+def test_costs_are_deducted_so_a_marginal_edge_reads_as_marginal():
+    # At 6.7x a round trip is ~24% of a full R: a gross mark shows a 30% hit rate as profitable
+    # when it is a loser. This is the self-flattery the resolver exists to prevent.
+    c = trade_cost(6.7, 1.5, 20.0)
+    assert c["total"] > 0.005 and c["total"] < 0.02
+    assert c["entry_fee"] < c["exit_fee"]                # maker in, taker out
+    taker = trade_cost(6.7, 1.5, 20.0, entry_maker=False)
+    assert taker["total"] > c["total"] * 1.3             # chasing the entry costs real money
+    assert trade_cost(0.0, 0.0, 0.0)["total"] == 0.0     # no position, no cost
 
 
 def test_intrabar_ambiguity_resolves_against_the_desk():
@@ -140,3 +165,68 @@ def test_conventions_are_published_with_every_report(tmp_path):
     rep = resolve_book(tmp_path, now=_START)
     assert any("adverse-first" in c for c in rep["conventions"])
     assert any("slippage" in c for c in rep["conventions"])
+
+
+# ----------------------------------------------- geometric growth is the objective, so measure it
+
+def _closed(rets, hours=20):
+    from datetime import timedelta
+    return [{"equity_return": r, "outcome": "STOPPED", "closed": True, "profitable": r > 0,
+             "exit_at": (_START + timedelta(hours=hours * (i + 1))).isoformat()}
+            for i, r in enumerate(rets)]
+
+
+def test_log_growth_per_trade_is_reported_not_just_total_return():
+    # The objective is max E[log wealth]. Total return over a short window says almost nothing
+    # about it; g per trade x trades per year is the quantity that compounds.
+    c = equity_curve(_closed([0.18] * 7 + [-0.06] * 13))
+    assert c["log_growth_per_trade"] > 0
+    assert c["trades_per_year_at_this_pace"] > 0
+    assert c["implied_cagr"] is not None
+
+
+def test_a_losing_edge_names_EDGE_as_the_constraint_not_frequency():
+    # THE POINT OF NAMING IT: if g <= 0, raising cadence multiplies a losing bet. Reporting a
+    # growth number without saying which term is short invites exactly the wrong response.
+    c = equity_curve(_closed([0.18] * 2 + [-0.06] * 18))
+    assert c["log_growth_per_trade"] <= 0
+    assert c["growth_constraint"].startswith("EDGE")
+    assert "makes it worse" in c["growth_constraint"]
+
+
+def test_a_winning_edge_at_low_pace_names_FREQUENCY():
+    c = equity_curve(_closed([0.18] * 7 + [-0.06] * 13, hours=24 * 30))   # ~12 trades/yr
+    assert c["log_growth_per_trade"] > 0
+    assert c["growth_constraint"].startswith("FREQUENCY")
+
+
+def test_no_closed_trades_is_unmeasured_never_zero_growth():
+    c = equity_curve([])
+    assert c["log_growth_per_trade"] is None
+    assert c["growth_constraint"].startswith("UNMEASURED")
+
+
+def test_the_kill_condition_is_pre_registered_and_gives_no_verdict_early():
+    # An author who has built something finds reasons to extend a failing test. The threshold is
+    # fixed before the data exists, and before the decision point there is NO verdict either way.
+    r = kill_check(_closed([0.18] * 2 + [-0.06] * 8))
+    assert r["state"] == "RUNNING" and r["n_closed"] < KILL_AFTER_N
+    assert "no verdict either way" in r["why"]
+
+
+def test_a_dead_sleeve_is_killed_with_no_extensions():
+    r = kill_check(_closed([0.18] * 8 + [-0.06] * 42))        # 16% hit rate over 50
+    assert r["state"] == "KILL" and r["hit_rate"] < KILL_HIT_RATE
+    assert "NO EXTENSIONS" in r["why"] and "materially NEW mechanism" in r["why"]
+
+
+def test_surviving_the_kill_check_is_not_a_promotion():
+    # 30% clears the 25% kill floor and is still BELOW the 31.1% cost-adjusted breakeven.
+    r = kill_check(_closed([0.18] * 15 + [-0.06] * 35))
+    assert r["state"] == "SURVIVES-THIS-CHECK"
+    assert "not a promotion" in r["why"] and "breakeven" in r["why"]
+
+
+def test_the_kill_floor_sits_below_breakeven_not_at_it():
+    # Killing at exactly breakeven would graveyard a real 33% edge about half the time.
+    assert KILL_HIT_RATE < 0.311

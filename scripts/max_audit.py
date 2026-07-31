@@ -982,6 +982,15 @@ def check_carry_funding_measured(defects) -> None:
             f"-- the leak alarm is BLIND: it cannot tell a clean hedge from a bleeding one, and "
             f"the forward track record the sizing gate reads is accruing without its edge term. "
             f"Verdict: {str(cc.get('bleed_verdict', ''))[:120]}"))
+        return
+    # THE ALARM ACTUALLY FIRING must fail something too. Until 2026-07-31 this branch did not
+    # exist: bleed_alert was computed, written to JSON, rendered on the dashboard -- and gated
+    # nothing, so a book whose non-funding P&L was 3146% of its harvest could read as a SURVIVOR.
+    # A fence firing into a field nobody reads is not a fence.
+    if cc.get("bleed_alert") is True:
+        defects.append((
+            "carry-bleed-alarm",
+            f"carry leak alarm FIRING and unactioned -- {str(cc.get('bleed_verdict', ''))[:200]}"))
 
 
 def check_memory_hygiene(defects) -> None:
@@ -1944,6 +1953,16 @@ _PRODUCER_CADENCE = {
              "next cycle, the weekly GAP-MAX sweep, or any fresh session'; its own header claims "
              "a cadence and nothing checked it was ever re-worked, which is exactly the failure "
              "this law exists to catch"),
+    # THE DISCRETIONARY DESK is a PRODUCER: it states the sleeve's measured constants (noise
+    # floors, costs, the hit rate 300% CAGR requires) and every one of those is a MEASUREMENT that
+    # drifts. A stale page means the desk is reasoning from last month's volatility regime and
+    # last month's fee tier while believing they are current -- and the numbers in it are what the
+    # principal reads before a capital decision, which is the most expensive place for a quietly
+    # outdated figure to sit.
+    "docs/DISCRETIONARY_DESK.md": (
+        14.0, "L1.6/L1.41: re-stated from the resolver's measured output (noise floors, realised "
+              "costs, conditional hit rates, required rate for the CAGR target) -- if it goes "
+              "stale the section claims measurements that are no longer true"),
 }
 #: Artifacts that are terminal by nature: templates, forensic write-ups, protocol libraries. They
 #: accumulate no inventory, so they owe no cadence -- recorded here so "no law" is a DECISION.

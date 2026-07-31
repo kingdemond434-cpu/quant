@@ -7,27 +7,44 @@ than a manual trader."* And then the mechanism, in the principal's own words: *"
 to prevent it and put trades until the trend and swing hits, minimising downside and maximising
 upside."*
 
-THE DESIGN PHILOSOPHY, stated plainly because it is the whole point. A manual discretionary
-trader with no stop who is up 60% in 12 hours is not out-earning a disciplined desk -- they are
-earlier in a distribution whose left tail is a zeroed account. The screenshot is the trade that
-worked; the same 8x leverage that made +60% makes -60% just as fast, and a directional trader
-without a stop meets the -100% version eventually. The desk's edge is NOT being more cautious per
-trade. It is being able to take the SAME aggressive bet a thousand times without the one that
-ends the account. So:
+CORRECTION OF RECORD (2026-07-31). This file previously described the screenshot as a stopless
+punt and built several arguments on that. It was wrong. A second screenshot shows the SL line
+plainly at 4050.00 on a short entered at 4107.38 -- trailed BELOW entry, locking ~57 of the ~80
+points then open, with price at 4027 and roughly 22 points (~0.55%) of room left to breathe. In
+the principal's words: *"I did have a stop, I kept moving it trying to bank profit while letting
+it breathe and run further."*
 
-  AGGRESSION IS UNCAPPED. This sleeve takes real leverage, real directional conviction, and sizes
-  UP on high-confidence calls -- fractional-Kelly against Claude's own stated probability, which
-  at a 60% edge and a 2% stop is ~8x, exactly the leverage in the screenshot. A high-conviction
-  call is meant to be large. Timidity here is a defect (L1.28).
+That is not the absence of discipline this file assumed. It is precisely the trail-and-ride
+mechanic implemented below, executed by hand -- and it is a useful DATA POINT on the trail width:
+the stop sat roughly 1.9 trail-distances behind price, not the naive 1R the first version of this
+ladder used, which is the same direction the measured noise floor pushed the trail. n=1, so it
+proves nothing on its own; it is recorded because it agrees with the measurement rather than
+because it is impressive.
 
-  RUIN IS CAPPED, and this is the one line that does not move. EVERY position carries a stop
-  (the thing the manual account lacks), per-trade loss is bounded, portfolio leverage is bounded,
+THE DESIGN PHILOSOPHY, stated plainly because it is the whole point. The desk's edge is NOT being
+more cautious per trade than a good discretionary trader -- the screenshot shows one managing risk
+properly. It is being able to take the SAME aggressive bet a thousand times, at a size that
+survives the losing runs, across more instruments than one person can watch. So:
+
+  AGGRESSION LIVES IN BREADTH AND FREQUENCY, NOT IN BET SIZE, and that is a measured conclusion
+  rather than a preference. Simulated over 250 days: at 20% risk per trade this book meets a -90%
+  drawdown with near-certainty EVEN WHEN THE STRATEGY IS PROFITABLE, and past full Kelly more size
+  makes growth NEGATIVE. Holding total risk fixed at ~24% and changing only its SHAPE, one bet at
+  24% gives P(-90%)=100% while eight bets at 3% give P(-90%)=0% with a far higher median. So the
+  sleeve runs 18 instruments, hourly, up to five positions at once, 6% each -- MORE total exposure
+  than one-bet-at-20% ever ran, spread where it compounds instead of where it ruins. On a 0.9%
+  structural stop 6% is still ~6.7x, the screenshot's own range. Timidity is a defect (L1.28);
+  so is confusing bet size with aggression.
+
+  RUIN IS CAPPED, and this is the one line that does not move. EVERY position carries a stop,
+  per-trade loss is bounded, portfolio leverage is bounded,
   and the whole sleeve sits inside the -35% ruin rail like everything else (L1.23). This is not
   the timid reading of a restraint -- it is the mathematics of compounding: E[log wealth] of a
   ruined book is minus infinity, so the bet that can ruin you is never the growth-optimal bet
   however good it looks (the Alameda row in the desk's own cohort register).
 
-  THE STOP IS CALCULATED, NOT CHOSEN. A percentage stop is an arbitrary distance the market has
+  THE STOP IS CALCULATED, NOT CHOSEN -- which is the ONE thing a hand-managed book cannot do at
+  scale, and therefore where the desk's advantage actually lies. A percentage stop is an arbitrary distance the market has
   never heard of; a STRUCTURAL stop sits at the price where the thesis is factually dead -- the
   swing the trend must not lose, the range edge, the level that was defended. This desk refuses
   an asserted `stop_pct`: the model must name an invalidation PRICE and the structure it belongs
@@ -38,7 +55,7 @@ ends the account. So:
 
   WINNERS ARE RIDDEN, NOT TAKEN. "Put trades until the trend and swing hits" -- so there is no
   fixed take-profit. The position moves to breakeven at +1R, trails one R behind, and ADDS on
-  strength (1.00u -> 1.50u -> 1.75u) while the trend holds, exiting only when price closes back
+  strength (up to 1.75u, less when the trail is noise-widened) while the trend holds, exiting when price closes back
   through the trailing structure. The pyramid is not extra risk: by the time the first add goes
   on, the original tranche's stop is at breakeven, so OPEN RISK FALLS at every stage
   (1.00 -> 0.50 -> 0.25 -> 0.00 of the initial budget) while exposure RISES. That asymmetry is
@@ -55,8 +72,8 @@ ends the account. So:
 
 WHY THE STOP ALWAYS HITS BEFORE LIQUIDATION, which is the failure mode that kills leveraged
 directional books: sizing solves leverage = risk_fraction / stop_distance, so leverage * stop
-distance == risk_fraction <= 0.20 BY CONSTRUCTION, while liquidation sits at roughly 1/leverage.
-The stop is therefore never more than ~20% of the way to liquidation at any leverage this sleeve
+distance == risk_fraction <= 0.06 BY CONSTRUCTION, while liquidation sits at roughly 1/leverage.
+The stop is therefore never more than ~6% of the way to liquidation at any leverage this sleeve
 can produce. It is structurally impossible for this sizer to build a position that gets
 liquidated before its stop is touched.
 
@@ -76,8 +93,9 @@ of levels where its thesis is actually dead. That is the same PASS-optimisation 
 sleeve had to have designed out of it. The brief asks for the honest level and nothing else; the
 sizer's shape is the desk's business, not the trader's.
 
-INSTRUMENTS: Binance perps for liquid directional exposure (BTCUSDT, ETHUSDT, SOLUSDT) and
-PAXGUSDT as the on-Binance gold analogue of the screenshot's XAUUSD.
+INSTRUMENTS: 18 liquid Binance perps, plus PAXGUSDT as the on-Binance gold analogue of the
+screenshot's XAUUSD -- the one non-crypto-beta name, and so the one position that can be
+uncorrelated when everything else moves together.
 
     python scripts/run_conviction_trader.py [--json]
 """
@@ -97,6 +115,8 @@ if not _ROOT.exists():
     _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
+from scripts.run_trade_review import N_SUPPORT  # noqa: E402
+
 from libs.ops.lawful import guard as _law_guard  # noqa: E402
 
 _BOOK = "data/conviction_book.jsonl"
@@ -114,9 +134,24 @@ INSTRUMENTS = ("BTCUSDT", "ETHUSDT", "SOLUSDT", "PAXGUSDT", "BNBUSDT", "XRPUSDT"
                "DOGEUSDT", "ADAUSDT", "AVAXUSDT", "LINKUSDT", "LTCUSDT", "DOTUSDT",
                "SUIUSDT", "NEARUSDT", "APTUSDT", "ARBUSDT", "PEPEUSDT", "HYPEUSDT")
 MIN_PROB, MAX_PROB = 0.52, 0.90        # below 52% is the other side; 90%+ is an over-confidence tell
-KELLY_FRACTION = 0.5                    # half-Kelly: aggressive but robust to estimate error
-MAX_LEVERAGE = 20.0                    # absolute notional ceiling -- 20x, not the 100x that ruins
-MIN_STOP_PCT = 0.5                      # absolute floor; the REAL floor is derived, see below
+#: HALF-Kelly. Full Kelly maximises growth but has an expected drawdown near 50% and is
+#: catastrophically sensitive to over-estimating p: betting 1.5x Kelly (what a 35% hit rate would
+#: make of a 45% assumption) turns positive growth NEGATIVE. Half-Kelly keeps 75% of the growth
+#: rate for 25% of the variance -- the standard result, and the reason the fraction is 0.5 and not
+#: 1.0 or 0.25.
+KELLY_FRACTION = 0.5
+#: 20x. DERIVED, not chosen: it is the gap-stress cap evaluated at the tightest legal stop --
+#: 0.50 stress loss / ((0.5% stop + 2% slip)/100) = 20.0x. Above that even the tightest structural
+#: stop cannot survive a 2% cascade through it. Replaced a flat 10x that was picked by taste and
+#: turned out to penalise tight stops (see MAX_RISK_PER_TRADE for the pattern).
+MAX_LEVERAGE = 20.0
+#: 0.5% absolute floor, superseded per-instrument by the MEASURED noise floor below (PAXG 24h
+#: 0.64%, SOL 24h 1.28% -- measured live 2026-07-31). This constant now only catches the case
+#: where the measurement is unavailable; it is a fallback, not the rule.
+MIN_STOP_PCT = 0.5
+#: 15%. DERIVED from the sizer's own arithmetic: at a 6% risk budget a 15% stop implies 0.4x
+#: leverage, at which point the position is no longer a leveraged directional bet and belongs in
+#: the spot/carry sleeves instead. Beyond it a "stop" is a hope, not an invalidation.
 MAX_STOP_PCT = 15.0
 
 #: THE NOISE FLOOR, and the second flat constant on this desk that turned out to be hiding a
@@ -165,7 +200,35 @@ MAX_RISK_PER_TRADE = 0.06              # at most 6% of sleeve equity at risk on 
 #: TOTAL heat across all live positions. This is the real aggression dial now, and at 30% it is
 #: HIGHER than the old design ever ran (one 20% bet at a time), while every individual bet is
 #: survivable. Enforced against the open book, not assumed.
+#: 30% = 5 concurrent positions at the 6% per-trade budget. DERIVED from the shape simulation
+#: above: at ~24% total heat, 1 bet gives P(-90%)=100%, 4 bets 1%, 8 bets 0%. Five slots sits in
+#: the safe part of that curve while keeping total exposure ABOVE what the old one-bet-at-20%
+#: design ever ran.
 MAX_PORTFOLIO_HEAT = 0.30
+
+#: HOLD LIMIT vs FORECAST HORIZON -- decoupled, because measuring showed they were fighting.
+#: `horizon_hours` is the model's CALIBRATION clock ("when I expect to be right"); it was also
+#: being used as a hard exit, which truncates winners for a reason that has nothing to do with the
+#: trade. Measured on the marked gold short: the SAME position marks +0.07R at a 12h horizon and
+#: +0.63R at 30h. An arbitrary clock was setting the P&L instead of the structure.
+#: A trade now runs to its STRUCTURAL exit -- stop or trail -- with 4x its stated horizon as a
+#: hard time stop so nothing can sit open forever and escape scoring. 4x is derived from the
+#: ladder itself: reaching the last rung needs 3 trail-distances of favourable movement, and a
+#: trend that has not managed that in 4x its own forecast horizon is a thesis that did not happen.
+MAX_HOLD_MULT = 4.0
+
+#: CORRELATION STRESS. Effective heat uses MEASURED correlations, which is what lets genuine
+#: diversification buy real capacity -- measured live 2026-07-31: PAXG vs crypto averages +0.15
+#: while crypto-vs-crypto averages +0.48, so a gold position alongside four alts is nothing like
+#: a fifth alt. But correlations RISE toward 1 in exactly the cascade that would hurt, and a rail
+#: that trusts calm-market correlations is a rail that fails when it matters. So every measured
+#: correlation is shrunk 35% of the way toward 1.0 before use: +0.15 becomes +0.45, +0.80 becomes
+#: +0.87. Diversification is credited, but only two thirds of it.
+CORR_STRESS = 0.35
+#: Hard ceiling on the NOMINAL sum regardless of how diversifying the book looks. Correlation
+#: estimates can be wrong; 50% caps how wrong they are allowed to make the book. At the 6% budget
+#: that is 8 concurrent positions, matching the shape simulation's safest tested point.
+MAX_GROSS_HEAT = 0.50
 
 #: THE GAP-RISK STRESS, and the reason there is a notional ceiling at all. The stop being hit is
 #: priced: that is MAX_RISK_PER_TRADE and the sizer targets it exactly. What is NOT priced is a
@@ -184,8 +247,14 @@ MAX_PORTFOLIO_HEAT = 0.30
 #: the thing that must hold if MAX_RISK_PER_TRADE is ever raised again, and a test pins that
 #: leverage never exceeds it. Do not read it as active protection today.
 SLIP_STRESS_PCT = 2.0                  # a liquidation cascade prints this far through the stop
-MAX_STRESS_LOSS = 0.50                 # ...and even then the sleeve loses at most half
-MAX_PEAK_STRESS_LOSS = 0.60            # the full pyramid is allowed slightly more, measured as
+#: 0.50 -- a 2% cascade through the stop costs at most half the sleeve. Chosen against the
+#: drawdown simulation: a 50% hit is survivable and recoverable (needs +100% to restore), whereas
+#: the -90% outcomes that the 20% risk budget produced need +900% and never come back.
+MAX_STRESS_LOSS = 0.50
+#: 0.60, measured as
+MAX_PEAK_STRESS_LOSS = 0.60            # drawdown FROM THE STAGE TRIGGER, where the book is up
+#: ~0.47 unrealised (computed from the tranche ladder at the +2 rung): so the bound says a cascade
+#: may cost the pyramid its own open gains and ~13% more, never the starting stake. Derived as
 #:                                       drawdown FROM THE STAGE TRIGGER: by then the position is
 #:                                       up roughly that much unrealised, so the bound says the
 #:                                       pyramid may give back its own open gains in a cascade --
@@ -195,6 +264,11 @@ MAX_PEAK_STRESS_LOSS = 0.60            # the full pyramid is allowed slightly mo
 #: behind, THEN adds -- which is why open risk falls as size grows. Deliberately geometric-
 #: decaying: the trend that has already run two rungs has less remaining runway than the one that
 #: just started, so the adds get smaller, not larger. Peak exposure 1.75u.
+#: (0.50, 0.25) -- geometric halving, giving peak exposure 1.75u. DERIVED from the risk ladder
+#: rather than chosen: with each rung trailing one distance behind, these sizes are exactly what
+#: makes open risk fall 1.00 -> 0.50 -> 0.25 -> 0.00 of the entry budget while exposure rises, the
+#: asymmetry the tests assert. Larger adds break the monotone fall; smaller ones leave upside
+#: unclaimed for no risk reduction.
 ADD_UNITS: tuple[float, ...] = (0.50, 0.25)
 
 #: THE TRAIL DISTANCE, and the third flat constant that turned out to be a defect. The ladder used
@@ -228,6 +302,12 @@ _STRUCTURE_WORDS = (
     "vwap", "liquidity", "order block", "session", "prior day", "prior week", "prior session",
     "base", "neckline", "wick", "close", "open interest", "poc", "value area", "fib", "band",
 )
+
+#: MINIMUM MEANINGFUL SIZE. Not an EV bound -- cost scales with notional, so cost/risk is constant
+#: and a small trade is proportionally as good as a large one. This is the VENUE minimum: Binance
+#: USD-M rejects orders under ~$5 notional, and at a $200 sleeve a 0.1% risk on a 2% stop is $10
+#: of notional. Below this the order simply will not fill, so booking it would be fiction.
+MIN_TRADE_RISK = 0.001
 
 #: SLEEVE DRAWDOWN HALT. Per-trade risk is bounded; a LOSING RUN is not. At a 20% budget three
 #: stops in a row is -49% of the sleeve, which is why a sleeve-level rail has to exist before real
@@ -403,9 +483,8 @@ def management_plan(entry: float, invalidation: float, direction: str, *,
 
 _BRIEF = """You are the desk's CONVICTION TRADER. You take AGGRESSIVE leveraged DIRECTIONAL bets --
 this is the sleeve modelled on a sharp manual trader flipping an account fast, not the cautious
-news reader. You are ENCOURAGED to size up when you have real conviction. But you carry a
-CALCULATED STOP on every trade (the discipline a blown manual account lacked), and you will be
-SCORED, so your confidence must be honest.
+news reader. You are ENCOURAGED to size up when you have real conviction. You carry a CALCULATED
+STOP on every trade and you will be SCORED, so your confidence must be honest.
 
 INSTRUMENTS: {instruments}. Take a directional view -- macro, technical, flow, positioning,
 cross-asset (gold via PAXGUSDT, risk via BTC/ETH). A VIEW is allowed here (unlike the event
@@ -417,6 +496,14 @@ swing sequence, position in range, distance to the nearest level each way, and v
 Read them like a trader: is the 4h trend with you, is there room to the next level, is the
 invalidation you want to use an actual defended structure or a random pivot?
 {charts}
+
+THE DESK'S OWN PLAYBOOK -- lessons this sleeve LEARNED from its own closed Binance trades, each
+one held to {n_support}+ independent agreeing trades before it was allowed to reach you, and
+retired the moment a trade contradicted it. These are not platitudes; they are this desk's
+measured experience. Weigh them against what you see, and if the chart contradicts one, SAY SO in
+your reasoning -- a lesson that stops matching reality needs to be retired, and you are the only
+thing that can notice.
+{playbook}
 
 PICK THE BEST SETUP IN THE UNIVERSE, not the first readable one. You get one call per hour across
 18 instruments and several positions can be live at once, so a mediocre setup costs you the good
@@ -554,9 +641,22 @@ def noise_table(*, horizons: tuple[float, ...] = (8.0, 24.0, 48.0), fetch=None) 
                        "an invalidation closer than this is refused as noise"}
 
 
+def _closed_keys(root: Path) -> set[str]:
+    """Trades the resolver has already marked out. Without this a stopped position would keep
+    occupying heat until its hard-exit clock ran down -- blocking new trades with capital that
+    was returned hours ago, which is idle capacity dressed as prudence (L1.28a)."""
+    try:
+        rep = json.loads((root / _PNL_STATE).read_text("utf-8"))
+    except (OSError, ValueError):
+        return set()
+    return {m.get("key") for m in rep.get("marks", [])
+            if m.get("outcome") in ("STOPPED", "TRAILED-OUT", "MARKED", "TIME-STOPPED")}
+
+
 def open_positions(root: Path, *, now: datetime | None = None) -> list[dict[str, Any]]:
-    """Calls whose horizon has not expired -- read from the book, never assumed."""
+    """Positions still live: past neither their structural exit nor their hard time stop."""
     now = now or datetime.now(tz=UTC)
+    closed_keys = _closed_keys(root)
     live = []
     try:
         lines = (root / _BOOK).read_text("utf-8", errors="ignore").splitlines()
@@ -570,11 +670,43 @@ def open_positions(root: Path, *, now: datetime | None = None) -> list[dict[str,
         except ValueError:
             continue
         try:
-            if datetime.fromisoformat(r["resolve_by"]) > now and r.get("action") != "PASS":
+            # a position occupies heat until its HARD exit, not until its forecast is scored
+            until = r.get("hard_exit_by") or r.get("resolve_by")
+            if datetime.fromisoformat(until) > now and r.get("action") != "PASS":
                 live.append(r)
-        except (KeyError, ValueError):
+        except (KeyError, ValueError, TypeError):
             continue
+    if closed_keys:
+        live = [r for r in live if r.get("at") not in closed_keys]
     return live
+
+
+def effective_heat(root: Path, live: list[dict[str, Any]]) -> tuple[float, str]:
+    """Portfolio risk with MEASURED correlations: sqrt(w' S w), not the naive sum.
+
+    The naive sum is right only if every position is the same trade. It is wrong in BOTH
+    directions and both cost money: it overstates safety when five alts are really one bet, and it
+    blocks a genuinely diversifying trade (gold beside crypto) that added almost no portfolio
+    risk. UNMEASURED correlations fall back to the naive sum and SAY SO -- never to an optimistic
+    default, which would let a blind book believe it was diversified."""
+    ws = [(r.get("symbol"), float((r.get("sizing") or {}).get("risk_fraction") or 0.0))
+          for r in live]
+    naive = sum(w for _, w in ws)
+    if len(ws) < 2:
+        return naive, "single position -- correlation irrelevant"
+    try:
+        corr = json.loads((root / "data/chart_context.json").read_text("utf-8"))["correlations"]
+    except (OSError, ValueError, KeyError):
+        return naive, "UNMEASURED correlations -- naive sum used (no diversification credit)"
+    var = 0.0
+    for a, wa in ws:
+        for b, wb in ws:
+            rho = 1.0 if a == b else corr.get(a, {}).get(b)
+            if rho is None:
+                return naive, f"no measured correlation for {a}/{b} -- naive sum used"
+            rho = rho + (1.0 - rho) * CORR_STRESS          # stress toward 1, never toward 0
+            var += wa * wb * rho
+    return var ** 0.5, f"measured correlations, stressed {CORR_STRESS:.0%} toward 1"
 
 
 def portfolio_heat(root: Path, *, now: datetime | None = None) -> dict[str, Any]:
@@ -586,17 +718,63 @@ def portfolio_heat(root: Path, *, now: datetime | None = None) -> dict[str, Any]
     reported here rather than quietly ignored. This rail is what allows the cadence to rise: more
     shots at a bounded total exposure is the whole design."""
     live = open_positions(root, now=now)
-    heat = sum(float((r.get("sizing") or {}).get("risk_fraction") or 0.0) for r in live)
+    gross = sum(float((r.get("sizing") or {}).get("risk_fraction") or 0.0) for r in live)
     longs = sum(1 for r in live if r.get("direction") == "LONG")
+    eff, basis = effective_heat(root, live)
+    full = eff >= MAX_PORTFOLIO_HEAT or gross >= MAX_GROSS_HEAT
     return {
-        "n_open": len(live), "heat": round(heat, 4), "cap": MAX_PORTFOLIO_HEAT,
-        "headroom": round(max(0.0, MAX_PORTFOLIO_HEAT - heat), 4),
+        "n_open": len(live), "heat": round(eff, 4), "gross_heat": round(gross, 4),
+        "cap": MAX_PORTFOLIO_HEAT, "gross_cap": MAX_GROSS_HEAT, "correlation_basis": basis,
+        "headroom": round(max(0.0, MAX_PORTFOLIO_HEAT - eff), 4),
         "symbols": [r.get("symbol") for r in live],
         "directional_skew": (f"{longs}L/{len(live) - longs}S" if live else "flat"),
-        "state": "FULL" if heat >= MAX_PORTFOLIO_HEAT else "OPEN",
-        "why": (f"{heat:.1%} of {MAX_PORTFOLIO_HEAT:.0%} heat live across {len(live)} positions"
+        "state": "FULL" if full else "OPEN",
+        "why": (f"{eff:.1%} effective of {MAX_PORTFOLIO_HEAT:.0%} ({gross:.1%} gross of "
+                f"{MAX_GROSS_HEAT:.0%}) across {len(live)} positions [{basis}]"
                 if live else "no live positions -- full heat available"),
     }
+
+
+def size_into_headroom(root: Path, symbol: str, desired_risk: float,
+                       live: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+    """The heat cap as a SIZER, not a gate -- and the correlation-aware growth lever.
+
+    Refusing a good setup because the book is 95% full throws the setup away; taking it at 5% size
+    does not. Idle capacity is unbooked loss (L1.28a), and a slot left empty contributes exactly
+    zero to geometric growth while a small position contributes a small positive amount.
+
+    It is also where correlation pays. The largest size that fits is solved against EFFECTIVE heat,
+    so a trade uncorrelated with the book (gold beside four alts, measured +0.15) gets far more
+    room than one duplicating it (+0.80) -- which is the multivariate-Kelly intuition made
+    operational: allocate to the bet that adds the most growth per unit of portfolio risk."""
+    live = open_positions(root) if live is None else live
+    gross_used = sum(float((r.get("sizing") or {}).get("risk_fraction") or 0.0) for r in live)
+    gross_room = max(0.0, MAX_GROSS_HEAT - gross_used)
+    if gross_room <= 0:
+        return {"risk": 0.0, "bound": "gross_heat", "why": "gross heat cap reached"}
+
+    def fits(w: float) -> bool:
+        cand = [*live, {"symbol": symbol, "sizing": {"risk_fraction": w}}]
+        return effective_heat(root, cand)[0] <= MAX_PORTFOLIO_HEAT
+
+    hi = min(desired_risk, gross_room)
+    if hi <= 0:
+        return {"risk": 0.0, "bound": "no room", "why": "no headroom at any size"}
+    if fits(hi):
+        return {"risk": round(hi, 6),
+                "bound": "kelly" if hi >= desired_risk else "gross_heat",
+                "why": f"full requested size fits ({len(live)} live)"}
+    lo = 0.0
+    for _ in range(24):                                    # bisection: effective heat is monotone
+        mid = (lo + hi) / 2
+        if fits(mid):
+            lo = mid
+        else:
+            hi = mid
+    return {"risk": round(lo, 6), "bound": "effective_heat",
+            "why": (f"trimmed from {desired_risk:.2%} to {lo:.2%} to stay inside "
+                    f"{MAX_PORTFOLIO_HEAT:.0%} effective heat against {len(live)} live "
+                    "position(s) -- correlation with the book decides how much fits")}
 
 
 def sleeve_drawdown(root: Path) -> dict[str, Any]:
@@ -622,6 +800,55 @@ def sleeve_drawdown(root: Path) -> dict[str, Any]:
                     f"{SLEEVE_DD_HALT:.0%} halt" if dd >= SLEEVE_DD_HALT
                     else f"{dd:.1%} drawdown over {n} closed calls, inside the "
                          f"{SLEEVE_DD_HALT:.0%} rail")}
+
+
+def _playbook_brief(root: Path) -> str:
+    """SUPPORTED lessons only. A single lucky trade must not be able to rewrite the method, so the
+    PROVISIONAL tier is deliberately invisible here (see run_trade_review.py)."""
+    try:
+        pb = json.loads((root / "data/trading_playbook.json").read_text("utf-8"))
+    except (OSError, ValueError):
+        return ("(no playbook yet -- the review loop has not closed enough trades to support a "
+                "lesson. You are trading on general reasoning alone, which is the honest state, "
+                "not a clean slate.)")
+    live = [lv for lv in pb.get("lessons", []) if lv.get("status") == "SUPPORTED"]
+    if not live:
+        prov = sum(1 for lv in pb.get("lessons", []) if lv.get("status") == "PROVISIONAL")
+        return (f"(no SUPPORTED lessons yet; {prov} provisional and deliberately withheld until "
+                f"{N_SUPPORT}+ trades agree. Trade on your own read.)")
+    live.sort(key=lambda lv: (-lv.get("support", 0), -lv.get("last_seen_at_trade", 0)))
+    return json.dumps([{"lesson": lv["text"], "when": lv.get("applies_when", ""),
+                        "evidence": f"{lv.get('support')} agreeing trades"}
+                       for lv in live[:12]], indent=1)
+
+
+def setup_features(call: dict[str, Any], charts: dict[str, Any] | None) -> dict[str, Any]:
+    """Tag the SITUATION a trade was taken in, so the desk can learn WHICH SETUPS PAY rather than
+    only whether it is globally calibrated.
+
+    A single hit rate over all trades hides everything actionable: a sleeve that is 55% with the 4h
+    trend and 25% against it looks like a mediocre 40% overall, and the fix -- stop taking
+    counter-trend setups -- is invisible until the outcomes are conditioned on the setup."""
+    f: dict[str, Any] = {"symbol": call.get("symbol"), "direction": call.get("direction")}
+    tf = ((charts or {}).get("charts", {}).get(str(call.get("symbol")), {})
+          .get("timeframes", {}).get("4h", {}))
+    trend = str(tf.get("trend", "UNKNOWN"))
+    f["trend_4h"] = trend.split(" ")[0]
+    f["with_4h_trend"] = (("UPTREND" in trend and call.get("direction") == "LONG")
+                          or ("DOWNTREND" in trend and call.get("direction") == "SHORT")
+                          if "TREND" in trend else None)
+    f["vol_regime"] = tf.get("vol_regime", "UNKNOWN")
+    pir = tf.get("position_in_range")
+    f["position_in_range"] = (None if pir is None else
+                              "low" if pir < 0.33 else "high" if pir > 0.67 else "mid")
+    struct = str(call.get("structure", "")).lower()
+    f["level_touches"] = next((int(n) for n in re.findall(r"(\d+)[ -]?touch", struct)), None)
+    try:
+        f["horizon_bucket"] = ("short" if float(call.get("horizon_hours", 0)) <= 12 else
+                               "medium" if float(call.get("horizon_hours", 0)) <= 36 else "long")
+    except (TypeError, ValueError):
+        f["horizon_bucket"] = None
+    return f
 
 
 def _chart_brief(root: Path, heat: dict[str, Any] | None = None, *, max_chars: int = 9000) -> str:
@@ -715,8 +942,8 @@ def validate(call: dict[str, Any], *, noise: dict[str, Any] | None = None,
     if why:
         return False, why
     if not MIN_STOP_PCT <= stop <= MAX_STOP_PCT:
-        # THE RAIL THE MANUAL ACCOUNT LACKED: a trade with no stop, or a stop so wide it is not a
-        # stop, is the one that ends the account. This is not timidity -- it is the difference
+        # A trade with no stop, or a stop so wide it is not a stop, is the one that ends the
+        # account. This is not timidity -- it is the difference
         # between compounding the aggressive bet and being ruined by it (L1.23). The tight end is
         # the same rail pointed the other way: an invalidation inside the noise is not a thesis
         # being wrong, it is a wick, and it converts a real edge into churn.
@@ -745,15 +972,51 @@ def validate(call: dict[str, Any], *, noise: dict[str, Any] | None = None,
     if len(str(call["driver"])) < 20 or len(str(call["falsifier"])) < 15:
         return False, "REFUSED: driver/falsifier too thin"
     if heat:
-        if heat.get("state") == "FULL":
+        # NOT "the book is busy, come back later" -- that would leave a good setup unbooked, and an
+        # unbooked setup contributes exactly zero to geometric growth. The heat cap SIZES the trade
+        # (size_into_headroom); it only refuses when nothing fillable fits at all.
+        fits = heat.get("fits_risk")
+        if fits is not None and fits < MIN_TRADE_RISK:
+            return False, (f"REFUSED: no fillable size left -- effective heat {heat['heat']:.1%} "
+                           f"against the {MAX_PORTFOLIO_HEAT:.0%} cap leaves {fits:.3%}, below the "
+                           f"{MIN_TRADE_RISK:.1%} venue minimum. Breadth is the aggression here, "
+                           "not stacking.")
+        if fits is None and heat.get("state") == "FULL":
             return False, (f"REFUSED: portfolio heat {heat['heat']:.1%} is at the "
-                           f"{MAX_PORTFOLIO_HEAT:.0%} cap -- the next trade waits for one to "
-                           "resolve. Breadth is the aggression here, not stacking.")
+                           f"{MAX_PORTFOLIO_HEAT:.0%} cap and per-symbol headroom is UNMEASURED")
         if call["symbol"] in (heat.get("symbols") or []):
             return False, (f"REFUSED: already live in {call['symbol']} -- doubling the same "
                            "instrument is concentration wearing a second name, which is exactly "
                            "what the spread-the-heat design exists to avoid")
     return True, "accepted"
+
+
+def calibrated_p(raw_p: float) -> dict[str, Any]:
+    """SIZE on the desk's MEASURED accuracy, SCORE the model's raw claim.
+
+    This is the closed loop that protects geometric growth, and it is not a safety feature -- it
+    is the growth term itself. Kelly is f* = (pb - q)/b: if the sleeve claims 0.63 and truly hits
+    0.45, sizing on 0.63 bets ~2x Kelly, where E[log wealth] is NEGATIVE. No amount of edge
+    survives systematically over-betting it.
+
+    It runs in BOTH directions, and the upward one is the point as much as the downward: a desk
+    measured UNDER-confident gets its probability raised and therefore its size raised. Aggression
+    that has been earned is aggression the sizer hands over automatically.
+
+    N-gated inside forecast_calibration: under 5 resolved outcomes it returns the raw value
+    unchanged and says so, because a correction from noise is worse than no correction."""
+    try:
+        from libs.self_improvement.forecast_calibration import calibrated_confidence
+        c = calibrated_confidence(raw_p)
+    except Exception as exc:                              # broad by design -- never lose the call
+        return {"raw": raw_p, "used": raw_p, "applied": False,
+                "why": f"UNMEASURED calibration ({type(exc).__name__}) -- sizing on the raw claim"}
+    return {"raw": c["raw"], "used": c["adjusted"] if c.get("applied") else c["raw"],
+            "applied": bool(c.get("applied")), "bias": c.get("bias"),
+            "direction": ("shrunk -- desk measured over-confident" if (c.get("bias") or 0) > 0
+                          else "raised -- desk measured UNDER-confident, earned size returned"
+                          if (c.get("bias") or 0) < 0 else "unchanged"),
+            "why": c.get("why")}
 
 
 def record(root: Path, call: dict[str, Any], *,
@@ -763,24 +1026,46 @@ def record(root: Path, call: dict[str, Any], *,
     stop_pct, why = derive_stop_pct(entry, inval, call["direction"])
     if why:                                    # unreachable via main(), which validates first
         raise ValueError(why)
-    sizing = kelly_leverage(float(call["probability"]),
+    cal = calibrated_p(float(call["probability"]))
+    sizing = kelly_leverage(cal["used"],
                             float(call["expected_move_pct"]) / stop_pct, stop_pct)
+    # HEAT HEADROOM AS A SIZER: trim into what actually fits rather than refusing the setup.
+    fit = size_into_headroom(root, str(call["symbol"]), sizing["risk_fraction"])
+    if fit["risk"] < sizing["risk_fraction"]:
+        sizing = {**sizing, "risk_fraction": fit["risk"],
+                  "leverage": round(fit["risk"] / (stop_pct / 100.0), 2) if stop_pct else 0.0,
+                  "capped_by": f"{sizing['capped_by']}+{fit['bound']}"}
+    sizing["headroom"] = fit
+    sizing["calibration"] = cal
     noise_pct = (float(noise["median_adverse_pct"])
                  if noise and noise.get("state") == "MEASURED"
                  and noise.get("median_adverse_pct") is not None else None)
     plan = management_plan(entry, inval, call["direction"],
                            risk_fraction=sizing["risk_fraction"], leverage=sizing["leverage"],
                            noise_pct=noise_pct)
-    row = {**call, "at": now.isoformat(), "paper": True, "stop_pct": round(stop_pct, 4),
+    horizon = float(call["horizon_hours"])
+    try:
+        charts = json.loads((root / "data/chart_context.json").read_text("utf-8"))
+    except (OSError, ValueError):
+        charts = None
+    row = {**call, "at": now.isoformat(), "paper": True, "venue": "BINANCE-USDM-PERP",
+           "setup": setup_features(call, charts), "stop_pct": round(stop_pct, 4),
            "stop_source": "DERIVED from the named invalidation level", "sizing": sizing,
            "noise": noise, "management": plan,
-           "resolve_by": (now + timedelta(hours=float(call["horizon_hours"]))).isoformat()}
+           # the CALIBRATION clock -- when the forecast is scored
+           "resolve_by": (now + timedelta(hours=horizon)).isoformat(),
+           # the POSITION clock -- a hard time stop far beyond it, so structure decides the exit
+           "max_hold_hours": round(horizon * MAX_HOLD_MULT, 2),
+           "hard_exit_by": (now + timedelta(hours=horizon * MAX_HOLD_MULT)).isoformat(),
+           "entry_order_type": "POST_ONLY_LIMIT at the named level (we bid support, not chase)"}
     p = root / _BOOK
     p.parent.mkdir(parents=True, exist_ok=True)
     with p.open("a", encoding="utf-8") as fh:
         fh.write(json.dumps(row) + "\n")
     try:
         from libs.self_improvement import forecast_calibration as fc
+        # SCORE THE RAW CLAIM, not the size we took: grading the adjusted number would launder the
+        # model's own error through the desk's correction and the bias would never be measurable.
         fc.log_forecast(f"conviction:{now.isoformat()}", float(call["probability"]),
                         "directional", resolve_by=row["resolve_by"],
                         claim=f"{call['direction']} {call['symbol']} @{sizing['leverage']}x "
@@ -846,6 +1131,7 @@ def main() -> int:
         floors = {"state": "UNMEASURED", "why": str(exc)}
     charts = _chart_brief(_ROOT, heat)
     raw = _ask(_BRIEF.format(instruments=", ".join(INSTRUMENTS),
+                             playbook=_playbook_brief(_ROOT), n_support=3,
                              brief=json.dumps(brief, indent=1)[:5000],
                              noise=json.dumps(floors)[:1500],
                              charts=charts,
@@ -863,6 +1149,9 @@ def main() -> int:
                                     str(call.get("direction", "LONG")))
             except (ValueError, TypeError, OSError) as exc:
                 noise = {"state": "UNMEASURED", "floor_pct": MIN_STOP_PCT, "why": str(exc)}
+        if call.get("action") != "PASS" and call.get("symbol"):
+            heat = {**heat, "fits_risk": size_into_headroom(
+                _ROOT, str(call["symbol"]), MAX_RISK_PER_TRADE)["risk"]}
         ok, why = validate(call, noise=noise, heat=heat)
         if not ok:
             state = {"status": "REFUSED", "why": why, "call": call, "noise": noise}
