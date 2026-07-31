@@ -14,6 +14,8 @@ from pathlib import Path
 
 from scripts.run_conviction_trader import (
     _BRIEF,
+    _LENSES,
+    ENSEMBLE_N,
     INSTRUMENTS,
     MAX_GROSS_HEAT,
     MAX_LEVERAGE,
@@ -30,6 +32,7 @@ from scripts.run_conviction_trader import (
     calibrated_p,
     derive_stop_pct,
     effective_heat,
+    ensemble_consensus,
     kelly_leverage,
     management_plan,
     measured_risk_cap,
@@ -673,3 +676,64 @@ def test_the_sizer_actually_consumes_the_higher_cap():
     lo = kelly_leverage(0.63, 4.0 / 2.0, 2.0, risk_cap=0.06)["risk_fraction"]
     hi = kelly_leverage(0.63, 4.0 / 2.0, 2.0, risk_cap=0.11)["risk_fraction"]
     assert hi > lo                                    # the cap is a real input, not decoration
+
+
+# ------------------------------------------- the ensemble: precision bought with frequency
+
+def _read(sym, direction, p, action="TRADE"):
+    return {"action": action, "symbol": sym, "direction": direction, "probability": p}
+
+
+def test_a_split_ensemble_stands_aside():
+    # Near a 31.1% breakeven, +3pp of hit rate multiplies g by 3.5x while halving the trade count
+    # costs a factor of 2. Standing aside on disagreement is the good side of that trade.
+    call, d = ensemble_consensus([_read("BTCUSDT", "LONG", 0.62),
+                                  _read("ETHUSDT", "SHORT", 0.60),
+                                  _read("SOLUSDT", "LONG", 0.55)])
+    assert d["state"] == "SPLIT" and call["action"] == "PASS"
+    assert "precision is worth more than frequency" in call["pass_reason"] + d["why"]
+
+
+def test_two_of_three_is_enough_to_trade():
+    call, d = ensemble_consensus([_read("BTCUSDT", "LONG", 0.62),
+                                  _read("ETHUSDT", "SHORT", 0.60),
+                                  _read("BTCUSDT", "LONG", 0.55)])
+    assert d["state"] == "CONSENSUS" and call["action"] == "TRADE"
+    assert call["symbol"] == "BTCUSDT" and d["n_agreeing"] == 2
+
+
+def test_the_consensus_takes_the_most_conservative_probability():
+    # Averaging lets one over-confident read pull the size up, and Kelly is CONVEX in p -- so the
+    # error from an inflated probability is not symmetric with the error from a cautious one.
+    call, d = ensemble_consensus([_read("BTCUSDT", "LONG", 0.88),
+                                  _read("BTCUSDT", "LONG", 0.54)])
+    assert call["probability"] == 0.54
+    assert "convex" in d["probability_rule"]
+
+
+def test_the_rejected_minority_is_kept_not_discarded():
+    # Whether this filter HELPS is itself measurable, and imposing it without keeping what it
+    # rejected makes that unanswerable.
+    _c, d = ensemble_consensus([_read("BTCUSDT", "LONG", 0.62),
+                                _read("ETHUSDT", "SHORT", 0.60),
+                                _read("BTCUSDT", "LONG", 0.55)])
+    assert d["minority"] and d["minority"][0]["symbol"] == "ETHUSDT"
+
+
+def test_a_consensus_to_pass_is_a_pass():
+    call, d = ensemble_consensus([{"action": "PASS", "pass_reason": "chop, no edge"},
+                                  {"action": "PASS", "pass_reason": "nothing set up"},
+                                  _read("BTCUSDT", "LONG", 0.62)])
+    assert call["action"] == "PASS" and d["state"] == "CONSENSUS"
+
+
+def test_no_readable_reads_is_not_a_trade():
+    call, d = ensemble_consensus([None, None, None])
+    assert call is None and d["state"] == "NO-READS"
+
+
+def test_the_lenses_are_actually_different():
+    # Three samples of one framing correlate heavily and their agreement means almost nothing.
+    assert len(set(_LENSES)) == len(_LENSES) == ENSEMBLE_N
+    assert any("OPPOSITE" in x for x in _LENSES)
+    assert any("already in" in x for x in _LENSES)
