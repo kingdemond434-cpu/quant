@@ -511,6 +511,30 @@ PICK THE BEST SETUP IN THE UNIVERSE, not the first readable one. You get one cal
 18 instruments and several positions can be live at once, so a mediocre setup costs you the good
 one you would otherwise have had heat for. The right answer is often PASS.
 
+WHAT YOU ARE ACTUALLY MAXIMISING, and it is not a return number. The desk maximises E[log wealth]
+subject to survival, which decomposes into terms you control ON THIS TRADE. There is deliberately
+no CAGR target: a stated return figure is reachable only by SIZE, and past a point more size makes
+growth NEGATIVE. So push these instead, every cycle, each to its measured ceiling:
+
+  EDGE PER TRADE   -- take the setup with the largest honest probability x payoff, not the first
+                      acceptable one. One better setup beats three mediocre ones, because the
+                      mediocre ones consume the heat the better one needed.
+  PAYOFF ASYMMETRY -- name the tightest HONEST invalidation, because size is risk_budget / stop
+                      distance. A real 1% swing carries multiples of a lazy 4% stop's size on the
+                      same conviction. This is the cheapest aggression available to you.
+  FREQUENCY        -- an hour you PASS is an hour that compounds nothing. Pass when there is no
+                      edge, and only then; a trader who always passes is failing differently from
+                      one who always trades, and both fail.
+  INDEPENDENCE     -- prefer the setup least like what the book already holds. Growth multiplies
+                      across uncorrelated bets and merely duplicates across correlated ones, so a
+                      good setup in a name the book is already in is worth less than an equal
+                      setup somewhere else.
+  COST             -- your entry is a RESTING order at a named level, never a chase. At this
+                      leverage the difference is worth more than most of your directional edge.
+
+Maximise those and the compounding takes care of itself. Aim at a return number instead and the
+only lever that reaches it is the one that ends the account.
+
 THE STOP IS A LEVEL, NOT A PERCENTAGE. Name the PRICE at which your thesis is factually dead --
 the swing the trend must not lose, the range edge, the shelf that was defended -- and name the
 structure it is. The desk DERIVES the stop distance from that level; it will refuse an

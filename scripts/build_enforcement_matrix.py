@@ -204,6 +204,10 @@ _MAP: dict[str, list[str]] = {
     # decision-ledger success metric says "no CAGR targeting" -- and a 300% target section still
     # landed on 2026-07-31, caught by the principal rather than by any check.
     "L1.23-no-target": ["scripts/check_return_targeting.py", "docs/PROJECT_HANDOFF.md"],
+    # R0144: installed, running and PRODUCING are three different facts. The manifest check proved
+    # the LINE existed; nothing proved the organ emitted anything, which is how a miner goes dark
+    # with the board still green.
+    "L1.28c-liveness": ["scripts/check_organ_liveness.py"],
     # L1.25a: null streaks throttle nothing -- an organ going quiet is caught by the freshness/
     # productivity wires REGARDLESS of its reason, so "stopped because nothing was working" trips
     # the same fence as "stopped because broken". The pessimism-freeze cannot hide.

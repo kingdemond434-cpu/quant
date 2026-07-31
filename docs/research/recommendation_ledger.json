@@ -1745,15 +1745,15 @@
   },
   {
    "id": "R0144",
-   "source": "cycle",
-   "summary": "pull_deploy revert race DESTROYS work landed during its CI window: OLD captured at tick start, 'git reset --hard $OLD' runs ~8min later unconditionally -- wiped commit 80153c0 + working-tree fixes live on 2026-07-31. Fix: before reverting, refuse unless HEAD==$NEW and tree clean (mirror of its own refuse-on-dirty rule); record refused-revert loudly. (Raised as R0135, twice renumbered in two-box id collisions.)",
-   "roi_bps": 8.0,
-   "raised": "2026-07-31T16:42:10.846685+00:00",
-   "status": "implemented",
-   "reason": "refuse-revert-tree-moved live in pull_deploy.sh; recovered from the dead evening session and committed",
-   "commit": "4d77a3f",
+   "source": "principal",
+   "summary": "ORGAN LIVENESS + indirect growth framing. Principal: 'make sure all miners etc run, do it yourself, don't tell me to check' and 'make it indirectly maximise max compounding'. (1) check_organ_liveness.py: INSTALLED, RUNNING and PRODUCING are three different facts and only the third is worth anything. check_scheduler_manifest proved the LINE existed; check_exploration covered six named hunters; nothing covered the other hundred lines -- an organ can sit in crontab -l and have emitted nothing for a week, which is how a miner goes dark while the board stays green. Reads the cadence and EVIDENCE artifact the manifest already declares on 79 entries, against real file age. NEVER-PRODUCED (wiring) kept distinct from STALE (auth/quota/upstream). First live read: 19/29 producing. (2) The conviction brief now states what is maximised INDIRECTLY -- edge per trade, payoff asymmetry, frequency, independence, cost -- with no return figure, because a stated return is reachable only by SIZE and past a point more size makes growth negative.",
+   "roi_bps": 0.0,
+   "raised": "2026-07-31T23:00:00+00:00",
+   "status": "done",
+   "reason": "built, 6 tests, in the law gate's state battery; 26/26 build standard",
+   "commit": null,
    "due": null,
-   "disposed": "2026-07-31T16:42:39.792584+00:00"
+   "note": "three self-inflicted defects caught before it shipped: a ';' separator that made most organs read NEVER-PRODUCED (false red -> fence gets disabled), docs/*.md counting as an artifact so any organ citing a law read FRESH forever (false GREEN -- worse), and its own except-pass plus missing lawful entry, both caught by the build standard"
   },
   {
    "id": "R0145",
