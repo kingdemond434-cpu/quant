@@ -89,6 +89,12 @@ explored: 2026-07-26 literature deep-miner run 3, plus run 2. Repeated attempts 
   covers SSRN's own free-download mechanism, not just abstract pages. The OP-026 ladder's RePEc step
   RESOLVED the stranded F11 (published-version verbatim abstract via ideas.repec.org) — the ladder
   works; the 403 remains a routing problem, not a wall.
+  TWO NEW SUBSTITUTE ROUTES VALIDATED 2026-07-31 (official-sector sweep — add to the OP-026 ladder):
+  (a) NY Fed `newyorkfed.org/medialibrary/media/research/staff_reports/srNNNN.pdf` serves the PDF
+  when the staff_reports HTML page 403s (validated on sr1052, read in full); (b) Boston Fed hosts
+  mirrors of NY Fed staff-report content (`bostonfed.org/-/media/Documents/Workingpapers/...` —
+  validated on the sr1073 stablecoin-runs paper after its primary route 403'd). Fed research 403s
+  are ROUTING problems; the medialibrary/regional-mirror ladder resolves them legitimately.
 reason-low-value: ACCESS, not content. Consistent **HTTP 403** from this VPS on
   papers.ssrn.com/sol3/papers.cfm, www.sciencedirect.com/science/article/*, and
   onlinelibrary.wiley.com/doi/full/*. This is the single largest cause of `[SUMMARY-ONLY]` grades in

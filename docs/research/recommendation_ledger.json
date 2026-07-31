@@ -2192,6 +2192,66 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0181",
+   "source": "deep_sweep",
+   "summary": "inbox #90: verify post-2024 funding-carry compression on desk decade archive (BIS WP1087 primary: ETF launch cut carry ~3pp/-36%; He et al 11%/yr decay; survey claims 2025 carry Sharpe NEGATIVE, summary-grade) and wire measured decay slope into funding-sleeve sizing priors; watch access events as compression triggers (litminer run4 LIT-e F2)",
+   "roi_bps": 60.0,
+   "raised": "2026-07-31T19:24:01.198219+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0182",
+   "source": "deep_sweep",
+   "summary": "watchlist cards 23-25 build batch (litminer run4 LIT-e, dues 08-07/08-10): (23) BIS WP1087 carry->liquidation screen construction on ingested axes + COT-BTC contract extension via existing run_cot_screen.py (novelty-gated vs 41y COT kill: different construction); (24) regulatory-event timeline build for the existing event gate (pre-registered null classes: general warnings, CBDC); (25) stablecoin run-signature episodic conditioning variables (sr1073 primary; mint/burn pair + safe-coin premium). Screens themselves stay Stage-A, zero promotion",
+   "roi_bps": 45.0,
+   "raised": "2026-07-31T19:24:01.294036+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0183",
+   "source": "deep_sweep",
+   "summary": "inbox #91: adopt sqrt-impact cost curve (spread/2 + c*sigma*sqrt(Q/ADV)) from AQR $1.7T live-trade record as the s42 growth-path capacity model; 85% of impact permanent; real costs ~10x smaller than academic estimates (litminer run4 buyside F1)",
+   "roi_bps": 40.0,
+   "raised": "2026-07-31T19:25:03.826035+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0184",
+   "source": "deep_sweep",
+   "summary": "inbox #92: READ-ONLY cross-signal netting audit of order logs -- do carry+trend sleeves send offsetting trades same instrument same window; price the leak bps/yr; any fix respects L1.38 change window (AQR Craftsmanship primary; litminer run4 buyside F7)",
+   "roi_bps": 25.0,
+   "raised": "2026-07-31T19:25:03.971863+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0185",
+   "source": "deep_sweep",
+   "summary": "inbox #93: trend-family doctrine pack -- (1) re-run Man TSMOM benchmarks on own tape, published-vs-OOS decay -58 to -65pct measured in crypto (McLean-Pontiff lands); (2) vol-targeting boundary law: sizing tool never alpha, slow/blended estimators, ETH fast-scaling HURTS; (3) trend-bleed attribution SR=a+b*|SR_mkt| -- check |move| before doubting efficacy; (4) costed breadth wall ~10-15 coins, desk liquid-perp universe IS the capacity-positive zone (litminer run4 buyside F2-F6)",
+   "roi_bps": 35.0,
+   "raised": "2026-07-31T19:25:04.097956+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

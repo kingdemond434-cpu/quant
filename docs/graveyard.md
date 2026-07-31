@@ -107,6 +107,12 @@ decay is *larger* for predictors whose in-sample returns were *higher*. Any sign
 published literature is haircut ~58% off its published effect before it is worth a slot, and more
 than that if its published Sharpe was fat. The desk's own `ls_contrarian` (backtest 9.84 → DSR-killed)
 is the same phenomenon observed internally.
+**CRYPTO-NATIVE MEASURED INSTANCE (2026-07-31, litminer run 4 — the prior LANDS numerically):**
+Man/Harvey published crypto TSMOM gross vol-scaled Sharpe **1.46–1.65** (2016–22, JPM 2022, primary
+read via Duke archive); an independent 150-perp OOS 2022–24 NET re-test (arXiv 2602.11708) measures
+classical TSMOM at **0.54–0.65 = −58% to −65% vs published** — McLean–Pontiff almost exactly, in
+this desk's own asset class and instrument. The haircut is no longer only an equity-literature
+import.
 
 | Hypothesis (external prior) | Verdict | Tag | Lesson |
 |---|---|---|---|

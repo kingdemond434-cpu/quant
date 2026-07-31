@@ -1272,3 +1272,63 @@ arXiv:2606.11851 — the literature converged on the desk's ledger design). Seco
 program: benchmark verbalized confidence against an EXTERNAL feature-based success predictor
 (Agent Psychometrics, AUC 0.842 on unseen tasks — honest −0.146 held-out penalty).
 [§33: wired -> docs/research/recommendation_ledger.json R-row (this entry)]
+
+## #90 — CARRY COMPRESSION IS A LIVE SIZING INPUT: VERIFY POST-2024 FUNDING-CARRY DECAY ON THE DESK'S OWN DECADE ARCHIVE (litminer run 4) ◆compounding
+_Source: litminer LIT-e (deep_sweep/20260731_litE_official_sector.md, finding 2); BIS WP 1087
+primary read + He et al. + a 2025 survey (arXiv 2510.14435, summary-grade)._
+**The published record says the desk's funding-carry family is COMPRESSING STRUCTURALLY:** spot-ETF
+launch cut carry ~3pp everywhere and ~8pp on CME (causal DiD, −36%/−97% of the 7.5% pre-mean);
+perp-spot deviations decaying ~11%/yr (He et al.); the survey computes short-perp BTC carry Sharpe
+6.45 full-sample → 4.06 (2024) → NEGATIVE (2025) [summary-grade — verify before trusting]. This is
+L1.19 (hunt replacements BEFORE advantages die) pointed at the desk's LIVE book: (a) verify the
+compression on the desk's own BitMEX-decade + multi-venue funding archive (one notebook, data
+already ingested); (b) wire the measured decay slope into sizing/expectation priors for the funding
+sleeves (expect below-backtest carry); (c) put future ACCESS EVENTS (options launches,
+cross-margining, ETF expansions) on the event watch as further compression triggers — each is a
+dated, pre-registerable structural break. **ROI:** prevents over-sizing a decaying edge — cheaper
+than any new alpha. [§33: wired -> docs/research/recommendation_ledger.json R-row (this entry)]
+
+## #91 — ADOPT THE SQRT-IMPACT COST CURVE FROM $1.7T OF LIVE TRADES AS THE GROWTH-PATH CAPACITY MODEL (litminer run 4) ◆compounding
+_Source: litminer LIT-e buy-side (deep_sweep/20260731_litE_buyside.md F1); AQR Frazzini–Israel–
+Moskowitz "Trading Costs", 21 markets 1998–2016, PRIMARY PDF read._
+Published LIVE numbers (not backtest assumptions): mean market impact **9.97bps** / IS 11.02bps;
+**~85% of impact PERMANENT** (only 1.26bps reverses in 24h — patience avoids paying twice, never
+refunds impact); impact is **square-root in %-of-ADV** (log-log power 0.35, R² 95%, F-test rejects
+linear); rises with VIX/idio-vol; real costs ~10× SMALLER than academic estimates. **Desk action:**
+adopt `cost = spread/2 + c·σ·sqrt(Q/ADV)` as the capacity-curve functional form in the §42
+machinery (at $5k book, fees/spread dominate and impact≈0 — the curve matters for the GROWTH path
+and for capacity_runway math, not today's fills). [§33: wired -> docs/research/recommendation_ledger.json R-row (this entry)]
+
+## #92 — CROSS-SIGNAL ORDER NETTING AUDIT: DO CARRY+TREND SLEEVES SEND OFFSETTING TRADES? (litminer run 4)
+_Source: litminer LIT-e buy-side F7; AQR "Craftsmanship Alpha" (JPM 2017), primary read._
+Integrated construction never sends offsetting trades; siloed sleeves DO — paying spread+fees twice
+for zero net exposure change. **Action: a READ-ONLY audit** of desk order logs — count instances
+where two sleeves traded opposite directions in the same instrument within one rebalance window,
+price the leak in bps/yr. NOTE THE CHANGE WINDOW (L1.38): the AUDIT is read-only and always
+allowed; any executor FIX it motivates goes through the money-path freeze rules (repair if a
+defect, improvement-frozen if an optimization, window check first).
+[§33: wired -> docs/research/recommendation_ledger.json R-row (this entry)]
+
+## #93 — TREND-FAMILY DOCTRINE PACK: FOUR BUY-SIDE PRIMARY-READ PRIORS, ONE DISPOSITION (litminer run 4)
+_Source: litminer LIT-e buy-side F2/F3/F4/F5/F6; Man/Harvey JPM 2022 + arXiv 2602.11708 + Man/JPM
+2018 + AQR JPM 2020 + Man Dec-2024; all primary except where flagged._
+1. **BENCHMARK + DECAY (the −58% prior LANDS numerically in crypto):** Man published crypto TSMOM
+   gross vol-scaled Sharpe 1.46–1.65 (2016–22); an independent 150-perp OOS 2022–24 NET re-test
+   gets classical TSMOM 0.54–0.65 = **−58% to −65% vs published, McLean–Pontiff almost exactly** —
+   yet trend still beat B&H (0.17) at half the MDD. Desk: re-run these benchmarks EXACTLY on its
+   own tape (data ingested; ignore the paper's "AdaptiveTrend 2.41" — 1yr IS, inconsistencies).
+2. **VOL-TARGETING BOUNDARY LAW:** Sharpe benefit exists ONLY where a leverage effect exists
+   (equities yes; bonds/FX/commodities negligible; BTC modest 1.08→1.04–1.20; **ETH ~nothing, and
+   FAST 5d-only scaling HURTS ETH** — MDD 20.3→23.9%). Universal benefit = vol-of-vol + tails, not
+   Sharpe. This UNIFIES the desk's own vol-target-overlay kill (carry 1.40→1.07: carry has no
+   leverage effect) with published evidence. Rule: vol-scaling is a SIZING/STABILITY tool, never
+   booked as alpha; slow/blended (avg 5d,180d) estimators only.
+3. **ATTRIBUTION FRAME for trend bleeds:** SR_trend = α + β·|SR_market| (α<0 whipsaw bleed, β<1);
+   the 2010s "trend winter" was muted |moves|, NOT lost efficacy. When the trend book bleeds,
+   compute realized |move| FIRST — only α/β deterioration is evidence against the strategy. NOT a
+   timing overlay (no forecastability claimed; desk killed overlays 3×).
+4. **COSTED BREADTH WALL:** net of costs/shorting/liquidity, crypto trend Sharpe PEAKS at ~10–15
+   coins (MA) / ~10 (breakout — binary signals need more liquidity); avg pairwise corr ~0.6 means
+   crypto breadth buys ~half of equity breadth. The desk's liquid-perp universe IS the entire
+   capacity-positive zone — breadth expansion beyond it is negative-EV by published evidence.
+[§33: wired -> docs/research/recommendation_ledger.json R-row (this entry)]
