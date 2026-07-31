@@ -2120,6 +2120,18 @@
    "commit": null,
    "due": "2026-08-02",
    "disposed": "2026-07-31T18:08:14.280994+00:00"
+  },
+  {
+   "id": "R0175",
+   "source": "cycle",
+   "summary": "Ledger corruption incident 2026-07-31: origin/master carried recommendation_ledger.json with unresolved merge-conflict markers, and recommendations.py silent-except read it as an EMPTY-HEALTHY ledger (report: 0 total, nothing overdue) -- one add away from atomically overwriting 174 rows with 0. Healed by union-merge (zero rows lost); loader now refuses loudly; tracked-json/jsonl parse + conflict-marker fence added to governance tests.",
+   "roi_bps": 200.0,
+   "raised": "2026-07-31T18:13:46.651366+00:00",
+   "status": "implemented",
+   "reason": "Fixed same-run per L1.40: union-resolved ledger (174 rows, no disposition reverted), _load refusal path verified firing (rc 1 on corrupt input, restored file reads 174), fence tests green and now inside the CI/pre-push law-gate path",
+   "commit": "647123f",
+   "due": null,
+   "disposed": "2026-07-31T18:13:46.744776+00:00"
   }
  ]
 }
