@@ -89,6 +89,7 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("check_exploration.py", ()),              # L1.32 -- no exploration organ gone dark
     ("check_calibration.py", ()),              # L1.29 -- no ungraded past-due forecast
     ("check_strategy_breadth.py", ()),         # L1.32 -- the breadth MEASUREMENT
+    ("run_organ_er.py", ()),                   # L1.32 -- no organ left in coma
     ("check_replacement_rate.py", ()),         # L1.30 -- births vs deaths
     ("check_change_window.py", ()),            # L1.38 -- money-path freeze windows
     ("check_scheduler_manifest.py", ()),       # L1.28c state half -- live crontab drift (rc=1)

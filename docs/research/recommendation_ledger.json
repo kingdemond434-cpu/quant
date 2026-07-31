@@ -2616,6 +2616,30 @@
    "commit": "e20c23e",
    "due": null,
    "disposed": "2026-07-31T20:44:50.773086+00:00"
+  },
+  {
+   "id": "R0215",
+   "source": "principal",
+   "summary": "The desk DETECTED coma well and TREATED nothing. check_exploration reported the family DARK, check_organ_liveness separated NEVER-PRODUCED from STALE, check_miner_runway watched the seats -- three organs reported dark for days, every report correct, and no treatment was ever attempted. Detection without treatment is a monitor, not a hospital, and a ward whose alarms nobody answers gets its alarms switched off (L1.43). organ_catchup was the closest thing and is deliberately narrow: it re-fires QUOTA-KILLED organs only, one per tick, across six seats, so an organ dark from never being scheduled, from expired auth, from a miswired artifact path or from a crash got the same silence as one merely rate-limited. run_organ_er triages every exploration organ into UNSCHEDULED / BLOCKED / MISWIRED / STARVED / CRASHED / UNKNOWN because the treatment depends entirely on the cause and a wrong treatment is worse than none; re-fires what it can; escalates what it cannot with the exact blocker; and records every attempt with its diagnosis to data/organ_er_log.jsonl so 'we tried' is a dated fact and a never-working treatment becomes visible as a pattern. DISCHARGED requires the ARTIFACT to refresh -- exit status is the organ's opinion of itself, and trusting it would let a silently-broken organ read healthy forever (verified: an organ exiting 0 while producing nothing stays STILL-ADMITTED). Runs 4x/day with --treat, because a single daily pass would leave an organ dark up to 24h before the first attempt.",
+   "roi_bps": null,
+   "raised": "2026-07-31T20:57:41.133886+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0216",
+   "source": "max_audit",
+   "summary": "REGISTRY DEFECT found by the organ ER on its first run: data/hunt_coverage.json is written by kimi_hunter.py:50 and by nothing else -- it is kimi's SECOND ARTIFACT, not an organ -- yet check_exploration._FAMILY lists it as its own organ with its own cadence. Two consequences, both live for days: the desk's dark count read '3 of 6 exploration organs DARK' when it is really TWO distinct patients with kimi double-billed, inflating both numerator and denominator; and the artifact can never have a manifest line of its own, so it would report UNSCHEDULED forever -- a permanent false alarm of exactly the kind that trains an operator to ignore the board. The ER now attributes it to its producer (state SECONDARY, not a coma, not treatable) so the ward count means something. Verified by grep on writers before classifying rather than inferred.",
+   "roi_bps": null,
+   "raised": "2026-07-31T20:57:41.188275+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

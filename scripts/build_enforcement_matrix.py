@@ -243,6 +243,10 @@ _MAP: dict[str, list[str]] = {
     # takes risk for nothing); the human method this sleeve was built to copy is the second
     # benchmark, computed the same way and equally non-optional.
     "L1.6-principal-benchmark": ["scripts/run_principal_benchmark.py"],
+    # R0215: the desk DETECTED coma well and TREATED nothing -- three organs reported dark for
+    # days, every report correct, no treatment attempted. Detection without treatment is a
+    # monitor, not a hospital, and a ward whose alarms nobody answers gets its alarms switched off.
+    "L1.32-organ-er": ["scripts/run_organ_er.py"],
     # L1.25a: null streaks throttle nothing -- an organ going quiet is caught by the freshness/
     # productivity wires REGARDLESS of its reason, so "stopped because nothing was working" trips
     # the same fence as "stopped because broken". The pessimism-freeze cannot hide.
