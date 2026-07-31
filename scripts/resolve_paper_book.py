@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""PAPER BOOK RESOLVER (R0126) -- marks every paper call against what price actually did.
+"""PAPER BOOK RESOLVER (R0133) -- marks every paper call against what price actually did.
 
 WHY THIS EXISTS, and why it is the most important thing either trading sleeve was missing. R0122
 and R0125 both write pre-registered calls to a book and then never look at them again. An unmarked
@@ -367,7 +367,7 @@ def main() -> int:
     if args.json:
         print(json.dumps(rep, indent=2))
     else:
-        print(f"paper book (R0126): {rep['status']} -- {rep['detail']}")
+        print(f"paper book (R0133): {rep['status']} -- {rep['detail']}")
     if args.report_only:
         return 0
     # UNMEASURED is not a failure of this organ -- it is the true state of an unproven sleeve, and

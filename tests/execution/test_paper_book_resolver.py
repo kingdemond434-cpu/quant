@@ -1,4 +1,4 @@
-"""R0126 paper book resolver -- the mark must be real, conservative, and refuse rather than guess.
+"""R0133 paper book resolver -- the mark must be real, conservative, and refuse rather than guess.
 
 An unmarked paper book is the purest form of the L1.28a defect: it accumulates confident rows,
 reports no failure, and reads as though the sleeve works. These tests pin that the mark walks the

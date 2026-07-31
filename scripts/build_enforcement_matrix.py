@@ -168,7 +168,7 @@ _MAP: dict[str, list[str]] = {
     # R0125 conviction sleeve: aggression is L1.28 (uncapped conviction), the rail is L1.23
     # (stop on every trade, leverage cap, inside the ruin rail).
     "L1.23-conviction": ["scripts/run_conviction_trader.py"],
-    # R0126: the marker. Both paper sleeves wrote books nobody ever read -- the purest L1.28a
+    # R0133: the marker. Both paper sleeves wrote books nobody ever read -- the purest L1.28a
     # defect, since an unmarked book accumulates confident rows and reports no failure. This organ
     # walks the recorded ladder against real bars, benchmarks against buy-and-hold (L1.6) and
     # feeds the outcome to calibration (L1.29), which is what makes over-confidence self-shrinking.

@@ -244,7 +244,7 @@ QUANT_ROOT=/home/quant/quant-platform
 # CONFIDENCE: committed-script (new this cycle)
 45 */4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_conviction.lock .venv/bin/python scripts/run_conviction_trader.py >> data/cro_ai_logs/conviction.log 2>&1
 
-# PAPER BOOK RESOLVER (R0126): marks EVERY paper call against real bars. Both sleeves above wrote
+# PAPER BOOK RESOLVER (R0133): marks EVERY paper call against real bars. Both sleeves above wrote
 # books nobody read -- an unmarked book accumulates confident rows, reports no failure and reads
 # as though the sleeve works, which is the purest L1.28a defect on the desk. Walks the RECORDED
 # management ladder bar by bar (stop, trail to breakeven, adds, trail behind the extreme) so the

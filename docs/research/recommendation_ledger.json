@@ -1610,6 +1610,18 @@
    "due": "2026-08-02",
    "disposed": "2026-07-31T13:43:56.232989+00:00",
    "note": "renumbered twice 2026-07-31 (two concurrent sessions allocating ids; origin rows kept theirs both times)"
+  },
+  {
+   "id": "R0133",
+   "source": "claude",
+   "summary": "PAPER BOOK RESOLVER -- mark every paper call from R0122 and R0125 against real OHLC bars. Both sleeves wrote books nobody read, which is the purest L1.28a defect: confident rows accumulate, nothing fails, and the sleeve reads as working. Walks the RECORDED management ladder bar by bar (stop, trail, adds) so the number is the P&L of the strategy as specified; benchmarks each call against unlevered buy-and-hold over the same window (the L1.6 promotion bar); feeds outcomes to L1.29 calibration so over-confidence auto-shrinks size; publishes its conventions (adverse-first intrabar, swing trail simulated as extreme-minus-trail, fills at the level with no slippage) because each one decides the answer. UNRESOLVABLE never becomes a zero. Also computes the sleeve equity curve that feeds R0125's 35pct drawdown halt. Hourly. FIRST LIVE RUN found the flat MIN_STOP_PCT defect: marking the principal's own gold short showed -0.13R on a CORRECT thesis, chopped out by ordinary retrace, which produced the measured per-instrument noise floor now enforced in R0125.",
+   "roi_bps": 0.0,
+   "raised": "2026-07-31T14:30:00+00:00",
+   "status": "done",
+   "reason": "built, scheduled hourly, 12 tests, verified live against OKX; renumbered from R0126 after the VPS session allocated that id concurrently",
+   "commit": "d3d4c27",
+   "due": null,
+   "note": "owed next: 30-call calibration+EV review that graveyards the sleeve if uncalibrated"
   }
  ]
 }

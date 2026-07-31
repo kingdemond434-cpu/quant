@@ -186,7 +186,7 @@ _STRUCTURE_WORDS = (
 #: SLEEVE DRAWDOWN HALT. Per-trade risk is bounded; a LOSING RUN is not. At a 20% budget three
 #: stops in a row is -49% of the sleeve, which is why a sleeve-level rail has to exist before real
 #: money does rather than after the first bad week. Read from the resolver's marked equity curve
-#: (R0126) -- which also means this rail is only as alive as the marking is, so an unmarked book
+#: (R0133) -- which also means this rail is only as alive as the marking is, so an unmarked book
 #: reports NO-HISTORY and never OK (L1.28a).
 SLEEVE_DD_HALT = 0.35                  # same shape as the book's -35% ruin rail (L1.23)
 _PNL_STATE = "data/paper_book_pnl.json"
@@ -494,7 +494,7 @@ def noise_table(*, horizons: tuple[float, ...] = (8.0, 24.0, 48.0), fetch=None) 
 
 
 def sleeve_drawdown(root: Path) -> dict[str, Any]:
-    """The sleeve's own drawdown rail, read from the marked paper book (R0126).
+    """The sleeve's own drawdown rail, read from the marked paper book (R0133).
 
     UNMEASURED must never read as OK: an unmarked or unreadable book returns NO-HISTORY, which is
     reported everywhere it is consumed rather than quietly treated as a clean slate."""
