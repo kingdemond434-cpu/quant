@@ -1327,6 +1327,30 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0110",
+   "source": "principal",
+   "summary": "POST-TWIN FREQUENCY RAISES (armed, fire when the research twin's first artifacts land on master): (1) brain 4->6 slots/day on the primary (the twin removes the 15-19pct audit load + all mining from its seat -- conversion capacity is the binding constraint and this raises it 50pct); (2) deep sweep full-8 from weekly to 2x/week on the twin's free seat, gated on measured marginal-new-finding yield (X8 rule); (3) kimi 8->12x/day once OpenRouter funded IF month-one metering shows marginal sessions still yield (hunter frequency is budget-bound not information-bound -- external space always has more)",
+   "roi_bps": 30.0,
+   "raised": "2026-07-31T09:28:53.248726+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0111",
+   "source": "principal",
+   "summary": "GENERALIZED EVENT DISPATCHER (the structural end-state of max frequency): a single artifact-watcher that fires organs on STATE CHANGE instead of clock -- sweep synthesis lands -> director reads it; screen returns SCREEN-INTERESTING -> fusion re-plans + paper sleeve spawns; conversion fence flips repair-mode -> brain brief updates; ledger row disposed -> queue rebuilds. Fixed grids are inherently sub-max: events ARE information arrival. Extends R0108 from one organ to the desk",
+   "roi_bps": 35.0,
+   "raised": "2026-07-31T09:28:53.293137+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
