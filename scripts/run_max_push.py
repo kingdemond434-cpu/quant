@@ -85,6 +85,11 @@ _LEVERAGE: dict[str, tuple[float, str]] = {
               "measured spread between build-rate (~14 findings/day) and convert-rate "
               "(~0.6/day, deep sweep 2026-07-31) is the desk's largest single loss, and it "
               "multiplies every other row -- every queue item IS conversion (L1.28b)"),
+    "calibration_debt": (
+        0.80, "every Kelly bet and every promotion rests on a probability the desk assigned; if "
+              "those are systematically over-confident the desk over-bets EVERY position and "
+              "the error is invisible per-decision (L1.29). Unscored forecasts inflate the "
+              "apparent hit rate by never counting the misses"),
     "tier1_process_gap": (
         0.75, "the principal's standing order (2026-07-31): every gap to tier-1 PROCESS closes "
               "autonomously, without being told -- only calendar-time walls are exempt. A layer "
@@ -280,14 +285,33 @@ def _from_tier_benchmark() -> list[dict[str, Any]]:
     return out
 
 
+def _from_calibration() -> list[dict[str, Any]]:
+    """Is the desk's own confidence measured and honest? (L1.29)
+
+    Reliability (1 - Brier) is the aspect; an UNFORECASTING or OVERDUE desk reports UNMEASURED,
+    which outranks everything -- a desk that never grades its predictions cannot know whether
+    it is over-betting."""
+    d = _json("data/calibration_status.json") or {}
+    st = str(d.get("status", "UNFORECASTING"))
+    rel = d.get("reliability")
+    measured = st not in ("UNFORECASTING", "OVERDUE") and rel is not None
+    return [_item("calibration::forecast_reliability", "calibration_debt",
+                  float(rel) if measured else None, 1.0,
+                  str(d.get("detail", "no calibration artifact")),
+                  "log a probability at every real decision point and RESOLVE it by its "
+                  "deadline; the measured bias then shrinks future confidence automatically "
+                  "(forecast_calibration.calibrated_confidence)",
+                  "data/calibration_status.json")]
+
+
 def build(*, refresh: bool = True) -> dict[str, Any]:
     if refresh:
         for s in ("check_ratchets.py", "check_utilisation.py", "build_enforcement_matrix.py",
-                  "check_conversion.py"):
+                  "check_conversion.py", "check_calibration.py"):
             _refresh(s)
     items = (_from_ratchets() + _from_utilisation() + _from_matrix()
              + _from_wiring() + _from_register() + _from_conversion()
-             + _from_tier_benchmark())
+             + _from_tier_benchmark() + _from_calibration())
     items.sort(key=lambda r: -float(r["score"]))
     at_ceiling = [i for i in items if i["measured"] and i["gap_fraction"] <= 0.0]
     unmeasured = [i for i in items if not i["measured"]]

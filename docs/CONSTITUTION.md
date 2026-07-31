@@ -434,6 +434,31 @@ exists to detect: `scripts/check_utilisation.py` enumerates every declared ceili
 and fails on idle headroom with no named binding constraint. Utilisation is a **ratchet** (L1.0) —
 today's figure is tomorrow's floor.
 
+**L1.29 THE DESK SCORES ITS OWN CONFIDENCE — OR ITS CONFIDENCE IS FICTION** *(principal-goal
+build, 2026-07-31)*. Every Kelly bet, every promotion, every EV ranking rests on a **probability
+this desk assigned itself** — an alpha's survival odds, a task's success odds, an audit's stated
+confidence. **If those probabilities are systematically too high, the desk over-bets every
+position and over-promotes every candidate, and the error is invisible decision-by-decision
+because each individual call looks reasonable.** A Kelly bettor sized on over-confident estimates
+converges to ruin with probability one — the failure is arithmetic, not bad luck.
+
+**THE OPERATIVE RULE.** (a) Every consequential probability is **logged with a resolve-by date**
+at the moment it is asserted. (b) It is **scored when the outcome lands** — a prediction the desk
+refuses to grade is a belief, not a forecast, and silently inflates the apparent hit-rate by never
+counting its misses. (c) The measured bias is **fed back as a shrinkage** on future confidence
+(`forecast_calibration.calibrated_confidence`) — a bias term nobody consumes is decoration. (d)
+Below five resolved outcomes the correction is **withheld and said so**: a correction estimated
+from noise is worse than none. (e) **Zero logged forecasts is UNFORECASTING, never "calibrated"**
+— the fence caught exactly this on its own first run.
+
+**WHY THIS IS SURVIVAL, NOT BOOKKEEPING.** Calibration is the only mechanism that can detect the
+desk being *confidently wrong* — the one failure mode every other fence is blind to, because
+every other fence checks whether the desk did what it said, not whether what it said was true.
+
+**FENCED**: `scripts/check_calibration.py` fails on ungraded past-due predictions and reports
+UNFORECASTING/BLIND/MISCALIBRATED; its artifact feeds `run_max_push.py`, so miscalibration
+competes in the daily hunt against every other gap.
+
 **L1.28c CADENCE IS AGGRESSION — EVERY SCHEDULE HUNTS ITS OWN CEILING** *(principal order
 2026-07-31)*. **Every cadence on this desk aims to increase its frequency to the maximum that
 still carries ROI, and a cadence nobody has tried to raise is idle capacity wearing a schedule.**

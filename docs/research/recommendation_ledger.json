@@ -1351,6 +1351,18 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0112",
+   "source": "principal",
+   "summary": "L1.29 FORECAST INSTRUMENTATION (the fence is live and reports UNFORECASTING -- now feed it): log_forecast with resolve_by at the real decision points -- alpha survival p at Stage-A screen (resolve at forward-clock end), promotion success p at Stage-B, deep-sweep auditor stated confidence per finding (resolve when the row is disposed), R-row ROI estimates. Then wire calibrated_confidence into the EV ranker and sizing so the measured bias shrinks live decisions",
+   "roi_bps": 30.0,
+   "raised": "2026-07-31T10:38:10.383113+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

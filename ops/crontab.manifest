@@ -207,6 +207,15 @@ QUANT_ROOT=/home/quant/quant-platform
 # CONFIDENCE: committed-script (new this cycle)
 */5 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_live_guard.lock .venv/bin/python scripts/run_live_guard.py >> data/cro_ai_logs/live_guard.log 2>&1
 
+# CALIBRATION FENCE (L1.29, 2026-07-31): scores the desk's own probability forecasts against
+# outcomes and fails on predictions past their grading deadline. The bias it measures is CONSUMED
+# (forecast_calibration.calibrated_confidence) so an over-confident desk self-corrects instead of
+# over-betting every Kelly position. Pure CPU, seconds; daily matches outcome-arrival (forecasts
+# resolve on the scale of days, not minutes -- L1.28c data-arrival ceiling).
+# EVIDENCE: scripts/check_calibration.py -> data/calibration_status.json; docs/CONSTITUTION.md L1.29
+# CONFIDENCE: committed-script (new this cycle)
+15 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_calibration.py >> data/cro_ai_logs/calibration.log 2>&1
+
 # MOAT BACKUP (L1.23, principal order 2026-07-31): the irreplaceable small stores (execution
 # tape, research memory, SoR, capital events, cost model, graveyard) replicate into backups/moat/
 # with sha256 manifest + a restore drill ON EVERY RUN; the snapshot/push cycle then carries the

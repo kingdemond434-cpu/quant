@@ -32,16 +32,66 @@ def _save(d: dict[str, Any]) -> None:
     _LOG.write_text(json.dumps(d, indent=2), "utf-8")
 
 
-def log_forecast(key: str, p: float, kind: str) -> None:
-    """Record (or refresh, while unresolved) a probability forecast keyed by a stable id."""
+def log_forecast(key: str, p: float, kind: str, resolve_by: str | None = None,
+                 claim: str | None = None) -> None:
+    """Record (or refresh, while unresolved) a probability forecast keyed by a stable id.
+
+    resolve_by (ISO date/datetime, optional) is the deadline by which the outcome must be scored
+    -- an unresolved forecast past it is the 'never score yourself' defect check_calibration.py
+    hunts: a desk that predicts but never grades its predictions has beliefs, not forecasts."""
     d = _load()
     f = d["forecasts"].get(key, {})
     if f.get("resolved"):
         return                                            # never overwrite a scored forecast
     f.update({"p": round(float(p), 4), "kind": kind,
               "updated": datetime.now(tz=UTC).isoformat()})
+    if resolve_by is not None:
+        f["resolve_by"] = resolve_by
+    if claim is not None:
+        f["claim"] = claim
     d["forecasts"][key] = f
     _save(d)
+
+
+def overdue(now: datetime | None = None) -> list[dict[str, Any]]:
+    """Unresolved forecasts past their resolve_by -- predictions the desk refused to grade."""
+    now = now or datetime.now(tz=UTC)
+    out = []
+    for key, f in _load()["forecasts"].items():
+        rb = f.get("resolve_by")
+        if f.get("resolved") or not rb:
+            continue
+        try:
+            due = datetime.fromisoformat(rb)
+            due = due if due.tzinfo else due.replace(tzinfo=UTC)
+        except ValueError:
+            continue
+        if due < now:
+            out.append({"key": key, "p": f.get("p"), "resolve_by": rb,
+                        "claim": f.get("claim", "")})
+    return out
+
+
+def calibrated_confidence(raw_p: float) -> dict[str, Any]:
+    """Shrink a raw probability by the desk's MEASURED bias -- the closed loop.
+
+    THE GAP THIS CLOSES: report() computed a bias term for months and the docstring claimed it
+    was 'applied as a shrinkage', but nothing consumed it -- so a systematically over-confident
+    desk kept sizing on its raw, un-corrected estimates, which is exactly how a Kelly bettor
+    over-bets into ruin. This subtracts the measured bias (over-confidence) from a raw forecast,
+    N-gated: below 5 resolved outcomes it returns raw unchanged and says so, because a
+    correction from noise is worse than no correction. Advisory by construction -- the caller
+    decides whether to consume it; it never mutates state."""
+    rep = report()
+    bias = rep.get("bias")
+    if bias is None:
+        return {"raw": round(float(raw_p), 4), "adjusted": round(float(raw_p), 4),
+                "applied": False, "why": rep["status"]}
+    adj = min(1.0, max(0.0, float(raw_p) - float(bias)))   # bias>0 (over-confident) lowers p
+    return {"raw": round(float(raw_p), 4), "adjusted": round(adj, 4),
+            "applied": abs(bias) > 0.05, "bias": bias, "bias_label": rep.get("bias_label"),
+            "why": f"desk is {rep.get('bias_label')} by {bias:+.3f} over {rep['n_resolved']} "
+                   "resolved forecasts"}
 
 
 def resolve(key: str, outcome: bool) -> None:

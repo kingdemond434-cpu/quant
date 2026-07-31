@@ -112,6 +112,10 @@ _MAP: dict[str, list[str]] = {
     # with evidence per line; brain_seat_throughput measures the resource they all compete for,
     # so "raise the cron" vs "buy a second seat" is settled by measurement.
     "L1.28c": ["scripts/check_scheduler_manifest.py", "scripts/check_utilisation.py"],
+    # L1.29: the desk scores its own confidence or its confidence is fiction. The fence fails
+    # on ungraded predictions; the shrinkage closes the loop back into sizing/promotion.
+    "L1.29": ["scripts/check_calibration.py",
+              "libs/self_improvement/forecast_calibration.py"],
     # L1.25a: null streaks throttle nothing -- an organ going quiet is caught by the freshness/
     # productivity wires REGARDLESS of its reason, so "stopped because nothing was working" trips
     # the same fence as "stopped because broken". The pessimism-freeze cannot hide.
