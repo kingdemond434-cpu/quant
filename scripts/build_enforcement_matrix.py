@@ -188,6 +188,11 @@ _MAP: dict[str, list[str]] = {
     # reach the trader and are retired by their own falsifier -- the same standard L1.6 applies to
     # alpha, applied to the desk's beliefs about its own method.
     "L1.6-playbook": ["scripts/run_trade_review.py", "docs/DISCRETIONARY_DESK.md"],
+    # R0140: copytrading, screened. The naive read (copy the leaderboard's best) is the 420/0
+    # selection failure in a new costume; the screen computes the tempting number AND disqualifies
+    # it, archives the only unbiased design (a forward panel counting exits as failures), and
+    # measures the derivative that does not require picking a winner.
+    "L1.6-copytrading": ["scripts/screen_copytrading.py"],
     # L1.25a: null streaks throttle nothing -- an organ going quiet is caught by the freshness/
     # productivity wires REGARDLESS of its reason, so "stopped because nothing was working" trips
     # the same fence as "stopped because broken". The pessimism-freeze cannot hide.

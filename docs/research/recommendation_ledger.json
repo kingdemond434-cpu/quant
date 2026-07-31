@@ -1694,6 +1694,18 @@
    "commit": null,
    "due": null,
    "note": "weights are fixed and nothing here fine-tunes -- what improves is evidence-weighted knowledge of which setups pay, the way a journal improves a human trader"
+  },
+  {
+   "id": "R0140",
+   "source": "principal",
+   "summary": "COPYTRADING SCREENED, Stage A, zero promotion authority. Two hypotheses, opposite verdicts. H1 FOLLOW A LEAD TRADER: ABANDONED as untestable from public data. The naive split-half test on 34 OKX lead traders returns Spearman +0.33 with 5/6 of the top quintile beating the median -- and it is an artifact: cohort SELECTED ON THE OUTCOME (sorted by pnl/aum/copiers/winRatio then measured for performance), blown-up traders absent entirely so persistence is manufactured by the survival filter, mean 45d return +81pct across the sample (a leaderboard, not a population), n=34 giving ~1.9 sigma BEFORE either bias. Economics add a 13pct copier profit share, entry lag behind the lead, and the lead's full drawdown. H2 TRADE THE COPY FLOW: KEPT and measured. Copy capital is FORCED flow -- copiers enter behind the lead, exit when it exits, liquidate together -- so aggregate skew and stress are a crowding gauge needing no winner picked, which is exactly why it dodges the selection problem. Live: 164 positions, median leverage 20x, 52pct underwater. Screen archives a FORWARD PANEL counting disappearances as FAILURES, the only unbiased design; NO-DATA until two snapshots sit 5+ days apart. Judged against max E[log wealth]: a sleeve adding only crypto beta adds ~nothing, so any promotion must show DIVERSIFYING return.",
+   "roi_bps": 0.0,
+   "raised": "2026-07-31T19:00:00+00:00",
+   "status": "screened",
+   "reason": "Stage A run live; H1 abandoned on measurement, H2 on a forward clock",
+   "commit": null,
+   "due": null,
+   "note": "two bugs found by checking my own numbers: the crowding gauge reported an outlier-dominated -0.97 as its centre when the median was -0.078, and posSide 'net' (46pct of margin) was being silently dropped from the long/short skew"
   }
  ]
 }
