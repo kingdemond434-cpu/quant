@@ -3463,6 +3463,30 @@
    "review_due": "2026-08-02",
    "review_due_source": "R0058 due 08-01 + R0174 due 08-02 + ack expiries",
    "verified_by_fresh_read": true
+  },
+  {
+   "id": "2026-07-31-cycle6-r0206-carry-attribution-and-inert-moneypath-fix",
+   "ts": "2026-07-31T21:04:10.124779+00:00",
+   "decision": "REPAIR-MODE cycle (conversion fence: 146 backlog rows, lambda/mu ~3.3), two conversions. (1) R0206/BR-08 CONVERTED BY TEST, NOT BY OPINION: built scripts/screen_carry_basis_path.py (pre-registered constants, 2 constructions x 2 horizons = 4 DSR-counted cells, ALL written to data/carry_basis_path.json including the ones that printed nothing) and ran it on bronze D1, 164 symbols 2019-09-08..2026-07-31. HYPOTHESIS REFUTED AND REVERSED: top-4-by-funding basis leg is +0.65 bps/day (t +3.11) = CONVERGING, not widening; the BASIS LEG ALONE improves monotonically across funding deciles (d1 -1.89 -> d10 +0.61 bps/day) in all 4 constructions. SELF-CORRECTION: the first write-up cited NET by decile, which is partly tautological because funding is the ranking variable; the basis leg is the component that carries no such mechanism. The carry ENTRY RULE is exonerated; the live -51.74 bps price_pnl returns to the execution/accounting explanation exactly as the card pre-committed. Graveyard row + rm-20260731T210007-ebb263 written; residual ~66 bps reality gap rowed R0213. (2) MONEY-PATH FIX CONVERTED FROM INERT TO LIVE: the uncommitted min_notional change touched binance_spot_live, whose ONLY importer (run_live_guard.py:99) never calls exchange_filters -- every money-path caller imports the TESTNET modules, so the field reached ZERO consumers while run_stranded_recovery.py:128 kept its hardcoded 10.0. Propagated to binance_spot_testnet, REWROTE a FABRICATED docstring (it cited a dust guard in run_cashcarry_executor._reconcile and a '2026-07-25 false-fire' -- fresh grep: neither exists in that file), and added tests/execution/test_filter_parity.py, verified to FAIL 4/5 without the fix. Also closed 2 max_audit governance defects (blind_rediscovery_log.md classified under both \u00a735-excluded-with-reason and \u00a736 _PRODUCER_CADENCE): live defects 6 -> 4.",
+   "expected_benefit": "R0206: eliminates a wrong repair direction before it was acted on -- the desk was one step from re-engineering the selection rule of its only sleeve on a mechanism that history refutes, and localises the ~66 bps divergence to execution where the next repair hour actually pays. Money path: converts an inert change into a live one and installs the parity test that prevents the whole class (4 duplicate parsers, previously 0 tests between them).",
+   "confidence": 0.7,
+   "assumptions": [
+    "bronze D1 funding = sum of payments DURING day t and basis = perp/spot at day t CLOSE (crypto_source.py:194,224) -- both observable at close(t), so ranking on funding(t) and entering at close(t) has no look-ahead",
+    "basis measurement noise biases forward delta-basis TOWARD apparent convergence, i.e. AGAINST H1 -- so the refutation is the direction the bias favours, which is why the lag1 construction was pre-registered alongside it (it agrees: +0.10 bps, t +0.59)",
+    "the panel is substantially a CURRENT-UNIVERSE snapshot (the 18 early-ending symbols cluster on one date = a collector boundary, not delistings), so the LEVEL is inflated; the SIGN and the decile monotonicity are the robust parts and the conclusion rests only on those"
+   ],
+   "neighbours": [
+    "run_stranded_recovery.py:128 -- now receives venue-truth min_notional instead of the hardcoded 10.0 fallback; behaviour CHANGES for symbols whose published minimum differs from 10.0 (capacity_floor.json measures spot_min 5.0), in the direction of attempting recoveries it previously refused. Book is flat/frozen so nothing executes today.",
+    "run_cashcarry_executor.py -- imports the same binance_spot_testnet.exchange_filters; it reads step/min_qty/qty_prec/tick/price_prec ONLY and never min_notional, so its sizing path is UNCHANGED by this edit (verified by grep: no min_notional in that file).",
+    "capacity_simulator.py -- already parsed min_notional independently and correctly; unchanged, and it is the reference that confirmed the futures key is 'notional' not 'minNotional'.",
+    "max_audit.py -- _FINDING_DOCS_EXCLUDED and _PRODUCER_CADENCE gained one entry each; raises docs-governed count, lowers live defects 6 -> 4. No finding was dropped from a denominator: the 9 blind-rediscovery cards remain driven as R0202-R0210 in the recommendation ledger."
+   ],
+   "independence": "Two changes touch the execution subsystem in one window, so the non-interaction argument is explicit: the binance_spot_testnet edit is PURELY ADDITIVE (one new dict key), and the only consumer that reads that key is run_stranded_recovery, which the executor does not call and which cannot run while the book is flat. The parity test is test-only. The R0206 work is research-side and touches no execution code. No shared state, no ordering dependency.",
+   "success_metric": "R0206: the ~66 bps gap decomposes with execution as the DOMINANT term when measured against trade_forensics+tca (forecast 20260731-r0206-gap-is-execution-not-selection, p=0.70, resolve 2026-08-31). Money path: no further silent field divergence in the spot parser pair for 90 days (forecast 20260731-filter-parity-holds, p=0.90, resolve 2026-10-31).",
+   "reversal_condition": "R0206: if a survivorship-corrected panel (delisted perps included) flips the top-decile basis leg NEGATIVE and significant, the entry-rule explanation is back and the graveyard row is re-opened under L1.16a with that named enabling change. Money path: if run_stranded_recovery begins attempting orders the venue rejects, revert the propagation (single additive key) and restore the conservative 10.0 floor.",
+   "review_due": "2026-08-31",
+   "review_due_source": "forecast resolve_by 20260731-r0206-gap-is-execution-not-selection",
+   "verified_by_fresh_read": true
   }
  ]
 }

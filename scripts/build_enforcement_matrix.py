@@ -63,7 +63,12 @@ _MAP: dict[str, list[str]] = {
     "L1.13": ["check_gap_register_health", "run_execution_intel.py"],
     "L1.14": ["check_directives", "research_erv.py"],
     "L1.15": ["check_self_application"],
-    "L1.16": ["mechanism_board.py", "check_gate_optimality"],
+    # L1.16: every edge understood -- mechanism, regime, failure modes -- or it is not durable.
+    # screen_carry_basis_path is the attribution instrument for the ONLY deployed sleeve: it
+    # measures whether the funding-rank entry selects into a widening or converging basis, which
+    # is what decides whether the carry harvest is a cashflow or compensation for a basis loss.
+    "L1.16": ["mechanism_board.py", "check_gate_optimality",
+              "scripts/screen_carry_basis_path.py"],
     "L1.17": ["negative_knowledge.py", "check_findings_ratchet", "docs/graveyard.md"],
     "L1.18": ["tests/validation/test_capacity_parity.py"],
     "L1.18a": ["tests/validation/test_capacity_parity.py",

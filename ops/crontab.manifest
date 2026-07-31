@@ -1148,3 +1148,20 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # EVIDENCE: scripts/run_organ_er.py -> data/organ_er.json + data/organ_er_log.jsonl
 # CONFIDENCE: committed-script (new this cycle)
 15 2,8,14,20 * * * cd "$QUANT_ROOT" && flock -n data/.cron_organ_er.lock .venv/bin/python scripts/run_organ_er.py --treat >> data/cro_ai_logs/organ_er.log 2>&1
+
+# CARRY BASIS-PATH ATTRIBUTION (R0206, 2026-07-31). Re-measures the ONLY deployed sleeve's
+# basis-leg behaviour: does ranking perps by funding select into a WIDENING premium (which would
+# make the funding harvest compensation for a basis loss) or a converging one? Run 1 REFUTED the
+# widening hypothesis (top-4 basis leg +0.65 bps/day, t +3.11; basis leg improves monotonically
+# with funding decile), which is what EXONERATED the entry rule and redirected the live -51.74 bps
+# price_pnl to execution. That exoneration is a REGIME CLAIM and can expire.
+# CEILING TYPE: DATA-ARRIVAL bound, and the arrival that matters is REGIME, not rows -- the panel
+# grows daily but the sign of the forward basis path moves on month scales, so a daily line would
+# re-read a materially unchanged answer (L1.28c: firing faster than the state changes is waste).
+# MONTHLY is the decided cadence, not an inherited one.
+# RAISE CONDITION (named, so this is a decision with a falsifier): raise to weekly if any run
+# flips the top-decile basis leg negative, or if the book re-arms and live price_pnl diverges
+# from this measurement again -- at that point the answer IS moving and the cadence should follow.
+# EVIDENCE: scripts/screen_carry_basis_path.py -> reports/carry_basis_path.json
+# CONFIDENCE: committed-script (new this cycle)
+20 4 1 * * cd "$QUANT_ROOT" && flock -n data/.cron_carrybasis.lock .venv/bin/python scripts/screen_carry_basis_path.py >> data/cro_ai_logs/carry_basis_path.log 2>&1

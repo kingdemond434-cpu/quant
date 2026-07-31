@@ -1846,6 +1846,17 @@ _FINDING_DOCS_EXCLUDED = {
     "docs/research/cn_oss_extraction_20260731.md": "dig extraction card -- its 5 finds are "
                                                    "rowed as R0100 (ingest+screen) by the "
                                                    "authoring session; §33 governs the cards",
+    "docs/research/blind_rediscovery_log.md": "monthly blind-rediscovery run log -- each run's "
+                                              "cards are rowed into the RECOMMENDATION ledger by "
+                                              "the authoring session (run 1 2026-07-31 -> "
+                                              "R0202-R0210), the organ that drives conversion and "
+                                              "enforces dispositions. Same precedent as "
+                                              "cn_oss_extraction_20260731.md. Scope-excluded here "
+                                              "so the SAME cards are not double-counted against "
+                                              "two backlogs; §36 still governs the file via "
+                                              "_PRODUCER_CADENCE, so a run that stops happening "
+                                              "fires. If a future run's cards are ever NOT "
+                                              "ledgered, move this into _FINDING_DOCS",
     "docs/research/panel_inbox.md": "raw panel transcript -- rulings are the distilled output",
     "docs/research/feed_inbox.md": "literature feed, not desk findings",
     "docs/research/data_axis_watchlist.md": "source cards -- governed by §33 dispositions",
@@ -1936,6 +1947,14 @@ _PRODUCER_CADENCE = {
     "docs/research/adoption_queue.md": (
         35.0, "trigger-gated methods (fracdiff, dollar bars, ...) -- nothing notices when a "
               "precondition ARRIVES, so a due adoption waits forever"),
+    # (A duplicate blind_rediscovery_log.md entry lived here from 2026-07-31 until a concurrent
+    # session classified the SAME file below at 31.0d. Removed rather than merged: Python keeps
+    # the LAST duplicate key silently, so two entries meant one of the two stated reasons was
+    # decorative and nobody could tell which. The surviving entry is the better-founded one --
+    # it READS the cadence from the document's own header, which is what §36 asks for, instead of
+    # inventing one here. The dropped entry's only distinct argument was a 35d-vs-31d margin so an
+    # on-time monthly run cannot fire the check on its own due date; if that ever fires
+    # spuriously, widen the surviving entry rather than re-adding a second key.)
     # The register is a producer too -- the one every other law routes into. Its own header
     # promises a re-rank every daily cycle; check_gap_register_health reads the self-declared
     # stamp, and this is the file-level backstop if the stamp itself stops being written.

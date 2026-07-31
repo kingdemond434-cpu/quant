@@ -75,6 +75,7 @@ _GOVERNED: tuple[str, ...] = (
     "check_return_targeting.py",
     "check_organ_liveness.py",
     "check_freshness.py",                                   # L1.44 fence (capability hunt s5)
+    "screen_carry_basis_path.py",                           # R0206 carry attribution (2026-07-31)
     "check_promotion_gate.py",
     "run_discretionary_max.py",
     "run_discretionary_hunt.py",
