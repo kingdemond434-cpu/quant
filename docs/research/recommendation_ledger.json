@@ -2511,11 +2511,11 @@
    "summary": "BLIND-REDISCOVERY 2026-07-31 / BR-08 (highest-value card, EV 0.0260): the dominant P&L term of the ONLY deployed sleeve is UNATTRIBUTED and the desk holds two mutually contradictory measurements of it. 73 churn-free round-trips ran -58.27 bps net-of-fee with only 12 bps commission -- price_pnl -51.74 bps, which for a delta-neutral pair is the BASIS CHANGE and should be ~0, and which does NOT amortize with hold time. Meanwhile the live bleed_alert reports non-funding PnL at +3573 (+3161% of funding harvest), attributed by a prior cycle to an accounting echo. Neither reading is explained. MECHANISM that would explain the negative one: funding is computed FROM the premium index, so ranking names by highest funding is mechanically ranking by widest perp premium -- the entry shorts a basis that then keeps widening, making carry compensation for the wrong side of an ongoing squeeze rather than a free cashflow. TEST (independent of the desk's broken execution record): on lake history (funding+basis, 279 symbols, 2011-2026) condition on funding-rank at entry and measure the forward BASIS path at 1/3/8/24h and 1/5d. Pre-committed: top-rank names widen over the first funding period, effect strengthening with rank; flat or converging REFUTES and sends -51.74 bps back to the contamination explanation.",
    "roi_bps": 250.0,
    "raised": "2026-07-31T20:16:50.794341+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "Converted BY TEST. scripts/screen_carry_basis_path.py built and run: bronze D1, 164 symbols 2019-09-08..2026-07-31, 4 pre-registered DSR-counted cells all published to reports/carry_basis_path.json. H1 REFUTED (top-4 basis leg +0.65 bps/day, t +3.11 = converging, not widening). H2 refuted on the non-tautological component (basis leg alone improves monotonically d1 -1.89 -> d10 +0.61). Entry rule EXONERATED; live -51.74 bps redirected to execution -> R0219. Graveyard row + rm-20260731T210007-ebb263.",
+   "commit": "edd92cb",
    "due": null,
-   "disposed": null
+   "disposed": "2026-07-31T21:24:21.088722+00:00"
   },
   {
    "id": "R0207",
