@@ -2599,11 +2599,11 @@
    "summary": "Miner breadth mandate widened to UNLIMITED / ALL-SURFACE / NEVER-ENDING across all 14 hunting surfaces plus the external panel. NO SURFACE OUT OF SCOPE: every venue (CEX/DEX/perp/spot/options/prediction market/OTC), era (pre-ban CN, dead exchanges, discontinued APIs), language, asset class, timeframe, FORMAT (papers, repos, configs, backtest tables, bot source, forum arguments, filings, post-mortems) and STYLE (systematic, discretionary, manual, hybrid, market-making, event-driven) -- with the explicit instruction that catching yourself deciding a surface is 'not the kind of thing we look at' IS the finding. NEVER-ENDING: no terminal state; 'covered' and 'we already looked' are claims requiring a dated search with its residual gap, never defaults. UNLIMITED: no quota on families, findings, depth or session length. THE ONLY TWO LIMITS, neither a scope limit: the S13 legitimacy gate (public and licensed only, a forbidding licence is a HARD STOP, closed-group and cracked material never touched in any language) and never installing third-party agent tooling on desk hardware (mine it as TEXT). kimi_hunter and run_capability_hunt carry the same text in their embedded charters.",
    "roi_bps": null,
    "raised": "2026-07-31T20:40:53.725742+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "unlimited/all-surface/never-ending mandate on all 14 hunting surfaces + external panel, kimi and capability hunt charters included; legitimacy gate and supply-chain rule preserved as the only two limits; breadth fence green 14/14",
+   "commit": "e20c23e",
    "due": null,
-   "disposed": null
+   "disposed": "2026-07-31T20:44:50.727597+00:00"
   },
   {
    "id": "R0214",
@@ -2611,11 +2611,11 @@
    "summary": "'Surpass me' had nothing measuring it. The desk benchmarks every sleeve against unlevered buy-and-hold because a levered sleeve that merely tracks the index takes risk for nothing (L1.6); by the same logic a discretionary machine that merely matches the human method it was built to copy is engineering for nothing, and nothing computed that. run_principal_benchmark re-prices the desk's OWN closed trades at the principal's demonstrated 10% risk fraction -- same calls, entries, stops and exits, only size changes -- so the difference is attributable to sizing policy alone. EXACT rather than simulated: cost in R is size-independent, so net_R = equity_return/risk_fraction and the outcome scales linearly with f. Reports RUIN rather than computing around a sequence-ending trade. VERDICT IS NOT FOREGONE and that is the point: at ~33% hit the desk's cap wins, at ~46% his 10% wins and the cap is costing growth -- verified both directions by test. SCOPE LIMIT STATED IN THE ARTIFACT: this compares SIZING POLICY on the desk's own calls; it does NOT show the machine beats the principal, because his SELECTION is unmeasured (the desk has seen one of his trades). The output also carries where the machine should win (independent bets, consistency, measurement) and where the human still does (selection, 6R winner shape) -- both halves, not the flattering one.",
    "roi_bps": null,
    "raised": "2026-07-31T20:40:53.797006+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "run_principal_benchmark re-prices the desk's own closed trades at his 10% risk; exact via size-independent net_R; RUIN reported not computed around; verdict verified to flip at the crossover in both directions; scope limit and both-sides ledger stated in the artifact; 6 tests",
+   "commit": "e20c23e",
    "due": null,
-   "disposed": null
+   "disposed": "2026-07-31T20:44:50.773086+00:00"
   }
  ]
 }
