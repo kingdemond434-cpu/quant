@@ -63,12 +63,20 @@ def _acquire() -> object | None:
     return fh
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
+    args = argv if argv is not None else sys.argv[1:]
+    fail_on_lock = "--fail-on-lock" in args
     _fh = _acquire()
     if _fh is None:
-        # Another gate is mid-run on the same tree. Exit 0 and DO NOT touch the marker:
-        # non-zero would fail an organ's cycle for the non-error of someone else already
-        # checking, and writing the marker here IS the last-writer-wins race.
+        # Another gate is mid-run on the same tree. For an ORGAN's routine gate, exit 0 and DO
+        # NOT touch the marker: non-zero would fail its cycle for the non-error of someone else
+        # already checking, and writing the marker here IS the last-writer-wins race.
+        # For a DEPLOY decision that exit 0 is a lie -- pull_deploy read "skipped" as "green"
+        # and would have shipped an unvetted commit (found 2026-07-31, R0136). --fail-on-lock
+        # returns 3: "could not gate", which a deployer must treat as not-green and retry.
+        if fail_on_lock:
+            print("CI: another run holds the lock -- cannot gate this tree state (rc 3)")
+            return 3
         print("CI: another run holds the lock -- skipping (marker left untouched)")
         return 0
     failed: list[str] = []

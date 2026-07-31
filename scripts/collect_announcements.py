@@ -145,7 +145,7 @@ def _iso(ts: Any) -> str | None:
 def _rss_items(xml: str, source: str) -> list[dict[str, Any]]:
     out = []
     for block in re.findall(r"<item>(.*?)</item>", xml, re.DOTALL | re.IGNORECASE)[:40]:
-        def _f(tag: str) -> str:
+        def _f(tag: str, block: str = block) -> str:
             m = re.search(rf"<{tag}[^>]*>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?</{tag}>", block,
                           re.DOTALL | re.IGNORECASE)
             return re.sub(r"<[^>]+>", "", m.group(1)).strip() if m else ""

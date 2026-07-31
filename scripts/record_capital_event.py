@@ -77,7 +77,7 @@ def _live_equity(st: dict[str, Any]) -> tuple[float | None, str]:
             return (eq, "direct venue read (futures equity + banked spot P&L; any UNREALISED "
                         "spot P&L is not included -- flatten or pass --equity if positions "
                         "are open)")
-    except Exception as exc:                                # noqa: BLE001 -- refusal path
+    except Exception as exc:                                # refusal path
         return (None, f"venue read failed: {exc}")
     return (None, "no fresh executor persist and no venue keys on this box")
 

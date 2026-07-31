@@ -1,11 +1,16 @@
-"""L1.41 build standard -- nothing enters below the bar, so timid work never has to be caught later."""
+"""L1.41 build standard -- nothing enters below the bar; timid work is never caught later."""
 from __future__ import annotations
 
 import ast
 from pathlib import Path
 
-from scripts.check_build_standard import (_GOVERNED, _SCHEDULE_EXEMPT, _has_silent_swallow,
-                                          audit_organ, build_report)
+from scripts.check_build_standard import (
+    _GOVERNED,
+    _SCHEDULE_EXEMPT,
+    _has_silent_swallow,
+    audit_organ,
+    build_report,
+)
 
 
 def test_every_governed_organ_meets_the_standard():

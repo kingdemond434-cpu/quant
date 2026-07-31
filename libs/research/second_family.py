@@ -61,7 +61,7 @@ def ask_second_family(prompt: str, *, context: str, timeout: float = 300.0) -> S
         if str(_ROOT) not in sys.path:
             sys.path.insert(0, str(_ROOT))
         from scripts.run_strategic_director import MODEL, _ask
-    except Exception as exc:                                   # noqa: BLE001
+    except Exception as exc:
         return SecondOpinion(False, reason=f"second family unimportable: {exc}", context=context)
     text, err = _ask(prompt, MODEL, timeout=timeout)
     op = (SecondOpinion(False, reason=err or "empty response", model=MODEL, context=context)

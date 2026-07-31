@@ -124,7 +124,7 @@ def atr_pct(bars: list[tuple[int, float, float, float, float]], n: int = 14) -> 
     if len(bars) < n + 1:
         return None
     trs = []
-    for prev, cur in zip(bars[-n - 1:-1], bars[-n:]):
+    for prev, cur in zip(bars[-n - 1:-1], bars[-n:], strict=True):
         trs.append(max(cur[2] - cur[3], abs(cur[2] - prev[4]), abs(cur[3] - prev[4])))
     last = bars[-1][4]
     return round(sum(trs) / len(trs) / last * 100.0, 4) if last else None

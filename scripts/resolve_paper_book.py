@@ -167,7 +167,7 @@ def walk_ladder(row: dict[str, Any], bars: list[tuple[int, float, float, float, 
     exit_ts = bars[-1][0]
     outcome = "OPEN"
 
-    for ts, _o, hi, lo, close in bars:
+    for ts, _o, hi, lo, _close in bars:
         # 1. ADVERSE-FIRST: the stop is tested before any favourable progression in the same bar.
         if (sign > 0 and lo <= stop) or (sign < 0 and hi >= stop):
             exit_px, exit_ts, outcome = stop, ts, ("STOPPED" if stage_i == 0 else "TRAILED-OUT")

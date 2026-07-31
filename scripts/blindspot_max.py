@@ -165,8 +165,7 @@ def main() -> None:
     # exists to detect. Ask the independent family what THIS run missed, and record the verdict
     # honestly -- SOLO when the partner is unavailable, never silently passed off as confirmed.
     try:
-        from libs.research.second_family import (ask_second_family, blindspot_prompt,
-                                                 merge_verdict)
+        from libs.research.second_family import ask_second_family, blindspot_prompt, merge_verdict
         own = json.dumps({"unread": unread, "unmodelled": unmodelled[:20],
                           "pairs": pairs[:20], "never": never[:20]}, indent=1)
         op = ask_second_family(blindspot_prompt("blindspot_max", own), context="blindspot_max")
@@ -176,7 +175,7 @@ def main() -> None:
         OUT.write_text(json.dumps(d, indent=1), "utf-8")
         print(f"  second family: {verdict['verdict']}"
               + (f" -- {verdict.get('reason', '')}" if verdict["verdict"] == "SOLO" else ""))
-    except Exception as exc:  # noqa: BLE001 -- the partner must never break the organ
+    except Exception as exc:               # the partner must never break the organ
         print(f"  second family: SKIPPED ({exc})")
     print(f"\n  -> {OUT}")
 

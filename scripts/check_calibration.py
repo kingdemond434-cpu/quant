@@ -44,7 +44,6 @@ if str(_ROOT) not in sys.path:
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 from libs.ops.lawful import guard as _law_guard  # noqa: E402
-
 from libs.self_improvement import forecast_calibration as fc  # noqa: E402
 
 

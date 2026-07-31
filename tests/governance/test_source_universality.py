@@ -1,4 +1,4 @@
-"""L1.34 -- every seat's brief carries the full source-class mandate. No seat narrower than another."""
+"""L1.34 -- every seat's brief carries the full source-class mandate; no seat narrower."""
 from __future__ import annotations
 
 from pathlib import Path

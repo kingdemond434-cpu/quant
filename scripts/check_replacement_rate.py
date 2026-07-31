@@ -51,6 +51,7 @@ _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 from libs.ops.lawful import guard as _law_guard  # noqa: E402
+
 _DATE = re.compile(r"(20\d\d)-(\d\d)-(\d\d)")
 
 
@@ -147,11 +148,11 @@ def build_report(root: Path | None = None, window_days: int = 90,
         "live_forward_clocks": live_clocks,
         "graveyard_entries_total": graveyard_total,
         "detail": (
-            (f"births UNCOUNTABLE (no dated promotion history) vs {deaths} death(s) in "
+            f"births UNCOUNTABLE (no dated promotion history) vs {deaths} death(s) in "
              f"{window_days}d; {live_clocks} live forward clock(s) occupied of 12"
              if births is None else
              f"{births} birth(s) vs {deaths} death(s) in {window_days}d; "
-             f"{live_clocks} live forward clock(s)")),
+             f"{live_clocks} live forward clock(s)"),
         "next_action": (
             "raise BIRTHS upstream -- more axes screened, more forward slots filled, "
             "resurrection queue consumed (L1.25a). NEVER loosen a validation bar to "

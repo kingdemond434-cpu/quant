@@ -16,6 +16,11 @@
 #   * CI RED -> pull is REVERTED to the exact prior commit, then exit non-zero. Leaving the box on
 #     code that fails its own gate is strictly worse than leaving it on the old code, and a
 #     half-applied deploy is the state nobody can reason about at 3am.
+#   * TREE MOVED MID-GATE -> the revert itself refuses. The CI window is minutes long; work that
+#     lands in it (a session's commit, an operator hotfix) is the only copy, and 2026-07-31 the
+#     unconditional revert destroyed exactly that. Red-but-newer code plus a loud record beats
+#     silently deleting someone's work; the next tick re-gates whatever the tree then holds.
+#     (run_ci is invoked --fail-on-lock here: "another gate is mid-run" is not "green".)
 #   * RUIN RAIL CHANGED -> reported, never restarted. A deadman restart is a window with no ruin
 #     rail; no unattended script opens that window (libs/ops/deploy_plan.py explains the tiering).
 #
@@ -177,11 +182,27 @@ git merge --ff-only FETCH_HEAD >/dev/null 2>&1 || {
     record ff-failed "$OLD_SHORT" "$NEW_SHORT" "git merge --ff-only failed"; exit 2; }
 say "fast-forwarded to $NEW_SHORT -- running the CI gate before restarting anything"
 
-if ! "$PY" "$ROOT/scripts/run_ci.py"; then
-    say "CI GATE RED on $NEW_SHORT -- REVERTING to $OLD_SHORT"
+# --fail-on-lock: a lock-skip exits 0 for organs, but "someone else is mid-gate" is NOT "green"
+# for a deploy decision -- without the flag this branch shipped unvetted commits (R0136).
+if ! "$PY" "$ROOT/scripts/run_ci.py" --fail-on-lock; then
+    say "CI GATE NOT GREEN on $NEW_SHORT -- reverting to $OLD_SHORT"
+    # REVERT ONLY A TREE NOBODY ELSE TOUCHED. The CI window is minutes long; a session or an
+    # operator can legitimately commit or edit here mid-gate, and OLD was captured before all
+    # of that. An unconditional reset --hard destroyed exactly that work live on 2026-07-31
+    # (commit 80153c0 + uncommitted fixes, R0135). Same philosophy as the refuse-on-dirty
+    # check at the top: not deploying (or not reverting) is always recoverable; destroyed
+    # work is not.
+    NOW_HEAD=$(git rev-parse HEAD)
+    if [ "$NOW_HEAD" != "$NEW" ] || [ -n "$(git status --porcelain --untracked-files=no 2>/dev/null)" ]; then
+        say "REFUSING REVERT -- the tree moved during the CI window (HEAD $(git rev-parse --short HEAD),"
+        say "expected $NEW_SHORT, or tracked files modified). A session is working here; a"
+        say "reset --hard now destroys the only copy. Box left as-is; next tick re-gates."
+        record refused-revert-tree-moved "$OLD_SHORT" "$NEW_SHORT" "gate not green but tree changed mid-gate; nothing reverted, nothing restarted"
+        exit 1
+    fi
     git reset --hard "$OLD" >/dev/null 2>&1 || say "WARNING: revert failed -- box is on RED code"
     say "nothing was restarted; the desk keeps running the code that passed its gate."
-    record ci-red "$OLD_SHORT" "$NEW_SHORT" "reverted -- run_ci.py failed on the new commit"
+    record ci-red "$OLD_SHORT" "$NEW_SHORT" "reverted -- run_ci.py not green on the new commit"
     exit 1
 fi
 say "CI gate green"

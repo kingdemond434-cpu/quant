@@ -1634,6 +1634,42 @@
    "commit": null,
    "due": null,
    "note": "the gap-stress leverage cap is now INERT at a 6pct budget and is labelled as such in code rather than counted as protection; owed next: wire measured calibration into the probability before Kelly so size scales UP as evidence arrives, not only down"
+  },
+  {
+   "id": "R0135",
+   "source": "cycle",
+   "summary": "pull_deploy revert race DESTROYS work landed during its CI window: OLD captured at tick start, 'git reset --hard $OLD' runs ~8min later unconditionally -- wiped commit 80153c0 + working-tree fixes live on 2026-07-31. Fix: before reverting, refuse unless HEAD==$NEW and tree clean (mirror of its own refuse-on-dirty rule); record refused-revert loudly.",
+   "roi_bps": 8.0,
+   "raised": "2026-07-31T14:56:43.032807+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0136",
+   "source": "cycle",
+   "summary": "run_ci.py lock-skip exits 0 and pull_deploy reads rc0 as CI GREEN -> a concurrent CI at tick time deploys an UNVETTED commit (silent gate bypass). Fix: run_ci --fail-on-lock flag exiting 3 on contention; puller invokes with it and treats 3 as not-green-retry-next-tick.",
+   "roi_bps": 5.0,
+   "raised": "2026-07-31T14:56:43.107456+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0137",
+   "source": "cycle",
+   "summary": "daily_research_cycle ci_gate step: timeout 300s predates the 07-25 whole-tree pytest change (~8min), so the step has died by timeout nearly every run since -- silent daily gate outage, steps_ok['ci_gate']=False unfenced; and its rare True was a lock-skip fake-green. Third member of the skip-reads-green family: rollback_guard._ci_green() returncode==0 also counts contention as green. Fix: timeout 1200 + --fail-on-lock in rollback_guard.",
+   "roi_bps": 4.0,
+   "raised": "2026-07-31T15:02:33.564383+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

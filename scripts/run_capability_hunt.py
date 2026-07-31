@@ -47,6 +47,7 @@ if not _ROOT.exists():                                     # dev/CI checkout
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 from libs.ops.lawful import guard as _law_guard  # noqa: E402
+
 _OUT = _ROOT / "docs/research/capability_hunt"
 
 #: The evidence every hunter reads first -- today's real gaps, not yesterday's impressions.
@@ -271,11 +272,14 @@ def _build_lenses() -> list[str]:
     for k in range(48):                                    # divisible by the 6-slot day
         kind = kinds[k % len(kinds)]
         if kind == "A":
-            out.append(_ALPHA_LENSES[ai % len(_ALPHA_LENSES)]); ai += 1
+            out.append(_ALPHA_LENSES[ai % len(_ALPHA_LENSES)])
+            ai += 1
         elif kind == "D":
-            out.append(_DEFENSIVE_LENSES[di % len(_DEFENSIVE_LENSES)]); di += 1
+            out.append(_DEFENSIVE_LENSES[di % len(_DEFENSIVE_LENSES)])
+            di += 1
         else:
-            out.append(_DEFECT_LENSES[xi % len(_DEFECT_LENSES)]); xi += 1
+            out.append(_DEFECT_LENSES[xi % len(_DEFECT_LENSES)])
+            xi += 1
     return out
 
 
@@ -331,7 +335,7 @@ def _gpt(prompt: str) -> tuple[bool, str]:
         sys.path.insert(0, str(_ROOT))
     try:
         from scripts.run_strategic_director import MODEL, _ask
-    except Exception as exc:                                     # noqa: BLE001
+    except Exception as exc:
         return False, f"GPT seat unimportable: {exc}"
     text, err = _ask(prompt, MODEL)
     if err or not text.strip():
