@@ -1008,7 +1008,7 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # CONFIDENCE: committed-script (new this cycle; two parse bugs caught by its own tests first)
 50 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_liveness.lock .venv/bin/python scripts/check_organ_liveness.py --report-only >> data/cro_ai_logs/liveness.log 2>&1
 
-# PROMOTION GATE (R0147): what evidence buys what expansion, fixed BEFORE the evidence exists.
+# PROMOTION GATE (R0150): what evidence buys what expansion, fixed BEFORE the evidence exists.
 # The kill condition (R0142) gave the sleeve a defined way to DIE; without this it had no defined
 # way to GROW, which makes expansion an improvised decision taken in the mood of a good week --
 # the exact moment that decision is worst. THE TRAP IT CLOSES: 50 trades in seven days is ONE

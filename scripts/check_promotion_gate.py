@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""PROMOTION GATE (R0147) -- what evidence buys what expansion, fixed BEFORE the evidence exists.
+"""PROMOTION GATE (R0150) -- what evidence buys what expansion, fixed BEFORE the evidence exists.
 
 PRINCIPAL (2026-07-31): *"if it works we will expand and advance this after a week, maxxing it."*
 

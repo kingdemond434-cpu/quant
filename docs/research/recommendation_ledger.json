@@ -1802,6 +1802,30 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0149",
+   "source": "principal",
+   "summary": "2-OF-3 ENSEMBLE CONSENSUS on the conviction sleeve -- buy hit rate with frequency. Correct only because of WHERE the hit rate sits: cost-adjusted breakeven is 31.1pct and the plausible rate is on top of it, so g per trade is tiny and small precision gains multiply it (32->33pct is x3.5 on g, 32->36pct is x11) while halving the trade count costs a factor of 2. Through the honest haircuts: no filter 33pct/460 = 34pct CAGR; 2-of-3 at 36pct/230 = 58pct; at 38pct/230 = 95pct. Three reads framed DIFFERENTLY (straight / argue the opposite side / assume your instinct is already priced) because three samples of one framing correlate and their agreement means nothing. 2-of-3 not unanimity, which cuts to ~1/4 the trades for +8pp and measures 63pct against 95pct. Consensus takes the LOWEST probability among agreeing reads since Kelly is convex in p. The rejected minority is KEPT so whether the filter helps stays measurable -- if agreement-filtered calls do not out-hit unfiltered ones, the filter goes.",
+   "roi_bps": 0.0,
+   "raised": "2026-08-01T00:00:00+00:00",
+   "status": "done",
+   "reason": "built, 7 tests; renumbered from R0146 after a concurrent VPS allocation",
+   "commit": null,
+   "due": null,
+   "note": "reviewable once the hit rate is measured -- far above breakeven the trade-off reverses and frequency wins again, so this is not permanent"
+  },
+  {
+   "id": "R0150",
+   "source": "principal",
+   "summary": "PROMOTION LADDER -- what evidence buys what expansion, fixed BEFORE the evidence exists. Principal: 'if it works we will expand and advance this after a week, maxxing it.' The kill condition gave the sleeve a defined way to DIE and no defined way to GROW, which makes expansion an improvised decision taken in the mood of a good week. THE TRAP CLOSED: 50 trades in seven days is ONE REGIME -- cadence manufactures sample size but never calendar time -- so every rung needs both. R1 (50 closed + 14d + hit above breakeven + attribution clean) raises the per-trade cap to measured half-Kelly, STILL PAPER. R2 (100 + 30d + beats buy-and-hold + calibration informative) is the first LIVE money at 1pct of book, small because paper-to-live is where unmodelled slippage appears and that should cost tuition not capital. R3 5pct, R4 15pct = ceiling for one sleeve. NO SKIPPING: later counts with an earlier benchmark failed grants the EARLIER rung. UNMEASURED never passes -- corrupting the attribution artifact drops a fully qualified book from rung 3 to rung 0, verified by test.",
+   "roi_bps": 0.0,
+   "raised": "2026-08-01T00:15:00+00:00",
+   "status": "done",
+   "reason": "built, 8 tests, in the law gate's state battery; 28/28 build standard",
+   "commit": null,
+   "due": null,
+   "note": "a blazing week grants rung 1 at most, and rung 1 is still paper -- which is the whole point of writing it down before the week happens"
   }
  ]
 }

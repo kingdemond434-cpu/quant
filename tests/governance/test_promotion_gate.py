@@ -1,4 +1,4 @@
-"""R0147 promotion gate -- what evidence buys what expansion, fixed before the evidence exists.
+"""R0150 promotion gate -- what evidence buys what expansion, fixed before the evidence exists.
 
 The kill condition gave the sleeve a defined way to DIE. Without this it had no defined way to
 GROW, which makes expansion an improvised decision taken in the mood of a good week -- and a week
