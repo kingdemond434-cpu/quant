@@ -295,7 +295,9 @@ hypotheses and EV-score them; only the top few enter research.
 - **Fixes shipped 2026-07-16** (CI ALL GREEN; regression tests in
   `tests/execution/test_executor_sizing.py`): hard cap (never re-inflate; cash remainder),
   free-capital sizing, `quote_depth()` thin-book guard on BOTH entry legs (≥5× order notional
-  within 1% of touch), idle-under-KILL. Originals in `*.bak-20260716`.
+  within 1% of touch), idle-under-KILL. Originals in `docs/archive/pre-hardening-20260716/`
+  (moved off the scripts/libs surface 2026-07-31; 5 of 7 `.bak` blobs existed nowhere in git
+  history, so they were archived INTO git rather than deleted — the 2 duplicates were deleted).
 - **The rail worked.** First true fire, zero human latency mattered, flatten executed, page sent.
   The 2026-07-12 external-review hardening (single-writer, versioned state) held: no double-fire,
   no zombie writer. Reset remains the principal's documented operator action
