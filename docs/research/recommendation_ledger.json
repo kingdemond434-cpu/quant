@@ -2139,11 +2139,11 @@
    "summary": "L1.36 law gate ordered its CONSUMER before its PRODUCER: check_law_families reads data/enforcement_matrix.json, which build_enforcement_matrix writes and .gitignore excludes -- so the gate was green on any machine that had run it before and RED on every clean checkout. Master CI failed 10 consecutive runs on 'BREACH check_law_families.py (rc=2)' for commits that passed locally. Reordered producer-first; pinned by test.",
    "roi_bps": null,
    "raised": "2026-07-31T18:24:11.992788+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "fixed and pushed on claude/wonderful-darwin-7uiobi; verified on a fresh worktree with data/ stripped -- law gate PASS on the FIRST run, ruff clean, mypy clean over 389 files, pytest exit 0",
+   "commit": "469d572",
    "due": null,
-   "disposed": null
+   "disposed": "2026-07-31T18:28:16.484706+00:00"
   },
   {
    "id": "R0177",
@@ -2151,11 +2151,11 @@
    "summary": "check_law_families swallowed a missing enforcement matrix into 'enforced = {}', so an ABSENT INPUT arrived at the comparison as 'the matrix says not one of these 65 laws has a fence' -- all six families reported DECORATIVE, the fence's most alarming state, with the real cause printed nowhere. Missing input now reports UNMEASURED with the cause named, still exit 2.",
    "roi_bps": null,
    "raised": "2026-07-31T18:24:22.958107+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "fixed and pushed on claude/wonderful-darwin-7uiobi; verified on a fresh worktree with data/ stripped -- law gate PASS on the FIRST run, ruff clean, mypy clean over 389 files, pytest exit 0",
+   "commit": "469d572",
    "due": null,
-   "disposed": null
+   "disposed": "2026-07-31T18:28:16.532536+00:00"
   },
   {
    "id": "R0178",
@@ -2163,11 +2163,11 @@
    "summary": "L1.44 read_fresh resolved relative paths against an internally-guessed install root instead of cwd, making it the only reader in its own process consuming a different install's artifacts than the cwd-relative reads beside it. Broke test_guard_consumes_fresh_artifact outright and made its two neighbours pass while scoring production state instead of their fixtures. Now cwd, with QUANT_FRESH_ROOT as the explicit override.",
    "roi_bps": null,
    "raised": "2026-07-31T18:24:23.012602+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "fixed and pushed on claude/wonderful-darwin-7uiobi; verified on a fresh worktree with data/ stripped -- law gate PASS on the FIRST run, ruff clean, mypy clean over 389 files, pytest exit 0",
+   "commit": "469d572",
    "due": null,
-   "disposed": null
+   "disposed": "2026-07-31T18:28:16.582966+00:00"
   },
   {
    "id": "R0179",
@@ -2175,11 +2175,11 @@
    "summary": "tests/governance/test_law_families.py read the gitignored generated enforcement matrix without building it, so it passed only on a machine that had already built it -- on CI solely because an earlier workflow step happened to run the builder first. Now builds its own input via an autouse fixture.",
    "roi_bps": null,
    "raised": "2026-07-31T18:24:23.080254+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "fixed and pushed on claude/wonderful-darwin-7uiobi; verified on a fresh worktree with data/ stripped -- law gate PASS on the FIRST run, ruff clean, mypy clean over 389 files, pytest exit 0",
+   "commit": "469d572",
    "due": null,
-   "disposed": null
+   "disposed": "2026-07-31T18:28:16.629571+00:00"
   },
   {
    "id": "R0180",
@@ -2187,11 +2187,11 @@
    "summary": "Four mypy --strict errors under the CI-resolved mypy (unpinned >=1.10, resolving to 2.3.0) in equivalent_mutants, positive_control x2 and crypto_source. CI never reached the mypy step because the law gate failed first, so these were a second red waiting behind the first.",
    "roi_bps": null,
    "raised": "2026-07-31T18:24:23.140151+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "fixed and pushed on claude/wonderful-darwin-7uiobi; verified on a fresh worktree with data/ stripped -- law gate PASS on the FIRST run, ruff clean, mypy clean over 389 files, pytest exit 0",
+   "commit": "469d572",
    "due": null,
-   "disposed": null
+   "disposed": "2026-07-31T18:28:16.677376+00:00"
   }
  ]
 }
