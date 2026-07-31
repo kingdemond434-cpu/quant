@@ -211,7 +211,7 @@ def main() -> int:
         print(f"organ liveness (L1.28c): {rep['status']} -- {rep['detail'][:200]}")
         for o in rep["organs"]:
             if o["state"] != "FRESH":
-                print(f"  {o['state']:<16}{str(o['script']):<38}"
+                print(f"  {o['state']:<16}{o['script']!s:<38}"
                       f"age={o['age_h']} tol={o['tolerance_h']}h")
     if args.report_only:
         return 0

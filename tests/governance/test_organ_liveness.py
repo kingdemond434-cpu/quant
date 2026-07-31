@@ -6,9 +6,16 @@ because the board was only checking that the LINE existed.
 """
 from __future__ import annotations
 
+import os
 import time
 
-from scripts.check_organ_liveness import MIN_TOLERANCE_H, STALE_MULTIPLE, audit, cadence_hours, parse_manifest
+from scripts.check_organ_liveness import (
+    MIN_TOLERANCE_H,
+    STALE_MULTIPLE,
+    audit,
+    cadence_hours,
+    parse_manifest,
+)
 
 _MAN = """# EVIDENCE: scripts/a.py -> data/a.json; docs/CONSTITUTION.md L1.1
 0 * * * * cd "$Q" && python scripts/a.py
@@ -39,11 +46,11 @@ def test_cadence_is_derived_from_the_cron_expression():
 def test_an_organ_that_never_wrote_its_artifact_is_distinguished_from_one_that_stopped(tmp_path):
     # Different diagnoses -- NEVER-PRODUCED is wiring, STALE is auth/quota/upstream. Collapsing
     # them sends someone to debug the wrong thing.
-    (tmp_path / "ops").mkdir(); (tmp_path / "data").mkdir()
+    (tmp_path / "ops").mkdir()
+    (tmp_path / "data").mkdir()
     (tmp_path / "ops/crontab.manifest").write_text(_MAN)
     (tmp_path / "data/b.json").write_text("{}")
     old = time.time() - 500 * 3600
-    import os
     os.utime(tmp_path / "data/b.json", (old, old))
     rep = audit(tmp_path)
     states = {o["script"]: o["state"] for o in rep["organs"]}
@@ -54,7 +61,8 @@ def test_an_organ_that_never_wrote_its_artifact_is_distinguished_from_one_that_s
 
 
 def test_a_fresh_organ_passes(tmp_path):
-    (tmp_path / "ops").mkdir(); (tmp_path / "data").mkdir()
+    (tmp_path / "ops").mkdir()
+    (tmp_path / "data").mkdir()
     (tmp_path / "ops/crontab.manifest").write_text(_MAN)
     for f in ("a.json", "b.json"):
         (tmp_path / "data" / f).write_text("{}")
@@ -64,9 +72,9 @@ def test_a_fresh_organ_passes(tmp_path):
 
 def test_tolerance_is_loose_enough_that_one_missed_tick_is_not_a_failure(tmp_path):
     # A board that is red most mornings is a board nobody reads.
-    (tmp_path / "ops").mkdir(); (tmp_path / "data").mkdir()
+    (tmp_path / "ops").mkdir()
+    (tmp_path / "data").mkdir()
     (tmp_path / "ops/crontab.manifest").write_text(_MAN)
-    import os
     (tmp_path / "data/a.json").write_text("{}")
     (tmp_path / "data/b.json").write_text("{}")
     missed_one = time.time() - 1.5 * 3600          # hourly organ, one tick late
