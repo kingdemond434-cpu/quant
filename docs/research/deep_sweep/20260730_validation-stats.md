@@ -1,6 +1,6 @@
 # WEEKLY DEEP COLD AUDIT — validation-stats — 2026-07-30
 
-_Status: IN PROGRESS (skeleton written first per COMPLETION CONTRACT; findings appended as verified)._
+_Status: SUPERSEDED — this run died as a skeleton (never flipped COMPLETE). Its declared plan was inherited in full and executed by `20260731_validation-stats.md` (STATUS: COMPLETE). Marked by the 2026-07-31 synthesis seat at the completing auditor's request so the runner never re-queues this file._
 
 **Subsystem scope:** selection bias, multiple testing, parameter sensitivity, sample dependence,
 walk-forward + CV methodology, regime robustness, distributional assumptions, uncertainty

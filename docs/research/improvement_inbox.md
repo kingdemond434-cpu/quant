@@ -1191,3 +1191,22 @@ wired, guard checks existence rather than function.**
 not a 32-gate big bang); add a repo-wide max_audit check that every published verdict/threshold has a consumer.
 **ROI:** this is the generator of the failure class — fixing instances individually leaves it intact.
 **Dependencies:** none. **Retirement:** none; each predicate must be satisfiable by a stated reachable state.
+
+---
+
+## 2026-07-31 — WEEKLY DEEP COLD AUDIT SYNTHESIS (pointer entry; the LEDGER is canonical)
+
+**What:** 8/8 subsystem audits completed (first time ever); synthesis at
+`docs/research/deep_sweep/20260731_SYNTHESIS.md`. Per the desk's own measurement this inbox is a
+write-only store (meta M4), so the full portfolio was rowed into `scripts/recommendations.py` as
+**R0070–R0095** (26 bundled items, each naming its covered finding IDs) — work THOSE rows; this
+entry exists to satisfy the synthesis prompt and to leave a paper trail.
+**Evidence headline:** gauntlet certification (first 7 rows): true-SR 2.0 AND 3.0 controls FAIL both
+paths on every seed; SR 5.0 passes per-candidate — the screen is measured WELDED (R0077 acts on it).
+**Top of portfolio:** P0-1 scheduler de-dup before 06:40Z collision (R0070) · P0-2 launch money-path
+(ruin rail loosens ~89% at inception as wired; R0071) · P0-3 PAT/bind security pair (R0072) · P0-4
+moat backup, ~29-day disk fuse (R0073) · P1 multipliers: read-implies-writer class check (R0074) +
+repair wire for a queue at λ/μ≈4 (R0075).
+**ROI:** the two P1 multipliers claim the spread between build-rate and convert-rate for every future
+finding. **Dependencies:** four principal decisions bundled on PRINCIPAL_ACTION. **Retirement:** this
+entry retires when R0070–R0095 reach dispositions.
