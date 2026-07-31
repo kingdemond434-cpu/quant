@@ -1007,3 +1007,20 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # EVIDENCE: scripts/check_organ_liveness.py -> data/organ_liveness.json
 # CONFIDENCE: committed-script (new this cycle; two parse bugs caught by its own tests first)
 50 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_liveness.lock .venv/bin/python scripts/check_organ_liveness.py --report-only >> data/cro_ai_logs/liveness.log 2>&1
+
+# PROMOTION GATE (R0147): what evidence buys what expansion, fixed BEFORE the evidence exists.
+# The kill condition (R0142) gave the sleeve a defined way to DIE; without this it had no defined
+# way to GROW, which makes expansion an improvised decision taken in the mood of a good week --
+# the exact moment that decision is worst. THE TRAP IT CLOSES: 50 trades in seven days is ONE
+# REGIME, and cadence can manufacture sample size but never calendar time, so every rung requires
+# BOTH. RUNG 1 (50 closed + 14 days + hit above the 31.1pct cost-adjusted breakeven + attribution
+# clean) raises the per-trade cap from the 6pct floor to measured half-Kelly, still PAPER. RUNG 2
+# (100 + 30d + beats buy-and-hold + calibration informative) is the first LIVE money at 1pct of
+# book -- small because paper-to-live is where unmodelled slippage appears, and that should cost
+# tuition not capital. RUNG 3 5pct, RUNG 4 15pct and that is the ceiling for one sleeve. NO
+# SKIPPING: meeting a later rung's counts while failing an earlier benchmark grants the EARLIER
+# rung. UNMEASURED never passes -- a promotion granted by a broken reader is the worst failure
+# this organ could have. HOURLY with the other live-state fences.
+# EVIDENCE: scripts/check_promotion_gate.py -> data/promotion_gate.json
+# CONFIDENCE: committed-script (new this cycle)
+55 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_promotion.lock .venv/bin/python scripts/check_promotion_gate.py >> data/cro_ai_logs/promotion.log 2>&1

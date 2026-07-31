@@ -74,6 +74,7 @@ _GOVERNED: tuple[str, ...] = (
     "run_calibration_probe.py",
     "check_return_targeting.py",
     "check_organ_liveness.py",
+    "check_promotion_gate.py",
 )
 
 #: Organs that legitimately owe no cron line, with the reason. "No schedule" must be a DECISION.
