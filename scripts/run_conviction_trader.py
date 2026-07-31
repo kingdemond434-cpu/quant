@@ -145,11 +145,33 @@ MAX_PEAK_STRESS_LOSS = 0.60            # the full pyramid is allowed slightly mo
 #:                                       pyramid may give back its own open gains in a cascade --
 #:                                       never the starting stake.
 
-#: The pyramid: (trigger in R, units added). Each rung first TRAILS the stop one R behind, THEN
-#: adds -- which is why open risk falls as size grows. Deliberately geometric-decaying: the trend
-#: that has already run 2R has less remaining runway than the one that just started, so the adds
-#: get smaller, not larger. Peak exposure 1.75u.
-ADD_LADDER: tuple[tuple[float, float], ...] = ((1.0, 0.50), (2.0, 0.25))
+#: The pyramid: units added at each rung. Each rung first TRAILS the stop one TRAIL DISTANCE
+#: behind, THEN adds -- which is why open risk falls as size grows. Deliberately geometric-
+#: decaying: the trend that has already run two rungs has less remaining runway than the one that
+#: just started, so the adds get smaller, not larger. Peak exposure 1.75u.
+ADD_UNITS: tuple[float, ...] = (0.50, 0.25)
+
+#: THE TRAIL DISTANCE, and the third flat constant that turned out to be a defect. The ladder used
+#: to trail exactly 1R behind, which means the breakeven move at +1R leaves the stop one R from
+#: price -- and since the entry stop is allowed to sit AT the noise floor, that trailed stop sits
+#: at the noise floor too. It has to pass the same test the entry stop passes, and it did not.
+#:
+#: So the trail is max(1R, 1.5x the measured noise), and the rungs are spaced one trail distance
+#: apart so each rung's stop lands exactly where the previous rung triggered. When the noise floor
+#: is not binding this reduces EXACTLY to the old 1R ladder; it only ever gives the trade room it
+#: measurably needs. That is a GENERALISATION of the old rule, not a different design.
+#:
+#: EVIDENCE STATUS, stated plainly because the temptation is to imply otherwise: this change is
+#: derived from a principle (every stop in the ladder passes the same noise test), NOT fitted to
+#: an outcome, and on the one trade marked so far it did not help -- the 1.5%-stop variant went
+#: from -0.19R to -0.22R. n=1 in both directions is nothing. It is kept because it is consistent
+#: and reduces to the prior behaviour when noise is not binding, and it stays on the forward clock
+#: like everything else. Do not read it as a fix that has been shown to work.
+#:
+#: What that same marking DID establish is separate and larger: at every stop width where the
+#: trade survived (2%+), it was still OPEN at a positive R when the 30h horizon expired. The
+#: binding constraint on that trade was the HORIZON, not the stop and not the trail.
+NOISE_TRAIL_MULT = 1.5
 
 #: A stop is only "calculated" if it sits at something the market drew. This vocabulary is how the
 #: fence tells a structural level from a number someone liked. Kept broad on purpose -- a false
@@ -234,7 +256,8 @@ def derive_stop_pct(entry_ref: float, invalidation: float, direction: str) -> tu
 
 
 def management_plan(entry: float, invalidation: float, direction: str, *,
-                    risk_fraction: float, leverage: float) -> dict[str, Any]:
+                    risk_fraction: float, leverage: float,
+                    noise_pct: float | None = None) -> dict[str, Any]:
     """"PUT TRADES UNTIL THE TREND AND SWING HITS" -- the trail-and-pyramid ladder, computed.
 
     Every stage's open risk and locked profit are COMPUTED from the tranche book, not asserted, so
@@ -248,18 +271,27 @@ def management_plan(entry: float, invalidation: float, direction: str, *,
         return {"status": "UNPLANNABLE", "why": "zero-width R -- entry equals invalidation"}
     stop_pct = r / entry * 100.0
 
+    # THE TRAIL must clear the noise for the same reason the entry stop must: a stop inside the
+    # wiggle exits a correct thesis. Rungs are spaced one trail distance apart so each rung's stop
+    # lands exactly where the previous rung triggered -- with no noise floor this is the old 1R
+    # ladder unchanged.
+    trail = r if noise_pct is None else max(r, NOISE_TRAIL_MULT * (noise_pct / 100.0) * entry)
+
     # The pyramid gets the same gap-stress test as the entry, at the looser peak bound: the adds
     # only ever go on once the earlier tranches are stopped at or above breakeven, so a cascade
     # through the trail hits size that is no longer risking the entry budget. If the full ladder
     # would breach it, the ADDS shrink -- never the rail.
     peak_cap = min(MAX_LEVERAGE, slip_leverage_cap(stop_pct, stress_loss=MAX_PEAK_STRESS_LOSS))
-    raw_peak_units = 1.0 + sum(u for _, u in ADD_LADDER)
+    raw_peak_units = 1.0 + sum(ADD_UNITS)
     add_scale = 1.0
     if leverage > 0 and leverage * raw_peak_units > peak_cap:
         add_scale = max(0.0, min(1.0, (peak_cap / leverage - 1.0) / (raw_peak_units - 1.0)))
 
     def at(mult: float) -> float:                            # price at +mult R in the trade's favour
         return entry + sign * r * mult
+
+    def rung(k: float) -> float:                             # price k trail-distances in favour
+        return entry + sign * trail * k
 
     tranches: list[tuple[float, float]] = [(entry, 1.0)]     # (entry price, units)
 
@@ -276,25 +308,26 @@ def management_plan(entry: float, invalidation: float, direction: str, *,
         "units": 1.0, "notional_leverage": round(leverage, 2),
         "open_risk_frac": orisk, "locked_profit_frac": olock}]
 
-    for trig_r, add_raw in ADD_LADDER:
+    for k, add_raw in enumerate(ADD_UNITS, start=1):
         add_u = round(add_raw * add_scale, 4)
-        stop = at(trig_r - 1.0)                              # trail ONE R behind, then add
-        tranches.append((at(trig_r), add_u))
+        stop = rung(k - 1)                                   # trail ONE trail-distance behind
+        tranches.append((rung(k), add_u))
         units = sum(u for _, u in tranches)
         orisk, olock = book(stop)
-        where = "breakeven" if trig_r <= 1.0 else f"+{trig_r - 1.0:g}R"
+        where = "breakeven" if k == 1 else f"the +{k - 1} rung"
         stages.append({
-            "at_R": trig_r, "trigger": round(at(trig_r), 8), "stop": round(stop, 8),
+            "at_R": round(trail * k / r, 3), "trigger": round(rung(k), 8), "stop": round(stop, 8),
             "action": f"TRAIL stop to {where}, THEN ADD {add_u:.2f}u (risk falls as size grows)",
             "units": round(units, 2), "notional_leverage": round(leverage * units, 2),
             "open_risk_frac": orisk, "locked_profit_frac": olock})
 
-    final_r = ADD_LADDER[-1][0] + 1.0
-    stop = at(final_r - 1.0)
+    final_k = len(ADD_UNITS) + 1
+    stop = rung(final_k - 1)
     orisk, olock = book(stop)
     units = sum(u for _, u in tranches)
     stages.append({
-        "at_R": final_r, "trigger": round(at(final_r), 8), "stop": round(stop, 8),
+        "at_R": round(trail * final_k / r, 3), "trigger": round(rung(final_k), 8),
+        "stop": round(stop, 8),
         "action": "TRAIL behind each new swing as it forms; NO further adds, NO fixed target -- "
                   "hold until price closes back through the trailing structure",
         "units": round(units, 2), "notional_leverage": round(leverage * units, 2),
@@ -304,6 +337,8 @@ def management_plan(entry: float, invalidation: float, direction: str, *,
     return {
         "status": "OK" if add_scale >= 1.0 else "PYRAMID-SCALED",
         "r_price": round(r, 8), "stop_pct": round(stop_pct, 4),
+        "trail_price": round(trail, 8), "trail_R": round(trail / r, 3),
+        "trail_source": "noise-widened" if trail > r * 1.000001 else "1R (noise not binding)",
         "peak_units": round(units, 2), "peak_leverage": round(peak, 2),
         "peak_leverage_cap": round(peak_cap, 2), "add_scale": round(add_scale, 4),
         "peak_stress_loss": round(peak * (stop_pct + SLIP_STRESS_PCT) / 100.0, 4),
@@ -571,7 +606,8 @@ def validate(call: dict[str, Any], *, noise: dict[str, Any] | None = None) -> tu
     return True, "accepted"
 
 
-def record(root: Path, call: dict[str, Any]) -> dict[str, Any]:
+def record(root: Path, call: dict[str, Any], *,
+           noise: dict[str, Any] | None = None) -> dict[str, Any]:
     now = datetime.now(tz=UTC)
     entry, inval = float(call["entry_ref"]), float(call["invalidation"])
     stop_pct, why = derive_stop_pct(entry, inval, call["direction"])
@@ -579,11 +615,15 @@ def record(root: Path, call: dict[str, Any]) -> dict[str, Any]:
         raise ValueError(why)
     sizing = kelly_leverage(float(call["probability"]),
                             float(call["expected_move_pct"]) / stop_pct, stop_pct)
+    noise_pct = (float(noise["median_adverse_pct"])
+                 if noise and noise.get("state") == "MEASURED"
+                 and noise.get("median_adverse_pct") is not None else None)
     plan = management_plan(entry, inval, call["direction"],
-                           risk_fraction=sizing["risk_fraction"], leverage=sizing["leverage"])
+                           risk_fraction=sizing["risk_fraction"], leverage=sizing["leverage"],
+                           noise_pct=noise_pct)
     row = {**call, "at": now.isoformat(), "paper": True, "stop_pct": round(stop_pct, 4),
            "stop_source": "DERIVED from the named invalidation level", "sizing": sizing,
-           "management": plan,
+           "noise": noise, "management": plan,
            "resolve_by": (now + timedelta(hours=float(call["horizon_hours"]))).isoformat()}
     p = root / _BOOK
     p.parent.mkdir(parents=True, exist_ok=True)
@@ -669,7 +709,7 @@ def main() -> int:
         elif call.get("action") == "PASS":
             state = {"status": "PASS", "why": why}
         else:
-            row = record(_ROOT, call)
+            row = record(_ROOT, call, noise=noise)
             state = {"status": "TRADE", "why": why, "call": row,
                      "leverage": row["sizing"]["leverage"],
                      "peak_leverage": row["management"].get("peak_leverage"), "noise": noise}

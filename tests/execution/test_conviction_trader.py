@@ -323,3 +323,42 @@ def test_the_constraint_is_published_but_the_reward_is_not():
     low = _BRIEF.lower()
     for leak in ("kelly", "max_risk_per_tra", "slip_stress", "sizing optimum", "1.3-2"):
         assert leak not in low.replace("fractional-kelly against your probability", "")
+
+
+def test_the_trail_clears_the_noise_too_not_just_the_entry_stop():
+    # Consistency: a stop moved to breakeven at +1R sits one R from price, and the entry stop is
+    # allowed to sit AT the noise floor -- so the trailed stop has to pass the same test.
+    s = kelly_leverage(0.63, 2.0, 2.0)
+    tight = management_plan(100.0, 98.0, "LONG", risk_fraction=s["risk_fraction"],
+                            leverage=s["leverage"], noise_pct=2.5)      # noise > 1R
+    assert tight["trail_R"] > 1.0 and tight["trail_source"] == "noise-widened"
+    # each rung's stop lands exactly where the previous rung triggered
+    st = tight["stages"]
+    for a, b in zip(st, st[1:]):
+        assert abs(b["stop"] - a["trigger"]) < 1e-6
+
+
+def test_a_quiet_instrument_reduces_exactly_to_the_old_one_R_ladder():
+    # The change is a GENERALISATION, not a different design: when noise is not binding, nothing
+    # about the ladder moves.
+    s = kelly_leverage(0.63, 2.0, 2.0)
+    base = management_plan(100.0, 98.0, "LONG", risk_fraction=s["risk_fraction"],
+                           leverage=s["leverage"])
+    quiet = management_plan(100.0, 98.0, "LONG", risk_fraction=s["risk_fraction"],
+                            leverage=s["leverage"], noise_pct=0.4)      # 1.5*0.4% < 2% stop
+    assert quiet["trail_source"].startswith("1R")
+    assert [x["stop"] for x in base["stages"]] == [x["stop"] for x in quiet["stages"]]
+    assert [x["trigger"] for x in base["stages"]] == [x["trigger"] for x in quiet["stages"]]
+
+
+def test_the_widened_trail_keeps_every_downside_invariant():
+    # Giving the trade room must not quietly give back the asymmetry it was built for.
+    s = kelly_leverage(0.63, 2.0, 2.0)
+    for noise in (None, 2.5, 4.0):
+        st = management_plan(100.0, 98.0, "LONG", risk_fraction=s["risk_fraction"],
+                             leverage=s["leverage"], noise_pct=noise)["stages"]
+        risks = [x["open_risk_frac"] for x in st]
+        assert risks == sorted(risks, reverse=True) and risks[0] == max(risks)
+        assert risks[-1] == 0.0
+        assert [x["stop"] for x in st] == sorted(x["stop"] for x in st)
+        assert [x["units"] for x in st] == sorted(x["units"] for x in st)
