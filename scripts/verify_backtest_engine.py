@@ -94,7 +94,7 @@ def main(argv: list[str] | None = None) -> int:
         except VerificationError as e:
             failures += 1
             results.append({"case": name, "ok": False, "error": str(e)[:300]})
-        except Exception as e:                           # noqa: BLE001 - report, never crash cron
+        except Exception as e:
             failures += 1
             results.append({"case": name, "ok": False,
                             "error": f"{type(e).__name__}: {str(e)[:200]}"})

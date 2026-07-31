@@ -309,20 +309,21 @@ def _churn_guard(held_h: float, funding: float, rail_forced: bool) -> bool:
 # exchange DEFAULT rate -- i.e. names with no funding premium whatsoever -- and paid a full
 # round-trip for them. Those 50 trades ate ~80% of the desk's gross profit.
 #
-# DERIVATION (not a fitted constant): a carry must out-earn its round-trip over the minimum
-# hold. Measured median pair round-trip is ~4.5 bps (run_cost_model.py); the minimum hold is
-# 24h = 3 funding periods. Break-even funding = 4.5 / 3 = 1.5 bps = 0.00015 per 8h.
-_MIN_FUNDING = 0.00015          # per-8h floor: below this a carry cannot pay for its own exit
-# FAIL CLOSED (2026-07-27). Was 4.5 = the desk MEDIAN, which sits at only the 43rd percentile
-# of measured round-trips (median 5.7, p75 21.3, p90 39.5, max 130.5 across 30 symbols).
-# 'Unmeasured' is NOT a random subset: a symbol is missing from the cost model BECAUSE it is
-# too illiquid to measure -- i.e. it is the expensive tail. Assigning it the median was a
-# fail-open on exactly the worst books (this file already records NOM -149bps, KNC -211bps).
-# Worse, at 4.5 with a 24h hold the gate required funding > 4.5/3e4 = 0.00015 = _MIN_FUNDING
-# exactly, so the cost gate added NOTHING beyond the existing floor -- it was decorative.
-# p90 makes the unmeasured case pessimistic: a symbol must prove it is cheap (by being
-# measured) before it can clear the bar. Raising it can only REFUSE NEW OPENS -- _entry_gate
-# is never applied to the hold/target set, so this cannot force-close anything.
+# _MIN_FUNDING DELETED 2026-07-31 (R0057). The absolute per-8h floor (0.00015, derived from the
+# desk-MEDIAN round-trip when the cost gate still used the median default) became redundant the
+# day the cost gate went per-symbol with a p90 fail-closed default: unmeasured names now need
+# funding > 39.5/3e4 = 0.000132 anyway, and thin proven losers are on the bleed denylist. The
+# floor's only remaining effect, measured 2026-07-30: vetoing the 4 net-positive MAJORS (tight
+# measured books whose funding capture beats their own round-trip below 0.00015) -- 245/245
+# candidates rejected with the floor on. Protection lives in the per-symbol check below.
+# FAIL CLOSED (2026-07-27). Default was 4.5 = the desk MEDIAN, which sits at only the 43rd
+# percentile of measured round-trips (median 5.7, p75 21.3, p90 39.5, max 130.5 across 30
+# symbols). 'Unmeasured' is NOT a random subset: a symbol is missing from the cost model
+# BECAUSE it is too illiquid to measure -- i.e. it is the expensive tail. Assigning it the
+# median was a fail-open on exactly the worst books (this file already records NOM -149bps,
+# KNC -211bps). p90 makes the unmeasured case pessimistic: a symbol must prove it is cheap
+# (by being measured) before it can clear the bar. Raising it can only REFUSE NEW OPENS --
+# _entry_gate is never applied to the hold/target set, so this cannot force-close anything.
 _DEFAULT_RT_BPS = 39.5          # p90 of measured pair round-trip; pessimistic when unmeasured
 _COST_MODEL = Path("data/cost_model.json")
 _FORENSICS = Path("web/trade_forensics.json")
@@ -373,8 +374,6 @@ def _entry_gate(sym: str, funding: float, min_hold_h: float = _MIN_HOLD_H) -> bo
     can never force-close existing carries (that would itself be a churn event)."""
     if _structurally_bleeding(sym):
         return False                      # proven money-loser: never re-open it
-    if funding < _MIN_FUNDING:
-        return False
     periods = max(1.0, min_hold_h / 8.0)
     return funding * 1e4 * periods > _rt_bps(sym)
 

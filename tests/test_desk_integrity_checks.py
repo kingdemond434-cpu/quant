@@ -128,19 +128,89 @@ class TestOrphanScripts:
                           ["wired.py"])
         assert _run(monkeypatch, root, m.check_orphan_scripts) == []
 
-    def test_page_digest_is_reported_not_silently_wired(self) -> None:
-        """It calls itself a daily job and is in no cadence -- REPORT that, do not wire it.
+    def test_page_digest_is_governed_not_orphaned(self) -> None:
+        """HISTORY: this lock originally asserted the OPPOSITE -- that `page_digest.py` must be
+        REPORTED as an orphan, because wiring an unverified pager into a cadence was the
+        principal's decision to make. On 2026-07-31 the red test surfaced that the decision had
+        already been overtaken by events: the script had been firing daily from the LEGACY live
+        crontab since ~07-27 (data/cro_ai_logs/digest_page.log shows 4 fires), and the 07-30
+        manifest port recorded that line into ops/crontab.manifest, which silenced the detector.
+        The drift was surfaced to the principal (page + ledger 2026-07-31) rather than blessed
+        silently; the digest itself answers his own ask ("report findings when I'm not there").
 
-        Wiring another account's unverified pager into a daily cadence is how you turn one
-        unnoticed script into daily spam, and register #3 is literally "pager delivery
-        unverified". The detector's job is to surface it; the decision is the principal's."""
+        The invariant this lock now protects is the inverse failure: the digest cadence must
+        stay GOVERNED -- present in the manifest (so §36 owns it) and therefore NOT reported as
+        an orphan. Silent UNwiring (dropping the manifest line without a decision) turns the
+        principal's one daily visibility channel off with no diff anyone reviews; that is the
+        new way to lose this quietly."""
+        manifest = (m.ROOT / "ops/crontab.manifest").read_text("utf-8", errors="ignore")
+        assert "page_digest.py" in manifest, "digest cadence dropped from the manifest"
         out: list[tuple[str, str]] = []
         m.check_orphan_scripts(out)
-        assert any("page_digest.py" in msg for _, msg in out)
+        assert not any("page_digest.py" in msg for _, msg in out)
 
     def test_a_declared_oneshot_is_exempt(self, tmp_path, monkeypatch) -> None:
         root = self._tree(tmp_path, {"wired.py": "", "pull_cme.py": ""}, ["wired.py"])
         assert _run(monkeypatch, root, m.check_orphan_scripts) == []
+
+
+class TestRecommendationRows:
+    """§42 X1 (2026-07-31): overdue ledger rows surface as carry-over-trackable defects.
+
+    The wire this locks: before it existed, no recommendation row older than 3.67 days had ever
+    been implemented, because nothing re-surfaced rows across session boundaries. These tests pin
+    the per-row stable IDs (what the §37 sweep ledger tracks), the 24h grace, the scheduled-due
+    semantics, and parity with the CLI's own constants."""
+
+    @staticmethod
+    def _iso(hours_ago: float) -> str:
+        from datetime import UTC, datetime, timedelta
+        return (datetime.now(tz=UTC) - timedelta(hours=hours_ago)).isoformat()
+
+    def _run(self, tmp_path, monkeypatch, rows):
+        led = tmp_path / "docs/research/recommendation_ledger.json"
+        led.parent.mkdir(parents=True)
+        led.write_text(json.dumps({"recommendations": rows}), "utf-8")
+        monkeypatch.setattr(m, "ROOT", tmp_path)
+        out: list[tuple[str, str]] = []
+        m.check_recommendation_rows(out)
+        return out
+
+    def test_fresh_open_row_is_within_grace(self, tmp_path, monkeypatch) -> None:
+        out = self._run(tmp_path, monkeypatch, [
+            {"id": "R0001", "status": "open", "raised": self._iso(2), "summary": "s"}])
+        assert out == []
+
+    def test_stale_open_row_fires_per_row_and_summary(self, tmp_path, monkeypatch) -> None:
+        out = self._run(tmp_path, monkeypatch, [
+            {"id": "R0001", "status": "open", "raised": self._iso(72),
+             "summary": "fix the thing", "source": "cycle"}])
+        ids = [k for k, _ in out]
+        assert "rec-owed-R0001" in ids
+        assert "rec-ledger-backlog" in ids
+
+    def test_scheduled_past_due_fires_and_future_does_not(self, tmp_path, monkeypatch) -> None:
+        out = self._run(tmp_path, monkeypatch, [
+            {"id": "R0001", "status": "scheduled", "raised": self._iso(72),
+             "due": "2020-01-01", "summary": "s"},
+            {"id": "R0002", "status": "scheduled", "raised": self._iso(72),
+             "due": "2099-01-01", "summary": "s"}])
+        ids = [k for k, _ in out]
+        assert "rec-owed-R0001" in ids
+        assert "rec-owed-R0002" not in ids
+
+    def test_terminal_rows_are_silent(self, tmp_path, monkeypatch) -> None:
+        out = self._run(tmp_path, monkeypatch, [
+            {"id": "R0001", "status": "implemented", "raised": self._iso(500), "summary": "s"},
+            {"id": "R0002", "status": "rejected", "raised": self._iso(500), "summary": "s"}])
+        assert out == []
+
+    def test_grace_matches_the_cli_source_of_truth(self) -> None:
+        """The check mirrors scripts/recommendations.py rather than importing it (max_audit
+        stays a standalone sweeper); this parity lock is what makes that duplication safe."""
+        import scripts.recommendations as rc
+        assert rc.GRACE_H == 24.0
+        assert set(rc._TERMINAL) == {"implemented", "rejected"}
 
 
 class TestLawNumbers:

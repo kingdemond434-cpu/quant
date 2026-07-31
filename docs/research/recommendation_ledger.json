@@ -19,10 +19,10 @@
    "roi_bps": null,
    "raised": "2026-07-26T11:34:30.251443+00:00",
    "status": "scheduled",
-   "reason": "Cut 31.5k->27.5k today by merging four genuinely redundant maximisation blocks. Reaching the 16k gate needs an architectural decision -- restructure the doctrine into principles-plus-pointers with procedures in referenced docs -- which deserves a focused pass, not a tail-end cleanup.",
+   "reason": "doctrine grew 27k->54k since this row was written; consolidation is careful editorial surgery on the law text (preserve every commitment, pass check_timidity_language) and was displaced today by money-path restoration + the X1 wire. Now enforced: this row sits in tomorrow's \u00a737 brief via rec-owed-R0002 with a survival count -- the fossilization pattern this row kept exhibiting is the thing X1 ends",
    "commit": null,
-   "due": "2026-07-27",
-   "disposed": "2026-07-26T11:53:17.481309+00:00"
+   "due": "2026-08-01",
+   "disposed": "2026-07-31T07:29:03.385201+00:00"
   },
   {
    "id": "R0003",
@@ -30,11 +30,11 @@
    "summary": "O1 data-moat: screen the desk's own L2 tape \u2014 build depth-imbalance panel from data/moat (microstructure.py has zero callers) and stage_a_screen it; crown-jewel dataset has 0 research artifacts in ~1 month of recording (converges with data-intelligence sweep's moat-extraction pilot)",
    "roi_bps": null,
    "raised": "2026-07-26T11:45:41.959734+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "mechanism-priored build on owned tape (26.4d accrued); queued behind money-path batch 08-01 and doctrine/knowledge compression 08-02",
    "commit": null,
-   "due": null,
-   "disposed": null,
+   "due": "2026-08-03",
+   "disposed": "2026-07-31T07:20:52.418844+00:00",
    "corrections": [
     {
      "was": "rejected",
@@ -52,11 +52,11 @@
    "summary": "O2 data-moat: wire hypothesis_novelty into live generation + compile ONE canonical machine graveyard (data/graveyard_priors.json) from graveyard.md+research_memory+526 candidate rows; PriorIdea constructed nowhere in production; validate first via E2 recall replay on the 420 campaign",
    "roi_bps": null,
    "raised": "2026-07-26T11:45:42.077509+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "novelty gate wire is research-engine top open item (day 7); needs the canonical machine graveyard compile; scheduled to the generation slot of next cycle",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-02",
+   "disposed": "2026-07-31T07:20:52.497283+00:00"
   },
   {
    "id": "R0005",
@@ -64,11 +64,11 @@
    "summary": "O3 data-moat: mechanism-priored cross-axis interaction screen (kimchi x funding, stablecoin x breadth, OI x regime); extraction law demands cross-feature interactions and no implementation exists; every cell a logged trial, no pair without written mechanism prior",
    "roi_bps": null,
    "raised": "2026-07-26T11:45:42.148635+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "requires stated mechanism priors per pair before any screen (multiplicity honesty); prior-writing scheduled after novelty-gate wire lands",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-05",
+   "disposed": "2026-07-31T07:20:52.577637+00:00"
   },
   {
    "id": "R0006",
@@ -76,11 +76,11 @@
    "summary": "O4 data-moat: append-only crypto_regime_history.jsonl (3 lines in classify_regime.py + deterministic backfill); desk destroys its own daily regime fingerprint by overwrite; hmm_gmm_agree=false with confidence=1.0 currently invisible",
    "roi_bps": null,
    "raised": "2026-07-26T11:45:42.213912+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "small append-only wire (3 lines + deterministic backfill) but touches classify_regime neighbours; bundled with 08-02 batch",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-02",
+   "disposed": "2026-07-31T07:20:52.647542+00:00"
   },
   {
    "id": "R0007",
@@ -88,11 +88,11 @@
    "summary": "O5 data-moat: event-study harness over owned event data (unlock_events, listings, liquidations + own tape around events); event-reconstruction moat class is empty while the data sits collected and idle",
    "roi_bps": null,
    "raised": "2026-07-26T11:45:42.272109+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "harness wired and producing: data/event_study_listings.json written 2026-07-31T02:45 by the scheduled run; libs/validation/event_study.py + listing_events pre-registration live",
+   "commit": "1c946ec",
    "due": null,
-   "disposed": null
+   "disposed": "2026-07-31T07:20:22.576263+00:00"
   },
   {
    "id": "R0008",
@@ -100,11 +100,11 @@
    "summary": "O6 data-moat: populate-or-retire the trials_ledger (0 rows in every DB while docstring claims nothing is validated without it; gauntlet no-ledger fallback n_trials=2) + build effective-vs-raw trial audit view from research_candidates rows (gate-optimality duty currently unauditable)",
    "roi_bps": null,
    "raised": "2026-07-26T11:45:42.344528+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "populate-or-retire decision needs the trials-accounting design review (V-series findings); bundled with stats batch",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-04",
+   "disposed": "2026-07-31T07:20:52.731718+00:00"
   },
   {
    "id": "R0009",
@@ -112,11 +112,11 @@
    "summary": "O7 data-moat hygiene: terminal-mark 340 phantom queued v1 campaign rows (frozen since 06-22) and regenerate web/discovery.json to actually mirror the full graveyard table (today it carries sleeve results only)",
    "roi_bps": null,
    "raised": "2026-07-26T11:45:42.421033+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "mechanical json hygiene (terminal-mark 340 frozen v1 rows); 20-minute task, next cycle's mechanical opener",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-01",
+   "disposed": "2026-07-31T07:20:52.798786+00:00"
   },
   {
    "id": "R0010",
@@ -136,11 +136,11 @@
    "summary": "ADJACENCY (proactive battery move 2): apply OP-031 (Wayback-CDX-replay the API path, not the HTML page) to every OTHER row-capped/rolling-window endpoint in data_universe_map.json. One instance is never one instance -- btc126's 177-row cap hid 414 recoverable days; any other capped free endpoint the desk catalogued is hiding history the same way.",
    "roi_bps": 0.0,
    "raised": "2026-07-26T15:27:35.842054+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "adjacency sweep over all archive-fetching collectors; process improvement, queued behind alpha-path work",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-06",
+   "disposed": "2026-07-31T07:20:52.869909+00:00"
   },
   {
    "id": "R0012",
@@ -148,11 +148,11 @@
    "summary": "Re-screen usdt_cny_otc_premium (axis #76) when the live recorder data/cny_premium.jsonl reaches n>=400 rows (~2027-06), at which point min-detectable IC falls ~0.157->0.098 and the observed |IC|=0.075 becomes testable. Until then: no clock, no Holm slot, no capital. Keep the desk's own recorder PRIMARY -- ChaiNext (original publisher) is NXDOMAIN and btc126 is an undocumented single-point-of-failure mirror.",
    "roi_bps": 0.0,
    "raised": "2026-07-26T15:27:36.032282+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "condition-gated: re-screen at n>=400 live rows; collector at ~9d of daily rows, ~400d horizon; due set to the expected condition date, not a wish",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-11-15",
+   "disposed": "2026-07-31T07:20:22.719968+00:00"
   },
   {
    "id": "R0013",
@@ -160,11 +160,11 @@
    "summary": "live_book.py:159 coerces a null funding_harvested to 0.0 via _num(), so the molded dashboard still shows a fabricated zero during a venue outage even though the executed book now emits funding_measured=false. Thread the measured flag through live_book.to_public().",
    "roi_bps": 0.0,
    "raised": "2026-07-26T20:26:09.605574+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "real small bug (null coerced to fabricated 0.0 on molded dashboard); scheduled next cycle with the money-path batch R0020/R0025/R0026",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-01",
+   "disposed": "2026-07-31T07:20:22.788087+00:00"
   },
   {
    "id": "R0014",
@@ -184,11 +184,11 @@
    "summary": "docs/research/deep_sweep/ now hosts TWO producers' output (the weekly deep cold audit AND the literature deep-miner's LIT_* files) under a single _FINDING_DOCS_EXCLUDED claim whose stated reason describes only the former. The routing argument happens to hold for both (LIT findings do reach improvement_inbox, e.g. #72 -> GAP row #79), but the exclusion should say so explicitly rather than covering a second organ by directory accident.",
    "roi_bps": 0.0,
    "raised": "2026-07-26T20:32:01.490912+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "artifact-governance hygiene (two producers one dir); low risk, batched with governance day",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-05",
+   "disposed": "2026-07-31T07:20:52.935944+00:00"
   },
   {
    "id": "R0016",
@@ -242,11 +242,11 @@
    "summary": "growth_audit must not certify utilization on a book that is unhedged or under a kill order -- add hedge-integrity + kill-state predicates to carry_capital_utilization so it cannot report 'OK -- fully deployed' on a burning book.",
    "roi_bps": 15.0,
    "raised": "2026-07-28T15:15:15.590903+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "growth_audit must not certify utilization on an unhedged/killed book; small guard + test, 08-02 batch",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-02",
+   "disposed": "2026-07-31T07:20:53.004559+00:00"
   },
   {
    "id": "R0020",
@@ -254,11 +254,11 @@
    "summary": "ADJACENCY: _mkt_or_limit reports 'order placed' as success, so _do() clears its reconcile-fail counter on a post-only order that may never fill -- a leg can sit unhedged with no alarm. Make the reconciler's success predicate goal-state (leg matched next tick), same fix shape as the close path.",
    "roi_bps": 10.0,
    "raised": "2026-07-28T15:15:15.668610+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "money-path semantics bug (placement clears reconcile-fail counter before fill); needs careful tests; next cycle top batch",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-01",
+   "disposed": "2026-07-31T07:20:22.859017+00:00"
   },
   {
    "id": "R0021",
@@ -290,11 +290,11 @@
    "summary": "EV GATE IS MIS-CALIBRATED (gate-optimality): docstring demands conservative est_sharpe while _EV_THRESHOLD=0.05 demands ~1.6+ at breadth 40, so honest scoring auto-rejects and optimistic scoring is rewarded. Either drop the threshold to admit the modest-but-broad decorrelated class, or replace the self-supplied est_sharpe prior with a tag-driven empirical prior from realized outcomes. Recalibrate against the carry reference (EV 0.1171).",
    "roi_bps": 30.0,
    "raised": "2026-07-28T15:24:55.879790+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "threshold recalibrated 0.05->0.002 with in-code derivation from the two measured reference classes; 3 lock-tests pin honest-carry QUEUE / junk REJECT / modest-honest QUEUE; re-tune only at n>=50 scored verdicts",
+   "commit": "7f1b3b1",
    "due": null,
-   "disposed": null
+   "disposed": "2026-07-31T07:29:03.176637+00:00"
   },
   {
    "id": "R0024",
@@ -302,11 +302,11 @@
    "summary": "libs/data/onchain_flows.py produces no artifact, making the documented verify-don't-trust diff against 15y CM backfill unexecutable. Either wire it to write a netflow series or retire the doc's NEXT STEP and grade the CM backfill's residual honestly.",
    "roi_bps": 5.0,
    "raised": "2026-07-28T15:24:55.959473+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "produce the artifact so the CM diff-verify can run; bundled with data-batch day",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-03",
+   "disposed": "2026-07-31T07:20:53.077764+00:00"
   },
   {
    "id": "R0025",
@@ -314,11 +314,11 @@
    "summary": "Cost-rate circuit breaker in the carry executor: pause OPENS (never closes) on a windowed fee-vs-harvest rate with an absolute-burn floor; fail-closed on opens since an open is always optional. Section 40 fired 27h before diagnosis with no authority to stop anything -- the only brake was the equity ruin rail at -35%, after the money was gone.",
    "roi_bps": 40.0,
    "raised": "2026-07-28T20:26:42.200986+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "book resumed trading today after R0057 -- the brake between fee-alarm and ruin rail is now the top defense-in-depth build; GAP98 spec exists",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-01",
+   "disposed": "2026-07-31T07:20:22.925631+00:00"
   },
   {
    "id": "R0026",
@@ -326,11 +326,11 @@
    "summary": "Root-cause the -51.74 bps price_pnl on delta-neutral carry round-trips (should be ~0): decompose into leg asymmetry vs entry/exit spread vs basis drift vs the naked-long-spot incident window. Decides whether the desk's only sleeve is viable; blocks any resume decision.",
    "roi_bps": 100.0,
    "raised": "2026-07-28T20:26:42.266235+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "gates the carry promotion decision (fast-track clock day 35/40); decomposition from owned fills, no new data needed",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-01",
+   "disposed": "2026-07-31T07:20:22.992619+00:00"
   },
   {
    "id": "R0027",
@@ -338,11 +338,11 @@
    "summary": "Extend fee attribution to SPOT-leg commission. /fapi income is futures-only, so every fee number the desk now produces is a labelled LOWER BOUND and the true round-trip cost is worse than measured.",
    "roi_bps": 15.0,
    "raised": "2026-07-28T20:26:42.334023+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "extend fee attribution to spot leg (current numbers are a stated LOWER BOUND); needed before any live-sizing decision but not before paper economics",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-03",
+   "disposed": "2026-07-31T07:20:53.143120+00:00"
   },
   {
    "id": "R0028",
@@ -350,11 +350,11 @@
    "summary": "institutional_knowledge.md is 596 lines against the constitution's ~200-line ACTIVE-lessons cap ('compress before adding'). I added this cycle's lessons without compressing -- stating it rather than hiding it. Distil aged entries into _PRIORS multipliers and one-line rules at the monthly memory-compression item; archive, never delete.",
    "roi_bps": 5.0,
    "raised": "2026-07-28T20:27:23.876601+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "596 lines vs ~200 cap; memory-consolidation cadence duty is also owed -- one editorial session covers both",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-02",
+   "disposed": "2026-07-31T07:20:53.212299+00:00"
   },
   {
    "id": "R0029",
@@ -362,11 +362,11 @@
    "summary": "ADJACENCY of the fee-blind defect (proactive battery move 2): libs/portfolio/live_book.py:102 computes the molded book's WIN RATE from the same fee-blind trade-log 'net' (price_pnl + est_funding, no commission term). A trade counts as a win when commission made it a net loss. Same failure shape, second organ -- one instance is never one instance. Plumb the venue-truth fee attribution built this cycle into live_book, or label the statistic fee-blind on the dashboard.",
    "roi_bps": 8.0,
    "raised": "2026-07-28T20:29:43.904909+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "fee-blind molded calc: same file and neighbours as R0013, bundled",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-02",
+   "disposed": "2026-07-31T07:20:53.281701+00:00"
   },
   {
    "id": "R0030",
@@ -374,11 +374,11 @@
    "summary": "GATE-OPTIMALITY, measured: stage_a_screen needs n_eff >= (1.96/0.03)^2 = 4268 independent obs to call a cell POWERED, but for a stacked cross-sectional panel n_eff collapses to the number of DATES. The crypto lake starts 2019-09 (2516 dates, mdi 0.039), so NO daily cross-sectional screen on that axis can EVER be powered whatever the signal; fred_macro is capped ~4030 business days by BTC history. This is a gate that rejects ~100% for reasons unrelated to candidate merit -- exactly the zero-information gate the gate-optimality duty says to investigate. Do NOT loosen the threshold: fix the power calculation for panel data (n_eff should not be date-capped when breadth is real) or state the detection floor honestly per axis.",
    "roi_bps": 60.0,
    "raised": "2026-07-28T20:31:40.701253+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "n_eff>=4268 wall needs horizon-scaled ic_min design (stats-sensitive, panel-half open); stats batch day",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-04",
+   "disposed": "2026-07-31T07:21:10.348587+00:00"
   },
   {
    "id": "R0031",
@@ -386,11 +386,11 @@
    "summary": "WALCL 4-week reserve impulse -> next-week BTC printed IC +0.1106 with a mechanism-consistent sign, de-contamination PASSED (resid +0.0964) and momentum Sharpe 0.82, clearing ic_min and sharpe_min and stopped ONLY by the power gate -- correctly, since a 4-week window sampled weekly carries ~204 independent obs (t~1.6), not 815 (t~3.2). NOT an edge and NOT a clock. It is the first empirical reason to revisit the WALCL axis that its six EV rejections never had: run a PRE-REGISTERED NON-OVERLAPPING re-test.",
    "roi_bps": 25.0,
    "raised": "2026-07-28T20:31:40.766685+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "TOP generation item tomorrow: pieces verified today (bronze/fed derived net-liquidity series live, idle slot confirmed m=11, construction pre-registered from the 07-28 screen). NOT wired tonight by decision: release-lag alignment declaration + revalidate_clocks shift-sensitivity rail are mandatory first and rushing a phantom-edge-critical wire at cycle end is the exact kimchi class (L1.27: this protects against a named hazard, it does not avoid uncertainty)",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-01",
+   "disposed": "2026-07-31T07:29:03.316338+00:00"
   },
   {
    "id": "R0032",
@@ -398,11 +398,11 @@
    "summary": "DEPTH DEFECT: collect_fred_macro.py caps at _LOOKBACK_DAYS=1200 while its own docstring claims FRED 'serves deep history on day one'. That truncation is why no fred_macro screen was ever powered -- the axis was starved of the history the gate requires. Backfill to the archive-depth ceiling and diff-verify (depth-parity class).",
    "roi_bps": 20.0,
    "raised": "2026-07-28T20:31:40.831864+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "rejected",
+   "reason": "deep-history need is served: full-history pull exists as data/fred_macro_deep.json (07-28, used by the screen) and is re-pullable on demand; widening the daily roller to 25k days duplicates that pull every day for no forward gain. The docstring lie is fixed this cycle instead (collector now states the 1200d rolling scope)",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-07-31T07:20:52.346327+00:00"
   },
   {
    "id": "R0033",
@@ -410,11 +410,11 @@
    "summary": "GATE-OPTIMALITY ROOT CAUSE: validate()'s pbo + reality_check gates are CAMPAIGN CONSTANTS (both statistics take only the matrix; the candidate's returns are never an input), so all 420 candidates got an identical verdict -- measured campaign PBO=0.6159 and White RC p=0.4220 forced 420/420 rejections. Per-candidate replacements built + tested (libs/validation/stepwise.py: cscv_candidate_pbo, romano_wolf_stepdown; thresholds unchanged). Production flip NOT self-applied -- gate strictness is principal-gated (constitution pt 5); paged for a YES/NO ruling.",
    "roi_bps": 50.0,
    "raised": "2026-07-29T06:17:12.712538+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "fix BUILT and green (13 tests, thresholds unchanged); production flip is Tier-3 validation-gate strictness, restored on the principal page 07-30 awaiting YES/NO; due = escalate if unanswered a week",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-07",
+   "disposed": "2026-07-31T07:20:22.645129+00:00"
   },
   {
    "id": "R0034",
@@ -422,11 +422,11 @@
    "summary": "EV-GATE MISCALIBRATION IS UNFIXED AND IT BLOCKED THIS CYCLE'S GENERATION. The 07-28 cycle wrote the lesson ('_EV_THRESHOLD=0.05 needs est_sharpe>=1.6 at breadth 40; conservative honesty is auto-rejected, optimism rewarded, the many-small-decorrelated-sleeves class dies at the door') into institutional_knowledge.md and left the constant at 0.05. Measured today: 4 novel, mechanism-backed hypotheses on already-ingested axes scored ev=0.005-0.010 -> all REJECT. A finding written and not driven is the exact shape \u00a735/\u00a741 exist to stop. FIX NEEDS ITS OWN CAREFUL PASS: recalibrate against a known-good reference (carry 3.28 -> 0.1171) AND a known-marginal one, same method as the PBO/RC fix -- do NOT hand-tune the constant at the end of a long cycle.",
    "roi_bps": 20.0,
    "raised": "2026-07-29T06:25:25.355470+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "same fix as R0023 -- the generation blocker is removed; next cycle's generation slot verifies queued candidates actually screen",
+   "commit": "7f1b3b1",
    "due": null,
-   "disposed": null
+   "disposed": "2026-07-31T07:29:03.245097+00:00"
   },
   {
    "id": "R0035",
@@ -434,11 +434,11 @@
    "summary": "\u00a735 coverage regression (100%->97%) resolved by DISPOSITION, not new work: of the 5 findings with no register trace, 4 were already decided and merely unrecorded -- #79 job-market data and #80 satellite/shipping carry written REJECT reasons, #26 competitor-simulation is blocked on the same $120 OpenRouter top-up already paged, and micro_audit_inbox #1 (carry-funding silent zero) was fixed 2026-07-26. Only #48 wallet behavioural fingerprinting is a live undriven finding (wallet RISK replicated OOS while wallet RETURNS were refuted at n=1400) -- rowed as GAP #88 with a mechanism-first screen plan.",
    "roi_bps": 8.0,
    "raised": "2026-07-29T06:26:50.644322+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "governance-day batch: re-audit the 5 disposition-closed findings with fresh eyes",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-05",
+   "disposed": "2026-07-31T07:20:53.415991+00:00"
   },
   {
    "id": "R0036",
@@ -1159,6 +1159,54 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0096",
+   "source": "cycle-20260731",
+   "summary": "Per-venue exposure cap: one config number (MAX_VENUE_FRACTION) enforced in _alloc, live-tunable, inert at one venue, cheap now vs expensive retrofit the day venue #2 exists (panel MOVE 2, gap #54)",
+   "roi_bps": 15.0,
+   "raised": "2026-07-31T07:21:10.420879+00:00",
+   "status": "scheduled",
+   "reason": "one config number + _alloc guard + test; bundled with the 08-02 batch; inert at one venue so zero live risk",
+   "commit": null,
+   "due": "2026-08-02",
+   "disposed": "2026-07-31T07:29:03.460233+00:00"
+  },
+  {
+   "id": "R0097",
+   "source": "cycle-20260731",
+   "summary": "Frankenstein synthesizer before/after check: compare gen_diversity metrics pre/post wiring commit 8da8acd; if flat across 28 cycles, retire it as complexity without evidence (panel rider, L2.9 exit)",
+   "roi_bps": 5.0,
+   "raised": "2026-07-31T07:21:10.492266+00:00",
+   "status": "scheduled",
+   "reason": "measurement-first retire-check needs the gen_diversity before/after pull; stats batch day",
+   "commit": null,
+   "due": "2026-08-04",
+   "disposed": "2026-07-31T07:29:03.533038+00:00"
+  },
+  {
+   "id": "R0098",
+   "source": "cycle-20260731",
+   "summary": "Retire quarantined dynamic_leverage optimizer (libs/risk/dynamic_leverage.py + run_leverage_opt.py): never validated live, contaminated confidence history (gap #14), executor clamp ignores it both directions; kill-committee item needing independence argument (risk-path neighbourhood)",
+   "roi_bps": 8.0,
+   "raised": "2026-07-31T07:21:10.562149+00:00",
+   "status": "scheduled",
+   "reason": "kill-committee item: needs independence argument (risk-path neighbourhood) and the monthly governance slot is the right court",
+   "commit": null,
+   "due": "2026-08-05",
+   "disposed": "2026-07-31T07:29:03.606909+00:00"
+  },
+  {
+   "id": "R0099",
+   "source": "cycle-20260731",
+   "summary": "Wire or retire graveyard_resurrect.py: re-surfaced as a true orphan by the unlaundered detector; graveyard_resurrection_queue.json (n=42) has zero readers while its reader script is wired to nothing -- the options-VRP unlock (Deribit verified) sits in that queue",
+   "roi_bps": 25.0,
+   "raised": "2026-07-31T07:21:10.680584+00:00",
+   "status": "implemented",
+   "reason": "wired weekly in the manifest (Sun 04:40) + queue rebuilt this cycle (n=42, shortlist defi_health + multilingual wikipedia); options-VRP unlock visible to the weekly sweep at last",
+   "commit": "7f1b3b1",
+   "due": null,
+   "disposed": "2026-07-31T07:29:03.676142+00:00"
   }
  ]
 }

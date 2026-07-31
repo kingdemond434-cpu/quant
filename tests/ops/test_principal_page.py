@@ -19,13 +19,22 @@ _ASK = (
 
 
 def test_preserves_an_unrelated_pending_ask(tmp_path: Path) -> None:
-    """THE REGRESSION: the exact loss that happened on the live desk."""
+    """THE REGRESSION: the exact loss that happened on the live desk.
+
+    CONTRACT UPDATED 2026-07-31. The original assertion ("pager reads line 1 only" so the
+    purchase notice must OWN line 1) locked in the very ordering the desk ruled a FAILURE on
+    07-30, when an unrelated PURCHASE DECISION prepended above two Tier-3 asks put both rulings
+    below the fold and the principal was paged housekeeping instead (max_audit POSITION FIX).
+    The ruled priority: a fresh URGENT block outranks any non-urgent page; the daily reminder
+    re-sends the standing Tier-3 ask, which is the correct thing for line 1 to carry. The
+    non-urgent message must still LAND and survive -- that half of the 07-29 lock is unchanged."""
     p = tmp_path / "PRINCIPAL_ACTION.md"
     p.write_text(_ASK, "utf-8")
     out = pp.page(
         "PURCHASE DECISION: OpenRouter credits exhausted (balance $-0.59).",
         marker="PURCHASE DECISION:", path=p)
-    assert "PURCHASE DECISION:" in out.splitlines()[0]   # pager reads line 1 only
+    assert out.splitlines()[0].startswith("URGENT")      # Tier-3 ask keeps the top
+    assert "PURCHASE DECISION:" in out                   # the notice LANDED below it
     assert "Tier-3 YES/NO" in out                        # the ask SURVIVED
     assert "13 tests green" in out                       # including its indented detail
 

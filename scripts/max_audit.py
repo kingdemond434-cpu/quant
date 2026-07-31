@@ -1924,6 +1924,11 @@ _PRODUCER_CADENCE = {
 #: Artifacts that are terminal by nature: templates, forensic write-ups, protocol libraries. They
 #: accumulate no inventory, so they owe no cadence -- recorded here so "no law" is a DECISION.
 _TERMINAL_ARTIFACTS = {
+    "docs/research/BITMEX_DECADE_INGEST_SPEC.md":
+        "build spec (directive bitmex-ingest-spec, closed 2026-07-31) -- executed via its phase "
+        "artifacts: phase 1 landed same-day (data/bitmex_funding.jsonl, 11,148 rows 2016->now); "
+        "phase 2 is the tranche cron line the spec defines. Conversion is tracked on those "
+        "artifacts, not on this doc.",
     "docs/research/FRONTIER_MINER_TEMPLATE.md": "template spec -- instantiated, not converted",
     "docs/research/GAP34_FORENSIC.md": "forensic write-up for a closed gap",
     "docs/research/self_interrogation_patterns.md": "protocol library -- applied, not converted",
@@ -2390,9 +2395,13 @@ def check_orphan_scripts(defects) -> None:
             # made this detector count it as referenced and fall silent. Diagnosing a problem must
             # never be what silences its detection, or the desk's own audits become the thing that
             # hides the findings.
+            # docs/audit_shards/ excluded 2026-07-31, third instance of the same class: the
+            # sharded audit dossiers QUOTE orphan findings verbatim ("scripts/page_digest.py:
+            # no hits"), and that quotation silenced this very detector for a day.
             if (f.is_file()
                     and f.name not in ("daily_research_cycle.py", "max_audit.py")
-                    and "deep_sweep" not in f.as_posix()):
+                    and "deep_sweep" not in f.as_posix()
+                    and "audit_shards" not in f.as_posix()):
                 with contextlib.suppress(OSError):
                     corpus.append(f.read_text("utf-8", errors="ignore"))
     blob = "\n".join(corpus)
@@ -3192,7 +3201,64 @@ def check_carryover_skipped(defects) -> None:
 
 #: Every check the sweep runs. Module-level so other organs (§37 carry-over) can
 #: enumerate the same set instead of keeping a second copy that silently drifts.
+def check_recommendation_rows(defects) -> None:
+    """§42 X1 wire (2026-07-31): the recommendation ledger joins the carry-over pressure loop.
+
+    Measured before this check existed (meta audit 2026-07-31): NO row older than 3.67 days had
+    ever been implemented -- λ≈14 rows/day arrived, terminal disposals ran ≈3.2/day and almost
+    entirely same-session, so the undone stock grew +10/day and old rows were simply never seen
+    again. Directives, findings and gap-register rows all had max_audit gates; the §42 ledger --
+    the one organ whose law says nothing recommended is ever forgotten -- had none, so the §37
+    brief (built FROM these checks) could not carry its rows across sessions.
+
+    Per-row stable IDs (`rec-owed-R0031`) let the sweep ledger track each row's survival count
+    individually, which is the §37 pressure that actually moves work. The per-row list is capped
+    to the OLDEST offenders so the pager stays readable; the summary defect carries the TRUE
+    totals so the cap hides nothing (no-silent-caps). Grace/due semantics mirror
+    scripts/recommendations.py (GRACE_H=24, terminal={implemented,rejected}); a parity test in
+    tests/test_desk_integrity_checks.py locks the two against drifting apart.
+    """
+    _PER_ROW_CAP = 12
+    d = _j(ROOT / "docs/research/recommendation_ledger.json", {})
+    rows = d.get("recommendations", []) if isinstance(d, dict) else []
+    if not rows:
+        return
+    now = datetime.now(UTC)
+
+    def _age_h(iso):
+        try:
+            return (now - datetime.fromisoformat(iso)).total_seconds() / 3600.0
+        except (TypeError, ValueError):
+            return 0.0
+
+    overdue = []
+    for r in rows:
+        st = r.get("status")
+        if st == "open" and _age_h(r.get("raised", "")) > 24.0:
+            overdue.append((_age_h(r.get("raised", "")), r, "undisposed"))
+        elif st == "scheduled":
+            due = str(r.get("due") or "")
+            if due and due < now.date().isoformat():
+                overdue.append((_age_h(r.get("raised", "")), r, f"scheduled-past-due({due})"))
+    if not overdue:
+        return
+    overdue.sort(key=lambda t: -t[0])
+    for age_h, r, why in overdue[:_PER_ROW_CAP]:
+        defects.append((f"rec-owed-{r.get('id', '?')}",
+                        f"§42: {r.get('id')} {why} {age_h / 24.0:.1f}d "
+                        f"[{r.get('source', '?')}]: {str(r.get('summary', ''))[:120]}"))
+    defects.append(("rec-ledger-backlog",
+                    f"§42: {len(overdue)} recommendation row(s) owe a disposition "
+                    f"({sum(1 for *_, w in overdue if w == 'undisposed')} undisposed past 24h "
+                    f"grace, {sum(1 for *_, w in overdue if w != 'undisposed')} scheduled past "
+                    f"due; oldest {overdue[0][0] / 24.0:.1f}d, {_PER_ROW_CAP} oldest shown "
+                    f"per-row). Dispose via scripts/recommendations.py dispose -- implemented "
+                    f"with --commit, rejected with a real --reason, or scheduled with an "
+                    f"enforced --due. Deleting rows is the denominator trick and is detected."))
+
+
 CHECKS = [("carryover-skipped", check_carryover_skipped),
+          ("recommendation-rows", check_recommendation_rows),
           ("organs", check_organs), ("stubs", check_stub_deaths),
                       ("stale-daemons", check_stale_daemons),
                       ("panel", check_panel), ("coverage", check_coverage),
@@ -3734,23 +3800,39 @@ def main() -> None:
     # Third recurrence of one family -- 07-24 stale line 1, 07-28 silent deletion, now demotion by a
     # neighbour's insert -- because the carve-out was POSITIONAL and no writer owns a position. Find
     # a fresh URGENT block ANYWHERE in the body and hoist it; reordering only, nothing dropped.
-    urgent = ""
+    # FORMAT-FRAGILITY FIX (2026-07-31, FOURTH recurrence of the family: 07-24 stale line 1,
+    # 07-28 silent deletion, 07-30 demotion-by-neighbour, now demotion-by-ANNOTATION). The stamp
+    # parse was `split("URGENT ",1)[1].split(":",1)[0]` -> fromisoformat, so the moment a human
+    # annotated the header ("URGENT 2026-07-29 (updated 07-31): ...") recognition threw, was
+    # suppressed, and the routine sweep silently retook line 1 from two Tier-3 asks -- caught
+    # live by test_max_audit_run_preserves_a_written_page. Recognition now keys on the first
+    # ISO-DATE TOKEN anywhere in the paragraph head, so annotations cannot disarm it. And hoist
+    # the RUN of all fresh URGENT paragraphs, not just the first -- with two pending Tier-3
+    # asks, "one above the fold, one buried" is the same failure at half size.
+    urgents: list[str] = []
     paras = body.split("\n\n")
-    for i, para in enumerate(paras):
-        if not para.startswith("URGENT "):
-            continue
-        with contextlib.suppress(Exception):
-            stamp = para.split("URGENT ", 1)[1].split(":", 1)[0].strip()
-            if (NOW - datetime.fromisoformat(stamp).timestamp()) / 86400.0 <= _URGENT_TTL_D:
-                urgent = para
-                body = "\n\n".join(paras[:i] + paras[i + 1:]).strip()
-                break
+    remaining: list[str] = []
+    for para in paras:
+        hoisted = False
+        if para.startswith("URGENT"):
+            m_date = re.search(r"(\d{4}-\d{2}-\d{2})", para[:80])
+            if m_date:
+                with contextlib.suppress(Exception):
+                    age_d = (NOW - datetime.fromisoformat(m_date.group(1))
+                             .replace(tzinfo=UTC).timestamp()) / 86400.0
+                    if age_d <= _URGENT_TTL_D:
+                        urgents.append(para)
+                        hoisted = True
+        if not hoisted:
+            remaining.append(para)
+    body = "\n\n".join(remaining).strip()
+    urgent = "\n\n".join(urgents)
     if overdue:
         head = (f"{_MARK}: {len(overdue)} below-max state(s) >48h unfixed/unacked -- "
                 + "; ".join(f"{d}" for d, _ in overdue[:6])
                 + (" ..." if len(overdue) > 6 else "") + "\n"
                 + "".join(f"  - {d}: {m}\n" for d, m in overdue[:8]))
-        # a fresh urgent page keeps line 1; otherwise the escalation owns it as before
+        # fresh urgent pages keep the top; otherwise the escalation owns line 1 as before
         PA.write_text((urgent + "\n\n" if urgent else "") + head + "\n" + body, "utf-8")
         print(f"ESCALATED to principal page (line {'2' if urgent else '1'}): "
               f"{len(overdue)} defect(s) >48h" + (" -- behind a fresh URGENT page" if urgent else ""))
