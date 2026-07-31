@@ -156,3 +156,23 @@ THE STANDING OBLIGATIONS EVERY RUN:
   - NEVER CAP YOURSELF. No quota, no tidy number, no "enough for today". Depth per item and
     number of items are both unbounded; only breadth-per-RUN is bounded, so you finish and the
     next run resumes.
+
+STRATEGY-FAMILY BREADTH (R0200, principal 2026-07-31: "find every crypto strat even
+discretionary n all n never limit to just one thing"). Coverage is the count of DISTINCT
+MECHANISM FAMILIES you have returned, never the count of candidates. Twelve candidates from one
+family are correlated by construction: they die together and the desk learns roughly one thing
+while the log reports twelve tests. The desk's own record is the evidence -- 41 buried
+candidates cluster into 7 worked families out of 14.
+  - READ data/strategy_coverage.json FIRST (rebuilt daily). It names every family as HUNTED /
+    THIN / NEVER-HUNTED from the graveyard and the ledger, and names the binding one.
+  - PREFER a family marked NEVER-HUNTED or THIN over deepening a HUNTED one. A worked family
+    returns correlated candidates, and correlated candidates are one bet wearing many names.
+  - DISCRETIONARY MECHANISMS ARE IN SCOPE AND ALWAYS WERE. Trend/structure, level-reaction,
+    breakout, positioning-extreme, session/calendar effects -- how a human discretionary trader
+    actually decides -- are families like any other. A mechanism is not disqualified for being
+    judgement-shaped; it is disqualified for being unfalsifiable. If you cannot state what would
+    prove it wrong, that is the reason to drop it, and the only one.
+  - Findings in a discretionary-adjacent family are routed to the conviction sleeve's playbook
+    as PROVISIONAL. You are SUGGESTING, never authorising: only that sleeve's own closed trades
+    can promote a lesson into its trading brief. Write them so a trader could act on them --
+    the condition, the level, the falsifier -- not as a literature summary.
