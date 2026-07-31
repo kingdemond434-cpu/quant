@@ -58,6 +58,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
 import time
 import urllib.error
@@ -224,8 +225,29 @@ def _ms(iso: str) -> int:
     return int(datetime.fromisoformat(iso).timestamp() * 1000)
 
 
-def walk_ladder(row: dict[str, Any], bars: list[tuple[int, float, float, float, float]]
-                ) -> dict[str, Any]:
+#: TRAIL WIDTH, in R behind the running favourable extreme -- the single number that decides how
+#: far a winner is allowed to run before it is banked, and therefore the winner:loser shape that
+#: growth_levers measures as the steepest term on the desk. It was hardcoded at 1R and chosen by
+#: nobody. 1.0 stays the DEFAULT (it is what the recorded marks were produced under, and changing
+#: the default silently would rewrite the book's own history), while trail_sweep() re-walks the
+#: same bars at every width so the desk's OWN trades say which one compounds hardest.
+TRAIL_R = 1.0
+#: The widths swept, bounded by MEASURED quantities at both ends rather than by taste.
+#: FLOOR 0.5R: the stop is set at structural invalidation, and the sleeve's own measured noise
+#: floor (median adverse excursion over the trade's horizon -- run_conviction_trader.noise_floor)
+#: runs at roughly half that distance on these instruments. A trail tighter than the noise floor
+#: does not bank profit, it re-stops the trade on the same noise the structural stop was placed
+#: outside of, so below this the sweep would only be measuring the noise floor twice.
+#: CEILING 3.0R: past 3R behind the extreme the trail sits further away than the entry stop for
+#: any trade that has not yet run 3R, so it never binds and the candidate is not a trail at all.
+#: These bound the SEARCH, not the answer -- if the measured optimum lands on either edge, that is
+#: the finding that the bound needs re-deriving, and trail_sweep reports the whole curve so it is
+#: visible when it happens.
+TRAIL_WIDTHS: tuple[float, ...] = (0.5, 0.75, 1.0, 1.5, 2.0, 3.0)
+
+
+def walk_ladder(row: dict[str, Any], bars: list[tuple[int, float, float, float, float]],
+                *, trail_r: float = TRAIL_R) -> dict[str, Any]:
     """Simulate the RECORDED management plan against real bars. The number this returns is the
     P&L of the strategy as specified -- ladder, trail and adds included -- which is the only mark
     that says anything about whether trend-riding earns its complexity."""
@@ -267,7 +289,8 @@ def walk_ladder(row: dict[str, Any], bars: list[tuple[int, float, float, float, 
         #    mechanical proxy for "behind the most recent swing" -- see the module docstring).
         extreme = max(extreme, hi) if sign > 0 else min(extreme, lo)
         if stage_i + 1 >= len(stages):
-            stop = max(stop, extreme - r_price) if sign > 0 else min(stop, extreme + r_price)
+            band = r_price * max(0.0, trail_r)
+            stop = max(stop, extreme - band) if sign > 0 else min(stop, extreme + band)
 
     if exit_px is None:                               # ran out of bars while still open
         exit_px, exit_ts = bars[-1][4], bars[-1][0]
@@ -429,6 +452,77 @@ def realised_payoff(resolved: list[dict[str, Any]]) -> dict[str, Any]:
                      "not a payoff one."}
 
 
+def trail_sweep(walked: list[dict[str, Any]]) -> dict[str, Any]:
+    """Re-walk the SAME trades at every trail width and report which one compounds hardest.
+
+    THE PRINCIPAL'S OWN METHOD, MADE MEASURABLE. The gold trade this sleeve is modelled on was
+    described as *"I kept moving it trying to bank profit while letting it breathe and run further"*
+    -- which is a statement about exactly one parameter: how far behind the extreme the stop sits.
+    Too tight and every winner is banked into a scratch; too wide and each one gives back more than
+    it keeps. The sleeve had that number hardcoded at 1R with no measurement behind it, while
+    growth_levers ranks the winner shape it produces as the STEEPEST term in the whole growth
+    identity. A guess in the highest-gradient slot is the most expensive kind of guess.
+
+    WHY A SWEEP RATHER THAN AN OPINION. Every width is walked against the same real bars, so the
+    comparison holds the trades, the entries and the stops fixed and moves only the thing under
+    test. That controls for the obvious confound -- a wider trail looks better in a trending week
+    for reasons that have nothing to do with the trail.
+
+    RANKED BY LOG GROWTH, never by hit rate or by mean R. Widening the trail RAISES the winner
+    multiple and LOWERS the hit rate at the same time; either one alone can be improved while
+    growth falls. E[log] per trade is the quantity that decides compounding, so it is the quantity
+    that picks the width, and the losing candidates are kept in the output so the trade-off is
+    visible rather than asserted.
+    """
+    widths = [w for w in walked if w.get("trail_r") is not None]
+    if not widths:
+        return {"state": "UNMEASURED", "why": "no conviction trades re-walked -- the sweep needs "
+                                              "marked ladder trades with their bars"}
+    by: dict[float, list[dict[str, Any]]] = {}
+    for w in widths:
+        by.setdefault(float(w["trail_r"]), []).append(w)
+    rows = []
+    for tr in sorted(by):
+        ms = by[tr]
+        rs = [float(m["realised_R"]) for m in ms if m.get("realised_R") is not None]
+        eqs = [float(m["equity_return"]) for m in ms if m.get("equity_return") is not None]
+        if not rs or not eqs:
+            continue
+        wins = [r for r in rs if r > 0]
+        losses = [-r for r in rs if r <= 0]
+        # E[log] per trade on the realised NET returns -- the compounding quantity, not the mean.
+        g = sum(math.log(1.0 + e) for e in eqs if e > -1.0) / len(eqs)
+        rows.append({
+            "trail_r": tr, "n": len(rs),
+            "hit_rate": round(len(wins) / len(rs), 4),
+            "winner_R": round(sum(wins) / len(wins), 3) if wins else None,
+            "loser_R": round(sum(losses) / len(losses), 3) if losses else None,
+            "ratio": round((sum(wins) / len(wins)) / (sum(losses) / len(losses)), 3)
+                     if wins and losses else None,
+            "g_per_trade": round(g, 6),
+        })
+    if not rows:
+        return {"state": "UNMEASURED", "why": "re-walked trades produced no scorable returns"}
+    best = max(rows, key=lambda r: r["g_per_trade"])
+    live = next((r for r in rows if r["trail_r"] == TRAIL_R), None)
+    gain = (best["g_per_trade"] - live["g_per_trade"]) if live else None
+    return {
+        "state": "MEASURED" if len(widths) // max(1, len(by)) >= PAYOFF_MIN_N else "THIN",
+        "n_trades": len(widths) // max(1, len(by)),
+        "live_trail_r": TRAIL_R, "best_trail_r": best["trail_r"],
+        "g_gain_per_trade": None if gain is None else round(gain, 6),
+        "widths": rows,
+        "why": (f"width {best['trail_r']}R compounds hardest at {best['g_per_trade']:+.5f} per "
+                f"trade (hit {best['hit_rate']:.1%}, winners {best['winner_R']}R)"
+                + (f", against {live['g_per_trade']:+.5f} at the live {TRAIL_R}R -- "
+                   f"{'WIDER' if best['trail_r'] > TRAIL_R else 'TIGHTER'} is better on this "
+                   "record" if live and best["trail_r"] != TRAIL_R else
+                   f"; the live {TRAIL_R}R is already the best of the swept widths")
+                + ". Ranked by E[log], never by hit rate: widening raises the winner multiple and "
+                  "lowers the hit rate together, so either alone can improve while growth falls."),
+    }
+
+
 def kill_check(resolved: list[dict[str, Any]]) -> dict[str, Any]:
     """Evaluate the PRE-REGISTERED exit. Written before the data existed; not adjustable after.
 
@@ -504,6 +598,7 @@ def resolve_book(root: Path, *, now: datetime | None = None,
                  fetch=fetch_bars) -> dict[str, Any]:
     now = now or datetime.now(tz=UTC)
     marks: list[dict[str, Any]] = []
+    swept: list[dict[str, Any]] = []      # every trade re-walked at every trail width
 
     for book, kind in ((_CONVICTION_BOOK, "conviction"), (_EVENT_BOOK, "event")):
         for row in _rows(root / book):
@@ -534,8 +629,20 @@ def resolve_book(root: Path, *, now: datetime | None = None,
                 marks.append({"kind": kind, "key": row.get("at"), "symbol": row.get("symbol"),
                               "outcome": "UNRESOLVABLE", "why": source})
                 continue
-            res = (walk_ladder(row, bars) if kind == "conviction" and row.get("management")
-                   else mark_event_row(row, bars))
+            is_ladder = kind == "conviction" and bool(row.get("management"))
+            res = walk_ladder(row, bars) if is_ladder else mark_event_row(row, bars)
+            # RE-WALK THE SAME BARS AT EVERY TRAIL WIDTH while they are in hand. Doing it here is
+            # what makes the sweep free and honest at once: no second fetch, and every width sees
+            # the identical trade, entry and stop, so the only thing that varies is the parameter
+            # under test. (Costs are recomputed per width -- a wider trail holds longer and pays
+            # more funding, which is part of what it must earn back.)
+            if is_ladder:
+                for tr in TRAIL_WIDTHS:
+                    alt = walk_ladder(row, bars, trail_r=tr)
+                    if alt.get("outcome") in ("STOPPED", "TRAILED-OUT"):
+                        swept.append({"trail_r": tr, "key": row.get("at"),
+                                      "realised_R": alt.get("realised_R"),
+                                      "equity_return": alt.get("equity_return")})
             # Still OPEN at the hard stop -> TIME-STOPPED: marked out at market rather than left
             # unscored forever. A trade that never resolves is a forecast that never grades.
             if res.get("outcome") == "OPEN" and hard <= now:
@@ -587,6 +694,7 @@ def resolve_book(root: Path, *, now: datetime | None = None,
                          / max(1, len([m for m in resolved if m.get("realised_R") is not None])),
                          4) if resolved else None),
         "realised_payoff": realised_payoff(resolved),
+        "trail_sweep": trail_sweep(swept),
         "equity": curve,
         "kill_condition": kill_check(resolved),
         "setup_performance": setup_performance(resolved),

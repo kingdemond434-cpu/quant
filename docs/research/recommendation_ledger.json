@@ -2264,6 +2264,18 @@
    "commit": "9a4e231",
    "due": null,
    "disposed": "2026-07-31T19:28:27.753426+00:00"
+  },
+  {
+   "id": "R0187",
+   "source": "max_audit",
+   "summary": "How far to let a winner breathe -- the trail width -- was hardcoded at extreme-minus-1R with no measurement behind it, while growth_levers ranks the winner shape it produces as the STEEPEST term in the growth identity. A guess in the highest-gradient slot. walk_ladder now takes trail_r and trail_sweep() re-walks every marked trade at 0.5/0.75/1.0/1.5/2.0/3.0R against the SAME bars, so entries, stops and trades are held fixed and only the parameter moves. Ranked by E[log] per trade, never hit rate or mean R: widening RAISES the winner multiple and LOWERS the hit rate together, so either alone can improve while compounding falls. Rejected widths stay in the output so the trade-off is visible. This is the principal's own stated method -- 'kept moving it to bank profit while letting it breathe and run further' -- turned from a preference into a measurement.",
+   "roi_bps": null,
+   "raised": "2026-07-31T19:32:27.979276+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
