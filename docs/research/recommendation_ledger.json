@@ -19,7 +19,7 @@
    "roi_bps": null,
    "raised": "2026-07-26T11:34:30.251443+00:00",
    "status": "scheduled",
-   "reason": "doctrine grew 27k->54k since this row was written; consolidation is careful editorial surgery on the law text (preserve every commitment, pass check_timidity_language) and was displaced today by money-path restoration + the X1 wire. Now enforced: this row sits in tomorrow's \u00a737 brief via rec-owed-R0002 with a survival count -- the fossilization pattern this row kept exhibiting is the thing X1 ends",
+   "reason": "doctrine grew 27k->54k since this row was written; consolidation is careful editorial surgery on the law text (preserve every commitment, pass check_timidity_language) and was displaced today by money-path restoration + the X1 wire. Now enforced: this row sits in tomorrow's §37 brief via rec-owed-R0002 with a survival count -- the fossilization pattern this row kept exhibiting is the thing X1 ends",
    "commit": null,
    "due": "2026-08-01",
    "disposed": "2026-07-31T07:29:03.385201+00:00"
@@ -27,7 +27,7 @@
   {
    "id": "R0003",
    "source": "deep_sweep",
-   "summary": "O1 data-moat: screen the desk's own L2 tape \u2014 build depth-imbalance panel from data/moat (microstructure.py has zero callers) and stage_a_screen it; crown-jewel dataset has 0 research artifacts in ~1 month of recording (converges with data-intelligence sweep's moat-extraction pilot)",
+   "summary": "O1 data-moat: screen the desk's own L2 tape — build depth-imbalance panel from data/moat (microstructure.py has zero callers) and stage_a_screen it; crown-jewel dataset has 0 research artifacts in ~1 month of recording (converges with data-intelligence sweep's moat-extraction pilot)",
    "roi_bps": null,
    "raised": "2026-07-26T11:45:41.959734+00:00",
    "status": "scheduled",
@@ -419,7 +419,7 @@
   {
    "id": "R0034",
    "source": "cycle",
-   "summary": "EV-GATE MISCALIBRATION IS UNFIXED AND IT BLOCKED THIS CYCLE'S GENERATION. The 07-28 cycle wrote the lesson ('_EV_THRESHOLD=0.05 needs est_sharpe>=1.6 at breadth 40; conservative honesty is auto-rejected, optimism rewarded, the many-small-decorrelated-sleeves class dies at the door') into institutional_knowledge.md and left the constant at 0.05. Measured today: 4 novel, mechanism-backed hypotheses on already-ingested axes scored ev=0.005-0.010 -> all REJECT. A finding written and not driven is the exact shape \u00a735/\u00a741 exist to stop. FIX NEEDS ITS OWN CAREFUL PASS: recalibrate against a known-good reference (carry 3.28 -> 0.1171) AND a known-marginal one, same method as the PBO/RC fix -- do NOT hand-tune the constant at the end of a long cycle.",
+   "summary": "EV-GATE MISCALIBRATION IS UNFIXED AND IT BLOCKED THIS CYCLE'S GENERATION. The 07-28 cycle wrote the lesson ('_EV_THRESHOLD=0.05 needs est_sharpe>=1.6 at breadth 40; conservative honesty is auto-rejected, optimism rewarded, the many-small-decorrelated-sleeves class dies at the door') into institutional_knowledge.md and left the constant at 0.05. Measured today: 4 novel, mechanism-backed hypotheses on already-ingested axes scored ev=0.005-0.010 -> all REJECT. A finding written and not driven is the exact shape §35/§41 exist to stop. FIX NEEDS ITS OWN CAREFUL PASS: recalibrate against a known-good reference (carry 3.28 -> 0.1171) AND a known-marginal one, same method as the PBO/RC fix -- do NOT hand-tune the constant at the end of a long cycle.",
    "roi_bps": 20.0,
    "raised": "2026-07-29T06:25:25.355470+00:00",
    "status": "implemented",
@@ -431,7 +431,7 @@
   {
    "id": "R0035",
    "source": "cycle",
-   "summary": "\u00a735 coverage regression (100%->97%) resolved by DISPOSITION, not new work: of the 5 findings with no register trace, 4 were already decided and merely unrecorded -- #79 job-market data and #80 satellite/shipping carry written REJECT reasons, #26 competitor-simulation is blocked on the same $120 OpenRouter top-up already paged, and micro_audit_inbox #1 (carry-funding silent zero) was fixed 2026-07-26. Only #48 wallet behavioural fingerprinting is a live undriven finding (wallet RISK replicated OOS while wallet RETURNS were refuted at n=1400) -- rowed as GAP #88 with a mechanism-first screen plan.",
+   "summary": "§35 coverage regression (100%->97%) resolved by DISPOSITION, not new work: of the 5 findings with no register trace, 4 were already decided and merely unrecorded -- #79 job-market data and #80 satellite/shipping carry written REJECT reasons, #26 competitor-simulation is blocked on the same $120 OpenRouter top-up already paged, and micro_audit_inbox #1 (carry-funding silent zero) was fixed 2026-07-26. Only #48 wallet behavioural fingerprinting is a live undriven finding (wallet RISK replicated OOS while wallet RETURNS were refuted at n=1400) -- rowed as GAP #88 with a mechanism-first screen plan.",
    "roi_bps": 8.0,
    "raised": "2026-07-29T06:26:50.644322+00:00",
    "status": "scheduled",
@@ -851,7 +851,7 @@
   {
    "id": "R0070",
    "source": "deep_sweep",
-   "summary": "SYNTH0731 P0-1 [DI-1=infraF1=E-7]: de-dup dual scheduler \u2014 migrate legacy-only jobs into ops/crontab.manifest, delete legacy block once, stagger 13-job 08:21 herd, dedup 2x rows since 07-30T23:00 (defi/oi_ls/venue_div), crontab-vs-manifest drift fence. ingest_axes collides 06:40Z daily w/ different args+locks; recorder double-spawn armed against moat",
+   "summary": "SYNTH0731 P0-1 [DI-1=infraF1=E-7]: de-dup dual scheduler — migrate legacy-only jobs into ops/crontab.manifest, delete legacy block once, stagger 13-job 08:21 herd, dedup 2x rows since 07-30T23:00 (defi/oi_ls/venue_div), crontab-vs-manifest drift fence. ingest_axes collides 06:40Z daily w/ different args+locks; recorder double-spawn armed against moat",
    "roi_bps": 80.0,
    "raised": "2026-07-31T03:45:44.935428+00:00",
    "status": "open",
@@ -863,7 +863,7 @@
   {
    "id": "R0071",
    "source": "deep_sweep",
-   "summary": "SYNTH0731 P0-2 [exec F1/F2/F8/F7/F9]: launch money path \u2014 record_capital_event+check_gate0_ready read cashcarry_positions.json, executor persists last_combined_equity, refuse zero-equity rebase; copy 3-line equity fix to binance_live.py:188; wire place_stop_market into open path; executor consumes live_guard effective_size+limit_only; live_guard minutes-cadence; THEN dispose R0057. Rail currently loosens ~89 pct at launch inception",
+   "summary": "SYNTH0731 P0-2 [exec F1/F2/F8/F7/F9]: launch money path — record_capital_event+check_gate0_ready read cashcarry_positions.json, executor persists last_combined_equity, refuse zero-equity rebase; copy 3-line equity fix to binance_live.py:188; wire place_stop_market into open path; executor consumes live_guard effective_size+limit_only; live_guard minutes-cadence; THEN dispose R0057. Rail currently loosens ~89 pct at launch inception",
    "roi_bps": 500.0,
    "raised": "2026-07-31T03:45:45.001121+00:00",
    "status": "implemented",
@@ -887,7 +887,7 @@
   {
    "id": "R0073",
    "source": "deep_sweep",
-   "summary": "SYNTH0731 P0-4 [DM-1=infraF5]: moat survivability \u2014 TODAY cp execution_tape+3 sqlites off-box; disk fence (<15pct page, <8pct hard) in check_ratchets; hourly rclone of closed moat/lake hours to Storage Box (EUR4/mo, principal line); monthly restore drill. ~29d fuse to 80pct guard, zero copies of irreplaceable L2",
+   "summary": "SYNTH0731 P0-4 [DM-1=infraF5]: moat survivability — TODAY cp execution_tape+3 sqlites off-box; disk fence (<15pct page, <8pct hard) in check_ratchets; hourly rclone of closed moat/lake hours to Storage Box (EUR4/mo, principal line); monthly restore drill. ~29d fuse to 80pct guard, zero copies of irreplaceable L2",
    "roi_bps": 200.0,
    "raised": "2026-07-31T03:45:45.135219+00:00",
    "status": "open",
@@ -911,7 +911,7 @@
   {
    "id": "R0075",
    "source": "deep_sweep",
-   "summary": "SYNTH0731 P1-6 [meta X1/X3/X4/X7 + val X10]: repair capacity \u2014 top-10 open/past-due R-rows into carry-over brief; max_audit recommendations-past-due gate; repair-mode backpressure at open+past-due>25; MTTR/P(fix)/stock-growth born-fenced; age-escalating priority; split roi_bps measured-vs-rank; disposition-in-same-commit duty. Queue at lambda/mu~4, P(fix|survives session)~5pct, no row >3.67d old ever implemented",
+   "summary": "SYNTH0731 P1-6 [meta X1/X3/X4/X7 + val X10]: repair capacity — top-10 open/past-due R-rows into carry-over brief; max_audit recommendations-past-due gate; repair-mode backpressure at open+past-due>25; MTTR/P(fix)/stock-growth born-fenced; age-escalating priority; split roi_bps measured-vs-rank; disposition-in-same-commit duty. Queue at lambda/mu~4, P(fix|survives session)~5pct, no row >3.67d old ever implemented",
    "roi_bps": 120.0,
    "raised": "2026-07-31T03:45:45.265843+00:00",
    "status": "open",
@@ -935,7 +935,7 @@
   {
    "id": "R0077",
    "source": "deep_sweep",
-   "summary": "SYNTH0731 P2-9 [val X1/X2/T2 + alpha F14/O2]: act on certification (SR-3 controls FAIL both paths all seeds, SR-5 passes percand \u2014 gate measured WELDED): make screen_select BY-FDR the decider, dsr/RW demoted to ranking stats (page the gate-topology ruling); re-score the 420 under fixed per-candidate gate as ONE pre-registered resurrection batch; standing gate-CI + scheduled histogram regen",
+   "summary": "SYNTH0731 P2-9 [val X1/X2/T2 + alpha F14/O2]: act on certification (SR-3 controls FAIL both paths all seeds, SR-5 passes percand — gate measured WELDED): make screen_select BY-FDR the decider, dsr/RW demoted to ranking stats (page the gate-topology ruling); re-score the 420 under fixed per-candidate gate as ONE pre-registered resurrection batch; standing gate-CI + scheduled histogram regen",
    "roi_bps": 250.0,
    "raised": "2026-07-31T03:45:45.409373+00:00",
    "status": "open",
@@ -947,7 +947,7 @@
   {
    "id": "R0078",
    "source": "deep_sweep",
-   "summary": "SYNTH0731 P2-10 [val V7/V8/X8]: Stage-B honesty \u2014 anytime_valid e-process as ELIGIBLE condition (or pre-committed looks 40/90d); ledgered RETIRED-with-reason writer so attrition never lowers survivor bars; append-only forward-verdict history JSONL. Realized alpha ~4.9x nominal on the only path to capital",
+   "summary": "SYNTH0731 P2-10 [val V7/V8/X8]: Stage-B honesty — anytime_valid e-process as ELIGIBLE condition (or pre-committed looks 40/90d); ledgered RETIRED-with-reason writer so attrition never lowers survivor bars; append-only forward-verdict history JSONL. Realized alpha ~4.9x nominal on the only path to capital",
    "roi_bps": 90.0,
    "raised": "2026-07-31T03:45:45.483084+00:00",
    "status": "open",
@@ -971,7 +971,7 @@
   {
    "id": "R0080",
    "source": "deep_sweep",
-   "summary": "SYNTH0731 P2-13 [val V5/V6 + 0729F7]: capacity coherence \u2014 replace validate() 2x-book bar with 10pct-slice ADMIT band AND plumb real per-symbol ADV in the SAME change (either alone misfires); delete dead deployed_equity_usd/n_sleeves params",
+   "summary": "SYNTH0731 P2-13 [val V5/V6 + 0729F7]: capacity coherence — replace validate() 2x-book bar with 10pct-slice ADMIT band AND plumb real per-symbol ADV in the SAME change (either alone misfires); delete dead deployed_equity_usd/n_sleeves params",
    "roi_bps": 70.0,
    "raised": "2026-07-31T03:45:45.617318+00:00",
    "status": "open",
@@ -983,7 +983,7 @@
   {
    "id": "R0081",
    "source": "deep_sweep",
-   "summary": "SYNTH0731 P3-14 [DI-7/DI-13]: bronze owner \u2014 manifest job for full-universe daily klines + backfill 132 symbols frozen since 06-21 (Binance Vision free) + write-rate anomaly fence (learned rows/period +-50pct) on every appending collector, must retro-fire on current defi file",
+   "summary": "SYNTH0731 P3-14 [DI-7/DI-13]: bronze owner — manifest job for full-universe daily klines + backfill 132 symbols frozen since 06-21 (Binance Vision free) + write-rate anomaly fence (learned rows/period +-50pct) on every appending collector, must retro-fire on current defi file",
    "roi_bps": 60.0,
    "raised": "2026-07-31T03:45:45.682895+00:00",
    "status": "open",
@@ -1007,7 +1007,7 @@
   {
    "id": "R0083",
    "source": "deep_sweep",
-   "summary": "SYNTH0731 P3-16 [DI-12 + alpha F2/O3]: options VRP unlock \u2014 Deribit surface hourly + 3-5 strikes/expiry; build the consumer for graveyard_resurrection_queue; pre-registered VRP re-screen at ~60 obs; refresh forward_slots snapshot + fill idle Holm slot",
+   "summary": "SYNTH0731 P3-16 [DI-12 + alpha F2/O3]: options VRP unlock — Deribit surface hourly + 3-5 strikes/expiry; build the consumer for graveyard_resurrection_queue; pre-registered VRP re-screen at ~60 obs; refresh forward_slots snapshot + fill idle Holm slot",
    "roi_bps": 45.0,
    "raised": "2026-07-31T03:45:45.822061+00:00",
    "status": "open",
@@ -1019,7 +1019,7 @@
   {
    "id": "R0084",
    "source": "deep_sweep",
-   "summary": "SYNTH0731 P3-17 [DM-5/M4/M6/DM-12]: moat conversion \u2014 schedule micro_factory daily; tape records attempts/partials (open_fail rows) + TCA fields on all open paths + cashcarry_error.log fence; data_vitals globs cover execution_tape + lake. Micro-feature screening itself = existing R0003",
+   "summary": "SYNTH0731 P3-17 [DM-5/M4/M6/DM-12]: moat conversion — schedule micro_factory daily; tape records attempts/partials (open_fail rows) + TCA fields on all open paths + cashcarry_error.log fence; data_vitals globs cover execution_tape + lake. Micro-feature screening itself = existing R0003",
    "roi_bps": 55.0,
    "raised": "2026-07-31T03:45:45.886004+00:00",
    "status": "open",
@@ -1031,7 +1031,7 @@
   {
    "id": "R0085",
    "source": "deep_sweep",
-   "summary": "SYNTH0731 P3-18 [DI-8/DI-11]: feed repairs \u2014 fix dead futclose path (+0 closes x139 symbols, 7d stale) + hole-drain tranche in dl_oi_ls_universe (312-1663d holes self-logged daily); revive COT via CFTC direct weekly CSV (free; MT5 transport dead since 06-21)",
+   "summary": "SYNTH0731 P3-18 [DI-8/DI-11]: feed repairs — fix dead futclose path (+0 closes x139 symbols, 7d stale) + hole-drain tranche in dl_oi_ls_universe (312-1663d holes self-logged daily); revive COT via CFTC direct weekly CSV (free; MT5 transport dead since 06-21)",
    "roi_bps": 30.0,
    "raised": "2026-07-31T03:45:45.950552+00:00",
    "status": "open",
@@ -1043,7 +1043,7 @@
   {
    "id": "R0086",
    "source": "deep_sweep",
-   "summary": "SYNTH0731 P2-19 [val V11/V6/V14 + 0729F11]: validation small-fix bundle \u2014 DSR n_eff=n/autocorr_factor (3 lines, anti-conservative side); _PERIODS_PER_YEAR x4.1 annual_sharpe inflation; event_study bootstrap overlap conservatism",
+   "summary": "SYNTH0731 P2-19 [val V11/V6/V14 + 0729F11]: validation small-fix bundle — DSR n_eff=n/autocorr_factor (3 lines, anti-conservative side); _PERIODS_PER_YEAR x4.1 annual_sharpe inflation; event_study bootstrap overlap conservatism",
    "roi_bps": 50.0,
    "raised": "2026-07-31T03:45:46.017975+00:00",
    "status": "open",
@@ -1055,7 +1055,7 @@
   {
    "id": "R0087",
    "source": "deep_sweep",
-   "summary": "SYNTH0731 P2-20 [val X4/U2]: implement the lake-backed _forward_score() stub in run_rejection_rescore \u2014 57 rejects, 0 forward-scored, ~6 days; the desk s only false-negative instrument",
+   "summary": "SYNTH0731 P2-20 [val X4/U2]: implement the lake-backed _forward_score() stub in run_rejection_rescore — 57 rejects, 0 forward-scored, ~6 days; the desk s only false-negative instrument",
    "roi_bps": 45.0,
    "raised": "2026-07-31T03:45:46.085918+00:00",
    "status": "open",
@@ -1079,7 +1079,7 @@
   {
    "id": "R0089",
    "source": "deep_sweep",
-   "summary": "SYNTH0731 P0-2b [exec F13]: dispose the 8-item carried execution table \u2014 venue_reconcile contradiction, CI phantom error-log stamps, SPOT-EXCESS page hook, reconcile retry cap, dup closes/atomic persist, hurdle consumer, BNB burn decision, web/tca.json writer",
+   "summary": "SYNTH0731 P0-2b [exec F13]: dispose the 8-item carried execution table — venue_reconcile contradiction, CI phantom error-log stamps, SPOT-EXCESS page hook, reconcile retry cap, dup closes/atomic persist, hurdle consumer, BNB burn decision, web/tca.json writer",
    "roi_bps": 40.0,
    "raised": "2026-07-31T03:45:46.237561+00:00",
    "status": "open",
@@ -1103,7 +1103,7 @@
   {
    "id": "R0091",
    "source": "deep_sweep",
-   "summary": "SYNTH0731 P3-22 [DI-15 + DM M12/DM-8]: era archaeology \u2014 reconcile 69k-thread-catalog claim vs 713 rows on disk (sec33 credit from artifacts only); first thread-to-series-to-StageA conversion as the existence proof for the 8btc universe",
+   "summary": "SYNTH0731 P3-22 [DI-15 + DM M12/DM-8]: era archaeology — reconcile 69k-thread-catalog claim vs 713 rows on disk (sec33 credit from artifacts only); first thread-to-series-to-StageA conversion as the existence proof for the 8btc universe",
    "roi_bps": 20.0,
    "raised": "2026-07-31T03:45:46.375608+00:00",
    "status": "open",
@@ -1127,7 +1127,7 @@
   {
    "id": "R0093",
    "source": "deep_sweep",
-   "summary": "SYNTH0731 P1-8c [meta X6/M6]: principal_doctrine.txt diff triggers auto blind-spot row origin=principal \u2014 the failure-signal gauge logged 0 principal rows across 6+ doctrine orders since 07-26",
+   "summary": "SYNTH0731 P1-8c [meta X6/M6]: principal_doctrine.txt diff triggers auto blind-spot row origin=principal — the failure-signal gauge logged 0 principal rows across 6+ doctrine orders since 07-26",
    "roi_bps": 20.0,
    "raised": "2026-07-31T03:45:46.509584+00:00",
    "status": "open",
@@ -1151,7 +1151,7 @@
   {
    "id": "R0095",
    "source": "deep_sweep",
-   "summary": "SYNTH0731 P1-8d [E-6/E-8/E-12/E-13]: intelligence-cycle honesty \u2014 nonzero exit = ERROR not NO-INPUT in _subprocess_cap; fix label_factory.py:296 (.iloc/reset_index) + dup-index regression test; point research layer at NAV-chain equity (third equity source); research_priority wired to real family kills or labeled DATA-FREE",
+   "summary": "SYNTH0731 P1-8d [E-6/E-8/E-12/E-13]: intelligence-cycle honesty — nonzero exit = ERROR not NO-INPUT in _subprocess_cap; fix label_factory.py:296 (.iloc/reset_index) + dup-index regression test; point research layer at NAV-chain equity (third equity source); research_priority wired to real family kills or labeled DATA-FREE",
    "roi_bps": 55.0,
    "raised": "2026-07-31T03:45:46.643172+00:00",
    "status": "open",
@@ -1690,7 +1690,7 @@
    "roi_bps": 0.0,
    "raised": "2026-07-31T18:00:00+00:00",
    "status": "done",
-   "reason": "built, 10 review tests, 21/21 build standard, registered as a \u00a736 producer",
+   "reason": "built, 10 review tests, 21/21 build standard, registered as a §36 producer",
    "commit": null,
    "due": null,
    "note": "weights are fixed and nothing here fine-tunes -- what improves is evidence-weighted knowledge of which setups pay, the way a journal improves a human trader"
@@ -2135,6 +2135,138 @@
   },
   {
    "id": "R0176",
+   "source": "max_audit",
+   "summary": "L1.36 law gate ordered its CONSUMER before its PRODUCER: check_law_families reads data/enforcement_matrix.json, which build_enforcement_matrix writes and .gitignore excludes -- so the gate was green on any machine that had run it before and RED on every clean checkout. Master CI failed 10 consecutive runs on 'BREACH check_law_families.py (rc=2)' for commits that passed locally. Reordered producer-first; pinned by test.",
+   "roi_bps": null,
+   "raised": "2026-07-31T18:24:11.992788+00:00",
+   "status": "implemented",
+   "reason": "fixed and pushed on claude/wonderful-darwin-7uiobi; verified on a fresh worktree with data/ stripped -- law gate PASS on the FIRST run, ruff clean, mypy clean over 389 files, pytest exit 0",
+   "commit": "469d572",
+   "due": null,
+   "disposed": "2026-07-31T18:28:16.484706+00:00"
+  },
+  {
+   "id": "R0177",
+   "source": "max_audit",
+   "summary": "check_law_families swallowed a missing enforcement matrix into 'enforced = {}', so an ABSENT INPUT arrived at the comparison as 'the matrix says not one of these 65 laws has a fence' -- all six families reported DECORATIVE, the fence's most alarming state, with the real cause printed nowhere. Missing input now reports UNMEASURED with the cause named, still exit 2.",
+   "roi_bps": null,
+   "raised": "2026-07-31T18:24:22.958107+00:00",
+   "status": "implemented",
+   "reason": "fixed and pushed on claude/wonderful-darwin-7uiobi; verified on a fresh worktree with data/ stripped -- law gate PASS on the FIRST run, ruff clean, mypy clean over 389 files, pytest exit 0",
+   "commit": "469d572",
+   "due": null,
+   "disposed": "2026-07-31T18:28:16.532536+00:00"
+  },
+  {
+   "id": "R0178",
+   "source": "max_audit",
+   "summary": "L1.44 read_fresh resolved relative paths against an internally-guessed install root instead of cwd, making it the only reader in its own process consuming a different install's artifacts than the cwd-relative reads beside it. Broke test_guard_consumes_fresh_artifact outright and made its two neighbours pass while scoring production state instead of their fixtures. Now cwd, with QUANT_FRESH_ROOT as the explicit override.",
+   "roi_bps": null,
+   "raised": "2026-07-31T18:24:23.012602+00:00",
+   "status": "implemented",
+   "reason": "fixed and pushed on claude/wonderful-darwin-7uiobi; verified on a fresh worktree with data/ stripped -- law gate PASS on the FIRST run, ruff clean, mypy clean over 389 files, pytest exit 0",
+   "commit": "469d572",
+   "due": null,
+   "disposed": "2026-07-31T18:28:16.582966+00:00"
+  },
+  {
+   "id": "R0179",
+   "source": "max_audit",
+   "summary": "tests/governance/test_law_families.py read the gitignored generated enforcement matrix without building it, so it passed only on a machine that had already built it -- on CI solely because an earlier workflow step happened to run the builder first. Now builds its own input via an autouse fixture.",
+   "roi_bps": null,
+   "raised": "2026-07-31T18:24:23.080254+00:00",
+   "status": "implemented",
+   "reason": "fixed and pushed on claude/wonderful-darwin-7uiobi; verified on a fresh worktree with data/ stripped -- law gate PASS on the FIRST run, ruff clean, mypy clean over 389 files, pytest exit 0",
+   "commit": "469d572",
+   "due": null,
+   "disposed": "2026-07-31T18:28:16.629571+00:00"
+  },
+  {
+   "id": "R0180",
+   "source": "max_audit",
+   "summary": "Four mypy --strict errors under the CI-resolved mypy (unpinned >=1.10, resolving to 2.3.0) in equivalent_mutants, positive_control x2 and crypto_source. CI never reached the mypy step because the law gate failed first, so these were a second red waiting behind the first.",
+   "roi_bps": null,
+   "raised": "2026-07-31T18:24:23.140151+00:00",
+   "status": "implemented",
+   "reason": "fixed and pushed on claude/wonderful-darwin-7uiobi; verified on a fresh worktree with data/ stripped -- law gate PASS on the FIRST run, ruff clean, mypy clean over 389 files, pytest exit 0",
+   "commit": "469d572",
+   "due": null,
+   "disposed": "2026-07-31T18:28:16.677376+00:00"
+  },
+  {
+   "id": "R0181",
+   "source": "max_audit",
+   "summary": "certifi was an UNDECLARED runtime dependency: scripts/reconcile_venue.py imports it at module scope and calls certifi.where() at import time to build its SSL context, so the venue reconciler cannot be imported without it. It was merely present transitively, so it worked on every machine that had already pulled it in and would be absent from a clean 'pip install -e .' -- a DR restore producing a desk whose reconciler crashes on import. Declared in pyproject dependencies. Swept every third-party import across scripts/ and libs/: the rest are optional and already carry mypy overrides.",
+   "roi_bps": null,
+   "raised": "2026-07-31T18:34:50.107795+00:00",
+   "status": "implemented",
+   "reason": "certifi declared in pyproject [project] dependencies; import sweep across scripts/ and libs/ confirmed it was the only undeclared hard dependency",
+   "commit": "ea693b8",
+   "due": null,
+   "disposed": "2026-07-31T18:35:07.005218+00:00"
+  },
+  {
+   "id": "R0182",
+   "source": "max_audit",
+   "summary": "Moat writers measured the WRONG FILESYSTEM: execution_tape._disk_ok and both recorders called shutil.disk_usage('/') while writing under data/moat/, which is a different disk whenever the box has a data volume. Wrong in both directions and silent in both -- pauses the writer while the moat volume is empty, or lets writes fill it unchecked; and append() is an observer whose False the executor ignores by design, so the refusing direction destroys fills exactly like the rolling buffer this module exists to replace. It also made the tape tests inherit the host's disk fill: 7 CI failures on a runner whose / is >80% full, for tests writing only to tmp_path. Guard now probes the target path's own filesystem.",
+   "roi_bps": null,
+   "raised": "2026-07-31T18:47:26.053943+00:00",
+   "status": "implemented",
+   "reason": "disk guard now probes the target path's own filesystem in execution_tape and both moat recorders; reproduced the CI condition by simulating / at 95% (append refused before, succeeds now); tape tests stub the guard and two new tests cover the guard itself",
+   "commit": "c5f2ed4",
+   "due": null,
+   "disposed": "2026-07-31T18:51:10.911343+00:00"
+  },
+  {
+   "id": "R0183",
+   "source": "max_audit",
+   "summary": "Promotion gate certified growth it did not have: BREAKEVEN_HIT=0.311 is the ARITHMETIC breakeven (E[R]=0), but the desk maximises E[log wealth] and variance drag puts the log-breakeven at 33.5% at the 6% floor, rising to 36.0% at the 12% ceiling. A sleeve measured at 32% cleared hit_rate_above_breakeven, took rung 1's cap increase and rung 2's real money, and compounded the book DOWNWARD throughout. Criterion now solves E[log]=0 at the risk fraction actually in force (median of closed marks), so the bar rises with the sleeve's own promotions.",
+   "roi_bps": null,
+   "raised": "2026-07-31T19:14:07.291678+00:00",
+   "status": "implemented",
+   "reason": "log_breakeven() solves E[log]=0 at the risk fraction in force; criterion rewired; pinned by two tests including the f->0 sanity check against the resolver's stated 31.1%",
+   "commit": "e7ea268",
+   "due": null,
+   "disposed": "2026-07-31T19:18:20.433595+00:00"
+  },
+  {
+   "id": "R0184",
+   "source": "max_audit",
+   "summary": "measured_risk_cap computed Kelly on GROSS odds b=3.0 (the ladder's winner:loser shape before costs) while resolve_paper_book marks the book NET of the fee/slippage/funding stack that moves breakeven from 25.0% to 31.1%. Sizing off a payoff the desk never receives overstates Kelly at every hit rate, and Kelly is the one input where overstating it overstates the BET in the growth-destroying direction: at a measured 38% the cap was 8.7% where net odds give 6.0%. Fixed to net odds 2.23:1. Investigated and REJECTED clamping the floor to full Kelly: a zero cap places no trades, so the book never reaches KILL_AFTER_N and the sleeve becomes unkillable; the thin-edge case is already held by the promotion gate refusing live money below breakeven. Conflict now reported in the artifact instead.",
+   "roi_bps": null,
+   "raised": "2026-07-31T19:14:07.346131+00:00",
+   "status": "implemented",
+   "reason": "Kelly now on net odds 2.23:1; full-Kelly clamp investigated and rejected with the kill-deadlock reason recorded in code and test; conflict surfaced as floor_above_full_kelly",
+   "commit": "e7ea268",
+   "due": null,
+   "disposed": "2026-07-31T19:18:20.475927+00:00"
+  },
+  {
+   "id": "R0185",
+   "source": "max_audit",
+   "summary": "The desk's most consequential number was never measured: the winner:loser R shape. realised_R is written onto every mark and aggregated only as a flat mean, never split into the ratio that the 25.0% gross breakeven, the 31.1% cost-adjusted one, measured_risk_cap's Kelly odds, and check_promotion_gate's log-breakeven all consume. It is also the steepest gradient in the system -- holding hit rate and size fixed, the odds of a doubling year run 0.2% at a 2R winner, 44% at 3R, 93% at 4R. A sleeve realising 2.27:1 needs a 37.9% hit rate to break even, not 31.1%, which lands the requirement ABOVE the rate the desk aims at -- invisible while the shape is assumed. realised_payoff() now measures it, stays ASSUMED under 20 closed, and reports measured vs assumed side by side.",
+   "roi_bps": null,
+   "raised": "2026-07-31T19:24:04.289947+00:00",
+   "status": "implemented",
+   "reason": "realised_payoff() measures winner:loser R from the marks, holds ASSUMED under 20 closed, reports measured vs assumed breakeven; pinned by two tests",
+   "commit": "9a4e231",
+   "due": null,
+   "disposed": "2026-07-31T19:28:27.707102+00:00"
+  },
+  {
+   "id": "R0186",
+   "source": "max_audit",
+   "summary": "run_discretionary_max targeted the hit rate alone -- one term of four. Compounding enters through exactly n (independent bets), p (hit rate), b (winner shape) and f (size), and p is not even the steepest: one extra R of winner is worth ~5pp of hit rate at the margin, with a measured exchange rate (a 4R trail pays down to a 28.7% hit rate against a 3R/35% baseline). growth_levers() now decomposes the identity, ranks by marginal effect, puts ASSUMED inputs first because an unmeasured input cannot be improved on purpose, and records SIZE as the anti-lever: growth rises with f only to full Kelly and the odds of a doubling year peak earlier still, so 6%->20% risk at a 38% hit rate CUTS those odds from 73% to 31%.",
+   "roi_bps": null,
+   "raised": "2026-07-31T19:24:04.342959+00:00",
+   "status": "implemented",
+   "reason": "growth_levers() decomposes the four-term identity, ranks ASSUMED inputs first, records size as the anti-lever with its arithmetic; pinned by two tests",
+   "commit": "9a4e231",
+   "due": null,
+   "disposed": "2026-07-31T19:28:27.753426+00:00"
+  },
+  {
+   "id": "R0187",
    "source": "deep_sweep",
    "summary": "inbox #85: rebuild quarantined anytime_valid as e-process (wealth M_t=prod(1-l+l*X), confirm at M>=1/alpha; Ville) -- daily Stage-B peeking becomes valid by construction, cures measured x4.9 alpha inflation; recipes: e-backtesting arXiv 2209.00991, AV t-test 2310.03722; caveat t-test non-Gaussian unconfirmed, default bounded e-process (litminer run4 W1)",
    "roi_bps": 80.0,
@@ -2143,10 +2275,11 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "note": "renumbered from R0176 after sibling-session ID race, merge 2026-07-31"
   },
   {
-   "id": "R0177",
+   "id": "R0188",
    "source": "deep_sweep",
    "summary": "inbox #86: de-weld gauntlet via IRT -- run synthetic true-SR ladder 0/1/2/3/5 through each gate, fit 2PL sigma(theta-beta), drop zero-discrimination gates, tune composite to P(pass|target SR)~50% max-information point; certify_gauntlet already emits the response matrix, only the fit is missing (Fluid Benchmarking/PSN-IRT/Agent Psychometrics converge; litminer run4 W3)",
    "roi_bps": 100.0,
@@ -2155,10 +2288,11 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "note": "renumbered from R0177 after sibling-session ID race, merge 2026-07-31"
   },
   {
-   "id": "R0178",
+   "id": "R0189",
    "source": "deep_sweep",
    "summary": "inbox #87: panel aggregation -> calibrated soft voting / Bayesian fusion; singletons kept as scored minority reports; cross-family confidences multiply (arXiv 2606.13591; debate cancellation CONFIRMED by ICLR25 MAD + 2511.07784 + 2606.03032 -- do not rebuild debate) (litminer run4 W4)",
    "roi_bps": 40.0,
@@ -2167,10 +2301,11 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "note": "renumbered from R0178 after sibling-session ID race, merge 2026-07-31"
   },
   {
-   "id": "R0179",
+   "id": "R0190",
    "source": "deep_sweep",
    "summary": "inbox #88: verification protocol -- rubric-decomposed <=3 targeted checks per review; CAP review loops at 3-4 (gains plateau); budget for 12.8% verifier wrong-flip risk round 1 (DeepVerifier 2601.15808: F1 73.2 vs 61.5 agent-as-judge, +11.1pp end-task) (litminer run4 W5)",
    "roi_bps": 30.0,
@@ -2179,10 +2314,11 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "note": "renumbered from R0179 after sibling-session ID race, merge 2026-07-31"
   },
   {
-   "id": "R0180",
+   "id": "R0191",
    "source": "deep_sweep",
    "summary": "inbox #89: calibration program config -- per-family per-task-type shrinkage, RE-BASELINE on every model upgrade (ConfidenceBench 2607.20526: Claude Brier 0.103 vs GPT-5 0.117-0.141, 5/15 models worse than calibrated-random; newer!=better); elicitation via self-critique+consistency (2606.03437); adopt per-claim confidence-minus-evidence-quality gap metric (2606.11851) (litminer run4 W2)",
    "roi_bps": 35.0,
@@ -2191,10 +2327,11 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "note": "renumbered from R0180 after sibling-session ID race, merge 2026-07-31"
   },
   {
-   "id": "R0181",
+   "id": "R0192",
    "source": "deep_sweep",
    "summary": "inbox #90: verify post-2024 funding-carry compression on desk decade archive (BIS WP1087 primary: ETF launch cut carry ~3pp/-36%; He et al 11%/yr decay; survey claims 2025 carry Sharpe NEGATIVE, summary-grade) and wire measured decay slope into funding-sleeve sizing priors; watch access events as compression triggers (litminer run4 LIT-e F2)",
    "roi_bps": 60.0,
@@ -2203,10 +2340,11 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "note": "renumbered from R0181 after sibling-session ID race, merge 2026-07-31"
   },
   {
-   "id": "R0182",
+   "id": "R0193",
    "source": "deep_sweep",
    "summary": "watchlist cards 23-25 build batch (litminer run4 LIT-e, dues 08-07/08-10): (23) BIS WP1087 carry->liquidation screen construction on ingested axes + COT-BTC contract extension via existing run_cot_screen.py (novelty-gated vs 41y COT kill: different construction); (24) regulatory-event timeline build for the existing event gate (pre-registered null classes: general warnings, CBDC); (25) stablecoin run-signature episodic conditioning variables (sr1073 primary; mint/burn pair + safe-coin premium). Screens themselves stay Stage-A, zero promotion",
    "roi_bps": 45.0,
@@ -2215,10 +2353,11 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "note": "renumbered from R0182 after sibling-session ID race, merge 2026-07-31"
   },
   {
-   "id": "R0183",
+   "id": "R0194",
    "source": "deep_sweep",
    "summary": "inbox #91: adopt sqrt-impact cost curve (spread/2 + c*sigma*sqrt(Q/ADV)) from AQR $1.7T live-trade record as the s42 growth-path capacity model; 85% of impact permanent; real costs ~10x smaller than academic estimates (litminer run4 buyside F1)",
    "roi_bps": 40.0,
@@ -2227,10 +2366,11 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "note": "renumbered from R0183 after sibling-session ID race, merge 2026-07-31"
   },
   {
-   "id": "R0184",
+   "id": "R0195",
    "source": "deep_sweep",
    "summary": "inbox #92: READ-ONLY cross-signal netting audit of order logs -- do carry+trend sleeves send offsetting trades same instrument same window; price the leak bps/yr; any fix respects L1.38 change window (AQR Craftsmanship primary; litminer run4 buyside F7)",
    "roi_bps": 25.0,
@@ -2239,10 +2379,11 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "note": "renumbered from R0184 after sibling-session ID race, merge 2026-07-31"
   },
   {
-   "id": "R0185",
+   "id": "R0196",
    "source": "deep_sweep",
    "summary": "inbox #93: trend-family doctrine pack -- (1) re-run Man TSMOM benchmarks on own tape, published-vs-OOS decay -58 to -65pct measured in crypto (McLean-Pontiff lands); (2) vol-targeting boundary law: sizing tool never alpha, slow/blended estimators, ETH fast-scaling HURTS; (3) trend-bleed attribution SR=a+b*|SR_mkt| -- check |move| before doubting efficacy; (4) costed breadth wall ~10-15 coins, desk liquid-perp universe IS the capacity-positive zone (litminer run4 buyside F2-F6)",
    "roi_bps": 35.0,
@@ -2251,7 +2392,8 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "note": "renumbered from R0185 after sibling-session ID race, merge 2026-07-31"
   }
  ]
 }

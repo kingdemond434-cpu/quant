@@ -108,3 +108,35 @@ def test_untagged_trades_leave_two_regimes_unmeasured_not_satisfied(tmp_path):
     rep = evaluate(tmp_path)
     assert rep["criteria"]["two_regimes"]["state"] == "UNMEASURED"
     assert rep["granted_rung"] == 3
+
+
+# --- the standard is E[log wealth], not expected R ---------------------------------------------
+
+def test_log_breakeven_is_above_the_arithmetic_one_and_rises_with_size():
+    """31.1% is where expected R turns positive; it is NOT where the book starts compounding.
+
+    Between the two sits variance drag: a sequence averaging a positive R can still shrink capital
+    geometrically. Promoting on the arithmetic figure took a sleeve measured at 32% through rung 1's
+    cap increase and rung 2's real money while it compounded the book DOWNWARD.
+    """
+    from scripts.check_promotion_gate import BREAKEVEN_HIT, log_breakeven
+    assert log_breakeven(0.06) > BREAKEVEN_HIT
+    assert round(log_breakeven(0.06), 3) == 0.335
+    # drag grows with size, so the sleeve's own promotions raise the bar it must keep clearing
+    assert log_breakeven(0.12) > log_breakeven(0.06) > log_breakeven(0.02)
+    # and it collapses to the arithmetic breakeven as size goes to zero -- the sanity check that
+    # the payoff/cost reconstruction here matches resolve_paper_book's stated 3:1 and ~24% of R
+    assert abs(log_breakeven(1e-9) - BREAKEVEN_HIT) < 0.002
+
+
+def test_a_sleeve_between_the_two_breakevens_is_refused_promotion(tmp_path):
+    """32% clears expected-R and fails E[log] -- the exact band the old gate promoted."""
+    from scripts.check_promotion_gate import _criteria
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data/paper_book_pnl.json").write_text(json.dumps({
+        "n_resolved": 60, "win_rate": 0.32,
+        "marks": [{"closed": True, "sizing": {"risk_fraction": 0.06}} for _ in range(60)],
+    }), "utf-8")
+    c = _criteria(tmp_path)["hit_rate_above_breakeven"]
+    assert c["ok"] is False
+    assert "LOG-breakeven" in c["why"]

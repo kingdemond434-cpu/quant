@@ -222,6 +222,11 @@ RISK_CAP_FLOOR = 0.06
 #: 12% ceiling: half-Kelly at a 38% hit rate, the top of the band this desk considers plausible.
 #: Above it the sizer would be extrapolating past any hit rate it has ever observed.
 RISK_CAP_CEILING = 0.12
+#: Execution cost as a fraction of one R, measured in resolve_paper_book from the Binance USD-M
+#: fee schedule plus observed slippage and funding: ~24% of a full R at taker-in/taker-out, the
+#: same figure that moves the breakeven hit rate from 25.0% to 31.1%. It belongs in the Kelly
+#: odds because the desk receives the NET payoff, never the gross one.
+R_COST = 0.24
 
 
 def measured_risk_cap(root: Path | None = None) -> dict[str, Any]:
@@ -243,13 +248,45 @@ def measured_risk_cap(root: Path | None = None) -> dict[str, Any]:
                        "measured, so the floor applies. Not timidity: a cap derived from an "
                        "unobserved rate is a guess wearing a formula."}
     p = float(hit if not isinstance(hit, dict) else hit.get("mean", 0.0))
-    b = 3.0                                              # the ladder's realised winner:loser shape
+    # NET odds, not gross. This used b = 3.0 -- the ladder's winner:loser shape BEFORE costs --
+    # while resolve_paper_book marks the book net of the same fee/slippage/funding stack that
+    # moves the breakeven hit rate from 25.0% to 31.1%. Sizing off a payoff the desk does not
+    # actually receive overstates Kelly at every hit rate, and Kelly is the one quantity where
+    # overstating the input overstates the bet in the direction that destroys growth.
+    win, loss = 3.0 - R_COST, 1.0 + R_COST               # costs widen the loss AND shave the win
+    b = win / loss
     full = (p * b - (1 - p)) / b
     cap = max(RISK_CAP_FLOOR, min(RISK_CAP_CEILING, full / 2.0))
+    # THE FLOOR IS DELIBERATELY NOT KELLY-BOUNDED, and this note exists because clamping it to
+    # full Kelly is the obvious-looking "fix" that breaks two things. Below a ~35% measured hit
+    # rate the 6% floor does sit above full Kelly on these net odds, which looks like an overbet
+    # to correct. It is not, because of what surrounds it:
+    #   * A sleeve that thin can never reach live money anyway -- check_promotion_gate's
+    #     hit_rate_above_breakeven blocks rung 2, so the floor only ever applies on PAPER, where
+    #     the cost of the overbet is fictional and the EVIDENCE is the entire point.
+    #   * Clamping to full Kelly sends the cap to zero once the measured edge goes negative, and
+    #     a zero cap places no trades -- so the book never reaches KILL_AFTER_N = 50 closed and
+    #     the kill condition can never fire. The sleeve would be dead and unburiable at once,
+    #     which is strictly worse than a bounded paper overbet.
+    # Death is kill_check's decision and live sizing is the gate's; shrinking to irrelevance is
+    # neither, and would pre-empt both silently.
+    # `full < cap`, NOT `0 < full < cap`: a NEGATIVE full Kelly is the case most worth reporting
+    # -- the measured edge is adverse and any positive size loses -- and the tighter form silently
+    # excluded exactly it, flagging the mild overbets while staying quiet on the severe one.
+    over_kelly = full < cap
     return {"cap": round(cap, 4), "state": "MEASURED", "n_resolved": n,
-            "hit_rate": round(p, 4), "full_kelly": round(full, 4),
-            "why": f"half-Kelly at a measured {p:.1%} hit rate is {full/2:.1%}; "
-                   f"clamped to [{RISK_CAP_FLOOR:.0%}, {RISK_CAP_CEILING:.0%}]"}
+            "hit_rate": round(p, 4), "full_kelly": round(full, 4), "net_odds": round(b, 4),
+            "floor_above_full_kelly": over_kelly,
+            "why": f"half-Kelly at a measured {p:.1%} hit rate on NET odds {b:.2f}:1 is "
+                   f"{full/2:.1%}; clamped to [{RISK_CAP_FLOOR:.0%}, {RISK_CAP_CEILING:.0%}]"
+                   + (f". NOTE the {RISK_CAP_FLOOR:.0%} floor is above full Kelly {full:.1%} at "
+                      "this measured rate"
+                      + (" -- which is NEGATIVE, so the measured edge is adverse and the kill "
+                         "condition is the organ that should be ending this, not the sizer"
+                         if full <= 0 else "")
+                      + ". Paper-only by construction (the promotion gate blocks live money "
+                        "below breakeven); reported, not silently clamped"
+                      if over_kelly else "")}
 
 #: TOTAL heat across all live positions. This is the real aggression dial now, and at 30% it is
 #: HIGHER than the old design ever ran (one 20% bet at a time), while every individual bet is

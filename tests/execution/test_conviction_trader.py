@@ -737,3 +737,39 @@ def test_the_lenses_are_actually_different():
     assert len(set(_LENSES)) == len(_LENSES) == ENSEMBLE_N
     assert any("OPPOSITE" in x for x in _LENSES)
     assert any("already in" in x for x in _LENSES)
+
+
+# --- Kelly is computed on the payoff the desk actually RECEIVES --------------------------------
+
+def test_kelly_uses_net_odds_not_the_gross_ladder_shape(monkeypatch):
+    """It used b = 3.0 -- the winner:loser shape BEFORE costs -- while the book is marked NET.
+
+    resolve_paper_book deducts the same fee/slippage/funding stack that moves the breakeven hit
+    rate from 25.0% to 31.1%, so sizing off 3:1 claims a payoff the desk never receives. Kelly is
+    the one place where overstating the input overstates the BET, in the growth-destroying
+    direction: at a measured 38% the old cap was 8.7% where the net-odds cap is 6.0%.
+    """
+    import libs.self_improvement.forecast_calibration as fc
+    monkeypatch.setattr(fc, "report", lambda: {"n_resolved": 60, "hit_rate_posterior": 0.38})
+    out = measured_risk_cap(Path("."))
+    assert out["state"] == "MEASURED"
+    assert out["net_odds"] < 3.0                       # costs widen the loss and shave the win
+    assert round(out["net_odds"], 2) == 2.23
+    assert out["cap"] < 0.0867                         # what the gross-odds sizer would have bet
+    assert out["cap"] == RISK_CAP_FLOOR
+
+
+def test_floor_above_full_kelly_is_reported_never_silently_clamped(monkeypatch):
+    """Clamping the floor to full Kelly is the obvious-looking fix that breaks the kill condition.
+
+    A zero cap places no trades, so the book never reaches KILL_AFTER_N closed and the sleeve can
+    never be killed -- dead and unburiable at once. The thin-edge case is already handled by the
+    promotion gate refusing live money below breakeven, so the floor stays and the conflict is
+    surfaced in the artifact instead of resolved by silently shrinking to irrelevance.
+    """
+    import libs.self_improvement.forecast_calibration as fc
+    monkeypatch.setattr(fc, "report", lambda: {"n_resolved": 60, "hit_rate_posterior": 0.30})
+    out = measured_risk_cap(Path("."))
+    assert out["cap"] == RISK_CAP_FLOOR                # never zero -- the kill must stay reachable
+    assert out["floor_above_full_kelly"] is True       # and never silent
+    assert "promotion gate" in out["why"]

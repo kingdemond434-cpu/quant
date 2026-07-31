@@ -11,7 +11,7 @@ _Seeded 2026-07-18; rotation rule: >=40% of budget to least-recently-covered._
 | Theses & dissertations | 2026-07-26 | 1 | see LIT_d | Opened this run as part of the non-English ground. The genre that must report negative results is the one nobody reads — free graveyard entries. |
 | Failed-replication literature | 2026-07-31 | 3 | **11 findings; 4 graveyard rows + 1 corroboration; 3 method rails; NK-004 at HIGH** | Richest family. Run 4 closed both stranded carry-overs: F11 upgraded via the OP-026 RePEc route (size-death corroboration into the graveyard), F8's PubPeer layer mined (+103% citation stacking quantified, author-level nodes named). Remaining un-exhausted: the "−0.31" digit in F4; systematic Retraction-DB sweep found NOTHING beyond the Lucey cluster (measured null — the cluster IS the crypto retraction story). |
 | Non-English academic | 2026-07-31 | 3 | see LIT_d + run-4 addendum | Run 4: J-STAGE `ファンディングレート` → **exactly 0 results** — the JP academic corpus has never used the funding-rate loanword; JP perp-mechanism knowledge lives ENTIRELY in the practitioner web. J-STAGE crypto-derivatives sub-corpus graded EXHAUSTED-BY-ABSENCE. NOTE: kimchi clock REFUTED 2026-07-30 (R0051) — the KR academic layer's load-bearing status is retired; 오정훈 resume point downgraded to context-only. |
-| AI/agent/LLM methods (cs.LG/cs.AI/evals) | 2026-07-31 | 2 | **Run 4: 8 findings → 5 inbox items (#85–#89) + R0176–R0180, aimed at LIVE wounds** | Paid again, harder: exact e-process recipe for the Stage-B ×4.9 peeking wound; IRT de-welding for the welded gauntlet (certify_gauntlet already emits the response matrix); calibrated soft-voting replacing the singleton-discarding plurality filter; debate cancellation RE-CONFIRMED on 2025-26 evidence. Venue verdicts logged (METR rich; Epoch thin-for-methods; OpenReview workshops rich — NeurIPS eval-of-agents deadline 08-29; MemAgents = unmined ground; CN tech reports thin-for-methods). |
+| AI/agent/LLM methods (cs.LG/cs.AI/evals) | 2026-07-31 | 2 | **Run 4: 8 findings → 5 inbox items (#85–#89) + R0187–R0191, aimed at LIVE wounds** | Paid again, harder: exact e-process recipe for the Stage-B ×4.9 peeking wound; IRT de-welding for the welded gauntlet (certify_gauntlet already emits the response matrix); calibrated soft-voting replacing the singleton-discarding plurality filter; debate cancellation RE-CONFIRMED on 2025-26 evidence. Venue verdicts logged (METR rich; Epoch thin-for-methods; OpenReview workshops rich — NeurIPS eval-of-agents deadline 08-29; MemAgents = unmined ground; CN tech reports thin-for-methods). |
 
 **Rotation note (the ≥40%-to-least-recently-covered rule), updated 2026-07-31.** Practitioner
 research is no longer at zero (visited run 4, and it paid). Least-recently-covered now: the FOUR
@@ -464,7 +464,7 @@ Two parallel deep digs, both ground files durable (`deep_sweep/20260731_litE_off
   risk corroborating the desk's overlay kills; Asness halving null correctly HELD OUT of the
   graveyard (summary-only).
 - **Routing totals for the run: 3 watchlist cards (§33-deferred with dates), 9 inbox entries
-  (#85–#93), 10 ledger rows (R0176–R0185), 13 research-memory rows, 4 universe-map sources,
+  (#85–#93), 10 ledger rows (R0187–R0196; renumbered from R0176–R0185 at merge — sibling-session ID race), 13 research-memory rows, 4 universe-map sources,
   1 residual gap, OP-026a operator propagation, 2 graveyard edits, NK-004 HIGH + NK-005 extended.**
 
 ### ✅ ITEM 3 [LIT-c + expansion reserve] — engine frontier mined at the desk's live wounds. **CLOSED.**
@@ -473,7 +473,7 @@ map 1:1 onto measured desk defects: e-process rebuild for the quarantined `anyti
 wealth-process recipe, ×4.9 → 1.0 by construction); IRT gate-discrimination fit for the welded
 gauntlet (the response matrix already exists — only the fit is missing); calibrated soft voting
 for the singleton-discarding panel filter. Confirmatory null: debate cancellation STANDS on
-2025-26 evidence (three independent sources). All routed (#85–#89, R0176–R0180).
+2025-26 evidence (three independent sources). All routed (#85–#89, R0187–R0191).
 
 ---
 

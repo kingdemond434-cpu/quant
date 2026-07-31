@@ -125,6 +125,18 @@ SLIPPAGE = 0.00015
 #: a positive-funding regime -- roughly 0.25% of equity per 20h hold at 10x notional.
 FUNDING_PER_8H = 0.0001
 
+#: The PLANNED winner:loser shape -- what the trail-and-pyramid ladder is built to produce, and
+#: the source of the 25.0% gross breakeven that the cost stack above lifts to 31.1%. Named so it
+#: reads as the assumption it is: realised_payoff() measures what actually came out of the ladder
+#: and reports the two side by side, because every money figure downstream consumes this ratio.
+ASSUMED_WINNER_R = 3.0
+#: Execution cost as a fraction of one R, derived from the measured fee/slippage/funding stack
+#: directly above: ~24% of a full R at taker-in/taker-out on the sizer's own leverage.
+COST_R = 0.24
+#: Cost-adjusted breakeven hit rate implied by the ASSUMED 3:1 shape, from those same measured
+#: costs. Stated for comparison against the MEASURED breakeven, never as a standard on its own.
+BREAKEVEN_ASSUMED = 0.311
+
 
 def trade_cost(leverage: float, units: float, hold_hours: float, *,
                entry_maker: bool = True) -> dict[str, float]:
@@ -363,6 +375,60 @@ def equity_curve(resolved: list[dict[str, Any]]) -> dict[str, Any]:
                     "path is rougher than this, never smoother"}
 
 
+#: Minimum resolved trades before the measured payoff replaces the assumed one. 20 is where the
+#: standard error on a mean R-multiple drops below ~0.4R for this distribution -- coarse, but
+#: enough to tell 2R from 4R, which is the distinction that decides whether the sleeve compounds.
+PAYOFF_MIN_N = 20
+
+
+def realised_payoff(resolved: list[dict[str, Any]]) -> dict[str, Any]:
+    """MEASURE the winner:loser R shape the sleeve actually produces, instead of assuming 3:1.
+
+    THE MOST CONSEQUENTIAL UNMEASURED NUMBER ON THE DESK. Every money figure downstream rests on
+    a 3R winner: the 25.0% gross breakeven, the 31.1% cost-adjusted one, the Kelly odds in
+    measured_risk_cap, check_promotion_gate's log-breakeven, the kill floor. All of it is an
+    ASSUMPTION about the trail-and-pyramid plan, and `realised_R` was written onto every mark and
+    then aggregated only as a flat mean -- never split into the winner:loser ratio the whole
+    apparatus consumes.
+
+    It is also the steepest gradient in the system, which is what makes leaving it unmeasured
+    expensive rather than untidy. Holding hit rate and size fixed, P(a year above +100%) runs
+    0.2% at a 2R winner, 44% at 3R, 93% at 4R. A desk assuming 3R while realising 2.5R is not
+    slightly optimistic; it is targeting a hit rate that cannot pay, and it would never find out,
+    because the assumption appears nowhere as a measurement to be contradicted.
+
+    Reported as a MEASUREMENT with its own state, never silently substituted: under PAYOFF_MIN_N
+    the assumed 3.0 stands and says so, because a payoff ratio from six trades would move the
+    Kelly sizer on noise.
+    """
+    rs = [float(m["realised_R"]) for m in resolved if m.get("realised_R") is not None]
+    wins = [r for r in rs if r > 0]
+    losses = [-r for r in rs if r <= 0]
+    if len(rs) < PAYOFF_MIN_N or not wins or not losses:
+        return {"state": "ASSUMED", "n": len(rs), "need": PAYOFF_MIN_N,
+                "winner_R": ASSUMED_WINNER_R, "loser_R": 1.0, "ratio": ASSUMED_WINNER_R,
+                "why": f"{len(rs)}/{PAYOFF_MIN_N} resolved with a winner and a loser -- the 3:1 "
+                       "shape stays an ASSUMPTION and is labelled one. A payoff ratio measured "
+                       "off a handful of trades would move the Kelly sizer on noise."}
+    mw, ml = sum(wins) / len(wins), sum(losses) / len(losses)
+    ratio = mw / ml if ml > 0 else float("inf")
+    # Cost-adjusted breakeven implied by the SHAPE THE SLEEVE ACTUALLY MADE, not the planned one.
+    w, loss_r = ratio - COST_R, 1.0 + COST_R
+    be = loss_r / (w + loss_r) if w + loss_r > 0 else None
+    return {"state": "MEASURED", "n": len(rs), "n_wins": len(wins), "n_losses": len(losses),
+            "winner_R": round(mw, 3), "loser_R": round(ml, 3), "ratio": round(ratio, 3),
+            "assumed_ratio": ASSUMED_WINNER_R,
+            "breakeven_hit": None if be is None else round(be, 4),
+            "vs_assumption": round(ratio - ASSUMED_WINNER_R, 3),
+            "why": f"winners average {mw:.2f}R against {ml:.2f}R losers = {ratio:.2f}:1 over "
+                   f"{len(rs)} closed, versus the {ASSUMED_WINNER_R:.1f}:1 assumed. Cost-adjusted "
+                   f"breakeven on the MEASURED shape is "
+                   + (f"{be:.1%}" if be is not None else "undefined")
+                   + f" (the assumed shape implies {BREAKEVEN_ASSUMED:.1%}). Losers above 1.0R "
+                     "mean stops are being jumped, not honoured -- that is a slippage finding, "
+                     "not a payoff one."}
+
+
 def kill_check(resolved: list[dict[str, Any]]) -> dict[str, Any]:
     """Evaluate the PRE-REGISTERED exit. Written before the data existed; not adjustable after.
 
@@ -520,6 +586,7 @@ def resolve_book(root: Path, *, now: datetime | None = None,
                              if m.get("realised_R") is not None)
                          / max(1, len([m for m in resolved if m.get("realised_R") is not None])),
                          4) if resolved else None),
+        "realised_payoff": realised_payoff(resolved),
         "equity": curve,
         "kill_condition": kill_check(resolved),
         "setup_performance": setup_performance(resolved),
