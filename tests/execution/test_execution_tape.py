@@ -4,14 +4,33 @@ down the live executor that feeds it."""
 from __future__ import annotations
 
 import json
+from pathlib import Path
+
+import pytest
 
 from libs.execution import execution_tape
+
+#: the real guard, captured before the autouse fixture stubs it out
+_REAL_DISK_OK = execution_tape._disk_ok
 
 
 def _rec(sym: str = "BTCUSDT", event: str = "open", **kw) -> dict:
     r = {"event": event, "symbol": sym, "opened": "2026-07-02T05:18:33+00:00", "notional": 100.0}
     r.update(kw)
     return r
+
+
+@pytest.fixture(autouse=True)
+def _disk_has_room(monkeypatch):
+    """These tests are about TAPE SEMANTICS, so the disk guard must not decide their verdict.
+
+    Without this they inherited the ambient fill level of whatever machine ran them: green on a
+    clean disk, and 7 failures on a GitHub runner whose / is over 80% full -- for tests that write
+    only to tmp_path. `append` swallows and returns False by design, so a blocked guard looked
+    identical to a broken tape. The guard's own behaviour is worth testing, and is, explicitly
+    below, rather than being an accident of the host.
+    """
+    monkeypatch.setattr(execution_tape, "_disk_ok", lambda path=None: True)
 
 
 def test_append_then_read_roundtrip(tmp_path):
@@ -101,3 +120,37 @@ def test_tape_outlives_the_rolling_cap(tmp_path):
     assert len(rolling) == 500            # buffer evicted 100 fills
     assert len(execution_tape.read(path=p)) == 600  # tape kept every one
     assert json.loads(p.read_text("utf-8").splitlines()[0])["symbol"] == "S0USDT"
+
+
+# --- the disk guard itself: measured on the TAPE's filesystem, never on "/" ---------------------
+
+def test_full_disk_refuses_the_append_and_writes_nothing(tmp_path, monkeypatch):
+    """The guard's real job, tested on purpose instead of inherited from the host."""
+    monkeypatch.setattr(execution_tape, "_disk_ok", lambda path=None: False)
+    p = tmp_path / "tape.jsonl"
+    assert execution_tape.append(_rec(), path=p) is False
+    assert not p.exists()                       # refused, not half-written
+    assert execution_tape.read(path=p) == []
+
+
+def test_disk_guard_measures_the_tapes_own_filesystem_not_root(tmp_path, monkeypatch):
+    """It used to call shutil.disk_usage("/") whatever path the tape was on.
+
+    data/moat sits on its own volume whenever the box has a data disk, so "/" is then simply a
+    different disk -- and the guard would pause the tape on a full root while the moat volume sat
+    empty, or let writes fill the moat volume unchecked. append() is an observer whose return
+    value the executor ignores by design, so the refusing direction destroys fills silently: the
+    exact failure this module was built to stop.
+    """
+    seen: list[str] = []
+    real = execution_tape.shutil.disk_usage
+
+    def spy(p):
+        seen.append(str(p))
+        return real("/")
+
+    monkeypatch.setattr(execution_tape.shutil, "disk_usage", spy)
+    _REAL_DISK_OK(tmp_path / "moat" / "deep" / "tape.jsonl")   # the real guard, not the stub
+    assert seen and seen[0] != "/"
+    # the tape's tree may not exist yet -- the nearest EXISTING ancestor is the right probe
+    assert Path(seen[0]) == tmp_path

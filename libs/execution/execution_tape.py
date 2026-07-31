@@ -34,8 +34,24 @@ _TAPE = Path("data/moat/execution_tape/cashcarry_trades.jsonl")
 _DISK_MAX_FRAC = 0.80  # same guard as the moat recorders -- never fill the disk for a log
 
 
-def _disk_ok() -> bool:
-    u = shutil.disk_usage("/")
+def _disk_ok(path: Path = _TAPE) -> bool:
+    """True when the filesystem THE TAPE ITSELF is written to has headroom.
+
+    It used to measure "/" unconditionally, which is a different disk from the tape's whenever
+    data/ sits on its own volume -- the normal shape for a VPS with a data disk. That is wrong in
+    both directions and silent in both: it refuses to write while the tape's own volume is empty,
+    or permits writes that fill it. The refusing direction is the dangerous one here, because
+    append() is an observer whose return value the executor ignores by design, so a mis-measured
+    guard destroys fills exactly the way the rolling buffer did -- the failure this module exists
+    to prevent. It also made the tape's tests inherit the ambient disk state of whatever machine
+    ran them: green on a clean disk, red on a full one (7 failures on a GitHub runner whose / is
+    over 80% full, for a test writing to tmp_path).
+
+    The tape may not exist yet, so probe the nearest existing ancestor -- that is the filesystem
+    the file will land on.
+    """
+    probe = path if path.exists() else next((p for p in path.parents if p.exists()), Path("/"))
+    u = shutil.disk_usage(probe)
     return (u.used / u.total) < _DISK_MAX_FRAC
 
 
@@ -54,7 +70,7 @@ def _key(rec: dict[str, Any]) -> str:
 def append(rec: dict[str, Any], *, path: Path = _TAPE) -> bool:
     """Append one fill event to the permanent tape. Never raises -- returns success."""
     try:
-        if not _disk_ok():
+        if not _disk_ok(path):
             return False
         path.parent.mkdir(parents=True, exist_ok=True)
         out = dict(rec)

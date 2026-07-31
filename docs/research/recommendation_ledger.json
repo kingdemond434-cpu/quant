@@ -2204,6 +2204,18 @@
    "commit": "ea693b8",
    "due": null,
    "disposed": "2026-07-31T18:35:07.005218+00:00"
+  },
+  {
+   "id": "R0182",
+   "source": "max_audit",
+   "summary": "Moat writers measured the WRONG FILESYSTEM: execution_tape._disk_ok and both recorders called shutil.disk_usage('/') while writing under data/moat/, which is a different disk whenever the box has a data volume. Wrong in both directions and silent in both -- pauses the writer while the moat volume is empty, or lets writes fill it unchecked; and append() is an observer whose False the executor ignores by design, so the refusing direction destroys fills exactly like the rolling buffer this module exists to replace. It also made the tape tests inherit the host's disk fill: 7 CI failures on a runner whose / is >80% full, for tests writing only to tmp_path. Guard now probes the target path's own filesystem.",
+   "roi_bps": null,
+   "raised": "2026-07-31T18:47:26.053943+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

@@ -121,8 +121,16 @@ def _get(path: str, params: str) -> object:
         return json.loads(r.read())
 
 
-def _disk_ok() -> bool:
-    u = shutil.disk_usage("/")
+def _disk_ok(path: Path = _ROOT) -> bool:
+    """True when the filesystem THE RECORDER WRITES TO has headroom.
+
+    Measured on the target path, not "/": data/moat sits on its own volume whenever the box has a
+    data disk, and then "/" is simply a different disk. Wrong in both directions and silent in
+    both -- it pauses the recorder while the moat volume is empty, or lets writes fill the moat
+    volume unchecked. Probe the nearest existing ancestor, since the tree may not exist yet.
+    """
+    probe = path if path.exists() else next((p for p in path.parents if p.exists()), Path("/"))
+    u = shutil.disk_usage(probe)
     return (u.used / u.total) < _DISK_MAX_FRAC
 
 
