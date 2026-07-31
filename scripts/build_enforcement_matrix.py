@@ -180,6 +180,10 @@ _MAP: dict[str, list[str]] = {
     # R0135: four money-path constants were found defective in one session, all round numbers
     # picked by analogy rather than computed. Four of four is a missing mechanism, not bad luck.
     "L1.41-sizing": ["scripts/check_sizing_derivation.py"],
+    # R0137: the dashboard showed carry as a SURVIVOR on P&L whose funding term was 3% of it. The
+    # desk's own two-sided bleed fence already said "naked leg" -- and gated nothing.
+    "L1.6-attribution": ["scripts/check_mechanism_attribution.py",
+                         "libs/execution/carry_accounting.py"],
     # L1.25a: null streaks throttle nothing -- an organ going quiet is caught by the freshness/
     # productivity wires REGARDLESS of its reason, so "stopped because nothing was working" trips
     # the same fence as "stopped because broken". The pessimism-freeze cannot hide.

@@ -1646,6 +1646,30 @@
    "commit": null,
    "due": null,
    "note": "the fence cannot check that a cited derivation is CORRECT, only that one exists and is specific -- stated in its docstring rather than implied"
+  },
+  {
+   "id": "R0136",
+   "source": "claude",
+   "summary": "POSITION CLOCK decoupled from FORECAST CLOCK + correlation-weighted portfolio heat. (1) horizon_hours was scoring the forecast AND closing the position; measured, the SAME gold short reads +0.07R at a 12h horizon and +0.63R at 30h, so an arbitrary clock was setting the P&L. Positions now run to their structural exit with a hard time stop at 4x the horizon; anything still open is TIME-STOPPED and marked, because a trade that never closes never grades. Heat releases the moment the resolver marks a trade closed. (2) Heat was a naive sum, which is wrong in both directions -- it overstates safety when five alts are one bet and blocks a genuinely diversifying trade. Now sqrt(w'Sw) on MEASURED correlations (PAXG vs crypto +0.15, crypto vs crypto +0.48), stressed 35pct toward 1.0 because correlations converge in the cascade that hurts, with a 50pct gross cap bounding how wrong an estimate may make the book.",
+   "roi_bps": 0.0,
+   "raised": "2026-07-31T16:30:00+00:00",
+   "status": "done",
+   "reason": "built, tested, in the law gate",
+   "commit": null,
+   "due": null,
+   "note": "both changes raise net return without adding risk; neither is fitted to an outcome"
+  },
+  {
+   "id": "R0137",
+   "source": "claude",
+   "summary": "MECHANISM ATTRIBUTION FENCE. The dashboard showed funding carry as a SURVIVOR on +24.5pct / Sharpe 13.13 over 29 days. The funding harvest behind it was 113.06 of 3,669.55 -- 3.1pct. A cash-and-carry is delta-neutral by construction so its price legs cancel and its P&L should be funding plus basis, near-100pct. The desk ALREADY owned the fence that says this: carry_bleed_report, deliberately two-sided so a large POSITIVE non-funding P&L alarms as loudly as a loss, because on a hedged book a windfall that size is a NAKED LEG. Run on those numbers it returns BLEED(inverted) at 3146pct of harvest. The verdict was computed, written to JSON, rendered -- AND GATED NOTHING: max_audit raised a defect only when funding was UNMEASURED. Fixed both specifically (the alarm firing now raises a defect) and generally (a new fence refuses SURVIVED/promotable status for any sleeve whose P&L its stated mechanism cannot explain, in the law gate's state battery). Gate 0 independently records ZERO fills and no keys for the Binance carry executor, so that sleeve has never traded.",
+   "roi_bps": 0.0,
+   "raised": "2026-07-31T16:30:00+00:00",
+   "status": "done",
+   "reason": "built, tested, in the law gate",
+   "commit": null,
+   "due": null,
+   "note": "an unattributed WIN is as disqualifying as a loss -- the exposure that made it is still on, still unhedged, and will reverse"
   }
  ]
 }

@@ -918,3 +918,15 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # EVIDENCE: _forward_score smoke-tested 10/10 on backdated cutoffs this cycle (log in ledger)
 # CONFIDENCE: committed-script
 50 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_rejection_rescore.py >> data/cro_ai_logs/reject_rescore.log 2>&1 && .venv/bin/python scripts/run_rejection_shadow.py >> data/cro_ai_logs/reject_rescore.log 2>&1
+
+# MECHANISM ATTRIBUTION (R0137): no sleeve may read as SURVIVED on P&L its stated mechanism cannot
+# explain. Built after a live near-miss -- the dashboard showed funding carry as a survivor on
+# +24.5pct/Sharpe 13.13 while the funding harvest behind it was 113 dollars of 3,670. A
+# cash-and-carry is delta-neutral by construction, so its price legs cancel and its P&L should be
+# funding plus basis. The desk's own two-sided carry fence already returned BLEED(inverted) on
+# those numbers -- and its verdict gated NOTHING, which is the defect this organ exists to end.
+# An unattributed WIN is treated as seriously as a loss: the exposure that produced it is still on,
+# still unhedged, and will reverse. HOURLY, alongside the other live-state fences.
+# EVIDENCE: scripts/check_mechanism_attribution.py -> data/mechanism_attribution.json
+# CONFIDENCE: committed-script (new this cycle; caught the live case on its first run)
+35 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_attribution.lock .venv/bin/python scripts/check_mechanism_attribution.py --report-only >> data/cro_ai_logs/attribution.log 2>&1

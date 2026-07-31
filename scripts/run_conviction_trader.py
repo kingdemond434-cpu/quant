@@ -7,13 +7,24 @@ than a manual trader."* And then the mechanism, in the principal's own words: *"
 to prevent it and put trades until the trend and swing hits, minimising downside and maximising
 upside."*
 
-THE DESIGN PHILOSOPHY, stated plainly because it is the whole point. A manual discretionary
-trader with no stop who is up 60% in 12 hours is not out-earning a disciplined desk -- they are
-earlier in a distribution whose left tail is a zeroed account. The screenshot is the trade that
-worked; the same 8x leverage that made +60% makes -60% just as fast, and a directional trader
-without a stop meets the -100% version eventually. The desk's edge is NOT being more cautious per
-trade. It is being able to take the SAME aggressive bet a thousand times without the one that
-ends the account. So:
+CORRECTION OF RECORD (2026-07-31). This file previously described the screenshot as a stopless
+punt and built several arguments on that. It was wrong. A second screenshot shows the SL line
+plainly at 4050.00 on a short entered at 4107.38 -- trailed BELOW entry, locking ~57 of the ~80
+points then open, with price at 4027 and roughly 22 points (~0.55%) of room left to breathe. In
+the principal's words: *"I did have a stop, I kept moving it trying to bank profit while letting
+it breathe and run further."*
+
+That is not the absence of discipline this file assumed. It is precisely the trail-and-ride
+mechanic implemented below, executed by hand -- and it is a useful DATA POINT on the trail width:
+the stop sat roughly 1.9 trail-distances behind price, not the naive 1R the first version of this
+ladder used, which is the same direction the measured noise floor pushed the trail. n=1, so it
+proves nothing on its own; it is recorded because it agrees with the measurement rather than
+because it is impressive.
+
+THE DESIGN PHILOSOPHY, stated plainly because it is the whole point. The desk's edge is NOT being
+more cautious per trade than a good discretionary trader -- the screenshot shows one managing risk
+properly. It is being able to take the SAME aggressive bet a thousand times, at a size that
+survives the losing runs, across more instruments than one person can watch. So:
 
   AGGRESSION LIVES IN BREADTH AND FREQUENCY, NOT IN BET SIZE, and that is a measured conclusion
   rather than a preference. Simulated over 250 days: at 20% risk per trade this book meets a -90%
@@ -25,14 +36,15 @@ ends the account. So:
   structural stop 6% is still ~6.7x, the screenshot's own range. Timidity is a defect (L1.28);
   so is confusing bet size with aggression.
 
-  RUIN IS CAPPED, and this is the one line that does not move. EVERY position carries a stop
-  (the thing the manual account lacks), per-trade loss is bounded, portfolio leverage is bounded,
+  RUIN IS CAPPED, and this is the one line that does not move. EVERY position carries a stop,
+  per-trade loss is bounded, portfolio leverage is bounded,
   and the whole sleeve sits inside the -35% ruin rail like everything else (L1.23). This is not
   the timid reading of a restraint -- it is the mathematics of compounding: E[log wealth] of a
   ruined book is minus infinity, so the bet that can ruin you is never the growth-optimal bet
   however good it looks (the Alameda row in the desk's own cohort register).
 
-  THE STOP IS CALCULATED, NOT CHOSEN. A percentage stop is an arbitrary distance the market has
+  THE STOP IS CALCULATED, NOT CHOSEN -- which is the ONE thing a hand-managed book cannot do at
+  scale, and therefore where the desk's advantage actually lies. A percentage stop is an arbitrary distance the market has
   never heard of; a STRUCTURAL stop sits at the price where the thesis is factually dead -- the
   swing the trend must not lose, the range edge, the level that was defended. This desk refuses
   an asserted `stop_pct`: the model must name an invalidation PRICE and the structure it belongs
@@ -463,9 +475,8 @@ def management_plan(entry: float, invalidation: float, direction: str, *,
 
 _BRIEF = """You are the desk's CONVICTION TRADER. You take AGGRESSIVE leveraged DIRECTIONAL bets --
 this is the sleeve modelled on a sharp manual trader flipping an account fast, not the cautious
-news reader. You are ENCOURAGED to size up when you have real conviction. But you carry a
-CALCULATED STOP on every trade (the discipline a blown manual account lacked), and you will be
-SCORED, so your confidence must be honest.
+news reader. You are ENCOURAGED to size up when you have real conviction. You carry a CALCULATED
+STOP on every trade and you will be SCORED, so your confidence must be honest.
 
 INSTRUMENTS: {instruments}. Take a directional view -- macro, technical, flow, positioning,
 cross-asset (gold via PAXGUSDT, risk via BTC/ETH). A VIEW is allowed here (unlike the event
@@ -824,8 +835,8 @@ def validate(call: dict[str, Any], *, noise: dict[str, Any] | None = None,
     if why:
         return False, why
     if not MIN_STOP_PCT <= stop <= MAX_STOP_PCT:
-        # THE RAIL THE MANUAL ACCOUNT LACKED: a trade with no stop, or a stop so wide it is not a
-        # stop, is the one that ends the account. This is not timidity -- it is the difference
+        # A trade with no stop, or a stop so wide it is not a stop, is the one that ends the
+        # account. This is not timidity -- it is the difference
         # between compounding the aggressive bet and being ruined by it (L1.23). The tight end is
         # the same rail pointed the other way: an invalidation inside the noise is not a thesis
         # being wrong, it is a wick, and it converts a real edge into churn.
