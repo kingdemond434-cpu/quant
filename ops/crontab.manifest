@@ -325,7 +325,8 @@ QUANT_ROOT=/home/quant/quant-platform
 
 # EVIDENCE: .../20260729_data-intelligence.md:77 ("dl_oi_ls_universe daily 06:20")
 # CONFIDENCE: documented-cadence
-20 6 * * * cd "$QUANT_ROOT" && flock -n data/.cron_oi_ls_universe.lock .venv/bin/python scripts/dl_oi_ls_universe.py >> data/cro_ai_logs/oi_ls_universe_cron.log 2>&1
+# LOCK ported 2026-07-31 from the legacy line (same-minute twin under a split lock = parquet race):
+20 6 * * * cd "$QUANT_ROOT" && flock -n /tmp/dl_oils.lock .venv/bin/python scripts/dl_oi_ls_universe.py >> data/cro_ai_logs/oi_ls_universe_cron.log 2>&1
 
 # EVIDENCE: .../20260729_data-intelligence.md:77 ("ingest_axes daily 06:40"); the log name is
 #   the live one (docs/research/deep_sweep/20260726_data-intelligence.md:153 "ingest_axes_cron.log")
