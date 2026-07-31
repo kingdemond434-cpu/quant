@@ -48,3 +48,31 @@ def test_law_present_and_mapped():
     assert "L1.34 EVERY FORM OF RAW INFORMATION IS IN SCOPE FOR EVERY SEAT" in const
     assert "pay to reconstruct" in const
     assert '"L1.34"' in Path("scripts/build_enforcement_matrix.py").read_text("utf-8")
+
+
+# --- L1.35 deep-forest exhaustiveness ---------------------------------------------------------
+
+@pytest.mark.parametrize("p", _PROMPTS, ids=lambda p: p.stem)
+def test_every_seat_carries_the_deep_forest_mandate(p):
+    t = p.read_text("utf-8")
+    assert "DEEP-FOREST EXHAUSTIVENESS" in t
+    # the distinction that makes it enforceable rather than a slogan
+    assert "SECTION-EXHAUSTION" in t and "SEAT-EXHAUSTION IS ALWAYS FALSE" in t
+
+
+def test_seat_exhaustion_is_a_defect_not_a_state():
+    const = " ".join(Path("docs/CONSTITUTION.md").read_text("utf-8").replace("**", "").split())
+    assert "L1.35 THE HUNTERS ARE THE NEVER-FINISHED ORGAN" in const
+    assert "there is nothing left to hunt" in const      # named, and named as a defect
+    doc = Path("ops/principal_doctrine.txt").read_text("utf-8")
+    assert "SEAT-EXHAUSTION IS ALWAYS FALSE" in doc
+
+
+def test_boring_is_named_as_an_edge():
+    # The insight is load-bearing: seats skip unglamorous sources unless told they are the edge.
+    for f in (Path("ops/frontier_en_prompt.txt"), Path("ops/principal_doctrine.txt")):
+        assert "boring" in f.read_text("utf-8").lower()
+
+
+def test_law_is_mapped_to_fences():
+    assert '"L1.35"' in Path("scripts/build_enforcement_matrix.py").read_text("utf-8")

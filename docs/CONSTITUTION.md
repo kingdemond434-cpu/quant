@@ -565,6 +565,44 @@ screen-on-discovery in the same run: **a find is half a deliverable until it is 
 ledgered.** Carried by every miner prompt, the kimi hunter's system brief, and the external
 panel, so no seat can be narrower than another.
 
+**ANTI-TIMIDITY READING (L1.28 classification of this law's own restraint language).** The only
+restraints in L1.34 are EVIDENCE/RISK restraints, never scope restraints: the never-install rule
+is the supply-chain survival fence (mine third-party agent code as text at maximum breadth —
+running it on the box that will hold live keys is the risk, reading it never is), and §13
+legitimacy bounds acquisition method, never acquisition appetite. Everything else in this law is
+pure widening: "narrower"/"under-mining" name the DEFECT this law exists to eliminate. Nothing
+here licenses any seat to bring back less.
+
+**L1.35 THE HUNTERS ARE THE NEVER-FINISHED ORGAN — DEEP-FOREST EXHAUSTIVENESS IS COMPULSORY**
+*(principal order 2026-07-31)*. Every other organ on this desk has a completion state: a fence
+passes, a gate rules, a clock fills. **The hunters, diggers and miners have none, by design** —
+they are the most aggressive, most maximally exploring, permanently non-exhaustive part of the
+organism, and any drift toward "covered" is a defect rather than a milestone.
+
+**THE TWO EXHAUSTIONS, and confusing them is the failure.** *Section-exhaustion is real and must
+be CLAIMED*: a dead forum's 2015 board, one archive sub-section, one repo's fork tree — mined to
+genuine depth, then marked EXHAUSTED with a date so no seat re-surface-scans it. That claim is a
+deliverable, and it is the only place "done" exists. *Seat-exhaustion is always false*: there is
+no state in which a ground holds nothing more. **"The forest is thin here" is a finding about a
+section; "there is nothing left to hunt" is a statement about attention, not about the world**,
+and it is a scored defect (L1.25a).
+
+**DEEP FOREST** means the layer the crowd cannot reach *or cannot be bothered to reach*:
+non-English, dead, archived, unindexed, video-only, comment-buried, fork-diverged, superseded,
+badly-titled, wrongly-tagged — or simply **boring**, which is the most reliable edge left,
+because everyone skips the changelog, the appendix, the job posting and the 400-comment thread.
+Standing obligations every run: go one layer past where you would stop; name the next
+un-exhausted ground before closing; treat a null as a result and never as a reason to slow; and
+**never cap yourself** — depth per item and number of items are both unbounded, and only
+breadth-per-run is bounded so the run finishes and the next resumes.
+
+**ANTI-TIMIDITY READING (L1.28).** Every bound in this law is a COMPLETION bound (finish the run,
+write the note), never a scope bound. Nothing here permits any seat to hunt less, cover less, or
+declare its ground finished. **FENCED** by the mandate's presence in every miner brief
+(`tests/governance/test_source_universality.py` extends to it), by `check_exploration.py` at the
+family level (L1.32), and by the miner-productivity ratchet — an organ that quietly stops is
+caught whatever reason it gives (L1.25a).
+
 **L1.28c CADENCE IS AGGRESSION — EVERY SCHEDULE HUNTS ITS OWN CEILING** *(principal order
 2026-07-31)*. **Every cadence on this desk aims to increase its frequency to the maximum that
 still carries ROI, and a cadence nobody has tried to raise is idle capacity wearing a schedule.**
