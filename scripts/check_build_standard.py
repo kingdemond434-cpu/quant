@@ -76,6 +76,7 @@ _GOVERNED: tuple[str, ...] = (
     "check_organ_liveness.py",
     "check_promotion_gate.py",
     "run_discretionary_max.py",
+    "run_discretionary_hunt.py",
 )
 
 #: Organs that legitimately owe no cron line, with the reason. "No schedule" must be a DECISION.
@@ -125,6 +126,7 @@ _REFUSAL_WORDS = ("UNMEASURED", "REFUSED", "REFUSING", "BLOCKED", "NO-DATA", "DA
                   "CONTAMINATED", "UNDERPOWERED", "FORWARD-CLOCK", "NO-DATA",
                   "DUPLICATION", "DUPLICATE",
                   "UNINFORMATIVE", "ACCUMULATING", "UNSCORABLE", "NO-ANSWER",
+                  "NO-CANDIDATES", "LENS-EXHAUSTED", "EXHAUSTED",
                   "RETURN-TARGETING")
 
 

@@ -1042,3 +1042,27 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # EVIDENCE: scripts/run_discretionary_max.py -> data/discretionary_max.json
 # CONFIDENCE: committed-script (new this cycle)
 15 1,7,13,19 * * * cd "$QUANT_ROOT" && flock -n data/.cron_discmax.lock .venv/bin/python scripts/run_discretionary_max.py >> data/cro_ai_logs/disc_max.log 2>&1
+
+# DISCRETIONARY EDGE HUNT (R0152): find the NEXT discretionary edge, not just tune the current one.
+# The section had an optimiser (R0151 pushes the existing sleeve's hit rate) and a learner (R0139
+# extracts lessons from closed trades) -- both improve ONE edge, and neither ever asks whether
+# there is a second. The allocator's own arithmetic says an INDEPENDENT second edge is worth more
+# than a large improvement to the first, because growth MULTIPLIES across uncorrelated bets and
+# merely ADDS within one; a desk with a single discretionary hypothesis is one regime change away
+# from having none.
+# THE FILTER IS THE FORCED-PARTICIPANT TEST, inherited from the event sleeve and the strongest one
+# here: every candidate must name WHO has to trade against you and WHY they cannot wait. "RSI below
+# 30" names nobody. A hypothesis with no compelled counterparty is a PATTERN, and this desk is
+# 420-tested / 0-survived on patterns. Generic answers ("traders", "the market") are refused.
+# SIX LENSES on a date-ordinal rotation so coverage is provable: forced liquidity, structural
+# lateness, wrong-price anchor, session and calendar, failed expectation, cross-asset divergence.
+# All about participants and compulsion, never about indicators.
+# ANTI-REPETITION: every candidate is permanently registered and shown back as ALREADY HUNTED. A
+# repeat rate over 50pct means the lens is EXHAUSTED and the correct response is to re-aim the
+# lenses, NOT to raise the cadence -- a higher cadence on an exhausted space regenerates the same
+# ideas faster. Survivors earn a forward clock and a place in the sleeve allocator's independence
+# test; they earn no capital (L1.6), and the allocator decides whether a survivor is a real second
+# edge or the first one wearing a new name. DAILY.
+# EVIDENCE: scripts/run_discretionary_hunt.py -> data/discretionary_hunt.json + discretionary_edges.json
+# CONFIDENCE: committed-script (new this cycle)
+40 23 * * * cd "$QUANT_ROOT" && flock -n data/.cron_dischunt.lock .venv/bin/python scripts/run_discretionary_hunt.py >> data/cro_ai_logs/disc_hunt.log 2>&1

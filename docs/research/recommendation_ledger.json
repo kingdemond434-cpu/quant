@@ -1838,6 +1838,18 @@
    "commit": null,
    "due": null,
    "note": "first run correctly names EVIDENCE as binding: the sleeve is not producing yet, which check_organ_liveness independently confirms"
+  },
+  {
+   "id": "R0152",
+   "source": "principal",
+   "summary": "DISCRETIONARY EDGE HUNT -- find the NEXT edge, not just tune the current one. Principal: 'a whole system dedicated to this and improving the brain and finding MULTIPLE discretionary edges, trading like a compounding human trader.' The section had an OPTIMISER (R0151 pushes the existing sleeve's hit rate) and a LEARNER (R0139 extracts lessons from closed trades) -- both improve ONE edge, neither ever asks whether there is a second. The allocator's own arithmetic says an INDEPENDENT second edge beats a large improvement to the first, because growth MULTIPLIES across uncorrelated bets and merely ADDS within one; one hypothesis is one regime change from none. FILTER: the forced-participant test -- name WHO must trade against you and WHY they cannot wait. 'RSI below 30' names nobody; a hypothesis with no compelled counterparty is a PATTERN and this desk is 420-tested/0-survived on patterns. Generic answers are refused. SIX LENSES on date-ordinal rotation, all about participants and compulsion rather than indicators: forced liquidity, structural lateness, wrong-price anchor, session/calendar, failed expectation, cross-asset divergence. ANTI-REPETITION: candidates permanently registered and shown back as ALREADY HUNTED; a repeat rate over 50pct means re-aim the lenses, NOT raise the cadence, since a faster hunt on an exhausted space regenerates the same ideas quicker. Survivors earn a forward clock and the allocator's independence test -- never capital.",
+   "roi_bps": 0.0,
+   "raised": "2026-08-01T02:00:00+00:00",
+   "status": "done",
+   "reason": "built, 9 tests; 30/30 build standard, law gate PASS",
+   "commit": null,
+   "due": null,
+   "note": "completes the section: HUNT finds edges, ALLOCATOR proves independence, MAX pushes the hit rate, REVIEW learns from closes, PROMOTION decides what evidence buys, KILL ends it"
   }
  ]
 }
