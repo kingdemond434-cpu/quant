@@ -220,6 +220,10 @@ _MAP: dict[str, list[str]] = {
     # RATE is a legal target where a return figure is not -- it cannot be reached by sizing, only
     # by selection, information and filtering, which are exactly the levers to push.
     "L1.28c-discretionary": ["scripts/run_discretionary_max.py"],
+    # R0152: the desk had an optimiser and a learner for ONE discretionary edge and nothing that
+    # hunted for a SECOND. A single hypothesis is one regime change away from none, and the
+    # allocator's own arithmetic says an independent second edge beats improving the first.
+    "L1.31-discretionary-hunt": ["scripts/run_discretionary_hunt.py"],
     # L1.25a: null streaks throttle nothing -- an organ going quiet is caught by the freshness/
     # productivity wires REGARDLESS of its reason, so "stopped because nothing was working" trips
     # the same fence as "stopped because broken". The pessimism-freeze cannot hide.

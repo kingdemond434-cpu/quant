@@ -44,8 +44,15 @@ def _load() -> dict[str, Any]:
         try:
             loaded: dict[str, Any] = json.loads(LEDGER.read_text("utf-8"))
             return loaded
-        except Exception:
-            pass
+        except Exception as e:
+            # A corrupt ledger must NEVER read as empty-healthy: `report` would print
+            # "0 total, nothing overdue" and the next _save would atomically replace
+            # every row with the empty dict -- the mass-deletion the ledger law forbids.
+            # Observed live 2026-07-31: merge-conflict markers committed to origin read
+            # here as a clean empty ledger. Refuse loudly; git history repairs it.
+            raise SystemExit(
+                f"REFUSING: {LEDGER} exists but cannot be parsed ({e}); repair it from "
+                "git history -- an unreadable ledger must never become an empty one") from e
     return {"recommendations": []}
 
 
