@@ -135,6 +135,86 @@ def audit_doctrine() -> dict[str, Any]:
     return {"present": True, "hits": hits}
 
 
+# ---------------------------------------------------------------------------------------------
+# PROMPT-SURFACE SWEEP (L1.28 hardening, principal order 2026-07-31: "strict military maximum").
+# THE GAP THIS CLOSES: this fence guarded the constitution and the doctrine and NOTHING ELSE --
+# yet an organ's behaviour is set by its PROMPT, so a timid line in a miner brief throttled that
+# seat every single run while the fence reported green. Every prompt surface is now in scope.
+# ---------------------------------------------------------------------------------------------
+
+#: Every file that instructs an organ. Missing one means an unguarded surface.
+def _prompt_surfaces() -> list[Path]:
+    out = sorted(_ROOT.glob("ops/*prompt*.txt")) + sorted(_ROOT.glob("prompts/*.txt"))
+    # organ scripts carrying inline briefs (the hunt/sweep/hunter genomes)
+    for rel in ("scripts/kimi_hunter.py", "scripts/run_capability_hunt.py",
+                "scripts/run_deep_sweep.py", "libs/research/strategic_director.py",
+                "libs/research/second_family.py"):
+        p = _ROOT / rel
+        if p.exists():
+            out.append(p)
+    return out
+
+
+#: NUMERIC QUOTA CAPS -- the sneakiest timidity, because a cap reads as helpful specificity.
+#: "top 3" in a hunter brief silently converts an unbounded mandate into a 3-item chore.
+_QUOTA_PATTERNS = (
+    r"\btop\s+(?:3|5|10|three|five|ten)\b",
+    r"\b(?:at most|no more than|limit yourself to|maximum of|up to)\s+\d+\b",
+    r"\b(?:a few|a handful of|two or three|one or two)\s+(?:findings|items|ideas|sources)\b",
+    r"\bpick\s+(?:the\s+)?(?:best|top)\s+\d+\b",
+)
+
+#: HEDGED ORDERS -- an instruction that permits the organ to decline is not an instruction.
+_HEDGED_ORDERS = (
+    "if appropriate", "if time permits", "if you have time", "you may want to",
+    "consider whether you should", "feel free to skip", "optionally", "if convenient",
+    "where practical", "if it seems worthwhile", "at your discretion",
+)
+
+
+def audit_prompts() -> list[dict[str, Any]]:
+    """Timid language in the files that actually drive organ behaviour.
+
+    EXEMPTIONS are deliberate and narrow: a line that also names the law forbidding the pattern
+    is quoting it in order to ban it (this file's own laws do exactly that), and a line bounding
+    BREADTH-PER-RUN is a completion bound, not a scope bound -- L1.35 requires runs to finish, so
+    'bounded per run' must stay legal while 'bounded per seat' must not."""
+    hits: list[dict[str, Any]] = []
+    for path in _prompt_surfaces():
+        try:
+            lines = path.read_text("utf-8", errors="ignore").splitlines()
+        except OSError:
+            continue
+        for i, line in enumerate(lines, 1):
+            low = line.lower()
+            # NARROW exemptions only. An earlier draft exempted any line containing "never",
+            # which is most lines in an aggressive prompt -- the fence reported a clean sweep
+            # because it was skipping almost everything. Exempt ONLY lines that explicitly
+            # forbid the pattern or bound breadth PER RUN (a completion bound, legal under
+            # L1.35) -- never a line that merely sounds assertive.
+            if any(m in low for m in ("l1.21a", "l1.28", "l1.35", "timid", "misreading",
+                                      "breadth-per-run", "breadth per run", "is a defect",
+                                      "never cap", "no quota", "is forbidden")):
+                continue
+            for pat in _QUOTA_PATTERNS:
+                if re.search(pat, low):
+                    hits.append({"file": str(path.relative_to(_ROOT)), "line": i,
+                                 "kind": "QUOTA-CAP", "text": line.strip()[:150],
+                                 "why": "a numeric cap silently converts an unbounded mandate "
+                                        "into a chore -- state the bound as breadth-PER-RUN or "
+                                        "remove it (L1.35)"})
+                    break
+            for phrase in _HEDGED_ORDERS:
+                if phrase in low:
+                    hits.append({"file": str(path.relative_to(_ROOT)), "line": i,
+                                 "kind": "HEDGED-ORDER", "phrase": phrase,
+                                 "text": line.strip()[:150],
+                                 "why": "an instruction the organ may decline is not an "
+                                        "instruction -- make it an order or delete it"})
+                    break
+    return hits
+
+
 def audit() -> dict[str, Any]:
     clauses = _clauses()
     classified_by_table = _table_rows(clauses)
@@ -171,6 +251,7 @@ def audit() -> dict[str, Any]:
     for r in rows:
         counts[str(r["status"])] = counts.get(str(r["status"]), 0) + 1
     doctrine = audit_doctrine()
+    prompt_hits = audit_prompts()
     return {
         "generated": datetime.now(tz=UTC).isoformat(),
         "law": "L1.28 -- timidity is a scored defect. Every scope restraint states its non-timid "
@@ -180,6 +261,8 @@ def audit() -> dict[str, Any]:
         "doctrine_injected": "l1.28" in (_DOCTRINE.read_text("utf-8").lower()
                                          if _DOCTRINE.exists() else ""),
         "doctrine_timid_instructions": doctrine["hits"],
+        "prompt_surfaces_scanned": len(_prompt_surfaces()),
+        "prompt_timid_hits": prompt_hits,
         "rows": rows,
     }
 
@@ -204,12 +287,15 @@ def main() -> int:
         for h in rep["doctrine_timid_instructions"]:
             print(f"  TIMID-ORDER  principal_doctrine.txt:{h['line']} \"{h['phrase']}\" -- this is "
                   f"an instruction to every organ to do less: {h['text']}")
+        for h in rep["prompt_timid_hits"]:
+            print(f"  {h['kind']:<12} {h['file']}:{h['line']} -- {h['why']}\n"
+                  f"               {h['text']}")
         if not rep["doctrine_injected"]:
             print("  NOT-INJECTED L1.28 is absent from ops/principal_doctrine.txt -- the law is "
                   "not reaching any organ (L2.1)")
         print(f"-> {_OUT.relative_to(_ROOT)}")
     failed = (rep["unclassified"] or rep["doctrine_timid_instructions"]
-              or not rep["doctrine_injected"])
+              or rep["prompt_timid_hits"] or not rep["doctrine_injected"])
     return 0 if (args.report_only or not failed) else 1
 
 

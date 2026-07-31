@@ -134,6 +134,9 @@ _MAP: dict[str, list[str]] = {
     # organ going quiet whatever reason it gives.
     "L1.35": ["tests/governance/test_source_universality.py", "scripts/check_exploration.py",
               "check_organs", "scripts/check_ratchets.py"],
+    # L1.36: families enforced AS families -- complete, fenced per member, reaching every organ
+    # via the doctrine, and guarded by a family-level check. A gate, not a report.
+    "L1.36": ["scripts/check_law_families.py"],
     # L1.25a: null streaks throttle nothing -- an organ going quiet is caught by the freshness/
     # productivity wires REGARDLESS of its reason, so "stopped because nothing was working" trips
     # the same fence as "stopped because broken". The pessimism-freeze cannot hide.

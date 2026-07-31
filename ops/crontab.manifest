@@ -207,6 +207,15 @@ QUANT_ROOT=/home/quant/quant-platform
 # CONFIDENCE: committed-script (new this cycle)
 */5 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_live_guard.lock .venv/bin/python scripts/run_live_guard.py >> data/cro_ai_logs/live_guard.log 2>&1
 
+# LAW-FAMILY FENCE (L1.36, principal order 2026-07-31 "strict military maximum"): the six law
+# families verified AS families -- complete, every member fenced, every member reaching the
+# organs via the doctrine, and each guarded by a family-level check. Per-law greenness hides
+# family decay: first run found L2.3 fenced in the matrix and ABSENT from the doctrine, so no
+# organ had ever been told the law that governs the desk's conversion crisis.
+# EVIDENCE: scripts/check_law_families.py -> data/law_families.json; CONSTITUTION L1.36
+# CONFIDENCE: committed-script (new this cycle)
+50 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_law_families.py >> data/cro_ai_logs/law_families.log 2>&1
+
 # EXPLORATION FAMILY FENCE (L1.32, 2026-07-31): the six unknown-unknown organs measured as ONE
 # family. DARK (any organ never produced) exits 2 -- exploration decays organ by organ and no
 # single decay ever looks alarming, which is exactly why this number exists. First run: DARK,
