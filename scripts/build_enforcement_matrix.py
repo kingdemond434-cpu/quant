@@ -103,6 +103,8 @@ _MAP: dict[str, list[str]] = {
     # L1.28a is measured, not asserted: every ceiling reports utilisation or counts as zero.
     "L1.28a": ["scripts/check_utilisation.py", "check_idle_capability", "check_clock_saturation",
                "check_capacity_runway"],
+    # L1.28b: conversion hunts 100% daily -- FLATLINE (7d of silence on a non-empty queue) fails.
+    "L1.28b": ["scripts/check_conversion.py"],
 }
 
 # ---------------------------------------------------------------------------------------------
@@ -116,6 +118,11 @@ _MAP: dict[str, list[str]] = {
 # These are appended into _MAP rather than written inline above so the read direction stays clean:
 # above answers "what enforces this law", below answers "why does this check exist at all".
 _FENCE_OWNERS: dict[str, str] = {
+    # --- conversion parity (L1.28b): the repair wire's two halves. check_conversion measures the
+    # daily flow (arrival vs disposition, FLATLINE on silence); check_recommendation_rows (§42 X1,
+    # built independently by the box the same day) applies per-row carry-over pressure so old
+    # rows are seen again. Same law, complementary directions.
+    "check_recommendation_rows": "L1.28b",
     # --- capacity (§42 / L1.18a): six fences, one law. Small edges are hunted, filled and RETIRED
     # on arithmetic, never ranked down for being small.
     "check_capacity_hunt": "L1.18a",

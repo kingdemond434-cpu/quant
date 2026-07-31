@@ -402,6 +402,34 @@ exists to detect: `scripts/check_utilisation.py` enumerates every declared ceili
 and fails on idle headroom with no named binding constraint. Utilisation is a **ratchet** (L1.0) —
 today's figure is tomorrow's floor.
 
+**L1.28b CONVERSION PARITY — FINDING WITHOUT FIXING IS HALF A DELIVERABLE** *(principal order
+2026-07-31)*. **A found-unfixed defect is an unbooked loss aging at its stated ROI**, exactly as
+idle capital is under L1.28a — the conversion queue therefore hunts 100% daily like every other
+ceiling, and **no part of this desk is exempt from pushing itself to 100% every day: an organ
+that only detects, only catalogues, or only writes is running at half its deliverable.**
+
+**WHY THIS IS A LAW AND NOT A REMINDER.** The 2026-07-31 deep sweep measured it: findings arrive
+at ~14/day, cross-session repairs complete at ~0.6/day, no ledger row older than 3.67 days had
+ever been implemented, and ≥80% of all audit output converted to nothing. The desk's BUILD
+capability compounds; its CONVERT capability did not — and nothing measured that gap daily, so it
+widened silently, exactly as unmeasured utilisation did before L1.28a. Queueing theory closes the
+argument (meta M8): at an arrival-to-service ratio of ~4, exhortation cannot drain the queue —
+only capacity and admission control can, and this law installs both.
+
+**THE OPERATIVE RULE.** (a) Every finding enters ONE ledger with an ROI, a due date and an owner —
+split stores recreate the defect (M10). (b) A reasoned rejection is a conversion; **silence is
+the only failure state.** (c) The §33 miners' pattern is UNIVERSAL: extraction scales up to meet
+acquisition, and repair scales up to meet detection — **detection is never throttled to hide the
+gap** (that would be timidity wearing a tidiness costume). (d) Backlog above the repair-mode line
+(25 open rows) flips the next audit/brain window from finding to fixing. (e) **Unmeasured
+conversion counts as zero conversion.**
+
+**FENCED**: `scripts/check_conversion.py` measures the ledger daily (arrival rate, disposition
+rate, backlog age, past-due rows) and **fails on FLATLINE** — zero dispositions in 7 days with a
+non-empty queue. Its artifact feeds `run_max_push.py`, so conversion debt ranks in the same daily
+max-push queue as every other below-ceiling aspect, at the second-highest declared leverage —
+because every other row in that queue IS conversion.
+
 ---
 
 ## LEVEL 2 — ENFORCEMENT ENGINE (how compliance is ensured)

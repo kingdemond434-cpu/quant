@@ -162,6 +162,17 @@ QUANT_ROOT=/home/quant/quant-platform
 # CONFIDENCE: committed-script (new this cycle)
 27 */6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_utilisation.py >> data/cro_ai_logs/utilisation.log 2>&1
 
+# CONVERSION FENCE (L1.28b, principal order 2026-07-31): finding without fixing is half a
+# deliverable. The 07-31 deep sweep measured findings arriving ~14/day vs cross-session repairs
+# ~0.6/day with no row older than 3.67d ever implemented -- the build/convert spread was the
+# desk's largest unmeasured loss. This measures the recommendation ledger every 6h (same cadence
+# as utilisation, its sibling law): FLATLINE (7d of silence on a non-empty queue) exits 2 and
+# lands in the noop sweep; REPAIR-MODE (backlog > 25) flips organ effort from finding to fixing
+# via data/conversion_status.json, which run_max_push.py folds into the daily hunt queue.
+# EVIDENCE: scripts/check_conversion.py -> data/conversion_status.json; docs/CONSTITUTION.md L1.28b
+# CONFIDENCE: committed-script (new this cycle)
+33 */6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_conversion.py >> data/cro_ai_logs/conversion_fence.log 2>&1
+
 # TIMIDITY FENCE (L1.28): about two thirds of the constitution's principles contain restraint
 # language, every one of which a language model can degrade into a general licence to do less.
 # The misreading is systematic, silent, and looks like good judgement. This requires every

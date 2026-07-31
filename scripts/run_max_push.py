@@ -12,6 +12,7 @@ and 100% IS the work queue. What did not exist was the queue. The desk had FIVE 
     data/enforcement_matrix.json  principles with no fence
     data/wiring_agent.json        built capability nothing runs
     docs/GAP_REGISTER.md          open defects
+    data/conversion_status.json   findings aging unconverted (L1.28b, added 2026-07-31)
 
 Five lists nobody can rank against each other is the same as no list: the desk works whichever one
 it happened to open. This merges them into ONE queue ordered by expected contribution, so "what is
@@ -79,6 +80,11 @@ _LEVERAGE: dict[str, tuple[float, str]] = {
         0.65, "test strength and type coverage bound how much of the above the desk can TRUST"),
     "open_defect": (
         0.50, "a known defect nobody closed; its cost is already being paid"),
+    "conversion_debt": (
+        0.95, "a finding aging in the queue is alpha already paid for and never collected; the "
+              "measured spread between build-rate (~14 findings/day) and convert-rate "
+              "(~0.6/day, deep sweep 2026-07-31) is the desk's largest single loss, and it "
+              "multiplies every other row -- every queue item IS conversion (L1.28b)"),
 }
 
 # Aspects with no number at all rank above partially-complete ones -- see module docstring.
@@ -212,12 +218,39 @@ def _from_register() -> list[dict[str, Any]]:
                   "docs/GAP_REGISTER.md")]
 
 
+def _from_conversion() -> list[dict[str, Any]]:
+    """Conversion debt (L1.28b) ranks in the SAME queue as every other gap.
+
+    Two aspects: the all-time dispositioned fraction (how much of everything ever found reached
+    a verdict) and the 7-day flow ratio (is conversion keeping pace with detection RIGHT NOW).
+    A missing artifact reports both as unmeasured, which outranks everything (L1.28a: unmeasured
+    counts as zero) -- the fence being unwired is itself the top conversion defect.
+    """
+    d = _json("data/conversion_status.json") or {}
+    ratio = d.get("queue_dispositioned")
+    arr, disp = d.get("arrivals_7d"), d.get("dispositions_7d")
+    flow = None if arr is None or disp is None else min(1.0, disp / arr) if arr else 1.0
+    detail = d.get("detail") or "data/conversion_status.json missing -- run check_conversion.py"
+    action = ("repair-mode: flip the next audit/brain window from finding to fixing; drain "
+              "past-due rows first (each names its own fix)" if d.get("repair_mode")
+              else "keep dispositions >= arrivals; a row nobody closes is a cost already paid")
+    return [
+        _item("conversion::queue_dispositioned", "conversion_debt",
+              None if ratio is None else float(ratio), 1.0, detail, action,
+              "data/conversion_status.json"),
+        _item("conversion::flow_keeps_pace_7d", "conversion_debt", flow, 1.0,
+              f"7d: {arr} raised vs {disp} dispositioned; status {d.get('status')}",
+              action, "data/conversion_status.json"),
+    ]
+
+
 def build(*, refresh: bool = True) -> dict[str, Any]:
     if refresh:
-        for s in ("check_ratchets.py", "check_utilisation.py", "build_enforcement_matrix.py"):
+        for s in ("check_ratchets.py", "check_utilisation.py", "build_enforcement_matrix.py",
+                  "check_conversion.py"):
             _refresh(s)
     items = (_from_ratchets() + _from_utilisation() + _from_matrix()
-             + _from_wiring() + _from_register())
+             + _from_wiring() + _from_register() + _from_conversion())
     items.sort(key=lambda r: -float(r["score"]))
     at_ceiling = [i for i in items if i["measured"] and i["gap_fraction"] <= 0.0]
     unmeasured = [i for i in items if not i["measured"]]
