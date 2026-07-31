@@ -1985,6 +1985,16 @@ _PRODUCER_CADENCE = {
     # last month's fee tier while believing they are current -- and the numbers in it are what the
     # principal reads before a capital decision, which is the most expensive place for a quietly
     # outdated figure to sit.
+    # CLASSIFIED 2026-07-31 on arrival from the VPS lineage -- the §36(2) fence fired the moment
+    # it landed, which is the law working. The file states its own governance in its header
+    # ("Governed by §36 ... max age = one month + the early-fire rule"), so the cadence is READ
+    # from its prose rather than invented here, exactly as §36 intends.
+    "docs/research/blind_rediscovery_log.md": (
+        31.0, "L1.9/§36: the blind-rediscovery seat runs once per cycle and logs every invention "
+              "for a 12-month literature comparison -- the desk's only direct measurement of "
+              "whether it is genuinely creative or an excellent summariser. Its cadence is stated "
+              "in its own header (one month); going stale means the seat stopped running and the "
+              "12-month comparison silently loses its baseline."),
     "docs/DISCRETIONARY_DESK.md": (
         14.0, "L1.6/L1.41: re-stated from the resolver's measured output (noise floors, realised "
               "costs, conditional hit rates, cost-adjusted breakeven) -- if it goes "

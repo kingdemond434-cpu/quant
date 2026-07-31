@@ -120,3 +120,73 @@ def test_an_unreadable_corpus_reports_unreadable_not_never_hunted(tmp_path):
     assert c["status"] == "UNREADABLE"
     assert c["read_errors"] and "graveyard unreadable" in c["read_errors"][0]
     assert "NOT a coverage finding" in c["detail"]
+
+
+# ---- the fence: breadth ENFORCED, not requested -------------------------------------------------
+
+def test_every_hunting_surface_carries_the_mandate_in_the_real_repo():
+    """REGRESSION CHECK, and the point of the fence. An instruction silently deleted from a prompt
+    is indistinguishable from one never given -- and prompts are edited by hand and by other
+    sessions. This is what makes 'never limit to just one thing' survive the next edit."""
+    from scripts.check_strategy_breadth import build_report
+    rep = build_report(_REPO, surfaces_only=True)
+    assert rep["unwidened_surfaces"] == [], rep["unwidened_surfaces"]
+    assert rep["status"] == "OK"
+    assert rep["n_surfaces"] >= 14
+
+
+def test_kimi_may_propose_strategies_again():
+    """kimi_hunter is the desk's only non-Claude hunter -- its widest lens -- and its charter said
+    'Never suggest strategies or indicators'. That line was aimed at PATTERN-MINING and hit
+    STRATEGIES wholesale, barring the widest lens owned from returning the thing most needed.
+    The real test was never source-vs-strategy: it is MECHANISM vs PATTERN."""
+    from scripts.kimi_hunter import CHARTER
+    assert "Never suggest strategies or indicators" not in CHARTER
+    assert "STRATEGIES ARE IN SCOPE, PATTERNS ARE NOT" in CHARTER
+    assert "FORCED PARTICIPANT" in CHARTER          # the test that replaced the ban
+    assert "judgement-shaped" in CHARTER            # discretionary explicitly admitted
+    assert "INFORMATION SOURCES remain equally in scope" in CHARTER   # widened, not redirected
+
+
+def test_a_surface_that_loses_the_mandate_fails_the_fence(tmp_path):
+    from scripts.check_strategy_breadth import _HUNT_SURFACES, build_report
+    for rel in _HUNT_SURFACES:
+        p = tmp_path / rel
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text("STRATEGY-FAMILY BREADTH mandate present", "utf-8")
+    assert build_report(tmp_path, surfaces_only=True)["status"] == "OK"
+    (tmp_path / _HUNT_SURFACES[0]).write_text("mandate quietly removed", "utf-8")
+    rep = build_report(tmp_path, surfaces_only=True)
+    assert rep["status"] == "UNWIDENED" and _HUNT_SURFACES[0] in rep["unwidened_surfaces"]
+
+
+def test_unmeasured_breadth_never_reads_as_ok(tmp_path):
+    """'no evidence of narrowing' and 'no evidence' are the same sentence only to a broken gate."""
+    from scripts.check_strategy_breadth import _HUNT_SURFACES, build_report
+    for rel in _HUNT_SURFACES:
+        p = tmp_path / rel
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text("STRATEGY-FAMILY BREADTH", "utf-8")
+    rep = build_report(tmp_path)                 # no data/strategy_coverage.json
+    assert rep["status"] == "BLIND" and rep["breadth"]["state"] == "BLIND"
+
+
+def test_the_portable_half_needs_no_live_state(tmp_path):
+    """The law/state split: --surfaces-only must mean the same thing on a clean checkout, or it
+    reports BLIND on every PR and gets switched off (L1.43)."""
+    from scripts.check_strategy_breadth import _HUNT_SURFACES, build_report
+    for rel in _HUNT_SURFACES:
+        p = tmp_path / rel
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text("STRATEGY-FAMILY BREADTH", "utf-8")
+    rep = build_report(tmp_path, surfaces_only=True)      # no data/ at all
+    assert rep["status"] == "OK" and rep["breadth"]["state"] == "NOT-RUN"
+
+
+def test_the_fence_runs_at_both_boundaries_with_the_right_halves():
+    """Portable half at every commit; the measurement only where live state exists."""
+    from scripts.run_law_gate import _LAW_FENCES, _STATE_FENCES
+    law = {n: a for n, a in _LAW_FENCES}
+    state = {n: a for n, a in _STATE_FENCES}
+    assert law.get("check_strategy_breadth.py") == ("--surfaces-only",)
+    assert state.get("check_strategy_breadth.py") == ()

@@ -70,6 +70,13 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("check_build_standard.py", ()),           # L1.41 -- nothing enters below standard
     ("check_sizing_derivation.py", ()),        # L1.41 -- no money number chosen by feel
     ("check_return_targeting.py", ()),         # handoff 2026-07-12 -- no CAGR target
+    # --surfaces-only: the PORTABLE half (is the breadth mandate still on every hunting prompt?)
+    # reads committed files, so it means the same in CI, a fresh clone and the box. The breadth
+    # MEASUREMENT reads live coverage state no clean checkout has, so it runs in _STATE_FENCES --
+    # a commit gate reporting BLIND on every PR is a gate that gets switched off (L1.43). Same
+    # split as check_scheduler_manifest, and the half that belongs here is the right one: a
+    # mandate leaves a prompt by an EDIT, so the edit is the moment to catch it.
+    ("check_strategy_breadth.py", ("--surfaces-only",)),  # L1.32 -- never limit to one family
 )
 
 #: STATE FENCES -- box-only. They measure LIVE STATE (artifacts, ledgers, organ freshness) that
@@ -81,6 +88,8 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("check_conversion.py", ()),               # L1.28b -- FLATLINE fails
     ("check_exploration.py", ()),              # L1.32 -- no exploration organ gone dark
     ("check_calibration.py", ()),              # L1.29 -- no ungraded past-due forecast
+    ("check_strategy_breadth.py", ()),         # L1.32 -- the breadth MEASUREMENT
+    ("run_organ_er.py", ()),                   # L1.32 -- no organ left in coma
     ("check_replacement_rate.py", ()),         # L1.30 -- births vs deaths
     ("check_change_window.py", ()),            # L1.38 -- money-path freeze windows
     ("check_scheduler_manifest.py", ()),       # L1.28c state half -- live crontab drift (rc=1)

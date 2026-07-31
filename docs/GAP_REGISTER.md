@@ -5,7 +5,7 @@ _Re-ranked 2026-07-31T21:05Z (sixth cycle of the day)._ **#1 stays PRINCIPAL REA
 `rung full_flatten_disarmed`, `requires_manual_rearm true`, 0 positions). Two evidence-driven
 movements, both from measurements taken this cycle rather than a re-weighing:
 
-**#1a NEW — R0211 venue-side protective stop is INERT, and it is a REARM blocker.**
+**#1a NEW — R0217 venue-side protective stop is INERT, and it is a REARM blocker.**
 `run_cashcarry_executor.py:1015` gates the stop rail on `hasattr(fut, "place_stop_market")`;
 `fut` is `binance_testnet` (line 29) and `place_stop_market` is defined **only** in
 `binance_live.py`. "The rail that survives host death" returns `[]` unconditionally. Its own
@@ -23,7 +23,7 @@ monotonically across funding deciles (d1 −1.89 → d10 +0.61 bps/day), in all 
 funding leg *must* rise with rank. The basis leg carries no such mechanism.) The entry rule is
 **exonerated**, so the live −51.74 bps `price_pnl` is redirected to
 execution/accounting exactly as the card pre-committed. The gap that remains is the honest
-finding and is now rowed as **R0213**: paper-gross +7.77 bps/day vs live −58.27 bps/round-trip is
+finding and is now rowed as **R0219**: paper-gross +7.77 bps/day vs live −58.27 bps/round-trip is
 an **L2.10 reality gap of ~66 bps**, and the next repair hour goes to decomposing it against
 `trade_forensics` + `tca`, **not** to re-engineering selection. The +7.77 figure is gross of
 costs on a current-universe panel and is recorded as NOT an edge.

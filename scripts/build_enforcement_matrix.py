@@ -239,6 +239,19 @@ _MAP: dict[str, list[str]] = {
     # families, and twelve candidates from one family are correlated by construction -- they die
     # together and the desk learns one thing while reporting twelve tests.
     "L1.32-strategy-coverage": ["scripts/run_strategy_coverage.py"],
+    # R0211: the coverage MAP reports and the widened prompts request; neither fails when a miner
+    # drifts back to the family it knows, which is how breadth actually dies -- one comfortable
+    # session at a time with the volume never dropping. This is the clock behind the rule.
+    "L1.32-strategy-breadth": ["scripts/check_strategy_breadth.py"],
+    # R0213: "surpass me" is only an instruction if something measures it. The desk already
+    # benchmarks every sleeve against buy-and-hold (a levered sleeve that merely tracks the index
+    # takes risk for nothing); the human method this sleeve was built to copy is the second
+    # benchmark, computed the same way and equally non-optional.
+    "L1.6-principal-benchmark": ["scripts/run_principal_benchmark.py"],
+    # R0215: the desk DETECTED coma well and TREATED nothing -- three organs reported dark for
+    # days, every report correct, no treatment attempted. Detection without treatment is a
+    # monitor, not a hospital, and a ward whose alarms nobody answers gets its alarms switched off.
+    "L1.32-organ-er": ["scripts/run_organ_er.py"],
     # L1.25a: null streaks throttle nothing -- an organ going quiet is caught by the freshness/
     # productivity wires REGARDLESS of its reason, so "stopped because nothing was working" trips
     # the same fence as "stopped because broken". The pessimism-freeze cannot hide.
