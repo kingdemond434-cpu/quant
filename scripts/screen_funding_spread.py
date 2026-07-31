@@ -39,6 +39,14 @@ _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
+# L1.42 LAWFUL ENTRY: this organ ran on a cron line that passed through no gate at
+# all -- 60 manifest lines did. guard() verifies the sealed core and that the doctrine
+# still carries every law family; it is TTL-cached (~0ms after the first call in a
+# window) and pages-but-does-not-block, so a governance fault never silences an organ.
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+from libs.ops.lawful import guard as _law_guard  # noqa: E402
+
 #: venue -> (jsonl path, timestamp field candidates, symbol field candidates, rate field
 #: candidates). Collectors were written independently and do NOT share a schema, so the reader
 #: is tolerant by design -- and a venue whose file is absent is REPORTED, never silently dropped
@@ -187,6 +195,7 @@ def build_report(root: Path | None = None, *, round_trip_bps: float = 8.0) -> di
 
 
 def main() -> int:
+    _law_guard()
     ap = argparse.ArgumentParser()
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--round-trip-bps", type=float, default=8.0)

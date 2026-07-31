@@ -35,6 +35,7 @@ from libs.execution.carry_accounting import (
     derive_spot_realized,
     read_income,
 )
+from libs.ops.lawful import guard as _law_guard  # L1.42: no act exempt
 from libs.risk import capital_events, risk_controls
 
 _STATE = Path("data/cashcarry_positions.json")
@@ -1385,6 +1386,10 @@ def _foreign_executor_alive() -> bool:
 
 
 def main() -> None:
+    # L1.42 STRICT: the executor must NOT trade under a tampered core or a doctrine
+    # missing a law family. Every other organ pages and continues; here, refusing to
+    # act IS the safe direction -- an unlawful trade cannot be undone.
+    _law_guard(strict=True)
     ap = argparse.ArgumentParser()
     _enable_fee_burn()           # Gate-0 fee lever: on from the first tick
     ap.add_argument("--top", type=int, default=5, help="number of carries to hold (opens)")

@@ -764,6 +764,32 @@ run enforces it at the boundary**. Its vocabulary lists are deliberately broad a
 when they produce a false positive, **never** by rewording an organ to satisfy the fence: a gate
 that cries wolf is a gate that gets switched off, and that is how enforcement actually dies.
 
+**L1.42 NO ACT IS EXEMPT — EVERY ENTRY POINT PASSES THE LAWS** *(principal order 2026-07-31:
+"every single thing in quant, all acts, must follow all rules, principles, constitutions, laws —
+everything, no exceptions ever, no matter the interactions or cycles")*.
+
+**THE EXCEPTION THAT EXISTED WAS MOST OF THE DESK.** The spawn gate (L1.37) lives in
+`ops/brain_env.sh`, which only *claude-invoking* organs source — **26** manifest lines. The other
+**60** run `.venv/bin/python scripts/X.py` directly and passed through **no gate at all**: a
+collector, a fence, a screen or the executor could start under a tampered constitutional core or
+a doctrine stripped of an entire law family, and nothing would have checked. "Enforced at every
+boundary" was true of the boundaries that existed — and this was the boundary nobody had built.
+
+**`libs/ops/lawful.guard()` is that boundary**, and its three properties are each load-bearing.
+**CHEAP**: a TTL marker means one verification per window across all 60 organs (43ms cold, ~0ms
+cached) — *a gate that adds latency to every cron tick gets deleted, and a deleted gate enforces
+nothing*. **NON-BLOCKING by default**: it pages and records rather than killing the organ,
+because a governance fault must never silently stop the desk's research or its collectors (L1.2).
+**FAIL-CLOSED where it must**: `guard(strict=True)` raises, and **the executor uses it** — an
+unlawful trade cannot be undone, so there and only there, refusing to act is the safe direction.
+
+**IT IS A BUILD CONDITION, NOT A CONVENTION.** L1.41 condition 6 requires every governed organ to
+call it, so a new organ that skips the guard **fails the build** rather than joining the 60.
+Exemptions are enumerated with reasons — the gate organs themselves cannot guard inside the gate
+without recursing. The `QUANT_LAW_GUARD=off` bypass exists deliberately and is **recorded on
+every use**: a guard that cannot be disabled in an emergency gets deleted from every call site
+instead, which is strictly worse — so a bypass is a dated act, never a quiet habit.
+
 **L1.28c CADENCE IS AGGRESSION — EVERY SCHEDULE HUNTS ITS OWN CEILING** *(principal order
 2026-07-31)*. **Every cadence on this desk aims to increase its frequency to the maximum that
 still carries ROI, and a cadence nobody has tried to raise is idle capacity wearing a schedule.**

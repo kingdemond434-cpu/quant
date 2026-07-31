@@ -39,6 +39,14 @@ from pathlib import Path
 _ROOT = Path("/home/quant/quant-platform")
 if not _ROOT.exists():                                     # dev/CI checkout
     _ROOT = Path(__file__).resolve().parent.parent
+
+# L1.42 LAWFUL ENTRY: this organ ran on a cron line that passed through no gate at
+# all -- 60 manifest lines did. guard() verifies the sealed core and that the doctrine
+# still carries every law family; it is TTL-cached (~0ms after the first call in a
+# window) and pages-but-does-not-block, so a governance fault never silences an organ.
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+from libs.ops.lawful import guard as _law_guard  # noqa: E402
 _OUT = _ROOT / "docs/research/capability_hunt"
 
 #: The evidence every hunter reads first -- today's real gaps, not yesterday's impressions.
@@ -332,6 +340,7 @@ def _gpt(prompt: str) -> tuple[bool, str]:
 
 
 def main() -> int:
+    _law_guard()
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true", help="write the prompts, call no model")
     ap.add_argument("--slot", type=int, default=0,

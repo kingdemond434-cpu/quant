@@ -37,6 +37,14 @@ _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
+# L1.42 LAWFUL ENTRY: this organ ran on a cron line that passed through no gate at
+# all -- 60 manifest lines did. guard() verifies the sealed core and that the doctrine
+# still carries every law family; it is TTL-cached (~0ms after the first call in a
+# window) and pages-but-does-not-block, so a governance fault never silences an organ.
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+from libs.ops.lawful import guard as _law_guard  # noqa: E402
+
 from libs.self_improvement import forecast_calibration as fc  # noqa: E402
 
 
@@ -80,6 +88,7 @@ def build_report() -> dict[str, object]:
 
 
 def main() -> int:
+    _law_guard()
     ap = argparse.ArgumentParser()
     ap.add_argument("--report-only", action="store_true")
     ap.add_argument("--json", action="store_true")

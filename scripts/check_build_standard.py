@@ -28,6 +28,9 @@ THE FIVE CONDITIONS, each a law this desk already carries:
      behind its failures rather than being complexity nobody voted for.
   5. NO SILENT SWALLOW (L2.4) -- a bare `except: pass` in an organ turns a failure into a
      success signal for every caller downstream.
+  6. LAWFUL ENTRY (L1.42)   -- the organ calls libs.ops.lawful.guard() at start, so it cannot
+     run under a tampered core or a doctrine stripped of a law family. 60 manifest lines
+     bypassed every gate before this condition existed.
 
 SCOPE, deliberately narrow so the fence stays credible: only NEW-STANDARD organs (those declared
 in _GOVERNED). The desk's older scripts predate the standard and retrofitting them wholesale
@@ -65,6 +68,16 @@ _SCHEDULE_EXEMPT: dict[str, str] = {
     "check_build_standard.py": "runs inside the law gate's battery and in CI on every push; a "
                                "separate cron line would add nothing a commit does not already "
                                "trigger",
+}
+
+#: Organs that legitimately do not call guard(), with the reason. The gate organs THEMSELVES
+#: must not: run_law_gate invokes the checks that guard() delegates to, so guarding inside them
+#: is a loop, and check_constitution_core IS the seal authority.
+_GUARD_EXEMPT: dict[str, str] = {
+    "run_law_gate.py": "it IS the gate -- guarding inside it recurses into itself",
+    "check_law_families.py": "guard() imports FAMILIES from this module; guarding here is a loop",
+    "check_build_standard.py": "runs inside the law gate, which has already verified the core "
+                               "before this fence executes",
 }
 
 #: Vocabulary that proves an organ can say "I could not measure this".
@@ -108,6 +121,9 @@ def audit_organ(root: Path, name: str, *, manifest: str, matrix_src: str,
     if name not in matrix_src:
         v.append("UNMAPPED (L2.0): absent from the enforcement matrix -- its failures carry no "
                  "authority and no law claims it")
+    if "lawful" not in src and name not in _GUARD_EXEMPT:
+        v.append("NO-LAWFUL-ENTRY (L1.42): does not call libs.ops.lawful.guard() -- this organ "
+                 "can start under a tampered core or a doctrine missing a law family")
     try:
         if _has_silent_swallow(ast.parse(src)):
             v.append("SILENT-SWALLOW (L2.4): an `except: pass` converts a failure into a success "

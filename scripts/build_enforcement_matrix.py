@@ -154,6 +154,9 @@ _MAP: dict[str, list[str]] = {
     # than detection days later. The two Stage-A screens are its first governed non-fence organs.
     "L1.41": ["scripts/check_build_standard.py", "scripts/screen_funding_spread.py",
               "scripts/screen_collateral_allocation.py"],
+    # L1.42: the boundary for the 60 python entry points that sourced no shell gate.
+    "L1.42": ["libs/ops/lawful.py", "scripts/check_build_standard.py",
+              "scripts/run_cashcarry_executor.py"],
     # L1.25a: null streaks throttle nothing -- an organ going quiet is caught by the freshness/
     # productivity wires REGARDLESS of its reason, so "stopped because nothing was working" trips
     # the same fence as "stopped because broken". The pessimism-freeze cannot hide.

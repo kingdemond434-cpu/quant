@@ -49,6 +49,14 @@ from typing import Any
 
 _ROOT = Path(__file__).resolve().parent.parent
 
+# L1.42 LAWFUL ENTRY: this organ ran on a cron line that passed through no gate at
+# all -- 60 manifest lines did. guard() verifies the sealed core and that the doctrine
+# still carries every law family; it is TTL-cached (~0ms after the first call in a
+# window) and pages-but-does-not-block, so a governance fault never silences an organ.
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+from libs.ops.lawful import guard as _law_guard  # noqa: E402
+
 # The deep-sweep backpressure line: open+past-due above this flips audit windows to repair.
 REPAIR_MODE_BACKLOG = 25
 _TERMINAL = frozenset({"implemented", "rejected", "retired"})
@@ -122,6 +130,7 @@ def build_report(root: Path, now: datetime | None = None) -> dict[str, Any]:
 
 
 def main() -> int:
+    _law_guard()
     ap = argparse.ArgumentParser()
     ap.add_argument("--report-only", action="store_true",
                     help="write the artifact and always exit 0 (for queue refresh)")
