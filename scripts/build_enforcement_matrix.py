@@ -108,6 +108,10 @@ _MAP: dict[str, list[str]] = {
                "check_capacity_runway"],
     # L1.28b: conversion hunts 100% daily -- FLATLINE (7d of silence on a non-empty queue) fails.
     "L1.28b": ["scripts/check_conversion.py"],
+    # L1.28c: every cadence hunts its own ceiling. The manifest fence requires a decided cadence
+    # with evidence per line; brain_seat_throughput measures the resource they all compete for,
+    # so "raise the cron" vs "buy a second seat" is settled by measurement.
+    "L1.28c": ["scripts/check_scheduler_manifest.py", "scripts/check_utilisation.py"],
     # L1.25a: null streaks throttle nothing -- an organ going quiet is caught by the freshness/
     # productivity wires REGARDLESS of its reason, so "stopped because nothing was working" trips
     # the same fence as "stopped because broken". The pessimism-freeze cannot hide.

@@ -69,3 +69,19 @@ def test_brain_seat_ceiling_exists_and_is_honest():
         assert c.limit >= c.used
         if c.used < c.limit:
             assert "SECOND SEAT" in c.binding_constraint
+
+
+# --- L1.28c: cadence is aggression ------------------------------------------------------------
+
+def test_cadence_law_present_on_every_surface():
+    assert "L1.28c CADENCE IS AGGRESSION" in CONSTITUTION
+    assert "PHASE COUNTS AS CADENCE" in CONSTITUTION
+    assert "L1.28c" in DOCTRINE and "CADENCE IS AGGRESSION" in DOCTRINE
+    src = Path("scripts/build_enforcement_matrix.py").read_text("utf-8")
+    assert '"L1.28c"' in src
+
+
+def test_cadence_law_names_all_three_ceiling_types():
+    for kind in ("INFORMATION-ARRIVAL", "RESOURCE", "DATA-ARRIVAL"):
+        assert kind in CONSTITUTION
+        assert kind in DOCTRINE

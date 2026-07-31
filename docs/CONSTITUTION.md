@@ -434,6 +434,40 @@ exists to detect: `scripts/check_utilisation.py` enumerates every declared ceili
 and fails on idle headroom with no named binding constraint. Utilisation is a **ratchet** (L1.0) —
 today's figure is tomorrow's floor.
 
+**L1.28c CADENCE IS AGGRESSION — EVERY SCHEDULE HUNTS ITS OWN CEILING** *(principal order
+2026-07-31)*. **Every cadence on this desk aims to increase its frequency to the maximum that
+still carries ROI, and a cadence nobody has tried to raise is idle capacity wearing a schedule.**
+Frequency is not a setting chosen once and inherited forever — it is a lever under L1.28a, and
+leaving it where it was first written is the same defect as leaving capital undeployed.
+
+**THE THREE CEILING TYPES, because "max" means a different thing for each** — and a cadence must
+name which one binds it:
+- **INFORMATION-ARRIVAL bound** (audits, strategists, reviewers): firing faster than the desk's
+  state changes re-reads unchanged state. Max = one run per information arrival, and the way
+  past it is **event-driven firing**, never a denser fixed grid.
+- **RESOURCE bound** (every LLM organ, sharing one brain seat and one quota): max = whatever the
+  measured contention allows. Raising cron against a saturated mutex adds deferrals, not work;
+  the resolution is a second seat or a second pool, and the binding constraint must say so.
+- **DATA-ARRIVAL bound** (collectors, feature factories, fences): max = as often as the input
+  changes, and for pure-CPU organs this is nearly free — **a cheap fence held at 6-hourly
+  because nobody revisited it is pure unbooked latency.**
+
+**THE OPERATIVE RULE.** (a) Every scheduled line carries a DECIDED cadence with its reason — a
+raise, or a hold with the evidence that the raise is worthless or harmful. "It has always run
+daily" is not a reason. (b) **PHASE COUNTS AS CADENCE**: a queue that rebuilds two hours after
+the organ that consumes it is stale at every use, and re-phasing is a free raise (measured
+instance: the max-push queue, 2026-07-31). (c) A cadence whose ceiling type is unnamed is
+**unmeasured, and unmeasured counts as idle** (L1.28a). (d) Raises are ratcheted with the rest:
+today's cadence is tomorrow's floor unless evidence retires it. (e) Costs are a scheduling
+input, never a veto — L1.21a governs here exactly as everywhere else.
+
+**FENCED**: `scripts/check_scheduler_manifest.py` requires every manifest line to carry its
+evidence and confidence; `scripts/check_utilisation.py` measures `brain_seat_throughput` (the
+resource every LLM cadence competes for) so "raise it" and "buy a second seat" are distinguished
+by measurement rather than by opinion; the deep sweep's recursive-meta re-examines cadences
+weekly. **The end state is event-driven**: a fixed grid is a polling approximation of the
+information arrivals that should be firing the organ directly.
+
 **L1.28b CONVERSION PARITY — FINDING WITHOUT FIXING IS HALF A DELIVERABLE** *(principal order
 2026-07-31)*. **A found-unfixed defect is an unbooked loss aging at its stated ROI**, exactly as
 idle capital is under L1.28a — the conversion queue therefore hunts 100% daily like every other
