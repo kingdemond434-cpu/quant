@@ -139,10 +139,18 @@ def _criteria(root: Path) -> dict[str, dict[str, Any]]:
     except (OSError, ValueError) as exc:
         put("independent_of_carry", None, f"allocation unreadable ({type(exc).__name__})")
 
-    # TWO REGIMES: the chart context records a volatility regime per instrument. Requiring the
-    # record to span more than one is the cheapest available proxy for "not a single tape".
-    put("two_regimes", None, "regime tagging over the trade record is not yet accumulated -- "
-                             "UNMEASURED, which blocks rung 4 by design")
+    # TWO REGIMES -- now MEASURED rather than permanently blocking. Every trade is already tagged
+    # with the volatility regime at entry (run_conviction_trader.setup_features), so "did this
+    # record span more than one tape" is answerable from the marks. A criterion that can never be
+    # satisfied is not a standard, it is a wall, and a wall that nobody can climb gets removed
+    # rather than met -- which is how a ladder quietly loses its top rung.
+    regimes = {(m.get("setup") or {}).get("vol_regime") for m in (pnl.get("marks") or [])
+               if m.get("closed") and (m.get("setup") or {}).get("vol_regime")}
+    regimes.discard("UNKNOWN")
+    regimes.discard(None)
+    put("two_regimes", None if not regimes else len(regimes) >= 2,
+        f"closed trades span {sorted(regimes)}" if regimes else
+        "no regime tags on any closed trade yet -- UNMEASURED, not satisfied")
     return out
 
 

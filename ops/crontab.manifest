@@ -1035,3 +1035,21 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # EVIDENCE: scripts/check_promotion_gate.py -> data/promotion_gate.json
 # CONFIDENCE: committed-script (new this cycle)
 55 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_promotion.lock .venv/bin/python scripts/check_promotion_gate.py >> data/cro_ai_logs/promotion.log 2>&1
+
+# DISCRETIONARY MAX (R0151): the ceiling-pusher for the discretionary desk -- L1.28c and L1.25a
+# applied to this section like every other. TARGET: a 38pct hit rate. That number is LEGAL where a
+# CAGR target is not, and the distinction is the whole point: a return figure is reachable by SIZE,
+# and size past full Kelly makes growth negative, which is why targeting one corrupts the optimizer
+# (PROJECT_HANDOFF 2026-07-12, fenced by R0143). A HIT RATE cannot be reached by sizing at all --
+# only by selection, information and filtering, which are exactly the levers the desk wants pushed.
+# 38pct is ~one binomial standard error above the 31.1pct cost-adjusted breakeven: the first level
+# at which "this works" is distinguishable from "this got lucky". NOT a ceiling -- on reaching it
+# the organ RE-AIMS one step further and never reports "target met, stand down" (L1.25a).
+# Every cycle it names the ONE binding lever rather than listing ten, because a board listing ten
+# produces none. Ladder by leverage: INFORMATION (public charts cannot carry an edge; the event
+# sleeve is the non-public version) > CROSS-FAMILY (blocked on the OpenRouter seat) and CALIBRATION
+# > SELECTION > ENSEMBLE > EXECUTION. It refuses to idle: every state carries its unlock.
+# 4x/day.
+# EVIDENCE: scripts/run_discretionary_max.py -> data/discretionary_max.json
+# CONFIDENCE: committed-script (new this cycle)
+15 1,7,13,19 * * * cd "$QUANT_ROOT" && flock -n data/.cron_discmax.lock .venv/bin/python scripts/run_discretionary_max.py >> data/cro_ai_logs/disc_max.log 2>&1
