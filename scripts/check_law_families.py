@@ -63,10 +63,11 @@ FAMILIES: dict[str, tuple[tuple[str, ...], str, str]] = {
         "a rail that reads healthy while being terminal, or a survival guarantee that was "
         "never actually wired to the money path"),
     "validation_honesty": (
-        ("L1.6", "L1.25", "L1.29", "L1.30", "L1.43"),
+        ("L1.6", "L1.25", "L1.29", "L1.30", "L1.43", "L1.44"),
         "scripts/check_ratchets.py",
-        "the desk being confidently wrong -- a welded gate, an over-confident forecast, or a "
-        "book whose edges die faster than the pipeline replaces them"),
+        "the desk being confidently wrong -- a welded gate, an over-confident forecast, a "
+        "book whose edges die faster than the pipeline replaces them, or a live decision "
+        "steered by a frozen input it believes is current"),
     "moat": (
         ("L1.11", "L1.17", "L2.9"),
         "scripts/run_moat_backup.py",

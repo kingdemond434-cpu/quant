@@ -63,6 +63,32 @@ def _age_h(iso: str) -> float:
         return 0.0
 
 
+def _next_id(d: dict) -> str:
+    """Allocate past BOTH the local ledger and the last-fetched origin/master copy (R0152).
+
+    Count-based allocation minted the same id on two boxes three times on 2026-07-31
+    (R0135-37, R0143, R0144): each box counts its own rows, so concurrent sessions collide
+    and every merge renumbers rows and repoints code comments. Max-known-id with origin
+    consulted (git show reads the fetched ref -- no network) shrinks the race window from
+    all-day to since-last-fetch; an unreadable origin falls back to the local max, which
+    still never re-mints an id a renumber has already retired.
+    """
+    import re
+    import subprocess
+    nums = [int(m.group(1)) for r in d["recommendations"]
+            if (m := re.match(r"R(\d+)$", str(r.get("id", ""))))]
+    try:
+        remote = subprocess.run(
+            ["git", "show", "origin/master:docs/research/recommendation_ledger.json"],
+            capture_output=True, text=True, timeout=10,
+            cwd=Path(__file__).resolve().parent.parent)
+        if remote.returncode == 0:
+            nums += [int(x) for x in re.findall(r'"id":\s*"R(\d+)"', remote.stdout)]
+    except (OSError, subprocess.SubprocessError):
+        pass                                   # offline clone: local max still monotonic
+    return f"R{(max(nums) if nums else 0) + 1:04d}"
+
+
 def add(a: argparse.Namespace) -> None:
     d = _load()
     # DEDUPE on (source, summary): organs re-read the same audit report every cycle, and a ledger
@@ -72,7 +98,7 @@ def add(a: argparse.Namespace) -> None:
         if r["source"] == a.source and r["summary"].strip() == a.summary.strip():
             print(f"{r['id']} already ledgered ({r['status']})")
             return
-    rid = f"R{len(d['recommendations']) + 1:04d}"
+    rid = _next_id(d)
     d["recommendations"].append({
         "id": rid, "source": a.source, "summary": a.summary,
         "roi_bps": a.roi_bps, "raised": datetime.now(tz=UTC).isoformat(),

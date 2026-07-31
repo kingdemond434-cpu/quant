@@ -284,6 +284,26 @@ def _checks() -> list[tuple[str, str]]:
         out.append(("recorder_stale", "data-moat recorder heartbeat stale >10min -- "
                     "unrecoverable microstructure data is being LOST; respawner runs next "
                     "cycle, or: .venv/bin/python scripts/ensure_recorder.py"))
+    # LIVE-GUARD DEATH (L1.44, capability hunt 2026-07-31). run_live_guard is simultaneously the
+    # size-fraction governor and the stage-demotion tripwire evaluator, and the executor's
+    # documented stale-guard behavior is fail-OPEN (full size, takers allowed). Its freeze path
+    # cannot save it: the KILL file is written BY the guard, so a dead guard can never write its
+    # own freeze -- both degradations point toward MORE aggressive execution, and until this
+    # check nothing paged on the file's age. Content `generated` over mtime (deploys lie fresh).
+    try:
+        lg = json.loads(Path("data/live_guard.json").read_text("utf-8"))
+        lg_at = datetime.fromisoformat(str(lg.get("generated", "1970-01-01T00:00:00+00:00")))
+        lg_age = (datetime.now(tz=UTC) - lg_at).total_seconds()
+    except (OSError, ValueError, TypeError):
+        lg_age = None
+        out.append(("live_guard_missing", "data/live_guard.json missing/unreadable -- size "
+                    "governor and stage tripwires UNEVALUATED; executor fail-opens to full "
+                    "size; start: .venv/bin/python scripts/run_live_guard.py"))
+    if lg_age is not None and lg_age > 900:
+        out.append(("live_guard_dead", f"live guard stale {lg_age/60:.0f}min (cadence 5min) -- "
+                    "executor fail-opens to FULL SIZE + takers and stage demotion is "
+                    "unevaluated; a dead guard cannot write its own KILL file; restart: "
+                    ".venv/bin/python scripts/run_live_guard.py"))
     try:
         v = json.loads(Path("data/cadence_violation.json").read_text("utf-8"))
         out.append(("cadence_floor_violation", "review/safety cadence FLOOR breached: "

@@ -24,6 +24,8 @@ from pathlib import Path
 
 import numpy as np
 
+from libs.research.upbit_data import upbit_daily_close_keyed
+
 SERIES = Path("data/signal_halflife.jsonl")
 REPORT = Path("data/signal_halflife_report.json")
 MIN_POINTS_TO_FIT = 8          # refuse to estimate a half-life below this
@@ -52,8 +54,9 @@ def stables():
 
 
 def kimchi(gb):
-    kb = {str(r["candle_date_time_utc"])[:10]: float(r["trade_price"])
-          for r in _get("https://api.upbit.com/v1/candles/days?market=KRW-BTC&count=200")}
+    # R0060 single source: inline keying here used the OPEN stamp (~15h look-ahead) -- this is
+    # the copy that printed a contaminated "kimchi STRENGTHENING" row during the refutation audit.
+    kb = upbit_daily_close_keyed()
     res = _get("https://query1.finance.yahoo.com/v8/finance/chart/KRW=X?interval=1d&range=300d"
                )["chart"]["result"][0]
     fx = {datetime.fromtimestamp(int(t), tz=UTC).date().isoformat(): float(c)

@@ -891,6 +891,43 @@ non-empty queue. Its artifact feeds `run_max_push.py`, so conversion debt ranks 
 max-push queue as every other below-ceiling aspect, at the second-highest declared leverage —
 because every other row in that queue IS conversion.
 
+**L1.44 CONSUMPTION-TIME FRESHNESS — A DECISION IS ONLY AS LIVE AS ITS INPUTS** *(capability
+hunt 2026-07-31; single-family run — Claude proposal, GPT-9 seat down, verdict SOLO — but the
+class was proven by the desk's own record five times over before the law existed)*. The desk had
+five producer-side max-age registries (max_audit, check_ratchets, check_miner_runway,
+check_exploration, data_health), all hand-enumerated, all answering "did the producer run?" —
+and NONE knowing who READS what. So a dead producer surfaced as one idleness line among 25 while
+its frozen artifact kept steering live decisions as if current: the max_push queue consumed 2h
+stale by every brain slot (the L1.28c proving instance), an idle Holm slot fed by a stale
+snapshot, `panel_verdicts` 189h old pinning a payload at its floor, the ADL force-order window
+firing after its condition had passed, and the 13,155/4,500 two-sources equity split — five hand
+discoveries of ONE unnamed class. THE LAW: every decision-path read of a produced artifact
+declares its maximum tolerated age AT THE READ SITE via `libs.ops.fresh.read_fresh` — severity
+belongs to the CONSUMER, which is why producer-side registries could never see it. Each read
+appends its contract to `data/freshness_contracts.jsonl`, so the registry of who-consumes-what
+BUILDS ITSELF from actual reads (no sixth hand list to rot) and is simultaneously the
+producer→consumer edge list that L1.28c's event-driven end state requires. Freshness prefers the
+artifact's content `generated` stamp over mtime — deploys rewrite files, so mtime lies FRESH, in
+the dangerous direction. Valid-until-changed state files (`kind='state'`) are fresh iff their
+named GUARDIAN organ is alive, never by their own age — the distinction that keeps the fence
+from crying wolf on legitimately-old state (L1.43). Fallback mode returns the data with
+`fresh=False` and the CALLER names its degrade direction (a stale denylist STILL DENIES; a stale
+cost may only TIGHTEN a gate, never loosen it); `strict` raises, for reads where acting on
+frozen input is worse than not acting (mirrors `lawful.guard(strict=True)`). **FENCED** by
+`scripts/check_freshness.py`: STALE-CONSUMED (a live decision consumed a frozen input — the
+smoking gun, with the caller named) and UNWIRED (a bootstrap contract deleted) fail; ZERO
+recorded contracts is UNMEASURED, never OK (L1.28a). THE COMPOUND IT CLOSED ON DAY ONE:
+`run_live_guard` is both the size governor and the stage-demotion evaluator, the executor's
+documented stale-guard behavior is fail-OPEN, and the KILL file is written BY the guard — so a
+dead guard could never freeze its own book and nothing paged on its age; `run_alerts` now pages
+`live_guard_dead` within 15 minutes. ANTI-TIMIDITY READING: this law throttles NOTHING —
+producers run at full cadence (L1.28b(f)) and consumers keep reading; it makes stale consumption
+VISIBLE and names the blast radius, and the fence can only ever demand FRESHER inputs and MORE
+wired contracts, never less reading. The symmetric half: a contract provably too tight is
+loosened on measured evidence exactly as a welded gate is re-calibrated (L1.43), never by muting
+the fence — and the timid failure mode (contracts so tight the fence cries wolf until someone
+disables it) is scored exactly like the stale-consumed defect itself.
+
 ---
 
 ## LEVEL 2 — ENFORCEMENT ENGINE (how compliance is ensured)

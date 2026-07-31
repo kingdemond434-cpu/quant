@@ -1,6 +1,19 @@
 # GAP REGISTER — live ranked list of known inefficiencies & missing capabilities
 
-_Re-ranked 2026-07-31T13:50Z (second cycle of the day). **The 08:05 headline is superseded: the
+_Re-ranked 2026-07-31T17:05Z (fourth cycle of the day)._ **Deploy pipeline HEALED and two-session
+work UNIFIED** — the evening session's orphaned 35-file fix set (R0144–R0146 skip-reads-green
+family) was recovered, gated, merged with the remote discretionary program (R0135–R0143 +
+organ-liveness), and pushed; puller `up-to-date`, crontab reinstalled at the new manifest hash,
+executor recycled onto current code, forecast `20260731-deploy-pipeline-repair-heals` graded
+TRUE. Rank movements, artifact-backed: **#1 stays PRINCIPAL REARM + A/B/C** (unchanged, page
+live; every idle-capital hour attributable to that one reply — R0026's decomposition now shows
+the clean-regime price leg at **+0.46 bps**, so the sleeve's economics do not block resume).
+**Conversion queue rank falls**: 16 rows disposed this cycle (R0009/13/26/31/42/47/50/52/63 +
+R0144-46/149/152 + 2 panel rows scheduled), forward cohort **12/12 accruing** (WALCL clock fills
+the kimchi slot). **08-01 batch owns tomorrow**: R0002 doctrine 87.6k→16k (measured 3× worse
+than rowed), money-path trio R0020/R0025/R0062, R0043 angle-20 headline._
+
+_Previous stamp (13:50Z), kept for the freeze record: **the 08:05 headline is superseded: the
 book FROZE at 08:35Z** — pager-ladder full-flatten (root cause: a retired-credentials auth check
 paged false-positives for 12d into a ladder whose ack file had NO writer; Binance 418 mid-flatten
 crash-hammered by systemd until the ban-latch fix). Movements this cycle, each artifact-backed:
