@@ -2439,11 +2439,11 @@
    "summary": "The desk had no STRATEGY-FAMILY coverage axis. Every coverage organ maps WHERE the miners look (9 source families x 7 regional seats in prospector_coverage.md); nothing mapped WHAT KIND of edge comes back, so the desk could report healthy source coverage while every card came from three mechanism families and no organ could see it. Coverage is the count of DISTINCT families touched, never candidates tested: twelve candidates from one family are correlated by construction, die together, and teach roughly one thing while the log reports twelve tests. run_strategy_coverage enumerates 14 crypto families, scores each HUNTED/THIN/NEVER-HUNTED from the graveyard and ledger, and names the binding gap. FIRST RUN: 41 buried candidates cluster into just 7/14 worked families -- STATISTICAL-ARBITRAGE never hunted once, and LEVEL-REACTION (the conviction sleeve's OWN stop-placement premise) tested exactly once.",
    "roi_bps": null,
    "raised": "2026-07-31T20:16:39.010080+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "run_strategy_coverage enumerates 14 families, scores each from graveyard+ledger, names the binding gap; 9 tests including two parser-defect regression pins and the UNREADABLE path; ran live -- 7/14 hunted, STATISTICAL-ARBITRAGE never, LEVEL-REACTION once",
+   "commit": "1f8a854",
    "due": null,
-   "disposed": null
+   "disposed": "2026-07-31T20:20:35.897376+00:00"
   },
   {
    "id": "R0201",
@@ -2451,11 +2451,11 @@
    "summary": "Discretionary self-improvement had no route from research to the sleeve: the playbook learned ONLY from the sleeve's own closed trades, so a miner finding about trend/level/positioning mechanisms could never reach it. import_to_playbook routes discretionary-adjacent family findings in as PROVISIONAL with support=0, carrying their origin and an explicit SUGGESTS-ONLY authority note. The asymmetry is the safety property: an outside finding may suggest a method change, only the sleeve's own closed trades may authorise one -- run_trade_review's N_SUPPORT=3 queue is not skippable, verified end-to-end against the real _playbook_brief consumer (imports are visible to the desk and withheld from the trading brief). All 11 miner prompt surfaces (prospector, litminer, dataaxis, blindrediscovery, 7 regional frontier seats) now read the coverage map first, prefer NEVER-HUNTED/THIN families over deepening worked ones, and are told discretionary mechanisms are in scope and always were -- disqualified only for being unfalsifiable, never for being judgement-shaped.",
    "roi_bps": null,
    "raised": "2026-07-31T20:16:39.067127+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "import_to_playbook files discretionary findings as PROVISIONAL support=0 with SUGGESTS-ONLY authority; end-to-end test against the real _playbook_brief proves imports never reach the trading brief; all 11 miner prompt surfaces widened",
+   "commit": "1f8a854",
    "due": null,
-   "disposed": null
+   "disposed": "2026-07-31T20:20:35.940262+00:00"
   }
  ]
 }
