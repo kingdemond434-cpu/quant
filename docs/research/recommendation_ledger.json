@@ -1478,11 +1478,11 @@
    "summary": "R0122 LLM DISCRETIONARY SLEEVE (principal request: 'Claude acts like a human trader with a brain, trades 24/7'): PAPER-ONLY sleeve running 6x/day. Edge is PROSE not charts -- exchange announcements, contract-spec changes, listing notices, chain incidents, regulatory statements: information whose implication requires READING, arriving while humans sleep. Every call is a pre-registered forecast with an explicit probability, logged to forecast_calibration so L1.29 SCORES it (Brier/bias/hit-rate) automatically. Write-time refusals: no mechanism, no falsifier, chart-pattern-as-mechanism, probability outside 0.50-0.95. PASS is first-class. Zero promotion authority -- earns a forward clock the same way as every axis (L1.6). NEXT STAGES OWED: (a) build data/exchange_announcements.jsonl + news_feed.jsonl collectors -- the sleeve's actual edge is dark without them; (b) paper P&L marking vs buy-and-hold AND vs the carry sleeve; (c) after 30+ scored calls, read its Brier: if uncalibrated or below benchmark, graveyard it with the reason",
    "roi_bps": 35.0,
    "raised": "2026-07-31T12:33:16.979973+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "Sleeve + its feed both BUILT and scheduled. collect_announcements.py runs every 15min against live public endpoints (OKX announcements verified working; Binance CMS 400s without a signed context, Bybit CloudFront blocks this egress country -- both RECORDED, and the Bybit one is a concrete argument for the second VPS in another region). It measures its OWN information latency (first_seen minus published_at) and gates on it: only fresh+material items reach the trader. First live run proved the gate necessary -- it ingested the 2021 CREAM exploit as breaking tier-1 news. Symbol extraction whitelisted after the regex returned ACROSS/AN/AS/LED as tickers. Sleeve runs 6x/day, paper-only, every call a scored forecast. REMAINING: paper P&L marking vs buy-and-hold + carry sleeve, and the 30-call calibration review that graveyards it if uncalibrated",
+   "commit": "pending",
    "due": null,
-   "disposed": null
+   "disposed": "2026-07-31T12:53:19.113549+00:00"
   }
  ]
 }

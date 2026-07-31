@@ -162,6 +162,9 @@ _MAP: dict[str, list[str]] = {
     # R0122 LLM discretionary sleeve: paper-only candidate generator whose calls are scored
     # forecasts. Governed by L1.6 (zero promotion authority) and L1.29 (it grades itself).
     "L1.6-llm": ["scripts/run_llm_trader.py"],
+    # R0122b: the unstructured feed the sleeve trades. Under L1.11a (information asymmetry as a
+    # search dimension) -- its latency measurement IS the asymmetry test.
+    "L1.11a-events": ["scripts/collect_announcements.py"],
     # L1.25a: null streaks throttle nothing -- an organ going quiet is caught by the freshness/
     # productivity wires REGARDLESS of its reason, so "stopped because nothing was working" trips
     # the same fence as "stopped because broken". The pessimism-freeze cannot hide.

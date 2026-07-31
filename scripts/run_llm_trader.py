@@ -102,6 +102,25 @@ def build_brief(root: Path) -> dict[str, Any]:
                           ("news", "data/news_feed.jsonl", 10)):
         try:
             lines = (root / rel).read_text("utf-8", errors="ignore").splitlines()
+            if label == "announcements":
+                # ONLY TRADEABLE ITEMS reach the trader (R0122b): fresh enough to still be
+                # unpriced AND material enough to force repositioning. Handing it the archive
+                # is how a sleeve "trades" a three-year-old exploit.
+                import json as _j
+                rows = []
+                for ln in reversed(lines):
+                    try:
+                        r = _j.loads(ln)
+                    except ValueError:
+                        continue
+                    if r.get("tradeable"):
+                        rows.append({k: r[k] for k in
+                                     ("source", "title", "symbols", "latency_minutes", "tier")
+                                     if k in r})
+                    if len(rows) >= n:
+                        break
+                brief["sources"][label] = rows or "no TRADEABLE events this window"
+                continue
             brief["sources"][label] = [ln[:400] for ln in lines[-n:] if ln.strip()]
         except OSError:
             # ABSENT, never silently empty: a brief that hides its missing feeds invites a call
