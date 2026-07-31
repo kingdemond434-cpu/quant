@@ -2647,11 +2647,11 @@
    "summary": "Gap #39 was closed on run_recorder.py (Binance) and NOT on run_recorder_bybit.py, which kept a hardcoded 20-symbol tuple. So the two recorders drifted and the second-venue tape could intersect the traded book at ZERO -- the precise defect #39 named, still live on the venue nobody re-checked. Bybit now derives the SAME priority-ordered universe as its twin (benchmark, held positions, recently traded, majors -- majors dropped first when the cap binds) filtered to what Bybit actually lists via one keyless instruments-info call, so no request is ever burned on a contract the venue does not carry. FALLS BACK rather than blocks, and the asymmetry is deliberate and inverted from the rest of the desk: the action is reading public keyless data with no money at risk, while NOT acting is permanent -- an unrecorded day cannot be bought back at any price -- so an unreachable venue keeps the fallback list and says so loudly instead of recording nothing while reporting healthy. Also fixed a NameError: the module-level universe call sat above the _get helper it needs, so the recorder would not have started at all.",
    "roi_bps": null,
    "raised": "2026-07-31T22:46:05.067211+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "bybit universe derives from the same priority-ordered source as its twin, filtered to listed contracts; falls back loudly rather than recording nothing; import-time NameError fixed; 3 tests",
+   "commit": "468988c",
    "due": null,
-   "disposed": null
+   "disposed": "2026-07-31T22:46:12.648294+00:00"
   }
  ]
 }
