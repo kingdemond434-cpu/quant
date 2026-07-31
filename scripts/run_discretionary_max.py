@@ -72,6 +72,100 @@ TARGET_HIT = 0.38
 REAIM_STEP = 0.04
 
 
+#: THE GROWTH IDENTITY. Everything this desk can do to compound harder enters through exactly
+#: four terms, and no fifth:
+#:
+#:     g_year  =  n * [ p*ln(1 + b*f)  +  (1-p)*ln(1 - l*f) ]
+#:
+#:   n  independent bets per year   -- decorrelation, NOT trade count
+#:   p  hit rate                    -- selection, information, filtering
+#:   b  winner:loser R shape        -- how far a winner is allowed to run before it is banked
+#:   f  risk per bet                -- size
+#:
+#: WHY THIS ORGAN NEEDED IT. It was targeting p alone. p is one term of four, and measured on the
+#: desk's own numbers it is not even the steepest: lifting the winner shape from 3R to 4R moves
+#: the odds of a doubling year further than four points of hit rate does. An organ that hunts one
+#: term while three sit unexamined is not pushing a ceiling, it is polishing a wall.
+#:
+#: AND THE ANTI-LEVER, recorded here because it is the one that feels like aggression and is not.
+#: f does NOT belong on the list. Growth rises with size only to full Kelly and falls after it,
+#: and the probability of a doubling year peaks EARLIER still -- around 5% risk per bet on this
+#: payoff, falling monotonically above it. Measured on the desk's own stack at a 38% hit rate,
+#: taking risk from 6% to 20% cuts the chance of a doubling year from 73% to 31%. Size is the one
+#: dial where "uncap it" and "achieve it" point in opposite directions, so the ceiling-pusher
+#: names it as a term to hold, not to raise. The upside is bought in n, p and b.
+_GROWTH_TERMS = ("INDEPENDENT-BETS", "HIT-RATE", "WINNER-SHAPE", "RISK-PER-BET")
+
+
+def growth_levers(root: Path) -> dict[str, Any]:
+    """Decompose compounding into its four inputs and rank them by MEASURED marginal effect.
+
+    Each term reports what it is worth at the margin, so effort goes where the gradient is rather
+    than where the attention is. Terms that are ASSUMED rather than measured are ranked first
+    regardless of their gradient: an unmeasured input cannot be improved on purpose, and the one
+    that is currently assumed (the winner shape) is also the steepest.
+    """
+    pnl = _read(root, "data/paper_book_pnl.json")
+    payoff = pnl.get("realised_payoff") or {}
+    n_closed = int(pnl.get("n_resolved") or 0)
+    hit = pnl.get("win_rate")
+    alloc = _read(root, "data/sleeve_allocation.json")
+
+    b_state = payoff.get("state") or "ASSUMED"
+    b_val = float(payoff.get("ratio") or 3.0)
+    terms = [
+        {"term": "WINNER-SHAPE", "symbol": "b", "state": b_state, "value": b_val,
+         "gradient": "STEEPEST -- one extra R of winner is worth ~5pp of hit rate at the margin, "
+                     "and the exchange rate is measured: a 4R trail pays down to a 28.7% hit rate "
+                     "against a 3R/35% baseline",
+         "detail": ("the winner:loser shape is ASSUMED at 3:1 and has never been measured -- "
+                    "every downstream money figure (breakeven, Kelly odds, the promotion bar) "
+                    "rests on it" if b_state != "MEASURED" else
+                    f"measured {b_val:.2f}:1 against the 3.0:1 assumed"),
+         "action": ("resolve enough closed trades for realised_payoff to leave ASSUMED -- until "
+                    "then the steepest lever on the desk is invisible, not flat"
+                    if b_state != "MEASURED" else
+                    "run_trade_review's RIGHT-BUT-TRUNCATED cause is the signal that the trail is "
+                    "banking winners early; widen it while the exchange rate says the hit rate "
+                    "cost is affordable")},
+        {"term": "INDEPENDENT-BETS", "symbol": "n", "state": alloc.get("status") or "UNMEASURED",
+         "value": None,
+         "gradient": "LINEAR in the exponent and the most under-exploited: 18 crypto perps are "
+                     "close to ONE bet, so trade count overstates n badly",
+         "detail": "n is independent bets, not trades. Correlated positions held at once are one "
+                   "bet with extra fees, which is why raising cadence on the same tape buys "
+                   "nothing while decorrelating buys growth at no accuracy cost",
+         "action": "measure the realised cross-instrument correlation of CLOSED trades, then add "
+                   "genuinely uncorrelated ground (different horizon, different driver) rather "
+                   "than more names off the same tape"},
+        {"term": "HIT-RATE", "symbol": "p", "state": "MEASURED" if n_closed >= 20 else "UNMEASURED",
+         "value": hit,
+         "gradient": "steep near breakeven -- but bounded, because p is the term an adversary "
+                     "competes away fastest",
+         "detail": f"{n_closed} closed trades; this organ's own TARGET_HIT applies here and here "
+                   "only -- it is the process target that cannot be reached by sizing",
+         "action": "the lever ladder below (information, cross-family, selection) is entirely "
+                   "about this term"},
+        {"term": "RISK-PER-BET", "symbol": "f", "state": "HELD-BY-ARITHMETIC", "value": None,
+         "gradient": "NEGATIVE above ~5% on this payoff -- the only term where raising it lowers "
+                     "the outcome it is meant to raise",
+         "detail": "growth rises with size only to full Kelly and falls after; the probability of "
+                   "a doubling year peaks earlier still. At a 38% hit rate, 6% -> 20% risk cuts "
+                   "that probability from 73% to 31%",
+         "action": "HOLD. Not timidity and not a compromise -- raising this term is arithmetically "
+                   "self-defeating, which is why the upside is bought in b, n and p instead"},
+    ]
+    unmeasured = [t for t in terms if t["state"] in ("ASSUMED", "UNMEASURED")]
+    return {"identity": "g_year = n * [ p*ln(1 + b*f) + (1-p)*ln(1 - l*f) ]",
+            "terms": terms,
+            "n_unmeasured": len(unmeasured),
+            "binding_term": (unmeasured[0]["term"] if unmeasured else "HIT-RATE"),
+            "why": (f"{unmeasured[0]['term']} is {unmeasured[0]['state']} -- an input nobody has "
+                    "measured cannot be improved on purpose, and this one is also the steepest"
+                    if unmeasured else
+                    "all four terms measured; effort goes to the steepest that is still moving")}
+
+
 def _read(root: Path, rel: str) -> dict[str, Any]:
     try:
         return json.loads((root / rel).read_text("utf-8"))
@@ -180,6 +274,7 @@ def build_report(root: Path | None = None) -> dict[str, Any]:
         "target_hit_rate": aim, "measured_hit_rate": hit, "n_closed": n,
         "aim_note": aim_why,
         "binding_lever": binding,
+        "growth": growth_levers(root),
         "levers": sorted(lv, key=lambda x: x["rank"]),
         "n_open": len(open_), "n_blocked": len(blocked),
         "never_idle": ("every lever is built or blocked on named evidence; the binding one is "

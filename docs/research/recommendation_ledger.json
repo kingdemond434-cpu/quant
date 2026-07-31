@@ -2240,6 +2240,30 @@
    "commit": "e7ea268",
    "due": null,
    "disposed": "2026-07-31T19:18:20.475927+00:00"
+  },
+  {
+   "id": "R0185",
+   "source": "max_audit",
+   "summary": "The desk's most consequential number was never measured: the winner:loser R shape. realised_R is written onto every mark and aggregated only as a flat mean, never split into the ratio that the 25.0% gross breakeven, the 31.1% cost-adjusted one, measured_risk_cap's Kelly odds, and check_promotion_gate's log-breakeven all consume. It is also the steepest gradient in the system -- holding hit rate and size fixed, the odds of a doubling year run 0.2% at a 2R winner, 44% at 3R, 93% at 4R. A sleeve realising 2.27:1 needs a 37.9% hit rate to break even, not 31.1%, which lands the requirement ABOVE the rate the desk aims at -- invisible while the shape is assumed. realised_payoff() now measures it, stays ASSUMED under 20 closed, and reports measured vs assumed side by side.",
+   "roi_bps": null,
+   "raised": "2026-07-31T19:24:04.289947+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0186",
+   "source": "max_audit",
+   "summary": "run_discretionary_max targeted the hit rate alone -- one term of four. Compounding enters through exactly n (independent bets), p (hit rate), b (winner shape) and f (size), and p is not even the steepest: one extra R of winner is worth ~5pp of hit rate at the margin, with a measured exchange rate (a 4R trail pays down to a 28.7% hit rate against a 3R/35% baseline). growth_levers() now decomposes the identity, ranks by marginal effect, puts ASSUMED inputs first because an unmeasured input cannot be improved on purpose, and records SIZE as the anti-lever: growth rises with f only to full Kelly and the odds of a doubling year peak earlier still, so 6%->20% risk at a 38% hit rate CUTS those odds from 73% to 31%.",
+   "roi_bps": null,
+   "raised": "2026-07-31T19:24:04.342959+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

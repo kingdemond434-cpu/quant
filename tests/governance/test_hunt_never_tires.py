@@ -85,3 +85,39 @@ def test_cadence_law_names_all_three_ceiling_types():
     for kind in ("INFORMATION-ARRIVAL", "RESOURCE", "DATA-ARRIVAL"):
         assert kind in CONSTITUTION
         assert kind in DOCTRINE
+
+
+# --- the ceiling-pusher pushes the whole growth identity, not one term of it -------------------
+
+def test_all_four_growth_terms_are_enumerated_and_ranked():
+    """It targeted the hit rate alone -- one term of four, and not the steepest.
+
+    Compounding enters through exactly four inputs: independent bets, hit rate, winner shape and
+    size. An organ hunting one while three sit unexamined is polishing a wall, not pushing a
+    ceiling.
+    """
+    from pathlib import Path
+
+    from scripts.run_discretionary_max import _GROWTH_TERMS, growth_levers
+    g = growth_levers(Path("."))
+    assert {t["term"] for t in g["terms"]} == set(_GROWTH_TERMS)
+    assert "g_year" in g["identity"]
+    # an ASSUMED input outranks a measured one: it cannot be improved on purpose
+    assert g["binding_term"] == "WINNER-SHAPE"
+
+
+def test_size_is_recorded_as_the_anti_lever_never_as_headroom():
+    """The one dial where 'uncap it' and 'achieve it' point in opposite directions.
+
+    Growth rises with size only to full Kelly and falls after; the odds of a doubling year peak
+    earlier still. This must stay written down, because raising it is the change that always
+    LOOKS like aggression and is arithmetically self-defeating.
+    """
+    from pathlib import Path
+
+    from scripts.run_discretionary_max import growth_levers
+    f = next(t for t in growth_levers(Path("."))["terms"] if t["symbol"] == "f")
+    assert f["state"] == "HELD-BY-ARITHMETIC"
+    assert "NEGATIVE" in f["gradient"]
+    assert f["action"].startswith("HOLD")
+    assert "timidity" in f["action"]          # the reason, so it is not re-litigated as caution
