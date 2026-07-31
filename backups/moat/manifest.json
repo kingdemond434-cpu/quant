@@ -1,0 +1,59 @@
+{
+  "generated": "2026-07-31T08:37:41.176493+00:00",
+  "law": "L1.23 -- survival first: the moat is capital in information form",
+  "stores": {
+    "execution_tape": {
+      "status": "ABSENT",
+      "kind": "tree",
+      "path": "data/moat/execution_tape",
+      "sha256": {},
+      "note": "store missing on this host -- recorded, not skipped silently"
+    },
+    "research_memory": {
+      "status": "ABSENT",
+      "kind": "sqlite",
+      "path": "data/research_memory.db",
+      "sha256": {},
+      "note": "store missing on this host -- recorded, not skipped silently"
+    },
+    "sor_research": {
+      "status": "REPLICATED",
+      "kind": "sqlite",
+      "path": "data/sor_research.sqlite",
+      "bytes": 0,
+      "sha256": {
+        "sor_research": "ac7fbf4732ec6b1a11c3af81cea48005c158e39d9043800a4d7895506a32b5b5"
+      }
+    },
+    "capital_events": {
+      "status": "ABSENT",
+      "kind": "file",
+      "path": "data/capital_events.jsonl",
+      "sha256": {},
+      "note": "store missing on this host -- recorded, not skipped silently"
+    },
+    "cost_model": {
+      "status": "ABSENT",
+      "kind": "file",
+      "path": "data/cost_model.json",
+      "sha256": {},
+      "note": "store missing on this host -- recorded, not skipped silently"
+    },
+    "graveyard": {
+      "status": "REPLICATED",
+      "kind": "file",
+      "path": "docs/graveyard.md",
+      "bytes": 36861,
+      "sha256": {
+        "graveyard.md": "621c464d65e5ebd1cddff72582edccce4711e999c55965f49f54d40a33b9c355"
+      }
+    }
+  },
+  "skipped_over_cap": [],
+  "not_covered_bytes": {},
+  "not_covered_note": "bulk lake/L2 need the Storage-Box/R2 principal decision -- measured here every run so the gap stays a number",
+  "disk_free_pct": 11.42,
+  "fuse_pct": 15.0,
+  "restore_drill_passed": true,
+  "status": "DISK-FUSE"
+}

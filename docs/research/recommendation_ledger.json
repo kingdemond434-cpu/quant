@@ -1219,6 +1219,18 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0101",
+   "source": "principal",
+   "summary": "R0101 portfolio-construction tier gap (TIER1_BENCHMARK): multi-sleeve risk model + correlation-budgeted allocation, activates when n_sleeves >= 3; design can start now against paper sleeves -- the benchmark register queues this daily until T1",
+   "roi_bps": 15.0,
+   "raised": "2026-07-31T08:39:11.913098+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

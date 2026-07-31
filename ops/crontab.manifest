@@ -173,6 +173,18 @@ QUANT_ROOT=/home/quant/quant-platform
 # CONFIDENCE: committed-script (new this cycle)
 33 */6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_conversion.py >> data/cro_ai_logs/conversion_fence.log 2>&1
 
+# MOAT BACKUP (L1.23, principal order 2026-07-31): the irreplaceable small stores (execution
+# tape, research memory, SoR, capital events, cost model, graveyard) replicate into backups/moat/
+# with sha256 manifest + a restore drill ON EVERY RUN; the snapshot/push cycle then carries the
+# replicas to GitHub -- off-box, different failure domain, zero cost. Bulk L2/lake NOT covered
+# (measured into the artifact every run; Storage-Box/R2 is the standing principal decision).
+# DISK FUSE: free <15% exits 2 and lands in the noop sweep -- the 29-day countdown pages ~14
+# days before the 80% guard would start sacrificing the moat. libs/ops/backup.py sat with zero
+# production callers while the moat had no copy; this is that capability finally wired.
+# EVIDENCE: scripts/run_moat_backup.py -> backups/moat/manifest.json + data/backup_status.json
+# CONFIDENCE: committed-script (new this cycle)
+55 3 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_moat_backup.py >> data/cro_ai_logs/moat_backup.log 2>&1
+
 # TIMIDITY FENCE (L1.28): about two thirds of the constitution's principles contain restraint
 # language, every one of which a language model can degrade into a general licence to do less.
 # The misreading is systematic, silent, and looks like good judgement. This requires every

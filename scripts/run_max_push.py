@@ -85,6 +85,11 @@ _LEVERAGE: dict[str, tuple[float, str]] = {
               "measured spread between build-rate (~14 findings/day) and convert-rate "
               "(~0.6/day, deep sweep 2026-07-31) is the desk's largest single loss, and it "
               "multiplies every other row -- every queue item IS conversion (L1.28b)"),
+    "tier1_process_gap": (
+        0.75, "the principal's standing order (2026-07-31): every gap to tier-1 PROCESS closes "
+              "autonomously, without being told -- only calendar-time walls are exempt. A layer "
+              "below T1 is a known distance to the best practice that exists, with its closer "
+              "named in the benchmark register"),
 }
 
 # Aspects with no number at all rank above partially-complete ones -- see module docstring.
@@ -244,13 +249,45 @@ def _from_conversion() -> list[dict[str, Any]]:
     ]
 
 
+_TIER_SCORE = {"T1": 1.00, "T2": 0.66, "T3": 0.40, "T4": 0.15}
+
+
+def _from_tier_benchmark() -> list[dict[str, Any]]:
+    """The tier-1 process benchmark (principal 2026-07-31): sub-T1 layers hunt themselves.
+
+    Parses docs/research/TIER1_BENCHMARK.md. time_bound rows are walls, not work -- listed in
+    the register, excluded here. A missing register is UNMEASURED (ranks top): the benchmark
+    being deleted is itself the largest tier gap.
+    """
+    p = _ROOT / "docs/research/TIER1_BENCHMARK.md"
+    if not p.exists():
+        return [_item("tier1::benchmark_register", "tier1_process_gap", None, 1.0,
+                      "docs/research/TIER1_BENCHMARK.md missing -- the standing gap register "
+                      "was deleted or never synced", "restore the register; the deep sweep "
+                      "re-grades it weekly", "docs/research/TIER1_BENCHMARK.md")]
+    out = []
+    for m in re.finditer(
+            r"^\|\s*(\w+)\s*\|\s*(T[1-4]|—)\s*\|\s*(.+?)\s*\|\s*\**(yes|no)\**\s*\|\s*$",
+            p.read_text("utf-8"), re.MULTILINE):
+        layer, tier, closer, time_bound = m.groups()
+        if time_bound == "yes" or tier == "—":
+            continue
+        score = _TIER_SCORE.get(tier)
+        if score is not None and score < 1.0:
+            out.append(_item(f"tier1::{layer}", "tier1_process_gap", score, 1.0,
+                             f"graded {tier} -- distance to tier-1 process is named work",
+                             closer, "docs/research/TIER1_BENCHMARK.md"))
+    return out
+
+
 def build(*, refresh: bool = True) -> dict[str, Any]:
     if refresh:
         for s in ("check_ratchets.py", "check_utilisation.py", "build_enforcement_matrix.py",
                   "check_conversion.py"):
             _refresh(s)
     items = (_from_ratchets() + _from_utilisation() + _from_matrix()
-             + _from_wiring() + _from_register() + _from_conversion())
+             + _from_wiring() + _from_register() + _from_conversion()
+             + _from_tier_benchmark())
     items.sort(key=lambda r: -float(r["score"]))
     at_ceiling = [i for i in items if i["measured"] and i["gap_fraction"] <= 0.0]
     unmeasured = [i for i in items if not i["measured"]]

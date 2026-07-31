@@ -75,7 +75,10 @@ _MAP: dict[str, list[str]] = {
     "L1.21": ["check_depth_parity", "check_coverage"],
     "L1.22": ["run_intelligence_cycle.py", "check_self_application", "check_self_sufficiency"],
     "L1.23": ["run_deadman_switch.py (Tier-3)", "libs/risk/gate.py", "check_production",
-              "scripts/run_drills.py", "libs/risk/capital_events.py"],
+              "scripts/run_drills.py", "libs/risk/capital_events.py",
+              # the moat is capital in information form: replicas drilled on every run, disk
+              # fuse fails loud ~14 days before the 80% guard would start eating the moat
+              "scripts/run_moat_backup.py"],
     "L1.24": ["run_intelligence_cycle.py", "check_idle_capability", "check_data_utilization"],
     "L1.25": ["check_welded_gates", "check_gate_optimality", "check_rejection_shadow"],
     "L1.26": ["research_erv.py", "check_directives"],

@@ -1,0 +1,185 @@
+# Graveyard — rejected hypotheses (do_not_repeat)
+
+Every entry is permanent. Never re-test an identical hypothesis; a *materially new* mechanism or
+dataset is required to reopen a class. Tags feed the EV-gate priors in `alpha_economics.py`.
+Machine copy: `web/discovery.json`. Companion: [[institutional_knowledge]].
+
+## CODE / CAPABILITY RETIREMENTS (L2.9 RETIRE exits, distinct from hypothesis kills below)
+
+Dormancy-hunter RETIRE dispositions land here with a written mechanism-of-death, per
+`docs/EXECUTION_QUEUE.md` RANK 1. Unlike a hypothesis kill this is reversible in principle (the
+code is recoverable from git history) but is not re-activated without a fresh external importer
+appearing — reintroducing a dead import is exactly the drift this section exists to catch.
+
+### `libs/discovery/` Alpha Discovery Factory — RETIRED 2026-07-30
+
+**Mechanism of death:** zero external importers. `libs/self_improvement/dormancy.py`'s
+`_external_importers()` (full dotted-path regex, scoped to `scripts/libs/app/api/tests`, excluding
+the module's own package/tests) found 14 of the 23 modules in `libs/discovery/` — `factory.py`,
+`models.py`, `signals.py`, `hypotheses.py`, `acceptance.py`, `fragility.py`, `half_life.py`,
+`parameter_stability.py`, `correlation_engine.py`, `failure_dependency.py`,
+`family_concentration.py`, `pools.py`, `portfolio_geometry.py`, `cagr_optimizer.py` — reachable
+from nothing outside their own package. They form a complete, self-contained MT5-era alpha
+discovery pipeline that predates and was fully superseded by `libs.autodiscovery` (51 external
+importers) without ever being wired to it or torn out.
+
+**Disposition: RETIRE**, not MERGE — `libs.autodiscovery` already re-implements the equivalent
+capability with its own validation stack (CSCV/Romano-Wolf, lockbox holdout, campaign FDR); there
+is nothing here worth folding in.
+
+**What survived (7 modules, genuinely alive via non-factory callers):** `capacity.py`,
+`tail_risk.py`, `monte_carlo_survival.py`, `objective.py`, `regime_diversification.py`,
+`stress_scenario.py`, `research_roi.py` (plus `errors.py`, a dependency of `capacity.py`). These
+were individual utility functions other subsystems adopted directly, independent of the factory
+that originally housed them — `libs/discovery/__init__.py` now exports only these 7.
+
+**Verification before deletion:** whole-repo grep for every dead module's full dotted path found
+one hit outside the package's own tests — `tests/research/test_capacity_policy.py`'s
+`test_acceptance_no_longer_carries_its_own_flat_floor`, which did source-text inspection of
+`libs.discovery.factory` (not a functional dependency). That test was removed rather than
+retargeted: the property it guarded ("the flat $100k floor is not back") is trivially true forever
+once the module carrying the floor no longer exists.
+
+**Test suite change:** `tests/discovery/test_factory.py`, `test_hypotheses_signals.py`,
+`test_optimizer_acceptance_pools.py` deleted wholesale (exclusively covered retired modules);
+`tests/discovery/test_robustness_engines.py` trimmed from 14 tests to the 7 covering survivors.
+
+**Kill-basis rule (2026-07-12, round-2 external review):** every kill must record its BASIS —
+`economic` (mechanism/statistics falsified: permanent) vs `data/infra` (killed by a broken feed,
+outage, or collection bug). An infra-killed hypothesis is NOT permanently dead: it becomes
+re-testable once the specific infra defect is verified fixed. Existing entries below are all
+economic kills unless noted.
+
+| Hypothesis | Verdict | Tag | Lesson |
+|---|---|---|---|
+| short_term_reversal (xsec) | Sharpe −1.41; gross −0.48 (unprofitable at ZERO cost) | `wrong_sign` | positive IC ≠ tradeable P&L — IC lived mid-distribution |
+| btc_leadlag | Sharpe −2.28; gross negative | `wrong_sign` | same IC trap |
+| funding_momentum | −1.72; dragged portfolio (incr −0.08) | `costs_killed_edge` | dropped from perp book |
+| illiquidity_premium | 0.0, IC −0.043 | `no_economics` | |
+| xsec_lowvol | −0.83 — low-vol anomaly INVERTS in crypto | `wrong_sign` | lottery demand: high-vol wins; do NOT flip sign (p-hack) |
+| cross-exchange funding dispersion | −5.28, corr 0.54 to carry | `no_economics` | reusable asset: multiexchange.py |
+| Fear&Greed timing | −0.56 vs hold 0.73 | `no_economics` | display-only regime indicator |
+| oi_divergence (hourly bt) | −1.21, 5/9 gates | `overfit` | forward clock continues (data still accruing) |
+| ls_contrarian | bt 9.84 (!) — DSR killed it | `overfit` | fat Sharpe is a red flag, not a green one |
+| vol-target overlay | Sharpe 1.40→1.07 — HURTS | `regime_artifact` | carry edge is vol-correlated; de-levering high vol cuts the good periods |
+| options VRP | best IC of campaign (+0.06) but breadth 2 | `no_breadth` | real signal, starved — revisit only with more vol markets |
+| breadth re-add (lowvol+reversal 2026-07-04) | reverted same day | `overfit` | combiner zero-weighting losers ≠ improvement; graveyard functions are not spare parts |
+| trend_regime_gated (challenger) | EV gate REJECT p~7% — running anyway on principal override, day 0/90 | `regime_artifact`? | pre-registered; evidence will settle it |
+| kama_squeeze (TTM squeeze + KAMA(10,2,30), canonical, principal-override 2026-07-11) | Sharpe 0.16, 4/9 gates, PBO 0.77, RC p 0.34 | `crowded` + `no_economics` | squeeze timing UNDERPERFORMED the raw KAMA baseline (0.16 vs 0.20 — both dead): vol compression is real but its direction is a coin flip; retail-canon signals arrive pre-arbitraged. EV gate's 1.6% prior vindicated |
+
+**Standing conclusion (breadth campaign):** free-data price-only alpha is mostly dead; funding/carry
+is the lone repeat survivor. The lever is genuinely-new data + validation time, not more sleeves.
+| tftrailbreakout (TF Donchian20 + 10% trail) | annSh 0.82, 6/9 gates, max_corr 0.91 vs trend book; EV 0.0003 | `wrong_orthogonality`/crowded | tested 2026-07-19: trailing-stop exit does NOT rescue breakout -- redundant trend exposure (price_only+crowded), not a new stream |
+| tfatrexitbreakout (TF Donchian20 + ATR14x3 Chandelier) | annSh 0.94, 7/9 gates, max_corr 0.91; EV 0.0004 | `wrong_orthogonality`/crowded | tested 2026-07-19: ATR/Chandelier exit marginally higher raw Sharpe but same 0.91 corr vs trend + crowded price-only -> reject |
+| dex_cex_volume_ratio_flow | EV 0.0039 (p_survive base rate, no prior applies) | `no_economics`-adjacent | EV-gated 2026-07-19 pre-research (alpha map "DEX volume ?" branch): DEX/CEX volume-ratio flow signal has no strong pre-registered economic mechanism, base survival rate alone leaves it well below threshold -- reject before spending research hours |
+| stablecoin_mint_burn_supply_signal | EV 0.0005 | `narrow_breadth` | EV-gated 2026-07-19 (alpha map "Mint/burn ?" branch): few stablecoins issue at meaningful scale (breadth~6) AND adjacent to the already-running stablecoin_flows family (orthogonality low) -- double-penalized, reject before research |
+| btc_correlation_regime_carry_conditioning | EV 0.0003 | `regime_artifact`-adjacent | EV-gated 2026-07-19 (alpha map "BTC-correlation regime ?" branch): a conditioning overlay on the EXISTING carry book, not a new stream -- same structural class as the rejected vol-target overlay (Sharpe 1.40->1.07, HURTS) and the rejected FRED macro overlays; est_sharpe=refinement-not-new-stream scores low by design |
+| coinbase_premium_timing | in-sample Sharpe 2.7 BUT contamination corr(z, same-day BTC ret)=+0.256; premium std 0.06% (USD~=USDT arbitraged flat) | `timing_artifact` | high Sharpe on a near-zero-variance venue premium is close-timestamp microstructure, not institutional flow -- the collapsed-variance red flag again. De-contamination check now mandatory on every premium screen. |
+| try_premium_timing (Turkey capital-control) | IC -0.063, weak; de-contam same-day corr -0.495 | `timing_artifact` | best kimchi-analog tested and it FAILS: TRY premium std 0.23% (Korea 1.42%) is dominated by FX-close-timing noise; Turkey arbs global more tightly than Korea. Kimchi is RARE, not a generic regional-premium pattern. |
+| bithumb_kr_premium_lookahead | IC 0.72 / momentum Sharpe 10.0 (!) -- shift-test: IC stays ~0.7 at +1d shift too | `lookahead_artifact` | Bithumb 24h candle is timestamped at KST-day open (15:00 UTC prior day), so its close sits ~1.6d AHEAD of Binance's UTC close -> the premium mechanically contains future price. Caught by the NEW hardened-harness rail (|IC|>0.35 or best Sharpe>6 -> SUSPECT-LOOKAHEAD). The 'too good' Sharpe was the tell, exactly like ls_contrarian 9.84. Timezone alignment now a standing hazard on any non-UTC venue candle. |
+| coinone_kr_premium | IC 0.051, revSh 1.74, de-contam clean -- but SAME Korea axis as kimchi (z20 corr high) | `redundant` | Correctly aligned + passes the gate, but it is the kimchi/Upbit Korea-premium signal from a 3rd venue, not orthogonal-new. Value = corroborates kimchi's realness; NOT a separate clock. |
+| bitbank_jp / mercado_br premiums | bitbank IC -0.06 (noise, + JST-candle timezone risk); mercado SCREEN-WEAK, same-day -0.27 | `no_economics`/`weak` | Japan premium near-zero (freer capital flows, std 0.37%); Brazil rejected. Regional-premium class is now exhausted: kimchi is the lone survivor across KR/JP/BR/TR/Coinbase tested. |
+| multilingual_wikipedia_attention (en/ja/ko/ru/zh BTC pageviews) | all 5 SCREEN-WEAK: IC 0.01-0.065, best timing Sharpe <0.35; same-period 0.01-0.08 | `no_edge_daily` | Retail attention per language population (different geographic user bases) is GENUINELY orthogonal (same-period corr ~0.01-0.08) but NOT predictive at daily horizon -- attention co-moves with, does not lead, daily returns. Kills the whole multilingual-search-trends category as a daily timing signal (Baidu/Naver/Google Trends would be the same). May be a weekly conditioning feature at best; do not re-test as daily alpha. |
+| era_inout_regime_rotation ("port Quantopian In&Out risk-off rotation to crypto") | the era community's OWN decomposition: bonds out-leg contributed +123% (~6.5%/yr) of the 942% total; swapping out-leg to short-SPY collapses returns (out-signal precision too low to bet directionally, max ~60% then decays); ±1 parameter step costs 25-40% of total return; two "same-idea" variants diverge 2x YTD | `economic` + era-evidence | PRE-EMPTIVE kill, mined 2026-07-28 from Wayback `quantopian.com/posts/new-strategy-in-and-out` (108 posts, Oct-Nov 2020, EN frontier miner session D). The thread ITSELF proved the timing alpha thin and the out-leg CARRY the sauce ("the signals are really just finding when to get into bonds" -- Whitnable). Crypto translation: the out-leg = stables + funding yield, which the desk's carry book ALREADY harvests; the residual timing layer is exactly the overlay class killed 3x here (FRED macro overlays, vol-target overlay, btc_correlation_regime conditioning). Do not re-test as a rotation strategy. Only residual worth a future look: risk-appetite PAIR-RATIOS (gold/silver, XLU/XLI, FXF/FXA -- common-factor-cancelling construction, Vladimir's intersection form) as candidate FEATURES for an existing regime model -- weak prior at daily horizon (24/7 arbitrage; cf. multilingual_wikipedia kill above), must clear novelty vs the FRED-overlay kills before any screen. Era lesson transferred to inbox #71 (signal-source precision beats liquidity). |
+| defi_health (DefiLlama total TVL / DEX volume / protocol fees) | all SCREEN-WEAK: IC -0.01..+0.02, timing Sharpe <0.55 | `no_edge_daily` | DeFi activity/health aggregates are orthogonal (same-period ~-0.03) but carry no daily-horizon timing edge -- same 'activity' family as the on-chain n-transactions/fees/mempool metrics that also died. DEX volume ~ generic activity, already proxied. Don't re-test. |
+| era_ta_indicator_stack_crypto (EMA/RSI/MACD/ADX/Ichimoku stacks on BTC, the 2013-14 retail canon) | PRE-EMPTIVE KILL from a public 2013-14 natural experiment, not a desk backtest. Bitcointalk "Automated Trading Contest" (topic 261086, 301 posts, CryptoTrader.org platform, rounds #1-#5): **when entries were submitted BEFORE the evaluation window (rounds #2-#3, pre-registered forward), 0 of 8 submissions beat buy-and-hold** (best entrant 1029.81 vs B&H 1058.33 on a $1000 base; organizer: "Again, buy and hold strategy generated highest profit"). **When the SAME community, platform and strategy families were scored on an IN-SAMPLE backtest over an already-completed year (round #5, 2013-01-01..2014-01-01, submissions open until 12/01), 6 of 8 beat B&H and the winner returned 228x** ($5,000 -> $1,140,904 on Ichimoku vs B&H $296,501 = 3.85x B&H) | `overfit` + `crowded` | THE CLEANEST PUBLIC IN-SAMPLE-vs-FORWARD NATURAL EXPERIMENT THE DESK HAS FOUND. Same platform, same people, same asset, same indicator families -- the ONLY variable changed was whether scoring was pre-registered-forward or in-sample, and it flipped the entire result set. Independently corroborates the desk's own 420-price-hypotheses/0-survivors record via a completely separate 2013-era path, and validates pre-registration + forward clocks as the load-bearing control (not DSR/PBO alone). Contemporary poster Coldstuff (#285) also flags the uncosted second-order defect: winning backtests traded size that "could have pushed the market $20 or $50 each way" on 2013 MtGox -- zero market-impact model. Do NOT re-test the retail TA-indicator family; and treat ANY leaderboard/backtest-scored external result as in-sample until pre-registration is proven |
+| era_grid_ladder_vol_bot (laddered grid bot harvesting range oscillation, MtGox EUR/BTC 2012) | Real-money, publicly-reported era instance: GMVT-BOT (Bitcointalk topic 95760, ran ~Jul-Dec 2012, IPO'd as a security, **CLOSED**). Operator's own published numbers: 0.6-0.8%/wk gross ONLY in high volatility, "usually less than 0.5%" -- against MtGox fees of 0.6%/trade (0.55% above 100 BTC volume). Operator's claim "never makes a loss" is the tell | `no_economics` + `costs_killed_edge` | The grid/ladder family's P&L is a SHORT-GAMMA volatility-risk premium with a bounded gain and an unbounded inventory tail, dressed as "riskless": every round-trip books a small realized profit while the loss accumulates silently as inventory when price trends out of the ladder. The operator states the failure mode himself ("if price goes below 3 EUR/BTC there will be a decision... or close down"). Fee stack ate most of the gross even in the good regime. Era-provenance kill: the desk should not spend a cycle re-deriving grid-bot economics |
+| era_crossvenue_fiat_premium_arb (harvesting a persistent cross-venue price premium as "riskless" arb) | Two documented era instances, both ending badly. (a) MtGox<->BTC-e, Bitcointalk topic 171349 (2013): OP claims 7% gap / ~3% cost = 3% edge; reply-chain refutes it -- full fee stack is 3.3% best / 5.2% worst (post #37), and the true binding constraint is fiat-rail transfer time + payment-processor reserves (#39, "Gox had low OKPAY reserves"). (b) "Bitcoin Arbitrage Fund", topic 330209 (2013): 8-20% China/abroad gap, but the OP states the edge IS access -- "as Shenzhen citizens we have several bank accounts in Hong Kong" -- and later reports the spread decaying ("getting small, it will make our fund more difficult to operate"). (c) THIRD, MOST EXPLICIT INSTANCE — topic 339040 "Flying to China to Arbitrage 100-500k" (2013-14): the operation's actual steps were selling on BTCChina then **physically flying cash to Hong Kong**, because participants state the binding limits outright — *"u are not allowed to bring more than someting like 20k rmb out of the country"* (#13) and *"As a foreigner, you can get an Alipay account, but you can't withdraw more than CNY 2k without being verified (which requires a Chinese ID)"* (#7). The premium was a LOGISTICS-AND-PERMISSIONS problem, not a trading one | `no_economics` (as arb) / **mechanism-reclassified** | A cross-venue premium that PERSISTS is rent on a capital-control / withdrawal / counterparty barrier -- it is compensation, not inefficiency, and it is only harvestable by whoever holds the specific rail access. The 2013 Gox premium was the market correctly pricing withdrawal-insolvency risk; anyone "arbing" it was collecting a risk premium while accumulating balances at an insolvent venue, and it went to zero in Feb 2014. DIRECTLY RELEVANT TO THE LIVE KIMCHI CLOCK: this era evidence EXPLAINS the desk's own KR/JP/BR/TR result set (kimchi survives, Japan/Brazil/Turkey die) -- premium magnitude tracks BARRIER HEIGHT, and it is why kimchi must be used as an information/timing signal (which the desk does) rather than sized as an arb (which the desk must never do) |
+| commit_velocity_dev_momentum (cross-sectional, 35-asset survivorship-aware L1s, 1/3/6mo) | 1mo CS-IC -0.018 (t -0.68); 3mo +0.033 (t 1.21); 6mo +0.014 (t 0.55), 6mo L/S NW-t 1.53 -- NONE clear |t|>=2 | `insignificant` | The CORRECT test of the Electric-Capital thesis (ecosystem selection, not BTC timing; forward RELATIVE return; winners+slow-survivors+dead L1s to kill survivorship bias; monthly N not obs-N). Direction is thesis-consistent at 3/6mo (positive) but insignificant; raw commits = weakest proxy. RETENTION/MIGRATION escalation PRE-REGISTERED below -- do NOT fish more commit-count variants (multiplicity). |
+| cm_mvrv_btc_daily_level (Coin Metrics CapMVRVCur, 20d-z level → next-day BTC, 2010-07→2026-05, n=5,767) | Stage-A TIMING-ARTIFACT: raw IC +0.046 and momentum Sharpe 1.18 clear the floors, but same-period corr 0.416 >> 0.20 contam bar — the 20d z-score of a PRICE-NUMERATOR ratio is largely recent momentum in disguise (market cap = price×supply sits in the numerator, so the z co-moves with the very returns it "predicts"). Alignment declared: CM daily rows = EOD UTC day t, signal(t)→ret(t+1), live availability lag ~2h past midnight (flash status observed 01:44Z t+1) | `timing_artifact` | ONE construction tried, one verdict, logged (charter §26.3). NOT a kill of the cost-basis mechanism itself: residual IC 0.039 SURVIVES orthogonalization to same-day returns (does not collapse below half of raw), and the mechanism is inherently slow — the honest escalation is a PRE-REGISTERED weekly-horizon / realized-cap-orthogonalized construction on a proper clock slot, never a same-run screen re-roll. Any future price-numerator ratio (NVT, Mayer multiple, price/realized-price) screened at daily 20d-z will hit this same contamination by construction — orthogonalize FIRST or screen at the mechanism's native horizon. Data: free CM community CSV (CC BY-NC — licence ruling pending for production use). |
+
+---
+
+## EXTERNAL-LITERATURE PRIORS (added 2026-07-26, literature deep-miner run 3)
+
+**A THIRD KILL-BASIS, declared explicitly so it is never confused with the desk's own evidence:**
+`external-literature`. Every row above this line was killed by the desk's OWN backtest/screen on the
+desk's OWN data. Every row below was killed by somebody else's published evidence and has NOT been
+independently re-run here. That is a weaker basis and it is labelled as such — but it is not a weak
+REASON to skip: these are hypothesis families where a credible team already spent the multiplicity
+budget and found nothing, so re-testing them buys the desk a near-certain null at full DSR cost.
+Per LITERATURE_SPEC: *"A mechanism that failed replication enters the graveyard as prior, not the
+queue."* Reopening any row below requires a materially new mechanism or dataset, exactly as above.
+
+**Standing haircut prior attached to this whole section (McLean–Pontiff, JF 2016, 97 predictors):**
+published predictor returns are **26% lower out-of-sample** and **58% lower post-publication**, and
+decay is *larger* for predictors whose in-sample returns were *higher*. Any signal sourced from
+published literature is haircut ~58% off its published effect before it is worth a slot, and more
+than that if its published Sharpe was fat. The desk's own `ls_contrarian` (backtest 9.84 → DSR-killed)
+is the same phenomenon observed internally.
+
+| Hypothesis (external prior) | Verdict | Tag | Lesson |
+|---|---|---|---|
+| lit_trading_frictions_family (the published "trading frictions" anomaly category: illiquidity, spread, volume, turnover, price-level variants) | **102 of 106 (96.2%) fail to replicate** under NYSE breakpoints + value weighting; whole-corpus failure 65% at t>1.96 and **82% at the 2.78 multiple-test hurdle** across 452 anomalies | `no_economics` / external-literature | Hou–Xue–Zhang, *Replicating Anomalies*, RFS 2020 — **primary text extracted and verified 2026-07-26** (not a summary; three numbers previously recorded from a search summary were WRONG and are corrected here). The desk's own `illiquidity_premium` kill (IC −0.043) was not bad luck — it is the MODAL outcome for the single worst-replicating category in the entire published anomaly literature. Do not reopen frictions-family variants. Mechanism: the original spreads are microcap-borne and equal-weighting-borne — real in the data, untradeable at size. **PER-CATEGORY BREAKDOWN (extracted 2026-07-26, NYSE-VW single test / multiple test at 2.78): Investment 73.7% / 50.0%; Momentum 63.2% / 49.1%; Profitability 44.3% / 17.7%; Value-vs-growth 42% / 10.1%; Intangibles 25.2% / 10.7%; Trading frictions 3.8% / 1.9%.** Recorded so the kill is not over-read: **investment and momentum are the ONLY categories that survive** — everything else fails at 82%+ under multiple testing. For THIS desk that residual is mostly unreachable: price-only momentum is already dead on desk data (420/0 + the era natural experiment), and 'investment' is an accounting characteristic with no crypto analogue for most assets. So the honest reading is *the equity literature's surviving signal does not transfer here*, not *the desk should go test investment factors*. |
+| lit_crypto_xsec_size_and_volume (published crypto cross-sectional size/volume anomalies) | Spreads "originate from micro-cap coins of negligible economic importance"; crypto momentum's alpha "extracts... largely from short positions"; "most abnormal returns occur primarily in bull markets and fade over time" | `no_economics` + `regime_artifact` / external-literature | Fieberg–Liedtke–Zaremba, *Cryptocurrency anomalies and economic constraints*, IRFA 2024 (RePEc abstract, verbatim). Three independent mechanisms of death on the same family, and this is the CRYPTO restatement of the HXZ microcap finding by a different team. A long-biased, liquid-universe, cost-honest book captures approximately NONE of the published crypto cross-sectional spread — which is the external explanation for the desk's own 420-hypotheses/0-survivors record. |
+| lit_defi_tvl_crosssection (TVL level AND **change in TVL** as a cross-sectional crypto return predictor, weekly) | 335 coins, 2023-01→2024-12: TVL-sorted alphas all p>0.13; overstatement-adjusted TVL p>0.46; **ΔTVL p>0.40**; GRS F-tests fail to reject zero alphas throughout (p 0.35–0.99) | `no_economics` / external-literature | Brigida (2025), arXiv 2506.03287 (full HTML read). CLOSES THE SECOND AXIS on the desk's own `defi_health` kill: the desk killed TVL at the daily BTC-timing horizon, this kills it cross-sectionally at weekly INCLUDING the change-in-TVL construction the desk never ran. Load-bearing bonus: headline TVL is mechanically OVERSTATED by staking/pool2/governance-token/borrowing/liquid-staking/vesting double-counts, so a vendor TVL *level* must never be trusted as a quantity. |
+| lit_bruteforce_ratio_mining (mechanically generating large families of accounting/price ratio strategies and keeping the significant ones) | 2.1M strategies generated; "most rejections of the null of no outperformance under single hypothesis testing are likely false"; "a remarkably small number of strategies survive... **Even these surviving strategies have no theoretical underpinnings**" | `overfit` / external-literature | Chordia–Goyal–Saretto, *p-Hacking: Evidence from Two Million Trading Strategies* (SFI RP17-37, verbatim abstract). The closest published analogue to what a mechanical screening loop IS. Strongest external argument for the desk's mechanism-first gate: **statistical survival without a mechanism is not evidence** — the survivors of a brute-force search have no mechanism and therefore will not survive forward. Widely-quoted specific thresholds (|t|>3.79 etc.) are SUMMARY-ONLY and deliberately NOT recorded here. |
+
+**Held back deliberately (provenance discipline, not an oversight):** Li & Zhu, *Taming crypto
+anomalies* (crypto SIZE disappears out-of-sample; 13 of 49 anomalies significant) would be a fifth
+row and it points the same way as row 2 — but its numbers reached the desk only through a search
+index (SSRN 403s from this box). Per the desk's own rule a SUMMARY-ONLY claim may not be pasted into
+the graveyard. It stays provisional in `docs/research/deep_sweep/LIT_a_failed_replication.md` F11
+until primary text is read. Recording the abstention because the temptation to round it up is
+exactly how a phantom prior gets installed permanently.
+
+---
+
+### era_crossvenue_fiat_premium_arb — FOURTH INSTANCE (CN 2017, primary text) — CORROBORATED + MECHANISM REFINED
+_CN frontier miner, 2026-07-26. Basis: `economic`. Not a new kill — a fourth independent era instance
+of an already-dead class, added because it supplies the mechanism detail the other three lacked._
+
+**SOURCE (dead-forest, Wayback-only).** `8btc.com/thread-53689-1-1.html` — 「P网搬砖简明指南（以及一种
+交易策略）」("Concise guide to Poloniex banzhuan (and a trading strategy)"), 巴比特/8btc BTC forum,
+posted 2017-05-02, capture `20171019172042`. 8btc.com, chainnode.com and Baidu Tieba are ALL
+unreachable from this box — this ground exists only in the archive. Mined to reply-depth: OP + replies
+at depth 1 and 2 (quoted-reply chains), 7 substantive posts.
+
+**WHAT THE ERA TRADERS ACTUALLY DOCUMENTED.** The 2017 bull began on foreign venues (Poloniex 「P网」,
+Bittrex 「B网」), so domestic venues (比特时代 BTC Trade, 云币网 Yunbi — collectively 「果盘」) lagged by
+**up to 10%**. The OP states the binding barrier outright: **domestic platforms could not withdraw BTC**
+(「国内不能提比特币」) — which is *why* the domestic price sat below the foreign price. Claimed economics:
+gap >10%, net **~3% after fees**, called 「无风险获利」(riskless profit).
+
+**WHY THIS IS THE SAME KILL, NOT A NEW EDGE.** Identical to the three instances already recorded: the
+premium is rent on a withdrawal/permissions barrier, harvestable only by whoever holds the rail. The
+replies make the permissions barrier explicit — Poloniex **did not accept mainland registrations**, so
+the workaround was to **select "Hong Kong" as your country** (post #3), and KYC tiers capped you at
+$2,000 until you uploaded ID to reach $25,000 (posts #5/#8). Same shape as the 2013 Bitcointalk
+「fly the cash to Hong Kong」 instance: a logistics-and-permissions problem wearing a trade's clothes.
+
+**THE NEW DETAIL — HOW THE ARB ROUTED *AROUND* THE BARRIER.** The other three instances never explained
+how anyone transacted at all under a withdrawal freeze. This one does: **BTC was frozen, altcoins were
+not.** The trade moved value on the fastest-confirming altcoin rail — XRP 瑞波币 is the worked example,
+with XLM 恒星币, ZEC, SC and NEO 小蚁股 named at depth (post #9). The OP explicitly warns **using BTC
+itself works badly, especially during network congestion**. So the barrier was asset-specific, and the
+arb survived exactly as long as *some* asset had an open rail.
+
+**THE PART THAT IS STILL LIVE (routed to improvement_inbox #58, not to capital).** The OP's risk
+framing is the era's name for transfer-latency risk — 「搬砖砸脚」*"moving bricks and dropping one on
+your own foot"*: your value is in flight, unhedged, while the price moves. His two mitigations are
+real execution doctrine and generalise to any cross-venue movement the desk makes:
+  1. 天时 (right timing) — move only when the gap is large AND the transferred asset is **rising on
+     30-min-or-faster candles**, so latency drift is favourable rather than symmetric;
+  2. 地利 (right ground) — pick the **fastest-confirming asset and fastest-withdrawing venue**.
+This is the correct instinct: in-flight time is directional exposure, and asset choice is the lever.
+
+**AND ONE GENUINELY SHARP OBSERVATION (depth-1 reply, post #1) worth preserving.** A replier argues the
+spread is the *lesser* half of the trade: with domestic BTC withdrawal frozen, domestic BTC supply is
+segmented and effectively **deflationary**, while Poloniex alts are BTC-denominated — so **the
+re-opening of withdrawals is itself a predictable catalyst** that would inflate foreign alt prices.
+That is a capital-control *regime-change* trade, not an arb, and it is the most sophisticated idea in
+the thread. Recorded here as era knowledge; NOT carded — the venues are dead, mainland rails are far
+more closed in 2026 than 2017, and the desk holds no way to test a 2017-specific segmentation.
+
+**CONNECTS TO THE LIVE 2026 RESULT.** This era's 10% gap versus today's measured CNY OTC premium std of
+**0.580%** is the barrier-vs-merchant-depth finding in axis #76 (data_axis_watchlist card 9): in 2017
+the rail was frozen and the premium was enormous; in 2026 the capital barrier is *higher* but a deep
+professional 承兑商 (OTC merchant) network arbitrages it to a quarter of Korea's. Barrier height sets
+the premium's ceiling; **merchant density sets where inside that ceiling it actually sits.**
+| smart_dumb_divergence (elite top-trader position ratio MINUS retail account ratio) | pooled mean IC +0.0032 (t +0.15, n=5 majors, 4h, 180 bars); 0/20 per-symbol screens passed | `no_edge` | THE DIRECT TEST of the Elite-Trader-Intelligence premise ('do skilled traders lead the crowd?'). Binance topLongShortPositionRatio (elite, size-weighted) minus globalLongShortAccountRatio (retail crowd) -- the two genuinely diverge in LEVEL (66.8% vs 55.1% long) but the divergence carries ZERO forward information. The 'smart money vs dumb money' signal is a narrative, not an edge, at aggregate 4h granularity. |
+| elite_account_ratio (top-trader headcount long ratio) | pooled mean IC -0.0101 (t -0.32, n=5) | `no_edge` | Elite headcount positioning carries no forward information; only the size-weighted POSITION variant showed any sign consistency (logged as a candidate, not wired). |
+| hyperliquid_trader_skill_persistence (41k-address leaderboard, 8,026 filtered, formation/holding rank test) | ADJACENT windows rho +0.120 (t +10.9) BUT with a ~3-week GAP rho FLIPS to -0.064 (t -5.8); long-horizon variant -0.060 (t -5.4); gapped decile spreads insignificant (t 1.33 / 1.15) | `position_overlap_artifact` | THE foundational test behind copytrading: does past trader performance predict future performance? The apparent persistence exists ONLY when formation and holding windows TOUCH -- a trader holding one position across the boundary yields mechanically correlated PnL (an open position, not skill); BTC's mildly-trending weekly path (-5.9/+6.8/+0.2/+1.5/+1.0/-0.0%) makes persistently-long accounts look consistently skilled. Insert a 3-week gap and it INVERTS to mild reversion. Robust in the safe direction: the leaderboard is a current snapshot so blown-up accounts are ABSENT, which biases persistence UP -- true persistence is <= -0.064. Top-decile forward returns were NEGATIVE in every variant (-1.7%, -3.4%, -28.6%). Kills the 26-layer Elite-Trader-Intelligence spec at its premise: selecting past winners selects luck. Do not re-test aggregate or per-trader copytrading without a GAPPED design. |
+| hl_elite_directional_order_flow (Hyperliquid, performance-blind cohorts, 4h signed taker flow vs next-bucket return) | HFT-cohort BTC IC -0.139 (underpowered, 80 bkts); DIRECTIONAL cohort (260) BTC IC +0.157 / ETH +0.056, pooled t +3.00 on n=2 -- BUT breadth re-run (320, same rule, +60 traders) FLIPPED BTC to IC -0.033 + TIMING-ARTIFACT (same-period +0.202 > 0.20 gate); ETH IC +0.110 vs tercile spread -0.524% (opposite signs); 14/16 coins too thin | `unstable_artifact`/`no_edge` | Mechanism #3 of 3 pre-registered (after aggregate-positioning t+0.15 and gapped skill-persistence -0.064 both failed). Tested the actual copytrading mechanism: does elite flow LEAD price? Designed around both circularity traps (cohort selected on VOLUME/TURNOVER, never performance; flow(t) vs ret(t+1) only). Self-caught design flaw mid-experiment: top-VOLUME selection picks HFT/market-makers (2000 fills in 30 MINUTES) whose flow is inventory not conviction -- spec layer 11's own rule -- so re-selected on TURNOVER RATIO (1-25x/mo = discretionary). KILLED BY INSTABILITY: adding 60 traders to the SAME rule inverted BTC's IC sign. A real edge does not flip under cohort perturbation. Root mechanism: taker flow is CONCURRENT with price (buying moves price) -- it fails de-contamination, it does not lead. STRUCTURAL WALL: userFills caps at 2000 fills/address (30 min for the biggest accounts), so historical breadth is impossible from the snapshot API -- only forward accumulation could build it. Do not re-test elite/copytrade flow without >=8 coins AND cohort-perturbation stability AND a gapped/de-contaminated design. |
+| hl_longterm_riskadjusted_skill (229 traders, median 621d / max 1195d verified on-chain records, own-curve 60/40 formation-holding split) | formation SHARPE -> holding return rho -0.019 (t -0.28) = ZERO; consistency t +0.45; total return t +0.73; cohort holding mean -3.3%, median -11.9%, only 40% positive | `no_predictive_power` | THE strongest version of the trader-skill hypothesis, built after the principal correctly objected that earlier tests used a ONE-WEEK holding window, no track-record filter, and raw-PnL ranking. Fixed all three: multi-YEAR records, risk-adjusted selection (Sharpe/consistency/drawdown), long-horizon holding, natural gap via own-curve split, pnlHistory normalised by contemporaneous accountValue so deposits are not counted as returns. Selecting proven multi-year traders by past Sharpe has ZERO forward predictive power. ONE PARTIAL EXCEPTION worth keeping: DRAWDOWN CONTROL persisted (rho +0.135, t +2.05; top-quartile holding +2.3% vs bottom -18.0%) -- does NOT clear the 4-test multiplicity bar (~2.5) so not an edge, but consistent with the classic finding that RISK characteristics persist while RETURNS do not. Also settles the 'dig deeper / Chinese / niche verified traders' objection: HL on-chain records are the STRONGEST available evidence class (cryptographically verifiable, losers included); self-reported or platform-curated track records are strictly weaker, and enlarging the search pool AMPLIFIES the winner's curse (max-order statistic gets more luck-dominated as N grows). |
+| exchange_netflow (Coin Metrics `netflow_ntv` / `sply_ex_ntv`, BTC 5,575d 2011-04-24->2026-07-28 + ETH 4,008d, 2 builds x 3 horizons = 12 cells) | 0/12 SCREEN-INTERESTING. Best cell btc/scaled/h=5: IC **-0.0345** with the mechanism-CORRECT negative sign, but residual IC after the angle-20 de-contamination **+0.0124 -- the sign FLIPS**. Horizon signs incoherent (btc/raw h=1 -0.0074 vs h=20 +0.0114). h=5/h=20 cells correctly SCREEN-UNDERPOWERED (overlapping windows collapse n_eff below the ~4268 independent obs the screen requires, R0030). | `no_edge` (contamination, not lead) | Mechanism tested: coins moving ONTO exchanges are supply arriving at the only venue where it can be sold, so netflow should be revealed selling intent leading weaker returns. **THIS NEGATIVE IS UNUSUALLY TRUSTWORTHY and that is the point of logging it loudly:** the axis is genuinely novel (novelty 0.973, nearest prior kimchi at sim 0.027), carries **16 years** of depth, and has the CLEANEST alignment available anywhere on the desk -- signal and target are the SAME Coin Metrics daily rows keyed by the same `date` field, so the cross-source timezone join that turned kimchi (~73% artifact) and Turkey premium into pure timing fakes is **structurally impossible** here. So this is not "unproven for want of data"; daily exchange netflow genuinely does not lead BTC or ETH. **TRANSFERABLE:** the de-contamination gate is the single highest-value component of `axis_screen` -- it caught a sign-flip that a raw-IC report would have sold as mechanism-CONFIRMING (correct sign, plausible story, 16y sample: every heuristic said edge). Do not re-test exchange-flow at daily frequency without either intraday granularity or a per-exchange (not aggregate) decomposition, and never trust a raw IC whose sign survives only before orthogonalisation. Research memory `rm-20260730T024116-185ecc`; `reports/screen_exchange_netflow.json`. |
