@@ -61,6 +61,32 @@ _STATE = "data/llm_trader.json"
 MIN_PROB, MAX_PROB = 0.50, 0.95      # a call below 50% is a call the other way; 95%+ is a tell
 MAX_OPEN = 3                          # concurrent paper calls -- concentration discipline
 
+#: CONTROLLED MECHANISM TAXONOMY (external critique, 2026-07-31). Free-text mechanisms cannot be
+#: AGGREGATED, so "which mechanism families actually produce alpha" is unanswerable and every
+#: thesis looks equally novel. Forcing each call into one of these makes mechanism survival
+#: measurable exactly like an axis: after N calls the desk can retire the families that never
+#: pay and concentrate on the ones that do. NEW families are added deliberately, never invented
+#: per-call -- an unbounded vocabulary is the same as no vocabulary.
+MECHANISMS = (
+    "FORCED_LIQUIDATION",      # leveraged positions must close at any price
+    "COLLATERAL_CHANGE",       # margin/leverage/haircut rules force repositioning
+    "LIQUIDITY_MIGRATION",     # venue/pool listing or delisting moves where trading happens
+    "INVENTORY_ADJUSTMENT",    # market makers rebalance inventory
+    "ARBITRAGE_DISLOCATION",   # a link between venues/instruments breaks
+    "SUPPLY_SHOCK",            # unlocks, emissions, burns, treasury movement
+    "REGULATORY_CONSTRAINT",   # access/eligibility restricted or expanded
+    "INFRASTRUCTURE_FAILURE",  # exploit, bridge/validator/RPC outage
+    "GOVERNANCE_CHANGE",       # tokenomics, fees, emissions decided
+)
+
+#: WHO IS FORCED TO TRANSACT -- the external critique's sharpest structural suggestion. "LONG
+#: because bullish" is untestable; "market makers must reduce inventory" names a participant
+#: whose behaviour can be checked against OI, depth and flow. Forced flows persist; discretionary
+#: ones do not, and this field is what lets the desk tell them apart afterwards.
+PARTICIPANTS = ("LEVERAGED_LONGS", "LEVERAGED_SHORTS", "MARKET_MAKERS", "ARBITRAGEURS",
+                "VALIDATORS_MINERS", "TREASURY_ISSUER", "ETF_AUTHORIZED_PARTICIPANTS",
+                "LENDING_PROTOCOL_USERS", "NOBODY_FORCED")
+
 _CALL_BRIEF = """You are the desk's DISCRETIONARY TRADER. You trade like a thoughtful human: you
 read what happened, you form a view with a REASON, you state how confident you are, and you say
 what would prove you wrong. You are PAPER-TRADING -- no capital moves on your word, and your only
@@ -89,7 +115,21 @@ OUTPUT EXACTLY ONE JSON OBJECT, no prose around it:
 PASS IS A FIRST-CLASS ANSWER and most windows deserve it: if nothing happened that requires
 reading prose to understand, there is no edge here and a call would be noise. A desk that trades
 every window is a desk with no filter. REFUSED AT WRITE TIME: any call without a real mechanism
-(not a pattern), without a falsifier, or with a probability outside {lo}-{hi}."""
+(not a pattern), without a falsifier, or with a probability outside {lo}-{hi}.
+
+BUT A PASS IS ALSO SCORED, and you must justify it. A model that passes on everything gets a
+beautiful calibration score and contributes nothing -- so a PASS carries
+`passed_on` (the most material event you declined) and `pass_reason` (already priced / no
+mechanism / not tradeable / unclear direction). Those declines are marked against the same
+horizon as a real call, so the desk can measure whether your filter ADDS value or merely avoids
+deciding. Passing is allowed; passing without saying what you passed on is not.
+
+FIELDS REQUIRED ON EVERY CALL, in addition to the above:
+  "mechanism_class": one of {mechs}
+  "forced_participant": one of {parts} -- who MUST transact, not who might want to
+  "compressible": true if a simple IF-THEN rule on the event text would produce this same call.
+    ANSWER HONESTLY: if most of your calls are compressible, the desk should replace you with
+    ten lines of code, and finding that out is a win, not a loss."""
 
 
 def build_brief(root: Path) -> dict[str, Any]:
@@ -132,9 +172,14 @@ def build_brief(root: Path) -> dict[str, Any]:
 def validate_call(call: dict[str, Any]) -> tuple[bool, str]:
     """The write-time bar. A call that cannot state WHY is not a call (L1.16)."""
     if call.get("action") == "PASS":
-        return True, "PASS recorded -- no edge this window"
+        # A PASS IS A DECISION AND IS SCORED. Without this the model optimises toward passing:
+        # perfect calibration, zero economic value (external critique, 2026-07-31).
+        if not call.get("pass_reason"):
+            return False, ("REFUSED: a PASS must say WHY -- an unjustified pass is how a model "
+                           "farms a clean Brier score while contributing nothing")
+        return True, f"PASS recorded and scored: {str(call.get('pass_reason'))[:80]}"
     for field in ("symbol", "direction", "horizon_hours", "probability", "mechanism",
-                  "falsifier"):
+                  "falsifier", "mechanism_class", "forced_participant"):
         if not call.get(field):
             return False, f"REFUSED: missing {field}"
     if call["direction"] not in ("LONG", "SHORT"):
@@ -159,6 +204,15 @@ def validate_call(call: dict[str, Any]) -> tuple[bool, str]:
                        "420-tested/0-survived record already refuted")
     if len(str(call["falsifier"])) < 15:
         return False, "REFUSED: no real falsifier"
+    if call["mechanism_class"] not in MECHANISMS:
+        return False, (f"REFUSED: mechanism_class must be one of {MECHANISMS} -- free-text "
+                       "mechanisms cannot be aggregated, so mechanism survival becomes "
+                       "unmeasurable and weak families never get retired")
+    if call["forced_participant"] not in PARTICIPANTS:
+        return False, f"REFUSED: forced_participant must be one of {PARTICIPANTS}"
+    if call["forced_participant"] == "NOBODY_FORCED":
+        return False, ("REFUSED: no forced participant means no forced flow -- that is a VIEW, "
+                       "not a mechanism, and views are what the 420/0 record already refuted")
     return True, "accepted"
 
 
@@ -216,7 +270,9 @@ def main() -> int:
         return 0
 
     raw = _ask_claude(_CALL_BRIEF.format(brief=json.dumps(brief, indent=1)[:6000],
-                                         lo=MIN_PROB, hi=MAX_PROB))
+                                         lo=MIN_PROB, hi=MAX_PROB,
+                                         mechs=" | ".join(MECHANISMS),
+                                         parts=" | ".join(PARTICIPANTS)))
     call = parse_call(raw)
     if call is None:
         state = {"status": "NO-CALL", "why": "model returned no parseable JSON (auth, quota, or "

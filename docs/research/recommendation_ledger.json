@@ -1483,6 +1483,30 @@
    "commit": "pending",
    "due": null,
    "disposed": "2026-07-31T12:53:19.113549+00:00"
+  },
+  {
+   "id": "R0123",
+   "source": "panel",
+   "summary": "EXTERNAL CRITIQUE (GPT, 2026-07-31) -- SURVIVING ITEMS, built: (1) PASS-optimisation trap CLOSED -- scoring calibration alone rewards passing on everything; a PASS now requires pass_reason and is scored against the same horizon; (2) CONTROLLED MECHANISM TAXONOMY (9 families) replacing free text, so mechanism survival is measurable and weak families retire on evidence; (3) FORCED_PARTICIPANT required and enumerated -- NOBODY_FORCED is refused as 'a VIEW, not a mechanism'; (4) COMPRESSIBILITY self-report -- if an IF-THEN rule reproduces the call, replace the LLM with code",
+   "roi_bps": 30.0,
+   "raised": "2026-07-31T13:10:30.923290+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0124",
+   "source": "panel",
+   "summary": "EXTERNAL CRITIQUE -- QUEUED, ranked by evidence-per-effort: (a) EVENT ANALOGUE MEMORY (GPT's top pick): embed every event, retrieve N most similar historical ones with their realised 1h/4h/24h/7d reactions, so the LLM reasons from OUR evidence not its pretraining -- also the strongest moat item since nobody else has our first_seen stamps; (b) BLINDING EXPERIMENT: hide asset/exchange names behind placeholders -- if performance collapses it was brand recognition, not reasoning. Cheapest decisive test of whether the edge is real; (c) SHADOW KEYWORD BOT running alongside: if a trivial rules engine matches the LLM, the LLM is not earning its keep; (d) EV-per-opportunity scoring alongside Brier (55pct with a big payoff beats 85pct with a tiny one); (e) ADVERSARIAL CRITIC before each call; (f) bull/bear/judge triad with disagreement logged; (g) per-mechanism decay curves. DELIBERATELY NOT QUEUED: the ~40 remaining suggestions -- the critique's own closing warning is that complexity accumulation is the failure mode, and this desk already owns regime conditioning, a multi-model panel, blind-spot organs and mechanism fingerprints",
+   "roi_bps": 35.0,
+   "raised": "2026-07-31T13:10:30.967019+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
