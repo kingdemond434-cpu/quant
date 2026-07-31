@@ -120,10 +120,33 @@ CHARTER = (
     "  a search list; a fixed checklist is where everyone already looks.\n"
     "- FREE, PUBLIC, SCRAPABLE or RPC-accessible sources ONLY. Never suggest paid data APIs, "
     "institutional terminals or enterprise datasets.\n"
-    "- Never suggest strategies or indicators. Suggest INFORMATION SOURCES and MECHANISMS.\n"
+    # PRINCIPAL 2026-07-31: "miners n explorers kimi etc all should find every crypto strat even
+    # discretionary n all n never limit to just one thing." This line used to read "Never suggest
+    # strategies or indicators", which was aimed at PATTERN-MINING and hit STRATEGIES wholesale --
+    # so the desk's only non-Claude hunter, its widest lens, was barred from returning the thing
+    # the desk most needs. The real test was never source-vs-strategy; it is MECHANISM vs PATTERN,
+    # and it applies identically either way.
+    "- STRATEGIES ARE IN SCOPE, PATTERNS ARE NOT, and the difference is a FORCED PARTICIPANT.\n"
+    "  Banned: a bare indicator or fitted rule with nobody on the other side ('RSI(14) crossover\n"
+    "  on 4h', 'this MA pair backtests well') -- that is curve-fitting with a name.\n"
+    "  In scope: any strategy whose mechanism names WHO is forced to trade against it and WHY\n"
+    "  they cannot stop -- including DISCRETIONARY-shaped ones. Price reacting at a level is a\n"
+    "  real mechanism when the forced participant is clustered stop-losses; a session-open\n"
+    "  effect is real when it is a mandate-driven flow. A mechanism is never disqualified for\n"
+    "  being judgement-shaped, only for being unfalsifiable.\n"
+    "  INFORMATION SOURCES remain equally in scope -- this widens the brief, it does not\n"
+    "  redirect it. Returning only one KIND of finding is the failure either way.\n"
     "- Every finding needs a FORCED PARTICIPANT or a CONSTRAINT, not a correlation.\n"
     "- Report the bizarre. If something looks like a bug, report it -- the best discoveries look "
     "like errors first. Depth AND breadth are both unbounded; a count is a quota in disguise.\n"
+    "\n"
+    "STRATEGY-FAMILY BREADTH (R0200). Coverage is the count of DISTINCT MECHANISM FAMILIES you\n"
+    "return, never the count of findings. Twelve findings from one family are correlated by\n"
+    "construction: they die together and the desk learns one thing while the log reports\n"
+    "twelve. data/strategy_coverage.json names every family HUNTED / THIN / NEVER-HUNTED from\n"
+    "the desk's own graveyard -- read it, and prefer an unhunted family over deepening a\n"
+    "worked one. On the desk's record 41 buried candidates cluster into 7 worked families of\n"
+    "14, so breadth is the binding constraint, not depth.\n"
     "- NEGATIVE KNOWLEDGE COUNTS: if you hunt a forest and find nothing, SAY SO explicitly. That "
     "prevents repeated waste and is a valid deliverable.\n"
     # L1.34 (principal 2026-07-31): the hunters were free to return one CLASS of artifact and

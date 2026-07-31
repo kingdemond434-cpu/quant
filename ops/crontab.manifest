@@ -1105,3 +1105,17 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # EVIDENCE: scripts/run_strategy_coverage.py -> data/strategy_coverage.json
 # CONFIDENCE: committed-script (new this cycle)
 50 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_stratcov.lock .venv/bin/python scripts/run_strategy_coverage.py --import-discretionary >> data/cro_ai_logs/strategy_coverage.log 2>&1
+
+# ---------------------------------------------------------------------------------------------
+# STRATEGY-BREADTH FENCE (R0202) -- the clock behind "never limit to just one thing".
+# Widened prompts are a REQUEST and the coverage map is a REPORT; neither fails when a miner
+# drifts back to the family it knows, which is how breadth actually dies -- one comfortable
+# session at a time, with volume never dropping so every dashboard stays green. Fails on NARROW
+# (families worked below the floor), UNWIDENED (a hunting surface lost the mandate) and BLIND
+# (coverage unmeasured, which can never read OK). The PORTABLE half (--surfaces-only) also runs
+# in the law gate at every commit and push, because a mandate leaves a prompt by an edit.
+# CADENCE: hourly, right after the coverage map's daily rebuild has had time to land, so the
+# measurement it reads is never older than the producer's own cycle.
+# EVIDENCE: scripts/check_strategy_breadth.py -> data/strategy_breadth.json
+# CONFIDENCE: committed-script (new this cycle)
+35 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_stratbreadth.lock .venv/bin/python scripts/check_strategy_breadth.py >> data/cro_ai_logs/strategy_breadth.log 2>&1

@@ -234,6 +234,10 @@ _MAP: dict[str, list[str]] = {
     # families, and twelve candidates from one family are correlated by construction -- they die
     # together and the desk learns one thing while reporting twelve tests.
     "L1.32-strategy-coverage": ["scripts/run_strategy_coverage.py"],
+    # R0202: the coverage MAP reports and the widened prompts request; neither fails when a miner
+    # drifts back to the family it knows, which is how breadth actually dies -- one comfortable
+    # session at a time with the volume never dropping. This is the clock behind the rule.
+    "L1.32-strategy-breadth": ["scripts/check_strategy_breadth.py"],
     # L1.25a: null streaks throttle nothing -- an organ going quiet is caught by the freshness/
     # productivity wires REGARDLESS of its reason, so "stopped because nothing was working" trips
     # the same fence as "stopped because broken". The pessimism-freeze cannot hide.

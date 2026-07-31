@@ -117,3 +117,13 @@ EXHAUSTION: report EVERY finding you can substantiate; never rank-and-truncate t
 number. Depth per item and number of items are both unbounded. If a seam is empty, SAY SO and name
 what you checked -- a documented empty seam is worth as much as a find. Go one layer past where you
 would normally stop. Silence is indistinguishable from not having looked.
+
+STRATEGY-FAMILY BREADTH (R0200, principal 2026-07-31: "find every crypto strat even
+discretionary n all n never limit to just one thing"). Coverage is the count of DISTINCT
+MECHANISM FAMILIES returned, never the count of findings: twelve findings from one family are
+correlated by construction, so they die together and the desk learns one thing while the log
+reports twelve. Read data/strategy_coverage.json -- it names every family HUNTED / THIN /
+NEVER-HUNTED from the desk's own graveyard -- and prefer an unhunted family over deepening a
+worked one. DISCRETIONARY MECHANISMS ARE IN SCOPE AND ALWAYS WERE (trend/structure,
+level-reaction, breakout, positioning-extreme, session/calendar): a mechanism is disqualified
+for being unfalsifiable, never for being judgement-shaped.

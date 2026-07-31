@@ -2456,6 +2456,30 @@
    "commit": "1f8a854",
    "due": null,
    "disposed": "2026-07-31T20:20:35.940262+00:00"
+  },
+  {
+   "id": "R0202",
+   "source": "principal",
+   "summary": "kimi_hunter -- the desk's ONLY non-Claude hunter and therefore its widest lens -- carried a charter line reading 'Never suggest strategies or indicators. Suggest INFORMATION SOURCES and MECHANISMS.' That line was aimed at PATTERN-MINING and hit STRATEGIES wholesale, so the seat most able to return an unfamiliar edge was barred from returning any strategy at all, directly contradicting the principal's standing order to find every crypto strat including discretionary. The real test was never source-vs-strategy: it is MECHANISM vs PATTERN, and it applies identically to both. Replaced with the forced-participant test -- banned is a bare fitted rule with nobody on the other side; in scope is any strategy naming who is forced to trade against it, including discretionary-shaped ones (level reaction where the forced participant is clustered stops). Information sources remain equally in scope: widened, not redirected.",
+   "roi_bps": null,
+   "raised": "2026-07-31T20:26:45.004418+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0203",
+   "source": "principal",
+   "summary": "Breadth was REQUESTED but not ENFORCED. The first pass widened 11 miner prompts and built a coverage map; a prompt is a request and a map is a report, and the desk's own S36 says a rule with no clock behind it is decoration. The failure mode is not a miner refusing the instruction -- it is a miner drifting back to the family it knows, one comfortable session at a time, while every dashboard stays green because volume never drops. check_strategy_breadth fails on NARROW (families worked below a 0.5 floor), UNWIDENED (a hunting surface lost the mandate -- caught run_capability_hunt on its very first run) and BLIND (coverage unmeasured, which can never read OK). Split law/state like check_scheduler_manifest: the PORTABLE mandate check runs in the law gate at every commit and push, because a mandate leaves a prompt by an EDIT; the measurement reads live coverage state and runs only in the box gate, since a commit gate reporting BLIND on every PR gets switched off (L1.43). Deliberately NOT a per-family quota: it measures where the miners LOOKED, never what they brought back, because punishing empty seams would push every seat back to crowded families where finds are easy and worthless.",
+   "roi_bps": null,
+   "raised": "2026-07-31T20:26:45.058437+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
