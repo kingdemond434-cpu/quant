@@ -1,0 +1,61 @@
+# ============================================================================================
+# ops/crontab.research.manifest -- the RESEARCH TWIN's scheduler (R0107, principal 2026-07-31)
+#
+# PURPOSE: a second cheap VPS runs the desk's research load -- miners, digs, kimi, the deep
+# sweep, blind-spot organs -- so the primary box's CPU and brain-seat go to execution, collectors
+# and the NAV truth chain. The 07-31 audit measured the audit apparatus alone at 15-19% of the
+# primary's serial brain ceiling; this manifest moves that load (and all mining) off-box.
+#
+# ROLE SELECTION: deploy/pull_deploy.sh and deploy/reconstitute_cron.sh read ops/role (a
+# per-box, GITIGNORED file). Absent or "primary" -> ops/crontab.manifest (unchanged behaviour).
+# "research" -> THIS file. To make a box a twin:  echo research > ops/role
+#
+# DECIDED EXCLUSIONS (each a decision, not an omission):
+#   - executor / collectors / recorders / NAV / venue sampler: venue truth and the moat live on
+#     ONE box only -- two collectors writing two lakes is divergence, not redundancy.
+#   - the brain cycle + wiring agent + model upgrade: repo-MUTATING singletons. Two implementers
+#     on two boxes duel on merges; research organs here write additive docs/research/* only.
+#   - box-state fences (utilisation, gate0 board, drills, moat backup): they measure the
+#     primary's state; running them here would report the twin's emptiness as the desk's.
+#   - intelligence cycle / strategist / fusion: stay primary (they read primary-local artifacts).
+#
+# QUOTA CAVEAT (honest): both boxes share the same Claude account pools. The twin removes the
+# CPU/mutex bottleneck (organs no longer queue behind one serial seat), not the quota ceiling --
+# brain_auth_check's dual-pool chain load-balances and pages on exhaustion, same as today.
+#
+# PRIMARY TRIM OWED: once the twin's first dig artifacts appear on master, remove the dig/kimi/
+# sweep/blindspot lines from ops/crontab.manifest in one ledgered commit ("research seats moved
+# to twin") -- until then the resume-skip logic tolerates the overlap at the cost of some
+# double-digging.
+#
+# FORMAT: identical to ops/crontab.manifest (installed by deploy/reconstitute_cron.sh; the
+# systemctl guards degrade correctly on a box with no systemd units).
+# ============================================================================================
+
+# self-deploy: the twin pulls master every 10 minutes and self-installs THIS manifest on change
+*/10 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_pull_deploy.lock /bin/sh deploy/pull_deploy.sh >> data/cro_ai_logs/pull_deploy_cron.log 2>&1
+
+# research artifacts home hourly: miners/sweeps write docs/research/*; this pushes them to master
+40 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_git_snapshot.lock .venv/bin/python scripts/git_snapshot.py >> data/cro_ai_logs/git_snapshot.log 2>&1
+
+# kimi hunter battery (8x/day) + weekly deep passes
+5 */3 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/kimi_hunter.py >> data/cro_ai_logs/kimi_hunter.log 2>&1
+35 5 * * 0,3 cd "$QUANT_ROOT" && .venv/bin/python scripts/kimi_hunter.py --deep >> data/cro_ai_logs/kimi_hunter_deep.log 2>&1
+
+# the deep cold audit -- the single biggest load moved off the primary brain seat
+0 1 * * * cd "$QUANT_ROOT" && flock -n data/.cron_deep_sweep.lock /bin/bash ops/run_deep_sweep.sh
+
+# dig seats, primary slots + pre-dawn twins (frontier rotation covers all 7 language regions)
+0 14 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-dataaxis.timer >/dev/null 2>&1 || flock -n /tmp/seat_dataaxis.lock /bin/bash ops/run_dataaxis_dig.sh >> data/cro_ai_logs/seat_dataaxis.log 2>&1; }
+0 15 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-frontier.timer >/dev/null 2>&1 || flock -n /tmp/seat_frontier.lock /bin/bash ops/run_frontier_rotation.sh >> data/cro_ai_logs/seat_frontier.log 2>&1; }
+0 18 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-prospector.timer >/dev/null 2>&1 || flock -n /tmp/seat_prospector.lock /bin/bash ops/run_prospector_dig.sh >> data/cro_ai_logs/seat_prospector.log 2>&1; }
+0 19 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-litminer.timer >/dev/null 2>&1 || flock -n /tmp/seat_litminer.lock /bin/bash ops/run_litminer_dig.sh >> data/cro_ai_logs/seat_litminer.log 2>&1; }
+0 3 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-frontier.timer >/dev/null 2>&1 || flock -n /tmp/seat_frontier.lock /bin/bash ops/run_frontier_rotation.sh >> data/cro_ai_logs/seat_frontier.log 2>&1; }
+0 5 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-dataaxis.timer >/dev/null 2>&1 || flock -n /tmp/seat_dataaxis.lock /bin/bash ops/run_dataaxis_dig.sh >> data/cro_ai_logs/seat_dataaxis.log 2>&1; }
+0 6 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-prospector.timer >/dev/null 2>&1 || flock -n /tmp/seat_prospector.lock /bin/bash ops/run_prospector_dig.sh >> data/cro_ai_logs/seat_prospector.log 2>&1; }
+0 7 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-litminer.timer >/dev/null 2>&1 || flock -n /tmp/seat_litminer.lock /bin/bash ops/run_litminer_dig.sh >> data/cro_ai_logs/seat_litminer.log 2>&1; }
+
+# unknown-unknown organs
+10 3 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/blindspot_max.py >> data/cro_ai_logs/blindspot_max.log 2>&1
+25 21 * * 6 cd "$QUANT_ROOT" && .venv/bin/python scripts/blindspot_prober.py >> data/cro_ai_logs/blindspot_prober.log 2>&1
+0 20 * * 6 cd "$QUANT_ROOT" && { systemctl is-enabled quant-blindrediscovery.timer >/dev/null 2>&1 || flock -n /tmp/seat_blindrediscovery.lock /bin/bash ops/run_blindrediscovery_dig.sh >> data/cro_ai_logs/seat_blindrediscovery.log 2>&1; }

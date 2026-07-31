@@ -1279,6 +1279,18 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0106",
+   "source": "principal",
+   "summary": "PROBE CAPITAL (post-funding): auto-allocate $5-10 slices to Stage-B candidates purely to measure execution reality (true fills, slippage, funding timing) -- the only legitimate evidence-clock accelerant; capped by the rails, ledgered as capital events, activates on first deposit",
+   "roi_bps": 35.0,
+   "raised": "2026-07-31T08:52:53.264601+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

@@ -27,7 +27,15 @@ set -eu
 
 SELF_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 ROOT=$(CDPATH= cd -- "$SELF_DIR/.." && pwd)
-MANIFEST="$ROOT/ops/crontab.manifest"
+# ROLE SELECTION (R0107, 2026-07-31): ops/role is per-box, gitignored state. Absent or
+# "primary" -> the full manifest (unchanged behaviour). "research" -> the twin's subset, so a
+# second VPS becomes a research twin with one line: echo research > ops/role
+_ROLE=$(cat "$ROOT/ops/role" 2>/dev/null || echo primary)
+if [ "$_ROLE" = "research" ]; then
+    MANIFEST="$ROOT/ops/crontab.research.manifest"
+else
+    MANIFEST="$ROOT/ops/crontab.manifest"
+fi
 CHECKER="$ROOT/scripts/check_scheduler_manifest.py"
 MARK_BEGIN="# >>> quant-desk ops/crontab.manifest >>> (managed block -- edit the manifest, not this)"
 MARK_END="# <<< quant-desk ops/crontab.manifest <<<"

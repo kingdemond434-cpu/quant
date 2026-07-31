@@ -100,8 +100,13 @@ fi
 # manifest against the current file catches that case and every future one, including manifests
 # that arrive while the puller is broken. reconstitute_cron.sh is idempotent (fenced crontab
 # block) and needs no root for the cron half; its systemd half degrades to printed "owed" lines.
-if [ "$DRY" -eq 0 ] && [ -f "$ROOT/ops/crontab.manifest" ]; then
-    _MAN_WANT=$(cksum "$ROOT/ops/crontab.manifest" | cut -d' ' -f1)
+# ROLE SELECTION (R0107): a box with `research` in ops/role installs the research-twin
+# manifest; everything else keeps the full manifest. ops/role is gitignored per-box state.
+_ROLE=$(cat "$ROOT/ops/role" 2>/dev/null || echo primary)
+_MAN_FILE="$ROOT/ops/crontab.manifest"
+[ "$_ROLE" = "research" ] && _MAN_FILE="$ROOT/ops/crontab.research.manifest"
+if [ "$DRY" -eq 0 ] && [ -f "$_MAN_FILE" ]; then
+    _MAN_WANT=$(cksum "$_MAN_FILE" | cut -d' ' -f1)
     _MAN_HAVE=$(cat "$ROOT/data/.crontab_installed_hash" 2>/dev/null || echo none)
     if [ "$_MAN_WANT" != "$_MAN_HAVE" ]; then
         say "scheduler manifest not yet installed at this hash ($_MAN_HAVE -> $_MAN_WANT)"
