@@ -2564,6 +2564,42 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0211",
+   "source": "cro-self-audit",
+   "summary": "MONEY-PATH RAIL INERT: venue-side protective stop (run_cashcarry_executor.py:1015) is a no-op under current wiring -- fut=binance_testnet lacks place_stop_market, which only binance_live defines. The host-death-survival rail does not exist in practice. Either add place_stop_market to binance_testnet (paper-safe, restores the rail in the environment actually being validated) or make the missing-capability path PAGE instead of silently returning []. MUST be closed before REARM puts capital behind it.",
+   "roi_bps": 90.0,
+   "raised": "2026-07-31T21:00:41.902240+00:00",
+   "status": "scheduled",
+   "reason": "REARM BLOCKER, dated ahead of any plausible REARM. Costs nothing while the book is flat (armed false, 0 positions, verified this cycle) and becomes live-critical the moment capital is behind it, so it is scheduled rather than rushed tonight -- adding place_stop_market to binance_testnet touches the money path and deserves the careful slot. Escalates if REARM lands first: the rail must exist before the fill, not after.",
+   "commit": null,
+   "due": "2026-08-02",
+   "disposed": "2026-07-31T21:06:31.621210+00:00"
+  },
+  {
+   "id": "R0212",
+   "source": "cro-self-audit",
+   "summary": "CAPACITY SINGLE-SOURCE: libs/autodiscovery/validation.py:69 hardcodes _VENUE_MIN_NOTIONAL_USD=10.0 and derives a $200 _EXEC_VIABILITY_FLOOR_USD from it, while data/capacity_floor.json carries MEASURED venue truth (spot_min 5.0, fut_min 5.0, per_carry_median 15.0, recorded 2026-07-27 off live endpoints). Per L1.44 the read should source the artifact with the constant as a fallback that may only TIGHTEN. Also the 3 other exchangeInfo parsers still omit the notional filter (futures key is 'notional', not 'minNotional').",
+   "roi_bps": 45.0,
+   "raised": "2026-07-31T21:00:42.010440+00:00",
+   "status": "scheduled",
+   "reason": "Real but not binding: the hardcoded 10.0 is CONSERVATIVE against measured venue truth (capacity_floor.json spot_min 5.0), so it errs toward refusing marginal orders rather than placing rejected ones. Sequenced behind R0213/R0211 which both touch live behaviour. Includes propagating the notional parse to the two futures parsers using the futures key 'notional'.",
+   "commit": null,
+   "due": "2026-08-05",
+   "disposed": "2026-07-31T21:06:31.730049+00:00"
+  },
+  {
+   "id": "R0213",
+   "source": "cro-self-audit",
+   "summary": "R0206 FOLLOW-ON -- the reality gap is now LOCALISED: paper-gross top-4 funding carry is +7.77 bps/day (t +10.28) on 164 symbols 2019-2026 while the live sleeve realised -58.27 bps net over 73 churn-free round-trips. The entry rule is EXONERATED (basis converges after entry). ~66 bps therefore sits in execution/accounting: slippage on the thinnest names on the venue, the maker fill-rate (24.2% paying 96.5% of fees), and the price_pnl accounting itself. Next repair hour goes to decomposing that gap against trade_forensics + tca, NOT to re-engineering selection.",
+   "roi_bps": 110.0,
+   "raised": "2026-07-31T21:00:42.122389+00:00",
+   "status": "scheduled",
+   "reason": "Highest-ROI of the three and the direct successor to this cycle's conversion: R0206 exonerated selection, so the ~66 bps now has ONE remaining home. Next repair slot decomposes it against trade_forensics + tca. Dated 08-02 because it needs the careful slot, not a cycle-end rush, and the book is flat so no further gap accrues meanwhile.",
+   "commit": null,
+   "due": "2026-08-02",
+   "disposed": "2026-07-31T21:06:31.544450+00:00"
   }
  ]
 }

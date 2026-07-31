@@ -83,17 +83,30 @@ def _prec_of(step: float) -> int:
 
 
 def exchange_filters() -> dict[str, dict[str, float]]:
-    """Per-symbol step, min qty, base precision, price tick + precision (for valid spot sizing)."""
+    """Per-symbol step, min qty, base precision, price tick + precision (for valid spot sizing).
+
+    ``min_notional`` is the venue's minimum ORDER VALUE -- a gate quantity filters cannot express.
+    THIS is the module the money path actually imports (run_cashcarry_executor,
+    run_stranded_recovery), so the field has to live here to reach anything; adding it only to
+    binance_spot_live ships it inert. run_stranded_recovery previously fell back to a hardcoded
+    10.0 for every symbol because the key did not exist -- against the desk's own measured venue
+    truth (data/capacity_floor.json: spot_min 5.0) that silently refused recoverable balances in
+    the $5-10 band under the label "below venue min notional". 0.0 = no published minimum, which
+    is why that caller keeps a conservative floor for the 0.0 case rather than treating it as
+    "no minimum". Key parity with binance_spot_live is pinned by
+    tests/execution/test_filter_parity.py."""
     info = _get("/api/v3/exchangeInfo")
     out: dict[str, dict[str, float]] = {}
     for s in info.get("symbols", []):
         f = {flt["filterType"]: flt for flt in s.get("filters", [])}
         lot = f.get("LOT_SIZE", {})
         tick = float(f.get("PRICE_FILTER", {}).get("tickSize", 0.0) or 0.0)
+        notl = f.get("NOTIONAL", {}) or f.get("MIN_NOTIONAL", {})
         out[s["symbol"]] = {
             "step": float(lot.get("stepSize", 0.0001)), "min_qty": float(lot.get("minQty", 0.0)),
             "qty_prec": int(s.get("baseAssetPrecision", 6)),
             "tick": tick, "price_prec": _prec_of(tick) if tick else 8,
+            "min_notional": float(notl.get("minNotional", 0.0) or 0.0),
         }
     return out
 

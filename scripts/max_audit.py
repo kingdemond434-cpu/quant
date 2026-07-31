@@ -1846,6 +1846,17 @@ _FINDING_DOCS_EXCLUDED = {
     "docs/research/cn_oss_extraction_20260731.md": "dig extraction card -- its 5 finds are "
                                                    "rowed as R0100 (ingest+screen) by the "
                                                    "authoring session; §33 governs the cards",
+    "docs/research/blind_rediscovery_log.md": "monthly blind-rediscovery run log -- each run's "
+                                              "cards are rowed into the RECOMMENDATION ledger by "
+                                              "the authoring session (run 1 2026-07-31 -> "
+                                              "R0202-R0210), the organ that drives conversion and "
+                                              "enforces dispositions. Same precedent as "
+                                              "cn_oss_extraction_20260731.md. Scope-excluded here "
+                                              "so the SAME cards are not double-counted against "
+                                              "two backlogs; §36 still governs the file via "
+                                              "_PRODUCER_CADENCE, so a run that stops happening "
+                                              "fires. If a future run's cards are ever NOT "
+                                              "ledgered, move this into _FINDING_DOCS",
     "docs/research/panel_inbox.md": "raw panel transcript -- rulings are the distilled output",
     "docs/research/feed_inbox.md": "literature feed, not desk findings",
     "docs/research/data_axis_watchlist.md": "source cards -- governed by §33 dispositions",
@@ -1936,6 +1947,14 @@ _PRODUCER_CADENCE = {
     "docs/research/adoption_queue.md": (
         35.0, "trigger-gated methods (fracdiff, dollar bars, ...) -- nothing notices when a "
               "precondition ARRIVES, so a due adoption waits forever"),
+    # §36(2) claim for the blind-rediscovery log (2026-07-31): it was the one docs artifact no law
+    # owned. It is a MONTHLY producer -- the organ that re-invents mechanisms blind to the desk's
+    # own history, so a silent death costs the desk its only un-anchored idea source. 35d, not 31,
+    # so an on-time monthly run never fires the check the day before it is due.
+    "docs/research/blind_rediscovery_log.md": (
+        35.0, "monthly blind-rediscovery run (cadence_state.last_blind_rediscovery); its cards are "
+              "ledgered as R-rows by the authoring session, so §36 governs the RUN happening while "
+              "the recommendation ledger governs the cards"),
     # The register is a producer too -- the one every other law routes into. Its own header
     # promises a re-rank every daily cycle; check_gap_register_health reads the self-declared
     # stamp, and this is the file-level backstop if the stamp itself stops being written.

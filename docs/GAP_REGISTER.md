@@ -1,6 +1,37 @@
 # GAP REGISTER — live ranked list of known inefficiencies & missing capabilities
 
-_Re-ranked 2026-07-31T18:10Z (fifth cycle of the day)._ Rank order UNCHANGED — **#1 stays
+_Re-ranked 2026-07-31T21:05Z (sixth cycle of the day)._ **#1 stays PRINCIPAL REARM + A/B/C**
+(page live, book flat+frozen, `live_guard.json` read fresh this cycle: `armed false`,
+`rung full_flatten_disarmed`, `requires_manual_rearm true`, 0 positions). Two evidence-driven
+movements, both from measurements taken this cycle rather than a re-weighing:
+
+**#1a NEW — R0211 venue-side protective stop is INERT, and it is a REARM blocker.**
+`run_cashcarry_executor.py:1015` gates the stop rail on `hasattr(fut, "place_stop_market")`;
+`fut` is `binance_testnet` (line 29) and `place_stop_market` is defined **only** in
+`binance_live.py`. "The rail that survives host death" returns `[]` unconditionally. Its own
+docstring discloses it — disclosed-but-never-gated is an open defect, not documentation. It costs
+nothing while the book is flat and becomes live-critical the moment REARM puts capital behind it,
+so it is ranked immediately under the REARM ask it gates rather than in the general queue.
+
+**R0206 CLOSES — and it closes by REFUTING its own hypothesis, which moves the carry
+investigation rather than ending it.** The proposed mechanism (ranking by funding = ranking by
+widest premium ⇒ the sleeve shorts an ongoing squeeze) is **refuted and reversed**: on 164 symbols
+2019-09-08..2026-07-31, the top-4-by-funding basis leg is **+0.65 bps/day (t +3.11)** — converging,
+mildly *favourable* — and — the non-tautological half — the **basis leg alone** improves
+monotonically across funding deciles (d1 −1.89 → d10 +0.61 bps/day), in all four constructions.
+(Net by decile also rises, but that is partly mechanical: funding is the ranking variable, so the
+funding leg *must* rise with rank. The basis leg carries no such mechanism.) The entry rule is
+**exonerated**, so the live −51.74 bps `price_pnl` is redirected to
+execution/accounting exactly as the card pre-committed. The gap that remains is the honest
+finding and is now rowed as **R0213**: paper-gross +7.77 bps/day vs live −58.27 bps/round-trip is
+an **L2.10 reality gap of ~66 bps**, and the next repair hour goes to decomposing it against
+`trade_forensics` + `tca`, **not** to re-engineering selection. The +7.77 figure is gross of
+costs on a current-universe panel and is recorded as NOT an edge.
+
+**Staleness:** #71 blocked on a principal/panel ruling since 07-26 (5 days) — named again, not
+silently carried. #91 remains `paged-tier3`. #88 due 08-12, unchanged.
+
+_Previous stamp: Re-ranked 2026-07-31T18:10Z (fifth cycle of the day)._ Rank order UNCHANGED — **#1 stays
 PRINCIPAL REARM + A/B/C** (page live, book flat+frozen; the reply now also gates **R0058 TCA
 persistence**, scheduled to land in the REARM→first-fill gap because the L1.38 window reads
 RAIL_BREACH — zero TCA data is being destroyed while flat, and the fix must precede fill #1).
