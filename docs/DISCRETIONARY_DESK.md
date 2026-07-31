@@ -118,3 +118,55 @@ buy-and-hold **and** the carry sleeve after costs. Every call is a pre-registere
 L1.29. Per-trade risk ≤ 6%, effective heat ≤ 30%, gross ≤ 50%, sleeve drawdown halt at 35%, and
 the whole sleeve inside the book's −35% ruin rail (L1.23). Every money-path constant carries its
 derivation (L1.41). It places no orders.
+
+## Why this has a higher CAGR *ceiling* than the 420 — and why that is not an argument that it works
+
+Asked directly: why would this earn more than every alpha the desk has already tested, and why
+can't those earn the same way?
+
+**Most of the answer is that it doesn't.** The 420 failed for lack of *edge*, not lack of
+structure. Nothing below would have saved a single one of them.
+
+**But there is one real structural difference, and it is not what it first looks like.** The
+tempting story is "asymmetric payoffs compound better." That is false, and the arithmetic says so:
+at equal arithmetic mean, a 35/65 +18%/−6% payoff has `g = +0.0177` while a 70/30 ±6% payoff has
+`g = +0.0222`. Since `g ≈ μ − σ²/2`, the skewed bet's extra variance *costs* growth. Right skew by
+itself does not raise the growth rate.
+
+What the named invalidation actually buys is a **bounded left tail, and therefore survivable
+leverage**:
+
+| | worst single trade | can it be levered? |
+|---|---|---|
+| fixed-horizon signal, 1x | −35% (an adverse gap) | — |
+| same signal, 6x | **−100%** | no — one gap ends it |
+| 1% structural stop, 6x | −6% | **yes** |
+
+Leverage is bounded by *where you exit*, not by how confident you are. Every one of the graveyard's
+kills — `btc_leadlag`, `funding_momentum`, `illiquidity_premium`, `xsec_lowvol`, `ls_contrarian`,
+`dex_cex_volume_ratio_flow`, `coinbase_premium_timing` — is a signal computed from a series and
+held for a fixed horizon. None names a price at which it is wrong. So none can be levered: an
+unbounded left tail at leverage makes `P(ruin) > 0`, and any positive ruin probability sends
+long-run `E[log wealth]` to −∞ regardless of the edge. They were stuck near 1x, and 1x on a small
+statistical edge is a small number. That is the entire CAGR-ceiling difference.
+
+**So why can't they earn the same way? Many of them could have.** The stop/trail/heat machinery is
+*portable* — it is not discretionary-only. Any signal that can name a structural invalidation can
+plug into the same sizer and inherit the same leverage. What stopped them was how they were
+*specified*, not what they were.
+
+**The standing consequence:** a candidate that can name an invalidation level has a materially
+higher ceiling than one that cannot, and that should be asked at specification time rather than
+discovered later. It is a question about the hypothesis, not about the code.
+
+**And the counterweight, which is the important half.** Leverage and skew *amplify*; they do not
+*create*. Same machinery, same costs, only the hit rate varying:
+
+| true hit rate | g/trade | 460 trades/yr |
+|---|---|---|
+| 35% | +0.0073 | +2716% |
+| 25% | −0.0155 | **−99.9%** |
+| 22% | −0.0223 | **−100%** |
+
+At no edge, this structure reaches ruin *faster* than the flat signal would have. The higher
+ceiling is real and it is not evidence of anything. Only the forward clock is.
