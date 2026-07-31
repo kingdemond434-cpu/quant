@@ -36,6 +36,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import hashlib
 import json
 import sys
 from datetime import UTC, datetime
@@ -53,6 +54,13 @@ _FENCE_END = "# <<< WIRING AGENT <<<"
 
 # Never scheduled by an agent, ever. Not proposed either -- these are principal decisions.
 _NEVER = {"run_deadman_switch.py", "run_cashcarry_executor.py"}
+
+# Safe-by-writes is not the same as sane-to-schedule (2026-07-31: the agent cron'd ops_server.py
+# -- a long-running server, so each fire stacks an instance or dies on the bound port -- and
+# setup_ngrok.py/setup_testnet_keys.py, one-shot provisioning). Shape filters, not a blacklist:
+_NOT_ORGANS = ("setup_", "smoke_", "demo_", "bootstrap_")
+_SERVER_MARKERS = ("serve_forever", "httpserver", "socketserver", "uvicorn",
+                   "app.run(", "start_server", ".bind((")
 
 # Import substrings that make a script MONEY-PATH or SPEND-CAPABLE -> propose, never auto-wire.
 _MONEY_PATH = ("libs.execution", "binance_live", "binance_spot_live", "binance_testnet",
@@ -116,6 +124,8 @@ def classify(rel: str) -> tuple[str, str, str]:
     name = Path(rel).name
     if name in _NEVER:
         return "NEVER", "Tier-3 / executor -- scheduling is a permanent principal decision", ""
+    if name.startswith(_NOT_ORGANS):
+        return "PROPOSE", "one-shot provisioning/smoke script -- not a recurring organ", ""
     p = _ROOT / rel
     try:
         src = p.read_text("utf-8", errors="ignore")
@@ -130,24 +140,55 @@ def classify(rel: str) -> tuple[str, str, str]:
     low = src.lower()
     if any(s in low for s in _SPENDS):
         return "PROPOSE", "can SPEND (external model/API) -- budget envelope decision, not auto", ""
+    if any(m in low for m in _SERVER_MARKERS):
+        return "PROPOSE", "long-running server -- needs a supervisor (systemd), not a cron stack", ""
     if _writes_outside_data(src, _safe_path_constants(tree)):
         return "PROPOSE", "writes outside data/ + web/ -- unattended scheduling needs review", ""
-    # Cadence from what it touches: network readers slower, local-only readers daily.
+    # Cadence from what it touches: network readers slower, local-only readers daily. Slot is a
+    # deterministic hash of the name -- a fixed "21 8" herded every wired organ onto one minute
+    # of a 2-core box (R0070 stagger); hashing keeps re-runs idempotent, daily slots land in the
+    # 03:00-06:59 window clear of the 08:45 brain and the 02:00 research chain.
+    h = int(hashlib.md5(name.encode()).hexdigest(), 16)
     touches_net = any(k in low for k in ("urllib", "http", "requests", "api."))
-    cadence = ("37 */6 * * *", "6-hourly (reads a network source; slower cadence bounds "
+    cadence = (f"{h % 60} */6 * * *", "6-hourly (reads a network source; slower cadence bounds "
                "rate-limit exposure -- the 2026-07-21 IP ban came from over-frequent polling)") \
-        if touches_net else ("21 8 * * *", "daily (local artifacts only)")
+        if touches_net else (f"{h % 60} {3 + (h >> 8) % 4} * * *", "daily (local artifacts only)")
     return "AUTO-WIRE", f"runnable, no money path, no spend, local writes only -- {cadence[1]}", \
         cadence[0]
+
+
+def _fenced_paths() -> list[str]:
+    """Script paths already inside the fence. Wired-stays-wired: dormancy reads the manifest, so
+    a script the agent wired yesterday is no longer dormant today -- without this union the fence
+    DROPS it, it goes dormant again tomorrow, and the whole block oscillates between two disjoint
+    sets forever (observed live 2026-07-31: six scripts out, twelve in, every run)."""
+    try:
+        text = _MANIFEST.read_text("utf-8")
+        block = text[text.index(_FENCE_START):text.index(_FENCE_END)]
+    except (OSError, ValueError):
+        return []
+    out: list[str] = []
+    for ln in block.splitlines():
+        if ".venv/bin/python scripts/" in ln and not ln.lstrip().startswith("#"):
+            out.append(ln.split(".venv/bin/python ", 1)[1].split()[0])
+    return out
 
 
 def scan() -> dict[str, Any]:
     from libs.self_improvement.dormancy import scan as dormancy_scan
     rep = dormancy_scan(include_modules=False)      # scripts only: modules are wired by callers
     rows: list[dict[str, Any]] = []
+    seen: set[str] = set()
     for d in rep.dormant:
         decision, reason, cadence = classify(d.path)
+        seen.add(d.path)
         rows.append({"path": d.path, "lines": d.lines, "decision": decision,
+                     "reason": reason, "cadence": cadence})
+    for rel in _fenced_paths():                     # ratchet: re-classify, never silently drop
+        if rel in seen:
+            continue
+        decision, reason, cadence = classify(rel)
+        rows.append({"path": rel, "lines": 0, "decision": decision,
                      "reason": reason, "cadence": cadence})
     rows.sort(key=lambda r: (-r["lines"]))
     counts: dict[str, int] = {}

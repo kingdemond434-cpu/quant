@@ -11,7 +11,7 @@ on post-rejection market data needs the lake + the generator. That is wired here
 adapter; if the lake/provider is unavailable (fresh clone, no data) the runner scores nothing and
 exits cleanly, leaving the shadow audit to report "unscored" -- never a fabricated score.
 
-Usage: run_rejection_rescore.py [--db data/sor_autodiscovery.sqlite] [--limit 50] [--min-age 30]
+Usage: run_rejection_rescore.py [--db data/sor_crypto.sqlite] [--limit 50] [--min-age 30]
 """
 from __future__ import annotations
 
@@ -26,21 +26,74 @@ from libs.validation.reject_rescore import plan_rescore
 _ROOT = Path(__file__).resolve().parent.parent
 _SCORES = _ROOT / "data/reject_forward_scores.json"
 
+# Lazy per-run caches: lake frames are read once per symbol, the BTC reference once.
+_FRAMES: dict[str, object] = {}
+_MIN_FWD_BARS = 30
+
+
+def _frame(symbol: str):
+    if symbol not in _FRAMES:
+        try:
+            from libs.autodiscovery.crypto_adapter import _read_frames
+            from libs.data.timeframe import Timeframe
+            _FRAMES.update(_read_frames([symbol], Timeframe.D1, "data/lake"))
+        except Exception:
+            _FRAMES[symbol] = None
+    return _FRAMES.get(symbol)
+
 
 def _forward_score(rec: object) -> float | None:
     """Re-evaluate one rejected candidate on its post-rejection forward window.
 
-    Runtime hook: rebuild the candidate's signal from its stored (family, subtype, symbol, params)
-    and score it on data after ``rec.created_at``. Returns None when the lake/generator cannot
-    produce an honest forward series (missing data, too-short window) -- never a guess. Left as the
-    single injection point so the recovery loop's scheduling + wiring are testable without the lake.
+    Rebuilds the stored (family, subtype, symbol, params) signal via the SAME generator registry
+    the campaign used, on the full lake series (causal rolling windows need their warmup), then
+    scores ONLY the bars strictly after ``rec.created_at`` -- genuinely out-of-sample relative to
+    the rejection. Same cost model as the campaign default (net_returns, 3bps/turnover). Returns
+    None when the lake cannot produce an honest forward series (missing frame, <30 forward bars,
+    unknown generator) -- never a guess. Annualized daily Sharpe (sqrt(365), crypto clock).
     """
-    return None  # honest default until the lake-backed replay is wired on the runtime host
+    if rec is None:
+        return None
+    try:
+        import numpy as np
+        import pandas as pd
+
+        from libs.autodiscovery.crypto_adapter import _provider_from_frames
+        from libs.autodiscovery.generators import GENERATORS, net_returns
+        spec = next((g for g in GENERATORS
+                     if g.family.value == rec.family and g.subtype == rec.subtype), None)
+        df = _frame(rec.symbol)
+        if spec is None or df is None:
+            return None
+        _frame("BTCUSDT")  # cross-asset generators need the reference leg in the frame cache
+        provider = _provider_from_frames({k: v for k, v in _FRAMES.items() if v is not None},
+                                         min_bars=_MIN_FWD_BARS)
+        series = provider(rec.symbol)
+        if series is None:
+            return None
+        positions = spec.fn(series, dict(rec.params))
+        rets = net_returns(series, positions)
+        cutoff = pd.Timestamp(rec.created_at)
+        idx = df.index
+        if getattr(idx, "tz", None) is not None and cutoff.tz is None:
+            cutoff = cutoff.tz_localize(idx.tz)
+        elif getattr(idx, "tz", None) is None and cutoff.tz is not None:
+            cutoff = cutoff.tz_localize(None)
+        rets = np.asarray(rets)
+        # net_returns yields the return REALIZED at each bar after the first (len N-1 vs N bars):
+        # align the cutoff mask to the TRAILING len(rets) bars so rets[j] pairs with its own bar.
+        mask = np.asarray(idx > cutoff)[-len(rets):]
+        fwd = rets[mask]
+        if len(fwd) < _MIN_FWD_BARS or float(np.std(fwd)) == 0.0:
+            return None
+        return float(np.mean(fwd) / np.std(fwd) * np.sqrt(365.0))
+    except Exception:
+        return None  # unreadable inputs surface as unscored, never as a fabricated number
 
 
 def main() -> None:
     p = argparse.ArgumentParser()
-    p.add_argument("--db", default="data/sor_autodiscovery.sqlite")
+    p.add_argument("--db", default="data/sor_crypto.sqlite")
     p.add_argument("--limit", type=int, default=50)
     p.add_argument("--min-age-days", type=float, default=30.0)
     a = p.parse_args()

@@ -141,7 +141,7 @@
    "success_metric": "data/liquidations.parquet shows events > 0 within 72h and a steady accumulation rate thereafter (data_health.py will flag STUCK if not)",
    "reversal_condition": "If Bybit source also shows 0 events after 72h (STUCK), the venue is not the bottleneck -- deprioritize liquidation_reversal as implementation_impossible from this network rather than trying a third venue",
    "review_due": "2026-07-12",
-   "outcome": null
+   "outcome": "SCORED 2026-07-31 (19d late): CORRECT. Binance fstream verified silently dropping all frames (handshake 101, zero payloads on BTCUSDT aggTrade 150s+) while Bybit allLiquidation flowed instantly; the swap restored a real event stream and run_recorder_bybit.py has run continuously since (process up since Jul 21, 431+ CPU-hours). The 40d liquidation_reversal clock restarted honestly from the swap rather than accruing on a dead pipe -- the 12-13d 'progress' before it was fake and was correctly reset."
   },
   {
    "id": "2026-07-09-duplicate-live-executor-killed",
@@ -158,7 +158,7 @@
    "success_metric": "No further Python312-rooted process appears in Get-CimInstance Win32_Process going forward; cashcarry_exec_heartbeat stays single-sourced (no renewed duplication); ground-truth account state (deployed_notional, n_carries) checked before and after and showed no doubling at any point in this session -- no evidence of actual financial harm from either the original state or the kill",
    "reversal_condition": "If a new system-Python duplicate reappears, the root cause is not \"an old orphan\" but something actively re-spawning under system Python -- escalate to a full audit of any manual/legacy launch mechanism on this machine",
    "review_due": "2026-07-10",
-   "outcome": null
+   "outcome": "SCORED 2026-07-31 (21d late): WRONG diagnosis, bounded harm. The 'duplicate' was ONE logical process (venv redirector stub + Python312 child worker -- proven twice, IK 2026-07-09/07-10); the kill was unnecessary and cost a ~3min executor gap before watchdog respawn. Failed assumption: 'two PIDs with matching args = two independent processes'. Lesson already encoded in institutional_knowledge (count venv stubs, check ParentProcessId first) -- calibration: confident-but-wrong on process identity, the same class as the 07-11 deadman zombie misread."
   },
   {
    "id": "2026-07-09-live-autodeploy-preauthorization",
@@ -1599,7 +1599,8 @@
    "success_metric": "AUTH-OK verify passes; next 7 days of cycles run with zero quota no-ops; first-month spend within cap",
    "reversal_condition": "if spend exceeds cap or API auth proves flaky: restore .credentials.json.retired-* (subscription auth) and revisit",
    "review_due": "2026-07-26",
-   "review_due_source": "success_metric"
+   "review_due_source": "success_metric",
+   "outcome": "SCORED 2026-07-31 (5d late): CORRECT in direction, incomplete in scope. Flipping the brain chain to opus-4-8 on fable-5 credit exhaustion restored cycles same-day (AUTH-OK verified, full logs resumed -- see max_audit_acks organ-stale-brain-cycle RESOLVED note). Scope gap: the same flip was not propagated to all digger organs, which continued dying on session limits (production-stale dataaxis/litminer still firing 07-31) -- the run-reset-aware-retry directive is the still-open remainder. Calibration: right fix, under-swept adjacency."
   },
   {
    "id": "2026-07-19-brain-auth-option-b-supersedes",
@@ -3378,6 +3379,25 @@
    "rails_touched": "NONE",
    "opportunity_cost": "none material -- unblocked CI which everything else ships through",
    "review_due": "2026-08-07"
+  },
+  {
+   "id": "2026-07-31-freeze-response-commit-scheduler-unification-reject-loop-l116a-reopens",
+   "ts": "2026-07-31T13:47:12.454561+00:00",
+   "decision": "FOUR-PART CYCLE: (1) adopt+commit the in-flight 08:35Z freeze-incident fixes (Binance 418 cross-process ban latch in crypto_source._get; KILL-loop survives venue outage + close-only path decoupled from ranks in the executor; truthful _auth_broken; principal REPLY CHANNEL -- ntfy poll -> PAGE_ACK + REARM/A/B/C/YES/NO -- announce page delivered 13:26Z ntfy 200); freeze itself LEFT LATCHED (requires_manual_rearm is the guard's contract; un-firing my own rail on my own diagnosis is the canonical failure). (2) SCHEDULER SINGLE-SOURCE: live crontab == manifest (drift OK), 6 double-scheduled organs deduped, deep-sweep contradiction resolved to WEEKLY per its own recorded ruling, wiring agent gains organ-shape filters (no servers/setup scripts), fence ratchet (kills period-2 flap), hash-staggered slots (kills the 08:21 herd). (3) REJECT RECOVERY LOOP LIVE: _forward_score implemented (trailing-mask alignment; smoke 10/10 backdated), repointed rescore+shadow to sor_crypto (434 rejects; June FX store unscorable on this host -- 57 rejects have no lake bars, recorded), wired daily 06:50, first scoreable cohort ~08-10. (4) GENERATION: 4 new hypotheses gated (2 QUEUE: bitmex_decade_funding_persistence 0.0061, cross_venue_funding_dispersion 0.0060; 2 REJECT honest), plus L1.16a MASS RE-OPEN of 10 graveyard kills with recorded EV in [0.002,0.05) -- named enabling change is the measured 5x EV-gate miscalibration (R0023/R0034); their mechanism of death WAS the bar. Seeds 6 of 9 clock-starved axes. energy/mining stay dead honestly (0.0011/0.0002 below even the new bar).",
+   "neighbours": [
+    "pager path: _poll_replies runs BEFORE page computation each alerts tick; REARM lifts ONLY a kill file that starts 'live_guard freeze' (other writers' kills untouched); trust boundary = topic secrecy, same as the pager itself -- falsifier: any suspected abuse moves to authed ntfy",
+    "every _get caller (collectors, 3-min refresh chain, executor ranks): a latched ban now FAILS FAST with RuntimeError instead of retry-extending the ban -- callers see errors sooner; their except-paths were already exercised by the 418 day",
+    "halted-book loop: close-all failure now sleeps+retries instead of crashing -> systemd respawn storm class ended; _daily_data_tasks still runs under KILL (flywheel preserved)",
+    "~15 wired organs change fire times to hash-staggered 03-06h slots -- load profile + log timestamps move; certify_gauntlet lands 05:10 daily",
+    "reject_forward_scores.json is read by run_rejection_shadow -> web/reject_shadow.json -> max_audit check_rejection_shadow: the check now measures the LIVE campaign store",
+    "research_agenda.json queue rewrite touches its 4 readers; do_not_repeat entries ANNOTATED in place, never deleted (L1.17)",
+    "max_audit page writer: newest-URGENT-first sort changes PRINCIPAL_ACTION.md ordering for every future multi-URGENT state"
+   ],
+   "expected_benefit": "book resume latency collapses to principal-reaction time; scheduler corruption class (R0048 shape) structurally closed; gate-leak recovery becomes measurable from 08-10; 12 screening candidates queued on starved axes",
+   "confidence": 0.85,
+   "success_metric": "REARM reply observed lifting freeze + book resumes within one tick; zero duplicate-organ fires in 7d of logs; reject scores >0 rows by 08-12; >=4 of 12 queue items screened by 08-04 (R0126)",
+   "reversal_condition": "reply channel abused or misfires -> revert run_alerts poll block + move to authed ntfy; stagger causes a collector collision -> re-pin explicit slots; re-opened items that fail screens return to graveyard with BOTH kill records",
+   "review_due": "2026-08-12"
   }
  ]
 }

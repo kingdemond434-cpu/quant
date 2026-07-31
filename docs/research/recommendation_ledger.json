@@ -1519,6 +1519,97 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0126",
+   "source": "cycle",
+   "summary": "Stage-A screen the 12-item reopened+new queue (research_agenda.queue_ranked_by_expected_research_roi, EV order): screens via libs.research.axis_screen, declared alignment, full trial accounting; covers 6 of 9 clock-starved axes (etf_flows, wikipedia, fx, index, fed, crossasset) + bitmex decade + cross-venue funding dispersion. Target: first 4 screens by 2026-08-04.",
+   "roi_bps": 40.0,
+   "raised": "2026-07-31T13:41:27.934842+00:00",
+   "status": "scheduled",
+   "reason": "scheduled this cycle with explicit slot; see ack ledger + cycle report 2026-07-31",
+   "commit": null,
+   "due": "2026-08-04",
+   "disposed": "2026-07-31T13:43:55.008366+00:00",
+   "note": "renumbered twice 2026-07-31 (two concurrent sessions allocating ids; origin rows kept theirs both times)"
+  },
+  {
+   "id": "R0127",
+   "source": "cycle",
+   "summary": "screen-target-horizon-harness build (axis_screen target/horizon matrix with per-cell DSR trial accounting) -- scheduled 2026-08-02, FIRST of the overdue directives because R0100 screening depends on it",
+   "roi_bps": 60.0,
+   "raised": "2026-07-31T13:43:42.297220+00:00",
+   "status": "scheduled",
+   "reason": "scheduled this cycle with explicit slot; see ack ledger + cycle report 2026-07-31",
+   "commit": null,
+   "due": "2026-08-02",
+   "disposed": "2026-07-31T13:43:55.216381+00:00",
+   "note": "renumbered twice 2026-07-31 (two concurrent sessions allocating ids; origin rows kept theirs both times)"
+  },
+  {
+   "id": "R0128",
+   "source": "cycle",
+   "summary": "run-reset-aware-retry (parse session-limit reset time, single sleep-retry within TimeoutStartSec) -- scheduled 2026-08-02; unblocks quota-dead dig organs",
+   "roi_bps": 35.0,
+   "raised": "2026-07-31T13:43:42.384287+00:00",
+   "status": "scheduled",
+   "reason": "scheduled this cycle with explicit slot; see ack ledger + cycle report 2026-07-31",
+   "commit": null,
+   "due": "2026-08-02",
+   "disposed": "2026-07-31T13:43:55.483743+00:00",
+   "note": "renumbered twice 2026-07-31 (two concurrent sessions allocating ids; origin rows kept theirs both times)"
+  },
+  {
+   "id": "R0129",
+   "source": "cycle",
+   "summary": "collector-scaffold libs/research/collector_kit.py (fetch-retry, MANDATORY UTC alignment declaration, diff-verify, z20 warmup, Stage-A call) -- scheduled 2026-08-03, careful build",
+   "roi_bps": 50.0,
+   "raised": "2026-07-31T13:43:42.483458+00:00",
+   "status": "scheduled",
+   "reason": "scheduled this cycle with explicit slot; see ack ledger + cycle report 2026-07-31",
+   "commit": null,
+   "due": "2026-08-03",
+   "disposed": "2026-07-31T13:43:55.672889+00:00",
+   "note": "renumbered twice 2026-07-31 (two concurrent sessions allocating ids; origin rows kept theirs both times)"
+  },
+  {
+   "id": "R0130",
+   "source": "cycle",
+   "summary": "oi-ls-oos-alignment-fix (match aggregation window + label convention to crypto_metrics, re-verify corr, chain to 06:20 cron) -- scheduled 2026-08-03, lookahead-sensitive",
+   "roi_bps": 45.0,
+   "raised": "2026-07-31T13:43:42.562205+00:00",
+   "status": "scheduled",
+   "reason": "scheduled this cycle with explicit slot; see ack ledger + cycle report 2026-07-31",
+   "commit": null,
+   "due": "2026-08-03",
+   "disposed": "2026-07-31T13:43:55.841862+00:00",
+   "note": "renumbered twice 2026-07-31 (two concurrent sessions allocating ids; origin rows kept theirs both times)"
+  },
+  {
+   "id": "R0131",
+   "source": "cycle",
+   "summary": "orphan-code investigation: monitoring/stage14/stage14_5/stage15 packages -- import-graph vs dynamic imports, wire or retire on the record -- scheduled 2026-08-02",
+   "roi_bps": 15.0,
+   "raised": "2026-07-31T13:43:42.646953+00:00",
+   "status": "scheduled",
+   "reason": "scheduled this cycle with explicit slot; see ack ledger + cycle report 2026-07-31",
+   "commit": null,
+   "due": "2026-08-02",
+   "disposed": "2026-07-31T13:43:56.052512+00:00",
+   "note": "renumbered twice 2026-07-31 (two concurrent sessions allocating ids; origin rows kept theirs both times)"
+  },
+  {
+   "id": "R0132",
+   "source": "cycle",
+   "summary": "welded-gate migration: run_options_vrp_backtest.py to campaign_gate_stats()+validate(campaign,column) with column-mapping verification -- scheduled 2026-08-02, before options-VRP resurrection re-screen",
+   "roi_bps": 30.0,
+   "raised": "2026-07-31T13:43:42.743087+00:00",
+   "status": "scheduled",
+   "reason": "scheduled this cycle with explicit slot; see ack ledger + cycle report 2026-07-31",
+   "commit": null,
+   "due": "2026-08-02",
+   "disposed": "2026-07-31T13:43:56.232989+00:00",
+   "note": "renumbered twice 2026-07-31 (two concurrent sessions allocating ids; origin rows kept theirs both times)"
   }
  ]
 }

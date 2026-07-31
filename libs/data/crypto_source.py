@@ -10,24 +10,64 @@ from __future__ import annotations
 
 import json
 import time
+import urllib.error
 import urllib.request
+from pathlib import Path
 from typing import Any
 
 import numpy as np
 import pandas as pd
 
 _FAPI = "https://fapi.binance.com"
+
+# Cross-process rate-ban latch (2026-07-31 incident: premiumIndex returned 418 -- Binance's
+# IP auto-ban -- and every retry from every respawning process EXTENDED the ban). A file, not
+# a module global, because the callers are short-lived: cron collectors, the 3-min refresh
+# chain, and systemd-respawned executors each start cold.
+_BAN_FILE = Path("data/BINANCE_BAN_UNTIL")
+
+
+def _ban_remaining() -> float:
+    try:
+        until = float(_BAN_FILE.read_text("utf-8").split()[0])
+    except (OSError, ValueError, IndexError):
+        return 0.0
+    return max(0.0, until - time.time())
 _SPOT = "https://api.binance.com"
 
 
 def _get(url: str, *, tries: int = 4) -> Any:
+    rem = _ban_remaining()
+    if rem > 0:
+        raise RuntimeError(f"binance rate-ban latched for {rem:.0f}s more "
+                           f"(data/BINANCE_BAN_UNTIL): refusing {url}")
     last: Exception | None = None
     for _ in range(tries):
         try:
             req = urllib.request.Request(url, headers={"User-Agent": "quant-platform/1.0"})
             with urllib.request.urlopen(req, timeout=30) as resp:
                 return json.loads(resp.read())
-        except Exception as exc:  # transient network / rate-limit
+        except urllib.error.HTTPError as exc:
+            # 418 = IP auto-ban, 429 = rate limit. Requests sent while banned EXTEND the
+            # ban, so latch a cross-process cooldown and fail fast instead of retrying.
+            if exc.code in (418, 429):
+                ra = exc.headers.get("Retry-After") if exc.headers else None
+                try:
+                    wait = max(60.0, float(ra))  # honour the venue's own clock
+                except (TypeError, ValueError):
+                    wait = 7200.0 if exc.code == 418 else 120.0
+                try:
+                    _BAN_FILE.parent.mkdir(parents=True, exist_ok=True)
+                    _BAN_FILE.write_text(
+                        f"{time.time() + wait:.0f} code={exc.code} retry_after={ra}\n",
+                        "utf-8")
+                except OSError:
+                    pass
+                raise RuntimeError(f"binance rate-ban {exc.code} on {url}: latched "
+                                   f"{wait:.0f}s cooldown") from exc
+            last = exc
+            time.sleep(1.5)
+        except Exception as exc:  # transient network
             last = exc
             time.sleep(1.5)
     raise RuntimeError(f"GET failed after {tries}: {url} :: {last}")

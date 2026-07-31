@@ -1826,6 +1826,13 @@ _FINDING_DOCS = (
 #: Finding-bearing docs deliberately out of scope, with the reason -- so the scope check can tell
 #: "consciously excluded" from "quietly unmonitored".
 _FINDING_DOCS_EXCLUDED = {
+    "docs/CYCLE_20260729_CLOSURE.md": "dated closure snapshot -- every numbered item was rowed "
+                                      "via track_findings/recommendations at write time; the "
+                                      "register drives them, the snapshot is the record",
+    "docs/WEEKLY_MAX_CYCLE.md": "process runbook -- its numbered steps are procedure, not "
+                                "findings owing dispositions",
+    "docs/TRIAGE_20260729_PRINCIPAL_BATCH.md": "dated triage record -- verdicts were rowed into "
+                                               "the ledger 07-29; historical artifact",
     "docs/research/panel_inbox.md": "raw panel transcript -- rulings are the distilled output",
     "docs/research/feed_inbox.md": "literature feed, not desk findings",
     "docs/research/data_axis_watchlist.md": "source cards -- governed by §33 dispositions",
@@ -2379,6 +2386,14 @@ def check_mine_evidence_base(defects) -> None:
 _ONESHOT_SCRIPTS = frozenset({
     "backfill_onchain_oos.py", "batch_onchain.py", "batch_premium.py", "build_dev_factor.py",
     "dl_metrics_history.py", "pull_cme.py",
+    # classified 2026-07-31 (orphan-scripts sweep):
+    "collect_bitmex_funding.py",   # phase-1 decade ingest, ran 07-31 -> data/bitmex_funding.jsonl
+                                   # (11,148 rows); forward funding comes from the live collectors,
+                                   # phase-2 tranche runner is rowed separately
+    "flatten_cookie.py",           # principal-approved COOKIEUSDT incident tool, ran once 07-28
+    "hl_filter_test.py",           # elite-trader premise experiment (kernel of the 26-layer spec
+    "screen_smart_dumb.py",        # decision) -- both ran once, verdicts recorded in data/hl_*.log
+    "verify_fixes.py",             # dated live-code verification of the a1bcd86 fixes, ran once
 })
 
 
@@ -3827,7 +3842,7 @@ def main() -> None:
     # ISO-DATE TOKEN anywhere in the paragraph head, so annotations cannot disarm it. And hoist
     # the RUN of all fresh URGENT paragraphs, not just the first -- with two pending Tier-3
     # asks, "one above the fold, one buried" is the same failure at half size.
-    urgents: list[str] = []
+    urgents: list[tuple[str, str]] = []       # (iso_date, para)
     paras = body.split("\n\n")
     remaining: list[str] = []
     for para in paras:
@@ -3839,12 +3854,16 @@ def main() -> None:
                     age_d = (NOW - datetime.fromisoformat(m_date.group(1))
                              .replace(tzinfo=UTC).timestamp()) / 86400.0
                     if age_d <= _URGENT_TTL_D:
-                        urgents.append(para)
+                        urgents.append((m_date.group(1), para))
                         hoisted = True
         if not hoisted:
             remaining.append(para)
     body = "\n\n".join(remaining).strip()
-    urgent = "\n\n".join(urgents)
+    # NEWEST URGENT OWNS LINE 1 (2026-07-31, fifth member of the demotion family: a fresh
+    # book-frozen ask landed BELOW two older URGENTs because hoisting preserved body order).
+    # Sort is by stamp desc and stable, so same-day blocks keep their written order.
+    urgents.sort(key=lambda t: t[0], reverse=True)
+    urgent = "\n\n".join(p for _, p in urgents)
     if overdue:
         head = (f"{_MARK}: {len(overdue)} below-max state(s) >48h unfixed/unacked -- "
                 + "; ".join(f"{d}" for d, _ in overdue[:6])
