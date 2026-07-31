@@ -74,6 +74,34 @@ session window, so it must be bounded PER RUN while exhaustion is achieved ACROS
      surface touches. The DEPTH MANDATE and dark-forest/era mandates are unchanged -- they now
      apply to the items you take, and 'EXHAUSTED' is claimed per-item across runs.
 
+=== CN OSS TOOL-CHAIN TRANCHE (principal catalogue 2026-07-31 -- MINE, NEVER ADOPT) ===
+A principal-supplied survey (LLM-generated, UNVERIFIED -- treat every line as a lead to verify,
+never as fact; some projects may not exist as described) named these Chinese-ecosystem OSS
+projects. The desk's own audit verdict stands: the binding constraint is conversion, not new
+platforms -- so these are DIG TARGETS to strip-mine for axes, data sources, factor constructions
+and mechanism lore, NEVER software to install or run (the RESEARCH-ONLY freeze above applies;
+running third-party agent tooling on this box is a supply-chain vector to a future live-key
+host). s13 licence gate absolute, checked per repo.
+TARGETS: QuantDinger (local-first quant platform), Vibe-Trading (claims 452 alpha factors + 77
+skills), AlphaGPT (symbolic-regression factor mining), NOFX (multi-model self-evolution trading),
+ValueCell (multi-agent finance), cola_ai (DeepSeek+Binance serverless trader), DeerFlow
+(ByteDance research automation), Kimi Work (Moonshot browser agent), evmscope + coin-mcp
+(on-chain/market MCP toolkits).
+WHAT TO MINE, priority order:
+  1. Their DATA-SOURCE lists and collectors -- any feed they aggregate that we do not collect is
+     a candidate axis (route to data_axis_watchlist, screen-on-discovery in the SAME run,
+     mechanism prior first. Do NOT breadth-screen a 452-factor dump -- that is the 420/0 failure
+     with extra steps; card only constructions with a stated economic mechanism).
+  2. Their factor CONSTRUCTIONS with stated mechanisms (graveyard-check before carding -- many
+     will be tested price-family variants).
+  3. Their issue trackers, Discussions, and contributor networks (repo-chain discipline above) --
+     the practitioner community AROUND these tools is exactly this seat's living-web ground, and
+     their contributors' other repos + starred lists are the fork-chain into CN quant OSS.
+  4. Their METHODS as literature: symbolic regression / agent-team patterns route to
+     improvement_inbox.md as engine ideas, never as installs.
+CNCERT's malicious-AI-skills warning is region intelligence, not a deterrent: it means never
+EXECUTE their code -- mine it as text, which is all this seat does anyway.
+
 === VIDEO IS NOW READABLE (2026-07-26) ===
 The 07-18 transcript fetch is IP-BLOCKED finding was REFUTED: only the direct youtube
 timedtext route is blocked. Use scripts/fetch_video_transcript.py <url|id> (rotates public
