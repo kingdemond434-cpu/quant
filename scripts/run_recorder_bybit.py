@@ -32,10 +32,67 @@ _ROOT = Path(__file__).resolve().parent.parent / "data/moat/bybit"
 _HB = Path(__file__).resolve().parent.parent / "data/recorder_bybit_heartbeat"
 _CTX = ssl.create_default_context(cafile=certifi.where())
 
-_SYMBOLS = ("BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT",
-            "DOGEUSDT", "ADAUSDT", "AVAXUSDT", "LINKUSDT", "LTCUSDT",
-            "TRXUSDT", "DOTUSDT", "BCHUSDT", "NEARUSDT", "SUIUSDT",
-            "UNIUSDT", "APTUSDT", "FILUSDT", "ARBUSDT", "OPUSDT")
+#: FALLBACK universe only. Kept because a recorder that records NOTHING is the one failure this
+#: organ cannot come back from -- an unrecorded day does not exist free at any venue afterwards.
+_FALLBACK = ("BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT",
+             "DOGEUSDT", "ADAUSDT", "AVAXUSDT", "LINKUSDT", "LTCUSDT",
+             "TRXUSDT", "DOTUSDT", "BCHUSDT", "NEARUSDT", "SUIUSDT",
+             "UNIUSDT", "APTUSDT", "FILUSDT", "ARBUSDT", "OPUSDT")
+_MAX_SYMBOLS = 20                # weight budget: 20 @ 4s depth + 20s trades = ~6 req/s
+
+
+def _listed_on_bybit(http=None) -> frozenset[str]:
+    """What Bybit actually lists. Keyless, one call.
+
+    Without this the traded universe would be copied across venue-blind and every name Bybit
+    does not list would burn two requests a cycle forever, returning nothing -- the recorder
+    would look busy and record less."""
+    try:
+        d = (http or _get)("/v5/market/instruments-info", "category=linear&limit=1000")
+        rows = ((d or {}).get("result") or {}).get("list") or []
+        return frozenset(str(r["symbol"]) for r in rows if r.get("symbol"))
+    except (OSError, KeyError, TypeError, ValueError):
+        return frozenset()
+
+
+def _universe(http=None) -> tuple[str, ...]:
+    """The SAME priority-ordered universe the Binance recorder derives, filtered to what Bybit
+    lists. Gap #39 was closed on run_recorder.py and this second-venue tape kept a hardcoded
+    list, so the two recorders drifted apart and this one could intersect the traded book at
+    ZERO -- which is the precise defect #39 named, still live on the venue nobody re-checked.
+
+    ORDER IS PRIORITY, same as the twin: benchmark, then held positions, then recently traded,
+    then majors. When the cap binds it is the MAJORS that get dropped and the traded names that
+    survive, because the whole point of a second-venue tape is cross-venue work on the book the
+    desk actually holds.
+
+    FALLS BACK RATHER THAN BLOCKS, and the asymmetry is deliberate. Elsewhere on this desk an
+    unknown must block the action; here the "action" is reading public data with no key and no
+    money at risk, while the harm of not acting is permanent -- an unrecorded day cannot be
+    bought back at any price. So an unreadable universe or an unreachable instrument list keeps
+    the fallback and says so loudly, rather than recording nothing while looking healthy."""
+    try:
+        from scripts.run_recorder import _universe as _binance_universe
+        wanted = _binance_universe()
+    except Exception as exc:
+        print(f"bybit recorder: universe underivable ({type(exc).__name__}: {exc}) -- "
+              "FALLBACK list in use; this is a degraded universe, not a healthy one")
+        return _FALLBACK
+    listed = _listed_on_bybit(http)
+    if not listed:
+        print("bybit recorder: instruments-info unreachable -- cannot filter to listed symbols; "
+              "FALLBACK list in use rather than recording nothing")
+        return _FALLBACK
+    keep = tuple(s for s in wanted if s in listed)[:_MAX_SYMBOLS]
+    if not keep:
+        print("bybit recorder: NO derived symbol is listed on bybit -- FALLBACK in use")
+        return _FALLBACK
+    dropped = [s for s in wanted if s not in listed]
+    print(f"bybit recorder universe: {len(keep)} symbols following the traded book"
+          + (f"; {len(dropped)} not listed on bybit ({', '.join(dropped[:6])})" if dropped else ""))
+    return keep
+
+
 _DEPTH_EVERY_S = 4.0
 _TRADES_EVERY_S = 20.0
 _REQ_PER_S_CAP = 20.0            # bybit allows far more; stay modest and neighbourly
@@ -60,6 +117,11 @@ def _get(path: str, params: str) -> dict[str, Any] | None:
         return d if d.get("retCode") == 0 else None
     except Exception:
         return None                                   # a dropped poll is a gap, never a crash
+
+
+#: Derived AFTER _get exists -- the universe call needs the HTTP helper, and a module-level
+#: assignment above it raised NameError at import: the recorder would not start at all.
+_SYMBOLS = _universe()
 
 
 def _write(sym: str, rows: list[dict[str, Any]]) -> None:
