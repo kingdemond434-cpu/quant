@@ -6,17 +6,19 @@ _Seeded 2026-07-18; rotation rule: >=40% of budget to least-recently-covered._
 |---|---|---|---|---|
 | arXiv q-fin (full) | 2026-07-26 | 1 | 1 graveyard row (`lit_defi_tvl_crosssection`, primary-verified) | Reachable and productive. HTML route (`arxiv.org/html/<id>`, `ar5iv…`) is the workhorse; PDFs now also readable (OP-025). Still only a slice touched — the full q-fin subcategory sweep is UNMINED. |
 | SSRN (microstructure/anomalies/crypto) | 2026-07-26 | 1 | 0 — **blocked** | **HTTP 403 from this box on every attempt.** Logged as NK-005 with a validated substitute-route ladder (OP-026). One finding (F11) is stranded provisional solely because of this. Not a dead corpus — a routing problem. |
-| Practitioner research (AQR/Man/TwoSigma/BIS/IMF/Fed) | never | 0 | — | **THE LARGEST UNTOUCHED FAMILY, and the spec calls it "criminally under-mined".** Explicitly NOT taken this run (bounded scope) and named as the next run's first literature pick. BIS/IMF/Fed crypto-market-structure notes are the highest-value slice. |
+| Practitioner research (AQR/Man/TwoSigma/BIS/IMF/Fed) | 2026-07-31 | 1 | **FIRST VISIT: 3 watchlist cards (23–25), 4 inbox items (#90–#93), 6 primary reads, the −58% prior measured in crypto, 4 loot entries** | The spec's "criminally under-mined" call VALIDATED on contact: BIS WP1087 (carry→liquidations, primary), NY Fed sr1073 (stablecoin runs, primary via mirror), sr1052 (macro-disconnect null, primary), AQR Trading Costs ($1.7T live-trade cost curve), Man/Harvey crypto TSMOM (primary via Duke archive). Sub-families still unmined: Two Sigma depth (no alt-data methodology published — measured thin), DE Shaw (not visited), ECB/BoE. |
 | Journals (JF/JFE/RFS/JPM preprints) | 2026-07-26 | 1 | 2 graveyard rows + the McLean–Pontiff standing haircut prior | Reached via NBER pages, author self-archives and institutional OA repos, never via the publisher (Wiley 403s). HXZ interior extracted and it **corrected three numbers** in the desk's record. |
 | Theses & dissertations | 2026-07-26 | 1 | see LIT_d | Opened this run as part of the non-English ground. The genre that must report negative results is the one nobody reads — free graveyard entries. |
-| Failed-replication literature | 2026-07-26 | 2 | **11 findings; 4 graveyard rows; 3 method rails** | **Richest family by a wide margin** and the clearest validation of the ground's thesis: somebody else already paid the multiplicity cost. Includes the retraction cluster (NK-004). Closest to exhausted of the eight, but not exhausted. |
-| Non-English academic | 2026-07-26 | 2 | see LIT_d | Carries the ≥25% search-space-expansion reserve. Korean-language kimchi work is directly load-bearing on a LIVE desk clock. |
-| AI/agent/LLM methods (cs.LG/cs.AI/evals) | 2026-07-26 | 1 | **3 findings → 4 inbox items, incl. one CANCELLATION of queued work** | Engine self-improvement — highest compounding leverage, and it paid immediately: killed queued item #43 (automated debate) on measured evidence, found the panel's plurality-vote filter discarding singleton findings, and rejected a plausible-sounding build (self-preference defences) as 80–99% artifact. |
+| Failed-replication literature | 2026-07-31 | 3 | **11 findings; 4 graveyard rows + 1 corroboration; 3 method rails; NK-004 at HIGH** | Richest family. Run 4 closed both stranded carry-overs: F11 upgraded via the OP-026 RePEc route (size-death corroboration into the graveyard), F8's PubPeer layer mined (+103% citation stacking quantified, author-level nodes named). Remaining un-exhausted: the "−0.31" digit in F4; systematic Retraction-DB sweep found NOTHING beyond the Lucey cluster (measured null — the cluster IS the crypto retraction story). |
+| Non-English academic | 2026-07-31 | 3 | see LIT_d + run-4 addendum | Run 4: J-STAGE `ファンディングレート` → **exactly 0 results** — the JP academic corpus has never used the funding-rate loanword; JP perp-mechanism knowledge lives ENTIRELY in the practitioner web. J-STAGE crypto-derivatives sub-corpus graded EXHAUSTED-BY-ABSENCE. NOTE: kimchi clock REFUTED 2026-07-30 (R0051) — the KR academic layer's load-bearing status is retired; 오정훈 resume point downgraded to context-only. |
+| AI/agent/LLM methods (cs.LG/cs.AI/evals) | 2026-07-31 | 2 | **Run 4: 8 findings → 5 inbox items (#85–#89) + R0187–R0191, aimed at LIVE wounds** | Paid again, harder: exact e-process recipe for the Stage-B ×4.9 peeking wound; IRT de-welding for the welded gauntlet (certify_gauntlet already emits the response matrix); calibrated soft-voting replacing the singleton-discarding plurality filter; debate cancellation RE-CONFIRMED on 2025-26 evidence. Venue verdicts logged (METR rich; Epoch thin-for-methods; OpenReview workshops rich — NeurIPS eval-of-agents deadline 08-29; MemAgents = unmined ground; CN tech reports thin-for-methods). |
 
-**Rotation note (the ≥40%-to-least-recently-covered rule).** All eight rows read `never` at run
-start, so rotation gave no ordering and allocation went by expected compounding value. **From the
-next run rotation BINDS, and it points at practitioner research (AQR/Man/Two Sigma/BIS/IMF/Fed) —
-the only family still at zero.**
+**Rotation note (the ≥40%-to-least-recently-covered rule), updated 2026-07-31.** Practitioner
+research is no longer at zero (visited run 4, and it paid). Least-recently-covered now: the FOUR
+families last touched 2026-07-26 — **arXiv q-fin (full subcategory sweep still unmined), SSRN
+(via the strengthened OP-026a ladder), journals, theses (layer B, still the weakest relative to
+its thesis)**. Next run's rotation-bound picks come from these four; the arXiv q-fin full sweep +
+theses layer are the named front of the queue.
 
 ---
 
@@ -370,3 +372,154 @@ holes, and priors on the live book.**
   deliberately withheld from the Search Operator Library pending the ruling** — banking a capability
   before it is ruled lawful quietly makes the permissive answer the default, which is how a rail
   erodes without anyone deciding to erode it.
+
+---
+
+## SESSION NOTE 2026-07-31 (literature deep-miner — run 4; STANDING DAILY)
+
+**Written BEFORE searching (completion contract). Ground truth recomputed at start, not
+remembered:** `mine_gate.py` → **BACKLOG-CLEAR, mining authorised.** `source_backlog_next.py` → 2
+pending technical verification (Kaiko, NAVER DataLab), 3 pending legitimacy decision (Upbit portal,
+bitFlyer, Glassnode/CQ→CM — the CM one was RULED by run 3, parser hasn't caught up). Desk is in
+**REPAIR-MODE** (127-row ledger backlog) — L1.28b(f): mining runs at full cadence regardless;
+repair-mode biases this run toward closing owed verifications before wide new ground.
+**Kimchi context has CHANGED since run 3:** the KR premium screen was REFUTED at 8.2y depth
+(2026-07-30, R0051) — run 3's "highest-value resume point" (오정훈 2019, FX-drives-kimchi) is
+therefore DOWNGRADED: still free graveyard/mechanism context, no longer load-bearing on a live clock.
+
+### ITEMS TAKEN THIS RUN (bounded; depth maxed per item)
+1. **[BACKLOG] Kaiko + NAVER verification close-out.** NAVER: endpoint re-confirmed 401-keyed
+   2026-07-31 (unchanged; sole blocker = human key, §33 deferral 2026-08-09 intact — NOT expired).
+   Kaiko: artifact confirmed on disk (132 fixings, stress-diff run). Remaining sliver: check
+   whether a FREE published Kaiko fixing exists to diff the reconstruction against; then update
+   the card's grade string so the backlog parser stops resurfacing a wired item. — STATUS: below.
+2. **[LIT-e, ROTATION-FORCED] Practitioner research — FIRST-EVER visit to the only zero-session
+   family.** BIS / Fed (FEDS + Liberty Street) / IMF crypto-market-structure notes first (the
+   spec's named highest-value slice), then AQR / Man Institute. Mechanism extraction mapped to
+   desk data (funding, OI, liquidations, basis, stablecoin mint/burn reconstruction, FRED macro);
+   ≥2-level citation dig on the best lead; §27 data-loot strip of every paper (their datasets ARE
+   axes). — STATUS: below.
+3. **[LIT-c refresh + ≥25% expansion reserve] AI/agent-methods frontier** since 07-26, aimed at
+   what the desk just built (L1.29 forecast calibration → LLM-calibration literature; welded-gate
+   finding → agent-eval design), plus NEW venues for the expansion reserve. — STATUS: below.
+4. **[CARRY, opportunistic ≤2 fetches] F11 (Li & Zhu) primary text via the OP-026 substitute
+   ladder.** — STATUS: below.
+
+### NEXT RUN PICKS UP AT (written now, updated at close)
+- ~~PubPeer citation-stacking thread (F8)~~ **CLOSED THIS RUN** (see resolutions below).
+- Full arXiv q-fin subcategory sweep (only a slice ever touched).
+- Whatever practitioner sub-family this run leaves unmined — named precisely at close.
+
+---
+
+## RESOLUTIONS — run 4 (written as each item closed)
+
+### ✅ ITEM 1 [BACKLOG] — Kaiko RESOLVED (10th of 14); NAVER honestly held pending. **CLOSED.**
+- **Kaiko re-graded `verified-clean` 2026-07-31** — earned, not administrative: rulebook-verbatim
+  methodology diff (run 3) + 132-fixing reconstruction artifact confirmed on disk + stress test
+  (~100× outlier-resistance differential). The residual — fixing-level diff vs vendor-published
+  values — is documented WITH its free route: **`explorer.kaiko.com` displays current BRR without
+  login** (observed 64,653.57 USD, 2026-07-31); bulk/API history is paid-only. Backlog parser
+  re-run confirms: 10 resolved, 1 pending verification (NAVER only).
+- **NAVER endpoint liveness re-confirmed** (HTTP 401, unchanged keyed-API shape). Stays pending
+  CORRECTLY — sole blocker is the free-registration human step (GAP #69); §33 deferral 2026-08-09
+  intact. Not padded into a fake resolution.
+
+### ✅ ITEM 4 [CARRY] — F11 (Li & Zhu) UPGRADED from SUMMARY-ONLY via the OP-026 ladder. **CLOSED.**
+- SSRN `Delivery.cfm` direct-PDF **403s** (NK-005 scope extended: the block covers SSRN's own
+  free-delivery mechanism, not just abstract pages). The ladder's RePEc step delivered: IDEAS
+  carries the **published RIBF 83 (2026) abstract verbatim** (DOI 10.1016/j.ribaf.2026.103298).
+  Confirmed word-for-word: *"the disappearance of size effect"* out-of-sample; DS3 = MKT + MOM2 +
+  RMOM (no size factor).
+- **Routed as CORROBORATION into graveyard row `lit_crypto_xsec_size_and_volume`** (same family —
+  no fifth row; that would double-count one kill). The two-run abstention note in the graveyard is
+  replaced with the dated resolution. STILL provisional and honestly un-pasted: "13 of 49
+  significant" + IS/OOS split dates (interior unread — every legitimate route exhausted today).
+
+### ✅ UNPLANNED [CARRY×2 CLOSED] — F8's PubPeer layer mined; NK-004 upgraded to HIGH confidence.
+- PubPeer DIRECT = 403 (bot-gate; **not circumvented** — #80 ruling pending; logged). Layer mined
+  via secondary (chrisbrunet.com, full read) carrying a **peer-reviewed 2025 econometric study:
+  Ecosystem citations-per-article +103%** (2021-25 vs 2016-20); Elsevier DISMANTLED the Finance
+  Journals Ecosystem; 12 retractions = **5,104 combined citations**; author nodes named (Lucey 55
+  PubPeer flags/56 papers in 2025, Vigne 21 flags, Goodell 68-in-FRL); documented co-authorship
+  trading. **Operational sharpening in NK-004:** citation counts in FRL/IRFA/IREF crypto papers
+  carry a ~2× cartel-inflation de-rating; Lucey/Vigne/Goodell author-list = single-source
+  regardless of venue.
+
+### ✅ ITEM 2 [LIT-e, ROTATION-FORCED] — practitioner family FIRST VISIT: both sub-grounds mined to primary depth. **CLOSED.**
+Two parallel deep digs, both ground files durable (`deep_sweep/20260731_litE_official_sector.md`,
+`20260731_litE_buyside.md`).
+- **Official sector (BIS/Fed/IMF):** 8 findings — headline: BIS WP1087 **primary read in full**
+  (carry→sell-side-liquidation mechanism, +10% carry ⇒ +22%-of-OI short liquidations; the desk has
+  BETTER granularity than the paper) → card 23; regulatory-event drift taxonomy with pre-registered
+  null classes → card 24; stablecoin run signatures (sr1073 primary via Boston Fed mirror) →
+  card 25; structural carry COMPRESSION as a live sizing input → inbox #90; BTC-macro disconnect
+  null (sr1052 primary) corroborating the desk's FRED-overlay kills, lone CPI-core exception;
+  IMF crypto-factor = graveyard-match, correctly discarded; 4 data-loot entries.
+- **Buy-side (AQR/Man/TwoSigma):** 10 findings — headline: the **−58% haircut prior LANDS
+  numerically in crypto** (Man published 1.46–1.65 vs independent NET OOS 0.54–0.65) → graveyard
+  haircut note upgraded; $1.7T live-trade sqrt-impact cost curve → inbox #91; vol-targeting
+  boundary law UNIFYING the desk's own vol-target kill with published evidence → #93; cross-signal
+  netting audit → #92; Two Sigma's own "not predictive" regime admission + 91%-unexplained crypto
+  risk corroborating the desk's overlay kills; Asness halving null correctly HELD OUT of the
+  graveyard (summary-only).
+- **Routing totals for the run: 3 watchlist cards (§33-deferred with dates), 9 inbox entries
+  (#85–#93), 10 ledger rows (R0187–R0196; renumbered from R0176–R0185 at merge — sibling-session ID race), 13 research-memory rows, 4 universe-map sources,
+  1 residual gap, OP-026a operator propagation, 2 graveyard edits, NK-004 HIGH + NK-005 extended.**
+
+### ✅ ITEM 3 [LIT-c + expansion reserve] — engine frontier mined at the desk's live wounds. **CLOSED.**
+8 findings, 26% of budget on venue expansion (verdicts logged per venue). The three ENGINE-FIXes
+map 1:1 onto measured desk defects: e-process rebuild for the quarantined `anytime_valid` (exact
+wealth-process recipe, ×4.9 → 1.0 by construction); IRT gate-discrimination fit for the welded
+gauntlet (the response matrix already exists — only the fit is missing); calibrated soft voting
+for the singleton-discarding panel filter. Confirmatory null: debate cancellation STANDS on
+2025-26 evidence (three independent sources). All routed (#85–#89, R0187–R0191).
+
+---
+
+## RUN 4 CLOSE — depth line, honest defects, next ground
+
+**DEPTH LINE (per-lead, mandated):**
+- BIS WP1087 — *primary full read → citation chase (He et al., 2510.14435 survey, CFTC DiD) →
+  desk-data mapping → novelty-gate vs the 41y COT screen.* Depth surfaced what the surface never
+  says: the liquidation-flush entry-timing extension is UNTESTED in the paper, and the desk's COT
+  screen has NO BTC row — the loot refined from "new feed" to "one-contract extension of an
+  existing runner".
+- Fed stablecoin/macro pair (sr1073/sr1052) — *403 → mirror/medialibrary routes → primary full
+  reads.* The run-signature INVERSION (crypto-native vs TradFi-reserve stress) is interior-only
+  content no abstract carries.
+- AQR/Man family — *Duke-archive primary reads → independent OOS re-test cross-check (2602.11708)
+  → published-vs-forward decay measured.* The reply/critique layer (the re-test) is where the
+  −58% number landed; either source alone would have mis-set the prior.
+- F8 PubPeer layer — *secondary full read; PubPeer direct 403 (bot-gate, NOT defeated, logged).*
+  Depth turned an allegation into a measured +103% with named nodes.
+- F11 — *OP-026 ladder walked to its RePEc rung; verbatim published abstract.* Closed a two-run
+  stranding without touching a paywall.
+- AI-methods wounds — *each wound chased ≥2 citation levels (SAVI review chain, IRT triple-
+  convergence, debate triple-refutation).* Three independent groups converging on IRT-for-evals is
+  the strongest transfer signal in the batch.
+
+**HONEST DEFECTS OF THIS RUN:**
+1. **No Stage-A screen RAN this run.** Screen-on-discovery was satisfied by the letter (no new
+   axis arrived screenable: cards 23–25 all require constructions the litminer freeze bars — and
+   §33-dated deferrals + ledger rows are the honest routing) but the spirit — a screen verdict in
+   the same run — was not achieved. The alpha org owes the constructions by 08-07/08-10, and the
+   deferral machinery will resurface them if it slips.
+2. **Two [SUMMARY-ONLY] strandings remain** (SEC-interventions FRL numbers; IMF WP 2023/163 —
+   mirror located but unread) plus the 2510.14435 survey's 2025-negative-carry computation.
+   Named, not hidden; all three are one OP-026a-route attempt from resolution next run.
+3. **Ledger arrival pressure:** this run ADDED 10 rows to a 127-row backlog in repair-mode. Every
+   row is evidence-backed and consolidated (9 inbox entries carry ~21 distinct findings), but the
+   arrival-vs-service asymmetry is real and this organ is on the arrival side. Mitigation applied:
+   aggressive consolidation; nulls routed to research_memory (7 rows), not the ledger.
+4. **The AI-methods agent saved appendix PDFs under tool-results/ (not repo)** — minable next run
+   but NOT durable repo artifacts; if the box recycles /tmp they are gone. Named as a re-fetch
+   cost, not a loss (URLs recorded in the ground file).
+
+**NEXT UN-EXHAUSTED GROUND (the chain that makes exhaustion achievable):**
+1. arXiv q-fin FULL subcategory sweep (rotation-bound, carried three runs now).
+2. Theses layer (B) — DiVA/theses.fr/DART-Europe unsearched; the family's weakest layer.
+3. Practitioner residuals: Two Sigma depth (measured thin), DE Shaw, ECB/BoE crypto notes.
+4. LIT-c carry-overs: appendix deltas (2606.03032/2509.08713/2606.03437), MemAgents workshop
+   ground, Search-Time Contamination (2606.05241), NeurIPS eval-of-agents deadline 08-29.
+5. The three [SUMMARY-ONLY] strandings above, via OP-026a.

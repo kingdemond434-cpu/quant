@@ -54,9 +54,25 @@ reason-low-value: NOT low-value as CONTENT — these venues carry a large share 
   manuscripts, including a crypto paper with 707 WoS citations. The editor's own defence is that this
   is "pretty common" in finance. A preprint separately alleged the associated Elsevier "Finance
   Journals Ecosystem" might facilitate citation stacking.
-adequately-explored-confidence: med — the retraction event is documented and primary-read, but the
-  PubPeer thread on citation stacking was NOT opened (carry-over) and no systematic audit of the
-  affected corpus was attempted.
+adequately-explored-confidence: HIGH (upgraded 2026-07-31, run 4 — the carry-over layer was mined).
+  CITATION-STACKING IS NOW QUANTIFIED, NOT ALLEGED: a peer-reviewed 2025 econometric/graph-theory
+  study measured **Ecosystem citations-per-article +103% (2021-2025 vs 2016-2020)** and concluded
+  the ecosystem journals benefited from its creation; Elsevier DISMANTLED the Finance Journals
+  Ecosystem (operating since 2020-11-04) in late 2025, retracting 12 papers carrying **5,104
+  combined citations**. AUTHOR-LEVEL nodes now named (sharper than the venue filter): Lucey (55
+  PubPeer flags; 56 papers in 2025 — one per 6.5 days), Vigne (21 flags; ≥33 Lucey co-pubs; removed
+  as EiC of two journals), Goodell (68 papers in FRL alone, 61 in 2024). Documented co-authorship
+  trading: an SSRN three-author draft scrubbed and republished with a fourth author added under an
+  "equal contribution" statement, same text/figures. Lucey's own defence produced a list of **240
+  instances of finance editors publishing in their own journals** — the defence generalises the
+  defect to the field. Source: chrisbrunet.com/p/elsevier-shuts-down-its-finance-journal (secondary,
+  read in full 2026-07-31, embedding the PubPeer evidence + the peer-reviewed study). PubPeer DIRECT
+  = HTTP 403 from this box (bot-gate; NOT circumvented per the pending #80 ruling — logged).
+  OPERATIONAL RULE SHARPENED: in FRL/IRFA/IREF crypto papers, (a) citation count is a CORRUPTED
+  quality signal (may measure cartel membership; inflation scale ~2×), (b) any paper with
+  Lucey/Vigne/Goodell in the author list is SINGLE-SOURCE regardless of venue or citations, and
+  (c) the +103% number gives the litminer a concrete de-rating factor when weighing "highly cited"
+  claims from this corpus.
 reopen-conditions: this record is about a SIGNAL, not a source ban — keep reading these venues.
   Reopen/upgrade if: Elsevier publishes an outcome of the wider investigation (commenters asked for
   all ~240 articles to be reviewed); the PubPeer citation-stacking thread is read; or an independent
@@ -69,6 +85,16 @@ history: 2026-07-26 recorded. Operational prior adopted (improvement_inbox #64):
 
 ### NK-005 SSRN + ScienceDirect + Wiley direct fetch from this box  [priority: reduced]   review-due: 2026-10-26
 explored: 2026-07-26 literature deep-miner run 3, plus run 2. Repeated attempts across several papers.
+  SCOPE EXTENDED 2026-07-31 (run 4): SSRN `Delivery.cfm` direct-PDF URLs 403 as well — the block
+  covers SSRN's own free-download mechanism, not just abstract pages. The OP-026 ladder's RePEc step
+  RESOLVED the stranded F11 (published-version verbatim abstract via ideas.repec.org) — the ladder
+  works; the 403 remains a routing problem, not a wall.
+  TWO NEW SUBSTITUTE ROUTES VALIDATED 2026-07-31 (official-sector sweep — add to the OP-026 ladder):
+  (a) NY Fed `newyorkfed.org/medialibrary/media/research/staff_reports/srNNNN.pdf` serves the PDF
+  when the staff_reports HTML page 403s (validated on sr1052, read in full); (b) Boston Fed hosts
+  mirrors of NY Fed staff-report content (`bostonfed.org/-/media/Documents/Workingpapers/...` —
+  validated on the sr1073 stablecoin-runs paper after its primary route 403'd). Fed research 403s
+  are ROUTING problems; the medialibrary/regional-mirror ladder resolves them legitimately.
 reason-low-value: ACCESS, not content. Consistent **HTTP 403** from this VPS on
   papers.ssrn.com/sol3/papers.cfm, www.sciencedirect.com/science/article/*, and
   onlinelibrary.wiley.com/doi/full/*. This is the single largest cause of `[SUMMARY-ONLY]` grades in

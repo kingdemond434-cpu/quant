@@ -440,7 +440,29 @@ _Superseded original grading below (kept for the record):_
   formulas are not.
 - **Grade: UNVERIFIED.** Do not present as an adopted replacement yet.
 
-### 8. Kaiko vendor-replacement — grade: **needs-monitoring (raw ticks) / RECONSTRUCTABLE (index methodology — re-graded 2026-07-25)** [§33: wired tier:1 -> data/kaiko_vwm_reference_rate.jsonl]
+### 8. Kaiko vendor-replacement — grade: **verified-clean (reconstruction executed + rulebook-verbatim methodology diff + stress test; re-graded 2026-07-31)** [§33: wired tier:1 -> data/kaiko_vwm_reference_rate.jsonl]
+> **VERIFICATION CLOSE-OUT 2026-07-31 (litminer run 4 — this completes the backlog's "technical
+> check: docs + endpoint" and the grade upgrade is earned, not administrative):**
+> - **Docs half:** rulebook interior extracted from primary PDF + ESMA register independently
+>   confirmed (run 3, `deep_sweep/T1a_kaiko_verification.md`); calculation rule re-read VERBATIM
+>   from the vendor page 2026-07-26 (recency-weighted cross-partition average, not flat TWAP).
+> - **Endpoint half:** replacement path DEMONSTRATED live — 132 fixings computed from a 174,199-trade
+>   4-venue keyless public REST tape, artifact on disk (`data/kaiko_vwm_reference_rate.jsonl`,
+>   confirmed non-empty 2026-07-31). Stress test: injected 5%-off print at 2% of window volume moves
+>   VWM+TWAP 0.1 bps vs desk VWAP 9.8 bps (~100×) — the reconstruction exhibits the outlier
+>   resistance the published rule is designed for.
+> - **RESIDUAL GAP, documented per the free-frontier axiom (search run 2026-07-31, not a default):
+>   fixing-level diff vs Kaiko's own published values.** Bulk/API fixing history is PAID-ONLY
+>   (docs.kaiko.com historical-prices endpoint = keyed; stream replay = 72h). **FREE route found:
+>   `explorer.kaiko.com` displays current BRR values without login** (BTC BRR 64,653.57 USD observed
+>   2026-07-31, page dated 30/07/2026, with 1w/1m/1y chart views). Verification plan for a future
+>   run: re-run the reconstruction over a fresh window and spot-diff its fixing against the
+>   explorer-displayed BRR at the same timestamp — a one-observation ground-truth touch, free.
+>   ToS-check the explorer before any STANDING collection (spot-read for verification is ordinary
+>   public-web use; a scheduled scraper is not the same act).
+> - NOTE: raw-ticks component re-graded with the card: the desk's replacement for Kaiko tick data
+>   IS the 4-venue keyless tape, which the reconstruction run exercised end-to-end. No Kaiko
+>   product is adopted; nothing here grants promotion authority to anything.
 > **§33 CONVERSION 2026-07-26 — RECONSTRUCTABLE became RECONSTRUCTED. This card's own NEXT STEP
 > ("price the published VWM+TWAP rule against the desk's own cross-venue normalizer") was EXECUTED:
 > `scripts/reconstruct_kaiko_reference_rate.py`, built and run.**
@@ -860,6 +882,10 @@ here as excluded, not silently dropped (charter s27 "log every negative").
   result lands.
 - **Grade: needs-monitoring** (mechanism-first, single hypothesis, zero promotion authority --
   Stage-A screen only, exactly like every other axis onboarded this way).
+> **LIVENESS RE-CONFIRMED 2026-07-31 (litminer run 4):** POST to `openapi.naver.com/v1/datalab/search`
+> → HTTP 401 again, unchanged keyed-API shape. Card honestly STAYS pending-verification: the first
+> live screen cannot run until the free NAVER Developers key (human step, GAP #69) lands.
+> §33 deferral 2026-08-09 intact, not expired.
 > **VERIFICATION ADDENDUM 2026-07-25 (EN frontier miner):** endpoint LIVE-CONFIRMED —
 > unauthenticated POST to `openapi.naver.com/v1/datalab/search` returns HTTP 401 with NAVER's
 > own error body (`errorCode 024, "Not Exist Client ID"`), exactly the expected shape for a
@@ -1008,3 +1034,68 @@ NOT mean capital (L1.6 -- a candidate is not an edge). R-rows: R0115-R0118.
    high-funding regime; pure Sharpe-per-turn on an owned edge.
 8. **realized_vs_modeled_slippage_regime** — proprietary liquidity-stress gauge from tape vs
    cost_model; bootstraps on live fills (R0106).
+
+---
+
+## LITMINER RUN-4 CARDS (2026-07-31, official-sector family first visit — BIS/Fed/IMF primary reads)
+
+### 23. Carry↔liquidation mechanism family (BIS WP 1087, primary read) + COT-BTC extension — grade: needs-monitoring (mechanism prior on INGESTED axes; COT runner exists, BTC contract unrun) [§33: deferred(2026-08-07) tier:2]
+- **Provides:** mechanism priors on data the desk ALREADY holds — basis, multi-venue funding
+  (incl. BitMEX 2016–2026 decade), tick liquidation stream — plus a near-zero-cost extension of
+  the EXISTING COT ingestion (`scripts/run_cot_screen.py`, public-domain archives) to the CME BTC
+  futures contract.
+- **Mechanism (Schmeling–Schrimpf–Todorov, BIS WP 1087 Oct-2025 rev, PRIMARY TEXT READ IN FULL —
+  bis.org/publ/work1087.pdf):** +10% standardized carry ⇒ sell-side liquidations ≈ +22% of OI over
+  the next month (sell-side ONLY; robust ex-profit-taking); high carry raises implied vol and
+  predicts crashes. WHO LOSES: retail trend-chasers paying the premium for leveraged upside (CFTC
+  nonreportables net-long; attention R²=12% on OKEx carry; micro-futures DiD +11% CME carry). WHY
+  THEY PERSIST: leverage-through-derivatives IS the product. Why arb doesn't close it: at 10× the
+  futures leg would have been liquidated in >half of sample months (no cross-margining).
+- **Desk edge over the paper:** tick-level liquidation stream (paper is coarser); the UNTESTED
+  extension is liquidation-flush as carry-ENTRY timing.
+- **NOVELTY GATE, run 2026-07-31:** desk's 41y COT screen (24 charged trials) killed
+  LAGGED-POSITIONING→RETURNS on 6 non-crypto contracts (GHR gate replicated; pooled t=−0.64).
+  This card's construction is DIFFERENT — carry level/changes → forward LIQUIDATION intensity and
+  crash conditioning, with COT-BTC nonreportables as the carry-DEMAND side variable, not a
+  positioning-momentum signal. `funding_momentum` graveyard entry ≠ carry LEVEL (de-contamination
+  angle-20 gate mandatory at screen time). Both prior kills stay dead.
+- **Legitimacy (s13):** clean — BIS WP public; CFTC COT public domain; all desk-side data owned.
+- **Screen plan (pre-registerable):** aligned (carry_z, forward liquidation intensity / forward
+  crash indicator) at h∈{5d,20d}; timestamp alignment = desk UTC daily close on both legs, no
+  cross-source lag ambiguity; every construction logged as a charged trial.
+- **§33 disposition:** deferred(2026-08-07) — construction owed by the alpha org via ledger row
+  (R-row this run); litminer freeze bars new runner code. Tier 2: mechanism prior on ingested axes.
+
+### 24. Regulatory-event timeline (5-class taxonomy, Auer–Claessens) — grade: needs-monitoring (event gate EXISTS; timeline dataset is the owed build) [§33: deferred(2026-08-10) tier:3]
+- **Provides:** dated, classified regulatory-event timeline (AML/CFT, interoperability-restricting,
+  legal-status, CBDC, general-warning classes), reconstructable FREE from regulator sites/archives.
+- **Mechanism (BIS QR Sep-2018 page-read + Dallas Fed WP 381 PDF read; 151 events 2015–18):**
+  documented UNDERREACTION gradient — unfavourable −0.32% @120min → −3.12% @24h; AML/CFT −4pp
+  median over 10 DAYS (−24pp multi-event days); interoperability −6.4pp/10d; spillover betas
+  ETH/LTC/XMR ≈0.7–1.2× BTC. PRE-REGISTERED NULL CLASSES (free multiplicity savings): general
+  warnings, CBDC statements — do NOT charge trials on them.
+- **Persistence caveat, honest:** the 2024 FRL follow-on (SEC interventions, −5.2%/3d → −17.2%/30d)
+  is [SUMMARY-ONLY — both routes 403'd]; NK-004 applies to the venue (FRL). McLean–Pontiff −58%
+  haircut on all effect sizes; 2015–18 magnitudes will NOT be 2026 magnitudes.
+- **Desk fit:** `libs/validation/event_study.py` is the event-shaped gate (§42: event-shaped edges
+  go through the event-shaped gate; window/direction/threshold pre-registered as constants;
+  VARIANTS_TRIED priced honestly).
+- **§33 disposition:** deferred(2026-08-10) — timeline build owed (ledger row this run). Tier 3:
+  new surface with a live gate path.
+
+### 25. Stablecoin run signature — episodic conditioning on the EXISTING stablecoin_flows family — grade: needs-monitoring (reconstruction path corroborated, run-signature variables unbuilt) [§33: deferred(2026-08-10) tier:2]
+- **Provides:** episodic run-state classifier from data the desk can already reconstruct free:
+  USDT/USDC treasury-Transfer mint/burn (the desk's corroborated reconstruction path), DefiLlama
+  per-chain stablecoin circulation, CoinGecko stablecoin mcap (both free; sr1073's own sources),
+  plus safe-coin premium off the desk's 4-venue tape.
+- **Mechanism (NY Fed sr1073 June-2025 rev, PRIMARY via Boston Fed mirror after 403):** fixed-price
+  primary redemption + secondary trading ⇒ MMF-type first-mover advantage; redemptions ACCELERATE
+  below $1 (break-the-buck nonlinearity); crypto-native stress rotates offshore/algo→US-based
+  (Frax −45%/15d, 2022); TradFi-reserve stress INVERTS the rotation (2023: USDC $0.88 secondary
+  while primary held par, USDT bid $1.03); rotations ≈1:1 (R² 0.6–0.7). Burn-spike = real-time run
+  signature; the mint/burn PAIR classifies which risk source is live.
+- **NOT a new daily sleeve:** the desk's daily aggregate stablecoin supply signal is EV-gated/dead;
+  this is EPISODIC conditioning (rare-event state variable) for the existing family — event-shaped,
+  not continuous-statistic shaped.
+- **§33 disposition:** deferred(2026-08-10) — variable construction owed with the family's next
+  scheduled work (ledger row this run). Tier 2.

@@ -552,3 +552,20 @@ CONFIRMED IN LIVE USE this run (search results + tracker-site names), not assume
 | 코인별 / 종목별 | coinbyeol / jongmokbyeol | "per-coin / per-ticker" qualifier | ✓ 코인별 김프 = per-asset premium — the exact key that surfaced 6 live per-coin trackers |
 | 재정거래 | jaejeong-georae | arbitrage (formal/textbook register) | finds analytical/academic KR content vs retail chatter |
 | 잡코인 | japkoin | "junk coins"/alts (retail register) | KR alt-frenzy threads — the dispersion axis's behavioral layer |
+
+### OP-026a Fed/Man-family 403-bypass routes (amendment to the OP-026 ladder)   [active]
+class: source-expansion
+origin: Literature deep-miner run 4 (2026-07-31), official-sector + buy-side sweeps
+technique: three VALIDATED additions to the OP-026 substitute ladder — (a) NY Fed
+  `newyorkfed.org/medialibrary/media/research/staff_reports/srNNNN.pdf` serves the PDF when the
+  staff_reports HTML page 403s (validated: sr1052 read in full); (b) Boston Fed mirrors NY Fed
+  staff-report content at `bostonfed.org/-/media/Documents/Workingpapers/...` (validated: sr1073);
+  (c) the Duke Harvey archive `people.duke.edu/~charvey/Research/Published_Papers/` is a reliable
+  author-self-archive bypass for the ENTIRE Man Group/Harvey paper family (validated: JPM 2022
+  crypto guide + JPM 2018 vol-targeting, both read in full). Also negative route knowledge: SSRN
+  `Delivery.cfm` direct-PDF is INSIDE the 403 block; retractiondatabase.org redirect-loops from
+  this box; PubPeer 403s (bot-gate — do not defeat, #80 ruling pending).
+validated-gain: 4 primary reads this run that would otherwise have been SUMMARY-ONLY, incl. two
+  that produced watchlist cards (23, 25) and one that landed the −58% decay prior numerically.
+propagation (§16): every digger adopts its own-domain equivalent — author self-archive pages and
+  institutional medialibrary/mirror paths BEFORE grading any 403'd paper SUMMARY-ONLY.
