@@ -1507,6 +1507,18 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0125",
+   "source": "principal",
+   "summary": "R0125 CONVICTION SLEEVE -- the Binance equivalent of the principal's MT5 leveraged discretionary trading (XAUUSD short +60pct/12h screenshot). Claude takes AGGRESSIVE leveraged directional bets on BTC/ETH/SOL perps + PAXGUSDT (on-Binance gold analogue), sized by fractional-Kelly against its OWN stated probability -- an honest 60pct edge at a 2pct stop -> ~8x, matching the screenshot's leverage. AGGRESSION UNCAPPED (sizes up on conviction, timidity is a defect), RUIN CAPPED (stop on every trade, 10x hard leverage ceiling, <=20pct risk/trade, inside the -35pct ruin rail). Every call scored by L1.29 so over-confidence auto-shrinks future size. PAPER ONLY, 6x/day, earns real size only via forward clock beating buy-hold AND carry after costs. NEXT STAGES OWED: paper P&L marking with the leverage applied + stop logic simulated; a 30-trade calibration+EV review; and the honest live-readiness note -- a leveraged directional sleeve needs the deposit AND its own drawdown sub-rail before any real size",
+   "roi_bps": 45.0,
+   "raised": "2026-07-31T13:21:32.978932+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

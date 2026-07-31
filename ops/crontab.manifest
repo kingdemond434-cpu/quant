@@ -233,6 +233,17 @@ QUANT_ROOT=/home/quant/quant-platform
 # CONFIDENCE: committed-script (new this cycle)
 40 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/screen_funding_spread.py >> data/cro_ai_logs/funding_spread_screen.log 2>&1
 
+# CONVICTION SLEEVE (R0125, principal request 2026-07-31: "the Binance equivalent of my MT5
+# leveraged discretionary trading -- aggressive"). Claude takes AGGRESSIVE leveraged directional
+# bets (BTC/ETH/SOL perps + PAXGUSDT gold analogue), sized by fractional-Kelly against its OWN
+# probability -- an honest 60pct edge with a 2pct stop becomes ~8x, exactly the screenshot's
+# leverage. AGGRESSION UNCAPPED, RUIN CAPPED: every trade carries a stop, leverage hard-capped
+# at 10x, per-trade risk <=20pct, whole sleeve inside the -35pct ruin rail (L1.23). PAPER ONLY,
+# every call scored by the L1.29 calibration fence. 6x/day.
+# EVIDENCE: scripts/run_conviction_trader.py -> data/conviction_trader.json + conviction_book.jsonl
+# CONFIDENCE: committed-script (new this cycle)
+45 */4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_conviction.lock .venv/bin/python scripts/run_conviction_trader.py >> data/cro_ai_logs/conviction.log 2>&1
+
 # UNSTRUCTURED EVENT COLLECTOR (R0122b): the feed the LLM sleeve actually trades. EVERY 15 MIN,
 # and the cadence IS the edge: steady-state information latency equals the collection interval,
 # so a 15-min tick means the desk sees a listing/delisting/spec change within 15 minutes of

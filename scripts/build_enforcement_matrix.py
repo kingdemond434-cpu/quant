@@ -165,6 +165,9 @@ _MAP: dict[str, list[str]] = {
     # R0122b: the unstructured feed the sleeve trades. Under L1.11a (information asymmetry as a
     # search dimension) -- its latency measurement IS the asymmetry test.
     "L1.11a-events": ["scripts/collect_announcements.py"],
+    # R0125 conviction sleeve: aggression is L1.28 (uncapped conviction), the rail is L1.23
+    # (stop on every trade, leverage cap, inside the ruin rail).
+    "L1.23-conviction": ["scripts/run_conviction_trader.py"],
     # L1.25a: null streaks throttle nothing -- an organ going quiet is caught by the freshness/
     # productivity wires REGARDLESS of its reason, so "stopped because nothing was working" trips
     # the same fence as "stopped because broken". The pessimism-freeze cannot hide.
