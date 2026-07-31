@@ -71,6 +71,7 @@ _GOVERNED: tuple[str, ...] = (
     "screen_copytrading.py",
     "run_sleeve_allocator.py",
     "run_calibration_probe.py",
+    "check_return_targeting.py",
 )
 
 #: Organs that legitimately owe no cron line, with the reason. "No schedule" must be a DECISION.
@@ -83,6 +84,8 @@ _SCHEDULE_EXEMPT: dict[str, str] = {
     "check_sizing_derivation.py": "a build-boundary fence like check_build_standard -- it reads "
                                   "source, not state, so it belongs in the law gate and CI where "
                                   "constants are actually written, not on a clock",
+    "check_return_targeting.py": "reads doctrine and source, not state -- a target is written at "
+                                 "commit time, so the gate that catches it is the commit gate",
 }
 
 #: Organs that legitimately do not call guard(), with the reason. The gate organs THEMSELVES
@@ -95,6 +98,8 @@ _GUARD_EXEMPT: dict[str, str] = {
                                "before this fence executes",
     "check_sizing_derivation.py": "runs inside the law gate, which has already verified the core "
                                   "before this fence executes",
+    "check_return_targeting.py": "runs inside the law gate, which has already verified the core "
+                                 "before this fence executes",
 }
 
 #: Vocabulary that proves an organ can say "I could not measure this".
@@ -111,7 +116,8 @@ _REFUSAL_WORDS = ("UNMEASURED", "REFUSED", "REFUSING", "BLOCKED", "NO-DATA", "DA
                   "NOTHING-TO-REVIEW", "NO-REVIEW", "STALE", "RETIRED", "PROVISIONAL",
                   "CONTAMINATED", "UNDERPOWERED", "FORWARD-CLOCK", "NO-DATA",
                   "DUPLICATION", "DUPLICATE",
-                  "UNINFORMATIVE", "ACCUMULATING", "UNSCORABLE", "NO-ANSWER")
+                  "UNINFORMATIVE", "ACCUMULATING", "UNSCORABLE", "NO-ANSWER",
+                  "RETURN-TARGETING")
 
 
 def _has_silent_swallow(tree: ast.AST) -> bool:

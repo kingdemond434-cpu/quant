@@ -168,9 +168,11 @@ MAX_STOP_PCT = 15.0
 #: breakeven sat inside gold's ordinary retrace.
 NOISE_MULT = 1.0                       # the stop must clear the median adverse excursion
 NOISE_LOOKBACK_HOURS = 96
-#: PER-TRADE RISK, and the single most consequential number in this file. It was 20%. The
-#: principal's target is 100-200% net CAGR, and simulating it settled the question rather than
-#: arguing it (250 sequential days, winners +3R after the trail, losers -1R):
+#: PER-TRADE RISK, and the single most consequential number in this file. It was 20%, chosen by
+#: analogy to a screenshot. Simulating it settled the question rather than arguing it (250
+#: sequential days, winners +3R after the trail, losers -1R). No return figure is restated as an
+#: objective here -- the desk does not chase a CAGR target (PROJECT_HANDOFF.md 2026-07-12); this
+#: is the survival arithmetic that bounds size whatever the ambition:
 #:
 #:      risk/trade   true hit rate   median year   P(-90% drawdown)
 #:            20%             35%        +9064%              96%

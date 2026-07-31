@@ -200,6 +200,10 @@ _MAP: dict[str, list[str]] = {
     # anything. Zero resolved forecasts existed when this was checked. L1.29 scores it; this poses
     # the questions that give L1.29 something to score without needing capital or venue keys.
     "L1.29-probe": ["scripts/run_calibration_probe.py"],
+    # R0143: the desk ruled against CAGR targeting on 2026-07-12, again on 2026-07-16, and a
+    # decision-ledger success metric says "no CAGR targeting" -- and a 300% target section still
+    # landed on 2026-07-31, caught by the principal rather than by any check.
+    "L1.23-no-target": ["scripts/check_return_targeting.py", "docs/PROJECT_HANDOFF.md"],
     # L1.25a: null streaks throttle nothing -- an organ going quiet is caught by the freshness/
     # productivity wires REGARDLESS of its reason, so "stopped because nothing was working" trips
     # the same fence as "stopped because broken". The pessimism-freeze cannot hide.

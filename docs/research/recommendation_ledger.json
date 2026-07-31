@@ -1730,6 +1730,18 @@
    "commit": null,
    "due": null,
    "note": "the ordering was wrong and this makes it explicit: the sizer that consumes p was built before anything checked p was meaningful"
+  },
+  {
+   "id": "R0143",
+   "source": "principal",
+   "summary": "RETURN-TARGETING FENCE + doctrine regression repaired. The desk ruled on 2026-07-12 (PROJECT_HANDOFF.md): 'Don't chase a CAGR target -- targeting a return number corrupts a survival-constrained optimizer into over-leverage. Max safe growth; let the number fall out.' It ruled again 2026-07-16, triaging a CAGR-maximisation override out of a principal-supplied constitution, and a decision-ledger success metric reads 'no CAGR targeting'. On 2026-07-31 a section titled 'What 300% net CAGR actually requires' was written into DISCRETIONARY_DESK.md past all three, and the PRINCIPAL caught it, not a fence -- which by L1.41 means it was not caught. Section rewritten to state the objective as max E[log wealth] subject to survival, with the same numbers kept as a DIAGNOSTIC (cost-adjusted breakeven 31.1pct feeds the kill condition and the EDGE-vs-FREQUENCY constraint) rather than as a goal. check_return_targeting.py now fails the law gate on a return figure bound to goal language, while leaving analysis figures alone -- a fence flagging every percentage would be switched off within a day.",
+   "roi_bps": 0.0,
+   "raised": "2026-07-31T22:00:00+00:00",
+   "status": "done",
+   "reason": "built, 8 tests, in the law gate's portable battery; 25/25 build standard",
+   "commit": null,
+   "due": null,
+   "note": "principal's own framing: the existing mandates (L1.28/L1.28a/L1.28b/L1.28c/L1.25a) already enforce maximum growth, so a stated number is redundant AND distorting -- removing it removes the one instruction pointing away from those laws"
   }
  ]
 }
