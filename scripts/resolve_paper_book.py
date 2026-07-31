@@ -18,6 +18,11 @@ WHAT IT DOES:
     the strategy as specified, not of a naive entry-to-horizon mark that would flatter or damn it
     for the wrong reasons,
   * marks event-sleeve calls at their horizon,
+  * runs conviction positions to their STRUCTURAL exit rather than to the forecast clock. Those
+    are different objects and conflating them was costing real money: measured on the marked gold
+    short, the SAME position reads +0.07R at a 12h horizon and +0.63R at 30h, so an arbitrary
+    clock was setting the P&L instead of the structure. A hard time stop at 4x the horizon still
+    force-marks anything that will not resolve, because a trade that never closes never grades,
   * benchmarks every call against unlevered buy-and-hold over the SAME window, because beating
     buy-and-hold is the L1.6 promotion condition and a levered sleeve that merely tracks it is
     taking risk for nothing,
@@ -338,7 +343,15 @@ def resolve_book(root: Path, *, now: datetime | None = None,
                 marks.append({"kind": kind, "key": row.get("at"), "outcome": "UNRESOLVABLE",
                               "why": "unparseable timestamps"})
                 continue
-            end = int(min(due, now).timestamp() * 1000)
+            # THE POSITION RUNS TO ITS STRUCTURE, NOT TO ITS FORECAST CLOCK. `resolve_by` scores
+            # the forecast; `hard_exit_by` is when the position is force-marked. Walking only to
+            # resolve_by truncated winners for a reason unrelated to the trade -- measured, the
+            # same gold short marks +0.07R at a 12h horizon and +0.63R at 30h.
+            try:
+                hard = datetime.fromisoformat(row["hard_exit_by"])
+            except (KeyError, ValueError):
+                hard = due                      # pre-decoupling rows keep their old behaviour
+            end = int(min(hard, now).timestamp() * 1000)
             if end - start < _BAR_MS:
                 marks.append({"kind": kind, "key": row.get("at"), "outcome": "TOO-EARLY",
                               "why": "less than one bar has elapsed"})
@@ -350,14 +363,21 @@ def resolve_book(root: Path, *, now: datetime | None = None,
                 continue
             res = (walk_ladder(row, bars) if kind == "conviction" and row.get("management")
                    else mark_event_row(row, bars))
+            # Still OPEN at the hard stop -> TIME-STOPPED: marked out at market rather than left
+            # unscored forever. A trade that never resolves is a forecast that never grades.
+            if res.get("outcome") == "OPEN" and hard <= now:
+                res = {**res, "outcome": "TIME-STOPPED",
+                       "why": f"hit the {row.get('max_hold_hours')}h hold limit still open"}
+            closed = res.get("outcome") in ("STOPPED", "TRAILED-OUT", "MARKED", "TIME-STOPPED")
             marks.append({"kind": kind, "key": row.get("at"), "symbol": row.get("symbol"),
                           "direction": row.get("direction"),
                           "probability": row.get("probability"), "source": source,
                           "buy_and_hold": _benchmark(bars),
-                          "closed": datetime.fromisoformat(row["resolve_by"]) <= now, **res})
+                          "scored_at": row.get("resolve_by"), "hard_exit_by": row.get("hard_exit_by"),
+                          "closed": closed, **res})
 
-    resolved = [m for m in marks if m.get("outcome") in ("STOPPED", "TRAILED-OUT", "MARKED")
-                and m.get("closed")]
+    resolved = [m for m in marks if m.get("outcome") in ("STOPPED", "TRAILED-OUT", "MARKED",
+                                                         "TIME-STOPPED") and m.get("closed")]
     resolved.sort(key=lambda m: m.get("exit_at") or m.get("key") or "")
     curve = equity_curve(resolved)
     unresolvable = [m for m in marks if m.get("outcome") == "UNRESOLVABLE"]
@@ -412,7 +432,8 @@ def feed_calibration(report: dict[str, Any]) -> list[str]:
     except ImportError as exc:
         return [f"UNFED: calibration module unavailable ({exc})"]
     for m in report["marks"]:
-        if m.get("outcome") in ("STOPPED", "TRAILED-OUT", "MARKED") and m.get("closed"):
+        if m.get("outcome") in ("STOPPED", "TRAILED-OUT", "MARKED",
+                                "TIME-STOPPED") and m.get("closed"):
             key = f"{'conviction' if m['kind'] == 'conviction' else 'llm_trader'}:{m['key']}"
             try:
                 fc.resolve(key, bool(m.get("profitable")))

@@ -192,6 +192,30 @@ MAX_RISK_PER_TRADE = 0.06              # at most 6% of sleeve equity at risk on 
 #: design ever ran.
 MAX_PORTFOLIO_HEAT = 0.30
 
+#: HOLD LIMIT vs FORECAST HORIZON -- decoupled, because measuring showed they were fighting.
+#: `horizon_hours` is the model's CALIBRATION clock ("when I expect to be right"); it was also
+#: being used as a hard exit, which truncates winners for a reason that has nothing to do with the
+#: trade. Measured on the marked gold short: the SAME position marks +0.07R at a 12h horizon and
+#: +0.63R at 30h. An arbitrary clock was setting the P&L instead of the structure.
+#: A trade now runs to its STRUCTURAL exit -- stop or trail -- with 4x its stated horizon as a
+#: hard time stop so nothing can sit open forever and escape scoring. 4x is derived from the
+#: ladder itself: reaching the last rung needs 3 trail-distances of favourable movement, and a
+#: trend that has not managed that in 4x its own forecast horizon is a thesis that did not happen.
+MAX_HOLD_MULT = 4.0
+
+#: CORRELATION STRESS. Effective heat uses MEASURED correlations, which is what lets genuine
+#: diversification buy real capacity -- measured live 2026-07-31: PAXG vs crypto averages +0.15
+#: while crypto-vs-crypto averages +0.48, so a gold position alongside four alts is nothing like
+#: a fifth alt. But correlations RISE toward 1 in exactly the cascade that would hurt, and a rail
+#: that trusts calm-market correlations is a rail that fails when it matters. So every measured
+#: correlation is shrunk 35% of the way toward 1.0 before use: +0.15 becomes +0.45, +0.80 becomes
+#: +0.87. Diversification is credited, but only two thirds of it.
+CORR_STRESS = 0.35
+#: Hard ceiling on the NOMINAL sum regardless of how diversifying the book looks. Correlation
+#: estimates can be wrong; 50% caps how wrong they are allowed to make the book. At the 6% budget
+#: that is 8 concurrent positions, matching the shape simulation's safest tested point.
+MAX_GROSS_HEAT = 0.50
+
 #: THE GAP-RISK STRESS, and the reason there is a notional ceiling at all. The stop being hit is
 #: priced: that is MAX_RISK_PER_TRADE and the sizer targets it exactly. What is NOT priced is a
 #: cascade printing THROUGH the stop before the fill -- and that loss scales with NOTIONAL, not
@@ -590,9 +614,22 @@ def noise_table(*, horizons: tuple[float, ...] = (8.0, 24.0, 48.0), fetch=None) 
                        "an invalidation closer than this is refused as noise"}
 
 
+def _closed_keys(root: Path) -> set[str]:
+    """Trades the resolver has already marked out. Without this a stopped position would keep
+    occupying heat until its hard-exit clock ran down -- blocking new trades with capital that
+    was returned hours ago, which is idle capacity dressed as prudence (L1.28a)."""
+    try:
+        rep = json.loads((root / _PNL_STATE).read_text("utf-8"))
+    except (OSError, ValueError):
+        return set()
+    return {m.get("key") for m in rep.get("marks", [])
+            if m.get("outcome") in ("STOPPED", "TRAILED-OUT", "MARKED", "TIME-STOPPED")}
+
+
 def open_positions(root: Path, *, now: datetime | None = None) -> list[dict[str, Any]]:
-    """Calls whose horizon has not expired -- read from the book, never assumed."""
+    """Positions still live: past neither their structural exit nor their hard time stop."""
     now = now or datetime.now(tz=UTC)
+    closed_keys = _closed_keys(root)
     live = []
     try:
         lines = (root / _BOOK).read_text("utf-8", errors="ignore").splitlines()
@@ -606,11 +643,43 @@ def open_positions(root: Path, *, now: datetime | None = None) -> list[dict[str,
         except ValueError:
             continue
         try:
-            if datetime.fromisoformat(r["resolve_by"]) > now and r.get("action") != "PASS":
+            # a position occupies heat until its HARD exit, not until its forecast is scored
+            until = r.get("hard_exit_by") or r.get("resolve_by")
+            if datetime.fromisoformat(until) > now and r.get("action") != "PASS":
                 live.append(r)
-        except (KeyError, ValueError):
+        except (KeyError, ValueError, TypeError):
             continue
+    if closed_keys:
+        live = [r for r in live if r.get("at") not in closed_keys]
     return live
+
+
+def effective_heat(root: Path, live: list[dict[str, Any]]) -> tuple[float, str]:
+    """Portfolio risk with MEASURED correlations: sqrt(w' S w), not the naive sum.
+
+    The naive sum is right only if every position is the same trade. It is wrong in BOTH
+    directions and both cost money: it overstates safety when five alts are really one bet, and it
+    blocks a genuinely diversifying trade (gold beside crypto) that added almost no portfolio
+    risk. UNMEASURED correlations fall back to the naive sum and SAY SO -- never to an optimistic
+    default, which would let a blind book believe it was diversified."""
+    ws = [(r.get("symbol"), float((r.get("sizing") or {}).get("risk_fraction") or 0.0))
+          for r in live]
+    naive = sum(w for _, w in ws)
+    if len(ws) < 2:
+        return naive, "single position -- correlation irrelevant"
+    try:
+        corr = json.loads((root / "data/chart_context.json").read_text("utf-8"))["correlations"]
+    except (OSError, ValueError, KeyError):
+        return naive, "UNMEASURED correlations -- naive sum used (no diversification credit)"
+    var = 0.0
+    for a, wa in ws:
+        for b, wb in ws:
+            rho = 1.0 if a == b else corr.get(a, {}).get(b)
+            if rho is None:
+                return naive, f"no measured correlation for {a}/{b} -- naive sum used"
+            rho = rho + (1.0 - rho) * CORR_STRESS          # stress toward 1, never toward 0
+            var += wa * wb * rho
+    return var ** 0.5, f"measured correlations, stressed {CORR_STRESS:.0%} toward 1"
 
 
 def portfolio_heat(root: Path, *, now: datetime | None = None) -> dict[str, Any]:
@@ -622,15 +691,19 @@ def portfolio_heat(root: Path, *, now: datetime | None = None) -> dict[str, Any]
     reported here rather than quietly ignored. This rail is what allows the cadence to rise: more
     shots at a bounded total exposure is the whole design."""
     live = open_positions(root, now=now)
-    heat = sum(float((r.get("sizing") or {}).get("risk_fraction") or 0.0) for r in live)
+    gross = sum(float((r.get("sizing") or {}).get("risk_fraction") or 0.0) for r in live)
     longs = sum(1 for r in live if r.get("direction") == "LONG")
+    eff, basis = effective_heat(root, live)
+    full = eff >= MAX_PORTFOLIO_HEAT or gross >= MAX_GROSS_HEAT
     return {
-        "n_open": len(live), "heat": round(heat, 4), "cap": MAX_PORTFOLIO_HEAT,
-        "headroom": round(max(0.0, MAX_PORTFOLIO_HEAT - heat), 4),
+        "n_open": len(live), "heat": round(eff, 4), "gross_heat": round(gross, 4),
+        "cap": MAX_PORTFOLIO_HEAT, "gross_cap": MAX_GROSS_HEAT, "correlation_basis": basis,
+        "headroom": round(max(0.0, MAX_PORTFOLIO_HEAT - eff), 4),
         "symbols": [r.get("symbol") for r in live],
         "directional_skew": (f"{longs}L/{len(live) - longs}S" if live else "flat"),
-        "state": "FULL" if heat >= MAX_PORTFOLIO_HEAT else "OPEN",
-        "why": (f"{heat:.1%} of {MAX_PORTFOLIO_HEAT:.0%} heat live across {len(live)} positions"
+        "state": "FULL" if full else "OPEN",
+        "why": (f"{eff:.1%} effective of {MAX_PORTFOLIO_HEAT:.0%} ({gross:.1%} gross of "
+                f"{MAX_GROSS_HEAT:.0%}) across {len(live)} positions [{basis}]"
                 if live else "no live positions -- full heat available"),
     }
 
@@ -807,10 +880,16 @@ def record(root: Path, call: dict[str, Any], *,
     plan = management_plan(entry, inval, call["direction"],
                            risk_fraction=sizing["risk_fraction"], leverage=sizing["leverage"],
                            noise_pct=noise_pct)
+    horizon = float(call["horizon_hours"])
     row = {**call, "at": now.isoformat(), "paper": True, "stop_pct": round(stop_pct, 4),
            "stop_source": "DERIVED from the named invalidation level", "sizing": sizing,
            "noise": noise, "management": plan,
-           "resolve_by": (now + timedelta(hours=float(call["horizon_hours"]))).isoformat()}
+           # the CALIBRATION clock -- when the forecast is scored
+           "resolve_by": (now + timedelta(hours=horizon)).isoformat(),
+           # the POSITION clock -- a hard time stop far beyond it, so structure decides the exit
+           "max_hold_hours": round(horizon * MAX_HOLD_MULT, 2),
+           "hard_exit_by": (now + timedelta(hours=horizon * MAX_HOLD_MULT)).isoformat(),
+           "entry_order_type": "POST_ONLY_LIMIT at the named level (we bid support, not chase)"}
     p = root / _BOOK
     p.parent.mkdir(parents=True, exist_ok=True)
     with p.open("a", encoding="utf-8") as fh:

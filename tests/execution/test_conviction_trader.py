@@ -8,13 +8,16 @@ ladder and the trail never widens it. Upside maximised = exposure rises and ther
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from scripts.run_conviction_trader import (_BRIEF, MAX_LEVERAGE, MAX_PEAK_STRESS_LOSS,
                                            MAX_RISK_PER_TRADE, MAX_STOP_PCT, MAX_STRESS_LOSS,
                                            MIN_STOP_PCT, SLIP_STRESS_PCT, adverse_excursion,
                                            derive_stop_pct, kelly_leverage, management_plan,
-                                           INSTRUMENTS, MAX_PORTFOLIO_HEAT, _chart_brief,
+                                           INSTRUMENTS, MAX_GROSS_HEAT,
+                                           MAX_PORTFOLIO_HEAT, _chart_brief,
+                                           effective_heat,
                                            noise_floor, portfolio_heat, record,
                                            sleeve_drawdown,
                                            slip_leverage_cap, validate)
@@ -445,3 +448,89 @@ def test_charts_for_instruments_already_held_are_not_spent_on(tmp_path):
          "charts": {"BTCUSDT": {"state": "OK"}, "ETHUSDT": {"state": "OK"}}}))
     txt = _chart_brief(tmp_path, {"symbols": ["BTCUSDT"]})
     assert "ETHUSDT" in txt and "BTCUSDT" not in txt.split("\n", 1)[1]
+
+
+# ---------------------------------------- correlation-weighted heat: real diversification, real room
+
+def _cc(tmp_path, corr):
+    (tmp_path / "data").mkdir(exist_ok=True)
+    (tmp_path / "data/chart_context.json").write_text(json.dumps({"correlations": corr}))
+
+
+def _pos(sym, r=0.06):
+    return {"symbol": sym, "sizing": {"risk_fraction": r}}
+
+
+def test_identical_bets_get_no_diversification_credit(tmp_path):
+    # Five copies of the same trade is one trade. The naive sum is right here and must stay right.
+    _cc(tmp_path, {s: {t: 1.0 for t in "ABCDE"} for s in "ABCDE"})
+    eff, _ = effective_heat(tmp_path, [_pos(s) for s in "ABCDE"])
+    assert abs(eff - 0.30) < 1e-6
+
+
+def test_genuinely_uncorrelated_bets_buy_real_capacity(tmp_path):
+    _cc(tmp_path, {s: {t: (1.0 if s == t else 0.0) for t in "ABCDE"} for s in "ABCDE"})
+    eff, _ = effective_heat(tmp_path, [_pos(s) for s in "ABCDE"])
+    assert eff < 0.30                                   # less portfolio risk than the naive sum...
+    assert eff > 0.06 * 5 / 5                           # ...but never less than a single position
+
+
+def test_correlations_are_stressed_toward_one_never_toward_zero(tmp_path):
+    # Correlations rise in exactly the cascade that hurts. A rail trusting calm-market numbers
+    # fails when it matters, so diversification is credited only partly.
+    _cc(tmp_path, {s: {t: (1.0 if s == t else 0.0) for t in "AB"} for s in "AB"})
+    eff, basis = effective_heat(tmp_path, [_pos("A"), _pos("B")])
+    independent = (0.06 ** 2 + 0.06 ** 2) ** 0.5
+    assert eff > independent                            # strictly less credit than the raw estimate
+    assert "stressed" in basis
+
+
+def test_unmeasured_correlation_falls_back_to_the_naive_sum(tmp_path):
+    # Never to an optimistic default: a blind book must not believe it is diversified.
+    eff, basis = effective_heat(tmp_path, [_pos("A"), _pos("B")])
+    assert abs(eff - 0.12) < 1e-9 and "UNMEASURED" in basis
+    _cc(tmp_path, {"A": {"A": 1.0}})                    # B missing from the matrix
+    eff, basis = effective_heat(tmp_path, [_pos("A"), _pos("B")])
+    assert abs(eff - 0.12) < 1e-9 and "no measured correlation" in basis
+
+
+def test_the_gross_cap_still_binds_however_diversified_the_book_looks(tmp_path):
+    # Correlation estimates can be wrong; the nominal cap bounds how wrong they may make the book.
+    _cc(tmp_path, {f"S{i}": {f"S{j}": (1.0 if i == j else 0.0) for j in range(9)}
+                   for i in range(9)})
+    (tmp_path / "data/conviction_book.jsonl").write_text("\n".join(
+        json.dumps({**_pos(f"S{i}"), "action": "TRADE", "direction": "LONG",
+                    "hard_exit_by": (datetime.now(tz=UTC) + timedelta(hours=9)).isoformat()})
+        for i in range(9)) + "\n")
+    h = portfolio_heat(tmp_path)
+    assert h["gross_heat"] >= MAX_GROSS_HEAT and h["state"] == "FULL"
+
+
+# --------------------------------------- the position clock is not the forecast clock
+
+def test_a_trade_gets_far_longer_than_its_forecast_horizon(tmp_path, monkeypatch):
+    # Measured: the same gold short reads +0.07R at a 12h horizon and +0.63R at 30h. An arbitrary
+    # clock was setting the P&L instead of the structure.
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "data").mkdir()
+    import libs.self_improvement.forecast_calibration as fc
+    monkeypatch.setattr(fc, "_LOG", tmp_path / "data/forecast_log.json")
+    row = record(tmp_path, _t(horizon_hours=12))
+    assert row["max_hold_hours"] == 48.0                # 4x the forecast horizon
+    assert row["hard_exit_by"] > row["resolve_by"]      # position outlives its scoring clock
+    assert "POST_ONLY_LIMIT" in row["entry_order_type"]
+
+
+def test_heat_is_released_once_the_resolver_marks_a_trade_closed(tmp_path):
+    # A stopped position must stop occupying heat immediately -- blocking new trades with capital
+    # returned hours ago is idle capacity dressed as prudence.
+    (tmp_path / "data").mkdir()
+    key = datetime.now(tz=UTC).isoformat()
+    (tmp_path / "data/conviction_book.jsonl").write_text(json.dumps(
+        {"action": "TRADE", "symbol": "BTCUSDT", "direction": "LONG", "at": key,
+         "sizing": {"risk_fraction": 0.06},
+         "hard_exit_by": (datetime.now(tz=UTC) + timedelta(hours=40)).isoformat()}) + "\n")
+    assert portfolio_heat(tmp_path)["n_open"] == 1
+    (tmp_path / "data/paper_book_pnl.json").write_text(json.dumps(
+        {"marks": [{"key": key, "outcome": "STOPPED"}]}))
+    assert portfolio_heat(tmp_path)["n_open"] == 0      # capital back, slot free

@@ -191,14 +191,49 @@ def build_symbol(symbol: str, *, fetch=None, now: datetime | None = None) -> dic
         dh, dl = max(b[2] for b in day), min(b[3] for b in day)
         out["day_range"] = {"high": round(dh, 8), "low": round(dl, 8),
                             "position": round((px - dl) / (dh - dl), 3) if dh > dl else None}
+        out["_returns"] = _returns(last_bars)          # stripped after the correlation pass
     ok = [v for v in out["timeframes"].values() if v.get("state") == "OK"]
     out["state"] = "OK" if len(ok) == len(_TFS) else ("PARTIAL" if ok else "UNAVAILABLE")
+    return out
+
+
+def _returns(bars: list[tuple[int, float, float, float, float]], n: int = 96) -> list[float]:
+    closes = [b[4] for b in bars[-(n + 1):]]
+    return [(b - a) / a for a, b in zip(closes, closes[1:]) if a]
+
+
+def correlations(series: dict[str, list[float]]) -> dict[str, dict[str, float]]:
+    """Pairwise return correlation across the universe.
+
+    THIS IS WHAT MAKES BREADTH REAL. The simulation that justified spreading risk across many
+    positions assumed the bets were INDEPENDENT -- but five crypto longs in a correlated tape is
+    one position wearing five names, and summing their risk as though they were separate both
+    overstates safety AND blocks trades that were genuinely diversifying. Measured correlation
+    lets the heat rail do the honest thing in both directions."""
+    out: dict[str, dict[str, float]] = {}
+    for a, xs in series.items():
+        out[a] = {}
+        for b, ys in series.items():
+            n = min(len(xs), len(ys))
+            if n < 30:
+                out[a][b] = 1.0 if a == b else 0.9      # too little data -> assume the WORST case
+                continue
+            x, y = xs[-n:], ys[-n:]
+            mx, my = sum(x) / n, sum(y) / n
+            sxy = sum((i - mx) * (j - my) for i, j in zip(x, y))
+            sxx = sum((i - mx) ** 2 for i in x)
+            syy = sum((j - my) ** 2 for j in y)
+            out[a][b] = round(sxy / (sxx * syy) ** 0.5, 4) if sxx > 0 and syy > 0 else 0.9
     return out
 
 
 def build(symbols: tuple[str, ...], *, fetch=None, now: datetime | None = None) -> dict[str, Any]:
     now = now or datetime.now(tz=UTC)
     charts = {s: build_symbol(s, fetch=fetch, now=now) for s in symbols}
+    series = {s: c["_returns"] for s, c in charts.items() if c.get("_returns")}
+    corr = correlations(series)
+    for c in charts.values():
+        c.pop("_returns", None)
     unavailable = [s for s, c in charts.items() if c["state"] == "UNAVAILABLE"]
     partial = [s for s, c in charts.items() if c["state"] == "PARTIAL"]
     return {
@@ -215,6 +250,7 @@ def build(symbols: tuple[str, ...], *, fetch=None, now: datetime | None = None) 
                    + (f"; UNAVAILABLE: {', '.join(unavailable)}" if unavailable else "")
                    + (f"; PARTIAL: {', '.join(partial)}" if partial else "")),
         "charts": charts,
+        "correlations": corr,
     }
 
 
