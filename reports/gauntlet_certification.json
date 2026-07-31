@@ -1,70 +1,43 @@
 {
-  "generated": "2026-07-31T23:36:03Z",
-  "status": "RUNNING",
-  "rows_done": 5,
-  "rows_planned": 6,
+  "generated": "2026-07-31T23:47:04Z",
+  "status": "COMPLETE-SYNTHETIC",
+  "peers": "SYNTHETIC",
+  "answers": "ONLY: can the gate stack pass a genuinely good candidate at all. The peers here are manufactured zero-edge draws at the campaign's recorded shape, so PBO and the reality check -- both computed AGAINST the cohort -- say nothing about whether the desk's real price space is picked clean. That half stays blocked on a builder for _audit_prepared.pkl (3 readers, 0 writers).",
   "campaign": {
     "T": 310,
     "N": 420,
     "se_annual_sharpe": 1.0850895607454298,
     "peers": "SYNTHETIC"
   },
+  "controls": {
+    "targets": [
+      10.0
+    ],
+    "seeds": 1,
+    "construction": "exact sample Sharpe (libs.validation.positive_control)"
+  },
+  "legacy_welded_path": {
+    "pass_rate_by_true_sharpe": {
+      "10": 1.0
+    },
+    "min_passing_true_sharpe": 10.0,
+    "null_false_pass_rate": 0.0,
+    "sole_blocking_gate_counts": {},
+    "all_blocking_gate_counts": {},
+    "certified_admits_good": true
+  },
+  "per_candidate_path": {
+    "pass_rate_by_true_sharpe": {
+      "10": 1.0
+    },
+    "min_passing_true_sharpe": 10.0,
+    "null_false_pass_rate": 0.0,
+    "sole_blocking_gate_counts": {},
+    "all_blocking_gate_counts": {},
+    "certified_admits_good": true
+  },
   "rows": [
     {
-      "target": 3.0,
-      "seed": 0,
-      "realised_ann_sharpe": 2.9999999999999996,
-      "legacy": {
-        "survived": false,
-        "failed": [
-          "dsr",
-          "reality_check"
-        ],
-        "dsr": 0.35848371373585275,
-        "pbo": 0.18912198912198913,
-        "reality_p": 0.266,
-        "oos_sharpe": 0.16370596580063462
-      },
-      "per_candidate": {
-        "survived": false,
-        "failed": [
-          "dsr",
-          "reality_check"
-        ],
-        "dsr": 0.35848371373585275,
-        "pbo": 0.0024087024087024087,
-        "reality_p": 0.536,
-        "oos_sharpe": 0.16370596580063462
-      }
-    },
-    {
-      "target": 3.0,
-      "seed": 1,
-      "realised_ann_sharpe": 2.9999999999999996,
-      "legacy": {
-        "survived": false,
-        "failed": [
-          "dsr",
-          "reality_check"
-        ],
-        "dsr": 0.35941498552902873,
-        "pbo": 0.19067599067599067,
-        "reality_p": 0.267,
-        "oos_sharpe": 0.1141958070529278
-      },
-      "per_candidate": {
-        "survived": false,
-        "failed": [
-          "dsr",
-          "reality_check"
-        ],
-        "dsr": 0.35941498552902873,
-        "pbo": 0.013364413364413364,
-        "reality_p": 0.538,
-        "oos_sharpe": 0.1141958070529278
-      }
-    },
-    {
       "target": 10.0,
       "seed": 0,
       "realised_ann_sharpe": 10.0,
@@ -83,27 +56,6 @@
         "pbo": 0.0,
         "reality_p": 0.0,
         "oos_sharpe": 0.5257341284246863
-      }
-    },
-    {
-      "target": 10.0,
-      "seed": 1,
-      "realised_ann_sharpe": 10.0,
-      "legacy": {
-        "survived": true,
-        "failed": [],
-        "dsr": 0.9999999216470138,
-        "pbo": 0.0002331002331002331,
-        "reality_p": 0.0,
-        "oos_sharpe": 0.47458645315506787
-      },
-      "per_candidate": {
-        "survived": true,
-        "failed": [],
-        "dsr": 0.9999999216470138,
-        "pbo": 0.0,
-        "reality_p": 0.0,
-        "oos_sharpe": 0.47458645315506787
       }
     },
     {

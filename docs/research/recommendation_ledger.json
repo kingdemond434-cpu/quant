@@ -2702,6 +2702,18 @@
    "commit": "aebc591",
    "due": null,
    "disposed": "2026-07-31T23:38:25.204351+00:00"
+  },
+  {
+   "id": "R0222",
+   "source": "max_audit",
+   "summary": "Positive control CERTIFICATION COMPLETE (COMPLETE-SYNTHETIC), both halves measured for the first time in the desk's history. ADMITS GOOD: an injected true annualised Sharpe of 10 PASSES both the legacy welded path and the per-candidate path (dsr 1.000, pbo 0.000, rc_p 0.000) -- the gate is NOT welded shut, so 0-survivors-from-420 is an interpretable statement about the candidates rather than an unexplained property of the machinery. REJECTS NULL: a true-zero-edge control fails 5 gates simultaneously (cpcv, walk_forward, dsr, reality_check, capacity) on BOTH paths, null false-pass rate 0%. Both paths agree exactly on min_passing_true_SR=10.0 and null_FPR=0%, which is itself evidence the per-candidate migration does not loosen promotion -- the objection that killed the 2026-07-30 migration attempt was that its before/after windows differed and deltas could not be attributed; this run scores both paths on the SAME injected candidate over the SAME window. Caveat kept: peers are synthetic, so this certifies the GATE MACHINERY and says nothing about whether the desk's real price space is picked clean -- that half stays blocked on a builder for _audit_prepared.pkl.",
+   "roi_bps": null,
+   "raised": "2026-07-31T23:47:26.583364+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
