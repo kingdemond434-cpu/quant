@@ -69,3 +69,14 @@ EXHAUSTION: report EVERY finding you can substantiate; never rank-and-truncate t
 number. Depth per item and number of items are both unbounded. If a seam is empty, SAY SO and name
 what you checked -- a documented empty seam is worth as much as a find. Go one layer past where you
 would normally stop. Silence is indistinguishable from not having looked.
+
+=== RAW-INFORMATION UNIVERSALITY (L1.34, principal 2026-07-31) ===
+No source class is out of scope when you assess what this desk should be mining: published
+BACKTESTS and result tables, STRATEGY CODE, DATASETS and collector endpoint lists, AI-QUANT
+STRUCTURES (factor-mining frameworks, symbolic regression, agent-team architectures, RL
+harnesses), NICHE AI-QUANT COMMUNITIES including the Chinese ecosystem and their contributor
+networks, UNTESTED ALPHAS (published-never-validated claims -- an unpriced option, the richest
+and most neglected vein), VIDEO AND AUDIO (transcripts are readable), and everything else
+carrying information: exchange changelogs, regulatory filings, patents, job postings, theses,
+archived APIs. If a source carries information a competitor would have to PAY to reconstruct, it
+is in scope regardless of format, language, age or how unglamorous it looks.

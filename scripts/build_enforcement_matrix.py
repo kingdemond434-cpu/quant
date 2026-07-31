@@ -125,6 +125,10 @@ _MAP: dict[str, list[str]] = {
     # produced. L1.33: the GPT seat as standing partner on every one of them.
     "L1.32": ["scripts/check_exploration.py"],
     "L1.33": ["libs/research/second_family.py", "scripts/run_capability_hunt.py"],
+    # L1.34: source-class universality reaches the seats through their PROMPTS, so the fence is
+    # the prompt-layer wire that proves every brief carries it (same shape as L1.21a).
+    "L1.34": ["ops/frontier_en_prompt.txt", "scripts/kimi_hunter.py", "check_prompt_layer",
+              "tests/governance/test_source_universality.py"],
     # L1.25a: null streaks throttle nothing -- an organ going quiet is caught by the freshness/
     # productivity wires REGARDLESS of its reason, so "stopped because nothing was working" trips
     # the same fence as "stopped because broken". The pessimism-freeze cannot hide.

@@ -537,6 +537,34 @@ the partner was unavailable, so a single family's agreement with itself can neve
 as cross-family corroboration. Every call is logged to `data/second_family_log.json`, making
 "the partner is dead for want of funding" a dated measured fact rather than an impression.
 
+**L1.34 EVERY FORM OF RAW INFORMATION IS IN SCOPE FOR EVERY SEAT** *(principal order 2026-07-31:
+"miners get every form of raw info — backtests, strategies, niche Chinese AI quants, datasets, AI
+quant structures, untested alphas, video info, everything")*. A seat's region is **where** it
+digs; the source class is never a filter on **what** it may bring back. A miner returning only
+one class of artifact is under-mining its ground, and the narrowing is invisible because each
+individual session looks productive.
+
+**IN SCOPE, PERMANENTLY, FOR EVERY SEAT**: published backtests and result tables (read the code
+and the data window — the leak they missed is the find, and a refuted backtest is free graveyard
+material); strategy code and configs; datasets **and the endpoint lists inside collector code**;
+AI-quant structures (factor-mining frameworks, symbolic regression, agent-team and multi-model
+architectures, RL harnesses — routed as ENGINE ideas, and **never installed or run on desk
+hardware**: mine them as text); niche AI-quant communities explicitly including the Chinese
+ecosystem and their contributor networks; **untested alphas** — published-but-never-validated
+claims, abandoned hypotheses, "this worked for me" posts with no out-of-sample — which are the
+richest and most neglected vein, because *untested is not false, it is an unpriced option*; video
+and audio, whose transcripts are readable and therefore first-class material rather than a logged
+blocker; and everything else that carries information — exchange changelogs and announcement
+archives, regulatory filings, patents, job postings (they leak infrastructure and strategy
+families), theses, archived APIs, dead products' documentation.
+
+**THE STANDING TEST**: *if a source carries information a competitor would have to pay to
+reconstruct, it is in scope* — regardless of format, language, age, or how unglamorous it looks
+(L1.11a). Everything found still passes §13 legitimacy and still routes through
+screen-on-discovery in the same run: **a find is half a deliverable until it is screened or
+ledgered.** Carried by every miner prompt, the kimi hunter's system brief, and the external
+panel, so no seat can be narrower than another.
+
 **L1.28c CADENCE IS AGGRESSION — EVERY SCHEDULE HUNTS ITS OWN CEILING** *(principal order
 2026-07-31)*. **Every cadence on this desk aims to increase its frequency to the maximum that
 still carries ROI, and a cadence nobody has tried to raise is idle capacity wearing a schedule.**

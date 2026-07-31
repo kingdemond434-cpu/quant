@@ -16,3 +16,45 @@ OUTPUTS / ROUTING
 - Set "last_blind_rediscovery" to today's UTC ISO in data/cadence_state.json.
 
 CLOSE: be blunt. Fresh eyes with nothing new is a valid quarterly result -- do not pad. This exists to catch the blind spot our narrative cannot see, not to manufacture ideas.
+
+
+=== RAW-INFORMATION UNIVERSALITY (L1.34, principal order 2026-07-31: "miners get EVERY form of raw
+info -- backtests, strategies, niche Chinese AI quants, datasets, AI quant structures, untested
+alphas, video info, everything") ===
+NO SOURCE CLASS IS OUT OF SCOPE FOR ANY SEAT. Your region/ground is WHERE you dig; this list is
+WHAT counts as diggable, and it is not a menu -- a seat that returns only one class of artifact
+is under-mining its ground. All of it is s13-gated (public + licensed, never cracked/closed-group)
+and all of it routes through SCREEN-ON-DISCOVERY: a find is half a deliverable until it is
+screened or ledgered in the SAME run.
+
+ 1. BACKTESTS AND RESULTS, not just claims -- published equity curves, notebooks, result tables,
+    competition entries, journal replication packs. Read the CODE and the DATA WINDOW, not the
+    headline: the interesting artifact is usually the leak, the survivorship, or the cost model
+    they forgot. A refuted backtest is FREE GRAVEYARD MATERIAL and a real deliverable (L1.17).
+ 2. STRATEGY CODE AND CONFIGS -- repos, gists, forum attachments, bot configs, TradingView/QC/
+    vn.py/backtrader scripts, exchange-provided sample bots. Mechanism first: card only what
+    carries a stated economic story (a parameter set is not a mechanism).
+ 3. DATASETS AND FEED CATALOGUES -- every dataset a tool aggregates is a candidate axis. Follow
+    the collector code, not the marketing page: the endpoint list IS the find.
+ 4. AI-QUANT STRUCTURES -- factor-mining frameworks, symbolic-regression setups, agent-team and
+    multi-model architectures, RL trading harnesses, feature stores, prompt/graph designs. These
+    route to docs/research/improvement_inbox.md as ENGINE ideas. NEVER install or run third-party
+    agent tooling on desk hardware (supply-chain rule; mine it as TEXT).
+ 5. NICHE AI-QUANT COMMUNITIES, explicitly including the Chinese ecosystem -- Gitee/Chinese
+    GitHub, Zhihu, Xueqiu, JoinQuant/BigQuant/myquant BBSs, WeChat mirrors, Bilibili lectures,
+    and the equivalent layer in YOUR language. The contributor networks around these tools are
+    themselves the ground: follow forks, starred lists, issues and discussions.
+ 6. UNTESTED ALPHAS -- the richest vein and the most neglected: published-but-never-validated
+    claims, abandoned hypotheses, half-finished threads, "this worked for me" posts with no
+    out-of-sample, thesis appendices nobody replicated. Untested is not the same as false; it is
+    an unpriced option. Log the mechanism and the falsifier even when you cannot screen it today.
+ 7. VIDEO AND AUDIO -- conference talks, regional quant lectures, botter walkthroughs, podcast
+    interviews. Transcripts ARE readable: scripts/fetch_video_transcript.py <url|id> and
+    --bilibili <BVid>. Video-origin mechanisms are FIRST-CLASS material, never a logged blocker;
+    only log video_locked for a platform you actually tried and failed.
+ 8. EVERYTHING ELSE THAT CARRIES INFORMATION -- exchange docs/changelogs/announcement archives,
+    regulatory filings and enforcement actions, patents, job postings (they leak infrastructure
+    and strategy families), conference agendas, university theses, archived APIs, dead products'
+    documentation.
+THE STANDING TEST: if a source carries information a competitor would have to pay to reconstruct,
+it is in scope regardless of its format, language, age, or how unglamorous it looks (L1.11a).
