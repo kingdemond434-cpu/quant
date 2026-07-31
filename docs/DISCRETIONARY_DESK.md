@@ -93,23 +93,49 @@ tagged with trend alignment, vol regime, position in range, level touch count an
 buckets under 5 trades report INSUFFICIENT rather than a number, because a 100% hit rate on two
 trades is not a finding and publishing it as one is how a desk learns superstition.
 
-## What 300% net CAGR actually requires
+## The objective, and why no return number is stated here
 
-Growth is `g × N`. Costs are measured, not assumed: at ~6.7× leverage a round trip is ~1.0% of
-sleeve equity maker-in / taker-out — about 17% of one R.
+**Maximise E[log wealth] subject to survival.** That is the objective. There is deliberately no
+CAGR target in this document, and its absence is not modesty.
 
-| true hit rate | net per trade | outcome at ~460 trades/yr |
+The desk ruled on this on 2026-07-12, in `PROJECT_HANDOFF.md`:
+
+> *Don't chase a CAGR target (targeting a return number corrupts a survival-constrained optimizer
+> into over-leverage). Max safe growth; let the number fall out.*
+
+An earlier version of this page carried a "what 300% requires" section. That was a doctrine
+regression and it was caught by the principal, not by a fence. The reason it is a regression is
+mechanical, not stylistic: a stated return number anchors every downstream decision toward the
+tail of the distribution, and the only lever that reaches a tail outcome is **size**. This desk's
+own simulations show exactly where that ends — at 20% risk per trade the book meets a −90%
+drawdown with near-certainty *even when the strategy is profitable*, and past full Kelly more size
+makes growth **negative**. A target high enough to be exciting is therefore a standing instruction
+to destroy the thing it is aiming at.
+
+**This is not a reduction in ambition, and reading it as one inverts it.** The law stack already
+mandates the maximum: L1.28 (timidity is a defect), L1.28a (idle capacity is unbooked loss),
+L1.28b (conversion pushes to 100%), L1.28c (every cadence hunts its own ceiling), L1.25a (the hunt
+never tires), L1.41 (nothing enters below the build standard). Those laws bind harder than a
+number does, because they are enforced by fences that fail the build rather than by a figure in a
+document. Removing the target removes the one instruction that pointed *away* from them.
+
+### What is measured instead
+
+Not a target — a diagnostic, so the desk knows which term is short:
+
+| true hit rate | net per trade | note |
 |---|---|---|
-| ≤ 29% | negative | **graveyard — costs eat it** |
+| ≤ 29% | negative | costs eat it — the kill condition below fires |
 | 30–32% | ~0 | flat |
-| 35% | +1.4% | 100–300% |
-| **38%+** | +2.1% | **300%+** |
+| 35% | +1.4% | edge is real |
+| 38%+ | +2.1% | edge is strong |
 
-**Cost-adjusted breakeven is 31.1%, not 25%.** The target needs roughly a **38% hit rate**. That is
-not heroic — but it is unmeasured, and the entire distance between "this compounds hard" and "this
-is a slow bleed" is about seven points of a number nobody has yet observed.
+**Cost-adjusted breakeven is 31.1%, not 25%** — fees, slippage and funding cost about 17% of one R
+at the leverage this sleeve runs. That number is an input to the kill condition and to the
+`EDGE vs FREQUENCY` constraint the resolver publishes. It is not something to hit.
 
-Nothing in this document changes that. Only the forward clock does.
+Growth is `g × N`. The desk maximises both under the survival rails and reports whichever is
+binding. Whatever CAGR falls out is the answer, not the goal.
 
 ## Standing rails
 

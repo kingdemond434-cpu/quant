@@ -72,7 +72,7 @@ def main(argv: list[str] | None = None) -> int:
         # NOT touch the marker: non-zero would fail its cycle for the non-error of someone else
         # already checking, and writing the marker here IS the last-writer-wins race.
         # For a DEPLOY decision that exit 0 is a lie -- pull_deploy read "skipped" as "green"
-        # and would have shipped an unvetted commit (found 2026-07-31, R0144). --fail-on-lock
+        # and would have shipped an unvetted commit (found 2026-07-31, R0145). --fail-on-lock
         # returns 3: "could not gate", which a deployer must treat as not-green and retry.
         if fail_on_lock:
             print("CI: another run holds the lock -- cannot gate this tree state (rc 3)")

@@ -578,11 +578,11 @@
    "summary": "run_ci.py EXITS 0 WHEN IT SKIPS: a concurrent run holding the lock produces 'CI: another run holds the lock -- skipping (marker left untouched)' and return code 0. The constitution calls CI 'the mechanical safety net: nothing ships that fails it', so a skip that is indistinguishable from a pass is a FAIL-OPEN in the net -- this cycle recorded a green baseline that had executed zero tests, and any cron/agent trusting the exit code inherits the same false green. FIX: distinct non-zero exit (or an explicit --wait) for skipped-on-lock, and callers must read the body. NOT done this cycle deliberately: a second session was actively running run_ci.py in the same tree, and editing the gate under a live consumer is how the 07-16 change-induced incidents happened.",
    "roi_bps": 3.0,
    "raised": "2026-07-30T12:22:52.771907+00:00",
-   "status": "scheduled",
-   "reason": "Real fail-open in the mechanical safety net, and cheap. Deferred by ONE day for a concrete reason, not comfort: a second session was executing run_ci.py in this same tree during the cycle, and patching the gate under a live consumer is the exact change-induced-incident shape of 2026-07-16. Do it first thing when the tree is exclusively held.",
-   "commit": null,
-   "due": "2026-08-01",
-   "disposed": "2026-07-30T12:23:04.441891+00:00"
+   "status": "implemented",
+   "reason": "same fix family: --fail-on-lock rc3 distinguishes skip from green for every deploy decider; organs keep rc0 skip",
+   "commit": "4d77a3f",
+   "due": null,
+   "disposed": "2026-07-31T16:42:40.013461+00:00"
   },
   {
    "id": "R0048",
@@ -1733,39 +1733,51 @@
   },
   {
    "id": "R0143",
-   "source": "cycle",
-   "summary": "pull_deploy revert race DESTROYS work landed during its CI window: OLD captured at tick start, 'git reset --hard $OLD' runs ~8min later unconditionally -- wiped commit 80153c0 + working-tree fixes live on 2026-07-31. Fix: before reverting, refuse unless HEAD==$NEW and tree clean (mirror of its own refuse-on-dirty rule); record refused-revert loudly. (Renumbered from R0135 after the second two-session id collision; always allocate with recommendations.py --expect.)",
-   "roi_bps": 8.0,
-   "raised": "2026-07-31T14:56:43.032807+00:00",
-   "status": "open",
-   "reason": null,
+   "source": "principal",
+   "summary": "RETURN-TARGETING FENCE + doctrine regression repaired. The desk ruled on 2026-07-12 (PROJECT_HANDOFF.md): 'Don't chase a CAGR target -- targeting a return number corrupts a survival-constrained optimizer into over-leverage. Max safe growth; let the number fall out.' It ruled again 2026-07-16, triaging a CAGR-maximisation override out of a principal-supplied constitution, and a decision-ledger success metric reads 'no CAGR targeting'. On 2026-07-31 a section titled 'What 300% net CAGR actually requires' was written into DISCRETIONARY_DESK.md past all three, and the PRINCIPAL caught it, not a fence -- which by L1.41 means it was not caught. Section rewritten to state the objective as max E[log wealth] subject to survival, with the same numbers kept as a DIAGNOSTIC (cost-adjusted breakeven 31.1pct feeds the kill condition and the EDGE-vs-FREQUENCY constraint) rather than as a goal. check_return_targeting.py now fails the law gate on a return figure bound to goal language, while leaving analysis figures alone -- a fence flagging every percentage would be switched off within a day.",
+   "roi_bps": 0.0,
+   "raised": "2026-07-31T22:00:00+00:00",
+   "status": "done",
+   "reason": "built, 8 tests, in the law gate's portable battery; 25/25 build standard",
    "commit": null,
    "due": null,
-   "disposed": null
+   "note": "principal's own framing: the existing mandates (L1.28/L1.28a/L1.28b/L1.28c/L1.25a) already enforce maximum growth, so a stated number is redundant AND distorting -- removing it removes the one instruction pointing away from those laws"
   },
   {
    "id": "R0144",
    "source": "cycle",
-   "summary": "run_ci.py lock-skip exits 0 and pull_deploy reads rc0 as CI GREEN -> a concurrent CI at tick time deploys an UNVETTED commit (silent gate bypass). Fix: run_ci --fail-on-lock flag exiting 3 on contention; puller invokes with it and treats 3 as not-green-retry-next-tick. (Renumbered from R0136 after id collision.)",
-   "roi_bps": 5.0,
-   "raised": "2026-07-31T14:56:43.107456+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "summary": "pull_deploy revert race DESTROYS work landed during its CI window: OLD captured at tick start, 'git reset --hard $OLD' runs ~8min later unconditionally -- wiped commit 80153c0 + working-tree fixes live on 2026-07-31. Fix: before reverting, refuse unless HEAD==$NEW and tree clean (mirror of its own refuse-on-dirty rule); record refused-revert loudly. (Raised as R0135, twice renumbered in two-box id collisions.)",
+   "roi_bps": 8.0,
+   "raised": "2026-07-31T16:42:10.846685+00:00",
+   "status": "implemented",
+   "reason": "refuse-revert-tree-moved live in pull_deploy.sh; recovered from the dead evening session and committed",
+   "commit": "4d77a3f",
    "due": null,
-   "disposed": null
+   "disposed": "2026-07-31T16:42:39.792584+00:00"
   },
   {
    "id": "R0145",
    "source": "cycle",
-   "summary": "daily_research_cycle ci_gate step: timeout 300s predates the 07-25 whole-tree pytest change (~8min), so the step has died by timeout nearly every run since -- silent daily gate outage, steps_ok['ci_gate']=False unfenced; and its rare True was a lock-skip fake-green. Third member of the skip-reads-green family: rollback_guard._ci_green() returncode==0 also counts contention as green. Fix: timeout 1200 + --fail-on-lock in rollback_guard. (Renumbered from R0137 after id collision.)",
-   "roi_bps": 4.0,
-   "raised": "2026-07-31T15:02:33.564383+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "summary": "run_ci.py lock-skip exits 0 and pull_deploy reads rc0 as CI GREEN -> a concurrent CI at tick time deploys an UNVETTED commit (silent gate bypass). Fix: run_ci --fail-on-lock flag exiting 3 on contention; puller invokes with it and treats 3 as not-green-retry-next-tick. (Raised as R0136.)",
+   "roi_bps": 5.0,
+   "raised": "2026-07-31T16:42:10.913854+00:00",
+   "status": "implemented",
+   "reason": "run_ci --fail-on-lock rc3 + puller opts in; contract pinned by tests/ops/test_ci_gate_lock.py",
+   "commit": "4d77a3f",
    "due": null,
-   "disposed": null
+   "disposed": "2026-07-31T16:42:39.862781+00:00"
+  },
+  {
+   "id": "R0146",
+   "source": "cycle",
+   "summary": "daily_research_cycle ci_gate step: timeout 300s predates the 07-25 whole-tree pytest change, so the step died by timeout nearly every run since -- silent daily gate outage; its rare True was a lock-skip fake-green. Third member of the skip-reads-green family: rollback_guard._ci_green() returncode==0 also counts contention as green. Fix: timeout 1200 + --fail-on-lock in rollback_guard. (Raised as R0137.)",
+   "roi_bps": 4.0,
+   "raised": "2026-07-31T16:42:10.987761+00:00",
+   "status": "implemented",
+   "reason": "ci_gate timeout 1200 + --fail-on-lock in daily cycle and rollback_guard; steps_ok watch from 08-01",
+   "commit": "4d77a3f",
+   "due": null,
+   "disposed": "2026-07-31T16:42:39.947088+00:00"
   }
  ]
 }

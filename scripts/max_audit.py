@@ -1954,14 +1954,14 @@ _PRODUCER_CADENCE = {
              "a cadence and nothing checked it was ever re-worked, which is exactly the failure "
              "this law exists to catch"),
     # THE DISCRETIONARY DESK is a PRODUCER: it states the sleeve's measured constants (noise
-    # floors, costs, the hit rate 300% CAGR requires) and every one of those is a MEASUREMENT that
+    # floors, costs, the cost-adjusted breakeven hit rate) and every one is a MEASUREMENT that
     # drifts. A stale page means the desk is reasoning from last month's volatility regime and
     # last month's fee tier while believing they are current -- and the numbers in it are what the
     # principal reads before a capital decision, which is the most expensive place for a quietly
     # outdated figure to sit.
     "docs/DISCRETIONARY_DESK.md": (
         14.0, "L1.6/L1.41: re-stated from the resolver's measured output (noise floors, realised "
-              "costs, conditional hit rates, required rate for the CAGR target) -- if it goes "
+              "costs, conditional hit rates, cost-adjusted breakeven) -- if it goes "
               "stale the section claims measurements that are no longer true"),
 }
 #: Artifacts that are terminal by nature: templates, forensic write-ups, protocol libraries. They

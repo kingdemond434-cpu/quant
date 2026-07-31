@@ -2,7 +2,9 @@
 """SLEEVE ALLOCATOR (R0141) -- risk across discretionary sleeves, by MARGINAL growth contribution.
 
 PRINCIPAL ORDER (2026-07-31): *"advance this section way more so multiple discretionary edges
-genuinely compound triple-digit CAGRs and max geometric growth each on the side."*
+genuinely compound and max geometric growth each on the side."* (The principal's own framing
+carried a return figure; it is deliberately not restated here -- see PROJECT_HANDOFF.md, 'do not
+chase a CAGR target'. The objective is max E[log wealth] subject to survival.)
 
 THE WORD THAT DOES THE WORK IS "GENUINELY". Adding sleeves only multiplies growth if the sleeves
 are INDEPENDENT. Five sleeves all long crypto beta are one sleeve wearing five names: they draw

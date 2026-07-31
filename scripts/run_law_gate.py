@@ -60,6 +60,7 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("check_scheduler_manifest.py", ("--report-only",)),  # L1.28c -- every line is decided
     ("check_build_standard.py", ()),           # L1.41 -- nothing enters below standard
     ("check_sizing_derivation.py", ()),        # L1.41 -- no money number chosen by feel
+    ("check_return_targeting.py", ()),         # handoff 2026-07-12 -- no CAGR target
 )
 
 #: STATE FENCES -- box-only. They measure LIVE STATE (artifacts, ledgers, organ freshness) that
