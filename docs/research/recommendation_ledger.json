@@ -1291,6 +1291,18 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0107",
+   "source": "principal",
+   "summary": "VOL-TARGET HEADROOM FENCE (R0108): measure realized book vol vs the rail-implied fractional-Kelly ceiling every cycle -- BELOW ceiling with no named constraint = L1.28a idleness defect (raise sizing); ABOVE = over-Kelly breach (E[log] falling, ruin rising -- cut). Vol target becomes a measured ceiling held at its mathematical maximum daily, like every other ceiling; the optimum itself RISES automatically as validated edges/Sharpe/evidence accrue",
+   "roi_bps": 30.0,
+   "raised": "2026-07-31T09:02:06.464504+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
