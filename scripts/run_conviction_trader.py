@@ -197,7 +197,59 @@ NOISE_LOOKBACK_HOURS = 96
 #: near-zero chance of the drawdown that ends the account. So the aggression moved from SIZE to
 #: BREADTH and FREQUENCY -- an 18-instrument universe, hourly, several positions live at once.
 #: On a 0.9% structural stop 6% still buys ~6.7x leverage, which is the screenshot's own range.
-MAX_RISK_PER_TRADE = 0.06              # at most 6% of sleeve equity at risk on one call
+MAX_RISK_PER_TRADE = 0.06              # the UNMEASURED floor; the live cap is derived below
+
+#: THE CAP IS DERIVED FROM MEASURED ACCURACY, NOT FIXED -- and this exists because the flat 6%
+#: was wrong in the timid direction, which the principal caught.
+#:
+#: I had claimed a 10%-risk single position loses money over a year. That was computed from a
+#: 37% risk figure I INFERRED from a screenshot instead of asking. The real figure was 10%, and
+#: at 10% the arithmetic says the opposite: at a 35% hit rate with 3:1 payoffs g = +0.0233 per
+#: trade against +0.0177 at 6%. Full Kelly there is 13.3%, so 10% is 0.75x Kelly -- aggressive
+#: and sane -- while 6% is 0.45x. The flat cap was leaving growth on the table (L1.28).
+#:
+#: But 10% is only correct IF the hit rate is really 35%. At 30% it is 1.5x Kelly and at 28% it is
+#: 2.5x, where growth turns negative. So the cap is not re-picked at a higher number -- it is tied
+#: to the thing that decides it:
+#:
+#:      cap = clamp(HALF-KELLY of the MEASURED hit rate, 6% floor, 12% ceiling)
+#:
+#: Unmeasured stays at 6%: with the parameter unknown the smaller bet is not timidity, it is the
+#: same rule that treats an unmeasured correlation as a duplicate -- the assumption that costs
+#: money when wrong is the one that gets made. The calibration probe (R0142) is what turns that
+#: floor into a measurement, which is why it was worth building before any capital moved.
+RISK_CAP_FLOOR = 0.06
+#: 12% ceiling: half-Kelly at a 38% hit rate, the top of the band this desk considers plausible.
+#: Above it the sizer would be extrapolating past any hit rate it has ever observed.
+RISK_CAP_CEILING = 0.12
+
+
+def measured_risk_cap(root: Path | None = None) -> dict[str, Any]:
+    """Per-trade cap from the desk's MEASURED hit rate, half-Kelly, floored and capped.
+
+    Returns the floor with state UNMEASURED when there is no record -- never an optimistic
+    default, because a cap set from a hit rate nobody has observed is a guess wearing a formula."""
+    try:
+        from libs.self_improvement.forecast_calibration import report
+        rep = report()
+        n = int(rep.get("n_resolved") or 0)
+        hit = rep.get("hit_rate_posterior")
+    except Exception as exc:
+        return {"cap": RISK_CAP_FLOOR, "state": "UNMEASURED",
+                "why": f"calibration unavailable ({type(exc).__name__}) -- floor applies"}
+    if n < 30 or hit is None:
+        return {"cap": RISK_CAP_FLOOR, "state": "UNMEASURED", "n_resolved": n,
+                "why": f"{n}/30 resolved outcomes -- the hit rate that sets Kelly is not yet "
+                       "measured, so the floor applies. Not timidity: a cap derived from an "
+                       "unobserved rate is a guess wearing a formula."}
+    p = float(hit if not isinstance(hit, dict) else hit.get("mean", 0.0))
+    b = 3.0                                              # the ladder's realised winner:loser shape
+    full = (p * b - (1 - p)) / b
+    cap = max(RISK_CAP_FLOOR, min(RISK_CAP_CEILING, full / 2.0))
+    return {"cap": round(cap, 4), "state": "MEASURED", "n_resolved": n,
+            "hit_rate": round(p, 4), "full_kelly": round(full, 4),
+            "why": f"half-Kelly at a measured {p:.1%} hit rate is {full/2:.1%}; "
+                   f"clamped to [{RISK_CAP_FLOOR:.0%}, {RISK_CAP_CEILING:.0%}]"}
 
 #: TOTAL heat across all live positions. This is the real aggression dial now, and at 30% it is
 #: HIGHER than the old design ever ran (one 20% bet at a time), while every individual bet is
@@ -333,7 +385,8 @@ def slip_leverage_cap(stop_pct: float, *, stress_loss: float = MAX_STRESS_LOSS) 
     return stress_loss / ((stop_pct + SLIP_STRESS_PCT) / 100.0)
 
 
-def kelly_leverage(prob: float, reward_risk: float, stop_pct: float) -> dict[str, Any]:
+def kelly_leverage(prob: float, reward_risk: float, stop_pct: float,
+                   *, risk_cap: float = MAX_RISK_PER_TRADE) -> dict[str, Any]:
     """Fractional-Kelly leverage from Claude's OWN probability. Aggression is here; the caps are
     the rail. Kelly f* = (p*b - q)/b; leverage = (fraction of equity at risk) / (stop distance).
 
@@ -345,7 +398,7 @@ def kelly_leverage(prob: float, reward_risk: float, stop_pct: float) -> dict[str
     p, q, b = prob, 1.0 - prob, max(reward_risk, 1e-6)
     edge = (p * b - q) / b                                  # full-Kelly fraction of equity
     want = max(0.0, edge * KELLY_FRACTION)                  # half-Kelly, before any cap
-    budget = min(MAX_RISK_PER_TRADE, want)
+    budget = min(risk_cap, want)
     if stop_pct <= 0:
         return {"full_kelly": round(edge, 4), "kelly_risk_fraction": round(budget, 4),
                 "risk_fraction": 0.0, "leverage": 0.0, "slip_cap": 0.0, "capped_by": "no-stop"}
@@ -354,7 +407,7 @@ def kelly_leverage(prob: float, reward_risk: float, stop_pct: float) -> dict[str
     lev = min(MAX_LEVERAGE, slip_cap, kelly_lev)
     realised = lev * (stop_pct / 100.0)                     # what the stop actually costs
     caps = []
-    if want > MAX_RISK_PER_TRADE:
+    if want > risk_cap:
         caps.append("max_risk")
     if slip_cap < min(kelly_lev, MAX_LEVERAGE):
         caps.append("gap_stress")
@@ -1053,8 +1106,10 @@ def record(root: Path, call: dict[str, Any], *,
     if why:                                    # unreachable via main(), which validates first
         raise ValueError(why)
     cal = calibrated_p(float(call["probability"]))
-    sizing = kelly_leverage(cal["used"],
-                            float(call["expected_move_pct"]) / stop_pct, stop_pct)
+    rcap = measured_risk_cap(root)
+    sizing = kelly_leverage(cal["used"], float(call["expected_move_pct"]) / stop_pct, stop_pct,
+                            risk_cap=float(rcap["cap"]))
+    sizing["risk_cap"] = rcap
     # HEAT HEADROOM AS A SIZER: trim into what actually fits rather than refusing the setup.
     fit = size_into_headroom(root, str(call["symbol"]), sizing["risk_fraction"])
     if fit["risk"] < sizing["risk_fraction"]:

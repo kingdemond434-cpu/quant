@@ -22,6 +22,8 @@ from scripts.run_conviction_trader import (
     MAX_RISK_PER_TRADE,
     MAX_STRESS_LOSS,
     MIN_STOP_PCT,
+    RISK_CAP_CEILING,
+    RISK_CAP_FLOOR,
     SLIP_STRESS_PCT,
     _chart_brief,
     adverse_excursion,
@@ -30,6 +32,7 @@ from scripts.run_conviction_trader import (
     effective_heat,
     kelly_leverage,
     management_plan,
+    measured_risk_cap,
     noise_floor,
     portfolio_heat,
     record,
@@ -630,3 +633,43 @@ def test_a_busy_book_trims_the_trade_instead_of_refusing_it(tmp_path):
 def test_nothing_fillable_is_still_refused(tmp_path):
     ok, why = validate(_t(), heat={"heat": 0.30, "fits_risk": 0.0001, "symbols": []})
     assert not ok and "no fillable size" in why
+
+
+# --------------------------------------- the per-trade cap is DERIVED, and it can go UP
+
+def test_the_cap_rises_with_a_measured_hit_rate(monkeypatch):
+    # The flat 6% was wrong in the TIMID direction and the principal caught it: at a real 35% hit
+    # rate full Kelly is 13.3%, so 6% is 0.45x Kelly and leaves growth on the table (L1.28).
+    import libs.self_improvement.forecast_calibration as fc
+    caps = []
+    for p in (0.30, 0.35, 0.42):
+        monkeypatch.setattr(fc, "report",
+                            lambda p=p: {"n_resolved": 60, "hit_rate_posterior": p})
+        caps.append(measured_risk_cap(Path("."))["cap"])
+    assert caps == sorted(caps) and caps[-1] > caps[0]
+    assert caps[-1] > RISK_CAP_FLOOR                  # a proven forecaster earns MORE size
+    assert caps[-1] <= RISK_CAP_CEILING
+
+
+def test_an_unmeasured_hit_rate_holds_the_floor_and_says_why(monkeypatch):
+    # Not timidity: a cap derived from an unobserved rate is a guess wearing a formula, and this
+    # is the same rule that treats an unmeasured correlation as a duplicate.
+    import libs.self_improvement.forecast_calibration as fc
+    monkeypatch.setattr(fc, "report", lambda: {"n_resolved": 4, "hit_rate_posterior": 0.5})
+    c = measured_risk_cap(Path("."))
+    assert c["cap"] == RISK_CAP_FLOOR and c["state"] == "UNMEASURED"
+    assert "guess wearing a formula" in c["why"]
+
+
+def test_a_poor_measured_hit_rate_never_pushes_the_cap_below_the_floor(monkeypatch):
+    # Sizing DOWN is calibrated_p's job (it shrinks the probability). The cap floor stays put so a
+    # bad patch cannot ratchet the sleeve into irrelevance before the kill condition decides.
+    import libs.self_improvement.forecast_calibration as fc
+    monkeypatch.setattr(fc, "report", lambda: {"n_resolved": 60, "hit_rate_posterior": 0.26})
+    assert measured_risk_cap(Path("."))["cap"] == RISK_CAP_FLOOR
+
+
+def test_the_sizer_actually_consumes_the_higher_cap():
+    lo = kelly_leverage(0.63, 4.0 / 2.0, 2.0, risk_cap=0.06)["risk_fraction"]
+    hi = kelly_leverage(0.63, 4.0 / 2.0, 2.0, risk_cap=0.11)["risk_fraction"]
+    assert hi > lo                                    # the cap is a real input, not decoration
