@@ -238,11 +238,30 @@ QUANT_ROOT=/home/quant/quant-platform
 # bets (BTC/ETH/SOL perps + PAXGUSDT gold analogue), sized by fractional-Kelly against its OWN
 # probability -- an honest 60pct edge with a 2pct stop becomes ~8x, exactly the screenshot's
 # leverage. AGGRESSION UNCAPPED, RUIN CAPPED: every trade carries a stop, leverage hard-capped
-# at 10x, per-trade risk <=20pct, whole sleeve inside the -35pct ruin rail (L1.23). PAPER ONLY,
-# every call scored by the L1.29 calibration fence. 6x/day.
+# at 20x, per-trade risk <=6pct, heat <=30pct, whole sleeve inside the -35pct ruin rail (L1.23).
+# PAPER ONLY,
+# every call scored by the L1.29 calibration fence. HOURLY (was 6x/day): with per-trade risk
+# cut 20pct->6pct and a 30pct portfolio heat cap, aggression moved from SIZE to BREADTH and
+# FREQUENCY -- simulation showed one 24pct bet has a ~100pct chance of a -90pct drawdown even
+# when profitable, while the same heat spread over 4-8 positions has ~1pct. More shots at a
+# bounded total exposure IS the compounding lever; bigger shots are not.
 # EVIDENCE: scripts/run_conviction_trader.py -> data/conviction_trader.json + conviction_book.jsonl
 # CONFIDENCE: committed-script (new this cycle)
-45 */4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_conviction.lock .venv/bin/python scripts/run_conviction_trader.py >> data/cro_ai_logs/conviction.log 2>&1
+45 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_conviction.lock .venv/bin/python scripts/run_conviction_trader.py >> data/cro_ai_logs/conviction.log 2>&1
+
+# CHART CONTEXT (R0134): the charts the discretionary sleeve was never shown. It was asked to name
+# swing levels it had no price structure for -- a headline reader with a leverage dial, which is
+# the "too calculative, earns less than a manual trader" failure the principal described. Builds
+# multi-timeframe structure per instrument: fractal swing highs/lows clustered into LEVELS WITH
+# TOUCH COUNTS (a level defended three times is not the level touched once), trend state read from
+# the swing sequence rather than a moving average, position in range, distance to the nearest level
+# each way, volatility regime vs the instrument's own 30d median, and 1h/4h/24h/7d momentum.
+# EVERY 20 MIN, staying ahead of the hourly trader so its levels are never more than a bar or two
+# stale; the trader flags any staleness it does see rather than trusting it. UNAVAILABLE
+# instruments are RECORDED -- a universe that shrinks to whatever answered is one nobody chose.
+# EVIDENCE: scripts/build_chart_context.py -> data/chart_context.json
+# CONFIDENCE: committed-script (new this cycle, 18-instrument universe verified live on OKX)
+*/20 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_charts.lock .venv/bin/python scripts/build_chart_context.py >> data/cro_ai_logs/chart_context.log 2>&1
 
 # PAPER BOOK RESOLVER (R0133): marks EVERY paper call against real bars. Both sleeves above wrote
 # books nobody read -- an unmarked book accumulates confident rows, reports no failure and reads

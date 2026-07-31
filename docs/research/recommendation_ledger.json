@@ -1622,6 +1622,18 @@
    "commit": "d3d4c27",
    "due": null,
    "note": "owed next: 30-call calibration+EV review that graveyards the sleeve if uncalibrated"
+  },
+  {
+   "id": "R0134",
+   "source": "principal",
+   "summary": "CHART CONTEXT + BREADTH RECUT of the discretionary sleeve. Principal: 'maximise this side too -- discretionary, like a human trader with professional risk management, best of both worlds, target 100-200 net CAGR.' TWO FINDINGS DROVE THIS. (1) The sleeve was asked to trade like a chart trader with NO PRICE STRUCTURE at all -- funding/liquidations/news only. build_chart_context.py now supplies multi-timeframe fractal swing levels WITH TOUCH COUNTS, trend read from the swing sequence, position in range, room to the next level, and vol regime, for 18 instruments every 20 min. (2) Simulating the CAGR target settled the sizing question: at 20pct risk/trade the book meets a -90pct drawdown with ~certainty EVEN WHEN PROFITABLE, and past full Kelly more size makes growth negative; at 5-6pct it clears 100-200pct several times over. Holding total heat fixed at ~24pct and only changing its SHAPE, 1 bet at 24pct gives median +1058pct with P(-90pct)=100pct while 4-8 bets at 3-6pct give far higher medians with P(-90pct)=0-1pct. So per-trade risk 20pct->6pct, universe 4->18, cadence 4h->hourly, new 30pct portfolio heat cap with same-symbol doubling refused. Aggression moved from SIZE to BREADTH and FREQUENCY, which is strictly better on BOTH median return and ruin.",
+   "roi_bps": 0.0,
+   "raised": "2026-07-31T15:10:00+00:00",
+   "status": "done",
+   "reason": "built, scheduled, 52 tests across the two organs, 18/18 instruments charted live",
+   "commit": null,
+   "due": null,
+   "note": "the gap-stress leverage cap is now INERT at a 6pct budget and is labelled as such in code rather than counted as protection; owed next: wire measured calibration into the probability before Kelly so size scales UP as evidence arrives, not only down"
   }
  ]
 }

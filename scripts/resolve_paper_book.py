@@ -83,21 +83,32 @@ def _http(url: str, *, timeout: int = 25) -> Any:
         return json.loads(resp.read())
 
 
-def _binance_bars(symbol: str, start_ms: int, end_ms: int) -> list[tuple[int, float, float,
-                                                                        float, float]]:
-    url = (f"https://fapi.binance.com/fapi/v1/klines?symbol={symbol}&interval={BAR}"
+#: Interval names differ per venue; one mapping so callers speak a single dialect.
+_INTERVALS: dict[str, tuple[str, str, int]] = {          # ours -> (binance, okx, ms)
+    "15m": ("15m", "15m", 15 * 60 * 1000),
+    "1h": ("1h", "1H", 60 * 60 * 1000),
+    "4h": ("4h", "4H", 4 * 60 * 60 * 1000),
+    "1d": ("1d", "1D", 24 * 60 * 60 * 1000),
+}
+
+
+def _binance_bars(symbol: str, start_ms: int, end_ms: int, bar: str = BAR
+                  ) -> list[tuple[int, float, float, float, float]]:
+    iv = _INTERVALS[bar][0]
+    url = (f"https://fapi.binance.com/fapi/v1/klines?symbol={symbol}&interval={iv}"
            f"&startTime={start_ms}&endTime={end_ms}&limit=1000")
     return [(int(r[0]), float(r[1]), float(r[2]), float(r[3]), float(r[4])) for r in _http(url)]
 
 
-def _okx_bars(symbol: str, start_ms: int, end_ms: int) -> list[tuple[int, float, float,
-                                                                     float, float]]:
+def _okx_bars(symbol: str, start_ms: int, end_ms: int, bar: str = BAR
+              ) -> list[tuple[int, float, float, float, float]]:
     inst = f"{symbol[:-4]}-USDT" if symbol.endswith("USDT") else symbol
+    iv, step = _INTERVALS[bar][1], _INTERVALS[bar][2]
     got: dict[int, tuple[int, float, float, float, float]] = {}
-    cursor = end_ms + _BAR_MS
+    cursor = end_ms + step
     for _ in range(MAX_PAGES):
         d = _http(f"https://www.okx.com/api/v5/market/history-candles?instId={inst}"
-                  f"&bar={BAR}&limit=100&after={cursor}")
+                  f"&bar={iv}&limit=100&after={cursor}")
         rows = d.get("data") or []
         if not rows:
             break
@@ -111,13 +122,15 @@ def _okx_bars(symbol: str, start_ms: int, end_ms: int) -> list[tuple[int, float,
     return [v for _, v in sorted(got.items()) if start_ms <= v[0] <= end_ms]
 
 
-def fetch_bars(symbol: str, start_ms: int, end_ms: int) -> tuple[list[tuple[int, float, float,
-                                                                            float, float]], str]:
+def fetch_bars(symbol: str, start_ms: int, end_ms: int, bar: str = BAR
+               ) -> tuple[list[tuple[int, float, float, float, float]], str]:
     """Bars from the first venue that answers. Returns ([], reason) rather than inventing a mark."""
+    if bar not in _INTERVALS:
+        return [], f"UNRESOLVABLE -- unknown interval {bar}"
     errors = []
     for name, fn in (("binance", _binance_bars), ("okx", _okx_bars)):
         try:
-            bars = fn(symbol, start_ms, end_ms)
+            bars = fn(symbol, start_ms, end_ms, bar)
             if bars:
                 return bars, name
             errors.append(f"{name}: empty")

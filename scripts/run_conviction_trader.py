@@ -102,7 +102,17 @@ from libs.ops.lawful import guard as _law_guard  # noqa: E402
 _BOOK = "data/conviction_book.jsonl"
 _STATE = "data/conviction_trader.json"
 
-INSTRUMENTS = ("BTCUSDT", "ETHUSDT", "SOLUSDT", "PAXGUSDT")
+#: THE UNIVERSE. Widened from 4 to 18 because BREADTH IS THE COMPOUNDING LEVER and size is not --
+#: see MAX_RISK_PER_TRADE below for the simulation that forced this. Four instruments means the
+#: sleeve either takes a mediocre setup or passes; eighteen means it can wait for the good one and
+#: still be in the market, which is what a professional discretionary book actually looks like.
+#: All verified live on the venue fallback chain 2026-07-31. PAXGUSDT is the on-Binance gold
+#: analogue of the principal's XAUUSD screenshot and is deliberately kept: it is the only
+#: non-crypto-beta instrument here, so it is the one position that can be uncorrelated with the
+#: other seventeen when everything else moves together.
+INSTRUMENTS = ("BTCUSDT", "ETHUSDT", "SOLUSDT", "PAXGUSDT", "BNBUSDT", "XRPUSDT",
+               "DOGEUSDT", "ADAUSDT", "AVAXUSDT", "LINKUSDT", "LTCUSDT", "DOTUSDT",
+               "SUIUSDT", "NEARUSDT", "APTUSDT", "ARBUSDT", "PEPEUSDT", "HYPEUSDT")
 MIN_PROB, MAX_PROB = 0.52, 0.90        # below 52% is the other side; 90%+ is an over-confidence tell
 KELLY_FRACTION = 0.5                    # half-Kelly: aggressive but robust to estimate error
 MAX_LEVERAGE = 20.0                    # absolute notional ceiling -- 20x, not the 100x that ruins
@@ -125,7 +135,37 @@ MAX_STOP_PCT = 15.0
 #: breakeven sat inside gold's ordinary retrace.
 NOISE_MULT = 1.0                       # the stop must clear the median adverse excursion
 NOISE_LOOKBACK_HOURS = 96
-MAX_RISK_PER_TRADE = 0.20              # at most 20% of sleeve equity at risk on one call
+#: PER-TRADE RISK, and the single most consequential number in this file. It was 20%. The
+#: principal's target is 100-200% net CAGR, and simulating it settled the question rather than
+#: arguing it (250 sequential days, winners +3R after the trail, losers -1R):
+#:
+#:      risk/trade   true hit rate   median year   P(-90% drawdown)
+#:            20%             35%        +9064%              96%
+#:            20%             30%          -98%             100%
+#:             5%             30%          351%               2%
+#:
+#: At 20% the book meets a -90% drawdown with near-certainty EVEN WHEN THE STRATEGY IS
+#: PROFITABLE -- it is wiped out on the way to the gain -- and at a 30% hit rate 20% sits past
+#: full Kelly, where more size makes growth NEGATIVE. Meanwhile 5% clears the target several
+#: times over. The target never needed bigger bets.
+#:
+#: This is NOT a retreat from aggression, and the second simulation is the proof. Holding TOTAL
+#: heat fixed at ~24% and only changing its shape (35% hit rate):
+#:
+#:      1 bet @ 24%   median +1058%   5th pct -100%   P(-90%) 100%
+#:      4 bets @  6%  median  huge    5th pct  huge   P(-90%)   1%
+#:      8 bets @  3%  median  huge    5th pct  huge   P(-90%)   0%
+#:
+#: Same money at risk, spread across independent instruments: strictly better median AND a
+#: near-zero chance of the drawdown that ends the account. So the aggression moved from SIZE to
+#: BREADTH and FREQUENCY -- an 18-instrument universe, hourly, several positions live at once.
+#: On a 0.9% structural stop 6% still buys ~6.7x leverage, which is the screenshot's own range.
+MAX_RISK_PER_TRADE = 0.06              # at most 6% of sleeve equity at risk on one call
+
+#: TOTAL heat across all live positions. This is the real aggression dial now, and at 30% it is
+#: HIGHER than the old design ever ran (one 20% bet at a time), while every individual bet is
+#: survivable. Enforced against the open book, not assumed.
+MAX_PORTFOLIO_HEAT = 0.30
 
 #: THE GAP-RISK STRESS, and the reason there is a notional ceiling at all. The stop being hit is
 #: priced: that is MAX_RISK_PER_TRADE and the sizer targets it exactly. What is NOT priced is a
@@ -137,6 +177,12 @@ MAX_RISK_PER_TRADE = 0.20              # at most 20% of sleeve equity at risk on
 #: This replaced a flat 10x cap that was actively anti-aggression: it made a 0.9% structural stop
 #: deploy 9% of the risk budget while a lazy 2% stop deployed the full 20% -- the desk's own
 #: ceiling punishing the exact behaviour the calculated stop exists to produce (L1.28).
+#: HONEST STATUS AFTER THE RISK RECUT: at a 6% per-trade budget this cap no longer binds anywhere
+#: in the legal stop range (0.5-15%) -- the risk budget is the tighter constraint everywhere, so
+#: the stress cap is currently INERT. By this desk's own standard a rail that can never fire is
+#: decoration, so it is named as one rather than counted as protection. It is kept because it is
+#: the thing that must hold if MAX_RISK_PER_TRADE is ever raised again, and a test pins that
+#: leverage never exceeds it. Do not read it as active protection today.
 SLIP_STRESS_PCT = 2.0                  # a liquidation cascade prints this far through the stop
 MAX_STRESS_LOSS = 0.50                 # ...and even then the sleeve loses at most half
 MAX_PEAK_STRESS_LOSS = 0.60            # the full pyramid is allowed slightly more, measured as
@@ -309,7 +355,11 @@ def management_plan(entry: float, invalidation: float, direction: str, *,
         "open_risk_frac": orisk, "locked_profit_frac": olock}]
 
     for k, add_raw in enumerate(ADD_UNITS, start=1):
-        add_u = round(add_raw * add_scale, 4)
+        # THE ADD IS SIZED BY RISK, NOT BY UNITS. Its stop sits one TRAIL behind it, so at a
+        # noise-widened trail each unit added carries trail/R of risk rather than 1R. Adding a
+        # flat 0.50u there would make open risk RISE at the first rung -- caught by the invariant
+        # test, which is the whole reason that test asserts on computed numbers.
+        add_u = round(add_raw * add_scale * (r / trail), 4)
         stop = rung(k - 1)                                   # trail ONE trail-distance behind
         tranches.append((rung(k), add_u))
         units = sum(u for _, u in tranches)
@@ -360,6 +410,17 @@ SCORED, so your confidence must be honest.
 INSTRUMENTS: {instruments}. Take a directional view -- macro, technical, flow, positioning,
 cross-asset (gold via PAXGUSDT, risk via BTC/ETH). A VIEW is allowed here (unlike the event
 sleeve), but state the DRIVER: what makes this move happen, and what would kill it.
+
+YOUR CHARTS -- multi-timeframe structure for every instrument: swing highs and lows with TOUCH
+COUNTS (a level defended three times is not the level touched once), trend state read from the
+swing sequence, position in range, distance to the nearest level each way, and volatility regime.
+Read them like a trader: is the 4h trend with you, is there room to the next level, is the
+invalidation you want to use an actual defended structure or a random pivot?
+{charts}
+
+PICK THE BEST SETUP IN THE UNIVERSE, not the first readable one. You get one call per hour across
+18 instruments and several positions can be live at once, so a mediocre setup costs you the good
+one you would otherwise have had heat for. The right answer is often PASS.
 
 THE STOP IS A LEVEL, NOT A PERCENTAGE. Name the PRICE at which your thesis is factually dead --
 the swing the trend must not lose, the range edge, the shelf that was defended -- and name the
@@ -493,6 +554,51 @@ def noise_table(*, horizons: tuple[float, ...] = (8.0, 24.0, 48.0), fetch=None) 
                        "an invalidation closer than this is refused as noise"}
 
 
+def open_positions(root: Path, *, now: datetime | None = None) -> list[dict[str, Any]]:
+    """Calls whose horizon has not expired -- read from the book, never assumed."""
+    now = now or datetime.now(tz=UTC)
+    live = []
+    try:
+        lines = (root / _BOOK).read_text("utf-8", errors="ignore").splitlines()
+    except OSError:
+        return []
+    for ln in lines:
+        if not ln.strip():
+            continue
+        try:
+            r = json.loads(ln)
+        except ValueError:
+            continue
+        try:
+            if datetime.fromisoformat(r["resolve_by"]) > now and r.get("action") != "PASS":
+                live.append(r)
+        except (KeyError, ValueError):
+            continue
+    return live
+
+
+def portfolio_heat(root: Path, *, now: datetime | None = None) -> dict[str, Any]:
+    """Total risk live across the book, and the rail that makes frequency safe rather than reckless.
+
+    Breadth only beats concentration if the bets are actually SEPARATE. Eight positions all long
+    crypto beta in a correlated tape is one position wearing eight names, and the simulation that
+    justified widening the universe assumed independence -- so the same-direction concentration is
+    reported here rather than quietly ignored. This rail is what allows the cadence to rise: more
+    shots at a bounded total exposure is the whole design."""
+    live = open_positions(root, now=now)
+    heat = sum(float((r.get("sizing") or {}).get("risk_fraction") or 0.0) for r in live)
+    longs = sum(1 for r in live if r.get("direction") == "LONG")
+    return {
+        "n_open": len(live), "heat": round(heat, 4), "cap": MAX_PORTFOLIO_HEAT,
+        "headroom": round(max(0.0, MAX_PORTFOLIO_HEAT - heat), 4),
+        "symbols": [r.get("symbol") for r in live],
+        "directional_skew": (f"{longs}L/{len(live) - longs}S" if live else "flat"),
+        "state": "FULL" if heat >= MAX_PORTFOLIO_HEAT else "OPEN",
+        "why": (f"{heat:.1%} of {MAX_PORTFOLIO_HEAT:.0%} heat live across {len(live)} positions"
+                if live else "no live positions -- full heat available"),
+    }
+
+
 def sleeve_drawdown(root: Path) -> dict[str, Any]:
     """The sleeve's own drawdown rail, read from the marked paper book (R0133).
 
@@ -516,6 +622,40 @@ def sleeve_drawdown(root: Path) -> dict[str, Any]:
                     f"{SLEEVE_DD_HALT:.0%} halt" if dd >= SLEEVE_DD_HALT
                     else f"{dd:.1%} drawdown over {n} closed calls, inside the "
                          f"{SLEEVE_DD_HALT:.0%} rail")}
+
+
+def _chart_brief(root: Path, heat: dict[str, Any] | None = None, *, max_chars: int = 9000) -> str:
+    """The charts, trimmed to what fits and honest about what did not.
+
+    Instruments already live are dropped: heat is capped and the same-symbol trade is refused
+    anyway, so spending brief on them buys nothing. STALE and MISSING are stated -- a trader
+    reasoning over yesterday's structure while believing it is today's is worse than one who
+    knows it is blind."""
+    try:
+        raw = json.loads((root / "data/chart_context.json").read_text("utf-8"))
+    except (OSError, ValueError) as exc:
+        return (f"CHARTS UNAVAILABLE ({type(exc).__name__}) -- build_chart_context.py has not run "
+                "on this host. You are trading BLIND on structure: do not name a swing level you "
+                "cannot see, and PASS unless the non-chart evidence alone is compelling.")
+    try:
+        age_h: float | None = (datetime.now(tz=UTC)
+                               - datetime.fromisoformat(raw["generated"])).total_seconds() / 3600.0
+        age_note = f"{age_h:.1f}h old"
+    except (KeyError, ValueError) as exc:
+        # NOT swallowed: an unreadable timestamp means the trader cannot tell fresh structure from
+        # a stale snapshot, and that must reach the trader rather than vanish into a default.
+        age_h, age_note = None, f"age UNMEASURED ({type(exc).__name__}) -- treat as possibly STALE"
+    held = set((heat or {}).get("symbols") or [])
+    charts = {k: v for k, v in (raw.get("charts") or {}).items() if k not in held}
+    head = f"(chart context {age_note}, {raw.get('status')}: {raw.get('detail')})\n"
+    if age_h is None or age_h > 2:
+        head = ("WARNING -- CHART STRUCTURE MAY BE STALE"
+                + (f" ({age_h:.1f}h old)" if age_h is not None else "")
+                + ", treat levels as approximate.\n") + head
+    body = json.dumps(charts, separators=(",", ":"))
+    if len(body) > max_chars:
+        body = body[:max_chars] + f'... [TRUNCATED at {max_chars} chars of {len(body)}]'
+    return head + body
 
 
 def build_brief(root: Path) -> dict[str, Any]:
@@ -544,7 +684,8 @@ def build_brief(root: Path) -> dict[str, Any]:
     return brief
 
 
-def validate(call: dict[str, Any], *, noise: dict[str, Any] | None = None) -> tuple[bool, str]:
+def validate(call: dict[str, Any], *, noise: dict[str, Any] | None = None,
+             heat: dict[str, Any] | None = None) -> tuple[bool, str]:
     if call.get("action") == "PASS":
         if not call.get("pass_reason"):
             return False, "REFUSED: a PASS must state why -- an unjustified pass is not a decision"
@@ -603,6 +744,15 @@ def validate(call: dict[str, Any], *, noise: dict[str, Any] | None = None) -> tu
                        "expected gain is negative-EV even when the call is right")
     if len(str(call["driver"])) < 20 or len(str(call["falsifier"])) < 15:
         return False, "REFUSED: driver/falsifier too thin"
+    if heat:
+        if heat.get("state") == "FULL":
+            return False, (f"REFUSED: portfolio heat {heat['heat']:.1%} is at the "
+                           f"{MAX_PORTFOLIO_HEAT:.0%} cap -- the next trade waits for one to "
+                           "resolve. Breadth is the aggression here, not stacking.")
+        if call["symbol"] in (heat.get("symbols") or []):
+            return False, (f"REFUSED: already live in {call['symbol']} -- doubling the same "
+                           "instrument is concentration wearing a second name, which is exactly "
+                           "what the spread-the-heat design exists to avoid")
     return True, "accepted"
 
 
@@ -682,13 +832,23 @@ def main() -> int:
         print(json.dumps(state, indent=2) if args.json else
               f"conviction (R0125): HALTED -- {dd['why']}")
         return 0
+    heat = portfolio_heat(_ROOT)
+    if heat["state"] == "FULL":
+        state = {"status": "HEAT-FULL", "why": heat["why"], "heat": heat,
+                 "at": datetime.now(tz=UTC).isoformat()}
+        (_ROOT / _STATE).write_text(json.dumps(state, indent=2), "utf-8")
+        print(json.dumps(state, indent=2) if args.json else
+              f"conviction (R0125): HEAT-FULL -- {heat['why']}")
+        return 0
     try:
         floors = noise_table()
     except (OSError, ValueError) as exc:
         floors = {"state": "UNMEASURED", "why": str(exc)}
+    charts = _chart_brief(_ROOT, heat)
     raw = _ask(_BRIEF.format(instruments=", ".join(INSTRUMENTS),
                              brief=json.dumps(brief, indent=1)[:5000],
-                             noise=json.dumps(floors)[:1200],
+                             noise=json.dumps(floors)[:1500],
+                             charts=charts,
                              lo=MIN_PROB, hi=MAX_PROB,
                              smin=MIN_STOP_PCT, smax=MAX_STOP_PCT))
     call = parse(raw)
@@ -703,7 +863,7 @@ def main() -> int:
                                     str(call.get("direction", "LONG")))
             except (ValueError, TypeError, OSError) as exc:
                 noise = {"state": "UNMEASURED", "floor_pct": MIN_STOP_PCT, "why": str(exc)}
-        ok, why = validate(call, noise=noise)
+        ok, why = validate(call, noise=noise, heat=heat)
         if not ok:
             state = {"status": "REFUSED", "why": why, "call": call, "noise": noise}
         elif call.get("action") == "PASS":
@@ -714,6 +874,7 @@ def main() -> int:
                      "leverage": row["sizing"]["leverage"],
                      "peak_leverage": row["management"].get("peak_leverage"), "noise": noise}
     state["drawdown_rail"] = dd
+    state["heat"] = heat
     state.setdefault("at", datetime.now(tz=UTC).isoformat())
     (_ROOT / _STATE).write_text(json.dumps(state, indent=2), "utf-8")
     print(json.dumps(state, indent=2) if args.json else

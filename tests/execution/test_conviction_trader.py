@@ -14,7 +14,9 @@ from scripts.run_conviction_trader import (_BRIEF, MAX_LEVERAGE, MAX_PEAK_STRESS
                                            MAX_RISK_PER_TRADE, MAX_STOP_PCT, MAX_STRESS_LOSS,
                                            MIN_STOP_PCT, SLIP_STRESS_PCT, adverse_excursion,
                                            derive_stop_pct, kelly_leverage, management_plan,
-                                           noise_floor, record, sleeve_drawdown,
+                                           INSTRUMENTS, MAX_PORTFOLIO_HEAT, _chart_brief,
+                                           noise_floor, portfolio_heat, record,
+                                           sleeve_drawdown,
                                            slip_leverage_cap, validate)
 
 _ENTRY = 4107.4                                   # the screenshot's XAUUSD short, as PAXGUSDT
@@ -54,14 +56,14 @@ def test_no_edge_means_no_size():
 def test_reported_risk_is_what_the_stop_actually_costs_not_what_kelly_asked_for():
     # When a ceiling binds, Kelly's REQUEST and the position's actual exposure diverge. The
     # management ladder is denominated in this number, so publishing the request would overstate
-    # downside at every stage of it.
+    # downside at every stage of it. (At a 6% budget no ceiling binds inside the legal stop range,
+    # so this is checked by forcing the leverage cap directly.)
     s = kelly_leverage(0.63, 4.0 / 0.5, 0.5)
-    assert s["kelly_risk_fraction"] == MAX_RISK_PER_TRADE
-    assert s["risk_fraction"] < s["kelly_risk_fraction"]
-    assert abs(s["risk_fraction"] - s["leverage"] * 0.005) < 1e-6
-    # ...and when nothing binds, request and realisation agree.
-    s = kelly_leverage(0.63, 4.0 / 4.0, 4.0)
-    assert abs(s["risk_fraction"] - s["kelly_risk_fraction"]) < 1e-6
+    assert abs(s["risk_fraction"] - s["leverage"] * 0.005) < 1e-6      # always the realised number
+    assert abs(s["risk_fraction"] - s["kelly_risk_fraction"]) < 1e-6   # nothing binding -> agree
+    tiny = kelly_leverage(0.63, 4.0 / 0.05, 0.05)                      # sub-legal stop: caps bite
+    assert tiny["risk_fraction"] < tiny["kelly_risk_fraction"]
+    assert tiny["capped_by"] not in ("", "kelly")
 
 
 def test_no_size_is_left_on_the_table_at_any_stop_distance():
@@ -78,15 +80,14 @@ def test_no_size_is_left_on_the_table_at_any_stop_distance():
         assert s["capped_by"] != ""
 
 
-def test_the_tight_structural_stop_beats_the_old_flat_ceiling():
-    # REGRESSION PIN for the actual defect: under the old flat 10x cap a 0.9% structural stop
-    # deployed 9% of the risk budget while a lazy 2% stop deployed the full 20%. The gap-stress
-    # bound is a real constraint at that distance -- but it must bind at a level well above where
-    # the arbitrary one did.
-    tight = kelly_leverage(0.63, 4.0 / 0.9, 0.9)
-    assert "gap_stress" in tight["capped_by"]       # bound by a reason, not a round number
-    assert tight["risk_fraction"] > 10.0 * 0.009 * 1.5     # comfortably beats the old 9%
-    assert tight["leverage"] > 10.0
+def test_a_tight_structural_stop_deploys_the_whole_budget():
+    # REGRESSION PIN for the original defect: a flat 10x cap made a 0.9% structural stop deploy
+    # only 9% of a 20% budget, penalising the exact behaviour the calculated stop exists to
+    # produce. No ceiling may quietly keep the budget from a tight honest level.
+    for stop in (0.5, 0.9, 1.5):
+        s = kelly_leverage(0.63, 4.0 / stop, stop)
+        assert abs(s["risk_fraction"] - s["kelly_risk_fraction"]) < 1e-9, f"budget stolen at {stop}%"
+    assert kelly_leverage(0.63, 4.0 / 0.9, 0.9)["leverage"] > 5.0      # still real leverage
 
 
 def test_the_only_notional_ceiling_is_the_gap_stress():
@@ -362,3 +363,85 @@ def test_the_widened_trail_keeps_every_downside_invariant():
         assert risks[-1] == 0.0
         assert [x["stop"] for x in st] == sorted(x["stop"] for x in st)
         assert [x["units"] for x in st] == sorted(x["units"] for x in st)
+
+
+# ------------------------------------------------- breadth is the aggression: portfolio heat rail
+
+def _book_row(symbol, risk, hours_left=6):
+    from datetime import UTC, datetime, timedelta
+    return json.dumps({"action": "TRADE", "symbol": symbol, "direction": "LONG",
+                       "sizing": {"risk_fraction": risk},
+                       "resolve_by": (datetime.now(tz=UTC)
+                                      + timedelta(hours=hours_left)).isoformat()})
+
+
+def test_heat_is_read_from_the_open_book_not_assumed(tmp_path):
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data/conviction_book.jsonl").write_text(
+        "\n".join([_book_row("BTCUSDT", 0.06), _book_row("ETHUSDT", 0.06),
+                   _book_row("SOLUSDT", 0.06, hours_left=-5)]) + "\n")    # third has expired
+    h = portfolio_heat(tmp_path)
+    assert h["n_open"] == 2 and abs(h["heat"] - 0.12) < 1e-9
+    assert h["state"] == "OPEN" and h["headroom"] > 0
+    assert set(h["symbols"]) == {"BTCUSDT", "ETHUSDT"}
+
+
+def test_a_full_book_refuses_the_next_trade_rather_than_stacking(tmp_path):
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data/conviction_book.jsonl").write_text(
+        "\n".join(_book_row(s, 0.06) for s in
+                  ("BTCUSDT", "ETHUSDT", "SOLUSDT", "ADAUSDT", "LINKUSDT")) + "\n")
+    h = portfolio_heat(tmp_path)
+    assert h["state"] == "FULL" and h["heat"] >= MAX_PORTFOLIO_HEAT
+    ok, why = validate(_t(), heat=h)
+    assert not ok and "heat" in why and "Breadth is the aggression" in why
+
+
+def test_doubling_the_same_instrument_is_refused(tmp_path):
+    # Eight positions all in one name is one position wearing eight names -- exactly what the
+    # spread-the-heat simulation says destroys the advantage.
+    h = {"state": "OPEN", "heat": 0.06, "symbols": ["PAXGUSDT"]}
+    ok, why = validate(_t(symbol="PAXGUSDT"), heat=h)
+    assert not ok and "already live" in why
+    assert validate(_t(symbol="BTCUSDT"), heat=h)[0]
+
+
+def test_an_empty_book_leaves_full_heat_available(tmp_path):
+    h = portfolio_heat(tmp_path)
+    assert h["state"] == "OPEN" and h["heat"] == 0.0 and h["n_open"] == 0
+
+
+def test_the_universe_is_wide_enough_for_the_heat_cap():
+    # Breadth only works if there ARE enough instruments to spread across: the cap allows
+    # MAX_PORTFOLIO_HEAT / MAX_RISK_PER_TRADE concurrent positions, and the universe must exceed
+    # that or the design silently degrades back to concentration.
+    slots = MAX_PORTFOLIO_HEAT / MAX_RISK_PER_TRADE
+    assert len(INSTRUMENTS) > slots * 2
+    assert len(set(INSTRUMENTS)) == len(INSTRUMENTS)
+    assert "PAXGUSDT" in INSTRUMENTS               # the one non-crypto-beta name
+
+
+def test_blind_on_charts_is_stated_not_hidden(tmp_path):
+    # A trader reasoning over structure it cannot see is worse than one that knows it is blind.
+    txt = _chart_brief(tmp_path)
+    assert "UNAVAILABLE" in txt and "BLIND" in txt
+
+
+def test_stale_charts_are_flagged(tmp_path):
+    from datetime import UTC, datetime, timedelta
+    (tmp_path / "data").mkdir()
+    old = (datetime.now(tz=UTC) - timedelta(hours=9)).isoformat()
+    (tmp_path / "data/chart_context.json").write_text(json.dumps(
+        {"generated": old, "status": "OK", "detail": "1/1", "charts": {"BTCUSDT": {"state": "OK"}}}))
+    txt = _chart_brief(tmp_path)
+    assert "STALE" in txt
+
+
+def test_charts_for_instruments_already_held_are_not_spent_on(tmp_path):
+    from datetime import UTC, datetime
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data/chart_context.json").write_text(json.dumps(
+        {"generated": datetime.now(tz=UTC).isoformat(), "status": "OK", "detail": "2/2",
+         "charts": {"BTCUSDT": {"state": "OK"}, "ETHUSDT": {"state": "OK"}}}))
+    txt = _chart_brief(tmp_path, {"symbols": ["BTCUSDT"]})
+    assert "ETHUSDT" in txt and "BTCUSDT" not in txt.split("\n", 1)[1]
