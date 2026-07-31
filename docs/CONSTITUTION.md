@@ -682,6 +682,30 @@ defect is always allowed, because changing a broken rail is the safest available
 `scripts/check_change_window.py` — BLOCK only when a change touches money-path files inside a live
 window; pre-launch is always OPEN (no capital can be harmed).
 
+**L1.39 ZERO IDLE FINDINGS — EVERYTHING FOUND ADVANCES ITS NEXT STAGE IMMEDIATELY** *(principal
+order 2026-07-31: "everything they find and everything everything finds must be utilised and
+implemented immediately, no idle")*. Every finding — from a miner, a hunt, the GPT+Claude duo, a
+fence, an audit — is routed to its **immediate next pipeline action in the same run it is found**.
+A finding that advances no stage is the defect; the queue latency between found and actioned is
+the idle this law kills.
+
+**THE ONE DISTINCTION THAT KEEPS THIS FROM BLOWING UP THE DESK, and it is not optional.** *No
+idle* means zero **action** latency; it does **not** mean zero **validation** latency, and the
+two are opposite risks. A raw find's next stage is a Stage-A screen (same run — screen-on-
+discovery). A screened survivor's next stage is a pre-registered forward clock (immediately). An
+engine idea's next stage is a build. A defect's next stage is a fix. **But a candidate is never an
+edge (L1.6): "implement immediately" for an alpha candidate means screen it immediately, clock it
+immediately — never size it immediately.** Skipping the screen/clock to "implement faster" is the
+phantom-edge factory this constitution exists to prevent; it is the reckless reading, and it is
+banned. The immediacy is in the ROUTING, never in the bar.
+
+**EVERY FINDING STORE IS COVERED, not just the recommendation ledger**: the axis watchlist
+(screen owed), the improvement inbox (build owed), the graveyard (re-entry condition recorded),
+the capability-hunt proposals (build owed). **FENCED** by the conversion family it joins:
+`check_conversion.py` (cross-session: no ledger row rots), the screen-on-discovery duty in the
+doctrine (same-run: no miner find sits un-screened), and `check_law_families.py` (the family is
+enforced as a whole). Unmeasured routing counts as idle (L1.28a).
+
 **L1.28c CADENCE IS AGGRESSION — EVERY SCHEDULE HUNTS ITS OWN CEILING** *(principal order
 2026-07-31)*. **Every cadence on this desk aims to increase its frequency to the maximum that
 still carries ROI, and a cadence nobody has tried to raise is idle capacity wearing a schedule.**

@@ -983,3 +983,28 @@ Each axis carries a stated mechanism and awaits screen-on-discovery by the seat 
    flat-screened Coin Metrics aggregates at wallet resolution.
 5. **Perp-DEX funding, access-segmented venues (Aster/Lighter)** — participant-segmentation
    (card 22 logic, opposite end): degen-retail funding cohort vs CEX funding spread.
+
+## ALPHA-HUNT CANDIDATES — 2026-07-31 (SCREEN-OWED, Claude family; full record: alpha_hunt_20260731.md)
+
+These are NOT idle: each is routed here for screen-on-discovery by the next box cycle that can
+reach the lake. Zero-idle = each advances to its NEXT stage (a Stage-A screen) immediately; it does
+NOT mean capital (L1.6 -- a candidate is not an edge). R-rows: R0115-R0118.
+
+1. **cross_exchange_funding_spread** (R0115, HIGHEST EV) — long funding cheap venue / short rich
+   venue when |spread|>round-trip cost. Decorrelated 2nd sleeve (earns the spread, not the level).
+   Data: funding on hyperliquid/bitmex/+ already collected. SCREEN-OWED: spread series → Sharpe
+   after costs, per venue pair.
+2. **post_liquidation_reversion** (R0116) — 5–30min after a liquidation-intensity z-score spike>k,
+   does price revert a fraction of the cascade? Regime-gated on the z-score. Data:
+   liquidation_listener.py owned. SCREEN-OWED.
+3. **cross_venue_quote_lead_lag** (R0117, pure moat) — which venue's book-imbalance leads others'
+   mid at own synchronized L2 timestamps. Extends micro_factory. SCREEN-OWED (box-local L2).
+4. **event_density_promotion_clock** (R0118) — multiplier, not an edge: event-driven survivors
+   clock per-event not per-day. Build into the promotion-latency path.
+5. **funding_boundary_micro_reversal** — pre/post 8h-settlement drift+reversal on 2nd-tier perps.
+6. **newlylisted_perp_funding_normalization** — fade extreme early funding toward the norm
+   (small-cap frontier, L1.18a).
+7. **high_funding_regime_carry_sizing** — size the deployed carry UP only in the detectable
+   high-funding regime; pure Sharpe-per-turn on an owned edge.
+8. **realized_vs_modeled_slippage_regime** — proprietary liquidity-stress gauge from tape vs
+   cost_model; bootstraps on live fills (R0106).

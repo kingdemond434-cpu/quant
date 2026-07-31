@@ -53,7 +53,7 @@ FAMILIES: dict[str, tuple[tuple[str, ...], str, str]] = {
         "the unknown-unknown organs decaying one at a time, each decay individually "
         "unremarkable, with no number that would show it"),
     "conversion": (
-        ("L1.10", "L1.28b", "L2.3", "L2.7"),
+        ("L1.10", "L1.28b", "L2.3", "L2.7", "L1.39"),
         "scripts/check_conversion.py",
         "findings piling up unfixed -- a desk that detects at tier-1 rate and repairs at "
         "hobbyist rate, with the spread invisible"),

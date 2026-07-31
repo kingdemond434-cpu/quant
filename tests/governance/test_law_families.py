@@ -119,3 +119,23 @@ def test_spawn_gate_pages_but_does_not_block():
     # A governance fault must never silently stop the desk (L1.2).
     be = Path("ops/brain_env.sh").read_text("utf-8")
     assert "_brain_page" in be and "return 0" in be.split("_law_gate_fast()")[1][:900]
+
+
+# --- L1.39 zero idle findings ------------------------------------------------------------------
+
+def test_l39_in_conversion_family_and_mapped():
+    from scripts.check_law_families import FAMILIES
+    assert "L1.39" in FAMILIES["conversion"][0]
+    mx = Path("scripts/build_enforcement_matrix.py").read_text("utf-8")
+    assert '"L1.39"' in mx
+
+
+def test_l39_draws_the_action_vs_validation_distinction():
+    # The load-bearing safety line: no idle = zero ACTION latency, NOT zero validation latency.
+    # Without this, "implement immediately" becomes the phantom-edge factory the desk bans.
+    const = " ".join(Path("docs/CONSTITUTION.md").read_text("utf-8").replace("**", "").split())
+    assert "L1.39 ZERO IDLE FINDINGS" in const
+    assert "never size it immediately" in const
+    assert "a candidate is never an edge" in const
+    doc = Path("ops/principal_doctrine.txt").read_text("utf-8")
+    assert "THE IMMEDIACY IS IN THE ROUTING, NEVER IN THE BAR" in doc

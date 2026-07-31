@@ -143,6 +143,10 @@ _MAP: dict[str, list[str]] = {
     # L1.38: the money path freezes to IMPROVEMENTS (never repairs) inside launch/first-fills/
     # rail-breach windows. Part of the survival family in spirit; fenced standalone.
     "L1.38": ["scripts/check_change_window.py"],
+    # L1.39: zero idle findings -- every finding routes to its next stage immediately. The
+    # principle unifies the two existing enforcers (cross-session + same-run); no new fence.
+    "L1.39": ["scripts/check_conversion.py", "ops/principal_doctrine.txt",
+              "scripts/check_law_families.py"],
     # L1.25a: null streaks throttle nothing -- an organ going quiet is caught by the freshness/
     # productivity wires REGARDLESS of its reason, so "stopped because nothing was working" trips
     # the same fence as "stopped because broken". The pessimism-freeze cannot hide.

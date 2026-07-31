@@ -1387,6 +1387,54 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0115",
+   "source": "principal",
+   "summary": "ALPHA HUNT R1 (Claude family, docs/research/alpha_hunt_20260731.md): CROSS-EXCHANGE FUNDING-SPREAD as a decorrelated 2nd sleeve -- long funding cheap venue / short rich venue when |spread|>round-trip cost; earns the SPREAD not the level so it pays when flat-funding kills single-venue carry (variance-drag reduction raises geometric mean directly, R0101 made concrete). Funding collected on 4+ venues already. Stage-A screen owed.",
+   "roi_bps": 45.0,
+   "raised": "2026-07-31T11:49:32.424659+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0116",
+   "source": "principal",
+   "summary": "ALPHA HUNT R2: POST-LIQUIDATION-CASCADE REVERSION (regime-gated) -- liquidation_listener.py feed owned, no reversion screen exists. Forced participant: liq engines market-close at any price, overshooting fair value transiently. Screen: 5-30min after liquidation-intensity z-score spike >k, does price revert a measurable fraction? Regime gate = the z-score, trades only when forced flow present. Data owned, cheap to screen.",
+   "roi_bps": 40.0,
+   "raised": "2026-07-31T11:49:32.470372+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0117",
+   "source": "principal",
+   "summary": "ALPHA HUNT R3: CROSS-VENUE QUOTE LEAD-LAG at own synchronized L2 timestamps -- pure moat, vendor data cannot reconstruct (their cross-venue stamps are interpolated, ours are actual capture instants). Which venue book-imbalance moves FIRST predicts others' mid sub-minute. Extends micro_factory (same L2 store, new feature family). Highest reconstruction-cost item, L1.11a.",
+   "roi_bps": 30.0,
+   "raised": "2026-07-31T11:49:32.516659+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0118",
+   "source": "principal",
+   "summary": "ALPHA HUNT R4: EVENT-DENSITY PROMOTION CLOCK -- event-driven edges (funding/liquidation/ETF) accrue evidence PER EVENT not per calendar day; the 28-day calendar clock under-credits them. Per-mechanism event-count clock promotes an event-driven survivor faster WITHOUT lowering the bar (same n_eff, reached sooner). Directly attacks bottleneck #1 calendar-time accrual.",
+   "roi_bps": 25.0,
+   "raised": "2026-07-31T11:49:32.551722+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
