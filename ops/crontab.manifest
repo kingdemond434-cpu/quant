@@ -207,6 +207,14 @@ QUANT_ROOT=/home/quant/quant-platform
 # CONFIDENCE: committed-script (new this cycle)
 */5 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_live_guard.lock .venv/bin/python scripts/run_live_guard.py >> data/cro_ai_logs/live_guard.log 2>&1
 
+# STERILE COCKPIT (L1.38, 2026-07-31): reports whether the desk is in a change-freeze window
+# (launch week / <20 live fills / rail unwinding). Advisory as a cron line -- its teeth are in
+# the pre-push hook, which passes the commit's changed files and BLOCKS a money-path improvement
+# inside a live window (a repair, declared, always passes). Research/mining/fences unaffected.
+# EVIDENCE: scripts/check_change_window.py -> data/change_window.json; CONSTITUTION L1.38
+# CONFIDENCE: committed-script (new this cycle)
+8 * * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_change_window.py >> data/cro_ai_logs/change_window.log 2>&1
+
 # THE LAW GATE, HOURLY (L1.37, principal order 2026-07-31 "enforced 24/7 with every
 # interaction"). The full battery -- portable law fences PLUS the box-only state fences whose
 # verdict is real here. This is the boundary that catches drift arriving WITHOUT a commit:

@@ -72,15 +72,32 @@ def test_hunt_keeps_families_independent_and_flags_degradation():
 
 
 def test_lens_rotation_gives_independent_draws():
-    from scripts.run_capability_hunt import _LENSES, _lens_for
-    day = "20260731"
-    slots = [_lens_for(day, i) for i in range(3)]
-    assert len(set(slots)) == 3                       # no two slots in a day share a lens
-    assert _lens_for(day, 0) != _lens_for("20260801", 0)   # nor does the same slot day-to-day
-    # every lens is reachable -- the rotation covers the whole space, never a favourite subset
+    from scripts.run_capability_hunt import _ALPHA_LENSES, _DEFENSIVE_LENSES, _lens_for
+    # same slot draws a different lens day to day -- consecutive draws are independent
+    assert _lens_for("20260731", 0) != _lens_for("20260801", 0)
+    # every lens of BOTH kinds is reachable over a month -- no favourite subset, yield stays
+    # measurable per lens
     seen = {_lens_for(f"2026{m:02d}{d:02d}", s)
-            for m in (7, 8) for d in range(1, 29) for s in range(3)}
-    assert seen == set(_LENSES)
+            for m in (7, 8) for d in range(1, 29) for s in range(6)}
+    assert all(x in seen for x in _ALPHA_LENSES)
+    assert all(x in seen for x in _DEFENSIVE_LENSES)
+
+
+def test_majority_of_daily_draws_hunt_new_alpha():
+    # Principal: exploration anchored to the growth/alpha goal -> most daily draws are offensive.
+    from scripts.run_capability_hunt import _ALPHA_LENSES, _lens_for
+    for day in ("20260731", "20260801", "20260815", "20260901"):
+        alpha = sum(1 for s in range(6) if _lens_for(day, s) in _ALPHA_LENSES)
+        assert alpha >= 4, f"{day}: only {alpha}/6 offensive"
+
+
+def test_brief_is_anchored_to_the_growth_objective_and_brainstorms():
+    from scripts.run_capability_hunt import _HUNT_BRIEF
+    b = _HUNT_BRIEF.lower()
+    assert "geometric growth" in b and "validated alpha" in b     # the supreme objective, up top
+    assert "brainstorm" in b                                       # breadth on every run
+    assert "forced participant" in " ".join(
+        __import__("scripts.run_capability_hunt", fromlist=["_ALPHA_LENSES"])._ALPHA_LENSES).lower()
 
 
 def test_hunt_history_is_append_only_and_lens_attributed(tmp_path):

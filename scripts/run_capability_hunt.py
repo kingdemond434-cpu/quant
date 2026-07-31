@@ -51,7 +51,12 @@ _CONTEXT = """Read these BEFORE proposing (they are today's measured state, rege
   docs/CONSTITUTION.md         the laws (skim L1.28a-c, L1.25a, L1.29-L1.31)
   docs/GAP_REGISTER.md + docs/research/recommendation_ledger.json   what is ALREADY known"""
 
-_HUNT_BRIEF = """You are hunting for a CAPABILITY THIS DESK DOES NOT HAVE AND HAS NOT THOUGHT OF.
+_HUNT_BRIEF = """You are hunting for what would most RAISE THIS DESK'S LONG-TERM GEOMETRIC GROWTH
+(max E[log wealth]) and its rate of VALIDATED ALPHA DISCOVERY -- the two supreme objectives.
+Every proposal is judged by one question: how much validated compounding does it add, directly
+or through what it multiplies? A new edge, a cheaper fill, a decorrelated sleeve, a faster
+promotion path, a data asymmetry no competitor can buy -- all qualify; so does a capability whose
+absence would let a live edge die uncaught. Aim at the GROWTH, not at the org chart.
 
 {context}
 
@@ -95,7 +100,16 @@ OUTPUT (strict, and keep it SHORT -- one proposal, deeply argued, beats five ske
   FALSIFIER: <what evidence would prove this is NOT worth building>
 Then one line: NOVELTY-CHECK: <grep/read command you ran proving this does not already exist>.
 An honest "I could not find one that clears the bar, here is what I checked and why each failed"
-is a VALID and useful answer -- padding the list with known items is a defect."""
+is a VALID and useful answer -- padding the list with known items is a defect.
+
+THEN, ALWAYS -- THE BRAINSTORM (breadth, principal 2026-07-31 "brainstorms too"). After the one
+deep proposal, list EVERY additional high-ROI idea you can substantiate, one line each, no cap
+and no minimum -- if there are twenty, write twenty; if the seam is thin, say so. Depth AND
+breadth, never one at the cost of the other (L1.35). Each: IDEA -- mechanism/why it raises
+growth -- rough ROI tier (S/A/B) -- where it routes (axis watchlist / ledger / a fence). These
+are RAW GENERATION: they are not required to be novel-checked or built this run -- the builder
+rows the strongest into the ledger for later screening, and screen-on-discipline decides. A run
+that produces one deep proposal and an empty brainstorm has left growth ideas on the table."""
 
 _BUILD_BRIEF = """You are the BUILDER stage of the capability hunt. Two independent model
 families each proposed a missing capability. Read BOTH proposals:
@@ -137,7 +151,36 @@ and the next run resumes from it -- never leave a half-built capability unrecord
 #: dominate; one deep lens per run forces genuinely different draws, and the rotation guarantees
 #: every region is visited. Deterministic on (date, slot) so a resumed run keeps its lens and the
 #: yield record stays attributable.
-_LENSES: list[str] = [
+#: EVERY lens resolves to the same question -- "what raises long-term geometric growth of THIS
+#: book?" -- because the supreme objective is max E[log wealth] and max validated-alpha rate
+#: (principal 2026-07-31: "always use a similar question in exploration relative to the growth
+#: and alpha-maxxing goal so we get maximum output of high-ROI ideas"). Two halves, alternating
+#: by rotation: OFFENSIVE lenses hunt new growth directly (edges, data, capacity, compounding);
+#: DEFENSIVE lenses protect the growth that exists (the failure that ends compounding is a
+#: negative term in the same objective). Offense is listed first so a majority of daily draws
+#: point at new alpha.
+_ALPHA_LENSES: list[str] = [
+    "NEW EDGE FAMILY -- name a mechanism class with a FORCED participant (liquidation cascades, "
+    "index/ETF rebalances, funding-settlement flows, options-dealer gamma, stablecoin "
+    "mint/redeem, miner/validator flows) that this desk has never screened, and the free data "
+    "that would test it. Mechanism first, never a pattern.",
+    "DATA ASYMMETRY -- information that could exist ONLY because of how WE combine data (our "
+    "own-timestamp L2, our execution tape, cross-source joins). What proprietary feature is a "
+    "competitor structurally unable to buy? (L1.11a: rank by reconstruction cost.)",
+    "CAPACITY & COMPOUNDING -- what lets the book carry more risk-adjusted size or compound "
+    "FASTER: a decorrelated sleeve, a cost-tier cut (every bp is pure CAGR), a funding-harvest "
+    "cadence, a capacity band we are leaving on the table.",
+    "REGIME-CONDITIONED EDGE -- an edge that exists only in a nameable, DETECTABLE regime "
+    "(high-funding, high-vol, post-liquidation, low-liquidity) we could switch on and off. What "
+    "regime do we not yet detect, and what edge would it gate?",
+    "SMALL-CAPACITY FRONTIER -- an edge too small for a tier-1 desk to touch and therefore ours "
+    "for free (L1.18a): a niche venue, a long-tail pair, an era archive, a language ecosystem. "
+    "Which structurally-abandoned band are we not harvesting?",
+    "FASTER PROMOTION -- what shortens the path from screen-hit to sized-capital without lowering "
+    "a bar: an evidence accelerant (8h panels, event-density), a paper-sleeve auto-spawn, a "
+    "resurrection-queue consumer. Time-to-alpha is a growth term.",
+]
+_DEFENSIVE_LENSES: list[str] = [
     "INVERT A FENCE -- find the claim no fence tests for TRUTH (only for compliance).",
     "FOLLOW A NUMBER NOBODY OWNS -- a quantity that sets terminal wealth and is computed nowhere.",
     "TIER-1 PROCESS GAP -- what Jane Street/XTX/Jump/DRW/Optiver/HRT/Wintermute have and we do "
@@ -152,6 +195,22 @@ _LENSES: list[str] = [
     "it? Include crowding into our own edges and venue-side adverse selection.",
     "THE UNASKED QUESTION -- an assumption held so deeply it was never written down. Test it.",
 ]
+#: 2:1 OFFENSE, so a majority of every day's 6 draws hunt NEW growth while the rest protect it.
+#: Pattern A,A,D repeated: alpha lenses cycle (each ~twice per cycle), defensive lenses cycle
+#: through all 8 across days -- so a 6-slot window is 4 offensive / 2 defensive, and over a few
+#: days every lens of both kinds is drawn (yield stays measurable per lens).
+def _build_lenses() -> list[str]:
+    out: list[str] = []
+    ai = di = 0
+    for k in range(24):                                    # length divisible by the 6-slot day
+        if k % 3 == 2:
+            out.append(_DEFENSIVE_LENSES[di % len(_DEFENSIVE_LENSES)]); di += 1
+        else:
+            out.append(_ALPHA_LENSES[ai % len(_ALPHA_LENSES)]); ai += 1
+    return out
+
+
+_LENSES: list[str] = _build_lenses()
 
 
 def _lens_for(stamp: str, slot: int) -> str:

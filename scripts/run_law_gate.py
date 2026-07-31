@@ -66,6 +66,7 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("check_exploration.py", ()),              # L1.32 -- no exploration organ gone dark
     ("check_calibration.py", ()),              # L1.29 -- no ungraded past-due forecast
     ("check_replacement_rate.py", ()),         # L1.30 -- births vs deaths
+    ("check_change_window.py", ()),            # L1.38 -- money-path freeze windows
 )
 
 

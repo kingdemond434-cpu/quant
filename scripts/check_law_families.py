@@ -58,7 +58,7 @@ FAMILIES: dict[str, tuple[tuple[str, ...], str, str]] = {
         "findings piling up unfixed -- a desk that detects at tier-1 rate and repairs at "
         "hobbyist rate, with the spread invisible"),
     "survival": (
-        ("L1.23", "L1.20", "L2.8a"),
+        ("L1.23", "L1.20", "L2.8a", "L1.38"),
         "scripts/run_drills.py",
         "a rail that reads healthy while being terminal, or a survival guarantee that was "
         "never actually wired to the money path"),

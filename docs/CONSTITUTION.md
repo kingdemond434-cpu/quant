@@ -664,6 +664,24 @@ desk: that trades a research outage for a paperwork fault, and the outage is the
 (L1.2). The breach is paged, dated, and logged — loud, never silent, never blocking.
 **FENCED**: `scripts/run_law_gate.py`.
 
+**L1.38 STERILE COCKPIT — THE MONEY PATH DOES NOT CHANGE WHERE A CHANGE CANNOT BE CAUGHT**
+*(2026-07-31, capability-hunt lens 6: aviation safety)*. Airlines forbid non-essential activity
+below 10,000 feet — not because the crew is less capable then, but because that is when an error
+has no time to be caught. This desk has the identical structure and had no equivalent rule: an
+autonomous box shipping ~10 commits/day into the tree the executor runs from, a 10-minute
+auto-deploy, and a launch week where a money-path defect fires exactly once, for real, on real
+capital. The money path (executor, connectors, risk rails, sizing, capital events) is now frozen
+to IMPROVEMENTS inside three windows: the 7-day launch window, while fewer than 20 live fills
+exist, and while a rail is actively unwinding the book.
+
+**THIS IS THE OPPOSITE OF TIMIDITY, and the boundary is exact.** It freezes only the *money path*
+and only inside a *window*; research, mining, data acquisition, fences and exploration keep
+running at **full cadence** (L1.28b(f), L1.25a) — a frozen money path during launch week costs
+nothing in discovery. And it freezes **improvements, never repairs**: a fix for a live money-path
+defect is always allowed, because changing a broken rail is the safest available act. **FENCED**:
+`scripts/check_change_window.py` — BLOCK only when a change touches money-path files inside a live
+window; pre-launch is always OPEN (no capital can be harmed).
+
 **L1.28c CADENCE IS AGGRESSION — EVERY SCHEDULE HUNTS ITS OWN CEILING** *(principal order
 2026-07-31)*. **Every cadence on this desk aims to increase its frequency to the maximum that
 still carries ROI, and a cadence nobody has tried to raise is idle capacity wearing a schedule.**

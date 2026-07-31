@@ -140,6 +140,9 @@ _MAP: dict[str, list[str]] = {
     # L1.37: the gate itself -- four boundaries (organ spawn, pre-push, CI, hourly cron).
     "L1.37": ["scripts/run_law_gate.py", "deploy/git_hooks/pre-push", "ops/brain_env.sh",
               ".github/workflows/ci.yml"],
+    # L1.38: the money path freezes to IMPROVEMENTS (never repairs) inside launch/first-fills/
+    # rail-breach windows. Part of the survival family in spirit; fenced standalone.
+    "L1.38": ["scripts/check_change_window.py"],
     # L1.25a: null streaks throttle nothing -- an organ going quiet is caught by the freshness/
     # productivity wires REGARDLESS of its reason, so "stopped because nothing was working" trips
     # the same fence as "stopped because broken". The pessimism-freeze cannot hide.
