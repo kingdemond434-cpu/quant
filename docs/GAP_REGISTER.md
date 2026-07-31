@@ -1,5 +1,26 @@
 # GAP REGISTER — live ranked list of known inefficiencies & missing capabilities
 
+_Re-ranked 2026-07-31T13:50Z (second cycle of the day). **The 08:05 headline is superseded: the
+book FROZE at 08:35Z** — pager-ladder full-flatten (root cause: a retired-credentials auth check
+paged false-positives for 12d into a ladder whose ack file had NO writer; Binance 418 mid-flatten
+crash-hammered by systemd until the ban-latch fix). Movements this cycle, each artifact-backed:
+
+- **#1 priority is now PRINCIPAL REARM**: reply channel BUILT+LIVE (`run_alerts._poll_replies` →
+  data/PAGE_ACK + REARM/A/B/C/YES/NO commands; announce page delivered 13:26Z ntfy 200). Book +
+  forward clock idle until his reply — every idle-capital hour is now attributable to a single
+  human action, correctly.
+- **Scheduler single-sourced** (R0070 herd/dupes closed): live crontab == manifest (drift OK,
+  75 lines), 6 double-scheduled organs deduped, deep-sweep daily-vs-weekly contradiction resolved
+  to WEEKLY per its recorded ruling, wiring-agent flap+server-wiring fixed (ratchet fence,
+  organ-shape filters, hash-staggered slots).
+- **Reject recovery loop LIVE** (rejection-shadow-unscored closed): `_forward_score` implemented
+  (smoke 10/10 on backdated cutoffs), repointed to sor_crypto (434 rejects; June FX store
+  unscorable here, ledgered), wired daily 06:50. First scoreable cohort ~08-10.
+- **Generation: 2 new QUEUEs + 10 L1.16a re-opens** (recalibrated-gate victims, EV 0.002-0.019)
+  seed 6 of 9 clock-starved axes; screens = R0107 (due 08-04, harness R0108 first). energy/mining
+  honestly below bar (0.0011/0.0002).
+- Max-audit page writer: newest URGENT now owns line 1 (5th demotion-family member fixed).
+
 _Re-ranked 2026-07-31T08:05Z (daily cycle). **The rank moved because the money path came back to
 life and the queue got its missing enforcement wire.** Movements, each verified by artifact:
 

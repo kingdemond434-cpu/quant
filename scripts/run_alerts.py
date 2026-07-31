@@ -109,6 +109,75 @@ def _ledger_ok(channel: str, detail: str, title: str, *, ok: bool = True) -> Non
         _log(channel, ok, detail, title)
 
 
+# --- PRINCIPAL REPLY CHANNEL (2026-07-31) --------------------------------------------------
+# Pages have asked for replies ("reply YES/NO", "reply KILL-DIGEST") since 07-18, but nothing
+# ever READ the topic, and data/PAGE_ACK -- the derisk ladder's ack input -- had never been
+# created by anything: the ladder could latch (it froze the book today) while the principal
+# had no phone-usable way to ack or re-arm. The ntfy app can PUBLISH to the topic it
+# subscribes to, so replies arrive as TITLELESS messages on the same channel; desk pushes
+# always carry a Title (_push sets one), which is the discriminator. REARM here is transport
+# for the human's own act, not an automated re-arm: it only ever runs off an explicit
+# principal message. Trust boundary = knowledge of the secret topic, identical to the pager
+# itself (ledgered limitation; falsifier: any suspected abuse moves this to authed ntfy).
+_PAGE_ACK = Path("data/PAGE_ACK")
+_REPLIES = Path("data/principal_replies.jsonl")
+_REPLY_STATE = Path("data/.reply_poll_state.json")
+
+
+def _poll_replies(topic: str) -> None:
+    """Fail-quiet by design: paging must never break because reply-polling did."""
+    try:
+        st: dict = {}
+        with contextlib.suppress(Exception):
+            st = json.loads(_REPLY_STATE.read_text("utf-8"))
+        since = str(st.get("last_id") or "24h")
+        url = f"https://ntfy.sh/{topic}/json?poll=1&since={since}"
+        with urllib.request.urlopen(url, timeout=15) as resp:
+            lines = resp.read().decode("utf-8", "replace").splitlines()
+        last_id = st.get("last_id")
+        for ln in lines:
+            try:
+                m = json.loads(ln)
+            except json.JSONDecodeError:
+                continue
+            if m.get("event") != "message":
+                continue
+            last_id = m.get("id") or last_id
+            if m.get("title"):                      # desk's own page, not a reply
+                continue
+            body = str(m.get("message") or "").strip()
+            if not body or len(body) > 500:
+                continue
+            with contextlib.suppress(Exception):
+                _REPLIES.parent.mkdir(parents=True, exist_ok=True)
+                with _REPLIES.open("a", encoding="utf-8") as fh:
+                    fh.write(json.dumps({"ts": datetime.now(tz=UTC).isoformat(),
+                                         "msg_ts": m.get("time"), "body": body}) + "\n")
+            # ANY reply is operator contact: ack the pager (the derisk ladder's input).
+            _PAGE_ACK.write_text(
+                f"{datetime.now(tz=UTC).isoformat()} {body[:120]}\n", "utf-8")
+            cmd = body.split()[0].upper() if body.split() else ""
+            if cmd == "REARM":
+                out = subprocess.run(
+                    [sys.executable, "scripts/run_live_guard.py", "--rearm",
+                     "principal-ntfy"], capture_output=True, text=True, timeout=60,
+                ).stdout.strip()
+                kill = Path("data/CASHCARRY_KILL")
+                lifted = ""
+                if kill.exists() and kill.read_text("utf-8").startswith("live_guard freeze"):
+                    kill.unlink()   # completes the human's order; other writers' kills stay
+                    lifted = "; freeze lifted"
+                with contextlib.suppress(Exception):
+                    _push(topic, "Quant desk: REARM received",
+                          f"{out or 'ladder re-armed'}{lifted} -- book resumes next tick")
+        if last_id:
+            _REPLY_STATE.write_text(
+                json.dumps({"last_id": last_id,
+                            "polled": datetime.now(tz=UTC).isoformat()}), "utf-8")
+    except Exception:
+        return
+
+
 # --- SILENT-FAILURE DETECTION (2026-07-22) -------------------------------------------------
 # All four digger timers fired into quota/auth walls for 2 days and NOTHING noticed: systemd
 # reported "success" because the unit ran, while the log said "hit your session limit" and the
@@ -122,9 +191,22 @@ _CRED = Path("/home/quant/.claude/.credentials.json")
 
 
 def _auth_broken() -> bool:
-    """Every claude organ (brain + all diggers) runs as `quant` and reads ~/.claude. No active
-    credentials => nothing can reason. Free, definitive, no quota burned."""
-    return not _CRED.exists()
+    """Every claude organ (brain + all diggers) runs as `quant`. The legacy credentials file
+    was RETIRED 2026-07-19 (auth moved to setup-token/session storage), so the old existence
+    check paged false-positives for 12 days and fed the derisk ladder that froze the book on
+    2026-07-31. Truthful free check: session storage mtime moves on every authenticated
+    request, so 'broken' = no legacy file AND no session activity for >36h (organs run daily,
+    so a 36h-quiet desk is genuinely dead-on-arrival, whether auth or otherwise)."""
+    if _CRED.exists():
+        return False
+    for probe in (Path("/home/quant/.claude/history.jsonl"),
+                  Path("/home/quant/.claude/projects")):
+        try:
+            if time.time() - probe.stat().st_mtime < 36 * 3600:
+                return False
+        except OSError:
+            continue
+    return True
 
 
 def _digger_health() -> list[tuple[str, str]]:
@@ -375,7 +457,8 @@ def main() -> None:
               "when something is genuinely wrong")
         print(f"test page sent -> https://ntfy.sh/{topic}")
         return
-    try:
+    _poll_replies(topic)          # read principal replies BEFORE computing pages: a fresh
+    try:                          # ACK/REARM must suppress this very tick's escalation
         state = json.loads(_STATE.read_text("utf-8"))
     except (OSError, json.JSONDecodeError):
         state = {}

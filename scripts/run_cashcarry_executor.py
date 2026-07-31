@@ -592,7 +592,10 @@ def _ranked() -> list[tuple[str, float]]:
 
 
 def _rebalance(top: int, hold_top: int, capital: float, *, dry: bool) -> dict[str, Any]:
-    ranked = _ranked()
+    # Close-only mode (top=0, hold_top=0: the KILL/flatten path) needs no market ranks --
+    # closing reads `pos`, not funding. Decoupled so the kill can execute during a public-
+    # data outage or IP ban (2026-07-31: premiumIndex 418 crashed every close-all tick).
+    ranked = _ranked() if (top > 0 or hold_top > 0) else []
     # UNIVERSE SWITCH (principal-approved 2026-07-27). Was `ranked[:top]` = top-N by RAW
     # FUNDING. Funding is the COMPENSATION FOR ILLIQUIDITY, so funding-first ranking
     # systematically selected the names whose round-trips destroy the carry: COOKIEUSDT was
@@ -1458,7 +1461,15 @@ def main() -> None:
                 killed = True
             with contextlib.suppress(Exception):
                 _daily_data_tasks()                       # halted book must not starve the flywheel
-            rb = _rebalance(0, 0, 0.0, dry=dry)           # top=0, hold=0 -> closes everything
+            try:
+                rb = _rebalance(0, 0, 0.0, dry=dry)       # top=0, hold=0 -> closes everything
+            except Exception as exc:
+                # A venue outage/ban must not kill the KILL loop: close-all is idempotent and
+                # retried every tick while any leg remains. Crashing here made systemd respawn-
+                # hammer a banned endpoint every ~5min (2026-07-31 418 incident).
+                print(f"KILL: close-all deferred this tick ({exc})")
+                time.sleep(_HB_TICK)
+                continue
             with contextlib.suppress(Exception):
                 _emit(rb, _mark(rb), dry)                 # dashboard stays honest while halted
             time.sleep(_HB_TICK)

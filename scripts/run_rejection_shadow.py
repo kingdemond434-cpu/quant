@@ -13,7 +13,7 @@ forward evaluator produces it; a reject with no entry is carried as pending (nev
 file == no scores yet == the audit reports "cannot judge until scored", which is itself the honest
 standing signal to wire the evaluator.
 
-Usage: run_rejection_shadow.py [--db data/sor_autodiscovery.sqlite] [--threshold 0.5]
+Usage: run_rejection_shadow.py [--db data/sor_crypto.sqlite] [--threshold 0.5]
 """
 from __future__ import annotations
 
@@ -34,7 +34,7 @@ _OUT = _ROOT / "web/reject_shadow.json"
 def main() -> None:
     book = ThresholdBook(_ROOT / "data/adaptive_thresholds.json")
     p = argparse.ArgumentParser()
-    p.add_argument("--db", default="data/sor_autodiscovery.sqlite")
+    p.add_argument("--db", default="data/sor_crypto.sqlite")
     p.add_argument("--threshold", type=float, default=None,
                    help="forward metric a reject must clear to count as 'would have paid' "
                         "(default: the evidence-adjusted reject_deploy_threshold)")

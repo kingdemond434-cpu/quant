@@ -595,11 +595,14 @@ QUANT_ROOT=/home/quant/quant-platform
 # CONFIDENCE: inferred
 30 1 * * * cd "$QUANT_ROOT" && flock -n data/.cron_crypto_factory.lock /bin/bash ops/run_crypto_factory.sh
 
-# deep cold-audit organ: header says weekly (ops/run_deep_sweep.sh:2) yet dated artifacts
-# landed 07-26/07-28/07-29 (docs/research/deep_sweep/) and organ_catchup re-fires it as an
-# owed organ -- so the live cadence is at least daily-rotating perspectives. Daily slot chosen.
-# CONFIDENCE: inferred
-0 1 * * * cd "$QUANT_ROOT" && flock -n data/.cron_deep_sweep.lock /bin/bash ops/run_deep_sweep.sh
+# deep cold-audit organ: WEEKLY, per the recorded cadence ruling further down this file
+# ("deep sweep stays WEEKLY -- 8 max-effort auditors; 2x/wk would re-audit unchanged state at
+# enormous quota cost"). The daily 01:00 slot that briefly lived here was inferred from
+# crash-stub artifacts (2026-07-31 meta audit: "fossilized crash loop"), never decided, and
+# contradicted that ruling; the dated 07-26..07-31 artifacts came from catchup re-fires, not a
+# daily design. Sunday 04:00 matches the legacy live line; ONE lock path, repo-local.
+# CONFIDENCE: decided 2026-07-31 (resolves the manifest's own self-contradiction)
+0 4 * * 0 cd "$QUANT_ROOT" && flock -n data/.cron_deep_sweep.lock /bin/bash ops/run_deep_sweep.sh
 
 # headless AI brain cycles beyond the 08:45 timer: the full schedule is 4 cycles/day
 # (scripts/quota_verdict.py:100 "4 cycles/day + 7 miners/day"), organs page on brain-auth
@@ -702,17 +705,35 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # Every entry here was proven: runnable main(), no money-path import, no spend
 # capability, no writes outside data/ + web/. CONFIDENCE: auto-wired.
 # scripts/run_kama_squeeze_backtest.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
-21 8 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_kama_squeeze_backtest.py >> data/cro_ai_logs/run_kama_squeeze_backtest.log 2>&1
+32 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_kama_squeeze_backtest.py >> data/cro_ai_logs/run_kama_squeeze_backtest.log 2>&1
 # scripts/run_trend_gauntlet.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
-21 8 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_trend_gauntlet.py >> data/cro_ai_logs/run_trend_gauntlet.log 2>&1
+40 5 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_trend_gauntlet.py >> data/cro_ai_logs/run_trend_gauntlet.log 2>&1
 # scripts/run_prediction_markets.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
-21 8 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_prediction_markets.py >> data/cro_ai_logs/run_prediction_markets.log 2>&1
+57 3 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_prediction_markets.py >> data/cro_ai_logs/run_prediction_markets.log 2>&1
 # scripts/run_onchain_history_backtest.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
-21 8 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_onchain_history_backtest.py >> data/cro_ai_logs/run_onchain_history_backtest.log 2>&1
+25 4 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_onchain_history_backtest.py >> data/cro_ai_logs/run_onchain_history_backtest.log 2>&1
 # scripts/run_xsec_funding.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
-21 8 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_xsec_funding.py >> data/cro_ai_logs/run_xsec_funding.log 2>&1
+53 3 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_xsec_funding.py >> data/cro_ai_logs/run_xsec_funding.log 2>&1
 # scripts/run_carry_harvest.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
-21 8 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_carry_harvest.py >> data/cro_ai_logs/run_carry_harvest.log 2>&1
+55 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_carry_harvest.py >> data/cro_ai_logs/run_carry_harvest.log 2>&1
+# scripts/compute_performance.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
+34 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/compute_performance.py >> data/cro_ai_logs/compute_performance.log 2>&1
+# scripts/certify_gauntlet.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
+10 5 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/certify_gauntlet.py >> data/cro_ai_logs/certify_gauntlet.log 2>&1
+# scripts/run_autodiscovery.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
+20 3 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_autodiscovery.py >> data/cro_ai_logs/run_autodiscovery.log 2>&1
+# scripts/research_alpha_optimizer.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
+24 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/research_alpha_optimizer.py >> data/cro_ai_logs/research_alpha_optimizer.log 2>&1
+# scripts/run_carry_crowding.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
+5 5 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_carry_crowding.py >> data/cro_ai_logs/run_carry_crowding.log 2>&1
+# scripts/carry_viability.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
+47 5 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/carry_viability.py >> data/cro_ai_logs/carry_viability.log 2>&1
+# scripts/run_research_tick.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
+44 5 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_research_tick.py >> data/cro_ai_logs/run_research_tick.log 2>&1
+# scripts/bundle_all.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
+4 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/bundle_all.py >> data/cro_ai_logs/bundle_all.log 2>&1
+# scripts/bundle_algo.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
+25 5 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/bundle_algo.py >> data/cro_ai_logs/bundle_algo.log 2>&1
 # <<< WIRING AGENT <<<
 # GATE 0 READINESS (launch day, 2026-07-30). s1_entry_met is the gate that admits real capital,
 # and NOTHING assembled its evidence dict from reality -- so "what is actually left?" required
@@ -803,7 +824,12 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # OpenRouter not cadence; venue divergence stays */5 (the 2026-07-21 IP ban was over-frequency).
 # EVIDENCE: this order; GLOBAL BRAIN MUTEX commit fc7302d (two brains, one tree, one quota)
 # CONFIDENCE: committed-script (flock-guarded against the live twins)
-45 8 * * * cd "$QUANT_ROOT" && flock -n /tmp/cro_ai.cron.lock bash ops/run_cro_ai.sh >/dev/null 2>&1
+# (2026-07-31: the 45 8 cron twin of the 08:45 systemd timer was REMOVED here -- same minute,
+# two launchers, split lock paths (/tmp vs data/), the exact R0048 shape. quant-cro-ai.timer
+# owns 08:45; the 2,14,20 slots live in the brain-cycles block above under ONE lock path.)
+# refresh_panel_roster weekly dry-run (Mon 05:30) -- adopted from a live-only crontab line
+# 2026-07-31 so DR reconstitution covers it; bare invocation is report-only (--apply is manual).
+30 5 * * 1 cd "$QUANT_ROOT" && .venv/bin/python scripts/refresh_panel_roster.py >> data/cro_ai_logs/roster_frontier_watch.log 2>&1
 0 3 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-frontier.timer >/dev/null 2>&1 || flock -n /tmp/seat_frontier.lock /bin/bash ops/run_frontier_rotation.sh >> data/cro_ai_logs/seat_frontier.log 2>&1; }
 
 # SECOND DAILY DIG SLOTS (principal order 2026-07-31 "do this for everything"): prospector,
@@ -853,3 +879,23 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # EVIDENCE: run 2026-07-31 -> data/graveyard_resurrection_queue.json (n=42, shortlist 2)
 # CONFIDENCE: committed-script
 40 4 * * 0 cd "$QUANT_ROOT" && .venv/bin/python scripts/graveyard_resurrect.py >> data/cro_ai_logs/graveyard_resurrect.log 2>&1
+
+# ADOPTED FROM LIVE CRONTAB 2026-07-31 (drift-to-zero pass): these organs were live-only, so a
+# DR reconstitution would silently drop them. crypto_factory is the daily autodiscovery factory
+# run; growth_audit refreshes web/growth_audit.json (the conservatism-defect feed the pager and
+# daily cycle read). max_audit + quota_verdict live lines were NOT adopted -- the manifest
+# already schedules both (0 7 daily / 0 */3) and adopting the live twins double-scheduled them
+# for ~1h on 2026-07-31 before the dup check caught it.
+# CONFIDENCE: adopted-live (cadences observed, not re-derived).
+30 3 * * * cd "$QUANT_ROOT" && flock -n /tmp/crypto_factory.lock bash ops/run_crypto_factory.sh >/dev/null 2>&1
+*/30 * * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_growth_audit.py >/dev/null 2>&1
+
+# REJECT RECOVERY LOOP (wired 2026-07-31, closes rejection-shadow-unscored): rescore matured
+# rejects on their post-rejection forward window, then re-run the shadow audit that judges gate
+# leakage. Store = sor_crypto.sqlite (the LIVE campaign; sor_autodiscovery is the June FX-era
+# store whose 57 rejects have no lake bars on this host and can never score here -- ledgered).
+# First scoreable cohort matures ~2026-08-10 (30d min forward window + 30 min forward bars).
+# Chain: reject_forward_scores.json -> run_rejection_shadow -> web/reject_shadow.json -> max_audit.
+# EVIDENCE: _forward_score smoke-tested 10/10 on backdated cutoffs this cycle (log in ledger)
+# CONFIDENCE: committed-script
+50 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_rejection_rescore.py >> data/cro_ai_logs/reject_rescore.log 2>&1 && .venv/bin/python scripts/run_rejection_shadow.py >> data/cro_ai_logs/reject_rescore.log 2>&1

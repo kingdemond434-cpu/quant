@@ -174,3 +174,14 @@ recursion rule), so the desk needs him to supply an angle exactly once.
     (Origin 2026-07-30: kimchi was retracted 07-29 and spent the next day holding Stage-B slot 1 of
     12 at forward Sharpe −5.13, and the doctrine still cites its IC +0.148 as the standing evidence
     for SCREEN-ON-DISCOVERY.)
+
+14. IS THE GATE'S HISTORY RE-SCORED? (added 2026-07-31, found a live gap the day it was coined)
+    When any GATE, THRESHOLD or SCORING FORMULA is recalibrated, ask "what did the OLD calibration
+    kill that the new one would pass?" -- and re-verdict those victims in the SAME pass, under
+    L1.16a with the recalibration as the named enabling change. Proving instance: the EV gate's
+    0.05->0.002 recalibration (R0023) landed 07-30 and nobody swept its kills; 10 hypotheses with
+    recorded EV in [0.002, 0.05) -- including etf_flow_pressure at 0.0191, nearly 10x the honest
+    bar -- sat wrongly graveyarded until the 07-31 cycle swept them. The symmetric half: a gate
+    TIGHTENED must re-verdict what it previously ADMITTED (nothing live today enters that way,
+    but forward slots admitted under a looser bar would be the instance). A fixed gate that never
+    revisits its verdicts keeps its old miscalibration alive in the record forever.
