@@ -79,6 +79,7 @@ _GOVERNED: tuple[str, ...] = (
     "run_discretionary_max.py",
     "run_discretionary_hunt.py",
     "run_cost_hunt.py",
+    "run_strategy_coverage.py",
 )
 
 #: Organs that legitimately owe no cron line, with the reason. "No schedule" must be a DECISION.

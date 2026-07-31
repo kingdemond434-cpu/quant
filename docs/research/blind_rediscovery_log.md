@@ -624,7 +624,7 @@ the inventory that queue is missing**, and populating it costs no slot and no ca
 
 ---
 
-## A GOVERNANCE CONFLICT — surfaced, not routed around (R0208)
+## A GOVERNANCE CONFLICT — surfaced, not routed around (R0210)
 
 This seat's charter is **"RESEARCH ONLY (freeze) … No code"**. L1.39 (ZERO IDLE FINDINGS) requires
 every finding to advance its next pipeline stage **in the same run**, and for an invented mechanism
@@ -705,7 +705,7 @@ axis on this page.
 BR-04 was EV-rejected and is reported as rejected with its inputs untouched — the gate was named as
 mis-applied rather than gamed, which is the only honest way to disagree with a gate.
 
-**Ledger rows for this session: R0200–R0208.** They were originally written as R0197–R0205 and
+**Ledger rows for this session: R0202–R0210.** They were originally written as R0197–R0205, renumbered twice as a sibling session pushed, and
 renumbered at push time: a sibling session had already taken R0197–R0199 on origin (trail-width and
 funding-sign cost-hunt rows). Both sessions' rows are preserved in full — 208 total, IDs unique and
 monotonic, origin's 199 untouched. Recorded here because a renumber that is not written down looks

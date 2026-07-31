@@ -1092,3 +1092,16 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # EVIDENCE: scripts/run_cost_hunt.py -> data/cost_hunt.json
 # CONFIDENCE: committed-script (new this cycle)
 23 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_costhunt.lock .venv/bin/python scripts/run_cost_hunt.py >> data/cro_ai_logs/cost_hunt.log 2>&1
+
+# ---------------------------------------------------------------------------------------------
+# STRATEGY-FAMILY COVERAGE (R0200) -- what KINDS of edge the miners come back with.
+# Every existing coverage organ maps WHERE they look (9 source families x 7 regional seats);
+# none mapped what kind of edge returns. Coverage is the count of DISTINCT FAMILIES touched,
+# never candidates tested: twelve candidates from one family are correlated by construction, so
+# they die together and the desk learns one thing while reporting twelve tests. Names the
+# NEVER-HUNTED families as the binding gap, and routes discretionary-adjacent findings to the
+# conviction sleeve's playbook as PROVISIONAL -- suggest-only, promoted solely by the sleeve's
+# own closed trades. DAILY, ahead of the miner slots so their next dig can read it.
+# EVIDENCE: scripts/run_strategy_coverage.py -> data/strategy_coverage.json
+# CONFIDENCE: committed-script (new this cycle)
+50 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_stratcov.lock .venv/bin/python scripts/run_strategy_coverage.py --import-discretionary >> data/cro_ai_logs/strategy_coverage.log 2>&1

@@ -229,6 +229,11 @@ _MAP: dict[str, list[str]] = {
     # rate. Funding is SIGNED and public; the sleeve was blind to which sides get PAID to hold.
     # Selection uses the sign; marking stays always-adverse -- different jobs, different signs.
     "L1.41-cost-hunt": ["scripts/run_cost_hunt.py"],
+    # R0200: every coverage organ mapped WHERE the miners look (source families, regions,
+    # languages) and none mapped WHAT KIND of edge came back. 42 buried strategies cluster into
+    # families, and twelve candidates from one family are correlated by construction -- they die
+    # together and the desk learns one thing while reporting twelve tests.
+    "L1.32-strategy-coverage": ["scripts/run_strategy_coverage.py"],
     # L1.25a: null streaks throttle nothing -- an organ going quiet is caught by the freshness/
     # productivity wires REGARDLESS of its reason, so "stopped because nothing was working" trips
     # the same fence as "stopped because broken". The pessimism-freeze cannot hide.
