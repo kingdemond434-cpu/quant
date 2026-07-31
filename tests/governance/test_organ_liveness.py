@@ -8,7 +8,13 @@ from __future__ import annotations
 
 import time
 
-from scripts.check_organ_liveness import MIN_TOLERANCE_H, STALE_MULTIPLE, audit, cadence_hours, parse_manifest
+from scripts.check_organ_liveness import (
+    MIN_TOLERANCE_H,
+    STALE_MULTIPLE,
+    audit,
+    cadence_hours,
+    parse_manifest,
+)
 
 _MAN = """# EVIDENCE: scripts/a.py -> data/a.json; docs/CONSTITUTION.md L1.1
 0 * * * * cd "$Q" && python scripts/a.py
