@@ -53,3 +53,19 @@ def test_l125a_mapped_to_real_fences():
     # The wires that catch a quiet organ regardless of its stated reason.
     for fence in ("check_organs", "check_stub_deaths", "check_idle_capability"):
         assert fence in src
+
+
+# --- L1.28a: the brain seat, the ceiling every LLM cadence competes for -----------------------
+
+def test_brain_seat_ceiling_exists_and_is_honest():
+    """Unmeasured contention counts as ZERO, and a measured deferral must name the twin."""
+    from scripts.check_utilisation import _brain_seat, collect
+    assert any(c.name == "brain_seat_throughput" for c in collect())
+    c = _brain_seat()
+    if not c.measured:
+        assert c.utilisation == 0.0          # never reads healthy for lack of a log
+        assert c.binding_constraint          # and must say why
+    else:
+        assert c.limit >= c.used
+        if c.used < c.limit:
+            assert "SECOND SEAT" in c.binding_constraint

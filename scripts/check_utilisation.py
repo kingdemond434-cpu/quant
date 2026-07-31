@@ -247,9 +247,61 @@ def _test_suites_runnable() -> Ceiling:
         "satisfied' failure the Gate 0 board refuses.")
 
 
+def _brain_seat() -> Ceiling:
+    """THE SEAT: how much of the day the desk's ONE serial brain is actually working.
+
+    THE UNMEASURED CEILING (found 2026-07-31 answering "is anything still below max
+    frequency"): every claude-invoking organ takes /tmp/quant_brain.lock, and every LOSER
+    appends a DEFERRED line to brain_mutex.log -- a complete, free record of contention that
+    NOTHING had ever read. So the desk raised and lowered LLM cadences for weeks with no
+    measurement of the resource they all compete for: the exact "we are running at 60% and
+    that seems fine" defect L1.28a exists to kill, sitting on the desk's scarcest input.
+
+    THE METRIC, and why it is deferrals rather than wall-clock: a deferral is a run the desk
+    WANTED and did not get, which is precisely the thing extra cadence is supposed to buy. Two
+    readings, both actionable:
+      deferral rate LOW  -> the seat has idle windows: RAISE cadences (headroom exists).
+      deferral rate HIGH -> the seat is the binding constraint: raising cron changes nothing;
+                            only a second seat (the research twin) or shorter runs do.
+    Utilisation is reported as attempts-that-ran / attempts-made over the trailing 24h, so
+    100% means nothing was ever turned away and lower means real contention. UNMEASURED (no
+    log yet, e.g. this container) counts as ZERO by law -- never as healthy."""
+    log = _LOGS / "brain_mutex.log"
+    since = datetime.now(tz=UTC) - timedelta(hours=24)
+    deferred = 0
+    try:
+        for line in log.read_text("utf-8", errors="ignore").splitlines():
+            stamp = line.split(" ", 1)[0]
+            try:
+                if datetime.fromisoformat(stamp.replace("Z", "+00:00")) >= since:
+                    deferred += 1
+            except ValueError:
+                continue
+        measured = True
+    except OSError:
+        measured = False
+    # Attempts = organ fires that reached the mutex. Runs = attempts - deferrals. The daily
+    # scheduled claude-organ fire count is the denominator's floor; deferrals add the rest.
+    scheduled_fires = 34.0                                  # claude-invoking cron lines/day
+    attempts = scheduled_fires + deferred
+    ran = attempts - deferred
+    return Ceiling(
+        "brain_seat_throughput", attempts if measured else scheduled_fires,
+        ran if measured else 0.0, "organ runs/24h (vs attempted)", measured,
+        "" if (measured and deferred == 0) else
+        ("ONE serial brain seat: every deferred organ is a run the desk wanted and did not "
+         "get. The resolution path is a SECOND SEAT (research twin, ops/role=research) -- "
+         "raising cron cadence cannot add throughput to a saturated mutex"
+         if measured else
+         "brain_mutex.log absent on this host -- measurable only where organs actually run"),
+        "This is the resource EVERY llm cadence competes for. Unmeasured, the desk cannot tell "
+        "'raise the cadence' (headroom) from 'buy a second seat' (contention) -- and it has "
+        "been raising cadences blind. Deferrals are the only honest signal of which is true.")
+
+
 def collect() -> list[Ceiling]:
     return [_capital(), _forward_slots(), _capability(), _data_assets(), _organs(), _mutation(),
-            _test_suites_runnable()]
+            _test_suites_runnable(), _brain_seat()]
 
 
 def build() -> dict[str, Any]:
