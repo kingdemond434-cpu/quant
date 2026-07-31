@@ -961,3 +961,18 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # EVIDENCE: scripts/screen_copytrading.py -> data/copytrading_screen.json + copytrading_panel.jsonl
 # CONFIDENCE: committed-script (new this cycle; OKX endpoints verified live, Binance 451s here)
 50 3 * * * cd "$QUANT_ROOT" && flock -n data/.cron_copytrade.lock .venv/bin/python scripts/screen_copytrading.py >> data/cro_ai_logs/copytrading.log 2>&1
+
+# SLEEVE ALLOCATOR (R0141): risk across DISCRETIONARY sleeves by MARGINAL growth contribution.
+# Adding sleeves only multiplies growth if they are INDEPENDENT -- five sleeves all long crypto
+# beta are one sleeve wearing five names, so risk scales with N while growth scales with 1 and the
+# desk pays N sets of costs for one bet. Measured on real data this book already shows crypto-vs-
+# crypto return correlation +0.48 and gold-vs-crypto +0.15, so the difference between a real second
+# edge and a duplicate is large and measurable. Correlation scales TOTAL deployed risk, not merely
+# how a fixed total is split: two independent sleeves deploy ~41pct nominal against a 30pct
+# correlation-adjusted cap, two duplicates deploy ~30pct. UNMEASURED pairs are assumed DUPLICATE --
+# the assumption that costs money when wrong is the one that gets made. Every registered sleeve
+# keeps a seed share so it can accumulate the record that would earn it more (L1.28a).
+# DAILY, after the resolver has marked the day's closes.
+# EVIDENCE: scripts/run_sleeve_allocator.py -> data/sleeve_allocation.json
+# CONFIDENCE: committed-script (new this cycle)
+25 4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_alloc.lock .venv/bin/python scripts/run_sleeve_allocator.py >> data/cro_ai_logs/sleeve_alloc.log 2>&1

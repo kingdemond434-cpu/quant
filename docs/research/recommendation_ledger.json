@@ -1706,6 +1706,18 @@
    "commit": null,
    "due": null,
    "note": "two bugs found by checking my own numbers: the crowding gauge reported an outlier-dominated -0.97 as its centre when the median was -0.078, and posSide 'net' (46pct of margin) was being silently dropped from the long/short skew"
+  },
+  {
+   "id": "R0141",
+   "source": "principal",
+   "summary": "SLEEVE ALLOCATOR -- risk across discretionary sleeves by MARGINAL growth contribution. Principal: 'advance this section so multiple discretionary edges genuinely compound triple-digit CAGRs each on the side.' The word doing the work is GENUINELY: adding sleeves multiplies growth only if they are INDEPENDENT. Five sleeves all long crypto beta are one sleeve wearing five names -- risk scales with N, growth with 1, and the desk pays N sets of costs for one bet. Measured on this book: crypto-vs-crypto +0.48, gold-vs-crypto +0.15. Correlation now scales TOTAL deployed risk, not merely how a fixed total is split: two independent sleeves deploy 40.6pct nominal against a 30pct correlation-adjusted cap, two duplicates 30.4pct -- independence buys 34pct more deployable risk. UNMEASURED pairs are assumed DUPLICATE. Every registered sleeve keeps a seed share so it can accumulate the record that earns it more.",
+   "roi_bps": 0.0,
+   "raised": "2026-07-31T20:00:00+00:00",
+   "status": "done",
+   "reason": "built, 8 tests, in the manifest; 23/23 build standard",
+   "commit": null,
+   "due": null,
+   "note": "first version normalised shares to 1, so two perfect duplicates received the same total heat as two independent sleeves -- the exact failure the organ exists to prevent, committed inside the organ itself and caught by its own demonstration"
   }
  ]
 }

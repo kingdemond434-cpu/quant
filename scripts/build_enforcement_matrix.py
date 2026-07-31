@@ -193,6 +193,9 @@ _MAP: dict[str, list[str]] = {
     # it, archives the only unbiased design (a forward panel counting exits as failures), and
     # measures the derivative that does not require picking a winner.
     "L1.6-copytrading": ["scripts/screen_copytrading.py"],
+    # R0141: more sleeves multiply growth only if INDEPENDENT. Correlated sleeves draw down
+    # together -- risk scales with N, growth with 1, and the desk pays N sets of costs for one bet.
+    "L1.28b-sleeves": ["scripts/run_sleeve_allocator.py"],
     # L1.25a: null streaks throttle nothing -- an organ going quiet is caught by the freshness/
     # productivity wires REGARDLESS of its reason, so "stopped because nothing was working" trips
     # the same fence as "stopped because broken". The pessimism-freeze cannot hide.

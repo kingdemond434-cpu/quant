@@ -69,6 +69,7 @@ _GOVERNED: tuple[str, ...] = (
     "check_mechanism_attribution.py",
     "run_trade_review.py",
     "screen_copytrading.py",
+    "run_sleeve_allocator.py",
 )
 
 #: Organs that legitimately owe no cron line, with the reason. "No schedule" must be a DECISION.
@@ -107,7 +108,8 @@ _REFUSAL_WORDS = ("UNMEASURED", "REFUSED", "REFUSING", "BLOCKED", "NO-DATA", "DA
                   "DYING", "BELOW-STANDARD", "INCOMPLETE", "UNREACHED", "DECORATIVE",
                   "UNATTRIBUTED", "UNDECIDABLE",
                   "NOTHING-TO-REVIEW", "NO-REVIEW", "STALE", "RETIRED", "PROVISIONAL",
-                  "CONTAMINATED", "UNDERPOWERED", "FORWARD-CLOCK", "NO-DATA")
+                  "CONTAMINATED", "UNDERPOWERED", "FORWARD-CLOCK", "NO-DATA",
+                  "DUPLICATION", "DUPLICATE")
 
 
 def _has_silent_swallow(tree: ast.AST) -> bool:
