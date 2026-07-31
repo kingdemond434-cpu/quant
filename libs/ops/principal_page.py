@@ -54,7 +54,15 @@ def _strip_block(existing: str, marker: str) -> str:
 
 
 def page(message: str, *, marker: str, path: Path | None = None) -> str:
-    """Put ``message`` at line 1 of the principal page, preserving every other message.
+    """Put ``message`` at the top of the principal page, preserving every other message --
+    EXCEPT that URGENT blocks outrank everything else (2026-07-31, caught live by
+    test_max_audit_run_preserves_a_written_page): the max_audit escalation paged itself onto
+    line 1 ABOVE two pending Tier-3 asks, burying the desk's highest-priority decisions under
+    defect noise -- the same attention-failure as the 07-29 clobber, in polite form. A
+    non-URGENT message therefore inserts BELOW the leading run of URGENT paragraphs; only an
+    URGENT message may take line 1 from another URGENT. Consequence for the daily re-reminder
+    pager (which reads line 1): it re-sends the standing urgent ask rather than the newest
+    housekeeping block, which is the correct priority.
 
     ``marker`` must be a stable prefix of ``message`` (e.g. "PURCHASE DECISION:") so a repeat
     page replaces its own prior copy rather than accumulating duplicates. Returns the text
@@ -63,7 +71,16 @@ def page(message: str, *, marker: str, path: Path | None = None) -> str:
     p = path or PAGE
     existing = p.read_text("utf-8") if p.exists() else ""
     body = _strip_block(existing, marker)
-    out = message.rstrip("\n") + "\n" + (f"\n{body}\n" if body else "")
+    msg = message.rstrip("\n")
+    if body.startswith("URGENT") and not msg.lstrip().startswith("URGENT"):
+        paras = body.split("\n\n")
+        lead: list[str] = []
+        while paras and paras[0].startswith("URGENT"):
+            lead.append(paras.pop(0))
+        rest = "\n\n".join(paras).strip()
+        out = "\n\n".join(lead) + "\n\n" + msg + "\n" + (f"\n{rest}\n" if rest else "")
+    else:
+        out = msg + "\n" + (f"\n{body}\n" if body else "")
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(out, "utf-8")
     return p.read_text("utf-8")            # verify by fresh read, never trust the write

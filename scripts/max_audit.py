@@ -3800,23 +3800,39 @@ def main() -> None:
     # Third recurrence of one family -- 07-24 stale line 1, 07-28 silent deletion, now demotion by a
     # neighbour's insert -- because the carve-out was POSITIONAL and no writer owns a position. Find
     # a fresh URGENT block ANYWHERE in the body and hoist it; reordering only, nothing dropped.
-    urgent = ""
+    # FORMAT-FRAGILITY FIX (2026-07-31, FOURTH recurrence of the family: 07-24 stale line 1,
+    # 07-28 silent deletion, 07-30 demotion-by-neighbour, now demotion-by-ANNOTATION). The stamp
+    # parse was `split("URGENT ",1)[1].split(":",1)[0]` -> fromisoformat, so the moment a human
+    # annotated the header ("URGENT 2026-07-29 (updated 07-31): ...") recognition threw, was
+    # suppressed, and the routine sweep silently retook line 1 from two Tier-3 asks -- caught
+    # live by test_max_audit_run_preserves_a_written_page. Recognition now keys on the first
+    # ISO-DATE TOKEN anywhere in the paragraph head, so annotations cannot disarm it. And hoist
+    # the RUN of all fresh URGENT paragraphs, not just the first -- with two pending Tier-3
+    # asks, "one above the fold, one buried" is the same failure at half size.
+    urgents: list[str] = []
     paras = body.split("\n\n")
-    for i, para in enumerate(paras):
-        if not para.startswith("URGENT "):
-            continue
-        with contextlib.suppress(Exception):
-            stamp = para.split("URGENT ", 1)[1].split(":", 1)[0].strip()
-            if (NOW - datetime.fromisoformat(stamp).timestamp()) / 86400.0 <= _URGENT_TTL_D:
-                urgent = para
-                body = "\n\n".join(paras[:i] + paras[i + 1:]).strip()
-                break
+    remaining: list[str] = []
+    for para in paras:
+        hoisted = False
+        if para.startswith("URGENT"):
+            m_date = re.search(r"(\d{4}-\d{2}-\d{2})", para[:80])
+            if m_date:
+                with contextlib.suppress(Exception):
+                    age_d = (NOW - datetime.fromisoformat(m_date.group(1))
+                             .replace(tzinfo=UTC).timestamp()) / 86400.0
+                    if age_d <= _URGENT_TTL_D:
+                        urgents.append(para)
+                        hoisted = True
+        if not hoisted:
+            remaining.append(para)
+    body = "\n\n".join(remaining).strip()
+    urgent = "\n\n".join(urgents)
     if overdue:
         head = (f"{_MARK}: {len(overdue)} below-max state(s) >48h unfixed/unacked -- "
                 + "; ".join(f"{d}" for d, _ in overdue[:6])
                 + (" ..." if len(overdue) > 6 else "") + "\n"
                 + "".join(f"  - {d}: {m}\n" for d, m in overdue[:8]))
-        # a fresh urgent page keeps line 1; otherwise the escalation owns it as before
+        # fresh urgent pages keep the top; otherwise the escalation owns line 1 as before
         PA.write_text((urgent + "\n\n" if urgent else "") + head + "\n" + body, "utf-8")
         print(f"ESCALATED to principal page (line {'2' if urgent else '1'}): "
               f"{len(overdue)} defect(s) >48h" + (" -- behind a fresh URGENT page" if urgent else ""))

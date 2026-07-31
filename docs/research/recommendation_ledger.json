@@ -19,10 +19,10 @@
    "roi_bps": null,
    "raised": "2026-07-26T11:34:30.251443+00:00",
    "status": "scheduled",
-   "reason": "Cut 31.5k->27.5k today by merging four genuinely redundant maximisation blocks. Reaching the 16k gate needs an architectural decision -- restructure the doctrine into principles-plus-pointers with procedures in referenced docs -- which deserves a focused pass, not a tail-end cleanup.",
+   "reason": "doctrine grew 27k->54k since this row was written; consolidation is careful editorial surgery on the law text (preserve every commitment, pass check_timidity_language) and was displaced today by money-path restoration + the X1 wire. Now enforced: this row sits in tomorrow's \u00a737 brief via rec-owed-R0002 with a survival count -- the fossilization pattern this row kept exhibiting is the thing X1 ends",
    "commit": null,
-   "due": "2026-07-27",
-   "disposed": "2026-07-26T11:53:17.481309+00:00"
+   "due": "2026-08-01",
+   "disposed": "2026-07-31T07:29:03.385201+00:00"
   },
   {
    "id": "R0003",
@@ -290,11 +290,11 @@
    "summary": "EV GATE IS MIS-CALIBRATED (gate-optimality): docstring demands conservative est_sharpe while _EV_THRESHOLD=0.05 demands ~1.6+ at breadth 40, so honest scoring auto-rejects and optimistic scoring is rewarded. Either drop the threshold to admit the modest-but-broad decorrelated class, or replace the self-supplied est_sharpe prior with a tag-driven empirical prior from realized outcomes. Recalibrate against the carry reference (EV 0.1171).",
    "roi_bps": 30.0,
    "raised": "2026-07-28T15:24:55.879790+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "threshold recalibrated 0.05->0.002 with in-code derivation from the two measured reference classes; 3 lock-tests pin honest-carry QUEUE / junk REJECT / modest-honest QUEUE; re-tune only at n>=50 scored verdicts",
+   "commit": "7f1b3b1",
    "due": null,
-   "disposed": null
+   "disposed": "2026-07-31T07:29:03.176637+00:00"
   },
   {
    "id": "R0024",
@@ -386,11 +386,11 @@
    "summary": "WALCL 4-week reserve impulse -> next-week BTC printed IC +0.1106 with a mechanism-consistent sign, de-contamination PASSED (resid +0.0964) and momentum Sharpe 0.82, clearing ic_min and sharpe_min and stopped ONLY by the power gate -- correctly, since a 4-week window sampled weekly carries ~204 independent obs (t~1.6), not 815 (t~3.2). NOT an edge and NOT a clock. It is the first empirical reason to revisit the WALCL axis that its six EV rejections never had: run a PRE-REGISTERED NON-OVERLAPPING re-test.",
    "roi_bps": 25.0,
    "raised": "2026-07-28T20:31:40.766685+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "TOP generation item tomorrow: pieces verified today (bronze/fed derived net-liquidity series live, idle slot confirmed m=11, construction pre-registered from the 07-28 screen). NOT wired tonight by decision: release-lag alignment declaration + revalidate_clocks shift-sensitivity rail are mandatory first and rushing a phantom-edge-critical wire at cycle end is the exact kimchi class (L1.27: this protects against a named hazard, it does not avoid uncertainty)",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-01",
+   "disposed": "2026-07-31T07:29:03.316338+00:00"
   },
   {
    "id": "R0032",
@@ -422,11 +422,11 @@
    "summary": "EV-GATE MISCALIBRATION IS UNFIXED AND IT BLOCKED THIS CYCLE'S GENERATION. The 07-28 cycle wrote the lesson ('_EV_THRESHOLD=0.05 needs est_sharpe>=1.6 at breadth 40; conservative honesty is auto-rejected, optimism rewarded, the many-small-decorrelated-sleeves class dies at the door') into institutional_knowledge.md and left the constant at 0.05. Measured today: 4 novel, mechanism-backed hypotheses on already-ingested axes scored ev=0.005-0.010 -> all REJECT. A finding written and not driven is the exact shape \u00a735/\u00a741 exist to stop. FIX NEEDS ITS OWN CAREFUL PASS: recalibrate against a known-good reference (carry 3.28 -> 0.1171) AND a known-marginal one, same method as the PBO/RC fix -- do NOT hand-tune the constant at the end of a long cycle.",
    "roi_bps": 20.0,
    "raised": "2026-07-29T06:25:25.355470+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "same fix as R0023 -- the generation blocker is removed; next cycle's generation slot verifies queued candidates actually screen",
+   "commit": "7f1b3b1",
    "due": null,
-   "disposed": null
+   "disposed": "2026-07-31T07:29:03.245097+00:00"
   },
   {
    "id": "R0035",
@@ -1166,11 +1166,11 @@
    "summary": "Per-venue exposure cap: one config number (MAX_VENUE_FRACTION) enforced in _alloc, live-tunable, inert at one venue, cheap now vs expensive retrofit the day venue #2 exists (panel MOVE 2, gap #54)",
    "roi_bps": 15.0,
    "raised": "2026-07-31T07:21:10.420879+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "one config number + _alloc guard + test; bundled with the 08-02 batch; inert at one venue so zero live risk",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-02",
+   "disposed": "2026-07-31T07:29:03.460233+00:00"
   },
   {
    "id": "R0097",
@@ -1178,11 +1178,11 @@
    "summary": "Frankenstein synthesizer before/after check: compare gen_diversity metrics pre/post wiring commit 8da8acd; if flat across 28 cycles, retire it as complexity without evidence (panel rider, L2.9 exit)",
    "roi_bps": 5.0,
    "raised": "2026-07-31T07:21:10.492266+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "measurement-first retire-check needs the gen_diversity before/after pull; stats batch day",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-04",
+   "disposed": "2026-07-31T07:29:03.533038+00:00"
   },
   {
    "id": "R0098",
@@ -1190,11 +1190,11 @@
    "summary": "Retire quarantined dynamic_leverage optimizer (libs/risk/dynamic_leverage.py + run_leverage_opt.py): never validated live, contaminated confidence history (gap #14), executor clamp ignores it both directions; kill-committee item needing independence argument (risk-path neighbourhood)",
    "roi_bps": 8.0,
    "raised": "2026-07-31T07:21:10.562149+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "kill-committee item: needs independence argument (risk-path neighbourhood) and the monthly governance slot is the right court",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-05",
+   "disposed": "2026-07-31T07:29:03.606909+00:00"
   },
   {
    "id": "R0099",
@@ -1202,11 +1202,11 @@
    "summary": "Wire or retire graveyard_resurrect.py: re-surfaced as a true orphan by the unlaundered detector; graveyard_resurrection_queue.json (n=42) has zero readers while its reader script is wired to nothing -- the options-VRP unlock (Deribit verified) sits in that queue",
    "roi_bps": 25.0,
    "raised": "2026-07-31T07:21:10.680584+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "wired weekly in the manifest (Sun 04:40) + queue rebuilt this cycle (n=42, shortlist defi_health + multilingual wikipedia); options-VRP unlock visible to the weekly sweep at last",
+   "commit": "7f1b3b1",
    "due": null,
-   "disposed": null
+   "disposed": "2026-07-31T07:29:03.676142+00:00"
   }
  ]
 }

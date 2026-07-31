@@ -111,3 +111,28 @@ def test_max_audit_run_preserves_a_written_page(tmp_path):
     after = p.read_text("utf-8")
     assert after.lstrip().startswith("URGENT"), "the sweep demoted or destroyed the urgent page"
     assert len(after) > 500, "page collapsed to roughly nothing after a sweep"
+
+
+def test_non_urgent_page_inserts_below_leading_urgent_run(tmp_path):
+    """Deterministic form of the live catch (2026-07-31): the escalation must never take
+    line 1 from a pending Tier-3 ask. State-independent so it guards even when no urgent
+    page happens to be live at test time."""
+    from libs.ops.principal_page import page as _page
+    p = tmp_path / "PRINCIPAL_ACTION.md"
+    p.write_text("URGENT: reply A/B/C on the book.\n\nURGENT 2: reply YES/NO on the gate.\n\n"
+                 "old details body.\n", "utf-8")
+    out = _page("MAX-AUDIT ESCALATION: 15 defects >48h\n  - detail line",
+                marker="MAX-AUDIT ESCALATION", path=p)
+    assert out.startswith("URGENT: reply A/B/C")
+    assert "URGENT 2: reply YES/NO" in out.split("MAX-AUDIT ESCALATION")[0], \
+        "escalation split the leading urgent run"
+    assert "MAX-AUDIT ESCALATION" in out and "old details body." in out
+
+
+def test_urgent_page_still_takes_line_one(tmp_path):
+    from libs.ops.principal_page import page as _page
+    p = tmp_path / "PRINCIPAL_ACTION.md"
+    p.write_text("URGENT old ask.\n", "utf-8")
+    out = _page("URGENT new ask.", marker="URGENT new", path=p)
+    assert out.startswith("URGENT new ask.")
+    assert "URGENT old ask." in out
