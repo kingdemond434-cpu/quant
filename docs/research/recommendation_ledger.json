@@ -1670,6 +1670,18 @@
    "commit": null,
    "due": null,
    "note": "an unattributed WIN is as disqualifying as a loss -- the exposure that made it is still on, still unhedged, and will reverse"
+  },
+  {
+   "id": "R0138",
+   "source": "principal",
+   "summary": "GEOMETRIC-GROWTH MAXIMISATION of the discretionary sleeve. Principal: 'max geometric growth and heavy compounding, definitely earning 100-200-300 net CAGR.' Three levers, each raising E[log wealth] rather than raising bet size. (1) CALIBRATION-DRIVEN SIZING: the sizer trusted Claude's STATED probability. If it claims 0.63 and truly hits 0.45 that is ~2x Kelly, where growth is NEGATIVE -- no edge survives systematically over-betting it. Size now uses the MEASURED calibration, both directions: a desk found under-confident gets its size RAISED automatically. The raw claim is still what gets scored, or the correction would launder the model's error and the bias would stop being measurable. (2) HEAT HEADROOM AS A SIZER, not a gate: a busy book now TRIMS a good setup instead of refusing it, because an unbooked setup contributes exactly zero to growth. Solved against EFFECTIVE heat, so an uncorrelated trade gets far more room than a duplicate -- multivariate Kelly made operational (on a 5-alt book, gold gets 4.39pct vs LTC 3.14pct). (3) GROWTH IS NOW MEASURED: log-growth per trade, realised trades/year, implied CAGR, and -- the part that matters -- the BINDING CONSTRAINT named as EDGE or FREQUENCY, because if g<=0 raising cadence multiplies a losing bet.",
+   "roi_bps": 0.0,
+   "raised": "2026-07-31T17:15:00+00:00",
+   "status": "done",
+   "reason": "built, 55 conviction tests + 17 resolver tests, law gate PASS",
+   "commit": null,
+   "due": null,
+   "note": "sizing fence flagged MIN_TRADE_RISK on first run; vocabulary widened rather than the organ reworded, per its own stated rule"
   }
  ]
 }

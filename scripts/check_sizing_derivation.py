@@ -69,7 +69,8 @@ _DERIVATION_WORDS = (
     "exchange limit", "venue limit", "hard limit", "protocol", "law l1", "law l2", "l1.", "l2.",
     "empirical", "calibrat", "estimated from", "fitted", "per the", "found by",
     "published", "fee schedule", "venue schedule", "quoted", "top-of-book", "spread on",
-    "exchange minimum", "tier", "documented",
+    "exchange minimum", "venue minimum", "minimum notional", "rejects orders", "tier",
+    "documented",
 )
 
 #: Constants that are pure plumbing, not sizing. Naming them is a DECISION, same as the schedule

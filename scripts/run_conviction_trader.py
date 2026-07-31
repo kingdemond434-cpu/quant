@@ -301,6 +301,12 @@ _STRUCTURE_WORDS = (
     "base", "neckline", "wick", "close", "open interest", "poc", "value area", "fib", "band",
 )
 
+#: MINIMUM MEANINGFUL SIZE. Not an EV bound -- cost scales with notional, so cost/risk is constant
+#: and a small trade is proportionally as good as a large one. This is the VENUE minimum: Binance
+#: USD-M rejects orders under ~$5 notional, and at a $200 sleeve a 0.1% risk on a 2% stop is $10
+#: of notional. Below this the order simply will not fill, so booking it would be fiction.
+MIN_TRADE_RISK = 0.001
+
 #: SLEEVE DRAWDOWN HALT. Per-trade risk is bounded; a LOSING RUN is not. At a 20% budget three
 #: stops in a row is -49% of the sleeve, which is why a sleeve-level rail has to exist before real
 #: money does rather than after the first bad week. Read from the resolver's marked equity curve
@@ -719,6 +725,48 @@ def portfolio_heat(root: Path, *, now: datetime | None = None) -> dict[str, Any]
     }
 
 
+def size_into_headroom(root: Path, symbol: str, desired_risk: float,
+                       live: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+    """The heat cap as a SIZER, not a gate -- and the correlation-aware growth lever.
+
+    Refusing a good setup because the book is 95% full throws the setup away; taking it at 5% size
+    does not. Idle capacity is unbooked loss (L1.28a), and a slot left empty contributes exactly
+    zero to geometric growth while a small position contributes a small positive amount.
+
+    It is also where correlation pays. The largest size that fits is solved against EFFECTIVE heat,
+    so a trade uncorrelated with the book (gold beside four alts, measured +0.15) gets far more
+    room than one duplicating it (+0.80) -- which is the multivariate-Kelly intuition made
+    operational: allocate to the bet that adds the most growth per unit of portfolio risk."""
+    live = open_positions(root) if live is None else live
+    gross_used = sum(float((r.get("sizing") or {}).get("risk_fraction") or 0.0) for r in live)
+    gross_room = max(0.0, MAX_GROSS_HEAT - gross_used)
+    if gross_room <= 0:
+        return {"risk": 0.0, "bound": "gross_heat", "why": "gross heat cap reached"}
+
+    def fits(w: float) -> bool:
+        cand = [*live, {"symbol": symbol, "sizing": {"risk_fraction": w}}]
+        return effective_heat(root, cand)[0] <= MAX_PORTFOLIO_HEAT
+
+    hi = min(desired_risk, gross_room)
+    if hi <= 0:
+        return {"risk": 0.0, "bound": "no room", "why": "no headroom at any size"}
+    if fits(hi):
+        return {"risk": round(hi, 6),
+                "bound": "kelly" if hi >= desired_risk else "gross_heat",
+                "why": f"full requested size fits ({len(live)} live)"}
+    lo = 0.0
+    for _ in range(24):                                    # bisection: effective heat is monotone
+        mid = (lo + hi) / 2
+        if fits(mid):
+            lo = mid
+        else:
+            hi = mid
+    return {"risk": round(lo, 6), "bound": "effective_heat",
+            "why": (f"trimmed from {desired_risk:.2%} to {lo:.2%} to stay inside "
+                    f"{MAX_PORTFOLIO_HEAT:.0%} effective heat against {len(live)} live "
+                    "position(s) -- correlation with the book decides how much fits")}
+
+
 def sleeve_drawdown(root: Path) -> dict[str, Any]:
     """The sleeve's own drawdown rail, read from the marked paper book (R0133).
 
@@ -865,15 +913,51 @@ def validate(call: dict[str, Any], *, noise: dict[str, Any] | None = None,
     if len(str(call["driver"])) < 20 or len(str(call["falsifier"])) < 15:
         return False, "REFUSED: driver/falsifier too thin"
     if heat:
-        if heat.get("state") == "FULL":
+        # NOT "the book is busy, come back later" -- that would leave a good setup unbooked, and an
+        # unbooked setup contributes exactly zero to geometric growth. The heat cap SIZES the trade
+        # (size_into_headroom); it only refuses when nothing fillable fits at all.
+        fits = heat.get("fits_risk")
+        if fits is not None and fits < MIN_TRADE_RISK:
+            return False, (f"REFUSED: no fillable size left -- effective heat {heat['heat']:.1%} "
+                           f"against the {MAX_PORTFOLIO_HEAT:.0%} cap leaves {fits:.3%}, below the "
+                           f"{MIN_TRADE_RISK:.1%} venue minimum. Breadth is the aggression here, "
+                           "not stacking.")
+        if fits is None and heat.get("state") == "FULL":
             return False, (f"REFUSED: portfolio heat {heat['heat']:.1%} is at the "
-                           f"{MAX_PORTFOLIO_HEAT:.0%} cap -- the next trade waits for one to "
-                           "resolve. Breadth is the aggression here, not stacking.")
+                           f"{MAX_PORTFOLIO_HEAT:.0%} cap and per-symbol headroom is UNMEASURED")
         if call["symbol"] in (heat.get("symbols") or []):
             return False, (f"REFUSED: already live in {call['symbol']} -- doubling the same "
                            "instrument is concentration wearing a second name, which is exactly "
                            "what the spread-the-heat design exists to avoid")
     return True, "accepted"
+
+
+def calibrated_p(raw_p: float) -> dict[str, Any]:
+    """SIZE on the desk's MEASURED accuracy, SCORE the model's raw claim.
+
+    This is the closed loop that protects geometric growth, and it is not a safety feature -- it
+    is the growth term itself. Kelly is f* = (pb - q)/b: if the sleeve claims 0.63 and truly hits
+    0.45, sizing on 0.63 bets ~2x Kelly, where E[log wealth] is NEGATIVE. No amount of edge
+    survives systematically over-betting it.
+
+    It runs in BOTH directions, and the upward one is the point as much as the downward: a desk
+    measured UNDER-confident gets its probability raised and therefore its size raised. Aggression
+    that has been earned is aggression the sizer hands over automatically.
+
+    N-gated inside forecast_calibration: under 5 resolved outcomes it returns the raw value
+    unchanged and says so, because a correction from noise is worse than no correction."""
+    try:
+        from libs.self_improvement.forecast_calibration import calibrated_confidence
+        c = calibrated_confidence(raw_p)
+    except Exception as exc:                              # noqa: BLE001 -- never lose the call
+        return {"raw": raw_p, "used": raw_p, "applied": False,
+                "why": f"UNMEASURED calibration ({type(exc).__name__}) -- sizing on the raw claim"}
+    return {"raw": c["raw"], "used": c["adjusted"] if c.get("applied") else c["raw"],
+            "applied": bool(c.get("applied")), "bias": c.get("bias"),
+            "direction": ("shrunk -- desk measured over-confident" if (c.get("bias") or 0) > 0
+                          else "raised -- desk measured UNDER-confident, earned size returned"
+                          if (c.get("bias") or 0) < 0 else "unchanged"),
+            "why": c.get("why")}
 
 
 def record(root: Path, call: dict[str, Any], *,
@@ -883,8 +967,17 @@ def record(root: Path, call: dict[str, Any], *,
     stop_pct, why = derive_stop_pct(entry, inval, call["direction"])
     if why:                                    # unreachable via main(), which validates first
         raise ValueError(why)
-    sizing = kelly_leverage(float(call["probability"]),
+    cal = calibrated_p(float(call["probability"]))
+    sizing = kelly_leverage(cal["used"],
                             float(call["expected_move_pct"]) / stop_pct, stop_pct)
+    # HEAT HEADROOM AS A SIZER: trim into what actually fits rather than refusing the setup.
+    fit = size_into_headroom(root, str(call["symbol"]), sizing["risk_fraction"])
+    if fit["risk"] < sizing["risk_fraction"]:
+        sizing = {**sizing, "risk_fraction": fit["risk"],
+                  "leverage": round(fit["risk"] / (stop_pct / 100.0), 2) if stop_pct else 0.0,
+                  "capped_by": f"{sizing['capped_by']}+{fit['bound']}"}
+    sizing["headroom"] = fit
+    sizing["calibration"] = cal
     noise_pct = (float(noise["median_adverse_pct"])
                  if noise and noise.get("state") == "MEASURED"
                  and noise.get("median_adverse_pct") is not None else None)
@@ -907,6 +1000,8 @@ def record(root: Path, call: dict[str, Any], *,
         fh.write(json.dumps(row) + "\n")
     try:
         from libs.self_improvement import forecast_calibration as fc
+        # SCORE THE RAW CLAIM, not the size we took: grading the adjusted number would launder the
+        # model's own error through the desk's correction and the bias would never be measurable.
         fc.log_forecast(f"conviction:{now.isoformat()}", float(call["probability"]),
                         "directional", resolve_by=row["resolve_by"],
                         claim=f"{call['direction']} {call['symbol']} @{sizing['leverage']}x "
@@ -989,6 +1084,9 @@ def main() -> int:
                                     str(call.get("direction", "LONG")))
             except (ValueError, TypeError, OSError) as exc:
                 noise = {"state": "UNMEASURED", "floor_pct": MIN_STOP_PCT, "why": str(exc)}
+        if call.get("action") != "PASS" and call.get("symbol"):
+            heat = {**heat, "fits_risk": size_into_headroom(
+                _ROOT, str(call["symbol"]), MAX_RISK_PER_TRADE)["risk"]}
         ok, why = validate(call, noise=noise, heat=heat)
         if not ok:
             state = {"status": "REFUSED", "why": why, "call": call, "noise": noise}

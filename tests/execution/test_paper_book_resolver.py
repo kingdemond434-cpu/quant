@@ -10,8 +10,8 @@ from __future__ import annotations
 import json
 from datetime import UTC, datetime, timedelta
 
-from scripts.resolve_paper_book import (_benchmark, mark_event_row, resolve_book,
-                                        trade_cost, walk_ladder)
+from scripts.resolve_paper_book import (_benchmark, equity_curve, mark_event_row,
+                                        resolve_book, trade_cost, walk_ladder)
 from scripts.run_conviction_trader import kelly_leverage, management_plan
 
 _ENTRY, _INVAL = 100.0, 98.0                  # LONG, R = 2.0
@@ -156,3 +156,42 @@ def test_conventions_are_published_with_every_report(tmp_path):
     rep = resolve_book(tmp_path, now=_START)
     assert any("adverse-first" in c for c in rep["conventions"])
     assert any("slippage" in c for c in rep["conventions"])
+
+
+# ----------------------------------------------- geometric growth is the objective, so measure it
+
+def _closed(rets, hours=20):
+    from datetime import timedelta
+    return [{"equity_return": r, "outcome": "STOPPED", "closed": True,
+             "exit_at": (_START + timedelta(hours=hours * (i + 1))).isoformat()}
+            for i, r in enumerate(rets)]
+
+
+def test_log_growth_per_trade_is_reported_not_just_total_return():
+    # The objective is max E[log wealth]. Total return over a short window says almost nothing
+    # about it; g per trade x trades per year is the quantity that compounds.
+    c = equity_curve(_closed([0.18] * 7 + [-0.06] * 13))
+    assert c["log_growth_per_trade"] > 0
+    assert c["trades_per_year_at_this_pace"] > 0
+    assert c["implied_cagr"] is not None
+
+
+def test_a_losing_edge_names_EDGE_as_the_constraint_not_frequency():
+    # THE POINT OF NAMING IT: if g <= 0, raising cadence multiplies a losing bet. Reporting a
+    # growth number without saying which term is short invites exactly the wrong response.
+    c = equity_curve(_closed([0.18] * 2 + [-0.06] * 18))
+    assert c["log_growth_per_trade"] <= 0
+    assert c["growth_constraint"].startswith("EDGE")
+    assert "makes it worse" in c["growth_constraint"]
+
+
+def test_a_winning_edge_at_low_pace_names_FREQUENCY():
+    c = equity_curve(_closed([0.18] * 7 + [-0.06] * 13, hours=24 * 30))   # ~12 trades/yr
+    assert c["log_growth_per_trade"] > 0
+    assert c["growth_constraint"].startswith("FREQUENCY")
+
+
+def test_no_closed_trades_is_unmeasured_never_zero_growth():
+    c = equity_curve([])
+    assert c["log_growth_per_trade"] is None
+    assert c["growth_constraint"].startswith("UNMEASURED")

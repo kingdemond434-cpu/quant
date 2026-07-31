@@ -17,7 +17,8 @@ from scripts.run_conviction_trader import (_BRIEF, MAX_LEVERAGE, MAX_PEAK_STRESS
                                            derive_stop_pct, kelly_leverage, management_plan,
                                            INSTRUMENTS, MAX_GROSS_HEAT,
                                            MAX_PORTFOLIO_HEAT, _chart_brief,
-                                           effective_heat,
+                                           calibrated_p, effective_heat,
+                                           size_into_headroom,
                                            noise_floor, portfolio_heat, record,
                                            sleeve_drawdown,
                                            slip_leverage_cap, validate)
@@ -396,8 +397,12 @@ def test_a_full_book_refuses_the_next_trade_rather_than_stacking(tmp_path):
                   ("BTCUSDT", "ETHUSDT", "SOLUSDT", "ADAUSDT", "LINKUSDT")) + "\n")
     h = portfolio_heat(tmp_path)
     assert h["state"] == "FULL" and h["heat"] >= MAX_PORTFOLIO_HEAT
+    # with no per-symbol headroom measured, a FULL book still refuses...
     ok, why = validate(_t(), heat=h)
-    assert not ok and "heat" in why and "Breadth is the aggression" in why
+    assert not ok and "UNMEASURED" in why
+    # ...and once headroom IS measured, refusal is by fillable size, not by "the book is busy".
+    ok, why = validate(_t(), heat={**h, "fits_risk": 0.0})
+    assert not ok and "Breadth is the aggression" in why
 
 
 def test_doubling_the_same_instrument_is_refused(tmp_path):
@@ -534,3 +539,75 @@ def test_heat_is_released_once_the_resolver_marks_a_trade_closed(tmp_path):
     (tmp_path / "data/paper_book_pnl.json").write_text(json.dumps(
         {"marks": [{"key": key, "outcome": "STOPPED"}]}))
     assert portfolio_heat(tmp_path)["n_open"] == 0      # capital back, slot free
+
+
+# ------------------------------------------------- geometric growth: the three levers, measured
+
+def test_size_follows_measured_accuracy_in_both_directions(monkeypatch):
+    # THE GROWTH TERM, not a safety feature: if the sleeve claims 0.63 and truly hits 0.45, sizing
+    # on 0.63 bets ~2x Kelly, where E[log wealth] is NEGATIVE. And the upward direction matters
+    # just as much -- a desk measured UNDER-confident gets its size handed back automatically.
+    import libs.self_improvement.forecast_calibration as fc
+    monkeypatch.setattr(fc, "calibrated_confidence",
+                        lambda p: {"raw": p, "adjusted": p - 0.12, "applied": True, "bias": 0.12})
+    over = calibrated_p(0.63)
+    assert over["used"] < over["raw"] and "over-confident" in over["direction"]
+    monkeypatch.setattr(fc, "calibrated_confidence",
+                        lambda p: {"raw": p, "adjusted": p + 0.09, "applied": True, "bias": -0.09})
+    under = calibrated_p(0.63)
+    assert under["used"] > under["raw"] and "earned size returned" in under["direction"]
+    # ...and a smaller probability is strictly less Kelly, which is the whole mechanism. Asserted
+    # on full_kelly because the 6% per-trade cap masks the difference at these probabilities --
+    # the growth term is what moves, and the cap is downstream of it.
+    assert (kelly_leverage(over["used"], 2.0, 2.0)["full_kelly"]
+            < kelly_leverage(under["used"], 2.0, 2.0)["full_kelly"])
+
+
+def test_unmeasured_calibration_sizes_on_the_raw_claim_and_says_so(monkeypatch):
+    import libs.self_improvement.forecast_calibration as fc
+    monkeypatch.setattr(fc, "calibrated_confidence",
+                        lambda p: (_ for _ in ()).throw(OSError("log unreadable")))
+    c = calibrated_p(0.63)
+    assert c["used"] == 0.63 and c["applied"] is False and "UNMEASURED" in c["why"]
+
+
+def test_the_raw_claim_is_what_gets_scored_not_the_size_taken(tmp_path, monkeypatch):
+    # Grading the adjusted number would launder the model's error through the desk's own
+    # correction, and the bias would never become measurable again.
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "data").mkdir()
+    import libs.self_improvement.forecast_calibration as fc
+    monkeypatch.setattr(fc, "_LOG", tmp_path / "data/forecast_log.json")
+    monkeypatch.setattr(fc, "calibrated_confidence",
+                        lambda p: {"raw": p, "adjusted": 0.55, "applied": True, "bias": 0.08})
+    row = record(tmp_path, _t())
+    logged = json.loads((tmp_path / "data/forecast_log.json").read_text())["forecasts"]
+    assert any(abs(f["p"] - 0.63) < 1e-9 for f in logged.values())    # RAW is scored
+    assert row["sizing"]["calibration"]["used"] == 0.55               # ADJUSTED is sized
+
+
+def test_an_uncorrelated_trade_gets_more_room_than_a_duplicate(tmp_path):
+    # The multivariate-Kelly intuition made operational: allocate to the bet that adds the most
+    # growth per unit of PORTFOLIO risk, not per unit of its own risk.
+    _cc(tmp_path, {"A": {"A": 1.0, "B": 1.0, "Z": 0.0},
+                   "B": {"A": 1.0, "B": 1.0, "Z": 0.0},
+                   "Z": {"A": 0.0, "B": 0.0, "Z": 1.0}})
+    book = [_pos("A", 0.14), _pos("B", 0.14)]
+    dup = size_into_headroom(tmp_path, "A", 0.06, book)["risk"]
+    div = size_into_headroom(tmp_path, "Z", 0.06, book)["risk"]
+    assert div > dup
+
+
+def test_a_busy_book_trims_the_trade_instead_of_refusing_it(tmp_path):
+    # An unbooked setup contributes exactly zero to geometric growth; a small one does not.
+    _cc(tmp_path, {s: {t: (1.0 if s == t else 0.9) for t in "ABCDEFG"} for s in "ABCDEFG"})
+    book = [_pos(s) for s in "ABCDE"]
+    fit = size_into_headroom(tmp_path, "F", 0.06, book)
+    assert 0.0 < fit["risk"] < 0.06 and fit["bound"] == "effective_heat"
+    ok, _ = validate(_t(), heat={"heat": 0.28, "fits_risk": fit["risk"], "symbols": []})
+    assert ok                                            # taken small, not thrown away
+
+
+def test_nothing_fillable_is_still_refused(tmp_path):
+    ok, why = validate(_t(), heat={"heat": 0.30, "fits_risk": 0.0001, "symbols": []})
+    assert not ok and "no fillable size" in why

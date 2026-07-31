@@ -305,9 +305,38 @@ def equity_curve(resolved: list[dict[str, Any]]) -> dict[str, Any]:
         hwm = max(hwm, eq)
         mdd = max(mdd, (hwm - eq) / hwm if hwm > 0 else 0.0)
         path.append(round(eq, 6))
+    # GEOMETRIC GROWTH, the actual objective (max E[log wealth]), measured rather than hoped for.
+    # Reported as g per trade and annualised at the book's own realised pace, because a per-trade
+    # edge means nothing without the frequency that compounds it -- growth is g x N, and naming
+    # which of the two is short is what tells the desk where to push.
+    import math
+    logs = [math.log(1.0 + float(m.get("equity_return") or 0.0)) for m in resolved
+            if float(m.get("equity_return") or 0.0) > -0.999]
+    g = sum(logs) / len(logs) if logs else None
+    span_h = None
+    try:
+        ts = sorted(m["exit_at"] for m in resolved if m.get("exit_at"))
+        if len(ts) >= 2:
+            span_h = (datetime.fromisoformat(ts[-1])
+                      - datetime.fromisoformat(ts[0])).total_seconds() / 3600.0
+    except (ValueError, KeyError, TypeError):
+        span_h = None
+    per_year = (len(resolved) / span_h * 24 * 365) if span_h and span_h > 0 else None
+    cagr = (math.exp(g * per_year) - 1.0) if (g is not None and per_year) else None
     return {"n": len(resolved), "final": round(eq, 6), "high_water": round(hwm, 6),
             "max_drawdown": round(mdd, 6),
             "current_drawdown": round((hwm - eq) / hwm if hwm > 0 else 0.0, 6),
+            "log_growth_per_trade": round(g, 6) if g is not None else None,
+            "trades_per_year_at_this_pace": round(per_year, 1) if per_year else None,
+            "implied_cagr": (round(cagr, 4) if cagr is not None and abs(cagr) < 1e6 else
+                             ("ABOVE-MODEL" if cagr is not None else None)),
+            "growth_constraint": (
+                "UNMEASURED -- no closed trades" if g is None else
+                "EDGE: log-growth per trade is <= 0, so frequency multiplies a losing bet and "
+                "raising cadence makes it worse" if g <= 0 else
+                "FREQUENCY: per-trade growth is positive, so the binding constraint is how many "
+                "of these the desk can find and hold at once" if per_year and per_year < 300 else
+                "neither obviously binding -- edge positive and pace already high"),
             "path": path[-50:],
             "note": "compounded in exit order; overlapping calls drawdown together, so the live "
                     "path is rougher than this, never smoother"}
