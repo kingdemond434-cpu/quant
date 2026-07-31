@@ -94,3 +94,29 @@ Stage-A only: zero promotion authority (L1.6). Screen-on-discovery still owed pe
 Rowed as R-rows this pass; the other candidates sit on the axis watchlist for screen-on-discovery.
 When the GPT-9 seat funds, this exact pass reruns cross-family and the CONFIRMED/CONTESTED deltas
 become the real signal.
+
+---
+
+# HUNT PASS 2 — adversary / unasked-assumption / capacity lenses (same day, different draws)
+
+- **★ CROWDING DETECTOR on our own deployed edges (R0119)** — adversary lens. If a competitor
+  finds our carry names, the tell arrives BEFORE the P&L does: funding compression on OUR held
+  symbols vs the cross-sectional norm, fill quality degrading at the same size, basis narrowing
+  faster than the venue average. Nothing measures this; by the time it shows in returns the
+  capacity is already gone. Data owned (tape + funding). Routes to a FENCE, not a trade.
+- **★ CARRY vs LENDING ON THE SAME COLLATERAL (R0120)** — unasked assumption, and the sharpest
+  finding of the day. Every capacity decision assumes cash-and-carry is the base allocation for
+  the desk's USDT. Nobody has ever computed the alternative: the same collateral in a DeFi
+  lending pool at a measurable near-riskless rate — and `defi_lending.jsonl` is collected daily
+  and UNREAD. If lending wins in flat-funding regimes, the correct book is REGIME-SWITCHED
+  between carry and lending rather than always-carry. Zero new data required.
+- **FUNDING-INTERVAL ARBITRAGE (R0121)** — capacity lens. Venues settle funding on different
+  schedules (8h/4h/1h) at different snapshot instants. A position held across venue A's
+  settlement but exited before venue B's collects one payment while paying none — a structurally
+  free leg arising purely from calendar mismatch, not a price view. Needs only the funding
+  timestamps already collected. Screen owed: achievable per-cycle capture net of two round trips.
+
+**Cross-pass note:** R0120 is the highest-value item found today because it questions the desk's
+base allocation rather than adding a satellite to it — and it is answerable entirely from data
+already on disk. It is also the clearest instance of an unread feed (defi_lending) carrying a
+decision the desk never made.

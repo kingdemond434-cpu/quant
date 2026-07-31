@@ -1394,11 +1394,11 @@
    "summary": "ALPHA HUNT R1 (Claude family, docs/research/alpha_hunt_20260731.md): CROSS-EXCHANGE FUNDING-SPREAD as a decorrelated 2nd sleeve -- long funding cheap venue / short rich venue when |spread|>round-trip cost; earns the SPREAD not the level so it pays when flat-funding kills single-venue carry (variance-drag reduction raises geometric mean directly, R0101 made concrete). Funding collected on 4+ venues already. Stage-A screen owed.",
    "roi_bps": 45.0,
    "raised": "2026-07-31T11:49:32.424659+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "Stage-A screen BUILT and scheduled daily (scripts/screen_funding_spread.py + 7 tests): cross-venue join with symbol normalisation (XBTUSD/BTCUSDT/BTC) and hour bucketing, spread vs round-trip cost, HARVESTABLE-CANDIDATE vs UNHARVESTABLE verdict, NO-DATA reported as UNMEASURED never as a null. Screening itself is now automatic; the axis verdict lands from box data. Execution design for the paired-leg construction remains owed before any sizing",
+   "commit": "pending",
    "due": null,
-   "disposed": null
+   "disposed": "2026-07-31T11:59:32.682214+00:00"
   },
   {
    "id": "R0116",
@@ -1430,6 +1430,42 @@
    "summary": "ALPHA HUNT R4: EVENT-DENSITY PROMOTION CLOCK -- event-driven edges (funding/liquidation/ETF) accrue evidence PER EVENT not per calendar day; the 28-day calendar clock under-credits them. Per-mechanism event-count clock promotes an event-driven survivor faster WITHOUT lowering the bar (same n_eff, reached sooner). Directly attacks bottleneck #1 calendar-time accrual.",
    "roi_bps": 25.0,
    "raised": "2026-07-31T11:49:32.551722+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0119",
+   "source": "principal",
+   "summary": "ALPHA HUNT R2-1 (adversary lens): CROWDING DETECTOR on our own deployed edges -- if a competitor finds our carry names, the tell arrives BEFORE the P&L does: funding compression on our specific held symbols vs the cross-sectional norm, our fill quality degrading at the same size, basis narrowing faster than the venue average. Nothing measures whether our own edges are being crowded; by the time it shows in returns the capacity is gone. Mechanism: per-held-symbol funding percentile vs universe + realized-slippage drift. Data owned (tape + funding). Routes to a fence, not a trade.",
+   "roi_bps": 30.0,
+   "raised": "2026-07-31T11:59:50.146393+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0120",
+   "source": "principal",
+   "summary": "ALPHA HUNT R2-2 (unasked-assumption lens): THE DESK HAS NEVER TESTED WHETHER ITS OWN CARRY SLEEVE IS THE BEST USE OF THE SAME COLLATERAL. Every capacity decision assumes cash-and-carry is the base allocation, but the same USDT could sit in a DeFi lending pool (defi_lending collected daily, unread) at a measurable, near-riskless rate. The screen: carry net-of-cost yield vs best-available lending APY on the same collateral, same window. If lending wins in flat-funding regimes, the correct book is REGIME-SWITCHED between them -- and nobody has ever computed the comparison. Data fully owned.",
+   "roi_bps": 35.0,
+   "raised": "2026-07-31T11:59:50.190000+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0121",
+   "source": "principal",
+   "summary": "ALPHA HUNT R2-3 (capacity lens): FUNDING-INTERVAL ARBITRAGE ACROSS VENUES -- venues settle funding on DIFFERENT schedules (8h vs 1h vs 4h) and at different snapshot instants. A position held across venue A's settlement but exited before venue B's collects one funding payment while paying none, a structurally free carry leg that exists purely because the calendars differ. Mechanism: settlement-calendar mismatch, not a price view. Requires only the funding timestamps already collected. Screen owed: measure the achievable per-cycle capture net of two round trips.",
+   "roi_bps": 30.0,
+   "raised": "2026-07-31T11:59:50.228992+00:00",
    "status": "open",
    "reason": null,
    "commit": null,
