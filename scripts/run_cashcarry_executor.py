@@ -625,6 +625,16 @@ def _rebalance(top: int, hold_top: int, capital: float, *, dry: bool) -> dict[st
     # prices are read, so it latches through state and binds the NEXT tick's reconcile. Both stop
     # the reconciler rebuilding a book the close path is unwinding (2026-07-28 churn incident).
     _flatten_only = _KILL.exists() or state.get("last_risk_action") == "flatten"
+    # GUARD CONSUMPTION (R0071d): live_guard computed a graded response for weeks --
+    # effective_size_fraction and limit_only -- and nothing read either. Its binary KILL half
+    # was wired (above); the graded half now scales this tick's sizing capital and, in
+    # limit_only, forbids taker chasing in the maker path. Stale artifact = neutral.
+    _refresh_guard()
+    _guard_note = ""
+    if _GUARD["size_frac"] < 1.0 or _GUARD["limit_only"]:
+        capital = capital * _GUARD["size_frac"]
+        _guard_note = (f"live_guard: sizing scaled to {_GUARD['size_frac']:.0%}"
+                       + (" + limit-only" if _GUARD["limit_only"] else ""))
     recon = _reconcile(pos, dry=dry, cooldown=cool,          # heal hedge drift FIRST (survival #1)
                        fail_counts=fails, orphan_seen=orph,
                        flatten_only=_flatten_only)
@@ -665,6 +675,8 @@ def _rebalance(top: int, hold_top: int, capital: float, *, dry: bool) -> dict[st
     alloc = _alloc(cands, free)                             # funding-weighted, concentration-capped
     per = free / max(1, len(cands))                        # equal-weight fallback
     actions: list[str] = list(recon)                       # surface reconcile actions in the feed
+    if _guard_note:
+        actions.append(_guard_note)
     if actions_gate:
         actions.append(actions_gate)
 
@@ -684,6 +696,14 @@ def _rebalance(top: int, hold_top: int, capital: float, *, dry: bool) -> dict[st
                              for s, p in pos.items())
                          + float(state.get("realized_spot_pnl", 0.0)))
             eq_c = eq + spot_side
+            # VENUE-TRUTH PERSISTENCE (R0071a, 2026-07-31): this key had THREE readers and no
+            # writer -- record_capital_event.py fell through to inception-or-zero, so the ONE
+            # command that runs on launch day would have recorded equity $0.00 and re-based the
+            # rail ~89% below truth. The executor is the only organ that computes combined
+            # equity from venue truth; it now persists that number with its timestamp so the
+            # capital-event reader can demand freshness instead of trusting a corpse.
+            state["last_combined_equity"] = round(eq_c, 2)
+            state["last_combined_equity_at"] = datetime.now(tz=UTC).isoformat()
             # INCEPTION, honouring any RECORDED capital event (libs/risk/capital_events.py).
             # `start_futures_equity` is written once at inception and never re-based, so after a
             # ruin-floor breach the book entered a provably closed loop -- flatten, no opens, no
@@ -867,6 +887,11 @@ def _rebalance(top: int, hold_top: int, capital: float, *, dry: bool) -> dict[st
             actions.append(f"topup {sym} +{qty}")
 
     state["positions"] = pos
+    if not dry:
+        # VENUE-SIDE PROTECTIVE STOPS (R0071c): reconciled every tick against the held book --
+        # place missing, replace drifted, remove orphaned. Survives total host death, which the
+        # in-process rail cannot.
+        actions.extend(_reconcile_protective_stops(pos, state))
     if not dry:                                           # only persist REAL (executed) positions
         _reconcile_spot_realized(state)                   # self-heal accounting from exchange truth
         _STATE.parent.mkdir(parents=True, exist_ok=True)
@@ -925,6 +950,103 @@ def _passive_price(bk: dict[str, Any], fl: dict[str, Any], sym: str, side: str) 
             if tick > 0 else float(px))
 
 
+_STOP_FRAC = 0.35                                          # spec section 3: ruin-line distance
+
+
+def _stop_plan(pos: dict[str, dict[str, Any]],
+               *, frac: float = _STOP_FRAC) -> dict[str, dict[str, float]]:
+    """Desired venue-side protective stop per held carry (R0071c; pure -- fully testable).
+
+    Every carry is short the perp, so the protective side is BUY reduce-only at
+    entry*(1+frac). frac is the ruin-line distance (spec section 3): far beyond any funding
+    wick a carry should survive, comfortably inside the leverage-cap liquidation band, and it
+    exists for the host-death case -- an executor that dies leaves a book the venue itself
+    will de-hedge cleanly instead of liquidating."""
+    out: dict[str, dict[str, float]] = {}
+    for sym, p in pos.items():
+        qty = abs(float(p.get("perp_qty") or p.get("spot_qty") or 0.0))
+        entry = float(p.get("perp_entry") or p.get("spot_cost") or 0.0)
+        if qty > 0 and entry > 0:
+            out[sym] = {"qty": qty, "stop": round(entry * (1.0 + frac), 8)}
+    return out
+
+
+def _stop_matches(order: dict[str, Any], want: dict[str, float]) -> bool:
+    """True when a resting stop is close enough to the plan to keep (5% qty / 2% price)."""
+    try:
+        return (abs(float(order.get("origQty", 0.0)) - want["qty"]) <= 0.05 * want["qty"]
+                and abs(float(order.get("stopPrice", 0.0)) - want["stop"]) <= 0.02 * want["stop"])
+    except (TypeError, ValueError):
+        return False
+
+
+def _reconcile_protective_stops(pos: dict[str, dict[str, Any]],
+                                state: dict[str, Any]) -> list[str]:
+    """Venue-side stop = the rail that survives host death. Reconciled, not fire-and-forget:
+    place missing, replace drifted (>5% qty / >2% price), cancel orphans whose position
+    closed. Per-id cancels only -- see _resting_quotes for why cancel_all is forbidden near
+    stops. No-op on connectors without stop support (testnet parity gap, recorded)."""
+    if not fut.has_keys() or not hasattr(fut, "place_stop_market"):
+        return []
+    canceler = getattr(fut, "cancel_order", None)
+    plan = _stop_plan(pos)
+    acts: list[str] = []
+    tracked = set(state.get("protective_stops", {})) | set(plan)
+    for sym in sorted(tracked):
+        with _safe():
+            stops = [o for o in fut.open_orders(sym) if o.get("type") == "STOP_MARKET"]
+            want = plan.get(sym)
+            if want is None:                               # position gone -> its stop goes too
+                for o in stops:
+                    if canceler is not None:
+                        canceler(sym, int(o.get("orderId", 0)))
+                        acts.append(f"stop-cancel {sym} (position closed)")
+                continue
+            keep = next((o for o in stops if _stop_matches(o, want)), None)
+            for o in stops:                                # drifted/duplicate stops go
+                if o is not keep and canceler is not None:
+                    canceler(sym, int(o.get("orderId", 0)))
+            if keep is None:
+                fut.place_stop_market(sym, "BUY", want["qty"], want["stop"])
+                acts.append(f"stop {sym} {want['qty']} @{want['stop']} (ruin-line backstop)")
+    state["protective_stops"] = plan
+    return acts
+
+
+def _resting_quotes(mod: Any, sym: str) -> list[dict[str, Any]]:
+    """Open orders EXCLUDING protective stops (R0071c).
+
+    The maker-pair protocol infers 'my quote filled' from an emptying open-orders book. A
+    resting STOP_MARKET breaks that inference permanently: the book never reads empty, the wait
+    loop always times out, and the fallback branch cancels the stop and re-takers an
+    already-filled leg -- a double fill AND a naked position, triggered by the safety order
+    itself. This is why the stop had zero callers; the filter is what makes wiring it safe."""
+    try:
+        return [o for o in mod.open_orders(sym) if o.get("type") != "STOP_MARKET"]
+    except Exception:
+        return []
+
+
+# live_guard consumption (R0071d): refreshed once per tick from data/live_guard.json; the guard
+# computed these for weeks with no consumer. size_frac scales the tick's sizing capital;
+# limit_only suppresses taker fallbacks. Stale/absent guard = neutral (full size, takers
+# allowed) -- the guard's own freeze path is the KILL file, which is already authoritative.
+_GUARD: dict[str, Any] = {"size_frac": 1.0, "limit_only": False}
+
+
+def _refresh_guard() -> None:
+    _GUARD.update({"size_frac": 1.0, "limit_only": False})
+    try:
+        g = json.loads((Path("data/live_guard.json")).read_text("utf-8"))
+        at = datetime.fromisoformat(str(g.get("generated", "1970-01-01T00:00:00+00:00")))
+        if (datetime.now(tz=UTC) - at).total_seconds() > 900:
+            return                                          # stale guard is no guard
+        _GUARD["size_frac"] = min(1.0, max(0.0, float(g.get("effective_size_fraction", 1.0))))
+        _GUARD["limit_only"] = str(g.get("canary", {}).get("mode", "")) == "limit_only"
+    except Exception:
+        return
+
+
 def _maker_pair(sym: str, qty: float, spot_side: str, fut_side: str,
                 *, wait: float) -> dict[str, Any]:
     """Quote BOTH legs post-only (maker), wait, then taker-fill whatever didn't rest+fill.
@@ -947,15 +1069,32 @@ def _maker_pair(sym: str, qty: float, spot_side: str, fut_side: str,
     end = time.time() + wait
     while time.time() < end:                               # wait for the resting quotes to fill
         time.sleep(2.0)
-        if not spot.open_orders(sym) and not fut.open_orders(sym):
+        if not _resting_quotes(spot, sym) and not _resting_quotes(fut, sym):
             break
     for name, mod, side, _bk, _fl in legs:                 # cancel + taker any still-unfilled leg
         with _safe():
-            if mod.open_orders(sym):
-                mod.cancel_all(sym)
-                res = mod.place_market(sym, side, qty)
-                modes[name] = "taker_fallback"
-                ok[name] = _filled(res)
+            resting = _resting_quotes(mod, sym)
+            if resting:
+                # Cancel OUR quotes by id, never the symbol's whole book (R0071c): cancel_all
+                # here would take the protective STOP_MARKET down with the stale quote --
+                # naked-stop removal as a side effect of a fill-timeout. Fall back to
+                # cancel_all only on a connector without per-id cancel (testnet spot, where
+                # no stops rest).
+                canceler = getattr(mod, "cancel_order", None)
+                if canceler is not None:
+                    for o in resting:
+                        canceler(sym, int(o.get("orderId", 0)))
+                else:
+                    mod.cancel_all(sym)
+                if _GUARD["limit_only"]:
+                    # live_guard degraded mode (R0071d): no taker chasing -- report the leg
+                    # unfilled and let the next tick re-quote. The guard's whole point is that
+                    # in a degraded venue state, paying taker to force a fill is the leak.
+                    modes[name] = "limit_only_unfilled"
+                else:
+                    res = mod.place_market(sym, side, qty)
+                    modes[name] = "taker_fallback"
+                    ok[name] = _filled(res)
             elif modes.get(name) == "maker_pending":
                 modes[name] = "maker"
                 ok[name] = True                             # left the book with no cancel -> filled
@@ -1123,7 +1262,12 @@ def _mark(rb: dict[str, Any]) -> dict[str, float | None]:
     if fut.has_keys():
         with _safe():
             fut_eq = fut.account_summary()["equity"]
-            start_eq = float(state.get("start_futures_equity", fut_eq))
+            # EFFECTIVE inception here too (R0071b, 2026-07-31): this reporting site kept the
+            # raw inception after the rail site was fixed, so the first post-deposit dashboard
+            # tick would have shown the whole deposit as fabricated P&L -- the exact two-sites/
+            # one-truth class the equity bug came from.
+            start_eq = float(capital_events.effective_start_equity(
+                float(state.get("start_futures_equity", fut_eq))))
             fut_pnl = fut_eq - start_eq                   # futures leg (realized+funding+fees+unrl)
             net = spot_pnl + spot_realized + fut_pnl
         # SEPARATE guard from the equity read above. Sharing one `_safe()` made the failure

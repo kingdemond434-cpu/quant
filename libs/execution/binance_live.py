@@ -378,8 +378,20 @@ def open_orders(symbol: str | None = None) -> list[dict[str, Any]]:
 
 
 def cancel_all(symbol: str) -> dict[str, Any]:
-    """Cancel all open orders for a symbol (clears stale maker quotes before re-pegging)."""
+    """Cancel all open orders for a symbol (clears stale maker quotes before re-pegging).
+
+    CAUTION (R0071c, 2026-07-31): this also cancels a resting protective STOP_MARKET. Paths
+    that must preserve the venue-side stop (the maker-pair fallback) cancel their own orders
+    individually via cancel_order instead."""
     res = _signed("/fapi/v1/allOpenOrders", {"symbol": symbol}, method="DELETE")
+    return dict(res) if isinstance(res, dict) else {"raw": res}
+
+
+def cancel_order(symbol: str, order_id: int) -> dict[str, Any]:
+    """Cancel ONE order by id -- surgical, so a maker-quote cleanup can never take the
+    protective stop down with it."""
+    res = _signed("/fapi/v1/order", {"symbol": symbol, "orderId": order_id}, method="DELETE")
+    _log.info("cancel_order symbol=%s order_id=%s", symbol, order_id)
     return dict(res) if isinstance(res, dict) else {"raw": res}
 
 

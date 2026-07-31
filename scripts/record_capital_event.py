@@ -27,6 +27,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -48,21 +49,52 @@ def _state() -> dict[str, Any]:
         return {}
 
 
-def _live_equity(st: dict[str, Any]) -> float:
-    """Combined equity as the executor computes it: futures equity + banked realised spot P&L."""
-    return float(st.get("last_combined_equity",
-                        st.get("start_futures_equity", 0.0))) + 0.0
+_FRESH_S = 6 * 3600
+
+
+def _live_equity(st: dict[str, Any]) -> tuple[float | None, str]:
+    """Combined equity from a VERIFIED source, or (None, why) -- never a guessed number.
+
+    THE DEFECT THIS REPLACES (deep-sweep exec F1, R0071a): the old read fell through
+    last_combined_equity (which no organ wrote) to the frozen inception to 0.0 -- so the one
+    command that runs on launch day would have recorded equity $0.00 and re-based the rail far
+    below venue truth. The ladder now is: (1) executor-persisted venue truth, only if FRESH;
+    (2) a direct venue read; (3) refusal. An unverifiable equity is a refusal, never a zero --
+    a VERIFIED zero (fresh empty account) passes; a fabricated one cannot."""
+    ts = st.get("last_combined_equity_at")
+    if "last_combined_equity" in st and isinstance(ts, str):
+        try:
+            age = (datetime.now(tz=UTC) - datetime.fromisoformat(ts)).total_seconds()
+        except ValueError:
+            age = float("inf")
+        if age <= _FRESH_S:
+            return (float(st["last_combined_equity"]),
+                    f"executor venue-truth persist, {age / 60:.0f}m old")
+    try:
+        from libs.execution import binance_live as fut
+        if fut.has_keys():
+            eq = float(fut.account_summary()["equity"]) + float(st.get("realized_spot_pnl", 0.0))
+            return (eq, "direct venue read (futures equity + banked spot P&L; any UNREALISED "
+                        "spot P&L is not included -- flatten or pass --equity if positions "
+                        "are open)")
+    except Exception as exc:                                # noqa: BLE001 -- refusal path
+        return (None, f"venue read failed: {exc}")
+    return (None, "no fresh executor persist and no venue keys on this box")
 
 
 def _show() -> int:
     st = _state()
     raw_start = float(st.get("start_futures_equity", 0.0))
     eff = CE.effective_start_equity(raw_start)
-    eq = _live_equity(st)
+    eq, src = _live_equity(st)
     print(f"inception (raw state)     ${raw_start:,.2f}")
     print(f"inception (effective)     ${eff:,.2f}"
           + ("   <- re-based by a recorded capital event" if eff != raw_start else ""))
-    print(f"combined equity           ${eq:,.2f}")
+    if eq is None:
+        print(f"combined equity           UNVERIFIABLE ({src})")
+        eq = 0.0
+    else:
+        print(f"combined equity           ${eq:,.2f}   [{src}]")
     if eff > 0:
         d = risk_controls.evaluate(eq, eff, max(eff, eq), 0.0, ruin_cap_lev=8.0)
         print(f"drawdown from inception   {eq / eff - 1.0:+.1%}")
@@ -97,7 +129,19 @@ def main() -> int:
         return _show()
 
     st = _state()
-    eq = args.equity if args.equity is not None else _live_equity(st)
+    if args.equity is not None:
+        eq, src = float(args.equity), "explicit --equity from the principal"
+    else:
+        eq, src = _live_equity(st)
+    if eq is None:
+        # REFUSAL, not a default (R0071a): recording a capital event against a guessed equity
+        # re-bases the survival rail against fiction. Check the venue, then pass --equity.
+        print(f"REFUSED: combined equity is UNVERIFIABLE on this box ({src}).")
+        print("Check the venue balance yourself, then re-run with --equity <number> "
+              "(equity BEFORE the deposit lands). A verified 0.00 on a fresh account "
+              "is legitimate; an assumed one is how a rail gets re-based ~89% below truth.")
+        return 2
+    print(f"equity source: {src}")
     start = (args.start if args.start is not None
              else CE.effective_start_equity(float(st.get("start_futures_equity", eq))))
     try:

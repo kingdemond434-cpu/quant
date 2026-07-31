@@ -698,11 +698,11 @@
    "summary": "SECOND LOCK NOBODY NAMED: _MIN_FUNDING=0.00015 rejects 245/245 positive-funding candidates. Its only marginal effect is vetoing the 4 names that are NET-POSITIVE under the desk's own cost model (BTC/ETH/XRP/BNB, +1.13..+2.16 bps/24h); the cost test alone already blocks the bad ones. Desk's own carry_viability.json says BTCUSDT needs 0.010 bps vs the floor's 1.5 = 150x stricter. Clearing the ruin rail alone leaves the book FLAT and the desk will wrongly conclude the rail fix failed. Delete the absolute floor (do not lower it). ORDER: equity read first, then this. [exec-growth F11/F17]",
    "roi_bps": 7000.0,
    "raised": "2026-07-30T17:08:24.896397+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "code half was already shipped by the box (55da0ec); verified deleted at run_cashcarry_executor.py:312 -- clock unblock complete",
+   "commit": "55da0ec",
    "due": null,
-   "disposed": null
+   "disposed": "2026-07-31T09:18:15.806489+00:00"
   },
   {
    "id": "R0058",
@@ -866,11 +866,11 @@
    "summary": "SYNTH0731 P0-2 [exec F1/F2/F8/F7/F9]: launch money path \u2014 record_capital_event+check_gate0_ready read cashcarry_positions.json, executor persists last_combined_equity, refuse zero-equity rebase; copy 3-line equity fix to binance_live.py:188; wire place_stop_market into open path; executor consumes live_guard effective_size+limit_only; live_guard minutes-cadence; THEN dispose R0057. Rail currently loosens ~89 pct at launch inception",
    "roi_bps": 500.0,
    "raised": "2026-07-31T03:45:45.001121+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "all four repo legs closed: (a) capital-event venue-truth ladder + refusal of unverifiable equity, executor persists last_combined_equity; (b) reporting site honours recorded capital events; (c) protective stops planned+reconciled per tick, maker-pair fill-inference made stop-safe, per-id cancels added; (d) live_guard graded outputs consumed + guard scheduled 5-min. REMAINING (not repo-closeable): live verification against real fills at Gate 0; testnet connector stop parity is a recorded no-op",
+   "commit": "pending-this-commit",
    "due": null,
-   "disposed": null
+   "disposed": "2026-07-31T09:18:15.846284+00:00"
   },
   {
    "id": "R0072",

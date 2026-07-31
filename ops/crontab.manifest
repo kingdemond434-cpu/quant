@@ -173,6 +173,14 @@ QUANT_ROOT=/home/quant/quant-platform
 # CONFIDENCE: committed-script (new this cycle)
 33 */6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_conversion.py >> data/cro_ai_logs/conversion_fence.log 2>&1
 
+# LIVE GUARD (R0071d, 2026-07-31): computes the graded degradation response -- effective_size_
+# fraction, limit_only canary mode, and the KILL freeze. It was BUILT and never scheduled, so
+# its consumers (wired into the executor today) would have read stale-neutral forever. The
+# executor's freshness gate is 15 minutes; the guard must beat that clock comfortably.
+# EVIDENCE: scripts/run_live_guard.py -> data/live_guard.json; executor _refresh_guard()
+# CONFIDENCE: committed-script (new this cycle)
+*/5 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_live_guard.lock .venv/bin/python scripts/run_live_guard.py >> data/cro_ai_logs/live_guard.log 2>&1
+
 # MOAT BACKUP (L1.23, principal order 2026-07-31): the irreplaceable small stores (execution
 # tape, research memory, SoR, capital events, cost model, graveyard) replicate into backups/moat/
 # with sha256 manifest + a restore drill ON EVERY RUN; the snapshot/push cycle then carries the
