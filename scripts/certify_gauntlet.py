@@ -27,19 +27,38 @@ from __future__ import annotations
 import argparse
 import json
 import pickle
+import sys
 import time
 from pathlib import Path
 from typing import Any
 
-import numpy as np
+_ROOT = Path("/home/quant/quant-platform")
+if not _ROOT.exists():
+    _ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+    # WITHOUT THIS the script dies on `ModuleNotFoundError: No module named 'libs'` when invoked
+    # as `python scripts/certify_gauntlet.py` -- which is exactly how its manifest line calls it.
+    # It only ever ran under `python -m`, so the daily organ produced a bare traceback and the
+    # BLOCKED artifact it was carefully written to emit never got written either. Every other
+    # organ on the desk carries this preamble; this one was missing it.
+    sys.path.insert(0, str(_ROOT))
 
-from libs.autodiscovery.models import Family, Hypothesis
-from libs.autodiscovery.validation import campaign_gate_stats, validate
-from libs.validation.dsr import sharpe_ratio
-from libs.validation.economic_prior import MechanismType
-from libs.validation.positive_control import PPY, exact_sharpe_series
+import numpy as np  # noqa: E402
+
+from libs.autodiscovery.models import Family, Hypothesis  # noqa: E402
+from libs.autodiscovery.validation import campaign_gate_stats, validate  # noqa: E402
+from libs.validation.dsr import sharpe_ratio  # noqa: E402
+from libs.validation.economic_prior import MechanismType  # noqa: E402
+from libs.validation.positive_control import PPY, exact_sharpe_series, null_cohort  # noqa: E402
 
 _PREPARED = Path("_audit_prepared.pkl")
+#: The campaign SHAPE, committed, so a synthetic cohort can stand in at the right dimensions.
+_HIST = Path("reports/gate_histogram.json")
+#: Fixed seed for the SYNTHETIC peer cohort -- the peers must be identical across runs or the
+#: certification moves for reasons that have nothing to do with the gate. The INJECTED controls
+#: still vary their seed per row (--seeds/--seed0): R0017 closed on exactly that defect, a
+#: reused seed=7 across all 13 sweep rows reading as signal when it was one draw repeated.
+_SYNTH_SEED = 20260731
 _OUT = Path("reports/gauntlet_certification.json")
 _FAMILY_TRIAL_BUDGET = 120
 _HYP = Hypothesis(
@@ -53,7 +72,7 @@ class CampaignUnavailable(RuntimeError):
     """The campaign pickle is absent. Raised so the caller can record a BLOCKER, not a traceback."""
 
 
-def _load_campaign() -> tuple[np.ndarray, np.ndarray, int]:
+def _load_campaign() -> tuple[np.ndarray, np.ndarray, int, str]:
     """The reconstructed 420-candidate campaign the 0-survivor result was measured on.
 
     `_audit_prepared.pkl` is a gitignored 6MB scratch artifact with THREE READERS (this script,
@@ -71,17 +90,40 @@ def _load_campaign() -> tuple[np.ndarray, np.ndarray, int]:
     could not certify, in the artifact the max-push queue reads, instead of a stack trace at the
     bottom of a log nobody opens.
     """
-    if not _PREPARED.exists():
+    if _PREPARED.exists():
+        prepared = pickle.loads(_PREPARED.read_bytes())
+        min_len = min(len(r) for *_x, r in prepared)
+        matrix = np.column_stack([r[-min_len:] for *_x, r in prepared])
+        sharpes = np.array([sharpe_ratio(r) for *_x, r in prepared])
+        return matrix, sharpes, min_len, "CAMPAIGN"
+
+    # FALLBACK: a SYNTHETIC null cohort at the campaign's RECORDED shape -- the resolution this
+    # script named for itself, now taken. It splits the question the certifier was asked into the
+    # half that is answerable without the pickle and the half that is not, and the split is the
+    # whole point of doing it this way rather than waiting:
+    #
+    #   ANSWERABLE ON SYNTHETIC PEERS -- "can this gate stack EVER pass a genuinely good
+    #   candidate?" That is a property of the GATE MACHINERY, not of the desk's price space. If
+    #   an injected true Sharpe of 10 cannot survive against 420 zero-edge peers, the gate is
+    #   welded shut and no amount of real data would have shown it more clearly.
+    #
+    #   NOT ANSWERABLE -- "is the desk's real 420-candidate campaign's 0-survivor result
+    #   informative, or an artifact of its peers?" That needs the REAL peers, because PBO and the
+    #   reality check are both computed AGAINST the cohort. A synthetic cohort answers a
+    #   different question and must never be reported as if it answered this one.
+    #
+    # So the run is labelled SYNTHETIC end to end and the artifact says which question it settled.
+    shape = json.loads(_HIST.read_text("utf-8"))["matrix_shape"] if _HIST.exists() else None
+    if not shape:
         raise CampaignUnavailable(
-            f"{_PREPARED} is absent and NOTHING in this repo generates it (3 readers, 0 writers). "
-            "It was reconstructed by hand for the 2026-07-29 audit and never committed. Until it "
-            "is regenerated or _load_campaign() is given a fallback, the positive control cannot "
-            "run and 'welded gate' vs 'empty space' stays undecidable.")
-    prepared = pickle.loads(_PREPARED.read_bytes())
-    min_len = min(len(r) for *_x, r in prepared)
-    matrix = np.column_stack([r[-min_len:] for *_x, r in prepared])
-    sharpes = np.array([sharpe_ratio(r) for *_x, r in prepared])
-    return matrix, sharpes, min_len
+            f"{_PREPARED} is absent (3 readers, 0 writers) AND {_HIST} carries no matrix_shape, "
+            "so not even a synthetic cohort can be built at the campaign's dimensions. Commit a "
+            "builder for the pickle, or restore the histogram.")
+    n_obs, n_cand = int(shape[0]), int(shape[1])
+    rng = np.random.default_rng(_SYNTH_SEED)
+    matrix = null_cohort(n_cand, n_obs, rng=rng)
+    sharpes = np.array([sharpe_ratio(matrix[:, i]) for i in range(n_cand)])
+    return matrix, sharpes, n_obs, "SYNTHETIC"
 
 
 def _score(rets: np.ndarray, matrix: np.ndarray,
@@ -122,7 +164,7 @@ def main() -> int:
     targets = [float(t) for t in args.targets.split(",")]
 
     try:
-        matrix, peer_sharpes, n_obs = _load_campaign()
+        matrix, peer_sharpes, n_obs, provenance = _load_campaign()
     except CampaignUnavailable as exc:
         # RECORD THE BLOCKER, do not crash. A daily organ that dies on a traceback produces
         # nothing an audit can read, so the gap stays invisible for as long as nobody opens the
@@ -146,7 +188,12 @@ def main() -> int:
         print(f"-> {_OUT} (status BLOCKED -- the blocker is now an artifact, not a traceback)")
         return 1
     se = float(np.sqrt(PPY / n_obs))
-    print(f"campaign: T={n_obs} N={matrix.shape[1]}  SE(annual Sharpe)={se:.3f}")
+    print(f"campaign: T={n_obs} N={matrix.shape[1]}  SE(annual Sharpe)={se:.3f}  "
+          f"peers={provenance}")
+    if provenance == "SYNTHETIC":
+        print("PEERS ARE SYNTHETIC -- this run certifies the GATE MACHINERY (can a true edge "
+              "pass?), NOT whether the desk's real 0/420 result is informative. Different "
+              "questions; only the first is answerable without _audit_prepared.pkl.")
     print("controls have their target SAMPLE Sharpe by construction (sampling error removed)\n")
 
     rows: list[dict[str, Any]] = []
@@ -171,7 +218,8 @@ def main() -> int:
                 "status": "RUNNING",
                 "rows_done": len(rows),
                 "rows_planned": (len(targets) + 1) * args.seeds,
-                "campaign": {"T": n_obs, "N": matrix.shape[1], "se_annual_sharpe": se},
+                "campaign": {"T": n_obs, "N": matrix.shape[1], "se_annual_sharpe": se,
+                             "peers": provenance},
                 "rows": rows,
             }, indent=2), "utf-8")
             lg, pc = scored["legacy"], scored["per_candidate"]
@@ -212,8 +260,22 @@ def main() -> int:
 
     out: dict[str, Any] = {
         "generated": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "status": "COMPLETE",          # RUNNING checkpoints carry partial rows; only this is final
-        "campaign": {"T": n_obs, "N": matrix.shape[1], "se_annual_sharpe": se},
+        # COMPLETE-SYNTHETIC is deliberately a DIFFERENT status, not a footnote on COMPLETE. A
+        # reader scanning for "COMPLETE" must not pick up a run whose peers were manufactured and
+        # conclude the desk's real 0/420 campaign has been vindicated -- it answers the gate
+        # question, not the price-space question, and the two get confused precisely because the
+        # numbers look identical.
+        "status": "COMPLETE" if provenance == "CAMPAIGN" else "COMPLETE-SYNTHETIC",
+        "peers": provenance,
+        "answers": ("both: can the gate pass a true edge, AND is the real 0/420 informative"
+                    if provenance == "CAMPAIGN" else
+                    "ONLY: can the gate stack pass a genuinely good candidate at all. The peers "
+                    "here are manufactured zero-edge draws at the campaign's recorded shape, so "
+                    "PBO and the reality check -- both computed AGAINST the cohort -- say nothing "
+                    "about whether the desk's real price space is picked clean. That half stays "
+                    "blocked on a builder for _audit_prepared.pkl (3 readers, 0 writers)."),
+        "campaign": {"T": n_obs, "N": matrix.shape[1], "se_annual_sharpe": se,
+                     "peers": provenance},
         "controls": {"targets": targets, "seeds": args.seeds,
                      "construction": "exact sample Sharpe (libs.validation.positive_control)"},
         "legacy_welded_path": _summary("legacy"),
