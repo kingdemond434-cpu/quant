@@ -1910,6 +1910,13 @@ _FINDING_DOCS_EXCLUDED = {
     "docs/EXTERNAL_PANEL_DOSSIER.md":
         "GENERATED dossier -- its numbered block is a copy of the register table; original panel "
         "findings enter via panel_inbox -> panel_rulings, which are in scope",
+    # trailing slash = class entry, same design as deep_sweep/ above
+    "docs/research/capability_hunt/":
+        "daily L1.31 hunt records -- dated per-slot snapshots whose findings are ROWED IN THE\n"
+        "SAME RUN by the hunt's own duty (L1.31/L1.39; 2026-07-31 proof: s5 -> R0153-R0173,\n"
+        "every one disposed). The ledger drives them; the snapshot is the record. A hunt that\n"
+        "fails to row is caught by the conversion fences on the rows' absence, and that failure\n"
+        "belongs to the hunt run, not to scope.",
 }
 
 

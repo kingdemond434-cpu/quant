@@ -1,6 +1,17 @@
 # GAP REGISTER — live ranked list of known inefficiencies & missing capabilities
 
-_Re-ranked 2026-07-31T17:05Z (fourth cycle of the day)._ **Deploy pipeline HEALED and two-session
+_Re-ranked 2026-07-31T18:10Z (fifth cycle of the day)._ Rank order UNCHANGED — **#1 stays
+PRINCIPAL REARM + A/B/C** (page live, book flat+frozen; the reply now also gates **R0058 TCA
+persistence**, scheduled to land in the REARM→first-fill gap because the L1.38 window reads
+RAIL_BREACH — zero TCA data is being destroyed while flat, and the fix must precede fill #1).
+Conversion queue: every past-grace row disposed this cycle (R0056 implemented-by-machinery,
+R0058 pinned as above, R0060 closed with a permanent single-source fence + 10 contaminated
+half-life rows retracted); max_audit **10 → 0 live defects**, 32 acks each dated with a
+falsifier. New row: **R0174 session edit-mutex** (due 08-02) after a sweep-and-recover race
+between two live sessions in one tree. capability_hunt/ scoped as a §35/§36 class exclusion
+(findings row same-run; 07-31 proof R0153–R0173 all disposed).
+
+_Previous stamp: Re-ranked 2026-07-31T17:05Z (fourth cycle of the day)._ **Deploy pipeline HEALED and two-session
 work UNIFIED** — the evening session's orphaned 35-file fix set (R0144–R0146 skip-reads-green
 family) was recovered, gated, merged with the remote discretionary program (R0135–R0143 +
 organ-liveness), and pushed; puller `up-to-date`, crontab reinstalled at the new manifest hash,

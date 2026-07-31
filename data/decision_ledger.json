@@ -3439,6 +3439,30 @@
    "review_due": "2026-08-07",
    "review_due_source": "one week of puller ticks + clock rows is decisive for all five sub-decisions",
    "verified_by_fresh_read": "pull_deploy_state.json up-to-date@ffdf929 16:43Z; axis_shadow_state walcl ACCRUING 1/40d; forward_slots m=12 idle=0; max_audit live=[carry-bleed-alarm(acked)]; conversion_status 112 backlog 40 disp/7d"
+  },
+  {
+   "id": "2026-07-31-cycle5-repairmode-conversion-batch",
+   "ts": "2026-07-31T18:08:58.754765+00:00",
+   "decision": "Repair-mode conversion cycle run CONCURRENT with a live sibling session, serialized by design: (1) R0060 CLOSED -- last two leaky Upbit open-stamp copies rewired to upbit_daily_close_keyed (code half landed via sibling commit 748cda4 after this session's untracked fence test failed in ITS suite -- cross-session fence propagation); this session contributed the permanent fence tests/governance/test_upbit_single_source.py + retracted 10 leak-contaminated kimchi_premium rows in data/signal_halflife.jsonl (STRENGTHENING ic 0.38 was pure look-ahead vs true full-depth IC +0.0012). (2) R0056 CLOSED implemented-by-machinery (092310f findings-scope fence + f57ae69 L1.28b conversion family; parser variant reasoned-rejected). (3) R0058 SCHEDULED 08-01 pinned to the REARM boundary: L1.38 change-window reads RAIL_BREACH, book venue-verified flat so zero TCA data destroyed while frozen; fix must land before first post-REARM fill. (4) capability_hunt/ scoped as \u00a735/\u00a736 class exclusion (findings row same-run per L1.31; 07-31 proof R0153-R0173 all disposed). (5) 3 acks with falsifiers: daemon-stale-code (restart HELD -- sibling mid-edit on binance_spot_live.py; frozen book makes stale code inert), carry-bleed-alarm (accounting echo; flat book cannot carry a naked leg; A/B/C owed), deploy-refused (correct R0135 behavior on sibling dirt). (6) R0174 session edit-mutex rowed+scheduled 08-02 after today's sweep-and-recover race. Max_audit live defects 10 -> 0.",
+   "expected_benefit": "Conversion queue drained of every past-grace row (arrivals/dispositions gap is the binding L1.28b defect); phantom-edge surface removed (a refuted signal was printing STRENGTHENING into a decay tracker); R0058 sequencing protects the moat data stream at resume.",
+   "confidence": 0.85,
+   "assumptions": [
+    "sibling session lands binance_spot_live.py cleanly and deploy-refused self-clears",
+    "principal REARM arrives before 08-01 EOD (else R0058 due simply re-fires on an open window)",
+    "no reader currently consumes signal_halflife.jsonl rows without honoring retracted_lookahead (grep found zero readers)"
+   ],
+   "neighbours": [
+    "scripts/max_audit.py \u00a735/\u00a736 scope sets (exclusion added -- scope check semantics unchanged)",
+    "recommendation ledger shared with concurrent sessions (id R0174 verified-by-expect)",
+    "quant-cashcarry daemon (restart deliberately deferred -- money path untouched this session)",
+    "signal_halflife.jsonl consumers (none today; rows carry retracted_lookahead flags)"
+   ],
+   "independence": "No money-path file edited (change window RAIL_BREACH honored); sibling owned libs/execution + governance fences this window, this session owned research scripts + data + scope dicts -- disjoint file sets, ledger writes serialized via --expect guards.",
+   "success_metric": "max_audit stays 0 live defects through 08-01 noon except acks expiring on their stated falsifiers; R0058 lands before first post-REARM fill (tape rows carry spot_mid/fut_mid/wait_s/slip_bps from fill #1); fence test green in CI permanently.",
+   "reversal_condition": "If the retraction tags break any signal_halflife consumer, restore from checkpoint 20260731T175735_r0060-upbit-single-source; if capability_hunt exclusion ever hides an un-rowed finding, move the class into _FINDING_DOCS (the honest direction).",
+   "review_due": "2026-08-02",
+   "review_due_source": "R0058 due 08-01 + R0174 due 08-02 + ack expiries",
+   "verified_by_fresh_read": true
   }
  ]
 }
