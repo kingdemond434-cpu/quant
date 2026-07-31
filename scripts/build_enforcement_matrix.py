@@ -212,6 +212,10 @@ _MAP: dict[str, list[str]] = {
     # defined way to GROW, which makes expansion an improvised decision taken in the mood of a
     # good week -- the exact moment that decision is worst.
     "L1.6-promotion": ["scripts/check_promotion_gate.py"],
+    # R0151: the constitution's ceiling-pushing family applied to the discretionary desk. A HIT
+    # RATE is a legal target where a return figure is not -- it cannot be reached by sizing, only
+    # by selection, information and filtering, which are exactly the levers to push.
+    "L1.28c-discretionary": ["scripts/run_discretionary_max.py"],
     # L1.25a: null streaks throttle nothing -- an organ going quiet is caught by the freshness/
     # productivity wires REGARDLESS of its reason, so "stopped because nothing was working" trips
     # the same fence as "stopped because broken". The pessimism-freeze cannot hide.

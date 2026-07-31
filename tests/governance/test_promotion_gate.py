@@ -81,3 +81,30 @@ def test_the_top_rung_is_capped_and_needs_two_regimes(tmp_path):
     rep = evaluate(tmp_path)
     assert rep["granted_rung"] == 3                 # two_regimes is UNMEASURED by design
     assert "15% of book" in _RUNGS[3]["grants"] and "ceiling" in _RUNGS[3]["grants"]
+
+
+def test_two_regimes_is_measured_from_the_trade_tags_not_permanently_blocked(tmp_path):
+    # A criterion that can never be satisfied is not a standard, it is a wall -- and a wall nobody
+    # can climb gets removed rather than met, which is how a ladder loses its top rung.
+    _book(tmp_path, n=999, days=999)
+    one = json.loads((tmp_path / "data/paper_book_pnl.json").read_text())
+    one["marks"] = [{"closed": True, "exit_at": one["marks"][0]["exit_at"],
+                     "setup": {"vol_regime": "NORMAL"}}]
+    (tmp_path / "data/paper_book_pnl.json").write_text(json.dumps(one))
+    rep = evaluate(tmp_path)
+    assert rep["criteria"]["two_regimes"]["ok"] is False        # measured, and it FAILS on one tape
+    assert rep["granted_rung"] == 3
+
+    one["marks"].append({"closed": True, "exit_at": one["marks"][0]["exit_at"],
+                         "setup": {"vol_regime": "EXPANDING"}})
+    (tmp_path / "data/paper_book_pnl.json").write_text(json.dumps(one))
+    rep = evaluate(tmp_path)
+    assert rep["criteria"]["two_regimes"]["ok"] is True
+    assert rep["granted_rung"] == 4                              # the top rung is REACHABLE
+
+
+def test_untagged_trades_leave_two_regimes_unmeasured_not_satisfied(tmp_path):
+    _book(tmp_path, n=999, days=999)
+    rep = evaluate(tmp_path)
+    assert rep["criteria"]["two_regimes"]["state"] == "UNMEASURED"
+    assert rep["granted_rung"] == 3

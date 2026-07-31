@@ -1826,6 +1826,18 @@
    "commit": null,
    "due": null,
    "note": "a blazing week grants rung 1 at most, and rung 1 is still paper -- which is the whole point of writing it down before the week happens"
+  },
+  {
+   "id": "R0151",
+   "source": "principal",
+   "summary": "DISCRETIONARY MAX -- a system dedicated to pushing this section's ceiling, plus the promotion ladder's top rung made REACHABLE. Principal: 'aim for 38 percent hit, maximise all parts, make sure there's a literal system dedicated to maxing this discretionary side, push its ceiling like the constitution forces everything.' A 38pct HIT RATE target is legal where a CAGR target is not, and the distinction is the point: a return figure is reachable by SIZE (and size past full Kelly makes growth negative, which is why targeting one corrupts the optimizer), while a hit rate moves ONLY through selection, information and filtering -- the exact levers to push. Targeting the PROCESS variable is what makes targeting the outcome variable unnecessary. 38pct is ~one binomial standard error above the 31.1pct breakeven: the first level at which 'this works' is distinguishable from 'this got lucky'. NOT a ceiling -- on reaching it the organ RE-AIMS one step further and never reports 'target met'. Names the ONE binding lever per cycle (INFORMATION > CROSS-FAMILY/CALIBRATION > SELECTION > ENSEMBLE > EXECUTION) because a board listing ten produces none. ALSO FIXED: promotion-gate rung 4 required two_regimes which was UNMEASURED by design and therefore permanently unreachable -- a criterion nobody can satisfy is a wall, not a standard, and walls get removed rather than met. Now measured from the vol-regime tag setup_features already writes on every trade.",
+   "roi_bps": 0.0,
+   "raised": "2026-08-01T01:00:00+00:00",
+   "status": "done",
+   "reason": "built, 7 tests + 2 for the rung-4 fix; 29/29 build standard",
+   "commit": null,
+   "due": null,
+   "note": "first run correctly names EVIDENCE as binding: the sleeve is not producing yet, which check_organ_liveness independently confirms"
   }
  ]
 }
