@@ -207,6 +207,14 @@ QUANT_ROOT=/home/quant/quant-platform
 # CONFIDENCE: committed-script (new this cycle)
 */5 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_live_guard.lock .venv/bin/python scripts/run_live_guard.py >> data/cro_ai_logs/live_guard.log 2>&1
 
+# EXPLORATION FAMILY FENCE (L1.32, 2026-07-31): the six unknown-unknown organs measured as ONE
+# family. DARK (any organ never produced) exits 2 -- exploration decays organ by organ and no
+# single decay ever looks alarming, which is exactly why this number exists. First run: DARK,
+# 3 of 6 organs had never produced an artifact.
+# EVIDENCE: scripts/check_exploration.py -> data/exploration_status.json; CONSTITUTION L1.32
+# CONFIDENCE: committed-script (new this cycle)
+45 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_exploration.py >> data/cro_ai_logs/exploration.log 2>&1
+
 # REPLACEMENT RATE (L1.30, 2026-07-31): births vs deaths of validated edges. Terminal wealth is
 # set by whether the pipeline replaces decaying edges faster than they die -- a book on three
 # great edges with a replacement rate of 0.3 looks healthy every day right up until the last one
@@ -656,7 +664,7 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 0 15 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-frontier.timer >/dev/null 2>&1 || flock -n /tmp/seat_frontier.lock /bin/bash ops/run_frontier_rotation.sh >> data/cro_ai_logs/seat_frontier.log 2>&1; }
 0 18 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-prospector.timer >/dev/null 2>&1 || flock -n /tmp/seat_prospector.lock /bin/bash ops/run_prospector_dig.sh >> data/cro_ai_logs/seat_prospector.log 2>&1; }
 0 19 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-litminer.timer >/dev/null 2>&1 || flock -n /tmp/seat_litminer.lock /bin/bash ops/run_litminer_dig.sh >> data/cro_ai_logs/seat_litminer.log 2>&1; }
-0 20 * * 6 cd "$QUANT_ROOT" && { systemctl is-enabled quant-blindrediscovery.timer >/dev/null 2>&1 || flock -n /tmp/seat_blindrediscovery.lock /bin/bash ops/run_blindrediscovery_dig.sh >> data/cro_ai_logs/seat_blindrediscovery.log 2>&1; }
+0 20 * * 2,6 cd "$QUANT_ROOT" && { systemctl is-enabled quant-blindrediscovery.timer >/dev/null 2>&1 || flock -n /tmp/seat_blindrediscovery.lock /bin/bash ops/run_blindrediscovery_dig.sh >> data/cro_ai_logs/seat_blindrediscovery.log 2>&1; }
 
 # SUB-ACCOUNT CAPABILITY PROBE (principal order 2026-07-30: "allow our system to create automated
 # subaccounts when needed"). Binance gates sub-account APIs to corporate/broker tiers, so the
@@ -714,7 +722,7 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # EVIDENCE: both executed 2026-07-31 -> data/blindspot_max.json + data/blindspot_probes.json
 # CONFIDENCE: committed-script
 10 3 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/blindspot_max.py >> data/cro_ai_logs/blindspot_max.log 2>&1
-25 21 * * 6 cd "$QUANT_ROOT" && .venv/bin/python scripts/blindspot_prober.py >> data/cro_ai_logs/blindspot_prober.log 2>&1
+25 21 * * 1,4 cd "$QUANT_ROOT" && .venv/bin/python scripts/blindspot_prober.py >> data/cro_ai_logs/blindspot_prober.log 2>&1
 
 # DAILY PRINCIPAL DIGEST -- ported from the LEGACY crontab block 2026-07-31, where it had been
 # firing since ~07-27 WITHOUT ever being a recorded decision (the orphan-scripts lock caught the

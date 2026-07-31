@@ -160,6 +160,24 @@ def main() -> None:
                                "slices": slice_rows,
                                "total": unread + len(unmodelled) + len(pairs) + len(never)},
                               indent=1), "utf-8")
+    # SECOND FAMILY (L1.33, principal 2026-07-31 "gpt n claude work together on these families"):
+    # a blind-spot hunter that only ever thinks in ONE model's priors has the exact defect it
+    # exists to detect. Ask the independent family what THIS run missed, and record the verdict
+    # honestly -- SOLO when the partner is unavailable, never silently passed off as confirmed.
+    try:
+        from libs.research.second_family import (ask_second_family, blindspot_prompt,
+                                                 merge_verdict)
+        own = json.dumps({"unread": unread, "unmodelled": unmodelled[:20],
+                          "pairs": pairs[:20], "never": never[:20]}, indent=1)
+        op = ask_second_family(blindspot_prompt("blindspot_max", own), context="blindspot_max")
+        verdict = merge_verdict(own, op)
+        d = json.loads(OUT.read_text("utf-8"))
+        d["second_family"] = {**verdict, "text": op.text[:4000] if op.available else ""}
+        OUT.write_text(json.dumps(d, indent=1), "utf-8")
+        print(f"  second family: {verdict['verdict']}"
+              + (f" -- {verdict.get('reason', '')}" if verdict["verdict"] == "SOLO" else ""))
+    except Exception as exc:  # noqa: BLE001 -- the partner must never break the organ
+        print(f"  second family: SKIPPED ({exc})")
     print(f"\n  -> {OUT}")
 
 

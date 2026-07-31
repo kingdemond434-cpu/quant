@@ -1375,6 +1375,18 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0114",
+   "source": "principal",
+   "summary": "SECOND FAMILY on the remaining exploration organs (L1.33 rollout): blindspot_max is partnered; wire ask_second_family+merge_verdict into blindspot_prober, the blindrediscovery dig brief, and the deep-sweep meta seat, so every family organ carries CONFIRMED/CONTESTED/SOLO. Also: fix the 3 DARK organs the L1.32 fence found on first run (kimi_hunt, hunt_coverage, blindspot_probes artifacts never produced -- scheduled and silent)",
+   "roi_bps": 25.0,
+   "raised": "2026-07-31T10:56:48.332883+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

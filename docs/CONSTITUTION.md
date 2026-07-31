@@ -505,6 +505,38 @@ adopted capability is retired by evidence, exactly as the deep sweep retires its
 `ops/run_capability_hunt.sh`, 3x daily; dated artifacts under `docs/research/capability_hunt/`, and
 `check_organs` catches it going quiet whatever the stated reason (L1.25a).
 
+**L1.32 THE UNKNOWN-UNKNOWN ORGANS ARE ONE FAMILY** *(principal order 2026-07-31: "same with
+unknowns, gaps, blindspots — these are all families")*. Six organs sample the same space —
+capability hunt, blindspot_max, blindspot_prober, blindrediscovery, kimi_hunter, and the sweep's
+meta seat — and treating them as unrelated singletons produced three live failures: **unmeasured
+yield** (an organ producing nothing looks identical to one producing steadily —
+`blindrediscovery` sat scheduled with `last=never` until a human noticed), **uncoordinated
+coverage** (six organs free to hunt one region is one organ's diversity at six organs' cost), and
+**no family-level floor** (exploration can decay organ by organ, each decay individually
+unremarkable, with no number that would show it). They are now measured as one.
+
+**THIS FENCE CAN ONLY EVER DEMAND MORE EXPLORATION.** It has no path that recommends running any
+organ less: if two overlap, the answer is to **re-aim one, never silence it** (L1.8, L1.25a).
+**FENCED**: `scripts/check_exploration.py` — DARK when any organ has never produced, STALE when
+one produced once then quietly stopped, THIN when under half the family produced this week.
+
+**L1.33 THE TWO FAMILIES WORK TOGETHER ON EVERY EXPLORATION ORGAN** *(principal order 2026-07-31:
+"and GPT and Claude work together on these families")*. The capability hunt proved it; every
+other exploration organ was **single-family**, thinking in exactly one model's priors — which is
+the precise failure those organs exist to detect, turned on themselves. The GPT-9 seat is now a
+standing partner on the family through one shared module (`libs/research/second_family.py`), so
+organs gain the partner by importing one function, no per-organ copy can drift, and funding the
+seat upgrades every organ in the same deploy.
+
+**THE PARTNER HUNTS WHAT THE FIRST FAMILY MISSED — it never re-ranks the first family's list.**
+A model cannot see its own blind spot; the partner exists because it has different ones, so the
+**delta between the families is the finding** and must be read, never averaged away. **The
+verdict label is the whole value**: CONFIRMED (both produced), CONTESTED (the partner found what
+the first could not — a measured blind spot), and **SOLO — explicitly not "confirmed"** — when
+the partner was unavailable, so a single family's agreement with itself can never be cited later
+as cross-family corroboration. Every call is logged to `data/second_family_log.json`, making
+"the partner is dead for want of funding" a dated measured fact rather than an impression.
+
 **L1.28c CADENCE IS AGGRESSION — EVERY SCHEDULE HUNTS ITS OWN CEILING** *(principal order
 2026-07-31)*. **Every cadence on this desk aims to increase its frequency to the maximum that
 still carries ROI, and a cadence nobody has tried to raise is idle capacity wearing a schedule.**

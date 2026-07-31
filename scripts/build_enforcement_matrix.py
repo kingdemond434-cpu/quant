@@ -121,6 +121,10 @@ _MAP: dict[str, list[str]] = {
     # L1.31: two model families hunt the missing capability daily AND one builds it. The organ
     # is the fence: check_organs catches it going quiet, and its artifacts are dated evidence.
     "L1.31": ["scripts/run_capability_hunt.py", "ops/run_capability_hunt.sh", "check_organs"],
+    # L1.32: the unknown-unknown organs measured as ONE family -- DARK when any has never
+    # produced. L1.33: the GPT seat as standing partner on every one of them.
+    "L1.32": ["scripts/check_exploration.py"],
+    "L1.33": ["libs/research/second_family.py", "scripts/run_capability_hunt.py"],
     # L1.25a: null streaks throttle nothing -- an organ going quiet is caught by the freshness/
     # productivity wires REGARDLESS of its reason, so "stopped because nothing was working" trips
     # the same fence as "stopped because broken". The pessimism-freeze cannot hide.
