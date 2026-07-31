@@ -1742,6 +1742,18 @@
    "commit": null,
    "due": null,
    "note": "principal's own framing: the existing mandates (L1.28/L1.28a/L1.28b/L1.28c/L1.25a) already enforce maximum growth, so a stated number is redundant AND distorting -- removing it removes the one instruction pointing away from those laws"
+  },
+  {
+   "id": "R0144",
+   "source": "principal",
+   "summary": "ORGAN LIVENESS + indirect growth framing. Principal: 'make sure all miners etc run, do it yourself, don't tell me to check' and 'make it indirectly maximise max compounding'. (1) check_organ_liveness.py: INSTALLED, RUNNING and PRODUCING are three different facts and only the third is worth anything. check_scheduler_manifest proved the LINE existed; check_exploration covered six named hunters; nothing covered the other hundred lines -- an organ can sit in crontab -l and have emitted nothing for a week, which is how a miner goes dark while the board stays green. Reads the cadence and EVIDENCE artifact the manifest already declares on 79 entries, against real file age. NEVER-PRODUCED (wiring) kept distinct from STALE (auth/quota/upstream). First live read: 19/29 producing. (2) The conviction brief now states what is maximised INDIRECTLY -- edge per trade, payoff asymmetry, frequency, independence, cost -- with no return figure, because a stated return is reachable only by SIZE and past a point more size makes growth negative.",
+   "roi_bps": 0.0,
+   "raised": "2026-07-31T23:00:00+00:00",
+   "status": "done",
+   "reason": "built, 6 tests, in the law gate's state battery; 26/26 build standard",
+   "commit": null,
+   "due": null,
+   "note": "three self-inflicted defects caught before it shipped: a ';' separator that made most organs read NEVER-PRODUCED (false red -> fence gets disabled), docs/*.md counting as an artifact so any organ citing a law read FRESH forever (false GREEN -- worse), and its own except-pass plus missing lawful entry, both caught by the build standard"
   }
  ]
 }

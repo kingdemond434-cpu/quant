@@ -993,3 +993,17 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # EVIDENCE: scripts/run_calibration_probe.py -> data/calibration_probe.json + .jsonl
 # CONFIDENCE: committed-script (new this cycle)
 5 */6 * * * cd "$QUANT_ROOT" && flock -n data/.cron_calprobe.lock .venv/bin/python scripts/run_calibration_probe.py >> data/cro_ai_logs/cal_probe.log 2>&1
+
+# ORGAN LIVENESS (R0144): is every scheduled organ actually PRODUCING? check_scheduler_manifest
+# proves the LINE is installed and check_exploration covers six named hunters; nothing covered the
+# other hundred lines. Installed, running and producing are THREE DIFFERENT FACTS and only the
+# third is worth anything -- an organ can sit in crontab -l and have emitted nothing for a week,
+# which is exactly how a miner goes dark while the board stays green. Reads the cadence and the
+# EVIDENCE artifact the manifest already declares on 79 entries, and compares against real file
+# age. NEVER-PRODUCED (wiring) is kept distinct from STALE (auth/quota/upstream) because they need
+# different repairs. Tolerance is 3x cadence: one missed tick is a hiccup, three is a dead organ,
+# and a board that is red most mornings is one nobody reads.
+# HOURLY, alongside the other live-state fences.
+# EVIDENCE: scripts/check_organ_liveness.py -> data/organ_liveness.json
+# CONFIDENCE: committed-script (new this cycle; two parse bugs caught by its own tests first)
+50 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_liveness.lock .venv/bin/python scripts/check_organ_liveness.py --report-only >> data/cro_ai_logs/liveness.log 2>&1

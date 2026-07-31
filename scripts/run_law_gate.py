@@ -71,6 +71,7 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("check_replacement_rate.py", ()),         # L1.30 -- births vs deaths
     ("check_change_window.py", ()),            # L1.38 -- money-path freeze windows
     ("check_mechanism_attribution.py", ()),    # L1.6 -- no survival on unexplained P&L
+    ("check_organ_liveness.py", ()),           # L1.28c -- every organ actually produces
 )
 
 
