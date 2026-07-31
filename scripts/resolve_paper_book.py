@@ -82,6 +82,27 @@ BAR = "15m"
 _BAR_MS = 15 * 60 * 1000
 MAX_PAGES = 12                              # bounded paging: ~1200 bars = 12 days at 15m
 
+#: THE PRE-REGISTERED KILL CONDITION, written BEFORE the evidence arrives, which is the only time
+#: it is honest. After a session spent building this sleeve there is a real risk of talking my own
+#: book -- an author who has invested effort finds reasons to extend a failing test. So the exit is
+#: fixed now, in code, with numbers derived rather than chosen:
+#:
+#:   KILL_AFTER_N = 50 closed marked trades. At a 31.1% cost-adjusted breakeven, 50 trades puts the
+#:   binomial standard error at ~6.5pp, so a true 31% rate reads above 24.6% ~84% of the time --
+#:   enough to distinguish "no edge" from "unlucky" without waiting so long that a losing sleeve
+#:   bleeds the book while its author asks for more data.
+#:   KILL_HIT_RATE = 0.25 -- a full standard error BELOW breakeven. Not 31%: killing at exactly
+#:   breakeven would graveyard a real 33% edge half the time. This is the level where continuing is
+#:   the unreasonable choice.
+#:
+#: NO EXTENSIONS. If this fires, the sleeve goes to the graveyard with its record, and reopening it
+#: requires a materially new mechanism -- not a bigger sample of the same one.
+KILL_AFTER_N = 50
+#: 0.25 -- a full binomial standard error (~6.5pp at n=50) BELOW the 31.1% cost-adjusted breakeven.
+#: Deliberately not 31.1%: killing at exactly breakeven would graveyard a real 33% edge about half
+#: the time. This is the level at which continuing is the unreasonable choice.
+KILL_HIT_RATE = 0.25
+
 #: EXECUTION COSTS, and the reason a mark without them is a flattering number rather than a
 #: result. Binance USD-M non-VIP: taker 0.045%/side, maker 0.018%/side, funding ~0.01% per 8h
 #: stamp. These are charged on NOTIONAL, so at 6.7x leverage a taker round trip costs ~0.9% of
@@ -342,6 +363,32 @@ def equity_curve(resolved: list[dict[str, Any]]) -> dict[str, Any]:
                     "path is rougher than this, never smoother"}
 
 
+def kill_check(resolved: list[dict[str, Any]]) -> dict[str, Any]:
+    """Evaluate the PRE-REGISTERED exit. Written before the data existed; not adjustable after.
+
+    An author who has spent a session building something finds reasons to extend a failing test.
+    Fixing the threshold in advance is the only defence against that, and it is cheap now and
+    expensive later -- which is exactly why it is done now."""
+    n = len(resolved)
+    if n < KILL_AFTER_N:
+        return {"state": "RUNNING", "n_closed": n, "kill_after_n": KILL_AFTER_N,
+                "kill_hit_rate": KILL_HIT_RATE,
+                "why": f"{n}/{KILL_AFTER_N} closed trades -- the pre-registered decision point is "
+                       "not reached, and no verdict either way is available before it"}
+    wins = sum(1 for m in resolved if m.get("profitable"))
+    hit = wins / n
+    if hit < KILL_HIT_RATE:
+        return {"state": "KILL", "n_closed": n, "hit_rate": round(hit, 4),
+                "why": f"hit rate {hit:.1%} is below the pre-registered {KILL_HIT_RATE:.0%} floor "
+                       f"over {n} closed trades. This was fixed before the evidence arrived. "
+                       "Graveyard the sleeve with its record; reopening requires a materially NEW "
+                       "mechanism, not a larger sample of this one. NO EXTENSIONS."}
+    return {"state": "SURVIVES-THIS-CHECK", "n_closed": n, "hit_rate": round(hit, 4),
+            "why": f"hit rate {hit:.1%} clears the {KILL_HIT_RATE:.0%} kill floor -- which is NOT "
+                   f"the same as clearing the {31.1:.1f}% cost-adjusted breakeven, and not a "
+                   "promotion. It means only that continuing to measure is still reasonable."}
+
+
 def setup_performance(resolved: list[dict[str, Any]], *, min_n: int = 5) -> dict[str, Any]:
     """Hit rate and mean return CONDITIONED ON THE SETUP -- how the desk learns what to stop doing.
 
@@ -474,6 +521,7 @@ def resolve_book(root: Path, *, now: datetime | None = None,
                          / max(1, len([m for m in resolved if m.get("realised_R") is not None])),
                          4) if resolved else None),
         "equity": curve,
+        "kill_condition": kill_check(resolved),
         "setup_performance": setup_performance(resolved),
         "costs_deducted": {"taker": TAKER_FEE, "maker": MAKER_FEE, "slippage_per_side": SLIPPAGE,
                            "funding_per_8h": FUNDING_PER_8H,

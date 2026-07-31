@@ -170,3 +170,20 @@ discovered later. It is a question about the hypothesis, not about the code.
 
 At no edge, this structure reaches ruin *faster* than the flat signal would have. The higher
 ceiling is real and it is not evidence of anything. Only the forward clock is.
+
+## Pre-registered kill condition
+
+Fixed in code before any evidence exists, because that is the only time it is honest. An author who
+has spent a session building something finds reasons to extend a failing test.
+
+**After 50 closed marked trades, if the hit rate is below 25%, this sleeve is graveyarded with its
+record. No extensions.** Reopening requires a materially *new* mechanism, not a larger sample of
+this one.
+
+Why those numbers: at n=50 the binomial standard error is ~6.5pp, enough to separate "no edge" from
+"unlucky" without letting a losing sleeve bleed while its author asks for more data. The floor is
+25% rather than the 31.1% cost-adjusted breakeven because killing *at* breakeven would graveyard a
+real 33% edge about half the time — 25% is where continuing becomes the unreasonable choice.
+
+Clearing this floor is **not** a promotion. It means only that continuing to measure is still
+reasonable. Promotion still requires beating buy-and-hold and the carry sleeve after costs (L1.6).

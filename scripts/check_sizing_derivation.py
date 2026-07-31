@@ -71,6 +71,9 @@ _DERIVATION_WORDS = (
     "published", "fee schedule", "venue schedule", "quoted", "top-of-book", "spread on",
     "exchange minimum", "venue minimum", "minimum notional", "rejects orders", "tier",
     "documented",
+    # STATISTICAL derivations -- the third false-positive class this fence produced. A threshold
+    # placed a standard error below a breakeven IS derived; the vocabulary simply lacked the words.
+    "standard error", "binomial", "sigma", "power", "breakeven", "posterior", "variance",
 )
 
 #: Constants that are pure plumbing, not sizing. Naming them is a DECISION, same as the schedule

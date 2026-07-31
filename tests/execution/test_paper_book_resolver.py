@@ -10,7 +10,8 @@ from __future__ import annotations
 import json
 from datetime import UTC, datetime, timedelta
 
-from scripts.resolve_paper_book import (_benchmark, equity_curve, mark_event_row,
+from scripts.resolve_paper_book import (KILL_AFTER_N, KILL_HIT_RATE, _benchmark,
+                                        equity_curve, kill_check, mark_event_row,
                                         resolve_book, trade_cost, walk_ladder)
 from scripts.run_conviction_trader import kelly_leverage, management_plan
 
@@ -162,7 +163,7 @@ def test_conventions_are_published_with_every_report(tmp_path):
 
 def _closed(rets, hours=20):
     from datetime import timedelta
-    return [{"equity_return": r, "outcome": "STOPPED", "closed": True,
+    return [{"equity_return": r, "outcome": "STOPPED", "closed": True, "profitable": r > 0,
              "exit_at": (_START + timedelta(hours=hours * (i + 1))).isoformat()}
             for i, r in enumerate(rets)]
 
@@ -195,3 +196,29 @@ def test_no_closed_trades_is_unmeasured_never_zero_growth():
     c = equity_curve([])
     assert c["log_growth_per_trade"] is None
     assert c["growth_constraint"].startswith("UNMEASURED")
+
+
+def test_the_kill_condition_is_pre_registered_and_gives_no_verdict_early():
+    # An author who has built something finds reasons to extend a failing test. The threshold is
+    # fixed before the data exists, and before the decision point there is NO verdict either way.
+    r = kill_check(_closed([0.18] * 2 + [-0.06] * 8))
+    assert r["state"] == "RUNNING" and r["n_closed"] < KILL_AFTER_N
+    assert "no verdict either way" in r["why"]
+
+
+def test_a_dead_sleeve_is_killed_with_no_extensions():
+    r = kill_check(_closed([0.18] * 8 + [-0.06] * 42))        # 16% hit rate over 50
+    assert r["state"] == "KILL" and r["hit_rate"] < KILL_HIT_RATE
+    assert "NO EXTENSIONS" in r["why"] and "materially NEW mechanism" in r["why"]
+
+
+def test_surviving_the_kill_check_is_not_a_promotion():
+    # 30% clears the 25% kill floor and is still BELOW the 31.1% cost-adjusted breakeven.
+    r = kill_check(_closed([0.18] * 15 + [-0.06] * 35))
+    assert r["state"] == "SURVIVES-THIS-CHECK"
+    assert "not a promotion" in r["why"] and "breakeven" in r["why"]
+
+
+def test_the_kill_floor_sits_below_breakeven_not_at_it():
+    # Killing at exactly breakeven would graveyard a real 33% edge about half the time.
+    assert KILL_HIT_RATE < 0.311
