@@ -215,7 +215,13 @@ _ALPHA_LENSES: list[str] = [
     # just one thing." The lenses above all hunt NEW ground; none asked whether the ground already
     # walked is one family walked repeatedly. On the desk's record 41 buried candidates cluster
     # into 7 worked families out of 14, which no lens could have surfaced.
-    "STRATEGY-FAMILY BREADTH / UNHUNTED FAMILY -- read data/strategy_coverage.json and take a "
+    "STRATEGY-FAMILY BREADTH -- UNLIMITED, ALL-SURFACE, NEVER-ENDING. No surface is out of scope: "
+    "every venue, era, language, asset class, timeframe, format and STYLE (systematic, "
+    "discretionary, manual, hybrid, market-making, event-driven). There is no terminal state -- "
+    "'covered' and 'we already looked' are claims requiring a dated search with its residual gap, "
+    "never defaults. No quota on families, findings or depth; a count is a quota in disguise. The "
+    "only two limits are the licence gate and never installing third-party tooling, and neither "
+    "is a scope limit. Concretely: read data/strategy_coverage.json and take a "
     "family marked NEVER-HUNTED or "
     "THIN, not one marked HUNTED. Coverage is DISTINCT FAMILIES, never candidates: twelve "
     "candidates from one family are correlated by construction, so they die together and the desk "

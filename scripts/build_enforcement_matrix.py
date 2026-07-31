@@ -238,6 +238,11 @@ _MAP: dict[str, list[str]] = {
     # drifts back to the family it knows, which is how breadth actually dies -- one comfortable
     # session at a time with the volume never dropping. This is the clock behind the rule.
     "L1.32-strategy-breadth": ["scripts/check_strategy_breadth.py"],
+    # R0213: "surpass me" is only an instruction if something measures it. The desk already
+    # benchmarks every sleeve against buy-and-hold (a levered sleeve that merely tracks the index
+    # takes risk for nothing); the human method this sleeve was built to copy is the second
+    # benchmark, computed the same way and equally non-optional.
+    "L1.6-principal-benchmark": ["scripts/run_principal_benchmark.py"],
     # L1.25a: null streaks throttle nothing -- an organ going quiet is caught by the freshness/
     # productivity wires REGARDLESS of its reason, so "stopped because nothing was working" trips
     # the same fence as "stopped because broken". The pessimism-freeze cannot hide.

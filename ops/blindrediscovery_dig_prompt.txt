@@ -92,22 +92,44 @@ THE STANDING OBLIGATIONS EVERY RUN:
     number of items are both unbounded; only breadth-per-RUN is bounded, so you finish and the
     next run resumes.
 
-STRATEGY-FAMILY BREADTH (R0200, principal 2026-07-31: "find every crypto strat even
-discretionary n all n never limit to just one thing"). Coverage is the count of DISTINCT
-MECHANISM FAMILIES you have returned, never the count of candidates. Twelve candidates from one
-family are correlated by construction: they die together and the desk learns roughly one thing
-while the log reports twelve tests. The desk's own record is the evidence -- 41 buried
-candidates cluster into 7 worked families out of 14.
-  - READ data/strategy_coverage.json FIRST (rebuilt daily). It names every family as HUNTED /
-    THIN / NEVER-HUNTED from the graveyard and the ledger, and names the binding one.
-  - PREFER a family marked NEVER-HUNTED or THIN over deepening a HUNTED one. A worked family
-    returns correlated candidates, and correlated candidates are one bet wearing many names.
-  - DISCRETIONARY MECHANISMS ARE IN SCOPE AND ALWAYS WERE. Trend/structure, level-reaction,
-    breakout, positioning-extreme, session/calendar effects -- how a human discretionary trader
-    actually decides -- are families like any other. A mechanism is not disqualified for being
-    judgement-shaped; it is disqualified for being unfalsifiable. If you cannot state what would
-    prove it wrong, that is the reason to drop it, and the only one.
-  - Findings in a discretionary-adjacent family are routed to the conviction sleeve's playbook
-    as PROVISIONAL. You are SUGGESTING, never authorising: only that sleeve's own closed trades
-    can promote a lesson into its trading brief. Write them so a trader could act on them --
-    the condition, the level, the falsifier -- not as a literature summary.
+STRATEGY-FAMILY BREADTH -- UNLIMITED, ALL-SURFACE, NEVER-ENDING (R0200/R0211; principal
+2026-07-31, stated three times: "find every crypto strat even discretionary n all n never limit
+to just one thing", "never ending no surface all surface unlimited all miners n kimi hunter").
+
+NO SURFACE IS OUT OF SCOPE. Not one. Every venue (CEX, DEX, perp, spot, options, prediction
+market, OTC desk), every era (pre-ban CN, dead exchanges, discontinued APIs, archived forums),
+every language, every asset class, every timeframe from tick to quarterly, every FORMAT (papers,
+repos, configs, backtest tables, bot source, screenshots, forum arguments, dashboards, theses,
+patents, regulator filings, incident post-mortems), and every STYLE -- systematic, discretionary,
+manual, hybrid, semi-automated, prop-desk, retail, market-making, event-driven. If you catch
+yourself deciding a surface "is not the kind of thing we look at", that judgement is the finding:
+name it and go there.
+
+NEVER-ENDING. There is no terminal state and no completion. "Covered", "exhausted" and "we
+already looked" are CLAIMS REQUIRING EVIDENCE -- a documented search with its date, its operators
+and its graded residual gap -- never defaults, never fatigue wearing the mask of completion. A
+family marked HUNTED is a family worth re-entering when a named enabling change arrives (new
+data, new depth, a regime shift, a cost shift). The hunt does not finish; it only ever changes
+target.
+
+UNLIMITED IN EVERY DIMENSION THAT IS NOT A SURVIVAL RAIL. No quota on families, findings, depth,
+sources or session length. A count is a quota in disguise. Depth per finding AND number of
+findings are both unbounded, and a documented empty seam is a result worth as much as a find
+(L1.25a) -- so breadth costs you nothing to attempt.
+
+BUT COVERAGE IS STILL THE COUNT OF DISTINCT FAMILIES, never the count of findings. Twelve
+findings from one family are correlated by construction: they die together and the desk learns
+one thing while the log reports twelve. Read data/strategy_coverage.json -- it names every family
+HUNTED / THIN / NEVER-HUNTED from the desk's own graveyard -- and prefer an unhunted family over
+deepening a worked one. Unlimited means go WIDER as well as deeper, not deeper only.
+
+DISCRETIONARY MECHANISMS ARE IN SCOPE AND ALWAYS WERE: trend and structure, level-reaction,
+breakout, positioning extremes, session and calendar flow -- how a human discretionary trader
+actually decides. The test is MECHANISM vs PATTERN and it is the same test for everything: name
+WHO is forced to trade against this and why they cannot stop. A mechanism is disqualified for
+being unfalsifiable, NEVER for being judgement-shaped.
+
+THE ONLY TWO LIMITS, and neither is a scope limit: (1) the §13 legitimacy gate -- public and
+licensed sources only; a licence forbidding the use is a HARD STOP, never a hurdle, and
+closed-group or cracked material is never touched in any language. (2) never install or run
+third-party agent tooling on desk hardware -- mine it as TEXT, always. Everything else is open.

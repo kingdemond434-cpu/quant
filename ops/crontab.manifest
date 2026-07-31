@@ -1119,3 +1119,16 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # EVIDENCE: scripts/check_strategy_breadth.py -> data/strategy_breadth.json
 # CONFIDENCE: committed-script (new this cycle)
 35 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_stratbreadth.lock .venv/bin/python scripts/check_strategy_breadth.py >> data/cro_ai_logs/strategy_breadth.log 2>&1
+
+# ---------------------------------------------------------------------------------------------
+# PRINCIPAL BENCHMARK (R0213) -- does the machine beat the human it was built to copy?
+# The desk benchmarks every sleeve against unlevered buy-and-hold because a levered sleeve that
+# merely tracks the index takes risk for nothing (L1.6). Same logic one level up: a discretionary
+# machine that merely matches the human's own method is engineering for nothing. Re-prices the
+# desk's OWN closed trades at his demonstrated 10% risk fraction -- same calls, same entries,
+# same stops, only the size changes -- so the difference is attributable to sizing policy alone.
+# Exact, not simulated: cost in R is size-independent, so the outcome scales linearly with f.
+# CADENCE: hourly, alongside the resolver that produces the marks it reads.
+# EVIDENCE: scripts/run_principal_benchmark.py -> data/principal_benchmark.json
+# CONFIDENCE: committed-script (new this cycle)
+47 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_prinbench.lock .venv/bin/python scripts/run_principal_benchmark.py >> data/cro_ai_logs/principal_benchmark.log 2>&1
