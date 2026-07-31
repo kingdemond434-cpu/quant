@@ -1915,6 +1915,19 @@ _PRODUCER_CADENCE = {
     "docs/GAP_REGISTER.md": (
         3.0, "re-ranked at the START of every daily AI cycle by its own rule -- the organ §35 and "
              "§36 both depend on, and it was checked by nothing"),
+    # THE TIER-1 BENCHMARK is a PRODUCER: sub-T1 rows are queued into the max-push hunt every
+    # refresh, and the deep sweep re-grades it weekly from auditor evidence. A stale benchmark
+    # silently stops queueing gaps -- the exact inventory-accumulates failure §36 catches.
+    "docs/research/TIER1_BENCHMARK.md": (
+        8.0, "L1.36/L1.31: re-graded weekly by the deep-sweep synthesis from auditor evidence, "
+             "and parsed by run_max_push every refresh so every sub-T1 row enters the daily "
+             "hunt -- if it goes stale, gaps stop being queued and nothing would say so"),
+    # ALPHA HUNT records are producers under L1.39: each listed candidate owes a Stage-A screen,
+    # so an un-updated hunt record means candidates are sitting un-screened -- idle findings.
+    "docs/research/alpha_hunt_20260731.md": (
+        14.0, "L1.39/L1.31: every candidate listed here owes a Stage-A screen (R0115 and R0120 "
+              "were screened same-day); a stale record means candidates are accumulating "
+              "un-screened, which is precisely the idle-findings defect"),
     "docs/EXECUTION_QUEUE.md": (
         7.0, "the ranked, unbuilt remainder (opened 2026-07-30) -- 'worked in RANK ORDER by the "
              "next cycle, the weekly GAP-MAX sweep, or any fresh session'; its own header claims "
@@ -1924,6 +1937,11 @@ _PRODUCER_CADENCE = {
 #: Artifacts that are terminal by nature: templates, forensic write-ups, protocol libraries. They
 #: accumulate no inventory, so they owe no cadence -- recorded here so "no law" is a DECISION.
 _TERMINAL_ARTIFACTS = {
+    "docs/research/cn_oss_extraction_20260731.md":
+        "dated verification record (10 CN OSS projects: 8 real, 1 hallucinated, 1 proprietary). "
+        "It accumulates no inventory: its 5 extracted axes were rowed as R0100 and appended to "
+        "data_axis_watchlist.md, and its verdicts were folded into ops/frontier_cn_prompt.txt so "
+        "the CN seat never re-spends the verification. The doc is the evidence, not a queue.",
     "docs/research/BITMEX_DECADE_INGEST_SPEC.md":
         "build spec (directive bitmex-ingest-spec, closed 2026-07-31) -- executed via its phase "
         "artifacts: phase 1 landed same-day (data/bitmex_funding.jsonl, 11,148 rows 2016->now); "
