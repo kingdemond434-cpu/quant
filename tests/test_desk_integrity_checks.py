@@ -128,15 +128,26 @@ class TestOrphanScripts:
                           ["wired.py"])
         assert _run(monkeypatch, root, m.check_orphan_scripts) == []
 
-    def test_page_digest_is_reported_not_silently_wired(self) -> None:
-        """It calls itself a daily job and is in no cadence -- REPORT that, do not wire it.
+    def test_page_digest_is_governed_not_orphaned(self) -> None:
+        """HISTORY: this lock originally asserted the OPPOSITE -- that `page_digest.py` must be
+        REPORTED as an orphan, because wiring an unverified pager into a cadence was the
+        principal's decision to make. On 2026-07-31 the red test surfaced that the decision had
+        already been overtaken by events: the script had been firing daily from the LEGACY live
+        crontab since ~07-27 (data/cro_ai_logs/digest_page.log shows 4 fires), and the 07-30
+        manifest port recorded that line into ops/crontab.manifest, which silenced the detector.
+        The drift was surfaced to the principal (page + ledger 2026-07-31) rather than blessed
+        silently; the digest itself answers his own ask ("report findings when I'm not there").
 
-        Wiring another account's unverified pager into a daily cadence is how you turn one
-        unnoticed script into daily spam, and register #3 is literally "pager delivery
-        unverified". The detector's job is to surface it; the decision is the principal's."""
+        The invariant this lock now protects is the inverse failure: the digest cadence must
+        stay GOVERNED -- present in the manifest (so §36 owns it) and therefore NOT reported as
+        an orphan. Silent UNwiring (dropping the manifest line without a decision) turns the
+        principal's one daily visibility channel off with no diff anyone reviews; that is the
+        new way to lose this quietly."""
+        manifest = (m.ROOT / "ops/crontab.manifest").read_text("utf-8", errors="ignore")
+        assert "page_digest.py" in manifest, "digest cadence dropped from the manifest"
         out: list[tuple[str, str]] = []
         m.check_orphan_scripts(out)
-        assert any("page_digest.py" in msg for _, msg in out)
+        assert not any("page_digest.py" in msg for _, msg in out)
 
     def test_a_declared_oneshot_is_exempt(self, tmp_path, monkeypatch) -> None:
         root = self._tree(tmp_path, {"wired.py": "", "pull_cme.py": ""}, ["wired.py"])

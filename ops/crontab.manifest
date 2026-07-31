@@ -483,44 +483,19 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # retune it (the agent will then leave it alone because it is already scheduled).
 # Every entry here was proven: runnable main(), no money-path import, no spend
 # capability, no writes outside data/ + web/. CONFIDENCE: auto-wired.
-# scripts/compute_performance.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
-21 8 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/compute_performance.py >> data/cro_ai_logs/compute_performance.log 2>&1
-# scripts/hold_optimizer.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
-21 8 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/hold_optimizer.py >> data/cro_ai_logs/hold_optimizer.log 2>&1
-# scripts/certify_gauntlet.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
-21 8 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/certify_gauntlet.py >> data/cro_ai_logs/certify_gauntlet.log 2>&1
-# scripts/run_autodiscovery.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
-21 8 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_autodiscovery.py >> data/cro_ai_logs/run_autodiscovery.log 2>&1
-# scripts/research_alpha_optimizer.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
-21 8 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/research_alpha_optimizer.py >> data/cro_ai_logs/research_alpha_optimizer.log 2>&1
-# scripts/run_carry_crowding.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
-21 8 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_carry_crowding.py >> data/cro_ai_logs/run_carry_crowding.log 2>&1
-# scripts/carry_viability.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
-21 8 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/carry_viability.py >> data/cro_ai_logs/carry_viability.log 2>&1
-# scripts/stageb_capacity.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
-21 8 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/stageb_capacity.py >> data/cro_ai_logs/stageb_capacity.log 2>&1
-# scripts/flatten_cookie.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
-21 8 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/flatten_cookie.py >> data/cro_ai_logs/flatten_cookie.log 2>&1
-# scripts/graveyard_resurrect.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
-21 8 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/graveyard_resurrect.py >> data/cro_ai_logs/graveyard_resurrect.log 2>&1
-# scripts/run_research_tick.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
-21 8 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_research_tick.py >> data/cro_ai_logs/run_research_tick.log 2>&1
-# scripts/build_panel_rulings.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
-21 8 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/build_panel_rulings.py >> data/cro_ai_logs/build_panel_rulings.log 2>&1
-# scripts/ops_server.py -- runnable, no money path, no spend, local writes only -- 6-hourly (reads a network source; slower cadence bounds rate-limit exposure -- the 2026-07-21 IP ban came from over-frequent polling)
-37 */6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/ops_server.py >> data/cro_ai_logs/ops_server.log 2>&1
-# scripts/bundle_all.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
-21 8 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/bundle_all.py >> data/cro_ai_logs/bundle_all.log 2>&1
-# scripts/bundle_algo.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
-21 8 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/bundle_algo.py >> data/cro_ai_logs/bundle_algo.log 2>&1
-# scripts/smoke_orchestration.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
-21 8 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/smoke_orchestration.py >> data/cro_ai_logs/smoke_orchestration.log 2>&1
-# scripts/setup_testnet_keys.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
-21 8 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/setup_testnet_keys.py >> data/cro_ai_logs/setup_testnet_keys.log 2>&1
-# scripts/setup_ngrok.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
-21 8 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/setup_ngrok.py >> data/cro_ai_logs/setup_ngrok.log 2>&1
+# scripts/run_kama_squeeze_backtest.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
+21 8 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_kama_squeeze_backtest.py >> data/cro_ai_logs/run_kama_squeeze_backtest.log 2>&1
+# scripts/run_trend_gauntlet.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
+21 8 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_trend_gauntlet.py >> data/cro_ai_logs/run_trend_gauntlet.log 2>&1
+# scripts/run_prediction_markets.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
+21 8 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_prediction_markets.py >> data/cro_ai_logs/run_prediction_markets.log 2>&1
+# scripts/run_onchain_history_backtest.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
+21 8 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_onchain_history_backtest.py >> data/cro_ai_logs/run_onchain_history_backtest.log 2>&1
+# scripts/run_xsec_funding.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
+21 8 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_xsec_funding.py >> data/cro_ai_logs/run_xsec_funding.log 2>&1
+# scripts/run_carry_harvest.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
+21 8 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_carry_harvest.py >> data/cro_ai_logs/run_carry_harvest.log 2>&1
 # <<< WIRING AGENT <<<
-
 # GATE 0 READINESS (launch day, 2026-07-30). s1_entry_met is the gate that admits real capital,
 # and NOTHING assembled its evidence dict from reality -- so "what is actually left?" required
 # reading five subsystems by hand. This measures every criterion against its proving artifact and
@@ -639,3 +614,14 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # CONFIDENCE: committed-script
 10 3 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/blindspot_max.py >> data/cro_ai_logs/blindspot_max.log 2>&1
 25 21 * * 6 cd "$QUANT_ROOT" && .venv/bin/python scripts/blindspot_prober.py >> data/cro_ai_logs/blindspot_prober.log 2>&1
+
+# DAILY PRINCIPAL DIGEST -- ported from the LEGACY crontab block 2026-07-31, where it had been
+# firing since ~07-27 WITHOUT ever being a recorded decision (the orphan-scripts lock caught the
+# drift when the 07-30 audit shards accidentally silenced the detector). Kept, not killed: it
+# answers the principal's own ask ("report findings when I'm not there"), it is idempotent per
+# UTC day (data/.last_digest_page), Priority:low, and one buzz/day. The legacy 08:30 twin is a
+# no-op against the same-day stamp until the R0070 herd cleanup strips it. Decision surfaced on
+# the principal page + ledger 2026-07-31; killing it is one deleted line + a page note.
+# EVIDENCE: data/cro_ai_logs/digest_page.log (4 fires, 2 delivered, 2 ntfy-429 -> retry added)
+# CONFIDENCE: committed-script
+30 8 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/page_digest.py >> data/cro_ai_logs/digest_page.log 2>&1

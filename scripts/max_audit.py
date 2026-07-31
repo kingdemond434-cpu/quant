@@ -2390,9 +2390,13 @@ def check_orphan_scripts(defects) -> None:
             # made this detector count it as referenced and fall silent. Diagnosing a problem must
             # never be what silences its detection, or the desk's own audits become the thing that
             # hides the findings.
+            # docs/audit_shards/ excluded 2026-07-31, third instance of the same class: the
+            # sharded audit dossiers QUOTE orphan findings verbatim ("scripts/page_digest.py:
+            # no hits"), and that quotation silenced this very detector for a day.
             if (f.is_file()
                     and f.name not in ("daily_research_cycle.py", "max_audit.py")
-                    and "deep_sweep" not in f.as_posix()):
+                    and "deep_sweep" not in f.as_posix()
+                    and "audit_shards" not in f.as_posix()):
                 with contextlib.suppress(OSError):
                     corpus.append(f.read_text("utf-8", errors="ignore"))
     blob = "\n".join(corpus)
