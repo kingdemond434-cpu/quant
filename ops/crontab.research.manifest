@@ -55,6 +55,12 @@
 0 6 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-prospector.timer >/dev/null 2>&1 || flock -n /tmp/seat_prospector.lock /bin/bash ops/run_prospector_dig.sh >> data/cro_ai_logs/seat_prospector.log 2>&1; }
 0 7 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-litminer.timer >/dev/null 2>&1 || flock -n /tmp/seat_litminer.lock /bin/bash ops/run_litminer_dig.sh >> data/cro_ai_logs/seat_litminer.log 2>&1; }
 
+# third dig slots (midday) -- on the twin these EXECUTE rather than skip: its seat is free
+0 10 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-dataaxis.timer >/dev/null 2>&1 || flock -n /tmp/seat_dataaxis.lock /bin/bash ops/run_dataaxis_dig.sh >> data/cro_ai_logs/seat_dataaxis.log 2>&1; }
+0 11 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-frontier.timer >/dev/null 2>&1 || flock -n /tmp/seat_frontier.lock /bin/bash ops/run_frontier_rotation.sh >> data/cro_ai_logs/seat_frontier.log 2>&1; }
+0 12 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-prospector.timer >/dev/null 2>&1 || flock -n /tmp/seat_prospector.lock /bin/bash ops/run_prospector_dig.sh >> data/cro_ai_logs/seat_prospector.log 2>&1; }
+0 13 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-litminer.timer >/dev/null 2>&1 || flock -n /tmp/seat_litminer.lock /bin/bash ops/run_litminer_dig.sh >> data/cro_ai_logs/seat_litminer.log 2>&1; }
+
 # unknown-unknown organs
 10 3 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/blindspot_max.py >> data/cro_ai_logs/blindspot_max.log 2>&1
 25 21 * * 6 cd "$QUANT_ROOT" && .venv/bin/python scripts/blindspot_prober.py >> data/cro_ai_logs/blindspot_prober.log 2>&1

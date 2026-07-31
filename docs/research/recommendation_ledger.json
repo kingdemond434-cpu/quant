@@ -1315,6 +1315,18 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0109",
+   "source": "principal",
+   "summary": "RUN run_axis_generate.py ONCE on the box (one-shot debt-clearer, NOT a cron organ): authors pre-registered hypotheses for all 13 Bronze axes through the EV gate, sets gen_done keys, writes the pre-registration doc -- the standing generation duty the clock-saturation breach ordered. Box-local because gen_done state lives in data/. After it runs, the STANDING generator need is the knowledge-graph composer (R0079-gated)",
+   "roi_bps": 25.0,
+   "raised": "2026-07-31T09:26:29.283562+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

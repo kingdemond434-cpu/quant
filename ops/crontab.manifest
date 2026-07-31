@@ -173,6 +173,24 @@ QUANT_ROOT=/home/quant/quant-platform
 # CONFIDENCE: committed-script (new this cycle)
 33 */6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_conversion.py >> data/cro_ai_logs/conversion_fence.log 2>&1
 
+# MICRO FACTORY (principal 2026-07-31, closes the audit's DM-5 built-never-scheduled finding):
+# turns the PROPRIETARY moat -- own-timestamp L2 books nobody else has -- into measurable state
+# variables daily (M_LIQUIDITY_WITHDRAWAL family: does liquidity vanish BEFORE vol arrives?).
+# Pure CPU, zero LLM quota: this is hypothesis/data formation with NO seat constraint, so its
+# frequency ceiling is data arrival (daily snapshot growth), and daily is that ceiling.
+# EVIDENCE: scripts/micro_factory.py (moat-local; primary box only -- the twin holds no L2)
+# CONFIDENCE: committed-script (new this cycle)
+30 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_micro_factory.lock .venv/bin/python scripts/micro_factory.py >> data/cro_ai_logs/micro_factory.log 2>&1
+
+# THIRD DIG SLOTS (principal 2026-07-31 "max frequency left"): midday opportunistic harvest.
+# flock -n makes an occupied seat a FREE instant skip, so extra slots cost nothing when the
+# brain seat is busy and convert idle seat windows into digs when it is not. With the research
+# twin online these mostly execute there; here they scavenge whatever the mutex leaves free.
+0 10 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-dataaxis.timer >/dev/null 2>&1 || flock -n /tmp/seat_dataaxis.lock /bin/bash ops/run_dataaxis_dig.sh >> data/cro_ai_logs/seat_dataaxis.log 2>&1; }
+0 11 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-frontier.timer >/dev/null 2>&1 || flock -n /tmp/seat_frontier.lock /bin/bash ops/run_frontier_rotation.sh >> data/cro_ai_logs/seat_frontier.log 2>&1; }
+0 12 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-prospector.timer >/dev/null 2>&1 || flock -n /tmp/seat_prospector.lock /bin/bash ops/run_prospector_dig.sh >> data/cro_ai_logs/seat_prospector.log 2>&1; }
+0 13 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-litminer.timer >/dev/null 2>&1 || flock -n /tmp/seat_litminer.lock /bin/bash ops/run_litminer_dig.sh >> data/cro_ai_logs/seat_litminer.log 2>&1; }
+
 # LIVE GUARD (R0071d, 2026-07-31): computes the graded degradation response -- effective_size_
 # fraction, limit_only canary mode, and the KILL freeze. It was BUILT and never scheduled, so
 # its consumers (wired into the executor today) would have read stale-neutral forever. The
