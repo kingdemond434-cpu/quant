@@ -116,6 +116,11 @@ _MAP: dict[str, list[str]] = {
     # on ungraded predictions; the shrinkage closes the loop back into sizing/promotion.
     "L1.29": ["scripts/check_calibration.py",
               "libs/self_improvement/forecast_calibration.py"],
+    # L1.30: births vs deaths of validated edges -- the number that sets terminal wealth.
+    "L1.30": ["scripts/check_replacement_rate.py"],
+    # L1.31: two model families hunt the missing capability daily AND one builds it. The organ
+    # is the fence: check_organs catches it going quiet, and its artifacts are dated evidence.
+    "L1.31": ["scripts/run_capability_hunt.py", "ops/run_capability_hunt.sh", "check_organs"],
     # L1.25a: null streaks throttle nothing -- an organ going quiet is caught by the freshness/
     # productivity wires REGARDLESS of its reason, so "stopped because nothing was working" trips
     # the same fence as "stopped because broken". The pessimism-freeze cannot hide.

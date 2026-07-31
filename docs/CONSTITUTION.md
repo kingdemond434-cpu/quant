@@ -459,6 +459,40 @@ every other fence checks whether the desk did what it said, not whether what it 
 UNFORECASTING/BLIND/MISCALIBRATED; its artifact feeds `run_max_push.py`, so miscalibration
 competes in the daily hunt against every other gap.
 
+**L1.30 REPLACEMENT RATE — EDGES DIE ON THEIR OWN SCHEDULE; ONLY THE PIPELINE DECIDES WHETHER
+THE BOOK DIES WITH THEM** *(2026-07-31)*. Every edge decays — crowding, regime change,
+microstructure drift — on a half-life measured in months. **Terminal wealth is therefore not set
+by how good today's sleeves are; it is set by whether validated BIRTHS keep pace with DEATHS.** A
+book earning 80% on three edges with a replacement rate of 0.3 is on a countdown nobody is
+watching: it reads healthy every single day right up until the last edge dies. A book earning 30%
+with a rate above 1.0 compounds indefinitely. Births count **only** at forward-evidence status —
+a screen hit is not an edge (L1.6).
+
+**THE RESPONSE IS ALWAYS UPSTREAM.** A low replacement rate **never** justifies loosening a
+validation bar to manufacture births — that converts a real countdown into a fake reprieve and is
+precisely the failure L1.6 and L1.25 forbid. It is answered with more axes, more screens, more
+forward slots filled (L1.25a). **FENCED**: `scripts/check_replacement_rate.py` — DYING when
+deaths outpace births, and **UNMEASURED-BIRTHS when births cannot be counted**, because "we
+cannot count births" and "there are no births" are different claims and only one is evidence.
+
+**L1.31 THE DESK HUNTS ITS OWN MISSING CAPABILITIES, DAILY, IN TWO MODEL FAMILIES** *(principal
+order 2026-07-31: "ChatGPT and Claude both hunt for what to add, what's missing, and implement
+it")*. Every other fence audits what EXISTS. **Nothing hunted for capabilities never conceived** —
+those arrived only when the principal happened to ask "what else?", which made the desk's growth
+rate a function of how often a human was curious. That is now a daily property of the system.
+
+**TWO FAMILIES, INDEPENDENTLY, THEN BUILD.** A model cannot see its own blind spot: ask one family
+twice and the second answer is the first restated with more confidence. **Cross-family agreement
+is evidence; agreement within one family is style.** So a Claude seat and the GPT-9 seat propose
+without seeing each other, and the builder treats convergence as the strongest available signal
+and divergence as the second strongest (one family saw what the other could not). **The hunt
+BUILDS in the same run** — a proposal nobody implements is the found-never-fixed defect L1.28b
+exists to kill, and at this desk's measured conversion rate a proposal-only organ is a debt
+generator. A run that degrades to one family **says so**, so the record never implies a
+cross-family agreement that never happened. **FENCED**: `scripts/run_capability_hunt.py` +
+`ops/run_capability_hunt.sh`, daily; dated artifacts under `docs/research/capability_hunt/`, and
+`check_organs` catches it going quiet whatever the stated reason (L1.25a).
+
 **L1.28c CADENCE IS AGGRESSION — EVERY SCHEDULE HUNTS ITS OWN CEILING** *(principal order
 2026-07-31)*. **Every cadence on this desk aims to increase its frequency to the maximum that
 still carries ROI, and a cadence nobody has tried to raise is idle capacity wearing a schedule.**

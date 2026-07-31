@@ -207,6 +207,27 @@ QUANT_ROOT=/home/quant/quant-platform
 # CONFIDENCE: committed-script (new this cycle)
 */5 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_live_guard.lock .venv/bin/python scripts/run_live_guard.py >> data/cro_ai_logs/live_guard.log 2>&1
 
+# REPLACEMENT RATE (L1.30, 2026-07-31): births vs deaths of validated edges. Terminal wealth is
+# set by whether the pipeline replaces decaying edges faster than they die -- a book on three
+# great edges with a replacement rate of 0.3 looks healthy every day right up until the last one
+# dies. Never a kill switch: a low rate is answered UPSTREAM (more axes, more slots), never by
+# loosening a bar to manufacture births.
+# EVIDENCE: scripts/check_replacement_rate.py -> data/replacement_rate.json; CONSTITUTION L1.30
+# CONFIDENCE: committed-script (new this cycle)
+20 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_replacement_rate.py >> data/cro_ai_logs/replacement_rate.log 2>&1
+
+# CAPABILITY HUNT (L1.31, principal order 2026-07-31): "chatgpt and claude both hunt for what to
+# add, what's missing, and IMPLEMENT it" -- what this session did by hand, every day, unprompted.
+# TWO INDEPENDENT FAMILIES on purpose: a Claude seat and the GPT-9 seat propose the missing
+# capability separately (a model cannot see its own blind spot; agreement across families is
+# evidence, agreement within one is style), then the Claude seat BUILDS the winner in the same
+# run -- proposal without implementation is the found-never-fixed defect L1.28b exists to kill.
+# Runs after the max-push queue and every fence has refreshed, so the hunt reads today's real
+# gaps rather than yesterday's.
+# EVIDENCE: scripts/run_capability_hunt.py -> docs/research/capability_hunt/; CONSTITUTION L1.31
+# CONFIDENCE: committed-script (new this cycle)
+30 9 * * * cd "$QUANT_ROOT" && flock -n data/.cron_capability_hunt.lock /bin/bash ops/run_capability_hunt.sh >> data/cro_ai_logs/capability_hunt.log 2>&1
+
 # CALIBRATION FENCE (L1.29, 2026-07-31): scores the desk's own probability forecasts against
 # outcomes and fails on predictions past their grading deadline. The bias it measures is CONSUMED
 # (forecast_calibration.calibrated_confidence) so an over-confident desk self-corrects instead of

@@ -1,0 +1,195 @@
+#!/usr/bin/env python3
+"""CAPABILITY HUNT (L1.31) -- two model families hunt what is MISSING, and one builds it. Daily.
+
+PRINCIPAL ORDER (2026-07-31): *"make sure quant does this every day, max ROI frequency, where
+ChatGPT and Claude both hunt for what to add, what's missing, and implement it -- like now."*
+
+WHAT THIS AUTOMATES. Every fence this desk owns audits things that EXIST: is the gate strict, is
+the queue converting, is the cadence maxed. Nothing hunted for capabilities that were never
+conceived -- those arrived only when a human asked "what else?" and a model went looking. That
+made the desk's growth rate a function of how often the principal happened to ask. This organ
+makes it a daily property of the system.
+
+WHY TWO FAMILIES, NOT ONE RUN TWICE. A model cannot see its own blind spot: ask the same family
+twice and the second answer is the first answer restated with more confidence. Agreement ACROSS
+families (Claude and GPT-9) is evidence; agreement within one is style. So both propose
+INDEPENDENTLY -- neither sees the other's answer -- and the synthesis step treats cross-family
+agreement as the strongest signal available and cross-family DISAGREEMENT as the second
+strongest (one family saw something the other could not).
+
+WHY IT BUILDS, NOT JUST PROPOSES. A proposal nobody implements is the found-never-fixed defect
+L1.28b exists to kill, and this desk's measured conversion rate makes a pure-proposal organ a
+debt generator. So the third stage IMPLEMENTS the winner in the same run -- code, fence, law,
+tests -- exactly as the principal's own sessions do.
+
+THE PROMPTS ARE THE GENOME. They are written here, versioned, and improved by the deep sweep's
+recursive-meta section like every other prompt on this desk.
+
+    python scripts/run_capability_hunt.py [--dry-run]
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import subprocess
+import sys
+from datetime import UTC, datetime
+from pathlib import Path
+
+_ROOT = Path("/home/quant/quant-platform")
+if not _ROOT.exists():                                     # dev/CI checkout
+    _ROOT = Path(__file__).resolve().parent.parent
+_OUT = _ROOT / "docs/research/capability_hunt"
+
+#: The evidence every hunter reads first -- today's real gaps, not yesterday's impressions.
+_CONTEXT = """Read these BEFORE proposing (they are today's measured state, regenerated hours ago):
+  data/max_push_queue.json     every aspect not yet at 100%, ranked
+  data/conversion_status.json  is the desk converting findings at all (L1.28b)
+  data/calibration_status.json is the desk's own confidence scored (L1.29)
+  data/replacement_rate.json   are validated edges being born faster than they die (L1.30)
+  docs/research/TIER1_BENCHMARK.md   every layer's distance to tier-1 process
+  docs/CONSTITUTION.md         the laws (skim L1.28a-c, L1.25a, L1.29-L1.31)
+  docs/GAP_REGISTER.md + docs/research/recommendation_ledger.json   what is ALREADY known"""
+
+_HUNT_BRIEF = """You are hunting for a CAPABILITY THIS DESK DOES NOT HAVE AND HAS NOT THOUGHT OF.
+
+{context}
+
+THE BAR -- this is not a backlog-grooming exercise. Everything already in the ledger, the gap
+register, or the max-push queue is OUT OF SCOPE by construction: those are known, owned, and
+being worked. You are looking for the thing that is missing from the LIST ITSELF -- the question
+nobody on this desk has asked, the failure mode no fence watches, the measurement whose absence
+is invisible precisely because nothing reports it.
+
+HOW TO FIND ONE (use all of these, they surface different things):
+ 1. INVERT A FENCE: every fence checks the desk did what it said. What checks whether what it
+    SAID was true? (That reasoning produced L1.29 -- calibration -- and it was worth building.)
+ 2. FOLLOW A NUMBER NOBODY OWNS: name a quantity that determines terminal wealth and is computed
+    NOWHERE. (That produced L1.30 -- replacement rate: births vs deaths of validated edges.)
+ 3. ASK WHAT A TIER-1 PROP DESK HAS THAT WE DO NOT -- Jane Street, XTX, Jump, DRW, Optiver, HRT,
+    Wintermute; and RenTech/Medallion as the ceiling exemplar. Process, not capital.
+ 4. READ THE NEGATIVE EXEMPLARS: Alameda, LTCM, Archegos each died of something specific. Which
+    of their deaths would this desk currently NOT detect in time?
+ 5. TIME-TRAVEL: it is 12 months from now and the desk failed. What was the cause, and what
+    single capability would have caught it?
+ 6. CROSS-DOMAIN TRANSFER: take one idea from control theory, epidemiology, reliability
+    engineering, information theory, or aviation safety that has no equivalent here.
+
+OUTPUT (strict, and keep it SHORT -- one proposal, deeply argued, beats five sketched):
+  MISSING CAPABILITY: <one line>
+  WHY IT IS INVISIBLE TODAY: <what makes its absence unnoticeable>
+  MECHANISM: <how it would work, concretely -- files, artifact, fence status values>
+  WHAT IT WOULD HAVE CAUGHT: <a real incident from this desk's own record, cited>
+  ROI: <direct + cascade, and what it multiplies>
+  COST: <hours, maintenance, and what it competes with>
+  FALSIFIER: <what evidence would prove this is NOT worth building>
+Then one line: NOVELTY-CHECK: <grep/read command you ran proving this does not already exist>.
+An honest "I could not find one that clears the bar, here is what I checked and why each failed"
+is a VALID and useful answer -- padding the list with known items is a defect."""
+
+_BUILD_BRIEF = """You are the BUILDER stage of the capability hunt. Two independent model
+families each proposed a missing capability. Read BOTH proposals:
+
+--- PROPOSAL A (Claude family) ---
+{a}
+
+--- PROPOSAL B (GPT-9 family, independent) ---
+{b}
+
+ADJUDICATE with the desk's own discipline, then BUILD.
+ 1. If both families converged on the same capability, that is the strongest signal available --
+    build it. If they diverged, judge on expected contribution to long-term compounding per unit
+    of effort (L2.7), and say plainly why the loser lost; a divergence often means one family saw
+    a blind spot the other could not, so check whether the loser is worth a ledger row.
+ 2. VERIFY IT DOES NOT EXIST before writing a line -- this desk's most common defect is building
+    something already present but unwired. If it exists unwired, WIRE it; that is a better
+    outcome than a new file.
+ 3. BUILD IT FULLY, in the desk's style: the script, its artifact, its status values (with an
+    UNMEASURED/refusal path -- never let an unmeasured thing report OK), a law in
+    docs/CONSTITUTION.md and ops/principal_doctrine.txt if it is a standing duty, the mapping in
+    scripts/build_enforcement_matrix.py, a line in ops/crontab.manifest with EVIDENCE and
+    CONFIDENCE, and TESTS that fail if the wiring is removed.
+ 4. RUN IT. If its first run reports a defect, that is success, not failure -- record it. If its
+    first run reports OK on an empty measurement set, FIX THAT FIRST: unmeasured must never read
+    as fine (L1.28a).
+ 5. Verify the tree: pytest on the suites you touched, build_enforcement_matrix (zero orphans),
+    check_scheduler_manifest, check_timidity_language. Then commit and push to master with a
+    message naming what was missing and what it would have caught.
+ 6. Row anything you deliberately did NOT build via scripts/recommendations.py, with the reason.
+
+Write your session record to {report} (what both families proposed, what you built, what you
+refused, what its first run said). If you cannot finish the build, the record IS the deliverable
+and the next run resumes from it -- never leave a half-built capability unrecorded."""
+
+
+def _claude(prompt: str, timeout: int = 2400) -> tuple[bool, str]:
+    r = subprocess.run(
+        ["bash", "-c",
+         'source ops/brain_env.sh && brain_auth_check || { echo BRAIN_AUTH_FAILED; exit 90; } && '
+         'claude --effort max --append-system-prompt "$_DOCTRINE" -p "$0" '
+         '--dangerously-skip-permissions', prompt],
+        cwd=_ROOT, capture_output=True, text=True, timeout=timeout)
+    return r.returncode == 0, (r.stdout or "") + (r.stderr or "")[-400:]
+
+
+def _gpt(prompt: str) -> tuple[bool, str]:
+    """The GPT-9 seat -- a genuinely INDEPENDENT model family, reusing the strategic director's
+    provider chain (scripts/run_strategic_director.py:_ask, which never raises: a dead provider
+    must not crash a cycle). Dormant until OpenRouter is funded, and it says so rather than
+    silently degrading the hunt to one family."""
+    if str(_ROOT) not in sys.path:
+        sys.path.insert(0, str(_ROOT))
+    try:
+        from scripts.run_strategic_director import MODEL, _ask
+    except Exception as exc:                                     # noqa: BLE001
+        return False, f"GPT seat unimportable: {exc}"
+    text, err = _ask(prompt, MODEL)
+    if err or not text.strip():
+        return False, err or "empty response"
+    return True, text
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--dry-run", action="store_true", help="write the prompts, call no model")
+    args = ap.parse_args()
+    _OUT.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now(tz=UTC).strftime("%Y%m%d")
+    report = _OUT / f"{stamp}_hunt.md"
+    brief = _HUNT_BRIEF.format(context=_CONTEXT)
+
+    if args.dry_run:
+        (_OUT / f"{stamp}_prompts.txt").write_text(
+            brief + "\n\n=== BUILD ===\n" + _BUILD_BRIEF.format(a="<A>", b="<B>", report=report),
+            "utf-8")
+        print(f"[hunt] dry-run: prompts -> {_OUT}/{stamp}_prompts.txt")
+        return 0
+
+    # STAGE 1+2: both families propose INDEPENDENTLY -- neither sees the other's answer.
+    ok_a, a = _claude(brief + "\n\nWork READ-ONLY: propose only, do not modify anything.", 1500)
+    ok_g, b = _gpt(brief)
+    if not ok_a:
+        a = f"(Claude seat failed: {a[-300:]})"
+    if not ok_g:
+        # HONEST DEGRADATION: a dead GPT seat does not cancel the hunt -- it runs single-family
+        # and SAYS SO, so the record never implies cross-family agreement that never happened.
+        b = (f"(GPT-9 seat unavailable: {b}. This run is SINGLE-FAMILY -- treat its proposal as "
+             "unconfirmed by an independent family, and note that in the record.)")
+    (_OUT / f"{stamp}_proposals.md").write_text(
+        f"# CAPABILITY HUNT PROPOSALS {stamp}\n\n## A -- Claude family\n\n{a}\n\n"
+        f"## B -- GPT-9 family (independent)\n\n{b}\n", "utf-8")
+
+    # STAGE 3: adjudicate + BUILD. Proposal without implementation is the defect (L1.28b).
+    ok_b, out = _claude(_BUILD_BRIEF.format(a=a, b=b, report=report), 3000)
+    status = {"stamp": stamp, "claude_proposed": ok_a, "gpt_proposed": ok_g,
+              "cross_family": ok_a and ok_g, "built": ok_b and report.exists(),
+              "report": str(report), "generated": datetime.now(tz=UTC).isoformat()}
+    (_ROOT / "data/capability_hunt.json").write_text(json.dumps(status, indent=2), "utf-8")
+    print(f"[hunt] {json.dumps(status)}")
+    if not ok_b:
+        print(f"[hunt] builder tail: {out[-500:]}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

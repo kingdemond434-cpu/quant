@@ -1363,6 +1363,18 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0113",
+   "source": "principal",
+   "summary": "APPEND-ONLY PROMOTION HISTORY (unblocks L1.30 births): promotion_queue.json records CURRENT slot occupancy only, so births are uncountable and the replacement-rate fence honestly reports UNMEASURED-BIRTHS. Add a dated append-only promotion_history (edge id, promoted_at, mechanism family, retired_at when it exits) -- then replacement rate becomes a real number and the desk can see whether its pipeline outruns decay",
+   "roi_bps": 25.0,
+   "raised": "2026-07-31T10:44:26.686724+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

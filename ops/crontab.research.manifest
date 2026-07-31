@@ -65,3 +65,6 @@
 10 3 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/blindspot_max.py >> data/cro_ai_logs/blindspot_max.log 2>&1
 25 21 * * 6 cd "$QUANT_ROOT" && .venv/bin/python scripts/blindspot_prober.py >> data/cro_ai_logs/blindspot_prober.log 2>&1
 0 20 * * 6 cd "$QUANT_ROOT" && { systemctl is-enabled quant-blindrediscovery.timer >/dev/null 2>&1 || flock -n /tmp/seat_blindrediscovery.lock /bin/bash ops/run_blindrediscovery_dig.sh >> data/cro_ai_logs/seat_blindrediscovery.log 2>&1; }
+
+# capability hunt (L1.31) -- on the twin this EXECUTES rather than contends for the seat
+30 9 * * * cd "$QUANT_ROOT" && flock -n data/.cron_capability_hunt.lock /bin/bash ops/run_capability_hunt.sh >> data/cro_ai_logs/capability_hunt.log 2>&1
