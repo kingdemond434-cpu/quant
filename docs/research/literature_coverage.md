@@ -370,3 +370,77 @@ holes, and priors on the live book.**
   deliberately withheld from the Search Operator Library pending the ruling** — banking a capability
   before it is ruled lawful quietly makes the permissive answer the default, which is how a rail
   erodes without anyone deciding to erode it.
+
+---
+
+## SESSION NOTE 2026-07-31 (literature deep-miner — run 4; STANDING DAILY)
+
+**Written BEFORE searching (completion contract). Ground truth recomputed at start, not
+remembered:** `mine_gate.py` → **BACKLOG-CLEAR, mining authorised.** `source_backlog_next.py` → 2
+pending technical verification (Kaiko, NAVER DataLab), 3 pending legitimacy decision (Upbit portal,
+bitFlyer, Glassnode/CQ→CM — the CM one was RULED by run 3, parser hasn't caught up). Desk is in
+**REPAIR-MODE** (127-row ledger backlog) — L1.28b(f): mining runs at full cadence regardless;
+repair-mode biases this run toward closing owed verifications before wide new ground.
+**Kimchi context has CHANGED since run 3:** the KR premium screen was REFUTED at 8.2y depth
+(2026-07-30, R0051) — run 3's "highest-value resume point" (오정훈 2019, FX-drives-kimchi) is
+therefore DOWNGRADED: still free graveyard/mechanism context, no longer load-bearing on a live clock.
+
+### ITEMS TAKEN THIS RUN (bounded; depth maxed per item)
+1. **[BACKLOG] Kaiko + NAVER verification close-out.** NAVER: endpoint re-confirmed 401-keyed
+   2026-07-31 (unchanged; sole blocker = human key, §33 deferral 2026-08-09 intact — NOT expired).
+   Kaiko: artifact confirmed on disk (132 fixings, stress-diff run). Remaining sliver: check
+   whether a FREE published Kaiko fixing exists to diff the reconstruction against; then update
+   the card's grade string so the backlog parser stops resurfacing a wired item. — STATUS: below.
+2. **[LIT-e, ROTATION-FORCED] Practitioner research — FIRST-EVER visit to the only zero-session
+   family.** BIS / Fed (FEDS + Liberty Street) / IMF crypto-market-structure notes first (the
+   spec's named highest-value slice), then AQR / Man Institute. Mechanism extraction mapped to
+   desk data (funding, OI, liquidations, basis, stablecoin mint/burn reconstruction, FRED macro);
+   ≥2-level citation dig on the best lead; §27 data-loot strip of every paper (their datasets ARE
+   axes). — STATUS: below.
+3. **[LIT-c refresh + ≥25% expansion reserve] AI/agent-methods frontier** since 07-26, aimed at
+   what the desk just built (L1.29 forecast calibration → LLM-calibration literature; welded-gate
+   finding → agent-eval design), plus NEW venues for the expansion reserve. — STATUS: below.
+4. **[CARRY, opportunistic ≤2 fetches] F11 (Li & Zhu) primary text via the OP-026 substitute
+   ladder.** — STATUS: below.
+
+### NEXT RUN PICKS UP AT (written now, updated at close)
+- PubPeer citation-stacking thread (F8) — still unopened, carried twice now.
+- Full arXiv q-fin subcategory sweep (only a slice ever touched).
+- Whatever practitioner sub-family this run leaves unmined (AQR/Man likely, if BIS/Fed/IMF absorb
+  the budget) — named precisely at close.
+
+---
+
+## RESOLUTIONS — run 4 (written as each item closed)
+
+### ✅ ITEM 1 [BACKLOG] — Kaiko RESOLVED (10th of 14); NAVER honestly held pending. **CLOSED.**
+- **Kaiko re-graded `verified-clean` 2026-07-31** — earned, not administrative: rulebook-verbatim
+  methodology diff (run 3) + 132-fixing reconstruction artifact confirmed on disk + stress test
+  (~100× outlier-resistance differential). The residual — fixing-level diff vs vendor-published
+  values — is documented WITH its free route: **`explorer.kaiko.com` displays current BRR without
+  login** (observed 64,653.57 USD, 2026-07-31); bulk/API history is paid-only. Backlog parser
+  re-run confirms: 10 resolved, 1 pending verification (NAVER only).
+- **NAVER endpoint liveness re-confirmed** (HTTP 401, unchanged keyed-API shape). Stays pending
+  CORRECTLY — sole blocker is the free-registration human step (GAP #69); §33 deferral 2026-08-09
+  intact. Not padded into a fake resolution.
+
+### ✅ ITEM 4 [CARRY] — F11 (Li & Zhu) UPGRADED from SUMMARY-ONLY via the OP-026 ladder. **CLOSED.**
+- SSRN `Delivery.cfm` direct-PDF **403s** (NK-005 scope extended: the block covers SSRN's own
+  free-delivery mechanism, not just abstract pages). The ladder's RePEc step delivered: IDEAS
+  carries the **published RIBF 83 (2026) abstract verbatim** (DOI 10.1016/j.ribaf.2026.103298).
+  Confirmed word-for-word: *"the disappearance of size effect"* out-of-sample; DS3 = MKT + MOM2 +
+  RMOM (no size factor).
+- **Routed as CORROBORATION into graveyard row `lit_crypto_xsec_size_and_volume`** (same family —
+  no fifth row; that would double-count one kill). The two-run abstention note in the graveyard is
+  replaced with the dated resolution. STILL provisional and honestly un-pasted: "13 of 49
+  significant" + IS/OOS split dates (interior unread — every legitimate route exhausted today).
+
+### ✅ UNPLANNED [CARRY×2 CLOSED] — F8's PubPeer layer mined; NK-004 upgraded to HIGH confidence.
+- PubPeer DIRECT = 403 (bot-gate; **not circumvented** — #80 ruling pending; logged). Layer mined
+  via secondary (chrisbrunet.com, full read) carrying a **peer-reviewed 2025 econometric study:
+  Ecosystem citations-per-article +103%** (2021-25 vs 2016-20); Elsevier DISMANTLED the Finance
+  Journals Ecosystem; 12 retractions = **5,104 combined citations**; author nodes named (Lucey 55
+  PubPeer flags/56 papers in 2025, Vigne 21 flags, Goodell 68-in-FRL); documented co-authorship
+  trading. **Operational sharpening in NK-004:** citation counts in FRL/IRFA/IREF crypto papers
+  carry a ~2× cartel-inflation de-rating; Lucey/Vigne/Goodell author-list = single-source
+  regardless of venue.

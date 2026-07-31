@@ -440,7 +440,29 @@ _Superseded original grading below (kept for the record):_
   formulas are not.
 - **Grade: UNVERIFIED.** Do not present as an adopted replacement yet.
 
-### 8. Kaiko vendor-replacement — grade: **needs-monitoring (raw ticks) / RECONSTRUCTABLE (index methodology — re-graded 2026-07-25)** [§33: wired tier:1 -> data/kaiko_vwm_reference_rate.jsonl]
+### 8. Kaiko vendor-replacement — grade: **verified-clean (reconstruction executed + rulebook-verbatim methodology diff + stress test; re-graded 2026-07-31)** [§33: wired tier:1 -> data/kaiko_vwm_reference_rate.jsonl]
+> **VERIFICATION CLOSE-OUT 2026-07-31 (litminer run 4 — this completes the backlog's "technical
+> check: docs + endpoint" and the grade upgrade is earned, not administrative):**
+> - **Docs half:** rulebook interior extracted from primary PDF + ESMA register independently
+>   confirmed (run 3, `deep_sweep/T1a_kaiko_verification.md`); calculation rule re-read VERBATIM
+>   from the vendor page 2026-07-26 (recency-weighted cross-partition average, not flat TWAP).
+> - **Endpoint half:** replacement path DEMONSTRATED live — 132 fixings computed from a 174,199-trade
+>   4-venue keyless public REST tape, artifact on disk (`data/kaiko_vwm_reference_rate.jsonl`,
+>   confirmed non-empty 2026-07-31). Stress test: injected 5%-off print at 2% of window volume moves
+>   VWM+TWAP 0.1 bps vs desk VWAP 9.8 bps (~100×) — the reconstruction exhibits the outlier
+>   resistance the published rule is designed for.
+> - **RESIDUAL GAP, documented per the free-frontier axiom (search run 2026-07-31, not a default):
+>   fixing-level diff vs Kaiko's own published values.** Bulk/API fixing history is PAID-ONLY
+>   (docs.kaiko.com historical-prices endpoint = keyed; stream replay = 72h). **FREE route found:
+>   `explorer.kaiko.com` displays current BRR values without login** (BTC BRR 64,653.57 USD observed
+>   2026-07-31, page dated 30/07/2026, with 1w/1m/1y chart views). Verification plan for a future
+>   run: re-run the reconstruction over a fresh window and spot-diff its fixing against the
+>   explorer-displayed BRR at the same timestamp — a one-observation ground-truth touch, free.
+>   ToS-check the explorer before any STANDING collection (spot-read for verification is ordinary
+>   public-web use; a scheduled scraper is not the same act).
+> - NOTE: raw-ticks component re-graded with the card: the desk's replacement for Kaiko tick data
+>   IS the 4-venue keyless tape, which the reconstruction run exercised end-to-end. No Kaiko
+>   product is adopted; nothing here grants promotion authority to anything.
 > **§33 CONVERSION 2026-07-26 — RECONSTRUCTABLE became RECONSTRUCTED. This card's own NEXT STEP
 > ("price the published VWM+TWAP rule against the desk's own cross-venue normalizer") was EXECUTED:
 > `scripts/reconstruct_kaiko_reference_rate.py`, built and run.**
@@ -860,6 +882,10 @@ here as excluded, not silently dropped (charter s27 "log every negative").
   result lands.
 - **Grade: needs-monitoring** (mechanism-first, single hypothesis, zero promotion authority --
   Stage-A screen only, exactly like every other axis onboarded this way).
+> **LIVENESS RE-CONFIRMED 2026-07-31 (litminer run 4):** POST to `openapi.naver.com/v1/datalab/search`
+> → HTTP 401 again, unchanged keyed-API shape. Card honestly STAYS pending-verification: the first
+> live screen cannot run until the free NAVER Developers key (human step, GAP #69) lands.
+> §33 deferral 2026-08-09 intact, not expired.
 > **VERIFICATION ADDENDUM 2026-07-25 (EN frontier miner):** endpoint LIVE-CONFIRMED —
 > unauthenticated POST to `openapi.naver.com/v1/datalab/search` returns HTTP 401 with NAVER's
 > own error body (`errorCode 024, "Not Exist Client ID"`), exactly the expected shape for a
