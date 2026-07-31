@@ -45,7 +45,8 @@ def test_cadence_is_derived_from_the_cron_expression():
 def test_an_organ_that_never_wrote_its_artifact_is_distinguished_from_one_that_stopped(tmp_path):
     # Different diagnoses -- NEVER-PRODUCED is wiring, STALE is auth/quota/upstream. Collapsing
     # them sends someone to debug the wrong thing.
-    (tmp_path / "ops").mkdir(); (tmp_path / "data").mkdir()
+    (tmp_path / "ops").mkdir()
+    (tmp_path / "data").mkdir()
     (tmp_path / "ops/crontab.manifest").write_text(_MAN)
     (tmp_path / "data/b.json").write_text("{}")
     old = time.time() - 500 * 3600
@@ -60,7 +61,8 @@ def test_an_organ_that_never_wrote_its_artifact_is_distinguished_from_one_that_s
 
 
 def test_a_fresh_organ_passes(tmp_path):
-    (tmp_path / "ops").mkdir(); (tmp_path / "data").mkdir()
+    (tmp_path / "ops").mkdir()
+    (tmp_path / "data").mkdir()
     (tmp_path / "ops/crontab.manifest").write_text(_MAN)
     for f in ("a.json", "b.json"):
         (tmp_path / "data" / f).write_text("{}")
@@ -70,7 +72,8 @@ def test_a_fresh_organ_passes(tmp_path):
 
 def test_tolerance_is_loose_enough_that_one_missed_tick_is_not_a_failure(tmp_path):
     # A board that is red most mornings is a board nobody reads.
-    (tmp_path / "ops").mkdir(); (tmp_path / "data").mkdir()
+    (tmp_path / "ops").mkdir()
+    (tmp_path / "data").mkdir()
     (tmp_path / "ops/crontab.manifest").write_text(_MAN)
     import os
     (tmp_path / "data/a.json").write_text("{}")
