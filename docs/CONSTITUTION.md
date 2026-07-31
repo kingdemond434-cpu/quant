@@ -790,6 +790,36 @@ without recursing. The `QUANT_LAW_GUARD=off` bypass exists deliberately and is *
 every use**: a guard that cannot be disabled in an emergency gets deleted from every call site
 instead, which is strictly worse — so a bypass is a dated act, never a quiet habit.
 
+**L1.43 GOVERNANCE IS MEASURED LIKE EVERYTHING ELSE** *(2026-07-31, self-applying)*. This desk
+hunts welded gates — a validation gate that accepts or rejects ~100% carries zero information
+however rigorous it looks — and had **never turned that logic on its own governance layer**, in a
+session that added roughly fifteen laws and a dozen fences. L1.26 is blunt about what that means:
+tooling and architecture are **never objectives**; they compete against every alternative use of
+the same brain cycles. **A fence nobody's behaviour changes for is cost wearing a governance
+costume.**
+
+Each fence is therefore classified by what it has actually caught: **FIRED** (it produced a
+non-OK verdict at least once — the only positive evidence a fence can generate), **QUIET** (only
+ever OK), or **NEVER-RUN** (no artifact ever — the built-never-wired defect *inside* governance).
+**The rail/detector distinction is the load-bearing part**: a quiet survival RAIL is precisely
+what you are paying for (L1.23), so its silence is never a demerit, while a quiet DETECTOR is
+genuinely ambiguous — clean desk, or inert check — and the fence says so rather than guessing.
+
+**IT PROPOSES NO RETIREMENTS AND FAILS NO BUILD.** Quiet detectors route to the weekly sweep's
+recursive-meta section, which owns retirement decisions with context this script does not have.
+And its own blind spot is handled honestly: history begins at first observation, so a fence that
+fired, got its defect fixed, and re-ran clean would read QUIET forever — the proven 07-31 catches
+(law-families finding L2.3 fenced-but-never-in-the-doctrine; build-standard finding five
+violations including three in itself) are **seeded with citations to where the evidence lives**.
+
+**ITS NON-TIMID READING** *(L1.28 classification — the fence flagged the word "reject" here, which
+is the fence working)*. The only "rejection" in L1.43 is the **welded-gate diagnostic** it borrows:
+a gate that accepts or rejects ~100% is uninformative. **Nothing in this law licenses rejecting a
+fence, retiring a check, or building fewer of them** — it explicitly proposes no retirements and
+fails no build, and it treats a quiet RAIL as a cost worth paying indefinitely. Its sole demand is
+UPWARD: a new fence must be good enough to **fire on its first run**, which is a bar on quality,
+never a cap on quantity. Read as licence to build less governance, it would be inverted.
+
 **L1.28c CADENCE IS AGGRESSION — EVERY SCHEDULE HUNTS ITS OWN CEILING** *(principal order
 2026-07-31)*. **Every cadence on this desk aims to increase its frequency to the maximum that
 still carries ROI, and a cadence nobody has tried to raise is idle capacity wearing a schedule.**

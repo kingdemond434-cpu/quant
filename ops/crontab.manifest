@@ -233,6 +233,15 @@ QUANT_ROOT=/home/quant/quant-platform
 # CONFIDENCE: committed-script (new this cycle)
 40 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/screen_funding_spread.py >> data/cro_ai_logs/funding_spread_screen.log 2>&1
 
+# FENCE YIELD (L1.43, 2026-07-31): does the governance layer EARN its brain cycles? A fence that
+# has never caught anything is decoration, and this desk added ~15 laws in one session -- L1.26
+# says tooling is never an objective, it competes like everything else. Evidence organ: it
+# proposes no retirements and never fails a build; quiet DETECTORS route to the weekly sweep's
+# recursive-meta, which owns retirement. A quiet RAIL is what you are paying for (L1.23).
+# EVIDENCE: scripts/check_fence_yield.py -> data/fence_yield.json; CONSTITUTION L1.43
+# CONFIDENCE: committed-script (new this cycle)
+25 7 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_fence_yield.py >> data/cro_ai_logs/fence_yield.log 2>&1
+
 # THE LAW GATE, HOURLY (L1.37, principal order 2026-07-31 "enforced 24/7 with every
 # interaction"). The full battery -- portable law fences PLUS the box-only state fences whose
 # verdict is real here. This is the boundary that catches drift arriving WITHOUT a commit:
