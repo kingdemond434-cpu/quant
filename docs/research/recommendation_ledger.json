@@ -2415,11 +2415,11 @@
    "summary": "Funding is SIGNED and public but the sleeve was blind to the sign. resolve_paper_book charges funding always-adverse (correct for MARKING -- a mark must never flatter itself), and nothing anywhere read which side of a perp is being PAID to hold. On Binance USD-M positive funding means longs pay shorts, so at any moment roughly half the instrument-sides collect carry. run_cost_hunt (hourly, cadence bound to the 8h funding stamp) snapshots live signed funding for all 18 instruments, ranks paid vs paying sides, and flags the extreme regime; run_conviction_trader.trade_cost_view prices each call's cost in R BEFORE sizing (size-independent: leverage cancels) and refuses trades above COST_REFUSE_R=0.5R, derived -- at 0.5R the ladder nets 2.5R/-1.5R, a 37.5% breakeven, the sleeve's ceiling accuracy spent entirely on the venue's rake. Selection uses the sign, marking stays adverse: different jobs, different signs. Costs are the only growth lever that needs no proven edge -- known before the trade, and the whole gap between the 25.0% gross breakeven and the 31.1% net one.",
    "roi_bps": null,
    "raised": "2026-07-31T20:01:23.392802+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "run_cost_hunt + trade_cost_view + COST_REFUSE_R veto + carry map in the brief; 11 tests including the sign convention and that the paid side of the same thesis is never refused; ran live against both venues",
+   "commit": "3147179",
    "due": null,
-   "disposed": null
+   "disposed": "2026-07-31T20:05:13.010136+00:00"
   },
   {
    "id": "R0199",
@@ -2427,11 +2427,11 @@
    "summary": "First live cost-hunt run surfaced two facts the desk did not have. (1) Binance's premiumIndex bulk endpoint returns HTTP 451 from this egress region, so all 17 measured funding rates came from the OKX fallback -- the fallback is currently the only feed, not decoration. (2) PAXGUSDT is SINGLE-VENUE: OKX lists no gold swap at all (verified against its full SWAP instrument list), so gold's funding is unmeasurable whenever Binance is unreachable and no retry fixes it. Both were only visible because fetch_funding carries each venue's error onto the NO-DATA row instead of swallowing it -- the build-standard fence caught the original except-pass. Recorded as fallback_exists=false rather than as an outage, since a structural gap and a transient failure demand different responses, and gold is the instrument the principal's own discretionary record is built on.",
    "roi_bps": null,
    "raised": "2026-07-31T20:01:23.445405+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "venue errors carried onto NO-DATA rows; unlisted-contract distinguished from outage via fallback_exists; both findings recorded in DISCRETIONARY_DESK.md",
+   "commit": "3147179",
    "due": null,
-   "disposed": null
+   "disposed": "2026-07-31T20:05:13.066914+00:00"
   }
  ]
 }
