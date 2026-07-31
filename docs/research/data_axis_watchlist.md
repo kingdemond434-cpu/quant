@@ -962,3 +962,24 @@ on this evidence.**
 undocumented. The desk's own recorder must stay primary; btc126 is backfill, not a dependency.
 
 [§33: screened -> data/cny_otc_premium_history.jsonl]
+
+## CN OSS EXTRACTION BATCH — 2026-07-31 (5 new axes; full record: cn_oss_extraction_20260731.md)
+
+Verified same-day out of a principal-supplied survey of 10 CN-ecosystem OSS projects (8 real,
+1 hallucinated, 1 proprietary — verdicts in the extraction record; MINE-NEVER-ADOPT applies).
+Each axis carries a stated mechanism and awaits screen-on-discovery by the seat that ingests it:
+
+1. **CN A-share flow microstructure (Eastmoney/AkShare/Tushare, free)** — northbound Stock
+   Connect flows, dragon-tiger lists, **margin balances**. Mechanism: mainland retail leverage
+   appetite propagates into crypto via the CN-retail channel Card 9 validated (contrarian sign);
+   margin balance is a direct leverage-cycle observable orthogonal to everything collected.
+2. **Liquidation-heatmap / cost-basis reconstruction** — rebuild free from the Coinalyze lead +
+   OI/funding already collected; never buy the proprietary (Claw402) feed. Mechanism: clustered
+   liquidation prices are pre-committed forced flow; cascade fuel measurable ex-ante.
+3. **DexScreener long-tail DEX liquidity + new-listing feed (keyless)** — DEX-first price
+   discovery; deployer/LP behaviour leads CEX listing flows; invisible in current venue feeds.
+4. **Token-holder concentration deltas (Ethplorer/Etherscan family, free tiers)** — supply
+   concentration marks accumulation/distribution before exchange netflow prints; complements the
+   flat-screened Coin Metrics aggregates at wallet resolution.
+5. **Perp-DEX funding, access-segmented venues (Aster/Lighter)** — participant-segmentation
+   (card 22 logic, opposite end): degen-retail funding cohort vs CEX funding spread.

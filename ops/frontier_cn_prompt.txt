@@ -82,11 +82,18 @@ platforms -- so these are DIG TARGETS to strip-mine for axes, data sources, fact
 and mechanism lore, NEVER software to install or run (the RESEARCH-ONLY freeze above applies;
 running third-party agent tooling on this box is a supply-chain vector to a future live-key
 host). s13 licence gate absolute, checked per repo.
-TARGETS: QuantDinger (local-first quant platform), Vibe-Trading (claims 452 alpha factors + 77
-skills), AlphaGPT (symbolic-regression factor mining), NOFX (multi-model self-evolution trading),
-ValueCell (multi-agent finance), cola_ai (DeepSeek+Binance serverless trader), DeerFlow
-(ByteDance research automation), Kimi Work (Moonshot browser agent), evmscope + coin-mcp
-(on-chain/market MCP toolkits).
+VERIFIED 2026-07-31 (same-day web extraction; verdicts + top-5 axes + licence flags recorded in
+docs/research/cn_oss_extraction_20260731.md -- READ IT FIRST, do not re-spend verification):
+DIG-WORTHY: Vibe-Trading/HKUDS (MIT, highest value -- issues #476/#331, discussion #468, Discord;
+452-factor claim TRUE but qlib158/alpha101/gtja191 are the 420/0-refuted price-pattern class, do
+NOT breadth-screen them); AlphaGPT (Apache-2.0, thin -- the in-repo paper/20251226.pdf is the one
+real target); NOFX (AGPL-3.0 -- READ-ONLY, no code lift; 3 mechanism constructions worth carding;
+read OneKey's governance post-mortem before trusting anything operational); QuantDinger (backend
+Apache-2.0 only -- frontend/mobile proprietary); DeerFlow + ValueCell (engine patterns only).
+DEAD -- DO NOT DIG: cola_ai (NOT FOUND, probable hallucination in the source survey); Kimi Work
+(proprietary desktop product, nothing to mine). The 5 extracted axes are already rowed (R0100) and
+in data_axis_watchlist.md -- the seat's job on this tranche is the DEEPER pass: community grounds,
+the AlphaGPT paper, and any data source the bounded extraction missed.
 WHAT TO MINE, priority order:
   1. Their DATA-SOURCE lists and collectors -- any feed they aggregate that we do not collect is
      a candidate axis (route to data_axis_watchlist, screen-on-discovery in the SAME run,

@@ -1207,6 +1207,18 @@
    "commit": "7f1b3b1",
    "due": null,
    "disposed": "2026-07-31T07:29:03.676142+00:00"
+  },
+  {
+   "id": "R0100",
+   "source": "principal",
+   "summary": "CN OSS extraction 2026-07-31: ingest+screen the 5 verified new axes (CN margin/northbound flows, liquidation-heatmap reconstruction, DexScreener long-tail, holder-concentration deltas, perp-DEX funding Aster/Lighter) per data_axis_watchlist batch; engine ideas (AST purity gates, factor lifecycle triage, PnL-selected prompt evolution) evaluated AFTER the R0077 gate repair -- full record docs/research/cn_oss_extraction_20260731.md",
+   "roi_bps": 25.0,
+   "raised": "2026-07-31T08:14:54.594292+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
