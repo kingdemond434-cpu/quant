@@ -28,6 +28,7 @@ from pathlib import Path
 import numpy as np
 
 from libs.research.axis_screen import stage_a_screen
+from libs.research.upbit_data import upbit_daily_close_keyed
 
 
 def _get(u, t=40):
@@ -63,8 +64,9 @@ def llama_chart(u):
 
 
 def kimchi():
-    kb = {str(r["candle_date_time_utc"])[:10]: float(r["trade_price"])
-          for r in _get("https://api.upbit.com/v1/candles/days?market=KRW-BTC&count=200")}
+    # R0060 single source: the OPEN-stamp keying this once inlined carries ~15h look-ahead;
+    # upbit_data owns the corrected close-date join, and the fence pins the copy count at one.
+    kb = upbit_daily_close_keyed()
     res = _get("https://query1.finance.yahoo.com/v8/finance/chart/KRW=X?interval=1d&range=300d"
                )["chart"]["result"][0]
     fx = {datetime.fromtimestamp(int(t), tz=UTC).date().isoformat(): float(c)
