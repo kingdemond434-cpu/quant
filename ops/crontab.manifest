@@ -1077,3 +1077,18 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # EVIDENCE: scripts/run_discretionary_hunt.py -> data/discretionary_hunt.json + discretionary_edges.json
 # CONFIDENCE: committed-script (new this cycle)
 40 23 * * * cd "$QUANT_ROOT" && flock -n data/.cron_dischunt.lock .venv/bin/python scripts/run_discretionary_hunt.py >> data/cro_ai_logs/disc_hunt.log 2>&1
+
+# ---------------------------------------------------------------------------------------------
+# COST HUNT (R0198) -- the one growth lever that needs no proven edge.
+# Costs are known BEFORE the trade, they are the whole gap between the 25.0% gross breakeven and
+# the 31.1% net one, and near breakeven a third of the cost stack is worth more than a point of
+# hit rate. Funding is SIGNED and public: at any moment half the instrument-sides are being PAID
+# to hold, and the sleeve was blind to which half. This snapshots the live rate for every
+# instrument, ranks paid vs paying sides, and flags the extreme-funding regime the trader's cost
+# veto refuses. Selection uses the sign; MARKING stays always-adverse -- different jobs.
+# CADENCE IS DATA-BOUND, not chosen: Binance settles funding every 8h (00/08/16 UTC), so a
+# snapshot older than one stamp is a different regime's rate. Hourly keeps every read inside the
+# 8h freshness contract trade_cost_view declares, with margin for a missed run.
+# EVIDENCE: scripts/run_cost_hunt.py -> data/cost_hunt.json
+# CONFIDENCE: committed-script (new this cycle)
+23 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_costhunt.lock .venv/bin/python scripts/run_cost_hunt.py >> data/cro_ai_logs/cost_hunt.log 2>&1

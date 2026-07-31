@@ -224,6 +224,11 @@ _MAP: dict[str, list[str]] = {
     # hunted for a SECOND. A single hypothesis is one regime change away from none, and the
     # allocator's own arithmetic says an independent second edge beats improving the first.
     "L1.31-discretionary-hunt": ["scripts/run_discretionary_hunt.py"],
+    # R0198: costs are the one growth lever available before any edge is proven -- known BEFORE
+    # the trade, and near breakeven a third of the cost stack is worth more than a point of hit
+    # rate. Funding is SIGNED and public; the sleeve was blind to which sides get PAID to hold.
+    # Selection uses the sign; marking stays always-adverse -- different jobs, different signs.
+    "L1.41-cost-hunt": ["scripts/run_cost_hunt.py"],
     # L1.25a: null streaks throttle nothing -- an organ going quiet is caught by the freshness/
     # productivity wires REGARDLESS of its reason, so "stopped because nothing was working" trips
     # the same fence as "stopped because broken". The pessimism-freeze cannot hide.

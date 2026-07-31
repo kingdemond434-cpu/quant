@@ -413,6 +413,60 @@ _PNL_STATE = "data/paper_book_pnl.json"
 #: "stop_pct: 3" did not reason about the level; it decorated a number.
 STOP_MISMATCH_TOL = 0.25               # relative
 
+#: COST VETO, in R. Derived from the ladder's own payoff: a trade whose expected costs reach 0.5R
+#: nets 2.5R when right and loses 1.5R when wrong, so its breakeven hit rate is 1.5/(2.5+1.5) =
+#: 37.5% -- the sleeve's CEILING accuracy spent entirely on breaking even, with the edge going to
+#: the venue. At current major-perp funding this never binds (a 2% stop, 24h hold, 0.01%/8h is
+#: ~0.015R); it exists for the extreme-funding regime -- 0.3%/8h has been observed on meme perps,
+#: which over a 20h hold at a 0.9% stop is ~0.8R of pure bleed. The refusal is those trades.
+COST_REFUSE_R = 0.5
+
+
+def trade_cost_view(root: Path, symbol: str, direction: str, stop_pct: float,
+                    horizon_hours: float) -> dict[str, Any]:
+    """Expected all-in cost of THIS call, in R, priced BEFORE sizing -- possible because cost in
+    R is size-independent: (cost as a fraction of notional) / (stop as a fraction of price), and
+    leverage cancels.
+
+    Fees and slippage come from the resolver's published venue schedule (maker-in as the plan
+    specifies, taker-out, slippage both sides). Funding is the live SIGNED rate from the cost
+    hunt (R0198) over the call's own horizon: negative means this side is PAID to hold. The
+    freshness contract is 8h -- one funding stamp -- because a rate older than a stamp is a
+    different regime's rate (L1.44).
+
+    ABSENT is a stated state, not a zero: with no snapshot the veto stands down and the flat
+    always-adverse cost model in the resolver carries alone. Fail-open is DELIBERATE here and
+    the direction matters -- a dead cost feed must idle the veto, never the sleeve, because
+    marking still charges costs pessimistically either way; the stale read is recorded."""
+    from scripts.resolve_paper_book import MAKER_FEE, SLIPPAGE, TAKER_FEE
+    stop_frac = stop_pct / 100.0
+    if stop_frac <= 0:
+        return {"state": "ABSENT", "why": "no stop distance -- cost in R is undefined"}
+    fees_R = (MAKER_FEE + TAKER_FEE + 2 * SLIPPAGE) / stop_frac
+    try:
+        from libs.ops.fresh import read_fresh
+        fr = read_fresh("data/cost_hunt.json", max_age_h=8.0,
+                        caller="run_conviction_trader.trade_cost_view", root=root)
+        rate = ((fr.data or {}).get("rates") or {}).get(symbol) or {}
+        if not fr.fresh or rate.get("state") != "MEASURED":
+            return {"state": "ABSENT", "fees_R": round(fees_R, 4),
+                    "why": ("cost hunt stale/absent" if not fr.fresh else
+                            f"no measured funding for {symbol}")
+                           + " -- veto stands down, resolver's adverse cost model carries alone"}
+        from scripts.run_cost_hunt import signed_funding_8h
+        pays_8h = signed_funding_8h(float(rate["funding_8h"]), direction)
+    except Exception as exc:                       # any failure -> veto down, sleeve up, recorded
+        return {"state": "ABSENT", "fees_R": round(fees_R, 4),
+                "why": f"cost view unavailable ({type(exc).__name__}) -- veto stands down"}
+    funding_R = pays_8h * (horizon_hours / 8.0) / stop_frac
+    total = fees_R + funding_R
+    return {"state": "MEASURED", "fees_R": round(fees_R, 4),
+            "funding_8h_signed": round(pays_8h, 8), "funding_R": round(funding_R, 4),
+            "expected_cost_R": round(total, 4),
+            "carry": "PAID" if funding_R < 0 else ("PAYS" if funding_R > 0 else "FLAT"),
+            "why": (f"fees+slippage {fees_R:.3f}R, funding {funding_R:+.3f}R over "
+                    f"{horizon_hours:.0f}h ({'this side is PAID to hold' if funding_R < 0 else 'this side pays'})")}
+
 
 def slip_leverage_cap(stop_pct: float, *, stress_loss: float = MAX_STRESS_LOSS) -> float:
     """The only honest reason to cap notional: a cascade that prints THROUGH the stop costs
@@ -1065,11 +1119,30 @@ def build_brief(root: Path) -> dict[str, Any]:
                 brief["context"][label] = [ln[:300] for ln in lines[-n:] if ln.strip()] or "ABSENT"
         except OSError:
             brief["context"][label] = "ABSENT on this host"
+    # LIVE CARRY MAP (R0198): which sides are PAID to hold right now, and which pay so much the
+    # veto will refuse them. Shown so carry can break ties BETWEEN comparable setups -- the brief
+    # says explicitly that it must never manufacture a thesis on its own, because funding is what
+    # everyone can see, and a trade whose only driver is visible carry is the crowded side of it.
+    try:
+        ch = json.loads((root / "data/cost_hunt.json").read_text("utf-8"))
+        if ch.get("status") in ("MEASURED", "PARTIAL"):
+            brief["context"]["funding_carry"] = {
+                "note": "tie-breaker ONLY -- never a thesis. Between comparable setups prefer "
+                        "the PAID side; the AVOID list will be refused by the cost veto.",
+                "paid_sides": [f"{x['symbol']} {x['direction']} {x['pays_8h']:+.5%}/8h"
+                               for x in (ch.get("best_carry") or [])[:5]],
+                "avoid": [f"{x['symbol']} {x['direction']} {x['pays_8h']:+.5%}/8h EXTREME"
+                          for x in (ch.get("extreme_paying") or [])[:5]] or "none in force"}
+        else:
+            brief["context"]["funding_carry"] = "NO-DATA this window"
+    except (OSError, ValueError):
+        brief["context"]["funding_carry"] = "ABSENT on this host"
     return brief
 
 
 def validate(call: dict[str, Any], *, noise: dict[str, Any] | None = None,
-             heat: dict[str, Any] | None = None) -> tuple[bool, str]:
+             heat: dict[str, Any] | None = None,
+             costs: dict[str, Any] | None = None) -> tuple[bool, str]:
     if call.get("action") == "PASS":
         if not call.get("pass_reason"):
             return False, "REFUSED: a PASS must state why -- an unjustified pass is not a decision"
@@ -1126,6 +1199,16 @@ def validate(call: dict[str, Any], *, noise: dict[str, Any] | None = None,
     if mv / stop < 1.2:
         return False, (f"REFUSED: reward:risk {mv/stop:.2f} < 1.2 -- risking more than the "
                        "expected gain is negative-EV even when the call is right")
+    if (costs and costs.get("state") == "MEASURED"
+            and float(costs.get("expected_cost_R") or 0.0) > COST_REFUSE_R):
+        # The extreme-funding refusal. Not timidity: at 0.5R of cost the ladder nets 2.5R/-1.5R,
+        # a 37.5% breakeven -- the sleeve's ceiling accuracy spent entirely on the venue's rake.
+        # The same thesis re-arrives free of the bleed as the OPPOSITE side elsewhere, or here
+        # after the funding regime turns; the paid-side version of this trade is never refused.
+        return False, (f"REFUSED: expected cost {costs['expected_cost_R']:.2f}R > "
+                       f"{COST_REFUSE_R}R of the risk unit ({costs.get('why', '')[:120]}) -- "
+                       "paying the venue more than half of R needs ceiling accuracy just to "
+                       "break even")
     if len(str(call["driver"])) < 20 or len(str(call["falsifier"])) < 15:
         return False, "REFUSED: driver/falsifier too thin"
     if heat:
@@ -1199,6 +1282,11 @@ def record(root: Path, call: dict[str, Any], *,
     noise_pct = (float(noise["median_adverse_pct"])
                  if noise and noise.get("state") == "MEASURED"
                  and noise.get("median_adverse_pct") is not None else None)
+    # the call's own expected cost in R (R0198) -- carried on the row so the review loop can
+    # later measure whether paid-carry trades out-hit paying ones, which is the next selection
+    # signal this either earns or loses on evidence
+    sizing["costs"] = trade_cost_view(root, str(call["symbol"]), str(call["direction"]),
+                                      stop_pct, float(call["horizon_hours"]))
     plan = management_plan(entry, inval, call["direction"],
                            risk_fraction=sizing["risk_fraction"], leverage=sizing["leverage"],
                            noise_pct=noise_pct)
@@ -1343,7 +1431,19 @@ def main() -> int:
         if call.get("action") != "PASS" and call.get("symbol"):
             heat = {**heat, "fits_risk": size_into_headroom(
                 _ROOT, str(call["symbol"]), MAX_RISK_PER_TRADE)["risk"]}
-        ok, why = validate(call, noise=noise, heat=heat)
+        costs = None
+        if call.get("action") != "PASS":
+            try:
+                stop_c, stop_why = derive_stop_pct(float(call["entry_ref"]),
+                                                   float(call["invalidation"]),
+                                                   str(call.get("direction", "")))
+                if not stop_why:
+                    costs = trade_cost_view(_ROOT, str(call["symbol"]),
+                                            str(call["direction"]), stop_c,
+                                            float(call["horizon_hours"]))
+            except (KeyError, TypeError, ValueError):
+                costs = None                   # malformed call -- validate names the real refusal
+        ok, why = validate(call, noise=noise, heat=heat, costs=costs)
         if not ok:
             state = {"status": "REFUSED", "why": why, "call": call, "noise": noise}
         elif call.get("action") == "PASS":
