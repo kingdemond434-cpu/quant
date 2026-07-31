@@ -738,6 +738,32 @@ hunt less, or fix less — the sole direction this law can be read in is upward.
 constraint is L1.6, untouched: a defect fix still ships with its test, and an idea is still an
 idea until a screen says otherwise.
 
+**L1.41 THE BUILD STANDARD — NOTHING ENTERS BELOW IT** *(principal order 2026-07-31:
+"everything ever built and implemented in quant must be done with all the principles enforced —
+anti-timidity, max aggression, all families — which stops the problem of things ending up timid,
+not following things, not at ceiling, noticed later, from growing in the first place")*.
+
+**EVERY OTHER FENCE ON THIS DESK IS A DETECTOR.** They find the built-never-wired organ, the
+unmeasured-reports-OK check, the cadence nobody decided — *after* those things exist, often days
+later, by which time the desk has been quietly running on them. This law moves the enforcement to
+the **moment of creation** and refuses entry. Its own proving evidence is the session that wrote
+it: **every fence built on 2026-07-31 initially shipped with at least one standard violation** —
+calibration reported OK on zero forecasts, replacement-rate published a phantom-key zero as
+DYING, change-window blocked pre-launch, and the build-standard fence itself shipped with three,
+including an `except: pass`. All were caught by hand. **Hand is not a mechanism.**
+
+**THE FIVE CONDITIONS**, each already a law here: a **REFUSAL PATH** (L1.28a — an organ with no
+vocabulary for "I could not measure" will report OK on absent input); **TESTED** (L2.2);
+**SCHEDULED OR EXEMPT-WITH-A-REASON** (L1.28c — "no cron line" must be a decision, never a
+default); **LAW-MAPPED** (L2.0 — so its failures carry authority); and **NO SILENT SWALLOW**
+(L2.4 — an `except: pass` converts a failure into a success signal for every caller downstream).
+
+**IT GOVERNS ITSELF** — a build-standard fence exempt from its own standard is precisely the
+decoration it exists to detect — and it runs inside the law gate, so **every commit, push and CI
+run enforces it at the boundary**. Its vocabulary lists are deliberately broad and are widened
+when they produce a false positive, **never** by rewording an organ to satisfy the fence: a gate
+that cries wolf is a gate that gets switched off, and that is how enforcement actually dies.
+
 **L1.28c CADENCE IS AGGRESSION — EVERY SCHEDULE HUNTS ITS OWN CEILING** *(principal order
 2026-07-31)*. **Every cadence on this desk aims to increase its frequency to the maximum that
 still carries ROI, and a cadence nobody has tried to raise is idle capacity wearing a schedule.**

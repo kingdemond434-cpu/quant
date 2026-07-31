@@ -150,6 +150,10 @@ _MAP: dict[str, list[str]] = {
     # L1.40: endless generation + defect lenses on the same 6x/day rotation, fixed in-run.
     "L1.40": ["scripts/run_capability_hunt.py", "scripts/check_exploration.py",
               "scripts/run_mutation.py"],
+    # L1.41: nothing enters below the build standard -- prevention at the build boundary rather
+    # than detection days later. The two Stage-A screens are its first governed non-fence organs.
+    "L1.41": ["scripts/check_build_standard.py", "scripts/screen_funding_spread.py",
+              "scripts/screen_collateral_allocation.py"],
     # L1.25a: null streaks throttle nothing -- an organ going quiet is caught by the freshness/
     # productivity wires REGARDLESS of its reason, so "stopped because nothing was working" trips
     # the same fence as "stopped because broken". The pessimism-freeze cannot hide.

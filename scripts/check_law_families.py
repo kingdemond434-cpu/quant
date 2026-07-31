@@ -42,7 +42,7 @@ _ROOT = Path(__file__).resolve().parent.parent
 #: family -> (member law ids, family-level fence, what the family exists to prevent)
 FAMILIES: dict[str, tuple[tuple[str, ...], str, str]] = {
     "aggression": (
-        ("L1.21a", "L1.28", "L1.28a", "L1.28b", "L1.28c", "L1.25a", "L1.35"),
+        ("L1.21a", "L1.28", "L1.28a", "L1.28b", "L1.28c", "L1.25a", "L1.35", "L1.41"),
         "scripts/check_timidity_language.py",
         "the desk quietly doing less than it could -- every organ defaulting to the timid "
         "reading of a restraint, idling a ceiling, slowing after a null, or shipping a cadence "

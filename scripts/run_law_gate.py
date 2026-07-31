@@ -54,6 +54,7 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("check_timidity_language.py", ()),        # L1.28 -- incl. all 18 prompt surfaces
     ("build_enforcement_matrix.py", ()),       # L2.0 -- no law is prose, no fence is an orphan
     ("check_scheduler_manifest.py", ()),       # L1.28c -- every scheduled line is decided
+    ("check_build_standard.py", ()),           # L1.41 -- nothing enters below standard
 )
 
 #: STATE FENCES -- box-only. They measure LIVE STATE (artifacts, ledgers, organ freshness) that
