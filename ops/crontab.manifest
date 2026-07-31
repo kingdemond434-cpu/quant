@@ -244,6 +244,22 @@ QUANT_ROOT=/home/quant/quant-platform
 # CONFIDENCE: committed-script (new this cycle)
 45 */4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_conviction.lock .venv/bin/python scripts/run_conviction_trader.py >> data/cro_ai_logs/conviction.log 2>&1
 
+# PAPER BOOK RESOLVER (R0126): marks EVERY paper call against real bars. Both sleeves above wrote
+# books nobody read -- an unmarked book accumulates confident rows, reports no failure and reads
+# as though the sleeve works, which is the purest L1.28a defect on the desk. Walks the RECORDED
+# management ladder bar by bar (stop, trail to breakeven, adds, trail behind the extreme) so the
+# number is the P&L of the strategy as specified; benchmarks every call against unlevered
+# buy-and-hold over the same window (the L1.6 promotion bar); feeds outcomes to L1.29 calibration,
+# which is what makes an over-confident sleeve shrink its own size. Conventions are published with
+# every report because each one decides the answer: adverse-first intrabar, swing trail simulated
+# as extreme-minus-1R, fills at the level with no slippage. UNRESOLVABLE never becomes a zero.
+# HOURLY: it also feeds the sleeve drawdown rail that halts run_conviction_trader, and a rail is
+# only as alive as its input -- a daily mark would leave that rail blind for 23 hours at a time.
+# Prices: Binance USD-M first, OKX fallback (Binance answers 451 from this egress region).
+# EVIDENCE: scripts/resolve_paper_book.py -> data/paper_book_pnl.json + paper_book_marks.jsonl
+# CONFIDENCE: committed-script (new this cycle, OKX endpoints verified live 2026-07-31)
+20 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_paperbook.lock .venv/bin/python scripts/resolve_paper_book.py >> data/cro_ai_logs/paper_book.log 2>&1
+
 # UNSTRUCTURED EVENT COLLECTOR (R0122b): the feed the LLM sleeve actually trades. EVERY 15 MIN,
 # and the cadence IS the edge: steady-state information latency equals the collection interval,
 # so a 15-min tick means the desk sees a listing/delisting/spec change within 15 minutes of

@@ -10,10 +10,12 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from scripts.run_conviction_trader import (MAX_LEVERAGE, MAX_PEAK_STRESS_LOSS,
-                                           MAX_RISK_PER_TRADE, MAX_STRESS_LOSS, SLIP_STRESS_PCT,
+from scripts.run_conviction_trader import (_BRIEF, MAX_LEVERAGE, MAX_PEAK_STRESS_LOSS,
+                                           MAX_RISK_PER_TRADE, MAX_STOP_PCT, MAX_STRESS_LOSS,
+                                           MIN_STOP_PCT, SLIP_STRESS_PCT, adverse_excursion,
                                            derive_stop_pct, kelly_leverage, management_plan,
-                                           record, slip_leverage_cap, validate)
+                                           noise_floor, record, sleeve_drawdown,
+                                           slip_leverage_cap, validate)
 
 _ENTRY = 4107.4                                   # the screenshot's XAUUSD short, as PAXGUSDT
 
@@ -242,3 +244,82 @@ def test_places_no_orders():
     for banned in ("binance_live", "place_order", "place_market", "place_post_only"):
         assert banned not in src
     assert "PAPER ONLY" in src
+
+
+# ------------------------------------------------------------------ sleeve-level drawdown rail
+
+def test_the_drawdown_rail_is_blind_not_ok_when_the_book_is_unmarked(tmp_path):
+    # L1.28a: an unmarked book means the rail has no data. That must read as BLIND, never as a
+    # clean slate -- "no evidence of a drawdown" and "no drawdown" are not the same statement.
+    d = sleeve_drawdown(tmp_path)
+    assert d["state"] == "NO-HISTORY" and d["halted"] is False and "BLIND" in d["why"]
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data/paper_book_pnl.json").write_text(
+        json.dumps({"status": "UNMEASURED", "equity": {"n": 0}}))
+    assert sleeve_drawdown(tmp_path)["state"] == "NO-HISTORY"
+
+
+def test_a_losing_run_halts_the_sleeve(tmp_path):
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data/paper_book_pnl.json").write_text(json.dumps(
+        {"status": "MEASURED", "equity": {"n": 9, "current_drawdown": 0.42, "max_drawdown": 0.42}}))
+    d = sleeve_drawdown(tmp_path)
+    assert d["state"] == "HALTED" and d["halted"] is True
+    # ...and a sleeve inside the rail keeps trading, aggressively.
+    (tmp_path / "data/paper_book_pnl.json").write_text(json.dumps(
+        {"status": "MEASURED", "equity": {"n": 9, "current_drawdown": 0.10, "max_drawdown": 0.30}}))
+    assert sleeve_drawdown(tmp_path)["halted"] is False
+
+
+# ---------------------------------------------------------- the measured, per-instrument noise floor
+
+def _flat_bars(n=600, start=100.0, wiggle=0.004):
+    """Bars that oscillate by a known amount and go nowhere -- pure noise, no trend."""
+    out, ts = [], 1_780_000_000_000
+    for i in range(n):
+        mid = start * (1 + (wiggle if i % 2 else -wiggle))
+        out.append((ts, mid, mid * 1.001, mid * 0.999, mid))
+        ts += 15 * 60 * 1000
+    return out
+
+
+def test_adverse_excursion_measures_the_wiggle_it_is_given():
+    med = adverse_excursion(_flat_bars(wiggle=0.01), 8.0, "LONG")
+    assert med is not None and 1.0 < med < 3.0          # ~2% peak-to-trough oscillation
+    quiet = adverse_excursion(_flat_bars(wiggle=0.001), 8.0, "LONG")
+    assert quiet < med                                   # a quieter instrument gets a tighter floor
+
+
+def test_too_few_bars_is_unmeasured_never_zero_noise():
+    # Reporting "no noise" from missing data would let every stop through -- the exact inversion.
+    assert adverse_excursion(_flat_bars(4), 24.0, "LONG") is None
+    nf = noise_floor("BTCUSDT", 24.0, "LONG", fetch=lambda *a: ([], "venue down"))
+    assert nf["state"] == "UNMEASURED" and "did NOT pass, it did not run" in nf["why"]
+    assert nf["floor_pct"] == MIN_STOP_PCT                # falls back, and says so
+
+
+def test_a_stop_inside_the_noise_is_refused():
+    # REGRESSION PIN from the first live resolver run: a PAXGUSDT short with a 1.04% structural
+    # stop over 30h was marked -0.13R -- the thesis was RIGHT (gold fell) and ordinary retrace
+    # took it out. Measured floor for that instrument/horizon/direction is ~1.18%.
+    noise = {"state": "MEASURED", "floor_pct": 1.18, "median_adverse_pct": 1.18}
+    ok, why = validate(_t(invalidation=_ENTRY * 1.0104, horizon_hours=30), noise=noise)
+    assert not ok and "INSIDE the noise" in why
+    # ...and a level outside the noise on the same trade is fine.
+    assert validate(_t(invalidation=_ENTRY * 1.02, horizon_hours=30), noise=noise)[0]
+
+
+def test_an_unmeasured_noise_floor_does_not_block_the_trade_but_is_recorded():
+    # UNMEASURED must not become a silent refusal either: a dead price feed would otherwise halt
+    # the sleeve entirely, which is the timid failure of the same coin (L1.28).
+    noise = {"state": "UNMEASURED", "floor_pct": MIN_STOP_PCT, "why": "venue down"}
+    assert validate(_t(invalidation=_ENTRY * 1.006), noise=noise)[0]
+
+
+def test_the_constraint_is_published_but_the_reward_is_not():
+    # The model is TOLD the noise floor (a constraint it must satisfy) and never told where the
+    # sizing optimum sits (a reward it would chase by naming levels that maximise its own size).
+    assert "{noise}" in _BRIEF
+    low = _BRIEF.lower()
+    for leak in ("kelly", "max_risk_per_tra", "slip_stress", "sizing optimum", "1.3-2"):
+        assert leak not in low.replace("fractional-kelly against your probability", "")

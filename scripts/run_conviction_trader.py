@@ -106,8 +106,25 @@ INSTRUMENTS = ("BTCUSDT", "ETHUSDT", "SOLUSDT", "PAXGUSDT")
 MIN_PROB, MAX_PROB = 0.52, 0.90        # below 52% is the other side; 90%+ is an over-confidence tell
 KELLY_FRACTION = 0.5                    # half-Kelly: aggressive but robust to estimate error
 MAX_LEVERAGE = 20.0                    # absolute notional ceiling -- 20x, not the 100x that ruins
-MIN_STOP_PCT = 0.5                      # a stop tighter than this is noise; 100%+ is no stop
+MIN_STOP_PCT = 0.5                      # absolute floor; the REAL floor is derived, see below
 MAX_STOP_PCT = 15.0
+
+#: THE NOISE FLOOR, and the second flat constant on this desk that turned out to be hiding a
+#: defect. MIN_STOP_PCT is a single number applied to gold and to SOL alike -- but a 1% stop is
+#: outside the noise on PAXGUSDT and deep inside it on SOLUSDT, so one of those trades is being
+#: stopped out by wiggle rather than by being wrong. A stop inside the noise converts a correct
+#: thesis into a loss, which is the most expensive way to be right.
+#:
+#: So the floor is MEASURED per instrument and per horizon: over the last few days of bars, take
+#: every rolling window the length of this trade's horizon and record how far price went AGAINST
+#: an entry at the window's start. The median of those is the adverse excursion a random entry
+#: normally survives. An invalidation closer than that is not an invalidation.
+#:
+#: FOUND BY MEASUREMENT, not by argument: the first live resolver run marked a PAXGUSDT short
+#: whose thesis was correct (gold fell) at -0.13R, because a 1.04% structural stop trailed to
+#: breakeven sat inside gold's ordinary retrace.
+NOISE_MULT = 1.0                       # the stop must clear the median adverse excursion
+NOISE_LOOKBACK_HOURS = 96
 MAX_RISK_PER_TRADE = 0.20              # at most 20% of sleeve equity at risk on one call
 
 #: THE GAP-RISK STRESS, and the reason there is a notional ceiling at all. The stop being hit is
@@ -143,6 +160,14 @@ _STRUCTURE_WORDS = (
     "vwap", "liquidity", "order block", "session", "prior day", "prior week", "prior session",
     "base", "neckline", "wick", "close", "open interest", "poc", "value area", "fib", "band",
 )
+
+#: SLEEVE DRAWDOWN HALT. Per-trade risk is bounded; a LOSING RUN is not. At a 20% budget three
+#: stops in a row is -49% of the sleeve, which is why a sleeve-level rail has to exist before real
+#: money does rather than after the first bad week. Read from the resolver's marked equity curve
+#: (R0126) -- which also means this rail is only as alive as the marking is, so an unmarked book
+#: reports NO-HISTORY and never OK (L1.28a).
+SLEEVE_DD_HALT = 0.35                  # same shape as the book's -35% ruin rail (L1.23)
+_PNL_STATE = "data/paper_book_pnl.json"
 
 #: How far the model's own asserted stop_pct may disagree with the level it named before the call
 #: is refused as internally inconsistent. A model that names a swing 1% away and then writes
@@ -309,6 +334,11 @@ THIS IS WHERE YOUR SIZE COMES FROM: the desk sizes risk_budget / stop_distance, 
 at a real swing carries FOUR TIMES the size of a lazy 4% stop on the same edge. Find the tightest
 HONEST invalidation, not a comfortable one -- and not one so tight that noise takes you out.
 
+THE NOISE FLOOR IS MEASURED, PER INSTRUMENT AND PER HORIZON: {noise}
+A level closer than that gets hit by ordinary wiggle rather than by your thesis failing, and the
+desk refuses it. If your level is inside the floor, either name a level further out or ask for a
+SHORTER horizon -- a short horizon has a smaller floor, which is how a tight level stays legal.
+
 YOUR WINNERS ARE RIDDEN, NOT TAKEN. There is no take-profit. The desk moves your stop to
 breakeven at +1R, trails one R behind, and ADDS on strength (1.00u -> 1.50u -> 1.75u) while the
 trend holds, exiting only when price closes back through the trailing structure. So do NOT pick a
@@ -342,6 +372,117 @@ if there is no directional edge -- but a conviction trader that always passes is
 job. Probability must be {lo}-{hi}."""
 
 
+def adverse_excursion(bars: list[tuple[int, float, float, float, float]], horizon_hours: float,
+                      direction: str) -> float | None:
+    """Median adverse excursion over rolling windows of this trade's own horizon, in percent.
+
+    "How far does price normally go against me before the horizon is up?" -- computed from the
+    instrument's own bars rather than assumed. Returns None when there are not enough bars, which
+    the caller must surface as UNMEASURED rather than treat as zero noise."""
+    w = max(1, int(round(horizon_hours * 4)))                # 15m bars
+    if len(bars) < w + 8:
+        return None
+    sign = 1.0 if direction == "LONG" else -1.0
+    excursions = []
+    for i in range(len(bars) - w):
+        ref = bars[i][1]                                     # window's open
+        if ref <= 0:
+            continue
+        window = bars[i:i + w + 1]
+        worst = (min(b[3] for b in window) if sign > 0 else max(b[2] for b in window))
+        excursions.append((ref - worst) * sign / ref * 100.0)
+    if not excursions:
+        return None
+    excursions.sort()
+    n = len(excursions)
+    return excursions[n // 2] if n % 2 else (excursions[n // 2 - 1] + excursions[n // 2]) / 2
+
+
+def noise_floor(symbol: str, horizon_hours: float, direction: str, *,
+                fetch=None) -> dict[str, Any]:
+    """The per-instrument minimum honest stop. UNMEASURED falls back to the flat floor and SAYS
+    SO -- a silent fallback would restore exactly the defect this replaced."""
+    if fetch is None:
+        try:
+            from scripts.resolve_paper_book import fetch_bars as fetch
+        except ImportError as exc:
+            return {"state": "UNMEASURED", "floor_pct": MIN_STOP_PCT,
+                    "why": f"price source unavailable ({exc}); flat floor in use"}
+    now_ms = int(datetime.now(tz=UTC).timestamp() * 1000)
+    span = int((NOISE_LOOKBACK_HOURS + horizon_hours) * 3600 * 1000)
+    bars, source = fetch(symbol, now_ms - span, now_ms)
+    if not bars:
+        return {"state": "UNMEASURED", "floor_pct": MIN_STOP_PCT,
+                "why": f"no bars for {symbol} ({source}); flat floor in use -- the noise check "
+                       "did NOT pass, it did not run"}
+    med = adverse_excursion(bars, horizon_hours, direction)
+    if med is None:
+        return {"state": "UNMEASURED", "floor_pct": MIN_STOP_PCT,
+                "why": f"only {len(bars)} bars, too few for a {horizon_hours}h window"}
+    floor = max(MIN_STOP_PCT, NOISE_MULT * med)
+    return {"state": "MEASURED", "floor_pct": round(floor, 4), "median_adverse_pct": round(med, 4),
+            "bars": len(bars), "source": source,
+            "why": f"a random {horizon_hours}h entry in {symbol} normally goes {med:.2f}% against "
+                   f"itself; an invalidation closer than that is noise, not a thesis failing"}
+
+
+def noise_table(*, horizons: tuple[float, ...] = (8.0, 24.0, 48.0), fetch=None) -> dict[str, Any]:
+    """The floor for every instrument and horizon, published INTO the brief.
+
+    Withholding it would refuse the model's level without ever telling it the rule, which is how a
+    gate becomes noise the caller learns to route around. Note what is published and what is not:
+    the noise floor is a CONSTRAINT the model must satisfy, so it gets it; where the sizing optimum
+    sits is a REWARD it could chase, so it does not."""
+    if fetch is None:
+        try:
+            from scripts.resolve_paper_book import fetch_bars as fetch
+        except ImportError as exc:
+            return {"state": "UNMEASURED", "why": f"price source unavailable ({exc})"}
+    now_ms = int(datetime.now(tz=UTC).timestamp() * 1000)
+    span = int((NOISE_LOOKBACK_HOURS + max(horizons)) * 3600 * 1000)
+    out: dict[str, Any] = {}
+    for sym in INSTRUMENTS:
+        bars, source = fetch(sym, now_ms - span, now_ms)
+        if not bars:
+            out[sym] = f"UNMEASURED ({source}) -- flat {MIN_STOP_PCT}% floor applies"
+            continue
+        row = {}
+        for h in horizons:
+            lo = adverse_excursion(bars, h, "LONG")
+            sh = adverse_excursion(bars, h, "SHORT")
+            row[f"{h:g}h"] = {"LONG": None if lo is None else round(max(MIN_STOP_PCT, lo), 2),
+                              "SHORT": None if sh is None else round(max(MIN_STOP_PCT, sh), 2)}
+        out[sym] = row
+    return {"state": "MEASURED", "min_stop_pct_by_symbol_and_horizon": out,
+            "meaning": "the median distance price goes AGAINST a random entry over that horizon; "
+                       "an invalidation closer than this is refused as noise"}
+
+
+def sleeve_drawdown(root: Path) -> dict[str, Any]:
+    """The sleeve's own drawdown rail, read from the marked paper book (R0126).
+
+    UNMEASURED must never read as OK: an unmarked or unreadable book returns NO-HISTORY, which is
+    reported everywhere it is consumed rather than quietly treated as a clean slate."""
+    try:
+        rep = json.loads((root / _PNL_STATE).read_text("utf-8"))
+    except (OSError, ValueError) as exc:
+        return {"state": "NO-HISTORY", "halted": False,
+                "why": f"paper book not marked on this host ({type(exc).__name__}) -- the "
+                       "drawdown rail is BLIND until resolve_paper_book.py has run"}
+    eq = rep.get("equity") or {}
+    n = int(eq.get("n") or 0)
+    if n == 0:
+        return {"state": "NO-HISTORY", "halted": False,
+                "why": f"book marked but 0 closed calls ({rep.get('status')}) -- rail BLIND"}
+    dd = float(eq.get("current_drawdown") or 0.0)
+    return {"state": "HALTED" if dd >= SLEEVE_DD_HALT else "OK", "halted": dd >= SLEEVE_DD_HALT,
+            "current_drawdown": dd, "max_drawdown": eq.get("max_drawdown"), "n_closed": n,
+            "why": (f"sleeve is {dd:.1%} below its high-water mark, at or past the "
+                    f"{SLEEVE_DD_HALT:.0%} halt" if dd >= SLEEVE_DD_HALT
+                    else f"{dd:.1%} drawdown over {n} closed calls, inside the "
+                         f"{SLEEVE_DD_HALT:.0%} rail")}
+
+
 def build_brief(root: Path) -> dict[str, Any]:
     brief: dict[str, Any] = {"generated": datetime.now(tz=UTC).isoformat(), "context": {}}
     for label, rel, n in (("funding", "data/bitmex_funding.jsonl", 4),
@@ -368,7 +509,7 @@ def build_brief(root: Path) -> dict[str, Any]:
     return brief
 
 
-def validate(call: dict[str, Any]) -> tuple[bool, str]:
+def validate(call: dict[str, Any], *, noise: dict[str, Any] | None = None) -> tuple[bool, str]:
     if call.get("action") == "PASS":
         if not call.get("pass_reason"):
             return False, "REFUSED: a PASS must state why -- an unjustified pass is not a decision"
@@ -405,6 +546,14 @@ def validate(call: dict[str, Any]) -> tuple[bool, str]:
         # being wrong, it is a wick, and it converts a real edge into churn.
         return False, (f"REFUSED: derived stop {stop:.2f}% outside {MIN_STOP_PCT}-{MAX_STOP_PCT} "
                        "-- every conviction trade carries a real structural stop (L1.23)")
+    if noise and noise.get("state") == "MEASURED" and stop < float(noise["floor_pct"]):
+        # NOT a timid refusal: taking this trade means being stopped out by ordinary wiggle on a
+        # thesis that was correct, which is strictly worse than not taking it. The fix is a level
+        # further out or a longer horizon, both of which the model may propose next cycle.
+        return False, (f"REFUSED: stop {stop:.2f}% sits INSIDE the noise -- "
+                       f"{noise.get('median_adverse_pct')}% is the median adverse excursion for a "
+                       f"{call['horizon_hours']}h {call['symbol']} entry, so this level gets hit "
+                       "by wiggle rather than by the thesis failing")
     claimed = call.get("stop_pct")
     if claimed not in (None, ""):
         try:
@@ -483,8 +632,23 @@ def main() -> int:
     if args.brief:
         print(json.dumps(brief, indent=2))
         return 0
+    dd = sleeve_drawdown(_ROOT)
+    if dd["halted"]:
+        # Not timidity: a sleeve this far below its high-water mark has evidence its edge is not
+        # what it claimed, and adding leveraged size to a broken estimate is how books die (L1.23).
+        state = {"status": "HALTED", "why": f"sleeve drawdown rail: {dd['why']}",
+                 "drawdown": dd, "at": datetime.now(tz=UTC).isoformat()}
+        (_ROOT / _STATE).write_text(json.dumps(state, indent=2), "utf-8")
+        print(json.dumps(state, indent=2) if args.json else
+              f"conviction (R0125): HALTED -- {dd['why']}")
+        return 0
+    try:
+        floors = noise_table()
+    except (OSError, ValueError) as exc:
+        floors = {"state": "UNMEASURED", "why": str(exc)}
     raw = _ask(_BRIEF.format(instruments=", ".join(INSTRUMENTS),
                              brief=json.dumps(brief, indent=1)[:5000],
+                             noise=json.dumps(floors)[:1200],
                              lo=MIN_PROB, hi=MAX_PROB,
                              smin=MIN_STOP_PCT, smax=MAX_STOP_PCT))
     call = parse(raw)
@@ -492,16 +656,24 @@ def main() -> int:
         state = {"status": "NO-CALL", "why": "no parseable JSON (auth/quota/refusal)",
                  "at": datetime.now(tz=UTC).isoformat()}
     else:
-        ok, why = validate(call)
+        noise = None
+        if call.get("action") != "PASS" and call.get("symbol") and call.get("horizon_hours"):
+            try:
+                noise = noise_floor(str(call["symbol"]), float(call["horizon_hours"]),
+                                    str(call.get("direction", "LONG")))
+            except (ValueError, TypeError, OSError) as exc:
+                noise = {"state": "UNMEASURED", "floor_pct": MIN_STOP_PCT, "why": str(exc)}
+        ok, why = validate(call, noise=noise)
         if not ok:
-            state = {"status": "REFUSED", "why": why, "call": call}
+            state = {"status": "REFUSED", "why": why, "call": call, "noise": noise}
         elif call.get("action") == "PASS":
             state = {"status": "PASS", "why": why}
         else:
             row = record(_ROOT, call)
             state = {"status": "TRADE", "why": why, "call": row,
                      "leverage": row["sizing"]["leverage"],
-                     "peak_leverage": row["management"].get("peak_leverage")}
+                     "peak_leverage": row["management"].get("peak_leverage"), "noise": noise}
+    state["drawdown_rail"] = dd
     state.setdefault("at", datetime.now(tz=UTC).isoformat())
     (_ROOT / _STATE).write_text(json.dumps(state, indent=2), "utf-8")
     print(json.dumps(state, indent=2) if args.json else

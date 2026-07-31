@@ -168,6 +168,11 @@ _MAP: dict[str, list[str]] = {
     # R0125 conviction sleeve: aggression is L1.28 (uncapped conviction), the rail is L1.23
     # (stop on every trade, leverage cap, inside the ruin rail).
     "L1.23-conviction": ["scripts/run_conviction_trader.py"],
+    # R0126: the marker. Both paper sleeves wrote books nobody ever read -- the purest L1.28a
+    # defect, since an unmarked book accumulates confident rows and reports no failure. This organ
+    # walks the recorded ladder against real bars, benchmarks against buy-and-hold (L1.6) and
+    # feeds the outcome to calibration (L1.29), which is what makes over-confidence self-shrinking.
+    "L1.28a-paper-marks": ["scripts/resolve_paper_book.py"],
     # L1.25a: null streaks throttle nothing -- an organ going quiet is caught by the freshness/
     # productivity wires REGARDLESS of its reason, so "stopped because nothing was working" trips
     # the same fence as "stopped because broken". The pessimism-freeze cannot hide.
