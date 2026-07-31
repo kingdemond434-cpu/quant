@@ -33,7 +33,16 @@ _PRIORS: dict[str, float] = {
     "crowded_known": 0.35,       # published/crowded -> decayed before we arrive
 }
 _BASE_P = 0.15                   # honest base rate: most rigorously-tested candidates fail
-_EV_THRESHOLD = 0.05            # below this, reject immediately (not worth the research-hours)
+# RECALIBRATED 2026-07-31 (R0023/R0034, gate-optimality): 0.05 was dimensionally wrong for this
+# formula. Scored HONESTLY, the desk's single validated family (carry-class: p≈0.2 after priors,
+# est_sharpe 0.8, breadth 60 -> breadth_f 1.73, capacity_f≈1, orth 1, ~20h/1.5x maint) yields
+# EV ≈ 0.009 -- the old bar sat 5x ABOVE the best real candidate ever measured, so honest inputs
+# auto-rejected and only inflated est_sharpe could pass: the gate trained optimism and BLOCKED
+# two generation cycles (R0034). Hard-kill junk (price_only+narrow: p≈0.02-0.03) scores ~0.0002,
+# two orders of magnitude below carry-class, so 0.002 separates cleanly: ~10x above measured
+# junk, ~4x below measured good. A calibration test locks both reference points. Re-tune ONLY
+# from the EV-gate self-audit at n>=50 scored verdicts (constitution item 9), never by feel.
+_EV_THRESHOLD = 0.002           # below this, reject immediately (not worth the research-hours)
 
 
 @dataclass

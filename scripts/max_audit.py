@@ -1924,6 +1924,11 @@ _PRODUCER_CADENCE = {
 #: Artifacts that are terminal by nature: templates, forensic write-ups, protocol libraries. They
 #: accumulate no inventory, so they owe no cadence -- recorded here so "no law" is a DECISION.
 _TERMINAL_ARTIFACTS = {
+    "docs/research/BITMEX_DECADE_INGEST_SPEC.md":
+        "build spec (directive bitmex-ingest-spec, closed 2026-07-31) -- executed via its phase "
+        "artifacts: phase 1 landed same-day (data/bitmex_funding.jsonl, 11,148 rows 2016->now); "
+        "phase 2 is the tranche cron line the spec defines. Conversion is tracked on those "
+        "artifacts, not on this doc.",
     "docs/research/FRONTIER_MINER_TEMPLATE.md": "template spec -- instantiated, not converted",
     "docs/research/GAP34_FORENSIC.md": "forensic write-up for a closed gap",
     "docs/research/self_interrogation_patterns.md": "protocol library -- applied, not converted",
@@ -3196,7 +3201,64 @@ def check_carryover_skipped(defects) -> None:
 
 #: Every check the sweep runs. Module-level so other organs (§37 carry-over) can
 #: enumerate the same set instead of keeping a second copy that silently drifts.
+def check_recommendation_rows(defects) -> None:
+    """§42 X1 wire (2026-07-31): the recommendation ledger joins the carry-over pressure loop.
+
+    Measured before this check existed (meta audit 2026-07-31): NO row older than 3.67 days had
+    ever been implemented -- λ≈14 rows/day arrived, terminal disposals ran ≈3.2/day and almost
+    entirely same-session, so the undone stock grew +10/day and old rows were simply never seen
+    again. Directives, findings and gap-register rows all had max_audit gates; the §42 ledger --
+    the one organ whose law says nothing recommended is ever forgotten -- had none, so the §37
+    brief (built FROM these checks) could not carry its rows across sessions.
+
+    Per-row stable IDs (`rec-owed-R0031`) let the sweep ledger track each row's survival count
+    individually, which is the §37 pressure that actually moves work. The per-row list is capped
+    to the OLDEST offenders so the pager stays readable; the summary defect carries the TRUE
+    totals so the cap hides nothing (no-silent-caps). Grace/due semantics mirror
+    scripts/recommendations.py (GRACE_H=24, terminal={implemented,rejected}); a parity test in
+    tests/test_desk_integrity_checks.py locks the two against drifting apart.
+    """
+    _PER_ROW_CAP = 12
+    d = _j(ROOT / "docs/research/recommendation_ledger.json", {})
+    rows = d.get("recommendations", []) if isinstance(d, dict) else []
+    if not rows:
+        return
+    now = datetime.now(UTC)
+
+    def _age_h(iso):
+        try:
+            return (now - datetime.fromisoformat(iso)).total_seconds() / 3600.0
+        except (TypeError, ValueError):
+            return 0.0
+
+    overdue = []
+    for r in rows:
+        st = r.get("status")
+        if st == "open" and _age_h(r.get("raised", "")) > 24.0:
+            overdue.append((_age_h(r.get("raised", "")), r, "undisposed"))
+        elif st == "scheduled":
+            due = str(r.get("due") or "")
+            if due and due < now.date().isoformat():
+                overdue.append((_age_h(r.get("raised", "")), r, f"scheduled-past-due({due})"))
+    if not overdue:
+        return
+    overdue.sort(key=lambda t: -t[0])
+    for age_h, r, why in overdue[:_PER_ROW_CAP]:
+        defects.append((f"rec-owed-{r.get('id', '?')}",
+                        f"§42: {r.get('id')} {why} {age_h / 24.0:.1f}d "
+                        f"[{r.get('source', '?')}]: {str(r.get('summary', ''))[:120]}"))
+    defects.append(("rec-ledger-backlog",
+                    f"§42: {len(overdue)} recommendation row(s) owe a disposition "
+                    f"({sum(1 for *_, w in overdue if w == 'undisposed')} undisposed past 24h "
+                    f"grace, {sum(1 for *_, w in overdue if w != 'undisposed')} scheduled past "
+                    f"due; oldest {overdue[0][0] / 24.0:.1f}d, {_PER_ROW_CAP} oldest shown "
+                    f"per-row). Dispose via scripts/recommendations.py dispose -- implemented "
+                    f"with --commit, rejected with a real --reason, or scheduled with an "
+                    f"enforced --due. Deleting rows is the denominator trick and is detected."))
+
+
 CHECKS = [("carryover-skipped", check_carryover_skipped),
+          ("recommendation-rows", check_recommendation_rows),
           ("organs", check_organs), ("stubs", check_stub_deaths),
                       ("stale-daemons", check_stale_daemons),
                       ("panel", check_panel), ("coverage", check_coverage),

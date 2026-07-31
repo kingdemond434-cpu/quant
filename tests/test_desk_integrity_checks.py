@@ -154,6 +154,65 @@ class TestOrphanScripts:
         assert _run(monkeypatch, root, m.check_orphan_scripts) == []
 
 
+class TestRecommendationRows:
+    """§42 X1 (2026-07-31): overdue ledger rows surface as carry-over-trackable defects.
+
+    The wire this locks: before it existed, no recommendation row older than 3.67 days had ever
+    been implemented, because nothing re-surfaced rows across session boundaries. These tests pin
+    the per-row stable IDs (what the §37 sweep ledger tracks), the 24h grace, the scheduled-due
+    semantics, and parity with the CLI's own constants."""
+
+    @staticmethod
+    def _iso(hours_ago: float) -> str:
+        from datetime import UTC, datetime, timedelta
+        return (datetime.now(tz=UTC) - timedelta(hours=hours_ago)).isoformat()
+
+    def _run(self, tmp_path, monkeypatch, rows):
+        led = tmp_path / "docs/research/recommendation_ledger.json"
+        led.parent.mkdir(parents=True)
+        led.write_text(json.dumps({"recommendations": rows}), "utf-8")
+        monkeypatch.setattr(m, "ROOT", tmp_path)
+        out: list[tuple[str, str]] = []
+        m.check_recommendation_rows(out)
+        return out
+
+    def test_fresh_open_row_is_within_grace(self, tmp_path, monkeypatch) -> None:
+        out = self._run(tmp_path, monkeypatch, [
+            {"id": "R0001", "status": "open", "raised": self._iso(2), "summary": "s"}])
+        assert out == []
+
+    def test_stale_open_row_fires_per_row_and_summary(self, tmp_path, monkeypatch) -> None:
+        out = self._run(tmp_path, monkeypatch, [
+            {"id": "R0001", "status": "open", "raised": self._iso(72),
+             "summary": "fix the thing", "source": "cycle"}])
+        ids = [k for k, _ in out]
+        assert "rec-owed-R0001" in ids
+        assert "rec-ledger-backlog" in ids
+
+    def test_scheduled_past_due_fires_and_future_does_not(self, tmp_path, monkeypatch) -> None:
+        out = self._run(tmp_path, monkeypatch, [
+            {"id": "R0001", "status": "scheduled", "raised": self._iso(72),
+             "due": "2020-01-01", "summary": "s"},
+            {"id": "R0002", "status": "scheduled", "raised": self._iso(72),
+             "due": "2099-01-01", "summary": "s"}])
+        ids = [k for k, _ in out]
+        assert "rec-owed-R0001" in ids
+        assert "rec-owed-R0002" not in ids
+
+    def test_terminal_rows_are_silent(self, tmp_path, monkeypatch) -> None:
+        out = self._run(tmp_path, monkeypatch, [
+            {"id": "R0001", "status": "implemented", "raised": self._iso(500), "summary": "s"},
+            {"id": "R0002", "status": "rejected", "raised": self._iso(500), "summary": "s"}])
+        assert out == []
+
+    def test_grace_matches_the_cli_source_of_truth(self) -> None:
+        """The check mirrors scripts/recommendations.py rather than importing it (max_audit
+        stays a standalone sweeper); this parity lock is what makes that duplication safe."""
+        import scripts.recommendations as rc
+        assert rc.GRACE_H == 24.0
+        assert set(rc._TERMINAL) == {"implemented", "rejected"}
+
+
 class TestLawNumbers:
     """Two accounts wrote a §38 and a §39 for different laws hours apart."""
 

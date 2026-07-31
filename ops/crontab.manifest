@@ -625,3 +625,13 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # EVIDENCE: data/cro_ai_logs/digest_page.log (4 fires, 2 delivered, 2 ntfy-429 -> retry added)
 # CONFIDENCE: committed-script
 30 8 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/page_digest.py >> data/cro_ai_logs/digest_page.log 2>&1
+
+# GRAVEYARD RESURRECTION ENGINE (L1.16a) -- wired 2026-07-31 after the unlaundered orphan
+# detector re-surfaced it: the script existed, its queue artifact had ZERO readers, and the
+# named best resurrection (options VRP, "starved not wrong", Deribit access now verified) sat
+# invisible in it. Read-only ranker: parses the graveyard by cause-of-death, produces the
+# evidence-driven re-test queue the brain works; it never resurrects anything itself. WEEKLY
+# (Sun) -- its input (the graveyard) accretes slowly, and its consumer is the weekly sweep.
+# EVIDENCE: run 2026-07-31 -> data/graveyard_resurrection_queue.json (n=42, shortlist 2)
+# CONFIDENCE: committed-script
+40 4 * * 0 cd "$QUANT_ROOT" && .venv/bin/python scripts/graveyard_resurrect.py >> data/cro_ai_logs/graveyard_resurrect.log 2>&1

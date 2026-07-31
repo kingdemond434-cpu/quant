@@ -8,19 +8,19 @@
   "miner_seats_productive": {
     "artifact": "data/miner_runway.json",
     "proving_command": "python scripts/check_miner_runway.py --json --report-only",
-    "recorded": "2026-07-30T07:19:13Z",
-    "value": 0.0
+    "recorded": "2026-07-31T07:07:01Z",
+    "value": 0.090909
   },
   "pager_delivered_24h": {
     "artifact": "data/alert_delivery.jsonl",
     "proving_command": "python scripts/run_alert_canary.py",
-    "recorded": "2026-07-30T07:19:13Z",
-    "value": 0.0
+    "recorded": "2026-07-31T07:07:01Z",
+    "value": 1.0
   },
   "scripts_mypy_clean": {
     "artifact": "data/mypy_ratchet.json",
     "proving_command": "python scripts/check_mypy_ratchet.py",
-    "recorded": "2026-07-30T23:45:27Z",
+    "recorded": "2026-07-31T07:07:01Z",
     "value": 0.406844
   },
   "test_strength::libs/execution/staging.py": {

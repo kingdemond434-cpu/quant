@@ -1,6 +1,41 @@
 # GAP REGISTER — live ranked list of known inefficiencies & missing capabilities
 
-_Re-ranked 2026-07-30T12:45Z (R0017 cycle). **The rank moved because the instrument that was
+_Re-ranked 2026-07-31T08:05Z (daily cycle). **The rank moved because the money path came back to
+life and the queue got its missing enforcement wire.** Movements, each verified by artifact:
+
+- **BOOK RESUMED — the top conservatism defect closed.** `_MIN_FUNDING` deleted (R0057/R0066,
+  commit 55da0ec, 4 lock-tests) + executor restarted TWICE onto fixed code (first restart preceded
+  the edit — daemon-stale-code caught in the act; final pid 1541537). First tick 07:21Z:
+  `carries=3` (BTC/BNB/FIL — exactly the majors the floor vetoed). Growth-audit
+  `carry_capital_utilization` NONE-gap → closed by deployment. Watch item: one `OPEN-FAIL ETHUSDT
+  (spot_ok fut_ok=False)`; venue shows no orphan ETH across subsequent ticks; deep semantics is
+  R0020 (due 08-01).
+- **§42 X1 WIRE LANDED (the queue's missing cross-session repair path).** `max_audit` now fires
+  `rec-owed-R<id>` per overdue ledger row (12 oldest + true-total summary), which feeds the §37
+  carry-over brief automatically. 27 overdue rows ALL disposed this cycle (1 implemented,
+  1 rejected with reason, 25 scheduled with enforced dues). P1 prediction (9 rows due 08-01) now
+  has its counter-mechanism; check outcome 08-02 as registered.
+- **Certification read (R0077): the gate question is ANSWERED.** `reports/gauntlet_certification.json`:
+  legacy path admits NOTHING at any true Sharpe up to 15 (sole weld: reality_check); per-candidate
+  path admits from **SR≥5** with 0% null false-pass. At T=310/N=420 the bar is honest and the
+  SAMPLE is the constraint → the T-lever is now specced AND flowing:
+  `docs/research/BITMEX_DECADE_INGEST_SPEC.md` + **11,148 rows of XBTUSD funding 2016→now on disk**
+  (`data/bitmex_funding.jsonl`). Tier-3 flip ask unchanged, restored on the page (R0033, 08-07).
+- **EV gate recalibrated (R0023/R0034):** 0.05 → 0.002 with derivation + 3 reference lock-tests —
+  the old bar sat 5x above the best HONESTLY-scored real family, so honesty auto-rejected and two
+  generation cycles were blocked. Generation unblocks next cycle.
+- **Resurrection engine wired (L1.16a):** `graveyard_resurrect.py` was a true orphan (zero-reader
+  queue); now weekly in the manifest, queue rebuilt (n=42, shortlist: defi_health, multilingual
+  wikipedia attention; options-VRP unlock noted, Deribit verified).
+- **DATED EXITS for the stale-row sweep (register rule, item-level):** #1 live-track-record,
+  #5 data-breadth clocks, #6 factory-pilot-30d = time-gated clocks → DEFER to their own maturity
+  dates (they close by calendar + evidence, not work); #3 pager-delivery → partially evidenced
+  (digest 2/4 + retry added 55da0ec; full verify folded into next real page); #4 fill-quality
+  ledger → 08-03 data batch. Full row-body edit pass with per-row dates is FIRST mechanical item
+  of the 08-01 cycle (ledgered); header dates alone do not satisfy the item-level rule and are
+  not claimed to.
+
+_Prior stamp:_ Re-ranked 2026-07-30T12:45Z (R0017 cycle). **The rank moved because the instrument that was
 supposed to certify the gate turned out never to have asked its question, and because a refuted
 sleeve was found holding a capacity slot.** Two closures and one correction:
 
