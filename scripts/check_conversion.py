@@ -25,6 +25,11 @@ STATUSES (fail LOUD, never advisory):
                sweep prompts, brain briefs) is expected to flip effort from finding to fixing.
                Queueing theory (meta M8): at rho~4, exhortation cannot drain a queue -- only
                capacity or admission control can, and this flag is the admission signal.
+               BOUNDARY (L1.28b(f), principal 2026-07-31): repair-mode redirects DISCRETIONARY
+               ENGINEERING ATTENTION ONLY. It never reduces raw information quantity --
+               collectors, recorders, miners, diggers, screens-on-discovery, forward clocks and
+               every scheduled detector run at full cadence unconditionally. Acquisition is
+               never cut to meet extraction.
   OK           dispositions flowing and backlog under the line.
 
 Artifact: data/conversion_status.json -- consumed by run_max_push.py so conversion debt ranks

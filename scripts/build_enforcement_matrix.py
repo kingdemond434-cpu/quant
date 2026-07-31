@@ -105,6 +105,11 @@ _MAP: dict[str, list[str]] = {
                "check_capacity_runway"],
     # L1.28b: conversion hunts 100% daily -- FLATLINE (7d of silence on a non-empty queue) fails.
     "L1.28b": ["scripts/check_conversion.py"],
+    # L1.25a: null streaks throttle nothing -- an organ going quiet is caught by the freshness/
+    # productivity wires REGARDLESS of its reason, so "stopped because nothing was working" trips
+    # the same fence as "stopped because broken". The pessimism-freeze cannot hide.
+    "L1.25a": ["check_organs", "check_stub_deaths", "check_idle_capability",
+               "scripts/check_ratchets.py"],
 }
 
 # ---------------------------------------------------------------------------------------------

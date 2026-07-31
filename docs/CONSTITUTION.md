@@ -269,6 +269,38 @@ implementation. Only when the instrument is proven sound and the diagnostics are
 a space be declared low-yield — and even then it is priced as low marginal ROI, never
 impossible. Premature surrender is a scored defect of the same class as timidity.
 
+**L1.25a THE HUNT NEVER TIRES — NULL STREAKS THROTTLE NOTHING, ANYWHERE** *(principal order
+2026-07-31; universal — this is L1.25's diagnostic made into a standing metabolic law for EVERY
+organ and EVERY activity, not just alpha discovery)*. **A run of empty results — 430 tested/0
+survivors, a week of honest-null digs, a month of failed screens, an audit that finds nothing —
+carries exactly ZERO authority over effort level.** It has two legitimate readings and only two:
+(1) **the instrument is broken** — planted positive controls decide (L1.25 diagnostic first);
+(2) **this space is picked clean HERE** — in which case the hunt MOVES (new axis, new mechanism
+family, new venue, new horizon, new language, new era) at the **same or higher** rate, taking the
+negative results along as free multiplicity budget and permanent map. **Neither reading ever
+reduces cadence, generation volume, or seat count.** Fatigue-by-null is pessimism-decay — the
+most expensive timidity variant, because generation sits at the top of every funnel: an organ that
+slows after nulls converts a bounded search cost into an unbounded missed-compounding cost.
+
+**THE PROVING INSTANCE IS OUR OWN.** The factory read its 420/0 record as "price space dead,"
+locked its generator on that pool, and generation ran at steady-state ZERO for a week — while the
+record itself turned out to be an instrument artifact (welded gate, L1.25). The pessimism froze
+the hunt *before* the diagnostic ran. This law makes that ordering illegal: **the diagnostic runs
+while the hunt continues, never instead of it.**
+
+**THE OPERATIVE RULE.** (a) A null streak in any organ triggers escalation, not rest: run/request
+the positive control, widen the space, log the negative knowledge — all at full cadence. (b)
+**Survivors are hunted every single day**: forward slots are fed daily from the resurrection
+queue and fresh screens; an empty slot with a non-empty candidate space is an L1.28a idleness
+defect. (c) "Nothing has worked" is a statement about the PAST of one space, never a budget for
+the future of any; effort reallocates toward the widest untested space, it never shrinks. (d) An
+organ, prompt, or plan that lowers its own activity citing a null record commits a scored defect
+of the L1.28 class — the timidity fence's pessimism reading. **FENCED** by the productivity and
+freshness wires that fire on any organ going quiet regardless of its reason: `check_organs` /
+`check_stub_deaths` (L2.4 — an organ that stopped is caught as an artifact fact, and "we stopped
+because nothing was working" trips the same wire as "we stopped because broken"), the
+`miner_seats_productive` ratchet, and `check_idle_capability` (L1.28a).
+
 **L1.26 INVESTMENT OBJECTIVE PRIORITY** *(principal order 2026-07-29)*. Self-improvement,
 architecture, tooling and intelligence-layer upgrades are never objectives; they compete for
 resources against every alternative use on expected contribution to long-term risk-adjusted
@@ -422,7 +454,16 @@ the only failure state.** (c) The §33 miners' pattern is UNIVERSAL: extraction 
 acquisition, and repair scales up to meet detection — **detection is never throttled to hide the
 gap** (that would be timidity wearing a tidiness costume). (d) Backlog above the repair-mode line
 (25 open rows) flips the next audit/brain window from finding to fixing. (e) **Unmeasured
-conversion counts as zero conversion.**
+conversion counts as zero conversion.** (f) **RAW INFORMATION ACQUISITION IS UNTOUCHABLE**
+*(principal order 2026-07-31)*: conversion pressure — repair-mode included — redirects only
+**discretionary engineering attention** (which work the brain or an audit window does first). It
+**never reduces, delays, or touches raw information quantity**: collectors, recorders, miners,
+diggers, screens-on-discovery, forward clocks, fences and every scheduled detector run at full
+cadence **unconditionally**, in repair-mode and out of it. Acquisition is never cut to meet
+extraction — extraction scales up to meet acquisition, always, in both directions of the
+pipeline. A repair-mode that paused a collector would be paying down engineering debt with
+irreplaceable data — the one currency the desk cannot re-earn (deleted-at-source history never
+comes back).
 
 **FENCED**: `scripts/check_conversion.py` measures the ledger daily (arrival rate, disposition
 rate, backlog age, past-due rows) and **fails on FLATLINE** — zero dispositions in 7 days with a
