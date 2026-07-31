@@ -10,8 +10,15 @@ from __future__ import annotations
 
 from pathlib import Path
 
-CONSTITUTION = Path("docs/CONSTITUTION.md").read_text("utf-8")
-DOCTRINE = Path("ops/principal_doctrine.txt").read_text("utf-8")
+
+def _flat(path: str) -> str:
+    # Markdown wraps at 100 cols, so pinned phrases can span newlines and bold markers --
+    # normalise whitespace and strip emphasis before asserting content.
+    return " ".join(Path(path).read_text("utf-8").replace("**", "").split())
+
+
+CONSTITUTION = _flat("docs/CONSTITUTION.md")
+DOCTRINE = _flat("ops/principal_doctrine.txt")
 
 
 def test_hunt_never_tires_in_constitution():

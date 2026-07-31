@@ -70,6 +70,20 @@ SUBSYSTEMS = {
         "for ideas that widen the hypothesis space. INSTITUTIONAL CURIOSITY: what stopped "
         "surprising us, which rejected ideas deserve re-look given new capability. Research "
         "TRAJECTORY: is each cycle making the next stronger (velocity/quality/robustness trend)?",
+    # 9th seat, the 07-31 synthesis's own (F) recommendation made real the same week: the
+    # execution-growth seat found the launch-day money-path cluster days before keys arrive, so
+    # launch-readiness gets an EXPLICIT seat while the stakes are highest. RETIREMENT CONDITION:
+    # after Gate-0 passes AND the first live week completes clean, fold this brief back into
+    # execution-growth (record the retirement in the synthesis that does it).
+    "launch-readiness": "ACTIVE UNTIL GATE-0 + FIRST CLEAN LIVE WEEK. The money path AS WIRED, "
+        "not as designed: walk every command and code path that fires on launch day and in week "
+        "one (deposit recording, capital events, equity sources, ruin-rail arming/re-entry, "
+        "stop placement, connector order paths, guard consumers, kill switches, reconciliation) "
+        "and prove each reads/writes what actually exists -- phantom files, $0-equity paths, "
+        "zero-caller safety code are the defect classes with proven instances. Board-vs-reality: "
+        "does every gate0/readiness board line trace to a real artifact a real writer maintains? "
+        "Drill coverage: which launch-day failures have never been drilled? Assume the launch "
+        "happens TOMORROW and hunt what fires exactly once, that day, wrong.",
 }
 
 
@@ -164,7 +178,15 @@ def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now(tz=UTC).strftime("%Y%m%d")
     results = []
-    for key, brief in SUBSYSTEMS.items():
+    # SEAT ROTATION (E-20, 07-31 synthesis): the dict order ran verbatim every window, so when a
+    # window died mid-sweep the SAME tail seats starved every time (position 8 produced nothing
+    # for days while position 1 re-ran fine). Rotate the starting seat by date -- deterministic
+    # (resume within a day sees the same order) and fair across days: every seat is first once
+    # per cycle through the list.
+    seats = list(SUBSYSTEMS.items())
+    offset = int(stamp) % len(seats)
+    seats = seats[offset:] + seats[:offset]
+    for key, brief in seats:
         # RESUMABLE (2026-07-26): a real report for TODAY means this auditor is done -- skip it,
         # so a sweep killed halfway is CONTINUED by the next invocation (organ_catchup re-fires
         # reset-aware) instead of restarting at auditor one and re-losing the same seat race.
@@ -206,11 +228,16 @@ def main() -> None:
             "(G) RESEARCH CAPABILITY CAGR: a rough composite index (experiment throughput, "
             "hypothesis quality, validation quality, automation, knowledge reuse, implementation "
             "velocity, data coverage) -- is the ENGINE getting stronger week over week?\n"
-            "THEN: append the top portfolio items as dated entries to "
-            "docs/research/improvement_inbox.md (each: exactly-what + evidence + fix + ROI + "
-            "dependencies + retirement condition), and add ONE line to data/PRINCIPAL_ACTION.md "
-            "ONLY if a human decision/spend is required. Blunt; portfolio-prioritized, never "
-            "'implement everything'; nothing high-value lost to neglect."
+            "THEN -- LEDGER FIRST (R0056; the desk's own record proves improvement_inbox.md is "
+            "write-only): row each top portfolio item into the section-42 ledger via "
+            "`.venv/bin/python scripts/recommendations.py add --source deep_sweep --summary "
+            "'...' --roi-bps N` -- DEDUP against open rows first (`recommendations.py report`) "
+            "and cite the existing row id instead of re-adding; then append ONE short pointer "
+            "entry to docs/research/improvement_inbox.md naming the row ids; and add ONE line to "
+            "data/PRINCIPAL_ACTION.md ONLY if a human decision/spend is required. Blunt; "
+            "portfolio-prioritized, never 'implement everything'; nothing high-value lost to "
+            "neglect. L1.28b applies to your own output: an un-rowed recommendation is a finding "
+            "already leaking."
         )
         with contextlib.suppress(subprocess.TimeoutExpired):
             _run(sp, 1800)
