@@ -103,7 +103,7 @@ QUANT_ROOT=/home/quant/quant-platform
 # 2026-07-30 (39 unclaimed fences -> 0) and RATCHETED: a new fence must name the law it serves.
 # EVIDENCE: scripts/build_enforcement_matrix.py (built 2026-07-30); docs/CONSTITUTION.md L2.0/L2.2
 # CONFIDENCE: committed-script (new this cycle)
-13 7 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/build_enforcement_matrix.py >> data/cro_ai_logs/enforcement_matrix.log 2>&1
+13 */6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/build_enforcement_matrix.py >> data/cro_ai_logs/enforcement_matrix.log 2>&1
 
 # IMMUTABLE CONSTITUTIONAL CORE (L2.8a): the organism may amend its own constitution, so five
 # clauses are SHA-256 sealed against it -- L1.1 (the objective function), L1.2 (the hierarchy),
@@ -115,7 +115,7 @@ QUANT_ROOT=/home/quant/quant-platform
 # EVIDENCE: scripts/check_constitution_core.py + data/constitution_core.lock (sealed 2026-07-30);
 #           tests/governance/test_constitution_core.py proves the seal discriminates
 # CONFIDENCE: committed-script (new this cycle)
-7 7 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_constitution_core.py >> data/cro_ai_logs/constitution_core.log 2>&1
+7 */6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_constitution_core.py >> data/cro_ai_logs/constitution_core.log 2>&1
 
 # PROMOTION QUEUE (L1.18a, principal concern 2026-07-30: the shadow->live process must not be so
 # slow that "by the time they reach live the capital is already outgrown its capacity").
@@ -129,7 +129,7 @@ QUANT_ROOT=/home/quant/quant-platform
 # EVIDENCE: scripts/run_promotion_queue.py + libs/research/promotion_latency.py;
 #           tests/research/test_promotion_queue.py (13 tests incl. the accelerant refusals)
 # CONFIDENCE: committed-script (new this cycle)
-53 7 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_promotion_queue.py >> data/cro_ai_logs/promotion_queue.log 2>&1
+53 */6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_promotion_queue.py >> data/cro_ai_logs/promotion_queue.log 2>&1
 
 # MAX PUSH (L1.0, principal order 2026-07-30: "every aspect should always aim and hunt to maximise
 # itself 100% every single day, believing it never is"). The law already said the gap to 100% IS
@@ -144,7 +144,7 @@ QUANT_ROOT=/home/quant/quant-platform
 # Runs LAST in the 06:xx-07:xx governance block so it reads that morning's fresh artifacts.
 # EVIDENCE: scripts/run_max_push.py -> data/max_push_queue.json; docs/CONSTITUTION.md L1.0
 # CONFIDENCE: committed-script (new this cycle)
-41 7 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_max_push.py >> data/cro_ai_logs/max_push.log 2>&1
+41 */6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_max_push.py >> data/cro_ai_logs/max_push.log 2>&1
 
 # UTILISATION (L1.28a, principal order 2026-07-30: "idleness is also timid -- never leave any
 # ceiling or capital idle"). Unused headroom is not safety, it is an unbooked loss. A wrong trade
@@ -157,7 +157,7 @@ QUANT_ROOT=/home/quant/quant-platform
 # equity had TWO sources of truth; every capacity band is a ratio to that number.
 # EVIDENCE: scripts/check_utilisation.py -> data/utilisation.json; docs/CONSTITUTION.md L1.28a
 # CONFIDENCE: committed-script (new this cycle)
-27 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_utilisation.py >> data/cro_ai_logs/utilisation.log 2>&1
+27 */6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_utilisation.py >> data/cro_ai_logs/utilisation.log 2>&1
 
 # TIMIDITY FENCE (L1.28): about two thirds of the constitution's principles contain restraint
 # language, every one of which a language model can degrade into a general licence to do less.
@@ -167,7 +167,7 @@ QUANT_ROOT=/home/quant/quant-platform
 # "propose rather than build" there is a direct instruction to every organ to do less.
 # EVIDENCE: scripts/check_timidity_language.py + tests/governance/test_timidity_fence.py
 # CONFIDENCE: committed-script (new this cycle)
-19 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_timidity_language.py >> data/cro_ai_logs/timidity.log 2>&1
+19 */6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_timidity_language.py >> data/cro_ai_logs/timidity.log 2>&1
 
 # MODEL AUTO-UPGRADE (principal order 2026-07-30: "auto-upgrade to newer flagship models, no human
 # needed"). Model capability is the one input the desk cannot improve by its own work -- it
@@ -523,7 +523,7 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # measure" as satisfied is how capital gets admitted it should not.
 # EVIDENCE: scripts/check_gate0_ready.py -> data/gate0_readiness.json
 # CONFIDENCE: committed-script (new this cycle)
-9 */4 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_gate0_ready.py >> data/cro_ai_logs/gate0_readiness.log 2>&1
+9 * * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_gate0_ready.py >> data/cro_ai_logs/gate0_readiness.log 2>&1
 
 # GENERATION DIVERSITY (HYPOTHESIS_MAX #2/#3/#6, unblocked at Gate 0 entry 2026-07-30). The spec
 # deferred the collapse detector with an explicit trigger -- "build it when generation cadence
@@ -539,7 +539,7 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # EVIDENCE: libs/research/{collapse_detector,variation_blocker,mechanism_fingerprint}.py;
 #           tests/research/test_{collapse_detector,variation_blocker}.py (37 tests)
 # CONFIDENCE: committed-script (new this cycle)
-23 9 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_generation_diversity.py >> data/cro_ai_logs/gen_diversity.log 2>&1
+23 */6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_generation_diversity.py >> data/cro_ai_logs/gen_diversity.log 2>&1
 
 # SAFETY DRILLS (GAP_REGISTER row #2 Gate-0 item (c): "monthly host-death and ladder DRILLS have
 # never been run"). staging.s2_entry_met reads `critical_drill_failures`, and that field defaults
@@ -555,7 +555,7 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # EVIDENCE: scripts/run_drills.py -> data/drill_report.json + data/drill_log.jsonl;
 #           tests/ops/test_drills.py breaks each rail and proves the drill catches it
 # CONFIDENCE: committed-script (new this cycle)
-40 3 * * 1 cd "$QUANT_ROOT" && .venv/bin/python scripts/run_drills.py >> data/cro_ai_logs/drills.log 2>&1
+40 3 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_drills.py >> data/cro_ai_logs/drills.log 2>&1
 
 # --------------------------------------------------------------------------------------------
 # MINER SEATS -- CRON FALLBACK, NO ROOT REQUIRED (2026-07-30). The five seats were systemd-only,
@@ -574,7 +574,7 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 0 15 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-frontier.timer >/dev/null 2>&1 || flock -n /tmp/seat_frontier.lock /bin/bash ops/run_frontier_rotation.sh >> data/cro_ai_logs/seat_frontier.log 2>&1; }
 0 18 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-prospector.timer >/dev/null 2>&1 || flock -n /tmp/seat_prospector.lock /bin/bash ops/run_prospector_dig.sh >> data/cro_ai_logs/seat_prospector.log 2>&1; }
 0 19 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-litminer.timer >/dev/null 2>&1 || flock -n /tmp/seat_litminer.lock /bin/bash ops/run_litminer_dig.sh >> data/cro_ai_logs/seat_litminer.log 2>&1; }
-0 20 1 * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-blindrediscovery.timer >/dev/null 2>&1 || flock -n /tmp/seat_blindrediscovery.lock /bin/bash ops/run_blindrediscovery_dig.sh >> data/cro_ai_logs/seat_blindrediscovery.log 2>&1; }
+0 20 * * 6 cd "$QUANT_ROOT" && { systemctl is-enabled quant-blindrediscovery.timer >/dev/null 2>&1 || flock -n /tmp/seat_blindrediscovery.lock /bin/bash ops/run_blindrediscovery_dig.sh >> data/cro_ai_logs/seat_blindrediscovery.log 2>&1; }
 
 # SUB-ACCOUNT CAPABILITY PROBE (principal order 2026-07-30: "allow our system to create automated
 # subaccounts when needed"). Binance gates sub-account APIs to corporate/broker tiers, so the
@@ -587,3 +587,22 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 #           tests/execution/test_sub_accounts.py (13 tests, all guards exercised)
 # CONFIDENCE: committed-script (new this cycle)
 48 5 * * * cd "$QUANT_ROOT" && .venv/bin/python -c "from libs.execution.sub_accounts import probe; print(probe().detail)" >> data/cro_ai_logs/subaccounts.log 2>&1
+
+# CADENCE MAXIMISATION (principal order 2026-07-31: "maximise and exhaust cadence frequencies for
+# everything if it benefits and has ROI, ignoring costs"). Raised above: max-push, promotion
+# queue, gen-diversity, constitution core, enforcement matrix, utilisation, timidity 6-hourly
+# (each costs seconds of local python; their inputs refresh on the 6h brain/intelligence rhythm,
+# so 6h is the point past which extra runs re-read unchanged inputs); gate0 readiness HOURLY for
+# the launch window; drills DAILY (19 checks in ~3s -- a free daily proof the rails still hold).
+# Two quota-bearing additions below: a 4th daily brain slot and a 2nd frontier dig slot. Both
+# reuse the live entries' own flocks, so if the box's crontab still carries the original lines
+# the flock makes the extra slot a no-op rather than a double-run.
+# DELIBERATELY NOT RAISED, each with its reason: deep sweep stays WEEKLY (8 max-effort auditors;
+# its inputs are the week's work -- 2x/wk would re-audit unchanged state at enormous quota cost);
+# pull_deploy stays */10 (deploy latency is already below any human reaction time); model upgrade
+# stays daily (vendors ship monthly); kimi already at its 6x/day + weekly-deep max, gated on
+# OpenRouter not cadence; venue divergence stays */5 (the 2026-07-21 IP ban was over-frequency).
+# EVIDENCE: this order; GLOBAL BRAIN MUTEX commit fc7302d (two brains, one tree, one quota)
+# CONFIDENCE: committed-script (flock-guarded against the live twins)
+45 8 * * * cd "$QUANT_ROOT" && flock -n /tmp/cro_ai.cron.lock bash ops/run_cro_ai.sh >/dev/null 2>&1
+0 3 * * * cd "$QUANT_ROOT" && { systemctl is-enabled quant-frontier.timer >/dev/null 2>&1 || flock -n /tmp/seat_frontier.lock /bin/bash ops/run_frontier_rotation.sh >> data/cro_ai_logs/seat_frontier.log 2>&1; }
