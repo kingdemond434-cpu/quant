@@ -27,11 +27,15 @@ from __future__ import annotations
 import json
 import re
 import ssl
+import sys
 import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+from scripts import seats  # noqa: E402 -- after the sys.path bootstrap above
+
 KEYS = ROOT / "data/secrets/llm_panel.json"
 CLASSMAP = ROOT / "data/information_class_map.json"
 MECH = ROOT / "docs/research/MECHANISM_GRAPH.md"
@@ -56,26 +60,10 @@ USER = (
 )
 
 
-
-def _doctrine(role: str = "") -> str:
-    """Runtime doctrine preamble. One source (scripts/doctrine.py); never a pasted copy."""
-    try:
-        from scripts.doctrine import preamble
-        return preamble(role)
-    except Exception:  # blind-except intentional (BLE001)
-        try:
-            import sys as _s
-            _s.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent))
-            from doctrine import preamble  # type: ignore
-            return preamble(role)
-        except Exception:  # blind-except intentional (BLE001)
-            return ""          # never break a caller over a preamble
-
-
 def _ask(base, key, model, timeout=240.0):
     body = json.dumps({"model": model, "max_tokens": 3000, "temperature": 1.0,
                        "reasoning": {"effort": "high"},
-                       "messages": [{"role": "system", "content": _doctrine("llm_blind_researcher") + SYSTEM},
+                       "messages": [{"role": "system", "content": SYSTEM},
                                     {"role": "user", "content": USER}]}).encode()
     req = urllib.request.Request(base.rstrip("/") + "/chat/completions", data=body, method="POST",
                                  headers={"Authorization": f"Bearer {key}",
@@ -102,15 +90,15 @@ def main() -> None:
     if not KEYS.exists():
         print("no panel keys")
         return
-    provs = {p["model"]: p for p in json.loads(KEYS.read_text("utf-8"))["providers"]
-             if isinstance(p, dict)}
+    # Live-roster resolution: an upgraded-away seat is substituted (same lab first), not lost.
+    provs = {p["model"]: p for p in seats.resolve(SEATS, n=len(SEATS), role="blind_researcher")}
     vocab = desk_vocabulary()
     print("=== ZERO-CONTEXT BLIND RESEARCHER ===")
     print("    *** UNTESTED SCRIPT -- verify output before trusting it ***")
     print(f"    desk vocabulary: {len(vocab)} terms. Models get NONE of it.\n")
 
     items, per_seat = [], {}
-    for seat in SEATS:
+    for seat in list(provs):
         prov = provs.get(seat)
         if not prov:
             continue

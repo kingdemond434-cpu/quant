@@ -247,7 +247,32 @@ MONTHLY GOVERNANCE (every ~30 cycles via cro_cycle_log length; do ALL of):
    one strong recent model per distinct LAB from the live OpenRouter catalog for max
    cross-training diversity; review the diff, then `--apply` (backs up config, preserves the key,
    logs to data/panel_roster_log.jsonl). Bad picks self-correct via the hit-rate scorer. Keep the
-   roster ~10-12 DISTINCT labs; never let it collapse toward one family.
+   roster ~10-12 DISTINCT labs; never let it collapse toward one family. Its fill-empty-labs
+   target is now DERIVED from the live roster plus a corrected seed — it can never resurrect a
+   lab retired on evidence (mistralai/cohere/microsoft/meta-llama, ledgers #116/#118), and
+   `:free` variants are excluded (they rate-limit and return blanks = a silent seat loss).
+12d. MODEL AUTO-UPGRADE (monthly, fired by scripts/run_cadence.py — DEPTH MAINTENANCE, the
+   counterpart to 12b's diversity maintenance). 12b is deliberately non-upgrading because catalog
+   metadata cannot judge capability; that rule STANDS and is not relaxed here. What changed is the
+   EVIDENCE: a candidate is never adopted for being NEWER, only for PASSING A LIVE GAUNTLET whose
+   four probes each encode a real seat failure — liveness (muse-spark 403), format-parseability
+   (gpt-5.6-terra-pro: 0 parseable rows), anti-fabrication (nova-premier hallucinated a filename),
+   and measured capacity on the real full payload (minimax claimed 1M, blanked at 260k).
+     • `scripts/model_upgrade.py` — OpenRouter seats. Same-lab only, context may never regress,
+       weak/`:free` tiers excluded, anthropic permanently excluded (the panel's worth is being
+       uncorrelated with a Claude brain). Refuses any swap that would cut seat count or lab count.
+       Records `previous` for every promotion; `--rollback` reverts a promoted seat that has since
+       blanked >=3x, so a bad promotion self-heals.
+     • `scripts/brain_model_upgrade.py` — the Claude organs. Discovers via the Anthropic Models
+       API, upgrades each chain slot IN PLACE within its own model family, and DEMOTES the
+       incumbent to the next slot rather than deleting it — so brain_auth_check walks past a
+       starved promotion to known-good on the next cycle. Chain ORDER is never re-ranked: it
+       encodes billing (Max seat vs metered fable pool) and resumability, not capability.
+     • `scripts/seats.py` — organs resolve seats against the LIVE roster, so an upgrade can no
+       longer silently amputate a board (the old provs.get(seat)/continue dropped seats in
+       silence). Substitutions prefer the same lab and are logged; a lost seat pages.
+   A stalled loop is itself a defect: max_audit's `model-freshness` check fires when either
+   surface has not been evaluated within 35d, or when a gauntlet-PASSED upgrade was never applied.
 12c. PANEL FINDING-MEMORY: every triaged finding is recorded to data/panel_verdicts.jsonl and
    digested into docs/research/panel_rulings.md (auto-rebuilt each panel run). At triage, CHECK
    panel_rulings.md BEFORE evaluating new output — a finding matching a prior REJECT with no NEW

@@ -1348,3 +1348,22 @@ Three things that change how other work is read:
   Zero T1 rows now remain; the parser returns 22 queued items.
 - **A missing log is NOT evidence an organ never ran** (reaper deletes ~68 organs' logs 3x/day,
   found independently by two seats). Every prior conclusion of that shape must be re-derived.
+
+## 2026-08-01 EN frontier miner session E -> LEDGER (pointer only; this file is write-only by design)
+
+Rowed as **R0286** (growth_leverage mixes two year-conventions in one output row — cagr/ann_vol at
+ppy=365 beside risk_of_ruin at its default horizon=252, understating annual ruin on the L1.23 rail)
+and **R0287** (return-on-capital-utilized as a reporting invariant; the desk has hit the
+equity-basis shape three times already — R0234/R0235/the 13,155-vs-4,500 split).
+
+One measured fact that changes how other cross-sectional work should be read:
+- **Crypto is NOT raw-material-limited for cross-sectional strategies.** Same estimator over both
+  universes: idiosyncratic share of daily return variance is 0.513 (crypto top-8) / 0.467 (top-30)
+  vs **0.492 for the 8 sector SPDRs**, while cross-sectional dispersion is **3.3–3.8× higher**
+  (0.0283/0.0324 vs 0.0085 daily). The standing intuition that crypto alts are "just leveraged
+  BTC" and therefore offer no cross-section is FALSE at daily frequency on our own data
+  (`data/olps_era_mechanism_test.json`). Cross-sectional kills in the graveyard
+  (`short_term_reversal`, `xsec_lowvol`, `lit_crypto_xsec_size_and_volume`) must be attributed to
+  payoff SHAPE and cost, never to absent dispersion — and `era_olps_olmar_portfolio_selection`
+  says so explicitly in its own lesson field so the row cannot be miscited later.
+[§33: wired -> docs/research/recommendation_ledger.json R0286/R0287]

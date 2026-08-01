@@ -1351,6 +1351,22 @@ def _exc_fields(arm: excitation.Arm, spot_side: str) -> dict[str, Any]:
     if "last_jitter" in _EXC_CADENCE:
         out["exc_cadence_jitter"] = _EXC_CADENCE["last_jitter"]
     return out
+#: GAP #49. How long one pair-execution identity stays live. 300s comfortably spans an
+#: ambiguous timeout plus its retries and a restart-and-reconcile pass, which are the two
+#: paths that re-place an order, while staying far short of the next rebalance.
+_CYCLE_S = 300
+
+
+def _pair_cycle(sym: str, spot_side: str, qty: float) -> str:
+    """Stable identity for ONE logical pair execution, used to make order IDs idempotent.
+
+    Quantity is included because two carries on the same symbol in the same direction and the
+    same rebalance differ by size, and merging them under one ID would suppress the second as a
+    duplicate -- trading a duplicate-fill risk for a missing-fill risk rather than removing it.
+    The coarse time term still bounds how long an ID stays live, so a genuinely new pass tomorrow
+    is never confused with today's.
+    """
+    return f"{sym}:{spot_side}:{qty:.10g}:{int(time.time() // _CYCLE_S)}"
 
 
 def _execute_pair_impl(sym: str, qty: float, spot_side: str, fut_side: str) -> dict[str, Any]:
@@ -1390,10 +1406,17 @@ def _execute_pair_impl(sym: str, qty: float, spot_side: str, fut_side: str) -> d
     # walked COOKIEUSDT through zero into a +916,772 long. reduceOnly makes that impossible.
     # Opens (spot BUY / futures SELL) must NOT be reduceOnly -- they establish the short.
     _reduce_only_leg = spot_side == "SELL"
+    # GAP #49: one cycle token per logical pair execution. Retries of THIS pair reproduce the
+    # same client order IDs regardless of how long the retry took, so the venue dedupes them.
+    # A wall-clock bucket alone would not: an order placed just before a bucket rolls has a
+    # sub-second retry window, after which the duplicate is placed -- and a duplicated leg on a
+    # delta-neutral book is an unhedged directional position.
+    _cycle = _pair_cycle(sym, spot_side, qty)
     with _safe():
         spot_res = spot.place_market(sym, spot_side, qty)
     with _safe():
-        fut_res = fut.place_market(sym, fut_side, qty, reduce_only=_reduce_only_leg)
+        fut_res = fut.place_market(sym, fut_side, qty, reduce_only=_reduce_only_leg,
+                                   cycle=_cycle)
     spot_ok, fut_ok = _filled(spot_res), _filled(fut_res)
     if not (spot_ok and fut_ok):
         with contextlib.suppress(Exception):

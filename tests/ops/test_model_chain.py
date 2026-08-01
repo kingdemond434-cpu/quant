@@ -126,6 +126,12 @@ _ALLOWED = {
     "libs/ops/model_chain.py",    # owns the compiled-in fallback constant
     "ops/brain_env.sh",           # ${_BRAIN_MODEL_CHAIN:-...} default, only if the file is absent
     "tests/ops/test_model_chain.py",
+    # The UPGRADER's own test. Its fixture is definitionally a chain literal: the thing
+    # under test is rewrite_text turning an inline ${_BRAIN_MODEL_CHAIN:-...} default into
+    # the upgraded one, so a transformer's test must contain what it transforms -- exactly
+    # as this file must contain the pattern it greps for. NOT a config pinning an organ to
+    # yesterday's models, which is the only thing this fence exists to stop.
+    "tests/scripts/test_model_upgrade.py",
 }
 
 

@@ -29,11 +29,15 @@ from __future__ import annotations
 import json
 import ssl
 import subprocess
+import sys
 import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+from scripts import seats  # noqa: E402 -- after the sys.path bootstrap above
+
 KEYS = ROOT / "data/secrets/llm_panel.json"
 OUT = ROOT / "data/code_audit.jsonl"
 CTX = ssl.create_default_context()
@@ -70,26 +74,10 @@ SYSTEM = (
 )
 
 
-
-def _doctrine(role: str = "") -> str:
-    """Runtime doctrine preamble. One source (scripts/doctrine.py); never a pasted copy."""
-    try:
-        from scripts.doctrine import preamble
-        return preamble(role)
-    except Exception:  # blind-except intentional (BLE001)
-        try:
-            import sys as _s
-            _s.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent))
-            from doctrine import preamble  # type: ignore
-            return preamble(role)
-        except Exception:  # blind-except intentional (BLE001)
-            return ""          # never break a caller over a preamble
-
-
 def _ask(base, key, model, system, user, timeout=240.0):
     body = json.dumps({"model": model, "max_tokens": 3000, "temperature": 0.2,
                        "reasoning": {"effort": "high"},
-                       "messages": [{"role": "system", "content": _doctrine("llm_code_auditor") + system},
+                       "messages": [{"role": "system", "content": system},
                                     {"role": "user", "content": user}]}).encode()
     req = urllib.request.Request(base.rstrip("/") + "/chat/completions", data=body, method="POST",
                                  headers={"Authorization": f"Bearer {key}",
@@ -113,8 +101,8 @@ def main() -> None:
     if not KEYS.exists():
         print("no panel keys")
         return
-    provs = {p["model"]: p for p in json.loads(KEYS.read_text("utf-8"))["providers"]
-             if isinstance(p, dict)}
+    # Live-roster resolution: an upgraded-away seat is substituted (same lab first), not lost.
+    provs = {p["model"]: p for p in seats.resolve(SEATS, n=len(SEATS), role="llm_code_auditor")}
     diff = recent_diff(N_COMMITS)
     if not diff.strip():
         print("no python diff in the last commits")
@@ -126,7 +114,7 @@ def main() -> None:
 
     user = ("Review this diff. Report only defects causing SILENT WRONG BEHAVIOUR.\n\n" + diff)
     rows = []
-    for seat in SEATS:
+    for seat in list(provs):
         prov = provs.get(seat)
         if not prov:
             print(f"  {seat}: not in roster")

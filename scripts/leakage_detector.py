@@ -76,8 +76,19 @@ def _resid(y, x):
 
 
 def audit(feature, fwd_ret, same_ret=None, name: str = "feature",
-          horizons: dict | None = None, universe: list | None = None) -> dict:
-    """Run every leakage contract. Returns a verdict dict; VERDICT=='CLEAN' is the only pass."""
+          horizons: dict | None = None, universe: list | None = None,
+          compute=None, bars=None) -> dict:
+    """Run every leakage contract. Returns a verdict dict; VERDICT=='CLEAN' is the only pass.
+
+    `compute` + `bars` (optional, backward compatible) add the CONSTRUCTIVE proof to the
+    heuristic rails. The rails below detect leakage that produces implausible NUMBERS -- |IC|
+    over 0.35, Sharpe over 6, contemporaneous dominance. A feature can leak and still post IC
+    0.20: a 1-bar-ahead return smoothed over 5 bars, or full-sample z-scoring, both sail through
+    every rail here and are caught instantly by future invariance (mutate future bars 1000x and
+    prove the past value cannot move). Callers holding the generating function should always
+    pass it -- a proof strictly dominates a heuristic, and this desk's autopsy is 64% MEASUREMENT
+    failures. Callers holding only arrays are unaffected.
+    """
     f = np.asarray(feature, float)
     r1 = np.asarray(fwd_ret, float)
     flags, notes = [], {}
@@ -87,6 +98,20 @@ def audit(feature, fwd_ret, same_ret=None, name: str = "feature",
     if len(f) < MIN_N:
         return {"name": name, "verdict": "UNDERPOWERED",
                 "flags": [f"n={len(f)} < {MIN_N}"], "notes": {}}
+
+    # 0 CONSTRUCTIVE PROOF (runs FIRST when available: it is decisive, the rest are indicative)
+    if compute is not None and bars is not None:
+        try:
+            from libs.features.causal_guard import check_causal
+            _res = check_causal(compute, bars, name=name,
+                                min_periods=int(notes.get("min_periods", 1) or 1))
+            notes["future_invariance"] = _res.message
+            if not _res.ok:
+                flags.append(f"FUTURE LEAKAGE PROVEN: {_res.message} "
+                             f"({_res.n_leaked}/{_res.n_checked} points moved when future bars "
+                             f"were scaled 1000x) -- constructive, not heuristic")
+        except Exception as e:                     # never let the proof's absence weaken the rails
+            notes["future_invariance"] = f"unavailable ({type(e).__name__})"
 
     ic, t_ic = _spearman(f, r1)
     notes["forward_ic"] = round(ic, 4)

@@ -573,3 +573,119 @@ def validate(
         rejection_reason="" if not failed else "failed: " + ", ".join(failed),
         metrics=metrics,
     )
+
+
+def gate_discrimination(gate_results: list[dict[str, bool]]) -> dict[str, dict]:
+    """GAP #71 INSTRUMENTATION -- which gates actually DISCRIMINATE, and which are constants.
+
+    THE MEASURED PROBLEM. `pbo` and `reality_check` are computed ONCE per campaign (they are
+    properties of the returns matrix, not of any candidate) and then applied as PER-CANDIDATE
+    gates. So when campaign PBO is 0.6159 against a 0.50 bar, that gate reads False for every
+    candidate in the campaign -- all 420 of them -- no matter how good any individual one is. The
+    desk's own numbers: 420 candidates tested, ZERO survivors, while the genuinely per-candidate
+    gates discriminated normally (walk_forward 58.1%, fragility 47.9%).
+
+    WHY THIS REPORTS RATHER THAN FIXES. Turning a campaign veto into a rank would LOWER a
+    statistical bar, and this desk's standing research directive is explicit -- *"Never reduce
+    statistical standards. Only improve efficiency."* The gap register dates the redesign and
+    marks it as needing a principal ruling on RANK-not-VETO. So this measures the mechanism
+    instead of quietly relaxing it: a gate that passes everything or fails everything carries
+    zero information about any individual candidate, and the desk should be able to SEE that
+    rather than infer it from an empty survivor list.
+
+    A constant gate is not necessarily wrong. A campaign really can be overfit end to end. What
+    is wrong is not knowing which of the two you are looking at.
+    """
+    if not gate_results:
+        return {}
+    names = list(gate_results[0])
+    n = len(gate_results)
+    out: dict[str, dict] = {}
+    for g in names:
+        passed = sum(1 for r in gate_results if r.get(g))
+        rate = passed / n
+        constant = passed in (0, n)
+        out[g] = {
+            "pass_rate": round(rate, 4), "passed": passed, "n": n,
+            "discriminates": not constant,
+            "note": ("" if not constant else
+                     (f"CONSTANT: this gate {'passed' if passed else 'FAILED'} for all {n} "
+                      f"candidates, so it carries zero information about any individual one. "
+                      + ("A gate failing everything is a campaign-level verdict wearing a "
+                         "per-candidate costume -- the whole campaign is being rejected, not "
+                         "these candidates." if not passed else
+                         "A gate passing everything is not filtering; confirm it is still "
+                         "wired to anything."))),
+        }
+    return out
+
+
+def blocking_constant_gates(gate_results: list[dict[str, bool]]) -> list[str]:
+    """Gates that FAILED every candidate -- the ones that make promotion arithmetically
+    impossible regardless of candidate quality. Empty is the healthy state."""
+    return [g for g, d in gate_discrimination(gate_results).items()
+            if not d["discriminates"] and d["passed"] == 0]
+
+
+def counterfactual_survivors(
+    gate_results: list[dict[str, bool]], waive: list[str] | tuple[str, ...],
+) -> dict:
+    """GAP #71, THE QUESTION A RULING ACTUALLY NEEDS: if these gates were waived, who survives?
+
+    "Should we relax the campaign veto?" is unanswerable in the abstract and trivially answerable
+    from the gate matrix -- but only if someone computes it. It was computed ONCE, by hand, and
+    the result lives in a recommendation-ledger entry nobody re-reads. This makes it an output of
+    every campaign, so the ruling is made against current evidence rather than a remembered one.
+
+    THE MEASURED ANSWER ON THE REAL 420: zero. Waiving `pbo` and `reality_check` produces no
+    survivors, because every candidate ALSO failed at least one genuinely per-candidate gate --
+    which is precisely what the register's "sole-cause failures EMPTY" was recording. Relaxing
+    the veto would not have promoted anything; it would only have changed which failure was
+    reported first.
+
+    That is worth knowing in both directions. It says the campaign veto is not, today, the thing
+    standing between the desk and a validated alpha -- so relaxing it buys nothing and costs a
+    statistical standard. It also says the structural objection to the veto stands on its own
+    merits (campaign PBO rises with generation volume, which contradicts the Two-Stage Discovery
+    Law's "the confirmation bar never rises with generation") rather than on a promise of
+    survivors it cannot keep.
+
+    `independent_estimate` is included as the naive counterfactual for contrast: multiply the
+    surviving gates' pass rates as if they were independent. On the real campaign it predicts
+    ~9 survivors (0.581 x 0.479 x 0.433 x 0.433 x 0.402 = 2.1% of 420) where the true count is
+    ZERO.
+
+    THAT DIRECTION IS THE INFORMATIVE PART, and it is easy to get backwards. Observed BELOW the
+    independent estimate means gate PASSES are negatively associated: a candidate that clears one
+    gate tends to fail another. Which is what a well-designed battery should look like -- the
+    gates are penalising genuinely different failure modes rather than re-measuring one latent
+    "quality" score. (If they were positively associated, the good candidates would sweep every
+    gate and survivors would EXCEED the independent estimate, which would mean the battery is
+    largely one gate wearing five hats.) Across 420 candidates, not one was simultaneously
+    profitable, walk-forward-stable, capacity-viable and tail-acceptable.
+
+    Quoting the independent number as an expected yield would badly oversell any relaxation, so
+    it is reported beside the true count, never instead of it.
+    """
+    if not gate_results:
+        return {"n": 0, "waived": list(waive), "survivors": 0, "survivor_indices": [],
+                "independent_estimate": 0.0, "note": "no candidates -- nothing to counterfact"}
+    waived = set(waive)
+    n = len(gate_results)
+    survivors = [i for i, row in enumerate(gate_results)
+                 if all(ok for g, ok in row.items() if g not in waived)]
+    remaining = [g for g in gate_results[0] if g not in waived]
+    est = 1.0
+    for g in remaining:
+        est *= sum(1 for r in gate_results if r.get(g)) / n
+    return {
+        "n": n, "waived": sorted(waived), "survivors": len(survivors),
+        "survivor_indices": survivors[:20],
+        "independent_estimate": round(est * n, 2),
+        "note": ("waiving these gates promotes NOBODY -- every candidate also fails at least one "
+                 "gate that genuinely discriminates, so the relaxation buys no survivors and "
+                 "costs a statistical standard"
+                 if not survivors else
+                 f"{len(survivors)}/{n} would survive the waiver; this is a PROMOTION-BAR change "
+                 f"and belongs to the principal, not to a screen"),
+    }

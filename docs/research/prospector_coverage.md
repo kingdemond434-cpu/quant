@@ -6,10 +6,10 @@ _Seeded 2026-07-18; every family unvisited -- the first run biases per the rotat
 |---|---|---|---|
 | Podcasts/interviews | 2026-07-19 | 1 | 1 ep (Pavel Kycek, algoadvantage.substack.com) — CLAIM-grade, generic momentum+meanrev, no mechanism; 0 cards |
 | YouTube/talks | never | 0 | untouched this session — priority next run |
-| Forums (deep+legacy) | 2026-07-28 | 2 | s1 (07-25): Bitcointalk ERA-ARCHAEOLOGY opened — boards 8+78 mapped via OP-021; 6 topics mined to reply-depth → 3 graveyard entries + EN era lexicon. **s2 (07-28, session D): QUANTOPIAN ARCHIVE opened + mapped — 52,187 threads confirmed in Wayback (the whole forum); In&Out thread (108 posts) + its live-trade continuation (13) mined to EXHAUSTION → graveyard `era_inout_regime_rotation` (the community's own decomposition kills the crypto port), inbox #71, WS-003 4th confirmation, OP-034 + Quantopian-stratum lexicon, and the full named diaspora record (QC canonical / Quantiacs futures / self-host branch).** Wilmott/EliteTrader/Nuclear Phynance still never touched |
+| Forums (deep+legacy) | 2026-07-28 | 2 | s1 (07-25): Bitcointalk ERA-ARCHAEOLOGY opened — boards 8+78 mapped via OP-021; 6 topics mined to reply-depth → 3 graveyard entries + EN era lexicon. **s2 (07-28, session D): QUANTOPIAN ARCHIVE opened + mapped — 52,187 threads confirmed in Wayback (the whole forum); In&Out thread (108 posts) + its live-trade continuation (13) mined to EXHAUSTION → graveyard `era_inout_regime_rotation` (the community's own decomposition kills the crypto port), inbox #71, WS-003 4th confirmation, OP-034 + Quantopian-stratum lexicon, and the full named diaspora record (QC canonical / Quantiacs futures / self-host branch).** **s3 (2026-08-01, session E): OLMAR/OLPS cluster (20 captures, not the 9 logged) — 3 threads exhausted incl. the paper AUTHOR's in-thread admission; family killed on our own data AND the era's own kill reason refuted (crypto has 3.3–3.8× the dispersion of the sector ETFs OLMAR failed on). WILMOTT FIRST TOUCH DONE after a 4-session carry: 403 direct, 14,890 threads via Wayback, full board map recovered, verdict THIN-BUT-REAL (~5,868 mineable of 14,890; 68% Off-Topic/Politics noise).** EliteTrader/Nuclear Phynance still never touched |
 | Social (X/Discord/Substack) | 2026-07-19 | 1 | 3 Substacks fetched (Maverick Quant, quantjourney [paywalled], algoadvantage) — 0 cards, mostly explainer/content-marketing grade |
 | Code (GitHub/Kaggle) | 2026-07-19 | 1 | operator-named dig: ai_quant_trade, Qbot, QuantDinger, Vibe-Trading (READMEs+issues) + Hummingbot/Freqtrade issues — all infra/framework shells or equity factor zoos, 0 crypto-perp strategy logic; 0 cards but confirmed funding-arb is now commoditized into hummingbot's v2_funding_rate_arb.py (crowding evidence) |
-| Academic (SSRN/arXiv) | never | 0 | untouched this session (RSRS is sell-side research, not SSRN/arXiv) — priority next run |
+| Academic (SSRN/arXiv) | never | 0 | untouched this session (RSRS is sell-side research, not SSRN/arXiv) — priority next run. **2026-08-01: touched only OBLIQUELY — the OLMAR paper (Li & Hoi ICML-2012 #168) was read THROUGH its forum thread, where its author answers questions the paper never addresses. Standing note: for any algorithm with a live practitioner community, the FORUM is a higher-yield read than the paper.** |
 | Records (contests/CTA) | 2026-07-25 | 1 | partial, via forum route: Bitcointalk "Automated Trading Contest" (topic 261086, CryptoTrader.org rounds #1-#5) mined as a contest RECORD — produced the in-sample-vs-forward natural experiment graveyard entry. Kaggle G-Research + Numerai post-mortems still untouched |
 | Non-English forums | 2026-07-26 | 2 | s1 (07-19): Chinese RSRS + funding-arb (CSDN/VeighNa/BigQuant/Zhihu/FMZ) + JP note.com — RSRS EV-killed, ML-funding-rate graveyard-matched. **s2 (07-26, CN frontier miner): axis #76 usdt-cny-otc-premium UN-PARKED — "no clean free API" REFUTED, 3 keyless routes, 591d history reconstructed (OP-031 CDX-replay of a capped JSON API), Stage-A screened 4/4 cells → no promotable edge but the catalogued mechanism's SIGN and MAGNITUDE priors both falsified. New: OP-031, OP-032, CN lexicon.** Era-archaeology (banzhuan/8btc/ChainNode/Tieba) still UNSTARTED — first item next run |
 | AI/HF documentation | 2026-07-19 | 1 | touched only incidentally via Vibe-Trading (AI trading-agent platform) + ai_quant_trade (LLM module) — both infra, not alpha-discovery-process documentation; weak coverage, revisit properly next run |
@@ -313,7 +313,89 @@ ITEMS THIS RUN (bounded per completion contract; depth per item unbounded):
    obligation (the seed list is a floor: harvest venues named *inside* threads, not just the row).
 3. Data axes are hunted on every venue touched, even when the strategy yield is zero — a dig
    returning 0 strategies and 1 new axis is a GOOD dig.
-STATUS: run in progress — per-item results below.
+STATUS: **items 1 and 2 CLOSED. Full results below.**
+
+#### ITEM 1 — CLOSED. OLPS/OLMAR killed on our own data, and the era's OWN kill reason REFUTED. [§33: killed -> docs/graveyard.md era_olps_olmar_portfolio_selection]
+GROUND: the OLMAR cluster is **20 archived threads, not the 9 session D logged** (CDX
+`filter=original:.*olmar.*`) across two strata — the 2014 original wave and the 2019–20 revival.
+- MINED TO EXHAUSTION (all posts, full text): `olmar-implementation-fixed-bug` (65 posts, 2014,
+  the original wave), `comparing-olps-algorithms-olmar-up-et-al-dot-on-etfs` (40 posts, 2019, the
+  family-level comparison), `odd-behavior-olmar-algorithm-and-commissions` (7 posts, 2014).
+- **DEPTH PAID THE WHOLE BILL: the paper's OWN AUTHOR is in the 2014 thread.** Bin Li (Li & Hoi,
+  ICML 2012) replies at posts 19/21 and concedes the algorithm's central defect in his own words:
+  *"in some extreme cases, it does happen that the vector contains one 1 and the rest are 0s. We
+  are still looking methods to control its behaviors."* That admission exists nowhere in the paper.
+- NOVELTY GATE RUN BEFORE COMPUTE (audited harness): nearest prior `short_term_reversal (xsec)`,
+  similarity 0.25, **NOT redundant**. Treated as UNINFORMATIVE rather than a green light — the
+  desk's own 2026-07-30 research-engine audit measured this gate at **0% recall**. The kill below
+  is justified on mechanism and measurement, never on the gate's PASS.
+- **THE ERA'S STATED KILL REASON WAS TESTED AND FAILED.** Grant Kiehne (2019) blamed correlation:
+  OLMAR dies on sector ETFs because they are "an arbitrarily coarsely chopped SPY". That is
+  falsifiable, so it was measured — one estimator, both universes, our own lake, and we happen to
+  hold **the exact 8 sector SPDRs he named**. Idiosyncratic share of daily return variance vs the
+  panel's own leave-one-out equal-weight factor: **crypto top-8 0.513 / top-30 0.467 vs sector
+  ETFs 0.492**, with crypto carrying **3.3–3.8× the cross-sectional dispersion** (0.0283/0.0324 vs
+  0.0085 daily). Crypto is NOT more factor-dominated than the universe that already failed. The
+  convenient conclusion was the wrong one and is recorded as refuted (`data/olps_era_mechanism_test.json`).
+- **WHAT ACTUALLY KILLS IT, measured on our panel** (published rule, PAPER DEFAULTS w=5 eps=10,
+  ONE pre-registered config, no sweep; `data/olps_olmar_crypto_run.json`): gross CAGR **+11.28%
+  vs uniform-CRP +42.24% and BAH +39.38%** — a −31pp/yr deficit at ZERO cost; mean max-weight
+  0.991 → **effective N = 1.02 of 8**, reproducing the author's own confession 14 years later;
+  median turnover **1.851/day** → net −8.06% @5bps, −24.05% @10bps, **−75.49% @39.5bps** (the
+  desk's fail-closed p90). Universe picked on CURRENT liquidity biases the test UP; it fails anyway.
+- **THE LOAD-BEARING NEGATIVE:** the dispersion result is written INTO the graveyard row's lesson
+  field precisely so this kill can never be miscited as "crypto has no cross-section". The family
+  dies on its ALLOCATION RULE, not on the opportunity set.
+- Era self-falsification harvested free (the reply layer, not the headline): Paul Perry's full
+  OLPS-toolbox comparison — *"hard to say that any of these algorithms decidedly beat BAH or CRP…
+  OLMAR is really not outperforming"*; ONS + Borodin et al. (2004) — uniform CRP beats all prior
+  algorithms; **Thomas Wiecki (Quantopian head of research) publishing only after swapping
+  VolumeSlippage→FixedSlippage *because the volume model stopped the rebalance completing*** — the
+  friction WAS the finding; "Blue Seahawk" recomputing a headline 190% to **58% on capital actually
+  utilized vs a 128% benchmark**; Jason Tichy — *"it only seems to work with the seed money of
+  $100k"*, disqualifying for a §42 small book on its own.
+- ROUTED: graveyard row (with an explicit L1.16a re-entry condition — a turnover-constrained OLPS
+  variant holding effective-N>3 and median turnover<0.15 BEFORE any return is computed; a new
+  parameter set is NOT an enabling change), 2 research-memory rows (1 rejected hypothesis, 1
+  validated construction), **OP-035**, inbox pointer, **R0286 + R0287**, 2 data artifacts.
+- ADJACENCY (battery #2) PAID OUT ON OUR OWN CODE: the 2014 thread's defect is an int-vs-float cast
+  in the commission model that silently changed backtest results (CEO-confirmed, zipline#128), and
+  the community's own read was *"members haven't been too concerned with trading costs, to-date,
+  since one would expect that the bug would have been found by now"*. Hunting that SHAPE in our
+  tree found **`libs/risk/growth_leverage.py:124`**: `analyze()` returns `cagr`/`ann_vol`
+  annualized at the caller's ppy (`run_crypto_portfolio.py:186` correctly passes 365) beside
+  `risk_of_ruin()` called with NO horizon, silently using its default **252** — two year
+  conventions in one output row, understating annual ruin on the L1.23 rail. **Verify-don't-trust
+  mattered: my first read flagged ppy=252 as the bug and that was WRONG** — the crypto caller
+  passes 365; the real defect is one line down. Rowed R0286 (freeze barred the fix).
+
+#### ITEM 2 — CLOSED as a genuine FIRST TOUCH (the 4-session silent carry is ended). Wilmott: MAPPED, verdict THIN-BUT-REAL.
+- **ACCESS: 403 direct from this VPS on all three hostnames — a ROUTE negative, not a capability
+  negative** (battery #9). Wayback carries **14,890 unique `viewtopic` threads** (CDX, collapsed,
+  statuscode:200), so the ground is fully open by a §13-clean public-archive route.
+- **BOARD MAP RECOVERED — this is the durable deliverable, because phpBB URLs carry no titles and
+  without it every future run must surface-scan.** Thread counts by board:
+  `f=15 Off Topic 8,200` | `f=10 Programming and Software 2,229` | `f=73 Politics 1,885` |
+  `f=3 General 1,790` | `f=16 Careers 1,717` | `f=4 Technical 1,709` | `f=44 Quantitative Finance
+  Code Library 1,244` | `f=8 Student 1,201` | `f=38 Trading 1,052` | `f=34 Numerical Methods 1,033`
+  | `f=11 Book And Research Paper 830` | `f=26 Brainteaser 721` | `f=41 Economics 475`.
+- **FIRST-PASS VERDICT: THIN-BUT-REAL, and the map is what makes it cheap.** ~68% of the archive
+  (Off Topic 8,200 + Politics 1,885 + Careers/Student) is noise; the mineable core is
+  Trading + Code Library + Technical + Numerical Methods + Book/Research ≈ **5,868 threads**.
+  Wilmott is a derivatives/vol/rates community, so expect execution, microstructure and numerical
+  methods rather than crypto mechanisms — 2 crypto-keyword hits in the 50 titles sampled.
+- **CROSS-PLATFORM CONVERGENCE ON TODAY'S ITEM 1:** Trading board `t=100441` is titled
+  *"Are the online portfolio selection alg. practical approach?"* — an INDEPENDENT community
+  interrogating the exact family killed above. **Honest null: no Wayback capture of that thread
+  body exists** (title recovered from the board listing; CDX returns zero rows for t=100441), so
+  it is title-only evidence and is NOT counted as corroboration of the kill.
+- Named for the next run from the 50 titles sampled: `t=100271` "Probability of limit order being
+  filled given a state of the order book" (execution-reality-model relevant), `t=85860` RenTech
+  strategy-morphing, `t=100638` "Volume as trend detector", `t=100661` factor investing.
+- **OP-035 EARNED ITS KEEP TWICE IN ONE RUN.** Wilmott's 2017 skin uses `itemlist__item
+  topic_read`, NOT phpBB's default `topictitle` — my first two extraction passes returned 0 titles
+  from 115KB pages that were full of them. The class census diagnosed it in one command, on a
+  second platform, hours after the operator was written for the first.
 
 ## SESSION NOTES — CN frontier miner
 
@@ -684,3 +766,140 @@ ITEMS THIS RUN (bounded per completion contract; depth per item unbounded):
 3. **VENUE DISCOVERY (standing obligation) + carried pointer #2 (Gitee/CN-GitHub OP-001 chain).**
    Every run must attempt venues NOT on the seed list; the seed list is a floor.
 STATUS: run in progress — per-item results below.
+
+#### ITEM 1 — CLOSED. Unverified-slang block negative-controlled: **0 of 7 survived.** [§33: wired -> docs/research/search_operator_library.md]
+METHOD (OP-030/OP-037): positive control FIRST — 韭菜/割韭菜/庄家 and 大饼 queried by the same
+pipeline returned abundant live text, so any later zero is attributable to the TERM, not to my
+search method. Then each candidate quoted, in native context. Every construction tried is logged
+below, not just the ones that printed.
+
+**KILLED — 6 of 7, with the nearest REAL form named (that is where the value was):**
+| supplied term | verdict | the real form |
+|---|---|---|
+| 牛季节 "cow season" | KILL — zero exact-match | 牛市 (bull mkt) / **山寨季·山寨币季节** (altseason, live: "山寨季节的味道越来越浓了") |
+| 蜡烛猴 "candlestick monkey" | KILL — zero | 蜡烛图 (candlestick chart) and/or **猴市** ("monkey market" = choppy/range regime) — probable conflation of the two |
+| 新葱 "new onion" | KILL — zero | 小白 / 新韭菜 |
+| 韭菜盒 | KILL — **not a crypto term at all**; 韭菜盒子 is a FOOD (leek pastry) | **韭菜币** (leek-coin) is the real adjacent term |
+| 狗商 | KILL — zero | **狗庄** — prompt's guess CONFIRMED, live 2025-09 usage on Gate square/Toutiao/Foresight |
+| 大鳄鱼 | KILL — zero | **大鳄** — prompt's guess CONFIRMED (People's Daily 2021 "币圈大鳄") |
+| "Kuisancle" | **UNRESOLVABLE** — not pinyin | 亏损 kuīsǔn (loss) is the probable intent but is STANDARD financial vocabulary, so it carries no search-key value either way. Recorded as unresolvable rather than force-fitted |
+
+**THE FINDING IS NOT THE KILL LIST — IT IS WHY A BAD GLOSSARY IS WORSE THAN NO GLOSSARY** (OP-037):
+querying invented slang does not merely waste a query, it returns a CLEAN ZERO, and a clean zero on
+what looks like a native term reads as *"this ground has no coverage"*. Bad vocabulary makes a RICH
+ground look picked clean and the seat then rationally deprioritises it forever. That is a
+manufactured false exhaustion, and it was sitting in this seat's own primary instrument.
+
+**NEW OPERATOR OP-036 — censorship-evasion slang has a BIRTH DATE; pick the key by ERA.** The run's
+best find, and it came out of verifying a term rather than hunting a mechanism. CONFIRMED verbatim
+by two independent CN sources: `最开始叫大饼的是比特天空的群，自从去年94事件之后，为防止敏感词语导致群被封，
+比特天空让大家把比特币称之为大饼` — BTC became 大饼 **specifically so WeChat groups would not be banned
+for typing a filtered word**, dated to the **2017-09-04 "94" ban**. Consequences for our own era ground:
+  - post-2017-09 CN group/forum text searched for 比特币 systematically UNDER-RECALLS the exact layer
+    that matters, because that layer deliberately stopped typing it;
+  - pre-2017-09 archives searched for 大饼 return near-zero — the term did not exist yet, and that
+    zero is a FALSE NEGATIVE about the era, not evidence of an empty archive;
+  - **our 8btc/ChainNode/Tieba ground (2011-2021) straddles the event**, so every single-key search of
+    it was guaranteed to half-miss regardless of effort — and would have read as "the archive is thin".
+  §16 propagation: the mechanism is language-general, only the trigger event changes (KR 2017-12
+  crackdown, RU post-2022 sanctions, TR 2021 payment ban). Standing question added for every region
+  seat: *what regulatory event hit this ground, and what did the vocabulary do on that date?*
+
+**LEXICON: +14 rows to the operator-library table**, all confirmed in live text this run, incl. the
+COIN-NICKNAME EUPHEMISM CLASS which is the layer that never types a ticker — 大饼 BTC, 二饼/姨太 ETH,
+太子 BCH, 末日战车 ETC, 柚子 EOS, 辣条 LTC. **Trap recorded: 薄饼 is PancakeSwap, NOT bitcoin** — a
+near-homograph of 大饼 meaning something unrelated. Also added the manipulation-mechanics set
+(洗盘/控盘/诱多/诱空/砸盘 — 控盘 "float control" is the mechanism-bearing one), the regime term 猴市,
+and the retail-positioning set (套牢/踏空/割肉/装死/纸手/钻石手).
+SCREEN-ON-DISCOVERY: nothing to screen — item 1 produced an INSTRUMENT upgrade (recall), not a data
+axis or a mechanism. Stated plainly rather than manufacturing a screen to look productive.
+
+### SESSION CLOSE 2026-08-01 session E (EN frontier miner) — DEPTH LINE, BATTERY, STANDING TEST
+
+**STANDING TEST — "Which artifact on disk is different because of what was mined?"**
+`docs/graveyard.md` (`era_olps_olmar_portfolio_selection`, with its L1.16a re-entry condition),
+`data/olps_era_mechanism_test.json`, `data/olps_olmar_crypto_run.json`, OP-035 in the operator
+library, 2 research-memory rows (rm-20260801T122725-080a44 rejected / -a80d0a validated),
+R0286 + R0287 in the recommendation ledger, the improvement-inbox pointer, and this note.
+**Cycle CONVERTED** — and the conversion is a KILL plus a REFUTATION, both first-class (L1.17).
+
+**DEPTH LINE (honest, per mandate):**
+- `olmar-implementation-fixed-bug` (2014, 65 posts): **EXHAUSTED** — reply-chain depth is what
+  surfaced Bin Li, the paper's own author, conceding the weight-collapse defect. Surface would
+  have given a code listing and nothing else.
+- `comparing-olps-algorithms-olmar-up-et-al-dot-on-etfs` (2019, 40 posts): **EXHAUSTED** — the
+  headline is a comparison notebook; the value is at reply 24, where a third party recomputes a
+  190% headline to 58% on capital actually utilized, and at reply 30 where the community
+  *"utterly amazed that we are all so blindly trusting"* records its own methodological collapse.
+- `odd-behavior-olmar-algorithm-and-commissions` (2014, 7 posts): **EXHAUSTED**; citation chain
+  followed out to zipline#128, quantopian/quantopian-algos, `cais.ntu.edu.sg/~chhoi/olps/`,
+  JMLR li11b (the PAMR/CWMR predecessor), NIPS 5436.
+- OLMAR cluster as a whole: **17 of 20 captures remain** — NOT exhausted, and no such claim made.
+- Quantopian archive as a whole: **mapped, NOT exhausted** (52,187 threads).
+- Wilmott: **MAPPED, NOT mined** — board map + 50 sampled titles only; 5,868 mineable threads.
+- MECHANISM DEPTH beyond the text: the era's qualitative claim was converted into a quantitative
+  measurement on our own lake. That is the layer past where the dig would normally stop.
+
+**NEXT RUN TAKES FIRST (the chain — do not re-surface-scan the above):**
+1. **Wilmott f=38 Trading + f=44 Code Library title harvest to completion** (~2,300 threads; the
+   board map and the working `itemlist__item` selector make this cheap now), then mine the
+   execution/microstructure seam — `t=100271` limit-order fill probability is the named entry.
+   Wilmott's derivatives crowd is the desk's best EN ground for EXECUTION reality, not alpha.
+2. **OLMAR cluster remainder** — `long-slash-short-olmar-hack` (2020, 33KB, the long/short variant
+   the graveyard row's re-entry condition would have to beat) and `mean-reverting-excess-returns-
+   olmar-idea`. Both are now cheap and both are potential re-entry-condition evidence.
+3. "Quality Companies in an Uptrend" (still carried from session D — carried TWICE now, name it
+   again next run rather than letting it go silent a third time).
+
+**STANDING DIASPORA QUESTION:** unchanged and still open — the QC "Amazing returns" superthread
+(did In&Out survive the 2022 bond crash, the natural experiment the era never saw). Wilmott adds a
+second diaspora question: Wilmott is a LIVE forum that went 403-to-bots, so its practitioners are
+still somewhere — the board map shows Careers (1,717) and Events (475) boards, which are where
+migration announcements live.
+
+**VENUE DISCOVERY (standing obligation — the seed list is a floor):** attempted and honestly THIN
+this run. Harvested from inside the threads mined, not from the seed list: `cais.ntu.edu.sg/~chhoi/
+olps/` (the OLPS authors' own project site + toolbox — an academic-lab venue, RICH for this family
+and the canonical index of every OLPS variant), `github.com/quantopian/quantopian-algos` (the
+era's official algo repo, RICH), `nbviewer`-hosted `github.com/paulperry/quant` (a practitioner's
+own comparison notebooks, RICH), `github.com/Marigold/universal-portfolios` (Vinkler's
+implementation + thesis, named in-thread). Verdicts recorded here so nobody re-spends on them.
+
+**PROACTIVE BATTERY (moves run, honestly reported — a move that produced nothing is named):**
+- **#2 ADJACENCY — PAID OUT, on our own code.** The era's int/float commission cast → hunted the
+  same convention-constant shape in our tree → `growth_leverage.py:124` mixes ppy-annualized
+  cagr/ann_vol with a hardcoded 252-day ruin horizon. Rowed R0286.
+- **#3 CONFIG-VS-OUTCOME.** Every claim above names its artifact. Specifically: the Quantopian
+  backtest stat tables are AJAX-loaded and every captured value is the placeholder `--`, so era
+  performance numbers in that archive are CLAIMS, never platform-computed stats (written into
+  OP-035). This is why the era's own in-thread RECOMPUTATIONS are the valuable objects.
+- **#9 SCOPE THE NEGATIVE RESULT — twice.** Wilmott 403 was scoped to "this VPS is blocked on the
+  live site", NOT "Wilmott is inaccessible" (14,890 threads say otherwise). The zero-title
+  extraction was scoped to "wrong selector for this skin", NOT "the board pages are empty".
+- **#4 REGRESSION SWEEP — what this run made worse:** the graveyard gains a long row whose
+  dispersion caveat MUST travel with any citation of it; mitigated by writing the caveat into the
+  row's own lesson field rather than relying on a reader's memory. R0286/R0287 add 2 rows to a
+  conversion queue the desk already measures as over-subscribed — real cost, named, not hidden.
+- **#10 RATCHET CHECK.** Two counts this run beat their recorded predecessors and should not fall:
+  OLMAR captures located 9 → **20**; EN region grounds with a mapped board structure 1 (Quantopian)
+  → **2** (+Wilmott). Both are floors.
+- **#1/#5/#6/#7/#8 produced nothing beyond the above this run — reported as such, not skipped.**
+
+**COMMIT STATE — READ THIS IF THE ARTIFACTS BELOW ARE MISSING (concurrency hazard, R0135 class).**
+Item 1's kill landed in commit `6e4c9b2` (graveyard + both data artifacts) and the write-first note
+in `e995cb3`. **The remaining output — OP-035, the inbox pointer, and this entire session note —
+was still uncommitted at session close because a SIBLING session left an open `git merge`
+(`MERGE_HEAD` → `3bf89cd`) across ~50 files including `libs/execution/binance_live.py`.** Its
+conflicts were resolved (0 `UU`) but uncommitted, and git refuses a partial commit during a merge,
+so the only way to save this note would have been to AUTHOR the sibling's unreviewed money-path
+resolution as my own commit. Under L1.38 (sterile cockpit) and this seat's research-only freeze
+that is not mine to do, so I declined and left the merge alone. All four touched docs are backed
+up at `/tmp/olmar/backup/` (`prospector_coverage.md`, `search_operator_library.md`,
+`improvement_inbox.md`, `graveyard.md`); restore from there if the merge was aborted rather than
+committed. Four Claude sessions were live in this tree during this run.
+
+**SEAT-EXHAUSTION CHECK (L1.35):** false, as always. Named un-exhausted ground at close: 17 OLMAR
+captures, 52,187 Quantopian threads, 5,868 mineable Wilmott threads, EliteTrader and Nuclear
+Phynance never touched, Kaggle G-Research and Numerai post-mortems never touched, the Academic
+(SSRN/arXiv) family still never touched directly. The forest is not thin; this seat is bounded
+per-run by design.

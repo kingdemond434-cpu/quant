@@ -28,6 +28,7 @@ Stage-A only, zero promotion authority. Run from repo root.
 from __future__ import annotations
 
 import json
+import os
 import re
 import ssl
 import subprocess
@@ -40,6 +41,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
+from scripts import seats  # noqa: E402 -- after the sys.path bootstrap above
 
 KEYS = ROOT / "data/secrets/llm_panel.json"
 FEED = ROOT / "data/breadth_expansion.jsonl"
@@ -49,7 +51,11 @@ CTX = ssl.create_default_context()
 
 # code-strong flagships; yield table below is the real selection evidence
 SEATS = ["deepseek/deepseek-v4-pro", "moonshotai/kimi-k3", "x-ai/grok-4.3"]
-N_TARGETS = 3          # sources attempted per run
+# Sources attempted per run. Was 3, against a breadth feed that grows faster than 3/day -- so
+# the conversion bottleneck this script exists to close was itself throttled below the inflow
+# rate, and the backlog could only ever grow. Overridable per-run; the cost is one LLM call per
+# (source x seat) and the static-scan + isolated-subprocess safety path is unchanged.
+N_TARGETS = int(os.environ.get("COLLECTOR_N_TARGETS", "8"))
 
 BANNED = re.compile(
     r"\b(subprocess|os\s*\.\s*(system|popen|remove|unlink|environ)|eval\s*\(|exec\s*\("
@@ -169,8 +175,9 @@ def main() -> None:
     if not (KEYS.exists() and FEED.exists()):
         print("missing panel keys or breadth feed")
         return
-    provs = {p["model"]: p for p in json.loads(KEYS.read_text("utf-8"))["providers"]
-             if isinstance(p, dict)}
+    # Live-roster resolution: an upgraded-away seat is substituted (same lab first), not lost.
+    provs = {p["model"]: p for p in seats.resolve(SEATS, n=len(SEATS), role="collector_author")}
+    seated = list(provs)
     tried = set()
     if DONE.exists():
         tried = {json.loads(x).get("source") for x in DONE.read_text("utf-8").splitlines()
@@ -194,10 +201,10 @@ def main() -> None:
         return
     targets = cands[:N_TARGETS]
     GEN.mkdir(exist_ok=True)
-    print(f"=== COLLECTOR AUTHOR | {len(targets)} sources x {len(SEATS)} flagship seats ===")
+    print(f"=== COLLECTOR AUTHOR | {len(targets)} sources x {len(seated)} flagship seats ===")
     print("    (executes model-written code -- static scan + isolated subprocess + timeout)\n")
 
-    jobs = [(t, s) for t in targets for s in SEATS if s in provs]
+    jobs = [(t, s) for t in targets for s in seated]
 
     def _gen(j):
         t, seat = j

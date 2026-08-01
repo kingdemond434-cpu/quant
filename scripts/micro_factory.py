@@ -30,6 +30,7 @@ Read-only. No keys, no LLM. Run from repo root.
 """
 from __future__ import annotations
 
+import argparse
 import gzip
 import json
 from datetime import UTC, datetime
@@ -40,9 +41,38 @@ import numpy as np
 ROOT = Path(__file__).resolve().parent.parent
 MOAT = ROOT / "data/moat/fut"
 OUT = ROOT / "data/micro_features.json"
-SYMS = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT", "DOGEUSDT"]
-N_FILES = 60          # most recent contiguous hours per symbol
+STORE = ROOT / "data/micro_feature_store.json"
+
+# SYMBOLS ARE DISCOVERED, NOT HARDCODED. This was a literal 5 -- BTC/ETH/SOL/XRP/DOGE -- while
+# run_recorder_bybit.py records TWENTY. So three quarters of the symbols the desk pays to record
+# were never read by the factory that exists to mine them, and adding a symbol to the recorder
+# silently did nothing. Reading the directory means the two can never drift again.
+_SYMS_FALLBACK = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT", "DOGEUSDT"]
 ROLL = 24             # hours of history for the withdrawal z-score
+
+
+def recorded_symbols() -> list[str]:
+    """Every symbol with recorded books on disk -- the real breadth of the moat."""
+    if not MOAT.exists():
+        return _SYMS_FALLBACK
+    found = sorted(d.name for d in MOAT.iterdir()
+                   if d.is_dir() and any(d.glob("*.jsonl.gz")))
+    return found or _SYMS_FALLBACK
+
+
+def load_store() -> dict:
+    """Feature cache: {'SYM/hour': row}. Missing/corrupt reads degrade to a cold pass."""
+    try:
+        return json.loads(STORE.read_text("utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def save_store(store: dict) -> None:
+    STORE.parent.mkdir(parents=True, exist_ok=True)
+    tmp = STORE.with_suffix(".json.tmp")        # atomic: a killed run must not corrupt the cache
+    tmp.write_text(json.dumps(store), "utf-8")
+    tmp.replace(STORE)
 
 
 def book_features(rec: dict) -> dict | None:
@@ -83,11 +113,32 @@ def book_features(rec: dict) -> dict | None:
             "slope": (d10b + d10a) / near}
 
 
-def hourly(sym: str) -> list[dict]:
+def hourly(sym: str, n_files: int | None = None, store: dict | None = None) -> list[dict]:
+    """Per-hour microstructure features for one symbol.
+
+    `n_files=None` means THE WHOLE RECORDED HISTORY. It used to be a hard `[-N_FILES:]` = the
+    most recent 60 hours, so the desk's only proprietary asset -- 4.4GB of order books it pays
+    to record continuously -- was being read 2.5 days at a time. Everything older was storage
+    cost with zero research yield, and no signal with a horizon longer than ~2 days could even
+    be expressed, let alone tested.
+
+    `store` is the FEATURE CACHE, keyed by (symbol, hour-file). feature_library.py stated the
+    problem outright: features were "COMPUTED AND DISCARDED. Each one cost a full pass over
+    4.4GB of order books and none is reachable without re-reading it." Per-hour rows are
+    immutable once written -- a completed hour never changes -- so re-deriving them every run
+    was pure waste, and that waste is what made full-history passes look unaffordable.
+    """
     d = MOAT / sym
-    files = sorted(d.glob("*.jsonl.gz"))[-N_FILES:]
+    files = sorted(d.glob("*.jsonl.gz"))
+    if n_files is not None:
+        files = files[-n_files:]
     out = []
     for f in files:
+        if store is not None:
+            hit = store.get(f"{sym}/{f.stem}")
+            if hit is not None:                 # immutable completed hour -- never re-scan it
+                out.append(hit)
+                continue
         vals: list[dict] = []
         try:
             with gzip.open(f, "rt", encoding="utf-8", errors="ignore") as fh:
@@ -113,6 +164,8 @@ def hourly(sym: str) -> list[dict]:
             row[k] = float(arr.mean())
             if k in ("depth5", "spread_bps"):
                 row[k + "_sd"] = float(arr.std())
+        if store is not None:
+            store[f"{sym}/{f.stem}"] = row      # persist: this hour is never re-scanned again
         out.append(row)
     return out
 
@@ -132,9 +185,24 @@ def main() -> None:
     print("=== MICROSTRUCTURE FEATURE FACTORY (proprietary moat, no reconstruction needed) ===")
     print("    mechanism M_LIQUIDITY_WITHDRAWAL: does liquidity vanish BEFORE volatility,")
     print("    or only alongside it? (lead-vs-coincident killed 38% of this desk's ideas)\n")
+    ap = argparse.ArgumentParser(description="Microstructure feature factory over the moat.")
+    ap.add_argument("--recent", type=int, default=None,
+                    help="only the most recent N hours per symbol (default: FULL history)")
+    ap.add_argument("--symbols", default=None,
+                    help="comma-separated override (default: every recorded symbol)")
+    ap.add_argument("--no-store", action="store_true", help="ignore and do not write the cache")
+    args = ap.parse_args()
+
+    syms = ([s.strip() for s in args.symbols.split(",") if s.strip()] if args.symbols
+            else recorded_symbols())
+    store = None if args.no_store else load_store()
+    scope = "FULL history" if args.recent is None else f"most recent {args.recent}h"
+    print(f"    scope: {len(syms)} symbol(s) x {scope} | "
+          f"cache {'off' if store is None else f'{len(store)} hours warm'}\n")
+
     results, pooled_lead, pooled_coin, pooled_res = [], [], [], []
-    for sym in SYMS:
-        rows = hourly(sym)
+    for sym in syms:
+        rows = hourly(sym, n_files=args.recent, store=store)
         if len(rows) < 30:
             print(f"  {sym:<10} thin ({len(rows)} usable hours)")
             continue
@@ -202,7 +270,12 @@ def main() -> None:
                    "COINCIDENT -- the apparent lead is vol clustering, withdrawal adds nothing")
         print(f"    VERDICT: {verdict}")
     OUT.write_text(json.dumps({"updated": datetime.now(tz=UTC).isoformat(),
-                               "roll_hours": ROLL, "results": results}, indent=1), "utf-8")
+                               "roll_hours": ROLL, "symbols": syms,
+                               "scope": scope, "results": results}, indent=1), "utf-8")
+    if store is not None:
+        save_store(store)
+        print(f"  feature store: {len(store)} symbol-hours cached -> {STORE}")
+        print("  (completed hours are immutable; the next run re-reads none of them)")
     print(f"\n  -> {OUT}")
 
 

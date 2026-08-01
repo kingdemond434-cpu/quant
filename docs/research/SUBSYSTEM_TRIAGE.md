@@ -27,18 +27,27 @@ Verdicts are **BUILT** (exists, verified), **BUILD** (ready, unblocked, spec bel
 | 14 | Production Monitoring — hedge invariant | `hedge_integrity.py` (new) |
 | 15 | Execution TCA | executor log fields (new) |
 | 16 | Failure Containment rails | measurement gate + reduceOnly + chunking |
+| 17 | Information Advantage / Data Moat Score | `research_cio.py` §1 — `(uniq × predictive × persistence × replication_difficulty) / cost`; ranks data/moat 1.03 vs social attention 0.00 |
+| 18 | Failure-Pattern Filter | `alpha_lifecycle.py` §1 — mines closes for loss-predicting characteristics; extends the bleed denylist |
+| 19 | Research Throughput / Validated Alpha Discovery Rate | `research_cio.py` §3 — experiments/week, time-to-verdict, kill rate, survival; the north star |
+| 20 | Alpha Blind-Spot / Coverage Map | `research_cio.py` §2 — coverage × advantage; currently ranks M_LIQUIDITY_WITHDRAWAL first (1.03 advantage at 0.4% coverage) |
+| 21 | Alpha Transfer Pipeline | `alpha_lifecycle.py` §2 — 11 explicit gate states per alpha; measured furthest reach today is 5/11 (FORWARD_REGISTERED) |
+
+**Re-verdicted 2026-07-29.** Items 17–21 sat under BUILD long after they shipped. They were
+invisible for a second reason: all three of `check_findings_scope`, `check_findings_tracked` and
+`check_findings_ratchet` were blind (`ModuleNotFoundError: libs`, fixed the same day), so nothing
+was reading this file at all. Each row above was verified by RUNNING the named producer, not by
+matching a name.
 
 ---
 
 ## BUILD — unblocked, specified, next session (~1–2h total)
 
-| # | Component | Spec | Why now |
-|---|---|---|---|
-| 17 | **Information Advantage / Data Moat Score** | `uniqueness × replication_difficulty × persistence ÷ cost`, scored per dataset in `feature_library.py`. Moat=high, funding=low, on-chain/attention=low. | Stops research spend on crowded data. ~40 lines. |
-| 18 | **Failure-Pattern Filter** | Mine 249 closes + cost model for characteristics predicting losses (`high funding × low liquidity × micro-cap`). Extends the existing bleed denylist. | Would have flagged COOKIEUSDT pre-emptively. Data exists. |
-| 19 | **Research Throughput / Alpha Factory Metrics / Quality Score** | Read `experiment_registry.jsonl`: experiments/week, time-to-verdict, kill rate, survival, **Validated Alpha Discovery Rate** (north star). | One reader over existing data. Currently 0.00 and unmeasured over time. |
-| 20 | **Alpha Blind-Spot / Coverage Map** | Coverage % per mechanism (already computed) × information-advantage score → "low coverage, high value" ranking. | Directs the next construction test. |
-| 21 | **Alpha Transfer Pipeline** | Formalise `discovery → OOS → paper → small capital → scale → monitor → replace` as explicit gate states on each alpha record. | A discovery that never reaches capital has zero value; currently undefined. |
+**EMPTY as of 2026-07-29.** All five items (17–21) shipped and are re-verdicted BUILT
+above, each against a producer that was RUN to confirm it. The specs they were built from
+are preserved in git history; keeping stale spec rows here would leave the register
+claiming open work that does not exist, which is the mirror image of the defect that hid
+them.
 
 ---
 

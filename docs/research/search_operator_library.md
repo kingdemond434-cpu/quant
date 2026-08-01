@@ -481,6 +481,20 @@ marked ✓ were CONFIRMED IN USE this run (2026-07-26) against live CN pages/API
 | 梭哈 | suoha | all-in (from "show hand") | retail sentiment marker |
 | 合约党 | heyue dang | the perp-contract crowd | finds derivatives-retail cohort discussion |
 | 走势图 | zoushitu | trend chart | pairs with 历史 to find chart pages that have a data endpoint behind them |
+| 大饼 | dabing | "big pancake" = BTC. **Born after 2017-09-04** as WeChat keyword-filter evasion (see OP-036) | ✓✓ two independent sources on the origin; THE key for post-94 group/forum layer |
+| 二饼 / 姨太 | erbing / yitai | "second pancake" / "auntie" = ETH (both coexist) | ✓ GTokenTool, udn, cngold, jb51 |
+| 太子 / 末日战车 / 柚子 / 辣条 | taizi / moriz. / youzi / latiao | BCH / ETC / EOS / LTC | ✓ the coin-nickname euphemism class — finds text that never types the ticker |
+| 薄饼 | baobing | "thin pancake" = **PancakeSwap, NOT bitcoin** | ✗ TRAP: looks like 大饼's sibling, is a DEX. Do not treat as a BTC key |
+| 糖果 / 撸糖果 / 薅羊毛 | tangguo / lu tangguo / hao yangmao | airdrop / farming airdrops | ✓ finds the airdrop-aggregator layer (see venue finds) |
+| 空气币 / 山寨币 / 传销币 / 韭菜币 | kongqibi / shanzhaibi / chuanxiaobi / jiucaibi | air-coin / altcoin / Ponzi-coin / leek-coin | ✓ all four organic in live text; 韭菜币 is new to this table |
+| 狗庄 | gouzhuang | pejorative for 庄家, the manipulating operator | ✓ live 2025-09 usage (Gate square, Toutiao, Foresight) — **the term is 狗庄, never 狗商** |
+| 大鳄 | da'e | "big alligator" = the wealthy big player | ✓ People's Daily 2021 — **never 大鳄鱼** |
+| 小白 / 新韭菜 | xiaobai / xin jiucai | genuine newbie terms | ✓ — **never 新葱** |
+| 猴市 | houshi | "monkey market" = choppy/range-bound regime (vs 牛市/熊市) | ✓ a REGIME term — the CN key for range-vs-trend discussion |
+| 山寨季 / 山寨币季节 | shanzhai ji | altseason | ✓ — **never 牛季节** |
+| 插针 / 瀑布 / 阴跌 / 腰斩 | chazhen / pubu / yindie / yaozhan | wick / waterfall dump / grinding decline / halved | ✓ price-action lore keys |
+| 洗盘 / 控盘 / 诱多 / 诱空 / 砸盘 | xipan / kongpan / youduo / youkong / zapan | shakeout / float-control / bull trap / bear trap / dumping | ✓ **the manipulation-mechanics key set** — 控盘 (float control) is the mechanism-bearing one |
+| 套牢 / 踏空 / 割肉 / 装死 / 纸手 / 钻石手 | taolao / takong / gerou / zhuangsi / zhishou / zuanshishou | trapped / missed the rally / cut losses / play dead / paper hands / diamond hands | ✓ retail POSITIONING/sentiment keys |
 
 ### OP-033 legacy regional forums are NOT UTF-8 — decode before you judge     [active]
 class: extraction
@@ -553,6 +567,41 @@ CONFIRMED IN LIVE USE this run (search results + tracker-site names), not assume
 | 재정거래 | jaejeong-georae | arbitrage (formal/textbook register) | finds analytical/academic KR content vs retail chatter |
 | 잡코인 | japkoin | "junk coins"/alts (retail register) | KR alt-frenzy threads — the dispersion axis's behavioral layer |
 
+### OP-035 platform archives change their MARKUP between eras — a selector validated on one era silently zero-hits another   [active]
+class: extraction
+origin: EN frontier miner session E (2026-08-01), mining the Quantopian OLMAR cluster
+validated-gain: OP-034's selectors were derived from LATE-2020 captures. Applied unchanged to the
+  SAME SITE's 2014 captures they returned **0 posts on a 79KB page that contains 7** — a silent
+  false negative that reads exactly like "this capture is empty/corrupt". Generalised selector
+  recovered 7/7, then 65 posts on the 2014 implementation thread and 40 on the 2019 comparison
+  thread first try.
+technique:
+  (1) NEVER anchor on the START of a class attribute. Quantopian 2020 emits
+      `class='post-container'`; Quantopian 2014 emits `class='container bg-white margin_15t
+      post-container'` — the SAME token, last instead of first. Match the token ANYWHERE:
+      `<div class=['\"][^'\"]*post-container[^'\"]*['\"]` (and accept both quote styles, OP-034 trap 3).
+  (2) FIELD NAMES DRIFT TOO, so resolve each field through an ERA-ORDERED FALLBACK CHAIN rather
+      than one name: body = `body-text-container` (2014) -> `response-text` (2020) -> `body-text`;
+      date = `quanto-date` (2014) -> `posted-at` (2020). Take the first that hits.
+  (3) DIAGNOSE ZERO-HITS BY CLASS CENSUS, never by eye: `grep -o "class=['\"][a-z0-9_ -]*['\"]"
+      FILE | sort | uniq -c | sort -rn | head -30` names the era's real selectors in one command.
+      This is the OP-030 negative-control discipline applied to EXTRACTION rather than to search.
+  (4) KNOW WHAT THE CAPTURE CANNOT CONTAIN: Quantopian's backtest stat tables (`top-level-stat` /
+      `stat-value` / `stat-label`) are AJAX-loaded, so every captured value is the placeholder
+      `--`. 21-77 stat fields per thread, ALL empty. **Published performance numbers survive in
+      that archive only as TEXT claims inside reply bodies, never as the platform's own computed
+      stats** — so an era performance claim there is unverifiable at source by construction, and
+      must be treated as a CLAIM (and is exactly why the era's own recomputations in the reply
+      chain, e.g. the margin catch, are the most valuable objects in the thread).
+adaptations: applies to ANY long-lived platform archive spanning a redesign — BigQuant, FMZ,
+  JoinQuant, Xueqiu, note.com, old vBulletin/Discourse boards. Before declaring a stratum thin,
+  re-run the class census on ONE page from THAT stratum. Pair with OP-034 (the Quantopian recipe)
+  and OP-033 (encoding) — the three are one family: **encoding, compression and MARKUP-ERA are
+  three independent layers at which a rich ground silently reads as empty.**
+counterfactual: HIGH. The 2014 stratum is the ORIGINAL OLMAR wave and contains the paper author's
+  own in-thread admission; a run that trusted the zero-hit would have concluded "the 2014 captures
+  are login-walled/empty" and closed the era's most load-bearing evidence on a selector artifact.
+
 ### OP-026a Fed/Man-family 403-bypass routes (amendment to the OP-026 ladder)   [active]
 class: source-expansion
 origin: Literature deep-miner run 4 (2026-07-31), official-sector + buy-side sweeps
@@ -569,3 +618,60 @@ validated-gain: 4 primary reads this run that would otherwise have been SUMMARY-
   that produced watchlist cards (23, 25) and one that landed the −58% decay prior numerically.
 propagation (§16): every digger adopts its own-domain equivalent — author self-archive pages and
   institutional medialibrary/mirror paths BEFORE grading any 403'd paper SUMMARY-ONLY.
+
+### OP-036 censorship-evasion slang has a BIRTH DATE — pick the key by ERA      [active]
+class: search / lexicon
+origin: CN frontier miner session 3 (2026-08-01), verifying the principal's unverified-slang block
+validated-gain: resolved 7/7 unverified terms and produced an era-dating rule that changes which
+  key is correct for which decade of archive. CONFIRMED by two independent CN sources, verbatim:
+  "最开始叫大饼的是比特天空的群，自从去年94事件之后，为防止敏感词语导致群被封，比特天空让大家把比特币称之为大饼"
+  — BTC came to be called 大饼 ("big pancake") specifically so WeChat groups would not be banned
+  for typing a filtered word, DATED to the 2017-09-04 "94" ban.
+technique: censorship-evasion vocabulary is not timeless slang — it is BORN at a regulatory event
+  and spreads afterwards. So the search key is a function of the ERA of the ground:
+  (1) searching POST-2017-09 CN group/forum text for 比特币 systematically under-recalls the exact
+      layer that matters, because that layer deliberately stopped typing it;
+  (2) searching PRE-2017-09 archives for 大饼 returns near-zero — the term did not exist yet, and
+      that zero is a FALSE NEGATIVE about the era, not evidence the ground is empty;
+  (3) therefore date the ground FIRST, then choose the key. For a ground spanning the event, run
+      BOTH keys and treat the union as the recall set.
+  The coin-nickname class is the highest-value instance because it is the layer that never types a
+  ticker: 大饼 BTC, 二饼/姨太 ETH, 太子 BCH, 末日战车 ETC, 柚子 EOS, 辣条 LTC. Trap: 薄饼 is
+  PancakeSwap, NOT bitcoin — a near-homograph of 大饼 that means something unrelated.
+adaptations (§16 — the mechanism is language-general, only the trigger event changes): KR — the
+  2017-12/2018-01 exchange crackdown and the real-name-account rule; RU — post-2022 sanctions
+  vocabulary; TR — post-2021 payment ban; any region whose community moved under legal pressure.
+  The standing question for every region seat: WHAT REGULATORY EVENT HIT THIS GROUND, AND WHAT DID
+  THE VOCABULARY DO ON THAT DATE? The diaspora mandate already asks where they went; this asks
+  what they started calling things when they got there.
+counterfactual: HIGH for era-archaeology. The desk's CN era ground (8btc/ChainNode/Tieba, 2011-2021)
+  straddles the 94 event, so a single-key search of it was guaranteed to half-miss regardless of
+  effort — and would have read as "the archive is thin" rather than "the key was wrong for the era".
+  Pairs permanently with OP-030 (a zero is a claim about your query) and OP-032 (search native first).
+
+### OP-037 negative-control a SUPPLIED glossary before spending budget on it     [active]
+class: search / instrument hygiene
+origin: CN frontier miner session 3 (2026-08-01)
+validated-gain: **0 of 7** supplied unverified terms survived contact with live sources — a 100%
+  noise rate on that block. Killed with the real form named in 6 cases: 牛季节→牛市/山寨季,
+  蜡烛猴→蜡烛图 (chart) or 猴市 (choppy regime, a real and useful term), 新葱→小白/新韭菜,
+  韭菜盒→not crypto at all (韭菜盒子 is a FOOD; the real adjacent term is 韭菜币), 狗商→狗庄,
+  大鳄鱼→大鳄. "Kuisancle" is not pinyin and stayed unresolvable (亏损 kuisun = loss is the
+  probable intent, but it is standard financial vocabulary, so it carries no search-key value).
+technique: a glossary handed to a seat — by a principal, an LLM, a blog, a "top 50 terms" post — is
+  a LEAD LIST, never a fact list, and it must be negative-controlled BEFORE any budget is spent
+  querying it. Method: (a) run a VERIFIED term first as a positive control on your own search
+  method, so a later zero is attributable to the term and not to the pipeline; (b) query each
+  candidate quoted, in a native-language context; (c) on a zero, hunt the NEAREST REAL FORM rather
+  than just deleting the row — that is where the value is, since a garbled term usually orbits a
+  real one; (d) record kills permanently so the same bad row is never re-queried by the next run.
+  WHY THIS IS NOT PEDANTRY: querying invented slang does not merely waste the query. It returns a
+  clean zero, and a clean zero on a native term reads as "this ground has no coverage" — so bad
+  vocabulary makes a RICH ground look picked clean, and the seat rationally deprioritises it
+  forever. A wrong glossary is therefore worse than no glossary: it manufactures false exhaustion.
+adaptations: every region seat, and every future principal-supplied or LLM-generated list of any
+  kind (venues, endpoints, repos, forums) — same discipline: positive control, quote the query,
+  hunt the near form, record the kill. Pair with OP-030 and OP-027.
+counterfactual: HIGH — the block shipped in this seat's own prompt with an explicit warning that it
+  might be invented, so every CN run until now either spent budget on noise or skipped the terms
+  and left the instrument un-repaired. This closes it permanently for the whole fleet.

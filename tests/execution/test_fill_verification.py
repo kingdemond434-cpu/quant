@@ -30,24 +30,41 @@ def _rejected_order() -> dict:
 
 
 class _FakeConn:
+    """Fake venue connector.
+
+    THE `reduce_only` KWARG IS NOT OPTIONAL DECORATION. This fake predated the 2026-07-27
+    reduce_only change (incident #6: repeated close attempts bought a short through zero into a
+    +916,772 COOKIEUSDT long, then +1,138,985 on 1000CATUSDT). Production started passing
+    `reduce_only=` to the futures leg; the fake did not accept it, so every futures call raised
+    TypeError, `_safe()` swallowed it, and `fut_ok` came back False in every test.
+
+    That made two tests fail permanently -- and nobody saw it, because a missing dev dependency
+    was aborting the whole pytest session at collection. A stale fake is worse than no fake: it
+    reports the production path as broken while the production path is fine, and it teaches the
+    reader to distrust the suite.
+
+    Rebuilt to RECORD the flag rather than merely tolerate it, so the incident-#6 invariant --
+    closes are reduceOnly, opens are not -- is now pinned by tests instead of by a comment.
+    """
+
     def __init__(self, response: object) -> None:
         self._response = response
         self.calls: list[tuple] = []
+        self.reduce_only_flags: list[bool] = []
+        self.cycles: list[str | None] = []
 
-    # `reduce_only` accepted since 2026-07-27 (incident #6): the close path passes it on the
-    # futures leg. Without it here the fake raised TypeError, `_safe()` swallowed it, and BOTH
-    # legs read as unfilled -- so these tests failed for a day while the money-path guard they
-    # pin went unverified. A stale fake silently disarms the regression test it exists to run.
-    def place_market(self, sym: str, side: str, qty: float, reduce_only: bool = False) -> dict:
+    def place_market(self, sym: str, side: str, qty: float,
+                     reduce_only: bool = False, cycle: str | None = None) -> dict:
+        # Signature MIRRORS the real connectors deliberately, rather than swallowing **kwargs.
+        # **kwargs would keep this fake green forever while production drifted, which is a worse
+        # failure than the stale fake it replaced: the suite would look healthy and prove nothing.
+        # An explicit signature means drift shows up as a loud, fixable failure.
         self.calls.append((sym, side, qty))
+        self.reduce_only_flags.append(bool(reduce_only))
+        self.cycles.append(cycle)
         if isinstance(self._response, Exception):
             raise self._response
         return self._response
-
-    # NOTE: deliberately exposes no `positions`/`balances`/`exchange_filters`. `_close_goal_state`
-    # probes those to see whether a leg is already flat, and must FAIL CLOSED when it cannot read
-    # the venue -- these tests pin that: an unreadable wallet leaves `_ok` exactly as the fill
-    # verification set it, so a rejected leg stays rejected and its position stays tracked.
 
 
 def test_filled_helper_requires_confirmed_status_and_qty() -> None:
@@ -66,6 +83,31 @@ def test_execute_pair_reports_success_when_both_legs_confirm_filled(
     result = _MOD._execute_pair("GTCUSDT", 10.0, "SELL", "BUY")
     assert result["spot_ok"] is True
     assert result["fut_ok"] is True
+
+
+def test_close_sends_reduce_only_on_the_futures_leg(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """INCIDENT #6, PINNED. spot_side=='SELL' is the close direction, so the futures leg BUYS to
+    cover a short -- exactly the order that walked COOKIEUSDT through zero into a +916,772 long.
+    reduceOnly makes crossing zero arithmetically impossible, and nothing tested that it was
+    actually being sent."""
+    monkeypatch.setattr(_MOD, "_MAKER", False)
+    monkeypatch.setattr(_MOD, "spot", _FakeConn(_filled_order(10.0)))
+    fut = _FakeConn(_filled_order(10.0))
+    monkeypatch.setattr(_MOD, "fut", fut)
+    _MOD._execute_pair("GTCUSDT", 10.0, "SELL", "BUY")
+    assert fut.reduce_only_flags == [True], "a CLOSE must be reduceOnly on the futures leg"
+
+
+def test_open_does_not_send_reduce_only(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The mirror half, and it matters just as much: an open ESTABLISHES the short, so
+    reduceOnly there would silently refuse to open the position at all."""
+    monkeypatch.setattr(_MOD, "_MAKER", False)
+    monkeypatch.setattr(_MOD, "spot", _FakeConn(_filled_order(10.0)))
+    fut = _FakeConn(_filled_order(10.0))
+    monkeypatch.setattr(_MOD, "fut", fut)
+    _MOD._execute_pair("GTCUSDT", 10.0, "BUY", "SELL")
+    assert fut.reduce_only_flags == [False], "an OPEN must not be reduceOnly"
 
 
 def test_execute_pair_reports_failure_when_spot_leg_rejected(
