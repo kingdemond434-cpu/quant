@@ -3390,6 +3390,18 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0279",
+   "source": "principal",
+   "summary": "Scam filter REMOVED ENTIRELY on principal order -- any rule that discards a source before reading it will eventually discard a genuinely good discovery, and you never learn which one because an unread page leaves no trace. Replaced with MINE EVERYTHING: nothing disqualified on keyword, domain, claimed return, tone or smell; the gauntlet does the rejecting because it is the only stage entitled to say no and it is now measured. Instruction added on what to extract from pages whose numbers are invented -- the MECHANISM (a fabricated track record is often wrapped around a real mechanism the author did not invent), the DATA SOURCES the marketing copy names, the POSITIONING SIGNAL (what is being sold to CN retail reveals what the crowd believes and what is crowded), and the VOCABULARY (promo copy uses the words its audience actually searches with). Domain-gating and technical long-tail queries KEPT but reframed explicitly as RECALL WIDENING, not filtering. BUILT libs/research/transcript_candidates.py -- every tradeable mechanism named across all six transcripts as gauntlet candidates, ordered by MEASURED family survival rate rather than popularity (volume 38.7%, mean-reversion 38.5%, momentum 27.4%, pattern 22.0%, trend 18.2%). That ordering is the most useful thing in any transcript: forward slots are capped at 12, so spending them in proportion to a measured survival rate instead of intuition is free expected value -- and it inverts what retail focuses on, since trend-following survives worst. 13 candidates: chaikin_money_flow, volume_surge_breakout, obv_trend (volume); zscore/bollinger/percent_b/rsi reversion and range_position_dip (mean reversion); squeeze_momentum, absolute_momentum; donchian_breakout, golden_cross, trend_gated_rotation. Plus two overlays: vol_target (the one overlay with a mechanical rather than predictive justification -- it equalises risk per unit time, raising the geometric mean for any edge at all) and regime_filter (gate an existing strategy by state rather than trading the state). Costs always on at 6bps/turn. 33 tests, every candidate pinned CAUSAL by truncation (a dip-buyer that peeks backtests beautifully and is worthless) and pinned for NEXT-BAR alignment. Caught a real divide-by-zero in vol_target: np.where evaluates both branches so the division ran even where realised vol was zero -- and a dead-quiet window is exactly where an inverse-vol lever wants infinite size. CANNOT BACKTEST HERE: data/moat is VPS-only. These owe their gauntlet run on the box.",
+   "roi_bps": null,
+   "raised": "2026-08-01T09:59:35.073426+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

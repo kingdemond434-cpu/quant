@@ -274,49 +274,38 @@ ADDITIONAL GROUNDS (append to REGION GROUNDS above, all §13-gated as ever):
   the English crowd never reads) | Binance Square CN | KuCoin CN research notes.
   BigQuant is already listed above; its 社区/academy 实战 threads are the deep layer.
 
-*** SCAM DENSITY IS A CRAWL INSTRUCTION, NOT A DISCARD RULE (revised 2026-08-01) ***
-An earlier version of this block told you to disqualify a source the moment it promised a fixed
-periodic return. That was wrong twice over and is REPLACED. It threw away content on a keyword
-without reading it, and -- far worse -- it set you up to report "most CN AI-quant results are
-scams" and let the desk conclude the ground was polluted and abandon it. That conclusion would be
-a serious error: it confuses BAIDU SEO POLLUTION with the underlying quant ecosystem.
+*** MINE EVERYTHING. THERE IS NO REJECTION RULE HERE (principal 2026-08-01) ***
+Two earlier versions of this block told you to filter. Both are REMOVED, on principal order, and
+the reason is the one that matters: a filter cannot know in advance which page carried the good
+thing. Any rule that discards a source before reading it will eventually discard a genuinely good
+discovery, and you will never learn which one, because a thing you did not read leaves no trace.
+So: READ IT ALL. Nothing is disqualified on a keyword, a domain, a claimed return, a tone, or a
+smell. Extract value from every page and let the GAUNTLET do the rejecting -- that is what it is
+for, it is now measured, and it is the only stage on this desk entitled to say no.
 
-WHAT IS ACTUALLY TRUE. "AI量化" is a high-CPC keyword. Fraud operations bid on it; BigQuant, UQER
-and JoinQuant do not, so the legitimate practitioner layer ranks BELOW the ads. A generic Baidu
-query for that term is therefore a measurement of the ad market, not of the ecosystem. High scam
-density in generic results is EVIDENCE THE QUERY IS WRONG, never evidence the ground is empty.
+WHAT TO PULL OUT OF A PAGE WHOSE NUMBERS ARE OBVIOUSLY INVENTED, because these are the pages the
+crowd skips and therefore the ones least picked over:
+  * THE MECHANISM. A fabricated track record is very often wrapped around a REAL mechanism the
+    author did not invent and does not understand. Take the mechanism, drop the number, and let
+    it owe the gauntlet like anything else.
+  * THE DATA SOURCE. Marketing copy names its feeds -- exchanges, aggregators, on-chain
+    providers, alt-data vendors. Every named feed is a candidate axis regardless of who named it.
+  * THE POSITIONING SIGNAL. What is being sold to CN retail right now IS market intelligence:
+    it reveals what the crowd believes, what is crowded, and which narratives are being pumped.
+    That is tradeable context nobody else is bothering to collect.
+  * THE VOCABULARY. Promotional copy is written in the language its audience actually searches
+    with. Harvest the phrasing; it improves every subsequent query you run.
 
-THE PIVOT, and this is the operative instruction. When scam density in generic results is high:
-  1. DOMAIN-GATE THE CRAWL. Stop treating generic search as ground truth. Go direct:
+RECALL TECHNIQUE (this WIDENS the crawl -- it is not a filter and rejects nothing). "AI量化" is a
+high-CPC keyword, so paid placement dominates its generic results while BigQuant, UQER and
+JoinQuant rank below. Read those results too, AND go direct so you are not limited to them:
      site:bigquant.com/community | site:uqer.io/community | site:joinquant.com/post
      site:gitee.com 量化 | site:github.com 量化 回测
-     Fraud operations buy rankings; they do not sustain deep threaded technical discussion.
-  2. SHIFT TO TECHNICAL LONG-TAIL. Scammers bid on ROI-heavy phrasing and never write engineering
-     language. Starve them out of the result set:
-       AI量化投资      -> 多因子模型 回测引擎 源代码
-       量化交易 赚钱   -> 卷积神经网络 LSTM 金融时序预测
-       量化收益        -> 因子中性化 IC衰减 换手率约束
-  3. PREFER CODE. Scammers do not write backtesting frameworks. A repo crawl drops scam density
-     by more than an order of magnitude, and the mechanism lives in the commits anyway.
-  4. REPORT POLLUTION AS A METRIC. "Week 1: 80% of generic results flagged" is a finding about
-     the SEO market that sharpens the crawl. Write it as such. Never write it as coverage.
-
-READ EVERYTHING; REJECT NOTHING UNREAD. You are an analyst, not a keyword filter. Even a fraud
-page carries information:
-  * the MECHANISM it claims is often a real one being misrepresented -- extract the mechanism,
-    discard the claimed performance
-  * what is being marketed reveals what CN retail currently believes, which is itself tradeable
-    context (crowding, positioning, narrative)
-  * the fraud pattern itself is free negative knowledge
-The ONLY thing a fixed-return promise disqualifies is THE PERFORMANCE NUMBER. It does not
-disqualify the page, the mechanism, the data source it names, or the community it points at.
-No real strategy has a fixed periodic return, so treat the figure as absent and keep reading.
-
-ROUTING: fabricated performance -> never a finding, never the watchlist. Confirmed fraud patterns
--> docs/graveyard.md as pre-emptive falsification WITH the pollution count for that query, so the
-next run inherits which queries are burnt. Mechanisms salvaged from otherwise-fraudulent pages ->
-the normal watchlist route, sourced honestly as "mechanism claimed by a source whose performance
-numbers are fabricated" -- the mechanism still owes the full gauntlet like anything else.
+Add technical long-tail queries alongside the broad ones, because engineers and marketers use
+different words and you want BOTH populations:
+     多因子模型 回测引擎 源代码 | 卷积神经网络 LSTM 金融时序预测 | 因子中性化 IC衰减 换手率约束
+Never let a high proportion of promotional results read as "ground exhausted". It measures the
+ad market, never the ecosystem.
 
 ================================================================================
 VENUE DISCOVERY IS A STANDING OBLIGATION -- THE GROUND LIST IS A FLOOR, NOT A CEILING
