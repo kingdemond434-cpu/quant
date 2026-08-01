@@ -35,6 +35,7 @@ from libs.validation.fdr import benjamini_hochberg
 from libs.validation.pbo import PBOResult, probability_backtest_overfitting
 from libs.validation.reality_check import RealityCheckResult, whites_reality_check
 from libs.validation.revalidation import WalkForwardEngine, WalkForwardStatus
+from libs.validation.robustness_filters import not_too_lucky, sample_adequacy
 from libs.validation.screen_select import ScreenSelection, screen_select
 from libs.validation.stepwise import (
     CSCVResult,
@@ -476,6 +477,20 @@ def validate(
     benchmark_returns: np.ndarray | None = None,
     campaign: CampaignGates | None = None,
     column: int | None = None,
+    # NUMBER OF ROUND-TRIP TRADES the candidate actually took (wired 2026-08-01).
+    #
+    # There was NO minimum-trade gate anywhere in this desk's validation, which is a hole a
+    # transcript found rather than an audit: a strategy can post a magnificent Sharpe on fifteen
+    # trades and the entire gauntlet above has nothing to say about it, because every statistic
+    # here is computed per-OBSERVATION and a 5,000-bar series holding one position the whole time
+    # has 5,000 observations and one bet.
+    #
+    # Optional because most existing callers pass a return SERIES and genuinely do not know the
+    # trade count. When it is absent the gate is reported as UNMEASURED, never as passed -- see
+    # the `unmeasured` field. That distinction exists because of `beats_baselines`, which quietly
+    # returned True for every candidate this desk ever screened simply because no caller supplied
+    # benchmark_returns, and read as a passed gate in every verdict for months.
+    n_trades: int | None = None,
 ) -> ValidationVerdict:
     arr = np.asarray(returns, dtype="float64")
     if len(arr) < 250:
@@ -566,10 +581,34 @@ def validate(
         # skipped-as-True when no benchmark is supplied (see the constant block above); when
         # one IS supplied the candidate must beat buy-and-hold and equal-weight outright.
         "beats_baselines": _beats_baselines(arr, benchmark_returns),
+        # NOT-TOO-LUCKY, wired 2026-08-01. Studentised, never a fixed ratio: the source specified
+        # "reject if OOS < 0.3 x IS", and that rule was MEASURED here rejecting 20-40% of genuine
+        # alphas at every sample length from 310 to 5,000 bars, because a fixed ratio ignores how
+        # noisily each Sharpe was estimated. Re-specified against the standard error of the
+        # difference it costs 2.8% of real edges to remove 6.2% of flattered nulls -- roughly 17
+        # nulls per real edge lost. It runs unconditionally because validate() now has all four
+        # inputs; a report with is_sharpe 0.0 is treated as "nothing to compare" and passes.
+        "not_too_lucky": not_too_lucky(
+            wf.is_sharpe, wf.oos_sharpe, wf.n_is, wf.n_oos).passed,
     }
+    # UNMEASURED IS ITS OWN STATE, and this is the whole lesson of `beats_baselines`. A gate whose
+    # input was never supplied has not passed -- nobody looked. Folding that into `gates` as True
+    # is how a gate can protect nothing for months while reading green in every artifact. It does
+    # NOT block survival (this is a screen with zero promotion authority, and failing a candidate
+    # for an input its caller does not have would kill real alphas), but it is impossible to miss.
+    unmeasured: list[str] = []
+    if n_trades is None:
+        unmeasured.append("sample_adequacy")
+    else:
+        gates["sample_adequacy"] = sample_adequacy(n_trades).passed
+    if benchmark_returns is None:
+        unmeasured.append("beats_baselines")
+
     failed = [name for name, ok in gates.items() if not ok]
+    reason = "" if not failed else "failed: " + ", ".join(failed)
+    if unmeasured:
+        reason = (reason + " | " if reason else "") + "UNMEASURED: " + ", ".join(unmeasured)
     return ValidationVerdict(
-        survived=not failed, gates=gates,
-        rejection_reason="" if not failed else "failed: " + ", ".join(failed),
-        metrics=metrics,
+        survived=not failed, gates=gates, rejection_reason=reason,
+        metrics=metrics, unmeasured=tuple(unmeasured),
     )

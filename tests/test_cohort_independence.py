@@ -8,10 +8,12 @@ rather than just reporting a correlation.
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
 from libs.research.cohort_independence import (
     BENCHMARK_MEAN_CORR,
     BENCHMARK_N,
+    demeaning_floor,
     effective_bets,
     measure,
 )
@@ -98,3 +100,34 @@ def test_verdict_does_not_punish_a_small_diverse_cohort():
     assert small.n_eff < huge.n_eff, "premise: N_eff alone ranks the redundant sweep higher"
     assert "AT OR BETTER" in small.verdict
     assert "ABOVE BENCHMARK" in huge.verdict
+
+
+# ----------------------------------------------- the domain of the equicorrelation formula
+
+def test_independent_bets_can_never_exceed_the_number_of_assets():
+    """There is no arrangement of 29 assets that constitutes 64 independent bets. The first
+    version of effective_bets clamped only from below and reported exactly that on the real crypto
+    cross-section, because removing a common factor drives residual correlation negative and the
+    formula extrapolates straight out of its domain."""
+    for n in (3, 12, 29, 420):
+        assert effective_bets(n, -0.5) <= n
+        assert effective_bets(n, demeaning_floor(n)) <= n
+
+
+def test_the_demeaning_floor_is_where_zero_structure_lands():
+    """Residuals against a cross-sectional mean must sum to zero at every date, and that
+    constraint alone forces mean pairwise correlation to -1/(N-1). Measuring that value is
+    measuring the arithmetic, not the market."""
+    assert demeaning_floor(29) == pytest.approx(-1.0 / 28)
+    rng = np.random.default_rng(42)
+    x = rng.normal(0.0, 1.0, (4000, 29))          # genuinely independent columns
+    resid = x - x.mean(axis=1, keepdims=True)      # ...demeaned cross-sectionally
+    c = np.corrcoef(resid, rowvar=False)
+    iu = np.triu_indices(29, k=1)
+    assert float(np.mean(c[iu])) == pytest.approx(demeaning_floor(29), abs=0.01), (
+        "independent data, demeaned, must land on the floor -- that is what makes it a floor")
+
+
+def test_a_perfectly_hedged_pair_still_reports_at_most_two_bets():
+    a = np.random.default_rng(7).normal(0.0, 1.0, (900, 1))
+    assert measure(np.column_stack([a, -a])).n_eff <= 2.0

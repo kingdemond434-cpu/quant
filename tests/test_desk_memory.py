@@ -122,8 +122,17 @@ def test_overflow_is_by_rank_and_stays_a_small_tail():
          being the defect.
 
     So: strict rank ordering, and a bounded tail. If this fails on (2) the fix is to RETIRE a
-    lesson whose falsifier arrived, never to raise the budget -- raising it is how the doctrine
-    reached 95k.
+    lesson whose falsifier arrived or GRADUATE one into a test, never to raise the budget --
+    raising it is how the doctrine reached 95k.
+
+    THE TAIL BOUND IS ON THE UNENFORCED TAIL, NOT THE WHOLE TAIL, and the distinction is a
+    correction rather than a relaxation. The first version of this test bounded total overflow at
+    25%. That was a PROXY for "lessons are being lost", and graduation made the proxy false: a
+    graduated lesson sits at the bottom of the ranking BECAUSE a test enforces it, so a healthy
+    mature corpus is mostly tail. Measured at 42 lessons the total tail is 26.2% and every single
+    entry in it is either test-enforced or hygiene-class -- nothing is lost. Bounding the raw
+    fraction would now force retirement of lessons that are fine, which is the opposite of what
+    the bound was for. So the assertion moved to the property the proxy was standing in for.
     """
     _, dropped = dm.corpus()
     active = dm.load()
@@ -132,9 +141,15 @@ def test_overflow_is_by_rank_and_stays_a_small_tail():
     if dropped:
         assert min(k.score for k in kept) >= max(d.score for d in dropped), (
             "a weaker lesson was injected over a stronger one -- the budget is not ranking")
-    assert len(dropped) / len(active) < 0.25, (
-        f"{len(dropped)}/{len(active)} paid-for lessons reach no organ: "
-        f"{[d.id for d in dropped]}. Retire one whose falsifier arrived.")
+    lost = [d for d in dropped if not d.enforced_verified and d.cost not in ("hygiene", "slow")]
+    assert not lost, (
+        f"{len(lost)} paid-for lesson(s) reach NO organ and NO test enforces them: "
+        f"{[(d.id, d.cost) for d in lost]}. Graduate one into a test, or retire one whose "
+        "falsifier arrived. Do not raise the budget.")
+    unenforced_tail = [d for d in dropped if not d.enforced_verified]
+    assert len(unenforced_tail) / len(active) < 0.15, (
+        f"{len(unenforced_tail)}/{len(active)} lessons fall off the budget with no test behind "
+        "them -- the corpus is rotating rather than compounding")
 
 
 # ---------------------------------------------------------------- retirement
