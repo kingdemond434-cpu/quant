@@ -25,6 +25,7 @@ from app.signal_builder import (
     vol_expansion_positions,
 )
 from libs.autodiscovery.models import Family, Hypothesis, MarketSeries
+from libs.research.intermarket import intermarket_difference, threshold_revert
 from libs.validation.economic_prior import MechanismType
 
 PositionFn = Callable[[MarketSeries, dict[str, float]], np.ndarray]
@@ -85,6 +86,24 @@ def _cross_asset(s: MarketSeries, p: dict[str, float]) -> np.ndarray:
     ref_ret = np.zeros(len(s), dtype="float64")
     ref_ret[1:] = s.ref_close[1:] / s.ref_close[:-1] - 1.0
     return (-np.sign(ref_ret)).astype("float64")  # inverse to the reference's prior move
+
+
+def _intermarket_difference(s: MarketSeries, p: dict[str, float]) -> np.ndarray:
+    """Trade the RESIDUAL against the reference, not the market factor both legs share.
+
+    Requires the reference's RANGE as well as its close: each leg is normalised by its own ATR
+    before the subtraction, which is what makes a fixed threshold mean the same thing on a
+    BTC/ETH pair and on a BTC/altcoin pair whose volatilities differ several-fold. A close-only
+    reference degrades to flat rather than silently dropping the normalisation -- an unnormalised
+    difference is a report of which symbol is more volatile, not a relative-value signal.
+    """
+    if s.ref_close is None or s.ref_high is None or s.ref_low is None:
+        return np.zeros(len(s), dtype="float64")   # honest: needs the reference's range
+    d = intermarket_difference(
+        s.high, s.low, s.close, s.ref_high, s.ref_low, s.ref_close,
+        lookback=int(p["lookback"]),
+    )
+    return threshold_revert(d, threshold=float(p["threshold"]))
 
 
 def _carry(s: MarketSeries, p: dict[str, float]) -> np.ndarray:
@@ -174,6 +193,15 @@ GENERATORS: tuple[GeneratorSpec, ...] = (
     GeneratorSpec(Family.CROSS_ASSET, "inverse_reference", _cross_asset, _S,
                   "cross-market transmission (e.g. USD -> FX)",
                   ["needs a reference instrument", "correlation breakdown"], [{"lookback": 1}]),
+    GeneratorSpec(Family.CROSS_ASSET, "intermarket_difference", _intermarket_difference, _S,
+                  "relative-value dispersion: what outperforms its reference tends to continue "
+                  "outperforming, and the shared market factor is differenced away",
+                  ["needs the reference's range, not just its close",
+                   "the residual is smaller than either leg, so costs bite harder",
+                   "a correlation break makes the difference a second directional bet"],
+                  [{"lookback": 24, "threshold": 0.25},
+                   {"lookback": 12, "threshold": 0.30},
+                   {"lookback": 48, "threshold": 0.25}]),
     GeneratorSpec(Family.CARRY, "drift_proxy", _carry, _R,
                   "risk-premium / funding drift (PROXY: no swap/rate data)",
                   ["proxy only, not true carry", "rate-regime change"], [{"lookback": 200}]),

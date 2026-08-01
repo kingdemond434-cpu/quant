@@ -78,17 +78,30 @@ def _provider_from_frames(frames: dict[str, Any], min_bars: int) -> DataProvider
     # BTC -- effectively never) leave ref_close None so the generator honestly skips (zeros).
     btc = frames.get("BTCUSDT")
     btc_close = btc["close"] if btc is not None else None
+    # The reference's RANGE too: intermarket differencing normalises each leg by its own ATR
+    # before subtracting, and a close-only reference cannot supply one.
+    btc_high = btc["high"] if btc is not None else None
+    btc_low = btc["low"] if btc is not None else None
 
     def provider(symbol: str) -> MarketSeries | None:
         df = frames.get(symbol)
         if df is None or len(df) < min_bars:
             return None
         funding = df["funding"].to_numpy("float64") if "funding" in df.columns else None
-        ref_close = None
+        ref_close = ref_high = ref_low = None
         if btc_close is not None and symbol != "BTCUSDT":
             ref = btc_close.reindex(df.index).ffill()
             if not ref.isna().any():
                 ref_close = ref.to_numpy("float64")
+                # ALL THREE OR NONE. A reference whose close is aligned but whose range is not
+                # would put the two legs of the difference on different bars, which reads as a
+                # signal and is a join bug.
+                if btc_high is not None and btc_low is not None:
+                    rh = btc_high.reindex(df.index).ffill()
+                    rl = btc_low.reindex(df.index).ffill()
+                    if not rh.isna().any() and not rl.isna().any():
+                        ref_high = rh.to_numpy("float64")
+                        ref_low = rl.to_numpy("float64")
         return MarketSeries(
             close=df["close"].to_numpy("float64"),
             high=df["high"].to_numpy("float64"),
@@ -96,6 +109,8 @@ def _provider_from_frames(frames: dict[str, Any], min_bars: int) -> DataProvider
             volume=df["volume"].to_numpy("float64"),
             hour=np.array([t.hour for t in df.index], dtype="float64"),
             ref_close=ref_close,
+            ref_high=ref_high,
+            ref_low=ref_low,
             funding=funding,
         )
 

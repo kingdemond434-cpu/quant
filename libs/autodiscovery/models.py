@@ -52,6 +52,11 @@ class MarketSeries:
     volume: np.ndarray | None = None
     hour: np.ndarray | None = None       # bar hour-of-day (server time), for session effects
     ref_close: np.ndarray | None = None  # a second instrument, for cross-asset relationships
+    # The reference's RANGE, needed to put its indicator on the same scale as this symbol's
+    # before differencing them (libs/research/intermarket.cmma). Optional and separate from
+    # ref_close because a close-only reference is still enough for the older sign-of-move rule.
+    ref_high: np.ndarray | None = None
+    ref_low: np.ndarray | None = None
     funding: np.ndarray | None = None    # per-bar perp funding rate (Level-3), for crypto signals
 
     def __len__(self) -> int:
