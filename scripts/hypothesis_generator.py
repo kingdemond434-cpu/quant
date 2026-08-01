@@ -14,11 +14,17 @@ SO THIS ROLE INVERTS THE BREADTH EXPANDER'S DESIGN, deliberately:
 Same principle (maximise NEW information), opposite implementation, because the failure modes are
 opposite. Anchoring is the enemy of source search; ignorance is the enemy of hypothesis search.
 
-SEATS: multi-lab by design. The principal observes GPT is strong at idea generation; the desk's own
-measurement says gpt-5.6-terra-pro produced 0 parseable rows on 5 of 6 breadth lenses while
-nemotron/grok produced 18 each. Both can be true -- different task. So GPT leads here (its claimed
-strength, generative framing) and two other labs run alongside, and the YIELD TABLE decides who
-keeps the seat. No seat by reputation.
+SEATS: THE WHOLE ROSTER, priority-ordered. The principal observes GPT is strong at idea
+generation; the desk's own measurement says gpt-5.6-terra-pro produced 0 parseable rows on 5 of 6
+breadth lenses while nemotron/grok produced 18 each. Both can be true -- different task. So GPT
+LEADS the priority order (its claimed strength, generative framing), and the YIELD TABLE decides
+who keeps a seat. No seat by reputation.
+
+But leading is not the same as being the only one asked. This ran THREE seats out of thirteen
+until 2026-07-31: google, qwen, z-ai, moonshotai (Kimi), nvidia and the lab siblings never
+generated a single hypothesis, on the desk's own #2 supreme objective. Cognitive diversity is the
+entire reason the roster is 13 distinct labs rather than 3 copies of one, and generation is
+exactly the task where uncorrelated training data pays. Every funded seat now generates.
 
 OUTPUT CONTRACT forces falsifiability: every idea must name a MECHANISM, a FREE data source, a
 concrete TEST, and a KILL CONDITION. "Interesting area" is rejected by construction.
@@ -44,7 +50,28 @@ MECH = ROOT / "docs/research/MECHANISM_GRAPH.md"
 OUT = ROOT / "data/hypothesis_queue.jsonl"
 CTX = ssl.create_default_context()
 
-SEATS = ["openai/gpt-5.6-terra-pro", "x-ai/grok-4.3", "deepseek/deepseek-v4-pro"]
+#: PRIORITY ORDER, not the seat list. These three are first because they are the lineages with
+#: measured generation quality on this desk; everything else in the roster follows. The literal
+#: model IDs are resolved against the LIVE roster by seats.resolve, so an upgraded-away model is
+#: substituted same-lab-first rather than silently lost -- this list can go stale without
+#: breaking anything, which is the point.
+SEAT_PRIORITY = ["openai/gpt-5.6-terra-pro", "x-ai/grok-4.3", "deepseek/deepseek-v4-pro"]
+
+#: HOW MANY SEATS GENERATE. `None` = every seat on the roster.
+#:
+#: WAS 3, HARDCODED, OUT OF 13. Ten funded seats -- google, qwen, z-ai, moonshotai (Kimi),
+#: nvidia and the siblings -- never generated a single hypothesis, on the desk's own #2 supreme
+#: objective. That is not a small throttle: cognitive diversity is the entire reason the roster
+#: is 13 distinct labs rather than 3 instances of one, and generation is precisely the task where
+#: uncorrelated training data pays. Using 3 of 13 for generation while paying for 13 is the
+#: expensive way to be narrow.
+#:
+#: COST, STATED HONESTLY. 5 lenses x 13 seats = 65 calls at ~$0.22 = ~$14/run, against the
+#: $100-150/mo envelope the panel budget already works to. At a weekly cadence that is ~$60/mo
+#: for the desk's primary output. The old comment costed the 3-seat sweep at ~$3.30/run against
+#: a "$10-30/mo" figure; the envelope has since been raised and this is the ROI the principal
+#: explicitly funded the roster for. Set an integer here to cap it if that changes.
+GEN_SEATS: int | None = None
 
 LENSES = [
     ("MECHANISM TRANSITION", "What causes a market to move BETWEEN states (calm->stressed, "
@@ -108,9 +135,27 @@ def refuted() -> tuple[str, set[str]]:
 
 def main() -> None:
     if not KEYS.exists():
-        print("no panel keys"); return
+        print("no panel keys")
+        return
     # Live-roster resolution: an upgraded-away seat is substituted (same lab first), not lost.
-    provs = {p["model"]: p for p in seats.resolve(SEATS, n=len(SEATS), role="hypothesis_gen")}
+    #
+    # THE PREFERRED LIST IS THE WHOLE ROSTER, priority-ordered. Passing only SEAT_PRIORITY here
+    # capped generation at 3 seats no matter how many were funded, because resolve_ids walks the
+    # preferred list and only tops up to an explicit `n`. So the roster could grow to 24 and
+    # generation would still ask three models. Building the preferred list from the live roster
+    # means every seat the desk pays for does the desk's #2 supreme objective.
+    # DISTINCT LABS STAYS ON, and that is a choice worth defending rather than a default. It
+    # collapses the lab siblings (a second openai, a second google), so a 13-seat roster yields
+    # ~8 generating seats instead of 13. More volume was available and is deliberately declined:
+    # the desk's measured problem is candidate QUALITY, not count -- 420 candidates produced zero
+    # survivors -- and two models from one lab share training data, so the second mostly adds
+    # correlated ideas. That is precisely the mode collapse batch_diversity() exists to detect:
+    # throughput rising while information does not. Set distinct_labs=False only if the yield
+    # table ever shows siblings producing genuinely different mechanisms.
+    _roster = [str(p["model"]) for p in seats.load_roster()]
+    _preferred = SEAT_PRIORITY + [m for m in _roster if m not in SEAT_PRIORITY]
+    provs = {p["model"]: p for p in seats.resolve(_preferred, n=GEN_SEATS,
+                                                  distinct_labs=True, role="hypothesis_gen")}
     seated = list(provs)
     dead_txt, dead_tok = refuted()
     mech = MECH.read_text("utf-8")[:3000] if MECH.exists() else ""
