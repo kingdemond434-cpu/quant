@@ -3328,6 +3328,18 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0274",
+   "source": "cycle",
+   "summary": "GROWTH AUDIT CANNOT TELL TIMIDITY FROM A LATCHED KILL SWITCH. web/growth_audit.json (regenerated 09:00 today) reports carry_capital_utilization as a CONSERVATISM DEFECT -- '$0 deployed / $200 authorized', justified_by NONE -- while data/CASHCARRY_KILL has been latched since 07-31 08:35Z and data/live_guard.json reads ladder.rung=full_flatten_disarmed, requires_manual_rearm=true. REARM is principal-only, so $0 is a survival rail doing its job, not under-deployment, and no cycle can close it. The audit does not read the kill file or the guard's ladder rung. This fires EVERY DAY until REARM and its own rule says 'every NONE-gap is a DEFECT: close it same-cycle' -- so the daily check trains its reader to ignore its only defect line, which is how a gate dies (L1.43: a gate that cries wolf gets acknowledged into silence). FIX: read the kill file + ladder rung and emit RAIL-LATCHED (with the latch timestamp and that REARM is a human step) as a distinct verdict from GAP. The distinction is the point -- L1.28a's own carve-out is that headroom held by a survival rail is legitimate idle, and the audit currently cannot express it.",
+   "roi_bps": 3.0,
+   "raised": "2026-08-01T09:23:05.835057+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
