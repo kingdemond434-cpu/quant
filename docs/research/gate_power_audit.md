@@ -104,6 +104,36 @@ On the short-vol payoff — precisely the shape the moment adjustment exists to 
 *Secondary finding:* 0.15% of short-vol nulls clear the whole stack including `fragility`. The
 desk has no effective tail-shape veto on the money path. Small, but real, and unaddressed here.
 
+## 4b. Effective number of independent tests — and why Romano-Wolf was the right survivor
+
+Every multiplicity correction here is handed the RAW candidate count. 420 variants over one
+universe in one era are not 420 independent tests. Measured at true SR 3.0, N=420, T=310:
+
+| ρ | power | FPR | N_eff (participation) | independent baseline | ratio |
+|---|---|---|---|---|---|
+| 0.0 | 1.25% | 0.000% | 178.2 | 178.0 | **1.00** |
+| 0.3 | 2.08% | 0.000% | 11.0 | 178.0 | 0.06 |
+| 0.6 | 8.75% | 0.000% | 2.8 | 178.0 | 0.02 |
+| 0.9 | 17.92% | 0.000% | 1.2 | 178.0 | 0.01 |
+
+The ρ=0 row reads **exactly 1.00** against its own baseline, which is the guard working: the
+raw figure of ~178 at T<N is an estimation artifact, and only the ratio is a finding. At a
+merely moderate ρ=0.3 the 420-candidate cohort is worth about **11 independent tests**.
+
+This is the sharpest justification for which correction to keep, and it is stronger than the
+argument originally made for the fix:
+
+* **Romano-Wolf ADAPTS.** Its stationary-block bootstrap resamples the cohort jointly, so the
+  dependence structure is preserved and the correction shrinks toward the effective count. Power
+  *rises* with ρ (1.25% → 17.92%) precisely because of this.
+* **DSR's deflation does NOT.** `expected_max_sharpe(n_trials)` takes the raw integer 420 and has
+  no channel through which correlation could reach it.
+
+So on a realistically correlated campaign DSR was deflating for ~420 tests where roughly ~11
+existed — over-correcting by more than an order of magnitude — while Romano-Wolf was already
+sized correctly. Keeping the adaptive correction and dropping the fixed one is not a preference;
+it is the only choice consistent with this table.
+
 ## 5. What actually binds — the bottleneck
 
 | knob | power at true SR 2.0 |
