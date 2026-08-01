@@ -1331,7 +1331,7 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # EVIDENCE: ops/run_recommendation_worker.sh -> data/cro_ai_logs/recommendation_worker_*.log
 #   and the ledger's own implemented/rejected counts, which are the real proof.
 # CONFIDENCE: committed-script (new this cycle)
-5 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_recworker.lock /bin/bash ops/run_recommendation_worker.sh >> data/cro_ai_logs/recommendation_worker.log 2>&1
+*/20 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_recworker.lock /bin/bash ops/run_recommendation_worker.sh >> data/cro_ai_logs/recommendation_worker.log 2>&1
 
 # CROSSASSET SHADOW CLOCK (2026-08-01). slot_registry counts `crossasset` in the concurrent Holm
 # cohort on the strength of data/crossasset_shadow_state.json -- which had not been written since
