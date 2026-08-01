@@ -82,3 +82,50 @@ shipped in per-bar units and required **4.78 annualised**.
 - **One venue, daily bars, three correlated assets.** The correlation is the binding limit on how
   much the cross-asset agreement is worth.
 - **In-sample over the full history.** Every bar was used.
+
+---
+
+# Second, independent confirmation: the monkey test on the same BTC bars
+
+`libs/validation/random_baseline` on the same 2,438 OKX daily bars. Where the permutation test
+shuffles the **data** and keeps the rule, this shuffles the **rule** (exposure-matched) and keeps
+the data. Two different nulls, same conclusion.
+
+| rule | time in market | exposure share | timing share | beat rate |
+|---|---|---|---|---|
+| `time_series_mom[40]` | 0.98 | 0.06 | **0.94** | **0.985** |
+| `time_series_mom[20]` | 0.99 | 0.06 | 0.94 | **0.975** |
+| `donchian[20]` | 0.10 | 0.10 | 0.90 | **0.915** |
+| `vol_trend[20,20]` | 0.49 | 0.05 | 0.95 | **0.912** |
+| `squeeze_breakout[20,20]` | 0.05 | 0.06 | 0.94 | 0.892 |
+| `ma_cross[50,200]` | 0.92 | 0.19 | 0.81 | 0.865 |
+| `drift_proxy[200]` | 0.92 | **0.38** | 0.62 | 0.835 |
+| `persistent_long` | 1.00 | **1.00** | **0.00** | 0.568 |
+| `zscore_fade[20,2.0]` | 0.13 | 0.07 | 0.93 | **0.102** |
+| `shock_fade[20,2.0]` | 0.13 | 0.07 | 0.93 | **0.077** |
+| `zscore_fade[50,2.5]` | 0.07 | 0.06 | 0.94 | **0.077** |
+
+Four rules clear Davey's 0.90 beat-rate target. The mean-reversion family is not merely weak — it
+is beaten by roughly 90% of coin flips with identical exposure, which is the same verdict the
+permutation test reached by an unrelated route (negative Sharpe, p ≈ 0.86).
+
+`persistent_long` is the control and behaves exactly as designed: exposure share 1.00, timing
+share **0.00**, beat rate mid-range. A rule with no timing skill is credited with none.
+
+## The reading that was wrong, and why
+
+Time-in-market for `time_series_mom[40]` is **0.98**, which looks like a rule that earns its
+return by simply being there. It is not: its exposure share is **0.06** and its timing share is
+**0.94**.
+
+Those two numbers measure different things and it is easy to conflate them. Time-in-market is
+`mean(position != 0)`. Exposure is `mean(position) * mean(return)`. For a rule that is **long OR
+short** (+1/−1), `|position|` is 1 almost always while `mean(position)` sits near zero — so a
+rule can be invested on 98% of bars and still take essentially none of its return from drift.
+
+The rule where the two DO coincide is `persistent_long`, which is long-only: time-in-market 1.00
+and exposure share 1.00. `drift_proxy[200]` sits between them at 0.38 exposure share, which is
+what a long-biased trend rule should look like.
+
+So the desk's best candidate is not a leveraged buy-and-hold. Its edge is in **when** it is long
+versus short, and that survives both nulls.
