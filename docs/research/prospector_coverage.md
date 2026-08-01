@@ -284,6 +284,37 @@ PROACTIVE BATTERY (moves run this session, per standing duty):
   the new card adds ZERO standing backlog burden (checked against source_backlog._classify rules).
   Moves #1/#5/#6/#7/#10 produced nothing beyond the above this run — reported as such, not skipped.
 
+### 2026-08-01 session E (EN frontier miner) — IN PROGRESS (write-first note; updated as items resolve)
+CONCURRENCY: a CN frontier-miner session is live in this same working tree (uncommitted note at
+file end as of my start). All my edits are surgical anchored Edits inside the EN section, never a
+whole-file write, and I commit each item as it closes (session A and C both died before writing).
+Mine gate: **BACKLOG-CLEAR** (`scripts/mine_gate.py`: all 7 carded finds disposed; mining authorised).
+VERIFY-QUEUE (resume rule, 60s config-vs-outcome — NOT re-derived): the 4 pending items are litminer
+cards 23/24/25 carrying **future-dated deferrals** (2026-08-07 / 2026-08-10) with owning R-rows, plus
+NAVER (credential-blocked, deferral 2026-08-09 stands). Card 23 states the build is owed by the alpha
+org and that litminer freeze bars the runner code — re-probing today is duplication, not verification.
+Nothing in the queue is EN-region-actionable today. Named, not silently skipped.
+PRIOR EN STATE (resume rule): last EN session 2026-07-28 (session D). Its written chain, in order:
+(1) **OLMAR thread cluster** (`posts/olmar-*`, 9 Wayback captures already located by D — 2013 era,
+on-line portfolio selection + its era debunking); (2) "Quality Companies in an Uptrend" companion
+superthread; (3) **Wilmott first touch** (never visited by any desk organ; carried and NOT started
+across sessions B, C and D — a §37 silent-carry, named here rather than carried a fourth time).
+
+ITEMS THIS RUN (bounded per completion contract; depth per item unbounded):
+1. **OLMAR / on-line-portfolio-selection cluster — carried pointer #1, and it lands on the desk's
+   ONLY never-tested strategy family.** `data/strategy_coverage.json` (2026-08-01T05:50Z) grades 14
+   families: 7 HUNTED, 6 THIN, and **STATISTICAL-ARBITRAGE = MENTIONED-NEVER-TESTED, n_tested=0**.
+   OLPS (OLMAR/PAMR/universal portfolios) is relative-price mean reversion — that family exactly.
+   L1.35 prefers an unhunted family over deepening a worked one, so this is the highest-value
+   version of the carried pointer, not merely the next thread. Plan: mine the cluster to reply-depth
+   incl. the era's own debunking, novelty-gate BEFORE compute, and SCREEN-ON-DISCOVERY in the same
+   run if a stated-mechanism construction emerges (every construction logged as a charged trial).
+2. **WILMOTT FIRST TOUCH** — the never-visited EN legacy ground, plus the standing VENUE-DISCOVERY
+   obligation (the seed list is a floor: harvest venues named *inside* threads, not just the row).
+3. Data axes are hunted on every venue touched, even when the strategy yield is zero — a dig
+   returning 0 strategies and 1 new axis is a GOOD dig.
+STATUS: run in progress — per-item results below.
+
 ## SESSION NOTES — CN frontier miner
 
 ### 2026-07-26 session 1 (CN frontier miner) — IN PROGRESS (write-first note; updated as items resolve)
@@ -627,3 +658,29 @@ data/kr_perasset_premium_rebuilt.jsonl + kr_perasset_legs_raw.json + kr_perasset
 (new datasets, manifested), 11 stage_a_verdicts rows, 9 research_memory rows, F0015,
 R0067/R0068/R0069, 1 blind-spot row, reports/axis_screens/kr_perasset_premium.json, universe-map
 entry, KR lexicon section, paid-target Nansen line advanced, this note, watchlist. Cycle CONVERTED.
+
+### 2026-08-01 session 3 (CN frontier miner) — IN PROGRESS (write-first note; updated as items resolve)
+Mine gate: **BACKLOG-CLEAR** (`scripts/mine_gate.py`: all 7 carded finds disposed; mining authorised).
+Verify-queue (30s config-vs-outcome, NOT re-derived a 5th time — F0002 already rowed 07-28): the 4
+"VERIFY this cycle" items are the same standing-monitoring/dated-deferral cards; NAVER still
+credential-blocked (deferral 2026-08-09 stands). None is CN-region or miner-actionable.
+PRIOR CN STATE (resume rule): last CN session 2026-07-30. Carried un-exhausted grounds, in order:
+(1) 8btc forum-54 era board — catalog 713 tids, **11 mined**, exhaustion continues; (2) **Gitee /
+CN-GitHub repo chain per OP-001 — carried since 07-26 and NEVER STARTED across 3 sessions** (a §37
+silent-carry defect, named here); (3) CN OSS tranche deeper pass (principal 07-31).
+
+ITEMS THIS RUN (bounded per completion contract; depth per item unbounded):
+1. **T1 INSTRUMENT DEFECT-CLOSER — the unverified-slang block (principal 2026-08-01).** The prompt
+   ships 8 UNVERIFIED terms with an explicit warning that querying invented slang "would make a
+   rich ground look picked clean". That is a **recall defect in this seat's primary instrument**,
+   and it outranks any single dig: it multiplies every future CN run (charter §16 propagates it to
+   the whole fleet). Plan: OP-030 negative-control every unverified term against live CN sources,
+   promote/kill each, ADD the 4 verified-block terms missing from our lexicon table (大饼/糖果/
+   空气币/山寨币), and A/B measured recall vs the translated-English key.
+2. **CN OSS TRANCHE DEEPER PASS (principal 07-31, the seat's named job):** AlphaGPT
+   `paper/20251226.pdf` (the tranche's only real target there) + Vibe-Trading issues #476/#331 +
+   discussion #468 — mining for **DATA SOURCES the bounded extraction missed** and mechanism-
+   carrying constructions. Screen-on-discovery in the SAME run for anything with a stated mechanism.
+3. **VENUE DISCOVERY (standing obligation) + carried pointer #2 (Gitee/CN-GitHub OP-001 chain).**
+   Every run must attempt venues NOT on the seed list; the seed list is a floor.
+STATUS: run in progress — per-item results below.
