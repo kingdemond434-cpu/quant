@@ -3954,6 +3954,18 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0326",
+   "source": "deep_sweep",
+   "summary": "SCHEDULER: ops/run_crypto_factory.sh is scheduled TWICE under DIFFERENT locks -- crontab.manifest:643 (30 1 * * *, flock data/.cron_crypto_factory.lock) and :951 (30 3 * * *, flock /tmp/crypto_factory.lock). Two different lock files means mutual exclusion DOES NOT HOLD: if the 01:30 run overruns 2h the 03:30 run starts concurrently against the same factory outputs. Found while fixing R0070's set-vs-multiset fence blindness; NOT one of the duplicates R0070 named (those were 17 exact-duplicate legacy lines, now deleted). Fix: single lock path, or one schedule. The new multiset check cannot catch this -- the two lines differ, so they are two legitimate manifest entries; it needs a same-script-different-lock check.",
+   "roi_bps": 40.0,
+   "raised": "2026-08-01T15:18:25.434153+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

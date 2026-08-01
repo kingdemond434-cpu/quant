@@ -154,9 +154,32 @@ class TestCheckerContract:
         assert c.main(["--root", str(root)]) == 1                     # drift -> nonzero
         assert c.main(["--root", str(root), "--report-only"]) == 0    # tolerated on request
         man = c.parse_manifest(root / "ops/crontab.manifest")
-        missing_live, extra_live = c.diff_live(root, man, live)
+        missing_live, extra_live, dupes = c.diff_live(root, man, live)
         assert len(missing_live) == 1 and "real_job.py" in missing_live[0]
         assert len(extra_live) == 1 and "live_only.py" in extra_live[0]
+        assert dupes == []
+
+    def test_a_job_scheduled_twice_is_drift_not_a_match(
+            self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        """THE REGRESSION THIS FENCE SHIPPED WITH. diff_live compared `set`s, so an exact duplicate
+        live line collapsed into the manifest's copy and BOTH differences came back empty -- the
+        fence printed "matches manifest" and exited OK. Measured on the real box 2026-08-01: 154
+        live job lines vs 137 manifest entries, 17 jobs running twice, verdict OK.
+
+        The duplicate is the ONLY drift shape a set cannot represent, which is why it needs its own
+        test rather than a variation of the both-directions one above.
+        """
+        root = _fixture_repo(tmp_path, _GOOD)
+        job = ('*/5 * * * * cd /srv/desk && '
+               ".venv/bin/python scripts/real_job.py >> data/x.log 2>&1\n")
+        live = job + job                                   # scheduled twice, byte-identical
+        monkeypatch.setattr(c, "read_live_crontab", lambda: live)
+        man = c.parse_manifest(root / "ops/crontab.manifest")
+        missing_live, extra_live, dupes = c.diff_live(root, man, live)
+        assert missing_live == [] and extra_live == []     # a set sees nothing wrong here
+        assert len(dupes) == 1 and "real_job.py" in dupes[0]
+        assert "live x2" in dupes[0] and "manifest x1" in dupes[0]
+        assert c.main(["--root", str(root)]) == 1          # and it must FAIL the gate
 
     def test_root_normalization_makes_identical_jobs_equal(self, tmp_path: Path) -> None:
         """$QUANT_ROOT in the manifest vs the literal VPS path live must compare equal --
@@ -165,5 +188,5 @@ class TestCheckerContract:
         man = c.parse_manifest(root / "ops/crontab.manifest")
         live = ('*/5 * * * * cd /srv/desk && '
                 ".venv/bin/python scripts/real_job.py >> data/x.log 2>&1\n")
-        missing_live, extra_live = c.diff_live(root, man, live)
-        assert missing_live == [] and extra_live == []
+        missing_live, extra_live, dupes = c.diff_live(root, man, live)
+        assert missing_live == [] and extra_live == [] and dupes == []
