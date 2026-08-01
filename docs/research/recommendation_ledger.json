@@ -3810,6 +3810,30 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0314",
+   "source": "proactive_battery",
+   "summary": "ADJACENCY of R0067: artifacts DERIVED from the mispaired Upbit keying between 2026-07-29T11:10 and 2026-08-01T14:00 are still on disk uncorrected. Confirmed: data/signal_halflife.jsonl carries kimchi_premium rows dated 2026-08-01 (ic_early 0.122 / ic_recent 0.0304 / status AGEING, written 08:24) and data/fusion_engine.json (12:51) fuses a 'kimchi' leg -- both computed through upbit_data's +1d shift, so their kimchi legs measure -r_binance, not a premium. The halflife rows are ALSO exact duplicates (same date+signal written twice), which is a second defect in the same file. Retract/re-run both now that the canon is same-instant; then sweep for any other consumer artifact written in that 3-day window.",
+   "roi_bps": null,
+   "raised": "2026-08-01T14:16:18.995811+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0315",
+   "source": "cycle",
+   "summary": "SHARED-WORKING-TREE COMMIT SWEEPING: concurrent sessions in /home/quant/quant-platform run tree-wide commits that absorb another live session's in-flight edits into unrelated commits. Observed 2026-08-01: the R0067 Upbit keying fix, its two new test files and the graveyard correction landed across four sibling commits (eaa8b84, dd191e5, 7c49c3b, 710ad77) whose messages are about JP MINER seats and a crossasset clock. Consequences: (a) git attribution is fiction, so 'which commit changed the keying' is unanswerable from the log; (b) --commit on a ledger disposition cites a sha whose message contradicts the work; (c) a half-finished edit can be committed mid-write by another session. Fix candidates: per-session git worktrees, or a commit lock, or teach organs to stage explicit paths instead of -a/-A.",
+   "roi_bps": null,
+   "raised": "2026-08-01T14:16:29.488842+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
