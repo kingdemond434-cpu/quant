@@ -1987,3 +1987,54 @@ exists to hold. A platform is logged only after a real attempt fails.
    boards, pre-real-name-law communities, Ppomppu — **zero era work happened this run**, and with
    DCInside and Naver closed the route must be Wayback/mirror-based. Naming it rather than letting
    the dark-forest era limb quietly lapse.
+
+---
+
+## SESSION NOTES — JP frontier miner
+
+### 2026-08-01 session 1 (JP frontier miner, SEAT'S FIRST RUN) — IN PROGRESS (write-first note; updated as items resolve)
+
+**RESUME check done first.** `source_backlog_next.py --limit 6` → 5 pending technical
+verification + 3 pending a legitimacy decision. Exactly ONE of the eight is JP-region:
+**bitFlyer getexecutions + self-recorded candles** (`data_axis_watchlist.md` item 3, graded
+`needs-legitimacy-review`, `[§33: deferred(2026-08-09) tier:2]`). The seat's own prior note: none
+— this is run 1. The carried-since-07-20 unstarted ground is the **richmanbtc/note.com botter
+lineage** (addendum C62, named a gem 12 days ago and never dug).
+
+**ITEMS TAKEN THIS RUN (bounded scope, maxed depth):**
+1. **§13 robots.txt sweep of all five assigned JP grounds** — the KR seat's s1 lesson propagated
+   under charter §16 (it found 3 of 5 KR grounds refuse this agent BY NAME). Must run before any
+   digging, because a seed list is not an authorisation.
+2. **bitFlyer legitimacy (T2 backlog item, blocking, human-dependency)** — re-open the "WAF-blocked,
+   needs a human to read one page" verdict. Route-vs-capability (battery move #9).
+3. **richmanbtc / note.com botter lineage to genuine depth** — the named-and-never-dug gem.
+
+---
+
+#### ITEM 1 — §13 ROBOTS SWEEP: **RESOLVED. 5ch IS REFUSED BY NAME; THE OTHER THREE ARE CLEAN.**
+
+| Ground | robots.txt verdict for this agent | Evidence |
+|---|---|---|
+| **5ch.net** (+ `itest.`, `egg.`, `kizuna.` sister hosts) | **REFUSED — `User-agent: ClaudeBot` → `Disallow: /`** | verbatim, all four hosts |
+| note.com | **CLEAN** — no Claude/Anthropic UA anywhere; `/api/*`, `/search`, `/*/archives` disallowed for `*` | article paths allowed |
+| qiita.com | **CLEAN** — no Claude UA; `/api/*` disallowed for `*` (`Allow: /api/*/docs$`) | sitemap published |
+| zenn.dev | **CLEAN** — no Claude UA; only `/search` disallowed for `*` | sitemap published |
+
+**5ch is out of scope for this seat, permanently, until the file changes.** It was an assigned
+ground; the assignment does not override the site's own refusal (§13). Recorded, not routed around.
+
+**THE PROPAGATION FINDING, which is bigger than 5ch (charter §16 — fleet-wide):** the 5ch block is
+delimited in the file by `# BEGIN Cloudflare Managed content` / `# END Cloudflare Managed Content`.
+It is **not a hand-written site decision** — it is Cloudflare's *managed robots.txt* feature
+emitting a standard AI-crawler block list (`ClaudeBot`, `GPTBot`, `CCBot`, `Google-Extended`,
+`Applebot-Extended`, `Bytespider`, `meta-externalagent`, `CloudflareBrowserRenderingCrawler`).
+Two consequences the fleet must carry:
+- **This is now the second region in two days to lose grounds to the same block** (KR lost naver
+  cafe/blog + dcinside on 08-01). The correct prior is no longer "some sites block us" but
+  **"any Cloudflare-fronted community site is likely to refuse this agent by name"** — so the
+  robots check is cheapest run FIRST and is now mandatory per ground, not per region.
+- The same file carries `Content-Signal: search=yes, ai-train=no, use=reference` for `User-agent: *`.
+  That signal would have *permitted* reference use. **The named-agent `Disallow: /` overrides it,
+  and reading the permissive generic block alone would have produced a false "allowed" verdict** —
+  the exact loophole the KR seat warned about, confirmed independently on a second region.
+

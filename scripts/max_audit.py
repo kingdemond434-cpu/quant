@@ -1940,6 +1940,12 @@ _FINDING_DOCS_EXCLUDED = {
         "GENERATED dossier -- its numbered block is a copy of the register table; original panel "
         "findings enter via panel_inbox -> panel_rulings, which are in scope",
     # trailing slash = class entry, same design as deep_sweep/ above
+    "docs/research/ARTIFACT_GOVERNANCE.md":
+        "THE LAW ITSELF (§36). The register that says which law claims which artifact cannot be claimed by another register without circularity -- it is the root of that tree.",
+    "docs/research/META_RESEARCH_DIRECTIVE.md":
+        "L1.22 self-improvement. States how the desk researches its own research; enforced by the cycle's meta duty, not by an artifact-freshness clock.",
+    "docs/research/UNREACHABLE_LAYER_TRIAGE.md":
+        "§36 orphan-code triage. The standing record of which modules are unreachable and why, with each carrying an explicit wire/defer/retire verdict -- self-disposing, like the other triage registers.",
     "docs/research/capability_hunt/":
         "daily L1.31 hunt records -- dated per-slot snapshots whose findings are ROWED IN THE\n"
         "SAME RUN by the hunt's own duty (L1.31/L1.39; 2026-07-31 proof: s5 -> R0153-R0173,\n"
