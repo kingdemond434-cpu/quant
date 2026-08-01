@@ -46,8 +46,10 @@ __all__ = [
 ]
 
 #: Hard ceiling on rounds. Exhaustion normally stops the ladder well before this; the cap exists
-#: so a model that hallucinates novelty forever cannot bill indefinitely.
-MAX_ROUNDS = 10
+#: so a model that hallucinates novelty forever cannot bill indefinitely. Raised 10->11 when the
+#: principal's six standing questions became a rung of their own -- a cap that silently truncates
+#: the ladder is the same defect as a seat count capped by a literal's length.
+MAX_ROUNDS = 11
 
 #: A round must contribute at least this fraction of genuinely new content tokens or the model is
 #: treated as exhausted. 0.15 is deliberately low: late rounds are SHORTER (the easy material is
@@ -105,6 +107,17 @@ PUSH_LADDER: tuple[str, ...] = (
     "It has 0 deployed alphas and a validated-discovery rate of 0.00 per 45 days. Its last "
     "campaign ran 420 candidates for zero survivors, and relaxing the gates was MEASURED to "
     "promote nobody. Given that, what changes in your answer, and what did you miss?"
+    + COMPOUNDING_FILTER,
+
+    "The six standing questions, answered in order and each with a number or a named artifact: "
+    "(1) What is the BOTTLENECK -- the one constraint whose removal moves everything else, and "
+    "how do you know it binds? (2) What COMPOUNDS -- which of your items pays repeatedly rather "
+    "than once? (3) What would an INSTITUTIONAL desk do here that this one is not doing? "
+    "(4) How does this become SELF-IMPROVING -- what result feeds back and changes the next "
+    "cycle's behaviour without a human? (5) Where is the OPPORTUNITY COST -- what is idle, "
+    "under-deployed, unspent, or waiting, and what does that idleness cost in compounded "
+    "capital? (6) How do we raise THROUGHPUT while preserving VALIDATION INTEGRITY -- more "
+    "candidates tested at the full bar, never more survivors waved through."
     + COMPOUNDING_FILTER,
 
     "Adversarially: what would a competitor with the same data find that you did not? What is "

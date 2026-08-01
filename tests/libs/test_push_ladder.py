@@ -128,8 +128,8 @@ def test_short_late_rounds_are_not_punished() -> None:
 def test_ladders_are_ten_rungs_and_never_repeat_themselves(ladder) -> None:
     """Asking 'anything else?' ten times gets 'no' by round two -- a repeated question reads as
     a signal the model has finished. Each rung must attack a different suppression mechanism."""
-    assert len(ladder) == 10
-    assert len(set(ladder)) == 10
+    assert len(ladder) >= 10
+    assert len(set(ladder)) == len(ladder)
     for rung in ladder:
         assert len(rung) > 80, "a one-line nudge does not move a model off its first answer"
 
@@ -138,7 +138,7 @@ def test_generation_ladder_re_asserts_the_output_contract() -> None:
     """A pushed model drifts toward prose, and a hypothesis without a mechanism, a test and a
     kill condition is not a hypothesis."""
     fmt = sum(1 for r in GENERATION_LADDER if "format" in r.lower() or "MECHANISM" in r)
-    assert fmt >= 8, f"only {fmt}/10 generation rungs restate the contract"
+    assert fmt >= 8, f"only {fmt}/{len(GENERATION_LADDER)} rungs restate the contract"
 
 
 def test_analysis_ladder_forbids_silent_cost_self_censorship() -> None:
@@ -218,3 +218,22 @@ def test_the_decay_rung_asks_how_to_harvest_not_whether_to_skip() -> None:
     rung = next(r for r in PUSH_LADDER if "Second-order" in r)
     assert "harvest it BEFORE it does, never to skip it" in rung
     assert "aggressive version" in rung
+
+
+def test_the_six_standing_questions_are_a_rung() -> None:
+    """The principal's permanent exploration set. Every seat answers all six, every push, with a
+    number or a named artifact -- not prose."""
+    rung = next((r for r in PUSH_LADDER if "BOTTLENECK" in r), None)
+    assert rung is not None
+    for q in ("COMPOUNDS", "INSTITUTIONAL", "SELF-IMPROVING", "OPPORTUNITY COST",
+              "VALIDATION INTEGRITY"):
+        assert q in rung, q
+    assert "never more survivors waved through" in rung, (
+        "throughput must never be bought by lowering the bar -- that is negative discovery")
+
+
+def test_the_round_cap_never_truncates_the_ladder() -> None:
+    """A cap below the rung count silently drops the last questions -- the same defect as a seat
+    count capped by a literal's length, which this session found four times."""
+    assert len(PUSH_LADDER) <= MAX_ROUNDS
+    assert len(GENERATION_LADDER) <= MAX_ROUNDS
