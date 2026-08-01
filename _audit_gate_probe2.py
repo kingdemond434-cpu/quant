@@ -17,7 +17,9 @@ from libs.validation.economic_prior import MechanismType
 from libs.validation.reality_check import hansen_spa
 
 PPY = 365.0  # D1 crypto bars: 365 periods/year (annualisation for TRUE-Sharpe reporting)
-prepared = pickle.loads(Path("_audit_prepared.pkl").read_bytes())
+# S301 suppressed deliberately: _audit_prepared.pkl is written by _audit_gate_probe.py on this
+# box and never leaves it, so these bytes are our own, not untrusted input.
+prepared = pickle.loads(Path("_audit_prepared.pkl").read_bytes())  # noqa: S301
 FAM_ORDER = list(dict.fromkeys(p[0] for p in prepared))
 
 min_len = min(len(r) for *_x, r in prepared)

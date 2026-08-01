@@ -283,3 +283,34 @@ def test_graduation_actually_freed_budget():
     for d in dropped:
         assert d.enforced_verified or d.cost in ("hygiene", "slow"), (
             f"{d.id} ({d.cost}) reaches no organ and no test enforces it")
+
+
+def test_overflow_separates_a_real_loss_from_a_deliberate_demotion(tmp_path):
+    """A graduated lesson that ranks out is NOT a lesson the desk stopped telling anyone -- a test
+    tells it, on every CI run. Counting the two together reported 31 lessons "reaching NO organ"
+    when 20 were enforced, overstating the loss 2.8x; a number that cries wolf gets skipped, and
+    the genuine losses hide inside it."""
+    # load() resolves enforced_by against the ledger's grandparent, so the fixture needs a root
+    # shaped like the repo: <root>/docs/l.jsonl alongside <root>/tests/.
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "tests").mkdir()
+    (tmp_path / "tests" / "t.py").write_text("def test_x():\n    pass\n", "utf-8")
+    p = tmp_path / "docs" / "l.jsonl"
+    p.write_text(
+        json.dumps(_row(id="L0001", enforced_by="tests/t.py::test_x")) + "\n"
+        + json.dumps(_row(id="L0002")) + "\n", "utf-8")
+    lost, demoted = dm.unreached(budget=1, path=p)   # budget=1 -> nothing fits, all overflow
+    assert [i.id for i in lost] == ["L0002"], "an unenforced lesson over budget is a real loss"
+    assert [i.id for i in demoted] == ["L0001"], "a test-enforced lesson is demoted, not lost"
+
+
+def test_an_unverifiable_enforcement_claim_is_counted_as_lost_not_demoted(tmp_path):
+    """The half that keeps the split honest. If a bad enforced_by bought a place in `demoted`,
+    writing a path that resolves to nothing would be a way to make a paid-for lesson disappear
+    from every organ's context AND from the overflow report that exists to catch exactly that."""
+    p = tmp_path / "l.jsonl"
+    p.write_text(json.dumps(_row(id="L0001", enforced_by="tests/nope.py::test_ghost")) + "\n",
+                 "utf-8")
+    lost, demoted = dm.unreached(budget=1, path=p)
+    assert [i.id for i in lost] == ["L0001"]
+    assert demoted == []

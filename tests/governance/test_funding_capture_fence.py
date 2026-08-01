@@ -222,6 +222,7 @@ class TestExitCodes:
         monkeypatch.setattr(fence, "build_report",
                             lambda: {"status": "UNMEASURED", "detail": "d", "breaches": [],
                                      "n_closes": 0, "mismarked_fraction": 0.0, "forfeit_z": 0.0,
-                                     "per_position_truth_rows": None, "close_phase_octiles": [0] * 8,
+                                     "per_position_truth_rows": None,
+                                     "close_phase_octiles": [0] * 8,
                                      "next_action": "n"})
         assert fence.main() == 2

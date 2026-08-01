@@ -276,6 +276,30 @@ def corpus(budget: int = BUDGET_CHARS, path: Path | None = None) -> tuple[str, l
     return _HEADER + body + _FOOTER, dropped
 
 
+def unreached(budget: int = BUDGET_CHARS,
+              path: Path | None = None) -> tuple[list[Lesson], list[Lesson]]:
+    """Split the overflow into what is genuinely LOST and what is merely DEMOTED.
+
+    NOT EVERY DROPPED LESSON IS A LOSS, and conflating the two is how this fence dies. A lesson
+    that has graduated to a test is enforced MECHANICALLY on every CI run; ranking it out of the
+    char budget is precisely what ENFORCED_WEIGHT exists to cause, so its absence from an organ's
+    context costs nothing. Measured 2026-08-01: 31 lessons overflowed and 20 of them were
+    graduated, so the raw count overstated the real loss by 2.8x. A number that cries wolf like
+    that trains its reader to skip it, and a fence nobody reads is a fence that has been switched
+    off -- the expensive failure, because the 11 genuine losses hide inside the noise.
+
+    THE DISCOUNT IS SAFE ONLY BECAUSE `enforced_verified` IS EARNED, NEVER CLAIMED. load() sets it
+    by RESOLVING the named test on disk and fails closed, so a typo, a renamed test or a deleted
+    file leaves the lesson at full weight and it lands here in `lost` where it belongs. Without
+    that check this split would be a way to smuggle a paid-for lesson out of every organ's context
+    by writing a path that points at nothing.
+    """
+    _text, over = corpus(budget, path)
+    lost = [item for item in over if not item.enforced_verified]
+    demoted = [item for item in over if item.enforced_verified]
+    return lost, demoted
+
+
 _HEADER = """
 === DESK MEMORY -- lessons this desk PAID for, ranked by what ignorance cost (injected at
 runtime from docs/desk_lessons.jsonl; do not summarise, do not skip) ===

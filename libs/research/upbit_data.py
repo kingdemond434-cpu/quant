@@ -39,17 +39,18 @@ from __future__ import annotations
 import json
 import time as _time
 import urllib.request
+from typing import Any
 
 _UPBIT = "https://api.upbit.com/v1/candles/days"
 _UA = {"User-Agent": "Mozilla/5.0 (quant-desk kimchi)"}
 
 
-def _key(row: dict) -> str:
+def _key(row: dict[str, Any]) -> str:
     """THE alignment policy, in one place: the candle's label IS its UTC date. No shift."""
     return str(row["candle_date_time_utc"])[:10]
 
 
-def _fetch(market: str, count: int, to: str, timeout: int) -> list:
+def _fetch(market: str, count: int, to: str, timeout: int) -> list[dict[str, Any]]:
     url = f"{_UPBIT}?market={market}&count={count}"
     if to:
         url += f"&to={to}"
