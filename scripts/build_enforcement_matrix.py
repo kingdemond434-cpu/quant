@@ -173,6 +173,11 @@ _MAP: dict[str, list[str]] = {
     # back. It also owns the producer for the three ramp_gate step-up conditions that had none.
     "L1.45": ["scripts/check_excitation.py", "scripts/run_cost_identification.py",
               "libs/execution/excitation.py"],
+    # L1.46: clock provenance. Every other data fence asks whether the COLLECTOR RAN -- gapless
+    # collection was verified GOOD on the same corpus that is not monotonic in its own `t` field.
+    # This one asks whether the TIMESTAMPS MEAN WHAT THE SCHEMA IMPLIES, which is the defect class
+    # behind kimchi_premium, coinbase_premium_timing and R0060 alike.
+    "L1.46": ["scripts/check_clock_provenance.py", "libs/research/clock_provenance.py"],
     # R0122 LLM discretionary sleeve: paper-only candidate generator whose calls are scored
     # forecasts. Governed by L1.6 (zero promotion authority) and L1.29 (it grades itself).
     "L1.6-llm": ["scripts/run_llm_trader.py"],

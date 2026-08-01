@@ -1218,3 +1218,20 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # EVIDENCE: scripts/run_moat_campaign.py -> reports/moat_campaign.json
 # CONFIDENCE: committed-script (new; first run may legitimately report BLOCKED on sample length)
 10 4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_moatcamp.lock .venv/bin/python scripts/run_moat_campaign.py >> data/cro_ai_logs/moat_campaign.log 2>&1
+# --- L1.46 CLOCK PROVENANCE (capability hunt s0, 2026-08-01) --------------------------------
+# CEILING TYPE (L1.28c): DATA-ARRIVAL bound, and the arrival granularity is EXACTLY ONE HOUR --
+# the moat tape rotates hourly (data/moat/<venue>/<SYMBOL>/YYYYMMDD_HH.jsonl.gz), so the fence's
+# unit of observation is one file per stream. Denser re-reads a file it has already judged;
+# sparser lets a whole file be written wrong unseen, and an hour recorded without the venue stamp
+# is a Delta hour that cannot be bought back at any price (L1.28b(f): the collector never
+# throttles, so the detector must not either). Hourly is therefore the ceiling AND the floor.
+# PHASE :40 -- mid-file, deliberately. At :05 the newest file holds ~5 minutes and the achieved-
+# period estimate is thin; at :40 it holds ~40 minutes, which is a solid median over ~300 depth
+# rows, while still catching a bad hour inside that hour rather than after it.
+# Pure CPU: samples 4 symbols per venue and reads the FRONT of each gzip, so it stops early
+# instead of decompressing 7.5GB -- the cost of running it is a rounding error.
+# EVIDENCE: scripts/check_clock_provenance.py -> data/clock_provenance_status.json; CONSTITUTION L1.46
+# CONFIDENCE: committed-script (new this cycle; first run fired MIXED-CLOCK and named fut/* and
+# spot/* as interleaving two clocks under one field name, and independently reproduced the
+# achieved-vs-configured period gap on both Binance recorders -- 8.28s and 7.84s against 5.0s)
+40 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_clockprov.lock .venv/bin/python scripts/check_clock_provenance.py --report-only >> data/cro_ai_logs/clock_provenance.log 2>&1

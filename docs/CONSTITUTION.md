@@ -1074,6 +1074,62 @@ engineering + cognitive cost; no unnecessary complexity; no duplication; interna
 Never modify merely because wording is possible; rank candidate changes by ERV; recommend
 "unchanged" explicitly when nothing clears the bar.
 
+**L1.46 CLOCK PROVENANCE — A TIMESTAMP WHOSE CLOCK IS UNDECLARED IS AN ASSUMPTION WEARING A
+MEASUREMENT'S CLOTHES** *(capability hunt 2026-08-01; SOLO — the GPT-9 seat returned HTTP 400 for
+the fifth consecutive run, so this is UNCONFIRMED by an independent family and must never later be
+cited as cross-family corroboration)*. Every recorder wrote its timestamp into a field called `t`,
+and `t` meant two different things in the same file: `run_recorder.py:232` stamped depth with
+`int(time.time() * 1000)` — OUR clock — while `:249` stamped trades with `int(tr["T"])` — the
+VENUE's. Same field name, same file, discriminated only by `k`, declared nowhere. Measured on
+disk: 83 of 12,037 rows in one hourly file step BACKWARDS in `t`, the worst by 40.2 seconds. The
+corpus is 82% of all desk data and is not monotonic in its own time field. || **NOTHING COULD SEE
+THIS BECAUSE EVERY DATA FENCE ASKS WHETHER THE COLLECTOR RAN, NEVER WHETHER THE TIMESTAMPS MEAN
+WHAT THE SCHEMA IMPLIES.** Gapless collection was verified GOOD on this exact corpus. The desk's
+own auditor crystallised the blind spot in one line — `moat_audit.py:71` read `"t": d.get("t") or
+d.get("E") or d.get("ts")`, three different clocks coalesced into one field, silently preferring
+whichever happened to be present. And the same file's docstring records the desk being burned by
+the *kind* half of this defect once already: the first audit read trades as corrupt books and
+declared the dataset unusable. The kind filter was fixed; the clock was left. || **THE COST IS ON
+THE RECORD THREE TIMES.** `kimchi_premium`, the desk's flagship, was retracted as a ~73% timestamp
+artifact; `coinbase_premium_timing` was graveyarded as "close-timestamp microstructure"; R0060
+found leaky Upbit look-ahead copies surviving their own retraction. Three of the most prominent
+kills in the graveyard are ONE defect class — and the institutional response was a PROSE DUTY
+("DECLARE TIMESTAMP ALIGNMENT for every cross-source series … unstated alignment voids the screen")
+with **no instrument**, which made that duty unsatisfiable by construction on the dataset it most
+needed to govern. A duty with no instrument is a wish. || **THE OPERATIVE RULE:** every market-data
+record declares the clock that stamped it (`c` = `venue` / `recv` / `recv_only`) and retains the
+venue's own stamp beside ours wherever the venue publishes one. Δ = t_recv − t_venue then becomes a
+first-class series and is **structurally unbuyable**: a vendor can sell you the venue's stamp or
+THEIR box's receipt, never when a message reached OURS, and it cannot be backfilled — so an hour
+recorded without it is an hour gone at any price. `recv_only` is kept DISTINCT from `recv` because
+Binance spot `/api/v3/depth` genuinely publishes no timestamp (verified live): a venue limitation
+must never read as a desk defect, or the fence cries wolf and gets switched off. Readers order
+mixed-clock files by RECEIPT, the only axis on which "what did we know, and when" is answerable.
+|| **THE SECOND CLAIM THE SCHEMA MAKES ABOUT THE TIME AXIS, AND NOBODY CHECKED IT EITHER: HOW
+OFTEN.** Measured 2026-08-01, the futures depth stream samples every **8.28 s against
+`_DEPTH_EVERY_S = 5.0`**, with p05 at 7.8 s and *nothing* near 5.0 — the poll loop cannot finish
+inside its own period, so `time.sleep(max(0.0, …))` sleeps zero every cycle and the constant is a
+fiction that every consumer reading it instead of measuring inherits as truth. Spot is the same at
+7.84 s; Bybit is clean at 1.08×. **A CONFIGURED CONSTANT IS NOT EVIDENCE OF A CADENCE** — demand
+the artifact, never the setting (the proactive battery's CONFIG-VS-OUTCOME move, applied to time
+itself). This is why R0117 — rowed as "cross-venue quote lead-lag **at own synchronized L2
+timestamps** … ours are actual capture instants" — rests on a false premise: two independent
+pollers at 8.28 s and 4.32 s share no trigger, so their sampling phase drifts continuously through
+the full cycle and the aliasing envelope is larger than the sub-minute effect being hunted. Nothing
+in the stack — angle-20 de-contamination, the artifact gate, Holm, DSR — tests for sampling-phase
+aliasing. That is the 420/0 instrument-artifact class (L1.25) one layer further down, aimed at the
+desk's self-declared crown jewel. || **ANTI-TIMIDITY READING (L1.28): this is a MEASUREMENT duty
+and a SCOPE EXPANSION, never a bar on research.** It forbids nothing and gates no hypothesis; it
+makes an alignment claim checkable that was previously asserted. Marking a stream `recv_only` is
+HONESTY, never an excuse to stop hunting the venue stamp — and where a venue does publish one,
+dropping it is an L1.28a idleness defect against a series that cannot be re-earned. The fence
+reports UNMEASURED as loudly as it reports a breach: an unmeasured time axis counts as an
+unknown one, never a healthy one. || Fenced by `scripts/check_clock_provenance.py`
+(NO-DATA / UNMEASURED / MIXED-CLOCK / RECV-ONLY / PERIOD-DRIFT, never OK on absent input) over
+`libs/research/clock_provenance.py`, which is the single module that knows which clock stamped
+which row — including for the 7.5 GB of pre-marker tape, whose provenance is KNOWN per
+(venue, kind) from the recorder source and is therefore preserved rather than written off.
+
 **L2.0 THE RATCHET FENCE (how L1.0 is enforced, not hoped for)** *(principal order 2026-07-29)*.
 Every ratchet metric lands in a committed floor artifact with its measuring command, and a fence
 fires when it falls or goes stale: `data/mutation_score.json` (test strength),

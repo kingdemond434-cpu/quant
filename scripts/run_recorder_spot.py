@@ -240,7 +240,12 @@ def main() -> None:
         for sym in symbols:
             try:
                 d = _get("/api/v3/depth", f"symbol={sym}&limit=20")
-                buf[sym].append({"t": int(time.time() * 1000), "k": "d",
+                # L1.46: "recv_only", NOT "recv" -- /api/v3/depth genuinely returns no venue
+                # timestamp (verified live 2026-08-01: keys are lastUpdateId/bids/asks only,
+                # unlike /fapi/v1/depth which returns E and T). This is a permanent VENUE limit,
+                # and it is marked differently from "recv" so the fence never reads a venue that
+                # offers no stamp as a desk defect -- a fence that cries wolf gets switched off.
+                buf[sym].append({"t": int(time.time() * 1000), "k": "d", "c": "recv_only",
                                  "u": d.get("lastUpdateId"),
                                  "b": d.get("bids"), "a": d.get("asks")})
             except Exception:
@@ -257,7 +262,9 @@ def main() -> None:
                     if isinstance(trades, list) and trades:
                         last_trade_id[sym] = int(trades[-1]["a"])
                         for tr in trades:
-                            buf[sym].append({"t": int(tr["T"]), "k": "t", "a": int(tr["a"]),
+                            # L1.46: VENUE clock here, receipt clock on the depth rows above.
+                            buf[sym].append({"t": int(tr["T"]), "k": "t", "c": "venue",
+                                             "a": int(tr["a"]),
                                              "p": tr["p"], "q": tr["q"],
                                              "m": bool(tr["m"])})
                 except Exception:

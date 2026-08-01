@@ -76,6 +76,7 @@ _GOVERNED: tuple[str, ...] = (
     "check_organ_liveness.py",
     "check_freshness.py",                                   # L1.44 fence (capability hunt s5)
     "check_excitation.py",                                  # L1.45 fence (capability hunt s4)
+    "check_clock_provenance.py",                            # L1.46 fence (capability hunt s0)
     "run_cost_identification.py",                           # L1.45 producer (capability hunt s4)
     "screen_carry_basis_path.py",                           # R0206 carry attribution (2026-07-31)
     "check_promotion_gate.py",

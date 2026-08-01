@@ -3186,18 +3186,6 @@
    "renumber_note": "allocator race with the VPS lineage; origin keeps its ids by convention. Origin's R0226 is an unrelated check_orphan_code finding. No code references this row."
   },
   {
-   "id": "R0271",
-   "source": "cycle",
-   "summary": "MIN-LEN TRUNCATION, SIBLING SCRIPTS: 8 more campaign builders still align with r[-min_len:] (run_campaign.py:95, certify_gauntlet.py:100, run_carry_harvest.py:89, run_xsec_funding.py:90, run_xsec_funding_max.py:68, run_funding_8h.py:63, run_mt5_crossasset.py:87, run_mt5_funding_bridge.py:109, run_prediction_markets.py:100). orchestrator.py is now stratified via stratified_campaign_gates; these are not. certify_gauntlet is the sharpest: the desk CERTIFIES its own gate on a 82.9%-truncated matrix, so the certification measures the truncated instrument, not the one now in production.",
-   "roi_bps": 40.0,
-   "raised": "2026-08-01T09:01:49.122364+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
-   "due": null,
-   "disposed": null
-  },
-  {
    "id": "R0262",
    "source": "cycle",
    "summary": "TOP-K RANKED SCREEN (gate_power_audit.md s6, still open): the backtest gauntlet is an ABSOLUTE threshold feeding MAX_FORWARD_SLOTS=12, so it admits nobody and leaves the forward stage -- the desk's only instrument of promotion -- permanently starved. Ranking by DSR and taking top-12 gives 51% precision at true SR 2.0 vs the current gauntlet's 0.00 promotions. Named by the desk's own audit as the next-largest lever after the min-len fix landed this cycle.",
@@ -3306,6 +3294,18 @@
    "disposed": null
   },
   {
+   "id": "R0271",
+   "source": "cycle",
+   "summary": "MIN-LEN TRUNCATION, SIBLING SCRIPTS: 8 more campaign builders still align with r[-min_len:] (run_campaign.py:95, certify_gauntlet.py:100, run_carry_harvest.py:89, run_xsec_funding.py:90, run_xsec_funding_max.py:68, run_funding_8h.py:63, run_mt5_crossasset.py:87, run_mt5_funding_bridge.py:109, run_prediction_markets.py:100). orchestrator.py is now stratified via stratified_campaign_gates; these are not. certify_gauntlet is the sharpest: the desk CERTIFIES its own gate on a 82.9%-truncated matrix, so the certification measures the truncated instrument, not the one now in production.",
+   "roi_bps": 40.0,
+   "raised": "2026-08-01T09:01:49.122364+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
    "id": "R0272",
    "source": "cycle",
    "summary": "TRACKED-JSON FORMAT FENCE: both Claude sessions independently produced multi-thousand-line whole-file diffs on append-only ledgers TODAY by writing a different indent than the canonical writer (recommendation_ledger.json is indent=1 per scripts/recommendations.py; decision_ledger.json is indent=2). Mine: a 26-line append to decision_ledger.json rendered as 7,056 changed lines; the sibling session's ledger commit rendered as 6,360. Content was intact in both cases -- and that is exactly the danger: the diff is indistinguishable at a glance from the LEDGER CORRUPTION class R0175 exists to catch, so a real deletion inside one would be invisible to review, and the append-only guarantee becomes unreviewable in practice. FENCE: a test that each tracked JSON ledger round-trips byte-identically through its canonical writer, so a wrong-indent write fails at commit rather than at review. Cheap, and it makes 'rows are never deleted' actually checkable.",
@@ -3381,75 +3381,87 @@
   },
   {
    "id": "R0278",
-   "source": "principal",
-   "summary": "Three corrections and two builds. (1) SCAM FILTER REPLACED -- my first version disqualified a source on a keyword (fixed periodic return) without reading it, and worse, set the miner up to report 'most CN AI-quant results are scams' and let the desk conclude the ground was polluted and abandon it. That confuses BAIDU SEO POLLUTION with the underlying ecosystem: AI\u91cf\u5316 is a high-CPC keyword, fraud bids on it, and BigQuant/UQER/JoinQuant do not, so the practitioner layer ranks BELOW the ads. High scam density in generic results is evidence THE QUERY IS WRONG, never that the ground is empty. Replaced with domain-gating (site:bigquant.com/community, uqer.io/community, joinquant.com/post, gitee/github \u91cf\u5316 \u56de\u6d4b), technical long-tail queries that starve scam bidding (\u591a\u56e0\u5b50\u6a21\u578b \u56de\u6d4b\u5f15\u64ce \u6e90\u4ee3\u7801; \u5377\u79ef\u795e\u7ecf\u7f51\u7edc LSTM \u91d1\u878d\u65f6\u5e8f\u9884\u6d4b instead of \u91cf\u5316\u4ea4\u6613 \u8d5a\u94b1), code-repo preference, and pollution density reported as a CRAWL-SHARPENING metric. Read everything, reject nothing unread: a fraud page's claimed MECHANISM is often real and misrepresented, and what is being marketed reveals what CN retail believes, which is tradeable context. A fixed-return promise disqualifies THE NUMBER, not the page, the mechanism, the data source it names, or the community it points at. (2) VENUE DISCOVERY IS NOW A STANDING OBLIGATION IN ALL SEVEN REGION PROMPTS (cn/en/jp/kr/ru/ar/br, charter \u00a716 fleet parity). Every named platform is a SEED, never the definition of the ground. A hardcoded list decays in two directions -- named venues die or go quiet while new ones appear where practitioners moved TO -- so a seat reading only its seed list reports thinning ground when the ground actually MOVED, and the desk cannot tell those apart from outside. Methods specified: follow practitioners out of threads to the Discord/Telegram/QQ/Substack/BBS they name, read repo README/issues/star-graph neighbours, find aggregators and awesome-lists, and specifically hunt the APP layer (exchange square feeds, broker forums, in-product comment threads) which is systematically under-mined because it does not surface in web search. Plus: hunt DATA on every venue, not only strategies -- a dig returning zero strategies and one new data axis is a GOOD dig. Verdicts (RICH/THIN/WALLED/DEAD) recorded per venue so the next run inherits them. \u00a713 unchanged: discovery widens WHERE you look, never HOW you get in. (3) MASTER WAS MYPY-RED and would have made pull_deploy revert: libs/research/slot_registry.py:121 carried a stale 'type: ignore[arg-type]' that no longer matched the real error (call-overload), so mypy flagged BOTH the unmatched call and the now-unused ignore -- two errors from one stale suppression. Narrowed the type instead of re-silencing. Not my code; came in at d13999b. BUILT: libs/research/dip_ladder.py (the red-day DCA mechanism as a CANDIDATE for the gauntlet, honest poor prior recorded BEFORE testing, causal by construction, non-overlapping windows, budget as the binding constraint; 10 tests) and docs/research/ADVERSARIAL_REVIEW_RUBRIC.md (the dual-brain idea in the form where the value lives -- ten defect classes each derived from a defect actually shipped on this desk, each with its own test).",
-   "roi_bps": null,
-   "raised": "2026-08-01T09:53:27.350152+00:00",
-   "status": "open",
+   "source": "cycle",
+   "summary": "L1.46 PERIOD-DRIFT: futures depth samples every 8.28s and spot every 7.84s against _DEPTH_EVERY_S=5.0 -- the poll loop cannot finish inside its own period so the sleep is always zero. Either make the poll loop concurrent (restores 5s resolution, needs a weight-budget check against Binance limits) or correct the constant to the achieved value. NOT fixed in the hunt run: rushing a concurrency change on a live collector risks a rate-limit ban that costs irreplaceable data.",
+   "roi_bps": 0.0,
+   "raised": "2026-08-01T10:09:51.651509+00:00",
+   "status": "scheduled",
    "reason": null,
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-05",
+   "disposed": "2026-08-01T10:10:21.188623+00:00"
   },
   {
    "id": "R0279",
-   "source": "principal",
-   "summary": "Scam filter REMOVED ENTIRELY on principal order -- any rule that discards a source before reading it will eventually discard a genuinely good discovery, and you never learn which one because an unread page leaves no trace. Replaced with MINE EVERYTHING: nothing disqualified on keyword, domain, claimed return, tone or smell; the gauntlet does the rejecting because it is the only stage entitled to say no and it is now measured. Instruction added on what to extract from pages whose numbers are invented -- the MECHANISM (a fabricated track record is often wrapped around a real mechanism the author did not invent), the DATA SOURCES the marketing copy names, the POSITIONING SIGNAL (what is being sold to CN retail reveals what the crowd believes and what is crowded), and the VOCABULARY (promo copy uses the words its audience actually searches with). Domain-gating and technical long-tail queries KEPT but reframed explicitly as RECALL WIDENING, not filtering. BUILT libs/research/transcript_candidates.py -- every tradeable mechanism named across all six transcripts as gauntlet candidates, ordered by MEASURED family survival rate rather than popularity (volume 38.7%, mean-reversion 38.5%, momentum 27.4%, pattern 22.0%, trend 18.2%). That ordering is the most useful thing in any transcript: forward slots are capped at 12, so spending them in proportion to a measured survival rate instead of intuition is free expected value -- and it inverts what retail focuses on, since trend-following survives worst. 13 candidates: chaikin_money_flow, volume_surge_breakout, obv_trend (volume); zscore/bollinger/percent_b/rsi reversion and range_position_dip (mean reversion); squeeze_momentum, absolute_momentum; donchian_breakout, golden_cross, trend_gated_rotation. Plus two overlays: vol_target (the one overlay with a mechanical rather than predictive justification -- it equalises risk per unit time, raising the geometric mean for any edge at all) and regime_filter (gate an existing strategy by state rather than trading the state). Costs always on at 6bps/turn. 33 tests, every candidate pinned CAUSAL by truncation (a dip-buyer that peeks backtests beautifully and is worthless) and pinned for NEXT-BAR alignment. Caught a real divide-by-zero in vol_target: np.where evaluates both branches so the division ran even where realised vol was zero -- and a dead-quiet window is exactly where an inverse-vol lever wants infinite size. CANNOT BACKTEST HERE: data/moat is VPS-only. These owe their gauntlet run on the box.",
-   "roi_bps": null,
-   "raised": "2026-08-01T09:59:35.073426+00:00",
-   "status": "open",
+   "source": "cycle",
+   "summary": "R0117 cross-venue quote lead-lag rests on a FALSE PREMISE and must not be screened as rowed: it assumes 'own synchronized L2 timestamps', but the fut and bybit recorders are independent pollers at measured 8.28s and 4.32s with no common trigger, so sampling phase drifts through the full cycle and the aliasing envelope exceeds the sub-minute effect. Nothing in the stack (angle-20, artifact gate, Holm, DSR) tests for sampling-phase aliasing. Re-scope to a phase-alias simulation FIRST, or synchronise the pollers, before any screen.",
+   "roi_bps": 0.0,
+   "raised": "2026-08-01T10:09:51.740585+00:00",
+   "status": "scheduled",
    "reason": null,
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-08",
+   "disposed": "2026-08-01T10:10:21.290775+00:00"
   },
   {
    "id": "R0280",
-   "source": "principal",
-   "summary": "Stopped generating commodity mechanisms and built on the MOAT instead. THE RESULT THAT FORCED IT: 129 textbook mechanisms (Bollinger, RSI, Donchian, CMF, golden cross, squeeze, %B, z-score, OBV, Chaikin, Donchian, rotation) across 10 liquid Kraken pairs on 720 daily bars through the repaired gauntlet -> 0 survivors. And the gate was NOT the reason: best in-sample Sharpe 1.75 delivered OOS 0.08; across all 129 the max OOS Sharpe was 0.100, mean -0.001, and ZERO had OOS above 0.5. Removing reality_check entirely would have promoted noise. Public indicators on the most liquid pairs at default parameters are picked clean -- the expected result, written down as the prior before running. Separately confirmed the DSR fix works on real data: the top candidates now clear DSR at 0.98-0.998 where the pre-fix deflation would have crushed all of them below 0.95, so Romano-Wolf rather than DSR made the actual call. Also measured N_eff on the REAL campaign: 129 candidates = 14.6 effective tests (ratio 0.133 to baseline), mean pairwise asset correlation 0.73 -- ten crypto pairs are one bet. That does NOT mean RW over-corrected here (its bootstrap adapts to dependence, measured this morning) and it would not have rescued anything at OOS 0.08. BUILT libs/research/moat_microstructure.py: loaders for both recorder formats, and features that REQUIRE recorded L2 -- deep order-book imbalance over all 20 levels, microprice, book slope, trade-flow imbalance from aggressor side, depth/spread dynamics. Four candidates: obi_pressure, flow_momentum, liquidity_withdrawal (the M_LIQUIDITY_WITHDRAWAL construction previously blocked on exactly this data), microprice_reversion. The asymmetry that justifies the slots: a mechanism computable from free daily bars has been tested by everyone with a laptop and its survival prior is the 0/129 above; a mechanism needing 20-level depth at 4s cadence has been tested only by people who pay for the data and who are not optimising for a small book. CAUGHT A REAL BLINDNESS while testing: the trailing z-score returned NaN on a zero-variance window, so liquidity_withdrawal was blind to a perfectly stable book that suddenly empties -- the most extreme instance of the exact event it exists to detect. A flat window followed by a move is unboundedly surprising and now scores as such. 12 tests, including that buyer-is-maker means the aggressor SOLD (invert it and every flow feature silently changes sign while the backtest still runs). NOT YET RUN: needs the recorded tape on the VPS.",
-   "roi_bps": null,
-   "raised": "2026-08-01T10:13:12.633714+00:00",
-   "status": "open",
+   "source": "cycle",
+   "summary": "L1.46 UNLOCKED, now build the consumer: Bybit depth rows now carry the venue stamp (vt), update id (u) and sequence (seq), which makes two things possible that were impossible before -- (a) sequence-gap detection, so a dropped poll stops being indistinguishable from a quiet book, and (b) the JOIN to the free first-party Bybit archive (200 levels/100ms/345d, already in universe_map at status:queued, owned by R0243 for the download). Public deep book joined to our receipt tape measures our own information disadvantage per symbol per regime.",
+   "roi_bps": 0.0,
+   "raised": "2026-08-01T10:10:15.780979+00:00",
+   "status": "scheduled",
    "reason": null,
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-08",
+   "disposed": "2026-08-01T10:10:21.382311+00:00"
   },
   {
    "id": "R0281",
-   "source": "principal",
-   "summary": "SEVEN MINER SEATS WERE DEAD FROM A MISSING SYSTEMD ENVIRONMENT, and I named the wrong blocker first. CORRECTION: I said the miners were blocked on an OpenRouter key (~$5/mo), inferred from an outstanding-items note rather than read from the code. Wrong. ops/run_frontier_miner.sh invokes 'claude --effort max -p ...' -- the Claude Code CLI on the subscription seat -- and check_miner_runway._creds_present() tests for a Claude credential home, ANTHROPIC_API_KEY, or CLAUDE_CODE_OAUTH_TOKEN. Nothing to purchase. THE ACTUAL DEFECT: ops/quant-frontier.service, which drives all SEVEN regional seats, was missing BOTH lines its four sibling units carry -- 'Environment=PATH=/home/quant/.local/bin:...' and 'EnvironmentFile=-/home/quant/.claude_token.env'. prospector, litminer, dataaxis and blindrediscovery all have them; frontier had only User=quant. systemd starts a service with a nearly empty environment, so the claude binary in ~/.local/bin was simply not findable and the rotation died on 'command not found' before reading a single prompt. That is why data/miner_runway.json shows last_run=null for every frontier seat, and it means every prompt improvement made to those seven regions today -- venue discovery, CN slang, scam-filter removal, technical long-tail queries -- was landing on seats that could not execute. FIXED in the unit, with the reason recorded inline. The leading '-' on EnvironmentFile is kept deliberately: a unit that REFUSES to start when the token is absent leaves nothing in the log and nothing for check_miner_runway to read, whereas failing loudly at run time leaves evidence. ALSO ADDED tests/governance/test_service_unit_parity.py -- 4 tests asserting every Claude-invoking unit carries PATH, the token EnvironmentFile, the optional '-' prefix, and a consistent User=. Verified it FAILS on the pre-fix unit and passes after, so it genuinely catches this class. One unit drifting from four siblings is not something a human notices by reading; it is what a test notices for free. REMAINING HUMAN STEP: /home/quant/.claude_token.env must exist on the box containing CLAUDE_CODE_OAUTH_TOKEN=... -- the other four seats also report creds-missing, which means that file is absent, and the '-' prefix means their units start anyway and fail at run time. Secret goes from the principal's screen into that gitignored file directly; never through chat, never through git.",
-   "roi_bps": null,
-   "raised": "2026-08-01T10:28:45.161538+00:00",
-   "status": "open",
+   "source": "cycle",
+   "summary": "The trade tape is the only CLEAN-CLOCK series in the moat corpus and the sole micro-feature producer filters it out: micro_factory.py keeps only k=d rows, but a sampled futures hour is 357 depth against 11,680 trade rows -- ~97% of records, venue-stamped, already on disk, unused. Aggressor imbalance, trade-size distribution and inter-arrival times are all free. Verified 2026-08-01 on data/moat/fut/BTCUSDT/20260725_07.jsonl.gz.",
+   "roi_bps": 0.0,
+   "raised": "2026-08-01T10:10:16.037173+00:00",
+   "status": "scheduled",
    "reason": null,
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-06",
+   "disposed": "2026-08-01T10:10:21.466207+00:00"
   },
   {
    "id": "R0282",
-   "source": "max_audit",
-   "summary": "The miner runway doctor reported a verdict about the HOST as a verdict about the DESK, and it cost real confusion today. data/cro_ai_logs is gitignored and VPS-local, so running check_miner_runway from a dev clone or agent container finds no logs AND no credential, and the status ladder then reported 'creds-missing' for all eleven seats. I read that stale artifact and told the principal the miners had never run -- while docs/research/deep_sweep/20260801_*.md (11,772 lines across six subsystem audits) sat in the same repo as proof that they had. FIXED: observability is now checked BEFORE every other verdict. When the log directory is absent every seat reports 'unobservable', a top-level blocker names the cause and the fix, and the artifact carries observable/log_dir fields. 'unobservable' is in _BAD deliberately so the exit code is nonzero -- a run that cannot see the logs has verified nothing, and exiting 0 would let a green check stand in for a check that never happened. Config facts (prompt/runner/unit) still report normally because they are read from the repo and true anywhere; only RUN facts are withheld. This is defect class #10 from the adversarial review rubric I wrote the same morning -- a verdict that depends on the machine rather than the code -- which I documented and then walked into four hours later. ALSO VERIFIED AND FOUND CLEAN, against a claim from another session that a new organ was silently exempt from standing law: every one of the 14 claude-invoking organs passes --append-system-prompt \"$_DOCTRINE\" (6 shell: frontier_miner, prospector, litminer, dataaxis, blindrediscovery, cro_ai; 8 python: max_audit, calibration_probe, capability_hunt, conviction_trader, deep_sweep, discretionary_hunt, llm_trader, trade_review). run_capability_hunt.py:342 was the specific claim and it is correct -- the subprocess sources brain_env.sh and uses $_DOCTRINE in the SAME bash -c, so no export is needed. The only doctrine-free claude calls are auth pings ('Reply with exactly: PING-OK') and two alert message strings that merely mention the word. There is no doctrine-injection gap.",
-   "roi_bps": null,
-   "raised": "2026-08-01T10:46:17.098810+00:00",
-   "status": "open",
+   "source": "cycle",
+   "summary": "Recorder supervision is asymmetric on the crown jewel: ensure_recorder.py:18 _PAT = 'python.*run_recorder\\.py' matches ONLY the futures recorder (the escaped .py excludes run_recorder_spot/bybit), while spot and bybit rely on a naive cron pgrep guard that detects a DEAD process but not a HUNG one. Futures gets a real supervisor; the other two thirds of the corpus does not.",
+   "roi_bps": 0.0,
+   "raised": "2026-08-01T10:10:16.249157+00:00",
+   "status": "scheduled",
    "reason": null,
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-04",
+   "disposed": "2026-08-01T10:10:21.552756+00:00"
   },
   {
    "id": "R0283",
-   "source": "max_audit",
-   "summary": "Rescued libs/research/panel_diversity.py from a branch 396 commits behind master. Another session reported three unmerged branches blocked on rework; verified all three exist (under the claude/ prefix): llm-auto-upgrade-verify-gcjac3 is 25 ahead but 653 BEHIND, generic-detectors and panel-asymmetry-dissent are 1 ahead and 396 behind. Four others (deadman-atomic-and-carryover, findings-always-tracked, event-study-capacity, quant-repo-review-9po4g5) are 0 ahead -- fully merged and safe to delete. panel-asymmetry-dissent carried the item worth having: effective-N applied to OPINIONS. Thirteen frontier models reading THE SAME dossier means '12 of 13 agreed' can be one framing echoed twelve times -- and a dossier written BY the audited system is exactly the input most likely to carry a framing. That is the same mathematics as today's measurement that 129 correlated candidates are 14.6 effective tests; the desk applies it to trials via DSR and never applied it to panel opinions. A straight merge CONFLICTS (run_external_panel.py, plus conversion_record.json deleted there and modified here), but the value is in two NEW files that conflict with nothing: libs/research/panel_diversity.py (199 lines) and its 25 tests. Extracted both; all 25 pass against current master unmodified, 397 files clean under mypy, ruff clean, law gate 10/10. The integration into run_external_panel.py is deliberately NOT taken -- it needs hand-work against a file that has moved 396 commits, and merging a stale integration to save ten minutes is how a branch that was reviewed needs_rework becomes a defect on master. The module is now on master where it can be wired at leisure instead of rotting on a branch. ALSO: generic-detectors claims 'mypy into CI' but master already runs mypy across 397 files, so that branch is at least partly redundant -- worth diffing before any rework effort is spent on it.",
-   "roi_bps": null,
-   "raised": "2026-08-01T10:48:18.104465+00:00",
-   "status": "open",
+   "source": "cycle",
+   "summary": "MONEY PATH, now unblocked by L1.46: run_cost_model.py walks order books of UNKNOWN AGE to produce data/cost_model.json, the one L2 artifact gating real capital (consumed at run_cashcarry_executor.py:339). Verified 2026-08-01: _snapshots() and _leg_costs() contain ZERO timestamp handling of any kind, and a repo-wide grep for book_age|snapshot_age|quote_age|stale_book|md_age returns nothing -- the executor prices maker-vs-taker against a book whose staleness it cannot know, and staleness is worst exactly when it costs most. Depth rows now carry both clocks, so weighting a book-walk by its measured age is finally possible. Money-path change: check scripts/check_change_window.py first.",
+   "roi_bps": 0.0,
+   "raised": "2026-08-01T10:16:23.531604+00:00",
+   "status": "scheduled",
    "reason": null,
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-06",
+   "disposed": "2026-08-01T10:16:31.650878+00:00"
+  },
+  {
+   "id": "R0284",
+   "source": "cycle",
+   "summary": "L1.33 VIOLATION in the organ that most depends on it: run_capability_hunt._gpt() (scripts/run_capability_hunt.py:348) reaches the GPT-9 seat via a PRIVATE path -- 'from scripts.run_strategic_director import MODEL, _ask' -- instead of the shared libs/research/second_family.py that L1.33 exists to make universal. Consequences verified 2026-08-01: data/second_family_log.json holds 5 rows, ALL context=blindspot_max, ALL available=false/HTTP-400, and ZERO from the capability hunt -- so the hunt's SOLO verdicts (s3, s4, s0) are NOT dated measured facts in the ledger built to record exactly that, and funding the seat would upgrade blindspot_max but NOT the hunt. Fix: route _gpt through ask_second_family(context='capability_hunt').",
+   "roi_bps": 0.0,
+   "raised": "2026-08-01T10:18:54.788708+00:00",
+   "status": "scheduled",
+   "reason": null,
+   "commit": null,
+   "due": "2026-08-04",
+   "disposed": "2026-08-01T10:19:12.038865+00:00"
   }
  ]
 }
