@@ -111,9 +111,19 @@ Work the list top to bottom and get through as many as you honestly can. Report 
 did, the sha or the reason, and anything worth its own row (scripts/recommendations.py add)."
 
 echo "=== owed-work worker start $(date -u) ===" >> "$LOG"
-claude --effort max --append-system-prompt "$_DOCTRINE" -p "$PROMPT" \
+# TIMEOUT IS LOAD-BEARING. This run holds the flock for its whole life, so a hang does not
+# merely waste itself -- it blocks EVERY subsequent tick indefinitely. The first live run hung
+# past an hour and silently deadlocked the queue while looking perfectly alive. 3000s is
+# generous for a large batch at max effort and still frees the lock before the next-but-one
+# tick, so the queue can never stall for more than one cycle. Exit 124 feeds the ratchet as a
+# ceiling signal and halves the batch, which is correct: a run that could not finish in 50
+# minutes was too big.
+timeout 3000 claude --effort max --append-system-prompt "$_DOCTRINE" -p "$PROMPT" \
     --dangerously-skip-permissions >> "$LOG" 2>&1
 RC=$?
+if [ "$RC" = "124" ]; then
+    echo "TIMED OUT after 3000s -- the ratchet halves the batch next run" >> "$LOG"
+fi
 echo "=== owed-work worker exit $RC at $(date -u) ===" >> "$LOG"
 
 # RATCHET: climb on success, halve on a real ceiling. No upper bound -- the ceiling is discovered,
