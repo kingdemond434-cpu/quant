@@ -2116,3 +2116,152 @@ whose *internal research use is PERMITTED*. So the correct disposition of this a
 a human" — it is **use the licensed path, drop the direct-collector plan**. Residual gap is
 granularity (1 day/month), not availability.
 
+---
+
+#### ITEM 3 — richmanbtc / note.com botter lineage: **RESOLVED. THE NAMED GEM IS A MAKER-REBATE ARTIFACT; THREE OF ITS TOOLS ARE REAL.**
+
+Carried unstarted since 2026-07-20 (addendum C62, "the anti-consensus gem"). Dug this run to repo +
+fork + notebook + community-reply depth. **The headline is a kill, and it is a good one.**
+
+**THE MECHANISM IS DEAD → `docs/graveyard.md` `jp_mlbot_atr_limit_reversion`.**
+`github.com/richmanbtc/mlbot_tutorial` (519★, 187 forks, **CC0-1.0** and **dead since 2022-11-28** —
+both verified by me via the GitHub API, not taken on report). LightGBM on ~43 TA-Lib features
+predicting the P&L of a passive limit rule, GMO Coin BTC_JPY 15-min, 2018-10→2021-04.
+**The community itself did the attribution** (バジル, `note.com/kkngo/n/n631e9fdc7855`): the edge is
+**「毎回ATR×0.5の位置に指値を置くだけ」** — the bare ATR×0.5 limit returns ~1700% over the window with
+**no ML at all**, and the ML layer leaves cumulative return **almost unchanged**. And the rule is a
+**fee artifact**: the tutorial's own `maker_fee_history` is `0.0 → -0.00035 → -0.00025 → 0.0`, i.e.
+**the maker fee is zero or NEGATIVE across the entire backtest.** It is a venue-subsidy harvest.
+Three independent practitioners then watched it die on three different venues/timeframes
+(kkngo 2023 JP; chanta Bybit 12h, died 2024-03; pip_pip_pip_p Binance, down monotonically from 2022
+through the 2024 bull market). **Its own author publishes numbers that fail his own two bars**
+(p-mean 0.2005 vs bar 1e-5, ~840× off; non-stationarity 0.4556 vs bar 0.3) and states
+「そのままでは儲からない」 up front. Method defects recorded in the graveyard entry: `KFold()` at
+sklearn defaults trains on the future for **4 of 5 folds** with purging explicitly omitted;
+frictionless fills; no liquidation.
+
+**THREE TOOLS SURVIVE → `docs/research/improvement_inbox.md` (all CC0, verified):**
+1. **p平均法 (p-mean)** — an **order-sensitive** significance bar. Our whole promotion stack
+   (t-test/PSR/DSR) is **order-invariant** and therefore blind to late-window decay; under L1.30
+   that is exactly the blind spot we cannot afford. **But I reproduced a real bug in the published
+   error-rate formula on this box:** it is the Irwin–Hall lower tail, valid only for `p_mean ≤ 1/N`,
+   and it returns **8.53 at `p_mean=0.8, N=5`** and **26.04 at `p_mean=1.0`** — unbounded above 1,
+   no guard. The tutorial's **own headline run** (`p_mean=0.2004701…`) already sits outside the
+   valid region (`N·p_mean = 1.00235`); my reproduction returns its exact published
+   `0.008431733454943706`, which confirms the transcription is right and the *formula* is wrong.
+   Adoption also requires a **pre-registered window**: opecry (`note.com/opecry/n/nc064da3a68b8`)
+   improved p-mean 0.2→0.04 and the error rate 0.008→6.4e-7 — **four orders of magnitude — purely
+   by deleting the sub-period where the curve dipped.**
+2. **richman非定常性スコア** — adversarial validation with **time as the label** (fit LGBM on
+   `np.arange(n)`; R² is the score; `feature_importances_` names the offenders; ships as a drop-in
+   sklearn transformer). Our critique: `shuffle=True` makes index-prediction near-trivial, so it
+   measures interpolation, not extrapolation, and the 0.3 threshold is unjustified (the author's own
+   baseline is 0.4556 and he ships it). Worth building in the **ordered-fold** variant.
+3. **`publicGetExpiredFutures`** — survivorship-free universe construction solved **venue-side in
+   three lines**, in 2021. Directly shortcuts **R0239**, and the KR seat's Upbit candle-purge finding
+   is the same defect class. **Ask every venue for its own graveyard before reconstructing one.**
+
+**THE CROSS-CORROBORATION THAT MATTERS.** `crypto_data_fetcher` (CC0) pulls
+`api.coin.z.com/data/trades/{MKT}/{YYYY}/{MM}/{YYYYMMDD}_{MKT}.csv.gz`, **scanning from 2018** — the
+*exact* endpoint I had independently found an hour earlier while hunting a licensed replacement for
+the §13-restricted bitFlyer axis. **Two unrelated routes, same artifact, same session.** That is the
+strongest confirmation available short of a second model family, and it upgrades axis 27 from "a
+thing I probed" to "the JP scene's standard historical source". Nulls, stated: 187 forks produced
+**one** substantive derivative (a Bybit port); GitHub has **zero** discussion; both "advanced"
+notebooks are **empty stubs** (「執筆中」); the author's own P&L disclosure is **an image**.
+
+**VENUE DISCOVERY (standing obligation) — where the JP botter community actually is:**
+| Venue | What lives there | Verdict |
+|---|---|---|
+| **仮想通貨botter Qiita Advent Calendar** (2021–2025, `qiita.com/advent-calendar/{YYYY}/botter`; 2022 had 32 participants × 3 series) | **The community's real annual record — where the post-mortems get published.** 4 of the 5 best sources this run came from it | **RICH — the single highest-yield JP ground found. NEXT RUN'S PRIMARY.** |
+| **マケデコ / Market API Developer Community** (Discord, run *with* **JPX総研**; `mkdeco.connpass.com`; own Advent Calendar) | J-Quants API (JPX official JP equities+options). Institutionally backed | RICH-adjacent (equities, not crypto) |
+| **Bivolab** (Discord, operated by **bitbank** itself) | exchange-run botter lab | UNVISITED |
+| X/Twitter `#botter` | primary hub; `@richmanbtc2 @blog_UKI @richwomanbtc @yoshiso @MtkN1 @magimagi1223 @i_love_profit @morio202008` | hub, long-form spills to note/Zenn/Qiita |
+| Blog network | `blog.shidokamo.com`, `tech.takibi.net` (yasstake/RustyBot), `gitan.dev`, `mirumi.me`, `rarirure.rip`, `yodakaart.tech` | UNVISITED |
+| `jodawithforce.hatenablog.com` | JP botter blog | **WALLED (403)** |
+| note.com comment layer | loads via `/api/*` | **OUT OF BOUNDS — robots.txt disallows `/api/*` for `*`.** Not a wall we may route around |
+
+**A COMMUNITY NORM WORTH RECORDING, because it explains the shape of everything above.** UKI names
+オフ会 (offline meetups) as where live information is exchanged, on the norm that botters discuss
+**exhausted** edges openly and never advertise active ones. **⇒ The published JP record is
+structurally a post-mortem archive.** That is not a limitation to complain about — it is a
+*specification*: mine this ground for **deaths, decay dates and method defects** (which is exactly
+what it yielded), and never expect a live edge from it.
+
+---
+
+### SESSION CLOSE 2026-08-01 session 1 (JP frontier miner) — DEPTH, BATTERY, STANDING TEST, NEXT GROUND
+
+**DEPTH LINE (per promising lead):**
+| Lead | Depth reached | What depth surfaced that the surface did not |
+|---|---|---|
+| bitFlyer legitimacy | **EXHAUSTED** (live 4 ways × 2 IP families × 2 HTTP versions, 3 sibling hosts, CDX domain dump, ToS body read) | The whole finding. Surface = "403, ask a human". Depth = a **tarpit not a 403**, a **per-hostname** policy proven by 200s from the same edge IP, an archived ToS the prior probe's *query* had missed, and the **verbatim IP clause** that closes the item |
+| bitFlyer CDX domain dump | **repo-equivalent of fork depth** | The undocumented **`/api/chart/btc_jpy`** endpoint — invisible to any path-guessing probe; only the full key dump reveals it |
+| richmanbtc lineage | **repo + 100 forks + notebooks + Qiita/note back-catalogue + community reply layer** | The surface is a 519★ ML tutorial. Depth is: the ML **adds nothing** (kkngo), the fee was **negative**, three dated **deaths**, a **live exploit** of its own metric (opecry), and a **reproduced formula bug** |
+| GMO Coin | **EXHAUSTED technically** (payload, schema, ms timestamps, day-precision start boundary, 40-symbol universe, robots) — **licence unread** | An entire free JP tick tape the desk did not know it could have |
+| bitbank | **surface + structural-zero test** | `success:1` hiding **~1,090 phantom pre-launch bars**. One extra column check separated a good source from a poisoned one |
+
+**Not breadth-theater:** 3 items taken, 3 closed, 2 marked EXHAUSTED, and every conclusion rests on
+an artifact fetched this run.
+
+**PROACTIVE BATTERY — moves run, and what each produced (a move that produced nothing says so):**
+- **#9 SCOPE THE NEGATIVE RESULT** — *the run's highest-yield move.* "bitFlyer ToS unreachable" was a
+  **route** failure read as a **capability** failure for four sessions. Separating them closed the item.
+- **#2 ADJACENCY** — the same shape immediately: the KR seat's robots lesson applied to JP found 5ch;
+  the bitFlyer licence kill was then applied forward to pre-emptively block `getchats`,
+  `getfundingratehistory` and the archived chart series *before* they were carded.
+- **#3 CONFIG VS OUTCOME** — demanded the artifact everywhere: fetched the CSV, decompressed it, read
+  the rows; counted zero-volume bars rather than trusting `success:1`; verified CC0 and the formula
+  bug myself rather than accepting the scout's report.
+- **#1 CONTINGENCY BEFORE FAILURE** — the bitFlyer kill was not allowed to stand alone; GMO + bitbank
+  were hunted **in the same run** as its replacements.
+- **#6 GENERALISE THE RULE** — three findings promoted to fleet operators (OP-043/044/045) plus an
+  OP-041 refinement; none left as JP-local trivia.
+- **#10 RATCHET CHECK** — 5ch's robots verdict is explicitly marked **do not cache** (the Cloudflare
+  list grows), so today's clean is not tomorrow's clean.
+- **#5 COST INVERSION** — **produced nothing this run.** No paid path was proposed or needed; the
+  video-locked log stays untouched because no mechanism was video-only. Recorded, not skipped.
+- **#8 NEGATIVE SPACE** — produced the next-ground answer below (the Advent Calendar archive, five
+  years deep, never touched by this desk).
+
+**STANDING TEST (L1.11a):** does it carry information a competitor must pay to reconstruct?
+**GMO tick tape — YES** (JP-only tickers at tick resolution, free, 7.9y, absent from English
+catalogues). **bitbank phantom-history — YES, inverted**: knowing where a free source *lies* is worth
+as much as the source. **bitFlyer — moot, licence forbids.** **The Advent Calendar archive — YES**:
+five years of JP-language post-mortems with dates and numbers, which is precisely the material our
+graveyard is made of.
+
+**DIASPORA — "where did they go?"** JP is the one region so far that **did not scatter**. Unlike CN
+(into paid/ID-gated enclosures, §13-unreachable) and RU (barrier migration), the JP botter community
+**consolidated onto X + an annual Qiita Advent Calendar**, and its exchanges even run *official*
+Discords (Bivolab/bitbank, マケデコ/JPX). The migration that did happen is **venue-side**: FTX's death
+(ky's ¥15M loss report) pushed the scene onto **Bybit/Binance**, which is why post-2022 JP writeups
+are Bybit-centric while the 2018–2021 canon is GMO/bitFlyer-centric.
+
+**§13 LEDGER FOR THIS RUN:** 5ch **REFUSED by name** (recorded, not routed around) · bitFlyer
+**RESTRICTED by licence** (killed, not worked around) · note.com `/api/*` **out of bounds** (comment
+layer left unmined rather than fetched) · note/qiita/zenn/GMO/bitbank **CLEAN** · GMO robots
+**explicitly `Allow: /`**. Nothing was accessed against a stated refusal.
+
+**NEXT UN-EXHAUSTED GROUND, in order, for JP session 2:**
+1. **仮想通貨botter Qiita Advent Calendar 2021–2025** — up to ~75 slots/year × 5 years, **never
+   touched**, and it is where this community publishes its dated post-mortems. Mine year-by-year and
+   claim **SECTION-EXHAUSTION per year** (L1.35). This is the JP ground's richest seam by a distance.
+2. **Close the two licence reads (R0309/R0310)** — GMO and bitbank; both hosts serve us, both bodies
+   are JS-rendered, both block real ingest of a verified-clean tape. Cheapest unlock on the board.
+3. **Era-archaeology, NOT YET STARTED** — the 2017 bitFlyer-FX **SFD** (Special Fee for Deviation)
+   mechanics: an *exchange-imposed* mechanical convergence band between FX_BTC_JPY and spot BTC_JPY,
+   i.e. a rule that literally forces traders to pay for deviation. Strong mechanism prior
+   (a named party is compelled), and the era's discussion is in 5ch archives — **which are
+   ClaudeBot-refused live**, so this must be reached via Wayback/mirrors or it does not get reached.
+   Mt.Gox-era threads likewise.
+4. **Bivolab (bitbank's own Discord) + the six-blog network** — unvisited.
+5. **JP lexicon** — seeds `okuribito / gachiho / inago / yobun` remain **UNVERIFIED**. The CN seat's
+   OP-037 is explicit: negative-control a supplied glossary before spending budget on it (0/7 CN
+   terms survived). Do that before using any of them as search keys.
+
+**Which artifact on disk is different because of what was mined?** `docs/graveyard.md` (+1 kill),
+`docs/research/data_axis_watchlist.md` (entry 3 closed after 4 deferrals; entries 27–28 new),
+`docs/research/improvement_inbox.md` (+3 engine tools), `docs/research/search_operator_library.md`
+(OP-043/044/045 + OP-041 refinement), `data/data_universe_map.json` (+4, **but see R0311 — that file
+is gitignored**), this coverage doc, and ledger rows **R0309–R0313**.

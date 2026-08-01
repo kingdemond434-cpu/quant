@@ -3750,6 +3750,66 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0309",
+   "source": "cycle",
+   "summary": "JP-s1: READ THE GMO COIN LICENCE (coin.z.com/jp/corp/policy/terms/, 200 + not bot-blocked but JS-rendered) then re-grade data_axis_watchlist entry 27. Unlocks a free keyless JP tick tape 2018-09-05-> across 28 spot + 12 margin symbols incl. JP-only MONA/XYM/FCR/NAC/WILD. Blocks all ingest until done. OP-038-class fetch, NOT a human page-read.",
+   "roi_bps": 40.0,
+   "raised": "2026-08-01T14:10:32.506909+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0310",
+   "source": "cycle",
+   "summary": "JP-s1: READ THE BITBANK LICENCE (bitbank.cc/error/terms, 200, 6500B) then re-grade data_axis_watchlist entry 28. Docs repo has NO LICENSE file so the site kiyaku governs.",
+   "roi_bps": 10.0,
+   "raised": "2026-08-01T14:10:32.619346+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0311",
+   "source": "cycle",
+   "summary": "JP-s1 DEFECT: data/data_universe_map.json -- the documented routing target for EVERY digger's data-source finds -- is GITIGNORED (.gitignore:11 'data/*', no '!' exception; 68 sources on disk, 0 tracked). Every seat's universe-map contribution is box-local, invisible to review and lost on reclone. 8 other data/ files have explicit '!' exceptions, so the convention exists and this file was simply never added to it.",
+   "roi_bps": 25.0,
+   "raised": "2026-08-01T14:10:32.751106+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0312",
+   "source": "cycle",
+   "summary": "JP-s1: p-mean (JP botter lineage) gives an ORDER-SENSITIVE decay bar our DSR/PSR structurally lack (they are order-invariant) -- directly on-objective under L1.30. Adopt the SHAPE, but the published error-rate formula is BROKEN (verified: returns 8.53 at p_mean=0.8/N=5, and the source's own headline run sits outside its Irwin-Hall validity region). Needs full alternating Irwin-Hall + domain guard + simulated null, and a PRE-REGISTERED window (a published exploit improves the metric 4 orders of magnitude by deleting a losing sub-period).",
+   "roi_bps": 60.0,
+   "raised": "2026-08-01T14:10:32.956649+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0313",
+   "source": "cycle",
+   "summary": "JP-s1: for every venue we collect, check for a venue-side EXPIRED/DELISTED-INSTRUMENT endpoint (e.g. FTX publicGetExpiredFutures) before building a point-in-time universe by observation -- directly shortcuts R0239, and the KR seat's Upbit candle-purge finding is the same defect class.",
+   "roi_bps": 35.0,
+   "raised": "2026-08-01T14:10:33.156803+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
