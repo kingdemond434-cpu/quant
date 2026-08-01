@@ -4098,6 +4098,54 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0338",
+   "source": "cro",
+   "summary": "WIRE libs/research/marginal_admission.evaluate INTO THE PROMOTION PATH -- until this is called it does not exist. The gate is built, tested 18/18, committed 6c81187, and consulted by NOTHING. Every candidate is still admitted on standalone OOS Sharpe against a fixed bar. Required: (1) find the forward-evidence promotion decision that fills the 12 MAX_FORWARD_SLOTS and call evaluate(candidate_returns, incumbent_returns_matrix) there; (2) row-align candidate and incumbent series on identical timestamps and bar convention BEFORE calling -- misaligned rows produce a correlation that means nothing (same-ruler law); (3) persist the full Admission dataclass alongside each promotion so the decision is auditable, and make any artifact that REPORTS admission read that stored verdict rather than recomputing it (artifact-vs-behaviour disagreement is this desk s most repeated defect); (4) re-evaluate the THREE INCUMBENTS against each other -- fixture measurement says a cohort at pairwise rho 0.943 is worth 1.04 effective bets, so at least two of BNB/ETH/BTC basis are probably not earning their slots, and freeing slots is the point.",
+   "roi_bps": null,
+   "raised": "2026-08-01T16:49:35.306648+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0339",
+   "source": "principal",
+   "summary": "MEDALLION-STRUCTURE PROGRAMME (principal 2026-08-01: as close to Medallion as possible in process and structure). Ranked by measured gap, not by appeal. (1) SIGNAL COUNT AND INDEPENDENCE: the binding constraint is 3 signals at pairwise rho 0.943 = 1.04 effective bets. Medallion aggregates thousands of weak near-independent edges; ten uncorrelated 0.15-Sharpe edges beat one 0.4-Sharpe edge because the aggregate carries leverage safely. Search must therefore target NEW MECHANISMS uncorrelated to funding basis, not better basis variants -- grep docs/graveyard.md first, breadth campaign already exhausted several. (2) MAKER NOT TAKER: spot pays 18.1bps mean slippage while futures earns maker 4/4. Medallion earns spread rather than paying it. Fixing spot execution plausibly explains the 4/4 negative hold buckets on its own and may be worth more than any new signal. (3) RISK-PARITY / INVERSE-CORRELATION ALLOCATION across admitted signals rather than equal weight, so marginal contribution governs SIZE as well as ADMISSION. (4) HIGHER TURNOVER SHORTER HOLDS only where net-of-cost survives -- Medallion gets significance from n, not from per-trade edge. NOT transferable and must not be pretended: colocation, market-making at scale, a research headcount. Also flag the honest tension: Medallion is 100 percent systematic with zero discretion, so the conviction sleeve is structurally anti-Medallion -- principal decision, not the desk s.",
+   "roi_bps": null,
+   "raised": "2026-08-01T16:49:35.397546+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0340",
+   "source": "cro",
+   "summary": "WIRE libs/risk/sleeve_allocation.allocate INTO THE CAPITAL PATH -- built and tested 18/18 but consulted by NOTHING, same unwired state as marginal_admission (R0338). Required: (1) call it where sleeve capital is decided so the carry book is the base (is_base=True) and conviction is a booster; (2) feed it REAL measured inputs -- base sharpe/n_closes from web/trade_forensics.json, conviction sharpe/n_closes from data/conviction_book.jsonl once R-multiples exist (R0334), and rho_to_base from the two sleeves realised return series row-aligned on identical timestamps (same-ruler law); (3) persist the Plan so any artifact reporting sleeve size reads the stored allocation rather than recomputing it; (4) NOTE the current live reading -- the carry base is loss-making (76 closes, 4/4 hold buckets negative) so base_proven is False and the allocator will correctly hold conviction to its 2 percent learning stake until carry is fixed. That is the intended behaviour, not a bug to route around.",
+   "roi_bps": null,
+   "raised": "2026-08-01T16:54:53.292127+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0341",
+   "source": "panel",
+   "summary": "COMMIT AUDIT 2026-08-01: independent seats reviewed the last 24h of desk commits -- triage every finding in data/cro_ai_logs/commit_audit_20260801T1658.log, row the real ones, and reject the rest with reasons",
+   "roi_bps": null,
+   "raised": "2026-08-01T16:58:28.865717+00:00",
+   "status": "rejected",
+   "reason": "PHANTOM ROW -- manufactured by the bug it reports, and disposed by the same cycle that fixed it. The run that created this row got 0/4 substantive seat replies (tencent HTTP 404, cohere HTTP 400, nvidia-nano HTTP 400, nvidia KeyError('choices')); run_external_panel.py wrote NO panel_inbox.md and still exited 0, and ops/run_commit_audit.sh gated its ledger write on that exit code. So there is literally nothing to triage in data/cro_ai_logs/commit_audit_20260801T1658.log -- no seat reviewed any commit. Rejected rather than left open because the finding it asserts does not exist; rejected rather than deleted because rows are never deleted. THE FIX IS LANDED IN THE SAME COMMIT: the gate now requires docs/research/panel_inbox.md to have been rewritten (the artifact run_external_panel.py writes only inside 'if ok:'), logs NO-QUORUM with the measured seat count when it was not, and rows nothing -- covered by tests/ops/test_commit_audit_quorum.py, whose regression case rows a finding against the old gate and refuses against the new one.",
+   "commit": null,
+   "due": null,
+   "disposed": "2026-08-01T17:00:38.755360+00:00"
   }
  ]
 }

@@ -38,6 +38,12 @@ web/*
 reports/
 lake/
 docs/EXTERNAL_PANEL_DOSSIER.md
+# commit-audit payload: 425KB of `git log --since=24h` patches, REGENERATED on every run by
+# ops/run_commit_audit.sh. Same class as EXTERNAL_PANEL_DOSSIER.md above -- a derived panel
+# payload, not an artifact. Committing it would add a ~425KB blob per run for zero information
+# (every byte is reconstructable from git itself), and §36 governance rightly applies to what is
+# COMMITTED, so the PRODUCER carries the cadence claim instead (ops/crontab.manifest).
+docs/research/recent_changes.md
 *.exe
 tools/*.exe
 .coverage

@@ -1352,3 +1352,31 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # EVIDENCE: scripts/run_crossasset_shadow.py -> data/crossasset_shadow_state.json
 # CONFIDENCE: committed-script (verified running by hand this cycle)
 40 6 * * * cd "$QUANT_ROOT" && flock -n data/.cron_crossasset.lock .venv/bin/python scripts/run_crossasset_shadow.py >> data/cro_ai_logs/crossasset_shadow.log 2>&1
+
+# COMMIT AUDIT (L1.31/L1.43, principal 2026-08-01: "no independent validation, no second pair of
+# eyes -- every check was written by the same mind that wrote the code"). The desk owns 13 seats
+# across 11 labs and pointed NONE of them at its own commits: seats reviewed research findings and
+# code on rotation, and nobody ever reviewed the CHANGES. A checker written by the author encodes
+# the author's wrong model exactly as faithfully as the code does, so a second checker by the same
+# mind inherits the first one's blind spot -- which is why this is a DIFFERENT model family and not
+# another in-house fence.
+# BUILT 2026-08-01 by a session that died before landing it: ops/run_commit_audit.sh and
+# prompts/panel_missions/commit_audit.txt sat UNTRACKED for ~1h with no scheduler line, which is
+# the built-never-wired defect (§42 "an orphan is fixed by a caller, not by deletion") plus the
+# L1.28c defect underneath it -- an organ whose cadence was never DECIDED runs at zero forever.
+# CEILING TYPE: INFORMATION-ARRIVAL. The payload is `git log --since=24.hours`, so a daily fire
+# tiles the window exactly -- no gap, no overlap. Firing 2x/day against an unchanged 24h window
+# would re-review 12h of already-reviewed commits and spend a second full 13-seat panel (~$2.93)
+# for zero new information, which is the ceiling, not a budget choice.
+# LIFTING CONDITION, stated so this is a DECISION and not an inherited default: narrow --since to
+# 12h and go 2x/day if measured finding-yield per run justifies the seat spend; the L1.28c end
+# state is event-driven firing on push, which removes the window question entirely.
+# DEGRADES HONESTLY: OpenRouter is at -$0.59, so every seat 402s and the run reports BLOCKED
+# rather than pretending. It is scheduled NOW precisely so the loop works the day credit lands
+# with nothing further to wire.
+# 10:10 UTC: after the 09:30 capability hunt, clear of the 06:xx-07:xx governance block and of the
+# 10:00 data-axis dig, and late enough that the overnight commit flow is inside the 24h window.
+# EVIDENCE: ops/run_commit_audit.sh -> data/cro_ai_logs/commit_audit_*.log + a panel-sourced
+#   ledger row per run (the row is the proof it converted; the log alone is not).
+# CONFIDENCE: committed-script (new this cycle)
+10 10 * * * cd "$QUANT_ROOT" && flock -n data/.cron_commit_audit.lock /bin/bash ops/run_commit_audit.sh >> data/cro_ai_logs/commit_audit.log 2>&1
