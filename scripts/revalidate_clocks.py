@@ -181,22 +181,34 @@ def stablesupply():
 
 
 def shift_ic(signal: dict, gb: dict, shift: int, fx: dict | None = None) -> float:
-    """IC of z(signal shifted by `shift` days) vs NEXT-day return."""
+    """IC of z(signal shifted by `shift` days) vs NEXT-day return.
+
+    THE SIGNAL IS BUILT SAME-INSTANT FIRST, THEN THE FINISHED SERIES IS SHIFTED. This used to
+    shift only the numerator leg -- signal[i+shift] over fx[i]/gb[i] -- which for a ratio signal
+    whose DENOMINATOR is the target's own price does not shift the signal at all: it rebuilds it
+    as roughly gb[i+1]/gb[i], i.e. the forward return itself. Measured on an i.i.d.-noise premium
+    with zero predictive content by construction, the old form reported a +1d cell of +0.931.
+
+    That false positive is not hypothetical: it is what produced the "kimchi is a ~73% timestamp
+    artifact" verdict on 2026-07-29, which justified a +1d keying change that then 24h-mispaired
+    three days of live collection and put a refuted mechanism in the graveyard (R0067). A leak
+    detector that fires on clean data is worse than none -- it makes good data look broken and
+    gets "fixed" in the direction of the damage.
+    """
     dates = sorted(set(signal) & set(gb) & (set(fx) if fx else set(gb)))
     if len(dates) < 60:
         return float("nan")
-    {d: i for i, d in enumerate(dates)}
     btc = np.array([gb[d] for d in dates])
     ret = np.zeros(len(btc))
     ret[1:] = btc[1:] / btc[:-1] - 1.0
     fwd = np.roll(ret, -1)
+    series = np.array([signal[d] / fx[d] / gb[d] - 1.0 for d in dates]) if fx else \
+        np.array([signal[d] for d in dates], dtype=float)
     sig, rr = [], []
-    for i, d in enumerate(dates):
+    for i in range(len(dates)):
         j = i + shift
         if 0 <= j < len(dates):
-            dj = dates[j]
-            v = signal[dj] / fx[d] / gb[d] - 1.0 if fx else signal[dj]
-            sig.append(v)
+            sig.append(series[j])
             rr.append(fwd[i])
     sig, rr = np.array(sig, float), np.array(rr, float)
     z = np.zeros(len(sig))

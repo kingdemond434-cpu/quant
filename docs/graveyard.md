@@ -289,24 +289,37 @@ is where every RU thread says it actually dies — never on the estimator.
 
 ## kimchi_premium -- daily close-to-close construction (KILLED 2026-08-01)
 
-**Mechanism-of-death:** the celebrated IC +0.2249 was ~73% timestamp overlap. Upbit's
-`candle_date_time_utc` is the KST-day OPEN, so keying by it labelled every close ~15h early and
-the "forward" screen read a price from INSIDE the window it claimed to predict. Shift test:
-`+1d 0.823` vs `0d 0.225` vs the honest no-overlap cell `+0.018`.
+**Mechanism-of-death: NO EDGE AT FULL DEPTH, on a thin-window original screen.** The celebrated
+IC +0.2249 was measured on ~200 days. At 2,303 same-instant-aligned days (2017-09-25 .. 2026-08-01)
+the h=1d cell reads IC **+0.0148**, residual **+0.0118**, against a detection floor of 0.041 -- the
+point estimate is a third of the smallest effect this sample could resolve. Per-era signs flip
+across all four regimes (+0.0141 / -0.0092 / +0.0010 / +0.0532). The h=5d cell is de-contam-killed
+(raw -0.2064, same-period -0.191, residual -0.0522 -> TIMING-ARTIFACT): the premium puts the
+Binance price in its DENOMINATOR, so that is construction, not information.
 
-**Why it stays dead after the alignment fix.** Corrected keying left residual IC +0.1274 at n=143
--- underpowered, not refuted. Backfilling 143 -> 2,302 aligned days (2017-09 .. 2026-08, via Upbit
-`to=` pagination plus 10y Yahoo FX) collapsed it to +0.0251, below the 0.041 detection floor. The
-effect SHRANK 5x while n grew 16x, which is what noise does; a real effect holds its magnitude and
-gains significance. Per-era signs flip across all four regimes (-0.054 / +0.072 / -0.042 /
-+0.052), which refutes a durable mechanism rather than merely failing to confirm one. The h=5d
-cell (raw IC -0.33) is de-contam-killed: same-period -0.316, residual -0.079 -- the premium puts
-the Binance price in its DENOMINATOR, so that is construction, not information.
+**CORRECTION 2026-08-01 (R0067) -- the original stated mechanism was REFUTED, the kill was not.**
+This entry first recorded the death as a *~73% timestamp artifact*: "Upbit's `candle_date_time_utc`
+is the KST-day OPEN, so keying by it labelled closes ~15h early". **That premise is false.** Upbit
+day candles are UTC-MIDNIGHT-boundary -- the candle labelled D closes at 24:00 UTC D, proven to the
+won against Upbit's own hourly candles on four dates across two eras
+(`tests/research/test_upbit_boundary.py`). The belief was inherited from
+`bithumb_kr_premium_lookahead`, a REAL kill on a DIFFERENT venue whose 24h candle genuinely is
+KST-day-open; Upbit is not Bithumb, and the premise was never measured before it became canon.
+Consequences, both now closed: the "fix" it justified added a `+1 day` shift that 24h-mispaired
+every leg (corr(premium, -r_binance) +0.813, std 2.98% vs 1.40% same-instant), and the depth
+numbers first published in this entry (n=2,302, IC +0.0251, per-era -0.054/+0.072/-0.042/+0.052)
+were computed on that mispaired series -- they are SUPERSEDED by the same-instant figures above.
+The shift test that started it (`+1d 0.823` vs `0d 0.225`) was never leak evidence: the premium
+carries the Binance price in its denominator, so a +1d-shifted premium is contemporaneous with the
+target BY CONSTRUCTION. **The kill stands on depth, independent of any of this.**
 
 **Reproduce:** `scripts/backfill_kimchi.py` (one-shot; archives to
 `data/kimchi_premium_history.jsonl`). All 3 horizons and all 4 eras are reported, not just the
 best cell -- reporting the winner alone would be p-hacking our own collector.
 
-**Still open, and genuinely different rather than a re-litigation:** INTRADAY. The leak was a
-day-boundary problem, which is itself evidence that whatever the premium carries lives INSIDE the
-day and is destroyed by a close-to-close construction.
+**Still open, and genuinely different rather than a re-litigation:** INTRADAY -- but note the
+original argument for it ("the leak was a day-boundary problem, so the signal must live inside the
+day") DIED WITH THE LEAK, and must not be cited. What survives is weaker and honest: a daily
+close-to-close pair samples a continuously-quoted spread twice, so a mechanism acting on an
+arbitrage-window timescale would be invisible here whether or not one exists. That is an argument
+about RESOLUTION, not evidence of a signal, and it earns a screen on intraday data -- never a slot.

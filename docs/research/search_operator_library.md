@@ -861,3 +861,117 @@ term** (`원화 마켓` vs `원화마켓`). The pure rail-access event class was
 **Why this matters beyond hygiene:** an era-fitted selector biases coverage toward the RECENT era,
 which is the crowded one. The dark-forest premium is in the old era, and this defect silently
 deletes it while the run still reports a healthy count.
+
+---
+
+### OP-043 diagnose a block by varying ONE thing against the SAME edge IP   [active]
+_Added by JP frontier miner, session 1, 2026-08-01._
+
+**Problem it solves.** A digger hits a host, gets nothing, and writes "our IP is blocked" or
+"WAF 403" in the card. That verdict then propagates as fact, downgrades the source, and — worst
+case — creates a *human dependency* ("someone please open this page for us"). It is usually a guess,
+because the probe varied nothing.
+
+**The operator.** Before recording ANY block verdict, run the 2x2 against the same target:
+1. **Sibling hostname** on the same service (`api.`, `docs.`, `lightning.`, `public.`, `static.`)
+2. **IP family** (`curl -4` vs `-6`) — and **record `%{remote_ip}`**, always
+3. **HTTP version** (`--http1.1` vs h2)
+4. **Exact failure shape**: `curl -sv` and read whether it is a status code, a TLS failure, a
+   silent hang (`code=000`), or a stream error. **A tarpit and a 403 are different findings.**
+
+**Worked instance, and it overturned a standing card.** `bitflyer.com/ja-jp/terms` was recorded as
+"403, WAF-blocked, cannot be defeated, needs a human". Actual: TLS completes, cert verifies,
+HTTP/2 stream opens, then `INTERNAL_ERROR (err 2)`; on HTTP/1.1 and on IPv4 it **hangs to timeout**
+(`code=000`) — an Akamai tarpit, never a 403. And **`api.bitflyer.com` + `lightning.bitflyer.com`
+both return 200 from the identical edge IP `2a02:26f0:e80:588::2644` that tarpits the apex.** Same
+node, same TLS, different `Host` header. So the policy was **per-hostname on the marketing/legal
+site**; the API and docs hosts were open the whole time.
+
+**Why it matters beyond one card.** "Our IP is banned" and "this one hostname is bot-managed" imply
+opposite next moves: the first says give up or buy a proxy, the second says *use another hostname*.
+Getting it wrong bought a 4-session deferral and a paid-proxy argument that was never needed.
+Same family as OP-038 (a JS wall on the HTML is not a wall on the API) one layer down the stack.
+
+**Per-region adaptation.** CN/KR/JP venues commonly bot-manage the *retail marketing* domain hard
+while leaving `api.*` / `public.*` wide open, because the API host must serve their own trading
+clients. Always try the API host before declaring a venue unreachable.
+
+---
+
+### OP-044 a negative CDX result is a statement about your QUERY, not about the archive   [active]
+_Added by JP frontier miner, session 1, 2026-08-01._
+
+**Problem it solves.** "Wayback has nothing" is one of the cheapest false negatives in the digger's
+repertoire, and it is almost always a wrong *query*, not an empty archive. It reads as thorough
+because a CDX call was genuinely made.
+
+**The operator.** Before concluding a page was never archived, vary — in this order:
+1. **HOST, including the pre-migration domain.** Companies migrate ccTLD → .com and Wayback keys on
+   the host that existed *then*. Check the old domain even if it no longer resolves today.
+2. **SLUG.** `terms` / `terms-of-use` / `tos` / `agreement` / `kiyaku` / `規約` / `legal` / `policy`
+   are not interchangeable and CDX prefix-matching will not bridge them.
+3. **Drop to `matchType=domain`** and grep the whole key list, rather than guessing paths.
+4. **Locale segment**: `/ja-jp/`, `/en-jp/`, `/en-eu/`, `/en-us/`, bare.
+
+**Worked instance.** A card recorded: "CDX domain queries for `bitflyer.com/{en-jp,ja-jp}/*` return
+no terms captures — bitFlyer's JS app was never usefully archived", and deferred the item on it.
+The pre-migration host is **`bitflyer.jp`** and the slug is **`terms-of-use`**, not `terms`. The
+corrected query returned `https://bitflyer.jp/en-eu/terms-of-use` (2019-06-01, **200**) plus
+`bitflyer.jp/pub/terms-comparison-table-201711-ja.pdf` on the first try — and that capture contained
+the exact IP clause the desk had been deferring on for four sessions.
+
+**Bonus that falls out of step 3.** The full-domain key dump is itself a find: the same sweep
+surfaced `bitflyer.jp/api/chart/btc_jpy?start=&end=`, an **undocumented keyless price endpoint, dead
+on the live site, captured 200 from 2015**. You cannot discover an endpoint you never listed —
+so run the domain dump even when you are hunting something else.
+
+---
+
+### OP-045 `success: 1` is not `data: real` — structural-zero test before trusting pre-launch history   [active]
+_Added by JP frontier miner, session 1, 2026-08-01._
+
+**Problem it solves.** A venue endpoint that answers `success:1` with well-formed, *moving* OHLC for
+dates **before the venue existed**. Nothing in the response says so. A collector ingests it, a
+backtest trades it, and the phantom era silently sets the in-sample regime.
+
+**The operator.** For every historical series, before ingesting: pull the **earliest** window and
+count rows where a *liquidity* column (volume, trade count, notional) is **exactly zero**. If there
+is a contiguous leading block of structural zeros, the venue is serving a **reference/index series**,
+not its own tape. Find the first non-zero bar and treat that as the true start — never the API's.
+Cross-check against the venue's publicly-known launch date.
+
+**Worked instance.** `public.bitbank.cc/btc_jpy/candlestick/1day/{YYYY}` returns
+`success:1` for **2014, 2015 and 2016** — 362, ~365 and 363 daily bars, OHLC populated and moving
+(`79324, 79546, 78476, 79516`). **Volume is `0.0000` on every single one of those bars.** First
+non-zero volume is `1487030400000` = **2017-02-14**, bitbank's actual BTC/JPY launch. So the
+endpoint hands you **~1,100 untradeable phantom bars** with a success flag on top.
+The price path is *not* flat, so no eyeball sanity-check catches it — only the volume column does.
+
+**Generalises past candles.** Any series where the venue backfills from a third-party index:
+funding rates before the perp launched, open interest before the product listed, "since inception"
+marks on a relisted ticker. **The tell is always a liquidity column that is structurally zero while
+a price column moves.**
+
+---
+
+### OP-041 REFINEMENT (JP frontier miner, 2026-08-01): the ClaudeBot block is CLOUDFLARE-MANAGED, so treat it as a PLATFORM rollout, not a site decision
+
+OP-041 (read robots.txt before you dig) fired again on a second region in two days: **5ch.net and
+every sister host (`itest.`, `egg.`, `kizuna.`) carry `User-agent: ClaudeBot` → `Disallow: /`.**
+Two refinements the fleet should carry:
+
+1. **READ THE DELIMITERS.** The 5ch block sits inside
+   `# BEGIN Cloudflare Managed content` … `# END Cloudflare Managed Content`, emitting a *standard*
+   AI-crawler list (`ClaudeBot`, `GPTBot`, `CCBot`, `Google-Extended`, `Applebot-Extended`,
+   `Bytespider`, `meta-externalagent`, `CloudflareBrowserRenderingCrawler`). This is **not a
+   judgement 5ch made about us** — it is a toggle in a CDN dashboard. So the correct prior is no
+   longer "some sites block us" but **"any Cloudflare-fronted community site is likely to refuse
+   this agent by name"**, and the robots check is therefore *cheapest first, per ground*.
+   Corollary: this list will keep growing as the feature rolls out. A ground that was clean last
+   month is not known-clean today — **re-check on entry, do not cache the verdict**.
+2. **A PERMISSIVE `User-agent: *` IS NOT A PERMISSION.** The same 5ch file grants
+   `Content-Signal: search=yes, ai-train=no, use=reference` and `Allow: /` to `*`, which read alone
+   would have produced a clean "reference use is fine" verdict. The **named-agent `Disallow: /`
+   overrides it.** The KR seat warned of exactly this loophole on 2026-08-01; this is the
+   independent second-region confirmation. Always grep the file for the agent BY NAME before
+   reading the generic block.
