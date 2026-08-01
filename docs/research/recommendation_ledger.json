@@ -3462,6 +3462,18 @@
    "commit": null,
    "due": "2026-08-04",
    "disposed": "2026-08-01T10:19:12.038865+00:00"
+  },
+  {
+   "id": "R0285",
+   "source": "cycle",
+   "summary": "cash_and_carry stays UNATTRIBUTED until the book trades clean post-freeze: the -1,849.83 unexplained vs +113.06 funding IS explained (churn-loop fee fire, 1,746 commissions, fixed in 59b837d) but the fence has no incident-exemption path BY DESIGN, and adding one would be editing the guard to fit the violation. Clears when the book runs clean and reconciles.",
+   "roi_bps": null,
+   "raised": "2026-08-01T11:14:36.666247+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

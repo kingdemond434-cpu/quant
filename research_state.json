@@ -1,5 +1,5 @@
 {
-  "generated": "2026-08-01T08:24:00.886078+00:00",
+  "generated": "2026-08-01T11:13:46.984209+00:00",
   "master_objective": "maximize expected lifetime geometric growth (log wealth), survival-c",
   "deployed": {
     "sleeves": [
@@ -7,13 +7,13 @@
       "perp_ls (paper)"
     ],
     "start_capital": 15000.0,
-    "equity": 18811.44,
-    "net_pnl": 3811.44,
-    "return_pct": 25.41,
-    "days_live": 30.13,
+    "equity": 13263.23,
+    "net_pnl": -1736.77,
+    "return_pct": -11.578,
+    "days_live": 30.25,
     "winrate_pct": 43.7,
     "n_closed_trades": 254,
-    "deployed_sharpe": 12.36,
+    "deployed_sharpe": 3.13,
     "funding": 113.06,
     "funding_measured": true,
     "n_carries": 0,
@@ -67,8 +67,8 @@
     }
   ],
   "retirement_note": "SIGNAL ONLY \u2014 marginal-Sharpe swings ~\u00b10.15 between runs, so a single negative sign is within noise. Retire only on PERSISTENT negative contribution across runs, with promotion-grade rigor. No whipsaw.",
-  "architecture_review_due": false,
-  "cycles_logged": 55,
+  "architecture_review_due": true,
+  "cycles_logged": 56,
   "completed_this_cycle": [
     "archive_integrity_ok",
     "watchdog_run_logged_off",
@@ -144,17 +144,17 @@
     "DEFER heavy external paper search: info value < top backlog item this cycle."
   ],
   "forecast_calibration": {
-    "n_resolved": 7,
+    "n_resolved": 15,
     "n_excluded": {
       "retrospective": 30,
       "duplicate_claim": 0
     },
     "status": "calibrated",
-    "brier": 0.2144,
-    "reliability": 0.7856,
-    "bias": 0.1214,
+    "brier": 0.2342,
+    "reliability": 0.7658,
+    "bias": 0.13,
     "bias_label": "over-confident",
-    "hit_rate_posterior": 0.667,
+    "hit_rate_posterior": 0.647,
     "note": "Brier lower=better; reliability=1-Brier; bias>0 means forecasts were too high. Applied as a shrinkage on future p_success when |bias| is material."
   }
 }
