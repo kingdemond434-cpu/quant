@@ -28,6 +28,7 @@ import re
 import subprocess
 import sys
 import time
+from collections.abc import Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -716,6 +717,30 @@ def check_generation(defects) -> None:
                     break
     if last_verdict and (not last_gen or last_verdict > last_gen):
         last_gen = last_verdict
+    # THIRD STORE (2026-08-01). The 07-28 fix established the right principle -- credit the
+    # PRODUCT, not the flag -- but wired only two of the three places a screen actually lands. A
+    # screen run through libs.research.axis_screen directly (rather than via stage_a_executor)
+    # writes reports/axis_screens/<axis>.json and NOTHING else, so this check called generation
+    # "skipped" on days real screens ran. Measured: it had been firing for 5.8d and was walked
+    # past by 10 awake cycles -- while R0069's decisive 38-asset / 84,891-asset-day panel screen
+    # was written to reports/axis_screens/ that very afternoon. Same shape as the §37 ack bug
+    # fixed in this commit: an organ judging the desk from a partial view of the evidence, then
+    # escalating. Newest of {flag, verdict row, screen report} wins.
+    # L1.44: content `updated` OUTRANKS mtime -- a deploy or checkout rewrites files and mtime
+    # then lies FRESH, which is the dangerous direction here (it would credit generation that
+    # never happened). Fall back to mtime only for the reports whose schema carries no stamp.
+    screens = ROOT / "reports/axis_screens"
+    if screens.is_dir():
+        for p in screens.glob("*.json"):
+            with contextlib.suppress(Exception):
+                stamp = None
+                blob = json.loads(p.read_text("utf-8"))
+                if isinstance(blob, dict):
+                    stamp = blob.get("updated") or blob.get("generated")
+                iso = str(stamp) if stamp else datetime.fromtimestamp(
+                    p.stat().st_mtime, tz=UTC).isoformat()
+                if not last_gen or iso > last_gen:
+                    last_gen = iso
     # successful cycles since a fixed watch baseline
     base_f = ROOT / "data/generation_watch_baseline"
     if not base_f.exists():
@@ -3873,19 +3898,56 @@ def check_constitution(defects) -> None:
 CHECKS += [("constitution", check_constitution)]   # registered BELOW its definition
 
 
+def split_acked(
+    defects: Sequence[tuple[str, str]], *, now_iso: str | None = None
+) -> tuple[list[tuple[str, str]], list[tuple[str, str]], str]:
+    """Split raw defects into LIVE and ACKED against the one ack registry.
+
+    THE ONE DEFINITION (2026-08-01). ``CHECKS`` is module-level precisely so other organs can
+    enumerate the same defects "instead of keeping a second copy that silently drifts" -- but the
+    ack filter that runs immediately after it lived inside ``main()``, so §37's carry-over brief
+    enumerated CHECKS and never saw the acks. It therefore filed all 26 dated, reasoned, expiring
+    acks under "shown the work and not done", and the 12 items it put in front of the brain FIRST
+    were 12/12 acked -- several of them blocked on principal-only actions the brain cannot take.
+    A brief whose top of queue is 100% false gets walked past, which the brief then counted as
+    avoidance and escalated. Sharing this function is what stops that drift for good.
+
+    Returns ``(live, acked, ack_state)``. ``ack_state`` is the REFUSAL PATH (L1.41): "known" when
+    the registry was genuinely read, "unknown" when it exists but could not be parsed. An ABSENT
+    registry is known-empty -- "nothing has been acked" is a fact, not an unknown. Callers that
+    write history must record "unknown" rather than guessing, because guessing "nothing is acked"
+    writes a permanent false accusation and guessing "all acked" buries real work.
+    """
+    now_iso = now_iso or datetime.now(tz=UTC).isoformat()
+    if not ACKS.exists():
+        acks: Any = {}
+        state = "known"
+    else:
+        try:
+            acks = json.loads(ACKS.read_text("utf-8"))
+            state = "known"
+        except Exception:
+            acks, state = {}, "unknown"
+    if not isinstance(acks, dict):
+        acks, state = {}, "unknown"
+
+    live: list[tuple[str, str]] = []
+    acked: list[tuple[str, str]] = []
+    for did, msg in defects:
+        a = acks.get(did)
+        if isinstance(a, dict) and a.get("until", "") > now_iso:
+            acked.append((did, a.get("reason", "")))
+        else:
+            live.append((did, msg))
+    return live, acked, state
+
+
 def main() -> None:
     defects: list[tuple[str, str]] = []
     for label, fn in CHECKS:
         _fenced(fn, defects, label)
 
-    acks = _j(ACKS, {})
-    live, acked = [], []
-    for did, msg in defects:
-        a = acks.get(did)
-        if a and a.get("until", "") > datetime.now(tz=UTC).isoformat():
-            acked.append((did, a.get("reason", "")))
-        else:
-            live.append((did, msg))
+    live, acked, _ack_state = split_acked(defects)
 
     prev = _j(REPORT, {})
     first_seen = prev.get("first_seen", {})

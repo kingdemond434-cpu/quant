@@ -1,5 +1,28 @@
 # GAP REGISTER — live ranked list of known inefficiencies & missing capabilities
 
+_Re-ranked 2026-08-01T15:10Z (daily cycle)._ **#1 stays PRINCIPAL REARM + A/B/C** (unchanged,
+human-gated). One new entry enters directly beneath it, and one measurement changes how the whole
+register should be read.
+
+**#1b NEW — R0320: an accounting re-baseline DISSOLVED an active risk rail.** Journal-verified
+from `journalctl -u quant-cashcarry` this cycle, not inferred: `12:10:22 RISK-PAUSE-OPENS drawdown
+-17.6%<=-15%` (`net=$-1860.22`, `carries=0`) → `12:22:51` `capital_events` RESTART moves start
+equity `+4790.70` → `14:19:29 'open BNBUSDT 0.01'` — **opens resumed with zero trades in between**.
+A drawdown rail is a RATIO, so moving its denominator clears it without any risk having fallen.
+Testnet/paper today (`run_cashcarry_executor.py:29-30` hard-imports testnet), which is the only
+reason this is #1b and not #1. It ranks above the general queue because it is a RAIL-SEMANTICS
+defect that becomes live-critical at the same moment REARM does, exactly like R0217 below it. NOT
+fixed this cycle by choice: the correct post-capital-event baseline (high-water vs start-equity vs
+event-adjusted) is a genuine design question with rail-safety consequences, and DEFERRAL DISCIPLINE
+names "unresolved uncertainty" — not session length — as the valid reason. Dated, not parked.
+
+**READ THE REGISTER DIFFERENTLY FROM TODAY.** The §37 carry-over brief that has been steering
+cycle priority was measured this cycle at a **57% false-positive rate** (26 of 47 items carried
+unexpired dated acks; the top-12 shown to the brain FIRST was **12/12 acked**). Fixed in this
+commit. Any prioritisation inherited from a pre-2026-08-01 cycle was ranked against that noise —
+so a row that looks neglected may simply never have been visible under it. Row age before today is
+weak evidence of anything.
+
 _Re-ranked 2026-07-31T21:05Z (sixth cycle of the day)._ **#1 stays PRINCIPAL REARM + A/B/C**
 (page live, book flat+frozen, `live_guard.json` read fresh this cycle: `armed false`,
 `rung full_flatten_disarmed`, `requires_manual_rearm true`, 0 positions). Two evidence-driven

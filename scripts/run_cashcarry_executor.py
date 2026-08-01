@@ -436,6 +436,43 @@ def _structurally_bleeding(sym: str) -> bool:
     return False
 
 
+#: Fewer realised pairs than this and the sample is an anecdote; the gate keeps using the model.
+_MIN_FILLS_FOR_REALISED = 3
+
+
+def _realised_rt_bps(sym: str) -> float | None:
+    """Median round-trip slippage this desk ACTUALLY PAID on this symbol, or None if too few.
+
+    L1.11(b): our own order flow is the one execution dataset no competitor has, and it disagreed
+    with the cost surface by roughly fifty times -- surface said 0.35bps for BNB, our fills said
+    ~16bps combined (spot +18.1 mean / +7.0 median, futures -1.7). The gate was admitting trades
+    that needed twelve days of funding to repay one entry, which is why every post-fix hold bucket
+    came back negative while the gate believed it was selecting winners.
+
+    Median rather than mean: one catastrophic fill should cost a trade, not blacklist a symbol
+    forever (mean +18.1 vs median +7.0 here -- the gap is a single outlier).
+    """
+    try:
+        rows = json.loads(_TRADES.read_text("utf-8"))
+    except Exception:
+        return None
+    slips = []
+    for r in rows:
+        if str(r.get("symbol")) != sym:
+            continue
+        sp, ft = r.get("spot_slip_bps"), r.get("fut_slip_bps")
+        if sp is None:
+            continue
+        try:
+            slips.append(abs(float(sp)) + abs(float(ft or 0.0)))
+        except (TypeError, ValueError):
+            continue
+    if len(slips) < _MIN_FILLS_FOR_REALISED:
+        return None
+    slips.sort()
+    return slips[len(slips) // 2]
+
+
 def _rt_bps(sym: str) -> float:
     """This symbol's MEASURED round-trip cost, else the desk median. Self-improving: as the
     recorder accrues the traded names, the gate automatically tightens on expensive books
@@ -450,9 +487,14 @@ def _rt_bps(sym: str) -> float:
         # it. max() keeps a proven-expensive name (KNC -211bps) expensive when the model
         # freezes, and stops a stale "cheap" reading from admitting opens the current book
         # would refuse. New opens only, as ever -- this can never force-close a held carry.
-        return float(v) if fr.fresh else max(float(v), _DEFAULT_RT_BPS)
+        modelled = float(v) if fr.fresh else max(float(v), _DEFAULT_RT_BPS)
     except (KeyError, TypeError, ValueError):
-        return _DEFAULT_RT_BPS
+        modelled = _DEFAULT_RT_BPS
+    # REALITY FLOORS THE MODEL (L1.11b). MAX, never average: this may only TIGHTEN the gate, the
+    # same direction the stale-model rule above already enforces. A bad realised sample can cost
+    # us a trade; it can never admit one.
+    real = _realised_rt_bps(sym)
+    return max(modelled, real) if real is not None else modelled
 
 
 def _entry_gate(sym: str, funding: float, min_hold_h: float = _MIN_HOLD_H) -> bool:

@@ -53,6 +53,9 @@ def main() -> int:
     a = ap.parse_args()
 
     from libs.ops.carryover import brief, carryover_state, load_sweeps, record_sweep
+    from libs.ops.lawful import guard
+
+    guard()
 
     if a.record:
         try:
@@ -60,8 +63,15 @@ def main() -> int:
             defects: list[tuple[str, str]] = []
             for _label, fn in m.CHECKS:
                 m._fenced(fn, defects, _label)
-            record_sweep(LEDGER, [d[0] for d in defects], ts=time.time(),
-                         brain_alive=brain_was_alive())
+            # ACK-AWARE (2026-08-01). This recorded EVERY defect as owed, including the ones the
+            # desk had already disposed of with a dated, reasoned, expiring ack -- so the brief
+            # accused the brain of avoidance for work it had explicitly judged and scheduled, and
+            # the 12 items it ranked FIRST were 12/12 acked. Split against the ONE ack registry
+            # (max_audit.split_acked), never a second copy of the rule.
+            live, acked, ack_state = m.split_acked(defects)
+            record_sweep(LEDGER, [d[0] for d in live], ts=time.time(),
+                         brain_alive=brain_was_alive(),
+                         acked_ids=[d[0] for d in acked], ack_state=ack_state)
         except Exception as exc:
             print(f"[§37] record failed ({type(exc).__name__}: {exc}) -- printing prior state")
 

@@ -3870,6 +3870,90 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0319",
+   "source": "cycle",
+   "summary": "\u00a737 carry-over brief recorded ACKED defects as owed: 26 of 47 reported items carried dated acks, top-12 were 12/12 acked, so the brain's FIRST-priority queue was 57% false and anti-correlated with real work. Fixed by sharing max_audit.split_acked; deferral now tracked separately with a 30d TREADMILL detector.",
+   "roi_bps": 0.0,
+   "raised": "2026-08-01T15:01:10.384705+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0320",
+   "source": "cycle",
+   "summary": "INTEGRITY-WATCH P0: a capital-event re-baseline DISSOLVED an active risk rail. Journal-verified: 12:10:22 RISK-PAUSE-OPENS at drawdown -17.6%<=-15% (net -1860.22, carries=0); 12:22:51 capital_events RESTART moved start equity by +4790.70; 14:19:29 opens RESUMED (open BNBUSDT). Zero trades in between -- the rail was cleared by the denominator moving, not by risk falling. Testnet/paper today, but this class carries into live. Fix needs a decided post-capital-event drawdown baseline (high-water vs start-equity) -- rail-safety design work, not a cycle-end edit.",
+   "roi_bps": 0.0,
+   "raised": "2026-08-01T15:02:22.687475+00:00",
+   "status": "scheduled",
+   "reason": "the correct post-capital-event drawdown baseline (high-water vs start-equity vs event-adjusted) is a rail-safety design decision, not a cycle-end edit; DEFERRAL DISCIPLINE names unresolved uncertainty as the valid reason. Testnet/paper today so no capital is exposed, but it is a REARM blocker of the same class as R0217.",
+   "commit": null,
+   "due": "2026-08-04",
+   "disposed": "2026-08-01T15:10:59.616586+00:00"
+  },
+  {
+   "id": "R0321",
+   "source": "cycle",
+   "summary": "INTEGRITY-WATCH P1: untracked naked-long path with a structurally dead detector. 3 OPEN-FAIL half-fills in 2 days (spot_ok=True fut_ok=False -> spot bought, hedge never placed, deliberately NOT tracked per VERIFY-BEFORE-TRACK at run_cashcarry_executor.py:912). The SPOT-EXCESS detector at :651 sits INSIDE 'for sym,p in pos.items()' so it can only scan TRACKED symbols and can never fire on an untracked orphan. Zero SPOT-EXCESS lines despite two half-fills today.",
+   "roi_bps": 0.0,
+   "raised": "2026-08-01T15:02:22.790849+00:00",
+   "status": "scheduled",
+   "reason": "same money-path batch as R0320; moving the SPOT-EXCESS scan off the tracked-positions loop touches the reconcile path and belongs with the baseline work, not beside it.",
+   "commit": null,
+   "due": "2026-08-04",
+   "disposed": "2026-08-01T15:10:59.760107+00:00"
+  },
+  {
+   "id": "R0322",
+   "source": "cycle",
+   "summary": "INTEGRITY-WATCH P1: two published books disagree by $4,666. web/cashcarry_live.json net_pnl +2930.02 (baseline capital_events.effective_start_equity 5757.08) vs web/portfolio.json -1736.39 (baseline st['start_futures_equity'] 10547.78). capital_events.py:176 returns h[-1]['start_equity_after'] and DISCARDS its argument when the ledger is non-empty, so the executor and the molded book see different capital events. Both cannot be right.",
+   "roi_bps": 0.0,
+   "raised": "2026-08-01T15:02:22.986123+00:00",
+   "status": "scheduled",
+   "reason": "dual-baseline split needs one decided source of truth for capital events; sequenced after R0320 because both turn on the same capital_events semantics.",
+   "commit": null,
+   "due": "2026-08-05",
+   "disposed": "2026-08-01T15:10:59.848359+00:00"
+  },
+  {
+   "id": "R0323",
+   "source": "cycle",
+   "summary": "INTEGRITY-WATCH P2: Gate 0's '>=4 weeks of live fills' reads a tape running at 1 row/24h behind a fresh heartbeat. check_gate0_ready.py:58-60 counts data/moat/execution_tape/cashcarry_trades.jsonl; heartbeat 0min fresh, payload 1 row/24h vs a 4-44/day baseline, because the tape appends only on a COMPLETED fill and opens are failing to fill. The desk's own heartbeat!=data lesson, now sitting on the Gate 0 criterion.",
+   "roi_bps": 0.0,
+   "raised": "2026-08-01T15:02:23.163782+00:00",
+   "status": "scheduled",
+   "reason": "Gate 0 is not imminent (live_guard stage S0, armed false, 6/6 ramp checks false), so the fill-count criterion has time; it must be fixed before any Gate 0 attestation is believed.",
+   "commit": null,
+   "due": "2026-08-06",
+   "disposed": "2026-08-01T15:10:59.951746+00:00"
+  },
+  {
+   "id": "R0324",
+   "source": "cycle",
+   "summary": "INTEGRITY-WATCH P2: maker fill-rate UNMEASURED for 8 days and tomorrow's first monitor run will publish a FALSE 0.0. data/fill_quality.json has never been written; producer scripts/fill_quality_monitor.py was cronned only today (manifest:759) and first fires 08-02 03:12. Its _is_maker() recognises maker/isMaker/is_maker/m/role/liquidity but the cash-carry tape stores spot_mode/fut_mode, so it fails closed to 0.0 and record_desk_metrics will persist and page on that false zero. Best number available: trade_forensics maker_share 0.447, spot leg 0.263 -- both below the 0.60 bar.",
+   "roi_bps": 0.0,
+   "raised": "2026-08-01T15:02:23.299790+00:00",
+   "status": "scheduled",
+   "reason": "CHEAPEST AND MOST URGENT of the five -- fill_quality_monitor first fires 08-02 03:12 and will publish a false maker_rate 0.0 that record_desk_metrics persists and pages on. Teach _is_maker() spot_mode/fut_mode BEFORE that run.",
+   "commit": null,
+   "due": "2026-08-02",
+   "disposed": "2026-08-01T15:11:00.042230+00:00"
+  },
+  {
+   "id": "R0325",
+   "source": "cycle",
+   "summary": "CONVERSION METRIC BLIND TO ITS OWN BEST CASE. check_conversion.py:127 counts dispositions_7d as rows moved to implemented/rejected, so a defect found and FIXED in the same run -- never rowed, because L1.39 says route it to its next stage immediately -- scores ZERO conversion, while the slower find->row->schedule path scores as activity. Measured this cycle: 3 real defects fixed (carryover ack-blindness, check_generation third store, fill-quality false zero) and dispositions_7d stayed flat at 84 while backlog rose 216->225. L1.28b(e) says unmeasured conversion counts as zero, so the metric currently penalises the doctrine-preferred behaviour and rewards queueing. Candidate fix: credit a commit that closes a max_audit defect id, or require same-run fixes to be rowed-and-closed rather than never rowed. Do NOT fix by loosening what counts as a disposition.",
+   "roi_bps": 0.0,
+   "raised": "2026-08-01T15:15:19.794345+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

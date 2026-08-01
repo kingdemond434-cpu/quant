@@ -65,6 +65,34 @@ def _is_maker(r: dict) -> bool:
     return role in ("maker", "add", "post")
 
 
+#: EXACTLY the fields `_is_maker` consults -- keep the two in lockstep. If this list names a field
+#: the reader cannot actually parse, the schema reads as "understood" while every row silently
+#: scores taker, which is the precise bug this guard exists to prevent (caught by its own test).
+_LIQUIDITY_FIELDS = ("maker", "isMaker", "is_maker", "m", "role", "liquidity")
+
+
+def _schema_understood(rows: list[dict]) -> bool:
+    """Does ANY row carry a field that could express maker-vs-taker?
+
+    THE FALSE ZERO (2026-08-01, before this monitor's first cron fire). `_is_maker` fails CLOSED,
+    which is right for one unknown row and catastrophic for an unknown SCHEMA: pointed at the
+    cash-carry tape -- which stores `spot_mode`/`fut_mode` ('maker' / 'taker_fallback' /
+    'already-flat') and none of the names `_is_maker` knows -- every leg reads taker and the
+    monitor publishes `maker_rate: 0.0` with verdict STALLED, "a DEFECT, not a note". That number
+    would then be persisted by record_desk_metrics and paged, i.e. a measurement failure dressed
+    as a measured finding. Refusing is the only honest output: "we could not read it" and "it was
+    0%" are different claims and only one of them is evidence.
+
+    THIS IS THE GUARD, NOT THE FIX (R0324, due 2026-08-02). Teaching `_is_maker` to read
+    `spot_mode`/`fut_mode` is the real repair, and it is deliberately NOT done here because those
+    rows carry TWO legs each ('maker' / 'taker' / 'taker_fallback' / 'already-flat') against a
+    one-verdict-per-row reader, and `already-flat` is not a fill at all so it must not enter the
+    denominator. Getting that wrong yields a plausible WRONG rate, which is worse than an obvious
+    refusal: an implausible 0% gets investigated, a believable 43% gets believed.
+    """
+    return any(k in r for r in rows for k in _LIQUIDITY_FIELDS)
+
+
 def _fee(r: dict) -> float:
     for k in ("fee", "commission", "fee_usd"):
         if k in r:
@@ -93,6 +121,13 @@ def measure(rows: list[dict]) -> dict[str, Any]:
     n = len(rows)
     if not n:
         return {"fills": 0, "maker_rate": None, "fee_concentration": None, "bps_per_rt": None}
+    if not _schema_understood(rows):
+        # UNMEASURED, never 0.0 -- verdict() already routes maker_rate=None to "NO DATA".
+        return {"fills": n, "maker_rate": None, "fee_concentration": None, "bps_per_rt": None,
+                "unreadable_schema": True,
+                "note": (f"{n} row(s) carry no recognised liquidity field "
+                         f"{_LIQUIDITY_FIELDS} -- cannot tell maker from taker. Reporting "
+                         "UNMEASURED rather than a false 0%.")}
     makers = [r for r in rows if _is_maker(r)]
     takers = [r for r in rows if not _is_maker(r)]
     fee_all = sum(_fee(r) for r in rows)
