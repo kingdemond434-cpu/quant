@@ -84,6 +84,7 @@ _GOVERNED: tuple[str, ...] = (
     "check_strategy_breadth.py",
     "run_principal_benchmark.py",
     "run_organ_er.py",
+    "check_enforcement_execution.py",       # L1.43 execution-vs-existence (capability hunt s3)
 )
 
 #: Organs that legitimately owe no cron line, with the reason. "No schedule" must be a DECISION.

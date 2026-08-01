@@ -2750,6 +2750,78 @@
    "commit": "e98b925",
    "due": null,
    "disposed": "2026-08-01T01:21:14.505847+00:00"
+  },
+  {
+   "id": "R0226",
+   "source": "cycle",
+   "summary": "L1.43 gap: check_orphan_code is PACKAGE-granular (skips packages with <3 modules; libs/research is reached by dozens of scripts), so a MODULE orphaned inside a well-reached package is invisible to it. dist_shift.py sat there 3 days. check_enforcement_execution now covers modules that are MATRIX-CITED, but an orphaned module that no law cites is still unseen. Extend to module-granular reachability repo-wide.",
+   "roi_bps": null,
+   "raised": "2026-08-01T01:55:34.881905+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0227",
+   "source": "cycle",
+   "summary": "libs/regime/engine.py:84 conf=posteriors[-1].max() ignores the GMM cross-check and rule-engine computed on the next lines: web/regime_engine.json reads confidence=1.0 while hmm_gmm_agree=false and gmm_regime=bear vs regime=bull. Confidence is STRUCTURALLY INCAPABLE of falling on model disagreement. run_regime_engine.py merges confidence into data/crypto_regime.json 'so the executor sizes by regime' -- money-path adjacent (L1.40 unmeasured-reported-as-OK).",
+   "roi_bps": null,
+   "raised": "2026-08-01T01:55:35.078088+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0228",
+   "source": "cycle",
+   "summary": "scripts/run_intelligence_cycle.py:86 reads web/regime.json which DOES NOT EXIST (real path web/regime_engine.json), so meta-learning has labelled every observation 'unlabelled' on a 4-hourly cron since 2026-07-30 (L1.44 phantom-path read).",
+   "roi_bps": null,
+   "raised": "2026-08-01T01:55:35.245818+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0229",
+   "source": "cycle",
+   "summary": "dist_shift DRIFT verdict is overpowered at large n: KS 5pct crit ~0.106 at n_ref=659/n_recent=220, and financial autocorrelation violates its iid assumption -- a benign drifting random walk returns DRIFT. DRIFT is a member of _HARD_TRIGGERS (strips production_capital_allowed). revalidate_clocks deliberately maps ONLY SHIFT to a hard trigger; the bands themselves need re-calibration on measured evidence before any caller wires DRIFT to capital.",
+   "roi_bps": null,
+   "raised": "2026-08-01T01:55:35.460024+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0230",
+   "source": "cycle",
+   "summary": "LIVE FINDING: stablecoin_supply_momentum (Holm forward slot, ACCRUING 8/40d) returns dist_shift SHIFT on its z-scored signal, corroborated independently by its own clock z20 = -3.12/-2.81/-3.19 (sustained ~3 sigma supply contraction). Screen also reads SCREEN-UNDERPOWERED. Needs a decision: the world it was screened in has moved.",
+   "roi_bps": null,
+   "raised": "2026-08-01T01:55:35.659139+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0231",
+   "source": "cycle",
+   "summary": "scripts/deep_review.py (L1.7 adversarial validation, 13-seat second-family panel) is exempted as human-invoked, but LIVE_CONNECTOR_SPEC section-7 REQUIRES it on all 5 money-path files before the Gate-0 key request and GAP_REGISTER still lists it OPEN. Execution-path exists; the obligation is unmet.",
+   "roi_bps": null,
+   "raised": "2026-08-01T01:55:35.766676+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

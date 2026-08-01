@@ -61,6 +61,11 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # whether the machine happened to have run it before is not a gate in either direction.
     ("build_enforcement_matrix.py", ()),       # L2.0 -- no law is prose, no fence is an orphan
     ("check_law_families.py", ()),             # L1.36 -- families complete/fenced/reaching/guarded
+    # L1.43 -- a cited enforcement that nothing EXECUTES leaves its law enforced by a docstring.
+    # A LAW fence, not a state one: it reads scripts/, libs/ and the manifest, all committed, so it
+    # means the same in CI, a fresh clone and on the box. Caught dist_shift.py (cited for L1.19 and
+    # L2.10, importer count outside its own test: zero) on its first run.
+    ("check_enforcement_execution.py", ()),
     ("check_timidity_language.py", ()),        # L1.28 -- incl. all 18 prompt surfaces
     # --report-only: the LAW half is manifest<->repo integrity (exit 2). Live-crontab DRIFT
     # (exit 1) is BOX STATE -- on a red-parked box the manifest is *supposed* to be ahead of

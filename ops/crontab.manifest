@@ -312,6 +312,23 @@ QUANT_ROOT=/home/quant/quant-platform
 # CONFIDENCE: committed-script (new this cycle)
 25 7 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_fence_yield.py >> data/cro_ai_logs/fence_yield.log 2>&1
 
+# ENFORCEMENT EXECUTION (L1.43, 2026-08-01): fence_yield above asks what a fence has CAUGHT; this
+# asks the prior question a never-run fence cannot answer for itself -- is there a path by which it
+# could fire AT ALL? The matrix checks that a citation EXISTS and MAPS, never that anything calls
+# it, so a law reads ENFORCED while its only named enforcement is executed by nothing. First run
+# caught libs/research/dist_shift.py: built 07-29, unit-tested green, cited as the enforcement of
+# L1.19 and L2.10, and imported by nothing but its own test for three days. Three checks were green
+# across it -- the matrix (existence), check_orphan_code (PACKAGE-granular, so a module orphaned
+# inside the well-reached libs/research is invisible), check_fence_yield (artifact-emitting fences
+# only).
+# CADENCE CEILING: DATA-ARRIVAL bound, and the data is the repo tree -- it changes on every commit
+# (~10/day). Pure CPU, no network, ~2s, so the honest maximum is EVENT-DRIVEN: it runs in
+# _LAW_FENCES on every push, PR and hourly law gate, which is where it actually binds. This daily
+# line is the backstop that catches drift arriving without a commit, not the primary trigger.
+# EVIDENCE: scripts/check_enforcement_execution.py -> data/enforcement_execution.json; L1.43/L2.0
+# CONFIDENCE: committed-script (new this cycle)
+40 7 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_enforcement_execution.py >> data/cro_ai_logs/enforcement_execution.log 2>&1
+
 # THE LAW GATE, HOURLY (L1.37, principal order 2026-07-31 "enforced 24/7 with every
 # interaction"). The full battery -- portable law fences PLUS the box-only state fences whose
 # verdict is real here. This is the boundary that catches drift arriving WITHOUT a commit:

@@ -812,6 +812,28 @@ fired, got its defect fixed, and re-ran clean would read QUIET forever — the p
 (law-families finding L2.3 fenced-but-never-in-the-doctrine; build-standard finding five
 violations including three in itself) are **seeded with citations to where the evidence lives**.
 
+**AND THE PRIOR QUESTION A NEVER-RUN FENCE CANNOT ANSWER FOR ITSELF: IS THERE A PATH BY WHICH IT
+COULD FIRE AT ALL?** *(2026-08-01, capability hunt s3)*. Classifying a fence by what it has CAUGHT
+presumes something executes it. The enforcement matrix asks only whether a cited artifact EXISTS
+and MAPS to a principle — never whether anything calls it — so **a law can read ENFORCED while its
+only named enforcement is executed by nothing**. The proving instance: `libs/research/dist_shift.py`
+was built 2026-07-29, unit-tested green, and cited as the enforcement of **L1.19** (information
+decay) and **L2.10** (reality gap), while its only importer in the repository was its own unit
+test. `RevalidationController` consumed exactly what it produced and had no caller either — a
+matched producer/consumer pair, each built correctly, never connected. Three checks were green
+across it: the matrix (existence, not execution), `check_orphan_code` (PACKAGE-granular, and
+`libs/research` is reached by dozens of scripts, so an orphaned MODULE inside it is invisible), and
+`check_fence_yield` (scoped to fences that emit artifacts, which a library module does not).
+**IMPORTABLE IS NOT EXECUTED** is the distinction that does the work: a package `__init__`
+re-export makes an orphan statically reachable, so a module counts as executed only when one of its
+own public symbols is REFERENCED from non-test code. **A unit test proves a mechanism works and
+says nothing whatever about whether anything runs it** — which is exactly how this stayed invisible.
+Fenced by `scripts/check_enforcement_execution.py`, which fired on its first run. It is
+deliberately CONSERVATIVE, because a gate that cries wolf gets acknowledged into silence and that
+is how enforcement actually dies: every ambiguous case resolves to EXECUTED, human-invoked tools
+are exempt **with a recorded reason** (the "no cron line must be a DECISION" convention), and a law
+is reported unenforced only when **every** one of its citations is broken.
+
 **ITS NON-TIMID READING** *(L1.28 classification — the fence flagged the word "reject" here, which
 is the fence working)*. The only "rejection" in L1.43 is the **welded-gate diagnostic** it borrows:
 a gate that accepts or rejects ~100% is uninformative. **Nothing in this law licenses rejecting a

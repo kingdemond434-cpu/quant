@@ -12,14 +12,132 @@ Read-only diagnostic. Run from repo root."""
 from __future__ import annotations
 
 import json
+import sys
 import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
 
-from libs.research.axis_screen import stage_a_screen
-from libs.research.upbit_data import upbit_daily_close_keyed
+_ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
+from libs.ops.lawful import guard as _law_guard  # noqa: E402
+from libs.research.axis_screen import stage_a_screen  # noqa: E402
+from libs.research.dist_shift import split_and_check  # noqa: E402
+from libs.research.upbit_data import upbit_daily_close_keyed  # noqa: E402
+from libs.validation.revalidation import (  # noqa: E402
+    RevalidationController,
+    WalkForwardReport,
+    WalkForwardStatus,
+)
+
+_OUT = _ROOT / "data/clock_revalidation.json"
+_SHADOW = _ROOT / "data/axis_shadow_state.json"
+
+
+def _forward_report(axis: str) -> WalkForwardReport:
+    """The axis's CURRENT standing, read from its forward clock rather than asserted.
+
+    PASSED only where the clock has actually met its bar -- an ACCRUING axis is PENDING, never
+    passing. This matters because the controller's whole job is downgrading PASSED -> STALE on a
+    hard trigger: hand it a fake PASSED and the downgrade is theatre.
+    """
+    status, sharpe, stability, msg = WalkForwardStatus.PENDING, 0.0, 0.0, "no forward clock"
+    try:
+        axes = json.loads(_SHADOW.read_text("utf-8")).get("axes", [])
+    except (OSError, ValueError):
+        axes = []
+    for a in axes:
+        if a.get("axis") != axis:
+            continue
+        sharpe = float(a.get("ann_sharpe") or 0.0)
+        fwd, need = int(a.get("forward_days") or 0), int(a.get("need") or 40)
+        stability = min(1.0, fwd / need) if need else 0.0
+        verdict = str(a.get("verdict") or "")
+        status = (WalkForwardStatus.PASSED if verdict == "ELIGIBLE"
+                  else WalkForwardStatus.PENDING)
+        msg = f"clock {verdict} {fwd}/{need}d, ann_sharpe={sharpe:.2f}"
+        break
+    return WalkForwardReport(status=status, walk_forward_score=0.0, n_windows=0,
+                             oos_sharpe=sharpe, oos_mean_return=0.0, stability=stability,
+                             message=msg)
+
+
+def _z(series: np.ndarray, win: int = 20) -> np.ndarray:
+    """Causal trailing z-score -- the desk's standard signal transform (same window the Stage-A
+    screen uses), warmup dropped.
+
+    NOT COSMETIC, and the first wiring got this wrong. A two-window distribution test fed RAW
+    LEVELS fires on any trending series: a deterministic constant-increment ramp -- a process with
+    no distributional change whatsoever -- returns SHIFT, and stablecoin supply is very nearly that
+    ramp. The first run of this wiring duly reported SHIFT on both axes with an identical 0.35
+    haircut, which is the welded-gate signature: a detector that fires on everything carries zero
+    information (L1.43, gate-optimality duty).
+
+    The right question is whether the distribution of the signal AS THE STRATEGY CONSUMES IT has
+    moved, and the strategy consumes the z-score, which is stationary by construction. Positive
+    controls: iid noise -> STABLE, a genuine mean/variance regime change -> SHIFT.
+    """
+    x = np.asarray(series, dtype=float)
+    if len(x) <= win:
+        return np.array([], dtype=float)
+    out = np.zeros(len(x))
+    for t in range(win, len(x)):
+        w = x[t - win:t]
+        sd = w.std()
+        out[t] = (x[t] - w.mean()) / sd if sd > 0 else 0.0
+    return out[win:]
+
+
+def dist_revalidate(name: str, series: np.ndarray, results: list[dict]) -> dict:
+    """DISTRIBUTION-SHIFT REVALIDATION -- the wiring that did not exist until 2026-08-01.
+
+    `libs/research/dist_shift.py` was built 2026-07-29, unit-tested green, and cited by the
+    enforcement matrix as the evidence that L1.19 (information decay) and L2.10 (reality gap) were
+    enforced -- while its only importer in the repo was its own test. `RevalidationController`
+    consumes exactly what it produces (`drift` / `structural_break`) and had no caller either.
+    Producer and consumer both existed, fit each other exactly, and were never connected.
+
+    Direction is downward-only by construction: a SHIFT can strip production capital from a
+    passing axis, never grant it. A monitor that could promote would be an alpha claim wearing a
+    diagnostic's clothes.
+    """
+    d = split_and_check(_z(np.asarray(series, dtype=float)), name=name)
+    verdict = d.get("verdict", "INSUFFICIENT-DATA")
+
+    # ONLY *SHIFT* IS A HARD TRIGGER, and this is the caller's decision to make -- dist_shift is
+    # explicitly advisory ("the caller decides, and the caller logs the decision").
+    #
+    # DRIFT fires on ONE marginal indicator, and a bare KS flag is the cheapest of the three: at
+    # n_ref=659/n_recent=220 the 5% critical value is ~0.106, so the test is badly overpowered, and
+    # financial series are autocorrelated, which violates the iid assumption KS rests on and
+    # inflates the false-positive rate further. Measured here: a benign drifting random walk
+    # returns DRIFT. Wiring that to _HARD_TRIGGERS -- which DRIFT is a member of -- would strip
+    # production capital from healthy axes on a noisy statistic, and a clamp that fires on nothing
+    # real is a compounding cost, not prudence (L1.27/L1.28).
+    #
+    # SHIFT is the defensible bar: it needs a break-magnitude move (>4x variance or >2.5 MADs) OR
+    # agreement between two independent views. That is the module's own corroboration discipline,
+    # and it is what "conclude" should mean. DRIFT stays what its author intended -- a flag plus a
+    # downward-only confidence haircut, carried in the artifact, blocking nothing.
+    hard = verdict == "SHIFT"
+    decision = RevalidationController().assess(_forward_report(name), structural_break=hard)
+    row = {"axis": name, "dist_verdict": verdict, "haircut": d.get("haircut"),
+           "advisory_only": verdict == "DRIFT",
+           "ks_d": d.get("ks_d"), "ks_crit_5pct": d.get("ks_crit_5pct"),
+           "var_ratio": d.get("var_ratio"), "level_move_mads": d.get("level_move_mads"),
+           "n_ref": d.get("n_ref"), "n_recent": d.get("n_recent"),
+           "revalidation_status": decision.status.value,
+           "production_capital_allowed": decision.production_capital_allowed,
+           "triggers": [t.value for t in decision.triggers],
+           "rationale": decision.rationale}
+    results.append(row)
+    print(f"  DIST-SHIFT {name}: {verdict} haircut={d.get('haircut')} "
+          f"-> revalidation={decision.status.value} "
+          f"capital_allowed={decision.production_capital_allowed}")
+    return row
 
 
 def _get(url, timeout=35):
@@ -88,6 +206,8 @@ def shift_ic(signal: dict, gb: dict, shift: int, fx: dict | None = None) -> floa
 
 
 def main() -> None:
+    _law_guard()
+    dist: list[dict] = []
     gb = binance()
     print("=== LIVE CLOCK RE-VALIDATION (hardened harness + shift test) ===\n")
 
@@ -105,7 +225,9 @@ def main() -> None:
               f"resid {r.get('residual_ic'):+.4f} | {r['verdict']}")
         print(f"  SHIFT TEST  -1d {s[-1]:+.3f} | 0d {s[0]:+.3f} | +1d {s[1]:+.3f}")
         fwd_leak = abs(s[1]) > abs(s[0]) * 1.5 and abs(s[1]) > 0.3
-        print(f"  -> {'*** FORWARD-SHIFT LEAK SUSPECTED ***' if fwd_leak else 'no lookahead pattern (shift0 not dominated by +1d)'}\n")
+        print(f"  -> {'*** FORWARD-SHIFT LEAK SUSPECTED ***' if fwd_leak else 'no lookahead pattern (shift0 not dominated by +1d)'}")
+        dist_revalidate("kimchi_premium", prem, dist)
+        print()
     except Exception as e:
         print(f"KIMCHI: ERROR {type(e).__name__}: {e}\n")
 
@@ -122,7 +244,9 @@ def main() -> None:
         print(f"STABLECOIN SUPPLY n={len(dates)} | IC {r.get('ic'):+.4f} "
               f"same {r.get('same_period_corr'):+.3f} resid {r.get('residual_ic'):+.4f} | {r['verdict']}")
         print(f"  SHIFT TEST  -1d {s[-1]:+.3f} | 0d {s[0]:+.3f} | +1d {s[1]:+.3f}")
-        print(f"  -> {'*** FORWARD-SHIFT LEAK SUSPECTED ***' if abs(s[1])>abs(s[0])*1.5 and abs(s[1])>0.3 else 'no lookahead pattern'}\n")
+        print(f"  -> {'*** FORWARD-SHIFT LEAK SUSPECTED ***' if abs(s[1])>abs(s[0])*1.5 and abs(s[1])>0.3 else 'no lookahead pattern'}")
+        dist_revalidate("stablecoin_supply_momentum", sig, dist)
+        print()
     except Exception as e:
         print(f"STABLECOIN: ERROR {type(e).__name__}\n")
 
@@ -145,6 +269,32 @@ def main() -> None:
             print(f"  {f:22s} rows={len(rows):3d} span {ds[0] if ds else '-'} .. {ds[-1] if ds else '-'}")
         else:
             print(f"  {f:22s} MISSING")
+
+    # ARTIFACT. This organ was print-only for its whole life, so nothing downstream -- including
+    # check_fence_yield, which classifies a fence by the verdicts it has produced -- could tell a
+    # clean run from a run that never happened. UNMEASURED is a real status here, not a filler:
+    # every upstream fetch above is network-dependent, and a failed fetch must never read as "no
+    # drift detected" (L1.28a).
+    blocked = [r for r in dist if not r["production_capital_allowed"]
+               and r["dist_verdict"] in ("DRIFT", "SHIFT")]
+    if not dist:
+        status = "UNMEASURED"
+    elif any(r["dist_verdict"] == "SHIFT" for r in dist):
+        status = "SHIFT"
+    elif any(r["dist_verdict"] == "DRIFT" for r in dist):
+        status = "DRIFT"
+    elif all(r["dist_verdict"] == "INSUFFICIENT-DATA" for r in dist):
+        status = "UNMEASURED"
+    else:
+        status = "OK"
+    payload = {"generated": datetime.now(UTC).isoformat(), "status": status, "axes": dist,
+               "capital_blocked": [r["axis"] for r in blocked],
+               "note": "UNMEASURED means no axis series was fetched (upstream fetch failed) or "
+                       "every window was too short -- never that the distribution is stable."}
+    _OUT.parent.mkdir(parents=True, exist_ok=True)
+    _OUT.write_text(json.dumps(payload, indent=1) + "\n", "utf-8")
+    print(f"\nDIST-SHIFT REVALIDATION: {status} ({len(dist)} axes) -> "
+          f"{_OUT.relative_to(_ROOT)}")
 
 
 if __name__ == "__main__":
