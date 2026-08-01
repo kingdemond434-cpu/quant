@@ -25,7 +25,6 @@ from __future__ import annotations
 import argparse
 import json
 import time
-import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -34,6 +33,7 @@ import numpy as np
 
 from libs.autodiscovery.generators import GENERATORS, net_returns
 from libs.autodiscovery.models import MarketSeries
+from libs.data.venue_http import get_json
 from libs.validation.bar_permutation import (
     DEFAULT_PERMUTATIONS,
     Bars,
@@ -55,20 +55,14 @@ _PPY = 365.0
 _MIN_ACTIVE_FRACTION = 0.01
 
 
-def _okx_get(url: str, tries: int = 4) -> list[list[str]]:
-    last: Exception | None = None
-    for _ in range(tries):
-        try:
-            with urllib.request.urlopen(url, timeout=30) as fh:
-                body = json.loads(fh.read().decode())
-            if str(body.get("code")) != "0":
-                raise RuntimeError(f"okx code={body.get('code')} msg={body.get('msg')}")
-            rows: list[list[str]] = body.get("data") or []
-            return rows
-        except Exception as exc:
-            last = exc
-            time.sleep(1.0)
-    raise RuntimeError(f"okx GET failed after {tries}: {url} :: {last}")
+def _okx_get(url: str) -> list[list[str]]:
+    """Via venue_http, which carries the browser User-Agent. The library default UA earns a 403
+    from OKX's bot filter, and this script previously recorded that as a venue refusal."""
+    body = get_json(url)
+    if str(body.get("code")) != "0":
+        raise RuntimeError(f"okx code={body.get('code')} msg={body.get('msg')}")
+    rows: list[list[str]] = body.get("data") or []
+    return rows
 
 
 def fetch_ohlc(base: str, days: int) -> dict[str, np.ndarray]:
@@ -118,7 +112,7 @@ def _rules() -> list[dict[str, Any]]:
     for spec in GENERATORS:
         for variant in spec.param_variants:
             out.append({"family": str(spec.family), "subtype": spec.subtype,
-                        "params": dict(variant), "fn": spec.position_fn, "control": False})
+                        "params": dict(variant), "fn": spec.fn, "control": False})
     return out
 
 

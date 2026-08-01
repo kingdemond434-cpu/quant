@@ -181,9 +181,16 @@ def test_every_ranked_out_candidate_would_have_been_admitted_with_more_slots():
 
 def test_a_near_zero_oos_candidate_never_occupies_a_slot():
     """The failure that appeared the moment the statistical wall came down: replaying the real
-    campaign filled all twelve slots with OOS Sharpe ~0.02. A forward clock runs for months, so a
-    slot spent on noise BLOCKS a real edge for that whole period. An idle slot costs nothing."""
-    plan = admit([_cand(f"noise{i}", oos=0.02) for i in range(20)], idle_slots=12)
+    campaign filled all twelve slots with near-zero OOS Sharpe. A forward clock runs for months,
+    so a slot spent on noise BLOCKS a real edge for that whole period. An idle slot costs nothing.
+
+    RESTATED IN ANNUALISED UNITS. This test originally used oos=0.02 and called it "~zero". It is
+    not: validate() reports PER-BAR Sharpe, so 0.02 is 0.38 ANNUALISED -- nearly the bottom of the
+    0.5-1.5 real-edge band. The test passed only because the floor carried the same 19x units
+    error, and the two errors cancelled. The intent was always "annualised noise gets no slot", so
+    that is what it now says."""
+    noise = 0.05 / (PPY_DAILY ** 0.5)          # 0.05 ANNUALISED -- genuinely nothing
+    plan = admit([_cand(f"noise{i}", oos=noise) for i in range(20)], idle_slots=12)
     assert not plan.admitted
     assert plan.idle_slots_after == 12
     assert any("relevance floor" in n for n in plan.notes)
@@ -191,13 +198,18 @@ def test_a_near_zero_oos_candidate_never_occupies_a_slot():
 
 def test_the_floor_sits_below_the_real_edge_band_so_noisy_measurement_is_not_fatal():
     """A true 1.0 edge measured on a short window can print well under 0.5. The floor must sit
-    BELOW the band's lower edge or it rejects real edges for being imprecisely measured."""
+    BELOW the band's lower edge or it rejects real edges for being imprecisely measured.
+
+    COMPARED IN ANNUALISED UNITS, which is the bug this test failed to catch the first time: it
+    compared the PER-BAR floor against the ANNUALISED band, so 0.25 per-bar (4.78 annualised)
+    sailed through a check that was supposed to stop exactly that."""
     from libs.validation.robustness_filters import REAL_EDGE_OOS_SHARPE_BAND
-    assert 0.0 < MIN_ADMISSION_OOS_SHARPE < REAL_EDGE_OOS_SHARPE_BAND[0]
+    assert 0.0 < MIN_ADMISSION_ANN_SHARPE < REAL_EDGE_OOS_SHARPE_BAND[0]
 
 
 def test_the_relevance_floor_cannot_be_out_ranked_either():
-    plan = admit([_cand("clears_everything_but_flat", oos=0.1)], idle_slots=12)
+    flat = 0.05 / (PPY_DAILY ** 0.5)           # 0.05 ANNUALISED, not 0.1 per-bar (= 1.9 ann)
+    plan = admit([_cand("clears_everything_but_flat", oos=flat)], idle_slots=12)
     assert not plan.admitted
     assert "below_relevance_floor" in plan.blocked[0].blocked_by
 
@@ -271,3 +283,64 @@ def test_a_missing_turnover_field_is_not_penalised_as_zero_or_infinite():
     assert rank_score(g, oos_sharpe=1.0, dsr=0.9, reality_p=0.01, turnover=None) == \
         pytest.approx(rank_score(g, oos_sharpe=1.0, dsr=0.9, reality_p=0.01,
                                  turnover=None, cost_basis="net"))
+
+
+# ================================================================= units and sample adequacy
+# Added after the floor shipped in the WRONG UNITS for a full campaign cycle: 0.25 was set as
+# "half the real-edge band's lower edge of 0.5", but validate() reports PER-BAR Sharpe, so the
+# floor was 4.78 annualised -- 3.2x above the TOP of the band it was meant to sit below. These
+# tests exist so the mistake is mechanical to catch rather than a docstring nobody reads.
+
+from libs.validation.screen_admission import (  # noqa: E402
+    MIN_ADMISSION_ANN_SHARPE,
+    MIN_ADMISSION_BARS,
+    PPY_DAILY,
+)
+
+
+def test_the_floor_is_derived_from_the_annualised_declaration_not_hand_set():
+    """THE UNITS GUARD. The per-bar constant must be the annualised one divided by sqrt(PPY). If
+    someone hand-edits the per-bar number again, this fails immediately instead of after a
+    campaign returns zero survivors."""
+    assert pytest.approx(
+        MIN_ADMISSION_ANN_SHARPE / (PPY_DAILY ** 0.5)) == MIN_ADMISSION_OOS_SHARPE
+
+
+def test_the_floor_sits_below_the_band_where_real_edge_is_observed_to_live():
+    """The floor's whole justification. Its ANNUALISED value must sit under 0.5, the bottom of
+    REAL_EDGE_OOS_SHARPE_BAND -- otherwise it rejects real edges for being imprecisely measured,
+    which is what it did at 4.78."""
+    from libs.validation.robustness_filters import REAL_EDGE_OOS_SHARPE_BAND
+    assert REAL_EDGE_OOS_SHARPE_BAND[0] > MIN_ADMISSION_ANN_SHARPE
+
+
+def test_a_realistic_edge_now_clears_the_floor():
+    """The regression the units error caused: a true annualised Sharpe of 1.0 measured cleanly is
+    squarely inside the real-edge band and MUST be admissible. Under the old floor it was not."""
+    oos_per_bar = 1.0 / (PPY_DAILY ** 0.5)
+    plan = admit([{"name": "real", "gates": {}, "oos_sharpe": oos_per_bar,
+                   "n_bars": MIN_ADMISSION_BARS}], idle_slots=12, cost_basis="net")
+    assert [a.name for a in plan.admitted] == ["real"]
+
+
+def test_a_sharpe_measured_on_too_few_bars_is_blocked_for_cause():
+    """Not strictness. Below ~1,460 daily bars the standard error of the OOS Sharpe is wider than
+    the entire 0.5-1.5 band, so the number carries no information to admit on. Blocking is the
+    honest response to an unresolvable measurement."""
+    plan = admit([{"name": "short", "gates": {}, "oos_sharpe": 5.0, "n_bars": 310}],
+                 idle_slots=12, cost_basis="net")
+    assert not plan.admitted
+    assert "insufficient_bars" in plan.blocked[0].blocked_by
+
+
+def test_an_undeclared_bar_count_is_reported_unmeasured_not_passed():
+    """A missing sample width is exactly how a 19x units error shipped unnoticed. It must be
+    surfaced, never silently treated as adequate."""
+    plan = admit([{"name": "quiet", "gates": {}, "oos_sharpe": 5.0}],
+                 idle_slots=12, cost_basis="net")
+    assert any("UNMEASURED sample width" in n for n in plan.notes)
+
+
+def test_the_bar_floor_is_the_two_standard_error_arithmetic_not_a_taste():
+    """T >= 4 * PPY / SR^2 puts a true annualised Sharpe of 1.0 two standard errors above zero."""
+    assert pytest.approx(4.0 * PPY_DAILY / 1.0 ** 2, rel=0.01) == MIN_ADMISSION_BARS

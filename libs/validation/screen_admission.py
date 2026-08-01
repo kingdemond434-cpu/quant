@@ -58,7 +58,10 @@ from dataclasses import dataclass, field
 
 __all__ = [
     "GROSS_TURNOVER_PENALTY",
+    "MIN_ADMISSION_ANN_SHARPE",
+    "MIN_ADMISSION_BARS",
     "MIN_ADMISSION_OOS_SHARPE",
+    "PPY_DAILY",
     "STATISTICAL_GATES",
     "STRUCTURAL_GATES",
     "Admission",
@@ -78,18 +81,55 @@ __all__ = [
 #: BLOCKS A REAL ONE for that entire period. An idle slot costs nothing; a wasted slot costs a
 #: discovery.
 #:
-#: WHY 0.25 AND WHY IT IS NOT A SIGNIFICANCE BAR. The desk's measured real-edge band starts at
-#: OOS Sharpe 0.5. A short backtest window measures a true 1.0 edge noisily, so the floor must sit
-#: BELOW the band or it would reject real edges for being imprecisely measured -- half the band's
-#: lower edge is the loosest defensible reading. It asks "is there plausibly anything here?", not
-#: "is this distinguishable from noise?" -- the forward stage answers the second question, which
-#: is the entire point of this module.
+#: THE UNITS ERROR THIS CONSTANT WAS SHIPPED WITH, recorded because the value is meaningless
+#: without it and because the desk lost a campaign cycle to it.
 #:
-#: RAISING THIS TO MANUFACTURE STRICTNESS WOULD REBUILD THE WALL. It is a floor on relevance, and
-#: the campaign that motivated it topped out at OOS 0.100 across 129 mechanisms -- so under this
-#: floor that campaign correctly admits NOTHING, which is the honest answer for mechanisms the
-#: desk has already measured as picked clean.
-MIN_ADMISSION_OOS_SHARPE = 0.25
+#: The floor was originally set to 0.25 with the reasoning "the real-edge band starts at OOS
+#: Sharpe 0.5, so half of that sits safely below the band." Both halves of that sentence are true
+#: and they are in DIFFERENT UNITS. `libs/validation/dsr.sharpe_ratio` is ``mean/std`` per period
+#: and never annualises, and WalkForwardEngine averages it across folds -- so a floor of 0.25 is
+#: 0.25 PER BAR, which on daily bars is 0.25 * sqrt(365) = 4.78 ANNUALISED. The real-edge band of
+#: 0.5-1.5 is annualised. The floor was therefore set roughly 19x above where it was intended and
+#: 3.2x above the TOP of the band where genuine edge is observed to live.
+#:
+#: MEASURED CONSEQUENCE (reports/admission_power.json): admission rate equals floor-only pass rate
+#: at every single Sharpe level, to three decimals. Structural gates pass 73-100% of true alphas
+#: and ~50% of pure nulls; statistical gates only rank. So this one mis-scaled constant WAS the
+#: entire gate, and at 4.78 annualised it admitted 0.4% of true Sharpe-1.5 candidates.
+#:
+#: THE FLOOR IS NOW DECLARED IN ANNUALISED UNITS AND CONVERTED, so the comparison to the band is
+#: dimensionally honest and the next reader cannot repeat the mistake.
+#:
+#: WHY IT IS NOT A SIGNIFICANCE BAR, which still stands. It asks "is there plausibly anything
+#: here?", not "is this distinguishable from noise?" -- the forward stage answers the second
+#: question, and that is the entire point of this module. Setting it at half the band's lower edge
+#: is the loosest defensible reading of "plausibly anything".
+#:
+#: WHAT IT CANNOT DO, and this is the finding that matters more than the constant. At the
+#: campaign's 310 bars the null OOS Sharpe has sd 1.37 ANNUALISED, while the whole real-edge band
+#: is 1.0 wide -- the noise is wider than the signal range, so NO threshold separates them. The
+#: measured trade-off curve is bad everywhere: a floor at 1.5 annualised still lets 58 pure nulls
+#: through per campaign for 12 slots. The fix is sample size, not calibration; see
+#: MIN_ADMISSION_BARS below.
+PPY_DAILY = 365.0
+
+#: In ANNUALISED Sharpe. Half of the real-edge band's lower edge (0.5).
+MIN_ADMISSION_ANN_SHARPE = 0.25
+
+#: Per-bar, which is the unit validate() actually reports in. Derived, never hand-set.
+MIN_ADMISSION_OOS_SHARPE = MIN_ADMISSION_ANN_SHARPE / (PPY_DAILY ** 0.5)
+
+#: MINIMUM BARS BEFORE AN OOS SHARPE MEANS ANYTHING. The real constraint, measured.
+#:
+#: The standard error of a per-bar Sharpe is ~1/sqrt(T). To put a TRUE annualised Sharpe of 1.0
+#: two standard errors above zero needs T >= 4 * PPY / 1.0^2 = 1,460 daily bars. The 2026-08-01
+#: campaign ran on 310 (effective ~194 per walk-forward fold), which is why it resolved nothing:
+#: at that width a true Sharpe-1.0 edge and pure noise produce overlapping distributions.
+#:
+#: THE DATA WAS ALWAYS THERE. OKX holds 2,438 confirmed daily bars for BTC, 2,436 for ETH, 2,017
+#: for SOL -- 7.9x the window the campaign used and 1.7x what this floor requires. The short
+#: window was a choice, not a data limit, and it cost every campaign run under it.
+MIN_ADMISSION_BARS = 1_460
 
 #: Penalty applied to rank when the supplied Sharpe is GROSS -- i.e. costs have not been charged.
 #:
@@ -243,6 +283,7 @@ def admit(candidates: list[dict[str, object]], *, idle_slots: int,
       3. Admission confers a forward CLOCK and never capital. Nothing returned here is a size.
     """
     rows: list[Admission] = []
+    unmeasured_bars: list[str] = []
     for c in candidates:
         raw_gates = c.get("gates")
         # Defensive rather than trusting: a caller passing a non-dict must not crash a campaign,
@@ -258,6 +299,17 @@ def admit(candidates: list[dict[str, object]], *, idle_slots: int,
         # and like every other structural block it must be un-out-rankable.
         if oos < MIN_ADMISSION_OOS_SHARPE:
             blocked_list.append("below_relevance_floor")
+        # SAMPLE ADEQUACY, and it blocks for cause rather than ranking. An OOS Sharpe measured on
+        # 310 bars carries a standard error wider than the entire band where real edge lives, so
+        # admitting on it is not a loose decision -- it is a decision made on a number that
+        # contains no information. UNMEASURED when the caller does not say, because a missing bar
+        # count is exactly how the desk shipped a 19x units error without noticing.
+        raw_bars = c.get("n_bars")
+        n_bars = int(raw_bars) if isinstance(raw_bars, (int, float)) else None
+        if n_bars is None:
+            unmeasured_bars.append(name)
+        elif n_bars < MIN_ADMISSION_BARS:
+            blocked_list.append("insufficient_bars")
         stat_fail = tuple(g for g in STATISTICAL_GATES if g in gates and not gates[g])
         raw_turn = c.get("turnover")
         turn = float(raw_turn) if isinstance(raw_turn, (int, float)) else None
@@ -290,9 +342,21 @@ def admit(candidates: list[dict[str, object]], *, idle_slots: int,
                      "-- and this desk measured realised cost at 7.75x its own prediction")
     n_floor = sum(1 for r in blocked if "below_relevance_floor" in r.blocked_by)
     if n_floor:
-        notes.append(f"{n_floor} candidate(s) below the {MIN_ADMISSION_OOS_SHARPE} OOS relevance "
-                     "floor -- a forward clock runs for months, so a slot spent on noise blocks a "
-                     "real edge; an idle slot costs nothing")
+        notes.append(f"{n_floor} candidate(s) below the {MIN_ADMISSION_ANN_SHARPE} ANNUALISED OOS "
+                     f"relevance floor ({MIN_ADMISSION_OOS_SHARPE:.4f} per bar) -- a forward clock "
+                     "runs for months, so a slot spent on noise blocks a real edge; an idle slot "
+                     "costs nothing")
+    n_short = sum(1 for r in blocked if "insufficient_bars" in r.blocked_by)
+    if n_short:
+        notes.append(f"{n_short} candidate(s) scored on fewer than {MIN_ADMISSION_BARS} bars. Not "
+                     "a strictness call: below that width the standard error of the OOS Sharpe is "
+                     "wider than the whole 0.5-1.5 real-edge band, so the number carries no "
+                     "information to admit on. OKX holds 2,438 daily bars for BTC -- re-run the "
+                     "campaign on the history that already exists rather than widening this")
+    if unmeasured_bars:
+        notes.append(f"UNMEASURED sample width on {len(unmeasured_bars)} candidate(s): nobody "
+                     "declared how many bars the OOS Sharpe was measured over, so whether it can "
+                     "resolve anything is unknown. Not counted as a pass")
     if not eligible and rows:
         notes.append("every candidate failed a STRUCTURAL gate -- that is a real result and is "
                      "not fixed by widening the screen; the mechanisms have no edge, no capacity, "
