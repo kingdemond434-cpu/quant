@@ -240,6 +240,23 @@ EXTRA_SOURCES = {
         "kind": "JSON_STATE", "path": "data/cashcarry_exec_heartbeat",
         "field": None, "cadence_s": 120,
         "feeds": "A001 -- executor liveness; the money-moving process itself"},
+    # THE EXECUTION TAPE WAS INVISIBLE HERE (R0084, 2026-08-01). Two independent misses put it
+    # outside every glob at once: main()'s scan is `data/*.jsonl`, NON-RECURSIVE, so it cannot
+    # descend into data/moat/execution_tape/; and the one DIR_GLOB that does cover data/moat
+    # matches `**/*.jsonl.gz`, while the tape is UNCOMPRESSED .jsonl. So the Execution Reality
+    # Model -- an L1.11 NAMED MOAT COMPONENT, and the only record of what our own fills actually
+    # cost -- had no liveness row at all. A dead tape and a quiet trading day looked identical.
+    "execution_tape (our own fills)": {
+        "kind": "DIR_GLOB", "path": "data/moat/execution_tape", "glob": "**/*.jsonl",
+        "cadence_s": 86400,
+        "feeds": "L1.11 Execution Reality Model -- the fills the desk cannot re-earn or buy"},
+    # The bronze lake: the only place daily bars land. Nothing measured whether it was still being
+    # written, which is how 111 symbols froze on 2026-06-21 and were found by a sweep rather than
+    # by a fence.
+    "lake bronze (daily bars)": {
+        "kind": "DIR_GLOB", "path": "data/lake/bronze", "glob": "**/*.parquet",
+        "cadence_s": 86400,
+        "feeds": "every backtest and screen that reads daily OHLCV"},
 }
 
 
