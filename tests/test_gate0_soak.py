@@ -23,7 +23,6 @@ from pathlib import Path
 from unittest import mock
 
 import pytest
-
 import scripts.check_gate0_ready as g
 
 

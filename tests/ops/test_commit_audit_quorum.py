@@ -110,7 +110,7 @@ def _TMP() -> Path:
 
 
 @pytest.fixture(autouse=True, scope="module")
-def _cleanup():  # noqa: ANN202
+def _cleanup():
     yield
     import shutil
     for d in _TMPS:
