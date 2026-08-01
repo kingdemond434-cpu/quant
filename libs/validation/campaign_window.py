@@ -34,23 +34,35 @@ a return, a Sharpe, or a p-value -- so no channel exists through which results c
 partition. A window chosen after peeking at performance would be a selection effect dressed as a
 fix.
 
-*** NOT WIRED INTO ANY CAMPAIGN YET, AND DELIBERATELY SO. ***
-
-This module currently PRICES the truncation; it does not change how a campaign runs. Two things
-must be true before ``run_campaign.py`` (and its three siblings that share the ``min_len`` idiom)
-should call it, and only the first is done:
+*** WIRED 2026-08-01 into the autodiscovery campaign. Both preconditions are now met. ***
 
   1. DONE -- the planner is results-blind and the split is priced. Verified by tests.
-  2. NOT DONE -- the per-stratum level has to actually reach the gate. ``romano_wolf_stepdown``
-     takes ``alpha=0.05`` and the campaign builders never pass anything else, so today a
-     k-stratum campaign would run k families at 5% each and the true family-wise error would be
-     ~1-(1-0.05)^k, not 5%. The Bonferroni accounting this planner assumes is a PROPERTY OF THE
-     CALLER, not of this module, and wiring the plan without wiring the level would convert a
-     measured improvement into a real loosening of error control.
+  2. DONE (2026-08-01) -- the per-stratum level now reaches the gate.
+     ``libs.autodiscovery.validation.stratified_campaign_gates`` is the ONLY supported way to
+     split a campaign, and it computes ``CAMPAIGN_ALPHA/k`` itself and threads it through
+     ``campaign_gate_stats(..., alpha=)`` into ``romano_wolf_stepdown(..., alpha=)``, so total
+     family-wise error stays at 5% however the campaign is cut. Pinned by
+     ``tests/autodiscovery/test_stratified_campaign.py::
+     test_every_stratum_is_tested_at_campaign_alpha_over_k``.
 
-Recorded that way on purpose: an un-wired planner that states its precondition is worth more than
-a wired one whose error accounting is assumed. The measurement it supports -- what min-length
-truncation costs -- stands on its own.
+     Until that landed, the campaign builders passed nothing and every family ran at 5%, so a
+     k-stratum campaign would have carried ~1-(1-0.05)^k. The Bonferroni accounting this planner
+     assumes is a PROPERTY OF THE CALLER, not of this module -- which is why splitting by hand,
+     rather than through ``stratified_campaign_gates``, is still a loosening of error control.
+
+MEASURED ON THE REAL CAMPAIGN when it was wired (420 candidates, `_audit_prepared.pkl`):
+
+    min-length   130,200 obs (17.1% of available), 420 tested,  E[discoveries]   1.06
+    stratified   698,655 obs (92.0% of available), 308 tested,  E[discoveries] 191.65   (180.8x)
+
+24 strata, windows 4594 down to 1098. The 112 untested candidates are those no stratum's floors
+(MIN_COHORT=12, MIN_OBS=250) can support; they are recorded as UNTESTED, never as rejected, and
+the count is written to the audit log every campaign. Under min-length they were nominally tested
+at ~0.25% power, so nothing that had a real chance of discovery lost one.
+
+COST: Romano-Wolf's bootstrap is linear in retained observations, so a stratified campaign does
+roughly 5x the work of a truncated one (measured ~97s for a 60-candidate two-stratum fixture).
+That is the price of using the data, and it is paid once per campaign.
 """
 from __future__ import annotations
 

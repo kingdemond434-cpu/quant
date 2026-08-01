@@ -22,6 +22,12 @@ from libs.discovery.tail_risk import tail_risk
 # uses _min_capacity_usd() instead.
 from libs.research.capacity_policy import capacity_required  # noqa: F401
 from libs.validation.baselines import baseline_scorecard
+from libs.validation.campaign_window import (
+    CAMPAIGN_ALPHA,
+    StrataPlan,
+    plan_strata,
+    stratum_matrix,
+)
 from libs.validation.cpcv import CPCV
 from libs.validation.dsr import deflated_sharpe_ratio, sharpe_ratio
 from libs.validation.errors import ValidationError
@@ -380,12 +386,20 @@ class CampaignGates:
         self.screen = with_screen
 
 
-def campaign_gate_stats(returns_matrix: np.ndarray) -> CampaignGates | None:
+def campaign_gate_stats(returns_matrix: np.ndarray, *,
+                        alpha: float = 0.05) -> CampaignGates | None:
     """One pass over the campaign matrix yielding PER-CANDIDATE pbo / significance verdicts.
 
-    Same thresholds as before (PBO <= 0.5, significance at 5%) -- only the *attribution* changes,
-    from one campaign verdict imposed on everyone to a verdict each candidate earns.  Romano-Wolf
-    still controls family-wise error across all N, so multiplicity is paid for in full.
+    Same thresholds as before (PBO <= 0.5, significance at ``alpha``) -- only the *attribution*
+    changes, from one campaign verdict imposed on everyone to a verdict each candidate earns.
+    Romano-Wolf still controls family-wise error across all N, so multiplicity is paid for in full.
+
+    ``alpha`` is the level THIS family is tested at, and threading it is what makes a STRATIFIED
+    campaign honest rather than a loophole. A campaign cut into k strata runs k families; testing
+    each at 5% would give an overall false-positive rate near 1-(1-0.05)^k. Callers that split
+    MUST pass CAMPAIGN_ALPHA/k -- see :func:`stratified_campaign_gates`, which is the only
+    supported way to do the split and computes the level itself. The default reproduces the
+    single-family behaviour exactly, so existing callers are unaffected.
     """
     matrix = np.asarray(returns_matrix, dtype="float64")
     if matrix.ndim != 2 or matrix.shape[1] < 2:
@@ -393,10 +407,52 @@ def campaign_gate_stats(returns_matrix: np.ndarray) -> CampaignGates | None:
     legacy_pbo, legacy_rc = campaign_pbo_rc(matrix)
     return CampaignGates(
         cscv=cscv_candidate_pbo(matrix),
-        stepdown=romano_wolf_stepdown(matrix),
+        stepdown=romano_wolf_stepdown(matrix, alpha=alpha),
         legacy_pbo=legacy_pbo,
         legacy_rc=legacy_rc,
     )
+
+
+def stratified_campaign_gates(
+    return_series: Sequence[np.ndarray],
+) -> tuple[list[tuple[CampaignGates, int] | None], StrataPlan]:
+    """Per-candidate campaign statistics WITHOUT truncating every candidate to the shortest.
+
+    THE DEFECT THIS REPLACES. Every campaign builder aligned its matrix with ``r[-min_len:]``, so
+    ONE short candidate truncated every other. Measured on the desk's own 420-candidate campaign:
+    310 observations retained of 1,808 available per candidate -- **82.9% of the data already on
+    disk, discarded before a single test ran** (docs/research/gate_power_audit.md section 5).
+    That audit measured history length as THE binding constraint on the whole funnel
+    (T=310->2500 takes power at true Sharpe 2.0 from 0.00% to 19.58%) while campaign size buys
+    nothing (N=420->30 leaves power at 0.00%). The truncation made exactly the wrong trade: it
+    spent observations to keep candidates aligned.
+
+    THIS RAISES POWER; IT DOES NOT LOWER A BAR. Each stratum is its own family tested at
+    ``CAMPAIGN_ALPHA/k``, so total family-wise error stays at 5% however the campaign is cut --
+    every stratum is held to a STRICTER per-family level than the 5% the single campaign used.
+    The partition is decided by ``plan_strata`` from LENGTHS ALONE (it never sees a return, a
+    Sharpe or a p-value), so no channel exists through which results could shape it. Both
+    properties are pinned by tests, because a window chosen after peeking at performance would be
+    a selection effect dressed up as a fix.
+
+    Returns ``(per_candidate, plan)`` where ``per_candidate[i]`` is ``(gates, column)`` for the
+    stratum candidate *i* was tested in, or **None** when no stratum supports its history. A None
+    is NOT a pass and NOT a statistical rejection: callers must record it as *untested*. Letting
+    it fall through to the legacy campaign-constant path would be fail-closed but would file a
+    data-availability exclusion in the graveyard under a false mechanism of death, which corrupts
+    the family survival statistics that steer future search (L1.17).
+    """
+    series = [np.asarray(r, dtype="float64") for r in return_series]
+    plan = plan_strata([len(r) for r in series])
+    per_candidate: list[tuple[CampaignGates, int] | None] = [None] * len(series)
+    k = max(1, len(plan.strata))
+    for s in plan.strata:
+        gates = campaign_gate_stats(stratum_matrix(series, s), alpha=CAMPAIGN_ALPHA / k)
+        if gates is None:                      # cohort of <2 cannot carry multiplicity statistics
+            continue
+        for column, cand in enumerate(s.keep):  # keep is sorted, matching stratum_matrix's columns
+            per_candidate[cand] = (gates, column)
+    return per_candidate, plan
 
 
 def validate(

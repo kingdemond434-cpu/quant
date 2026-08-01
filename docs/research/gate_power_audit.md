@@ -193,5 +193,22 @@ still controls FWER at 5%, and every economic gate is unchanged. Pinned by
 - Effective-number-of-tests ratio under real correlation (study running; the estimator's floor at
   T<N is an artifact and only the ratio to an independent baseline is interpretable).
 - Regime-shift and fat-tail power conditions (`realism` study).
-- Top-K ranked screen (§6) and the min-length truncation (§5) — both larger than a one-line change
-  and both worth more than the change made here.
+- ~~the min-length truncation (§5)~~ — **CLOSED 2026-08-01.** The autodiscovery campaign now
+  stratifies by available history via `stratified_campaign_gates`
+  (`libs/autodiscovery/validation.py`), which plans the partition from lengths alone and tests each
+  stratum at `CAMPAIGN_ALPHA/k` so family-wise error stays at 5%. Measured on the same
+  420-candidate campaign this audit used:
+
+  | | min-length | stratified |
+  |---|---|---|
+  | observations used | 130,200 (17.1%) | **698,655 (92.0%)** |
+  | candidates tested | 420 | 308 (+112 recorded *untested*) |
+  | E[discoveries] @ true SR 2.0 | 1.06 | **191.65** (180.8×) |
+
+  No threshold moved. The 112 candidates no stratum supports are recorded as **untested**, never
+  as rejected — filing a data-availability exclusion under a statistical mechanism of death would
+  corrupt the family survival statistics that steer future search. Two consequences worth
+  carrying: the **nine sibling campaign builders still truncate** (R0261 — `certify_gauntlet.py`
+  most sharply, since it certifies the gate on a matrix the production path no longer uses), and
+  Romano-Wolf's bootstrap now does ~5× the work (R0263).
+- Top-K ranked screen (§6) — still open, and now the largest remaining lever (R0262).

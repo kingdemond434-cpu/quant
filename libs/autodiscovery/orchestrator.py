@@ -23,14 +23,21 @@ from libs.autodiscovery.models import (
     Family,
     Hypothesis,
     MarketSeries,
+    ValidationMetrics,
+    ValidationVerdict,
 )
 from libs.autodiscovery.prioritization import prioritize
 from libs.autodiscovery.regime import regime_robust
-from libs.autodiscovery.validation import campaign_fdr, campaign_gate_stats, validate
+from libs.autodiscovery.validation import (
+    campaign_fdr,
+    stratified_campaign_gates,
+    validate,
+)
 from libs.core.ids import generate_id
 from libs.costs.execution_gap import ExecutionGap, survives_execution_gap
 from libs.store.audit import AuditLog
 from libs.store.connection import Database
+from libs.validation.campaign_window import CAMPAIGN_ALPHA
 from libs.validation.dsr import sharpe_ratio
 from libs.validation.lockbox import LockedHoldout
 
@@ -168,8 +175,34 @@ class AutoDiscoveryLab:
                         dtype="float64")
             for f in _fam_new
         }
+        # STRATIFIED BY AVAILABLE HISTORY, not truncated to the shortest candidate. The old rule
+        # was `matrix = column_stack([r[-min_len:] ...])`, which let ONE short candidate truncate
+        # every other: measured on this desk's own 420-candidate campaign, 310 observations kept
+        # of 1,808 available -- 82.9% of the data on disk discarded before a test ran. The gate
+        # audit (docs/research/gate_power_audit.md s5) measured history length as THE binding
+        # constraint (T=310->2500 moves power at true Sharpe 2.0 from 0.00% to 19.58%) while
+        # cohort size buys nothing (N=420->30 stays at 0.00%). Each stratum is its own family at
+        # CAMPAIGN_ALPHA/k, so family-wise error stays at 5% -- this raises POWER, it lowers no
+        # bar. The partition sees lengths only, never a return or a p-value.
+        gates_by_candidate, strata_plan = stratified_campaign_gates(
+            [r for _, r, _ in prepared])
+        # NO SILENT CAPS. Stratification tests every candidate its own history supports and leaves
+        # the rest UNTESTED -- on the desk's real 420-candidate campaign that is 308 tested and
+        # 112 not. Untested-and-said-so beats tested-at-0.25%-power, but only if it is said: an
+        # unreported exclusion reads downstream as "the campaign covered everything".
+        self.audit.append(
+            "campaign_strata", actor="autodiscovery_lab",
+            inputs={"campaign_id": campaign_id, "n_candidates": strata_plan.n_candidates,
+                    "n_tested": strata_plan.n_tested,
+                    "n_untested": strata_plan.n_candidates - strata_plan.n_tested,
+                    "obs_retained": strata_plan.obs_retained,
+                    "obs_available": strata_plan.obs_available,
+                    "strata_alpha": CAMPAIGN_ALPHA / max(1, len(strata_plan.strata)),
+                    "expected_discoveries": strata_plan.expected_discoveries},
+            outcome=strata_plan.why,
+        )
         min_len = min(len(r) for _, r, _ in prepared)
-        matrix = np.column_stack([r[-min_len:] for _, r, _ in prepared])  # T x N (selection-aware)
+        matrix = np.column_stack([r[-min_len:] for _, r, _ in prepared])  # legacy diagnostics only
         sharpe_estimates = np.array([sharpe_ratio(r) for _, r, _ in prepared], dtype="float64")
         # PER-CANDIDATE multiplicity statistics, computed in ONE pass over the matrix (not Nx).
         # The predecessor hoisted campaign_pbo_rc() out of the loop for the same speed reason, but
@@ -186,12 +219,10 @@ class AutoDiscoveryLab:
         # column_stack'd from `prepared` in order, and the enumerate below walks that same
         # list, so the loop index IS the candidate's column. Wired at all 19 legacy call
         # sites in the 07-29 closure cycle, not just here.
-        gates_once = campaign_gate_stats(matrix)
-
         # ---------------------------------------------------------------- PASS 1: validate
         # Two passes, because the campaign-level FDR screen cannot be applied until every
-        # candidate has a p-value. Promotion moved to pass 2. `col` indexes into `gates_once`,
-        # the per-candidate CSCV/Romano-Wolf stats computed once above (see the note there).
+        # candidate has a p-value. Promotion moved to pass 2. `col` now indexes into the STRATUM
+        # this candidate was tested in (gates_by_candidate above), not one global matrix.
         _Box = LockedHoldout[np.ndarray]
         evaluated: list[tuple[Hypothesis, np.ndarray, np.ndarray, Any, _Box | None]] = []
         for col, (hyp, rets, stressed) in enumerate(prepared):
@@ -213,11 +244,27 @@ class AutoDiscoveryLab:
             if len(rets) >= int(_MIN_BARS / (1.0 - _LOCKBOX_FRACTION)) + 1:
                 box = LockedHoldout(rets, holdout_fraction=_LOCKBOX_FRACTION)
                 research = box.research()
+            # UNTESTED IS NOT REJECTED. A candidate whose history no stratum supports gets an
+            # explicit not-tested verdict. Passing campaign=None would be fail-CLOSED (it falls
+            # to the legacy campaign-constant path, which measured PBO 0.6159 / RC p 0.4220 and
+            # rejects everyone) -- safe, but it would file a DATA-AVAILABILITY exclusion in the
+            # graveyard under a statistical mechanism of death, corrupting the family survival
+            # statistics that steer future search. Say what actually happened instead.
+            _stratum = gates_by_candidate[col]
+            if _stratum is None:
+                evaluated.append((hyp, rets, stressed, ValidationVerdict(
+                    survived=False, gates={"campaign_stratum": False},
+                    rejection_reason=("not tested: no stratum supports this candidate's "
+                                      f"history ({len(rets)} obs)"),
+                    metrics=ValidationMetrics(),
+                ), box))
+                continue
+            _gates, _col = _stratum
             verdict = validate(
                 research, hypothesis=hyp,
                 n_trials=_fam_trials.get(_f, n_trials),
                 sharpe_estimates=_sh,
-                returns_matrix=matrix, campaign=gates_once, column=col,
+                returns_matrix=matrix, campaign=_gates, column=_col,
             )
             evaluated.append((hyp, rets, stressed, verdict, box))
 
@@ -225,7 +272,19 @@ class AutoDiscoveryLab:
         # Every candidate here already cleared a 0.95 per-candidate DSR bar. Run twenty past
         # that bar and you expect one false survivor by construction: the per-candidate control
         # says nothing about the error rate of the SET being promoted. This does.
-        fdr_pass, fdr_threshold = campaign_fdr([e[3].metrics.dsr for e in evaluated])
+        # UNTESTED CANDIDATES ARE NOT IN THE FDR FAMILY. Benjamini-Hochberg's m must be the number
+        # of hypotheses actually TESTED: a candidate no stratum could support has no p-value, and
+        # its default metrics would enter as dsr=0.0 -> p=1.0. Leaving those in would inflate m
+        # from 308 to 420 on the desk's real campaign, tightening the BH threshold by 308/420 and
+        # diluting the screen exactly as its own docstring warns junk does -- suppressing real
+        # discoveries with tests that were never run. Fail-CLOSED is not automatically safe here:
+        # a bar that rejects everything carries no information (gate-optimality duty).
+        _tested_idx = [i for i, e in enumerate(evaluated) if gates_by_candidate[i] is not None]
+        _pass_tested, fdr_threshold = campaign_fdr(
+            [evaluated[i][3].metrics.dsr for i in _tested_idx])
+        fdr_pass = [False] * len(evaluated)
+        for _slot, _cand in enumerate(_tested_idx):
+            fdr_pass[_cand] = _pass_tested[_slot]
 
         # ---------------------------------------------------------------- PASS 2: promote
         counts = dict.fromkeys(CandidateStatus, 0)

@@ -722,3 +722,35 @@ hypotheses and EV-score them; only the top few enter research.
   tree is clean (`refused-revert-tree-moved`). The class: state captured early + destruction later
   = a race whose window is the whole gap; the fix is always to re-check at the point of no return
   (R0135). Same shape to watch for in any future auto-revert/auto-clean path.
+- **A multiplicity denominator counts tests that COULD have produced a false positive — nothing
+  else (2026-08-01).** Stratifying the campaign left 112 of 420 candidates untested. Their default
+  metrics (`dsr=0.0` → `p=1.0`) would have entered Benjamini-Hochberg's `m`, inflating it 308→420,
+  tightening the threshold by 308/420 and diluting the screen exactly as `campaign_fdr`'s own
+  docstring warns junk does. A test that never ran cannot generate a false discovery, so it is not
+  in the family. **This does NOT generalise to "always drop the dead ones":** the forward-slot Holm
+  bar deliberately keeps `m=12` even when a clock is frozen, because there shrinking `m` LOOSENS
+  every bar (the phantom-edge direction). The unifying rule is the count of tests that could have
+  produced a false positive — and where that is genuinely ambiguous, resolve toward power on the
+  SCREEN (nothing reaches capital) and toward conservatism on the PROMOTION path (capital is at
+  risk). That is the two-stage discovery law expressed as an arithmetic rule.
+- **Fail-closed is not automatically safe, and its safety is why the bug survives (2026-08-01).**
+  The `m`-inflation above errs CONSERVATIVE — it rejects more — which is precisely why it would
+  have passed review: reviewers check "can this lose money?", not "what does this suppress?". A bar
+  that rejects ~100% carries zero information (gate-optimality duty), and a suppressed real edge
+  costs its entire forward compounding stream, silently. Ask of every conservative bug what it
+  hides, not just what it risks. Same cycle, same shape: an untested candidate falling through to
+  `validate(campaign=None)` is fail-closed *and* files a data-availability exclusion under a
+  STATISTICAL mechanism of death, corrupting the family survival statistics that steer future
+  search (L1.17). Untested and rejected are different verdicts and must be recorded differently.
+- **Check a signature before believing a note about it (2026-08-01).** Two prior memories recorded
+  that `campaign_window.py` was blocked by "an `alpha=` kwarg no call site passes". The kwarg had
+  existed all along (`stepwise.py:160`, validated at :176); the gap was at the two CALL SITES, both
+  passing the statistic bare. A one-line fresh read replaced a multi-day belief. Related: a blocker
+  recorded yesterday may already have been cleared by a sibling session today — the ordering
+  constraint that gated this fix (leaky panel + inert CPCV) had both halves fixed hours earlier the
+  same morning. Re-verify a blocker before deferring on it.
+- **Appending to a tracked JSON ledger with the wrong indent produces a whole-file diff that hides
+  the real change (2026-08-01).** `json.dump(..., indent=1)` on `decision_ledger.json` (written with
+  `indent=2`) turned a 26-line append into 7,056 changed lines — content verified identical, but no
+  reviewer could have seen that, and it is indistinguishable at a glance from the ledger corruption
+  R0175 exists to catch. Match the existing format, then diff to confirm insertions-only.

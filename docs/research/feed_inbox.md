@@ -138,54 +138,36 @@ reference for when that item is built (liquidity STATE, not just level, predicts
 - 2026-07-29 · http://arxiv.org/abs/2607.27099v1
 - We propose a new approach to model rainfall by combining heterogeneous data sources at different time scales. Continuous arrivals of rain cells are incorporated into a Hawkes process formalism that encompasses the classical Bartlett-Lewis and Neyman-Scott models, thereby providing a more flexible representation of clustering. Analysis of high frequency rainfall data (at the minute scale over several years) indicates that critical Hawkes processes with heavy-tailed power-law kernels yield a superior fit relative to classical models and alternative kernel specifications. Scaling arguments inspir
 
-## Where does the criticality live? Early-warning signals are event-heterogeneous across seven crypto-perpetual liquidation cascades
-- 2026-07-29 · http://arxiv.org/abs/2607.27070v1
-- Do crypto perpetual-futures crashes carry a reproducible early-warning fingerprint of a critical transition, and in which state variable? We study seven major BTC liquidation cascades (2022-2025, including the record 19B USD event of 10 October 2025) using minute-level price and 5-minute leverage/order-flow data. On detrended residuals we compute rolling variance and lag-1 autocorrelation and test their pre-cascade trend with the Kendall-tau statistic, sweeping 39 analysis configurations per variable per event. No variable is event-invariant. Price carries the critical-slowing-down signature i
-
-## Herding, Momentum, and Reversal in China's A-Share Market: An Agent-Based Network Model with Information Diffusion
-- 2026-07-29 · http://arxiv.org/abs/2607.27063v1
-- This study develops an agent-based financial market model to explain stock-price momentum and reversal through the joint effects of local herding and delayed information diffusion. Investors form heterogeneous Gaussian beliefs about the next-period price, choose among buying, selling, and remaining inactive, and revise their action probabilities in response to neighboring investors. The local interaction structure is represented by von Neumann and Moore lattices and is later replaced by Erdős--Rényi and Watts--Strogatz networks for robustness. A separate information process updates investor be
-
-## Multi-Currency AMMs for Decentralized FOREX Markets: Feasibility & Optimal Design
-- 2026-07-29 · http://arxiv.org/abs/2607.26405v1
-- Most currency pairs lack a direct liquid market, so international foreign exchange relies on routing transactions through a dominant vehicle currency. Multi-currency automated market makers (AMMs) offer an alternative by sharing liquidity across many currency pairs, facilitating direct cross-currency trade while exploiting liquidity consolidation. This paper studies a multi-currency pool design that minimizes trading cost. Under a constant-mean AMM architecture, equilibrium trading costs reflect the trade-off between reduced price impact from consolidated liquidity and increased impermanent lo
-
-## OpenMarket: A Synchronized Polymarket-Binance Dataset for High-Frequency Prediction-Market Research
-- 2026-07-28 · http://arxiv.org/abs/2607.26245v1
-- OpenMarket began as an attempt to trade Polymarket's BTC 15-minute binary markets against Binance BTC/USDT order flow. The attempt did not produce a tradable edge: out-of-sample, a walk-forward logistic model over 43 microstructure features does not beat, and slightly underperforms, the probability already implied by Polymarket's own order book, and simulated trading nets -0.116 normalized payoff units per attempted trade under stated fee and slippage assumptions. We release the synchronized corpus and infrastructure that attempt produced and, to our knowledge, the first public millisecond-lev
-
-## Bitcoin Runs on a Clock: Why Every Price Indicator Dies and the Halving Clock Doesn't
-- 2026-07-28 · http://arxiv.org/abs/2607.26188v1
-- Every widely followed Bitcoin cycle indicator (Pi Cycle, MVRV, Mayer, Puell) called turns precisely for a decade, then degraded in one sequence: precise, then early, then silent. This is one structural phenomenon. Across the four halving epochs (2011-2026), the per-cycle maxima of five top-calling oscillators decline monotonically while minima end higher, so any threshold calibrated on past cycles must stop firing; short-horizon indicators decay toward zero and several invert sign; yet Bitcoin's time structure stays fixed, with mature-cycle tops 525/546/534 days after their halvings and bottom
-
-## Train Often, Deploy Selectively: Forward-Gated Model Replacement in Crypto Markets
-- 2026-07-30 · http://arxiv.org/abs/2607.28577v1
-- Production forecasting systems retrain models regularly, but a retrained candidate does not necessarily outperform a continuously maintained incumbent that has continued to learn. We introduce Shadow Before Swap (SBS), a deployment policy that warm-refits a challenger off the serving path, evaluates it against the maintained incumbent on the same next week of delayed labels, and promotes it only after a fixed paired negative-log-likelihood (NLL) advantage. In historical replay over two nonoverlapping Binance episodes spanning 48 UTC weeks, three seeds, eight underlyings, and two perpetual-futu
-
-## Can Large Language Models Execute Parent Orders?
-- 2026-07-30 · http://arxiv.org/abs/2607.28410v1
-- Parent-order execution is a core problem in algorithmic trading, where the goal is to split a large order into smaller orders while reducing execution costs. Existing approaches either rely on pre-specified market assumptions that may not hold in practice, or require task-specific training that limits adaptability to new settings. To overcome these limitations, we present the first systematic study of large language models (LLMs) for parent-order execution. This extends the use of LLMs in finance from what to trade to how to execute. We propose PACE (Plan-Ahead Controlled Execution), a hierarc
-
-## Optimal Execution with Passive Market Impact
-- 2026-07-30 · http://arxiv.org/abs/2607.28323v1
-- We derive a mesoscopic model for optimal execution with limit orders that incorporates microstructural features of passive price impact. Our framework is based on two empirical observables: the approximately exponential decay of limit-order fill probabilities with distance from the midprice, and the short-term linear response of price changes to order flow imbalance. Combining these ingredients, we obtain a reduced-form passive impact rate that decays exponentially with quote distance. The model describes passive execution at a tactical level, where fills arise from a sequence of quote adjustm
-
-## Bootstrap inference in autoregressive duration models
-- 2026-07-30 · http://arxiv.org/abs/2607.28294v1
-- This paper develops bootstrap inference for autoregressive conditional duration (ACD) models observed over a fixed calendar span, so that the number of durations is random. We study recursive schemes that either fix the calendar span or the realized event count. For the fixed-count bootstrap, we establish consistency when the duration tail index satisfies $κ\geq1$. When $0<κ<1$, classical consistency fails because the estimator has a mixed-normal limit, but the bootstrap reproduces its conditional Gaussian component. Consequently, basic percentile intervals remain first-order valid and bootstr
-
-## Boundary-Induced Apparent Risk Aversion in Nonergodic Multiplicative Growth
-- 2026-07-30 · http://arxiv.org/abs/2607.28230v1
-- Finite multiplicative systems often cease to evolve when a lower continuation threshold is reached,whereas standard growth-optimal benchmarks assume uninterrupted continuation. We study a finite-horizon binary multiplicative process in which a fixed exposure is chosen ex ante and paths crossing an absorbing boundary are assigned a residual value. Exact lattice propagation yields the optimal exposure as a function of initial log distance to the boundary, horizon, and residual ratio. Costly absorption compresses exposure below the no-boundary Kelly fraction near the boundary. When interpreted th
-
-## FinSMART: Financial Sentiment Analysis for Algorithmic Trading through Market-Aligned Reinforcement Learning
-- 2026-07-30 · http://arxiv.org/abs/2607.28127v1
-- Recent advances in Generative AI have substantially improved financial sentiment analysis through post-trained financial large language models (LLMs). However, existing approaches remain confined to a market-agnostic, supervised learning paradigm that relies on limited, static and human-annotated datasets, and thus are incapable of adapting to evolving market conditions. To address this limitation, we introduce FinSMART, the first market-aligned reinforcement learning framework for financial sentiment analysis, which directly optimizes sentiment signals using realized market outcomes. To deal 
-
-## Energy Market and Carbon Emission Spillovers in Critical Minerals Investment: A Dynamic Connectedness Approach
-- 2026-07-29 · http://arxiv.org/abs/2607.27485v1
-- Design/methodology/approach A time-varying parameter vector autoregression (TVP-VAR) model is employed to quantify dynamic connectedness and directional volatility spillovers using daily data from May 1, 2013, to May 2, 2023. The study isolates the impact of extreme events by splitting the data into pre- and post-COVID-19 samples based on the February 2020 stock market crash. Purpose This paper examines the daily financial risk spillovers associated with investing in critical minerals. It examines the dynamic interconnectedness between seven critical mineral Exchange-Traded Fund (ETF) portfoli
-
-## Are Three Matrices All You Need To Beat the Market? Observable Matrix Dynamics for Portfolio Optimization
-- 2026-07-29 · http://arxiv.org/abs/2607.27461v1
-- We present a simple framework for dynamic portfolio management that uses nothing but daily prices, trading volumes, and market capitalizations. Its state is three fixed-size matrices built from the price history: the distance matrix of the return correlations and the transition matrices of two Markov chains that rank the S\&P 500 names monthly by trailing return and by trailing volatility. These three matrices rest on the price history alone, the same information Markowitz mean-variance optimization draws on, but they replace its expected-return vector and covariance matrix. Our method require
+<!-- 2026-08-01: batch of 12 q-fin papers (2607.26188..2607.28577, dated 07-28..07-30) triaged and
+cleared. 4 ROWED to the recommendation ledger (the inbox is a queue and improvement_inbox.md is
+write-only, so a finding not rowed is discarded):
+  * 2607.28577 "Train Often, Deploy Selectively" (Shadow Before Swap) -> R0265. The desk has forward
+    slot ADMISSION but no DISPLACEMENT rule, and reads 12/12 occupied -- directly binding now that
+    this cycle's power fix is built to produce survivors. Paired-on-identical-labels is the
+    transferable idea; it removes the period effect that makes comparing differently-aged clocks
+    meaningless.
+  * 2607.28230 "Boundary-Induced Apparent Risk Aversion" -> R0266. A boundary-distance Kelly shrink
+    ADDITIVE to kelly_shrink.py's estimation-error shrink. This desk deploys from ~$1k with venue
+    minimums, so the absorbing boundary is real, not asymptotic. Test composition before wiring:
+    two independent haircuts on one estimate is the duplicated-multiplicity error in sizing form.
+  * 2607.28323 "Optimal Execution with Passive Market Impact" -> R0267. Exponential fill-probability
+    decay in quote distance + linear OFI response. Aimed at the 24.2% maker fill rate and the ~66bps
+    carry execution gap (R0219), and it gives L1.45 excitation a functional form to interpolate
+    between the points it measures.
+  * 2607.26245 "OpenMarket" -> R0268. Free synchronized MILLISECOND Polymarket<->Binance corpus (our
+    L2 is 4080ms), PLUS an honest negative: 43 microstructure features do not beat the book's own
+    implied probability, -0.116 payoff/trade after fees. Graveyard the construction with its
+    mechanism so the novelty gate blocks it; keep the corpus.
+8 REJECTED with reasons: 2607.27070 liquidation-cascade early warning (its OWN finding is that no
+state variable is event-invariant across the 7 cascades, i.e. it reports the absence of the robust
+signature -- valuable as a prior AGAINST a cascade-EWS hypothesis, not as one); 2607.26188 "Bitcoin
+Runs on a Clock" (extreme claim, taken seriously per the charter and rejected on POWER not
+plausibility: tops at 525/546/534 days post-halving is n=3 epochs -- three observations cannot
+separate a fixed clock from coincidence, and there is no way to accrue a fourth before 2028);
+2607.27063 A-share agent-based herding (wrong asset class, simulation not measurement); 2607.26405
+multi-currency AMM design (DeFi protocol economics, off our strategy surface); 2607.28410 LLM parent
+orders (execution-relevant but needs an LLM in the order path -- latency and failure surface we will
+not put on the money path); 2607.28294 bootstrap ACD inference (duration models on tick data; the
+desk is daily/8h); 2607.28127 FinSMART sentiment RL (sentiment, off surface, needs annotation infra);
+2607.27485 critical-minerals spillovers and 2607.27461 three-matrices S&P portfolio (both wrong asset
+class). -->
