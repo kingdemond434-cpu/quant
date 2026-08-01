@@ -286,3 +286,27 @@ STATISTICAL-ARBITRAGE card in the watchlist). **The transferable lesson:** the s
 (Kalman, polynomial, ML hedge ratio) is where RU practitioners consistently report zero marginal
 gain over OLS+σ. If the desk ever tests statarb, spend the budget on **costs and capacity**, which
 is where every RU thread says it actually dies — never on the estimator.
+
+## kimchi_premium -- daily close-to-close construction (KILLED 2026-08-01)
+
+**Mechanism-of-death:** the celebrated IC +0.2249 was ~73% timestamp overlap. Upbit's
+`candle_date_time_utc` is the KST-day OPEN, so keying by it labelled every close ~15h early and
+the "forward" screen read a price from INSIDE the window it claimed to predict. Shift test:
+`+1d 0.823` vs `0d 0.225` vs the honest no-overlap cell `+0.018`.
+
+**Why it stays dead after the alignment fix.** Corrected keying left residual IC +0.1274 at n=143
+-- underpowered, not refuted. Backfilling 143 -> 2,302 aligned days (2017-09 .. 2026-08, via Upbit
+`to=` pagination plus 10y Yahoo FX) collapsed it to +0.0251, below the 0.041 detection floor. The
+effect SHRANK 5x while n grew 16x, which is what noise does; a real effect holds its magnitude and
+gains significance. Per-era signs flip across all four regimes (-0.054 / +0.072 / -0.042 /
++0.052), which refutes a durable mechanism rather than merely failing to confirm one. The h=5d
+cell (raw IC -0.33) is de-contam-killed: same-period -0.316, residual -0.079 -- the premium puts
+the Binance price in its DENOMINATOR, so that is construction, not information.
+
+**Reproduce:** `scripts/backfill_kimchi.py` (one-shot; archives to
+`data/kimchi_premium_history.jsonl`). All 3 horizons and all 4 eras are reported, not just the
+best cell -- reporting the winner alone would be p-hacking our own collector.
+
+**Still open, and genuinely different rather than a re-litigation:** INTRADAY. The leak was a
+day-boundary problem, which is itself evidence that whatever the premium carries lives INSIDE the
+day and is destroyed by a close-to-close construction.

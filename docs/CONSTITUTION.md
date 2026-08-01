@@ -1130,6 +1130,58 @@ unknown one, never a healthy one. || Fenced by `scripts/check_clock_provenance.p
 which row — including for the 7.5 GB of pre-marker tape, whose provenance is KNOWN per
 (venue, kind) from the recorder source and is therefore preserved rather than written off.
 
+**L1.47 FUNDING CAPTURE — A DISCRETE PAYMENT BOOKED AS A CONTINUOUS ACCRUAL IS AN EXPECTATION
+WEARING A MEASUREMENT'S CLOTHES** *(capability hunt 2026-08-01; SOLO — the GPT-9 seat returned
+HTTP 400 for the sixth consecutive run, so this is UNCONFIRMED by an independent family and must
+never later be cited as cross-family corroboration)*. The desk runs TWO organs optimising how
+**long** to hold a carry (`hold_optimizer.py`, `optimal_hold.py`) and has never once asked **where
+in the funding cycle** to open or close one — though phase is a free coordinate, carries the same
+P&L units as duration, and is fully under the desk's control. || **THE DEFECT IS THAT THE
+ACCOUNTING BOOKS THE EXPECTATION, WHICH IS EXACTLY WHY IT SURVIVED EVERY REVIEW.** Funding is paid
+at discrete UTC stamps; `run_cashcarry_executor.py:870` books `est_funding = funding * notl *
+(held / 8.0)` — a continuous accrual. Measured on the 265-close tape 2026-08-01: mean delta
+**−0.013 settlements** (unbiased, and therefore invisible), per-trade **sd 0.482**, and **41.5% of
+closes mis-marked by half a settlement or more**. An estimator can be right on average and wrong
+on every single trade; reviewing its mean is how a desk certifies a coin flip. || **THREE LAYERS
+HID IT, EACH INDIVIDUALLY REASONABLE.** (1) The accrual books the expectation, so the log cannot
+show the flip. (2) Realised funding exists ONLY as a book-level scalar — `binance_live.py:251`
+does `out["funding"] += amt` with no symbol key — so `carry_accounting` differences it at book
+level and any phase error lands in the EXECUTION bucket, where R0219 is hunting a ~66 bps gap it
+**cannot possibly find there**. (3) The clock is fetched and thrown away: `nextFundingTime` arrives
+in the very `/fapi/v1/premiumIndex` payload the desk already reads every cycle
+(`crypto_source.py:144`) and had **ZERO occurrences repo-wide**, as did `fundingIntervalHours` —
+which Binance sets to 4h for many high-funding alts, so every `/ 8.0` under-counts the payments of
+exactly the best names by 2×, at 15 restatement sites owning one assumption. || **WHAT THE FIRST
+RUN FOUND, AND WHAT IT REFUSED TO CLAIM.** Opens AND closes both concentrate in the final hour
+before a settlement at z = **+6.3** and **+5.2**; 59 of 265 closes (22.3%) walked away within an
+hour of a payment they had already borne ~8h of basis risk to earn — **9.2% of all booked funding
+revenue**, on the revenue line of the only deployed sleeve. **THE MECHANISM IS UNESTABLISHED AND
+THE FENCE SAYS SO**: three candidate explanations were tested and REFUTED the same day — cron
+alignment (the executor is a continuous systemd service, not a cron job), signal-coupling (funding
+at open is FLAT across phase, oct7 median 1.00 vs 1.02 bps) and min-hold aliasing (close octile
+equals open octile only 8.7% of the time, BELOW the 12.5% chance rate). A measured fact with a
+refuted story is still a measured fact, and publishing the fact while naming the story as unknown
+is the honest form — inventing a mechanism to match a number is how an artifact becomes a
+doctrine. || **THE OPERATIVE RULE:** funding is counted in SETTLEMENTS, never in elapsed hours.
+Every quantity derived from funding imports the one clock (`libs/research/funding_clock.py`) rather
+than restating an interval; every close is measurable in PHASE; and the desk holds **per-position
+venue truth** against which its estimate is differenced — an estimate nothing differences is an
+estimate nothing can audit (L1.43). **THE CONTROLLABILITY QUESTION MUST STAY ANSWERABLE**: the
+executor KNOWS whether a close was forced (`_churn_guard(rail_forced)`) and discards it at log
+time, which makes this capability's own falsifier — *are these closes chosen, or forced?* —
+unanswerable after the fact. A flag computed and dropped is evidence destroyed at zero saving.
+|| **ANTI-TIMIDITY READING (L1.28): a MEASUREMENT duty and a SCOPE EXPANSION, never a bar on
+trading.** It forbids no trade, gates no candidate and loosens no statistical bar. It makes a
+capture claim checkable that was previously assumed, and it ADDS a control coordinate the desk was
+not using — an unexploited free coordinate is an L1.28a idleness defect, not prudence. The fence
+reports UNMEASURED as loudly as a breach: an undifferenced estimate counts as an unknown revenue
+line, never a healthy one. And the evidence half is untouched — a phase edge earns a MEASUREMENT,
+never a size change; closes are never held past a RAIL to chase a settlement, because a rail exit
+is a certainty problem and not a fee problem (L1.45's closes-are-never-excited rule, same logic).
+|| Fenced by `scripts/check_funding_capture.py` (NO-DATA / UNMEASURED / FORFEITING / PHASE-BLIND,
+never OK on absent input) over `libs/research/funding_clock.py`, the single module that knows when
+a perp actually pays.
+
 **L2.0 THE RATCHET FENCE (how L1.0 is enforced, not hoped for)** *(principal order 2026-07-29)*.
 Every ratchet metric lands in a committed floor artifact with its measuring command, and a fence
 fires when it falls or goes stale: `data/mutation_score.json` (test strength),

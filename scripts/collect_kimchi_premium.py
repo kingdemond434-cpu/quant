@@ -22,7 +22,7 @@ from pathlib import Path as _P
 import numpy as np
 
 _sys.path.insert(0, str(_P(__file__).resolve().parent.parent))
-from libs.research.upbit_data import upbit_daily_close_keyed
+from libs.research.upbit_data import upbit_daily_utc_keyed
 
 _UPBIT = "https://api.upbit.com/v1/candles/days"
 _BINANCE = "https://api.binance.com/api/v3/klines"
@@ -37,8 +37,8 @@ def _get(url: str) -> object:
 
 
 def _upbit_daily(market: str) -> dict[str, float]:
-    # single source of the close-date keying -- see libs/research/upbit_data.py for why
-    return upbit_daily_close_keyed(market, 200)
+    # single source of the Upbit keying -- see libs/research/upbit_data.py for the boundary proof
+    return upbit_daily_utc_keyed(market, 200)
 
 
 def _binance_daily(sym: str, n: int = 200) -> dict[str, float]:

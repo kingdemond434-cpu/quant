@@ -24,7 +24,7 @@ from pathlib import Path
 
 import numpy as np
 
-from libs.research.upbit_data import upbit_daily_close_keyed
+from libs.research.upbit_data import upbit_daily_utc_keyed
 
 SERIES = Path("data/signal_halflife.jsonl")
 REPORT = Path("data/signal_halflife_report.json")
@@ -54,9 +54,9 @@ def stables():
 
 
 def kimchi(gb):
-    # R0060 single source: inline keying here used the OPEN stamp (~15h look-ahead) -- this is
-    # the copy that printed a contaminated "kimchi STRENGTHENING" row during the refutation audit.
-    kb = upbit_daily_close_keyed()
+    # R0060/R0067 single source: the inline copy here printed a contaminated "kimchi STRENGTHENING"
+    # row during the refutation audit. upbit_data owns the keying; never re-derive it.
+    kb = upbit_daily_utc_keyed()
     res = _get("https://query1.finance.yahoo.com/v8/finance/chart/KRW=X?interval=1d&range=300d"
                )["chart"]["result"][0]
     fx = {datetime.fromtimestamp(int(t), tz=UTC).date().isoformat(): float(c)

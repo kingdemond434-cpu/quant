@@ -6,8 +6,11 @@ passed a weaker gate is not validated -- it is unexamined. This re-runs each LIV
   2. the SHIFT-SENSITIVITY test that killed bithumb_KR (timezone/candle-label lookahead): a genuine
      leading signal degrades smoothly under a +/-1 day shift; a lookahead artifact keeps or peaks
      its IC when the signal is shifted FORWARD (i.e. it already contained future price).
-KIMCHI IS THE PRIORITY: it uses Upbit daily candles, and bithumb -- another KRW venue -- died of
-exactly this (KST day-open timestamps sat ~1.6d ahead of Binance UTC closes).
+KIMCHI USES UPBIT DAILY CANDLES, and bithumb -- another KRW venue -- died of a KST day-open
+timestamp sitting ~1.6d ahead of Binance UTC closes. THOSE ARE DIFFERENT VENUES WITH DIFFERENT
+CANDLE BOUNDARIES, and assuming otherwise is what produced the 07-29 keying regression (R0067):
+Upbit dailies are UTC-midnight-boundary, proven from Upbit's own hourly candles. Per-venue candle
+boundaries are MEASURED (tests/research/test_upbit_boundary.py), never inherited from a sibling.
 Read-only diagnostic. Run from repo root."""
 from __future__ import annotations
 
@@ -26,7 +29,7 @@ if str(_ROOT) not in sys.path:
 from libs.ops.lawful import guard as _law_guard  # noqa: E402
 from libs.research.axis_screen import stage_a_screen  # noqa: E402
 from libs.research.dist_shift import split_and_check  # noqa: E402
-from libs.research.upbit_data import upbit_daily_close_keyed  # noqa: E402
+from libs.research.upbit_data import upbit_daily_utc_keyed  # noqa: E402
 from libs.validation.revalidation import (  # noqa: E402
     RevalidationController,
     WalkForwardReport,
@@ -161,9 +164,9 @@ def yahoo(sym):
 
 def upbit():
     # ONE copy of the alignment policy (see libs/research/upbit_data.py): this script carried its
-    # own open-date keying and kept printing the leaky IC after the collector was fixed -- two
-    # copies of one policy means fixing one only moves the bug.
-    return upbit_daily_close_keyed("KRW-BTC", 200)
+    # own inline keying and kept printing a stale IC after the collector was changed -- two copies
+    # of one policy means fixing one only moves the bug.
+    return upbit_daily_utc_keyed("KRW-BTC", 200)
 
 
 def stablesupply():
