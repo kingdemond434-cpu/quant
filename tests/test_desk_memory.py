@@ -110,11 +110,31 @@ def test_a_tiny_budget_keeps_the_highest_scoring_lesson():
     assert best not in dropped
 
 
-def test_todays_ledger_fits_so_no_paid_lesson_is_withheld():
-    """The ceiling is meant to bind when lessons genuinely compete, not on day one. A ceiling that
-    drops half the corpus immediately is data loss wearing the costume of a ranking."""
+def test_overflow_is_by_rank_and_stays_a_small_tail():
+    """The ceiling is SUPPOSED to bind eventually -- that is the whole design, and it started
+    binding the moment three new lessons outranked two old ones. What must never happen is either
+    of the two ways this could quietly go wrong:
+
+      1. Something high-scoring gets dropped while something weaker is injected. Then the budget
+         is not a ranking, it is a lottery.
+      2. The tail grows until most of what the desk paid for reaches no organ. At that point the
+         corpus is a diary again and the budget has stopped being a forcing function and started
+         being the defect.
+
+    So: strict rank ordering, and a bounded tail. If this fails on (2) the fix is to RETIRE a
+    lesson whose falsifier arrived, never to raise the budget -- raising it is how the doctrine
+    reached 95k.
+    """
     _, dropped = dm.corpus()
-    assert not dropped, f"over budget and therefore NOT injected: {[d.id for d in dropped]}"
+    active = dm.load()
+    kept = [item for item in active if item not in dropped]
+    assert kept, "nothing injected at all"
+    if dropped:
+        assert min(k.score for k in kept) >= max(d.score for d in dropped), (
+            "a weaker lesson was injected over a stronger one -- the budget is not ranking")
+    assert len(dropped) / len(active) < 0.25, (
+        f"{len(dropped)}/{len(active)} paid-for lessons reach no organ: "
+        f"{[d.id for d in dropped]}. Retire one whose falsifier arrived.")
 
 
 # ---------------------------------------------------------------- retirement

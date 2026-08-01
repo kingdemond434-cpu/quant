@@ -164,12 +164,20 @@ def corpus(budget: int = BUDGET_CHARS, path: Path | None = None) -> tuple[str, l
     kept: list[Lesson] = []
     dropped: list[Lesson] = []
     used = len(_HEADER) + len(_FOOTER)
+    full = False
     for item in items:
         block = item.render()
-        if used + len(block) + 1 <= budget:
+        # STRICT RANK, and the `full` latch is the whole reason this is not a greedy pack. Greedy
+        # packing skips an over-long lesson and takes a shorter lower-scoring one behind it, which
+        # silently lets a terse hygiene note outrank a verbose capital-class lesson -- at which
+        # point the budget is not a ranking, it is a length contest. The moment one lesson does
+        # not fit, everything below it in rank is dropped too, so what reaches an organ is always
+        # a strict prefix of the ranking. Costs a little unused budget; buys the invariant.
+        if not full and used + len(block) + 1 <= budget:
             kept.append(item)
             used += len(block) + 1
         else:
+            full = True
             dropped.append(item)
     if not kept:
         return "", dropped
