@@ -1249,3 +1249,21 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # CONFIDENCE: committed-script (first run graded 6 of 7, Brier 0.2484, and left the one ambiguous
 # conviction claim unresolved rather than guessing it)
 50 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_fcscore.lock .venv/bin/python scripts/score_forecasts.py --write >> data/cro_ai_logs/forecast_scoring.log 2>&1
+
+# NET-PROFIT OPTIMISER (principal 2026-08-01: "net profits must always be set to maximum possible
+# -- carry holding longer or shorter, size, lower fees"). Measures net PnL per hour held from the
+# desk's OWN closed fills, bucketed against the 8h funding grid, with the funding/price/fee
+# decomposition INSIDE each bucket -- so a bucket that "wins" on directional drift is visible
+# rather than mistaken for carry on a book that is supposed to be delta-neutral.
+# Buckets under 12 trades report UNDERPOWERED and are never ranked: ranking thin cells is how a
+# book talks itself into a worse parameter.
+# Daily 05:25 -- after the 8h settlements land, before the cycle reads state.
+# EVIDENCE: scripts/optimise_net_profit.py -> data/net_profit_optimum.json
+# CONFIDENCE: committed-script. First run on 254 trades: 24-48h is the ONLY positive net/hour band
+# (+0.00346/h, n=68, 52.9% win); funding rises monotonically with hold (0.039 -> 0.487) exactly as
+# theory says, while the price column bleeds -0.155 -> -0.650 -> -1.796 -- a delta leak that SCALES
+# with holding time on a book whose price legs should cancel. That leak, not the hold period, is
+# the dominant lever. Caveat recorded with the number: the 254-trade sample spans the 07-27 churn
+# incident, whose rail-forced closes distort the hold distribution, so the verdict must be re-read
+# on post-fix fills before any parameter moves.
+25 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_netopt.lock .venv/bin/python scripts/optimise_net_profit.py >> data/cro_ai_logs/net_profit_optimum.log 2>&1
