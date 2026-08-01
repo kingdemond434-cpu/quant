@@ -129,3 +129,63 @@ what a long-biased trend rule should look like.
 
 So the desk's best candidate is not a leveraged buy-and-hold. Its edge is in **when** it is long
 versus short, and that survives both nulls.
+
+---
+
+# Overlays measured on the surviving rules
+
+`libs/research/overlays` built from the 2026-08-01 batch and measured on the four rules that
+cleared both nulls, across BTC / ETH / SOL (OKX daily, full history). Twelve rule-symbol pairs.
+
+The prior was recorded in the module docstring BEFORE measuring so it could not be adjusted
+afterwards: Algovibes' portfolio study found that every added layer — regime gate, volatility
+sizing, trend-strength gate, funding gate — made the underlying strategy **worse**. The expected
+outcome for any overlay was nothing or harm.
+
+## Volatility targeting — replicates, and the drawdown effect is the story
+
+| | mean before | mean after | ratio |
+|---|---|---|---|
+| annualised Sharpe | 0.66 | 0.88 | **1.32×** |
+| max drawdown | 0.64 | 0.20 | **0.32×** |
+
+Sharpe improved in **11 of 12**. Max drawdown fell in **12 of 12**. Per-rule the drawdown effect
+is severe: BTC `time_series_mom[40]` 0.54 → 0.22, ETH `time_series_mom[40]` 0.72 → 0.23, ETH
+`donchian[20]` 0.48 → 0.10, SOL `time_series_mom[40]` 0.89 → 0.32.
+
+Saeed Amen's claim was that vol scaling roughly doubles trend-following information ratio. On
+Sharpe alone that overstates it here (1.32×), but the desk cares about return per unit of
+drawdown and on that basis the improvement is roughly **4×**. This also lands directly on the
+constraint measured three separate ways in this batch — `monte_carlo_survival`'s `dd_limit=0.20`
+being unreachable, the external BTC sweep needing 40–60% drawdown tolerance, and the live book's
+1.31 effective positions. A trend book at 0.20 max drawdown is a different object from one at
+0.64.
+
+## Trade dependence — does NOT replicate, but the runs test predicts when it will
+
+The Turtle rule (take the trade after a loser, skip the one after a winner) was measured by
+neurotrader at runs-test **z = 2.7** on *hourly* Donchian, improving profit factor at every
+lookback. On **daily** crypto it mostly does not: the filter helped 4 of 12 and badly hurt several
+(ETH `donchian[20]` 0.70 → −0.00, BTC `vol_trend` 0.42 → 0.03).
+
+But it is not noise, and this is the useful part:
+
+```
+corr(runs z, Sharpe change from the filter) = 0.898   (n=12)
+  z > 0   (n=5):  mean change +0.070,  helped 4/5
+  z <= 0  (n=7):  mean change -0.340,  helped 0/7
+```
+
+The runs test is a **valid pre-screen for its own overlay**. Where dependence is actually present
+the filter helps; where it is absent the filter destroys the strategy, and the test says which in
+advance. So the adoption is conditional: measure z first, apply the filter only when z > 0. That
+is a stronger and more transferable result than the source's unconditional rule, and it explains
+the source's own finding — hourly Donchian had z = 2.7, which is exactly the regime where it works.
+
+## Status
+
+Diagnostics and sizing, not gates, and nothing here is promoted. No walk-forward split: these are
+overlays measured on the same full history the underlying rules were measured on, so the
+multiplicity of *choosing* the overlay is not priced. The vol-targeting result is robust enough
+across 12 pairs and one-directional enough on drawdown (12/12) to be worth a forward slot; the
+trade-dependence result is worth keeping only as the conditional rule above.
