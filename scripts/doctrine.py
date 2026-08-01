@@ -133,7 +133,8 @@ def audit_prompt_files() -> dict[str, Any]:
     """Every prompt FILE must also carry the mandate. Runtime injection covers code paths; a
     human pasting a prompt into a chat UI bypasses code entirely, and that is how rounds 1-2 of
     the panel actually ran. Files and callers are two separate enforcement surfaces."""
-    ok, missing = [], []
+    ok: list[str] = []
+    missing: list[str] = []
     for d in ("prompts", "prompts/panel_missions"):
         base = ROOT / d
         if not base.exists():
@@ -150,7 +151,8 @@ def audit_brain_instructions() -> dict[str, Any]:
     loads, the brain operates without it -- a whole intelligence running unconstrained."""
     targets = ["CLAUDE.md", "ops/memory/institutional-constitution.md",
                "docs/research/OPERATING_DOCTRINE.md", "docs/research/RESEARCH_EXCELLENCE.md"]
-    ok, missing = [], []
+    ok: list[str] = []
+    missing: list[str] = []
     for t in targets:
         f = ROOT / t
         if not f.exists():
@@ -162,7 +164,8 @@ def audit_brain_instructions() -> dict[str, Any]:
 
 def audit_callers() -> dict[str, Any]:
     """Which LLM callers inject doctrine, and which silently do not."""
-    injected, missing = [], []
+    injected: list[str] = []
+    missing: list[str] = []
     for p in sorted((ROOT / "scripts").glob("*.py")):
         s = p.read_text("utf-8", errors="ignore")
         # A file that merely CONTAINS the endpoint string is not a caller. prove_future.py holds
