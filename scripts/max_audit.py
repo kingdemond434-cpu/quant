@@ -1887,6 +1887,19 @@ _FINDING_DOCS_EXCLUDED = {
     "docs/research/cn_oss_extraction_20260731.md": "dig extraction card -- its 5 finds are "
                                                    "rowed as R0100 (ingest+screen) by the "
                                                    "authoring session; §33 governs the cards",
+    "docs/research/search_operator_library.md": "versioned REFERENCE library, not a findings "
+                                                "backlog: its 'numbered items' are OP-nnn search "
+                                                "OPERATORS (charter 15/16), each a reusable "
+                                                "technique with its own status lifecycle "
+                                                "(active/watch/archived) and its own retirement "
+                                                "rule -- 'retired entries move to the ARCHIVE "
+                                                "section, never deleted'. An operator is a tool a "
+                                                "digger DRAWS from, not a defect owing a "
+                                                "disposition, and rowing 25 of them would inflate "
+                                                "the open-finding count with items that can never "
+                                                "close. The doc is still governed: 36 covers it "
+                                                "via _PRODUCER_CADENCE, so a library that stops "
+                                                "being contributed to fires",
     "docs/research/blind_rediscovery_log.md": "monthly blind-rediscovery run log -- each run's "
                                               "cards are rowed into the RECOMMENDATION ledger by "
                                               "the authoring session (run 1 2026-07-31 -> "
@@ -2518,6 +2531,12 @@ _ONESHOT_SCRIPTS = frozenset({
     "hl_filter_test.py",           # elite-trader premise experiment (kernel of the 26-layer spec
     "screen_smart_dumb.py",        # decision) -- both ran once, verdicts recorded in data/hl_*.log
     "verify_fixes.py",             # dated live-code verification of the a1bcd86 fixes, ran once
+    # classified 2026-08-01: R0069's named DECISIVE EXPERIMENT -- a one-shot full-depth panel
+    # backfill whose whole purpose is to settle one axis permanently. It ran and produced
+    # reports/axis_screens/kr_perasset_premium_depth.json (38 assets, 84,891 asset-days). A
+    # decisive experiment is by definition not a cadence: re-running it on unchanged history
+    # would re-test dead ground and burn multiplicity budget for nothing.
+    "screen_kr_perasset_depth.py",
 })
 
 
@@ -2861,6 +2880,16 @@ _DIG_DOCS_EXCLUDED = {
     "docs/research/micro_audit_inbox.md":
         "audit findings, not mined finds -- own rotting-findings check",
     "docs/research/panel_inbox.md": "external panel output -- own rulings/scoring loop",
+    "docs/research/ADVERSARIAL_REVIEW_RUBRIC.md":
+        "a rubric of DEFECT CLASSES, not mined finds. Each 'card' defines a recurring failure "
+        "shape with the real instance that produced it -- reference material a reviewer reads "
+        "BEFORE looking at code. A class is permanent and cannot be 'disposed'; the instances it "
+        "cites were rowed when they were found. Governed by 36 via _PRODUCER_CADENCE",
+    "docs/research/improvement_inbox.md":
+        "already in _FINDING_DOCS, so 35 drives every item in it. Counting the same cards against "
+        "33 as well would double-charge one backlog to two laws and make both conversion rates "
+        "wrong -- the same precedent as blind_rediscovery_log.md. Its items are improvements "
+        "owing a RECOMMENDATION row, not dig finds owing a screen",
 }
 #: Committed-state is checked over the whole research surface, including the excluded docs above:
 #: a graveyard entry is self-dispositioning but still has to reach git to exist.

@@ -50,7 +50,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from libs.autodiscovery.models import Family, Hypothesis
+from libs.autodiscovery.models import Family, Hypothesis, ValidationVerdict
 from libs.autodiscovery.validation import campaign_gate_stats, validate
 from libs.validation.dsr import sharpe_ratio
 from libs.validation.economic_prior import MechanismType
@@ -72,7 +72,7 @@ _HYP = Hypothesis(
 )
 
 
-def _score_per_candidate(control: np.ndarray, peers: np.ndarray) -> object:
+def _score_per_candidate(control: np.ndarray, peers: np.ndarray) -> ValidationVerdict:
     """Inject `control` as an extra campaign column and score it on the REAL per-candidate path."""
     m = np.column_stack([peers, control])
     gates = campaign_gate_stats(m)
@@ -98,7 +98,8 @@ def _cohort() -> tuple[np.ndarray, np.ndarray, np.ndarray]:
 
 
 class TestTheGateStillDiscriminates:
-    def test_a_true_sharpe_5_edge_is_admitted(self, _cohort) -> None:
+    def test_a_true_sharpe_5_edge_is_admitted(
+            self, _cohort: tuple[np.ndarray, np.ndarray, np.ndarray]) -> None:
         """THE ANTI-WELD ASSERTION. If this fails, the gauntlet rejects a genuine Sharpe-5 edge and
         the desk's promotion path admits nothing -- a silent, total loss of every future alpha."""
         peers, good, _ = _cohort
@@ -111,7 +112,8 @@ class TestTheGateStillDiscriminates:
             f"loosening a threshold -- find what changed."
         )
 
-    def test_a_zero_edge_control_is_rejected(self, _cohort) -> None:
+    def test_a_zero_edge_control_is_rejected(
+            self, _cohort: tuple[np.ndarray, np.ndarray, np.ndarray]) -> None:
         """THE OTHER HALF. Without this, the assertion above is satisfied by deleting every gate."""
         peers, _, dud = _cohort
         res = _score_per_candidate(dud, peers)
