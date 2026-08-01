@@ -18,8 +18,11 @@ from libs.autodiscovery.models import Hypothesis, ValidationMetrics, ValidationV
 from libs.discovery.capacity import capacity_estimate
 from libs.discovery.tail_risk import tail_risk
 
-# re-exported for tests/autodiscovery/test_capacity_relative.py; validate()'s own gate below
-# uses _min_capacity_usd() instead.
+# re-exported for tests/autodiscovery/test_capacity_relative.py. validate()'s own capacity gate
+# calls capacity_status() below -- the 10%-slice band (L1.18a). It used to call a local
+# _min_capacity_usd() implementing a 2x-of-book multiple; that rule and its constant were deleted
+# 2026-08-01 (R0080) rather than left dead, because a spare capacity bar sitting in the file is
+# precisely how the desk ended up running two of them at once.
 from libs.research.capacity_policy import capacity_required  # noqa: F401
 from libs.validation.baselines import baseline_scorecard
 from libs.validation.campaign_window import (
@@ -72,7 +75,11 @@ _DESK_EQUITY_FALLBACK_USD = 1.0e3     # used only when live equity is unreadable
 # INCLUSIVE at the small end forever -- at $1k everything from ~$200 up is in; at $50k a
 # $300-capacity edge has finally become a rounding error and retires by OUTGROWTH.
 _MIN_SLICE_FRACTION = 0.10            # an edge must hold >=10% of the book to be worth a quota
-_CAPACITY_MULTIPLE_OF_EQUITY = 2.0    # RETAINED only for the gauntlet's own headroom bar
+# DELETED 2026-08-01 (R0080): `_CAPACITY_MULTIPLE_OF_EQUITY = 2.0`, "RETAINED only for the
+# gauntlet's own headroom bar". That retention is the whole defect -- the gauntlet's own bar WAS
+# the desk's capacity bar for every candidate it screened, so "retained only for" described a
+# second, stricter, unconstitutional rule quietly outranking the one above it. There is now ONE
+# band: capacity_status().
 _VENUE_MIN_NOTIONAL_USD = 10.0        # Binance-class minimum order notional
 _EXEC_VIABILITY_FLOOR_USD = 20.0 * _VENUE_MIN_NOTIONAL_USD   # ~$200: a handful of economic trips
 
@@ -120,10 +127,6 @@ def _desk_equity_usd() -> float:
             if isinstance(v, (int, float)) and v > 0:
                 return float(v)
     return _DESK_EQUITY_FALLBACK_USD
-
-
-def _min_capacity_usd() -> float:
-    return max(_desk_equity_usd() * _CAPACITY_MULTIPLE_OF_EQUITY, _EXEC_VIABILITY_FLOOR_USD)
 
 
 def capacity_status(capacity_usd: float, *, equity_usd: float | None = None) -> str:
@@ -463,15 +466,19 @@ def validate(
     n_trials: int,
     sharpe_estimates: np.ndarray,
     returns_matrix: np.ndarray,
-    adv_usd: float = 1.0e11,
+    # PER-SYMBOL DOLLAR ADV. Was `adv_usd: float = 1.0e11` until 2026-08-01 (R0080), and that
+    # default is why every capacity figure this desk has ever stored is a fiction: NO production
+    # caller passes it, so all 1,673 candidates in the lab store were sized against a HUNDRED
+    # BILLION DOLLAR daily volume -- two to four orders of magnitude above any real crypto pair.
+    #
+    # It is now None-by-default and the capacity gate reports UNMEASURED when it is absent, which
+    # is the same treatment `beats_baselines` and `sample_adequacy` already get. A default that
+    # silently manufactures a number is strictly worse than no number: it cannot be distinguished
+    # from a measurement downstream, and 966 of those 1,673 stored capacities are the identical
+    # constant 5.04e-13 -- the arithmetic signature of edge~0 against adv=1e11, sitting in the
+    # store looking like 966 independent capacity measurements.
+    adv_usd: float | None = None,
     edge_bps: float | None = None,
-    # What the desk ACTUALLY deploys. The capacity gate is a ratio to this, not a fixed dollar
-    # figure -- see capacity_required(). None means "read the live book from the NAV chain", which
-    # is what makes the ratio self-scaling as the desk grows. The old default of 0.0 was a hole:
-    # it collapsed the gate to the $2k absolute floor and passed essentially any capacity, so the
-    # ratio that was supposed to protect the desk protected nothing whenever a caller omitted it.
-    deployed_equity_usd: float | None = None,
-    n_sleeves: int | None = None,
     pbo: PBOResult | None = None,
     rc: RealityCheckResult | None = None,
     benchmark_returns: np.ndarray | None = None,
@@ -551,8 +558,13 @@ def validate(
     # Candidate-aware capacity: use the strategy's OWN realized per-bar edge (bps), so a no-edge
     # strategy gets ~zero capacity (fails) while a real edge on a liquid market passes -- instead
     # of the old fixed edge_bps that made this gate a constant veto for every candidate.
+    #
+    # NO ADV, NO CAPACITY NUMBER (R0080). capacity_estimate is linear in adv_usd, so inventing an
+    # ADV does not produce an approximate capacity -- it produces an arbitrary one, scaled by
+    # whatever constant was chosen. There is no honest capacity without a volume measurement.
     eff_edge_bps = edge_bps if edge_bps is not None else max(0.0, float(arr.mean()) * 1.0e4)
-    cap = capacity_estimate(adv_usd=adv_usd, edge_bps=max(eff_edge_bps, 1.0e-9))
+    cap = (capacity_estimate(adv_usd=adv_usd, edge_bps=max(eff_edge_bps, 1.0e-9))
+           if adv_usd is not None and adv_usd > 0 else None)
     tail = tail_risk(arr)
 
     metrics = ValidationMetrics(
@@ -562,7 +574,7 @@ def validate(
         dsr=dsr.dsr,
         pbo=pbo_value,
         reality_p=reality_value,
-        capacity_usd=cap.capacity_usd,
+        capacity_usd=cap.capacity_usd if cap is not None else 0.0,
         fragility=tail.tail_risk_score,
     )
 
@@ -574,9 +586,6 @@ def validate(
         "dsr": dsr.passed,
         "pbo": pbo_ok,
         "reality_check": sig_ok,
-        # capacity parity: relative to the desk's OWN size (see _min_capacity_usd), never a
-        # fixed institutional floor. Small edges are admitted and exploited to their own quota.
-        "capacity": cap.capacity_usd >= _min_capacity_usd(),
         "fragility": tail.acceptable,
         # skipped-as-True when no benchmark is supplied (see the constant block above); when
         # one IS supplied the candidate must beat buy-and-hold and equal-weight outright.
@@ -603,6 +612,32 @@ def validate(
         gates["sample_adequacy"] = sample_adequacy(n_trades).passed
     if benchmark_returns is None:
         unmeasured.append("beats_baselines")
+    # CAPACITY: THE 10%-SLICE BAND, NOT A MULTIPLE OF THE BOOK (R0080, L1.18a).
+    #
+    # This gate read `cap.capacity_usd >= _min_capacity_usd()`, i.e. capacity >= 2x desk equity.
+    # L1.18a names that exact shape as the defect -- "THE BAND IS A MINIMUM SLICE (>=10% of book),
+    # NEVER A MULTIPLE OF IT" -- and this file's own comment block has said since 2026-07-30 that
+    # the multiple "was wrong and measurably so": at $1,000 equity it marked $300, $800 and $1,500
+    # capacities OUTGROWN, edges able to hold 30%, 80% and 150% of the entire book. The band was
+    # already implemented correctly in capacity_status() directly above; validate() simply never
+    # called it, so the desk ran TWO capacity bars at once and the stricter, unconstitutional one
+    # owned the gauntlet.
+    #
+    # BOTH HALVES LAND TOGETHER ON PURPOSE, because either alone misfires in opposite directions.
+    # Swapping the band alone loosens the bar while capacity is still computed from a $100bn ADV
+    # fiction. Plumbing real ADV alone shrinks every capacity by 3-4 orders of magnitude while the
+    # 2x-multiple bar is still in place, which would fail essentially every candidate -- turning a
+    # measurement fix into a systematic killer of exactly the small edges §42 calls this desk's
+    # structural advantage.
+    #
+    # UNMEASURED, NEVER PASSED, when no ADV was supplied. This does not block survival (same rule
+    # as sample_adequacy and beats_baselines: a screen with zero promotion authority must not fail
+    # a candidate for an input its caller does not have). The honesty gain is the point -- a
+    # missing ADV previously produced a confident capacity verdict computed from a constant.
+    if cap is None:
+        unmeasured.append("capacity")
+    else:
+        gates["capacity"] = capacity_status(cap.capacity_usd) == "ADMIT"
 
     failed = [name for name, ok in gates.items() if not ok]
     reason = "" if not failed else "failed: " + ", ".join(failed)

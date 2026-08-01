@@ -80,7 +80,14 @@ def main() -> None:
             family=Family.CARRY, subtype=f"xsec_max_{name}", symbol="CRYPTO_XSEC", params={},
             mechanism=MechanismType.RISK_PREMIUM, edge_source="x-sec funding (risk-parity, costed)",
             failure_modes=_FAIL), n_trials=len(series), sharpe_estimates=sharpes,
-            returns_matrix=matrix, campaign=campaign, column=col) if len(active) >= 250 else None
+            returns_matrix=matrix, campaign=campaign, column=col,
+            # REAL PER-SYMBOL ADV (R0080). This script already measured dollar ADV per name at
+            # _panels() and fed it to the return model, then called validate() without it -- so
+            # the capacity verdict was computed from the old adv_usd=1e11 default while the real
+            # number sat in scope two frames up. Summed because this is a risk-parity basket over
+            # the whole panel: every name in `adv` is traded, so the strategy's tradeable volume
+            # is their total, not any single leg's.
+            adv_usd=float(sum(adv.values())) or None) if len(active) >= 250 else None
         survived = bool(v.survived) if v else False
         survivors += int(survived)
         ann = round(float(spr) * np.sqrt(365), 2)

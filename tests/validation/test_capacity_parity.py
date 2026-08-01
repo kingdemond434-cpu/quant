@@ -64,7 +64,10 @@ def test_bar_is_relative_to_desk_equity(tmp_path: Path, monkeypatch: pytest.Monk
     (tmp_path / "web").mkdir()
     (tmp_path / "web/cashcarry_live.json").write_text(json.dumps({"equity": 4500.0}), "utf-8")
     assert V._desk_equity_usd() == 4500.0
-    assert V._min_capacity_usd() == pytest.approx(9000.0)
+    # The band is a SLICE of the book (10%), never a MULTIPLE of it (L1.18a). Before R0080 this
+    # asserted 2 x 4500 = 9000; that multiple was the rule the constitution names as the defect.
+    assert V.capacity_status(450.0) == "ADMIT"          # exactly the 10% slice
+    assert V.capacity_status(449.0) == "OUTGROWN"       # just under it
 
 
 def test_a_small_edge_the_desk_can_fill_is_ADMITTED(
@@ -73,7 +76,7 @@ def test_a_small_edge_the_desk_can_fill_is_ADMITTED(
     monkeypatch.chdir(tmp_path)
     (tmp_path / "web").mkdir()
     (tmp_path / "web/cashcarry_live.json").write_text(json.dumps({"equity": 4500.0}), "utf-8")
-    assert V._min_capacity_usd() <= 20_000.0          # admitted now
+    assert V.capacity_status(20_000.0) == "ADMIT"      # admitted now
     assert 20_000.0 < 1.0e5                            # would have been rejected before
 
 
@@ -84,7 +87,9 @@ def test_tiny_capital_admits_tiny_edges(
     monkeypatch.chdir(tmp_path)
     (tmp_path / "web").mkdir()
     (tmp_path / "web/cashcarry_live.json").write_text(json.dumps({"equity": 100.0}), "utf-8")
-    assert V._min_capacity_usd() == pytest.approx(V._EXEC_VIABILITY_FLOOR_USD)
+    # At $100 equity the 10% slice ($10) is below the execution floor, so the floor binds --
+    # and it is the ONLY absolute floor the desk permits (L1.5 execution physics, not an opinion).
+    assert V.capacity_status(V._EXEC_VIABILITY_FLOOR_USD) == "ADMIT"
     assert V.capacity_status(300.0, equity_usd=100.0) == "ADMIT"
 
 
@@ -109,21 +114,28 @@ def test_bar_scales_up_with_the_book(
     monkeypatch.chdir(tmp_path)
     (tmp_path / "web").mkdir()
     (tmp_path / "web/cashcarry_live.json").write_text(json.dumps({"equity": 1.0e6}), "utf-8")
-    assert V._min_capacity_usd() == pytest.approx(2.0e6)
+    # $1m book -> the 10% slice is $100k, so a $99k edge has become a rounding error.
+    assert V.capacity_status(1.0e5) == "ADMIT"
+    assert V.capacity_status(9.9e4) == "OUTGROWN"
 
 
 def test_missing_state_falls_back_without_crashing(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch, no_venue_truth: None) -> None:
     monkeypatch.chdir(tmp_path)
     assert V._desk_equity_usd() == V._DESK_EQUITY_FALLBACK_USD
-    assert V._min_capacity_usd() > 0
+    assert V.capacity_status(1.0e6) == "ADMIT"
 
 
 def test_no_fixed_institutional_floor_remains() -> None:
     """A regression fence: the day someone reintroduces a hardcoded 1e5 capacity bar, this fails."""
     src = Path(V.__file__).read_text("utf-8")
     assert "_MIN_CAPACITY_USD = 1.0e5" not in src
-    assert "_min_capacity_usd()" in src
+    # R0080: the gate now calls the shared 10%-slice band. The old local 2x-multiple bar
+    # (_min_capacity_usd / _CAPACITY_MULTIPLE_OF_EQUITY) was DELETED, not left dead -- a spare
+    # capacity bar in the file is how the desk came to run two of them at once.
+    assert not hasattr(V, "_min_capacity_usd")
+    assert not hasattr(V, "_CAPACITY_MULTIPLE_OF_EQUITY")
+    assert 'capacity_status(cap.capacity_usd) == "ADMIT"' in src
 
 
 class TestAdmissionBandSlides:
@@ -137,7 +149,8 @@ class TestAdmissionBandSlides:
     def test_the_old_multiple_rule_would_have_rejected_most_of_those(self) -> None:
         # Regression fence on the reasoning, not just the number: a 2x-of-book bar at $1k equity
         # marked $300/$800/$1500 OUTGROWN -- edges holding 30%/80%/150% of the entire book.
-        assert 1000.0 * V._CAPACITY_MULTIPLE_OF_EQUITY > 1500.0
+        _OLD_MULTIPLE = 2.0        # the deleted rule, kept here as the thing being refuted
+        assert 1000.0 * _OLD_MULTIPLE > 1500.0
         assert V.capacity_status(1500.0, equity_usd=1000.0) == "ADMIT"
 
     def test_the_same_edge_retires_only_when_it_becomes_a_rounding_error(self) -> None:
