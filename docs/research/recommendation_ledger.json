@@ -4086,6 +4086,18 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0337",
+   "source": "owed-work-worker",
+   "summary": "THREE PYTEST FAILURES THAT WERE STRUCTURALLY INVISIBLE UNTIL 2026-08-01, now visible and owned by nobody. tests/test_gate0_soak.py executed at import and raised SystemExit, killing pytest with INTERNALERROR exit 3, so the suite produced NO report at all and every failure behind it was hidden. Collection is now repaired (all 7 of its own Gate-0 soak cases pass and had never once run). Remaining, each verified not to be a side effect of that repair: (1) test_every_tracked_jsonl_parses_per_line -- docs/desk_lessons.jsonl:1 is a '#' comment header; the file is tracked and the header is byte-identical to 8ae06a7^, so this predates the repair. The desk's OWN loader (desk_memory.load) explicitly skips '#' lines, so the integrity test and the documented format disagree; decide which is authoritative and make one match the other rather than deleting the header. (2) test_every_docs_artifact_is_claimed -- docs/research/recent_changes.md is ungoverned under \u00a736; it is a generated 24h commit digest whose producer ops/run_commit_audit.sh is also unlanded, so both should land together with a _PRODUCER_CADENCE entry. (3+4) the two test_desk_memory invariants, red because 7 unenforced 'wasted' lessons overflow the 12k char budget: L0009 L0010 L0013 L0024 L0028 L0038 L0051. The chartered fixes are graduation or retirement, NEVER raising the budget (that is how the doctrine reached 95k), and learn.py currently has no 'retire' verb at all, which may be the actual blocker -- the audit tells you to 'retire a lesson whose falsifier arrived' and gives you no way to do it. Candidate honest graduations to check against their assertions before claiming: L0028 vs tests/validation/test_robustness_filters.py (the luck filter's both-error calibration), L0013 vs test_transcript_candidates::test_costs_are_charged_on_every_turn.",
+   "roi_bps": 60.0,
+   "raised": "2026-08-01T16:43:55.926110+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
