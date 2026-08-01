@@ -3040,6 +3040,89 @@ CHECKS += [("fee-carry-ratio", check_fee_carry_ratio),
            ("holdings-ratchet", check_holdings_never_shrink),
            ("universal-doctrine", check_universal_doctrine)]
 
+
+#: Every reasoning organ. An organ that does not carry the constitution is optimising for
+#: something -- it just is not the desk's objective, and nothing in its output will say so.
+_CONSTITUTION_ORGANS = ("run_external_panel", "hypothesis_generator", "breadth_expander",
+                        "llm_code_auditor", "meta_architect", "llm_blind_researcher",
+                        "collector_author", "deep_review", "run_micro_audit")
+
+
+def check_constitution(defects) -> None:
+    """THE OBJECTIVE, ITS RATCHET, AND ITS REACH (principal 2026-08-01).
+
+    max_pi E[log W_T] is the desk's sole objective; validated information gain, validated alpha
+    and realized CAGR are subordinate measures. Three failure modes, all checked here:
+
+      REACH. An organ that does not inject the constitution is optimising for SOMETHING -- the
+      shape of a good-looking answer, the reviewer's instinct for caution, whatever its training
+      leans toward -- and nothing in its output will announce which. Same class as
+      `doctrine-not-injected`: a law parked in one organ's prompt is a local habit.
+
+      THE RATCHET. Every principle carries an aggression rank with a high-water mark on disk that
+      code only ever RAISES. A rank that fell means the constitution was weakened, and weakening
+      is meant to cost a hand-edit of a file named CONSTITUTION_RATCHET -- deliberate, dated and
+      visible -- because institutions do not vote to become timid, they drift there one
+      reasonable-sounding amendment at a time.
+
+      VOCABULARY. Weakening phrases used rather than named. This catches the accidental kind and
+      cannot catch a determined one; the ratchet is what covers the rest.
+    """
+    try:
+        from libs.doctrine import ratchet as _ratchet
+        from libs.doctrine.constitution import OBJECTIVE, weakening_language
+    except ImportError as e:                      # pragma: no cover - the desk has no objective
+        defects.append(("constitution-unimportable",
+                        f"libs.doctrine will not import ({e}) -- the desk's sole objective is "
+                        "unavailable to every organ that injects it, and to this check"))
+        return
+
+    naked = []
+    for name in _CONSTITUTION_ORGANS:
+        p = ROOT / "scripts" / f"{name}.py"
+        if not p.exists():
+            continue
+        with contextlib.suppress(OSError):
+            if "OBJECTIVE_PREAMBLE" not in p.read_text("utf-8", errors="ignore"):
+                naked.append(name)
+    if naked:
+        defects.append((
+            "constitution-not-injected",
+            f"{len(naked)} reasoning organ(s) run WITHOUT the constitution: {', '.join(naked)}. "
+            "Each is still optimising something -- the objective just is not stated, so nothing "
+            "it proposes can be scored against dE[log W_T]. Prepend "
+            "libs.doctrine.constitution.OBJECTIVE_PREAMBLE to its system prompt."))
+
+    doc = ROOT / "ops/principal_doctrine.txt"
+    if doc.exists() and OBJECTIVE not in doc.read_text("utf-8", errors="ignore"):
+        defects.append((
+            "constitution-absent-from-doctrine",
+            "ops/principal_doctrine.txt no longer states max_pi E[log W_T]. Every local organ "
+            "injects that file as its system prompt, so the desk would be running with an "
+            "aggression stance and no objective for it to serve."))
+
+    rep = _ratchet.check()
+    if not rep.ok:
+        defects.append((
+            "constitution-ratchet-broken",
+            "AGGRESSION RATCHET VIOLATED -- " + " | ".join(rep.violations)))
+    if not _ratchet.BASELINE_PATH.exists():
+        defects.append((
+            "constitution-ratchet-missing",
+            f"{_ratchet.BASELINE_PATH} is gone. With no high-water mark there is no floor under "
+            "any principle, and the next weakening passes silently. Regenerate with "
+            "libs.doctrine.ratchet.update_high_water() and commit it."))
+
+    weak = weakening_language()
+    if weak:
+        defects.append((
+            "constitution-weakening-language",
+            "constitutional statements USE weakening language rather than naming it: "
+            + ", ".join(f"{pid}:'{ph}'" for pid, ph in weak)))
+
+
+CHECKS += [("constitution", check_constitution)]
+
 #: Module-level `check_*` functions that are deliberately NOT swept. Empty by design: an exemption
 #: must be argued in writing here, never assumed by silence.
 _CHECKS_EXEMPT: set[str] = set()

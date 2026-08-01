@@ -34,6 +34,7 @@ from typing import Any
 
 import certifi
 
+from libs.doctrine.constitution import OBJECTIVE_PREAMBLE
 from libs.llm.push import PUSH_LADDER, push_rounds
 
 _KEYS = Path("data/secrets/llm_panel.json")
@@ -88,18 +89,32 @@ def _panel_budget_state() -> dict[str, Any]:
 
 def _mission() -> tuple[str, str]:
     """(name, system_prompt). A CLI arg / PANEL_MISSION env forces a specific mission (the
-    MONTHLY review forces 'tier1'); otherwise rotate over _ROTATION by ISO week number."""
+    MONTHLY review forces 'tier1'); otherwise rotate over _ROTATION by ISO week number.
+
+    THE CONSTITUTION IS PREPENDED HERE, AT THE ONE CHOKE POINT, rather than pasted into twelve
+    mission files. Twelve copies drift: one gets edited, eleven do not, and the seat that read a
+    stale copy is indistinguishable in the log from the seats that read the current one. Loading
+    it from libs.doctrine means the objective a model is scored against and the objective the
+    audit enforces are the same object, and a mission file added tomorrow inherits it for free.
+    """
     import os
     import sys
     override = (sys.argv[1] if len(sys.argv) > 1 else os.environ.get("PANEL_MISSION", "")).strip()
     if override and (_MISSIONS / f"{override}.txt").exists():
-        return override, (_MISSIONS / f"{override}.txt").read_text("utf-8")
+        return override, _with_constitution((_MISSIONS / f"{override}.txt").read_text("utf-8"))
     idx = datetime.now(tz=UTC).isocalendar().week % len(_ROTATION)
     name = _ROTATION[idx]
     path = _MISSIONS / f"{name}.txt"
     if not path.exists():                            # fallback to audit if a file is missing
         name, path = "audit", _MISSIONS / "audit.txt"
-    return name, path.read_text("utf-8")
+    return name, _with_constitution(path.read_text("utf-8"))
+
+
+def _with_constitution(mission: str) -> str:
+    """Constitution first, mission second. Order is deliberate: the objective has to be in scope
+    BEFORE the model reads what it is being asked to optimise, or the mission sets the frame and
+    the objective arrives as a footnote."""
+    return f"{OBJECTIVE_PREAMBLE}\n{mission}"
 
 
 _FUNDING = Path("data/panel_funding_state.json")

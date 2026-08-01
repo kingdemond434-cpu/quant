@@ -337,6 +337,26 @@ def main() -> None:
     else:
         fired.append("hypothesis-funnel")
 
+    # CONSTITUTION (EVERY CYCLE). max_pi E[log W_T] is the desk's sole objective and the
+    # aggression ratchet is what stops it eroding. Raising the high-water mark here means a
+    # STRENGTHENED principle is locked in the same cycle it lands, with no ceremony -- while a
+    # weakened one has nowhere to hide, because the mark it fell below is already committed.
+    # Asymmetry is the whole design: strengthening is frictionless, weakening costs a hand-edit.
+    try:
+        from libs.doctrine.ratchet import check as _rcheck
+        from libs.doctrine.ratchet import update_high_water as _rraise
+        _rep = _rcheck()
+        if _rep.ok:
+            _rraise()
+            fired.append("constitution")
+            if _rep.raised:
+                print(f"cadence: constitution STRENGTHENED -- {'; '.join(_rep.raised)}")
+        else:
+            print("cadence: CONSTITUTION RATCHET VIOLATED -- " + " | ".join(_rep.violations))
+    except Exception as _e:       # a doctrine check must never be what stops a cycle
+        print(f"cadence: constitution check failed to run ({type(_e).__name__}: {_e}) -- "
+              "the objective is unenforced this cycle")
+
     # MOAT MINING (EVERY CYCLE, maximum cadence). The desk's information-advantage ranking puts
     # self-recorded order books at 1.03 and the next source at 0.37 -- the only asset here that
     # cannot be bought, scraped or replicated, and it sat at 0.4% exploitation with ZERO

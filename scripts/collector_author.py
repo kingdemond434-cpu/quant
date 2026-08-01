@@ -41,6 +41,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
+from libs.doctrine.constitution import OBJECTIVE_PREAMBLE  # noqa: E402
 from scripts import seats  # noqa: E402 -- after the sys.path bootstrap above
 
 KEYS = ROOT / "data/secrets/llm_panel.json"
@@ -65,6 +66,11 @@ ALLOWED_IMPORTS = {"json", "urllib", "urllib.request", "urllib.parse", "urllib.e
                    "datetime", "math", "statistics", "re", "time", "csv", "io", "collections"}
 
 SYSTEM = (
+    # THE CONSTITUTION LEADS. An organ that does not carry the objective optimises for
+    # what its output LOOKS like rather than for expected shift in E[log W] -- and, worse,
+    # quietly recommends the timid option because nothing told it that timidity is a
+    # scored defect rather than a neutral default.
+    OBJECTIVE_PREAMBLE + "\n"
     "You write DATA COLLECTORS for a quant desk. Given a public data source, emit ONE Python "
     "function that fetches a DAILY TIME SERIES from it.\n"
     "STRICT CONTRACT:\n"

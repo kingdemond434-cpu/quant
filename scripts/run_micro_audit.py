@@ -17,10 +17,14 @@ dossier sanitizer as a hard secret gate.
 from __future__ import annotations
 
 import json
+import sys
 import time
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from libs.doctrine.constitution import OBJECTIVE_PREAMBLE
 
 _KEYS = Path("data/secrets/llm_panel.json")
 _MISSION = Path("prompts/panel_missions/micro.txt")
@@ -109,7 +113,10 @@ def main() -> None:
     brief = build_brief()
     if sanitize(brief) != brief:                     # anything secret-shaped -> hard refuse
         raise SystemExit("micro-audit brief failed sanitization -- refusing to send")
-    system = _MISSION.read_text("utf-8")
+    # Constitution first, mission second: the objective has to be in scope BEFORE the model
+    # reads what it is being asked to optimise, or the mission sets the frame and the
+    # objective arrives as a footnote.
+    system = OBJECTIVE_PREAMBLE + "\n" + _MISSION.read_text("utf-8")
     providers = json.loads(_KEYS.read_text("utf-8"))["providers"]
     picked = _pick(providers)
     ts = datetime.now(tz=UTC).isoformat()

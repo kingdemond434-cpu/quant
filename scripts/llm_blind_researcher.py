@@ -34,6 +34,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
+from libs.doctrine.constitution import OBJECTIVE_PREAMBLE  # noqa: E402
 from libs.llm.push import PUSH_LADDER, push_rounds  # noqa: E402
 from scripts import seats  # noqa: E402 -- after the sys.path bootstrap above
 
@@ -49,6 +50,11 @@ SEATS = ["openai/gpt-5.6-terra-pro", "google/gemini-3.1-pro-preview",
 
 # NOTE: no desk context whatsoever. Adding any would destroy the measurement.
 SYSTEM = (
+    # THE CONSTITUTION LEADS. An organ that does not carry the objective optimises for
+    # what its output LOOKS like rather than for expected shift in E[log W] -- and, worse,
+    # quietly recommends the timid option because nothing told it that timidity is a
+    # scored defect rather than a neutral default.
+    OBJECTIVE_PREAMBLE + "\n"
     "You are a quantitative researcher who has just been given a budget and told to find "
     "systematic trading edges in crypto using ONLY free, public data. You have no existing "
     "infrastructure, no legacy positions and no prior assumptions. Answer from first principles."

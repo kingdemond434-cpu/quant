@@ -1,0 +1,28 @@
+{
+ "_": "HIGH-WATER MARK for constitutional aggression. Raised automatically; NEVER lowered by code. Editing a number DOWN in this file is the only way to weaken a principle, and it is meant to be a visible, dated, argued act -- institutions drift toward timidity one reasonable amendment at a time, and this is the mechanism that makes each one cost a decision.",
+ "updated": "2026-08-01T23:22:08.393266+00:00",
+ "principles": {
+  "P0": "Sole Objective",
+  "P1": "Information Value Condition",
+  "P2": "Alpha Is Modelled, Not Implied",
+  "P3": "Research Aggression",
+  "P4": "Constraint Elimination",
+  "P5": "Maximum Sustainable Aggression",
+  "P6": "Survival Is A Growth Argument",
+  "P7": "Resource Expansion",
+  "P8": "Validation Integrity Is Never Traded For Throughput",
+  "P9": "The Ratchet"
+ },
+ "high_water": {
+  "P0": 10,
+  "P1": 9,
+  "P2": 8,
+  "P3": 10,
+  "P4": 9,
+  "P5": 10,
+  "P6": 10,
+  "P7": 10,
+  "P8": 9,
+  "P9": 10
+ }
+}
