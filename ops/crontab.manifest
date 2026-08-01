@@ -1314,3 +1314,23 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 #   and the ledger's own implemented/rejected counts, which are the real proof.
 # CONFIDENCE: committed-script (new this cycle)
 5 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_recworker.lock /bin/bash ops/run_recommendation_worker.sh >> data/cro_ai_logs/recommendation_worker.log 2>&1
+
+# CROSSASSET SHADOW CLOCK (2026-08-01). slot_registry counts `crossasset` in the concurrent Holm
+# cohort on the strength of data/crossasset_shadow_state.json -- which had not been written since
+# 2026-06-21, 977h, flagged STALLED. The script works (verified: live cross-asset returns across
+# equity and energy legs) but appeared in no cron and no timer: it ran once at inception and never
+# again.
+# WHY IT IS NOT MERELY UNTIDY: the forward-slot cohort is CAPPED at MAX_FORWARD_SLOTS=12 and the
+# desk is AT 12. A clock accruing nothing still consumes a slot, so a dead entry blocks a live
+# candidate on the only path from research to capital. The registry deliberately counts dormant
+# clocks until an explicit ledgered retirement -- over-counting m only tightens the bar, the safe
+# error -- but that trade is only correct if someone then fixes or retires the clock.
+# SCHEDULE RATHER THAN RETIRE: the axis is genuinely orthogonal to everything else accruing, so
+# retiring a working cross-asset clock to free a slot would discard the diversification the cohort
+# exists to build. If it still shows nothing in a fortnight, retirement becomes correct and the
+# evidence will say so.
+# 06:40 UTC: after the US session settles into the prior close (both legs are daily bars), clear
+# of the 06:00 cluster.
+# EVIDENCE: scripts/run_crossasset_shadow.py -> data/crossasset_shadow_state.json
+# CONFIDENCE: committed-script (verified running by hand this cycle)
+40 6 * * * cd "$QUANT_ROOT" && flock -n data/.cron_crossasset.lock .venv/bin/python scripts/run_crossasset_shadow.py >> data/cro_ai_logs/crossasset_shadow.log 2>&1
