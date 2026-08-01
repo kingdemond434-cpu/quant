@@ -337,6 +337,23 @@ def main() -> None:
     else:
         fired.append("hypothesis-funnel")
 
+    # MOAT MINING (EVERY CYCLE, maximum cadence). The desk's information-advantage ranking puts
+    # self-recorded order books at 1.03 and the next source at 0.37 -- the only asset here that
+    # cannot be bought, scraped or replicated, and it sat at 0.4% exploitation with ZERO
+    # mechanisms tested while every other organ was maximised. Hole-first and budgeted, so it
+    # mines cells nobody has ever measured before re-measuring anything: that ordering is what
+    # converges on 100% exploration instead of re-grinding the same convenient symbol. Runs every
+    # cycle deliberately -- the archive only grows, so any cycle that skips it is coverage the
+    # desk permanently ran late on.
+    _r = subprocess.run([sys.executable, "scripts/mine_moat.py"],
+                        capture_output=True, text=True, timeout=420, check=False)
+    _tail = (_r.stdout or _r.stderr or "").strip().splitlines()[-1:] or [""]
+    if _r.returncode != 0 or not Path("data/moat_mine.json").exists():
+        print(f"cadence: moat-mine rc={_r.returncode} NO ARTIFACT | {_tail[0][:110]}")
+    else:
+        fired.append("moat-mine")
+        print(f"cadence: {_tail[0][:150]}")
+
     # MODEL UPGRADE (monthly). The desk's models used to be frozen literals that only ever moved
     # when a human noticed a newer flagship -- so seats aged silently (llama-4-maverick sat 15
     # months stale). This makes "are we on the best model available?" a cadence question with a
