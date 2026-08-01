@@ -71,6 +71,15 @@ POSITIVE = {
     "(因子|多因子|阿尔法|alpha挖掘|截面)": 3.0,
     "(高频|微观结构|订单流|做市|套利)": 2.0,
     "(量化|程序化交易|算法交易)": 1.0,
+    # --- Academic phrasing. Abstracts state what was measured and how, which is the category
+    # with this desk's best conversion record -- but they say it in different words than a video
+    # title does, so without these a paper feed ranks below a YouTube tutorial.
+    r"\b(we (document|show|find|propose|develop|test)|this paper|we study)\b": 3.0,
+    r"\b(sample of|cross[- ]section|panel of|we use .{0,20}(observations|firms|stocks))": 4.0,
+    r"\b(statistical(ly)? (significan|test)|null hypothesis|bootstrap|t-statistic)\b": 4.0,
+    r"\b(data snooping|multiple hypothesis|false discovery|reality check|white'?s)\b": 5.0,
+    r"\b(transaction costs?|net of (fees|costs)|implementation shortfall|capacity)\b": 3.0,
+    r"\b(leakage|lookahead|point[- ]in[- ]time|survivorship)\b": 4.0,
 }
 
 #: Patterns that predict NOTHING converts. The profit-claim family is weighted hardest because it

@@ -40,7 +40,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from libs.data import bilibili, cn_sources
+from libs.data import bilibili, cn_sources, papers
 from libs.research.video_triage import SURFACE_THRESHOLD, score_title, triage
 
 _ROOT = Path(__file__).resolve().parent.parent
@@ -309,6 +309,32 @@ def main(argv: list[str] | None = None) -> int:
                                   "author": a.author, "why": hits})
             time.sleep(0.5)
 
+    # --- Academic + code. The only sources whose CONTENT is readable: abstracts come back in the
+    # API response, so these can produce a finding rather than only a queue entry.
+    acad: dict[str, int] = {}
+    paper_calls = ([(f"arxiv:{c}", (lambda c=c: papers.arxiv("", category=c, limit=25)))
+                    for c in papers.ARXIV_CATEGORIES]
+                   + [("ssrn:fin-econ", lambda: papers.ssrn(count=40)),
+                      ("openreview", lambda: papers.openreview("quantitative trading")),
+                      ("hn", lambda: papers.hackernews("quant trading backtest"))])
+    for label, call in paper_calls:
+        items, e = call()
+        if e:
+            blocked[label] = e
+            continue
+        acad[label] = len(items)
+        for a in items:
+            key = f"{a.source}:{a.ident}"
+            all_ids.add(key)
+            if key in seen:
+                continue
+            s, hits = score_title(a.searchable)
+            if s >= args.threshold:
+                queue.append({"channel": label, "video_id": key, "title": a.title[:180],
+                              "score": round(s, 1), "url": a.url, "why": hits,
+                              "abstract": a.abstract[:400]})
+        time.sleep(0.4)
+
     discovered: dict[str, int] = {}
     for q in SEARCH_QUERIES:
         vids, err = search_youtube(q)
@@ -358,6 +384,8 @@ def main(argv: list[str] | None = None) -> int:
         "bilibili_discovered": bili,
         "cn_article_discovered": cn_hits,
         "cn_source_probe": cn_sources.probe_all(),
+        "academic_discovered": acad,
+        "academic_probe": papers.probe_all(),
         "channels_blocked": blocked,
         "threshold": args.threshold,
         "n_new_surfaced": len(queue),
