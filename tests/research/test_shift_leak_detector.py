@@ -36,7 +36,7 @@ _N = 400
 
 
 def _world(seed: int = 7) -> tuple[list[str], np.ndarray, np.ndarray, dict, dict]:
-    """A synthetic venue pair: BTC random walk, flat FX, so the premium is the only free variable."""
+    """A synthetic venue pair: BTC random walk, flat FX -- the premium is the only free variable."""
     rng = np.random.default_rng(seed)
     dates = [f"2025-{1 + i // 28:02d}-{1 + i % 28:02d}" for i in range(_N)]
     px = 100 * np.exp(np.cumsum(rng.normal(0, 0.02, _N)))

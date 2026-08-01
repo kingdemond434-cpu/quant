@@ -1294,3 +1294,74 @@ first-party, §13-clean (public documented venue APIs, no login, no paywall, no 
   limits observed and respected throughout (the 429s in this run were backed off, never evaded).
 - **Routed:** `data/upbit_trade_announcements.jsonl`, `data/upbit_announcements.jsonl`,
   `data/data_universe_map.json` (4 entries), R0298–R0301, **R0303 (dated 08-03)**.
+
+---
+
+### 27. GMO Coin free tick-trade archive (JP venue, keyless, 2018-09-05 →) — grade: **verified-technically-clean, LICENCE UNREAD (reachable, not blocked)** [§33: screened -> docs/research/prospector_coverage.md JP-s1] 
+_Found by JP frontier miner session 1, 2026-08-01, as the licensed replacement for the §13-restricted bitFlyer axis._
+
+- **What it is.** GMO Coin (GMOコイン, a listed-group JP venue) publishes **daily tick-by-tick trade
+  CSVs, gzipped, keyless, no account**, at:
+  `https://api.coin.z.com/data/trades/{SYMBOL}/{YYYY}/{MM}/{YYYYMMDD}_{SYMBOL}.csv.gz`
+- **VERIFIED THIS RUN, not inferred.** `20210301_BTC_JPY.csv.gz` → **200, 1,746,370 B**;
+  `20210301_BTC.csv.gz` → **200, 97,373 B**. Decompressed header + rows:
+  `symbol,side,size,price,timestamp` / `BTC,SELL,0.0100,4788420.000,2021-02-28 21:00:00.833`.
+  **Millisecond timestamps, signed side, tick granularity.**
+- **START DATE BINARY-SEARCHED to the day: 2018-09-05.** `20180904` → **403**, `20180905` → **200**,
+  for BOTH the spot (`BTC`) and leveraged (`BTC_JPY`) products. (403-not-404 is the S3 object-absent
+  shape, so the boundary is the data start, not an auth wall.) ⇒ **~7.9 years of JP tick tape.**
+- **Universe (from the service's own index page):** 28 spot symbols —
+  `BTC ETH BCH LTC XRP XEM XLM BAT OMG XTZ QTUM ENJ DOT ATOM MKR DAI XYM MONA FCR ADA LINK DOGE SOL
+  ASTR NAC WILD SUI` — plus 12 margin pairs (`BTC/JPY ETH/JPY BCH/JPY LTC/JPY XRP/JPY DOT/JPY
+  ATOM/JPY ADA/JPY LINK/JPY DOGE/JPY SOL/JPY SUI/JPY`). 8 of these spot-checked live at 200.
+- **WHY THIS IS A MOAT AXIS AND NOT JUST MORE PRICE DATA (L1.11a standing test).** The interesting
+  part is *not* BTC. It is **`MONA` (Monacoin), `XYM`, `FCR`, `NAC`, `WILD`, `XEM`** — JP-listing-
+  specific assets with thin or absent coverage on global venues, at **tick** resolution, **free**.
+  A competitor reconstructing this pays for a JP venue feed or does not have it. It is also the
+  **spot ⊕ leveraged pair on the same venue** (`BTC` and `BTC_JPY` are separate books), which is a
+  clean same-venue basis series most aggregators flatten away.
+- **`robots.txt`: EXPLICITLY PERMISSIVE.** `coin.z.com/robots.txt` = `User-agent: * / Allow: /` with
+  7 unrelated `Disallow`s (signup, LP pages, chart generator). **No ClaudeBot/AI-agent block.**
+  `api.coin.z.com/robots.txt` → 404 (no directives).
+- **§13 RESIDUAL — READ THIS BEFORE ANY COLLECTOR IS BUILT.** The service's own docs page carries
+  **no terms, no licence, no disclaimer** (checked). The governing document is GMO Coin's site
+  規約 at `coin.z.com/jp/corp/policy/terms/` and `/jp/corp/policy/` — both return **200 and are NOT
+  bot-blocked**, but the body is **JS-rendered** (86,604 B / 64,607 B of shell; the 規約 text is not
+  in the raw HTML). **LICENCE THEREFORE UNREAD.**
+  **This is a materially better state than bitFlyer and must not be conflated with it:** bitFlyer's
+  terms host *refuses us*; GMO's *serves us* and we simply have not rendered the body. Next action
+  is an OP-038-class fetch of the JSON/API behind the JS shell, **not** a human page-read and **not**
+  a proxy purchase.
+- **NEXT ACTION (dated):** render `coin.z.com/jp/corp/policy/terms/`, grep for the IP/データ/
+  再配布/API clause, and re-grade. **Owed by 2026-08-05.** Until then: **no collector, no ingest.**
+  Technically verified ≠ cleared.
+
+---
+
+### 28. bitbank public candlestick API (JP venue, keyless, whole-year-per-call) — grade: **verified-technically-clean WITH A CONFIRMED PHANTOM-HISTORY TRAP, licence unread** [§33: screened -> docs/research/prospector_coverage.md JP-s1]
+_Found by JP frontier miner session 1, 2026-08-01._
+
+- **What it is.** `https://public.bitbank.cc/{pair}/candlestick/{type}/{YYYY}` returns **an entire
+  year of OHLCV in one keyless call**. Payload: `[open, high, low, close, volume, timestamp_ms]`.
+  Verified live at 200 for `btc_jpy/1day/{2014,2015,2016,2017,2018}`.
+- **THE TRAP, AND IT IS THE ACTUAL DELIVERABLE HERE (see OP-045).** For **2014, 2015 and 2016** the
+  endpoint returns `success: 1` with **362 / ~365 / 363 daily bars of populated, MOVING OHLC** —
+  and **volume `0.0000` on every single bar.** Measured: `2014 bars=362 nonzero_vol=0`,
+  `2016 bars=363 nonzero_vol=0`, `2017 bars=365 nonzero_vol=317 first_nz=1487030400000`
+  (**2017-02-14**, bitbank's real BTC/JPY launch), `2018 bars=365 nonzero_vol=364`.
+  ⇒ **~1,090 untradeable phantom bars are served ahead of the venue's own existence, flagged as
+  success.** The price path moves, so no visual sanity-check catches it; **only the volume column
+  does**. Any collector taking "bitbank since 2014" at face value poisons its earliest regime.
+- **TRUE USABLE START: 2017-02-14.** Anything earlier is a reference/index backfill, not bitbank's
+  tape, and must not enter a backtest.
+- **Granularity caveat:** the year-per-call form works for `1day`; `1hour/2017` returned
+  `{"success":0,"data":{"code":10000}}` — finer types need the `YYYYMMDD` form. Do not assume the
+  year form generalises across `type`.
+- **§13:** `bitbank.cc/robots.txt` → 200, **no ClaudeBot block**; `public.bitbank.cc/robots.txt` →
+  404. The API docs repo `github.com/bitbankinc/bitbank-api-docs` (126★) carries **no LICENSE file**
+  (`license: None` via the GitHub API), so the docs are unlicensed and the governing document is the
+  site 規約 (`bitbank.cc/error/terms`, 200, 6,500 B — body not yet extracted). **LICENCE UNREAD.**
+- **NEXT ACTION (dated):** extract the 規約 body and re-grade. **Owed by 2026-08-05.** No ingest until
+  then.
+- **Standing value even if the licence fails:** the phantom-history finding is venue-independent
+  knowledge and is already generalised into **OP-045**.
