@@ -995,10 +995,30 @@ Verified same-day out of a principal-supplied survey of 10 CN-ecosystem OSS proj
 1 hallucinated, 1 proprietary — verdicts in the extraction record; MINE-NEVER-ADOPT applies).
 Each axis carries a stated mechanism and awaits screen-on-discovery by the seat that ingests it:
 
-1. **CN A-share flow microstructure (Eastmoney/AkShare/Tushare, free)** — northbound Stock
-   Connect flows, dragon-tiger lists, **margin balances**. Mechanism: mainland retail leverage
+1. **CN A-share flow microstructure (Eastmoney/AkShare/Tushare, free)** — ~~northbound Stock
+   Connect flows~~, dragon-tiger lists, **margin balances**. Mechanism: mainland retail leverage
    appetite propagates into crypto via the CN-retail channel Card 9 validated (contrarian sign);
    margin balance is a direct leverage-cycle observable orthogonal to everything collected.
+   > **⛔ CORRECTION 2026-08-01 (CN miner session 3) — NORTHBOUND FLOW IS DEAD. STRUCK, not
+   > de-prioritised.** Confirmed by **two independent digs on the same day**: (a) 400 trading
+   > sessions probed 2024-11-20→2026-07-31 — `hk2sh` all zeros, `hk2sz`/`s2n` one non-zero each;
+   > (b) `RPT_MUTUAL_DEAL_HISTORY` returns `FUND_INFLOW/NET_DEAL_AMT/BUY_AMT/SELL_AMT/
+   > HOLD_MARKET_CAP` all **null**, and the realtime `push2/kamt` endpoint returns empty. Cause is
+   > not a broken route: **HKEX/SSE/SZSE ceased daily net-purchase disclosure on 2024-08-16.** Any
+   > post-2024 use is impossible, incl. the `/northbound` route in the claw402 catalog.
+   > **SURVIVING WORKAROUND:** per-stock northbound *holdings* are still published daily
+   > (`RPT_MUTUAL_HOLD_DET`: `HOLD_NUM`, `HOLD_SHARES_RATIO`, `HOLD_MARKET_CAP` + 1/5/10d deltas),
+   > so flow must be **reconstructed by differencing levels**, never read directly.
+   > **SECOND, INDEPENDENT REASON TO DOWN-WEIGHT:** the CN sell-side reproduction repo
+   > `hugo2046/QuantsPlaybook` contains a native study titled **北向资金交易能力一定强吗**
+   > ("is northbound money actually smart?") — the premise this axis rests on is questioned in its
+   > own literature. Dead feed *and* contested prior: down-weighted twice over.
+   > **§13 STATUS OF THE REST OF THIS ROW IS UNRESOLVED — do not build yet.** Eastmoney
+   > `datacenter-web` is a commercial aggregator with **no stated terms** (decision owed, **R0290**).
+   > Where a first-party exchange route exists, **prefer it**: margin balances are published
+   > directly by SSE (`query.sse.com.cn/marketdata/tradedata/queryMargin.do`, epoch **2010-03-31**,
+   > 16.3y, per-security `rzye/rzmre/rzche/rqyl/rqmcl/rqchl`), SZSE and BSE — statutory public
+   > disclosure, which is far cleaner provenance than an aggregator.
 2. **Liquidation-heatmap / cost-basis reconstruction** — rebuild free from the Coinalyze lead +
    OI/funding already collected; never buy the proprietary (Claw402) feed. Mechanism: clustered
    liquidation prices are pre-committed forced flow; cascade fuel measurable ex-ante.
@@ -1189,3 +1209,23 @@ ratio-to-supply / ratio-to-total metric from any vendor, check the **as-of date 
 separately from the numerator. A `_now` suffix on a field joined to historical events is a silent
 look-ahead in the conditioning variable even when the return series is perfectly clean — and it
 fails in the direction that manufactures a *false null*, which no gate on this desk would catch.
+
+### ⚠ SAME-RUN CORRECTION — I TESTED THE WRONG WINDOW, and external evidence says so
+_Added hours after the screen above, from the parallel Gitee/CN-GitHub dig. Recorded as a correction
+to my own construction rather than quietly folded in._
+Three independent external bodies — **Tokenomist (236 events)**, **Keyrock (16,000+ events)** and a
+**PolyU study of 52 Binance listings** — agree that the unlock drawdown **concentrates in [T−30d, T],
+i.e. BEFORE the unlock date, not after it.** The schedules are public, so the market front-runs them;
+by the unlock date the supply is already priced.
+**Every one of my 27 cells tested a POST-event window (D → D+N).** So the null above is *consistent
+with* the external finding rather than contradicting it — but it is a null about the wrong window,
+and reporting it without this caveat would have understated how much remains untested. My screen
+does not test the hypothesis the outside evidence actually supports.
+**The re-entry condition is amended accordingly:** the pre-registered construction is a **SHORT over
+[T−30d, T]**, conditioned on unlock size vs float and on liquidity — not a short on the unlock date.
+Note this ALSO partly sidesteps defect (1) above: a pre-event window still needs a
+contemporaneous-float denominator, but the *timing* no longer depends on it.
+**A naive short-on-unlock-date should FAIL — and mine did.** That makes the run above a cheap,
+unplanned **positive control on the desk's own wiring**: our panel reproduced the externally-reported
+null in the window where a null is expected. Weak evidence the instrument is sound (L1.25 diagnostic
+step 1), obtained for free.

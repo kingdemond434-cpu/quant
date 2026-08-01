@@ -675,3 +675,31 @@ adaptations: every region seat, and every future principal-supplied or LLM-gener
 counterfactual: HIGH — the block shipped in this seat's own prompt with an explicit warning that it
   might be invented, so every CN run until now either spent budget on noise or skipped the terms
   and left the instrument un-repaired. This closes it permanently for the whole fleet.
+
+### OP-038 a JS anti-bot wall on the HTML is not a wall on the API      [active]
+class: extraction / repo-discovery
+origin: CN frontier miner session 3 (2026-08-01), first real session on the Gitee chain
+validated-gain: unblocked a ground CARRIED AND NEVER STARTED across 3 prior sessions. Gitee HTML is
+  behind a JS shim (`nox_*.js`): WebFetch returns **HTTP 405**, plain curl returns an empty `<body>`,
+  and the API *search* endpoint returns `[]` without a token — four separate signals that all read
+  as "this ground is walled". It is not. Three keyless routes work and carried the whole session.
+technique: when a site's HTML is bot-walled, do NOT record the GROUND as walled — test its API and
+  raw-content routes separately, because they are usually governed by different infrastructure.
+  For Gitee specifically (copy-runnable):
+    gitee.com/api/v5/repos/{owner}/{repo}                              -> metadata incl. LICENCE + fork parent
+    gitee.com/api/v5/repos/{owner}/{repo}/git/trees/{branch}?recursive=1 -> full file tree
+    gitee.com/{owner}/{repo}/raw/{branch}/{path}   (curl -sL; 302s without -L) -> raw source text
+  Discovery pattern that composes with it: find repos via a SEARCH ENGINE (they index Gitee fine),
+  then READ them via the API — i.e. split discovery and retrieval across two different systems
+  rather than abandoning the ground when one of them refuses.
+  NOTE the boundary this does NOT cross (§13): this uses the platform's own public, documented,
+  unauthenticated API. It is not defeating an access control and it never touches a closed group —
+  a login wall, a paid wall or a private repo remains a HARD STOP. Discovery widens WHERE you look,
+  never HOW you get in.
+adaptations: universal. Any bot-walled host — check `/api/`, `/raw/`, `?format=json`, an RSS/Atom
+  feed, a sitemap, or the mobile endpoint before grading it WALLED. KR/JP/RU/CN portals commonly
+  serve clean JSON behind a JS-rendered front. Pair with OP-030 (a zero is a claim about your
+  method) and the §9 rule that a negative result is about the ROUTE, never the CAPABILITY.
+counterfactual: HIGH — this ground had been deferred three sessions running and would plausibly have
+  been graded "Gitee is walled from this VPS", which is exactly the false-exhaustion class OP-037
+  describes, arrived at by a different door.

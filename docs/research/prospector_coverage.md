@@ -11,7 +11,7 @@ _Seeded 2026-07-18; every family unvisited -- the first run biases per the rotat
 | Code (GitHub/Kaggle) | 2026-07-19 | 1 | operator-named dig: ai_quant_trade, Qbot, QuantDinger, Vibe-Trading (READMEs+issues) + Hummingbot/Freqtrade issues — all infra/framework shells or equity factor zoos, 0 crypto-perp strategy logic; 0 cards but confirmed funding-arb is now commoditized into hummingbot's v2_funding_rate_arb.py (crowding evidence) |
 | Academic (SSRN/arXiv) | never | 0 | untouched this session (RSRS is sell-side research, not SSRN/arXiv) — priority next run. **2026-08-01: touched only OBLIQUELY — the OLMAR paper (Li & Hoi ICML-2012 #168) was read THROUGH its forum thread, where its author answers questions the paper never addresses. Standing note: for any algorithm with a live practitioner community, the FORUM is a higher-yield read than the paper.** |
 | Records (contests/CTA) | 2026-07-25 | 1 | partial, via forum route: Bitcointalk "Automated Trading Contest" (topic 261086, CryptoTrader.org rounds #1-#5) mined as a contest RECORD — produced the in-sample-vs-forward natural experiment graveyard entry. Kaggle G-Research + Numerai post-mortems still untouched |
-| Non-English forums | 2026-07-26 | 2 | s1 (07-19): Chinese RSRS + funding-arb (CSDN/VeighNa/BigQuant/Zhihu/FMZ) + JP note.com — RSRS EV-killed, ML-funding-rate graveyard-matched. **s2 (07-26, CN frontier miner): axis #76 usdt-cny-otc-premium UN-PARKED — "no clean free API" REFUTED, 3 keyless routes, 591d history reconstructed (OP-031 CDX-replay of a capped JSON API), Stage-A screened 4/4 cells → no promotable edge but the catalogued mechanism's SIGN and MAGNITUDE priors both falsified. New: OP-031, OP-032, CN lexicon.** Era-archaeology (banzhuan/8btc/ChainNode/Tieba) still UNSTARTED — first item next run |
+| Non-English forums | 2026-07-26 | 2 | s1 (07-19): Chinese RSRS + funding-arb (CSDN/VeighNa/BigQuant/Zhihu/FMZ) + JP note.com — RSRS EV-killed, ML-funding-rate graveyard-matched. **s2 (07-26, CN frontier miner): axis #76 usdt-cny-otc-premium UN-PARKED — "no clean free API" REFUTED, 3 keyless routes, 591d history reconstructed (OP-031 CDX-replay of a capped JSON API), Stage-A screened 4/4 cells → no promotable edge but the catalogued mechanism's SIGN and MAGNITUDE priors both falsified. New: OP-031, OP-032, CN lexicon.** Era-archaeology (banzhuan/8btc/ChainNode/Tieba) still UNSTARTED — first item next run. **s3 (2026-08-01): T1 instrument repair — the 7 supplied unverified slang terms negative-controlled, 0/7 survived, 6 with the real form named; +14 verified lexicon rows; OP-036 (evasion slang has a BIRTH DATE — 大饼 born of the 2017-09-04 "94" ban, so the search key is a function of the ERA, and our era ground straddles it), OP-037 (negative-control a supplied glossary), OP-038 (a JS wall on the HTML is not a wall on the API — unblocked the Gitee chain carried 3 sessions). CN OSS tranche: AlphaGPT paper + NOFX "3 mechanisms" both REFUTED, Vibe-Trading crypto layer weaker than ours (honest null). Screened `unlock_events.json` (24,201 events, 0 readers) 0/27 cells → UNMEASURABLE not dead, 2 measurement defects. VERIFIED on live API: a 123-event Binance delisting forced-close panel discarded by a `status=="TRADING"` filter (R0292). R0288–R0293. Era: 8btc thread-44638 mined to reply-depth, CN-side corroboration of the cross-venue-premium kill. DIASPORA ANSWERED: CN discussion migrated into paid/ID-gated enclosures — §13 puts it permanently out of reach, so the open CN layer worth mining is repos + era archives + platform 文库, NOT live community.** |
 | AI/HF documentation | 2026-07-19 | 1 | touched only incidentally via Vibe-Trading (AI trading-agent platform) + ai_quant_trade (LLM module) — both infra, not alpha-discovery-process documentation; weak coverage, revisit properly next run |
 
 ## COVERAGE REALITY vs DIRECTIVE (honesty record, 2026-07-20)
@@ -1007,6 +1007,96 @@ is episodic and barrier-scaled, from primary era text.
    the euphemism was not born until 2017-09. n=1, so this is corroboration, not proof, and it is
    labelled as such.
 
+#### ITEM 3 — CLOSED. Gitee / CN-GitHub chain: the §37 silent-carry defect is DISCHARGED, and the wall was never real. [§33: wired -> OP-038 + R0292/R0293]
+Carried and never started across **3 sessions** — named as a defect in this run's header, so the
+first duty was to find out *why*. **The answer is that it looked walled and was not.** Gitee HTML sits
+behind a JS anti-bot shim: WebFetch → **HTTP 405**, curl → empty `<body>`, and the API *search*
+endpoint returns `[]` without a token. Four independent signals all reading "walled". Three keyless
+routes work fine (metadata+licence, recursive file tree, raw source) and carried the entire session
+— written up as **OP-038**, because the general lesson is that *a JS wall on the HTML is not a wall
+on the API*, and grading a ground WALLED on the HTML alone is OP-037's false-exhaustion by another
+door. §13 boundary explicitly held: these are the platform's own public unauthenticated endpoints;
+no access control was crossed and no closed group entered.
+
+**BEST FIND — VERIFIED MYSELF AGAINST THE LIVE API, and it is on a venue we actually trade (R0292).**
+`fapi/v1/exchangeInfo` carries **123 PERPETUAL symbols with a real `deliveryDate`** (≠ sentinel
+`4133404800000`), **all `status=SETTLING`**, spanning **2022-06-17 → 2026-07-02** — by year 2022:3,
+2024:21, 2025:45, **2026:54**, an accelerating ~1/week. `run_listing_watch.py:33` filters
+`status == "TRADING"`, so **0 of 123 survive**; delistings are caught only as a set-difference *after*
+the symbol vanishes, and `deliveryDate` is discarded. `grep deliveryDate` across `scripts/`+`libs/`
+= **ZERO hits over 11 `exchangeInfo` consumers.**
+So a complete **123-event delisting forced-close panel with exact settlement timestamps is
+retroactively buildable TODAY from one keyless call we already make daily** — no new feed, no §13
+question, no collector to build. The source claimed it needed *forward* collection; that is refuted —
+Binance retains delisted contracts in the live payload. **Same defect class as the `min_len`
+truncation and `limit=30`: the data was already inside a payload we fetch, and a filter threw it away.**
+Mechanism: delisting forces every holder to close by a hard published deadline. Test *three* separate
+hypotheses (initial impulse / drift to settlement / rebound) — they may carry opposite signs, since
+some tokens fully recover within 24h. **Caution recorded:** delisting candidates are by construction
+the illiquid cohort our execution layer handles worst — the two execution-denylisted symbols are
+exactly this type — so any edge must be net of a real slippage model.
+
+**SECOND DEFECT (R0293) — funding-clamp saturation is unrepresented anywhere on the desk.** OKX
+publishes per-instrument `minFundingRate`/`maxFundingRate` via `priapi/v5/public/funding-rate-all`
+(**521 instruments in one keyless call**; the documented per-`instId` route we use at
+`run_cost_hunt.py:111` does **not** return these fields). The clamps are **three-tiered, not
+constant**: ±0.375% (2), ±0.75% (17), **±1.0% (502)**. `collect_tail_funding_divergence.py` studies
+funding gaps **on the thin tail** — precisely the cohort pinned at the ±1.0% cap — and there is
+**zero** clamp handling anywhere in `scripts/` or `libs/`. A **censored** funding print read as an
+extreme signal is a measurement error, not an edge, and a constant-threshold "extreme funding" rule
+mis-classifies 502 of 521 instruments. Saturation is also a candidate *regime flag* in its own right:
+pinned funding can no longer pull perp to index, so the basis must close via spot flow or forced
+deleveraging instead.
+
+**NEW DATA AXES (verified live, keyless) — HTX is absent from every desk collector:**
+`api.hbdm.com/linear-swap-api/v1/swap_batch_funding_rate` returns **all USDT-M symbols in one call**;
+`swap_historical_funding_rate` gives **6,330 rows / 5.78y** (USDT-M, epoch 2020-10-21) and **6,960
+rows / 6.35y** (coin-M). Gate is likewise absent (`api.gateio.ws/api/v4/futures/usdt/tickers`, all
+perps + indicative funding; history capped at ~30d, `limit=1000` silently ignored).
+**CFFEX named-broker position rankings** (`cffex.com.cn/sj/ccpm/...csv`, GBK, epoch **2010-04-16**,
+16.3y, all 7 products): daily **named-firm long AND short open interest** — no Western venue
+publishes this (CFTC COT is weekly and category-level). Genuinely moat-class, though not our market.
+
+**FACTOR CONSTRUCTION WORTH CARRYING (mechanism + transferable):** 筹码分布 / chip-distribution
+cost-basis reconstruction, algorithm extracted from `akshare` (MIT): 120-day window, 150 price bins,
+each day deposits a triangular kernel around `(O+H+L+C)/4` scaled by turnover, decaying the prior
+distribution by `(1 − turnoverRate)`. **It is not a feed — it is computed from OHLCV alone**, so it
+reconstructs a cost-basis distribution for **every CEX-only altcoin perp where on-chain URPD does not
+exist**. Mechanism: disposition effect — holders trapped just above spot are the supply overhang.
+*Caveat this desk must apply to itself:* the disposition effect is a BEHAVIOURAL pattern, not a
+forced flow — nobody is compelled — so it owes the gauntlet like anything else and must not be
+carded as forced-supply.
+
+**HONEST NULLS, and they are most of the ground:** `tianx123/FMZ-strategies` — 573 files, **25%
+literally named for the refuted class** (MACD/RSI/KDJ/Bollinger/Donchian/Dual Thrust/海龟/网格×6/
+马丁格尔×3); its forks are **mirrors, not diverged** (same dead tree, no added code).
+`hugo2046/QuantsPlaybook` (5.7k★) — **~90% refuted-class**, incl. RSRS which this desk already
+EV-killed. `insoteam/samaritan` — MIT and clean, but its entire venue list (BTCC, CHBTC, OKCoin.cn,
+Poloniex, Huobi-legacy) is 2017-era and **dead**. FMZ `GetData("SPOTPRICE"/"BASIS")` is
+**platform-internal only**, not a fetchable endpoint. **ECOLOGY SHIFT:** `yutiansut.com` is fully
+dead (HTTP 000), which silently breaks QUANTAXIS's `QATdx/QAThs/QAQAWEB` symbol-list fetchers —
+do not build on them.
+
+**LICENCE GATE — HARD STOPS RECORDED (§13 is absolute):** `dromara/northstar` and
+`yunjinqi/backtrader` are **GPL-3.0** → read-only, no code lift. `tianx123/FMZ-strategies`,
+`hugo2046/QuantsPlaybook`, `mrkanhai/oskhquant`, `CodeBang01/Ashare` carry **NO LICENCE** → all
+rights reserved by default → **text-mine only, never vendor**. FMZ 文库 articles are © INVENTOR PTE
+LTD. Clear: `akshare` **MIT** (the CN endpoint atlas), `adata` Apache-2.0, `QUANTAXIS` MIT,
+`starquant`/`EliteQuant_R`/`rqalpha` Apache-2.0.
+
+**VENUES — the CN community layer is overwhelmingly WALLED, and that is itself the finding.**
+Seven QQ groups (QUANTAXIS 563280067 / 773602202 / 945822690, VeighNa 262656087), three 知识星球
+(paid: AkShare, northstar, QuantsPlaybook), and multiple WeChat groups/公众号 (QAPRO,
+quantitativeanalysis) — **all recorded as WALLED, none entered**. `discord.gg/mkk5RgN` (QUANTAXIS,
+1,611 members / 14 online — metadata read via the public invite API, not joined): **THIN**.
+`vnpy.com/forum/` is **public and THIN** — 4 boards sampled, ~95% install/API-debug traffic, and the
+entire 价差交易 board is module debugging: a *tooling* community, not a research one.
+`yutiansut.com:3000` (QUANTAXIS CLUB): **DEAD**. `fmz.com` 文库 digests: RICH-ish, and the digests
+are the good part. **The structural read: CN quant's real discussion has migrated into paid and
+identity-gated enclosures (知识星球, QQ, WeChat), which the §13 gate puts permanently out of reach.
+That is a durable constraint on this region, not a gap to be closed — and it means the OPEN CN layer
+worth mining is repos, era archives and platform 文库, not live community.**
+
 ### SESSION CLOSE 2026-08-01 session E (EN frontier miner) — DEPTH LINE, BATTERY, STANDING TEST
 
 **STANDING TEST — "Which artifact on disk is different because of what was mined?"**
@@ -1096,3 +1186,93 @@ captures, 52,187 Quantopian threads, 5,868 mineable Wilmott threads, EliteTrader
 Phynance never touched, Kaggle G-Research and Numerai post-mortems never touched, the Academic
 (SSRN/arXiv) family still never touched directly. The forest is not thin; this seat is bounded
 per-run by design.
+
+### SESSION CLOSE 2026-08-01 session 3 (CN frontier miner) — STANDING TEST, DEPTH, BATTERY, NEXT GROUND
+
+**STANDING TEST — "Which artifact on disk is different because of what was mined?"**
+`search_operator_library.md` (**OP-036/037/038** + **14 verified lexicon rows**), `data_axis_watchlist.md`
+(unlock axis card + its same-run correction + the northbound strike), `data/unlock_event_screen.json`
+(27 cells, now git-tracked via a narrow `!` exception), `cn_oss_extraction_20260731.md` (5 corrections
+at source), `recommendation_ledger.json` (**R0288–R0293**), `rm-20260801T125319-a95125`, and this note.
+**Cycle CONVERTED** — and note what the conversions actually were: **two refutations, one demonstrated
+defect, one null, and one instrument repair.** Not one new alpha. That is the honest shape of it.
+
+**DEPTH LINE (per lead, honest):**
+- **Unverified-slang block: EXHAUSTED** — 7/7 resolved, 6 with the real form named. Depth was the
+  *near-form hunt*: deleting the bad rows would have been half the job; the value was 猴市, 韭菜币,
+  山寨季 and 狗庄 sitting one step away from the garbled terms.
+- **大饼 origin: EXHAUSTED to two independent primary sources** with verbatim text and a date. Surface
+  would have given "big pancake = BTC"; depth gave the **2017-09-04 causal origin**, which is the
+  entire content of OP-036.
+- **`unlock_events.json`: EXHAUSTED as an artifact** — read to its schema, screened 27 cells, and both
+  its defects found. Depth past the screen is what turned "null" into "unmeasurable, and here is
+  precisely why".
+- **8btc thread-44638: EXHAUSTED** (15 posts, reply-chain). The headline is a price gap; the *replies*
+  carry the AML/latency barrier and the episodic character — the surface would have given a number and
+  no mechanism.
+- **8btc era board as a whole: NOT exhausted** — 713 catalogued, ~11 mined, and this run proved the
+  catalogue is **incomplete** (44638 is outside it). No exhaustion claimed.
+- **Gitee/CN-GitHub chain: OPENED, NOT exhausted** — akshare/QuantsPlaybook/FMZ/QUANTAXIS/samaritan
+  read; JoinQuant, BigQuant, RiceQuant, 掘金量化 **untouched behind community logins**.
+- **CN OSS tranche: EXHAUSTED for its three named targets** (AlphaGPT, Vibe-Trading, NOFX) — two
+  refuted, one honest null.
+
+**PROACTIVE BATTERY (moves run; a move that produced nothing is named, never skipped):**
+- **#3 CONFIG-VS-OUTCOME — the run's biggest payout.** Refused to bank R0289 as reasoned-from-source
+  and executed it: the guard reports CLEAN on a feature reading the **final bar of the entire series**.
+  Also refused to bank OP-036 unexercised, which is what produced the era find.
+- **#2 ADJACENCY — ran, bounded null.** Swept for the leakage-guard's shape (checker covering a subset
+  of its input space while reporting PASS on all of it): `validation.py:91` is the only literal
+  instance across `libs/`+`scripts/`. One module, three entry points — not a family. Reported as such.
+- **#9 SCOPE THE NEGATIVE RESULT — three times, and one of them unblocked a 3-session carry.** Gitee
+  405/empty-body/`[]` scoped to "the HTML front is walled", NOT "Gitee is unreachable" → OP-038 and the
+  whole of item 3. Zhihu 403 scoped to the ROUTE (search readable, articles not) → **no paid unlock
+  justified**. Kill-list zeros scoped to the TERM, not the pipeline, via a positive control.
+- **#5 COST INVERSION — paid out twice.** NOFX's two "mechanisms" reduce to one **purchased** endpoint
+  (`claw402`) whose free primary is our own liquidation tape; and the CN margin-balance axis has a
+  **first-party exchange route** (SSE `queryMargin`, 16.3y) behind the ToS-grey Eastmoney aggregator —
+  prefer the exchange, which is both cleaner provenance and free.
+- **#10 RATCHET CHECK — floors that must not fall:** operators 37→**40**; CN lexicon 12→**26** verified
+  rows; era threads mined 11→**12** *and* the era ground proven larger than its 713-thread catalogue;
+  CN OSS tranche targets verified-at-primary-source 3/3.
+- **#4 REGRESSION SWEEP — what this run made worse, stated plainly.** I added **6 rows** (R0288–R0293)
+  to a queue the fence already reports as **REPAIR-MODE: 195 backlog, 54 past due, 291 raised vs 81
+  dispositioned in 7d (ρ≈3.6)**. That is a real cost and I am not hiding it. L1.28b(f) exempts miners
+  and screens-on-discovery from repair-mode throttling *by name*, so the correct response is to say it
+  out loud rather than suppress detection — but three of my six rows are **defects in our own code**
+  (R0289/R0292/R0293), which is the cheapest tier to convert and needs no new feed. Second cost: the
+  unlock axis card now carries a same-run self-correction, so a reader who stops at the screen table
+  gets the wrong window — mitigated by putting the correction *inside* the card, not in a session note.
+- **#1/#6/#7/#8 produced nothing beyond the above this run — reported as such, not skipped.**
+
+**VIDEO-LOCKED:** nothing logged. **No CN video was attempted this run**, so there is no route failure
+to report — and a platform is only logged after a real attempt fails. Honest gap, not a blocker.
+
+**NEXT RUN TAKES FIRST (the chain — do not re-surface-scan the above):**
+1. **The delisting panel (R0292) is the highest-value thing this seat has ever surfaced** — 123 events,
+   exact timestamps, one keyless call, a venue we trade, no §13 question. Build the panel and run the
+   **three separate hypotheses** (impulse / drift-to-settlement / rebound) through the §42 event-study
+   path, net of a real slippage model for the illiquid cohort.
+2. **Re-run the unlock screen on the CORRECTED window** `[T−30d, T]` — the external evidence says the
+   effect lives pre-event and all 27 of my cells tested post-event.
+3. **8btc era board, section by section, with BOTH era keys** (比特币 pre-94, 大饼 post-94, per OP-036)
+   — and **re-catalogue first**, since 44638 proved the 713-thread catalogue incomplete.
+4. **JoinQuant / BigQuant / RiceQuant / 掘金量化 实战 threads** — the only major CN ground this run
+   opened and did not enter.
+
+**SEAT-EXHAUSTION CHECK (L1.35): FALSE, as always.** Named un-exhausted ground at close: ~700 8btc
+era threads plus an under-count of unknown size; four CN quant platforms untouched; CFFEX 16.3y
+named-broker OI never pulled; HTX/Gate funding history catalogued but not ingested; 承兑商 merchant-
+density thread never opened; Xiaohongshu and Gate 广场 (both on the seed list) never visited this run.
+**The ground grew faster than I mined it this session, which is the normal and correct state.**
+
+**STANDING DIASPORA QUESTION — materially advanced, and the answer is uncomfortable.** Previous runs
+asked where CN crypto discussion went after the bans. This run found it: **into paid and
+identity-gated enclosures** — 知识星球 (paid), QQ groups (ID-gated), WeChat groups (friend-add) — with
+the open web layer left as tutorials, refuted-class strategy dumps and marketing. **§13 puts that
+layer permanently out of reach, and that is a structural ceiling on this region, not a gap to close.**
+The operative consequence: **the open CN layer worth mining is repos, era archives and platform 文库
+— not live community.** Next question carried: did the *era* boards (8btc/ChainNode) preserve the
+pre-enclosure discussion that is now walled? If so, era-archaeology is not merely one CN deliverable
+— it is the **only** route to CN practitioner discussion at depth, which would sharply raise its
+priority relative to living-web digging.
