@@ -506,11 +506,11 @@
    "summary": "MATRIX-WINDOW POWER FIX (5.9x, measured): orchestrator.py:165 truncates the campaign matrix to the SHORTEST candidate (min_len), so T=310 against a median candidate length of 2134 -- 130,200 of 759,444 observations (83%) discarded from the multiplicity statistic that is now the SOLE remaining blocker. Measured in reports/matrix_window_measurement.json: min_len T=310/N=420 -> min adj_p 0.5220; retained-obs-maximising T=2109/N=266 -> min adj_p 0.0890. Free power from data already on disk. PHANTOM-EDGE CRITICAL and promotion-LOOSENING: dropping short candidates SHRINKS the multiplicity family, so the retained-N must be reported beside every verdict and R0017's positive control must work first. Note honestly: rejected=0 at every window, so this alone will NOT produce a survivor.",
    "roi_bps": null,
    "raised": "2026-07-30T02:31:04.652044+00:00",
-   "status": "scheduled",
+   "status": "implemented",
    "reason": null,
-   "commit": null,
+   "commit": "e49648c",
    "due": null,
-   "disposed": "2026-08-01T09:18:07.952283+00:00"
+   "disposed": "2026-08-01T09:18:41.292619+00:00"
   },
   {
    "id": "R0042",

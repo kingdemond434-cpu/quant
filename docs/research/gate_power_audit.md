@@ -208,7 +208,7 @@ still controls FWER at 5%, and every economic gate is unchanged. Pinned by
   No threshold moved. The 112 candidates no stratum supports are recorded as **untested**, never
   as rejected — filing a data-availability exclusion under a statistical mechanism of death would
   corrupt the family survival statistics that steer future search. Two consequences worth
-  carrying: the **nine sibling campaign builders still truncate** (R0261 — `certify_gauntlet.py`
+  carrying: the **nine sibling campaign builders still truncate** (R0271 — `certify_gauntlet.py`
   most sharply, since it certifies the gate on a matrix the production path no longer uses), and
   Romano-Wolf's bootstrap now does ~5× the work (R0263).
 - Top-K ranked screen (§6) — still open, and now the largest remaining lever (R0262).
