@@ -79,6 +79,15 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from libs.research.conversion_max import (
+    assemble as assemble_conversion,
+)
+from libs.research.conversion_max import (
+    duplicate_of,
+    open_titles,
+    pressure_block,
+)
+
 _ROOT = Path(__file__).resolve().parents[2]
 LEDGER = _ROOT / "docs" / "research" / "cro_recommendations.jsonl"
 
@@ -369,6 +378,7 @@ def assemble_dossier(root: Path | None = None) -> dict[str, Any]:
     # classes and its own last recommendations gives it something it can actually be wrong about.
     return {"present": present, "missing": missing, "inventory": inv,
             "self": {"scorecard": scorecard(), "recent": _recent_own(base)},
+            "conversion": assemble_conversion(base),
             "coverage": {"read_in_full": len(present), "inventoried": len(inv),
                          "artifacts_found": n_total,
                          "truncated": max(0, n_total - len(inv))},
@@ -475,6 +485,8 @@ def build_prompt(dossier: dict[str, Any], *, n: int = 12) -> str:
     cov = dossier.get("coverage") or {}
     inv = json.dumps(dossier.get("inventory") or [], default=str)
     own = json.dumps(dossier.get("self") or {}, default=str)[:8000]
+    conv = dossier.get("conversion")
+    conv_block = pressure_block(conv) if conv is not None else ""
     inv_block = f"""
 =============================== FULL DESK INVENTORY ===============================
 Every other artifact on this desk, NOT read in full above -- path, size, age in days, and shape.
@@ -560,6 +572,7 @@ MUST cite a specific number from the desk state or the measured findings above -
 will be rejected by a code check. If something is a guess, label it `speculation` and say so; that
 is a respected answer here and mislabelling is the only dishonesty this contract can catch.
 
+{conv_block}
 ======================================= OUTPUT =======================================
 Return EXACTLY {n} recommendations as a JSON array and nothing else -- no prose before or after.
 Cover a SPREAD of the twelve deliverables rather than {n} of one kind; a cycle of twelve alpha
@@ -590,14 +603,23 @@ comprehensive. A recommendation that cannot be proven wrong is worth nothing her
 
 # -------------------------------------------------------------------------------------- parsing
 
-def parse(raw: str) -> CROResult:
-    """Strict parse. Every rejection carries its reason; nothing is repaired or guessed at."""
+def parse(raw: str, *, known_open: set[str] | None = None) -> CROResult:
+    """Strict parse. Every rejection carries its reason; nothing is repaired or guessed at.
+
+    `known_open` is the set of normalised titles already OPEN across every conversion family. It
+    defaults to reading them, and it exists because of the pressure this prompt now applies: asked
+    aggressively for twelve recommendations, a model with ten good ones fills the last two by
+    restating what is already in the ledger. That is not conversion, it is noise that INFLATES the
+    very backlog the pressure is attacking -- so it is rejected here rather than trusted to the
+    prompt. Pass an empty set to disable (tests, or a deliberate re-proposal review).
+    """
     accepted: list[Recommendation] = []
     rejected: list[Recommendation] = []
     errors: list[str] = []
     rows, err = _extract_array(raw)
     if err:
         return CROResult(parse_errors=[err], raw_chars=len(raw))
+    known = open_titles() if known_open is None else known_open
     for i, row in enumerate(rows):
         if not isinstance(row, dict):
             errors.append(f"item {i}: not an object")
@@ -612,7 +634,7 @@ def parse(raw: str) -> CROResult:
                                 "evidence_class": rec.evidence_class.lower(),
                                 "confidence": rec.confidence.lower(),
                                 "deliverable": rec.deliverable.lower()})
-        reason = _rejection_reason(rec)
+        reason = _rejection_reason(rec) or _duplicate_reason(rec, known)
         if reason:
             rejected.append(Recommendation(**{**asdict(rec), "rejected_reason": reason}))
         else:
@@ -643,6 +665,16 @@ def _rejection_reason(rec: Recommendation) -> str:
     if rec.evidence_class == "evidence" and not _HAS_NUMBER.search(rec.bottleneck):
         return ("labelled `evidence` but cites no number in its bottleneck. Evidence means a "
                 "measurement; a claim without one is a hypothesis and must say so.")
+    return ""
+
+
+def _duplicate_reason(rec: Recommendation, known: set[str]) -> str:
+    """Re-proposing what is already open is not a recommendation. Under quota pressure it is the
+    single most likely filler, and it makes the backlog worse while reading as productivity."""
+    if known and duplicate_of(rec.title, known):
+        return ("restates a recommendation already OPEN in the ledger. Re-proposing open work is "
+                "not conversion -- it inflates the backlog this cycle is meant to reduce. If it "
+                "is genuinely stuck, recommend the KILL or name the blocking dependency instead.")
     return ""
 
 

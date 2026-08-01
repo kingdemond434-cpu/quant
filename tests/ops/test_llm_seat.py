@@ -178,3 +178,203 @@ def test_a_successful_call_records_its_spend(monkeypatch) -> None:
     text, err = llm_seat.chat("hi")
     assert text == "ok" and err is None
     assert llm_seat.month_spend_usd() == pytest.approx(0.1)
+
+
+# --------------------------------------------------- flagship selection that upgrades itself
+
+def test_the_highest_version_wins_so_upgrades_are_automatic(monkeypatch) -> None:
+    """THE POINT OF PARSING RATHER THAN LISTING. A hardcoded preference list containing `gpt-5`
+    keeps choosing it forever after `gpt-6` ships -- silently, while every status line reads
+    healthy. Same bomb as a pinned model string, with a longer fuse."""
+    today = ["gpt-4o", "gpt-5", "gpt-5-mini", "o3", "babbage-002"]
+    tomorrow = [*today, "gpt-6", "gpt-6-mini", "o5"]
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+    for listing, expect in ((today, "gpt-5"), (tomorrow, "gpt-6")):
+        monkeypatch.setattr(llm_seat, "_get",
+                            lambda *a, _l=listing, **k: ({"data": [{"id": i} for i in _l]}, None))
+        model, err = llm_seat.discover_model(llm_seat.primary_seat())
+        assert (model, err) == (expect, None)
+
+
+def test_cheaper_variants_are_refused_not_merely_ranked_low() -> None:
+    """`mini` and `nano` sort adjacent to the flagship and often carry the SAME version number, so
+    ranking alone would let a gpt-6-mini beat a gpt-5 and quietly shrink the brain."""
+    for bad in ("gpt-5-mini", "gpt-6-nano", "o4-mini", "gpt-4-turbo",
+                "deepseek/deepseek-r1:free", "meta-llama/llama-3-8b-instruct"):
+        assert llm_seat.flagship_rank(bad) is None, bad
+    for good in ("gpt-5", "gpt-6", "openai/gpt-5", "o5", "x-ai/grok-4"):
+        assert llm_seat.flagship_rank(good) is not None, good
+
+
+def test_a_flagship_beats_a_higher_versioned_downgrade(monkeypatch) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+    monkeypatch.setattr(llm_seat, "_get", lambda *a, **k: (
+        {"data": [{"id": i} for i in ("gpt-5", "gpt-9-mini", "gpt-9-nano")]}, None))
+    assert llm_seat.discover_model(llm_seat.primary_seat())[0] == "gpt-5"
+
+
+def test_openrouter_prefixed_ids_are_understood(monkeypatch) -> None:
+    monkeypatch.setenv("OPENROUTER_API_KEY", "or-test")
+    monkeypatch.setattr(llm_seat, "_get", lambda *a, **k: ({"data": [{"id": i} for i in (
+        "openai/gpt-5", "openai/gpt-5-mini", "anthropic/claude-opus-4",
+        "deepseek/deepseek-r1:free")]}, None))
+    assert llm_seat.discover_model(llm_seat.primary_seat())[0] == "openai/gpt-5"
+
+
+def test_the_bare_alias_beats_a_dated_snapshot(monkeypatch) -> None:
+    """The bare name is the provider's stable pointer; decorated ids are snapshots that get
+    retired under you."""
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+    monkeypatch.setattr(llm_seat, "_get", lambda *a, **k: (
+        {"data": [{"id": i} for i in ("gpt-5-2026-04-01", "gpt-5")]}, None))
+    assert llm_seat.discover_model(llm_seat.primary_seat())[0] == "gpt-5"
+
+
+def test_no_flagship_names_what_was_offered(monkeypatch) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+    monkeypatch.setattr(llm_seat, "_get",
+                        lambda *a, **k: ({"data": [{"id": "text-embedding-3-large"}]}, None))
+    model, err = llm_seat.discover_model(llm_seat.primary_seat())
+    assert not model and "text-embedding-3-large" in err
+
+
+# ------------------------------------------------------------------- max effort, degraded safely
+
+def test_max_effort_is_requested_by_default(monkeypatch) -> None:
+    seen: list[dict] = []
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+    monkeypatch.setattr(llm_seat, "discover_model", lambda *a, **k: ("gpt-5", None))
+    monkeypatch.setattr(llm_seat, "_post", lambda u, k, payload, **kw: (
+        seen.append(json.loads(payload)) or
+        ({"choices": [{"message": {"content": "ok"}}], "usage": {"total_tokens": 10}}, None)))
+    llm_seat.chat("hi")
+    assert seen[0]["reasoning_effort"] == llm_seat.DEFAULT_EFFORT == "high"
+
+
+def test_a_provider_that_refuses_effort_still_gets_an_answer(monkeypatch) -> None:
+    """A seat going dark because it asked for too much thinking would be a self-inflicted outage."""
+    calls: list[dict] = []
+
+    def post(u, k, payload, **kw):
+        body = json.loads(payload)
+        calls.append(body)
+        if "reasoning_effort" in body:
+            return {}, "HTTP 400: Unsupported parameter: 'reasoning_effort'"
+        return {"choices": [{"message": {"content": "ok"}}], "usage": {"total_tokens": 10}}, None
+
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+    monkeypatch.setattr(llm_seat, "discover_model", lambda *a, **k: ("gpt-5", None))
+    monkeypatch.setattr(llm_seat, "_post", post)
+    text, err = llm_seat.chat("hi")
+    assert (text, err) == ("ok", None)
+    assert len(calls) == 2 and "reasoning_effort" not in calls[-1]
+
+
+def test_the_token_cap_is_renamed_rather_than_dropped(monkeypatch) -> None:
+    """Losing the cap entirely would let one call run away against a metered API."""
+    calls: list[dict] = []
+
+    def post(u, k, payload, **kw):
+        body = json.loads(payload)
+        calls.append(body)
+        if "max_completion_tokens" in body:
+            return {}, "HTTP 400: Unsupported parameter: 'max_completion_tokens', use 'max_tokens'"
+        return {"choices": [{"message": {"content": "ok"}}], "usage": {"total_tokens": 10}}, None
+
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+    monkeypatch.setattr(llm_seat, "discover_model", lambda *a, **k: ("gpt-5", None))
+    monkeypatch.setattr(llm_seat, "_post", post)
+    assert llm_seat.chat("hi", max_tokens=1234)[0] == "ok"
+    assert calls[-1]["max_tokens"] == 1234
+
+
+def test_a_400_that_dropping_cannot_fix_is_surfaced(monkeypatch) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+    monkeypatch.setattr(llm_seat, "discover_model", lambda *a, **k: ("gpt-5", None))
+    monkeypatch.setattr(llm_seat, "_post",
+                        lambda *a, **k: ({}, "HTTP 400: model not available in your region"))
+    _, err = llm_seat.chat("hi")
+    assert "region" in err
+
+
+def test_a_dated_snapshot_never_outranks_its_own_stable_alias() -> None:
+    """`gpt-5-2026-04-01` parsed as minor version 2026 and beat `gpt-5`. Snapshots get retired
+    under you; the bare alias does not, so a hyphen-plus-digits is a DATE and only a dot
+    introduces a minor version."""
+    assert llm_seat.flagship_rank("gpt-5")[:2] >= llm_seat.flagship_rank("gpt-5-2026-04-01")[:2]
+    assert llm_seat.flagship_rank("gpt-5.1")[:2] > llm_seat.flagship_rank("gpt-5")[:2]
+
+
+def test_there_is_no_version_ceiling(monkeypatch) -> None:
+    """"Not just to gpt6 then never." The version is parsed, so there is no upper bound to reach."""
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+    for listing, expect in ((["gpt-5", "gpt-7"], "gpt-7"),
+                            (["gpt-7", "gpt-12"], "gpt-12"),
+                            (["gpt-12", "gpt-40"], "gpt-40")):
+        monkeypatch.setattr(llm_seat, "_get",
+                            lambda *a, _l=listing, **k: ({"data": [{"id": i} for i in _l]}, None))
+        assert llm_seat.discover_model(llm_seat.primary_seat())[0] == expect
+
+
+def test_a_brand_new_family_is_still_discovered(monkeypatch) -> None:
+    """The version has no ceiling, but the FAMILY list is still a list -- and a new family under a
+    new name would match nothing and be invisible forever. That is the same 'then never' failure
+    one level up, and it is the one that bites when the landscape actually moves."""
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+    monkeypatch.setattr(llm_seat, "_get", lambda *a, **k: (
+        {"data": [{"id": i} for i in ("titan-3", "titan-3-mini", "titan-2")]}, None))
+    assert llm_seat.discover_model(llm_seat.primary_seat())[0] == "titan-3"
+
+
+def test_a_known_family_still_wins_over_an_unknown_one(monkeypatch) -> None:
+    """An unrecognised name is weaker evidence than a recognised one -- but 'unrecognised' must
+    not mean 'unusable'."""
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+    monkeypatch.setattr(llm_seat, "_get", lambda *a, **k: (
+        {"data": [{"id": i} for i in ("titan-9", "gpt-5")]}, None))
+    assert llm_seat.discover_model(llm_seat.primary_seat())[0] == "gpt-5"
+
+
+# ------------------------------------------------------- pinned models elsewhere on the desk
+
+def test_a_pin_below_the_flagship_is_reported(monkeypatch) -> None:
+    """THE COVERAGE THIS MODULE DOES NOT OTHERWISE HAVE. Discovery keeps THIS seat current, but
+    eleven other organs read llm_panel.json where every provider carries a hardcoded model. A pin
+    is invisible by construction: the organ runs, returns text, reports success, and quietly
+    executes something superseded -- for years, if nobody looks."""
+    llm_seat.SECRETS.parent.mkdir(parents=True, exist_ok=True)
+    llm_seat.SECRETS.write_text(json.dumps(
+        {"providers": [{"name": "panel", "key": "k", "model": "gpt-4o"}]}), "utf-8")
+    monkeypatch.setattr(llm_seat, "_get", lambda *a, **k: (
+        {"data": [{"id": i} for i in ("gpt-4o", "gpt-5")]}, None))
+    pins = llm_seat.stale_pins()
+    assert len(pins) == 1
+    assert pins[0]["stale"] is True and pins[0]["flagship"] == "gpt-5"
+    assert "PINNED BELOW FLAGSHIP" in pins[0]["note"]
+
+
+def test_a_pin_at_the_flagship_is_not_flagged(monkeypatch) -> None:
+    llm_seat.SECRETS.parent.mkdir(parents=True, exist_ok=True)
+    llm_seat.SECRETS.write_text(json.dumps(
+        {"providers": [{"name": "panel", "key": "k", "model": "gpt-5"}]}), "utf-8")
+    monkeypatch.setattr(llm_seat, "_get", lambda *a, **k: (
+        {"data": [{"id": i} for i in ("gpt-4o", "gpt-5")]}, None))
+    assert llm_seat.stale_pins()[0]["stale"] is False
+
+
+def test_an_unpinned_seat_needs_no_check(monkeypatch) -> None:
+    """Discovery already keeps it current; probing it would spend a request to learn nothing."""
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+    assert llm_seat.stale_pins() == []
+
+
+def test_stale_pins_reach_status(monkeypatch) -> None:
+    """So it lands in front of the CRO and the doctor without anyone remembering to ask."""
+    llm_seat.SECRETS.parent.mkdir(parents=True, exist_ok=True)
+    llm_seat.SECRETS.write_text(json.dumps(
+        {"providers": [{"name": "panel", "key": "k", "model": "gpt-4o"}]}), "utf-8")
+    monkeypatch.setattr(llm_seat, "_get", lambda *a, **k: (
+        {"data": [{"id": i} for i in ("gpt-4o", "gpt-5")]}, None))
+    st = llm_seat.status()
+    assert st["stale_pins"][0]["pinned"] == "gpt-4o"
+    assert st["effort"] == "high"

@@ -23,10 +23,19 @@ now, and it is the cross-family seat: an independent model FAMILY, which is the 
 lever 2. A second Anthropic seat would agree with the first for reasons that have nothing to do
 with the market.
 
-THE MODEL IS DISCOVERED, NOT HARDCODED. A pinned model string is a time bomb: it works until the
-provider retires it, and then every organ fails with an error that reads like an outage. This asks
-the provider what it serves and picks by preference order over what actually came back. Same
-discipline as re-probing a source instead of trusting a recorded status.
+THE FLAGSHIP IS DISCOVERED AND UPGRADES ITSELF. A pinned model string is a time bomb: it works
+until the provider retires it, and then every organ fails with an error that reads like an outage.
+A pinned PREFERENCE LIST is the same bomb with a longer fuse and it is the worse of the two --
+the day `gpt-6` ships, a list containing `gpt-5` keeps choosing the older model forever while
+every status line still reads healthy. So the version number is PARSED out of whatever the
+provider lists and the highest wins, which makes the upgrade automatic and silent in the right
+direction. Cheaper variants (mini, nano, turbo, :free) are refused outright rather than ranked
+low, because they sort adjacent to the flagship and often carry the SAME version number.
+
+EFFORT IS REQUESTED AT MAXIMUM. Four cycles a day against a $20/month cap means the binding
+constraint is the quality of twelve recommendations, never the tokens spent producing them.
+Providers that reject the parameter are retried without it, so asking for more thinking can never
+cost a cycle.
 
 SPEND IS CAPPED AND MEASURED, because this is wired to a daily cadence and a runaway loop against
 a metered API is a real way to lose real money. Every call records its token usage; the month's
@@ -40,6 +49,7 @@ from __future__ import annotations
 import contextlib
 import json
 import os
+import re
 import ssl
 import urllib.error
 import urllib.request
@@ -62,12 +72,61 @@ KEY_ENV_VARS: tuple[tuple[str, str, str], ...] = (
     ("XAI_API_KEY", "xai", "https://api.x.ai/v1"),
 )
 
-#: Preference order for model discovery, matched as SUBSTRINGS against whatever the provider
-#: actually lists. Substrings rather than exact names because provider naming drifts constantly
-#: and an exact match that misses would silently fall through to a weak model.
-MODEL_PREFERENCE: tuple[str, ...] = (
-    "gpt-5", "o4", "gpt-4.1", "o3", "gpt-4o", "deepseek-r", "grok-4", "grok-3",
+#: Flagship families, as VERSION-EXTRACTING patterns rather than a list of names.
+#:
+#: WHY NOT A LIST OF NAMES (principal 2026-08-01: "always maximum flagship models, max effort, and
+#: upgrade in future automatic if better comes"). A hardcoded preference list is pinned to what was
+#: known the day it was written: the day `gpt-6` ships, a list containing `gpt-5` keeps selecting
+#: the older model forever, silently, and the desk reads a healthy green seat while running a
+#: superseded brain. That is the same failure as a pinned model string, one level up.
+#:
+#: So the version is PARSED and the HIGHEST wins. `gpt-6` outranks `gpt-5` the moment the provider
+#: lists it, with no code change and no release note to notice. Families are ordered only to break
+#: ties between equal version numbers.
+_FLAGSHIP_PATTERNS: tuple[tuple[str, str], ...] = (
+    # A minor version is introduced by a DOT only (gpt-4.1, gpt-5.2). A HYPHEN followed by digits
+    # is a dated snapshot -- `gpt-5-2026-04-01` -- and reading that as minor version 2026 made the
+    # snapshot outrank its own stable alias. Snapshots get retired under you; the bare alias does
+    # not, so it must win.
+    ("gpt", r"(?:^|/)gpt-(\d+)(?:\.(\d+))?"),         # gpt-5, gpt-5.1, gpt-6, gpt-12 ...
+    ("o", r"(?:^|/)o(\d+)(?:\.(\d+))?\b"),            # o3, o4, o5 ...
+    ("grok", r"(?:^|/)grok-(\d+)(?:\.(\d+))?"),
+    ("deepseek", r"(?:^|/)deepseek-r(\d+)(?:\.(\d+))?"),
+    ("claude", r"(?:^|/)claude-[a-z]*-?(\d+)(?:\.(\d+))?"),
 )
+
+#: LAST-RESORT FAMILY MATCH: any `name-<version>` id at all.
+#:
+#: WHY (principal 2026-08-01: "it should always upgrade when new better released, not just to gpt6
+#: then never"). Parsing the version number already makes gpt-7, gpt-12 and beyond automatic --
+#: there is no ceiling. But the FAMILY list is still a list, and a genuinely new family under a new
+#: name would match nothing and be invisible forever. That is the same "then never" failure one
+#: level up, and it is the one that actually bites when the landscape moves.
+#:
+#: So when no KNOWN family is present, any versioned non-downgrade id becomes a candidate. Known
+#: families still win outright when they exist, because an unrecognised name is weaker evidence
+#: than a recognised one -- but "unrecognised" can no longer mean "unusable".
+_GENERIC_PATTERN = r"(?:^|/)([a-z][a-z0-9]*)[-_]?v?(\d+)(?:\.(\d+))?"
+
+#: Tie-break order between families at the same version number. GPT first because the principal
+#: seated GPT specifically; the rest exist so a provider without it still yields a flagship.
+_FAMILY_RANK = {name: i for i, (name, _) in enumerate(_FLAGSHIP_PATTERNS)}
+
+#: Tokens that mark a CHEAPER, SMALLER or OLDER variant. A model id carrying any of these is not
+#: the flagship, and picking one would quietly downgrade the seat while every status line still
+#: read healthy. `mini` and `nano` are the dangerous ones: they sort adjacent to the flagship and
+#: often carry the same version number.
+_DOWNGRADE_TOKENS: tuple[str, ...] = (
+    "mini", "nano", "small", "lite", "tiny", "turbo", "instruct", "preview", "legacy",
+    ":free", "-free", "8b", "7b", "3b", "flash", "haiku", "distill", "base", "audio",
+    "realtime", "transcribe", "tts", "image", "search", "embedding", "moderation", "codex",
+)
+
+#: Reasoning effort requested. MAX BY DEFAULT: this seat runs four times a day against a $20/month
+#: cap, so the binding constraint is the quality of twelve recommendations rather than the token
+#: cost of producing them. Providers that reject the parameter are retried without it -- see
+#: `chat` -- so requesting it can never cost a cycle.
+DEFAULT_EFFORT = "high"
 
 #: Hard monthly ceiling in USD. Deliberately low: this is wired to a daily cadence, and the cost
 #: of an over-cautious cap is a deferred run while the cost of no cap is unbounded. Raise it
@@ -143,13 +202,41 @@ def primary_seat() -> Seat | None:
     return got[0] if got else None
 
 
+def flagship_rank(model_id: str) -> tuple[int, int, int, int] | None:
+    """Rank a model id as a flagship candidate, or None if it is not one.
+
+    Higher sorts better. The version number dominates, which is what makes the upgrade AUTOMATIC:
+    when a provider lists `gpt-6`, it outranks every `gpt-5` immediately, with no code change.
+    Downgrade-marked ids (mini, nano, turbo, :free ...) are rejected outright rather than ranked
+    low -- they sort adjacent to the flagship and often carry the SAME version number, so ranking
+    alone would let a `gpt-6-mini` beat a `gpt-5` and quietly shrink the brain.
+    """
+    low = model_id.lower()
+    if any(tok in low for tok in _DOWNGRADE_TOKENS):
+        return None
+    for family, pat in _FLAGSHIP_PATTERNS:
+        m = re.search(pat, low)
+        if not m:
+            continue
+        major = int(m.group(1))
+        minor = int(m.group(2)) if m.lastindex and m.lastindex >= 2 and m.group(2) else 0
+        # Shorter id wins at equal version: the bare alias (`gpt-5`) is the provider's stable
+        # pointer, while decorated ids are dated snapshots that get retired under you.
+        return (major, minor, -_FAMILY_RANK[family], -len(low))
+    return None
+
+
 def discover_model(seat: Seat, *, timeout: float = 20.0) -> tuple[str, str | None]:
-    """Ask the provider what it serves and pick by preference. Returns (model, error).
+    """Ask the provider what it serves and pick the HIGHEST-VERSION FLAGSHIP. Returns (model, err).
 
     A PINNED MODEL STRING IS A TIME BOMB. It works until the provider retires it and then every
-    organ fails with something that reads like an outage rather than like a rename. An explicit
-    `<NAME>_MODEL` environment variable still wins -- discovery is the default, not a override of
-    the principal's choice.
+    organ fails with something that reads like an outage rather than like a rename. A pinned
+    PREFERENCE LIST is the same bomb with a longer fuse: the day `gpt-6` ships, a list containing
+    `gpt-5` keeps choosing the older model forever while every status line still reads healthy.
+    Parsing the version and taking the maximum makes the upgrade automatic.
+
+    An explicit `<NAME>_MODEL` environment variable still wins -- discovery is the default, never
+    an override of the principal's choice.
     """
     if seat.model:
         return seat.model, None
@@ -160,14 +247,31 @@ def discover_model(seat: Seat, *, timeout: float = 20.0) -> tuple[str, str | Non
     ids = [i for i in ids if i]
     if not ids:
         return "", "provider listed no models"
-    for want in MODEL_PREFERENCE:
-        hits = sorted(i for i in ids if want in i)
-        if hits:
-            # Shortest match wins: "gpt-5" over "gpt-5-chat-latest-preview-0613". The bare name is
-            # the provider's stable alias; the decorated ones are snapshots that get retired.
-            return min(hits, key=len), None
-    return "", (f"none of {MODEL_PREFERENCE} found among {len(ids)} listed models "
-                f"(e.g. {', '.join(ids[:5])}) -- set <PROVIDER>_MODEL explicitly")
+    ranked = [(r, i) for i in ids if (r := flagship_rank(i)) is not None]
+    if ranked:
+        return max(ranked)[1], None
+    # No KNOWN family present. Rather than going dark on a provider serving something new, fall
+    # back to any versioned non-downgrade id -- an unrecognised name is weaker evidence than a
+    # recognised one, but it must not mean unusable.
+    generic = [(g, i) for i in ids if (g := _generic_rank(i)) is not None]
+    if generic:
+        return max(generic)[1], None
+    return "", (f"no flagship model found among {len(ids)} listed "
+                f"(e.g. {', '.join(sorted(ids)[:5])}) -- every candidate carried a downgrade "
+                f"marker {_DOWNGRADE_TOKENS[:6]}... or carried no version at all. Set "
+                "<PROVIDER>_MODEL explicitly.")
+
+
+def _generic_rank(model_id: str) -> tuple[int, int, int] | None:
+    low = model_id.lower()
+    if any(tok in low for tok in _DOWNGRADE_TOKENS):
+        return None
+    m = re.search(_GENERIC_PATTERN, low)
+    if not m:
+        return None
+    return (int(m.group(2)), int(m.group(3) or 0), -len(low))
+
+
 
 
 def month_spend_usd(now: datetime | None = None) -> float:
@@ -198,9 +302,17 @@ def monthly_cap_usd() -> float:
 
 def chat(
     prompt: str, *, system: str = "", seat: Seat | None = None, max_tokens: int = 8000,
-    timeout: float = 240.0, temperature: float = 0.4,
+    timeout: float = 240.0, temperature: float = 0.4, effort: str = DEFAULT_EFFORT,
 ) -> tuple[str, str | None]:
-    """One completion. Returns (text, error) -- NEVER raises, so a cadenced organ survives it.
+    """One completion at MAXIMUM reasoning effort. Returns (text, error) -- NEVER raises, so a
+    cadenced organ survives it.
+
+    EFFORT IS REQUESTED HIGH AND DEGRADED ONLY IF REFUSED. The seat runs four times a day against
+    a $20/month cap, so the binding constraint is the quality of twelve recommendations rather
+    than the tokens spent producing them -- there is no version of this where thinking less is the
+    right trade. Providers differ on which parameters they accept, so a 400 naming a parameter is
+    retried with the offending one dropped rather than surfaced as a failure: a seat that goes
+    dark because it asked for too much thinking would be a self-inflicted outage.
 
     The cap is checked BEFORE the call, not after. Checking after is how run_external_panel
     discovered exhaustion mid-run with nothing to show for the spend.
@@ -221,10 +333,12 @@ def chat(
     if system:
         msgs.append({"role": "system", "content": system})
     msgs.append({"role": "user", "content": prompt})
-    payload = json.dumps({"model": model, "messages": msgs,
-                          "max_completion_tokens": int(max_tokens),
-                          "temperature": float(temperature)}).encode()
-    body, err = _post(f"{s.base_url}/chat/completions", s.key, payload, timeout=timeout)
+    req: dict[str, Any] = {"model": model, "messages": msgs,
+                           "max_completion_tokens": int(max_tokens),
+                           "temperature": float(temperature)}
+    if effort:
+        req["reasoning_effort"] = effort
+    body, err = _post_with_degrade(f"{s.base_url}/chat/completions", s.key, req, timeout=timeout)
     if err:
         return "", err
     try:
@@ -233,6 +347,46 @@ def chat(
         return "", f"unparseable response: {json.dumps(body)[:200]}"
     _record_spend(s, model, body.get("usage") or {})
     return text, None
+
+
+def stale_pins(*, timeout: float = 20.0) -> list[dict[str, Any]]:
+    """Every seat PINNED to a model below the provider's current flagship.
+
+    WHY THIS EXISTS AND WHY IT COVERS MORE THAN THIS MODULE (principal 2026-08-01: "this goes for
+    every single llm related to our quant, all panels etc, kimi, you all"). Discovery keeps THIS
+    seat current automatically, but the desk's other eleven model organs read
+    `data/secrets/llm_panel.json`, and every provider entry there carries a hardcoded `model`
+    string. A pin is invisible by construction: the organ runs, returns text, and reports success
+    while quietly executing a superseded model -- for years, if nobody looks.
+
+    So the pins are CHECKED against what the provider currently serves, and a pin below the
+    flagship is reported as a defect with the replacement named. Reported rather than rewritten:
+    silently editing a credentials file out from under eleven organs is a worse failure than a
+    stale pin, and a pin may be deliberate (a cost decision, a capability the flagship lost).
+    `status()` surfaces this, so it reaches the CRO and the doctor without anyone remembering to
+    ask.
+    """
+    out: list[dict[str, Any]] = []
+    for s in seats():
+        if not s.model:
+            continue                      # unpinned: discovery already keeps it current
+        probe = Seat(name=s.name, base_url=s.base_url, key=s.key, model="", source=s.source)
+        best, err = discover_model(probe, timeout=timeout)
+        if err or not best:
+            out.append({"seat": s.name, "source": s.source, "pinned": s.model,
+                        "flagship": None, "stale": None, "error": err})
+            continue
+        # Either ranker may answer; only the leading (major, minor) pair is compared, so the
+        # differing tuple widths never meet.
+        pinned_rank: tuple[int, ...] | None = flagship_rank(s.model) or _generic_rank(s.model)
+        best_rank: tuple[int, ...] | None = flagship_rank(best) or _generic_rank(best)
+        stale = bool(best_rank and (pinned_rank is None or best_rank[:2] > pinned_rank[:2]))
+        out.append({"seat": s.name, "source": s.source, "pinned": s.model, "flagship": best,
+                    "stale": stale,
+                    "note": (f"PINNED BELOW FLAGSHIP: {s.model} -> {best}. Either update the pin "
+                             "or clear the `model` field so discovery keeps it current."
+                             if stale else "")})
+    return out
 
 
 def status() -> dict[str, Any]:
@@ -257,6 +411,13 @@ def status() -> dict[str, Any]:
     out["primary"] = got[0].name
     out["primary_model"] = model or None
     out["primary_error"] = err
+    out["effort"] = DEFAULT_EFFORT
+    # Stale pins reach the CRO and the doctor without anyone remembering to ask. A pinned model is
+    # invisible by construction: the organ runs, returns text, and reports success while quietly
+    # executing something superseded.
+    pins = [p for p in stale_pins() if p.get("stale")]
+    if pins:
+        out["stale_pins"] = pins
     return out
 
 
@@ -270,6 +431,41 @@ def _headers(key: str) -> dict[str, str]:
 def _get(url: str, key: str, *, timeout: float) -> tuple[dict[str, Any], str | None]:
     req = urllib.request.Request(url, headers=_headers(key))
     return _send(req, timeout)
+
+
+#: Parameters that a provider may reject, in the order they are given up. Effort goes LAST because
+#: it is the one the principal asked for; temperature and the token-cap spelling go first because
+#: their defaults are harmless.
+_DEGRADABLE = ("temperature", "max_completion_tokens", "reasoning_effort")
+
+
+def _post_with_degrade(url: str, key: str, req: dict[str, Any], *, timeout: float
+                       ) -> tuple[dict[str, Any], str | None]:
+    """POST, and if the provider rejects a parameter by name, drop that one and retry.
+
+    WHY THIS EXISTS RATHER THAN A PER-PROVIDER PARAMETER TABLE. Providers differ on which
+    parameters they accept and change it without notice; a table encodes today's answer and rots.
+    Reading the rejection is self-correcting -- the provider names the parameter it refused in the
+    400 body, which is exactly why `_send` carries the body into the error string.
+
+    `max_completion_tokens` is retried as `max_tokens`, because that rename is the single most
+    common 400 across OpenAI-compatible endpoints and losing the cap entirely would let one call
+    run away against a metered API.
+    """
+    attempt = dict(req)
+    for _ in range(len(_DEGRADABLE) + 1):
+        body, err = _post(url, key, json.dumps(attempt).encode(), timeout=timeout)
+        if err is None or not err.startswith("HTTP 400"):
+            return body, err
+        low = err.lower()
+        if "max_completion_tokens" in low and "max_tokens" not in attempt:
+            attempt["max_tokens"] = attempt.pop("max_completion_tokens", max(1, 8000))
+            continue
+        dropped = next((p for p in _DEGRADABLE if p in attempt and p.lower() in low), None)
+        if dropped is None:
+            return body, err            # a 400 about something we cannot fix by dropping
+        attempt.pop(dropped)
+    return {}, "exhausted parameter degradation without a successful call"
 
 
 def _post(url: str, key: str, payload: bytes, *, timeout: float
