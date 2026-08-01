@@ -52,6 +52,11 @@ BENCHMARK_N = 101
 #: correlation is biased UPWARD. Reported rather than silently tolerated.
 _MIN_OBS_PER_SERIES = 3
 
+#: Smallest random-subset correlation that can serve as the denominator of an amplification ratio.
+#: Below this the baseline is noise and the ratio is uninterpretable -- see
+#: `selection_amplification`.
+_MIN_RATIO_BASE = 0.02
+
 
 @dataclass(frozen=True)
 class Independence:
@@ -168,3 +173,149 @@ def measure(returns: np.ndarray) -> Independence:
 
     return Independence(int(n), int(n_obs), mean_corr, float(np.median(pair)), n_eff,
                         bench, float(mean_corr / BENCHMARK_MEAN_CORR), bool(noisy), verdict)
+
+
+# ---------------------------------------------------------------- selection amplifies correlation
+
+@dataclass(frozen=True)
+class SelectionEffect:
+    n_pool: int
+    n_selected: int
+    pool_corr: float
+    selected_corr: float
+    random_subset_corr: float
+    amplification: float
+    p_value: float
+    n_eff_pool: float
+    n_eff_selected: float
+    verdict: str
+
+    def summary(self) -> str:
+        return (f"pool {self.n_pool} @ corr {self.pool_corr:.3f} ({self.n_eff_pool:.1f} bets) "
+                f"-> selected {self.n_selected} @ corr {self.selected_corr:.3f} "
+                f"({self.n_eff_selected:.1f} bets), {self.amplification:.1f}x a random subset, "
+                f"p={self.p_value:.3f} :: {self.verdict}")
+
+
+def selection_amplification(
+    returns: np.ndarray, scores: np.ndarray, *, k: int, n_null: int = 400, seed: int = 0,
+    selected: np.ndarray | None = None,
+) -> SelectionEffect:
+    """Does SELECTING the best candidates make the cohort more correlated? Measure it.
+
+    THE DEFECT THIS CLOSES, and it is a measured one rather than a hypothetical. `measure()` runs
+    on the candidate POOL, and that is the number the desk has been reading. On the 2026-08-01
+    fifty-one-strategy cohort the pool's mean pairwise correlation was 0.08 -- comfortably better
+    than the 0.159 professional benchmark, reading as "these candidates are genuinely distinct".
+    Among the candidates that actually WON it was 0.85. The pool number was true and completely
+    beside the point: nothing trades the pool. The desk allocates to the survivors, and the
+    survivors were one bet wearing eleven costumes.
+
+    WHY SELECTION DOES THIS. Ranking on realised performance over a shared window ranks partly on
+    whatever common factor was paying during that window. Every candidate loading on it is pushed
+    up together, so the top of the ranking fills with the same exposure -- the correlation is not
+    created by the selection, it is CONCENTRATED by it. That is why a pool measurement cannot
+    detect it and why this has to be computed on the admitted set.
+
+    WHY THERE IS A NULL RATHER THAN A THRESHOLD. Correlation measured on k series is noisier than
+    on N, so a selected subset would read as more correlated than the pool sometimes even under
+    perfectly innocent selection, and a fixed threshold would fire on that noise. The null here is
+    RANDOM subsets of the same size k drawn from the same pool: it holds the subset size fixed and
+    varies only whether the choice was informed. The p-value is the fraction of random subsets at
+    least as correlated as the selected one, with the standard +1 correction so a null that never
+    once reaches the observed value reports 1/(n_null+1) rather than an impossible zero.
+
+    `scores` is any per-candidate ranking statistic, higher meaning better -- Sharpe, rank score,
+    whatever the admission actually used. Pass the SAME statistic admission ranked on, or this
+    measures the amplification of a selection nobody made.
+
+    `selected` OVERRIDES scores and k with the literal column indices that were admitted, and is
+    the preferred call from a real gauntlet. Top-k-by-score is a PROXY for what admission did;
+    admission also applies structural blocks, so the set it actually returns is not the top k of
+    anything. Measuring the proxy would answer a question about a portfolio nobody holds.
+    """
+    m = np.asarray(returns, dtype="float64")
+    s = np.asarray(scores, dtype="float64")
+    if m.ndim != 2 or m.shape[1] < 2 or s.shape[0] != m.shape[1]:
+        return _no_selection_effect(int(m.shape[1]) if m.ndim == 2 else 0, k,
+                                    "UNMEASURABLE: need a 2-D matrix and one score per column")
+    live = np.std(m, axis=0) > 0
+    keep = np.flatnonzero(live)
+    m, s = m[:, live], s[live]
+    n = m.shape[1]
+
+    if selected is not None:
+        # Re-index onto the surviving columns, since dead ones were dropped above. An admitted
+        # column that was dead is silently gone rather than shifting every later index by one.
+        remap = {int(o): i for i, o in enumerate(keep)}
+        chosen = np.array(sorted({remap[int(j)] for j in np.asarray(selected).ravel()
+                                  if int(j) in remap}), dtype=int)
+        k = int(chosen.size)
+    else:
+        k = int(min(max(k, 2), n))
+        chosen = np.argsort(-s)[:k]
+
+    if n < 4 or k < 2 or k >= n:
+        return _no_selection_effect(n, k, "UNMEASURABLE: the selected set is the whole pool or "
+                                          "smaller than a pair, so there is nothing for "
+                                          "selection to concentrate")
+
+    c = np.corrcoef(m, rowvar=False)
+    pool_corr = _mean_offdiag(c, np.arange(n))
+    sel_corr = _mean_offdiag(c, chosen)
+
+    rng = np.random.default_rng(seed)
+    null = np.array([_mean_offdiag(c, rng.choice(n, size=k, replace=False))
+                     for _ in range(int(n_null))])
+    null = null[np.isfinite(null)]
+    if not np.isfinite(sel_corr) or null.size == 0:
+        return _no_selection_effect(n, k, "UNMEASURABLE: no finite pairwise correlations")
+
+    rand_corr = float(np.mean(null))
+    p = float((int(np.sum(null >= sel_corr)) + 1) / (null.size + 1))
+    # Ratio against the RANDOM-SUBSET mean, not against the pool: the like-for-like comparison is
+    # a subset of the same size chosen without information, which is what isolates the selection.
+    #
+    # NOT REPORTED WHEN THE BASELINE IS NEAR ZERO, which is not a rounding concern but the same
+    # domain error as the effective_bets upper clamp (see above). A genuinely uncorrelated pool
+    # gives a random-subset correlation of about -0.008, and dividing by that produced
+    # "-8.8x amplification" from data with no structure whatsoever -- a number that reads as a
+    # dramatic finding and means only that the denominator was noise. Below the threshold the
+    # amplification is NaN and the p-value and the two correlation LEVELS carry the answer, which
+    # they can do without a denominator.
+    amp = float(sel_corr / rand_corr) if rand_corr >= _MIN_RATIO_BASE else float("nan")
+
+    if p > 0.10:
+        verdict = ("SELECTION IS NOT CONCENTRATING: the winners are no more correlated than a "
+                   "random subset of the same size. The pool's independence carries over.")
+    elif sel_corr >= 2 * BENCHMARK_MEAN_CORR:
+        verdict = ("SELECTION COLLAPSES THE COHORT: the winners are one bet in many costumes. "
+                   "Size on the SELECTED n_eff, not the pool's -- allocating as though these "
+                   "were independent is the single fastest way to a correlated drawdown.")
+    else:
+        verdict = ("SELECTION CONCENTRATES: the winners are measurably more correlated than "
+                   "chance, so the pool's n_eff overstates the diversification being bought.")
+
+    return SelectionEffect(
+        n_pool=n, n_selected=k, pool_corr=pool_corr, selected_corr=sel_corr,
+        random_subset_corr=rand_corr, amplification=amp, p_value=p,
+        n_eff_pool=effective_bets(n, pool_corr), n_eff_selected=effective_bets(k, sel_corr),
+        verdict=verdict)
+
+
+def _mean_offdiag(c: np.ndarray, idx: np.ndarray) -> float:
+    """Mean off-diagonal correlation of the submatrix on `idx`, reusing the pool's matrix.
+
+    Re-estimating correlations from the subset's own columns would give the same answer at far
+    greater cost -- a pairwise correlation does not depend on which other columns were included.
+    """
+    sub = c[np.ix_(idx, idx)]
+    iu = np.triu_indices(len(idx), k=1)
+    pair = sub[iu]
+    pair = pair[np.isfinite(pair)]
+    return float(np.mean(pair)) if pair.size else float("nan")
+
+
+def _no_selection_effect(n: int, k: int, why: str) -> SelectionEffect:
+    nan = float("nan")
+    return SelectionEffect(n, k, nan, nan, nan, nan, nan, nan, nan, why)

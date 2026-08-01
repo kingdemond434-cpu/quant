@@ -30,6 +30,7 @@ from libs.autodiscovery.generators import GENERATORS, net_returns
 from libs.autodiscovery.models import Family, Hypothesis, MarketSeries
 from libs.autodiscovery.validation import validate
 from libs.data.venue_http import get_json
+from libs.research.cohort_independence import measure, selection_amplification
 from libs.validation.screen_admission import MIN_ADMISSION_BARS, admit
 
 _ROOT = Path(__file__).resolve().parent.parent
@@ -168,6 +169,17 @@ def main(argv: list[str] | None = None) -> int:
     plan = admit(admit_rows, idle_slots=12, cost_basis="net")
     survivors = [r for r in rows if not r["failed_gates"]]
 
+    # IS THE ADMITTED SET ONE BET IN MANY COSTUMES? Measured on the set admission ACTUALLY
+    # returned, not on the candidate pool and not on a top-k proxy. The pool's correlation is the
+    # number this desk has been reading and it is beside the point -- nothing trades the pool. On
+    # the 2026-08-01 fifty-one-strategy cohort the pool sat at 0.08, comfortably better than the
+    # 0.159 professional benchmark, while the candidates that won sat at 0.85.
+    by_name = {r["name"]: i for i, r in enumerate(rows)}
+    admitted_cols = np.array([by_name[a.name] for a in plan.admitted if a.name in by_name],
+                             dtype=int)
+    sel = selection_amplification(matrix, sharpes, k=max(len(admitted_cols), 2),
+                                  selected=admitted_cols if admitted_cols.size else None)
+
     doc = {
         "generated_utc": datetime.now(UTC).isoformat(timespec="seconds").replace("+00:00", "Z"),
         "status": "MEASURED",
@@ -180,6 +192,12 @@ def main(argv: list[str] | None = None) -> int:
         "deaths_by_gate": dict(sorted(deaths.items(), key=lambda kv: -kv[1])),
         "admitted": [{"name": a.name, "rank": a.rank_score} for a in plan.admitted],
         "admission_notes": list(plan.notes),
+        "pool_independence": measure(matrix).summary(),
+        "selection_effect": {"summary": sel.summary(), "pool_corr": sel.pool_corr,
+                             "selected_corr": sel.selected_corr, "p_value": sel.p_value,
+                             "n_eff_pool": sel.n_eff_pool,
+                             "n_eff_selected": sel.n_eff_selected,
+                             "verdict": sel.verdict},
         "top_by_oos": sorted(rows, key=lambda r: -(r["oos_sharpe"] or -9))[:15],
         "survivors": survivors[:40],
     }
@@ -190,6 +208,8 @@ def main(argv: list[str] | None = None) -> int:
         "n_candidates", "n_clearing_every_gate", "deaths_by_gate", "bars_per_symbol")},
         indent=2, default=str))
     print(f"admitted: {[a.name for a in plan.admitted]}")
+    print(f"pool:      {doc['pool_independence']}")
+    print(f"selection: {sel.summary()}")
     print(f"wrote {out}")
     return 0
 
