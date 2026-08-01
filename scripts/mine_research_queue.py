@@ -40,7 +40,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from libs.data import bilibili
+from libs.data import bilibili, cn_sources
 from libs.research.video_triage import SURFACE_THRESHOLD, score_title, triage
 
 _ROOT = Path(__file__).resolve().parent.parent
@@ -162,6 +162,13 @@ BILIBILI_QUERIES = (
     "期货 量化 策略",
 )
 
+CN_ARTICLE_QUERIES = (
+    "量化 回测 陷阱",
+    "量化策略 过拟合",
+    "因子 挖掘 回测",
+    "加密货币 量化 策略",
+)
+
 SEARCH_QUERIES = (
     "quantitative trading backtest python",
     "algorithmic trading strategy tested",
@@ -255,7 +262,17 @@ def main(argv: list[str] | None = None) -> int:
     # times more signal per candidate than a YouTube title alone.
     bili: dict[str, int] = {}
     for kw in BILIBILI_QUERIES:
-        vids, err = bilibili.search(kw)
+        # PAGED. Search returns 20 rows a page and its ranking rotates, so one page re-sampled
+        # often is mostly the same corpus seen again; three pages is depth rather than repetition.
+        vids: list = []
+        err = None
+        for pg in (1, 2, 3):
+            got, e = bilibili.search(kw, page=pg)
+            if e:
+                err = e if not vids else None
+                break
+            vids.extend(got)
+            time.sleep(0.4)
         if err:
             blocked[f"bilibili:{kw}"] = err
             continue
@@ -270,6 +287,27 @@ def main(argv: list[str] | None = None) -> int:
                               "title": v.title[:160], "score": round(s, 1), "url": v.url,
                               "author": v.author, "views": v.views, "why": hits})
         time.sleep(0.5)
+
+    # --- Chinese article sources: Juejin (掘金) and WeChat via Sogou.
+    cn_hits: dict[str, int] = {}
+    for kw in CN_ARTICLE_QUERIES:
+        for name, fn in (("juejin", cn_sources.juejin), ("wechat", cn_sources.sogou_weixin)):
+            arts, e = fn(kw)
+            if e:
+                blocked[f"{name}:{kw}"] = e
+                continue
+            cn_hits[f"{name}:{kw}"] = len(arts)
+            for a in arts:
+                key = f"{a.source}:{a.ident}"
+                all_ids.add(key)
+                if key in seen:
+                    continue
+                s, hits = score_title(a.searchable)
+                if s >= args.threshold:
+                    queue.append({"channel": f"{a.source}:{kw}", "video_id": key,
+                                  "title": a.title[:160], "score": round(s, 1), "url": a.url,
+                                  "author": a.author, "why": hits})
+            time.sleep(0.5)
 
     discovered: dict[str, int] = {}
     for q in SEARCH_QUERIES:
@@ -318,6 +356,8 @@ def main(argv: list[str] | None = None) -> int:
         "channels_scanned": counts,
         "search_discovered": discovered,
         "bilibili_discovered": bili,
+        "cn_article_discovered": cn_hits,
+        "cn_source_probe": cn_sources.probe_all(),
         "channels_blocked": blocked,
         "threshold": args.threshold,
         "n_new_surfaced": len(queue),
