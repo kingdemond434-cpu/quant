@@ -854,11 +854,11 @@
    "summary": "SYNTH0731 P0-1 [DI-1=infraF1=E-7]: de-dup dual scheduler \u2014 migrate legacy-only jobs into ops/crontab.manifest, delete legacy block once, stagger 13-job 08:21 herd, dedup 2x rows since 07-30T23:00 (defi/oi_ls/venue_div), crontab-vs-manifest drift fence. ingest_axes collides 06:40Z daily w/ different args+locks; recorder double-spawn armed against moat",
    "roi_bps": 80.0,
    "raised": "2026-07-31T03:45:44.935428+00:00",
-   "status": "open",
+   "status": "implemented",
    "reason": null,
-   "commit": null,
+   "commit": "52b140a",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-01T15:19:08.020534+00:00"
   },
   {
    "id": "R0071",
@@ -3961,6 +3961,18 @@
    "summary": "SCHEDULER: ops/run_crypto_factory.sh is scheduled TWICE under DIFFERENT locks -- crontab.manifest:643 (30 1 * * *, flock data/.cron_crypto_factory.lock) and :951 (30 3 * * *, flock /tmp/crypto_factory.lock). Two different lock files means mutual exclusion DOES NOT HOLD: if the 01:30 run overruns 2h the 03:30 run starts concurrently against the same factory outputs. Found while fixing R0070's set-vs-multiset fence blindness; NOT one of the duplicates R0070 named (those were 17 exact-duplicate legacy lines, now deleted). Fix: single lock path, or one schedule. The new multiset check cannot catch this -- the two lines differ, so they are two legitimate manifest entries; it needs a same-script-different-lock check.",
    "roi_bps": 40.0,
    "raised": "2026-08-01T15:18:25.434153+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0327",
+   "source": "cycle",
+   "summary": "CI IS RED AT HEAD AND THE CAUSE IS desk-memory-overflow, NOT A CODE CHANGE. tests/test_desk_memory.py::test_graduation_actually_freed_budget and ::test_overflow_is_by_rank_and_stays_a_small_tail both fail because paid-for lessons (blind/capital/wasted cost) are squeezed past the 12000-char budget and reach NO organ while no test enforces them. PROVEN PRE-EXISTING: both still fail with L0054/L0055/L0056 removed from docs/desk_lessons.jsonl (isolation run 2026-08-01T15:3xZ), and max_audit reported desk-memory-overflow with 27 named lessons at 14:46 before any edit this cycle. Marker had ok:true at 10:05, so the break landed in that window from elsewhere. ENABLING CHANGE SHIPPED THIS CYCLE: libs/research/desk_memory._test_exists now resolves CLASS-QUALIFIED refs (file::Class::test), which it never could before -- pytest's standard form and this repo's dominant style -- so graduation was structurally impossible for most existing tests and lessons could not earn their budget discount. L0054/L0055 graduated on it immediately. DO NOT fix the overflow by mass-graduating lessons to any test that merely EXISTS: the verifier checks existence, not that the test enforces the lesson, so mass-graduation is gameable and would convert a real guard into a rubber stamp. Retire lessons whose falsifier arrived, or graduate only where a test genuinely encodes the property.",
+   "roi_bps": 0.0,
+   "raised": "2026-08-01T15:19:30.741616+00:00",
    "status": "open",
    "reason": null,
    "commit": null,

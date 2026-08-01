@@ -140,14 +140,28 @@ def _test_exists(ref: str, root: Path | None = None) -> bool:
     a renamed test or a deleted file silently drops a paid-for lesson out of every organ's
     context while the ledger still claims it is handled. That is the exact failure this whole
     module exists to prevent, reintroduced one level down.
+
+    CLASS-QUALIFIED REFS RESOLVE TOO (2026-08-01). This split on the FIRST `::` and treated the
+    whole remainder as a function name, so `test_x.py::TestGroup::test_case` -- pytest's standard
+    form and the dominant style in this repo (tests/ops/test_carryover.py is entirely classes) --
+    could never resolve. The failure was silent and pointed the wrong way: a lesson genuinely
+    covered by a class-based test was REFUSED graduation, kept full weight, and was then squeezed
+    out of the char budget by newer lessons, reaching no organ at all. Fail-closed protected the
+    weight but not the outcome.
     """
     if "::" not in ref:
         return False
-    rel, name = ref.split("::", 1)
+    parts = [s.strip() for s in ref.split("::")]
+    rel, name = parts[0], parts[-1]
     p = (root or _ROOT) / rel
     if not p.exists():
         return False
-    return f"def {name.strip()}(" in p.read_text("utf-8", errors="ignore")
+    src = p.read_text("utf-8", errors="ignore")
+    # Every intermediate segment must be a real class, so a typo'd container cannot pass on the
+    # strength of a same-named method elsewhere in the file.
+    if any(f"class {seg}" not in src for seg in parts[1:-1]):
+        return False
+    return f"def {name}(" in src
 
 
 def load(path: Path | None = None) -> list[Lesson]:
