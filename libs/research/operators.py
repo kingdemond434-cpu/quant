@@ -98,6 +98,7 @@ import numpy as np
 
 __all__ = [
     "group_rank",
+    "group_zscore",
     "ts_backfill",
     "ts_information_ratio",
     "vector_neut",
@@ -242,6 +243,55 @@ def _group_rank_1d(v: np.ndarray, codes: np.ndarray) -> np.ndarray:
         # groups, which quietly turns group size into a position weight nobody chose.
         out[idx] = (_average_ranks(v[idx]) - 1.0) / (m - 1.0)
     return out
+
+
+def group_zscore(x: np.ndarray, group: np.ndarray) -> np.ndarray:
+    """(x - group mean) / group std, within each group. The MAGNITUDE-PRESERVING sibling of
+    group_rank, and the choice between them is a real decision with a stated mechanism.
+
+    THE SELECTION PRINCIPLE, from the BRAIN options webinar and worth more than the function:
+    "options data represents such huge amount of information that if it shows a higher price point
+    move, it means for certainty that something has happened. Therefore if you place weights using
+    operators that emphasise outliers, like z-score, you have potential for your alpha performance
+    to be boosted -- that is why we used z-score instead of rank."
+
+    Stated generally: RANK WHEN THE SOURCE IS NOISY, Z-SCORE WHEN IT IS INFORMATIVE.
+      Rank throws away magnitude and keeps only order. That is exactly right when a large reading
+      is as likely to be a data error, a thin print or an outlier as a signal -- rank makes the
+      strategy immune to the tail, at the cost of ignoring it.
+      Z-score keeps magnitude. That is right when the source is expensive to move, so a large
+      reading is itself evidence: an options market repricing, a funding rate at an extreme, a
+      liquidation cascade. Ignoring the size of those is discarding the informative part.
+
+    The desk's own measured priors say which is which here: price-only families died (rank them),
+    while funding/carry -- an expensive-to-move positioning signal -- is the lone repeat survivor
+    (z-score it). Choosing by habit rather than by the source's information content is how a
+    signal gets flattened before it is ever tested.
+
+    STANDARD DEVIATION FLOORED, never `> 0`: a group whose members all hold the same value has no
+    dispersion, and dividing by floating-point dust manufactured a 1.4e31 signal on this desk on
+    2026-08-01. Such a group returns 0.0 -- no view -- rather than an enormous one.
+    A SINGLETON GROUP returns 0.0 for the same reason group_rank returns 0.5: one member has no
+    dispersion to be measured against, and 0.0 is this operator's neutral, not its extreme.
+    """
+    panel, shape = _as_panel(x)
+    codes = _group_codes(group)
+    out = np.full(panel.shape, np.nan)
+    for i in range(panel.shape[0]):
+        row = panel[i]
+        row_codes = codes[i] if codes.ndim == 2 else codes
+        for g in np.unique(row_codes[row_codes >= 0]):
+            m = (row_codes == g) & np.isfinite(row)
+            k = int(m.sum())
+            if k == 0:
+                continue
+            if k == 1:
+                out[i][m] = 0.0
+                continue
+            vals = row[m]
+            sd = float(np.std(vals, ddof=1))
+            out[i][m] = 0.0 if sd <= _STD_FLOOR else (vals - vals.mean()) / sd
+    return out.reshape(shape)
 
 
 def group_rank(x: np.ndarray, group: np.ndarray) -> np.ndarray:

@@ -66,6 +66,7 @@ import numpy as np
 
 __all__ = [
     "PREMIUM_Z",
+    "dvol_to_variance",
     "ewma_variance",
     "garman_klass",
     "invalid_bars",
@@ -181,23 +182,64 @@ def realised_variance(returns: np.ndarray, *, n: int = 21) -> np.ndarray:
 
 
 def prediction_premium(returns: np.ndarray, *, n: int = 21,
-                       lam: float = EWMA_LAMBDA) -> np.ndarray:
+                       lam: float = EWMA_LAMBDA,
+                       implied_variance: np.ndarray | None = None) -> np.ndarray:
     """(forecast variance - realised variance) / realised variance.
 
     Scaled by realised variance rather than left as a difference so it is comparable across assets
     and across regimes -- an absolute variance gap is dominated by whichever asset happens to be
     the most volatile, which would make any cross-sectional use of this a volatility ranking
     wearing a premium's name.
+
+    SUPPLY `implied_variance` AND THE PREMIUM BECOMES THE REAL ONE. The BRAIN options webinar is
+    blunt about why: "what happened in the past has happened in the past; what CAN happen in the
+    future is being currently priced in by the market, and that is what implied volatility gives
+    you." EWMA is an extrapolation of realised returns -- a backward-looking estimate of a
+    forward-looking quantity. Implied variance is the market's actual forecast, paid for in real
+    money by people who lose if it is wrong.
+
+    That upgrade turns this from a statistical artefact into the VARIANCE RISK PREMIUM, which is
+    one of the most durable documented premia in any asset class and shares its economics with the
+    funding carry this desk already knows works: both pay for bearing a risk that usually does not
+    arrive. Deribit publishes DVOL free for BTC and ETH and libs/data/deribit.py already fetches
+    it, so the input exists -- it is a wiring job, not a data acquisition.
+
+    EWMA REMAINS THE DEFAULT ON PURPOSE. It is the baseline any implied-vol version must BEAT to
+    justify the dependency, so a null result here needs no feed at all, and a positive one makes
+    the IV upgrade a measured improvement over a recorded baseline rather than an assumption.
+    `implied_variance` must be in the same units and alignment as realised variance -- an
+    annualised vol index like DVOL is a PERCENTAGE ANNUAL VOLATILITY and has to be converted
+    ((dvol/100)**2 / periods_per_year) before it is comparable. Passing it raw would inflate the
+    premium by roughly the number of periods in a year, which is exactly the sort of units error
+    that produces a spectacular and entirely fictional signal.
     """
-    fc = ewma_variance(returns, lam=lam)
+    fc = (ewma_variance(returns, lam=lam) if implied_variance is None
+          else np.asarray(implied_variance, dtype="float64"))
+    if len(fc) != len(np.asarray(returns)):
+        raise ValueError("implied_variance must align 1:1 with returns")
     rv = realised_variance(returns, n=n)
     with np.errstate(divide="ignore", invalid="ignore"):
         prem = np.where(np.isfinite(rv) & (rv > _VAR_FLOOR), (fc - rv) / rv, np.nan)
     return np.asarray(prem, dtype="float64")
 
 
+def dvol_to_variance(dvol: np.ndarray, *, periods_per_year: float) -> np.ndarray:
+    """Deribit's DVOL index -> per-period variance, in the units realised_variance produces.
+
+    DVOL is quoted as an ANNUALISED VOLATILITY IN PERCENT. Three conversions are needed and
+    skipping any of them produces a premium wrong by orders of magnitude: percent -> fraction,
+    volatility -> variance, annual -> per-period. This function exists so that arithmetic lives in
+    one place with a test on it, rather than being re-derived at each call site.
+    """
+    d = np.asarray(dvol, dtype="float64")
+    if periods_per_year <= 0:
+        raise ValueError("periods_per_year must be positive")
+    return (d / 100.0) ** 2 / periods_per_year
+
+
 def premium_signal(returns: np.ndarray, *, n: int = 21, window: int = 126,
-                   z: float = PREMIUM_Z) -> np.ndarray:
+                   z: float = PREMIUM_Z,
+                   implied_variance: np.ndarray | None = None) -> np.ndarray:
     """Position in [-1, 1] when the premium exceeds +/- `z` rolling standard deviations.
 
     SIGN CONVENTION, stated because it is the whole economic claim and an inverted sign would
@@ -211,7 +253,7 @@ def premium_signal(returns: np.ndarray, *, n: int = 21, window: int = 126,
     The rolling standard deviation uses only trailing data, so the threshold a bar is judged
     against never contains that bar's own future.
     """
-    prem = prediction_premium(returns, n=n)
+    prem = prediction_premium(returns, n=n, implied_variance=implied_variance)
     out = np.zeros(len(prem))
     for i in range(window, len(prem)):
         w = prem[i - window:i]

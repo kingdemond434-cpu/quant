@@ -513,3 +513,41 @@ def test_a_window_that_is_mostly_missing_is_not_scored():
 def test_a_window_shorter_than_two_is_refused():
     with pytest.raises(ValueError):
         ts_information_ratio(np.zeros(10), 1)
+
+
+# ------------------------------------------- group_zscore: magnitude, when magnitude is signal
+
+def test_group_zscore_standardises_within_each_group():
+    from libs.research.operators import group_zscore
+    x = np.array([[1.0, 2.0, 3.0, 10.0, 20.0, 30.0]])
+    g = np.array([0, 0, 0, 1, 1, 1])
+    z = group_zscore(x, g)[0]
+    assert np.allclose(z[:3], z[3:]), "same shape within each group -> same z, whatever the scale"
+    assert z[1] == pytest.approx(0.0) and z[4] == pytest.approx(0.0)
+
+
+def test_group_zscore_keeps_the_magnitude_that_group_rank_discards():
+    """The selection principle in one assertion. Rank sees only order, so a mild outlier and an
+    extreme one look identical; z-score does not. That is the whole reason to prefer it when the
+    source is expensive to move and a large reading is itself evidence."""
+    from libs.research.operators import group_rank, group_zscore
+    g = np.array([0, 0, 0])
+    mild = np.array([[1.0, 2.0, 3.0]])
+    extreme = np.array([[1.0, 2.0, 100.0]])
+    assert np.allclose(group_rank(mild, g), group_rank(extreme, g)), "rank cannot tell them apart"
+    assert not np.allclose(group_zscore(mild, g), group_zscore(extreme, g))
+
+
+def test_a_group_with_no_dispersion_returns_no_view_not_an_enormous_one():
+    """`> 0` on a standard deviation does not survive floating-point dust -- that exact guard
+    produced a 1.4e31 signal on this desk. A group whose members all agree has no information."""
+    from libs.research.operators import group_zscore
+    z = group_zscore(np.array([[5.0, 5.0, 5.0]]), np.array([0, 0, 0]))
+    assert np.all(np.isfinite(z)) and np.all(z == 0.0)
+
+
+def test_a_singleton_group_is_neutral_under_both_operators():
+    from libs.research.operators import SINGLETON_RANK, group_rank, group_zscore
+    x, g = np.array([[7.0]]), np.array([0])
+    assert group_zscore(x, g)[0, 0] == 0.0, "0.0 is z-score's neutral"
+    assert group_rank(x, g)[0, 0] == SINGLETON_RANK, "0.5 is rank's neutral"
