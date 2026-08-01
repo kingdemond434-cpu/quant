@@ -195,3 +195,94 @@ the premium's ceiling; **merchant density sets where inside that ceiling it actu
 | exchange_netflow (Coin Metrics `netflow_ntv` / `sply_ex_ntv`, BTC 5,575d 2011-04-24->2026-07-28 + ETH 4,008d, 2 builds x 3 horizons = 12 cells) | 0/12 SCREEN-INTERESTING. Best cell btc/scaled/h=5: IC **-0.0345** with the mechanism-CORRECT negative sign, but residual IC after the angle-20 de-contamination **+0.0124 -- the sign FLIPS**. Horizon signs incoherent (btc/raw h=1 -0.0074 vs h=20 +0.0114). h=5/h=20 cells correctly SCREEN-UNDERPOWERED (overlapping windows collapse n_eff below the ~4268 independent obs the screen requires, R0030). | `no_edge` (contamination, not lead) | Mechanism tested: coins moving ONTO exchanges are supply arriving at the only venue where it can be sold, so netflow should be revealed selling intent leading weaker returns. **THIS NEGATIVE IS UNUSUALLY TRUSTWORTHY and that is the point of logging it loudly:** the axis is genuinely novel (novelty 0.973, nearest prior kimchi at sim 0.027), carries **16 years** of depth, and has the CLEANEST alignment available anywhere on the desk -- signal and target are the SAME Coin Metrics daily rows keyed by the same `date` field, so the cross-source timezone join that turned kimchi (~73% artifact) and Turkey premium into pure timing fakes is **structurally impossible** here. So this is not "unproven for want of data"; daily exchange netflow genuinely does not lead BTC or ETH. **TRANSFERABLE:** the de-contamination gate is the single highest-value component of `axis_screen` -- it caught a sign-flip that a raw-IC report would have sold as mechanism-CONFIRMING (correct sign, plausible story, 16y sample: every heuristic said edge). Do not re-test exchange-flow at daily frequency without either intraday granularity or a per-exchange (not aggregate) decomposition, and never trust a raw IC whose sign survives only before orthogonalisation. Research memory `rm-20260730T024116-185ecc`; `reports/screen_exchange_netflow.json`. |
 | carry_entry_shorts_widening_basis (BR-08/R0206: funding-rank entry -> forward basis path; bronze D1 164 symbols, 2019-09-08..2026-07-31, 2 constructions x 2 horizons = 4 pre-registered cells) | **H1 REFUTED, and REVERSED.** Top-4-by-funding basis leg is **+0.65 bps/day (t +3.11)** -- CONVERGING, i.e. mildly FAVOURABLE to the short-perp leg, not widening. H2 (effect strengthens with rank) is refuted in the opposite direction, and on the NON-TAUTOLOGICAL component: the BASIS LEG ALONE improves monotonically across funding deciles (h=1 d1 -1.89 -> d10 +0.61 bps/day; h=5 d1 -4.71 -> d10 +0.91), in all four constructions. SELF-CORRECTION, recorded rather than quietly fixed: the first write-up cited NET by decile (d1 -17.8 -> d10 +7.0) as the H2 evidence, which is partly TAUTOLOGICAL -- funding is the ranking variable, so the funding leg must rise with rank. The basis leg carries no such mechanism and moves the same favourable way, which is what actually refutes H2. lag1 construction agrees throughout (+0.10 bps, t +0.59). | `mechanism_refuted` | Tested BECAUSE the ONLY deployed sleeve realised -58.27 bps net over 73 churn-free round-trips with price_pnl -51.74 bps, which for a delta-neutral pair IS the basis change and should be ~0. Proposed mechanism: Binance funding is computed FROM the premium index, so ranking by funding mechanically ranks by widest premium, and the entry might be shorting an ongoing squeeze. **It is not.** History says the extreme funding rank is the BEST bucket, not the worst, and the basis converges slightly after entry. **Therefore the live -51.74 bps is NOT a property of the entry rule** and goes back to the contamination/execution explanation exactly as the card pre-committed. THE REAL FINDING IS THE GAP: paper-gross +7.77 bps/day vs live -58.27 bps/round-trip is an L2.10 reality gap of ~66 bps that is now ATTRIBUTED TO EXECUTION, not selection -- which is where the next repair hour goes. **DO NOT CITE +7.77 bps/day AS AN EDGE:** it is gross of fees, slippage and impact, on a panel that is substantially a current-universe snapshot (the 18 symbols ending early cluster on ONE date = a collector boundary, not delistings), and the top-4 funding names are the thinnest on the venue. The SIGN and the decile MONOTONICITY are the robust parts; the LEVEL is not. Bias direction is stated in the artifact: basis measurement noise biases forward Delta-basis toward apparent convergence, so H1 was refuted despite the bias running against it being the only clean read -- the lag1 construction exists for exactly that and agrees. `scripts/screen_carry_basis_path.py`; `reports/carry_basis_path.json`. |
 | era_olps_olmar_portfolio_selection (OLMAR/OLPS "follow-the-loser" on-line portfolio selection ported to crypto; Li & Hoi ICML-2012 paper 168, PAPER DEFAULTS w=5 eps=10, ONE pre-registered config, no sweep; Binance USDT-perp bronze D1, top-8 by median $vol 2023-05-05→2026-06-21 1,138d/3.12y + top-30 446d) | **DIES THREE INDEPENDENT WAYS, and NOT the way the era thought.** (1) LOSES TO THE TRIVIAL BENCHMARK AT ZERO COST: gross CAGR +11.28% vs uniform-CRP +42.24% and buy-and-hold +39.38% — a −31pp/yr deficit before a single basis point of cost (top-30: gross −29.04% vs BAH −10.67%). (2) IT IS NOT PORTFOLIO SELECTION: mean max-weight 0.991, **effective N = 1.02 of 8** — a daily single-asset rotation, exactly the collapse the paper's OWN AUTHOR (Bin Li, in-thread 2013) conceded: *"in some extreme cases, it does happen that the vector contains one 1 and the rest are 0s. We are still looking methods to control its behaviors."* (3) TURNOVER ANNIHILATES IT: median 1.851/day → net CAGR −8.06% @5bps, −24.05% @10bps, **−75.49% @39.5bps** (the desk's own fail-closed p90 for an unmeasured name), capital ×0.0125. | `costs_killed_edge` + `no_economics` | **THE ERA'S OWN STATED KILL REASON IS WRONG AND WAS REFUTED HERE — do not reuse it.** Grant Kiehne (2019) blamed correlation: OLMAR fails on sector ETFs because "each ETF is too correlated with the market… you are just dealing with an arbitrarily coarsely chopped SPY". MEASURED on our own data with one estimator over both universes (idiosyncratic share of daily return variance vs the panel's own leave-one-out equal-weight factor): **crypto top-8 idio 0.513 vs the sector ETFs that failed 0.492** — crypto is *no more* factor-dominated, and carries **3.3–3.8× the cross-sectional dispersion** (0.0283/0.0324 vs 0.0085 daily). So the family dies on its ALLOCATION RULE, never on the opportunity set: **this row must NEVER be cited as evidence that crypto cross-sectional strategies lack raw material — the dispersion measurement says the opposite.** Corroborating era self-falsification, all harvested in-thread (free): Paul Perry's full OLPS-toolbox comparison — *"hard to say that any of these algorithms decidedly beat BAH or CRP… OLMAR is really not outperforming"*; the ONS paper + Borodin et al. (2004) — uniform CRP outperforms all previous algorithms; Thomas Wiecki (Quantopian head of research) publishing results only after swapping VolumeSlippage→FixedSlippage *because the volume model prevented the rebalance completing* (the friction WAS the finding); "Blue Seahawk" recomputing a headline 190% to **58% on capital actually utilized vs a 128% benchmark** once margin was counted; Jason Tichy — *"it only seems to work with the seed money of $100k. If I input any smaller amount the algorithm loses it in a couple months"*, which is disqualifying for a §42 small book independent of everything above. BIAS DIRECTION IS SAFE: the universe was selected on *current* liquidity (survivorship + liquidity selection), biasing the test UP; it fails anyway. RE-ENTRY CONDITION (L1.16a): only on a named enabling change to the ALLOCATION rule — a turnover-constrained or transaction-cost-aware OLPS variant (e.g. an explicit L1-penalised update) demonstrated to hold effective-N > 3 and median daily turnover < 0.15 BEFORE any return is computed; a new parameter set for the same unconstrained update is NOT an enabling change and is re-litigating. Nearest desk prior: `short_term_reversal (xsec)` (unprofitable at zero cost, IC mid-distribution) — the novelty gate scored this 0.25 similarity / NOT redundant, but that gate was measured at **0% recall** by the desk's own 2026-07-30 research-engine audit, so the PASS was treated as uninformative and the kill was justified on mechanism, not on the gate. |
+
+---
+
+### retail_crossvenue_scan_arb — KILLED at source with the operator's own instrumentation (RU, 2025 primary text)
+_RU frontier miner, session 1, 2026-08-01. Source: habr.com/ru/articles/911056/ (2025-05-20),
+"Арбитраж криптовалют — или переливаем из пустого в порожнее" ("...or pouring from empty into
+empty"), + its 66-comment tree mined to depth 7 via OP-039. Public article, §13 clean._
+
+**THE MECHANISM AS CLAIMED:** scan every pair on every venue for BID(A) > ASK(B) net of fees; when
+the spread exceeds costs, buy on B and sell on A. The retail cross-venue "переливы" family.
+
+**THE OPERATOR'S OWN NUMBERS, from a purpose-built scanner (16 venues, 2,870 pairs, CCXT +
+ClickHouse, two-stage bulk-ticker-then-orderbook architecture):**
+- **15,256** arbitrage signals detected → **4** survived manual review. That is the entire result.
+- **90.8%** of signals expire in **milliseconds**; only **0.9%** (137) last >15 minutes.
+- 77% of all signals came from a single venue (Gate.io) — i.e. concentrated in the venue most
+  likely to be quoting stale, not the venue most likely to be payable.
+- $100k/day minimum volume filter and a $100 test deposit — this is the desk's own size band, so
+  the kill is NOT a capacity artifact and §42 does not rescue it.
+
+**WHY IT DIES — four named failure modes, none of which is "the spread was too small":**
+1. **The withdrawal rail is closed exactly where the spread is wide.** Independent second source,
+   habr 599551 (2018/2022): *"там, где большие проценты, монеты не доступны к выводу"* — where the
+   percentages are big, the coins are not withdrawable. The spread IS the closed rail, priced.
+2. **The venue's withdrawal-status API lies.** An asset reports as withdrawable while the network
+   is in fact halted, and the API does not expose it. A cost model built on the API is wrong in
+   the unsafe direction.
+3. **Ticker collision — the same ticker is a different asset/network across venues.** Verbatim
+   (comment, depth 1, score 0): *"есть скамные пары которые надо фильтровать — ticker один а по
+   факту разные сети, на них сразу арбитраж и 600% будет"*. **The apparent edge is largest exactly
+   where the join is wrong.** This independently confirms the desk's §42 rule that a cross-venue
+   spread above the credibility ceiling is marked and never ranked first.
+4. **The binding constraint is VENUE COUNTERPARTY RISK, not the spread.** From the thread's one
+   substantive counter-claim (depth 0), which asserts 25–75%/month is achievable on futures and
+   DEX-CEX rather than spot: *"Главная задача — это не спалиться... давно мониторят токсичные
+   сделки и выдают неопытным бан. Очень повезёт, что вернёте стартовый капитал через пару
+   месяцев."* — the venue detects "toxic" flow and bans/withholds withdrawal. **Even the bull case
+   concedes the P&L is not withdrawable.** An edge you cannot withdraw is not an edge (L1.5).
+
+**TAG:** `costs_killed_edge` + `no_economics` (as arb) — and **mechanism-reclassified**, see below.
+**RE-ENTRY CONDITION (L1.16a):** only with (a) pre-funded inventory on both venues removing the
+on-chain leg entirely — the thread's own top-voted suggestion, which the author concedes at least
+doubles capital and requires synchronised execution — AND (b) a measured, venue-specific
+withdrawal-success record proving the P&L is realisable. Absent (b) this stays dead: the desk would
+be financing a venue's float and calling it alpha.
+
+### CROSS-ERA SYNTHESIS — the barrier MIGRATES, the premium never becomes harvestable
+This is the **fifth instance** of `era_crossvenue_fiat_premium_arb`, and the first from the RU
+corpus. Placed here because it changes the law's shape rather than adding a data point.
+
+The desk already held: *a cross-venue premium that persists is rent on a capital-control /
+withdrawal / counterparty barrier — compensation, not inefficiency, harvestable only by whoever
+holds the specific rail access*, with **premium magnitude tracking BARRIER HEIGHT**.
+
+Five instances now, and the barrier is a **different object every era while the conclusion is
+identical**:
+| era | venue pair | the barrier | outcome |
+|---|---|---|---|
+| 2013 | MtGox ↔ BTC-e | withdrawal insolvency | premium → 0 at Gox collapse |
+| 2013–14 | BTCChina ↔ abroad | capital controls; cash physically flown to HK | rent on permissions |
+| 2017 | CN venues ↔ abroad | AML/latency barrier | episodic, merchant-density-bounded |
+| **2022+** | **RU P2P ↔ global** | **sanctions; card rails severed** | **see RU note below** |
+| **2025** | **any CEX ↔ any CEX** | **the venue's own anti-toxic-flow enforcement** | **P&L not withdrawable** |
+
+**THE OPERATIVE UPGRADE:** the 2025 instance shows the barrier persists *even when every state-level
+barrier is absent*. Two venues in the same jurisdiction with open crypto rails still produce an
+unharvestable premium, because **the venue itself becomes the barrier** once it detects the flow.
+So the law is not "premiums are rent on capital controls" — it is **"a persistent cross-venue
+premium is rent on whatever barrier is currently binding, and a barrier is always binding, because
+a premium with no barrier is arbitraged away by definition."** The corollary is the useful part:
+**do not hunt for a region whose barrier is low enough to arb — that region's premium is already
+zero.** This closes the "find a friendlier jurisdiction" idea before anyone spends a cycle on it.
+
+### statarb_kalman_hedge_ratio_refinement — pre-emptively killed by its own comment thread (RU, 2023)
+_Source: smart-lab.ru/blog/936066.php (2023-08-30), Kalman-filter statistical arbitrage BTC/ETH._
+**CLAIM:** a Kalman filter estimating a time-varying hedge ratio between BTC and ETH beats a static
+/ rolling-OLS ratio for pairs trading. 1,035 days of 4h bars, 27.05% time in market, z≤−2 long /
+z≥+2 short / exit at 0.
+**KILLED BY THE REPLIES, not by us** — free falsification, the cheapest kind:
+- *"For arbitrage, normal regression plus std dev suffices"* — Kalman deemed unnecessary; roughly
+  equivalent returns from a 3rd-order polynomial (commenter 3Qu).
+- *"Realistically buying/selling at your model price will be extremely problematic"* — execution,
+  which the post never models.
+- *"ChatGPT wrote this. Ernie Chan, probably. And yes, Kalman filter not needed."* (robomakerr).
+**AND IT FAILS EVERY DESK GATE ON ITS FACE:** no costs, no slippage, no out-of-sample, no
+significance test, **one pair**, no comparison to the rolling-OLS baseline it claims to beat.
+**TAG:** `no_economics` (the refinement, not pairs trading itself, which is UNTESTED here — see the
+STATISTICAL-ARBITRAGE card in the watchlist). **The transferable lesson:** the sophistication layer
+(Kalman, polynomial, ML hedge ratio) is where RU practitioners consistently report zero marginal
+gain over OLS+σ. If the desk ever tests statarb, spend the budget on **costs and capacity**, which
+is where every RU thread says it actually dies — never on the estimator.

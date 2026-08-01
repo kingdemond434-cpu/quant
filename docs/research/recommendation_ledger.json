@@ -3570,6 +3570,54 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0294",
+   "source": "cycle",
+   "summary": "RU-01 [DEMONSTRATED] libs/data/multiexchange.py okx_inst() cross-venue join resolves only 260/653 Binance USDT perps and silently drops 5 liquid perps OKX DOES list (SHIB/PEPE/FLOKI/BONK/SATS): Binance encodes the re-denomination multiplier in the TICKER (1000SHIBUSDT), OKX in the CONTRACT SIZE (SHIB-USDT-SWAP ctVal=1e6). Coverage loss NOT corruption (funding is a dimensionless rate) and LATENT (only caller hardcodes 14 large caps), but it blocks the universe expansion R0296 requires. Fix: strip leading numeric multiplier and try both forms, compare ctVal before declaring a match; add a resolved/attempted counter so misses stop being silent.",
+   "roi_bps": 15.0,
+   "raised": "2026-08-01T13:20:49.255236+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0295",
+   "source": "cycle",
+   "summary": "RU-02 [DESIGN INVERSION] scripts/run_crossexchange_backtest.py measures cross-venue funding DISPERSION over a hardcoded 14-symbol large-cap universe -- the cohort most heavily cross-venue arbitraged, where venue funding converges by construction, so the signal is sampled where its variance is minimised. Directly opposite to \u00a742's named ground 'thin-pair cross-venue funding'. Corroborated independently by RU practitioners who name thin venues that drift 1-4% for 15-45min on shitcoins as where divergence lives. A null from this backtest is evidence about the cohort, not the mechanism. Needs R0294 fixed first as the enabling ingredient.",
+   "roi_bps": 40.0,
+   "raised": "2026-08-01T13:20:49.380845+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0296",
+   "source": "cycle",
+   "summary": "RU-03 STATISTICAL-ARBITRAGE is the desk's only MENTIONED-NEVER-TESTED family (strategy_coverage.json n_tested=0). RU practitioner corpus supplies the first prior: 4.78%/yr gross per contract across 80 cointegrated pairs; practitioner capacity ceiling 0.3-1.0M RUB (~USD 3-11k) per pair before market makers take it -- which under L1.18a is this desk's band, not a disqualifier; slippage+colocation named as the binding constraint by every source; and estimator sophistication (Kalman/polynomial) worth ~zero over OLS+sigma per the reply chains. NOT a forward-slot request. Operative: when this family is next tested, spend the budget on cost/capacity measurement, never on the estimator.",
+   "roi_bps": 25.0,
+   "raised": "2026-08-01T13:20:49.484227+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0297",
+   "source": "cycle",
+   "summary": "RU-04 scripts/run_crossexchange_backtest.py:_panel() swallows all venue-fetch failures via bare 'except Exception: continue' plus 'if bn.empty or by.empty or ok.empty: continue', with NO counter of attempted-vs-resolved symbols. A venue delisting or a join miss shrinks the panel invisibly and the backtest still reports a result over the survivors. Desk SILENT-EXCEPT defect class. Fix: count and log attempted/resolved/dropped-with-reason; refuse to publish a verdict below a declared minimum panel width.",
+   "roi_bps": 10.0,
+   "raised": "2026-08-01T13:20:49.592964+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

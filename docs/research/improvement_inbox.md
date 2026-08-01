@@ -1367,3 +1367,59 @@ One measured fact that changes how other cross-sectional work should be read:
   payoff SHAPE and cost, never to absent dispersion — and `era_olps_olmar_portfolio_selection`
   says so explicitly in its own lesson field so the row cannot be miscited later.
 [§33: wired -> docs/research/recommendation_ledger.json R0286/R0287]
+
+---
+
+## RU frontier miner, session 1 (2026-08-01) — one DEMONSTRATED defect, one design inversion
+
+_All ledgered: #1=**R0294**, #2=**R0295**, #3 design-note (no row; the ledgered engine work is #1/#2), plus **R0297** for the silent-except. (R0296 is the statarb family prior, filed on the watchlist.)_
+_Prior text said R0294/R0296/R0297 — this inbox is write-only, a row here is not tracking._
+
+### 1. [DEMONSTRATED] `libs/data/multiexchange.py:okx_inst()` silently drops 5 liquid perps
+`okx_inst()` maps `BTCUSDT → BTC-USDT-SWAP` by string surgery (`symbol[:-4]`) with no verification
+that the OKX instrument is the same underlying. **Probed live against both venues' instrument
+lists (2026-08-01):**
+- Join resolves **260 / 653** Binance USDT perps.
+- **The two venues put the re-denomination multiplier in different places.** Binance encodes it in
+  the **ticker** (`1000SHIBUSDT`); OKX encodes it in the **contract size** (`SHIB-USDT-SWAP`,
+  `ctVal=1,000,000 SHIB`). So the desk's join looks for `1000SHIB-USDT-SWAP`, which does not exist,
+  and concludes OKX does not list SHIB.
+- **5 liquid names are listed on OKX and silently missed: SHIB, PEPE, FLOKI, BONK, SATS.**
+  (`1000XEC/1000LUNC/1000RATS/1MBABYDOGE/1000CAT/1000X/1000CHEEMS/1000WHY/1000000MOG/1000000BOB`
+  are genuinely absent from OKX — correctly unresolved, not defects.)
+
+**HONEST SEVERITY — it is a COVERAGE loss, NOT a corruption, and it is currently LATENT.**
+- Funding is a **dimensionless rate**, so the contract multiplier does **not** corrupt any number.
+  I checked this before writing the row; the tempting "1000x scaling bug" headline would be wrong.
+- **The only live caller** (`scripts/run_crossexchange_backtest.py:36`) hardcodes a **14-symbol
+  large-cap `_UNIVERSE`** containing no re-denominated tickers, so **the defect does not bite
+  today.** It is a latent blocker on any universe expansion — which is the point, because the
+  expansion is exactly what §42 asks for (see #2).
+- The failure is **silent**: `fetch_okx_funding` returns an empty DataFrame on a miss, and the
+  caller does `if ... ok.empty: continue` under a bare `except Exception: continue`, with **no
+  counter**. A venue delisting shrinks the panel invisibly. (Desk lesson class: SILENT-EXCEPT.)
+
+### 2. [DESIGN INVERSION — the more valuable finding] the cross-venue dispersion signal is measured
+### on the cohort where cross-venue dispersion is structurally smallest
+`run_crossexchange_backtest.py` computes **venue-relative funding dispersion** — a signal whose
+entire content is *venues disagreeing* — over a hardcoded universe of the **14 most heavily
+cross-venue-arbitraged large caps** (BTC, ETH, SOL, XRP, DOGE, BNB, ADA, AVAX, LINK, LTC, DOT, TRX,
+BCH, NEAR). These are the names where venue funding converges *by construction*, because they carry
+the deepest cross-venue arb. **The signal is being sampled where its variance is minimised.**
+
+This is the direct opposite of §42's named ground, which lists **"thin-pair cross-venue funding"**
+as one of the four structural niches a ~$50k book owns. It is also what the RU thread independently
+names: the venues that *«люфтят курсом»* (let the quote drift loosely) on shitcoins by 1–4% for
+15–45 minutes are the thin ones, never the majors. **A null from this backtest is therefore not
+evidence about the mechanism** — it is evidence about a cohort chosen to have the least of it.
+Fixing #1 (R0294) is the enabling ingredient for testing the cohort where the mechanism should live.
+
+### 3. [ENGINE, from RU practitioner code] two-stage bulk-then-deep venue scan
+Reusable collector pattern from habr 911056, verified as the author's actual architecture:
+**stage 1** — one bulk REST call per venue returns *all* tickers (bid/ask, no depth); filter on
+bid≤ask; the survivor set is tiny. **stage 2** — fetch full order book only for survivors.
+Result: **16 venues × 2,870 pairs in under a minute** under standard rate limits. Also: CCXT ships
+per-venue rate-limit timing and serves cache rather than erroring when polled too fast — so a
+scanner built on it degrades to *stale data*, not to an exception, which is a silent-staleness
+hazard worth knowing before adopting (L1.44). Recorded as a design note; **no third-party tooling
+installed or run** (supply-chain rule — mined as text only).

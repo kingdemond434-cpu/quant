@@ -1276,3 +1276,173 @@ The operative consequence: **the open CN layer worth mining is repos, era archiv
 pre-enclosure discussion that is now walled? If so, era-archaeology is not merely one CN deliverable
 — it is the **only** route to CN practitioner discussion at depth, which would sharply raise its
 priority relative to living-web digging.
+
+---
+
+## SESSION NOTES — RU frontier miner
+
+_Region grounds: habr.com quant/algo long-reads, smart-lab.ru, RU-language GitHub (lang:ru), RU
+YouTube algo channels, RU public Telegram. Operators: OP-002 (Yandex/RU templates), OP-003
+(habr comments / smart-lab forums), OP-004 (cyberleninka.ru open archive)._
+
+### 2026-08-01 session 1 (RU frontier miner) — IN PROGRESS (write-first note; updated as items resolve)
+
+**SEAT STATUS: FIRST RUN.** There is no prior RU session note anywhere in this document — EN has
+sessions A–E, CN has 1–3, PROSPECTOR has one. **The RU ground has never been dug.** So nothing here
+is a resume; everything is ground-opening, and I claim EXHAUSTED on nothing I have not mined
+section-by-section.
+
+**WHY THESE ITEMS (the reasoning, so the next run can overrule it):** the desk's own
+`data/strategy_coverage.json` says **STATISTICAL-ARBITRAGE is the only MENTIONED-NEVER-TESTED
+family** (n_tested=0, 1 ledger mention, nothing ever reached the graveyard). RU retail algo culture
+— smart-lab.ru, MOEX spread traders, habr quant long-reads — is the most stat-arb/pairs-saturated
+practitioner community in any region the desk covers. **Unhunted family × this seat's actual
+specialty** is a better use of a first run than deepening CROSS-VENUE-PREMIUM, which is HUNTED with
+9 candidates and **9 deaths**.
+
+**ITEMS TAKEN THIS RUN (bounded breadth, unbounded depth per item):**
+
+1. **BACKLOG VERIFICATION (RESUME mandate — verification is the desk's bottleneck, not cataloguing).**
+   From `source_backlog_next.py`: **Regulatory-event timeline (5-class taxonomy, Auer–Claessens)**.
+   Taken because it is the most RU-adjacent of the 4 pending items — Russia is the highest-barrier
+   regulatory regime in the desk's entire premium dataset. Verify: primary source reachable, §13
+   licence, and whether it actually yields a *usable dated event list* rather than a prose taxonomy.
+   - **RESOLVED — VERIFIED, and the answer is NO for the QR version.** BIS QR Sept-2018
+     (`bis.org/publ/qtrpdf/r_qt1809f.htm`) is **prose + regressions with NO annex event table**. It
+     names **151 regulatory news events, start-2015 → end-June-2018, sourced from Reuters**, and
+     shows exactly **two** illustrative events with timestamps (2017-03-10 21:04 SEC rejects
+     bitcoin ETF; 2018-06-22 07:17 Japan FSA orders 6 exchanges to improve AML). The dataset lives
+     in the separate extended paper (Auer & Claessens, *Cryptocurrency Market Reactions to
+     Regulatory News*), which is **SSRN 403 from this VPS** — route failure, NOT capability
+     failure (L1.25a): CESifo WP 8228 / CEPR DP 14602 are the same paper and were not exhausted.
+   - **THE USABLE PART, which is why this is not a null.** The *taxonomy and its effect sizes* are
+     extractable now and are the reusable asset: **3 primary classes + 2 auxiliary** — legal
+     status; AML/CFT; interoperability (restrictions on links to regulated entities); plus general
+     warnings and CBDC statements. Measured: **interoperability restrictions ≈ −6.4pp**, **AML/CFT
+     median ≈ −4pp over a 10-day window**, legal-status largest, and — the load-bearing one —
+     **general warnings show NO statistically significant effect.**
+   - **THE OPERATIVE READ for the desk:** the categories are *not* interchangeable, and the null on
+     general warnings is the useful half. Any event-study panel that pools "regulatory news" into
+     one bucket dilutes a −6.4pp effect with a class measured at zero. If the desk builds a
+     regulatory-event axis, **it must carry the 3-class label or it is pre-diluted.** That is a
+     design constraint obtainable *without* the event list.
+   - **VERDICT: keep PENDING, re-scope.** Not "no event list exists" — "the QR does not carry it and
+     the SSRN route is walled from here". Next attempt: CESifo WP 8228 PDF and CEPR DP 14602.
+
+2. **RU LIVING-WEB GROUND, opening dig: habr.com + smart-lab.ru**, hunting STATISTICAL-ARBITRAGE
+   first (unhunted family), then data axes and engine ideas. To comment/reply depth ≥2 (OP-003), not
+   headline depth. Every venue mentioned inside a thread is harvested as a new venue (venue-discovery
+   obligation).
+   - RESOLVED → see below.
+
+3. **ERA-ARCHAEOLOGY + BARRIER-HEIGHT OUT-OF-SAMPLE TEST.** The desk's `era_crossvenue_fiat_premium_arb`
+   graveyard entry was **mechanism-reclassified**: a persistent cross-venue premium is *rent on a
+   capital-control / withdrawal / counterparty barrier*, and **premium magnitude tracks BARRIER
+   HEIGHT** (KR 1.42% std → JP 0.37% → TR 0.23%, all dead except kimchi, which was itself later
+   refuted). That law was fit on KR/JP/BR/TR/CN. **Russia post-2022 is the highest-barrier point in
+   existence** — SWIFT cutoff, card rails severed, sanctioned venues — and it is *out of sample*.
+   This is a test of a mechanism the desk already believes, which outranks a 10th candidate in a dead
+   family. Plus the standing diaspora question: **where did they go** after 2022?
+   - **RESOLVED — the law SURVIVES its most extreme out-of-sample test, and the axis is CLOSED on
+     two independent grounds (§13 hard stop + the rent is charged as spread, so the desk would be
+     the payer).** Full card in `prospector_watchlist.md`. The cross-era synthesis it produced —
+     *the barrier migrates, and a premium with no barrier is arbitraged away by definition* — is in
+     `graveyard.md` and is the session's most transferable output.
+
+**NEXT GROUND (named before I start, so the chain survives being killed mid-run):** MMGP.ru +
+bits.media era boards section-by-section; RU-language GitHub `lang:ru` fork chains; RU YouTube algo
+channels via `fetch_video_transcript.py`; cyberleninka.ru citation chains (OP-004).
+
+### SESSION CLOSE 2026-08-01 session 1 (RU frontier miner) — STANDING TEST, DEPTH, BATTERY, NEXT GROUND
+
+**STANDING TEST — "Which artifact on disk is different because of what was mined?"**
+`search_operator_library.md` (**OP-039** habr comments API — verified runnable, **OP-040** the
+re-denomination-convention probe, + an **11-row RU lexicon**, 8 of them verified in situ),
+`graveyard.md` (**`retail_crossvenue_scan_arb`** killed with the operator's own instrumentation,
+**`statarb_kalman_hedge_ratio_refinement`** killed by its own reply chain, and the **cross-era
+barrier-migration synthesis**), `prospector_watchlist.md` (STATISTICAL-ARBITRAGE family prior + the
+RU premium axis CLOSED), `improvement_inbox.md` (1 demonstrated defect, 1 design inversion, 1 engine
+pattern), `recommendation_ledger.json` (**R0294–R0297**), and this note. **Cycle CONVERTED.**
+And the honest shape of it: **two refutations, one demonstrated code defect, one design inversion,
+one family prior, and zero tradeable cards.** No alpha. That is the correct output for a first run
+on ground whose two dominant families were already adjudicated here.
+
+**DEPTH LINE (per lead, honest):**
+- **habr 911056: EXHAUSTED** — article + **all 66 comments to depth 7** via OP-039. This is the
+  session and it is the clearest depth-payoff I can show: the **surface** gave "15,256 signals → 4
+  viable". The **depth** gave (a) the ticker-collision mechanism *(«ticker один а по факту разные
+  сети... сразу арбитраж и 600%»,* depth 1, **score 0**), which I then demonstrated against our own
+  join; (b) the venue-ban/toxic-flow constraint from the thread's *bull* case (depth 0) — the
+  counter-claimant concedes the P&L is not withdrawable, which is worth more than the debunking;
+  (c) the two-stage scan architecture (depth 4); (d) hard infra numbers — 50 msg/s/pair protobuf,
+  247 pairs, 25–40 Mbit/s, 100% CPU (depth 1). **Ranking by keyword density rather than votes is
+  what surfaced (a) — it had zero votes and the top-voted comment carried nothing.**
+- **habr 599551: EXHAUSTED at article level** (comments not exposed in fetch; not re-attempted via
+  OP-039 — a named gap, not a claim of exhaustion). Value: independent second source for the
+  closed-rail mechanism, verbatim.
+- **smart-lab statarb tranche: OPENED, NOT exhausted.** 707565 (67 comments, mined via fetch) and
+  936066 (reply chain, mined) closed; **339456, 52568, 504951, 133052, and the full
+  `/tag/статистический арбитраж` index remain unmined.** No exhaustion claimed.
+- **BIS/Auer–Claessens: NOT exhausted** — QR read to its taxonomy and effect sizes; the extended
+  paper is walled on the SSRN route only. Two live alternate routes named and untried.
+- **RU premium / Garantex: EXHAUSTED as an axis** — closed permanently on §13, which is dispositive
+  and needs no further digging. The only RU ground where "done" is genuinely claimable.
+- **BREADTH-THEATER CHECK:** not this run. 1 comment tree fully walked, 2 reply chains mined, 1
+  live cross-venue probe run against desk code, 1 import graph walked. But **zero repo forks and
+  zero citation chains** — `github.com/Alex-ok2005/crypto-arbitrage-scanner` (named in habr 911056)
+  was **not** followed, and cyberleninka (OP-004) was not touched. Naming both as owed.
+
+**PROACTIVE BATTERY (moves run; a move that produced nothing is named, never skipped):**
+- **#3 CONFIG-VS-OUTCOME — the run's biggest payout, twice.** Refused to bank the ticker-collision
+  comment as a plausible-sounding warning and **executed a live two-venue probe**: it turned into a
+  demonstrated, quantified coverage gap (260/653; 5 named liquid perps). Then refused to bank *that*
+  as a live defect and **walked the import graph** — which showed the only caller hardcodes 14 large
+  caps, so the defect is **LATENT, not live**. Both refusals changed the verdict.
+- **#9 SCOPE THE NEGATIVE RESULT — twice.** SSRN 403 scoped to **the route**, not the paper (two
+  alternate routes named) — this is the exact error that once turned one blocked endpoint into "video
+  is blocked". And the `okx_inst` miss scoped correctly: of 16 unresolved re-denominated tickers,
+  only **5** are defects; the other 11 are genuine OKX absences and calling them defects would have
+  been a manufactured finding.
+- **#4 REGRESSION SWEEP — what this run made worse, plainly.** I added **4 rows (R0294–R0297)** to a
+  queue the fence already calls REPAIR-MODE. Real cost, not hidden. Mitigating: three are defects in
+  **our own code**, the cheapest tier to convert, needing no new feed; and L1.28b(f) exempts miners
+  from repair-mode throttling by name. Second cost: I seeded an RU lexicon of which **3 rows are
+  UNVERIFIED** (carried from the seat brief, not seen in the wild) — marked as such inline per
+  OP-037 rather than presented as knowledge.
+- **#5 COST INVERSION — paid out.** The RU premium axis looked like a paid-data question (who sells
+  RU P2P quotes?) and is in fact a **§13 hard stop**, so no purchase can ever be justified. Closing
+  it at the legitimacy gate costs nothing and permanently retires a spend proposal.
+- **#2 ADJACENCY — ran, bounded.** The re-denomination hazard is not one-venue: Bybit/Binance mostly
+  agree on the `1000` prefix, **OKX does not**, and Bitget/Gate/HTX are **unverified** — named as the
+  next probe in OP-040 rather than assumed either way.
+- **#10 RATCHET CHECK — floors that must not fall:** operators 38 → **41**; RU lexicon 0 → **11 rows
+  (8 verified)**; RU session notes 0 → **1**; graveyard cross-era instances of the premium law 4 → **5**.
+- **#1/#6/#7/#8 produced nothing beyond the above this run — reported as such, not skipped.**
+
+**VIDEO-LOCKED:** nothing logged. **No RU video was attempted this run** — RU YouTube algo channels
+were in my ground list and I did not reach them. That is an honest gap in coverage, **not** a route
+failure, and it must not be recorded as a blocker: a platform is only logged after a real attempt
+fails.
+
+**VENUE DISCOVERY (obligation: every run finds venues not on the seed list):**
+| venue | what lives there | how found | verdict |
+|---|---|---|---|
+| `habr.com/kek/v2/` comments API | full nested comment trees, keyless | endpoint probe | **RICH** — now OP-039 |
+| smart-lab.ru `/tag/статистический арбитраж` | the RU statarb index, many unmined posts | tag-index from a post | **RICH**, unmined |
+| pikabu.ru | statarb/pairs explainers, large comment culture | search surface | **THIN** (derivative), unmined |
+| vc.ru `/services` | RU P2P/venue comparison writeups | premium search | **THIN** for alpha, useful venue intel |
+| `github.com/Alex-ok2005/crypto-arbitrage-scanner` | the debunked scanner's actual source | named in habr 911056 | **UNVISITED — owed** |
+| Finam broker's habr company blog | broker-published statarb tutorials | search surface | **UNMINED** |
+
+**NEXT RUN TAKES FIRST (the chain — do not re-surface-scan the above):**
+1. **The smart-lab statarb tranche to exhaustion** (339456, 52568, 504951, 133052 + the tag index),
+   mining comments — this is the desk's only never-tested family and the reply chains are where the
+   RU corpus keeps its cost/capacity numbers. Highest value on this ground.
+2. **`crypto-arbitrage-scanner` repo chain** (OP-001: issues, forks, contributor's other repos) —
+   the one lead this run named and did not follow.
+3. **RU YouTube algo channels** via `fetch_video_transcript.py` — untouched this run; video is
+   first-class and must not silently become a skipped class.
+4. **CESifo WP 8228 / CEPR DP 14602** for the Auer–Claessens event annex (the walled-route retry).
+5. **Era-archaeology, still entirely unopened on this ground:** MMGP.ru + bits.media archives,
+   pre-sanctions LocalBitcoins/EXMO mechanics. **Zero era work happened this run** — the dark-forest
+   mandate's era limb is owed and I am naming it rather than letting it quietly lapse.

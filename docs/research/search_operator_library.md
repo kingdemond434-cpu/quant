@@ -407,6 +407,63 @@ COROLLARY (2026-07-28): on PLATFORM archives (Quantopian, BigQuant, FMZ, Quantia
 INVERTS — there the era vocabulary is strategy names and author handles, so search the STRATEGY
 and follow the HANDLE across platforms.
 
+### OP-039 habr comments API — the full nested tree in one keyless call      [active]
+class: community-discovery / operator
+origin: RU frontier miner (2026-08-01)   validated-gain: on habr 911056 returned 66 comments to
+  depth 7 in one call; the three highest-value findings of the session were ALL at depth>=1 and
+  NONE were in the article body — incl. the cross-venue ticker-collision mechanism that a desk-side
+  probe then DEMONSTRATED against our own join code.
+technique: OP-003/OP-022's two-step shape, now runnable for RU. The library previously said only
+  "habr comments endpoint" as an OP-003 adaptation and never gave a URL, so it was unexecutable.
+  (1) DISCOVER: normal web/Yandex search for habr.com/ru/articles/<id>/
+  (2) MINE DEPTH — ONE keyless GET, no auth, no JS wall:
+      curl -H "User-Agent: Mozilla/5.0" https://habr.com/kek/v2/articles/<id>/comments/
+      -> {"comments": {"<id>": {"parentId":..., "level":<depth>, "score":..., "message":"<html>"}}}
+      `level` IS the depth, precomputed — no tree walk needed to satisfy the >=2 depth mandate.
+      Strip HTML, then rank by MECHANISM-KEYWORD DENSITY, never by `score`: on 911056 the single
+      most valuable comment (ticker collision + no-spot-short-on-MEXC + a 25-40 Mbit/s bandwidth
+      figure) had score=0, and the top-voted comment carried nothing.
+  NOTE the host is habr.com/kek/v2/ (not /api/), which is why it is not found by guessing.
+adaptations: RU=habr (verified 2026-08-01). Same two-step shape as HN Algolia (OP-022), Reddit
+  .json, Discourse /t/<id>.json, Zhihu answer API. CN/KR/JP equivalents already listed in OP-003.
+counterfactual: LOW — the endpoint is undocumented publicly and the depth+density ranking is the
+  part that actually surfaces the value; a reader of the article alone gets the debunking headline
+  and none of the four mechanisms.
+
+### OP-040 the venue that re-denominates in the TICKER vs in the CONTRACT SIZE   [active]
+class: verification / reconstruction
+origin: RU frontier miner (2026-08-01)   validated-gain: found 5 liquid perps (SHIB/PEPE/FLOKI/
+  BONK/SATS) that OKX lists and the desk's string join silently drops
+technique: before trusting ANY cross-venue symbol join, test the re-denomination convention, which
+  differs BY VENUE for the same underlying: Binance puts the multiplier in the TICKER
+  (`1000SHIBUSDT`), OKX puts it in the CONTRACT SIZE (`SHIB-USDT-SWAP`, ctVal=1,000,000 SHIB).
+  A `symbol[:-4]` style join therefore MISSES the asset entirely rather than mismatching it.
+  Probe: pull both venues' instrument lists, strip any leading numeric multiplier, and check the
+  stripped form as well as the literal one; compare ctVal/contractSize before declaring a match.
+adaptations: universal — any venue pair. Bybit/Binance mostly agree on the 1000 prefix; OKX does
+  not; Bitget/Gate/HTX conventions unverified and are the next probe.
+counterfactual: MED — a coverage gap is invisible by construction (the symbol just is not there),
+  so nothing surfaces it until someone counts the join's hit rate.
+
+## LEXICON — RU crypto-trading jargon (dark-forest search keys)
+_Seeded by the RU frontier miner 2026-08-01. Terms VERIFIED in situ (seen in a real RU thread this
+session) are marked [V]; terms carried in from the seat brief and NOT yet seen in the wild are
+marked [UNVERIFIED] and must be negative-controlled before budget is spent on them (OP-037)._
+
+| term | gloss | era | status | example query |
+|---|---|---|---|---|
+| перелив / переливать | "pouring over" — moving funds between venues to harvest a spread; the standard RU term for inter-exchange arb, and it does NOT translate as "arbitrage" | 2018- | [V] habr 911056/599551 | `перелив между биржами криптовалюта` |
+| стакан | order book (lit. "glass") — the RU word; `orderbook` returns EN content, `стакан` returns RU practitioner content | perennial | [V] habr 911056 comments | `стакан глубина ликвидность бот` |
+| щиткоин / щиток | shitcoin (transliterated + diminutive) | 2017- | [V] habr 911056 comments | `щиткоины арбитраж спред` |
+| люфтить (курсом) | "to have play/slack" (mechanical term) — a venue whose quote drifts loosely vs consensus; names the thin-venue divergence cohort exactly | 2020s | [V] habr 911056 comment | `биржи которые люфтят курсом` |
+| токсичные сделки | "toxic trades" — the VENUE's term for flow it bans; the binding constraint on retail cross-venue arb | 2020s | [V] habr 911056 comment | `бан за токсичные сделки биржа вывод` |
+| спалиться | "to get burned/spotted" — to be detected by the venue's surveillance | perennial | [V] habr 911056 comment | `как не спалиться арбитраж биржа` |
+| хомяк | "hamster" = retail bagholder (the RU equivalent of CN 韭菜) | 2017- | [UNVERIFIED] seat brief | `хомяки закупились памп` |
+| памп / слив | pump / dump-and-drain | perennial | [UNVERIFIED] seat brief | `памп слив схема телеграм` |
+| физлицо / физик | "natural person" — the P2P/tax-rail term for a retail individual counterparty | perennial | [UNVERIFIED] seat brief | `физлицо P2P лимиты банк` |
+| календарный арбитраж | calendar spread arb (near vs far future) — the dominant RU statarb form on MOEX | perennial | [V] smart-lab 707565 | `календарный арбитраж фьючерс проскальзывание` |
+| проскальзывание | slippage — the RU practitioner's named killer of statarb | perennial | [V] smart-lab 707565 | `статарбитраж проскальзывание не работает` |
+
 ## ARCHIVED
 (none yet)
 
