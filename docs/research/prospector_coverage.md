@@ -967,6 +967,46 @@ lesson — unit tests prove a mechanism works and say nothing about its coverage
 and `check_causal`/`assert_causal` inherit it rather than repeating it — so the blast radius is one
 module with three entry points, not a family. Reported as a bounded null, not left unstated.
 
+#### ERA-ARCHAEOLOGY — `8btc thread-44638` mined to reply-depth. GROUND EXTENDED. [§33: screened -> docs/graveyard.md corroboration]
+Surfaced by the OP-036 era-key test and **not in our 713-thread catalog** (that catalog covers board
+`forum-2` only) — so the era ground is larger than the catalogue implies. Wayback capture
+`20170107145729`, declared `gb2312`, GBK-decoded per **OP-033** (confirmed again — UTF-8 renders it
+as mojibake). 15 post bodies recovered; the reply chain is where everything below lives.
+
+**WHAT IT IS:** January 2017, a live CN-premium episode at **8-10%**, argued out by practitioners.
+**THE MECHANISM, stated by the participants themselves:**
+- *"人民币废纸了，美元买不到了，有钱人纷纷借比特币出逃，怎么不要价差大啊"* (BigArnold, 2017-01-05) — RMB
+  debasement fear plus **inability to buy USD** drives capital flight through BTC. That is the
+  demand side of the premium, named explicitly.
+- **THE BARRIER, which is why it did not close** — *"这想法可能性不大，成本太高了，单是币价相差8-10%，还有国外
+  交易所的实名制防洗钱的问题比国内严得多"* (神级人物): beyond the 8-10% gap, **foreign venues' real-name/AML
+  requirements are far stricter than domestic** — and *"美元充值很慢，有的要1天，有的要3天"* (空军2号): USD
+  funding takes **1–3 days**. Latency and permissions, not price.
+- **IT IS EPISODIC, not a level:** *"上次冲8000的时候，国内交易所差价都五六百，现在基本没差价呢"* — the spread
+  appears during rallies and collapses to ~nothing otherwise. And it recurs across eras:
+  *"新韭菜吧，13年也是这样的"* / *"去年也这样过"* / *"差价百分之十很正常"*.
+
+**VALUE: this CORROBORATES an existing graveyard kill from the other side of the trade.**
+`era_crossvenue_fiat_premium_arb` concluded a persistent cross-venue premium is *"rent on a
+capital-control / withdrawal / counterparty barrier — compensation, not inefficiency, harvestable
+only by whoever holds the specific rail access."* That was derived from **English** Bitcointalk
+threads written by outsiders flying cash INTO China. This is the **CN-language, mainland-resident
+view of the same barrier in the same era**, and it independently names the identical three
+frictions — and the participants themselves conclude the arb is not worth doing (*"成本太高了"*).
+Independent-source corroboration of a kill is worth recording: it converts a one-region conclusion
+into a two-region one. **No new graveyard row** — nothing new died, and duplicating a kill would
+corrupt the family survival statistics.
+**Direct attribution value (L1.16)** for our live axis #76 `usdt-cny-otc-premium`: this is *why* it
+is episodic and barrier-scaled, from primary era text.
+
+**TWO INSTRUMENT CONFIRMATIONS, both free:**
+1. **新韭菜 appears organically in 2017 practitioner text** — independent confirmation of item 1's
+   kill of the invented 新葱, from a source that predates the glossary by nine years.
+2. **OP-036's era-dating rule survives its first contact with real era text:** this is a *pre-94*
+   thread (2017-01) and it uses 比特币 throughout, **not 大饼** — exactly as the rule predicts, since
+   the euphemism was not born until 2017-09. n=1, so this is corroboration, not proof, and it is
+   labelled as such.
+
 ### SESSION CLOSE 2026-08-01 session E (EN frontier miner) — DEPTH LINE, BATTERY, STANDING TEST
 
 **STANDING TEST — "Which artifact on disk is different because of what was mined?"**
