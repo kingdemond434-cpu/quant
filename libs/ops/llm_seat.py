@@ -329,8 +329,9 @@ def chat(
     """
     s = seat or primary_seat()
     if s is None:
-        return "", ("no seat: export OPENROUTER_API_KEY (recommended -- one key reaches every model "
-                    "family and auto-upgrades across the market, not just within one vendor), "
+        return "", ("no seat: export OPENROUTER_API_KEY (recommended -- one key reaches every "
+                    "model family and auto-upgrades across the market, not just within one "
+                    "vendor), "
                     "or OPENAI_API_KEY / DEEPSEEK_API_KEY / XAI_API_KEY, or write "
                     "data/secrets/llm_panel.json")
     spent, cap = month_spend_usd(), monthly_cap_usd()
