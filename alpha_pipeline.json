@@ -1,7 +1,7 @@
 {
-  "generated": "2026-07-31T08:35:15.728528+00:00",
+  "generated": "2026-08-01T02:28:58.670049+00:00",
   "n_alphas": 8,
-  "n_survived": 1,
+  "n_survived": 0,
   "deployed": [
     "cash_and_carry"
   ],
@@ -21,20 +21,20 @@
     {
       "alpha": "crypto::funding_carry",
       "category": "crypto-sleeve",
-      "expected_sharpe": 1.29,
-      "gates": "10/10",
-      "survived": true,
-      "stage": "validated-candidate",
+      "expected_sharpe": 0.91,
+      "gates": "9/10",
+      "survived": false,
+      "stage": "backtest",
       "orthogonality": "unknown",
       "crowding_risk": "medium",
       "expected_half_life": "unknown-until-forward",
-      "retire_check": "WATCH"
+      "retire_check": "REJECT: fails gates"
     },
     {
       "alpha": "crypto::ts_trend",
       "category": "crypto-sleeve",
-      "expected_sharpe": 0.72,
-      "gates": "8/10",
+      "expected_sharpe": 0.75,
+      "gates": "9/10",
       "survived": false,
       "stage": "backtest",
       "orthogonality": "unknown",
@@ -45,8 +45,8 @@
     {
       "alpha": "crypto::xsec_price_mom",
       "category": "crypto-sleeve",
-      "expected_sharpe": 0.7,
-      "gates": "6/10",
+      "expected_sharpe": 0.67,
+      "gates": "8/10",
       "survived": false,
       "stage": "backtest",
       "orthogonality": "unknown",
@@ -55,9 +55,9 @@
       "retire_check": "REJECT: fails gates"
     },
     {
-      "alpha": "crypto::taker_flow",
+      "alpha": "crypto::funding_momentum",
       "category": "crypto-sleeve",
-      "expected_sharpe": 0.58,
+      "expected_sharpe": 0.54,
       "gates": "6/10",
       "survived": false,
       "stage": "backtest",
@@ -69,7 +69,7 @@
     {
       "alpha": "crypto::basis_carry",
       "category": "crypto-sleeve",
-      "expected_sharpe": 0.51,
+      "expected_sharpe": 0.52,
       "gates": "6/10",
       "survived": false,
       "stage": "backtest",
@@ -79,9 +79,9 @@
       "retire_check": "REJECT: fails gates"
     },
     {
-      "alpha": "crypto::funding_momentum",
+      "alpha": "crypto::taker_flow",
       "category": "crypto-sleeve",
-      "expected_sharpe": 0.5,
+      "expected_sharpe": 0.48,
       "gates": "6/10",
       "survived": false,
       "stage": "backtest",

@@ -25,13 +25,28 @@ gate (the FDR screen) and **it does not unweld it** — BH and BY select 0 of 26
 available window. The reason is structural and knowable in advance, and it is not the reason the
 desk's code comments give.
 
+**And the worst finding is neither of those.** The CPCV gate's purge and embargo are **inert**:
+the consuming statistic never reads the training fold, so the leak protection the desk believes it
+installed cannot affect the output — identical results at purge ∈ {0, 2, 50, 500}. Combined with
+walk-forward running at `embargo=0` and neither PBO having any purge or block structure, **no gate
+in the live path has any leak protection at all.** I initially recorded CPCV as a validated
+strength on the evidence of its constructor call and docstring; that was wrong, and the retraction
+is left visible in §1 (K4) because the mistake I made is exactly the one the desk keeps making.
+
+**The honest overall verdict** is not the one either side of the desk's internal argument wants.
+The gate *is* mis-assembled and over-strict in the ways catalogued below — **and** the desk's best
+candidate is weaker than its reports say (Sharpe overstated 4.1× by an hourly annualisation
+constant applied to daily bars; it fails a lockbox it was never run against; its walk-forward
+passes at exactly 2/4 with the most recent window negative). "The gate is welded" and "the space is
+picked clean" are both partly true. Neither can be resolved without E1, which has never been run.
+
 ---
 
 ## SCORES
 
 | score | value | basis |
 |---|---|---|
-| current_capability_pct | **34%** | The primitives are correct and well-tested (DSR, CPCV, Romano-Wolf, BH/BY, PBO, SPA all textbook). The *assembly* is not: 3 of 11 production gates carry zero information, the cost-stress gate is dead, multiplicity is per-script, and the certification is self-greening. Capability is in the parts, not the instrument. |
+| current_capability_pct | **26%** (revised down from 34% after N22) | The primitives are correct and well-tested (DSR, CPCV, Romano-Wolf, BH/BY, PBO, SPA all textbook). The *assembly* is not: 3 of 11 production gates carry zero information, one is a nested duplicate, **none has working leak protection**, the cost-stress gate is dead, multiplicity is per-script, reported Sharpes are 4.1× overstated, and the certification is self-greening. Capability is almost entirely in the parts, not the instrument. |
 | practical_ceiling_estimate | **85%** | Bounded by genuine crypto sample depth and by the irreducible fact that forward evidence takes calendar time. Not bounded by method — every method needed is already in the repo. |
 | ceiling_gap | **51pp** | Almost all of it is wiring and honesty, not new statistics. |
 | opportunity_cost_1y | **HIGH — the whole discovery funnel** | The gate has admitted 0 candidates in its life (`furthest_gate: 5` of 11; gates 6–11 never occupied). One year of a 100%-reject screen = one year of zero validated births against L1.30's replacement-rate clock. |
@@ -1362,6 +1377,9 @@ Ranked by impact × confidence / (cost × maintenance). Compounding multipliers 
 | 12 | **Wire `stationarity` (Engle-Granger) onto the carry sleeve** (N13). | The load-bearing assumption of the deployed book has no instrument. LTCM's failure mode, unmonitored. | small | MEDIUM-HIGH |
 | 13 | **Connect `event_study` to `listing_events`** (N12). | Doctrine-mandated by name; data already being collected daily. | medium | MEDIUM |
 | 14 | Supply `benchmark_returns` for the non-carry families (N4b). | Converts a 100%-accept gate into a real one at near-zero cost. | small | HIGH |
+| 15 | **Fix `_PERIODS_PER_YEAR` for daily candidates** (N23) and stop stripping zeros before validation (N23b). | Every Sharpe the desk reports, persists and ranks rejects by is 4.1× too large. It gates nothing, which is why it survived — but it is the number humans and organs use to judge whether candidates are worth defending. | ~1 line | HIGH |
+| 16 | **Lag and out-of-sample the regime labels** (N24: `.shift(1)`, expanding-window terciles), then wire `regime_robust` into the scripts that validate the real sleeves. | Currently leaks twice, passes 47.2% of pure noise, and is absent from the live validation path. Regime robustness is a standard gate across the entire benchmark cohort. | small | HIGH |
+| 17 | Give `signal_governance_gate` a real `structural_break_pass` writer, or retire the path (N25). | An eight-gate governance stack that can never return True is either a dead subsystem or an unreachable rail; both need a decision. | small | MEDIUM |
 
 **Interactions worth stating explicitly.** #5 and #7 both reduce the DSR bar *by fixing inputs*,
 and they compound: a smaller, de-duplicated, correctly-counted trial set lowers `sr0` twice.

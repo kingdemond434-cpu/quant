@@ -1,17 +1,17 @@
 # Desk digest (auto-generated daily -- do not hand-edit)
-_updated 2026-07-31T08:06Z · companion to [[institutional_knowledge]]_
+_updated 2026-08-01T02:16Z · companion to [[institutional_knowledge]]_
 
 ## Book
-- Molded net: **$3669.49** | funding **$113.06** | run-rate APR 8.4% | day 29.12
-- Root cause: **unknown_novel** (pause_and_page) | tracking error $3580.43
+- Molded net: **$3659.07** | funding **$113.06** | run-rate APR 0.0% | day 29.87
+- Root cause: **unknown_novel** (pause_and_page) | tracking error $3570.01
 
 ## Validation clocks
 - **carry (DEPLOYED)**: 35/90d | bt 3.32 fwd 14.3
 - **perp L/S**: 28/90d | bt 0.86 fwd -0.37
-- **trend**: 28/90d | bt 1.29 fwd -1.48
+- **trend**: 28/90d | bt 1.29 fwd -1.46
 - **trend regime-gated**: 23/90d | bt 1.27 fwd 0.0
-- **OI/LS data**: 33/40d
-- **stablecoin data**: 29/40d
+- **OI/LS data**: 34/40d
+- **stablecoin data**: 30/40d
 
 ## Open decisions (ledger)
 - `2026-07-04-cashcarry-top10-4500` -- review 2026-08-04: funding/day rises ~50% without new drift losses by 2026-08-04
@@ -22,8 +22,6 @@ _updated 2026-07-31T08:06Z · companion to [[institutional_knowledge]]_
 - `2026-07-09-carry-accounting-symmetric-realized` -- review 2026-08-08: net_pnl ~= funding - fees +- basis drift as closes accumulate
 - `2026-07-09-income-pagination` -- review 2026-08-08: income totals stable vs manual venue export
 - `2026-07-09-carry-hysteresis-hold-while-positive` -- review 2026-08-08: closes/day < 3 and commissions < 20% of funding by 2026-07-23
-- `2026-07-09-liquidation-source-swap-binance-to-bybit` -- review 2026-07-12: data/liquidations.parquet shows events > 0 within 72h and a steady accumulation rate there
-- `2026-07-09-duplicate-live-executor-killed` -- review 2026-07-10: No further Python312-rooted process appears in Get-CimInstance Win32_Process going forward
 - `2026-07-09-live-autodeploy-preauthorization` -- review at live connect + 60d: first auto-deployed sleeve reaches step-2 (10%) without gate breach
 - `2026-07-09-adaptive-validation-windows` -- review first fast-track + 30d: first fast-tracked sleeve survives its first 30 live days without demotion
 - `2026-07-10-max-growth-mandate-discovery-engine` -- review 2026-08-10: 0 unresolved NONE-defects older than 1 cycle; >=90 hypotheses scored by 2026-08-10 with gr
@@ -111,7 +109,6 @@ _updated 2026-07-31T08:06Z · companion to [[institutional_knowledge]]_
 - `2026-07-19-public-shared-data-surgical` -- review 2026-08-18: open shared datasets get adopted; proprietary finds spawn reconstruction targets; nothing 
 - `2026-07-19-digger-parity-propagation` -- review 2026-08-18: no digger persistently lags another in depth/region/cadence; new upgrades appear across al
 - `2026-07-19-discovery-doctrine-expansion` -- review 2026-08-18: operator-library entries grow with per-region adaptation rows filled within one session of
-- `2026-07-19-brain-api-billing-option-a` -- review 2026-07-26: AUTH-OK verify passes; next 7 days of cycles run with zero quota no-ops; first-month spend
 - `2026-07-19-brain-auth-option-b-supersedes` -- review 2026-08-18: brain cycles run 7 consecutive days with zero quota no-ops alongside normal interactive us
 - `2026-07-19-cro-script-unbound-dollar-fix` -- review 2026-08-18: next run creates a growing data/cro_ai_logs/<ts>.log and exits 0
 - `2026-07-19-exhaustion-verified-assetclass-dormant` -- review 2026-08-18: next fires of all 4 diggers produce full-size logs; asset-class dormancy holds until a led
@@ -222,6 +219,11 @@ _updated 2026-07-31T08:06Z · companion to [[institutional_knowledge]]_
 - `2026-07-31-rec-queue-x1-wire-and-ev-recalibration` -- review 2026-08-07: P1 check 08-02: of the 9 rows due 08-01, fewer than 6 past-due (prediction was >=6 WITHOUT
 - `2026-07-31-bitmex-decade-spec-and-funding-phase1` -- review 2026-08-14: phase 2: bitmex_xbtusd_1m.parquet spans 2014-11->now with both verifications green; first 
 - `2026-07-31-page-digest-governance-and-detector-unlaundering` -- review 2026-08-07: digest_page.log shows delivered daily incl. after-retry lines; orphan check stays honest (
+- `2026-07-31-freeze-response-commit-scheduler-unification-reject-loop-l116a-reopens` -- review 2026-08-12: REARM reply observed lifting freeze + book resumes within one tick; zero duplicate-organ f
+- `2026-07-31-ci-red-deploy-pipeline-repair` -- review 2026-08-30: within 1h of push: puller tick reports up-to-date (or deployed) with CI marker green, cron
+- `2026-07-31-cycle4-recovery-merge-walcl` -- review 2026-08-07: next puller ticks stay green+up-to-date; walcl clock accrues daily rows; no new id collisi
+- `2026-07-31-cycle5-repairmode-conversion-batch` -- review 2026-08-02: max_audit stays 0 live defects through 08-01 noon except acks expiring on their stated fal
+- `2026-07-31-cycle6-r0206-carry-attribution-and-inert-moneypath-fix` -- review 2026-08-31: R0206: the ~66 bps gap decomposes with execution as the DOMINANT term when measured agains
 
 ## Executive KPI snapshot
 - CRO: {"hypotheses_tested_lifetime": 20, "validated_survivors": 1, "survivor_note": "cash-carry (fwd 8/90); trend candidate gauntlet-passed (fwd 1/90); all else graveyarded", "survival_r
