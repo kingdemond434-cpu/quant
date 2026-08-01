@@ -1300,3 +1300,52 @@ quality, infrastructure reliability, learning rate. A system that discovers alph
 monitor, diagnose, adapt and improve itself is incomplete. Success is measured only by the
 long-term improvement of the organism's ability to discover, validate, deploy and compound
 durable alpha — and by E[log(W_T)] itself.
+
+## L1.48 EVIDENCE IS THE CLOCK -- NO CALENDAR GATE MAY STAND IN FOR A CONFIDENCE BAR
+
+Principal law, 2026-08-01: *"fix every grandma time habit ... fast and adaptive for everything,
+present and future implementations."* Timeliness is an ANTI-TIMIDITY obligation of the same rank as
+the aggression laws, not a preference. A gate that makes the desk wait when the evidence is already
+in hand destroys compounding exactly as surely as a gate that sizes too small, and it does so
+invisibly, because waiting never shows up as a loss.
+
+**The rule.** No promotion, allocation, eligibility, probation, re-entry or graduation may be gated
+on elapsed calendar time when what the gate is actually asking is *"is there enough evidence?"*
+Those gates must ask for evidence directly -- sample size and the t-statistic of the measured
+effect -- via `libs/research/evidence_clock.sufficient()`. Calendar time is a PROXY for evidence,
+valid only at a fixed observation rate, and this desk's rate is not fixed. The proxy therefore
+fails in both directions and both failures are real:
+
+* a book at 3 closes/day holds more evidence on day 20 than a slow one does on day 90, and a
+  day-gate blocks it anyway -- foregone compounding bought with nothing;
+* ninety days of near-inactivity clears `days >= 90` carrying twelve observations at t=0.42, so the
+  gate reads green on a claim no statistician would sign.
+
+**The t-statistic, not the Sharpe, is the axis.** Sharpe 2.0 on 20 observations and Sharpe 2.0 on
+400 are different claims and a Sharpe bar cannot separate them -- which is precisely how a hot
+streak buys size it has not earned.
+
+**Shortfalls are reported in OBSERVATIONS, never in days.** This is the adaptive half of the law
+rather than a presentational nicety. A caller told *"you need ~218 more closes"* can open slots,
+shorten holds or widen the universe and have them today; a caller told *"wait 60 days"* can only
+wait. Any check that reports a waiting period instead of an evidence shortfall is in breach.
+
+**Sufficiency is recomputed, never latched.** Eligibility must be withdrawn as fast as it is
+granted. Promotion may be earned quickly; demotion must be immediate. The asymmetry is deliberate:
+being slow to size up costs foregone growth, being slow to size down costs permanent impairment
+(L1.1), and those are not symmetric losses.
+
+**What legitimately remains on a clock**, so this law is never used to strip a real fence:
+
+1. venue and physical reality -- funding stamps, rate limits, maker rest times, data release lags;
+2. a principal law measuring a DIFFERENT claim, e.g. the 7-day Gate 0 soak floor, which attests
+   that the desk RUNS UNATTENDED. Swapping that for a t-statistic would be a category error;
+3. data-window definitions such as an out-of-sample split boundary.
+
+**The test, applied to every new gate before it ships:** if the number stands in for *"enough
+evidence"*, it is illegal -- ask `evidence_clock` instead. If it encodes a physical fact or a
+distinct claim, it stays. Any new `_DAYS`, `_WARMUP`, `PROBATION`, `COOLDOWN` or `GRACE` constant
+must carry a comment naming which of the three exemptions it claims, or it is a defect.
+
+**Binding on future work.** This applies to code not yet written. A reviewer, auditor or panel seat
+encountering a calendar gate in new work must raise it as a defect without waiting to be asked.
