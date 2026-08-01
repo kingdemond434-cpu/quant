@@ -1,13 +1,15 @@
 {
-  "generated": "2026-07-31T12:19:43.478537+00:00",
+  "generated": "2026-08-01T03:55:05.495563+00:00",
   "law": "L1.23 -- survival first: the moat is capital in information form",
   "stores": {
     "execution_tape": {
-      "status": "ABSENT",
+      "status": "REPLICATED",
       "kind": "tree",
       "path": "data/moat/execution_tape",
-      "sha256": {},
-      "note": "store missing on this host -- recorded, not skipped silently"
+      "bytes": 135453,
+      "sha256": {
+        "cashcarry_trades.jsonl": "7edac624481efbdbfc665d2cf0b589bee5c11868ff8865fdcf709e9253adb145"
+      }
     },
     "research_memory": {
       "status": "ABSENT",
@@ -20,9 +22,9 @@
       "status": "REPLICATED",
       "kind": "sqlite",
       "path": "data/sor_research.sqlite",
-      "bytes": 0,
+      "bytes": 835584,
       "sha256": {
-        "sor_research": "9aa9fbd47eab5be6449a56a1417c5feabf57fb7edf058ad767cb71feebd9961a"
+        "sor_research": "c66c0de85d1fea33b6793699016a114df65af5c9769d6712b5cf8b00389f1b78"
       }
     },
     "capital_events": {
@@ -33,27 +35,32 @@
       "note": "store missing on this host -- recorded, not skipped silently"
     },
     "cost_model": {
-      "status": "ABSENT",
+      "status": "REPLICATED",
       "kind": "file",
       "path": "data/cost_model.json",
-      "sha256": {},
-      "note": "store missing on this host -- recorded, not skipped silently"
+      "bytes": 54088,
+      "sha256": {
+        "cost_model.json": "bc261252281d6aa322d73dbc1135774a9be0e24c94dfe7e88230d46aef07ca28"
+      }
     },
     "graveyard": {
       "status": "REPLICATED",
       "kind": "file",
       "path": "docs/graveyard.md",
-      "bytes": 36861,
+      "bytes": 41511,
       "sha256": {
-        "graveyard.md": "621c464d65e5ebd1cddff72582edccce4711e999c55965f49f54d40a33b9c355"
+        "graveyard.md": "75e806fbc9bc27f69c1dcd5672e8716fee91003c7941fe2cc952b8804a56f60b"
       }
     }
   },
   "skipped_over_cap": [],
-  "not_covered_bytes": {},
+  "not_covered_bytes": {
+    "data/lake": 1364769622,
+    "data/moat": 7695899074
+  },
   "not_covered_note": "bulk lake/L2 need the Storage-Box/R2 principal decision -- measured here every run so the gap stays a number",
-  "disk_free_pct": 11.41,
+  "disk_free_pct": 59.18,
   "fuse_pct": 15.0,
   "restore_drill_passed": true,
-  "status": "DISK-FUSE"
+  "status": "OK"
 }

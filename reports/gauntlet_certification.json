@@ -1,20 +1,24 @@
 {
-  "generated": "2026-08-01T01:35:36Z",
-  "status": "COMPLETE-SYNTHETIC",
-  "peers": "SYNTHETIC",
-  "answers": "ONLY: can the gate stack pass a genuinely good candidate at all. The peers here are manufactured zero-edge draws at the campaign's recorded shape, so PBO and the reality check -- both computed AGAINST the cohort -- say nothing about whether the desk's real price space is picked clean. That half stays blocked on a builder for _audit_prepared.pkl (3 readers, 0 writers).",
+  "generated": "2026-08-01T07:30:15Z",
+  "status": "COMPLETE",
+  "peers": "CAMPAIGN",
+  "answers": "both: can the gate pass a true edge, AND is the real 0/420 informative",
   "campaign": {
     "T": 310,
     "N": 420,
     "se_annual_sharpe": 1.0850895607454298,
-    "peers": "SYNTHETIC"
+    "peers": "CAMPAIGN"
   },
   "controls": {
     "targets": [
+      2.0,
       3.0,
-      5.0
+      5.0,
+      7.0,
+      10.0,
+      15.0
     ],
-    "seeds": 1,
+    "seeds": 3,
     "construction": "exact sample Sharpe (libs.validation.positive_control)"
   },
   "design": {
@@ -70,39 +74,181 @@
   },
   "legacy_welded_path": {
     "pass_rate_by_true_sharpe": {
+      "2": 0.0,
       "3": 0.0,
-      "5": 0.0
+      "5": 0.0,
+      "7": 0.0,
+      "10": 0.0,
+      "15": 0.0
     },
     "min_passing_true_sharpe": null,
     "null_false_pass_rate": 0.0,
     "sole_blocking_gate_counts": {
-      "dsr": 1
+      "reality_check": 12
     },
     "all_blocking_gate_counts": {
-      "dsr": 2,
-      "reality_check": 1
+      "dsr": 6,
+      "pbo": 3,
+      "reality_check": 18
     },
     "certified_admits_good": false
   },
   "per_candidate_path": {
     "pass_rate_by_true_sharpe": {
+      "2": 0.0,
       "3": 0.0,
-      "5": 1.0
+      "5": 1.0,
+      "7": 1.0,
+      "10": 1.0,
+      "15": 1.0
     },
     "min_passing_true_sharpe": 5.0,
     "null_false_pass_rate": 0.0,
     "sole_blocking_gate_counts": {
-      "reality_check": 1
+      "reality_check": 6
     },
     "all_blocking_gate_counts": {
-      "reality_check": 1
+      "reality_check": 6
     },
     "certified_admits_good": true
   },
   "rows": [
     {
+      "target": 2.0,
+      "seed": 0,
+      "realised_ann_sharpe": 1.9999999999999998,
+      "legacy": {
+        "survived": false,
+        "failed": [
+          "dsr",
+          "pbo",
+          "reality_check"
+        ],
+        "dsr": 0.5567680586093884,
+        "pbo": 0.6242424242424243,
+        "reality_p": 0.422,
+        "oos_sharpe": 0.11198765685434155
+      },
+      "per_candidate": {
+        "survived": false,
+        "failed": [
+          "reality_check"
+        ],
+        "dsr": 0.9664501754035485,
+        "pbo": 0.07381507381507381,
+        "reality_p": 0.976,
+        "oos_sharpe": 0.11198765685434155
+      }
+    },
+    {
+      "target": 2.0,
+      "seed": 1,
+      "realised_ann_sharpe": 1.9999999999999998,
+      "legacy": {
+        "survived": false,
+        "failed": [
+          "dsr",
+          "pbo",
+          "reality_check"
+        ],
+        "dsr": 0.5564810931915642,
+        "pbo": 0.6098679098679098,
+        "reality_p": 0.422,
+        "oos_sharpe": 0.06271142903833636
+      },
+      "per_candidate": {
+        "survived": false,
+        "failed": [
+          "reality_check"
+        ],
+        "dsr": 0.9657487913305676,
+        "pbo": 0.09945609945609946,
+        "reality_p": 0.976,
+        "oos_sharpe": 0.06271142903833636
+      }
+    },
+    {
+      "target": 2.0,
+      "seed": 2,
+      "realised_ann_sharpe": 2.000000000000001,
+      "legacy": {
+        "survived": false,
+        "failed": [
+          "dsr",
+          "pbo",
+          "reality_check"
+        ],
+        "dsr": 0.5575421916891391,
+        "pbo": 0.6008547008547008,
+        "reality_p": 0.422,
+        "oos_sharpe": 0.14581733513656353
+      },
+      "per_candidate": {
+        "survived": false,
+        "failed": [
+          "reality_check"
+        ],
+        "dsr": 0.9682838315449396,
+        "pbo": 0.04755244755244755,
+        "reality_p": 0.974,
+        "oos_sharpe": 0.14581733513656353
+      }
+    },
+    {
       "target": 3.0,
       "seed": 0,
+      "realised_ann_sharpe": 2.9999999999999996,
+      "legacy": {
+        "survived": false,
+        "failed": [
+          "dsr",
+          "reality_check"
+        ],
+        "dsr": 0.847868706046961,
+        "pbo": 0.4620823620823621,
+        "reality_p": 0.422,
+        "oos_sharpe": 0.16370596580063462
+      },
+      "per_candidate": {
+        "survived": false,
+        "failed": [
+          "reality_check"
+        ],
+        "dsr": 0.9968468989157026,
+        "pbo": 0.00777000777000777,
+        "reality_p": 0.45,
+        "oos_sharpe": 0.16370596580063462
+      }
+    },
+    {
+      "target": 3.0,
+      "seed": 1,
+      "realised_ann_sharpe": 2.9999999999999996,
+      "legacy": {
+        "survived": false,
+        "failed": [
+          "dsr",
+          "reality_check"
+        ],
+        "dsr": 0.8462007074436136,
+        "pbo": 0.4303030303030303,
+        "reality_p": 0.422,
+        "oos_sharpe": 0.1141958070529278
+      },
+      "per_candidate": {
+        "survived": false,
+        "failed": [
+          "reality_check"
+        ],
+        "dsr": 0.9966625770366887,
+        "pbo": 0.023776223776223775,
+        "reality_p": 0.45,
+        "oos_sharpe": 0.1141958070529278
+      }
+    },
+    {
+      "target": 3.0,
+      "seed": 2,
       "realised_ann_sharpe": 3.0,
       "legacy": {
         "survived": false,
@@ -110,20 +256,20 @@
           "dsr",
           "reality_check"
         ],
-        "dsr": 0.35745818143513963,
-        "pbo": 0.18181818181818182,
-        "reality_p": 0.265,
-        "oos_sharpe": 0.15278111922374848
+        "dsr": 0.8525647306871431,
+        "pbo": 0.43853923853923854,
+        "reality_p": 0.422,
+        "oos_sharpe": 0.19708402424392435
       },
       "per_candidate": {
         "survived": false,
         "failed": [
           "reality_check"
         ],
-        "dsr": 0.9970394109157039,
-        "pbo": 0.003962703962703963,
-        "reality_p": 0.538,
-        "oos_sharpe": 0.15278111922374848
+        "dsr": 0.9973238127517601,
+        "pbo": 0.004428904428904429,
+        "reality_p": 0.448,
+        "oos_sharpe": 0.19708402424392435
       }
     },
     {
@@ -133,39 +279,293 @@
       "legacy": {
         "survived": false,
         "failed": [
-          "dsr"
+          "reality_check"
         ],
-        "dsr": 0.9202947679849703,
-        "pbo": 0.08811188811188811,
-        "reality_p": 0.007,
-        "oos_sharpe": 0.25411252892222036
+        "dsr": 0.9967667639503887,
+        "pbo": 0.11414141414141414,
+        "reality_p": 0.422,
+        "oos_sharpe": 0.26714258369322086
       },
       "per_candidate": {
         "survived": true,
         "failed": [],
-        "dsr": 0.9999971518803104,
+        "dsr": 0.9999962138941768,
         "pbo": 0.0,
-        "reality_p": 0.002,
-        "oos_sharpe": 0.25411252892222036
+        "reality_p": 0.017,
+        "oos_sharpe": 0.26714258369322086
+      }
+    },
+    {
+      "target": 5.0,
+      "seed": 1,
+      "realised_ann_sharpe": 4.999999999999998,
+      "legacy": {
+        "survived": false,
+        "failed": [
+          "reality_check"
+        ],
+        "dsr": 0.996520575362851,
+        "pbo": 0.13877233877233877,
+        "reality_p": 0.422,
+        "oos_sharpe": 0.21716456308211068
+      },
+      "per_candidate": {
+        "survived": true,
+        "failed": [],
+        "dsr": 0.9999954374954044,
+        "pbo": 0.0001554001554001554,
+        "reality_p": 0.017,
+        "oos_sharpe": 0.21716456308211068
+      }
+    },
+    {
+      "target": 5.0,
+      "seed": 2,
+      "realised_ann_sharpe": 5.0,
+      "legacy": {
+        "survived": false,
+        "failed": [
+          "reality_check"
+        ],
+        "dsr": 0.997462594789306,
+        "pbo": 0.10038850038850039,
+        "reality_p": 0.422,
+        "oos_sharpe": 0.299617402458646
+      },
+      "per_candidate": {
+        "survived": true,
+        "failed": [],
+        "dsr": 0.9999979572986821,
+        "pbo": 0.0,
+        "reality_p": 0.017,
+        "oos_sharpe": 0.299617402458646
+      }
+    },
+    {
+      "target": 7.0,
+      "seed": 0,
+      "realised_ann_sharpe": 6.999999999999999,
+      "legacy": {
+        "survived": false,
+        "failed": [
+          "reality_check"
+        ],
+        "dsr": 0.9999914327627654,
+        "pbo": 0.0012432012432012432,
+        "reality_p": 0.422,
+        "oos_sharpe": 0.370579201585807
+      },
+      "per_candidate": {
+        "survived": true,
+        "failed": [],
+        "dsr": 0.9999999995357817,
+        "pbo": 0.0,
+        "reality_p": 0.001,
+        "oos_sharpe": 0.370579201585807
+      }
+    },
+    {
+      "target": 7.0,
+      "seed": 1,
+      "realised_ann_sharpe": 6.999999999999999,
+      "legacy": {
+        "survived": false,
+        "failed": [
+          "reality_check"
+        ],
+        "dsr": 0.999989783876942,
+        "pbo": 0.01724941724941725,
+        "reality_p": 0.422,
+        "oos_sharpe": 0.3201333191112935
+      },
+      "per_candidate": {
+        "survived": true,
+        "failed": [],
+        "dsr": 0.9999999993421601,
+        "pbo": 0.0,
+        "reality_p": 0.001,
+        "oos_sharpe": 0.3201333191112935
+      }
+    },
+    {
+      "target": 7.0,
+      "seed": 2,
+      "realised_ann_sharpe": 7.000000000000001,
+      "legacy": {
+        "survived": false,
+        "failed": [
+          "reality_check"
+        ],
+        "dsr": 0.9999957069998218,
+        "pbo": 0.0030303030303030303,
+        "reality_p": 0.422,
+        "oos_sharpe": 0.4021507806733676
+      },
+      "per_candidate": {
+        "survived": true,
+        "failed": [],
+        "dsr": 0.9999999998819916,
+        "pbo": 0.0,
+        "reality_p": 0.001,
+        "oos_sharpe": 0.4021507806733676
+      }
+    },
+    {
+      "target": 10.0,
+      "seed": 0,
+      "realised_ann_sharpe": 10.0,
+      "legacy": {
+        "survived": false,
+        "failed": [
+          "reality_check"
+        ],
+        "dsr": 0.9999999999249511,
+        "pbo": 0.0,
+        "reality_p": 0.422,
+        "oos_sharpe": 0.5257341284246863
+      },
+      "per_candidate": {
+        "survived": true,
+        "failed": [],
+        "dsr": 1.0,
+        "pbo": 0.0,
+        "reality_p": 0.0,
+        "oos_sharpe": 0.5257341284246863
+      }
+    },
+    {
+      "target": 10.0,
+      "seed": 1,
+      "realised_ann_sharpe": 10.0,
+      "legacy": {
+        "survived": false,
+        "failed": [
+          "reality_check"
+        ],
+        "dsr": 0.9999999999019316,
+        "pbo": 0.0,
+        "reality_p": 0.422,
+        "oos_sharpe": 0.47458645315506787
+      },
+      "per_candidate": {
+        "survived": true,
+        "failed": [],
+        "dsr": 1.0,
+        "pbo": 0.0,
+        "reality_p": 0.0,
+        "oos_sharpe": 0.47458645315506787
+      }
+    },
+    {
+      "target": 10.0,
+      "seed": 2,
+      "realised_ann_sharpe": 10.000000000000002,
+      "legacy": {
+        "survived": false,
+        "failed": [
+          "reality_check"
+        ],
+        "dsr": 0.9999999999851199,
+        "pbo": 0.0,
+        "reality_p": 0.422,
+        "oos_sharpe": 0.55595084799545
+      },
+      "per_candidate": {
+        "survived": true,
+        "failed": [],
+        "dsr": 1.0,
+        "pbo": 0.0,
+        "reality_p": 0.0,
+        "oos_sharpe": 0.55595084799545
+      }
+    },
+    {
+      "target": 15.0,
+      "seed": 0,
+      "realised_ann_sharpe": 15.000000000000004,
+      "legacy": {
+        "survived": false,
+        "failed": [
+          "reality_check"
+        ],
+        "dsr": 1.0,
+        "pbo": 0.0,
+        "reality_p": 0.256,
+        "oos_sharpe": 0.7843256731561519
+      },
+      "per_candidate": {
+        "survived": true,
+        "failed": [],
+        "dsr": 1.0,
+        "pbo": 0.0,
+        "reality_p": 0.0,
+        "oos_sharpe": 0.7843256731561519
+      }
+    },
+    {
+      "target": 15.0,
+      "seed": 1,
+      "realised_ann_sharpe": 14.999999999999998,
+      "legacy": {
+        "survived": false,
+        "failed": [
+          "reality_check"
+        ],
+        "dsr": 1.0,
+        "pbo": 0.0,
+        "reality_p": 0.256,
+        "oos_sharpe": 0.732008343228025
+      },
+      "per_candidate": {
+        "survived": true,
+        "failed": [],
+        "dsr": 1.0,
+        "pbo": 0.0,
+        "reality_p": 0.0,
+        "oos_sharpe": 0.732008343228025
+      }
+    },
+    {
+      "target": 15.0,
+      "seed": 2,
+      "realised_ann_sharpe": 15.000000000000004,
+      "legacy": {
+        "survived": false,
+        "failed": [
+          "reality_check"
+        ],
+        "dsr": 1.0,
+        "pbo": 0.0,
+        "reality_p": 0.256,
+        "oos_sharpe": 0.8122842935322543
+      },
+      "per_candidate": {
+        "survived": true,
+        "failed": [],
+        "dsr": 1.0,
+        "pbo": 0.0,
+        "reality_p": 0.0,
+        "oos_sharpe": 0.8122842935322543
       }
     },
     {
       "target": 0.0,
       "seed": 0,
-      "realised_ann_sharpe": 8.169987983632701e-17,
+      "realised_ann_sharpe": 5.718991588542891e-16,
       "legacy": {
         "survived": false,
         "failed": [
           "cpcv",
           "walk_forward",
           "dsr",
+          "pbo",
           "reality_check",
           "capacity"
         ],
-        "dsr": 0.0009722760705717334,
-        "pbo": 0.19937839937839938,
-        "reality_p": 0.265,
-        "oos_sharpe": -0.014656858604065522
+        "dsr": 0.04673067881857893,
+        "pbo": 0.6150738150738151,
+        "reality_p": 0.422,
+        "oos_sharpe": -0.011338383304337334
       },
       "per_candidate": {
         "survived": false,
@@ -173,13 +573,84 @@
           "cpcv",
           "walk_forward",
           "dsr",
+          "pbo",
           "reality_check",
           "capacity"
         ],
-        "dsr": 0.5,
-        "pbo": 0.4416472416472417,
+        "dsr": 0.5000000000000002,
+        "pbo": 0.5157731157731158,
         "reality_p": 1.0,
-        "oos_sharpe": -0.014656858604065522
+        "oos_sharpe": -0.011338383304337334
+      }
+    },
+    {
+      "target": 0.0,
+      "seed": 1,
+      "realised_ann_sharpe": 3.267995193453081e-16,
+      "legacy": {
+        "survived": false,
+        "failed": [
+          "cpcv",
+          "walk_forward",
+          "dsr",
+          "pbo",
+          "reality_check",
+          "capacity"
+        ],
+        "dsr": 0.0467306788185789,
+        "pbo": 0.6150738150738151,
+        "reality_p": 0.422,
+        "oos_sharpe": -0.06537169661324692
+      },
+      "per_candidate": {
+        "survived": false,
+        "failed": [
+          "cpcv",
+          "walk_forward",
+          "dsr",
+          "pbo",
+          "reality_check",
+          "capacity"
+        ],
+        "dsr": 0.5000000000000001,
+        "pbo": 0.5146853146853146,
+        "reality_p": 1.0,
+        "oos_sharpe": -0.06537169661324692
+      }
+    },
+    {
+      "target": 0.0,
+      "seed": 2,
+      "realised_ann_sharpe": -2.8594957942714456e-16,
+      "legacy": {
+        "survived": false,
+        "failed": [
+          "expected_value",
+          "cpcv",
+          "dsr",
+          "pbo",
+          "reality_check",
+          "capacity"
+        ],
+        "dsr": 0.04673067881857884,
+        "pbo": 0.6151515151515151,
+        "reality_p": 0.422,
+        "oos_sharpe": 0.042016062604040144
+      },
+      "per_candidate": {
+        "survived": false,
+        "failed": [
+          "expected_value",
+          "cpcv",
+          "dsr",
+          "pbo",
+          "reality_check",
+          "capacity"
+        ],
+        "dsr": 0.4999999999999999,
+        "pbo": 0.5150738150738151,
+        "reality_p": 1.0,
+        "oos_sharpe": 0.042016062604040144
       }
     }
   ]

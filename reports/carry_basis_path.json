@@ -1,14 +1,14 @@
 {
-  "generated": "2026-07-31T21:13:45.228039+00:00",
+  "generated": "2026-08-01T04:21:41.659172+00:00",
   "law": "L1.16 alpha attribution; L1.4 reality anchoring; R0206/BR-08",
   "row": "R0206",
   "question": "does ranking perps by funding select into a WIDENING basis, making the carry sleeve's -51.74 bps price_pnl a structural feature of its entry rule?",
-  "n_symbols": 164,
+  "n_symbols": 166,
   "span": [
     "2019-09-08",
-    "2026-07-31"
+    "2026-08-01"
   ],
-  "skipped_symbols": 115,
+  "skipped_symbols": 113,
   "trials_declared": 4,
   "trials_run": 4,
   "promotion_authority": "NONE (two-stage law) -- this is a repair diagnostic, not a screen",
@@ -17,75 +17,75 @@
     {
       "construction": "literal",
       "horizon_d": 1,
-      "n_blocks": 2234,
+      "n_blocks": 2235,
       "sampling": "non-overlapping",
       "min_xsec": 20,
       "top_n": 4,
-      "basis_leg_bps": 0.649,
-      "basis_leg_t": 3.11,
-      "funding_leg_bps": 7.118,
-      "net_bps": 7.767,
-      "net_t": 10.28,
+      "basis_leg_bps": 0.689,
+      "basis_leg_t": 3.2,
+      "funding_leg_bps": 7.258,
+      "net_bps": 7.947,
+      "net_t": 10.59,
       "deciles": {
         "1": {
-          "basis_leg_bps": -1.891,
-          "funding_leg_bps": -15.912,
-          "net_bps": -17.803,
-          "n": 2234
+          "basis_leg_bps": -1.909,
+          "funding_leg_bps": -15.91,
+          "net_bps": -17.819,
+          "n": 2235
         },
         "2": {
-          "basis_leg_bps": -0.147,
-          "funding_leg_bps": -0.089,
-          "net_bps": -0.236,
-          "n": 2234
+          "basis_leg_bps": -0.127,
+          "funding_leg_bps": -0.111,
+          "net_bps": -0.238,
+          "n": 2235
         },
         "3": {
-          "basis_leg_bps": -0.087,
-          "funding_leg_bps": 1.835,
-          "net_bps": 1.748,
-          "n": 2234
+          "basis_leg_bps": -0.108,
+          "funding_leg_bps": 1.878,
+          "net_bps": 1.77,
+          "n": 2235
         },
         "4": {
-          "basis_leg_bps": 0.058,
-          "funding_leg_bps": 2.868,
-          "net_bps": 2.926,
-          "n": 2234
+          "basis_leg_bps": 0.065,
+          "funding_leg_bps": 2.879,
+          "net_bps": 2.944,
+          "n": 2235
         },
         "5": {
-          "basis_leg_bps": 0.13,
-          "funding_leg_bps": 3.563,
-          "net_bps": 3.694,
-          "n": 2234
+          "basis_leg_bps": 0.141,
+          "funding_leg_bps": 3.557,
+          "net_bps": 3.698,
+          "n": 2235
         },
         "6": {
-          "basis_leg_bps": 0.314,
-          "funding_leg_bps": 3.96,
-          "net_bps": 4.273,
-          "n": 2234
+          "basis_leg_bps": 0.294,
+          "funding_leg_bps": 3.971,
+          "net_bps": 4.265,
+          "n": 2235
         },
         "7": {
-          "basis_leg_bps": 0.254,
-          "funding_leg_bps": 4.351,
-          "net_bps": 4.605,
-          "n": 2234
+          "basis_leg_bps": 0.243,
+          "funding_leg_bps": 4.329,
+          "net_bps": 4.572,
+          "n": 2235
         },
         "8": {
-          "basis_leg_bps": 0.292,
-          "funding_leg_bps": 4.809,
-          "net_bps": 5.101,
-          "n": 2234
+          "basis_leg_bps": 0.294,
+          "funding_leg_bps": 4.861,
+          "net_bps": 5.155,
+          "n": 2235
         },
         "9": {
-          "basis_leg_bps": 0.334,
-          "funding_leg_bps": 5.299,
-          "net_bps": 5.633,
-          "n": 2234
+          "basis_leg_bps": 0.365,
+          "funding_leg_bps": 5.335,
+          "net_bps": 5.7,
+          "n": 2235
         },
         "10": {
-          "basis_leg_bps": 0.608,
-          "funding_leg_bps": 6.425,
-          "net_bps": 7.033,
-          "n": 2234
+          "basis_leg_bps": 0.572,
+          "funding_leg_bps": 6.41,
+          "net_bps": 6.982,
+          "n": 2235
         }
       },
       "h2_rank_strengthens": false,
@@ -98,70 +98,70 @@
       "sampling": "non-overlapping",
       "min_xsec": 20,
       "top_n": 4,
-      "basis_leg_bps": 0.775,
-      "basis_leg_t": 1.8,
-      "funding_leg_bps": 28.027,
-      "net_bps": 28.803,
-      "net_t": 4.71,
+      "basis_leg_bps": 0.762,
+      "basis_leg_t": 1.74,
+      "funding_leg_bps": 28.73,
+      "net_bps": 29.492,
+      "net_t": 4.91,
       "deciles": {
         "1": {
-          "basis_leg_bps": -4.714,
-          "funding_leg_bps": -57.614,
-          "net_bps": -62.327,
+          "basis_leg_bps": -4.674,
+          "funding_leg_bps": -57.521,
+          "net_bps": -62.195,
           "n": 446
         },
         "2": {
-          "basis_leg_bps": 0.139,
-          "funding_leg_bps": 0.192,
-          "net_bps": 0.331,
+          "basis_leg_bps": 0.108,
+          "funding_leg_bps": 0.434,
+          "net_bps": 0.541,
           "n": 446
         },
         "3": {
-          "basis_leg_bps": 0.056,
-          "funding_leg_bps": 10.69,
-          "net_bps": 10.746,
+          "basis_leg_bps": 0.095,
+          "funding_leg_bps": 10.659,
+          "net_bps": 10.754,
           "n": 446
         },
         "4": {
-          "basis_leg_bps": 0.34,
-          "funding_leg_bps": 13.355,
-          "net_bps": 13.694,
+          "basis_leg_bps": 0.374,
+          "funding_leg_bps": 13.48,
+          "net_bps": 13.854,
           "n": 446
         },
         "5": {
-          "basis_leg_bps": 0.409,
-          "funding_leg_bps": 16.23,
-          "net_bps": 16.639,
+          "basis_leg_bps": 0.376,
+          "funding_leg_bps": 16.08,
+          "net_bps": 16.456,
           "n": 446
         },
         "6": {
-          "basis_leg_bps": 0.59,
-          "funding_leg_bps": 18.337,
-          "net_bps": 18.926,
+          "basis_leg_bps": 0.595,
+          "funding_leg_bps": 18.605,
+          "net_bps": 19.2,
           "n": 446
         },
         "7": {
-          "basis_leg_bps": 0.212,
-          "funding_leg_bps": 20.137,
-          "net_bps": 20.349,
+          "basis_leg_bps": 0.213,
+          "funding_leg_bps": 20.271,
+          "net_bps": 20.483,
           "n": 446
         },
         "8": {
-          "basis_leg_bps": 1.01,
-          "funding_leg_bps": 20.576,
-          "net_bps": 21.586,
+          "basis_leg_bps": 1.034,
+          "funding_leg_bps": 20.509,
+          "net_bps": 21.544,
           "n": 446
         },
         "9": {
-          "basis_leg_bps": 0.879,
-          "funding_leg_bps": 22.362,
-          "net_bps": 23.241,
+          "basis_leg_bps": 0.831,
+          "funding_leg_bps": 22.494,
+          "net_bps": 23.324,
           "n": 446
         },
         "10": {
-          "basis_leg_bps": 0.908,
-          "funding_leg_bps": 24.466,
-          "net_bps": 25.374,
+          "basis_leg_bps": 0.932,
+          "funding_leg_bps": 24.512,
+          "net_bps": 25.444,
           "n": 446
         }
       },
@@ -171,75 +171,75 @@
     {
       "construction": "lag1",
       "horizon_d": 1,
-      "n_blocks": 2233,
+      "n_blocks": 2234,
       "sampling": "non-overlapping",
       "min_xsec": 20,
       "top_n": 4,
-      "basis_leg_bps": 0.105,
-      "basis_leg_t": 0.59,
-      "funding_leg_bps": 6.109,
-      "net_bps": 6.214,
-      "net_t": 8.55,
+      "basis_leg_bps": 0.045,
+      "basis_leg_t": 0.25,
+      "funding_leg_bps": 6.11,
+      "net_bps": 6.155,
+      "net_t": 8.43,
       "deciles": {
         "1": {
-          "basis_leg_bps": -0.99,
-          "funding_leg_bps": -12.495,
-          "net_bps": -13.486,
-          "n": 2233
+          "basis_leg_bps": -0.992,
+          "funding_leg_bps": -12.532,
+          "net_bps": -13.524,
+          "n": 2234
         },
         "2": {
-          "basis_leg_bps": 0.006,
-          "funding_leg_bps": -0.006,
-          "net_bps": 0.0,
-          "n": 2233
+          "basis_leg_bps": 0.003,
+          "funding_leg_bps": 0.022,
+          "net_bps": 0.025,
+          "n": 2234
         },
         "3": {
-          "basis_leg_bps": 0.023,
-          "funding_leg_bps": 1.816,
-          "net_bps": 1.84,
-          "n": 2233
+          "basis_leg_bps": 0.02,
+          "funding_leg_bps": 1.83,
+          "net_bps": 1.85,
+          "n": 2234
         },
         "4": {
-          "basis_leg_bps": -0.045,
-          "funding_leg_bps": 2.74,
-          "net_bps": 2.695,
-          "n": 2233
+          "basis_leg_bps": -0.061,
+          "funding_leg_bps": 2.748,
+          "net_bps": 2.686,
+          "n": 2234
         },
         "5": {
-          "basis_leg_bps": 0.044,
-          "funding_leg_bps": 3.319,
-          "net_bps": 3.363,
-          "n": 2233
+          "basis_leg_bps": 0.045,
+          "funding_leg_bps": 3.323,
+          "net_bps": 3.368,
+          "n": 2234
         },
         "6": {
-          "basis_leg_bps": 0.123,
-          "funding_leg_bps": 3.586,
-          "net_bps": 3.709,
-          "n": 2233
+          "basis_leg_bps": 0.148,
+          "funding_leg_bps": 3.531,
+          "net_bps": 3.679,
+          "n": 2234
         },
         "7": {
-          "basis_leg_bps": 0.281,
-          "funding_leg_bps": 3.866,
-          "net_bps": 4.147,
-          "n": 2233
+          "basis_leg_bps": 0.251,
+          "funding_leg_bps": 3.964,
+          "net_bps": 4.215,
+          "n": 2234
         },
         "8": {
-          "basis_leg_bps": 0.192,
-          "funding_leg_bps": 4.326,
-          "net_bps": 4.518,
-          "n": 2233
+          "basis_leg_bps": 0.209,
+          "funding_leg_bps": 4.289,
+          "net_bps": 4.498,
+          "n": 2234
         },
         "9": {
-          "basis_leg_bps": 0.209,
-          "funding_leg_bps": 4.599,
-          "net_bps": 4.808,
-          "n": 2233
+          "basis_leg_bps": 0.181,
+          "funding_leg_bps": 4.67,
+          "net_bps": 4.851,
+          "n": 2234
         },
         "10": {
-          "basis_leg_bps": 0.234,
-          "funding_leg_bps": 5.446,
-          "net_bps": 5.679,
-          "n": 2233
+          "basis_leg_bps": 0.247,
+          "funding_leg_bps": 5.455,
+          "net_bps": 5.702,
+          "n": 2234
         }
       },
       "h2_rank_strengthens": false,
@@ -252,70 +252,70 @@
       "sampling": "non-overlapping",
       "min_xsec": 20,
       "top_n": 4,
-      "basis_leg_bps": 0.578,
-      "basis_leg_t": 1.5,
-      "funding_leg_bps": 26.228,
-      "net_bps": 26.805,
-      "net_t": 4.39,
+      "basis_leg_bps": 0.43,
+      "basis_leg_t": 1.06,
+      "funding_leg_bps": 26.859,
+      "net_bps": 27.29,
+      "net_t": 4.51,
       "deciles": {
         "1": {
-          "basis_leg_bps": -1.607,
-          "funding_leg_bps": -51.027,
-          "net_bps": -52.634,
+          "basis_leg_bps": -1.641,
+          "funding_leg_bps": -50.84,
+          "net_bps": -52.48,
           "n": 446
         },
         "2": {
-          "basis_leg_bps": -0.084,
-          "funding_leg_bps": 0.144,
-          "net_bps": 0.06,
+          "basis_leg_bps": -0.027,
+          "funding_leg_bps": 0.037,
+          "net_bps": 0.01,
           "n": 446
         },
         "3": {
-          "basis_leg_bps": -0.275,
-          "funding_leg_bps": 10.826,
-          "net_bps": 10.55,
+          "basis_leg_bps": -0.294,
+          "funding_leg_bps": 10.763,
+          "net_bps": 10.469,
           "n": 446
         },
         "4": {
-          "basis_leg_bps": -0.073,
-          "funding_leg_bps": 13.226,
-          "net_bps": 13.153,
+          "basis_leg_bps": -0.057,
+          "funding_leg_bps": 13.353,
+          "net_bps": 13.297,
           "n": 446
         },
         "5": {
-          "basis_leg_bps": 0.109,
-          "funding_leg_bps": 15.471,
-          "net_bps": 15.581,
+          "basis_leg_bps": 0.097,
+          "funding_leg_bps": 15.427,
+          "net_bps": 15.524,
           "n": 446
         },
         "6": {
-          "basis_leg_bps": 0.2,
-          "funding_leg_bps": 17.68,
-          "net_bps": 17.88,
+          "basis_leg_bps": 0.25,
+          "funding_leg_bps": 18.023,
+          "net_bps": 18.273,
           "n": 446
         },
         "7": {
-          "basis_leg_bps": 0.414,
-          "funding_leg_bps": 19.482,
-          "net_bps": 19.896,
+          "basis_leg_bps": 0.509,
+          "funding_leg_bps": 19.517,
+          "net_bps": 20.026,
           "n": 446
         },
         "8": {
-          "basis_leg_bps": 0.453,
-          "funding_leg_bps": 19.632,
-          "net_bps": 20.085,
+          "basis_leg_bps": 0.423,
+          "funding_leg_bps": 19.515,
+          "net_bps": 19.938,
           "n": 446
         },
         "9": {
-          "basis_leg_bps": 0.687,
-          "funding_leg_bps": 20.452,
-          "net_bps": 21.139,
+          "basis_leg_bps": 0.561,
+          "funding_leg_bps": 20.88,
+          "net_bps": 21.441,
           "n": 446
         },
         "10": {
-          "basis_leg_bps": 0.845,
-          "funding_leg_bps": 22.729,
-          "net_bps": 23.574,
+          "basis_leg_bps": 0.858,
+          "funding_leg_bps": 22.528,
+          "net_bps": 23.386,
           "n": 446
         }
       },
