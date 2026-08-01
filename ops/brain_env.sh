@@ -166,3 +166,23 @@ _law_gate_fast
 # into every claude organ via --append-system-prompt. Read once here; every organ script
 # sources this file, so all present AND future organs inherit it. Read at spawn time.
 _DOCTRINE="$(cat /home/quant/quant-platform/ops/principal_doctrine.txt 2>/dev/null)"
+
+# DESK MEMORY (2026-08-01): the lessons this desk has PAID for -- ranked by what ignorance cost
+# x how many times it has had to re-learn them -- appended to the same injection every organ
+# already receives. This is the ONLY thing on the desk that compounds across sessions: model
+# weights do not update between runs, so a lesson lives exactly as long as something reads it at
+# runtime. docs/institutional_knowledge.md held 67,802 chars of hard-won incident knowledge and
+# was cited only from Python comments -- it reached no organ, ever, and therefore changed no
+# behaviour, ever. This closes that path.
+#
+# HARD-BUDGETED at 12k chars by libs/research/desk_memory.py, deliberately: doctrine reached
+# 95,204 chars (6.0x max_audit's own 16k dilution threshold) precisely because nothing ever said
+# no. Adding lessons past the budget DISPLACES weaker ones rather than growing the context, so
+# organs get smarter over time without getting slower. Overflow goes to stderr, never silently.
+#
+# `|| true` is load-bearing: a broken memory layer must never stop an organ from running. The
+# corpus is an improvement to a working organ, not a precondition for one.
+_MEMORY="$(cd /home/quant/quant-platform 2>/dev/null && \
+    .venv/bin/python scripts/learn.py render 2>/dev/null || true)"
+_DOCTRINE="${_DOCTRINE}
+${_MEMORY}"

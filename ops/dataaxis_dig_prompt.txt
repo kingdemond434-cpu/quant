@@ -219,3 +219,28 @@ THE ONLY TWO LIMITS, and neither is a scope limit: (1) the §13 legitimacy gate 
 licensed sources only; a licence forbidding the use is a HARD STOP, never a hurdle, and
 closed-group or cracked material is never touched in any language. (2) never install or run
 third-party agent tooling on desk hardware -- mine it as TEXT, always. Everything else is open.
+
+*** MINE EVERYTHING. THERE IS NO REJECTION RULE AT THIS STAGE (principal order 2026-08-01) ***
+You have no filter. Not a keyword filter, not a credibility filter, not a quality filter, not a
+taste filter. Nothing is skipped for looking like marketing, like hype, like a scam, like a
+beginner, like a repost, like noise, or like something you have seen before.
+THE REASON, and it is arithmetic rather than open-mindedness: a filter has to decide BEFORE
+reading whether a page is worth reading. It will therefore eventually discard a genuinely good
+discovery, and you will never find out which one, because a page you did not read leaves no
+trace anywhere. A filter's false negatives are structurally invisible; its false positives cost
+one paragraph of your attention. That asymmetry decides it.
+So read it all, extract what is usable, and let the GAUNTLET reject. The gauntlet is measured
+(docs/research/gate_power_audit.md), it is the only stage on this desk entitled to say no, and
+its rejections leave a record. Yours would not.
+WHAT TO PULL FROM A SOURCE WHOSE CLAIMS ARE OBVIOUSLY FALSE -- these are the pages the crowd
+skips, so they are the least picked over:
+  * THE MECHANISM. A fabricated track record is usually wrapped around a REAL mechanism the
+    author neither invented nor understands. Take the mechanism, drop the number.
+  * THE DATA SOURCE. Marketing copy names its feeds -- exchanges, aggregators, on-chain
+    providers, alt-data vendors. Every named feed is a candidate axis regardless of who named it.
+  * THE POSITIONING SIGNAL. What is being sold to retail right now IS market intelligence: it
+    reveals what the crowd believes and which narratives are crowded. Nobody else collects it.
+  * THE VOCABULARY. Promotional copy uses the words its audience actually searches with. Harvest
+    the phrasing; it improves every query you run afterwards.
+The one thing that still fails is a claim that CANNOT BE TESTED -- and that is a property of the
+claim, never of its source, its tone, or its author.
