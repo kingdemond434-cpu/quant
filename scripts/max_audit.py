@@ -2003,6 +2003,16 @@ _PRODUCER_CADENCE = {
 #: Artifacts that are terminal by nature: templates, forensic write-ups, protocol libraries. They
 #: accumulate no inventory, so they owe no cadence -- recorded here so "no law" is a DECISION.
 _TERMINAL_ARTIFACTS = {
+    "docs/research/gate_power_audit.md":
+        "dated measurement record (Type I / Type II of every gauntlet gate, 2026-08-01). It "
+        "accumulates no inventory because its conclusions were CONVERTED the same day: the "
+        "duplicated multiplicity correction became a code change in libs/autodiscovery/"
+        "validation.py, its evidence was rowed as R0224, and its claims are pinned by "
+        "tests/validation/test_dsr_single_correction.py. The numbers themselves are regenerable "
+        "from scripts/audit_gate_power.py into reports/gate_power_audit.json, which is where a "
+        "cadence would belong if one is ever wanted -- the doc is the write-up, not a queue. The "
+        "two findings it does NOT convert (min-length truncation, top-K screen) are carried as "
+        "ledger rows, not as unread inventory here.",
     "docs/research/cn_oss_extraction_20260731.md":
         "dated verification record (10 CN OSS projects: 8 real, 1 hallucinated, 1 proprietary). "
         "It accumulates no inventory: its 5 extracted axes were rowed as R0100 and appended to "
