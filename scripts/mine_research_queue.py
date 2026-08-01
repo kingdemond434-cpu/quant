@@ -1,0 +1,314 @@
+"""Daily research miner: discover candidate quant sources, rank them, queue what to read.
+
+WHAT IT DOES AND WHAT IT CANNOT, both measured from this box on 2026-08-01 rather than assumed.
+
+    YouTube channel listings   REACHABLE -- video ids + titles parse out of the page (23/23 for
+                               one channel)
+    YouTube captions           BLOCKED -- no `captionTracks` in the watch page, api/timedtext
+                               returns 0 bytes, youtube-transcript-api raises RequestBlocked.
+                               Datacenter-IP block; retrying does not fix it.
+    Xueqiu (雪球)              REACHABLE -- 110KB of real content with an embedded JSON payload
+    Baidu                      BLOCKED -- returns a 1.5KB anti-bot shell, not results
+    Zhihu (知乎)               BLOCKED -- HTTP 403
+    Bilibili search API        BLOCKED -- HTTP 412 (WBI request signing required)
+    JoinQuant / BigQuant /     REACHABLE but JS-rendered shells; the listings need a browser.
+    RiceQuant / MyQuant        Chromium is available in this environment for that.
+
+So this miner does NOT fetch transcripts and does not pretend to. It solves the part that is
+actually expensive for a human: deciding WHICH of several hundred videos is worth reading. One
+channel in this batch had 559 videos and the desk's own record shows most of them would convert
+nothing.
+
+EVERY SOURCE RECORDS ITS OWN STATUS. A source that fails is written into the report as BLOCKED
+with the reason, never skipped silently -- the 2026-08-01 batch produced a report saying "OKX
+BLOCKED, HTTP 403" that turned out to be a User-Agent bot-filter, and an honestly recorded WRONG
+diagnosis outlives the outage it describes (lesson L0052).
+
+THE LEDGER MAKES IT DAILY. Seen video ids are appended, so each run surfaces only what is NEW.
+Without it a daily job re-reports the same backlog forever and gets ignored within a week.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import time
+import urllib.error
+import urllib.request
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Any
+
+from libs.research.video_triage import SURFACE_THRESHOLD, triage
+
+_ROOT = Path(__file__).resolve().parent.parent
+_OUT = _ROOT / "reports" / "research_queue.json"
+_LEDGER = _ROOT / "data" / "research_queue_seen.json"
+
+_UA = {"User-Agent": ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+                      "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"),
+       "Accept-Language": "en-US,en;q=0.9,zh-CN;q=0.8"}
+
+#: Channels whose output has actually converted on this desk, plus near neighbours. Ordered by
+#: measured conversion: neurotrader and Algovibes produced essentially everything that shipped
+#: from the 2026-08-01 batch.
+YOUTUBE_CHANNELS = (
+    "@neurotrader888",
+    "@Algovibes",
+    "@quantprogram",
+    "@TheTransparentTrader",
+    "@PartTimeLarry",
+    "@quantopian",
+)
+
+#: Chinese-language sources. Only the ones measured reachable are enabled; the rest are declared
+#: here WITH their block reason so the next reader does not re-diagnose them.
+CN_SOURCES: tuple[dict[str, str], ...] = (
+    {"name": "xueqiu", "url": "https://xueqiu.com/", "status": "enabled"},
+    {"name": "baidu", "url": "https://www.baidu.com/s?wd=%E9%87%8F%E5%8C%96%E4%BA%A4%E6%98%93",
+     "status": "blocked", "reason": "returns a ~1.5KB anti-bot shell rather than results"},
+    {"name": "zhihu", "url": "https://www.zhihu.com/search?q=%E9%87%8F%E5%8C%96",
+     "status": "blocked", "reason": "HTTP 403 to unauthenticated requests"},
+    {"name": "bilibili", "url": "https://api.bilibili.com/x/web-interface/search/type",
+     "status": "blocked", "reason": "HTTP 412 -- search API requires WBI request signing"},
+    {"name": "joinquant", "url": "https://www.joinquant.com/", "status": "needs_browser",
+     "reason": "reachable but JS-rendered; listings require Chromium"},
+    {"name": "bigquant", "url": "https://bigquant.com/", "status": "needs_browser",
+     "reason": "reachable but JS-rendered; listings require Chromium"},
+    {"name": "ricequant", "url": "https://www.ricequant.com/", "status": "needs_browser",
+     "reason": "reachable but JS-rendered; listings require Chromium"},
+)
+
+
+def _get(url: str, *, timeout: float = 30.0) -> str:
+    req = urllib.request.Request(url, headers=_UA)
+    with urllib.request.urlopen(req, timeout=timeout) as fh:
+        body: str = fh.read().decode("utf8", errors="ignore")
+    return body
+
+
+def fetch_channel(handle: str) -> tuple[list[tuple[str, str]], str | None]:
+    """(video_id, title) pairs from a channel's /videos page, or (…, error).
+
+    IDS AND TITLES COME FROM THE SAME BLOCK, never from two independent lists. A misaligned
+    pairing would attach the wrong title to every id and the queue would rank nonsense while
+    looking perfectly healthy -- the worst class of bug this miner could have, because the output
+    stays plausible.
+
+    PARSES `lockupViewModel`, which is the CURRENT layout. YouTube previously emitted
+    `videoRenderer` blocks and this parser was written against those; on 2026-08-01 the page
+    served zero of them and 24 lockupViewModels, so an earlier version reported every channel as
+    blocked. Both shapes are tried, newest first, and a page that yields neither is reported as a
+    LAYOUT CHANGE rather than a network failure -- they need completely different fixes and
+    conflating them wastes the next reader's time.
+    """
+    try:
+        html = _get(f"https://www.youtube.com/{handle}/videos", timeout=40)
+    except Exception as exc:
+        return [], f"{type(exc).__name__}: {str(exc)[:140]}"
+    return _parse_listing(html)
+
+
+def _parse_listing(html: str) -> tuple[list[tuple[str, str]], str | None]:
+    out: list[tuple[str, str]] = []
+    seen: set[str] = set()
+
+    # Current layout: {"lockupViewModel":{"contentId":"<id>", ... "title":{"content":"<title>"}}}
+    for block in re.split(r'"lockupViewModel":', html)[1:]:
+        # NO WINDOW. An earlier version searched only the first 4,000 chars of each block and
+        # found nothing: a lockup carries several thumbnail URLs before it reaches contentId, so
+        # the id routinely sits past that. The split already bounds each block to one video.
+        vid = re.search(r'"contentId":"([\w-]{11})"', block)
+        title = re.search(r'"title":\{"content":"((?:[^"\\]|\\.)*)"', block)
+        if vid and title and vid.group(1) not in seen:
+            seen.add(vid.group(1))
+            out.append((vid.group(1), _unescape(title.group(1))))
+
+    if not out:  # Legacy layout, kept so an older cached page still parses.
+        for block in re.findall(r'"videoRenderer":\{(.*?)"navigationEndpoint"', html, flags=re.S):
+            vid = re.search(r'"videoId":"([\w-]{11})"', block)
+            title = re.search(r'"title":\{"runs":\[\{"text":"((?:[^"\\]|\\.)*)"\}\]', block)
+            if vid and title and vid.group(1) not in seen:
+                seen.add(vid.group(1))
+                out.append((vid.group(1), _unescape(title.group(1))))
+
+    if not out:
+        return [], ("LAYOUT CHANGE: page fetched but neither lockupViewModel nor videoRenderer "
+                    "blocks parsed. This is a parser fix, not a network problem.")
+    return out, None
+
+
+def _unescape(raw: str) -> str:
+    try:
+        decoded: str = json.loads(f'"{raw}"')
+        return decoded
+    except json.JSONDecodeError:
+        return raw
+
+
+#: Search queries run EVERY day so the miner is not limited to a hand-picked channel list. The
+#: desk's whole problem with a fixed list is that it can only ever re-find what someone already
+#: knew about; search is what makes the miner exploratory. Multilingual on purpose -- the
+#: Chinese-language quant scene publishes to YouTube too, and those results never surface from
+#: English queries.
+SEARCH_QUERIES = (
+    "quantitative trading backtest python",
+    "algorithmic trading strategy tested",
+    "backtested trading strategies statistical",
+    "walk forward analysis trading",
+    "monte carlo permutation test trading",
+    "crypto quant strategy research",
+    "overfitting trading strategy validation",
+    "量化交易 策略 回测",
+    "量化投资 python 策略",
+    "加密货币 量化 策略",
+    "アルゴリズム取引 バックテスト",
+    "трейдинг квантовый бэктест",
+)
+
+
+def search_youtube(query: str) -> tuple[list[tuple[str, str]], str | None]:
+    """(video_id, title) pairs from a YouTube search, using the same parser as a channel page.
+
+    THE SAME PARSER ON PURPOSE. Search results and channel listings share the lockupViewModel
+    layout, so one parser fix repairs both -- and if they ever diverge, the channel path fails
+    loudly rather than the search path failing silently.
+    """
+    from urllib.parse import quote
+    try:
+        html = _get(f"https://www.youtube.com/results?search_query={quote(query)}", timeout=40)
+    except Exception as exc:
+        return [], f"{type(exc).__name__}: {str(exc)[:140]}"
+    return _parse_listing(html)
+
+
+def probe_cn() -> list[dict[str, Any]]:
+    """Reachability of each Chinese source, re-measured every run.
+
+    RE-MEASURED RATHER THAN TRUSTED because a block is a fact about today. The desk has already
+    been burned once by treating a recorded HTTP failure as permanent when it was a header
+    problem, so the declared status is the PRIOR and the probe is the evidence.
+    """
+    rows: list[dict[str, Any]] = []
+    for src in CN_SOURCES:
+        row: dict[str, Any] = {"name": src["name"], "declared": src["status"],
+                               "reason": src.get("reason")}
+        try:
+            body = _get(src["url"], timeout=25)
+            row["reachable"] = True
+            row["bytes"] = len(body)
+            # A tiny body from a search endpoint is an anti-bot shell, not content.
+            row["looks_like_content"] = len(body) > 20_000
+        except urllib.error.HTTPError as exc:
+            row["reachable"] = False
+            row["http_status"] = exc.code
+        except Exception as exc:
+            row["reachable"] = False
+            row["error"] = f"{type(exc).__name__}: {str(exc)[:120]}"
+        rows.append(row)
+        time.sleep(0.4)
+    return rows
+
+
+def _load_seen() -> set[str]:
+    if not _LEDGER.exists():
+        return set()
+    try:
+        return set(json.loads(_LEDGER.read_text("utf-8")).get("seen", []))
+    except Exception:
+        return set()
+
+
+def _save_seen(seen: set[str]) -> None:
+    _LEDGER.parent.mkdir(parents=True, exist_ok=True)
+    _LEDGER.write_text(json.dumps({"seen": sorted(seen)}, indent=0), "utf-8")
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--channels", default=",".join(YOUTUBE_CHANNELS))
+    ap.add_argument("--threshold", type=float, default=SURFACE_THRESHOLD)
+    ap.add_argument("--all", action="store_true", help="ignore the seen-ledger (full backlog)")
+    ap.add_argument("--out", default=str(_OUT))
+    args = ap.parse_args(argv)
+
+    seen = set() if args.all else _load_seen()
+    channels = [c.strip() for c in str(args.channels).split(",") if c.strip()]
+
+    queue: list[dict[str, Any]] = []
+    blocked: dict[str, str] = {}
+    counts: dict[str, int] = {}
+    all_ids: set[str] = set()
+
+    discovered: dict[str, int] = {}
+    for q in SEARCH_QUERIES:
+        vids, err = search_youtube(q)
+        if err:
+            blocked[f"search:{q}"] = err
+            continue
+        discovered[q] = len(vids)
+        all_ids.update(v for v, _ in vids)
+        fresh = [(v, t2) for v, t2 in vids if v not in seen]
+        for c in triage(fresh, channel=f"search:{q}", threshold=args.threshold):
+            queue.append({"channel": f"search:{q}", "video_id": c.video_id, "title": c.title,
+                          "score": round(c.score, 1), "url": c.url, "why": list(c.hits)})
+        time.sleep(0.8)
+
+    for handle in channels:
+        vids, err = fetch_channel(handle)
+        if err:
+            blocked[handle] = err
+            continue
+        counts[handle] = len(vids)
+        all_ids.update(v for v, _ in vids)
+        fresh = [(v, t) for v, t in vids if v not in seen]
+        for c in triage(fresh, channel=handle, threshold=args.threshold):
+            queue.append({"channel": handle, "video_id": c.video_id, "title": c.title,
+                          "score": round(c.score, 1), "url": c.url, "why": list(c.hits)})
+        time.sleep(0.6)
+
+    # A video can surface from several queries; keep its best-scoring row only.
+    best: dict[str, dict[str, Any]] = {}
+    for row in queue:
+        vid = str(row["video_id"])
+        if vid not in best or float(row["score"]) > float(best[vid]["score"]):
+            best[vid] = row
+    queue = sorted(best.values(), key=lambda r: -float(r["score"]))
+    doc = {
+        "generated_utc": datetime.now(UTC).isoformat(timespec="seconds").replace("+00:00", "Z"),
+        "status": "MEASURED" if counts else "BLOCKED",
+        "captions": {
+            "available": False,
+            "reason": ("every caption path is blocked from this IP: no captionTracks in the watch "
+                       "page, api/timedtext returns 0 bytes, youtube-transcript-api raises "
+                       "RequestBlocked. Discovery and ranking work; reading does not."),
+            "implication": "the queue names what to paste in; it cannot read it",
+        },
+        "channels_scanned": counts,
+        "search_discovered": discovered,
+        "channels_blocked": blocked,
+        "threshold": args.threshold,
+        "n_new_surfaced": len(queue),
+        "queue": queue,   # NOT capped: a cap silently hides the tail of a daily backlog
+        "cn_sources": probe_cn(),
+    }
+    out = Path(args.out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(doc, indent=2, ensure_ascii=False), "utf-8")
+
+    if not args.all:
+        _save_seen(seen | all_ids)
+
+    print(f"scanned {sum(counts.values())} videos across {len(counts)} channel(s); "
+          f"{len(queue)} new above threshold {args.threshold}")
+    for r in queue[:12]:
+        print(f"  {r['score']:>5.1f}  {r['channel']:<18} {r['title'][:64]}")
+    if blocked:
+        print(f"BLOCKED channels: {blocked}")
+    print(f"wrote {out}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
