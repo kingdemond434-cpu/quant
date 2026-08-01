@@ -3690,6 +3690,66 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0304",
+   "source": "cycle",
+   "summary": "L1.47 STAGED (money path, L1.38 STERILE): land funding_events() -- a ~15-line twin of commission_events(binance_testnet.py:269) reading _income_rows(...,'FUNDING_FEE',symbol=) -- and write data/funding_truth.json. This is the ONLY thing that clears check_funding_capture's UNMEASURED: 265 closes have booked $93.58 of ESTIMATED funding and not one has ever been differenced against what Binance actually paid. Until it lands, every funding number the desk reports is an unaudited estimate and R0219's ~66bps execution gap cannot be decomposed (book-level funding scalar puts any phase error in the execution bucket by construction).",
+   "roi_bps": 130.0,
+   "raised": "2026-08-01T14:01:24.424300+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0305",
+   "source": "cycle",
+   "summary": "L1.47 STAGED (money path, L1.38 STERILE): make closes settlement-aware. 59/265 closes (22.3%, z=+4.8) landed within 1h of a funding stamp with POSITIVE funding, walking away from $8.58 = 2.89bps on that notional and 9.2% of ALL booked funding revenue on the only deployed sleeve. Add a phase term to _churn_guard (hold past an imminent stamp when funding>0 and no rail forces the exit) and replace _entry_gate's periods=max(1,min_hold_h/8.0) with funding_clock.settlements_in over the prospective window. RAILS ALWAYS WIN -- never hold past a rail to chase a settlement (L1.45 closes-are-never-excited).",
+   "roi_bps": 130.0,
+   "raised": "2026-08-01T14:01:24.532956+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0306",
+   "source": "cycle",
+   "summary": "L1.47 STAGED (money path): persist rail_forced onto the close log row. _churn_guard(held_h,funding,rail_forced) at run_cashcarry_executor.py:334 COMPUTES whether a close was forced and _log_trade DISCARDS it, so check_funding_capture reports PHASE-BLIND and this capability's own falsifier -- are the 59 pre-stamp closes CHOSEN or FORCED? -- is unanswerable after the fact. A flag computed and dropped is evidence destroyed at zero saving; 86/265 closes held <8h despite _MIN_HOLD_H=24, so a large forced fraction is likely and currently unprovable.",
+   "roi_bps": 40.0,
+   "raised": "2026-08-01T14:01:24.709832+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0307",
+   "source": "cycle",
+   "summary": "fundingIntervalHours has ZERO occurrences repo-wide, and Binance sets funding interval PER SYMBOL (4h for many high-funding alts). Every '/ 8.0' (7 sites) and '3*365' (8 sites) assumes a uniform 8h, so the entry gate under-ranks by 2x EXACTLY the highest-funding names -- the ones carry most wants -- and _FUNDING_PANIC=-0.0005 'per-8h' lets the desk hold through 2x the bleed it thinks on those same names. libs/research/funding_clock.py now single-sources the interval and its interval_hours() REFUSES (returns None) for symbols the venue has not declared, so the fix is: parse fundingIntervalHours from /fapi/v1/premiumIndex (already fetched every cycle, currently 90% discarded at crypto_source.py:144) and thread it through. Wiring the 15 restatement sites to the clock module is NOT money path; the executor's two sites are.",
+   "roi_bps": 90.0,
+   "raised": "2026-08-01T14:01:36.817244+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0308",
+   "source": "cycle",
+   "summary": "est_funding uses ENTRY COST BASIS not mark notional: run_cashcarry_executor.py:869 sets notl = spot_qty * spot_cost, but funding is paid on MARK notional at each stamp. A third accounting error stacked on the discrete-vs-continuous one (L1.47) and on the book-level attribution gap, and unlike those two it GROWS WITH PRICE DRIFT rather than averaging out -- so it is the one term of the three that is NOT unbiased in expectation. Cheap to fix once per-position funding truth exists to validate against (R0304).",
+   "roi_bps": 25.0,
+   "raised": "2026-08-01T14:01:37.100108+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
