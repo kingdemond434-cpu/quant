@@ -42,6 +42,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
+from libs.llm.push import GENERATION_LADDER, push_rounds  # noqa: E402
 from scripts import seats  # noqa: E402 -- after the sys.path bootstrap above
 
 KEYS = ROOT / "data/secrets/llm_panel.json"
@@ -105,11 +106,10 @@ SYSTEM = (
 )
 
 
-def _ask(base, key, model, system, user, timeout=240.0):
+def _ask(base, key, model, messages, timeout=240.0):
     body = json.dumps({"model": model, "max_tokens": 3000, "temperature": 0.95,
                        "reasoning": {"effort": "high"},
-                       "messages": [{"role": "system", "content": system},
-                                    {"role": "user", "content": user}]}).encode()
+                       "messages": messages}).encode()
     req = urllib.request.Request(base.rstrip("/") + "/chat/completions", data=body, method="POST",
                                  headers={"Authorization": f"Bearer {key}",
                                           "Content-Type": "application/json"})
@@ -117,6 +117,16 @@ def _ask(base, key, model, system, user, timeout=240.0):
         out = json.loads(r.read())
     m = out["choices"][0]["message"]
     return str(m.get("content") or m.get("reasoning") or "")
+
+
+def _ask_pushed(base, key, model, system, user):
+    """Generation is the desk's #2 supreme objective and it was taking ONE answer per seat per
+    lens. The graveyard, mechanism map and lens prompt are already paid for; the ladder harvests
+    the rest of what the seat has against that same context, and stops when novelty dies rather
+    than at an arbitrary count."""
+    r = push_rounds(lambda msgs: _ask(base, key, model, msgs), system, user,
+                    ladder=GENERATION_LADDER)
+    return r.text, f"{r.rounds} push round(s); {r.stop_reason}"
 
 
 def refuted() -> tuple[str, set[str]]:
@@ -197,9 +207,10 @@ def main() -> None:
         if not p:
             return lens_name, seat, "", "not in roster"
         try:
-            return (lens_name, seat,
-                    _ask(p["base_url"], p["key"], seat, SYSTEM, _user_for(lens_name, lens_txt)),
-                    None)
+            txt, stop = _ask_pushed(p["base_url"], p["key"], seat, SYSTEM,
+                                    _user_for(lens_name, lens_txt))
+            print(f"  {lens_name[:22]:<22} {seat.split('/')[-1]:<22} {stop}")
+            return (lens_name, seat, txt, None)
         except Exception as e:
             return lens_name, seat, "", f"{type(e).__name__} {getattr(e, 'code', '')}"
 

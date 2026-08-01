@@ -1664,6 +1664,65 @@ def check_producer_cadence(defects) -> None:
             "-- a promise nobody checks is how inventory rots in plain sight."))
 
 
+#: Organs that ask an LLM for IDEAS. Each must (a) push until the seat is exhausted and (b) ask
+#: every funded seat. collector_author is deliberately absent: it writes ONE working fetch(), not
+#: an enumeration, so the analysis ladder is the wrong instrument there and extract_code() on a
+#: ten-round concatenation would pick a block from the wrong round.
+_IDEA_ORGANS = ("run_external_panel", "hypothesis_generator", "breadth_expander",
+                "llm_code_auditor", "meta_architect", "llm_blind_researcher")
+
+
+def check_llm_exhaustion(defects) -> None:
+    """STANDING POLICY: never accept a seat's first answer, and never ask only some of the seats.
+
+    TWO DEFECTS, ONE ROOT. Both were found 2026-07-31 and both were systemic rather than local.
+
+    1. ONE-SHOT HARVESTING. Every organ took a single completion per seat and discarded the rest
+       of what that seat knew. The expensive half of an LLM call is the INPUT -- a ~40k-char
+       mission plus dossier, graveyard and rulings -- and it was being paid for once and thrown
+       away. Pushing reuses that whole context (same conversation, nothing re-sent), so additional
+       rounds cost only output tokens. The ladder stops on measured EXHAUSTION, not a fixed count:
+       novelty per round against everything already said, so "it gave up" is a number.
+
+    2. SEAT CAPS BY LITERAL LENGTH. `seats.resolve(SEATS, n=len(SEATS))` appeared in FIVE organs.
+       The hardcoded list's LENGTH became the cap on how many funded seats were ever asked -- 3 of
+       13 in four of them. The desk paid for thirteen lineages of training data and consulted
+       three. This is the same shape as the inline `${_BRAIN_MODEL_CHAIN:-...}` pin and the
+       `_LABS` literal that capped roster breadth: a constant quietly bounding something that was
+       supposed to grow with the roster.
+
+    Checked structurally rather than by convention, because a convention that only lives in a
+    commit message decays the first time someone adds an organ.
+    """
+    missing_push, capped = [], []
+    for name in _IDEA_ORGANS:
+        p = ROOT / "scripts" / f"{name}.py"
+        if not p.exists():
+            continue
+        with contextlib.suppress(OSError):
+            src = p.read_text("utf-8", errors="ignore")
+            if "push_rounds(" not in src:
+                missing_push.append(name)
+            if re.search(r"seats\.resolve\([A-Z_]+,\s*n=len\(", src):
+                capped.append(name)
+    if missing_push:
+        defects.append((
+            "llm-not-exhausted",
+            f"{len(missing_push)} idea-generating organ(s) accept a seat's FIRST answer and stop "
+            f"-- {', '.join(missing_push)}. The input context is the expensive half and is "
+            "already paid for; a push ladder reuses it and harvests the rest of the seat's "
+            "inventory for output tokens only. Use libs.llm.push.push_rounds, which stops on "
+            "measured exhaustion rather than a fixed count."))
+    if capped:
+        defects.append((
+            "llm-seats-capped-by-literal",
+            f"{len(capped)} organ(s) cap seats at a hardcoded list's LENGTH via "
+            f"`n=len(...)` -- {', '.join(capped)}. The desk pays for the whole roster and asks a "
+            "fraction of it, and growing the roster does not grow the organ. Build the preferred "
+            "list from seats.load_roster() and pass n=None; the literal is a PRIORITY ORDER, not "
+            "a membership list."))
+
+
 VPS_PINS = ROOT / "requirements-vps.txt"
 
 
@@ -2755,6 +2814,7 @@ CHECKS = [("carryover-skipped", check_carryover_skipped),
                       ("findings-ratchet", check_findings_ratchet),
                       ("gap-register-health", check_gap_register_health),
                       ("producer-cadence", check_producer_cadence),
+                      ("llm-exhaustion", check_llm_exhaustion),
                       ("dependency-drift", check_dependency_drift),
                       ("naive-datetime", check_naive_datetime),
                       ("test-suite", check_test_suite_collectable),

@@ -273,7 +273,7 @@ def check_cost_realism() -> tuple[list[str], list[str], dict]:
         c = COST
     try:
         d = json.loads(c.read_text("utf-8"))
-    except Exception:  # noqa: BLE001
+    except Exception:
         return [f"cost model {c.name} unparseable"], [], {}
     age_d = (datetime.now(tz=UTC).timestamp() - c.stat().st_mtime) / 86400
     meta = {"artifact": c.name, "age_days": round(age_d, 1)}
@@ -379,7 +379,7 @@ def check_reproducibility(p: Path) -> tuple[list[str], list[str], dict]:
     try:
         hits = subprocess.run(["grep", "-rl", p.name, "scripts/", "libs/"], cwd=str(ROOT),
                               capture_output=True, text=True, timeout=30, check=False).stdout
-    except Exception:  # noqa: BLE001
+    except Exception:
         hits = ""
     producers = [h.strip() for h in hits.splitlines() if h.strip()]
     if not producers:

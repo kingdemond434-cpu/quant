@@ -135,7 +135,7 @@ def _gate_verdicts() -> dict:
     try:
         return {k: v.get("verdict") for k, v in
                 json.loads(GATE.read_text("utf-8")).get("datasets", {}).items()}
-    except Exception:  # noqa: BLE001
+    except Exception:
         return {}
 
 
@@ -149,7 +149,7 @@ def main() -> None:
             mb = json.loads(MECH.read_text("utf-8"))
             live_mechs = {m for m, v in mb.get("verdicts", {}).items()
                           if v in ("ALIVE", "UNTESTED")}
-        except Exception:  # noqa: BLE001
+        except Exception:
             pass
 
     rows = []

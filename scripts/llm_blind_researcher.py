@@ -34,6 +34,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
+from libs.llm.push import PUSH_LADDER, push_rounds  # noqa: E402
 from scripts import seats  # noqa: E402 -- after the sys.path bootstrap above
 
 KEYS = ROOT / "data/secrets/llm_panel.json"
@@ -60,11 +61,10 @@ USER = (
 )
 
 
-def _ask(base, key, model, timeout=240.0):
+def _ask(base, key, model, messages, timeout=240.0):
     body = json.dumps({"model": model, "max_tokens": 3000, "temperature": 1.0,
                        "reasoning": {"effort": "high"},
-                       "messages": [{"role": "system", "content": SYSTEM},
-                                    {"role": "user", "content": USER}]}).encode()
+                       "messages": messages}).encode()
     req = urllib.request.Request(base.rstrip("/") + "/chat/completions", data=body, method="POST",
                                  headers={"Authorization": f"Bearer {key}",
                                           "Content-Type": "application/json"})
@@ -72,6 +72,18 @@ def _ask(base, key, model, timeout=240.0):
         out = json.loads(r.read())
     m = out["choices"][0]["message"]
     return str(m.get("content") or m.get("reasoning") or "")
+
+
+def _ask_pushed(base, key, model):
+    """Blind research is the purest push case on the desk.
+
+    This organ is deliberately given NO desk context so it cannot anchor -- which means its first
+    answer is the most generic thing it knows. The later rungs (inversion, constraint removal,
+    cross-domain transfer, horizon shift) are exactly where a cold seat stops reciting and starts
+    inventing. Stops when novelty dies, not at a fixed count.
+    """
+    r = push_rounds(lambda msgs: _ask(base, key, model, msgs), SYSTEM, USER, ladder=PUSH_LADDER)
+    return r.text, f"{r.rounds} push round(s); {r.stop_reason}"
 
 
 def desk_vocabulary() -> set[str]:
@@ -88,9 +100,17 @@ def desk_vocabulary() -> set[str]:
 
 def main() -> None:
     if not KEYS.exists():
-        print("no panel keys"); return
+        print("no panel keys")
+        return
     # Live-roster resolution: an upgraded-away seat is substituted (same lab first), not lost.
-    provs = {p["model"]: p for p in seats.resolve(SEATS, n=len(SEATS), role="blind_researcher")}
+    # SEAT CAP REMOVED (2026-07-31). This read `n=len(SEATS)`, so the LITERAL'S LENGTH capped how
+    # many funded seats were ever asked -- 3 of 13. Five organs shared the bug. SEATS is a
+    # PRIORITY ORDER, not a membership list: the preferred list is now built from the LIVE roster
+    # so every seat the desk pays for does the desk's work, and growing the roster grows the
+    # organ. seats.resolve still substitutes an upgraded-away model same-lab-first.
+    _roster = [str(p["model"]) for p in seats.load_roster()]
+    _pref = SEATS + [m for m in _roster if m not in SEATS]
+    provs = {p["model"]: p for p in seats.resolve(_pref, n=None, role="blind_researcher")}
     vocab = desk_vocabulary()
     print("=== ZERO-CONTEXT BLIND RESEARCHER ===")
     print("    *** UNTESTED SCRIPT -- verify output before trusting it ***")
@@ -102,7 +122,8 @@ def main() -> None:
         if not prov:
             continue
         try:
-            txt = _ask(prov["base_url"], prov["key"], seat)
+            txt, _stop = _ask_pushed(prov["base_url"], prov["key"], seat)
+            print(f"  {seat.split('/')[-1]:<24} {_stop}")
         except Exception as e:
             print(f"  {seat.split('/')[-1]:<24} FAILED ({type(e).__name__} "
                   f"{getattr(e, 'code', '')})")

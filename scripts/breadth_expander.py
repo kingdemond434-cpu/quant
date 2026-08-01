@@ -39,6 +39,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
+from libs.llm.push import PUSH_LADDER, push_rounds  # noqa: E402
 from scripts import seats  # noqa: E402 -- after the sys.path bootstrap above
 
 KEYS = ROOT / "data/secrets/llm_panel.json"
@@ -49,7 +50,8 @@ CTX = ssl.create_default_context()
 LEAD_SEAT = "openai/gpt-5.6-terra-pro"
 DIVERSITY_POOL = ["x-ai/grok-4.3", "google/gemini-3.1-pro-preview", "deepseek/deepseek-v4-pro",
                   "qwen/qwen3.7-max", "z-ai/glm-5.2", "moonshotai/kimi-k3", "minimax/minimax-m3",
-                  "google/gemini-3.6-flash", "meituan/longcat-2.0", "nvidia/nemotron-3-ultra-550b-a55b"]
+                  "google/gemini-3.6-flash", "meituan/longcat-2.0",
+                  "nvidia/nemotron-3-ultra-550b-a55b"]
 
 LENSES = [
     ("MODALITY GAP", "The desk mines TABULAR data well and is structurally blind to other carriers "
@@ -77,8 +79,10 @@ SYSTEM = (
     "HARD RULES:\n"
     "1. FREE and PUBLIC only. No paywalled, pirated, private-group or paid-vendor data.\n"
     "2. Be SPECIFIC AND CHECKABLE: give the actual endpoint/domain/dataset name. Vague categories "
-    "('social sentiment') are useless; 'api.example.com/v1/x, free, no key, daily history' is useful.\n"
-    "3. Prefer sources with STRUCTURED or reconstructable history -- a signal needs a time series.\n"
+    "('social sentiment') are useless; 'api.example.com/v1/x, free, no key,\n"
+    "daily history' is useful.\n"
+    "3. Prefer sources with STRUCTURED or reconstructable history -- a signal\n"
+    "needs a time series.\n"
     "4. State the MECHANISM: why would this move crypto prices, and does it LEAD or coincide?\n"
     "5. Do NOT suggest: Binance/OKX/Bybit/Deribit standard market data, Glassnode/CryptoQuant/"
     "Nansen/Kaiko paid tiers, generic Twitter/Reddit sentiment, or news aggregators -- all are "
@@ -88,11 +92,10 @@ SYSTEM = (
 )
 
 
-def _ask(base_url: str, key: str, model: str, system: str, user: str, timeout: float = 110.0) -> str:
+def _ask(base_url: str, key: str, model: str, messages, timeout: float = 110.0) -> str:
     body = json.dumps({"model": model, "max_tokens": 4000, "temperature": 0.9,
                        "reasoning": {"effort": "high"},
-                       "messages": [{"role": "system", "content": system},
-                                    {"role": "user", "content": user}]}).encode()
+                       "messages": messages}).encode()
     req = urllib.request.Request(base_url.rstrip("/") + "/chat/completions", data=body,
                                  method="POST",
                                  headers={"Authorization": f"Bearer {key}",
@@ -101,6 +104,17 @@ def _ask(base_url: str, key: str, model: str, system: str, user: str, timeout: f
         out = json.loads(r.read())
     m = out["choices"][0]["message"]
     return str(m.get("content") or m.get("reasoning") or "")
+
+
+def _ask_pushed(base, key, model, system, user):
+    """Push until the seat is measurably exhausted -- standing policy across every LLM organ.
+
+    The context (system prompt + payload) is the expensive half and is already paid for; the
+    ladder reuses it and keeps asking until novelty dies, the model surrenders, or the round cap
+    binds. Returns (joined_text, stop_reason).
+    """
+    r = push_rounds(lambda msgs: _ask(base, key, model, msgs), system, user, ladder=PUSH_LADDER)
+    return r.text, f"{r.rounds} push round(s); {r.stop_reason}"
 
 
 def probe(url: str) -> str:
@@ -144,7 +158,13 @@ def main() -> None:
     # never silently dropped. The lead is resolved on its own so it can never be crowded out of
     # the pool's distinct-lab budget, and the pool keeps its lens-rotation diversity.
     lead = seats.resolve([LEAD_SEAT], n=1, role="breadth_lead")
-    pool = seats.resolve(DIVERSITY_POOL, n=len(DIVERSITY_POOL), distinct_labs=False,
+    # SEAT CAP REMOVED (2026-07-31): len(DIVERSITY_POOL) capped the pool at the literal's
+    # length rather than the funded roster. distinct_labs stays False here BY DESIGN --
+    # source discovery wants maximum surface area, and a lab sibling searching a different
+    # corner is a real extra draw, unlike in hypothesis generation where it is correlated.
+    _roster = [str(p["model"]) for p in seats.load_roster()]
+    _pref = DIVERSITY_POOL + [m for m in _roster if m not in DIVERSITY_POOL]
+    pool = seats.resolve(_pref, n=None, distinct_labs=False,
                          role="breadth_pool")
     by_model = {p["model"]: p for p in (lead + pool)}
     LEAD = lead[0]["model"] if lead else LEAD_SEAT
@@ -215,7 +235,9 @@ def main() -> None:
     def _run(j):
         ln_name, seat, prov, user = j
         try:
-            return ln_name, seat, _ask(prov["base_url"], prov["key"], seat, SYSTEM, user), None
+            txt, _stop = _ask_pushed(prov["base_url"], prov["key"], seat, SYSTEM, user)
+            print(f"  {ln_name[:20]:<20} {seat.split('/')[-1]:<20} {_stop}")
+            return ln_name, seat, txt, None
         except Exception as e:
             return ln_name, seat, "", f"{type(e).__name__} {getattr(e, 'code', '')}"
 

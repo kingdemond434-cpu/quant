@@ -7,11 +7,15 @@ discretionary directional traders. Side effect: their 2000 fills span months -> 
 Still performance-blind (no PnL in selection) -> no circularity. Flow at t vs return t+1 only.
 Bar: |t| >= 2.7 (3-mechanism multiplicity)."""
 from __future__ import annotations
-import json, urllib.request
+
+import json
+import urllib.request
 from collections import defaultdict
 from datetime import UTC, datetime
 from pathlib import Path
+
 import numpy as np
+
 from libs.research.axis_screen import stage_a_screen
 
 INFO="https://api.hyperliquid.xyz/info"; LB="https://stats-data.hyperliquid.xyz/Mainnet/leaderboard"

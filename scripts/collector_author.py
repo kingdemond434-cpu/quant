@@ -79,11 +79,10 @@ SYSTEM = (
 )
 
 
-def _ask(base, key, model, system, user, timeout=150.0):
+def _ask(base, key, model, messages, timeout=150.0):
     body = json.dumps({"model": model, "max_tokens": 3000, "temperature": 0.3,
                        "reasoning": {"effort": "high"},
-                       "messages": [{"role": "system", "content": system},
-                                    {"role": "user", "content": user}]}).encode()
+                       "messages": messages}).encode()
     req = urllib.request.Request(base.rstrip("/") + "/chat/completions", data=body, method="POST",
                                  headers={"Authorization": f"Bearer {key}",
                                           "Content-Type": "application/json"})
@@ -91,6 +90,7 @@ def _ask(base, key, model, system, user, timeout=150.0):
         out = json.loads(r.read())
     m = out["choices"][0]["message"]
     return str(m.get("content") or m.get("reasoning") or "")
+
 
 
 def extract_code(txt: str) -> str:
@@ -160,7 +160,14 @@ def main() -> None:
         print("missing panel keys or breadth feed")
         return
     # Live-roster resolution: an upgraded-away seat is substituted (same lab first), not lost.
-    provs = {p["model"]: p for p in seats.resolve(SEATS, n=len(SEATS), role="collector_author")}
+    # SEAT CAP REMOVED (2026-07-31). This read `n=len(SEATS)`, so the LITERAL'S LENGTH capped how
+    # many funded seats were ever asked -- 3 of 13. Five organs shared the bug. SEATS is a
+    # PRIORITY ORDER, not a membership list: the preferred list is now built from the LIVE roster
+    # so every seat the desk pays for does the desk's work, and growing the roster grows the
+    # organ. seats.resolve still substitutes an upgraded-away model same-lab-first.
+    _roster = [str(p["model"]) for p in seats.load_roster()]
+    _pref = SEATS + [m for m in _roster if m not in SEATS]
+    provs = {p["model"]: p for p in seats.resolve(_pref, n=None, role="collector_author")}
     seated = list(provs)
     tried = set()
     if DONE.exists():
@@ -196,8 +203,15 @@ def main() -> None:
                 f"MODALITY: {t.get('modality','')}\nWHY IT MATTERS: {t.get('mechanism','')}\n\n"
                 "Write fetch() returning a daily time series from this source.")
         try:
-            return t, seat, extract_code(_ask(provs[seat]["base_url"], provs[seat]["key"],
-                                              seat, SYSTEM, user)), None
+            # NO PUSH LADDER HERE, DELIBERATELY. This task writes ONE working fetch(),
+            # not an enumeration of ideas, so the analysis ladder is the wrong
+            # instrument: it asks for rankings and removals, and extract_code() on a
+            # ten-round concatenation would pick a block from the wrong round.
+            # Breadth here comes from more TARGETS, not more rounds per target.
+            msgs = [{"role": "system", "content": SYSTEM},
+                    {"role": "user", "content": user}]
+            return t, seat, extract_code(_ask(provs[seat]["base_url"],
+                                              provs[seat]["key"], seat, msgs)), None
         except Exception as e:
             return t, seat, "", f"{type(e).__name__}"
 

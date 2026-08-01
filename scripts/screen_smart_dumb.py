@@ -58,7 +58,7 @@ def main() -> None:
             elite_acc = _ratio("topLongShortAccountRatio", sym)
             retail = _ratio("globalLongShortAccountRatio", sym)
             px = _klines(sym)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             print(f"{sym:9s} DATA-BLOCKED ({type(e).__name__})")
             continue
         ts = sorted(set(elite_pos) & set(elite_acc) & set(retail) & set(px))

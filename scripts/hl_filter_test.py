@@ -4,9 +4,11 @@ describes -- at increasing strictness, and combined -- and reports what each SEL
 FORWARD (out of sample, on the later 40% of each trader's own curve).
 The filter is applied using ONLY formation-period info (what you could actually know at選択 time)."""
 from __future__ import annotations
-import json, urllib.request
-from datetime import UTC, datetime
+
+import json
+import urllib.request
 from pathlib import Path
+
 import numpy as np
 
 INFO="https://api.hyperliquid.xyz/info"; LB="https://stats-data.hyperliquid.xyz/Mainnet/leaderboard"

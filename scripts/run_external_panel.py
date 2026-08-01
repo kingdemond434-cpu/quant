@@ -19,6 +19,10 @@ docs/research/panel_inbox.md. Panel hit-rate is scored at monthly governance.
 
 from __future__ import annotations
 
+import sys as _sys
+from pathlib import Path as _P
+
+_sys.path.insert(0, str(_P(__file__).resolve().parent.parent))
 import contextlib
 import json
 import random
@@ -29,6 +33,8 @@ from pathlib import Path
 from typing import Any
 
 import certifi
+
+from libs.llm.push import PUSH_LADDER, push_rounds
 
 _KEYS = Path("data/secrets/llm_panel.json")
 _MISSIONS = Path("prompts/panel_missions")
@@ -176,7 +182,7 @@ def singletons(responses: list[dict[str, str]],
     return out
 
 
-def _ask(base_url: str, key: str, model: str, system: str, user: str,
+def _ask(base_url: str, key: str, model: str, messages: list[dict[str, str]],
          timeout: float = 360.0) -> str:                # 6min: high-effort reasoning runs long
     # (a 180s cap cut deepseek mid-stream with IncompleteRead on the 2026-07-12 max-thinking run)
     body = json.dumps({
@@ -187,8 +193,7 @@ def _ask(base_url: str, key: str, model: str, system: str, user: str,
         # deepseek/glm blank-response bug). Models without reasoning ignore the param.
         "model": model, "max_tokens": _RESP_BUDGET, "temperature": 0.7,
         "reasoning": {"effort": "high"},
-        "messages": [{"role": "system", "content": system},
-                     {"role": "user", "content": user}],
+        "messages": messages,
     }).encode()
     req = urllib.request.Request(
         base_url.rstrip("/") + "/chat/completions", data=body, method="POST",
@@ -197,6 +202,20 @@ def _ask(base_url: str, key: str, model: str, system: str, user: str,
         out = json.loads(r.read())
     msg = out["choices"][0]["message"]
     return str(msg.get("content") or msg.get("reasoning") or "")
+
+
+def _ask_pushed(base_url: str, key: str, model: str, system: str, user: str) -> tuple[str, str]:
+    """One answer per seat was one answer's worth of a seat's inventory.
+
+    The mission, dossier, graveyard and rulings are ~40k chars of INPUT that the desk pays for
+    once and then threw away after a single completion. The ladder reuses that whole context --
+    same conversation, nothing re-sent -- and keeps asking until the seat is measurably exhausted.
+    Returns (joined_text, stop_reason); the stop reason is kept because "exhausted after 4" and
+    "hit the round cap" are opposite diagnoses about whether the cap should rise.
+    """
+    r = push_rounds(lambda msgs: _ask(base_url, key, model, msgs), system, user,
+                    ladder=PUSH_LADDER)
+    return r.text, f"{r.rounds} push round(s); {r.stop_reason}"
 
 
 def main() -> None:
@@ -374,7 +393,9 @@ def main() -> None:
     def _one(pv: dict[str, Any]) -> dict[str, str]:
         name = pv.get("name", pv.get("model", "?"))
         try:
-            txt = _ask(pv["base_url"], pv["key"], pv["model"], system, dossier)
+            txt, _stop = _ask_pushed(pv["base_url"], pv["key"], pv["model"],
+                                     system, dossier)
+            print(f"panel: {name} -- {_stop}")
             # BLANK-RESPONSE RETRY (2026-07-20): the full-coverage feed made payloads ~5x
             # larger, and a seat can silently return an empty string on a big prompt
             # (observed: minimax-m3 returned a bare newline to the 260k audit payload but
@@ -383,7 +404,8 @@ def main() -> None:
             # "N/13 models agreed" figure the desk reasons from. Retry once, then fail loud.
             if len(txt.strip()) < 50:
                 print(f"panel: {name} blank ({len(txt)} chars) -- retrying once")
-                txt = _ask(pv["base_url"], pv["key"], pv["model"], system, dossier)
+                txt, _stop = _ask_pushed(pv["base_url"], pv["key"], pv["model"],
+                                         system, dossier)
                 if len(txt.strip()) < 50:
                     try:
                         from scripts.build_audit_coverage import record_blank

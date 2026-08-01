@@ -6,9 +6,12 @@ Same design otherwise: multi-year on-chain records, own-curve 60/40 formation/ho
 pnlHistory normalised by contemporaneous accountValue, risk-adjusted selection criteria.
 Reports explicit CIs and minimum-detectable-effect so the conclusion is power-aware."""
 from __future__ import annotations
-import json, urllib.request
+
+import json
+import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
+
 import numpy as np
 
 INFO="https://api.hyperliquid.xyz/info"; LB="https://stats-data.hyperliquid.xyz/Mainnet/leaderboard"

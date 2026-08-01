@@ -13,9 +13,12 @@ Uses pnlHistory (cumulative PnL) normalised by contemporaneous accountValue, so 
 do not masquerade as returns. Tests whether risk-adjusted long-run skill PERSISTS into the later
 period -- the precondition for 'find genuinely good traders and follow them'."""
 from __future__ import annotations
-import json, urllib.request
+
+import json
+import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
+
 import numpy as np
 
 INFO="https://api.hyperliquid.xyz/info"; LB="https://stats-data.hyperliquid.xyz/Mainnet/leaderboard"
