@@ -2038,3 +2038,81 @@ Two consequences the fleet must carry:
   and reading the permissive generic block alone would have produced a false "allowed" verdict** —
   the exact loophole the KR seat warned about, confirmed independently on a second region.
 
+---
+
+#### ITEM 2 — bitFlyer legitimacy: **RESOLVED. THE LICENCE IS READ. VERDICT: RESTRICTED. HUMAN DEPENDENCY REMOVED.**
+
+The card (`data_axis_watchlist.md` item 3) said: WAF-blocked → licence unread → **"one page-read by a
+human"** → `[§33: deferred(2026-08-09)]`. Three of its recorded facts were wrong, and the fourth
+conclusion did not follow. All four corrected against artifacts fetched this run.
+
+**(a) THE FAILURE MODE IS NOT A 403 AND NOT AN IP BLOCK.** The card records "403" and "WAF-blocked".
+Actual behaviour: TLS completes, cert verifies (`O="bitFlyer, Inc."`), the HTTP/2 stream OPENS, then
+`INTERNAL_ERROR (err 2)`; over HTTP/1.1 and over IPv4 it simply **hangs to timeout** (`code=000`).
+An Akamai tarpit, not a status code. **And it is not our IP:** `api.bitflyer.com` and
+`lightning.bitflyer.com` both return **200 from the identical edge IP** (`2a02:26f0:e80:588::2644`)
+that tarpits `bitflyer.com`. Same node, same TLS, different `Host` → one serves, one hangs. So the
+policy is **per-hostname on the marketing/legal site**, and the API + docs hosts were never blocked.
+*Generalises: diagnose a block by varying ONE thing at a time against the same edge — an "our IP is
+banned" verdict that never tried a sibling hostname is a guess.*
+
+**(b) "NEVER USEFULLY ARCHIVED" IS REFUTED — the CDX probe used the wrong host AND the wrong slug.**
+The card queried `bitflyer.com/{en-jp,ja-jp}/*`. The pre-migration host is **`bitflyer.jp`** and the
+slug is **`terms-of-use`**, not `terms`. Correct query returns captures immediately, incl.
+`https://bitflyer.jp/en-eu/terms-of-use` (2019-06-01, **200**) and
+`bitflyer.jp/pub/terms-comparison-table-201711-ja.pdf`. *A negative CDX result is a statement about
+the query, never about the archive.*
+
+**(c) THE OPERATIVE CLAUSE, READ AND QUOTED VERBATIM** (`/en-eu/terms-of-use`, capture 20190601153535):
+> "The bitFlyer API is the copyrighted technology of bitFlyer and may not be copied, imitated or
+> used, in whole or in part, outside of the API's intended use. bitFlyer retains all its rights
+> related to its databases, websites, ... **including chat text, the content of bitFlyer emails, and
+> data such as transaction prices** — developed or provided by bitFlyer or its affiliates **which can
+> be acquired by various external APIs**. bitFlyer may demand any third party stop using bitFlyer's
+> API for any purposes not authorized by bitFlyer."
+
+Reinforced by: *"you may use the bitFlyer Materials only for your internal purposes and solely as
+necessary for your use of the Service"*; and a bar on *"any robot, spider, crawler, scraper, script
+... not authorized by us to access the Services, extract data"*.
+
+**VERDICT: `restricted-by-licence`.** The venue names transaction-price data acquired via its
+external APIs as retained property and conditions use on *"your use of the Service"*. Our proposed
+use — bulk automated recording of executions by a non-customer, to build a research dataset — is
+squarely what that text refuses. §13 is a HARD STOP, not a hurdle: **do not build a bitFlyer
+direct-recording collector.**
+
+**HONEST RESIDUAL, stated so nobody over-reads this:** the document read is the **EU entity's**
+2019 ToS, not the JP entity's current 利用規約 (JP-side `terms-of-use` paths return no CDX captures;
+the live host is tarpitted). So this is bitFlyer *group's* stated position, strongly against, rather
+than a JP-entity ruling. It does not need to be: §13 asks whether a licence forbids the use, and the
+only bitFlyer terms document the desk has ever actually read says yes. **Grading a restriction on
+the evidence we have beats deferring a fourth time on evidence we cannot get.**
+
+**THE SAME CLAUSE PRE-EMPTIVELY KILLS TWO THINGS I FOUND THIS RUN** before they could be carded —
+which is the clause earning its keep rather than a coincidence:
+- `GET /v1/getchats` — **live, keyless, returns real JP retail chat** (verified: 2026-07-27
+  messages, nicknames, timestamps). A venue's own retail chat is structurally unbuyable and I would
+  otherwise have carded it immediately. Clause 678 names **"chat text"** explicitly. **BLOCKED.**
+- `GET /v1/getfundingratehistory` — live, keyless, verified returning 8-hourly JP funding
+  (`rate` 0.0001 / 0.00199, calculation+settlement dates). Funding/carry is the desk's *only*
+  repeat-surviving family, so this is the one I most wanted. Same clause. **BLOCKED.**
+
+**AND IT BLOCKS THE BIGGEST FIND OF THE RUN, WHICH I AM NOT GOING TO LAUNDER THROUGH THE ARCHIVE:**
+CDX surfaced `https://bitflyer.jp/api/chart/btc_jpy?start=<ms>&end=<ms>` — an **undocumented keyless
+price-series endpoint, dead on the live site (302) but captured 200 by Wayback from 2015-08**.
+Verified payload: **414,675 bytes, `[[epoch_ms, price], …]` at 15-minute steps, 2014-10-16 →
+2015-08-12 in a single capture** — i.e. ~10 months of BTC/JPY per capture, with many captures at
+differing windows, from the era when JPY was the world's top BTC fiat pair. That is exactly the
+"irreplaceable, competitor-must-pay-to-reconstruct" asset L1.11a tells me to hunt.
+**It is still bitFlyer's data.** Reading it from a third-party archive does not extinguish the
+venue's stated rights in it, and "the Internet Archive had a copy" is not a licence. **NOT CARDED.**
+Recorded here in full so no future seat spends the discovery cost again and so the finding survives
+if the licence position ever changes (L1.16a re-entry condition: **a bitFlyer JP-entity ToS, or an
+explicit bitFlyer data-use permission, that does not retain rights in transaction prices**).
+
+**THE LICENSED SUBSTITUTE ALREADY EXISTS AND THE DESK ALREADY OWNS IT.** `data_axis_watchlist.md`
+records Tardis.dev covering **`bitflyer` since 2019-08-30**, free first-of-month, under a licence
+whose *internal research use is PERMITTED*. So the correct disposition of this axis is not "wait for
+a human" — it is **use the licensed path, drop the direct-collector plan**. Residual gap is
+granularity (1 day/month), not availability.
+

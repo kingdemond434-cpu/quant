@@ -1,4 +1,4 @@
-"""The funding SETTLEMENT CLOCK -- the single definition of when a perp actually pays (L1.46).
+"""The funding SETTLEMENT CLOCK -- the single definition of when a perp actually pays (L1.47).
 
 Perpetual funding is a DISCRETE payment at fixed UTC stamps (00/08/16 for an 8h symbol). It is
 not an accrual. A position held 7.9h across zero stamps earns NOTHING; a position held 0.2h
