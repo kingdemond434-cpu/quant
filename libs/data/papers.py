@@ -202,8 +202,79 @@ def probe_all() -> list[dict[str, Any]]:
     for name, fn in checks:
         items, err = fn()
         rows.append({"source": name, "ok": err is None, "n": len(items), "error": err})
-    rows.append({"source": "github", "ok": False,
-                 "error": "HTTP 403 unauthenticated -- set a GITHUB_TOKEN to enable repo/code "
-                          "search; this is the one blocked source a credential would fix"})
+    gh_items, gh_err = github("quant backtest crypto")
+    rows.append({"source": "github", "ok": gh_err is None, "n": len(gh_items),
+                 "token_present": github_token() is not None, "error": gh_err})
     rows.append({"source": "reddit", "ok": False, "error": "HTTP 403 -- blocked"})
     return rows
+
+
+# ---------------------------------------------------------------------------- GitHub (token-gated)
+
+#: Where the token is looked for, in order. NEVER hardcoded and never committed: a token in a repo
+#: is a credential leak that outlives whoever pasted it. `GITHUB_TOKEN` in the environment is the
+#: right place; the dotfile is the fallback for a box where env config is inconvenient.
+GITHUB_TOKEN_ENV = "GITHUB_TOKEN"
+GITHUB_TOKEN_FILE = "~/.gh_token"
+
+
+def github_token() -> str | None:
+    """The token, or None. Absence is a normal state, not an error."""
+    import os
+    from pathlib import Path
+    tok = os.environ.get(GITHUB_TOKEN_ENV, "").strip()
+    if tok:
+        return tok
+    path = Path(GITHUB_TOKEN_FILE).expanduser()
+    if path.exists():
+        got = path.read_text("utf-8").strip()
+        if got:
+            return got
+    return None
+
+
+def github(query: str, *, kind: str = "repositories", limit: int = 20
+           ) -> tuple[list[Paper], str | None]:
+    """GitHub repo or code search. Requires a token; 403s without one.
+
+    WHY IT IS WORTH A CREDENTIAL. Code is the least ambiguous source there is -- a repository that
+    implements a permutation test contains the procedure itself, not a description of it, and the
+    desk's conversion record says procedures convert. It is also the only source here that can be
+    searched for an IMPLEMENTATION rather than a claim about one.
+
+    `kind="code"` needs the token to carry `public_repo`; repo search works with any valid token.
+    """
+    tok = github_token()
+    if not tok:
+        return [], (f"no token: set ${GITHUB_TOKEN_ENV} or write one to {GITHUB_TOKEN_FILE}. "
+                    "GitHub search is 403 unauthenticated.")
+    if kind not in ("repositories", "code"):
+        raise ValueError(f"kind must be 'repositories' or 'code', got {kind!r}")
+    url = (f"https://api.github.com/search/{kind}?q={quote(query)}"
+           f"&per_page={int(limit)}" + ("&sort=updated" if kind == "repositories" else ""))
+    req = urllib.request.Request(url, headers={
+        **_UA, "Authorization": f"Bearer {tok}",
+        "Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28"})
+    try:
+        with urllib.request.urlopen(req, timeout=30) as fh:
+            body = json.loads(fh.read().decode("utf8", errors="ignore"))
+    except Exception as exc:
+        return [], f"{type(exc).__name__}: {str(exc)[:140]}"
+    out: list[Paper] = []
+    for item in body.get("items") or []:
+        if kind == "repositories":
+            name = str(item.get("full_name") or "")
+            if not name:
+                continue
+            out.append(Paper(
+                source="github", ident=name, title=name,
+                url=str(item.get("html_url") or ""),
+                abstract=str(item.get("description") or "")[:600],
+                published=str(item.get("pushed_at") or "")[:10]))
+        else:
+            repo = (item.get("repository") or {}).get("full_name") or ""
+            path = str(item.get("path") or "")
+            out.append(Paper(
+                source="github_code", ident=f"{repo}/{path}", title=f"{repo} :: {path}",
+                url=str(item.get("html_url") or ""), abstract=""))
+    return out, None if out else "github returned no items"

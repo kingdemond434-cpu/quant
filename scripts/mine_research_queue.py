@@ -41,6 +41,7 @@ from pathlib import Path
 from typing import Any
 
 from libs.data import bilibili, cn_sources, papers
+from libs.research import conversion_ledger
 from libs.research.video_triage import SURFACE_THRESHOLD, score_title, triage
 
 _ROOT = Path(__file__).resolve().parent.parent
@@ -386,6 +387,8 @@ def main(argv: list[str] | None = None) -> int:
         "cn_source_probe": cn_sources.probe_all(),
         "academic_discovered": acad,
         "academic_probe": papers.probe_all(),
+        "github_token_present": papers.github_token() is not None,
+        "ranker_calibration": conversion_ledger.calibration(),
         "channels_blocked": blocked,
         "threshold": args.threshold,
         "n_new_surfaced": len(queue),
