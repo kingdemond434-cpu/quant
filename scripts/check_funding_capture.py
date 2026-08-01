@@ -6,7 +6,7 @@ WHY THIS FENCE EXISTS. Funding is a DISCRETE payment at fixed UTC stamps. The ex
 as a CONTINUOUS accrual -- `est_funding = funding * notl * (held / 8.0)`
 (run_cashcarry_executor.py:870) -- and that booking is UNBIASED IN EXPECTATION, which is exactly
 why it survived every review this desk has ever run. Measured on the 265-close tape: mean delta
--0.012 settlements. The average is right. No single trade is.
+-0.013 settlements, per-trade sd 0.482. The average is right. No single trade is.
 
 Three layers hid it, each individually reasonable:
   1. THE ACCOUNTING BOOKS THE EXPECTATION, so it cannot show the coin flip. Per-trade sd is 0.491
@@ -115,6 +115,21 @@ def _parse(stamp: Any) -> datetime | None:
     return t.replace(tzinfo=UTC) if t.tzinfo is None else t.astimezone(UTC)
 
 
+def _num(v: Any) -> float | None:
+    """Coerce a tape field to a float, or None when the row is malformed.
+
+    Returns None rather than 0.0 so a junk value is COUNTED as malformed instead of silently
+    becoming a zero -- a zero funding rate reads as 'this close forfeited nothing', which is the
+    reassuring direction and therefore the dangerous one.
+    """
+    if v is None:
+        return None
+    try:
+        return float(v)
+    except (TypeError, ValueError):
+        return None
+
+
 def _binomial_z(k: int, n: int, p: float) -> float:
     """Excess concentration in sigmas. Zero for an empty sample -- never a divide-by-zero."""
     if n <= 0:
@@ -132,6 +147,7 @@ def build_report(root: Path | None = None, now: datetime | None = None) -> dict[
     truth = _truth_rows(root)
 
     n = 0
+    malformed = 0
     mismarked = 0
     zero_capture = 0
     forfeits = 0
@@ -144,20 +160,23 @@ def build_report(root: Path | None = None, now: datetime | None = None) -> dict[
 
     for r in closes:
         t0, t1 = _parse(r.get("opened")), _parse(r.get("closed"))
-        if t0 is None or t1 is None:
+        rate, notl = _num(r.get("funding_rate")), _num(r.get("notional"))
+        est = _num(r.get("est_funding"))
+        if t0 is None or t1 is None or rate is None or notl is None:
+            # A row the fence cannot read is COUNTED and surfaced, never skipped silently and
+            # never coerced to a comfortable zero (L2.4).
+            malformed += 1
             continue
         n += 1
-        rate = float(r.get("funding_rate") or 0.0)
-        notl = float(r.get("notional") or 0.0)
         total_notional += notl
-        booked_funding += float(r.get("est_funding") or 0.0)
+        booked_funding += est or 0.0
 
         discrete = fc.settlements_in(t0, t1)
         continuous = fc.continuous_settlements(t0, t1)
         deltas.append(discrete - continuous)
         if abs(discrete - continuous) >= 0.5:
             mismarked += 1
-        if discrete == 0 and abs(float(r.get("est_funding") or 0.0)) > 0.0:
+        if discrete == 0 and abs(est or 0.0) > 0.0:
             zero_capture += 1
 
         phase_octiles[min(7, int(fc.phase_hours(t1)))] += 1
@@ -186,6 +205,8 @@ def build_report(root: Path | None = None, now: datetime | None = None) -> dict[
         breaches.append(f"MIS-MARKED: {mismark_frac:.1%} of closes booked >=0.5 settlement wrong")
     if closes and not attributable:
         breaches.append("PHASE-BLIND: close rows carry no rail/reason field")
+    if malformed:
+        breaches.append(f"UNREADABLE: {malformed} close row(s) unparseable and excluded")
 
     if not tape:
         status = "NO-DATA"
@@ -224,6 +245,7 @@ def build_report(root: Path | None = None, now: datetime | None = None) -> dict[
         "breaches": breaches,
         "n_tape_rows": len(tape),
         "n_closes": n,
+        "n_malformed_closes": malformed,
         "per_position_truth_rows": None if truth is None else len(truth),
         "mean_delta_settlements": round(mean_delta, 4),
         "sd_delta_settlements": round(sd_delta, 4),

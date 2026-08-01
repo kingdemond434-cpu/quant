@@ -1248,6 +1248,24 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # achieved-vs-configured period gap on both Binance recorders -- 8.28s and 7.84s against 5.0s)
 40 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_clockprov.lock .venv/bin/python scripts/check_clock_provenance.py --report-only >> data/cro_ai_logs/clock_provenance.log 2>&1
 
+# --- L1.47 FUNDING CAPTURE (capability hunt s1, 2026-08-01) ---------------------------------
+# CEILING TYPE (L1.28c): DATA-ARRIVAL bound. The unit of observation is ONE CLOSED CARRY -- the
+# fence's inputs change only when the executor completes a round trip, which on the current book
+# is a few per hour. Denser re-reads a tape it has already judged; sparser lets a whole funding
+# cycle's worth of forfeits pass unseen, and a settlement walked away from cannot be re-earned.
+# Hourly is therefore the ceiling AND the floor. Pure CPU over a 523-row JSONL: the cost of
+# running it is a rounding error, so cadence is bounded by information arrival and nothing else.
+# PHASE :43 -- deliberately NOT aligned to a funding stamp (00/08/16 UTC). The fence measures the
+# historical phase DISTRIBUTION of closes, so its own firing phase must not correlate with the
+# thing it measures; :43 also sits just after clock provenance (:40) in the fence cluster and
+# reads an artifact no other :4x organ writes.
+# EVIDENCE: scripts/check_funding_capture.py -> data/funding_capture.json; CONSTITUTION L1.47
+# CONFIDENCE: committed-script (new this cycle; first run fired FOUR breaches at once -- UNMEASURED
+# (265 closes booked $93.58 of estimated funding, not one differenced against venue truth),
+# FORFEITING (59/265 closes inside 1h of a settlement, z=+4.8), MIS-MARKED (41.5% of closes wrong
+# by >=0.5 settlement) and PHASE-BLIND (close rows carry no rail/reason field))
+43 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_fundcap.lock .venv/bin/python scripts/check_funding_capture.py --report-only >> data/cro_ai_logs/funding_capture.log 2>&1
+
 # FORECAST SCORER (L1.29 calibration). The desk had a forecast LOGGER and no SCORER, so
 # check_calibration sat OVERDUE with 7 unscored predictions -- the worst asymmetry available,
 # since logging a probability feels like rigour while only the scoring turns it into calibration.

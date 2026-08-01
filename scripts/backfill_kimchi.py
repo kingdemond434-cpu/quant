@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 """KIMCHI DEEP BACKFILL: 143 aligned days -> ~2,600, so the screen can actually resolve.
 
-WHY. The 2026-07-29 alignment fix retracted the celebrated IC +0.2249 as ~73% timestamp overlap
-(Upbit's candle_date_time_utc is the KST-day OPEN; keying by it labelled closes ~15h early). The
-honest re-screen returned forward IC +0.0604 with residual IC +0.1274 -- and verdict
+WHY. The 2026-07-29 alignment "fix" retracted the celebrated IC +0.2249 as ~73% timestamp overlap,
+on the premise that Upbit's candle_date_time_utc is a KST-day OPEN labelling closes ~15h early.
+THAT PREMISE WAS REFUTED on 2026-07-30 from Upbit's own hourly candles (R0067): Upbit dailies are
+UTC-midnight-boundary, so the original keying was same-instant and the +1d "fix" was the error.
+The retraction itself STANDS on other evidence -- kimchi showed no edge at full 8.2y depth
+(IC +0.0012, n=2987) and the original screen ran on a thin 200d window.
+The honest re-screen returned forward IC +0.0604 with residual IC +0.1274 -- and verdict
 SCREEN-UNDERPOWERED, because at n_eff~121 the detection floor is 1.96/sqrt(121) = 0.178. The
 signal was not refuted; it was UNRESOLVABLE. That is a sample-size problem, and the sample size
 was an accident: every consumer called Upbit with count=200 and nobody paginated.
@@ -45,6 +49,7 @@ import numpy as np
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 from libs.research.axis_screen import stage_a_screen  # noqa: E402
+from libs.research.upbit_data import upbit_daily_history  # noqa: E402
 
 _UA = {"User-Agent": "Mozilla/5.0 (quant-desk kimchi-backfill)"}
 _ARCHIVE = ROOT / "data/kimchi_premium_history.jsonl"
@@ -56,27 +61,12 @@ def _get(url: str, timeout: int = 30):
 
 
 def upbit_history(market: str = "KRW-BTC", pages: int = 40) -> dict[str, float]:
-    """Daily closes keyed by UTC CLOSE date, walked back via `to=`. See libs/research/upbit_data."""
-    out: dict[str, float] = {}
-    cursor = ""
-    for _ in range(pages):
-        url = f"https://api.upbit.com/v1/candles/days?market={market}&count=200"
-        if cursor:
-            url += f"&to={cursor}"
-        try:
-            rows = _get(url)
-        except Exception as e:
-            print(f"  upbit page failed ({e!r}) -- stopping at {len(out)} rows")
-            break
-        if not rows:
-            break
-        for r in rows:
-            # KST-day candle: open-date + 1 = the UTC date its close lands on
-            d = dt.date.fromisoformat(str(r["candle_date_time_utc"])[:10]) + dt.timedelta(days=1)
-            out[d.isoformat()] = float(r["trade_price"])
-        cursor = rows[-1]["candle_date_time_utc"]
-        time.sleep(0.15)                      # courtesy: Upbit allows ~10 req/s, we need ~7 total
-    return out
+    """Deep Upbit history from the ONE keying source (R0068).
+
+    This function used to re-derive the join inline, which is precisely how the 07-29 keying change
+    reached the live collector while the HISTORY it gets screened against kept a different one.
+    """
+    return upbit_daily_history(market, pages=pages)
 
 
 def binance_history(sym: str = "BTCUSDT", start: str = "2016-01-01") -> dict[str, float]:
