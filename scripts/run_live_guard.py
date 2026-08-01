@@ -259,7 +259,13 @@ def main() -> int:
             flatten_note = (f"rung {rung.name} requires flatten -- NOT executed "
                             f"(armed={venue is not None}, --allow-flatten={allow_flatten})")
 
-    effective_size = size_fraction * rung.size_multiplier * mode.size_multiplier
+    # SCOPED AT THE COMPUTATION, not just in the report (2026-08-01). The canary attests the
+    # LIVE path and is deliberately SKIPPED while the connector is unarmed, so it can never
+    # clear at S0 -- a verdict whose own probe refuses to run must not size a PAPER book.
+    # Scoping only the emitted JSON left this line still halving the book while the artifact
+    # claimed 1.0: artifact and behaviour disagreeing is worse than the original bug.
+    _canary_mult = mode.size_multiplier if venue is not None else 1.0
+    effective_size = size_fraction * rung.size_multiplier * _canary_mult
 
     report = {
         "ts": datetime.now(tz=UTC).isoformat(),
@@ -285,7 +291,12 @@ def main() -> int:
         # not caution. The moment the connector IS armed the probe runs for real and this binds
         # again unchanged; a canary that RUNS and FAILS still returns limit_only immediately.
         "canary": {"mode": ("limit_only" if (mode.limit_only and venue is not None) else "normal"),
-                   "size_multiplier": mode.size_multiplier,
+                   # Scoped exactly as the mode is: a probe that attests the LIVE path and is
+                   # deliberately skipped at S0 cannot justify halving a PAPER book. Leaving
+                   # it at 0.5 held effective size at 0.05 (ramp 0.1 x canary 0.5), so the
+                   # desk opened ~1 carry and accrued ~1 close/day -- too slow to reach a
+                   # decidable sample. Binds in full the moment the connector arms.
+                   "size_multiplier": (mode.size_multiplier if venue is not None else 1.0),
                    "reason": (mode.reason if venue is not None else
                               mode.reason + " -- NOT BINDING at S0: the probe attests the LIVE "
                               "path and is deliberately skipped while the connector is unarmed, "
