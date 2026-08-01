@@ -39,6 +39,9 @@ _UA = {"User-Agent": "Mozilla/5.0 (quant-desk forecast-scorer)"}
 _ABOVE = re.compile(r"\b([A-Z]{2,12}USD[TC]?)\b.*?\b(?:trades?|trade)\s+ABOVE\s+([0-9]+\.?[0-9]*)",
                     re.I)
 # "LONG BTCUSDT @13.97x stop 0.86% (below the 4h shelf at 62441.9 ...)"
+# "SHORT SOLUSDT @7.34x stop 1.63% (... 73.47 cap ...)" -- mirror of the LONG pattern.
+_CONVICTION_SHORT = re.compile(
+    r"SHORT\s+([A-Z]{2,12}USD[TC]?)\b.*?stop\s+([0-9.]+)%.*?([0-9]+\.[0-9]+)", re.I)
 _CONVICTION = re.compile(
     r"LONG\s+([A-Z]{2,12}USD[TC]?)\b.*?stop\s+([0-9.]+)%.*?shelf\s+at\s+([0-9]+\.?[0-9]*)", re.I)
 
@@ -57,6 +60,28 @@ def _price_at(symbol: str, when: datetime) -> float | None:
         return None
     best = min(rows, key=lambda r: abs(int(r[0]) - ms))
     return float(best[4])
+
+
+def _high_between(symbol: str, start: datetime, end: datetime) -> float | None:
+    """Highest 1m HIGH in [start, end] -- the mirror of _low_between, for SHORT stops."""
+    ms0, ms1 = int(start.timestamp() * 1000), int(end.timestamp() * 1000)
+    highs: list[float] = []
+    cur = ms0
+    while cur < ms1:
+        url = (f"https://api.binance.com/api/v3/klines?symbol={symbol}&interval=1m"
+               f"&startTime={cur}&endTime={ms1}&limit=1000")
+        try:
+            rows = json.loads(urllib.request.urlopen(
+                urllib.request.Request(url, headers=_UA), timeout=25).read())
+        except Exception:
+            return None
+        if not rows:
+            break
+        highs.extend(float(r[2]) for r in rows)
+        cur = int(rows[-1][0]) + 60_000
+        if len(rows) < 1000:
+            break
+    return max(highs) if highs else None
 
 
 def _low_between(symbol: str, start: datetime, end: datetime) -> float | None:
@@ -108,6 +133,18 @@ def main() -> None:
         # rather than applied silently: a levered LONG with a stop X% below a named shelf SURVIVES
         # iff price never traded through that stop before the deadline. Checked on 1m LOWS -- a
         # close-only check would miss a wick through the stop, and that error flatters the desk.
+        ms = _CONVICTION_SHORT.search(claim)
+        if ms:
+            sym, pct, lvl = ms.group(1).upper(), float(ms.group(2)), float(ms.group(3))
+            stop = lvl * (1.0 + pct / 100.0)      # a SHORT stops out ABOVE the level
+            hi = _high_between(sym, datetime.fromisoformat(str(v.get("updated") or rb)), deadline)
+            if hi is None:
+                skipped.append((key, f"no venue highs for {sym}"))
+                continue
+            survived = hi < stop
+            resolved.append((key, sym, stop, hi, survived, float(v.get("p", 0.5))))
+            continue
+
         mc = _CONVICTION.search(claim)
         if mc:
             sym, pct, shelf = mc.group(1).upper(), float(mc.group(2)), float(mc.group(3))

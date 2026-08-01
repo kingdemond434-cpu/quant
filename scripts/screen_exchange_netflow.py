@@ -101,7 +101,9 @@ def main() -> int:
                       lesson="Killed on 11y held-out OOS (backfill_onchain_oos)."),
             PriorIdea(id="kimchi-premium", statement="Korean exchange price premium predicts BTC "
                       "returns", category="cross-venue", features=["kimchi_premium", "prem_btc"],
-                      lesson="Retracted: ~73% timestamp artifact, KST vs UTC candle labels."),
+                      lesson="Killed on depth: h=1d IC +0.0148 (residual +0.0118) vs a 0.041 "
+                             "floor at n=2,303; original screen was a ~200d window. NOT a "
+                             "timestamp artifact -- that premise was refuted (R0067)."),
         ],
     )
     _log(f"NOVELTY GATE: novelty={nov.novelty_score:.3f} redundant={nov.is_redundant} "
