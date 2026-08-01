@@ -1205,3 +1205,16 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # CONFIDENCE: committed-script (new this cycle; first run fired ABSORBING and named the two
 # incident-#6 symbols permanently denylisted on the desk's own since-fixed close bug)
 35 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_excitation.lock .venv/bin/python scripts/check_excitation.py --report-only >> data/cro_ai_logs/excitation.log 2>&1
+# MOAT MICROSTRUCTURE CAMPAIGN (principal 2026-08-01). Scores order-book candidates against the
+# RECORDED tape -- the only dataset this desk owns that the crowd does not. Runs on the PRIMARY
+# only: the moat lives on one box by design (two collectors writing two lakes is divergence, not
+# redundancy), so the twin has no tape to score.
+# WHY IT EARNED A LINE: the same day, 129 textbook mechanisms across 10 liquid pairs on daily
+# bars returned 0 survivors with a MAXIMUM out-of-sample Sharpe of 0.100 -- picked clean. This
+# asks the same question of data that cannot be bought at retail.
+# Daily at 04:10 UTC: the tape only grows, so re-scoring more often spends CPU for no new
+# evidence; and it emits status BLOCKED with the shortfall named when the tape is too short,
+# rather than a weak number that reads like a result.
+# EVIDENCE: scripts/run_moat_campaign.py -> reports/moat_campaign.json
+# CONFIDENCE: committed-script (new; first run may legitimately report BLOCKED on sample length)
+10 4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_moatcamp.lock .venv/bin/python scripts/run_moat_campaign.py >> data/cro_ai_logs/moat_campaign.log 2>&1
