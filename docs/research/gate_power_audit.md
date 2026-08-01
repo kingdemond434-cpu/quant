@@ -23,12 +23,16 @@ rather than inferred.
 | 2.0 | 0.0% | 5.83% | 0.000% | 0.021% |
 | 3.0 | 1.2% | 23.75% | 0.000% | 0.021% |
 | 5.0 | 12.1% | **85.42%** | 0.000% | 0.021% |
-| 7.0 | 40.4% | *measuring* | 0.000% | 0.021% |
+| 7.0 | 40.4% | **100.00%** | 0.000% | 0.021% |
 | 10.0 | 80.4% | — | 0.000% | — |
 
 95% Wilson intervals on the after column: 1.5 → [0.6, 4.2], 2.0 → [3.5, 9.6], 3.0 → [18.8, 29.5],
-5.0 → [80.4, 89.3]. On the false-positive side, before is 0 of 5,040 (upper bound 0.10%) and
-after is 1 of 5,040 (upper bound 0.11%).
+5.0 → [80.4, 89.3], 7.0 → [98.4, 100.0]. On the false-positive side, before is 0 of 5,040 (upper
+bound 0.10%) and after is 1 of 5,040 (upper bound 0.11%) — intervals that overlap almost entirely.
+
+The gauntlet previously rejected 60% of candidates whose true Sharpe was **7**. That is not a
+conservative gate; it is a gate that had stopped measuring the candidate and was measuring its own
+correction stack.
 
 A world-class systematic book runs a true Sharpe of 2–3. The gauntlet admitted **0%** of those.
 The false-positive rate moved from 0 of 5,040 to 1 of 5,040 — 95% intervals that almost entirely
