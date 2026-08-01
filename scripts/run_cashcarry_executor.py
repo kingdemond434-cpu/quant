@@ -204,11 +204,46 @@ def _realised_pnl() -> float:
         return 0.0
 
 
+#: Where the live epoch baseline is recorded. See _live_epoch_pnl.
+_LIVE_EPOCH = Path("data/live_compound_epoch.json")
+
+
+def _live_epoch_pnl() -> float:
+    """Realised PnL already on the books when this desk FIRST went live.
+
+    R0235: the NAV chain does not distinguish testnet from live, and at the S0->S1 flip it carried
+    2,930.43 of TESTNET profit. Compounding a real deposit by that figure sized a 200 USD deposit
+    as 800 -- 4x, on money that does not exist at the venue -- and Gate 0's capital_fraction cap is
+    evaluated on the pre-multiplied number, so it never saw the size actually traded.
+
+    The first live read stamps the then-current realised figure as an EPOCH, and all later growth
+    counts only PnL ABOVE it. Live compounding therefore begins at exactly 1.0x, which is the
+    truth: no live PnL has been earned yet. The testnet record stays intact and the hash-chained
+    NAV file is never rewritten.
+    """
+    try:
+        if _LIVE_EPOCH.exists():
+            return float(json.loads(_LIVE_EPOCH.read_text("utf-8")).get("epoch_realised", 0.0))
+    except Exception:
+        return _realised_pnl()        # unreadable epoch -> subtract everything => 1.0x, fail-safe
+    stamp = _realised_pnl()
+    # best-effort persist: if it fails we still RETURN the stamp, so this tick computes 1.0x and
+    # the next tick re-stamps. Failing to write can never widen the size.
+    with contextlib.suppress(Exception):
+        _LIVE_EPOCH.write_text(json.dumps(
+            {"epoch_realised": stamp, "stamped_at": datetime.now(tz=UTC).isoformat(),
+             "why": "R0235: realised PnL on the books at the first live read. Growth counts only "
+                    "PnL above this, so live compounding starts at 1.0x instead of inheriting "
+                    "testnet profit as live size."}), "utf-8")
+    return stamp
+
+
 def _compounded_capital(default: float) -> float:
-    """Operator capital grown by REALISED PnL, hard-clamped, inert until live."""
+    """Operator capital grown by REALISED PnL earned LIVE, hard-clamped, inert until live."""
     if not _is_live():
         return default                                   # pre-Gate-0: frozen base, unchanged
-    grown = default + _realised_pnl() * _COMPOUND_FRACTION
+    live_pnl = _realised_pnl() - _live_epoch_pnl()        # R0235: exclude pre-live (testnet) PnL
+    grown = default + live_pnl * _COMPOUND_FRACTION
     lo, hi = default * _COMPOUND_MIN_FACTOR, default * _COMPOUND_MAX_FACTOR
     return float(min(max(grown, lo), hi))
 
