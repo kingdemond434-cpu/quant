@@ -54,7 +54,7 @@ def main() -> int:
         print("decision ledger empty or unreadable -- nothing to review")
         return 0
 
-    today = date.today()
+    today = date.today()  # noqa: DTZ011 -- calendar date for a filename/stamp, never compared to an instant
     plan = backfill_plan(rows, today)
 
     if plan and not dry:

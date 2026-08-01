@@ -60,7 +60,7 @@ def _windows(lengths: np.ndarray) -> dict[str, tuple[int, int]]:
 def main() -> int:
     t0 = time.time()
     with open(_PKL, "rb") as fh:
-        prepared = pickle.load(fh)
+        prepared = pickle.load(fh)  # noqa: S301 -- pickle of a corpus this desk wrote itself; never an untrusted input
     series = [np.asarray(e[-1], dtype="float64") for e in prepared]
     lengths = np.array([len(s) for s in series])
     _log(f"{len(series)} candidates: min={lengths.min()} median={int(np.median(lengths))} "

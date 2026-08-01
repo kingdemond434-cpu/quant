@@ -107,7 +107,7 @@ def _key(text: str) -> str:
 def lens_for(stamp: str, slot: int = 0) -> tuple[str, str]:
     """Date-ordinal rotation so coverage is provable rather than random."""
     try:
-        ordinal = datetime.strptime(stamp, "%Y%m%d").date().toordinal()
+        ordinal = datetime.strptime(stamp, "%Y%m%d").replace(tzinfo=UTC).date().toordinal()
     except ValueError:
         ordinal = 0
     return _LENSES[(ordinal + slot) % len(_LENSES)]

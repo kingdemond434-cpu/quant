@@ -2745,7 +2745,7 @@ def check_decision_ledger_matures(defects) -> None:
     rows = [r for r in rows if isinstance(r, dict)]
     if not rows:
         return
-    h = _health(rows, _date.today())
+    h = _health(rows, _date.today())  # noqa: DTZ011 -- calendar date for a filename/stamp, never compared to an instant
     if h.no_review_date:
         defects.append((
             "decision-ledger-undated",

@@ -315,7 +315,7 @@ def _lens_for(stamp: str, slot: int) -> str:
     and left several lenses effectively unreachable. A date ORDINAL makes day-to-day steps
     exactly +1, so 48 slots (6/day x 8 days) sweep the whole list with nothing dead."""
     try:
-        d = datetime.strptime(stamp, "%Y%m%d").date().toordinal()
+        d = datetime.strptime(stamp, "%Y%m%d").replace(tzinfo=UTC).date().toordinal()
     except ValueError:                                     # non-date stamp: degrade, never crash
         d = sum(ord(c) for c in stamp)
     return _LENSES[(d * 6 + slot) % len(_LENSES)]

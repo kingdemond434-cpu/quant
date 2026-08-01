@@ -96,7 +96,7 @@ def _load_campaign() -> tuple[np.ndarray, np.ndarray, int, str]:
     bottom of a log nobody opens.
     """
     if _PREPARED.exists():
-        prepared = pickle.loads(_PREPARED.read_bytes())
+        prepared = pickle.loads(_PREPARED.read_bytes())  # noqa: S301 -- pickle of a corpus this desk wrote itself; never an untrusted input
         min_len = min(len(r) for *_x, r in prepared)
         matrix = np.column_stack([r[-min_len:] for *_x, r in prepared])
         sharpes = np.array([sharpe_ratio(r) for *_x, r in prepared])
