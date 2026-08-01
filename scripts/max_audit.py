@@ -2629,6 +2629,19 @@ _PHANTOM_ALLOWED = {
                              "healthy state, and creating it would suspend mining.",
     "data/LIVE_ENABLE": "arming flag -- absence is the safe state by design.",
     "data/kill_switch": "rail flag -- absence is the healthy state.",
+    # OPERATOR-SUPPLIED CREDENTIALS. These are never written by desk code by design -- a repo that
+    # can WRITE its own secrets is a repo that can leak them. They are placed by hand (or by the
+    # deploy) and are gitignored, so "no writer in the tree" is the correct and intended state.
+    # Their absence is a FUNDING/PROVISIONING fact, already surfaced by the organs that need them
+    # (alert_channels degrades to log-only; the KR collector reports its key as missing).
+    "data/secrets/alert_channels.json": "operator-provisioned credential; desk code must never "
+                                        "write a secret, and its absence is reported by the "
+                                        "alert channel itself as degraded delivery.",
+    "data/secrets/binance_live_spot.json": "operator-provisioned live spot credential -- absence "
+                                           "is the SAFE state and is what keeps the spot leg "
+                                           "un-armed until a human provisions it.",
+    "data/secrets/naver.json": "operator-provisioned free NAVER API key (GAP #69, unclaimed). "
+                               "The KR collector reports the missing key rather than failing.",
 }
 
 #: Extensions worth auditing: durable stores a reader can be wrong about. Logs are excluded --
@@ -2642,6 +2655,52 @@ _PATH_LIT = re.compile(r'["\'](?P<p>(?:data|reports)/[A-Za-z0-9_./-]+'
 _WRITE_VERBS = ("write_text", "write_bytes", "open(", "json.dump", "to_csv", "to_json",
                 "savefig", "copyfile", "copy2", "dump(", "mkdir", "touch", "backup(",
                 "to_parquet", "np.save", "pickle.dump", "connect(")
+
+
+def _resolve_writers(lines: list[str], bound: dict[str, str]) -> set[str]:
+    """Paths written THROUGH A VARIABLE, which is how almost all of them are actually written.
+
+    THE FALSE-POSITIVE THIS FIXES (2026-08-01). The original test was LINE-LOCAL: a path counted as
+    written only if a write verb appeared on the same line as the string literal. But the ordinary
+    Python idiom is a module constant written later through its name --
+
+        QUAR = ROOT / "data/defi_lending_quarantine.json"     # literal here, no write verb
+        ...
+        QUAR.write_text(json.dumps(...))                      # writer here, no literal
+
+    -- so the detector could not see the writer and reported perfectly correct code as
+    READ-WITHOUT-WRITER. Measured on this tree: of 53 reported phantoms, the majority were this
+    shape (collect_defi_lending.py:62, protective_stops.py:143, collect_oi_ls_live.py, ...). That
+    matters more than the miscount: a fence that fires on healthy code gets acknowledged into
+    silence, and an acknowledged fence enforces nothing. The narrowness the docstring claims was
+    real in intent and absent in implementation.
+
+    ALIASES TOO. A constant is frequently passed as a default and written through the parameter
+    name (`def append(*, path: Path = LEDGER): path.write_text(...)`), so a name bound to a known
+    path as a default argument inherits that path for the purposes of this check.
+
+    Deliberately still textual rather than a full dataflow analysis. The remaining blind spot is a
+    path written through a name this never sees bound; that direction fails toward REPORTING a
+    phantom, which is the safe direction for a detector whose entire job is to notice absence.
+    """
+    if not bound:
+        return set()
+    written: set[str] = set()
+    # `def f(..., path: Path = LEDGER)` -> `path` also refers to LEDGER's target.
+    alias = dict(bound)
+    for line in lines:
+        for name, p in bound.items():
+            for m in re.finditer(rf"(\w+)\s*(?::[^=,)]+)?=\s*{re.escape(name)}\b", line):
+                if m.group(1).isidentifier():
+                    alias.setdefault(m.group(1), p)
+    for line in lines:
+        for name, p in alias.items():
+            if not re.search(rf"\b{re.escape(name)}\b", line):
+                continue
+            if any(v in line for v in _WRITE_VERBS) or re.search(
+                    rf"\b{re.escape(name)}\s*\.\s*(unlink|rename|replace|parent)\b", line):
+                written.add(p)
+    return written
 
 
 def check_phantom_paths(defects) -> None:
@@ -2671,12 +2730,24 @@ def check_phantom_paths(defects) -> None:
         except OSError:
             continue
         rel_py = str(py.relative_to(root))
-        for line in text.splitlines():
+        lines = text.splitlines()
+        # NAME -> path, for module-constant style bindings. See _resolve_writers.
+        bound: dict[str, str] = {}
+        for line in lines:
+            # A path named only in a COMMENT is not read by anything. This check reported
+            # `data/x.json` -- a placeholder inside two explanatory comments, one of them in this
+            # very function -- as a phantom store with two readers.
+            if line.lstrip().startswith("#"):
+                continue
             for m in _PATH_LIT.finditer(line):
                 p = m.group("p")
                 refs.setdefault(p, set()).add(rel_py)
                 if any(v in line for v in _WRITE_VERBS):
                     writers.add(p)
+                lhs = line.split("=", 1)[0].strip() if "=" in line else ""
+                if lhs.isidentifier():
+                    bound[lhs] = p
+        writers |= _resolve_writers(lines, bound)
 
     phantoms = sorted(
         p for p, _ in refs.items()
