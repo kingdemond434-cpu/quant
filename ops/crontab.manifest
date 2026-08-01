@@ -1235,3 +1235,17 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # spot/* as interleaving two clocks under one field name, and independently reproduced the
 # achieved-vs-configured period gap on both Binance recorders -- 8.28s and 7.84s against 5.0s)
 40 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_clockprov.lock .venv/bin/python scripts/check_clock_provenance.py --report-only >> data/cro_ai_logs/clock_provenance.log 2>&1
+
+# FORECAST SCORER (L1.29 calibration). The desk had a forecast LOGGER and no SCORER, so
+# check_calibration sat OVERDUE with 7 unscored predictions -- the worst asymmetry available,
+# since logging a probability feels like rigour while only the scoring turns it into calibration.
+# Resolves "SYMBOL trades above X at +Nh" claims against the CLOSE of the 1m candle containing
+# resolve_by (one defined instant, so the answer cannot drift with when the scorer runs).
+# Claims it cannot parse unambiguously are left OVERDUE by design and named -- a guessed outcome
+# corrupts the measurement the fence exists to protect.
+# Hourly at :50 -- the quiz/probe organs log on the hour with 4h and 12h deadlines, so an hourly
+# pass grades each one within the hour it matures; denser buys nothing, sparser lets them pile up.
+# EVIDENCE: scripts/score_forecasts.py -> data/forecast_log.json (outcomes via fc.resolve)
+# CONFIDENCE: committed-script (first run graded 6 of 7, Brier 0.2484, and left the one ambiguous
+# conviction claim unresolved rather than guessing it)
+50 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_fcscore.lock .venv/bin/python scripts/score_forecasts.py --write >> data/cro_ai_logs/forecast_scoring.log 2>&1
