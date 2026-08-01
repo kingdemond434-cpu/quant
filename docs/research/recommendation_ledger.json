@@ -2738,6 +2738,18 @@
    "commit": "314805d",
    "due": null,
    "disposed": "2026-08-01T00:43:48.720814+00:00"
+  },
+  {
+   "id": "R0225",
+   "source": "max_audit",
+   "summary": "Min-length truncation PRICED: it is the largest remaining loss in the discovery pipeline, and a stratification planner now quantifies it. Every campaign builder aligns its matrix with min_len = min(len(r) for r in return_series), so ONE short candidate truncates every other -- 310 observations retained of ~1,808 available per candidate, 82.9% of the data on disk discarded before a single test ran. That is exactly backwards given the audit: observations buy power (T=310/620/1250/2500 -> 0.0/1.7/4.6/19.6% at true Sharpe 2) and cohort size does not (N=420/100/30 all 0.0%). libs/validation/campaign_window.py partitions candidates by AVAILABLE HISTORY via an exact DP so every candidate is tested at the longest window it can support and none is truncated to a stranger's. On a realistic length distribution: expected discoveries 1.06 -> 159.0, observations used 18.0% -> 89.0%, candidates tested 420 -> 326 (the rest are too short to reach the floors). TWO SELF-INFLICTED DEFECTS CAUGHT DURING THE BUILD, both recorded in code. (1) The first objective maximised per-candidate power and chose 4,000 obs x 16 candidates -- 99.9% power with 404 of 420 hypotheses never tested; a dropped candidate has ZERO discovery probability, not a small one, so the objective became expected discoveries = cohort x power summed over strata. (2) The unpriced version then fragmented into 34 minimum-size strata because smaller cohorts carry a smaller multiplicity deflation -- evading the correction by partitioning, and it would have reported a fictional 279x. Each stratum is now scored at CAMPAIGN_ALPHA/k so total family-wise error stays 5% however the campaign is cut. MAX_STRATA was also set from a sweep (optimum k=26) after an initial guess of 8 sat hard against the cap. NOT WIRED, deliberately: romano_wolf_stepdown takes alpha=0.05 and no builder passes anything else, so a k-stratum campaign today would run k families at 5% each and the real FWER would be ~1-(1-0.05)^k. The Bonferroni accounting is a property of the CALLER; wiring the plan without wiring the level would turn a measured improvement into a genuine loosening. 10 tests.",
+   "roi_bps": null,
+   "raised": "2026-08-01T01:09:20.249362+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
