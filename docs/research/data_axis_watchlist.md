@@ -1229,3 +1229,68 @@ contemporaneous-float denominator, but the *timing* no longer depends on it.
 unplanned **positive control on the desk's own wiring**: our panel reproduced the externally-reported
 null in the window where a null is expected. Weak evidence the instrument is sound (L1.25 diagnostic
 step 1), obtained for free.
+
+### 26. KR venue-state layer — Upbit + Bithumb event archive, market flags and rail state — grade: needs-monitoring (verified live, ingest STARTED, screen owed) [§33: screened -> data/upbit_trade_announcements.jsonl]
+_Discovered and verified by the KR frontier miner, session 1, 2026-08-01. All endpoints keyless,
+first-party, §13-clean (public documented venue APIs, no login, no paywall, no scraping)._
+
+- **Provides — four distinct surfaces, all free:**
+  1. `api-manager.upbit.com/api/v1/announcements` — **5,685 dated, categorised announcements back
+     to Upbit's open-beta day, 2017-10-24.** `category=trade` → **737** listing/delisting/
+     trading-support events. *Caps: `per_page<=20` (30 → 429, 100 → 400); needs ≥3s between pages.
+     The category filter key is **English** (`trade`); the Korean literal `거래` returns HTTP 400.*
+  2. `api.upbit.com/v1/market/all?isDetails=true` — per-asset `market_event.warning` (유의종목) plus
+     `caution{PRICE_FLUCTUATIONS, TRADING_VOLUME_SOARING, DEPOSIT_AMOUNT_SOARING,
+     GLOBAL_PRICE_DIFFERENCES, CONCENTRATION_OF_SMALL_ACCOUNTS}`.
+  3. `api.bithumb.com/v1/market/all?isDetails=true` — second KR venue, same `market_warning` field.
+  4. `api.bithumb.com/public/assetsstatus/ALL` — **per-asset deposit / withdrawal open-closed state.**
+- **Mechanism (why this is not just more data):** Korean retail is a large, concentrated,
+  KRW-rail-captive flow cohort, and these endpoints are **the venue's own labels on that cohort**.
+  `CONCENTRATION_OF_SMALL_ACCOUNTS` is computed from Upbit's internal account-level book and is
+  **structurally unbuyable** — no vendor sells it. The Bithumb rail state is an **independent
+  measure of barrier height**, which breaks the circularity in which every prior KR premium study
+  here inferred the barrier *from the premium itself*.
+- **Measured live 2026-08-01T13:34Z (base rates, because a flag that never fires carries nothing):**
+  Upbit 803 markets / 277 KRW — `warning` 6 KRW (2.2%), `TRADING_VOLUME_SOARING` 14 (5.1%),
+  `DEPOSIT_AMOUNT_SOARING` 3 (1.1%), `GLOBAL_PRICE_DIFFERENCES` 1 (0.4%),
+  `CONCENTRATION_OF_SMALL_ACCOUNTS` 0. Bithumb 487 markets → 470 NONE / **17 CAUTION**;
+  `assetsstatus` 506 assets → withdrawal closed 4 (0.8%), **deposit closed 51 (10.1%)**.
+  Cross-venue: **ZIL, STORJ, TT, BONK warned at BOTH**; Bithumb flags 17 vs Upbit's 6, so the
+  **13-name disagreement set** is itself a candidate. ZIL is the live full-syndrome case (warned at
+  both + deposit AND withdrawal closed).
+- **THREE TRAPS, all measured, all of which would have produced a confident wrong answer:**
+  1. **`GLOBAL_PRICE_DIFFERENCES` fires on 175/803 (22%) of ALL markets and 1/277 (0.4%) of KRW.**
+     The 22% is thin USDT/BTC-book illiquidity, **not** a fiat premium. The biggest number on the
+     page is the artifact. *Split by quote currency before reading any rate.*
+  2. **Key events on `first_listed_at`, never `listed_at`** — they differ on 42.5% of rows (median
+     2.08d, p90 9.30d, max 14.7d). Mechanism now known: Upbit *amends* the trading-start time after
+     publishing (`(거래지원 개시 시점 변경 안내)`), and the amendment rewrites `listed_at`.
+  3. **Announcements are KST (+09:00); Upbit daily candles close at 24:00 UTC** (proven from primary
+     hourly data, PROSPECTOR 2026-07-30). A 17:00 KST announcement is 08:00 UTC *inside* that UTC
+     day — the window must start at the **next** UTC close or it is look-ahead.
+- **Event classes (in the 360 rows classified so far, 2023-02-15 →):** new listing 151;
+  **KRW market addition 41** — asset *already* on Upbit's BTC/USDT books, KRW rail added, which
+  **isolates rail access from discovery** and is the cleanest natural experiment in the set;
+  warning ON 47; warning OFF 9; delisting 40.
+- **Feasibility gate PASSED, measured with zero price data** (each delisting title carries its own
+  effective timestamp): notice window **min 14.0d, median 30.9d, max 36.0d, 40/40 parsed** — a
+  month-long, pre-announced, precisely-dated forced-unwind window. §42 names *"delisting unwinds"*
+  as our ground.
+- **Screen status — HONEST:** the pre-registered Upbit-KRW delisting event study is **IMPOSSIBLE**
+  and that is a reported result, not a skip. The declared survivorship threat **fired 6/6**: Upbit
+  returns HTTP 404 on `/v1/candles/days` for every delisted market, so the treatment group is
+  **erased, not merely biased**. Scoped to the route: the *event dates* survive intact, and the
+  study is **re-runnable on global prices** (the assets trade elsewhere with history intact) — which
+  tests the sharper question of whether a KR delisting moves the asset's *global* price. Owed next
+  run. **`axis_screen` is the WRONG instrument here** (~2 non-zero days in 30 reads as noise on
+  every continuous statistic); this goes through `libs/validation/event_study.py`, `n_cohort=1`.
+- **Irreplaceability — this is the part with a deadline.** Surfaces 2–4 are **snapshot-only, no
+  history endpoint**, so the series can only ever begin the day recording begins. Worse, the purge
+  means **the entire KRW price history of any asset is destroyed when it delists**, at ~**11.4
+  markets/year**. **KRW-AQT and KRW-AERGO halt 2026-08-03; KRW-SPURS 2026-08-18; the desk holds
+  history for none of them** (the 07-30 panel's `>=120 aligned days` filter excludes exactly the
+  thin/new names that delist — **our own construction filter stacks with the venue's purge**).
+- **Legitimacy (§13): clean.** Public, documented, unauthenticated first-party venue APIs. Rate
+  limits observed and respected throughout (the 429s in this run were backed off, never evaded).
+- **Routed:** `data/upbit_trade_announcements.jsonl`, `data/upbit_announcements.jsonl`,
+  `data/data_universe_map.json` (4 entries), R0298–R0301, **R0303 (dated 08-03)**.

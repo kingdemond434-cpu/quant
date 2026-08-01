@@ -1446,3 +1446,544 @@ fails.
 5. **Era-archaeology, still entirely unopened on this ground:** MMGP.ru + bits.media archives,
    pre-sanctions LocalBitcoins/EXMO mechanics. **Zero era work happened this run** — the dark-forest
    mandate's era limb is owed and I am naming it rather than letting it quietly lapse.
+
+## SESSION NOTES — KR frontier miner
+
+_Region grounds: Naver blogs + public cafes, DCInside trading galleries, velog/tistory dev posts,
+KR GitHub, Upbit/Bithumb developer ecosystems. Operators: OP-002 (native-language templates),
+OP-032 (native language FIRST). KR lexicon seeded 2026-07-30 by the PROSPECTOR seat._
+
+### 2026-08-01 session 1 (KR frontier miner) — IN PROGRESS (write-first note; updated as items resolve)
+
+**SEAT STATUS: FIRST RUN.** No `SESSION NOTES — KR frontier miner` section existed in this document
+before this line. KR ground HAS been touched, but by other seats: the **PROSPECTOR seat on
+2026-07-30** ran the per-asset KR premium axis to a family null (175 assets, median IC +0.0050,
+honest-null branch fired) and catalogued the per-coin premium tracker ecosystem. That session
+**named its own next KR ground and did not do it**: _"Coinpan/DCInside/Naver-cafe community
+deep-mining — the discussion layer behind the trackers"_. **I am resuming that chain, not
+restarting**, per the RESUME mandate.
+
+**WHY THESE ITEMS — the reasoning, so the next run can overrule it:**
+`data/strategy_coverage.json` says **CROSS-VENUE-PREMIUM is HUNTED with 9 candidates and 9 deaths**,
+three of them Korean (`bithumb_kr_premium_lookahead`, `coinone_kr_premium`, and kimchi itself,
+REFUTED at full 8.2y depth 2026-07-30). **The obvious KR dig is the one dig this seat must not do.**
+The unhunted/thin ground is elsewhere: **ATTENTION-SENTIMENT is THIN (n_tested=2)** and it is the
+family a Korean-retail seat is structurally best placed to open — KR retail is a distinct,
+concentrated, KRW-rail flow cohort with its own information ecosystem.
+
+**ITEMS TAKEN THIS RUN (bounded breadth, unbounded depth per item):**
+
+1. **BACKLOG VERIFICATION, RE-SCOPED (RESUME mandate).** `source_backlog_next.py` lists **NAVER
+   DataLab (Korean search-attention)** as pending verification. It has been "verified" **three
+   times** (07-25, 07-30, 07-31) with the identical answer: HTTP 401, keyed API, blocker is a free
+   NAVER Developers registration = a human step. **A fourth re-confirmation is worth zero.** The
+   part that is NOT settled, and that a KR seat is the right organ to settle:
+   **is the whole KR search-attention CLASS blocked, or only that one route?** (L1.25a: scope the
+   negative result to the ROUTE, never the CAPABILITY.) Sub-item: the desk's axis watchlist carries
+   **four KR/CN/JP community sources parked at `needs-legitimacy-review`** (Coinpan, DCInside,
+   Weibo/Zhihu, 5ch) — a placeholder verdict nobody has ever actually adjudicated. **A §13 gate that
+   is never run on a candidate rejects it by default**, which is the welded-gate pattern (L1.43)
+   pointed at our own legitimacy gate. Decide it, either way, with the primary documents.
+   - RESOLVED → see below.
+
+2. **THE NAMED, UNDONE KR GROUND: community deep-mine.** DCInside 비트코인 갤러리 / Coinpan /
+   Naver cafés — to **reply depth ≥2**, hunting mechanisms in THIN or NEVER-HUNTED families, not
+   the adjudicated premium. Reading a public thread as a researcher is a different act from
+   adopting it as an automated feed; §13 governs the second. Every venue named inside a thread is
+   harvested (venue-discovery obligation).
+   - RESOLVED → see below.
+
+3. **UPBIT / BITHUMB DEVELOPER ECOSYSTEM + KR GITHUB — data axes, not strategies.** Standing
+   obligation: every venue is asked what it PUBLISHES. A dig returning zero strategies and one new
+   data axis is a good dig. Hunt endpoint lists inside collector code, not marketing pages.
+   - RESOLVED → see below.
+
+STATUS: run in progress — per-item results appended below as they close.
+
+#### ITEM 1 — CLOSED. The KR §13 map, read off the PRIMARY documents for the first time.
+
+**The desk had never fetched a single `robots.txt` on this ground.** Four KR/CN/JP community
+sources sat at `needs-legitimacy-review` in `data_axis_watchlist.md` — a placeholder that has
+survived three rounds — and my own seat brief names Naver cafés and DCInside as REGION GROUNDS.
+One `curl` each settled all of it. **Measured 2026-08-01, verbatim:**
+
+| venue | `User-agent: *` policy | AI/Claude family named explicitly? | §13 verdict |
+|---|---|---|---|
+| **cafe.naver.com** | **`Disallow: /`** — entire site, to everyone | `ClaudeBot`, `GPTBot`, `Google-Extended` + prose header *"BOT ACCESS FOR THE PURPOSES OF AI TRAINING AND RETRIEVAL-AUGMENTED GENERATION (RAG) IS STRICTLY PROHIBITED"* | **HARD STOP** |
+| **blog.naver.com**, **m.blog.naver.com** | permissive except `/PostList.nhn` | **`ClaudeBot` + `Claude-SearchBot` → `Disallow: /`**, same RAG prose | **HARD STOP for this agent family** |
+| **gall.dcinside.com**, `m.`, `www.` | `Allow: /` (minus ~15 named galleries + `/kcaptcha/`, `/api/`, `/search/`) | **`ClaudeBot`, `anthropic-ai`, `Claude-Web` → `Disallow: /`** under the header `# ----- AI 학습 크롤러 차단 -----` | **HARD STOP for this agent family.** See the split below — do **not** self-grant the `*` route |
+| **coinpan.com** | **`Disallow: /inquiry/` and nothing else** | none | **OPEN — CLEAN** |
+| **datalab.naver.com** | `Allow: /$`, `Allow: /index.naver`, **`Disallow: /`** | — | **the web-XHR scrape route is DISALLOWED** |
+| **velog.io** | `User-agent: *` with **zero rules** | none | **OPEN — CLEAN** |
+| **www.bithumb.com** | `User-agent: *`, no `Disallow` at all | none | **OPEN — CLEAN** |
+| **kimpga.com** | `Allow: /` (minus privacy/terms) | none | **OPEN — CLEAN** |
+| tistory.com apex | serves a Next.js app shell at `/robots.txt`, no policy | — | per-subdomain check owed |
+| coinone.co.kr | 302 → Cloudflare on `/robots.txt` | — | **UNRESOLVED**, named not assumed |
+
+**FINDING 1 — THREE OF MY FIVE ASSIGNED GROUNDS REFUSE THIS AGENT BY NAME.** Naver cafés, Naver
+blogs and DCInside galleries each carry a machine-readable directive naming `ClaudeBot` /
+`anthropic-ai` / `Claude-Web` with `Disallow: /`. §13 is absolute — *"a licence forbidding the use
+is a HARD STOP, never a hurdle"* — and the doctrine adds *"never route around a venue's own access
+control."* **Selecting a different user-agent to evade a block aimed at this agent by name is
+exactly that routing-around, so the `*` section is not a loophole I am entitled to take.** I did
+not fetch page content from any of the three. The seat brief is a seed list, not an authorisation;
+where a seed collides with §13, §13 wins and the ground is closed.
+
+**FINDING 2 — THE DESK'S TWO KR COMMUNITY GRADINGS WERE BACKWARDS.** `data_axis_watchlist.md`
+excluded *"Korean forums (Coinpan, DCInside crypto boards) — needs-legitimacy-review … ToS-grey"*
+as one undifferentiated class. The primary documents split them cleanly and in the opposite
+direction to the guess: **DCInside blocks us by name; Coinpan allows everything except
+`/inquiry/`.** The source the desk declined to build is the clean one. This is the welded-gate
+pattern (L1.43) aimed at our own §13 gate: **a legitimacy verdict that is never actually
+adjudicated rejects by default**, and a default rejection is indistinguishable from a reasoned one
+in every downstream artifact.
+
+**FINDING 3 — GAP #69 IS WORTH FAR MORE THAN ITS CARD SAYS, and this is the actionable one.**
+`openapi.naver.com` was only ever probed at `/v1/datalab/search`. I probed the sibling content
+endpoints. **All four return the identical keyed-API 401** (`errorCode 024`, *"Not Exist Client ID"*):
+```
+GET /v1/search/blog.json        -> HTTP 401  errorCode 024
+GET /v1/search/cafearticle.json -> HTTP 401  errorCode 024
+GET /v1/search/news.json        -> HTTP 401  errorCode 024
+GET /v1/datalab/search          -> HTTP 401  errorCode 024
+```
+So the **one free NAVER Developers registration** does not merely unlock a search-attention axis
+(the card's framing, filed tier-3). **It is simultaneously the LICENSED route into Naver blog and
+Naver café content that `robots.txt` otherwise closes to us permanently.** One human step converts
+**two hard-stopped grounds plus one blocked axis** into a single §13-clean feed. That is a large
+change in the value of GAP #69 and it was invisible because nobody probed the neighbouring paths.
+
+**FINDING 4 — a free confirmation of a judgement call.** The 07-26 session refused the
+`datalab.naver.com` web-XHR scrape on instinct (*"ToS-grey… producing an artifact by doing the
+thing the card refused to do is a fake conversion"*). `datalab.naver.com/robots.txt` is
+`Disallow: /` for everything but the bare index. **That instinct is now evidenced, not merely
+principled** — and the refusal should be cited as correct rather than re-litigated.
+
+**DCINSIDE — THE ONE VERDICT I AM NOT ENTITLED TO MAKE ALONE.** Two distinct acts must not be
+collapsed: *(a)* me, an Anthropic-family agent, fetching pages — **named, blocked, closed, and I
+complied**; *(b)* a future desk collector under its own UA doing statistical post-counting, which
+the `User-agent: *  Allow: /` section permits on its face while the file's own header states the
+operator's intent is to block AI crawlers. That gap is a **principal legitimacy decision**, not
+something a miner grants itself, and it is rowed as such rather than resolved here in either
+direction. Recording the ambiguity beats inventing a verdict.
+
+**VERDICT ON THE BACKLOG ITEM: NAVER DataLab stays PENDING — unchanged, and correctly so — but the
+re-verification loop is now CLOSED.** Three prior sessions each re-confirmed the same 401. The
+route is settled; a fifth probe is worth nothing. What this run adds instead is the *scope*: the
+blocker is not "one attention axis is unavailable", it is **"the licensed gateway to the entire
+KR consumer-web layer is unpurchased, and it is free."**
+
+#### ITEM 2 — CLOSED, and the honest verdict is that this ground is SHUT on three independent mechanisms.
+
+The named next-run ground was *"Coinpan/DCInside/Naver-cafe community deep-mining."* I could not
+mine any of the three, and the reasons are different in each case — which matters, because
+collapsing them into "KR community is blocked" would be the exact error that once turned one
+blocked YouTube endpoint into *"video is blocked."*
+
+- **DCInside** — blocked by **§13**: `ClaudeBot` / `anthropic-ai` / `Claude-Web` named with
+  `Disallow: /`. I did not fetch. **Not a route failure; a legitimacy hard stop.**
+- **Naver cafés / blogs** — blocked by **§13**, same shape, plus prose forbidding RAG use outright.
+  **Licensed alternative exists and is free** (`/v1/search/cafearticle.json`, `/v1/search/blog.json`)
+  — see Finding 3. **Not a capability failure; an unpurchased key.**
+- **Coinpan** — **§13-CLEAN but technically WALLED.** `robots.txt` permits everything bar
+  `/inquiry/`, and every content route sits behind a Cloudflare interstitial:
+  ```
+  /rss                        -> HTTP 403  "Just a moment..."
+  /index.php?mid=free&act=rss -> HTTP 403  "Just a moment..."
+  /free                       -> HTTP 403  "Just a moment..."
+  /sitemap.xml                -> HTTP 200  (the one route that serves)
+  ```
+  I applied **OP-038** (*a JS wall on the HTML is not a wall on the API*) — it does **not** rescue
+  this one: the wall is at the **CDN edge**, not the renderer, so the feed routes are walled too.
+  That is a real refinement to OP-038 and is written back to the library. **Solving a Cloudflare
+  challenge is routing around access control and is forbidden**, so this stays WALLED, not
+  "pending a better scraper".
+
+**THE RE-AIM THIS FORCES, and it is the session's most useful structural output.** All three KR
+retail-community venues are unreachable, by three unrelated mechanisms, none of which a better
+query or more persistence would fix. **A KR seat whose value proposition is "read what Korean
+retail says" has no ground.** But the thing that makes Korean retail interesting is not their
+*forum posts* — it is that they are a large, concentrated, KRW-rail-captive flow cohort. **Their
+venues publish machine-readable state about that cohort, keylessly, and nobody collects it.**
+Item 3 is where the value actually was, and this run found it only because item 2 closed.
+
+#### ITEM 3 — CLOSED. The KR venue-API layer is wide open, deep, and uncollected.
+
+**FINDING 5 — `api-manager.upbit.com/api/v1/announcements`: keyless, first-party, and it reaches
+back to Upbit's open-beta day.** Verified by direct probe of the final page:
+```
+total_count 5,685   total_pages 1,137 (per_page=5; cap is 20, per_page>=30 -> 429, >=100 -> 400)
+oldest rows: 2017-10-24T10:41:48+09:00  "오픈베타 안내 (Q&A)"
+             2017-10-27T23:33:33+09:00  "스팀달러(SBD), 블록틱스(TIX) 상장 안내"
+categories:  거래 / 입출금 / 안내 / 점검 / 이벤트 / NFT / 디지털 자산 / 서비스+
+             (filter key is ENGLISH: `category=trade` -> 737 events; `category=거래` -> HTTP 400)
+```
+**8.8 years of dated, categorised, first-party KRW-venue events.** `category=trade` (737) is the
+listing / delisting / trading-support subset — the tradeable core.
+
+**FINDING 6 — A LOOK-AHEAD TRAP SITTING IN THE OBVIOUS FIELD, measured not asserted.** Each record
+carries **both** `listed_at` and `first_listed_at`. They differ on **17 of 40 (42.5%)** of a
+recent sample, with **median edit lag 2.08 days, p90 9.30 days, max 14.7 days**. `listed_at` is the
+field the list sorts by and the one any reasonable person would key an event study on — **and for
+42.5% of events it is a timestamp assigned AFTER the fact, on median two days late, sometimes two
+weeks.** An announcement edited later acquires a later `listed_at`, which can push its apparent
+date past the price move it caused. **Key on `first_listed_at`. Always.** This is the L1.46 class
+— *"a timestamp whose clock is undeclared is an assumption wearing a measurement's clothes"* —
+and here the venue hands us the fix for free, but only if you look at the second field.
+
+**FINDING 7 — THE FIND OF THE SESSION: `api.upbit.com/v1/market/all?isDetails=true` publishes
+venue-computed state about the Korean retail cohort, per asset, keylessly.** Every market carries
+`market_event.warning` (the 유의종목 investment-warning designation) plus a five-field `caution`
+object. Measured live, **2026-08-01T13:34Z**, 803 markets / 277 KRW:
+
+| flag | ALL (n=803) | **KRW-only (n=277)** | what it is |
+|---|---|---|---|
+| `warning` (유의종목) | 15 (1.9%) | **6 (2.2%)** | the venue's own investment-warning designation |
+| `TRADING_VOLUME_SOARING` | 16 (2%) | **14 (5.1%)** | venue-defined volume frenzy |
+| `GLOBAL_PRICE_DIFFERENCES` | 175 (22%) | **1 (0.4%)** | venue's own per-asset premium alarm |
+| `DEPOSIT_AMOUNT_SOARING` | 7 (1%) | **3 (1.1%)** | inbound retail capital per asset |
+| `PRICE_FLUCTUATIONS` | 9 (1%) | **1 (0.4%)** | venue-defined volatility flag |
+| `CONCENTRATION_OF_SMALL_ACCOUNTS` | 0 | **0** | **retail crowding, per asset — in schema, not firing today** |
+
+**The flags are LIVE and DISCRIMINATING, not welded** — they fire at rates from 0% to 22%, which
+is the first thing to check on any new flag surface (L1.43).
+
+**AND THE TRAP INSIDE IT, which is why the KRW column is broken out separately.**
+`GLOBAL_PRICE_DIFFERENCES` fires on **175 markets (22%)** — by far the biggest number on the page,
+and the one that looks like a ready-made kimchi-premium signal. **On KRW markets it fires once
+(0.4%).** The 175 are almost entirely USDT- and BTC-quoted books, where the "global price
+difference" is *thin-book illiquidity*, not a fiat premium. **Reading the headline 22% as a
+premium signal would have been a pure artifact** — the desk's own tail-screen rule (*the biggest
+number in a noisy panel is the likeliest artifact*) fires exactly here, and the KRW split is what
+catches it.
+
+**FINDING 8 — BITHUMB IS A SECOND, INDEPENDENT KR VENUE PUBLISHING THE SAME STATE, plus the
+barrier itself.** `api.bithumb.com/v1/market/all?isDetails=true` (487 markets) carries
+`market_warning`: **470 NONE / 17 CAUTION**. Cross-venue overlap with Upbit's 6 KRW warnings:
+**ZIL, STORJ, TT, BONK are flagged at BOTH** — so the designation tracks asset-level state rather
+than venue idiosyncrasy, while **Bithumb flags 17 vs Upbit's 6**, i.e. a materially looser
+threshold. **The 13-name disagreement set is itself a candidate signal** (one venue sees trouble
+the other has not designated yet), and it costs nothing to record.
+
+And `api.bithumb.com/public/assetsstatus/ALL` — **506 assets, per-asset deposit and withdrawal
+status**, measured today: **withdrawal closed on 4 (0.8%), deposit closed on 51 (10.1%).**
+
+**WHY FINDING 8 IS THE ONE WITH THE DEEPEST MECHANISM BEHIND IT.** The desk's own cross-era
+synthesis (RU seat, 2026-08-01) concluded that a persistent cross-venue premium is **rent on a
+barrier**, and that premium magnitude tracks **barrier height**. Every KR premium study this desk
+has ever run — including the kimchi work that was ultimately refuted — inferred the barrier *from
+the premium itself*, which is circular. **These two endpoints publish the barrier DIRECTLY,
+per-asset, per-day, free:** a coin whose deposit rail is shut at Bithumb cannot be arbitraged into
+that venue, and that is an *independent* regressor for the premium rather than a restatement of
+it. **ZIL is the live worked example — warned at both venues AND deposit- and withdrawal-closed at
+Bithumb simultaneously.** Whether this rescues anything is an open empirical question and I am
+claiming nothing about it; what I am claiming is that the circularity that has dogged every KR
+premium study here is **breakable with two keyless endpoints nobody has collected.**
+
+**THE IRREPLACEABILITY POINT, and it decides the priority.** `market/all` and `assetsstatus`
+return **CURRENT STATE ONLY — there is no history endpoint.** Every hour not recorded is gone at
+any price (L1.46). The announcement archive back-fills the *event dates* to 2017, but the *flag
+state* series can only ever start the day the desk begins recording. **This is the cheapest
+irreplaceable-data decision available right now: a few hundred bytes a day, keyless, and the
+series can never be bought later.** A competitor would have to reconstruct
+`CONCENTRATION_OF_SMALL_ACCOUNTS` from Upbit's internal account-level book, which is
+structurally unbuyable.
+
+#### ITEM 3 (cont.) — EVENT-CLASS TAXONOMY + THE FEASIBILITY GATE, measured.
+
+Classifying the `category=trade` archive (**360 of 737 rows pulled at time of writing**, spanning
+**2023-02-15 → 2026-07-31**; the pull is resumable and the remainder is next-run work — I am **not**
+claiming the full archive):
+
+| event class | Korean title form | n (in 360) | what it is |
+|---|---|---|---|
+| new listing | `신규 거래지원 안내` | **151** | brand new to Upbit, all markets at once |
+| **KRW market addition** | `KRW 마켓 디지털 자산 추가` | **41** | **already trading on Upbit's BTC/USDT books; KRW access added** |
+| warning ON | `거래 유의 종목 지정 안내` | **47** | 유의종목 designation |
+| warning OFF | `거래 유의 종목 지정 해제 안내` | **9** | designation lifted |
+| delisting | `거래지원 종료 안내 (M/D HH:MM)` | **40** | trading-support termination |
+
+**THE STRUCTURAL FIND: `KRW 마켓 추가` IS A DIFFERENT EVENT FROM `신규 거래지원`, AND IT IS THE
+CLEAN ONE.** A new listing confounds two shocks — the market learning the asset exists on a major
+venue, *and* Korean retail gaining won-denominated access. A **KRW market addition applies only the
+second**: the asset is *already* trading on Upbit's own BTC and USDT books, so it is already
+discovered, already priced on that very venue, already arbitraged — and then one rail opens.
+**That is a natural experiment isolating rail access from discovery**, and it is the shape of
+mechanism the desk's whole barrier synthesis predicts. 41 such events in 3.5 years, ~90+ expected
+across the full archive.
+
+**THE FEASIBILITY GATE — measured, and it PASSES with room.** A pre-announced event is only
+tradeable if there is a window between the announcement and the effect. Every delisting title
+carries its own effective timestamp in parentheses, so the window is measurable with **zero**
+price data. **40/40 titles parsed:**
+```
+NOTICE WINDOW (announcement -> trading halt), days:
+  min 14.0   p25 30.0   median 30.9   p75 31.9   max 36.0
+  two regimes: a 14-day regime (2023-24) and a ~31-day regime (2025-26)
+  shortest: PCI  2023-03-31 -> 2023-04-14 (14.0d)
+  longest:  LOOM 2025-04-01 -> 2025-05-07 (36.0d)
+```
+**Upbit pre-announces delistings by a median of 31 days with a precise published halt time.** This
+is exactly §42's named ground (*"delisting unwinds"*), it is a month-long forced-unwind window on a
+retail-captive venue, and the desk collects none of it. Checking this first was the right order:
+had the window been ~0, the mechanism would have been DOA and no price work would have been
+justified.
+
+**AND IT EXPLAINS FINDING 6'S MECHANISM, which was previously only measured.** The listing titles
+carry suffixes `(거래지원 개시 시점 안내)`, `(...변경 안내)`, `(...추가 변경 안내)` — the venue
+*amends the trading-start time* after first publishing. **That amendment is what rewrites
+`listed_at`.** So the 42.5% divergence is not noise: `first_listed_at` = when the market first
+learned, `listed_at` = when the schedule was last revised. Both are meaningful, they answer
+different questions, and keying an event study on the second silently dates the event to the
+revision instead of the news.
+
+**PRE-REGISTRATION — written and committed to this document BEFORE any price data was fetched.**
+- **Event:** Upbit `거래지원 종료` delisting announcement, keyed on **`first_listed_at`** (never
+  `listed_at`, per Finding 6).
+- **Direction: NEGATIVE**, declared in advance. *Mechanism:* KR retail is the marginal buyer for
+  small-cap KRW-quoted names and is heavily non-self-custodial. A delisting notice removes their
+  access on a published deadline; holders who cannot or will not move the asset to another venue
+  **must sell before the halt and cannot stop** — that is the forced counterparty. The bid
+  shrinks over a known month.
+- **Window:** announcement → **+3 days**, ONE window, pre-declared. A second window is a second
+  trial and would raise the bar (§42).
+- **Benchmark:** BTC over each event's own window, subtracted (`abnormal_returns`) — otherwise the
+  study measures beta, not edge.
+- **Gate:** `libs/validation/event_study.py`, `n_cohort=1` (single pre-registered hypothesis),
+  harness's own multiplicity-corrected bar + bootstrap. **`axis_screen` is the WRONG instrument
+  here and would manufacture a false null** — ~2 non-zero days in 30 reads as noise on every
+  continuous statistic, which is the exact failure that module was written to fix.
+- **Timestamp alignment, declared:** announcements are **KST (+09:00)**; Upbit daily candles close
+  at **24:00 UTC** (proven from primary hourly data, PROSPECTOR 2026-07-30, and reused here rather
+  than re-assumed). An announcement at `2026-07-16T17:00+09:00` is `08:00 UTC` — **inside** that
+  UTC day — so the return window must start at the **next** UTC daily close or it is look-ahead.
+- **Falsifiers:** mean abnormal return ≥ 0; t below the harness bar; bootstrap interval spanning
+  zero; or **n < 20**, at which point the harness itself returns "a story, not evidence".
+- **KNOWN THREAT, declared before it is tested:** if Upbit purges candle history for delisted
+  markets, only *surviving* markets are studyable and the sample is catastrophically
+  survivorship-biased. **This is checked FIRST, and if it fails the study is impossible and that
+  is the reported result** — not a smaller study quietly run on whatever remains.
+
+#### ITEM 3 (cont.) — THE PRE-DECLARED THREAT FIRED, 6/6. And scoping it correctly is the finding.
+
+**Upbit PURGES candle history when it delists a market.** Tested on six assets delisted across
+three years, every one at the venue where the event happened:
+```
+KRW-OXT   (halted 2026-06-29) -> HTTP 404        KRW-QTCON (halted 2025-08-25) -> HTTP 404
+KRW-NKN   (halted 2026-06-15) -> HTTP 404        KRW-PCI   (halted 2023-04-14) -> HTTP 404
+KRW-LOOM  (halted 2025-05-07) -> HTTP 404        KRW-MARO  (halted 2023-09-26) -> HTTP 404
+```
+**This is not a biased sample — it is an ERASED treatment group.** Every delisted asset has had its
+Upbit price history deleted, and no delisted asset survives to be studied, so the studyable sample
+of Upbit-priced delisting events is exactly **zero**, not "40 minus some". Declaring this threat in
+the pre-registration and testing it *before* fetching any prices is the only reason this run did
+not produce a confident study of whatever happened to remain.
+
+**SCOPE IT TO THE ROUTE, NOT THE CAPABILITY (L1.25a).** Three distinct things were at risk and only
+one actually died:
+- **DEAD:** the *Upbit-KRW-priced* delisting study, and with it any measurement of the KRW-specific
+  premium collapse into a halt. That needs the purged leg and cannot be reconstructed.
+- **ALIVE:** the *event dates* — the announcement archive is intact and is precisely the asset that
+  survives the purge. This is what makes the archive worth more than it first appears.
+- **ALIVE:** the study itself, **re-based on global prices**. OXT, NKN, LOOM, MARO and PCI all
+  trade on venues whose history is intact. The runnable question becomes *"does an Upbit KRW
+  delisting announcement move the asset's GLOBAL price?"* — which, if KR retail is genuinely a
+  marginal buyer, is the sharper test anyway, and it is not survivorship-affected because the
+  global venues keep their history. **That is next-run work and I am not claiming its result.**
+
+**FINDING 9 — THE IRREPLACEABILITY IS LARGER THAN THE FLAGS, AND IT HAS A DATE ON IT.**
+Finding 7 said the *flag* series is snapshot-only. The purge says something much bigger: **the
+entire KRW price history of any Upbit asset is destroyed the day it delists**, at a measured rate
+of **~11.4 markets/year**. Concretely, and this expires in two days:
+
+| market | halt date | in the desk's 07-30 `kr_perasset` panel? | history the desk holds |
+|---|---|---|---|
+| **KRW-AQT** | **2026-08-03 (2 days)** | **no** | **none** |
+| **KRW-AERGO** | **2026-08-03 (2 days)** | **no** | **none** |
+| **KRW-SPURS** | **2026-08-18** | **no** | **none** |
+
+**AND THE SECOND SURVIVORSHIP MECHANISM, which is ours, not the venue's.** The 07-30 panel holds
+**176 of 277** KRW markets because it filtered to `>=120 aligned days`. That filter excludes the
+newest and thinnest names — **which are exactly the names that get delisted**. So the desk's KR
+dataset is survivorship-biased *by its own construction filter*, stacking in the same direction as
+the venue's purge. Two independent selection effects pointing the same way, neither previously
+named. (Honest note on a weaker probe: I also checked how many panel symbols vanished between
+07-30 and today and got **0/176** — but at ~11 purges/year a 2-day window expects ~0.06, so that
+zero is **underpowered by construction and is not reassurance**. The dated table above is the real
+evidence, not the null.)
+
+Rowed as **R0303** with the 08-03 expiry: capture full candle history for all 277 live KRW markets
+before the halt, then daily. After 08-03 the AQT and AERGO series are unobtainable at any price.
+
+#### ITEM 3 (cont.) — FINAL ARCHIVE + A SELF-CAUGHT SELECTOR DEFECT (OP-035, in my own work).
+
+Pull reached **680 of 737** `category=trade` rows, spanning **2018-03-28 → 2026-07-31** (the
+remainder is resumable next-run; `data/upbit_trade_announcements.jsonl` dedupes on `id`).
+Per-year: `2018:78 2019:71 2020:90 2021:34 2022:41 2023:51 2024:67 2025:142 2026:106`.
+
+**MY OWN CLASSIFIER WAS ERA-FITTED AND I CAUGHT IT — 332/680 (49%) unclassified.** The counts I
+reported above are a **LOWER BOUND**, and the reason is exactly OP-035 (*a selector validated on
+one era silently zero-hits another*), here in title convention rather than markup. **Upbit renamed
+its own event classes at least five times in eight years:**
+
+| era form | count | class |
+|---|---|---|
+| `BTC 마켓 코인 추가` | 75 | market addition (2018 register: "코인" = coin) |
+| `BTC 마켓 디지털 자산 추가` | 52 | same event, 2020 register ("디지털 자산" = digital asset) |
+| **`원화 마켓 신규 상장`** | **18** | **KRW listing — early register** |
+| `BTC, ETH 마켓 코인 추가` | 16 | multi-market form my single-market key missed |
+| `KRW, BTC 마켓 디지털 자산 추가` | 15 | multi-market, modern register |
+| **`원화마켓 신규 상장`** | **12** | **same as above, WITHOUT the space** |
+| `KRW 마켓 디지털 자산 추가` | 8 | the only form my selector caught |
+| `원화 마켓 디지털 자산 추가` / `원화 마켓 코인 추가` | 7 / 3 | more KRW-rail events |
+
+**`원화` (won) was the early word; `KRW` the later one — and both appear with and without a space.**
+So the pure rail-access class is **not 43 events, it is ~83+**, and a modern-title selector finds
+barely half. This is a lexicon finding with direct search value, not a formatting curiosity.
+
+**AND THE WARNING REGIME HAS AT LEAST FIVE STATES, NOT TWO** — I had modelled it as on/off:
+`유의 종목 지정` (designated) · `유의 종목 해제` (released) · **`유의 촉구 안내`** (caution *urged*
+— a softer tier below designation) · **`유의 종목 일시 지정`** (temporary designation) ·
+**`유의 종목 지정 기간 연장`** (designation period **extended** — the venue stating the problem is
+unresolved). A designation-extension is a distinct and informative event, and modelling this ladder
+as a binary would throw away most of its content.
+
+Corrected headline figures (still lower bounds where noted): **50 delistings** (2018-10-05 →
+2026-07-16), notice window **43/50 parsed: min 6.8d, median 30.9d, max 36.0d** — the fuller sample
+reveals a short-notice tail the 40-event sample did not show. **72 `유의 종목 지정`** designations
+(2019-02-22 →) plus the softer tiers above. **151 `신규 거래지원`** listings — but that form only
+exists from **2024-04-23**, so pre-2024 listings live under the era forms in the table.
+
+#### ITEM 3 — CLOSED. Full archive, era-aware counts, and what catching the selector defect bought.
+
+**Pull complete: 737/737 `category=trade` rows, 2017-10-27 → 2026-07-31 (8.8 years).**
+Re-classified with era-aware keys (`원화`+`KRW`, `코인 추가`+`디지털 자산 추가`+`신규 상장`+
+`신규 거래지원`, both spacings):
+
+| event class | era-aware n | modern-key n | span |
+|---|---|---|---|
+| **KRW rail-access (listing / market addition)** | **239** | 43 | 2018-03-22 → 2026-07-31 |
+| **delisting** | **97** | 50 | 2018-01-06 → 2026-07-16 |
+| **유의종목 designated** | **102** | 72 | 2019-02-22 → 2026-07-31 |
+| 유의 촉구 (soft caution tier) | **41** | — | 2022-05-13 → 2026-07-11 |
+| 유의종목 released | **18** | 12 | 2019-11-28 → 2026-07-24 |
+
+**Catching my own era-fitted selector multiplied the primary event class 5.6× (43 → 239)** and
+roughly doubled delistings and designations. Had I shipped the first pass, every downstream event
+study would have run at ~18% of available power on a class the desk would then have called
+underpowered — the L1.25 instrument-defect failure, arriving through a selector rather than a gate.
+Notice window on the fuller set: **45/97 parsed (min 2.9d, median 30.9d, max 36.0d)** — the 52
+unparsed are pre-2022 delistings using a different in-title date format (`(19.01.05 종료)`), which
+is more era-convention work owed, named rather than glossed.
+
+### SESSION CLOSE 2026-08-01 session 1 (KR frontier miner) — STANDING TEST, DEPTH, BATTERY, NEXT GROUND
+
+**STANDING TEST — "Which artifact on disk is different because of what was mined?"**
+`data/upbit_trade_announcements.jsonl` (**737 rows, 8.8y, new dataset**),
+`data/upbit_announcements.jsonl` (100 rows, resumable, all-category),
+`data/data_universe_map.json` (**+4 entries**, incl. the KR community layer recorded CLOSED so no
+seat re-spends on it), `docs/research/data_axis_watchlist.md` (**axis #26**),
+`docs/research/search_operator_library.md` (**OP-041**, **OP-042**, an **OP-038 refinement**, an
+**OP-035 extension**, and **+9 KR lexicon rows**, all confirmed in situ),
+`recommendation_ledger.json` (**R0298–R0301, R0303**), and this note. **Cycle CONVERTED.**
+Honest shape: **zero tradeable cards, one new data axis with four surfaces, one ground permanently
+closed on legitimacy, one dated destruction deadline, and a self-caught selector defect.**
+
+**DEPTH LINE (per lead, honest):**
+- **Upbit announcement archive: EXHAUSTED for `category=trade`** — 737/737 pulled, classified twice
+  (modern keys, then era-aware after I caught the defect), notice window measured, taxonomy mapped
+  across five era conventions. **NOT exhausted for the other 7 categories** (`입출금` is the
+  rail-state event log and is the obvious next tranche); all-category pull sits at 100/5,685.
+- **Upbit / Bithumb market-state endpoints: EXHAUSTED at snapshot depth** — every flag enumerated,
+  base rates measured, KRW split forced, cross-venue overlap computed. Cannot go deeper without a
+  time series, and there is none to fetch — which is the finding, not a limit of my effort.
+- **The delisting event study: went one layer PAST where I would have stopped, and that layer is
+  the whole result.** Surface = "40 delisting events, let's screen them". Depth = declared the
+  survivorship threat, tested it first, found the treatment group **erased 6/6**, and scoped the
+  death to the route (Upbit prices) rather than the capability (global prices survive). **A run
+  that skipped that check would have published a study of the assets that did not get delisted.**
+- **KR community layer: EXHAUSTED as a question, on primary documents** — three venues, three
+  independent closure mechanisms, verdicts recorded so it is never re-spent. Zero content fetched
+  from the two that name this agent family.
+- **BREADTH-THEATER CHECK — partly guilty, and I will name it.** I mined **zero comment trees, zero
+  reply chains, zero repo forks and zero citation chains this run.** The DEPTH MANDATE's
+  reply-chain limb went entirely unserved. The honest defence is that all three KR discussion
+  venues were closed by §13 or Cloudflare, so there was no legitimate comment layer to mine — but
+  the honest admission is that I did **not** substitute velog/tistory (both **CLEAN**, both on my
+  ground, both untouched), and that is a gap I chose by pursuing the venue-API seam instead. Named,
+  and it is the first item next run.
+
+**PROACTIVE BATTERY (moves run; a move that produced nothing is named, never skipped):**
+- **#3 CONFIG-VS-OUTCOME — the run's biggest payout, three times.** (a) Refused to accept
+  `needs-legitimacy-review` as a verdict and fetched the actual `robots.txt` — which reversed the
+  desk's grading on two venues at once. (b) Refused to accept "the blocker is a NAVER key" and
+  probed the sibling endpoints — which tripled what that key is worth. (c) Refused to trust that a
+  venue keeps its own history and tested six delisted markets — which killed the study I had just
+  pre-registered. **Every one of the three changed a verdict, and none was more than a minute.**
+- **#9 SCOPE THE NEGATIVE RESULT — four times, and it is the discipline that carried this run.**
+  The KR community closure split into three *different* mechanisms (§13-named / §13-blanket /
+  CDN-walled) instead of one "KR is blocked"; the purge scoped to *Upbit prices*, not to the study;
+  Coinpan scoped to *the CDN edge*, not to OP-038 being wrong; the NAVER 401 scoped to *the route*,
+  with the licensed alternative named.
+- **#1 CONTINGENCY BEFORE FAILURE — paid out immediately.** Bithumb was catalogued as a *second*
+  KR venue publishing the same warning field before anyone asked what happens if Upbit closes. It
+  then turned out to carry the rail-state endpoint Upbit does not have.
+- **#4 REGRESSION SWEEP — what this run made worse, plainly.** I added **5 rows (R0298–R0301,
+  R0303)** to a queue the conversion fence already calls REPAIR-MODE, one of them with a **2-day
+  fuse**. Real cost, stated not hidden. Mitigating: R0298 makes a **DEGRADED** organ healthy rather
+  than adding surface, and L1.28b(f) exempts miners from repair-mode throttling by name. Second
+  cost: `data/upbit_announcements.jsonl` is a **partial** 100-row file that could be mistaken for
+  the full archive — labelled resumable in the universe map, but it is a loose end.
+- **#10 RATCHET CHECK — floors that must not fall:** operators 41 → **43** (+2 refinements); KR
+  lexicon 6 → **15 rows**; KR session notes 0 → **1**; universe-map `regional_venues_kr_jp` 6 → **10**;
+  desk-known KR event archive 0 → **737 rows / 8.8y**.
+- **#2 ADJACENCY — ran, and it found the highest-ROI row.** After finding the Upbit feed I asked
+  where else this shape lives and found `scripts/collect_announcements.py` **DEGRADED** with both
+  its exchange sources broken — so the find is a *repair*, not an addition (R0298).
+- **#6 GENERALISE THE RULE — ran.** The robots-first check is not a KR rule; it is now **OP-041**
+  with the AI-crawler UA list, and it predicts the pattern (consumer-web portals closing, venue and
+  developer infrastructure staying open) rather than just recording this instance.
+- **#5 COST INVERSION — ran, paid out.** Every surface here is keyless and first-party; the one
+  paid-shaped question (KR search attention) resolves to a **free** registration whose value I
+  raised rather than to a purchase (R0300).
+- **#8 NEGATIVE SPACE — ran.** "What has never been looked at at all" on this ground was *the venue
+  APIs' non-price surface*. It had never been asked, and it is where the entire session's value was.
+- **#7 AUTONOMY CHECK — produced nothing this run**, reported as such.
+
+**VIDEO-LOCKED: nothing logged, and deliberately so.** I attempted **no** KR video this run —
+tistory/velog/YouTube KR were in my ground and I did not reach them. That is a **coverage gap, not
+a route failure**, and logging it as a blocker would corrupt the purchase-trigger evidence the log
+exists to hold. A platform is logged only after a real attempt fails.
+
+**VENUE DISCOVERY (obligation: every run finds venues not on the seed list):**
+| venue | what lives there | how found | verdict |
+|---|---|---|---|
+| `api-manager.upbit.com/api/v1/announcements` | 5,685 dated KR venue events, 8.8y, keyless | endpoint probe | **RICH** — now axis #26 |
+| `api.upbit.com/v1/market/all?isDetails=true` | venue-computed retail-crowding + premium flags | `isDetails` param guess | **RICH** — now OP-042 |
+| `api.bithumb.com/public/assetsstatus/ALL` | per-asset deposit/withdrawal rail state | second-venue contingency | **RICH** — independent barrier measure |
+| `api.bithumb.com/v1/market/all?isDetails=true` | 2nd KR venue warning field, 17 CAUTION | ditto | **RICH** |
+| `openapi.naver.com/v1/search/{blog,cafearticle,news}` | licensed route to KR consumer web | sibling-endpoint probe | **WALLED — free key (GAP #69)** |
+| `coinpan.com` | KR crypto forum; robots CLEAN | robots.txt | **WALLED** (Cloudflare edge, all routes) |
+| `gall.dcinside.com` | KR trading galleries | robots.txt | **§13 HARD STOP** — names this agent family |
+| `cafe.naver.com`, `blog.naver.com` | KR cafés/blogs | robots.txt | **§13 HARD STOP** — named + RAG-prohibited |
+| `velog.io` | KR dev writeups; **zero robots rules** | robots.txt | **OPEN — CLEAN, UNMINED** |
+| `www.bithumb.com` | venue site; no `Disallow` at all | robots.txt | **OPEN — CLEAN, UNMINED** |
+| `kimpga.com` | premium tracker; `Allow: /` | robots.txt | **OPEN — CLEAN**, corroboration only |
+
+**NEXT RUN TAKES FIRST (the chain — do not re-surface-scan the above):**
+1. **`velog.io` + tistory KR quant/algo writeups, to comment depth.** Both **CLEAN**, both on my
+   ground, both untouched, and they are the *replacement* for the closed community layer — this
+   closes the reply-chain gap I named above. **Highest priority precisely because it is the limb I
+   failed this run.**
+2. **The global-priced delisting event study** — 97 events, prices intact off-venue, hypothesis and
+   falsifiers already pre-registered above. Use `libs/validation/event_study.py`, `n_cohort=1`,
+   **never `axis_screen`**.
+3. **The KRW rail-access study (239 events)** — the cleaner natural experiment: asset already on
+   Upbit's BTC/USDT books, KRW rail opens, discovery held constant.
+4. **`category=입출금`** — the deposit/withdrawal event log, i.e. the *historical* barrier-state
+   series to pair with today's snapshot; plus finish the all-category pull (100/5,685).
+5. **Parse the 52 pre-2022 delisting effective dates** (`(19.01.05 종료)` format) — more era work.
+6. **Era-archaeology proper: still entirely unopened on this ground.** The 2017–18 kimchi-mania
+   boards, pre-real-name-law communities, Ppomppu — **zero era work happened this run**, and with
+   DCInside and Naver closed the route must be Wayback/mirror-based. Naming it rather than letting
+   the dark-forest era limb quietly lapse.

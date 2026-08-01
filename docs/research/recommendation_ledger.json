@@ -2913,11 +2913,11 @@
    "summary": "SYNTH0801 P2-8 [data-int DI-28, SL-verified]: POINT-IN-TIME UNIVERSE. crypto_source.list_perp_symbols filters status=='TRADING' and list_liquid_perps takes top-N by TODAY's 24h volume, then ingest backfills 7 years -- so every crypto backtest is conditioned on the symbol still being liquid today. LUNAUSDT/USTUSDT/FTTUSDT/SRMUSDT all ABSENT from the 279-symbol lake: the desk has never backtested a token dying. The validation stack (DSR/PBO/Holm/forward clocks) is BLIND to this because it corrupts the input panel, not the test. Fix: persist exchangeInfo daily with ALL statuses -- the call is already made on every ingest run and thrown away. PRECONDITION for any power increase to the gate.",
    "roi_bps": 7000.0,
    "raised": "2026-08-01T03:34:09.415775+00:00",
-   "status": "open",
+   "status": "implemented",
    "reason": null,
-   "commit": null,
+   "commit": "c3226f9",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-01T13:40:50.544084+00:00"
   },
   {
    "id": "R0240",
@@ -3673,6 +3673,18 @@
    "summary": "R0239 capture half DONE (scripts/snapshot_universe.py, daily 00:20). REMAINING: reconstruct delisted history (LUNA/UST/FTT/SRM) from binance.vision delisted-symbol archives -- separate, larger job, scope once",
    "roi_bps": null,
    "raised": "2026-08-01T13:39:53.613525+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0303",
+   "source": "cycle",
+   "summary": "KR-s1 E [DATED, EXPIRES 2026-08-03]: Upbit PURGES candle history on delisting -- verified 6/6 delisted markets (OXT/NKN/LOOM/QTCON/PCI/MARO) return HTTP 404 on /v1/candles/days. ~11.4 KRW markets/yr are erased at source. KRW-AQT and KRW-AERGO halt 2026-08-03 (2 days), KRW-SPURS 2026-08-18; NONE are in the desk's 176-symbol kr_perasset panel because its >=120-aligned-day filter excludes exactly the thin/new names that delist -- so the desk's KR dataset is survivorship-biased by its OWN construction filter, stacking with the venue's purge. ACTION: snapshot full daily+minute candles for ALL 277 live KRW markets BEFORE 08-03, then daily. Unrecoverable at any price after the halt (L1.46).",
+   "roi_bps": 45.0,
+   "raised": "2026-08-01T13:41:58.528580+00:00",
    "status": "open",
    "reason": null,
    "commit": null,

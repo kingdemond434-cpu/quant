@@ -623,6 +623,15 @@ CONFIRMED IN LIVE USE this run (search results + tracker-site names), not assume
 | 코인별 / 종목별 | coinbyeol / jongmokbyeol | "per-coin / per-ticker" qualifier | ✓ 코인별 김프 = per-asset premium — the exact key that surfaced 6 live per-coin trackers |
 | 재정거래 | jaejeong-georae | arbitrage (formal/textbook register) | finds analytical/academic KR content vs retail chatter |
 | 잡코인 | japkoin | "junk coins"/alts (retail register) | KR alt-frenzy threads — the dispersion axis's behavioral layer |
+| 유의종목 | yuui-jongmok | "investment-warning designation" — Upbit/Bithumb's formal caution label | ✓ CONFIRMED live in the venue API (`market_event.warning`); the KR delisting-risk event word |
+| 상장 / 신규 거래지원 | sangjang / singyu georaejiwon | listing. 상장 = retail register; **신규 거래지원 안내 = the exact phrase Upbit titles its listing notices** | ✓ CONFIRMED in 737 `category=trade` announcements — use the formal phrase to hit the venue archive, the slang to hit retail threads |
+| 거래지원 종료 | georaejiwon jongryo | "trading-support termination" = **delisting**, the venue's own euphemism | ✓ the KR delisting event key; 상장폐지/상폐 is the retail word for the same thing |
+| 상폐 | sangpye | delisting (retail contraction of 상장폐지) | retail panic threads around a 유의종목 designation |
+| 입출금 | ipchulgeum | deposit/withdrawal — the **rail-state** word | ✓ CONFIRMED as an Upbit announcement category; the barrier-height key |
+| 유의 촉구 | yuui chokgu | "caution URGED" — a softer tier BELOW formal designation | ✓ CONFIRMED in the Upbit archive; the early-warning tier most people miss |
+| 유의 종목 지정 기간 연장 | ...gigan yeonjang | designation period EXTENDED = the venue saying it is still unresolved | ✓ a distinct, informative event; modelling 유의종목 as binary discards it |
+| 원화 / 원화마켓 | wonhwa | "won" — **the EARLY register for what is now written KRW** | ✓ CONFIRMED: `원화 마켓 신규 상장` (18) + `원화마켓 신규 상장` (12, NO SPACE) + `원화 마켓 디지털 자산 추가` (7). Search BOTH spellings AND both spacings or you lose half the KRW-rail events |
+| 코인 추가 → 디지털 자산 추가 | ...chuga | "coin added" (2018 register) became "digital asset added" (2020+) | ✓ the same event renamed; an era-blind selector zero-hits 75 rows of it |
 
 ### OP-035 platform archives change their MARKUP between eras — a selector validated on one era silently zero-hits another   [active]
 class: extraction
@@ -760,3 +769,95 @@ adaptations: universal. Any bot-walled host — check `/api/`, `/raw/`, `?format
 counterfactual: HIGH — this ground had been deferred three sessions running and would plausibly have
   been graded "Gitee is walled from this VPS", which is exactly the false-exhaustion class OP-037
   describes, arrived at by a different door.
+
+### OP-041 read robots.txt BEFORE you dig — the ground list is not an authorisation   [active]
+class: legitimacy / ground-selection
+origin: KR frontier miner session 1 (2026-08-01), first run on the KR ground
+validated-gain: **three of the five grounds named in that seat's own brief refuse this agent family
+  by name**, and nobody had ever checked. `cafe.naver.com` is `Disallow: /` to everyone plus a prose
+  header forbidding RAG use; `blog.naver.com` names `ClaudeBot` and `Claude-SearchBot`;
+  `gall.dcinside.com` names `ClaudeBot`, `anthropic-ai` and `Claude-Web` under the header
+  `# ----- AI 학습 크롤러 차단 -----`. In the same pass it **REVERSED** the desk's standing guess in
+  the other direction: `coinpan.com`, which `data_axis_watchlist.md` had excluded as "ToS-grey",
+  denies only `/inquiry/`. Cost: five `curl` calls, under a minute.
+technique: `curl -s https://HOST/robots.txt` on every ground **before** spending a query on it, and
+  read THREE things, not one:
+    (a) the `User-agent: *` block — what a generic collector may do;
+    (b) **any block naming an AI/LLM crawler** (`ClaudeBot`, `Claude-Web`, `Claude-SearchBot`,
+        `anthropic-ai`, `GPTBot`, `OAI-SearchBot`, `PerplexityBot`, `Google-Extended`, `CCBot`,
+        `Bytespider`, `cohere-ai`, `meta-externalagent`) — this is the one aimed at YOU;
+    (c) prose comment headers, which increasingly carry the operator's stated intent in plain
+        language and are not machine-readable at all.
+  **THE RULE THAT MATTERS: a permissive `User-agent: *` is NOT a loophole around a block that names
+  your family.** Choosing a different UA to slip past a directive aimed at you by name is precisely
+  the "routing around a venue's own access control" that §13 forbids. Where the two sections
+  disagree, that gap is a PRINCIPAL DECISION, not something a miner grants itself in either
+  direction — record the ambiguity rather than inventing a verdict.
+adaptations: universal, and the AI-crawler block is spreading fastest through **consumer-web
+  portals** (KR: Naver, DCInside; JP: Yahoo/note; CN: Zhihu/Weibo) while **developer and venue
+  infrastructure stays wide open** (velog.io has zero rules; bithumb.com has no `Disallow` at all;
+  exchange APIs are unrestricted). Expect the community layer to close and the API layer to stay
+  open — and aim the seat accordingly instead of reporting the ground as thin.
+counterfactual: HIGH and BIDIRECTIONAL — without it this seat would have scraped three grounds it is
+  named-blocked from, and would have gone on skipping the one KR forum that is actually clean.
+
+### OP-042 a venue's own state flags are a free proprietary axis — and the biggest flag is the artifact   [active]
+class: data-axis discovery
+origin: KR frontier miner session 1 (2026-08-01)
+validated-gain: `api.upbit.com/v1/market/all?isDetails=true` publishes, keylessly and per asset, the
+  venue's own `warning` designation plus `caution{PRICE_FLUCTUATIONS, TRADING_VOLUME_SOARING,
+  DEPOSIT_AMOUNT_SOARING, GLOBAL_PRICE_DIFFERENCES, CONCENTRATION_OF_SMALL_ACCOUNTS}`.
+  `CONCENTRATION_OF_SMALL_ACCOUNTS` is a **retail-crowding measure computed from the venue's
+  internal account-level book** — structurally unbuyable from any vendor. Bithumb publishes the
+  same warning field plus `public/assetsstatus/ALL`, a per-asset deposit/withdrawal open-closed
+  state = **an independent measure of barrier height**.
+technique: on every venue, ask what STATE it publishes about its own market, not just prices —
+  `isDetails=true`, `assetsstatus`, `system_status`, announcement categories, risk/caution labels.
+  Then run the two checks that decide whether it is worth anything:
+    1. **DOES IT FIRE?** A flag that is always false or always true carries zero information
+       (L1.43). Measure the base rate before believing anything about it.
+    2. **SPLIT BY QUOTE CURRENCY BEFORE READING ANY RATE.** `GLOBAL_PRICE_DIFFERENCES` fires on
+       **175/803 (22%)** of all Upbit markets and on **1/277 (0.4%)** of KRW markets. The 22% is
+       thin USDT/BTC-book illiquidity, not a fiat premium. **The biggest number on the page was the
+       artifact**, and only the split catches it.
+  And check for a history endpoint: these are **SNAPSHOT-ONLY**, so the series can only ever begin
+  the day you start recording (L1.46) — which makes starting cheap and starting late irreversible.
+adaptations: universal. Every venue with a retail-protection or risk-labelling regime publishes
+  something like this (KR 유의종목; JP JVCEA designations; EU MiCA disclosures). Regulated retail
+  venues are the richest ground because the labels are compliance obligations, so they are
+  published on a schedule and cannot quietly stop.
+counterfactual: HIGH — this seat's assigned community ground was 100% closed, and this is the axis
+  that replaced it. Found only by asking a venue API what it publishes BESIDES prices.
+
+### OP-038 REFINEMENT (KR frontier miner, 2026-08-01): the wall can be at the CDN EDGE
+OP-038 says a JS wall on the HTML is not a wall on the API, and it is right — but it has a boundary
+that cost this run its only clean KR forum. **`coinpan.com` returns Cloudflare's `Just a moment...`
+interstitial on `/`, `/free`, `/rss` AND `/index.php?mid=X&act=rss` alike — HTTP 403 on every
+content route, with only `/sitemap.xml` serving.** When the challenge sits at the CDN edge rather
+than in the page renderer, the API and feed routes are behind the SAME wall and OP-038's split does
+not apply. **Diagnostic:** if the JSON/RSS route returns the same interstitial HTML as the page,
+the wall is at the edge — stop, and grade the venue WALLED. Solving the challenge is defeating an
+access control (§13 HARD STOP), and it stays walled no matter how good the scraper gets.
+
+### OP-035 EXTENSION (KR frontier miner, 2026-08-01): the CONVENTION changes, not just the markup
+OP-035 warns that a selector validated on one era zero-hits another because the **markup** changed.
+The same failure arrives through **the source's own vocabulary**, and it is harder to see because
+nothing errors — you simply get a smaller number and believe it. **Measured on Upbit's own
+announcement archive: 332/680 rows (49%) fell through a selector fitted on modern titles.** In eight
+years the venue renamed its event classes at least five times — `코인 추가` → `디지털 자산 추가`,
+`원화 마켓` → `KRW 마켓`, `상장` → `신규 거래지원` — **and shipped a whitespace variant of its own
+term** (`원화 마켓` vs `원화마켓`). The pure rail-access event class was **43 by modern keys and
+~83+ in truth**.
+**TECHNIQUE — do this before trusting any count off an archive you did not write:**
+  1. Bucket rows **per year** and check the per-class count against total volume. A class that
+     starts abruptly mid-archive (`신규 거래지원`: zero before 2024-04-23) is a **rename**, never a
+     behaviour change — the events did not begin then, the words did.
+  2. **Strip parentheticals and symbols, then histogram the title TAILS** (`title[-28:]`). Recurring
+     stems fall out immediately and hand you the era forms you never guessed.
+  3. Report **UNCLASSIFIED as a first-class number.** A classifier that silently drops half the
+     archive looks exactly like a classifier that works.
+  4. Search the OLD register AND the new one AND their spacing variants — non-segmenting scripts
+     (KR/JP/CN) make whitespace optional, so one term is genuinely two search keys.
+**Why this matters beyond hygiene:** an era-fitted selector biases coverage toward the RECENT era,
+which is the crowded one. The dark-forest premium is in the old era, and this defect silently
+deletes it while the run still reports a healthy count.

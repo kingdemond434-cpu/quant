@@ -1423,3 +1423,23 @@ per-venue rate-limit timing and serves cache rather than erroring when polled to
 scanner built on it degrades to *stale data*, not to an exception, which is a silent-staleness
 hazard worth knowing before adopting (L1.44). Recorded as a design note; **no third-party tooling
 installed or run** (supply-chain rule — mined as text only).
+
+## 2026-08-01 — KR frontier miner session 1 (engine/process, rowed to the ledger; inbox is the narrative copy)
+1. **`scripts/collect_announcements.py` is DEGRADED and its two broken sources are both exchange
+   feeds** (Binance HTTP 400 signed-context, Bybit CloudFront-blocked-by-egress-country), leaving
+   OKX + DefiLlama + two RSS wires. **It carries zero Korean venues.** Upbit's
+   `api-manager.upbit.com/api/v1/announcements` is keyless, first-party, 5,685 events deep to
+   2017-10-24, and works from this box today. This is a **repair of a degraded organ**, not new
+   surface. Its own `why_latency_matters` note is satisfied better than by any current source:
+   Upbit publishes **both** `first_listed_at` and `listed_at`, so publish-time is a venue clock
+   rather than our poll clock. **→ R0298.**
+2. **A generalisable defect class: `needs-legitimacy-review` is a verdict that never resolves.**
+   Four sources sat in it for three rounds. §13 is a gate, and **a gate never actually run on a
+   candidate rejects by default** — indistinguishable downstream from a reasoned rejection. One
+   `curl robots.txt` each settled all four and **reversed two of them**. Every placeholder verdict
+   in any watchlist should carry an owner and a date, or it is a silent permanent no. **→ OP-041.**
+3. **Selector defects are instrument defects (L1.25) and they hide as small numbers.** My own
+   era-fitted title classifier dropped **49% of a 737-row archive** and undercounted the primary
+   event class **5.6×** — no error, no exception, just a smaller number that looked plausible. Any
+   classifier run over an archive spanning years must report **UNCLASSIFIED as a first-class
+   figure**. **→ OP-035 extension.**
