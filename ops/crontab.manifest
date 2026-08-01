@@ -751,6 +751,18 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # retune it (the agent will then leave it alone because it is already scheduled).
 # Every entry here was proven: runnable main(), no money-path import, no spend
 # capability, no writes outside data/ + web/. CONFIDENCE: auto-wired.
+# scripts/meta_research_review.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
+47 3 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/meta_research_review.py >> data/cro_ai_logs/meta_research_review.log 2>&1
+# scripts/run_geometric_review.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
+43 4 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_geometric_review.py >> data/cro_ai_logs/run_geometric_review.log 2>&1
+# scripts/fill_quality_monitor.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
+12 3 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/fill_quality_monitor.py >> data/cro_ai_logs/fill_quality_monitor.log 2>&1
+# scripts/slot_budget_analysis.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
+18 3 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/slot_budget_analysis.py >> data/cro_ai_logs/slot_budget_analysis.log 2>&1
+# scripts/record_desk_metrics.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
+1 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/record_desk_metrics.py >> data/cro_ai_logs/record_desk_metrics.log 2>&1
+# scripts/run_portfolio_risk.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
+36 3 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_portfolio_risk.py >> data/cro_ai_logs/run_portfolio_risk.log 2>&1
 # scripts/report_gate_audit.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
 34 5 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/report_gate_audit.py >> data/cro_ai_logs/report_gate_audit.log 2>&1
 # scripts/run_kama_squeeze_backtest.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
