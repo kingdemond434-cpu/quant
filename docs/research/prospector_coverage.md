@@ -942,6 +942,31 @@ invite) is a **hostile impostor server running a wallet drainer** — disowned b
 in discussion #265. Do not join. Official venue is `discord.gg/6TdQnT5xcF`. **Honest null on venue
 discovery here: no QQ, Telegram, Slack, forum or mailing list exists for this project.**
 
+#### R0289 UPGRADED FROM REASONED TO **DEMONSTRATED** (battery #3 — demand the artifact, never the claim)
+The leakage-guard finding arrived reasoned-from-source, which is not the same as measured, so I ran
+it against the real bronze schema. Reproducible in-repo via `libs.features.causal_guard.check_causal`:
+```
+CONTROL   close.shift(-1)            -> ok=False  n_leaked=23   correctly CAUGHT
+DEFECT    funding.shift(-1)          -> ok=True   n_leaked=0    LEAKS, REPORTED CLEAN
+          basis.shift(-1)            -> ok=True   n_leaked=0    LEAKS, REPORTED CLEAN
+          volume.shift(-1)           -> ok=True   n_leaked=0    LEAKS, REPORTED CLEAN
+          taker_buy_frac.shift(-1)   -> ok=True   n_leaked=0    LEAKS, REPORTED CLEAN
+WORST     funding[-1] broadcast      -> ok=True   n_leaked=0    reads the FINAL BAR of the whole
+                                                                 series and is REPORTED CLEAN
+          full-sample z(funding)     -> ok=True   n_leaked=0    the EXACT leak class the docstring
+                                                                 names as rejected
+```
+The control failing correctly proves the harness itself works — **only its column coverage is
+broken**. And the reason this survived: `causal_guard.self_test()` builds its fixture from
+`open/high/low/close` ONLY, so *the test that exists to prove the guard bites is structurally
+incapable of revealing what it is blind to*. That is a sharper variant of this desk's own recorded
+lesson — unit tests prove a mechanism works and say nothing about its coverage.
+**ADJACENCY SWEEP (battery #2 — one instance is never one instance):** swept for the same shape
+(`a checker enumerating a hardcoded subset of its input space while reporting PASS on all of it`).
+`libs/features/validation.py:91` is the **only** literal OHLC-list instance in `libs/` + `scripts/`,
+and `check_causal`/`assert_causal` inherit it rather than repeating it — so the blast radius is one
+module with three entry points, not a family. Reported as a bounded null, not left unstated.
+
 ### SESSION CLOSE 2026-08-01 session E (EN frontier miner) — DEPTH LINE, BATTERY, STANDING TEST
 
 **STANDING TEST — "Which artifact on disk is different because of what was mined?"**
