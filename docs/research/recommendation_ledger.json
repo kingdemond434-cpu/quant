@@ -2841,11 +2841,11 @@
    "summary": "SYNTH0801 P0-2 [exec E22, SL-verified]: add a PROFITABILITY criterion to Gate 0. web/trade_forensics hold_buckets_net_of_fees measured: <2h -33.77bps, 2-8h -78.97bps, 8-24h -102.62bps, >24h -712.71bps -- the strategy about to be funded loses money in EVERY hold bucket on its own realised tape, while its backtest reports gates 10/10. NOT ONE of the eleven Gate-0/freeze-exit criteria reads profitability, slippage or fee intensity. L1.4 reality>simulation. Success criterion: it must read NOT-READY today.",
    "roi_bps": 6000.0,
    "raised": "2026-08-01T03:34:08.857032+00:00",
-   "status": "open",
+   "status": "implemented",
    "reason": null,
-   "commit": null,
+   "commit": "a608014",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-01T11:54:04.756373+00:00"
   },
   {
    "id": "R0234",
@@ -2853,11 +2853,11 @@
    "summary": "SYNTH0801 P0-3 [launch L10 / exec E20]: copy the 3-line multi-asset equity fix from binance_testnet.py:181-183 to binance_live.py:188, which still reads USDT-only totalMarginBalance while the account holds 5000 USDC + 0.01 BTC beside 208 USDT. This is the read that valued a solvent book near zero, flattened it and disarmed the dead-man on 2026-07-30. Both files were edited the same day and the live one kept the old read. Ranked #2 desk-wide on 07-31 and still undone.",
    "roi_bps": 5000.0,
    "raised": "2026-08-01T03:34:08.945069+00:00",
-   "status": "open",
+   "status": "implemented",
    "reason": null,
-   "commit": null,
+   "commit": "168a343",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-01T11:51:07.505118+00:00"
   },
   {
    "id": "R0235",
@@ -2865,11 +2865,11 @@
    "summary": "SYNTH0801 P0-4 [launch L19]: gate _compounded_capital on a live-inception boundary. Seeding stage:S1 makes _compounded_capital(200) return 800 -- it reads realized_spot_pnl from nav_attestation, which is TESTNET P&L, against a 200 USD deposit of which ~100 is spot. Gate-0's capital_fraction cap is evaluated on the PRE-multiplied number, so a cap the system can scale immediately afterwards is not a cap. Test: seed S1, assert _compounded_capital(200)==200 (returns 800 today).",
    "roi_bps": 5500.0,
    "raised": "2026-08-01T03:34:09.040173+00:00",
-   "status": "open",
+   "status": "implemented",
    "reason": null,
-   "commit": null,
+   "commit": "89bdd0a",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-01T11:44:32.187582+00:00"
   },
   {
    "id": "R0236",
@@ -3469,6 +3469,30 @@
    "summary": "cash_and_carry stays UNATTRIBUTED until the book trades clean post-freeze: the -1,849.83 unexplained vs +113.06 funding IS explained (churn-loop fee fire, 1,746 commissions, fixed in 59b837d) but the fence has no incident-exemption path BY DESIGN, and adding one would be editing the guard to fit the violation. Clears when the book runs clean and reconciles.",
    "roi_bps": null,
    "raised": "2026-08-01T11:14:36.666247+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0286",
+   "source": "proactive_battery",
+   "summary": "libs/risk/growth_leverage.py:124 -- analyze() mixes TWO year conventions in one output row: cagr and ann_vol are annualized at the caller's ppy (run_crypto_portfolio.py:186 correctly passes 365) but risk_of_ruin() is called WITHOUT a horizon, silently using its default horizon=252. For the 365-day crypto book the reported risk_of_ruin therefore covers only 69% of a year while being presented beside genuinely-annual figures, so it UNDERSTATES annual ruin probability on the L1.23 ruin rail (cap 2%). Fix: pass horizon=int(ppy) (or thread ppy through) so the ruin horizon matches the annualization. Found by the EN miner's ADJACENCY move on a 2014 Quantopian thread where an int-vs-float cast in the commission model silently changed backtest results -- same shape: a convention constant mis-scaling a number a human then trusts. Freeze barred the miner from fixing libs/.",
+   "roi_bps": 0.0,
+   "raised": "2026-08-01T12:28:32.218157+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0287",
+   "source": "proactive_battery",
+   "summary": "Adopt the era's return-accounting principle as a reporting invariant: a leveraged book's return must be computed on CAPITAL ACTUALLY UTILIZED (max cash drawn, margin included), never on portfolio_value. Quantopian 2019: a headline 190% recomputed to 58% vs a 128% benchmark once margin was counted -- 'less than half the benchmark' -- and the community's own reaction was 'I am utterly amazed that we are all so blindly trusting of something so critically flawed'. The desk has hit the equity-basis shape THREE times already (R0234 LIVE equity undercount ~25x, R0235 testnet profit sizing live capital, the 13,155/4,500 split), so this is a recurring class, not a one-off. Proposal: a single named helper for return-on-capital-utilized plus a fence that fails any performance artifact reporting a return without declaring its capital basis.",
+   "roi_bps": 0.0,
+   "raised": "2026-08-01T12:28:32.331399+00:00",
    "status": "open",
    "reason": null,
    "commit": null,
