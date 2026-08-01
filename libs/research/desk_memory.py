@@ -77,6 +77,25 @@ COST_WEIGHT: dict[str, int] = {
 
 _REQUIRED = ("id", "learned", "cost", "lesson", "evidence")
 
+#: Injection weight of a lesson that a TEST already enforces mechanically.
+#:
+#: THIS CONSTANT IS THE DIFFERENCE BETWEEN COMPOUNDING AND PLATEAUING, so it is worth stating why.
+#: A fixed budget with a growing ledger saturates: lesson 60 displaces lesson 40, and the desk
+#: stops accumulating even though it keeps learning. The only escape that does not mean forgetting
+#: is GRADUATION -- converting a lesson from something an agent must READ AND REMEMBER into
+#: something a test CHECKS MECHANICALLY. A graduated lesson keeps its enforcement forever at zero
+#: context cost, and hands its budget back to a lesson that no test can catch.
+#:
+#: NOT zero, deliberately. A test locks one property in one file; the lesson generalises to code
+#: that does not exist yet. "A `> 0` guard does not survive floating-point dust" is enforced in
+#: volatility_signals.py and still worth telling whoever writes the next guard. So graduation
+#: demotes, it does not delete.
+#:
+#: 0.35 is set so an enforced CAPITAL lesson (5 x 0.35 = 1.75) ranks below an unenforced WASTED
+#: one (3.0). That ordering is the point: injected context should be spent on what a machine
+#: cannot catch, because everything a machine can catch should be caught by the machine.
+ENFORCED_WEIGHT = 0.35
+
 
 @dataclass(frozen=True)
 class Lesson:
@@ -89,20 +108,46 @@ class Lesson:
     tags: tuple[str, ...] = ()
     source: str = ""
     retired: str = ""
+    enforced_by: str = ""
+    #: Set by load() after CHECKING the named test exists. Never trusted from the file -- an
+    #: unverifiable enforced_by must not buy a budget discount, or the field becomes a way to
+    #: smuggle lessons out of the corpus by writing a path that resolves to nothing.
+    enforced_verified: bool = False
 
     @property
     def score(self) -> float:
-        """Cost of ignorance, amplified by how often the desk has had to re-learn it.
+        """Cost of ignorance, amplified by how often the desk has had to re-learn it, discounted
+        when a test already enforces it mechanically.
 
-        log2 rather than linear on purpose: the 2nd occurrence is the strong signal (it proves the
-        first lesson did not stick); the 8th is more of the same and should not be able to crowd
-        out every capital-class lesson on its own.
+        log2 rather than linear on the recurrence term: the 2nd occurrence is the strong signal
+        (it proves the first lesson did not stick); the 8th is more of the same and should not be
+        able to crowd out every capital-class lesson on its own.
         """
         w = COST_WEIGHT.get(self.cost, 1)
-        return w * (1.0 + math.log2(max(self.recurrence, 1)))
+        base = w * (1.0 + math.log2(max(self.recurrence, 1)))
+        return base * (ENFORCED_WEIGHT if self.enforced_verified else 1.0)
 
     def render(self) -> str:
-        return f"- {self.lesson.strip()}\n    EVIDENCE: {self.evidence.strip()}"
+        mark = f"  [enforced by {self.enforced_by}]" if self.enforced_verified else ""
+        return f"- {self.lesson.strip()}{mark}\n    EVIDENCE: {self.evidence.strip()}"
+
+
+def _test_exists(ref: str, root: Path | None = None) -> bool:
+    """Does `tests/x.py::test_name` name a test that is really there?
+
+    FAILS CLOSED. An enforced_by that cannot be resolved returns False, so the lesson keeps its
+    full weight and stays in the corpus. The alternative -- trusting the field -- means a typo,
+    a renamed test or a deleted file silently drops a paid-for lesson out of every organ's
+    context while the ledger still claims it is handled. That is the exact failure this whole
+    module exists to prevent, reintroduced one level down.
+    """
+    if "::" not in ref:
+        return False
+    rel, name = ref.split("::", 1)
+    p = (root or _ROOT) / rel
+    if not p.exists():
+        return False
+    return f"def {name.strip()}(" in p.read_text("utf-8", errors="ignore")
 
 
 def load(path: Path | None = None) -> list[Lesson]:
@@ -120,13 +165,45 @@ def load(path: Path | None = None) -> list[Lesson]:
         row = json.loads(line)
         if row.get("retired"):
             continue
+        ref = str(row.get("enforced_by", "")).strip()
         out.append(Lesson(
             id=str(row["id"]), learned=str(row["learned"]), cost=str(row["cost"]),
             lesson=str(row["lesson"]), evidence=str(row["evidence"]),
             recurrence=int(row.get("recurrence", 1)),
             tags=tuple(row.get("tags", ())), source=str(row.get("source", "")),
+            enforced_by=ref,
+            # VERIFIED, never trusted. See _test_exists: a stale or mistyped reference must not
+            # buy the budget discount, or the field becomes a silent way out of the corpus.
+            enforced_verified=bool(ref) and _test_exists(ref, p.parent.parent),
         ))
     out.sort(key=lambda item: (-item.score, item.id))
+    return out
+
+
+def broken_enforcement(path: Path | None = None) -> list[Lesson]:
+    """Lessons claiming a test that does not resolve.
+
+    A DEFECT, not a warning. The ledger says the property is mechanically guarded, the guard is
+    missing, and the lesson is still carrying full weight in a budget that is already binding --
+    so the desk is paying context for a claim it also believes is automated. Surfaced by
+    scripts/learn.py audit and by max_audit.
+    """
+    p = path or LEDGER
+    if not p.exists():
+        return []
+    out: list[Lesson] = []
+    for line in p.read_text("utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        row = json.loads(line)
+        ref = str(row.get("enforced_by", "")).strip()
+        if row.get("retired") or not ref:
+            continue
+        if not _test_exists(ref, p.parent.parent):
+            out.append(Lesson(id=str(row["id"]), learned=str(row["learned"]),
+                              cost=str(row["cost"]), lesson=str(row["lesson"]),
+                              evidence=str(row["evidence"]), enforced_by=ref))
     return out
 
 

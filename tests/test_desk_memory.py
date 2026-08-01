@@ -205,3 +205,66 @@ def test_memory_failure_can_never_stop_an_organ_from_running():
     inject = src.split("scripts/learn.py render")[1].split("\n")[0]
     assert "|| true" in inject or "|| true" in src.split("scripts/learn.py render")[1][:200], (
         "the render call must not be able to fail an organ spawn")
+
+
+# ------------------------------------------------------- graduation: the anti-plateau mechanism
+
+def test_a_test_enforced_lesson_is_demoted_not_deleted():
+    """Graduation is the escape from saturation. A fixed budget with a growing ledger eventually
+    displaces old lessons to make room for new ones and the desk stops accumulating. Converting a
+    lesson into a TEST keeps the property enforced forever at zero context cost and hands the
+    budget back. Demoted rather than removed because a test locks one property in one file while
+    the lesson generalises to code that does not exist yet."""
+    plain = dm.Lesson("L1", "2026-08-01", "capital", "x" * 30, "y" * 30)
+    grad = dm.Lesson("L2", "2026-08-01", "capital", "x" * 30, "y" * 30,
+                     enforced_by="tests/t.py::test_x", enforced_verified=True)
+    assert 0 < grad.score < plain.score
+    assert grad.score == plain.score * dm.ENFORCED_WEIGHT
+
+
+def test_enforced_lessons_rank_below_anything_a_machine_cannot_catch():
+    """The ordering that makes graduation worth doing: injected context is spent on judgement
+    calls, because everything mechanically checkable is already checked mechanically."""
+    enforced_capital = dm.Lesson("L1", "2026-08-01", "capital", "x" * 30, "y" * 30,
+                                 enforced_by="t::t", enforced_verified=True)
+    unenforced_wasted = dm.Lesson("L2", "2026-08-01", "wasted", "x" * 30, "y" * 30)
+    assert unenforced_wasted.score > enforced_capital.score
+
+
+def test_an_unresolvable_enforcement_claim_grants_no_discount(tmp_path):
+    """FAILS CLOSED, and this is the load-bearing half. If enforced_by were trusted from the file,
+    a typo or a renamed test would silently drop a paid-for lesson out of every organ's context
+    while the ledger still claimed the property was automated -- the exact failure this module
+    exists to prevent, reintroduced one level down."""
+    p = tmp_path / "l.jsonl"
+    p.write_text(json.dumps(_row(id="L0001", enforced_by="tests/nope.py::test_ghost")) + "\n",
+                 "utf-8")
+    item = dm.load(p)[0]
+    assert not item.enforced_verified
+    assert item.score == dm.COST_WEIGHT["blind"], "an unverified claim must keep full weight"
+
+
+def test_broken_enforcement_claims_are_reported_as_defects(tmp_path):
+    p = tmp_path / "l.jsonl"
+    p.write_text(
+        json.dumps(_row(id="L0001", enforced_by="tests/nope.py::test_ghost")) + "\n"
+        + json.dumps(_row(id="L0002")) + "\n", "utf-8")
+    broken = dm.broken_enforcement(p)
+    assert [b.id for b in broken] == ["L0001"]
+
+
+def test_every_shipped_enforcement_claim_resolves():
+    """The desk's own ledger, checked. A graduated lesson whose test vanished is a lesson nobody
+    is enforcing and nobody is reading."""
+    broken = dm.broken_enforcement()
+    assert not broken, f"claim enforcement by a test that does not exist: {[b.id for b in broken]}"
+
+
+def test_graduation_actually_freed_budget():
+    """The mechanism has to pay for itself or it is bookkeeping. Everything currently over budget
+    must be either test-enforced (still guarded, just not injected) or the lowest-cost class --
+    never an unenforced capital or blind lesson."""
+    _, dropped = dm.corpus()
+    for d in dropped:
+        assert d.enforced_verified or d.cost in ("hygiene", "slow"), (
+            f"{d.id} ({d.cost}) reaches no organ and no test enforces it")
