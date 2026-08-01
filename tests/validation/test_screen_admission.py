@@ -223,3 +223,51 @@ def test_a_missing_oos_field_fails_the_floor_rather_than_passing_it():
     pre-filter, and a candidate whose OOS nobody computed has not earned a scarce clock."""
     plan = admit([{"name": "no_oos", "gates": {}}], idle_slots=12)
     assert not plan.admitted
+
+
+# --------------------------------------------------- turnover: priced ONCE, never twice
+
+def test_a_net_sharpe_is_not_penalised_for_turnover_again():
+    """The double-correction trap, and it is the exact defect that made this gauntlet 4x too
+    strict: DSR deflated trials the campaign layer had already deflated. positions_to_returns
+    charges 6 bps per turn, so a Sharpe built through it already carries its costs -- subtracting
+    turnover from that number a second time would repeat the mistake in a new place."""
+    g = dict.fromkeys(STRUCTURAL_GATES + STATISTICAL_GATES, True)
+    with_turn = rank_score(g, oos_sharpe=1.0, dsr=0.9, reality_p=0.01,
+                           turnover=0.60, cost_basis="net")
+    without = rank_score(g, oos_sharpe=1.0, dsr=0.9, reality_p=0.01, cost_basis="net")
+    assert with_turn == pytest.approx(without)
+
+
+def test_a_gross_sharpe_is_penalised_for_turnover():
+    g = dict.fromkeys(STRUCTURAL_GATES + STATISTICAL_GATES, True)
+    hi = rank_score(g, oos_sharpe=1.0, dsr=0.9, reality_p=0.01,
+                    turnover=0.60, cost_basis="gross")
+    lo = rank_score(g, oos_sharpe=1.0, dsr=0.9, reality_p=0.01,
+                    turnover=0.15, cost_basis="gross")
+    assert lo > hi, "at equal gross Sharpe the 15%-turnover alpha must outrank the 60% one"
+
+
+def test_an_undeclared_cost_basis_is_treated_as_gross_and_reported():
+    """Unknown must not read as 'costs already charged'. That branch admits a candidate whose
+    entire edge is fees -- and this desk measured realised cost at 7.75x its own prediction, so
+    even a declared NET is optimistic."""
+    g = dict.fromkeys(STRUCTURAL_GATES + STATISTICAL_GATES, True)
+    assert rank_score(g, oos_sharpe=1.0, dsr=0.9, reality_p=0.01, turnover=0.5) < \
+        rank_score(g, oos_sharpe=1.0, dsr=0.9, reality_p=0.01, turnover=0.5, cost_basis="net")
+    plan = admit([_cand("x")], idle_slots=1)
+    assert any("UNMEASURED cost basis" in n for n in plan.notes)
+
+
+def test_declaring_net_removes_the_unmeasured_warning():
+    plan = admit([_cand("x")], idle_slots=1, cost_basis="net")
+    assert not any("UNMEASURED cost basis" in n for n in plan.notes)
+
+
+def test_a_missing_turnover_field_is_not_penalised_as_zero_or_infinite():
+    """Absent turnover means nobody measured it; it must neither be treated as free (0.0, which
+    flatters) nor as maximal (which would kill every candidate silently)."""
+    g = dict.fromkeys(STRUCTURAL_GATES + STATISTICAL_GATES, True)
+    assert rank_score(g, oos_sharpe=1.0, dsr=0.9, reality_p=0.01, turnover=None) == \
+        pytest.approx(rank_score(g, oos_sharpe=1.0, dsr=0.9, reality_p=0.01,
+                                 turnover=None, cost_basis="net"))

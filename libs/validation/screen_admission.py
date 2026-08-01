@@ -57,6 +57,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 __all__ = [
+    "GROSS_TURNOVER_PENALTY",
     "MIN_ADMISSION_OOS_SHARPE",
     "STATISTICAL_GATES",
     "STRUCTURAL_GATES",
@@ -89,6 +90,30 @@ __all__ = [
 #: floor that campaign correctly admits NOTHING, which is the honest answer for mechanisms the
 #: desk has already measured as picked clean.
 MIN_ADMISSION_OOS_SHARPE = 0.25
+
+#: Penalty applied to rank when the supplied Sharpe is GROSS -- i.e. costs have not been charged.
+#:
+#: WHY THIS IS CONDITIONAL AND NOT UNCONDITIONAL, which is the whole point. BRAIN states its score
+#: is "inversely proportional to turnover", and turnover is genuinely the difference between a
+#: 60%-turnover alpha and a 15% one at the same headline return. The obvious move is to subtract a
+#: turnover term from rank_score. That move would be WRONG on this desk and wrong in the exact way
+#: that made the gauntlet 4x too strict in the first place: libs/research/transcript_candidates
+#: .positions_to_returns ALREADY charges 6 bps per turn, so a Sharpe built through that path has
+#: costs in it, and penalising turnover again is ONE CORRECTION APPLIED TWICE -- lesson L0008,
+#: rubric class 3, the identical defect as DSR deflating trials the campaign layer had already
+#: deflated.
+#:
+#: But validate() itself applies NO cost adjustment. It scores whatever series it is handed. So
+#: whether the number reaching admission is net or gross is a property of the CALLER, and nothing
+#: in the artifact says which. That is the `beats_baselines` shape again -- an unstated assumption
+#: reading as satisfied.
+#:
+#: Hence: the caller must DECLARE its cost basis. NET means charged, so no penalty. GROSS means
+#: unchanged, so this penalty applies. UNKNOWN is reported as unmeasured and treated as GROSS,
+#: because assuming costs were charged when nobody said so is the branch that admits a candidate
+#: whose edge is entirely fees -- and the desk has already measured realised costs at 7.75x its
+#: own prediction, so even a declared NET is optimistic.
+GROSS_TURNOVER_PENALTY = 1.0
 
 #: A structural failure is disqualifying at any confidence level. These are not thresholds on
 #: evidence, they are statements about whether the thing can be traded or should be expected to
@@ -169,7 +194,8 @@ class AdmissionPlan:
 
 
 def rank_score(gates: dict[str, bool], *, oos_sharpe: float, dsr: float,
-               reality_p: float) -> float:
+               reality_p: float, turnover: float | None = None,
+               cost_basis: str = "unknown") -> float:
     """Order candidates for scarce forward slots. NOT a pass/fail score.
 
     Built from OOS Sharpe first because that is the quantity the desk has an empirical band for
@@ -184,7 +210,13 @@ def rank_score(gates: dict[str, bool], *, oos_sharpe: float, dsr: float,
     cleared = sum(1 for g in STATISTICAL_GATES if gates.get(g, False))
     # OOS Sharpe dominates; each cleared statistical gate is worth a small, fixed bonus so it can
     # break ties between candidates with similar OOS but cannot outweigh a genuine OOS difference.
-    return float(oos_sharpe) + 0.05 * cleared + 0.02 * float(dsr) + 0.02 * (1.0 - float(reality_p))
+    score = (float(oos_sharpe) + 0.05 * cleared + 0.02 * float(dsr)
+             + 0.02 * (1.0 - float(reality_p)))
+    # Charged ONLY when the caller says costs are not already in the number. See
+    # GROSS_TURNOVER_PENALTY: penalising a net Sharpe would be the double-correction defect.
+    if turnover is not None and str(cost_basis).lower() != "net":
+        score -= GROSS_TURNOVER_PENALTY * max(0.0, float(turnover))
+    return score
 
 
 def _f(row: dict[str, object], key: str, default: float) -> float:
@@ -195,7 +227,8 @@ def _f(row: dict[str, object], key: str, default: float) -> float:
     return float(v) if isinstance(v, (int, float)) else default
 
 
-def admit(candidates: list[dict[str, object]], *, idle_slots: int) -> AdmissionPlan:
+def admit(candidates: list[dict[str, object]], *, idle_slots: int,
+          cost_basis: str = "unknown") -> AdmissionPlan:
     """Assign the best structurally-sound candidates to idle forward clocks.
 
     `candidates` rows carry: name, gates (dict), oos_sharpe, dsr, reality_p.
@@ -226,8 +259,11 @@ def admit(candidates: list[dict[str, object]], *, idle_slots: int) -> AdmissionP
         if oos < MIN_ADMISSION_OOS_SHARPE:
             blocked_list.append("below_relevance_floor")
         stat_fail = tuple(g for g in STATISTICAL_GATES if g in gates and not gates[g])
+        raw_turn = c.get("turnover")
+        turn = float(raw_turn) if isinstance(raw_turn, (int, float)) else None
         score = rank_score(gates, oos_sharpe=oos, dsr=_f(c, "dsr", 0.0),
-                           reality_p=_f(c, "reality_p", 1.0))
+                           reality_p=_f(c, "reality_p", 1.0), turnover=turn,
+                           cost_basis=str(c.get("cost_basis") or cost_basis))
         rows.append(Admission(name=name, rank_score=score, blocked_by=tuple(blocked_list),
                               statistical_failures=stat_fail))
 
@@ -247,6 +283,11 @@ def admit(candidates: list[dict[str, object]], *, idle_slots: int) -> AdmissionP
         f"{len(admitted)} of {len(eligible)} structurally-sound candidates fit {n} idle slot(s)",
         "admission is a FORWARD CLOCK, never capital; the promotion bar is unchanged",
     ]
+    if str(cost_basis).lower() not in ("net", "gross"):
+        notes.append("UNMEASURED cost basis: nobody declared whether these Sharpes are net of "
+                     "fees. Treated as GROSS (turnover penalised) because assuming costs were "
+                     "charged is the branch that admits a candidate whose edge is entirely fees "
+                     "-- and this desk measured realised cost at 7.75x its own prediction")
     n_floor = sum(1 for r in blocked if "below_relevance_floor" in r.blocked_by)
     if n_floor:
         notes.append(f"{n_floor} candidate(s) below the {MIN_ADMISSION_OOS_SHARPE} OOS relevance "
