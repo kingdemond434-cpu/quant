@@ -323,6 +323,20 @@ def main() -> None:
     else:
         fired.append("promotion-gate")
 
+    # DAILY HYPOTHESIS FUNNEL. Generation is the desk's #2 supreme objective and its output
+    # was going straight into a queue nobody screened. This runs the arithmetic stage every
+    # cycle -- cost floor, degenerate turnover, trivial-variation fingerprint, batch diversity --
+    # so the gauntlet receives screened candidates and the desk can SEE its conversion rate.
+    # No bar is moved: the screen rejects only on cheap unambiguous evidence and escalates
+    # everything else, and no statistics are ever asked of a model.
+    _r = subprocess.run([sys.executable, "scripts/hypothesis_screen.py"],
+                        capture_output=True, text=True, timeout=300, check=False)
+    _tail = (_r.stdout or _r.stderr or "").strip().splitlines()[-1:] or [""]
+    if _r.returncode != 0:
+        print(f"cadence: hypothesis-funnel rc={_r.returncode} | {_tail[0][:110]}")
+    else:
+        fired.append("hypothesis-funnel")
+
     # MODEL UPGRADE (monthly). The desk's models used to be frozen literals that only ever moved
     # when a human noticed a newer flagship -- so seats aged silently (llama-4-maverick sat 15
     # months stale). This makes "are we on the best model available?" a cadence question with a
