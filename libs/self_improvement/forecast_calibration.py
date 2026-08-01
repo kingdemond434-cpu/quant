@@ -106,13 +106,55 @@ def resolve(key: str, outcome: bool) -> None:
     _save(d)
 
 
+def _scoreable(forecasts: dict[str, Any]) -> list[dict[str, Any]]:
+    """The resolved forecasts that carry real calibration information.
+
+    TWO exclusions. Both remove rows that carry ZERO independent information, and both were
+    silently inflating n and corrupting the bias:
+
+    1. NO resolve_by -> NOT A FORECAST. L1.29(a) requires every consequential probability to be
+       logged WITH a resolve-by date AT THE MOMENT IT IS ASSERTED. A row without one was graded
+       retrospectively. In this store all 30 such rows were kind=engineering, ALL resolved TRUE,
+       a median of 18ms after being logged -- the outcome was already known when the
+       "prediction" was made. Pooling them drove the measured bias to -0.146 (under-confident)
+       while the pre-registered rows say +0.176 (OVER-confident). run_conviction_trader fed that
+       INVERTED correction straight into kelly_leverage, so a call its own model rated 0.44
+       (edge<=0, correctly "no-edge") was inflated to 0.586 and sized at 6.00x. The risk cap
+       bounds size; it cannot restore the SIGN of the edge, so the cap never saw this.
+
+    2. DUPLICATE claims count ONCE. A re-asked question is not a second observation. The probe
+       organ re-logged "Will S2USDT trade ABOVE 102.0 in 24 hours' time?" 17 times in 14h at a
+       frozen threshold; all 17 resolve on the same print, so scoring them as 17 would clear the
+       n>=5 noise gate on what is arithmetically ONE coin flip. Earliest instance wins.
+    """
+    res = [{**f, "_key": k} for k, f in forecasts.items()
+           if f.get("resolved") and f.get("resolve_by")]
+    res.sort(key=lambda f: str(f.get("updated") or ""))
+    seen: set[str] = set()
+    out: list[dict[str, Any]] = []
+    for f in res:
+        sig = " ".join(str(f.get("claim") or f["_key"]).split()).lower()
+        if sig in seen:
+            continue
+        seen.add(sig)
+        out.append(f)
+    return out
+
+
 def report() -> dict[str, Any]:
     """Calibration over resolved forecasts: Brier, hit-rate posterior, bias. N-gated (honest)."""
     d = _load()
-    res = [f for f in d["forecasts"].values() if f.get("resolved")]
+    resolved = [f for f in d["forecasts"].values() if f.get("resolved")]
+    res = _scoreable(d["forecasts"])
     n = len(res)
+    excluded = {"retrospective": sum(1 for f in resolved if not f.get("resolve_by")),
+                "duplicate_claim": len(resolved) - n
+                - sum(1 for f in resolved if not f.get("resolve_by"))}
     if n < 5:
-        return {"n_resolved": n, "status": f"insufficient outcomes ({n}/5) -- accumulating",
+        return {"n_resolved": n, "n_excluded": excluded,
+                "status": (f"insufficient outcomes ({n}/5) -- accumulating; "
+                           f"{excluded['retrospective']} retrospective + "
+                           f"{excluded['duplicate_claim']} duplicate row(s) are not scoreable"),
                 "brier": None, "reliability": None, "bias": None, "hit_rate_posterior": None}
     brier = sum((f["p"] - f["outcome"]) ** 2 for f in res) / n
     bias = sum(f["p"] - f["outcome"] for f in res) / n     # + = over-confident, - = under-confident
@@ -120,7 +162,7 @@ def report() -> dict[str, Any]:
     # Beta(1,1) prior updated with hits/misses -> posterior mean hit-rate
     a, b = 1 + hits, 1 + (n - hits)
     return {
-        "n_resolved": n, "status": "calibrated",
+        "n_resolved": n, "n_excluded": excluded, "status": "calibrated",
         "brier": round(brier, 4), "reliability": round(1 - brier, 4),
         "bias": round(bias, 4),
         "bias_label": ("over-confident" if bias > 0.05 else

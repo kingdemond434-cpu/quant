@@ -84,13 +84,55 @@ def test_reasoned_rejection_counts_as_conversion(tmp_path):
 
 def test_past_due_rows_named(tmp_path):
     _write_ledger(tmp_path, [
-        _row("R1", "open", 10.0, due="2026-07-01"),
-        _row("R2", "open", 3.0, due="2026-12-01"),
+        _row("R1", "scheduled", 10.0, due="2026-07-01"),      # overdue
+        _row("R2", "scheduled", 3.0, due="2026-12-01"),       # future deadline, not due
         _row("R3", "implemented", 5.0, disposed_days_ago=1.0),
     ])
     rep = build_report(tmp_path, NOW)
     assert rep["past_due"] == 1
     assert rep["past_due_ids"] == ["R1"]
+
+
+def test_untriaged_open_row_past_grace_is_past_due(tmp_path):
+    """The branch that was structurally dead in production.
+
+    add() writes `status: open, due: None` and only `dispose --status scheduled` ever sets a due,
+    so ZERO rows in the live ledger had status open AND a due date -- yet the fence required a
+    non-null due to consider anything past due. 28 untriaged rows were invisible, and
+    run_max_push.py:239 consumes this artifact, so the desk prioritised off the lenient count."""
+    _write_ledger(tmp_path, [
+        _row("R1", "open", 3.0),                              # no due -- 3d > 24h grace
+        _row("R2", "open", 0.5),                              # inside grace, not yet a defect
+        _row("R3", "implemented", 5.0, disposed_days_ago=1.0),
+    ])
+    rep = build_report(tmp_path, NOW)
+    assert rep["past_due_orphaned"] == 1
+    assert rep["past_due_ids"] == ["R1"]
+
+
+def test_row_due_today_is_past_due_not_invisible(tmp_path):
+    """`"2026-07-31" < "2026-07-31"` is False, so a scheduled row was invisible for the whole day
+    it came due. Six live rows sat in that blind spot."""
+    _write_ledger(tmp_path, [
+        _row("R1", "scheduled", 2.0, due=NOW.date().isoformat()),
+        _row("R2", "implemented", 5.0, disposed_days_ago=1.0),
+    ])
+    rep = build_report(tmp_path, NOW)                          # NOW is 12:00, due parses to 00:00
+    assert rep["past_due_overdue"] == 1
+    assert rep["past_due_ids"] == ["R1"]
+
+
+def test_finished_rows_are_not_backlog_forever(tmp_path):
+    """`done`/`screened` are written by organs that bypass the CLI. They are completed work;
+    counting them as backlog inflated the debt permanently and never counted as dispositions."""
+    _write_ledger(tmp_path, [
+        _row("R1", "done", 3.0),
+        _row("R2", "screened", 3.0),
+        _row("R3", "open", 0.5),
+    ])
+    rep = build_report(tmp_path, NOW)
+    assert rep["backlog"] == 1                    # only the genuinely open row
+    assert rep["terminal_unstamped"] == 2         # ...and the missing stamps stay VISIBLE
 
 
 def test_law_is_enforced_in_matrix():

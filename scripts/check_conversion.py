@@ -59,7 +59,16 @@ from libs.ops.lawful import guard as _law_guard  # noqa: E402
 
 # The deep-sweep backpressure line: open+past-due above this flips audit windows to repair.
 REPAIR_MODE_BACKLOG = 25
-_TERMINAL = frozenset({"implemented", "rejected", "retired"})
+# `done` and `screened` are written by organs that bypass the CLI (scripts/recommendations.py:223
+# only permits implemented|rejected|scheduled). They read "built, N tests, in the law gate" and
+# "Stage A run live" -- FINISHED WORK. Omitting them counted 15 completed rows as backlog forever
+# AND, because they carry no `disposed` stamp, never as dispositions: a double penalty that
+# inflated the apparent debt at both ends. Counting them is a correctness fix, NOT the denominator
+# trick -- no row leaves the ledger, and `terminal_unstamped` below reports exactly how many are
+# terminal without a timestamp so the disposition RATE understatement stays visible.
+_TERMINAL = frozenset({"implemented", "rejected", "retired", "done", "screened"})
+# scripts/recommendations.py:37 -- an untriaged row past this is a DEFECT, not backlog.
+GRACE_H = 24.0
 
 
 def _parse_ts(raw: object) -> datetime | None:
@@ -92,8 +101,28 @@ def build_report(root: Path, now: datetime | None = None) -> dict[str, Any]:
         }
 
     backlog = [r for r in rows if r.get("status") not in _TERMINAL]
-    today = now.date().isoformat()
-    past_due = [r for r in backlog if isinstance(r.get("due"), str) and r["due"] < today]
+    # PAST DUE, counted the way scripts/recommendations.py counts it. Two bugs lived here and both
+    # ran in the FORGIVING direction, which is how the fence reported past_due=0 while
+    # recommendations.py reported 34 DEFECTS on the same file in the same minute -- and
+    # run_max_push.py:239 consumes THIS artifact, so the desk prioritised off the lenient number.
+    #   (1) `r["due"] < today` compared ISO STRINGS, so "2026-08-01" < "2026-08-01" is False and a
+    #       scheduled row was invisible for the entire day it came due (6 rows today).
+    #   (2) it required a non-null `due`, but add() writes `due: None` and only `dispose
+    #       --status scheduled` ever sets one -- so ZERO rows in the ledger have status `open` AND
+    #       a due date. That branch was structurally dead in production, hiding every untriaged
+    #       row. The unit test that "proved" it worked used an open row WITH a due date, a fixture
+    #       the CLI cannot produce.
+    overdue = [r for r in backlog
+               if (d := _parse_ts(r.get("due"))) is not None and d < now]
+    orphans = [r for r in backlog
+               if r.get("status") == "open"
+               and (t := _parse_ts(r.get("raised"))) is not None
+               and (now - t).total_seconds() / 3600.0 > GRACE_H]
+    seen: set[int] = set()
+    past_due = [r for r in (*overdue, *orphans)
+                if id(r) not in seen and not seen.add(id(r))]  # type: ignore[func-returns-value]
+    terminal_unstamped = sum(1 for r in rows
+                             if r.get("status") in _TERMINAL and not r.get("disposed"))
     arrivals_7d = sum(1 for r in rows if (t := _parse_ts(r.get("raised"))) and t >= week_ago)
     dispositions_7d = sum(
         1 for r in rows
@@ -117,6 +146,8 @@ def build_report(root: Path, now: datetime | None = None) -> dict[str, Any]:
                "loss aging at its stated ROI",
         "backlog": len(backlog), "past_due": len(past_due),
         "past_due_ids": [r.get("id") for r in past_due][:20],
+        "past_due_overdue": len(overdue), "past_due_orphaned": len(orphans),
+        "terminal_unstamped": terminal_unstamped,
         "arrivals_7d": arrivals_7d, "dispositions_7d": dispositions_7d,
         "arrival_rate_per_day": round(arrivals_7d / 7, 3),
         "disposition_rate_per_day": round(dispositions_7d / 7, 3),

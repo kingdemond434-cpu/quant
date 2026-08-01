@@ -3074,6 +3074,102 @@
    "commit": null,
    "due": "2026-08-06",
    "disposed": "2026-08-01T06:04:03.531936+00:00"
+  },
+  {
+   "id": "R0253",
+   "source": "cycle",
+   "summary": "FORECAST SELF-GRADING WRITER: find and fix whatever logged 30 eng:* forecasts and resolved them TRUE a median 18ms later (all outcome=1.0, no resolve_by). The estimator now excludes them (libs/self_improvement/forecast_calibration._scoreable), but the WRITER still produces them -- every new one is another retrospective row. Either give it a real resolve_by or stop calling log_forecast from a state-assertion path.",
+   "roi_bps": 3000.0,
+   "raised": "2026-08-01T07:50:32.305403+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0254",
+   "source": "cycle",
+   "summary": "CALIBRATION PROBE re-logs ONE identical claim: 'Will S2USDT trade ABOVE 102.0 in 24 hours' time?' appeared 17x in 14h (6x in the 06:01-06:14 window) at a FROZEN 102.0 threshold and constant p=0.61. Two defects: (a) the probe fires far more often than its 6-hourly cron line implies -- find the extra caller; (b) S2USDT's reference price looks stuck, which is the silent-stale-instrument class. Dedup now neutralises the calibration damage (17 copies score as 1) but the loop still burns quota and the stale price is unexplained.",
+   "roi_bps": 2500.0,
+   "raised": "2026-08-01T07:50:32.408193+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0255",
+   "source": "cycle",
+   "summary": "CROSSASSET forward slot is a 41-day-old fossil holding live multiplicity: web/crossasset_shadow.json frozen 2026-06-21 at forward_days=1, and grep finds NO scheduler reference to run_crossasset_shadow anywhere (not in ops/crontab.manifest, not in run_daily_research.py _STEPS) though that file's docstring claims '(3) cross-asset combo shadow'. Decide explicitly: WIRE it (it is a real clock the desk thinks it has) or RETIRE the slot by ledgered decision. Until then it inflates Holm m=12 while returning nothing. Now visible as not_accruing/STALLED in derive_slots().",
+   "roi_bps": 4000.0,
+   "raised": "2026-08-01T07:50:32.519020+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0256",
+   "source": "cycle",
+   "summary": "CNY_PREMIUM clock pinned at 0/40 for 9 days: data/cny_premium.jsonl gains a row daily and the collector logs green, but EVERY row carries z20=null and run_axis_shadows.py:131 skips null z20, so n stays 0 permanently. Fix the z20 producer. Now surfaced as NO-EVIDENCE by derive_slots(), but the detector only names it -- the collector is still emitting nulls.",
+   "roi_bps": 3500.0,
+   "raised": "2026-08-01T07:50:32.631671+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0257",
+   "source": "cycle",
+   "summary": "DEGENERATE-OBSERVATION clocks that a staleness check CANNOT catch: walcl_reserve_impulse re-stamps one 2026-07-29 observation under a new date key daily (byte-identical payload, asof frozen), and defi_utilisation's z20 series is [0,0,0,0,1.80] where position=sign(z) makes all 4 realized returns exactly 0.0 (std=0, t-stat uncomputable). Both look ACCRUING to the new evidence probe because their artifacts ARE fresh and days>0. Extend the probe to read the RETURN SERIES, not just the day count.",
+   "roi_bps": 2000.0,
+   "raised": "2026-08-01T07:50:32.740678+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0258",
+   "source": "cycle",
+   "summary": "run_daily_research.py swallows non-zero exits by design ('best-effort daily batch, never abort the chain') and daily_research_cycle.py keeps only the last 6 stdout lines, so run_cashcarry_shadow.py's SystemExit('need a liquid perp panel with basis') killed the desk's FLAGSHIP forward clock for a full day (35/90, NW-t 2.28, 4 days from its fast-track gate) with zero alarm. Recovered manually this cycle to 36. Best-effort is right for the CHAIN; it must still PAGE per-step failures.",
+   "roi_bps": 3000.0,
+   "raised": "2026-08-01T07:50:32.864782+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0259",
+   "source": "cycle",
+   "summary": "recommendations.py:223 restricts --status to implemented|rejected|scheduled, so the 15 rows written as done/screened came from organs bypassing the CLI, carry disposed=None, and are terminal-without-a-timestamp. check_conversion now counts them terminal and reports terminal_unstamped=15, but the vocabulary drift remains: either teach the CLI these statuses or migrate the rows to implemented.",
+   "roi_bps": 1500.0,
+   "raised": "2026-08-01T07:50:32.971850+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0260",
+   "source": "cycle",
+   "summary": "ORPHANED FORECAST NAMESPACE pins the desk's #1 max_push item permanently. 4 rows keyed calib-quiz-20260731-q1/q2/q4/q5 are past their resolve_by, and grep finds NO writer and NO resolver for 'calib-quiz' anywhere in scripts/ or libs/ -- run_calibration_probe.py --resolve owns only the 'probe:' namespace (it graded 2 this cycle, n 5->7, bias +0.176 -> +0.121). So calibration::forecast_reliability stays UNMEASURED at rank 1 forever regardless of how well the probe organ performs. Either give calib-quiz a resolver (they are ordinary market-direction claims with explicit thresholds and passed deadlines: BTCUSDT>63216.2 +4h, ETHUSDT>1874.22 +12h, PAXGUSDT>4051.35 +4h, BNBUSDT>589.28 +12h) or migrate the namespace into run_calibration_probe. NOT hand-graded this cycle on purpose -- rushing judgement work fabricates calibration data, which is the exact failure the L1.29 fix addressed.",
+   "roi_bps": 2500.0,
+   "raised": "2026-08-01T08:05:56.329253+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

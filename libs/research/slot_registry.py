@@ -57,6 +57,75 @@ _AXIS_STATE = "data/axis_shadow_state.json"
 _SLEEVE_ROSTER = "data/shadow_sleeves.json"
 _OUT = "data/forward_slots.json"
 
+#: Slot -> (evidence artifact, day-count field). The STATE files above prove a clock was BORN;
+#: these prove it is still BREATHING, and the two are not the same question. Measured 2026-08-01:
+#: the standing states are birth-certificate stubs carrying nothing but `shadow_start` and are
+#: never rewritten, while the derivative slots' state was the hardcoded string literal "ACCRUING"
+#: -- so `derive_slots()` ASSERTED that 12 of 12 clocks were accruing without reading a single day
+#: count. Five were not: crossasset frozen 41 days at day 1 with NO scheduler line anywhere,
+#: cny_premium pinned at 0/40 for 9 days (every z20 null, skipped at run_axis_shadows.py:131),
+#: walcl re-stamping one 07-29 observation daily, defi_utilisation 4 days of exactly-zero returns,
+#: and cashcarry silently missing its 08-01 run. `idle_slots: 0` then suppressed every idleness
+#: alert. This is the L1.28a rule turned on the desk's own evidence pipeline: UNMEASURED
+#: UTILISATION COUNTS AS ZERO, and a capability is proven by its ARTIFACT, never by a flag.
+_EVIDENCE: dict[str, tuple[str, str]] = {
+    "cashcarry": ("web/cashcarry_shadow.json", "forward_days"),
+    "crossasset": ("web/crossasset_shadow.json", "forward_days"),
+    "crypto_combined": ("web/crypto_shadow.json", "forward_days"),
+    "trend_30d": ("web/trend_shadow.json", "forward_days"),
+    "trend_regime": ("web/trend_regime_shadow.json", "forward_days"),
+    "legacy_shadow": ("web/shadow.json", "forward_days"),
+    "oi_divergence": ("web/derivative_shadow.json", "days_accumulated"),
+    "ls_contrarian": ("web/derivative_shadow.json", "days_accumulated"),
+}
+
+#: A forward clock advances once per day. Past this its artifact is not evidence, it is a fossil.
+STALE_AFTER_H = 36.0
+
+
+def _parse_ts(raw: object) -> datetime | None:
+    if not isinstance(raw, str) or not raw:
+        return None
+    try:
+        ts = datetime.fromisoformat(raw)
+    except ValueError:
+        return None
+    return ts if ts.tzinfo else ts.replace(tzinfo=UTC)
+
+
+def _evidence(name: str, now: datetime, *, days: object = None,
+              updated: object = None) -> dict[str, Any]:
+    """Is this clock BREATHING? Never asserts -- reports UNMEASURED when it cannot tell.
+
+    Axis slots pass their own row's `days`/`updated`; everything else is looked up in _EVIDENCE.
+    NO-EVIDENCE (day count 0) is kept DISTINCT from STALLED (artifact not rewritten): a clock can
+    run perfectly on schedule and still accrue nothing, which is exactly how cny_premium sat at
+    0/40 for nine days while its collector reported green every morning.
+    """
+    src = "(axis row)"
+    if days is None and updated is None:
+        ref = _EVIDENCE.get(name)
+        if ref is None:
+            return {"evidence": "UNMEASURED", "why": f"no evidence artifact mapped for {name}"}
+        src = ref[0]
+        doc = _read_json(src)
+        if not isinstance(doc, dict):
+            return {"evidence": "UNMEASURED", "why": f"{src} missing or unreadable", "source": src}
+        days, updated = doc.get(ref[1]), doc.get("updated")
+    ts = _parse_ts(updated)
+    if ts is None:
+        return {"evidence": "UNMEASURED", "why": f"{src} carries no parseable `updated`",
+                "source": src}
+    age_h = round((now - ts).total_seconds() / 3600.0, 1)
+    try:
+        n_days = int(days)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return {"evidence": "UNMEASURED", "why": f"{src} carries no day count",
+                "source": src, "age_h": age_h}
+    state = ("NO-EVIDENCE" if n_days <= 0 else
+             "STALLED" if age_h > STALE_AFTER_H else "ACCRUING")
+    return {"evidence": state, "days": n_days, "age_h": age_h, "source": src}
+
 
 def _read_json(rel: str) -> Any | None:
     """Return parsed JSON, or None when the source cannot be trusted (missing/unreadable)."""
@@ -72,7 +141,8 @@ def derive_slots() -> dict[str, Any]:
     Returns a payload carrying the slots, the cohort size `m_concurrent`, and `complete` -- False
     whenever any source was unreadable, meaning m is a LOWER BOUND and the true bar may be higher.
     """
-    slots: list[dict[str, str]] = []
+    now = datetime.now(tz=UTC)
+    slots: list[dict[str, Any]] = []
     unknown: list[str] = []
 
     axis_doc = _read_json(_AXIS_STATE)
@@ -86,7 +156,12 @@ def derive_slots() -> dict[str, Any]:
             if str(row.get("verdict", "")).upper() == "RETIRED":
                 continue
             slots.append({"name": str(row.get("axis", "?")), "kind": "axis",
-                          "source": _AXIS_STATE, "state": str(row.get("verdict", "ACCRUING"))})
+                          "source": _AXIS_STATE, "state": str(row.get("verdict", "ACCRUING")),
+                          **_evidence(str(row.get("axis", "?")), now,
+                                      days=row.get("forward_days", row.get("n", 0)),
+                                      updated=row.get("updated")
+                                      or (axis_doc.get("updated")
+                                          if isinstance(axis_doc, dict) else None))})
 
     for name, rel in _STANDING_STATES.items():
         doc = _read_json(rel)
@@ -95,7 +170,7 @@ def derive_slots() -> dict[str, Any]:
             continue
         if isinstance(doc, dict) and doc.get("shadow_start"):
             slots.append({"name": name, "kind": "standing", "source": rel,
-                          "state": f"since {doc['shadow_start']}"})
+                          "state": f"since {doc['shadow_start']}", **_evidence(name, now)})
 
     roster = _read_json(_SLEEVE_ROSTER)
     if roster is None:
@@ -106,20 +181,34 @@ def derive_slots() -> dict[str, Any]:
         names = sorted({*_DERIVATIVE_BUILTIN, *extras})
     for name in names:
         slots.append({"name": name, "kind": "derivative", "source": _SLEEVE_ROSTER,
-                      "state": "ACCRUING"})
+                      "state": "roster", **_evidence(name, now)})
 
+    # m is deliberately UNCHANGED by any of this: a stalled clock stays in the cohort until it is
+    # RETIRED by an explicit ledgered decision, because dropping it would SHRINK m and loosen every
+    # bar -- the phantom-edge direction this module exists to prevent. What the measurement buys is
+    # that a dead clock can no longer report itself as accruing, and that the desk can see it is
+    # paying multiplicity for slots returning nothing.
+    dead = [s for s in slots if s.get("evidence") in ("STALLED", "NO-EVIDENCE")]
+    unmeasured = [s for s in slots if s.get("evidence") == "UNMEASURED"]
     return {
-        "updated": datetime.now(tz=UTC).isoformat(),
+        "updated": now.isoformat(),
         "m_concurrent": len(slots),
         "complete": not unknown,
         "cap": MAX_FORWARD_SLOTS,
         "over_cap": len(slots) > MAX_FORWARD_SLOTS,
         "idle_slots": max(0, MAX_FORWARD_SLOTS - len(slots)),
         "unknown_sources": unknown,
+        "accruing": len(slots) - len(dead) - len(unmeasured),
+        "not_accruing": [{"name": s["name"], "evidence": s.get("evidence"),
+                          "days": s.get("days"), "age_h": s.get("age_h")} for s in dead],
+        "unmeasured_slots": [s["name"] for s in unmeasured],
+        "evidence_stale_after_h": STALE_AFTER_H,
         "slots": slots,
         "note": ("Holm cohort for every Stage-B forward clock. Unreadable sources are counted as "
                  "UNKNOWN, never zero: understating m loosens every bar. Dormant clocks stay "
-                 "counted until RETIRED by an explicit ledgered decision."),
+                 "counted until RETIRED by an explicit ledgered decision -- `not_accruing` names "
+                 "the slots paying multiplicity while returning no evidence, which is a cost to "
+                 "fix upstream, never by shrinking m."),
     }
 
 
