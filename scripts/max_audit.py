@@ -2050,6 +2050,15 @@ _TERMINAL_ARTIFACTS = {
         "It accumulates no inventory: its 5 extracted axes were rowed as R0100 and appended to "
         "data_axis_watchlist.md, and its verdicts were folded into ops/frontier_cn_prompt.txt so "
         "the CN seat never re-spends the verification. The doc is the evidence, not a queue.",
+    "docs/research/REALITY_CHECK_POWER.md":
+        "dated power measurement (Type II of the reality_check gate on the real cohort's shape, "
+        "2026-08-01), same class as gate_power_audit.md. It accumulates no inventory: the numbers "
+        "regenerate from scripts/audit_reality_check.py into reports/reality_check_audit.json, "
+        "and its conclusion is a single named build -- a pooled-by-mechanism path in "
+        "run_real_campaign -- not a queue of items. The measurement it records is terminal: the "
+        "gate's false-positive rate is clean (0/3,900 at N=196) and its power inside the desk's "
+        "real-edge band is not, which is a fact about the campaign's design rather than an "
+        "inventory to work off. NOTHING here licenses moving a threshold, and the doc says so.",
     "docs/research/PERMUTATION_NULL_RESULT.md":
         "dated measurement record (permutation null + monkey test + overlays on OKX daily perps, "
         "2026-08-01), same shape as gate_power_audit.md and governed the same way. It accumulates "

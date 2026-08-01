@@ -78,7 +78,9 @@ def main(argv: list[str] | None = None) -> int:
         doc["briefing"] = str(_BRIEFING.relative_to(_ROOT))
         if not args.dry_run:
             doc["blocker"] = (
-                "export OPENAI_API_KEY in the environment to seat the CRO. The same variable "
+                "export OPENROUTER_API_KEY in the environment to seat the CRO -- one key "
+                "reaches every model family and auto-upgrades across the market rather than "
+                "within a single vendor. The same variable "
                 "lights eleven other dark organs (run_external_panel, strategic_director, "
                 "llm_code_auditor, meta_architect, breadth_expander, kimi_hunter, "
                 "collector_author, deep_review, run_micro_audit, refresh_panel_roster, "
