@@ -1,23 +1,25 @@
 #!/usr/bin/env bash
-# RECOMMENDATION WORKER (principal 2026-08-01: "make claude keep up with recommendation
-# implementations, immediate, automated").
+# OWED-WORK WORKER (principal 2026-08-01: "recommendation conversion fully aggressive, maxed, and
+# immediately acted upon by the desk -- same with defects").
 #
-# THE GAP IT CLOSES. §41 made every recommendation reach a disposition, and the desk then generated
-# them faster than anything consumed them: 132 open, 51 past the 24h grace, oldest 39h, and ZERO
-# cron organs touching the ledger. Generation without a matching consumer is not throughput, it is
-# a queue that grows until nobody reads it -- which is precisely the failure §41 was built to stop,
-# arriving one layer up. The brain triages the ledger among a dozen other duties and loses.
+# v2 changes two things that made v1 merely adequate:
 #
-# WHY ITS OWN LOCK, NOT THE BRAIN MUTEX. The frontier miners took brain_mutex and starved: every
-# time their timer fired the brain held it, they deferred instantly, and in ~12 days they produced
-# nothing. A worker that defers to a busy organ is a worker that never runs. This takes its own
-# flock so it runs CONCURRENTLY with the brain, capped at one instance. Two claude processes at
-# ~190MB against 1.6GB available is affordable; a permanently starved queue is not.
+# 1. ADAPTIVE BATCH, NOT A FIXED 3. A constant batch is a constant drain rate, so a generation
+#    burst permanently outruns it -- and the desk burst ~40 rows in one hour while I watched. The
+#    batch now scales with the backlog (depth/18, floored at 3, capped at 12), so a deep queue is
+#    attacked harder and a shallow one is not padded with low-value work. The cap is not timidity:
+#    beyond ~12 rows one run's context stops being enough to do any of them properly, and a batch
+#    that half-finishes twelve rows is worse than one that finishes eight.
 #
-# BATCH SIZE 3, deliberately small. A large batch means one bad row poisons a long run and the
-# whole commit gets reverted; three keeps each run short, keeps the diff reviewable, and at hourly
-# cadence clears 72/day against a generation rate near 50/day -- so the backlog drains rather than
-# merely holding steady.
+# 2. DEFECTS ARE OWED WORK TOO. max_audit carries live defects with NO consumer -- exactly the gap
+#    that let 137 recommendations pile up before this organ existed. Fixing a defect and
+#    implementing a recommendation are the same act (read the evidence, change the code, prove it),
+#    so they share one organ, one lock and one contract rather than spawning a third claude
+#    process on a 3.8GB box.
+#
+# Own flock, never brain_mutex: the frontier miners took the mutex and produced nothing for ~12
+# days because they deferred every time a cycle was live. A consumer that yields to a producer
+# never runs.
 set -uo pipefail
 cd /home/quant/quant-platform
 source ops/brain_env.sh
@@ -25,68 +27,84 @@ source ops/brain_env.sh
 mkdir -p data/cro_ai_logs
 LOG="data/cro_ai_logs/recommendation_worker_$(date -u +%Y%m%dT%H%M).log"
 
-# Oldest-first among rows past their grace window: age is the honest priority when every row
-# already carries an ERV note, and it guarantees nothing can sit forever because newer work keeps
-# looking more attractive.
-BATCH="$(.venv/bin/python - <<'PYEOF'
-import json, datetime as dt
+WORK="$(.venv/bin/python - <<'PYEOF'
+import json, math, subprocess, datetime as dt
 from pathlib import Path
+
 rows = json.loads(Path("docs/research/recommendation_ledger.json").read_text("utf-8"))["recommendations"]
 now = dt.datetime.now(dt.UTC)
 open_rows = [r for r in rows if r.get("status") == "open"]
+
 def age_h(r):
     try:
         return (now - dt.datetime.fromisoformat(r["raised"])).total_seconds() / 3600.0
     except Exception:
         return 0.0
+
+# ADAPTIVE: attack a deep queue harder. Cap at 12 -- past that one run cannot do any of them
+# properly, and half-finishing twelve is worse than finishing eight.
+n = max(3, min(12, math.ceil(len(open_rows) / 18)))
 open_rows.sort(key=age_h, reverse=True)
-for r in open_rows[:3]:
-    print(f"{r['id']} :: [{r.get('source')}] {r['summary'][:400]}")
+print(f"### {len(open_rows)} rows open; this run takes the {n} oldest.\n")
+for r in open_rows[:n]:
+    print(f"{r['id']} :: [{r.get('source')}] {r['summary'][:380]}")
+
+# Live max_audit defects share the batch: same act, same contract, no third process.
+try:
+    rep = json.loads(Path("data/max_audit_report.json").read_text("utf-8"))
+    live = [d for d in rep.get("live", []) if not str(d.get("id", "")).startswith("rec-")]
+    if live:
+        print(f"\n### {len(live)} live max_audit defect(s); this run takes the 3 oldest.\n")
+        for d in live[:3]:
+            print(f"DEFECT {d.get('id')} :: {str(d.get('msg'))[:380]}")
+except Exception:
+    pass
 PYEOF
 )"
 
-if [ -z "$BATCH" ]; then
-    echo "$(date -u +%FT%TZ) recommendation-worker: ledger clear, nothing owed" >> "$LOG"
+if ! printf '%s' "$WORK" | grep -q "::"; then
+    echo "$(date -u +%FT%TZ) owed-work worker: nothing owed" >> "$LOG"
     exit 0
 fi
 
 brain_auth_check || { echo "auth unavailable -- next run resumes" >> "$LOG"; exit 1; }
 
-PROMPT="You are the recommendation worker. Your ONLY job this run is to take the three ledger rows
-below to a real disposition. Nothing else.
+PROMPT="You are the owed-work worker. Take every item below to a real, finished disposition. That
+is your whole job this run -- do not start anything else.
 
-${BATCH}
+${WORK}
 
-FOR EACH ROW, do exactly one of:
-  IMPLEMENT it properly -- read the cited files, make the change, add or update a test where the
-    change is behavioural, run: .venv/bin/python -m ruff check libs/ scripts/ tests/ and the
-    relevant pytest subset. Then commit (never --no-verify) and dispose:
-      .venv/bin/python scripts/recommendations.py dispose --id <ID> --status implemented \\
-        --commit <sha> --expect '<a distinctive substring of that row summary>'
-  REJECT it with a substantive reason (>=25 chars) -- duplicates another row (name it), superseded,
-    negative EV once complexity is priced, re-tests graveyarded ground, or blocked forever on
-    something that will not happen. A reasoned no IS a completed disposition; the standard is that
-    nothing is SKIPPED, not that everything is built.
-  SCHEDULE it with --due YYYY-MM-DD and say what it waits on. Use this sparingly: a scheduled row
-    that nothing unblocks is a rejection wearing a nicer label.
+FOR EACH LEDGER ROW: implement it properly (read the cited files, make the change, add or update a
+test where behaviour changes, run ruff and the relevant pytest subset, commit, then dispose with
+--status implemented --commit <sha> --expect '<distinctive substring>'); OR reject it with a
+substantive reason (>=25 chars: duplicates a named row, superseded, negative EV once complexity is
+priced, re-tests graveyarded ground, blocked forever); OR schedule it with --due and say what it
+waits on. A reasoned no IS a completed disposition -- the standard is that nothing is SKIPPED, not
+that everything is built.
 
-HARD RULES:
-  * scripts/run_deadman_switch.py is Tier-3. Do NOT edit it. If a row requires it, dispose the row
-    as scheduled and say it needs principal sign-off.
-  * Never loosen a survival rail, a venue rate limit, or a validation bar to make a row pass.
-  * If a row is already done, verify that with a real artifact or commit and dispose it
-    implemented citing the proof -- do not re-implement it.
-  * --expect is mandatory on every dispose: ids shift when another writer appends, and disposing
+FOR EACH DEFECT: fix it and prove the fence goes green, or ACK it in data/max_audit_acks.json with
+a real reason and an expiry no more than 30 days out, or state plainly that it needs the principal
+and why. Never ack something you could have fixed in the time it took to write the ack.
+
+HARD RULES, and these are not negotiable:
+  * scripts/run_deadman_switch.py is Tier-3. Do NOT edit it. A row needing it gets scheduled with
+    a note that it needs principal sign-off.
+  * Never loosen a survival rail, a venue rate limit, or a validation bar to make something pass.
+    Editing a guard to fit the violation it just caught is the failure this desk has paid for
+    repeatedly.
+  * --expect is MANDATORY on every dispose. Ids shift when another writer appends, and disposing
     the wrong row is worse than leaving it open.
-  * Run .venv/bin/python scripts/run_law_gate.py before your final commit. If it breaches on
-    something YOU changed, fix it; if it was already breaching, say so and proceed.
-  * If you cannot finish a row honestly, leave it OPEN and say why. A false 'implemented' is far
-    worse than an untouched row, because it removes the thing from view forever.
+  * If a row is already done, prove it with a real artifact or commit and dispose it implemented
+    citing that proof -- do not re-implement it.
+  * Run .venv/bin/python scripts/run_law_gate.py before your final commit. Fix anything YOU broke;
+    if a breach was already there, say so and proceed.
+  * A row you cannot finish honestly stays OPEN with the reason stated. A false 'implemented' is
+    far worse than an untouched row, because it removes the thing from view permanently.
 
-Report per row: what you did, the commit sha or the reason, and anything you noticed that deserves
-its own ledger row (add it with scripts/recommendations.py add)."
+Report per item: what you did, the commit sha or the reason, and anything you noticed that
+deserves its own row (add it with scripts/recommendations.py add)."
 
-echo "=== recommendation-worker start $(date -u) ===" >> "$LOG"
+echo "=== owed-work worker start $(date -u) ===" >> "$LOG"
 claude --effort max --append-system-prompt "$_DOCTRINE" -p "$PROMPT" \
     --dangerously-skip-permissions >> "$LOG" 2>&1
-echo "=== recommendation-worker exit $? at $(date -u) ===" >> "$LOG"
+echo "=== owed-work worker exit $? at $(date -u) ===" >> "$LOG"
