@@ -1533,3 +1533,43 @@ with `if re.search(r'\d', symbol): continue`.)
 
 **Cross-reference to the CN seat's finding:** the KR seat measured Upbit **purging candles on
 delisting** (treatment group erased). Same defect class, and this is the venue-side mitigation.
+
+---
+
+## BR frontier miner, session 1 (2026-08-01) — three engine ideas, all verified on a live artifact this run
+
+### #A — A VINTAGE STORE: the desk has no concept of "what was knowable on date D" for revised data
+**Directly extends the entry immediately above** (`publicGetExpiredFutures` / R0239 point-in-time
+universe). That entry solves *which instruments existed*; this one solves *what the values were*, and
+they are the same defect in two coordinates.
+
+Measured on the RFB crypto panel this run: **42 of 42 common months revised** between vintages, worst
+**+40.9%**, revisions **systematically upward**, and still moving on a month **2.4 years old**.
+Any backtest reading today's file applies knowledge that did not exist — a look-ahead **in the
+conditioning variable**, which is the R0289 class and which **every return-series leak check passes
+cleanly**, because the returns are fine. It fails toward a FALSE POSITIVE, so it costs a Holm slot.
+
+**Proposal:** a general `vintage` store keying every observation by `(reference_period, vintage_date)`
+plus an `as_of(d)` reader that returns only what was published on or before `d`. Applies to any
+revised source — tax/regulator data, central-bank series, exchange volume restatements, on-chain
+indexers that reorg. **This is a MULTIPLIER (L2.7): it does not add a signal, it makes a whole class
+of slow-moving axes usable that are currently unusable-or-leaky.** Cheap: the vintages are free files.
+
+### #B — Land a stdlib `.xls` reader (the `.doc`/`.xls` twin of GAP_REGISTER #70's `pdf_text.py`)
+`pandas.read_excel` cannot open a legacy `.xls` without xlrd, which this box does not have and cannot
+install. Government, regulator, central-bank and exchange publications are **disproportionately
+legacy `.xls`** — which is exactly why they stay under-mined. A ~200-line stdlib OLE2+BIFF8 reader
+(prototype `/tmp/xls_stdlib.py`, technique preserved as **OP-046**) removes the blocker permanently.
+**Note the same landing failure as OP-025:** its PDF prototype has sat in `/tmp` as GAP #70 since
+07-26 and every later run re-derives it. Two prototypes now rot in `/tmp`; landing both is one small
+commit and the research freeze on this seat is why I cannot do it.
+
+### #C — Promote "conservation-law validation" to a standing requirement for any hand-rolled extractor
+Rather than trust the `.xls` parser, its output was checked against **arithmetic identities inside the
+data** (PF+PJ=Subtotal; Subtotal₁+Subtotal₂+Domestic=TotalGeral): **78/78 rows, worst residual exactly
+0.00e+00**. That is strictly stronger than diffing a PDF twin, because it spans three independent
+column groups **and both RK- and NUMBER-encoded cells**, so a decoder bug could not cancel.
+It also caught a real bug first: cells keyed on `(row,col)` silently **merged all five sheets** into
+one plausible-looking grid. **Proposal: any extractor feeding a research artifact must ship with an
+in-data invariant check, and "it looks right" is refused as validation (OP-025's own warning, now
+with a cheap general mechanism).**

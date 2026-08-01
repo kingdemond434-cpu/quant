@@ -13,6 +13,7 @@ _Seeded 2026-07-18; every family unvisited -- the first run biases per the rotat
 | Records (contests/CTA) | 2026-07-25 | 1 | partial, via forum route: Bitcointalk "Automated Trading Contest" (topic 261086, CryptoTrader.org rounds #1-#5) mined as a contest RECORD — produced the in-sample-vs-forward natural experiment graveyard entry. Kaggle G-Research + Numerai post-mortems still untouched |
 | Non-English forums | 2026-07-26 | 2 | s1 (07-19): Chinese RSRS + funding-arb (CSDN/VeighNa/BigQuant/Zhihu/FMZ) + JP note.com — RSRS EV-killed, ML-funding-rate graveyard-matched. **s2 (07-26, CN frontier miner): axis #76 usdt-cny-otc-premium UN-PARKED — "no clean free API" REFUTED, 3 keyless routes, 591d history reconstructed (OP-031 CDX-replay of a capped JSON API), Stage-A screened 4/4 cells → no promotable edge but the catalogued mechanism's SIGN and MAGNITUDE priors both falsified. New: OP-031, OP-032, CN lexicon.** Era-archaeology (banzhuan/8btc/ChainNode/Tieba) still UNSTARTED — first item next run. **s3 (2026-08-01): T1 instrument repair — the 7 supplied unverified slang terms negative-controlled, 0/7 survived, 6 with the real form named; +14 verified lexicon rows; OP-036 (evasion slang has a BIRTH DATE — 大饼 born of the 2017-09-04 "94" ban, so the search key is a function of the ERA, and our era ground straddles it), OP-037 (negative-control a supplied glossary), OP-038 (a JS wall on the HTML is not a wall on the API — unblocked the Gitee chain carried 3 sessions). CN OSS tranche: AlphaGPT paper + NOFX "3 mechanisms" both REFUTED, Vibe-Trading crypto layer weaker than ours (honest null). Screened `unlock_events.json` (24,201 events, 0 readers) 0/27 cells → UNMEASURABLE not dead, 2 measurement defects. VERIFIED on live API: a 123-event Binance delisting forced-close panel discarded by a `status=="TRADING"` filter (R0292). R0288–R0293. Era: 8btc thread-44638 mined to reply-depth, CN-side corroboration of the cross-venue-premium kill. DIASPORA ANSWERED: CN discussion migrated into paid/ID-gated enclosures — §13 puts it permanently out of reach, so the open CN layer worth mining is repos + era archives + platform 文库, NOT live community.** |
 | Non-English forums — **JP** | 2026-08-01 | 1 | **s1 (2026-08-01, JP frontier miner, seat's first run).** §13: **5ch.net + all sister hosts REFUSE `ClaudeBot` by name** (Cloudflare-*managed* block → treat as a platform rollout, not a site decision; re-check on entry, never cache); note/qiita/zenn/GMO/bitbank clean. **bitFlyer axis CLOSED after 4 deferrals** — the "403/WAF/needs-a-human" record was a **tarpit**, the block is **per-hostname** (api+lightning serve 200 from the *same edge IP*), the "never archived" claim was a wrong CDX host+slug, and the ToS was then read: it retains rights in *"data such as transaction prices"* → **`restricted-by-licence`**, which pre-emptively killed `getchats`, `getfundingratehistory` and an archived keyless 15-min BTC/JPY series (2014-10→, Wayback-only) before any were carded. **Replacements found same run: GMO Coin free keyless tick tape (2018-09-05→, 28 spot + 12 margin, JP-only MONA/XYM/FCR/NAC/WILD) and bitbank — both licence-unread, no ingest (R0309/R0310).** **richmanbtc lineage (the C62 "gem", unstarted 12 days) KILLED**: the edge is a bare ATR×0.5 limit, the ML adds ~nothing, and the maker fee was **zero-or-negative across the whole backtest** → a venue-subsidy harvest, dead on 3 venues. Salvaged 3 CC0 tools (p-mean order-sensitive decay bar — **published error-rate formula reproduced BROKEN**; time-adversarial feature screen; `publicGetExpiredFutures` for R0239). New: **OP-043/044/045** + OP-041 refinement. Era-archaeology (2017 bitFlyer-FX **SFD**, Mt.Gox 5ch) **UNSTARTED**; JP lexicon seeds still **unverified**. Next: **the 仮想通貨botter Qiita Advent Calendar 2021–2025, never touched.** |
+| Non-English forums — **BR** | 2026-08-01 | 1 | **s1 (2026-08-01, BR frontier miner, seat's first run).** **§13: the KR/JP by-name-block pattern does NOT generalise** — 18 hosts swept full-file over 17 AI-crawler tokens, **zero BR blocks**; the community layer (bastter, InfoMoney, MQL5-PT, Investing BR, bitcointalk, YouTube, Telegram) is **open**, so KR/JP was a property of *those* consumer portals, not a global rollout (OP-041 corrected). One **HARD STOP: `reddit.com` `Disallow: /`** to everyone — a *global* decision that bites BR hard (r/investimentos, r/farialimabets, r/BrasilBitcoin). **Pre-emptive graveyard check killed one third of my own brief before any searching:** the seat's era target "BR P2P premium" is already `mercado_br` **REJECTED** (graveyard:81) inside a family killed **5×** whose lone survivor (kimchi) was itself refuted 07-30 — no L1.16a enabling change exists, so the **seed list** is the defect. **THE FIND: RFB `criptoativos_dados_abertos`** — Brazil's **mandatory** national crypto-reporting panel (every domestic exchange reports **every** operation, no minimum; P2P + foreign venues >R$30k), free and keyless: **77 months Ago-2019→Dez-2025, 66 assets, 4,206 asset-months**; Dez-2025 = **3,544,986 taxpayers / R$43.1bn**; all-time **USDT R$1.004tn vs BTC R$269bn (3.7×)** ⇒ a **dollarization**, not speculation, mechanism. **Deliberately NOT screened** — n=77 monthly + 3.5mo lag vs a ~4,268-obs bar would manufacture a false null (L1.25); reported **UNDERPOWERED** with the cross-sectional enabling change named. **The depth layer was the prize: a FREE POINT-IN-TIME VINTAGE STACK** — RFB republishes monthly under a dated filename and **42/42 common months are revised** (worst Março-2023 **+40.9%**; a month **2.4y old** still moved), systematically upward, so backtesting today's file is a **+41% look-ahead in the CONDITIONING variable** (R0289 class — passes every return-series leak check, fails toward a FALSE POSITIVE). Proven recoverable: 23+ dates in CDX, and a **live-404 vintage restored intact** via `web.archive.org/<ts>id_/`. Read at all only by writing a **stdlib OLE2+BIFF8 reader** (no xlrd on this box) validated by the data's **own conservation law: 78/78 rows, residual 0.00e+00**. New **OP-046 / OP-047 / OP-035-BR**; R0316–R0318. Incidental: a **BR-only tokenized-RWA universe** in a government dataset (**MBPRK = tokenized *precatórios***, MBCONS, IMOB01, MCO2; **BRZ = 92.4M ops**, a payment rail). **ITEM 3 (PT-BR practitioner ground) explicitly DEFERRED to 08-04, not dropped.** Next: practitioner ground first, then **mirror the vintage stack before it decays**, B3, Pix fraud stats. |
 | AI/HF documentation | 2026-07-19 | 1 | touched only incidentally via Vibe-Trading (AI trading-agent platform) + ai_quant_trade (LLM module) — both infra, not alpha-discovery-process documentation; weak coverage, revisit properly next run |
 
 ## COVERAGE REALITY vs DIRECTIVE (honesty record, 2026-07-20)
@@ -2266,3 +2267,290 @@ layer left unmined rather than fetched) · note/qiita/zenn/GMO/bitbank **CLEAN**
 `docs/research/improvement_inbox.md` (+3 engine tools), `docs/research/search_operator_library.md`
 (OP-043/044/045 + OP-041 refinement), `data/data_universe_map.json` (+4, **but see R0311 — that file
 is gitignored**), this coverage doc, and ledger rows **R0309–R0313**.
+
+---
+
+## SESSION NOTES — BR frontier miner
+
+### 2026-08-01 session 1 (BR frontier miner, SEAT'S FIRST RUN) — IN PROGRESS (write-first note; updated as items resolve)
+
+**No BR row existed in this document before this run.** The seat has never been run. Per the RESUME
+mandate I read the backlog (`source_backlog_next.py`: 8 pending verification, 2 pending a legitimacy
+decision — **none BR**), the region table above (**no BR entry**), and the three prior first-run seat
+notes (KR s1, JP s1, RU s1) for propagated operators. There is no prior BR session to resume from, so
+this run opens the ground.
+
+**PRE-EMPTIVE GRAVEYARD CHECK — DONE BEFORE ANY SEARCHING, AND IT KILLED ONE THIRD OF MY OWN BRIEF.**
+My seat brief names as an era target: *"USD-restriction-era P2P premium mechanics (another
+premium-analog provenance)"*. That ground is **already dead, and Brazil specifically is already
+dead**:
+- `docs/graveyard.md:81` — `bitbank_jp / mercado_br premiums`: *"mercado SCREEN-WEAK, same-day −0.27
+  ... **Brazil rejected**. Regional-premium class is now exhausted: kimchi is the lone survivor across
+  KR/JP/BR/TR/Coinbase tested."* **The desk has already screened the Brazilian premium and killed it.**
+- `docs/graveyard.md:244–268` — the CROSS-ERA SYNTHESIS, five instances deep, states the law:
+  *"**do not hunt for a region whose barrier is low enough to arb — that region's premium is already
+  zero**"* and *"a persistent cross-venue premium is rent on whatever barrier is currently binding."*
+- And the lone survivor that the whole family was ranked against — kimchi — was itself **REFUTED** at
+  full 8.2y depth on 2026-07-30 (IC +0.0012, n=2987). So the family's best case is now zero too.
+
+Under **L1.16a** re-opening a graveyard entry requires a **NAMED ENABLING CHANGE** addressing the
+original mechanism of death. I have none: Brazil's mechanism of death was *low barrier height* (BRL is
+freely convertible, no capital controls), and nothing about that has changed. **I am therefore NOT
+spending this run on the BR premium, and I am recording the seed list itself as the defect** — a brief
+pointing a fresh seat at a six-times-killed family is how a desk burns a whole first run re-deriving a
+known null. Routed as a finding, not silently skipped.
+
+**ITEMS TAKEN THIS RUN (bounded per the completion contract; depth per item unbounded):**
+
+1. **§13 ROBOTS SWEEP of every named BR ground, before spending a single query on any of them.**
+   Propagated OP-041. This has now fired on **2 of 2** prior first-run seats (KR: 3 of 5 grounds refuse
+   ClaudeBot by name; JP: 5ch + all sister hosts refuse by name). A third region is the test of whether
+   that is a pattern or a coincidence, and the answer changes where this seat is aimed permanently.
+
+2. **BR STATE + VENUE DATA LAYER — the keyless-API hunt.** This is what actually paid for both prior
+   first runs when their community ground turned out to be closed (KR: Upbit 5,685-event archive;
+   JP: GMO free tick tape from 2018). `data/data_universe_map.json` currently contains **ZERO** Brazilian
+   entries. Priority order by *reverse-engineering cost per unit of effort* (L1.11a), not by familiarity:
+   **(a)** Receita Federal **IN 1888/2019** — every Brazilian exchange is *legally compelled* to report
+   every crypto transaction to the tax authority monthly, and RFB publishes aggregates. A national
+   mandatory-reporting crypto flow series is **structurally unbuyable**. **(b)** BCB open data (SGS
+   series, PTAX, **Pix** instant-payment rails = the crypto on/off-ramp). **(c)** Mercado Bitcoin's
+   public trade tape (the premium is dead; **the tape is not the premium**). **(d)** B3 free historical
+   series. Every one gets the OP-042/OP-045 treatment: does it fire, does it have history, and is the
+   history real rather than `success:1` phantom bars.
+
+3. **BR PRACTITIONER GROUND, mined to reply-depth ≥2 / fork depth.** PT-BR GitHub quant repos and one
+   live community chain, hunting **untested alphas** (L1.34 #6, the richest and most neglected vein) and
+   **engine ideas** — not another premium.
+
+**STANDING OPEN QUESTION (diaspora):** where did the BR crypto community go? Named checkpoints to
+answer against: the 2017 mania boards, the Mercado Bitcoin early era, and the flow between local venues
+and Binance BRL.
+
+_Status: note written 2026-08-01 before any searching. Items resolve below._
+
+
+#### ITEM 1 — CLOSED. §13 ROBOTS SWEEP: **the KR/JP pattern does NOT generalise. BR's community layer is open; the one hard stop is a global platform, not a BR site.** [§33: wired -> docs/research/search_operator_library.md OP-041 adaptation]
+
+Ran OP-041 over **18 hosts** covering every ground in my brief, reading all three layers (the `*`
+block, any block naming an AI crawler, and prose headers). **Full-file grep, not a truncated head** —
+my first pass cut at 1,200 bytes, which would have hidden a by-name block further down a long file
+(GitHub's and MQL5's both are long). Re-ran as a whole-file regex over 17 AI-crawler tokens.
+
+| Host | AI-crawler block | Verdict |
+|---|---|---|
+| `www.youtube.com` | none | **CLEAN** (`/results` disallowed — search pages only) |
+| `github.com` | none | **CLEAN** |
+| `www.b3.com.br` | none | **CLEAN** — the file is literally `User-agent: *` (14 bytes) with **zero directives** |
+| `www.bcb.gov.br`, `api.bcb.gov.br`, `olinda.bcb.gov.br` | none | **CLEAN** (`api.` and `olinda.` serve no robots.txt at all) |
+| `www.gov.br` | none | **CLEAN** |
+| `bitcointalk.org` | none | **CLEAN** (sitemap line only) |
+| `bastter.com`, `br.investing.com`, `www.mql5.com`, `www.smarttbot.com`, `www.nelogica.com.br`, `clear.com.br`, `www.infomoney.com.br`, `t.me` | none | **CLEAN** |
+| `dadosabertos.bcb.gov.br` | none | CLEAN **except `Disallow: /api/`** — the CKAN portal API. Irrelevant: the real data APIs are on `api.`/`olinda.`, different hosts, both unrestricted |
+| **`www.reddit.com`** | — | **HARD STOP: `User-agent: *` → `Disallow: /`, to everyone**, under a Public Content Policy header |
+| `www.mercadobitcoin.com.br`, `www.advfn.com` | — | **CLOUDFLARE-WALLED at the edge** (403 on robots.txt itself) |
+
+**THE FINDING IS THE NEGATIVE ONE, AND IT IS LOAD-BEARING.** Two prior first-run seats found their
+assigned community ground **named-blocked** (KR 3 of 5; JP 5ch + siblings), and OP-041's stated
+expectation was that *"the community layer closes and the API layer stays open."* **In BR the
+community layer is open** — bastter, InfoMoney, MQL5, Investing BR, bitcointalk, YouTube, Telegram all
+carry no AI-crawler directive. So the KR/JP result is **a property of KR/JP consumer-web portals
+(Naver, DCInside, 5ch-on-Cloudflare), not a global rollout**. OP-041's adaptation note is corrected
+accordingly: **check per region, and do not carry a regional verdict forward as a prior.**
+
+**The one hard stop is `reddit.com`, and it is a GLOBAL platform decision, not a Brazilian one** — but
+it bites BR unusually hard, because r/investimentos, r/farialimabets and r/BrasilBitcoin are where a
+large share of BR retail trading talk actually lives. Recorded, not routed around. Two further sites
+(`mercadobitcoin.com.br`, `advfn.com`) are Cloudflare-walled **on the HTML**; per OP-038 that is not a
+wall on the API, and **`api.mercadobitcoin.net` answers keylessly** — confirmed below.
+
+#### ITEM 2 — CLOSED, AND IT IS THE RUN'S FIND. The BR state/venue data layer, and a **free point-in-time vintage stack** nobody has. [§33: screened -> docs/research/data_axis_watchlist.md entry 29]
+
+`data/data_universe_map.json` held **zero** Brazilian entries before this run. Probed keyless, verified
+live, and **read the artifact rather than the marketing page** in every case.
+
+| Source | Status | What it holds |
+|---|---|---|
+| **RFB `criptoativos_dados_abertos`** | **200, keyless, PARSED** | national **mandatory**-reporting crypto panel, **77 months** Ago-2019→Dez-2025, 66 assets, 4,206 asset-months |
+| **BCB SGS** `api.bcb.gov.br/dados/serie/bcdata.sgs.{n}/dados` | **200, keyless** | PTAX FX (series 1), Selic (11) — verified returning live values |
+| **BCB Olinda `Pix_DadosAbertos`** | **200, keyless** | Pix instant-payment open data incl. **`EstatisticasFraudesPix`** — per-month Pix fraud/contestation statistics. **UNMINED** |
+| **Mercado Bitcoin** `api.mercadobitcoin.net/api/v4` + legacy `/api/BTC/trades/` | **200, keyless** | live tick tape; **rolling window starts ~2024-08** (not 2013 — tested year by year), **1000-row cap per call** (the desk's own pagination lesson) |
+| `b3.com.br` | robots-clean, **unprobed** | next ground |
+
+**THE HEADLINE AXIS — and why I did NOT screen it.** Under **IN RFB 1888/2019** (now **DeCripto, IN
+2291/2025**) every Brazil-domiciled exchange must report **every** crypto operation with **no minimum
+value**; residents must report foreign-exchange and **P2P** activity above R$30k/month. Receita
+Federal publishes the aggregate free. Dec-2025 alone: **3,544,986 unique individual taxpayers**,
+**R$43.1bn (~US$8bn)** in one month, split **domestic exchange R$26.1bn / P2P R$10.1bn / foreign
+exchange R$6.9bn**. All-time by declared value: **USDT R$1.004 TRILLION vs BTC R$269bn** — USDT is
+**3.7×** BTC, which says Brazilians are buying a **dollar proxy**, not a speculative asset. That is
+the mechanism (EM dollarization / capital flight on a compelled-reporting basis), and it is joinable
+to BCB PTAX, which I verified keyless in the same run.
+
+**I deliberately did not run `axis_screen`, and that is the disciplined call, not a skipped duty.**
+n = **77 monthly** points with a **~3.5-month publication lag**; the screen needs ~4,268 independent
+observations (R0030). A screen here returns a null at ~zero power — **a manufactured false null on a
+genuinely novel axis (L1.25), burning multiplicity budget to learn nothing.** Reported **UNDERPOWERED,
+not dead**, exactly as the CN seat scoped `unlock_events.json`. The enabling change is named in the
+watchlist: use it **cross-sectionally** (66 assets × 77 months = 4,206 asset-months) where breadth,
+not length, supplies the observations.
+
+**THE DEPTH LAYER — one past where I would have stopped — is where the real find was.** RFB
+republishes the whole file monthly under a **dated filename**, so every release is a **vintage**.
+I pulled three and diffed them:
+- 2023-05-03 → 2023-08-07: **39 of 42** common months revised **within three months**
+- 2023-05-03 → 2026-04-15: **42 of 42** revised; worst **Março-2023 R$15,828mn → R$22,308mn (+40.9%)**
+- 2022-01-04 → 2026-04-15: Ago-2019 total **3,940.3 → 4,036.9 (+2.5%)**, unique CPF **160,589 →
+  182,935 (+13.9%)** — a month **2.4 years old** was still moving
+- revisions are **systematically upward** (late and amended filings accrue for years)
+
+⇒ **Anyone backtesting the current file embeds a look-ahead of up to +41% in the CONDITIONING
+VARIABLE** — the R0289 class, which every return-series leak check passes cleanly because the returns
+are spotless, and which fails toward a **FALSE POSITIVE** that would survive to a forward clock and
+waste a Holm slot. **The fix is free and I proved it works**: 23+ publication dates recovered from
+Wayback CDX, and a vintage that is **404 on the live server** was recovered intact (282,624 B, valid
+`d0cf11e0` OLE2 magic) via the raw-replay modifier `web.archive.org/web/<ts>id_/<url>`. **Point-in-time
+reconstruction back to 2021-09 is PROVEN FEASIBLE, not hoped for.** Generalised as **OP-047**.
+
+**AND THE TRAP FOR WHOEVER BUILDS IT.** Across vintages the file changes **row offset** (10→8),
+**column ORDER** (`CNPJ|CPF` → `CPF|CNPJ` — **swapped**, so a fixed reader takes CNPJ ≈2k as CPF
+≈160k, an ~80× error that still looks like a plausible count), **number encoding** (2022 is *text*
+with BR thousands separators — `float("160.589")` = 160.589, a silent **1000×** error), **labels**,
+and even the **filename date convention** (`DDMMYYYY` → `YYYYMMDD`, with a real publication hiatus
+2023-09 → 2024-10). Parse by **header semantics per vintage, never by cell address**. Generalised as
+the **OP-035 BR extension** — and note the inversion that makes it dangerous: OP-035's earlier
+instances *produced nothing*, so you noticed; **this one produces a full, plausible, wrong series.**
+
+**HOW IT WAS READ AT ALL, and how I know the numbers are right.** The box has **no xlrd, no openpyxl,
+no olefile**, installs are frozen, and `pandas.read_excel` cannot open a legacy `.xls` — so this
+576 KB dataset was, on paper, unreadable. Wrote a ~200-line pure-stdlib **OLE2 + BIFF8** reader
+(**OP-046**). It shipped with a real bug I caught and fixed mid-run: cells keyed on `(row, col)`
+**silently merged all five sheets** into one plausible grid (a header spliced onto another report's
+numbers) — cells carry no sheet id, and the only attribution is the record's **absolute stream offset**
+against the BOUNDSHEET positions. Rather than validate against the PDF twin (whose text layer is
+CID-encoded and would have needed its own unvalidated extractor), I used **the data's own arithmetic**
+(OP-024): PF+PJ=Subtotal and Subtotal₁+Subtotal₂+Domestic=TotalGeral across **78 monthly rows → 0
+violations, worst residual exactly 0.00e+00**. That is stronger than text agreement because it spans
+three independent column groups **and both RK- and NUMBER-encoded cells**, so a decoder bug could not
+cancel.
+
+**INCIDENTAL — a BR-only tokenized-RWA universe, sitting in a government dataset.** Of the 66 assets:
+**`MBPRK02/03/04` = tokenized *precatórios*** (court-ordered Brazilian government debt),
+**`MBCONS02`** (*consórcio* credit), **`IMOB01`** (real estate), **`MCO2`** (tokenized carbon),
+`CBRL`/`BRLT`/`BRZ`/`BRZX` (BRL stablecoins), `WBX`. **`BRZ` carries 92.4M operations — the highest
+op-count of any asset in Brazil** on R$38bn, i.e. a retail *payment rail*, not an investment. None of
+these exist in the desk's universe or in any global vendor's crypto taxonomy.
+
+#### ITEM 3 — **NOT DONE. Named, not disguised.** [§33: deferred(2026-08-04)]
+The PT-BR practitioner ground (GitHub quant repos, forum reply-chains, untested alphas) was **not
+touched**. I chose to spend its budget going one layer deeper on ITEM 2 once the vintage diff started
+producing, per the L1.35 "go one layer past where you would stop" obligation — and that layer is where
+the run's actual find was. **Recording this as an explicit deferral with a date rather than quietly
+dropping it**, because §37's silent-carry defect starts exactly here. It is the first item next run.
+
+### SESSION CLOSE 2026-08-01 session 1 (BR frontier miner) — DEPTH, BATTERY, §13, STANDING TEST, NEXT GROUND
+
+**DEPTH LINE (per promising lead):**
+| Lead | Depth reached | What depth surfaced that the surface did not |
+|---|---|---|
+| §13 robots sweep | **EXHAUSTED** (18 hosts × full-file grep over 17 AI-crawler tokens, 3 layers each) | The surface answer after KR/JP was "expect a block". Depth found **zero BR blocks** and one **global** stop (reddit), correcting OP-041's stated expectation from a global rollout to a **regional** one |
+| RFB open data | **EXHAUSTED for a first pass** (5 sheets, 77 months, 4,206 rows, 3 vintages diffed, Wayback CDX, live-404 recovery, conservation-law validation) | Surface = "a monthly gov statistic". Depth = **42/42 months revised**, a **free point-in-time stack**, an **80× column-order trap**, and a **BR-only tokenized-RWA universe** |
+| The `.xls` blocker | **EXHAUSTED** (format specs → working reader → self-caught sheet-collision bug → arithmetic validation) | "This box cannot read `.xls`" is **false**, and the dataset behind it is 576 KB of national flow data |
+| Mercado Bitcoin API | **surface + boundary test** | Cloudflare-walled HTML **is not** a walled API (OP-038); and the tape is a **rolling window from ~2024-08**, not the deep 2013 history the venue's age implies |
+| BR premium (era target) | **graveyard-checked BEFORE spending** | Killed the item before it cost anything — see below |
+
+**Not breadth-theater:** 2 items closed to genuine exhaustion, 1 explicitly deferred with a date, and
+every number above was read off an artifact fetched this run.
+
+**THE HIGHEST-VALUE THING I DID WAS BEFORE I SEARCHED.** My own brief named *"USD-restriction-era P2P
+premium mechanics"* as an era target. `graveyard.md:81` already records **`mercado_br` premium:
+SCREEN-WEAK, same-day −0.27, Brazil rejected**, and the cross-era synthesis (5 instances) states the
+law: *"do not hunt for a region whose barrier is low enough to arb — that region's premium is already
+zero."* The family's lone survivor, kimchi, was itself **refuted** on 2026-07-30. Under **L1.16a** a
+re-open needs a **named enabling change** addressing the original mechanism of death; Brazil's was
+*low barrier height* (BRL freely convertible), and nothing has changed. **A whole first run was
+available to be burned re-deriving a six-times-known null, and the graveyard check cost one grep.**
+The defect is in the **seed list**, and it is logged as such rather than silently skipped.
+
+**PROACTIVE BATTERY — moves run, and what each produced (a move that produced nothing says so):**
+- **#9 SCOPE THE NEGATIVE RESULT** — twice, both decisive. "This box cannot read `.xls`" was a
+  **library** failure read as a **capability** failure → OP-046. And a Wayback CDX query returning
+  **0 rows** was a **504 gateway timeout**, not an empty archive (OP-044, verbatim) — I re-ran it and
+  got 23 publication dates. Concluding "not archived" there would have killed the run's best find.
+- **#3 CONFIG VS OUTCOME** — demanded the artifact everywhere: downloaded and parsed the `.xls`
+  rather than citing the news summary (which said *"R$1–5bn/month"*; the file says **R$43.1bn**, ~10×
+  stale); year-by-year probed the MB tape rather than assuming a 2013-founded venue serves 2013 data.
+- **#2 ADJACENCY** — the vintage/look-ahead shape was immediately matched to the desk's **R0289**
+  (`pct_circ_now` denominator) and to **R0239**'s point-in-time universe work, and filed as the same
+  defect in a different coordinate rather than as a BR curiosity.
+- **#10 RATCHET CHECK** — the MB rolling window means **its early data is being lost daily**; starting
+  collection is cheap and starting late is irreversible (L1.46). Flagged in the watchlist.
+- **#6 GENERALISE THE RULE** — three fleet operators (OP-046, OP-047, OP-035-BR) + an OP-041
+  correction; nothing left as BR-local trivia.
+- **#1 CONTINGENCY BEFORE FAILURE** — the vintage stack is **Wayback-dependent** and Wayback already
+  404s on the live server for 2 of 4 files tried; the contingency is to mirror the vintages now, while
+  they exist. Named in the watchlist.
+- **#5 COST INVERSION** — **produced nothing this run.** No paid path was proposed or needed; every
+  source found was free and keyless. Recorded, not skipped.
+- **#8 NEGATIVE SPACE** — produced the next-ground list below (B3 and Pix fraud statistics, neither
+  touched by any seat).
+
+**§13 LEDGER FOR THIS RUN:** `reddit.com` **`Disallow: /` — HARD STOP, recorded and not routed
+around** (three BR subreddits left unmined). `mercadobitcoin.com.br` + `advfn.com` **Cloudflare-walled
+on HTML** — not circumvented; the venue's own **public API** was used instead, which is a different
+door the venue itself opens, not a way around the closed one. RFB/BCB/B3/gov.br published under
+Brazil's open-data law (**LAI 12.527/2011**) — **CLEAN**. No AI-crawler directive was overridden, and
+no `User-agent: *` was self-granted against a block naming this family. Nothing accessed against a
+stated refusal.
+
+**STANDING TEST (L1.11a): does it carry information a competitor must pay to reconstruct?**
+**RFB panel — YES, and unusually so.** It is *compelled* reporting (no minimum value for domestic
+exchanges), it covers **P2P and foreign-exchange activity that no venue API can see**, and no vendor
+sells it. **The vintage stack — YES, and more strongly than the panel itself**: vendors sell the
+*revised* series; the point-in-time stack is free, is disappearing from the live server, and most
+builders will not know it is needed. **Pix fraud statistics — YES, and untouched by anyone.**
+**MB tape — NO** (an ordinary venue tape, and shallow at ~2024-08).
+
+**DIASPORA — "where did they go?"** Partially answered, and the answer is **into compelled disclosure
+rather than into another venue**. The RFB panel shows the migration in numbers: **P2P/no-exchange
+volume (R$10.1bn/mo) now exceeds foreign-exchange volume (R$6.9bn/mo)**, while domestic exchanges hold
+R$26.1bn. So BR flow did not flee offshore — it split between **domestic regulated venues** and a
+large **peer-to-peer** layer, both now inside the reporting perimeter (and from 2026 DeCripto widens
+it further to crypto-to-crypto, transfers and payments). The community-platform half of the question
+is **unanswered** and belongs to ITEM 3.
+
+**VENUE DISCOVERY (standing obligation — harvested from inside results, not from the seed list):**
+| Venue | What lives there | How found | Verdict |
+|---|---|---|---|
+| `gov.br/receitafederal/.../criptoativos` | the national mandatory-reporting panel + its vintage stack | RFB regulation search | **RICH — the run's find** |
+| `olinda.bcb.gov.br/.../Pix_DadosAbertos` | Pix open data incl. **`EstatisticasFraudesPix`** (fraud/contestation per month) | BCB API probe | **RICH, UNMINED** |
+| `api.bcb.gov.br/dados/serie/bcdata.sgs.{n}` | keyless BR macro series (PTAX, Selic, …) | BCB API probe | **RICH** — the join target for the dollarization mechanism |
+| `api.mercadobitcoin.net` | keyless BR venue tape behind a Cloudflare-walled site | OP-038 applied to a walled host | THIN (rolling ~2024-08) but real |
+| `web.archive.org/.../<ts>id_/` | raw-replay of deleted government binaries | vintage recovery | **RICH — the route that makes OP-047 work** |
+| `reddit.com` (r/investimentos, r/farialimabets, r/BrasilBitcoin) | BR retail trading talk | robots sweep | **WALLED — `Disallow: /`, §13 hard stop** |
+| `b3.com.br` | BR exchange free historical series | robots sweep | **CLEAN, UNPROBED — next ground** |
+
+**NEXT UN-EXHAUSTED GROUND, in order, for BR session 2:**
+1. **ITEM 3, carried with a date (2026-08-04)** — PT-BR practitioner ground: BR GitHub quant repos to
+   fork/issue depth, MQL5's Portuguese section (B3 algo traders, robots-clean), bastter/InfoMoney
+   forum reply-chains ≥2. Hunting **untested alphas** (L1.34 #6) and engine ideas. **First, not later.**
+2. **Mirror the RFB vintage stack before it decays** — 23+ dates known, 2 of 4 already live-404. This
+   is the one item with a **decaying deadline**; everything else waits patiently.
+3. **B3** — robots-clean and unprobed. Hunt the free historical series and, specifically, whether B3
+   publishes **open interest / positions by investor type** (a real positioning axis that is paid
+   almost everywhere else).
+4. **BCB `EstatisticasFraudesPix`** — a monthly national payment-fraud series, keyless, that no
+   crypto desk anywhere is looking at. Mechanism prior owed before any screen.
+5. **Era-archaeology: NOT STARTED.** Mercado Bitcoin's early era and the 2017-mania BR boards remain
+   untouched. Note the correction above: hunt them for **microstructure and workflow lore**, *not* for
+   the premium, which is graveyarded.
+6. **BR lexicon** — seeds `alavancado`, `laranja`, PT-isms are **UNVERIFIED**. Per **OP-037**,
+   negative-control the supplied glossary before spending budget on it (the CN seat's supplied terms
+   scored **0/7**). Do that before using any of them as search keys.
+
+**Which artifact on disk is different because of what was mined?**
+`docs/research/data_axis_watchlist.md` (**entry 29**, new), `docs/research/search_operator_library.md`
+(**OP-046, OP-047, OP-035-BR extension** + an OP-041 regional correction),
+`docs/research/improvement_inbox.md` (**+3 engine ideas**), `docs/research/recommendation_ledger.json`
+(**R0316, R0317, R0318**), and this coverage doc (**the BR seat's first region row + first session
+note**). No graveyard entry: the BR premium was already there, which was the point.

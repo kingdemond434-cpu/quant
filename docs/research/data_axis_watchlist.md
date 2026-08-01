@@ -1422,3 +1422,84 @@ _Found by JP frontier miner session 1, 2026-08-01._
   then.
 - **Standing value even if the licence fails:** the phantom-history finding is venue-independent
   knowledge and is already generalised into **OP-045**.
+
+---
+
+### 29. RFB "Criptoativos — Dados Abertos" (Brazil, national MANDATORY crypto-reporting panel, 2019-08 → 2025-12) — grade: **verified-live, extracted, arithmetically self-validated; UNDERPOWERED FOR STAGE-A BY CONSTRUCTION (n=77 monthly) — catalogued, NOT screened, and the reason is stated** [§33: screened -> docs/research/prospector_coverage.md BR-s1]
+_BR frontier miner session 1, 2026-08-01. Fetched, parsed and cross-checked this run — every number
+below was read off the artifact, not a summary._
+
+**WHAT IT IS.** Under **IN RFB 1888/2019** (now superseded by **DeCripto, IN RFB 2291/2025**) every
+exchange domiciled in Brazil must report **every crypto operation with no minimum value**, and every
+resident person/company must report operations on **foreign** exchanges or **peer-to-peer** above
+R$30k/month. Receita Federal publishes the aggregate as a free `.xls`/`.pdf`:
+`https://www.gov.br/receitafederal/pt-br/assuntos/orientacao-tributaria/declaracoes-e-demonstrativos/criptoativos/arquivos/criptoativos_dados_abertos_20260415.xls`
+(576,000 B, HTTP 200, keyless, no auth). Five sheets:
+| Sheet | Content | Extracted |
+|---|---|---|
+| Relatorio1 | monthly R$mn split **foreign-exchange (PF/PJ) / no-exchange P2P (PF/PJ) / domestic exchanges** | **77 months, Ago-2019 → Dez-2025** |
+| Relatorio2 | monthly **unique CPF (individuals) / CNPJ (companies)** | 77 months; Dez-2025 = **3,544,986 CPF / 67,324 CNPJ** |
+| Relatorio3 | monthly **gender split** of operation count and value | 77 months |
+| Relatorio4 | **per-asset per-month**: n operations, total R$, mean R$ | **4,206 rows, 66 assets** |
+
+**SCALE (Dez-2025):** foreign-exchange R$6,906mn · P2P/no-exchange R$10,121mn · domestic exchanges
+R$26,076mn · **Total R$43,103mn (~US$8bn) in one month.**
+**ALL-TIME BY ASSET:** USDT **R$1.004 trillion** (44.9M ops) ≫ BTC R$269bn (150.7M ops) > USDC R$80bn
+> ETH R$61bn > XRP R$42.8bn > **BRZ R$38bn on 92.4M operations** (the highest op-count of any asset).
+
+**MECHANISM (stated before any screen, per SCREEN-ON-DISCOVERY (2)).** USDT declared value is **3.7×
+BTC's**. Brazilians are overwhelmingly buying a **dollar proxy**, not a speculative asset — so
+`declared_stablecoin_value / declared_BTC_value` is an **EM dollarization / capital-flight** measure
+on a compelled-reporting basis. Who is forced to trade against it: residents hedging BRL debasement
+who cannot cheaply access USD deposits. Testable against **BCB PTAX** (verified keyless this run:
+`api.bcb.gov.br/dados/serie/bcdata.sgs.1/dados?formato=json`).
+
+**WHY IT IS NOT SCREENED THIS RUN, AND WHY THAT IS THE HONEST CALL.** n = **77 monthly** observations
+with a **~3.5-month publication lag** (the 2026-04-15 file ends at Dez-2025). The desk's screen
+requires ~4,268 independent observations (R0030). Running `axis_screen` here would produce a null
+whose power is ~0 — **a manufactured false null on a genuinely novel axis, which L1.25 names as the
+failure mode, and which would burn multiplicity budget for zero information.** Same call the CN seat
+made on `unlock_events.json` (0/27 → *UNMEASURABLE, not dead*). Reported as **UNDERPOWERED**, not as
+*no edge*. It is a **regime/conditioning variable and a validation ground-truth**, never a timing signal.
+**ENABLING CHANGE that would make it screenable:** use it cross-sectionally (66 assets × 77 months =
+4,206 asset-months) as a **retail-attention conditioner** on the desk's existing perp universe, where
+breadth rather than length supplies the observations.
+
+**THE REAL PRIZE — A FREE POINT-IN-TIME VINTAGE STACK (verified, not asserted).** RFB republishes the
+whole file monthly under a **dated filename**, so every release is a **vintage**. Measured this run:
+- 2023-05-03 vs 2023-08-07 vintages: **39 of 42** common months revised **within 3 months**.
+- 2023-05-03 vs 2026-04-15: **42 of 42 revised.** Largest **Março-2023 R$15,828mn → R$22,308mn (+40.9%)**.
+- 2022-01-04 vs 2026-04-15: Ago-2019 Total Geral **3,940.3 → 4,036.9 (+2.5%)** and unique CPF
+  **160,589 → 182,935 (+13.9%)** — i.e. revisions still accrue on a month **2.4 years old**.
+- Revisions are **systematically upward** (late and amended filings).
+⇒ **Backtesting the CURRENT file is a look-ahead leak of up to +41% in the conditioning variable** —
+the R0289 defect class exactly (a value whose as-of date ≠ its event date), and it fails toward a
+FALSE result. The vintage stack is the fix and it is free. **23+ distinct publication dates recovered
+from Wayback CDX**; a vintage that is **404 on the live server** (`..._04012022.xls`) was fully
+recovered at 282,624 B via the raw-replay modifier
+`https://web.archive.org/web/20220115123532id_/<url>` — **so point-in-time reconstruction back to
+2021-09 is PROVEN feasible, not hoped for.**
+
+**THE TRAP FOR WHOEVER BUILDS IT — a fixed-cell scraper silently produces a wrong series.** Across
+eras the file changes **row offset** (data starts row 10 in 2022, row 8 in 2026), **column ORDER**
+(2022 `MÊS/ANO | CNPJ | CPF` vs 2026 `MÊS/ANO | CPF | CNPJ` — **swapped**, so a fixed reader takes
+CNPJ ≈ 2k as CPF ≈ 160k, an ~80× error that still *looks* like a plausible count), **number type**
+(2022 = text with Brazilian thousands separators `160.589`; 2026 = native numerics) and **labels**
+(`Exchanges / Somente PJ` → `Exchanges no Brasil*`). Parse by **header semantics per vintage**, never
+by cell address. Generalised as the OP-035 BR extension.
+**And the filename convention itself flips:** `DDMMYYYY` up to 2023-09 (`02092021`, `07082023`,
+`25092023`) then **`YYYYMMDD`** from 2024-10 (`20241007`, `20250115`, `20260415`). A regex for one era
+silently zero-hits the other. There is also a real **publication hiatus 2023-09 → 2024-10**.
+
+**BR-ONLY TOKENIZED-RWA UNIVERSE (incidental discovery, in a government dataset).** Of the 66 assets:
+`MBPRK02/03/04` (**tokenized *precatórios* — court-ordered Brazilian government debt**), `MBCONS02`
+(*consórcio* credit), `IMOB01` (real estate), `CBRL`/`BRLT`/`BRZ`/`BRZX` (BRL stablecoins), `MCO2`
+(tokenized carbon), `WBX`. These exist nowhere in the desk's universe and are not in any global
+vendor's crypto taxonomy.
+
+**§13:** `gov.br/robots.txt` — `User-agent: *` with **no AI-crawler block and no relevant Disallow**;
+files are published under Brazil's open-data policy (LAI 12.527/2011). **CLEAN — no restriction.**
+**VERIFICATION STATUS:** endpoint live ✓ · parsed ✓ · **arithmetic self-validated ✓** (OP-024: all
+78 monthly rows satisfy PF+PJ=Subtotal and Subtotal₁+Subtotal₂+Domestic=TotalGeral with worst
+residual **exactly 0.00**) · licence clean ✓ · **ingest NOT started** · **screen deliberately withheld
+as underpowered, with the enabling change named above.**

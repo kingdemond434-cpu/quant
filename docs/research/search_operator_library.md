@@ -975,3 +975,116 @@ Two refinements the fleet should carry:
    overrides it.** The KR seat warned of exactly this loophole on 2026-08-01; this is the
    independent second-region confirmation. Always grep the file for the agent BY NAME before
    reading the generic block.
+
+### OP-046 stdlib-only .xls (OLE2 + BIFF8) extraction — the xlrd blocker is false   [active]
+class: verification / extraction
+origin: BR frontier miner session 1 (2026-08-01), on the Receita Federal crypto open-data file
+validated-gain: the desk's box has **no xlrd, no openpyxl, no olefile** and installs are frozen, so
+  `pandas.read_excel` cannot open a `.xls` at all. That would have reduced a **576 KB national
+  mandatory-reporting dataset** (77 months × 4 report tables + a 4,206-row per-asset panel) to a
+  screenshot-grade citation. Written from the format specs in ~200 lines of pure stdlib (`struct`
+  only) and it read every sheet correctly on the first validated pass.
+technique: exactly the OP-025 premise one format across — do NOT conclude "this box cannot read
+  `.xls`" from a missing library. A legacy `.xls` is two documented layers and both are byte-level:
+    (1) **OLE2 / Compound File**: header at 0x1E→sector shift, 0x2C→#FAT sectors, 0x30→dir start,
+        0x3C→miniFAT, 0x44/0x48→DIFAT. Sector *n* lives at `(n+1)*sectorsize`. Walk DIFAT→FAT→chain.
+        Directory entries are 128 B (UTF-16LE name, type at 0x42, start 0x74, size 0x78).
+        **Streams < 4096 B live in the miniFAT inside the root entry's stream** — miss that and small
+        sheets vanish silently.
+    (2) **BIFF8 records** in the `Workbook` stream: `<HH>` opcode+length, then walk. Cells:
+        `0x00FD` LABELSST (index into SST), `0x0203` NUMBER (f64), `0x027E` RK, `0x00BD` MULRK,
+        `0x0204` LABEL. `0x0085` BOUNDSHEET names each sheet. **RK decoding**: bit0 ⇒ ÷100,
+        bit1 ⇒ signed int `v>>2`, else the top 30 bits are the HIGH half of an IEEE double
+        (`(v & 0xFFFFFFFC) << 32`).
+  **THE TWO BUGS THAT PRODUCE PLAUSIBLE-BUT-WRONG OUTPUT, both hit live in this run:**
+  **(a) SHEET COLLISION.** Keying cells on `(row, col)` merges every sheet into one grid. It does not
+  crash and it does not look wrong — it produced a row reading `CRIPTOATIVO | MÊS/ANO | ... | 899.79
+  | 990.46`, a header spliced onto another report's numbers. **Cells carry no sheet id; the only
+  attribution is the record's absolute stream OFFSET compared against the BOUNDSHEET positions.**
+  **(b) SST CONTINUE BOUNDARIES.** The shared-string table spans `0x003C` CONTINUE records and **the
+  1-byte compressed/wide flag REPEATS at every continuation boundary, mid-string**. Ignore it and
+  strings silently become mojibake from the boundary onward.
+  **THEN VALIDATE WITH OP-024 BEFORE TRUSTING ANY NUMBER** — see the counterfactual.
+adaptations: universal and language-independent (byte-level). Government, regulator, central-bank and
+  exchange publications are **disproportionately legacy `.xls`** precisely because they are old
+  institutional pipelines — which is the same reason they are under-mined. Same move applies to `.doc`
+  (OLE2 + WordDocument stream) and `.ppt`. `.xlsx` needs none of this: it is a zip of XML.
+counterfactual: HIGH, and the **validation** is the transferable half. Rather than diff the PDF twin
+  (whose text layer is CID-encoded and would have needed its own unvalidated extractor), the file's
+  own **arithmetic identities** were used: PF+PJ=Subtotal and Subtotal₁+Subtotal₂+Domestic=TotalGeral
+  across **78 monthly rows → 0 violations, worst residual exactly 0.00e+00**. That is a far stronger
+  proof than text agreement, because it spans three independent column groups **and both RK- and
+  NUMBER-encoded cells**, so a decoder bug in either could not cancel. **Pair every hand-rolled
+  binary extractor with a conservation law from inside the data (OP-024); an extractor validated only
+  by "it looks right" is a phantom-evidence factory (OP-025's own warning).**
+
+### OP-047 a dated-filename publication series is a FREE POINT-IN-TIME PANEL — and its latest file is a look-ahead trap   [active]
+class: data-axis discovery / leak-prevention
+origin: BR frontier miner session 1 (2026-08-01), Receita Federal `criptoativos_dados_abertos_<date>`
+validated-gain: **measured, not argued.** Three vintages of the same series were parsed and diffed:
+  **39 of 42** common months changed within **3 months**; **42 of 42** changed by the latest vintage;
+  worst **Março-2023 R$15,828mn → R$22,308mn (+40.9%)**; and a month **2.4 years old** at first
+  publication still moved (+2.5% value, **+13.9% unique-taxpayer count**). Revisions are
+  **systematically upward** — late and amended filings accrue for years.
+technique: whenever an institution republishes a whole dataset under a **dated filename or URL**
+  (`..._20260415.xls`, `report_2024Q3.pdf`, `data_v7.csv`), you are not looking at one dataset. You
+  are looking at a **stack of vintages**, and:
+    1. **THE CURRENT FILE IS THE LEAKY ONE.** Its historical rows carry information that did not
+       exist on those dates. Backtesting it embeds a look-ahead **in the conditioning variable** —
+       the R0289 class (a value whose as-of date ≠ its event date), which fails toward a **false
+       result** and is invisible to every return-series leak check, because the RETURNS are spotless.
+    2. **THE FIX IS FREE.** Enumerate the vintages (Wayback CDX + the live directory), download each,
+       and key every observation by `(reference_month, vintage_date)`. You now hold what was
+       *actually knowable* on each date — the thing vendors charge for and mostly do not have.
+    3. **RECOVER DEAD VINTAGES WITH THE RAW-REPLAY MODIFIER.** Publishers delete old files: 2 of 4
+       tried were **404 on the live server**. `https://web.archive.org/web/<timestamp>id_/<url>`
+       returns the **unrewritten original bytes** — verified here recovering a 282,624 B `.xls` with
+       an intact `d0cf11e0` OLE2 magic. Without `id_`, Wayback injects its banner and corrupts binaries.
+    4. **THE REVISION IS ITSELF A SERIES** — `revision(t, v)` measures reporting completeness and lag,
+       and is a candidate axis in its own right, not just a hazard to neutralise.
+  **AND THE COST OF NOT DOING IT IS ASYMMETRIC:** a revised-data backtest overstates, so it produces
+  FALSE POSITIVES that survive to a forward clock and waste a Holm slot.
+adaptations: universal, and richest where reporting is **compelled and late-arriving** — tax
+  authorities, central banks, regulators, statistical offices, exchange volume reports, on-chain
+  indexers that reorg. Macro desks call this a real-time/vintage database (ALFRED, OECD); crypto has
+  essentially none, so building one from a government file series is a genuine asymmetry (L1.11a).
+counterfactual: HIGH. The axis reads as an ordinary monthly macro series; only diffing two vintages
+  reveals that **every single historical value is wrong by construction** in the obvious build.
+
+### OP-035 EXTENSION (BR frontier miner, 2026-08-01): the SCHEMA changes between eras, not just the markup — and column ORDER is the silent one
+OP-035 (a selector validated on one era zero-hits another) and its KR extension (the *convention*
+changes) both describe failures that **produce nothing**, so you notice. The BR instance is the
+dangerous inversion: **it produces a full, plausible, wrong series.** Across vintages of one
+government file the following all moved:
+| What changed | 2022 vintage | 2026 vintage | Failure if unhandled |
+|---|---|---|---|
+| **Column ORDER** | `MÊS/ANO \| CNPJ \| CPF` | `MÊS/ANO \| CPF \| CNPJ` | **~80× error** — CNPJ ≈2k read as CPF ≈160k, still a plausible count |
+| Row offset of first data row | 10 | 8 | header parsed as data, or 2 months dropped |
+| Number encoding | **text** `160.589` (BR thousands sep `.`) | native numeric | `float("160.589")` = **160.589**, not 160,589 — a **1000× silent error** |
+| Column label | `Exchanges / Somente PJ` | `Exchanges no Brasil*` | label-matching parser zero-hits |
+| Filename date code | `DDMMYYYY` (`07082023`) | **`YYYYMMDD`** (`20260415`) | enumerator silently misses a whole era |
+**THE RULE: parse by HEADER SEMANTICS per vintage, never by cell address — and re-derive the header
+for every vintage rather than once.** A fixed-offset reader over a multi-vintage series is not a
+scraper, it is a random number generator with good manners. **The `160.589` case is the one to fear:
+locale-dependent decimal separators mean a wrong-but-parseable float, and no exception is ever raised.**
+
+### OP-041 CORRECTION (BR frontier miner, 2026-08-01): the AI-crawler block is REGIONAL, not global — do not carry a region's verdict forward as a prior
+OP-041 fired on two consecutive first-run seats (KR: 3 of 5 grounds named-blocked; JP: 5ch + all
+sister hosts), and its adaptation note generalised that to *"expect the community layer to close and
+the API layer to stay open."* **A third region falsifies the general form.** An 18-host full-file
+sweep of the BR ground (bastter, InfoMoney, MQL5, Investing BR, bitcointalk, YouTube, Telegram,
+SmarttBot, Nelogica, Clear, B3, BCB, gov.br, Mercado Bitcoin) found **zero blocks naming any AI
+crawler**. The KR/JP result is a property of **those regions' consumer-web portals** (Naver,
+DCInside, 5ch behind Cloudflare's managed list), **not a platform-wide rollout**.
+**THE OPERATIVE CORRECTION:** run the sweep **per region, every time**, and treat a prior region's
+verdict as **zero evidence** about the next. Carrying "the community layer is closed" forward would
+have made this seat abandon an open ground and report it as thin — the exact failure L1.25a names
+(a statement about your attention dressed as a statement about the world).
+**AND THE INVERSION WORTH KNOWING:** BR's only hard stop is **`reddit.com` (`User-agent: *` →
+`Disallow: /`)**, a **global platform** decision that happens to bite regions whose retail community
+lives on Reddit. So the axis that predicts a block is **platform**, not **geography** — sweep the
+hosts, never the country.
+**PROCEDURAL NOTE, learned by nearly getting it wrong:** grep the **whole** robots.txt, not a
+truncated head. My first pass cut at 1,200 bytes; GitHub's and MQL5's files are longer than that and
+a by-name block further down would have been invisible. A truncated read that finds nothing is
+**not** a clean verdict.
