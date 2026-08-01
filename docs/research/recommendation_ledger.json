@@ -2714,6 +2714,18 @@
    "commit": "b3d6c8e",
    "due": null,
    "disposed": "2026-07-31T23:50:19.012650+00:00"
+  },
+  {
+   "id": "R0223",
+   "source": "max_audit",
+   "summary": "Answered 'is the gate too harsh': YES, and the harshness is in the campaign SHAPE, not in any threshold. The DSR gate demands an observed annualised Sharpe of 5.04 at the campaign's own dimensions (N=420 x T=310), derived from the desk's own expected_max_sharpe and _DSR_THRESHOLD rather than restated, and that figure is a FLOOR because a real cohort disperses more than the null. Power against a genuinely good strategy is therefore 0.3% at true SR 2.0 and 3.0% at true SR 3.0 -- so 0-of-420 is exactly what this campaign returns whether or not it contained real edges, and cannot be read as evidence the price space is picked clean. The legitimate fix is shape, not tolerance: N=30 x T=1250 puts the hurdle at 2.01 and N=10 x T=2500 at 1.23, while every gate stays exactly where it is. Also CORRECTS gap #71's premise: switching the screen from Romano-Wolf FWER to Benjamini-Hochberg buys no power for the single best candidate, because BH's rank-1 threshold is q/m -- Bonferroni exactly -- and screen_select is wired with method='by', which is stricter still by H_m=6.6. Measured on the cohort: at SR_true=3 the BH screen selects 2 candidates and the injected true edge is not among them. So leaving CampaignGates.screen unwired costs nothing today; rewiring it would add false names without lowering the floor.",
+   "roi_bps": null,
+   "raised": "2026-08-01T00:01:13.293785+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

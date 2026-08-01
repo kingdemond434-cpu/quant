@@ -44,10 +44,15 @@ if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
 import numpy as np  # noqa: E402
+from scipy.stats import norm as _norm  # noqa: E402
 
 from libs.autodiscovery.models import Family, Hypothesis  # noqa: E402
-from libs.autodiscovery.validation import campaign_gate_stats, validate  # noqa: E402
-from libs.validation.dsr import sharpe_ratio  # noqa: E402
+from libs.autodiscovery.validation import (  # noqa: E402
+    _DSR_THRESHOLD,
+    campaign_gate_stats,
+    validate,
+)
+from libs.validation.dsr import expected_max_sharpe, sharpe_ratio  # noqa: E402
 from libs.validation.economic_prior import MechanismType  # noqa: E402
 from libs.validation.positive_control import PPY, exact_sharpe_series, null_cohort  # noqa: E402
 
@@ -153,6 +158,83 @@ def _score(rets: np.ndarray, matrix: np.ndarray,
         }
 
     return {"legacy": _v(legacy), "per_candidate": _v(percand)}
+
+
+#: Campaign shapes to price. Rows are observation counts, columns candidate counts -- the two
+#: knobs the desk actually controls when it designs a sweep.
+_DESIGN_T = (310, 620, 1250, 2500)
+_DESIGN_N = (420, 100, 30, 10, 5)
+#: True annualised Sharpes worth asking about. A world-class systematic book runs 2-3; anything
+#: at 5+ is a once-a-decade find, so a gate that only resolves above 5 resolves nothing real.
+_TRUE_SR_GRID = (1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.0)
+
+
+def dsr_hurdle_annual(n_trials: int, n_obs: int, *, var_sharpes: float | None = None) -> float:
+    """The observed ANNUALISED Sharpe a candidate must post to clear the DSR gate.
+
+    Derived from the desk's OWN primitives rather than restated, so the number moves if the gate
+    moves: ``expected_max_sharpe`` supplies the multiplicity deflator and ``_DSR_THRESHOLD`` the
+    tolerance. Inlining either as a literal would let the table drift silently away from the gate
+    it claims to describe, which is the whole failure mode this script exists to catch.
+
+    ``var_sharpes`` defaults to the NULL dispersion 1/T -- the variance of sample Sharpes across
+    zero-edge candidates. That makes the result a FLOOR: a real cohort disperses more than noise,
+    ``expected_max_sharpe`` scales linearly in that dispersion, so the live hurdle is higher than
+    this, never lower. Reporting the floor keeps the verdict conservative in the safe direction.
+    """
+    sr0 = expected_max_sharpe(n_trials, (1.0 / n_obs) if var_sharpes is None else var_sharpes)
+    # dsr >= threshold  <=>  z >= Phi^-1(threshold), and z = (sr - sr0)*sqrt(T-1)/sqrt(denom)
+    # with denom -> 1 for near-normal returns. Solve for sr, then annualise.
+    z = float(_norm.ppf(_DSR_THRESHOLD))
+    return float((sr0 + z / np.sqrt(max(1, n_obs - 1))) * np.sqrt(PPY))
+
+
+def design_power(n_trials: int, n_obs: int) -> dict[str, Any]:
+    """Why 0-of-420 is uninformative, priced instead of argued.
+
+    The certification above answers "can a true edge pass"; the honest follow-up is "how big must
+    it be", and that is arithmetic on the campaign's SHAPE, not on its thresholds. Two knobs set
+    it: N widens the multiplicity deflator (E[max of N nulls]) and T shrinks the standard error
+    (SE = sqrt(PPY/T)). Their product IS the hurdle.
+
+    This matters because the two available responses to "nothing survived" are not equally
+    legitimate. Lowering a threshold manufactures survivors and is forbidden. Re-shaping the
+    experiment -- fewer, mechanism-motivated candidates over longer history -- buys the same
+    resolution while every threshold stays exactly where it is. The table prices that trade so
+    the choice is made on numbers.
+    """
+    se = float(np.sqrt(PPY / n_obs))
+    hurdle = dsr_hurdle_annual(n_trials, n_obs)
+    power = {f"{s:g}": float(1.0 - _norm.cdf((hurdle - s) / se)) for s in _TRUE_SR_GRID}
+    # The largest true Sharpe the campaign still cannot find half the time. If this sits above
+    # what real strategies achieve, a null result carries no information about the price space.
+    blind_to = [s for s in _TRUE_SR_GRID if power[f"{s:g}"] < 0.5]
+    return {
+        "dsr_threshold": _DSR_THRESHOLD,
+        "n_trials": n_trials,
+        "n_obs": n_obs,
+        "se_annual_sharpe": se,
+        "hurdle_annual_sharpe": hurdle,
+        "hurdle_is_a_floor": "null dispersion assumed; a real cohort disperses more, so the live "
+                             "hurdle is >= this, never below it",
+        "power_by_true_annual_sharpe": power,
+        "underpowered_below_annual_sharpe": (max(blind_to) if blind_to else None),
+        # N enters DIRECTLY here, with no floor, because that is what a redesigned campaign would
+        # actually face: production callers pass the real candidate count (run_discovery
+        # n_trials=len(lib), run_crypto_portfolio matrix.shape[1], orchestrator per-family counts).
+        # The first draft of this table applied THIS SCRIPT's _FAMILY_TRIAL_BUDGET floor of 120 to
+        # every cell, which collapsed N=100/30/10/5 to one number and said -- falsely -- that
+        # narrowing a campaign below 120 buys nothing. The floor is the certifier's scoring
+        # assumption, not the gate's; conflating the two would have argued the desk out of the one
+        # lever that works.
+        "alternative_shapes": {
+            f"T={t}": {f"N={n}": dsr_hurdle_annual(n, t) for n in _DESIGN_N} for t in _DESIGN_T
+        },
+        "certifier_trial_floor": _FAMILY_TRIAL_BUDGET,
+        "reading": ("Hurdle is set by campaign SHAPE, not by the 0.95 tolerance. Cutting N and "
+                    "raising T lowers it without relaxing a single gate; lowering the tolerance "
+                    "would manufacture survivors and is not on the table."),
+    }
 
 
 def main() -> int:
@@ -278,6 +360,10 @@ def main() -> int:
                      "peers": provenance},
         "controls": {"targets": targets, "seeds": args.seeds,
                      "construction": "exact sample Sharpe (libs.validation.positive_control)"},
+        # The other half of "can a true edge pass": HOW BIG must it be. Purely analytic, so it is
+        # correct even on the rows this run did not sweep -- and it is what turns "0 of 420" from
+        # a claim about the price space into a claim about the campaign's resolution.
+        "design": design_power(max(_FAMILY_TRIAL_BUDGET, matrix.shape[1] + 1), n_obs),
         "legacy_welded_path": _summary("legacy"),
         "per_candidate_path": _summary("per_candidate"),
         "rows": rows,
