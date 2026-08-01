@@ -59,6 +59,18 @@ POSITIVE = {
     r"\b(regime|hidden markov|structural break|non[- ]?stationar)": 2.0,
     r"\b(entropy|hawkes|self[- ]exciting|granger|cointegrat|order flow|microstructure)\b": 2.0,
     r"\b(python|code|implementation|from scratch|walkthrough)\b": 1.0,
+    # --- Chinese. NO \b: word boundaries are defined by non-word characters and CJK text has
+    # none, so every \b-anchored pattern above silently never matches a Chinese title. That bug
+    # scored 102 fetched Bilibili videos at exactly zero and made the source look empty.
+    "(回测|樣本外|样本外|滚动回测|前推分析)": 5.0,
+    "(置换检验|蒙特卡洛|蒙特卡羅|随机检验)": 5.0,
+    "(过拟合|過擬合|曲线拟合|数据挖掘偏差|幸存者偏差)": 4.0,
+    "(显著性|统计检验|夏普|夏普比率|信息比率|p值)": 4.0,
+    "(实证|实测|测试了|我测试|验证|复现)": 3.0,
+    "(回撤|波动率目标|风险平价|仓位管理|凯利)": 3.0,
+    "(因子|多因子|阿尔法|alpha挖掘|截面)": 3.0,
+    "(高频|微观结构|订单流|做市|套利)": 2.0,
+    "(量化|程序化交易|算法交易)": 1.0,
 }
 
 #: Patterns that predict NOTHING converts. The profit-claim family is weighted hardest because it
@@ -72,6 +84,13 @@ NEGATIVE = {
     r"\b(prop firm|funded account|challenge|scalping strategy ever)\b": -2.0,
     r"\b(best|ultimate|only|#1|top \d+)\b.*\b(strategy|indicator)\b": -2.0,
     r"\b(my (journey|story)|how i (started|quit)|interview|reveals?)\b": -2.0,
+    # --- Chinese negatives. The Bilibili quant results are dominated by course-funnel uploads
+    # ("108集", "保姆级教程", "B站最全"), which is the same narrative/marketing category that
+    # converted zero times in the 2026-08-01 batch.
+    "(保姆级|零基础|入门教程|手把手|从入门到|全套教程|\\d+集)": -5.0,
+    "(最全|天花板|强推|一条龙|白嫖|附源码|资料领取|私信)": -4.0,
+    "(月入|暴富|翻倍|躺赚|稳赚|财富自由|割韭菜)": -6.0,
+    "(培训|课程|报名|加微信|加群|领取)": -4.0,
 }
 
 #: Below this, the queue does not surface it. Set so the batch's known non-converters fall out

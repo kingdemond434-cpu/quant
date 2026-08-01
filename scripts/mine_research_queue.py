@@ -40,7 +40,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from libs.research.video_triage import SURFACE_THRESHOLD, triage
+from libs.data import bilibili
+from libs.research.video_triage import SURFACE_THRESHOLD, score_title, triage
 
 _ROOT = Path(__file__).resolve().parent.parent
 _OUT = _ROOT / "reports" / "research_queue.json"
@@ -152,6 +153,15 @@ def _unescape(raw: str) -> str:
 #: knew about; search is what makes the miner exploratory. Multilingual on purpose -- the
 #: Chinese-language quant scene publishes to YouTube too, and those results never surface from
 #: English queries.
+BILIBILI_QUERIES = (
+    "量化交易 策略",
+    "量化 回测 python",
+    "加密货币 量化",
+    "量化投资 因子",
+    "程序化交易 策略",
+    "期货 量化 策略",
+)
+
 SEARCH_QUERIES = (
     "quantitative trading backtest python",
     "algorithmic trading strategy tested",
@@ -241,6 +251,26 @@ def main(argv: list[str] | None = None) -> int:
     counts: dict[str, int] = {}
     all_ids: set[str] = set()
 
+    # --- Bilibili (B站): WBI-signed search. Scores title+description+tags, which is several
+    # times more signal per candidate than a YouTube title alone.
+    bili: dict[str, int] = {}
+    for kw in BILIBILI_QUERIES:
+        vids, err = bilibili.search(kw)
+        if err:
+            blocked[f"bilibili:{kw}"] = err
+            continue
+        bili[kw] = len(vids)
+        all_ids.update(v.bvid for v in vids)
+        for v in vids:
+            if v.bvid in seen:
+                continue
+            s, hits = score_title(v.searchable)
+            if s >= args.threshold:
+                queue.append({"channel": f"bilibili:{kw}", "video_id": v.bvid,
+                              "title": v.title[:160], "score": round(s, 1), "url": v.url,
+                              "author": v.author, "views": v.views, "why": hits})
+        time.sleep(0.5)
+
     discovered: dict[str, int] = {}
     for q in SEARCH_QUERIES:
         vids, err = search_youtube(q)
@@ -287,6 +317,7 @@ def main(argv: list[str] | None = None) -> int:
         },
         "channels_scanned": counts,
         "search_discovered": discovered,
+        "bilibili_discovered": bili,
         "channels_blocked": blocked,
         "threshold": args.threshold,
         "n_new_surfaced": len(queue),
