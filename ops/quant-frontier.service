@@ -6,4 +6,16 @@ After=network-online.target
 Type=oneshot
 User=quant
 WorkingDirectory=/home/quant/quant-platform
+# PARITY WITH EVERY OTHER MINER UNIT, and its absence is why all seven frontier seats had
+# last_run=null in data/miner_runway.json. prospector, litminer, dataaxis and blindrediscovery
+# all carry these two lines; this unit carried neither.
+#   PATH  -- systemd starts a service with a near-empty environment, so without this the `claude`
+#            binary in ~/.local/bin is simply not findable and the rotation dies on
+#            "command not found" before it reads a single prompt.
+#   EnvironmentFile -- carries CLAUDE_CODE_OAUTH_TOKEN. The leading `-` makes it OPTIONAL so the
+#            unit still starts when the file is absent; that is deliberate, because a miner that
+#            fails loudly at run time leaves a log, whereas a unit that refuses to start leaves
+#            nothing for check_miner_runway to read.
+Environment=PATH=/home/quant/.local/bin:/home/quant/quant-platform/.venv/bin:/usr/bin:/bin
+EnvironmentFile=-/home/quant/.claude_token.env
 ExecStart=/bin/bash /home/quant/quant-platform/ops/run_frontier_rotation.sh

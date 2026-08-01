@@ -3414,6 +3414,18 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0281",
+   "source": "principal",
+   "summary": "SEVEN MINER SEATS WERE DEAD FROM A MISSING SYSTEMD ENVIRONMENT, and I named the wrong blocker first. CORRECTION: I said the miners were blocked on an OpenRouter key (~$5/mo), inferred from an outstanding-items note rather than read from the code. Wrong. ops/run_frontier_miner.sh invokes 'claude --effort max -p ...' -- the Claude Code CLI on the subscription seat -- and check_miner_runway._creds_present() tests for a Claude credential home, ANTHROPIC_API_KEY, or CLAUDE_CODE_OAUTH_TOKEN. Nothing to purchase. THE ACTUAL DEFECT: ops/quant-frontier.service, which drives all SEVEN regional seats, was missing BOTH lines its four sibling units carry -- 'Environment=PATH=/home/quant/.local/bin:...' and 'EnvironmentFile=-/home/quant/.claude_token.env'. prospector, litminer, dataaxis and blindrediscovery all have them; frontier had only User=quant. systemd starts a service with a nearly empty environment, so the claude binary in ~/.local/bin was simply not findable and the rotation died on 'command not found' before reading a single prompt. That is why data/miner_runway.json shows last_run=null for every frontier seat, and it means every prompt improvement made to those seven regions today -- venue discovery, CN slang, scam-filter removal, technical long-tail queries -- was landing on seats that could not execute. FIXED in the unit, with the reason recorded inline. The leading '-' on EnvironmentFile is kept deliberately: a unit that REFUSES to start when the token is absent leaves nothing in the log and nothing for check_miner_runway to read, whereas failing loudly at run time leaves evidence. ALSO ADDED tests/governance/test_service_unit_parity.py -- 4 tests asserting every Claude-invoking unit carries PATH, the token EnvironmentFile, the optional '-' prefix, and a consistent User=. Verified it FAILS on the pre-fix unit and passes after, so it genuinely catches this class. One unit drifting from four siblings is not something a human notices by reading; it is what a test notices for free. REMAINING HUMAN STEP: /home/quant/.claude_token.env must exist on the box containing CLAUDE_CODE_OAUTH_TOKEN=... -- the other four seats also report creds-missing, which means that file is absent, and the '-' prefix means their units start anyway and fail at run time. Secret goes from the principal's screen into that gitignored file directly; never through chat, never through git.",
+   "roi_bps": null,
+   "raised": "2026-08-01T10:28:45.161538+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
