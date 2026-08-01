@@ -2877,11 +2877,11 @@
    "summary": "SYNTH0801 P1-5 [meta M2/M3, SL-verified]: ONE honest conversion meter. check_conversion.py reports past_due=0 while recommendations.py reports 9 DEFECTS on the same file the same minute, and run_max_push.py:239 consumes the FORGIVING one. Three one-line fixes: (a) compare due as a datetime not a string (a row due today is not < today, so every scheduled row is invisible on the day it comes due); (b) count 'open' rows past grace (all 78 carry due=None and are dropped by the isinstance guard, so the 24h rule is unmeasured); (c) add done/screened to _TERMINAL -- 15 rows sit in statuses the tooling cannot write, counted as backlog forever.",
    "roi_bps": 4000.0,
    "raised": "2026-08-01T03:34:09.145142+00:00",
-   "status": "open",
+   "status": "implemented",
    "reason": null,
-   "commit": null,
+   "commit": "d13999b",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-01T08:08:16.072187+00:00"
   },
   {
    "id": "R0237",
