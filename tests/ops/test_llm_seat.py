@@ -36,17 +36,23 @@ def test_a_dark_desk_reports_the_blocker_rather_than_raising() -> None:
 def test_the_environment_is_read_first(monkeypatch) -> None:
     """THE WHOLE POINT. The secrets file lives on a box that gets reclaimed; an exported variable
     is set once and survives every container the desk is ever given."""
-    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+    monkeypatch.setenv("OPENROUTER_API_KEY", "or-test")
     seat = llm_seat.primary_seat()
     assert seat is not None
-    assert seat.name == "openai" and seat.source == "env:OPENAI_API_KEY"
-    assert seat.base_url == "https://api.openai.com/v1"
+    assert seat.name == "openrouter" and seat.source == "env:OPENROUTER_API_KEY"
+    assert seat.base_url == "https://openrouter.ai/api/v1"
 
 
-def test_openai_outranks_the_others(monkeypatch) -> None:
-    monkeypatch.setenv("OPENROUTER_API_KEY", "or-test")
+def test_openrouter_outranks_the_others(monkeypatch) -> None:
+    """A DIRECT vendor key bounds auto-upgrade to one catalogue: OpenAI upgrades gpt-5 -> gpt-6
+    forever and can never reach a better model from anyone else. OpenRouter lists the whole
+    landscape, so the same version parser upgrades across the MARKET rather than within a
+    supplier -- which is what a standing 'always run the best available' order actually requires."""
     monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
-    assert llm_seat.primary_seat().name == "openai"
+    monkeypatch.setenv("OPENROUTER_API_KEY", "or-test")
+    seat = llm_seat.primary_seat()
+    assert seat.name == "openrouter"
+    assert seat.base_url == "https://openrouter.ai/api/v1"
 
 
 def test_the_secrets_file_still_works(monkeypatch) -> None:
@@ -149,7 +155,7 @@ def test_a_nonsense_cap_falls_back_to_the_default(monkeypatch) -> None:
 
 def test_chat_without_a_seat_says_exactly_what_to_export() -> None:
     text, err = llm_seat.chat("hi")
-    assert not text and "OPENAI_API_KEY" in err
+    assert not text and "OPENROUTER_API_KEY" in err
 
 
 def test_an_http_error_carries_its_body(monkeypatch) -> None:

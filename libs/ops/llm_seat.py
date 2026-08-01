@@ -15,13 +15,14 @@ secrets file second, and every dark organ can light from a single exported varia
 the same mechanism that just unblocked GitHub search, and a mechanism the principal already
 operates.
 
-WHY OPENAI IS A FIRST-CLASS PROVIDER HERE. The existing panel code is written against
-OpenAI-COMPATIBLE `/chat/completions`, which is genuinely one code path for OpenRouter, xAI,
-DeepSeek, Qwen, Mistral and OpenAI itself. But every default in the repo points at OpenRouter, so
-an OpenAI key -- by far the easiest one for a principal to obtain -- had nowhere to go. It does
-now, and it is the cross-family seat: an independent model FAMILY, which is the entire point of
-lever 2. A second Anthropic seat would agree with the first for reasons that have nothing to do
-with the market.
+ONE CODE PATH, AND OPENROUTER IS THE RECOMMENDED KEY. `/chat/completions` is OpenAI-COMPATIBLE
+across OpenRouter, xAI, DeepSeek, Qwen, Mistral and OpenAI itself, so any of them work. OpenRouter
+is preferred for a reason that only shows up over time: a DIRECT vendor key bounds the
+auto-upgrade below to that vendor's catalogue, so an OpenAI key would climb gpt-5 -> gpt-6 -> gpt-7
+forever and never reach a better model from anyone else. OpenRouter lists the whole landscape, so
+the same version parser upgrades across the MARKET. It is also the only single credential that
+delivers cross-family (lever 2), and a second seat from the desk's OWN family would agree with it
+for reasons that have nothing to do with the market.
 
 THE FLAGSHIP IS DISCOVERED AND UPGRADES ITSELF. A pinned model string is a time bomb: it works
 until the provider retires it, and then every organ fails with an error that reads like an outage.
@@ -62,12 +63,21 @@ _ROOT = Path(__file__).resolve().parents[2]
 SECRETS = _ROOT / "data" / "secrets" / "llm_panel.json"
 SPEND_LEDGER = _ROOT / "data" / "llm_spend.jsonl"
 
-#: Environment variables consulted, in order. `OPENAI_API_KEY` is first because it is the one a
-#: principal is most likely to already have, and because OpenAI is the cross-family seat the
-#: discretionary ceiling-pusher has been asking for.
+#: Environment variables consulted, in order. OPENROUTER IS FIRST, and the reason is the auto-
+#: upgrade requirement rather than convenience.
+#:
+#: Version parsing makes the flagship selection automatic, but a DIRECT vendor key bounds that
+#: automation to one vendor's catalogue: an OpenAI key upgrades gpt-5 -> gpt-6 -> gpt-7 forever and
+#: can never reach a better model from anyone else. OpenRouter lists the whole landscape, so the
+#: same parser upgrades across the MARKET rather than within a supplier. Given a standing order to
+#: always run the best available model, a single-vendor key quietly caps that at "best available
+#: from this vendor" -- which is the "then never" failure with a wider blast radius.
+#:
+#: It is also the only key that satisfies cross-family (lever 2) from one credential, and the
+#: eleven dark organs already point at OpenRouter base URLs -- kimi_hunter cannot run without it.
 KEY_ENV_VARS: tuple[tuple[str, str, str], ...] = (
-    ("OPENAI_API_KEY", "openai", "https://api.openai.com/v1"),
     ("OPENROUTER_API_KEY", "openrouter", "https://openrouter.ai/api/v1"),
+    ("OPENAI_API_KEY", "openai", "https://api.openai.com/v1"),
     ("DEEPSEEK_API_KEY", "deepseek", "https://api.deepseek.com/v1"),
     ("XAI_API_KEY", "xai", "https://api.x.ai/v1"),
 )
@@ -319,8 +329,10 @@ def chat(
     """
     s = seat or primary_seat()
     if s is None:
-        return "", ("no seat: export OPENAI_API_KEY (or OPENROUTER_API_KEY / DEEPSEEK_API_KEY / "
-                    "XAI_API_KEY) in the environment, or write data/secrets/llm_panel.json")
+        return "", ("no seat: export OPENROUTER_API_KEY (recommended -- one key reaches every model "
+                    "family and auto-upgrades across the market, not just within one vendor), "
+                    "or OPENAI_API_KEY / DEEPSEEK_API_KEY / XAI_API_KEY, or write "
+                    "data/secrets/llm_panel.json")
     spent, cap = month_spend_usd(), monthly_cap_usd()
     if spent >= cap:
         return "", (f"monthly cap reached: ${spent:.2f} of ${cap:.2f}. Raise it with "
@@ -402,7 +414,9 @@ def status() -> dict[str, Any]:
     }
     if not got:
         out["blocker"] = (
-            "DARK: no external-model seat. Eleven organs depend on this -- run_external_panel, "
+            "DARK: no external-model seat. Export OPENROUTER_API_KEY (one key reaches every "
+            "family and auto-upgrades across the market). Eleven organs depend on this -- "
+            "run_external_panel, "
             "strategic_director, llm_code_auditor, meta_architect, breadth_expander, kimi_hunter, "
             "collector_author, deep_review, run_micro_audit, refresh_panel_roster, "
             "llm_blind_researcher -- and one exported OPENAI_API_KEY lights all of them.")
