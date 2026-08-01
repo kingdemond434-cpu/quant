@@ -48,10 +48,16 @@ import numpy as np
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 from libs.research.axis_screen import stage_a_screen  # noqa: E402
+from libs.research.cohort_independence import (  # noqa: E402
+    BENCHMARK_MEAN_CORR,
+    BENCHMARK_N,
+    effective_bets,
+)
 from libs.research.upbit_data import upbit_daily_history  # noqa: E402
 
 _UA = {"User-Agent": "Mozilla/5.0 (quant-desk kr-perasset)"}
 _OUT = ROOT / "reports/axis_screens/kr_perasset_premium_depth.json"
+_CACHE = ROOT / "data/kr_perasset_depth_raw.json"   # raw fetch legs; verdict is never cached
 _MIN_DAYS = 120          # pre-declared minimum aligned days per asset
 _DEEP_CUTOFF = "2019-01-01"
 
@@ -120,24 +126,106 @@ def usdkrw() -> dict[str, float]:
     return full
 
 
+def _contribution_series(sig: np.ndarray, tgt: np.ndarray,
+                         dates: list[str], zwin: int = 20) -> dict[str, float]:
+    """Per-date IC contribution z(sig)[t] * fwd_target[t], keyed by date.
+
+    Reproduces stage_a_screen's own convention EXACTLY -- trailing z over `zwin`, np.roll(target,-1)
+    for the forward leg, and the [zwin:-1] valid window -- because the whole point is to measure the
+    cross-asset dependence OF THE IC ESTIMATES the harness produced, not of some adjacent quantity.
+    """
+    s = np.asarray(sig, dtype="float64")
+    fwd = np.roll(np.asarray(tgt, dtype="float64"), -1)
+    z = np.zeros(len(s))
+    for t in range(zwin, len(s)):
+        w = s[t - zwin:t]
+        sd = w.std()
+        z[t] = (s[t] - w.mean()) / sd if sd > 0 else 0.0
+    return {dates[t]: float(z[t] * fwd[t]) for t in range(zwin, len(s) - 1)}
+
+
+def _panel_independence(contrib: dict[str, dict[str, float]]) -> dict:
+    """How many INDEPENDENT bets is this 38-asset sign test actually made of?
+
+    THE PRE-DECLARED CAVEAT, FINALLY MEASURED. The prospector's construction declared up front that
+    "the BTC-relative construct only partially removes the common alt factor", so the naive sign
+    test -- whose variance n/4 assumes n INDEPENDENT assets -- was known from the start to be an
+    UPPER BOUND on significance. Computing it closes that gap rather than moving a goalpost: the
+    correction can only ever make the verdict HARDER to clear, which is the safe direction, and the
+    criterion itself ("significantly >50% positive") is unchanged.
+    """
+    markets = sorted(contrib)
+    if len(markets) < 2:
+        return {"status": "UNMEASURABLE: fewer than 2 assets"}
+
+    # PAIRWISE-COMPLETE, because the panel is UNBALANCED and a global intersection is empty. The
+    # first version required one common date set across all 38 and got ZERO: Upbit purges candles
+    # on delisting, so several assets' windows END years before the survivors', and demanding a
+    # global overlap silently reduces to the shortest dead asset. (It reported UNMEASURABLE rather
+    # than a number, which is the behaviour that made this fixable -- an estimator that had
+    # returned 0.0 for "no overlap" would have printed n_eff = n and read as full independence,
+    # the most flattering possible answer.)
+    common_min = 60
+    corrs: list[float] = []
+    pairs_skipped = 0
+    for i in range(len(markets)):
+        for j in range(i + 1, len(markets)):
+            a, b = contrib[markets[i]], contrib[markets[j]]
+            shared = sorted(set(a) & set(b))
+            if len(shared) < common_min:
+                pairs_skipped += 1
+                continue
+            va = np.array([a[d] for d in shared])
+            vb = np.array([b[d] for d in shared])
+            if va.std() == 0 or vb.std() == 0:
+                pairs_skipped += 1
+                continue
+            corrs.append(float(np.corrcoef(va, vb)[0, 1]))
+    if len(corrs) < 10:
+        return {"status": f"UNMEASURABLE: only {len(corrs)} usable pairs "
+                          f"({pairs_skipped} skipped for <{common_min} shared dates)"}
+    mean_corr = float(np.mean(corrs))
+    n_eff = effective_bets(len(markets), mean_corr)
+    return {"status": "measured", "n_assets": len(markets),
+            "n_pairs_used": len(corrs), "n_pairs_skipped": pairs_skipped,
+            "mean_pairwise_corr": round(mean_corr, 4),
+            "n_eff": round(float(n_eff), 2),
+            "benchmark_101_alphas_n_eff": round(effective_bets(BENCHMARK_N,
+                                                               BENCHMARK_MEAN_CORR), 2)}
+
+
 def main() -> None:
-    print("probing Upbit KRW universe for deep history...")
-    deep = deep_krw_markets()
-    print(f"  {len(deep)} markets with history before {_DEEP_CUTOFF}")
-    if "KRW-BTC" not in deep:
-        raise SystemExit("BTC reference missing -- cannot build a BTC-relative construct")
+    # CACHE THE FETCH, NOT THE VERDICT. The network leg costs ~25 minutes (277 Upbit depth probes
+    # plus paginated Binance history per asset); the analysis costs seconds. Caching the raw legs
+    # means an adjudication can be re-derived -- a corrected estimator, a different horizon -- for
+    # free, instead of the re-run cost silently discouraging the re-analysis. Delete the file to
+    # refetch. The VERDICT is never cached: it is always recomputed from the raw legs.
+    if _CACHE.exists():
+        print(f"using cached fetch {_CACHE.relative_to(ROOT)} (delete it to refetch)")
+        raw = json.loads(_CACHE.read_text("utf-8"))
+        fx, ub, gb = raw["fx"], raw["ub"], raw["gb"]
+        print(f"  {len(gb)} binance-paired markets | BTC depth {len(ub['KRW-BTC'])} days")
+    else:
+        print("probing Upbit KRW universe for deep history...")
+        deep = deep_krw_markets()
+        print(f"  {len(deep)} markets with history before {_DEEP_CUTOFF}")
+        if "KRW-BTC" not in deep:
+            raise SystemExit("BTC reference missing -- cannot build a BTC-relative construct")
 
-    fx = usdkrw()
-    ub = {m: upbit_daily_history(m, pages=20) for m in deep}
-    print(f"  upbit fetched; BTC depth {len(ub['KRW-BTC'])} days | fx {len(fx)}")
+        fx = usdkrw()
+        ub = {m: upbit_daily_history(m, pages=20) for m in deep}
+        print(f"  upbit fetched; BTC depth {len(ub['KRW-BTC'])} days | fx {len(fx)}")
 
-    gb: dict[str, dict[str, float]] = {}
-    for m in deep:
-        sym = m.replace("KRW-", "") + "USDT"
-        d = binance_daily(sym)
-        if len(d) >= _MIN_DAYS:
-            gb[m] = d
-    print(f"  binance pairs available: {len(gb)} of {len(deep)}")
+        gb = {}
+        for m in deep:
+            sym = m.replace("KRW-", "") + "USDT"
+            d = binance_daily(sym)
+            if len(d) >= _MIN_DAYS:
+                gb[m] = d
+        print(f"  binance pairs available: {len(gb)} of {len(deep)}")
+        _CACHE.parent.mkdir(parents=True, exist_ok=True)
+        _CACHE.write_text(json.dumps({"fx": fx, "ub": ub, "gb": gb}), encoding="utf-8")
+        print(f"  raw legs cached -> {_CACHE.relative_to(ROOT)}")
     if "KRW-BTC" not in gb:
         raise SystemExit("BTCUSDT missing")
 
@@ -148,6 +236,7 @@ def main() -> None:
 
     btc_dates = sorted(set(ub["KRW-BTC"]) & set(gb["KRW-BTC"]) & set(fx))
     results, skipped = [], []
+    contrib: dict[str, dict[str, float]] = {}
     for m in sorted(gb):
         if m == "KRW-BTC":
             continue
@@ -167,6 +256,7 @@ def main() -> None:
                         "residual_ic": float(r.get("residual_ic") or 0.0),
                         "same_period_corr": float(r.get("same_period_corr") or 0.0),
                         "powered": bool(r.get("powered")), "verdict": r.get("verdict")})
+        contrib[m] = _contribution_series(sig, ri - rb, dates)
 
     if not results:
         raise SystemExit("no asset cleared the minimum-days floor -- reporting nothing")
@@ -181,6 +271,14 @@ def main() -> None:
         verdicts[x["verdict"]] = verdicts.get(x["verdict"], 0) + 1
     total_obs = int(sum(x["n"] for x in results))
 
+    indep = _panel_independence(contrib)
+    n_eff = indep.get("n_eff")
+    # The sign test's variance is n/4 under INDEPENDENCE. With n_eff independent assets the
+    # statistic carries only sqrt(n_eff/n) of the resolution the naive z claims.
+    sign_z_eff = (float(sign_z) * np.sqrt(n_eff / n)) if n_eff else None
+    decisive_z = sign_z_eff if sign_z_eff is not None else float(sign_z)
+    consistent = abs(decisive_z) > 1.96
+
     summary = {
         "experiment": "kr_perasset_premium full-depth panel (R0069 decisive experiment)",
         "construction": "pre-registered verbatim from prospector 2026-07-30; LENGTH extension",
@@ -189,6 +287,12 @@ def main() -> None:
         "median_ic": round(float(np.median(ics)), 4), "mean_ic": round(float(ics.mean()), 4),
         "median_residual_ic": round(float(np.median(res_ics)), 4),
         "share_positive": round(pos / n, 3), "sign_z": round(float(sign_z), 2),
+        "independence": indep,
+        "sign_z_effective": (round(float(sign_z_eff), 2) if sign_z_eff is not None else None),
+        "sign_z_note": ("naive sign_z assumes n INDEPENDENT assets; the construction pre-declared "
+                        "that BTC-relativisation only partially removes the common alt factor, so "
+                        "the naive value is an UPPER BOUND. The effective z is the decisive one."),
+        "verdict_overall": ("CONSISTENT-POSITIVE" if consistent else "HONEST NULL"),
         "verdicts": verdicts,
         "recent_era_comparison": {"n_assets": 175, "median_ic": 0.0050, "share_positive": 0.54,
                                   "sign_z": 0.98},
@@ -205,9 +309,13 @@ def main() -> None:
     print(f"  mean IC     {summary['mean_ic']:+.4f}")
     print(f"  median residual IC {summary['median_residual_ic']:+.4f}")
     print(f"  share positive {pos}/{n} ({summary['share_positive']:.0%}), sign-z {sign_z:+.2f}")
+    print(f"  independence: {indep}")
+    if sign_z_eff is not None:
+        print(f"  sign-z at n_eff={n_eff}: {sign_z_eff:+.2f}  <- the decisive statistic")
+    else:
+        print("  n_eff UNMEASURABLE -- falling back to the naive z, which OVERSTATES significance")
     print(f"  verdicts: {verdicts}")
-    print(f"  -> {'CONSISTENT-POSITIVE' if abs(sign_z) > 1.96 else 'HONEST NULL'} "
-          f"(pre-declared rule)")
+    print(f"  -> {summary['verdict_overall']} (pre-declared rule, on the effective z)")
     print(f"  written -> {_OUT.relative_to(ROOT)}")
 
 
