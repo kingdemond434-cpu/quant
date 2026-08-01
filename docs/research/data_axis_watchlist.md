@@ -1099,3 +1099,35 @@ NOT mean capital (L1.6 -- a candidate is not an edge). R-rows: R0115-R0118.
   not continuous-statistic shaped.
 - **§33 disposition:** deferred(2026-08-10) — variable construction owed with the family's next
   scheduled work (ledger row this run). Tier 2.
+
+## WorldQuant BRAIN + the 101-alpha correlation benchmark (2026-08-01, transcript batch)
+
+- **What it is:** a PUBLIC, free-to-join alpha research platform (~250k users across 100+
+  countries) exposing ~125,000 data fields, an expression language, and an instant backtest
+  simulator. Submitted alphas are scored and ranked; strong contributors are paid as research
+  consultants. §13 status: public signup, own terms, nothing cracked or closed-group — the same
+  class of source as any other public research venue. Standing miner lead for dataaxis and
+  prospector: harvest the OPERATOR VOCABULARY and the DATA-FIELD TAXONOMY, which are the parts
+  that transfer. Alpha expressions written there belong to whoever wrote them; the field taxonomy
+  is a map of what alternative data institutions actually consider tradeable, and that map is the
+  asset.
+- **ADOPTED IMMEDIATELY, and it is the most useful number in the batch:** a published study of 101
+  real production alphas measured their AVERAGE PAIRWISE CORRELATION at **15.9%**. Under an
+  equicorrelation approximation that is `101 / (1 + 100 x 0.159)` = **6.0 independent bets**. A
+  professional, deliberately-diversified hundred-signal library is SIX bets.
+  Now in `libs/research/cohort_independence.py` as `BENCHMARK_MEAN_CORR`, so every campaign this
+  desk runs can be read against an external standard instead of against zero.
+- **Why it matters here:** it reproduces the desk's own measured "campaign WIDTH buys nothing"
+  result from a completely independent direction. At that same correlation, going from 101 to 420
+  candidates buys 6.0 -> 6.3 independent bets — three tenths of one bet for four times the
+  multiplicity burden. The honest description of a 420-candidate campaign is not "420 hypotheses";
+  it is N_eff, and the gap between the two is the size of the illusion. Locked by test.
+- **Alpha decay, with its two causes named:** crowding (others find the edge and trade it away)
+  and being flawed from the start (overfit, or the regime that produced it ended). The platform's
+  entire thesis is that discovery RATE must outrun decay rate — which is this desk's second
+  supreme objective, arrived at independently. Confirmation, not a new axis.
+- **NOT adopted:** the three-layer repository -> combination-model -> optimizer architecture. This
+  desk has ZERO validated alphas; a combination layer over an empty repository is infrastructure
+  for a problem it does not have, and the two-stage law already says screening volume carries no
+  promotion authority. Revisit when there are >=3 orthogonal validated sleeves — that is the
+  lifting condition, recorded so it is not re-litigated.

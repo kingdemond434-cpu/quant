@@ -1040,6 +1040,22 @@ def check_prompt_layer(defects) -> None:
                         f"principal_doctrine.txt {doc.stat().st_size/1000:.1f}k chars (>16k) -- "
                         "consolidate the stacked axiom blocks into tighter prose (preserve every "
                         "commitment, cut the repetition); every organ pays this context"))
+    # (c) DESK MEMORY OVERFLOW. The lesson corpus is hard-budgeted so that new lessons DISPLACE
+    # weaker ones instead of growing every organ's context -- that budget is the whole reason it
+    # cannot become a second 95k doctrine file. But overflow still means the desk paid for a
+    # lesson it is no longer telling anyone, so it must be visible rather than quietly ranked out.
+    # The fix is to retire a lesson whose falsifier arrived, NOT to raise the budget.
+    try:
+        from libs.research.desk_memory import BUDGET_CHARS, corpus
+        _text, over = corpus()
+        if over:
+            defects.append(("desk-memory-overflow",
+                            f"{len(over)} paid-for lesson(s) exceed the {BUDGET_CHARS}-char "
+                            f"memory budget and reach NO organ: "
+                            f"{', '.join(o.id for o in over)} -- retire a lesson whose falsifier "
+                            "arrived (scripts/learn.py audit)"))
+    except Exception:
+        pass
     try:
         cad = json.loads((ROOT / "data/cadence_state.json").read_text("utf-8"))
         last_rev = datetime.fromisoformat(cad["last_prompt_review"]).timestamp()
@@ -1896,6 +1912,8 @@ _FINDING_DOCS_EXCLUDED = {
     "docs/REPO_EXTRACTION.md": "adoption record, not findings",
     "docs/RD_AGENT_AUDIT.md": "historical audit -- superseded by SYSTEM_REVIEW",
     "docs/institutional_knowledge.md": "knowledge base, not an obligation list",
+    "docs/desk_lessons.jsonl": "the injected lesson corpus -- each row IS a closed lesson, and "
+                               "scripts/learn.py audit is what governs it",
     "docs/desk_digest.md": "generated digest",
     "docs/graveyard.md": "terminal by construction",
     "docs/PROJECT_HANDOFF.md": "handoff doc, not findings",
