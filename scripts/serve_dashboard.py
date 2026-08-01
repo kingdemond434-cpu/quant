@@ -44,7 +44,7 @@ class _Handler(SimpleHTTPRequestHandler):
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--port", type=int, default=8080)
-    ap.add_argument("--host", default="0.0.0.0")           # bind LAN so the phone can reach it
+    ap.add_argument("--host", default="0.0.0.0")  # noqa: S104 -- deliberate LAN bind; read-only, and the HOST FIREWALL is the control (gap register: exposure surface)           # bind LAN so the phone can reach it
     args = ap.parse_args()
     _WEB.mkdir(parents=True, exist_ok=True)
     handler = partial(_Handler, directory=str(_WEB))

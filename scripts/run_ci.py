@@ -39,6 +39,11 @@ _STEPS = [
     # breaking collection -- EXPIRED once pyproject set --import-mode=importlib: the tree collects
     # and was run 100% GREEN this session (only optional-dep skips), so gating it is proven safe.
     ("tests (pytest)", [_PY, "-m", "pytest", "tests/", "-q"]),
+    # TYPES (2026-07-25): mypy --strict was configured in pyproject and run by NOBODY -- the
+    # strictest tool in the repo was not in the gate, so nothing stopped a type regression
+    # landing. Added the same day scripts/ entered its `files` list, because a type gate that
+    # covers the money path but is never executed is not a gate.
+    ("types (mypy)", [_PY, "-m", "mypy"]),
     ("stress harness", [_PY, "scripts/run_stress.py"]),
 ]
 
