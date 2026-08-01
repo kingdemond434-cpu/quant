@@ -101,9 +101,28 @@ NORTH STAR
 
 
 def preamble(role: str = "") -> str:
-    """The doctrine every LLM call must carry. Prepend to the system prompt."""
+    """The doctrine every LLM call must carry. Prepend to the system prompt.
+
+    THE REVIEW RUBRIC RIDES ALONG (2026-08-01). docs/research/ADVERSARIAL_REVIEW_RUBRIC.md holds
+    ten defect classes, each with the real shipped instance from this repo that produced it. It
+    was referenced in exactly one place -- a max_audit exclusion list -- and injected nowhere, so
+    it worked only when an agent happened to remember it. On the day it was wired, remembering it
+    had already caught three real defects in code written that same morning (a `> 0` guard that
+    floating-point dust walked through, a docstring whose algebra was backwards, and an estimator
+    read past its own domain). A checklist that fires on recall is not a control.
+
+    It is read from the markdown at call time rather than copied here, so editing the doc changes
+    every organ on the next call; and it degrades to "" if the file is missing, because a broken
+    enrichment must never take down a working organ. libs/research/review_rubric.audit() is what
+    makes that absence loud instead of silent.
+    """
     head = f"\n[ROLE: {role}]\n" if role else "\n"
-    return _ANTI_TIMIDITY + head
+    try:
+        from libs.research.review_rubric import preamble as _rubric
+        rubric = _rubric()
+    except Exception:
+        rubric = ""
+    return _ANTI_TIMIDITY + rubric + head
 
 
 

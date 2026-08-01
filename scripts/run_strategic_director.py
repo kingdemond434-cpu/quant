@@ -51,7 +51,19 @@ _CTX = ssl.create_default_context()
 
 
 def _ask(prompt: str, model: str, timeout: float = 360.0) -> tuple[str, str]:
-    """(response, error). Never raises -- a dead provider must not crash the cycle."""
+    """(response, error). Never raises -- a dead provider must not crash the cycle.
+
+    DOCTRINE INJECTED AS A SYSTEM MESSAGE (2026-08-01). scripts/doctrine.py's own three-surface
+    audit reported this caller at 9/10: it posted a bare user message to chat/completions with no
+    preamble, so the strategic director -- the organ that proposes what the desk should DO -- was
+    the one intelligence here running unconstrained. It therefore also missed the adversarial
+    review rubric that now rides along with the preamble, which is the specific reason this was
+    worth fixing today rather than logging.
+
+    Wrapped defensively because doctrine is an improvement to a working caller, never a
+    precondition for one: an import failure degrades to the previous behaviour rather than taking
+    down the cycle.
+    """
     try:
         providers = json.loads(KEYS.read_text("utf-8"))["providers"]
     except (OSError, ValueError, KeyError) as e:
@@ -60,10 +72,17 @@ def _ask(prompt: str, model: str, timeout: float = 360.0) -> tuple[str, str]:
         base, key = prov.get("base_url", ""), prov.get("key", "")
         if not base or not key:
             continue
+        try:
+            from scripts.doctrine import preamble as _doctrine
+            system = _doctrine("strategic director")
+        except Exception:
+            system = ""
+        messages = ([{"role": "system", "content": system}] if system else []) + [
+            {"role": "user", "content": prompt}]
         body = json.dumps({
             "model": model, "max_tokens": 8000, "temperature": 0.4,
             "reasoning": {"effort": "high"},
-            "messages": [{"role": "user", "content": prompt}],
+            "messages": messages,
         }).encode()
         req = urllib.request.Request(
             base.rstrip("/") + "/chat/completions", data=body, method="POST",
