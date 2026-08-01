@@ -3877,11 +3877,11 @@
    "summary": "\u00a737 carry-over brief recorded ACKED defects as owed: 26 of 47 reported items carried dated acks, top-12 were 12/12 acked, so the brain's FIRST-priority queue was 57% false and anti-correlated with real work. Fixed by sharing max_audit.split_acked; deferral now tracked separately with a 30d TREADMILL detector.",
    "roi_bps": 0.0,
    "raised": "2026-08-01T15:01:10.384705+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "split_acked shared as the one definition; brief now records live/acked separately with an ack_state refusal path and a 30d TREADMILL detector. Verified on real data: owed queue 0 acked (was 26), 26 tracked as deferred, 23 tests green.",
+   "commit": "41b92b9",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-01T15:20:58.661622+00:00"
   },
   {
    "id": "R0320",
@@ -3949,11 +3949,11 @@
    "summary": "CONVERSION METRIC BLIND TO ITS OWN BEST CASE. check_conversion.py:127 counts dispositions_7d as rows moved to implemented/rejected, so a defect found and FIXED in the same run -- never rowed, because L1.39 says route it to its next stage immediately -- scores ZERO conversion, while the slower find->row->schedule path scores as activity. Measured this cycle: 3 real defects fixed (carryover ack-blindness, check_generation third store, fill-quality false zero) and dispositions_7d stayed flat at 84 while backlog rose 216->225. L1.28b(e) says unmeasured conversion counts as zero, so the metric currently penalises the doctrine-preferred behaviour and rewards queueing. Candidate fix: credit a commit that closes a max_audit defect id, or require same-run fixes to be rowed-and-closed rather than never rowed. Do NOT fix by loosening what counts as a disposition.",
    "roi_bps": 0.0,
    "raised": "2026-08-01T15:15:19.794345+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "Needs a decided crediting rule (commit-closes-a-defect-id vs require-row-then-close) and must not be fixed by loosening what counts as a disposition; belongs with the R0327 memory-budget work since both are conversion-accounting semantics.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-05",
+   "disposed": "2026-08-01T15:20:58.742223+00:00"
   },
   {
    "id": "R0326",
@@ -3973,11 +3973,11 @@
    "summary": "CI IS RED AT HEAD AND THE CAUSE IS desk-memory-overflow, NOT A CODE CHANGE. tests/test_desk_memory.py::test_graduation_actually_freed_budget and ::test_overflow_is_by_rank_and_stays_a_small_tail both fail because paid-for lessons (blind/capital/wasted cost) are squeezed past the 12000-char budget and reach NO organ while no test enforces them. PROVEN PRE-EXISTING: both still fail with L0054/L0055/L0056 removed from docs/desk_lessons.jsonl (isolation run 2026-08-01T15:3xZ), and max_audit reported desk-memory-overflow with 27 named lessons at 14:46 before any edit this cycle. Marker had ok:true at 10:05, so the break landed in that window from elsewhere. ENABLING CHANGE SHIPPED THIS CYCLE: libs/research/desk_memory._test_exists now resolves CLASS-QUALIFIED refs (file::Class::test), which it never could before -- pytest's standard form and this repo's dominant style -- so graduation was structurally impossible for most existing tests and lessons could not earn their budget discount. L0054/L0055 graduated on it immediately. DO NOT fix the overflow by mass-graduating lessons to any test that merely EXISTS: the verifier checks existence, not that the test enforces the lesson, so mass-graduation is gameable and would convert a real guard into a rubber stamp. Retire lessons whose falsifier arrived, or graduate only where a test genuinely encodes the property.",
    "roi_bps": 0.0,
    "raised": "2026-08-01T15:19:30.741616+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "CI-BLOCKING at HEAD, so it outranks the other scheduled rows. The enabling change (class-qualified test refs) shipped in 41b92b9; remaining work is judgment -- retire lessons whose falsifier arrived, graduate only where a test genuinely encodes the property. Explicitly NOT mass-graduation: the verifier checks existence, not enforcement.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-02",
+   "disposed": "2026-08-01T15:20:58.825189+00:00"
   }
  ]
 }
