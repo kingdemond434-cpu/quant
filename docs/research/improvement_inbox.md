@@ -1332,3 +1332,19 @@ _Source: litminer LIT-e buy-side F2/F3/F4/F5/F6; Man/Harvey JPM 2022 + arXiv 260
    crypto breadth buys ~half of equity breadth. The desk's liquid-perp universe IS the entire
    capacity-positive zone — breadth expansion beyond it is negative-EV by published evidence.
 [§33: wired -> docs/research/recommendation_ledger.json R-row (this entry)]
+
+## 2026-08-01 deep-sweep synthesis -> LEDGER (pointer only; this file is write-only by design)
+
+Nine seats, 11,206 lines. Portfolio rowed as **R0232-R0246**; map:
+`docs/research/deep_sweep/20260801_SYNTHESIS.md`. Deduped against and citing R0041, R0086,
+R0073/R0203, R0077/R0223/R0188, R0084 rather than re-adding.
+
+Three things that change how other work is read:
+- **Ordering constraint (SYNTHESIS sec.C).** Raising the gauntlet's power BEFORE fixing the
+  survivorship-biased panel (R0239) and the inert leak protection (R0240) converts a 100%-reject
+  screen into a powered detector of artifacts. Input -> leak -> measurement -> power -> re-certify.
+- **TIER1_BENCHMARK re-graded, 10 rows, 8 downgrades**, including all four T1s. A T1 grade
+  DE-QUEUES the layer from run_max_push, so the four T1 rows were suppressing four whole layers.
+  Zero T1 rows now remain; the parser returns 22 queued items.
+- **A missing log is NOT evidence an organ never ran** (reaper deletes ~68 organs' logs 3x/day,
+  found independently by two seats). Every prior conclusion of that shape must be re-derived.

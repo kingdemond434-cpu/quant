@@ -51,29 +51,29 @@ they are walls, not work.
 
 | layer | tier_now | closer_to_t1 | time_bound |
 |---|---|---|---|
-| validation_methodology | T1 | hold: certification-triggered FDR decider (R0077) keeps it honest | no |
-| research_governance | T1 | hold: matrix zero-orphans is the standing bar | no |
-| self_audit_layer | T1 | hold: 9-seat sweep + planted controls + recursive meta | no |
-| llm_native_automation | T1 | operational maturity: zero scheduler incidents 30d, quota referee alive | no |
+| validation_methodology | T3 | CUT 08-01: purge/embargo INERT (.train unreferenced; cpcv fraction identical to 6dp across a 250x parameter range), _PERIODS_PER_YEAR=24*260 on daily bars = 4.135x Sharpe overstatement, 3 of 11 gates carry zero information, certification is 2 targets x 1 SEED. Closer: N22 leak fix + N23 annualisation + real certification at SR 1-3 (8x12 harness exists, zero callers) | no |
+| research_governance | T2 | CUT 08-01: L2.3's third disposition converts 0/6 on its first due date; the two push/CI-blocking fences are substring whitelists with unreachable failure states; 15 rows park in a status the tooling cannot write. Closer: one honest conversion meter + rate-based admission control | no |
+| self_audit_layer | T2 | CUT 08-01: the T1 justification cited planted controls that do not exist (grep 'plant' -> no output). Closer: measure audit recall d by planting defects (X1), then restore | no |
+| llm_native_automation | T3 | CUT 08-01: miner_seats_productive 9.1% -- 10 of 11 seats configured, credentialed, unit-tested, producing nothing; frontier seat's trailing echo swallows exit code so 7 failed digs report Result=success. Closer: exit $rc + brain_mutex distinguishable + reaper glob | no |
 | risk_rails | T2 | R0071 money-path cluster + one clean live cycle | no |
-| data_moat | T2 | backups/moat replicas live (run_moat_backup) + Storage-Box/R2 for bulk L2 (principal EUR-4/mo) + second venue | no |
-| data_engineering | T2 | bronze owner + 132-symbol backfill (R0081) + write-rate fences + lineage on every appender | no |
+| data_moat | T3 | CUT 08-01: its own closer (run_moat_backup) replicates a 0-table database and its restore drill hashes the replica against ITSELF. Closer: drill compares replica to SOURCE + the 7.4MB irreplaceable set committed + T7 retention probe 08-08 | no |
+| data_engineering | T3 | CUT 08-01: survivorship at the source (LUNA/UST/FTT/SRM absent; panel selected on today's liquidity then backfilled 7y), 40% of symbols frozen 6 weeks, 5 non-crypto asset classes dark 43 days unnoticed. Closer: point-in-time universe from the exchangeInfo call already being discarded | no |
 | alpha_generation_process | T2 | horizon-honest power gate (R0030/O1) + positive-control battery + resurrection consumer + fusion axes earned | no |
 | alpha_generation_throughput | T4 | unfreeze generator post-R0077; L1.25a forbids idle generation; feed 12/12 forward slots daily | no |
 | knowledge_reuse_read_side | T4 | phantom-DB repoint x4 (R0079) + one consumer per composed store, born-fenced | no |
-| monitoring_observability | T2 | pager delivery ratchet off 0% (ntfy topic confirmed on principal's phone) + alert canary green 7d | no |
+| monitoring_observability | T3 | CUT 08-01: pager ~29% precision (2 of 7 standing CRITICALs provably false, 1 structurally unreachable); 11 fences exit 0 on absent input; no time-series store exists. Closer: != "OK" refusal path + false_page_rate ratchet | no |
 | execution | T3 | R0071 stops/guards + TCA fields on all open paths (R0084) + maker-first routing measured | no |
 | portfolio_construction | T3 | multi-sleeve risk model + correlation-budgeted allocation once n_sleeves >= 3 (R0101) | no |
-| security_opsec | T3 | PAT to fine-grained read-only (principal) + ports bound localhost (R0072) + token rotation (principal) | no |
+| security_opsec | T4 | CUT 08-01: anonymous off-box fetch of the research web root returns desk content not a login page; push-capable PAT live in remote.origin.url and leaked to LLM vendors; deploy gate executes fetched code BEFORE gating it. Closer: Cloudflare Access + PAT rotation (principal) + scratch-checkout CI | no |
 | conversion_repair | T2 | L1.28b fence flow: dispositions >= arrivals for 30 consecutive days | no |
 | venue_breadth_counterparty | T4 | Bybit second venue (spec exists: BYBIT_SECOND_VENUE_SPEC.md) + venue-risk scoring + withdrawal drill -- the FTX lesson, Wintermute exemplar | no |
 | simulation_prod_parity | T2 | cross-engine parity suite actually running (optional_test_deps ceiling: arch/backtrader/vectorbt) + verify_backtest_engine green + TCA-vs-sim drift measured -- HRT/Jump exemplar | no |
 | inventory_treasury | T3 | fee-asset (BNB) auto-policy + stablecoin treasury rules + funding-payment sweep -- DRW/Wintermute exemplar | no |
 | capital_reallocation | T2 | per-sleeve drawdown pulls + reallocate to measured performers once n_sleeves >= 2 (derisk ladder is the embryo) -- the one pod-shop practice worth taking | no |
-| vol_surface_expertise | T3 | Deribit collector thickened hourly + VRP resurrection screen (R0083) -- Optiver/SIG exemplar | no |
+| vol_surface_expertise | T4 | CUT 08-01: the only options dataset is a side-effect of the executor, forward-archive-only, ~1 obs/day, 15 gaps >24h in 35 days. Closer: schedule collect_deribit_surface hourly, decoupled from the executor | no |
 | forecast_combination | T2 | fusion axes earn entry, then ensemble weighting across surviving axes -- XTX/TGS exemplar | no |
 | capital_scale | T4 | compounding through capacity bands | **yes** |
-| forward_history_depth | — | T=310d bar; 8h panels accrue sqrt(3)x; otherwise one day per day | **yes** |
+| forward_history_depth | T3 | RE-GRADED 08-01 -- NOT time-bound: 82.86% of on-disk observations are discarded before any test runs (min_len truncation, 6+ scripts) and 345d of free first-party L2 is downloadable now. Closer: stratified campaign window (campaign_window.py exists, ZERO callers) + the free L2 backfill as features | no |
 | track_record | — | Gate-0 -> first clean live year | **yes** |
 
 **Grading map used by the parser** (declared, arguable, in one place): T1=1.00, T2=0.66,
