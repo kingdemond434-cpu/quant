@@ -867,6 +867,81 @@ Recorded with first-pass verdicts so no seat re-spends on them. The seed list is
 | cngold.com.cn (中金网) | Carried the verbatim 大饼 origin text | 大饼 origin query | THIN but load-bearing — one of OP-036's two sources |
 | **zhuanlan.zhihu.com** | — | — | **WALLED from this VPS: HTTP 403 on article fetch.** Zhihu SEARCH results are readable, article bodies are not. Scoped as a ROUTE failure, not a capability failure (L1.25a / battery #9) — glossary content was obtained free elsewhere, so **no paid unlock is justified and nothing is video-locked** |
 
+#### ITEM 2 — CLOSED. CN OSS tranche deeper pass: **the tranche's two headline targets are REFUTED, and the real find was a feed stack nobody was looking for.** [§33: screened -> docs/research/data_axis_watchlist.md]
+Licence gate first: AlphaGPT Apache-2.0, Vibe-Trading MIT, NOFX AGPL-3.0 — all read from the LICENSE
+blob, no hard stops. Nothing cloned, installed or executed; all read as text (supply-chain rule).
+
+**(a) THE 07-31 NOTE'S "ONE REAL TARGET" IS NOT WHAT IT SAYS IT IS.** `AlphaGPT/paper/20251226.pdf`
+is *"Defense in Predatory Markets: A Differential Game Framework for AMM Liquidity via Uniswap V4
+Hooks"* — **not a factor-mining paper at all**. Its entire "extensive empirical validation" is 1,000
+Monte-Carlo paths of a synthetic jump-diffusion: **zero real observations**. And it is internally
+broken in a way that settles how to read it — Proposition 1 states the attacker's optimal injection
+*decreases* in the fee, while its own proof derives the opposite and says, verbatim and unedited,
+*"This seems counterintuitive. Let's re-examine... So σ_sol(φ) is \*increasing\* in φ."* The abstract
+calls it zero-sum; §IV.B says *"Ah, the initial modeling as zero-sum was an oversimplification."*
+First-person LLM self-correction left inside a formal proof. **Unreviewed LLM output — do not cite
+its numbers anywhere.** The repo's actual method is a REINFORCE Transformer emitting RPN formulas
+over **6 price features**, scored in-sample with no train/test split — the 420/0-refuted class, with
+full-sample normalisation leak. *Useful negative:* it independently reproduces five defect classes
+we already name, which is corroboration that **our 420/0 rejections were correct**.
+⚠ `times.py:13` carries a **hardcoded live Tushare token** — someone else's credential. Never use it.
+
+**(b) THE NOFX "3 MECHANISM CONSTRUCTIONS" CLAIM IS REFUTED — and the failure mode is instructive.**
+0 of 3 are constructed in that repo. The 07-31 note's signature phrase *"the crowd's fuel and walls"*
+is **verbatim marketing copy from NOFX's own README line 70** — the note was quoting a README and
+reporting it as a code reading. Two of the three are a single purchased endpoint
+(`claw402.ai/.../cost-liquidation-heatmap`); cross-exchange net flow **does not exist** in the code.
+**That section of the 07-31 note is retired as secondhand.** Governance: SlowMist-confirmed 2025-11
+incident (admin_mode default true, `/api/exchanges` returned API keys unauthenticated, >1,000
+publicly reachable deployments, coordinated key revocation) — never run it on a key host.
+
+**(c) HONEST NULL on the tranche's stated purpose:** Vibe-Trading's crypto layer is **strictly weaker
+than ours** — OHLCV + funding history only, with no order-book, no trade-tape and no liquidation
+collector anywhere. Nothing to take. The tranche was mined for what it was catalogued for and it
+was not there; recorded as a null rather than dressed up.
+
+**(d) THE ACTUAL FIND — a keyless CN alt-data stack, 6 endpoints verified live, up to 26 years.**
+`datacenter-web.eastmoney.com` / `push2his.eastmoney.com`: margin balance 融资融券 (2010-03-31→2026-07-31,
+~6.69M rows), block trades 大宗交易 (2000-08-29→, ~678k), dragon-tiger 龙虎榜 (2004-06-25→, ~264k),
+**lockup expiry 限售解禁 (forward calendar TO 2035, ~34k)**, shareholder count, size-bucketed fund flow.
+**§13 IS NOT SATISFIED AND I HAVE NOT TREATED IT AS IF IT WERE:** these are undocumented internal
+APIs with **no stated terms**, and "no terms stated" is not "licensed". Routed as a legitimacy
+DECISION (**R0290**), not carded as clean.
+**WHY IT MATTERS IF IT CLEARS, and this is the run's neatest convergence:** `RPT_LIFT_STOCK` is the
+**same forced-supply mechanism** my own item-1 overflow screened in crypto — except with 26 years of
+history *and* a forward calendar to 2035, which is exactly the two things the crypto unlock snapshot
+lacked. The cheap ordering is therefore to validate the mechanism on the deep clean panel BEFORE
+paying for a crypto collector (R0288). Two datasets, one mechanism, both currently unexploited.
+
+**(e) GeckoTerminal — keyless, and the one axis that cannot be bought later.** `/trades` returns
+**wallet-resolved signed DEX flow** (`tx_from_address`, buy/sell `kind`, `volume_in_usd`, `tx_hash`) —
+true signed order flow with counterparty identity, free. **But retention is 300 trades / ~17h of 1m
+bars, so it is FORWARD-ONLY-UNRECOVERABLE: every hour not recorded is gone at any price.** Measured
+burst limit ~3 rapid calls then 429 (documented 30/min). Our `data_universe_map.json` has **zero**
+entries for geckoterminal/birdeye/dexscreener and our collector inventory has **no DEX-native host
+at all** — the entire pool- and trade-level on-chain axis is uncovered.
+
+**(f) TWO CORRECTIONS TO STANDING DESK MATERIAL, both verified at primary source:**
+  1. **Northbound Stock Connect flow is DEAD** — probed over 400 sessions (2024-11-20→2026-07-31):
+     `hk2sh` all zeros, `hk2sz`/`s2n` one non-zero each; daily net-purchase disclosure **ceased
+     2024-08-16**. This refutes the top-ranked component of the 07-31 note's axis #1.
+  2. **`run_leakage_test` is blind on the axes we actually trade — VERIFIED MYSELF, rowed R0289.**
+     `libs/features/validation.py:91-99` mutates only `["open","high","low","close"]`. Our bronze D1
+     schema is `timestamp/open/high/low/close/volume/taker_buy_frac/funding/basis` — so **4 of 9
+     columns are never perturbed and any feature built on them passes the future-invariance test
+     trivially, leak or no leak**, while `causal_guard.py`'s docstring claims the test "rejects
+     future leakage, lookahead bias, hindsight labels, and full-sample normalization".
+     **Funding/carry is this desk's only repeat survivor**, so the one family that works is the one
+     the guard cannot see. UNMEASURED-REPORTED-AS-OK (L1.40): it returns PASS where it owes UNKNOWN.
+     Concrete trigger found: Eastmoney's dragon-tiger rows ship `D1..D30_CLOSE_ADJCHRATE` —
+     **vendor-precomputed forward returns in the same row as the features** — and in-row leakage is
+     invisible to an across-row invariance test by construction.
+
+⚠ **SAFETY, recorded so no seat repeats it:** `discord.gg/2vDYc2w5` (the old Vibe-Trading README
+invite) is a **hostile impostor server running a wallet drainer** — disowned by a repo collaborator
+in discussion #265. Do not join. Official venue is `discord.gg/6TdQnT5xcF`. **Honest null on venue
+discovery here: no QQ, Telegram, Slack, forum or mailing list exists for this project.**
+
 ### SESSION CLOSE 2026-08-01 session E (EN frontier miner) — DEPTH LINE, BATTERY, STANDING TEST
 
 **STANDING TEST — "Which artifact on disk is different because of what was mined?"**

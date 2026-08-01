@@ -3510,6 +3510,42 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0289",
+   "source": "cycle",
+   "summary": "DEFECT (verified by reading source, libs/features/validation.py:91-99): run_leakage_test mutates ONLY ['open','high','low','close'] future bars. Any feature computed from a NON-OHLC input is never perturbed and therefore ALWAYS PASSES the future-invariance test regardless of whether it leaks. Our own bronze D1 schema is timestamp/open/high/low/close/volume/taker_buy_frac/funding/basis -- so 4 of 9 columns (volume, taker_buy_frac, funding, basis) are invisible to the guard, and FUNDING/CARRY IS THE DESK'S ONLY REPEAT SURVIVOR. causal_guard.py's docstring claims the test 'rejects future leakage, lookahead bias, hindsight labels, and full-sample normalization' -- false for any non-OHLC input. This is the UNMEASURED-REPORTED-AS-OK class (L1.40): the guard returns PASS, not UNKNOWN, on inputs it cannot test. FIX: mutate every numeric column present in bars except the index, or refuse loudly (return UNTESTABLE) when a definition consumes a column the mutation does not cover. Found by CN miner session 3 via the Vibe-Trading dig.",
+   "roi_bps": 40.0,
+   "raised": "2026-08-01T12:57:17.080739+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0290",
+   "source": "cycle",
+   "summary": "SS13 LEGITIMACY DECISION OWED (policy, not technical): Eastmoney datacenter-web/push2his JSON feeds -- 6 endpoints verified live keyless with up to 26y depth (margin balance RPTA_WEB_RZRQ_GGMX 2010-2026 ~6.69M rows; block trades RPT_DATA_BLOCKTRADE 2000-2026; dragon-tiger RPT_DAILYBILLBOARD_DETAILS 2004-2026; lockup expiry RPT_LIFT_STOCK forward calendar TO 2035; shareholder count; size-bucketed fund flow). These are UNDOCUMENTED INTERNAL APIs with NO STATED TERMS OF SERVICE. Charter s13 requires public AND licensed; 'no terms stated' is NOT 'licensed' and must not be treated as a default pass. DECIDE before any collector is built. WHY IT MATTERS IF IT CLEARS: RPT_LIFT_STOCK is the SAME forced-supply mechanism as the crypto unlock axis screened this run (R0288) but with 26 years of history AND a forward calendar to 2035 -- i.e. the mechanism could be validated on clean deep data BEFORE spending on a crypto collector, which is the cheaper ordering. If it does not clear, say so and close it: an unresolved grey source silently blocks a dependent axis forever.",
+   "roi_bps": 12.0,
+   "raised": "2026-08-01T12:57:37.390793+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0291",
+   "source": "cycle",
+   "summary": "TIME-SENSITIVE CAPTURE: GeckoTerminal /trades (api.geckoterminal.com/api/v2, KEYLESS, verified live) returns WALLET-RESOLVED SIGNED DEX FLOW -- tx_from_address, buy/sell kind, volume_in_usd, block_number, tx_hash. True signed order flow WITH counterparty identity, free. Retention is only ~300 trades and ~17h of 1m bars, so it is FORWARD-ONLY-UNRECOVERABLE: every hour not recorded is permanently gone at any price (the one currency the desk cannot re-earn, L1.28b(f)). data/data_universe_map.json has ZERO entries for geckoterminal/birdeye/dexscreener and the collector inventory has NO DEX-native host at all -- the whole pool-level and trade-level on-chain axis is uncovered. Measured burst limit ~3 rapid keyless calls then 429 (documented 30/min) so a collector must pace. Licence: free tier, link attribution requested (satisfiable). Contrast with R0290: this one has NO legitimacy blocker. Found by CN miner session 3.",
+   "roi_bps": 25.0,
+   "raised": "2026-08-01T12:58:31.823249+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

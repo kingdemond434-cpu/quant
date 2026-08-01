@@ -1,5 +1,39 @@
 # CN OSS TOOL-CHAIN EXTRACTION — 2026-07-31
 
+> ## ⛔ CORRECTIONS 2026-08-01 (CN frontier miner session 3) — READ BEFORE ACTING ON ANYTHING BELOW
+> Two headline verdicts in this document are **REFUTED** by a deeper pass that read the primary
+> sources. Corrected here at source rather than only in a session note, because a retraction that
+> lands in one place is the kimchi failure mode.
+>
+> 1. **"AlphaGPT — the in-repo `paper/20251226.pdf` is the one real target" — WRONG.** That PDF is
+>    *"Defense in Predatory Markets: A Differential Game Framework for AMM Liquidity via Uniswap V4
+>    Hooks"* — not a factor-mining paper. Its whole validation is 1,000 Monte-Carlo paths of a
+>    synthetic jump-diffusion (**zero real observations**), and it is internally contradictory:
+>    Proposition 1 asserts the opposite of what its own proof derives, with unedited first-person
+>    LLM self-correction (*"Ah, the initial modeling as zero-sum was an oversimplification"*) left
+>    inside the text. **Treat as unreviewed LLM output; cite none of its numbers.** The repo's real
+>    method is a REINFORCE Transformer over **6 price features**, scored in-sample with no
+>    train/test split — the already-refuted 420/0 class.
+>    ⚠ `times.py:13` holds a **hardcoded live Tushare token** (a third party's credential). Do not use.
+> 2. **"NOFX — 3 mechanism constructions worth carding" — REFUTED, 0 of 3 exist in the code.** The
+>    phrase that entered this record, *"the crowd's fuel and walls"*, is **verbatim README marketing
+>    copy (line 70)** — a README was read and recorded as a code reading. Two of the three are one
+>    purchased endpoint (`claw402.ai/.../cost-liquidation-heatmap`); cross-exchange net flow does
+>    not exist. **That row is retired as secondhand.**
+> 3. **Baseline caveat below is CLOSED:** `data/data_universe_map.json` **does** exist on the box
+>    (87KB). It contains **zero** entries for geckoterminal / birdeye / dexscreener / tushare /
+>    akshare / solscan / helius / moralis, and the collector inventory has **no DEX-native host at
+>    all** — so the NEW flags stand, and the on-chain pool/trade axis is entirely uncovered.
+> 4. **Vibe-Trading's crypto layer is strictly WEAKER than ours** (OHLCV + funding only; no book, no
+>    tape, no liquidations) — honest null on the tranche's stated purpose. Its value turned out to be
+>    an unrelated keyless **Eastmoney CN alt-data stack** (6 feeds, up to 26y) — **§13 UNRESOLVED,
+>    undocumented internal APIs with no stated terms; decision owed as R0290, do NOT build against
+>    it until that clears.**
+> 5. ⚠ **`discord.gg/2vDYc2w5` (the old Vibe-Trading README invite) is a hostile impostor server
+>    running a wallet drainer**, disowned by a repo collaborator. Official: `discord.gg/6TdQnT5xcF`.
+>
+> _Rows opened by this pass: R0289 (leakage-guard blindness), R0290 (§13 Eastmoney), R0291 (GeckoTerminal)._
+
 **Provenance:** principal-supplied LLM survey of 10 Chinese-ecosystem crypto/quant OSS projects,
 verified same-day by a bounded web extraction (public pages only; no clones, no installs — the
 MINE-NEVER-ADOPT rule in `ops/frontier_cn_prompt.txt` stands). This is the permanent record; the
