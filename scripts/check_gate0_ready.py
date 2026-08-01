@@ -156,9 +156,57 @@ def _ruin_rail() -> dict[str, Any]:
                     DESK, "data/cashcarry_state.json", "run from the box that holds the state")
 
 
+def _net_of_fees_positive() -> dict[str, Any]:
+    """Does the sleeve actually make money, net of fees, on its OWN realised fills?
+
+    Every other Gate-0 criterion measures permission or plumbing -- keys, connector, caps, signoff.
+    None would notice that the strategy loses money, which is the one fact deciding whether funding
+    it is rational (L1.4 reality outranks simulation; L1.5 nothing counts until it survives real
+    costs). On 2026-08-01 this gate read 5/6 READY while the desk's own tape showed every hold
+    bucket negative net of fees, the worst at -712.71bps.
+
+    STRICT: any populated bucket negative blocks. The asymmetry earns it -- a losing sleeve burns
+    capital every hour it runs, while blocking a good one costs days of carry that evidence undoes.
+
+    FAIL-CLOSED: missing or unreadable forensics reads BLOCKED-UNKNOWN, never READY.
+    """
+    art = "web/trade_forensics.json"
+    try:
+        d = json.loads((_ROOT / art).read_text("utf-8"))
+        buckets = d.get("hold_buckets_net_of_fees") or {}
+        if not isinstance(buckets, dict) or not buckets:
+            return _row("net_of_fees_positive", None,
+                        "no hold_buckets_net_of_fees in the forensics artifact", DESK, art,
+                        "run scripts/run_trade_forensics.py to produce the buckets")
+        pop = {k: v for k, v in buckets.items()
+               if isinstance(v, dict) and int(v.get("n", 0) or 0) > 0}
+        if not pop:
+            return _row("net_of_fees_positive", None,
+                        "no closed trades in any hold bucket -- nothing measured yet", DESK, art,
+                        "accrue closes, then re-read")
+        neg = {k: float(v.get("bps", 0.0)) for k, v in pop.items()
+               if float(v.get("bps", 0.0)) < 0.0}
+        n_tot = sum(int(v.get("n", 0)) for v in pop.values())
+        if neg:
+            worst = min(neg, key=lambda k: neg[k])
+            return _row("net_of_fees_positive", False,
+                        f"{len(neg)}/{len(pop)} hold buckets NEGATIVE net of fees over {n_tot} "
+                        f"closes; worst {worst} at {neg[worst]:.2f}bps", DESK, art,
+                        "the sleeve loses money net of fees on its own fills -- fix execution "
+                        "cost or the edge before funding it; not a paperwork blocker")
+        best = max(pop, key=lambda k: float(pop[k].get("bps", 0.0)))
+        return _row("net_of_fees_positive", True,
+                    f"all {len(pop)} populated buckets positive net of fees over {n_tot} closes; "
+                    f"best {best} at {float(pop[best]['bps']):.2f}bps", DESK, art, "")
+    except (OSError, ValueError, TypeError, KeyError):
+        return _row("net_of_fees_positive", None, "forensics unreadable on this box", DESK, art,
+                    "run from the box that holds the tape")
+
+
 def build() -> dict[str, Any]:
     rows = [_principal_signoff(), _capital_fraction(), _symbol_count(),
-            _keys_present(), _connector_verified(), _ruin_rail()]
+            _keys_present(), _connector_verified(), _ruin_rail(),
+            _net_of_fees_positive()]
     blocking = [r for r in rows if r["status"] != "READY"]
     desk_owes = [r for r in blocking if r["owner"] == DESK]
     principal_owes = [r for r in blocking if r["owner"] == PRINCIPAL]
