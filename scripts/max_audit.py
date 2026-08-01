@@ -1070,17 +1070,24 @@ def check_prompt_layer(defects) -> None:
     # cannot become a second 95k doctrine file. But overflow still means the desk paid for a
     # lesson it is no longer telling anyone, so it must be visible rather than quietly ranked out.
     # The fix is to retire a lesson whose falsifier arrived, NOT to raise the budget.
+    # A GRADUATED LESSON IS NOT AN UNREACHED ONE. Counting the whole overflow reported 31 lessons
+    # "reaching NO organ" when 20 were enforced by a verified test and demoted on purpose -- 2.8x
+    # overstated, which buries the 11 real losses in noise and teaches the reader to skip the line.
     try:
-        from libs.research.desk_memory import BUDGET_CHARS, corpus
-        _text, over = corpus()
-        if over:
+        from libs.research.desk_memory import BUDGET_CHARS, unreached
+        lost, demoted = unreached()
+        if lost:
+            tail = (f" [{len(demoted)} further lesson(s) ranked out but enforced by a verified "
+                    "test -- demoted by design, not lost]" if demoted else "")
             defects.append(("desk-memory-overflow",
-                            f"{len(over)} paid-for lesson(s) exceed the {BUDGET_CHARS}-char "
+                            f"{len(lost)} paid-for lesson(s) exceed the {BUDGET_CHARS}-char "
                             f"memory budget and reach NO organ: "
-                            f"{', '.join(o.id for o in over)} -- retire a lesson whose falsifier "
-                            "arrived (scripts/learn.py audit)"))
-    except Exception:
-        pass
+                            f"{', '.join(o.id for o in lost)} -- retire a lesson whose falsifier "
+                            f"arrived, or graduate one to a test (scripts/learn.py audit).{tail}"))
+    except Exception as exc:  # never silently OK on absent input (L1.41)
+        defects.append(("desk-memory-unmeasured",
+                        f"the lesson corpus could not be read ({type(exc).__name__}: {exc}) -- "
+                        "what reaches an organ is UNKNOWN, which is not the same as healthy"))
     try:
         cad = json.loads((ROOT / "data/cadence_state.json").read_text("utf-8"))
         last_rev = datetime.fromisoformat(cad["last_prompt_review"]).timestamp()
@@ -2540,6 +2547,84 @@ _ONESHOT_SCRIPTS = frozenset({
 })
 
 
+#: Path literals that are legitimately absent -- each with the reason, so "known gap" is
+#: distinguishable from "nobody noticed". Anything not here and not on disk is a phantom.
+_PHANTOM_ALLOWED = {
+    "data/principal_replies.jsonl": "the principal's reply channel -- absent because he has not "
+                                    "replied yet, not because nothing writes it. Its emptiness is "
+                                    "itself the signal several organs read.",
+    "data/mining_suspended": "a FLAG file: present only while §33 backlog is owed. Absence is the "
+                             "healthy state, and creating it would suspend mining.",
+    "data/LIVE_ENABLE": "arming flag -- absence is the safe state by design.",
+    "data/kill_switch": "rail flag -- absence is the healthy state.",
+}
+
+#: Extensions worth auditing: durable stores a reader can be wrong about. Logs are excluded --
+#: they are written by redirection from cron, not by python, so they would all read as phantoms.
+_PHANTOM_EXTS = (".json", ".jsonl", ".db", ".sqlite", ".csv", ".pkl", ".parquet")
+
+_PATH_LIT = re.compile(r'["\'](?P<p>(?:data|reports)/[A-Za-z0-9_./-]+'
+                       r'(?:\.json|\.jsonl|\.db|\.sqlite|\.csv|\.pkl|\.parquet))["\']')
+
+#: Verbs that indicate the line PRODUCES the path rather than consuming it.
+_WRITE_VERBS = ("write_text", "write_bytes", "open(", "json.dump", "to_csv", "to_json",
+                "savefig", "copyfile", "copy2", "dump(", "mkdir", "touch", "backup(",
+                "to_parquet", "np.save", "pickle.dump", "connect(")
+
+
+def check_phantom_paths(defects) -> None:
+    """READ-WITHOUT-WRITER: a path some organ reads that NOTHING on this desk ever writes.
+
+    THE DESK'S MOST PROLIFIC DEFECT CLASS, and it had no detector. A reader pointed at a path no
+    producer creates does not crash -- it takes the empty/missing branch and returns a plausible
+    zero, so the organ reports HEALTHY on data that does not exist. Live instances found by hand
+    rather than by any fence: data/research_memory.db had FOUR readers and no writer and sat in
+    the moat backup's store list, where it recorded ABSENT on every run and padded the denominator
+    so 4/4 coverage read as 4/6; cost_ratio, slippage_ks_p and calibration_mae_falling_months were
+    ramp step-up conditions with zero producers anywhere while the ramp sat pinned at its floor.
+
+    THE TEST IS DELIBERATELY NARROW so it does not cry wolf. A path is a phantom only if it is
+    referenced in code, does NOT exist on disk, AND no line anywhere pairs it with a write verb.
+    A path that exists is fine (something made it, whatever that was). A path with a writer is
+    fine (it will exist when the producer runs). Logs are out of scope entirely -- cron writes
+    them by shell redirection, so every one would read as a phantom and the check would be
+    switched off within a week.
+    """
+    root = ROOT
+    refs: dict[str, set[str]] = {}
+    writers: set[str] = set()
+    for py in list((root / "scripts").rglob("*.py")) + list((root / "libs").rglob("*.py")):
+        try:
+            text = py.read_text("utf-8", errors="ignore")
+        except OSError:
+            continue
+        rel_py = str(py.relative_to(root))
+        for line in text.splitlines():
+            for m in _PATH_LIT.finditer(line):
+                p = m.group("p")
+                refs.setdefault(p, set()).add(rel_py)
+                if any(v in line for v in _WRITE_VERBS):
+                    writers.add(p)
+
+    phantoms = sorted(
+        p for p, _ in refs.items()
+        if p not in _PHANTOM_ALLOWED
+        and p.endswith(_PHANTOM_EXTS)
+        and not (root / p).exists()
+        and p not in writers
+    )
+    if phantoms:
+        shown = "; ".join(f"{p} (read by {', '.join(sorted(refs[p])[:2])})" for p in phantoms[:5])
+        defects.append((
+            "phantom-paths",
+            f"READ-WITHOUT-WRITER: {len(phantoms)} path(s) are read by code, do NOT exist on "
+            f"disk, and NOTHING writes them: {shown}{'...' if len(phantoms) > 5 else ''}. A "
+            "reader on a phantom path does not crash -- it takes the empty branch and reports a "
+            "plausible zero, so the organ reads HEALTHY on data that was never produced. Point "
+            "the reader at the real store, build the producer, or record the path in "
+            "_PHANTOM_ALLOWED with the reason it is legitimately absent."))
+
+
 def check_orphan_scripts(defects) -> None:
     """§36: a SCRIPT nothing runs is an orphan too -- and the orphan check could not see it.
 
@@ -3505,6 +3590,7 @@ CHECKS = [("carryover-skipped", check_carryover_skipped),
                       ("book-collapse", check_book_collapse),
                       ("mine-evidence-base", check_mine_evidence_base),
                       ("orphan-scripts", check_orphan_scripts),
+                      ("phantom-paths", check_phantom_paths),
                       ("law-numbers", check_law_numbers_unique),
                       ("mine-conversion", check_mine_conversion),
                       ("mine-flow", check_mine_flow),
