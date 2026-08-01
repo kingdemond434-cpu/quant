@@ -28,7 +28,7 @@ import numpy as np
 
 from libs.autodiscovery.generators import GENERATORS, net_returns
 from libs.autodiscovery.models import Family, Hypothesis, MarketSeries
-from libs.autodiscovery.validation import validate
+from libs.autodiscovery.validation import campaign_gate_stats, validate
 from libs.data.venue_http import get_json
 from libs.research.cohort_independence import measure, selection_amplification
 from libs.validation.screen_admission import MIN_ADMISSION_BARS, admit
@@ -137,6 +137,27 @@ def main(argv: list[str] | None = None) -> int:
                         for c in cands])
     n_trials = len(cands)
 
+    # PER-CANDIDATE CAMPAIGN STATISTICS, and this is a correction rather than a loosening.
+    #
+    # MEASURED 2026-08-01, first run: dsr killed 196 of 196 and reality_check killed 196 of 196.
+    # A gate with a 100% rejection rate is not a filter, it has no discriminating power at all --
+    # so the question is which of the two it is, and it was both.
+    #
+    # `validate` takes the corrected path only when a CampaignGates is supplied. This script
+    # passed `column=i` but never `campaign=`, so `per_candidate` was False and it fell to the
+    # LEGACY branch, which pays the multiplicity penalty TWICE: the full DSR deflation over
+    # n_trials AND White's Reality Check over the same N. That is exactly the doubled family-wise
+    # bar audit R0224 measured as costing up to 78 points of power (5.8% -> 83.8% at true SR 5.0,
+    # with false positives at 0 of 4,800 either way). The fix shipped in validation.py; this
+    # caller simply never opted into it.
+    #
+    # The legacy branch also broadcasts ONE cohort verdict to every candidate --
+    # whites_reality_check returns a single p-value for the whole matrix -- which is why the death
+    # count was exactly 196 and not 196 independent judgements. Romano-Wolf step-down still
+    # controls family-wise error across all N, so multiplicity is paid in full, once, and each
+    # candidate earns its own verdict instead of inheriting the cohort's.
+    gates_stats = campaign_gate_stats(matrix)
+
     # --- run the REAL gauntlet ------------------------------------------------------------
     deaths: dict[str, int] = {}
     rows: list[dict[str, Any]] = []
@@ -149,7 +170,8 @@ def main(argv: list[str] | None = None) -> int:
         )
         v = validate(c["returns"], hypothesis=hyp, n_trials=n_trials,
                      sharpe_estimates=sharpes, returns_matrix=matrix,
-                     deployed_equity_usd=25_000.0, column=i, n_trades=c["n_trades"])
+                     deployed_equity_usd=25_000.0, column=i, n_trades=c["n_trades"],
+                     campaign=gates_stats)
         gates = dict(v.gates)
         for g, ok in gates.items():
             if not ok:

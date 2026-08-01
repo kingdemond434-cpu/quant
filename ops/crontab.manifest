@@ -1218,3 +1218,50 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # EVIDENCE: scripts/run_moat_campaign.py -> reports/moat_campaign.json
 # CONFIDENCE: committed-script (new; first run may legitimately report BLOCKED on sample length)
 10 4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_moatcamp.lock .venv/bin/python scripts/run_moat_campaign.py >> data/cro_ai_logs/moat_campaign.log 2>&1
+# CHIEF RESEARCH OFFICER (principal 2026-08-01). The desk's SECOND BRAIN: a cross-family model
+# whose only job is to think, criticise, discover, prioritise and recommend -- never to implement.
+# Implementation agents execute what it validates; the separation is the point.
+# WHY IT EARNED A LINE, and why it is the highest-leverage seat available. run_discretionary_max
+# ranks its five levers by measured leverage and puts CROSS-FAMILY at 2 of 5, recorded as "blocked
+# on the OpenRouter seat" -- an independent model FAMILY disagreeing is worth far more than the
+# same family agreeing with itself, because a second Anthropic seat shares training data, priors
+# and blind spots with the first. libs/ops/llm_seat resolves the credential from the ENVIRONMENT
+# first, so one exported OPENAI_API_KEY seats this and lights the other eleven dark organs.
+# CADENCE: 4x daily (05:20, 11:20, 17:20, 23:20 UTC), the maximum the principal's order supports
+# without the ledger filling faster than dispositions clear. Spend is capped at $20/month in
+# libs/ops/llm_seat and checked BEFORE each call, never after -- run_external_panel discovered
+# credit exhaustion mid-run and returned nothing for the last of the balance.
+# WHILE THE SEAT IS DARK it writes docs/research/CRO_BRIEFING.md carrying the IDENTICAL prompt and
+# exits 0, so the review can be run by hand. A cadenced organ that hard-fails on a missing
+# credential gets disabled, and a disabled organ recommends nothing.
+# EVIDENCE: scripts/run_cro.py -> data/cro_review.json + docs/research/cro_recommendations.jsonl
+# CONFIDENCE: committed-script (new; runs dark until OPENAI_API_KEY is exported, and says so)
+20 5,11,17,23 * * * cd "$QUANT_ROOT" && flock -n data/.cron_cro.lock .venv/bin/python scripts/run_cro.py >> data/cro_ai_logs/cro.log 2>&1
+# RESEARCH MINER (principal 2026-08-01, "max frequency everyday"). Discovers and RANKS quant
+# research across YouTube, Bilibili, Juejin, WeChat/Sogou, arXiv, SSRN, OpenReview, HN and GitHub.
+# Captions are blocked on both video platforms, so the video half is a QUEUE for a human and the
+# module says so; the paper half returns abstracts and can actually be read.
+# CADENCE: daily 13:00 UTC for the full sweep. The Chinese sources run 4-hourly on their own
+# claude-code-remote Routine -- CN sources rate-limit differently and Bilibili's WBI keys rotate,
+# so a failure there must not abort the paper sweep.
+# EVIDENCE: scripts/mine_research_queue.py -> reports/research_queue.json
+# CONFIDENCE: committed-script (measured: 102 Bilibili videos ranked after the CJK word-boundary
+# fix; GitHub search is token-gated and reports it rather than failing)
+0 13 * * * cd "$QUANT_ROOT" && flock -n data/.cron_minerq.lock .venv/bin/python scripts/mine_research_queue.py >> data/cro_ai_logs/mine_research_queue.log 2>&1
+# REAL CAMPAIGN (2026-08-01). Runs the ACTUAL gauntlet on the ACTUAL history and reports WHERE
+# EVERY CANDIDATE DIES. "Zero survivors" is not a finding, it is the absence of one; a per-gate
+# death count turns it into either "the mechanisms have no edge" or "one gate is eating
+# everything", and the desk had been wrong about which twice by reasoning instead of counting.
+# WHAT IT ALREADY FOUND on its first run: dsr 196/196 and reality_check 196/196 -- two gates
+# rejecting 100%, which is a gate with no discriminating power. Cause: this caller passed column=
+# but never campaign=, so validate() fell to the LEGACY branch and paid multiplicity TWICE (the
+# full DSR deflation AND White's Reality Check over the same N), the exact defect audit R0224
+# measured at up to 78 points of power. Wiring campaign_gate_stats moved dsr to 147 and surfaced
+# pbo at 91 -- both now per-candidate rather than one cohort verdict broadcast to everyone.
+# CADENCE: weekly, Sunday 06:00 UTC. Daily bars move slowly and the run is ~10 minutes of CPU
+# after the CSCV speedup (55.1s -> 0.53s per call, x103); re-running nightly would spend CPU for
+# almost no new evidence.
+# EVIDENCE: scripts/run_real_campaign.py -> reports/real_campaign.json
+# CONFIDENCE: committed-script (measured 2026-08-01: 196 candidates over 2,018-2,439 OKX daily
+# bars; admitted set correlation 0.247 vs pool 0.047, 5.2x a random subset, p=0.002)
+0 6 * * 0 cd "$QUANT_ROOT" && flock -n data/.cron_realcamp.lock .venv/bin/python scripts/run_real_campaign.py >> data/cro_ai_logs/real_campaign.log 2>&1
