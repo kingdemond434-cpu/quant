@@ -43,7 +43,14 @@ from libs.research import variation_blocker as VB  # noqa: E402
 
 _OUT = _ROOT / "data/gen_diversity.json"
 _SCORECARD = _ROOT / "data/panel_scorecard.json"
-_DB = _ROOT / "data/research_memory.db"
+#: The lab candidate store. Was `data/research_memory.db` until 2026-08-01 (R0079) -- a path
+#: NOTHING in this repo has ever written, so `_DB.exists()` was always False and every 6-hourly run
+#: reported PERFECT diversity (entropy 1.0, breadth 1.0, distinctness 1.0) over an EMPTY batch.
+#: A collapse detector that cannot see the generator is not a quiet detector, it is an absent one.
+#: `.all()` is deliberate here and is NOT the survivors-only rule that governs the promotion queue:
+#: diversity is a property of what the desk GENERATES, so rejects belong in the sample -- excluding
+#: them would measure the gauntlet, not the generator.
+_DB = _ROOT / "data/sor_research.sqlite"
 
 
 def _batch() -> tuple[list[Any], list[str]]:

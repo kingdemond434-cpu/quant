@@ -1489,15 +1489,79 @@ def check_review_risks_tracked(defects) -> None:
                             "tracked row so a named risk cannot silently escape the discipline."))
 
 
-#: The desk's working book. Capacity-bound edges are the ONE structural advantage a book this
-#: size has, so the reference is explicit rather than implied.
-DESK_BOOK_USD = 50_000.0
+#: DELETED 2026-08-01 (R0079): `DESK_BOOK_USD = 50_000.0`. It was the audit's private copy of the
+#: desk's book size, and its last reader now calls `capacity_policy.live_book_usd()` like every
+#: other scorer. Left as a comment rather than silently removed because the constant is exactly
+#: the shape L1.28a warns about -- a plausible literal standing in for a measured quantity, which
+#: reads as prudent determinism and behaves as a permanent 2.7x mis-statement of the denominator
+#: every capacity band divides by. If a fallback is ever wanted again, it belongs in
+#: capacity_policy (which already has one, DEFAULT_BOOK_USD), never re-inlined here.
 
 
 #: Neither band may fall below this share of the screened funnel. SYMMETRIC on purpose: a funnel
 #: that is 100% niche is as defective as one that is 100% fund-shaped, because both mean a whole
 #: class of alpha is going unhunted and the objective is the MAXIMUM NUMBER of them.
 _BAND_MIN_SHARE = 0.25
+
+#: THE LAB CANDIDATE STORE. Both capacity checks below read it, and until 2026-08-01 (R0079) both
+#: named `data/research_memory.db` -- a path nothing in this repo has EVER written. One constant
+#: now, because two copies of a path is how one of them gets repointed and the other does not.
+_CANDIDATE_DB = ROOT / "data/sor_research.sqlite"
+
+
+def _rel(p: Path) -> str:
+    """Repo-relative display that never raises.
+
+    `Path.relative_to` throws ValueError for anything outside ROOT, which would have made the
+    REFUSAL PATH ITSELF the thing that crashed -- the failure handler failing on exactly the
+    unusual input it exists to describe. Found by the test written for it, not by reading it.
+    """
+    try:
+        return p.relative_to(ROOT).as_posix()
+    except ValueError:
+        return str(p)
+
+
+def _scored_capacities() -> tuple[list[float], list[str], str]:
+    """Every scored candidate's capacity, plus the reason the read produced nothing.
+
+    REFUSAL IS AN OUTCOME WITH ITS OWN VOCABULARY (L1.41 condition 1). Both callers previously
+    wrapped this read in a bare `contextlib.suppress(Exception)` and then returned early on
+    `len(caps) < 5`, so THREE different situations were indistinguishable and all three read as a
+    passing check: (a) the desk genuinely has few scored candidates, (b) the db is absent because
+    this is not the research box, and (c) the read RAISED -- which it did, on every run since the
+    checks were written, because `CandidateStore(Path)` is a type error (`CandidateStore` takes a
+    `Database`, and a `PosixPath` has no `.execute`). Two §42 audits therefore reported OK for
+    their entire existence without ever having read a single candidate, and the exception that
+    would have said so was swallowed one line above.
+
+    Returns (capacities, subtype-names, error) -- `error` empty when the read succeeded.
+    """
+    if not _CANDIDATE_DB.exists():
+        return [], [], f"{_rel(_CANDIDATE_DB)} absent (not the research box)"
+    try:
+        from libs.autodiscovery.memory import CandidateStore
+        from libs.store.connection import Database
+        store = CandidateStore(Database(_CANDIDATE_DB, read_only=True))
+        caps, names = [], []
+        for c in store.all():
+            cap = float(getattr(c.metrics, "capacity_usd", 0.0) or 0.0)
+            if cap > 0:
+                caps.append(cap)
+                names.append(str(getattr(getattr(c, "hypothesis", None), "subtype", "") or ""))
+    except Exception as exc:                                    # reported, never hidden
+        return [], [], f"{type(exc).__name__}: {exc}"
+    return caps, names, ""
+
+
+def _capacity_unreadable(defects, where: str, err: str) -> None:
+    """A capacity audit that cannot READ its input has not passed -- it has not run."""
+    defects.append((
+        "capacity-store-unreadable",
+        f"§42/L1.28a: {where} could not read {_rel(_CANDIDATE_DB)} -- {err}. This "
+        "check is NOT green; it is UNMEASURED, which is the state that looked identical to green "
+        "for as long as the reader was broken. Repair the store or the reader before trusting any "
+        "capacity-band verdict."))
 
 
 def check_capacity_hunt(defects) -> None:
@@ -1517,29 +1581,39 @@ def check_capacity_hunt(defects) -> None:
     defect. Small edges expire first -- that is arithmetic, and it is handled by
     `check_capacity_runway`, not by preferring them here.
     """
-    caps: list[float] = []
-    names: list[str] = []
-    with contextlib.suppress(Exception):
-        from libs.autodiscovery.memory import CandidateStore
-        store = CandidateStore(ROOT / "data/research_memory.db")
-        for c in store.all():
-            cap = float(getattr(c.metrics, "capacity_usd", 0.0) or 0.0)
-            if cap > 0:
-                caps.append(cap)
-                names.append(str(getattr(getattr(c, "hypothesis", None), "subtype", "") or ""))
+    caps, names, err = _scored_capacities()
+    if err:
+        _capacity_unreadable(defects, "check_capacity_hunt", err)
+        return
     if len(caps) < 5:
         return  # too few scored candidates to judge where the hunt is pointed
-    from libs.research.capacity_policy import DEFAULT_SLEEVES, capacity_band, declared_allocation
+    from libs.research.capacity_policy import (
+        capacity_band,
+        declared_allocation,
+        live_book_usd,
+        live_sleeves,
+    )
     # Whole-book figure -> must be divided by the sleeve count: no single edge is filled with the
-    # entire desk. Judging candidates against all $50k would inflate the requirement 8x and mark
-    # perfectly tradeable small edges "unfillable" -- the flat-floor bug wearing a new hat.
+    # entire desk. Judging candidates against the whole book would inflate the requirement 8x and
+    # mark perfectly tradeable small edges "unfillable" -- the flat-floor bug wearing a new hat.
     #
     # A DECLARED sleeve is banded at its declaration, because that is how every scorer judges it.
     # Banding at equal weight here would have the audit call an edge UNFILLABLE while the scorer
     # calls the same edge NICHE -- two answers to one question, and the audit is meant to be the
     # thing that catches that class of disagreement, not a source of it.
-    bands = [capacity_band(c, DESK_BOOK_USD, DEFAULT_SLEEVES,
-                           allocation_usd=declared_allocation(name))
+    #
+    # THE LIVE BOOK, NOT A LITERAL (2026-08-01, R0079). This banded against the module constant
+    # DESK_BOOK_USD = $50,000 while its sibling `check_capacity_runway` banded the SAME candidates
+    # against `live_book_usd()` = $18,811 -- two answers to the one number every capacity band is a
+    # ratio to, in adjacent functions, which is the precise defect L1.28a's first run found in the
+    # opposite direction. It is also self-inflicted in the expensive direction: a book pinned 2.7x
+    # too large inflates `capacity_required` and marks small edges UNFILLABLE, which is §42's named
+    # structural advantage being audited away by a constant. Doctrine is explicit -- "a ratio
+    # measured against a hardcoded number is the flat-floor bug one step removed" -- and
+    # live_book_usd() already falls back to the constant when the NAV chain is missing or stale,
+    # so this is strictly better-founded than the literal it replaces, never looser.
+    book, sleeves = live_book_usd(), live_sleeves()
+    bands = [capacity_band(c, book, sleeves, allocation_usd=declared_allocation(name))
              for c, name in zip(caps, names, strict=True)]
     in_niche = sum(1 for b in bands if b == "NICHE")
     larger = sum(1 for b in bands if b in ("SCALABLE", "FUND-SCALE"))
@@ -1549,7 +1623,7 @@ def check_capacity_hunt(defects) -> None:
         defects.append((
             "capacity-hunt-unfillable",
             f"§42: {unfillable}/{len(caps)} scored candidates cannot absorb the required headroom "
-            f"on a ${DESK_BOOK_USD:,.0f} book at all -- the desk would BE the edge. Small is the "
+            f"on a ${book:,.0f} book at all -- the desk would BE the edge. Small is the "
             "advantage; too small to fill is not. These should be screened out before scoring, "
             "not carried as candidates."))
     if fillable < 5:
@@ -1716,12 +1790,10 @@ def check_capacity_runway(defects) -> None:
         from having no deployable inventory and no notice that it is coming.
     """
     from libs.research.capacity_policy import growth_runway, live_book_usd, live_sleeves
-    caps: list[float] = []
-    with contextlib.suppress(Exception):
-        from libs.autodiscovery.memory import CandidateStore
-        store = CandidateStore(ROOT / "data/research_memory.db")
-        caps = [float(getattr(c.metrics, "capacity_usd", 0.0) or 0.0) for c in store.all()]
-    caps = [c for c in caps if c > 0]
+    caps, _names, err = _scored_capacities()
+    if err:
+        _capacity_unreadable(defects, "check_capacity_runway", err)
+        return
     if len(caps) < 5:
         return
     book, sleeves = live_book_usd(), live_sleeves()
