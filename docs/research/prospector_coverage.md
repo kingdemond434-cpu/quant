@@ -814,6 +814,59 @@ and the retail-positioning set (套牢/踏空/割肉/装死/纸手/钻石手).
 SCREEN-ON-DISCOVERY: nothing to screen — item 1 produced an INSTRUMENT upgrade (recall), not a data
 axis or a mechanism. Stated plainly rather than manufacturing a screen to look productive.
 
+#### ITEM 1 DEPTH OVERFLOW — the layer past where I would have stopped. [§33: screened -> data/unlock_event_screen.json]
+An operator written and never tested is the built-never-wired defect, so I spent OP-036 and the new
+lexicon on live ground instead of banking them. Two things came back.
+(a) **OP-036 era-key test:** `site:8btc.com 大饼` DID return era forum threads — incl. `thread-44638`
+    *"真够疯的，国内外价格相差8-10%"* (domestic-vs-foreign price gap of 8-10%), which is banzhuan-era
+    CN-premium material on our own carried ground, and `thread-87728` on whale mechanics. HONEST
+    CAVEAT: this is weak evidence for the operator — the engine does semantic matching, not
+    exact-key matching, so I cannot claim from it that the euphemism key beat the ticker key. The
+    operator's ERA-DATING logic rests on the two verbatim origin sources, not on this test.
+(b) **The real overflow: 控盘 carried NUMBERS, and they landed on a dataset we already owned.**
+    CN practitioner lore states float-control thresholds (~10% to move a thin book short-term, 30%
+    medium, 50%+ for a full cycle) and that low-circulation coins are the manipulable ones. Numbers
+    with a mechanism are the class that converts here (spoken/forum sources: MECHANISMS 0/13,
+    NUMBERS 4/4). That is a conditioning prior for `data/unlock_events.json` — **24,201 events,
+    s13-passed, ZERO python readers, sitting unused since 2026-07-24.**
+    NOVELTY GATE: PASSED — no unlock/vesting row anywhere in the graveyard.
+    MECHANISM: insider/private-sale vesting delivers tokens to a ~zero-cost-basis holder on a
+    contractually fixed PUBLIC date; they cannot sell before receipt and fund lifecycles force
+    distribution. Forced seller on an immutable schedule — the funding/carry shape, not price-pattern.
+    **SCREENED IN THE SAME RUN via the §42 event-study path** (an unlock is ~2 non-zero days in 30;
+    judging it on a continuous daily statistic is the error that gate exists to prevent).
+    **RESULT: 0 of 27 pre-registered cells pass** — all 27 logged, not just the best, `n_cohort=27`.
+    Powered cells are a genuine null (best |t|=1.32 vs bar 2.24).
+    **BUT THE VERDICT IS *UNMEASURED*, NOT *DEAD*, AND FOR TWO REASONS I DID NOT EXPECT:**
+    (1) `pct_circ_now` is a % of **TODAY's** circulating supply applied to events back to 2016 —
+        supply grows, so old unlocks that were huge shares of float at the time record as small
+        ones, structurally emptying the ≥10% bucket (insiders ≥10%: 14 events; ≥30%: **0**). The
+        conditioning variable is unknowable at event time. Clean prospectively, contaminated
+        historically. (2) It is a SNAPSHOT, not a series: forward calendar runs only to
+        **2026-08-23** with **zero** ≥10% events, so the forward test the mechanism needs cannot be
+        run from it and the file expires in three weeks.
+    NOT graveyarded — nothing was refuted, and a false kill would poison the novelty gate against a
+    live mechanism and corrupt family survival stats (L1.18a reasoning applied to a null).
+    Routed: axis card + narrow re-entry condition in `data_axis_watchlist.md`, collector rowed
+    **R0288**, `rm-20260801T125319-a95125`.
+    **TRANSFERABLE LESSON:** check the as-of date of a ratio's DENOMINATOR separately from its
+    numerator. A `_now` field joined to historical events is a silent look-ahead in the
+    *conditioning* variable even when the return series is spotless — and it fails toward a FALSE
+    NULL, which is the direction no gate on this desk would ever catch.
+
+#### VENUE DISCOVERY (standing obligation — harvested from inside results, NOT from the seed list)
+Recorded with first-pass verdicts so no seat re-spends on them. The seed list is a floor.
+| venue | what lives there | how found | verdict |
+|---|---|---|---|
+| **maimai.cn** (脉脉) | CN professional/workplace network, semi-anonymous. Surfaced `揭秘主观做市商：江湖雅称"狗庄""操盘手""大内资金总管"` — a **market-maker insider writeup**. CN analogue of Blind/Glassdoor: insider talk + **job postings**, which L1.34 names as leaking infrastructure and strategy families | 狗庄 query | **RICH — and a NEW VENUE CLASS for this seat.** OP-007 (ex-employee/insider layer) had no CN venue until now; every prior CN session mined forums and repos only |
+| **otcbtc.zendesk.com** | Help-centre docs of **OTCBTC, a defunct CN OTC exchange**, incl. step-by-step 搬砖 (banzhuan) arb walkthroughs that survived the venue | banzhuan query | **RICH for era-archaeology** — a dead venue's own docs are primary era material and were never on our list |
+| **xiarj.com / 闽发论坛** (Minfa) | Old CN stock forum; carries `威科夫控盘法详解` (Wyckoff float-control, multi-part) | 控盘 query | THIN-to-RICH, unmined — CN *equity* lore is the source of the 控盘 vocabulary crypto inherited |
+| tokenairdrop.org · kttg.pro · candy666.top · bicoin8.com | 糖果/空投 aggregators — airdrop calendars, "首码" new-project feeds | 糖果 query | THIN as alpha, but they are **event-calendar feeds**; adjacent to `unlock_events` and same forced-supply family |
+| huoxing24.com (火星财经) · tuoluo.cn (陀螺科技) · blockweeks.com (区块周刊) · 528btc.com (币界网) | CN crypto media + market analysis | 庄家/大饼 queries | THIN individually; useful as **positioning intelligence** (what CN retail is being told) |
+| jb51.net/blockchain (脚本之家) | Unglamorous CN dev-tutorial site carrying the **single richest slang glossary** found this run | 黑话 query | RICH-for-lexicon — the boring-source lesson (L1.35) paying out literally |
+| cngold.com.cn (中金网) | Carried the verbatim 大饼 origin text | 大饼 origin query | THIN but load-bearing — one of OP-036's two sources |
+| **zhuanlan.zhihu.com** | — | — | **WALLED from this VPS: HTTP 403 on article fetch.** Zhihu SEARCH results are readable, article bodies are not. Scoped as a ROUTE failure, not a capability failure (L1.25a / battery #9) — glossary content was obtained free elsewhere, so **no paid unlock is justified and nothing is video-locked** |
+
 ### SESSION CLOSE 2026-08-01 session E (EN frontier miner) — DEPTH LINE, BATTERY, STANDING TEST
 
 **STANDING TEST — "Which artifact on disk is different because of what was mined?"**

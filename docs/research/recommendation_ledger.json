@@ -3498,6 +3498,18 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0288",
+   "source": "cycle",
+   "summary": "Build a recurring DefiLlama unlock-calendar collector + circulating-supply-at-date series. data/unlock_events.json (24,201 events, 5.2MB, s13-passed) has ZERO python readers and is a ONE-SHOT 2026-07-24 snapshot: its forward calendar expires 2026-08-23 and holds 0 events at >=10% of float, so the forced-supply mechanism CANNOT be forward-tested and the file dies unused. Its pct_circ_now field is also %-of-TODAY's-supply applied to events back to 2016, which structurally empties the historical high-threshold bucket and is unknowable at event time. Collector makes the axis prospectively testable; without it the whole dataset is unconvertible. Evidence: data/unlock_event_screen.json (0/27 cells, rm-20260801T125319-a95125).",
+   "roi_bps": 15.0,
+   "raised": "2026-08-01T12:53:28.505882+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

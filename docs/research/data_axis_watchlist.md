@@ -1131,3 +1131,61 @@ NOT mean capital (L1.6 -- a candidate is not an edge). R-rows: R0115-R0118.
   for a problem it does not have, and the two-stage law already says screening volume carries no
   promotion authority. Revisit when there are >=3 orthogonal validated sleeves — that is the
   lifting condition, recorded so it is not re-litigated.
+
+---
+
+## AXIS — `token_unlock_forced_supply` (DefiLlama unlocks) — SCREENED IN-RUN, UNMEASURED AT THE THRESHOLD THAT MATTERS
+_CN frontier miner session 3, 2026-08-01. Screen-on-discovery duty discharged in the same run.
+Artifact: `data/unlock_event_screen.json` · research-memory `rm-20260801T125319-a95125` · ledger `R0288`._
+
+**HOW A CN LEXICON DIG ENDED ON A DATASET WE ALREADY OWNED.** Verifying the 控盘 (*kòngpán*,
+"float control") term surfaced quantitative CN practitioner lore with THRESHOLDS attached: an
+operator needs roughly **10% of float** to move a thin book short-term, **30%** medium-term and
+**50%+** to run a full cycle, and *"low-circulation coins are particularly vulnerable... many newly
+issued coins have highly concentrated chips, and large-scale makers can manipulate at very low
+cost."* That is a stated economic mechanism with numbers, which is the class that actually converts
+here (measured: from spoken/forum sources MECHANISMS convert 0/13, NUMBERS 4/4). It maps directly
+onto `data/unlock_events.json` — **24,201 events, 5.2MB, s13-passed, and ZERO python readers.**
+
+**MECHANISM (who is forced, and why they cannot stop):** insider and private-sale vesting releases
+tokens to a holder with a ~zero cost basis on a **contractually fixed, publicly published date**.
+They cannot sell before receipt, and fund lifecycles force distribution. Immutable schedule, forced
+seller — structurally the same shape as funding/carry, this desk's only repeat survivor, and
+explicitly NOT a price pattern (the 420/0-refuted class).
+**FALSIFIER:** abnormal return to a short from unlock close D to close D+N is indistinguishable
+from zero once multiplicity is priced.
+
+**RESULT: 0 of 27 pre-registered cells pass.** All 27 cells reported, not just the best — every
+category × threshold × window combination is a counted trial (`n_cohort=27`, Holm bars 2.24–2.90).
+Powered cells are a genuine null (best |t| = 1.32 at `ALL/≥10%/N=10`, mean +6.09% to the short,
+bar 2.24). Clock alignment declared (L1.46): DefiLlama date = UTC calendar day, bronze D1 = Binance
+UTC close, entry at close of D so the whole return is strictly post-event. Survivorship biases a
+SHORT study *against* an edge — the safe direction.
+
+**TWO MEASUREMENT DEFECTS, and together they fully explain the empty buckets — this is the find:**
+1. **The denominator has the wrong as-of date.** `pct_circ_now` is a percentage of **TODAY's**
+   (2026-07-24) circulating supply, applied to events going back to 2016. Circulating supply grows,
+   so an unlock that was a *huge* share of float at the time is recorded as a *small* share of
+   today's float. The historical high-threshold bucket is therefore structurally emptied —
+   insiders ≥10% has **14 events**, ≥30% has **0** — and the conditioning variable is not knowable
+   at event time. **The field is clean prospectively and contaminated historically.**
+2. **It is a snapshot, not a series.** One-shot scrape with no collector: the forward calendar spans
+   only 2026-07-25 → **2026-08-23** (171 events, 45 symbols) and contains **zero** events at ≥10%.
+   So the forward test the mechanism actually needs cannot be run from this artifact, and the file
+   expires in three weeks.
+
+**VERDICT: NOT REFUTED, NOT SUPPORTED — UNMEASURED where the mechanism lives.** Under L1.25 the
+absence of a survivor here is a data/instrument limitation, not a fact about the market, and it is
+recorded as such rather than as a kill. Not graveyarded: nothing was refuted, and a false kill would
+poison the novelty gate against a live mechanism.
+**RE-ENTRY CONDITION (L1.16a), narrow and named:** a recurring collector snapshotting the forward
+calendar so unlocks accrue prospectively, PLUS circulating-supply-at-event-date to replace the
+contaminated denominator. Re-test only when ≥20 insider events at ≥10% of *contemporaneous* float
+exist. **A new window or threshold on this same snapshot is NOT an enabling change and would be
+re-litigating** (L1.17). Collector rowed as **R0288**.
+
+**GENERALISED LESSON (the part that transfers past this axis):** before conditioning on any
+ratio-to-supply / ratio-to-total metric from any vendor, check the **as-of date of the DENOMINATOR**
+separately from the numerator. A `_now` suffix on a field joined to historical events is a silent
+look-ahead in the conditioning variable even when the return series is perfectly clean — and it
+fails in the direction that manufactures a *false null*, which no gate on this desk would catch.
