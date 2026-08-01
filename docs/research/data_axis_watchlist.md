@@ -161,7 +161,62 @@ _Superseded original grading below (kept for the record):_
   failure modes: non-uniform start dates per data type (do not assume uniform depth).
 - **Grade: verified-clean** (portal existence + categories), pending format/auth confirmation.
 
-### 3. bitFlyer getexecutions + self-recorded candles — grade: needs-legitimacy-review (mechanism verified-clean, destroyed-at-source residual confirmed; ToS host WAF-blocked so licence is unread, re-graded 2026-07-25) [§33: deferred(2026-08-09) tier:2]
+### 3. bitFlyer getexecutions + self-recorded candles — grade: **RESTRICTED-BY-LICENCE — CLOSED 2026-08-01, DO NOT BUILD** [§33: killed -> docs/graveyard.md `jp_bitflyer_direct_recording`]
+
+> **§33 DISPOSITION 2026-08-01 (JP frontier miner session 1) — THE DEFERRAL IS OVER. THE LICENCE HAS
+> BEEN READ AND IT FORBIDS THE USE. The human page-read dependency below is DISCHARGED — nobody
+> needs to open anything.**
+>
+> The blocker was never the licence's *existence*, it was four probes that all varied the same
+> thing. Corrections to the record below, each against an artifact fetched 2026-08-01:
+> - **"403 / WAF-blocked" is wrong.** TLS completes, cert verifies (`O="bitFlyer, Inc."`), the HTTP/2
+>   stream OPENS, then `INTERNAL_ERROR (err 2)`; over HTTP/1.1 and IPv4 it **hangs to timeout**
+>   (`code=000`). An Akamai tarpit, not a status code.
+> - **"the block is not egress-specific" is right but was read backwards.** It is not about egress
+>   because it is **per-hostname**: `api.bitflyer.com` and `lightning.bitflyer.com` both return
+>   **200 from the identical edge IP `2a02:26f0:e80:588::2644`** that tarpits the apex. Only the
+>   marketing/legal host is bot-managed. (⇒ **OP-043**.)
+> - **"never usefully archived" is refuted — the CDX query used the wrong host AND the wrong slug.**
+>   Pre-migration host is **`bitflyer.jp`**; slug is **`terms-of-use`**, not `terms`. Corrected query
+>   returned `https://bitflyer.jp/en-eu/terms-of-use` (2019-06-01, **200**) on the first attempt.
+>   (⇒ **OP-044**.)
+>
+> **THE OPERATIVE CLAUSE (verbatim, capture `20190601153535`):** *"The bitFlyer API is the copyrighted
+> technology of bitFlyer and may not be copied, imitated or used, in whole or in part, outside of the
+> API's intended use. bitFlyer retains all its rights related to its databases, websites, … **including
+> chat text, the content of bitFlyer emails, and data such as transaction prices** — developed or
+> provided by bitFlyer or its affiliates **which can be acquired by various external APIs**. bitFlyer
+> may demand any third party stop using bitFlyer's API for any purposes not authorized by bitFlyer."*
+> Reinforced by *"only for your internal purposes and solely as necessary for your use of the Service"*
+> and a bar on *"any robot, spider, crawler, scraper, script … not authorized by us to access the
+> Services, extract data"*.
+>
+> **VERDICT: `restricted-by-licence`. §13 is a HARD STOP. Do not build a bitFlyer direct-recording
+> collector.** The same clause pre-emptively kills two endpoints verified live and keyless this run
+> before either could be carded: **`/v1/getchats`** (real JP retail chat — clause names *"chat text"*)
+> and **`/v1/getfundingratehistory`** (8-hourly JP funding — the desk's only repeat-surviving family,
+> and the one most wanted). It also blocks the run's biggest find, **not carded on purpose**:
+> `bitflyer.jp/api/chart/btc_jpy?start=&end=`, an undocumented keyless 15-minute BTC/JPY series, dead
+> live (302) but **Wayback-captured 200 from 2015-08 (414,675 B ≈ 10 months per capture, back to
+> 2014-10-16)**. Reading bitFlyer's data out of a third-party archive does not extinguish bitFlyer's
+> stated rights in it — **"the Internet Archive had a copy" is not a licence.**
+>
+> **HONEST RESIDUAL:** the document read is the **EU entity's 2019** ToS, not the JP entity's current
+> 利用規約 (JP-side `terms-of-use` paths have no CDX captures; the live host is tarpitted). This is
+> bitFlyer *group's* stated position, strongly against — not a JP-entity ruling. §13 asks whether a
+> licence forbids the use; the only bitFlyer terms document the desk has ever read says yes. Grading a
+> restriction on the evidence we have beats a fifth deferral on evidence we cannot get.
+>
+> **L1.16a RE-ENTRY CONDITION:** a bitFlyer **JP-entity** ToS, or an explicit bitFlyer data-use
+> permission, that does **not** retain rights in transaction prices.
+>
+> **LICENSED SUBSTITUTE, ALREADY OWNED:** Tardis.dev covers `bitflyer` **since 2019-08-30**, free
+> first-of-month, internal research use **PERMITTED** (see entry 1's licence read). Residual gap is
+> granularity (1 day/month), not availability. **Unrestricted JP alternatives found the same run:
+> entry 27 (GMO Coin, free tick tape 2018-09-05→, 40 symbols) and entry 28 (bitbank).**
+
+<details><summary>Superseded record (2026-07-25/26 deferral, kept for provenance — its factual claims are corrected above)</summary>
+
 > **§33 DISPOSITION 2026-08-09 — DATED DEFERRAL, BLOCKER NAMED. A THIRD AND FOURTH INDEPENDENT
 > ROUTE TO THE ToS FAILED 2026-07-26. The licence is genuinely unread, so no verdict is written:
 > fabricating one would be exactly the hand-wave §13 exists to stop.**
@@ -230,6 +285,8 @@ _Superseded original grading below (kept for the record):_
 >   failed routes now logged (direct = WAF/geo-block; archive = no snapshots). Lifting
 >   condition: fetch the ToS from any non-blocked egress (different IP/organ or human) — one
 >   page-read closes the field and starts the clock on the ~32-minute backfill.**
+
+</details>
 
 _Superseded original grading below (kept for the record):_
 ### 3-OLD. bitFlyer getexecutions + self-recorded candles — grade: needs-monitoring

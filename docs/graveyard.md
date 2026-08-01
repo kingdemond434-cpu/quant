@@ -323,3 +323,66 @@ day") DIED WITH THE LEAK, and must not be cited. What survives is weaker and hon
 close-to-close pair samples a continuously-quoted spread twice, so a mechanism acting on an
 arbitrage-window timescale would be invisible here whether or not one exists. That is an argument
 about RESOLUTION, not evidence of a signal, and it earns a screen on intraday data -- never a slot.
+
+---
+
+### jp_mlbot_atr_limit_reversion (richmanbtc `mlbot_tutorial` lineage) — PRE-EMPTIVELY KILLED by the community's own attribution study, before the desk spent a single screen on it
+_JP frontier miner session 1, 2026-08-01. Free graveyard material: refuted at source, not by us._
+
+**The claimed mechanism.** The most-cited artifact in the entire JP botter ecosystem —
+`github.com/richmanbtc/mlbot_tutorial` (519★, 187 forks, **CC0-1.0** verified via GitHub API,
+**dead since 2022-11-28**). LightGBM on ~43 TA-Lib features predicting the realised P&L of a
+specific passive execution rule on GMO Coin BTC_JPY 15-minute bars, 2018-10 → 2021-04.
+
+**WHY IT IS DEAD — the attribution, done by the community itself** (バジル @kkngo_crypto,
+`note.com/kkngo/n/n631e9fdc7855`, 2023-02-05): the profit source is
+**「毎回ATR×0.5の位置に指値を置くだけ」** — *just placing a limit at ATR×0.5, every time*. That rule
+alone returns **~1700% over the 2.5-year window with no machine learning whatsoever**, and adding
+the tutorial's full ML stack on top leaves cumulative return **almost unchanged** (it cuts trade
+count and improves capital efficiency; it does not add return). **The ML is a filter on a rule that
+was already the entire edge.**
+
+**AND THE RULE ITSELF IS A FEE ARTIFACT.** The tutorial hand-transcribes GMO's
+`maker_fee_history`: `0.0` initially, **`-0.00035` from 2020-08-05**, **`-0.00025` from 2020-09-09**,
+`0.0` from 2020-11-04. **The maker fee is zero or NEGATIVE across the entire backtest window.** So
+the mechanism is passive liquidity provision harvesting mean reversion on a retail JPY venue during
+a period when the venue *paid you to post*. That is a **venue-subsidy harvest**, not an alpha — and
+the subsidy ended.
+
+**INDEPENDENT DEATH CONFIRMATIONS, three of them, different venues and timeframes:**
+- kkngo 2023: 「毎回ATR×0.5の位置に指値を置くだけで勝てるわけがない」 — the identical approach now loses.
+- chanta (`qiita.com/chanta/items/158f0d2b63afa2e6935b`, 2024-12-20, "消えたエッジの話"): same family
+  on **Bybit, 12-hour bars, ATR(6), 0.21–0.25×ATR**, live-profitable from ~Dec 2023 (some months at
+  90% win rate), **died March 2024** when the 12h BTC reversal cycle that had held since 2022 broke.
+- pip_pip_pip_p (`qiita.com/pip_pip_pip_p/items/3b86e36ca536e99d26e0`, 2024-12-07): the rule-based
+  layer on Binance BTCUSDT is up in 2021 and **monotonically down from 2022 onward, including
+  through the Nov–Dec 2024 bull market**.
+
+**THE TUTORIAL FAILS ITS OWN TWO BARS AND SAYS SO.** Published run: naive t-test `t=7.169`,
+`p=7.62e-13` — overwhelming. Its author's own p-mean: **0.2005**, error rate **8.43e-3** against his
+stated bar of **≤1e-5** (off by ~840×); his own non-stationarity score **0.4556** against his stated
+threshold **≤0.3**. He states up front 「そのままでは儲からない」 (*it will not make money as-is*).
+**The desk should read the p=7.6e-13 vs error-rate-840×-too-high contrast as the artifact it is** —
+it is the same shape as our own 420/0 instrument lesson pointed the other way.
+
+**METHOD DEFECTS, recorded so the shape is recognisable when it arrives in our own work:**
+1. **No cost model in substance** — fee ≤ 0 for the whole window (above).
+2. **Anti-causal CV.** `KFold()` with sklearn defaults = `shuffle=False, n_splits=5`, so for fold 0
+   the validation block is the *earliest* 20% and training is the *subsequent* 80%. **Four of five
+   folds train on data that postdates their validation block.** `TimeSeriesSplit` sits commented out
+   one line below. Purging is explicitly omitted, with unbounded overlapping labels from the
+   Force-Entry-Price forward scan (O(n²), **no horizon cap**).
+3. **Frictionless fills** — a touch through the limit is a fill; no queue position, no volume check,
+   no partial fills, no liquidation/zero-cut.
+
+**VERDICT: do not screen this family on JP venues.** Not because passive reversion is uninteresting,
+but because the published instance's return is attributable to a **maker rebate that no longer
+exists**, and three independent practitioners have since watched it die on three different venues.
+
+**L1.16a RE-ENTRY CONDITION:** a venue paying a **negative maker fee** on a book we can actually
+reach, at a size our band can fill — at which point this is a *rebate-harvest* mechanism to be
+sized on the rebate, and must never again be described as an ML edge.
+
+**WHAT SURVIVES THE KILL** (routed to `improvement_inbox.md`, not here): the p-mean evaluation
+shape, the adversarial-validation-against-time feature screen, and `publicGetExpiredFutures` as a
+survivorship-free universe primitive. The mechanism is dead; three of its tools are not.
