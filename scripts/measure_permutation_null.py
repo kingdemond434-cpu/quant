@@ -99,7 +99,10 @@ def _sharpe(r: np.ndarray) -> float:
     return float(np.mean(r) / sd * np.sqrt(_PPY))
 
 
-def _buy_and_hold(s: MarketSeries) -> np.ndarray:
+def _buy_and_hold(s: MarketSeries, p: dict[str, float]) -> np.ndarray:
+    """Signature matches PositionFn -- _score calls fn(series, params). Taking only the
+    series raised a TypeError that _score swallowed, and the control silently reported
+    UNMEASURED for a whole run."""
     return np.ones(len(s.close))
 
 

@@ -163,3 +163,25 @@ def test_a_pure_drift_asset_does_not_certify_a_momentum_rule():
     o, h, low, c = _ohlc_from_returns(_ar1(1500, phi=0.0, seed=5) + 0.005, seed=5)
     p = _pvalue(to_log_bars(o, h, low, c), _momentum_sharpe, seed=105)
     assert p > 0.05, f"a pure-drift asset certified a momentum rule at p={p:.3f}"
+
+
+def test_a_permutation_invariant_rule_is_not_handed_significance_by_float_dust():
+    """THE TRAP THIS TOLERANCE EXISTS FOR, and it fired on real data. Any rule driven by drift
+    alone -- buy-and-hold, persistent_long -- has a statistic that is INVARIANT under the
+    permutation, because the permutation reorders returns without changing them. A strict `>=`
+    then resolves a thousand exact ties on cumulative-sum rounding in the 6th decimal.
+
+    MEASURED on 2,438 real BTC bars: buy-and-hold scored 0.841290 against a permuted mean of
+    0.841284, sd 4e-6 -- the same number -- and came back p = 0.035. That reads as a tradeable
+    edge on a rule that provably has none."""
+    o, h, low, c = _ohlc_from_returns(_ar1(2400, phi=0.0, seed=21) + 0.0013, seed=21)
+    b = to_log_bars(o, h, low, c)
+    p = _pvalue(b, _buy_and_hold_sharpe, seed=121, n_perm=300)
+    assert p > 0.9, f"a permutation-invariant rule scored p={p:.4f}"
+
+
+def test_the_tolerance_does_not_blunt_a_real_separation():
+    """The control for the tolerance: a genuine edge sits orders of magnitude outside 1e-4, so
+    forgiving float dust must not cost any power."""
+    o, h, low, c = _ohlc_from_returns(_ar1(1500, phi=0.35, seed=22), seed=22)
+    assert _pvalue(to_log_bars(o, h, low, c), _momentum_sharpe, seed=122) < 0.02

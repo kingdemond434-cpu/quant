@@ -61,6 +61,15 @@ import numpy as np
 DEFAULT_PERMUTATIONS = 1_000
 MIN_PERMUTATIONS = 100
 
+#: Relative tolerance below which a permuted statistic counts as EQUAL to the real one.
+#:
+#: SET BY MEASUREMENT, not taste. Reassembling 2,438 real BTC bars by cumulative sum accumulates
+#: rounding of order 1e-5 relative, so a statistic that is mathematically invariant under the
+#: permutation still jitters in the 6th decimal. 1e-4 sits ~15x above that dust and ~3 orders of
+#: magnitude below any Sharpe difference that would mean anything: two strategies differing by
+#: 0.0001 relative are the same strategy.
+_TIE_RTOL = 1e-4
+
 
 @dataclass(frozen=True)
 class Bars:
@@ -192,6 +201,16 @@ def permutation_pvalue(real_stat: float, perm_stats: np.ndarray) -> float:
     """
     s = np.asarray(perm_stats, dtype="float64")
     s = s[np.isfinite(s)]
+    # NUMERICALLY EQUAL COUNTS AS A TIE, and this is not a rounding nicety -- it decides whether a
+    # whole class of rules reports significance it cannot have. A rule whose statistic is INVARIANT
+    # under the permutation (anything driven by drift alone: buy-and-hold, persistent_long) gets
+    # the identical value on every draw, because the permutation reorders the returns without
+    # changing them. A strict `>=` then resolves 1,000 exact ties on cumulative-sum dust in the
+    # 6th decimal and can return any p-value at all. MEASURED on 2,438 real BTC bars: buy-and-hold
+    # scored 0.841290 against a permuted mean of 0.841284 with sd 4e-6 -- numerically the same
+    # number -- and came back p = 0.035, which reads as a tradeable edge and is float noise.
+    # Ties count TOWARD the null, which is the conservative direction.
+    tol = _TIE_RTOL * max(abs(float(real_stat)), 1.0)
     if s.size < MIN_PERMUTATIONS:
         raise ValueError(
             f"{s.size} usable permutations, need at least {MIN_PERMUTATIONS}: below that the "
@@ -199,7 +218,7 @@ def permutation_pvalue(real_stat: float, perm_stats: np.ndarray) -> float:
             "threshold and the test reports significance it did not measure")
     if not np.isfinite(real_stat):
         return 1.0
-    return float((np.sum(s >= real_stat) + 1) / (s.size + 1))
+    return float((np.sum(s >= float(real_stat) - tol) + 1) / (s.size + 1))
 
 
 def permutation_moment_report(b: Bars, perms: list[Bars]) -> dict[str, object]:
