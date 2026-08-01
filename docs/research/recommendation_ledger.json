@@ -3304,6 +3304,30 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0272",
+   "source": "cycle",
+   "summary": "TRACKED-JSON FORMAT FENCE: both Claude sessions independently produced multi-thousand-line whole-file diffs on append-only ledgers TODAY by writing a different indent than the canonical writer (recommendation_ledger.json is indent=1 per scripts/recommendations.py; decision_ledger.json is indent=2). Mine: a 26-line append to decision_ledger.json rendered as 7,056 changed lines; the sibling session's ledger commit rendered as 6,360. Content was intact in both cases -- and that is exactly the danger: the diff is indistinguishable at a glance from the LEDGER CORRUPTION class R0175 exists to catch, so a real deletion inside one would be invisible to review, and the append-only guarantee becomes unreviewable in practice. FENCE: a test that each tracked JSON ledger round-trips byte-identically through its canonical writer, so a wrong-indent write fails at commit rather than at review. Cheap, and it makes 'rows are never deleted' actually checkable.",
+   "roi_bps": 3.0,
+   "raised": "2026-08-01T09:19:32.206216+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0273",
+   "source": "cycle",
+   "summary": "THE GENERATION ENGINE CANNOT START ON THIS BOX -- and this is upstream of everything else. scripts/run_autodiscovery.py (the ONLY entry point to AutoDiscoveryLab, the desk's industrialised generation engine) hard-imports MetaTrader5 in _mt5_provider() and dies with ModuleNotFoundError. requirements-deploy.txt:5 marks it 'Windows only; requires a running MT5 terminal + demo account' -- and the desk now runs HEADLESS ON LINUX. Verified by running it this cycle. THE ROUTE FAILED, NOT THE CAPABILITY: AutoDiscoveryLab takes data_provider as a constructor arg (orchestrator.py:60, used at :127), so the lab is provider-agnostic and one adapter away from running on the crypto data already on disk. THIS EXPLAINS THE STANDING generation-skipped DEFECT (12.6h and counting), 'generation tested=0 for 6 days', and why the 420/0 campaign record is frozen: _audit_prepared.pkl is dated Jul 26, before the Linux migration. It also means THIS CYCLE'S 180.8x power fix is currently an orphan by L1.45's definition -- a more powerful campaign that nothing on this machine can run. SPEC: implement a crypto DataProvider (symbol -> MarketSeries) over the existing moat/Coin Metrics/Binance archives, injected at the run_autodiscovery call site; keep the MT5 path behind a --provider flag rather than deleting it. NOT BUILT THIS CYCLE DELIBERATELY: a data adapter feeding the PRIMARY generation path is lookahead-sensitive, and the desk's own ledgered reasoning (collector-scaffold, R0031 class) is that bespoke backfills ahead of the scaffold re-create the kimchi-FX/bithumb-lookahead class. It gets a careful slot, first, next cycle -- not the last minutes of a long one.",
+   "roi_bps": 60.0,
+   "raised": "2026-08-01T09:21:32.381276+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
