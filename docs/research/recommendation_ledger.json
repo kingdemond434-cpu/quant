@@ -4206,6 +4206,54 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0347",
+   "source": "cycle",
+   "summary": "tests/data/test_multiexchange.py::test_okx_inst_mapping PINS THE BUG L0051 names: it asserts okx_inst('1000PEPEUSDT')=='1000PEPE-USDT-SWAP', but OKX carries the re-denomination multiplier in ctVal (=1e6) while Binance carries it in the TICKER, so the real OKX instrument is PEPE-USDT-SWAP. The test therefore certifies the mapping that silently DROPS SHIB/PEPE/FLOKI/BONK/SATS from cross-venue joins (260/653 resolved). A test that pins a defect makes the defect un-fixable without an argument about the test -- verify against OKX's live instrument list, then fix mapping and test together.",
+   "roi_bps": 25.0,
+   "raised": "2026-08-01T17:27:41.431251+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0348",
+   "source": "cycle",
+   "summary": "tests/test_desk_memory.py::test_graduation_actually_freed_budget and ::test_overflow_is_by_rank_and_stays_a_small_tail are RED ON MASTER and were red before this batch: at HEAD 25 dropped lessons were neither test-enforced nor hygiene/slow. Graduating L0057/L0053/L0028 to verified tests took it to 3 (L0024, L0038, L0051), all genuine research-judgement lessons with no mechanical property to test. Closing needs a RESEARCH decision -- retire a lesson whose falsifier arrived, per the corpus's own rule -- not more graduations, and inventing an enforcing test to silence it would be a false claim of enforcement (nearly done for L0051: its candidate test pins the very bug it warns about, see R0347).",
+   "roi_bps": 20.0,
+   "raised": "2026-08-01T17:27:49.388074+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0349",
+   "source": "cycle",
+   "summary": "THE FULL TEST SUITE CANNOT COMPLETE ON THIS BOX, so the local CI gate is structurally unsatisfiable. Measured 2026-08-01 immediately after repairing collection (6f54899): bare pytest over tests/ ran 23 minutes, reached ~94%, and died with RC=137 (SIGKILL). Two failures were already visible at the 80% mark but the summary never printed, so THEIR IDENTITY IS UNKNOWN. This matters because scripts/run_ci.py:41 and .github/workflows/ci.yml:49 BOTH invoke the whole tests/ tree: a gate that cannot finish can never go green, which is the permanently-unclearable-gate defect the GATE-OPTIMALITY DUTY names -- and it is worse than a red gate because it produces no verdict at all. CAUSE UNDETERMINED, AND SAYING SO RATHER THAN GUESSING: memory pressure is the leading hypothesis (free -m showed 164MB free of 3814, with a sibling session running its own pytest concurrently), but it is NOT established -- see the companion row on kernel-log access. Required, in order: (1) identify the 2 failures by running the ~80pc region alone; (2) establish the kill cause; (3) decide whether CI's pytest leg should shard or run under a memory cap, NOT whether it should narrow its scope -- a green gate bought by testing less is the denominator trick.",
+   "roi_bps": null,
+   "raised": "2026-08-01T17:31:36.204312+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0350",
+   "source": "cycle",
+   "summary": "THE DESK USER CANNOT READ THE KERNEL LOG, so every OOM, every kill, and every hardware-level event on this box is invisible to the organism that runs on it. Verified 2026-08-01: 'dmesg -T' returns 'read kernel buffer failed: Operation not permitted' and 'journalctl -k' returns 'No entries' with the hint that only members of 'adm' or 'systemd-journal' see system messages. THE TRAP THIS SETS IS THE DANGEROUS PART, and it caught me in the same cycle: I ran the OOM check, got zero matches, and was one step from recording 'not an OOM kill' as a finding. That would have been an UNMEASURABLE reported as a NEGATIVE RESULT -- the unmeasured-reported-as-OK class (L1.40) applied to the desk's own diagnostics. Any past or future conclusion of the form 'no OOM / no kernel event' drawn on this box is void unless the reader first proved they could see one. FIX IS ONE COMMAND AND IS A HUMAN STEP (group membership): usermod -aG adm,systemd-journal quant, then re-login. Until then, every organ that diagnoses a killed process must report UNDETERMINED rather than clean. Worth pairing with a startup check that asserts kernel-log readability and pages if absent, so this can never again be discovered mid-diagnosis.",
+   "roi_bps": null,
+   "raised": "2026-08-01T17:31:36.577420+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
