@@ -92,6 +92,12 @@ class ValidationVerdict(BaseModel):
     gates: dict[str, bool]
     rejection_reason: str
     metrics: ValidationMetrics
+    #: Gates whose INPUT was never supplied, so nobody looked. Deliberately NOT folded into
+    #: `gates` as True: `beats_baselines` did exactly that and read as a passed gate in every
+    #: verdict this desk produced for months, while protecting nothing, because no caller ever
+    #: passed benchmark_returns. An unmeasured gate is a different state from a passed one and
+    #: the artifact must say which. Empty tuple means every gate had its input.
+    unmeasured: tuple[str, ...] = ()
 
 
 class CandidateRecord(BaseModel):

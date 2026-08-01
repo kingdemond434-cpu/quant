@@ -60,6 +60,17 @@ class WalkForwardReport(BaseModel):
     oos_mean_return: float
     stability: float  # fraction of OOS windows with positive mean return
     message: str
+    #: IN-SAMPLE counterparts, added 2026-08-01 so the IS-vs-OOS degradation can be TESTED rather
+    #: than eyeballed. The engine was already splitting train/test and computing statistics on the
+    #: test side only, throwing the train side away -- which meant the single most diagnostic
+    #: comparison in backtesting ("how much worse did it get out of sample, and is that gap larger
+    #: than sampling noise?") could not be made by any caller. libs/validation/robustness_filters
+    #: .not_too_lucky needs exactly these four numbers. Defaults keep every existing construction
+    #: valid; a report built without them reads is_sharpe 0.0, which not_too_lucky treats as
+    #: "nothing to compare" and passes rather than inventing a verdict.
+    is_sharpe: float = 0.0
+    n_is: int = 0
+    n_oos: int = 0
 
 
 class RevalidationDecision(BaseModel):
@@ -98,12 +109,26 @@ class WalkForwardEngine:
         )
         oos_sharpes: list[float] = []
         oos_means: list[float] = []
+        is_sharpes: list[float] = []
+        n_is_total = 0
+        n_oos_total = 0
         for split in splits:
             test = arr[split.test]
             oos_sharpes.append(sharpe_ratio(test) if len(test) > 1 else 0.0)
             oos_means.append(float(test.mean()) if len(test) else 0.0)
+            # The TRAIN side, which this loop previously discarded. Averaging per-window IS
+            # Sharpes rather than computing one Sharpe over the pooled training data is
+            # deliberate: it matches how oos_sharpe is built two lines up, and the luck filter
+            # compares the two, so any asymmetry in how they are aggregated would show up as a
+            # degradation that is an artefact of the arithmetic rather than of the strategy.
+            train = arr[split.train]
+            if len(train) > 1:
+                is_sharpes.append(sharpe_ratio(train))
+                n_is_total += len(train)
+            n_oos_total += len(test)
 
         oos_sharpe = float(np.mean(oos_sharpes)) if oos_sharpes else 0.0
+        is_sharpe = float(np.mean(is_sharpes)) if is_sharpes else 0.0
         oos_mean = float(np.mean(oos_means)) if oos_means else 0.0
         stability = float(np.mean([m > 0 for m in oos_means])) if oos_means else 0.0
         passed = oos_sharpe >= min_oos_sharpe and stability >= min_stability
@@ -116,6 +141,13 @@ class WalkForwardEngine:
             oos_sharpe=oos_sharpe,
             oos_mean_return=oos_mean,
             stability=stability,
+            is_sharpe=is_sharpe,
+            # Anchored splits reuse the same early data in every training window, so n_is_total
+            # counts observations-used, not distinct observations. That is the right input for
+            # not_too_lucky's standard error, which is about how precisely the IS Sharpe was
+            # estimated -- but it is NOT a count of independent data and must not be read as one.
+            n_is=n_is_total,
+            n_oos=n_oos_total,
             message=(
                 f"oos_sharpe={oos_sharpe:.2f} (>= {min_oos_sharpe}), "
                 f"stability={stability:.2f} (>= {min_stability})"

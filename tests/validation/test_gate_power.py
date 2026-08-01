@@ -98,10 +98,33 @@ def test_the_screen_selection_is_computed_but_does_not_gate():
     'fixes' without pricing it. validate() reads stepdown.rejected (FWER); CampaignGates.screen is
     carried alongside as a diagnostic. Given the test above -- FDR buys no power at rank 1 -- the
     unwired state costs nothing today, and rewiring it would shortlist false names without
-    lowering the floor."""
+    lowering the floor.
+
+    ASSERTED ON THE GATE KEYS, NOT ON THE SOURCE TEXT. The original form of this test grepped the
+    body of validate() for the substring "screen" after `gates = {`, which made it fail the moment
+    an unrelated COMMENT used the word (it did, on 2026-08-01, in a note explaining that the
+    gauntlet is a screen with zero promotion authority). A test that a prose edit can break is a
+    test someone eventually deletes instead of reading, and it was checking a proxy anyway: what
+    matters is whether the screen selection appears among the gates that decide survival, and
+    that is directly observable from the verdict.
+    """
     import inspect
 
+    import numpy as np
+
+    from libs.autodiscovery.models import Family, Hypothesis
     from libs.autodiscovery.validation import validate
-    src = inspect.getsource(validate)
-    assert "campaign.stepdown.rejected[column]" in src
-    assert "screen" not in src.split("gates = {")[1]     # the screen does not appear in the gates
+    from libs.validation.economic_prior import MechanismType
+
+    rng = np.random.default_rng(0)
+    m = rng.normal(0.0004, 0.01, (600, 5))
+    hyp = Hypothesis(family=Family.LIQUIDITY, subtype="s", symbol="X", params={},
+                     mechanism=MechanismType.LIQUIDITY, edge_source="fixture",
+                     failure_modes=["decays"])
+    sh = np.array([m[:, i].mean() / m[:, i].std() for i in range(m.shape[1])])
+    verdict = validate(m[:, 0], hypothesis=hyp, n_trials=5, sharpe_estimates=sh,
+                       returns_matrix=m)
+    assert not [g for g in verdict.gates if "screen" in g], (
+        f"the BY-FDR screen has become a survival gate: {sorted(verdict.gates)}")
+    # ...and the FWER stepdown IS the one that decides, on the per-candidate path.
+    assert "campaign.stepdown.rejected[column]" in inspect.getsource(validate)

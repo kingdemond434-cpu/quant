@@ -75,17 +75,44 @@ class Independence:
 def effective_bets(n: int, mean_corr: float) -> float:
     """N / (1 + (N-1) * rho) -- independent bets under an equicorrelation approximation.
 
-    Clamped at 1.0 from below. Negative average correlation can push the formula above N, which is
-    real (a hedged pair genuinely carries more information than two independent series) but the
-    clamp on the low side matters more: rho -> 1 sends this to 1, which is the correct statement
-    that a cohort of identical signals is ONE bet however many copies it contains.
+    CLAMPED TO [1, N], AND THE UPPER CLAMP IS NOT COSMETIC. The first version clamped only from
+    below, reasoning that negative average correlation genuinely carries more information than
+    independence. That is true of a deliberately hedged PAIR and false of everything this function
+    is actually used on, and the difference cost a real misreading on 2026-08-01:
+    measure_cross_section_breadth reported **64.4 independent bets from 29 crypto perps**. There
+    is no arrangement of 29 assets that constitutes 64 independent bets. The formula was
+    extrapolating outside its domain and the output was read as a finding.
+
+    WHERE THE NEGATIVE CORRELATION CAME FROM, because this recurs. Removing a common factor from a
+    panel induces negative correlation among the residuals BY CONSTRUCTION -- subtract a
+    cross-sectional mean and the residuals must sum to zero, forcing average pairwise correlation
+    to about -1/(N-1). At N=29 that floor is -0.0357; the measured residual correlation was
+    -0.0196, i.e. 55% of the way to a number that pure arithmetic produces from data with no
+    structure at all. So the near-zero residual correlation was mostly the demeaning, not
+    diversification, and the honest statement after factor removal is N_eff ~= N, capped.
+
+    This is the desk's own lesson L0020 -- know an estimator's floor before reading its output as
+    a finding -- recurring in a new place, on code written the same day the lesson was recorded.
+    The low clamp still matters for the opposite reason: rho -> 1 sends this to 1, correctly
+    saying that a cohort of identical signals is ONE bet however many copies it holds.
     """
     if n <= 1:
         return float(n)
     denom = 1.0 + (n - 1) * mean_corr
     if denom <= 0:
         return float(n)
-    return max(1.0, n / denom)
+    return min(float(n), max(1.0, n / denom))
+
+
+def demeaning_floor(n: int) -> float:
+    """The average pairwise correlation that cross-sectional demeaning produces from nothing.
+
+    Residuals of a panel against its own cross-sectional mean must sum to zero at every date, and
+    that constraint alone forces mean pairwise correlation to -1/(N-1). Any residual correlation
+    at or below this is fully explained by the arithmetic; only the DISTANCE ABOVE it is evidence
+    of genuine common structure surviving the factor removal. Report the ratio, never the level.
+    """
+    return -1.0 / max(n - 1, 1)
 
 
 def measure(returns: np.ndarray) -> Independence:
