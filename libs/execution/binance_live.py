@@ -33,6 +33,7 @@ from pathlib import Path
 from typing import Any
 
 from libs.core.logging import get_logger
+from libs.execution.collateral import STABLE_COLLATERAL
 
 # OBSERVABILITY (gap #56, 2026-07-29). The desk already OWNED a structured logger with
 # correlation ids and secret redaction (libs/core/logging.py) and NOTHING below the script
@@ -183,9 +184,20 @@ def account_balance() -> float:
 def account_summary() -> dict[str, float]:
     """Equity, wallet, unrealized PnL, available, and margin used (the live P&L snapshot)."""
     a = _signed("/fapi/v2/account", {})
+    # EQUITY is the MAX of two venue-derived measures: totalMarginBalance, and the face-value sum
+    # of per-asset marginBalance across stable collateral. Under multiAssetsMargin=False
+    # totalMarginBalance is USDT-ONLY -- on 2026-07-30 it hid $5,000 of USDC, sized the book at
+    # 1/25th of true wealth and fed the dead-man a high-water below its dust floor, disarming the
+    # ruin rail at every equity. Under multiAssetsMargin=True the venue's own USD-marked total
+    # includes non-stables the stable sum cannot price, and wins the max. Max never reads below
+    # either truth; a depegged stable can overstate by its depeg, second-order next to $5,000 of
+    # blindness. Copied from the audited testnet client, NOT re-derived (R0234).
+    eq = max(sum(float(x.get("marginBalance", 0.0)) for x in a.get("assets", [])
+                 if x.get("asset") in STABLE_COLLATERAL),
+             float(a.get("totalMarginBalance", 0.0)))
     return {
         "wallet": float(a.get("totalWalletBalance", 0.0)),
-        "equity": float(a.get("totalMarginBalance", 0.0)),
+        "equity": eq,
         "unrealized_pnl": float(a.get("totalUnrealizedProfit", 0.0)),
         "available": float(a.get("availableBalance", 0.0)),
         "margin_used": float(a.get("totalInitialMargin", 0.0)),

@@ -19,6 +19,8 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
+from libs.execution.collateral import STABLE_COLLATERAL
+
 _BASE = "https://testnet.binancefuture.com"   # PINNED testnet -- never live
 _KEY_ENV = "BINANCE_TESTNET_KEY"
 _SECRET_ENV = "BINANCE_TESTNET_SECRET"
@@ -161,7 +163,8 @@ def account_balance() -> float:
     return 0.0
 
 
-_STABLE_COLLATERAL = ("USDT", "USDC", "FDUSD", "TUSD", "BUSD", "DAI")
+# the tuple lives in libs/execution/collateral.py -- two copies would drift
+_STABLE_COLLATERAL = STABLE_COLLATERAL
 
 
 def account_summary() -> dict[str, float]:
