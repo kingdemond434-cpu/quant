@@ -233,3 +233,63 @@ THE ONLY TWO LIMITS, and neither is a scope limit: (1) the §13 legitimacy gate 
 licensed sources only; a licence forbidding the use is a HARD STOP, never a hurdle, and
 closed-group or cracked material is never touched in any language. (2) never install or run
 third-party agent tooling on desk hardware -- mine it as TEXT, always. Everything else is open.
+
+================================================================================
+NATIVE VOCABULARY AND THE CENSORSHIP-EVASION PROBLEM (principal 2026-08-01)
+================================================================================
+WHY YOUR RECALL HAS BEEN LOW, and it is not that the ground is empty. Chinese crypto
+discussion uses a coded vocabulary that developed IN PART TO EVADE KEYWORD FILTERING.
+Searching Baidu/Zhihu/Xueqiu for the literal or translated terms means searching for the
+words that get filtered, not the words practitioners actually type. Seed every query set
+with the native slang below; treat a null result on a translated term as UNTESTED, not as
+absence of ground.
+
+VERIFIED SEED VOCABULARY -- confirmed against live sources 2026-08-01, safe to spend budget on:
+  大饼  dàbǐng      "big pancake" = BITCOIN. The single highest-value token here: it is how
+                     Chinese traders name BTC precisely when they do not want to type BTC.
+  糖果  tángguǒ     "candy" = airdrops / token giveaways
+  韭菜  jiǔcài      "leek/chives" = retail who are harvested. 割韭菜 gē jiǔcài = the act of
+                     fleecing them. The most common term in the entire ecosystem.
+  庄家  zhuāngjiā   the "banker" -- the manipulator/large player who moves a thin market.
+                     狗庄 gǒuzhuāng is the pejorative. THIS IS THE TERM FOR MANIPULATION
+                     MECHANICS; "whale" translated into Chinese finds nothing.
+  空气币 kōngqìbì   "air coin" -- no backing or use case
+  山寨币 shānzhàibì "copycat coin" = altcoin/shitcoin. NOTE: 假币 jiǎbì does NOT mean this --
+                     it means counterfeit BANKNOTES. A glossary handed to this desk had that
+                     wrong; do not query it.
+
+UNVERIFIED, DO NOT SEED UNTIL CONFIRMED AGAINST LIVE SOURCES. These arrived in a supplied
+glossary and could not be confirmed; several look garbled or invented. Querying invented
+slang burns budget AND produces a false "no CN coverage" reading, which is worse than not
+querying at all -- it would make a rich ground look picked clean:
+  牛季节 "cow season" (standard bull market is 牛市 niúshì) | 蜡烛猴 "candlestick monkey"
+  新葱 "new onion" (real newbie terms: 小白 xiǎobái, 新韭菜) | 韭菜盒 | 狗商 (real form: 狗庄)
+  大鳄鱼 (standard form is 大鳄 dà'è) | "Kuisancle" (not pinyin; probably 亏损 kuīsǔn = loss)
+If you confirm any of these in live practitioner text, MOVE IT UP to the verified block and
+say where you saw it. If you disconfirm one, say so. Either way the next run inherits it.
+
+ADDITIONAL GROUNDS (append to REGION GROUNDS above, all §13-gated as ever):
+  Gate 广场 (Gate Square) | 优矿 UQER uqer.io/community | digtime.cn | 小红书 Xiaohongshu
+  (personal accounts of manual traders moving into crypto -- discretionary process material
+  the English crowd never reads) | Binance Square CN | KuCoin CN research notes.
+  BigQuant is already listed above; its 社区/academy 实战 threads are the deep layer.
+
+*** THE AI-QUANT SCAM FILTER -- MANDATORY, AND IT PROTECTS THE LEDGER ***
+"AI量化" (AI quant) is simultaneously a legitimate frontier AND the current favourite bait of
+Chinese investment-fraud operations. Regulators have issued repeated warnings. The scam
+profile is stereotyped: "AI量化每日1%" (1% daily), "月收益翻倍" (monthly returns double),
+"币价稳定上涨" (price stable and rising), fake platforms showing fabricated PnL, small early
+payouts to build trust, then withdrawals frozen and the operator disappears.
+
+YOU WILL HIT THESE. They rank well and they are numerous. The rule:
+  * NEVER file a fabricated performance claim as a finding. A screenshot of a dashboard is
+    not evidence; a claimed daily return with no methodology is not a mechanism.
+  * A source promising a FIXED periodic return (X% daily/weekly/monthly) is disqualified as
+    an evidence source on that basis alone -- no real strategy has a fixed periodic return,
+    and the claim itself is the tell.
+  * Route confirmed scam patterns to docs/graveyard.md as PRE-EMPTIVE FALSIFICATION with the
+    scam marker, not to the watchlist. Knowing which "AI quant" claims are fraud is genuine
+    negative knowledge and it is free -- it stops the desk re-investigating the same bait.
+  * Do NOT let the scam density in this keyword make you abandon 量化 as a ground. The
+    legitimate BigQuant/UQER/JoinQuant practitioner layer sits under the same term. Filter,
+    do not retreat.

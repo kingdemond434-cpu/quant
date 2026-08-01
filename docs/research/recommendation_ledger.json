@@ -3366,6 +3366,18 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0277",
+   "source": "principal",
+   "summary": "CN miner recall: seeded native slang, added grounds, installed an AI-quant scam filter. THE RECALL FINDING, which is more useful than the glossary that prompted it: Chinese crypto discussion uses coded vocabulary that developed IN PART TO EVADE KEYWORD FILTERING, so a miner querying translated terms is searching for exactly the words that get filtered rather than the words practitioners type. That is a concrete mechanical explanation for weak CN recall, not a claim the ground is empty. Verified against live sources before seeding: \u5927\u997c dabing = BITCOIN (the highest-value token here -- it is how CN traders name BTC when they do not want to type BTC), \u7cd6\u679c = airdrops, \u97ed\u83dc/\u5272\u97ed\u83dc = retail who are harvested, \u5e84\u5bb6/\u72d7\u5e84 = the manipulator (translated 'whale' finds nothing), \u7a7a\u6c14\u5e01 = air coin, \u5c71\u5be8\u5e01 = altcoin. EXPLICITLY REFUSED TO SEED the unverified half of the supplied glossary: \u5047\u5e01 does NOT mean shitcoin (it means counterfeit banknotes; \u5c71\u5be8\u5e01 is the term), 'Kuisancle' is not pinyin for anything (probably garbled \u4e8f\u635f kuisun = loss), and \u725b\u5b63\u8282/\u8721\u70db\u7334/\u65b0\u8471/\u97ed\u83dc\u76d2/\u72d7\u5546/\u5927\u9cc4\u9c7c could not be confirmed. Querying invented slang burns budget AND returns null, which would make a rich ground read as picked clean -- strictly worse than not querying. They are recorded as UNVERIFIED with instructions to promote or disconfirm on sight, so the next run inherits the resolution either way. GROUNDS ADDED: Gate \u5e7f\u573a, UQER \u4f18\u77ff, digtime.cn, \u5c0f\u7ea2\u4e66 Xiaohongshu (manual traders moving into crypto -- discretionary process material the English crowd never reads), Binance Square CN, KuCoin CN research. BigQuant was already listed. SCAM FILTER, mandatory and ledger-protecting: AI\u91cf\u5316 is simultaneously a legitimate frontier and the current favourite bait of CN investment fraud, with repeated regulator warnings. Stereotyped profile: 'AI\u91cf\u5316\u6bcf\u65e51%', '\u6708\u6536\u76ca\u7ffb\u500d', fabricated dashboards, small early payouts then frozen withdrawals. A source promising a FIXED periodic return is disqualified as evidence on that basis alone -- no real strategy has one, and the claim is the tell. Confirmed scam patterns route to graveyard.md as pre-emptive falsification, never to the watchlist. The filter explicitly forbids retreating from \u91cf\u5316 as a ground: the legitimate BigQuant/UQER/JoinQuant practitioner layer sits under the same keyword.",
+   "roi_bps": null,
+   "raised": "2026-08-01T09:43:17.657823+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
