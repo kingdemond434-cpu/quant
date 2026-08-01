@@ -118,7 +118,11 @@ def _evidence(name: str, now: datetime, *, days: object = None,
                 "source": src}
     age_h = round((now - ts).total_seconds() / 3600.0, 1)
     try:
-        n_days = int(days)  # type: ignore[arg-type]
+        # `days` is object-typed off a JSON dict, so narrow before converting rather than
+        # silencing. The old `# type: ignore[arg-type]` had stopped matching the real error
+        # (call-overload) and mypy then flagged the ignore itself as unused -- two errors from
+        # one stale suppression, and CI red on master until it was removed.
+        n_days = int(days) if isinstance(days, (int, float, str)) else int(str(days))
     except (TypeError, ValueError):
         return {"evidence": "UNMEASURED", "why": f"{src} carries no day count",
                 "source": src, "age_h": age_h}

@@ -3378,6 +3378,18 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0278",
+   "source": "principal",
+   "summary": "Three corrections and two builds. (1) SCAM FILTER REPLACED -- my first version disqualified a source on a keyword (fixed periodic return) without reading it, and worse, set the miner up to report 'most CN AI-quant results are scams' and let the desk conclude the ground was polluted and abandon it. That confuses BAIDU SEO POLLUTION with the underlying ecosystem: AI\u91cf\u5316 is a high-CPC keyword, fraud bids on it, and BigQuant/UQER/JoinQuant do not, so the practitioner layer ranks BELOW the ads. High scam density in generic results is evidence THE QUERY IS WRONG, never that the ground is empty. Replaced with domain-gating (site:bigquant.com/community, uqer.io/community, joinquant.com/post, gitee/github \u91cf\u5316 \u56de\u6d4b), technical long-tail queries that starve scam bidding (\u591a\u56e0\u5b50\u6a21\u578b \u56de\u6d4b\u5f15\u64ce \u6e90\u4ee3\u7801; \u5377\u79ef\u795e\u7ecf\u7f51\u7edc LSTM \u91d1\u878d\u65f6\u5e8f\u9884\u6d4b instead of \u91cf\u5316\u4ea4\u6613 \u8d5a\u94b1), code-repo preference, and pollution density reported as a CRAWL-SHARPENING metric. Read everything, reject nothing unread: a fraud page's claimed MECHANISM is often real and misrepresented, and what is being marketed reveals what CN retail believes, which is tradeable context. A fixed-return promise disqualifies THE NUMBER, not the page, the mechanism, the data source it names, or the community it points at. (2) VENUE DISCOVERY IS NOW A STANDING OBLIGATION IN ALL SEVEN REGION PROMPTS (cn/en/jp/kr/ru/ar/br, charter \u00a716 fleet parity). Every named platform is a SEED, never the definition of the ground. A hardcoded list decays in two directions -- named venues die or go quiet while new ones appear where practitioners moved TO -- so a seat reading only its seed list reports thinning ground when the ground actually MOVED, and the desk cannot tell those apart from outside. Methods specified: follow practitioners out of threads to the Discord/Telegram/QQ/Substack/BBS they name, read repo README/issues/star-graph neighbours, find aggregators and awesome-lists, and specifically hunt the APP layer (exchange square feeds, broker forums, in-product comment threads) which is systematically under-mined because it does not surface in web search. Plus: hunt DATA on every venue, not only strategies -- a dig returning zero strategies and one new data axis is a GOOD dig. Verdicts (RICH/THIN/WALLED/DEAD) recorded per venue so the next run inherits them. \u00a713 unchanged: discovery widens WHERE you look, never HOW you get in. (3) MASTER WAS MYPY-RED and would have made pull_deploy revert: libs/research/slot_registry.py:121 carried a stale 'type: ignore[arg-type]' that no longer matched the real error (call-overload), so mypy flagged BOTH the unmatched call and the now-unused ignore -- two errors from one stale suppression. Narrowed the type instead of re-silencing. Not my code; came in at d13999b. BUILT: libs/research/dip_ladder.py (the red-day DCA mechanism as a CANDIDATE for the gauntlet, honest poor prior recorded BEFORE testing, causal by construction, non-overlapping windows, budget as the binding constraint; 10 tests) and docs/research/ADVERSARIAL_REVIEW_RUBRIC.md (the dual-brain idea in the form where the value lives -- ten defect classes each derived from a defect actually shipped on this desk, each with its own test).",
+   "roi_bps": null,
+   "raised": "2026-08-01T09:53:27.350152+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

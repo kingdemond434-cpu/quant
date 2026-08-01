@@ -2003,6 +2003,12 @@ _PRODUCER_CADENCE = {
 #: Artifacts that are terminal by nature: templates, forensic write-ups, protocol libraries. They
 #: accumulate no inventory, so they owe no cadence -- recorded here so "no law" is a DECISION.
 _TERMINAL_ARTIFACTS = {
+    "docs/research/ADVERSARIAL_REVIEW_RUBRIC.md":
+        "standing review checklist, not inventory. Its ten defect classes are each derived from a "
+        "defect actually shipped on this desk and each carries its own test, so the document is "
+        "consumed by being APPLIED to a diff rather than by being converted into rows. Nothing "
+        "queues here: a finding produced by running it is ledgered like any other finding. Grows "
+        "only when a NEW class is found in production, which is a repair event with its own row.",
     "docs/research/gate_power_audit.md":
         "dated measurement record (Type I / Type II of every gauntlet gate, 2026-08-01). It "
         "accumulates no inventory because its conclusions were CONVERTED the same day: the "
