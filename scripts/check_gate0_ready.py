@@ -21,7 +21,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -203,10 +203,80 @@ def _net_of_fees_positive() -> dict[str, Any]:
                     "run from the box that holds the tape")
 
 
+#: the soak floor. Seven days is the principal's rule (2026-08-01), and it is a FLOOR under the
+#: evidence bar, not an alternative to it.
+SOAK_DAYS = 7.0
+
+#: capital events that do NOT break a clean soak. Funding the account is the act Gate 0 exists to
+#: authorise -- a rule where depositing resets the principal's own soak timer would be incoherent.
+#: Everything else counts as a break, including kinds added later that nobody classified here.
+_BENIGN_EVENTS = {"DEPOSIT", "WITHDRAWAL", "TOPUP", "TRANSFER"}
+
+
+def _soak_clean_7d() -> dict[str, Any]:
+    """Seven continuous days of clean operation -- a FLOOR under the evidence bar, not a trigger.
+
+    Gate 0 was purely evidence-based, so a lucky three-day stretch could open it; on a book taking
+    ~3 closes a day that sits well inside noise. Time in testnet is NECESSARY and never sufficient,
+    and the two criteria fail in opposite directions: without this floor a short run of luck
+    promotes, without net_of_fees_positive a full week of losses promotes on the calendar alone.
+
+    CLEAN means no rail event in the window. The clock RESTARTS on a dead-man fire, a kill-file
+    freeze, or a recorded re-baseline -- a week the rails interrupted is not evidence the desk runs
+    unattended, it is evidence of the opposite, which is the very claim promotion rests on. The
+    2026-07-27 churn fire is the case in point: the book kept running while burning $1,746.
+
+    Deposits are exempt (see _BENIGN_EVENTS). Unreadable state reads BLOCKED-UNKNOWN, never READY:
+    a soak nobody can verify has not happened.
+    """
+    art = "data/capital_events.jsonl"
+    now = datetime.now(tz=UTC)
+
+    # A currently-latched rail means the soak has not begun at all -- check before the clock, since
+    # a latch that fired seconds ago still leaves a stale "6.9d clean" reading in the ledger.
+    for latch, label in ((_ROOT / "data" / "DEADMAN_FIRED", "dead-man latch"),
+                         (_ROOT / "data" / "CASHCARRY_KILL", "kill-file freeze")):
+        if latch.exists():
+            return _row("soak_clean_7d", False,
+                        f"{label} is CURRENTLY LATCHED -- the soak has not begun", DESK,
+                        f"data/{latch.name}", "clear the latch, then run seven clean days")
+
+    marks: list[tuple[str, datetime]] = []
+    try:
+        for ln in (_ROOT / art).read_text("utf-8").splitlines():
+            if not ln.strip():
+                continue
+            row = json.loads(ln)
+            kind = str(row.get("kind", "UNCLASSIFIED")).upper()
+            if kind in _BENIGN_EVENTS:
+                continue
+            ts = row.get("at") or row.get("ts") or row.get("recorded")
+            if ts:
+                d = datetime.fromisoformat(str(ts))
+                marks.append((kind, d if d.tzinfo else d.replace(tzinfo=UTC)))
+    except (OSError, ValueError, TypeError) as exc:
+        return _row("soak_clean_7d", None, f"capital-events ledger unreadable: {exc}", DESK, art,
+                    "run from the box that holds the state")
+
+    if not marks:
+        return _row("soak_clean_7d", None, "no inception event -- the soak clock has no start",
+                    DESK, art, "record a capital event to anchor the clock")
+
+    kind, last = max(marks, key=lambda kv: kv[1])
+    days = (now - last).total_seconds() / 86400.0
+    return _row("soak_clean_7d", days >= SOAK_DAYS,
+                f"{days:.1f}d clean since {kind} at {last.isoformat()[:16]}Z "
+                f"(floor {SOAK_DAYS:.0f}d)", DESK, art,
+                "" if days >= SOAK_DAYS else
+                f"run clean until {(last + timedelta(days=SOAK_DAYS)).isoformat()[:16]}Z "
+                f"({SOAK_DAYS - days:.1f}d left); any rail fire restarts the clock, because a week "
+                "the rails interrupted is not evidence the desk runs unattended")
+
+
 def build() -> dict[str, Any]:
     rows = [_principal_signoff(), _capital_fraction(), _symbol_count(),
             _keys_present(), _connector_verified(), _ruin_rail(),
-            _net_of_fees_positive()]
+            _net_of_fees_positive(), _soak_clean_7d()]
     blocking = [r for r in rows if r["status"] != "READY"]
     desk_owes = [r for r in blocking if r["owner"] == DESK]
     principal_owes = [r for r in blocking if r["owner"] == PRINCIPAL]
