@@ -3402,6 +3402,18 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0280",
+   "source": "principal",
+   "summary": "Stopped generating commodity mechanisms and built on the MOAT instead. THE RESULT THAT FORCED IT: 129 textbook mechanisms (Bollinger, RSI, Donchian, CMF, golden cross, squeeze, %B, z-score, OBV, Chaikin, Donchian, rotation) across 10 liquid Kraken pairs on 720 daily bars through the repaired gauntlet -> 0 survivors. And the gate was NOT the reason: best in-sample Sharpe 1.75 delivered OOS 0.08; across all 129 the max OOS Sharpe was 0.100, mean -0.001, and ZERO had OOS above 0.5. Removing reality_check entirely would have promoted noise. Public indicators on the most liquid pairs at default parameters are picked clean -- the expected result, written down as the prior before running. Separately confirmed the DSR fix works on real data: the top candidates now clear DSR at 0.98-0.998 where the pre-fix deflation would have crushed all of them below 0.95, so Romano-Wolf rather than DSR made the actual call. Also measured N_eff on the REAL campaign: 129 candidates = 14.6 effective tests (ratio 0.133 to baseline), mean pairwise asset correlation 0.73 -- ten crypto pairs are one bet. That does NOT mean RW over-corrected here (its bootstrap adapts to dependence, measured this morning) and it would not have rescued anything at OOS 0.08. BUILT libs/research/moat_microstructure.py: loaders for both recorder formats, and features that REQUIRE recorded L2 -- deep order-book imbalance over all 20 levels, microprice, book slope, trade-flow imbalance from aggressor side, depth/spread dynamics. Four candidates: obi_pressure, flow_momentum, liquidity_withdrawal (the M_LIQUIDITY_WITHDRAWAL construction previously blocked on exactly this data), microprice_reversion. The asymmetry that justifies the slots: a mechanism computable from free daily bars has been tested by everyone with a laptop and its survival prior is the 0/129 above; a mechanism needing 20-level depth at 4s cadence has been tested only by people who pay for the data and who are not optimising for a small book. CAUGHT A REAL BLINDNESS while testing: the trailing z-score returned NaN on a zero-variance window, so liquidity_withdrawal was blind to a perfectly stable book that suddenly empties -- the most extreme instance of the exact event it exists to detect. A flat window followed by a move is unboundedly surprising and now scores as such. 12 tests, including that buyer-is-maker means the aggressor SOLD (invert it and every flow feature silently changes sign while the backtest still runs). NOT YET RUN: needs the recorded tape on the VPS.",
+   "roi_bps": null,
+   "raised": "2026-08-01T10:13:12.633714+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
