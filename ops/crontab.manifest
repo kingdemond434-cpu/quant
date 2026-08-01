@@ -1296,3 +1296,21 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # EVIDENCE: scripts/snapshot_universe.py -> data/universe_snapshots.jsonl.gz (append-only)
 # CONFIDENCE: committed-script (first run recorded 851 symbols across 3 statuses)
 20 0 * * * cd "$QUANT_ROOT" && flock -n data/.cron_universe.lock .venv/bin/python scripts/snapshot_universe.py >> data/cro_ai_logs/universe_snapshot.log 2>&1
+
+# RECOMMENDATION WORKER (principal 2026-08-01: "make claude keep up with recommendation
+# implementations, immediate, automated"). §41 made every recommendation reach a disposition and
+# the desk then generated them faster than anything consumed them: 132 open, 51 past the 24h
+# grace, oldest 39h, and ZERO cron organs touching the ledger. Generation without a consumer is
+# not throughput -- it is a queue that grows until nobody reads it, which is the failure §41
+# exists to stop arriving one layer up. The brain triages the ledger among a dozen duties and
+# loses to them every cycle.
+# CADENCE: 3 rows/run hourly = 72/day against ~50/day generated, so the backlog DRAINS rather
+# than holds. Batch stays small on purpose: one bad row then poisons a short run, not a long one,
+# and each diff stays reviewable.
+# OWN FLOCK, NOT brain_mutex: the frontier miners took the mutex, deferred every time their timer
+# hit a live cycle, and produced nothing for ~12 days. A consumer that yields to a busy producer
+# never runs. Two claude processes at ~190MB against 1.6GB available is affordable.
+# EVIDENCE: ops/run_recommendation_worker.sh -> data/cro_ai_logs/recommendation_worker_*.log
+#   and the ledger's own implemented/rejected counts, which are the real proof.
+# CONFIDENCE: committed-script (new this cycle)
+5 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_recworker.lock /bin/bash ops/run_recommendation_worker.sh >> data/cro_ai_logs/recommendation_worker.log 2>&1
