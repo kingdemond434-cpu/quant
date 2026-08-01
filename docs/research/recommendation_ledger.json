@@ -3618,6 +3618,66 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0298",
+   "source": "cycle",
+   "summary": "KR-s1 A: collect_announcements.py is DEGRADED (binance HTTP 400, bybit CloudFront-blocked) and carries ZERO Korean venues. Add Upbit api-manager.upbit.com/api/v1/announcements -- keyless, first-party, 5,685 events back to 2017-10-24, category=trade -> 737 listing/delisting events. MUST key on first_listed_at not listed_at (differ on 42.5% of rows, median 2.08d, p90 9.30d) or 4 events in 10 are mis-dated. Caps: per_page<=20, >=3s between pages (429s hard). Replaces a broken source on a working feed.",
+   "roi_bps": 40.0,
+   "raised": "2026-08-01T13:37:26.175109+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0299",
+   "source": "cycle",
+   "summary": "KR-s1 B: START RECORDING the KR venue flag surface -- Upbit market/all?isDetails=true (warning + 5 caution flags incl CONCENTRATION_OF_SMALL_ACCOUNTS and GLOBAL_PRICE_DIFFERENCES) and Bithumb market/all + public/assetsstatus/ALL (per-asset deposit/withdrawal open-closed). ALL ARE SNAPSHOT-ONLY WITH NO HISTORY ENDPOINT, so every unrecorded hour is permanently lost (L1.46). Cost is a few hundred bytes/day, keyless. Bithumb rail state is an INDEPENDENT barrier-height regressor -- it breaks the circularity in which every prior KR premium study inferred the barrier from the premium itself.",
+   "roi_bps": 35.0,
+   "raised": "2026-08-01T13:37:26.314662+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0300",
+   "source": "cycle",
+   "summary": "KR-s1 C: GAP #69 (free NAVER Developers key) is UNDER-VALUED at tier-3. Probing the sibling endpoints shows the SAME key also unlocks /v1/search/blog.json and /v1/search/cafearticle.json -- the only s13-LICENSED route into Naver blogs and cafes, both of which name ClaudeBot/Claude-SearchBot Disallow:/ in robots.txt. One free human registration converts two hard-stopped grounds PLUS the DataLab attention axis. Re-price and re-prioritise; stop re-verifying the 401 (done 4x, settled).",
+   "roi_bps": 25.0,
+   "raised": "2026-08-01T13:37:26.462714+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0301",
+   "source": "cycle",
+   "summary": "KR-s1 D: PRINCIPAL LEGITIMACY DECISION OWED on DCInside. Its robots.txt names ClaudeBot/anthropic-ai/Claude-Web with Disallow:/ (hard stop for this agent family, complied with) while its User-agent:* section says Allow:/ -- so a desk collector under its own UA is permitted on the file's face, against a stated intent to block AI crawlers. A miner must not self-grant this either way. Decide and record; do not leave it as a placeholder needs-legitimacy-review, which is how the gate rejects by default.",
+   "roi_bps": 10.0,
+   "raised": "2026-08-01T13:37:26.620775+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0302",
+   "source": "cycle",
+   "summary": "R0239 capture half DONE (scripts/snapshot_universe.py, daily 00:20). REMAINING: reconstruct delisted history (LUNA/UST/FTT/SRM) from binance.vision delisted-symbol archives -- separate, larger job, scope once",
+   "roi_bps": null,
+   "raised": "2026-08-01T13:39:53.613525+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

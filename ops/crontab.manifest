@@ -1279,3 +1279,20 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # incident, whose rail-forced closes distort the hold distribution, so the verdict must be re-read
 # on post-fix fills before any parameter moves.
 25 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_netopt.lock .venv/bin/python scripts/optimise_net_profit.py >> data/cro_ai_logs/net_profit_optimum.log 2>&1
+
+# POINT-IN-TIME UNIVERSE SNAPSHOT (R0239). list_perp_symbols filters exchangeInfo to
+# status == TRADING and discards the rest, so every backfilled panel is conditioned on the symbol
+# SURVIVING to the day the backfill ran -- textbook survivorship bias. First capture (2026-08-01)
+# found 851 symbols of which 124 were NOT trading (123 SETTLING, 1 PENDING): 14.6% of the universe
+# was invisible to every cross-sectional study the desk has ever run.
+# WHY DAILY AND WHY IT CANNOT SLIP: a point-in-time snapshot not taken today cannot be taken
+# tomorrow. Unlike almost every other job here, a missed run is not stale data -- it is a
+# permanent hole. The value is continuity, so the series only becomes worth something by being
+# unbroken. The exchangeInfo call already happens on every ingest and was being thrown away.
+# SCOPE, honestly: this fixes the panel FORWARD. It does NOT restore LUNA/UST/FTT/SRM to the
+# seven-year history -- that reconstruction from binance.vision delisted archives is a separate,
+# larger job and should be scoped once rather than implied here.
+# 00:20 UTC: early enough that the snapshot describes the day it is named for, clear of midnight.
+# EVIDENCE: scripts/snapshot_universe.py -> data/universe_snapshots.jsonl.gz (append-only)
+# CONFIDENCE: committed-script (first run recorded 851 symbols across 3 statuses)
+20 0 * * * cd "$QUANT_ROOT" && flock -n data/.cron_universe.lock .venv/bin/python scripts/snapshot_universe.py >> data/cro_ai_logs/universe_snapshot.log 2>&1
