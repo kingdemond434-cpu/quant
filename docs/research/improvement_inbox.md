@@ -1443,3 +1443,93 @@ installed or run** (supply-chain rule — mined as text only).
    event class **5.6×** — no error, no exception, just a smaller number that looked plausible. Any
    classifier run over an archive spanning years must report **UNCLASSIFIED as a first-class
    figure**. **→ OP-035 extension.**
+
+## 2026-08-01 — JP frontier miner session 1 (engine/process; rowed to the ledger, inbox is the narrative copy)
+
+_Source: the richmanbtc JP botter lineage. The **mechanism** is graveyarded
+(`jp_mlbot_atr_limit_reversion` — a maker-rebate artifact). These three **tools** survive it, and all
+three repos are **CC0-1.0, verified via the GitHub API** (`mlbot_tutorial` 519★, `crypto_data_fetcher`
+83★, `bot_snippets` 7★), so there is no licence friction on adoption._
+
+### 1. [ENGINE — VALIDATION] p平均法 (p-mean): an ORDER-SENSITIVE significance bar our DSR/PSR structurally cannot express — **and the published error-rate formula is broken, verified**
+
+**The gap it fills, and it is a real one.** t-test, PSR and DSR are all **order-invariant**. The
+author's framing: 「3年前はすごいプラスだったけど、直近1年はマイナスで、期間全体で見るとプラスの場合…
+これらの手法はサンプルの順番を考慮しないので、直近1年がマイナスということを、知り得ない」 — *great three
+years ago, losing for the last year, positive overall: these tests cannot see the decay because they
+discard sample order.* **Our entire promotion stack has this blind spot.** Given L1.30 (edges die on
+a months-scale half-life), a bar that is *specifically* sensitive to late-window decay is
+directly on-objective.
+
+**The construction** (`tutorial.ipynb` cell 16): split returns into `n` equal-count sub-periods; run
+a one-sided `ttest_1samp` on each; **a sub-period with `t <= 0` is coerced to `p = 1`** (maximally
+penalised, not merely unhelpful); score = `mean(ps)`. Because one bad sub-period injects a `1.0`
+into an `n=5` mean, **the score cannot fall below 0.2 unless every sub-period is profitable**. That
+is a strictly stronger and cheaper bar than PSR/DSR for the decay case.
+
+**THE DEFECT, REPRODUCED ON THIS BOX — do not adopt the formula as published:**
+```
+calc_p_mean_type1_error_rate(p_mean, n) = (p_mean * n) ** n / factorial(n)
+```
+This is the **Irwin–Hall lower tail, valid only for `p_mean <= 1/N`.** Measured, N=5:
+`p_mean=0.5 -> 0.8138`; **`p_mean=0.8 -> 8.533`**; **`p_mean=1.0 -> 26.04`** — i.e. it returns
+"probabilities" of 853% and 2604%. It is unbounded above 1 and has no guard.
+**And the tutorial's own headline run is already outside the valid region:** its published
+`p_mean = 0.2004701053921813` gives `N·p_mean = 1.00235 > 1`. (Our reproduction returns exactly its
+published `0.008431733454943706`, confirming the transcription is right and the *formula* is the
+problem, not our reading of it.)
+**Second, subtler defect:** the one-sided `t>0 → p, else 1` coercion means the p-values are **not
+iid U(0,1) under the null** — roughly half the mass is atomised at exactly 1.0 — so the iid-uniform
+null the closed form assumes is not the null actually being tested.
+**⇒ If adopted: implement the full alternating Irwin–Hall sum, guard the domain, and calibrate the
+null by simulation rather than trusting the closed form.**
+
+**THE ADOPTION CONDITION, and it is non-negotiable — there is a worked exploit in the wild.**
+opecry (`note.com/opecry/n/nc064da3a68b8`, 2022-03-02) improved p-mean **0.2 → 0.04** and the error
+rate **0.008 → 6.4e-7** — four orders of magnitude — **purely by deleting the sub-period where the
+equity curve dipped** (`df = df[df.index > '2019-08-01']`). A metric whose entire design is
+order-sensitivity is trivially defeated by choosing the start date *after* seeing the curve.
+**So: the window is pre-registered before the metric is ever computed, and every window tried enters
+the multiplicity count.** (The tutorial warns about exactly this researcher-degrees-of-freedom
+failure two cells above the code that enables it.)
+
+### 2. [ENGINE — FEATURES] richman非定常性スコア: adversarial validation with TIME as the label
+
+**Construction** (`work/non_stationarity_score.ipynb`): fit LGBM on the feature matrix with target
+**`np.arange(n)` — the sample index itself**; score = mean `r2` across folds; lower is better;
+`feature_importances_` then *names* the offending features. Author's own framing: this is
+**Adversarial Validation with time substituted for train/test membership** — if your features can
+predict *when* you are, their distribution is time-dependent and the future is out-of-support.
+**Production version ships as a drop-in sklearn transformer**: `bot_snippets/nonstationary_feature_remover.py`
+(`BaseEstimator, TransformerMixin`, drops top-`remove_count`/`remove_ratio` by importance).
+
+**Our critique, which changes how we would use it.** It uses `KFold(n_splits=2, shuffle=True)`, which
+makes index-prediction nearly trivial — for any slow-moving feature, temporal nearest-neighbours sit
+in the training fold, so R² is **inflated by construction**. The stated 0.3 threshold is
+unjustified, and the author's own baseline scores **0.4556** and ships anyway. So it is **not a
+stationarity test in any statistical sense**. As a *cheap ranking* of which features will not survive
+a regime change it is sound and costs one LGBM fit. **The variant worth building is `shuffle=False`
+/ grouped-ordered folds, which converts it from an interpolation test into a genuine extrapolation
+test.** Relevant to us because our own dist_shift work (R0229/R0230) is the same family from the
+other end — that one guards *inputs at inference*, this one screens *features at fit time*.
+
+**Independent corroboration that this is the binding constraint:** pip_pip_pip_p
+(`qiita.com/pip_pip_pip_p/items/3b86e36ca536e99d26e0`) ranks four properties a base rule must have
+for an ML filter to add any value, and names **label-distribution stability across periods as the
+most important** — which is precisely what this score measures. Two independent practitioners
+closing the same loop from opposite directions.
+
+### 3. [ENGINE — UNIVERSE, directly relevant to R0239] `publicGetExpiredFutures`: survivorship-free universe construction, solved venue-side in three lines
+
+`crypto_data_fetcher` builds its FTX universe as the union of `publicGetMarkets` +
+`publicGetFutures` + **`publicGetExpiredFutures`** — an explicit **venue-side list of dead
+instruments**. The desk is currently building a point-in-time universe record (R0239) precisely
+because delisted/expired instruments vanish from live endpoints; this is the same problem solved in
+2021 by asking the venue for its own graveyard. **Action: for every venue we collect, check whether
+an expired/delisted-instrument endpoint exists before building a point-in-time record by
+observation.** Asking is cheaper than remembering, and it recovers history we never recorded.
+(Related, cruder, from the same repo: `store_warmup_bybit.py` discriminates perps from dated futures
+with `if re.search(r'\d', symbol): continue`.)
+
+**Cross-reference to the CN seat's finding:** the KR seat measured Upbit **purging candles on
+delisting** (treatment group erased). Same defect class, and this is the venue-side mitigation.
