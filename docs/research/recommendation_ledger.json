@@ -842,11 +842,11 @@
    "summary": "kr_perasset_premium axis ADJUDICATION (prospector 2026-07-30, zero promotion authority): recent-era 175-asset panel = pre-declared honest null; 8.2y 3-asset h1 cells underpowered-but-clean (+0.045/+0.053, residual>=raw, disp same-corr 0.01). DECISIVE EXPERIMENT if ranked worth a slot: full-depth panel backfill (Upbit paginated to 2017-09 per asset, ~30min fetch, n_eff ~50k crosses all power floors) -> family screen decides axis life/death permanently. ALSO: decide forward-clock per Sec26.5 for the 3-asset constructs or explicitly decline (12-slot Holm economics). Era mechanism prior: 8btc tid 63748 (2017 per-asset rail equilibrium) + 6 live KR per-coin premium dashboards (behavioral attention evidence).",
    "roi_bps": null,
    "raised": "2026-07-30T22:41:30.548159+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "DECISIVE EXPERIMENT RUN, AXIS ADJUDICATED HONEST NULL. Artifact reports/axis_screens/kr_perasset_premium_depth.json; reproducer committed 6d8b98b. Full-depth Upbit backfill: 38 assets / 84,286 asset-days (row asked ~50k), construction pre-registered verbatim from prospector 2026-07-30, keyed same-instant post-R0067 so the UTC-midnight leak is excluded. median IC +0.0095, share positive 25/38 (66%), naive sign-z +1.95 -- but independence measured n_eff 13.2 (mean pairwise corr 0.0508) and the construction pre-declared the naive z an UPPER BOUND, so the decisive effective sign-z is +1.15. Per-asset: 37 SCREEN-UNDERPOWERED, 1 TIMING-ARTIFACT, 0 survivors. Pre-declared rule returns HONEST NULL on the effective z. Second ask answered: 3-asset constructs EXPLICITLY DECLINED a forward clock -- a full-depth null in 1 of 12 Holm slots raises the bar on every concurrent candidate for no evidence. Decided rather than unproven: the recent-era 175-asset panel (+0.005, sign-z 0.98) and the 8.2y depth panel AGREE. Zero promotion authority either way. Executed by a concurrent session in this shared tree (pid 2051383, finished 16:13Z); I verified the on-disk artifact and committed the reproducer rather than re-running it.",
+   "commit": "6d8b98b",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-01T16:28:49.361644+00:00"
   },
   {
    "id": "R0070",
@@ -878,11 +878,11 @@
    "summary": "SYNTH0731 P0-3 [infra F2/F8]: rotate push-capable PAT in git remote to fine-grained contents:read + separate push path; rebind 8080/8090 to 127.0.0.1; Cloudflare Access on dash hostname. Supply-chain chain to future live-key box; unauth book state on 0.0.0.0",
    "roi_bps": 150.0,
    "raised": "2026-07-31T03:45:45.069141+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "NEEDS THE PRINCIPAL -- all three legs require credentials this desk cannot hold. VERIFIED THIS SESSION so the principal gets facts, not a to-do: (1) the git remote DOES carry a classic push-capable PAT (ghp_ prefix, i.e. broad-scope classic, not fine-grained) in plaintext .git/config, mode 664 quant:quant -- but it has NOT leaked into the repo: zero matches for a token-shaped string in tracked files and the one git-log -S hit is prose in a deep_sweep doc, not a value. Rotation needs the GitHub account. (2) Ports 8080 (serve_dashboard.py) and 8090 (ops_server.py) ARE bound 0.0.0.0 and confirmed serving (HTTP 200). BOTH binds are DELIBERATE and carry a noqa stating 'the HOST FIREWALL is the control'. That claim is now PARTLY verified: /etc/ufw/ufw.conf has ENABLED=yes, so ufw is up -- but /etc/ufw/user.rules is root-only, so whether 8080/8090 are actually denied is UNVERIFIABLE without root and remains an assumption. Do not rebind unilaterally: serve_dashboard's bind exists so the phone can reach it over LAN, and the correct fix is the tunnel (cloudflared IS already running on 127.0.0.1:20241) plus Access, which is leg 3. (3) Cloudflare Access needs the Cloudflare account. PRINCIPAL ACTIONS, exact: 'sudo ufw status numbered' to settle whether the firewall claim holds; rotate the PAT to fine-grained contents:read and move push to a separate credential; put Access in front of the dash hostname.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-08",
+   "disposed": "2026-08-01T15:38:56.350070+00:00"
   },
   {
    "id": "R0073",
@@ -890,11 +890,11 @@
    "summary": "SYNTH0731 P0-4 [DM-1=infraF5]: moat survivability \u2014 TODAY cp execution_tape+3 sqlites off-box; disk fence (<15pct page, <8pct hard) in check_ratchets; hourly rclone of closed moat/lake hours to Storage Box (EUR4/mo, principal line); monthly restore drill. ~29d fuse to 80pct guard, zero copies of irreplaceable L2",
    "roi_bps": 200.0,
    "raised": "2026-07-31T03:45:45.135219+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "Three LIVE bugs fixed in the organ guarding un-re-earnable data: (1) the restore drill compared the copy to ITSELF -- digests were taken from the replica, so a copy corrupt at write time certified itself; proven with a truncating copyfile (old=PASS, new=FAIL) and now source-digested, with a per-table row census for sqlite where a byte hash is the wrong assertion; (2) a phantom store (research_memory.db, never existed) padded the denominator while a real one (alpha_registry.sqlite) was silently uncovered -- now 6/6; (3) ABSENT was recorded then tolerated, so partial coverage reported OK -- now DEGRADED, exit 2. The test fixture asserted the INVERSE of production and is rebuilt from _STORES. The row's other asks are OBSOLETE, not skipped: the EUR4/mo Storage Box was CANCELLED on the record (data/PRINCIPAL_ACTION.md:168, 2026-08-01) because the irreplaceable non-depth set is ~6.4MB and fits in a git commit; rclone was never built and is not needed; 'zero copies of irreplaceable L2' is REFUTED (free first-party Bybit archive at 8x depth/41x resolution/345d, R0243). Off-box replication already works via git transport. Remaining: the check_ratchets disk floor, rowed separately with the corrected 25.1-day runway.",
+   "commit": "a845970",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-01T15:47:32.565174+00:00"
   },
   {
    "id": "R0074",
@@ -902,11 +902,11 @@
    "summary": "SYNTH0731 P1-5 [exec#7/T5 + DM M10]: read-implies-writer census + max_audit class assertion (~40 lines; 7 new phantom-path instances in 24h) + glob-scope audit of all ~15 self-measurement organs (3/3 audited so far had scope defects)",
    "roi_bps": 100.0,
    "raised": "2026-07-31T03:45:45.200921+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "TWO OF THREE DELIVERABLES LANDED, THE THIRD IS SCHEDULED. (1) read-implies-writer census: DONE -- max_audit.check_phantom_paths, wired into CHECKS, verified running and reporting 54 paths that are read by code, absent from disk and written by nothing; authored by a concurrent session in this shared tree, committed by me at 09096f7 with attribution rather than left exposed to a revert race. (2) max_audit class assertion: DONE -- same commit; the check is registered as the 'phantom-paths' class so the defect is named and tracked rather than living in a report body. (3) glob-scope audit of the ~15 self-measurement organs: NOT DONE and NOT CLAIMED. That is the deliverable the row's own evidence makes most valuable (3/3 organs audited so far each had a scope defect, and the desk already has a live instance in the log reaper -- run_cro_ai.sh:99 globs *.log and keeps 30 of 98, so ~68 organs' logs are deleted 3x/day and every liveness metric silently reads back the retention cap rather than the truth). It needs a real per-organ pass over each glob's scope, not a keyword sweep, and I am not going to fake it inside this window. WAITS ON: nothing external -- it is unblocked engineering time, which is why the due date is 3 days out rather than parked. Marking implemented on the strength of the first two would remove the third from view permanently, which is the exact failure the no-orphaned-recommendation law exists to stop.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-04",
+   "disposed": "2026-08-01T16:29:08.393796+00:00"
   },
   {
    "id": "R0075",
@@ -914,11 +914,11 @@
    "summary": "SYNTH0731 P1-6 [meta X1/X3/X4/X7 + val X10]: repair capacity \u2014 top-10 open/past-due R-rows into carry-over brief; max_audit recommendations-past-due gate; repair-mode backpressure at open+past-due>25; MTTR/P(fix)/stock-growth born-fenced; age-escalating priority; split roi_bps measured-vs-rank; disposition-in-same-commit duty. Queue at lambda/mu~4, P(fix|survives session)~5pct, no row >3.67d old ever implemented",
    "roi_bps": 120.0,
    "raised": "2026-07-31T03:45:45.265843+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "Core BUILT: the carry-over brief -- first thing in every brain prompt -- now carries the stale ledger rows it was structurally blind to (past-due first, oldest-first, true total stated, UNMEASURED on an unreadable ledger). Verified already-done and NOT rebuilt: the max_audit recommendations-past-due gate exists as rec-ledger-backlog, and repair-mode backpressure is live (conversion_status.json REPAIR-MODE at backlog 226 / past_due 54 against the >25 line). Remaining sub-items -- MTTR/P(fix)/stock-growth born-fenced, roi_bps measured-vs-rank split, disposition-in-same-commit duty -- have no producer and are rowed separately rather than silently carried inside a closed row.",
+   "commit": "f0cc401",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-01T15:42:07.932599+00:00"
   },
   {
    "id": "R0076",
@@ -926,11 +926,11 @@
    "summary": "SYNTH0731 P1-7 [E-14/DI-2/DI-9]: zero-dollar free-tier LLM fallback lane w/ licence gate + page-on-402/quota alert class + anthropic_api_key fallback file (principal funds OpenRouter per PRINCIPAL_ACTION). Tier dead day 9-10, idles 6+ organs incl 13-seat panel + strategic director",
    "roi_bps": 120.0,
    "raised": "2026-07-31T03:45:45.333831+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "MOST OF THIS ROW IS ALREADY BUILT AND THE ROW DID NOT KNOW IT -- recording that is the point of this disposition, so the next worker does not rebuild three existing pieces. (a) anthropic_api_key fallback file: EXISTS -- ops/brain_env.sh:6-22 wires data/secrets/anthropic_api_key as Option A with documented precedence over the OAuth token, explicitly labelled a DORMANT escape hatch for exactly the case this row names (the Max pool starving the brain). 600-perm, gitignored, read at spawn time, never systemd Environment=. (b) zero-dollar free-tier lane: PARTLY EXISTS -- scripts/refresh_panel_roster.py:77-80 already appends the ':free' suffix to roster models, added 2026-07-28, with ledger #116 recording the free tier's rate-limiting behaviour. (c) 402 handling: a PRE-FLIGHT balance check exists at run_external_panel.py:212-227, added specifically to stop the 402-mid-run failure. WHAT IS GENUINELY UNBUILT: the page-on-402/quota ALERT CLASS. The pre-flight makes a run refuse cleanly, but nothing PAGES when the lane dies, so the tier can sit dead for days looking like 'no findings' rather than 'no capability' -- which is precisely how this row's 9-10 day dead tier went unnoticed, and the same shape as check_exploration grading mtime instead of yield (BRAIN_AUTH_FAILED -> exit 0 -> reads FRESH). That is the highest-value remaining piece and it is unblocked engineering. WAITS ON: the funding half is a PRINCIPAL ACTION (OpenRouter credit) and no amount of desk-side work substitutes for it; the row itself says so. The licence gate for free-tier models also needs the section-13 read per provider before any free model is pointed at desk data -- a free tier whose terms permit training on submitted content is a hard stop, not a discount. Scheduled rather than rejected because the alert class is real work with real ROI; scheduled rather than implemented because I am not claiming the three pieces I merely found.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-05",
+   "disposed": "2026-08-01T16:29:52.363745+00:00"
   },
   {
    "id": "R0077",
@@ -938,11 +938,11 @@
    "summary": "SYNTH0731 P2-9 [val X1/X2/T2 + alpha F14/O2]: act on certification (SR-3 controls FAIL both paths all seeds, SR-5 passes percand \u2014 gate measured WELDED): make screen_select BY-FDR the decider, dsr/RW demoted to ranking stats (page the gate-topology ruling); re-score the 420 under fixed per-candidate gate as ONE pre-registered resurrection batch; standing gate-CI + scheduled histogram regen",
    "roi_bps": 250.0,
    "raised": "2026-07-31T03:45:45.409373+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "Actionable core BUILT: standing gate-CI (tests/validation/test_gate_admits_good.py) -- the desk had ZERO test coverage of whether the gauntlet can still ADMIT a real edge; verified to bite via two injected welds. The row's headline prescription (screen_select BY-FDR as decider) is REFUTED by measurement and rowed as R0328: BY at rank 1 is STRICTER than Bonferroni, so it cannot rescue SR-3; the real blocker is Romano-Wolf FWER alone, and changing the decider is a validation-bar ruling needing principal adjudication, not a code swap. The 420 re-score is date-blocked to 2026-08-10 and rowed+scheduled as R0329.",
+   "commit": "a9fe09e",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-01T15:33:25.142949+00:00"
   },
   {
    "id": "R0078",
@@ -950,11 +950,11 @@
    "summary": "SYNTH0731 P2-10 [val V7/V8/X8]: Stage-B honesty \u2014 anytime_valid e-process as ELIGIBLE condition (or pre-committed looks 40/90d); ledgered RETIRED-with-reason writer so attrition never lowers survivor bars; append-only forward-verdict history JSONL. Realized alpha ~4.9x nominal on the only path to capital",
    "roi_bps": 90.0,
    "raised": "2026-07-31T03:45:45.483084+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "SCHEDULED, AND DELIBERATELY NOT RUSHED -- this row edits the PROMOTION BAR, the one surface where moving fast is the failure rather than the virtue. Under the anti-timidity law's own split this is EVIDENCE/RISK restraint, not scope restraint: build aggressively, validate unchanged. State found: (a) the e-process machinery EXISTS -- libs/research/anytime_valid.e_value is real and already imported by scripts/run_shadow_8h.py:29 and scripts/run_derivative_shadow.py:27, so the row does not need it written, it needs it PROMOTED from a shadow-side statistic to a Stage-B ELIGIBLE condition. That is the whole delta and it is a bar change, which is why it gets a careful pass rather than a same-window edit. (b) The measured problem the row exists for is real and quantified: Stage-B daily peeking inflates alpha ~4.9x, which is why anytime_valid was quarantined rather than wired -- the quarantine is a holding action, not a decision, and leaving it is a silent 4.9x alpha inflation on the ONLY path to capital. (c) The RETIRED-with-reason writer and the append-only forward-verdict history JSONL are the honest-accounting half: without them attrition silently lowers the survivor bar, because a candidate that quietly leaves the panel is indistinguishable from one that never entered. Both are additive and neither touches a threshold, so they can land first and independently of the eligibility question -- that is the correct build order and I am recording it so the next worker does not bundle them. WAITS ON: nothing external. It needs one uninterrupted validation pass with the e-process-vs-pre-committed-looks (40/90d) choice made explicitly and its multiplicity consequence stated, not an incremental edit squeezed into a conversion window. Rejecting would be wrong -- the 4.9x is measured and compounds on every promotion.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-06",
+   "disposed": "2026-08-01T16:30:21.328057+00:00"
   },
   {
    "id": "R0079",
@@ -3978,6 +3978,114 @@
    "commit": null,
    "due": "2026-08-02",
    "disposed": "2026-08-01T15:20:58.825189+00:00"
+  },
+  {
+   "id": "R0328",
+   "source": "deep_sweep",
+   "summary": "REFUTATION RECORD (from R0077, do not re-litigate without new evidence): 'make screen_select BY-FDR the decider' CANNOT rescue the welded gate and must not be built as specified. Measured: (1) the per-candidate SR-3 control fails on Romano-Wolf adjusted p ~0.45 alone -- DSR ~0.997 and PBO ~0.02 both PASS, so the RW/FWER stage is the sole binding constraint; (2) screen_select applies BY-FDR to stepdown.raw_p at q=0.05, and the desk's own test tests/validation/test_gate_power.py:71 (test_fdr_buys_no_power_for_the_best_candidate) demonstrates BH at rank 1 IS Bonferroni and BY is STRICTER by H_m ~6.6 at m=420. Swapping the decider to BY therefore makes the rank-1 candidate HARDER to admit, not easier. (3) Two tests pin the current topology deliberately: test_gate_power.py:96 and :71. The real open question R0077 was reaching for is a GATE-TOPOLOGY RULING on whether campaign-level FWER (Romano-Wolf) is the right decider at all versus per-candidate FDR -- that is a validation-bar change requiring principal-level adjudication, NOT a code swap. Evidence: reports/gauntlet_certification.json, libs/autodiscovery/validation.py:386 (screen_select computed, zero readers).",
+   "roi_bps": 0.0,
+   "raised": "2026-08-01T15:33:13.741266+00:00",
+   "status": "implemented",
+   "reason": "This row IS the refutation record itself -- permanent knowledge preventing the BY-FDR swap from being re-proposed. Nothing to build; the measurement is the deliverable.",
+   "commit": "a9fe09e",
+   "due": null,
+   "disposed": "2026-08-01T15:33:25.060070+00:00"
+  },
+  {
+   "id": "R0329",
+   "source": "deep_sweep",
+   "summary": "R0077 remainder: re-score the 434 rejected candidates as ONE pre-registered resurrection batch. BLOCKED BY DATE, NOT BY A BUG -- libs/validation/reject_rescore.py:40 min_age_days=30.0 and the oldest reject is 2026-07-11T07:44:31Z, so max age today is 20.68d and 0 of 434 are eligible; first eligibility 2026-08-10T07:44:31Z when 390 unlock. A second independent blocker follows: run_rejection_rescore.py:31 _MIN_FWD_BARS=30 needs 30 post-rejection bars. Both are legitimate design rails and must NOT be lowered to make the batch run early. Also note data/reject_forward_scores.json does not exist -- the feeder has never produced a score, so the 08-10 run will be its FIRST real output and should be checked for the built-never-produced class rather than assumed to work. The runner is already scheduled (crontab.manifest:962, 50 6 * * *).",
+   "roi_bps": 60.0,
+   "raised": "2026-08-01T15:33:13.846056+00:00",
+   "status": "scheduled",
+   "reason": "Blocked by min_age_days=30 (oldest reject 2026-07-11, first eligibility 2026-08-10T07:44Z, 390 candidates unlock). Waiting on the calendar, not on work -- lowering the rail to run early is forbidden.",
+   "commit": null,
+   "due": "2026-08-10",
+   "disposed": "2026-08-01T15:33:24.977820+00:00"
+  },
+  {
+   "id": "R0330",
+   "source": "deep_sweep",
+   "summary": "R0075 remainder: the REPAIR-CAPACITY metrics are still unmeasured and therefore, per L1.28a, count as zero. MTTR (found->disposed), P(fix | row survives a session), and backlog stock-growth rate have NO producer anywhere -- grep for mttr/p_fix/stock_growth across scripts/ libs/ data/ returns nothing. Every OTHER part of R0075 is now built: top-10 rows reach the brain (f0cc401), the past-due gate fires as max_audit's rec-ledger-backlog, and repair-mode backpressure is live (data/conversion_status.json REPAIR-MODE, backlog 226, past_due 54, threshold 25). Without the three rates the desk cannot tell whether the repair capacity it just added is WORKING -- it can see the queue length but not the service rate, which is the exact arrival-vs-service comparison L1.28b was written from (lambda/mu ~4). Born-fence them on first measurement per L1.0/L2.0: value, floor, measuring command, and a check that fires when the floor falls. Also still open from R0075: split roi_bps into measured-vs-rank (today one field carries both, so a guessed rank is indistinguishable from a measured return) and the disposition-in-same-commit duty.",
+   "roi_bps": 50.0,
+   "raised": "2026-08-01T15:42:07.849202+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0331",
+   "source": "deep_sweep",
+   "summary": "R0073 remainder: the DISK metric has no floor artifact and no ratchet. A 15pct free-disk fuse exists inside run_moat_backup.py (FUSE_PCT, now exits 2, scheduled daily 03:55) and an 80pct used guard pauses the recorders (run_recorder.py:113 _DISK_MAX_FRAC), so the desk is not blind -- but per L1.0/L2.0 a number with no recorded floor is a defect: nothing writes disk_free_pct into a committed floor artifact, so nobody can see the TREND, only the current value at the moment a fence happens to run. MEASURED 2026-08-01: 37.69pct used, 58.07pct free, fill rate 0.673 GB/day measured two independent ways (mtime histogram of 21,483 moat files agreeing with the backup manifest's own 11.71h delta). Binding event is the 80pct recorder guard at 25.1 days (~2026-08-26), NOT the 29 days R0073 claims and NOT the 8pct line it names -- the row computed its runway against a threshold it did not name. Build: disk_free_pct into check_ratchets with its floor, its measuring command and a check that fires when it falls or goes stale.",
+   "roi_bps": 30.0,
+   "raised": "2026-08-01T15:47:32.491132+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0332",
+   "source": "panel",
+   "summary": "COMMIT AUDIT 2026-08-01: independent seats reviewed the last 24h of desk commits -- triage every finding in data/cro_ai_logs/commit_audit_20260801T1559.log, row the real ones, and reject the rest with reasons",
+   "roi_bps": null,
+   "raised": "2026-08-01T16:02:53.643357+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0333",
+   "source": "cro",
+   "summary": "PHANTOM STATE PATH blocks Gate 0 permanently: 4 checkers + libs/risk/capital_events.py read data/cashcarry_state.json, which NOTHING writes (only tests, into temp dirs). The executor writes data/cashcarry_positions.json, which DOES carry start_futures_equity and last_combined_equity. Effect: check_gate0_ready._ruin_rail always excepts to BLOCKED-UNKNOWN (state unreadable on this box) even ON the box, so Gate 0 can never reach all-READY. Live rails are NOT affected (deadman uses deadman_state.json, executor passes its own in-memory state). BEFORE repointing, reconcile the three disagreeing bases: positions.json last_combined_equity=8685.65, deadman last_eq=6118.99, RESTART event equity_after=5757.08. Repointing without reconciling could read +50% from inception and open the gate on a false basis -- same-ruler law. Fix sites: scripts/record_capital_event.py:41, scripts/check_change_window.py:96, scripts/check_mechanism_attribution.py:120, scripts/check_gate0_ready.py:140. Also widen the bare except so it names the exception instead of claiming unreadable-on-this-box.",
+   "roi_bps": null,
+   "raised": "2026-08-01T16:15:42.852809+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0334",
+   "source": "principal",
+   "summary": "EXECUTION-QUALITY DECOMPOSITION + post-trade interrogation (principal 2026-08-01). Record R-multiples per close in data/conviction_book.jsonl, then score SIX components separately rather than one blended hit-rate: entry quality, stop quality, target quality, sizing, trade management, exit timing. A mediocre forecast with excellent execution beats the reverse, and a blended score cannot tell you which one you have. Then interrogate every close and feed answers to the research engine: why did it beat/miss expectation, was the stop inside the noise band, was the target too conservative, should it have pyramided or scaled out, which regime, which features contributed. Objective is L1.1 max E[log W] -- so payoff asymmetry (reward:risk) outranks hit rate, and size must AUTO-REDUCE when measured expectancy decays, not only ratchet up.",
+   "roi_bps": null,
+   "raised": "2026-08-01T16:15:42.951426+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0335",
+   "source": "owed-work-worker",
+   "summary": "FENCE CONFLICT: the daemon-stale-code check has no L1.38 sterile-cockpit awareness, so it ORDERS a money-path breach during a launch window. Measured 2026-08-01: it told the operator to restart quant-cashcarry to ship f7becef, an entry-gate IMPROVEMENT committed 1h after the process started, while check_change_window.py simultaneously reported STERILE / GATE0_LAUNCH 0.2d into a 7d freeze. Two fences, opposite orders, same action, and the operator-facing one is the wrong one -- an operator who simply obeys the defect list breaches the sterile-cockpit law and ships an unproven money-path change onto live capital with no time to catch an error. FIX: daemon-stale-code should consult check_change_window and, when the stale imports are money-path files inside a live window, report the RESTART AS DEFERRED-BY-L1.38 with the window expiry rather than as an outstanding defect -- and should still fire loudly when the stale file is a REPAIR, which L1.38 always permits. Also worth splitting: a stale NON-money-path daemon has no such conflict and should keep firing immediately.",
+   "roi_bps": 40.0,
+   "raised": "2026-08-01T16:31:15.445836+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0336",
+   "source": "owed-work-worker",
+   "summary": "TWO CYCLE-QUALITY FENCES SCORE VOCABULARY AND FORMAT AS PROXIES FOR SUBSTANCE, AND THEY CONTRADICT EACH OTHER ON THE SAME CYCLE. Measured on 20260801_1445.log: check_cycle_interrogation greps for ('interrogat','probe','verified with a fresh read','self-interrog','angle') and fired 'no self-interrogation evidence' on a cycle that verified its headline finding from the journal with timestamps and values, disproved CI-red by isolation, and carried an explicit skepticism section -- it simply never typed the magic words (FALSE POSITIVE). check_rubberstamp_enforcement counts extension-bearing path regexes and fired 'only 1 named read' on the SAME cycle -- correct on format, since it named modules bare (max_audit.CHECKS, desk_memory._test_exists) instead of by path. So one fence says the cycle did not interrogate and the other says its interrogation lacked citations, while the truth is that it interrogated well and cited badly. Both are gameable in the cheap direction (type 'probe' once; paste five filenames) and both punish the expensive direction. FIX, and it needs a considered pass rather than a keyword patch: score the SUBSTANCE SIGNALS these cycles actually emit -- a claim paired with a value read from a named artifact, a self-correction against the cycle's own interest, a finding disproved rather than asserted -- and make the two fences agree on one definition of evidence so they cannot issue contradictory verdicts. The forward half also belongs in the cycle PROMPT (cite paths, not bare module names), because no fence change can make an already-written log cite better. Both acked 14d, expiring 2026-08-15 -- a fence that cries wolf on a good cycle gets acknowledged into silence, which is how enforcement actually dies.",
+   "roi_bps": 35.0,
+   "raised": "2026-08-01T16:34:34.836949+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
