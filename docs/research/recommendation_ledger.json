@@ -962,11 +962,11 @@
    "summary": "SYNTH0731 P2-12 [alpha F3/O4 = DM-2/M2moat]: repoint 4 phantom research_memory.db readers to sor_research.sqlite (fix max_audit CandidateStore(Path) type bug) AFTER disposing R0009 corpse-retire; then first gen-diversity measurement + first real promotion-queue run",
    "roi_bps": 60.0,
    "raised": "2026-07-31T03:45:45.549369+00:00",
-   "status": "open",
+   "status": "implemented",
    "reason": null,
-   "commit": null,
+   "commit": "5048f28",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-01T17:11:45.470282+00:00"
   },
   {
    "id": "R0080",
@@ -974,11 +974,11 @@
    "summary": "SYNTH0731 P2-13 [val V5/V6 + 0729F7]: capacity coherence \u2014 replace validate() 2x-book bar with 10pct-slice ADMIT band AND plumb real per-symbol ADV in the SAME change (either alone misfires); delete dead deployed_equity_usd/n_sleeves params",
    "roi_bps": 70.0,
    "raised": "2026-07-31T03:45:45.617318+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "SCHEDULED 08-04. Real and positive-EV, and it must land as ONE change: the reason says so itself -- replacing validate()'s 2x-book bar with the 10pct-slice ADMIT band WITHOUT plumbing real per-symbol ADV mis-fires in the loosening direction, and plumbing ADV alone mis-fires in the tightening direction. Either half alone is worse than neither, so this cannot be part-converted, which is exactly why it has sat undisposed. Not started this cycle: the cycle's slot went to repairing pytest collection, which was aborting the whole suite at exit 3 and would have made any validation change unverifiable.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-04",
+   "disposed": "2026-08-01T17:12:37.913566+00:00"
   },
   {
    "id": "R0081",
@@ -986,11 +986,11 @@
    "summary": "SYNTH0731 P3-14 [DI-7/DI-13]: bronze owner \u2014 manifest job for full-universe daily klines + backfill 132 symbols frozen since 06-21 (Binance Vision free) + write-rate anomaly fence (learned rows/period +-50pct) on every appending collector, must retro-fire on current defi file",
    "roi_bps": 60.0,
    "raised": "2026-07-31T03:45:45.682895+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "SCHEDULED 08-05. 132 symbols frozen since 06-21 is accruing an irreplaceable-data loss every day (Binance Vision is free, so the backfill half is recoverable, but the write-rate anomaly fence is what stops the NEXT silent freeze). Sequenced after R0082 because the 418 coordinator is the thing that would otherwise throttle a full-universe backfill.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-05",
+   "disposed": "2026-08-01T17:12:38.375664+00:00"
   },
   {
    "id": "R0082",
@@ -998,11 +998,11 @@
    "summary": "SYNTH0731 P3-15 [DI-10]: per-venue request-weight coordinator + 418 circuit breaker (shared token bucket, Retry-After capture, classify ban type on next occurrence); 418s killing shadow_8h/axis_shadows/nav_attest inside daily cycle",
    "roi_bps": 50.0,
    "raised": "2026-07-31T03:45:45.749768+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "SCHEDULED 08-04, ahead of the other P3 rows because it is a BLOCKER not a feature: 418s are killing shadow_8h, axis_shadows and nav_attest inside the daily cycle, so every day it waits costs forward-clock observations that cannot be re-earned (L1.28b(f) -- acquisition is never the thing that gets cut).",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-04",
+   "disposed": "2026-08-01T17:12:37.990238+00:00"
   },
   {
    "id": "R0083",
@@ -1010,11 +1010,11 @@
    "summary": "SYNTH0731 P3-16 [DI-12 + alpha F2/O3]: options VRP unlock \u2014 Deribit surface hourly + 3-5 strikes/expiry; build the consumer for graveyard_resurrection_queue; pre-registered VRP re-screen at ~60 obs; refresh forward_slots snapshot + fill idle Holm slot",
    "roi_bps": 45.0,
    "raised": "2026-07-31T03:45:45.822061+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "SCHEDULED 08-06. Options VRP is the top resurrection candidate, but its re-screen must run AFTER the run_options_vrp_backtest migration off the welded campaign-constant gate (already acked, due 08-02) -- screening it through a gate that rejects ~100pc would produce a false null on the best candidate the graveyard holds. Prerequisite-gated, keeping its EV-order place.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-06",
+   "disposed": "2026-08-01T17:12:38.524380+00:00"
   },
   {
    "id": "R0084",
@@ -1022,11 +1022,11 @@
    "summary": "SYNTH0731 P3-17 [DM-5/M4/M6/DM-12]: moat conversion \u2014 schedule micro_factory daily; tape records attempts/partials (open_fail rows) + TCA fields on all open paths + cashcarry_error.log fence; data_vitals globs cover execution_tape + lake. Micro-feature screening itself = existing R0003",
    "roi_bps": 55.0,
    "raised": "2026-07-31T03:45:45.886004+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "SCHEDULED 08-06. The tape half (open_fail rows, TCA fields on all open paths) is directly evidenced by this cycle's integrity watch: OPEN-FAIL ETHUSDT and DOGEUSDT produce NO row in data/cashcarry_trades.json at all -- a failed open is invisible to the tape, so the Execution Reality Model is being built from successes only, which biases every cost estimate it will ever produce.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-06",
+   "disposed": "2026-08-01T17:12:38.598899+00:00"
   },
   {
    "id": "R0085",
@@ -1034,11 +1034,11 @@
    "summary": "SYNTH0731 P3-18 [DI-8/DI-11]: feed repairs \u2014 fix dead futclose path (+0 closes x139 symbols, 7d stale) + hole-drain tranche in dl_oi_ls_universe (312-1663d holes self-logged daily); revive COT via CFTC direct weekly CSV (free; MT5 transport dead since 06-21)",
    "roi_bps": 30.0,
    "raised": "2026-07-31T03:45:45.950552+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "SCHEDULED 08-05, paired with R0081 as one data-repair window (same subsystem, so the independence gate wants them reasoned together rather than split across days). COT revival via the CFTC direct weekly CSV is free and replaces a transport dead since 06-21 -- a cost-inversion win, not new spend.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-05",
+   "disposed": "2026-08-01T17:12:38.451574+00:00"
   },
   {
    "id": "R0086",
@@ -1046,11 +1046,11 @@
    "summary": "SYNTH0731 P2-19 [val V11/V6/V14 + 0729F11]: validation small-fix bundle \u2014 DSR n_eff=n/autocorr_factor (3 lines, anti-conservative side); _PERIODS_PER_YEAR x4.1 annual_sharpe inflation; event_study bootstrap overlap conservatism",
    "roi_bps": 50.0,
    "raised": "2026-07-31T03:45:46.017975+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "SCHEDULED 08-04. Three independent small fixes, two of which move the bar in the ANTI-CONSERVATIVE direction (DSR n_eff=n/autocorr_factor; _PERIODS_PER_YEAR 4.1x annual_sharpe inflation), so this is a timidity correction with a real ROI and not tidying. Deliberately NOT rushed into the same window as R0080: both touch validation strictness and the independence gate requires a non-interaction argument for two changes in one subsystem in one window.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-04",
+   "disposed": "2026-08-01T17:12:38.092974+00:00"
   },
   {
    "id": "R0087",
@@ -1058,11 +1058,11 @@
    "summary": "SYNTH0731 P2-20 [val X4/U2]: implement the lake-backed _forward_score() stub in run_rejection_rescore \u2014 57 rejects, 0 forward-scored, ~6 days; the desk s only false-negative instrument",
    "roi_bps": 45.0,
    "raised": "2026-07-31T03:45:46.085918+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "SCHEDULED 08-05. This is the desk's ONLY false-negative instrument -- 57 rejects, 0 forward-scored -- and false negatives are the expensive error the EV-gate self-audit explicitly names. Higher standing than its P2-20 label implies, which is why it gets a date ahead of the rest of the P3 batch.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-05",
+   "disposed": "2026-08-01T17:12:38.302226+00:00"
   },
   {
    "id": "R0088",
@@ -1070,11 +1070,11 @@
    "summary": "SYNTH0731 P1-8b [meta M3/X8 + infra F4]: decide deep-sweep cadence from measured marginal yield (new-vs-repeat tagging + brain-hours by organ); revive quota_verdict referee (dead 8d, logs empty); collapse dual deep-sweep cron entries; assign estate topics to one seat per sweep",
    "roi_bps": 40.0,
    "raised": "2026-07-31T03:45:46.164528+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "SCHEDULED 08-07. Deliberately LAST of the meta items: deciding sweep cadence from measured marginal yield needs the new-vs-repeat tagging to have accumulated data, and L1.26 is explicit that process tooling loses to a boring execution fix with higher measured EV. The quota_verdict referee revival inside it is the part with near-term value.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-07",
+   "disposed": "2026-08-01T17:12:38.752836+00:00"
   },
   {
    "id": "R0089",
@@ -1082,11 +1082,11 @@
    "summary": "SYNTH0731 P0-2b [exec F13]: dispose the 8-item carried execution table \u2014 venue_reconcile contradiction, CI phantom error-log stamps, SPOT-EXCESS page hook, reconcile retry cap, dup closes/atomic persist, hurdle consumer, BNB burn decision, web/tca.json writer",
    "roi_bps": 40.0,
    "raised": "2026-07-31T03:45:46.237561+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "SCHEDULED 08-04. Eight execution items, and this cycle produced FRESH EVIDENCE for one of them: the SPOT-EXCESS page hook. The executor is logging 'SPOT-EXCESS BNBUSDT: wallet 0.86 vs tracked 0.01 -- untracked naked long' every ~13 minutes and has been for at least 45, plus OPEN-FAIL ETHUSDT and OPEN-FAIL DOGEUSDT (spot_ok=True fut_ok=False = a stranded spot leg). It is testnet, so no real capital is exposed and it is not an incident -- but it is the exact stranded-leg shape that stranded ~2,150 USD of real inventory once, and it is currently visible ONLY in a log line nobody pages on.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-04",
+   "disposed": "2026-08-01T17:12:38.200586+00:00"
   },
   {
    "id": "R0090",
@@ -1094,11 +1094,11 @@
    "summary": "SYNTH0731 P3-21 [DM M8/DM-9/DM-7]: route fusion negatives (5 combos x 2 engines) through existing graveyard writers w/ permanence grades + re-entry conditions; fix fusion_engine.py:147 verdict-overrule; populate-or-drop information_value lesson field (1244/1244 empty)",
    "roi_bps": 25.0,
    "raised": "2026-07-31T03:45:46.307062+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "SCHEDULED 08-07. Routing the 5x2 fusion negatives through the existing graveyard writers is genuine free multiplicity budget plus permanent knowledge, and fusion_engine.py:147's verdict-overrule is a correctness bug. Low urgency only because nothing downstream is currently blocked on it.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-07",
+   "disposed": "2026-08-01T17:12:38.849562+00:00"
   },
   {
    "id": "R0091",
@@ -1106,11 +1106,11 @@
    "summary": "SYNTH0731 P3-22 [DI-15 + DM M12/DM-8]: era archaeology \u2014 reconcile 69k-thread-catalog claim vs 713 rows on disk (sec33 credit from artifacts only); first thread-to-series-to-StageA conversion as the existence proof for the 8btc universe",
    "roi_bps": 20.0,
    "raised": "2026-07-31T03:45:46.375608+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "SCHEDULED 08-08. The 69k-thread-catalog claim versus 713 rows on disk must be reconciled BEFORE any further 8btc digging, because section-33 credits artifacts on disk and a catalog claim with no rows behind it is precisely the unbacked-conversion defect. Last of the batch because mining is suspended under repair-mode (data/mining_suspended exists) and this is a dig, not a repair.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-08",
+   "disposed": "2026-08-01T17:12:38.944939+00:00"
   },
   {
    "id": "R0092",
@@ -1118,11 +1118,11 @@
    "summary": "SYNTH0731 P2-23 [alpha O7/O8/O9, cites R0023/R0034]: cross-asset EV-gate hindsight audit (score the 11 pre-registered falsifiers on forward window accrued since 07-22, free); binance.vision 1m ingestion scoped to listing/delisting event windows; research_memory --mechanism required at log time",
    "roi_bps": 45.0,
    "raised": "2026-07-31T03:45:46.442048+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "SCHEDULED 08-06. Scoring the 11 pre-registered cross-asset falsifiers against the window accrued since 07-22 is FREE (no new data, no new compute) and is the calibration feedback L1.29 requires -- an ungraded prediction is a belief, not a forecast.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-06",
+   "disposed": "2026-08-01T17:12:38.675798+00:00"
   },
   {
    "id": "R0093",
@@ -4146,6 +4146,66 @@
    "commit": null,
    "due": null,
    "disposed": "2026-08-01T17:00:38.755360+00:00"
+  },
+  {
+   "id": "R0342",
+   "source": "principal",
+   "summary": "MIGRATE 8 CALENDAR GATES TO libs/research/evidence_clock.sufficient() (principal: fix every grandma time habit, fast and adaptive). Each site currently asks elapsed-days and must instead ask whether evidence is sufficient, passing its own mean/stdev/n_obs from its own realised series. SITES: scripts/run_shadow_forward.py:72 (fwd_days<90), scripts/run_trend_shadow.py:62 (days<90), scripts/run_crypto_shadow.py:85 (days<90), scripts/run_crossasset_shadow.py:81 (fwd_days<90), scripts/run_capital_plan.py:42 (fwd_sharpe>0 and fwd_days>=30 -- worst offender, gates CAPITAL on 30 days plus a bare positive Sharpe with no t-stat), scripts/run_axis_shadows.py:43 (_MIN_DAYS=40), scripts/stageb_capacity.py:28 (MIN_DAYS=40), libs/research/promotion_latency.py:65 (DESIGN_CLOCK_DAYS=90), libs/risk/kelly_shrink.py:77 (live_days>=60). ALSO fixed-calendar cooldowns that should be condition-based: scripts/kimi_hunter.py:51 (_VECTOR_COOLDOWN_D=45), scripts/check_excitation.py:56 (REENTRY_GRACE_DAYS=30), scripts/run_allocation.py:39 (_REBALANCE_DAYS=7 -- rebalance on drift breaching a band, not on a weekly clock), scripts/module_justification.py:41 (PROBATION_DAYS=14), libs/ops/carryover.py:70 (TREADMILL_DAYS=30). DO NOT TOUCH: check_gate0_ready.py SOAK_DAYS=7 (principal law, measures unattended operation not statistical evidence), maker rest times, orphan cooldowns, rate limits, _RELEASE_LAG_DAYS=2, OOS split boundaries, collector lookbacks. Report the eligibility flip at each site before/after -- a site that becomes eligible immediately on migration was being held back for nothing, and a site that becomes INELIGIBLE was promoting on a technicality.",
+   "roi_bps": null,
+   "raised": "2026-08-01T17:07:51.086796+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0343",
+   "source": "cycle",
+   "summary": "PANEL EXITS 0 WHEN EVERY SEAT FAILS -- fix the panel, not just its callers. scripts/run_external_panel.py prints 'panel: zero responses' and returns cleanly, so any caller gating on its exit code believes a review happened. ops/run_commit_audit.sh was the first caller to hit this and rowed a phantom finding (R0341) on its very first run; that caller is fixed (gates on panel_inbox.md's mtime), but EVERY OTHER CALLER STILL TRUSTS THE EXIT CODE and the next one written will hit the identical trap. Required: run_external_panel.py returns non-zero when zero seats returned a response, keeping 0 for a genuine partial run, plus a test asserting the code on a total-failure fixture. ADJACENCY: audit every caller of run_external_panel.py for exit-code trust before changing it, since some may currently depend on the 0.",
+   "roi_bps": null,
+   "raised": "2026-08-01T17:13:14.055306+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0344",
+   "source": "cycle",
+   "summary": "THE DEGRADED PANEL FALLBACK IS ITSELF DEAD, so the desk has NO independent-review capability at all -- funded or not. Measured 2026-08-01T16:58Z on a real run: OpenRouter unfunded (-0.59 USD), panel dropped to its 4 FREE seats, and ALL FOUR failed -- tencent HTTP 404 (model id gone), cohere HTTP 400, nvidia-nano HTTP 400, nvidia KeyError('choices') (response shape changed). 0/4 substantive, quorum failed, 26 files NOT credited as audited. This matters beyond the outage: the NO-COST-DRIVEN-DEGRADATION corollary promises the desk 'runs the strongest FREE fallback available and labels its output DEGRADED', and that promise is currently FALSE -- the fallback returns nothing. Two distinct fixes: (1) repair or replace the 4 free seat ids (a 404 is a dead model id, a 400 is a payload/params mismatch, the KeyError is an unhandled response shape -- three different causes, do not treat as one); (2) a canary that FAILS when the free roster's substantive count is 0, so a dead fallback is discovered before it is needed rather than during the outage it exists for.",
+   "roi_bps": null,
+   "raised": "2026-08-01T17:13:14.171558+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0345",
+   "source": "cycle",
+   "summary": "COMPOUND LEDGER ROWS ARE STRUCTURALLY UNDISPOSABLE, and that is a measurable part of the conversion backlog this desk is in repair-mode over. Every SYNTH0731 row (R0079-R0092, 14 rows, undisposed 1.5d and named in the carry-over brief) bundles 3-5 independent builds behind one id -- 'do X AND Y AND Z'. Such a row can never be marked implemented by any single action, so it can only ever be re-scheduled, and it ages forever while genuinely atomic rows around it convert. That is a defect in the LEDGER's admission, not in the worker: L1.28b says only capacity and admission control drain a queue at an arrival-to-service ratio near 4, and this is the admission-control half. Required: scripts/recommendations.py add REFUSES a summary that bundles independent deliverables (or splits it into linked child rows at creation), so a row is atomic by construction. FALSIFIER, and check it before building: measure disposition latency for compound versus atomic rows in the existing ledger -- if compound rows do NOT age longer, this hypothesis is wrong and the backlog is explained by something else.",
+   "roi_bps": null,
+   "raised": "2026-08-01T17:13:14.291450+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0346",
+   "source": "cycle",
+   "summary": "A DESK LESSON THAT DOES NOT FIT THE INJECTION BUDGET IS A WISH, AND THE LEDGER KNOWS IT AT WRITE TIME. Demonstrated 2026-08-01 with an unusually clean causal chain: commit 0240cfa recorded L0057 ('a red pytest leg can mean zero tests ran'), stated in its own message that the lesson renders at 659 chars against 156 chars of free budget and so 'does not fit and reaches no organ' -- and the class then recurred THREE times within 21 minutes (6c81187, ba19f22, and the recommendation-worker at 17:05Z), killing pytest collection repo-wide each time. The graduate path exists and works (L0057 is now graduated against tests/test_suite_collectable.py and enforced at ~0 context cost), but NOTHING forces the choice at the moment a lesson is written. Required: scripts/learn.py add reports, at write time, whether the new lesson fits the injected budget, and when it does not, demands either a graduating test or an explicit recorded 'no mechanism possible -- accepted as un-injected' note. Rationale: 32 of 57 lessons are currently over budget, so this is not a corner case -- it is the majority state of the desk's memory, and every one of them is a lesson the desk believes it has learned and has not.",
+   "roi_bps": null,
+   "raised": "2026-08-01T17:13:14.442459+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

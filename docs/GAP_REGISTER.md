@@ -1,5 +1,24 @@
 # GAP REGISTER — live ranked list of known inefficiencies & missing capabilities
 
+_Re-ranked 2026-08-01T17:35Z (daily cycle, PM)._ **#1 stays PRINCIPAL REARM + A/B/C** (unchanged,
+human-gated; `live_guard.json` read fresh this cycle: `armed false`, `stage S0`, 0 positions).
+**#1c ENTERS AND IS IMMEDIATELY CLOSED, and it outranked everything the register held:** bare
+`pytest` exited **3 with 102 INTERNALERROR lines and ZERO tests collected, repo-wide**. Not red —
+NOT RUNNING. Four files under `tests/` ended in a module-level `raise SystemExit`, which pytest
+evaluates during COLLECTION, so one such file aborts the whole session. CI is the desk's declared
+"mechanical safety net: nothing ships that fails it", and it was passing nothing while appearing
+to. Fixed + fenced in `6f54899` (`tests/test_suite_collectable.py`); collection RC 3 → 0 verified.
+
+**THE RANKING LESSON IS THE DURABLE PART, and it re-weights this whole register.** The class was
+diagnosed at 16:44Z (`0240cfa`, lesson L0057), the ONE instance was repaired, no fence was built —
+and it recurred **three times in the next 21 minutes** (`6c81187`, `ba19f22`, and the concurrent
+recommendation-worker at 17:05Z). `0240cfa`'s own message predicted it: L0057 renders at 659 chars
+against **156 chars of free injection budget**, so it "does not fit and reaches no organ".
+**32 of 57 desk lessons are currently over budget** — that is the MAJORITY of what this desk
+believes it has learned, reaching nothing. So: a register row whose only enforcement is a written
+lesson should be ranked as UNENFORCED, not as closed. Rows citing a fence or a test keep their
+rank; rows citing "we know better now" do not. Rowed as R0346 with the write-time fix.
+
 _Re-ranked 2026-08-01T15:10Z (daily cycle)._ **#1 stays PRINCIPAL REARM + A/B/C** (unchanged,
 human-gated). One new entry enters directly beneath it, and one measurement changes how the whole
 register should be read.
