@@ -15,6 +15,7 @@ This checks the RUNWAY -- everything that must be true BEFORE a seat can produce
   ran      evidence of ANY run ever, from the organ's own log glob, with its age
 
 STATUS is the diagnosis, and the distinction is the whole point:
+  unobservable     THIS HOST CANNOT SEE THE LOGS -- says nothing about the seats (see below)
   ok               produced inside its max age
   stale            produced before, not recently  -> a runtime failure, look at the log
   never-ran        runway complete, zero output   -> scheduling/quota, not configuration
@@ -22,8 +23,16 @@ STATUS is the diagnosis, and the distinction is the whole point:
   not-scheduled    nothing would ever invoke it   -> a wiring defect in the repo
   missing-prompt   configuration incomplete
 
-Exit code is nonzero when any seat is creds-missing / never-ran / not-scheduled, so this is
-cron-able as a pager check on the box. --report-only always exits 0 (for the record-keeping run).
+OBSERVABILITY IS CHECKED FIRST (2026-08-01). data/cro_ai_logs is gitignored and VPS-local, so
+running this from a dev clone or an agent container finds no logs AND no credential -- and the
+old ladder then reported "creds-missing" for all eleven seats. That is a verdict about the HOST
+wearing the costume of a verdict about the DESK. It cost real confusion: a reader concluded the
+miners had never run, while docs/research/deep_sweep/20260801_*.md sat in the same repo as proof
+that they had. Config facts (prompt/runner/unit) come from the repo and are true anywhere; every
+RUN fact needs the logs, and when they are absent this now says so instead of guessing.
+
+Exit code is nonzero when any seat is creds-missing / never-ran / not-scheduled / unobservable,
+so this is cron-able as a pager check on the box. --report-only always exits 0.
 
     python scripts/check_miner_runway.py [--json] [--report-only]
 """
@@ -74,7 +83,9 @@ _SEATS: dict[str, tuple[str, str, str, float]] = {
                          "blindrediscovery_*.log", 840.0),
 }
 
-_BAD = ("creds-missing", "never-ran", "not-scheduled", "missing-prompt")
+_BAD = ("creds-missing", "never-ran", "not-scheduled", "missing-prompt", "unobservable")
+#: "unobservable" is BAD on purpose. A run that cannot see the logs has not verified anything, and
+#: exiting 0 would let a green check stand in for a check that never happened.
 
 
 def _creds_present() -> bool:
@@ -114,6 +125,14 @@ def _last_run(glob: str) -> tuple[str | None, float | None, int | None]:
 
 
 def audit() -> dict[str, Any]:
+    # OBSERVABILITY FIRST -- this check is worthless, and worse than worthless, when it cannot see
+    # the run history. data/cro_ai_logs is VPS-local and gitignored, so running this anywhere else
+    # (a dev clone, a CI box, an agent container) finds no logs AND no credentials, and the old
+    # ladder then reported "creds-missing" for all eleven seats. That is a verdict about the
+    # MACHINE masquerading as a verdict about the DESK, and on 2026-08-01 it convinced a reader
+    # that eleven working seats had never run -- while docs/research/deep_sweep/20260801_*.md sat
+    # in the same repo as proof they had.
+    observable = _LOGDIR.is_dir()
     creds = _creds_present()
     seats: dict[str, Any] = {}
     for seat, (prompt, runner, glob, max_age_h) in _SEATS.items():
@@ -123,7 +142,12 @@ def audit() -> dict[str, Any]:
         sched = _scheduled(runner)
         name, age_h, size = _last_run(glob)
 
-        if not prompt_ok:
+        if not observable:
+            # BEFORE every other verdict. Config facts (prompt/runner/unit) are read from the repo
+            # and stay true anywhere; RUN facts are not knowable without the log directory. Saying
+            # anything about whether a seat ran, from a box that cannot see its logs, is a guess.
+            status = "unobservable"
+        elif not prompt_ok:
             status = "missing-prompt"
         elif not runner_ok or not sched:
             status = "not-scheduled"
@@ -146,6 +170,17 @@ def audit() -> dict[str, Any]:
     for seat, row in seats.items():
         by_status.setdefault(str(row["status"]), []).append(seat)
     blockers = []
+    if not observable:
+        blockers.append({
+            "blocker": f"log directory {_LOGDIR} is absent -- run history is UNREADABLE here",
+            "human_step": "run this ON the box that owns the logs; it is gitignored and local",
+            "blast_radius": len(seats),
+            "note": "this report says NOTHING about whether the seats ran. Config facts below "
+                    "(prompt/runner/unit) are read from the repo and remain true anywhere; every "
+                    "RUN fact is unknown. On 2026-08-01 the previous version reported "
+                    "'creds-missing' for all eleven seats from a box that simply could not see "
+                    "them, and a reader concluded the miners had never run while that same repo "
+                    "held today's dig output."})
     if not creds:
         blockers.append({"blocker": "no claude credential on this host",
                          "human_step": "bash ops/setup_brain_token.sh (or setup_brain_api_key.sh)",
@@ -154,6 +189,7 @@ def audit() -> dict[str, Any]:
                          "note": "ONE human step unblocks every seat counted here -- reported as "
                                  "a cause, not as N unrelated dead organs"})
     return {"checked": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "observable": observable, "log_dir": str(_LOGDIR),
             "creds_present": creds, "seats": seats, "by_status": by_status,
             "blockers": blockers,
             "n_bad": sum(1 for r in seats.values() if r["status"] in _BAD)}

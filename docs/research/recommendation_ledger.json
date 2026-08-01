@@ -3426,6 +3426,18 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0282",
+   "source": "max_audit",
+   "summary": "The miner runway doctor reported a verdict about the HOST as a verdict about the DESK, and it cost real confusion today. data/cro_ai_logs is gitignored and VPS-local, so running check_miner_runway from a dev clone or agent container finds no logs AND no credential, and the status ladder then reported 'creds-missing' for all eleven seats. I read that stale artifact and told the principal the miners had never run -- while docs/research/deep_sweep/20260801_*.md (11,772 lines across six subsystem audits) sat in the same repo as proof that they had. FIXED: observability is now checked BEFORE every other verdict. When the log directory is absent every seat reports 'unobservable', a top-level blocker names the cause and the fix, and the artifact carries observable/log_dir fields. 'unobservable' is in _BAD deliberately so the exit code is nonzero -- a run that cannot see the logs has verified nothing, and exiting 0 would let a green check stand in for a check that never happened. Config facts (prompt/runner/unit) still report normally because they are read from the repo and true anywhere; only RUN facts are withheld. This is defect class #10 from the adversarial review rubric I wrote the same morning -- a verdict that depends on the machine rather than the code -- which I documented and then walked into four hours later. ALSO VERIFIED AND FOUND CLEAN, against a claim from another session that a new organ was silently exempt from standing law: every one of the 14 claude-invoking organs passes --append-system-prompt \"$_DOCTRINE\" (6 shell: frontier_miner, prospector, litminer, dataaxis, blindrediscovery, cro_ai; 8 python: max_audit, calibration_probe, capability_hunt, conviction_trader, deep_sweep, discretionary_hunt, llm_trader, trade_review). run_capability_hunt.py:342 was the specific claim and it is correct -- the subprocess sources brain_env.sh and uses $_DOCTRINE in the SAME bash -c, so no export is needed. The only doctrine-free claude calls are auth pings ('Reply with exactly: PING-OK') and two alert message strings that merely mention the word. There is no doctrine-injection gap.",
+   "roi_bps": null,
+   "raised": "2026-08-01T10:46:17.098810+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
