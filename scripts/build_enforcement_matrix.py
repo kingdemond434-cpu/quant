@@ -288,6 +288,15 @@ _MAP: dict[str, list[str]] = {
 # These are appended into _MAP rather than written inline above so the read direction stays clean:
 # above answers "what enforces this law", below answers "why does this check exist at all".
 _FENCE_OWNERS: dict[str, str] = {
+    # --- READ-WITHOUT-WRITER (L1.40): the defect lens L1.40 names FIRST and calls this desk's most
+    # prolific class -- "the capital-event equity bug was exactly this". check_phantom_paths is its
+    # detector: a path read by code, absent from disk, written by nothing. Such a reader does not
+    # crash; it takes the empty branch and returns a plausible zero, so the organ reports HEALTHY on
+    # data that does not exist. Live instances were all found BY HAND before it existed
+    # (research_memory.db with four readers and no writer; cost_ratio, slippage_ks_p and
+    # calibration_mae_falling_months as ramp step-up conditions with no producer while the ramp sat
+    # pinned at its floor), which is exactly the hand-is-not-a-mechanism gap L1.41 exists to close.
+    "check_phantom_paths": "L1.40",
     # --- conversion parity (L1.28b): the repair wire's two halves. check_conversion measures the
     # daily flow (arrival vs disposition, FLATLINE on silence); check_recommendation_rows (§42 X1,
     # built independently by the box the same day) applies per-row carry-over pressure so old

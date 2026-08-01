@@ -386,3 +386,59 @@ sized on the rebate, and must never again be described as an ML edge.
 **WHAT SURVIVES THE KILL** (routed to `improvement_inbox.md`, not here): the p-mean evaluation
 shape, the adversarial-validation-against-time feature screen, and `publicGetExpiredFutures` as a
 survivorship-free universe primitive. The mechanism is dead; three of its tools are not.
+
+---
+
+## `jp_bitflyer_direct_recording` — bitFlyer direct recording (getexecutions + self-recorded candles)
+
+**KILLED 2026-08-01. Mechanism of death: §13 LEGITIMACY — the licence forbids the use.** Not a
+technical failure, not a null result. The endpoints work and are keyless; we may not use them.
+
+**THE OPERATIVE CLAUSE** (verbatim, Wayback capture `20190601153535` of
+`https://bitflyer.jp/en-eu/terms-of-use`, 2019-06-01, HTTP 200): *"The bitFlyer API is the
+copyrighted technology of bitFlyer and may not be copied, imitated or used, in whole or in part,
+outside of the API's intended use. bitFlyer retains all its rights related to its databases,
+websites, … including chat text, the content of bitFlyer emails, and data such as **transaction
+prices** — developed or provided by bitFlyer or its affiliates which can be acquired by various
+external APIs."* Reinforced by *"only for your internal purposes and solely as necessary for your
+use of the Service"* and an explicit bar on *"any robot, spider, crawler, scraper, script … not
+authorized by us to access the Services, extract data"*.
+
+**BLAST RADIUS — the clause pre-emptively killed two live keyless endpoints before either could be
+carded**, which is why this entry matters more than one collector: `/v1/getchats` (real JP retail
+chat — the clause names *"chat text"*) and `/v1/getfundingratehistory` (8-hourly JP funding — the
+desk's ONLY repeat-surviving family, and the single most wanted series in the region). It also
+blocks the run's largest find, deliberately never carded: `bitflyer.jp/api/chart/btc_jpy`, an
+undocumented keyless 15-minute BTC/JPY series, dead live (302) but Wayback-captured 200 from
+2015-08 back to 2014-10-16 (~414,675 B ≈ 10 months per capture).
+
+**AN ARCHIVE COPY IS NOT A LICENCE.** Reading bitFlyer's data out of a third-party archive does not
+extinguish bitFlyer's stated rights in it. This is the reusable half of the ruling: whenever a
+blocked source turns out to be Wayback-captured, the capture answers AVAILABILITY and says nothing
+about PERMISSION, and the two must never be collapsed.
+
+**WHAT WAS REFUTED ON THE WAY (route ≠ capability).** Four prior deferrals all varied the same
+thing and all mis-read the evidence. "403/WAF-blocked" was wrong: TLS completes, the cert verifies
+(`O="bitFlyer, Inc."`), the HTTP/2 stream opens, then `INTERNAL_ERROR (err 2)`; over HTTP/1.1+IPv4
+it hangs to timeout (`code=000`) — an Akamai tarpit, not a status code. The block is PER-HOSTNAME,
+not egress: `api.` and `lightning.` both return 200 from the *identical* edge IP
+`2a02:26f0:e80:588::2644` that tarpits the apex; only the marketing/legal host is bot-managed.
+"Never usefully archived" was refuted by fixing the CDX query — the pre-migration host is
+`bitflyer.jp` (not `.com`) and the slug is `terms-of-use` (not `terms`); corrected, it returned the
+document on the first attempt. A wrong host and a wrong slug had read as "the evidence does not
+exist" for four sessions.
+
+**HONEST RESIDUAL — this is a group position, not a JP-entity ruling.** The document read is the EU
+entity's 2019 ToS. JP-side `terms-of-use` paths have no CDX captures and the live host is
+tarpitted, so the JP entity's current 利用規約 has never been read. §13 asks whether a licence
+forbids the use, and the only bitFlyer terms document this desk has ever read says yes. Grading a
+restriction on the evidence we have beats a fifth deferral on evidence we cannot get.
+
+**L1.16a RE-ENTRY CONDITION:** a bitFlyer **JP-entity** ToS, or an explicit bitFlyer data-use
+permission, that does **not** retain rights in transaction prices. Absent that named change, do not
+re-open — the endpoints working is not new information.
+
+**LICENSED SUBSTITUTES, ALREADY OWNED:** Tardis.dev covers `bitflyer` from 2019-08-30, free
+first-of-month, internal research use PERMITTED — residual gap is granularity (1 day/month), not
+availability. Unrestricted JP alternatives found the same run: GMO Coin's free keyless tick CSVs
+from 2018-09-05 (40 symbols, JP-only MONA/XYM/FCR/NAC/WILD) and bitbank's public candlestick API.
