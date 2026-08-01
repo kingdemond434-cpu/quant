@@ -2042,6 +2042,20 @@ _TERMINAL_ARTIFACTS = {
         "It accumulates no inventory: its 5 extracted axes were rowed as R0100 and appended to "
         "data_axis_watchlist.md, and its verdicts were folded into ops/frontier_cn_prompt.txt so "
         "the CN seat never re-spends the verification. The doc is the evidence, not a queue.",
+    "docs/research/PERMUTATION_NULL_RESULT.md":
+        "dated measurement record (permutation null + monkey test + overlays on OKX daily perps, "
+        "2026-08-01), same shape as gate_power_audit.md and governed the same way. It accumulates "
+        "no inventory because every conclusion it reaches was CONVERTED the day it was written: "
+        "the biased two-shuffle construction became the coupled permutation in libs/validation/"
+        "bar_permutation.py, the float-dust p-value became its tie tolerance, the per-bar/"
+        "annualised units error became MIN_ADMISSION_ANN_SHARPE in screen_admission, and the "
+        "vol-targeting and conditional trade-dependence results became libs/research/overlays. "
+        "The numbers regenerate from scripts/measure_permutation_null.py into reports/"
+        "permutation_null.json, which is where a cadence would attach if one is ever wanted -- "
+        "the doc is the write-up, not a queue. The one thing it does NOT convert is the live "
+        "candidate (time_series_mom[40], p=0.008, stable across three assets); that is carried by "
+        "scripts/run_real_campaign.py, which runs the full gauntlet on it, not as unread "
+        "inventory here.",
     "docs/research/BITMEX_DECADE_INGEST_SPEC.md":
         "build spec (directive bitmex-ingest-spec, closed 2026-07-31) -- executed via its phase "
         "artifacts: phase 1 landed same-day (data/bitmex_funding.jsonl, 11,148 rows 2016->now); "
