@@ -3438,6 +3438,18 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0283",
+   "source": "max_audit",
+   "summary": "Rescued libs/research/panel_diversity.py from a branch 396 commits behind master. Another session reported three unmerged branches blocked on rework; verified all three exist (under the claude/ prefix): llm-auto-upgrade-verify-gcjac3 is 25 ahead but 653 BEHIND, generic-detectors and panel-asymmetry-dissent are 1 ahead and 396 behind. Four others (deadman-atomic-and-carryover, findings-always-tracked, event-study-capacity, quant-repo-review-9po4g5) are 0 ahead -- fully merged and safe to delete. panel-asymmetry-dissent carried the item worth having: effective-N applied to OPINIONS. Thirteen frontier models reading THE SAME dossier means '12 of 13 agreed' can be one framing echoed twelve times -- and a dossier written BY the audited system is exactly the input most likely to carry a framing. That is the same mathematics as today's measurement that 129 correlated candidates are 14.6 effective tests; the desk applies it to trials via DSR and never applied it to panel opinions. A straight merge CONFLICTS (run_external_panel.py, plus conversion_record.json deleted there and modified here), but the value is in two NEW files that conflict with nothing: libs/research/panel_diversity.py (199 lines) and its 25 tests. Extracted both; all 25 pass against current master unmodified, 397 files clean under mypy, ruff clean, law gate 10/10. The integration into run_external_panel.py is deliberately NOT taken -- it needs hand-work against a file that has moved 396 commits, and merging a stale integration to save ten minutes is how a branch that was reviewed needs_rework becomes a defect on master. The module is now on master where it can be wired at leisure instead of rotting on a branch. ALSO: generic-detectors claims 'mypy into CI' but master already runs mypy across 397 files, so that branch is at least partly redundant -- worth diffing before any rework effort is spent on it.",
+   "roi_bps": null,
+   "raised": "2026-08-01T10:48:18.104465+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
