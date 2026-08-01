@@ -258,6 +258,34 @@ def summarise(rows: list[dict[str, Any]]) -> dict[str, Any]:
             "delta_power": ((tp - base_tp) / len(trues)) if trues else None,
         }
 
+    # SUBSET POWER: leave-one-out cannot see REDUNDANCY. When two gates block the same candidates,
+    # removing either alone changes nothing and both look free -- the classic masking result. The
+    # only way to price a pair is to remove it as a pair, so the multiplicity corrections (which
+    # all deflate for the SAME family of N candidates and are therefore the prime suspects for
+    # double-counting) are scored jointly here as well as singly.
+    def _subset(keep: tuple[str, ...]) -> dict[str, Any]:
+        fp = sum(1 for r in nulls if all(r["gates"][g] for g in keep))
+        tp = sum(1 for r in trues if all(r["gates"][g] for g in keep))
+        lo_f, hi_f = _wilson(fp, len(nulls))
+        lo_t, hi_t = _wilson(tp, len(trues))
+        return {"kept": list(keep),
+                "fpr": (fp / len(nulls)) if nulls else None, "fpr_ci95": [lo_f, hi_f],
+                "power": (tp / len(trues)) if trues else None, "power_ci95": [lo_t, hi_t]}
+
+    _MULT = ("dsr", "reality_check", "pbo")
+    _ECON = tuple(g for g in GATES if g not in _MULT)
+    subsets = {
+        "all_gates": _subset(GATES),
+        "without_dsr": _subset(tuple(g for g in GATES if g != "dsr")),
+        "without_reality_check": _subset(tuple(g for g in GATES if g != "reality_check")),
+        "without_dsr_and_reality_check": _subset(
+            tuple(g for g in GATES if g not in ("dsr", "reality_check"))),
+        "without_all_three_multiplicity": _subset(_ECON),
+        "only_dsr": _subset(("dsr",)),
+        "only_reality_check": _subset(("reality_check",)),
+        "only_pbo": _subset(("pbo",)),
+    }
+
     # SOLE BLOCKER: among true alphas the pipeline killed, which single gate did it alone? A gate
     # that is never the sole blocker is redundant; one that usually is, is the binding constraint.
     sole: dict[str, int] = {}
@@ -271,6 +299,7 @@ def summarise(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "power_joint": rate(trues, "survived"),
         "per_gate": per_gate,
         "leave_one_out": loo,
+        "gate_subsets": subsets,
         "sole_blocker_of_true_alpha": dict(sorted(sole.items(), key=lambda x: -x[1])),
     }
 

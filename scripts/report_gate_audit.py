@@ -67,6 +67,23 @@ def marginal_table(c: dict[str, Any]) -> None:
           f"  joint FPR {_pct(c['type_i_joint']['rate'], 2)}")
 
 
+def subset_table(c: dict[str, Any]) -> None:
+    """Leave-one-out is blind to redundancy: two gates that block the same candidates each look
+    free when removed alone. Removing them as a pair is the only way to see it."""
+    cond = c["condition"]
+    subs = c.get("gate_subsets")
+    if not subs:
+        return
+    print(f"\nGATE SUBSETS -- redundancy between the multiplicity corrections "
+          f"(true SR={cond['true_sr']}, N={cond['n']}, T={cond['t']})")
+    print(f"{'gates kept':>34} {'power':>8} {'95% CI':>14} {'FPR':>8} {'95% CI':>14}")
+    for name, s in subs.items():
+        lo, hi = s["power_ci95"]
+        flo, fhi = s["fpr_ci95"]
+        print(f"{name:>34} {_pct(s['power']):>8} [{100 * lo:>5.1f},{100 * hi:>5.1f}]  "
+              f"{_pct(s['fpr'], 2):>8} [{100 * flo:>5.2f},{100 * fhi:>5.2f}]")
+
+
 def calibration_table(conds: list[dict[str, Any]]) -> None:
     print("\nCALIBRATION UNDER THE NULL -- is each correction the size it claims to be?")
     print(f"{'condition':>26} {'DSR>=.95':>10} {'RC p<=.05':>10} {'mean RC p':>10} "
@@ -136,8 +153,9 @@ def main() -> int:
         calibration_table(pc)
         # the marginal table at the effect size where the decision actually bites
         for c in pc:
-            if c["condition"]["true_sr"] in (2.0, 3.0):
+            if c["condition"]["true_sr"] in (2.0, 3.0, 5.0):
                 marginal_table(c)
+                subset_table(c)
     bottleneck_table(studies)
     return 0
 
