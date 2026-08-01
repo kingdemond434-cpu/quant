@@ -241,3 +241,60 @@ def test_the_prompt_tells_the_cro_the_inventory_is_askable() -> None:
 def test_a_bare_directory_inventories_to_nothing_without_crashing(tmp_path) -> None:
     d = assemble_dossier(tmp_path)
     assert d["inventory"] == [] and d["coverage"]["artifacts_found"] == 0
+
+
+# ------------------------------------------------- coverage must not shrink as the desk grows
+
+def test_a_growing_desk_never_reduces_artifact_coverage(tmp_path) -> None:
+    """THE INVARIANT THE PRINCIPAL NAMED: coverage is 100% of everything, and adding new things
+    must not reduce it. The first version capped ROWS, so a desk that grew past the cap would have
+    produced a SHRINKING view while every number still looked healthy -- and an artifact the CRO
+    cannot see is an artifact it cannot report as a blind spot."""
+    import json as _json
+    (tmp_path / "data").mkdir()
+    seen = []
+    for n in (50, 400, 1200):
+        for i in range(n):
+            (tmp_path / "data" / f"a{i}.json").write_text(
+                _json.dumps({f"key_{j}": "x" * 40 for j in range(10)}), "utf-8")
+        cov = assemble_dossier(tmp_path)["coverage"]
+        seen.append((n, cov["inventoried"], cov["artifacts_found"], cov["truncated"]))
+        assert cov["truncated"] == 0, f"{n} artifacts: {cov['truncated']} dropped"
+        assert cov["inventoried"] == cov["artifacts_found"], f"{n} artifacts: view is short"
+    assert [s[1] for s in seen] == sorted(s[1] for s in seen), f"coverage went backwards: {seen}"
+
+
+def test_detail_is_shed_before_any_artifact_is(tmp_path) -> None:
+    """Over budget, top-level keys go first and from the stalest artifacts backward. A path is
+    never dropped; shape is a nice-to-have."""
+    import json as _json
+    (tmp_path / "data").mkdir()
+    for i in range(1500):
+        (tmp_path / "data" / f"b{i}.json").write_text(
+            _json.dumps({f"k{j}": "y" * 60 for j in range(12)}), "utf-8")
+    inv = assemble_dossier(tmp_path)["inventory"]
+    assert len(inv) == 1500
+    assert all(r.get("path") and r.get("kb") is not None for r in inv)
+    assert not all(r.get("keys") for r in inv), "nothing was shed despite being over budget"
+
+
+# ------------------------------------------------------- the CRO audits itself, on evidence
+
+def test_the_cro_sees_its_own_track_record() -> None:
+    """Asking a model to 'find your blind spots' with nothing to look at produces agreeable
+    introspection. Its own reject rate and its own last proposals are something it can be
+    wrong about."""
+    d = assemble_dossier()
+    assert "scorecard" in d["self"] and "recent" in d["self"]
+    p = build_prompt(d)
+    assert "YOUR OWN TRACK RECORD" in p
+    assert "EVIDENCE ABOUT YOU" in p
+
+
+def test_self_critique_is_a_standing_responsibility_and_a_deliverable() -> None:
+    """A CRO that audits the desk but never audits itself is the one blind spot the desk cannot
+    see around, because it is the organ the desk relies on to find blind spots."""
+    assert any("Self-critique" in name for name, _ in RESPONSIBILITIES)
+    assert "cro_role_upgrade" in DELIVERABLES
+    p = build_prompt({"present": {}, "missing": []})
+    assert "cro_role_upgrade" in p and "audits itself" in p

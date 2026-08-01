@@ -132,6 +132,15 @@ RESPONSIBILITIES: tuple[tuple[str, str], ...] = (
     ("Intellectual honesty",
      "Never exaggerate. Never invent edge. Never assume profitability. Separate and clearly label "
      "evidence, hypothesis, speculation and opinion."),
+    ("Self-critique of this role",
+     "Turn every one of the responsibilities above onto YOURSELF. What is this role's own blind "
+     "spot? Which responsibility have you never actually exercised? What is missing from your "
+     "dossier that would change your answers? Which of your own past recommendations were "
+     "rejected by the fences, and were the fences right? Where is your prompt leading you toward "
+     "safe, generic advice? Is a deliverable class going unanswered cycle after cycle? Your own "
+     "scorecard and your last recommendations are in the state below -- read them as evidence "
+     "about you. A CRO that audits the desk but never audits itself is the single blind spot the "
+     "desk cannot see around, because it is the organ the desk relies on to find blind spots."),
 )
 
 #: The twelve daily deliverables. Each recommendation DECLARES which one it answers, and coverage
@@ -141,6 +150,12 @@ DELIVERABLES: tuple[str, ...] = (
     "highest_roi_improvement", "blind_spot", "architecture_weakness", "research_bottleneck",
     "data_opportunity", "alpha_opportunity", "automation_opportunity", "validation_improvement",
     "risk_improvement", "self_improvement", "implementation_priority", "expected_impact",
+    # THE CRO IMPROVING THE CRO (principal 2026-08-01: "even the gpt itself should be aggressively
+    # self improving maxxing its own blindspots n responsibilities"). Distinct from
+    # `self_improvement`, which is about the DESK. This one is about this ROLE: its prompt, its
+    # dossier, its fences, its unexercised responsibilities. It is a separate class because
+    # otherwise it never gets written -- critiquing the desk is always the more comfortable answer.
+    "cro_role_upgrade",
 )
 
 #: Operating principles, quoted so they bind the answer rather than decorating the file.
@@ -301,9 +316,19 @@ class CROResult:
 #: slice somebody remembered to list.
 INVENTORY_DIRS: tuple[str, ...] = ("data", "reports", "web", "docs/research", "docs")
 
-#: Inventory entries are capped so a sweep of a few thousand files cannot crowd out the artifacts
-#: that were read in full. The cap is on the INVENTORY, never on the priority sources.
-_MAX_INVENTORY = 400
+#: Character budget for the inventory block. NOT a row cap, and the difference is the whole point.
+#:
+#: The first version capped ROWS at 400, which meant coverage silently fell below 100% the moment
+#: the desk grew past that -- exactly the failure the principal named: "make sure the coverage is
+#: 100 percent always of everything, not that if we add new things it reduces". A CRO that cannot
+#: see an artifact cannot report it as a blind spot, so a growing desk would have produced a
+#: SHRINKING view while every number still looked healthy.
+#:
+#: So rows are never dropped. When the payload is too large, DETAIL is shed instead -- the
+#: top-level keys go first, and from the stalest artifacts first, because a file untouched for
+#: months is the one whose shape matters least. Every artifact keeps its path, size and age no
+#: matter how large the desk gets.
+_INVENTORY_CHAR_BUDGET = 60_000
 
 
 def assemble_dossier(root: Path | None = None) -> dict[str, Any]:
@@ -338,11 +363,29 @@ def assemble_dossier(root: Path | None = None) -> dict[str, Any]:
         except (OSError, json.JSONDecodeError) as exc:
             missing.append(f"{name} ({rel}: {type(exc).__name__})")
     inv, n_total = _inventory(base, read_in_full=set(DOSSIER_SOURCES.values()))
+    # THE CRO'S OWN TRACK RECORD, so self-critique is grounded in evidence rather than in a
+    # slogan. Asking a model to "find your blind spots" with nothing to look at produces
+    # agreeable introspection; handing it its own reject rate, its own unanswered deliverable
+    # classes and its own last recommendations gives it something it can actually be wrong about.
     return {"present": present, "missing": missing, "inventory": inv,
+            "self": {"scorecard": scorecard(), "recent": _recent_own(base)},
             "coverage": {"read_in_full": len(present), "inventoried": len(inv),
                          "artifacts_found": n_total,
-                         "truncated": max(0, n_total - len(inv) - len(present))},
+                         "truncated": max(0, n_total - len(inv))},
             "utc": datetime.now(UTC).isoformat(timespec="seconds")}
+
+
+def _recent_own(base: Path, *, n: int = 12) -> list[dict[str, Any]]:
+    """The CRO's own last recommendations, accepted and rejected, trimmed to what it needs to
+    judge itself: what it proposed, how it classified it, and whether a fence caught it."""
+    try:
+        rows = load(base / "docs" / "research" / "cro_recommendations.jsonl")
+    except OSError:
+        return []
+    return [{k: r.get(k) for k in
+             ("title", "deliverable", "lever", "kind", "evidence_class", "confidence",
+              "disposition", "rejected_reason")}
+            for r in rows[-n:]]
 
 
 def _inventory(base: Path, *, read_in_full: set[str]) -> tuple[list[dict[str, Any]], int]:
@@ -394,7 +437,28 @@ def _inventory(base: Path, *, read_in_full: set[str]) -> tuple[list[dict[str, An
                     row["unreadable"] = True
             rows.append(row)
     rows.sort(key=lambda r: float(r["age_days"]))
-    return rows[:_MAX_INVENTORY], len(rows)
+    return _fit_budget(rows), len(rows)
+
+
+def _fit_budget(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Shed DETAIL until the payload fits. Never sheds a ROW.
+
+    Coverage of the artifact LIST is the invariant: an artifact the CRO cannot see is an artifact
+    it cannot report as a blind spot, and blind-spot discovery is its first responsibility. Shape
+    is a nice-to-have and goes first, from the stalest artifacts backward -- a file untouched for
+    months is the one whose top-level keys matter least.
+    """
+    if len(json.dumps(rows, default=str)) <= _INVENTORY_CHAR_BUDGET:
+        return rows
+    for row in reversed(rows):                       # stalest first
+        row.pop("keys", None)
+        row.pop("n_rows", None)
+        if len(json.dumps(rows, default=str)) <= _INVENTORY_CHAR_BUDGET:
+            return rows
+    # Still over budget with paths alone: the desk is enormous. Keep every row anyway -- a
+    # truncated list would silently under-report coverage, and the prompt cap that follows will
+    # trim characters visibly rather than dropping artifacts invisibly.
+    return rows
 
 
 def build_prompt(dossier: dict[str, Any], *, n: int = 12) -> str:
@@ -409,7 +473,8 @@ def build_prompt(dossier: dict[str, Any], *, n: int = 12) -> str:
                     if missing else "")
     state = json.dumps(dossier.get("present") or {}, default=str)[:70000]
     cov = dossier.get("coverage") or {}
-    inv = json.dumps(dossier.get("inventory") or [], default=str)[:30000]
+    inv = json.dumps(dossier.get("inventory") or [], default=str)
+    own = json.dumps(dossier.get("self") or {}, default=str)[:8000]
     inv_block = f"""
 =============================== FULL DESK INVENTORY ===============================
 Every other artifact on this desk, NOT read in full above -- path, size, age in days, and shape.
@@ -422,6 +487,17 @@ Coverage this cycle: {cov.get('read_in_full', 0)} artifacts read in full, \
 {cov.get('inventoried', 0)} inventoried, {cov.get('truncated', 0)} beyond the inventory cap.
 
 {inv}
+
+============================ YOUR OWN TRACK RECORD ============================
+Your scorecard and your last recommendations. Read these as EVIDENCE ABOUT YOU, not as context.
+Which deliverable classes have you never answered? Which of your proposals did the fences catch,
+and were the fences right? Where is this prompt steering you toward safe, generic advice? At least
+one recommendation this cycle should carry deliverable `cro_role_upgrade` and be about THIS ROLE --
+its prompt, its dossier, its fences, its unexercised responsibilities. A CRO that audits the desk
+but never audits itself is the one blind spot the desk cannot see around, because it is the organ
+the desk relies on to find blind spots.
+
+{own}
 """
     return f"""You are the permanent CHIEF RESEARCH OFFICER of a quantitative crypto trading desk.
 You think, criticise, discover, prioritise and recommend. You do NOT implement code -- separate

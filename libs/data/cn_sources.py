@@ -114,27 +114,75 @@ def sogou_weixin(keyword: str) -> tuple[list[Article], str | None]:
         return [], f"{type(exc).__name__}: {str(exc)[:140]}"
     if "antispider" in html or "请输入验证码" in html:
         return [], "sogou served an anti-bot challenge (rate limited)"
+
+    # PARSED BLOCK-WISE, and the summary is the whole reason. The first version scanned title
+    # anchors globally and never touched `<p class="txt-info">`, so every WeChat article reached
+    # the ranker as a BARE TITLE while Juejin arrived with brief_content and Bilibili with
+    # description plus tags. Measured 2026-08-01: 3 of 40 WeChat articles cleared the threshold
+    # (7.5%) against Juejin's 42% and Bilibili's 28% -- and the page was carrying all 10 summaries
+    # the whole time. This module's own docstring states the requirement it was failing: "a Chinese
+    # title is often generic while the snippet carries the method words, so scoring the title alone
+    # under-ranks the material worth finding." Third instance of one class on this source (after
+    # the CJK word-boundary bug and the attribute-order bug): the fetch was healthy and the PARSE
+    # was starving the ranker.
+    #
+    # Block-wise rather than two global scans because pairing by document order across separate
+    # regex passes would silently mis-pair the moment one result lacked a summary -- and scoring
+    # article A on article B's body is far worse than scoring A on its title alone. Each
+    # `txt-box` holds exactly one title anchor and one summary (verified across live pages), so
+    # a block that does not is skipped rather than guessed at.
     out: list[Article] = []
     seen: set[str] = set()
-    # ORDER-AGNOSTIC. The anchor carries href BEFORE uigs, so a regex that demanded uigs first
-    # matched nothing while the page was perfectly healthy -- the parse reported "markup changed"
-    # on 10 present results. Match any anchor tagged as an article title, then pull href out of
-    # whatever position it occupies.
-    for m in re.finditer(r'<a\b([^>]*uigs="article_title[^>]*)>(.*?)</a>', html, flags=re.S):
-        attrs, raw = m.group(1), m.group(2)
-        href_m = re.search(r'href="([^"]+)"', attrs)
-        if not href_m:
-            continue
-        href = href_m.group(1)
-        title = re.sub(r"<[^>]+>", "", raw).strip()
-        if not title or href in seen:
-            continue
-        seen.add(href)
-        link = href if href.startswith("http") else f"https://weixin.sogou.com{href}"
-        out.append(Article(source="wechat", ident=href[-24:], title=title, url=link))
+    blocks = re.split(r'<div class="txt-box">', html)[1:]
+    for block in blocks:
+        art = _parse_wechat_block(block, seen)
+        if art is not None:
+            out.append(art)
+
+    # FALLBACK to the title-only scan when the block structure is gone. Sogou's markup shifts, and
+    # degrading to weaker results beats degrading to none -- but the caller is told, because a
+    # silent downgrade to title-only scoring is exactly the defect above coming back unnoticed.
     if not out:
+        for m in re.finditer(r'<a\b([^>]*uigs="article_title[^>]*)>(.*?)</a>', html, flags=re.S):
+            art = _wechat_article(m.group(1), m.group(2), "", seen)
+            if art is not None:
+                out.append(art)
+        if out:
+            return out, (f"txt-box blocks missing; fell back to title-only scoring on {len(out)} "
+                         "results -- snippets are NOT being scored, which under-ranks this source")
         return [], "page fetched but no article links parsed -- markup changed or empty result"
     return out, None
+
+
+def _parse_wechat_block(block: str, seen: set[str]) -> Article | None:
+    m = re.search(r'<a\b([^>]*uigs="article_title[^>]*)>(.*?)</a>', block, flags=re.S)
+    if m is None:
+        return None
+    info = re.search(r'<p class="txt-info"[^>]*>(.*?)</p>', block, flags=re.S)
+    return _wechat_article(m.group(1), m.group(2), info.group(1) if info else "", seen)
+
+
+def _wechat_article(attrs: str, raw_title: str, raw_snippet: str,
+                    seen: set[str]) -> Article | None:
+    """Build one article. ORDER-AGNOSTIC on attributes: the anchor carries href BEFORE uigs, so a
+    regex demanding uigs first matched nothing while the page was perfectly healthy."""
+    href_m = re.search(r'href="([^"]+)"', attrs)
+    if not href_m:
+        return None
+    href = href_m.group(1)
+    title = _text(raw_title)
+    if not title or href in seen:
+        return None
+    seen.add(href)
+    link = href if href.startswith("http") else f"https://weixin.sogou.com{href}"
+    return Article(source="wechat", ident=href[-24:], title=title, url=link,
+                   snippet=_text(raw_snippet)[:400])
+
+
+def _text(raw: str) -> str:
+    """Strip tags and collapse whitespace. Sogou wraps matched terms in <em> highlights, and an
+    unstripped '<em>回测</em>' would put markup into the text the ranker scores."""
+    return re.sub(r"\s+", " ", re.sub(r"<[^>]+>", "", raw)).strip()
 
 
 def probe_all() -> list[dict[str, Any]]:
