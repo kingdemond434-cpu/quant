@@ -58,6 +58,8 @@ _FENCES: dict[str, tuple[str, str, tuple[str, ...], str]] = {
                     "DETECTOR"),
     "law_families": ("data/law_families.json", "status", ("FAILING",), "DETECTOR"),
     "build_standard": ("data/build_standard.json", "status", ("BELOW-STANDARD",), "DETECTOR"),
+    "excitation": ("data/excitation_status.json", "status",
+                   ("NO-DATA", "NO-EXCITATION", "ABSORBING", "UNIDENTIFIED"), "DETECTOR"),
     "utilisation": ("data/utilisation.json", "status", ("OVER-LIMIT", "IDLE"), "DETECTOR"),
     "law_gate": ("data/law_gate.json", "ok", ("False", "false"), "RAIL"),
     "change_window": ("data/change_window.json", "status", ("STERILE", "UNMEASURED"), "RAIL"),

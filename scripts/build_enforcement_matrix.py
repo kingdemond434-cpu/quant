@@ -168,6 +168,11 @@ _MAP: dict[str, list[str]] = {
     # age at the read site; the fence fails on STALE-CONSUMED (a live decision steered by a
     # frozen input) and on UNWIRED (a bootstrap contract deleted from the executor/alerts).
     "L1.44": ["scripts/check_freshness.py", "libs/ops/fresh.py"],
+    # L1.45: execution excitation. Every other fence walks NODES and EDGES; this one looks for a
+    # CYCLE (traded -> recorded -> measured -> cheap -> traded) and for exclusions with no path
+    # back. It also owns the producer for the three ramp_gate step-up conditions that had none.
+    "L1.45": ["scripts/check_excitation.py", "scripts/run_cost_identification.py",
+              "libs/execution/excitation.py"],
     # R0122 LLM discretionary sleeve: paper-only candidate generator whose calls are scored
     # forecasts. Governed by L1.6 (zero promotion authority) and L1.29 (it grades itself).
     "L1.6-llm": ["scripts/run_llm_trader.py"],

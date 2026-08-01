@@ -75,6 +75,8 @@ _GOVERNED: tuple[str, ...] = (
     "check_return_targeting.py",
     "check_organ_liveness.py",
     "check_freshness.py",                                   # L1.44 fence (capability hunt s5)
+    "check_excitation.py",                                  # L1.45 fence (capability hunt s4)
+    "run_cost_identification.py",                           # L1.45 producer (capability hunt s4)
     "screen_carry_basis_path.py",                           # R0206 carry attribution (2026-07-31)
     "check_promotion_gate.py",
     "run_discretionary_max.py",
@@ -135,7 +137,8 @@ _REFUSAL_WORDS = ("UNMEASURED", "REFUSED", "REFUSING", "BLOCKED", "NO-DATA", "DA
                   "DUPLICATION", "DUPLICATE",
                   "UNINFORMATIVE", "ACCUMULATING", "UNSCORABLE", "NO-ANSWER",
                   "NO-CANDIDATES", "LENS-EXHAUSTED", "EXHAUSTED",
-                  "RETURN-TARGETING")
+                  "RETURN-TARGETING",
+                  "UNIDENTIFIED", "ABSORBING", "NO-EXCITATION", "UNDERPOWERED")
 
 
 def _has_silent_swallow(tree: ast.AST) -> bool:

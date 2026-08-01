@@ -1,0 +1,23 @@
+{
+  "_law": "L1.16a + L1.45",
+  "_purpose": "Re-entry conditions for EXECUTION-denylisted symbols. The alpha graveyard has recorded its re-entry conditions since L1.16a; the execution graveyard had none, and it is the one that most needed them: `_structurally_bleeding` blocks NEW OPENS, and `n` -- the trade count its own verdict is conditioned on -- can only grow through opens. So n freezes at the instant of the block and the verdict becomes unrevisitable by construction. A symbol is not re-admitted here; it is granted a bounded number of minimum-size PROBES so the verdict can be re-tested at all.",
+  "_default": "DENY. A symbol absent from this file stays blocked exactly as before. A row with no named_change, no usable probe_after, or max_probes=0 is also denied -- recording a row is not arming it.",
+  "1000CATUSDT": {
+    "named_change": "Incident #6 fix (2026-07-27, run_cashcarry_executor.py:1235 _CLOSE_IS_MARKET_ONLY + :1255 reduceOnly on close legs). The original mechanism of death was THE DESK'S OWN BUG, not this symbol's microstructure: post-only closes carried neither reduceOnly nor a venue size cap, so repeated close attempts accumulated resting fills that bought the short through zero into a +1,138,985 LONG. The -74.6 bps over n=5 attributed to this symbol is contaminated by that event, and the bug that caused it no longer exists.",
+    "original_verdict": {"n": 5, "bps": -74.6, "net_usd": -43.32},
+    "probe_after": "2026-08-15T00:00:00+00:00",
+    "_probe_after_why": "Deliberately AFTER the L1.38 launch window. A re-entry probe is a money-path IMPROVEMENT, not a repair, and the first 20 live fills are the ones that can never be re-randomised -- they should not be spent re-testing a contaminated verdict. Dated, not open-ended (an undated deferral is illegal).",
+    "max_probes": 3,
+    "max_notional_usd": 100.0,
+    "falsifier": "If 3 probes at natural size still realise <= -20 bps, the verdict is RE-CONFIRMED on uncontaminated evidence and this row is set to max_probes=0 with that result recorded. The point is to make the verdict TESTABLE, never to overturn it."
+  },
+  "COOKIEUSDT": {
+    "named_change": "Incident #6 fix (2026-07-27, run_cashcarry_executor.py:1235 _CLOSE_IS_MARKET_ONLY + :1255 reduceOnly on close legs). Same mechanism, and this is the symbol the executor's own comment names first: close attempts bought the short through zero into a +916,772 LONG. The -53.7 bps over n=7 is contaminated by the desk's own defect. NOTE the confound runs both ways -- executor:623 separately records COOKIEUSDT as a genuinely expensive book (cost model: 66.489 bps at $500, the most expensive of all 30 measured symbols), so this probe may well re-confirm the block. That is a legitimate outcome, not a failed experiment.",
+    "original_verdict": {"n": 7, "bps": -53.7, "net_usd": -39.07},
+    "probe_after": "2026-08-15T00:00:00+00:00",
+    "_probe_after_why": "As above -- after the launch window, dated.",
+    "max_probes": 3,
+    "max_notional_usd": 100.0,
+    "falsifier": "As above. With a modelled 66.489 bps round-trip at $500 this symbol may fail the ORDINARY entry gate on cost long before the denylist matters -- in which case the denylist was never the binding constraint and the probe budget goes unspent, which is itself the finding."
+  }
+}

@@ -3002,6 +3002,78 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0247",
+   "source": "cycle",
+   "summary": "L1.45 follow-on: _rt_bps reads only cost_model['pair']['500'] while run_cost_model computes 5 size buckets (100/250/500/1000/2500). 80% of a computed curve is discarded, and the discarded part is the d(cost)/d(size) SLOPE that every L1.18a capacity band, runway and REACHES-LIVE/TIGHT/DOA verdict is a statement about. Verified 2026-08-01. Fix is a lookup change, not new measurement -- the numbers are already on disk.",
+   "roi_bps": 40.0,
+   "raised": "2026-08-01T06:03:37.370225+00:00",
+   "status": "scheduled",
+   "reason": "Highest-ROI of the six and nearly free: the 5-bucket curve is already computed and on disk, so this is a lookup change with no new measurement. Deliberately NOT bundled into the L1.45 commit -- it changes the ENTRY GATE's threshold on every symbol, which is a money-path behaviour change of a different risk class from excitation (which varies only HOW an accepted order is worked, never WHETHER it is placed). It deserves its own diff and its own test.",
+   "commit": null,
+   "due": "2026-08-04",
+   "disposed": "2026-08-01T06:04:02.383275+00:00"
+  },
+  {
+   "id": "R0248",
+   "source": "cycle",
+   "summary": "L1.45 generalisation: add a CYCLE detector to the fence family. Every checker walks nodes and edges (check_orphan_code import graph, check_money_path_wired callers, check_freshness producer->consumer, run_reality_gap adjacent links) and NOTHING looks for a gate whose own output reaches its own input. The traded->recorded->measured->cheap->traded absorbing set was invisible to all 22 fences for that reason. Ask of every exclusion: what is the path back?",
+   "roi_bps": 30.0,
+   "raised": "2026-08-01T06:03:37.609129+00:00",
+   "status": "scheduled",
+   "reason": "The generalisation of what this run found by hand, and the right way to catch the NEXT absorbing set rather than this one. Scheduled behind the follow-ons that produce measurement, per L1.26: a detector for a class with one known instance (now fixed) ranks below closing the instance's measurement gaps.",
+   "commit": null,
+   "due": "2026-08-08",
+   "disposed": "2026-08-01T06:04:02.662761+00:00"
+  },
+  {
+   "id": "R0249",
+   "source": "cycle",
+   "summary": "L1.45 follow-on: MARKOUT is absent -- nothing measures P&L at t+1s/10s/60s after a maker fill. A post-only quote that is instantly underwater is being adversely selected, and slip-vs-arrival (the only TCA the desk has) is structurally blind to it. This is the tier-1 execution statistic and the excitation arms make it interpretable.",
+   "roi_bps": 25.0,
+   "raised": "2026-08-01T06:03:37.819049+00:00",
+   "status": "scheduled",
+   "reason": "Genuinely valuable and genuinely blocked: markout needs post-fill price snapshots the tape does not carry, so it is a collector change plus a statistic, not a statistic alone. Sequenced AFTER the excitation arms start accruing, because markout on a single deterministic wait is far less interpretable than markout across randomised waits -- building it first would measure the confounded thing.",
+   "commit": null,
+   "due": "2026-08-11",
+   "disposed": "2026-08-01T06:04:02.830804+00:00"
+  },
+  {
+   "id": "R0250",
+   "source": "cycle",
+   "summary": "L1.45 follow-on: est_funding is modelled and NEVER reconciled against venue funding transfers. The REVENUE half of a carry desk has no realised-vs-predicted check while the COST half now has three (cost_ratio, slippage_ks_p, calibration_mae_falling_months). L1.4 reality anchoring applies to revenue exactly as to cost.",
+   "roi_bps": 35.0,
+   "raised": "2026-08-01T06:03:38.012357+00:00",
+   "status": "scheduled",
+   "reason": "Named as the sharpest asymmetry this run surfaced: the desk just built three calibration statistics for the COST half of the carry while the REVENUE half has none. Not built now only because it needs venue funding-transfer history, which is a connector read this run did not touch.",
+   "commit": null,
+   "due": "2026-08-06",
+   "disposed": "2026-08-01T06:04:03.045612+00:00"
+  },
+  {
+   "id": "R0251",
+   "source": "cycle",
+   "summary": "L1.45 follow-on: the recorder universe is capped at 32 symbols by a 2400 weight/min Binance budget, and that constant silently sets the desk's tradeable universe (only recorded symbols can be cost-measured, and unmeasured names need ~4x funding to clear the entry gate). Nobody has computed the marginal bps of forgone carry from slot 33 -- a bandwidth constant is acting as a capacity policy.",
+   "roi_bps": 20.0,
+   "raised": "2026-08-01T06:03:38.201229+00:00",
+   "status": "scheduled",
+   "reason": "Real but lower-ROI than it looks: raising the cap costs venue weight budget and the binding constraint today is FILLS, not symbol coverage -- the book is frozen and the fit is starved of observations, so more recordable symbols would not currently produce more measurement. Re-rank once the book trades again.",
+   "commit": null,
+   "due": "2026-08-13",
+   "disposed": "2026-08-01T06:04:03.295885+00:00"
+  },
+  {
+   "id": "R0252",
+   "source": "cycle",
+   "summary": "L1.45 follow-on: _entry_gate uses the CURRENT 8h funding rate as a point forecast of the NEXT period's, an untested martingale assumption sitting on the carry sleeve's entire revenue line. L1.29 scores every other consequential probability the desk asserts; this one has never been scored.",
+   "roi_bps": 25.0,
+   "raised": "2026-08-01T06:03:38.389253+00:00",
+   "status": "scheduled",
+   "reason": "Cheap to test and it sits on the sleeve's entire revenue line, but it is a RESEARCH question (is funding autocorrelated at the 8h horizon) rather than an engineering gap, so it routes through a screen and a forecast rather than a build.",
+   "commit": null,
+   "due": "2026-08-06",
+   "disposed": "2026-08-01T06:04:03.531936+00:00"
   }
  ]
 }

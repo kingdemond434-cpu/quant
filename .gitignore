@@ -20,6 +20,15 @@ data/*
 # guard on the VPS reads it, so it must travel with the repo or the gate never
 # sees it. Revocation = delete the file and commit that too.
 !data/gate0_signoff.json
+# The L1.45 excitation design is the PRE-REGISTERED HYPOTHESIS, not state. An uncommitted
+# pre-registration is not a pre-registration: arms/epsilon/cap could be edited after seeing the
+# fills with no trace, which is the exact confounding the design exists to remove. Its diff IS
+# the audit trail -- a changed arm in a commit says a NEW experiment started, on that date.
+!data/excitation_design.json
+# The execution re-entry conditions are L1.16a EVIDENCE: the named enabling change, the dated
+# probe window and the falsifier for every symbol on the execution denylist. Untracked, a symbol
+# could be quietly re-admitted with no record of what change justified it.
+!data/execution_reentry.json
 web/*
 !web/index.html
 reports/

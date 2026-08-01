@@ -1182,3 +1182,24 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # EVIDENCE: scripts/screen_carry_basis_path.py -> reports/carry_basis_path.json
 # CONFIDENCE: committed-script (new this cycle)
 20 4 1 * * cd "$QUANT_ROOT" && flock -n data/.cron_carrybasis.lock .venv/bin/python scripts/screen_carry_basis_path.py >> data/cro_ai_logs/carry_basis_path.log 2>&1
+
+# --- L1.45 EXECUTION EXCITATION (capability hunt s4, 2026-08-01) ---------------------------
+# CEILING TYPE (L1.28c): DATA-ARRIVAL bound for both lines. Their inputs are the execution tape
+# (changes on every fill, ~27/day when the book trades) and data/cost_model.json. Both are pure
+# CPU over small files -- a few hundred JSONL rows -- so the cost of running them is negligible
+# and the only thing a slower cadence buys is latency. Hourly, and DECIDED rather than inherited.
+# PHASE: the fit runs at :20, ahead of the top-of-hour, because run_live_guard (*/5) consumes
+# data/ramp_state.json continuously -- publishing cost evidence just after the guard reads it
+# would make every ramp evaluation for the next hour act on the previous hour's fit (L1.28c(b),
+# the stale-queue defect measured on max_push). --write-ramp is deliberate and safe: while the
+# fit is UNDERPOWERED it publishes NOTHING, and once powered it still cannot step the ramp alone
+# (ramp_gate requires all five conditions incl. live_sharpe, drill streak and an 8-week window).
+# Wiring it now means no human has to remember to turn it on the day it becomes powered.
+# EVIDENCE: scripts/run_cost_identification.py -> data/cost_surface.json; CONSTITUTION L1.45
+# CONFIDENCE: committed-script (new this cycle; first run reported UNDERPOWERED and published
+# nothing, which is the refusal path working -- 7 usable fills against MIN_FILLS_FOR_RAMP=30)
+20 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_costident.lock .venv/bin/python scripts/run_cost_identification.py --write-ramp >> data/cro_ai_logs/cost_identification.log 2>&1
+# EVIDENCE: scripts/check_excitation.py -> data/excitation_status.json; CONSTITUTION L1.45
+# CONFIDENCE: committed-script (new this cycle; first run fired ABSORBING and named the two
+# incident-#6 symbols permanently denylisted on the desk's own since-fixed close bug)
+35 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_excitation.lock .venv/bin/python scripts/check_excitation.py --report-only >> data/cro_ai_logs/excitation.log 2>&1

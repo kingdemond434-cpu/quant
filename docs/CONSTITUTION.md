@@ -950,6 +950,59 @@ loosened on measured evidence exactly as a welded gate is re-calibrated (L1.43),
 the fence — and the timid failure mode (contracts so tight the fence cries wolf until someone
 disables it) is scored exactly like the stale-consumed defect itself.
 
+**L1.45 EXECUTION EXCITATION — A CONTROLLER THAT NEVER PERTURBS CANNOT IDENTIFY THE SURFACE IT
+GATES ON** *(capability hunt 2026-08-01; SOLO — GPT-9 seat returned HTTP 400, so this is
+unconfirmed by an independent family and must never later be cited as cross-family
+corroboration)*. The desk is fanatical about exploration in RESEARCH (L1.9, L1.25a "null streaks
+throttle nothing", L1.31 "exploration is resource-bound, never information-bound") and ran **ZERO
+exploration in EXECUTION**. That asymmetry had never been written down. L1.11(b) mandates an
+Execution Reality Model built from our own fills; every artifact read that as *record what
+happens*, and nothing read it as **make what happens informative**. THE DEFECT IS A CYCLE, and
+every file in it is individually correct: `run_recorder.py:96` records the symbols the desk
+already holds and recently traded (capped at 32 by a venue weight budget); `run_cost_model.py:27`
+walks only recorded symbols, so only they can ever be measured; the executor's `_rt_bps` assigns
+an unmeasured name the p90 fail-closed default of 39.5 bps; `_entry_gate` then requires ~4× the
+funding of a measured name. **Never traded ⇒ never recorded ⇒ never measured ⇒ never traded,
+forever** — an ABSORBING set whose only entry points are two hardcoded tuples. The fail-closed
+default is *good* engineering, correctly reasoned in its own comment ("'Unmeasured' is NOT a
+random subset"); its COMPOSITION with the recorder's traded-set universe is what welds the gate,
+and no single-file review can see it. Control theory named this in 1960 (Feldbaum's dual control;
+Åström–Wittenmark persistent excitation): a certainty-equivalence controller that only regulates
+converges to a SELF-CONFIRMING model — correct on-policy, arbitrarily wrong off-policy — and when
+the controller also GATES on that model, incomplete learning is permanent (Rothschild 1974).
+THE LAW: the desk carries a bounded, **pre-registered**, randomised excitation budget over its own
+order parameters, whose only purpose is to buy observations at operating points its own gates
+forbid. **IT VARIES *HOW*, NEVER *HOW MUCH*** — `libs/execution/excitation.py` has no vocabulary
+for size, and position sizing, leverage, the entry gate and every rail are untouched by
+construction. CLOSES ARE NEVER EXCITED (a close is a certainty problem, not a fee problem —
+incident #6). Arms, ε and the daily notional cap are FROZEN in `data/excitation_design.json`
+before the fills arrive; choosing an arm from a live estimate would re-create the confounding one
+level up. A cell with `n_observed=0` reports UNIDENTIFIED and **never a prior** (L1.28a applied to
+the cost surface). Observational fills CANNOT substitute: maker wait is today a deterministic
+function of side (240s iff spot BUY, 8s iff SELL), and the desk's own tape proves the collinearity
+is total — open waits [14.4, 125.0, 247.0]s against close waits [1.4 … 5.0]s, zero overlap. Nor
+can a bigger book-walk: walking a recorded book measures the cost of consuming DISPLAYED depth in
+a book that existed **without our order in it**, biased down by refill/fade and up by hidden
+liquidity, with neither bias signed a priori. No amount of book-walking resolves a counterfactual.
+**AND EVERY EXECUTION EXCLUSION CARRIES A RE-ENTRY CONDITION** (L1.16a, which the alpha graveyard
+has obeyed since it was written and the EXECUTION graveyard never had): the bleed denylist blocks
+new OPENS, and `n` — the trade count its own verdict is conditioned on — can only grow through
+opens, so `n` freezes at the instant of the block and the verdict becomes unrevisitable by
+construction. **FENCED** by `scripts/check_excitation.py` (NO-DATA / NO-EXCITATION / ABSORBING /
+UNIDENTIFIED, never OK on absent input) and produced by `scripts/run_cost_identification.py`,
+which is the missing producer for the three `ramp_gate` step-up conditions — `cost_ratio`,
+`slippage_ks_p`, `calibration_mae_falling_months` — that had **no producer anywhere in the repo**,
+pinning `ramp.size_fraction` at the 0.10 floor rung where no amount of waiting could lift it.
+ANTI-TIMIDITY READING: this is SCOPE expansion, not an evidence loosening. It buys MORE
+information at a declared, capped, REPORTED cost, and an unspent excitation budget is an IDLENESS
+defect under L1.28a, never prudence — the fence reports NO-EXCITATION for ε=0 exactly as loudly
+as it reports a broken design. THE EVIDENCE/RISK HALF IS UNTOUCHED AND STAYS EXACTLY AS STRICT: an
+excitation arm earns an OBSERVATION, never a promotion and never a cent of size; a re-entry probe
+is bounded, dated, minimum-size and requires a NAMED enabling change addressing the ORIGINAL
+mechanism of death (L1.16a's narrow door, unwidened); and an UNDERPOWERED fit publishes NO ramp
+evidence at all, so the gate's fail-closed defaults keep blocking. Publishing a `cost_ratio` from
+too few fills would step the book up on fiction, which is strictly worse than leaving it pinned.
+
 ---
 
 ## LEVEL 2 — ENFORCEMENT ENGINE (how compliance is ensured)

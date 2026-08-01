@@ -1,0 +1,91 @@
+{
+  "_law": "L1.45",
+  "_purpose": "PRE-REGISTERED excitation design. 'arms', 'epsilon' and 'daily_notional_cap_usd' are FROZEN: they are the hypothesis, fixed before the fills arrive, and changing them starts a NEW experiment rather than continuing this one. 'cells[*].n_observed' is a COUNTER refreshed by scripts/run_cost_identification.py -- counting observations is not re-registering a design.",
+  "registered": "2026-08-01",
+  "arms": {
+    "baseline": 240.0,
+    "medium": 60.0,
+    "brief": 15.0
+  },
+  "_arms_note": "maker_wait_s only -- how long a post-only OPEN quote may rest before crossing (executor:_MAKER_WAIT_OPEN). baseline=240.0 reproduces today's behaviour EXACTLY. No arm varies size, leverage, the entry gate or any rail: this design has no vocabulary for size. Closes are never excited (executor incident #6, 2026-07-27).",
+  "epsilon": 0.25,
+  "_epsilon_note": "75% of opens run exactly as today. Bounded perturbation of a working controller, never a replacement for it.",
+  "daily_notional_cap_usd": 2000.0,
+  "_cap_note": "Hard daily ceiling on notional placed under a NON-baseline arm. L1.28a: a declared, capped, REPORTED budget -- a ceiling that must be spent or explained, so an unspent budget is an idleness defect (check_excitation reports NO-EXCITATION), not prudence.",
+  "identification_target": {
+    "why": "Today maker_wait is a DETERMINISTIC function of side (240s iff spot BUY, 8s iff spot SELL, executor:1246), so wait and side are perfectly collinear and NO regression on observational fills can separate them. Only intervention breaks that.",
+    "fields_unblocked": [
+      "cost_ratio",
+      "slippage_ks_p",
+      "calibration_mae_falling_months"
+    ],
+    "_fields_note": "The three libs/execution/ramp_gate.py step-up conditions that had NO PRODUCER anywhere in the repo -- verified 2026-08-01: only consumers (ramp_gate.py:62,67,70; staging.py:84) and mutation-test fixtures referenced them. ramp.size_fraction was pinned at the 0.10 floor rung and could not advance by waiting."
+  },
+  "cells": {
+    "_measured_symbols": {
+      "AAVEUSDT": 1,
+      "ADAUSDT": 1,
+      "AGLDUSDT": 1,
+      "APTUSDT": 1,
+      "ARBUSDT": 1,
+      "AVAXUSDT": 1,
+      "BCHUSDT": 1,
+      "BICOUSDT": 1,
+      "BNBUSDT": 1,
+      "BTCUSDT": 1,
+      "CELRUSDT": 1,
+      "COOKIEUSDT": 1,
+      "DOGEUSDT": 1,
+      "DOTUSDT": 1,
+      "EDUUSDT": 1,
+      "EGLDUSDT": 1,
+      "ETHUSDT": 1,
+      "FILUSDT": 1,
+      "LINKUSDT": 1,
+      "LTCUSDT": 1,
+      "MANAUSDT": 1,
+      "NEARUSDT": 1,
+      "OPUSDT": 1,
+      "PEOPLEUSDT": 1,
+      "SOLUSDT": 1,
+      "SUIUSDT": 1,
+      "TRXUSDT": 1,
+      "UNIUSDT": 1,
+      "XLMUSDT": 1,
+      "XRPUSDT": 1
+    },
+    "_measured_note": "The 30 symbols the cost model has ever measured, i.e. the reachable set of the absorbing cycle. Tiering on this axis keeps the fit from averaging the cheap measured names over the expensive unmeasured tail.",
+    "measured:xs": {
+      "n_observed": 0,
+      "n_target": 30
+    },
+    "measured:s": {
+      "n_observed": 0,
+      "n_target": 30
+    },
+    "measured:m": {
+      "n_observed": 0,
+      "n_target": 20
+    },
+    "measured:l": {
+      "n_observed": 0,
+      "n_target": 10
+    },
+    "unmeasured:xs": {
+      "n_observed": 0,
+      "n_target": 20
+    },
+    "unmeasured:s": {
+      "n_observed": 0,
+      "n_target": 20
+    },
+    "unmeasured:m": {
+      "n_observed": 0,
+      "n_target": 10
+    },
+    "unmeasured:l": {
+      "n_observed": 0,
+      "n_target": 5
+    }
+  }
+}

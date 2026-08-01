@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import itertools
 import json
 import os
 import random
@@ -27,7 +28,7 @@ from typing import Any
 from libs.data.crypto_source import current_funding
 from libs.execution import binance_spot_testnet as spot
 from libs.execution import binance_testnet as fut
-from libs.execution import execution_tape
+from libs.execution import excitation, execution_tape
 from libs.execution.carry_accounting import (
     attribute_non_funding,
     carry_bleed_report,
@@ -348,6 +349,23 @@ _BLEED_BPS = -20.0        # realised net bps at which a symbol is structurally b
 _BLEED_MIN_N = 5          # minimum closed trades before the verdict is trusted
 
 
+_REENTRY = Path("data/execution_reentry.json")
+
+
+def _reentry_conditions() -> dict[str, Any]:
+    """Recorded L1.16a re-entry conditions for execution-denylisted symbols.
+
+    An unreadable or absent file returns {} -- which DENIES every probe, keeping the denylist
+    exactly as restrictive as it was before re-entry existed. This is the one direction the
+    degrade may take: a corrupt file must never become a licence to re-open proven losers.
+    """
+    try:
+        data = json.loads(_REENTRY.read_text("utf-8"))
+        return data if isinstance(data, dict) else {}
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
 def _structurally_bleeding(sym: str) -> bool:
     """True => this symbol has PROVEN it loses money for the desk; block new opens.
 
@@ -364,6 +382,19 @@ def _structurally_bleeding(sym: str) -> bool:
         try:
             if (r.get("symbol") == sym and int(r.get("n", 0)) >= _BLEED_MIN_N
                     and float(r.get("bps", 0.0)) <= _BLEED_BPS):
+                # L1.16a/L1.45 RE-ENTRY. This denylist is SELF-SEALING in a way the alpha
+                # graveyard is not: it blocks new OPENS, and `n` -- the trade count its own
+                # verdict is conditioned on -- can only grow through opens. So n freezes at the
+                # instant of the block and the verdict becomes unrevisitable by construction.
+                # Both currently-blocked names (COOKIEUSDT, 1000CATUSDT) are the incident-#6
+                # symbols whose losses came from the desk's OWN close bug, fixed 2026-07-27.
+                # A bounded, dated, named-change probe is what makes that verdict testable.
+                # DEFAULT IS DENY: no recorded condition => blocked exactly as before.
+                allowed, why = excitation.reentry_allowed(sym, _reentry_conditions(),
+                                                          execution_tape.read())
+                if allowed:
+                    print(f"re-entry probe {sym}: {why}")
+                    return False
                 return True
         except (TypeError, ValueError):
             continue
@@ -860,7 +891,11 @@ def _rebalance(top: int, hold_top: int, capital: float, *, dry: bool) -> dict[st
                         "notional": round(qty * px, 2), "funding_rate": round(fnd, 6),
                         "opened": pos[sym]["opened"],
                         "spot_mode": fill.get("spot"), "fut_mode": fill.get("fut"),
-                        **_tca(fill, px, fpe, "BUY")})
+                        **_tca(fill, px, fpe, "BUY"),
+                        # L1.45: the assigned arm travels onto the permanent tape. WITHOUT this
+                        # line the arm changes execution and leaves no trace, which is strictly
+                        # worse than not exciting at all -- unrecorded variation is noise.
+                        **{k: v for k, v in fill.items() if k.startswith("exc_")}})
         actions.append(f"open {sym} {qty}")
 
     # TOP UP undersized held carries toward the FULL-capital target so authorized capital is not
@@ -1225,6 +1260,64 @@ def _close_goal_state(sym: str, res: dict[str, Any]) -> dict[str, Any]:
     return res
 
 
+_EXC_SEQ = itertools.count()
+# The cadence jitter in force for the cycle that placed the current orders. Module-level because
+# the draw happens in the main loop and is consumed at the fill site; it lands on the tape as
+# `exc_cadence_jitter`, making the executor's own timing variation an identifying regressor
+# instead of unrecorded noise.
+_EXC_CADENCE: dict[str, float] = {}
+
+
+def _excitation_arm(sym: str, spot_side: str, qty: float) -> excitation.Arm:
+    """Assign this order its L1.45 excitation arm. NEVER raises, NEVER changes size.
+
+    An experiment must not be able to take down the executor that feeds it, so every failure path
+    degrades to the baseline arm -- which reproduces today's behaviour exactly (`_MAKER_WAIT_OPEN`
+    is the design's baseline value). The reason is carried on the Arm and lands on the tape, so
+    "why did this order not vary" is answerable afterwards; a silent degrade would make an inert
+    experiment look identical to a running one.
+
+    CLOSES RETURN BEFORE ANY I/O. `assign()` would refuse the SELL side anyway, but reaching it
+    costs a design load plus a full tape read -- on the CLOSE path, which every comment in this
+    file insists must be fast because the rails exit through it. Spending risk-path latency to
+    compute an arm that is then discarded is exactly the wrong trade, and it would get worse as
+    the tape grows.
+    """
+    if spot_side != "BUY":
+        return excitation.Arm(name=excitation.BASELINE_ARM, maker_wait_s=_MAKER_WAIT,
+                              cell="close", seed="", baseline=True,
+                              reason="close side -- never excited (risk path, no I/O)")
+    try:
+        design = excitation.load_design()
+        spent = excitation.spent_today(execution_tape.read())
+        return excitation.assign(sym, spot_side, qty, design=design,
+                                 spent_today_usd=spent, sequence=next(_EXC_SEQ))
+    except Exception as e:  # observer-grade: the money path never fails for an experiment
+        with contextlib.suppress(Exception):
+            _ERR.write_text(f"{datetime.now(tz=UTC).isoformat()} excitation degraded {sym}: "
+                            f"{e!r}\n")
+        return excitation.Arm(name=excitation.BASELINE_ARM, maker_wait_s=_MAKER_WAIT_OPEN,
+                              cell="unknown", seed="", baseline=True,
+                              reason=f"excitation error, degraded to baseline: {e!r}")
+
+
+def _exc_fields(arm: excitation.Arm, spot_side: str) -> dict[str, Any]:
+    """Arm stamp for the tape -- OPENS ONLY.
+
+    A close is stamped with NOTHING rather than with the baseline arm. `assign()` refuses the
+    SELL side, so a close's arm carries the design's baseline wait (240s) while the close itself
+    goes straight to market -- stamping it would write a wait the order never used, and the
+    identification fit would read those rows as 240s-wait observations. A field that describes
+    what did not happen is worse than an absent one.
+    """
+    if spot_side != "BUY":
+        return {}
+    out = arm.as_tape_fields()
+    if "last_jitter" in _EXC_CADENCE:
+        out["exc_cadence_jitter"] = _EXC_CADENCE["last_jitter"]
+    return out
+
+
 def _execute_pair_impl(sym: str, qty: float, spot_side: str, fut_side: str) -> dict[str, Any]:
     """Fill both carry legs -- maker-first (execution alpha: lower fees) if enabled, else market.
 
@@ -1239,12 +1332,19 @@ def _execute_pair_impl(sym: str, qty: float, spot_side: str, fut_side: str) -> d
     # A close is a CERTAINTY problem, not a fee problem; the desk's own note already says
     # "patient on OPENS, fast on CLOSES". Opens keep the maker rebate, which is where it pays.
     _CLOSE_IS_MARKET_ONLY = spot_side == "SELL"
+    arm = _excitation_arm(sym, spot_side, qty)
     if _MAKER and not _CLOSE_IS_MARKET_ONLY:
         try:
             # patient on OPENS (spot BUY = entering a carry), fast on CLOSES (spot SELL =
             # unwinding, where the rails need speed). See the fee audit note above.
-            _w = _MAKER_WAIT_OPEN if spot_side == "BUY" else _MAKER_WAIT
-            return _maker_pair(sym, qty, spot_side, fut_side, wait=_w)
+            #
+            # L1.45 EXCITATION: on OPENS the wait comes from the assigned arm, whose baseline
+            # value IS _MAKER_WAIT_OPEN -- so an absent/disabled design reproduces this line's
+            # previous behaviour exactly. Closes are never excited: `assign()` refuses the SELL
+            # side outright, and this branch is unreachable for closes anyway.
+            _w = arm.maker_wait_s if spot_side == "BUY" else _MAKER_WAIT
+            res = _maker_pair(sym, qty, spot_side, fut_side, wait=_w)
+            return {**res, **_exc_fields(arm, spot_side)}
         except Exception as e:  # maker machinery failed -> safe market fallback
             with contextlib.suppress(Exception):
                 _ERR.write_text(f"{datetime.now(tz=UTC).isoformat()} maker fail {sym}: {e!r}\n")
@@ -1265,7 +1365,12 @@ def _execute_pair_impl(sym: str, qty: float, spot_side: str, fut_side: str) -> d
             _ERR.write_text(f"{datetime.now(tz=UTC).isoformat()} unfilled leg {sym} "
                             f"spot_ok={spot_ok} fut_ok={fut_ok} spot_res={spot_res!r} "
                             f"fut_res={fut_res!r}\n")
-    return {"spot": "taker", "fut": "taker", "spot_ok": spot_ok, "fut_ok": fut_ok}
+    # The arm is stamped on the TAKER path too. It was assigned before the maker attempt, so a
+    # fill that fell back to taker still belongs to its assigned condition -- dropping the stamp
+    # here would silently delete exactly the observations where the maker path failed, which is
+    # attrition correlated with the outcome and the classic way an experiment fools itself.
+    return {"spot": "taker", "fut": "taker", "spot_ok": spot_ok, "fut_ok": fut_ok,
+            **_exc_fields(arm, spot_side)}
 
 
 def _mark(rb: dict[str, Any]) -> dict[str, float | None]:
@@ -1509,6 +1614,11 @@ def main() -> None:
                 cap = _dynamic_capital(capital)           # dynamic-leverage sized (when proven)
                 rb = _rebalance(top, hold_top, cap, dry=dry)   # places orders (live-tunable params)
                 last_work = time.time()
+                # L1.45: the jitter that governed the cycle JUST EXECUTED is recorded before the
+                # next one is drawn. This line has produced genuine exogenous variation on the
+                # live path since the anti-front-run jitter was added and DISCARDED every draw --
+                # unrecorded variation is noise, and recording it costs nothing.
+                _EXC_CADENCE["last_jitter"] = round(jitter, 4)
                 jitter = rng.uniform(0.85, 1.15)
             else:
                 rb = _book_snapshot()                     # just read + mark (no orders)
