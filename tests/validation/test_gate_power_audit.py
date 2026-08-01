@@ -7,7 +7,6 @@ simulate an alpha that is not the size it claims.
 from __future__ import annotations
 
 import numpy as np
-
 from scripts.audit_gate_power import (
     GATES,
     _wilson,
@@ -18,6 +17,7 @@ from scripts.audit_gate_power import (
     simulate_returns,
     summarise,
 )
+
 from libs.validation.positive_control import PPY
 
 

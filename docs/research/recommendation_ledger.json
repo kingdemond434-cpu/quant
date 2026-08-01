@@ -2726,6 +2726,18 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0224",
+   "source": "max_audit",
+   "summary": "Gauntlet audit: the multiplicity penalty was paid TWICE and that, not any threshold, is why nothing survived. DSR is a Probabilistic Sharpe Ratio against a DEFLATED benchmark sr0=expected_max_sharpe(n_trials); that deflation IS a multiplicity correction over the campaign, and on the per-candidate path Romano-Wolf already controls family-wise error over the SAME N candidates. Two family-wise bars were compounded into one nothing could pass. MEASURED on 240 genuine alphas and ~4,800 nulls per effect size (N=420, T=310), scoring through the real validate(): power at true Sharpe 2.0 was 0.0%, at 3.0 it was 1.2%. Gate subsets at SR=5: all gates 5.8% power / 0.000% FPR; WITHOUT DSR 83.8% power / 0.000% FPR; without reality_check 5.8% (masked by DSR); without BOTH 100% power / 32.3% FPR -- so exactly one correction is needed, not zero and not two. Leave-one-out alone could never have found this because DSR masks reality_check. The corrections are correctly SIZED as family-wise tests (White 3.3%, SPA 5.0%, Romano-Wolf 5.0% against nominal 5%) -- the defect was controlling family-wise error twice over one family, not miscalibration. Discrimination was always fine (DSR AUC 0.980 at SR=3), which is the signature of a good statistic behind an unreachable threshold. ADVERSARIAL CHECK that could have overturned it: PSR adjusts for skew/kurtosis and Romano-Wolf does not, so DSR might have been catching negatively-skewed nulls -- tested on a short-vol true null (skew -6.15, kurtosis 45.6) and FPR was IDENTICAL at 0.150% with and without DSR. The argument did not survive measurement. FIX: on the per-candidate path DSR is computed with n_trials=1, removing the duplicated deflation and RETAINING the moment-aware PSR; the legacy path keeps full deflation because nothing else corrects there. Power 0.0->5.83% at SR=2 and 1.2->23.75% at SR=3, false positives 0/5040 -> 1/5040 (overlapping 95% intervals). No threshold lowered: _DSR_THRESHOLD is still 0.95 and Romano-Wolf still holds FWER at 5%. BOTTLENECK, separately: history length moves power (T=310/620/1250/2500 -> 0.00/1.67/4.58/19.58% at SR=2) and campaign size does NOT (N=420/100/30 all 0.00%), while the campaign discards 82.9% of the observations it already has via min-length truncation (310 retained of 1808 available per candidate).",
+   "roi_bps": null,
+   "raised": "2026-08-01T00:41:54.138472+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

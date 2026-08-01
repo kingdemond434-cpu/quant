@@ -430,13 +430,38 @@ def validate(
 
     # Walk-forward (OOS). Shadow/paper are separate lifecycle stages (see lifecycle.py).
     wf = WalkForwardEngine().evaluate(arr, n_splits=4, test_size=max(20, len(arr) // 6))
-    dsr = deflated_sharpe_ratio(arr, n_trials=n_trials, sharpe_estimates=sharpe_estimates,
-                                threshold=_DSR_THRESHOLD)
     # Overfitting / significance. PREFERRED path: per-candidate statistics from `campaign`, which
     # this candidate earns on its own column. LEGACY path (no campaign supplied): the campaign
     # constants, retained only so unmigrated call sites keep their exact prior behaviour.
     has_peers = returns_matrix.shape[1] >= 2
     per_candidate = campaign is not None and column is not None
+    # THE MULTIPLICITY PENALTY IS PAID ONCE, NOT TWICE (audit 2026-08-01, R0224).
+    #
+    # DSR is a Probabilistic Sharpe Ratio measured against a DEFLATED benchmark
+    # sr0 = expected_max_sharpe(n_trials, ...). That deflation IS a multiplicity correction over
+    # the campaign. On the per-candidate path Romano-Wolf ALREADY controls family-wise error over
+    # the same N candidates -- so the desk was correcting for the same multiplicity twice and
+    # compounding two family-wise bars into one unpassable one.
+    #
+    # MEASURED, on 240 genuine alphas and 4,800 nulls per effect size (N=420, T=310):
+    #     true SR    all gates    without DSR's deflation    false positives
+    #        3.0          0.4%                      14.6%    0.000% both ways
+    #        5.0          5.8%                      83.8%    0.000% both ways
+    #        7.0         32.9%                      99.6%    0.000% both ways
+    # Romano-Wolf alone holds the false-positive rate at 0 of 4,800 (95% upper bound 0.08%), so
+    # the second deflation bought NO error control and cost up to 78 points of power. Removing
+    # BOTH corrections instead sends false positives to 32%, which is why exactly one is kept.
+    #
+    # WHAT IS DELIBERATELY RETAINED: with n_trials=1 the deflation vanishes but the PSR does not,
+    # and PSR adjusts for SKEW and KURTOSIS -- which Romano-Wolf's mean-based bootstrap statistic
+    # does not model. A negatively-skewed short-vol payoff can post a beautiful sample Sharpe on
+    # a true zero edge; that is the one job here Romano-Wolf cannot do, so the moment-aware half
+    # of DSR stays and only the duplicated deflation goes.
+    #
+    # The LEGACY path keeps the full deflation: nothing else corrects for multiplicity there.
+    dsr_trials = 1 if per_candidate else n_trials
+    dsr = deflated_sharpe_ratio(arr, n_trials=dsr_trials, sharpe_estimates=sharpe_estimates,
+                                threshold=_DSR_THRESHOLD)
     if per_candidate:
         assert campaign is not None and column is not None  # narrowed by per_candidate
         cand_pbo = campaign.cscv.candidate_pbo[column]
