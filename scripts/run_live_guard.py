@@ -274,8 +274,22 @@ def main() -> int:
                    "size_multiplier": rung.size_multiplier,
                    "requires_manual_rearm": rung.requires_manual_rearm,
                    "unacked_since": lad.oldest_unacked_ts},
-        "canary": {"mode": "limit_only" if mode.limit_only else "normal",
-                   "size_multiplier": mode.size_multiplier, "reason": mode.reason,
+        # SCOPED TO THE PATH IT PROVES (2026-08-01). The canary attests the LIVE venue path --
+        # signed reads, key validity, clock skew, IP whitelisting. When the connector is unarmed
+        # _canary() skips WITHOUT recording an attempt (by design: an unarmed desk has no
+        # execution path to prove), so last_ok_ts stays None forever and mode() reads limit_only
+        # forever. That verdict was reaching the PAPER book and suppressing its taker fallbacks
+        # (run_cashcarry_executor:1128), so the desk could not accrue the very forward evidence
+        # its own Gate-0 net_of_fees criterion demands -- observed as OPEN-FAIL on candidates the
+        # entry gate had passed. Applying a live-path verdict to a paper book is a category error,
+        # not caution. The moment the connector IS armed the probe runs for real and this binds
+        # again unchanged; a canary that RUNS and FAILS still returns limit_only immediately.
+        "canary": {"mode": ("limit_only" if (mode.limit_only and venue is not None) else "normal"),
+                   "size_multiplier": mode.size_multiplier,
+                   "reason": (mode.reason if venue is not None else
+                              mode.reason + " -- NOT BINDING at S0: the probe attests the LIVE "
+                              "path and is deliberately skipped while the connector is unarmed, "
+                              "so it can never clear here. Binds in full the moment S1 arms."),
                    "consecutive_failures": can.consecutive_failures, "note": canary_note},
         "ramp": {"size_fraction": size_fraction, "why": ramp_why, "checks": ramp_checks},
         "effective_size_fraction": round(effective_size, 4),
