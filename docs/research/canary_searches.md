@@ -89,3 +89,35 @@ C2 → a Gitee API endpoint or a specific repo's commit feed. Owed by the next r
   silently. ACTION OWED (tracked, not left here): update `data_registry.json` `eth_public_rpc` to
   the probed reality — a registry that records a dead fallback chain is worse than one that
   records none, because it stops anyone from looking.
+
+### 2026-08-02 — the canaries became an ORGAN (`scripts/run_canaries.py`)
+
+Until today this file promised a 4-day cadence that **nothing executed**. Nine cheap HTTP checks,
+run by whoever remembered — the same "cadence by LLM memory is a reliability hole" that
+`run_cadence`'s own docstring names, and the same shape the gap-register re-rank had until this
+cycle. The file's own 07-26 entry says it plainly: seeded 07-19 and never re-run, so "the baselines
+did not exist and no shift was detectable in principle."
+
+`scripts/run_canaries.py` now runs all nine every cycle, extracts the ONE tracked quantity per
+canary (a diff over a whole page is noise; a diff over a measured number is a signal), and keeps
+its machine baseline in `data/canary_history.jsonl` rather than parsing this prose — otherwise
+reformatting the document would register as a detected shift.
+
+**Result from the Claude Code container: 0/9 reachable.** Recorded as UNREACHABLE, never PASS —
+"we could not look" and "we looked and nothing moved" are opposite facts, and a shift detector that
+conflates them reports its own blindness as ecosystem stability.
+
+| # | status | cause |
+|---|--------|-------|
+| C1, C5, C6 | BLIND | HTTP 403 from the agent proxy |
+| C2, C3, C4, C7, C8, C9 | BLIND | tunnel connection refused |
+
+One real fix came out of the attempt: the first version used `certifi` and got
+CERTIFICATE_VERIFY_FAILED on hosts the proxy could actually reach, because this environment
+terminates TLS at a proxy whose root is not in certifi. The organ now prefers `SSL_CERT_FILE` /
+`REQUESTS_CA_BUNDLE`. Left uncorrected, that would have been a **self-inflicted blind spot reported
+as an ecosystem fact** — the canary equivalent of the frozen-grid coverage bug.
+
+**This entry does not claim a shift check happened.** It records that the duty is now executable
+and that this environment cannot execute it. The nine canaries produce real baselines on the VPS,
+where egress is open — the same box, and the same reason, as the recorders.

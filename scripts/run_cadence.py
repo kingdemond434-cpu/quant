@@ -456,6 +456,19 @@ def main() -> None:
         for _ln in (_r.stdout or "").strip().splitlines()[:1]:
             print(f"cadence: {_ln[:150]}")
 
+    # CANARIES (EVERY CYCLE). Charter §21 promised "re-run every 4 days" and nothing ran them:
+    # the file was seeded 2026-07-19 with placeholder baselines and never executed, so no shift was
+    # detectable in principle for two weeks. Cheap -- nine HTTP calls, seconds -- and the one that
+    # matters (C9) guards a LIVE data path rather than merely informing a digger.
+    _r = subprocess.run([sys.executable, "scripts/run_canaries.py"],
+                        capture_output=True, text=True, timeout=300, check=False)
+    _tail = (_r.stdout or _r.stderr or "").strip().splitlines()[:1] or [""]
+    if Path("data/canary_run.json").exists():
+        fired.append("canaries")
+        print(f"cadence: {_tail[0][:150]}")
+    else:
+        print(f"cadence: canaries rc={_r.returncode} NO ARTIFACT | {_tail[0][:110]}")
+
     # GAP-REGISTER MECHANICAL PASS (EVERY CYCLE). The register is, by the doctrine's own words,
     # "the only organ that DRIVES work" -- and its stated cadence ("re-ranked at the START of
     # every daily cycle") was executed by an LLM remembering to do it, which is precisely the
