@@ -50,6 +50,7 @@ def mine(tmp_path, monkeypatch):
     monkeypatch.setattr(M, "COVERAGE", tmp_path / "moat_coverage.json")
     monkeypatch.setattr(M, "REPORT", tmp_path / "moat_mine.json")
     monkeypatch.setattr(M, "SERIES", tmp_path / "moat_series.jsonl")
+    monkeypatch.setattr(M, "HISTORY", tmp_path / "moat_coverage_history.jsonl")
     monkeypatch.setattr(M, "ONTOLOGY_STATE", tmp_path / "ontology_state.json")
     return moat
 
@@ -166,3 +167,109 @@ def test_every_mechanism_is_wired_to_an_ontology_question(mine) -> None:
     mining move the search space rather than just fill a log."""
     from libs.hypmax.moat_mine import MECHANISMS
     assert set(M._QUESTION) == set(MECHANISMS)
+
+
+# ------------------------------------------------------------------ the RATE, not the level
+#
+# P26 says under-exploration is a breach and that the breach is the gap NOT CLOSING. Those two
+# states are identical in any snapshot -- 1.2% is a triumph the day after 0.5% and a scandal after
+# a week at 1.2% -- so the miner has to trend its own coverage or the law is undecidable. These
+# tests are written against the four verdicts separately because each one has a DIFFERENT fix, and
+# collapsing them is how the desk would end up chasing neglect while the real problem was
+# throughput.
+
+
+def _history(monkeypatch, tmp_path, pcts, cells, *, step_s: int = 600):
+    from datetime import UTC, datetime, timedelta
+    h = tmp_path / "hist.jsonl"
+    t0 = datetime(2026, 8, 1, tzinfo=UTC)
+    with h.open("w", encoding="utf-8") as fh:
+        for i, (p, c) in enumerate(zip(pcts, cells, strict=True)):
+            fh.write(json.dumps({"ts": (t0 + timedelta(seconds=step_s * i)).isoformat(),
+                                 "run": i, "coverage_pct": p, "cells_filled": c,
+                                 "cells_total": 1000, "holes": 1000 - c}) + "\n")
+    monkeypatch.setattr(M, "HISTORY", h)
+    return h
+
+
+def _rep(pct: float, cells: int, total: int = 1000) -> dict:
+    return {"coverage_pct": pct, "cells_filled": cells, "cells_total": total,
+            "holes": total - cells}
+
+
+def test_a_rising_coverage_is_closing_and_carries_an_eta(monkeypatch, tmp_path) -> None:
+    """A gap being closed is NOT a breach, and firing on it would train everyone to ignore the
+    alarm that matters. The ETA is the deliverable: 'when do we reach 100%' has to be an answer
+    the desk computes, not one a human reconstructs from two numbers they wrote down."""
+    _history(monkeypatch, tmp_path, [0.5, 0.9, 1.3, 1.7, 2.1], [5, 9, 13, 17, 21])
+    c = M.closure(_rep(2.5, 25), run=6)
+    assert c["state"] == "CLOSING"
+    assert c["runs_to_100"] and c["runs_to_100"] > 0
+    assert c["hours_to_100"] and c["hours_to_100"] > 0
+
+
+def test_a_flat_coverage_is_the_breach_in_its_pure_form(monkeypatch, tmp_path) -> None:
+    """Edge the desk has already PAID to record and is declining to collect. This is the state
+    the check has to be able to reach, and before the closure field existed it could not: the
+    defect fired identically whether the miner was converging in hours or had been dead a week."""
+    _history(monkeypatch, tmp_path, [1.2] * 6, [12] * 6)
+    c = M.closure(_rep(1.2, 12), run=7)
+    assert c["state"] == "STANDING-STILL"
+    assert c["runs_to_100"] is None, "a flat series must not be extrapolated to a finish date"
+
+
+def test_cells_rising_while_the_percentage_stalls_is_a_throughput_finding(
+        monkeypatch, tmp_path) -> None:
+    """THE SUBTLE ONE. The grid GROWS every second the recorders run, so a miner working flat out
+    can hold the percentage still. Reporting that as neglect sends the desk chasing a motivation
+    problem it has not got -- the fix is more miner, and the verdict has to say so."""
+    _history(monkeypatch, tmp_path, [1.2] * 6, [12, 24, 36, 48, 60, 72])
+    c = M.closure(_rep(1.2, 84, total=7000), run=7)
+    assert c["state"] == "OUTPACED-BY-RECORDING"
+    assert "more miner" in c["why"]
+
+
+def test_too_few_observations_is_unknown_rather_than_a_verdict(monkeypatch, tmp_path) -> None:
+    """A slope through two points is not evidence. Guessing here in either direction is worse than
+    admitting the rate is not yet measurable."""
+    _history(monkeypatch, tmp_path, [0.5], [5])
+    c = M.closure(_rep(0.9, 9), run=2)
+    assert c["state"] == "UNKNOWN"
+    assert c["runs_to_100"] is None
+
+
+def test_the_eta_is_derived_from_the_percentage_not_the_cell_count(monkeypatch, tmp_path) -> None:
+    """An ETA from cells-per-run assumes a frozen archive and promises a date that recording pushes
+    back every day. The percentage slope already nets grid growth out, which is the only reason it
+    can be quoted to a human at all."""
+    # cells climb 10/run, but the grid climbs with them so the percentage barely moves
+    _history(monkeypatch, tmp_path, [1.0, 1.02, 1.04, 1.06, 1.08], [10, 20, 30, 40, 50])
+    c = M.closure(_rep(1.10, 60, total=5455), run=6)
+    naive = (100.0 - 1.10) / 10.0        # what a cell-slope ETA would have claimed
+    assert c["runs_to_100"] is None or c["runs_to_100"] > naive * 10
+    assert "nets out grid growth" in c["eta_note"]
+
+
+def test_coverage_history_is_append_only(mine, tmp_path, monkeypatch) -> None:
+    """The trend IS the enforcement mechanism, so a file that gets overwritten each run destroys
+    the only evidence P26 can be decided on."""
+    for sym in ("AAAUSDT", "BBBUSDT"):
+        _write_day(mine, "fut", sym, "20260731", hours=1)
+    monkeypatch.setattr(M, "FILE_BUDGET", 1)
+    assert M.main() == 0
+    n1 = len((tmp_path / "moat_coverage_history.jsonl").read_text("utf-8").strip().splitlines())
+    assert M.main() == 0
+    n2 = len((tmp_path / "moat_coverage_history.jsonl").read_text("utf-8").strip().splitlines())
+    assert n2 > n1
+
+
+def test_a_real_run_ships_the_closure_verdict_in_its_artifact(mine, tmp_path) -> None:
+    """Read by check_under_exploration, so a missing field is a law that cannot be decided. The
+    check reads the ARTIFACT rather than re-deriving the trend, which means this field existing is
+    what makes the enforcement real."""
+    _write_day(mine, "fut", "AAAUSDT", "20260731", hours=1)
+    assert M.main() == 0
+    c = _report(tmp_path)["closure"]
+    assert c["state"] in ("CLOSING", "STANDING-STILL", "OUTPACED-BY-RECORDING", "UNKNOWN",
+                          "COMPLETE-FOR-THIS-GRID")
+    assert c["why"]

@@ -194,24 +194,78 @@ def test_under_exploration_is_enforced_and_currently_reports_the_real_blocker() 
     M.check_under_exploration(d)
     keys = {k for k, _ in d}
     assert keys <= {"exploration-blocked-upstream", "under-exploration",
-                    "exploration-unmeasured", "exploration-has-no-dedicated-organ"}
+                    "exploration-unmeasured", "exploration-has-no-dedicated-organ",
+                    "exploration-outpaced-by-recording", "exploration-rate-unmeasured"}
     if "exploration-blocked-upstream" in keys:
         assert "no mining action closes this" in E._RESOLUTION["exploration-blocked-upstream"][1]
 
 
-def test_a_standing_coverage_number_is_a_breach(monkeypatch, tmp_path) -> None:
-    """The breach is the gap NOT CLOSING, never the gap itself -- so a real partial coverage that
-    has an organ behind it must still register, because only a trend can tell progress from
-    stall and a snapshot cannot."""
-    (tmp_path / "data").mkdir()
-    (tmp_path / "ops").mkdir()
+def _moat_at(tmp_path, pct: float, closure: dict | None = None) -> None:
+    """A moat artifact with a dedicated organ behind it, so the only thing under test is the
+    coverage verdict itself."""
+    (tmp_path / "data").mkdir(exist_ok=True)
+    (tmp_path / "ops").mkdir(exist_ok=True)
     (tmp_path / "ops/run_moat_miner.sh").write_text("#!/bin/sh\n", "utf-8")
-    (tmp_path / "data/moat_mine.json").write_text(
-        '{"cumulative_coverage": {"coverage_pct": 41.0}}', "utf-8")
+    body: dict = {"cumulative_coverage": {"coverage_pct": pct}}
+    if closure is not None:
+        body["closure"] = closure
+    (tmp_path / "data/moat_mine.json").write_text(json.dumps(body), "utf-8")
+
+
+def test_a_standing_coverage_number_is_a_breach(monkeypatch, tmp_path) -> None:
+    """The breach is the gap NOT CLOSING, never the gap itself. 41% that has not moved in eleven
+    runs is edge the desk already paid to record and is declining to collect."""
+    _moat_at(tmp_path, 41.0, {"state": "STANDING-STILL", "why": "flat over 11 runs."})
     monkeypatch.setattr(M, "ROOT", tmp_path)
     d: list = []
     M.check_under_exploration(d)
     assert "under-exploration" in {k for k, _ in d}
+
+
+def test_a_gap_that_is_closing_is_not_a_breach(monkeypatch, tmp_path) -> None:
+    """THE DISTINCTION THE LAW IS ACTUALLY MADE OF, and the one this check could not draw until the
+    miner started trending itself: 41% converging is work in progress. Firing on it produces the
+    same red line as 41% dead, which is exactly how an alarm gets ignored."""
+    _moat_at(tmp_path, 41.0, {"state": "CLOSING", "why": "rising 0.4 pp/run."})
+    monkeypatch.setattr(M, "ROOT", tmp_path)
+    d: list = []
+    M.check_under_exploration(d)
+    assert d == [], [k for k, _ in d]
+
+
+def test_being_outpaced_by_recording_is_a_throughput_defect_not_neglect(
+        monkeypatch, tmp_path) -> None:
+    """Cells rising while the percentage stalls means the miner is working and the archive is
+    growing faster than it mines. Filed as neglect it sends the desk to check whether the miner is
+    running -- it is -- instead of raising its throughput."""
+    _moat_at(tmp_path, 1.2, {"state": "OUTPACED-BY-RECORDING", "why": "cells +12/run, pct flat."})
+    monkeypatch.setattr(M, "ROOT", tmp_path)
+    d: list = []
+    M.check_under_exploration(d)
+    keys = {k for k, _ in d}
+    assert keys == {"exploration-outpaced-by-recording"}
+    assert "under-exploration" not in keys
+    assert "throughput" in E._RESOLUTION["exploration-outpaced-by-recording"][1].lower()
+
+
+def test_an_artifact_with_no_closure_field_cannot_decide_the_law(monkeypatch, tmp_path) -> None:
+    """A LEVEL is not a verdict. An artifact carrying only the percentage leaves P26 undecidable,
+    and reporting that honestly beats defaulting either way -- defaulting to breach cries wolf,
+    defaulting to clean hides the wolf."""
+    _moat_at(tmp_path, 41.0)
+    monkeypatch.setattr(M, "ROOT", tmp_path)
+    d: list = []
+    M.check_under_exploration(d)
+    assert {k for k, _ in d} == {"exploration-rate-unmeasured"}
+
+
+def test_too_short_a_history_is_reported_as_unmeasured_not_as_a_breach(
+        monkeypatch, tmp_path) -> None:
+    _moat_at(tmp_path, 0.9, {"state": "UNKNOWN", "why": "only 2 recorded runs."})
+    monkeypatch.setattr(M, "ROOT", tmp_path)
+    d: list = []
+    M.check_under_exploration(d)
+    assert {k for k, _ in d} == {"exploration-rate-unmeasured"}
 
 
 def test_full_coverage_is_not_a_breach(monkeypatch, tmp_path) -> None:

@@ -134,6 +134,15 @@ _RESOLUTION: dict[str, tuple[str, str]] = {
         PATCH_READY, "start the dedicated continuous miner (ops/run_moat_miner.sh) and confirm "
                      "coverage is RISING. A standing coverage number is edge already paid for and "
                      "declined; the breach is the gap not closing, never the gap itself"),
+    "exploration-outpaced-by-recording": (
+        PATCH_READY, "raise MINER THROUGHPUT -- shorter --interval, larger per-run file budget, or "
+                     "a second miner process. The miner is already running and the archive is "
+                     "growing faster than it mines; treating this as neglect chases a motivation "
+                     "problem the desk has not got"),
+    "exploration-rate-unmeasured": (
+        PATCH_READY, "run the miner until at least three coverage observations exist. The LEVEL "
+                     "alone cannot distinguish a gap converging in hours from one that has stood "
+                     "still for a week, and P26 breaches on the second, not the first"),
     "exploration-blocked-upstream": (
         BLOCKED, "no mining action closes this -- the named producer (the recorders) is the only "
                  "thing that can write the data. Start them where the network permits; every "

@@ -3463,11 +3463,6 @@ _EXPLORATION_SURFACES: dict[str, tuple[str, str]] = {
     "data/moat_mine.json": ("moat (self-recorded order books)", "ops/run_moat_miner.sh"),
 }
 
-#: Consecutive observations of unchanged coverage before the gap counts as NOT CLOSING. Two is
-#: enough to distinguish "in progress" from "stalled" without firing on a single quiet cycle.
-_STALL_OBSERVATIONS = 2
-
-
 def check_under_exploration(defects) -> None:
     """P26: an owned dataset below 100% explored is a BREACH, and the breach is the gap NOT
     CLOSING (principal 2026-08-02: "underexploration of anything is violation of law").
@@ -3476,6 +3471,22 @@ def check_under_exploration(defects) -> None:
     it would train everyone to ignore the alarm. A gap that is STANDING STILL is the desk
     declining edge it has already paid for -- and those look identical in any single snapshot,
     which is why coverage has to be trended rather than read.
+
+    That distinction used to be a docstring. This check fired on every reading below 100% and the
+    constant that was supposed to implement the trend was never referenced anywhere -- so the desk
+    got the same red line whether the miner was converging in hours or had been dead for a week,
+    which is precisely the alarm everyone learns to ignore. The decision now reads the miner's own
+    `closure` field, computed over recorded history with a standard error, and every branch below
+    is a DIFFERENT defect with a different fix:
+
+      CLOSING               -- not a defect. Work in progress.
+      STANDING-STILL        -- the P26 breach in its pure form: mine it.
+      OUTPACED-BY-RECORDING -- cells rising, percentage not. The miner works and the archive grows
+                               faster than it mines; the fix is more miner, and calling this
+                               neglect would send the desk chasing a motivation problem it has not
+                               got.
+      UNKNOWN               -- fewer than three recorded runs. Reported as unmeasured rather than
+                               guessed, because a slope through two points is not evidence.
 
     Zero coverage with a named blocker is reported distinctly from zero coverage with none: "the
     recorders have written nothing" is an actionable fact about a different organ, while "we have
@@ -3510,9 +3521,34 @@ def check_under_exploration(defects) -> None:
                 "distinct from declining to mine: no mining action closes it, and the named "
                 "producer is the only thing that can."))
             continue
+        closing = d.get("closure") or {}
+        state = str(closing.get("state", "UNRECORDED"))
+        why = str(closing.get("why", ""))
+        if state in ("CLOSING", "COMPLETE-FOR-THIS-GRID"):
+            continue
+        if state == "OUTPACED-BY-RECORDING":
+            defects.append((
+                "exploration-outpaced-by-recording",
+                f"{label} at {cov}%: {why} Raise miner throughput -- run {organ} with a shorter "
+                "--interval or a larger per-run file budget. This is NOT a neglect finding and "
+                "must not be closed by asserting the miner is running; it already is."))
+            continue
+        if state == "UNRECORDED":
+            defects.append((
+                "exploration-rate-unmeasured",
+                f"{label} at {cov}% and the artifact carries no `closure` field -- the desk can "
+                "read the LEVEL but cannot tell a gap converging in hours from one that has stood "
+                f"still for a week. Re-run {organ} on a build that records coverage history."))
+            continue
+        if state == "UNKNOWN":
+            defects.append((
+                "exploration-rate-unmeasured",
+                f"{label} at {cov}%: {why} Run {organ} continuously so the rate becomes "
+                "measurable; until then the level is a status line, not a verdict."))
+            continue
         defects.append((
             "under-exploration",
-            f"{label} explored {cov}% -- P26 breach unless the gap is CLOSING. Verify "
+            f"{label} explored {cov}% and the gap is NOT CLOSING -- P26 breach. {why} Verify "
             f"{organ} is running continuously; a standing coverage number is edge the desk has "
             "already paid for and is declining to collect."))
 

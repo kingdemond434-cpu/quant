@@ -32,6 +32,7 @@ Read-only over data/moat. Writes only its own artifacts. No network, no keys, no
 """
 from __future__ import annotations
 
+import contextlib
 import gzip
 import json
 import os
@@ -45,6 +46,7 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from libs.doctrine.allocate import meta_learning_rate  # noqa: E402
 from libs.hypmax.moat_mine import (  # noqa: E402
     MECHANISMS,
     coverage_report,
@@ -56,6 +58,11 @@ MOAT = ROOT / "data/moat"
 COVERAGE = ROOT / "data/moat_coverage.json"
 REPORT = ROOT / "data/moat_mine.json"
 SERIES = ROOT / "data/moat_series.jsonl"
+#: Coverage percentage over time, one line per run. THE ARTIFACT THAT MAKES P26 CHECKABLE: the
+#: breach is the gap NOT CLOSING, and "closing" is invisible in any single snapshot -- 1.2% today
+#: is a triumph after 0.5% yesterday and a scandal after 1.2% for a week. Kept separate from
+#: moat_series.jsonl, which records per-cell measurements rather than the chase.
+HISTORY = ROOT / "data/moat_coverage_history.jsonl"
 ONTOLOGY_STATE = ROOT / "data/ontology_state.json"
 
 #: Files read per run. Max cadence means "runs constantly", not "reads 4.4GB every time" -- an
@@ -152,6 +159,103 @@ def _dispersion(summary: dict) -> float:
     return std / max(mean, 1e-12) if mean > 0 else (1.0 if std > 0 else 0.0)
 
 
+def closure(rep: dict, run: int) -> dict:
+    """THE RATE, NOT ONLY THE LEVEL (P18) -- and it is what makes P26 checkable at all.
+
+    The constitution says under-exploration is a breach and that the breach is the gap NOT
+    CLOSING. Those two states are indistinguishable in a snapshot: 1.2% coverage is a triumph the
+    day after 0.5% and a scandal after a week at 1.2%. So coverage is appended every run and the
+    slope is measured over the recorded history with its own standard error, exactly as the
+    allocator measures instrumentation closure.
+
+    TWO SERIES, NOT ONE, AND THE SECOND IS THE SUBTLE ONE. The grid GROWS every second the
+    recorders run, so cells_filled can climb hard while coverage_pct stands still or falls. Those
+    are opposite diagnoses -- "nobody is mining" is neglect and the desk's own fault, while
+    "mining slower than recording" is a throughput shortfall whose fix is more miner, not more
+    attention -- and trending only the percentage would report the second as the first and send
+    the desk chasing a motivation problem it does not have.
+
+    The ETA is deliberately derived from the PERCENTAGE slope rather than the cell slope, because
+    the percentage already nets out grid growth. An ETA computed from cells filled per run would
+    quietly assume a frozen archive and promise a date that recording pushes back every day.
+    """
+    HISTORY.parent.mkdir(parents=True, exist_ok=True)
+    row = {
+        "ts": datetime.now(tz=UTC).isoformat(),
+        "run": run,
+        "coverage_pct": float(rep.get("coverage_pct", 0.0)),
+        "cells_filled": int(rep.get("cells_filled", 0)),
+        "cells_total": int(rep.get("cells_total", 0)),
+        "holes": int(rep.get("holes", 0)),
+    }
+    with HISTORY.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(row, separators=(",", ":")) + "\n")
+
+    hist: list[dict] = []
+    try:
+        hist = [json.loads(x) for x in HISTORY.read_text("utf-8").strip().splitlines() if x][-200:]
+    except (OSError, json.JSONDecodeError, ValueError):
+        hist = [row]
+
+    pct_rate = meta_learning_rate([float(h.get("coverage_pct", 0.0)) for h in hist])
+    cell_rate = meta_learning_rate([float(h.get("cells_filled", 0)) for h in hist])
+
+    # Wall clock per run, measured rather than assumed -- the cadence floor and the continuous
+    # loop differ by orders of magnitude and an ETA in "runs" is unusable to a human either way.
+    span_s = 0.0
+    if len(hist) >= 2:
+        with contextlib.suppress(ValueError, TypeError):
+            t_first = datetime.fromisoformat(str(hist[0]["ts"]))
+            t_last = datetime.fromisoformat(str(hist[-1]["ts"]))
+            span_s = max(0.0, (t_last - t_first).total_seconds()) / max(1, len(hist) - 1)
+
+    pct = row["coverage_pct"]
+    eta_runs = eta_hours = None
+    if pct_rate.get("improving") and float(pct_rate.get("rate", 0.0)) > 0:
+        eta_runs = round((100.0 - pct) / float(pct_rate["rate"]), 1)
+        if span_s > 0:
+            eta_hours = round(eta_runs * span_s / 3600.0, 1)
+
+    if pct >= 100.0:
+        state, why = "COMPLETE-FOR-THIS-GRID", (
+            "every cell of the CURRENT grid is measured. The grid grows every second the recorders "
+            "run, so this is arrival at the next constraint, not a finish line (P20).")
+    elif pct_rate.get("improving"):
+        state, why = "CLOSING", (
+            f"coverage is rising {pct_rate['rate']:.3f} pp/run (se {pct_rate['se']:.3f}, "
+            f"n={pct_rate['n']}) -- work in progress, not a breach.")
+    elif cell_rate.get("improving"):
+        state, why = "OUTPACED-BY-RECORDING", (
+            f"cells measured are rising {cell_rate['rate']:.2f}/run but coverage is NOT -- the "
+            "miner is working and the grid is growing faster than it mines. This is a throughput "
+            "shortfall, not neglect: the fix is more miner (lower --interval, more parallel "
+            "passes, more files per run), never more attention.")
+    elif pct_rate.get("state") == "INSUFFICIENT-HISTORY":
+        state, why = "UNKNOWN", (
+            f"only {pct_rate['n']} recorded run(s) -- a rate from fewer than 3 points is a slope "
+            "through noise. The number is not yet a finding either way.")
+    else:
+        state, why = "STANDING-STILL", (
+            f"coverage is not distinguishable from flat over {pct_rate.get('n', 0)} runs and "
+            "neither is the cell count. This is the P26 breach in its pure form: edge the desk "
+            "has already paid to record and is declining to collect.")
+
+    return {
+        "state": state,
+        "why": why,
+        "coverage_pct": pct,
+        "pct_per_run": pct_rate,
+        "cells_per_run": cell_rate,
+        "seconds_per_run": round(span_s, 1),
+        "runs_to_100": eta_runs,
+        "hours_to_100": eta_hours,
+        "eta_note": (
+            "derived from the PERCENTAGE slope, which already nets out grid growth. An ETA from "
+            "cells-per-run would assume a frozen archive and promise a date that recording pushes "
+            "back every day."),
+    }
+
+
 def main() -> int:
     t0 = time.time()
     cells = _cells_on_disk()
@@ -239,6 +343,7 @@ def main() -> int:
 
     degenerate = [f"{r['symbol']}/{m}" for r in results for m, s in r["mechanisms"].items()
                   if int(s.get("n", 0)) > 0 and _dispersion(s) <= _DEGENERATE_CV]
+    closing = closure(rep, int(cov["runs"]))
     out = {
         "ts": datetime.now(tz=UTC).isoformat(),
         "run": cov["runs"],
@@ -248,6 +353,10 @@ def main() -> int:
         "symbols_on_disk": len(symbols),
         "days_on_disk": len(days),
         "cumulative_coverage": rep,
+        # P18/P26. The level alone cannot say whether the gap is closing, and the breach is the
+        # gap NOT closing -- so the rate ships in the artifact rather than being reconstructed by
+        # whoever reads it, and check_under_exploration decides on THIS field.
+        "closure": closing,
         "degenerate_series": degenerate[:20],
         "results": results[:40],
         # P20, ZERO CEILING. 100% coverage of the current grid is not completion -- it is arrival
@@ -277,6 +386,11 @@ def main() -> int:
     print(f"moat-mine run {cov['runs']}: {mined} cells, {files_read} files, "
           f"{out['seconds']}s | cumulative coverage {rep['coverage_pct']}% "
           f"({rep['cells_filled']}/{rep['cells_total']}) | holes {rep['holes']}")
+    eta = ("" if closing["hours_to_100"] is None
+           else f" | ETA 100% ~{closing['hours_to_100']}h ({closing['runs_to_100']} runs)")
+    print(f"  closure {closing['state']}{eta}")
+    if closing["state"] in ("STANDING-STILL", "OUTPACED-BY-RECORDING"):
+        print(f"  {closing['why']}")
     if rep["holes"]:
         print(f"  next targets: {', '.join(rep['next_targets'][:6])}")
     if degenerate:
