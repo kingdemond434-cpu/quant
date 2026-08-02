@@ -332,3 +332,26 @@ def test_a_real_run_ships_the_closure_verdict_in_its_artifact(mine, tmp_path) ->
     assert c["state"] in ("CLOSING", "STANDING-STILL", "OUTPACED-BY-RECORDING", "UNKNOWN",
                           "COMPLETE-FOR-THIS-GRID")
     assert c["why"]
+
+
+def test_the_tape_is_measured_from_the_schedule_not_by_a_second_walk(mine, tmp_path) -> None:
+    """EFFICIENCY THAT COMPOUNDS. The archive grows without bound by design (P20), so an extra
+    full directory walk per pass is a cost that rises forever: ~0.3s at today's 23k files, ~2.3s
+    at the 190k this recording rate reaches in three months, every pass. main() has already
+    enumerated every file to build the schedule, so the bytes come from that list."""
+    _write_day(mine, "fut", "AAAUSDT", "20260731", hours=2)
+    cells = M._cells_on_disk()
+    total, files = M._tape_from_cells(cells)
+    assert files == 2, "both hourly files should be counted"
+    assert total > 0
+    # identical to the standalone walk, so the cheap path is not a different measurement
+    assert (total, files) == M.tape_bytes(mine)
+
+
+def test_closure_still_measures_the_tape_itself_when_not_given_one(monkeypatch,
+                                                                  tmp_path) -> None:
+    """The fallback keeps the function callable on its own. A parameter that is REQUIRED to be
+    correct is a parameter a future caller gets wrong silently."""
+    _history(monkeypatch, tmp_path, [0.5, 0.9, 1.3, 1.7], [5, 9, 13, 17])
+    c = M.closure(_rep(2.1, 21), run=5)          # no tape_stats passed
+    assert c["tape_bytes"] > 0

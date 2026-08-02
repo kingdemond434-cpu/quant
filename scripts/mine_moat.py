@@ -160,7 +160,25 @@ def _dispersion(summary: dict) -> float:
     return std / max(mean, 1e-12) if mean > 0 else (1.0 if std > 0 else 0.0)
 
 
-def closure(rep: dict, run: int) -> dict:
+def _tape_from_cells(cells: dict[tuple[str, str], list[Path]]) -> tuple[int, int]:
+    """Tape size from the file list the scheduler already built -- no second directory walk.
+
+    Counts exactly the MINEABLE tape (files the scheduler recognises) rather than everything under
+    data/moat, which is the more useful denominator anyway: a stray file the miner cannot read is
+    not archive growth.
+    """
+    total = files = 0
+    for paths in cells.values():
+        for p in paths:
+            try:
+                total += p.stat().st_size
+            except OSError:
+                continue
+            files += 1
+    return total, files
+
+
+def closure(rep: dict, run: int, tape_stats: tuple[int, int] | None = None) -> dict:
     """THE RATE, NOT ONLY THE LEVEL (P18) -- and it is what makes P26 checkable at all.
 
     The constitution says under-exploration is a breach and that the breach is the gap NOT
@@ -181,7 +199,12 @@ def closure(rep: dict, run: int) -> dict:
     quietly assume a frozen archive and promise a date that recording pushes back every day.
     """
     HISTORY.parent.mkdir(parents=True, exist_ok=True)
-    tape, files = tape_bytes(MOAT)
+    # ONE WALK, NOT TWO. main() has already enumerated every tape file to build the schedule, so
+    # re-walking the archive here doubled the cost of the one operation that grows without bound
+    # by design -- 0.3s today at 23k files, 2.3s at the 190k this rate reaches in three months,
+    # every pass, forever. The caller passes what it already knows; the fallback keeps this
+    # function callable on its own, which is what its tests exercise.
+    tape, files = tape_stats if tape_stats is not None else tape_bytes(MOAT)
     row = {
         "ts": datetime.now(tz=UTC).isoformat(),
         "run": run,
@@ -393,7 +416,7 @@ def main() -> int:
 
     degenerate = [f"{r['symbol']}/{m}" for r in results for m, s in r["mechanisms"].items()
                   if int(s.get("n", 0)) > 0 and _dispersion(s) <= _DEGENERATE_CV]
-    closing = closure(rep, int(cov["runs"]))
+    closing = closure(rep, int(cov["runs"]), tape_stats=_tape_from_cells(cells))
     out = {
         "ts": datetime.now(tz=UTC).isoformat(),
         "run": cov["runs"],
