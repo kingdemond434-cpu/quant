@@ -1,0 +1,34 @@
+{
+ "_": "HIGH-WATER MARK for constitutional enforcement coverage. Raised automatically, never lowered by code. A NEW principle defaults to unenforced and therefore drops the live percentage below this mark -- which is the mechanism that makes 'every law, now and upcoming' true of code rather than of intention.",
+ "updated": "2026-08-02T07:51:33.564039+00:00",
+ "high_water": {
+  "mechanical_pct": 92.0,
+  "interactional_pct": 96.0,
+  "full_pct": 88.0
+ },
+ "live": {
+  "principles": 25,
+  "both": 22,
+  "mechanical_only": 1,
+  "interactional_only": 2,
+  "unenforced": 0,
+  "mechanical_pct": 92.0,
+  "interactional_pct": 96.0,
+  "full_pct": 88.0
+ },
+ "gaps_worst_first": [
+  {
+   "id": "P1",
+   "name": "Information Value Condition",
+   "aggression": 9,
+   "mode": "INTERACTIONAL"
+  },
+  {
+   "id": "P16",
+   "name": "Non-Destructive Coexistence",
+   "aggression": 9,
+   "mode": "INTERACTIONAL"
+  }
+ ],
+ "next_ceiling": "every law mechanically enforced AND in every interaction. Reaching that is not completion -- the next ceiling is enforcement that catches SUBTLE violations, not only absent ones."
+}

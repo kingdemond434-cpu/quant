@@ -3220,6 +3220,151 @@ def check_no_ceiling(defects) -> None:
 
 CHECKS += [("no-ceiling", check_no_ceiling)]
 
+
+ALLOCATOR_ARTIFACT = ROOT / "data/allocator.json"
+
+#: field in data/allocator.json -> (principle it evidences, what its absence means).
+#: PRODUCTION, NOT EXISTENCE. Checking that libs/doctrine imports would prove only that files are
+#: on disk; these fields exist only if the allocator actually RAN the corresponding code path, so
+#: their absence means the law is unenforced no matter how good the library is.
+_GOVERNING_FIELDS: dict[str, tuple[str, str]] = {
+    "bottleneck": ("P4", "the binding constraint is not being re-identified each cycle"),
+    "why_no_ranking": ("P10", "estimates are not being treated as estimates"),
+    "allocation": ("P12", "the global-first allocation never ran"),
+    "starved": ("P13", "nothing is watching for permanently-neglected subsystems"),
+    "closure_rate": ("P18", "the desk is not measuring the RATE at which it improves"),
+    "next_ceiling": ("P20", "the organ has no declared successor and will go quiet when green"),
+}
+
+
+def check_governing_layer_live(defects) -> None:
+    """THE GOVERNING LAYER MUST RUN, NOT MERELY EXIST (principal 2026-08-02: every law enforced
+    desk-wide, in every interaction, at full coverage -- now and always).
+
+    libs/doctrine/{estimate,allocate,portfolio_law}.py shipped with full test suites and no caller
+    for a while, which is the failure this desk keeps finding in itself: a governing layer nothing
+    calls governs nothing, and its unit tests stay green the entire time it is inert. So this
+    checks the ARTIFACT the allocator produces, field by field, because those fields exist only if
+    the corresponding code path actually executed this cycle.
+
+    A missing artifact is the loudest version of the same defect and is reported as such rather
+    than skipped -- "the allocator did not run" and "the allocator ran and found nothing" are
+    different facts, and only one of them is acceptable.
+    """
+    if not ALLOCATOR_ARTIFACT.exists():
+        defects.append((
+            "governing-layer-inert",
+            f"{ALLOCATOR_ARTIFACT.name} absent -- the governing layer did not run this cycle, so "
+            "P4, P10, P11, P12, P13 and P18 are unenforced. A layer nothing calls governs "
+            "nothing, and its unit tests stay green the whole time it is inert."))
+        return
+    try:
+        art = json.loads(ALLOCATOR_ARTIFACT.read_text("utf-8"))
+    except (OSError, json.JSONDecodeError) as e:
+        defects.append(("governing-layer-unreadable",
+                        f"{ALLOCATOR_ARTIFACT.name} will not parse ({e}) -- treated as inert"))
+        return
+    missing = [(f, pid, why) for f, (pid, why) in _GOVERNING_FIELDS.items() if f not in art]
+    if missing:
+        defects.append((
+            "governing-layer-partial",
+            "allocator artifact is missing field(s) that prove a law ran: "
+            + "; ".join(f"{f} ({pid}: {why})" for f, pid, why in missing)))
+    # P11: the three-verdict rule. Collapsing INSUFFICIENT-EVIDENCE into KEEP or RETIRE loses the
+    # one fact that should drive the next action -- go and measure it.
+    if "made entirely of guesses" not in str(art.get("why_no_ranking", "")) and not art.get(
+            "allocation", {}).get("funded"):
+        defects.append((
+            "governing-layer-ranked-on-nothing",
+            "the allocator produced no funded actions but does not state WHY it refused to rank. "
+            "Silence there is indistinguishable from a ranking that happened to be empty, and a "
+            "ranking gets acted on."))
+
+
+CHECKS += [("governing-layer", check_governing_layer_live)]
+
+
+LAW_COVERAGE_MARK = ROOT / "docs/research/LAW_COVERAGE.json"
+
+
+def check_law_coverage(defects) -> None:
+    """EVERY LAW ENFORCED, MEASURED, AND RATCHETED -- including laws added tomorrow.
+
+    A one-time audit of the principles is a snapshot. The next principle lands with no enforcement
+    and nothing notices, because nothing was watching for it. So coverage is a measured fraction
+    with a HIGH-WATER MARK, exactly like the aggression ratchet: it may rise freely and a fall
+    fails the audit. A new principle defaults to unenforced and therefore DROPS the percentage,
+    which is the mechanism that makes "and upcoming always" true of code rather than of intent.
+
+    Two modes are counted separately and are not interchangeable. Mechanical cover is a registered
+    check that can go red -- it constrains what gets DONE. Interactional cover is presence in the
+    preamble every organ injects -- it constrains what gets PROPOSED. A law with only the second
+    is not fully enforced, because a model that ignores the preamble produces a bad recommendation
+    and nothing catches it.
+    """
+    try:
+        from libs.doctrine.enforcement import coverage as _law_coverage
+        from libs.doctrine.enforcement import unenforced as _law_gaps
+    except ImportError as e:                       # pragma: no cover
+        defects.append(("law-coverage-unimportable", f"libs.doctrine.enforcement: {e}"))
+        return
+
+    registered = {name for name, _ in CHECKS}
+    cov = _law_coverage(registered)
+    gaps = _law_gaps(registered)
+
+    if cov["phantom"]:
+        defects.append((
+            "law-enforced-by-phantom-check",
+            f"principle(s) claim enforcement by unregistered check(s): {cov['phantom']}. An "
+            "unregistered check is a law the desk BELIEVES it is enforcing -- four consecutive "
+            "charters shipped exactly that way."))
+
+    dark = [r for r in cov["rows"] if r["mode"] == "NONE"]
+    if dark:
+        defects.append((
+            "law-unenforced",
+            f"{len(dark)} principle(s) have NO enforcement of either kind: "
+            + ", ".join(f"{r['id']} ({r['name']})" for r in dark)
+            + ". A law nothing can detect a violation of is not a law."))
+
+    prev = {}
+    with contextlib.suppress(OSError, json.JSONDecodeError):
+        prev = json.loads(LAW_COVERAGE_MARK.read_text("utf-8")).get("high_water", {})
+    regressed = [k for k in ("mechanical_pct", "interactional_pct", "full_pct")
+                 if float(prev.get(k, 0.0)) > float(cov[k])]
+    if regressed:
+        defects.append((
+            "law-coverage-regressed",
+            "law enforcement coverage FELL: "
+            + "; ".join(f"{k} {prev[k]} -> {cov[k]}" for k in regressed)
+            + ". Coverage ratchets like aggression does: it may rise freely, and a fall is either "
+            "a law that lost its check or a new law nobody enforced -- both are defects."))
+
+    # High-water mark only ever rises, by the same asymmetry the aggression ratchet uses.
+    with contextlib.suppress(OSError):
+        LAW_COVERAGE_MARK.parent.mkdir(parents=True, exist_ok=True)
+        LAW_COVERAGE_MARK.write_text(json.dumps({
+            "_": ("HIGH-WATER MARK for constitutional enforcement coverage. Raised automatically, "
+                  "never lowered by code. A NEW principle defaults to unenforced and therefore "
+                  "drops the live percentage below this mark -- which is the mechanism that makes "
+                  "'every law, now and upcoming' true of code rather than of intention."),
+            "updated": datetime.now(tz=UTC).isoformat(),
+            "high_water": {k: max(float(prev.get(k, 0.0)), float(cov[k]))
+                           for k in ("mechanical_pct", "interactional_pct", "full_pct")},
+            "live": {k: cov[k] for k in ("principles", "both", "mechanical_only",
+                                         "interactional_only", "unenforced",
+                                         "mechanical_pct", "interactional_pct", "full_pct")},
+            "gaps_worst_first": [{"id": g["id"], "name": g["name"], "aggression": g["aggression"],
+                                  "mode": g["mode"]} for g in gaps],
+            "next_ceiling": ("every law mechanically enforced AND in every interaction. Reaching "
+                             "that is not completion -- the next ceiling is enforcement that "
+                             "catches SUBTLE violations, not only absent ones."),
+        }, indent=1), "utf-8")
+
+
+CHECKS += [("law-coverage", check_law_coverage)]
+
 #: Module-level `check_*` functions that are deliberately NOT swept. Empty by design: an exemption
 #: must be argued in writing here, never assumed by silence.
 _CHECKS_EXEMPT: set[str] = set()
