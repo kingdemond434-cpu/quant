@@ -133,17 +133,25 @@ def test_verdicts_are_ordered_worst_first() -> None:
 # ------------------------------------------------------------------ against the LIVE register
 
 
-def test_the_live_register_parses_and_finds_the_real_overdue_row() -> None:
-    """Run against the real file, because a fixture passing while production is unparseable is
-    the exact shape this desk keeps finding. #2 carries a PRINCIPAL DEADLINE of 2026-07-31 that
-    went by with nothing reporting it -- which is the finding this organ exists to produce."""
+def test_the_live_register_parses_and_ranks() -> None:
+    """Run against the real file, because a fixture passing while production is unparseable is the
+    exact shape this desk keeps finding.
+
+    THIS TEST USED TO ASSERT that row #2 was DEADLINE-PASSED -- true when written, because its
+    2026-07-31 principal deadline had gone by unreported and finding it is what this organ exists
+    for. Then the deadline was discharged (re-deferred to 2026-08-23 with a stated reason) and the
+    assertion failed on a FIX. A test pinned to a transient defect fails when the defect is closed,
+    which trains everyone to weaken it; so what is asserted now is the invariant that survives the
+    fix -- the register parses, and anything overdue sorts to the front."""
     reg = Path("docs/GAP_REGISTER.md")
     if not reg.exists():
         pytest.skip("no register in this checkout")
     rows = R.classify(reg.read_text("utf-8"), date(2026, 8, 2))
     assert len(rows) > 20, f"only {len(rows)} open rows parsed -- the table shape changed"
-    overdue = [r for r in rows if r["verdict"] == "DEADLINE-PASSED"]
-    assert any(r["id"] == 2 for r in overdue), [r["id"] for r in overdue]
+    assert all(r["verdict"] for r in rows)
+    verdicts = [r["verdict"] for r in rows]
+    if "DEADLINE-PASSED" in verdicts:
+        assert verdicts[0] == "DEADLINE-PASSED", "an overdue row must sort to the front"
 
 
 def test_the_run_writes_its_artifact_and_appends_history(tmp_path, monkeypatch) -> None:

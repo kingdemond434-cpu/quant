@@ -416,10 +416,43 @@ def main() -> int:
                              "instrumented": len(instrumented),
                              "owed": len(uninstrumented)}, separators=(",", ":")) + "\n")
     series: list[float] = []
+    stamps: list[str] = []
     with contextlib.suppress(OSError, json.JSONDecodeError):
-        series = [float(json.loads(x)["coverage_pct"])
-                  for x in HISTORY.read_text("utf-8").strip().splitlines() if x][-60:]
+        rows = [json.loads(x) for x in HISTORY.read_text("utf-8").strip().splitlines() if x][-60:]
+        series = [float(r["coverage_pct"]) for r in rows]
+        stamps = [str(r.get("ts", "")) for r in rows]
     rate = meta_learning_rate(series)
+
+    # AN OBSERVATION COUNT IS NOT A SAMPLE SIZE. This file is appended once per ALLOCATOR RUN, so
+    # `n` counts how often the organ was invoked -- not how many cycles of real work happened
+    # between readings. On 2026-08-02 an engineer running the allocator while developing took n
+    # from 47 to 60 in an afternoon, and the verdict "the gap is NOT closing, n=60" borrowed all
+    # its authority from a number he had manufactured by looking. Same defect as §33's
+    # min_snapshots gate, in a second organ.
+    #
+    # The flat reading is still real -- coverage genuinely has not moved -- but the STRENGTH of
+    # that reading comes from elapsed time and distinct values, never from how many times somebody
+    # pressed the button. Both are reported so the claim can be weighed instead of taken on n.
+    distinct = len(set(series))
+    span_h = 0.0
+    if len(stamps) >= 2:
+        with contextlib.suppress(ValueError, TypeError):
+            span_h = max(0.0, (datetime.fromisoformat(stamps[-1])
+                               - datetime.fromisoformat(stamps[0])).total_seconds() / 3600.0)
+    rate = {
+        **rate,
+        "observations": len(series),
+        "distinct_values": distinct,
+        "span_hours": round(span_h, 1),
+        "evidence_note": (
+            f"{len(series)} observations over {span_h:.1f}h with {distinct} distinct value(s). "
+            + ("The reading is FLAT and the sample supports it: coverage held across a real "
+               "elapsed period."
+               if span_h >= 24.0 else
+               "SHORT WINDOW -- these observations are close together in time, so a flat reading "
+               "reflects how often this organ ran more than how the desk performed. An "
+               "observation count is not a sample size.")),
+    }
 
     CHASE.write_text(json.dumps({
         "_": ("cycles each instrumentation gap has stood open. Never reset except by CLOSING the "
@@ -481,7 +514,10 @@ def main() -> int:
           f"({coverage_pct}%) | bottleneck: {out['bottleneck']} | {out['seconds']}s")
     if rate.get("state") == "MEASURED":
         arrow = "closing" if rate["improving"] else "FLAT"
-        print(f"  closure rate {rate['rate']:+.2f} pp/cycle ({arrow}, n={rate['n']})")
+        print(f"  closure rate {rate['rate']:+.2f} pp/cycle ({arrow}, n={rate['n']} obs over "
+              f"{rate.get('span_hours', 0):.0f}h, {rate.get('distinct_values', 0)} distinct)")
+        if rate.get("span_hours", 0) < 24.0:
+            print(f"  {rate['evidence_note'].split('. ', 1)[-1]}")
         if not rate["improving"]:
             print("  THE GAP IS NOT CLOSING. Coverage is not distinguishable from flat over the "
                   "recorded history -- nobody is chasing this, and the constitution does not "

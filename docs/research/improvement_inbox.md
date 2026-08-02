@@ -998,3 +998,82 @@ from era text — it has NOT been checked against `data/cost_model.json` or the 
 research-frozen and may not read/modify execution paths beyond cataloguing). The next cycle that owns
 execution should verify whether in-flight variance is priced, and either close this as already-handled
 or size the gap. **Do not treat as adopted until that check runs.**
+
+## NEW FINDINGS 2026-08-02 (open — each rowed in GAP_REGISTER)
+
+71. **OBSERVATION COUNT IS NOT SAMPLE SIZE: two organs derived authority from how often they ran**
+
+**Found 2026-08-02, both instances VERIFIED by measurement rather than inspection.**
+
+§33's self-audit gated conclusiveness on `min_snapshots=12`. Measured: one `python
+scripts/max_audit.py` invocation appends exactly one snapshot, and the test suite appends none. So
+the gate counted **how often the auditor looked**. It was reachable in one afternoon by an engineer
+running the audit, with no mining and no conversion happening at all — a law convictable by
+observing it. The live ledger holds 78 snapshots and 2 distinct records, and on that basis the
+audit had been calling §33 "ceremony with good telemetry" for weeks.
+
+The generalisation was then checked rather than assumed, and it holds. `run_allocator` feeds
+`meta_learning_rate` a series appended once per allocator run: its verdict "THE GAP IS NOT CLOSING
+… n=60" rested on **60 observations spanning 5.0 hours with 1 distinct value**, ~13 of which this
+session created while developing. The flat reading is real, but its authority came from a number
+manufactured by looking.
+
+`mine_moat` shares the shape and is the least affected — each pass does real mining work — but the
+same inflation is available to anyone who runs the miner without new tape.
+
+**FIXED both places:** §33 now gates on distinct ITEMS (`MIN_ITEMS_PER_WINDOW`), and the allocator
+reports `observations`, `distinct_values` and `span_hours` alongside `n`, printing an explicit
+SHORT-WINDOW caveat under 24h.
+
+**THE GENERAL RULE, and the part worth carrying forward:** any `n` that gates a statistical claim
+must count EVENTS IN THE WORLD, never READINGS OF THE WORLD. Where the two are the same object,
+the estimator can be inflated by the act of measurement — which makes the desk's diligence in
+running its own audits the mechanism by which its audits become wrong. Next target: every other
+`len(history) >= K` gate, audited for which of the two it counts.
+
+72. **OPPOSITE-SIGNED PAIR: assumptions run conservative, detectors run permissive**
+
+WS-004 (promoted 07-26) established that this desk's **assumptions** err conservative: substituting
+a guess for a measurement lands on the pessimistic side, costs compounding, and looks like prudence.
+WS-005 (promoted 08-02, five independent instances) establishes that this desk's **detectors** err
+permissive: meeting absence — no stamp, no sample, no growth, a NaN, a 502 — they resolve to the
+CLEAN verdict.
+
+Same root habit, substituting a default for a measurement. Opposite signs. The pair matters because
+the remedies are different and mutually unhelpful: an assumption needs MEASURING, a detector needs
+to REFUSE TO CONCLUDE. Treating them as one bias would average out the sign that picks the fix.
+
+Worth a standing question on any new code path: is this substitution happening inside an ESTIMATE
+or inside a CHECK? The answer decides which way the error will point, before it is made.
+
+73. **PURCHASE THAT EXPIRES: the moat runway is measured in days, not in money**
+
+Register #81 carries this as a dated row; recording the reasoning here because it is the only cost
+on this desk with the property.
+
+Every other constraint can be relieved later by spending more. Tape cannot: pre-recorder L2 does not
+exist free at any venue, so an hour not recorded is an hour that is **permanently unbuyable at any
+price**. The desk currently holds ~15GB of headroom at ~1GB/day.
+
+Benchmarked before recommending, because the obvious answer is wrong: a Hetzner Storage Box is
+SSHFS, and the miner walks the whole archive every pass. Locally that walk costs 12µs/file (0.3s at
+today's 23k files, 2.3s at the ~190k this rate reaches in a quarter). Over SSHFS at ~1ms/stat it is
+~23s today and minutes within a quarter, against a 15-second mining interval — the miner would
+spend every pass walking and never mine. **Cloud Volume, not Storage Box**: same POSIX semantics,
+same walk cost, resizable without downtime so the purchase is never oversized.
+
+74. **PROVENANCE LADDER REVEALS three subsystems unmeasurable until the desk trades**
+
+`libs/doctrine/contribution.py` now lets every subsystem state dE[logW]/dC with the provenance of
+its evidence inflating the standard error. Running it produced a fact the previous "report the gap"
+approach could not express: `costs`, `execution` and `portfolio` are not under-instrumented, they
+are **structurally unmeasurable** — all three derive from `desk_metrics:fills`, which only a library
+writes, because nothing has ever traded.
+
+That reframes the instrumentation backlog. The remaining gaps are not one queue but two: five that
+close with an estimate, and three that close only when the first fill lands. No amount of research,
+governance or engineering moves the second group, and the allocator ranking them alongside the first
+implied otherwise. Open question worth a cycle: does that make the connector's expected value higher
+than #2's current rank reflects, given it unblocks three derivative terms at once rather than one
+sleeve?
+
