@@ -44,7 +44,19 @@ cleared rather than merely described.
 | `ARTIFACT_GOVERNANCE.md` | **DOCTRINE** | This register. Governs itself — a classification list that is not itself classified is the miner problem in miniature. |
 | `UNREACHABLE_LAYER_TRIAGE.md` | **TERMINAL** | Record of a completed triage with named unlock conditions. Superseded by a new triage if the conditions fire; never refreshed in place. |
 
-**Net: 3 cadenced, 5 doctrine, 3 terminal. Zero remain ungoverned.**
+### Added 2026-08-02 (same rule, applied to this session's own artifact)
+
+| Artifact | Class | Rationale |
+|---|---|---|
+| `docs/RECORDER_DEPLOY.md` | **TERMINAL** | Record of one deployment decision under one constraint: the `quant` user has no sudo, so the recorders are supervised by the user's own crontab rather than by systemd. It has no producer and no cadence — a clock cannot make a runbook true — so a staleness floor would be theatre. It is superseded BY A NAMED CONDITION instead: the day root is available and the four unit files in `ops/` are installed, this document becomes actively harmful (it would tell an operator to add cron supervision on top of `Restart=always`, giving two supervisors for three processes), and a new runbook must supersede it by name. That condition, not a date, is what retires it. |
+
+**Net: 3 cadenced, 5 doctrine, 4 terminal. Zero remain ungoverned.**
+
+A note on why this row was written the same day the artifact was: an artifact classified late is
+an artifact that was ungoverned for however long "late" was, and the register's own rationale for
+existing is that the NEXT artifact arrives ungoverned by default. Writing the runbook and leaving
+it for a later sweep would have reproduced, in one session, the exact failure this file was
+created to end.
 
 ---
 
