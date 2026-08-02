@@ -19,12 +19,19 @@ from __future__ import annotations
 import gzip
 import json
 import ssl
+import sys
 import time
 import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
 
 import certifi
+
+_R = Path(__file__).resolve().parent.parent
+if str(_R) not in sys.path:
+    sys.path.insert(0, str(_R))
+
+from libs.ops.disk import PAUSE_FRAC, headroom  # noqa: E402
 
 _BASE = "https://api.bybit.com"
 _ROOT = Path(__file__).resolve().parent.parent / "data/moat/bybit"
@@ -89,9 +96,30 @@ def main() -> None:
     buf: dict[str, list[dict]] = {s: [] for s in _SYMBOLS}
     last_trades = 0.0
     last_flush = time.time()
+    disk_warned = False
 
     while True:
         t0 = time.time()
+        # DISK GUARD. This recorder shipped WITHOUT one while both Binance recorders had it, and
+        # it is the fastest writer on the box -- 20 symbols at 1.5s depth, ~2.7x the others. So
+        # the two guarded recorders would have paused at 80% while this one kept writing to a
+        # full filesystem, at which point every organ that writes an artifact fails, including
+        # the audit that would explain why. The guard is not a courtesy; without it the failure
+        # takes the whole desk down rather than one venue's tape.
+        if headroom("/")["paused"]:
+            if not disk_warned:
+                print(f"bybit recorder: DISK >{PAUSE_FRAC:.0%} -- writing paused "
+                      "(heartbeat continues, so supervision must read the MARKER not the mtime)")
+                disk_warned = True
+            # The marker, not silence. A paused recorder keeps a fresh heartbeat, so liveness
+            # supervision sees a healthy process -- the state has to be written down or the tape
+            # stops with nothing anywhere recording that it did.
+            _HB.write_text(f"{time.time()} DISK-PAUSED", "utf-8")
+            for s in _SYMBOLS:
+                buf[s].clear()          # drop rather than grow unbounded in memory
+            time.sleep(30.0)
+            continue
+        disk_warned = False
         for sym in _SYMBOLS:
             d = _get("/v5/market/orderbook", f"category=linear&symbol={sym}&limit=25")
             if d:

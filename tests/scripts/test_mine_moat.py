@@ -179,16 +179,23 @@ def test_every_mechanism_is_wired_to_an_ontology_question(mine) -> None:
 # throughput.
 
 
-def _history(monkeypatch, tmp_path, pcts, cells, *, step_s: int = 600):
+def _history(monkeypatch, tmp_path, pcts, cells, *, step_s: int = 600, tape=None):
     from datetime import UTC, datetime, timedelta
     h = tmp_path / "hist.jsonl"
     t0 = datetime(2026, 8, 1, tzinfo=UTC)
+    # Default: the tape grows, which is the normal world. Tests that care pass `tape` explicitly.
+    tape = tape if tape is not None else [10**9 * (i + 1) for i in range(len(pcts))]
     with h.open("w", encoding="utf-8") as fh:
         for i, (p, c) in enumerate(zip(pcts, cells, strict=True)):
             fh.write(json.dumps({"ts": (t0 + timedelta(seconds=step_s * i)).isoformat(),
                                  "run": i, "coverage_pct": p, "cells_filled": c,
-                                 "cells_total": 1000, "holes": 1000 - c}) + "\n")
+                                 "cells_total": 1000, "holes": 1000 - c,
+                                 "tape_bytes": tape[i], "tape_files": 100 * (i + 1)}) + "\n")
     monkeypatch.setattr(M, "HISTORY", h)
+    # closure() appends its OWN row and measures the tape itself, so the fixture has to control
+    # that reading too -- otherwise the appended row reports this container's empty data/moat and
+    # the synthetic history is contradicted by its own last point.
+    monkeypatch.setattr(M, "tape_bytes", lambda _root: (tape[-1], 100 * len(tape)))
     return h
 
 
@@ -261,6 +268,58 @@ def test_coverage_history_is_append_only(mine, tmp_path, monkeypatch) -> None:
     assert M.main() == 0
     n2 = len((tmp_path / "moat_coverage_history.jsonl").read_text("utf-8").strip().splitlines())
     assert n2 > n1
+
+
+# ------------------------------------------------------------------ the false win
+#
+# THE FAILURE THESE GUARD, STATED ONCE. Coverage is filled/total, and total only grows while the
+# recorders write. Disk exhaustion pauses them, the grid freezes, and the miner closes the last
+# holes in a frozen denominator all the way to 100%. That produces a GREEN number for the exact
+# event that ends the desk's only unreplicable asset -- worse than a red alarm, because it retires
+# the chase. Every test below exists because a rising percentage is not, by itself, good news.
+
+
+def test_a_frozen_tape_refuses_the_coverage_verdict_even_while_coverage_rises(
+        monkeypatch, tmp_path) -> None:
+    """THE LOAD-BEARING ONE. Coverage climbing 41 -> 62 with the tape byte-identical is the
+    miner grinding out a frozen grid. Reporting CLOSING here would be true of the ratio and a lie
+    about the asset."""
+    _history(monkeypatch, tmp_path, [41.0, 47.0, 53.0, 59.0], [410, 470, 530, 590],
+             tape=[8_200_000_000] * 4)
+    c = M.closure(_rep(62.0, 620), run=5)
+    assert c["state"] == "RECORDING-STOPPED"
+    assert c["coverage_is_meaningful"] is False
+    assert c["runs_to_100"] is None, "a frozen grid must not be given a finish date"
+    assert "frozen grid" in c["why"] or "FROZEN grid" in c["why"]
+
+
+def test_a_growing_tape_leaves_the_normal_verdicts_alone(monkeypatch, tmp_path) -> None:
+    """The guard must not fire on the healthy world -- an alarm that also rings when nothing is
+    wrong is the one everybody disables."""
+    _history(monkeypatch, tmp_path, [0.5, 0.9, 1.3, 1.7], [5, 9, 13, 17])
+    c = M.closure(_rep(2.1, 21), run=5)
+    assert c["state"] == "CLOSING"
+    assert c["coverage_is_meaningful"] is True
+
+
+def test_a_short_history_does_not_call_a_quiet_run_a_stopped_recorder(
+        monkeypatch, tmp_path) -> None:
+    """The recorders flush on their own schedule, so one pass seeing no new bytes is normal. Four
+    observations is the bar -- below it, silence is not evidence of death."""
+    _history(monkeypatch, tmp_path, [1.0, 1.2], [10, 12], tape=[5_000_000_000] * 2)
+    c = M.closure(_rep(1.4, 14), run=3)
+    assert c["state"] != "RECORDING-STOPPED"
+
+
+def test_the_disk_deadline_travels_with_the_coverage_number(monkeypatch, tmp_path) -> None:
+    """The miner reads the archive every pass, which makes it the cheapest place on the desk to
+    notice the archive has a deadline. Carried in the artifact so the audit reads it rather than
+    re-deriving it."""
+    _history(monkeypatch, tmp_path, [0.5, 0.9, 1.3, 1.7], [5, 9, 13, 17])
+    c = M.closure(_rep(2.1, 21), run=5)
+    assert "disk" in c
+    assert c["disk"]["state"] in ("OK", "URGENT", "PAUSED", "UNKNOWN")
+    assert "used_frac" in c["disk"]
 
 
 def test_a_real_run_ships_the_closure_verdict_in_its_artifact(mine, tmp_path) -> None:

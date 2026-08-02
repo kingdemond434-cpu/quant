@@ -3524,6 +3524,23 @@ def check_under_exploration(defects) -> None:
         closing = d.get("closure") or {}
         state = str(closing.get("state", "UNRECORDED"))
         why = str(closing.get("why", ""))
+        # THE ARCHIVE'S DEADLINE, CHECKED BEFORE THE COVERAGE VERDICT. Disk exhaustion is the one
+        # failure that makes a GOOD number appear: the recorders pause, the grid stops growing,
+        # and the miner closes the last holes in a frozen denominator all the way to 100%. Read
+        # as a finish line, that retires the chase at the moment the asset stops accumulating.
+        disk = closing.get("disk") or {}
+        if disk.get("state") in ("URGENT", "PAUSED"):
+            defects.append((
+                "tape-disk-deadline",
+                f"{label}: {disk.get('note', '')} Deleting mined tape does NOT close this -- the "
+                "seven reconstructions are the first seven, not the last, so raw tape must stay "
+                "re-readable. Buy storage; every hour past the pause is permanently unbuyable."))
+        if state == "RECORDING-STOPPED":
+            defects.append((
+                "tape-recording-stopped",
+                f"{label}: {why} This outranks every coverage finding: coverage is filled/total "
+                "and a frozen total makes the ratio rise on its own."))
+            continue
         if state in ("CLOSING", "COMPLETE-FOR-THIS-GRID"):
             continue
         if state == "OUTPACED-BY-RECORDING":

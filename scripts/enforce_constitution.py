@@ -134,6 +134,16 @@ _RESOLUTION: dict[str, tuple[str, str]] = {
         PATCH_READY, "start the dedicated continuous miner (ops/run_moat_miner.sh) and confirm "
                      "coverage is RISING. A standing coverage number is edge already paid for and "
                      "declined; the breach is the gap not closing, never the gap itself"),
+    "tape-recording-stopped": (
+        BLOCKED, "the RECORDERS are the only thing that closes this, and no mining action does. "
+                 "Check they are alive and not disk-paused (the heartbeat carries a DISK-PAUSED "
+                 "marker while staying fresh, so liveness alone will report healthy). Until the "
+                 "tape grows again, every coverage number is measuring a frozen denominator"),
+    "tape-disk-deadline": (
+        PATCH_READY, "BUY STORAGE and move cold tape onto it. Deleting mined tape is not a fix -- "
+                     "the seven reconstructions are the first seven, not the last, so raw tape "
+                     "must stay re-readable as mechanisms are added. Recompression buys a "
+                     "multiple; storage changes the slope"),
     "exploration-outpaced-by-recording": (
         PATCH_READY, "raise MINER THROUGHPUT -- shorter --interval, larger per-run file budget, or "
                      "a second miner process. The miner is already running and the archive is "

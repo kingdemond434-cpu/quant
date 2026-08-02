@@ -53,6 +53,7 @@ from libs.hypmax.moat_mine import (  # noqa: E402
     extract_all,
 )
 from libs.hypmax.ontology import load_state, record_outcome, save_state  # noqa: E402
+from libs.ops.disk import days_to_pause, tape_bytes  # noqa: E402
 
 MOAT = ROOT / "data/moat"
 COVERAGE = ROOT / "data/moat_coverage.json"
@@ -180,6 +181,7 @@ def closure(rep: dict, run: int) -> dict:
     quietly assume a frozen archive and promise a date that recording pushes back every day.
     """
     HISTORY.parent.mkdir(parents=True, exist_ok=True)
+    tape, files = tape_bytes(MOAT)
     row = {
         "ts": datetime.now(tz=UTC).isoformat(),
         "run": run,
@@ -187,6 +189,12 @@ def closure(rep: dict, run: int) -> dict:
         "cells_filled": int(rep.get("cells_filled", 0)),
         "cells_total": int(rep.get("cells_total", 0)),
         "holes": int(rep.get("holes", 0)),
+        # THE DENOMINATOR'S SOURCE, RECORDED ALONGSIDE THE RATIO. Coverage is filled/total, and
+        # total only grows while the recorders write. If they pause -- on disk, on a rate cap, on
+        # a crash -- the denominator freezes and coverage races to 100% while the asset stops
+        # accumulating. Without this field that reads as the finish line.
+        "tape_bytes": tape,
+        "tape_files": files,
     }
     with HISTORY.open("a", encoding="utf-8") as fh:
         fh.write(json.dumps(row, separators=(",", ":")) + "\n")
@@ -216,6 +224,41 @@ def closure(rep: dict, run: int) -> dict:
         if span_s > 0:
             eta_hours = round(eta_runs * span_s / 3600.0, 1)
 
+    # IS THE ASSET STILL GROWING? Checked BEFORE any verdict about coverage, because a frozen
+    # tape invalidates every one of them. Over the recorded span rather than run-to-run: the
+    # recorders flush on their own schedule, so a single pass can legitimately see no change.
+    tape_growth = 0
+    if len(hist) >= 2:
+        tape_growth = int(hist[-1].get("tape_bytes", 0)) - int(hist[0].get("tape_bytes", 0))
+    bytes_per_day = ((tape_growth / (span_s * max(1, len(hist) - 1))) * 86400.0
+                     if span_s > 0 and tape_growth > 0 else 0.0)
+    disk = days_to_pause(bytes_per_day)
+    recording_stopped = (len(hist) >= 4 and tape_growth <= 0 and row["tape_bytes"] > 0)
+
+    if recording_stopped:
+        # THE FALSE WIN, REFUSED. Coverage still rises here -- the miner keeps closing holes in a
+        # grid that has stopped growing -- and reporting that as CLOSING would hand the desk a
+        # green number for the exact event that ends the asset. The verdict is about the tape.
+        return {
+            "state": "RECORDING-STOPPED",
+            "why": (f"the tape has not grown in {len(hist)} runs ({row['tape_files']} files, "
+                    f"{row['tape_bytes'] / 1e9:.2f} GB, unchanged). Coverage may still be rising "
+                    "-- the miner is closing holes in a FROZEN grid -- and that is not progress, "
+                    "it is the denominator dying. Check the recorders before reading any coverage "
+                    f"number: {disk.get('note', '')}"),
+            "coverage_pct": pct,
+            "coverage_is_meaningful": False,
+            "pct_per_run": pct_rate,
+            "cells_per_run": cell_rate,
+            "tape_bytes": row["tape_bytes"],
+            "tape_growth_bytes": tape_growth,
+            "disk": disk,
+            "seconds_per_run": round(span_s, 1),
+            "runs_to_100": None,
+            "hours_to_100": None,
+            "eta_note": "no ETA is offered while the grid is frozen -- it would be a fake date.",
+        }
+
     if pct >= 100.0:
         state, why = "COMPLETE-FOR-THIS-GRID", (
             "every cell of the CURRENT grid is measured. The grid grows every second the recorders "
@@ -244,8 +287,15 @@ def closure(rep: dict, run: int) -> dict:
         "state": state,
         "why": why,
         "coverage_pct": pct,
+        "coverage_is_meaningful": True,
         "pct_per_run": pct_rate,
         "cells_per_run": cell_rate,
+        "tape_bytes": row["tape_bytes"],
+        "tape_growth_bytes": tape_growth,
+        # WHEN THE TAPE STOPS, not whether there is space. Carried in the miner's artifact
+        # because this is the organ that reads the archive every pass -- it is the cheapest place
+        # on the desk to notice that the archive has a deadline.
+        "disk": disk,
         "seconds_per_run": round(span_s, 1),
         "runs_to_100": eta_runs,
         "hours_to_100": eta_hours,
@@ -389,8 +439,11 @@ def main() -> int:
     eta = ("" if closing["hours_to_100"] is None
            else f" | ETA 100% ~{closing['hours_to_100']}h ({closing['runs_to_100']} runs)")
     print(f"  closure {closing['state']}{eta}")
-    if closing["state"] in ("STANDING-STILL", "OUTPACED-BY-RECORDING"):
+    if closing["state"] in ("STANDING-STILL", "OUTPACED-BY-RECORDING", "RECORDING-STOPPED"):
         print(f"  {closing['why']}")
+    _disk = closing.get("disk", {})
+    if _disk.get("state") in ("URGENT", "PAUSED"):
+        print(f"  DISK {_disk['state']}: {_disk['note']}")
     if rep["holes"]:
         print(f"  next targets: {', '.join(rep['next_targets'][:6])}")
     if degenerate:
