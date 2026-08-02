@@ -381,6 +381,38 @@ def main() -> None:
         fired.append("moat-mine")
         print(f"cadence: {_tail[0][:150]}")
 
+    # GAUNTLET CALIBRATION (EVERY CYCLE). 420 candidates tested, 420 died -- and "the candidates
+    # were worthless" and "the screen cannot detect an edge it is handed" fit that observation
+    # equally well while demanding opposite responses. Live data can never separate them because
+    # the truth is never available; a planted edge of known strength can. The detection floor it
+    # produces is the desk's one progress metric that cannot be gamed: hypothesis count rises by
+    # generating more and survivor count rises by lowering the bar, but the floor moves only when
+    # the desk genuinely gets better at finding weak edges.
+    _r = subprocess.run([sys.executable, "scripts/calibrate_gauntlet.py"],
+                        capture_output=True, text=True, timeout=420, check=False)
+    _tail = (_r.stdout or _r.stderr or "").strip().splitlines()[-1:] or [""]
+    if _r.returncode != 0 or not Path("data/gauntlet_calibration.json").exists():
+        print(f"cadence: gauntlet-calibration rc={_r.returncode} NO ARTIFACT | {_tail[0][:110]}")
+    else:
+        fired.append("gauntlet-calibration")
+        for _ln in (_r.stdout or "").strip().splitlines()[:1]:
+            print(f"cadence: {_ln[:150]}")
+
+    # ANCESTOR ORGANS (EVERY CYCLE). Lineage, breeding, theory induction, feature invention and
+    # the internal information market. Built with tests and no caller, which is the exact
+    # "built but never runs" class this desk keeps finding in itself -- and a library wired six
+    # weeks late meets a codebase that moved underneath it. Runs on the graveyard's 42 real
+    # specimens today and reports honestly where that data cannot support a conclusion.
+    _r = subprocess.run([sys.executable, "scripts/run_ancestors.py"],
+                        capture_output=True, text=True, timeout=300, check=False)
+    _tail = (_r.stdout or _r.stderr or "").strip().splitlines()[-1:] or [""]
+    if _r.returncode != 0 or not Path("data/ancestors.json").exists():
+        print(f"cadence: ancestors rc={_r.returncode} NO ARTIFACT | {_tail[0][:110]}")
+    else:
+        fired.append("ancestors")
+        for _ln in (_r.stdout or "").strip().splitlines()[:1]:
+            print(f"cadence: {_ln[:150]}")
+
     # MODEL UPGRADE (monthly). The desk's models used to be frozen literals that only ever moved
     # when a human noticed a newer flagship -- so seats aged silently (llama-4-maverick sat 15
     # months stale). This makes "are we on the best model available?" a cadence question with a

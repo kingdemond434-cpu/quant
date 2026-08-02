@@ -28,6 +28,7 @@ import certifi
 _KEYS = Path("data/secrets/llm_panel.json")
 _LOG = Path("data/panel_roster_log.jsonl")
 _CATALOG = "https://openrouter.ai/api/v1/models"
+_CAPS_OUT = Path("data/roster_capabilities.json")
 _CTX = ssl.create_default_context(cafile=certifi.where())
 
 # BOOTSTRAP SEED ONLY -- used when there is no roster yet to learn the lab set from. The
@@ -185,6 +186,26 @@ def main() -> None:
         print(f"roster: catalog unreachable ({e!r}) -- keeping current roster")
         return
     catalog_ids = {str(m.get("id", "")) for m in models}
+    # RECORD WHAT EACH SEAT CAN ACTUALLY DO. Until 2026-08-02 every organ sent
+    # a hardcoded middle-rung reasoning effort -- six copies, none derived from the seat.
+    # "high" reads like a maximum and is the middle rung of a ladder whose top differs per model
+    # and per month, so a flagship the desk pays for was being asked a shallower question than it
+    # can answer, and the call succeeded either way so the cost never surfaced. This is the only
+    # place with a live catalog, so it is the only place that can turn capability into DATA.
+    _caps = {str(m.get("id", "")): sorted(str(x) for x in (m.get("supported_parameters") or []))
+             for m in models if m.get("id")}
+    _CAPS_OUT.parent.mkdir(parents=True, exist_ok=True)
+    _CAPS_OUT.write_text(json.dumps({
+        "ts": datetime.now(tz=UTC).isoformat(),
+        "source": _CATALOG,
+        "_": ("model id -> declared supported_parameters. libs/llm/effort.py reads this to ask "
+              "each seat for the DEEPEST reasoning rung it advertises. A seat missing here falls "
+              "back to the old 'high' literal and says so, because inventing a parameter name "
+              "produces a request the provider rejects -- or silently ignores while the desk "
+              "believes it bought deeper reasoning."),
+        "models": _caps,
+    }, indent=1), "utf-8")
+    print(f"roster: recorded capabilities for {len(_caps)} catalog model(s) -> {_CAPS_OUT}")
     old = [p["model"] for p in cfg["providers"]]
     dead = [m for m in old if m not in catalog_ids]
     new_roster = select_roster(models, key, base, current=old)

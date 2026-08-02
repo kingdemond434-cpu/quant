@@ -42,6 +42,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 from libs.doctrine.constitution import OBJECTIVE_PREAMBLE  # noqa: E402
+from libs.llm.effort import reasoning_payload  # noqa: E402
 from scripts import seats  # noqa: E402 -- after the sys.path bootstrap above
 
 KEYS = ROOT / "data/secrets/llm_panel.json"
@@ -87,7 +88,10 @@ SYSTEM = (
 
 def _ask(base, key, model, messages, timeout=150.0):
     body = json.dumps({"model": model, "max_tokens": 3000, "temperature": 0.3,
-                       "reasoning": {"effort": "high"},
+                       # DEPTH IS MEASURED, NOT ASSUMED. "high" is the middle rung of a ladder
+                       # whose top differs per model and per month -- a literal here is
+                       # capability left unused on a flagship the desk pays for.
+                       "reasoning": reasoning_payload(model),
                        "messages": messages}).encode()
     req = urllib.request.Request(base.rstrip("/") + "/chat/completions", data=body, method="POST",
                                  headers={"Authorization": f"Bearer {key}",

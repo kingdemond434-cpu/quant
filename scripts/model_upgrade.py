@@ -51,6 +51,10 @@ from typing import Any
 import certifi
 
 ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from libs.llm.effort import reasoning_payload  # noqa: E402
+
 KEYS = ROOT / "data/secrets/llm_panel.json"
 STATE = ROOT / "data/model_upgrade.json"
 LOG = ROOT / "data/model_upgrade_log.jsonl"
@@ -155,7 +159,7 @@ def _ask(base_url: str, key: str, model: str, system: str, user: str,
          timeout: float = 300.0, max_tokens: int = 2000) -> str:
     body = json.dumps({
         "model": model, "max_tokens": max_tokens, "temperature": 0.7,
-        "reasoning": {"effort": "high"},
+        "reasoning": reasoning_payload(model),
         "messages": [{"role": "system", "content": system},
                      {"role": "user", "content": user}],
     }).encode()

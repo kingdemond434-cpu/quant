@@ -39,6 +39,7 @@ __all__ = [
     "BENCHMARK_STRENGTHS",
     "LabResult",
     "detection_floor",
+    "false_positive_rate",
     "measure_screen",
     "no_edge_path",
     "planted_edge_path",
@@ -121,6 +122,25 @@ def measure_screen(screen: Callable[[np.ndarray, np.ndarray], bool],
                      false_positive_rate=round(fps / max(1, trials), 4))
 
 
+def false_positive_rate(screen: Callable[[np.ndarray, np.ndarray], bool],
+                        *, trials: int = 120, n: int = 500, seed: int = 0) -> float:
+    """P(screen fires | nothing is there). Measured ONCE -- it cannot depend on edge strength.
+
+    THE BUG THIS FUNCTION EXISTS TO KILL, found by the first real sweep against the desk's own L3
+    screen. `detection_floor` used to call `measure_screen` per strength with a fixed seed, so
+    every strength re-ran THE SAME null paths and the report showed six identical false-positive
+    rates as though they were six independent measurements. A suspiciously stable number reads as
+    a robust finding, which is the worst possible way to be wrong.
+
+    The null arm is strength-independent by construction -- no edge is planted, so there is
+    nothing for strength to vary. Measuring it once with more samples is both correct and cheaper
+    than measuring it six times badly.
+    """
+    fps = sum(1 for i in range(trials)
+              if screen(*no_edge_path(n, seed=seed * 100_003 + 50_000 + i)))
+    return round(fps / max(1, trials), 4)
+
+
 def detection_floor(screen: Callable[[np.ndarray, np.ndarray], bool],
                     *, strengths: Sequence[float] = BENCHMARK_STRENGTHS,
                     trials: int = 60, n: int = 500, seed: int = 0) -> dict:
@@ -135,7 +155,17 @@ def detection_floor(screen: Callable[[np.ndarray, np.ndarray], bool],
     edge weaker than that was invisible to this campaign -- so 420 rejections say nothing at all
     about edges below the floor, and reporting them as "tested" would be false.
     """
-    rows = [measure_screen(screen, strength=s, trials=trials, n=n, seed=seed) for s in strengths]
+    # The null is measured ONCE, with 2x the samples, and shared across every strength -- it
+    # cannot vary with a parameter that is not applied to it. Per-strength null runs would be six
+    # copies of one number wearing six hats.
+    fpr = false_positive_rate(screen, trials=trials * 2, n=n, seed=seed)
+    rows = [LabResult(
+        strength=float(st), trials=int(trials),
+        power=round(sum(1 for i in range(trials)
+                        if screen(*planted_edge_path(n, strength=st,
+                                                     seed=(seed + idx + 1) * 100_003 + i)))
+                    / max(1, trials), 4),
+        false_positive_rate=fpr) for idx, st in enumerate(strengths)]
     usable = [r for r in rows if r.usable]
     floor = min((r.strength for r in usable), default=None)
     return {
@@ -143,12 +173,19 @@ def detection_floor(screen: Callable[[np.ndarray, np.ndarray], bool],
                    "false_positive_rate": r.false_positive_rate, "usable": r.usable}
                   for r in rows],
         "detection_floor": floor,
+        "false_positive_rate": fpr,
         "note": (f"weakest reliably-detected edge: strength {floor}. Anything below it was "
                  "INVISIBLE to this screen, so rejections there are not evidence of absence."
                  if floor is not None else
                  "THE SCREEN DETECTED NOTHING AT ANY STRENGTH TESTED, including the blatant one. "
                  "That is a defect in the instrument, not a statement about the market -- and it "
                  "means a campaign of rejections carries no information whatsoever."),
+        "permissiveness": (
+            f"FPR {fpr:.2f}: roughly {fpr:.0%} of pure noise passes this screen. That is not "
+            "automatically wrong for an L3 pre-filter whose job is to be cheap and to escalate "
+            "rather than to decide -- but it is the number that sets how much L4 compute is "
+            "spent on nothing, and it must be read next to the power column, never alone."
+            if fpr > 0.2 else ""),
         "blatant_check": (
             "" if rows and rows[0].usable else
             "FAILS ON THE EASIEST CASE. A screen that cannot find the strongest planted edge has "

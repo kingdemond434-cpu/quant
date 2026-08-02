@@ -35,6 +35,7 @@ from typing import Any
 import certifi
 
 from libs.doctrine.constitution import OBJECTIVE_PREAMBLE
+from libs.llm.effort import reasoning_payload
 from libs.llm.push import PUSH_LADDER, push_rounds
 
 _KEYS = Path("data/secrets/llm_panel.json")
@@ -207,7 +208,7 @@ def _ask(base_url: str, key: str, model: str, messages: list[dict[str, str]],
         # answer (reasoning tokens count toward the cap; a small cap returns EMPTY -- the 07-12
         # deepseek/glm blank-response bug). Models without reasoning ignore the param.
         "model": model, "max_tokens": _RESP_BUDGET, "temperature": 0.7,
-        "reasoning": {"effort": "high"},
+        "reasoning": reasoning_payload(model),
         "messages": messages,
     }).encode()
     req = urllib.request.Request(

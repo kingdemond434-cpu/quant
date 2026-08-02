@@ -174,7 +174,19 @@ def lineage_report(lineage: Lineage) -> dict:
         "max_generation": max(gens),
         "by_family": fertility(lineage, key="family")[:12],
         "by_lens": fertility(lineage, key="lens")[:12],
-        "note": ("zero survivors is a MEASUREMENT of the ground, not of this graph. With no "
+        # A GRAVEYARD-ONLY POPULATION HAS NO VARIANCE TO RANK. Every entry reached the gauntlet
+        # and every entry died, so "reached_stage" is 100% everywhere and the ranking degenerates
+        # into a shrunk count of attempts wearing the word "fertility". Reporting that as a
+        # finding would point generation at whichever tag happens to be most common in a list of
+        # FAILURES -- precisely backwards. Found by the first live run.
+        "discriminating": len({s.stage for s in lineage.specimens.values()}) > 1 or bool(survivors),
+        "note": ("EVERY SPECIMEN SHARES ONE STAGE AND NONE SURVIVED, so fertility has nothing to "
+                 "rank on: the ordering below is a shrunk attempt-count, not a measure of which "
+                 "ground pays. Acting on it would point generation at whichever tag is most "
+                 "common in a list of FAILURES. Feed live candidates with real stages before "
+                 "reading this ranking."
+                 if len({s.stage for s in lineage.specimens.values()}) <= 1 and not survivors else
+                 "zero survivors is a MEASUREMENT of the ground, not of this graph. With no "
                  "survivors, fertility ranks by how FAR lines got -- which is the only signal "
                  "available and is still strictly better than allocating generation uniformly."
                  if not survivors else
@@ -233,12 +245,22 @@ def breed(parents: list[Specimen], *, max_children: int = 20,
         if len(children) >= max_children:
             break
 
+    capped = len(children) >= max_children
+    total_pairs = len(eligible) * (len(eligible) - 1) // 2
+    scanned = len(children) + len(rejected)
     return {
         "eligible_parents": len(eligible),
         "ineligible": len(parents) - len(eligible),
         "children": children,
         "rejected_pairings": rejected[:20],
         "n_rejected": len(rejected),
+        # THE CAP TRUNCATES THE SCAN, and without saying so the rejection count is read as a
+        # population measure when it is really "how far we got before stopping". 0 rejections out
+        # of 24 children looks like a perfectly diverse pool and may mean 24 pairs were examined
+        # out of 820. Found by the first live run over the graveyard.
+        "pairs_scanned": scanned,
+        "pairs_total": total_pairs,
+        "scan_truncated": capped and scanned < total_pairs,
         "note": (f"{len(children)} candidate(s) from {len(eligible)} eligible parent(s); "
                  f"{len(rejected)} pairing(s) rejected as near-duplicates. Every child enters "
                  "the funnel at the FULL bar -- parentage confers no credibility, and inherited "
@@ -247,6 +269,11 @@ def breed(parents: list[Specimen], *, max_children: int = 20,
             "parents have converged: most pairings are near-duplicates, so breeding is now "
             "producing paraphrases. Widen generation before breeding again."
             if len(rejected) > 3 * max(1, len(children)) else ""),
+        "scan_note": (
+            f"stopped at the {max_children}-child cap after {scanned} of {total_pairs} possible "
+            "pairings -- the rejection count above measures how far the scan got, NOT how "
+            "diverse the pool is, and no diversity conclusion may be drawn from it"
+            if capped and scanned < total_pairs else ""),
     }
 
 
