@@ -155,6 +155,18 @@ def main() -> int:
             "discriminator, and the floor below should be read as a floor on the guard."
             if esc_rate > 0.25 else ""),
         "verdict": verdict,
+        # P20, ZERO CEILING. A detection floor is a progress metric, so it has a successor even
+        # when it looks good -- and naming it is what stops the organ going quiet the day the
+        # number turns green, which is exactly when the next constraint starts binding.
+        "next_ceiling": (
+            "L3 is not the binding constraint at this floor. The next ceilings, in order: "
+            "calibrate L4 (walk-forward, fragility, CPCV, capacity, expected value) the same way; "
+            "then drive the false-positive rate down without losing power, since every false "
+            "positive spends L4 compute on nothing; then push the floor below the weakest edge "
+            "the desk would actually trade."
+            if floor is not None else
+            "fix the instrument before anything else -- no rejection this screen produces carries "
+            "information until it can find a planted edge"),
         "movement": moved,
         "note": ("power and false-positive rate are ALWAYS reported together: a screen that says "
                  "yes to everything has power 1.0 and is worthless, so neither number means "

@@ -253,3 +253,74 @@ def test_both_organs_are_checked_for_PRODUCTION_not_exit_code() -> None:
     src = Path("scripts/run_cadence.py").read_text("utf-8")
     assert 'not Path("data/gauntlet_calibration.json").exists()' in src
     assert 'not Path("data/ancestors.json").exists()' in src
+
+
+# ============================================================ the allocator
+
+import scripts.run_allocator as AL  # noqa: E402
+
+
+def test_the_allocator_refuses_to_rank_when_nothing_is_measured(tmp_path, monkeypatch) -> None:
+    """THE TEMPTING MOVE THIS REFUSES. Assigning plausible priors so the allocator 'works' would
+    produce a confident ranking made entirely of guesses, wearing the vocabulary of measurement.
+    That is worse than no allocator, because a ranking gets acted on."""
+    monkeypatch.setattr(AL, "OUT", tmp_path / "alloc.json")
+    monkeypatch.setattr(AL, "LEDGER", tmp_path / "led.json")
+    assert AL.main() == 0
+    d = json.loads((tmp_path / "alloc.json").read_text("utf-8"))
+    assert d["allocation"]["funded"] == []
+    assert d["allocation"]["vip"] is None
+    assert "made entirely of guesses" in d["why_no_ranking"]
+
+
+def test_every_constitutional_subsystem_is_covered_by_the_instrument_map() -> None:
+    """A subsystem with no declared artifact can never be instrumented, and would sit in the
+    'uninstrumented' column forever with no way out. 'Instrument it' is useless advice without
+    naming WHERE the number goes."""
+    from libs.doctrine.constitution import SUBSYSTEM_DERIVATIVES
+    missing = sorted(set(SUBSYSTEM_DERIVATIVES) - set(AL._INSTRUMENTS))
+    assert missing == [], f"subsystems with no declared instrument: {missing}"
+
+
+def test_every_instrument_entry_says_what_the_artifact_must_contain() -> None:
+    """A path with no contract produces a file somebody creates empty to clear the check."""
+    thin = sorted(k for k, (_, needs) in AL._INSTRUMENTS.items() if len(needs) < 25)
+    assert thin == [], f"instruments with no stated contents: {thin}"
+
+
+def test_an_empty_table_counts_as_uninstrumented(tmp_path, monkeypatch) -> None:
+    """EXISTENCE IS NOT ENOUGH. An empty table and a missing table are the same fact here -- no
+    contribution can be computed from either -- and the desk has repeatedly been fooled by a file
+    that exists, a process that exits clean, and nothing produced."""
+    import sqlite3
+    db = tmp_path / "m.sqlite"
+    with sqlite3.connect(db) as c:
+        c.execute("create table fills (id integer)")
+    monkeypatch.setattr(AL, "METRICS", db)
+    assert AL._exists("desk_metrics:fills") is False
+    with sqlite3.connect(db) as c:
+        c.execute("insert into fills values (1)")
+    assert AL._exists("desk_metrics:fills") is True
+
+
+def test_a_missing_database_is_uninstrumented_rather_than_a_crash(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(AL, "METRICS", tmp_path / "absent.sqlite")
+    assert AL._exists("desk_metrics:fills") is False
+
+
+def test_the_starvation_ledger_survives_across_runs(tmp_path, monkeypatch) -> None:
+    """Priority decides order, never entitlement -- and 'never once funded across many cycles' is
+    only visible if the ledger outlives a single run."""
+    monkeypatch.setattr(AL, "OUT", tmp_path / "alloc.json")
+    monkeypatch.setattr(AL, "LEDGER", tmp_path / "led.json")
+    AL.main()
+    assert (tmp_path / "led.json").exists()
+    AL.main()
+    assert "misses" in json.loads((tmp_path / "led.json").read_text("utf-8"))
+
+
+def test_the_allocator_runs_every_cycle_and_is_checked_for_production() -> None:
+    src = Path("scripts/run_cadence.py").read_text("utf-8")
+    assert "scripts/run_allocator.py" in src
+    assert 'fired.append("allocator")' in src
+    assert 'not Path("data/allocator.json").exists()' in src

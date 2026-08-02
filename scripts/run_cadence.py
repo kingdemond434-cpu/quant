@@ -413,6 +413,23 @@ def main() -> None:
         for _ln in (_r.stdout or "").strip().splitlines()[:1]:
             print(f"cadence: {_ln[:150]}")
 
+    # ALLOCATOR (EVERY CYCLE). The governing layer landed with full test suites and no caller,
+    # which governs nothing: the constitution says every subsystem optimises dE[log W]/dx_i, and
+    # until something computes those derivatives that sentence is decoration. With 0 alphas, 0
+    # trials and 0 fills there is no honest contribution estimate for ANY subsystem, so this
+    # deliberately produces NO ranking -- it reports the instrumentation gap, which is what P11
+    # mandates when evidence is insufficient. The day the first real estimate lands, the allocator
+    # is already running and already correct rather than written six weeks late.
+    _r = subprocess.run([sys.executable, "scripts/run_allocator.py"],
+                        capture_output=True, text=True, timeout=120, check=False)
+    _tail = (_r.stdout or _r.stderr or "").strip().splitlines()[-1:] or [""]
+    if _r.returncode != 0 or not Path("data/allocator.json").exists():
+        print(f"cadence: allocator rc={_r.returncode} NO ARTIFACT | {_tail[0][:110]}")
+    else:
+        fired.append("allocator")
+        for _ln in (_r.stdout or "").strip().splitlines()[:1]:
+            print(f"cadence: {_ln[:150]}")
+
     # MODEL UPGRADE (monthly). The desk's models used to be frozen literals that only ever moved
     # when a human noticed a newer flagship -- so seats aged silently (llama-4-maverick sat 15
     # months stale). This makes "are we on the best model available?" a cadence question with a

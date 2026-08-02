@@ -208,6 +208,14 @@ def main() -> int:
         "features": [{"name": f.name, "moat_derived": f.moat_derived,
                       "fingerprint": f.fingerprint} for f in features["kept"]],
         "market": market,
+        # P20, ZERO CEILING. Stated even while the inputs are thin, because the day the graveyard
+        # stops being the only source is the day this organ would otherwise quietly keep reporting
+        # the same 41 specimens and nobody would notice it had stopped growing.
+        "next_ceiling": (
+            "feed LIVE candidates with real stage values so fertility can discriminate at all; "
+            "then settle panel claims so the market's weights become calibration-derived rather "
+            "than uniform; then reach 3 survivors in one mechanism class so theory induction "
+            "arms. None of those is completion -- each is the next constraint."),
         "authority": ("NONE. Every child and every feature here is a CANDIDATE entering the "
                       "funnel at the full bar. Parentage confers no credibility -- inherited "
                       "standing is how a breeding programme launders a weak idea."),

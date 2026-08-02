@@ -185,3 +185,65 @@ def test_a_doctrine_with_no_constitution_block_gets_one_prepended(tmp_path) -> N
     assert R.preamble_in_sync(f) is None
     assert R.sync_preamble(f) == "prepended"
     assert R.preamble_in_sync(f) is True
+
+
+# ------------------------------------------------------------------ P20 everywhere
+
+def test_no_organ_declares_itself_complete() -> None:
+    """PRINCIPAL 2026-08-02: the constitutional laws apply everywhere regardless. A law that holds
+    only in the module that happens to import it is a local habit -- the same finding as universal
+    duties parked in the brain's own prompt, and the doctrine six organs injected and three did
+    not. P20 recognises no completion claim for any component."""
+    d: list = []
+    M.check_no_ceiling(d)
+    assert d == [], [msg for _, msg in d]
+
+
+@pytest.mark.parametrize("organ", M._COVERAGE_ORGANS)
+def test_every_progress_organ_names_its_successor(organ: str) -> None:
+    """A percentage with no next ceiling reads as a finish line, so the organ goes quiet exactly
+    when it turns green -- which is exactly when the next constraint starts binding and nobody is
+    looking for it. Parametrised so the failure names the organ."""
+    p = Path("scripts") / f"{organ}.py"
+    if not p.exists():
+        pytest.skip(f"{organ} not present")
+    assert "next_ceiling" in p.read_text("utf-8"), (
+        f"{organ} reports progress and names no successor")
+
+
+def test_the_trigger_is_membership_not_a_keyword(monkeypatch, tmp_path) -> None:
+    """AN EARLIER VERSION ONLY ASKED ORGANS WHOSE SOURCE CONTAINED THE WORD 'coverage', so two
+    progress-reporting organs escaped on a technicality -- the same 'applies only where somebody
+    remembered' failure the check exists to close."""
+    (tmp_path / "scripts").mkdir()
+    (tmp_path / "scripts/silent_organ.py").write_text("PCT = 100.0\n", "utf-8")
+    monkeypatch.setattr(M, "ROOT", tmp_path)
+    monkeypatch.setattr(M, "_COVERAGE_ORGANS", ("silent_organ",))
+    d: list = []
+    M.check_no_ceiling(d)
+    assert "coverage-without-next-ceiling" in _keys(d)
+
+
+def test_a_completion_claim_is_detected(monkeypatch, tmp_path) -> None:
+    """The check must be able to go red, or its passing means nothing."""
+    (tmp_path / "scripts").mkdir()
+    (tmp_path / "scripts/proud_organ.py").write_text(
+        'NEXT = "next_ceiling"\nNOTE = "the miner is fully built. "\n', "utf-8")
+    monkeypatch.setattr(M, "ROOT", tmp_path)
+    monkeypatch.setattr(M, "_COVERAGE_ORGANS", ("proud_organ",))
+    d: list = []
+    M.check_no_ceiling(d)
+    assert "no-ceiling-violated" in _keys(d)
+
+
+def test_forbidding_a_completion_claim_is_not_itself_a_violation(monkeypatch, tmp_path) -> None:
+    """An organ that FORBIDS the claim necessarily contains the words. A detector that fires on
+    the rule against the thing gets switched off within a week -- strictly worse than none."""
+    (tmp_path / "scripts").mkdir()
+    (tmp_path / "scripts/careful_organ.py").write_text(
+        'NEXT = "next_ceiling"\nRULE = "never say the work is finished here. "\n', "utf-8")
+    monkeypatch.setattr(M, "ROOT", tmp_path)
+    monkeypatch.setattr(M, "_COVERAGE_ORGANS", ("careful_organ",))
+    d: list = []
+    M.check_no_ceiling(d)
+    assert d == [], d

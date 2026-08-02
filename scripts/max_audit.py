@@ -3148,6 +3148,78 @@ def check_constitution(defects) -> None:
 
 CHECKS += [("constitution", check_constitution)]
 
+
+#: Organs that report a coverage/completeness figure. Each must name the NEXT ceiling, because a
+#: percentage with no successor reads as a finish line -- and P20 does not recognise one.
+_COVERAGE_ORGANS = ("run_allocator", "mine_moat", "calibrate_gauntlet", "run_ancestors")
+
+#: Completion claims. P20: "done", "sufficient", "fully built" and "complete" are status claims
+#: this constitution does not recognise for any component -- they are unexamined ceilings.
+_COMPLETION_CLAIMS = ("fully built", "nothing left to", "no further work",
+                      "feature complete", "work is finished", "nothing more to do")
+
+
+def check_no_ceiling(defects) -> None:
+    """P20 AND P13, ENFORCED EVERYWHERE RATHER THAN WHERE SOMEBODY REMEMBERED (principal
+    2026-08-02: "these constitutional laws must apply everywhere anyway regardless").
+
+    A constitutional law that holds only in the module that happens to import it is not a law, it
+    is a local habit -- the same finding as universal duties parked in the brain's own prompt and
+    the doctrine that six organs injected and three did not. So the two clauses most easily lost
+    are checked structurally across every organ that reports progress:
+
+      NO DECLARED COMPLETION. "done", "fully built", "nothing left to do" are unexamined ceilings.
+      An organ that says one is not merely optimistic; it has stopped looking, and nothing
+      downstream can tell that from having genuinely arrived.
+
+      EVERY COVERAGE FIGURE NAMES ITS SUCCESSOR. A percentage with no next ceiling reads as a
+      finish line, and the day it turns green the organ goes quiet -- which is precisely when the
+      next constraint becomes binding and precisely when nobody is looking for it.
+
+    Quoted and negated occurrences are exempt, because an organ that FORBIDS a completion claim
+    necessarily contains the words -- and a detector that fires on the rule against the thing gets
+    switched off within a week, which is strictly worse than no detector.
+    """
+    claimed, unceilinged = [], []
+    for name in _COVERAGE_ORGANS:
+        f = ROOT / "scripts" / f"{name}.py"
+        if not f.exists():
+            continue
+        with contextlib.suppress(OSError):
+            src = f.read_text("utf-8", errors="ignore")
+            # UNCONDITIONAL. An earlier version only asked organs whose source contained the
+            # word "coverage", so two progress-reporting organs escaped on a keyword technicality
+            # -- which is the same "applies only where somebody remembered" failure the whole
+            # check exists to close. Membership of this list IS the trigger.
+            if "next_ceiling" not in src:
+                unceilinged.append(name)
+            for sentence in re.split(r"(?<=[.;])\s+", src):
+                low = sentence.lower()
+                if any(n in low for n in ("not ", "never", "no ", "does not", "forbid",
+                                          "reject", "must not", "cannot")):
+                    continue
+                quoted = " ".join(re.findall(r"'([^']*)'", low) + re.findall(r'"([^"]*)"', low))
+                for claim in _COMPLETION_CLAIMS:
+                    if claim in low and claim not in quoted:
+                        claimed.append(f"{name}: '{claim}'")
+    if claimed:
+        defects.append((
+            "no-ceiling-violated",
+            f"organ(s) declare completion: {', '.join(sorted(set(claimed)))}. P20 does not "
+            "recognise 'done' for any component -- a completion claim is an unexamined ceiling, "
+            "and an organ that has stopped looking is indistinguishable downstream from one that "
+            "genuinely arrived."))
+    if unceilinged:
+        defects.append((
+            "coverage-without-next-ceiling",
+            f"organ(s) report a coverage figure and name no successor: {', '.join(unceilinged)}. "
+            "A percentage with no next ceiling reads as a finish line, so the organ goes quiet "
+            "exactly when it turns green -- which is exactly when the next constraint binds and "
+            "nobody is looking for it."))
+
+
+CHECKS += [("no-ceiling", check_no_ceiling)]
+
 #: Module-level `check_*` functions that are deliberately NOT swept. Empty by design: an exemption
 #: must be argued in writing here, never assumed by silence.
 _CHECKS_EXEMPT: set[str] = set()

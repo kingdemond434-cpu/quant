@@ -241,6 +241,15 @@ def main() -> int:
         "cumulative_coverage": rep,
         "degenerate_series": degenerate[:20],
         "results": results[:40],
+        # P20, ZERO CEILING. 100% coverage of the current grid is not completion -- it is arrival
+        # at the next constraint, and naming it here is what stops this organ going quiet on the
+        # day it turns green. The archive grows every second the recorders run, so the grid it is
+        # measured against grows too.
+        "next_ceiling": (
+            "close the remaining holes; then note that the grid itself GROWS every day the "
+            "recorders run, so 100% is a moving target rather than a finish line; then raise "
+            "resolution -- more mechanisms per cell and finer time buckets -- because the seven "
+            "reconstructions here are the first seven, not the last."),
         "note": ("hole-first: every run spends its budget on cells NOBODY has measured before "
                  "re-measuring anything. That ordering is what converges on 100% exploration "
                  "instead of re-grinding the most convenient symbol forever."),
