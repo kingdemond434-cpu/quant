@@ -218,6 +218,51 @@ def _test_cost(row: dict) -> float:
     return round(cost, 3)
 
 
+#: Minimum share of the ranked head reserved for candidates reading the desk's OWN data. EVIG
+#: already prefers them ~3x on replication cost, but preference is not protection: a day when the
+#: generator emits ninety public-data ideas and three moat ones can sweep the head of the queue on
+#: volume alone. P26 makes that under-exploration of owned data, so the floor makes it impossible.
+MOAT_SLOT_FLOOR = 0.30
+
+
+def reserve_moat_slots(ranked: list[dict], *, floor: float = MOAT_SLOT_FLOOR,
+                       head: int = 20) -> list[dict]:
+    """Guarantee owned-data candidates a share of the scarce head of the queue.
+
+    NOT A BAR CHANGE, AND THE DISTINCTION IS LOAD-BEARING. Every candidate here has already passed
+    the same screen; this only reorders which of the survivors gets scarce L4 compute first.
+    Nothing is promoted, no threshold moves, and a moat candidate that failed the screen is not
+    resurrected -- P8 says throughput is never bought by lowering the bar, and reserving slots
+    among equals does not touch it.
+
+    WHY A FLOOR AND NOT JUST THE EVIG PREFERENCE. Preference loses to volume. EVIG ranks a
+    moat-derived candidate ~3x a public one, but ninety public candidates and three moat ones puts
+    public work at the head anyway, and the desk spends the day exploring data anyone can buy
+    while the un-replicable asset waits. The floor converts a preference into a guarantee.
+
+    If there are fewer moat candidates than the floor allows, the remaining slots go to the next
+    best -- an empty reservation is waste, and P12 calls idle capacity with work waiting a failure.
+    """
+    if not ranked:
+        return ranked
+    n_head = min(head, len(ranked))
+    want = int(n_head * max(0.0, min(1.0, floor)))
+    moat = [c for c in ranked if float(c.get("moat_advantage", 0)) > 0.5]
+    if not moat or want <= 0:
+        return ranked
+    promoted = moat[:want]
+    ids = {id(c) for c in promoted}
+    rest = [c for c in ranked if id(c) not in ids]
+    for c in promoted:
+        c["moat_slot_reserved"] = True
+        c["moat_slot_note"] = (
+            f"held in the top {want} of {n_head} for reading the desk's OWN data. Not a bar "
+            "change -- it passed the same screen as everything else; this only decides which "
+            "survivor gets scarce L4 compute first, because preference loses to volume and "
+            "un-replicable data must never wait behind data anyone can buy.")
+    return promoted + rest
+
+
 def score_evig(rows: list[dict], family_history: dict[str, tuple[int, int]] | None = None,
                ) -> list[dict]:
     """Order survivors by expected validated information gain per unit of compute (P1).
@@ -244,7 +289,7 @@ def score_evig(rows: list[dict], family_history: dict[str, tuple[int, int]] | No
         d["moat_advantage"] = _moat_advantage(r)
         d["cost"] = _test_cost(r)
         out.append(d)
-    return rank_by_evig(out)
+    return reserve_moat_slots(rank_by_evig(out))
 
 
 def deterministic_screen(rows: list[dict], blocker: TrivialVariationBlocker | None = None,
@@ -452,7 +497,10 @@ def main() -> None:
     # accident of ordering. Ranking only; nothing is rejected by EVIG.
     kept = score_evig(kept, _family_history())
     _scored = [c for c in kept if c.get("evig_scored")]
+    _reserved = sum(1 for c in kept if c.get("moat_slot_reserved"))
     _floor_dead = any(c.get("floor_not_discriminating") for c in _scored)
+    print(f"  moat slots reserved   {_reserved} (floor {MOAT_SLOT_FLOOR:.0%} of the head) -- "
+          "un-replicable data never waits behind data anyone can buy")
     print(f"  EVIG ranked           {len(_scored)} scored, {len(kept) - len(_scored)} unscored"
           + ("  [floor not discriminating -- base rate is 0 survivors; rank RELATIVELY]"
              if _floor_dead else ""))

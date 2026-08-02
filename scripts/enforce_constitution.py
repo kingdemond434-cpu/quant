@@ -120,6 +120,32 @@ _RESOLUTION: dict[str, tuple[str, str]] = {
     "detector-cannot-age-its-findings": (
         PATCH_READY, "add a per-finding age counter that only CLOSING clears, or a standing leak "
                      "reads as a fresh finding every cycle"),
+    "coexistence-never-measured": (
+        PATCH_READY, "run scripts/run_coexistence.py -- until it does, nothing checks whether one "
+                     "family is costing another its growth, and a book of correlated winners "
+                     "looks identical to a diversified one"),
+    "coexistence-no-separation-ladder": (
+        PATCH_READY, "restore the separation ladder to the artifact. Orthogonality before "
+                     "retirement is an ORDER that binds with no data at all"),
+    "coexistence-retires-too-early": (
+        PATCH_READY, "remove the retirement authority. Separation recovers BOTH strategies; "
+                     "retirement recovers the interaction loss and gives up one of them"),
+    "under-exploration": (
+        PATCH_READY, "start the dedicated continuous miner (ops/run_moat_miner.sh) and confirm "
+                     "coverage is RISING. A standing coverage number is edge already paid for and "
+                     "declined; the breach is the gap not closing, never the gap itself"),
+    "exploration-blocked-upstream": (
+        BLOCKED, "no mining action closes this -- the named producer (the recorders) is the only "
+                 "thing that can write the data. Start them where the network permits; every "
+                 "unrecorded second is permanently unbuyable at any price"),
+    "exploration-unmeasured": (
+        PATCH_READY, "run the miner once so coverage is MEASURED -- until then the desk cannot "
+                     "tell 'mined and empty' from 'never looked', and those demand opposite "
+                     "responses"),
+    "exploration-has-no-dedicated-organ": (
+        PATCH_READY, "create the dedicated continuous runner. A cadence step is the floor; "
+                     "without the ceiling, coverage converges in as many days as there are "
+                     "cycles instead of in hours"),
     "evig-not-wired": (
         PATCH_READY, "rank the funnel by EVIG -- otherwise L4 compute goes to whatever order the "
                      "generator emitted"),
@@ -134,7 +160,8 @@ _RESOLUTION: dict[str, tuple[str, str]] = {
 #: The constitutional checks whose output this enforcer owns. Named explicitly so a check added
 #: later shows up as unowned rather than silently escaping enforcement.
 _CONSTITUTIONAL_CHECKS = ("constitution", "no-ceiling", "law-coverage", "governing-layer",
-                          "evig-ranking", "fixers-not-watchers")
+                          "evig-ranking", "fixers-not-watchers", "under-exploration",
+                          "coexistence")
 
 
 def _autofix(key: str) -> dict:

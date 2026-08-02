@@ -1,6 +1,6 @@
 {
  "_": "HIGH-WATER MARK for constitutional aggression. Raised automatically; NEVER lowered by code. Editing a number DOWN in this file is the only way to weaken a principle, and it is meant to be a visible, dated, argued act -- institutions drift toward timidity one reasonable amendment at a time, and this is the mechanism that makes each one cost a decision.",
- "updated": "2026-08-02T08:05:43.607465+00:00",
+ "updated": "2026-08-02T08:19:19.957109+00:00",
  "principles": {
   "P0": "Sole Objective",
   "P1": "Information Value Condition",
@@ -27,7 +27,8 @@
   "P22": "Immutable Core Preserved",
   "P23": "Anti-Timidity On Every Axis",
   "P24": "The Governance Asymmetry Law",
-  "P25": "Detect Implies Repair"
+  "P25": "Detect Implies Repair",
+  "P26": "Under-Exploration Is A Breach"
  },
  "high_water": {
   "P0": 10,
@@ -49,6 +50,7 @@
   "P23": 10,
   "P24": 10,
   "P25": 10,
+  "P26": 10,
   "P3": 10,
   "P4": 9,
   "P5": 10,

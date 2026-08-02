@@ -93,9 +93,16 @@ def test_the_remaining_gaps_state_what_would_close_them() -> None:
     """An empty entry must be an argued declaration, not an oversight. P1 needs EVIG wired into
     the funnel's ordering; P16 needs a second sleeve to exist at all."""
     src = Path("libs/doctrine/enforcement.py").read_text("utf-8")
-    for pid in (r["id"] for r in unenforced(_registered())):
-        assert f'"{pid}": ()' in src, f"{pid} is a gap but has no empty-tuple declaration"
-    assert "GENUINELY UNENFORCED" in src
+    gaps = list(unenforced(_registered()))
+    for r in gaps:
+        assert f'"{r["id"]}": ()' in src, f"{r['id']} is a gap but has no empty-tuple declaration"
+    # There are currently NO gaps -- P1 closed when EVIG was wired into the funnel's ordering and
+    # P16 when the coexistence organ landed. The assertion is written to hold in both worlds: an
+    # empty gap list is the goal, and any future gap must be a DECLARED empty tuple rather than an
+    # oversight, because a plausible-looking check name would report the law as covered while
+    # nothing fires.
+    if gaps:
+        assert "GENUINELY UNENFORCED" in src
 
 
 def test_gaps_are_ranked_worst_first_and_then_by_aggression() -> None:

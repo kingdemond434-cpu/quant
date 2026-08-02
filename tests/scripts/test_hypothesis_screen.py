@@ -183,3 +183,48 @@ def test_the_funnel_claims_no_promotion_authority() -> None:
     src = (ROOT / "scripts/hypothesis_screen.py").read_text("utf-8")
     assert "ZERO promotion authority" in src
     assert "Two-Stage Discovery Law" in src
+
+
+def test_moat_candidates_cannot_be_starved_by_public_volume() -> None:
+    """P26. EVIG already prefers owned data ~3x on replication cost, but PREFERENCE LOSES TO
+    VOLUME: ninety public ideas and three moat ones puts public work at the head anyway, and the
+    desk spends the day exploring data anyone can buy while the un-replicable asset waits."""
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+    from scripts.hypothesis_screen import MOAT_SLOT_FLOOR, score_evig
+    rows = [{"name": f"public {i}", "data_source": "public funding endpoint"} for i in range(40)]
+    rows += [{"name": f"depth withdrawal {i}", "data_source": "our recorded order books"}
+             for i in range(3)]
+    out = score_evig(rows, {})
+    head = out[:20]
+    assert sum(1 for c in head if c["moat_advantage"] > 0.5) == 3, (
+        "every available moat candidate must reach the head when the floor allows room")
+    assert MOAT_SLOT_FLOOR > 0
+
+
+def test_reserving_slots_never_changes_the_bar() -> None:
+    """NOT A BAR CHANGE, and the distinction is load-bearing: everything here already passed the
+    same screen. Reserving among equals only decides which SURVIVOR gets scarce compute first."""
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+    from scripts.hypothesis_screen import reserve_moat_slots
+    ranked = [{"n": i, "moat_advantage": 0.37} for i in range(10)]
+    ranked += [{"n": 99, "moat_advantage": 1.03}]
+    out = reserve_moat_slots(ranked)
+    assert len(out) == len(ranked), "reserving must never add or drop a candidate"
+    assert {id(c) for c in out} == {id(c) for c in ranked}
+    assert out[0]["moat_advantage"] > 0.5
+    assert "Not a bar change" in out[0]["moat_slot_note"]
+
+
+def test_an_empty_reservation_is_not_left_idle() -> None:
+    """P12: idle capacity with positive-return work waiting is a failure, so unused reserved
+    slots go to the next best rather than sitting empty."""
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+    from scripts.hypothesis_screen import reserve_moat_slots
+    ranked = [{"n": i, "moat_advantage": 0.37} for i in range(10)]
+    assert reserve_moat_slots(ranked) == ranked

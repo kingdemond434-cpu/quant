@@ -284,5 +284,44 @@ def main() -> int:
     return 0
 
 
+def loop(interval_s: float = 0.0) -> int:
+    """RUN FOREVER. The dedicated 24/7 miner, not a cadence step.
+
+    WHY BOTH EXIST. The cadence call guarantees the miner runs at all -- it is the floor. This
+    loop is the CEILING: it mines continuously, so coverage converges in hours rather than in as
+    many days as there are cadence cycles. Under-exploration of owned data is a constitutional
+    breach (P26), and "we mine it once a day" is under-exploration when the archive grows every
+    second and nothing but wall-clock stops the miner going faster.
+
+    Each pass is budgeted exactly as the single-shot run is, so a long loop can never monopolise
+    the box; `interval_s` is a courtesy gap for disk, not a throttle on exploration. Zero means
+    back-to-back, which is the correct default: the constraint that should bind is I/O, never a
+    number somebody picked.
+
+    Exits only on interrupt. A crash in one pass is logged and the loop continues -- a miner that
+    dies on one unreadable file has stopped exploring, which is the failure it exists to prevent.
+    """
+    passes, t_start = 0, time.time()
+    print(f"moat-miner: CONTINUOUS mode, interval {interval_s}s (0 = back-to-back)")
+    while True:
+        passes += 1
+        try:
+            main()
+        except KeyboardInterrupt:
+            break
+        except Exception as e:                     # one bad pass must never end the exploration
+            print(f"moat-miner: pass {passes} failed ({type(e).__name__}: {e}) -- continuing")
+        if interval_s > 0:
+            time.sleep(interval_s)
+    print(f"moat-miner: stopped after {passes} pass(es), "
+          f"{(time.time() - t_start) / 3600:.1f}h")
+    return 0
+
+
 if __name__ == "__main__":
+    if "--loop" in sys.argv:
+        _iv = 0.0
+        if "--interval" in sys.argv:
+            _iv = float(sys.argv[sys.argv.index("--interval") + 1])
+        raise SystemExit(loop(_iv))
     raise SystemExit(main())

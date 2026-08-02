@@ -84,10 +84,9 @@ ENFORCEMENT: dict[str, tuple[str, ...]] = {
     "P14": ("no-mining-throttle", "mining-nonregression", "mine-flow"),
     # P15 robust Kelly is mandatory
     "P15": ("gate-optimality",),
-    # P16 non-destructive coexistence. GENUINELY UNENFORCED: MC_i needs two sleeves and a
-    #     performance history, and the desk has zero of both. Arms the day a second sleeve exists;
-    #     asserting a check now would report a law as covered while nothing could fire.
-    "P16": (),
+    # P16 non-destructive coexistence -- MC_i per family, and the separation ladder,
+    #     which binds immediately even while the measurement is dormant
+    "P16": ("coexistence",),
     # P17 maximum exploration
     "P17": ("dig-depth", "generation", "source-backlog"),
     # P18 optimise the rate, not only the level -- closure_rate over recorded history
@@ -106,6 +105,8 @@ ENFORCEMENT: dict[str, tuple[str, ...]] = {
     "P24": ("constitution",),
     # P25 detect implies repair -- every detector carries a fix path; only the pager may notify
     "P25": ("fixers-not-watchers",),
+    # P26 under-exploration of owned data is a breach, and the breach is the gap NOT CLOSING
+    "P26": ("under-exploration", "mining-nonregression", "no-mining-throttle"),
 }
 
 #: principle id -> a phrase that must appear in OBJECTIVE_PREAMBLE for the law to be in scope for
@@ -138,6 +139,7 @@ PREAMBLE_MARKERS: dict[str, str] = {
     "P23": "TIMIDITY IS SCORED ON EVERY AXIS",
     "P24": "must name the throughput it multiplies",
     "P25": "DETECT IMPLIES REPAIR",
+    "P26": "UNDER-EXPLORATION IS A BREACH",
 }
 
 

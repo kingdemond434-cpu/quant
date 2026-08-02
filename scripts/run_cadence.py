@@ -461,6 +461,18 @@ def main() -> None:
         for _ln in (_r.stdout or "").strip().splitlines()[:1]:
             print(f"cadence: {_ln[:170]}")
 
+    # COEXISTENCE (EVERY CYCLE). No sleeve, family or engine may cost another its growth, and
+    # every one expands to its own maximum. Dormant until two families have a record -- MC_i is
+    # undefined with one -- but the ORDER it enforces (orthogonality before retirement) binds
+    # immediately and needs no data at all.
+    _r = subprocess.run([sys.executable, "scripts/run_coexistence.py"],
+                        capture_output=True, text=True, timeout=120, check=False)
+    _tail = (_r.stdout or _r.stderr or "").strip().splitlines()[-1:] or [""]
+    if _r.returncode != 0 or not Path("data/coexistence.json").exists():
+        print(f"cadence: coexistence rc={_r.returncode} NO ARTIFACT | {_tail[0][:110]}")
+    else:
+        fired.append("coexistence")
+
     # MODEL UPGRADE (monthly). The desk's models used to be frozen literals that only ever moved
     # when a human noticed a newer flagship -- so seats aged silently (llama-4-maverick sat 15
     # months stale). This makes "are we on the best model available?" a cadence question with a

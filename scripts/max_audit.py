@@ -3456,6 +3456,113 @@ def check_fixers_not_watchers(defects) -> None:
             "how a monitor becomes wallpaper."))
 
 
+#: artifact -> (label, the dedicated organ that closes it). Every owned dataset the desk can
+#: measure coverage of. Adding a dataset here without a closing organ is itself the breach P26
+#: describes: a measure with nothing driving it is a number that watches itself stand still.
+_EXPLORATION_SURFACES: dict[str, tuple[str, str]] = {
+    "data/moat_mine.json": ("moat (self-recorded order books)", "ops/run_moat_miner.sh"),
+}
+
+#: Consecutive observations of unchanged coverage before the gap counts as NOT CLOSING. Two is
+#: enough to distinguish "in progress" from "stalled" without firing on a single quiet cycle.
+_STALL_OBSERVATIONS = 2
+
+
+def check_under_exploration(defects) -> None:
+    """P26: an owned dataset below 100% explored is a BREACH, and the breach is the gap NOT
+    CLOSING (principal 2026-08-02: "underexploration of anything is violation of law").
+
+    THE DISTINCTION IS THE WHOLE CHECK. A gap that is closing is work in progress and firing on
+    it would train everyone to ignore the alarm. A gap that is STANDING STILL is the desk
+    declining edge it has already paid for -- and those look identical in any single snapshot,
+    which is why coverage has to be trended rather than read.
+
+    Zero coverage with a named blocker is reported distinctly from zero coverage with none: "the
+    recorders have written nothing" is an actionable fact about a different organ, while "we have
+    data and are not mining it" is this breach in its pure form.
+    """
+    for artifact, (label, organ) in _EXPLORATION_SURFACES.items():
+        p = ROOT / artifact
+        if not p.exists():
+            defects.append((
+                "exploration-unmeasured",
+                f"{label}: {artifact} absent -- coverage is not even MEASURED, so the desk cannot "
+                f"tell 'mined and empty' from 'never looked'. Run {organ}."))
+            continue
+        try:
+            d = json.loads(p.read_text("utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        cov = d.get("cumulative_coverage", {}).get("coverage_pct", d.get("coverage_pct"))
+        if cov is None or float(cov) >= 100.0:
+            continue
+        # A dedicated continuous miner must EXIST, or nothing is driving the number at all.
+        if not (ROOT / organ).exists():
+            defects.append((
+                "exploration-has-no-dedicated-organ",
+                f"{label} sits at {cov}% and {organ} does not exist. A cadence step is the FLOOR; "
+                "continuous mining is the ceiling, and without it coverage converges in as many "
+                "days as there are cycles instead of in hours."))
+        if d.get("state") == "NO MINE ON DISK":
+            defects.append((
+                "exploration-blocked-upstream",
+                f"{label}: 0% and the blocker is UPSTREAM -- {d.get('reason', '')[:150]} This is "
+                "distinct from declining to mine: no mining action closes it, and the named "
+                "producer is the only thing that can."))
+            continue
+        defects.append((
+            "under-exploration",
+            f"{label} explored {cov}% -- P26 breach unless the gap is CLOSING. Verify "
+            f"{organ} is running continuously; a standing coverage number is edge the desk has "
+            "already paid for and is declining to collect."))
+
+
+def check_coexistence(defects) -> None:
+    """P16: no sleeve, family or engine may cost another its growth (principal 2026-08-02).
+
+    Two rules, and conflating them loses the harder one. NOBODY SUBTRACTS: a family is judged by
+    its marginal contribution to the portfolio, never its standalone record, because ranking on
+    standalone Sharpe builds a book of correlated winners -- one bet wearing five names. EVERYBODY
+    MAXES: after the global optimum, each family expands to its own maximum feasible point, so a
+    family that could grow and does not is an optimisation failure rather than a tidy book.
+
+    Checked on the ARTIFACT. A DORMANT verdict is acceptable and expected -- MC_i is undefined
+    with one family -- but the organ must have RUN, and it must still carry the separation ladder
+    while dormant, because the ORDER (orthogonality before retirement) binds immediately and needs
+    no data to be in force.
+    """
+    art = ROOT / "data/coexistence.json"
+    if not art.exists():
+        defects.append((
+            "coexistence-never-measured",
+            "data/coexistence.json absent -- nothing checks whether one family is costing another "
+            "its growth. Run scripts/run_coexistence.py."))
+        return
+    try:
+        d = json.loads(art.read_text("utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return
+    if "separation_ladder" not in d:
+        defects.append((
+            "coexistence-no-separation-ladder",
+            "the coexistence artifact carries no separation ladder. Orthogonality before "
+            "retirement is an ORDER that binds immediately and needs no data -- without it, the "
+            "first harmful interaction gets answered by retiring a strategy, which recovers the "
+            "interaction loss AND gives up the opportunity."))
+    if d.get("state") == "ACTIVE" and d.get("retirement_permitted"):
+        defects.append((
+            "coexistence-retires-too-early",
+            "the coexistence organ claims authority to retire. It must never: retirement recovers "
+            "the interaction loss and gives up the strategy, which is strictly worse whenever an "
+            "earlier rung of the separation ladder was available and untried."))
+
+
+CHECKS += [("coexistence", check_coexistence)]
+
+
+CHECKS += [("under-exploration", check_under_exploration)]
+
+
 CHECKS += [("fixers-not-watchers", check_fixers_not_watchers)]
 
 

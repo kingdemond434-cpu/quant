@@ -611,6 +611,34 @@ PRINCIPLES: tuple[Principle, ...] = (
         aggression=10,
         posture="ENABLER",
     ),
+
+    # ------------------------------------------------------- under-exploration is a breach
+    # PRINCIPAL, 2026-08-02. The desk owns an asset nobody can replicate and was exploring 0.4%
+    # of it. That is not a backlog, it is a standing breach: unmined proprietary data is edge the
+    # desk has already PAID for and is choosing not to collect, and the choice compounds for as
+    # long as it stands. The archive also grows every second the recorders run, so the measure is
+    # a moving target and "we finished" is never available.
+    Principle(
+        id="P26",
+        name="Under-Exploration Is A Breach",
+        statement=(
+            "Any owned dataset explored below 100% is a BREACH, not a backlog -- and the breach "
+            "is not the gap itself but the gap NOT CLOSING. Coverage that stands still is the "
+            "desk declining edge it has already paid for. Proprietary data is the strongest case "
+            "because its replication cost is unbounded: a competitor can point a recorder at the "
+            "same venue tomorrow and still cannot have our timestamps from last month. Mining it "
+            "continuously is therefore not diligence, it is the highest-certainty term available "
+            "in the objective, and anything less than the maximum feasible rate is under-"
+            "exploration."),
+        formula=("breach iff coverage < 100% AND d(coverage)/dt is not significantly > 0; "
+                 "the grid GROWS, so 100% is a moving target and never a finish line"),
+        directive=(
+            "run a DEDICATED continuous miner, not a cadence step: the cadence call is the floor "
+            "and continuous mining is the ceiling. Rank owned-data candidates above public-data "
+            "ones by replication cost, and never let public-data volume starve them"),
+        aggression=10,
+        posture="ENABLER",
+    ),
 )
 
 _BY_ID = {p.id: p for p in PRINCIPLES}
@@ -935,6 +963,9 @@ OBJECTIVE_PREAMBLE = (
     "pager may notify without repairing -- and a plumber fixes the PIPE, never the water: a market "
     "loss is not a defect, and switching off a working strategy to stop a drawdown makes it "
     "permanent.\n"
+    "  UNDER-EXPLORATION IS A BREACH:  any owned dataset below 100% explored is a breach, and the "
+    "breach is the gap NOT CLOSING rather than the gap itself. Unmined proprietary data is edge "
+    "already paid for and declined. Never propose exploring LESS; propose mining faster.\n"
     "  IMMUTABLE CORE:  none of the above overrides the survival rails, the dead-man/kill-switch, "
     "the two-stage discovery law or any existing law. Where a computed floor conflicts with a "
     "survival rail, the rail wins unconditionally.\n"

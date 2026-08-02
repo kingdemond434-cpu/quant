@@ -1,28 +1,21 @@
 {
  "_": "HIGH-WATER MARK for constitutional enforcement coverage. Raised automatically, never lowered by code. A NEW principle defaults to unenforced and therefore drops the live percentage below this mark -- which is the mechanism that makes 'every law, now and upcoming' true of code rather than of intention.",
- "updated": "2026-08-02T08:11:00.676078+00:00",
+ "updated": "2026-08-02T08:21:40.341623+00:00",
  "high_water": {
-  "mechanical_pct": 96.2,
-  "interactional_pct": 96.2,
-  "full_pct": 92.3
+  "mechanical_pct": 100.0,
+  "interactional_pct": 96.3,
+  "full_pct": 96.3
  },
  "live": {
-  "principles": 26,
-  "both": 24,
+  "principles": 27,
+  "both": 26,
   "mechanical_only": 1,
-  "interactional_only": 1,
+  "interactional_only": 0,
   "unenforced": 0,
-  "mechanical_pct": 96.2,
-  "interactional_pct": 96.2,
-  "full_pct": 92.3
+  "mechanical_pct": 100.0,
+  "interactional_pct": 96.3,
+  "full_pct": 96.3
  },
- "gaps_worst_first": [
-  {
-   "id": "P16",
-   "name": "Non-Destructive Coexistence",
-   "aggression": 9,
-   "mode": "INTERACTIONAL"
-  }
- ],
+ "gaps_worst_first": [],
  "next_ceiling": "every law mechanically enforced AND in every interaction. Reaching that is not completion -- the next ceiling is enforcement that catches SUBTLE violations, not only absent ones."
 }
