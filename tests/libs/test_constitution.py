@@ -289,8 +289,14 @@ def test_the_preamble_forbids_recommending_timidity() -> None:
 
 def test_the_preamble_is_short_enough_to_survive_being_read() -> None:
     """A preamble nobody reads constrains nothing, and one that eats the context window costs
-    the answer it was meant to shape."""
-    assert len(OBJECTIVE_PREAMBLE) < 2600
+    the answer it was meant to shape.
+
+    The bound rose from 2.6k to 6k as the governing layer and the asymmetry correction landed.
+    That is a real cost paid deliberately: thirteen more binding clauses, each one a case the
+    base constitution left open. It is ~1% of a frontier model's context and it is the first
+    thing every seat reads. If it ever needs to grow again, the correct move is to CUT a clause
+    that stopped binding rather than to raise this number a third time."""
+    assert len(OBJECTIVE_PREAMBLE) < 6000
 
 
 def test_every_subsystem_states_its_derivative_of_the_one_objective() -> None:
@@ -307,3 +313,194 @@ def test_the_second_order_term_is_present() -> None:
     is the one a first-order objective silently drops."""
     d, _ = SUBSYSTEM_DERIVATIVES["meta/self-improvement"]
     assert d.startswith("d2E[log W]")
+
+
+# ------------------------------------------------------------------ the governing layer
+
+
+def test_the_governing_layer_added_principles_without_removing_any() -> None:
+    """"Nothing is removed. Nothing is weakened. Everything is weaponized." Checked, not
+    assumed: P0-P9 must all still be present at their original ranks."""
+    ids = {p.id for p in PRINCIPLES}
+    assert {f"P{i}" for i in range(10)} <= ids
+    assert {f"P{i}" for i in range(10, 23)} <= ids
+    assert principle("P0").aggression == 10 and principle("P3").aggression == 10
+
+
+def test_the_hat_is_constitutional_and_not_a_footnote() -> None:
+    """The directive writes the objective with a hat and then writes every downstream rule as
+    though the derivatives were observable. P10 closes that: a decision taken by comparing point
+    estimates is taking a decision on noise."""
+    p = principle("P10")
+    assert "POSTERIOR ESTIMATES with standard errors" in p.statement
+    assert "(value, se, n)" in p.formula
+
+
+def test_retirement_needs_significance_not_a_bad_period() -> None:
+    p = principle("P11")
+    assert "STATISTICALLY SIGNIFICANT" in p.statement
+    assert "INSUFFICIENT-EVIDENCE" in p.directive
+    assert "1.64-sigma" in p.formula
+
+
+def test_the_vip_rule_carries_the_half_that_usually_gets_dropped() -> None:
+    """Global optimum first is the easy half. What decides whether this is a growth mechanism or
+    a bureaucracy is that everyone else expands immediately afterwards."""
+    p = principle("P12")
+    assert "maximum feasible operating point" in p.statement
+    assert "OPTIMISATION FAILURES" in p.statement
+    assert "never defunded" in p.directive
+
+
+def test_priority_decides_order_and_never_entitlement() -> None:
+    p = principle("P13")
+    assert "never entitlement" in p.statement
+    assert "STARVED" in p.statement
+
+
+def test_discovery_is_never_throttled_to_clear_a_backlog() -> None:
+    """The bottleneck always scales upward. Surplus discovery is inventory; a hypothesis never
+    generated is lost permanently, and only one of those shows up on a chart."""
+    p = principle("P14")
+    assert "NEVER min Q_D" in p.statement
+    assert "INVENTORY" in p.statement
+    assert "Governance may never reduce discovery throughput" in p.directive
+
+
+def test_shrinkage_is_constitutionally_a_growth_argument() -> None:
+    """If P15 read as caution it would be argued about as caution, and the first person to win
+    that argument would lower the desk's expected growth while sounding bold."""
+    p = principle("P15")
+    assert "NOT conservatism" in p.statement
+    assert "proposing to lower expected growth" in p.statement
+    assert "ZERO, not small" in p.statement
+
+
+def test_coexistence_expands_orthogonality_before_reducing_opportunity() -> None:
+    p = principle("P16")
+    assert "MC_i" in p.formula
+    assert "separation, never retirement" in p.directive
+
+
+def test_exploration_assumes_edges_exist_until_proven_otherwise() -> None:
+    """The prior that decides whether a desk searches at all. Its opposite -- assume nothing is
+    there until something proves otherwise -- is self-confirming, because it defunds the search
+    that would have produced the proof."""
+    p = principle("P17")
+    assert "assumes unknown profitable edges exist until exhaustive evidence proves otherwise" \
+        in p.statement
+    assert "reduction of catastrophic downside" in p.directive, (
+        "research that removes a tail is research that raises E[log W] without producing alpha")
+
+
+def test_the_constitution_subjects_its_own_optimiser_to_replacement() -> None:
+    """A meta-rule that exempted itself would be the one place the ratchet cannot reach."""
+    st = principle("P18").statement
+    assert "no optimiser is exempt" in st
+    assert "constitution's own" in st
+
+
+def test_no_component_may_declare_itself_complete() -> None:
+    p = principle("P20")
+    assert "no declarations of completion" in p.statement.lower()
+    assert "unexamined ceiling" in p.directive
+
+
+def test_the_immutable_core_wins_every_conflict_unconditionally() -> None:
+    """The one direction the governing layer must never travel: an evidence-derived floor may
+    TIGHTEN a rail and may never loosen one."""
+    p = principle("P22")
+    assert "survival_rail wins, always" in p.formula
+    assert "may TIGHTEN a rail and may never loosen one" in p.directive
+    assert p.aggression == 10
+
+
+def test_the_preamble_carries_the_governing_layer_to_every_seat() -> None:
+    """A layer that exists only in a module is a preference. These are the clauses that change
+    what a model is allowed to recommend."""
+    p = OBJECTIVE_PREAMBLE
+    for clause in ("EVERYTHING IS AN ESTIMATE", "RETIREMENT NEEDS EVIDENCE",
+                   "GLOBAL FIRST, THEN EVERYONE", "BOTTLENECK SCALES UPWARD",
+                   "ROBUST KELLY IS MANDATORY", "MAXIMUM EXPLORATION", "RATE OVER LEVEL",
+                   "OUTPUT-ONLY", "ZERO CEILING", "IMMUTABLE CORE"):
+        assert clause in p, clause
+
+
+# ------------------------------------------------------------------ the asymmetry correction
+
+
+def test_the_constitution_pushes_forward_more_than_it_holds_back() -> None:
+    """THE DIAGNOSIS, MADE MEASURABLE. A constitution can state an aggressive philosophy and
+    encode the opposite one in its mechanics -- one defensible amendment at a time, no individual
+    gate wrong, the aggregate re-optimised from "find as many good things as physically possible
+    while preventing catastrophic mistakes" to "never deploy something bad".
+
+    The mechanism is arithmetic rather than intent: a body of law follows its majority. So the
+    balance is counted every cycle, which is the only way the drift is visible BEFORE it has
+    already happened."""
+    from libs.doctrine.constitution import governance_balance
+    b = governance_balance()
+    assert b["balanced"], b["note"]
+    assert b["enablers"] > b["guards"]
+    assert b["unclassified"] == [], "an unclassified principle cannot be counted either way"
+
+
+def test_guards_are_not_treated_as_the_enemy() -> None:
+    """The claim is narrow and has to stay narrow: guards must stay in the MINORITY, not
+    disappear. A guard that prevents ruin or a false conclusion protects compounding itself,
+    which is why the guards are among the highest-aggression principles here."""
+    from libs.doctrine.constitution import governance_balance
+    guards = [principle(g) for g in governance_balance()["guard_ids"]]
+    assert {g.id for g in guards} >= {"P6", "P8", "P15"}
+    assert all(g.aggression >= 8 for g in guards), (
+        "a guard against ruin is a maximum-aggression rule, not a cautious one")
+
+
+def test_posture_is_classified_by_direction_not_by_mechanism() -> None:
+    """The ratchet RESTRAINS amendments and its DIRECTION is pro-aggression. Classifying by
+    mechanism would file the desk's strongest anti-timidity rule as a restraint and invert the
+    very count this exists to get right."""
+    assert principle("P9").posture == "ENABLER"
+    assert principle("P11").posture == "ENABLER", (
+        "requiring evidence before retirement PROTECTS capability from governance churn")
+
+
+def test_governance_is_constitutionally_a_weapon_not_a_police_force() -> None:
+    """The principal's sentence, made binding: governance exists to maximise E[log W] and alpha
+    discovery. A control that merely says no is a tax paid to feel careful."""
+    p = principle("P21")
+    for fn in ("EXPERIMENT COORDINATOR", "BLIND-SPOT HUNTER", "DUPLICATE REMOVER",
+               "EVIDENCE CALIBRATOR", "BOTTLENECK REMOVER", "THROUGHPUT MULTIPLIER"):
+        assert fn in p.statement, fn
+    assert "not a police force" in p.statement
+    assert "a tax the desk pays to feel careful" in p.statement
+    assert "every gate ships with a named throughput multiplier" in p.formula
+
+
+def test_anti_timidity_now_covers_the_four_axes_it_used_to_miss() -> None:
+    """The old anti-timidity laws policed CAPITAL only -- don't under-size, don't hold cash,
+    don't hesitate to deploy -- and left research, governance, engineering, discovery and
+    conversion timidity entirely unguarded. That asymmetry is why governance won."""
+    p = principle("P23")
+    for axis in ("RESEARCH", "GOVERNANCE", "ENGINEERING", "DISCOVERY", "CONVERSION"):
+        assert axis in p.statement, axis
+    assert "only the first was ever policed" in p.statement
+    assert "silence on those axes is not a pass" in p.directive
+
+
+def test_a_new_gate_must_name_the_throughput_it_multiplies() -> None:
+    """Not as harmless overhead -- as the marginal rule that tips the aggregate."""
+    p = principle("P24")
+    assert "count(ENABLER) > count(GUARD)" in p.formula
+    assert "name the throughput it multiplies" in p.statement
+    assert "admissible only alongside the ENABLER it makes possible" in p.directive
+
+
+def test_the_preamble_tells_every_seat_that_governance_must_multiply_throughput() -> None:
+    """Without this a seat asked to improve the desk proposes another gate, because another gate
+    is always the easiest defensible recommendation to make."""
+    p = OBJECTIVE_PREAMBLE
+    assert "GOVERNANCE IS A WEAPON, NOT A POLICE FORCE" in p
+    assert "must name the throughput it multiplies" in p
+    assert "TIMIDITY IS SCORED ON EVERY AXIS" in p
+    assert "Never recommend the smaller version because it is easier to justify" in p

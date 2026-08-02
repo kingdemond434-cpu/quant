@@ -344,10 +344,17 @@ def main() -> None:
     # Asymmetry is the whole design: strengthening is frictionless, weakening costs a hand-edit.
     try:
         from libs.doctrine.ratchet import check as _rcheck
+        from libs.doctrine.ratchet import sync_preamble as _rsync
         from libs.doctrine.ratchet import update_high_water as _rraise
         _rep = _rcheck()
         if _rep.ok:
             _rraise()
+            # The doctrine file holds a COPY of the constitution because a prompt cannot import
+            # Python. Resyncing here, one-directionally from code to prompt, is what stops the
+            # organs running on a superseded objective while the audit enforces the current one.
+            _sync = _rsync()
+            if _sync not in ("in-sync", "doctrine-missing"):
+                print(f"cadence: constitution block {_sync} into ops/principal_doctrine.txt")
             fired.append("constitution")
             if _rep.raised:
                 print(f"cadence: constitution STRENGTHENED -- {'; '.join(_rep.raised)}")

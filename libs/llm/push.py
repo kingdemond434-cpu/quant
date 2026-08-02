@@ -86,7 +86,23 @@ COMPOUNDING_FILTER = (
     "not propose a control whose purpose is to feel careful. "
     "The two limits that DO bind: survival rails (ruin probability <=2%, never loosened, never "
     "traded for return) and PROVEN EDGE (size only on demonstrated edge -- the null is "
-    "no-edge-until-evidence). Inside those two, be maximally aggressive and say so."
+    "no-edge-until-evidence). Inside those two, be maximally aggressive and say so. "
+    # THE FAILURE MODE THIS LAST CLAUSE CLOSES (principal, 2026-08-01). A model asked "what else?"
+    # ten times reaches for another gate, another approval, another audit -- because a new control
+    # is always the easiest defensible recommendation to make and nobody ever gets blamed for one.
+    # Each is individually reasonable; the aggregate re-optimises the desk from "find as many good
+    # things as possible while preventing catastrophe" to "never deploy something bad". The ladder
+    # is the single highest-volume source of proposals here, so it is where that has to be caught.
+    "GOVERNANCE IS A WEAPON, NOT A POLICE FORCE. If you propose any control, gate, approval, "
+    "review step, ledger or audit, you must name the THROUGHPUT IT MULTIPLIES -- experiments "
+    "coordinated, blind spots hunted, duplicate research removed, evidence better calibrated, a "
+    "bottleneck removed, conversion capacity raised. A control that only says no is a tax paid to "
+    "feel careful, and proposing one is the same defect as under-sizing a proven edge. "
+    "Timidity is scored on EVERY axis, not just capital: a narrower search than the evidence "
+    "supports, an uncosted approval step, a smaller version shipped because it reviews more "
+    "easily, and conversion left below discovery rate are the same defect as idle cash. "
+    "If discovery outruns conversion the answer is ALWAYS to expand conversion, NEVER to throttle "
+    "discovery."
 )
 
 #: ANALYSIS ladder -- panel audits, strategic review, data recommendations, code review.

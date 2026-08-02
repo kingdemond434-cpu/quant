@@ -141,3 +141,47 @@ def test_the_committed_high_water_mark_is_in_git_not_just_on_disk() -> None:
     assert R.BASELINE_PATH.parts[0] == "docs", (
         f"{R.BASELINE_PATH} must live in a tracked directory or the ratchet resets itself")
     assert R.BASELINE_PATH.exists()
+
+
+# ------------------------------------------------------------------ the doctrine copy
+
+def test_the_doctrine_copy_is_byte_identical_to_the_module() -> None:
+    """A prompt cannot import Python, so the doctrine necessarily holds a COPY. Copies drift --
+    the module gets edited, the file does not, and every local organ then runs on a superseded
+    objective while the audit enforces the current one. Both look correct in isolation."""
+    assert R.preamble_in_sync() is True, (
+        "run libs.doctrine.ratchet.sync_preamble() and commit the doctrine")
+
+
+def test_a_stale_doctrine_copy_is_detected(monkeypatch, tmp_path) -> None:
+    """The check must be able to go red, or its passing means nothing."""
+    (tmp_path / "ops").mkdir()
+    (tmp_path / "scripts").mkdir()
+    (tmp_path / "ops/principal_doctrine.txt").write_text(
+        "=== CONSTITUTION (immutable) ===\nmax_pi E[log W_T] but an old wording\n"
+        "=== END CONSTITUTION ===\nrest of doctrine\n", "utf-8")
+    monkeypatch.setattr(M, "ROOT", tmp_path)
+    monkeypatch.setattr(M, "_CONSTITUTION_ORGANS", ())
+    d: list = []
+    M.check_constitution(d)
+    assert "constitution-doctrine-stale" in _keys(d)
+
+
+def test_the_sync_is_one_directional_from_code_to_prompt(tmp_path) -> None:
+    """Syncing the other way would let an untested edit to a text file become constitutional."""
+    from libs.doctrine.constitution import OBJECTIVE_PREAMBLE
+    f = tmp_path / "doctrine.txt"
+    f.write_text("=== CONSTITUTION old ===\nstale\n=== END CONSTITUTION ===\ntail\n", "utf-8")
+    assert R.sync_preamble(f) == "resynced"
+    assert R.preamble_in_sync(f) is True
+    assert f.read_text("utf-8").endswith("tail\n"), "the rest of the doctrine must survive"
+    assert OBJECTIVE_PREAMBLE in f.read_text("utf-8")
+
+
+def test_a_doctrine_with_no_constitution_block_gets_one_prepended(tmp_path) -> None:
+    """Absent is a different and worse fact than stale, and is not folded into it."""
+    f = tmp_path / "doctrine.txt"
+    f.write_text("just some standing orders\n", "utf-8")
+    assert R.preamble_in_sync(f) is None
+    assert R.sync_preamble(f) == "prepended"
+    assert R.preamble_in_sync(f) is True

@@ -3071,6 +3071,7 @@ def check_constitution(defects) -> None:
     try:
         from libs.doctrine import ratchet as _ratchet
         from libs.doctrine.constitution import OBJECTIVE, weakening_language
+        from libs.doctrine.constitution import governance_balance as _governance_balance
     except ImportError as e:                      # pragma: no cover - the desk has no objective
         defects.append(("constitution-unimportable",
                         f"libs.doctrine will not import ({e}) -- the desk's sole objective is "
@@ -3100,6 +3101,16 @@ def check_constitution(defects) -> None:
             "ops/principal_doctrine.txt no longer states max_pi E[log W_T]. Every local organ "
             "injects that file as its system prompt, so the desk would be running with an "
             "aggression stance and no objective for it to serve."))
+    elif doc.exists() and _ratchet.preamble_in_sync(doc) is False:
+        # A prompt cannot import Python, so the doctrine necessarily holds a COPY of the
+        # constitution. Copies drift: the module gets edited, the file does not, and every local
+        # organ then runs on last month's constitution while this audit enforces this month's.
+        # Both look correct in isolation, which is why drift has to be checked rather than noticed.
+        defects.append((
+            "constitution-doctrine-stale",
+            "ops/principal_doctrine.txt carries an OUT-OF-DATE copy of the constitution. Every "
+            "local organ injects it, so they are governed by a superseded objective while this "
+            "audit enforces the current one. Run libs.doctrine.ratchet.sync_preamble()."))
 
     rep = _ratchet.check()
     if not rep.ok:
@@ -3112,6 +3123,20 @@ def check_constitution(defects) -> None:
             f"{_ratchet.BASELINE_PATH} is gone. With no high-water mark there is no floor under "
             "any principle, and the next weakening passes silently. Regenerate with "
             "libs.doctrine.ratchet.update_high_water() and commit it."))
+
+    balance = _governance_balance()
+    if not balance["balanced"]:
+        # THE DRIFT THAT PROMPTED THIS CHECK (principal, 2026-08-01). A constitution can state an
+        # aggressive philosophy and encode the opposite one in its mechanics, one defensible
+        # amendment at a time. The mechanism is arithmetic rather than intent: a body of law
+        # follows its majority, so once restraints outnumber enablers, governance becomes the
+        # dominant optimiser however the preamble reads -- and the desk quietly switches from
+        # "find as many good things as possible while preventing catastrophe" to "never deploy
+        # something bad". Counting is the only way that is visible before it has happened.
+        defects.append((
+            "governance-asymmetry",
+            f"{balance['enablers']} enabling principles vs {balance['guards']} restraining ones. "
+            + balance["note"]))
 
     weak = weakening_language()
     if weak:

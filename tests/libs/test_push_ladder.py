@@ -237,3 +237,26 @@ def test_the_round_cap_never_truncates_the_ladder() -> None:
     count capped by a literal's length, which this session found four times."""
     assert len(PUSH_LADDER) <= MAX_ROUNDS
     assert len(GENERATION_LADDER) <= MAX_ROUNDS
+
+
+def test_the_filter_forbids_proposing_a_control_that_only_says_no() -> None:
+    """THE LADDER'S SECOND RISK, and the one that actually happened. A model asked "what else?"
+    ten times reaches for another gate, another approval, another audit -- a new control is the
+    easiest defensible recommendation there is and nobody is ever blamed for one. Each is
+    individually reasonable and the aggregate re-optimises the desk from "find as many good
+    things as possible while preventing catastrophe" to "never deploy something bad". This is
+    the highest-volume proposal source on the desk, so it is where that gets caught."""
+    from libs.llm.push import COMPOUNDING_FILTER as f
+    assert "GOVERNANCE IS A WEAPON, NOT A POLICE FORCE" in f
+    assert "name the THROUGHPUT IT MULTIPLIES" in f
+    assert "a tax paid to feel careful" in f
+    assert "same defect as under-sizing a proven edge" in f
+
+
+def test_the_filter_scores_timidity_on_every_axis_not_just_capital() -> None:
+    """The old anti-timidity language policed capital only. Research, engineering, discovery and
+    conversion timidity went unpoliced, which is the asymmetry that let governance win."""
+    from libs.llm.push import COMPOUNDING_FILTER as f
+    assert "EVERY axis, not just capital" in f
+    assert "same defect as idle cash" in f
+    assert "ALWAYS to expand conversion, NEVER to throttle discovery" in f

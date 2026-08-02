@@ -34,9 +34,12 @@ from libs.doctrine.constitution import PRINCIPLES, aggression_map
 
 __all__ = [
     "BASELINE_PATH",
+    "DOCTRINE_PATH",
     "RatchetReport",
     "check",
     "load_baseline",
+    "preamble_in_sync",
+    "sync_preamble",
     "update_high_water",
 ]
 
@@ -118,3 +121,56 @@ def update_high_water(path: Path | str = BASELINE_PATH,
         "high_water": dict(sorted(new.items())),
     }, indent=1), "utf-8")
     return new
+
+
+DOCTRINE_PATH = Path("ops/principal_doctrine.txt")
+_BEGIN = "=== CONSTITUTION"
+_END = "=== END CONSTITUTION ===\n"
+
+
+def preamble_in_sync(path: Path | str = DOCTRINE_PATH) -> bool | None:
+    """Is the shared doctrine's constitution block byte-identical to the module's?
+
+    None means the block is absent entirely -- a different and worse fact than stale, which is
+    why it is not folded into False.
+
+    WHY THIS CHECK EXISTS. Every local organ injects principal_doctrine.txt as its system prompt,
+    so the block has to physically live in that file; a prompt cannot import Python. That makes it
+    a COPY, and copies drift -- the module gets edited, the file does not, and the organs that
+    read the file are governed by last month's constitution while the audit enforces this
+    month's. Nobody notices, because both look correct in isolation. So the copy is allowed and
+    the DRIFT is not: this is checked every cycle and resynced automatically.
+    """
+    from libs.doctrine.constitution import OBJECTIVE_PREAMBLE
+    try:
+        txt = Path(path).read_text("utf-8")
+    except OSError:
+        return None
+    if _BEGIN not in txt or _END not in txt:
+        return None
+    block = txt[txt.index(_BEGIN): txt.index(_END) + len(_END)]
+    return block == OBJECTIVE_PREAMBLE
+
+
+def sync_preamble(path: Path | str = DOCTRINE_PATH) -> str:
+    """Rewrite the doctrine's constitution block from the module. Returns what it did.
+
+    ONE-DIRECTIONAL, from code to prompt, always. The module is the source of truth because it is
+    the thing the audit reads and the tests pin; syncing the other way would let an untested edit
+    to a text file become constitutional.
+    """
+    from libs.doctrine.constitution import OBJECTIVE_PREAMBLE
+    state = preamble_in_sync(path)
+    if state is True:
+        return "in-sync"
+    p = Path(path)
+    try:
+        txt = p.read_text("utf-8")
+    except OSError:
+        return "doctrine-missing"
+    if state is None:
+        p.write_text(OBJECTIVE_PREAMBLE + "\n" + txt, "utf-8")
+        return "prepended"
+    p.write_text(txt[:txt.index(_BEGIN)] + OBJECTIVE_PREAMBLE
+                 + txt[txt.index(_END) + len(_END):], "utf-8")
+    return "resynced"
