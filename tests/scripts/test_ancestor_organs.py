@@ -324,3 +324,41 @@ def test_the_allocator_runs_every_cycle_and_is_checked_for_production() -> None:
     assert "scripts/run_allocator.py" in src
     assert 'fired.append("allocator")' in src
     assert 'not Path("data/allocator.json").exists()' in src
+
+
+# ============================================================ the cost model must not lie
+
+def test_a_prose_mention_is_not_a_write() -> None:
+    """CAUGHT ON THE FIRST LIVE RUN AGAINST 8GB OF REAL TAPE. The old matcher reported
+    'deep_review.py is already scheduled and writes desk_metrics:fills' -- from a docstring
+    reading "fills, rate limits, or a 5xx mid-sequence". deep_review is a hostile code reviewer;
+    it has never written a fill. That mislabelled the gap cost-1 when nothing can close it, and an
+    incorrect cost model sends the chase at the wrong gap first."""
+    writers = AL._writers("desk_metrics:fills")
+    assert "scripts/deep_review.py" not in writers
+    assert any(w.endswith("store/trading.py") for w in writers), (
+        "the real writer is the INSERT INTO fills in libs/store/trading.py")
+
+
+def test_a_table_write_requires_an_insert_not_a_mention(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(AL, "ROOT", tmp_path)
+    (tmp_path / "scripts").mkdir()
+    (tmp_path / "libs").mkdir()
+    (tmp_path / "scripts/talker.py").write_text('"""we discuss widgets here."""\n', "utf-8")
+    (tmp_path / "scripts/writer.py").write_text('Q = "INSERT INTO widgets VALUES (?)"\n', "utf-8")
+    assert AL._writers("desk_metrics:widgets") == ["scripts/writer.py"]
+
+
+def test_a_library_only_writer_is_not_a_cheap_gap() -> None:
+    """A LIBRARY is not an organ. The producing path has never executed, so no amount of
+    estimate-writing closes it -- reporting cost-1 would send the chase somewhere it cannot win."""
+    cost, why = AL._closure_cost("desk_metrics:fills", "")
+    assert cost == AL._COST_NO_ORGAN
+    assert "only a LIBRARY writes this" in why
+    assert "never executed" in why
+
+
+def test_libs_is_scanned_not_just_scripts() -> None:
+    """The writer of record for fills lives in libs/store. A scan limited to scripts/ would have
+    reported 'nothing writes this' -- wrong in the opposite direction."""
+    assert any(w.startswith("libs/") for w in AL._writers("desk_metrics:fills"))

@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import contextlib
 import json
+import re
 import sqlite3
 import sys
 import time
@@ -145,17 +146,45 @@ _COST_NO_ORGAN = 8.0         # nothing writes this at all: build the organ first
 
 
 def _writers(artifact: str) -> list[str]:
-    """Scripts that reference this artifact path. Measured from the repo, never assumed."""
-    needle = (artifact.split(":", 1)[1] if artifact.startswith("desk_metrics:") else artifact)
+    """Files that actually WRITE this artifact. Mentions do not count.
+
+    THE BUG THIS REPLACES, CAUGHT ON THE FIRST LIVE RUN AGAINST REAL DATA. The previous version
+    matched any file CONTAINING the artifact string, so it reported "deep_review.py is already
+    scheduled and writes desk_metrics:fills" -- from a prose docstring reading "fills, rate limits,
+    or a 5xx mid-sequence". deep_review is a hostile code reviewer; it has never written a fill.
+
+    That mislabelled the gap cost-1 ("an organ already runs, add one estimate") when the truth is
+    that the only writer is a LIBRARY nothing currently calls, because nothing is trading. An
+    incorrect cost model sends the chase at the wrong gap first, which is precisely the failure
+    the ranking exists to prevent -- and it is the second time this shape has appeared here, after
+    the cadence scan that read only run_cadence.py and missed ops/*.sh.
+
+    So a write is now evidenced, not assumed: an INSERT for a table, a write call for a path. And
+    libs/ is scanned as well as scripts/, because the writer of record here lives in libs/store.
+    """
+    is_table = artifact.startswith("desk_metrics:")
+    needle = artifact.split(":", 1)[1] if is_table else artifact
     out = []
-    for f in sorted((ROOT / "scripts").glob("*.py")):
-        if f.name == "run_allocator.py":
-            continue                      # this file names every artifact; it writes none of them
-        try:
-            if needle in f.read_text("utf-8", errors="ignore"):
-                out.append(f.name)
-        except OSError:
-            continue
+    roots = [ROOT / "scripts", ROOT / "libs"]
+    for root in roots:
+        for f in sorted(root.rglob("*.py")):
+            if f.name == "run_allocator.py":
+                continue                  # names every artifact; writes none of them
+            try:
+                src = f.read_text("utf-8", errors="ignore")
+            except OSError:
+                continue
+            if needle not in src:
+                continue
+            if is_table:
+                # A table is only written by an INSERT (or a REPLACE/UPSERT) naming it.
+                if not re.search(rf"(insert\s+(or\s+\w+\s+)?into|replace\s+into)\s+{needle}",
+                                 src, re.IGNORECASE):
+                    continue
+            elif not any(w in src for w in ("write_text(", "json.dump", ".open(", "open(",
+                                            "to_parquet", "to_csv", "savez", "writer(")):
+                continue
+            out.append(str(f.relative_to(ROOT)))
     return out
 
 
@@ -169,15 +198,22 @@ def _closure_cost(artifact: str, cadence_src: str) -> tuple[float, str]:
     """
     writers = _writers(artifact)
     if not writers:
-        return _COST_NO_ORGAN, "no script writes this artifact -- an organ has to be built first"
-    running = [w for w in writers if f"scripts/{w}" in cadence_src]
+        return _COST_NO_ORGAN, "nothing writes this artifact -- an organ has to be built first"
+    # A LIBRARY writer is not an organ. libs/store/trading.py holds the only INSERT INTO fills on
+    # this desk, and nothing calls it because nothing is trading -- so the gap is not "add an
+    # estimate", it is "the producing path has never executed". Reporting that as cost-1 would
+    # send the chase at a gap that no amount of estimate-writing can close.
+    if all(w.startswith("libs/") for w in writers):
+        return _COST_NO_ORGAN, (
+            f"only a LIBRARY writes this ({writers[0]}) and no scheduled organ calls it -- the "
+            "producing path has never executed, so no estimate can be added until it does")
+    running = [w for w in writers if w in cadence_src]
     if running:
         return _COST_ORGAN_RUNS, (
-            f"{running[0]} is already scheduled and writes this -- the gap is one estimate, "
+            f"{running[0]} is already scheduled and WRITES this -- the gap is one estimate, "
             "not an organ")
     return _COST_ORGAN_IDLE, (
-        f"{writers[0]} writes this but is NOT wired into the cadence -- wire it, then add the "
-        "estimate")
+        f"{writers[0]} writes this but is NOT scheduled -- wire it, then add the estimate")
 
 
 def _load_chase() -> dict[str, int]:
