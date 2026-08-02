@@ -167,6 +167,15 @@ def main() -> int:
         REPORT.write_text(json.dumps({
             "ts": datetime.now(tz=UTC).isoformat(),
             "state": "NO MINE ON DISK",
+            # BLOCKED, not "waiting": the fix is a named process that must run elsewhere, and
+            # nothing this organ can do closes it.
+            "hole_tier": "BLOCKED",
+            "hole_fix": ("start run_recorder.py / run_recorder_spot.py / run_recorder_bybit.py. "
+                         "No mining action closes this -- every unrecorded second is permanently "
+                         "unbuyable, so the blocker is the recorders and nothing else."),
+            "cycles_open": 0,
+            "next_ceiling": ("record anything at all; then close the resulting holes hole-first; "
+                             "then note the grid GROWS every day the recorders run"),
             "coverage_pct": 0.0,
             "reason": f"{MOAT} absent or empty -- the recorders have written nothing here. "
                       "Coverage is 0.0% and that is a measurement, not a failure of this run.",
@@ -245,6 +254,15 @@ def main() -> int:
         # at the next constraint, and naming it here is what stops this organ going quiet on the
         # day it turns green. The archive grows every second the recorders run, so the grid it is
         # measured against grows too.
+        # P25, DETECT IMPLIES REPAIR. A hole is a defect in coverage, not a status line: it is
+        # PATCH_READY because the miner itself closes it on a later run, and the age counter is
+        # what stops a permanently-unreachable cell reading as a fresh finding every morning.
+        "hole_tier": ("PATCH_READY" if rep["holes"] else "NONE"),
+        "hole_fix": ("this miner closes these itself, hole-first, on subsequent runs -- no other "
+                     "action is required unless a cell's age stops falling, which means its files "
+                     "are unreadable rather than unmined"
+                     if rep["holes"] else ""),
+        "cycles_open": cov.get("runs", 0),
         "next_ceiling": (
             "close the remaining holes; then note that the grid itself GROWS every day the "
             "recorders run, so 100% is a moving target rather than a finish line; then raise "

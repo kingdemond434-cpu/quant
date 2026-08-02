@@ -3363,6 +3363,105 @@ def check_law_coverage(defects) -> None:
         }, indent=1), "utf-8")
 
 
+def check_evig_ranking(defects) -> None:
+    """P1: the funnel must ORDER by expected shift in E[log W], not by generator emission order.
+
+    Before 2026-08-02 the screen emitted candidates in whatever order the generator produced them,
+    so L4 compute -- the scarcest resource on this desk -- was allocated by accident of ordering.
+    EVIG existed as a fully-tested library that nothing called for weeks, which is the same
+    "built but never runs" class as the governing layer.
+
+    Checked on the ARTIFACT, because that is the only thing that proves the path ran. The floor is
+    also audited for BITE: with the desk's true base rate every candidate can fall below the
+    absolute compute floor, and a ranking that marks everything not-worth-compute is a FILTER
+    wearing a ranking's clothes -- which EVIG has no authority to be.
+    """
+    art = ROOT / "data/gauntlet_candidates.json"
+    src = ROOT / "scripts/hypothesis_screen.py"
+    if src.exists() and "rank_by_evig" not in src.read_text("utf-8", errors="ignore"):
+        defects.append((
+            "evig-not-wired",
+            "hypothesis_screen does not rank by EVIG -- L4 compute is allocated by the order the "
+            "generator happened to emit candidates in, which is P1 unenforced."))
+        return
+    if not art.exists():
+        return                       # no run yet; the funnel's own producer check owns that gap
+    with contextlib.suppress(OSError, json.JSONDecodeError):
+        cands = json.loads(art.read_text("utf-8")).get("candidates", [])
+        scored = [c for c in cands if c.get("evig_scored")]
+        if cands and not scored:
+            defects.append((
+                "evig-scored-nothing",
+                f"{len(cands)} candidate(s) survived the screen and NONE carries an EVIG score. "
+                "Ranking by nothing is ranking by the generator's emission order."))
+        elif scored and not any(c.get("floor_not_discriminating") for c in scored) and not any(
+                c.get("worth_compute") for c in scored):
+            defects.append((
+                "evig-floor-silently-buried-everything",
+                "every scored candidate is below the compute floor and the artifact does not say "
+                "the floor stopped discriminating. A ranking that buries everything IS a filter, "
+                "and a blanket 'not worth compute' would read as a considered per-candidate "
+                "verdict when it is a statement about the desk's base rate."))
+
+
+#: Organs that DETECT defects and must therefore carry a fix path (P25). The pager is the one
+#: legitimate pure notifier on the desk -- its whole job is to reach a human -- and it is exempt
+#: by name rather than by keyword, so nothing else can claim the exemption by resembling it.
+_DETECTOR_ORGANS = ("watch_pnl", "run_allocator", "mine_moat")
+_PURE_NOTIFIER_EXEMPT = ("run_alerts", "seats")
+
+#: A finding must resolve into one of these. "investigate", "monitor" and "escalated" are not
+#: outcomes -- a defect parked in one is an excuse with a ticket number.
+_FIX_TIERS = ("AUTOFIX", "PATCH_READY", "BLOCKED")
+
+
+def check_fixers_not_watchers(defects) -> None:
+    """P25: EVERY DETECTOR CARRIES A FIX PATH (principal 2026-08-02: everything here is a fixer,
+    not a notifier -- only the pager may merely notify).
+
+    A monitor that finds a defect and leaves it open is worse than no monitor. The desk then has
+    the defect AND the false comfort of watching it, and the attention the alarm consumes every
+    cycle is a real recurring cost bought against nothing. So a detector must resolve each finding
+    into AUTOFIX, PATCH_READY or BLOCKED -- applied now, the exact patch named and chased, or the
+    exact measurement that determines the fix, also chased.
+
+    Checked structurally, because a convention that lives only in a commit message decays the
+    first time somebody adds an organ -- this desk has watched exactly that happen with seat caps,
+    with the doctrine injection, and with the coverage keyword escape hatch three commits ago.
+    """
+    watchers, stale_blind = [], []
+    for name in _DETECTOR_ORGANS:
+        f = ROOT / "scripts" / f"{name}.py"
+        if not f.exists():
+            continue
+        with contextlib.suppress(OSError):
+            src = f.read_text("utf-8", errors="ignore")
+            if not any(t in src for t in _FIX_TIERS):
+                watchers.append(name)
+            if "cycles_open" not in src and "cycles_owed" not in src:
+                stale_blind.append(name)
+    if watchers:
+        defects.append((
+            "detector-without-fix-path",
+            f"organ(s) DETECT defects and carry no fix path: {', '.join(watchers)}. A monitor "
+            "that finds a defect and leaves it open is worse than no monitor -- the desk gets the "
+            "defect AND the false comfort of watching it. Resolve each finding into AUTOFIX, "
+            "PATCH_READY or BLOCKED; only the pager may notify without repairing."))
+    if stale_blind:
+        defects.append((
+            "detector-cannot-age-its-findings",
+            f"organ(s) cannot tell a three-week-old defect from this morning's: "
+            f"{', '.join(stale_blind)}. Without a per-finding age counter that only CLOSING "
+            "clears, a standing leak looks like a fresh finding every cycle, which is precisely "
+            "how a monitor becomes wallpaper."))
+
+
+CHECKS += [("fixers-not-watchers", check_fixers_not_watchers)]
+
+
+CHECKS += [("evig-ranking", check_evig_ranking)]
+
+
 CHECKS += [("law-coverage", check_law_coverage)]
 
 #: Module-level `check_*` functions that are deliberately NOT swept. Empty by design: an exemption

@@ -585,6 +585,32 @@ PRINCIPLES: tuple[Principle, ...] = (
         aggression=10,
         posture="ENABLER",
     ),
+
+    # ---------------------------------------------------------- detect implies repair
+    # PRINCIPAL, 2026-08-02: everything on this desk is a fixer, not a notifier -- only the pager
+    # itself is allowed to merely notify. A monitor that finds a defect and leaves it open is
+    # worse than no monitor: the desk now has the defect AND the false comfort of watching it,
+    # and the attention the alarm consumes every cycle is a real recurring cost against nothing.
+    Principle(
+        id="P25",
+        name="Detect Implies Repair",
+        statement=(
+            "Every organ that DETECTS a defect must carry a FIX PATH for it. Three tiers and no "
+            "fourth: AUTOFIX applies immediately on a surface declared live-tunable; PATCH_READY "
+            "names the exact change and is CHASED; BLOCKED names the measurement that would "
+            "determine the fix, and that measurement is chased too. 'Investigate', 'monitor' and "
+            "'escalated' are not outcomes -- a leak parked in one is an excuse with a ticket "
+            "number. Only the alert channel itself may notify without repairing. A plumber fixes "
+            "the PIPE and never the water: a market loss is not a defect, and 'fixing' one by "
+            "switching off the strategy that was working is how a drawdown becomes permanent."),
+        formula=("every finding -> {AUTOFIX, PATCH_READY, BLOCKED} with an action; "
+                 "cycles_open(leak) never resets except by CLOSING it"),
+        directive=(
+            "no defect may rest in a watched state; a finding older than the stale threshold "
+            "stops being a status and becomes a defect in its own right"),
+        aggression=10,
+        posture="ENABLER",
+    ),
 )
 
 _BY_ID = {p.id: p for p in PRINCIPLES}
@@ -903,6 +929,12 @@ OBJECTIVE_PREAMBLE = (
     "shipping a smaller version because it reviews more easily, and leaving conversion below "
     "discovery rate are ONE defect in five costumes. Never recommend the smaller version because "
     "it is easier to justify.\n"
+    "  DETECT IMPLIES REPAIR:  you are a fixer, not a notifier. Every defect you report must "
+    "carry a fix: applied now, or the EXACT patch named and chased, or the exact measurement that "
+    "would determine it. 'Investigate', 'monitor' and 'keep an eye on' are not outcomes. Only the "
+    "pager may notify without repairing -- and a plumber fixes the PIPE, never the water: a market "
+    "loss is not a defect, and switching off a working strategy to stop a drawdown makes it "
+    "permanent.\n"
     "  IMMUTABLE CORE:  none of the above overrides the survival rails, the dead-man/kill-switch, "
     "the two-stage discovery law or any existing law. Where a computed floor conflicts with a "
     "survival rail, the rail wins unconditionally.\n"

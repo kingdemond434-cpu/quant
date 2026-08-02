@@ -51,12 +51,10 @@ __all__ = [
 ENFORCEMENT: dict[str, tuple[str, ...]] = {
     # P0  sole objective -- the preamble carries it to every organ; the audit checks it is there
     "P0": ("constitution", "law-coverage"),
-    # P1  information value. GENUINELY UNENFORCED MECHANICALLY, and stated rather than filled in
-    #     with a plausible name: libs/hypmax/evig.py operationalises the condition but nothing on
-    #     the desk currently ranks experiments by expected shift in E[log W], so no check can
-    #     honestly claim to catch a violation. Closing it means wiring EVIG into the funnel's
-    #     ordering and asserting the produced queue carries the score.
-    "P1": (),
+    # P1  information value -- the funnel now ORDERS by expected shift in E[log W] rather
+    #     than by the order the generator emitted candidates in. Checked on the artifact,
+    #     and the compute floor is audited for BITE so a ranking cannot become a filter.
+    "P1": ("evig-ranking",),
     # P2  alpha is modelled, not implied -- the two-stage discovery law is exactly this rule
     "P2": ("mine-gate", "rejection-shadow"),
     # P3  research aggression -- idle capability and unspent capacity are scored defects
@@ -106,6 +104,8 @@ ENFORCEMENT: dict[str, tuple[str, ...]] = {
     "P23": ("idle", "no-mining-throttle"),
     # P24 the governance asymmetry law
     "P24": ("constitution",),
+    # P25 detect implies repair -- every detector carries a fix path; only the pager may notify
+    "P25": ("fixers-not-watchers",),
 }
 
 #: principle id -> a phrase that must appear in OBJECTIVE_PREAMBLE for the law to be in scope for
@@ -137,6 +137,7 @@ PREAMBLE_MARKERS: dict[str, str] = {
     "P22": "IMMUTABLE CORE",
     "P23": "TIMIDITY IS SCORED ON EVERY AXIS",
     "P24": "must name the throughput it multiplies",
+    "P25": "DETECT IMPLIES REPAIR",
 }
 
 

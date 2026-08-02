@@ -247,3 +247,52 @@ def test_forbidding_a_completion_claim_is_not_itself_a_violation(monkeypatch, tm
     d: list = []
     M.check_no_ceiling(d)
     assert d == [], d
+
+
+# ------------------------------------------------------------------ P25: fixers, not watchers
+
+def test_every_detector_carries_a_fix_path() -> None:
+    """PRINCIPAL 2026-08-02: everything here is a fixer, not a notifier. A monitor that finds a
+    defect and leaves it open is worse than no monitor -- the desk gets the defect AND the false
+    comfort of watching it, and the attention the alarm consumes every cycle is a real recurring
+    cost bought against nothing."""
+    d: list = []
+    M.check_fixers_not_watchers(d)
+    assert d == [], [msg for _, msg in d]
+
+
+def test_a_pure_watcher_is_detected(monkeypatch, tmp_path) -> None:
+    """The check must go red, and it DID on its first run -- catching two of my own organs."""
+    (tmp_path / "scripts").mkdir()
+    (tmp_path / "scripts/nagger.py").write_text(
+        'def main():\n    print("something looks wrong")\n', "utf-8")
+    monkeypatch.setattr(M, "ROOT", tmp_path)
+    monkeypatch.setattr(M, "_DETECTOR_ORGANS", ("nagger",))
+    d: list = []
+    M.check_fixers_not_watchers(d)
+    assert "detector-without-fix-path" in _keys(d)
+
+
+def test_a_detector_that_cannot_age_its_findings_is_detected(monkeypatch, tmp_path) -> None:
+    """Without a counter that only CLOSING clears, a three-week-old leak reads as a fresh finding
+    every morning -- which is precisely how a monitor becomes wallpaper."""
+    (tmp_path / "scripts").mkdir()
+    (tmp_path / "scripts/tiered.py").write_text('TIER = "PATCH_READY"\n', "utf-8")
+    monkeypatch.setattr(M, "ROOT", tmp_path)
+    monkeypatch.setattr(M, "_DETECTOR_ORGANS", ("tiered",))
+    d: list = []
+    M.check_fixers_not_watchers(d)
+    assert "detector-cannot-age-its-findings" in _keys(d)
+
+
+def test_the_pager_is_exempt_by_name_not_by_resemblance() -> None:
+    """The alert channel's whole job is to reach a human, so it is the one legitimate pure
+    notifier. Exempting by name means nothing else can claim the exemption by looking like it."""
+    assert "run_alerts" in M._PURE_NOTIFIER_EXEMPT
+    assert not set(M._DETECTOR_ORGANS) & set(M._PURE_NOTIFIER_EXEMPT)
+
+
+def test_investigate_is_not_an_allowed_outcome() -> None:
+    """Three tiers and no fourth. 'Investigate', 'monitor' and 'escalated' are excuses with
+    ticket numbers."""
+    assert set(M._FIX_TIERS) == {"AUTOFIX", "PATCH_READY", "BLOCKED"}

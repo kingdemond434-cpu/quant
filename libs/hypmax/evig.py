@@ -47,7 +47,8 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
-__all__ = ["EVIG_FLOOR", "EvigScore", "evig", "information_gain", "rank_by_evig"]
+__all__ = ["EVIG_FLOOR", "EvigScore", "evig", "information_gain",
+           "p_validate_from_history", "rank_by_evig"]
 
 #: Below this the candidate is not worth L4 compute TODAY -- it is not rejected, it is deferred,
 #: and it re-enters the ranking free of charge the moment any input changes (a new dataset lands,
@@ -104,6 +105,36 @@ def evig(*, p_validate: float, moat_advantage: float, cost: float = 1.0,
                      score >= floor, note)
 
 
+#: Beta prior on P(validate). alpha=0.5, beta=8 is a Jeffreys-ish prior tilted toward failure --
+#: deliberately, because the desk's OWN measured base rate is 0 survivors in 420 and a flat prior
+#: would claim more optimism than any evidence supports. It is not zero either: 0/420 does not
+#: prove impossibility, and a prior of exactly zero makes EVIG identically zero for every
+#: candidate forever, which converts the ranking into a constant and the funnel into a coin flip.
+_PRIOR_A, _PRIOR_B = 0.5, 8.0
+
+
+def p_validate_from_history(survivors: int, attempts: int) -> float:
+    """Posterior mean P(validate) for a family, shrunk toward a failure-tilted prior.
+
+    THIS IS WHAT MAKES EVIG RUNNABLE TODAY. Every other term is already derivable -- moat
+    advantage from the candidate's data source, cost from its own economics -- and P(validate)
+    was the one input nothing supplied, which is why the whole module sat uncalled.
+
+    With 0 survivors everywhere the estimate is currently near-flat across families, so EVIG
+    discriminates on MOAT and COST alone -- which is honest and is exactly the right first
+    version: those are the two terms that actually vary today, and replication cost is the one
+    that survives contact with a competitor. The moment any family produces its first survivor
+    the estimate sharpens automatically, with no code change and nobody remembering to act.
+
+    A family with zero attempts gets the prior mean rather than an error: unattempted ground is
+    not evidence of anything, and refusing to score it would bury exactly the regions the desk
+    has never looked at.
+    """
+    a = max(0, int(survivors))
+    n = max(a, int(attempts))
+    return round((a + _PRIOR_A) / (n + _PRIOR_A + _PRIOR_B), 6)
+
+
 #: Inputs that must be present for a candidate to be SCORED rather than merely listed.
 _REQUIRED = ("p_validate", "moat_advantage")
 
@@ -148,4 +179,24 @@ def rank_by_evig(candidates: list[dict], *, floor: float = EVIG_FLOOR) -> list[d
         if s.note:
             d["evig_note"] = s.note
         scored.append(d)
-    return sorted(scored, key=lambda d: -d["evig"]) + unscored
+    scored.sort(key=lambda d: -d["evig"])
+
+    # THE FLOOR MUST BE AUDITED FOR BITE, not just applied. Found on the first live wiring: with
+    # the desk's TRUE base rate (0 survivors in 41 recorded specimens) every worked family scores
+    # below the absolute floor, so every candidate came back worth_compute=False. That is exactly
+    # the mirror error this function's docstring warns about one paragraph up -- a ranking that
+    # buries everything IS a filter, and EVIG has no authority to be one.
+    #
+    # The floor is kept, because it becomes meaningful the moment P(validate) is realistic. What
+    # is added is the honest statement that it is not discriminating TODAY, so a caller cannot
+    # read a blanket "not worth compute" as a considered verdict on each candidate. Ordering is
+    # unaffected either way: rank is relative and always available.
+    if scored and not any(d["worth_compute"] for d in scored):
+        for d in scored:
+            d["floor_not_discriminating"] = True
+            d["evig_note"] = (
+                "EVERY scored candidate is below the absolute compute floor, so the floor is not "
+                "discriminating here -- this is a statement about the desk's base rate (0 "
+                "survivors so far), NOT a verdict on this candidate. Rank by the RELATIVE order "
+                "above; the floor sharpens automatically the first time anything validates.")
+    return scored + unscored

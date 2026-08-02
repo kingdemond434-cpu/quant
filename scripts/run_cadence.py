@@ -430,6 +430,21 @@ def main() -> None:
         for _ln in (_r.stdout or "").strip().splitlines()[:1]:
             print(f"cadence: {_ln[:150]}")
 
+    # P&L WATCHDOG (EVERY CYCLE, every mode). The desk's only P&L record is a once-a-day NAV
+    # attestation that nothing read: between attestations a leak is invisible, and across them it
+    # was visible only if somebody opened the file. A loss nobody looks at compounds exactly the
+    # way the objective says wealth compounds, downward. This makes "why are we down?" a question
+    # the desk asks itself rather than one a human has to think to ask.
+    _r = subprocess.run([sys.executable, "scripts/watch_pnl.py"],
+                        capture_output=True, text=True, timeout=120, check=False)
+    _tail = (_r.stdout or _r.stderr or "").strip().splitlines()[-1:] or [""]
+    if _r.returncode != 0 or not Path("data/pnl_watch.json").exists():
+        print(f"cadence: pnl-watch rc={_r.returncode} NO ARTIFACT | {_tail[0][:110]}")
+    else:
+        fired.append("pnl-watch")
+        for _ln in (_r.stdout or "").strip().splitlines()[:1]:
+            print(f"cadence: {_ln[:170]}")
+
     # MODEL UPGRADE (monthly). The desk's models used to be frozen literals that only ever moved
     # when a human noticed a newer flagship -- so seats aged silently (llama-4-maverick sat 15
     # months stale). This makes "are we on the best model available?" a cadence question with a

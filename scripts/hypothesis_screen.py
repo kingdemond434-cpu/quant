@@ -53,6 +53,7 @@ pre-registered FORWARD evidence under the Two-Stage Discovery Law.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import re
 import sys
@@ -63,6 +64,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
+from libs.hypmax.evig import p_validate_from_history, rank_by_evig  # noqa: E402
 from libs.hypmax.hypothesis_max import (  # noqa: E402
     TrivialVariationBlocker,
     batch_diversity,
@@ -72,6 +74,12 @@ from libs.hypmax.hypothesis_max import (  # noqa: E402
 )
 
 QUEUE = ROOT / "data/hypothesis_queue.jsonl"
+#: Data sources the desk RECORDS ITSELF. A candidate reading these cannot be replicated by a
+#: competitor for a past date at any price, which is the only advantage that survives contact
+#: with somebody else reading the same public feed.
+_MOAT_TOKENS = ("moat", "order book", "orderbook", "depth", "l2", "withdrawal", "microprice",
+                "resting", "book slope", "imbalance", "replenish", "our recorder", "recorded")
+
 OUT = ROOT / "data/gauntlet_candidates.json"
 FUNNEL = ROOT / "data/hypothesis_funnel.json"
 GRAVE = ROOT / "docs/graveyard.md"
@@ -158,6 +166,85 @@ def _family_of(row: dict) -> str:
     src = str(row.get("data", "")) or str(row.get("name", ""))
     toks = [t for t in re.split(r"[^A-Za-z]+", src) if len(t) > 3]
     return toks[0].lower() if toks else "unknown"
+
+
+def _family_history() -> dict[str, tuple[int, int]]:
+    """(survivors, attempts) per family, read from the desk's OWN graveyard.
+
+    Real recorded outcomes rather than an asserted prior. Every entry there was tested and died,
+    so the map is currently all-zero-survivors -- which is the honest input, and is precisely what
+    keeps P(validate) near-flat until something actually validates.
+    """
+    hist: dict[str, list[int]] = {}
+    grave = ROOT / "docs/graveyard.md"
+    if not grave.exists():
+        return {}
+    for line in grave.read_text("utf-8", errors="ignore").splitlines():
+        if not line.startswith("|") or line.startswith("|---") or "Hypothesis |" in line:
+            continue
+        cells = [c.strip() for c in line.strip("|").split("|")]
+        if len(cells) < 3 or not cells[0]:
+            continue
+        fam = _family_of({"name": cells[0]})
+        row = hist.setdefault(fam, [0, 0])
+        row[1] += 1                                  # attempted; survivors stay 0 by construction
+    return {k: (v[0], v[1]) for k, v in hist.items()}
+
+
+def _moat_advantage(row: dict) -> float:
+    """Replication cost of this candidate's data, on the desk's own measured scale.
+
+    The information-advantage ranking puts self-recorded order books at 1.03 and the next-best
+    source at 0.37 -- so a candidate reading the moat is worth ~2.8x a public-data one at equal
+    P(validate), and EVIG should say so. Anything unrecognised gets the PUBLIC value rather than
+    a middle guess: an unknown source is one nobody has shown to be proprietary, and flattering it
+    would let unlabelled candidates outrank measured moat ones.
+    """
+    blob = " ".join(str(row.get(k, "")) for k in
+                    ("data_source", "data", "source", "mechanism", "name")).lower()
+    return 1.03 if any(t in blob for t in _MOAT_TOKENS) else 0.37
+
+
+def _test_cost(row: dict) -> float:
+    """Relative L4 cost. 1.0 is a routine run; anything needing more history or more symbols
+    costs more, and EVIG divides by it because compute is the resource actually being rationed."""
+    cost = 1.0
+    with contextlib.suppress(TypeError, ValueError):
+        if float(row.get("turnover") or 0) > 10:
+            cost *= 1.5              # high turnover: more fills to simulate, more cost sensitivity
+    hz = _horizon_of(row)
+    if hz and hz >= 168:
+        cost *= 2.0                  # weekly+ horizons need years of history to say anything
+    return round(cost, 3)
+
+
+def score_evig(rows: list[dict], family_history: dict[str, tuple[int, int]] | None = None,
+               ) -> list[dict]:
+    """Order survivors by expected validated information gain per unit of compute (P1).
+
+    THE FUNNEL RANKED BY NOTHING BEFORE THIS. Candidates came out of the arithmetic screen in
+    whatever order the generator emitted them, so the scarcest resource on the desk -- L4 compute
+    -- was allocated by accident of ordering. EVIG is the constitution's own answer: value is the
+    expected SHIFT IN E[log W] from running the test, never the probability the answer is yes.
+
+    P(validate) comes from the family's own recorded history, shrunk toward a failure-tilted
+    prior, so it is measured rather than asserted; with 0 survivors so far it is near-flat and
+    EVIG discriminates on MOAT and COST, which are the terms that actually vary today. It
+    sharpens automatically the first time anything validates.
+
+    NO PROMOTION AUTHORITY. This orders; it never rejects. A candidate at the bottom of the
+    ranking is still a candidate.
+    """
+    hist = family_history or {}
+    out = []
+    for r in rows:
+        d = dict(r)
+        surv, att = hist.get(_family_of(r), (0, 0))
+        d["p_validate"] = p_validate_from_history(surv, att)
+        d["moat_advantage"] = _moat_advantage(r)
+        d["cost"] = _test_cost(r)
+        out.append(d)
+    return rank_by_evig(out)
 
 
 def deterministic_screen(rows: list[dict], blocker: TrivialVariationBlocker | None = None,
@@ -359,6 +446,16 @@ def main() -> None:
                   f"{y['duplicate_rate']:>7.0%}{y['distinct_survivors']:>10}")
         print("    Ranked by DISTINCT SURVIVORS: raw count rewards a seat that repeats itself,")
         print("    and survival rate alone rewards one that restates the deployed edge safely.")
+
+    # P1, INFORMATION VALUE CONDITION -- the funnel used to emit candidates in whatever order the
+    # generator produced them, so L4 compute (the scarcest resource here) was allocated by
+    # accident of ordering. Ranking only; nothing is rejected by EVIG.
+    kept = score_evig(kept, _family_history())
+    _scored = [c for c in kept if c.get("evig_scored")]
+    _floor_dead = any(c.get("floor_not_discriminating") for c in _scored)
+    print(f"  EVIG ranked           {len(_scored)} scored, {len(kept) - len(_scored)} unscored"
+          + ("  [floor not discriminating -- base rate is 0 survivors; rank RELATIVELY]"
+             if _floor_dead else ""))
 
     payload = {"ran": datetime.now(tz=UTC).isoformat(), "generated": len(rows),
                "seat_yield": yields,

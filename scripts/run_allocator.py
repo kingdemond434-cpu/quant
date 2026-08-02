@@ -224,7 +224,18 @@ def main() -> int:
         cost, why = _closure_cost(artifact, cadence_src)
         owed = int(chase.get(name, 0)) + 1
         chase[name] = owed
+        # P25, DETECT IMPLIES REPAIR. A gap is not a status: cost-1 means an organ already runs
+        # and writes the artifact, so the fix is one estimate and is PATCH_READY with the exact
+        # change named. cost-8 means no organ exists, so the fix cannot be written until one is
+        # designed -- BLOCKED, with the organ itself as the named next step. Nothing lands in
+        # "investigate".
+        tier = "PATCH_READY" if cost <= _COST_ORGAN_IDLE else "BLOCKED"
         uninstrumented.append({
+            "tier": tier,
+            "fix": (f"add the contribution estimate to {artifact} -- {why}"
+                    if tier == "PATCH_READY" else
+                    f"build the organ that writes {artifact} first; until it exists no estimate "
+                    "can be added and no allocation involving this subsystem is real"),
             "subsystem": name,
             "derivative": SUBSYSTEM_DERIVATIVES[name][0],
             "artifact_needed": artifact,
