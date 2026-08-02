@@ -45,6 +45,7 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from libs.ict import canonical as ict_canon  # noqa: E402
 from libs.ict import crypto as ict_crypto  # noqa: E402
 from libs.ict import patterns as ict  # noqa: E402
 from libs.research.axis_screen import stage_a_screen  # noqa: E402
@@ -70,6 +71,18 @@ DETECTORS = {
     "ict_equal_lows": ict_crypto.equal_lows,
     "ict_oi_flush": ict_crypto.oi_flush,
     "ict_sweep_into_funding": ict_crypto.sweep_into_funding,
+    # CANONICAL SET -- his definitions from the mentorship transcripts, kept alongside my earlier
+    # approximations rather than replacing them. Three of mine were wrong about WHICH CANDLE and
+    # WHICH PRICE, so "my reading of ICT" and "ICT" are different hypotheses and the screen is
+    # exactly the thing that should decide between them.
+    "ict_ob_canonical": ict_canon.order_block_canonical,
+    "ict_mean_threshold": ict_canon.mean_threshold_breach,
+    "ict_breaker_canonical": ict_canon.breaker_canonical,
+    "ict_ote": ict_canon.optimal_trade_entry,
+    "ict_in_ote": ict_canon.in_ote,
+    "ict_liquidity_void": ict_canon.liquidity_void,
+    "ict_common_gap": ict_canon.common_gap,
+    "ict_silver_bullet": ict_canon.silver_bullet_window,
 }
 
 
