@@ -18,6 +18,7 @@ check_registry_complete existed.
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -188,3 +189,44 @@ def test_a_partial_artifact_names_the_law_it_leaves_unenforced(monkeypatch, tmp_
     M.check_governing_layer_live(d)
     msg = dict(d)["governing-layer-partial"]
     assert "P13" in msg and "P18" in msg and "P4" in msg
+
+
+# ------------------------------------------------------------------ the mark writes only on change
+
+
+def test_an_unchanged_ratchet_is_not_rewritten(monkeypatch, tmp_path) -> None:
+    """A tracked file that changes on EVERY audit run has no information in its diff, and a repo
+    where running the auditor always dirties the tree trains whoever commits to `git add -A`
+    without reading -- so the one run whose diff carries a real regression goes through with the
+    noise. A ratchet's timestamp must mean 'this is when the mark moved', not 'this is when
+    somebody looked': the same distinction that made min_snapshots an unsound gate."""
+    mark = tmp_path / "LAW_COVERAGE.json"
+    monkeypatch.setattr(M, "LAW_COVERAGE_MARK", mark)
+    M.check_law_coverage([])
+    first = mark.read_text("utf-8")
+    M.check_law_coverage([])
+    M.check_law_coverage([])
+    assert mark.read_text("utf-8") == first, "the mark was rewritten with nothing changed"
+
+
+def test_the_mark_STILL_writes_when_the_high_water_actually_rises(monkeypatch, tmp_path) -> None:
+    """The other half, and the one that matters more: suppressing a no-op write must never
+    suppress a real one. A ratchet that stopped recording progress would be a far worse defect
+    than the churn it replaced."""
+    mark = tmp_path / "LAW_COVERAGE.json"
+    mark.write_text('{"high_water": {"mechanical_pct": 1.0, "interactional_pct": 1.0,'
+                    ' "full_pct": 1.0}, "live": {}}', "utf-8")
+    monkeypatch.setattr(M, "LAW_COVERAGE_MARK", mark)
+    M.check_law_coverage([])
+    after = json.loads(mark.read_text("utf-8"))
+    assert after["high_water"]["mechanical_pct"] > 1.0, "a real rise must be persisted"
+    assert after["live"], "the live snapshot must be written alongside it"
+
+
+def test_a_first_run_with_no_mark_writes_one(monkeypatch, tmp_path) -> None:
+    """Absence must not be mistaken for 'unchanged' -- that is WS-005 in the very code that
+    records law coverage."""
+    mark = tmp_path / "sub" / "LAW_COVERAGE.json"
+    monkeypatch.setattr(M, "LAW_COVERAGE_MARK", mark)
+    M.check_law_coverage([])
+    assert mark.exists()

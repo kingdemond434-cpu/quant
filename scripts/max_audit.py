@@ -3444,6 +3444,24 @@ def check_law_coverage(defects) -> None:
             "a law that lost its check or a new law nobody enforced -- both are defects."))
 
     # High-water mark only ever rises, by the same asymmetry the aggression ratchet uses.
+    #
+    # WRITTEN ONLY WHEN SOMETHING ACTUALLY CHANGED. This previously rewrote the file on every
+    # invocation, moving `updated` while every mark stayed identical -- so any audit run dirtied a
+    # tracked file with no information in the diff. That is not cosmetic: a repository where
+    # running the auditor always produces a change trains whoever commits to `git add -A` without
+    # reading, and the one time the diff DOES carry a regression it goes through with the noise.
+    # A ratchet's timestamp should mean "this is when the mark moved", not "this is when somebody
+    # looked" -- the same distinction that made min_snapshots an unsound gate two commits ago.
+    _new_hw = {k: max(float(prev.get(k, 0.0)), float(cov[k]))
+               for k in ("mechanical_pct", "interactional_pct", "full_pct")}
+    _live_now = {k: cov[k] for k in ("principles", "both", "mechanical_only",
+                                     "interactional_only", "unenforced",
+                                     "mechanical_pct", "interactional_pct", "full_pct")}
+    _prev_live = {}
+    with contextlib.suppress(OSError, json.JSONDecodeError):
+        _prev_live = json.loads(LAW_COVERAGE_MARK.read_text("utf-8")).get("live", {})
+    if _new_hw == prev and _live_now == _prev_live and LAW_COVERAGE_MARK.exists():
+        return
     with contextlib.suppress(OSError):
         LAW_COVERAGE_MARK.parent.mkdir(parents=True, exist_ok=True)
         LAW_COVERAGE_MARK.write_text(json.dumps({
