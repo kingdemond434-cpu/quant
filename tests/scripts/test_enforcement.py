@@ -315,3 +315,27 @@ def test_the_runbook_names_the_real_acceptance_test() -> None:
     assert "exploration-blocked-upstream" in doc, (
         "the operator must be told which breach clearing means it worked")
     assert "permanently unbuyable" in doc
+
+
+def test_there_is_a_zero_privilege_path_to_starting_the_recorders() -> None:
+    """THE HETZNER BOX HAS NO SUDO FOR `quant`, so /etc/systemd/system is unreachable. That is
+    not a reason to leave the tape unrecorded -- every unrecorded second is permanently unbuyable,
+    which is the only cost here money cannot fix afterwards."""
+    sh = Path("ops/start_recorders_nosudo.sh")
+    assert sh.exists()
+    body = sh.read_text("utf-8")
+    for script in ("run_recorder.py", "run_recorder_spot.py", "run_recorder_bybit.py"):
+        assert script in body, script
+    assert "pgrep" in body, "must be idempotent -- it is both the starter and the watchdog"
+    doc = Path("docs/RECORDER_DEPLOY.md").read_text("utf-8")
+    assert "no sudo" in doc.lower()
+    assert "crontab" in doc
+
+
+def test_the_starter_matches_each_recorder_exactly_not_by_prefix() -> None:
+    """A loose `pgrep -f run_recorder` ALSO matches run_recorder_spot and run_recorder_bybit, so
+    one running recorder would report all three alive -- and the desk would record one venue while
+    believing it recorded three."""
+    body = Path("ops/start_recorders_nosudo.sh").read_text("utf-8")
+    assert "[s]cripts/${script}" in body, "must match the full script path, not a bare prefix"
+    assert "believing it recorded three" in body, "the reason must survive in the source"

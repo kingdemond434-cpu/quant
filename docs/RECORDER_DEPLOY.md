@@ -64,6 +64,39 @@ that only starts on the next reboot is a recorder that loses everything until th
 
 ---
 
+## If `quant` has no sudo (it does not, on the Hetzner box)
+
+`sudo: I'm sorry quant. I'm afraid I can't do that` means /etc/systemd/system is unreachable and
+the unit files above cannot be installed. That is not a reason to leave the tape unrecorded, so
+there is a zero-privilege path that reproduces the one property of the units that actually
+matters — `Restart=always`:
+
+```bash
+cd /home/quant/quant-platform
+
+# start everything now (idempotent -- safe to run any number of times)
+bash ops/start_recorders_nosudo.sh
+
+# keep it alive across crashes AND reboots, using nothing but the user's own crontab
+( crontab -l 2>/dev/null | grep -v start_recorders_nosudo
+  echo "@reboot cd /home/quant/quant-platform && bash ops/start_recorders_nosudo.sh >> data/recorder_supervisor.log 2>&1"
+  echo "*/5 * * * * cd /home/quant/quant-platform && bash ops/start_recorders_nosudo.sh >> data/recorder_supervisor.log 2>&1"
+) | crontab -
+
+crontab -l | grep start_recorders    # confirm both lines landed
+```
+
+The script is BOTH the starter and the watchdog, which is why the same line serves `@reboot` and
+`*/5`: it starts whatever is down and leaves alone whatever is up. That covers the failure a
+supervisor loop would miss — the supervisor itself dying — and it needs no root at all.
+
+Worst case exposure is five minutes of tape after an unnoticed crash, versus everything after a
+reboot with no supervision. Tighten to `*/1` if that matters; the script costs a few `pgrep`s.
+
+**Why not `systemctl --user`?** It also needs `loginctl enable-linger`, which is usually
+root-gated, and a user service that stops when the session closes is worse than cron because it
+looks like it is working.
+
 ## Verify it is working (not just running)
 
 **An exit code proves a process ended, never that it produced.** The desk has been burned by this
