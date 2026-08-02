@@ -29,6 +29,11 @@ provenance record that dies with the working directory is not a record.
 
 _EMPTY as of 2026-08-02: #93 was the last open BUILD item and it shipped (`scripts/acquire_data.py`). An empty BUILD section is the correct state, not a missing one -- it means every unblocked item has been done rather than that the section was deleted._
 
+
+| # | Component | Note |
+|---|---|---|
+| 97 | **Data Decay Monitor** | **UNBLOCKED 2026-08-02 — blocker EXPIRED, re-verdicted on evidence.** Its stated blocker was "needs dataset-usefulness history; nothing to trend yet". That substrate now exists and two pieces of it were built this cycle: `data/canary_history.jsonl` records per-SOURCE reachability over time (availability decay, measured — 0/9 from the container today), and `data/acquisition_history.jsonl` records per-candidate usefulness SCORES over time from `scripts/acquire_data.py`, whose ranking already moves as the ontology records regions worked to zero survivors. Between them the desk can now trend both halves of decay: a source becoming unreachable, and a source becoming useless while still reachable. Buildable against those two files plus `data/instrumentation_coverage.jsonl` (116 rows). |
+
 ## QUEUE — blocked, blocker named
 
 **Blocked on data acquisition (new collectors) — the principal's own stated bottleneck:**
@@ -38,7 +43,6 @@ _EMPTY as of 2026-08-02: #93 was the last open BUILD item and it shipped (`scrip
 | 88 | Market Participant Identity Graph | Tier 1 crypto-specific. Wallet → exchange / MM / treasury / early-investor / retail clustering. Pairs with item 48 (wallet **risk** features only). |
 | 89 | Information Velocity Tracker | Needs multi-source timestamped corpora to measure appearance → spread → price reaction. |
 | 94 | Market Ecology Map | Who provides / consumes liquidity, who gets liquidated. Overlaps 88. |
-| 97 | Data Decay Monitor | Needs dataset-usefulness history; nothing to trend yet. |
 
 **Blocked on ≥1 deployed alpha (currently 0):**
 | # | Component |
@@ -74,3 +78,46 @@ one by funding. Four are buildable now and total maybe two hours.
 
 That is the whole argument. The desk does not need more design — it needs unique data flowing in
 and one alpha flowing out. Aug 7 is the first date the second of those can change.
+
+## Re-verdict pass 2026-08-02 — all 13 blockers checked, not assumed
+
+_(This heading deliberately does NOT begin with a verdict keyword. The first draft was
+titled `## QUEUE RE-VERDICT ...`, and `check_triage_disposition` keys sections off the
+heading prefix -- so the log documenting the re-verdict was parsed as thirteen NEW queued
+items and the count rose from 13 to 14. A document that reports on a check must not be
+readable BY that check as its own subject matter.)_
+
+The register's own rule is that a QUEUE verdict is *a claim with an expiry date*, and nobody
+re-reads a blocked row to ask whether it is still blocked. `check_triage_blocker_stale` only
+catches blockers whose named dependency SHIPPED — it cannot catch one that expired because the
+world changed. So every remaining blocker was checked by hand against the desk's actual state.
+
+**ONE EXPIRED: #97** (moved to BUILD above). Its substrate now exists, and two pieces of it were
+built this cycle.
+
+**ELEVEN HOLD, and the reason each holds is recorded so the next check starts from evidence:**
+
+**ELEVEN HOLD**, and the reason each holds is recorded so the next check starts from evidence
+rather than from the label. Written as prose, not a numbered table: a `| N |` row is parsed by
+`check_triage_disposition` as an ITEM, so a table describing items becomes items — the first draft
+of this section did exactly that and produced two phantom undisposed entries.
+
+- **Items 91, 87, 98, 90 — "needs >=1 deployed alpha": STILL TRUE.** Zero deployed.
+  `desk_metrics:alpha_performance` is empty and only a library writes it.
+- **Items 83, 88, 94 — "needs on-chain AND venue trade data": PARTIALLY expired.** The venue half
+  arrived: 8.2GB of moat tape now carries aggTrades across three venues. The on-chain half has
+  not. Recorded as partial rather than cleared, deliberately — half a blocker is still a blocker,
+  and clearing it would queue work that stalls on arrival.
+- **Item 89 — "needs multi-source timestamped corpora": STILL TRUE on the side that matters.** The
+  desk now has multi-venue timestamped PRICE data, but "appearance -> spread -> price reaction"
+  needs the APPEARANCE half — news and social corpora — which it does not have.
+- **Item 85 — "missing feature->signal->trade edges": STILL TRUE.** The trade edge requires trading.
+- **Items 84, 95, 100 — not blocked on data at all.** Correctly QUEUED rather than promoted: they
+  are unblocked but larger than the BUILD tier, which exists for cheap next-session work. Moving
+  them would turn BUILD into a backlog and bury the genuinely cheap items — the same denominator
+  dishonesty §34 forbids for mining, applied to a work queue.
+
+**Honest scope of this pass:** it covers TRIAGE_ADDENDUM's 13. `SUBSYSTEM_TRIAGE.md`'s 46 were
+NOT individually re-verdicted this cycle and are not claimed to have been — asserting a check that
+did not happen is the failure §33 credits artifacts to prevent. That pass is owed.
+
