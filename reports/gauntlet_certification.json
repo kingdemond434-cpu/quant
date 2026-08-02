@@ -1,5 +1,5 @@
 {
-  "generated": "2026-08-01T07:30:15Z",
+  "generated": "2026-08-02T07:16:39Z",
   "status": "COMPLETE",
   "peers": "CAMPAIGN",
   "answers": "both: can the gate pass a true edge, AND is the real 0/420 informative",
@@ -559,8 +559,7 @@
           "walk_forward",
           "dsr",
           "pbo",
-          "reality_check",
-          "capacity"
+          "reality_check"
         ],
         "dsr": 0.04673067881857893,
         "pbo": 0.6150738150738151,
@@ -574,8 +573,7 @@
           "walk_forward",
           "dsr",
           "pbo",
-          "reality_check",
-          "capacity"
+          "reality_check"
         ],
         "dsr": 0.5000000000000002,
         "pbo": 0.5157731157731158,
@@ -594,8 +592,7 @@
           "walk_forward",
           "dsr",
           "pbo",
-          "reality_check",
-          "capacity"
+          "reality_check"
         ],
         "dsr": 0.0467306788185789,
         "pbo": 0.6150738150738151,
@@ -609,8 +606,7 @@
           "walk_forward",
           "dsr",
           "pbo",
-          "reality_check",
-          "capacity"
+          "reality_check"
         ],
         "dsr": 0.5000000000000001,
         "pbo": 0.5146853146853146,
@@ -629,8 +625,7 @@
           "cpcv",
           "dsr",
           "pbo",
-          "reality_check",
-          "capacity"
+          "reality_check"
         ],
         "dsr": 0.04673067881857884,
         "pbo": 0.6151515151515151,
@@ -644,8 +639,7 @@
           "cpcv",
           "dsr",
           "pbo",
-          "reality_check",
-          "capacity"
+          "reality_check"
         ],
         "dsr": 0.4999999999999999,
         "pbo": 0.5150738150738151,
