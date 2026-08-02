@@ -456,6 +456,19 @@ def main() -> None:
         for _ln in (_r.stdout or "").strip().splitlines()[:1]:
             print(f"cadence: {_ln[:150]}")
 
+    # ICT SCREEN (EVERY CYCLE). The second strategy family landed with full test suites and NO
+    # CALLER -- the desk's own "built but never runs" class, committed while fixing instances of it
+    # elsewhere. Cheap (seconds, no network) and it refuses to synthesise bars when there are none,
+    # so a fresh checkout reports NO BARS rather than screening a generator.
+    _r = subprocess.run([sys.executable, "scripts/screen_ict.py"],
+                        capture_output=True, text=True, timeout=300, check=False)
+    _tail = (_r.stdout or _r.stderr or "").strip().splitlines()[:1] or [""]
+    if Path("data/ict_screen.json").exists():
+        fired.append("ict-screen")
+        print(f"cadence: {_tail[0][:150]}")
+    else:
+        print(f"cadence: ict-screen rc={_r.returncode} NO ARTIFACT | {_tail[0][:110]}")
+
     # CANARIES (EVERY CYCLE). Charter §21 promised "re-run every 4 days" and nothing ran them:
     # the file was seeded 2026-07-19 with placeholder baselines and never executed, so no shift was
     # detectable in principle for two weeks. Cheap -- nine HTTP calls, seconds -- and the one that
