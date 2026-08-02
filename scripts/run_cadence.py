@@ -456,6 +456,20 @@ def main() -> None:
         for _ln in (_r.stdout or "").strip().splitlines()[:1]:
             print(f"cadence: {_ln[:150]}")
 
+    # TAPE -> BARS (EVERY CYCLE, BEFORE THE SCREEN). The recorders write 15s L2+trades; every
+    # screen, feature and label on this desk eats OHLCV bars, and nothing converted between them --
+    # so the ICT family reported NO BARS while 8.2GB of its input sat on disk in the wrong shape.
+    # Ordered before screen_ict deliberately: screening last cycle's bars would silently evaluate
+    # a stale window and report it as current.
+    _r = subprocess.run([sys.executable, "scripts/build_bars.py"],
+                        capture_output=True, text=True, timeout=900, check=False)
+    _tail = (_r.stdout or _r.stderr or "").strip().splitlines()[:1] or [""]
+    if Path("data/build_bars.json").exists():
+        fired.append("build-bars")
+        print(f"cadence: {_tail[0][:150]}")
+    else:
+        print(f"cadence: build-bars rc={_r.returncode} NO ARTIFACT | {_tail[0][:110]}")
+
     # ICT SCREEN (EVERY CYCLE). The second strategy family landed with full test suites and NO
     # CALLER -- the desk's own "built but never runs" class, committed while fixing instances of it
     # elsewhere. Cheap (seconds, no network) and it refuses to synthesise bars when there are none,
