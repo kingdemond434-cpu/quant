@@ -1,5 +1,5 @@
 {
- "max_collected": 206,
- "at": "2026-08-02T12:59:14.361889+00:00",
+ "max_collected": 207,
+ "at": "2026-08-02T19:05:27.089918+00:00",
  "note": "high-water mark of COLLECTABLE test modules; ratchets UP only. A suite may never quietly shrink -- deleting a test is a decision, not a side effect."
 }

@@ -469,6 +469,20 @@ def main() -> None:
     else:
         print(f"cadence: canaries rc={_r.returncode} NO ARTIFACT | {_tail[0][:110]}")
 
+    # ACQUISITION PLAN (EVERY CYCLE). Triage #93, unblocked 2026-07-29 and unbuilt until now.
+    # Ranks what data to acquire NEXT on measured terms rather than on research_cio's hardcoded
+    # advantage table -- the adaptive term is the ontology's own attempts/survivors record, so a
+    # class of data this desk has worked to exhaustion falls from EVIDENCE. Ranks only; it spends
+    # nothing and starts no collector.
+    _r = subprocess.run([sys.executable, "scripts/acquire_data.py"],
+                        capture_output=True, text=True, timeout=120, check=False)
+    _tail = (_r.stdout or _r.stderr or "").strip().splitlines()[:1] or [""]
+    if Path("data/acquisition_plan.json").exists():
+        fired.append("acquisition")
+        print(f"cadence: {_tail[0][:150]}")
+    else:
+        print(f"cadence: acquisition rc={_r.returncode} NO ARTIFACT | {_tail[0][:110]}")
+
     # GAP-REGISTER MECHANICAL PASS (EVERY CYCLE). The register is, by the doctrine's own words,
     # "the only organ that DRIVES work" -- and its stated cadence ("re-ranked at the START of
     # every daily cycle") was executed by an LLM remembering to do it, which is precisely the

@@ -7,6 +7,7 @@ Running total: **101 items triaged.**
 
 ## BUILT — already covered
 
+| 93 | **Adaptive Data Acquisition Agent** | **BUILT 2026-08-02 -> `scripts/acquire_data.py`, wired into run_cadence every cycle.** Scores acquisition candidates EVIG-shaped -- P(usable from the digger's own grade) x information_gain x replication_difficulty x region_priority / cost -- and the ADAPTIVE term is `ontology.priority`, which reads the desk's recorded attempts and survivors. Demonstrated: an on-chain source ranked #1 on a virgin desk falls to #3 once its regions are recorded worked-to-zero-survivors, and the self-recorded tape rises to #1. A hardcoded advantage table cannot do that, which is why building it on `research_cio.SOURCES` was refused -- that would have been one author's priors wearing the vocabulary of measurement. Ungraded sources rank below every graded one INCLUDING the rejected ones, or the ranking rewards not looking. **Previously: UNBLOCKED 2026-07-29,** Its stated blocker was "depends on Information Advantage Score (item 17) existing first" — and 17 shipped, so the blocker expired. Caught mechanically by `max_audit.check_triage_disposition`, not by anyone re-reading the row: a QUEUE verdict is a claim with an expiry date and nobody revisits a blocked item to ask whether it is still blocked. Buildable now against `research_cio.py` §1. |
 | # | Component | Where | Note |
 |---|---|---|---|
 | 92 | Research Reproducibility Engine | `experiment_registry.py` | commit sha + artifact set pinned per experiment; 569/569 artifacts present (100%) |
@@ -26,15 +27,7 @@ provenance record that dies with the working directory is not a record.
 
 ## BUILD — unblocked, cheap, next session
 
-| # | Component | Note |
-|---|---|---|
-| 93 | **Adaptive Data Acquisition Agent** | **UNBLOCKED 2026-07-29.** Its stated blocker was "depends on Information Advantage Score (item 17) existing first" — and 17 shipped, so the blocker expired. Caught mechanically by `max_audit.check_triage_disposition`, not by anyone re-reading the row: a QUEUE verdict is a claim with an expiry date and nobody revisits a blocked item to ask whether it is still blocked. Buildable now against `research_cio.py` §1. |
-
-Items 86, 96, 99 and 82 were re-verdicted BUILT above on the same pass. Specs for them remain in
-git history; a register that keeps advertising work already done is as wrong as one that hides
-work still open.
-
----
+_EMPTY as of 2026-08-02: #93 was the last open BUILD item and it shipped (`scripts/acquire_data.py`). An empty BUILD section is the correct state, not a missing one -- it means every unblocked item has been done rather than that the section was deleted._
 
 ## QUEUE — blocked, blocker named
 
