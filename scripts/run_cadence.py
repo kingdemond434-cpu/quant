@@ -445,6 +445,22 @@ def main() -> None:
         for _ln in (_r.stdout or "").strip().splitlines()[:1]:
             print(f"cadence: {_ln[:170]}")
 
+    # CONSTITUTIONAL ENFORCEMENT (EVERY CYCLE). The constitutional checks were themselves pure
+    # DETECTORS -- they produced defect entries and nothing repaired anything, which is exactly
+    # what P25 forbids. This resolves every breach into AUTOFIX (applied here), PATCH_READY (the
+    # exact edit, chased) or BLOCKED-by-design (the ratchet, where silent repair would destroy
+    # the mechanism while appearing to defend it), and ages every one so a standing breach cannot
+    # read as a fresh finding each morning.
+    _r = subprocess.run([sys.executable, "scripts/enforce_constitution.py"],
+                        capture_output=True, text=True, timeout=240, check=False)
+    _tail = (_r.stdout or _r.stderr or "").strip().splitlines()[-1:] or [""]
+    if _r.returncode != 0 or not Path("data/constitution_enforcement.json").exists():
+        print(f"cadence: constitution-enforce rc={_r.returncode} NO ARTIFACT | {_tail[0][:110]}")
+    else:
+        fired.append("constitution-enforce")
+        for _ln in (_r.stdout or "").strip().splitlines()[:1]:
+            print(f"cadence: {_ln[:170]}")
+
     # MODEL UPGRADE (monthly). The desk's models used to be frozen literals that only ever moved
     # when a human noticed a newer flagship -- so seats aged silently (llama-4-maverick sat 15
     # months stale). This makes "are we on the best model available?" a cadence question with a
