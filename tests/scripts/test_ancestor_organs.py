@@ -362,3 +362,55 @@ def test_libs_is_scanned_not_just_scripts() -> None:
     """The writer of record for fills lives in libs/store. A scan limited to scripts/ would have
     reported 'nothing writes this' -- wrong in the opposite direction."""
     assert any(w.startswith("libs/") for w in AL._writers("desk_metrics:fills"))
+
+
+# ---------------------------------------------------------------- writers must be BOUND to paths
+#
+# THE THIRD TIME THIS SHAPE APPEARED. Requiring "the path is mentioned somewhere in the file" AND
+# "a write call happens somewhere in the file" leaves the two unconnected, so any file that READS a
+# set of artifacts and writes its own output is credited with writing all of them. On the cycle
+# estimate_contributions.py landed -- it reads twenty artifacts and writes one -- the allocator
+# reported it as the writer of every artifact it consumes, which would have marked twenty real
+# gaps as one-estimate-away.
+
+
+def test_a_path_in_a_read_map_is_not_a_write() -> None:
+    """The exact regression. A module holding a dict of paths to READ, plus a write call for its
+    OWN artifact, must not be credited with writing the ones it reads."""
+    src = '''
+SOURCES = {"a": "data/read_me.json", "b": "data/also_read.jsonl"}
+REPORT = ROOT / "data/my_output.json"
+REPORT.write_text(json.dumps(out), "utf-8")
+'''
+    assert AL._writes_path(src, "data/my_output.json") is True
+    assert AL._writes_path(src, "data/read_me.json") is False
+    assert AL._writes_path(src, "data/also_read.jsonl") is False
+
+
+def test_a_name_bound_to_a_path_and_then_written_counts() -> None:
+    """The normal idiom on this desk: assign the path to a module constant, write through it."""
+    src = 'OUT = ROOT / "data/x.json"\nOUT.write_text("{}", "utf-8")\n'
+    assert AL._writes_path(src, "data/x.json") is True
+
+
+def test_an_inline_literal_inside_a_write_expression_counts() -> None:
+    src = '(ROOT / "data/y.json").write_text("{}", "utf-8")\n'
+    assert AL._writes_path(src, "data/y.json") is True
+
+
+def test_opening_a_path_for_READING_is_not_a_write() -> None:
+    """`.open(` was the token that made this fail: it is the most common way to READ a file, so
+    admitting it bare credited every reader as a writer. The mode is now required."""
+    read = 'P = ROOT / "data/z.json"\nwith P.open(encoding="utf-8") as fh:\n    d = fh.read()\n'
+    assert AL._writes_path(read, "data/z.json") is False
+    append = 'P = ROOT / "data/z.json"\nwith P.open("a", encoding="utf-8") as fh:\n    fh.write(x)\n'
+    assert AL._writes_path(append, "data/z.json") is True
+
+
+def test_the_contributions_organ_is_credited_with_exactly_one_artifact() -> None:
+    """Checked against the REAL file rather than a fixture, because the fixture is what passed
+    while production was wrong. It reads twenty artifacts and writes one."""
+    assert AL._writers("data/contributions.json") == ["scripts/estimate_contributions.py"]
+    for consumed in ("data/panel_budget_state.json", "data/cadence_state.json",
+                     "data/gauntlet_calibration.json"):
+        assert "scripts/estimate_contributions.py" not in AL._writers(consumed), consumed

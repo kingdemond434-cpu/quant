@@ -413,6 +413,23 @@ def main() -> None:
         for _ln in (_r.stdout or "").strip().splitlines()[:1]:
             print(f"cadence: {_ln[:150]}")
 
+    # CONTRIBUTION ESTIMATES (EVERY CYCLE, BEFORE THE ALLOCATOR). run_allocator has reported the
+    # same binding constraint on every cycle it has ever run -- "CONTRIBUTION ESTIMATES" -- and
+    # P4 says the marginal resource goes to argmax_i |dE[log W]/dC_i|, an argmax that was being
+    # taken over an empty set. This organ derives what it can from artifacts ON DISK and emits
+    # NEVER_EXECUTED for the rest, so absence stays ranked and costed rather than being silently
+    # read as zero. Ordered before the allocator deliberately: the allocator consumes its output,
+    # and a stale contributions file would rank this cycle on last cycle's evidence.
+    _r = subprocess.run([sys.executable, "scripts/estimate_contributions.py"],
+                        capture_output=True, text=True, timeout=120, check=False)
+    _tail = (_r.stdout or _r.stderr or "").strip().splitlines()[-1:] or [""]
+    if _r.returncode != 0 or not Path("data/contributions.json").exists():
+        print(f"cadence: contributions rc={_r.returncode} NO ARTIFACT | {_tail[0][:110]}")
+    else:
+        fired.append("contributions")
+        for _ln in (_r.stdout or "").strip().splitlines()[:1]:
+            print(f"cadence: {_ln[:150]}")
+
     # ALLOCATOR (EVERY CYCLE). The governing layer landed with full test suites and no caller,
     # which governs nothing: the constitution says every subsystem optimises dE[log W]/dx_i, and
     # until something computes those derivatives that sentence is decoration. With 0 alphas, 0

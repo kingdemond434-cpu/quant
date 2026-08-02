@@ -56,6 +56,9 @@ OUT = ROOT / "data/allocator.json"
 LEDGER = ROOT / "data/allocator_ledger.json"
 CHASE = ROOT / "data/instrumentation_chase.json"
 HISTORY = ROOT / "data/instrumentation_coverage.jsonl"
+#: Written by scripts/estimate_contributions.py earlier in the same cycle. Read, never
+#: written here -- this organ ranks contributions, it does not author them.
+CONTRIBUTIONS = ROOT / "data/contributions.json"
 METRICS = ROOT / "data/desk_metrics.sqlite"
 
 #: subsystem -> (artifact that would carry its contribution estimate, what has to be in it).
@@ -161,6 +164,14 @@ def _writers(artifact: str) -> list[str]:
 
     So a write is now evidenced, not assumed: an INSERT for a table, a write call for a path. And
     libs/ is scanned as well as scripts/, because the writer of record here lives in libs/store.
+
+    AND THE WRITE MUST BE BOUND TO THE ARTIFACT -- the third time this shape appeared. Requiring
+    "the path is mentioned somewhere" AND "a write call happens somewhere" leaves the two
+    unconnected, so any file that READS a set of paths and writes its own output is credited with
+    writing all of them. estimate_contributions.py reads twenty artifacts and writes one; on the
+    cycle it landed, the allocator reported it as the writer of every artifact it consumes. The
+    binding is now explicit: either the literal sits inside a write expression, or it is assigned
+    to a NAME and that name is the target of a write call.
     """
     is_table = artifact.startswith("desk_metrics:")
     needle = artifact.split(":", 1)[1] if is_table else artifact
@@ -181,11 +192,49 @@ def _writers(artifact: str) -> list[str]:
                 if not re.search(rf"(insert\s+(or\s+\w+\s+)?into|replace\s+into)\s+{needle}",
                                  src, re.IGNORECASE):
                     continue
-            elif not any(w in src for w in ("write_text(", "json.dump", ".open(", "open(",
-                                            "to_parquet", "to_csv", "savez", "writer(")):
+            elif not _writes_path(src, needle):
                 continue
             out.append(str(f.relative_to(ROOT)))
     return out
+
+
+#: Method/function forms that actually PRODUCE a file. `.open(` is deliberately absent as a bare
+#: token: it is the single most common way to READ one, and admitting it is what let a reader be
+#: credited as a writer. Write modes are matched explicitly instead.
+_WRITE_CALLS = ("write_text(", "write_bytes(", "to_parquet(", "to_csv(", "savez(", "savefig(",
+                "dump(", "writer(")
+
+
+def _writes_path(src: str, needle: str) -> bool:
+    """Is there a write call BOUND to this specific path in this source?
+
+    Two admissible forms, and nothing else counts:
+
+      inline   the literal appears inside a write expression on the same logical line, e.g.
+               `(ROOT / "data/x.json").write_text(...)` or `open("data/x.json", "w")`
+      bound    the literal is assigned to a NAME and that name is the target of a write call,
+               e.g. `REPORT = ROOT / "data/x.json"` ... `REPORT.write_text(...)`
+
+    A path that merely appears in a dict of things to READ matches neither, which is the whole
+    point of the function.
+    """
+    for line in src.splitlines():
+        if needle in line and (any(w in line for w in _WRITE_CALLS)
+                               or re.search(r"open\([^)]*[\"'][wax]b?\+?[\"']", line)):
+            return True
+    names = set(re.findall(rf"^\s*([A-Za-z_]\w*)\s*=\s*[^\n=]*[\"'][^\"'\n]*{re.escape(needle)}",
+                           src, re.MULTILINE))
+    for name in names:
+        if re.search(rf"\b{name}\.(write_text|write_bytes|to_parquet|to_csv|savez)\(", src):
+            return True
+        # `NAME.open("w"/"a")` and `open(NAME, "w")` -- mode required, so a read cannot qualify.
+        if re.search(rf"\b{name}\.open\(\s*[\"'][wax]", src):
+            return True
+        if re.search(rf"\bopen\(\s*{name}\s*,\s*[\"'][wax]", src):
+            return True
+        if re.search(rf"\b(json|np|numpy|pickle)\.dump\([^)]*\b{name}\b", src):
+            return True
+    return False
 
 
 def _closure_cost(artifact: str, cadence_src: str) -> tuple[float, str]:
@@ -224,6 +273,35 @@ def _load_chase() -> dict[str, int]:
         return {str(k): int(v) for k, v in d.get("cycles_owed", {}).items()}
     except (OSError, json.JSONDecodeError, TypeError, ValueError):
         return {}
+
+
+def _load_contributions() -> list[dict]:
+    """The ranked contributions estimate_contributions.py wrote this cycle, or nothing.
+
+    ABSENCE IS NOT AN ERROR. When the file does not exist the allocator behaves exactly as it did
+    before this was wired -- it reports the instrumentation gap and offers no ranking. That is the
+    correct output for a desk with no evidence, and it means this reader can only ever ADD real
+    estimates rather than manufacture one.
+    """
+    try:
+        d = json.loads(CONTRIBUTIONS.read_text("utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return []
+    rows = d.get("ranked", [])
+    return rows if isinstance(rows, list) else []
+
+
+def _verdict_estimate(subsystem: str, measured: dict[str, dict]) -> Estimate:
+    """The Estimate a subsystem is judged on -- its measured contribution, or an explicitly
+    uninformative one.
+
+    n=0 is deliberate for the unmeasured case: the SAME code path that will classify real numbers
+    refuses to classify absent ones, so nobody downstream has to remember which mode it is in.
+    """
+    c = measured.get(subsystem)
+    if not c:
+        return Estimate(0.0, se=0.0, n=0, label=subsystem)
+    return Estimate(float(c["value"]), float(c["se_effective"]), int(c["n"]), subsystem)
 
 
 def _load_ledger() -> Ledger:
@@ -293,10 +371,29 @@ def main() -> int:
     # layer's own machinery then classifies as INSUFFICIENT-EVIDENCE rather than as a ranking.
     # That is the point: the same code path that will rank real numbers refuses to rank absent
     # ones, so nobody has to remember which mode it is in.
-    verdicts = [retirement_verdict(Estimate(0.0, se=0.0, n=0, label=s)) for s in instrumented]
+    # CONTRIBUTION ESTIMATES, IF ANY EXIST YET. estimate_contributions.py derives what it can from
+    # artifacts on disk; anything it could not derive comes back NEVER_EXECUTED with n=0, which
+    # cannot clear an action threshold by construction. So reading this file can only ever ADD
+    # real estimates -- it can never manufacture one -- and when the file is absent the allocator
+    # behaves exactly as it did before, reporting the instrumentation gap rather than a ranking.
+    contribs = _load_contributions()
+    measured = {c["subsystem"]: c for c in contribs if c.get("actionable")}
+
+    verdicts = [retirement_verdict(_verdict_estimate(s, measured)) for s in instrumented]
     unmeasured = [v for v in verdicts if v["verdict"] == "INSUFFICIENT-EVIDENCE"]
 
-    actions: list[Action] = []          # deliberately empty: no measured contribution exists
+    # ACTIONS ARE BUILT FROM MEASURED CONTRIBUTIONS ONLY. An empty list here is not a bug and not
+    # a placeholder: it is the correct output of a desk whose subsystems have no evidence yet, and
+    # it becomes non-empty the moment one of them earns an actionable estimate -- without this
+    # file changing again.
+    actions: list[Action] = [
+        Action(name=s,
+               contribution=Estimate(float(c["value"]), float(c["se_effective"]),
+                                     int(c["n"]), s),
+               cost=float(c.get("closure_cost", 1.0)),
+               subsystem=s)
+        for s, c in sorted(measured.items(), key=lambda kv: -float(kv[1]["density"]))
+    ]
     ledger = _load_ledger()
     alloc = allocate(actions, budget=0.0, ledger=ledger)
     LEDGER.parent.mkdir(parents=True, exist_ok=True)
