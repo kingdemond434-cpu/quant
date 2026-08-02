@@ -1078,6 +1078,83 @@ def check_memory_hygiene(defects) -> None:
                         "tail-reads go lossy"))
 
 
+#: Characters of doctrine per COMMITMENT above which the file is carrying prose that does no
+#: work. The live doctrine sits near 140; a padded one runs into four figures. Anchored to the
+#: measured density rather than to a round number, and it can go red the moment somebody adds
+#: waffle rather than law.
+_DOCTRINE_CHARS_PER_COMMITMENT = 400.0
+
+#: Absolute ceiling, so density cannot license unbounded growth: a doctrine that doubles in size
+#: while staying dense is still a doubled context bill on every organ call.
+_DOCTRINE_HARD_CEILING = 60_000
+
+
+def _check_doctrine_density(doc, defects) -> None:
+    """Is the doctrine LONG, or is it BLOATED? They are not the same defect and the old check
+    could not tell them apart.
+
+    WHAT THIS REPLACES, AND WHY THE OLD VERSION WAS ACTIVELY DANGEROUS. The previous rule fired on
+    file size past 16k and prescribed: "consolidate the stacked axiom blocks into tighter prose
+    (preserve every commitment, cut the repetition)". Measured against the actual file, that
+    advice is false in its premise and harmful if followed:
+
+      * repetition:  ONE near-duplicate sentence pair out of 17,955 pairs across 190 sentences.
+                     There is essentially nothing to consolidate.
+      * commitments: 247 distinct obligations -- section marks, defect names, artifact paths,
+                     thresholds, tier weights, named laws -- at ~140 chars each.
+
+    So the file is long because it contains a great deal of distinct law, not because it says
+    anything twice, and "cut the repetition" resolves in practice to "cut law". A shorter doctrine
+    that dropped an obligation is strictly worse than a long one that kept it: the context tax is
+    paid per call and is small, while a missing law is paid once, at an unknown later date, in
+    full. An audit that prescribes a harmful remedy is worse than one that stays silent, because
+    the remedy carries the audit's authority.
+
+    Scoping the injection per organ was the other candidate and is refused for a different reason:
+    the principal's standing instruction is that every law binds every interaction at full
+    coverage. Sending each organ only the sections that "apply to it" is a coverage reduction
+    wearing an efficiency costume, and which laws apply is exactly what an organ cannot be trusted
+    to have decided for it.
+
+    What remains is the real question: does the doctrine contain prose that carries no commitment?
+    That is measurable, it is the actual definition of bloat, and it still goes red -- padding the
+    file with exhortation raises chars-per-commitment immediately.
+    """
+    if not doc.exists():
+        return
+    try:
+        text = doc.read_text("utf-8")
+    except OSError:
+        return
+    from libs.doctrine.commitments import extract
+    n = sum(len(v) for v in extract(text).values())
+    size = len(text)
+    if n <= 0:
+        defects.append((
+            "prompt-doctrine-empty",
+            f"principal_doctrine.txt is {size/1000:.1f}k chars and states NO checkable "
+            "commitment -- no section mark, artifact path, threshold or named law. Every organ "
+            "injects this; a doctrine of pure exhortation is context with no instruction in it."))
+        return
+    density = size / n
+    if density > _DOCTRINE_CHARS_PER_COMMITMENT:
+        defects.append((
+            "prompt-doctrine-bloat",
+            f"principal_doctrine.txt carries {density:.0f} chars per commitment "
+            f"({size/1000:.1f}k chars, {n} commitments) against a bar of "
+            f"{_DOCTRINE_CHARS_PER_COMMITMENT:.0f}. The file is padded with prose that binds "
+            "nothing -- cut the exhortation, keep every obligation. Verify with "
+            "libs.doctrine.commitments.diff(before, after), which fails on any lost commitment."))
+    if size > _DOCTRINE_HARD_CEILING:
+        defects.append((
+            "prompt-doctrine-oversized",
+            f"principal_doctrine.txt is {size/1000:.1f}k chars, past the "
+            f"{_DOCTRINE_HARD_CEILING/1000:.0f}k ceiling, at {density:.0f} chars/commitment. "
+            "Density alone cannot license unbounded growth: this is a context bill every organ "
+            "pays on every call. Splitting law out to a referenced document is the move, never "
+            "deleting it."))
+
+
 def check_prompt_layer(defects) -> None:
     """PROMPT-LAYER hygiene (principal 2026-07-24 prompt audit): the prompts are organs too.
     (a) Doctrine bloat: the doctrine is prepended to EVERY organ call; past ~16k chars the
@@ -1086,11 +1163,7 @@ def check_prompt_layer(defects) -> None:
     contract/doctrine change materially the review is due by STATE (the blind-rediscovery
     precedent) -- a week of unreviewed prompt mutations is how contradictions accrete."""
     doc = ROOT / "ops/principal_doctrine.txt"
-    if doc.exists() and doc.stat().st_size > 16000:
-        defects.append(("prompt-doctrine-bloat",
-                        f"principal_doctrine.txt {doc.stat().st_size/1000:.1f}k chars (>16k) -- "
-                        "consolidate the stacked axiom blocks into tighter prose (preserve every "
-                        "commitment, cut the repetition); every organ pays this context"))
+    _check_doctrine_density(doc, defects)
     try:
         cad = json.loads((ROOT / "data/cadence_state.json").read_text("utf-8"))
         last_rev = datetime.fromisoformat(cad["last_prompt_review"]).timestamp()

@@ -403,7 +403,8 @@ def test_opening_a_path_for_READING_is_not_a_write() -> None:
     admitting it bare credited every reader as a writer. The mode is now required."""
     read = 'P = ROOT / "data/z.json"\nwith P.open(encoding="utf-8") as fh:\n    d = fh.read()\n'
     assert AL._writes_path(read, "data/z.json") is False
-    append = 'P = ROOT / "data/z.json"\nwith P.open("a", encoding="utf-8") as fh:\n    fh.write(x)\n'
+    append = ('P = ROOT / "data/z.json"\n'
+              'with P.open("a", encoding="utf-8") as fh:\n    fh.write(x)\n')
     assert AL._writes_path(append, "data/z.json") is True
 
 

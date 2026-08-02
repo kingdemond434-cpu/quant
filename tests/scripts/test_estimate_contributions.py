@@ -62,7 +62,7 @@ def test_the_source_map_agrees_with_the_allocator_that_consumes_it() -> None:
     could not compute one', which requires its own opinion about where the number lives."""
     import scripts.run_allocator as A
     theirs = {k: v[0] for k, v in A._INSTRUMENTS.items()}
-    assert C.SOURCES == theirs, {
+    assert theirs == C.SOURCES, {
         k: (C.SOURCES.get(k), theirs.get(k))
         for k in set(C.SOURCES) | set(theirs) if C.SOURCES.get(k) != theirs.get(k)}
 
@@ -96,10 +96,13 @@ def test_screening_is_scored_on_power_MINUS_false_positives(desk) -> None:
         json.dumps({"power": 0.9, "false_positive_rate": 0.3, "n": 400}), "utf-8")
     c = C._research_screening()
     assert c.value == pytest.approx((0.9 - 0.3) * C.LOGW_PER_LIVE_ALPHA_CYCLE)
-    high_fpr = 0.9
-    assert c.value < 0.9 * C.LOGW_PER_LIVE_ALPHA_CYCLE, (
-        "a screen with a 30% false-positive rate must not score as if it had none")
-    assert high_fpr > 0  # the comparison above is the assertion; this keeps the intent explicit
+
+    # The same screen with NO false positives must score strictly higher. Asserted as a
+    # comparison rather than a magnitude, because that is the property that stops the metric
+    # rewarding a screen which admits everything.
+    (desk / "data/gauntlet_calibration.json").write_text(
+        json.dumps({"power": 0.9, "false_positive_rate": 0.0, "n": 400}), "utf-8")
+    assert C._research_screening().value > c.value
 
 
 def test_mining_uses_the_measured_closure_rate_not_the_level(desk) -> None:
