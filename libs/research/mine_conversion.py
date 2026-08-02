@@ -787,6 +787,29 @@ class LawEffectiveness(BaseModel):
     improving: bool
     conclusive: bool
     verdict: str
+    #: Distinct ITEMS behind each window's rate. The snapshot count says how often the ledger was
+    #: written; only this says how much evidence the rate rests on, and they can differ by orders
+    #: of magnitude.
+    n_early_items: int = 0
+    n_late_items: int = 0
+
+
+#: Distinct items each window needs before the two rates may be COMPARED. Matches
+#: libs.doctrine.estimate.MIN_N_FOR_ACTION, and for the same reason: below it a single item
+#: flipping moves the rate tens of percentage points, so "flat" and "improving" are the same
+#: measurement wearing different labels.
+MIN_ITEMS_PER_WINDOW = 5
+
+#: z for calling the change real. One-sided 80%, matching ADMIT_Z -- the cost of investigating a
+#: law that turns out fine is one cycle, the cost of never noticing a dead law is unbounded.
+_EFFECT_Z = 1.28
+
+
+def _rate_se(rate: float, n: int) -> float:
+    """Binomial standard error, floored so n=1 cannot report perfect precision."""
+    if n <= 0:
+        return 1.0
+    return max((rate * (1.0 - rate) / n) ** 0.5, 1.0 / n)
 
 
 def law_effectiveness(
@@ -810,7 +833,7 @@ def law_effectiveness(
             verdict=f"{n}/{min_snapshots} snapshots -- too early to judge the law itself")
     third = max(1, n // 3)
 
-    def _window(rows: Sequence[LedgerRow]) -> tuple[float, float]:
+    def _window(rows: Sequence[LedgerRow]) -> tuple[float, float, int]:
         first: dict[str, float] = {}
         conv: dict[str, float] = {}
         for row in rows:
@@ -824,19 +847,66 @@ def law_effectiveness(
                     conv[nm] = ts
         rate = (len(conv) / len(first)) if first else 0.0
         lat = sorted((conv[k] - first[k]) / 86400.0 for k in conv)
-        return round(rate, 3), (round(statistics.median(lat), 2) if lat else -1.0)
+        return round(rate, 3), (round(statistics.median(lat), 2) if lat else -1.0), len(first)
 
-    e_rate, e_lat = _window(ledger[:third])
-    l_rate, l_lat = _window(ledger[-third:])
+    e_rate, e_lat, e_n = _window(ledger[:third])
+    l_rate, l_lat, l_n = _window(ledger[-third:])
+
+    # THE SNAPSHOT COUNT IS NOT THE SAMPLE SIZE, and conflating them let this function call §33
+    # "ceremony with good telemetry" from two items. min_snapshots gates how often the ledger was
+    # WRITTEN; the rates rest on how many distinct ITEMS were seen, and the live ledger had 62 of
+    # the former and 2 of the latter. Below MIN_ITEMS_PER_WINDOW a single item flipping swings the
+    # rate by tens of points, so "flat" and "improving" are the same measurement with different
+    # labels -- and this is the organ that enforces the evidence standard on everything else. A
+    # law is not exempt from the bar it sets, which cuts both ways: it may not be convicted on
+    # evidence too thin to convict anything else.
+    if min(e_n, l_n) < MIN_ITEMS_PER_WINDOW:
+        return LawEffectiveness(
+            n_snapshots=n, early_rate=e_rate, late_rate=l_rate,
+            early_latency_days=e_lat, late_latency_days=l_lat,
+            n_early_items=e_n, n_late_items=l_n,
+            improving=False, conclusive=False,
+            verdict=(f"{n} snapshots but only {e_n}/{l_n} distinct items per window (bar "
+                     f"{MIN_ITEMS_PER_WINDOW}) -- the rate {e_rate:.0%} -> {l_rate:.0%} rests on "
+                     "too few conversions to distinguish a flat law from a working one. Snapshots "
+                     "measure how often the ledger was written, never how much evidence it holds."))
+
+    # THE LEVEL CONVICTS WITHOUT A TREND. A law under which NOTHING converts is failing whether or
+    # not the rate moved -- 0% to 0% is flat, and flatness is the least interesting thing about it.
+    # Requiring a significant DECLINE here would exonerate the worst possible state for being
+    # consistently the worst, which is the trap in judging a law only by its derivative.
+    if l_rate <= 0.0:
+        return LawEffectiveness(
+            n_snapshots=n, early_rate=e_rate, late_rate=l_rate,
+            early_latency_days=e_lat, late_latency_days=l_lat,
+            n_early_items=e_n, n_late_items=l_n,
+            improving=False, conclusive=True,
+            verdict=(f"conversion rate {e_rate:.0%} -> {l_rate:.0%} over {l_n} items -- NOTHING "
+                     "converts under §33. It is ceremony with good telemetry, and no trend "
+                     "argument can rescue a rate of zero: either the enforcement is not biting or "
+                     "the bottleneck is elsewhere. Find out which."))
+
+    # COMPARED WITH ITS UNCERTAINTY, not with `>`. Two proportions differing by a point are not a
+    # trend, and ranking on raw point estimates is precisely what libs/doctrine/estimate.py exists
+    # to stop the rest of the desk doing.
+    se = (_rate_se(e_rate, e_n) ** 2 + _rate_se(l_rate, l_n) ** 2) ** 0.5
+    rate_better = (l_rate - e_rate) > _EFFECT_Z * se
+    rate_worse = (e_rate - l_rate) > _EFFECT_Z * se
     faster = l_lat >= 0 and e_lat >= 0 and l_lat < e_lat
-    improving = bool(l_rate > e_rate or faster)
+    improving = bool(rate_better or (faster and not rate_worse))
+    indistinguishable = not rate_better and not rate_worse and not faster
     verdict = (
-        f"conversion rate {e_rate:.0%} -> {l_rate:.0%}, median latency {e_lat:.1f}d -> {l_lat:.1f}d"
+        f"conversion rate {e_rate:.0%} -> {l_rate:.0%} (n={e_n}/{l_n}, se {se:.0%}), "
+        f"median latency {e_lat:.1f}d -> {l_lat:.1f}d"
         + (" -- the law is working" if improving else
+           " -- the change is NOT distinguishable from flat at this sample size. That is a finding "
+           "about the evidence, not yet a verdict on the law: gather more before concluding either "
+           "way." if indistinguishable else
            " -- NO improvement while §33 has been in force. It is ceremony with good telemetry: "
            "either the enforcement is not biting or the bottleneck is elsewhere. Find out which.")
     )
     return LawEffectiveness(
         n_snapshots=n, early_rate=e_rate, late_rate=l_rate,
         early_latency_days=e_lat, late_latency_days=l_lat,
-        improving=improving, conclusive=True, verdict=verdict)
+        n_early_items=e_n, n_late_items=l_n,
+        improving=improving, conclusive=not indistinguishable, verdict=verdict)

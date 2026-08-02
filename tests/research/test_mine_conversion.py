@@ -481,15 +481,52 @@ class TestLawSelfAudit:
         assert eff.conclusive is False and "too early" in eff.verdict
 
     def test_flat_conversion_indicts_the_law(self, tmp_path: Path) -> None:
-        # 12 snapshots, nothing ever converts -> §33 is ceremony and must say so
-        rows = [[(f"x{i}", 3, False) for i in range(3)] for _ in range(12)]
+        """Nothing ever converts. Widened from 3 to 6 items per window when the sample-size gate
+        landed -- the CLAIM is unchanged, it just now has enough evidence behind it to be made."""
+        rows = [[(f"x{i}", 3, False) for i in range(6)] for _ in range(12)]
         eff = law_effectiveness(load_ledger(self._ledger(tmp_path, rows)))
         assert eff.conclusive and eff.improving is False
         assert "ceremony with good telemetry" in eff.verdict
 
+    def test_a_zero_rate_is_convicted_on_its_LEVEL_without_needing_a_trend(
+            self, tmp_path: Path
+    ) -> None:
+        """A law under which nothing converts is failing whether or not the rate moved. Judging
+        only the derivative would exonerate the worst possible state for being CONSISTENTLY the
+        worst -- 0% to 0% is flat, and flatness is the least interesting thing about it."""
+        rows = [[(f"x{i}", 3, False) for i in range(6)] for _ in range(12)]
+        eff = law_effectiveness(load_ledger(self._ledger(tmp_path, rows)))
+        assert eff.late_rate == 0.0
+        assert eff.conclusive is True, "zero conversions must never report as inconclusive"
+        assert "no trend argument can rescue a rate of zero" in eff.verdict
+
     def test_rising_conversion_clears_the_law(self, tmp_path: Path) -> None:
-        early = [[(f"e{i}", 3, False) for i in range(3)] for _ in range(6)]
-        late = [[(f"l{i}", 3, True) for i in range(3)] for _ in range(6)]
+        early = [[(f"e{i}", 3, False) for i in range(6)] for _ in range(6)]
+        late = [[(f"l{i}", 3, True) for i in range(6)] for _ in range(6)]
         eff = law_effectiveness(load_ledger(self._ledger(tmp_path, early + late)))
         assert eff.conclusive and eff.improving is True
         assert "the law is working" in eff.verdict
+
+    def test_a_rate_built_on_two_items_cannot_convict_the_law(self, tmp_path: Path) -> None:
+        """THE LIVE BUG. min_snapshots gates how often the ledger was WRITTEN; the rate rests on
+        how many distinct ITEMS were seen, and the production ledger had 62 of the former and 2 of
+        the latter. It reported 40% -> 40% and called §33 "ceremony with good telemetry" from a
+        sample where one item flipping moves the rate fifty points -- committed by the organ that
+        enforces the evidence standard on everything else."""
+        early = [[("e1", 3, False), ("e2", 3, True)] for _ in range(6)]
+        late = [[("l1", 3, False), ("l2", 3, True)] for _ in range(6)]
+        eff = law_effectiveness(load_ledger(self._ledger(tmp_path, early + late)))
+        assert eff.conclusive is False
+        assert eff.n_early_items < 5 and eff.n_late_items < 5
+        assert "distinct items per window" in eff.verdict
+        assert "never how much evidence it holds" in eff.verdict
+
+    def test_a_one_point_move_is_not_a_trend(self, tmp_path: Path) -> None:
+        """Two proportions differing slightly are not evidence of improvement. Comparing raw point
+        estimates is exactly what libs/doctrine/estimate.py exists to stop the rest of the desk
+        doing, and this function was doing it with `>`."""
+        early = [[(f"e{i}", 3, i < 3) for i in range(8)] for _ in range(6)]
+        late = [[(f"l{i}", 3, i < 4) for i in range(8)] for _ in range(6)]
+        eff = law_effectiveness(load_ledger(self._ledger(tmp_path, early + late)))
+        assert eff.late_rate > eff.early_rate, "the point estimate really did rise -- the trap"
+        assert eff.improving is False, "a 12pp move on n=8 is noise, not a working law"

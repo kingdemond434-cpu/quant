@@ -2573,6 +2573,7 @@ def check_mine_flow(defects) -> None:
     and it never loosens, so there is no "good enough", only better-than-our-best or a regression.
     """
     from libs.research.mine_conversion import (
+        MIN_ITEMS_PER_WINDOW,
         class_priors,
         feedback_applied,
         flow_stats,
@@ -2649,6 +2650,19 @@ def check_mine_flow(defects) -> None:
             "enforces. Trend, not counterfactual (no pre-§33 baseline exists) -- but flat is flat. "
             "Either the gate is not biting or conversion is bottlenecked elsewhere; establish "
             "which before adding more enforcement on top."))
+    elif not eff.conclusive and eff.n_snapshots >= 12:
+        # UNJUDGEABLE IS NOT EXONERATED, and silence would read as the latter. The ledger has been
+        # written often enough to look like evidence while holding too few distinct items to be
+        # any -- so the desk must keep knowing it cannot yet judge its own law, and know exactly
+        # what would make it judgeable. Dropping the report here is how a law stops being asked
+        # about: the defect disappears, nobody notices the question went with it.
+        defects.append((
+            "mine-law-unjudgeable",
+            f"§33 self-audit: {eff.verdict} The law is neither working nor convicted -- it is "
+            f"UNMEASURED. {MIN_ITEMS_PER_WINDOW} distinct items per window is the bar; the ledger "
+            f"holds {eff.n_early_items}/{eff.n_late_items}. Converting more finds is what closes "
+            "this, so the fix for 'we cannot tell whether §33 works' is the same work §33 exists "
+            "to demand."))
     ok, why = feedback_applied(ledger, priors)
     if not ok:
         defects.append((
