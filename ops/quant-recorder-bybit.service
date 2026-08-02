@@ -1,0 +1,35 @@
+[Unit]
+# Bybit linear L2 tape (second venue). PUBLIC MARKET DATA ONLY -- no keys, no order paths, gated by nothing.
+# Recording is not trading: the connector is Gate-0-gated because it moves money, the TAPE is not.
+#
+# WHY THIS MUST NEVER BE OFF. Every unrecorded second is permanently unbuyable at any price --
+# pre-recorder L2 does not exist free at any venue. The moat is the desk's only un-replicable
+# asset and the archive only grows, so downtime here is the one cost that cannot be recovered
+# later with money. P26 makes leaving it off a constitutional breach, not a deferred task.
+Description=Quant recorder: Bybit linear L2 tape (second venue)
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+User=quant
+WorkingDirectory=/home/quant/quant-platform
+Environment=PATH=/home/quant/.local/bin:/home/quant/quant-platform/.venv/bin:/usr/bin:/bin
+Type=simple
+ExecStart=/home/quant/quant-platform/.venv/bin/python scripts/run_recorder_bybit.py
+# ALWAYS, not on-failure: a venue cutoff or a clean exit is still a gap in the tape, and the tape
+# is the thing that cannot be backfilled. RestartSec is short for the same reason.
+Restart=always
+RestartSec=10
+Nice=5
+# Read-only everywhere except the data lake -- this process CANNOT touch the book.
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/quant/quant-platform/data
+NoNewPrivileges=true
+PrivateTmp=true
+StandardOutput=append:/home/quant/quant-platform/data/recorder_bybit.log
+StandardError=inherit
+
+[Install]
+WantedBy=multi-user.target

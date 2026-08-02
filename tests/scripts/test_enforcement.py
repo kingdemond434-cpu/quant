@@ -249,3 +249,69 @@ def test_the_dedicated_continuous_miner_exists_and_loops() -> None:
     assert "def loop(" in src
     assert "must never end the exploration" in src, (
         "a miner that dies on one unreadable file has stopped exploring")
+
+
+# ------------------------------------------------------------------ the deploy path exists
+
+def test_every_recorder_has_a_systemd_unit() -> None:
+    """THE ACTUAL REASON THE MOAT IS EMPTY. The recorders had no unit file at all -- they were
+    started by hand, and a process started by hand stops on the next reboot and never comes back.
+    Not funding, not code, not a decision: four unit files."""
+    import configparser
+    units = {
+        "ops/quant-recorder-fut.service": "scripts/run_recorder.py",
+        "ops/quant-recorder-spot.service": "scripts/run_recorder_spot.py",
+        "ops/quant-recorder-bybit.service": "scripts/run_recorder_bybit.py",
+        "ops/quant-moat-miner.service": "ops/run_moat_miner.sh",
+    }
+    for unit, target in units.items():
+        p = Path(unit)
+        assert p.exists(), f"{unit} missing -- the desk cannot reconstitute itself from the repo"
+        assert Path(target).exists(), f"{unit} points at {target}, which does not exist"
+        c = configparser.ConfigParser(strict=False)
+        c.read(p)
+        assert {"Unit", "Service", "Install"} <= set(c.sections()), unit
+        assert Path(target).name in c.get("Service", "ExecStart"), unit
+
+
+def test_recorders_restart_always_because_tape_cannot_be_backfilled() -> None:
+    """on-failure is wrong here: a venue cutoff or a CLEAN exit is still a gap in the tape, and
+    the tape is the one thing money cannot buy back later."""
+    import configparser
+    for unit in ("ops/quant-recorder-fut.service", "ops/quant-recorder-spot.service",
+                 "ops/quant-recorder-bybit.service"):
+        c = configparser.ConfigParser(strict=False)
+        c.read(Path(unit))
+        assert c.get("Service", "Restart") == "always", unit
+        assert int(c.get("Service", "RestartSec")) <= 30, f"{unit}: slow restart loses tape"
+
+
+def test_the_miner_never_competes_with_a_recorder_for_io() -> None:
+    """Losing tape is permanent; a slower mining pass costs minutes. The priority ordering has to
+    reflect that asymmetry or a busy box quietly trades the irreplaceable for the recoverable."""
+    import configparser
+    c = configparser.ConfigParser(strict=False)
+    c.read(Path("ops/quant-moat-miner.service"))
+    assert c.get("Service", "IOSchedulingClass") == "idle"
+    assert int(c.get("Service", "Nice")) > 5
+
+
+def test_units_cannot_write_outside_the_data_lake() -> None:
+    """A recorder that could touch anything but data/ is a recorder that could touch the book."""
+    import configparser
+    for unit in Path("ops").glob("quant-recorder-*.service"):
+        c = configparser.ConfigParser(strict=False)
+        c.read(unit)
+        assert c.get("Service", "ProtectSystem") == "strict", unit.name
+        assert c.get("Service", "ReadWritePaths").endswith("/data"), unit.name
+
+
+def test_the_runbook_names_the_real_acceptance_test() -> None:
+    """An exit code proves a process ended, never that it produced -- the desk has been burned by
+    exactly that. The runbook must send the operator to PRODUCTION, not to systemctl status."""
+    doc = Path("docs/RECORDER_DEPLOY.md").read_text("utf-8")
+    assert "never that it produced" in doc
+    assert "enforce_constitution.py" in doc
+    assert "exploration-blocked-upstream" in doc, (
+        "the operator must be told which breach clearing means it worked")
+    assert "permanently unbuyable" in doc
