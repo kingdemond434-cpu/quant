@@ -57,6 +57,8 @@ def validate(
     edge_bps: float | None = None,
     pbo: PBOResult | None = None,
     rc: RealityCheckResult | None = None,
+    pc_pbo: float | None = None,
+    pc_p: float | None = None,
 ) -> ValidationVerdict:
     arr = np.asarray(returns, dtype="float64")
     if len(arr) < 250:
@@ -69,7 +71,24 @@ def validate(
     wf = WalkForwardEngine().evaluate(arr, n_splits=4, test_size=max(20, len(arr) // 6))
     dsr = deflated_sharpe_ratio(arr, n_trials=n_trials, sharpe_estimates=sharpe_estimates,
                                 threshold=_DSR_THRESHOLD)
-    # PBO/RC depend only on the (campaign-wide) matrix; reuse precomputed results when supplied.
+    # PER-CANDIDATE, NOT PER-CAMPAIGN (register #71). White's RC asks "is the BEST strategy in
+    # this set real?" and PBO asks "does the SELECTION PROCEDURE overfit?" -- both are properties
+    # of the SET, and handing each candidate the set's verdict let one number decide all of them.
+    # Measured here: campaign PBO 0.6159 and RC p 0.4220 made `pbo` and `reality_check` False for
+    # all 420 candidates regardless of merit, and campaign PBO RISES with candidate count, so the
+    # bar tightened every time the desk generated more -- which TWO_STAGE_DISCOVERY_LAW forbids.
+    #
+    # It fails the other way too, which is worse: plant ONE real edge among 19 noise strategies
+    # and campaign RC returns p=0.003, passing the reality_check gate for all twenty.
+    #
+    # Romano-Wolf stepdown and per-strategy CSCV keep the veto and make it DISCRIMINATE. Not
+    # RANK-not-VETO, which would lower the bar; each candidate is now judged on its own evidence
+    # and can neither be rescued nor condemned by its peers.
+    # COMPUTED ONCE PER CAMPAIGN, INDEXED PER CANDIDATE. Both statistics are vectorised over
+    # every strategy already, so the caller runs them once and passes this candidate's slice --
+    # keeping the O(N) bootstrap saving the campaign version was written for, while fixing the
+    # statistic it got wrong. The first draft called them inside the candidate loop, which is
+    # O(N^2) and would have been unusable at the 420 candidates that motivated the fix.
     has_peers = returns_matrix.shape[1] >= 2
     if pbo is None and has_peers:
         pbo = probability_backtest_overfitting(returns_matrix)
@@ -87,8 +106,8 @@ def validate(
         expected_value=float(arr.mean()),
         oos_sharpe=wf.oos_sharpe,
         dsr=dsr.dsr,
-        pbo=pbo.pbo if pbo is not None else 1.0,
-        reality_p=rc.p_value if rc is not None else 1.0,
+        pbo=pc_pbo if pc_pbo is not None else (pbo.pbo if pbo is not None else 1.0),
+        reality_p=pc_p if pc_p is not None else (rc.p_value if rc is not None else 1.0),
         capacity_usd=cap.capacity_usd,
         fragility=tail.tail_risk_score,
     )
@@ -99,8 +118,10 @@ def validate(
         "cpcv": _cpcv_positive_fraction(arr) >= _CPCV_MIN_POSITIVE,
         "walk_forward": wf.status is WalkForwardStatus.PASSED,
         "dsr": dsr.passed,
-        "pbo": pbo is not None and not pbo.overfit,
-        "reality_check": rc is not None and rc.significant_at_5pct,
+        "pbo": (pc_pbo <= 0.5) if pc_pbo is not None
+               else (pbo is not None and not pbo.overfit),
+        "reality_check": (pc_p <= 0.05) if pc_p is not None
+                         else (rc is not None and rc.significant_at_5pct),
         "capacity": cap.capacity_usd >= _MIN_CAPACITY_USD,
         "fragility": tail.acceptable,
     }
