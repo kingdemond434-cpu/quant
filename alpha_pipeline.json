@@ -1,5 +1,5 @@
 {
-  "generated": "2026-08-01T11:13:46.982665+00:00",
+  "generated": "2026-08-02T02:28:13.569728+00:00",
   "n_alphas": 8,
   "n_survived": 0,
   "deployed": [
@@ -21,7 +21,7 @@
     {
       "alpha": "crypto::funding_carry",
       "category": "crypto-sleeve",
-      "expected_sharpe": 1.07,
+      "expected_sharpe": 0.8,
       "gates": "9/10",
       "survived": false,
       "stage": "backtest",
@@ -33,7 +33,7 @@
     {
       "alpha": "crypto::ts_trend",
       "category": "crypto-sleeve",
-      "expected_sharpe": 0.72,
+      "expected_sharpe": 0.78,
       "gates": "9/10",
       "survived": false,
       "stage": "backtest",
@@ -45,7 +45,19 @@
     {
       "alpha": "crypto::xsec_price_mom",
       "category": "crypto-sleeve",
-      "expected_sharpe": 0.67,
+      "expected_sharpe": 0.71,
+      "gates": "8/10",
+      "survived": false,
+      "stage": "backtest",
+      "orthogonality": "unknown",
+      "crowding_risk": "medium",
+      "expected_half_life": "unknown-until-forward",
+      "retire_check": "REJECT: fails gates"
+    },
+    {
+      "alpha": "crypto::basis_carry",
+      "category": "crypto-sleeve",
+      "expected_sharpe": 0.65,
       "gates": "8/10",
       "survived": false,
       "stage": "backtest",
@@ -57,19 +69,7 @@
     {
       "alpha": "crypto::taker_flow",
       "category": "crypto-sleeve",
-      "expected_sharpe": 0.51,
-      "gates": "6/10",
-      "survived": false,
-      "stage": "backtest",
-      "orthogonality": "unknown",
-      "crowding_risk": "medium",
-      "expected_half_life": "unknown-until-forward",
-      "retire_check": "REJECT: fails gates"
-    },
-    {
-      "alpha": "crypto::basis_carry",
-      "category": "crypto-sleeve",
-      "expected_sharpe": 0.48,
+      "expected_sharpe": 0.57,
       "gates": "6/10",
       "survived": false,
       "stage": "backtest",
@@ -81,7 +81,7 @@
     {
       "alpha": "crypto::funding_momentum",
       "category": "crypto-sleeve",
-      "expected_sharpe": 0.35,
+      "expected_sharpe": 0.21,
       "gates": "5/10",
       "survived": false,
       "stage": "backtest",

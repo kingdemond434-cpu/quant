@@ -751,6 +751,8 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # retune it (the agent will then leave it alone because it is already scheduled).
 # Every entry here was proven: runnable main(), no money-path import, no spend
 # capability, no writes outside data/ + web/. CONFIDENCE: auto-wired.
+# scripts/build_return_panel.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
+49 5 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/build_return_panel.py >> data/cro_ai_logs/build_return_panel.log 2>&1
 # scripts/meta_research_review.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
 47 3 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/meta_research_review.py >> data/cro_ai_logs/meta_research_review.log 2>&1
 # scripts/run_geometric_review.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)

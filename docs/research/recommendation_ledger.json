@@ -974,11 +974,21 @@
    "summary": "SYNTH0731 P2-13 [val V5/V6 + 0729F7]: capacity coherence \u2014 replace validate() 2x-book bar with 10pct-slice ADMIT band AND plumb real per-symbol ADV in the SAME change (either alone misfires); delete dead deployed_equity_usd/n_sleeves params",
    "roi_bps": 70.0,
    "raised": "2026-07-31T03:45:45.617318+00:00",
-   "status": "scheduled",
-   "reason": "SCHEDULED 08-04. Real and positive-EV, and it must land as ONE change: the reason says so itself -- replacing validate()'s 2x-book bar with the 10pct-slice ADMIT band WITHOUT plumbing real per-symbol ADV mis-fires in the loosening direction, and plumbing ADV alone mis-fires in the tightening direction. Either half alone is worse than neither, so this cannot be part-converted, which is exactly why it has sat undisposed. Not started this cycle: the cycle's slot went to repairing pytest collection, which was aborting the whole suite at exit 3 and would have made any validation change unverifiable.",
-   "commit": null,
-   "due": "2026-08-04",
-   "disposed": "2026-08-01T17:12:37.913566+00:00"
+   "status": "implemented",
+   "reason": "IMPLEMENTED in 4832495, both halves as one change exactly as the row requires. (1) BAND: validate()'s capacity gate now calls capacity_status() -- the 10pct-slice ADMIT band -- instead of the 2x-of-book bar; _min_capacity_usd and _CAPACITY_MULTIPLE_OF_EQUITY are DELETED rather than left dead, because \"retained only for the gauntlet's own headroom bar\" is precisely how a second capacity bar came to exist alongside the constitutional one. (2) ADV: adv_usd defaulted to 1.0e11 and NO production caller passed it, so every stored capacity was computed against a 100-billion-dollar daily volume. Measured on one strategy: 114,947 dollars of capacity at a real 50m ADV versus 229,894,902 at the default -- a 2,000x gap, and 966 of the 1,673 stored candidates carry the identical constant 5.04e-13, the arithmetic signature of edge~0 against that default. adv_usd is now None-by-default and the gate reports UNMEASURED (the same non-blocking treatment beats_baselines and sample_adequacy already get), and run_xsec_funding_max now forwards the ADV it already measured at _panels() and previously discarded. (3) DEAD PARAMS deployed_equity_usd and n_sleeves deleted; verified zero callers passed either. DOES NOT LOOSEN THE SCREEN, measured rather than asserted: reports/gate_histogram.json at n=420 records survivors [] and sole_blocker {}, so no candidate was ever within one gate of surviving and this changes zero survivor outcomes on the campaign of record. VERIFICATION: 33 targeted capacity tests green (test_capacity_parity, test_capacity_relative), ruff clean, and validate() driven end-to-end across no-ADV / real-ADV / fiction-ADV showing UNMEASURED, evaluated, and evaluated respectively. test_gate_wiring surfaced one real failure -- a hardcoded allow-list of unmeasured gate names -- now fixed to assert each unmeasured gate maps to a REAL parameter of validate(), which is a stronger invariant than the string list it replaces.",
+   "commit": "4832495",
+   "due": null,
+   "disposed": "2026-08-01T17:42:34.291513+00:00",
+   "corrections": [
+    {
+     "was": "scheduled",
+     "was_reason": "SCHEDULED 08-04. Real and positive-EV, and it must land as ONE change: the reason says so itself -- replacing validate()'s 2x-book bar with the 10pct-slice ADMIT band WITHOUT plumbing real per-symbol ADV mis-fires in the loosening direction, and plumbing ADV alone mis-fires in the tightening direction. Either half alone is worse than neither, so this cannot be part-converted, which is exactly why it has sat undisposed. Not started this cycle: the cycle's slot went to repairing pytest collection, which was aborting the whole suite at exit 3 and would have made any validation change unverifiable.",
+     "was_commit": null,
+     "was_due": "2026-08-04",
+     "corrected": "2026-08-01T17:42:18.830498+00:00",
+     "why": "Not a misfiling -- the 08-01T17:12Z scheduling was correct for the state at that moment, and its reasoning was right on the merits (both halves must land together or each mis-fires in the opposite direction). Reopening because the STATE CHANGED: a concurrent session implemented both halves as one change in commit 4832495 while that disposition was being written. Re-disposing as implemented so the ledger records the work rather than a due date for work already done."
+    }
+   ]
   },
   {
    "id": "R0081",
@@ -987,10 +997,20 @@
    "roi_bps": 60.0,
    "raised": "2026-07-31T03:45:45.682895+00:00",
    "status": "scheduled",
-   "reason": "SCHEDULED 08-05. 132 symbols frozen since 06-21 is accruing an irreplaceable-data loss every day (Binance Vision is free, so the backfill half is recoverable, but the write-rate anomaly fence is what stops the NEXT silent freeze). Sequenced after R0082 because the 418 coordinator is the thing that would otherwise throttle a full-universe backfill.",
+   "reason": "CARRIED WITH TWO CORRECTIONS, ONE OF WHICH CHANGES THE DESIGN. (1) COUNT: \"132 symbols frozen\" is stale -- measured today it is 111 (the 08-01 sweep measured 112 while its own prose still said 132). The FREEZE is real and the date is exactly right: 111 symbols have their last bar on 2026-06-21 and none earlier, and the frozen set is EXACTLY the no-basis/no-taker_buy_frac schema class (crosstab perfectly diagonal, zero off-diagonal cells), so this is a schema migration that stopped, not a delisting -- 1000PEPEUSDT, 1000SHIBUSDT and 1INCHUSDT are all actively trading. (2) DESIGN, and this is the part worth the row: the anomaly the fence must retro-fire on is a 2x SURGE, NOT a drop. data/defi_lending.jsonl runs a flat 278-288 rows/hour across 103 contiguous gapless hours except 2026-07-30T23 through 2026-07-31T03, which are all exactly 556 -- two distinct writers 27-70ms apart, i.e. a same-minute twin under a split lock (the crontab holds one defi line today, so the duplicate was removed before 08-01T15:17Z). The existing scripts/collector_monitor.py:91 tests len(dates) < expected * RATE_DROP with RATE_DROP = 0.5 at :40 -- a FLOOR TEST ONLY, so a doubling passes it silently and it is structurally incapable of catching the very anomaly this row cites. It also covers only 4 hardcoded files (defi is not among them), counts a \"date\" key that defi rows do not carry, and is UNSCHEDULED (a daily_research_cycle step, not a cron line). A plus-or-minus band is therefore a REPLACEMENT, not a refinement. Confirmed there is no write-rate fence anywhere: 0 of 31 scripts/check_*.py measure rows per period, and check_organ_liveness and check_freshness are both AGE-based -- age cannot see a doubling. (3) The klines half is real: ingest_crypto_enriched.py appears in ZERO cron lines and is reachable only through the 02:00 daily chain at --top 80, overriding its own default of 150; Binance Vision monthly/klines is already proven working at dl_oi_ls_universe.py:94-128, so the backfill needs no new access or credentials. NOT BUILT THIS CYCLE: the batch budget went to R0079, R0080 and to repairing two fences that were firing on healthy code. Due 2026-08-06 -- fence first, because it is the half that prevents recurrence; backfill second.",
    "commit": null,
-   "due": "2026-08-05",
-   "disposed": "2026-08-01T17:12:38.375664+00:00"
+   "due": "2026-08-06",
+   "disposed": "2026-08-01T17:36:29.597971+00:00",
+   "corrections": [
+    {
+     "was": "scheduled",
+     "was_reason": "CARRIED WITH TWO CORRECTIONS, ONE OF WHICH CHANGES THE DESIGN. (1) COUNT: '132 symbols frozen' is stale -- measured today it is 111 (the 08-01 sweep measured 112 while its prose still said 132). The FREEZE is real and the date is exactly right: 111 symbols have their last bar on 2026-06-21 and none earlier, and the frozen set is EXACTLY the no-basis/no-taker_buy_frac schema class (crosstab perfectly diagonal, zero off-diagonal), so this is a schema migration that stopped, not a delisting -- 1000PEPEUSDT/1000SHIBUSDT/1INCHUSDT are all actively trading. (2) DESIGN, and this is the part worth the row: the anomaly the fence must retro-fire on is a 2x SURGE, NOT a drop. data/defi_lending.jsonl runs a flat 278-288 rows/hour for 103 contiguous gapless hours except 2026-07-30T23 through 2026-07-31T03, which are all exactly 556 -- two distinct writers 27-70ms apart, i.e. a same-minute twin under a split lock (the crontab has one defi line today, so the duplicate was removed before 08-01T15:17Z). The existing scripts/collector_monitor.py:91 tests  -- ONE-SIDED -- so it is structurally incapable of catching the very anomaly this row cites, and it also covers only 4 hardcoded files (defi is not among them), counts a 'date' key defi rows do not carry, and is UNSCHEDULED (a daily_research_cycle step, not cron). So a plus-or-minus band is not a refinement of collector_monitor, it is a replacement. Confirmed there is NO write-rate fence anywhere: 0 of 31 scripts/check_*.py measure rows per period; check_organ_liveness and check_freshness are both AGE-based, and age cannot see a doubling. (3) The klines half is real: ingest_crypto_enriched.py is in ZERO cron lines, reachable only via the 02:00 daily chain at --top 80 (overriding its own default of 150), and Binance Vision monthly/klines is already proven working in dl_oi_ls_universe.py:94-128, so the backfill route needs no new access. Not built this cycle: the batch's budget went to R0079/R0080 and to repairing two fences that were crying wolf. Due 08-06, fence first (it is the part that prevents recurrence), backfill second.",
+     "was_commit": null,
+     "was_due": "2026-08-06",
+     "corrected": "2026-08-01T17:36:12.001286+00:00",
+     "why": "TRANSCRIPTION REPAIR ONLY -- the decision (scheduled, due 2026-08-06) is unchanged. A backtick-quoted code snippet in the original reason was eaten by shell command substitution, leaving \"collector_monitor.py:91 tests  -- ONE-SIDED\" with the condition missing. The condition is: len(dates) < expected * RATE_DROP, with RATE_DROP = 0.5 at collector_monitor.py:40. That is a floor test only, so a doubling passes it silently -- which is exactly the anomaly R0081 asks the new fence to retro-fire on (556 rows/hour against a 278 baseline for five hours on 2026-07-30/31). The replacement must be a TWO-SIDED band."
+    }
+   ]
   },
   {
    "id": "R0082",
@@ -999,10 +1019,10 @@
    "roi_bps": 50.0,
    "raised": "2026-07-31T03:45:45.749768+00:00",
    "status": "scheduled",
-   "reason": "SCHEDULED 08-04, ahead of the other P3 rows because it is a BLOCKER not a feature: 418s are killing shadow_8h, axis_shadows and nav_attest inside the daily cycle, so every day it waits costs forward-clock observations that cannot be re-earned (L1.28b(f) -- acquisition is never the thing that gets cut).",
+   "reason": "SCOPE CORRECTED AND CHEAPENED. One sub-claim is REFUTED: '418s killing nav_attest' is false -- scripts/run_nav_attest.py makes ZERO HTTP calls (its whole import set is hashlib/json/datetime/pathlib; it reads state files and appends its own artifact) and has 22 successes and 0 failures in data/cro_cycle_log.json. It cannot be killed by a 418, and the upstream sweep said only that a limiter would PROTECT it. The other two are CONFIRMED with evidence: journalctl shows axis_shadows 418 on Jul 28 08:35:14 and Jul 31 08:36:25, shadow_8h on Jul 31 08:36:53, and cro_cycle_log records 7 and 6 failures respectively against 14 and 16 successes. ALSO PARTLY ALREADY BUILT, which changes the right first move: libs/data/crypto_source.py:40-69 is a working cross-process 418/429 circuit breaker that ALREADY captures Retry-After (:54), honours it (:58) and persists a ban deadline -- but it reaches exactly ONE of ~104 HTTP-calling files, and neither shadow script consults it (each has its own bare urlopen with no retry and no ban check: run_shadow_8h.py:44-47, run_axis_shadows.py:100-105). So the high-ROI first step is NOT the full coordinator: it is routing the two known victims through the latch that already exists, which is a small change against a measured failure. The full per-venue weight coordinator is genuinely large -- there is no shared HTTP helper at all (zero requests/httpx usage, 373 urlopen lines across ~104 files, 75 private _get helpers) -- and no connector reads X-MBX-USED-WEIGHT anywhere. Not rejected because the 418s are real and recurring, and the executor is also dying on them (six consecutive process deaths Jul 31 08:39-08:58). Due 08-07 for the latch routing; the coordinator stays a separate larger row rather than being smuggled in behind it.",
    "commit": null,
-   "due": "2026-08-04",
-   "disposed": "2026-08-01T17:12:37.990238+00:00"
+   "due": "2026-08-07",
+   "disposed": "2026-08-01T17:35:09.288248+00:00"
   },
   {
    "id": "R0083",
@@ -1011,10 +1031,10 @@
    "roi_bps": 45.0,
    "raised": "2026-07-31T03:45:45.822061+00:00",
    "status": "scheduled",
-   "reason": "SCHEDULED 08-06. Options VRP is the top resurrection candidate, but its re-screen must run AFTER the run_options_vrp_backtest migration off the welded campaign-constant gate (already acked, due 08-02) -- screening it through a gate that rejects ~100pc would produce a false null on the best candidate the graveyard holds. Prerequisite-gated, keeping its EV-order place.",
+   "reason": "SCOPE CORRECTED -- three of the row's sub-claims are REFUTED by the artifacts, and one half is not actionable as written. (a) 'fill idle Holm slot' is STALE: data/forward_slots.json reports idle_slots 0, 12/12 occupied, complete true. There is no idle slot. The real condition is different and worth its own work: one slot is OCCUPIED BUT EVIDENCE-LESS (cny_premium, evidence NO-EVIDENCE, days 0), which is a slot being consumed without accruing -- that is an L1.28a idleness defect wearing an occupied slot, not an empty one. (b) '3-5 strikes/expiry is a cadence knob, not new engineering' is FALSE: libs/data/deribit.py:90 collapses the entire book into four scalars (atm_iv, skew, term, spot) per currency, so there is no strike dimension to widen -- it is a schema change plus a collector rewrite. (c) 'pre-registered VRP re-screen at ~60 obs' does not exist anywhere; the phrase appears only in sweep prose, and under the two-stage law a re-screen without a pre-registration is exactly the garden-of-forking-paths the desk forbids. WHAT IS REAL AND CARRIED: the collector exists but is UNSCHEDULED (it runs only as a side effect of the executor's daily flywheel at run_cashcarry_executor.py:86, day-stamp-guarded to once per UTC day), giving 1.08 obs/day over 36 days with a 114.5h maximum gap -- so at current cadence ~60 daily obs is roughly 55 days away and the resurrection is genuinely blocked on data, not on effort. graveyard_resurrection_queue has a producer (graveyard_resurrect.py:101) and ZERO consumers repo-wide, and 2 of its 44 entries are markdown table-header rows parsed as hypotheses (graveyard_resurrect.py:66 skips only name/signal/strategy), so real n=42. Due 08-08: schedule the collector hourly and write the pre-registration FIRST, then let obs accrue.",
    "commit": null,
-   "due": "2026-08-06",
-   "disposed": "2026-08-01T17:12:38.524380+00:00"
+   "due": "2026-08-08",
+   "disposed": "2026-08-01T17:34:55.746818+00:00"
   },
   {
    "id": "R0084",
@@ -1023,10 +1043,10 @@
    "roi_bps": 55.0,
    "raised": "2026-07-31T03:45:45.886004+00:00",
    "status": "scheduled",
-   "reason": "SCHEDULED 08-06. The tape half (open_fail rows, TCA fields on all open paths) is directly evidenced by this cycle's integrity watch: OPEN-FAIL ETHUSDT and DOGEUSDT produce NO row in data/cashcarry_trades.json at all -- a failed open is invisible to the tape, so the Execution Reality Model is being built from successes only, which biases every cost estimate it will ever produce.",
+   "reason": "PARTLY DONE, REMAINDER IS MONEY-PATH INSIDE A LIVE STERILE WINDOW (L1.38). Verified sub-claim by sub-claim: (1) 'schedule micro_factory daily' was ALREADY TRUE before this row -- ops/crontab.manifest:191, in the live crontab, output data/micro_features.json refreshed 08-01 05:30 matching its cron slot. (2) data_vitals globs: DONE this cycle, commit 443438a -- main() globbed data/*.jsonl non-recursively and the one data/moat entry matched **/*.jsonl.gz while the tape is uncompressed, so the Execution Reality Model had no liveness row at all. (3) tape open_fail rows: the claim is FALSE as written -- there is no open_fail row type anywhere; all four exposure-adding paths in run_cashcarry_executor.py (:950 open, :1002 topup, :662 fut re-hedge, :690 spot re-hedge) 'continue' without _log_trade on failure, and partial fills are structurally invisible because _filled() (:1250) requires status==FILLED. Measured TCA coverage is 11/524 tape rows (2.1%). (4) cashcarry_error.log fence: a fence on it would be near-useless first -- all six writers use write_text (OVERWRITE), so the file can never exceed one line and each incident destroys the previous one; run_alerts.py:46 declares _ERR and never reads it again, so a naked leg pages nobody. Items 3 and 4 are edits to the executor, which check_change_window reports STERILE (GATE0_LAUNCH, 0.2d into a 7d window). They are IMPROVEMENTS, not repairs of a live defect, so L1.38 stages them rather than allowing them. Due 08-09 = just past the window; the error-log overwrite must be fixed BEFORE any fence reads that file, or the fence measures a one-line buffer.",
    "commit": null,
-   "due": "2026-08-06",
-   "disposed": "2026-08-01T17:12:38.598899+00:00"
+   "due": "2026-08-09",
+   "disposed": "2026-08-01T17:34:42.168381+00:00"
   },
   {
    "id": "R0085",
