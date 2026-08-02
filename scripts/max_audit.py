@@ -1674,17 +1674,32 @@ def check_gap_register_health(defects) -> None:
     if h.n_rows == 0:
         defects.append(("gap-register-unparseable", f"§36(3): {h.verdict}"))
         return
+    # THE MECHANICAL HALF, REPORTED SEPARATELY. scripts/rerank_gaps.py computes every part of the
+    # re-rank that needs no opinion, every cycle. It cannot discharge the judgment duty and does
+    # not try -- but "the countable work is current and the judgment call is owed" is a materially
+    # different state from "nobody has touched this", and collapsing them costs the reader the
+    # only distinction that changes what to do next.
+    _mech = ""
+    with contextlib.suppress(OSError, json.JSONDecodeError):
+        _m = json.loads((ROOT / "data/gap_rerank.json").read_text("utf-8"))
+        _age = (NOW - datetime.fromisoformat(_m["ts"]).timestamp()) / 3600.0
+        _hot = [f"#{r['id']}" for r in _m["rows"]
+                if r["verdict"] not in ("ON-CLOCK", "TRACKED")][:6]
+        _mech = (f" MECHANICAL PASS {_age:.0f}h old: {_m['need_decision']} of "
+                 f"{_m['open_rows']} open rows need a decision"
+                 + (f" ({', '.join(_hot)})" if _hot else "")
+                 + " -- the judgment call is what remains, and it arrives pre-computed.")
     if h.rerank_breach:
         defects.append((
             "gap-register-rerank-breach",
             f"§36(3): {h.verdict} Re-rank now and escalate anything genuinely stuck -- this is the "
             "organ every other law depends on; when it stops moving, everything routed into it "
-            "stops with it, silently."))
+            f"stops with it, silently.{_mech}"))
     elif h.rerank_stale:
         defects.append((
             "gap-register-rerank-stale",
             f"§36(3): {h.verdict} Caught as DRIFT, before the 7-day escalation bar it sets for "
-            "itself."))
+            f"itself.{_mech}"))
     if h.undated_open:
         defects.append((
             "gap-register-parked-rows",

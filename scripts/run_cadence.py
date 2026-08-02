@@ -456,6 +456,26 @@ def main() -> None:
         for _ln in (_r.stdout or "").strip().splitlines()[:1]:
             print(f"cadence: {_ln[:150]}")
 
+    # GAP-REGISTER MECHANICAL PASS (EVERY CYCLE). The register is, by the doctrine's own words,
+    # "the only organ that DRIVES work" -- and its stated cadence ("re-ranked at the START of
+    # every daily cycle") was executed by an LLM remembering to do it, which is precisely the
+    # reliability hole this module's docstring exists to close. Seven days and fifty open rows.
+    #
+    # This is the MECHANICAL half only: deadlines, parked rows, ownership and starvation, all
+    # computable and none of them opinions. It writes a stamp that deliberately does NOT match the
+    # `Re-ranked` regex, so it cannot discharge the judgment duty -- an organ that cleared a check
+    # it had not satisfied would stop the defect being reported and the work being done at the
+    # same moment, and only the first of those is visible.
+    _r = subprocess.run([sys.executable, "scripts/rerank_gaps.py"],
+                        capture_output=True, text=True, timeout=120, check=False)
+    _tail = (_r.stdout or _r.stderr or "").strip().splitlines()[-1:] or [""]
+    if _r.returncode != 0 or not Path("data/gap_rerank.json").exists():
+        print(f"cadence: gap-rerank rc={_r.returncode} NO ARTIFACT | {_tail[0][:110]}")
+    else:
+        fired.append("gap-rerank")
+        for _ln in (_r.stdout or "").strip().splitlines()[:1]:
+            print(f"cadence: {_ln[:150]}")
+
     # CONTRIBUTION ESTIMATES (EVERY CYCLE, BEFORE THE ALLOCATOR). run_allocator has reported the
     # same binding constraint on every cycle it has ever run -- "CONTRIBUTION ESTIMATES" -- and
     # P4 says the marginal resource goes to argmax_i |dE[log W]/dC_i|, an argmax that was being
