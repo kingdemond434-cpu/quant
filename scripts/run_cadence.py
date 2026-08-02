@@ -61,6 +61,9 @@ _STATE_FLOORS_D = {"last_panel": 4.0, "last_tier1": 16.0, "last_prompt_review": 
                    "last_prospector": 35.0, "last_blind_rediscovery": 100.0,
                    "last_model_upgrade": 45.0, "last_meta_research": 3.0,
                    "last_fill_quality": 10.0,
+                   # Both are DAILY organs with a 1.0d gate; the floor is the outer bound past
+                   # which a skipped duty stops being a quiet cycle and becomes a defect.
+                   "last_breadth_expansion": 3.0, "last_hypothesis_generation": 3.0,
                    "last_lit_deepdive": 35.0, "last_decision_scoring": 35.0,
                    "last_memory_consolidation": 100.0}
 
@@ -270,6 +273,46 @@ def main() -> None:
             fired.append("meta-research")
         else:
             print(f"cadence: meta-research produced nothing rc={_r.returncode} -- duty stays OWED")
+
+    # BREADTH EXPANSION + HYPOTHESIS GENERATION (daily). BOTH SHIPPED UNSCHEDULED, and the
+    # allocator only surfaced it once its writer-attribution was corrected: an organ that writes
+    # an artifact nothing calls is indistinguishable, in every report, from an organ that does not
+    # exist. breadth_expander is the desk's only GENERATIVE source discovery ("here is territory
+    # you have not looked at") and hypothesis_generator is the only generator that can see the
+    # graveyard -- the one that stops the desk re-proposing the dead, which is exactly how the
+    # principal's 50-hypothesis slate arrived three-quarters already-refuted.
+    #
+    # PRODUCTION, NOT EXIT CODE. Both are LLM organs against a shared wallet. A half-funded
+    # roster 402s mid-run, the sanitiser drops the partial result, and the process exits clean --
+    # the precise shape that let cadence_state claim a panel ran while nothing had been appended
+    # for five days. So the duty is stamped on the ARTIFACT GROWING, never on the return code,
+    # and their own budget guards handle the money.
+    for _name, _script, _artifact, _key in (
+            ("breadth-expansion", "scripts/breadth_expander.py",
+             "data/breadth_expansion.jsonl", "last_breadth_expansion"),
+            ("hypothesis-generation", "scripts/hypothesis_generator.py",
+             "data/hypothesis_queue.jsonl", "last_hypothesis_generation")):
+        if _days_since(state, _key) < 1.0:
+            continue
+        _p = Path(_artifact)
+        try:
+            _before = _p.stat().st_size
+        except OSError:
+            _before = -1
+        _r = subprocess.run([sys.executable, _script],
+                            capture_output=True, text=True, timeout=900, check=False)
+        try:
+            _after = _p.stat().st_size
+        except OSError:
+            _after = -1
+        _tail = (_r.stdout or _r.stderr or "").strip().splitlines()[-1:] or [""]
+        if _after > _before:
+            state[_key] = now.isoformat()
+            fired.append(_name)
+            print(f"cadence: {_name} +{_after - _before}b | {_tail[0][:110]}")
+        else:
+            print(f"cadence: {_name} rc={_r.returncode} appended NOTHING -- duty stays OWED "
+                  f"| {_tail[0][:110]}")
 
     # FILL QUALITY (weekly). The ledger ordered "re-measure WEEKLY until >60%" after the
     # patient-opens fix; that order never became code, so the fix has been unverified since it
