@@ -698,12 +698,38 @@ def ledger_regressed(ratchet: Ratchet, ledger: Sequence[LedgerRow]) -> tuple[boo
         return False, "no prior record -- nothing to compare"
     n = len(ledger)
     earliest = min((float(r["ts"]) for r in ledger), default=0.0)
+
     if n < ratchet.n_snapshots:
         return True, (f"snapshot count fell {ratchet.n_snapshots} -> {n}: the conversion ledger "
                       "has been truncated or deleted")
     if ratchet.earliest_ts and earliest > ratchet.earliest_ts + 1.0:
-        return True, ("the ledger's earliest snapshot moved forward in time: history was "
-                      "rewritten, not appended")
+        # AMBIGUOUS BY CONSTRUCTION, AND SAID SO RATHER THAN GUESSED.
+        #
+        # This fires in two situations that the ledger CANNOT distinguish: history genuinely
+        # rewritten, and a fresh checkout. data/ is gitignored, so a clone starts an empty ledger
+        # and fills it one row per audit invocation -- every row then postdates the recorded
+        # earliest, at an unchanged or higher count. Structurally identical to a rewrite that
+        # replaced old rows with new ones.
+        #
+        # A carve-out for "disjoint history" was written, and reverted, because the existing
+        # tamper test proved it silenced the real case: `n >= n_snapshots` is true of BOTH, so
+        # exempting it would have converted a false positive into a false negative on the only
+        # detector of the desk's evidence base being erased. Between the two errors this one is
+        # the cheap one -- an accusation that can be checked, rather than a deletion that cannot
+        # be noticed.
+        #
+        # So the verdict stands and the MESSAGE carries the ambiguity, which is what stops a
+        # reader (this one included, on 2026-08-02) filing an environment artifact as a desk
+        # defect without comparing the timestamps first.
+        return True, (
+            "the ledger's earliest snapshot moved forward in time: history was rewritten, not "
+            f"appended (local earliest {earliest:.0f} vs recorded {ratchet.earliest_ts:.0f}, "
+            f"{n} rows vs {ratchet.n_snapshots} recorded). CHECK THE ENVIRONMENT BEFORE THE "
+            "CONCLUSION: data/ is gitignored, so a fresh checkout builds its own ledger from "
+            "scratch and produces this signature having deleted nothing. On the machine that owns "
+            "the recorded history this is tampering; on a clone it is expected. The ledger alone "
+            "cannot tell them apart, and pretending otherwise in either direction is worse than "
+            "saying so.")
     return False, "ledger intact"
 
 

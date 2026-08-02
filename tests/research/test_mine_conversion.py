@@ -530,3 +530,50 @@ class TestLawSelfAudit:
         eff = law_effectiveness(load_ledger(self._ledger(tmp_path, early + late)))
         assert eff.late_rate > eff.early_rate, "the point estimate really did rise -- the trap"
         assert eff.improving is False, "a 12pp move on n=8 is noise, not a working law"
+
+
+class TestAmbiguousRewriteSignal:
+    """A fresh clone and a rewritten history are STRUCTURALLY IDENTICAL, and the check says so.
+
+    data/ is gitignored, so any fresh checkout starts an empty ledger and fills it one row per
+    audit invocation. Every row then postdates the recorded earliest at an unchanged or higher
+    count -- the same signature as a rewrite that replaced old rows with new ones.
+
+    A carve-out exempting "disjoint history" was written and REVERTED: `n >= n_snapshots` holds for
+    both cases, so exempting it converted a false positive into a false NEGATIVE on the only
+    detector of the desk's evidence base being erased. Between those two errors this one is the
+    cheap one -- an accusation can be checked, a silent deletion cannot be noticed. So the verdict
+    stands and the ambiguity moves into the message.
+    """
+
+    @staticmethod
+    def _rat(n, earliest):
+        return Ratchet(n_snapshots=n, earliest_ts=earliest)
+
+    def test_the_signal_still_fires_because_it_cannot_safely_be_suppressed(self) -> None:
+        led = [{"ts": 2000.0 + i, "items": []} for i in range(90)]
+        bad, _ = ledger_regressed(self._rat(89, 1000.0), led)
+        assert bad is True
+
+    def test_the_message_names_the_environment_explanation(self) -> None:
+        """What stops a reader -- this one, on 2026-08-02 -- filing a container artifact as a desk
+        defect. The check cannot resolve the ambiguity; it can refuse to hide it."""
+        led = [{"ts": 2000.0 + i, "items": []} for i in range(90)]
+        _, why = ledger_regressed(self._rat(89, 1000.0), led)
+        assert "CHECK THE ENVIRONMENT BEFORE THE CONCLUSION" in why
+        assert "gitignored" in why and "having deleted nothing" in why
+
+    def test_the_message_carries_the_numbers_needed_to_decide(self) -> None:
+        led = [{"ts": 2000.0 + i, "items": []} for i in range(90)]
+        _, why = ledger_regressed(self._rat(89, 1000.0), led)
+        assert "2000" in why and "1000" in why and "90 rows" in why
+
+    def test_a_genuinely_truncated_history_is_STILL_caught(self) -> None:
+        led = [{"ts": 1000.0 + i, "items": []} for i in range(10)]
+        bad, why = ledger_regressed(self._rat(89, 1000.0), led)
+        assert bad is True and "truncated or deleted" in why
+
+    def test_an_intact_ledger_still_reads_intact(self) -> None:
+        led = [{"ts": 1000.0 + i, "items": []} for i in range(120)]
+        bad, why = ledger_regressed(self._rat(89, 1000.0), led)
+        assert bad is False and why == "ledger intact"
