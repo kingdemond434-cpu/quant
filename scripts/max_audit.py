@@ -4207,6 +4207,43 @@ def check_unwired_modules(defects) -> None:
 CHECKS += [("unwired-modules", check_unwired_modules)]
 
 
+def check_moat_screened(defects) -> None:
+    """The EXCLUSIVE asset must be screened for survivors, not merely counted.
+
+    `mine_moat` records COVERAGE -- which (venue, symbol, day, mechanism) cells have been measured
+    -- and `extract_all` returns mean, std, p50, p95, max. For weeks that was the whole
+    relationship the desk had with the one asset a competitor cannot buy, scrape or backfill:
+    descriptive statistics and no verdict, at asymmetry depth 2 of 5.
+
+    Coverage without a verdict is the most expensive possible way to own an irreplaceable asset.
+    """
+    art = ROOT / "data/moat_screen.json"
+    if not art.exists():
+        defects.append((
+            "moat-never-screened",
+            "data/moat_screen.json absent -- the self-recorded L2 tape has never been screened "
+            "for predictive power. mine_moat measures COVERAGE; nothing asks whether any "
+            "proprietary mechanism predicts anything. Run scripts/screen_moat.py."))
+        return
+    try:
+        d = json.loads(art.read_text("utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return
+    if d.get("state") == "NO TAPE":
+        return                      # the recorders are the blocker; other checks own that
+    suspect = d.get("suspect_lookahead") or []
+    if len(suspect) > 0.5 * max(int(d.get("scored", 0)), 1):
+        defects.append((
+            "moat-screen-mostly-suspect",
+            f"{len(suspect)} of {d.get('scored')} scored hypotheses came back SUSPECT-LOOKAHEAD. "
+            "On a causally clean tape that is a statement about the HARNESS, not the features -- "
+            "alignment, horizon calibration or target construction. Four such bugs were found and "
+            "fixed on 2026-08-03; a fifth would look exactly like this."))
+
+
+CHECKS += [("moat-screened", check_moat_screened)]
+
+
 def check_registry_complete(defects) -> None:
     """A written check that is never registered is a law the desk believes it is enforcing.
 

@@ -73,6 +73,8 @@ REMEDIATIONS: dict[str, tuple[list[str], str]] = {
                   "refresh the asymmetry ledger"),
     "decay": (["python3", "scripts/monitor_data_decay.py"],
               "refresh the data decay monitor"),
+    "moat-never-screened": (["python3", "scripts/screen_moat.py"],
+                            "hunt survivors in the self-recorded L2 tape"),
 }
 
 #: Defect classes no command can close. Naming them stops the loop retrying forever and stops the
