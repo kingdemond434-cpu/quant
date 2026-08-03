@@ -4000,6 +4000,213 @@ CHECKS += [("law-coverage", check_law_coverage)]
 _CHECKS_EXEMPT: set[str] = set()
 
 
+ASYM_RECORD = ROOT / "docs/research/asymmetry_record.json"   # git-tracked; ratchets UP only
+
+
+def check_asymmetry_ratchet(defects) -> None:
+    """REALISED asymmetry may never fall -- the promised ratchet, and it was missing.
+
+    `scripts/asymmetry_ledger.py` grades every source on two axes and computes REALISED asymmetry
+    as weight x depth. Nothing audited it, so the ledger was a report rather than a ratchet: depth
+    could regress, a claim could go stale, and the only consequence was a number changing in a
+    file nobody re-read. `daily_max` even carried a remediation keyed on "asymmetry" that could
+    never fire, because no check produced a defect with that id -- dead config guarding nothing.
+
+    Two conditions, and the second is the one that matters. Realised asymmetry falling is a
+    regression by attrition -- §39(4) applied to the axis that actually decides edge. And a STALE
+    claim is worse than a low one: it means the desk is holding an advantage it has not
+    re-verified, which is 'not measured = fine' pointed at its own moat.
+    """
+    art = ROOT / "data/asymmetry_ledger.json"
+    if not art.exists():
+        defects.append((
+            "asymmetry-never-measured",
+            "data/asymmetry_ledger.json absent -- nothing has graded which of the desk's sources "
+            "a competitor could also have. Run scripts/asymmetry_ledger.py."))
+        return
+    try:
+        d = json.loads(art.read_text("utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return
+    realised = float(d.get("realised_asymmetry_total", 0.0))
+    stale = list(d.get("stale_claims") or [])
+    if stale:
+        defects.append((
+            "asymmetry-claim-stale",
+            f"{len(stale)} asymmetry claim(s) past their half-life without re-verification: "
+            f"{', '.join(stale[:6])}. A RECONSTRUCTIBLE advantage lasts only until somebody "
+            "productises it -- the graveyard already carries vendor-replacement entries that are "
+            "exactly that transition. An unchecked claim is 'not measured' being read as "
+            "'measured and fine', applied to the one asset that justifies the enterprise."))
+    try:
+        rec = json.loads(ASYM_RECORD.read_text("utf-8")) if ASYM_RECORD.exists() else {}
+    except (OSError, json.JSONDecodeError):
+        rec = {}
+    best = float(rec.get("best_realised", 0.0))
+    if realised > best + 1e-9:
+        rec["best_realised"] = realised
+        rec["updated"] = datetime.now(tz=UTC).isoformat()
+        rec["note"] = ("§39 ratchet on the asymmetry axis: realised = weight x depth, and it only "
+                       "grows. Depth is what has been BUILT, never what is planned.")
+        with contextlib.suppress(OSError):
+            ASYM_RECORD.write_text(json.dumps(rec, indent=1), "utf-8")
+    elif best > 0 and realised < best * 0.9:
+        defects.append((
+            "asymmetry-realised-fell",
+            f"§39(4) on the asymmetry axis: realised asymmetry fell to {realised:.2f} from a "
+            f"record of {best:.2f}. Weight x depth only grows -- a source demoted, a depth "
+            "regressed or a claim expired. Restore it or record what supersedes it."))
+
+
+CHECKS += [("asymmetry-ratchet", check_asymmetry_ratchet)]
+
+
+def check_data_decay(defects) -> None:
+    """A source going dark or going useless must raise a defect, not sit in a report.
+
+    `libs/data/decay.py` separates availability decay from usefulness decay and refuses to call
+    either one on a thin sample. Nothing consumed its verdicts, so a DECAYING source produced a
+    JSON file and no consequence -- and `daily_max` carried a "decay" remediation that could never
+    fire for want of a defect to match.
+    """
+    art = ROOT / "data/data_decay.json"
+    if not art.exists():
+        return                    # the monitor has never run here; production checks cover that
+    try:
+        d = json.loads(art.read_text("utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return
+    act = d.get("actionable") or []
+    if act:
+        names = ", ".join(f"{r.get('source')}({r.get('verdict')})" for r in act[:6])
+        defects.append((
+            "data-decay-actionable",
+            f"{len(act)} source(s) DECAYING or DEAD: {names}. Availability decay needs a new "
+            "endpoint and usefulness decay needs the source retired -- different remedies, which "
+            "is why they are never summed. NEVER-WORKED is excluded here on purpose: it is an "
+            "acquisition failure, not a decline."))
+
+
+CHECKS += [("data-decay", check_data_decay)]
+
+
+#: Library modules that legitimately have no importer. Each exemption is ARGUED here, never
+#: assumed by silence -- the same rule CHECKS uses.
+_UNWIRED_EXEMPT: set[str] = {
+    "libs.__init__",
+    # LIVE CONNECTORS, DORMANT UNTIL GATE-0 BY DESIGN. Wiring them now would mean an order path
+    # reachable from a desk with zero validated alphas, which is strictly worse than an unreachable
+    # one. They activate when the principal supplies keys; until then unreachable IS the safe state
+    # and pretending otherwise would be the one exemption that could lose money.
+    "libs.execution.binance_live",
+    "libs.execution.binance_spot_live",
+    "libs.execution.staging",
+}
+
+
+def check_unwired_modules(defects) -> None:
+    """A library module nothing imports is the desk's own "built but never runs" class.
+
+    THIS CHECK EXISTS BECAUSE A ONE-OFF GREP FOUND THREE OF THEM AT ONCE (2026-08-03):
+    `libs/data/wallet_graph.py`, `libs/portfolio/capacity_allocation.py` and -- earlier in the same
+    session -- the whole ICT detector family, which shipped with full test suites and no caller.
+    Tests passing is not the same as being reachable: a module with 20 green tests and no importer
+    produces exactly as much E[log W] as not having been written, and takes longer.
+
+    The sweep that caught them was a shell loop run by hand. A defect class found by hand once gets
+    found by hand never again, so it is mechanical from here.
+
+    TESTS DO NOT COUNT AS WIRING, deliberately. A test importing a module proves it works, not that
+    anything uses it -- and counting them would make every orphan look connected, which is the
+    precise failure being detected.
+    """
+    import ast
+
+    lib_root = ROOT / "libs"
+    if not lib_root.exists():
+        return
+    modules: set[str] = set()
+    for p in lib_root.rglob("*.py"):
+        if "__pycache__" in p.parts:
+            continue
+        rel = p.relative_to(ROOT).with_suffix("")
+        name = ".".join(rel.parts)
+        if name.endswith(".__init__"):
+            name = name[: -len(".__init__")]
+        modules.add(name)
+
+    imported: set[str] = set()
+    for area in ("scripts", "libs", "ops"):
+        base = ROOT / area
+        if not base.exists():
+            continue
+        for p in base.rglob("*.py"):
+            if "__pycache__" in p.parts:
+                continue
+            try:
+                tree = ast.parse(p.read_text("utf-8", errors="ignore"))
+            except (OSError, SyntaxError):
+                continue
+            parts = p.relative_to(ROOT).with_suffix("").parts
+            self_name = ".".join(parts)
+            pkg = ".".join(parts[:-1])          # the package a relative import resolves against
+            here: set[str] = set()
+            for node in ast.walk(tree):
+                if isinstance(node, ast.ImportFrom):
+                    # RELATIVE IMPORTS ARE THE MAJORITY INSIDE A PACKAGE, and resolving them is
+                    # what separates a useful check from a useless one. The first version recorded
+                    # `from .card import X` as the module "card", which matches nothing, and
+                    # reported 241 orphans out of 244 modules -- a check that loud is ignored
+                    # immediately, which is the crying-wolf failure this codebase names elsewhere.
+                    base = node.module or ""
+                    if node.level:
+                        up = pkg.split(".")
+                        up = up[: len(up) - (node.level - 1)] if node.level > 1 else up
+                        base = ".".join([*up, base]) if base else ".".join(up)
+                    if base:
+                        here.add(base)
+                        for alias in node.names:      # `from libs.ict import crypto`
+                            here.add(f"{base}.{alias.name}")
+                elif isinstance(node, ast.Import):
+                    for alias in node.names:
+                        here.add(alias.name)
+            # SELF-DISCARD IS PER FILE, AND GETTING THAT WRONG INVERTED THE WHOLE CHECK. The first
+            # version discarded `self_name` from the GLOBAL set, so processing libs/alpha/card.py
+            # erased the record that libs/self_improvement/controller.py had imported it -- every
+            # module deleted its own inbound edges and 241 of 244 modules reported as orphans. A
+            # check that loud is ignored on sight, which is the crying-wolf failure named
+            # elsewhere in this file.
+            here.discard(self_name)                   # a module importing itself is not a caller
+            imported |= here
+
+    # A PACKAGE IS REACHABLE IF ANY SUBMODULE IS: importing libs.alpha.card loads libs.alpha on
+    # the way. Counting package roots as orphans put 20 phantom entries in the list and buried the
+    # real ones, which is the same crying-wolf failure in a quieter register.
+    reachable = set(imported)
+    for name in imported:
+        parts = name.split(".")
+        for i in range(1, len(parts)):
+            reachable.add(".".join(parts[:i]))
+
+    orphans = sorted(
+        m for m in modules
+        if m not in reachable and m not in _UNWIRED_EXEMPT
+        and not m.endswith((".errors", ".models"))    # type/exception modules are imported by name
+    )
+    if orphans:
+        defects.append((
+            "unwired-modules",
+            f"{len(orphans)} library module(s) that NOTHING imports -- built, tested, and "
+            f"unreachable: {', '.join(orphans[:8])}"
+            + (f" (+{len(orphans) - 8} more)" if len(orphans) > 8 else "")
+            + ". Tests do not count as wiring: a module with green tests and no importer produces "
+              "as much E[log W] as not having been written. Give each a caller or argue it into "
+              "_UNWIRED_EXEMPT."))
+
+
+CHECKS += [("unwired-modules", check_unwired_modules)]
+
+
 def check_registry_complete(defects) -> None:
     """A written check that is never registered is a law the desk believes it is enforcing.
 

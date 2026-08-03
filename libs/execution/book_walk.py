@@ -39,6 +39,8 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from libs.backtest.queue_fill import maker_fill
+
 __all__ = [
     "DEPTH_KINDS",
     "BookSide",
@@ -47,6 +49,7 @@ __all__ = [
     "calibrate_impact",
     "capacity_at_impact",
     "fill_probability",
+    "queue_ahead_at",
     "walk_book",
 ]
 
@@ -212,22 +215,39 @@ def calibrate_impact(books: Sequence[BookSide], sizes: Sequence[float], *,
     return {"k": k, "r2": r2, "n": float(len(part))}
 
 
+def queue_ahead_at(side: BookSide, level_price: float, *, is_bid: bool) -> float:
+    """Resting size at or better than `level_price` -- the queue a passive order joins BEHIND.
+
+    This is the input the desk's existing maker-fill model was missing. `libs/backtest/queue_fill`
+    models queue priority, latency and partial fills properly; what it could not know was how much
+    size actually sits in front, because that is a fact about the recorded book. This supplies it.
+    """
+    if len(side) == 0:
+        return 0.0
+    better = side.price >= level_price if is_bid else side.price <= level_price
+    return float(side.size[better].sum())
+
+
 def fill_probability(depth_ahead: float, traded_volume: float, *,
                      own_size: float = 0.0) -> float:
-    """P(a resting order at a level is filled), given size queued ahead and volume that arrived.
+    """Fraction of a resting order filled, given size queued ahead and volume that arrived.
 
-    THIS IS WHAT CLOSES THE ICT FILL-BOUND QUESTION. `run_ict_strategy.py` reports two bounds --
-    filled at the level or filled at the close -- and states that the truth depends on book depth
-    the desk had not measured. With the recorded book it is measurable: an order is filled when
-    arriving volume exceeds what is queued in front of it.
+    THIS DELEGATES, AND AN EARLIER VERSION DID NOT -- WHICH WAS A DEFECT OF MINE. I wrote a
+    standalone probability here without checking whether the desk already modelled passive fills.
+    It did: `libs/backtest/queue_fill.maker_fill` is a port of the hftbacktest mechanism and is
+    strictly richer, carrying feed latency and partial fills that my version simply lacked. Two
+    implementations of the same mechanism is worse than either alone, because the one that gets
+    used is whichever the caller happened to import.
 
-    Deliberately NOT a model of queue jumping, cancellation or iceberg replenishment. Those all
-    push the true probability DOWN, so this is an UPPER BOUND and the optimistic side is the one
-    named -- an execution assumption that errs generous must say which way it errs.
+    So the mechanism lives in one place and this is the thin adapter that feeds it from a recorded
+    book. It remains an UPPER BOUND on realised fills: book replenishment, cancellations shrinking
+    the queue and price-level jumps are documented as unmodelled there, and all push the true
+    figure down.
     """
     if depth_ahead < 0 or traded_volume < 0 or own_size < 0:
         raise ValueError("sizes cannot be negative")
-    need = depth_ahead + own_size
-    if need <= 0:
+    size = own_size if own_size > 0 else 1.0
+    if depth_ahead <= 0 and own_size <= 0:
         return 1.0
-    return float(min(traded_volume / need, 1.0))
+    return float(maker_fill(order_size=size, queue_ahead=depth_ahead,
+                            through_volume=traded_volume).fill_fraction)

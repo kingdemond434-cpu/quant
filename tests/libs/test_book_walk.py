@@ -172,12 +172,30 @@ def test_fit_quality_is_reported_alongside_the_coefficient() -> None:
 
 # ------------------------------------------------------- queue fill probability
 
-def test_fill_probability_needs_volume_to_clear_the_queue() -> None:
-    """THIS CLOSES THE ICT FILL-BOUND QUESTION. run_ict_strategy reports +14.9bp/trade filled at
-    the level against -15.6bp filled at the close and says the truth depends on depth the desk had
-    not measured. It has."""
-    assert fill_probability(depth_ahead=100.0, traded_volume=10.0) == pytest.approx(0.1)
+def test_you_fill_NOTHING_until_the_queue_ahead_clears() -> None:
+    """FIFO PRICE-TIME PRIORITY, AND MY FIRST VERSION GOT IT WRONG IN THE FLATTERING DIRECTION.
+
+    I wrote `min(volume / need, 1)` -- 10 units trading against 100 ahead gave 0.1, implying a
+    tenth of the order fills. It does not. Under price-time priority nothing fills until the
+    queue in front is consumed; the answer is ZERO. A linear fraction manufactures partial maker
+    fills that never happened, which is exactly how a passive strategy's backtest invents edge.
+
+    The mechanism now lives in `libs/backtest/queue_fill.maker_fill`, which the desk already had
+    and which I duplicated without checking -- it carries feed latency and partial fills my
+    version simply lacked. Two implementations of one mechanism is worse than either alone,
+    because the one that gets used is whichever the caller happened to import.
+    """
+    assert fill_probability(depth_ahead=100.0, traded_volume=10.0) == 0.0
     assert fill_probability(depth_ahead=100.0, traded_volume=500.0) == 1.0
+
+
+def test_the_queue_ahead_comes_from_the_recorded_book() -> None:
+    """The input the existing maker model could not know: how much size actually sits in front.
+    That is a fact about the recorded book, which is what this module supplies."""
+    from libs.execution.book_walk import queue_ahead_at
+    asks = _asks(n=10, top=100.0, tick=0.01, size=2.0)
+    assert queue_ahead_at(asks, 100.02, is_bid=False) == pytest.approx(6.0)
+    assert queue_ahead_at(asks, 99.0, is_bid=False) == 0.0
 
 
 def test_our_own_size_joins_the_queue() -> None:
@@ -195,6 +213,16 @@ def test_negative_sizes_are_refused() -> None:
 
 
 def test_the_probability_is_documented_as_an_upper_bound() -> None:
-    """Queue jumping, cancellation and iceberg replenishment all push the true figure DOWN. An
-    execution assumption that errs generous must say which way it errs."""
+    """Book replenishment, cancellations shrinking the queue and price-level jumps are documented
+    as unmodelled in queue_fill, and all push the true figure DOWN. An execution assumption that
+    errs generous must say which way it errs."""
     assert "UPPER BOUND" in fill_probability.__doc__
+
+
+def test_it_delegates_rather_than_reimplementing() -> None:
+    """One mechanism, one implementation. Two versions of a passive-fill model is worse than
+    either alone: the one that gets used is whichever the caller happened to import."""
+    import inspect
+
+    from libs.execution import book_walk
+    assert "maker_fill" in inspect.getsource(book_walk.fill_probability)
