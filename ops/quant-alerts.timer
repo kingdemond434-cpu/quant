@@ -1,0 +1,13 @@
+[Unit]
+Description=Tick the quant pager every 15 minutes
+
+[Timer]
+# WELL INSIDE THE FLOOR IT FEEDS. run_cadence requires data/.last_alerts.json to be under 1.0h
+# old; ticking at 15 minutes means three consecutive failures still leave the floor intact, so a
+# transient network blip does not read as a dead pager.
+OnBootSec=3min
+OnUnitActiveSec=15min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

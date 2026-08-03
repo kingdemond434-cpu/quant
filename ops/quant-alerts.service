@@ -1,0 +1,22 @@
+[Unit]
+# THE PAGER. run_cadence enforces a 1.0h freshness floor on data/.last_alerts.json, and nothing
+# in the repository produced it -- so on any fresh VPS that floor was violated from the first hour
+# and stayed violated. A pager that does not tick is not a quiet desk, it is a deaf one.
+Description=Quant pager tick (ntfy push to the principal)
+After=network-online.target
+
+[Service]
+User=quant
+WorkingDirectory=/home/quant/quant-platform
+Environment=PATH=/home/quant/.local/bin:/home/quant/quant-platform/.venv/bin:/usr/bin:/bin
+Type=oneshot
+TimeoutStartSec=240
+ExecStart=/home/quant/quant-platform/.venv/bin/python scripts/run_alerts.py
+# An organ that fails must not take the timer down with it: the next tick is the retry, and a
+# disabled timer is a silence nobody notices.
+SuccessExitStatus=0 1
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/quant/quant-platform/data /home/quant/quant-platform/web /home/quant/quant-platform/docs
+NoNewPrivileges=true
+PrivateTmp=true

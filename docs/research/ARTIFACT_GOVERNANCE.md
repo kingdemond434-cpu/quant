@@ -50,7 +50,26 @@ cleared rather than merely described.
 |---|---|---|
 | `docs/RECORDER_DEPLOY.md` | **TERMINAL** | Record of one deployment decision under one constraint: the `quant` user has no sudo, so the recorders are supervised by the user's own crontab rather than by systemd. It has no producer and no cadence — a clock cannot make a runbook true — so a staleness floor would be theatre. It is superseded BY A NAMED CONDITION instead: the day root is available and the four unit files in `ops/` are installed, this document becomes actively harmful (it would tell an operator to add cron supervision on top of `Restart=always`, giving two supervisors for three processes), and a new runbook must supersede it by name. That condition, not a date, is what retires it. |
 
-**Net: 3 cadenced, 5 doctrine, 4 terminal. Zero remain ungoverned.**
+### Added 2026-08-03 (the superseding condition in the row above has now FIRED)
+
+| Artifact | Class | Rationale |
+|---|---|---|
+| `docs/VPS_BRINGUP.md` | **TERMINAL** | The runbook that supersedes `RECORDER_DEPLOY.md` **by name**, exactly as that row said something eventually must. Same class and the same reasoning: it records a deployment decision, has no producer and no cadence, and a staleness floor on a runbook would be theatre. Its own superseding condition: if the desk ever stops being deployed by `ops/deploy_vps.sh` — a different orchestrator, containers, a managed host — this document describes a machine that no longer exists and a new runbook must supersede it by name. |
+
+**The row above is now PARTLY superseded, and saying so is the point.** `RECORDER_DEPLOY.md` named
+its own retirement condition as "root is available and the unit files in `ops/` are installed", at
+which point it "becomes actively harmful" by prescribing cron supervision on top of
+`Restart=always`. As of 2026-08-03 the second half has fired: the units exist, and five more were
+added for the organs that had no launcher at all — the cadence engine, the pager, the process
+supervisor and the ruin rail. Root availability remains unknown and is the operator's fact, not the
+repository's, so `deploy_vps.sh` DETECTS it rather than assuming either way and prints the
+no-sudo path when `sudo -n` fails.
+
+`RECORDER_DEPLOY.md` is therefore **retained, not retired**, and now carries a pointer at the top
+directing operators to `VPS_BRINGUP.md` first. It stays because it is still the reference for what
+the recorders do and how to debug them; what it no longer is, is the entry point.
+
+**Net: 3 cadenced, 5 doctrine, 5 terminal. Zero remain ungoverned.**
 
 A note on why this row was written the same day the artifact was: an artifact classified late is
 an artifact that was ungoverned for however long "late" was, and the register's own rationale for

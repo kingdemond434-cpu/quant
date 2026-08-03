@@ -1,5 +1,10 @@
 # Starting the recorders — the one action that unblocks everything downstream
 
+> **This document covers the DATA side only.** For the whole desk — the cadence engine, the pager,
+> the process supervisor and the ruin rail, none of which had a launcher until 2026-08-03 — see
+> **[VPS_BRINGUP.md](VPS_BRINGUP.md)**, and prefer `bash ops/deploy_vps.sh` over the manual steps
+> below. This file remains the reference for what the recorders themselves do and how to debug them.
+
 **Why this document exists.** The desk has a moat miner, an EVIG ranking that prefers owned data
 3× on replication cost, a 30% reserved slot floor for moat candidates, and a constitutional law
 (P26) making under-exploration a breach. All of it is running. All of it is waiting on data that

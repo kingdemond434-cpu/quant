@@ -1,0 +1,25 @@
+[Unit]
+# THE SUPERVISOR THAT HAD NO SUPERVISOR. scripts/watchdog.py keeps the executor, dashboard and
+# liquidation listener alive -- and its own docstring records what happened when it died: it
+# crashed on 2026-07-11 (a Windows-only path on a Linux box) and the desk ran ELEVEN AND A HALF
+# DAYS with the pager silent and the forward clocks frozen. The fix that day was to the crash. The
+# fix that was never made is this file: nothing in the repository started the watchdog at all, so
+# it lived exactly as long as whoever last typed its name remembered to.
+Description=Quant process supervisor (executor, dashboard, liquidation listener)
+After=network-online.target
+
+[Service]
+User=quant
+WorkingDirectory=/home/quant/quant-platform
+Environment=PATH=/home/quant/.local/bin:/home/quant/quant-platform/.venv/bin:/usr/bin:/bin
+Type=oneshot
+TimeoutStartSec=300
+ExecStart=/home/quant/quant-platform/.venv/bin/python scripts/watchdog.py
+# An organ that fails must not take the timer down with it: the next tick is the retry, and a
+# disabled timer is a silence nobody notices.
+SuccessExitStatus=0 1
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/quant/quant-platform/data /home/quant/quant-platform/web /home/quant/quant-platform/docs
+NoNewPrivileges=true
+PrivateTmp=true

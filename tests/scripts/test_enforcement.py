@@ -441,3 +441,94 @@ def test_the_enforcer_has_ONE_definition_of_scope() -> None:
             "the governing layer is inert.")
     t2, u2 = audit.cited_evidence(repo)
     assert E._scope(audit, t2, u2) == audit.scope_of(t2, u2) == "REPO"
+
+
+# ------------------------------------------------------ every organ has a LAUNCHER
+
+def test_every_verified_floor_has_a_unit_that_can_produce_it() -> None:
+    """THE GAP THIS CLOSES WAS THE LARGEST ONE LEFT, AND IT WAS INVISIBLE BY CONSTRUCTION.
+
+    Until 2026-08-03 the repository could start recorders, a moat miner and five credit-blocked
+    diggers. It could not start the DESK. Nothing in it launched the cadence engine (which fires
+    the panel, the moat screen, survivor promotion, the forward-clock review, and enforces the
+    never-sleepier floors), the pager (whose artifact carries a 1.0h floor that was therefore
+    violated from the first hour of any fresh install, permanently), the process supervisor
+    (whose own header records eleven and a half days of silent pager and frozen clocks after it
+    died on 2026-07-11), or the Tier-3 ruin rail.
+
+    Nothing detected it either, because every check looked at the units that EXIST rather than at
+    the organs that must run. So this walks the freshness contract from the other end: for every
+    artifact `verify_deployment` holds to a floor, the unit it names must be a real file in ops/,
+    and that unit must actually invoke something.
+    """
+    import scripts.verify_deployment as V
+    for artifact, (_floor, unit, _why) in V.FLOORS.items():
+        base = unit.removesuffix(".timer").removesuffix(".service")
+        svc = Path("ops") / f"{base}.service"
+        assert svc.exists(), (
+            f"{artifact} is held to a floor by a unit that does not exist: {svc}. A floor whose "
+            "producer nothing starts is violated from the first hour and stays violated.")
+        body = svc.read_text("utf-8")
+        assert "ExecStart=" in body, f"{svc} starts nothing"
+        if unit.endswith(".timer"):
+            timer = Path("ops") / unit
+            assert timer.exists(), (
+                f"{svc} is a oneshot with no timer -- it runs when somebody types its name, "
+                "which is exactly how the desk lost 11.5 days")
+            assert "OnCalendar=" in timer.read_text("utf-8") or \
+                   "OnUnitActiveSec=" in timer.read_text("utf-8"), f"{timer} never fires"
+
+
+def test_every_required_unit_is_installed_by_the_deploy_script() -> None:
+    """A unit file the deploy script does not copy is a unit that exists in git and nowhere else.
+    That is the same failure one level up: written, correct, and never installed."""
+    import scripts.verify_deployment as V
+    deploy = Path("ops/deploy_vps.sh").read_text("utf-8")
+    for unit in (*V.REQUIRED_UNITS, *V.TIER3):
+        assert unit in deploy or unit.removesuffix(".timer") in deploy, (
+            f"{unit} is required by verify_deployment and never installed by ops/deploy_vps.sh")
+
+
+def test_the_deploy_script_will_not_arm_the_ruin_rail() -> None:
+    """It moves funds. Tier-3 means the principal's act, never a script's -- and a deploy that
+    quietly starts a process which can flatten the book is precisely the autonomy that forbids."""
+    deploy = Path("ops/deploy_vps.sh").read_text("utf-8")
+    assert "enable --now quant-deadman" not in deploy.replace(
+        "      sudo systemctl enable --now quant-deadman", ""), (
+        "deploy_vps.sh must PRINT the command for the principal, never run it")
+    assert "quant-deadman.service" in deploy, "the unit must still be INSTALLED, just not started"
+
+
+def test_the_deploy_script_verifies_production_rather_than_status() -> None:
+    """`systemctl is-active` proves a process is alive and never that it produced -- the failure
+    that gave this desk a silent pager for 11.5 days while every timer looked healthy."""
+    deploy = Path("ops/deploy_vps.sh").read_text("utf-8")
+    assert "scripts/verify_deployment.py" in deploy
+    assert "exit $RC" in deploy, "a deploy that cannot fail is a report, not a gate"
+
+
+def test_a_timer_driven_service_does_not_carry_its_own_install_section() -> None:
+    """THE CONVENTION, PINNED, BECAUSE BREAKING IT LOOKS LIKE SUCCESS.
+
+    A service paired with a timer must be enabled THROUGH the timer. Giving it its own
+    `[Install] WantedBy=multi-user.target` lets `systemctl enable quant-cadence.service` arm a
+    boot-time one-shot that runs once and never repeats -- and `is-enabled` then answers
+    "enabled", so the unit reports healthy while nothing is scheduled. That is the same
+    scheduled-but-not-producing shape the whole deploy verification exists to catch, one level
+    down in the unit files themselves.
+
+    Long-running daemons (the recorders, the miner, the screen, the ruin rail) have no timer and
+    must keep their [Install].
+    """
+    import configparser
+    for svc in sorted(Path("ops").glob("quant-*.service")):
+        c = configparser.ConfigParser(strict=False)
+        c.read(svc)
+        timer = svc.with_suffix(".timer")
+        if timer.exists():
+            assert "Install" not in c.sections(), (
+                f"{svc.name} is timer-driven and carries its own [Install] -- enabling the "
+                "SERVICE would look like success and schedule nothing")
+        else:
+            assert "Install" in c.sections(), (
+                f"{svc.name} has no timer and no [Install]: nothing can enable it at all")

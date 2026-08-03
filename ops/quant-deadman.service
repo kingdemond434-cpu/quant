@@ -1,0 +1,47 @@
+[Unit]
+# THE TIER-3 RUIN RAIL, AND THE ONE UNIT THIS REPOSITORY WILL NOT ENABLE FOR YOU.
+#
+# scripts/run_deadman_switch.py is the independent backstop: no LLM, no strategy logic, no imports
+# from libs/. It polls combined book equity once a minute and, after FIVE consecutive readings
+# below 65% of the high-water mark, writes the executor kill file, market-flattens every futures
+# position reduce-only, sells spot to USDT, and pages the principal.
+#
+# WHY THE FILE EXISTS: it had no unit at all. The desk's last-resort protection against ruin lived
+# exactly as long as someone remembered to type its name, which is the same failure that left the
+# recorders unstarted and the watchdog unsupervised. A rail nothing starts is not a rail.
+#
+# WHY ops/deploy_vps.sh DOES NOT ENABLE IT: this process MOVES FUNDS. It sells spot and closes
+# futures. The rail's own header makes it Tier-3 -- "may not be modified, disabled or removed
+# autonomously by the CRO/daily cycle: explicit principal sign-off only" -- and starting a
+# fund-moving process automatically is exactly the autonomy that tier forbids. So the unit is
+# provided, correct and ready, and the deploy script prints the one command that starts it. The
+# principal types it.
+#
+# BEFORE ENABLING, CONFIRM: live API keys are present with trade permission, the high-water mark in
+# the rail's state file reflects reality rather than a test run, and the 65% level is the intended
+# one. A dead-man switch armed against a stale high-water mark fires on a book that is fine.
+Description=Quant dead-man switch (Tier-3 ruin rail -- principal sign-off only)
+After=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+User=quant
+WorkingDirectory=/home/quant/quant-platform
+Environment=PATH=/home/quant/.local/bin:/home/quant/quant-platform/.venv/bin:/usr/bin:/bin
+Type=simple
+ExecStart=/home/quant/quant-platform/.venv/bin/python scripts/run_deadman_switch.py
+# ALWAYS, and at the shortest restart this repository uses anywhere. Every other organ can afford
+# to be down for a minute; the window in which this one is not running is the window in which a
+# 35% drawdown is not being watched.
+Restart=always
+RestartSec=10
+# HIGHEST PRIORITY ON THE BOX -- the inverse of the miner's. Everything else can wait behind it.
+Nice=-5
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/quant/quant-platform/data
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
