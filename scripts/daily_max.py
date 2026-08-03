@@ -85,6 +85,8 @@ REMEDIATIONS: dict[str, tuple[list[str], str]] = {
     # out whether it is stuck or merely between cells.
     "moat-screen-not-converging": (["python3", "scripts/screen_moat.py"],
                                    "advance the moat screening frontier one more pass"),
+    "moat-clocks-unread": (["python3", "scripts/review_moat_clocks.py"],
+                           "check whether pre-registered candidates held out of sample"),
 }
 
 #: Defect classes no command can close. Naming them stops the loop retrying forever and stops the

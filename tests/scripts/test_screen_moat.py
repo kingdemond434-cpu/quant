@@ -419,3 +419,22 @@ def test_the_frontier_actually_reaches_full_coverage_on_a_finite_archive(tmp_pat
     assert last["coverage_pct"] > 80.0, (
         f"coverage stalled at {last['coverage_pct']}% -- a denominator that cannot be filled is "
         "an alarm about arithmetic, not about the desk")
+
+
+def test_the_screen_and_the_miner_key_cells_the_same_way() -> None:
+    """SHARING A GRID IS THE WHOLE REASON TO MATCH THE MINER. A cell that is mined but never
+    screened is only a VISIBLE hole if both organs mean the same thing by "cell".
+
+    This organ briefly took the first ten characters of the filename, which on the recorders'
+    `YYYYMMDD_HH.jsonl.gz` yields `20260105_0` -- the date plus the tens digit of the hour. That
+    split every day into up to three cells, put the two organs on different grids, and made every
+    screened cell smaller, which is also a weaker screen.
+    """
+    import scripts.mine_moat as MM
+    for name in ("20260105_00.jsonl.gz", "20260105_17.jsonl.gz", "20260105_9.jsonl.gz"):
+        p = Path("data/moat/binance/BTCUSDT") / name
+        assert S._day_of(p) == "20260105"
+        assert S._day_of(p) == p.stem.split("_")[0], (
+            "mine_moat keys on stem.split('_')[0]; the two must not drift")
+    assert "split(\"_\")" in Path(MM.__file__).read_text("utf-8"), (
+        "the miner's rule changed -- re-check that this organ still matches it")

@@ -434,7 +434,11 @@ def main() -> None:
     # a candidate can cross the bar on a cycle that found no new survivor at all.
     for _organ, _script, _artifact in (
             ("moat-screen", "scripts/screen_moat.py", "data/moat_screen.json"),
-            ("moat-promote", "scripts/promote_moat_survivors.py", "data/moat_promotion.json")):
+            ("moat-promote", "scripts/promote_moat_survivors.py", "data/moat_promotion.json"),
+            # And the only OUT-OF-SAMPLE question in the whole pipeline: does a candidate that was
+            # pre-registered still predict on tape recorded AFTER it was named? Everything above
+            # this line is answered on tape that already existed when the candidate was chosen.
+            ("moat-clocks", "scripts/review_moat_clocks.py", "data/moat_clock_review.json")):
         _r = subprocess.run([sys.executable, _script],
                             capture_output=True, text=True, timeout=420, check=False)
         _tail = (_r.stdout or _r.stderr or "").strip().splitlines()[-1:] or [""]

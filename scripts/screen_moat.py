@@ -137,8 +137,17 @@ def _tape() -> list[Path]:
 
 
 def _day_of(p: Path) -> str:
-    """The day a tape file covers, from its name. `mine_moat` uses the same first-10-chars rule."""
-    return p.stem.split(".")[0][:10]
+    """The day a tape file covers -- BY `mine_moat`'S OWN RULE, which is the point.
+
+    The recorders write `YYYYMMDD_HH.jsonl.gz` and the miner keys cells on `stem.split("_")[0]`,
+    i.e. the date. An earlier version here took the first ten characters, which yields
+    `20260105_0` -- the date plus the TENS DIGIT OF THE HOUR. That silently split every day into
+    up to three cells and put this organ on a different grid from the miner, which defeats the
+    reason for sharing one: a cell that is mined but never screened is only a visible hole if both
+    organs mean the same thing by "cell". It also made every cell smaller, and a smaller cell is a
+    weaker screen.
+    """
+    return p.stem.split(".")[0].split("_")[0]
 
 
 def _cells() -> dict[tuple[str, str, str], list[Path]]:
