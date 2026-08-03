@@ -145,3 +145,33 @@ def test_the_timeout_covers_two_full_sweeps() -> None:
     s = (ROOT / "ops/quant-daily-max.service").read_text("utf-8")
     timeout = int(next(x for x in s.splitlines() if "TimeoutStartSec" in x).split("=")[1])
     assert timeout >= 3600
+
+
+def test_every_remediation_key_is_one_some_check_can_actually_emit() -> None:
+    """A REMEDIATION FOR A DEFECT NOTHING EMITS IS DEAD CONFIG THAT LOOKS LIKE COVERAGE.
+
+    The allowlist already proves each entry points at a script that exists and cannot mutate
+    anything. Nothing proved the other side: that the KEY it is filed under is one max_audit can
+    ever produce. A typo -- `moat-clocks-unred`, `moat-survivors-unexploted` -- would sit in the
+    allowlist forever looking like the defect was handled, and the loop would never fire it
+    because the string never matches. Silence from an autonomous fixer is indistinguishable from
+    nothing being wrong, which is exactly the comfort this desk keeps finding it has bought.
+
+    Matching is by SUBSTRING because the loop itself matches that way: real defect messages carry
+    suffixes (`production-missing: forensics`), so the key is a prefix of the live id.
+    """
+    src = Path("scripts/max_audit.py").read_text("utf-8")
+    unmatched = [k for k in D.REMEDIATIONS if f'"{k}' not in src and f"'{k}" not in src
+                 and k.split(":")[0] not in src]
+    assert not unmatched, (
+        "remediation keys no check in max_audit.py can emit -- dead config that reads as "
+        f"coverage: {unmatched}")
+
+
+def test_every_human_only_key_is_one_some_check_can_actually_emit() -> None:
+    """Same argument, opposite list. A HUMAN_ONLY entry for a defect nothing emits does not stop
+    the loop retrying anything -- it just records a decision about a defect that cannot occur."""
+    src = Path("scripts/max_audit.py").read_text("utf-8")
+    unmatched = [k for k in D.HUMAN_ONLY if f'"{k}' not in src and f"'{k}" not in src
+                 and k.split(":")[0] not in src]
+    assert not unmatched, f"HUMAN_ONLY keys no check can emit: {unmatched}"

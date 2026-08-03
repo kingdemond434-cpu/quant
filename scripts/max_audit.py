@@ -4348,6 +4348,24 @@ def check_moat_screened(defects) -> None:
                     "own false-positive rate. A survivor nobody reads is worth what a survivor "
                     "nobody found is worth. Run scripts/promote_moat_survivors.py."))
 
+    # A CLOCK NOBODY READS IS A WAITING ROOM WITH NO DOOR. Promotion buys forward days; the only
+    # out-of-sample question in the whole pipeline is whether the candidate still predicts on tape
+    # recorded AFTER it was named. Everything upstream -- including the persistence test -- is
+    # answered on tape that already existed when the candidate was chosen.
+    prereg = ROOT / "data/moat_preregistered.json"
+    review = ROOT / "data/moat_clock_review.json"
+    if prereg.exists() and not review.exists():
+        with contextlib.suppress(OSError, json.JSONDecodeError):
+            pending = json.loads(prereg.read_text("utf-8"))
+            if isinstance(pending, dict) and pending:
+                defects.append((
+                    "moat-clocks-unread",
+                    f"{len(pending)} candidate(s) are pre-registered with forward clocks and "
+                    "data/moat_clock_review.json does not exist -- nothing has asked whether any "
+                    "of them still predicts on tape recorded AFTER it was named. That is the only "
+                    "out-of-sample evidence this pipeline can produce, and the days are being "
+                    "paid whether or not anyone reads them. Run scripts/review_moat_clocks.py."))
+
 
 CHECKS += [("moat-screened", check_moat_screened)]
 
