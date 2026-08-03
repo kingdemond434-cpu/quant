@@ -152,12 +152,175 @@ def _trial_mechanisms() -> list[str]:
     return []
 
 
+# --------------------------------------------------------------- evidence scope
+#
+# THE AUDITOR COULD NOT TELL "THIS ORGAN IS BROKEN" FROM "THIS CHECKOUT NEVER RAN IT", and that
+# ambiguity has now produced a wrong report to the principal at least once: five defects were
+# relayed as real when three of them rested on `data/` artifacts that are gitignored and therefore
+# absent in every fresh clone by construction. The auditor was not wrong to fire -- on the machine
+# that owns the history, an absent artifact IS the defect -- it was wrong to present both readings
+# in identical language, leaving the reader to guess which machine the sentence was about.
+#
+# The scope is derived from WHAT EACH CHECK ACTUALLY READ, not from parsing its prose. Path reads
+# are recorded while the check runs, then split against `git ls-files`:
+#
+#   REPO     the check consulted at least one TRACKED file. The evidence is in git, so the defect
+#            is verifiable and closable from any checkout -- it is mine.
+#   RUNTIME  the check consulted ONLY untracked paths. The evidence exists solely on the machine
+#            that runs the organ; a clone cannot confirm or close it. Still a real defect there.
+#   UNSCOPED the check read no files at all -- pure in-memory or subprocess logic. Treated as REPO
+#            for escalation, because unknown provenance must never become an excuse.
+#
+# THE ASYMMETRY IS DELIBERATE AND POINTS AT ME. A check that touches both a tracked doc and a
+# runtime artifact is scored REPO, not RUNTIME. Misfiling a runtime defect as mine costs an
+# investigation; misfiling my defect as the machine's lets it live forever behind "needs the VPS".
+# Only the second failure is self-serving, so the tie breaks against me.
+
+_RECORDING: list[str] | None = None
+_PATH_METHODS = ("exists", "stat", "glob", "rglob", "iterdir", "open",
+                 "read_text", "read_bytes", "is_file", "is_dir")
+
+
+def _rel_root(p: Path) -> str:
+    """Repo-relative when inside the repo, absolute otherwise. `relative_to` RAISES outside ROOT,
+    and this session has now fixed that same crash in four separate scripts."""
+    try:
+        return str(p.relative_to(ROOT))
+    except ValueError:
+        return str(p)
+
+
+def _install_read_probe() -> None:
+    """Record every filesystem path a check consults. Idempotent."""
+    if getattr(Path, "_maxaudit_probed", False):
+        return
+    for name in _PATH_METHODS:
+        orig = getattr(Path, name)
+
+        def wrap(self, *a, _orig=orig, **kw):
+            if _RECORDING is not None:
+                _RECORDING.append(str(self))
+            return _orig(self, *a, **kw)
+
+        setattr(Path, name, wrap)
+    Path._maxaudit_probed = True
+
+
+def _tracked_set() -> set[str]:
+    """Every path git tracks, repo-relative. One subprocess, cached by the caller."""
+    try:
+        out = subprocess.run(["git", "ls-files"], cwd=ROOT, capture_output=True,
+                             text=True, timeout=60, check=False)
+        return set(out.stdout.split("\n")) - {""}
+    except (OSError, subprocess.SubprocessError):
+        return set()
+
+
+_TRACKED: set[str] | None = None
+
+
+def _split_evidence(paths: list[str]) -> tuple[list[str], list[str]]:
+    """(tracked, untracked) repo-relative evidence paths, deduped and ordered."""
+    global _TRACKED
+    if _TRACKED is None:
+        _TRACKED = _tracked_set()
+    tracked, untracked = [], []
+    for p in dict.fromkeys(paths):
+        try:
+            rel = str(Path(p).resolve().relative_to(ROOT))
+        except (ValueError, OSError):
+            continue                              # outside the repo: not evidence about the repo
+        if rel.startswith((".git/", "__pycache__")) or "/__pycache__/" in rel:
+            continue
+        (tracked if rel in _TRACKED else untracked).append(rel)
+    return tracked, untracked
+
+
+def scope_of(tracked: list[str], untracked: list[str]) -> str:
+    if tracked:
+        return "REPO"
+    return "RUNTIME" if untracked else "UNSCOPED"
+
+
+#: A path-ish token: either something containing a slash, or a bare filename with a known suffix.
+#: Glob metacharacters are kept so the directory part survives (`data/cro_ai_logs/2026*.log`).
+_TOKEN_RE = re.compile(r"[\w./*?<>-]*[\w*?](?:\.(?:md|json|jsonl|log|csv|parquet|py|sh|sqlite))\b"
+                       r"|(?:data|web|docs|libs|scripts|ops|tests)/[\w./*?-]+")
+
+_BASENAMES: dict[str, str] | None = None
+
+
+def _basename_index() -> dict[str, str]:
+    """basename -> repo-relative path, for tracked files with an unambiguous basename.
+
+    Defect prose names artifacts the way a human would (`prospector_coverage.md`), not by full
+    path. Ambiguous basenames are dropped rather than guessed: two files with one name cannot
+    settle which the sentence meant, and picking either would fabricate the evidence.
+    """
+    global _BASENAMES, _TRACKED
+    if _BASENAMES is None:
+        if _TRACKED is None:
+            _TRACKED = _tracked_set()
+        counts: dict[str, list[str]] = {}
+        for rel in _TRACKED:
+            counts.setdefault(rel.rsplit("/", 1)[-1], []).append(rel)
+        _BASENAMES = {b: v[0] for b, v in counts.items() if len(v) == 1}
+    return _BASENAMES
+
+
+def cited_evidence(msg: str) -> tuple[list[str], list[str]]:
+    """(tracked, untracked) paths the DEFECT ITSELF names -- its own claim about its evidence.
+
+    WHY THIS OUTRANKS WHAT THE CHECK READ. Scope was first derived purely from the files a check
+    touched while running, which is mechanically true and too coarse: `check_organs` stats the
+    tracked ORGAN_ARTIFACTS docs on its way to concluding that an untracked LOG is missing, so
+    every organ-never defect came out REPO. One check emits many defects and they do not share
+    evidence. What a defect asserts is missing is stated in its own sentence, so that is read
+    first; the check's read-set is the fallback for defects that name nothing.
+    """
+    global _TRACKED
+    if _TRACKED is None:
+        _TRACKED = _tracked_set()
+    idx = _basename_index()
+    tracked, untracked = [], []
+    for raw in _TOKEN_RE.findall(msg):
+        tok = raw.strip("./").replace(str(ROOT) + "/", "")
+        if not tok:
+            continue
+        if tok in _TRACKED:
+            tracked.append(tok)
+            continue
+        if tok in idx:
+            tracked.append(idx[tok])
+            continue
+        # A glob names a directory even when no file matches -- that directory is the evidence.
+        head = tok.split("*")[0].split("?")[0].rsplit("/", 1)[0] if ("*" in tok or "?" in tok) \
+            else tok
+        if head.startswith(("data/", "web/")) or tok.startswith(("data/", "web/")):
+            untracked.append(tok)
+    return list(dict.fromkeys(tracked)), list(dict.fromkeys(untracked))
+
+
 def _fenced(fn, defects, label):
+    """Run one check, recording the evidence each defect it raises actually rests on."""
+    global _RECORDING
+    _install_read_probe()
+    before = len(defects)
+    _RECORDING = []
     try:
         fn(defects)
     except Exception as e:
         defects.append((f"sweep-broken-{label}", f"max_audit check '{label}' itself failed: "
                         f"{e!r} -- a blind checker is a defect"))
+    finally:
+        seen, _RECORDING = _RECORDING or [], None
+    read_tr, read_un = _split_evidence(seen)
+    for i in range(before, len(defects)):
+        did, msg = defects[i][0], defects[i][1]
+        tr, un = cited_evidence(msg)
+        if not (tr or un):                       # names nothing: fall back to what the check read
+            tr, un = read_tr, read_un
+        defects[i] = (did, msg, scope_of(tr, un), tr[:6], un[:6])
 
 
 # ARTIFACT PARITY (2026-07-25): claude writes deliverables via FILE TOOLS, so a SUCCESSFUL organ
@@ -199,10 +362,14 @@ def check_organs(defects) -> None:
         ok = [p for p in LOGS.glob(pat) if p.stat().st_size >= min_b]
         art_h = _artifact_age_h(organ)
         if not ok and art_h > max_h:
+            # THE LOG PATH IS NAMED, not just the glob. The evidence for "never fired" is an
+            # absent log under data/cro_ai_logs, which is gitignored -- so the sentence must say
+            # so, or the scoper reads this as a repo defect and pages the principal about a
+            # directory that cannot exist in a checkout.
             defects.append((f"organ-never-{organ}",
-                            f"{organ}: no substantial log (pattern {pat}, >= {min_b}b) AND no "
-                            f"declared artifact written in {max_h}h -- organ has never fired or "
-                            "always dies"))
+                            f"{organ}: no substantial log ({_rel_root(LOGS)}/{pat}, >= {min_b}b) "
+                            f"AND no declared artifact written in {max_h}h -- organ has never "
+                            "fired or always dies"))
             continue
         if not ok:
             continue                      # artifacts prove production; stub log is expected
@@ -1199,6 +1366,43 @@ def check_bnb_funded(defects) -> None:
         pass
 
 
+def _git_age_h(rel: str) -> float:
+    """Hours since this path's last COMMIT, or inf if git does not know it."""
+    try:
+        out = subprocess.run(["git", "log", "-1", "--format=%ct", "--", rel],
+                             cwd=ROOT, capture_output=True, text=True, timeout=20, check=False)
+        ts = out.stdout.strip()
+        return (NOW - float(ts)) / 3600.0 if ts else float("inf")
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return float("inf")
+
+
+def _production_age_h(p: Path) -> float:
+    """Age of a product artifact, in hours -- mtime for untracked, WORSE-OF for tracked.
+
+    MTIME LIES ABOUT TRACKED FILES, ALWAYS IN THE FLATTERING DIRECTION. `git clone` stamps every
+    checked-out file with the CLONE time, so a doc last authored a week ago reports as hours old
+    on a fresh machine. Measured here: four `docs/research/*` products reported 131h stale while
+    their last commit was 168h back -- the staleness gate was reading the age of the checkout, not
+    the age of the work, and understating it by a day and a half. A freshness check that gets
+    younger every time you clone the repo is not measuring production.
+
+    Untracked products keep mtime: they are written in place and git knows nothing about them.
+    Tracked products take the WORSE of mtime-age and last-commit-age, which is strict in the one
+    direction the desk already demands -- §33 credits output only once it is committed and pushed,
+    so an artifact freshly written but never committed is correctly still counted as not produced.
+    """
+    rel = _rel_root(p)
+    age_mtime = (NOW - p.stat().st_mtime) / 3600.0
+    global _TRACKED
+    if _TRACKED is None:
+        _TRACKED = _tracked_set()
+    if rel not in _TRACKED:
+        return age_mtime
+    g = _git_age_h(rel)
+    return age_mtime if g == float("inf") else max(age_mtime, g)
+
+
 def check_production(defects) -> None:
     """OUTCOME-LEVEL fence (principal 2026-07-24): does each scheduled organ actually PRODUCE its
     output artifact within cadence? State-freshness checks miss the class where a scheduler fires
@@ -1225,7 +1429,7 @@ def check_production(defects) -> None:
                             "produced output, only (maybe) been scheduled"))
             continue
         newest = max(hits, key=lambda q: q.stat().st_mtime)
-        age_h = (NOW - newest.stat().st_mtime) / 3600.0
+        age_h = _production_age_h(newest)
         sz = newest.stat().st_size
         if age_h > max_h:
             defects.append(("production-stale",
@@ -3780,40 +3984,65 @@ CHECKS += [("check-registry", check_registry_complete)]
 
 
 def main() -> None:
-    defects: list[tuple[str, str]] = []
+    defects: list[tuple] = []
     for label, fn in CHECKS:
         _fenced(fn, defects, label)
 
     acks = _j(ACKS, {})
     live, acked = [], []
-    for did, msg in defects:
+    for did, msg, scope, tr, un in defects:
         a = acks.get(did)
         if a and a.get("until", "") > datetime.now(tz=UTC).isoformat():
             acked.append((did, a.get("reason", "")))
         else:
-            live.append((did, msg))
+            live.append((did, msg, scope, tr, un))
 
     prev = _j(REPORT, {})
     first_seen = prev.get("first_seen", {})
     now_iso = datetime.now(tz=UTC).isoformat()
-    first_seen = {d: t for d, t in first_seen.items() if d in {x for x, _ in live}}
-    for did, _ in live:
+    first_seen = {d: t for d, t in first_seen.items() if d in {x[0] for x in live}}
+    for did, *_ in live:
         first_seen.setdefault(did, now_iso)
+    by_scope: dict[str, int] = {}
+    for _, _, s, _, _ in live:
+        by_scope[s] = by_scope.get(s, 0) + 1
     REPORT.write_text(json.dumps(
-        {"ran": now_iso, "live": [{"id": d, "msg": m} for d, m in live],
-         "acked": [d for d, _ in acked], "first_seen": first_seen}, indent=1), "utf-8")
+        {"ran": now_iso,
+         "live": [{"id": d, "msg": m, "scope": s, "evidence_tracked": tr,
+                   "evidence_untracked": un} for d, m, s, tr, un in live],
+         "by_scope": by_scope,
+         "acked": [d for d, _ in acked], "first_seen": first_seen,
+         "scope_note": (
+             "REPO: the check consulted a git-tracked file, so the defect is verifiable and "
+             "closable from any checkout. RUNTIME: it consulted only untracked paths (data/, "
+             "web/ are gitignored), so a clone can neither confirm nor close it -- real on the "
+             "machine that runs the organ, unresolvable here. UNSCOPED: read no files; escalated "
+             "as REPO so unknown provenance never becomes an excuse. Scope is derived from the "
+             "paths each check ACTUALLY READ, not from its wording, and a check touching both "
+             "kinds is scored REPO -- misfiling a runtime defect as mine costs an investigation, "
+             "misfiling mine as the machine's lets it live forever behind 'needs the VPS'."),
+         }, indent=1), "utf-8")
 
-    print(f"MAX-AUDIT {now_iso[:16]}  live defects: {len(live)}  acked: {len(acked)}")
-    for did, msg in live:
+    print(f"MAX-AUDIT {now_iso[:16]}  live defects: {len(live)}  acked: {len(acked)}"
+          f"  | by scope: {by_scope}")
+    for did, msg, scope, _, _ in live:
         age_h = (datetime.now(tz=UTC) - datetime.fromisoformat(first_seen[did])
                  ).total_seconds() / 3600
-        print(f"  [{age_h:>5.1f}h] {did}: {msg}")
+        print(f"  [{age_h:>5.1f}h] [{scope:<8}] {did}: {msg}")
     for did, reason in acked:
         print(f"  [ acked] {did}: {reason}")
 
-    overdue = [(d, m) for d, m in live
-               if (datetime.now(tz=UTC) - datetime.fromisoformat(first_seen[d])
-                   ).total_seconds() / 3600 > ESCALATE_H]
+    # ESCALATION IS SCOPED. Paging the principal about an artifact that is absent because data/ is
+    # gitignored is crying wolf in the same way the stale RESOLVED line was, and it buries the
+    # defects he can actually act on. RUNTIME defects are still reported above, in full, every run.
+    overdue = [(d, m) for d, m, s, _, _ in live
+               if s != "RUNTIME"
+               and (datetime.now(tz=UTC) - datetime.fromisoformat(first_seen[d])
+                    ).total_seconds() / 3600 > ESCALATE_H]
+    runtime_overdue = sum(
+        1 for d, _, s, _, _ in live
+        if s == "RUNTIME" and (datetime.now(tz=UTC) - datetime.fromisoformat(first_seen[d])
+                               ).total_seconds() / 3600 > ESCALATE_H)
     # DELIVERY FIX (2026-07-24 external audit): the pager reads only PRINCIPAL_ACTION line 1.
     # The old code appended the escalation BELOW existing content (a stale RESOLVED line stayed
     # at line 1) AND only wrote once ever (one-shot latch), so 24 live defects never paged. Now
@@ -3824,12 +4053,16 @@ def main() -> None:
     # strip any prior escalation block so it never stacks / goes stale
     body = existing.split("\n" + _MARK)[0].split(_MARK)[0].rstrip()
     if overdue:
-        head = (f"{_MARK}: {len(overdue)} below-max state(s) >48h unfixed/unacked -- "
+        head = (f"{_MARK}: {len(overdue)} REPO-scope below-max state(s) >48h unfixed/unacked -- "
                 + "; ".join(f"{d}" for d, _ in overdue[:6])
                 + (" ..." if len(overdue) > 6 else "") + "\n"
-                + "".join(f"  - {d}: {m}\n" for d, m in overdue[:8]))
+                + "".join(f"  - {d}: {m}\n" for d, m in overdue[:8])
+                + (f"  ({runtime_overdue} further RUNTIME-scope defect(s) rest only on untracked "
+                   "artifacts and cannot be confirmed or closed from a checkout -- see "
+                   "data/max_audit_report.json)\n" if runtime_overdue else ""))
         PA.write_text(head + "\n" + body, "utf-8")   # escalation OWNS line 1
-        print(f"ESCALATED to principal page (line 1): {len(overdue)} defect(s) >48h")
+        print(f"ESCALATED to principal page (line 1): {len(overdue)} REPO defect(s) >48h"
+              + (f" (+{runtime_overdue} RUNTIME, not paged)" if runtime_overdue else ""))
     elif existing != body + ("\n" if body else ""):
         PA.write_text(body + ("\n" if body else ""), "utf-8")  # cleared: drop stale escalation
         print("escalation cleared: no overdue defects")
