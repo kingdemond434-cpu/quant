@@ -27,12 +27,25 @@ provenance record that dies with the working directory is not a record.
 
 ## BUILD — unblocked, cheap, next session
 
-_EMPTY as of 2026-08-02: #93 was the last open BUILD item and it shipped (`scripts/acquire_data.py`). An empty BUILD section is the correct state, not a missing one -- it means every unblocked item has been done rather than that the section was deleted._
+_EMPTY as of 2026-08-03: #97 was the last open BUILD item and it shipped (`libs/data/decay.py` + `scripts/monitor_data_decay.py`); #93 shipped before it (`scripts/acquire_data.py`). An empty BUILD section is the correct state, not a missing one -- it means every unblocked item has been done rather than that the section was deleted._
 
 
-| # | Component | Note |
-|---|---|---|
-| 97 | **Data Decay Monitor** | **UNBLOCKED 2026-08-02 — blocker EXPIRED, re-verdicted on evidence.** Its stated blocker was "needs dataset-usefulness history; nothing to trend yet". That substrate now exists and two pieces of it were built this cycle: `data/canary_history.jsonl` records per-SOURCE reachability over time (availability decay, measured — 0/9 from the container today), and `data/acquisition_history.jsonl` records per-candidate usefulness SCORES over time from `scripts/acquire_data.py`, whose ranking already moves as the ontology records regions worked to zero survivors. Between them the desk can now trend both halves of decay: a source becoming unreachable, and a source becoming useless while still reachable. Buildable against those two files plus `data/instrumentation_coverage.jsonl` (116 rows). |
+**#97 Data Decay Monitor — SHIPPED 2026-08-03.** `libs/data/decay.py` + `scripts/monitor_data_decay.py`.
+Its blocker ("needs dataset-usefulness history; nothing to trend yet") had expired: `canary_history.jsonl`
+carries per-source reachability and `acquisition_history.jsonl` carries per-candidate usefulness scores.
+
+The build kept the two decays SEPARATE and never sums them — a source going dark needs a new endpoint, a
+source going useless needs retiring, and an average of the two recommends neither. It also refuses three
+readings that all look like "low recent value": NEVER-WORKED is an acquisition failure rather than a
+decline, UNDERPOWERED means the sample cannot tell, and only DECAYING is decay.
+
+The sample-size rule is the load-bearing part and came straight from the live inputs:
+`instrumentation_coverage.jsonl` holds 164 rows written within a few seconds, all identical. Readings are
+collapsed to one per hour, so a burst buys exactly one observation. Run against this container it returns
+9 sources, all NEVER-WORKED — correct, and correctly not called decay.
+
+Written as prose rather than a `| N |` row: `check_triage_disposition` parses table rows as ITEMS, so a
+table describing a closed item would re-open it — a mistake this document has already made once.
 
 ## QUEUE — blocked, blocker named
 
