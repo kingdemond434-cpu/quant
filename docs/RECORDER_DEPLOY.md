@@ -127,6 +127,9 @@ jq '{coverage_pct, cells_on_disk, hypotheses, tally}' data/moat_screen.json
 # Anything that survived on more than one independent cell? (the only stage-A evidence there is)
 jq '.persistent_candidates' data/moat_screen.json
 
+# And did any of it beat the sweep's OWN false-positive rate -- i.e. earn a forward clock?
+jq '{stats, promoted: [.promoted[].key], refused: [.refused[].refused]}' data/moat_promotion.json
+
 # Is the constitutional breach clearing?
 python3 scripts/enforce_constitution.py
 ```
@@ -178,6 +181,11 @@ Nothing else needs starting. Everything downstream is already wired and running:
    symbol.
 2. **`scripts/mine_moat.py`** also fires every cadence cycle as the floor, so coverage advances
    even if the continuous miner is down.
+2c. **`promote_moat_survivors.py`** fires every cadence cycle and is the only thing that converts
+   persistence into a **forward clock** — never capital. Its bar is *derived*: a candidate must
+   beat the sweep's own measured promotion rate under a binomial tail test, on ≥2 independent
+   cells, with a stable IC sign. Romano-Wolf controls error *within* a screening pass; across
+   thousands of passes only this does.
 2b. **`quant-moat-screen`** hunts survivors hole-first over the same grid, so a cell that is mined
    but never screened is a visible hole rather than an invisible one. Survivors persist to
    `data/moat_survivors.json` **with their misses** — Romano-Wolf controls family-wise error

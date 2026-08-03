@@ -424,6 +424,26 @@ def main() -> None:
         fired.append("moat-mine")
         print(f"cadence: {_tail[0][:150]}")
 
+    # MOAT SCREENING AND SURVIVOR EXPLOITATION (EVERY CYCLE). Mining DESCRIBES the tape; screening
+    # ASKS it whether any mechanism predicts, and promotion turns a persistent answer into a
+    # forward clock. Running the first every cycle and the other two never was the asymmetry that
+    # left the desk's one irreplaceable asset measured everywhere and exploited nowhere.
+    #
+    # The order is load-bearing: screen writes the registry, promote reads it. Promotion runs even
+    # when screening produced nothing this pass, because persistence accumulates ACROSS passes and
+    # a candidate can cross the bar on a cycle that found no new survivor at all.
+    for _organ, _script, _artifact in (
+            ("moat-screen", "scripts/screen_moat.py", "data/moat_screen.json"),
+            ("moat-promote", "scripts/promote_moat_survivors.py", "data/moat_promotion.json")):
+        _r = subprocess.run([sys.executable, _script],
+                            capture_output=True, text=True, timeout=420, check=False)
+        _tail = (_r.stdout or _r.stderr or "").strip().splitlines()[-1:] or [""]
+        if _r.returncode != 0 or not Path(_artifact).exists():
+            print(f"cadence: {_organ} rc={_r.returncode} NO ARTIFACT | {_tail[0][:110]}")
+        else:
+            fired.append(_organ)
+            print(f"cadence: {_tail[0][:150]}")
+
     # GAUNTLET CALIBRATION (EVERY CYCLE). 420 candidates tested, 420 died -- and "the candidates
     # were worthless" and "the screen cannot detect an edge it is handed" fit that observation
     # equally well while demanding opposite responses. Live data can never separate them because

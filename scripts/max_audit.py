@@ -4286,6 +4286,48 @@ def check_moat_screened(defects) -> None:
             "alignment, horizon calibration or target construction. Four such bugs were found and "
             "fixed on 2026-08-03; a fifth would look exactly like this."))
 
+    # THE RATE, NOT THE LEVEL (P18) -- APPLIED TO THE HUNT, NOT ONLY TO THE MINE. The miner has
+    # carried a closure check since it was built; the screen shipped with a coverage frontier and
+    # no equivalent, which means "we screen it continuously" could stay true while the frontier
+    # stood still. Those are opposite diagnoses: a rising number is exploration, a frozen one is a
+    # scheduler that keeps re-screening the same convenient cells, and a SNAPSHOT cannot tell them
+    # apart -- 41% is a triumph the run after 27% and a scandal after a week at 41%.
+    hist = ROOT / "data/moat_screen_history.jsonl"
+    rows = []
+    if hist.exists():
+        for ln in hist.read_text("utf-8", errors="ignore").splitlines()[-40:]:
+            with contextlib.suppress(json.JSONDecodeError):
+                rows.append(json.loads(ln))
+    pcts = [float(r["coverage_pct"]) for r in rows if r.get("coverage_pct") is not None]
+    if len(pcts) >= 6 and pcts[-1] < 99.0 and pcts[-1] <= pcts[0]:
+        defects.append((
+            "moat-screen-not-converging",
+            f"screen coverage has not risen over the last {len(pcts)} runs "
+            f"({pcts[0]:.1f}% -> {pcts[-1]:.1f}%) and is not complete. The frontier is supposed to "
+            "spend every run on the cells owing the most mechanisms, so a flat series means the "
+            "scheduler is re-screening ground it has already covered while holes stand open -- "
+            "the exact failure hole-first ordering was built to prevent. Check the coverage "
+            "record is being persisted and that the file budget is not smaller than one cell."))
+
+    # A HUNT WHOSE FINDINGS NOTHING READS IS A DIARY. The registry accumulates survivors with
+    # their misses; `promote_moat_survivors.py` is the only thing that converts persistence into a
+    # forward clock. If survivors exist and no promotion artifact does, the desk is finding edges
+    # on its irreplaceable asset and dropping them on the floor.
+    reg = ROOT / "data/moat_survivors.json"
+    promo = ROOT / "data/moat_promotion.json"
+    if reg.exists() and not promo.exists():
+        with contextlib.suppress(OSError, json.JSONDecodeError):
+            entries = json.loads(reg.read_text("utf-8"))
+            if isinstance(entries, dict) and any(
+                    int(e.get("times_survived", 0)) > 0 for e in entries.values()):
+                defects.append((
+                    "moat-survivors-unexploited",
+                    f"{sum(1 for e in entries.values() if int(e.get('times_survived', 0)) > 0)} "
+                    "triple(s) have survived a screening pass and data/moat_promotion.json does "
+                    "not exist -- nothing has adjudicated whether any of them beats the sweep's "
+                    "own false-positive rate. A survivor nobody reads is worth what a survivor "
+                    "nobody found is worth. Run scripts/promote_moat_survivors.py."))
+
 
 CHECKS += [("moat-screened", check_moat_screened)]
 
