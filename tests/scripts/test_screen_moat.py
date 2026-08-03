@@ -289,8 +289,14 @@ def test_coverage_counts_mechanisms_that_RESOLVED_not_cells_that_were_touched(tm
     cov = json.loads((tmp_path / "cov.json").read_text("utf-8"))
     cell = next(iter(cov["screened"].values()))
     assert set(cell["mechanisms"]) < set(S.MECHANISMS), (
-        "a scalar mechanism resolves no IC and must leave its part of the cell open")
-    assert rep["coverage_pct"] < 100.0
+        "a scalar mechanism resolves no IC and must never be recorded as covered")
+    # It is recorded as UNANSWERABLE instead, which is a different claim: the cell was asked and
+    # the question has no answer here, as against never having been asked. An earlier version of
+    # this test asserted coverage < 100% -- true only while unanswerable pairs sat in the
+    # denominator, which is the arithmetic that made the frontier unable to close.
+    assert set(cell["unscreenable"]) & set(S.MECHANISMS)
+    assert not set(cell["mechanisms"]) & set(cell["unscreenable"])
+    assert rep["screenable_grid"] < len(S.MECHANISMS) * rep["cells_on_disk"]
 
 
 def test_a_gap_is_not_a_horizon() -> None:
@@ -352,3 +358,64 @@ def test_every_written_path_is_redirected(tmp_path) -> None:
     for name in ("MOAT", "REPORT", "HISTORY", "COVERAGE", "REGISTRY"):
         p = Path(getattr(S, name))
         assert real not in p.parents and p != real, f"{name} still points at the real data dir"
+
+
+def test_an_unanswerable_mechanism_leaves_the_denominator_not_the_numerator(tmp_path) -> None:
+    """A GAP THAT CAN NEVER CLOSE IS A LIE ABOUT ARITHMETIC, NOT A FINDING ABOUT THE DESK.
+
+    `replenishment_halflife` returns one number per cell -- there is nothing to correlate against
+    a return, here or anywhere -- so counting it as an unscreened hole pins coverage below 91%
+    forever. P26 makes a gap that stops closing a breach, so that would raise a standing alarm
+    about a denominator. It is recorded per cell and reported, never silently dropped: 'asked and
+    unanswerable' and 'never asked' demand opposite responses.
+    """
+    root = tmp_path / "moat_den"
+    _tape(root, predictive=True, n=900)
+    rep = _run(tmp_path, root)
+    assert rep["unscreenable_pairs"] >= 1, "the scalar mechanism must be recorded as unanswerable"
+    assert rep["screenable_grid"] < len(S.MECHANISMS) * rep["cells_on_disk"]
+    cov = json.loads((tmp_path / "cov.json").read_text("utf-8"))
+    cell = next(iter(cov["screened"].values()))
+    assert "replenishment_halflife" in cell["unscreenable"]
+    assert "replenishment_halflife" not in cell["mechanisms"], (
+        "unanswerable is not the same as answered -- it must never count as covered")
+
+
+def test_a_fuse_mechanism_with_no_input_is_retired_not_chased_forever(tmp_path) -> None:
+    """EMPTY IS NOT SHORT. `book_pressure_vs_funding` returns NOTHING on a venue that publishes no
+    funding, and that cell's files are already written -- no amount of further recording adds the
+    field. Counting it as an open hole leaves a frontier that can never reach 100%, which under
+    P26 reads as a breach that never closes. A SHORT series is the opposite: a quantity problem
+    the recorders fix by running, and it must stay a hole.
+    """
+    root = tmp_path / "moat_noinput"
+    _tape(root, predictive=True, n=700)          # no funding rows on this tape
+    rep = _run(tmp_path, root)
+    verdicts = {(r.get("mechanism"), r.get("verdict")) for r in rep["results"]}
+    assert ("book_pressure_vs_funding", "NO-INPUT") in verdicts
+    cov = json.loads((tmp_path / "cov.json").read_text("utf-8"))
+    cell = next(iter(cov["screened"].values()))
+    assert "book_pressure_vs_funding" in cell["unscreenable"]
+    # ...and a short-but-present series must NOT be retired, or a real hole disappears.
+    assert not any(v == "NO-INPUT" for m, v in verdicts if m == "resting_stability")
+
+
+def test_the_frontier_actually_reaches_full_coverage_on_a_finite_archive(tmp_path) -> None:
+    """THE PROPERTY THE WHOLE DESIGN EXISTS FOR. Repeated budgeted runs must converge, not
+    plateau: every cell touched, and every remaining hole attributable to tape quantity rather
+    than to arithmetic that can never resolve."""
+    root = tmp_path / "moat_conv"
+    _tape(root, predictive=True, n=700)
+    src = (root / "binance" / "BTCUSDT" / "20260101_00.jsonl.gz").read_bytes()
+    for day in ("20260102_00", "20260103_00"):
+        (root / "binance" / "BTCUSDT" / f"{day}.jsonl.gz").write_bytes(src)
+
+    seen, last = set(), None
+    for _ in range(4):
+        last = _run(tmp_path, root, files=1)
+        seen.update(last["symbols"])
+    assert len(seen) == 3, f"the frontier never reached every cell: {seen}"
+    assert last["cells_covered_pct"] == 100.0
+    assert last["coverage_pct"] > 80.0, (
+        f"coverage stalled at {last['coverage_pct']}% -- a denominator that cannot be filled is "
+        "an alarm about arithmetic, not about the desk")

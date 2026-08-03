@@ -82,11 +82,17 @@ class Leak:
     surface: str = ""               # file the fix lands on, when there is one
     change: dict[str, Any] | None = None      # {"key": k, "from": x, "to": y} for an autofix
     verify: str = ""                # how the next cycle proves the fix worked
+    #: REPO / RUNTIME / UNSCOPED -- whose fault it is, from the defect's own cited evidence.
+    #: A leak resting on a MISSING GITIGNORED ARTIFACT is a fact about the machine, not the
+    #: repository: data/ is gitignored, so "data/x.json absent" is true on every fresh checkout by
+    #: construction and no commit can pre-satisfy it. Without this, such a leak reads as a fix the
+    #: desk controls and has not made, which is a false accusation against any clone.
+    scope: str = "UNSCOPED"
 
     def as_dict(self) -> dict[str, Any]:
         return {"id": self.id, "what": self.what, "evidence": self.evidence, "tier": self.tier,
                 "action": self.action, "surface": self.surface, "change": self.change,
-                "verify": self.verify}
+                "verify": self.verify, "scope": self.scope}
 
 
 @dataclass

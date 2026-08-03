@@ -5,7 +5,25 @@ from __future__ import annotations
 
 import json
 
+import pytest
+
 from libs.execution import execution_tape
+
+
+@pytest.fixture(autouse=True)
+def _disk_guard_is_not_the_hosts_disk(monkeypatch):
+    """THESE TESTS ARE ABOUT THE TAPE, NOT ABOUT HOW FULL THIS MACHINE HAPPENS TO BE.
+
+    `append()` refuses to write above an 80% disk-usage guard, and every test here was silently
+    reading the real filesystem. On a roomy dev box they passed; on a GitHub runner, whose image
+    fills most of the root volume, `append()` returned False and SEVEN of them failed -- not
+    because the tape was broken but because the host was full. That is the same class the
+    dependency-pin work chased: a suite green only because of the environment it ran in.
+
+    The guard itself is real and load-bearing, so it is not removed -- it is pinned here and
+    tested directly in `test_the_disk_guard_refuses_when_the_disk_is_actually_full`.
+    """
+    monkeypatch.setattr(execution_tape, "_DISK_MAX_FRAC", 1.01)
 
 
 def _rec(sym: str = "BTCUSDT", event: str = "open", **kw) -> dict:
@@ -101,3 +119,31 @@ def test_tape_outlives_the_rolling_cap(tmp_path):
     assert len(rolling) == 500            # buffer evicted 100 fills
     assert len(execution_tape.read(path=p)) == 600  # tape kept every one
     assert json.loads(p.read_text("utf-8").splitlines()[0])["symbol"] == "S0USDT"
+
+
+def test_the_disk_guard_refuses_when_the_disk_is_actually_full(tmp_path, monkeypatch):
+    """The property the autouse fixture pins away, tested on purpose rather than by accident.
+
+    A full disk must cost the tape entry and NOTHING ELSE: `append` reports failure and the
+    executor that called it keeps running. An observer that raises is worse than an observer that
+    misses a line.
+    """
+    monkeypatch.setattr(execution_tape, "_DISK_MAX_FRAC", 0.0)   # nothing can be under 0% used
+    p = tmp_path / "tape.jsonl"
+    assert execution_tape.append(_rec(), path=p) is False
+    assert not p.exists(), "a refused write must not leave a file behind"
+    assert execution_tape.backfill([_rec(), _rec()], path=p) == 0
+    assert execution_tape.read(path=p) == []
+
+
+def test_the_guard_measures_the_filesystem_holding_the_tape(tmp_path):
+    """It used to measure `/` unconditionally. Whenever data/ is a separate mount -- which is what
+    the VPS deploy notes assume -- that is the wrong device in both directions: a full root blocks
+    writes to a data volume with room, and a full data volume passes because root is empty."""
+    import inspect
+    src = inspect.getsource(execution_tape._disk_ok)
+    assert 'disk_usage("/")' not in src
+    # It must also work before the tape's own directory exists -- the first write ever.
+    deep = tmp_path / "does" / "not" / "exist" / "tape.jsonl"
+    assert execution_tape._disk_ok(deep) in (True, False)     # resolves an ancestor, never raises
+    assert execution_tape.append(_rec(), path=deep) is True

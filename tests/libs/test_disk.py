@@ -23,21 +23,29 @@ def test_headroom_is_measured_to_the_pause_line_not_to_a_full_disk() -> None:
     assert h["headroom_bytes"] <= h["free_bytes"] or h["paused"]
 
 
+#: A pause threshold no real filesystem can be over, so these tests exercise the branch they
+#: name rather than whichever branch the HOST's fill level happens to select. Every test below
+#: used to read the machine's real disk: on a roomy dev box they took the intended path, and on a
+#: GitHub runner -- whose image fills most of the root volume -- `days_to_pause` returned PAUSED
+#: and one of them failed while two others silently returned early and asserted NOTHING. A test
+#: that quietly no-ops on a full disk is worse than one that fails: it reports success for work
+#: it did not do. The PAUSED branch is pinned deliberately in its own test.
+_NEVER_PAUSED = 1.01
+
+
 def test_an_unmeasured_growth_rate_is_UNKNOWN_never_a_comfortable_number() -> None:
     """Inventing 'never' from a rate nobody measured is how a two-week problem gets filed as a
     non-problem."""
-    d = days_to_pause(0.0)
+    d = days_to_pause(0.0, pause_frac=_NEVER_PAUSED)
     assert d["state"] == "UNKNOWN" and d["days"] is None
     assert "cannot be acted on" in d["note"]
 
 
 def test_a_fast_growth_rate_produces_a_date_and_escalates() -> None:
     """A percentage is a status line; a date is an action. This is the whole point of the module."""
-    h = headroom("/")
-    if h["paused"]:
-        return
+    h = headroom("/", _NEVER_PAUSED)
     per_day = max(1.0, h["headroom_bytes"] / 3.0)      # three days of headroom by construction
-    d = days_to_pause(per_day)
+    d = days_to_pause(per_day, pause_frac=_NEVER_PAUSED)
     assert d["state"] == "URGENT"
     assert 0 < d["days"] < WARN_DAYS
     assert "Deleting mined tape is NOT an option" in d["note"]
@@ -47,10 +55,8 @@ def test_the_urgent_note_refuses_deletion_as_a_remedy() -> None:
     """P20: the seven reconstructions are the FIRST seven, not the last. Deleting mined tape
     assumes today's mechanisms are the final ones, and it destroys ground that cannot be re-bought
     at any price. The guidance has to say so where somebody under pressure will read it."""
-    h = headroom("/")
-    if h["paused"]:
-        return
-    d = days_to_pause(max(1.0, h["headroom_bytes"] / 2.0))
+    h = headroom("/", _NEVER_PAUSED)
+    d = days_to_pause(max(1.0, h["headroom_bytes"] / 2.0), pause_frac=_NEVER_PAUSED)
     assert "re-readable" in d["note"] and "Buy storage" in d["note"]
 
 
@@ -58,6 +64,8 @@ def test_a_paused_disk_says_the_coverage_number_has_stopped_meaning_anything() -
     """The failure mode this module exists for: a frozen denominator makes coverage rise on its
     own, so the paused verdict must name that explicitly rather than just reporting fullness."""
     d = days_to_pause(1e9, pause_frac=0.0)             # forces the paused branch deterministically
+    # (the complement of _NEVER_PAUSED above: between them the two branches are pinned to the
+    # code under test rather than to how full the machine running the suite happens to be)
     assert d["state"] == "PAUSED" and d["days"] == 0.0
     assert "frozen denominator" in d["note"]
 

@@ -34,8 +34,24 @@ _TAPE = Path("data/moat/execution_tape/cashcarry_trades.jsonl")
 _DISK_MAX_FRAC = 0.80  # same guard as the moat recorders -- never fill the disk for a log
 
 
-def _disk_ok() -> bool:
-    u = shutil.disk_usage("/")
+def _disk_ok(path: Path = _TAPE) -> bool:
+    """Is there room on the filesystem that actually HOLDS THE TAPE?
+
+    It used to measure `/` unconditionally, which is the wrong device whenever data/ is a separate
+    mount -- the arrangement the VPS deploy notes assume. That gets it wrong in both directions: a
+    full root refuses writes to a data volume with terabytes free, and a full data volume passes
+    because root is empty. The guard exists to stop the tape filling a disk, so it has to look at
+    the disk the tape is on.
+
+    Falls back to the nearest existing ancestor, because the tape's own directory may not exist
+    yet on the first write.
+    """
+    p = path if path.exists() else next(
+        (a for a in path.parents if a.exists()), Path(path.anchor or "."))
+    try:
+        u = shutil.disk_usage(p)
+    except OSError:
+        return True          # unmeasurable is not full; the observer must never block the executor
     return (u.used / u.total) < _DISK_MAX_FRAC
 
 
@@ -54,7 +70,7 @@ def _key(rec: dict[str, Any]) -> str:
 def append(rec: dict[str, Any], *, path: Path = _TAPE) -> bool:
     """Append one fill event to the permanent tape. Never raises -- returns success."""
     try:
-        if not _disk_ok():
+        if not _disk_ok(path):
             return False
         path.parent.mkdir(parents=True, exist_ok=True)
         out = dict(rec)

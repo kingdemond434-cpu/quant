@@ -227,8 +227,22 @@ def main() -> int:
                             "NO RESOLUTION DECLARED for this defect key. A constitutional check "
                             "that ships without a fix path is itself a P25 violation -- add an "
                             "entry to _RESOLUTION naming the exact repair.")
-        breaches.append(Leak(id=key, what=msg[:400], evidence="max_audit constitutional check",
-                             tier=tier, action=action,
+        # SCOPE, FROM THE DEFECT'S OWN CITED EVIDENCE. A breach whose evidence is a MISSING
+        # GITIGNORED ARTIFACT is a fact about THIS MACHINE, not about the repository: data/ is
+        # gitignored, so `data/coexistence.json absent` is true on every fresh checkout by
+        # construction and no commit can pre-satisfy it. Tiering it PATCH_READY says the desk is
+        # in a breach it controls and has not fixed, which is a false accusation against any clone
+        # -- and it is the same REPO/RUNTIME distinction max_audit already derives, so it is
+        # imported rather than re-invented (two definitions would drift and the one that mattered
+        # would be whichever ran).
+        #
+        # The action is UNCHANGED: on the machine that owns the desk, running the named script is
+        # still exactly the fix. Only the claim about whose fault it is gets corrected.
+        tracked, untracked = audit.cited_evidence(msg)
+        scope = audit.scope_of(tracked, untracked)
+        breaches.append(Leak(id=key, what=msg[:400],
+                             evidence=f"max_audit constitutional check [{scope}]",
+                             tier=tier, action=action, scope=scope,
                              verify="the same check returns clean on the next cycle"))
 
     ledger = LeakLedger.load(BREACHES)

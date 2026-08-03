@@ -45,9 +45,16 @@ hypotheses, and the best of thirty looks good by construction. Romano-Wolf stepd
 controlled across the whole sweep -- the same machinery built when campaign-level statistics were
 found being applied per-candidate.
 
-SCALAR MECHANISMS ARE SKIPPED, NOT FAKED. `replenishment_halflife` returns one number per file,
-not a series; there is nothing to correlate against a return and broadcasting it to a constant
-would give a degenerate feature a verdict. Reported as SCALAR-NOT-SCREENABLE.
+UNANSWERABLE IS NOT UNANSWERED, AND THE DENOMINATOR KNOWS THE DIFFERENCE. Two mechanisms cannot
+be screened on some cells no matter what: `replenishment_halflife` returns one number per file
+(SCALAR-NOT-SCREENABLE -- broadcasting it to a constant would hand a degenerate feature a
+verdict), and a FUSE mechanism returns nothing on a venue that does not publish its second input
+(NO-INPUT -- `book_pressure_vs_funding` on a Binance cell whose files are already written and
+will never gain a funding field). Both are recorded per cell and REMOVED FROM THE DENOMINATOR:
+leaving them in pins coverage below 100% forever, and P26 makes a gap that stops closing a
+breach, so the standing alarm would be about arithmetic rather than about the desk. A merely
+SHORT series is the opposite -- a quantity problem the recorders close by running -- and stays a
+hole.
 
 Read-only over data/moat. Writes one artifact. No keys, no order paths.
 """
@@ -273,6 +280,18 @@ def screen_symbol(sym: str, rows: list[dict]) -> list[dict]:
                                 "constant would hand a degenerate feature a verdict")})
             continue
         v = np.asarray(vals, dtype="float64")
+        # EMPTY IS NOT SHORT, AND CONFLATING THEM PUTS A HOLE IN THE FRONTIER THAT NEVER CLOSES.
+        # A FUSE mechanism whose second input the venue does not publish returns NOTHING --
+        # `book_pressure_vs_funding` on a Binance cell, where no row carries a funding rate. More
+        # tape cannot fix that: this cell's files are written and will never gain the field. A
+        # SHORT series is the opposite, a quantity problem the recorders close by running. Reported
+        # separately so the frontier can retire the first and keep chasing the second.
+        if v.size == 0:
+            out.append({"symbol": sym, "mechanism": name, "verdict": "NO-INPUT",
+                        "why": ("the mechanism produced nothing on this cell -- for a FUSE "
+                                "mechanism that means the venue does not publish one of its "
+                                "inputs, which no amount of further recording changes")})
+            continue
         if v.size < 60:
             out.append({"symbol": sym, "mechanism": name, "verdict": "TOO-SHORT",
                         "n": int(v.size)})
@@ -487,13 +506,27 @@ def main() -> int:
     # cell and resolved nothing leaves the hole open, so "100%" means "we asked everywhere", not
     # "we ran everywhere": mined-and-barren and never-looked-at demand opposite responses.
     by_cell: dict[str, set[str]] = defaultdict(set)
+    # A MECHANISM THAT CANNOT BE SCREENED HERE IS NOT A HOLE, AND COUNTING IT AS ONE MAKES THE
+    # NUMBER A LIE THAT NEVER RESOLVES. `replenishment_halflife` returns ONE NUMBER per cell --
+    # there is nothing to correlate against a return, on this cell or any other -- so leaving it in
+    # the denominator pins coverage below 91% forever. P26 makes a gap that stops closing a breach,
+    # so a permanently unreachable 9% would raise a standing alarm about arithmetic rather than
+    # about the desk. Recorded per cell (a series can be scalar here and not there) and reported,
+    # never silently dropped: "asked and unanswerable" and "never asked" are different facts.
+    unscreenable: dict[str, set[str]] = defaultdict(set)
     for r in scored:
         by_cell[str(r["symbol"])].add(str(r["mechanism"]))
+    for r in results:
+        if (r.get("verdict") in ("SCALAR-NOT-SCREENABLE", "UNALIGNABLE", "NO-INPUT")
+                and r.get("mechanism")):
+            unscreenable[str(r["symbol"])].add(str(r["mechanism"]))
     screened = cov.setdefault("screened", {})
     for key, take in used:
         label = f"{key[0]}:{key[1]}@{key[2]}"
         rec = screened.setdefault("|".join(key), {"mechanisms": [], "t": 0.0})
         rec["mechanisms"] = sorted(set(rec.get("mechanisms", [])) | by_cell.get(label, set()))
+        rec["unscreenable"] = sorted(set(rec.get("unscreenable", []))
+                                     | unscreenable.get(label, set()))
         rec["t"] = datetime.now(tz=UTC).timestamp()
         rec["files"] = len(take)
         # Too little tape to screen is a property of the FILE. Retrying it every run would starve
@@ -505,10 +538,16 @@ def main() -> int:
     cov["cells_total"] = len(cells)
     covered_cells = sum(1 for v in screened.values() if v.get("mechanisms"))
     cells_pct = round(100.0 * covered_cells / max(len(cells), 1), 3)
-    grid = len(cells) * len(MECHANISMS)
-    filled = sum(len(set(v.get("mechanisms", [])) & set(MECHANISMS)) for v in screened.values())
+    all_mech = set(MECHANISMS)
+    # Denominator: every mechanism on every cell, MINUS the ones that cell has proven cannot carry
+    # a verdict. An unvisited cell owes all of them -- absence of a finding is not a finding.
+    dead = {k: set(v.get("unscreenable", [])) & all_mech for k, v in screened.items()}
+    grid = len(cells) * len(MECHANISMS) - sum(len(v) for v in dead.values())
+    filled = sum(len(set(v.get("mechanisms", [])) & all_mech) for v in screened.values())
     cov["coverage_pct"] = round(100.0 * filled / max(grid, 1), 3)
     cov["cells_covered_pct"] = cells_pct
+    cov["unscreenable_cells"] = sum(1 for v in dead.values() if v)
+    cov["unscreenable_pairs"] = sum(len(v) for v in dead.values())
     COVERAGE.write_text(json.dumps(cov, indent=1, sort_keys=True, default=str), "utf-8")
 
     reg = update_registry(scored, survivors, ts_now)
@@ -526,6 +565,7 @@ def main() -> int:
         "files_read": sum(len(t) for _, t in used), "files_on_disk": len(files),
         "cells_screened_this_run": len(used), "cells_on_disk": len(cells),
         "coverage_pct": cov["coverage_pct"], "cells_covered_pct": cells_pct,
+        "screenable_grid": grid, "unscreenable_pairs": cov["unscreenable_pairs"],
         "mechanisms": sorted(MECHANISMS), "manufactured": sorted(MANUFACTURED),
         "symbols": sorted(by_sym), "hypotheses": len(results), "scored": len(scored),
         "horizons_s": list(HORIZONS_S), "tally": tally,
@@ -561,8 +601,10 @@ def main() -> int:
     print(f"moat-screen: {len(results)} hypotheses / {len(MECHANISMS)} mechanisms "
           f"({len(MANUFACTURED)} manufactured) over {len(used)} cell(s), "
           f"{out['files_read']}/{len(files)} files")
-    print(f"  coverage {cov['coverage_pct']}% of {grid} (cell x mechanism) | "
-          f"cells touched {cells_pct}% of {len(cells)}")
+    print(f"  coverage {cov['coverage_pct']}% of {grid} SCREENABLE (cell x mechanism) | "
+          f"cells touched {cells_pct}% of {len(cells)}"
+          + (f" | {cov['unscreenable_pairs']} pair(s) proven unanswerable"
+             if cov["unscreenable_pairs"] else ""))
     for v, c in sorted(tally.items(), key=lambda kv: -kv[1]):
         print(f"  {v:<24} {c}")
     if persistent:

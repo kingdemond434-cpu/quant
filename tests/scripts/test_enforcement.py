@@ -159,11 +159,29 @@ def test_the_only_live_breach_is_the_one_the_environment_causes(tmp_path, monkey
     art = json.loads((tmp_path / "enf.json").read_text("utf-8"))
     assert art["checks_missing"] == []
     assert art["unclassified_defect_keys"] == []
-    controllable = [b for b in art["breaches"] if b["tier"] != BLOCKED]
+    # SCOPE FIRST, THEN TIER -- and getting that order wrong is what made this test lie.
+    # It asserted that NO breach is controllable, which was true only on a machine where somebody
+    # had already run the organs: data/ is gitignored, so `data/coexistence.json absent` is true
+    # on every fresh checkout by construction and no commit can pre-satisfy it. On a dev box with
+    # generated artifacts the test passed; on CI it failed, having spent the repo's whole history
+    # never running at all because the lint gate died first.
+    #
+    # The honest invariant is narrower: a breach whose evidence lives IN THE REPOSITORY is one
+    # the desk controls and must have fixed. A breach resting on an absent runtime artifact is a
+    # fact about this machine -- reported, actionable HERE, and not a charge against the commit.
+    controllable = [b for b in art["breaches"]
+                    if b["tier"] != BLOCKED and b.get("scope") == "REPO"]
     assert controllable == [], (
-        f"breach(es) the desk CONTROLS and has not fixed: {controllable}")
+        f"breach(es) the desk CONTROLS in the REPO and has not fixed: {controllable}")
     for b in art["breaches"]:
-        assert "upstream" in b["id"] or "ratchet" in b["id"], b["id"]
+        if b.get("scope") == "REPO":
+            assert "upstream" in b["id"] or "ratchet" in b["id"], b["id"]
+    # ...and the scope must actually be derived, not defaulted -- a field that is always UNSCOPED
+    # would pass the assertion above by being useless.
+    assert all(b.get("scope") in ("REPO", "RUNTIME", "UNSCOPED") for b in art["breaches"])
+    if art["breaches"]:
+        assert any(b.get("scope") != "UNSCOPED" for b in art["breaches"]), (
+            "no breach carries a derived scope -- the classifier is not running")
 
 
 def test_the_enforcer_runs_every_cycle_and_is_checked_for_production() -> None:
