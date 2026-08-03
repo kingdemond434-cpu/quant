@@ -105,3 +105,90 @@ def test_pandas_specifically_is_capped_below_3() -> None:
     assert _production()["pandas"].startswith("2."), (
         "production moved to pandas 3 -- raise the cap deliberately and re-run the suite against "
         "it before trusting anything green")
+
+
+# --------------------------------------------- and every IMPORT has to be declared at all
+
+#: Modules that are third-party by name but must NOT be declared: optional integrations the code
+#: imports lazily and degrades without, plus the two cross-check engines that already live in
+#: their own extra. A hard dependency hiding in this list would be the very defect being hunted,
+#: so each entry names why it is optional.
+_OPTIONAL_BY_DESIGN = {
+    "MetaTrader5",      # Windows-only broker bridge; every import site is guarded
+    "arch",             # libs/research/stationarity degrades gracefully (test skips without it)
+    "backtrader",       # cross-engine extra
+    "vectorbt",         # cross-engine extra
+    "streamlit",        # dashboard, not importable from any library path
+    "hypothesis", "pytest", "_pytest",   # test-only, declared in the dev extra
+}
+
+
+def _third_party_imports() -> dict[str, list[str]]:
+    """top-level module -> files importing it, across every tracked .py outside tests/."""
+    import ast
+    import sys
+
+    roots = {p.name.removesuffix(".py") for p in Path(".").glob("*.py")}
+    roots |= {p.name for p in Path(".").iterdir() if p.is_dir() and (p / "__init__.py").exists()}
+    roots |= {"libs", "app", "scripts", "tests", "migrations", "api", "config"}
+    # SIBLING SCRIPTS IMPORT EACH OTHER BY BARE NAME. `scripts/run_edge_gated_leverage.py` does
+    # `from run_leverage_opt import main`, which resolves because the script's own directory is on
+    # sys.path -- it is a LOCAL module, and reading it as an undeclared package would be a false
+    # accusation that trains the reader to ignore this test.
+    roots |= {p.stem for p in Path("scripts").rglob("*.py")}
+    out: dict[str, list[str]] = {}
+    for f in [*Path("libs").rglob("*.py"), *Path("scripts").rglob("*.py"),
+              *Path("app").rglob("*.py")]:
+        try:
+            tree = ast.parse(f.read_text("utf-8", errors="ignore"))
+        except SyntaxError:
+            continue
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                names = [a.name.split(".")[0] for a in node.names]
+            elif isinstance(node, ast.ImportFrom):
+                names = [node.module.split(".")[0]] if node.module and node.level == 0 else []
+            else:
+                continue
+            for n in names:
+                if n in roots or n in sys.stdlib_module_names or n.startswith("_"):
+                    continue
+                out.setdefault(n, []).append(str(f))
+    return out
+
+
+def test_every_imported_third_party_package_is_declared() -> None:
+    """CERTIFI WAS IMPORTED BY NINE SCRIPTS AND DECLARED IN NEITHER pyproject EXTRA.
+
+    It was pinned in requirements-vps.txt only, so production had it and `pip install -e .` did
+    not: a fresh checkout's `scripts/reconcile_venue.py` -- which builds the SSL context every
+    venue reconciliation goes through -- raised ImportError at line 26. The caps test above
+    compares two dependency LISTS to each other and cannot see a package missing from both; only
+    the source can say what the code actually needs.
+
+    It stayed invisible for another reason worth naming: CI's lint step had never passed, so the
+    type check that reports the missing stub was skipped on every commit in the repo's history.
+    """
+    declared = {_norm(k) for k in _declared()}
+    #: import name -> distribution name, where they differ.
+    dist = {"yaml": "pyyaml", "sklearn": "scikit-learn", "dateutil": "python-dateutil",
+            "pydantic_settings": "pydantic-settings"}
+    missing = {}
+    for mod, files in sorted(_third_party_imports().items()):
+        if mod in _OPTIONAL_BY_DESIGN:
+            continue
+        if _norm(dist.get(mod, mod)) not in declared:
+            missing[mod] = sorted(files)[:3]
+    assert not missing, (
+        "imported but declared in NO pyproject dependency list -- `pip install -e .[dev]` builds "
+        f"an environment where these raise ImportError: {missing}")
+
+
+def test_the_optional_allowlist_names_only_modules_that_are_actually_imported() -> None:
+    """An allowlist that outlives its entries stops being a decision and becomes a place to hide
+    one. A name here that nothing imports any more should be deleted, not carried."""
+    imported = set(_third_party_imports())
+    # pytest/hypothesis are imported from tests/, which the scan deliberately excludes.
+    stale = {m for m in _OPTIONAL_BY_DESIGN if m not in imported} - {
+        "hypothesis", "pytest", "_pytest"}
+    assert not stale, f"allowlisted as optional but imported nowhere -- delete: {sorted(stale)}"

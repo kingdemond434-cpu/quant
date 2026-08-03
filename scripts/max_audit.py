@@ -2955,9 +2955,55 @@ def check_mine_gate(defects) -> None:
                         "recompute the backlog, and without it the gate degrades to whatever the "
                         "shells do on a missing command. Restore it."))
         return
+    # THE GATE IS REACHED THROUGH A HELPER NOW, AND GREPPING FOR THE FILENAME MISSED IT.
+    # Each shell used to run `scripts/mine_gate.py` inline, into a `_MINE_PRIORITY` variable that
+    # was then never referenced -- the gate ran and its verdict went nowhere in all six. The fix
+    # moved the call into `mine_priority()`/`dig_prompt()` in ops/brain_env.sh, which DOES reach
+    # the prompt. This check kept looking for the literal filename and reported all six as
+    # bypassing the law they had just started obeying.
+    #
+    # Following exactly ONE level of indirection is deliberate. A shell counts as gated if it
+    # names the gate itself, or if it calls a helper that does -- and the helper must genuinely
+    # invoke the gate, which is re-derived here rather than assumed. Merely SOURCING brain_env.sh
+    # is not enough: sourcing a file that could call the gate is not calling it.
+    _GATE_HELPERS = ("mine_priority", "dig_prompt")
+    env = (ROOT / "ops/brain_env.sh")
+    env_txt = env.read_text("utf-8", errors="ignore") if env.exists() else ""
+    live_helpers = tuple(h for h in _GATE_HELPERS if "mine_gate.py" in env_txt and h in env_txt)
+
+    def _code_only(text: str) -> str:
+        """Shell source with comments removed. A COMMENT NAMING THE GATE IS NOT CALLING IT, and
+        every one of these shells carries a comment explaining what `dig_prompt` does -- so
+        matching raw text passed a shell whose actual invocation had been deleted."""
+        out = []
+        for line in text.splitlines():
+            q = None
+            for i, ch in enumerate(line):
+                if q:
+                    q = None if ch == q else q
+                elif ch in "\"'":
+                    q = ch
+                elif ch == "#" and (i == 0 or line[i - 1] in " \t"):
+                    line = line[:i]
+                    break
+            out.append(line)
+        return "\n".join(out)
+
+    def _gated(text: str) -> bool:
+        # THE HELPER MUST APPEAR AS A COMMAND, NOT AS A SUBSTRING. `dig_prompt` is also inside
+        # every one of these shells' PROMPT FILENAMES (ops/prospector_dig_prompt.txt), so a plain
+        # `in` test passed a shell whose invocation had been replaced by `cat`. Requiring a
+        # non-word character before and a word boundary after distinguishes `$(dig_prompt f)`
+        # from `..._dig_prompt.txt`.
+        code = _code_only(text)
+        if "mine_gate.py" in code:
+            return True
+        return any(re.search(r"(?<![\w./-])" + re.escape(h) + r"(?=[\s)]|$)", code, re.M)
+                   for h in live_helpers)
+
     shells = [*sorted(ROOT.glob("ops/run_*dig*.sh")), ROOT / "ops/run_frontier_miner.sh"]
-    untrusting = [s.name for s in shells if s.exists() and "mine_gate.py" not in
-                  s.read_text("utf-8", errors="ignore")]
+    untrusting = [s.name for s in shells
+                  if s.exists() and not _gated(s.read_text("utf-8", errors="ignore"))]
     if untrusting:
         defects.append(("mine-gate-bypassed",
                         f"§33: digger shell(s) do NOT invoke the derived gate -- "

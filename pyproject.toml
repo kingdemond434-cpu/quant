@@ -29,6 +29,16 @@ dependencies = [
     "duckdb>=1.5.3,<2",
     "scipy>=1.17.1,<2",
     "scikit-learn>=1.4",  # libs/regime (GMM/HMM probabilistic regimes) — a LIVE entrypoint dep
+    # UNDECLARED UNTIL 2026-08-03, AND IT IS ON THE MONEY PATH. Nine scripts import certifi —
+    # among them reconcile_venue.py, which builds the SSL context every venue reconciliation call
+    # goes through. It was pinned in requirements-vps.txt only, so production had it and any
+    # install of the declared package did not: `pip install -e .` produced a checkout whose
+    # reconciliation script raised ImportError at line 26. It stayed invisible because CI's lint
+    # step failed first and skipped the type check that names it.
+    "certifi>=2026.5.20,<2027",
+    # Same class as certifi, found by the same new test: pinned for the VPS, declared nowhere.
+    "psutil>=7.2.2,<8",        # scripts/watchdog.py -- process reaping on the live box
+    "websockets>=16.0,<17",    # scripts/liquidation_listener.py -- TOP-LEVEL import, no guard
 ]
 
 [project.optional-dependencies]
