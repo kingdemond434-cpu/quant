@@ -1,17 +1,17 @@
 # Desk digest (auto-generated daily -- do not hand-edit)
-_updated 2026-07-28T08:06Z · companion to [[institutional_knowledge]]_
+_updated 2026-08-03T02:11Z · companion to [[institutional_knowledge]]_
 
 ## Book
-- Molded net: **$-1956.26** | funding **$113.04** | run-rate APR 25.7% | day 26.12
-- Root cause: **infrastructure_bug** (act_autonomously) | tracking error $-2099.8
+- Molded net: **$-1840.58** | funding **$113.06** | run-rate APR 0.0% | day 31.87
+- Root cause: **unknown_novel** (pause_and_page) | tracking error $-1981.64
 
 ## Validation clocks
-- **carry (DEPLOYED)**: 32/90d | bt 3.54 fwd 12.48
-- **perp L/S**: 25/90d | bt 0.62 fwd 1.29
-- **trend**: 25/90d | bt 1.31 fwd -1.51
-- **trend regime-gated**: 20/90d | bt 1.31 fwd 0.0
-- **OI/LS data**: 30/40d
-- **stablecoin data**: 26/40d
+- **carry (DEPLOYED)**: 38/90d | bt 2.95 fwd 13.27
+- **perp L/S**: 31/90d | bt 0.63 fwd 0.87
+- **trend**: 31/90d | bt 1.33 fwd -5.62
+- **trend regime-gated**: 26/90d | bt 1.29 fwd 0.0
+- **OI/LS data**: 36/40d
+- **stablecoin data**: 32/40d
 
 ## Open decisions (ledger)
 - `2026-07-04-cashcarry-top10-4500` -- review 2026-08-04: funding/day rises ~50% without new drift losses by 2026-08-04
