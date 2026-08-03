@@ -38,6 +38,7 @@ import sys
 import time
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
@@ -197,6 +198,31 @@ def _autofix(key: str) -> dict:
     return {"applied": False, "action": f"no autofix implemented for '{key}'"}
 
 
+def _scope(audit: Any, tracked: list[str], untracked: list[str]) -> str:
+    """REPO / RUNTIME / UNSCOPED -- the EVIDENCE, separated from the REMEDY.
+
+    THE BUG THIS FIXES, CAUGHT BY CI ON ITS FIRST GREEN LINT. Defect prose names two kinds of path
+    and they mean opposite things:
+
+        "data/moat_mine.json absent -- ... Run ops/run_moat_miner.sh."
+         ^ the EVIDENCE, untracked and missing         ^ the REMEDY, tracked and present
+
+    `scope_of` sees one tracked path and returns REPO, so a breach that is true on every fresh
+    checkout by construction -- data/ is gitignored -- was reported as a fix the desk controls and
+    has not made. Every clone stood accused of the same two breaches, and the enforcement test that
+    should have caught it had never run because the lint gate died first.
+
+    The discriminator is EXISTENCE, not vocabulary. A cited untracked path that is NOT ON DISK is
+    the thing the defect is about; a cited path that exists is something the sentence is pointing
+    at, not something it is complaining about. So an absent untracked artifact wins, and only when
+    nothing is missing does the tracked/untracked split decide.
+    """
+    missing_untracked = [p for p in untracked if not (ROOT / p).exists()]
+    if missing_untracked:
+        return "RUNTIME"
+    return str(audit.scope_of(tracked, untracked))
+
+
 def main() -> int:
     t0 = time.time()
     import scripts.max_audit as audit
@@ -239,7 +265,7 @@ def main() -> int:
         # The action is UNCHANGED: on the machine that owns the desk, running the named script is
         # still exactly the fix. Only the claim about whose fault it is gets corrected.
         tracked, untracked = audit.cited_evidence(msg)
-        scope = audit.scope_of(tracked, untracked)
+        scope = _scope(audit, tracked, untracked)
         breaches.append(Leak(id=key, what=msg[:400],
                              evidence=f"max_audit constitutional check [{scope}]",
                              tier=tier, action=action, scope=scope,
