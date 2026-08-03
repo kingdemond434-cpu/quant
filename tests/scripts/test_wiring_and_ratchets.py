@@ -38,11 +38,9 @@ def test_the_unwired_check_resolves_absolute_imports() -> None:
     every module deleted its own inbound edges and 241 of 244 modules reported as orphans. A check
     that loud is ignored on sight."""
     d = _defects(M.check_unwired_modules)
-    if not d:
-        return
-    msg = d[0][1]
-    n = int(msg.split()[0])
-    assert n < 30, f"{n} orphans -- the import walker is broken again, not the codebase"
+    if d:
+        n = int(d[0][1].split()[0])
+        assert n < 30, f"{n} orphans -- the import walker is broken again, not the codebase"
 
 
 def test_a_package_is_reachable_through_its_submodules() -> None:
@@ -133,3 +131,28 @@ def test_allocation_gives_zero_weight_to_unmeasured_capacity(tmp_path) -> None:
     rep = json.loads((ROOT / "data/allocation.json").read_text("utf-8"))
     assert rep["gross"] == 0.0
     assert rep["unallocated"] == pytest.approx(1.0)
+
+
+def test_the_orphan_detector_can_still_SEE_an_orphan(tmp_path) -> None:
+    """A CLEAN RESULT AND A BROKEN WALKER LOOK IDENTICAL, AND ONLY ONE IS GOOD NEWS.
+
+    The test above asserts the orphan COUNT is small -- which it also is when the walker returns
+    early, walks nothing and reports nothing. That is the failure mode this desk keeps finding in
+    itself: a detector broken in the QUIET direction, whose silence reads as health. Today's sweep
+    for tests that can pass while asserting nothing found exactly this one.
+
+    So: plant a real orphan under libs/, confirm the check names it, and remove it. The positive
+    control is the only thing that distinguishes "nothing is unwired" from "nothing is looking".
+    """
+    orphan = Path("libs") / "_orphan_probe_do_not_import.py"
+    assert not orphan.exists(), "a previous run leaked its probe -- delete it"
+    orphan.write_text('"""Planted by a test. Nothing imports this, on purpose."""\n'
+                      "X = 1\n", "utf-8")
+    try:
+        d = _defects(M.check_unwired_modules)
+        named = " ".join(msg for _, msg in d)
+        assert d, "the check found NO orphan while one was sitting in libs/ -- it is not looking"
+        assert "_orphan_probe_do_not_import" in named, (
+            f"the walker ran but missed a planted orphan: {named[:300]}")
+    finally:
+        orphan.unlink(missing_ok=True)
