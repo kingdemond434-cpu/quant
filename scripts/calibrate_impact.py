@@ -44,6 +44,7 @@ from libs.execution.book_walk import (  # noqa: E402
     capacity_at_impact,
     walk_book,
 )
+from libs.research.microstructure import book_imbalance  # noqa: E402
 
 MOAT = ROOT / "data/moat"
 REPORT = ROOT / "data/impact_calibration.json"
@@ -125,6 +126,12 @@ def main() -> int:
         caps = [capacity_at_impact(x, max_bps=a.max_bps) for x in asks]
         touch_slip = [walk_book(x, min(1e-9 + x.size[0], x.size.sum()), is_buy=True).slippage_bps
                       for x in asks]
+        # DEPTH IMBALANCE COMES FREE WITH THE BOOK, and `libs/research/microstructure` already owned
+        # the definition -- it sat unwired while this script had bid and ask sizes in hand. Reusing
+        # it rather than recomputing keeps one definition of the feature: two would drift, and the
+        # one that got traded would be whichever the caller happened to import.
+        imb = book_imbalance(np.array([float(b[0].size.sum()) for b in books]),
+                             np.array([float(b[1].size.sum()) for b in books]))
         rows.append({
             "symbol": sym, "snapshots": len(asks),
             "impact_k": fit["k"], "fit_r2": fit["r2"],
@@ -132,6 +139,8 @@ def main() -> int:
             "capacity_at_budget": float(np.median(caps)),
             "capacity_p10": float(np.percentile(caps, 10)),
             "touch_slippage_bps": float(np.median(touch_slip)),
+            "depth_imbalance_median": float(np.median(imb)),
+            "depth_imbalance_std": float(np.std(imb)),
         })
 
     out = {

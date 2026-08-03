@@ -14,7 +14,9 @@ import numpy as np
 from libs.autodiscovery.models import Hypothesis, ValidationMetrics, ValidationVerdict
 from libs.discovery.capacity import capacity_estimate
 from libs.discovery.tail_risk import tail_risk
+from libs.validation.baselines import baseline_scorecard
 from libs.validation.dsr import deflated_sharpe_ratio, sharpe_ratio
+from libs.validation.errors import ValidationError
 from libs.validation.pbo import PBOResult, probability_backtest_overfitting
 from libs.validation.reality_check import RealityCheckResult, whites_reality_check
 from libs.validation.revalidation import WalkForwardEngine, WalkForwardStatus
@@ -59,6 +61,8 @@ def validate(
     rc: RealityCheckResult | None = None,
     pc_pbo: float | None = None,
     pc_p: float | None = None,
+    buy_hold_returns: np.ndarray | None = None,
+    universe_returns: np.ndarray | None = None,
 ) -> ValidationVerdict:
     arr = np.asarray(returns, dtype="float64")
     if len(arr) < 250:
@@ -125,6 +129,45 @@ def validate(
         "capacity": cap.capacity_usd >= _MIN_CAPACITY_USD,
         "fragility": tail.acceptable,
     }
+
+    # BEATS A TRIVIAL BASELINE -- the blunt question the gauntlet never asked.
+    #
+    # DSR, SPA and CPCV all ask "is this distinguishable from noise, given the search?". None asks
+    # whether it beats buy-and-hold. A candidate can clear every statistical gate and still lose to
+    # holding BTC, in which case it is complexity with no reason to exist -- and on a directional
+    # crypto book that is the LIKELY outcome, not an edge case. `libs/validation/baselines.py` was
+    # written to catch exactly this and then sat unwired for weeks, which is how a
+    # DSR-significant-but-baseline-losing strategy reaches deployment.
+    #
+    # Absent a benchmark stream the gate is SKIPPED rather than passed: a gate that defaults to
+    # True when nobody supplied its evidence is a gate that has been removed.
+    # STATIONARITY, FOR THE CANDIDATES WHERE IT DECIDES CORRECTNESS. A mean-reverting / pairs
+    # card rests entirely on the spread being stationary; if it is not, the backtest is fitting a
+    # trend and the "reversion" is a random walk that happened to come back. The constitution bans
+    # hand-rolled ADF for exactly that reason and `libs/research/stationarity` was written as the
+    # sanctioned seam -- then left unwired, so nothing ever asked the question.
+    #
+    # The backend (`arch` / statsmodels) is an OPTIONAL dependency, so absence must SKIP rather
+    # than pass: a gate that silently returns True when its backend is missing is a gate that has
+    # been deleted by a packaging decision.
+    if hypothesis is not None and getattr(hypothesis, "requires_stationarity", False):
+        try:
+            from libs.research.stationarity import StatsBackendMissing, adf_pvalue
+            gates["stationary"] = adf_pvalue(arr) < 0.05
+        except StatsBackendMissing:
+            pass                      # unmeasurable here; NOT recorded as passed
+        except (ImportError, ValueError):
+            pass
+
+    if buy_hold_returns is not None:
+        try:
+            bl = baseline_scorecard(arr, buy_hold_returns=np.asarray(buy_hold_returns,
+                                                                     dtype="float64"),
+                                    universe_returns=universe_returns)
+            gates["beats_baseline"] = bool(bl.beats_all)
+        except ValidationError:
+            gates["beats_baseline"] = False    # mismatched streams cannot clear a gate
+
     failed = [name for name, ok in gates.items() if not ok]
     return ValidationVerdict(
         survived=not failed, gates=gates,

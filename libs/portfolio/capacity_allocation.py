@@ -39,6 +39,19 @@ import pandas as pd
 
 from libs.ict.cross_sectional import effective_breadth
 from libs.portfolio.construction import concentration_cap, max_sharpe_weights
+from libs.risk.edge_gate import gated_leverage
+
+#: Prepended when the gross target was EARNED from forward evidence rather than chosen.
+_GATE_NOTE = ("Gross target came from libs/risk/edge_gate -- forward-validated edge, not a "
+              "hand-picked number. ")
+
+#: Why capacity is a wall rather than a nudge.
+_CAPACITY_NOTE = (
+    "Capacity is a HARD constraint, not a penalty: a strategy the desk cannot execute cannot be "
+    "held, and shading weights toward capacity instead would let it hold slightly too much "
+    "forever while the excess showed up only as unattributed slippage. Unallocated capital is "
+    "REPORTED -- if every strategy is at its cap, the honest answer is that the book cannot "
+    "absorb the target.")
 
 __all__ = [
     "AllocationResult",
@@ -88,8 +101,10 @@ def family_correlation(streams: pd.DataFrame) -> tuple[np.ndarray, float, float]
 
 def allocate_with_capacity(streams: pd.DataFrame, sharpes: dict[str, float],
                            capacity_frac: dict[str, float], *,
-                           gross_target: float = 1.0,
-                           concentration: float = 0.35) -> AllocationResult:
+                           gross_target: float | None = None,
+                           concentration: float = 0.35,
+                           fwd_sharpe: float | None = None,
+                           fwd_days: int = 0) -> AllocationResult:
     """Allocate across strategies of ANY family, then bind each weight to its tradeable capacity.
 
     `capacity_frac[name]` is the largest fraction of the book that strategy can carry at the
@@ -108,6 +123,18 @@ def allocate_with_capacity(streams: pd.DataFrame, sharpes: dict[str, float],
         raise ValueError(
             f"missing Sharpe or capacity for {missing}. A strategy with unknown capacity cannot "
             "be sized -- defaulting it to unlimited is how an unexecutable book gets built.")
+
+    # GROSS IS EARNED, NOT CHOSEN. `libs/risk/edge_gate.gated_leverage` sizes to FORWARD-validated
+    # edge -- floor until a 90-day shadow accumulates positive out-of-sample evidence, then ramping
+    # toward half-Kelly of the FORWARD Sharpe. It sat unwired, which meant every allocation ran at
+    # a hand-picked gross regardless of whether anything had proven itself live. On a desk with
+    # zero forward days that is the difference between the floor and a number somebody typed.
+    #
+    # An explicit `gross_target` still wins, because a caller stress-testing a book must be able to
+    # ask "what if". Absent one, the gate decides -- and with no forward evidence it returns the
+    # floor, which is the honest answer for this desk today.
+    if gross_target is None:
+        gross_target = gated_leverage(fwd_sharpe, fwd_days) / gated_leverage(None, 0)
 
     corr, n_eff, mean_corr = family_correlation(streams)
     mu = np.array([sharpes[n] for n in names], dtype="float64")
@@ -141,8 +168,4 @@ def allocate_with_capacity(streams: pd.DataFrame, sharpes: dict[str, float],
         names=names, weights=w, capacity_frac=cap, capped=tuple(sorted(capped)),
         n_eff=n_eff, mean_corr=mean_corr, gross=gross,
         unallocated=max(gross_target - gross, 0.0),
-        note=("Capacity is a HARD constraint, not a penalty: a strategy the desk cannot execute "
-              "cannot be held, and shading weights toward capacity instead would let it hold "
-              "slightly too much forever while the excess showed up only as unattributed "
-              "slippage. Unallocated capital is REPORTED -- if every strategy is at its cap, the "
-              "honest answer is that the book cannot absorb the target."))
+        note=(_GATE_NOTE if fwd_sharpe is not None else "") + _CAPACITY_NOTE)

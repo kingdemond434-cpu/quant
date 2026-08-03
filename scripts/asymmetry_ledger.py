@@ -41,6 +41,7 @@ from libs.data.asymmetry import (  # noqa: E402
     AsymmetrySource,
     Portfolio,
 )
+from libs.hypmax.manufacture import propose_from_owned, score_spec  # noqa: E402
 
 REPORT = ROOT / "data/asymmetry_ledger.json"
 
@@ -144,9 +145,30 @@ def main() -> int:
     gold = p.shallow_gold()
     stale = p.stale_claims()
 
+    # WHAT TO MANUFACTURE NEXT, from data the desk ALREADY holds. `libs/hypmax/manufacture` ranks
+    # specs by REPLICATION DIFFICULTY rather than predictive power -- an edge on public data is an
+    # edge everyone can find and therefore already priced. It sat unwired, which is why the ledger
+    # could say the self-recorded tape was under-mined without ever saying what to build from it.
+    #
+    # This is the ledger's missing action half: `shallow_gold` names the asset with high asymmetry
+    # and low depth; these are the concrete artifacts that RAISE that depth.
+    # Ranked by MOAT PER ENGINEER-DAY -- replication cost a competitor would face, divided by what
+    # it costs us to build. `score` was not a key `score_spec` returns; reading the API rather than
+    # guessing at it is what turned a column of 0.00 into a ranking.
+    specs = sorted(((sp, score_spec(sp)) for sp in propose_from_owned()),
+                   key=lambda t: -float(t[1].get("moat_per_day", 0.0)))
+
     out = {
         "ts": datetime.now(tz=UTC).isoformat(),
         "sources": len(SOURCES),
+        "manufacture_queue": [
+            {"name": sp.name, "mode": sp.mode, "inputs": list(sp.inputs),
+             "build_days": sc.get("build_days"),
+             "moat_per_day": sc.get("moat_per_day"),
+             "reverse_engineering_cost": sc.get("reverse_engineering_cost"),
+             "time_accruing": sc.get("time_accruing"),
+             "urgency": sc.get("urgency", ""), "notes": sp.notes}
+            for sp, sc in specs[:6]],
         "breadth_live_asymmetric": p.breadth,
         "mean_depth": round(p.mean_depth, 2),
         "realised_asymmetry_total": round(p.realised_total, 3),
@@ -181,6 +203,12 @@ def main() -> int:
         print(f"    {s.name:<28} {s.asymmetry:<16} depth {s.depth} -- {DEPTH_LEVELS[s.depth]}")
     if stale:
         print(f"\n  STALE CLAIMS (re-verify or downgrade): {', '.join(s.name for s in stale)}")
+    print("\n  MANUFACTURE NEXT -- buildable from data already held, ranked by how hard it would "
+          "be for anyone else to rebuild:")
+    for sp, sc in specs[:4]:
+        clock = "  TIME-ACCRUING" if sc.get("time_accruing") else ""
+        print(f"    {sp.name:<28} {sp.mode:<12} {sp.build_days:>4.1f}d  "
+              f"moat/day {float(sc['moat_per_day']):.2f}{clock}")
     return 0
 
 
