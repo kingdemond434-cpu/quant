@@ -75,6 +75,16 @@ REMEDIATIONS: dict[str, tuple[list[str], str]] = {
               "refresh the data decay monitor"),
     "moat-never-screened": (["python3", "scripts/screen_moat.py"],
                             "hunt survivors in the self-recorded L2 tape"),
+    # A HUNT WHOSE FINDINGS NOTHING READS IS A DIARY. The registry accumulates survivors with
+    # their misses; this is the only thing that adjudicates whether any of them beats the sweep's
+    # own false-positive rate. It buys a forward clock and nothing else -- no capital, no weight --
+    # which is exactly why it is safe to run unattended.
+    "moat-survivors-unexploited": (["python3", "scripts/promote_moat_survivors.py"],
+                                   "adjudicate persistent survivors into forward clocks"),
+    # The frontier standing still is a SCHEDULER problem, and one more pass is how the desk finds
+    # out whether it is stuck or merely between cells.
+    "moat-screen-not-converging": (["python3", "scripts/screen_moat.py"],
+                                   "advance the moat screening frontier one more pass"),
 }
 
 #: Defect classes no command can close. Naming them stops the loop retrying forever and stops the

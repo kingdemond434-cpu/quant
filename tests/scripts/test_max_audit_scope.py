@@ -48,9 +48,35 @@ def test_no_evidence_at_all_is_unscoped() -> None:
     assert M.scope_of([], []) == "UNSCOPED"
 
 
-def test_mixed_evidence_breaks_toward_repo() -> None:
-    """THE ASYMMETRY IS DELIBERATE. Both failure modes are possible; only one is self-serving."""
-    assert M.scope_of(["docs/graveyard.md"], ["data/x.json"]) == "REPO"
+def test_mixed_evidence_breaks_toward_repo_when_nothing_is_missing() -> None:
+    """THE ASYMMETRY IS DELIBERATE. Both failure modes are possible; only one is self-serving.
+
+    Conditioned on nothing being ABSENT -- see the test below, which is the case that matters far
+    more often in practice.
+    """
+    assert M.scope_of(["docs/graveyard.md"], ["docs/graveyard.md"]) == "REPO"
+
+
+def test_an_ABSENT_untracked_artifact_outranks_a_present_tracked_remedy() -> None:
+    """THE REFINEMENT, AND IT WAS PADDING THE PRINCIPAL PAGE. Defect prose names two kinds of path
+    and they mean opposite things:
+
+        "data/moat_screen.json absent -- ... Run scripts/screen_moat.py."
+         ^ the EVIDENCE: untracked and NOT THERE      ^ the REMEDY: tracked and present
+
+    Counting the tracked one first returned REPO, so a defect true on every fresh checkout BY
+    CONSTRUCTION -- data/ is gitignored -- was paged as a repository fault left unfixed. Three of
+    eleven REPO defects on the live page were this, and a page padded with things no commit can
+    fix is how a page stops being read.
+
+    The discriminator is EXISTENCE, not vocabulary.
+    """
+    assert not (M.ROOT / "data/definitely_not_written_by_anything.json").exists()
+    assert M.scope_of(["scripts/screen_moat.py"],
+                      ["data/definitely_not_written_by_anything.json"]) == "RUNTIME"
+    # ...and a defect naming only present, tracked files is STILL a repo defect. A rule that
+    # answered RUNTIME to everything would satisfy the assertion above by being useless.
+    assert M.scope_of(["scripts/run_allocator.py", "scripts/run_cadence.py"], []) == "REPO"
 
 
 # --------------------------------------------------------------- cited_evidence

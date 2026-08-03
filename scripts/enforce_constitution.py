@@ -199,27 +199,13 @@ def _autofix(key: str) -> dict:
 
 
 def _scope(audit: Any, tracked: list[str], untracked: list[str]) -> str:
-    """REPO / RUNTIME / UNSCOPED -- the EVIDENCE, separated from the REMEDY.
+    """Delegate to max_audit. ONE definition of scope, deliberately.
 
-    THE BUG THIS FIXES, CAUGHT BY CI ON ITS FIRST GREEN LINT. Defect prose names two kinds of path
-    and they mean opposite things:
-
-        "data/moat_mine.json absent -- ... Run ops/run_moat_miner.sh."
-         ^ the EVIDENCE, untracked and missing         ^ the REMEDY, tracked and present
-
-    `scope_of` sees one tracked path and returns REPO, so a breach that is true on every fresh
-    checkout by construction -- data/ is gitignored -- was reported as a fix the desk controls and
-    has not made. Every clone stood accused of the same two breaches, and the enforcement test that
-    should have caught it had never run because the lint gate died first.
-
-    The discriminator is EXISTENCE, not vocabulary. A cited untracked path that is NOT ON DISK is
-    the thing the defect is about; a cited path that exists is something the sentence is pointing
-    at, not something it is complaining about. So an absent untracked artifact wins, and only when
-    nothing is missing does the tracked/untracked split decide.
+    This briefly carried its own copy of the evidence-outranks-remedy rule. Two definitions of the
+    same judgement drift, and the one that matters becomes whichever module happened to run --
+    which is the defect class this desk keeps finding in itself. The rule now lives in
+    `max_audit.scope_of` and both callers read it there.
     """
-    missing_untracked = [p for p in untracked if not (ROOT / p).exists()]
-    if missing_untracked:
-        return "RUNTIME"
     return str(audit.scope_of(tracked, untracked))
 
 

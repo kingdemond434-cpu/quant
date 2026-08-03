@@ -237,6 +237,26 @@ def _split_evidence(paths: list[str]) -> tuple[list[str], list[str]]:
 
 
 def scope_of(tracked: list[str], untracked: list[str]) -> str:
+    """REPO / RUNTIME / UNSCOPED -- and the EVIDENCE outranks the REMEDY.
+
+    THE REFINEMENT, AND IT WAS INFLATING THE PRINCIPAL PAGE. Defect prose names two kinds of path
+    and they mean opposite things:
+
+        "data/moat_screen.json absent -- ... Run scripts/screen_moat.py."
+         ^ the EVIDENCE: untracked, and NOT THERE     ^ the REMEDY: tracked, and present
+
+    Counting the tracked one first returned REPO, so a defect that is true on every fresh checkout
+    BY CONSTRUCTION -- data/ is gitignored -- was paged as a repository fault the desk had left
+    unfixed. At least three of the eleven REPO defects on the page were this, and a page padded
+    with things no commit could ever fix is how a page stops being read.
+
+    The discriminator is EXISTENCE, not vocabulary: an absent untracked artifact is what the
+    defect is ABOUT, while a path that is present is what the sentence is POINTING AT. Only when
+    nothing cited is missing does the tracked/untracked split decide, which keeps a genuine repo
+    defect ("A is not called from B", both present and tracked) firmly REPO.
+    """
+    if any(not (ROOT / p).exists() for p in untracked):
+        return "RUNTIME"
     if tracked:
         return "REPO"
     return "RUNTIME" if untracked else "UNSCOPED"

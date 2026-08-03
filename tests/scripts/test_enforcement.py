@@ -423,30 +423,21 @@ def test_the_starter_matches_each_recorder_exactly_not_by_prefix() -> None:
     assert "believing it recorded three" in body, "the reason must survive in the source"
 
 
-def test_scope_reads_the_evidence_not_the_remedy() -> None:
-    """THE BUG CI CAUGHT ON ITS FIRST GREEN LINT, AND IT ACCUSED EVERY CLONE.
-
-    Defect prose names two kinds of path and they mean opposite things:
-
-        "data/moat_mine.json absent -- ... Run ops/run_moat_miner.sh."
-         ^ EVIDENCE: untracked, missing         ^ REMEDY: tracked, present
-
-    `scope_of` counts the tracked one and returns REPO, so a breach true on every fresh checkout
-    by construction -- data/ is gitignored -- was reported as a fix the desk controls and has not
-    made. The discriminator is EXISTENCE, not vocabulary: an absent untracked artifact is what the
-    defect is ABOUT; a path that exists is what the sentence is POINTING AT.
+def test_the_enforcer_has_ONE_definition_of_scope() -> None:
+    """THE RULE MOVED, AND THAT IS THE POINT. The evidence-outranks-remedy refinement briefly
+    lived here as a second copy while `max_audit.scope_of` kept the old behaviour -- which left
+    the enforcer and the auditor disagreeing about the same defect, and the answer the desk got
+    depended on which module happened to run. That is the defect class this repo keeps finding in
+    itself. The rule now lives in max_audit and the enforcer delegates.
     """
     import scripts.max_audit as audit
     absent = ("moat: data/never_written_by_anything.json absent -- coverage is not MEASURED. "
               "Run ops/run_moat_miner.sh.")
     tracked, untracked = audit.cited_evidence(absent)
     assert tracked and untracked, "the fixture must exercise BOTH kinds of path"
-    assert audit.scope_of(tracked, untracked) == "REPO", "the un-refined rule read the remedy"
-    assert E._scope(audit, tracked, untracked) == "RUNTIME"
+    assert E._scope(audit, tracked, untracked) == audit.scope_of(tracked, untracked) == "RUNTIME"
 
-    # ...and a defect that names only tracked files, none of them missing, is still REPO. A rule
-    # that answered RUNTIME to everything would pass the enforcement test by being useless.
     repo = ("scripts/run_allocator.py is not called from scripts/run_cadence.py -- "
             "the governing layer is inert.")
     t2, u2 = audit.cited_evidence(repo)
-    assert E._scope(audit, t2, u2) == "REPO"
+    assert E._scope(audit, t2, u2) == audit.scope_of(t2, u2) == "REPO"
