@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
+from typing import Any
 
 __all__ = [
     "ADMIT_Z",
@@ -156,7 +157,7 @@ def better(a: Estimate, b: Estimate, *, brier: float | None = None) -> Estimate 
     return a if adjusted(a, brier=brier) >= adjusted(b, brier=brier) else b
 
 
-def retirement_verdict(est: Estimate, *, z: float = RETIRE_Z) -> dict:
+def retirement_verdict(est: Estimate, *, z: float = RETIRE_Z) -> dict[str, Any]:
     """RETIRE / KEEP / INSUFFICIENT-EVIDENCE for a law, module, fence or routine.
 
     THREE OUTCOMES, NOT TWO. "We do not have enough evidence to judge this" is the honest verdict

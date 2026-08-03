@@ -32,6 +32,11 @@ Pure pandas/numpy. No I/O, no network, no order paths.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from libs.features.definition import FeatureDefinition
+
 import numpy as np
 import pandas as pd
 
@@ -225,10 +230,10 @@ def premium_discount(bars: pd.DataFrame, window: int = 50) -> pd.Series:
 #: same door as everything else -- same registry, same causal guard, same screen, same gauntlet.
 #: A "discretionary" family that bypassed the validation path would be a second desk, not a second
 #: sleeve, and P16 governs sleeves of ONE desk competing for one capital base.
-ICT_FEATURES: tuple = ()
+ICT_FEATURES: tuple[Any, ...] = ()
 
 
-def _definitions():
+def _definitions() -> tuple[FeatureDefinition, ...]:
     from libs.features.definition import FeatureDefinition
     spec = (
         ("ict_fvg", fair_value_gap, ("high", "low"), 3,
@@ -255,7 +260,8 @@ def _definitions():
     )
 
 
-def register(registry=None, *, bars=None, overwrite: bool = False) -> list[str]:
+def register(registry: Any = None, *, bars: Any = None,
+             overwrite: bool = False) -> list[str]:
     """Register every ICT detector. Returns the keys registered.
 
     `bars` is passed straight through to the desk's own `register_feature`, which runs the

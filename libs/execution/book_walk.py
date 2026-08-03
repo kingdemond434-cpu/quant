@@ -36,6 +36,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
 
@@ -90,7 +91,7 @@ class FillResult:
         return not self.exhausted
 
 
-def _levels(raw) -> tuple[np.ndarray, np.ndarray]:
+def _levels(raw: Any) -> tuple[np.ndarray, np.ndarray]:
     """[[price, size], ...] as strings or floats -> aligned float arrays."""
     if not raw:
         return np.empty(0), np.empty(0)
@@ -104,7 +105,7 @@ def _levels(raw) -> tuple[np.ndarray, np.ndarray]:
     return np.asarray(px, dtype="float64"), np.asarray(sz, dtype="float64")
 
 
-def book_from_row(row: dict) -> tuple[BookSide, BookSide] | None:
+def book_from_row(row: dict[str, Any]) -> tuple[BookSide, BookSide] | None:
     """(bids, asks) from a recorded depth row, or None if the snapshot is unusable.
 
     Sorting is done here rather than trusted from the venue: every consumer indexes [0] as the
@@ -181,7 +182,7 @@ def capacity_at_impact(side: BookSide, *, max_bps: float, is_buy: bool = True,
 
 
 def calibrate_impact(books: Sequence[BookSide], sizes: Sequence[float], *,
-                     is_buy: bool = True) -> dict[str, float]:
+                     is_buy: bool = True) -> dict[str, Any]:
     """Fit slippage_bps = k * sqrt(participation) on the desk's OWN books.
 
     The square-root law is the standard functional form and is kept; what changes is that `k` is

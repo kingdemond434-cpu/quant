@@ -74,6 +74,7 @@ from __future__ import annotations
 import re
 from collections.abc import Mapping
 from dataclasses import dataclass
+from typing import Any
 
 __all__ = [
     "CAUSAL_CHAIN",
@@ -653,7 +654,7 @@ def aggression_map() -> dict[str, int]:
     return {p.id: p.aggression for p in PRINCIPLES}
 
 
-def governance_balance(principles: tuple[Principle, ...] = PRINCIPLES) -> dict:
+def governance_balance(principles: tuple[Principle, ...] = PRINCIPLES) -> dict[str, Any]:
     """P24, measured. Do the mechanisms push this desk forward or hold it back?
 
     THE DIAGNOSIS THIS EXISTS TO PREVENT A REPEAT OF. A constitution can state an aggressive

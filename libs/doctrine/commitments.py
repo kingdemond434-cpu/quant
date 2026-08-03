@@ -32,6 +32,7 @@ Pure, dependency-free, no I/O.
 from __future__ import annotations
 
 import re
+from typing import Any
 
 __all__ = [
     "PATTERNS",
@@ -114,7 +115,7 @@ def diff(before: str, after: str) -> dict[str, list[str]]:
     return {k: sorted(v - a.get(k, set())) for k, v in b.items() if v - a.get(k, set())}
 
 
-def report(before: str, after: str) -> dict:
+def report(before: str, after: str) -> dict[str, Any]:
     """Human-readable verdict for a consolidation attempt."""
     missing = diff(before, after)
     n_missing = sum(len(v) for v in missing.values())

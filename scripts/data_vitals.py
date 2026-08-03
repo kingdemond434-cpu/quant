@@ -26,8 +26,10 @@ whether its timestamps are verified or assumed. `cny_otc_premium_history.jsonl` 
 
 Read-only. No keys, no network. Run from repo root.
 """
+
 from __future__ import annotations
 
+import itertools
 import json
 from datetime import UTC, datetime
 from pathlib import Path
@@ -46,16 +48,32 @@ PROVENANCE = {
         "regenerable": False,
         "timestamp_verified": False,
         "note": "rows carry '23:55 CST (UTC+8) assumed'. Alignment vs the USD/CNY reference is "
-                "ASSUMED. Feeds M_STRUCTURAL_BARRIER, one of two ALIVE mechanisms."},
-    "oi_ls_history.jsonl": {"collection": "binance futures API", "regenerable": True,
-                            "timestamp_verified": True, "note": "daily archive"},
-    "onchain_metrics.jsonl": {"collection": "public chain API", "regenerable": True,
-                              "timestamp_verified": True, "note": "public, no moat"},
-    "coinmetrics_flows.jsonl": {"collection": "coinmetrics community API", "regenerable": True,
-                                "timestamp_verified": True, "note": "public tier"},
-    "venue_divergence_shadow.jsonl": {"collection": "self-recorded multi-venue poll",
-                                      "regenerable": False, "timestamp_verified": True,
-                                      "note": "point-in-time capture; cannot be backfilled"},
+        "ASSUMED. Feeds M_STRUCTURAL_BARRIER, one of two ALIVE mechanisms.",
+    },
+    "oi_ls_history.jsonl": {
+        "collection": "binance futures API",
+        "regenerable": True,
+        "timestamp_verified": True,
+        "note": "daily archive",
+    },
+    "onchain_metrics.jsonl": {
+        "collection": "public chain API",
+        "regenerable": True,
+        "timestamp_verified": True,
+        "note": "public, no moat",
+    },
+    "coinmetrics_flows.jsonl": {
+        "collection": "coinmetrics community API",
+        "regenerable": True,
+        "timestamp_verified": True,
+        "note": "public tier",
+    },
+    "venue_divergence_shadow.jsonl": {
+        "collection": "self-recorded multi-venue poll",
+        "regenerable": False,
+        "timestamp_verified": True,
+        "note": "point-in-time capture; cannot be backfilled",
+    },
 }
 
 
@@ -110,7 +128,7 @@ def score(p: Path) -> dict | None:
     lat = 0.5
     cadence_s = None
     if len(ts) >= 8:
-        gaps = sorted((b - a).total_seconds() for a, b in zip(ts, ts[1:]) if b >= a)
+        gaps = sorted((b - a).total_seconds() for a, b in itertools.pairwise(ts) if b >= a)
         cadence_s = gaps[len(gaps) // 2] if gaps else None
         if cadence_s and cadence_s > 0:
             age = (now - max(ts)).total_seconds()
@@ -128,7 +146,7 @@ def score(p: Path) -> dict | None:
 
     align = 1.0
     if ts:
-        ooo = sum(1 for a, b in zip(ts, ts[1:]) if b < a)
+        ooo = sum(1 for a, b in itertools.pairwise(ts) if b < a)
         fut = sum(1 for t in ts if t > now.replace(microsecond=0) and (t - now).days > 0)
         align = max(0.0, 1.0 - (ooo + fut * 5) / len(ts))
 
@@ -138,16 +156,30 @@ def score(p: Path) -> dict | None:
     # so multiplying it in capped every score at 0.5 against a 0.5 threshold and marked
     # 14/14 collectors DEAD regardless of health. A constant carries no information.
     dqs = lat * comp * schema * align
-    prov = PROVENANCE.get(p.name, {"collection": "UNKNOWN", "regenerable": None,
-                                   "timestamp_verified": None, "note": "provenance not recorded"})
-    return {"source": p.name, "dqs": round(dqs, 4),
-            "components": {"latency": round(lat, 3), "completeness": round(comp, 3),
-                           "schema_integrity": round(schema, 3),
-                           "temporal_alignment": round(align, 3), "cross_validation_available": False},
-            "cadence_s": round(cadence_s, 1) if cadence_s else None,
-            "age_s": round((now - max(ts)).total_seconds(), 0) if ts else None,
-            "provenance": prov,
-            "action": "DEAD -- FAILOVER" if dqs < DQS_DEAD else "OK"}
+    prov = PROVENANCE.get(
+        p.name,
+        {
+            "collection": "UNKNOWN",
+            "regenerable": None,
+            "timestamp_verified": None,
+            "note": "provenance not recorded",
+        },
+    )
+    return {
+        "source": p.name,
+        "dqs": round(dqs, 4),
+        "components": {
+            "latency": round(lat, 3),
+            "completeness": round(comp, 3),
+            "schema_integrity": round(schema, 3),
+            "temporal_alignment": round(align, 3),
+            "cross_validation_available": False,
+        },
+        "cadence_s": round(cadence_s, 1) if cadence_s else None,
+        "age_s": round((now - max(ts)).total_seconds(), 0) if ts else None,
+        "provenance": prov,
+        "action": "DEAD -- FAILOVER" if dqs < DQS_DEAD else "OK",
+    }
 
 
 def main() -> None:
@@ -164,8 +196,10 @@ def main() -> None:
     for r in rows:
         c = r["components"]
         dead += r["dqs"] < DQS_DEAD
-        print(f"  {r['source']:<38}{r['dqs']:>7.3f}{c['latency']:>6.2f}{c['completeness']:>6.2f}"
-              f"{c['schema_integrity']:>6.2f}{c['temporal_alignment']:>6.2f}  {r['action']}")
+        print(
+            f"  {r['source']:<38}{r['dqs']:>7.3f}{c['latency']:>6.2f}{c['completeness']:>6.2f}"
+            f"{c['schema_integrity']:>6.2f}{c['temporal_alignment']:>6.2f}  {r['action']}"
+        )
     print(f"\n  {dead}/{len(rows)} collectors below DQS {DQS_DEAD} -> flagged DEAD")
     print("  NOTE: cross_validation is 0.5 for every source because NO collector currently has")
     print("  a second independent feed. That caps every DQS at 0.5x its otherwise value, which")
@@ -174,13 +208,24 @@ def main() -> None:
     unk = [r for r in rows if r["provenance"]["collection"] == "UNKNOWN"]
     bad_ts = [r for r in rows if r["provenance"].get("timestamp_verified") is False]
     norg = [r for r in rows if r["provenance"].get("regenerable") is False]
-    print(f"\n  PROVENANCE: {len(unk)} sources with UNKNOWN collection method; "
-          f"{len(norg)} NOT regenerable; {len(bad_ts)} with UNVERIFIED timestamps")
+    print(
+        f"\n  PROVENANCE: {len(unk)} sources with UNKNOWN collection method; "
+        f"{len(norg)} NOT regenerable; {len(bad_ts)} with UNVERIFIED timestamps"
+    )
     for r in bad_ts:
         print(f"    !! {r['source']}: {r['provenance']['note']}")
-    OUT.write_text(json.dumps({"updated": datetime.now(tz=UTC).isoformat(),
-                               "dqs_dead_threshold": DQS_DEAD, "n_dead": dead,
-                               "collectors": rows}, indent=1), "utf-8")
+    OUT.write_text(
+        json.dumps(
+            {
+                "updated": datetime.now(tz=UTC).isoformat(),
+                "dqs_dead_threshold": DQS_DEAD,
+                "n_dead": dead,
+                "collectors": rows,
+            },
+            indent=1,
+        ),
+        "utf-8",
+    )
     print(f"\n  -> {OUT}")
 
 

@@ -32,6 +32,7 @@ time-horizon shift, second-order effects, and finally forced ranking of everythi
 from __future__ import annotations
 
 import re
+from typing import Any
 
 __all__ = [
     "COMPOUNDING_FILTER",
@@ -288,7 +289,7 @@ def build_turns(system: str, user: str) -> list[dict[str, str]]:
     return [{"role": "system", "content": system}, {"role": "user", "content": user}]
 
 
-def push_rounds(ask, system: str, user: str, *,
+def push_rounds(ask: Any, system: str, user: str, *,
                 ladder: tuple[str, ...] = PUSH_LADDER,
                 max_rounds: int = MAX_ROUNDS,
                 min_novelty: float = MIN_NOVELTY) -> PushResult:

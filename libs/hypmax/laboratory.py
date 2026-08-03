@@ -32,6 +32,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
 
@@ -143,7 +144,7 @@ def false_positive_rate(screen: Callable[[np.ndarray, np.ndarray], bool],
 
 def detection_floor(screen: Callable[[np.ndarray, np.ndarray], bool],
                     *, strengths: Sequence[float] = BENCHMARK_STRENGTHS,
-                    trials: int = 60, n: int = 500, seed: int = 0) -> dict:
+                    trials: int = 60, n: int = 500, seed: int = 0) -> dict[str, Any]:
     """The weakest edge this screen reliably finds -- the desk's self-generated benchmark.
 
     THIS IS THE PROGRESS METRIC THAT CANNOT BE GAMED. Hypothesis count rises by generating more;

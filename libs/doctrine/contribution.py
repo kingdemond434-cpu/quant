@@ -34,6 +34,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
+from typing import Any
 
 from libs.doctrine.estimate import ADMIT_Z, Estimate, uncertainty_penalty
 
@@ -157,7 +158,7 @@ class Contribution:
         adj = est.value - lam * est.se
         return adj / max(closure_cost, 1e-9)
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         est = self.estimate()
         return {
             "subsystem": self.subsystem,
@@ -178,7 +179,7 @@ class Contribution:
 
 def rank(contributions: list[Contribution],
          costs: dict[str, float] | None = None,
-         calibration_brier: float | None = None) -> list[dict]:
+         calibration_brier: float | None = None) -> list[dict[str, Any]]:
     """Subsystems ordered by penalised contribution density -- P4's argmax, made computable.
 
     Everything is ranked, including what cannot be acted on. A subsystem excluded from the
@@ -211,7 +212,7 @@ def unestimated(all_subsystems: set[str],
     return sorted(all_subsystems - {c.subsystem for c in contributions})
 
 
-def summarise(contributions: list[Contribution], all_subsystems: set[str]) -> dict:
+def summarise(contributions: list[Contribution], all_subsystems: set[str]) -> dict[str, Any]:
     """The one-line state of P4: can the desk compute its own argmax yet?"""
     missing = unestimated(all_subsystems, contributions)
     live = [c for c in contributions if c.provenance.upper() == "LIVE"]

@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import shutil
 from pathlib import Path
+from typing import Any
 
 __all__ = [
     "PAUSE_FRAC",
@@ -42,7 +43,7 @@ PAUSE_FRAC = 0.80
 WARN_DAYS = 21.0
 
 
-def usage(path: str = "/") -> dict:
+def usage(path: str = "/") -> dict[str, Any]:
     u = shutil.disk_usage(path)
     return {
         "total_bytes": u.total,
@@ -52,7 +53,7 @@ def usage(path: str = "/") -> dict:
     }
 
 
-def headroom(path: str = "/", pause_frac: float = PAUSE_FRAC) -> dict:
+def headroom(path: str = "/", pause_frac: float = PAUSE_FRAC) -> dict[str, Any]:
     """Bytes remaining before the recorders pause -- NOT before the disk is full.
 
     The distinction is the point. Free space says how much room is left; this says how much of
@@ -94,7 +95,7 @@ def tape_bytes(root: Path) -> tuple[int, int]:
 
 
 def days_to_pause(growth_bytes_per_day: float, path: str = "/",
-                  pause_frac: float = PAUSE_FRAC) -> dict:
+                  pause_frac: float = PAUSE_FRAC) -> dict[str, Any]:
     """WHEN, not whether. A percentage is a status line; a date is an action.
 
     Returns state UNKNOWN rather than a large number when growth is not measurable -- inventing

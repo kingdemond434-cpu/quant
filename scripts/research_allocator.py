@@ -23,6 +23,7 @@ explicitly rather than presenting a prior as a data-driven allocation.
 
 Read-only. Run from repo root.
 """
+
 from __future__ import annotations
 
 import json
@@ -37,13 +38,21 @@ OUT = Path("data/research_allocation.json")
 
 # area -> (keywords for ledger matching, mechanism-graph saturation 0..1, base prior weight)
 AREAS = {
-    "M1_liquidity_flows":   (("stablecoin", "etf", "funding", "liquidity", "reserve"), 1.00, 1.0),
+    "M1_liquidity_flows": (("stablecoin", "etf", "funding", "liquidity", "reserve"), 1.00, 1.0),
     "M2_regional_controls": (("kimchi", "premium", "cny", "capital control", "krw"), 0.55, 1.0),
-    "M3_participant":       (("trader", "copytrad", "leaderboard", "elite", "skill", "wallet"), 0.95, 1.0),
-    "M4_info_diffusion":    (("attention", "wikipedia", "developer", "github", "search", "narrative"), 0.30, 1.0),
-    "M5_reflexivity":       (("reflexiv", "liquidation", "feedback", "cascade", "leverage"), 0.15, 1.0),
-    "execution_costs":      (("cost", "slippage", "churn", "execution", "fill", "tca"), 0.40, 1.0),
-    "method_infra":         (("harness", "rail", "power", "validator", "gate", "audit", "oos"), 0.20, 1.0),
+    "M3_participant": (
+        ("trader", "copytrad", "leaderboard", "elite", "skill", "wallet"),
+        0.95,
+        1.0,
+    ),
+    "M4_info_diffusion": (
+        ("attention", "wikipedia", "developer", "github", "search", "narrative"),
+        0.30,
+        1.0,
+    ),
+    "M5_reflexivity": (("reflexiv", "liquidation", "feedback", "cascade", "leverage"), 0.15, 1.0),
+    "execution_costs": (("cost", "slippage", "churn", "execution", "fill", "tca"), 0.40, 1.0),
+    "method_infra": (("harness", "rail", "power", "validator", "gate", "audit", "oos"), 0.20, 1.0),
 }
 
 REWARD = {"survivor": 1.0, "refutation": 0.6, "method": 0.5, "inconclusive": 0.0}
@@ -51,14 +60,25 @@ REWARD = {"survivor": 1.0, "refutation": 0.6, "method": 0.5, "inconclusive": 0.0
 
 def classify(text: str) -> str:
     t = text.lower()
-    if any(k in t for k in ("forward clock", "wired", "screen-interesting", "replicat")):
-        if "not wired" not in t and "nothing wired" not in t:
-            return "survivor"
-    if any(k in t for k in ("rail", "harness", "control", "power", "validator", "standard")):
-        if any(k in t for k in ("built", "added", "earned", "new standard")):
-            return "method"
-    if any(k in t for k in ("refut", "killed", "reject", "fails", "zero predictive",
-                            "graveyard", "exhausted", "no edge")):
+    if (any(k in t for k in ("forward clock", "wired", "screen-interesting", "replicat"))
+            and "not wired" not in t and "nothing wired" not in t):
+        return "survivor"
+    if (any(k in t for k in ("rail", "harness", "control", "power", "validator", "standard"))
+            and any(k in t for k in ("built", "added", "earned", "new standard"))):
+        return "method"
+    if any(
+        k in t
+        for k in (
+            "refut",
+            "killed",
+            "reject",
+            "fails",
+            "zero predictive",
+            "graveyard",
+            "exhausted",
+            "no edge",
+        )
+    ):
         return "refutation"
     if any(k in t for k in ("underpowered", "data-blocked", "thin", "insufficient", "blocked")):
         return "inconclusive"
@@ -78,7 +98,7 @@ def main() -> None:
 
     rng = np.random.default_rng(7)
     rows, draws = [], {}
-    for a, (kws, sat, _prior_w) in AREAS.items():
+    for a, (_kws, sat, _prior_w) in AREAS.items():
         t = tally[a]
         n = sum(t.values())
         gain = sum(REWARD[k] * v for k, v in t.items())
@@ -89,17 +109,27 @@ def main() -> None:
         # saturation penalty: a fully-observed chain earns less from a new sensor
         adj = samp * (1.0 - 0.65 * sat)
         draws[a] = adj
-        rows.append({"area": a, "attempts": n, "survivors": t["survivor"],
-                     "refutations": t["refutation"], "methods": t["method"],
-                     "inconclusive": t["inconclusive"], "info_gain": round(gain, 2),
-                     "posterior_mean": round(samp, 4), "saturation": sat,
-                     "score": round(adj, 4)})
+        rows.append(
+            {
+                "area": a,
+                "attempts": n,
+                "survivors": t["survivor"],
+                "refutations": t["refutation"],
+                "methods": t["method"],
+                "inconclusive": t["inconclusive"],
+                "info_gain": round(gain, 2),
+                "posterior_mean": round(samp, 4),
+                "saturation": sat,
+                "score": round(adj, 4),
+            }
+        )
 
     # --- DIVERSIFICATION LAYER (principal 2026-07-27) -------------------------------------
     # "diversify a lot like the S&P 500, but that doesn't mean low focus on all" -- i.e. broad
     # coverage with CONVICTION WEIGHTING, not equal weight. Three rails:
     #   FLOOR  every area keeps a minimum so a lean patch can never permanently kill a branch
-    #          (an area at 0% can never generate the evidence that would revive it -- absorbing state)
+    #          (an area at 0% can never generate the evidence that would revive it --
+    #          an absorbing state)
     #   CAP    no area exceeds MAX_W, so the book can never become a single-mechanism bet
     #   NEW    a permanent, non-negotiable slice for branches that DO NOT EXIST YET -- this is the
     #          "always be branching out" mandate; it never decays because unexplored classes have
@@ -114,7 +144,7 @@ def main() -> None:
     tot = sum(draws.values()) or 1.0
     for a in draws:
         draws[a] = draws[a] / tot * (1.0 - NEW_BRANCH)
-    for _ in range(60):                      # iterate floor/cap to a fixed point
+    for _ in range(60):  # iterate floor/cap to a fixed point
         for a in draws:
             draws[a] = min(max(draws[a], MIN_W * (1 - NEW_BRANCH)), MAX_W * (1 - NEW_BRANCH))
         t2 = sum(draws.values()) or 1.0
@@ -122,23 +152,37 @@ def main() -> None:
     for r in rows:
         r["allocation_pct"] = round(100 * draws[r["area"]], 1)
     rows.sort(key=lambda r: -r["allocation_pct"])
-    rows.append({"area": "NEW_BRANCHES (unexplored classes)", "attempts": 0, "survivors": 0,
-                 "refutations": 0, "methods": 0, "inconclusive": 0, "info_gain": 0.0,
-                 "posterior_mean": None, "saturation": 0.0,
-                 "allocation_pct": round(100 * NEW_BRANCH, 1)})
+    rows.append(
+        {
+            "area": "NEW_BRANCHES (unexplored classes)",
+            "attempts": 0,
+            "survivors": 0,
+            "refutations": 0,
+            "methods": 0,
+            "inconclusive": 0,
+            "info_gain": 0.0,
+            "posterior_mean": None,
+            "saturation": 0.0,
+            "allocation_pct": round(100 * NEW_BRANCH, 1),
+        }
+    )
 
     # --- L1 MONOTONIC BRANCH REGISTRY: branches are never deleted, only down-weighted ---------
     REG = Path("data/branch_registry.json")
     reg = json.loads(REG.read_text("utf-8")) if REG.exists() else {"branches": {}}
     now = datetime.now(tz=UTC).isoformat()
     for r in rows:
-        b = reg["branches"].setdefault(r["area"], {"first_seen": now, "last_weight": None,
-                                                   "last_dug": None, "status": "active"})
+        b = reg["branches"].setdefault(
+            r["area"],
+            {"first_seen": now, "last_weight": None, "last_dug": None, "status": "active"},
+        )
         b["last_weight"] = r["allocation_pct"]
         b["last_seen"] = now
     reg["count"] = len(reg["branches"])
-    reg["monotonic_rule"] = ("branch count never decreases; a branch may be down-weighted on "
-                             "evidence but never deleted -- zero attention is an absorbing state")
+    reg["monotonic_rule"] = (
+        "branch count never decreases; a branch may be down-weighted on "
+        "evidence but never deleted -- zero attention is an absorbing state"
+    )
     REG.write_text(json.dumps(reg, indent=1), "utf-8")
 
     # --- L2 DEPTH = GUARANTEED REVISIT CADENCE (not budget share) -----------------------------
@@ -156,13 +200,20 @@ def main() -> None:
     prior_dominated = total_surv < 5 or total_n < 30
 
     print("=== ADAPTIVE RESEARCH ALLOCATION (recomputed from evidence, not decreed) ===\n")
-    print(f"  {'area':<22}{'alloc':>7}{'att':>5}{'surv':>6}{'refut':>7}{'meth':>6}{'gain':>7}{'sat':>6}")
+    print(
+        f"  "
+        f"{'area':<22}{'alloc':>7}{'att':>5}{'surv':>6}{'refut':>7}{'meth':>6}{'gain':>7}{'sat':>6}"
+    )
     for r in rows:
-        print(f"  {r['area']:<22}{r['allocation_pct']:>6.1f}%{r['attempts']:>5}"
-              f"{r['survivors']:>6}{r['refutations']:>7}{r['methods']:>6}"
-              f"{r['info_gain']:>7.1f}{r['saturation']:>6.2f}")
-    print(f"\n  reward: survivor {REWARD['survivor']} | refutation {REWARD['refutation']} "
-          f"| method {REWARD['method']} | inconclusive {REWARD['inconclusive']}")
+        print(
+            f"  {r['area']:<22}{r['allocation_pct']:>6.1f}%{r['attempts']:>5}"
+            f"{r['survivors']:>6}{r['refutations']:>7}{r['methods']:>6}"
+            f"{r['info_gain']:>7.1f}{r['saturation']:>6.2f}"
+        )
+    print(
+        f"\n  reward: survivor {REWARD['survivor']} | refutation {REWARD['refutation']} "
+        f"| method {REWARD['method']} | inconclusive {REWARD['inconclusive']}"
+    )
     print("  (refutations are PAID -- closing a family permanently prevents future waste)")
 
     if prior_dominated:
@@ -171,10 +222,20 @@ def main() -> None:
         print("  This is honest, not a defect -- but do not present it as data-driven until")
         print("  survivors accumulate. Re-run after the Aug 7 OI/LS verdict.")
 
-    OUT.write_text(json.dumps({"updated": datetime.now(tz=UTC).isoformat(),
-                               "prior_dominated": bool(prior_dominated),
-                               "total_attempts": total_n, "total_survivors": total_surv,
-                               "reward_function": REWARD, "areas": rows}, indent=1), "utf-8")
+    OUT.write_text(
+        json.dumps(
+            {
+                "updated": datetime.now(tz=UTC).isoformat(),
+                "prior_dominated": bool(prior_dominated),
+                "total_attempts": total_n,
+                "total_survivors": total_surv,
+                "reward_function": REWARD,
+                "areas": rows,
+            },
+            indent=1,
+        ),
+        "utf-8",
+    )
     print(f"\n-> {OUT}")
 
 

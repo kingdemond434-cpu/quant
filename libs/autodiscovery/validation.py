@@ -9,6 +9,8 @@ never relaxed.
 
 from __future__ import annotations
 
+from typing import Any
+
 import numpy as np
 
 from libs.autodiscovery.models import Hypothesis, ValidationMetrics, ValidationVerdict
@@ -176,7 +178,7 @@ def validate(
     )
 
 
-def gate_discrimination(gate_results: list[dict[str, bool]]) -> dict[str, dict]:
+def gate_discrimination(gate_results: list[dict[str, bool]]) -> dict[str, dict[str, Any]]:
     """GAP #71 INSTRUMENTATION -- which gates actually DISCRIMINATE, and which are constants.
 
     THE MEASURED PROBLEM. `pbo` and `reality_check` are computed ONCE per campaign (they are
@@ -201,7 +203,7 @@ def gate_discrimination(gate_results: list[dict[str, bool]]) -> dict[str, dict]:
         return {}
     names = list(gate_results[0])
     n = len(gate_results)
-    out: dict[str, dict] = {}
+    out: dict[str, dict[str, Any]] = {}
     for g in names:
         passed = sum(1 for r in gate_results if r.get(g))
         rate = passed / n
@@ -230,7 +232,7 @@ def blocking_constant_gates(gate_results: list[dict[str, bool]]) -> list[str]:
 
 def counterfactual_survivors(
     gate_results: list[dict[str, bool]], waive: list[str] | tuple[str, ...],
-) -> dict:
+) -> dict[str, Any]:
     """GAP #71, THE QUESTION A RULING ACTUALLY NEEDS: if these gates were waived, who survives?
 
     "Should we relax the campaign veto?" is unanswerable in the abstract and trivially answerable

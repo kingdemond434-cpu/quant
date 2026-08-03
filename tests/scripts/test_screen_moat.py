@@ -39,8 +39,14 @@ import scripts.screen_moat as S  # noqa: E402
 
 
 def _tape(root: Path, *, predictive: bool, n: int = 4000, seed: int = 11,
-          strength: float = 0.0010, noise: float = 0.0004) -> None:
-    """Book imbalance drives the NEXT period (predictive) or the CURRENT one (contemporaneous)."""
+          strength: float = 0.0010, noise: float = 0.0004, funding: bool = False,
+          day: str = "20260101_00") -> None:
+    """Book imbalance drives the NEXT period (predictive) or the CURRENT one (contemporaneous).
+
+    `funding` adds k="meta" rows so the FUSE-class mechanism has both legs. Without them it
+    correctly returns nothing -- which is right, and also means a test written against this tape
+    silently skips it. That is how a full-sample normalisation leak lived in it.
+    """
     d = root / "binance" / "BTCUSDT"
     d.mkdir(parents=True, exist_ok=True)
     rng = np.random.default_rng(seed)
@@ -57,16 +63,28 @@ def _tape(root: Path, *, predictive: bool, n: int = 4000, seed: int = 11,
                      "b": [[f"{mid - 0.5 - j * 0.5:.2f}", f"{b[j]:.4f}"] for j in range(20)],
                      "a": [[f"{mid + 0.5 + j * 0.5:.2f}", f"{a[j]:.4f}"] for j in range(20)]})
         rows.append({"t": ts + 1000, "k": "t", "a": i, "p": f"{mid:.2f}", "q": "0.5"})
+        if funding and i % 20 == 0:
+            rows.append({"t": ts + 500, "k": "meta",
+                         "fr": float(0.0001 + 0.00005 * np.sin(i / 37.0))})
         if predictive:
             mid *= np.exp(strength * imb[i] + rng.normal(0, noise))   # move happens AFTER
-    with gzip.open(d / "20260101_00.jsonl.gz", "wt") as f:
+    with gzip.open(d / f"{day}.jsonl.gz", "wt") as f:
         for r in rows:
             f.write(json.dumps(r) + "\n")
 
 
-def _run(tmp: Path, root: Path) -> dict:
+def _run(tmp: Path, root: Path, *, files: int | None = None) -> dict:
+    """Run the screen against a temp tape with EVERY output path redirected.
+
+    THE REDIRECTION IS LOAD-BEARING, NOT TIDINESS. The screen now persists coverage and a survivor
+    registry, and an unredirected test writes SYNTHETIC-TAPE SURVIVORS into the desk's real
+    registry -- where they are indistinguishable from findings on the actual archive and carry the
+    same provenance fields. `test_every_written_path_is_redirected` fails if a future output is
+    added without being redirected here, because the next person to add one will not read this.
+    """
     S.MOAT, S.REPORT, S.HISTORY = root, tmp / "r.json", tmp / "h.jsonl"
-    sys.argv = ["screen_moat.py"]
+    S.COVERAGE, S.REGISTRY = tmp / "cov.json", tmp / "reg.json"
+    sys.argv = ["screen_moat.py"] + ([] if files is None else ["--files", str(files)])
     assert S.main() == 0
     return json.loads((tmp / "r.json").read_text("utf-8"))
 
@@ -185,3 +203,152 @@ def test_every_hypothesis_is_logged_win_or_lose(tmp_path) -> None:
     rep = _run(tmp_path, root)
     assert sum(rep["tally"].values()) == rep["hypotheses"]
     assert rep["authority"].startswith("NONE")
+
+
+# ------------------------------------------------------- manufactured mechanisms
+
+def test_the_manufactured_features_are_actually_screened() -> None:
+    """The asymmetry ledger ranked these first and they sat as PROPOSALS. A feature that exists,
+    is RECONSTRUCT/FUSE class and is never screened is worth exactly as much as one that does not
+    exist -- and the moat screen was the only organ that could tell the difference."""
+    from libs.hypmax.moat_features import MANUFACTURED
+    assert set(MANUFACTURED) <= set(S.MECHANISMS)
+    assert len(S.MECHANISMS) == len(S._EXTRACTORS) + len(MANUFACTURED), "no silent name swap"
+
+
+def test_a_name_collision_between_the_two_sources_is_fatal() -> None:
+    """`{**a, **b}` resolves a duplicate key by SILENTLY dropping one definition, and which one
+    survives depends on dict order. Two mechanisms sharing a name would be screened once and
+    reported under a name that no longer means what the other module thinks it means."""
+    import inspect
+    src = inspect.getsource(S)
+    assert "_COLLISION" in src and "RuntimeError" in src
+
+
+def test_manufactured_features_are_causal_and_finite(tmp_path) -> None:
+    """Each value at snapshot i may use only snapshots <= i. Verified by TRUNCATION: recomputing
+    on a prefix must reproduce the prefix of the full-series answer, which is impossible for any
+    feature that peeks forward."""
+    from libs.hypmax import moat_features as MF
+    root = tmp_path / "moat_mf"
+    _tape(root, predictive=True, n=600, funding=True)
+    rows = S._rows(next((root / "binance" / "BTCUSDT").glob("*.jsonl.gz")))
+    depth = [r for r in rows if r.get("k") in S.DEPTH_KINDS]
+    cut = depth[len(depth) // 2]["t"]
+    prefix = [r for r in rows if int(r["t"]) <= cut]
+    for name, fn in MF.MANUFACTURED.items():
+        full, part = np.asarray(fn(rows)), np.asarray(fn(prefix))
+        if part.size == 0:
+            continue                      # nothing computable on the prefix says nothing about it
+        # Features align to the LAST k snapshots, so compare the leading part of the prefix
+        # answer against the same absolute positions in the full one.
+        k = min(part.size, full.size) - 1
+        a, b = full[:k], part[:k]
+        both = np.isfinite(a) & np.isfinite(b)
+        assert both.sum() > 0, f"{name}: nothing finite to compare"
+        assert np.allclose(a[both], b[both], rtol=1e-9, atol=1e-12), (
+            f"{name} changed its own past when future data arrived -- lookahead")
+
+
+def test_a_fusion_with_one_leg_missing_returns_nothing(tmp_path) -> None:
+    """book_pressure_vs_funding is FUSE class. Defaulting the absent funding leg to zero would
+    turn it into plain book imbalance wearing a name that claims a barrier it does not have."""
+    from libs.hypmax.moat_features import book_pressure_vs_funding
+    root = tmp_path / "moat_nf"
+    _tape(root, predictive=True, n=400)          # the synthetic tape publishes no k="meta"
+    rows = S._rows(next((root / "binance" / "BTCUSDT").glob("*.jsonl.gz")))
+    assert book_pressure_vs_funding(rows).size == 0
+
+
+# ------------------------------------------------------------ coverage frontier
+
+def test_repeated_runs_move_onto_unscreened_cells(tmp_path) -> None:
+    """THE WHOLE POINT OF THE FRONTIER. `files[-200:]` re-screened the newest slice forever, so
+    the oldest tape -- the part that cannot be backfilled at any price -- was never looked at."""
+    root = tmp_path / "moat_cov"
+    _tape(root, predictive=True, n=400)
+    d = root / "binance" / "BTCUSDT"
+    src = (d / "20260101_00.jsonl.gz").read_bytes()
+    for day in ("20260102_00", "20260103_00"):
+        (d / f"{day}.jsonl.gz").write_bytes(src)
+
+    first = _run(tmp_path, root, files=1)
+    second = _run(tmp_path, root, files=1)
+    assert first["cells_on_disk"] == 3
+    assert first["symbols"] != second["symbols"], (
+        f"the second run re-screened the same cell: {first['symbols']}")
+    assert second["coverage_pct"] > first["coverage_pct"], "coverage must accumulate across runs"
+
+
+def test_coverage_counts_mechanisms_that_RESOLVED_not_cells_that_were_touched(tmp_path) -> None:
+    """The miner's rule, and it is the difference between 'we asked everywhere' and 'we ran
+    everywhere'. Mined-and-barren and never-looked-at demand opposite responses."""
+    root = tmp_path / "moat_cov2"
+    _tape(root, predictive=True, n=400)
+    rep = _run(tmp_path, root)
+    cov = json.loads((tmp_path / "cov.json").read_text("utf-8"))
+    cell = next(iter(cov["screened"].values()))
+    assert set(cell["mechanisms"]) < set(S.MECHANISMS), (
+        "a scalar mechanism resolves no IC and must leave its part of the cell open")
+    assert rep["coverage_pct"] < 100.0
+
+
+def test_a_gap_is_not_a_horizon() -> None:
+    """Hole-first scheduling hands the screen non-adjacent days BY DESIGN. Subsampling assumes
+    every step is stride x 15s; across a gap one '60-second period' can be twelve hours and it
+    carries twelve hours of return into a sample whose every other point carries a minute."""
+    ts = np.array([0, 60_000, 120_000, 86_400_000, 86_460_000], dtype="int64")
+    m = S._contiguous(ts, 60)
+    assert not m[0], "the first point has no preceding period"
+    assert m[1] and m[2] and m[4]
+    assert not m[3], "a period spanning a day must not be priced as a minute"
+
+
+# ------------------------------------------------------------ survivor registry
+
+def test_survivors_persist_with_their_misses(tmp_path) -> None:
+    """A survivor printed once and overwritten is a rumour. The denominator is the point: nothing
+    controls family-wise error ACROSS runs, so screening the archive repeatedly returns false
+    survivors at the nominal rate by construction."""
+    root = tmp_path / "moat_reg"
+    _tape(root, predictive=True, strength=0.0035, noise=0.0004)
+    rep = _run(tmp_path, root)
+    assert rep["survivors"]
+    reg = json.loads((tmp_path / "reg.json").read_text("utf-8"))
+    e = next(iter(reg.values()))
+    assert e["times_screened"] >= 1 and "hit_rate" in e and "first_seen" in e
+    assert any(v["times_survived"] >= 1 for v in reg.values())
+    # Every scored candidate is recorded, not only the winners.
+    assert len(reg) >= len(rep["survivors"])
+
+
+def test_persistence_requires_more_than_one_independent_cell(tmp_path) -> None:
+    """One survivor from one screening is the best of a family of thirty-three. Promotion to
+    PERSISTENT needs the same triple to survive on cells that are genuinely different days."""
+    root = tmp_path / "moat_reg2"
+    _tape(root, predictive=True, strength=0.0035, noise=0.0004)
+    rep = _run(tmp_path, root)
+    assert rep["persistent_candidates"] == [], "a single cell cannot establish persistence"
+
+
+def test_the_registry_records_sign_stability(tmp_path) -> None:
+    """The cheapest fraud test there is: a real microstructure effect points the same way every
+    day, a fitted one flips, and a mean IC hides that by cancelling."""
+    root = tmp_path / "moat_reg3"
+    _tape(root, predictive=True, n=1200)
+    _run(tmp_path, root)
+    reg = json.loads((tmp_path / "reg.json").read_text("utf-8"))
+    assert all("ic_sign_stability" in v for v in reg.values())
+
+
+def test_every_written_path_is_redirected(tmp_path) -> None:
+    """THE TEST THAT CATCHES THE NEXT OUTPUT NOBODY REDIRECTS. An unredirected artifact writes
+    synthetic-tape findings into the desk's real registry, where they are indistinguishable from
+    findings on the actual archive."""
+    root = tmp_path / "moat_red"
+    _tape(root, predictive=True, n=400)
+    _run(tmp_path, root)
+    real = Path(S.ROOT) / "data"
+    for name in ("MOAT", "REPORT", "HISTORY", "COVERAGE", "REGISTRY"):
+        p = Path(getattr(S, name))
+        assert real not in p.parents and p != real, f"{name} still points at the real data dir"

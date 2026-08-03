@@ -46,6 +46,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
+from typing import Any
 
 __all__ = ["EVIG_FLOOR", "EvigScore", "evig", "information_gain",
            "p_validate_from_history", "rank_by_evig"]
@@ -139,7 +140,8 @@ def p_validate_from_history(survivors: int, attempts: int) -> float:
 _REQUIRED = ("p_validate", "moat_advantage")
 
 
-def rank_by_evig(candidates: list[dict], *, floor: float = EVIG_FLOOR) -> list[dict]:
+def rank_by_evig(candidates: list[dict[str, Any]], *,
+                 floor: float = EVIG_FLOOR) -> list[dict[str, Any]]:
     """Order SCORED survivors by EVIG, then list unscored ones separately. Never mixed.
 
     UNSCORED CANDIDATES ARE NOT GIVEN NEUTRAL PRIORS, and the first version of this function did

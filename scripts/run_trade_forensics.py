@@ -130,9 +130,10 @@ def main() -> None:
         "note": ("instrumented 2026-07-26; records written before that carry no mode, so n_legs "
                  "climbs from 0 as new fills land -- a null share is thin data, not a regression"),
     }
-    if maker["maker_share"] is not None and maker["n_legs"] >= 20 and maker["maker_share"] < 0.60:
-        flags.append(f"maker fill-rate {maker['maker_share']:.1%} below the 60% target over "
-                     f"{maker['n_legs']} legs -- patient-maker opens are not converting; fees are "
+    share, n_legs = maker["maker_share"], len(legs)
+    if isinstance(share, float) and n_legs >= 20 and share < 0.60:
+        flags.append(f"maker fill-rate {share:.1%} below the 60% target over "
+                     f"{n_legs} legs -- patient-maker opens are not converting; fees are "
                      "the dominant carry cost, so this is the primary unit-economics lever")
 
     if tape.get("buffer_squeezing_window"):

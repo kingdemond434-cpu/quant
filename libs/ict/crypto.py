@@ -30,6 +30,11 @@ Pure pandas/numpy. No I/O, no keys, no order paths.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from libs.features.definition import FeatureDefinition
+
 import numpy as np
 import pandas as pd
 
@@ -181,7 +186,7 @@ def sweep_into_funding(df: pd.DataFrame, minutes: int = 30) -> pd.Series:
     return liquidity_sweep(df) * funding_window(df, minutes)
 
 
-def _definitions():
+def _definitions() -> tuple[FeatureDefinition, ...]:
     from libs.features.definition import FeatureDefinition
     spec = (
         ("ict_funding_window", funding_window, ("timestamp",), 1,
@@ -204,7 +209,8 @@ def _definitions():
     )
 
 
-def register(registry=None, *, bars=None, overwrite: bool = False) -> list[str]:
+def register(registry: Any = None, *, bars: Any = None,
+             overwrite: bool = False) -> list[str]:
     """Register the crypto-native ICT detectors under the same family and the same gate."""
     from libs.features.registry import register_feature
     out = []

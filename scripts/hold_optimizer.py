@@ -21,8 +21,10 @@ UPPER BOUND on true profitability. Stated, not buried.
 
 Read-only. Touches no orders and no config. Run from repo root.
 """
+
 from __future__ import annotations
 
+import itertools
 import json
 import statistics as st
 from datetime import UTC, datetime
@@ -53,11 +55,20 @@ def _load():
         if h <= 0 or n <= 0:
             continue
         fund = n * f * (h / 8.0)
-        out.append({"sym": r.get("symbol"), "closed": (r.get("closed") or "")[:10],
-                    "held_h": h, "notional": n, "funding_rate": f, "price_pnl": pp,
-                    "funding_earned": fund, "net": fund + pp,
-                    "net_bps": (fund + pp) / n * 1e4,
-                    "apr_pct": ((fund + pp) / n) * (8760.0 / h) * 100.0})
+        out.append(
+            {
+                "sym": r.get("symbol"),
+                "closed": (r.get("closed") or "")[:10],
+                "held_h": h,
+                "notional": n,
+                "funding_rate": f,
+                "price_pnl": pp,
+                "funding_earned": fund,
+                "net": fund + pp,
+                "net_bps": (fund + pp) / n * 1e4,
+                "apr_pct": ((fund + pp) / n) * (8760.0 / h) * 100.0,
+            }
+        )
     return out
 
 
@@ -68,10 +79,17 @@ def _summarise(rows, label):
     nets = [r["net_bps"] for r in rows]
     holds = [r["held_h"] for r in rows]
     sub24 = sum(1 for h in holds if h < 24) / len(holds) * 100
-    print(f"  {label:<26} n={len(rows):<4} median hold {st.median(holds):>5.1f}h  "
-          f"<24h: {sub24:>5.1f}%  median net {st.median(nets):+7.2f}bps")
-    return {"label": label, "n": len(rows), "median_hold_h": round(st.median(holds), 2),
-            "pct_under_24h": round(sub24, 1), "median_net_bps": round(st.median(nets), 3)}
+    print(
+        f"  {label:<26} n={len(rows):<4} median hold {st.median(holds):>5.1f}h  "
+        f"<24h: {sub24:>5.1f}%  median net {st.median(nets):+7.2f}bps"
+    )
+    return {
+        "label": label,
+        "n": len(rows),
+        "median_hold_h": round(st.median(holds), 2),
+        "pct_under_24h": round(sub24, 1),
+        "median_net_bps": round(st.median(nets), 3),
+    }
 
 
 def main() -> None:
@@ -87,7 +105,10 @@ def main() -> None:
     print("ERA SPLIT -- was the 14.9h median a live problem or a dead policy?\n")
     pre = [r for r in rows if r["closed"] and r["closed"] < GUARD_DATE]
     post = [r for r in rows if r["closed"] and r["closed"] >= GUARD_DATE]
-    eras = [_summarise(pre, f"PRE-guard (<{GUARD_DATE})"), _summarise(post, f"POST-guard (>={GUARD_DATE})")]
+    eras = [
+        _summarise(pre, f"PRE-guard (<{GUARD_DATE})"),
+        _summarise(post, f"POST-guard (>={GUARD_DATE})"),
+    ]
     eras = [e for e in eras if e]
 
     # COMPARE ERAS, do not test the post-era against an absolute threshold. v1 used
@@ -97,9 +118,11 @@ def main() -> None:
     # An absolute cutoff on a quantity whose baseline moved is a wrong-measurement error.
     if len(eras) == 2 and eras[1]["n"] >= 20:
         improved = eras[0]["pct_under_24h"] - eras[1]["pct_under_24h"]
-        print(f"\n  sub-24h closes: {eras[0]['pct_under_24h']:.1f}% -> "
-              f"{eras[1]['pct_under_24h']:.1f}% ({improved:+.1f}pp); median hold "
-              f"{eras[0]['median_hold_h']:.1f}h -> {eras[1]['median_hold_h']:.1f}h")
+        print(
+            f"\n  sub-24h closes: {eras[0]['pct_under_24h']:.1f}% -> "
+            f"{eras[1]['pct_under_24h']:.1f}% ({improved:+.1f}pp); median hold "
+            f"{eras[0]['median_hold_h']:.1f}h -> {eras[1]['median_hold_h']:.1f}h"
+        )
         if improved > 20:
             print("\n  VERDICT: the churn guard IS WORKING. The 14.9h pooled median is dominated")
             print("  by PRE-guard closes and describes a policy that no longer runs. My earlier")
@@ -115,8 +138,10 @@ def main() -> None:
     use = post if len(post) >= 40 else rows
     scope = "POST-guard only" if use is post else "ALL closes (post-guard sample too small)"
     print(f"\nNET BY REALISED HOLD -- {scope}, n={len(use)}\n")
-    print(f"  {'bucket':<12}{'n':>5}{'med hold':>10}{'med net':>10}{'mean net':>10}"
-          f"{'med APR':>10}  {'win%':>6}")
+    print(
+        f"  {'bucket':<12}{'n':>5}{'med hold':>10}{'med net':>10}{'mean net':>10}"
+        f"{'med APR':>10}  {'win%':>6}"
+    )
     out_b = []
     for lo, hi in BUCKETS:
         b = [r for r in use if lo <= r["held_h"] < hi]
@@ -127,12 +152,21 @@ def main() -> None:
         win = sum(1 for x in nets if x > 0) / len(b) * 100
         tag = f"{lo}-{'inf' if hi > 1e8 else int(hi)}h"
         flag = "  <-- n too small" if len(b) < 12 else ""
-        print(f"  {tag:<12}{len(b):>5}{st.median([r['held_h'] for r in b]):>9.1f}h"
-              f"{st.median(nets):>+10.2f}{st.mean(nets):>+10.2f}{st.median(aprs):>+9.1f}%"
-              f"{win:>6.0f}%{flag}")
-        out_b.append({"bucket": tag, "n": len(b), "median_net_bps": round(st.median(nets), 3),
-                      "mean_net_bps": round(st.mean(nets), 3),
-                      "median_apr_pct": round(st.median(aprs), 2), "win_pct": round(win, 1)})
+        print(
+            f"  {tag:<12}{len(b):>5}{st.median([r['held_h'] for r in b]):>9.1f}h"
+            f"{st.median(nets):>+10.2f}{st.mean(nets):>+10.2f}{st.median(aprs):>+9.1f}%"
+            f"{win:>6.0f}%{flag}"
+        )
+        out_b.append(
+            {
+                "bucket": tag,
+                "n": len(b),
+                "median_net_bps": round(st.median(nets), 3),
+                "mean_net_bps": round(st.mean(nets), 3),
+                "median_apr_pct": round(st.median(aprs), 2),
+                "win_pct": round(win, 1),
+            }
+        )
 
     print("\n  APR ANNUALISES A SHORT HOLD, WHICH AMPLIFIES NOISE -- an 8h trade's APR is its bps")
     print("  times 1095. Median net bps is the honest per-trade number; APR is shown because the")
@@ -149,13 +183,17 @@ def main() -> None:
         print("  kills hypotheses for, and it would be indefensible under the doctrine adopted")
         print("  today. The unblocker is the TCA fields, not a better search over this sample.")
     else:
-        print(f"  best-supported bucket: {rec['bucket']}  n={rec['n']}  "
-              f"median net {rec['median_net_bps']:+.2f}bps  median APR {rec['median_apr_pct']:+.1f}%")
+        print(
+            f"  best-supported bucket: {rec['bucket']}  n={rec['n']}  "
+            f"median net {rec['median_net_bps']:+.2f}bps  median APR {rec['median_apr_pct']:+.1f}%"
+        )
         # MONOTONICITY TEST -- the difference between a hold-time EFFECT and noise.
         signs = [1 if b["median_net_bps"] > 0 else -1 for b in ranked]
-        flips = sum(1 for a, b in zip(signs, signs[1:]) if a != b)
-        print(f"  sign pattern across {len(ranked)} adequately-sampled buckets: "
-              f"{''.join('+' if s > 0 else '-' for s in signs)}  ({flips} flips)")
+        flips = sum(1 for a, b in itertools.pairwise(signs) if a != b)
+        print(
+            f"  sign pattern across {len(ranked)} adequately-sampled buckets: "
+            f"{''.join('+' if s > 0 else '-' for s in signs)}  ({flips} flips)"
+        )
         if flips >= 2:
             print("  NON-MONOTONIC WITH MULTIPLE SIGN FLIPS. A genuine hold-time effect is smooth")
             print("  over a region; alternating signs across adjacent buckets is a NOISE")
@@ -173,11 +211,21 @@ def main() -> None:
             print("  horizon; the entry gate halting new opens is the correct response, and the")
             print("  real unblocker is measuring cost per symbol so the gate can pass on evidence.")
 
-    OUT.write_text(json.dumps({"updated": datetime.now(tz=UTC).isoformat(),
-                               "n_closes": len(rows), "eras": eras, "scope": scope,
-                               "buckets": out_b, "recommendation": rec,
-                               "caveat": "fees absent from trade log -> all nets are upper bounds"},
-                              indent=1), "utf-8")
+    OUT.write_text(
+        json.dumps(
+            {
+                "updated": datetime.now(tz=UTC).isoformat(),
+                "n_closes": len(rows),
+                "eras": eras,
+                "scope": scope,
+                "buckets": out_b,
+                "recommendation": rec,
+                "caveat": "fees absent from trade log -> all nets are upper bounds",
+            },
+            indent=1,
+        ),
+        "utf-8",
+    )
     print(f"\n  -> {OUT}")
 
 

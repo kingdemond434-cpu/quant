@@ -17,6 +17,7 @@ Three signals screened at 4h granularity (~83d):
 
 Hardened harness (de-contam + SUSPECT-LOOKAHEAD rails). Stage-A only, zero promotion authority.
 Run from repo root."""
+
 from __future__ import annotations
 
 import json
@@ -68,32 +69,51 @@ def main() -> None:
         close = np.array([px[t] for t in ts])
         ret = np.zeros(len(close))
         ret[1:] = close[1:] / close[:-1] - 1.0
-        sigs = {"elite_pos": np.array([elite_pos[t] for t in ts]),
-                "elite_acct": np.array([elite_acc[t] for t in ts]),
-                "smart_dumb_div": np.array([elite_pos[t] - retail[t] for t in ts]),
-                "retail_baseline": np.array([retail[t] for t in ts])}
+        sigs = {
+            "elite_pos": np.array([elite_pos[t] for t in ts]),
+            "elite_acct": np.array([elite_acc[t] for t in ts]),
+            "smart_dumb_div": np.array([elite_pos[t] - retail[t] for t in ts]),
+            "retail_baseline": np.array([retail[t] for t in ts]),
+        }
         for name, sig in sigs.items():
             r = stage_a_screen(sig, ret, name=f"{sym}:{name}", zwin=20)
             r["symbol"], r["signal"] = sym, name
             results.append(r)
-            pooled.setdefault(name, []).append((r.get("ic", 0.0), r.get("sharpe_momentum", 0.0),
-                                                r.get("sharpe_reversal", 0.0)))
-        print(f"{sym:9s} n={len(ts)} | " + " | ".join(
-            f"{k}: IC {next(x for x in results if x['symbol']==sym and x['signal']==k).get('ic'):+.3f}"
-            for k in sigs))
+            pooled.setdefault(name, []).append(
+                (r.get("ic", 0.0), r.get("sharpe_momentum", 0.0), r.get("sharpe_reversal", 0.0))
+            )
+        # The IC just computed for THIS symbol, by signal name. An earlier version re-searched
+        # `results` inside the print, which scanned every symbol screened so far to find a row it
+        # had appended two lines above.
+        ics = {r["signal"]: r.get("ic") for r in results if r["symbol"] == sym}
+        print(
+            f"{sym:9s} n={len(ts)} | "
+            + " | ".join(f"{k}: IC {ics.get(k) or 0.0:+.3f}" for k in sigs)
+        )
 
     print("\n=== POOLED across symbols (the honest read: N = symbols, not observations) ===")
     for name, vals in pooled.items():
-        ics = np.array([v[0] for v in vals]); mom = np.array([v[1] for v in vals])
+        ics = np.array([v[0] for v in vals])
+        mom = np.array([v[1] for v in vals])
         rev = np.array([v[2] for v in vals])
-        t = float(ics.mean() / (ics.std() / np.sqrt(len(ics)))) if len(ics) > 1 and ics.std() else 0.0
-        print(f"  {name:18s} mean IC {ics.mean():+.4f} (t {t:+.2f}, n={len(ics)}) | "
-              f"mean momSh {mom.mean():+.2f} | mean revSh {rev.mean():+.2f}")
+        t = (
+            float(ics.mean() / (ics.std() / np.sqrt(len(ics))))
+            if len(ics) > 1 and ics.std()
+            else 0.0
+        )
+        print(
+            f"  {name:18s} mean IC {ics.mean():+.4f} (t {t:+.2f}, n={len(ics)}) | "
+            f"mean momSh {mom.mean():+.2f} | mean revSh {rev.mean():+.2f}"
+        )
     surv = [r["name"] for r in results if r["verdict"] == "SCREEN-INTERESTING"]
     print(f"\nper-symbol SCREEN-INTERESTING: {len(surv)}/{len(results)} -> {surv[:8]}")
-    Path("data/elite_trader_screen.json").write_text(json.dumps(
-        {"updated": datetime.now(tz=UTC).isoformat(), "period": PERIOD,
-         "results": results}, indent=1), "utf-8")
+    Path("data/elite_trader_screen.json").write_text(
+        json.dumps(
+            {"updated": datetime.now(tz=UTC).isoformat(), "period": PERIOD, "results": results},
+            indent=1,
+        ),
+        "utf-8",
+    )
 
 
 if __name__ == "__main__":

@@ -34,6 +34,8 @@ Pure, dependency-free. The verification of registration happens in max_audit, wh
 
 from __future__ import annotations
 
+from typing import Any
+
 from libs.doctrine.constitution import OBJECTIVE_PREAMBLE, PRINCIPLES
 
 __all__ = [
@@ -149,7 +151,7 @@ def _interactional(pid: str, preamble: str = OBJECTIVE_PREAMBLE) -> bool:
 
 
 def coverage(registered: set[str] | None = None,
-             preamble: str = OBJECTIVE_PREAMBLE) -> dict:
+             preamble: str = OBJECTIVE_PREAMBLE) -> dict[str, Any]:
     """Per-principle enforcement, with the two modes reported SEPARATELY.
 
     `registered` is the set of check names actually in max_audit's CHECKS. When supplied, a
@@ -158,7 +160,7 @@ def coverage(registered: set[str] | None = None,
     way before the registry check existed. Passing None skips verification and is only for
     callers that genuinely have no access to CHECKS.
     """
-    rows = []
+    rows: list[dict[str, Any]] = []
     for p in PRINCIPLES:
         named = tuple(ENFORCEMENT.get(p.id, ()))
         live = tuple(c for c in named if registered is None or c in registered)
@@ -199,7 +201,7 @@ def coverage(registered: set[str] | None = None,
 
 
 def unenforced(registered: set[str] | None = None,
-               preamble: str = OBJECTIVE_PREAMBLE) -> list[dict]:
+               preamble: str = OBJECTIVE_PREAMBLE) -> list[dict[str, Any]]:
     """Gaps, worst first: nothing at all, then interactional-only, then by aggression rank.
 
     ORDERED BY AGGRESSION DESCENDING within each tier, deliberately. An unenforced principle at

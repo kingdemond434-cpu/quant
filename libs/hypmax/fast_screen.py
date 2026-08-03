@@ -34,6 +34,7 @@ authority: L3 passing means "worth real compute", never "worth capital".
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import Any
 
 import numpy as np
 
@@ -100,14 +101,14 @@ class ScreenResult:
 
     decision: str
     reasons: tuple[str, ...] = ()
-    metrics: dict = field(default_factory=dict)
+    metrics: dict[str, Any] = field(default_factory=dict)
 
     @property
     def proceeds(self) -> bool:
         return self.decision in ("PASS", "ESCALATE")
 
 
-def _clean(signal, forward) -> tuple[np.ndarray, np.ndarray]:
+def _clean(signal: Any, forward: Any) -> tuple[np.ndarray, np.ndarray]:
     s = np.asarray(signal, dtype="float64").ravel()
     f = np.asarray(forward, dtype="float64").ravel()
     n = min(len(s), len(f))
@@ -143,7 +144,7 @@ def _ranks(x: np.ndarray) -> np.ndarray:
     return r
 
 
-def information_coefficient(signal, forward) -> float:
+def information_coefficient(signal: Any, forward: Any) -> float:
     """Spearman rank IC. Rank-based because a single outlier can manufacture a Pearson
     correlation out of noise, and crypto returns are exactly where that happens."""
     s, f = _clean(signal, forward)
@@ -155,7 +156,7 @@ def information_coefficient(signal, forward) -> float:
     return float(np.corrcoef(rs, rf)[0, 1])
 
 
-def permutation_p(signal, forward, n_perm: int = 200, seed: int = 0) -> float:
+def permutation_p(signal: Any, forward: Any, n_perm: int = 200, seed: int = 0) -> float:
     """Fraction of shuffled labels producing |IC| at least as large as observed.
 
     Shuffles the FORWARD returns, not the signal: that destroys the pairing while preserving each
@@ -172,7 +173,7 @@ def permutation_p(signal, forward, n_perm: int = 200, seed: int = 0) -> float:
     return (hits + 1) / (n_perm + 1)       # +1: an observed value is itself one draw
 
 
-def split_half_consistency(signal, forward) -> tuple[float, float, float]:
+def split_half_consistency(signal: Any, forward: Any) -> tuple[float, float, float]:
     """(first-half IC, second-half IC, sign agreement in {-1.0, +1.0}).
 
     The cheapest out-of-sample question there is. A signal whose sign inverts across its own
@@ -187,12 +188,12 @@ def split_half_consistency(signal, forward) -> tuple[float, float, float]:
     return a, b, (1.0 if a * b > 0 else -1.0)
 
 
-def fast_screen(signal, forward, *, cost_bps: float | None = None,
+def fast_screen(signal: Any, forward: Any, *, cost_bps: float | None = None,
                 gross_edge_bps: float | None = None, n_perm: int = 200,
                 seed: int = 0) -> ScreenResult:
     """L3. Reject only on measured, unambiguous absence of signal; escalate on anything else."""
     s, f = _clean(signal, forward)
-    metrics: dict = {"n_obs": len(s)}
+    metrics: dict[str, Any] = {"n_obs": len(s)}
 
     if len(s) < MIN_OBS:
         return ScreenResult("ESCALATE", (

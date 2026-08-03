@@ -41,6 +41,7 @@ Pure numpy. No I/O, no network.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import Any
 
 import numpy as np
 
@@ -124,7 +125,7 @@ def _loss_depth(pnl: np.ndarray) -> np.ndarray:
     return depth
 
 
-def audit_trades(pnl, size=None, *, starting_equity: float | None = None,
+def audit_trades(pnl: Any, size: Any = None, *, starting_equity: float | None = None,
                  n_boot: int = 2000, mean_block: float = 5.0, seed: int = 0) -> TrackRecordAudit:
     """Audit a closed-trade sequence for the sizing fingerprints of a risk-loaded curve.
 

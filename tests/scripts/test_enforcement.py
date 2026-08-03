@@ -317,6 +317,9 @@ def test_every_recorder_has_a_systemd_unit() -> None:
         "ops/quant-recorder-spot.service": "scripts/run_recorder_spot.py",
         "ops/quant-recorder-bybit.service": "scripts/run_recorder_bybit.py",
         "ops/quant-moat-miner.service": "ops/run_moat_miner.sh",
+        # The hunt is a unit too. A screen that only exists as a script somebody remembers to run
+        # is a screen that stops at the next reboot -- the exact failure that left the moat empty.
+        "ops/quant-moat-screen.service": "ops/run_moat_screen.sh",
     }
     for unit, target in units.items():
         p = Path(unit)
@@ -344,10 +347,17 @@ def test_the_miner_never_competes_with_a_recorder_for_io() -> None:
     """Losing tape is permanent; a slower mining pass costs minutes. The priority ordering has to
     reflect that asymmetry or a busy box quietly trades the irreplaceable for the recoverable."""
     import configparser
-    c = configparser.ConfigParser(strict=False)
-    c.read(Path("ops/quant-moat-miner.service"))
-    assert c.get("Service", "IOSchedulingClass") == "idle"
-    assert int(c.get("Service", "Nice")) > 5
+    for unit in ("ops/quant-moat-miner.service", "ops/quant-moat-screen.service"):
+        c = configparser.ConfigParser(strict=False)
+        c.read(Path(unit))
+        assert c.get("Service", "IOSchedulingClass") == "idle", unit
+        assert int(c.get("Service", "Nice")) > 5, unit
+    # AND THE SCREEN SITS BELOW THE MINER. The priority order is the value order: lost tape is
+    # unbuyable, an unmined cell is a delay, an unscreened cell is a delay behind that one.
+    mine, screen = configparser.ConfigParser(strict=False), configparser.ConfigParser(strict=False)
+    mine.read(Path("ops/quant-moat-miner.service"))
+    screen.read(Path("ops/quant-moat-screen.service"))
+    assert int(screen.get("Service", "Nice")) >= int(mine.get("Service", "Nice"))
 
 
 def test_units_cannot_write_outside_the_data_lake() -> None:

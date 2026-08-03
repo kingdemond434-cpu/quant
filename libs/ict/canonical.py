@@ -45,6 +45,11 @@ buys no exemption: a rule from a transcript is a hypothesis, and this desk's pri
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from libs.features.definition import FeatureDefinition
+
 import numpy as np
 import pandas as pd
 
@@ -276,7 +281,7 @@ def silver_bullet_window(bars: pd.DataFrame) -> pd.Series:
     return inside.astype("float64").fillna(0.0)
 
 
-def _definitions():
+def _definitions() -> tuple[FeatureDefinition, ...]:
     from libs.features.definition import FeatureDefinition
     spec = (
         ("ict_ob_canonical", order_block_canonical, ("open", "high", "low", "close"), 21,
@@ -301,7 +306,8 @@ def _definitions():
     )
 
 
-def register(registry=None, *, bars=None, overwrite: bool = False) -> list[str]:
+def register(registry: Any = None, *, bars: Any = None,
+             overwrite: bool = False) -> list[str]:
     from libs.features.registry import register_feature
     out = []
     for d in _definitions():

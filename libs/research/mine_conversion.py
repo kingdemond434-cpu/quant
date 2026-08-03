@@ -847,7 +847,7 @@ def _rate_se(rate: float, n: int) -> float:
     """Binomial standard error, floored so n=1 cannot report perfect precision."""
     if n <= 0:
         return 1.0
-    return max((rate * (1.0 - rate) / n) ** 0.5, 1.0 / n)
+    return float(max((rate * (1.0 - rate) / n) ** 0.5, 1.0 / n))
 
 
 def law_effectiveness(
