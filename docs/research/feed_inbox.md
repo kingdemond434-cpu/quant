@@ -121,3 +121,7 @@ reference for when that item is built (liquidity STATE, not just level, predicts
 ## Neural Network-Driven Volatility Drag Mitigation under Aggressive Leverage
 - 2026-07-25 · http://arxiv.org/abs/2607.23068v1
 - This paper introduces a compact reformulation of a modular end-to-end neural network for global minimum-variance portfolio optimization that decouples model complexity from both look-back window length and universe size. A five-parameter hyperbolic weighted moving average combined with a saturating exponential replaces the original 2,400-parameter lag-transformation layer, and a bidirectional gated-recurrent-unit eigencleaning module together with a streamlined marginal-volatility network reduce total learnable parameters from 39,586 to just 2,175. In out-of-sample tests against state-of-the-a
+
+## Effort-Centric Fairness in Lending Decisions
+- 2026-07-30 · http://arxiv.org/abs/2607.28847v1
+- Algorithmic credit scoring must satisfy fairness and explanation requirements, yet prevailing predictive-parity criteria assess only outcomes at the decision point. They can therefore overlook whether rejected applicants face unequal burdens in reaching future approval, a phenomenon we call masked inequality. We develop an effort-centric framework that measures an applicant's effort as the minimum weighted cost of feasible changes required to cross the approval boundary. The framework distinguishes feature-independent actions from additive structural shifts that propagate through a causal mode
