@@ -199,3 +199,24 @@ def test_equal_weight_index_is_built_from_the_panel() -> None:
     """A hedge against an instrument the desk does not hold is a second bet."""
     d = pd.DataFrame({"a": [0.01, -0.01], "b": [0.03, 0.01]})
     assert list(equal_weight_index(d)) == [0.02, 0.0]
+
+
+def test_funding_is_charged_on_net_exposure_not_gross() -> None:
+    """THE ONE LINE ITEM WHERE THE HEDGE PAYS FOR ITSELF. Funding accrues per leg every 8h: a long
+    pays when the rate is positive, a short receives. Charged on GROSS it would double the drag and
+    erase precisely the advantage a market-neutral book has; charged on NET, the hedged book is
+    largely immune. Raising the rate five-fold must therefore barely move a neutral book."""
+    p = _panel()
+    zero = run_cross_sectional(p, ICTParams(), funding_bps_per_8h=0.0).cost_drag_annual
+    high = run_cross_sectional(p, ICTParams(), funding_bps_per_8h=5.0).cost_drag_annual
+    assert high >= zero
+    assert (high - zero) < 0.05 * max(zero, 1e-9), (
+        f"funding moved the hedged book's cost {zero:.3f} -> {high:.3f}; a market-neutral book "
+        "should net most of it out, so this reads as funding being charged on gross")
+
+
+def test_the_note_no_longer_claims_funding_is_unmodelled() -> None:
+    """It was a stated gap; a stale caveat is as misleading as a missing one."""
+    n = run_cross_sectional(_panel(), ICTParams()).note
+    assert "funding IS now" in n
+    assert "Market impact is not modelled" in n, "and what remains missing must still be said"
