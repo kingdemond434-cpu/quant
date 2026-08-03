@@ -46,7 +46,7 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
-from libs.ict.canonical import OTE_HI, OTE_LO
+from libs.ict.canonical import OTE_HI, OTE_LO, OTE_MID
 from libs.ict.patterns import (
     displacement,
     fair_value_gap,
@@ -77,6 +77,15 @@ class ICTParams:
     reward_multiple: float = 2.0
     #: Require the retrace to land in the 62-79% OTE band as well as in an FVG.
     require_ote: bool = False
+    #: "market" -- signal on the close, cross the spread next open (taker both ways).
+    #: "limit"  -- rest an order at the 70.5% OTE level and be filled only if price comes to it.
+    #: The second is what the setup actually describes, and it moves the cost of this strategy
+    #: from ~19% of capital a year to ~2.5%. It also means a level that is never touched is NO
+    #: TRADE, which is the honest price of waiting and must never be silently waived.
+    entry_mode: str = "market"
+    #: Require price to trade strictly THROUGH the resting level before claiming a fill. Touching
+    #: it is not being filled -- that assumes queue priority the desk has not earned.
+    limit_through: bool = True
     #: Cap on |target| as a fraction of equity, so a tight stop cannot imply absurd leverage.
     max_leverage: float = 3.0
 
@@ -87,6 +96,8 @@ class ICTParams:
             raise ValueError("setup_window and entry_window must be >= 1")
         if self.reward_multiple <= 0:
             raise ValueError("reward_multiple must be positive")
+        if self.entry_mode not in ("market", "limit"):
+            raise ValueError("entry_mode must be 'market' or 'limit'")
 
 
 @dataclass(frozen=True)
@@ -182,13 +193,37 @@ def setups(bars: pd.DataFrame, params: ICTParams | None = None) -> list[ICTSetup
         else:
             retrace = (high[i] - leg_lo) / span
             in_band = OTE_LO <= retrace <= OTE_HI
-        touched_fvg = fvg[i] == direction
-        if not (touched_fvg or (in_band and not p.require_ote)):
-            continue
-        if p.require_ote and not in_band:
-            continue
-
-        entry = float(close[i])
+        # LIMIT ENTRY -- THE MODE THAT CHANGES THE ECONOMICS, AND THE ONE EASIEST TO FAKE.
+        #
+        # The ICT entry IS a resting order by construction: you are waiting for price to retrace
+        # into a level you identified in advance. Crossing the spread for that is a choice, and an
+        # expensive one -- 15bp round trip taker against ~2bp maker, which on this strategy's
+        # turnover is 19% of capital a year against 2.5%. That single difference is larger than any
+        # plausible edge in the signal, so modelling it is not an optimisation, it is the question.
+        #
+        # IT MUST NOT BE MODELLED FLATTERINGLY, and there are exactly two ways to cheat:
+        #   NON-FILL. A limit at a level price never reaches is NO TRADE. Silently falling back to
+        #   a market entry would keep every winner and pay maker fees for it -- the single most
+        #   flattering bug available here. A setup whose level is never touched inside the window
+        #   is DISCARDED, and the fill rate is reported so the cost of waiting is visible.
+        #   QUEUE PRIORITY. Filling whenever the bar's low merely TOUCHES the level assumes the
+        #   book handed us the print. `limit_through` requires price to trade strictly THROUGH it,
+        #   which is the conservative reading and the default.
+        if p.entry_mode == "limit":
+            level = (leg_hi - OTE_MID * span) if direction > 0 else (leg_lo + OTE_MID * span)
+            hit = (low[i] < level) if direction > 0 else (high[i] > level)
+            if p.limit_through is False:
+                hit = (low[i] <= level) if direction > 0 else (high[i] >= level)
+            if not hit:
+                continue                       # not filled yet; the deadline above ends the story
+            entry = float(level)
+        else:
+            touched_fvg = fvg[i] == direction
+            if not (touched_fvg or (in_band and not p.require_ote)):
+                continue
+            if p.require_ote and not in_band:
+                continue
+            entry = float(close[i])
         # The stop sits beyond the level whose violation REFUTES the story -- the sweep extreme,
         # not a round number and not a fixed distance. If price returns through it, liquidity was
         # not taken and reversed; it was taken and continued.
@@ -246,10 +281,20 @@ def schedule(bars: pd.DataFrame,
         # SIGNAL ON THE ENTRY BAR'S CLOSE, filled by the engine at the next bar's open. An earlier
         # draft set the target on entry_i+1, which fills a bar later still -- a full extra bar of
         # delay that is not conservatism but a different strategy.
+        # A resting limit is filled DURING its bar, so the rest of that bar can already stop it
+        # out; a market order is not filled until the next open. Using entry_i+1 for both let the
+        # limit variant escape the fill bar's own adverse move -- see run_ict_strategy.trade_pnl.
         exit_j = n
-        for j in range(s.entry_i + 1, n):
-            hit = ((s.direction > 0 and (low[j] <= s.stop or high[j] >= s.target))
-                   or (s.direction < 0 and (high[j] >= s.stop or low[j] <= s.target)))
+        limit = p.entry_mode == "limit"
+        for j in range(s.entry_i if limit else s.entry_i + 1, n):
+            # On the fill bar only the STOP can close the position: the limit was filled by that
+            # bar's low, and its high may have printed BEFORE that low. Counting a same-bar target
+            # assumes the favourable intrabar path and manufactures edge out of noise.
+            fill_bar = limit and j == s.entry_i
+            hit = ((s.direction > 0 and (low[j] <= s.stop
+                                         or (not fill_bar and high[j] >= s.target)))
+                   or (s.direction < 0 and (high[j] >= s.stop
+                                            or (not fill_bar and low[j] <= s.target))))
             if hit:
                 exit_j = j
                 break

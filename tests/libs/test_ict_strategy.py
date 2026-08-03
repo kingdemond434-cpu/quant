@@ -210,3 +210,57 @@ def test_an_empty_frame_is_handled_not_crashed() -> None:
     df = pd.DataFrame({"open": [], "high": [], "low": [], "close": []})
     assert setups(df) == []
     assert len(ict_targets(df)) == 0
+
+
+# --------------------------------------------------- limit entry, and how it fakes edge
+
+def test_limit_mode_takes_fewer_setups_than_market_mode() -> None:
+    """A level price never reaches is NO TRADE. Silently falling back to a market entry would keep
+    every winner and pay maker fees for it -- the most flattering bug available here."""
+    df = _walk()
+    mkt = len(schedule(df, ICTParams(entry_mode="market"))[1])
+    lim = len(schedule(df, ICTParams(entry_mode="limit"))[1])
+    assert 0 < lim < mkt, f"limit {lim} vs market {mkt}: resting must cost some fills"
+
+
+def test_entry_mode_is_validated() -> None:
+    with pytest.raises(ValueError, match="entry_mode"):
+        ICTParams(entry_mode="iceberg")
+
+
+def test_the_fill_bar_can_stop_you_out_but_cannot_pay_you() -> None:
+    """TWO OFF-BY-ONES, BOTH DISCOVERED BY A RANDOM-WALK CONTROL, BOTH FLATTERING.
+
+    A limit is filled DURING its bar, so the rest of that bar is live. Scanning exits from
+    entry_i+1 (correct for a market order filled at the next open) let the position escape the
+    fill bar's adverse move: 56.5% hit rate against a 2R target on a driftless walk, z = +9.75.
+
+    Then allowing the TARGET on that same bar was the mirror error. A long limit is filled by the
+    bar's LOW; that bar's HIGH may have printed BEFORE the low, so the target would have been
+    reached by price we never held. The low that filled us is the one tick whose ordering is
+    known, so the fill bar may only take the position against us.
+    """
+    p = ICTParams(entry_mode="limit")
+    tgt = stop = 0
+    for seed in range(12):                    # POOLED: one walk yields too few trades to assert,
+        df = _walk(n=4000, seed=seed)         # and a skipping control proves nothing at all
+        _, taken = schedule(df, p)
+        hi, lo = df["high"].to_numpy(), df["low"].to_numpy()
+        for s in taken:
+            for j in range(s.entry_i, len(df)):
+                fill_bar = j == s.entry_i
+                hs = lo[j] <= s.stop if s.direction > 0 else hi[j] >= s.stop
+                ht = (not fill_bar) and (hi[j] >= s.target if s.direction > 0
+                                         else lo[j] <= s.target)
+                if hs:
+                    stop += 1
+                    break
+                if ht:
+                    tgt += 1
+                    break
+    n = tgt + stop
+    assert n >= 100, f"only {n} resolved trades -- the control needs a real sample"
+    z = (tgt / n - 1 / 3) / ((1 / 3 * 2 / 3 / n) ** 0.5)
+    assert z < 6.0, (
+        f"hit rate {tgt / n:.3f} (z={z:+.2f}) against a fair-coin 1/3 on a RANDOM WALK -- a 2R "
+        "target cannot be reached this often without an intrabar assumption doing the work")
