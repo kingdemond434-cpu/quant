@@ -3173,6 +3173,9 @@ CHECKS = [("carryover-skipped", check_carryover_skipped),
 
 PAID_TARGETS = ROOT / "docs/research/paid_dataset_targets.md"
 HOLDINGS_RECORD = ROOT / "docs/research/holdings_record.json"   # git-tracked, ratchets UP only
+#: Data-surface high-water mark. Machine-local BY NECESSITY: it counts gitignored `data/` holdings,
+#: so a committed figure makes every clone look like it lost the VPS's entire lake.
+HOLDINGS_LOCAL = ROOT / "data/holdings_surface_local.json"
 
 
 def check_paid_target_registry(defects) -> None:
@@ -3233,15 +3236,31 @@ def check_holdings_never_shrink(defects) -> None:
     surface = axes + series
     if surface == 0:
         return
+    # THE HIGH-WATER MARK MUST LIVE WHERE THE THING IT MEASURES LIVES. `best_surface` counted
+    # `data/lake/bronze` directories and `data/*.jsonl` files -- both gitignored -- while the
+    # record sat in a git-TRACKED file. So every clone measured a near-empty data/ against the
+    # VPS's 37 and reported catastrophic attrition: this checkout read 9 against 37 and filed
+    # `holdings-shrank`, having dropped nothing. Identical in shape to the `n_snapshots` ratchet
+    # fixed the same day, and the same fix applies -- a machine-local measurement needs a
+    # machine-local record.
+    #
+    # ONE-TIME COST, STATED: the local record seeds from the CURRENT surface on first run, so a
+    # drop occurring between this change landing and that first run is not caught. On the machine
+    # that owns the data the seed is taken at its true (high) value and the ratchet proceeds
+    # normally from there. Missing one transition once beats reporting a false regression forever.
     try:
-        rec = json.loads(HOLDINGS_RECORD.read_text("utf-8")) if HOLDINGS_RECORD.exists() else {}
-    except Exception:
-        rec = {}
-    best = int(rec.get("best_surface", 0))
+        loc = json.loads(HOLDINGS_LOCAL.read_text("utf-8")) if HOLDINGS_LOCAL.exists() else {}
+    except (OSError, json.JSONDecodeError):
+        loc = {}
+    best = int(loc.get("best_surface", 0))
     if surface > best:
-        rec["best_surface"] = surface
-        rec["updated"] = datetime.now(tz=UTC).isoformat()
-        HOLDINGS_RECORD.write_text(json.dumps(rec, indent=1), "utf-8")
+        loc["best_surface"] = surface
+        loc["updated"] = datetime.now(tz=UTC).isoformat()
+        loc["note"] = ("machine-local: counts gitignored data/ holdings, so this record must not "
+                       "be committed -- a clone would inherit another machine's floor")
+        with contextlib.suppress(OSError):
+            HOLDINGS_LOCAL.parent.mkdir(parents=True, exist_ok=True)
+            HOLDINGS_LOCAL.write_text(json.dumps(loc, indent=1), "utf-8")
     elif best >= 8 and surface < best * 0.9:
         defects.append(("holdings-shrank",
                         f"§39(4): information surface fell to {surface} (axes+series) from a "

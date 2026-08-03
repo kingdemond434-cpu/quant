@@ -146,3 +146,33 @@ def test_a_check_that_raises_still_produces_a_scoped_defect() -> None:
     assert len(defects) == 1
     assert defects[0][0] == "sweep-broken-exploder"
     assert len(defects[0]) == 5, "the fence's own defect must be scoped like any other"
+
+
+# ------------------------------------------- machine-local ratchets vs committed ones
+
+def test_the_data_surface_high_water_mark_is_machine_local() -> None:
+    """A RATCHET MUST LIVE WHERE THE THING IT MEASURES LIVES.
+
+    `best_surface` counted `data/lake/bronze` directories and `data/*.jsonl` files -- both
+    gitignored -- while its record sat in a git-TRACKED file. Every clone therefore measured a
+    near-empty data/ against the VPS's 37 and filed `holdings-shrank` having dropped nothing;
+    this checkout read 9. Same shape as the `n_snapshots` ratchet fixed the same day, same fix.
+    """
+    assert "data/" in str(M.HOLDINGS_LOCAL), "the surface ratchet must not be committed"
+    assert "docs/" in str(M.HOLDINGS_RECORD), "the paid-target ratchet is genuinely institutional"
+
+
+def test_the_committed_record_no_longer_carries_the_surface() -> None:
+    """And it says WHERE it went, so the next reader does not helpfully restore it."""
+    import json
+    d = json.loads((ROOT / "docs/research/holdings_record.json").read_text("utf-8"))
+    assert "best_surface" not in d
+    assert "holdings_surface_local" in d.get("best_surface_moved_to", "")
+
+
+def test_holdings_does_not_fire_on_a_checkout_with_no_local_record(tmp_path, monkeypatch) -> None:
+    """The regression bar: absent a local record the ratchet SEEDS rather than accuses."""
+    monkeypatch.setattr(M, "HOLDINGS_LOCAL", tmp_path / "surface.json")
+    defects: list = []
+    M.check_holdings_never_shrink(defects)
+    assert not [d for d in defects if d[0] == "holdings-shrank"]
