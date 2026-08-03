@@ -438,7 +438,23 @@ def main() -> None:
             # And the only OUT-OF-SAMPLE question in the whole pipeline: does a candidate that was
             # pre-registered still predict on tape recorded AFTER it was named? Everything above
             # this line is answered on tape that already existed when the candidate was chosen.
-            ("moat-clocks", "scripts/review_moat_clocks.py", "data/moat_clock_review.json")):
+            ("moat-clocks", "scripts/review_moat_clocks.py", "data/moat_clock_review.json"),
+            # THE CALLERS THAT WERE THEMSELVES ORPHANS. Each of these was written to make a
+            # library module reachable -- emergence, wallet_graph, ict.cross_sectional -- and then
+            # nothing ran the caller. The libs orphan check went green because the import existed,
+            # which is how a wiring fix can be one link short and still report success. Each exits
+            # cleanly naming its own blocker when its input is absent, so running them every cycle
+            # costs seconds and turns "no data yet" into a dated statement rather than a silence.
+            ("weak-signals", "scripts/cluster_weak_signals.py", "data/weak_signal_clusters.json"),
+            ("wallet-graph", "scripts/resolve_wallets.py", "data/wallet_entities.json"),
+            ("ict-xsec", "scripts/run_ict_cross_sectional.py", "data/ict_cross_sectional.json"),
+            # SOLE IMPORTERS THAT NOTHING RAN -- found by the same sweep, pre-existing rather than
+            # mine. run_axis_generate keeps libs.research.alpha_economics reachable and completes
+            # in seconds; run_prediction_markets keeps libs.data.prediction_markets reachable and
+            # now reports an empty fetch instead of dying on a pandas KeyError, so a cycle where
+            # the venue is unreachable costs a line of output rather than a traceback.
+            ("axis-generate", "scripts/run_axis_generate.py", "data/cadence_state.json"),
+            ("prediction-markets", "scripts/run_prediction_markets.py", "data/cadence_state.json")):
         _r = subprocess.run([sys.executable, _script],
                             capture_output=True, text=True, timeout=420, check=False)
         _tail = (_r.stdout or _r.stderr or "").strip().splitlines()[-1:] or [""]

@@ -54,6 +54,14 @@ def _collect(max_markets: int) -> pd.DataFrame:
         rows.append({"end": end, "p": p, "outcome": m["outcome"], "volume": m["volume"]})
         if i % 100 == 0:
             print(f"  fetched {i}/{len(markets)} markets ({len(rows)} usable)")
+    if not rows:
+        # AN EMPTY FETCH IS A FACT, NOT AN EXCEPTION. `pd.DataFrame([])` has no columns, so
+        # sorting it by "end" raised KeyError and the script died with a pandas traceback that
+        # says nothing about the actual problem -- which is that no market was retrieved. That
+        # happens whenever the venue is unreachable or returns nothing, and it must read as "the
+        # collector is the blocker", the same way every other organ on this desk reports its own
+        # empty input.
+        return pd.DataFrame(columns=["end", "p", "outcome", "volume"])
     return pd.DataFrame(rows).sort_values("end").reset_index(drop=True)
 
 
@@ -85,6 +93,12 @@ def _bet_returns(df: pd.DataFrame, *, min_p: float) -> np.ndarray:
 
 def main() -> None:
     df = _collect(max_markets=2500)
+    if df.empty:
+        print("prediction-markets: NO RESOLVED MARKETS fetched -- the collector is the blocker "
+              "(venue unreachable, or the API returned nothing). Reporting that rather than "
+              "crashing on an empty frame: a calibration computed from zero markets would be a "
+              "statement about the fetch, not about the market.")
+        return
     print(f"\nusable resolved markets: {len(df)}")
     if len(df) < 30:
         raise SystemExit("too few resolved markets to assess anything")

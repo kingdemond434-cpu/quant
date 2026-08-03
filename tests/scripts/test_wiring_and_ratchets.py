@@ -156,3 +156,42 @@ def test_the_orphan_detector_can_still_SEE_an_orphan(tmp_path) -> None:
             f"the walker ran but missed a planted orphan: {named[:300]}")
     finally:
         orphan.unlink(missing_ok=True)
+
+
+def test_a_wiring_fix_cannot_be_one_link_short() -> None:
+    """THE HOLE IN THE ORPHAN CHECK, AND I FELL INTO IT THREE TIMES IN ONE SESSION.
+
+    A libs module counts as wired the moment ANY file imports it -- including a scripts/ entrypoint
+    that nothing ever runs. So the honest fix for an orphan ("write it a caller") can be satisfied
+    by a file that is itself an orphan: the check goes green and the module is exactly as
+    unreachable as before. cluster_weak_signals.py, resolve_wallets.py and
+    run_ict_cross_sectional.py were each written to wire a library module, and nothing ran any of
+    them. A wiring fix one link short still reports success, which is worse than no fix at all.
+
+    Deliberately narrow: it audits only scripts that are LOAD-BEARING for the orphan check -- the
+    sole importer of some libs module. Not every script needs a caller, and a check that demanded
+    one would emit 69 defects nobody could act on, which is the crying-wolf failure this file
+    names in three other places.
+    """
+    d = _defects(M.check_unwired_modules)
+    dead = [msg for key, msg in d if key == "unwired-caller"]
+    assert not dead, dead[0][:400]
+
+
+def test_the_dead_caller_check_can_still_SEE_a_dead_caller(tmp_path) -> None:
+    """Same argument as the orphan probe above: a clean result and a check that stopped looking
+    are indistinguishable, and only one is good news."""
+    probe = Path("libs") / "_deadlink_probe.py"
+    caller = Path("scripts") / "_deadlink_probe_caller.py"
+    assert not probe.exists() and not caller.exists(), "a previous run leaked its probe"
+    probe.write_text('"""Planted by a test."""\nY = 2\n', "utf-8")
+    caller.write_text('"""Planted caller. NOTHING invokes this file, on purpose."""\n'
+                      "from libs._deadlink_probe import Y\n\nprint(Y)\n", "utf-8")
+    try:
+        d = _defects(M.check_unwired_modules)
+        named = " ".join(msg for key, msg in d if key == "unwired-caller")
+        assert named, "the check found no dead link while one was planted -- it is not looking"
+        assert "_deadlink_probe_caller" in named, f"the sweep ran but missed it: {named[:300]}"
+    finally:
+        probe.unlink(missing_ok=True)
+        caller.unlink(missing_ok=True)

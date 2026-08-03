@@ -4269,6 +4269,102 @@ def check_unwired_modules(defects) -> None:
               "as much E[log W] as not having been written. Give each a caller or argue it into "
               "_UNWIRED_EXEMPT."))
 
+    # THE HOLE IN THE CHECK ABOVE, AND IT IS THE ONE I FELL INTO. A libs module counts as wired
+    # the moment ANY file imports it -- including a scripts/ entrypoint that nothing ever runs. So
+    # the honest fix for an orphan ("write it a caller") can be satisfied by a file that is itself
+    # an orphan, the check goes green, and the module is exactly as unreachable as before. It
+    # happened three times in one session: cluster_weak_signals.py, resolve_wallets.py and
+    # run_ict_cross_sectional.py were each written to wire a library module, and nothing ran any
+    # of them. A wiring fix one link short still reports success, which is worse than no fix.
+    #
+    # This closes the chain rather than auditing all 277 scripts: only scripts that are LOAD-
+    # BEARING for the check above -- the sole importer of some libs module -- must themselves be
+    # invoked by something that runs (a shell in ops/, a systemd unit, the cadence, or another
+    # script). Research one-shots stay unaudited on purpose: not every script needs a caller, and
+    # a check that said otherwise would produce 69 defects nobody could act on.
+    sole_importer: dict[str, str] = {}
+    for mod in modules:
+        importers = [
+            str(f.relative_to(ROOT))
+            for f in ROOT.joinpath("scripts").glob("*.py")
+            if mod in _imports_of(f)
+        ]
+        others = [
+            f for f in (ROOT / "libs").rglob("*.py")
+            if "__pycache__" not in f.parts and mod in _imports_of(f)
+            and ".".join(f.relative_to(ROOT).with_suffix("").parts) != mod
+        ]
+        if len(importers) == 1 and not others:
+            sole_importer[mod] = importers[0]
+
+    # A SCRIPT MUST NOT VOUCH FOR ITSELF. Every script names itself in its own usage line, so
+    # searching a blob that includes the file being judged makes every script look invoked. The
+    # candidate's own text is excluded from its own haystack -- the same self-discard bug that
+    # inverted the orphan check above, in a different costume.
+    invoker_files = [
+        f for pat in ("ops/*", "scripts/*.py", ".github/workflows/*", "docs/*.md")
+        for f in ROOT.glob(pat) if f.is_file()
+    ]
+    # Scripts that cannot run on this platform at all. `run_autodiscovery.py` imports MetaTrader5,
+    # a Windows-only broker bridge already carried in the optional-dependency allowlist -- wiring
+    # it into a Linux cadence would schedule a guaranteed ImportError every cycle, which is noise
+    # dressed as coverage. The module it keeps alive (libs.costs.mt5_calibration) is reachable the
+    # day the desk runs an MT5 leg, and not before.
+    _CALLER_EXEMPT = {"scripts/run_autodiscovery.py": "imports MetaTrader5 -- Windows-only"}
+
+    dead_links = []
+    for mod, script in sorted(sole_importer.items()):
+        if script in _CALLER_EXEMPT:
+            continue
+        base = script.rsplit("/", 1)[-1]
+        invoked = any(
+            base in f.read_text("utf-8", errors="ignore")
+            for f in invoker_files
+            if str(f.relative_to(ROOT)) != script
+        )
+        if not invoked:
+            dead_links.append(f"{script} (sole importer of {mod})")
+    dead_links = sorted(set(dead_links))
+    if dead_links:
+        defects.append((
+            "unwired-caller",
+            f"{len(dead_links)} script(s) are the ONLY importer of a library module and nothing "
+            f"invokes them -- so the module is unreachable and the orphan check above is green "
+            f"anyway: {'; '.join(dead_links[:6])}"
+            + (f" (+{len(dead_links) - 6} more)" if len(dead_links) > 6 else "")
+            + ". A wiring fix that is one link short still reports success. Put each in the "
+              "cadence, a shell or a unit."))
+
+
+def _imports_of(path: Path) -> set[str]:
+    """Dotted module names a file imports, relative imports resolved. Cached: the orphan check
+    walks every file twice and parsing 400 files twice per run is the difference between a check
+    that runs every cycle and one that gets switched off."""
+    import ast as _ast
+
+    key = str(path)
+    if key in _IMPORTS_CACHE:
+        return _IMPORTS_CACHE[key]
+    out: set[str] = set()
+    try:
+        tree = _ast.parse(path.read_text("utf-8", errors="ignore"))
+    except (OSError, SyntaxError):
+        _IMPORTS_CACHE[key] = out
+        return out
+    for node in _ast.walk(tree):
+        if isinstance(node, _ast.ImportFrom) and node.module and not node.level:
+            out.add(node.module)
+            for alias in node.names:
+                out.add(f"{node.module}.{alias.name}")
+        elif isinstance(node, _ast.Import):
+            for alias in node.names:
+                out.add(alias.name)
+    _IMPORTS_CACHE[key] = out
+    return out
+
+
+_IMPORTS_CACHE: dict[str, set[str]] = {}
+
 
 CHECKS += [("unwired-modules", check_unwired_modules)]
 
