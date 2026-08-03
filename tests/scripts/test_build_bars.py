@@ -134,8 +134,15 @@ def test_tape_with_no_TRADES_is_distinguished_from_no_tape(tape) -> None:
 
 
 def test_bars_feed_the_ICT_screen_end_to_end(tape, monkeypatch, tmp_path) -> None:
-    """THE POINT OF THE WHOLE MODULE. Tape in, bars out, fourteen detectors screened -- the chain
-    that reported NO BARS before this existed."""
+    """THE POINT OF THE WHOLE MODULE. Tape in, bars out, EVERY detector screened -- the chain that
+    reported NO BARS before this existed.
+
+    THIS ASSERTION USED TO READ `== 14` AND BROKE THE MOMENT THE FAMILY GREW to 22. That is the
+    second time this session a test of mine pinned a transient number instead of the surviving
+    invariant, so it is worth naming: the claim being made is "the chain screens the WHOLE
+    registry", and `len(S.DETECTORS)` states that claim. A literal states a snapshot, then fails
+    for the one reason it should not -- the desk adding detectors.
+    """
     import scripts.screen_ict as S
     rng = np.random.default_rng(2)
     px, rows = 100.0, []
@@ -150,6 +157,7 @@ def test_bars_feed_the_ICT_screen_end_to_end(tape, monkeypatch, tmp_path) -> Non
     monkeypatch.setattr(S, "HISTORY", tmp_path / "s.jsonl")
     assert S.main() == 0
     rep = json.loads((tmp_path / "s.json").read_text("utf-8"))
-    assert rep["screened"] == 14, rep.get("state")
+    assert rep["screened"] == len(S.DETECTORS), rep.get("state")
+    assert rep["screened"] >= 14, "the family may grow, but it must never silently shrink"
     assert rep["bars"] > 100
     assert rep["interesting"] == [], "a random walk must yield no interesting signal"

@@ -57,14 +57,24 @@ def test_absent_bars_are_never_synthesised(desk) -> None:
 
 
 def test_every_detector_is_screened_and_logged_win_or_lose(desk) -> None:
-    """§26.3: reporting only the printer is p-hacking. Fourteen screened and fourteen weak is a
-    publishable outcome and the one the desk's prior expects."""
+    """§26.3: reporting only the printer is p-hacking. Every detector screened and every one weak
+    is a publishable outcome and the one the desk's prior expects.
+
+    THE INVARIANT IS CONSERVATION, NOT A COUNT. What must hold is that the report accounts for
+    EVERY registered detector -- results, tally and headline all reconciling to the registry -- so
+    a detector cannot be dropped on the floor between registration and reporting. This assertion
+    read `== 14` until the family grew to 22, which is a test failing for the one reason it must
+    not: the desk adding work. The floor is kept separately so silent SHRINKAGE still fails.
+    """
     _panel(desk)
     assert S.main() == 0
     rep = json.loads((desk / "r.json").read_text("utf-8"))
-    assert rep["screened"] == len(S.DETECTORS) == 14
-    assert len(rep["results"]) == 14
-    assert sum(rep["tally"].values()) == 14
+    n = len(S.DETECTORS)
+    assert rep["screened"] == n
+    assert len(rep["results"]) == n
+    assert sum(rep["tally"].values()) == n, "a verdict must exist for every detector"
+    assert {r["detector"] for r in rep["results"]} == set(S.DETECTORS), "no detector goes missing"
+    assert n >= 14, "the family may grow, but it must never silently shrink"
 
 
 def test_a_random_walk_produces_no_interesting_signal(desk) -> None:
