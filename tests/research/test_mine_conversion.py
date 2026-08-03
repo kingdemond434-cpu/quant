@@ -3,6 +3,7 @@ illegal, a deferral expires, and a conversion CLAIM without a backing artifact n
 
 from __future__ import annotations
 
+import json
 import os
 from datetime import UTC, date, datetime
 from pathlib import Path
@@ -577,3 +578,51 @@ class TestAmbiguousRewriteSignal:
         led = [{"ts": 1000.0 + i, "items": []} for i in range(120)]
         bad, why = ledger_regressed(self._rat(89, 1000.0), led)
         assert bad is False and why == "ledger intact"
+
+
+class TestSnapshotCountIsMachineLocal:
+    """THE AUDITOR WAS MANUFACTURING ITS OWN DEFECT, ONCE PER RUN, FOREVER.
+
+    `append_snapshot` adds one ledger row per max_audit invocation, so `n_snapshots` advanced on
+    every sweep. The ratchet -- a GIT-TRACKED file -- was rewritten unconditionally, so the working
+    tree was dirty after every run and the next check duly reported `dig-output-uncommitted`. The
+    only way to keep it green was to commit after every audit. A defect that can only be cleared by
+    ceremony is noise, and it was crowding out the defects that matter.
+
+    The count is also the wrong thing to commit on its own terms: data/ is gitignored, so a clone's
+    ledger starts empty and its count has nothing to do with the count the VPS reached. Comparing
+    the two reports truncation on a machine that has deleted nothing.
+    """
+
+    def _led(self, tmp_path, names, ts=1000.0):
+        p = tmp_path / "led.jsonl"
+        with p.open("w", encoding="utf-8") as fh:
+            for i, n in enumerate(names):
+                fh.write(json.dumps({"ts": ts + i, "items": [{"n": n, "s": "x", "d": "owing",
+                                                              "t": 1}]}) + "\n")
+        return p
+
+    def test_a_clone_is_not_accused_of_truncating_the_vps_ledger(self, tmp_path) -> None:
+        """The committed ratchet says 113 snapshots; this machine's ledger holds 2. Judged against
+        the committed figure that is 'the ledger was truncated'. Judged against THIS machine's own
+        previous count -- which is what the sweep now passes -- it is a clone doing its second run.
+        """
+        led = load_ledger(self._led(tmp_path, ["A", "B"]))
+        committed = Ratchet(n_snapshots=113, earliest_ts=1000.0)
+        assert ledger_regressed(committed, led)[0] is True          # the old, cross-machine test
+        assert ledger_regressed(committed, led, local_n_prior=1)[0] is False
+
+    def test_a_genuine_local_truncation_still_fires(self, tmp_path) -> None:
+        """The false positive is removed WITHOUT removing the detector. This machine recorded 5
+        snapshots and now holds 2: rows were deleted here, and that must still be seen."""
+        led = load_ledger(self._led(tmp_path, ["A", "B"]))
+        r = Ratchet(n_snapshots=113, earliest_ts=1000.0)
+        bad, why = ledger_regressed(r, led, local_n_prior=5)
+        assert bad is True
+        assert "5 -> 2" in why
+
+    def test_omitting_local_state_preserves_the_original_behaviour(self, tmp_path) -> None:
+        """Callers with no machine-local state must be unaffected -- the parameter is additive."""
+        led = load_ledger(self._led(tmp_path, ["A", "B"]))
+        r = Ratchet(n_snapshots=5, earliest_ts=1000.0)
+        assert ledger_regressed(r, led) == ledger_regressed(r, led, local_n_prior=None)

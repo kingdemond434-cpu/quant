@@ -2613,6 +2613,10 @@ MINE_LEDGER = ROOT / "data/mine_conversion_log.jsonl"
 #: standard was erasable by an organ that wanted an easier bar. In docs/ a reset shows up in
 #: `git status`, in the diff, and in check_dig_uncommitted. Tampering becomes visible, not silent.
 MINE_RATCHET = ROOT / "docs/research/conversion_record.json"
+#: Machine-local snapshot count. Deliberately under data/ (gitignored): how many times THIS
+#: machine ran the sweep is not an institutional fact, and committing it dirtied the tree on
+#: every run while making the truncation test compare a clone against the VPS's count.
+MINE_RATCHET_LOCAL = ROOT / "data/mine_ratchet_local.json"
 MINE_PRIORS = ROOT / "data/mine_generation_priors.json"
 
 
@@ -2805,7 +2809,9 @@ def check_mine_flow(defects) -> None:
             MINE_PRIORS.write_text(json.dumps(priors_payload(priors), indent=2), "utf-8")
 
     prior = load_ratchet(MINE_RATCHET)
-    truncated, why_trunc = ledger_regressed(prior, ledger)
+    local_prior = _j(MINE_RATCHET_LOCAL, {}).get("n_snapshots")
+    truncated, why_trunc = ledger_regressed(
+        prior, ledger, local_n_prior=int(local_prior) if local_prior is not None else None)
     if truncated:
         defects.append((
             "mine-ledger-truncated",
@@ -2814,8 +2820,30 @@ def check_mine_flow(defects) -> None:
             "The high-water marks in docs/research/conversion_record.json are what caught this."))
     new_ratchet, verdict = update_ratchet(
         prior, flow, conversion_rate=rate, regress_mult=thr["regress"], ledger=ledger)
+
+    # THE AUDITOR WAS MANUFACTURING ITS OWN DEFECT, ONCE PER RUN, FOREVER. `append_snapshot` adds
+    # one ledger row per invocation, so `n_snapshots` advanced on every sweep; writing the whole
+    # ratchet unconditionally then dirtied a GIT-TRACKED file every run, and the next check duly
+    # reported `dig-output-uncommitted`. The only way to keep that green was to commit after every
+    # single audit -- a defect that can only be cleared by ceremony is noise, and it was crowding
+    # out the defects that matter.
+    #
+    # The committed ratchet now carries only the HIGH-WATER MARKS, which change rarely and are
+    # genuinely institutional. The per-run count is machine-local state and lives in data/ beside
+    # the ledger it counts -- which also makes the truncation test compare like with like, instead
+    # of measuring a fresh clone against the count the VPS reached.
+    body_changed = (new_ratchet.model_dump(exclude={"n_snapshots"})
+                    != prior.model_dump(exclude={"n_snapshots"}))
+    if body_changed or not MINE_RATCHET.exists():
+        with contextlib.suppress(OSError):
+            MINE_RATCHET.write_text(new_ratchet.model_dump_json(indent=2), "utf-8")
     with contextlib.suppress(OSError):
-        MINE_RATCHET.write_text(new_ratchet.model_dump_json(indent=2), "utf-8")
+        MINE_RATCHET_LOCAL.parent.mkdir(parents=True, exist_ok=True)
+        MINE_RATCHET_LOCAL.write_text(
+            json.dumps({"n_snapshots": len(ledger), "note": (
+                "machine-local snapshot count. data/ is gitignored on purpose: this counts how "
+                "many times THIS machine ran the sweep, which is not an institutional fact and "
+                "must never be compared against another machine's.")}, indent=1), "utf-8")
 
     if flow.oldest_owing_days > thr["stale"]:
         defects.append((

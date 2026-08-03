@@ -686,21 +686,33 @@ def vanished(
     return tuple(sorted(was_owing - now_present - now_done))
 
 
-def ledger_regressed(ratchet: Ratchet, ledger: Sequence[LedgerRow]) -> tuple[bool, str]:
+def ledger_regressed(ratchet: Ratchet, ledger: Sequence[LedgerRow], *,
+                     local_n_prior: int | None = None) -> tuple[bool, str]:
     """Has the snapshot history been truncated or rewritten since the last recorded state?
 
     The ledger is the evidence base for latency, priors and the ratchet itself; erasing it resets
     every one of them. Snapshot count only ever grows and the earliest timestamp only ever moves
     BACKWARD (never forward), so either statistic going the wrong way is proof of tampering or of
     data loss -- both of which invalidate the record and must be seen, not silently absorbed.
+
+    THE TWO SIGNALS BELONG TO DIFFERENT SCOPES, which is why `local_n_prior` exists. The snapshot
+    COUNT is a property of one machine's ledger -- data/ is gitignored, so a clone's count starts
+    at zero and has nothing to do with the count the VPS reached. Comparing a clone against a
+    committed count reports "the ledger was truncated" on a machine that has deleted nothing.
+    `earliest_ts` is the cross-machine signal and stays on the committed ratchet.
+
+    So the caller passes THIS MACHINE's previously observed count as `local_n_prior`. Absent, the
+    count test falls back to the committed figure, preserving the original behaviour for callers
+    that have no machine-local state to offer.
     """
     if not ratchet.n_snapshots:
         return False, "no prior record -- nothing to compare"
     n = len(ledger)
     earliest = min((float(r["ts"]) for r in ledger), default=0.0)
 
-    if n < ratchet.n_snapshots:
-        return True, (f"snapshot count fell {ratchet.n_snapshots} -> {n}: the conversion ledger "
+    prior_n = ratchet.n_snapshots if local_n_prior is None else local_n_prior
+    if n < prior_n:
+        return True, (f"snapshot count fell {prior_n} -> {n}: the conversion ledger "
                       "has been truncated or deleted")
     if ratchet.earliest_ts and earliest > ratchet.earliest_ts + 1.0:
         # AMBIGUOUS BY CONSTRUCTION, AND SAID SO RATHER THAN GUESSED.
