@@ -213,6 +213,30 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0018",
+   "source": "cycle",
+   "summary": "P0 REPO FORK: working tree left master at 3bf89cd (07-29) for branch claude/llm-auto-upgrade-verify-gcjac3; master now holds 419 commits this line lacks (ALL 08-01/08-02 seat work: bd32eda \u00a733 anchor fix + jp_bitflyer graveyard entry, KR/JP/BR/RU miner output, calibration-inversion fixes) while 08-03/08-04 desk snapshots land ONLY here (23 commits master lacks; master frozen since 08-02T08:38Z). Sibling divergence live on this branch too (local was 63 behind its own origin mid-session). EXACT REPAIR: (1) fetch; (2) merge master into this branch (or rebase the snapshot commits onto master) with three-way UNION for append-only ledgers per the R0261 no-row-lost convention; (3) return the tree + snapshot cron to master; (4) verify the next snapshot lands on master. Interim mitigation done this run: jp_bitflyer_direct_recording graveyard entry restored verbatim from bd32eda onto this line.",
+   "roi_bps": null,
+   "raised": "2026-08-04T15:15:00.953666+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0019",
+   "source": "cycle",
+   "summary": "CLOSE GAP_REGISTER #68 as MOOT: the bitFlyer human ToS page-read it escalated is no longer needed \u2014 JP miner read the ToS 2026-08-01 via a clean Wayback route (capture 20190601153535, bitflyer.jp/en-eu/terms-of-use; the 'never archived' claim was a wrong CDX host+slug). Verdict restricted-by-licence; watchlist card #3 synced CLOSED 2026-08-04; graveyard entry jp_bitflyer_direct_recording. NOTE for the GAP #80 \u00a713-consistency ruling: row #68's fork of that question is resolved without any gate defeated.",
+   "roi_bps": null,
+   "raised": "2026-08-04T15:15:01.015999+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

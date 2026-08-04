@@ -161,7 +161,29 @@ _Superseded original grading below (kept for the record):_
   failure modes: non-uniform start dates per data type (do not assume uniform depth).
 - **Grade: verified-clean** (portal existence + categories), pending format/auth confirmation.
 
-### 3. bitFlyer getexecutions + self-recorded candles — grade: needs-legitimacy-review (mechanism verified-clean, destroyed-at-source residual confirmed; ToS host WAF-blocked so licence is unread, re-graded 2026-07-25) [§33: deferred(2026-08-09) tier:2]
+### 3. bitFlyer getexecutions + self-recorded candles — grade: CLOSED restricted-by-licence, destroyed-at-source for desk use (ToS READ 2026-08-01 by the JP miner; card synced 2026-08-04) [§33: killed -> docs/graveyard.md]
+> **CLOSED 2026-08-04 (EN frontier miner, backlog sync) — THE LICENCE WAS READ 2026-08-01 AND IT
+> FORBIDS THE USE. The JP miner's seat-1 run resolved what four deferrals could not, by a fully
+> §13-clean route: the "never archived" claim was a WRONG CDX HOST+SLUG (`bitflyer.jp` not `.com`,
+> `terms-of-use` not `terms`); corrected, Wayback capture `20190601153535` of
+> `bitflyer.jp/en-eu/terms-of-use` served the document first try. Operative clause: bitFlyer
+> retains all rights in *"data such as transaction prices … which can be acquired by various
+> external APIs"*, bars robots/scrapers, and limits use to "internal purposes … of the Service".**
+> - VERDICT: `restricted-by-licence` → no recorder is ever started; the same clause pre-kills
+>   `/v1/getchats`, `/v1/getfundingratehistory`, and the Wayback-archived keyless 15-min BTC/JPY
+>   series (2014-10→). AN ARCHIVE COPY IS NOT A LICENCE — availability ≠ permission.
+> - MECHANISM-OF-DEATH ARTIFACT: `docs/graveyard.md` entry `jp_bitflyer_direct_recording`
+>   (restored to this branch line 2026-08-04 — it was written 2026-08-01 in `bd32eda` on master,
+>   which this working line forked away from at `3bf89cd` 07-29; the fork is rowed separately).
+> - HONEST RESIDUAL (unchanged from the ruling): the document read is the EU entity's 2019 ToS,
+>   not the JP entity's current 利用規約. RE-ENTRY CONDITION: a JP-entity ToS or explicit
+>   permission that does NOT retain rights in transaction prices. The endpoints working is not
+>   new information.
+> - GAP_REGISTER **#68 (human page-read of the live ToS) is MOOT** — the read happened via the
+>   archive; the escalation should close. Licensed substitutes already owned: Tardis `bitflyer`
+>   free 1st-of-month (2019-08-30→); GMO Coin keyless ticks (2018-09-05→); bitbank candles.
+>
+> _Superseded deferral block below, kept for the record:_
 > **§33 DISPOSITION 2026-08-09 — DATED DEFERRAL, BLOCKER NAMED. A THIRD AND FOURTH INDEPENDENT
 > ROUTE TO THE ToS FAILED 2026-07-26. The licence is genuinely unread, so no verdict is written:
 > fabricating one would be exactly the hand-wave §13 exists to stop.**
@@ -440,7 +462,46 @@ _Superseded original grading below (kept for the record):_
   formulas are not.
 - **Grade: UNVERIFIED.** Do not present as an adopted replacement yet.
 
-### 8. Kaiko vendor-replacement — grade: **needs-monitoring (raw ticks) / RECONSTRUCTABLE (index methodology — re-graded 2026-07-25)** [§33: wired tier:1 -> data/kaiko_vwm_reference_rate.jsonl]
+### 8. Kaiko vendor-replacement — grade: **verified-clean (method reconstructed on the TRUE constituent set, agreement bands MEASURED; residuals declared: LMAX leg forward-only, published prose pins the fixing only to ~5 bps — re-graded 2026-08-04)** [§33: wired tier:1 -> data/kaiko_vwm_reference_rate.jsonl]
+> **RE-RUN EXECUTED 2026-08-04 (EN frontier miner) — the 07-26 correction's "RE-RUN REQUIRED
+> against the true constituent set" is DONE. Artifact: `data/kaiko_true_constituent_rerun.json`
+> (21 trials, EVERY construction logged, none cherry-picked). Design: same-tape comparisons on a
+> 3600s fixing at 2026-08-04T15:05Z — TRUE set minus LMAX (bitstamp 2,062 + kraken 4,307 +
+> crypto.com 13,695 + gemini 443 trades) vs the PRIOR set (coinbase 37,936 + bitfinex 3,565 +
+> kraken + bitstamp) × published params (10 partitions, inverse-time weights) vs the desk's prior
+> invented params (12 partitions, linear ramp); plus a HISTORICAL fixing 2026-08-03T20:00Z
+> (16:00 ET) on a 3-of-5 tape vs the PBT futures daily settle.**
+> - **CONSTITUENT-SET EFFECT: 0.30 bps** on calm tape. The 07-26 objection (2-of-5 overlap,
+>   coinbase 80% of tape and not a constituent) was methodologically right and MEASURABLY SMALL —
+>   in calm conditions the venue swap barely moves the fixing.
+> - **PARAMETER EFFECT: 4.34 bps** (published vs invented params, same tape) — the desk's invented
+>   parameters were ~14× the error source the constituent set was. Joint effect vs the prior
+>   artifact's exact construction: 4.00 bps.
+> - **THE PUBLISHED PROSE IS ITSELF AMBIGUOUS TO ~4.7 bps:** "weights inversely proportional to
+>   time" supports both 1/rank and 1/midpoint-age readings, which differ by −4.75 bps here. So
+>   WITHOUT Kaiko's exact formula, no reconstruction can claim better than ~5 bps fidelity —
+>   a vendor-side bound, measured and declared, not a desk defect.
+> - **VWM vs desk VWAP on the same true tape: 16.4 bps** this window — re-confirms the outlier-
+>   resistant estimator is a real value-add (the 07-26 stress finding stands).
+> - **VS A PUBLISHED NUMBER:** 3-of-5 fixing at 08-03 16:00 ET = **+8.5 bps vs PBT/Z35 daily
+>   settle 63,832.00** (Cboe settlement CSV, free per-date:
+>   `cboe.com/us/futures/market_statistics/settlement/csv/?dt=YYYY-MM-DD`; 07-24 was 64,156.00 —
+>   route live and current). DECLARED: the PBT settle is a FUTURES settle (basis-contaminated),
+>   so this is a sanity BAND, not a tracking proof. **No free intraday dissemination of the Kaiko
+>   index exists: Cboe's us_indices API (2,483 definitions) carries CM, Lukka and CoinRoutes
+>   RealPrice families but ZERO Kaiko entries** — the one BMR administrator NOT free through the
+>   exchange is the one whose index underlies Cboe's own future.
+> - **CONSTITUENT TAPE DEPTHS (route facts from session C 07-26 + today):** crypto.com
+>   `public/get-trades` keyless, `end_ts` backward pagination verified, archive floor measured
+>   between 1,370–1,420d (~3.8 YEARS of free tick history on a true constituent); **gemini's
+>   public tape reaches back only ~40 min** (probed today: `since=` 19h ago returned the most
+>   recent 43 min — corroborates session C's 0.67h; an archive floor, not a pagination bug);
+>   **LMAX Digital: destroyed-at-source** (no public historical trades endpoint, forward WS only —
+>   unchanged, a recorder remains the only path to that leg).
+> - REMAINING OPEN, NAMED: nothing technical. The exact weight formula is vendor-side opacity
+>   (bounded at ~5 bps above); the LMAX leg is a WIRING decision (start a recorder), not a
+>   verification step.
+>
 > **§33 CONVERSION 2026-07-26 — RECONSTRUCTABLE became RECONSTRUCTED. This card's own NEXT STEP
 > ("price the published VWM+TWAP rule against the desk's own cross-venue normalizer") was EXECUTED:
 > `scripts/reconstruct_kaiko_reference_rate.py`, built and run.**
@@ -777,7 +838,14 @@ MEV/mempool; GitLab/StackOverflow/NPM = developer-activity factor #65; Telegram/
 retail-attention layer, **one** source was built (mechanism-first, not volume); the rest are logged
 here as excluded, not silently dropped (charter s27 "log every negative").
 
-### 21. NAVER DataLab (Korean search-attention) — grade: needs-monitoring (built, unrun) [§33: deferred(2026-08-09) tier:3]
+### 21. NAVER DataLab (Korean search-attention) — grade: needs-legitimacy-review (account-gating: the SOLE blocker is a free NAVER Developers key = a human registration step, GAP #69; technical verification COMPLETE — endpoint live-confirmed keyless 401/errorCode 024 on 2026-07-25, 2026-07-26 and 2026-08-04; collector built+wired, zero code owed) [§33: deferred(2026-08-09) tier:3]
+> **RE-QUEUED 2026-08-04 (EN frontier miner, backlog sync): this card sat in the TECHNICAL
+> verification queue and was re-verified identically on three separate runs — a treadmill. There
+> is no technical work left (the parser's own taxonomy files account-gating under the
+> legitimacy/policy queue, which is where the remaining HUMAN step honestly belongs). Today's
+> probe: unauthenticated POST → HTTP 401, NAVER error body `024 Authentication failed`, keyless,
+> live. Unblock = GAP #69 (NAVER account + phone verify + drop `data/secrets/naver.json`); the
+> key also unlocks `/search/blog` + `/search/cafearticle` = 3 KR grounds, not 1 axis.**
 > **§33 DISPOSITION 2026-08-09 — THE COLLECTOR WAS RUN 2026-07-26. It did not produce an artifact,
 > and the honest disposition is a dated deferral rather than a manufactured one.**
 > - **RUN, VERBATIM OUTPUT:** `.venv/bin/python scripts/collect_naver_krsearch.py` →

@@ -490,3 +490,28 @@ adaptations: CN gbk/gb2312 (simplified, mainland), big5 (traditional, TW/HK); KR
 counterfactual: MEDIUM-HIGH — the thread was the run's only era find; discarding it as corrupt would
   have produced a false "CN era boards are unreadable" conclusion and, on the video-log precedent,
   could have gated a purchase or a "ground unreachable" note.
+
+### OP-034 dead-forum CDX index + capture triage (length-rank, gzip-sniff)   [active]
+class: reconstruction
+origin: EN frontier miner (2026-08-04, Quantopian archive dig)   validated-gain: turned a DEAD
+  Rails forum (quantopian.com HTTP 000, 12 CDX pages of /posts/*) into a mapped, finite,
+  exhaustible ground in 3 calls, and rescued a "corrupt" capture that was actually gzip.
+technique: for a dead forum whose live route is gone: (1) INDEX: CDX-query the POSTS PATH with
+  `collapse=urlkey` — the slug list IS the board index (OP-021's era-seek equivalent for dead
+  sites; slugs are human-readable, so topic search works on the index itself, no page fetches).
+  (2) TRIAGE BY THE LENGTH COLUMN before fetching: on late-era captures of JS-migrating platforms,
+  ~9KB captures are empty client-side shells while 30-60KB captures are server-rendered FULL
+  threads — the CDX length field separates them for free (Quantopian: shutdown-week captures ~9KB
+  useless; the same thread's earlier capture 54KB carried 100+ replies). Prefer the LARGEST
+  capture of a URL, not the latest. (3) SNIFF BYTES on every `id_` fetch: Wayback stores some
+  responses gzip-COMPRESSED and `id_` serves the stored bytes verbatim with no Content-Encoding
+  header — magic bytes `1f 8b` → gunzip before judging. Mojibake-looking output is an
+  ENCODING/COMPRESSION hypothesis first (OP-033's content-encoding cousin), never proof of a bad
+  capture. (4) Then exhaust section-by-section per OP-021 and mark EXHAUSTED honestly.
+adaptations: universal to any dead board (Discuz/phpBB/vBulletin/Rails/Discourse) in any region —
+  CN=8btc/ChainNode dead boards (pair with OP-033 GBK decode); KR=defunct cafe mirrors; JP=dead
+  5ch mirrors via archived hosts; RU=dead bitcointalk-RU sections. The length-triage matters MOST
+  for 2018+ platforms that migrated to client-side rendering before dying.
+counterfactual: LOW-MED — Wayback digging is common; ranking captures by CDX LENGTH to dodge
+  JS shells and the gzip magic-byte sniff are both desk discipline that turns "archive is broken"
+  false negatives into reads.

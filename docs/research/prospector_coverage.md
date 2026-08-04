@@ -6,11 +6,11 @@ _Seeded 2026-07-18; every family unvisited -- the first run biases per the rotat
 |---|---|---|---|
 | Podcasts/interviews | 2026-07-19 | 1 | 1 ep (Pavel Kycek, algoadvantage.substack.com) — CLAIM-grade, generic momentum+meanrev, no mechanism; 0 cards |
 | YouTube/talks | never | 0 | untouched this session — priority next run |
-| Forums (deep+legacy) | 2026-07-25 | 1 | EN frontier miner: Bitcointalk ERA-ARCHAEOLOGY opened — boards 8 (Trading Discussion, 18,640 topics, 2011-14 era = offsets 14480-18640) + 78 (Securities, 2,376 topics) mapped via OP-021; topics 261086/95760/171349/330209/339040/14466 mined to reply-depth → 3 graveyard entries + EN era lexicon. Wilmott/EliteTrader/Nuclear Phynance still never touched |
+| Forums (deep+legacy) | 2026-08-04 | 2 | s1 (07-25): Bitcointalk ERA-ARCHAEOLOGY opened — boards 8 (18,640 topics, 2011-14 era = offsets 14480-18640) + 78 (2,376 topics) mapped via OP-021; 6 topics mined to reply-depth → 3 graveyard entries + EN era lexicon. **s2 (08-04): QUANTOPIAN ARCHIVE OPENED — dead site (HTTP 000), 12 CDX pages of /posts/* slugs mapped (OP-034); olmar + in-and-out threads mined to reply-depth → 2 graveyard entries + diaspora answered (QuantConnect/IBridgePy/Slack/OSS org).** Wilmott/EliteTrader/Nuclear Phynance STILL never touched — first item next run |
 | Social (X/Discord/Substack) | 2026-07-19 | 1 | 3 Substacks fetched (Maverick Quant, quantjourney [paywalled], algoadvantage) — 0 cards, mostly explainer/content-marketing grade |
 | Code (GitHub/Kaggle) | 2026-07-19 | 1 | operator-named dig: ai_quant_trade, Qbot, QuantDinger, Vibe-Trading (READMEs+issues) + Hummingbot/Freqtrade issues — all infra/framework shells or equity factor zoos, 0 crypto-perp strategy logic; 0 cards but confirmed funding-arb is now commoditized into hummingbot's v2_funding_rate_arb.py (crowding evidence) |
 | Academic (SSRN/arXiv) | never | 0 | untouched this session (RSRS is sell-side research, not SSRN/arXiv) — priority next run |
-| Records (contests/CTA) | 2026-07-25 | 1 | partial, via forum route: Bitcointalk "Automated Trading Contest" (topic 261086, CryptoTrader.org rounds #1-#5) mined as a contest RECORD — produced the in-sample-vs-forward natural experiment graveyard entry. Kaggle G-Research + Numerai post-mortems still untouched |
+| Records (contests/CTA) | 2026-08-04 | 2 | s1 (07-25): Bitcointalk "Automated Trading Contest" (CryptoTrader.org rounds #1-#5) → in-sample-vs-forward natural experiment entry. **s2 (08-04): the Quantopian FUND record mined via HN trees → graveyard `crowdsourced_backtest_selection_fund` (backtest-Sharpe>2.5 selection → −3% live vs SPX +6.6% → capital returned Feb-2020) — the at-scale companion to s1's entry.** Kaggle G-Research + Numerai post-mortems + HN 9152332 contest-winner tree still untouched |
 | Non-English forums | 2026-07-26 | 2 | s1 (07-19): Chinese RSRS + funding-arb (CSDN/VeighNa/BigQuant/Zhihu/FMZ) + JP note.com — RSRS EV-killed, ML-funding-rate graveyard-matched. **s2 (07-26, CN frontier miner): axis #76 usdt-cny-otc-premium UN-PARKED — "no clean free API" REFUTED, 3 keyless routes, 591d history reconstructed (OP-031 CDX-replay of a capped JSON API), Stage-A screened 4/4 cells → no promotable edge but the catalogued mechanism's SIGN and MAGNITUDE priors both falsified. New: OP-031, OP-032, CN lexicon.** Era-archaeology (banzhuan/8btc/ChainNode/Tieba) still UNSTARTED — first item next run |
 | AI/HF documentation | 2026-07-19 | 1 | touched only incidentally via Vibe-Trading (AI trading-agent platform) + ai_quant_trade (LLM module) — both infra, not alpha-discovery-process documentation; weak coverage, revisit properly next run |
 
@@ -158,6 +158,87 @@ ITEM 1 RESULTS (all from live probes this run):
   administrator families disseminated free through the exchange. NOT new signal axes (redundant
   SOURCES for prices the desk can already compute) — no Stage-A owed on those; the one genuine
   axis-candidate is the PBT basis/regulated-funding series, handled next.
+
+### 2026-08-04 session D (EN frontier miner) — IN PROGRESS (write-first note; updated as items resolve)
+MINE GATE: BACKLOG-CLEAR (all 5 carded finds disposed; mining authorised). Generation priors read:
+data_axis_watchlist is the only measured class (57.1% conversion, 0d median latency) → favoured.
+PRIOR STATE: session C (07-26) closed its item 1 (NAVER + Kaiko blocker facts, crypto.com tape,
+Cboe PBT fixings route) but DIED before (a) syncing those verdicts into the watchlist cards —
+which is why source_backlog_next still lists Kaiko+NAVER as pending 9 days later — and (b) its
+item 2 (Quantopian archive dig). JP miner 08-01 ruled bitFlyer `restricted-by-licence` (ToS read,
+Wayback 20190601153535 of bitflyer.jp/en-eu/terms-of-use) but watchlist card #3 was never synced.
+ITEMS THIS RUN (bounded per completion contract):
+1. BACKLOG BURN / SESSION-C COMPLETION (Tier-1 defect-closer — the verify-queue is stale, every
+   future cycle re-reads dead items): (a) card #21 NAVER — technical verification is DONE 3×
+   (07-25/07-26 live-probe evidence); re-route to the account-gating (legitimacy/human) queue where
+   it honestly belongs; (b) card #3 bitFlyer — sync the JP 08-01 licence ruling → terminal;
+   (c) card #8 Kaiko — execute the card's own "RE-RUN REQUIRED": reconstruction against the TRUE
+   constituent set (Bitstamp/Crypto.com/Gemini/Kraken; LMAX leg destroyed-at-source, no free
+   history) diffed vs a PUBLISHED fixing (Cboe PBT settlement CSV route found by session C).
+2. QUANTOPIAN ARCHIVE DIG (session C's unfinished item 2; era-archaeology, the carried diaspora
+   target since session A): durable public archive route, ground map, ≥2 strategy threads to
+   reply-depth, graveyard-check every dead-era mechanism.
+3. IF BUDGET REMAINS: Wilmott/EliteTrader/Nuclear Phynance FIRST TOUCH — robots.txt + ground
+   survey only (KR/JP lesson: read robots.txt before digging; platform beats geography as the
+   block predictor).
+STATUS: item 1 CLOSED (details below). Item 2 open.
+ITEM 1 RESULTS — backlog verify-queue 2→0 pending technical, 8→10 resolved, all 3 remaining
+legitimacy items genuinely human-blocked (GAP #67 rulings due 08-15; GAP #69 NAVER key):
+- NAVER #21: 3rd live keyless probe (401/024 today) → re-queued as account-gating (the parser's
+  own legitimacy-queue definition); treadmill ended.
+- bitFlyer #3: synced to CLOSED restricted-by-licence per the JP 08-01 ToS read; GAP #68 moot
+  (rowed R0019). Graveyard entry `jp_bitflyer_direct_recording` RESTORED verbatim from bd32eda.
+- Kaiko #8: the 07-26 "RE-RUN REQUIRED" EXECUTED → `data/kaiko_true_constituent_rerun.json`,
+  21 trials all logged. Constituent-set effect **0.30 bps** (small!); desk's invented params were
+  the real error (**4.34 bps**); published prose ambiguous to **±4.7 bps** (1/rank vs 1/mid-age
+  weight reading) so ~5 bps is the fidelity floor without the exact formula; VWM vs VWAP 16.4 bps
+  this window (value-add re-confirmed); 3-of-5 historical fixing +8.5 bps vs PBT/Z35 settle
+  63,832.00 (basis-contaminated band, declared). NEGATIVE ROUTE FACT: Cboe us_indices carries CM/
+  Lukka/CoinRoutes free but ZERO Kaiko entries — no free intraday Kaiko dissemination exists.
+  Gemini public tape floor ~40 min (probed; corroborates session C). Card → verified-clean.
+- **P0 FOUND EN ROUTE (rowed R0018): the working tree FORKED from master at 3bf89cd (07-29)** —
+  master holds 419 commits this line lacks (all 08-01/08-02 work incl. §33 enforcement fixes +
+  graveyard entries); 08-03/08-04 snapshots land only here (23 commits); master frozen since
+  08-02T08:38Z; this branch's own origin moved 63 commits ahead mid-session (sibling live).
+  Repair rowed with the R0261 union convention; NOT attempted here (out of freeze lane).
+ITEM 2 RESULTS — QUANTOPIAN ARCHIVE OPENED (session C's carried item, era-archaeology):
+- GROUND: quantopian.com fully dead (HTTP 000). Archive route durable: Wayback /posts/* = **12 CDX
+  pages of unique thread slugs** — a FINITE, mappable, exhaustible ground (OP-034 written: slug
+  index + LENGTH-column triage separates ~9KB JS shells from 30-60KB server-rendered full threads;
+  id_ bytes can be stored-gzip, sniff `1f 8b`). Ground is MAPPED, explicitly NOT exhausted.
+- MINED TO DEPTH (2 threads + 3 HN trees): `olmar-implementation-fixed-bug` (2014 capture, 315KB,
+  the era's most-cloned algo, 708 clones) → **graveyard `olmar_olps_era_zero_cost_canon`**: the
+  canonical shared code hardcodes `commission=0` + `price_impact=0` on a hand-picked sid list —
+  3rd independent instance of the fee-artifact class; audit the COST MODEL first in any inherited
+  era code. `new-strategy-in-and-out` (2020, 100+ replies) → **graveyard
+  `inout_early_warning_rotation_fragility`**: killed in-thread by the community's own perturbation
+  test (constants 15/58→20/53 = "drastic drop"); residual general cross-asset lead-lag question →
+  **WS-005** (crypto analog, de-contam caveat declared). HN 15652997 (94 comments, walked to
+  depth 5) + 24931089 + 24940644 → **graveyard `crowdsourced_backtest_selection_fund`**: the
+  at-scale natural experiment (backtest Sharpe>2.5 selection → live −3% vs SPX +6.6% → investor
+  capital RETURNED Feb 2020) = the historical evidence base for the two-stage law. WS-003
+  (reply>OP) observations 3→6.
+- DIASPORA (the standing question, ANSWERED from primary captures): Quantopian's community went to
+  **QuantConnect** (main successor, with friction — "platform quite different… gave up"; paid port
+  offers in-thread at $250-300), **IBridgePy** (live trading), a dedicated **Slack workspace**
+  (created in-thread by Chris Liu), cloudquant, factset.quantopian.com (enterprise arm), and the
+  open-sourced **github.com/quantopian** org (zipline/alphalens/pyfolio = the surviving artifact
+  layer; repo-chain dig queued). Bitcointalk-era → Quantopian → QuantConnect chain now complete.
+- NO NEW DATA AXIS surfaced (equities-era, dead platform) → no Stage-A screen owed this run;
+  nothing carded as tradeable (nothing passed the mechanism-prior bar for a crypto desk).
+ITEM 3 (Wilmott/EliteTrader/Nuclear Phynance robots.txt first touch): **NOT STARTED** — named,
+not buried. First item next run alongside quantopian-algos repo chain + section-by-section
+/posts/* exhaustion (OP-034) + HN 9152332 contest-winner tree (unmined).
+DEPTH LINE: olmar thread = full-thread read (315KB server render, reply layer to Wiecki refactor);
+in-and-out = 2 captures compared, reply layer through the 100th-reply mark incl. the kill;
+HN 15652997 = full tree walk, 94 comments, best find at depth 5; CDX ground survey = 3 calls.
+NOT breadth-theater: every graveyard entry came from a reply layer or a settings line, none from
+an OP's claim.
+STANDING TEST ("which artifact on disk is different because of what was mined?"):
+data/kaiko_true_constituent_rerun.json (21 trials); docs/graveyard.md +4 entries (3 new + 1
+restored); data_axis_watchlist cards #3/#8/#21 re-graded (verify-queue 2→0);
+search_operator_library +OP-034; weak_signal_registry +WS-005, WS-003 updated; recommendation
+ledger +R0018/R0019. Verify-queue state change is the run's conversion payload.
 
 ## SESSION NOTES — CN frontier miner
 

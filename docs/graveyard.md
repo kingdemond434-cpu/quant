@@ -141,3 +141,119 @@ the premium's ceiling; **merchant density sets where inside that ceiling it actu
 | hyperliquid_trader_skill_persistence (41k-address leaderboard, 8,026 filtered, formation/holding rank test) | ADJACENT windows rho +0.120 (t +10.9) BUT with a ~3-week GAP rho FLIPS to -0.064 (t -5.8); long-horizon variant -0.060 (t -5.4); gapped decile spreads insignificant (t 1.33 / 1.15) | `position_overlap_artifact` | THE foundational test behind copytrading: does past trader performance predict future performance? The apparent persistence exists ONLY when formation and holding windows TOUCH -- a trader holding one position across the boundary yields mechanically correlated PnL (an open position, not skill); BTC's mildly-trending weekly path (-5.9/+6.8/+0.2/+1.5/+1.0/-0.0%) makes persistently-long accounts look consistently skilled. Insert a 3-week gap and it INVERTS to mild reversion. Robust in the safe direction: the leaderboard is a current snapshot so blown-up accounts are ABSENT, which biases persistence UP -- true persistence is <= -0.064. Top-decile forward returns were NEGATIVE in every variant (-1.7%, -3.4%, -28.6%). Kills the 26-layer Elite-Trader-Intelligence spec at its premise: selecting past winners selects luck. Do not re-test aggregate or per-trader copytrading without a GAPPED design. |
 | hl_elite_directional_order_flow (Hyperliquid, performance-blind cohorts, 4h signed taker flow vs next-bucket return) | HFT-cohort BTC IC -0.139 (underpowered, 80 bkts); DIRECTIONAL cohort (260) BTC IC +0.157 / ETH +0.056, pooled t +3.00 on n=2 -- BUT breadth re-run (320, same rule, +60 traders) FLIPPED BTC to IC -0.033 + TIMING-ARTIFACT (same-period +0.202 > 0.20 gate); ETH IC +0.110 vs tercile spread -0.524% (opposite signs); 14/16 coins too thin | `unstable_artifact`/`no_edge` | Mechanism #3 of 3 pre-registered (after aggregate-positioning t+0.15 and gapped skill-persistence -0.064 both failed). Tested the actual copytrading mechanism: does elite flow LEAD price? Designed around both circularity traps (cohort selected on VOLUME/TURNOVER, never performance; flow(t) vs ret(t+1) only). Self-caught design flaw mid-experiment: top-VOLUME selection picks HFT/market-makers (2000 fills in 30 MINUTES) whose flow is inventory not conviction -- spec layer 11's own rule -- so re-selected on TURNOVER RATIO (1-25x/mo = discretionary). KILLED BY INSTABILITY: adding 60 traders to the SAME rule inverted BTC's IC sign. A real edge does not flip under cohort perturbation. Root mechanism: taker flow is CONCURRENT with price (buying moves price) -- it fails de-contamination, it does not lead. STRUCTURAL WALL: userFills caps at 2000 fills/address (30 min for the biggest accounts), so historical breadth is impossible from the snapshot API -- only forward accumulation could build it. Do not re-test elite/copytrade flow without >=8 coins AND cohort-perturbation stability AND a gapped/de-contaminated design. |
 | hl_longterm_riskadjusted_skill (229 traders, median 621d / max 1195d verified on-chain records, own-curve 60/40 formation-holding split) | formation SHARPE -> holding return rho -0.019 (t -0.28) = ZERO; consistency t +0.45; total return t +0.73; cohort holding mean -3.3%, median -11.9%, only 40% positive | `no_predictive_power` | THE strongest version of the trader-skill hypothesis, built after the principal correctly objected that earlier tests used a ONE-WEEK holding window, no track-record filter, and raw-PnL ranking. Fixed all three: multi-YEAR records, risk-adjusted selection (Sharpe/consistency/drawdown), long-horizon holding, natural gap via own-curve split, pnlHistory normalised by contemporaneous accountValue so deposits are not counted as returns. Selecting proven multi-year traders by past Sharpe has ZERO forward predictive power. ONE PARTIAL EXCEPTION worth keeping: DRAWDOWN CONTROL persisted (rho +0.135, t +2.05; top-quartile holding +2.3% vs bottom -18.0%) -- does NOT clear the 4-test multiplicity bar (~2.5) so not an edge, but consistent with the classic finding that RISK characteristics persist while RETURNS do not. Also settles the 'dig deeper / Chinese / niche verified traders' objection: HL on-chain records are the STRONGEST available evidence class (cryptographically verifiable, losers included); self-reported or platform-curated track records are strictly weaker, and enlarging the search pool AMPLIFIES the winner's curse (max-order statistic gets more luck-dominated as N grows). |
+
+<!-- RESTORED 2026-08-04 (EN frontier miner): this entry was written 2026-08-01 in commit bd32eda on master, but the working tree forked to branch claude/llm-auto-upgrade-verify-gcjac3 at 3bf89cd (07-29) and the entry never reached this line — a §33 vanished-artifact instance created by BRANCH TOPOLOGY, not by an editor. Restored VERBATIM from bd32eda so the knowledge exists on the live line; the branch fork itself is rowed in the recommendation ledger this same run. -->
+
+## `jp_bitflyer_direct_recording` — bitFlyer direct recording (getexecutions + self-recorded candles)
+
+**KILLED 2026-08-01. Mechanism of death: §13 LEGITIMACY — the licence forbids the use.** Not a
+technical failure, not a null result. The endpoints work and are keyless; we may not use them.
+
+**THE OPERATIVE CLAUSE** (verbatim, Wayback capture `20190601153535` of
+`https://bitflyer.jp/en-eu/terms-of-use`, 2019-06-01, HTTP 200): *"The bitFlyer API is the
+copyrighted technology of bitFlyer and may not be copied, imitated or used, in whole or in part,
+outside of the API's intended use. bitFlyer retains all its rights related to its databases,
+websites, … including chat text, the content of bitFlyer emails, and data such as **transaction
+prices** — developed or provided by bitFlyer or its affiliates which can be acquired by various
+external APIs."* Reinforced by *"only for your internal purposes and solely as necessary for your
+use of the Service"* and an explicit bar on *"any robot, spider, crawler, scraper, script … not
+authorized by us to access the Services, extract data"*.
+
+**BLAST RADIUS — the clause pre-emptively killed two live keyless endpoints before either could be
+carded**, which is why this entry matters more than one collector: `/v1/getchats` (real JP retail
+chat — the clause names *"chat text"*) and `/v1/getfundingratehistory` (8-hourly JP funding — the
+desk's ONLY repeat-surviving family, and the single most wanted series in the region). It also
+blocks the run's largest find, deliberately never carded: `bitflyer.jp/api/chart/btc_jpy`, an
+undocumented keyless 15-minute BTC/JPY series, dead live (302) but Wayback-captured 200 from
+2015-08 back to 2014-10-16 (~414,675 B ≈ 10 months per capture).
+
+**AN ARCHIVE COPY IS NOT A LICENCE.** Reading bitFlyer's data out of a third-party archive does not
+extinguish bitFlyer's stated rights in it. This is the reusable half of the ruling: whenever a
+blocked source turns out to be Wayback-captured, the capture answers AVAILABILITY and says nothing
+about PERMISSION, and the two must never be collapsed.
+
+**WHAT WAS REFUTED ON THE WAY (route ≠ capability).** Four prior deferrals all varied the same
+thing and all mis-read the evidence. "403/WAF-blocked" was wrong: TLS completes, the cert verifies
+(`O="bitFlyer, Inc."`), the HTTP/2 stream opens, then `INTERNAL_ERROR (err 2)`; over HTTP/1.1+IPv4
+it hangs to timeout (`code=000`) — an Akamai tarpit, not a status code. The block is PER-HOSTNAME,
+not egress: `api.` and `lightning.` both return 200 from the *identical* edge IP
+`2a02:26f0:e80:588::2644` that tarpits the apex; only the marketing/legal host is bot-managed.
+"Never usefully archived" was refuted by fixing the CDX query — the pre-migration host is
+`bitflyer.jp` (not `.com`) and the slug is `terms-of-use` (not `terms`); corrected, it returned the
+document on the first attempt. A wrong host and a wrong slug had read as "the evidence does not
+exist" for four sessions.
+
+**HONEST RESIDUAL — this is a group position, not a JP-entity ruling.** The document read is the EU
+entity's 2019 ToS. JP-side `terms-of-use` paths have no CDX captures and the live host is
+tarpitted, so the JP entity's current 利用規約 has never been read. §13 asks whether a licence
+forbids the use, and the only bitFlyer terms document this desk has ever read says yes. Grading a
+restriction on the evidence we have beats a fifth deferral on evidence we cannot get.
+
+**L1.16a RE-ENTRY CONDITION:** a bitFlyer **JP-entity** ToS, or an explicit bitFlyer data-use
+permission, that does **not** retain rights in transaction prices. Absent that named change, do not
+re-open — the endpoints working is not new information.
+
+**LICENSED SUBSTITUTES, ALREADY OWNED:** Tardis.dev covers `bitflyer` from 2019-08-30, free
+first-of-month, internal research use PERMITTED — residual gap is granularity (1 day/month), not
+availability. Unrestricted JP alternatives found the same run: GMO Coin's free keyless tick CSVs
+from 2018-09-05 (40 symbols, JP-only MONA/XYM/FCR/NAC/WILD) and bitbank's public candlestick API.
+
+## `olmar_olps_era_zero_cost_canon` — OLMAR / OLPS portfolio-selection algorithms, 2013-14 Quantopian canon
+
+**KILLED 2026-08-04 (EN frontier miner, Quantopian era-archaeology). Mechanism of death: COSTS
+DISABLED IN THE CANONICAL CODE, propagated by cloning.** Primary artifact: Wayback capture
+`20140214052422` of `quantopian.com/posts/olmar-implementation-fixed-bug` (Grant Kiehne's
+implementation of Li & Hoi's ICML-2012 OLMAR, the era's most-cloned algorithm — **708 clones**).
+The shared source contains, verbatim: `set_commission(commission.PerShare(cost=0))` and
+`set_slippage(slippage.VolumeShareSlippage(volume_limit=0.25, price_impact=0))` — **zero
+commission AND zero price impact hardcoded**, on a HAND-PICKED fixed `sid()` list. The era's
+flagship "edge" was a fee-free, impact-free, selection-biased artifact BY CONSTRUCTION, and the
+sharing/cloning culture propagated the disabled cost model through 708 descendant lineages.
+Even the platform's own scientist's refactor thread says "I'm confident that it's doing the
+correct thing **now**" — correctness arrived after the clones. THIRD INDEPENDENT INSTANCE of the
+fee-artifact class (richmanbtc C62: maker fee ≤0 across the whole backtest; CryptoTrader.org
+contest round #2/#3 forward vs round #5 in-sample) — **when era code is inherited, audit the
+cost model FIRST; the death is usually in one settings line, not in the alpha logic.**
+High-turnover daily mean-reversion of the OLMAR class is cost-dominated; do not re-test without
+a real fee+impact model, and treat any strategy lineage descended from era Quantopian code as
+cost-contaminated until its settings lines are read.
+
+## `inout_early_warning_rotation_fragility` — "In & Out" cross-asset early-warning rotation (2020 Quantopian)
+
+**KILLED AS AN INSTANCE 2026-08-04 — the community's OWN perturbation test falsified it
+in-thread.** Primary artifact: Wayback captures `20201030003233`/`20201106094220` of
+`quantopian.com/posts/new-strategy-in-and-out` (Peter Guenther, 100+ replies, the platform's
+last flagship thread). Mechanism: exit SPY into IEF/TLT when early-value-chain signals (DBB base
+metals, XLI industrials, SHY short-rate yield) drop "substantially" (~7% / 60bps over ~3mo);
+re-enter after 3 trading weeks; evolved mid-thread into 1%-tail percentile triggers on shifted
+history. THE KILL, from the reply layer (charter §9 — the debunking lives in the thread): Dmitry
+Sarnachev re-ran with the magic constants rounded to less-engineered values (wait days 15→20/22,
+lookback 58→53, "whole number of weeks") and reported **"a drastic drop in returns"** —
+parameter-perturbation instability, the same instability class the desk's own
+`hl_elite_directional_order_flow` kill established ("a real edge does not flip under
+perturbation"). Thomas Chang's depth-1 reply asks the generating question: *"I wonder how much
+time you have spent to figure out the value of 15 and 58?"* HONEST SCOPE: this kills the TUNED
+INSTANCE, not the general cross-asset lead-lag hypothesis (which is a separate, live,
+weak-signal-registered question); any re-test must be constants-free (percentile/rank triggers)
+and survive ±perturbation of every window.
+
+## `crowdsourced_backtest_selection_fund` — allocating real capital on community backtest rank (Quantopian fund, 2017-2020)
+
+**KILLED BY HISTORY 2026-08-04 — the at-scale natural experiment of backtest-selection-vs-forward,
+recorded so the desk never re-runs it in miniature.** The platform selected community strategies
+showing **backtest Sharpe > 2.5** (contest + allocation machinery) into a real-money fund (launched
+2017-06-01 with Point72/a16z backing). FORWARD RESULT: **−3% in the first 4 months vs SPX +6.6%**
+(HN 15652997, quoting contemporaneous reporting); **investor capital RETURNED Feb 2020**
+(bizjournals, cited HN 24931089); community platform shut 2020-11-14. The depth-1 diagnosis that
+survives scrutiny: *"top strategies were showing off Sharpe ratios higher than 2.5 … such poor
+performance is proof that something is wrong with the way they test"* — selection on in-sample
+excellence at scale IS the flaw; crowding in US-equity factor space compounded it. CONFOUNDERS
+DECLARED: 4 months is short, 2017 was hard for quant factors broadly, AUM was small — the
+capital-return endpoint is what makes the verdict terminal rather than the 4-month print.
+CORROBORATES: the desk's two-stage discovery law (backtest gauntlet = screen with ZERO promotion
+authority; only pre-registered forward evidence promotes) and the 420/0 power-artifact finding.
+This entry is the historical evidence base for WHY the confirmation bar never loosens: the
+largest crowd-sourced attempt ever made bought negative live alpha with exactly the machinery the
+two-stage law forbids. Microstructure rider (depth-5 reply, justrobert): OHLC backtests are
+structurally blind to crash-day bid/ask breakdown and broker margin-call liquidation — an
+execution-reality prior for any stress-period backtest claim.

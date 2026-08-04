@@ -71,11 +71,14 @@ the action was free: canary C9 installed 2026-07-26 so the next enclosure is det
 collector breaks. Escalate to full promotion if a THIRD independent path (e.g. an exchange REST
 endpoint moving behind auth) lands.
 
-### WS-003 at this desk the yield is in the REPLY, not the OP [observations: 3]
+### WS-003 at this desk the yield is in the REPLY, not the OP [observations: 6]
 first-seen: 2026-07-25 · improvement_inbox #55 (HN 9642325, depth-2 reply — "the OP had nothing,
 the reply had this")
-latest: 2026-07-25 · improvement_inbox #57 (Bitcointalk 14466 reply #19 — "again the DEBUNKING is
-in the reply, not the OP")
+latest: 2026-08-04 · Quantopian dig, THREE more in one session: the In&Out kill is a depth-1/2
+REPLY (Sarnachev's perturbation test, not the OP's claim); the fund post-mortem's surviving
+diagnosis is d--b's depth-1 comment; the crash-day OHLC/margin-call execution prior sat at
+DEPTH 5 (justrobert, HN 15652997) — the deepest-ranked comment was the only execution-reality
+content in 94.
 direction: the correction, the debunk and the practitioner detail live BELOW the top level; mining
 that stops at OPs and search summaries systematically harvests the least reliable layer.
 independence: YES — two different platforms (Hacker News, Bitcointalk), two different eras (2015,
@@ -111,3 +114,16 @@ is a defect with a direction, and the burden is on the assumption. Next targets 
 checkable, not a slogan: the Glassnode/CryptoQuant watchlist card (improvement_inbox #54's own
 "burn down §7 next") still carries search-summary provenance; register #4's `_DEPTH_MULT` is still
 hand-set; register #59's fee model is still two hardcoded VIP0 constants.
+
+### WS-005 cross-asset early-warning rotation may have a crypto analog [observations: 1]
+first-seen: 2026-08-04 · EN frontier miner, Quantopian In&Out thread (mechanism: early-value-chain
+assets — base metals, industrials, short-rate yields — lead broad risk assets at ~3mo horizons)
+latest: same
+direction: if industrial-demand / funding-cost proxies genuinely lead equities, they may lead BTC
+risk-off too (crypto responds to real-yield and liquidity shocks). The INSTANCE is graveyarded
+(`inout_early_warning_rotation_fragility`, parameter-fragile) — this signal is only the residual
+GENERAL question, and it must clear the de-contamination gate (the desk's own finding: no SLOW
+price alpha at daily resolution survives — a cross-ASSET input is the one variant not yet tested).
+independence: single path so far. NOT promotable; logged so a second independent observation
+(e.g. a macro-lead paper or another region's era lore) can converge on it.
+promotion-check: none yet.
