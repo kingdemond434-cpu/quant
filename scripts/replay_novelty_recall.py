@@ -49,16 +49,17 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from libs.alpha_factory.hypothesis_novelty import (  # noqa: E402
-    PriorIdea,
-    hypothesis_novelty,
-)
 from scripts.build_graveyard_priors import (  # noqa: E402
     candidate_features,
     candidate_priors,
     candidate_statement,
     graveyard_md_priors,
     research_memory_priors,
+)
+
+from libs.alpha_factory.hypothesis_novelty import (  # noqa: E402
+    PriorIdea,
+    hypothesis_novelty,
 )
 
 CRYPTO_DB = ROOT / "data/sor_crypto.sqlite"
