@@ -203,3 +203,23 @@ but no second direct observation yet.
 promotion-check: none yet. Promotable to a checkable hypothesis the day the desk's crypto_xsec
 weighting scheme is audited: re-run any live cross-sectional screen VW vs EW and compare signs —
 if a desk factor flips, this stops being weak.
+
+## 2026-08-04 — barrier-rent infrastructure is being productized and EXPORTED across EM corridors (RU miner s1-on-branch)
+Source: forum.bits.media section 74 (P2P) live census, 2026-08-04 — public service ads only,
+no closed-group material. A single "P2P процессинг" recruiting ad prices one integrated
+gray-payments stack across RUB, TRY, KZT, INR, AZN, PKR, SAR, AED, EGP, KRW simultaneously;
+several ads quote explicit rent ladders ("AML < 25%", corridor fees) with USDT-TRC20 as the
+universal settlement leg and Telegram bots as the interface.
+Signal if real: the 2022 sanctions-rail tech (built to move RUB past a double barrier) is now
+sold as generic corridor infrastructure to OTHER barrier currencies. Productized rent
+infrastructure should COMPRESS cross-EM premium dispersion toward a common rent floor — i.e.
+fiat-barrier premiums (TRY, EGP, PKR, NGN analogs) become more alike over time as the same
+stack serves them, and premium MAGNITUDE becomes less about local barrier idiosyncrasy and
+more about corridor-tech pricing. Relevant to the desk's premium-family priors (kimchi as
+information signal; premium=barrier-rent law, sixth instance).
+independence: single path (one board's ad census, one date). Needs a second observation —
+e.g. the same multi-corridor stacks advertised on non-RU boards, or measured convergence in
+public premium series across EM pairs.
+promotion-check: none. Promotable the day two independent premium series (licensed, public,
+non-sanctioned venues) show dispersion compression coinciding with corridor-tech spread; until
+then this is structure knowledge, not a hypothesis.

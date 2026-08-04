@@ -523,6 +523,27 @@ ITEMS THIS RUN (bounded scope, depth-maxed):
   2. DIASPORA (dark-forest #3, standing question): 2022 sanctions-exodus — where did the RU crypto
      crowd GO (P2P/USDT rails, which platforms, which languages). s13-clean framing: public
      threads only; sanctioned venues are never carded as sources; the deliverable is mechanism
-     knowledge + new PUBLIC grounds, not sanctioned-venue data. STATUS: pending
+     knowledge + new PUBLIC grounds, not sanctioned-venue data. STATUS: ANSWERED (primary
+     evidence, forum.bits.media live sections 74/166/110, 2026-08-04):
+     (a) THE COMMUNITY SPLIT IN TWO. The TRADING crowd went OFFSHORE-VENUE, RUSSIAN-LANGUAGE:
+     Binance/Bybit/OKX/MEXC (+DEX), tooling = Telegram bots + TradingView-webhook bridges +
+     self-hosted open-source terminals (section 110 census). Language stayed Russian; venues
+     left. The FIAT-RAIL crowd became an obnal-services industry (section 74 census): USDT-TRC20
+     as settlement unit, Telegram-bot interfaces, corridors RUB/TRY/KZT/INR/AZN/PKR/SAR/AED +
+     cash Moscow/Asia/Turkey, geography Minsk/Brest/Warsaw/TH; ads price "AML < 25%", "чистка",
+     mixers, no-KYC QR-СБП payment processing. That layer is s13-UNTOUCHABLE (illicit-adjacent,
+     invite-only "закрытые площадки" carry the size) — recorded as structure, never as source.
+     (b) POST-2022 BARRIER IS DOUBLE: domestic (CB RF classifies crypto txs as card-block
+     grounds → "самые живучие карты" threads, СБП limit engineering, дроп/mule infra) plus
+     external (SWIFT cutoff, sanctions). Confirms the barrier-rent law from the 2013 sixth
+     instance: rent collectors sit outside the barrier's jurisdiction (2013: "мы не в РФ";
+     2022: Telegram bots + Warsaw/Dubai corridors). The RU premium axis stays CLOSED (OFAC s13
+     hard stop, per master-ledger s1) — nothing here re-opens it; the measurable residue is
+     structural knowledge, not a series. (c) WEAK SIGNAL routed: sanctions-rail tech resold as
+     generic gray-payments processing across EM corridors (TRY/INR/PKR/EGP/KRW in one ad) —
+     barrier-rent infrastructure is now a productized EXPORT, so premium magnitudes across EM
+     should converge toward the productized rent floor; logged to weak_signal_registry.
+     (d) Funding-arb commoditization visible in RU retail too (Axiona "funding mechanism"
+     platform, section 110) — third regional confirmation of the crowding evidence.
   3. (stretch) habr.com quant long-reads at comment depth via the two-step comments endpoint
      (library line ~202). STATUS: pending
