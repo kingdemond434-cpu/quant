@@ -4,6 +4,33 @@ _Principal override 2026-07-16. Reviewed + re-ranked at the START of every daily
 items stale >7 days MUST be escalated (implement / defer with deadline / retire with reason).
 Ranked by expected E[log wealth] impact. Never empty without written justification._
 
+_Re-ranked 2026-08-04T22:05Z (REAL re-rank). THREE MOVES, each from something MEASURED today:
+
+(1) **NEW #88b enters at 1: STALE-CODE DAEMONS — a committed fix is not a running fix.** A `--loop`
+process holds its code in memory, so editing the file changes nothing until restart. Measured by
+sweeping every long-lived organ process for start-time < last-commit-touching-its-script: **5 of 18
+were stale**, and four of those are the money path and the moat. The cash-carry executor had run
+since 08-01 14:16 and never picked up the 08-04 rails fix `423ccad`; `run_recorder_bybit.py` never
+picked up its 08-02 disk guard; `mine_moat` started 16 minutes BEFORE the `closure` feature landed
+and wrote 2.5 days of fresh artifacts from pre-closure code. All five restarted and verified. This
+enters at 1 because it silently voids EVERY other row here: any gap "closed by a commit" may still
+be open in production, and nothing on this desk was checking. Fix is mechanical and rowed (R0024).
+
+(2) **#81 (moat disk deadline) falls 1 -> 2, and half its risk is discharged.** Its own text said
+the bybit disk guard's "code half is fixed" — true on disk, INERT in the process, which is exactly
+move (1). The fastest writer on the box now actually honours `libs.ops.disk.PAUSE_FRAC` (verified:
+import at run_recorder_bybit.py:34, process restarted 21:59Z). Measured headroom is now **20.7GB
+free / 47% used** at ~1GB/day ≈ 20 days, better than the ~15GB/two-weeks reading of 08-02. The
+purchase half stays operator-owned with its dated deadline; the deadline does NOT move on this.
+
+(3) **NEW #88c: the fork is the disease, the ENOENT outage was one symptom.** 75/133 scheduled
+scripts were absent because the crontab came from master's manifest and the code did not. Restored
+113 files today, but the tree is still 419 commits behind with ~88 master-only test files and 256
+conflicted paths — and `deploy/pull_deploy.sh`, the mechanism that would re-sync it, was itself part
+of the outage. `pyproject.toml` proved the merge cannot be take-theirs: each side had ratcheted a
+DIFFERENT axis (our dependency upper-bounds vs master's stricter lint rules), so reunification is a
+per-file union. Rowed as R0023. Every cycle spent on the fork widens it._
+
 _Re-ranked 2026-08-02T13:20Z (REAL re-rank, discharging the debt the 07-26 stamp left standing).
 FOUR EVIDENCE-DRIVEN MOVES, each from something MEASURED this cycle rather than re-weighed opinion:
 

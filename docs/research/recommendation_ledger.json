@@ -273,6 +273,54 @@
    "commit": null,
    "due": "2026-08-05",
    "disposed": "2026-08-04T21:22:33.645460+00:00"
+  },
+  {
+   "id": "R0023",
+   "source": "cycle",
+   "summary": "Reunify the fork with master (419 commits, ~88 master-only test files, 256 conflicted paths). The 113-file restore closed the OUTAGE but not the divergence: pyproject alone showed both sides had ratcheted different axes (our dep upper-bounds vs master's lint rules), so the merge must be a per-file UNION, not a take-theirs. Until it lands, every cycle widens the gap and deploy/pull_deploy.sh cannot self-resync.",
+   "roi_bps": 8.0,
+   "raised": "2026-08-04T22:01:57.971104+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0024",
+   "source": "proactive_battery",
+   "summary": "Add a max_audit check for STALE-CODE DAEMONS: any long-lived organ process whose start time predates the last commit touching its script is running code the desk thinks it fixed. Found 5 live instances today incl. the executor and the bybit recorder. Mechanical to check (ps lstart vs git log -1 on the script path); this cycle's sweep is the prototype.",
+   "roi_bps": 5.0,
+   "raised": "2026-08-04T22:01:58.048735+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0025",
+   "source": "cycle",
+   "summary": "ensure_recorder.py keeps only run_recorder.py alive; run_recorder_spot.py and run_recorder_bybit.py have NO keeper and were orphaned at PPID 1. A crash in either silently ends that venue's tape, and unrecorded seconds are permanently unbuyable. Extend the keeper to all three, or give them systemd units like the executor.",
+   "roi_bps": 3.0,
+   "raised": "2026-08-04T22:01:58.123654+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0026",
+   "source": "cycle",
+   "summary": "ops/run_moat_miner.sh execs bare , not .venv/bin/python. It happens to work because the launcher's PATH carried the venv, but a cron/systemd start with a clean PATH would run system python and fail on numpy. Pin the interpreter.",
+   "roi_bps": 2.0,
+   "raised": "2026-08-04T22:01:58.216982+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
