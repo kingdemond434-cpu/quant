@@ -579,3 +579,7 @@ work obmen/birzha class first (barrier-rent instances compound); (2) cryptomania
 repo + Habr author page (fork/citation chain per depth mandate); (3) smart-lab.ru algo section
 (never touched, robots unread); (4) MMGP forum era-archaeology (untouched region era target);
 (5) habr full sweep via comments endpoint (master OP-039).
+PUSH RECORD (L1.37 --no-verify, sanctioned): pre-push fence execs scripts/run_law_gate.py which
+does not exist on this forked branch (ENOENT verified by running the hook manually — same class
+as EN s4's 08-04 record; the law gate lives on master, 419 ahead). Pushed ccfa013 + priors with
+--no-verify per the standing fork corollary; nothing was bypassed that exists here to run.
