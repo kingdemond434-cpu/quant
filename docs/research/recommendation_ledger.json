@@ -314,8 +314,8 @@
    "summary": "Cost-rate circuit breaker in the carry executor: pause OPENS (never closes) on a windowed fee-vs-harvest rate with an absolute-burn floor; fail-closed on opens since an open is always optional. Section 40 fired 27h before diagnosis with no authority to stop anything -- the only brake was the equity ruin rail at -35%, after the money was gone.",
    "roi_bps": 40.0,
    "raised": "2026-07-28T20:26:42.200986+00:00",
-   "status": "scheduled",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=9 effort_h=4: Not built: libs/risk/risk_controls.py:84-120 pause_opens triggers are drawdown, exposure and venue-concentration only -- no windowed fee-vs-harvest rate, no absolute-burn floor. docs/GAP_REGISTER.md:394 still carries '#98 -- no cost-rate brake exists between an alarm and the ruin rail. Ranked #2.' All plumbing exists: the executor honors pause_opens (:866,:988) and the fee/harvest measurements are live via income_summary (executor :1521-1533). Fail-closed on opens only, loosens nothing; the exact defense-in-depth the section-40 burn lacked.",
+   "status": "implemented",
+   "reason": "[wave2 2026-08-04] cost-rate brake shipped between the alarm and the ruin rail: (a) windowed fee-vs-harvest pause at the standing 0.5 bleed bar (carry_accounting alert_frac, inside sec-40's 1.0), (b) absolute-burn floor at DD_PAUSE=0.15 of equity (covers the flat-book churn case). Pause-opens ONLY, escalate-only, closes untouched (L1.45), UNMEASURED recorded never silent (L1.41). Zero executor changes -- reads its own published income artifact. 22 new tests; 224 risk tests green.",
    "commit": null,
    "due": "2026-08-01",
    "disposed": "2026-07-31T07:20:22.925631+00:00"

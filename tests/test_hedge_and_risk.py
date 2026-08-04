@@ -7,10 +7,19 @@ over-levering an unproven edge, fabricated metrics. Pure/offline (no network, no
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
 from libs.portfolio.live_book import LivePortfolio
 from libs.risk import risk_controls
 from libs.risk.dynamic_leverage import optimize_sleeve
+
+
+@pytest.fixture(autouse=True)
+def _hermetic_fee_burn(tmp_path, monkeypatch):
+    """Gap #98: evaluate() defaults to reading the executor's live income artifact. Redirect to
+    empty per-test paths so these verdicts are about the code, not the box's live burn state."""
+    monkeypatch.setattr(risk_controls, "INCOME_ARTIFACT", tmp_path / "cashcarry_live.json")
+    monkeypatch.setattr(risk_controls, "BURN_WINDOW_FILE", tmp_path / "fee_burn_window.json")
 
 
 # ---------------- growth-positive risk controls ----------------
