@@ -85,6 +85,27 @@ existing is that the NEXT artifact arrives ungoverned by default. Writing the ru
 it for a later sweep would have reproduced, in one session, the exact failure this file was
 created to end.
 
+### Added 2026-08-04 (the branch's own 18 — three laws' scope decisions landed together)
+
+`artifact-ungoverned` fired on **18** docs artifacts. Thirteen of them are one generated class and
+are claimed as a class in `max_audit._TERMINAL_ARTIFACTS` (a trailing-slash claim, so `shard_14`
+inherits the decision instead of arriving ungoverned); `docs/research/recent_changes.md` and
+`docs/research/TIER1_BENCHMARK.md` are likewise recorded in code, because a *directory class* and
+an *enforced staleness clock* are the two things this register's prose cannot express — the first
+has no syntax here, and the second would be a promise with no clock behind it, which is the exact
+failure §36 exists to end. The three below are classified here, where the reasoning belongs.
+
+| Artifact | Class | Rationale | Staleness floor |
+|---|---|---|---|
+| `docs/CONSTITUTION.md` | **DOCTRINE** | The governing law of the organism, permanent by its own first line and amendable only by principal order. It has no producer and no cadence — a clock cannot make a constitution truer — but it is emphatically not unchecked: its core is hash-locked in `data/constitution_core.lock` and enforced by `scripts/check_constitution_core.py`, with `scripts/check_law_families.py` and `scripts/check_timidity_language.py` reading it every cycle. It surfaced here only because §36(2) asks whether `max_audit.py`'s own source names a file, and the checks that govern this one live in their own scripts. The falsifier for this row is the standing one below: an edit not traceable to a principal decision in the ledger is a governance breach. | never |
+| `docs/DISCRETIONARY_DESK.md` | **DOCTRINE** | The standing charter of the discretionary sleeve — its venue, its evidence ladder, its own place in the law gate. Cited as the L1.6 playbook evidence in `scripts/build_enforcement_matrix.py` and read by `scripts/run_cost_hunt.py`. It changes when the sleeve's *design* changes, never on a schedule; the sleeve's live state is carried by its organs and the register, so a staleness floor here would page about a document while the thing it describes is fine. | never |
+| `docs/research/RESEARCH_EXCELLENCE.md` | **DOCTRINE** | Principal directive of 2026-07-28 binding the data, research and exploration layers — the *how to research* half of the pair whose *what to build* half, `OPERATING_DOCTRINE.md`, is already DOCTRINE above. `scripts/doctrine.py` loads the two together in a single list, so classifying one and leaving the other unclaimed was an omission rather than a decision. | never |
+
+**Running net: 3 cadenced, 8 doctrine, 7 terminal in this register, plus three decisions recorded
+in `max_audit.py` because they need code to be real (`docs/audit_shards/` as a class,
+`recent_changes.md` as terminal, `TIER1_BENCHMARK.md` as an 8-day enforced clock). Zero remain
+ungoverned.**
+
 ---
 
 ## Why doctrine is not simply "exempt"

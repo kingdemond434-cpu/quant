@@ -304,11 +304,11 @@
    "summary": "ensure_recorder.py keeps only run_recorder.py alive; run_recorder_spot.py and run_recorder_bybit.py have NO keeper and were orphaned at PPID 1. A crash in either silently ends that venue's tape, and unrecorded seconds are permanently unbuyable. Extend the keeper to all three, or give them systemd units like the executor.",
    "roi_bps": 3.0,
    "raised": "2026-08-04T22:01:58.123654+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "rejected",
+   "reason": "WRONG WHEN FILED -- retracted on evidence. I claimed run_recorder_spot.py and run_recorder_bybit.py had no keeper, from reading ensure_recorder.py (which indeed covers only run_recorder.py) WITHOUT checking the crontab. check_scheduler_manifest then named the real supervisor: ops/start_recorders_nosudo.sh, which covers all THREE recorders and is scheduled every 5 minutes AND @reboot (verified: 2 live crontab lines, and the script greps for all three script names). The recorders are supervised. The residual -- that this supervisor is a live-only crontab line the repo cannot reconstitute -- is a real finding but belongs to the scheduler-manifest drift item, not here.",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-04T22:13:52.031818+00:00"
   },
   {
    "id": "R0026",
@@ -316,11 +316,11 @@
    "summary": "ops/run_moat_miner.sh execs bare , not .venv/bin/python. It happens to work because the launcher's PATH carried the venv, but a cron/systemd start with a clean PATH would run system python and fail on numpy. Pin the interpreter.",
    "roi_bps": 2.0,
    "raised": "2026-08-04T22:01:58.216982+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "ops/run_moat_miner.sh execs bare python3. Confirmed still true; low risk today because the live launcher's PATH carries the venv, but a clean-PATH start fails on numpy. One-line pin.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-06",
+   "disposed": "2026-08-04T22:13:52.212559+00:00"
   }
  ]
 }

@@ -17,10 +17,11 @@ from libs.autodiscovery.models import Hypothesis, ValidationMetrics, ValidationV
 from libs.discovery.capacity import capacity_estimate
 from libs.discovery.tail_risk import tail_risk
 from libs.validation.baselines import baseline_scorecard
+from libs.validation.cpcv import CPCV
 from libs.validation.dsr import deflated_sharpe_ratio, sharpe_ratio
 from libs.validation.errors import ValidationError
 from libs.validation.pbo import PBOResult, probability_backtest_overfitting
-from libs.validation.reality_check import RealityCheckResult, whites_reality_check
+from libs.validation.reality_check import RealityCheckResult, hansen_spa, whites_reality_check
 from libs.validation.revalidation import WalkForwardEngine, WalkForwardStatus
 
 _PERIODS_PER_YEAR = 24 * 260
@@ -28,11 +29,52 @@ _DSR_THRESHOLD = 0.95
 _MIN_CAPACITY_USD = 1.0e5
 _CPCV_MIN_POSITIVE = 0.6   # >=60% of purged folds positive
 
+# Real CPCV settings. 6 groups choose 2 gives 15 test paths; purge drops the observations
+# straddling each boundary and the embargo holds out a further 1% after it, which is what stops
+# a serially-correlated stream leaking its answer across the split.
+_CPCV_GROUPS = 6
+_CPCV_TEST_GROUPS = 2
+_CPCV_PURGE = 2
+_CPCV_EMBARGO = 0.01
+_CPCV_MIN_OBS = 60         # below this there is nothing to be combinatorial about
+
+#: Level at which the CAMPAIGN-level SPA statistic is reported. Reported, never vetoed -- see
+#: :func:`campaign_spa` for why a campaign scalar may not become a per-candidate gate here.
+_SPA_ALPHA = 0.05
+
 
 def _cpcv_positive_fraction(returns: np.ndarray, *, k: int = 5) -> float:
-    folds = np.array_split(returns, k)
-    positive = [f.mean() > 0 for f in folds if len(f) > 1]
-    return float(np.mean(positive)) if positive else 0.0
+    """Fraction of COMBINATORIAL PURGED folds whose test slice is positive.
+
+    This was a plain `np.array_split` into k contiguous folds -- not purged, not embargoed, and
+    not combinatorial, despite the gate being named `cpcv` and the module docstring claiming
+    CPCV. `libs/validation/cpcv.py` implements the real thing (Lopez de Prado ch.12) and was
+    imported by nothing but its own test.
+
+    The difference is not cosmetic. Contiguous k-fold on overlapping financial samples leaks
+    information across the fold boundary, so the old measure was systematically optimistic on
+    exactly the serially-correlated return streams this desk trades. Purge + embargo remove the
+    observations that straddle the boundary; the combinatorial part gives many test paths instead
+    of one, so the fraction means something.
+
+    Falls back to the contiguous split only when the sample is too short to purge -- with a short
+    series there is nothing to be combinatorial about, and refusing to score would fail candidates
+    for being new rather than for being bad.
+    """
+    arr = np.asarray(returns, dtype="float64")
+    if len(arr) >= _CPCV_MIN_OBS:
+        try:
+            splitter = CPCV(n_groups=_CPCV_GROUPS, n_test_groups=_CPCV_TEST_GROUPS,
+                            purge=_CPCV_PURGE, embargo=_CPCV_EMBARGO)
+            positive = [bool(arr[s.test].mean() > 0)
+                        for s in splitter.split(len(arr)) if len(s.test) > 1]
+            if positive:
+                return float(np.mean(positive))
+        except (ValidationError, ValueError):
+            pass
+    folds = np.array_split(arr, k)
+    positive_fallback = [f.mean() > 0 for f in folds if len(f) > 1]
+    return float(np.mean(positive_fallback)) if positive_fallback else 0.0
 
 
 def campaign_pbo_rc(
@@ -50,6 +92,47 @@ def campaign_pbo_rc(
     return probability_backtest_overfitting(returns_matrix), whites_reality_check(returns_matrix)
 
 
+def campaign_spa(returns_matrix: np.ndarray) -> RealityCheckResult | None:
+    """Hansen's SPA over the campaign matrix -- R0001's fourth check, finally reached by code.
+
+    `libs/validation/reality_check.hansen_spa` has existed since the repo's first week and its
+    ONLY caller was `libs/validation/gauntlet.Gauntlet.run`, a class instantiated nowhere outside
+    `tests/validation/test_gauntlet.py`. So the desk shipped Hansen's SPA and never ran it on a
+    single real candidate. This is the seam that changes that: the orchestrator computes it once
+    per campaign and every verdict carries the answer.
+
+    REPORTED, NEVER VETOING, and both halves of that are deliberate.
+
+    It may not become a per-candidate GATE. SPA takes only the matrix -- no candidate's own
+    returns are an input -- so as a per-candidate gate it is a campaign CONSTANT, which is
+    precisely the register-#71 defect this file was rewritten to remove (see :func:`validate`'s
+    comment block: campaign PBO 0.6159 and White RC p 0.4220 forced 420/420 rejections regardless
+    of merit). Re-adding a campaign scalar to `gates` would reinstate the bug under a new name.
+
+    It may not REPLACE White's Reality Check either, and that is the sharper constraint. SPA
+    studentises and recentres, so it is uniformly MORE powerful than White's max-statistic --
+    it returns SMALLER p-values and therefore passes MORE campaigns. Swapping RC for SPA would
+    be a loosening of a live statistical bar wearing the costume of an upgrade, which
+    constitution point 5 forbids. Additive, or not at all.
+
+    What it buys, then, is the campaign-level reading `certify_gauntlet.py` exists to take: when
+    SPA -- the most powerful test the desk owns -- still cannot distinguish the best candidate in
+    a campaign from the benchmark, "0 survivors" is evidence about the search space rather than
+    about a welded gate.
+
+    Returns None for a cohort of fewer than two strategies: there is no selection to correct for.
+    """
+    matrix = np.asarray(returns_matrix, dtype="float64")
+    if matrix.ndim != 2 or matrix.shape[1] < 2:
+        return None
+    try:
+        return hansen_spa(matrix)
+    except (ValidationError, ValueError):
+        # An EXTRA reported statistic must never take a campaign down with it. Absence reads as
+        # unmeasured (spa_p stays None -> `advisory` records nothing), never as a pass.
+        return None
+
+
 def validate(
     returns: np.ndarray,
     *,
@@ -63,6 +146,7 @@ def validate(
     rc: RealityCheckResult | None = None,
     pc_pbo: float | None = None,
     pc_p: float | None = None,
+    spa_p: float | None = None,
     buy_hold_returns: np.ndarray | None = None,
     universe_returns: np.ndarray | None = None,
 ) -> ValidationVerdict:
@@ -170,11 +254,21 @@ def validate(
         except ValidationError:
             gates["beats_baseline"] = False    # mismatched streams cannot clear a gate
 
+    # HANSEN'S SPA -- RECORDED, NOT VETOING (R0001). `advisory` is a separate map from `gates`
+    # precisely so this cannot silently become a promotion bar: `survived` below reads `gates`
+    # and only `gates`. See :func:`campaign_spa` for the two reasons the separation is required
+    # (a campaign scalar in `gates` is register #71 again; and SPA is MORE powerful than White's
+    # RC, so substituting it for the live reality_check gate would loosen a bar, not raise one).
+    # Absent input records NOTHING rather than a pass -- an unsupplied statistic has not passed.
+    advisory: dict[str, bool] = {}
+    if spa_p is not None:
+        advisory["reality_check_spa"] = float(spa_p) < _SPA_ALPHA
+
     failed = [name for name, ok in gates.items() if not ok]
     return ValidationVerdict(
         survived=not failed, gates=gates,
         rejection_reason="" if not failed else "failed: " + ", ".join(failed),
-        metrics=metrics,
+        metrics=metrics, advisory=advisory,
     )
 
 

@@ -1825,6 +1825,19 @@ _FINDING_DOCS_EXCLUDED = {
     "docs/research/TRIAGE_ADDENDUM.md":
         "SELF-DISPOSING triage register (items 82-101), same instrument as SUBSYSTEM_TRIAGE "
         "and proven by the same check",
+    # SURFACED 2026-08-04. Nine numbered items, every one of them ALREADY DISPOSED IN THE DOC.
+    "docs/research/prospector_coverage.md":
+        "SELF-DISPOSING MINER SESSION LOG -- the frontier seats' write-first note, and the "
+        "declared artifact for eight organs in ORGAN_ARTIFACTS. Its numbered lines are that "
+        "session's BOUNDED ITEM LIST, and each one closes in place with an inline "
+        "`[§33: wired|screened|killed|deferred(DATE)|n/a -> artifact]` tag whose targets are real "
+        "(docs/graveyard.md, data/*.jsonl, search_operator_library.md, universe-map rows). They "
+        "are dig OUTPUTS -- work already done and routed -- not gaps owing an owner and a "
+        "deadline; a GAP_REGISTER row for 'JP lexicon bootstrap' would double-count §33 against "
+        "§35 and would then have to be given a fake owner and date to satisfy "
+        "check_gap_register_health. Same instrument as SUBSYSTEM_TRIAGE, so it gets the same "
+        "treatment: the exclusion is CHECKED, not trusted -- check_dig_log_disposition fails the "
+        "moment a session writes a numbered item without a disposition.",
 }
 
 #: Triage registers excluded from §35 because they disposition their own items inline. The
@@ -1834,6 +1847,16 @@ _TRIAGE_VERDICTS = ("BUILT", "BUILD", "QUEUE", "REJECT")
 #: BUILD/QUEUE are OPEN work. An exclusion that let them vanish would be the bypass the scope
 #: check exists to prevent, so they are counted back out loud.
 _TRIAGE_OPEN = ("BUILD", "QUEUE")
+
+#: Miner session logs excluded from §35 on the SAME premise as _TRIAGE_DOCS -- they disposition
+#: their own items inline, with a `[§33: ...]` tag rather than a verdict heading. The premise is
+#: what the exclusion rests on, so it is checked (check_dig_log_disposition) rather than trusted.
+_SELF_DISPOSING_DIG_LOGS = ("docs/research/prospector_coverage.md",)
+#: PRESENCE probe for the §33 inline tag. Deliberately only the OPENER: the parser of record is
+#: ``libs.research.mine_conversion._DISP_RE`` and duplicating its full grammar here would be a
+#: second parser to keep in sync (the desk has been bitten by exactly that). Tolerant of
+#: "S33"/"section 33" for the same reason the real parser is -- an ASCII-only writer still counts.
+_DIG_TAG_RE = re.compile(r"\[(?:§|S|section\s*)33:", re.IGNORECASE)
 
 
 #: §36 PRODUCERS: artifacts that accumulate inventory under a cadence STATED IN THEIR OWN PROSE
@@ -1858,6 +1881,15 @@ _PRODUCER_CADENCE = {
     "docs/GAP_REGISTER.md": (
         3.0, "re-ranked at the START of every daily AI cycle by its own rule -- the organ §35 and "
              "§36 both depend on, and it was checked by nothing"),
+    # SURFACED 2026-08-04 by check_artifact_governance. This is a REGISTER, not doctrine: it
+    # accumulates graded rows, and run_max_push.py turns every below-T1 row into queue items.
+    "docs/research/TIER1_BENCHMARK.md": (
+        8.0, "its own standing rule -- 'the deep sweep's synthesis (A) ceiling table and this "
+             "register must agree; where they diverge, the sweep re-grades this file in the same "
+             "session, so the benchmark can never fossilize into flattery' (weekly sweep + "
+             "slack). run_max_push.py parses it EVERY refresh and queues every below-T1 row, so a "
+             "frozen file does not go quiet -- it keeps feeding a stale ceiling into the daily "
+             "hunt, which is worse than silence"),
 }
 #: Artifacts that are terminal by nature: templates, forensic write-ups, protocol libraries. They
 #: accumulate no inventory, so they owe no cadence -- recorded here so "no law" is a DECISION.
@@ -1873,6 +1905,27 @@ _TERMINAL_ARTIFACTS = {
         "generate_external_review_doc.py, never an inventory. Its findings flow panel responses "
         "-> panel_inbox -> panel_rulings -> GAP_REGISTER rows (§35), so converting the dossier "
         "itself is meaningless: the next run overwrites it. Terminal by construction.",
+    # SURFACED 2026-08-04. Trailing slash = the whole CLASS is claimed, for the reason stated in
+    # check_artifact_governance: a generator emits instances forever and exact-path claims can
+    # never keep up, so shard_14 must inherit this decision instead of arriving ungoverned.
+    "docs/audit_shards/":
+        "GENERATED panel PAYLOAD -- one shard per seat ('AUDIT SHARD n/13 -- seat <model>'), "
+        "rebuilt wholesale by scripts/build_audit_shards.py on every deep code audit. Each file "
+        "is a RENDERED VIEW of tracked source (tier-1 money path in full + that seat's tier-2 "
+        "slice + the withheld-INERT list), so it holds nothing the repo does not already hold and "
+        "converting it would convert the code twice. Findings flow the same route as the dossier: "
+        "seat response -> panel_inbox -> panel_rulings -> GAP_REGISTER rows (§35). Same class as "
+        "EXTERNAL_PANEL_DOSSIER, terminal by construction. NOTE for whoever reunifies the fork: "
+        "the producer scripts/build_audit_shards.py is one of the master-only files missing from "
+        "this branch (GAP #88 / R0023), so the shards on disk currently have no regenerator here.",
+    "docs/research/recent_changes.md":
+        "GENERATED commit-audit payload -- ops/run_commit_audit.sh rewrites it from "
+        "`git log --since=24.hours` every run (cron 10:10 daily), patches truncated to 400 lines. "
+        "It is a rolling 24h WINDOW, not an inventory: yesterday's content is discarded, not "
+        "carried, so there is nothing that can accumulate un-converted. Its freshness is the "
+        "PRODUCER's property and is already monitored there -- ops/crontab.manifest declares the "
+        "organ's evidence as data/cro_ai_logs/commit_audit_*.log, which check_organ_liveness "
+        "reads. A second staleness clock on the output would page for the same outage twice.",
 }
 
 
@@ -2524,6 +2577,60 @@ def check_findings_scope(defects) -> None:
             "_FINDING_DOCS or _FINDING_DOCS_EXCLUDED with a stated reason."))
 
 
+def check_dig_log_disposition(defects) -> None:
+    """§35(9): a miner session log stays out of §35 only while it DISPOSES ITS OWN ITEMS.
+
+    `prospector_coverage.md` is excluded from the §35 scan because every numbered item in a
+    session note closes in place with an inline `[§33: ...]` tag. That is a CLAIM ABOUT THE
+    DOCUMENT, and a claim nobody checks is exactly the shape the scope law exists to forbid --
+    the next session writes one more item, forgets the tag, and the item is now governed by
+    nothing at all while the exclusion comment still says otherwise. The same reasoning already
+    stands behind _TRIAGE_DOCS ("the exclusion is only honest while that stays TRUE, so it is
+    checked rather than trusted"); this is that instrument applied to the other self-disposing
+    surface, so the two exclusions cost the same to hold.
+
+    A FLOOR, NOT A MATCHER, and said out loud: counting tags per session cannot prove tag #2
+    belongs to item #2 (the seats write the tag on the item's own line, on a later `#### ITEM n`
+    header, or at the end of the item's block, and all three are legal). What it CANNOT be
+    satisfied by is a session that adds an item and no disposition -- which is the entire failure
+    mode the exclusion must not be allowed to hide. Item parsing reuses ``parse_findings`` on each
+    section, so the set counted here is exactly the set §35 would have scanned; a second item
+    parser that drifted from the first would reintroduce the blind spot one level down.
+    """
+    from libs.research.finding_registry import parse_findings
+
+    short = []
+    for rel in _SELF_DISPOSING_DIG_LOGS:
+        p = ROOT / rel
+        if not p.exists():
+            continue
+        try:
+            text = p.read_text("utf-8")
+        except OSError:
+            continue
+        # Sections are the `### ` session notes. `#### ITEM n` sub-headers stay INSIDE their
+        # session on purpose: that is where two of the five seats write their dispositions.
+        heads = [(m.start(), m.group(1).strip())
+                 for m in re.finditer(r"^###\s+(.+?)\s*$", text, re.MULTILINE)]
+        bounds = [h[0] for h in heads] + [len(text)]
+        for i, (pos, title) in enumerate(heads):
+            block = text[pos:bounds[i + 1]]
+            n_items = len(parse_findings(block, source=rel))
+            n_tags = len(_DIG_TAG_RE.findall(block))
+            if n_items and n_tags < n_items:
+                short.append(f"{Path(rel).name} '{title[:60]}' "
+                             f"({n_items} item(s), {n_tags} §33 tag(s))")
+    if short:
+        defects.append((
+            "dig-log-undisposed",
+            f"§35(9): {len(short)} miner session(s) carry numbered items with FEWER §33 "
+            f"dispositions than items -- {'; '.join(short[:6])}. The doc is excluded from the §35 "
+            "findings scan PRECISELY because it dispositions its own items inline; an item with "
+            "no tag is governed by neither law. Write the item's "
+            "`[§33: wired|screened|killed|deferred(DATE)|n/a -> artifact]` tag, or move the doc "
+            "into _FINDING_DOCS so §35 takes it and every item owes a GAP_REGISTER row instead."))
+
+
 def check_orphan_code(defects) -> None:
     """MAP-vs-TERRITORY (audit 2.x): the desk flags idle DATA/capital/clocks but not idle CODE.
     Flags library packages that are almost entirely unreachable from any scripts/ entry point --
@@ -2599,6 +2706,24 @@ _DIG_DOCS_EXCLUDED = {
     "docs/research/micro_audit_inbox.md":
         "audit findings, not mined finds -- own rotting-findings check",
     "docs/research/panel_inbox.md": "external panel output -- own rulings/scoring loop",
+    # SURFACED 2026-08-04. Three `### n.` headings, and they are STUDIES, not finds.
+    "docs/research/THREE_MECHANISM_PREREGISTRATION.md":
+        "PRE-REGISTRATION -- terminal by definition, and already classified TERMINAL under §36(2) "
+        "in docs/research/ARTIFACT_GOVERNANCE.md. Its three headings are the mechanisms the desk "
+        "pre-committed to run (funding carry / OI divergence / liquidation cascade), each with a "
+        "named primary kill criterion and a share of ONE 5,220-trial deflation the three studies "
+        "deliberately share. A §33 disposition is a WRITE INTO THE DOC, and writing into a "
+        "pre-registration is the one thing it exists to prevent: the document's whole value is "
+        "that it was fixed before the data existed, so tagging its rows `deferred(DATE)` each "
+        "cycle would turn the record the verdict is judged against into a running commentary -- "
+        "an edited pre-registration is a backtest wearing a timestamp. It carries no INVENTORY "
+        "either: nothing here can be 'converted', only run to a verdict, and the verdicts land in "
+        "research_memory + the trial ledger under the pre-registered kill criteria. Precedent: "
+        "docs/research/FAILED_BREAKOUT_PREREGISTRATION.md (same class, same reasoning) and "
+        "docs/research/AXIS_PREREGISTRATIONS.md (already §35-excluded, 'the trial ledger "
+        "governs'). WHAT WOULD MOVE IT IN SCOPE: the file being edited to catalogue newly-mined "
+        "sources or finds rather than to record a fixed design -- at which point it has stopped "
+        "being a pre-registration and _DIG_DOCS is where it belongs.",
 }
 #: Committed-state is checked over the whole research surface, including the excluded docs above:
 #: a graveyard entry is self-dispositioning but still has to reach git to exist.
@@ -3261,6 +3386,7 @@ CHECKS = [("carryover-skipped", check_carryover_skipped),
                       ("review-risks", check_review_risks_tracked),
                       ("findings-tracked", check_findings_tracked),
                       ("findings-scope", check_findings_scope),
+                      ("dig-log-disposition", check_dig_log_disposition),
                       ("findings-ratchet", check_findings_ratchet),
                       ("gap-register-health", check_gap_register_health),
                       ("producer-cadence", check_producer_cadence),
