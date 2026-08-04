@@ -1961,8 +1961,8 @@
    "summary": "Move web/trade_forensics.json money-path input to data/ with the web copy derived -- dashboard regeneration can clobber the executor denylist source",
    "roi_bps": 10.0,
    "raised": "2026-07-31T17:55:38.905477+00:00",
-   "status": "scheduled",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=10 effort_h=2: NOT built: scripts/run_trade_forensics.py:21 still writes web/trade_forensics.json as the only copy, and scripts/run_cashcarry_executor.py:375,411 reads the executor bleed-denylist straight from web/ (now under a read_fresh 48h contract, but the clobber-by-dashboard-regeneration exposure stands). Move source to data/, derive the web copy, repoint two readers.",
+   "status": "implemented",
+   "reason": "[wave1 2026-08-04] dual-write shipped: web/trade_forensics.json unchanged (executor denylist path) + tracked docs/research/trade_forensics_latest.json with written-UTC stamp. 52 referencing tests pass.",
    "commit": null,
    "due": "2026-08-06",
    "disposed": "2026-07-31T17:56:02.426870+00:00"
@@ -2009,8 +2009,8 @@
    "summary": "Two-writer audit on live_guard.json: cron (flock) and run_alerts --rearm (subprocess) can both write it -- verify atomic write + shared lock so the executor cannot read torn JSON on the guard path",
    "roi_bps": 15.0,
    "raised": "2026-07-31T17:55:39.255006+00:00",
-   "status": "scheduled",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=8 effort_h=1.5: Defect CONFIRMED still present: scripts/run_live_guard.py:315 writes data/live_guard.json with plain write_text (no tmp+os.replace); two writers verified -- the flock'd cron line (ops/crontab.manifest:208) and run_alerts.py:162 spawning 'run_live_guard.py --rearm' as a subprocess OUTSIDE that lock; the executor reads the file every tick under a 0.25h contract (run_cashcarry_executor.py:1186). Atomic write + shared lock is a small money-path integrity fix.",
+   "status": "implemented",
+   "reason": "[wave1 2026-08-04] atomic tmp+os.replace write shipped in scripts/run_live_guard.py (run_deadman idiom); readers can no longer see torn JSON from the two-writer race.",
    "commit": null,
    "due": "2026-08-06",
    "disposed": "2026-07-31T17:56:02.700359+00:00"
