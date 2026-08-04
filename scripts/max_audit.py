@@ -2508,6 +2508,12 @@ _PRODUCER_CADENCE = {
 #: Artifacts that are terminal by nature: templates, forensic write-ups, protocol libraries. They
 #: accumulate no inventory, so they owe no cadence -- recorded here so "no law" is a DECISION.
 _TERMINAL_ARTIFACTS = {
+    "docs/research/NEW_FAMILY_GENERATORS_PREREGISTRATION.md":
+        "PRE-REGISTRATION (2026-08-04) of the seven new generator families + the 15m/1h "
+        "intraday re-test, committed before any of them ran. Immutable by design; conversions "
+        "land in reports/real_campaign.json and reports/intraday_rotation_{15m,1h}.json, and "
+        "the two deferred rows (H9 conditional on the 15m result, H4/H5 on the moat tape) "
+        "carry their blockers in the text.",
     "docs/research/DISCRETIONARY_PLAYBOOK_PREREGISTRATION.md":
         "PRE-REGISTRATION of the principal's playbook + tier list as hypotheses H1-H11 "
         "(2026-08-04), sizing module rejected under R0143 in the text itself. Immutable by "
