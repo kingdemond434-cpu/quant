@@ -211,9 +211,16 @@ def test_under_exploration_is_enforced_and_currently_reports_the_real_blocker() 
     d: list = []
     M.check_under_exploration(d)
     keys = {k for k, _ in d}
+    # tape-disk-deadline joined this set on 2026-08-04 and it is NOT a widening-to-go-green: the
+    # allowlist exists so an UNCLASSIFIED key cannot slip through, and this key is classified
+    # (E._RESOLUTION -> PATCH_READY, "BUY STORAGE"). It was simply unreachable until now, because
+    # the branch only fires once the moat is measurable, and the miner had been writing artifacts
+    # with no `closure` field for 2.5 days (a --loop daemon started 16 minutes before that feature
+    # landed, so the fix was committed but never running).
     assert keys <= {"exploration-blocked-upstream", "under-exploration",
                     "exploration-unmeasured", "exploration-has-no-dedicated-organ",
-                    "exploration-outpaced-by-recording", "exploration-rate-unmeasured"}
+                    "exploration-outpaced-by-recording", "exploration-rate-unmeasured",
+                    "tape-disk-deadline"}
     if "exploration-blocked-upstream" in keys:
         assert "no mining action closes this" in E._RESOLUTION["exploration-blocked-upstream"][1]
 

@@ -4145,9 +4145,16 @@ def check_under_exploration(defects) -> None:
         if disk.get("state") in ("URGENT", "PAUSED"):
             defects.append((
                 "tape-disk-deadline",
-                f"{label}: {disk.get('note', '')} Deleting mined tape does NOT close this -- the "
-                "seven reconstructions are the first seven, not the last, so raw tape must stay "
-                "re-readable. Buy storage; every hour past the pause is permanently unbuyable."))
+                # NAME THE ARTIFACT, or the scope classifier has nothing to derive from. scope_of
+                # reads PATHS out of this prose; with none cited it correctly returned UNSCOPED,
+                # and an always-UNSCOPED field is exactly the useless-classifier case the
+                # enforcement test guards against. data/moat is what the deadline is ABOUT and it
+                # is untracked, so citing it derives RUNTIME -- a fact about this box's disk, not
+                # a repository fault any commit could fix.
+                f"{label} (data/moat): {disk.get('note', '')} Deleting mined tape does NOT close "
+                "this -- the seven reconstructions are the first seven, not the last, so raw tape "
+                "must stay re-readable. Buy storage; every hour past the pause is permanently "
+                "unbuyable."))
         if state == "RECORDING-STOPPED":
             defects.append((
                 "tape-recording-stopped",
