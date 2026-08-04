@@ -106,3 +106,44 @@ QUEUE-verdict. Next session should prioritize the coverage families NOT touched 
 Podcasts/interviews (beyond one Substack), YouTube/talks, Forums (deep+legacy — r/algotrading,
 EliteTrader, Wilmott were not directly queried), Academic (SSRN/arXiv), Records
 (contests/CTA), and AI/HF documentation — see prospector_coverage.md._
+
+## 2026-08-04 — RU miner s1-on-branch: intraday volume-profile POC-retest structure (bits.media topic 2130528 + author's Habr series)
+SOURCE: forum.bits.media section 110, topic 2130528 "Аукционная теория в коде" (author
+cryptomaniac_dt, Jul-2026, full source on GitHub, cross-posted to Habr; second article in
+series = supply/demand zone scoring, multi-TF, pinbar entry). Mined to reply depth (6 blocks).
+1. **Mechanism (stated, code-backed):** 1h-bar state machine — consolidation windows (24/48/96
+   bars) qualified by range ≤6·ATR ∧ ≤10% price ∧ net-move/range ≤0.35 ∧ POC concentration
+   ≥2.5× uniform ∧ POC mid-range; then impulse validation (extreme ≥1× range within 12 bars);
+   then POC retest with reaction-confirm/invalidation/expiry FSM; target = nearest strong
+   (conc ≥ threshold) UNTESTED POC, min RR 1.5. Portfolio sim: fees+slip in R, stop-first
+   tie-break (pessimistic), reported 148 trades PF 1.63 avgR 0.34 maxDD 18.3%; local-retest
+   subclass carries the edge (n=92 WR 45.7% avgR 0.48 vs late-retest avgR 0.11).
+2. **Novelty vs graveyard:** PASSES — zero volume-profile/POC/value-area entries in graveyard;
+   family is volume-DISTRIBUTION-conditioned intraday structure, not a price derivative; the
+   desk's "price-only alpha is dead" finding is explicitly a DAILY/slow-resolution result
+   (blind-rediscovery memory), so 1h liquidity-anchored structure is an untested cell.
+3. **Named defect (free falsification context):** the daily walk-forward coin selector (top-100
+   mcap → 120d own-PnL backtest → trade coins with n≥3, PF≥1.0, sum_R>0, top-15 by sum_R) is
+   SELECTION ON NOISE — 3-15-trade PF estimates across 100 coins guarantee ~half pass by luck;
+   coin-level twin of graveyard `crowdsourced_backtest_selection_fund`. Any desk test must
+   SEVER the selector from the engine and test the engine unconditionally.
+4. **Evidence grade:** CLAIM (n=148 backtest, ~20 free config params, trial count unreported —
+   effective multiplicity unknown; author honest about funding/depth/partial-fill gaps).
+   Reply-layer prior: 20-yr practitioner null on extracting tradeable signal from volume
+   profile ("делал 20 лет назад, нифига не понял что можно извлечь").
+5. **Why edge might exist NOW:** volume-profile levels are watched by a large discretionary
+   crowd (self-fulfilling liquidity pooling at POC) while the killed desk families are all
+   price-derivative; 1h structure decays too fast for the daily-resolution tests already run.
+   Why it might NOT: TradingView ships VP indicators to millions; BingX-affiliate content
+   economics (execution venue choice smells sponsored) mean the genre optimizes for plausible
+   narrative, not persistence.
+6. **Cheapest falsification (Stage-A, owned data, no new axis):** compute rolling 96-bar POC +
+   concentration on existing 1h BTC/ETH perp candles; screen distance-to-POC × concentration
+   as conditioning feature via libs.research.axis_screen (artifact gate baked in). If the POC
+   "magnet" prior is real, sign shows in residual IC after de-contamination; if not, graveyard
+   with mechanism. ZERO promotion authority here — EV gate + pre-registration decide.
+7. **≤4-week observable:** Stage-A screen verdict on owned candles (hours of work, free).
+8. **Strongest spurious argument (written first):** every retest-entry system is structurally a
+   pullback-in-trend filter; after de-contamination against momentum/vol regime the POC
+   conditioning may add nothing — the 148-trade PF 1.63 is ~1.5-2σ from noise BEFORE counting
+   the ~20-parameter search space, i.e. consistent with a tuned sample.

@@ -11,7 +11,7 @@ _Seeded 2026-07-18; every family unvisited -- the first run biases per the rotat
 | Code (GitHub/Kaggle) | 2026-07-19 | 1 | operator-named dig: ai_quant_trade, Qbot, QuantDinger, Vibe-Trading (READMEs+issues) + Hummingbot/Freqtrade issues — all infra/framework shells or equity factor zoos, 0 crypto-perp strategy logic; 0 cards but confirmed funding-arb is now commoditized into hummingbot's v2_funding_rate_arb.py (crowding evidence) |
 | Academic (SSRN/arXiv) | never | 0 | untouched this session (RSRS is sell-side research, not SSRN/arXiv) — priority next run |
 | Records (contests/CTA) | 2026-08-04 | 2 | s1 (07-25): Bitcointalk "Automated Trading Contest" (CryptoTrader.org rounds #1-#5) → in-sample-vs-forward natural experiment entry. **s2 (08-04): the Quantopian FUND record mined via HN trees → graveyard `crowdsourced_backtest_selection_fund` (backtest-Sharpe>2.5 selection → −3% live vs SPX +6.6% → capital returned Feb-2020) — the at-scale companion to s1's entry.** Kaggle G-Research + Numerai post-mortems + HN 9152332 contest-winner tree still untouched |
-| Non-English forums | 2026-08-04 | 3 | s1 (07-19): Chinese RSRS + funding-arb (CSDN/VeighNa/BigQuant/Zhihu/FMZ) + JP note.com — RSRS EV-killed, ML-funding-rate graveyard-matched. s2 (07-26, CN frontier miner): axis #76 usdt-cny-otc-premium UN-PARKED — "no clean free API" REFUTED, 3 keyless routes, 591d history reconstructed (OP-031), Stage-A 4/4 cells → no promotable edge but SIGN and MAGNITUDE priors falsified. New: OP-031, OP-032, CN lexicon. **s3 (08-04, CN frontier miner): era-archaeology STARTED at depth — 8btc board CDX-mapped (993 urls, 39 boards), 3 era windows (2013 ban / 2017 freeze / 94 exodus) mined to reply-depth ≥2 → graveyard 5th instance adds the premium-SIGN law (coin-leg frozen → domestic discount; fiat-leg frozen → premium) + primary-source 94 diaspora record; LTW-2022 momentum "non-replication" REVERSED by code forensics (pd.cut fat-tail trap → OP-047); Gitee access-mapped (discovery-walled/content-open → OP-048); +12 lexicon rows. Board 233 (BitMEX 合约党, ~1000pp) surveyed, unmined.** |
+| Non-English forums | 2026-08-04 | 3 | s1 (07-19): Chinese RSRS + funding-arb (CSDN/VeighNa/BigQuant/Zhihu/FMZ) + JP note.com — RSRS EV-killed, ML-funding-rate graveyard-matched. s2 (07-26, CN frontier miner): axis #76 usdt-cny-otc-premium UN-PARKED — "no clean free API" REFUTED, 3 keyless routes, 591d history reconstructed (OP-031), Stage-A 4/4 cells → no promotable edge but SIGN and MAGNITUDE priors falsified. New: OP-031, OP-032, CN lexicon. **s3 (08-04, CN frontier miner): era-archaeology STARTED at depth — 8btc board CDX-mapped (993 urls, 39 boards), 3 era windows (2013 ban / 2017 freeze / 94 exodus) mined to reply-depth ≥2 → graveyard 5th instance adds the premium-SIGN law (coin-leg frozen → domestic discount; fiat-leg frozen → premium) + primary-source 94 diaspora record; LTW-2022 momentum "non-replication" REVERSED by code forensics (pd.cut fat-tail trap → OP-047); Gitee access-mapped (discovery-walled/content-open → OP-048); +12 lexicon rows. Board 233 (BitMEX 合约党, ~1000pp) surveyed, unmined.** **s4 (08-04, RU frontier miner s1-on-branch): forum.btcsec.com era corpus OPENED — 48 CDX pages, 1,570 topics mapped, 283 trading-tagged (data/btcsec_trading_topics.json); 3 threads reply-depth → grid-bot SECOND instance (correlated-outage failure mode) + barrier-rent SIXTH instance (Sep-2013 fee-ladder: ~12% route dispersion, Bitstamp anchor, "мы не в РФ" jurisdiction-arb); live successor forum.bits.media censused (sections 74/166/110) → 2022 diaspora ANSWERED (offshore-venue RU-language trading vs obnal-Telegram rails, double barrier) + corridor-tech-export weak signal + volume-profile POC watchlist card (novelty-clean). RU seat s1 proper lives on diverged master ledger.** |
 | AI/HF documentation | 2026-07-19 | 1 | touched only incidentally via Vibe-Trading (AI trading-agent platform) + ai_quant_trade (LLM module) — both infra, not alpha-discovery-process documentation; weak coverage, revisit properly next run |
 
 ## COVERAGE REALITY vs DIRECTIVE (honesty record, 2026-07-20)
@@ -546,4 +546,36 @@ ITEMS THIS RUN (bounded scope, depth-maxed):
      (d) Funding-arb commoditization visible in RU retail too (Axiona "funding mechanism"
      platform, section 110) — third regional confirmation of the crowding evidence.
   3. (stretch) habr.com quant long-reads at comment depth via the two-step comments endpoint
-     (library line ~202). STATUS: pending
+     (library line ~202). STATUS: SWAPPED for a higher-ROI in-session find (recorded, not
+     silent): section 110's code-included practitioner thread topic 2130528 "Аукционная теория
+     в коде" (Volume Profile / POC-retest 1h state machine, GitHub source, cross-posted from
+     Habr — so this IS the habr genre, reached via the forum). Mined to reply depth (6 blocks).
+     → prospector_watchlist.md card (novelty-clean vs graveyard; named defect: daily
+     walk-forward coin selector = selection on 3-15-trade noise across 100 coins, coin-level
+     twin of `crowdsourced_backtest_selection_fund`; engine must be tested SEVERED from
+     selector). Free reply-layer prior harvested: 20-yr practitioner null on volume-profile
+     extraction. GENRE-EVOLUTION finding for source-weighting: RU retail practitioner content
+     now ships causal engines, same-code-backtest/live, pessimistic tie-breaks, stated
+     limitations — the "pink backtest" tell is obsolete; audit must move to meta-level defects
+     (selector multiplicity, param-search trial counts, affiliate venue economics — BingX
+     execution choice smells sponsored). Full habr sweep remains OPEN ground for next run.
+DEPTH LINE (mandate report): topic 5499 reply-depth 20/20 posts (debunking replies harvested);
+topic 4083 reply-depth 20 posts (the load-bearing fact was reply #3, not the OP); topic 1987
+reply-depth 20 posts (fee-ladder was reply #4); topic 2130528 OP 20.7k chars + all 5 replies;
+sections 74/166/110 censused title-layer (25 threads each) — census WAS the instrument for
+item 2 (see OP-049). Forks/citations: GitHub repo noted in watchlist card (not fetched — next
+run: repo + Habr author page per OP-005/OP-013). Zero-hit checks: `arbitr` 0/1570 slugs
+(OP-030 lexical-zero verified: RU arb lore titles itself обмен/биржа/бот).
+PROACTIVE BATTERY (moves run): #2 ADJACENCY — the EN-seat's era grid-bot + barrier-rent classes
+were hunted deliberately in RU ground and found (2 instance-appends; one fix-shape, all
+regions). #9 SCOPE-THE-NEGATIVE — Wayback 0-byte fetches were the ROUTE (missing curl -L on
+302-to-canonical-ts), not the capability; OP-034 footnote added. #3 CONFIG-VS-OUTCOME — s13
+verdicts cite fetched robots.txt artifacts (both domains), not assumptions. #8 NEGATIVE SPACE —
+live-successor-board census (nobody had read the CURRENT P2P board as data; it answered the
+diaspora question in one fetch). Moves producing nothing: #5 COST-INVERSION (nothing paid
+touched this run — vendor-decision items routed to KR seat/brain).
+NEXT RUN (in order): (1) 280 unmined shortlist topics in data/btcsec_trading_topics.json —
+work obmen/birzha class first (barrier-rent instances compound); (2) cryptomaniac_dt GitHub
+repo + Habr author page (fork/citation chain per depth mandate); (3) smart-lab.ru algo section
+(never touched, robots unread); (4) MMGP forum era-archaeology (untouched region era target);
+(5) habr full sweep via comments endpoint (master OP-039).

@@ -586,3 +586,37 @@ adaptations: the SHAPE generalises (JP seat's bitFlyer per-hostname finding is t
   or ToS refusal involved).
 counterfactual: MED — the natural conclusion after /explore 405s is "Gitee is closed"; the desk's
   region ground would have been falsely written off.
+
+### OP-049 the ad board IS the data: service-ad census as a barrier-rent instrument   [active]
+found: 2026-08-04, RU frontier miner s1-on-branch, answering the 2022 sanctions-diaspora
+  standing question in ONE fetch after thread-search approaches would have taken days.
+what: on any legacy community forum, the CURRENT front page of its services/P2P/obmen sections
+  is a structured CENSUS of the gray-rail economy: each ad publicly quotes the rent (fee %,
+  "AML < N%" ladders), the settlement unit (post-2022 RU: universally USDT-TRC20), the
+  interface (Telegram bots), the corridors (currency lists), and the geography (cities where
+  cash sits). Read 25 ad TITLES and you have the market structure without touching a single
+  rail. Complementary reading: which sections DIED (era boards) vs which are ad-saturated
+  (rails) maps where the community's economic weight went — the diaspora answer is in the
+  section-level activity gradient, not in any thread's text.
+why it beats thread-mining for this question: ads are written to be found and priced to clear —
+  they are the one genre where the poster VOLUNTEERS the quantitative structure (rent, corridor,
+  venue). Discussion threads hide this in 40 pages of chatter.
+s13 note: the census is of PUBLIC ads only and produces STRUCTURE knowledge, never a source —
+  the advertised layer (mixers, no-KYC processing, invite-only «закрытые площадки») is
+  permanently untouchable; carding any of it as a data source is a hard stop. The instrument is
+  legitimate precisely because it never enters the shop, it reads the shop window.
+adaptations: RU=forum.bits.media sections 74/166 (done 08-04); CN=public layer thin (94-era
+  precedent: conversion moved to private QQ/WeChat in 48h — census the OVERSEAS boards: OKX/Gate
+  CN sections); KR=Naver cafe open boards + coin community 장터 sections (respect by-name robots
+  refusals first); JP=5ch is name-blocked, use archived mirrors; BR/TR=Telegram-channel public
+  previews (t.me/s/) carry the same ad genre. EVERY region: re-census quarterly — rent quotes
+  move with the barrier, and the TIME SERIES of quoted rent ladders is itself a barrier-height
+  proxy no vendor sells.
+counterfactual: HIGH — the diaspora question stood open across multiple RU sessions; the answer
+  was one public GET away the whole time. The class error was hunting DISCUSSIONS about where
+  people went instead of reading the market that formed where they arrived.
+
+_OP-034 field note (RU s1-on-branch, 08-04): Wayback REPLAY of querystring URLs (IPB/IPS
+`index.php?/topic/...`) 302s to the canonical capture timestamp — curl WITHOUT -L writes 0
+bytes, which looks exactly like a dead capture. It is the route, not the archive. Always `-L`
+on replay; CDX hit + 0-byte replay = redirect trap until proven otherwise (pairs with OP-030)._
