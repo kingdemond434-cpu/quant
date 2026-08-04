@@ -679,3 +679,53 @@ NAVER key status check (#69 due 08-09 — if landed, the 3 unlocked grounds chan
 whole frontier).
 PUSH RECORD: pre-push hook expected ENOENT on this fork (law gate lives on master) — verified by
 running the hook manually before pushing; --no-verify per the standing fork corollary if so.
+
+## SESSION NOTES — JP frontier miner
+
+### 2026-08-04 session 1-on-this-branch (JP frontier miner) — IN PROGRESS (write-first note; updated as items resolve)
+BRANCH CONTEXT (fork convention per RU/KR/EN): tree forked from master at 3bf89cd (07-29). JP
+seat s1 (2026-08-01) is NOT in this tree; its laws carried by seat memory and partially synced
+by EN s4: (a) bitFlyer `restricted-by-licence` IS on this branch (graveyard
+`jp_bitflyer_direct_recording` — an archive copy is not a licence; Tardis free tier covers
+bitflyer from 2019-08-30 as the licensed substitute); (b) richmanbtc C62 killed as maker-rebate
+artifact (fee-artifact class in graveyard; ATR-limit edge with maker_fee≤0 across backtest +
+KFold future-leak — do NOT re-litigate); (c) 5ch + itest/egg/kizuna refuse ClaudeBot BY NAME
+(Cloudflare managed block) → per the fleet ruling (RU btcsec: origin-domain robots governs
+Wayback mining too) 5ch's ARCHIVES are equally closed — s1's "era-dig 5ch via Wayback" plan is
+hereby RETIRED as illegal under the newer fleet law; (d) GMO free keyless tick CSVs from
+2018-09-05 (28 spot + 12 margin, JP-only tickers = the moat); (e) bitbank phantom-history trap
+(volume 0.0000 pre-2017-02); (f) note.com `/api/*` disallowed → comment layer out of bounds;
+(g) JP regional premium ALREADY graveyarded (bitbank IC −0.06, noise) — premium class exhausted,
+kimchi lone survivor; hunt MECHANISMS not premiums in JP ground. New OPs number from OP-051
+(KR took 050).
+ROBOTS (all fetched THIS session, no cached verdicts): qiita.com CLEAN for content paths
+(`*` only; /search + /api/* disallowed → discovery must be off-site or sitemap, API out);
+note.com CLEAN for posts (/api/* + /search out); zenn.dev CLEAN (named blocks are
+Bytespider/Megalodon-class, not us); **adventar.org HARD STOP — `ClaudeBot Disallow: /` inside
+a Cloudflare Managed Content block** (3rd region hit by the same rollout; s1 prior confirmed;
+archives equally closed per fleet ruling; also `*` disallows /calendars/ + /users/). Effect:
+Adventar-hosted botter Advent Calendar years unreachable; Qiita-hosted years (2021+) in bounds.
+BACKLOG (resume step 1): 0 pending technical verification; 3 pending-legitimacy rows are the
+KR-routed vendor items already RESOLVED by KR s1-on-branch (R0020, GAP #67/#69) — nothing
+JP-owed. §33 header: backlog clear, mining authorised.
+ITEMS THIS RUN (bounded per completion contract):
+1. **Qiita 仮想通貨botter Advent Calendar series (2021–2025) — the s1-designated primary
+   ground, never touched by any organ.** Map every Qiita-hosted year (finite era artifact),
+   deep-read highest-mechanism entries richmanbtc-lineage-first; the JP record is structurally
+   a POST-MORTEM archive (botters publish exhausted edges) → mine for deaths, decay dates,
+   method defects as graveyard material; route mechanisms via EV gate. STATUS: in progress.
+2. **Era-archaeology: bitFlyer-FX SFD band (2018–2020) via robots-clean grounds ONLY**
+   (note.com/Qiita/GitHub; 5ch and its archives closed, adventar closed). SFD = fee
+   discontinuity at ±10% FX-spot premium — candidate 7th instance of the barrier-rent/
+   fee-discontinuity family (6 instances). Graveyard-check first; era provenance = free
+   falsification context. Deliverable: mechanism understanding + graveyard or watchlist
+   routing. NOTE the licence fence: any tradeable construction needs non-bitFlyer data or
+   Tardis-licensed bitflyer (2019-08-30+). STATUS: in progress.
+3. **JP lexicon bootstrap (bounded):** negative-control the 4 s1 seeds
+   (okuribito/gachiho/inago/yobun) against real usage observed in items 1–2 (CN OP-037 lesson:
+   0/7 seed terms survived); start the JP lexicon section in the operator library with
+   VERIFIED-ONLY terms + contribute any new operator as OP-051. STATUS: in progress.
+STANDING DUTIES THIS RUN: §39 registry read (top OPEN advanceable = CryptoQuant flows/label
+corpora — watch for JP-ground label sets or paid-vendor mentions to add); §26 Stage-A screen
+in-run IF a new axis with stated mechanism + data-in-hand surfaces; universe map rows for any
+data source; commit+push with fork-corollary record.
