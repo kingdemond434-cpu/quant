@@ -506,7 +506,20 @@ ITEMS THIS RUN (bounded scope, depth-maxed):
   1. bits.media ERA-ARCHAEOLOGY (dark-forest #1; region era target). Wayback CDX map per OP-034
      (propagated from EN s4 — charter s14 parity in action) + OP-033 windows-1251 decode
      discipline. Hunt: pre-sanctions LocalBitcoins/EXMO era premium+arb mechanics, MM lore,
-     exchange-microstructure notes. STATUS: pending
+     exchange-microstructure notes. STATUS: DONE (this run's slice; ground NOT exhausted).
+     RESULT: the era ground is forum.btcsec.com (btcsec.com renamed bits.media 2015; successor
+     forum.bits.media LIVE, robots `User-agent: *` only — s13 PASS both). CDX: 48 pages, 1,570
+     unique 200-status topics, IPB3 UTF-8 (NO 1251 trap). 283-topic trading shortlist →
+     data/btcsec_trading_topics.json; universe map row 90-ru-btcsec-forum-wayback-corpus.
+     3 threads mined to reply-depth → 2 graveyard instance-appends: era_grid_ladder_vol_bot
+     SECOND INSTANCE (topic 5499 MensFreedom "временной арбитраж" corridor bot — retail restates
+     short-gamma in one sentence; NEW failure mode: correlated infra outage, bot server died
+     during the move); era_crossvenue_fiat_premium_arb SIXTH INSTANCE (topic 1987: Sep-2013
+     fee-ladder primary numbers, ~12% route dispersion, immediacy rent 3-4%, multi-hop beats
+     direct; ANCHOR FACT: RU exchangers priced off Bitstamp not BTC-E/Gox; topic 4083 post 3:
+     Gox untradeable to RU retail 6wk pre-collapse; "физически мы не в РФ" = jurisdiction-arb
+     business model, 2013 ancestor of post-2022 P2P rails). OP-030 finding: `arbitr` = ZERO slug
+     hits in 1,570 topics — RU arb lore titles itself обмен/биржа/бот, never арбитраж.
   2. DIASPORA (dark-forest #3, standing question): 2022 sanctions-exodus — where did the RU crypto
      crowd GO (P2P/USDT rails, which platforms, which languages). s13-clean framing: public
      threads only; sanctioned venues are never carded as sources; the deliverable is mechanism

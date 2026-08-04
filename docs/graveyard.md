@@ -309,3 +309,47 @@ largest crowd-sourced attempt ever made bought negative live alpha with exactly 
 two-stage law forbids. Microstructure rider (depth-5 reply, justrobert): OHLC backtests are
 structurally blind to crash-day bid/ask breakdown and broker margin-call liquidation — an
 execution-reality prior for any stress-period backtest claim.
+
+### era_grid_ladder_vol_bot — SECOND INSTANCE (RU 2014, sold-to-retail variant) — CORROBORATED + FAILURE MODE ADDED
+Source: forum.btcsec.com topic 5499 ("Бесплатный btc-e бот от MensFreedom", 2014, Wayback
+20140814073909, mined to reply-depth; RU miner s1-on-branch 2026-08-04). A corridor/"коридор
+курса" grid script for BTC-E, marketed as "временной арбитраж" (temporal arbitrage) with
+"беспроигрышная торговля" (can't-lose trading) — sold as freemium (free tier → Start/Basic/Pro
+FTC subscriptions + 10%/5yr referral pyramid + volunteer moderator recruitment). The thread
+contains its own kill, from users not the vendor: (post 15) "это не бот, это просто скрипт...
+использовать можно только при флете, либо при пампе. В случае дампа всё будет просрано" — the
+short-gamma economics of instance #1 (GMVT-BOT) restated by RU retail in one sentence; (post 16)
+"если бот приносит прибыль, зачем его продавать?" — the seller-signal; (post 14) community
+debunks "временной арбитраж" as requiring knowledge of future prices. NEW FAILURE MODE the GMVT
+instance did not show: CORRELATED INFRA OUTAGE — (post 9) "когда сегодня ночью были такие движи,
+сервак с ботом лёг и умер" / vendor confirms 1.5h outage during the move (posts 9-10): the
+hosted-bot server died exactly during the large move, i.e. the grid's max-damage moment and the
+operator's outage are the SAME event (both are volatility). Era-provenance kill extended: hosted
+retail grid bots add a correlated-operational tail to the short-gamma tail — the desk never
+re-derives grid-bot economics AND never treats hosted-execution uptime as independent of the
+regime that kills the strategy. Lexicon: "временной арбитраж" = grail-marketing term, not a
+mechanism; search key for the sold-bot genre in RU sources.
+
+### era_crossvenue_fiat_premium_arb — SIXTH INSTANCE (RU/UA 2013, exchanger fee-ladder, primary numbers) — BARRIER-RENT QUANTIFIED + ANCHOR FACT
+Source: forum.btcsec.com topic 1987 (24change.com exchanger thread, Sep 2013, Wayback
+20130909id_) + topic 4083 (Romanov Capital daily TA thread, Dec 2013-Jan 2014), both mined to
+reply-depth (RU miner s1-on-branch 2026-08-04). (a) ROUTE DISPERSION IS THE RETAIL-VISIBLE RENT,
+with primary numbers (post 4, user "gladiator", Sep-2013): the SAME 1 BTC nets 86.74 у.е. via
+the 5% exchanger vs 98.22 via metabank / Privat24-direct; BTC-E direct exit 94.40−6%; multi-hop
+BTC-E→LiqPay(4%)→Privat24(0.5%+0.5) = 88.73 — an ~12% spread ACROSS ROUTES at one instant, with
+multi-hop beating several direct rails. The barrier rent decomposes into: immediacy+inventory
+rent ~3-4% (the exchanger's own pitch: "скорость и неограниченные резервы именно тогда, когда
+это необходимо" — vs 2-day BTC-E withdrawal queues), plus per-rail friction stacks. (b) ANCHOR
+FACT: the RU/UA exchanger layer priced off BITSTAMP ("биткоин покупается по курсу bitstamp"),
+NOT the local venue BTC-E and NOT Gox — while a user (post 19) begs them to "switch to the Gox
+rate already" because Gox printed HIGHER: retail wanted the broken venue's premium paid out over
+working rails, which is exactly the rent transfer the barrier prohibits. (c) REAL-TIME GOX
+KNOWLEDGE (topic 4083 post 3, 29-Dec-2013): "Какой толк от Гокса, вы там пробовали торговать?" —
+RU practitioners treated the Gox price as untradeable SIX WEEKS before the Feb-2014 collapse;
+the premium was priced withdrawal-failure in real time, corroborating instance (a)/(b)'s
+retrospective reading with a contemporaneous primary source. (d) JURISDICTION ARB AS BUSINESS
+MODEL (posts 15-16): asked about FSB requests, the exchanger answers "Физически мы не в РФ
+находимся" — the 2013 ancestor of the post-2022 P2P/USDT rail structure; the rent collector
+sits OUTSIDE the barrier's jurisdiction, always. Standing implication unchanged and
+strengthened: persistent premium = barrier rent, harvestable only by rail-access holders;
+usable as information/timing, never sized as arb.
