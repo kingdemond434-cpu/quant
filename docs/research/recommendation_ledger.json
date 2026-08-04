@@ -2789,8 +2789,8 @@
    "summary": "libs/regime/engine.py:84 conf=posteriors[-1].max() ignores the GMM cross-check and rule-engine computed on the next lines: web/regime_engine.json reads confidence=1.0 while hmm_gmm_agree=false and gmm_regime=bear vs regime=bull. Confidence is STRUCTURALLY INCAPABLE of falling on model disagreement. run_regime_engine.py merges confidence into data/crypto_regime.json 'so the executor sizes by regime' -- money-path adjacent (L1.40 unmeasured-reported-as-OK).",
    "roi_bps": null,
    "raised": "2026-08-01T01:55:35.078088+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=9 effort_h=1.5: Unfixed: libs/regime/engine.py:84 still 'conf = float(self.posteriors[-1].max())'; hmm_gmm_agree is computed (:95) but never dampens confidence -- structurally incapable of falling on model disagreement, exactly as rowed. run_regime_engine.py:4/:48 still merges that confidence into data/crypto_regime.json 'so the executor sizes by regime'. Fix is a downward-only discount on disagreement (never raises confidence), small and money-path-safe in direction.",
+   "status": "implemented",
+   "reason": "[wave1 2026-08-04] disagreement dampening shipped: conf *= GMM posterior mass on the HMM's label -- strictly conservative, agreement path unchanged, unfitted-GMM excluded. The live pathology (confidence 1.0 with hmm_gmm_agree false) now expresses as ~0. 53 regime tests pass.",
    "commit": null,
    "due": null,
    "disposed": null
