@@ -23,7 +23,7 @@ from libs.discovery.tail_risk import tail_risk
 # _min_capacity_usd() implementing a 2x-of-book multiple; that rule and its constant were deleted
 # 2026-08-01 (R0080) rather than left dead, because a spare capacity bar sitting in the file is
 # precisely how the desk ended up running two of them at once.
-from libs.research.capacity_policy import capacity_required  # noqa: F401
+from libs.research.capacity_policy import capacity_required, venue_min_notional_usd  # noqa: F401
 from libs.validation.baselines import baseline_scorecard
 from libs.validation.campaign_window import (
     CAMPAIGN_ALPHA,

@@ -3633,8 +3633,8 @@
    "summary": "RU-04 scripts/run_crossexchange_backtest.py:_panel() swallows all venue-fetch failures via bare 'except Exception: continue' plus 'if bn.empty or by.empty or ok.empty: continue', with NO counter of attempted-vs-resolved symbols. A venue delisting or a join miss shrinks the panel invisibly and the backtest still reports a result over the survivors. Desk SILENT-EXCEPT defect class. Fix: count and log attempted/resolved/dropped-with-reason; refuse to publish a verdict below a declared minimum panel width.",
    "roi_bps": 10.0,
    "raised": "2026-08-01T13:20:49.592964+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=9 effort_h=1: Defect verified still present: scripts/run_crossexchange_backtest.py:51-54 _panel() still swallows all venue-fetch failures via bare 'except Exception: continue' plus 'if bn.empty or by.empty or ok.empty: continue' with no attempted/resolved/dropped counter; the 423ccad silent-swallow sweep covered the rails (max_audit.py:5925 check_silent_swallows_on_the_rails), not this research script. Small fix: count+log attempted/resolved/dropped-with-reason and refuse a verdict below a declared minimum panel width (a refusal path -- tightens, never loosens).",
+   "status": "implemented",
+   "reason": "[wave1 2026-08-04] refusal path shipped (L1.41): every venue-fetch failure recorded+printed as blocked, <2-venue panel exits UNMEASURED, artifact carries measured venues + panel_accounting (attempted/resolved/blocked). Width gate kept at 6, not weakened. 4-scenario stubbed smoke passed.",
    "commit": null,
    "due": null,
    "disposed": null

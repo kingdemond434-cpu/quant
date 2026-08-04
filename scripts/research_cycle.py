@@ -16,7 +16,7 @@ deterministic and honest -- it reports what the files on disk actually say.
 from __future__ import annotations
 
 import json
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -390,12 +390,61 @@ def _research_state(eng: dict[str, Any], done: dict[str, bool]) -> dict[str, Any
     }
 
 
+# Horizon for an engineering forecast: "this task's done_if detector fires within N days of the
+# forecast being pre-registered". 30d spans several ROI-ranked cycles yet keeps the
+# check_calibration OVERDUE fence meaningful inside a quarter.
+_FORECAST_HORIZON_DAYS = 30
+
+
 def _calibrate(done: dict[str, bool]) -> dict[str, Any]:
-    """Log each engineering forecast + resolve the ones that completed, then report calibration."""
+    """Pre-register engineering forecasts, grade them only when the outcome is KNOWN, report.
+
+    CONTRACT (forecast_calibration._scoreable #1 / L1.29a): a probability is a forecast only if
+    it is logged with a resolve_by BEFORE the outcome is known. The old loop here logged eng:*
+    rows with no resolve_by and resolved them TRUE in the same pass -- 30 degenerate all-TRUE
+    rows, graded a median 18ms after being logged, which inverted the measured bias (+0.176
+    over-confident read as -0.146 under-confident) and fed kelly_leverage an inflated p
+    (recommendation_ledger rec 3101). The estimator now excludes such rows; this writer must
+    stop producing them. Therefore:
+
+      * a task already done at first sight is NEVER logged -- observing state is an assertion,
+        not a prediction;
+      * an open task is pre-registered ONCE, with a resolve_by fixed at first assertion and
+        never rolled forward (a rolling deadline can never go overdue, which would blind the
+        check_calibration fence);
+      * grading writes BOTH sides, so misses are counted: detector fires while the deadline is
+        still ahead -> True; deadline passes with the task still open -> False. A completion
+        first OBSERVED after the deadline also grades False -- we cannot verify it beat the
+        clock, and defaulting to credit is the exact self-flattering failure this replaces;
+      * one forecast per task, never re-registered after resolution: _scoreable dedups
+        identical claims, so a re-ask would add rows without adding information.
+
+    Legacy rows lacking a parseable resolve_by are left untouched (resolving one would mint
+    another retrospective row); the estimator already excludes them.
+    """
+    now = datetime.now(tz=UTC)
     for it in _ENG:
-        fc.log_forecast(f"eng:{it['id']}", it["p"], "engineering")
-        if done.get(it["id"]):
-            fc.resolve(f"eng:{it['id']}", outcome=True)     # a completed task = forecast realised
+        key = f"eng:{it['id']}"
+        row = fc.get_forecast(key)
+        if row is None:
+            if not done.get(it["id"]):              # first sight while still OPEN: pre-register
+                fc.log_forecast(
+                    key, it["p"], "engineering",
+                    resolve_by=(now + timedelta(days=_FORECAST_HORIZON_DAYS)).isoformat(),
+                    claim=(f"eng task '{it['id']}' done_if detector fires within "
+                           f"{_FORECAST_HORIZON_DAYS}d of {now.date().isoformat()}"))
+            continue                                # already done + never forecast: assert only
+        if row.get("resolved"):
+            continue                                # scored history is immutable
+        try:
+            due = datetime.fromisoformat(str(row.get("resolve_by")))
+            due = due if due.tzinfo else due.replace(tzinfo=UTC)
+        except (TypeError, ValueError):
+            continue                                # legacy no-deadline row: inert, never graded
+        if due < now:
+            fc.resolve(key, outcome=False)          # horizon passed unverified -> forecast missed
+        elif done.get(it["id"]):
+            fc.resolve(key, outcome=True)           # detector fired inside the horizon
     rep = fc.report()
     (_WEB / "calibration.json").write_text(json.dumps(rep, indent=2), "utf-8")
     return rep

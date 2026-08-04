@@ -53,6 +53,17 @@ def log_forecast(key: str, p: float, kind: str, resolve_by: str | None = None,
     _save(d)
 
 
+def get_forecast(key: str) -> dict[str, Any] | None:
+    """Read-only copy of one stored forecast row, or None if never logged.
+
+    Exists so writers can PRE-REGISTER a forecast exactly once -- checking for an existing row
+    before logging keeps resolve_by FIXED at first assertion instead of rolling forward on every
+    pass (a rolling deadline can never go overdue, which would blind the check_calibration
+    fence) -- and can grade only rows that were actually pre-registered."""
+    f = _load()["forecasts"].get(key)
+    return dict(f) if f is not None else None
+
+
 def overdue(now: datetime | None = None) -> list[dict[str, Any]]:
     """Unresolved forecasts past their resolve_by -- predictions the desk refused to grade."""
     now = now or datetime.now(tz=UTC)

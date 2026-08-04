@@ -76,6 +76,7 @@ __all__ = [
     "outgrown_at",
     "sleeve_equity",
     "venue_book_usd",
+    "venue_min_notional_usd",
 ]
 
 #: CAPACITY IS A RATIO, NOT A DOLLAR FIGURE (2026-07-26). The gate was a flat $100,000 floor, which
@@ -277,6 +278,37 @@ def venue_book_usd() -> float | None:
     except Exception:
         return None
     return hw if hw > 0.0 else None
+
+
+#: MEASURED venue floor truth, written by scripts/capacity_simulator.py off the live exchangeInfo
+#: endpoints: per live-universe symbol, the venue's real MIN_NOTIONAL/NOTIONAL order filter for
+#: both legs plus the lot-rounding floor. THE canonical venue-notional source (R0218) -- consumers
+#: read it here instead of restating a "Binance-class 10.0" literal next to their own gates, which
+#: is the one-policy-many-copies defect this whole module exists to prevent.
+_CAPACITY_FLOOR_ARTIFACT = Path(__file__).resolve().parents[2] / "data/capacity_floor.json"
+
+
+def venue_min_notional_usd() -> float | None:
+    """Venue minimum order notional in USD from MEASURED truth, or None when unmeasured here.
+
+    The binding value across the live universe: the largest of each symbol's spot/futures
+    MIN_NOTIONAL filters, so an order sized to it clears every symbol the desk actually trades
+    (recorded truth 2026-07-27: spot_min 5.0, fut_min 5.0).
+
+    Returns None -- never a constant -- when the artifact is absent, unreadable or carries no
+    usable rows. Same contract as ``venue_book_usd``: this rung reports only genuine venue truth,
+    and each consumer owns its own fallback, because the honest direction DIFFERS by consumer
+    (stranded recovery adopts the measured value outright; the autodiscovery SUB-VIABLE floor is
+    tighten-only and may never drop below its historical constant -- see
+    libs/autodiscovery/validation.py).
+    """
+    try:
+        rows = json.loads(_CAPACITY_FLOOR_ARTIFACT.read_text("utf-8")).get("symbols", [])
+        measured = max((max(float(r.get("spot_min") or 0.0), float(r.get("fut_min") or 0.0))
+                        for r in rows), default=0.0)
+    except Exception:
+        return None
+    return measured if measured > 0.0 else None
 
 
 def live_book_usd(fallback: float = DEFAULT_BOOK_USD, ledger: Path | None = None) -> float:
