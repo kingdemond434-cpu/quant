@@ -408,7 +408,13 @@ def _structurally_bleeding(sym: str) -> bool:
     age, so a STALE denylist STILL DENIES -- the fence owns chasing the dead producer. Only an
     unreadable file falls back to allow, exactly as before, and that read is now recorded
     instead of silent."""
-    fr = read_fresh(_FORENSICS, max_age_h=48.0,
+    # R0159 EMPTY floor (min_rows=1): this is the deny-direction ledger that must be non-empty
+    # -- a truncated forensics ({}) vaporises every recorded denial, so blocked bleeders
+    # (COOKIEUSDT, 1000CATUSDT) become openable again with a young mtime as camouflage. A
+    # legitimate forensics artifact always carries worst_symbols and its stamp. The allow
+    # fallback below is unchanged (documented direction); the empty read is now a recorded
+    # stale_read instead of a silent un-deny.
+    fr = read_fresh(_FORENSICS, max_age_h=48.0, min_rows=1,
                     caller="run_cashcarry_executor._structurally_bleeding")
     rows = fr.data.get("worst_symbols") if isinstance(fr.data, dict) else None
     if not isinstance(rows, list):
@@ -477,7 +483,14 @@ def _rt_bps(sym: str) -> float:
     """This symbol's MEASURED round-trip cost, else the desk median. Self-improving: as the
     recorder accrues the traded names, the gate automatically tightens on expensive books
     (NOMUSDT realised -149 bps, KNCUSDT -211 bps -- thin books where slippage dominates)."""
-    fr = read_fresh(_COST_MODEL, max_age_h=48.0, caller="run_cashcarry_executor._rt_bps")
+    # R0159 EMPTY floor (min_rows=1): a truncated cost_model.json ({}) has a young mtime, so it
+    # passed the age gate as FRESH while dropping every measured name -- proven-expensive books
+    # (KNC -211bps) silently fall to the default with no record. A legitimate model always
+    # carries at least its symbols map, so an empty payload now takes the stale path: same
+    # default returned below (KeyError branch, unchanged), but recorded as a stale_read instead
+    # of steering silently.
+    fr = read_fresh(_COST_MODEL, max_age_h=48.0, min_rows=1,
+                    caller="run_cashcarry_executor._rt_bps")
     try:
         m = fr.data["symbols"][sym]["pair"]["500"]
         v = m.get("pair_roundtrip_bps")
@@ -1183,7 +1196,13 @@ def _refresh_guard() -> None:
     # authority), but a dead guard can never write its own KILL, so run_alerts now pages
     # live_guard_dead and this read leaves a stale_read record instead of degrading silently.
     try:
-        fr = read_fresh("data/live_guard.json", max_age_h=0.25,
+        # R0159 EMPTY floor (min_rows=1): a truncated live_guard.json ({}) used to pass the age
+        # gate and steer the tick at FULL SIZE with takers allowed -- the loosening direction,
+        # indistinguishable from a healthy guard that chose 1.0. A legitimate guard artifact
+        # always carries effective_size_fraction; an empty one now reads not-fresh, lands in the
+        # `return` below ("stale guard is no guard", neutral as ever) and leaves a stale_read
+        # record for run_alerts/the fence instead of degrading silently.
+        fr = read_fresh("data/live_guard.json", max_age_h=0.25, min_rows=1,
                         caller="run_cashcarry_executor._refresh_guard")
         if not fr.fresh or not isinstance(fr.data, dict):
             return                                          # stale guard is no guard

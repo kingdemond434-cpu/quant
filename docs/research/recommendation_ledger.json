@@ -1949,8 +1949,8 @@
    "summary": "Min-content contracts: extend read_fresh with min_rows/min_bytes -- a producer that runs but emits zero rows passes every age check (label_factory crash-as-NO-INPUT class)",
    "roi_bps": 15.0,
    "raised": "2026-07-31T17:55:38.821900+00:00",
-   "status": "scheduled",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=9 effort_h=2: NOT built: libs/ops/fresh.py:159-197 read_fresh signature carries max_age_h/kind/guardian/mode only -- no min_rows/min_bytes; the only min-content checks are producer-side (scripts/max_audit.py:47 'glob, min_bytes_for_success, max_age_hours' and :1483), which never guard consumption-time reads. A producer emitting zero rows still passes every read_fresh contract. Small extension to fresh.py + the ~6 bootstrap call sites.",
+   "status": "implemented",
+   "reason": "[wave1 2026-08-04] min_rows/min_bytes floors shipped on read_fresh with the existing refusal path (fail-closed on unverifiable; floors can remove freshness, never grant it); three executor call sites opted in (guard, forensics denylist, cost model -- each previously laundered a fresh-but-empty {} into full-size behaviour). 13 new tests; 213 ops tests pass.",
    "commit": null,
    "due": "2026-08-05",
    "disposed": "2026-07-31T17:56:02.363180+00:00"
