@@ -154,9 +154,24 @@ def test_a_coverage_regression_is_detected(monkeypatch, tmp_path) -> None:
     mark.write_text('{"high_water": {"mechanical_pct": 100.0, "interactional_pct": 100.0,'
                     ' "full_pct": 100.0}}', "utf-8")
     monkeypatch.setattr(M, "LAW_COVERAGE_MARK", mark)
+
+    # THE FIXTURE HAD TO CHANGE WHEN THE DESK GOT BETTER, WHICH IS ITSELF THE POINT. This
+    # originally relied on live coverage sitting BELOW a planted 100% mark -- so the moment P8's
+    # interactional gap was closed on 2026-08-04 and coverage actually reached 100/100/100, the
+    # planted mark stopped describing a regression and the check correctly reported nothing. A
+    # test that passes only while the system is imperfect stops testing the day it is fixed, and
+    # it fails in the direction that looks like the FIX broke something.
+    #
+    # So the regression is now SIMULATED rather than borrowed from a real shortfall: a principle
+    # loses its enforcing checks, coverage genuinely falls beneath the mark, and the ratchet must
+    # fire. This holds whatever the live number is.
+    import libs.doctrine.enforcement as E
+    crippled = {**E.ENFORCEMENT, "P8": ()}
+    monkeypatch.setattr(E, "ENFORCEMENT", crippled)
     d: list = []
     M.check_law_coverage(d)
-    assert "law-coverage-regressed" in {k for k, _ in d}
+    assert "law-coverage-regressed" in {k for k, _ in d}, (
+        f"a law lost its enforcement and the ratchet stayed quiet: {[k for k, _ in d]}")
 
 
 def test_the_high_water_mark_lives_in_git_not_in_data() -> None:

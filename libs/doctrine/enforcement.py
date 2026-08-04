@@ -123,7 +123,10 @@ PREAMBLE_MARKERS: dict[str, str] = {
     "P5": "Bet the most",
     "P6": "log(0) = -inf",
     "P7": "the answer is to BUY MORE OF IT",
-    "P8": "",                                    # throughput/bar clause lives in the mission text
+    # Was "" -- an honest declaration that P8 reached no model. Closed 2026-08-04: mechanical
+    # enforcement fires after a bar has already been lowered, so the law that most needs to be
+    # stated up front was the one nothing stated.
+    "P8": "THROUGHPUT COMES FROM SCREENING MORE, NEVER FROM PASSING MORE",
     "P9": "no principle may be revised toward conservatism",
     "P10": "EVERYTHING IS AN ESTIMATE",
     "P11": "RETIREMENT NEEDS EVIDENCE",
