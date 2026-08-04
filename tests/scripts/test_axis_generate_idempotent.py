@@ -46,9 +46,14 @@ def test_a_second_run_pre_registers_nothing_new() -> None:
         assert after_second == after_first, (
             f"the queue grew from {after_first} to {after_second} on a REPEAT run -- every "
             "cadence tick would fabricate another pre-registration date")
-        assert "skipped" in r.stdout, (
-            "a run that pre-registered nothing must SAY so: 'nothing new' and 'the script did "
-            "nothing' look identical from outside, and only the first is a healthy cycle")
+        # A run that registered nothing must SAY so -- "nothing new" and "the script did nothing"
+        # look identical from outside, and only the first is a healthy cycle. Asserted on the
+        # MEANING rather than one exact phrase: this test first pinned the word "skipped", then
+        # the script gained an early return whose message says "nothing new to pre-register", and
+        # the test failed for a wording change while the behaviour was correct. A test that breaks
+        # on rephrasing teaches people to loosen it.
+        said_so = any(w in r.stdout for w in ("nothing new", "already registered", "skipped"))
+        assert said_so, f"a no-op run reported nothing at all: {r.stdout[-300:]!r}"
     finally:
         for p, text in backup.items():
             p.write_text(text, "utf-8")

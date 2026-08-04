@@ -1,0 +1,22 @@
+{
+ "_": "HIGH-WATER MARKS for test coverage. Raised by --update, NEVER lowered by code. The money path is tracked separately because a repo-wide average lets order-path coverage fall while research tests keep the aggregate up -- the average hides exactly the number worth watching.",
+ "updated": "2026-08-04T00:52:28.520810+00:00",
+ "high_water": {
+  "repo_pct": 88.2,
+  "money_path_pct": 43.51
+ },
+ "measured": {
+  "repo_pct": 88.2,
+  "money_path_pct": 43.51,
+  "money_path_statements": 740
+ },
+ "money_path_files": [
+  "libs/execution/binance_live.py",
+  "libs/execution/binance_testnet.py",
+  "libs/execution/binance_spot_live.py",
+  "libs/execution/binance_spot_testnet.py",
+  "libs/execution/staging.py"
+ ],
+ "slack_pp": 1.0,
+ "next_ceiling": "money-path coverage at parity with the repo. It sits at 41.6% against 88.1% everywhere else, which is backwards: a bug in a research script costs a cycle, a bug on the order path walks a short through zero. Parity is not the end either -- the ceiling after it is coverage of the FAILURE branches specifically, since every incident this desk has had came from an error path, not a happy one."
+}
