@@ -11,7 +11,7 @@ _Seeded 2026-07-18; every family unvisited -- the first run biases per the rotat
 | Code (GitHub/Kaggle) | 2026-07-19 | 1 | operator-named dig: ai_quant_trade, Qbot, QuantDinger, Vibe-Trading (READMEs+issues) + Hummingbot/Freqtrade issues — all infra/framework shells or equity factor zoos, 0 crypto-perp strategy logic; 0 cards but confirmed funding-arb is now commoditized into hummingbot's v2_funding_rate_arb.py (crowding evidence) |
 | Academic (SSRN/arXiv) | never | 0 | untouched this session (RSRS is sell-side research, not SSRN/arXiv) — priority next run |
 | Records (contests/CTA) | 2026-08-04 | 2 | s1 (07-25): Bitcointalk "Automated Trading Contest" (CryptoTrader.org rounds #1-#5) → in-sample-vs-forward natural experiment entry. **s2 (08-04): the Quantopian FUND record mined via HN trees → graveyard `crowdsourced_backtest_selection_fund` (backtest-Sharpe>2.5 selection → −3% live vs SPX +6.6% → capital returned Feb-2020) — the at-scale companion to s1's entry.** Kaggle G-Research + Numerai post-mortems + HN 9152332 contest-winner tree still untouched |
-| Non-English forums | 2026-07-26 | 2 | s1 (07-19): Chinese RSRS + funding-arb (CSDN/VeighNa/BigQuant/Zhihu/FMZ) + JP note.com — RSRS EV-killed, ML-funding-rate graveyard-matched. **s2 (07-26, CN frontier miner): axis #76 usdt-cny-otc-premium UN-PARKED — "no clean free API" REFUTED, 3 keyless routes, 591d history reconstructed (OP-031 CDX-replay of a capped JSON API), Stage-A screened 4/4 cells → no promotable edge but the catalogued mechanism's SIGN and MAGNITUDE priors both falsified. New: OP-031, OP-032, CN lexicon.** Era-archaeology (banzhuan/8btc/ChainNode/Tieba) still UNSTARTED — first item next run |
+| Non-English forums | 2026-08-04 | 3 | s1 (07-19): Chinese RSRS + funding-arb (CSDN/VeighNa/BigQuant/Zhihu/FMZ) + JP note.com — RSRS EV-killed, ML-funding-rate graveyard-matched. s2 (07-26, CN frontier miner): axis #76 usdt-cny-otc-premium UN-PARKED — "no clean free API" REFUTED, 3 keyless routes, 591d history reconstructed (OP-031), Stage-A 4/4 cells → no promotable edge but SIGN and MAGNITUDE priors falsified. New: OP-031, OP-032, CN lexicon. **s3 (08-04, CN frontier miner): era-archaeology STARTED at depth — 8btc board CDX-mapped (993 urls, 39 boards), 3 era windows (2013 ban / 2017 freeze / 94 exodus) mined to reply-depth ≥2 → graveyard 5th instance adds the premium-SIGN law (coin-leg frozen → domestic discount; fiat-leg frozen → premium) + primary-source 94 diaspora record; LTW-2022 momentum "non-replication" REVERSED by code forensics (pd.cut fat-tail trap → OP-047); Gitee access-mapped (discovery-walled/content-open → OP-048); +12 lexicon rows. Board 233 (BitMEX 合约党, ~1000pp) surveyed, unmined.** |
 | AI/HF documentation | 2026-07-19 | 1 | touched only incidentally via Vibe-Trading (AI trading-agent platform) + ai_quant_trade (LLM module) — both infra, not alpha-discovery-process documentation; weak coverage, revisit properly next run |
 
 ## COVERAGE REALITY vs DIRECTIVE (honesty record, 2026-07-20)
@@ -388,3 +388,98 @@ board-tail pagination + OP-020 whole-thread extraction, now that OP-033 makes th
 OPEN QUESTION CARRIED (diaspora, standing): CNY OTC has left Huobi (`totalCount=0` on a live 200) — the
 books are now on OKX C2C and Binance P2P. Where did the *discussion* go? (OKX/Bitget/Gate CN
 communities, CN-language Telegram/X, overseas Zhihu mirrors.)
+
+### 2026-08-04 session 2 (CN frontier miner) — IN PROGRESS (write-first note; updated as items resolve)
+RESUME STATE: mine gate BACKLOG-CLEAR (all 3 prior cards disposed). source_backlog: 0 pending
+technical verification; the 3 pending LEGITIMACY decisions (Upbit portal, Glassnode/CryptoQuant
+vendor-replacement, NAVER DataLab) are KR-region/vendor-policy items already tracked by the backlog
+itself — outside CN scope, not silently skipped, named here. Generation priors favour
+data_axis_watchlist class (0.571 conversion). Prior session's named NEXT items are this run's items.
+
+ITEMS THIS RUN (bounded per completion contract — depth maxed, breadth bounded):
+1. **ERA-ARCHAEOLOGY: 8btc.com `forum-*` era boards, section-by-section** — OP-034 (CDX slug index +
+   length triage + gzip sniff) to map the dead board into a FINITE crawl, OP-021 era-seek for the
+   banzhuan / 94 (Sept-2017) / 2013 windows, OP-033 GBK decode, reply-chain ≥2 on every thread taken.
+   Graveyard-check before carding; every new slang term → lexicon. Goal: section map + highest-value
+   era threads mined; claim EXHAUSTED only per-section, honestly.
+2. **Gitee / CN-GitHub repo chain per OP-001** (vn.py lineage, factor libraries) — deferred twice
+   (s1 item 3 unstarted both runs); takes real budget this run. Forks/issues/contributor-chain depth.
+3. IF BUDGET REMAINS: diaspora open question (where CN OTC discussion went) — one probe, else recarry.
+STATUS: **RUN COMPLETE — items 1 and 2 CLOSED to depth; item 3 honestly recarried (no probe made).**
+
+#### ITEM 1 — 8btc era boards: CDX-MAPPED + three era windows mined to reply-depth. [§33: killed -> docs/graveyard.md era_crossvenue_fiat_premium_arb 5th instance]
+- **BOARD MAP (OP-034 step 1, durable):** 993 archived `forum-*` URLs; board 2 = 比特币论坛 (main BTC,
+  max archived page 1009 — THE era ground), 43 = 竞争币/山寨币 (166), 82 = 币界主版 (1000), 233 =
+  **BitMEX board (1000 pages — 合约党 era, unmined)**, 61 = 区块链 (1000), 39 = 挖矿, 147 = BCC, 186 =
+  EOS, 65 = 综合区, 163 = 读书会, 118 = 链友活动, 143 = Bytom, 229 = Bibox. Titles decode gb2312
+  (OP-033). Board-2 capture density lands EXACTLY on era pivots: 2013-09..12 (33 captures), freeze
+  spring 2017-02..06 (~21), 94 exodus 2017-09..10 (32).
+- **ERA-SEEK METHOD NOTE (feeds OP-021/034):** for a dead board, era-seek by CAPTURE TIMESTAMP of
+  page 1-9, not by deep-page offset — a 2017-09 capture of page 1 IS the 94-era thread list. Deep
+  pages at late timestamps show the *founding* era instead (2013-12 capture of page 26 = 2011-12
+  Bitcoinica/Pirateat40 lore, low value).
+- **4 threads mined to reply-depth ≥2 (GBK, both template eras parsed):** 50730 (freeze-era 30% LTC
+  spread, depth-4 chain), 74908 (94 diaspora decision, 29 posts/2 pages), 75923 (HK Bitfinex exit
+  rail), 72814 (banzhuan under exodus load). → **graveyard 5th instance** of
+  era_crossvenue_fiat_premium_arb with the family's missing variable: **barrier SIDE sets premium
+  SIGN** (coin leg frozen → domestic DISCOUNT, spring 2017, LTC −30%; fiat leg frozen → domestic
+  premium) + venue-side latency detail (Bitfinex hot-wallet depletion 09-10) + primary-source
+  diaspora record (retail→wallet hodl; traders→B网/Bitfinex-HK; size→USD quota, never returns;
+  **承兑商 network observably BORN in-thread 09-16/17**; GFW exchange-block dated 2017-09-20).
+- **UNREADABLE (zero CDX captures, do not re-find):** thread-73564 (承兑商 birth thread proper),
+  thread-50836 (国行差价1200). Same class as chainnode post/70078.
+- **NEXT-RUN CANDIDATES:** thread-73825 (Bitfinex BVI structure explainer, 2 full captures,
+  cross-referenced twice); board 233 BitMEX 合约党 era; 2013-12 ban reaction (needs the 302-retry
+  with -L on 20131225 forum-2-6).
+- LEXICON: +12 rows (郭嘉/辣条/内盘外盘/B网P网果盘/央妈/被墙/提币提现/转外网/结售汇/搬砖砸脚), all
+  era-text-confirmed. OP-033 addendum: per-POST charset failures + dual date-markup template eras.
+- Wayback ops note: ~1/3 of id_ fetches 000/302 on first try; sequential + 8s backoff recovers all
+  but two 302-looping captures (20170911 forum-2-1/2 — alternate timestamps exist, not chased).
+
+#### ITEM 2 — OP-001 chain on CN quant repos: one false falsification REVERSED + Gitee access map. [§33: killed -> docs/graveyard.md ltw2022_crypto_momentum_nonreplication_claim] [§33: wired -> docs/research/search_operator_library.md OP-047+OP-048]
+- **Chain A (GitHub, mined to OP-001 depth — README→blogs→code→issue thread→all 8 forks→both
+  commenters' profiles):** `YungFuu/Cryptocurrency-trading-strategy-replication` (39★, HKU course) —
+  the only public CN replication of **Liu-Tsyvinski-Wu (J. Finance 2022)** crypto size/momentum
+  factors. Surface reading = "momentum fails to replicate" (author + an independent second
+  replicator in issue #1). CODE FORENSICS REVERSED IT: momentum binned with `pd.cut` (equal-width
+  on fat tails → outlier detector), size with `qcut`; selection helper fits bin edges on the pooled
+  panel (look-ahead); author's stated method is post-hoc sign selection. → graveyard row kills the
+  CLAIM (evidence about nothing, either direction), OP-047 generalises the check, and the second
+  replicator's EW/VW significance-flip survives as weak signal `ltw_ewvw_significance_flip` (with a
+  named promotion check: audit desk crypto_xsec weighting VW-vs-EW). Forks: all 8 = same-day
+  classmate snapshots, ZERO diverged — chain honestly exhausted. License=None → no code reuse (§13).
+- **Novelty-gate kill made explicitly (no card):** Alpha101/191-on-crypto factor batteries
+  (popbo/alphas 572★ etc.) = the price-formulaic family the desk's 420/0 campaign already refuted;
+  re-testing would burn multiplicity budget on graveyard ground. Named so no future CN run re-finds
+  it as "opportunity".
+- **Chain B (Gitee ground): four-route probe → OP-048 access map.** robots clean (no Claude block,
+  crawl-delay 1, /api/v* disallowed); API v5 search = silent empty anon; so.gitee.com search = 401
+  anon (Indexea widget, id public in bundle); /explore + /search = nox JS-challenge 405; **repo
+  landing pages = 200 with browser UA**. Verdict: discovery-walled, content-open — discover via
+  Baidu `site:gitee.com` (OP-002) or GitHub-side, read on site. Wayback holds explore taxonomy
+  2021-2025: NO crypto-quant category exists (`quantum` = quantum computing). Not a §13 refusal;
+  re-probe quarterly.
+- vnpy lineage note: crypto gateways live in **veighna-global** (VeighNa Evo: vnpy_okx 173★ active
+  2026-06) — engine code, not alpha; low conversion prior; not carded.
+ITEM 3 (diaspora probe): **NOT DONE — recarried** (budget went to chain-A forensics; that trade was
+right: a false negative entering crypto_xsec priors outprices one diaspora probe).
+DEPTH LINE (per mandate, honest):
+- 8btc era boards (item 1): board index CDX-EXHAUSTED (993/993 urls mapped, 39 boards titled from
+  14 fetches + size ranks); era windows: 6 board-pages read, 4 threads mined to reply-chain ≥2
+  (50730 to depth 4); board 233 (BitMEX/合约党, ~1000pp) surveyed only — NOT exhausted.
+- YungFuu chain (item 2): EXHAUSTED — README+2 blogs+full .py+issue thread (3 comments)+8/8 forks
+  (all dead snapshots)+both commenters' repo lists. Depth surfaced what surface could not: the
+  binning bug (code layer) reversing the issue thread's claim (comment layer).
+- Gitee (item 2): route-mapped to its floor for this box; content layer deliberately not crawled
+  (discovery must come from outside; nothing yet worth fetching by path).
+WHICH ARTIFACT ON DISK IS DIFFERENT BECAUSE OF WHAT WAS MINED (§33 closing question):
+docs/graveyard.md (5th-instance section + ltw row), docs/research/search_operator_library.md
+(OP-047, OP-048, OP-033 addendum, +12 lexicon rows), docs/research/weak_signal_registry.md
+(ltw_ewvw_significance_flip), data/research_memory (3 rows: ef7ecc/fb1c64/56f118), this file.
+NEXT RUN TAKES FIRST: (1) thread-73825 (Bitfinex BVI explainer, 2 full captures) + 2013-12 ban
+window (-L retry on 20131225 forum-2-6); (2) board 233 BitMEX 合约党 era-seek (unmined 1000pp
+ground); (3) item 3 diaspora probe (recarried twice — do it or kill it with a reason).
+OPEN QUESTION CARRIED (diaspora, standing): unchanged from s1, now with the 94-era precedent that
+conversion moved to PRIVATE QQ/WeChat groups within 48h of the ban — the public-ground thinness is
+structural, so the probe should target overseas-hosted CN communities (OKX/Gate CN boards, CN X),
+not mainland mirrors.

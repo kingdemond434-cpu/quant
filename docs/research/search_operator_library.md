@@ -467,6 +467,16 @@ marked ✓ were CONFIRMED IN USE this run (2026-07-26) against live CN pages/API
 | 梭哈 | suoha | all-in (from "show hand") | retail sentiment marker |
 | 合约党 | heyue dang | the perp-contract crowd | finds derivatives-retail cohort discussion |
 | 走势图 | zoushitu | trend chart | pairs with 历史 to find chart pages that have a data endpoint behind them |
+| 内盘 / 外盘 | neipan / waipan | domestic vs overseas venues (also: a DEX's internal book, e.g. BTS 内盘) | ✓(08-04, era text) pair with 差价 to find spread/premium threads across ALL eras |
+| B网 / P网 / 果盘 | B-wang / P-wang / guopan | Bittrex / Poloniex / collectively the domestic venues (era) | ✓ single-letter venue names defeat keyword search — search the NICKNAME, not "Bittrex" |
+| 辣条 | latiao | "spicy stick" = LTC/Litecoin | ✓(08-04) finds LTC threads no English or official term reaches |
+| 郭嘉 | guojia | censorship homophone for 国家 (the state); Three-Kingdoms name used to dodge filters | ✓(08-04, two posts) THE censorship-evolution class the mandate predicts — search it to find state-action threads that survived moderation |
+| 央妈 | yangma | "central mama" = PBOC | ✓(08-04) finds central-bank-action threads in retail register |
+| 被墙 | beiqiang | GFW-blocked | ✓(08-04) dates access-barrier events from primary sources (e.g. 2017-09-20 exchange blocking) |
+| 提币 / 提现 | tibi / tixian | withdraw COINS vs withdraw FIAT — the freeze-era distinction that sets premium sign | ✓(08-04) the pair disambiguates which LEG a barrier froze; search both, never one |
+| 转外网 | zhuan waiwang | "move to the overseas net" — the diaspora act itself | ✓(08-04) THE diaspora search key for every CN regime event |
+| 结售汇 | jieshouhui | official FX settlement/purchase system | ✓(08-04) finds the fiat-rail chokepoint discussion |
+| 搬砖砸脚 | banzhuan zajiao | "dropping the brick on your own foot" — in-flight transfer loss | era name for transfer-latency risk (inbox #70; confirmed s1) |
 
 ### OP-033 legacy regional forums are NOT UTF-8 — decode before you judge     [active]
 class: extraction
@@ -487,6 +497,12 @@ adaptations: CN gbk/gb2312 (simplified, mainland), big5 (traditional, TW/HK); KR
   operator are permanently paired. Pair with OP-027 (a zero may be lexical) and OP-030 (a zero is a
   claim about your method until proven otherwise): a mojibake page is the *extraction-layer* form of the
   same false negative.
+addendum (CN miner s2, 2026-08-04): charset failures can be PER-POST, not per-page — user-pasted
+  content inside an otherwise-clean GBK page can carry big5/utf-8 fragments (8btc thread-75923 post #6:
+  clean page, mojibake post). A garbled POST is not a garbled PAGE: keep the page, flag the post. Also:
+  the SAME thread's page-1 and page-2 captures can come from different template eras with different
+  date markup (relative-date `<span title="...">` vs literal) — parse both forms before concluding a
+  page has "no posts".
 counterfactual: MEDIUM-HIGH — the thread was the run's only era find; discarding it as corrupt would
   have produced a false "CN era boards are unreadable" conclusion and, on the video-log precedent,
   could have gated a purchase or a "ground unreachable" note.
@@ -515,3 +531,58 @@ adaptations: universal to any dead board (Discuz/phpBB/vBulletin/Rails/Discourse
 counterfactual: LOW-MED — Wayback digging is common; ranking captures by CDX LENGTH to dodge
   JS shells and the gzip magic-byte sniff are both desk discipline that turns "archive is broken"
   false negatives into reads.
+
+### OP-047 equal-width binning on fat tails voids a factor test (pd.cut ≠ pd.qcut)   [active]
+_(numbered past OP-046: this working tree is the forked branch whose library ends at OP-034, but
+master already holds OP-035..046 — skipping ahead avoids a renumber collision at merge, per the
+EN-s4 union+renumber-once convention.)_
+class: verification
+origin: CN frontier miner s2 (2026-08-04), forensics on the 39-star HKU replication of
+  Liu-Tsyvinski-Wu (J. Finance 2022)   validated-gain: reversed a false falsification before it
+  entered the desk's priors — the repo + its issue thread read as "LTW crypto momentum fails to
+  replicate", but the momentum functions bin with `pd.cut(week_ret_lag1, bins=5)` = FIVE EQUAL-WIDTH
+  bins over the RANGE of fat-tailed weekly crypto returns, so "quintile 5" is really the 1-3 moonshot
+  outliers and "quintile 1" the worst crashes; the size functions correctly use `pd.qcut`. The
+  "momentum test" never tested momentum.
+technique: in ANY third-party factor code (and our own), check the binning primitive against the
+  variable's distribution BEFORE reading the results table: equal-frequency (qcut/percentile) is the
+  factor-literature convention; equal-width (cut/linspace) on heavy-tailed inputs concentrates ~all
+  mass in interior bins and turns the extreme bins into outlier detectors. Red flags: `pd.cut` on
+  returns/volume/mcap; bin counts wildly unequal; "top quintile" holding <5 names. Second forensic
+  layer from the same repo: selection helper reassigned from the FULL panel (`data = df[...]` after
+  `data = df[week==t-1]`), so bin edges were fit on pooled history = look-ahead edges + cross-week
+  name pollution. A replication with either defect is evidence about NOTHING (neither for nor
+  against the paper) — but its ISSUE THREAD can still carry independent evidence: here a second
+  replicator's EW-vs-VW significance flip (logged as a weak signal) survives the code's death.
+adaptations: universal to all regions' practitioner code; highest density in course-project and
+  blog-tutorial repos (CN 课程复现/知乎 walkthroughs, KR/JP blog backtests, RU habr posts) where the
+  author states methods honestly enough to audit. Pair with OP-030 (a zero is a claim about the
+  method): a NON-replication is a claim about the replication's method until the binning is checked.
+counterfactual: MEDIUM-HIGH — a digger citing "CN replication: LTW momentum insignificant" without
+  this check would have banked a false negative against the exact factor family the desk trades
+  cross-sectionally.
+
+### OP-048 Gitee is discovery-walled but content-open — route around, not through   [active]
+class: source-route
+origin: CN frontier miner s2 (2026-08-04), four-route probe
+validated-gain: turned "Gitee unreachable" into a working access map in 6 calls.
+technique: measured state 2026-08-04, from a datacenter IP with curl: (1) robots.txt is allow-all
+  (crawl-delay 1, no Claude-by-name block) but disallows /api/v*, /raw/*, /tree/*; (2) API v5
+  search answers HTTP 200 with an EMPTY array anonymously — a silent null, not an error (OP-030
+  class: looks like "no results", is actually "no access"); (3) web search 301s to so.gitee.com, a
+  JS SPA whose Indexea widget backend (`so.gitee.com/v1/widgets/search/<id>`, widget id readable in
+  the public bundle) returns 401 anonymously; (4) /explore and /search serve a "nox" JS anti-bot
+  challenge (HTTP 405) to non-browser clients — BUT (5) direct REPO LANDING PAGES return HTTP 200
+  to a plain browser UA. So: content reachable if you already hold the path; every on-site
+  discovery surface is walled. DISCOVER ELSEWHERE, READ ON SITE: (a) Baidu/Bing `site:gitee.com`
+  operators (OP-002), (b) GitHub-side discovery then check the author's Gitee for the CN-only
+  counterpart, (c) Wayback CDX of gitee.com/explore* as a frozen category index (captures span
+  2021-2025 with lang/license/order facets; taxonomy holds NO crypto-quant category — `quantum` is
+  quantum computing, so category browse was never the route).
+adaptations: the SHAPE generalises (JP seat's bitFlyer per-hostname finding is the same law:
+  blocks are per-SURFACE, not per-site — always probe content routes after a discovery surface
+  blocks). KR: naver blocks by name in robots (hard stop, different class). Re-probe Gitee
+  quarterly; anti-bot walls are config, not policy, and this one carries no §13 signal (no licence
+  or ToS refusal involved).
+counterfactual: MED — the natural conclusion after /explore 405s is "Gitee is closed"; the desk's
+  region ground would have been falsely written off.

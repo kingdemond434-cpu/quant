@@ -136,11 +136,63 @@ more closed in 2026 than 2017, and the desk holds no way to test a 2017-specific
 the rail was frozen and the premium was enormous; in 2026 the capital barrier is *higher* but a deep
 professional 承兑商 (OTC merchant) network arbitrages it to a quarter of Korea's. Barrier height sets
 the premium's ceiling; **merchant density sets where inside that ceiling it actually sits.**
+
+---
+
+### era_crossvenue_fiat_premium_arb — FIFTH INSTANCE (CN 2017, two eras in one year) — SIGN MECHANISM ADDED
+_CN frontier miner, 2026-08-04. Basis: `economic`. Same dead class, fifth independent instance; added
+because it supplies the one variable the rule still lacked: what sets the premium's **SIGN**._
+
+**SOURCES (dead-forest, Wayback-only, all reply-mined ≥2 deep, GBK per OP-033).**
+(a) `8btc.com/thread-50730-1-1.html` 「辣条内外盘差价高达30%，醉了」(2017-04-06, capture
+`20170409041105`) — freeze-era, 14 posts, quoted chains to depth 4;
+(b) `thread-74908` 「政策出台后，各位是准备提现RMB还是转外网继续持有？」(2017-09-15→23, pages 1+2, 29
+posts) — 94-exodus diaspora thread;
+(c) `thread-75923` 「igaowei：香港bitfinex平台，香港开银行帐户，BTC换港币，再转人民币」(2017-09-20→23,
+pages 1+2) — exit-rail mechanics;
+(d) `thread-72814` 「[搬砖求带]bitfinex连20个BTC都提不出来?」(2017-09-10/11) — banzhuan under exodus load.
+
+**THE NEW VARIABLE: BARRIER *SIDE* SETS THE PREMIUM'S SIGN.** During the Feb–May 2017 PBOC withdrawal
+freeze, the **coin leg** was frozen (提币 halted; fiat deposits/withdrawals still open) and the LTC
+domestic/overseas gap ran to **30% with the DOMESTIC side CHEAP** — thread (a)'s depth-4 chain states
+the equilibrium outright: exchanges dare not arb their own book against the PBOC (post #3), big clients
+「场外卖了币买在场内」 (sell OTC, rebuy in-venue at the discount, post #5), and the closing rebuttal —
+「差价那么大。请问买家在哪？」 *"at that spread, where are the buyers?"* — is trapped-capital equilibrium
+in one sentence: no exit rail, no marginal buyer, discount persists. In 2013→2021 capital-control eras
+the **fiat leg** is the frozen one and the domestic side trades at a PREMIUM. So the family's rule is
+now three-factor: **sign = which leg the barrier freezes (coin frozen → domestic discount; fiat frozen
+→ domestic premium); magnitude ceiling = barrier height; position inside the ceiling = merchant
+density.** A depth-1 counter-narrative in (a) (post #10, sourced to 「相关人员」): the freeze was partly
+the platforms' own choice under a KYC-traceability order, 「假币太多」 — i.e. reserve quality, not only
+regulation, froze the leg. Uncorroborated, preserved as era testimony (post #13 rebuts it with Yunbi's
+later fate).
+
+**WHY THIS STAYS DEAD AS A TRADE.** Same kill as instances 1–4: both sides of the 2017 gap were rent on
+a barrier only rail-holders could cross — and thread (d) adds the venue-side detail that even the OPEN
+rail degraded exactly when the herd moved (Bitfinex hot-wallet depletion queued 20-BTC withdrawals for
+hours on 2017-09-10; the era veteran's reply distinguishes it from insolvency). Transfer latency spikes
+when everyone needs the rail at once: in-flight risk is CORRELATED with the regime event that makes the
+gap attractive. The premium family is information, never arb.
+
+**DIASPORA RECORD (dark-forest #3, primary-source answer for the 94 event).** Threads (b)+(c), posted
+inside the two weeks after the 2017-09-04 announcement, document where the CN market went, by size class:
+retail → 黑市/direct-to-wallet hodl (dominant vote in (b)); traders → 「B网」Bittrex and Bitfinex via the
+HK rail (BTC→HKD→HK bank→RMB, with replies flagging 结售汇 settlement and physical cash-over-border as
+the residual chokepoints, and one asking for JP/KR venues because HK is 「触手可及」 within Beijing's
+reach); size → official USD quota at 「央妈」 then overseas, with the era's own judgment 「这部分钱估计
+是不会再回来了」 (that capital never returns); and the conversion layer → OTC dealer ads forming
+**in-thread within 48 hours** (QQ group 91694750, WeChat dealers soliciting fee-free conversion,
+2017-09-16/17) — the observable BIRTH of the 承兑商 merchant network that by 2026 grinds the CNY premium
+to 0.580% std. GFW blocking of overseas exchange sites is dated by a primary source: 2017-09-20 (「今天
+所有的国外交易所的网站都被墙了」) — a barrier-height step function with a date. 「转外网」's boards are
+dead but the pattern (private QQ/WeChat groups, not public boards) is the honest prior for why the 2026
+OTC-discussion diaspora question keeps returning thin public ground.
 | smart_dumb_divergence (elite top-trader position ratio MINUS retail account ratio) | pooled mean IC +0.0032 (t +0.15, n=5 majors, 4h, 180 bars); 0/20 per-symbol screens passed | `no_edge` | THE DIRECT TEST of the Elite-Trader-Intelligence premise ('do skilled traders lead the crowd?'). Binance topLongShortPositionRatio (elite, size-weighted) minus globalLongShortAccountRatio (retail crowd) -- the two genuinely diverge in LEVEL (66.8% vs 55.1% long) but the divergence carries ZERO forward information. The 'smart money vs dumb money' signal is a narrative, not an edge, at aggregate 4h granularity. |
 | elite_account_ratio (top-trader headcount long ratio) | pooled mean IC -0.0101 (t -0.32, n=5) | `no_edge` | Elite headcount positioning carries no forward information; only the size-weighted POSITION variant showed any sign consistency (logged as a candidate, not wired). |
 | hyperliquid_trader_skill_persistence (41k-address leaderboard, 8,026 filtered, formation/holding rank test) | ADJACENT windows rho +0.120 (t +10.9) BUT with a ~3-week GAP rho FLIPS to -0.064 (t -5.8); long-horizon variant -0.060 (t -5.4); gapped decile spreads insignificant (t 1.33 / 1.15) | `position_overlap_artifact` | THE foundational test behind copytrading: does past trader performance predict future performance? The apparent persistence exists ONLY when formation and holding windows TOUCH -- a trader holding one position across the boundary yields mechanically correlated PnL (an open position, not skill); BTC's mildly-trending weekly path (-5.9/+6.8/+0.2/+1.5/+1.0/-0.0%) makes persistently-long accounts look consistently skilled. Insert a 3-week gap and it INVERTS to mild reversion. Robust in the safe direction: the leaderboard is a current snapshot so blown-up accounts are ABSENT, which biases persistence UP -- true persistence is <= -0.064. Top-decile forward returns were NEGATIVE in every variant (-1.7%, -3.4%, -28.6%). Kills the 26-layer Elite-Trader-Intelligence spec at its premise: selecting past winners selects luck. Do not re-test aggregate or per-trader copytrading without a GAPPED design. |
 | hl_elite_directional_order_flow (Hyperliquid, performance-blind cohorts, 4h signed taker flow vs next-bucket return) | HFT-cohort BTC IC -0.139 (underpowered, 80 bkts); DIRECTIONAL cohort (260) BTC IC +0.157 / ETH +0.056, pooled t +3.00 on n=2 -- BUT breadth re-run (320, same rule, +60 traders) FLIPPED BTC to IC -0.033 + TIMING-ARTIFACT (same-period +0.202 > 0.20 gate); ETH IC +0.110 vs tercile spread -0.524% (opposite signs); 14/16 coins too thin | `unstable_artifact`/`no_edge` | Mechanism #3 of 3 pre-registered (after aggregate-positioning t+0.15 and gapped skill-persistence -0.064 both failed). Tested the actual copytrading mechanism: does elite flow LEAD price? Designed around both circularity traps (cohort selected on VOLUME/TURNOVER, never performance; flow(t) vs ret(t+1) only). Self-caught design flaw mid-experiment: top-VOLUME selection picks HFT/market-makers (2000 fills in 30 MINUTES) whose flow is inventory not conviction -- spec layer 11's own rule -- so re-selected on TURNOVER RATIO (1-25x/mo = discretionary). KILLED BY INSTABILITY: adding 60 traders to the SAME rule inverted BTC's IC sign. A real edge does not flip under cohort perturbation. Root mechanism: taker flow is CONCURRENT with price (buying moves price) -- it fails de-contamination, it does not lead. STRUCTURAL WALL: userFills caps at 2000 fills/address (30 min for the biggest accounts), so historical breadth is impossible from the snapshot API -- only forward accumulation could build it. Do not re-test elite/copytrade flow without >=8 coins AND cohort-perturbation stability AND a gapped/de-contaminated design. |
 | hl_longterm_riskadjusted_skill (229 traders, median 621d / max 1195d verified on-chain records, own-curve 60/40 formation-holding split) | formation SHARPE -> holding return rho -0.019 (t -0.28) = ZERO; consistency t +0.45; total return t +0.73; cohort holding mean -3.3%, median -11.9%, only 40% positive | `no_predictive_power` | THE strongest version of the trader-skill hypothesis, built after the principal correctly objected that earlier tests used a ONE-WEEK holding window, no track-record filter, and raw-PnL ranking. Fixed all three: multi-YEAR records, risk-adjusted selection (Sharpe/consistency/drawdown), long-horizon holding, natural gap via own-curve split, pnlHistory normalised by contemporaneous accountValue so deposits are not counted as returns. Selecting proven multi-year traders by past Sharpe has ZERO forward predictive power. ONE PARTIAL EXCEPTION worth keeping: DRAWDOWN CONTROL persisted (rho +0.135, t +2.05; top-quartile holding +2.3% vs bottom -18.0%) -- does NOT clear the 4-test multiplicity bar (~2.5) so not an edge, but consistent with the classic finding that RISK characteristics persist while RETURNS do not. Also settles the 'dig deeper / Chinese / niche verified traders' objection: HL on-chain records are the STRONGEST available evidence class (cryptographically verifiable, losers included); self-reported or platform-curated track records are strictly weaker, and enlarging the search pool AMPLIFIES the winner's curse (max-order statistic gets more luck-dominated as N grows). |
+| ltw2022_crypto_momentum_nonreplication_claim (CN course-replication of Liu-Tsyvinski-Wu, J.Finance 2022) | GitHub YungFuu/Cryptocurrency-trading-strategy-replication (39★, HKU MFIN7037, 2022) + its issue #1: author reports "some momentum factors insignificant"; independent replicator LeoLi2002 reports momentum non-replication AND an EW-vs-VW significance/sign flip. FORENSICS (CN miner s2, 2026-08-04, code read in full): the momentum functions bin with **`pd.cut(week_ret_lagN, bins=5)` — equal-WIDTH bins over fat-tailed weekly crypto returns** (the size functions correctly use `pd.qcut`), so "Q5−Q1" is a moonshot-outlier detector, not a momentum quintile spread; AND the selection helper reassigns from the full panel (`data = df[df.mcap>1e6]` overwrites the week filter), fitting bin edges on pooled history = look-ahead edges + cross-week name pollution; AND the author's stated method is post-hoc sign selection (「只要显著…根据系数正负采取做多做空」). All 8 forks are same-day classmate snapshots, zero divergence. | `replication_invalid` — kills the CLAIM, not the paper | The kill is of the NON-replication: this source is evidence about nothing, in either direction — do NOT cite it against LTW momentum (which crypto cross-sectional priors lean on), and do NOT cite its positive size-factor tables either (same pooled-bin defect). What survives the code's death is the SECOND replicator's independent EW/VW fragility report (own code, unseen) → weak_signal_registry `ltw_ewvw_significance_flip`. Genre lesson: course/blog replications state methods honestly enough to audit — audit the BINNING PRIMITIVE first (OP-047); a "failed replication" found in any region's practitioner web is a claim about the replication's method until proven otherwise. License note: repo has NO license → findings summarised, no code reused (§13). |
 
 <!-- RESTORED 2026-08-04 (EN frontier miner): this entry was written 2026-08-01 in commit bd32eda on master, but the working tree forked to branch claude/llm-auto-upgrade-verify-gcjac3 at 3bf89cd (07-29) and the entry never reached this line — a §33 vanished-artifact instance created by BRANCH TOPOLOGY, not by an editor. Restored VERBATIM from bd32eda so the knowledge exists on the live line; the branch fork itself is rowed in the recommendation ledger this same run. -->
 

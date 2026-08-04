@@ -186,3 +186,20 @@ price alpha at daily resolution survives — a cross-ASSET input is the one vari
 independence: single path so far. NOT promotable; logged so a second independent observation
 (e.g. a macro-lead paper or another region's era lore) can converge on it.
 promotion-check: none yet.
+
+## ltw_ewvw_significance_flip (2026-08-04, CN frontier miner s2)
+Independent CN replicator (GitHub user LeoLi2002, own unseen code, commenting on the YungFuu
+HKU replication of Liu-Tsyvinski-Wu 2022) reports that in crypto cross-sectional factor
+portfolios, **equal-weighting vs value-weighting flips factor-portfolio significance and even
+the SIGN of significant returns** (「甚至会出现显著性的反转，组合收益率由正显著变为负显著」).
+Mechanism if real: the "factor" return is carried by the microcap/illiquid tail that EW
+overweights — a capacity/implementability red flag for any EW crypto factor result, including
+the desk's own crypto_xsec screens if any are EW. The HOST repo's own momentum test is
+invalidated by OP-047 binning forensics (see graveyard `ltw2022_crypto_momentum_nonreplication_claim`);
+this comment is the one piece of that thread with independent evidentiary value.
+independence: single path (one practitioner's report; the host repo's code does NOT corroborate
+it because the host code is void). Converges with the general SMB-in-crypto capacity literature
+but no second direct observation yet.
+promotion-check: none yet. Promotable to a checkable hypothesis the day the desk's crypto_xsec
+weighting scheme is audited: re-run any live cross-sectional screen VW vs EW and compare signs —
+if a desk factor flips, this stops being weak.
