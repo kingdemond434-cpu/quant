@@ -805,3 +805,13 @@ owner or pull gently if still un-run; (4) マケデコ (market-making) Advent Ca
 sweep (OP-051 lists it, untouched); (5) run novelty gate BEFORE any screen (this run's slip).
 PUSH RECORD: pre-push hook expected ENOENT on this fork (law gate lives on master) — verify by
 running the hook manually; --no-verify per the standing fork corollary if so, recorded here.
+
+PUSH RECORD (L1.37 --no-verify, sanctioned) 2026-08-04 CRO cycle: pre-push fence execs
+scripts/run_law_gate.py, which does not exist on this forked branch -- ENOENT reproduced by
+running the push and reading the hook's own output, not assumed. Third instance of the class
+(EN s4, RU s1, here), and this cycle finally NAMED the cause rather than working around it: the
+tree is forked from master at 3bf89cd and 75 of 125 crontab-referenced scripts are absent,
+run_law_gate.py among them (gap register #88, R0022 scheduled 08-05). Pushed 429aa3c with
+--no-verify per the standing fork corollary and VERIFIED by SHA (local == origin). Nothing that
+exists in this checkout was bypassed. This record retires once the merge lands and the hook can
+actually execute -- at which point --no-verify must stop being routine here.
