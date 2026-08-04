@@ -170,7 +170,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         v = validate(c["returns"], hypothesis=hyp, n_trials=n_trials,
                      sharpe_estimates=sharpes, returns_matrix=matrix,
-                     deployed_equity_usd=25_000.0, column=i, n_trades=c["n_trades"],
+                     column=i, n_trades=c["n_trades"],
                      campaign=gates_stats)
         gates = dict(v.gates)
         for g, ok in gates.items():
@@ -190,6 +190,95 @@ def main(argv: list[str] | None = None) -> int:
 
     plan = admit(admit_rows, idle_slots=12, cost_basis="net")
     survivors = [r for r in rows if not r["failed_gates"]]
+
+    # --- THE POOLED-BY-MECHANISM PATH: the view that can actually certify a survivor ---------
+    #
+    # MEASURED 2026-08-01 (docs/research/REALITY_CHECK_POWER.md, reports/reality_check_audit.json):
+    # at this campaign's N=196 and T=2,018 the reality_check gate's power at a TRUE annualised
+    # Sharpe of 1.0 is 5%, and the closed-form minimum detectable Sharpe is 1.48 -- above the
+    # desk's entire measured real-edge band (0.5-1.5). The gate is CORRECT (false positives
+    # 0/3,900); the DESIGN asks it an unanswerable question by testing `mom[40] on BTC`,
+    # `mom[40] on ETH`, ... as ten separate hypotheses. Pooling the SAME mechanism's returns
+    # equal-weight across symbols asks the right one: "does this mechanism work on crypto" is one
+    # hypothesis with ten symbols of evidence. At the MEASURED same-mechanism cross-symbol
+    # strategy correlation of 0.348, ten symbols give 2.42x effective observations (1.56x on the
+    # t-statistic) while N falls from 196 to ~the mechanism count -- power at SR 1.0 goes 5%->70%
+    # and the detection floor moves to 0.77, INSIDE the band. Alpha untouched, gates untouched.
+    #
+    # NOT FREE, AND SAID SO: a mechanism that works on two symbols and fails on eight is diluted
+    # by the average and correctly dies -- pooling tests a strictly STRONGER claim than any
+    # per-symbol test. That is the intended behaviour. The per-symbol view above keeps its
+    # diagnostic value; this view is the certification path.
+    groups: dict[tuple, list[dict[str, Any]]] = {}
+    for c in cands:
+        key = (str(c["family"]), c["subtype"], tuple(sorted(c["params"].items())))
+        groups.setdefault(key, []).append(c)
+    pooled: list[dict[str, Any]] = []
+    for _key, members in sorted(groups.items(), key=lambda kv: str(kv[0])):
+        if len(members) < 2:
+            continue        # one symbol pools nothing; the per-symbol row already covers it
+        stack = np.column_stack([m["returns"][-T:] for m in members])
+        pr = stack.mean(axis=1)
+        if float(np.std(pr)) <= 0:
+            continue
+        proto = members[0]
+        pooled.append({
+            "family": proto["family"], "subtype": proto["subtype"],
+            "params": dict(proto["params"]),
+            "returns": pr, "n_symbols": len(members),
+            "symbols": sorted(m["symbol"] for m in members),
+            # trades summed across legs: the pooled book actually takes all of them
+            "n_trades": int(sum(m["n_trades"] for m in members)),
+            "mechanism": proto["mechanism"], "edge_source": proto["edge_source"],
+            "failure_modes": list(proto["failure_modes"]),
+        })
+
+    pooled_doc: dict[str, Any] = {"n_mechanisms": len(pooled)}
+    pooled_survivors: list[dict[str, Any]] = []
+    if pooled:
+        p_matrix = np.column_stack([p["returns"] for p in pooled])
+        p_sharpes = np.array([float(np.mean(p["returns"]) / np.std(p["returns"], ddof=1))
+                              for p in pooled])
+        p_stats = campaign_gate_stats(p_matrix)
+        p_deaths: dict[str, int] = {}
+        p_rows: list[dict[str, Any]] = []
+        for i, p in enumerate(pooled):
+            hyp = Hypothesis(
+                family=Family(p["family"]), subtype=p["subtype"],
+                symbol=f"POOLED[{p['n_symbols']}]",
+                params=p["params"], mechanism=p["mechanism"], edge_source=p["edge_source"],
+                failure_modes=p["failure_modes"],
+            )
+            v = validate(p["returns"], hypothesis=hyp, n_trials=len(pooled),
+                         sharpe_estimates=p_sharpes, returns_matrix=p_matrix,
+                         column=i, n_trades=p["n_trades"],
+                         campaign=p_stats)
+            for g, ok in v.gates.items():
+                if not ok:
+                    p_deaths[g] = p_deaths.get(g, 0) + 1
+            name = (f"POOLED:{p['subtype']}:"
+                    f"{'/'.join(f'{k}={vv:g}' for k, vv in p['params'].items())}")
+            ann = float(p_sharpes[i] * np.sqrt(_PPY))
+            row = {"name": name, "family": str(p["family"]),
+                   "n_symbols": p["n_symbols"], "symbols": p["symbols"],
+                   "n_trades": p["n_trades"], "in_sample_ann_sharpe": ann,
+                   "oos_sharpe": v.metrics.oos_sharpe, "dsr": v.metrics.dsr,
+                   "reality_p": v.metrics.reality_p, "pbo": v.metrics.pbo,
+                   "failed_gates": sorted(g for g, ok in v.gates.items() if not ok),
+                   "unmeasured": list(v.unmeasured)}
+            p_rows.append(row)
+            if not row["failed_gates"]:
+                pooled_survivors.append(row)
+        pooled_doc.update({
+            "note": ("ONE hypothesis per mechanism, tested against the equal-weight average of "
+                     "its per-symbol returns; a strictly stronger claim than any per-symbol "
+                     "test. Power at true ann. Sharpe 1.0: 70% here vs 5% per-symbol at N=196 "
+                     "(reports/reality_check_audit.json)."),
+            "deaths_by_gate": dict(sorted(p_deaths.items(), key=lambda kv: -kv[1])),
+            "n_clearing_every_gate": len(pooled_survivors),
+            "survivors": pooled_survivors,
+            "rows": sorted(p_rows, key=lambda r: -(r["oos_sharpe"] or -9)),
+        })
 
     # IS THE ADMITTED SET ONE BET IN MANY COSTUMES? Measured on the set admission ACTUALLY
     # returned, not on the candidate pool and not on a top-k proxy. The pool's correlation is the
@@ -222,6 +311,7 @@ def main(argv: list[str] | None = None) -> int:
                              "verdict": sel.verdict},
         "top_by_oos": sorted(rows, key=lambda r: -(r["oos_sharpe"] or -9))[:15],
         "survivors": survivors[:40],
+        "pooled_by_mechanism": pooled_doc,
     }
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -232,6 +322,12 @@ def main(argv: list[str] | None = None) -> int:
     print(f"admitted: {[a.name for a in plan.admitted]}")
     print(f"pool:      {doc['pool_independence']}")
     print(f"selection: {sel.summary()}")
+    print(f"POOLED: {pooled_doc.get('n_mechanisms', 0)} mechanisms, "
+          f"{pooled_doc.get('n_clearing_every_gate', 0)} clearing every gate; "
+          f"deaths {pooled_doc.get('deaths_by_gate', {})}")
+    for s in pooled_survivors:
+        print(f"  POOLED SURVIVOR: {s['name']}  ann_sharpe={s['in_sample_ann_sharpe']:.2f} "
+              f"oos={s['oos_sharpe']}  p={s['reality_p']:.4f}  over {s['n_symbols']} symbols")
     print(f"wrote {out}")
     return 0
 
