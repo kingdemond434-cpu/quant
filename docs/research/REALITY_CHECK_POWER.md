@@ -110,3 +110,26 @@ on crypto" is one hypothesis with ten symbols of evidence, not ten hypotheses wi
 Add a pooled-by-mechanism path to `run_real_campaign` alongside the per-symbol one, and report
 both. The per-symbol view keeps its diagnostic value; the pooled view is the one that can actually
 certify a survivor.
+
+## MEASURED 2026-08-04 — the pooled run happened, and its zero is now a finding
+
+The pooled path shipped and ran on the live OKX panel (20 mechanisms × 10 symbols, T≈2,000):
+**0 of 20 mechanisms clear every gate.** But unlike every previous zero, this one is
+INFORMATIVE, because the test now has power where the edge would have to be:
+
+- pooled in-sample annualised Sharpes cluster **0.2–0.9** (best: squeeze_breakout at 0.91,
+  adjusted p=0.18); the detection floor here is 0.77, so the best mechanism sits AT the floor
+  and still fails — the others are simply below it.
+- the sharper fact is **out-of-sample**: pooled walk-forward OOS Sharpes are **+0.01 to +0.06
+  across all 20** — the in-sample band does not persist. That is not a power problem; no design
+  detects an edge of 0.03.
+- reality_check still kills 20/20, and with 70% power at SR 1.0 that now reads as evidence of
+  absence in this band, not absence of evidence.
+
+**The conclusion moves.** The campaign design defect is fixed and no longer the explanation.
+The binding constraint is the MECHANISM SET: 20 daily-frequency price-derived families carry no
+certifiable pooled edge on this universe. The survivor hunt's marginal hour goes to NEW families
+— the ICT/structural detectors that landed 2026-08-04 (H3), the funding-phase coordinate
+(L1.47), Wyckoff/VWAP/ORB/compression (H6–H10, pre-registered), and above all the owned
+microstructure tape once the recorders run — not to re-parameterising these twenty. That
+allocation IS the result of this measurement.
