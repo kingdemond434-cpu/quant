@@ -4366,6 +4366,76 @@ def _imports_of(path: Path) -> set[str]:
 _IMPORTS_CACHE: dict[str, set[str]] = {}
 
 
+def check_silent_swallows_on_the_rails(defects) -> None:
+    """A BROAD `except Exception: pass` ON A RAIL MUST SAY WHY IT IS THERE.
+
+    Swept 2026-08-04: 39 of them across libs/ and scripts/, 32 with no explanatory comment. Most
+    are in research scripts where a swallowed error costs a wasted cycle and nothing else, so a
+    check demanding a comment on all 39 would be noise -- the crying-wolf failure this file names
+    in four other places.
+
+    On the RAILS it is different, and the two outcomes are opposite:
+
+      CORRECT   the recorder must not stop taping twenty-nine symbols because one fetch failed
+                (`fromId` resumes, so the gap is deferred and not dropped); the executor's
+                post-only fallback must return "no order rested" rather than crash; the pager
+                must not withhold pages it has already computed because a liveness ping failed
+      A DEFECT  the same construct hiding a failure on the primary path, where the caller then
+                proceeds believing the thing happened -- which is how `_market_max_qty` silently
+                cached its own failure and disabled the market-order cap for a whole process
+                lifetime, found the same day
+
+    The two look identical in a diff. The comment is the only thing that distinguishes a decision
+    from an oversight, so on these files it is required rather than encouraged.
+
+    scripts/run_deadman_switch.py is DELIBERATELY ABSENT. It is Tier-3 -- "may not be modified
+    autonomously, explicit principal sign-off only" -- and adding a comment is a modification. Its
+    two swallows were READ and are correct (a paging failure after the book is already flattened
+    must not crash the rail), but annotating them is the principal's call, not this file's.
+    """
+    import ast as _ast
+
+    rails = (
+        "libs/execution/binance_live.py", "libs/execution/binance_spot_live.py",
+        "libs/execution/binance_testnet.py", "libs/execution/binance_spot_testnet.py",
+        "libs/execution/staging.py",
+        "scripts/run_cashcarry_executor.py", "scripts/run_alerts.py",
+        "scripts/run_recorder.py", "scripts/run_recorder_spot.py",
+        "scripts/run_recorder_bybit.py",
+    )
+    bare: list[str] = []
+    for rel in rails:
+        p = ROOT / rel
+        if not p.exists():
+            continue
+        text = p.read_text("utf-8", errors="ignore")
+        lines = text.splitlines()
+        try:
+            tree = _ast.parse(text)
+        except SyntaxError:
+            continue
+        for n in _ast.walk(tree):
+            if not (isinstance(n, _ast.ExceptHandler) and len(n.body) == 1
+                    and isinstance(n.body[0], _ast.Pass)):
+                continue
+            if not (isinstance(n.type, _ast.Name) and n.type.id in ("Exception", "BaseException")):
+                continue
+            # A comment anywhere between the `except` line and the `pass` counts as the reason.
+            window = " ".join(lines[n.lineno - 1: n.body[0].lineno])
+            if "#" not in window:
+                bare.append(f"{rel}:{n.lineno}")
+    if bare:
+        defects.append((
+            "rail-silent-swallow",
+            f"{len(bare)} broad `except Exception: pass` on a RAIL with no stated reason -- "
+            f"{', '.join(bare[:6])}"
+            + (f" (+{len(bare) - 6} more)" if len(bare) > 6 else "")
+            + ". On these files a swallow is either load-bearing or a hidden failure on the "
+              "primary path, and the two are indistinguishable in a diff. Say which."))
+
+
+CHECKS += [("rail-silent-swallow", check_silent_swallows_on_the_rails)]
+
 CHECKS += [("unwired-modules", check_unwired_modules)]
 
 

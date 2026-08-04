@@ -532,3 +532,38 @@ def test_a_timer_driven_service_does_not_carry_its_own_install_section() -> None
         else:
             assert "Install" in c.sections(), (
                 f"{svc.name} has no timer and no [Install]: nothing can enable it at all")
+
+
+def test_a_rail_cannot_gain_an_unexplained_silent_swallow() -> None:
+    """`except Exception: pass` is either load-bearing or a hidden failure, and the two are
+    INDISTINGUISHABLE IN A DIFF.
+
+    Swept 2026-08-04: 39 across libs/ and scripts/, 32 undocumented. Most sit in research scripts
+    where a swallowed error costs a wasted cycle, so demanding a comment on all 39 would be the
+    crying-wolf failure this file names elsewhere. On the RAILS the two outcomes are opposite --
+    the recorder MUST NOT stop taping twenty-nine symbols because one fetch failed, and
+    `_market_max_qty` MUST NOT have silently cached its own failure and disabled the market-order
+    cap for a process lifetime. Both were the same three lines.
+    """
+    d: list = []
+    M.check_silent_swallows_on_the_rails(d)
+    assert not d, d[0][1] if d else ""
+
+
+def test_the_ruin_rail_is_exempt_from_that_check_ON_PURPOSE() -> None:
+    """scripts/run_deadman_switch.py carries two of these and is NOT audited for them.
+
+    It is Tier-3: "may not be modified, disabled or removed autonomously -- explicit principal
+    sign-off only". Adding a comment is a modification. Both swallows were READ and are correct
+    (a paging failure AFTER the book has already been flattened must not crash the rail), but
+    annotating them is the principal's call and not this repository's.
+
+    Pinned so the exemption stays a decision rather than becoming an oversight: if someone adds
+    the rail to that list, this fails and they have to argue it.
+    """
+    import inspect
+    src = inspect.getsource(M.check_silent_swallows_on_the_rails)
+    assert "run_deadman_switch" in src, "the exemption must be stated where the list is"
+    rails_tuple = src.split("rails = (")[1].split(")")[0]
+    assert "run_deadman_switch.py" not in rails_tuple, (
+        "the Tier-3 ruin rail was added to an autonomous check's audit list")
