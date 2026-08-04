@@ -24,10 +24,34 @@ from __future__ import annotations
 
 import contextlib
 import json
+import os
 import subprocess
 import sys
+import time
 from datetime import UTC, datetime
 from pathlib import Path
+
+_T0 = time.monotonic()
+
+# WALL-CLOCK BUDGET (2026-08-04). This process has two callers with different allowances: the
+# brain's _STEPS gives it 900s, the systemd unit gives 1800s. Unset means uncapped, which is the
+# correct default for a hand-run. The parent exports its own per-step timeout as
+# QUANT_STEP_BUDGET_S so a duty can decline to start work it cannot finish, rather than being
+# killed halfway through and losing the run.
+_BUDGET_S = float(os.environ.get("CADENCE_BUDGET_S")
+                  or os.environ.get("QUANT_STEP_BUDGET_S") or 0)
+
+# The panel's own subprocess timeout is 720s; add the dossier regen and a margin. A run that
+# cannot seat the whole panel inside its remaining budget leaves the duty OWED instead of
+# burning the tail of the budget on a call that will be killed mid-flight.
+_PANEL_RESERVE_S = 780.0
+
+
+def _budget_left() -> float:
+    """Seconds of wall-clock left for this process; +inf when no budget was declared."""
+    if _BUDGET_S <= 0:
+        return float("inf")
+    return _BUDGET_S - (time.monotonic() - _T0)
 
 _STATE = Path("data/cadence_state.json")
 _STAGE = Path("data/stage_state.json")
@@ -253,14 +277,8 @@ def main() -> None:
     stage = str(_load(_STAGE, {"stage": "S0"}).get("stage", "S0"))
     fired: list[str] = []
 
-    if _days_since(state, "last_tier1") >= _TIER1_EVERY_D:
-        if _run_panel("tier1"):
-            state["last_tier1"] = now.isoformat()
-            state["last_panel"] = now.isoformat()     # tier1 counts as this week's panel
-            fired.append("tier1")
-    elif _days_since(state, "last_panel") >= _PANEL_EVERY_D and _run_panel(None):
-        state["last_panel"] = now.isoformat()
-        fired.append("panel")
+    # THE ADVISORY PANEL USED TO RUN HERE, AND IT RAN FIRST. It now runs LAST, after the state
+    # write -- see the block at the end of main() for the measurement that moved it.
 
     # META-RESEARCH REVIEW (§ docs/research/META_RESEARCH_DIRECTIVE.md). Mechanical half runs
     # EVERY cycle: it is seconds, no LLM, no context cost, and a prompt-only duty would be
@@ -776,6 +794,38 @@ def main() -> None:
             state["freeze_exit_status"] = why
     _assert_floors(state, stage)
     _STATE.write_text(json.dumps(state, indent=2), "utf-8")
+
+    # ADVISORY PANEL LAST, AND ONLY ON THE WALL-CLOCK THAT REMAINS (2026-08-04).
+    # It used to run FIRST, and that ordering was silently costing the desk its primary output.
+    # The panel has ZERO authority by constitution -- it augments the desk's own work, never
+    # replaces it -- yet it is the only duty in this file that costs minutes: measured 293.6s
+    # this cycle to return 0/4 substantive on the free roster (tencent 404, cohere 400, nvidia
+    # x2 malformed), and up to its full 720s timeout when seats hang instead of erroring.
+    # Because it produced nothing it never stamped, so it re-fired on EVERY run; and because
+    # this state file is written at the END of main(), the parent's 900s timeout killed the
+    # process mid-panel and discarded every duty stamp the run had already earned. The work ran
+    # and the record of it did not: last_live_generate sat at 2026-07-31 while generation duties
+    # executed, and the moat screen reported flat coverage across 40 runs for the same reason.
+    # Running it after the write makes the primary-output duties unstarvable -- a killed panel
+    # now loses only the panel, and the duty stays OWED so nothing is quietly marked done.
+    # No floor is touched: _assert_floors has already run above on the full duty state.
+    _panel_stamped = False
+    if (_left := _budget_left()) < _PANEL_RESERVE_S:
+        print(f"cadence: panel SKIPPED -- {_left:.0f}s wall-clock left of {_BUDGET_S:.0f}s "
+              f"(needs {_PANEL_RESERVE_S:.0f}s). Duty stays OWED.")
+    elif _days_since(state, "last_tier1") >= _TIER1_EVERY_D:
+        if _run_panel("tier1"):
+            state["last_tier1"] = now.isoformat()
+            state["last_panel"] = now.isoformat()     # tier1 counts as this week's panel
+            fired.append("tier1")
+            _panel_stamped = True
+    elif _days_since(state, "last_panel") >= _PANEL_EVERY_D and _run_panel(None):
+        state["last_panel"] = now.isoformat()
+        fired.append("panel")
+        _panel_stamped = True
+    if _panel_stamped:
+        _STATE.write_text(json.dumps(state, indent=2), "utf-8")   # persist the panel stamp too
+
     print(f"cadence[{stage}]: fired={fired or 'nothing due'} | "
           f"panel due in {max(0.0, _PANEL_EVERY_D - _days_since(state, 'last_panel')):.1f}d | "
           f"tier1 due in {max(0.0, _TIER1_EVERY_D - _days_since(state, 'last_tier1')):.1f}d")

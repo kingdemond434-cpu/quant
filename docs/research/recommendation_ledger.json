@@ -261,6 +261,18 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0022",
+   "source": "cro-cycle-20260804",
+   "summary": "Merge master into claude/llm-auto-upgrade-verify-gcjac3 (union ledgers, CI green, push) to restore the 473 missing files -- two-sided merge over libs/execution/binance_live.py, needs its own session",
+   "roi_bps": null,
+   "raised": "2026-08-04T21:19:46.981869+00:00",
+   "status": "scheduled",
+   "reason": "Two-sided merge over a money-path file (libs/execution/binance_live.py): master is 419 commits ahead with 473 files this tree lacks, and the branch itself changed 150 code files. Needs its own session with CI on the result -- unresolved uncertainty, the valid deferral reason under DEFERRAL DISCIPLINE, not session length. Bounded and dated to the next cycle as its first item; it unblocks gap #88 AND a large share of the 27-item carry-over queue (certify_gauntlet/report_gate_audit/run_max_push/check_exploration/run_organ_er are all absent from this tree). No money at risk meanwhile: executor is testnet-pinned, stage S0, both verified by fresh read.",
+   "commit": null,
+   "due": "2026-08-05",
+   "disposed": "2026-08-04T21:22:33.645460+00:00"
   }
  ]
 }

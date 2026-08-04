@@ -3182,9 +3182,59 @@ def check_carryover_skipped(defects) -> None:
         "why not -- silently carrying an item a third time is what this exists to stop."))
 
 
+def check_scheduled_scripts(defects) -> None:
+    """Every scheduled command must NAME A FILE THAT EXISTS in this checkout.
+
+    Found live 2026-08-04: the working tree sat on a branch forked from master at 3bf89cd, and
+    75 of the 125 scripts the crontab invokes existed only on master -- 60% of the desk's
+    scheduled organs, run_live_guard.py among them, had been dying instantly on ENOENT. Nothing
+    reported it, because each organ still APPENDED TO ITS LOG on every fire: the log's mtime was
+    minutes old and its contents were 'can't open file'. Every freshness-shaped check the desk
+    owns read that mtime and passed. deploy/pull_deploy.sh was itself missing, so the mechanism
+    that would have re-synced the tree was part of the outage.
+
+    This is the config-vs-outcome class: a schedule proves intent, never execution. The check is
+    deliberately the cheapest possible statement of the real requirement -- resolve what is
+    scheduled, then stat it -- because that is the assertion no freshness signal can fake.
+    """
+    import re
+    import subprocess as _sp
+
+    refs: dict[str, str] = {}                     # script path -> where it was scheduled
+    try:
+        _cr = _sp.run(["crontab", "-l"], capture_output=True, text=True, timeout=20, check=False)
+        for ln in (_cr.stdout or "").splitlines():
+            if ln.strip().startswith("#"):
+                continue
+            for m in re.findall(r"(?:scripts|ops|deploy)/[A-Za-z0-9_./-]+\.(?:py|sh)", ln):
+                refs.setdefault(m, "crontab")
+    except (OSError, _sp.SubprocessError):
+        pass                                       # no crontab on this box: unit files still count
+    for unit in sorted(Path("ops").glob("*.service")):
+        try:
+            for ln in unit.read_text("utf-8").splitlines():
+                if ln.strip().startswith("ExecStart"):
+                    for m in re.findall(r"(?:scripts|ops|deploy)/[A-Za-z0-9_./-]+\.(?:py|sh)", ln):
+                        refs.setdefault(m, unit.name)
+        except OSError:
+            continue
+
+    missing = sorted(p for p in refs if not Path(p).exists())
+    if missing:
+        shown = ", ".join(missing[:6]) + ("..." if len(missing) > 6 else "")
+        defects.append((
+            "scheduled-script-missing",
+            f"{len(missing)}/{len(refs)} scheduled script(s) DO NOT EXIST in this checkout: "
+            f"{shown}. Every one of these fires on schedule, dies on ENOENT, and still touches "
+            f"its log -- so freshness checks read minutes-old logs and report the organ healthy. "
+            f"A schedule is intent, not execution. Restore the files (usually a branch/deploy "
+            f"divergence: compare against the mainline) or remove the schedule."))
+
+
 #: Every check the sweep runs. Module-level so other organs (§37 carry-over) can
 #: enumerate the same set instead of keeping a second copy that silently drifts.
 CHECKS = [("carryover-skipped", check_carryover_skipped),
+          ("scheduled-scripts", check_scheduled_scripts),
           ("organs", check_organs), ("stubs", check_stub_deaths),
                       ("stale-daemons", check_stale_daemons),
                       ("panel", check_panel), ("coverage", check_coverage),

@@ -18,6 +18,8 @@ Each step is isolated -- one failure never aborts the cycle. Idempotent + safe t
 from __future__ import annotations
 
 import json
+import os
+import shlex
 import subprocess
 import sys
 from datetime import UTC, datetime
@@ -118,13 +120,26 @@ _STEPS = [
 
 def _run(script: str, timeout: int) -> dict[str, object]:
     try:
+        # TELL THE STEP ITS OWN BUDGET (2026-08-04). A step that does not know how long it may
+        # run cannot decline work it has no time to finish -- it just gets killed partway and
+        # loses whatever it had not yet persisted. run_cadence was doing exactly that: it spent
+        # up to 720s of its 900s on an unfundable advisory panel and was killed before writing
+        # the duty stamps it had already earned. Exported for every step; harmless to ignore.
+        env = {**os.environ, "QUANT_STEP_BUDGET_S": str(timeout)}
+        # SPLIT THE COMMAND (2026-08-04). Two steps carry an argument -- "research_exchange.py
+        # brief" and "... score" -- and this ran [_PY, "<path> brief"], so python looked for a
+        # file whose NAME ended in " brief" and failed with ENOENT every single cycle since they
+        # were added. Both organs work when invoked correctly (brief writes an 87-line
+        # DESK_BRIEF.md), so the desk was reporting two healthy organs as permanently-false and
+        # never asking why a step that never once succeeded was still on the list.
         r = subprocess.run(
-            [_PY, script],
+            [_PY, *shlex.split(script)],
             cwd=str(_ROOT),
             timeout=timeout,
             capture_output=True,
             text=True,
             check=False,
+            env=env,
         )
         tail = (r.stdout or r.stderr or "").strip().splitlines()[-1:] or [""]
         return {"ok": r.returncode == 0, "rc": r.returncode, "tail": tail[0][:160]}

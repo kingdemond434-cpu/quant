@@ -1,4 +1,4 @@
-# DESK BRIEF -- 2026-07-27 20:38Z
+# DESK BRIEF -- 2026-08-04 21:21Z
 
 Machine-generated from measured desk state. Every number traces to an artifact in
 `data/`. Nothing here is an argument. Respond to the evidence, not to another model.
@@ -13,17 +13,17 @@ Machine-generated from measured desk state. Every number traces to an artifact i
    forward clocks promote.
 
 ## Experiment record (45d, harvested from git -- one row per commit)
-- experiments: **369**; decided: 156
-- survival rate: **9.6%** (15 survived / 131 refuted / 10 inconclusive)
+- experiments: **433**; decided: 199
+- survival rate: **7.5%** (15 survived / 170 refuted / 14 inconclusive)
 - unclassified commit decisions: 25 (commit-discipline defect)
 
 | mechanism | tested | survived | rate |
 |---|---:|---:|---:|
-| M_UNMAPPED | 102 | 10 | 10% |
-| M_ATTENTION_DELAY | 22 | 2 | 9% |
-| M_FORCED_DELEVERAGE | 10 | 2 | 20% |
-| M_STRUCTURAL_BARRIER | 10 | 0 | 0% |
-| M_LIQUIDITY_WITHDRAWAL | 9 | 0 | 0% |
+| M_UNMAPPED | 133 | 10 | 8% |
+| M_ATTENTION_DELAY | 26 | 2 | 8% |
+| M_LIQUIDITY_WITHDRAWAL | 14 | 0 | 0% |
+| M_FORCED_DELEVERAGE | 13 | 2 | 15% |
+| M_STRUCTURAL_BARRIER | 11 | 0 | 0% |
 | M_FUNDAMENTAL_PROXY | 7 | 0 | 0% |
 | M_SKILL_PERSISTENCE | 6 | 0 | 0% |
 | M_PRICE_PATTERN | 4 | 1 | 25% |
@@ -31,16 +31,16 @@ Machine-generated from measured desk state. Every number traces to an artifact i
 
 ### Why experiments died (45d)
 
-- `E_DATA_QUALITY` 61 (30%)
-- `B_WRONG_MEASUREMENT` 46 (23%)
-- `G_TOO_EXPENSIVE` 28 (14%)
-- `C_WRONG_TIMING` 27 (13%)
-- `H_OVERFIT` 24 (12%)
-- `F_REGIME_DEPENDENT` 10 (5%)
-- `D_ALREADY_ARBITRAGED` 4 (2%)
-- `A_NO_MECHANISM` 1 (0%)
+- `E_DATA_QUALITY` 79 (29%)
+- `B_WRONG_MEASUREMENT` 55 (20%)
+- `G_TOO_EXPENSIVE` 41 (15%)
+- `H_OVERFIT` 40 (15%)
+- `C_WRONG_TIMING` 35 (13%)
+- `F_REGIME_DEPENDENT` 13 (5%)
+- `D_ALREADY_ARBITRAGED` 4 (1%)
+- `A_NO_MECHANISM` 2 (1%)
 
-**107/201 = 53% of refutations are MEASUREMENT failures (data quality + wrong construction), not absent alpha.**
+**134/269 = 50% of refutations are MEASUREMENT failures (data quality + wrong construction), not absent alpha.**
 
 ## FAMILY KILLS -- mechanisms closed by evidence
 
@@ -61,7 +61,7 @@ Every future variant inherits this evidence.
 ## Proprietary moat (4.4GB order books, 30 symbols, top-20 snapshots)
 
 M_LIQUIDITY_WITHDRAWAL, construction = negative z of near-touch depth vs 24h roll:
-- raw lead rho pooled: +0.3032
+- raw lead rho pooled: +0.1100
 - **after orthogonalising forward RV against current RV: residual rho +0.0154 (t +0.28), sign 1/5 -> the lead was vol clustering.**
 - ONE construction tested only. The mechanism is NOT refuted. Untested: replenishment rate, one-sided withdrawal, book shape, migration, recovery half-life, d(book)/dt.
 

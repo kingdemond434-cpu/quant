@@ -1,7 +1,7 @@
 {
   "best_coverage": 1.0,
-  "max_open_findings": 71,
+  "max_open_findings": 76,
   "max_docs_scanned": 5,
-  "best_at": "2026-07-26T01:03:50.356004+00:00",
-  "n_records": 2
+  "best_at": "2026-08-04T20:45:20.444667+00:00",
+  "n_records": 3
 }
