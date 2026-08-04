@@ -3161,8 +3161,8 @@
    "summary": "run_daily_research.py swallows non-zero exits by design ('best-effort daily batch, never abort the chain') and daily_research_cycle.py keeps only the last 6 stdout lines, so run_cashcarry_shadow.py's SystemExit('need a liquid perp panel with basis') killed the desk's FLAGSHIP forward clock for a full day (35/90, NW-t 2.28, 4 days from its fast-track gate) with zero alarm. Recovered manually this cycle to 36. Best-effort is right for the CHAIN; it must still PAGE per-step failures.",
    "roi_bps": 3000.0,
    "raised": "2026-08-01T07:50:32.864782+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=9 effort_h=2: Still open. scripts/run_daily_research.py:65-80 swallows non-zero exits (prints tail only; results list read by nobody). scripts/daily_research_cycle.py:137-146 writes steps_ok into the cycle log, but grep shows zero consumers of steps_ok, and scripts/run_alerts.py (which already pages recorder/heartbeat failures at lines 261-286 and has _EVENT_TRIGGER machinery at :32) carries no per-step research-chain alert. Fix: emit a failed-steps artifact and page it via run_alerts.",
+   "status": "implemented",
+   "reason": "[wave2 2026-08-04] research-chain failures now leave evidence and page: both runners write data/research_chain_status.json atomically every run (empty failed list on clean -> RESOLVED flow works), run_daily_research exits 1 on step failure with names in the tail, run_alerts pages via the existing dedupe/backoff machinery with 24h override. Stubbed incident reproduced end-to-end. No gate weakened; exit-code change strengthens.",
    "commit": null,
    "due": null,
    "disposed": null

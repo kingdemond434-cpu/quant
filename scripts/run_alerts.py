@@ -39,7 +39,9 @@ _DEDUPE_S = 6 * 3600
 # stays at 6h deliberately -- a latched ruin rail SHOULD nag until the operator acts.
 _DEDUPE_OVERRIDES_S = {"growth_defect": 24 * 3600, "data_health": 24 * 3600,
                        "brain_noop": 24 * 3600, "principal_action_needed": 24 * 3600,
-                       "trade_class_bleeding": 24 * 3600, "auth_broken": 12 * 3600}
+                       "trade_class_bleeding": 24 * 3600, "auth_broken": 12 * 3600,
+                       # the chain runs once a day; its failures can only change once a day
+                       "research_chain_failed": 24 * 3600}
 _HB = Path("data/cashcarry_exec_heartbeat")
 _PAGER_BACKOFF = Path("data/.pager_backoff")
 _KILL = Path("data/CASHCARRY_KILL")
@@ -345,6 +347,26 @@ def _checks() -> list[tuple[str, str]]:
             out.append(("data_health", f"{len(alerts)} data-health alert(s): "
                         + "; ".join(str(a)[:60] for a in alerts[:3])))
     except (OSError, json.JSONDecodeError):
+        pass
+    # RESEARCH-CHAIN STEP FAILURES (R0258). The daily research runners are best-effort BY DESIGN
+    # (one step must never abort the chain) -- which made a dead step silent by design too:
+    # run_cashcarry_shadow's SystemExit killed the flagship forward clock for a full day with
+    # zero alarm. Both runners now drop data/research_chain_status.json (atomic write); a latest
+    # status carrying failed steps pages here, naming them. ABSENT artifact = no page: it is a
+    # new artifact, and the brain-down / cycle-age checks above already own "chain never ran".
+    try:
+        rcs = json.loads(Path("data/research_chain_status.json").read_text("utf-8"))
+        failed = [f for f in (rcs.get("failed") or []) if isinstance(f, dict)]
+        if failed:
+            names = "; ".join(
+                f"{str(f.get('step'))[:44]}(rc={f.get('rc')}) {str(f.get('tail', ''))[:60]}"
+                for f in failed[:3])
+            more = f" +{len(failed) - 3} more" if len(failed) > 3 else ""
+            out.append(("research_chain_failed",
+                        f"{len(failed)}/{rcs.get('steps_total', '?')} research step(s) FAILED "
+                        f"({rcs.get('runner', '?')} @ {str(rcs.get('generated', '?'))[:16]}Z): "
+                        f"{names}{more}"))
+    except (OSError, json.JSONDecodeError, AttributeError, TypeError):
         pass
     # silent-failure sweep (2026-07-22): systemd-success != work-done. A timer that fired
     # into a quota/auth wall reports success while producing zero research.

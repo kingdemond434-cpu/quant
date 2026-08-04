@@ -18,6 +18,7 @@ Each step is isolated -- one failure never aborts the cycle. Idempotent + safe t
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 from datetime import UTC, datetime
@@ -28,6 +29,9 @@ from libs.ops.platform_paths import venv_python
 _ROOT = Path(__file__).resolve().parent.parent
 _PY = venv_python(_ROOT)
 _LOG = _ROOT / "data" / "cro_cycle_log.json"
+# R0258: steps_ok in the cycle log had ZERO consumers, so a failed step was invisible. Every
+# cycle now also drops this artifact for run_alerts.py, which pages when it carries failures.
+_STATUS = _ROOT / "data" / "research_chain_status.json"
 
 # ordered pipeline; (label, script, timeout_s). Heavy research first, then bookkeeping.
 _STEPS = [
@@ -145,6 +149,28 @@ def _run(script: str, timeout: int) -> dict[str, object]:
         return {"ok": False, "rc": "error", "tail": repr(e)[:160]}
 
 
+def _write_status(steps: dict[str, dict[str, object]]) -> None:
+    """R0258: atomic failed-steps artifact for the pager (same-dir tmp + os.replace, the
+    run_deadman_switch.py idiom) -- run_alerts.py reads it each tick and pages on failures.
+    Written on EVERY cycle (empty failed list included) so a later clean run resolves the
+    alert. Best-effort: a status-write failure must never abort the cycle."""
+    failed = [{"step": k, "rc": v.get("rc"), "tail": str(v.get("tail", ""))[:400]}
+              for k, v in steps.items() if not v.get("ok")]
+    payload = {
+        "generated": datetime.now(tz=UTC).isoformat(),
+        "runner": "daily_research_cycle",
+        "steps_total": len(steps),
+        "failed": failed,
+    }
+    try:
+        _STATUS.parent.mkdir(parents=True, exist_ok=True)
+        tmp = _STATUS.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(payload, indent=2), "utf-8")
+        os.replace(tmp, _STATUS)
+    except OSError as e:
+        print(f"[status-write-failed] {e!r}"[:160])
+
+
 def _load(p: Path, d: object) -> object:
     try:
         return json.loads(p.read_text("utf-8"))
@@ -153,10 +179,11 @@ def _load(p: Path, d: object) -> object:
 
 
 def main() -> None:
-    steps: dict[str, object] = {}
+    steps: dict[str, dict[str, object]] = {}
     for label, script, timeout in _STEPS:
         steps[label] = _run(script, timeout)
         print(f"[{label}] {steps[label]}")
+    _write_status(steps)  # R0258: pager artifact, before any bookkeeping below can raise
 
     # read resulting institutional state for the dated cycle log
     eng = _load(_ROOT / "engineering_backlog.json", {})
