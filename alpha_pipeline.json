@@ -1,5 +1,5 @@
 {
-  "generated": "2026-08-04T02:53:09.336651+00:00",
+  "generated": "2026-08-04T08:44:25.163199+00:00",
   "n_alphas": 8,
   "n_survived": 0,
   "deployed": [
@@ -9,7 +9,7 @@
     {
       "alpha": "crypto::ls_contrarian",
       "category": "derivative-data",
-      "expected_sharpe": 8.48,
+      "expected_sharpe": 8.01,
       "gates": "8/9",
       "survived": false,
       "stage": "backtest",
@@ -21,7 +21,7 @@
     {
       "alpha": "crypto::ts_trend",
       "category": "crypto-sleeve",
-      "expected_sharpe": 0.79,
+      "expected_sharpe": 0.78,
       "gates": "7/9",
       "survived": false,
       "stage": "backtest",
@@ -33,7 +33,7 @@
     {
       "alpha": "crypto::xsec_price_mom",
       "category": "crypto-sleeve",
-      "expected_sharpe": 0.64,
+      "expected_sharpe": 0.65,
       "gates": "7/9",
       "survived": false,
       "stage": "backtest",
@@ -45,8 +45,8 @@
     {
       "alpha": "crypto::funding_carry",
       "category": "crypto-sleeve",
-      "expected_sharpe": 0.52,
-      "gates": "5/9",
+      "expected_sharpe": 0.59,
+      "gates": "7/9",
       "survived": false,
       "stage": "backtest",
       "orthogonality": "unknown",
@@ -57,7 +57,7 @@
     {
       "alpha": "crypto::taker_flow",
       "category": "crypto-sleeve",
-      "expected_sharpe": 0.48,
+      "expected_sharpe": 0.54,
       "gates": "7/9",
       "survived": false,
       "stage": "backtest",
@@ -69,7 +69,7 @@
     {
       "alpha": "crypto::basis_carry",
       "category": "crypto-sleeve",
-      "expected_sharpe": 0.32,
+      "expected_sharpe": 0.4,
       "gates": "5/9",
       "survived": false,
       "stage": "backtest",
@@ -81,8 +81,8 @@
     {
       "alpha": "crypto::funding_momentum",
       "category": "crypto-sleeve",
-      "expected_sharpe": 0.03,
-      "gates": "3/9",
+      "expected_sharpe": 0.04,
+      "gates": "4/9",
       "survived": false,
       "stage": "backtest",
       "orthogonality": "unknown",
@@ -93,7 +93,7 @@
     {
       "alpha": "crypto::oi_divergence",
       "category": "derivative-data",
-      "expected_sharpe": -13.62,
+      "expected_sharpe": -13.08,
       "gates": "4/9",
       "survived": false,
       "stage": "backtest",

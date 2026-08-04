@@ -125,3 +125,51 @@ reference for when that item is built (liquidity STATE, not just level, predicts
 ## Effort-Centric Fairness in Lending Decisions
 - 2026-07-30 · http://arxiv.org/abs/2607.28847v1
 - Algorithmic credit scoring must satisfy fairness and explanation requirements, yet prevailing predictive-parity criteria assess only outcomes at the decision point. They can therefore overlook whether rejected applicants face unequal burdens in reaching future approval, a phenomenon we call masked inequality. We develop an effort-centric framework that measures an applicant's effort as the minimum weighted cost of feasible changes required to cross the approval boundary. The framework distinguishes feature-independent actions from additive structural shifts that propagate through a causal mode
+
+## Path Portfolio Optimization: Defect, Lift, and the Price of Path Complexity
+- 2026-08-03 · http://arxiv.org/abs/2608.02355v1
+- This paper builds Path Portfolio Optimization: portfolio theory on a path-first framework in which the signature is the universal coordinate of the price path, and asks whether it survives estimation. A portfolio is a linear functional of the signature, so the control lives in a truncated tensor algebra, the covariance of signature coordinates is the non-group-like part of the expected signature --- a defect form --- and the whole mean--variance problem becomes a linear system in one tensor. Two structural results follow. The lift is the execution convention: the gap between the Marcus and for
+
+## AI Governance for Institutional Readiness in Finance
+- 2026-08-03 · http://arxiv.org/abs/2608.02311v1
+- Agentic AI is gaining acceptance in asset management, but governance has not kept pace: 88% of surveyed finance professionals report no operational governance framework for agentic AI despite universal awareness of its deployment, and only 24 of 75 large U.S. money managers disclosing AI use in Form ADV filings report a formal governance policy. We argue this gap is architectural, not cultural: governance built for deterministic systems assumes static validation. However, continuously retrained agentic policies violate static governance by design. We propose a four-layer framework (Policy, Eng
+
+## AI Financial Advice: Supply, Demand, and Life Cycle Implications
+- 2026-08-03 · http://arxiv.org/abs/2608.01607v1
+- We ask a representative sample to write prompts seeking spending and investing advice from LLMs, then simulate the lifetime effects of following the advice under realistic asset and labor market conditions. Applying this method to GPT-5.2, we find following the advice would move respondents toward life cycle theory: broader participation in diversified equity funds, age-declining equity shares, and larger savings buffers. Recommendations vary systematically by gender, prior AI experience, and financial literacy. For gender, two-thirds of recommended equity-share differences arise from men and 
+
+## Conformal Kelly: Conformal Prediction Intervals as the Scale in Fractional Kelly Position Sizing
+- 2026-08-02 · http://arxiv.org/abs/2608.01494v1
+- Conformal prediction has traditionally been used to quantify prediction uncertainty. We put that uncertainty to a second use, combining a 75% conformal interval with fractional Kelly to size portfolio positions: as the range widens we shrink the position, and as it narrows we grow it. On a six-year development window (2016-2021), with trading costs and strict leverage caps, this compounds at 28.5% annualised net log growth with a Sharpe ratio of 1.34 and a 27.7% maximum drawdown, versus 15.9% for holding the S&P 500 and 21-22% for passive portfolios at the same leverage. Our main development-w
+
+## Exactly solvable model for the diffusive price-dynamics paradox under long-range correlated market-order flow
+- 2026-08-02 · http://arxiv.org/abs/2608.00988v1
+- We develop an exactly solvable nonlinear time-series model by incorporating the square-root price-impact law into the Lillo--Mike--Farmer (LMF) model to resolve the diffusive price-dynamics paradox under predictable market-order flow. In financial market microstructure, it is well established that the price dynamics are approximately described by Brownian motion at long times. However, it is also well-known that market-order flow is clearly predictable due to long-range correlations, as mathematically formulated by the LMF model. Since market orders have a positive price impact in general, pre
+
+## Optimal Trading of Microstructure Mean Reversion
+- 2026-08-01 · http://arxiv.org/abs/2608.00885v1
+- At the scale of seconds the observed mid carries a stationary, mean-reverting error around a latent efficient price. We build an order book whose own flow produces that error and solve for the trading rule that maximises the long-run average profit rate net of the bid-ask spread. In a liquid large-tick asset the spread is one tick or two, and it is exactly the parity of the mid on the half-tick grid: tight at a half-integer, open at an integer. One coordinate therefore carries the problem: the gap $G$ between the mid and the efficient price; the price is an exogenous Brownian martingale, and $
+
+## Data-Driven Measures of High-Frequency Trading
+- 2026-08-01 · http://arxiv.org/abs/2608.00858v1
+- We introduce data-driven measures of high-frequency trading (HFT) that distinguish between liquidity-supplying and liquidity-demanding strategies. We train machine learning models on a proprietary dataset with observed HFT activity, then apply these models to public intraday data to generate HFT measures across all U.S. stocks during 2010-2023. Our measures outperform conventional proxies, which struggle to capture the temporal dynamics of HFT. Consistent with theory, our measures respond to a quasi-exogenous speed bump introduction and a data feed upgrade. The measures help uncover the differ
+
+## AI and Exchange Rate Predictability
+- 2026-08-01 · http://arxiv.org/abs/2608.00761v1
+- I revisit the exchange rate disconnect puzzle, first documented by Meese and Rogoff (1983), using generative artificial intelligence (AI) to forecast currency returns based on economic fundamentals. Using ChatGPT and DeepSeek, I analyze a comprehensive dataset of economic data releases for major currency pairs and measure the fundamental strength of each currency. These AI-powered fundamentals exhibit significant cross-sectional predictive power. A simple trading strategy that goes long currencies with strong fundamentals and short currencies with weak fundamentals generates a Sharpe ratio exc
+
+## Axient: On-Chain Credit and Loss Allocation for Leveraged Event Markets: A Venue-Agnostic Protocol for Traders, Credit Providers, Market Makers, and Liquidation Backstops
+- 2026-08-01 · http://arxiv.org/abs/2608.00647v1
+- A physically backed leveraged event position requires real credit: if collateral C receives leverage L, the protocol supplies (L-1)C and uses the combined amount to acquire recognized event exposure. This paper develops a venue-agnostic on-chain credit architecture for that capital layer and an endogenous model of its capital market. It separates traders, Senior Credit LPs, market makers, liquidators, and Liquidation Backstop Providers; formalizes pool and debt shares, utilization- and risk-sensitive interest, collateral-locked position accounts, venue capabilities, market-maker commitments, w
+
+## Axient: Debt-Free Finality for Leveraged Binary Event Markets
+- 2026-08-01 · http://arxiv.org/abs/2608.00631v1
+- Leveraged event positions combine a repayable loan with an outcome claim that may become non-tradable before oracle payout is final. This paper specifies Axient, a physically backed margin layer for binary event markets that separates leverage maturity from claim maturity and makes the hard-flat decision under explicit execution uncertainty. The model distinguishes quoted book proceeds, matched proceeds, settled proceeds, and redemption. At decision time, the protocol selects the smallest sale whose lower settled-proceeds envelope covers an upper bound on debt at the settlement horizon plus a 
+
+## Drawdown Risk Beyond Brownian Motion: A Monte-Carlo Framework, Non-Gaussian Extensions, and Long Memory
+- 2026-07-31 · http://arxiv.org/abs/2608.00127v1
+- How deep and how long should the drawdowns of a systematic trading strategy run, given its Sharpe ratio and the statistical structure of its returns? Building on the drawdown framework of Rej, Seager and Bouchaud (2017), we develop the answer in three steps. We first reframe their closed-form results as a transparent Monte-Carlo experiment, validate it against their analytic benchmarks, and extend the mapping from drawdowns to four decision-relevant measures: maximum drawdown, maximum loss, final negative time and longest recovery time. We then relax the Gaussian assumption, holding the true S
+
+## Boundary-Induced Apparent Risk Aversion in Nonergodic Multiplicative Growth
+- 2026-07-30 · http://arxiv.org/abs/2607.28230v2
+- Observed risk-taking behavior is often rationalized through expected-utility curvature, yet the curvature required to fit choices in one context can differ sharply from the curvature required in another, a tension highlighted by calibration critiques of expected-utility theory. Finite multiplicative systems often cease to evolve when a lower continuation threshold is reached, whereas standard growth-optimal benchmarks assume uninterrupted continuation. We study a finite-horizon binary multiplicative process in which a fixed exposure is chosen ex ante and paths crossing an absorbing boundary ar
