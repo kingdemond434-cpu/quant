@@ -36,6 +36,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
+from libs.doctrine.constitution import OBJECTIVE_PREAMBLE  # noqa: E402
+from libs.llm.effort import reasoning_payload  # noqa: E402
+from libs.llm.push import PUSH_LADDER, push_rounds  # noqa: E402
 from scripts import seats  # noqa: E402 -- after the sys.path bootstrap above
 
 KEYS = ROOT / "data/secrets/llm_panel.json"
@@ -47,6 +50,11 @@ N_COMMITS = 3
 MAX_DIFF_CHARS = 45000
 
 SYSTEM = (
+    # THE CONSTITUTION LEADS. An organ that does not carry the objective optimises for
+    # what its output LOOKS like rather than for expected shift in E[log W] -- and, worse,
+    # quietly recommends the timid option because nothing told it that timidity is a
+    # scored defect rather than a neutral default.
+    OBJECTIVE_PREAMBLE + "\n"
     "You are a hostile code reviewer for a quantitative trading desk. Your job is to find bugs "
     "that would cause SILENT WRONG BEHAVIOUR -- not style, not typing, not performance. A crash "
     "is safe because someone notices. A confident wrong number is not.\n\n"
@@ -74,11 +82,13 @@ SYSTEM = (
 )
 
 
-def _ask(base, key, model, system, user, timeout=240.0):
+def _ask(base, key, model, messages, timeout=240.0):
     body = json.dumps({"model": model, "max_tokens": 3000, "temperature": 0.2,
-                       "reasoning": {"effort": "high"},
-                       "messages": [{"role": "system", "content": system},
-                                    {"role": "user", "content": user}]}).encode()
+                       # DEPTH IS MEASURED, NOT ASSUMED. "high" is the middle rung of a ladder
+                       # whose top differs per model and per month -- a literal here is
+                       # capability left unused on a flagship the desk pays for.
+                       "reasoning": reasoning_payload(model),
+                       "messages": messages}).encode()
     req = urllib.request.Request(base.rstrip("/") + "/chat/completions", data=body, method="POST",
                                  headers={"Authorization": f"Bearer {key}",
                                           "Content-Type": "application/json"})
@@ -86,6 +96,17 @@ def _ask(base, key, model, system, user, timeout=240.0):
         out = json.loads(r.read())
     m = out["choices"][0]["message"]
     return str(m.get("content") or m.get("reasoning") or "")
+
+
+def _ask_pushed(base, key, model, system, user):
+    """Push until the seat is measurably exhausted -- standing policy across every LLM organ.
+
+    The context (system prompt + payload) is the expensive half and is already paid for; the
+    ladder reuses it and keeps asking until novelty dies, the model surrenders, or the round cap
+    binds. Returns (joined_text, stop_reason).
+    """
+    r = push_rounds(lambda msgs: _ask(base, key, model, msgs), system, user, ladder=PUSH_LADDER)
+    return r.text, f"{r.rounds} push round(s); {r.stop_reason}"
 
 
 def recent_diff(n: int) -> str:
@@ -102,7 +123,14 @@ def main() -> None:
         print("no panel keys")
         return
     # Live-roster resolution: an upgraded-away seat is substituted (same lab first), not lost.
-    provs = {p["model"]: p for p in seats.resolve(SEATS, n=len(SEATS), role="llm_code_auditor")}
+    # SEAT CAP REMOVED (2026-07-31). This read `n=len(SEATS)`, so the LITERAL'S LENGTH capped how
+    # many funded seats were ever asked -- 3 of 13. Five organs shared the bug. SEATS is a
+    # PRIORITY ORDER, not a membership list: the preferred list is now built from the LIVE roster
+    # so every seat the desk pays for does the desk's work, and growing the roster grows the
+    # organ. seats.resolve still substitutes an upgraded-away model same-lab-first.
+    _roster = [str(p["model"]) for p in seats.load_roster()]
+    _pref = SEATS + [m for m in _roster if m not in SEATS]
+    provs = {p["model"]: p for p in seats.resolve(_pref, n=None, role="llm_code_auditor")}
     diff = recent_diff(N_COMMITS)
     if not diff.strip():
         print("no python diff in the last commits")
@@ -120,7 +148,8 @@ def main() -> None:
             print(f"  {seat}: not in roster")
             continue
         try:
-            txt = _ask(prov["base_url"], prov["key"], seat, SYSTEM, user)
+            txt, _stop = _ask_pushed(prov["base_url"], prov["key"], seat, SYSTEM, user)
+            print(f"  {seat}: {_stop}")
         except Exception as e:
             print(f"  {seat.split('/')[-1]:<20} FAILED ({type(e).__name__} "
                   f"{getattr(e, 'code', '')})")

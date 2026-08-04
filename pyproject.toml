@@ -10,32 +10,45 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "Proprietary" }
 authors = [{ name = "Solo Quant" }]
+# UPPER BOUNDS ARE NOT TIDINESS -- they are what makes a green suite EVIDENCE about production.
+# Every pin here was a bare floor until 2026-08-02, so CI resolved whatever was newest and the VPS
+# ran requirements-vps.txt: pandas 2.3.3 in production against 3.0.5 in the test container, a MAJOR
+# version apart. Behaviour changes across a major, so the suite was green against software the desk
+# does not run. Installing production's exact pins and re-running immediately failed a test that
+# had passed for weeks (test_max_audit_sight asserted on stdout line ONE, and under production's
+# pins a dependency-drift check prints a note first) -- a test that was green only because the
+# environment was wrong. Caps are set at production's next major, so no resolver can ever again
+# put the test environment a major version away from the desk.
 dependencies = [
-    "pydantic>=2.13.4",
-    "pydantic-settings>=2.14.1",
-    "pyyaml>=6.0.3",
-    "numpy>=2.4.6",
-    "pandas>=2.3.3",
-    "pyarrow>=24.0.0",
-    "duckdb>=1.5.3",
-    "scipy>=1.17.1",
+    "pydantic>=2.13.4,<3",
+    "pydantic-settings>=2.14.1,<3",
+    "pyyaml>=6.0.3,<7",
+    "numpy>=2.4.6,<3",
+    "pandas>=2.3.3,<3",
+    "pyarrow>=24.0.0,<25",
+    "duckdb>=1.5.3,<2",
+    "scipy>=1.17.1,<2",
     "scikit-learn>=1.4",  # libs/regime (GMM/HMM probabilistic regimes) — a LIVE entrypoint dep
-    # scripts/reconcile_venue.py imports certifi at module scope and calls certifi.where() at
-    # import time to build its SSL context, so the venue reconciler cannot even be imported
-    # without it. It was undeclared and merely present transitively, which meant it worked on
-    # every machine that had already pulled it in for some other reason and would have been
-    # absent from a clean `pip install -e .` — a DR restore producing a desk whose reconciler
-    # crashes on import. CI, which installs exactly what is declared, is where that surfaced.
-    "certifi>=2024.2",
+    # UNDECLARED UNTIL 2026-08-03, AND IT IS ON THE MONEY PATH. Nine scripts import certifi —
+    # among them reconcile_venue.py, which imports it at module scope and calls certifi.where()
+    # at import time to build the SSL context every venue reconciliation call goes through. It was
+    # pinned in requirements-vps.txt only and present transitively elsewhere, so production had it
+    # and a clean `pip install -e .` did not — a DR restore producing a desk whose reconciler
+    # crashes on import. Both branches found this independently; the bounded pin follows this
+    # file's upper-bound doctrine.
+    "certifi>=2026.5.20,<2027",
+    # Same class as certifi, found by the same new test: pinned for the VPS, declared nowhere.
+    "psutil>=7.2.2,<8",        # scripts/watchdog.py -- process reaping on the live box
+    "websockets>=16.0,<17",    # scripts/liquidation_listener.py -- TOP-LEVEL import, no guard
 ]
 
 [project.optional-dependencies]
 dev = [
-    "ruff>=0.15.17",
-    "mypy>=2.1.0",
-    "pytest>=9.1.0",
-    "pytest-cov>=7.1.0",
-    "hypothesis>=6.155.2",
+    "ruff>=0.15.17,<0.16",
+    "mypy>=2.1.0,<3",
+    "pytest>=9.1.0,<10",
+    "pytest-cov>=7.1.0,<8",
+    "hypothesis>=6.155.2,<7",
     "types-PyYAML>=6.0",
     "pre-commit>=3.7",
 ]

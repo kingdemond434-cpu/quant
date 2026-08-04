@@ -73,6 +73,9 @@ def parse(line: str, venue: str = ""):
     if not b or not a:
         return None
     try:
+        # The quantity parse is the VALIDATION, not a value: a row whose size will not parse
+        # must reject HERE rather than reach the spread maths. The names are underscored because
+        # the call is used for the exception it raises, which is exactly what it is for.
         bp, _bq = float(b[0][0]), float(b[0][1])
         ap, _aq = float(a[0][0]), float(a[0][1])
     except (TypeError, ValueError, IndexError):

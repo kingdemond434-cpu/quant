@@ -28,6 +28,7 @@ symbol's own rolling history.
 
 Read-only. No keys, no LLM. Run from repo root.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -48,15 +49,14 @@ STORE = ROOT / "data/micro_feature_store.json"
 # were never read by the factory that exists to mine them, and adding a symbol to the recorder
 # silently did nothing. Reading the directory means the two can never drift again.
 _SYMS_FALLBACK = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT", "DOGEUSDT"]
-ROLL = 24             # hours of history for the withdrawal z-score
+ROLL = 24  # hours of history for the withdrawal z-score
 
 
 def recorded_symbols() -> list[str]:
     """Every symbol with recorded books on disk -- the real breadth of the moat."""
     if not MOAT.exists():
         return _SYMS_FALLBACK
-    found = sorted(d.name for d in MOAT.iterdir()
-                   if d.is_dir() and any(d.glob("*.jsonl.gz")))
+    found = sorted(d.name for d in MOAT.iterdir() if d.is_dir() and any(d.glob("*.jsonl.gz")))
     return found or _SYMS_FALLBACK
 
 
@@ -70,7 +70,7 @@ def load_store() -> dict:
 
 def save_store(store: dict) -> None:
     STORE.parent.mkdir(parents=True, exist_ok=True)
-    tmp = STORE.with_suffix(".json.tmp")        # atomic: a killed run must not corrupt the cache
+    tmp = STORE.with_suffix(".json.tmp")  # atomic: a killed run must not corrupt the cache
     tmp.write_text(json.dumps(store), "utf-8")
     tmp.replace(STORE)
 
@@ -107,10 +107,15 @@ def book_features(rec: dict) -> dict | None:
     near = d5b + d5a
     if near <= 0:
         return None
-    return {"mid": mid, "spread_bps": (ap - bp) / mid * 1e4,
-            "depth5": near, "depth10": d10b + d10a,
-            "imbalance": d5b / near, "concentration": top_b / max(d5b, 1e-9),
-            "slope": (d10b + d10a) / near}
+    return {
+        "mid": mid,
+        "spread_bps": (ap - bp) / mid * 1e4,
+        "depth5": near,
+        "depth10": d10b + d10a,
+        "imbalance": d5b / near,
+        "concentration": top_b / max(d5b, 1e-9),
+        "slope": (d10b + d10a) / near,
+    }
 
 
 def hourly(sym: str, n_files: int | None = None, store: dict | None = None) -> list[dict]:
@@ -136,7 +141,7 @@ def hourly(sym: str, n_files: int | None = None, store: dict | None = None) -> l
     for f in files:
         if store is not None:
             hit = store.get(f"{sym}/{f.stem}")
-            if hit is not None:                 # immutable completed hour -- never re-scan it
+            if hit is not None:  # immutable completed hour -- never re-scan it
                 out.append(hit)
                 continue
         vals: list[dict] = []
@@ -157,15 +162,19 @@ def hourly(sym: str, n_files: int | None = None, store: dict | None = None) -> l
         if len(vals) < 30:
             continue
         mids = np.array([v["mid"] for v in vals])
-        row = {"hour": f.stem, "n": len(vals), "mid_close": float(mids[-1]),
-               "rv_intra": float(np.diff(np.log(mids)).std() * np.sqrt(len(mids)))}
+        row = {
+            "hour": f.stem,
+            "n": len(vals),
+            "mid_close": float(mids[-1]),
+            "rv_intra": float(np.diff(np.log(mids)).std() * np.sqrt(len(mids))),
+        }
         for k in ("spread_bps", "depth5", "depth10", "imbalance", "concentration", "slope"):
             arr = np.array([v[k] for v in vals])
             row[k] = float(arr.mean())
             if k in ("depth5", "spread_bps"):
                 row[k + "_sd"] = float(arr.std())
         if store is not None:
-            store[f"{sym}/{f.stem}"] = row      # persist: this hour is never re-scanned again
+            store[f"{sym}/{f.stem}"] = row  # persist: this hour is never re-scanned again
         out.append(row)
     return out
 
@@ -178,7 +187,7 @@ def spearman(a, b):
         return 0.0, 0.0
     r = float(np.corrcoef(ra, rb)[0, 1])
     n = len(a)
-    return r, float(r * np.sqrt((n - 2) / max(1e-12, 1 - r ** 2)))
+    return r, float(r * np.sqrt((n - 2) / max(1e-12, 1 - r**2)))
 
 
 def main() -> None:
@@ -186,19 +195,29 @@ def main() -> None:
     print("    mechanism M_LIQUIDITY_WITHDRAWAL: does liquidity vanish BEFORE volatility,")
     print("    or only alongside it? (lead-vs-coincident killed 38% of this desk's ideas)\n")
     ap = argparse.ArgumentParser(description="Microstructure feature factory over the moat.")
-    ap.add_argument("--recent", type=int, default=None,
-                    help="only the most recent N hours per symbol (default: FULL history)")
-    ap.add_argument("--symbols", default=None,
-                    help="comma-separated override (default: every recorded symbol)")
+    ap.add_argument(
+        "--recent",
+        type=int,
+        default=None,
+        help="only the most recent N hours per symbol (default: FULL history)",
+    )
+    ap.add_argument(
+        "--symbols", default=None, help="comma-separated override (default: every recorded symbol)"
+    )
     ap.add_argument("--no-store", action="store_true", help="ignore and do not write the cache")
     args = ap.parse_args()
 
-    syms = ([s.strip() for s in args.symbols.split(",") if s.strip()] if args.symbols
-            else recorded_symbols())
+    syms = (
+        [s.strip() for s in args.symbols.split(",") if s.strip()]
+        if args.symbols
+        else recorded_symbols()
+    )
     store = None if args.no_store else load_store()
     scope = "FULL history" if args.recent is None else f"most recent {args.recent}h"
-    print(f"    scope: {len(syms)} symbol(s) x {scope} | "
-          f"cache {'off' if store is None else f'{len(store)} hours warm'}\n")
+    print(
+        f"    scope: {len(syms)} symbol(s) x {scope} | "
+        f"cache {'off' if store is None else f'{len(store)} hours warm'}\n"
+    )
 
     results, pooled_lead, pooled_coin, pooled_res = [], [], [], []
     for sym in syms:
@@ -213,15 +232,15 @@ def main() -> None:
         # WITHDRAWAL = negative z of near depth vs the symbol's own rolling history
         wd = np.zeros(len(d5))
         for i in range(ROLL, len(d5)):
-            w = d5[i - ROLL:i]
+            w = d5[i - ROLL : i]
             sd = w.std()
             wd[i] = -(d5[i] - w.mean()) / sd if sd > 0 else 0.0
         m = np.zeros(len(d5), bool)
         m[ROLL:-1] = True
         fwd = np.roll(rv, -1)
 
-        r_lead, t_lead = spearman(wd[m], fwd[m])       # withdrawal now -> vol NEXT hour
-        r_coin, t_coin = spearman(wd[m], rv[m])        # withdrawal now -> vol NOW
+        r_lead, t_lead = spearman(wd[m], fwd[m])  # withdrawal now -> vol NEXT hour
+        r_coin, t_coin = spearman(wd[m], rv[m])  # withdrawal now -> vol NOW
         # DE-CONTAMINATION: volatility CLUSTERS, so vol[t] predicts vol[t+1] on its own. A
         # withdrawal measure that is merely COINCIDENT with vol[t] therefore inherits a fake
         # 'lead'. Regress forward vol on current vol and test withdrawal against the RESIDUAL --
@@ -230,7 +249,7 @@ def main() -> None:
         _b = np.polyfit(rv[m], fwd[m], 1)
         resid = fwd[m] - (_b[0] * rv[m] + _b[1])
         r_res, t_res = spearman(wd[m], resid)
-        r_persist, _ = spearman(rv[m], fwd[m])         # how strong is vol clustering itself?
+        r_persist, _ = spearman(rv[m], fwd[m])  # how strong is vol clustering itself?
         r_spr, _ = spearman(wd[m], spr[m])
         pooled_lead.append(r_lead)
         pooled_res.append(r_res)
@@ -238,40 +257,71 @@ def main() -> None:
         k = max(3, int(m.sum()) // 4)
         o = np.argsort(wd[m])
         hi, lo = float(fwd[m][o[-k:]].mean()), float(fwd[m][o[:k]].mean())
-        print(f"  {sym:<10} hours={int(m.sum()):<4} depth5 ${d5.mean():>12,.0f}  "
-              f"spread {spr.mean():5.2f}bps")
-        print(f"             withdrawal -> NEXT-hour RV  rho {r_lead:+.3f} (t {t_lead:+.2f})   "
-              f"high-wd RV {hi*100:.3f}% vs low {lo*100:.3f}% = {hi/max(lo,1e-9):.2f}x")
+        print(
+            f"  {sym:<10} hours={int(m.sum()):<4} depth5 ${d5.mean():>12,.0f}  "
+            f"spread {spr.mean():5.2f}bps"
+        )
+        print(
+            f"             withdrawal -> NEXT-hour RV  rho {r_lead:+.3f} (t {t_lead:+.2f})   "
+            f"high-wd RV {hi * 100:.3f}% vs low {lo * 100:.3f}% = {hi / max(lo, 1e-9):.2f}x"
+        )
         print(f"             withdrawal -> SAME-hour RV  rho {r_coin:+.3f} (t {t_coin:+.2f})")
-        print(f"             vol persistence rho {r_persist:+.3f} | RESIDUAL (de-contaminated) "
-              f"rho {r_res:+.3f} (t {t_res:+.2f})  <-- the honest number")
-        results.append({"sym": sym, "hours": int(m.sum()), "depth5_usd": round(float(d5.mean()), 0),
-                        "spread_bps": round(float(spr.mean()), 3),
-                        "lead_rho": round(r_lead, 4), "lead_t": round(t_lead, 2),
-                        "coincident_rho": round(r_coin, 4), "coincident_t": round(t_coin, 2),
-                        "residual_rho": round(r_res, 4), "residual_t": round(t_res, 2),
-                        "vol_persistence": round(r_persist, 4),
-                        "rv_ratio_hi_lo": round(hi / max(lo, 1e-9), 3),
-                        "withdrawal_vs_spread_rho": round(r_spr, 4)})
+        print(
+            f"             vol persistence rho {r_persist:+.3f} | RESIDUAL (de-contaminated) "
+            f"rho {r_res:+.3f} (t {t_res:+.2f})  <-- the honest number"
+        )
+        results.append(
+            {
+                "sym": sym,
+                "hours": int(m.sum()),
+                "depth5_usd": round(float(d5.mean()), 0),
+                "spread_bps": round(float(spr.mean()), 3),
+                "lead_rho": round(r_lead, 4),
+                "lead_t": round(t_lead, 2),
+                "coincident_rho": round(r_coin, 4),
+                "coincident_t": round(t_coin, 2),
+                "residual_rho": round(r_res, 4),
+                "residual_t": round(t_res, 2),
+                "vol_persistence": round(r_persist, 4),
+                "rv_ratio_hi_lo": round(hi / max(lo, 1e-9), 3),
+                "withdrawal_vs_spread_rho": round(r_spr, 4),
+            }
+        )
 
     if len(pooled_lead) >= 3:
         pl, pc = np.array(pooled_lead), np.array(pooled_coin)
         t_pl = float(pl.mean() / (pl.std() / np.sqrt(len(pl)))) if pl.std() else 0.0
         print(f"\n  POOLED over {len(pl)} symbols:")
-        print(f"    LEAD        mean rho {pl.mean():+.4f} (t {t_pl:+.2f}), "
-              f"same sign {int((np.sign(pl) == np.sign(pl[0])).sum())}/{len(pl)}")
+        print(
+            f"    LEAD        mean rho {pl.mean():+.4f} (t {t_pl:+.2f}), "
+            f"same sign {int((np.sign(pl) == np.sign(pl[0])).sum())}/{len(pl)}"
+        )
         print(f"    COINCIDENT  mean rho {pc.mean():+.4f}")
         pr = np.array(pooled_res)
         t_pr = float(pr.mean() / (pr.std() / np.sqrt(len(pr)))) if pr.std() else 0.0
-        print(f"    RESIDUAL    mean rho {pr.mean():+.4f} (t {t_pr:+.2f}), "
-              f"same sign {int((np.sign(pr) == np.sign(pr[0])).sum())}/{len(pr)}  <-- DECIDES IT")
-        verdict = ("LEADS -- withdrawal adds information BEYOND vol persistence"
-                   if abs(t_pr) >= 2.4 and abs(pr.mean()) > 0.15 else
-                   "COINCIDENT -- the apparent lead is vol clustering, withdrawal adds nothing")
+        print(
+            f"    RESIDUAL    mean rho {pr.mean():+.4f} (t {t_pr:+.2f}), "
+            f"same sign {int((np.sign(pr) == np.sign(pr[0])).sum())}/{len(pr)}  <-- DECIDES IT"
+        )
+        verdict = (
+            "LEADS -- withdrawal adds information BEYOND vol persistence"
+            if abs(t_pr) >= 2.4 and abs(pr.mean()) > 0.15
+            else "COINCIDENT -- the apparent lead is vol clustering, withdrawal adds nothing"
+        )
         print(f"    VERDICT: {verdict}")
-    OUT.write_text(json.dumps({"updated": datetime.now(tz=UTC).isoformat(),
-                               "roll_hours": ROLL, "symbols": syms,
-                               "scope": scope, "results": results}, indent=1), "utf-8")
+    OUT.write_text(
+        json.dumps(
+            {
+                "updated": datetime.now(tz=UTC).isoformat(),
+                "roll_hours": ROLL,
+                "symbols": syms,
+                "scope": scope,
+                "results": results,
+            },
+            indent=1,
+        ),
+        "utf-8",
+    )
     if store is not None:
         save_store(store)
         print(f"  feature store: {len(store)} symbol-hours cached -> {STORE}")

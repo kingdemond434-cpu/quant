@@ -18,6 +18,7 @@ guaranteed false-positive factory. Discipline applied:
 
 Stage-A, zero promotion authority. Run from repo root.
 """
+
 from __future__ import annotations
 
 import json
@@ -32,14 +33,21 @@ from libs.research.upbit_data import upbit_daily_utc_keyed
 
 
 def _get(u, t=40):
-    return json.loads(urllib.request.urlopen(
-        urllib.request.Request(u, headers={"User-Agent": "q/1.0"}), timeout=t).read().decode())
+    return json.loads(
+        urllib.request.urlopen(
+            urllib.request.Request(u, headers={"User-Agent": "q/1.0"}), timeout=t
+        )
+        .read()
+        .decode()
+    )
 
 
 def binance():
     rows = _get("https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1d&limit=900")
-    return {datetime.fromtimestamp(int(r[0]) / 1000, tz=UTC).date().isoformat(): float(r[4])
-            for r in rows}
+    return {
+        datetime.fromtimestamp(int(r[0]) / 1000, tz=UTC).date().isoformat(): float(r[4])
+        for r in rows
+    }
 
 
 def stables():
@@ -54,23 +62,31 @@ def stables():
 
 
 def llama_tvl():
-    return {datetime.fromtimestamp(int(x["date"]), tz=UTC).date().isoformat(): float(x["tvl"])
-            for x in _get("https://api.llama.fi/v2/historicalChainTvl")}
+    return {
+        datetime.fromtimestamp(int(x["date"]), tz=UTC).date().isoformat(): float(x["tvl"])
+        for x in _get("https://api.llama.fi/v2/historicalChainTvl")
+    }
 
 
 def llama_chart(u):
-    return {datetime.fromtimestamp(int(ts), tz=UTC).date().isoformat(): float(v)
-            for ts, v in _get(u).get("totalDataChart", [])}
+    return {
+        datetime.fromtimestamp(int(ts), tz=UTC).date().isoformat(): float(v)
+        for ts, v in _get(u).get("totalDataChart", [])
+    }
 
 
 def kimchi():
     # R0060/R0067 single source: upbit_data owns the ONE Upbit keying (label = UTC date, no shift,
     # proven from Upbit's own hourly candles), and the fence pins the copy count at one.
     kb = upbit_daily_utc_keyed()
-    res = _get("https://query1.finance.yahoo.com/v8/finance/chart/KRW=X?interval=1d&range=300d"
-               )["chart"]["result"][0]
-    fx = {datetime.fromtimestamp(int(t), tz=UTC).date().isoformat(): float(c)
-          for t, c in zip(res["timestamp"], res["indicators"]["quote"][0]["close"], strict=False) if c}
+    res = _get("https://query1.finance.yahoo.com/v8/finance/chart/KRW=X?interval=1d&range=300d")[
+        "chart"
+    ]["result"][0]
+    fx = {
+        datetime.fromtimestamp(int(t), tz=UTC).date().isoformat(): float(c)
+        for t, c in zip(res["timestamp"], res["indicators"]["quote"][0]["close"], strict=False)
+        if c
+    }
     return kb, fx
 
 
@@ -78,26 +94,31 @@ def kimchi():
 COMBOS = {
     "liquidity_expansion (M1 chain)": (
         ["stablecoin_supply", "defi_tvl"],
-        "same mechanism node observed two ways: dollar liquidity entering the system"),
+        "same mechanism node observed two ways: dollar liquidity entering the system",
+    ),
     "onchain_economic_activity": (
         ["dex_volume", "protocol_fees"],
-        "real usage/revenue -- two views of the same economic throughput"),
+        "real usage/revenue -- two views of the same economic throughput",
+    ),
     "liquidity_plus_activity": (
         ["stablecoin_supply", "dex_volume", "protocol_fees"],
-        "capital arriving AND being used -- supply alone may be idle"),
+        "capital arriving AND being used -- supply alone may be idle",
+    ),
     "flow_plus_regional (orthogonal fuse)": (
         ["stablecoin_supply", "kimchi"],
-        "global dollar liquidity + KRW capital-control flow: genuinely different mechanisms"),
+        "global dollar liquidity + KRW capital-control flow: genuinely different mechanisms",
+    ),
     "full_stack": (
         ["stablecoin_supply", "dex_volume", "protocol_fees", "kimchi"],
-        "all surviving weak signals, equal weight"),
+        "all surviving weak signals, equal weight",
+    ),
 }
 
 
 def z(series: np.ndarray, w: int = 20) -> np.ndarray:
     o = np.zeros(len(series))
     for t in range(w, len(series)):
-        win = series[t - w:t]
+        win = series[t - w : t]
         sd = win.std()
         o[t] = (series[t] - win.mean()) / sd if sd > 0 else 0.0
     return o
@@ -110,14 +131,18 @@ def main() -> None:
         "stablecoin_supply": stables(),
         "defi_tvl": llama_tvl(),
         "dex_volume": llama_chart(
-            "https://api.llama.fi/overview/dexs?excludeTotalDataChartBreakdown=true"),
+            "https://api.llama.fi/overview/dexs?excludeTotalDataChartBreakdown=true"
+        ),
         "protocol_fees": llama_chart(
-            "https://api.llama.fi/overview/fees?excludeTotalDataChartBreakdown=true"),
+            "https://api.llama.fi/overview/fees?excludeTotalDataChartBreakdown=true"
+        ),
         "kimchi": {d: kb[d] / fx[d] / gb[d] - 1.0 for d in (set(kb) & set(fx) & set(gb))},
     }
     dates = sorted(set(gb).intersection(*[set(v) for v in raw.values()]))
-    print(f"aligned dates across ALL components: {len(dates)} "
-          f"(kimchi is the binding constraint at ~{len(raw['kimchi'])})")
+    print(
+        f"aligned dates across ALL components: {len(dates)} "
+        f"(kimchi is the binding constraint at ~{len(raw['kimchi'])})"
+    )
     if len(dates) < 80:
         print("insufficient overlap")
         return
@@ -136,8 +161,10 @@ def main() -> None:
         print(f"  {k:22s} IC {ic:+.4f}  revSh {rs:+.2f}  {r.get('verdict')}")
 
     n_tests = len(COMBOS)
-    print(f"\n--- pre-registered fusions (Bonferroni alpha {0.05/n_tests:.4f}, "
-          f"equal-weight only, no fitted weights) ---")
+    print(
+        f"\n--- pre-registered fusions (Bonferroni alpha {0.05 / n_tests:.4f}, "
+        f"equal-weight only, no fitted weights) ---"
+    )
     out = []
     for name, (members, why) in COMBOS.items():
         comp = np.mean([Z[m] for m in members], axis=0)
@@ -146,27 +173,52 @@ def main() -> None:
         cic = r.get("ic") or 0.0
         ic = abs(cic)
         lift = ic - best_single
-        verdict = ("FUSION ADDS VALUE" if lift > 0.02 else
-                   "no lift over best component (relabelling, not fusion)")
+        verdict = (
+            "FUSION ADDS VALUE"
+            if lift > 0.02
+            else "no lift over best component (relabelling, not fusion)"
+        )
         print(f"\n  {name}")
         print(f"    why: {why}")
         print(f"    members: {', '.join(members)}")
-        print(f"    composite IC {cic:+.4f} | best single |IC| {best_single:.4f} "
-              f"| lift {lift:+.4f}")
-        print(f"    same-period {(r.get('same_period_corr') or 0):+.3f} | "
-              f"resid {(r.get('residual_ic') or 0):+.4f} | "
-              f"revSh {(r.get('sharpe_reversal') or 0):+.2f} | {r.get('verdict')}")
+        print(
+            f"    composite IC {cic:+.4f} | best single |IC| {best_single:.4f} | lift {lift:+.4f}"
+        )
+        print(
+            f"    same-period {(r.get('same_period_corr') or 0):+.3f} | "
+            f"resid {(r.get('residual_ic') or 0):+.4f} | "
+            f"revSh {(r.get('sharpe_reversal') or 0):+.2f} | {r.get('verdict')}"
+        )
         print(f"    -> {verdict}")
-        out.append({"combo": name, "members": members, "ic": cic,
-                    "best_single": round(best_single, 4), "lift": round(lift, 4),
-                    "verdict": r.get("verdict"), "fusion_verdict": verdict})
+        out.append(
+            {
+                "combo": name,
+                "members": members,
+                "ic": cic,
+                "best_single": round(best_single, 4),
+                "lift": round(lift, 4),
+                "verdict": r.get("verdict"),
+                "fusion_verdict": verdict,
+            }
+        )
 
-    Path("data/fusion_engine.json").write_text(json.dumps(
-        {"updated": datetime.now(tz=UTC).isoformat(), "n_combos": n_tests,
-         "bonferroni_alpha": 0.05 / n_tests, "components": {k: round(v, 4) for k, v in base.items()},
-         "results": out}, indent=1), "utf-8")
-    print(f"\n=> {sum(1 for o in out if 'ADDS VALUE' in o['fusion_verdict'])}/{n_tests} "
-          f"combinations beat their best component.")
+    Path("data/fusion_engine.json").write_text(
+        json.dumps(
+            {
+                "updated": datetime.now(tz=UTC).isoformat(),
+                "n_combos": n_tests,
+                "bonferroni_alpha": 0.05 / n_tests,
+                "components": {k: round(v, 4) for k, v in base.items()},
+                "results": out,
+            },
+            indent=1,
+        ),
+        "utf-8",
+    )
+    print(
+        f"\n=> {sum(1 for o in out if 'ADDS VALUE' in o['fusion_verdict'])}/{n_tests} "
+        f"combinations beat their best component."
+    )
 
 
 if __name__ == "__main__":

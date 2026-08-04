@@ -1,0 +1,13 @@
+[Unit]
+Description=Run the quant daily maximisation sweep every day
+
+[Timer]
+# 05:30 UTC: after the overnight diggers and before the principal's morning. Persistent=true so a
+# missed day (reboot, downtime) fires on next boot rather than being silently skipped -- a daily
+# loop that can miss a day without saying so is not daily.
+OnCalendar=*-*-* 05:30:00
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

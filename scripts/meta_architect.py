@@ -34,6 +34,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
+from libs.doctrine.constitution import OBJECTIVE_PREAMBLE  # noqa: E402
+from libs.llm.effort import reasoning_payload  # noqa: E402
+from libs.llm.push import PUSH_LADDER, push_rounds  # noqa: E402
 from scripts import seats  # noqa: E402 -- after the sys.path bootstrap above
 
 KEYS = ROOT / "data/secrets/llm_panel.json"
@@ -44,6 +47,10 @@ CTX = ssl.create_default_context()
 SEATS = ["openai/gpt-5.6-terra-pro", "x-ai/grok-4.3", "google/gemini-3.1-pro-preview"]
 
 CHARTER = (
+    # The board redesigns the desk itself, so it is the one seat where a missing objective
+    # compounds: an architecture chosen against no objective becomes the frame every future
+    # decision is made inside.
+    OBJECTIVE_PREAMBLE + "\n"
     "You are an ARCHITECTURE REVIEW BOARD for a quantitative research desk. You do NOT propose "
     "trading ideas. You propose improvements to the RESEARCH SYSTEM ITSELF.\n\n"
     "THE BINDING RULE: every proposal must EITHER replace an existing component OR improve a "
@@ -65,22 +72,6 @@ CHARTER = (
 
 
 # ---------------------------------------------------------------- SIMPLIFIER (mechanical)
-
-def _doctrine(role: str = "") -> str:
-    """Runtime doctrine preamble. One source (scripts/doctrine.py); never a pasted copy."""
-    try:
-        from scripts.doctrine import preamble
-        return preamble(role)
-    except Exception:  # blind-except intentional (BLE001)
-        try:
-            import sys as _s
-            _s.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent))
-            from doctrine import preamble  # type: ignore
-            return preamble(role)
-        except Exception:  # blind-except intentional (BLE001)
-            return ""          # never break a caller over a preamble
-
-
 def simplifier() -> dict:
     scripts = sorted((ROOT / "scripts").glob("*.py"))
     cycle_txt = CYCLE.read_text("utf-8") if CYCLE.exists() else ""
@@ -120,11 +111,28 @@ def simplifier() -> dict:
             "touched_30d": len({ln.strip() for ln in recent.splitlines() if ln.strip()})}
 
 
-def _ask(base, key, model, system, user, timeout=240.0):
+def _doctrine(role: str = "") -> str:
+    """Runtime doctrine preamble. One source (scripts/doctrine.py); never a pasted copy."""
+    try:
+        from scripts.doctrine import preamble
+        return preamble(role)
+    except Exception:  # blind-except intentional (BLE001)
+        try:
+            import sys as _s
+            _s.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent))
+            from doctrine import preamble  # type: ignore
+            return preamble(role)
+        except Exception:  # blind-except intentional (BLE001)
+            return ""          # never break a caller over a preamble
+
+
+def _ask(base, key, model, messages, timeout=240.0):
     body = json.dumps({"model": model, "max_tokens": 12000, "temperature": 0.9,
-                       "reasoning": {"effort": "high"},
-                       "messages": [{"role": "system", "content": _doctrine("meta_architect") + system},
-                                    {"role": "user", "content": user}]}).encode()
+                       # DEPTH IS MEASURED, NOT ASSUMED. "high" is the middle rung of a ladder
+                       # whose top differs per model and per month -- a literal here is
+                       # capability left unused on a flagship the desk pays for.
+                       "reasoning": reasoning_payload(model),
+                       "messages": messages}).encode()
     req = urllib.request.Request(base.rstrip("/") + "/chat/completions", data=body, method="POST",
                                  headers={"Authorization": f"Bearer {key}",
                                           "Content-Type": "application/json"})
@@ -132,6 +140,18 @@ def _ask(base, key, model, system, user, timeout=240.0):
         out = json.loads(r.read())
     m = out["choices"][0]["message"]
     return str(m.get("content") or m.get("reasoning") or "")
+
+
+def _ask_pushed(base, key, model, system, user):
+    """Push until the seat is measurably exhausted -- standing policy across every LLM organ.
+
+    The context (system prompt + payload) is the expensive half and is already paid for; the
+    ladder reuses it and keeps asking until novelty dies, the model surrenders, or the round cap
+    binds. Returns (joined_text, stop_reason).
+    """
+    r = push_rounds(lambda msgs: _ask(base, key, model, msgs),
+                    _doctrine("meta_architect") + system, user, ladder=PUSH_LADDER)
+    return r.text, f"{r.rounds} push round(s); {r.stop_reason}"
 
 
 def desk_state(simp: dict) -> str:
@@ -181,14 +201,17 @@ def main() -> None:
     # Seats resolve against the LIVE roster: an upgraded-away model is substituted (same lab
     # first), never silently dropped -- the old provs.get(seat)/continue amputated this board
     # to zero without a word the moment a seat was swapped.
-    provs = {p["model"]: p for p in seats.resolve(SEATS, n=len(SEATS), role="meta_architect")}
+    # SEAT CAP REMOVED (2026-07-31). This read `n=len(SEATS)`, so the LITERAL'S LENGTH capped how
+    # many funded seats were ever asked -- 3 of 13. Five organs shared the bug. SEATS is a
+    # PRIORITY ORDER, not a membership list: the preferred list is now built from the LIVE roster
+    # so every seat the desk pays for does the desk's work, and growing the roster grows the
+    # organ. seats.resolve still substitutes an upgraded-away model same-lab-first.
+    _roster = [str(p["model"]) for p in seats.load_roster()]
+    _pref = SEATS + [m for m in _roster if m not in SEATS]
+    provs = {p["model"]: p for p in seats.resolve(_pref, n=None, role="meta_architect")}
     if not provs:
         print("\n  no panel seats resolvable -- architect cannot run")
         return
-        print("\n  no panel keys -- architect cannot run")
-        return
-    provs = {p["model"]: p for p in json.loads(KEYS.read_text("utf-8"))["providers"]
-             if isinstance(p, dict)}
     user = (f"{state}\n\nPropose 6-10 improvements to this RESEARCH SYSTEM. Prefer DELETE/MERGE "
             f"over ADD. All seven fields required per proposal.")
     rows = []
@@ -197,7 +220,8 @@ def main() -> None:
         if not prov:
             continue
         try:
-            txt = _ask(prov["base_url"], prov["key"], seat, CHARTER, user)
+            txt, _stop = _ask_pushed(prov["base_url"], prov["key"], seat, CHARTER, user)
+            print(f"  {seat}: {_stop}")
         except Exception as e:
             print(f"  {seat.split('/')[-1]:<22} FAILED ({type(e).__name__} "
                   f"{getattr(e, 'code', '')})")

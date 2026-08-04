@@ -14,6 +14,7 @@ positives. Handled per the two-stage law -- Stage-A screening is UNLIMITED and c
 promotion authority; the expected-false-positive count and a Bonferroni alpha are reported so
 nothing looks significant by accident. Run from repo root.
 """
+
 from __future__ import annotations
 
 import json
@@ -36,13 +37,16 @@ CACHE = Path("data/hl_fills_cache.json")
 
 def _get(u, t=180):
     return urllib.request.urlopen(
-        urllib.request.Request(u, headers={"User-Agent": "q/1.0"}), timeout=t).read()
+        urllib.request.Request(u, headers={"User-Agent": "q/1.0"}), timeout=t
+    ).read()
 
 
 def _post(p, t=20):
-    r = urllib.request.Request(INFO, data=json.dumps(p).encode(),
-                               headers={"Content-Type": "application/json",
-                                        "User-Agent": "q/1.0"})
+    r = urllib.request.Request(
+        INFO,
+        data=json.dumps(p).encode(),
+        headers={"Content-Type": "application/json", "User-Agent": "q/1.0"},
+    )
     with urllib.request.urlopen(r, timeout=t) as x:
         return json.loads(x.read().decode())
 
@@ -72,12 +76,22 @@ else:
         except Exception:
             continue
         if isinstance(f, list) and f:
-            raw.append([{"c": x.get("coin"), "t": int(x["time"]), "p": float(x["px"]),
-                         "s": float(x["sz"]), "b": str(x.get("side", "")).upper().startswith("B"),
-                         "d": str(x.get("dir", ""))}
-                        for x in f if x.get("coin") in COINS and x.get("time")])
+            raw.append(
+                [
+                    {
+                        "c": x.get("coin"),
+                        "t": int(x["time"]),
+                        "p": float(x["px"]),
+                        "s": float(x["sz"]),
+                        "b": str(x.get("side", "")).upper().startswith("B"),
+                        "d": str(x.get("dir", "")),
+                    }
+                    for x in f
+                    if x.get("coin") in COINS and x.get("time")
+                ]
+            )
         if (i + 1) % 100 == 0:
-            print(f"  {i+1}/{min(N, len(cand))} ok={len(raw)}", flush=True)
+            print(f"  {i + 1}/{min(N, len(cand))} ok={len(raw)}", flush=True)
             CACHE.write_text(json.dumps(raw))
     CACHE.write_text(json.dumps(raw))
 print(f"cohort {len(raw)} traders (performance-blind)")
@@ -106,9 +120,22 @@ for ti, fills in enumerate(raw):
             F["short_notional"] += n_
         per_trader[c][b][ti] += sgn * n_
 
-FEATURES = ["net_flow", "flow_imbalance", "gross_vol", "n_trades", "avg_trade_size", "buy_ratio",
-            "disagreement", "consensus_strength", "participation", "concentration",
-            "open_close_ratio", "long_short_tilt", "net_flow_accel", "vol_accel"]
+FEATURES = [
+    "net_flow",
+    "flow_imbalance",
+    "gross_vol",
+    "n_trades",
+    "avg_trade_size",
+    "buy_ratio",
+    "disagreement",
+    "consensus_strength",
+    "participation",
+    "concentration",
+    "open_close_ratio",
+    "long_short_tilt",
+    "net_flow_accel",
+    "vol_accel",
+]
 
 
 def build(c):
@@ -147,8 +174,9 @@ for c in COINS:
     if len(bks) < 70:
         print(f"{c}: thin ({len(bks)})")
         continue
-    kl = json.loads(_get(f"https://api.binance.com/api/v3/klines?symbol={c}USDT"
-                         f"&interval=4h&limit=1000", 40))
+    kl = json.loads(
+        _get(f"https://api.binance.com/api/v3/klines?symbol={c}USDT&interval=4h&limit=1000", 40)
+    )
     px = {int(k[0]) // BK: float(k[4]) for k in kl}
     idx = [i for i, b in enumerate(bks) if b in px and (b + 1) in px]
     if len(idx) < 70:
@@ -166,9 +194,11 @@ for c in COINS:
         r.update({"coin": c, "feature": fname})
         results.append(r)
         flag = "*" if r["verdict"] == "SCREEN-INTERESTING" else " "
-        print(f" {flag}{fname:20s} IC {r.get('ic'):+.4f} same {r.get('same_period_corr'):+.3f} "
-              f"resid {r.get('residual_ic'):+.4f} revSh {r.get('sharpe_reversal'):+.2f} "
-              f"{r['verdict']}")
+        print(
+            f" {flag}{fname:20s} IC {r.get('ic'):+.4f} same {r.get('same_period_corr'):+.3f} "
+            f"resid {r.get('residual_ic'):+.4f} revSh {r.get('sharpe_reversal'):+.2f} "
+            f"{r['verdict']}"
+        )
 
 k = len(results)
 print(f"\n=== FEATURE FACTORY: {k} feature-coin screens ===")
@@ -176,7 +206,7 @@ if k:
     surv = [r for r in results if r["verdict"] == "SCREEN-INTERESTING"]
     exp = 0.05 * k
     print(f"  SCREEN-INTERESTING: {len(surv)}/{k}")
-    print(f"  Expected false positives at alpha=0.05: ~{exp:.1f} | Bonferroni alpha {0.05/k:.5f}")
+    print(f"  Expected false positives at alpha=0.05: ~{exp:.1f} | Bonferroni alpha {0.05 / k:.5f}")
     print(f"  -> survivors {'EXCEED' if len(surv) > exp else 'DO NOT EXCEED'} chance expectation")
     print("\n  per-feature pooled across coins (|t|>=1.5 shown):")
     for f in FEATURES:
@@ -189,6 +219,9 @@ if k:
     for r in surv:
         print(f"    SURVIVOR: {r['name']} IC {r.get('ic'):+.4f}")
 
-Path("data/hl_feature_factory.json").write_text(json.dumps(
-    {"updated": datetime.now(tz=UTC).isoformat(), "n_screens": k, "results": results}, indent=1),
-    "utf-8")
+Path("data/hl_feature_factory.json").write_text(
+    json.dumps(
+        {"updated": datetime.now(tz=UTC).isoformat(), "n_screens": k, "results": results}, indent=1
+    ),
+    "utf-8",
+)

@@ -214,8 +214,8 @@ def probe_all() -> list[dict[str, Any]]:
 #: Where the token is looked for, in order. NEVER hardcoded and never committed: a token in a repo
 #: is a credential leak that outlives whoever pasted it. `GITHUB_TOKEN` in the environment is the
 #: right place; the dotfile is the fallback for a box where env config is inconvenient.
-GITHUB_TOKEN_ENV = "GITHUB_TOKEN"
-GITHUB_TOKEN_FILE = "~/.gh_token"
+GITHUB_TOKEN_ENV = "GITHUB_TOKEN"    # noqa: S105 -- env var NAME, not a credential
+GITHUB_TOKEN_FILE = "~/.gh_token"    # noqa: S105 -- dotfile PATH, not a credential
 
 
 def github_token() -> str | None:

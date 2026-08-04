@@ -18,6 +18,7 @@ a monitored option.
 
 Read-only. Run from repo root, cheap enough for daily cadence.
 """
+
 from __future__ import annotations
 
 import json
@@ -37,24 +38,40 @@ CLASSES = {
     "unstable_artifact": ("PERMANENT", "nothing -- sign flipped under cohort perturbation", None),
     "position_overlap_artifact": ("PERMANENT", "nothing -- mechanical PnL carry", None),
     "no_economics": ("NEAR-PERMANENT", "a NEW named causal mechanism is proposed", None),
-    "wrong_sign": ("NEAR-PERMANENT", "a mechanism explains the sign (flipping alone is p-hacking)",
-                   None),
-    "redundant": ("CONDITIONAL", "the signal it duplicates is retired or diverges", "live_axis_retired"),
+    "wrong_sign": (
+        "NEAR-PERMANENT",
+        "a mechanism explains the sign (flipping alone is p-hacking)",
+        None,
+    ),
+    "redundant": (
+        "CONDITIONAL",
+        "the signal it duplicates is retired or diverges",
+        "live_axis_retired",
+    ),
     "crowded": ("CONDITIONAL", "evidence the crowd left (volume//spread/decay)", "crowding_drop"),
-    "costs_killed_edge": ("REVERSIBLE", "measured costs fall or hold period lengthens",
-                          "cost_model_improved"),
+    "costs_killed_edge": (
+        "REVERSIBLE",
+        "measured costs fall or hold period lengthens",
+        "cost_model_improved",
+    ),
     "narrow_breadth": ("REVERSIBLE", "the tradeable universe widens", "universe_widened"),
     "no_breadth": ("REVERSIBLE", "more venues/assets carry the signal", "universe_widened"),
     "regime_artifact": ("REVERSIBLE", "a different regime arrives", "regime_changed"),
-    "insignificant": ("REVERSIBLE", "a larger sample / more power becomes available",
-                      "more_data_available"),
+    "insignificant": (
+        "REVERSIBLE",
+        "a larger sample / more power becomes available",
+        "more_data_available",
+    ),
     "no_edge_daily": ("REVERSIBLE", "test at a different horizon", "horizon_untested"),
     "no_predictive_power": ("REVERSIBLE", "a different SELECTION criterion, not a refit", None),
     "overfit": ("CONDITIONAL", "clean out-of-sample or forward evidence only", "oos_available"),
     "wrong_orthogonality": ("CONDITIONAL", "the sleeve it duplicated dies", "live_axis_retired"),
     "no_edge": ("NEAR-PERMANENT", "a genuinely new construction of the same data", None),
-    "insufficient": ("REVERSIBLE", "data volume grows past the power threshold",
-                     "more_data_available"),
+    "insufficient": (
+        "REVERSIBLE",
+        "data volume grows past the power threshold",
+        "more_data_available",
+    ),
 }
 
 
@@ -64,9 +81,10 @@ def triggers_met() -> dict[str, tuple[bool, str]]:
 
     # horizon_untested: was the horizon search ever run on this class?
     hz = ROOT / "data/horizon_discovery.json"
-    out["horizon_untested"] = (not hz.exists(),
-                               "horizon sweep has run (1d-90d)" if hz.exists()
-                               else "no horizon sweep on record")
+    out["horizon_untested"] = (
+        not hz.exists(),
+        "horizon sweep has run (1d-90d)" if hz.exists() else "no horizon sweep on record",
+    )
 
     # more_data_available: are forward clocks accruing rows?
     clocks = list((ROOT / "data").glob("*.jsonl"))
@@ -75,19 +93,25 @@ def triggers_met() -> dict[str, tuple[bool, str]]:
 
     # oos_available: does the reconstructed held-out OOS validator exist?
     oos = ROOT / "scripts/backfill_onchain_oos.py"
-    out["oos_available"] = (oos.exists(),
-                            "reconstructed OOS validator exists" if oos.exists() else "no OOS tool")
+    out["oos_available"] = (
+        oos.exists(),
+        "reconstructed OOS validator exists" if oos.exists() else "no OOS tool",
+    )
 
     # cost_model_improved: is there a measured cost model from recorded L2?
     cm = ROOT / "data/cost_model.json"
-    out["cost_model_improved"] = (cm.exists(),
-                                  "measured L2 cost model present" if cm.exists() else "none")
+    out["cost_model_improved"] = (
+        cm.exists(),
+        "measured L2 cost model present" if cm.exists() else "none",
+    )
 
     # live_axis_retired: has any tracked axis been retired?
     sh = ROOT / "scripts/run_axis_shadows.py"
     txt = sh.read_text("utf-8") if sh.exists() else ""
-    out["live_axis_retired"] = ("RETIRED" in txt, "an axis has been retired" if "RETIRED" in txt
-                                else "no retirements yet")
+    out["live_axis_retired"] = (
+        "RETIRED" in txt,
+        "an axis has been retired" if "RETIRED" in txt else "no retirements yet",
+    )
 
     out["regime_changed"] = (False, "no regime-change detector wired yet")
     out["crowding_drop"] = (False, "no crowding monitor wired yet")
@@ -111,16 +135,28 @@ def main() -> None:
             tags = ["untagged"]
         perms = [CLASSES.get(t, ("UNKNOWN", "unclassified -- tag it", None)) for t in tags]
         # the WEAKEST permanence governs: one reversible cause makes the whole record revisitable
-        order = {"REVERSIBLE": 0, "CONDITIONAL": 1, "NEAR-PERMANENT": 2, "PERMANENT": 3,
-                 "UNKNOWN": 1}
+        order = {
+            "REVERSIBLE": 0,
+            "CONDITIONAL": 1,
+            "NEAR-PERMANENT": 2,
+            "PERMANENT": 3,
+            "UNKNOWN": 1,
+        }
         perm = min((p[0] for p in perms), key=lambda x: order.get(x, 1))
         conds = "; ".join(dict.fromkeys(p[1] for p in perms))
         tkeys = [p[2] for p in perms if p[2]]
         met = [(k, trig[k][1]) for k in tkeys if k in trig and trig[k][0]]
-        records.append({"what": cells[0][:100], "classes": tags, "permanence": perm,
-                        "reversal_conditions": conds, "triggers": tkeys,
-                        "triggers_met": [k for k, _ in met],
-                        "evidence": cells[1][:140]})
+        records.append(
+            {
+                "what": cells[0][:100],
+                "classes": tags,
+                "permanence": perm,
+                "reversal_conditions": conds,
+                "triggers": tkeys,
+                "triggers_met": [k for k, _ in met],
+                "evidence": cells[1][:140],
+            }
+        )
 
     live = [r for r in records if r["triggers_met"]]
     by_perm: dict[str, int] = {}
@@ -140,15 +176,24 @@ def main() -> None:
     for r in live[:12]:
         print(f"    {r['what'][:58]:<58} [{','.join(r['triggers_met'])}]")
     if len(live) > 12:
-        print(f"    ... +{len(live)-12} more")
+        print(f"    ... +{len(live) - 12} more")
     print("\n  These are NOT auto-resurrected -- they become Stage-A candidates with a stated")
     print("  reason the original refutation may no longer hold. Zero promotion authority.")
 
-    OUT.write_text(json.dumps({"updated": datetime.now(tz=UTC).isoformat(),
-                               "n": len(records), "by_permanence": by_perm,
-                               "triggers": {k: {"met": v[0], "why": v[1]}
-                                            for k, v in trig.items()},
-                               "revivable_now": len(live), "records": records}, indent=1), "utf-8")
+    OUT.write_text(
+        json.dumps(
+            {
+                "updated": datetime.now(tz=UTC).isoformat(),
+                "n": len(records),
+                "by_permanence": by_perm,
+                "triggers": {k: {"met": v[0], "why": v[1]} for k, v in trig.items()},
+                "revivable_now": len(live),
+                "records": records,
+            },
+            indent=1,
+        ),
+        "utf-8",
+    )
     print(f"\n-> {OUT}")
 
 

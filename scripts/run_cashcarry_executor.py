@@ -533,6 +533,10 @@ def _mkt_or_limit(conn: Any, sym: str, side: str, qty: float) -> str:
             conn.place_post_only(sym, side, qty, px)
             return "limit"
     except Exception:
+        # THE FALLBACK FAILING IS A RESULT, NOT A CRASH -- and it does not lie about it.
+        # `return "limit"` sits INSIDE the try, so a failure here falls through to the empty
+        # string and the caller sees that no order rested. Swallowing would only be wrong if
+        # it let the function claim a fill it did not get.
         pass
     return ""
 

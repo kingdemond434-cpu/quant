@@ -22,6 +22,7 @@ class that killed mSOL/CME/bithumb today is structurally impossible here.
 
 Stage-A, zero promotion authority. Run from repo root.
 """
+
 from __future__ import annotations
 
 import json
@@ -32,19 +33,25 @@ from pathlib import Path
 import numpy as np
 
 OUT = Path("data/funding_persistence.json")
-N_HIST = 500          # funding ticks per symbol (8h each -> ~166 days)
+N_HIST = 500  # funding ticks per symbol (8h each -> ~166 days)
 
 
 def _get(u, t=30):
-    return json.loads(urllib.request.urlopen(
-        urllib.request.Request(u, headers={"User-Agent": "q/1.0"}), timeout=t).read().decode())
+    return json.loads(
+        urllib.request.urlopen(
+            urllib.request.Request(u, headers={"User-Agent": "q/1.0"}), timeout=t
+        )
+        .read()
+        .decode()
+    )
 
 
 def universe(n: int = 40) -> list[str]:
     """Liquid USDT perps by 24h quote volume -- the pool the executor actually picks from."""
     d = _get("https://fapi.binance.com/fapi/v1/ticker/24hr")
-    rows = [(float(x.get("quoteVolume", 0)), x["symbol"]) for x in d
-            if x["symbol"].endswith("USDT")]
+    rows = [
+        (float(x.get("quoteVolume", 0)), x["symbol"]) for x in d if x["symbol"].endswith("USDT")
+    ]
     rows.sort(reverse=True)
     return [s for _, s in rows[:n]]
 
@@ -78,8 +85,10 @@ def main() -> None:
         print(f"  only {len(series)} usable symbols")
         return
     grid = sorted(set.intersection(*[set(v) for v in series.values()]))
-    print(f"  {len(series)} symbols, {len(grid)} aligned funding periods "
-          f"(~{len(grid)/3:.0f} days)\n")
+    print(
+        f"  {len(series)} symbols, {len(grid)} aligned funding periods "
+        f"(~{len(grid) / 3:.0f} days)\n"
+    )
 
     ics = {24: [], 72: []}
     dec = {24: [], 72: []}
@@ -89,10 +98,11 @@ def main() -> None:
         for hrs, k in ((24, 3), (72, 9)):
             if i + k >= len(grid):
                 continue
-            fwd = np.array([np.mean([series[s][grid[i + j]] for j in range(1, k + 1)])
-                            for s in series])
+            fwd = np.array(
+                [np.mean([series[s][grid[i + j]] for j in range(1, k + 1)]) for s in series]
+            )
             ics[hrs].append(spearman(cur, fwd))
-            top = np.argsort(cur)[-max(2, len(cur) // 10):]      # what the executor buys
+            top = np.argsort(cur)[-max(2, len(cur) // 10) :]  # what the executor buys
             dec[hrs].append(float(fwd[top].mean()))
             med[hrs].append(float(np.median(fwd)))
 
@@ -105,15 +115,20 @@ def main() -> None:
         top_ann = float(d.mean() * 3 * 365 * 100)
         med_ann = float(m.mean() * 3 * 365 * 100)
         print(f"  --- {hrs}h holding period ---")
-        print(f"    persistence IC (entry funding -> realised funding)  {a.mean():+.4f} "
-              f"(t {t_ic:+.1f}, n={len(a)})")
+        print(
+            f"    persistence IC (entry funding -> realised funding)  {a.mean():+.4f} "
+            f"(t {t_ic:+.1f}, n={len(a)})"
+        )
         print(f"    TOP-decile basket realises {top_ann:+7.2f}%/yr")
         print(f"    universe median realises   {med_ann:+7.2f}%/yr")
         print(f"    selection edge             {top_ann - med_ann:+7.2f}%/yr\n")
-        res[f"{hrs}h"] = {"persistence_ic": round(float(a.mean()), 4), "ic_t": round(t_ic, 2),
-                          "top_decile_ann_pct": round(top_ann, 3),
-                          "median_ann_pct": round(med_ann, 3),
-                          "selection_edge_pct": round(top_ann - med_ann, 3)}
+        res[f"{hrs}h"] = {
+            "persistence_ic": round(float(a.mean()), 4),
+            "ic_t": round(t_ic, 2),
+            "top_decile_ann_pct": round(top_ann, 3),
+            "median_ann_pct": round(med_ann, 3),
+            "selection_edge_pct": round(top_ann - med_ann, 3),
+        }
 
     # half-life of a funding shock
     hl = []
@@ -125,21 +140,33 @@ def main() -> None:
             hl.append(-np.log(2) / np.log(abs(b)))
     if hl:
         h = float(np.median(hl))
-        print(f"  funding shock half-life: {h:.1f} periods ({h*8:.0f}h)")
+        print(f"  funding shock half-life: {h:.1f} periods ({h * 8:.0f}h)")
         res["half_life_periods"] = round(h, 2)
         res["half_life_hours"] = round(h * 8, 1)
 
     e24 = res["24h"]["selection_edge_pct"]
-    verdict = ("ENTRY SIGNAL WORKS -- top-decile selection beats the median materially"
-               if e24 > 5 else
-               "ENTRY SIGNAL WEAK -- selection adds little over buying the median symbol"
-               if e24 > 1 else
-               "ENTRY SIGNAL BROKEN -- selecting on current funding earns ~nothing extra")
+    verdict = (
+        "ENTRY SIGNAL WORKS -- top-decile selection beats the median materially"
+        if e24 > 5
+        else "ENTRY SIGNAL WEAK -- selection adds little over buying the median symbol"
+        if e24 > 1
+        else "ENTRY SIGNAL BROKEN -- selecting on current funding earns ~nothing extra"
+    )
     print(f"\n  VERDICT: {verdict}")
     print("  This is the executor's core assumption, tested for the first time.")
-    OUT.write_text(json.dumps({"updated": datetime.now(tz=UTC).isoformat(),
-                               "symbols": len(series), "periods": len(grid),
-                               "results": res, "verdict": verdict}, indent=1), "utf-8")
+    OUT.write_text(
+        json.dumps(
+            {
+                "updated": datetime.now(tz=UTC).isoformat(),
+                "symbols": len(series),
+                "periods": len(grid),
+                "results": res,
+                "verdict": verdict,
+            },
+            indent=1,
+        ),
+        "utf-8",
+    )
     print(f"  -> {OUT}")
 
 

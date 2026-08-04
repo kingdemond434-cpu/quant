@@ -32,6 +32,7 @@ from libs.research.cro_role import (
     MISSION,
     assemble_dossier,
     build_prompt,
+    open_titles,
     parse,
     record,
     scorecard,
@@ -90,16 +91,41 @@ def main(argv: list[str] | None = None) -> int:
         _emit(doc, args.json)
         return 0
 
-    text, err = llm_seat.chat(prompt, system=_SYSTEM, seat=seat, max_tokens=16000)
-    if err:
+    # PUSHED, NEVER FIRST-ANSWER (principal 2026-08-04: "cheap llm tricks of asking ... is this
+    # it or is this maxxed yet ... till they give up"). The dossier is the expensive half of the
+    # call and it is already paid for; each rung re-uses the whole conversation and costs output
+    # tokens only. push_rounds stops on MEASURED exhaustion (novelty floor), surrender, or the
+    # cap -- so "the CRO gave up" is a number in the artifact, not a feeling.
+    def _ask(msgs: list[dict[str, str]]) -> str:
+        t, e = llm_seat.chat_messages(msgs, seat=seat, max_tokens=16000)
+        if e:
+            raise RuntimeError(e)
+        return t
+
+    from libs.llm.push import push_rounds
+    try:
+        pushed = push_rounds(_ask, _SYSTEM, prompt)
+    except RuntimeError as exc:
         _write_briefing(prompt, dossier, stamp)
-        doc.update({"status": "SEAT ERROR", "error": err,
+        doc.update({"status": "SEAT ERROR", "error": str(exc),
                     "briefing": str(_BRIEFING.relative_to(_ROOT))})
         _write(doc)
         _emit(doc, args.json)
         return 0                      # cadenced organ: report and survive
 
+    doc["push"] = {"rounds": pushed.rounds, "stop_reason": pushed.stop_reason,
+                   "novelties": pushed.novelties}
+    # Each round is parsed SEPARATELY (each returns its own JSON array) and merged with the
+    # duplicate fence doing the dedup -- titles already accepted in an earlier round are OPEN by
+    # the time the later round is parsed, so a rung that re-states round 1 converts to nothing.
+    text = pushed.texts[0]
     result = parse(text)
+    for extra in pushed.texts[1:]:
+        seen = {r.title for r in result.accepted}
+        more = parse(extra, known_open=(open_titles() | {t.lower() for t in seen}))
+        result.accepted.extend(more.accepted)
+        result.rejected.extend(more.rejected)
+        result.parse_errors.extend(more.parse_errors)
     model, _ = llm_seat.discover_model(seat)
     doc.update({
         "status": "MEASURED",

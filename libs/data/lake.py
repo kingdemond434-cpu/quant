@@ -54,7 +54,7 @@ class ParquetLake:
         # resolving to Any as they did when pyarrow was fully untyped. The module is already
         # declared untyped-third-party in pyproject's ignore_missing_imports list; this keeps
         # that same decision at the two call sites the new stubs reach.
-        ds.write_dataset(  # type: ignore[no-untyped-call]
+        ds.write_dataset(
             table,
             base_dir=str(path),
             format="parquet",
@@ -78,7 +78,8 @@ class ParquetLake:
         path = self.path(layer, symbol, timeframe)
         if not path.exists() or not any(path.rglob("*.parquet")):
             return empty_bars()
-        table = ds.dataset(  # type: ignore[no-untyped-call]
+        # pyarrow ships this function unannotated (see write_dataset above).
+        table = ds.dataset(
             str(path), format="parquet", partitioning="hive"
         ).to_table()
         df = table.to_pandas()

@@ -351,6 +351,26 @@ _FENCE_OWNERS: dict[str, str] = {
     "check_panel": "L1.7",               # adversarial review capability being DOWN is a defect
     "check_memory_hygiene": "L1.17",     # research debt is only debt if it is written and findable
     "check_mine_evidence_base": "L1.6",  # a ratchet calibrated on n=2 is superstition with a JSON
+    # --- claimed at the 2026-08-04 merge: both branches' new fences, each under the law it serves.
+    "check_asymmetry_ratchet": "L1.24",       # owned-data advantage is a holding that must not shrink
+    "check_coexistence": "L1.23",             # sleeves sharing a book must not defeat its rails
+    "check_constitution_review": "L2.8",      # the quarterly review is amendment law's own cadence
+    "check_data_decay": "L1.19",              # decay is measured on the revalidation clock, not assumed
+    "check_dependency_drift": "L2.2",         # a suite green on the wrong pins is not evidence
+    "check_evig_ranking": "L1.26",            # research capital is priced by ERV/EVIG, not by recency
+    "check_fixers_not_watchers": "L1.13",     # a watcher with no remediation loop is a stale register
+    "check_governing_layer_live": "L2.2",     # the enforcement layer auditing that it itself runs
+    "check_law_coverage": "L2.2",             # a law with no fence is believed-but-not-enforced
+    "check_llm_exhaustion": "L1.28a",         # a seat asked once is paid-for capacity left idle
+    "check_moat_screened": "L1.11",           # unscreened moat candidates are vendor data with extra steps
+    "check_model_freshness": "L1.12",         # a verified better model unadopted is idle capability
+    "check_naive_datetime": "L1.41",          # tz-naive stamps are the build standard's silent-corruption class
+    "check_no_ceiling": "L1.28",              # anti-timidity: nothing capped below its measured maximum
+    "check_silent_swallows_on_the_rails": "L1.41",  # a bare except on the money path is a refusal-path hole
+    "check_test_suite_collectable": "L2.2",   # a suite that cannot collect enforces nothing
+    "check_triage_disposition": "L1.17",      # self-dispositioning registers stay honest or lose the exclusion
+    "check_under_exploration": "L1.32",       # under-exploration is a breach, not a preference
+    "check_unwired_modules": "L2.9",          # built-but-unreachable, the third shape of dormancy
 }
 for _fence, _pid in _FENCE_OWNERS.items():
     _MAP.setdefault(_pid, []).append(_fence)

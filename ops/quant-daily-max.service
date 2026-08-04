@@ -1,0 +1,17 @@
+[Unit]
+# THE DAILY MAXIMISATION LOOP. Audits, remediates what a producer can fix, VERIFIES by re-running
+# the check, and escalates only what the desk genuinely cannot close. Before this existed every
+# ntfy path was a sender and the principal was the control loop.
+Description=Quant daily maximisation sweep (audit -> remediate -> verify -> escalate)
+After=network-online.target
+[Service]
+User=quant
+WorkingDirectory=/home/quant/quant-platform
+Environment=PATH=/home/quant/.local/bin:/home/quant/quant-platform/.venv/bin:/usr/bin:/bin
+Type=oneshot
+# Generous: it runs the full sweep twice (once to find, once to verify) plus every remediation.
+TimeoutStartSec=5400
+ExecStart=/home/quant/quant-platform/.venv/bin/python /home/quant/quant-platform/scripts/daily_max.py
+# The sweep must also PUSH what it produced -- git is the institutional memory, VPS disk is not
+# (the desk's own §33). Separate step so a push failure never masks a successful sweep.
+ExecStartPost=/bin/bash /home/quant/quant-platform/ops/commit_daily_max.sh

@@ -86,11 +86,12 @@ def sufficient(mean: float, stdev: float, n_obs: int, *,
                            min_obs - n_obs)
     if t < min_t:
         # n needed scales with the SQUARE of the t shortfall, because t grows as sqrt(n).
-        need = int(math.ceil(n_obs * (min_t / t) ** 2)) if t > 0 else 0
+        need = math.ceil(n_obs * (min_t / t) ** 2) if t > 0 else 0
         short = max(0, need - n_obs) if need else -1
         return Sufficiency(False, t, n_obs,
                            f"t={t:.2f} < {min_t} at n={n_obs}" +
                            (f" -- needs ~{short} more observations at this effect size"
-                            if short >= 0 else " -- effect is non-positive, more data will not fix it"),
+                            if short >= 0
+                            else " -- effect is non-positive, more data will not fix it"),
                            short if short >= 0 else 0)
     return Sufficiency(True, t, n_obs, f"t={t:.2f} >= {min_t} on {n_obs} observations", 0)

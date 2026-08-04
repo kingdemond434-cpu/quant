@@ -44,7 +44,46 @@ cleared rather than merely described.
 | `ARTIFACT_GOVERNANCE.md` | **DOCTRINE** | This register. Governs itself — a classification list that is not itself classified is the miner problem in miniature. |
 | `UNREACHABLE_LAYER_TRIAGE.md` | **TERMINAL** | Record of a completed triage with named unlock conditions. Superseded by a new triage if the conditions fire; never refreshed in place. |
 
-**Net: 3 cadenced, 5 doctrine, 3 terminal. Zero remain ungoverned.**
+### Added 2026-08-02 (same rule, applied to this session's own artifact)
+
+| Artifact | Class | Rationale |
+|---|---|---|
+| `docs/RECORDER_DEPLOY.md` | **TERMINAL** | Record of one deployment decision under one constraint: the `quant` user has no sudo, so the recorders are supervised by the user's own crontab rather than by systemd. It has no producer and no cadence — a clock cannot make a runbook true — so a staleness floor would be theatre. It is superseded BY A NAMED CONDITION instead: the day root is available and the four unit files in `ops/` are installed, this document becomes actively harmful (it would tell an operator to add cron supervision on top of `Restart=always`, giving two supervisors for three processes), and a new runbook must supersede it by name. That condition, not a date, is what retires it. |
+
+### Added 2026-08-03 (the superseding condition in the row above has now FIRED)
+
+| Artifact | Class | Rationale |
+|---|---|---|
+| `docs/VPS_BRINGUP.md` | **TERMINAL** | The runbook that supersedes `RECORDER_DEPLOY.md` **by name**, exactly as that row said something eventually must. Same class and the same reasoning: it records a deployment decision, has no producer and no cadence, and a staleness floor on a runbook would be theatre. Its own superseding condition: if the desk ever stops being deployed by `ops/deploy_vps.sh` — a different orchestrator, containers, a managed host — this document describes a machine that no longer exists and a new runbook must supersede it by name. |
+
+**The row above is now PARTLY superseded, and saying so is the point.** `RECORDER_DEPLOY.md` named
+its own retirement condition as "root is available and the unit files in `ops/` are installed", at
+which point it "becomes actively harmful" by prescribing cron supervision on top of
+`Restart=always`. As of 2026-08-03 the second half has fired: the units exist, and five more were
+added for the organs that had no launcher at all — the cadence engine, the pager, the process
+supervisor and the ruin rail. Root availability remains unknown and is the operator's fact, not the
+repository's, so `deploy_vps.sh` DETECTS it rather than assuming either way and prints the
+no-sudo path when `sudo -n` fails.
+
+`RECORDER_DEPLOY.md` is therefore **retained, not retired**, and now carries a pointer at the top
+directing operators to `VPS_BRINGUP.md` first. It stays because it is still the reference for what
+the recorders do and how to debug them; what it no longer is, is the entry point.
+
+### Added 2026-08-04 (a pre-registration is a distinct class and needed saying so)
+
+| Artifact | Class | Rationale |
+|---|---|---|
+| `docs/research/FAILED_BREAKOUT_PREREGISTRATION.md` | **TERMINAL** | A pre-registration is terminal **by definition, and that is the whole point of one**. It records kill criteria and a trial budget fixed BEFORE the data existed; refreshing it, re-ranking it, or converting it would destroy the only property that makes it worth anything. It is superseded by exactly one thing: the study running to a verdict, at which point this document becomes the record the verdict is judged against and still must not change. If the hypothesis is re-opened on new evidence, that is a NEW pre-registration with its own date, never an edit to this one — an edited pre-registration is a backtest wearing a timestamp. |
+
+| `docs/research/THREE_MECHANISM_PREREGISTRATION.md` | **TERMINAL** | Same class and the same reasoning as the row above: a pre-registration is terminal by definition. It fixes the three mechanisms the desk will run, their shared trial budget, and the crucial distinction between a TRIAL (can be promoted, deflates the Sharpe) and a CONTROL (pre-declared expected-to-fail, cannot promote anything, measures the harness's false-positive rate instead). Editing it to add a fourth mechanism would void the shared deflation, which is the whole thing it exists to protect. Superseded only by a NEW pre-registration with its own date. |
+
+**Net: 3 cadenced, 5 doctrine, 7 terminal. Zero remain ungoverned.**
+
+A note on why this row was written the same day the artifact was: an artifact classified late is
+an artifact that was ungoverned for however long "late" was, and the register's own rationale for
+existing is that the NEXT artifact arrives ungoverned by default. Writing the runbook and leaving
+it for a later sweep would have reproduced, in one session, the exact failure this file was
+created to end.
 
 ---
 

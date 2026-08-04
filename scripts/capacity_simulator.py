@@ -18,6 +18,7 @@ the per-carry and whole-book minimum for the LIVE universe.
 
 Read-only, no keys, public endpoints. Run from repo root.
 """
+
 from __future__ import annotations
 
 import json
@@ -30,13 +31,18 @@ LIVE = ROOT / "web/cashcarry_live.json"
 COST = ROOT / "data/cost_model.json"
 OUT = ROOT / "data/capacity_floor.json"
 
-MAX_ROUNDING_ERR = 0.01      # 1% of an order lost to lot-step rounding is the tolerance
-SAFETY = 1.5                 # buffer so a price move does not push an order under the minimum
+MAX_ROUNDING_ERR = 0.01  # 1% of an order lost to lot-step rounding is the tolerance
+SAFETY = 1.5  # buffer so a price move does not push an order under the minimum
 
 
 def _get(u, t=30):
-    return json.loads(urllib.request.urlopen(
-        urllib.request.Request(u, headers={"User-Agent": "q/1.0"}), timeout=t).read().decode())
+    return json.loads(
+        urllib.request.urlopen(
+            urllib.request.Request(u, headers={"User-Agent": "q/1.0"}), timeout=t
+        )
+        .read()
+        .decode()
+    )
 
 
 def filters(info: dict) -> dict[str, dict]:
@@ -60,18 +66,24 @@ def main() -> None:
     if not syms:
         syms = ["BTCUSDT", "ETHUSDT", "SOLUSDT"]
     print(f"=== CAPACITY FLOOR | live carry universe: {len(syms)} symbols ===")
-    print(f"    tolerance: <={MAX_ROUNDING_ERR*100:.0f}% of an order lost to lot rounding, "
-          f"x{SAFETY} safety buffer\n")
+    print(
+        f"    tolerance: <={MAX_ROUNDING_ERR * 100:.0f}% of an order lost to lot rounding, "
+        f"x{SAFETY} safety buffer\n"
+    )
 
     spot_f = filters(_get("https://api.binance.com/api/v3/exchangeInfo"))
     fut_f = filters(_get("https://fapi.binance.com/fapi/v1/exchangeInfo"))
-    px = {r["symbol"]: float(r["price"])
-          for r in _get("https://api.binance.com/api/v3/ticker/price")
-          if r["symbol"] in syms}
+    px = {
+        r["symbol"]: float(r["price"])
+        for r in _get("https://api.binance.com/api/v3/ticker/price")
+        if r["symbol"] in syms
+    }
 
     rows, floors = [], []
-    print(f"  {'symbol':<12}{'price':>11}{'spot min':>10}{'fut min':>9}"
-          f"{'round-floor':>12}{'PER-LEG':>9}")
+    print(
+        f"  {'symbol':<12}{'price':>11}{'spot min':>10}{'fut min':>9}"
+        f"{'round-floor':>12}{'PER-LEG':>9}"
+    )
     for s in syms:
         p = px.get(s)
         sf, ff = spot_f.get(s), fut_f.get(s)
@@ -84,11 +96,20 @@ def main() -> None:
         venue_min = max(sf["min_notional"], ff["min_notional"])
         leg = max(round_floor, venue_min) * SAFETY
         floors.append(leg)
-        rows.append({"symbol": s, "price": p, "spot_min": sf["min_notional"],
-                     "fut_min": ff["min_notional"], "round_floor": round(round_floor, 2),
-                     "per_leg_min": round(leg, 2)})
-        print(f"  {s:<12}{p:>11.5f}{sf['min_notional']:>10.1f}{ff['min_notional']:>9.1f}"
-              f"{round_floor:>12.2f}{leg:>9.2f}")
+        rows.append(
+            {
+                "symbol": s,
+                "price": p,
+                "spot_min": sf["min_notional"],
+                "fut_min": ff["min_notional"],
+                "round_floor": round(round_floor, 2),
+                "per_leg_min": round(leg, 2),
+            }
+        )
+        print(
+            f"  {s:<12}{p:>11.5f}{sf['min_notional']:>10.1f}{ff['min_notional']:>9.1f}"
+            f"{round_floor:>12.2f}{leg:>9.2f}"
+        )
 
     if not floors:
         print("\nno usable symbols")
@@ -100,14 +121,18 @@ def main() -> None:
     per_carry_worst, per_carry_med = worst * 2, median * 2
 
     print(f"\n  binding symbol needs ${worst:,.2f}/leg  |  median ${median:,.2f}/leg")
-    print(f"  per-carry (spot + perp legs): worst ${per_carry_worst:,.2f} | "
-          f"median ${per_carry_med:,.2f}")
+    print(
+        f"  per-carry (spot + perp legs): worst ${per_carry_worst:,.2f} | "
+        f"median ${per_carry_med:,.2f}"
+    )
     print("\n  === MINIMUM VIABLE BOOK ===")
     for k in (3, 5, 10, n):
         if k <= 0:
             continue
-        print(f"    {k:>2} carries : ${per_carry_med*k:>10,.0f}  (median-symbol universe)"
-              f"   ${per_carry_worst*k:>10,.0f}  (if the binding symbol is included)")
+        print(
+            f"    {k:>2} carries : ${per_carry_med * k:>10,.0f}  (median-symbol universe)"
+            f"   ${per_carry_worst * k:>10,.0f}  (if the binding symbol is included)"
+        )
     print("\n  NOTE: slippage does NOT bind here -- the measured cost model shows impact RISING")
     print("  with size, so small orders are cheaper. The floor is LOT ROUNDING, and the real risk")
     print("  of breaching it is LEG MISMATCH: if spot and perp round differently the position")
@@ -125,7 +150,7 @@ def main() -> None:
             vals = [v for _, v in pts]
             flat = len({round(v, 3) for v in vals}) == 1 and len(vals) > 2
             worst = max(vals) if vals else 0.0
-            rt = worst * 4 / 100.0          # 4 legs: open spot, open perp, close spot, close perp
+            rt = worst * 4 / 100.0  # 4 legs: open spot, open perp, close spot, close perp
             tag = ""
             if flat:
                 tag = "  <-- DEGENERATE: flat across all buckets, not physically plausible"
@@ -133,13 +158,22 @@ def main() -> None:
                 tag = f"  <-- UNPROFITABLE: {rt:.2f}% round-trip vs ~0.7%/mo harvest"
             print(f"    {sym0:<14}" + " ".join(f"${k}:{v:.1f}" for k, v in pts[:5]) + tag)
 
-    OUT.write_text(json.dumps({"updated": datetime.now(tz=UTC).isoformat(),
-                               "tolerance_rounding": MAX_ROUNDING_ERR, "safety": SAFETY,
-                               "per_leg_worst": round(worst, 2),
-                               "per_leg_median": round(median, 2),
-                               "per_carry_median": round(per_carry_med, 2),
-                               "book_10_carries_median": round(per_carry_med * 10, 2),
-                               "symbols": rows}, indent=1), "utf-8")
+    OUT.write_text(
+        json.dumps(
+            {
+                "updated": datetime.now(tz=UTC).isoformat(),
+                "tolerance_rounding": MAX_ROUNDING_ERR,
+                "safety": SAFETY,
+                "per_leg_worst": round(worst, 2),
+                "per_leg_median": round(median, 2),
+                "per_carry_median": round(per_carry_med, 2),
+                "book_10_carries_median": round(per_carry_med * 10, 2),
+                "symbols": rows,
+            },
+            indent=1,
+        ),
+        "utf-8",
+    )
     print(f"\n-> {OUT}")
 
 

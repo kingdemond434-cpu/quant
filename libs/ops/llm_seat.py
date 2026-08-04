@@ -362,6 +362,43 @@ def chat(
     return text, None
 
 
+def chat_messages(
+    messages: list[dict[str, str]], *, seat: Seat | None = None, max_tokens: int = 8000,
+    timeout: float = 240.0, temperature: float = 0.4, effort: str = DEFAULT_EFFORT,
+) -> tuple[str, str | None]:
+    """chat(), at the MESSAGES level -- the seam the push ladder needs.
+
+    Added 2026-08-04 for `libs.llm.push.push_rounds`: a push round re-sends the whole
+    conversation (system + prior rounds + the rung), which a single-prompt entrypoint cannot
+    express. Same cap-before-call, same discovery, same degradation ladder, same spend record --
+    a second transport here would drift from the first on the exact policies that must not.
+    """
+    s = seat or primary_seat()
+    if s is None:
+        return "", "no seat: export OPENROUTER_API_KEY (see chat())"
+    spent, cap = month_spend_usd(), monthly_cap_usd()
+    if spent >= cap:
+        return "", (f"monthly LLM spend cap reached (${spent:.2f} of ${cap:.2f}) -- raise "
+                    "$LLM_MONTHLY_CAP_USD if the spend is proven worth it.")
+    model, err = discover_model(s)
+    if err:
+        return "", f"model discovery failed: {err}"
+    req: dict[str, Any] = {"model": model, "messages": list(messages),
+                           "max_completion_tokens": int(max_tokens),
+                           "temperature": float(temperature)}
+    if effort:
+        req["reasoning_effort"] = effort
+    body, err = _post_with_degrade(f"{s.base_url}/chat/completions", s.key, req, timeout=timeout)
+    if err:
+        return "", err
+    try:
+        text = str(body["choices"][0]["message"]["content"] or "")
+    except (KeyError, IndexError, TypeError):
+        return "", f"unparseable response: {json.dumps(body)[:200]}"
+    _record_spend(s, model, body.get("usage") or {})
+    return text, None
+
+
 def stale_pins(*, timeout: float = 20.0) -> list[dict[str, Any]]:
     """Every seat PINNED to a model below the provider's current flagship.
 

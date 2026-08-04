@@ -24,6 +24,7 @@ THE THREE PARTS:
 
 Read-only. No LLM, no keys. Run from repo root.
 """
+
 from __future__ import annotations
 
 import json
@@ -42,59 +43,183 @@ OUT = ROOT / "data/mechanism_board.json"
 MECHANISMS = {
     "M_ATTENTION_DELAY": {
         "story": "attention/information reaches us AFTER sophisticated participants have priced it",
-        "kws": ("attention", "sentiment", "social", "twitter", "wikipedia", "search", "trend",
-                "narrative", "mention", "reddit", "influencer", "hype", "pageview"),
+        "kws": (
+            "attention",
+            "sentiment",
+            "social",
+            "twitter",
+            "wikipedia",
+            "search",
+            "trend",
+            "narrative",
+            "mention",
+            "reddit",
+            "influencer",
+            "hype",
+            "pageview",
+        ),
     },
     "M_FUNDAMENTAL_PROXY": {
         "story": "a fundamental (developer effort, usage, revenue) is assumed to lead valuation",
-        "kws": ("developer", "github", "commit", "contributor", "tvl", "revenue", "usage",
-                "active address", "transaction count", "adoption", "release"),
+        "kws": (
+            "developer",
+            "github",
+            "commit",
+            "contributor",
+            "tvl",
+            "revenue",
+            "usage",
+            "active address",
+            "transaction count",
+            "adoption",
+            "release",
+        ),
     },
     "M_SKILL_PERSISTENCE": {
         "story": "some participants are skilled and their past performance predicts future",
-        "kws": ("trader", "elite", "copytrad", "leaderboard", "skill", "whale", "smart money",
-                "persistence", "retention"),
+        "kws": (
+            "trader",
+            "elite",
+            "copytrad",
+            "leaderboard",
+            "skill",
+            "whale",
+            "smart money",
+            "persistence",
+            "retention",
+        ),
     },
     "M_STRUCTURAL_BARRIER": {
         "story": "a HARD barrier (capital control, licence, settlement, collateral) stops "
-                 "convergence -- the only mechanism family with a live survivor on this desk",
-        "kws": ("capital control", "kimchi", "cny", "premium", "regulat", "licence", "license",
-                "segment", "barrier", "peg", "redemption", "queue", "cross-venue"),
+        "convergence -- the only mechanism family with a live survivor on this desk",
+        "kws": (
+            "capital control",
+            "kimchi",
+            "cny",
+            "premium",
+            "regulat",
+            "licence",
+            "license",
+            "segment",
+            "barrier",
+            "peg",
+            "redemption",
+            "queue",
+            "cross-venue",
+        ),
     },
     "M_FORCED_DELEVERAGE": {
         "story": "leveraged participants are FORCED to unwind (margin, liquidation, funding cost)",
-        "kws": ("funding", "open interest", "leverage", "liquidation", "margin", "crowding",
-                "positioning", "long short", "basis", "carry", "squeeze"),
+        "kws": (
+            "funding",
+            "open interest",
+            "leverage",
+            "liquidation",
+            "margin",
+            "crowding",
+            "positioning",
+            "long short",
+            "basis",
+            "carry",
+            "squeeze",
+        ),
     },
     "M_LIQUIDITY_WITHDRAWAL": {
         "story": "liquidity providers withdraw when inventory risk binds, so price impact jumps",
-        "kws": ("depth", "spread", "order book", "orderbook", "market maker", "liquidity",
-                "imbalance", "slippage", "replenish", "fragility", "microstructure"),
+        "kws": (
+            "depth",
+            "spread",
+            "order book",
+            "orderbook",
+            "market maker",
+            "liquidity",
+            "imbalance",
+            "slippage",
+            "replenish",
+            "fragility",
+            "microstructure",
+        ),
     },
     "M_FLOW_PRESSURE": {
         "story": "observable capital movement precedes the price impact of that capital",
-        "kws": ("flow", "netflow", "inflow", "outflow", "stablecoin", "bridge", "exchange "
-                "reserve", "mint", "supply"),
+        "kws": (
+            "flow",
+            "netflow",
+            "inflow",
+            "outflow",
+            "stablecoin",
+            "bridge",
+            "exchange reserve",
+            "mint",
+            "supply",
+        ),
     },
     "M_PRICE_PATTERN": {
         "story": "price history alone predicts price -- no participant story at all",
-        "kws": ("momentum", "reversal", "breakout", "rsi", "macd", "moving average", "kama",
-                "squeeze", "donchian", "indicator", "lowvol", "trend"),
+        "kws": (
+            "momentum",
+            "reversal",
+            "breakout",
+            "rsi",
+            "macd",
+            "moving average",
+            "kama",
+            "squeeze",
+            "donchian",
+            "indicator",
+            "lowvol",
+            "trend",
+        ),
     },
 }
 
 # the four questions -- a hypothesis that cannot answer these should not consume a slot
 BOARD = [
-    ("why_exists", "Why should this edge exist at all?", ("because", "mechanism", "due to",
-                                                          "driven by", "caused")),
-    ("who_forced", "WHO is forced to trade against their own interest?",
-     ("forced", "must", "liquidat", "margin", "redemption", "mandate", "rebalanc", "cannot",
-      "obliged", "required")),
-    ("why_not_arbed", "Why has this not already been arbitraged away?",
-     ("barrier", "control", "licence", "license", "constraint", "cost", "capacity", "latency",
-      "illiquid", "segment", "regulat", "queue", "friction")),
-    ("kill_condition", "What observation kills it?", ("kill", "if ic", "t<", "below", "fails",
-                                                      "reject if", "abandon")),
+    (
+        "why_exists",
+        "Why should this edge exist at all?",
+        ("because", "mechanism", "due to", "driven by", "caused"),
+    ),
+    (
+        "who_forced",
+        "WHO is forced to trade against their own interest?",
+        (
+            "forced",
+            "must",
+            "liquidat",
+            "margin",
+            "redemption",
+            "mandate",
+            "rebalanc",
+            "cannot",
+            "obliged",
+            "required",
+        ),
+    ),
+    (
+        "why_not_arbed",
+        "Why has this not already been arbitraged away?",
+        (
+            "barrier",
+            "control",
+            "licence",
+            "license",
+            "constraint",
+            "cost",
+            "capacity",
+            "latency",
+            "illiquid",
+            "segment",
+            "regulat",
+            "queue",
+            "friction",
+        ),
+    ),
+    (
+        "kill_condition",
+        "What observation kills it?",
+        ("kill", "if ic", "t<", "below", "fails", "reject if", "abandon"),
+    ),
 ]
 
 
@@ -120,8 +245,8 @@ def main() -> None:
             tally[m] = tally.get(m, 0) + 1
 
     # a mechanism with many deaths and no survivor is a FAMILY KILL
-    LIVE = {"M_STRUCTURAL_BARRIER", "M_FORCED_DELEVERAGE"}      # kimchi/cny, funding persistence
-    OPEN = {"M_LIQUIDITY_WITHDRAWAL"}                            # moat, untested
+    LIVE = {"M_STRUCTURAL_BARRIER", "M_FORCED_DELEVERAGE"}  # kimchi/cny, funding persistence
+    OPEN = {"M_LIQUIDITY_WITHDRAWAL"}  # moat, untested
     print("=== 1. MECHANISM-LEVEL GRAVEYARD ===")
     print("    concept archaeology blocks a PHRASE; mechanism archaeology blocks a REASON\n")
     print(f"  {'mechanism':<26}{'deaths':>7}  verdict / economic story")
@@ -157,18 +282,21 @@ def main() -> None:
         used_mech: dict[str, int] = {}
         out: list[dict[str, Any]] = []
         for h in ranked:
-            ms = mech_of(h.get("name", "") + " " + " ".join(h.get("concepts", []))) or ["M_UNMAPPED"]
+            ms = mech_of(h.get("name", "") + " " + " ".join(h.get("concepts", []))) or [
+                "M_UNMAPPED"
+            ]
             # correlation penalty: each prior selection in the same mechanism halves the value
             overlap = max(used_mech.get(m, 0) for m in ms)
-            adj = h.get("erv", 0) / (2 ** overlap)
+            adj = h.get("erv", 0) / (2**overlap)
             out.append({**h, "mechs": ms, "overlap": overlap, "erv_adj": round(adj, 4)})
             for m in ms:
                 used_mech[m] = used_mech.get(m, 0) + 1
         out.sort(key=lambda x: -x["erv_adj"])
         print(f"  {'ERV':>6}{'ADJ':>7}  {'mech':<24} hypothesis")
         for h in out[:10]:
-            print(f"  {h['erv']:>6.3f}{h['erv_adj']:>7.3f}  {h['mechs'][0][:24]:<24} "
-                  f"{h['name'][:44]}")
+            print(
+                f"  {h['erv']:>6.3f}{h['erv_adj']:>7.3f}  {h['mechs'][0][:24]:<24} {h['name'][:44]}"
+            )
         dupes = [h for h in out if h["overlap"] > 0]
         print(f"\n  {len(dupes)} hypotheses de-rated for mechanism overlap -- these were ONE BET")
         print("  WEARING SEVERAL HATS. Ranking by raw ERV would have funded the same idea 5x.")
@@ -178,14 +306,20 @@ def main() -> None:
     print("    64% of this desk's failures were TIMING or MEASUREMENT, not alpha -- exactly what")
     print("    a pre-test gate catches for free\n")
     samples = [
-        {"name": "Low RSI predicts bounce",
-         "text": "rsi oversold below 30 tends to bounce, momentum indicator"},
-        {"name": "Liquidation cascade exhaustion",
-         "text": "forced liquidations must sell into thin books, exceeding available depth; "
-                 "the constraint is that liquidated accounts CANNOT choose timing; not arbitraged "
-                 "because capacity is limited by book depth. kill if IC<0 over 12 months"},
-        {"name": "Attention efficiency ratio",
-         "text": "return per unit of social attention growth predicts continuation"},
+        {
+            "name": "Low RSI predicts bounce",
+            "text": "rsi oversold below 30 tends to bounce, momentum indicator",
+        },
+        {
+            "name": "Liquidation cascade exhaustion",
+            "text": "forced liquidations must sell into thin books, exceeding available depth; "
+            "the constraint is that liquidated accounts CANNOT choose timing; not arbitraged "
+            "because capacity is limited by book depth. kill if IC<0 over 12 months",
+        },
+        {
+            "name": "Attention efficiency ratio",
+            "text": "return per unit of social attention growth predicts continuation",
+        },
     ]
     for s in samples:
         t = (s["name"] + " " + s["text"]).lower()
@@ -200,10 +334,19 @@ def main() -> None:
         if fam:
             print(f"      mechanism {fam[0]} is a FAMILY KILL -- needs a new asymmetry story")
 
-    OUT.write_text(json.dumps({"updated": datetime.now(tz=UTC).isoformat(),
-                               "mechanism_deaths": tally, "verdicts": verdicts,
-                               "family_kills": dead_fams,
-                               "portfolio": out if ranked else []}, indent=1), "utf-8")
+    OUT.write_text(
+        json.dumps(
+            {
+                "updated": datetime.now(tz=UTC).isoformat(),
+                "mechanism_deaths": tally,
+                "verdicts": verdicts,
+                "family_kills": dead_fams,
+                "portfolio": out if ranked else [],
+            },
+            indent=1,
+        ),
+        "utf-8",
+    )
     print(f"\n  -> {OUT}")
 
 

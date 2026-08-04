@@ -244,7 +244,7 @@ def _oldest_days(rows: list[dict[str, Any]], key: str) -> float | None:
             continue
         for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%d"):
             try:
-                d = datetime.strptime(raw[:len(datetime.now().strftime(fmt))], fmt).replace(
+                d = datetime.strptime(raw[:len(datetime.now(UTC).strftime(fmt))], fmt).replace(
                     tzinfo=UTC)
             except ValueError:
                 continue

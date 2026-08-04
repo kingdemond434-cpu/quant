@@ -1,5 +1,5 @@
-"""EXPECTED RESEARCH VALUE -- score hypotheses BEFORE testing, so conversion rises instead of \
-supply.
+"""EXPECTED RESEARCH VALUE -- score hypotheses BEFORE testing, so conversion rises rather
+than supply.
 
 THE INSIGHT THIS IMPLEMENTS (principal, 2026-07-27): the desk does not have an idea shortage. It
 has a CONVERSION problem. ~28 hypotheses tested today, ONE survived. Adding generators raises
@@ -29,6 +29,7 @@ FOUR SCORERS, each grounded in something this desk MEASURED rather than assumed:
 
 Read-only. No LLM, no keys. Run from repo root.
 """
+
 from __future__ import annotations
 
 import json
@@ -43,29 +44,104 @@ OUT = ROOT / "data/research_erv.json"
 
 # concept families -- the archaeologist's vocabulary. Matching happens HERE, not on raw tokens.
 CONCEPTS = {
-    "attention": ("attention", "sentiment", "social", "twitter", "wikipedia", "search",
-                  "narrative", "mention", "trend", "hype", "buzz", "interest", "pageview"),
-    "developer": ("developer", "github", "commit", "contributor", "repo", "code", "maintainer",
-                  "release", "dev activity", "talent"),
-    "trader_skill": ("trader", "copytrad", "leaderboard", "elite", "skill", "whale", "smart money",
-                     "persistence", "follower"),
-    "premium_regional": ("premium", "kimchi", "regional", "korea", "china", "arbitrage venue",
-                         "cross-venue", "peg", "depeg"),
-    "funding_position": ("funding", "open interest", "positioning", "crowding", "long short",
-                         "liquidation", "basis", "carry", "perp"),
-    "onchain_flow": ("on-chain", "onchain", "wallet", "exchange flow", "netflow", "stablecoin",
-                     "tvl", "bridge", "address", "supply"),
-    "microstructure": ("order book", "orderbook", "depth", "spread", "liquidity", "imbalance",
-                       "market maker", "slippage", "replenish", "fragility", "microstructure"),
+    "attention": (
+        "attention",
+        "sentiment",
+        "social",
+        "twitter",
+        "wikipedia",
+        "search",
+        "narrative",
+        "mention",
+        "trend",
+        "hype",
+        "buzz",
+        "interest",
+        "pageview",
+    ),
+    "developer": (
+        "developer",
+        "github",
+        "commit",
+        "contributor",
+        "repo",
+        "code",
+        "maintainer",
+        "release",
+        "dev activity",
+        "talent",
+    ),
+    "trader_skill": (
+        "trader",
+        "copytrad",
+        "leaderboard",
+        "elite",
+        "skill",
+        "whale",
+        "smart money",
+        "persistence",
+        "follower",
+    ),
+    "premium_regional": (
+        "premium",
+        "kimchi",
+        "regional",
+        "korea",
+        "china",
+        "arbitrage venue",
+        "cross-venue",
+        "peg",
+        "depeg",
+    ),
+    "funding_position": (
+        "funding",
+        "open interest",
+        "positioning",
+        "crowding",
+        "long short",
+        "liquidation",
+        "basis",
+        "carry",
+        "perp",
+    ),
+    "onchain_flow": (
+        "on-chain",
+        "onchain",
+        "wallet",
+        "exchange flow",
+        "netflow",
+        "stablecoin",
+        "tvl",
+        "bridge",
+        "address",
+        "supply",
+    ),
+    "microstructure": (
+        "order book",
+        "orderbook",
+        "depth",
+        "spread",
+        "liquidity",
+        "imbalance",
+        "market maker",
+        "slippage",
+        "replenish",
+        "fragility",
+        "microstructure",
+    ),
     "reflexivity": ("reflexiv", "feedback", "cascade", "leverage cycle", "credit cycle"),
 }
 
 # concept -> (verdict, why) from THIS desk's measured history
 HISTORY = {
     "attention": (
-        "DEAD", "level AND acceleration tested across 15 horizons, 5 languages; all dead"),
+        "DEAD",
+        "level AND acceleration tested across 15 horizons, 5 languages; all dead",
+    ),
     "developer": (
-        "MOSTLY DEAD", "commit velocity CS-IC ~0 at 1/3/6mo; retention n=10 underpowered"),
+        "MOSTLY DEAD",
+        "commit velocity CS-IC ~0 at 1/3/6mo; retention n=10 underpowered",
+    ),
     "trader_skill": ("DEAD", "5 mechanisms, ~50k traders, gapped persistence rho -0.064"),
     "premium_regional": ("PARTLY ALIVE", "kimchi/cny live; JP/BR/TR/pegs/LSD all died on WIDTH"),
     "funding_position": ("ALIVE", "funding persistence IC +0.432; ls_contrarian on clock to Aug 7"),
@@ -74,13 +150,47 @@ HISTORY = {
     "reflexivity": ("INCONCLUSIVE", "M5 underpowered, OI history capped at 500 bars"),
 }
 
-MOAT_TERMS = ("order book", "orderbook", "depth", "book imbalance", "replenish", "moat",
-              "recorded", "l2", "microstructure", "slippage", "market maker inventory")
-PUBLIC_TERMS = ("github", "twitter", "wikipedia", "google trends", "tvl", "defillama",
-                "social", "reddit", "search volume")
-HARD_MECH = ("capital control", "licence", "license", "regulat", "settlement", "collateral",
-             "margin call", "forced", "liquidation", "redemption", "queue", "mandate",
-             "cannot", "barrier", "segmentat")
+MOAT_TERMS = (
+    "order book",
+    "orderbook",
+    "depth",
+    "book imbalance",
+    "replenish",
+    "moat",
+    "recorded",
+    "l2",
+    "microstructure",
+    "slippage",
+    "market maker inventory",
+)
+PUBLIC_TERMS = (
+    "github",
+    "twitter",
+    "wikipedia",
+    "google trends",
+    "tvl",
+    "defillama",
+    "social",
+    "reddit",
+    "search volume",
+)
+HARD_MECH = (
+    "capital control",
+    "licence",
+    "license",
+    "regulat",
+    "settlement",
+    "collateral",
+    "margin call",
+    "forced",
+    "liquidation",
+    "redemption",
+    "queue",
+    "mandate",
+    "cannot",
+    "barrier",
+    "segmentat",
+)
 
 
 def concepts_of(text: str) -> set[str]:
@@ -96,8 +206,11 @@ def score(h: dict[str, Any]) -> dict[str, Any]:
     # 1. archaeology -- concept-level, not token-level
     verdicts = [HISTORY.get(c, ("UNKNOWN", ""))[0] for c in cs]
     if "DEAD" in verdicts:
-        arch, arch_why = 0.05, (
-            f"concept already DEAD here: {[c for c in cs if HISTORY.get(c,('',''))[0]=='DEAD']}")
+        arch, arch_why = (
+            0.05,
+            "concept already DEAD here: "
+            f"{[c for c in cs if HISTORY.get(c, ('', ''))[0] == 'DEAD']}",
+        )
     elif "MOSTLY DEAD" in verdicts:
         arch, arch_why = 0.3, "concept mostly refuted; needs a materially new construction"
     elif "INCONCLUSIVE" in verdicts or "PARTLY ALIVE" in verdicts:
@@ -117,21 +230,31 @@ def score(h: dict[str, Any]) -> dict[str, Any]:
 
     # 3. mechanism depth -- spreads and forced flows beat forecasts (measured prior)
     mech = 1.0 if any(m in t for m in HARD_MECH) else (0.6 if "spread" in t else 0.35)
-    mech_why = ("hard constraint / forced flow named" if mech == 1.0
-                else "spread construction" if mech == 0.6
-                else "correlational -- forecasts died here")
+    mech_why = (
+        "hard constraint / forced flow named"
+        if mech == 1.0
+        else "spread construction"
+        if mech == 0.6
+        else "correlational -- forecasts died here"
+    )
 
     # 4. cost -- cheap falsifiable tests first
     cost = 1.0
     if any(k in t for k in ("reconstruct", "clustering", "neural", "graph", "panel of")):
         cost = 0.5
     if not h.get("kill"):
-        cost *= 0.7                              # no kill condition = not properly falsifiable
+        cost *= 0.7  # no kill condition = not properly falsifiable
 
     erv = arch * moat * mech * cost
-    return {"erv": round(erv, 4), "archaeology": arch, "moat": moat, "mechanism": mech,
-            "cost": cost, "concepts": sorted(cs),
-            "why": f"{arch_why}; {moat_why}; {mech_why}"}
+    return {
+        "erv": round(erv, 4),
+        "archaeology": arch,
+        "moat": moat,
+        "mechanism": mech,
+        "cost": cost,
+        "concepts": sorted(cs),
+        "why": f"{arch_why}; {moat_why}; {mech_why}",
+    }
 
 
 def main() -> None:
@@ -153,33 +276,62 @@ def main() -> None:
         print("\n  hypothesis queue is EMPTY (hypothesis_generator has never run -- 402).")
         print("  Demonstrating the scorer on the principal's own recent slate instead:\n")
         rows = [
-            {"name": "Attention efficiency ratio", "mechanism": "return per unit social attention",
-             "data": "google trends + wikipedia", "test": "cross-sectional IC", "kill": "IC<0.03"},
-            {"name": "Developer retention momentum",
-             "mechanism": "contributors staying predicts growth",
-             "data": "github contributors", "test": "rank vs fwd relative return", "kill": "t<2"},
-            {"name": "Market maker inventory stress",
-             "mechanism": "MMs FORCED to withdraw depth when inventory risk binds",
-             "data": "recorded order book depth (moat)", "test": "depth withdrawal vs fwd RV",
-             "kill": "no vol expansion"},
-            {"name": "Liquidity fragility score",
-             "mechanism": "depth collapse under stress cannot be replenished -- forced flow",
-             "data": "recorded order book (moat)", "test": "depth decay vs realised vol",
-             "kill": "ratio<1.2"},
-            {"name": "Bridge flow predicts rotation", "mechanism": "capital migrates before repricing",
-             "data": "defillama bridges", "test": "flow vs fwd relative return", "kill": "t<2"},
+            {
+                "name": "Attention efficiency ratio",
+                "mechanism": "return per unit social attention",
+                "data": "google trends + wikipedia",
+                "test": "cross-sectional IC",
+                "kill": "IC<0.03",
+            },
+            {
+                "name": "Developer retention momentum",
+                "mechanism": "contributors staying predicts growth",
+                "data": "github contributors",
+                "test": "rank vs fwd relative return",
+                "kill": "t<2",
+            },
+            {
+                "name": "Market maker inventory stress",
+                "mechanism": "MMs FORCED to withdraw depth when inventory risk binds",
+                "data": "recorded order book depth (moat)",
+                "test": "depth withdrawal vs fwd RV",
+                "kill": "no vol expansion",
+            },
+            {
+                "name": "Liquidity fragility score",
+                "mechanism": "depth collapse under stress cannot be replenished -- forced flow",
+                "data": "recorded order book (moat)",
+                "test": "depth decay vs realised vol",
+                "kill": "ratio<1.2",
+            },
+            {
+                "name": "Bridge flow predicts rotation",
+                "mechanism": "capital migrates before repricing",
+                "data": "defillama bridges",
+                "test": "flow vs fwd relative return",
+                "kill": "t<2",
+            },
         ]
 
     scored = sorted(((h, score(h)) for h in rows), key=lambda x: -x[1]["erv"])
     print(f"  {'ERV':>6}  {'arch':>5} {'moat':>5} {'mech':>5} {'cost':>5}  hypothesis")
     for h, s in scored[:20]:
-        print(f"  {s['erv']:>6.3f}  {s['archaeology']:>5.2f} {s['moat']:>5.2f} "
-              f"{s['mechanism']:>5.2f} {s['cost']:>5.2f}  {h['name'][:52]}")
+        print(
+            f"  {s['erv']:>6.3f}  {s['archaeology']:>5.2f} {s['moat']:>5.2f} "
+            f"{s['mechanism']:>5.2f} {s['cost']:>5.2f}  {h['name'][:52]}"
+        )
         print(f"          {s['why'][:110]}")
-    OUT.write_text(json.dumps({"updated": datetime.now(tz=UTC).isoformat(),
-                               "n": len(scored),
-                               "ranked": [{"name": h["name"], **s} for h, s in scored]},
-                              indent=1), "utf-8")
+    OUT.write_text(
+        json.dumps(
+            {
+                "updated": datetime.now(tz=UTC).isoformat(),
+                "n": len(scored),
+                "ranked": [{"name": h["name"], **s} for h, s in scored],
+            },
+            indent=1,
+        ),
+        "utf-8",
+    )
     print(f"\n  -> {OUT}")
     print("  A hypothesis scoring <0.15 should NOT consume a confirmation slot regardless of how")
     print("  interesting it sounds. Concept-level archaeology means rewording a dead idea does not")

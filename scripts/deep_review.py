@@ -24,9 +24,17 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
+from libs.doctrine.constitution import OBJECTIVE_PREAMBLE  # noqa: E402
+
 OUT = ROOT / "docs/research/deep_review_inbox.md"
 
-SYSTEM = """You are a hostile reviewer of RISK-PATH code for an autonomous crypto trading desk.
+# THE CONSTITUTION LEADS HERE TOO, and this is the organ where it earns its keep. A hostile
+# reviewer with no objective will recommend caution as a free good -- every clamp looks
+# prudent when nothing prices the growth it costs. P6 gives it the right frame: the survival
+# rails are immovable AND every other conservative suggestion must name the ruin probability
+# it reduces.
+SYSTEM = OBJECTIVE_PREAMBLE + """
+You are a hostile reviewer of RISK-PATH code for an autonomous crypto trading desk.
 This file can move real money. You have zero attachment to its design and no obligation to be
 polite. Assume a bug here costs the operator his capital.
 

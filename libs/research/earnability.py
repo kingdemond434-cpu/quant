@@ -45,6 +45,7 @@ rebalances, airdrops. Anything paid at an instant rather than accrued over one.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 
@@ -168,7 +169,7 @@ def attributable(flows: pd.Series, entry_ts: datetime, exit_ts: datetime, *,
     held = (flows.index > open_from) & (flows.index <= pd.Timestamp(exit_ts))
     earn, un = flows[held], flows[~held]
     return Attribution(
-        n_flows=int(len(flows)), n_earnable=int(held.sum()), n_unearnable=int((~held).sum()),
+        n_flows=len(flows), n_earnable=int(held.sum()), n_unearnable=int((~held).sum()),
         booked=float(flows.sum()), earnable=float(earn.sum()), unearnable=float(un.sum()),
     )
 
@@ -196,7 +197,8 @@ def _sharpe(r: np.ndarray, periods: float = 365.0) -> float:
     return float("nan") if sd == 0 else float(r.mean() / sd * np.sqrt(periods))
 
 
-def phase_sensitivity(build_returns, panels: dict[str, pd.DataFrame], *,
+def phase_sensitivity(build_returns: Callable[[pd.DataFrame], np.ndarray],
+                      panels: dict[str, pd.DataFrame], *,
                       periods: float = 365.0,
                       sharpe_tolerance: float = SHARPE_TOLERANCE,
                       mean_bps_tolerance: float = MEAN_BPS_TOLERANCE) -> PhaseSensitivity:

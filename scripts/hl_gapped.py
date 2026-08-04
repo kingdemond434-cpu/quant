@@ -13,6 +13,7 @@ If B survives, past skill predicts future performance ACROSS a 3-week gap -> pos
 short-horizon beta cannot explain it. If B collapses to ~null while A is strong, the 'skill' was
 mechanical position carry. Also reports BTC's move per window for the beta discussion.
 Run from repo root."""
+
 from __future__ import annotations
 
 import json
@@ -39,19 +40,24 @@ def _spear(a, b):
         return 0.0, 0.0
     rho = float(np.corrcoef(ra, rb)[0, 1])
     n = len(a)
-    t = rho * np.sqrt((n - 2) / max(1e-12, 1 - rho ** 2)) if n > 2 and abs(rho) < 1 else 0.0
+    t = rho * np.sqrt((n - 2) / max(1e-12, 1 - rho**2)) if n > 2 and abs(rho) < 1 else 0.0
     return rho, float(t)
 
 
 def _dec(form, hold, q=10):
-    o = np.argsort(form); k = len(form) // q
+    o = np.argsort(form)
+    k = len(form) // q
     if k < 5:
         return None
     top, bot = hold[o[-k:]], hold[o[:k]]
     d = top.mean() - bot.mean()
     se = np.sqrt(top.var(ddof=1) / k + bot.var(ddof=1) / k)
-    return {"top": round(float(top.mean()), 5), "bot": round(float(bot.mean()), 5),
-            "spread": round(float(d), 5), "t": round(float(d / se), 2) if se > 0 else 0.0}
+    return {
+        "top": round(float(top.mean()), 5),
+        "bot": round(float(bot.mean()), 5),
+        "spread": round(float(d), 5),
+        "t": round(float(d / se), 2) if se > 0 else 0.0,
+    }
 
 
 def _wins(x):
@@ -76,14 +82,16 @@ def main() -> None:
             recs.append((av, at, mp, wk))
         except (TypeError, ValueError):
             continue
-    av = np.array([x[0] for x in recs]); at = np.array([x[1] for x in recs])
-    mp = np.array([x[2] for x in recs]); wk = np.array([x[3] for x in recs])
+    av = np.array([x[0] for x in recs])
+    at = np.array([x[1] for x in recs])
+    mp = np.array([x[2] for x in recs])
+    wk = np.array([x[3] for x in recs])
     print(f"cohort: {len(recs)} traders")
 
     variants = {
-        "A adjacent  form=month-week  hold=week   (gap 0)":   ((mp - wk) / av, wk / av),
+        "A adjacent  form=month-week  hold=week   (gap 0)": ((mp - wk) / av, wk / av),
         "B GAPPED    form=allTime-mo  hold=week   (gap ~3wk)": ((at - mp) / av, wk / av),
-        "C long-horz form=allTime-mo  hold=month  (gap 0)":    ((at - mp) / av, mp / av),
+        "C long-horz form=allTime-mo  hold=month  (gap 0)": ((at - mp) / av, mp / av),
     }
     out = []
     for label, (f, h) in variants.items():
@@ -96,21 +104,38 @@ def main() -> None:
         print(f"\n[{label}]")
         print(f"  rho={rho:+.4f} t={t:+.2f} null_p95={null:.4f} -> {sig}")
         if d:
-            print(f"  decile: top {d['top']:+.4f} bot {d['bot']:+.4f} spread {d['spread']:+.4f} (t {d['t']:+.2f})")
-        out.append({"variant": label, "rho": round(rho, 4), "t": round(t, 2),
-                    "null_p95": round(null, 4), "decile": d, "status": sig})
+            print(
+                f"  decile: top {d['top']:+.4f} bot {d['bot']:+.4f} spread {d['spread']:+.4f} (t "
+                f"{d['t']:+.2f})"
+            )
+        out.append(
+            {
+                "variant": label,
+                "rho": round(rho, 4),
+                "t": round(t, 2),
+                "null_p95": round(null, 4),
+                "decile": d,
+                "status": sig,
+            }
+        )
 
     # BTC context for the beta discussion
     try:
-        k = json.loads(_get("https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1w&limit=6", 30))
+        k = json.loads(
+            _get("https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1w&limit=6", 30)
+        )
         w = [(float(x[4]) / float(x[1]) - 1.0) for x in k]
-        print(f"\nBTC weekly returns (last {len(w)}): " + " ".join(f"{x*100:+.1f}%" for x in w))
+        print(f"\nBTC weekly returns (last {len(w)}): " + " ".join(f"{x * 100:+.1f}%" for x in w))
     except Exception:
         pass
 
-    Path("data/hl_gapped_persistence.json").write_text(json.dumps(
-        {"updated": datetime.now(tz=UTC).isoformat(), "cohort": len(recs), "variants": out},
-        indent=1), "utf-8")
+    Path("data/hl_gapped_persistence.json").write_text(
+        json.dumps(
+            {"updated": datetime.now(tz=UTC).isoformat(), "cohort": len(recs), "variants": out},
+            indent=1,
+        ),
+        "utf-8",
+    )
 
 
 if __name__ == "__main__":

@@ -11,6 +11,11 @@
 #      works via this env var, which also outranks any stale stored login)
 #   3. neither file -> whatever OAuth login exists in ~/.claude (legacy fallback)
 export PATH="$HOME/.local/bin:$PATH"
+# Repo root. Overridable so the readiness checker and its tests can exercise these helpers
+# without pretending to be the VPS. Existing absolute paths below are left alone deliberately:
+# they demonstrably work on the machine that runs them, and rewriting them to chase tidiness
+# would put every organ's auth at risk to fix nothing.
+_BRAIN_ROOT="${_BRAIN_ROOT:-/home/quant/quant-platform}"
 _BRAIN_KEYFILE="/home/quant/quant-platform/data/secrets/anthropic_api_key"
 _BRAIN_TOKENFILE="/home/quant/quant-platform/data/secrets/claude_oauth_token"
 if [ -f "$_BRAIN_KEYFILE" ]; then
@@ -165,7 +170,103 @@ _law_gate_fast
 # PRINCIPAL DOCTRINE (2026-07-21): the desk's permanent max-ROI personality, injected
 # into every claude organ via --append-system-prompt. Read once here; every organ script
 # sources this file, so all present AND future organs inherit it. Read at spawn time.
-_DOCTRINE="$(cat /home/quant/quant-platform/ops/principal_doctrine.txt 2>/dev/null)"
+#
+# IT WAS A SILENT FAIL-OPEN. The path was hardcoded and the read was `2>/dev/null`, so ANY change
+# to where the repo lives -- a move, a rename, a second checkout, a restore onto a fresh box --
+# left `_DOCTRINE` empty and every organ ran with an empty `--append-system-prompt`, undirected,
+# forever, with nothing in any log to say so. The desk's "permanent max-ROI personality" was one
+# `mv` away from silently ceasing to exist. Found 2026-08-03 by scripts/check_organ_readiness.py
+# on its first run, which is what a pre-flight is for.
+#
+# `_BRAIN_ROOT` defaults to the same absolute path, so the VPS behaviour is byte-identical; what
+# changes is that the failure is now LOUD and the file is findable from a relocated checkout.
+_DOCTRINE="$(cat "$_BRAIN_ROOT/ops/principal_doctrine.txt" 2>/dev/null)"
+if [ -z "$_DOCTRINE" ]; then
+    printf 'brain_env: DOCTRINE EMPTY (%s) -- every organ sourcing this would run undirected\n' \
+        "$_BRAIN_ROOT/ops/principal_doctrine.txt" >&2
+fi
+
+# --- §33 CONVERSION PRIORITY -------------------------------------------------------------------
+#
+# THIS WAS COMPUTED AND THROWN AWAY IN ALL SIX DIG SCRIPTS. Each one ran
+#
+#     _MINE_PRIORITY="$(.venv/bin/python scripts/mine_gate.py 2>/dev/null || true)"
+#
+# under fourteen lines of comment explaining that the result is "prepended to this run's
+# instructions so the dig spends its FIRST effort converting" -- and then invoked claude with
+# `-p "$(cat ops/<organ>_dig_prompt.txt)"`, which does not reference the variable. The gate was
+# real, its output was well-formed, and nothing consumed it. Every dig therefore mined new ground
+# while the conversion backlog it was supposed to work went untouched, which is precisely what
+# `mine-conversion-unbacked` and `mine-law-unjudgeable` have been reporting.
+#
+# It is fixed HERE rather than six times, for the same reason `_DOCTRINE` lives here: every organ
+# script sources this file, so present and future organs inherit it and the next one cannot be
+# written without it.
+#
+# THE GATE'S FAILURE IS NOT SILENT ANY MORE. The old `2>/dev/null || true` meant a missing venv, a
+# broken import or a traceback all produced an empty string indistinguishable from "nothing owes a
+# disposition" -- fail-open, on the organ whose whole job is to stop the desk mining faster than it
+# converts. A failure now emits a visible marker into the prompt so the dig, the log and the
+# operator all see that the conversion duty could not be computed.
+mine_priority() {
+    local py out rc
+    for py in "$_BRAIN_ROOT/.venv/bin/python" .venv/bin/python python3; do
+        [ -x "$py" ] || command -v "$py" >/dev/null 2>&1 || continue
+        out="$("$py" "$_BRAIN_ROOT/scripts/mine_gate.py" 2>&1)"; rc=$?
+        if [ $rc -eq 0 ]; then
+            printf '%s' "$out"
+            return 0
+        fi
+    done
+    printf '%s' "[§33] CONVERSION GATE UNAVAILABLE -- scripts/mine_gate.py could not be run on \
+this host, so the conversion backlog for this run is UNKNOWN. Treat that as owing work, not as \
+nothing owing: check docs/research/ for items claiming a terminal disposition without a backing \
+artifact before mining new ground. (last error: ${out:-no interpreter found})"
+    return 1
+}
+
+# Prompt actually handed to an organ: the conversion duty FIRST, then the organ's own brief.
+# Order is the point -- the gate's instruction is to spend this run's first effort converting.
+dig_prompt() {
+    local brief prio
+    brief="$(cat "$1")"
+    prio="$(mine_priority)"
+    if [ -n "$prio" ]; then
+        printf '%s\n\n%s' "$prio" "$brief"
+    else
+        printf '%s' "$brief"
+    fi
+}
+
+# BRAIN_DRY_RUN=1 -- PROVE AN ORGAN CAN FIRE WITHOUT SPENDING A SINGLE CREDIT.
+#
+# `run_cro_ai.sh` already had this; the six dig scripts did not, which meant the only way to find
+# out whether a dig would work was to spend credits and read the log afterwards. That is the wrong
+# order when credits are the binding constraint: a missing prompt file, an empty doctrine or a
+# broken conversion gate should be discoverable for free.
+#
+# It deliberately runs BEFORE brain_auth_check, because that check itself burns a `claude -p PING`
+# per model in the fallback chain. A pre-flight that costs credits is not a pre-flight.
+dig_dry_run() {                       # $1 = organ label, $2 = prompt file
+    [ "${BRAIN_DRY_RUN:-0}" = "1" ] || return 1
+    local p rc=0
+    if [ ! -r "$2" ]; then
+        printf 'DRY-RUN %s: FAIL -- prompt file %s missing or unreadable\n' "$1" "$2"
+        return 0
+    fi
+    p="$(dig_prompt "$2")"
+    printf 'DRY-RUN %s: prompt %s chars (brief %s, doctrine %s) model=%s\n' \
+        "$1" "${#p}" "$(wc -c < "$2" | tr -d ' ')" "${#_DOCTRINE}" "${ANTHROPIC_MODEL:-unset}"
+    case "$p" in
+        "[§33]"*) printf '  conversion duty PRESENT and leads the prompt\n' ;;
+        *)        printf '  FAIL: conversion duty absent -- the dig would mine without converting\n'
+                  rc=1 ;;
+    esac
+    [ -n "$_DOCTRINE" ] || { printf '  FAIL: doctrine is EMPTY -- organ would run undirected\n'
+                             rc=1; }
+    [ "$rc" = 0 ] && printf '  READY\n'
+    return 0
+}
 
 # DESK MEMORY (2026-08-01): the lessons this desk has PAID for -- ranked by what ignorance cost
 # x how many times it has had to re-learn them -- appended to the same injection every organ

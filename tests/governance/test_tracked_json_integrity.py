@@ -39,6 +39,12 @@ def test_every_tracked_jsonl_parses_per_line() -> None:
         for n, line in enumerate(p.read_text("utf-8").splitlines(), 1):
             if not line.strip():
                 continue
+            # Full-line '#' comments are the ledger format's own documented convention: the
+            # reader that owns it (libs/research/desk_memory.py) skips them in three places, and
+            # docs/desk_lessons.jsonl carries its append-only contract as a '#' header. A comment
+            # is a deliberate line, not corruption -- markers and broken JSON still fail below.
+            if line.lstrip().startswith("#"):
+                continue
             try:
                 json.loads(line)
             except Exception as e:

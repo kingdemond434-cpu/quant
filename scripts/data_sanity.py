@@ -21,6 +21,7 @@ SEVEN IMPLAUSIBILITY CHECKS -- each encodes a physical fact about markets, not a
 
 Scans the desk's own artifacts. Read-only, no LLM, no keys. Run from repo root, daily.
 """
+
 from __future__ import annotations
 
 import json
@@ -34,9 +35,9 @@ DATA = ROOT / "data"
 OUT = DATA / "data_sanity_report.json"
 
 # asset-class physical bounds for daily returns (what markets can actually produce)
-MAX_DAILY_VOL = 0.35        # 35% daily std would be extraordinary even for a microcap
+MAX_DAILY_VOL = 0.35  # 35% daily std would be extraordinary even for a microcap
 MIN_DAILY_VOL = 1e-6
-STALE_RUN = 5               # identical consecutive values
+STALE_RUN = 5  # identical consecutive values
 FLAT_MIN_BUCKETS = 3
 
 
@@ -55,24 +56,35 @@ def scan_cost_model(findings):
         for leg, buckets in legs.items():
             if not isinstance(buckets, dict) or len(buckets) < FLAT_MIN_BUCKETS:
                 continue
-            pts = sorted((int(k), v.get("median_bps")) for k, v in buckets.items()
-                         if isinstance(v, dict) and v.get("median_bps") is not None)
+            pts = sorted(
+                (int(k), v.get("median_bps"))
+                for k, v in buckets.items()
+                if isinstance(v, dict) and v.get("median_bps") is not None
+            )
             vals = [v for _, v in pts]
             if len(vals) < FLAT_MIN_BUCKETS:
                 continue
             # CHECK 1: impact MUST rise with size; identical across a wide size range is impossible
             if len({round(v, 4) for v in vals}) == 1:
-                flag(findings, "CRITICAL", f"cost_model/{sym}/{leg}",
-                     f"slippage {vals[0]:.2f}bps IDENTICAL across {len(vals)} size buckets "
-                     f"(${pts[0][0]}-${pts[-1][0]})",
-                     "market impact must increase with order size; a flat curve means the "
-                     "estimator returned a constant, so any sizing decision using it is unfounded")
+                flag(
+                    findings,
+                    "CRITICAL",
+                    f"cost_model/{sym}/{leg}",
+                    f"slippage {vals[0]:.2f}bps IDENTICAL across {len(vals)} size buckets "
+                    f"(${pts[0][0]}-${pts[-1][0]})",
+                    "market impact must increase with order size; a flat curve means the "
+                    "estimator returned a constant, so any sizing decision using it is unfounded",
+                )
             # CHECK 5: a leg costing more than ~1% is not tradeable for a carry
             elif max(vals) > 100:
-                flag(findings, "HIGH", f"cost_model/{sym}/{leg}",
-                     f"max {max(vals):.0f}bps per leg",
-                     "4 legs per carry round-trip => >4% cost vs ~0.7%/mo funding harvest; "
-                     "structurally unprofitable at any size")
+                flag(
+                    findings,
+                    "HIGH",
+                    f"cost_model/{sym}/{leg}",
+                    f"max {max(vals):.0f}bps per leg",
+                    "4 legs per carry round-trip => >4% cost vs ~0.7%/mo funding harvest; "
+                    "structurally unprofitable at any size",
+                )
 
 
 def scan_jsonl(findings):
@@ -94,14 +106,35 @@ def scan_jsonl(findings):
         # positive, and a validator with a high FP rate trains the reader to ignore it -- which is
         # worse than no validator. window_s=3600 and partition_s=300 are settings; ts is a clock;
         # start_* is a fixed baseline. Only genuine MARKET quantities are checked.
-        CONFIG = {"n_hist", "n_quotes", "window_s", "partition_s", "ts", "timestamp", "time",
-                  "interval_s", "period_s", "lookback", "n", "count", "rows", "day", "epoch",
-                  "min_days", "need", "version", "seq"}
-        keys = [k for k, v in rows[-1].items()
-                if isinstance(v, (int, float))
-                and k not in CONFIG
-                and not k.startswith(("start_", "cfg_", "param_", "n_", "num_"))
-                and not k.endswith(("_s", "_ms", "_id", "_count", "_n", "_seq"))]
+        CONFIG = {
+            "n_hist",
+            "n_quotes",
+            "window_s",
+            "partition_s",
+            "ts",
+            "timestamp",
+            "time",
+            "interval_s",
+            "period_s",
+            "lookback",
+            "n",
+            "count",
+            "rows",
+            "day",
+            "epoch",
+            "min_days",
+            "need",
+            "version",
+            "seq",
+        }
+        keys = [
+            k
+            for k, v in rows[-1].items()
+            if isinstance(v, (int, float))
+            and k not in CONFIG
+            and not k.startswith(("start_", "cfg_", "param_", "n_", "num_"))
+            and not k.endswith(("_s", "_ms", "_id", "_count", "_n", "_seq"))
+        ]
         for k in keys:
             vals = [r.get(k) for r in rows if isinstance(r.get(k), (int, float))]
             if len(vals) < 4:
@@ -109,9 +142,14 @@ def scan_jsonl(findings):
             arr = np.asarray(vals, dtype="float64")
             # CHECK 2
             if arr.std() == 0:
-                flag(findings, "HIGH", f"{p.name}/{k}",
-                     f"zero variance across {len(arr)} rows (value {arr[0]})",
-                     "a series that never moves is a constant; the collector is echoing, not reading")
+                flag(
+                    findings,
+                    "HIGH",
+                    f"{p.name}/{k}",
+                    f"zero variance across {len(arr)} rows (value {arr[0]})",
+                    "a series that never moves is a constant; the collector is echoing, "
+                    "not reading",
+                )
                 continue
             # CHECK 4
             run = mx = 1
@@ -119,16 +157,28 @@ def scan_jsonl(findings):
                 run = run + 1 if arr[i] == arr[i - 1] else 1
                 mx = max(mx, run)
             if mx >= STALE_RUN:
-                flag(findings, "HIGH", f"{p.name}/{k}",
-                     f"{mx} identical consecutive values",
-                     "repeated values mean a cached or failed fetch is being recorded as fresh data")
+                flag(
+                    findings,
+                    "HIGH",
+                    f"{p.name}/{k}",
+                    f"{mx} identical consecutive values",
+                    "repeated values mean a cached or failed fetch is being recorded as fresh data",
+                )
             # CHECK 7: bounded quantities should not be monotone over long stretches
-            if (len(arr) >= 8 and "cum" not in k and "total" not in k
-                    and (np.all(np.diff(arr) >= 0) or np.all(np.diff(arr) <= 0))):
-                flag(findings, "MEDIUM", f"{p.name}/{k}",
-                     f"monotone across all {len(arr)} rows",
-                     "a market quantity that only ever moves one way is usually an accumulator "
-                     "or a counter mislabelled as a level")
+            if (
+                len(arr) >= 8
+                and "cum" not in k
+                and "total" not in k
+                and (np.all(np.diff(arr) >= 0) or np.all(np.diff(arr) <= 0))
+            ):
+                flag(
+                    findings,
+                    "MEDIUM",
+                    f"{p.name}/{k}",
+                    f"monotone across all {len(arr)} rows",
+                    "a market quantity that only ever moves one way is usually an accumulator "
+                    "or a counter mislabelled as a level",
+                )
         # CHECK 6: date holes inside the covered span
         ds = sorted({r["date"] for r in rows if r.get("date")})
         if len(ds) >= 3:
@@ -136,19 +186,30 @@ def scan_jsonl(findings):
                 a, b = date.fromisoformat(ds[0]), date.fromisoformat(ds[-1])
                 span = (b - a).days + 1
                 if span - len(ds) >= 2:
-                    missing = [str(a + timedelta(days=i)) for i in range(span)
-                               if str(a + timedelta(days=i)) not in set(ds)]
-                    flag(findings, "MEDIUM", f"{p.name}/dates",
-                         f"{span - len(ds)} missing days inside span {ds[0]}..{ds[-1]}",
-                         f"silent partial failure -- e.g. {missing[:3]}")
+                    missing = [
+                        str(a + timedelta(days=i))
+                        for i in range(span)
+                        if str(a + timedelta(days=i)) not in set(ds)
+                    ]
+                    flag(
+                        findings,
+                        "MEDIUM",
+                        f"{p.name}/dates",
+                        f"{span - len(ds)} missing days inside span {ds[0]}..{ds[-1]}",
+                        f"silent partial failure -- e.g. {missing[:3]}",
+                    )
             except ValueError:
                 pass
 
 
 def scan_screens(findings):
     """CHECK 3: implausible vol / IC in saved screen artifacts."""
-    for name in ("batch_altdata_screen.json", "batch_premium_screen.json",
-                 "structural_spreads.json", "hl_feature_factory.json"):
+    for name in (
+        "batch_altdata_screen.json",
+        "batch_premium_screen.json",
+        "structural_spreads.json",
+        "hl_feature_factory.json",
+    ):
         p = DATA / name
         if not p.exists():
             continue
@@ -158,16 +219,24 @@ def scan_screens(findings):
                 continue
             sd = r.get("sd_pct")
             if isinstance(sd, (int, float)) and sd > MAX_DAILY_VOL * 100:
-                flag(findings, "CRITICAL", f"{name}/{r.get('name')}",
-                     f"sd {sd:.1f}% on a spread/ratio",
-                     "far beyond what this quantity can physically produce; almost certainly "
-                     "non-synchronous legs or a unit error, not a market observation")
+                flag(
+                    findings,
+                    "CRITICAL",
+                    f"{name}/{r.get('name')}",
+                    f"sd {sd:.1f}% on a spread/ratio",
+                    "far beyond what this quantity can physically produce; almost certainly "
+                    "non-synchronous legs or a unit error, not a market observation",
+                )
             ic = r.get("ic")
             if isinstance(ic, (int, float)) and abs(ic) > 0.5:
-                flag(findings, "CRITICAL", f"{name}/{r.get('name')}",
-                     f"IC {ic:+.3f}",
-                     "daily-horizon IC above 0.5 implies near-perfect foresight; lookahead or "
-                     "alignment error is far more likely than a real signal")
+                flag(
+                    findings,
+                    "CRITICAL",
+                    f"{name}/{r.get('name')}",
+                    f"IC {ic:+.3f}",
+                    "daily-horizon IC above 0.5 implies near-perfect foresight; lookahead or "
+                    "alignment error is far more likely than a real signal",
+                )
 
 
 def main() -> None:
@@ -183,13 +252,27 @@ def main() -> None:
     sev = {}
     for f in findings:
         sev[f["severity"]] = sev.get(f["severity"], 0) + 1
-    print(f"\n  {len(findings)} implausibility findings"
-          + (f"  ({', '.join(f'{k}:{v}' for k, v in sorted(sev.items()))})" if sev else ""))
+    print(
+        f"\n  {len(findings)} implausibility findings"
+        + (f"  ({', '.join(f'{k}:{v}' for k, v in sorted(sev.items()))})" if sev else "")
+    )
     if not findings:
-        print("  (nothing implausible found -- note this is a WEAKER statement than 'data is correct')")
-    OUT.write_text(json.dumps({"updated": datetime.now(tz=UTC).isoformat(),
-                               "n": len(findings), "by_severity": sev,
-                               "findings": findings}, indent=1), "utf-8")
+        print(
+            "  (nothing implausible found -- note this is a WEAKER statement than 'data is "
+            "correct')"
+        )
+    OUT.write_text(
+        json.dumps(
+            {
+                "updated": datetime.now(tz=UTC).isoformat(),
+                "n": len(findings),
+                "by_severity": sev,
+                "findings": findings,
+            },
+            indent=1,
+        ),
+        "utf-8",
+    )
     print(f"\n  -> {OUT}")
     print("  CRITICAL findings should block any sizing or promotion decision that uses that input.")
 

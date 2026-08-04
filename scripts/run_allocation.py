@@ -1,123 +1,136 @@
-"""Dynamic capital allocator (items 1-3,5,9 of the build) -> web/allocation.json.
+#!/usr/bin/env python3
+"""ALLOCATE ACROSS FAMILIES, BOUND BY WHAT THE BOOK CAN CARRY -- capacity_allocation's caller.
 
-Turns the per-sleeve Sharpes + correlation matrix the portfolio engine already produces into a
-capital allocation across sleeves, comparing equal-weight / max-Sharpe / risk-parity and a
-RECOMMENDED book that is: max-Sharpe, 50/50 anti-overfit-blended with equal-weight, then 35%
-concentration-capped and regime-tilted (blend with regime_alloc.json). Reports each scheme's
-expected portfolio Sharpe, per-sleeve marginal contribution, capacity flag, and turnover vs the
-current live target -- plus whether a WEEKLY rebalance is due. SHADOW: this is advisory; it does not
-auto-resize live capital (unvalidated). Promotion needs it to beat flat in the forward shadow.
+WHY IT EXISTS. `libs/portfolio/capacity_allocation.py` was built and left with no production
+caller, found by a mechanical sweep for library modules nothing imports. That is the desk's own
+"built but never runs" class, and an allocator nobody calls allocates nothing.
 
-    python scripts/run_allocation.py
+WHAT IT JOINS UP. Two numbers that were being produced and never met:
+
+  CAPACITY, from `scripts/calibrate_impact.py` walking the desk's own recorded L2 depth. It is the
+  largest position the book absorbs inside the impact budget, per symbol.
+  RETURN STREAMS, per strategy. Effective breadth is MEASURED across them rather than assumed from
+  the fact that they carry different names -- two families that turn out to be the same trade in
+  different vocabulary are one bet, and a sleeve allocator handed their separate Sharpes doubles
+  the position and reports diversification.
+
+Allocation then runs in Sharpe space and capacity binds HARD on top. A strategy the desk cannot
+execute cannot be held, and unallocated capital is reported rather than quietly absorbed.
+
+Read-only. Writes one artifact. No keys, no order paths.
 """
-
 from __future__ import annotations
 
+import argparse
 import json
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
-import numpy as np
+import pandas as pd
 
-from libs.portfolio.construction import (
-    blend,
-    concentration_cap,
-    marginal_sharpe,
-    max_sharpe_weights,
-    portfolio_sharpe,
-    turnover,
-)
-from libs.portfolio.covariance import erc_weights
-from libs.portfolio.hrp import hrp_weights
-from libs.portfolio.risk_parity import risk_parity_weights
+ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
-_PORT = Path("web/crypto_portfolio.json")
-_REGALLOC = Path("web/regime_alloc.json")
-_STATE = Path("data/allocation_state.json")
-_OUT = Path("web/allocation.json")
-_CAP = 0.35
-_REBALANCE_DAYS = 7
+from libs.portfolio.capacity_allocation import allocate_with_capacity  # noqa: E402
+
+STREAMS = ROOT / "data/strategy_streams.csv"
+IMPACT = ROOT / "data/impact_calibration.json"
+REPORT = ROOT / "data/allocation.json"
+
+#: Book size in base units, used to turn an absolute capacity into a fraction of the book.
+DEFAULT_BOOK = 10.0
 
 
-def _wmap(sleeves: list[str], w: np.ndarray) -> dict[str, float]:
-    return {s: round(float(x), 4) for s, x in zip(sleeves, w, strict=True)}
-
-
-def main() -> None:
-    port = json.loads(_PORT.read_text("utf-8"))
-    rows = [r for r in port.get("results", []) if not str(r["sleeve"]).startswith("portfolio")]
-    sleeves = [r["sleeve"] for r in rows]
-    sharpes = np.array([float(r["ann_sharpe"]) for r in rows])
-    cmap = port.get("correlations", {})
-    n = len(sleeves)
-    corr = np.array([[float(cmap.get(a, {}).get(b, 1.0 if a == b else 0.0))
-                      for b in sleeves] for a in sleeves])
-
-    eq = np.full(n, 1.0 / n)
-    ms = max_sharpe_weights(sharpes, corr)
-    rp = risk_parity_weights(corr)
-    hrp = hrp_weights(corr)                                  # hierarchical risk parity (de Prado)
-    erc = erc_weights(corr)                                  # equal risk contribution
-    # recommended: max-Sharpe, anti-overfit blended 50/50 with equal, then concentration-capped
-    rec = concentration_cap(blend(ms, eq, 0.5), _CAP)
-    # regime tilt: blend 70/30 with the regime allocator's tilt if available and aligned
-    regime = "—"
+def _rel(p: Path) -> str:
     try:
-        ra = json.loads(_REGALLOC.read_text("utf-8"))
-        tilt = np.array([float(ra.get("tilt_weights", {}).get(s, 0.0)) for s in sleeves])
-        if tilt.sum() > 0:
-            rec = concentration_cap(blend(rec, tilt / tilt.sum(), 0.7), _CAP)
-            regime = ra.get("regime", "—")
-    except (OSError, ValueError):
-        pass
+        return str(p.relative_to(ROOT))
+    except ValueError:
+        return str(p)
 
-    schemes = {"equal_weight": eq, "max_sharpe": ms, "risk_parity": rp,
-               "hrp": hrp, "erc": erc, "recommended": rec}
-    sharpe_by = {k: round(portfolio_sharpe(v, sharpes, corr), 3) for k, v in schemes.items()}
-    mc = marginal_sharpe(rec, sharpes, corr)
 
-    # weekly rebalance gate
-    prev = json.loads(_STATE.read_text("utf-8")) if _STATE.exists() else {}
-    last = prev.get("last_rebalance")
-    now = datetime.now(tz=UTC)
-    due = True
-    if last:
-        try:
-            due = (now - datetime.fromisoformat(last)).days >= _REBALANCE_DAYS
-        except ValueError:
-            due = True
-    prev_w = prev.get("weights", {})
-    tnover = round(turnover(prev_w, _wmap(sleeves, rec)), 4) if prev_w else None
-    if due:
-        _STATE.parent.mkdir(parents=True, exist_ok=True)
-        _STATE.write_text(json.dumps({"last_rebalance": now.isoformat(),
-                                      "weights": _wmap(sleeves, rec)}, indent=2), "utf-8")
+def load_capacity(path: Path, book: float) -> dict[str, float]:
+    """symbol -> capacity as a FRACTION of the book, from the impact calibration.
 
+    Uses the p10 rather than the median: sizing to the typical book means being wrong exactly when
+    liquidity is gone, which is exactly when the position needs to come off.
+    """
+    if not path.exists():
+        return {}
+    try:
+        d = json.loads(path.read_text("utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    out = {}
+    for row in d.get("symbols") or []:
+        cap = row.get("capacity_p10")
+        if isinstance(cap, int | float) and book > 0:
+            out[str(row.get("symbol"))] = float(min(cap / book, 1.0))
+    return out
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--streams", default=None, help="CSV, one column of returns per strategy")
+    ap.add_argument("--book", type=float, default=DEFAULT_BOOK)
+    ap.add_argument("--gross", type=float, default=1.0)
+    a = ap.parse_args()
+
+    src = Path(a.streams) if a.streams else STREAMS
+    REPORT.parent.mkdir(parents=True, exist_ok=True)
+    if not src.exists():
+        REPORT.write_text(json.dumps({
+            "ts": datetime.now(tz=UTC).isoformat(), "state": "NO STREAMS",
+            "reason": (f"{_rel(src)} absent. Per-strategy return streams come from the backtest "
+                       "organs; data/ is gitignored so this is expected in a fresh checkout."),
+            "note": ("streams are NOT synthesised: an allocation computed on a generator would "
+                     "size real capital against imaginary correlations"),
+        }, indent=1), "utf-8")
+        print(f"allocation: NO STREAMS at {_rel(src)}")
+        return 0
+
+    streams = pd.read_csv(src)
+    streams = streams.select_dtypes("number").dropna(how="all", axis=1)
+    if streams.shape[1] < 2:
+        print(f"allocation: need >=2 strategies, got {streams.shape[1]}")
+        return 0
+
+    sharpes = {c: float(streams[c].mean() / streams[c].std(ddof=1))
+               if streams[c].std(ddof=1) > 0 else 0.0 for c in streams.columns}
+    cap = load_capacity(IMPACT, a.book)
+    # A strategy with no measured capacity is NOT assumed unlimited -- that is how an unexecutable
+    # book gets built. Absent a measurement it is given zero and reported, so the gap is visible.
+    missing = [c for c in streams.columns if c not in cap]
+    capacity = {c: cap.get(c, 0.0) for c in streams.columns}
+
+    res = allocate_with_capacity(streams, sharpes, capacity, gross_target=a.gross)
     out = {
-        "updated": now.isoformat(),
-        "status": "SHADOW",
-        "regime": regime,
-        "concentration_cap": _CAP,
-        "rebalance_due": bool(due),
-        "rebalance_every_days": _REBALANCE_DAYS,
-        "turnover_vs_prev": tnover,
-        "sleeves": sleeves,
-        "expected_sharpe_theoretical": sharpe_by,
-        "uplift_vs_equal": round(sharpe_by["recommended"] - sharpe_by["equal_weight"], 3),
-        "realized_flat_sharpe": port.get("headline_sharpe"),
-        "weights": {k: _wmap(sleeves, v) for k, v in schemes.items()},
-        "marginal_contribution": _wmap(sleeves, mc),
-        "capacity_note": "capacity hook present; per-sleeve $ ADV not yet measured (neutral)",
-        "honesty": ("expected_sharpe is the THEORETICAL quadrature of standalone in-sample Sharpes "
-                    f"-- optimistic vs realized {port.get('headline_sharpe')} (fails DSR). Only "
-                    "the RELATIVE uplift vs equal is actionable, after shadow."),
+        "ts": datetime.now(tz=UTC).isoformat(), "source": _rel(src),
+        "book": a.book, "weights": res.as_dict(),
+        "capacity_frac": dict(zip(res.names, (float(x) for x in res.capacity_frac), strict=True)),
+        "capped": list(res.capped),
+        "unmeasured_capacity": missing,
+        "n_eff": res.n_eff, "mean_corr": res.mean_corr, "ir_multiple": res.ir_multiple,
+        "gross": res.gross, "unallocated": res.unallocated,
+        "note": res.note + (
+            " Strategies with no measured capacity are given ZERO, never unlimited: run "
+            "scripts/calibrate_impact.py so the book can carry them."),
+        "authority": "NONE. Produces target weights; sends no orders.",
     }
-    _OUT.parent.mkdir(parents=True, exist_ok=True)
-    _OUT.write_text(json.dumps(out, indent=2), "utf-8")
-    print(f"allocation: recommended Sharpe {sharpe_by['recommended']} vs equal "
-          f"{sharpe_by['equal_weight']} (uplift {out['uplift_vs_equal']}); "
-          f"rebalance {'DUE' if due else 'not due'}; regime {regime}")
+    REPORT.write_text(json.dumps(out, indent=1, default=str), "utf-8")
+
+    print(f"allocation: {len(res.names)} strategies | measured N_eff {res.n_eff:.2f} "
+          f"(IR x{res.ir_multiple:.2f}) | gross {res.gross:.2f} | "
+          f"unallocated {res.unallocated:.2f}")
+    for n, w in sorted(res.as_dict().items(), key=lambda kv: -kv[1]):
+        flag = "  CAPPED" if n in res.capped else ""
+        print(f"  {n:<24} w={w:.4f}  cap={capacity[n]:.4f}{flag}")
+    if missing:
+        print(f"  NO MEASURED CAPACITY (weighted 0): {', '.join(missing)} -- run "
+              "scripts/calibrate_impact.py")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

@@ -39,6 +39,10 @@ from libs.research.strategic_director import (  # noqa: E402
 
 OUT = ROOT / "data/strategic_director.json"
 KEYS = ROOT / "data/secrets/llm_panel.json"
+
+from libs.doctrine.constitution import OBJECTIVE_PREAMBLE  # noqa: E402
+from libs.llm.effort import reasoning_payload  # noqa: E402
+
 # overridable; any reasoning model satisfies the contract -- but the DEFAULT is deliberately a
 # GPT model, not a Claude one (principal order 2026-07-31, and it was the design intent from the
 # start: "GPT Strategic Director"). Every other reasoning organ on this desk is Claude, so a
@@ -77,11 +81,14 @@ def _ask(prompt: str, model: str, timeout: float = 360.0) -> tuple[str, str]:
             system = _doctrine("strategic director")
         except Exception:
             system = ""
-        messages = ([{"role": "system", "content": system}] if system else []) + [
-            {"role": "user", "content": prompt}]
+        system = OBJECTIVE_PREAMBLE + ("\n" + system if system else "")
+        messages = [{"role": "system", "content": system},
+                    {"role": "user", "content": prompt}]
         body = json.dumps({
             "model": model, "max_tokens": 8000, "temperature": 0.4,
-            "reasoning": {"effort": "high"},
+            # depth follows the roster's per-model caps, never a hardcoded literal -- the
+            # effort ladder lives in ONE place (libs/llm/effort) for every organ.
+            "reasoning": reasoning_payload(model),
             "messages": messages,
         }).encode()
         req = urllib.request.Request(

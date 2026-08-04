@@ -9,6 +9,8 @@ Verdicts are **BUILT** (exists, verified), **BUILD** (ready, unblocked, spec bel
 
 ## BUILT — exists and verified today
 
+| 67 | **Intelligent Data Acquisition scoring** | **BUILT 2026-08-02 -- and it was a DUPLICATE of addendum #93.** Shipped as `scripts/acquire_data.py`, wired into run_cadence. Two triage docs carried the same component under different numbers and neither knew: an item written down twice is worked zero times or twice, never once. |
+| 39 | **Information Gain Engine** | **FIXED 2026-08-02 -- the row MISDIAGNOSED it.** "exists but DEAD, repair the estimator" was wrong: `info_bits` constant 0.2345 is exactly -log2(0.85), so every caller passed the same hardcoded 0.15 prior. The estimator was fine; the PRIOR never learned, making total_bits a row count in information-theory units. `empirical_prior()` now derives P(survive) from the desk's own log with Laplace smoothing and the prior travels with the number. A rejection books 0.0348 bits instead of 0.2345 -- the old value overstated learning ~7x, always in the desk's favour. |
 | # | Component | Where |
 |---|---|---|
 | 1 | Experiment Registry / Reproducibility / Decision Log | `experiment_registry.py` — 369 experiments, commit-pinned |
@@ -81,7 +83,6 @@ them.
 | # | Component | Blocker |
 |---|---|---|
 | 38 | Research Capital Allocation Engine | per-mechanism n = 2/10 vs 0/10 — one coin flip |
-| 39 | Information Gain Engine **(exists but DEAD)** | `info_bits` constant 0.2345 across all 810 rows — repair the writer first |
 | 40 | Research Forecast Calibration | needs predictions logged *before* experiments; cannot retrofit — start accruing day one |
 | 41 | Regime Generalisation / Transfer | no retained regime history |
 | 42 | Out-of-Distribution Intelligence | same |
@@ -117,7 +118,6 @@ them.
 | 64 | Market Ecology / Participant Model |
 | 65 | Alpha Adversary Model |
 | 66 | Blind Validation |
-| 67 | Intelligent Data Acquisition scoring |
 
 ---
 
@@ -149,3 +149,56 @@ them.
 2. Confirm the kill-latch/re-entry defect (book re-opened with `CASHCARRY_KILL` present)
 3. TCA fills accumulating → re-measure cost/funding vs the 7.75× baseline
 4. Sept 1 forward verdict — the first chance for the north star to leave 0.00
+
+## Re-verdict pass 2026-08-02 — all 46 blockers checked against the desk's actual state
+
+_(Heading deliberately avoids a verdict keyword, and the findings below are prose rather than a
+numbered table: `check_triage_disposition` keys sections off the heading prefix and parses `| N |`
+rows as ITEMS, so a document reporting on the queue would otherwise be parsed as queue entries.
+The addendum's first draft did exactly that.)_
+
+A QUEUE verdict is a claim with an expiry date, and `check_triage_blocker_stale` only catches a
+blocker whose named dependency SHIPPED — it cannot catch one that expired because the world moved.
+So all five blocker groups were checked by hand.
+
+**TWO EXPIRED.**
+
+- **Item 67, "Intelligent Data Acquisition scoring" — ALREADY BUILT, and it is a DUPLICATE.** This
+  is the same component as addendum #93, which shipped this cycle as `scripts/acquire_data.py`.
+  Two triage documents carried the same work under different numbers and neither knew, which is
+  the register's own §35 failure appearing inside the register: an item written down twice is
+  worked zero times or twice, never once.
+- **Item 39, "Information Gain Engine (exists but DEAD)" — MISDIAGNOSED, and now FIXED.** The row
+  said "repair the estimator" on the evidence of `info_bits` being a constant 0.2345 across 810
+  rows. The estimator was never broken: 0.2345 is exactly −log2(0.85), so every caller passed the
+  same hardcoded prior of 0.15. A prior that never updates gives identical surprise for every
+  outcome, making `total_bits` precisely `n × 0.2345` — a row count wearing an information-theory
+  unit, and the third instance this session of a counter dressed as evidence. It also erred in the
+  flattering direction: against a measured 420/420 rejection record, each rejection was booked as
+  0.2345 bits of *surprise* when it was exactly what the desk should expect. `empirical_prior()`
+  now learns P(survive) from the desk's own log with Laplace smoothing, and the prior travels with
+  the number. A rejection now books 0.0348 bits instead of 0.2345 — the old value overstated
+  learning roughly sevenfold.
+
+**THE REST HOLD, by group, with the reason recorded:**
+
+- **Items 22–28, blocked on OpenRouter funding (~$120):** unverifiable from this environment
+  (`data/panel_budget_state.json` is gitignored and absent here). NOT cleared and NOT confirmed —
+  recorded as owed to a VPS check rather than guessed in either direction.
+- **Items 29–37, blocked on ≥2 validated alphas:** STILL TRUE. Zero deployed;
+  `desk_metrics:alpha_performance` is empty and only a library writes it.
+- **Items 40–46, blocked on sample size or history:** mostly STILL TRUE. #46 needs TCA fills, #44
+  needs a non-empty suggestion ledger, #41–#43 need retained regime history. #40 ("needs
+  predictions logged *before* experiments; cannot retrofit — start accruing") is not a blocker at
+  all but an instruction nobody started; it is the closest of this group to actionable.
+- **Items 47–55, blocked on data acquisition:** PARTIALLY expired. The venue half arrived — 8.2GB
+  of moat tape across three venues, carrying aggTrades — which materially unblocks #54
+  (Cross-Venue Information Delay) since cross-venue lag is now measurable from owned data. The
+  on-chain half (#47–#52) has not arrived. Recorded as partial rather than cleared: half a blocker
+  is still a blocker, and clearing it would queue work that stalls on arrival.
+- **Items 56–66, "blocked on engineering only (no conceptual blocker)":** by their own note these
+  are NOT blocked. They are correctly QUEUED rather than promoted, because BUILD is the
+  cheap-next-session tier and moving eleven multi-day items into it would turn a ready-queue into
+  a backlog and bury the genuinely cheap work — the same denominator dishonesty §34 forbids for
+  mining, applied to a work queue.
+

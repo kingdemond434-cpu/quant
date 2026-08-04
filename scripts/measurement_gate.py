@@ -403,7 +403,10 @@ def verify_all() -> dict:
             results[p.name] = {"rows_sampled": len(rows), "kind": "UNKNOWN",
                                "verdict": "TOO_SMALL", "fails": [], "warns":
                                [f"only {len(rows)} rows -- below the 25-row scoring floor"],
-                               "timestamps": {}, "correctness": {}, "features": {}, "repro": {}}
+                               "timestamps": {}, "correctness": {}, "features": {}, "repro": {},
+                               # empty on purpose: unchecked provenance reads as undeclared
+                               # (fail-closed), and its absence would KeyError verify_all below.
+                               "provenance": {}}
             continue
         tkey = next((k for k in _TIME_KEYS if k in rows[0]), None)
         kind = classify_kind(rows, tkey, p.name)

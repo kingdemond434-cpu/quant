@@ -52,7 +52,7 @@ up concentrated in the one trade it already had.
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from typing import Any
 
 import numpy as np
@@ -120,7 +120,7 @@ def _portfolio_series(incumbents: np.ndarray) -> np.ndarray:
         incumbents = incumbents.reshape(-1, 1)
     sd = incumbents.std(axis=0, ddof=1)
     sd = np.where(sd > 0, sd, np.nan)
-    return np.nansum(incumbents / sd, axis=1)
+    return np.asarray(np.nansum(incumbents / sd, axis=1))
 
 
 def _sharpe(x: np.ndarray, periods_per_year: float) -> float:
@@ -176,10 +176,11 @@ def evaluate(
     if inc.size and inc.ndim == 1:
         inc = inc.reshape(-1, 1)
 
-    blank = dict(candidate_sharpe=0.0, portfolio_sharpe=0.0, rho_hat=float("nan"),
-                 rho_used=1.0, hurdle=float("nan"), orthogonal_ir=0.0,
-                 portfolio_sharpe_after=0.0, gain=0.0, n_overlap=int(cand.size),
-                 n_eff_before=0.0, n_eff_after=0.0)
+    blank: dict[str, Any] = {
+        "candidate_sharpe": 0.0, "portfolio_sharpe": 0.0, "rho_hat": float("nan"),
+        "rho_used": 1.0, "hurdle": float("nan"), "orthogonal_ir": 0.0,
+        "portfolio_sharpe_after": 0.0, "gain": 0.0, "n_overlap": int(cand.size),
+        "n_eff_before": 0.0, "n_eff_after": 0.0}
 
     if not np.all(np.isfinite(cand)) or cand.size == 0:
         return Admission(False, "candidate series is empty or non-finite", **blank)
@@ -227,9 +228,9 @@ def evaluate(
                     if (pairs_before + k) > 0 else rho)
     n_eff_after = _n_eff(k + 1, mean_c_after)
 
-    common = dict(candidate_sharpe=s_c, portfolio_sharpe=s_p, rho_hat=rho_hat, rho_used=rho,
-                  hurdle=rho * s_p, n_overlap=n, n_eff_before=n_eff_before,
-                  n_eff_after=n_eff_after)
+    common = {"candidate_sharpe": s_c, "portfolio_sharpe": s_p, "rho_hat": rho_hat,
+              "rho_used": rho, "hurdle": rho * s_p, "n_overlap": n,
+              "n_eff_before": n_eff_before, "n_eff_after": n_eff_after}
 
     if s_p <= 0.0:
         # A book with no measured edge cannot set a hurdle; falling back to standalone merit here
@@ -260,6 +261,8 @@ def evaluate(
                                 "-- inside estimation noise",
                          orthogonal_ir=ir, portfolio_sharpe_after=s_after, gain=gain, **common)
 
-    return Admission(True, f"adds {gain:+.4f} portfolio Sharpe ({s_p:.3f} -> {s_after:.3f}) at "
-                           f"rho<={rho:.3f}; effective bets {n_eff_before:.2f} -> {n_eff_after:.2f}",
+    return Admission(True,
+                     f"adds {gain:+.4f} portfolio Sharpe ({s_p:.3f} -> {s_after:.3f}) at "
+                     f"rho<={rho:.3f}; effective bets "
+                     f"{n_eff_before:.2f} -> {n_eff_after:.2f}",
                      orthogonal_ir=ir, portfolio_sharpe_after=s_after, gain=gain, **common)

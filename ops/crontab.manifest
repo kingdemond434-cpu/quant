@@ -707,6 +707,20 @@ SYSTEMD unit="quant-cashcarry.service" on="always" exec="scripts/run_cashcarry_e
 # CONFIDENCE: documented-cadence
 SYSTEMD unit="quant-deadman.service" on="always" exec="scripts/run_deadman_switch.py"
 
+# pager tick: quant-alerts.timer is COMMITTED (ops/quant-alerts.timer, 15-min tick feeding the
+# 1.0h data/.last_alerts.json floor in run_cadence). It was absent from this manifest while the
+# unit file sat in ops/ -- exactly the manifest-rot the scheduler test now catches (2026-08-04).
+# EVIDENCE: ops/quant-alerts.timer, ops/quant-alerts.service; CONFIDENCE: committed-unit
+SYSTEMD unit="quant-alerts.timer" on="15min tick" exec="scripts/run_alerts.py"
+
+# cadence engine: the desk's organ scheduler itself (committed unit, hourly tick).
+# EVIDENCE: ops/quant-cadence.timer, ops/quant-cadence.service; CONFIDENCE: committed-unit
+SYSTEMD unit="quant-cadence.timer" on="hourly tick" exec="scripts/run_cadence.py"
+
+# daily-max loop: works the max_audit defect queue every 6h (committed unit).
+# EVIDENCE: ops/quant-daily-max.timer, ops/quant-daily-max.service; CONFIDENCE: committed-unit
+SYSTEMD unit="quant-daily-max.timer" on="6h tick" exec="scripts/daily_max.py"
+
 # EVIDENCE: docs/PROJECT_HANDOFF.md:34; scripts/watchdog.py:61
 # CONFIDENCE: documented-cadence
 SYSTEMD unit="quant-dashboard.service" on="always" exec="scripts/serve_dashboard.py"
@@ -1429,3 +1443,23 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 #   ledger row per run (the row is the proof it converted; the log alone is not).
 # CONFIDENCE: committed-script (new this cycle)
 10 10 * * * cd "$QUANT_ROOT" && flock -n data/.cron_commit_audit.lock /bin/bash ops/run_commit_audit.sh >> data/cro_ai_logs/commit_audit.log 2>&1
+
+# --------------------------------------------------------------------------------------------
+# GOVERNANCE MEASUREMENT RE-RUNS (wired 2026-08-04 -- each was the sole importer of a libs
+# module with NOTHING invoking it, so the module was unreachable and the orphan check green)
+# --------------------------------------------------------------------------------------------
+
+# admission-gate power: re-measure Type I/II of the marginal-admission bar as the cohort grows.
+# EVIDENCE: scripts/measure_admission_power.py -> reports/admission_power.json
+# CONFIDENCE: inferred (slot chosen here; weekly -- statistics move with data, not with days)
+30 7 * * 1 cd "$QUANT_ROOT" && flock -n data/.cron_admpower.lock .venv/bin/python scripts/measure_admission_power.py >> data/cro_ai_logs/admission_power.log 2>&1
+
+# alpha persistence half-life: re-measure decay on the closes ledger as it accumulates.
+# EVIDENCE: scripts/measure_alpha_persistence.py; CONFIDENCE: inferred (weekly, same rationale)
+45 7 * * 1 cd "$QUANT_ROOT" && flock -n data/.cron_alphapersist.lock .venv/bin/python scripts/measure_alpha_persistence.py >> data/cro_ai_logs/alpha_persistence.log 2>&1
+
+# live-book concentration: HHI/greeks of the actual book -- sole importer of libs/portfolio/
+# concentration; unwired until 2026-08-04 (same defect class as the two rows above).
+# EVIDENCE: scripts/measure_live_book_concentration.py; CONFIDENCE: inferred (daily -- the book moves daily)
+55 7 * * * cd "$QUANT_ROOT" && flock -n data/.cron_bookconc.lock .venv/bin/python scripts/measure_live_book_concentration.py >> data/cro_ai_logs/book_concentration.log 2>&1
+

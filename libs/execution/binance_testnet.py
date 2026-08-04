@@ -348,7 +348,17 @@ def _market_max_qty(symbol: str) -> float:
                     _MKT_MAX_CACHE[s["symbol"]] = float(f["maxQty"])
         cap = _MKT_MAX_CACHE.get(symbol, float("inf"))
     except Exception:
-        pass                                  # unknown cap -> behave exactly as before
+        # A TRANSIENT FAILURE MUST NOT BE CACHED. This wrote inf into the cache on the way out,
+        # so ONE network blip during the lookup permanently disabled the cap for that symbol --
+        # for the whole process lifetime, and the executor runs for days between restarts. The
+        # protection this function exists to provide is the one that stops a -4005 rejection
+        # pushing the executor onto its resting-limit fallback, which is how a short once walked
+        # through zero into a +916,772 long. Silently losing it to a timeout is the worst
+        # available outcome and it left no trace at all.
+        #
+        # Returning inf for THIS call is still correct -- never invent a limit from a failed
+        # lookup -- but the cache is left untouched so the next call retries.
+        return float("inf")
     _MKT_MAX_CACHE[symbol] = cap
     return cap
 

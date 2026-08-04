@@ -1,0 +1,33 @@
+[Unit]
+# THE DEDICATED 24/7 MOAT SURVIVOR HUNT. Sibling to quant-moat-miner.service, and the answer to
+# its asymmetry: the miner DESCRIBES the archive continuously, this one INTERROGATES it. Mining an
+# irreplaceable asset around the clock while asking it whether anything predicts once a day is
+# under-exploitation of owned data, which P26 makes a breach rather than a preference.
+Description=Quant dedicated moat survivor hunt (continuous, read-only over data/moat)
+After=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+User=quant
+WorkingDirectory=/home/quant/quant-platform
+Environment=PATH=/home/quant/.local/bin:/home/quant/quant-platform/.venv/bin:/usr/bin:/bin
+# Per PASS. Screening is heavier per file than mining -- eleven mechanisms times three horizons
+# through stage A plus a bootstrap stepdown -- so the budget is smaller and the gap is longer.
+Environment=MOAT_SCREEN_FILES=24
+Environment=MOAT_SCREEN_INTERVAL=30
+Type=simple
+ExecStart=/bin/bash /home/quant/quant-platform/ops/run_moat_screen.sh
+Restart=always
+RestartSec=60
+# BELOW THE MINER, WHICH IS ITSELF BELOW THE RECORDERS. Lost tape is permanent and unbuyable; a
+# delayed screening pass costs minutes. The priority order is the value order.
+Nice=17
+IOSchedulingClass=idle
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/quant/quant-platform/data
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

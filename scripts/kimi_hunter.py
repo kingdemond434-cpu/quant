@@ -38,6 +38,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 KEYS = ROOT / "data/secrets/llm_panel.json"
+
+from libs.doctrine.constitution import OBJECTIVE_PREAMBLE  # noqa: E402
+
 BUDGET = ROOT / "data/panel_budget.json"
 BSTATE = ROOT / "data/panel_budget_state.json"
 LEDGER = ROOT / "data/suggestion_ledger.jsonl"
@@ -263,7 +266,9 @@ def _budget_ok() -> tuple[bool, str]:
 
 def _ask(base, key, system, user, timeout=240.0) -> str:
     body = json.dumps({"model": MODEL, "max_tokens": 16000, "temperature": 1.0,
-                       "messages": [{"role": "system", "content": _doctrine("kimi_hunter") + system},
+                       "messages": [{"role": "system",
+                                     "content": (OBJECTIVE_PREAMBLE + "\n"
+                                                 + _doctrine("kimi_hunter") + system)},
                                     {"role": "user", "content": user}]}).encode()
     req = urllib.request.Request(base.rstrip("/") + "/chat/completions", data=body, method="POST",
                                  headers={"Authorization": f"Bearer {key}",

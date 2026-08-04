@@ -35,23 +35,27 @@ _DISK_MAX_FRAC = 0.80  # same guard as the moat recorders -- never fill the disk
 
 
 def _disk_ok(path: Path = _TAPE) -> bool:
-    """True when the filesystem THE TAPE ITSELF is written to has headroom.
+    """Is there room on the filesystem that actually HOLDS THE TAPE?
 
-    It used to measure "/" unconditionally, which is a different disk from the tape's whenever
-    data/ sits on its own volume -- the normal shape for a VPS with a data disk. That is wrong in
-    both directions and silent in both: it refuses to write while the tape's own volume is empty,
-    or permits writes that fill it. The refusing direction is the dangerous one here, because
-    append() is an observer whose return value the executor ignores by design, so a mis-measured
-    guard destroys fills exactly the way the rolling buffer did -- the failure this module exists
-    to prevent. It also made the tape's tests inherit the ambient disk state of whatever machine
-    ran them: green on a clean disk, red on a full one (7 failures on a GitHub runner whose / is
-    over 80% full, for a test writing to tmp_path).
+    It used to measure `/` unconditionally, which is the wrong device whenever data/ is a separate
+    mount -- the arrangement the VPS deploy notes assume. That gets it wrong in both directions,
+    and silent in both: a full root refuses writes to a data volume with terabytes free, and a
+    full data volume passes because root is empty. The refusing direction is the dangerous one
+    here, because append() is an observer whose return value the executor ignores by design, so a
+    mis-measured guard destroys fills exactly the way the rolling buffer did -- the failure this
+    module exists to prevent. It also made the tape's tests inherit the ambient disk state of
+    whatever machine ran them: green on a clean disk, red on a full one (7 failures on a GitHub
+    runner whose / is over 80% full, for a test writing to tmp_path).
 
-    The tape may not exist yet, so probe the nearest existing ancestor -- that is the filesystem
-    the file will land on.
+    Falls back to the nearest existing ancestor, because the tape's own directory may not exist
+    yet on the first write -- that is the filesystem the file will land on.
     """
-    probe = path if path.exists() else next((p for p in path.parents if p.exists()), Path("/"))
-    u = shutil.disk_usage(probe)
+    p = path if path.exists() else next(
+        (a for a in path.parents if a.exists()), Path(path.anchor or "."))
+    try:
+        u = shutil.disk_usage(p)
+    except OSError:
+        return True          # unmeasurable is not full; the observer must never block the executor
     return (u.used / u.total) < _DISK_MAX_FRAC
 
 

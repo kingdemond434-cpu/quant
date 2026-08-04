@@ -534,6 +534,9 @@ def main() -> None:
             with urllib.request.urlopen(hb, timeout=10):
                 pass
     except Exception:
+        # THE PAGER'S JOB IS PAGES, NOT THE HEARTBEAT. This is a best-effort ping to an
+        # external liveness service; failing it must never stop pages that have already been
+        # computed from going out, which is what raising here would do.
         pass
     print(f"alerts: {sent} page(s) sent "
           f"({datetime.now(tz=UTC).isoformat()[:16]}Z)")

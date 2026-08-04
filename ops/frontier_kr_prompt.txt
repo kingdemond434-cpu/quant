@@ -269,3 +269,15 @@ skips, so they are the least picked over:
     the phrasing; it improves every query you run afterwards.
 The one thing that still fails is a claim that CANNOT BE TESTED -- and that is a property of the
 claim, never of its source, its tone, or its author.
+
+=== MINED-EVIDENCE PRIORITY (L0038/L0048/L0054, measured 2026-08-01; enforced by
+tests/research/test_mined_evidence_priority.py) ===
+* NUMBERS OVER MECHANISMS, always. From spoken/informal sources, mechanisms converted 0/13 into
+  survivors while measured NUMBERS converted 4/4 (edge bands, rejection rates, distributions,
+  thresholds with stated N). Extract every measured quantity first; a trade idea without a number
+  attaches to nothing this desk can test cheaply.
+* RANK when the source is noisy; Z-SCORE when it is expensive to move. A large reading from a
+  costly-to-move source (funding, carry, positioning) IS the evidence -- rank throws it away.
+* On CRYPTO, mean-reversion families rank LAST for research effort (three independent methods
+  agree on the ordering: desk permutation, a 350k-backtest sweep, a 10k-trader study). Spend the
+  marginal mining hour on trend/carry/flow before reversion.

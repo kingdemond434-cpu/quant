@@ -109,8 +109,16 @@ def test_every_registered_check_runs_without_raising() -> None:
         "print('BLIND=' + str(len(bad)));print(chr(10).join(bad))"
     )
     assert r.returncode == 0, r.stderr[-2000:]
-    head = r.stdout.strip().splitlines()[0]
-    assert head == "BLIND=0", (
+    # SEARCH FOR THE MARKER, never assume it is line one. This assertion used to read
+    # `splitlines()[0]` and passed only because no check happened to print anything -- and that
+    # was itself an accident of the environment: `check_dependency_drift` prints a one-line note
+    # for MINOR drift and appends a silent defect for MAJOR drift, so the test was green in a
+    # container whose pandas was a major version away from production and red the moment the
+    # container was corrected to production's pins. A test that depends on which lines other
+    # code prints is measuring the wrong thing.
+    marker = next((ln for ln in r.stdout.splitlines() if ln.startswith("BLIND=")), None)
+    assert marker is not None, f"no BLIND= marker in output:\n{r.stdout[-2000:]}"
+    assert marker == "BLIND=0", (
         f"max_audit checks failed to run under script invocation -- coverage is overstated by "
         f"exactly this many checks.\n{r.stdout[-2000:]}"
     )

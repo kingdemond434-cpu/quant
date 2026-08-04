@@ -38,7 +38,11 @@ def test_validate_rejects_pure_noise() -> None:
     assert verdict.survived is False
     assert verdict.rejection_reason  # names the failed gates
     assert set(verdict.gates) >= {"cpcv", "dsr", "pbo", "reality_check", "walk_forward",
-                                  "capacity", "fragility", "economic_mechanism"}
+                                  "fragility", "economic_mechanism"}
+    # R0080: no ADV supplied means capacity is UNMEASURED -- reported, never invented from a
+    # fictional volume constant. This test predates that rule and used to demand a capacity
+    # verdict here; the gate still exists and still binds whenever a caller supplies adv_usd.
+    assert "capacity" in verdict.unmeasured
 
 
 def test_lifecycle_states() -> None:

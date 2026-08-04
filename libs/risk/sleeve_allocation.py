@@ -42,7 +42,8 @@ from the same limited history that would be wrong in exactly the scenario the ca
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, asdict, field
+from collections.abc import Callable
+from dataclasses import asdict, dataclass, field
 from typing import Any
 
 #: Closed trades before a sleeve's expectancy is treated as measured at all. Below this the sleeve
@@ -144,7 +145,7 @@ class Allocation:
     n_closes: int = 0
     tier: str = ""              #: evidence rung reached
     tier_cap: float = 0.0       #: ceiling that rung grants
-    tier_blocker: str = ""      #: the FIRST condition that stopped the next rung -- the thing to fix
+    tier_blocker: str = ""      #: FIRST condition stopping the next rung -- the thing to fix
     base_candidate: bool = False  #: earned more than the top booster rung; should it be the base?
 
     def to_dict(self) -> dict[str, Any]:
@@ -165,7 +166,10 @@ class Plan:
 
 
 
-def evidence_tier(s: "Sleeve", *, ladder=EVIDENCE_LADDER) -> tuple[str, float, str]:
+def evidence_tier(
+    s: Sleeve, *,
+    ladder: tuple[tuple[str, float, dict[str, float]], ...] = EVIDENCE_LADDER,
+) -> tuple[str, float, str]:
     """Highest rung whose conditions ALL hold, plus the first condition blocking the next one.
 
     Conjunctive by design. A hot streak produces a high Sharpe over a short record in one regime,
@@ -177,7 +181,7 @@ def evidence_tier(s: "Sleeve", *, ladder=EVIDENCE_LADDER) -> tuple[str, float, s
     Recomputed from CURRENT evidence on every allocation, never latched -- so a decaying sleeve is
     demoted immediately rather than at the next review. Slow up, fast down.
     """
-    checks = (
+    checks: tuple[tuple[str, Callable[[float], bool], Callable[[float], str]], ...] = (
         ("min_closes", lambda r: s.n_closes >= r, lambda r: f"needs {r} closes, has {s.n_closes}"),
         ("min_sharpe", lambda r: s.sharpe >= r, lambda r: f"needs Sharpe {r}, has {s.sharpe:.3f}"),
         ("max_rho", lambda r: abs(s.rho_to_base) <= r,
@@ -187,14 +191,16 @@ def evidence_tier(s: "Sleeve", *, ladder=EVIDENCE_LADDER) -> tuple[str, float, s
         ("min_regimes_positive", lambda r: s.regimes_positive >= r,
          lambda r: f"needs {int(r)} positive regimes, has {s.regimes_positive}"),
         ("min_t_stat", lambda r: s.t_stat >= r,
-         lambda r: f"needs t>={r}, has t={s.t_stat:.2f} -- generate closes faster, not wait longer"),
+         lambda r: f"needs t>={r}, has t={s.t_stat:.2f} -- generate closes faster, "
+                   "not wait longer"),
         ("min_persistence", lambda r: s.persistence >= r,
          lambda r: f"needs persistence {r}, has {s.persistence:.2f}"),
     )
     best_name, best_cap = ladder[0][0], ladder[0][1]
     blocker = "at top rung"
     for name, cap, reqs in ladder[1:]:
-        failed = next((msg(reqs[k]) for k, ok, msg in checks if k in reqs and not ok(reqs[k])), None)
+        failed = next((msg(reqs[k]) for k, ok, msg in checks
+                       if k in reqs and not ok(reqs[k])), None)
         if failed is not None:
             return best_name, best_cap, f"{name} blocked: {failed}"
         best_name, best_cap = name, cap
@@ -295,13 +301,15 @@ def allocate(sleeves: list[Sleeve], total_equity: float, *,
             reason = (f"marginal IR {ir:+.3f} after paying rho={s.rho_to_base:+.3f} to a base at "
                       f"Sharpe {base.sharpe:.3f} -- adds nothing the base does not already own")
         else:
-            reason = (f"Sharpe {s.sharpe:.3f} at rho={s.rho_to_base:+.3f} -> marginal IR {ir:+.3f}; "
+            reason = (f"Sharpe {s.sharpe:.3f} at rho={s.rho_to_base:+.3f} -> "
+                      f"marginal IR {ir:+.3f}; "
                       f"fractional-Kelly {want:.3f}, tier {tier} caps at {tier_cap:.2f}, "
                       f"allocated {share:.3f}. Next rung -- {blocker}")
-        allocs.append(Allocation(s.name, share, share * total_equity, "PROVEN", reason,
-                                 marginal_ir=ir, n_closes=s.n_closes, tier=tier,
-                                 tier_cap=tier_cap, tier_blocker=blocker,
-                                 base_candidate=(want > tier_cap and tier == EVIDENCE_LADDER[-1][0])))
+        allocs.append(Allocation(
+            s.name, share, share * total_equity, "PROVEN", reason,
+            marginal_ir=ir, n_closes=s.n_closes, tier=tier,
+            tier_cap=tier_cap, tier_blocker=blocker,
+            base_candidate=(want > tier_cap and tier == EVIDENCE_LADDER[-1][0])))
 
     base_share = max(0.0, 1.0 - booster_share)
     base_state = "BASE" if base.n_closes >= min_closes and base.sharpe > 0 else "BASE-UNPROVEN"

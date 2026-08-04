@@ -268,6 +268,10 @@ def main() -> None:
                                              "p": tr["p"], "q": tr["q"],
                                              "m": bool(tr["m"])})
                 except Exception:
+                    # Same reasoning as the futures recorder, and it is the same code: one
+                    # symbol's fetch failing must not stop taping the rest, and `fromId` resumes
+                    # from the last id actually seen so the gap is collected next tick. Deferred,
+                    # never dropped -- an unrecorded second is the one cost money cannot undo.
                     pass
         for sym in symbols:
             if len(buf[sym]) >= _FLUSH_ROWS:

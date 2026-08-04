@@ -269,7 +269,8 @@ def _cpcv_positive_fraction(returns: np.ndarray, *, k: int = 5) -> float:
     return float(np.mean(positive_fallback)) if positive_fallback else 0.0
 
 
-def _beats_baselines(returns: np.ndarray, benchmark: np.ndarray | None) -> bool:
+def _beats_baselines(returns: np.ndarray, benchmark: np.ndarray | None,
+                     universe: np.ndarray | None = None) -> bool:
     """Does the candidate beat buy-and-hold and equal-weight? True when no benchmark is given.
 
     Skipping rather than failing on a missing benchmark is a deliberate fail-OPEN, and the only
@@ -285,7 +286,8 @@ def _beats_baselines(returns: np.ndarray, benchmark: np.ndarray | None) -> bool:
     if len(b) < 2 or len(b) != len(returns):
         return True
     try:
-        return bool(baseline_scorecard(returns, buy_hold_returns=b).beats_all)
+        return bool(baseline_scorecard(returns, buy_hold_returns=b,
+                                       universe_returns=universe).beats_all)
     except (ValidationError, ValueError):
         return True
 
@@ -498,6 +500,19 @@ def validate(
     # returned True for every candidate this desk ever screened simply because no caller supplied
     # benchmark_returns, and read as a passed gate in every verdict for months.
     n_trades: int | None = None,
+    # SIBLING-BRANCH PER-CANDIDATE SEAM (register #71, merged 2026-08-04). `pc_pbo` / `pc_p` carry
+    # ONE candidate's own CSCV-PBO and FWER-adjusted p, computed once per campaign by
+    # `libs/validation/per_candidate`. It is the SAME statistic as the `campaign=`/`column=` path
+    # through a thinner interface; that path wins when both are supplied. Kept because callers
+    # written against this seam must not silently fall back to campaign-wide broadcast verdicts --
+    # the exact defect #71 removed.
+    pc_pbo: float | None = None,
+    pc_p: float | None = None,
+    # Sibling-branch names for the baseline gate's inputs. `buy_hold_returns` is an alias for
+    # `benchmark_returns` (used only when the latter is absent); `universe_returns` additionally
+    # demands the candidate beat the equal-weight universe, a strictly harder baseline.
+    buy_hold_returns: np.ndarray | None = None,
+    universe_returns: np.ndarray | None = None,
 ) -> ValidationVerdict:
     arr = np.asarray(returns, dtype="float64")
     if len(arr) < 250:
@@ -509,10 +524,13 @@ def validate(
     # Walk-forward (OOS). Shadow/paper are separate lifecycle stages (see lifecycle.py).
     wf = WalkForwardEngine().evaluate(arr, n_splits=4, test_size=max(20, len(arr) // 6))
     # Overfitting / significance. PREFERRED path: per-candidate statistics from `campaign`, which
-    # this candidate earns on its own column. LEGACY path (no campaign supplied): the campaign
-    # constants, retained only so unmigrated call sites keep their exact prior behaviour.
+    # this candidate earns on its own column. SECOND path: `pc_pbo`/`pc_p`, the sibling branch's
+    # thinner seam carrying the same per-candidate statistics precomputed by the caller. LEGACY
+    # path (neither supplied): the campaign constants, retained only so unmigrated call sites keep
+    # their exact prior behaviour.
     has_peers = returns_matrix.shape[1] >= 2
     per_candidate = campaign is not None and column is not None
+    pc_supplied = pc_pbo is not None and pc_p is not None
     # THE MULTIPLICITY PENALTY IS PAID ONCE, NOT TWICE (audit 2026-08-01, R0224).
     #
     # DSR is a Probabilistic Sharpe Ratio measured against a DEFLATED benchmark
@@ -537,7 +555,9 @@ def validate(
     # of DSR stays and only the duplicated deflation goes.
     #
     # The LEGACY path keeps the full deflation: nothing else corrects for multiplicity there.
-    dsr_trials = 1 if per_candidate else n_trials
+    # `pc_p` is FWER-adjusted by construction (libs/validation/per_candidate), so the R0224 rule
+    # applies to that seam identically: the multiplicity penalty is paid once, in Romano-Wolf.
+    dsr_trials = 1 if (per_candidate or pc_supplied) else n_trials
     dsr = deflated_sharpe_ratio(arr, n_trials=dsr_trials, sharpe_estimates=sharpe_estimates,
                                 threshold=_DSR_THRESHOLD)
     if per_candidate:
@@ -546,6 +566,11 @@ def validate(
         pbo_ok = cand_pbo <= _PBO_THRESHOLD
         sig_ok = campaign.stepdown.rejected[column]
         pbo_value, reality_value = cand_pbo, campaign.stepdown.adjusted_p[column]
+    elif pc_supplied:
+        assert pc_pbo is not None and pc_p is not None  # narrowed by pc_supplied
+        pbo_ok = pc_pbo <= _PBO_THRESHOLD
+        sig_ok = pc_p <= 0.05
+        pbo_value, reality_value = float(pc_pbo), float(pc_p)
     else:
         if pbo is None and has_peers:
             pbo = probability_backtest_overfitting(returns_matrix)
@@ -589,7 +614,13 @@ def validate(
         "fragility": tail.acceptable,
         # skipped-as-True when no benchmark is supplied (see the constant block above); when
         # one IS supplied the candidate must beat buy-and-hold and equal-weight outright.
-        "beats_baselines": _beats_baselines(arr, benchmark_returns),
+        # `buy_hold_returns` is the sibling branch's name for the same evidence stream; it fills
+        # in only when `benchmark_returns` is absent, and `universe_returns` (when supplied)
+        # additionally demands the candidate beat the equal-weight universe.
+        "beats_baselines": _beats_baselines(
+            arr,
+            benchmark_returns if benchmark_returns is not None else buy_hold_returns,
+            universe=universe_returns),
         # NOT-TOO-LUCKY, wired 2026-08-01. Studentised, never a fixed ratio: the source specified
         # "reject if OOS < 0.3 x IS", and that rule was MEASURED here rejecting 20-40% of genuine
         # alphas at every sample length from 310 to 5,000 bars, because a fixed ratio ignores how
@@ -610,7 +641,7 @@ def validate(
         unmeasured.append("sample_adequacy")
     else:
         gates["sample_adequacy"] = sample_adequacy(n_trades).passed
-    if benchmark_returns is None:
+    if benchmark_returns is None and buy_hold_returns is None:
         unmeasured.append("beats_baselines")
     # CAPACITY: THE 10%-SLICE BAND, NOT A MULTIPLE OF THE BOOK (R0080, L1.18a).
     #
@@ -638,6 +669,23 @@ def validate(
         unmeasured.append("capacity")
     else:
         gates["capacity"] = capacity_status(cap.capacity_usd) == "ADMIT"
+
+    # STATIONARITY, FOR THE CANDIDATES WHERE IT DECIDES CORRECTNESS (sibling-branch gate, merged
+    # 2026-08-04). A mean-reverting / pairs card rests entirely on the spread being stationary; if
+    # it is not, the backtest is fitting a trend and the "reversion" is a random walk that happened
+    # to come back. The constitution bans hand-rolled ADF for exactly that reason and
+    # `libs/research/stationarity` was written as the sanctioned seam -- then left unwired, so
+    # nothing ever asked the question.
+    #
+    # The backend (statsmodels) is an OPTIONAL dependency, so absence is recorded as UNMEASURED
+    # rather than silently skipped: the sibling branch's `pass` honoured "never passed-by-default"
+    # but left no trace that nobody looked, which this file's own unmeasured discipline forbids.
+    if getattr(hypothesis, "requires_stationarity", False):
+        try:
+            from libs.research.stationarity import StatsBackendMissing, adf_pvalue
+            gates["stationary"] = adf_pvalue(arr) < 0.05
+        except (StatsBackendMissing, ImportError, ValueError):
+            unmeasured.append("stationary")   # unmeasurable is NOT passed -- and NOT silent
 
     failed = [name for name, ok in gates.items() if not ok]
     reason = "" if not failed else "failed: " + ", ".join(failed)
