@@ -245,6 +245,25 @@ def main() -> None:
         )
         with contextlib.suppress(subprocess.TimeoutExpired):
             _run(sp, 1800)
+    # SECOND FAMILY (L1.33 / R0114, shared helper libs/llm/second_opinion.py): all nine seats and
+    # the synthesis lead think in the same model family's priors -- the meta-and-blindspots seat
+    # included, which is the defect it audits for, applied to itself. Ask the independent family
+    # which SUBSYSTEM/seat this sweep cannot see, and record the verdict beside the reports --
+    # SOLO when the seat is dark, and a dark partner never breaks the sweep's exit-0 cadence.
+    try:
+        import sys
+        root = str(Path(__file__).resolve().parent.parent)   # __file__, so it also works off-VPS
+        if root not in sys.path:
+            sys.path.insert(0, root)        # run as `python scripts/...`: root is not on sys.path
+        from libs.llm.second_opinion import consult_second_family
+        consult_second_family(
+            "deep_sweep",
+            {"stamp": stamp,
+             "auditors": {k: ("COMPLETE" if ok else "FAILED") for k, ok in results},
+             "synthesis": "COMPLETE" if _complete(synth) else "MISSING"},
+            artifact=OUT / f"{stamp}_second_family.json")
+    except Exception as exc:  # the partner must never break the organ
+        print(f"  second family: SKIPPED ({exc})")
     n_ok = sum(1 for _, ok in results if ok)
     print(f"[deep-sweep] done: {n_ok}/{len(results)} COMPLETE; "
           f"synthesis={'yes' if _complete(synth) else 'NO'}", flush=True)

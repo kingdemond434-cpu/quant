@@ -164,17 +164,17 @@ def main() -> None:
     # a blind-spot hunter that only ever thinks in ONE model's priors has the exact defect it
     # exists to detect. Ask the independent family what THIS run missed, and record the verdict
     # honestly -- SOLO when the partner is unavailable, never silently passed off as confirmed.
+    # R0114: the ask/merge/record pattern itself lives in ONE shared helper
+    # (libs/llm/second_opinion.py), so the prober and the sweep carry it without a per-organ copy.
     try:
-        from libs.research.second_family import ask_second_family, blindspot_prompt, merge_verdict
-        own = json.dumps({"unread": unread, "unmodelled": unmodelled[:20],
-                          "pairs": pairs[:20], "never": never[:20]}, indent=1)
-        op = ask_second_family(blindspot_prompt("blindspot_max", own), context="blindspot_max")
-        verdict = merge_verdict(own, op)
-        d = json.loads(OUT.read_text("utf-8"))
-        d["second_family"] = {**verdict, "text": op.text[:4000] if op.available else ""}
-        OUT.write_text(json.dumps(d, indent=1), "utf-8")
-        print(f"  second family: {verdict['verdict']}"
-              + (f" -- {verdict.get('reason', '')}" if verdict["verdict"] == "SOLO" else ""))
+        import sys
+        if str(ROOT) not in sys.path:
+            sys.path.insert(0, str(ROOT))   # run as `python scripts/...`: ROOT is not on sys.path
+        from libs.llm.second_opinion import consult_second_family
+        consult_second_family("blindspot_max",
+                              {"unread": unread, "unmodelled": unmodelled[:20],
+                               "pairs": pairs[:20], "never": never[:20]},
+                              artifact=OUT)
     except Exception as exc:               # the partner must never break the organ
         print(f"  second family: SKIPPED ({exc})")
     print(f"\n  -> {OUT}")

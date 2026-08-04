@@ -67,11 +67,74 @@ def test_partner_brief_hunts_the_miss_not_a_rerank():
 
 
 def test_organs_import_the_shared_partner_not_a_copy():
-    bs = Path("scripts/blindspot_max.py").read_text("utf-8")
-    assert "from libs.research.second_family import" in bs
-    assert "second_family" in json.dumps(_FAMILY) or True
+    # R0114: the ask/merge/record pattern lives in EXACTLY one place -- the shared helper -- and
+    # every family organ calls it, so there is no per-organ copy to drift. STRICTLY STRONGER than
+    # the pre-R0114 form of this test, which fenced blindspot_max alone.
+    helper = Path("libs/llm/second_opinion.py").read_text("utf-8")
+    assert "from libs.research.second_family import" in helper
     # the partner must never be able to break the organ that calls it
-    assert "the partner must never break the organ" in bs
+    assert "the partner must never break the organ" in helper
+    for organ in ("scripts/blindspot_max.py", "scripts/blindspot_prober.py",
+                  "scripts/run_deep_sweep.py"):
+        src = Path(organ).read_text("utf-8")
+        assert "from libs.llm.second_opinion import consult_second_family" in src, organ
+        assert "the partner must never break the organ" in src, organ
+        # no organ re-imports the primitives directly -- that is how copies drift
+        assert "from libs.research.second_family import" not in src, organ
+
+
+def test_blindspot_dark_seat_is_recorded_solo_and_never_raises(tmp_path, monkeypatch, capsys):
+    # The organ's dark path: an unfunded/blocked seat degrades to a RECORDED SOLO verdict in the
+    # organ's own artifact -- never an exception, never a fake confirmation, exit-0 preserved.
+    from libs.llm.second_opinion import consult_second_family
+
+    monkeypatch.setattr(
+        "libs.research.second_family.ask_second_family",
+        lambda prompt, *, context, timeout=300.0: SecondOpinion(
+            False, reason="OpenRouter 402 -- unfunded", context=context),
+    )
+    art = tmp_path / "blindspot_probes.json"
+    art.write_text(json.dumps({"n_probes": 3}), "utf-8")
+    block = consult_second_family("blindspot_prober", {"n_probes": 3}, artifact=art)
+    assert block["verdict"] == "SOLO"
+    recorded = json.loads(art.read_text("utf-8"))
+    assert recorded["n_probes"] == 3                      # the organ's own output is untouched
+    assert recorded["second_family"]["verdict"] == "SOLO"
+    assert recorded["second_family"]["text"] == ""
+    assert "second family: SOLO" in capsys.readouterr().out
+
+
+def test_deep_sweep_partner_fault_skips_without_breaking_the_organ(tmp_path, monkeypatch, capsys):
+    # A LOCAL fault (partner primitives blow up) must degrade to SKIPPED, not an exception:
+    # the sweep's cadence never depends on the partner being alive.
+    from libs.llm.second_opinion import consult_second_family
+
+    def _boom(prompt, *, context, timeout=300.0):
+        raise RuntimeError("partner exploded")
+
+    monkeypatch.setattr("libs.research.second_family.ask_second_family", _boom)
+    art = tmp_path / "20260804_second_family.json"       # deep_sweep sidecar: not yet on disk
+    block = consult_second_family("deep_sweep", {"auditors": {}}, artifact=art)
+    assert block["verdict"] == "SKIPPED" and "partner exploded" in block["reason"]
+    assert not art.exists()                              # nothing half-written on the fault path
+    assert "second family: SKIPPED" in capsys.readouterr().out
+
+
+def test_blindspot_available_partner_is_recorded_into_a_fresh_artifact(tmp_path, monkeypatch):
+    # deep_sweep's sidecar artifact does not pre-exist; the helper must create it rather than die.
+    from libs.llm.second_opinion import consult_second_family
+
+    monkeypatch.setattr(
+        "libs.research.second_family.ask_second_family",
+        lambda prompt, *, context, timeout=300.0: SecondOpinion(
+            True, text="MISSED: x" * 4000, context=context),
+    )
+    art = tmp_path / "second_family.json"
+    block = consult_second_family("deep_sweep", {"auditors": {"a": "COMPLETE"}}, artifact=art)
+    assert block["verdict"] == "CONFIRMED"
+    recorded = json.loads(art.read_text("utf-8"))
+    assert recorded["second_family"]["verdict"] == "CONFIRMED"
+    assert len(recorded["second_family"]["text"]) == 4000    # capped, same as blindspot_max
 
 
 def test_laws_present_and_mapped():

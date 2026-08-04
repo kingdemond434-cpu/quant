@@ -1402,8 +1402,8 @@
    "summary": "SECOND FAMILY on the remaining exploration organs (L1.33 rollout): blindspot_max is partnered; wire ask_second_family+merge_verdict into blindspot_prober, the blindrediscovery dig brief, and the deep-sweep meta seat, so every family organ carries CONFIRMED/CONTESTED/SOLO. Also: fix the 3 DARK organs the L1.32 fence found on first run (kimi_hunt, hunt_coverage, blindspot_probes artifacts never produced -- scheduled and silent)",
    "roi_bps": 25.0,
    "raised": "2026-07-31T10:56:48.332883+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=10 effort_h=4: Pattern exists in exactly one organ: scripts/blindspot_max.py:168-172 (ask_second_family + merge_verdict). Zero second_family references in scripts/blindspot_prober.py, scripts/run_deep_sweep.py, or ops/run_blindrediscovery_dig.sh (grep). DARK organs partially persist: data/exploration_status.json (08-01) reports 3 dark -- capability_hunt NEVER-PRODUCED, kimi_hunter (OpenRouter-gated), hunt_coverage; blindspot_prober now FRESH (that part self-resolved). Wiring is mechanical replication of the existing pattern.",
+   "status": "implemented",
+   "reason": "[wave2 2026-08-04] second-family consultation extracted to libs/llm/second_opinion.consult_second_family and wired into blindspot_prober + run_deep_sweep (was blindspot_max-only). Bonus production find: the inline import was silently SKIPPING under cron (missing sys.path root) -- committed blindspot_max.json carried no second_family key; guard added, dark-mode SOLO verified live. Governance fence strengthened to cover all three organs. 12 tests pass.",
    "commit": null,
    "due": null,
    "disposed": null
