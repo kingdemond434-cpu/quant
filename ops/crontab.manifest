@@ -1463,3 +1463,12 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # EVIDENCE: scripts/measure_live_book_concentration.py; CONFIDENCE: inferred (daily -- the book moves daily)
 55 7 * * * cd "$QUANT_ROOT" && flock -n data/.cron_bookconc.lock .venv/bin/python scripts/measure_live_book_concentration.py >> data/cro_ai_logs/book_concentration.log 2>&1
 
+# WEEKLY WHOLE-DESK RE-TRIAGE (principal 2026-08-04: "just like today, weekly the whole quant
+# gets sweeped to get maxxed out"). The daily layer (max_audit every cycle, daily_max defect
+# remediation, CRO cycles) already sweeps DEFECTS; this duty is the deeper pass proven today:
+# every open/scheduled recommendation-ledger row re-investigated against the CURRENT tree
+# (ALREADY-BUILT flipped with file evidence, kills adversarially verified, IMPLEMENT-NOW rows
+# executed immediately per the standing rule). The brain owns it; rerank_gaps pre-computes the
+# mechanical half. EVIDENCE: the 2026-08-04 triage (241 rows -> 24 implemented flips, 100
+# IMPLEMENT-NOW queued, wave execution same-day). CONFIDENCE: inferred (slot chosen here).
+0 9 * * 1 cd "$QUANT_ROOT" && flock -n data/.cron_weekly_triage.lock .venv/bin/python scripts/rerank_gaps.py >> data/cro_ai_logs/weekly_triage.log 2>&1
