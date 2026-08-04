@@ -146,7 +146,9 @@ def ingest_fed() -> None:
 def ingest_binance_metrics(max_files: int | None = None) -> None:
     base = "https://data.binance.vision/data/futures/um/daily/metrics"
     got = skipped = missing = 0
-    end = date.today() - timedelta(days=1)
+    # UTC, not local: Binance daily metrics files are UTC-dated, so a non-UTC box would ask for
+    # the wrong day boundary and silently mis-align the backfill (DTZ011).
+    end = datetime.now(UTC).date() - timedelta(days=1)
     for sym in SYMBOLS:
         out = BRONZE / "binance_metrics" / sym
         out.mkdir(parents=True, exist_ok=True)

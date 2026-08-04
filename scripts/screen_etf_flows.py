@@ -85,7 +85,7 @@ def _parse(path: Path) -> pd.Series:
         vals = [_cell(c) for c in cells[1:] if _NUM.match(c.replace("&nbsp;", " ").strip())]
         if not vals:
             continue
-        day = pd.Timestamp(datetime.strptime(m.group(1), "%d %b %Y"), tz="UTC")
+        day = pd.Timestamp(datetime.strptime(m.group(1), "%d %b %Y"), tz="UTC")  # noqa: DTZ007 -- tz applied in the same call
         out[day] = vals[-1]                     # trailing column is the Total
     return pd.Series(out).sort_index()
 

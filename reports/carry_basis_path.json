@@ -1,0 +1,326 @@
+{
+  "generated": "2026-08-01T04:21:41.659172+00:00",
+  "law": "L1.16 alpha attribution; L1.4 reality anchoring; R0206/BR-08",
+  "row": "R0206",
+  "question": "does ranking perps by funding select into a WIDENING basis, making the carry sleeve's -51.74 bps price_pnl a structural feature of its entry rule?",
+  "n_symbols": 166,
+  "span": [
+    "2019-09-08",
+    "2026-08-01"
+  ],
+  "skipped_symbols": 113,
+  "trials_declared": 4,
+  "trials_run": 4,
+  "promotion_authority": "NONE (two-stage law) -- this is a repair diagnostic, not a screen",
+  "overall": "MIXED",
+  "cells": [
+    {
+      "construction": "literal",
+      "horizon_d": 1,
+      "n_blocks": 2235,
+      "sampling": "non-overlapping",
+      "min_xsec": 20,
+      "top_n": 4,
+      "basis_leg_bps": 0.689,
+      "basis_leg_t": 3.2,
+      "funding_leg_bps": 7.258,
+      "net_bps": 7.947,
+      "net_t": 10.59,
+      "deciles": {
+        "1": {
+          "basis_leg_bps": -1.909,
+          "funding_leg_bps": -15.91,
+          "net_bps": -17.819,
+          "n": 2235
+        },
+        "2": {
+          "basis_leg_bps": -0.127,
+          "funding_leg_bps": -0.111,
+          "net_bps": -0.238,
+          "n": 2235
+        },
+        "3": {
+          "basis_leg_bps": -0.108,
+          "funding_leg_bps": 1.878,
+          "net_bps": 1.77,
+          "n": 2235
+        },
+        "4": {
+          "basis_leg_bps": 0.065,
+          "funding_leg_bps": 2.879,
+          "net_bps": 2.944,
+          "n": 2235
+        },
+        "5": {
+          "basis_leg_bps": 0.141,
+          "funding_leg_bps": 3.557,
+          "net_bps": 3.698,
+          "n": 2235
+        },
+        "6": {
+          "basis_leg_bps": 0.294,
+          "funding_leg_bps": 3.971,
+          "net_bps": 4.265,
+          "n": 2235
+        },
+        "7": {
+          "basis_leg_bps": 0.243,
+          "funding_leg_bps": 4.329,
+          "net_bps": 4.572,
+          "n": 2235
+        },
+        "8": {
+          "basis_leg_bps": 0.294,
+          "funding_leg_bps": 4.861,
+          "net_bps": 5.155,
+          "n": 2235
+        },
+        "9": {
+          "basis_leg_bps": 0.365,
+          "funding_leg_bps": 5.335,
+          "net_bps": 5.7,
+          "n": 2235
+        },
+        "10": {
+          "basis_leg_bps": 0.572,
+          "funding_leg_bps": 6.41,
+          "net_bps": 6.982,
+          "n": 2235
+        }
+      },
+      "h2_rank_strengthens": false,
+      "verdict": "REFUTED-CONVERGING"
+    },
+    {
+      "construction": "literal",
+      "horizon_d": 5,
+      "n_blocks": 446,
+      "sampling": "non-overlapping",
+      "min_xsec": 20,
+      "top_n": 4,
+      "basis_leg_bps": 0.762,
+      "basis_leg_t": 1.74,
+      "funding_leg_bps": 28.73,
+      "net_bps": 29.492,
+      "net_t": 4.91,
+      "deciles": {
+        "1": {
+          "basis_leg_bps": -4.674,
+          "funding_leg_bps": -57.521,
+          "net_bps": -62.195,
+          "n": 446
+        },
+        "2": {
+          "basis_leg_bps": 0.108,
+          "funding_leg_bps": 0.434,
+          "net_bps": 0.541,
+          "n": 446
+        },
+        "3": {
+          "basis_leg_bps": 0.095,
+          "funding_leg_bps": 10.659,
+          "net_bps": 10.754,
+          "n": 446
+        },
+        "4": {
+          "basis_leg_bps": 0.374,
+          "funding_leg_bps": 13.48,
+          "net_bps": 13.854,
+          "n": 446
+        },
+        "5": {
+          "basis_leg_bps": 0.376,
+          "funding_leg_bps": 16.08,
+          "net_bps": 16.456,
+          "n": 446
+        },
+        "6": {
+          "basis_leg_bps": 0.595,
+          "funding_leg_bps": 18.605,
+          "net_bps": 19.2,
+          "n": 446
+        },
+        "7": {
+          "basis_leg_bps": 0.213,
+          "funding_leg_bps": 20.271,
+          "net_bps": 20.483,
+          "n": 446
+        },
+        "8": {
+          "basis_leg_bps": 1.034,
+          "funding_leg_bps": 20.509,
+          "net_bps": 21.544,
+          "n": 446
+        },
+        "9": {
+          "basis_leg_bps": 0.831,
+          "funding_leg_bps": 22.494,
+          "net_bps": 23.324,
+          "n": 446
+        },
+        "10": {
+          "basis_leg_bps": 0.932,
+          "funding_leg_bps": 24.512,
+          "net_bps": 25.444,
+          "n": 446
+        }
+      },
+      "h2_rank_strengthens": false,
+      "verdict": "INCONCLUSIVE"
+    },
+    {
+      "construction": "lag1",
+      "horizon_d": 1,
+      "n_blocks": 2234,
+      "sampling": "non-overlapping",
+      "min_xsec": 20,
+      "top_n": 4,
+      "basis_leg_bps": 0.045,
+      "basis_leg_t": 0.25,
+      "funding_leg_bps": 6.11,
+      "net_bps": 6.155,
+      "net_t": 8.43,
+      "deciles": {
+        "1": {
+          "basis_leg_bps": -0.992,
+          "funding_leg_bps": -12.532,
+          "net_bps": -13.524,
+          "n": 2234
+        },
+        "2": {
+          "basis_leg_bps": 0.003,
+          "funding_leg_bps": 0.022,
+          "net_bps": 0.025,
+          "n": 2234
+        },
+        "3": {
+          "basis_leg_bps": 0.02,
+          "funding_leg_bps": 1.83,
+          "net_bps": 1.85,
+          "n": 2234
+        },
+        "4": {
+          "basis_leg_bps": -0.061,
+          "funding_leg_bps": 2.748,
+          "net_bps": 2.686,
+          "n": 2234
+        },
+        "5": {
+          "basis_leg_bps": 0.045,
+          "funding_leg_bps": 3.323,
+          "net_bps": 3.368,
+          "n": 2234
+        },
+        "6": {
+          "basis_leg_bps": 0.148,
+          "funding_leg_bps": 3.531,
+          "net_bps": 3.679,
+          "n": 2234
+        },
+        "7": {
+          "basis_leg_bps": 0.251,
+          "funding_leg_bps": 3.964,
+          "net_bps": 4.215,
+          "n": 2234
+        },
+        "8": {
+          "basis_leg_bps": 0.209,
+          "funding_leg_bps": 4.289,
+          "net_bps": 4.498,
+          "n": 2234
+        },
+        "9": {
+          "basis_leg_bps": 0.181,
+          "funding_leg_bps": 4.67,
+          "net_bps": 4.851,
+          "n": 2234
+        },
+        "10": {
+          "basis_leg_bps": 0.247,
+          "funding_leg_bps": 5.455,
+          "net_bps": 5.702,
+          "n": 2234
+        }
+      },
+      "h2_rank_strengthens": false,
+      "verdict": "INCONCLUSIVE"
+    },
+    {
+      "construction": "lag1",
+      "horizon_d": 5,
+      "n_blocks": 446,
+      "sampling": "non-overlapping",
+      "min_xsec": 20,
+      "top_n": 4,
+      "basis_leg_bps": 0.43,
+      "basis_leg_t": 1.06,
+      "funding_leg_bps": 26.859,
+      "net_bps": 27.29,
+      "net_t": 4.51,
+      "deciles": {
+        "1": {
+          "basis_leg_bps": -1.641,
+          "funding_leg_bps": -50.84,
+          "net_bps": -52.48,
+          "n": 446
+        },
+        "2": {
+          "basis_leg_bps": -0.027,
+          "funding_leg_bps": 0.037,
+          "net_bps": 0.01,
+          "n": 446
+        },
+        "3": {
+          "basis_leg_bps": -0.294,
+          "funding_leg_bps": 10.763,
+          "net_bps": 10.469,
+          "n": 446
+        },
+        "4": {
+          "basis_leg_bps": -0.057,
+          "funding_leg_bps": 13.353,
+          "net_bps": 13.297,
+          "n": 446
+        },
+        "5": {
+          "basis_leg_bps": 0.097,
+          "funding_leg_bps": 15.427,
+          "net_bps": 15.524,
+          "n": 446
+        },
+        "6": {
+          "basis_leg_bps": 0.25,
+          "funding_leg_bps": 18.023,
+          "net_bps": 18.273,
+          "n": 446
+        },
+        "7": {
+          "basis_leg_bps": 0.509,
+          "funding_leg_bps": 19.517,
+          "net_bps": 20.026,
+          "n": 446
+        },
+        "8": {
+          "basis_leg_bps": 0.423,
+          "funding_leg_bps": 19.515,
+          "net_bps": 19.938,
+          "n": 446
+        },
+        "9": {
+          "basis_leg_bps": 0.561,
+          "funding_leg_bps": 20.88,
+          "net_bps": 21.441,
+          "n": 446
+        },
+        "10": {
+          "basis_leg_bps": 0.858,
+          "funding_leg_bps": 22.528,
+          "net_bps": 23.386,
+          "n": 446
+        }
+      },
+      "h2_rank_strengthens": false,
+      "verdict": "INCONCLUSIVE"
+    }
+  ]
+}

@@ -98,7 +98,7 @@ def _parse_ts(v):
     s = v.strip().replace("Z", "+00:00")
     for fmt in (None, "%Y-%m-%d", "%Y%m%d_%H", "%Y%m%d"):
         try:
-            d = datetime.fromisoformat(s) if fmt is None else datetime.strptime(s, fmt)
+            d = datetime.fromisoformat(s) if fmt is None else datetime.strptime(s, fmt)  # noqa: DTZ007 -- normalised to UTC on the next line
             return d if d.tzinfo else d.replace(tzinfo=UTC)
         except (ValueError, TypeError):
             continue
