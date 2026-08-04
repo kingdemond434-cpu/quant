@@ -111,17 +111,24 @@ def _signed(path: str, params: dict[str, Any], *, method: str = "GET") -> Any:
 
 
 def exchange_filters() -> dict[str, dict[str, float]]:
-    """Per-symbol step size, min qty, and price/qty precision (for valid order sizing)."""
+    """Per-symbol step size, min qty, price/qty precision, and minimum order notional.
+
+    ``min_notional`` is the venue's minimum ORDER VALUE; 0.0 means no published minimum, so
+    callers must keep their own conservative floor for that case. USD-M futures publishes the
+    value under the key ``notional``, NOT spot's ``minNotional`` -- reading the spot key here
+    yields 0.0 for every symbol (tests/execution/test_filter_parity.py pins this)."""
     info = _get("/fapi/v1/exchangeInfo")
     out: dict[str, dict[str, float]] = {}
     for s in info.get("symbols", []):
         f = {flt["filterType"]: flt for flt in s.get("filters", [])}
         lot = f.get("LOT_SIZE", {})
         pf = f.get("PRICE_FILTER", {})
+        notl = f.get("MIN_NOTIONAL", {}) or f.get("NOTIONAL", {})
         out[s["symbol"]] = {
             "step": float(lot.get("stepSize", 0.001)), "min_qty": float(lot.get("minQty", 0.0)),
             "qty_prec": int(s.get("quantityPrecision", 3)),
             "tick": float(pf.get("tickSize", 0.01)), "price_prec": int(s.get("pricePrecision", 2)),
+            "min_notional": float(notl.get("notional") or notl.get("minNotional") or 0.0),
         }
     return out
 
