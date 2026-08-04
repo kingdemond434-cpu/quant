@@ -48,7 +48,61 @@ def log_experiment(name: str, family: str, prior_survive: float, survived: bool,
     return rec
 
 
-def record_factory_cycle(tested: int, survivors: int, *, base_prior: float = 0.15,
+
+#: Prior used only when the desk has NO recorded history to learn one from. Labelled everywhere it
+#: is used, because an unlearned prior is an assumption and must never be mistaken for a rate.
+COLD_START_PRIOR = 0.15
+
+#: Laplace smoothing on the empirical prior. Without it, a desk with 0 survivors in 420 attempts
+#: derives a prior of exactly 0.0, every rejection becomes ZERO-surprise, and the accounting says
+#: the desk learns nothing from any outcome -- including, absurdly, from a survivor.
+_PRIOR_ALPHA = 1.0
+_PRIOR_BETA = 1.0
+
+
+def empirical_prior(log: Path = _LOG) -> tuple[float, str]:
+    """P(survive) learned from the desk's OWN record, not asserted.
+
+    THE DEFECT THIS CLOSES (triage #39, and its own note misdiagnoses it). `info_bits` was a
+    constant 0.2345 across all 810 rows, filed as "the estimator is DEAD -- repair it". The
+    estimator was never broken: 0.2345 is exactly -log2(0.85), so every caller was passing the
+    same hardcoded prior of 0.15. A prior that never updates produces identical surprise for every
+    outcome, which makes `total_bits` precisely `n x 0.2345` -- a ROW COUNT wearing an
+    information-theory unit. Third instance this session of a counter dressed as evidence, after
+    §33's min_snapshots and the allocator's closure-rate n.
+
+    Worse than merely constant: the desk's measured record is 420/420 rejections, so scoring each
+    rejection against a 0.15 prior books it as mildly SURPRISING when it is exactly what should be
+    expected. The accounting overstated learning in the one direction that flatters the desk.
+    """
+    rows = _rows(log)
+    if not rows:
+        return COLD_START_PRIOR, ("COLD START: no experiments logged, so this is an ASSUMPTION "
+                                  "rather than a rate. It is labelled as such wherever it appears.")
+    surv = sum(1 for r in rows if r.get("survived"))
+    n = len(rows)
+    p = (surv + _PRIOR_ALPHA) / (n + _PRIOR_ALPHA + _PRIOR_BETA)
+    return round(p, 6), (f"EMPIRICAL: {surv} survivor(s) in {n} logged experiment(s), "
+                         f"Laplace-smoothed to {p:.4f}. Smoothed because an unsmoothed 0/{n} gives "
+                         "a prior of exactly zero, under which every rejection is ZERO-surprise "
+                         "and the desk is recorded as learning nothing from any outcome.")
+
+
+def _rows(log: Path) -> list[dict[str, Any]]:
+    if not log.exists():
+        return []
+    out = []
+    for line in log.read_text("utf-8", errors="ignore").splitlines():
+        line = line.strip()
+        if line:
+            try:
+                out.append(json.loads(line))
+            except json.JSONDecodeError:
+                continue
+    return out
+
+
+def record_factory_cycle(tested: int, survivors: int, *, base_prior: float | None = None,
                          timeframe: str = "D1", log: Path = _LOG,
                          web: Path = Path("web/pilot.json")) -> dict[str, Any]:
     """Log one factory cycle's NEW candidates and refresh the pilot dashboard card.
@@ -59,6 +113,12 @@ def record_factory_cycle(tested: int, survivors: int, *, base_prior: float = 0.1
     forward-validated survivors per 1,000 + info-bits per experiment. tested is NEW-this-cycle
     (the factory dedups), so the log does not bloat after the first sweep.
     """
+    # LEARNED, NOT ASSERTED. `base_prior=None` derives P(survive) from the desk's own logged
+    # record; an explicit value is still honoured so a caller can score against a stated
+    # counterfactual, but the DEFAULT no longer hardcodes a rate the desk has measured to be wrong.
+    prior_why = "caller-supplied prior"
+    if base_prior is None:
+        base_prior, prior_why = empirical_prior(log)
     fam = f"crypto_{timeframe}"
     for _ in range(max(0, survivors)):
         log_experiment("factory_survivor", fam, base_prior, True, log=log)
@@ -68,7 +128,11 @@ def record_factory_cycle(tested: int, survivors: int, *, base_prior: float = 0.1
     per_1000 = round(1000.0 * s.get("survivors", 0) / max(1, s.get("experiments", 1)), 2)
     card = {"updated": datetime.now(tz=UTC).isoformat(),
             "pilot": "factory 30-day measurement (survivors per 1,000 decides scale-or-not)",
-            "survivors_per_1000": per_1000, **s}
+            "survivors_per_1000": per_1000,
+            # THE PRIOR AND ITS PROVENANCE TRAVEL WITH THE NUMBER. info_bits is meaningless
+            # without knowing what it was surprised RELATIVE TO -- and reporting bits against an
+            # unstated prior is how 810 identical values read as accumulated information.
+            "prior_used": round(float(base_prior), 6), "prior_basis": prior_why, **s}
     web.parent.mkdir(parents=True, exist_ok=True)
     web.write_text(json.dumps(card, indent=2), "utf-8")
     return card

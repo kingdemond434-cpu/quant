@@ -9,12 +9,16 @@ never relaxed.
 
 from __future__ import annotations
 
+from typing import Any
+
 import numpy as np
 
 from libs.autodiscovery.models import Hypothesis, ValidationMetrics, ValidationVerdict
 from libs.discovery.capacity import capacity_estimate
 from libs.discovery.tail_risk import tail_risk
+from libs.validation.baselines import baseline_scorecard
 from libs.validation.dsr import deflated_sharpe_ratio, sharpe_ratio
+from libs.validation.errors import ValidationError
 from libs.validation.pbo import PBOResult, probability_backtest_overfitting
 from libs.validation.reality_check import RealityCheckResult, whites_reality_check
 from libs.validation.revalidation import WalkForwardEngine, WalkForwardStatus
@@ -57,6 +61,10 @@ def validate(
     edge_bps: float | None = None,
     pbo: PBOResult | None = None,
     rc: RealityCheckResult | None = None,
+    pc_pbo: float | None = None,
+    pc_p: float | None = None,
+    buy_hold_returns: np.ndarray | None = None,
+    universe_returns: np.ndarray | None = None,
 ) -> ValidationVerdict:
     arr = np.asarray(returns, dtype="float64")
     if len(arr) < 250:
@@ -69,7 +77,24 @@ def validate(
     wf = WalkForwardEngine().evaluate(arr, n_splits=4, test_size=max(20, len(arr) // 6))
     dsr = deflated_sharpe_ratio(arr, n_trials=n_trials, sharpe_estimates=sharpe_estimates,
                                 threshold=_DSR_THRESHOLD)
-    # PBO/RC depend only on the (campaign-wide) matrix; reuse precomputed results when supplied.
+    # PER-CANDIDATE, NOT PER-CAMPAIGN (register #71). White's RC asks "is the BEST strategy in
+    # this set real?" and PBO asks "does the SELECTION PROCEDURE overfit?" -- both are properties
+    # of the SET, and handing each candidate the set's verdict let one number decide all of them.
+    # Measured here: campaign PBO 0.6159 and RC p 0.4220 made `pbo` and `reality_check` False for
+    # all 420 candidates regardless of merit, and campaign PBO RISES with candidate count, so the
+    # bar tightened every time the desk generated more -- which TWO_STAGE_DISCOVERY_LAW forbids.
+    #
+    # It fails the other way too, which is worse: plant ONE real edge among 19 noise strategies
+    # and campaign RC returns p=0.003, passing the reality_check gate for all twenty.
+    #
+    # Romano-Wolf stepdown and per-strategy CSCV keep the veto and make it DISCRIMINATE. Not
+    # RANK-not-VETO, which would lower the bar; each candidate is now judged on its own evidence
+    # and can neither be rescued nor condemned by its peers.
+    # COMPUTED ONCE PER CAMPAIGN, INDEXED PER CANDIDATE. Both statistics are vectorised over
+    # every strategy already, so the caller runs them once and passes this candidate's slice --
+    # keeping the O(N) bootstrap saving the campaign version was written for, while fixing the
+    # statistic it got wrong. The first draft called them inside the candidate loop, which is
+    # O(N^2) and would have been unusable at the 420 candidates that motivated the fix.
     has_peers = returns_matrix.shape[1] >= 2
     if pbo is None and has_peers:
         pbo = probability_backtest_overfitting(returns_matrix)
@@ -87,8 +112,8 @@ def validate(
         expected_value=float(arr.mean()),
         oos_sharpe=wf.oos_sharpe,
         dsr=dsr.dsr,
-        pbo=pbo.pbo if pbo is not None else 1.0,
-        reality_p=rc.p_value if rc is not None else 1.0,
+        pbo=pc_pbo if pc_pbo is not None else (pbo.pbo if pbo is not None else 1.0),
+        reality_p=pc_p if pc_p is not None else (rc.p_value if rc is not None else 1.0),
         capacity_usd=cap.capacity_usd,
         fragility=tail.tail_risk_score,
     )
@@ -99,11 +124,52 @@ def validate(
         "cpcv": _cpcv_positive_fraction(arr) >= _CPCV_MIN_POSITIVE,
         "walk_forward": wf.status is WalkForwardStatus.PASSED,
         "dsr": dsr.passed,
-        "pbo": pbo is not None and not pbo.overfit,
-        "reality_check": rc is not None and rc.significant_at_5pct,
+        "pbo": (pc_pbo <= 0.5) if pc_pbo is not None
+               else (pbo is not None and not pbo.overfit),
+        "reality_check": (pc_p <= 0.05) if pc_p is not None
+                         else (rc is not None and rc.significant_at_5pct),
         "capacity": cap.capacity_usd >= _MIN_CAPACITY_USD,
         "fragility": tail.acceptable,
     }
+
+    # BEATS A TRIVIAL BASELINE -- the blunt question the gauntlet never asked.
+    #
+    # DSR, SPA and CPCV all ask "is this distinguishable from noise, given the search?". None asks
+    # whether it beats buy-and-hold. A candidate can clear every statistical gate and still lose to
+    # holding BTC, in which case it is complexity with no reason to exist -- and on a directional
+    # crypto book that is the LIKELY outcome, not an edge case. `libs/validation/baselines.py` was
+    # written to catch exactly this and then sat unwired for weeks, which is how a
+    # DSR-significant-but-baseline-losing strategy reaches deployment.
+    #
+    # Absent a benchmark stream the gate is SKIPPED rather than passed: a gate that defaults to
+    # True when nobody supplied its evidence is a gate that has been removed.
+    # STATIONARITY, FOR THE CANDIDATES WHERE IT DECIDES CORRECTNESS. A mean-reverting / pairs
+    # card rests entirely on the spread being stationary; if it is not, the backtest is fitting a
+    # trend and the "reversion" is a random walk that happened to come back. The constitution bans
+    # hand-rolled ADF for exactly that reason and `libs/research/stationarity` was written as the
+    # sanctioned seam -- then left unwired, so nothing ever asked the question.
+    #
+    # The backend (`arch` / statsmodels) is an OPTIONAL dependency, so absence must SKIP rather
+    # than pass: a gate that silently returns True when its backend is missing is a gate that has
+    # been deleted by a packaging decision.
+    if hypothesis is not None and getattr(hypothesis, "requires_stationarity", False):
+        try:
+            from libs.research.stationarity import StatsBackendMissing, adf_pvalue
+            gates["stationary"] = adf_pvalue(arr) < 0.05
+        except StatsBackendMissing:
+            pass                      # unmeasurable here; NOT recorded as passed
+        except (ImportError, ValueError):
+            pass
+
+    if buy_hold_returns is not None:
+        try:
+            bl = baseline_scorecard(arr, buy_hold_returns=np.asarray(buy_hold_returns,
+                                                                     dtype="float64"),
+                                    universe_returns=universe_returns)
+            gates["beats_baseline"] = bool(bl.beats_all)
+        except ValidationError:
+            gates["beats_baseline"] = False    # mismatched streams cannot clear a gate
+
     failed = [name for name, ok in gates.items() if not ok]
     return ValidationVerdict(
         survived=not failed, gates=gates,
@@ -112,7 +178,7 @@ def validate(
     )
 
 
-def gate_discrimination(gate_results: list[dict[str, bool]]) -> dict[str, dict]:
+def gate_discrimination(gate_results: list[dict[str, bool]]) -> dict[str, dict[str, Any]]:
     """GAP #71 INSTRUMENTATION -- which gates actually DISCRIMINATE, and which are constants.
 
     THE MEASURED PROBLEM. `pbo` and `reality_check` are computed ONCE per campaign (they are
@@ -137,7 +203,7 @@ def gate_discrimination(gate_results: list[dict[str, bool]]) -> dict[str, dict]:
         return {}
     names = list(gate_results[0])
     n = len(gate_results)
-    out: dict[str, dict] = {}
+    out: dict[str, dict[str, Any]] = {}
     for g in names:
         passed = sum(1 for r in gate_results if r.get(g))
         rate = passed / n
@@ -166,7 +232,7 @@ def blocking_constant_gates(gate_results: list[dict[str, bool]]) -> list[str]:
 
 def counterfactual_survivors(
     gate_results: list[dict[str, bool]], waive: list[str] | tuple[str, ...],
-) -> dict:
+) -> dict[str, Any]:
     """GAP #71, THE QUESTION A RULING ACTUALLY NEEDS: if these gates were waived, who survives?
 
     "Should we relax the campaign veto?" is unanswerable in the abstract and trivially answerable

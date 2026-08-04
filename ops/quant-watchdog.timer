@@ -1,0 +1,14 @@
+[Unit]
+Description=Tick the quant process supervisor every 5 minutes
+
+[Timer]
+# FIVE MINUTES IS THE WORST-CASE EXPOSURE, and that is the number to reason about: it is how long
+# a dead executor, dashboard or liquidation listener stays dead before anything notices. The
+# watchdog is idempotent and costs a few pgrep calls, so the interval is bounded by how much
+# downtime is acceptable rather than by what it costs to run.
+OnBootSec=2min
+OnUnitActiveSec=5min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

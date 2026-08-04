@@ -152,12 +152,195 @@ def _trial_mechanisms() -> list[str]:
     return []
 
 
+# --------------------------------------------------------------- evidence scope
+#
+# THE AUDITOR COULD NOT TELL "THIS ORGAN IS BROKEN" FROM "THIS CHECKOUT NEVER RAN IT", and that
+# ambiguity has now produced a wrong report to the principal at least once: five defects were
+# relayed as real when three of them rested on `data/` artifacts that are gitignored and therefore
+# absent in every fresh clone by construction. The auditor was not wrong to fire -- on the machine
+# that owns the history, an absent artifact IS the defect -- it was wrong to present both readings
+# in identical language, leaving the reader to guess which machine the sentence was about.
+#
+# The scope is derived from WHAT EACH CHECK ACTUALLY READ, not from parsing its prose. Path reads
+# are recorded while the check runs, then split against `git ls-files`:
+#
+#   REPO     the check consulted at least one TRACKED file. The evidence is in git, so the defect
+#            is verifiable and closable from any checkout -- it is mine.
+#   RUNTIME  the check consulted ONLY untracked paths. The evidence exists solely on the machine
+#            that runs the organ; a clone cannot confirm or close it. Still a real defect there.
+#   UNSCOPED the check read no files at all -- pure in-memory or subprocess logic. Treated as REPO
+#            for escalation, because unknown provenance must never become an excuse.
+#
+# THE ASYMMETRY IS DELIBERATE AND POINTS AT ME. A check that touches both a tracked doc and a
+# runtime artifact is scored REPO, not RUNTIME. Misfiling a runtime defect as mine costs an
+# investigation; misfiling my defect as the machine's lets it live forever behind "needs the VPS".
+# Only the second failure is self-serving, so the tie breaks against me.
+
+_RECORDING: list[str] | None = None
+_PATH_METHODS = ("exists", "stat", "glob", "rglob", "iterdir", "open",
+                 "read_text", "read_bytes", "is_file", "is_dir")
+
+
+def _rel_root(p: Path) -> str:
+    """Repo-relative when inside the repo, absolute otherwise. `relative_to` RAISES outside ROOT,
+    and this session has now fixed that same crash in four separate scripts."""
+    try:
+        return str(p.relative_to(ROOT))
+    except ValueError:
+        return str(p)
+
+
+def _install_read_probe() -> None:
+    """Record every filesystem path a check consults. Idempotent."""
+    if getattr(Path, "_maxaudit_probed", False):
+        return
+    for name in _PATH_METHODS:
+        orig = getattr(Path, name)
+
+        def wrap(self, *a, _orig=orig, **kw):
+            if _RECORDING is not None:
+                _RECORDING.append(str(self))
+            return _orig(self, *a, **kw)
+
+        setattr(Path, name, wrap)
+    Path._maxaudit_probed = True
+
+
+def _tracked_set() -> set[str]:
+    """Every path git tracks, repo-relative. One subprocess, cached by the caller."""
+    try:
+        out = subprocess.run(["git", "ls-files"], cwd=ROOT, capture_output=True,
+                             text=True, timeout=60, check=False)
+        return set(out.stdout.split("\n")) - {""}
+    except (OSError, subprocess.SubprocessError):
+        return set()
+
+
+_TRACKED: set[str] | None = None
+
+
+def _split_evidence(paths: list[str]) -> tuple[list[str], list[str]]:
+    """(tracked, untracked) repo-relative evidence paths, deduped and ordered."""
+    global _TRACKED
+    if _TRACKED is None:
+        _TRACKED = _tracked_set()
+    tracked, untracked = [], []
+    for p in dict.fromkeys(paths):
+        try:
+            rel = str(Path(p).resolve().relative_to(ROOT))
+        except (ValueError, OSError):
+            continue                              # outside the repo: not evidence about the repo
+        if rel.startswith((".git/", "__pycache__")) or "/__pycache__/" in rel:
+            continue
+        (tracked if rel in _TRACKED else untracked).append(rel)
+    return tracked, untracked
+
+
+def scope_of(tracked: list[str], untracked: list[str]) -> str:
+    """REPO / RUNTIME / UNSCOPED -- and the EVIDENCE outranks the REMEDY.
+
+    THE REFINEMENT, AND IT WAS INFLATING THE PRINCIPAL PAGE. Defect prose names two kinds of path
+    and they mean opposite things:
+
+        "data/moat_screen.json absent -- ... Run scripts/screen_moat.py."
+         ^ the EVIDENCE: untracked, and NOT THERE     ^ the REMEDY: tracked, and present
+
+    Counting the tracked one first returned REPO, so a defect that is true on every fresh checkout
+    BY CONSTRUCTION -- data/ is gitignored -- was paged as a repository fault the desk had left
+    unfixed. At least three of the eleven REPO defects on the page were this, and a page padded
+    with things no commit could ever fix is how a page stops being read.
+
+    The discriminator is EXISTENCE, not vocabulary: an absent untracked artifact is what the
+    defect is ABOUT, while a path that is present is what the sentence is POINTING AT. Only when
+    nothing cited is missing does the tracked/untracked split decide, which keeps a genuine repo
+    defect ("A is not called from B", both present and tracked) firmly REPO.
+    """
+    if any(not (ROOT / p).exists() for p in untracked):
+        return "RUNTIME"
+    if tracked:
+        return "REPO"
+    return "RUNTIME" if untracked else "UNSCOPED"
+
+
+#: A path-ish token: either something containing a slash, or a bare filename with a known suffix.
+#: Glob metacharacters are kept so the directory part survives (`data/cro_ai_logs/2026*.log`).
+_TOKEN_RE = re.compile(r"[\w./*?<>-]*[\w*?](?:\.(?:md|json|jsonl|log|csv|parquet|py|sh|sqlite))\b"
+                       r"|(?:data|web|docs|libs|scripts|ops|tests)/[\w./*?-]+")
+
+_BASENAMES: dict[str, str] | None = None
+
+
+def _basename_index() -> dict[str, str]:
+    """basename -> repo-relative path, for tracked files with an unambiguous basename.
+
+    Defect prose names artifacts the way a human would (`prospector_coverage.md`), not by full
+    path. Ambiguous basenames are dropped rather than guessed: two files with one name cannot
+    settle which the sentence meant, and picking either would fabricate the evidence.
+    """
+    global _BASENAMES, _TRACKED
+    if _BASENAMES is None:
+        if _TRACKED is None:
+            _TRACKED = _tracked_set()
+        counts: dict[str, list[str]] = {}
+        for rel in _TRACKED:
+            counts.setdefault(rel.rsplit("/", 1)[-1], []).append(rel)
+        _BASENAMES = {b: v[0] for b, v in counts.items() if len(v) == 1}
+    return _BASENAMES
+
+
+def cited_evidence(msg: str) -> tuple[list[str], list[str]]:
+    """(tracked, untracked) paths the DEFECT ITSELF names -- its own claim about its evidence.
+
+    WHY THIS OUTRANKS WHAT THE CHECK READ. Scope was first derived purely from the files a check
+    touched while running, which is mechanically true and too coarse: `check_organs` stats the
+    tracked ORGAN_ARTIFACTS docs on its way to concluding that an untracked LOG is missing, so
+    every organ-never defect came out REPO. One check emits many defects and they do not share
+    evidence. What a defect asserts is missing is stated in its own sentence, so that is read
+    first; the check's read-set is the fallback for defects that name nothing.
+    """
+    global _TRACKED
+    if _TRACKED is None:
+        _TRACKED = _tracked_set()
+    idx = _basename_index()
+    tracked, untracked = [], []
+    for raw in _TOKEN_RE.findall(msg):
+        tok = raw.strip("./").replace(str(ROOT) + "/", "")
+        if not tok:
+            continue
+        if tok in _TRACKED:
+            tracked.append(tok)
+            continue
+        if tok in idx:
+            tracked.append(idx[tok])
+            continue
+        # A glob names a directory even when no file matches -- that directory is the evidence.
+        head = tok.split("*")[0].split("?")[0].rsplit("/", 1)[0] if ("*" in tok or "?" in tok) \
+            else tok
+        if head.startswith(("data/", "web/")) or tok.startswith(("data/", "web/")):
+            untracked.append(tok)
+    return list(dict.fromkeys(tracked)), list(dict.fromkeys(untracked))
+
+
 def _fenced(fn, defects, label):
+    """Run one check, recording the evidence each defect it raises actually rests on."""
+    global _RECORDING
+    _install_read_probe()
+    before = len(defects)
+    _RECORDING = []
     try:
         fn(defects)
     except Exception as e:
         defects.append((f"sweep-broken-{label}", f"max_audit check '{label}' itself failed: "
                         f"{e!r} -- a blind checker is a defect"))
+    finally:
+        seen, _RECORDING = _RECORDING or [], None
+    read_tr, read_un = _split_evidence(seen)
+    for i in range(before, len(defects)):
+        did, msg = defects[i][0], defects[i][1]
+        tr, un = cited_evidence(msg)
+        if not (tr or un):                       # names nothing: fall back to what the check read
+            tr, un = read_tr, read_un
+        defects[i] = (did, msg, scope_of(tr, un), tr[:6], un[:6])
 
 
 # ARTIFACT PARITY (2026-07-25): claude writes deliverables via FILE TOOLS, so a SUCCESSFUL organ
@@ -199,10 +382,14 @@ def check_organs(defects) -> None:
         ok = [p for p in LOGS.glob(pat) if p.stat().st_size >= min_b]
         art_h = _artifact_age_h(organ)
         if not ok and art_h > max_h:
+            # THE LOG PATH IS NAMED, not just the glob. The evidence for "never fired" is an
+            # absent log under data/cro_ai_logs, which is gitignored -- so the sentence must say
+            # so, or the scoper reads this as a repo defect and pages the principal about a
+            # directory that cannot exist in a checkout.
             defects.append((f"organ-never-{organ}",
-                            f"{organ}: no substantial log (pattern {pat}, >= {min_b}b) AND no "
-                            f"declared artifact written in {max_h}h -- organ has never fired or "
-                            "always dies"))
+                            f"{organ}: no substantial log ({_rel_root(LOGS)}/{pat}, >= {min_b}b) "
+                            f"AND no declared artifact written in {max_h}h -- organ has never "
+                            "fired or always dies"))
             continue
         if not ok:
             continue                      # artifacts prove production; stub log is expected
@@ -1078,6 +1265,83 @@ def check_memory_hygiene(defects) -> None:
                         "tail-reads go lossy"))
 
 
+#: Characters of doctrine per COMMITMENT above which the file is carrying prose that does no
+#: work. The live doctrine sits near 140; a padded one runs into four figures. Anchored to the
+#: measured density rather than to a round number, and it can go red the moment somebody adds
+#: waffle rather than law.
+_DOCTRINE_CHARS_PER_COMMITMENT = 400.0
+
+#: Absolute ceiling, so density cannot license unbounded growth: a doctrine that doubles in size
+#: while staying dense is still a doubled context bill on every organ call.
+_DOCTRINE_HARD_CEILING = 60_000
+
+
+def _check_doctrine_density(doc, defects) -> None:
+    """Is the doctrine LONG, or is it BLOATED? They are not the same defect and the old check
+    could not tell them apart.
+
+    WHAT THIS REPLACES, AND WHY THE OLD VERSION WAS ACTIVELY DANGEROUS. The previous rule fired on
+    file size past 16k and prescribed: "consolidate the stacked axiom blocks into tighter prose
+    (preserve every commitment, cut the repetition)". Measured against the actual file, that
+    advice is false in its premise and harmful if followed:
+
+      * repetition:  ONE near-duplicate sentence pair out of 17,955 pairs across 190 sentences.
+                     There is essentially nothing to consolidate.
+      * commitments: 247 distinct obligations -- section marks, defect names, artifact paths,
+                     thresholds, tier weights, named laws -- at ~140 chars each.
+
+    So the file is long because it contains a great deal of distinct law, not because it says
+    anything twice, and "cut the repetition" resolves in practice to "cut law". A shorter doctrine
+    that dropped an obligation is strictly worse than a long one that kept it: the context tax is
+    paid per call and is small, while a missing law is paid once, at an unknown later date, in
+    full. An audit that prescribes a harmful remedy is worse than one that stays silent, because
+    the remedy carries the audit's authority.
+
+    Scoping the injection per organ was the other candidate and is refused for a different reason:
+    the principal's standing instruction is that every law binds every interaction at full
+    coverage. Sending each organ only the sections that "apply to it" is a coverage reduction
+    wearing an efficiency costume, and which laws apply is exactly what an organ cannot be trusted
+    to have decided for it.
+
+    What remains is the real question: does the doctrine contain prose that carries no commitment?
+    That is measurable, it is the actual definition of bloat, and it still goes red -- padding the
+    file with exhortation raises chars-per-commitment immediately.
+    """
+    if not doc.exists():
+        return
+    try:
+        text = doc.read_text("utf-8")
+    except OSError:
+        return
+    from libs.doctrine.commitments import extract
+    n = sum(len(v) for v in extract(text).values())
+    size = len(text)
+    if n <= 0:
+        defects.append((
+            "prompt-doctrine-empty",
+            f"principal_doctrine.txt is {size/1000:.1f}k chars and states NO checkable "
+            "commitment -- no section mark, artifact path, threshold or named law. Every organ "
+            "injects this; a doctrine of pure exhortation is context with no instruction in it."))
+        return
+    density = size / n
+    if density > _DOCTRINE_CHARS_PER_COMMITMENT:
+        defects.append((
+            "prompt-doctrine-bloat",
+            f"principal_doctrine.txt carries {density:.0f} chars per commitment "
+            f"({size/1000:.1f}k chars, {n} commitments) against a bar of "
+            f"{_DOCTRINE_CHARS_PER_COMMITMENT:.0f}. The file is padded with prose that binds "
+            "nothing -- cut the exhortation, keep every obligation. Verify with "
+            "libs.doctrine.commitments.diff(before, after), which fails on any lost commitment."))
+    if size > _DOCTRINE_HARD_CEILING:
+        defects.append((
+            "prompt-doctrine-oversized",
+            f"principal_doctrine.txt is {size/1000:.1f}k chars, past the "
+            f"{_DOCTRINE_HARD_CEILING/1000:.0f}k ceiling, at {density:.0f} chars/commitment. "
+            "Density alone cannot license unbounded growth: this is a context bill every organ "
+            "pays on every call. Splitting law out to a referenced document is the move, never "
+            "deleting it."))
+
+
 def check_prompt_layer(defects) -> None:
     """PROMPT-LAYER hygiene (principal 2026-07-24 prompt audit): the prompts are organs too.
     (a) Doctrine bloat: the doctrine is prepended to EVERY organ call; past ~16k chars the
@@ -1086,11 +1350,7 @@ def check_prompt_layer(defects) -> None:
     contract/doctrine change materially the review is due by STATE (the blind-rediscovery
     precedent) -- a week of unreviewed prompt mutations is how contradictions accrete."""
     doc = ROOT / "ops/principal_doctrine.txt"
-    if doc.exists() and doc.stat().st_size > 16000:
-        defects.append(("prompt-doctrine-bloat",
-                        f"principal_doctrine.txt {doc.stat().st_size/1000:.1f}k chars (>16k) -- "
-                        "consolidate the stacked axiom blocks into tighter prose (preserve every "
-                        "commitment, cut the repetition); every organ pays this context"))
+    _check_doctrine_density(doc, defects)
     try:
         cad = json.loads((ROOT / "data/cadence_state.json").read_text("utf-8"))
         last_rev = datetime.fromisoformat(cad["last_prompt_review"]).timestamp()
@@ -1126,6 +1386,43 @@ def check_bnb_funded(defects) -> None:
         pass
 
 
+def _git_age_h(rel: str) -> float:
+    """Hours since this path's last COMMIT, or inf if git does not know it."""
+    try:
+        out = subprocess.run(["git", "log", "-1", "--format=%ct", "--", rel],
+                             cwd=ROOT, capture_output=True, text=True, timeout=20, check=False)
+        ts = out.stdout.strip()
+        return (NOW - float(ts)) / 3600.0 if ts else float("inf")
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return float("inf")
+
+
+def _production_age_h(p: Path) -> float:
+    """Age of a product artifact, in hours -- mtime for untracked, WORSE-OF for tracked.
+
+    MTIME LIES ABOUT TRACKED FILES, ALWAYS IN THE FLATTERING DIRECTION. `git clone` stamps every
+    checked-out file with the CLONE time, so a doc last authored a week ago reports as hours old
+    on a fresh machine. Measured here: four `docs/research/*` products reported 131h stale while
+    their last commit was 168h back -- the staleness gate was reading the age of the checkout, not
+    the age of the work, and understating it by a day and a half. A freshness check that gets
+    younger every time you clone the repo is not measuring production.
+
+    Untracked products keep mtime: they are written in place and git knows nothing about them.
+    Tracked products take the WORSE of mtime-age and last-commit-age, which is strict in the one
+    direction the desk already demands -- §33 credits output only once it is committed and pushed,
+    so an artifact freshly written but never committed is correctly still counted as not produced.
+    """
+    rel = _rel_root(p)
+    age_mtime = (NOW - p.stat().st_mtime) / 3600.0
+    global _TRACKED
+    if _TRACKED is None:
+        _TRACKED = _tracked_set()
+    if rel not in _TRACKED:
+        return age_mtime
+    g = _git_age_h(rel)
+    return age_mtime if g == float("inf") else max(age_mtime, g)
+
+
 def check_production(defects) -> None:
     """OUTCOME-LEVEL fence (principal 2026-07-24): does each scheduled organ actually PRODUCE its
     output artifact within cadence? State-freshness checks miss the class where a scheduler fires
@@ -1152,7 +1449,7 @@ def check_production(defects) -> None:
                             "produced output, only (maybe) been scheduled"))
             continue
         newest = max(hits, key=lambda q: q.stat().st_mtime)
-        age_h = (NOW - newest.stat().st_mtime) / 3600.0
+        age_h = _production_age_h(newest)
         sz = newest.stat().st_size
         if age_h > max_h:
             defects.append(("production-stale",
@@ -1601,17 +1898,32 @@ def check_gap_register_health(defects) -> None:
     if h.n_rows == 0:
         defects.append(("gap-register-unparseable", f"§36(3): {h.verdict}"))
         return
+    # THE MECHANICAL HALF, REPORTED SEPARATELY. scripts/rerank_gaps.py computes every part of the
+    # re-rank that needs no opinion, every cycle. It cannot discharge the judgment duty and does
+    # not try -- but "the countable work is current and the judgment call is owed" is a materially
+    # different state from "nobody has touched this", and collapsing them costs the reader the
+    # only distinction that changes what to do next.
+    _mech = ""
+    with contextlib.suppress(OSError, json.JSONDecodeError):
+        _m = json.loads((ROOT / "data/gap_rerank.json").read_text("utf-8"))
+        _age = (NOW - datetime.fromisoformat(_m["ts"]).timestamp()) / 3600.0
+        _hot = [f"#{r['id']}" for r in _m["rows"]
+                if r["verdict"] not in ("ON-CLOCK", "TRACKED")][:6]
+        _mech = (f" MECHANICAL PASS {_age:.0f}h old: {_m['need_decision']} of "
+                 f"{_m['open_rows']} open rows need a decision"
+                 + (f" ({', '.join(_hot)})" if _hot else "")
+                 + " -- the judgment call is what remains, and it arrives pre-computed.")
     if h.rerank_breach:
         defects.append((
             "gap-register-rerank-breach",
             f"§36(3): {h.verdict} Re-rank now and escalate anything genuinely stuck -- this is the "
             "organ every other law depends on; when it stops moving, everything routed into it "
-            "stops with it, silently."))
+            f"stops with it, silently.{_mech}"))
     elif h.rerank_stale:
         defects.append((
             "gap-register-rerank-stale",
             f"§36(3): {h.verdict} Caught as DRIFT, before the 7-day escalation bar it sets for "
-            "itself."))
+            f"itself.{_mech}"))
     if h.undated_open:
         defects.append((
             "gap-register-parked-rows",
@@ -2321,6 +2633,10 @@ MINE_LEDGER = ROOT / "data/mine_conversion_log.jsonl"
 #: standard was erasable by an organ that wanted an easier bar. In docs/ a reset shows up in
 #: `git status`, in the diff, and in check_dig_uncommitted. Tampering becomes visible, not silent.
 MINE_RATCHET = ROOT / "docs/research/conversion_record.json"
+#: Machine-local snapshot count. Deliberately under data/ (gitignored): how many times THIS
+#: machine ran the sweep is not an institutional fact, and committing it dirtied the tree on
+#: every run while making the truncation test compare a clone against the VPS's count.
+MINE_RATCHET_LOCAL = ROOT / "data/mine_ratchet_local.json"
 MINE_PRIORS = ROOT / "data/mine_generation_priors.json"
 
 
@@ -2485,6 +2801,7 @@ def check_mine_flow(defects) -> None:
     and it never loosens, so there is no "good enough", only better-than-our-best or a regression.
     """
     from libs.research.mine_conversion import (
+        MIN_ITEMS_PER_WINDOW,
         class_priors,
         feedback_applied,
         flow_stats,
@@ -2512,7 +2829,9 @@ def check_mine_flow(defects) -> None:
             MINE_PRIORS.write_text(json.dumps(priors_payload(priors), indent=2), "utf-8")
 
     prior = load_ratchet(MINE_RATCHET)
-    truncated, why_trunc = ledger_regressed(prior, ledger)
+    local_prior = _j(MINE_RATCHET_LOCAL, {}).get("n_snapshots")
+    truncated, why_trunc = ledger_regressed(
+        prior, ledger, local_n_prior=int(local_prior) if local_prior is not None else None)
     if truncated:
         defects.append((
             "mine-ledger-truncated",
@@ -2521,8 +2840,30 @@ def check_mine_flow(defects) -> None:
             "The high-water marks in docs/research/conversion_record.json are what caught this."))
     new_ratchet, verdict = update_ratchet(
         prior, flow, conversion_rate=rate, regress_mult=thr["regress"], ledger=ledger)
+
+    # THE AUDITOR WAS MANUFACTURING ITS OWN DEFECT, ONCE PER RUN, FOREVER. `append_snapshot` adds
+    # one ledger row per invocation, so `n_snapshots` advanced on every sweep; writing the whole
+    # ratchet unconditionally then dirtied a GIT-TRACKED file every run, and the next check duly
+    # reported `dig-output-uncommitted`. The only way to keep that green was to commit after every
+    # single audit -- a defect that can only be cleared by ceremony is noise, and it was crowding
+    # out the defects that matter.
+    #
+    # The committed ratchet now carries only the HIGH-WATER MARKS, which change rarely and are
+    # genuinely institutional. The per-run count is machine-local state and lives in data/ beside
+    # the ledger it counts -- which also makes the truncation test compare like with like, instead
+    # of measuring a fresh clone against the count the VPS reached.
+    body_changed = (new_ratchet.model_dump(exclude={"n_snapshots"})
+                    != prior.model_dump(exclude={"n_snapshots"}))
+    if body_changed or not MINE_RATCHET.exists():
+        with contextlib.suppress(OSError):
+            MINE_RATCHET.write_text(new_ratchet.model_dump_json(indent=2), "utf-8")
     with contextlib.suppress(OSError):
-        MINE_RATCHET.write_text(new_ratchet.model_dump_json(indent=2), "utf-8")
+        MINE_RATCHET_LOCAL.parent.mkdir(parents=True, exist_ok=True)
+        MINE_RATCHET_LOCAL.write_text(
+            json.dumps({"n_snapshots": len(ledger), "note": (
+                "machine-local snapshot count. data/ is gitignored on purpose: this counts how "
+                "many times THIS machine ran the sweep, which is not an institutional fact and "
+                "must never be compared against another machine's.")}, indent=1), "utf-8")
 
     if flow.oldest_owing_days > thr["stale"]:
         defects.append((
@@ -2561,6 +2902,19 @@ def check_mine_flow(defects) -> None:
             "enforces. Trend, not counterfactual (no pre-§33 baseline exists) -- but flat is flat. "
             "Either the gate is not biting or conversion is bottlenecked elsewhere; establish "
             "which before adding more enforcement on top."))
+    elif not eff.conclusive and eff.n_snapshots >= 12:
+        # UNJUDGEABLE IS NOT EXONERATED, and silence would read as the latter. The ledger has been
+        # written often enough to look like evidence while holding too few distinct items to be
+        # any -- so the desk must keep knowing it cannot yet judge its own law, and know exactly
+        # what would make it judgeable. Dropping the report here is how a law stops being asked
+        # about: the defect disappears, nobody notices the question went with it.
+        defects.append((
+            "mine-law-unjudgeable",
+            f"§33 self-audit: {eff.verdict} The law is neither working nor convicted -- it is "
+            f"UNMEASURED. {MIN_ITEMS_PER_WINDOW} distinct items per window is the bar; the ledger "
+            f"holds {eff.n_early_items}/{eff.n_late_items}. Converting more finds is what closes "
+            "this, so the fix for 'we cannot tell whether §33 works' is the same work §33 exists "
+            "to demand."))
     ok, why = feedback_applied(ledger, priors)
     if not ok:
         defects.append((
@@ -2621,9 +2975,55 @@ def check_mine_gate(defects) -> None:
                         "recompute the backlog, and without it the gate degrades to whatever the "
                         "shells do on a missing command. Restore it."))
         return
+    # THE GATE IS REACHED THROUGH A HELPER NOW, AND GREPPING FOR THE FILENAME MISSED IT.
+    # Each shell used to run `scripts/mine_gate.py` inline, into a `_MINE_PRIORITY` variable that
+    # was then never referenced -- the gate ran and its verdict went nowhere in all six. The fix
+    # moved the call into `mine_priority()`/`dig_prompt()` in ops/brain_env.sh, which DOES reach
+    # the prompt. This check kept looking for the literal filename and reported all six as
+    # bypassing the law they had just started obeying.
+    #
+    # Following exactly ONE level of indirection is deliberate. A shell counts as gated if it
+    # names the gate itself, or if it calls a helper that does -- and the helper must genuinely
+    # invoke the gate, which is re-derived here rather than assumed. Merely SOURCING brain_env.sh
+    # is not enough: sourcing a file that could call the gate is not calling it.
+    _GATE_HELPERS = ("mine_priority", "dig_prompt")
+    env = (ROOT / "ops/brain_env.sh")
+    env_txt = env.read_text("utf-8", errors="ignore") if env.exists() else ""
+    live_helpers = tuple(h for h in _GATE_HELPERS if "mine_gate.py" in env_txt and h in env_txt)
+
+    def _code_only(text: str) -> str:
+        """Shell source with comments removed. A COMMENT NAMING THE GATE IS NOT CALLING IT, and
+        every one of these shells carries a comment explaining what `dig_prompt` does -- so
+        matching raw text passed a shell whose actual invocation had been deleted."""
+        out = []
+        for line in text.splitlines():
+            q = None
+            for i, ch in enumerate(line):
+                if q:
+                    q = None if ch == q else q
+                elif ch in "\"'":
+                    q = ch
+                elif ch == "#" and (i == 0 or line[i - 1] in " \t"):
+                    line = line[:i]
+                    break
+            out.append(line)
+        return "\n".join(out)
+
+    def _gated(text: str) -> bool:
+        # THE HELPER MUST APPEAR AS A COMMAND, NOT AS A SUBSTRING. `dig_prompt` is also inside
+        # every one of these shells' PROMPT FILENAMES (ops/prospector_dig_prompt.txt), so a plain
+        # `in` test passed a shell whose invocation had been replaced by `cat`. Requiring a
+        # non-word character before and a word boundary after distinguishes `$(dig_prompt f)`
+        # from `..._dig_prompt.txt`.
+        code = _code_only(text)
+        if "mine_gate.py" in code:
+            return True
+        return any(re.search(r"(?<![\w./-])" + re.escape(h) + r"(?=[\s)]|$)", code, re.M)
+                   for h in live_helpers)
+
     shells = [*sorted(ROOT.glob("ops/run_*dig*.sh")), ROOT / "ops/run_frontier_miner.sh"]
-    untrusting = [s.name for s in shells if s.exists() and "mine_gate.py" not in
-                  s.read_text("utf-8", errors="ignore")]
+    untrusting = [s.name for s in shells
+                  if s.exists() and not _gated(s.read_text("utf-8", errors="ignore"))]
     if untrusting:
         defects.append(("mine-gate-bypassed",
                         f"§33: digger shell(s) do NOT invoke the derived gate -- "
@@ -2839,6 +3239,9 @@ CHECKS = [("carryover-skipped", check_carryover_skipped),
 
 PAID_TARGETS = ROOT / "docs/research/paid_dataset_targets.md"
 HOLDINGS_RECORD = ROOT / "docs/research/holdings_record.json"   # git-tracked, ratchets UP only
+#: Data-surface high-water mark. Machine-local BY NECESSITY: it counts gitignored `data/` holdings,
+#: so a committed figure makes every clone look like it lost the VPS's entire lake.
+HOLDINGS_LOCAL = ROOT / "data/holdings_surface_local.json"
 
 
 def check_paid_target_registry(defects) -> None:
@@ -2899,15 +3302,31 @@ def check_holdings_never_shrink(defects) -> None:
     surface = axes + series
     if surface == 0:
         return
+    # THE HIGH-WATER MARK MUST LIVE WHERE THE THING IT MEASURES LIVES. `best_surface` counted
+    # `data/lake/bronze` directories and `data/*.jsonl` files -- both gitignored -- while the
+    # record sat in a git-TRACKED file. So every clone measured a near-empty data/ against the
+    # VPS's 37 and reported catastrophic attrition: this checkout read 9 against 37 and filed
+    # `holdings-shrank`, having dropped nothing. Identical in shape to the `n_snapshots` ratchet
+    # fixed the same day, and the same fix applies -- a machine-local measurement needs a
+    # machine-local record.
+    #
+    # ONE-TIME COST, STATED: the local record seeds from the CURRENT surface on first run, so a
+    # drop occurring between this change landing and that first run is not caught. On the machine
+    # that owns the data the seed is taken at its true (high) value and the ratchet proceeds
+    # normally from there. Missing one transition once beats reporting a false regression forever.
     try:
-        rec = json.loads(HOLDINGS_RECORD.read_text("utf-8")) if HOLDINGS_RECORD.exists() else {}
-    except Exception:
-        rec = {}
-    best = int(rec.get("best_surface", 0))
+        loc = json.loads(HOLDINGS_LOCAL.read_text("utf-8")) if HOLDINGS_LOCAL.exists() else {}
+    except (OSError, json.JSONDecodeError):
+        loc = {}
+    best = int(loc.get("best_surface", 0))
     if surface > best:
-        rec["best_surface"] = surface
-        rec["updated"] = datetime.now(tz=UTC).isoformat()
-        HOLDINGS_RECORD.write_text(json.dumps(rec, indent=1), "utf-8")
+        loc["best_surface"] = surface
+        loc["updated"] = datetime.now(tz=UTC).isoformat()
+        loc["note"] = ("machine-local: counts gitignored data/ holdings, so this record must not "
+                       "be committed -- a clone would inherit another machine's floor")
+        with contextlib.suppress(OSError):
+            HOLDINGS_LOCAL.parent.mkdir(parents=True, exist_ok=True)
+            HOLDINGS_LOCAL.write_text(json.dumps(loc, indent=1), "utf-8")
     elif best >= 8 and surface < best * 0.9:
         defects.append(("holdings-shrank",
                         f"§39(4): information surface fell to {surface} (axes+series) from a "
@@ -3342,6 +3761,24 @@ def check_law_coverage(defects) -> None:
             "a law that lost its check or a new law nobody enforced -- both are defects."))
 
     # High-water mark only ever rises, by the same asymmetry the aggression ratchet uses.
+    #
+    # WRITTEN ONLY WHEN SOMETHING ACTUALLY CHANGED. This previously rewrote the file on every
+    # invocation, moving `updated` while every mark stayed identical -- so any audit run dirtied a
+    # tracked file with no information in the diff. That is not cosmetic: a repository where
+    # running the auditor always produces a change trains whoever commits to `git add -A` without
+    # reading, and the one time the diff DOES carry a regression it goes through with the noise.
+    # A ratchet's timestamp should mean "this is when the mark moved", not "this is when somebody
+    # looked" -- the same distinction that made min_snapshots an unsound gate two commits ago.
+    _new_hw = {k: max(float(prev.get(k, 0.0)), float(cov[k]))
+               for k in ("mechanical_pct", "interactional_pct", "full_pct")}
+    _live_now = {k: cov[k] for k in ("principles", "both", "mechanical_only",
+                                     "interactional_only", "unenforced",
+                                     "mechanical_pct", "interactional_pct", "full_pct")}
+    _prev_live = {}
+    with contextlib.suppress(OSError, json.JSONDecodeError):
+        _prev_live = json.loads(LAW_COVERAGE_MARK.read_text("utf-8")).get("live", {})
+    if _new_hw == prev and _live_now == _prev_live and LAW_COVERAGE_MARK.exists():
+        return
     with contextlib.suppress(OSError):
         LAW_COVERAGE_MARK.parent.mkdir(parents=True, exist_ok=True)
         LAW_COVERAGE_MARK.write_text(json.dumps({
@@ -3463,11 +3900,6 @@ _EXPLORATION_SURFACES: dict[str, tuple[str, str]] = {
     "data/moat_mine.json": ("moat (self-recorded order books)", "ops/run_moat_miner.sh"),
 }
 
-#: Consecutive observations of unchanged coverage before the gap counts as NOT CLOSING. Two is
-#: enough to distinguish "in progress" from "stalled" without firing on a single quiet cycle.
-_STALL_OBSERVATIONS = 2
-
-
 def check_under_exploration(defects) -> None:
     """P26: an owned dataset below 100% explored is a BREACH, and the breach is the gap NOT
     CLOSING (principal 2026-08-02: "underexploration of anything is violation of law").
@@ -3476,6 +3908,22 @@ def check_under_exploration(defects) -> None:
     it would train everyone to ignore the alarm. A gap that is STANDING STILL is the desk
     declining edge it has already paid for -- and those look identical in any single snapshot,
     which is why coverage has to be trended rather than read.
+
+    That distinction used to be a docstring. This check fired on every reading below 100% and the
+    constant that was supposed to implement the trend was never referenced anywhere -- so the desk
+    got the same red line whether the miner was converging in hours or had been dead for a week,
+    which is precisely the alarm everyone learns to ignore. The decision now reads the miner's own
+    `closure` field, computed over recorded history with a standard error, and every branch below
+    is a DIFFERENT defect with a different fix:
+
+      CLOSING               -- not a defect. Work in progress.
+      STANDING-STILL        -- the P26 breach in its pure form: mine it.
+      OUTPACED-BY-RECORDING -- cells rising, percentage not. The miner works and the archive grows
+                               faster than it mines; the fix is more miner, and calling this
+                               neglect would send the desk chasing a motivation problem it has not
+                               got.
+      UNKNOWN               -- fewer than three recorded runs. Reported as unmeasured rather than
+                               guessed, because a slope through two points is not evidence.
 
     Zero coverage with a named blocker is reported distinctly from zero coverage with none: "the
     recorders have written nothing" is an actionable fact about a different organ, while "we have
@@ -3510,9 +3958,51 @@ def check_under_exploration(defects) -> None:
                 "distinct from declining to mine: no mining action closes it, and the named "
                 "producer is the only thing that can."))
             continue
+        closing = d.get("closure") or {}
+        state = str(closing.get("state", "UNRECORDED"))
+        why = str(closing.get("why", ""))
+        # THE ARCHIVE'S DEADLINE, CHECKED BEFORE THE COVERAGE VERDICT. Disk exhaustion is the one
+        # failure that makes a GOOD number appear: the recorders pause, the grid stops growing,
+        # and the miner closes the last holes in a frozen denominator all the way to 100%. Read
+        # as a finish line, that retires the chase at the moment the asset stops accumulating.
+        disk = closing.get("disk") or {}
+        if disk.get("state") in ("URGENT", "PAUSED"):
+            defects.append((
+                "tape-disk-deadline",
+                f"{label}: {disk.get('note', '')} Deleting mined tape does NOT close this -- the "
+                "seven reconstructions are the first seven, not the last, so raw tape must stay "
+                "re-readable. Buy storage; every hour past the pause is permanently unbuyable."))
+        if state == "RECORDING-STOPPED":
+            defects.append((
+                "tape-recording-stopped",
+                f"{label}: {why} This outranks every coverage finding: coverage is filled/total "
+                "and a frozen total makes the ratio rise on its own."))
+            continue
+        if state in ("CLOSING", "COMPLETE-FOR-THIS-GRID"):
+            continue
+        if state == "OUTPACED-BY-RECORDING":
+            defects.append((
+                "exploration-outpaced-by-recording",
+                f"{label} at {cov}%: {why} Raise miner throughput -- run {organ} with a shorter "
+                "--interval or a larger per-run file budget. This is NOT a neglect finding and "
+                "must not be closed by asserting the miner is running; it already is."))
+            continue
+        if state == "UNRECORDED":
+            defects.append((
+                "exploration-rate-unmeasured",
+                f"{label} at {cov}% and the artifact carries no `closure` field -- the desk can "
+                "read the LEVEL but cannot tell a gap converging in hours from one that has stood "
+                f"still for a week. Re-run {organ} on a build that records coverage history."))
+            continue
+        if state == "UNKNOWN":
+            defects.append((
+                "exploration-rate-unmeasured",
+                f"{label} at {cov}%: {why} Run {organ} continuously so the rate becomes "
+                "measurable; until then the level is a status line, not a verdict."))
+            continue
         defects.append((
             "under-exploration",
-            f"{label} explored {cov}% -- P26 breach unless the gap is CLOSING. Verify "
+            f"{label} explored {cov}% and the gap is NOT CLOSING -- P26 breach. {why} Verify "
             f"{organ} is running continuously; a standing coverage number is edge the desk has "
             "already paid for and is declining to collect."))
 
@@ -3576,6 +4066,476 @@ CHECKS += [("law-coverage", check_law_coverage)]
 _CHECKS_EXEMPT: set[str] = set()
 
 
+ASYM_RECORD = ROOT / "docs/research/asymmetry_record.json"   # git-tracked; ratchets UP only
+
+
+def check_asymmetry_ratchet(defects) -> None:
+    """REALISED asymmetry may never fall -- the promised ratchet, and it was missing.
+
+    `scripts/asymmetry_ledger.py` grades every source on two axes and computes REALISED asymmetry
+    as weight x depth. Nothing audited it, so the ledger was a report rather than a ratchet: depth
+    could regress, a claim could go stale, and the only consequence was a number changing in a
+    file nobody re-read. `daily_max` even carried a remediation keyed on "asymmetry" that could
+    never fire, because no check produced a defect with that id -- dead config guarding nothing.
+
+    Two conditions, and the second is the one that matters. Realised asymmetry falling is a
+    regression by attrition -- §39(4) applied to the axis that actually decides edge. And a STALE
+    claim is worse than a low one: it means the desk is holding an advantage it has not
+    re-verified, which is 'not measured = fine' pointed at its own moat.
+    """
+    art = ROOT / "data/asymmetry_ledger.json"
+    if not art.exists():
+        defects.append((
+            "asymmetry-never-measured",
+            "data/asymmetry_ledger.json absent -- nothing has graded which of the desk's sources "
+            "a competitor could also have. Run scripts/asymmetry_ledger.py."))
+        return
+    try:
+        d = json.loads(art.read_text("utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return
+    realised = float(d.get("realised_asymmetry_total", 0.0))
+    stale = list(d.get("stale_claims") or [])
+    if stale:
+        defects.append((
+            "asymmetry-claim-stale",
+            f"{len(stale)} asymmetry claim(s) past their half-life without re-verification: "
+            f"{', '.join(stale[:6])}. A RECONSTRUCTIBLE advantage lasts only until somebody "
+            "productises it -- the graveyard already carries vendor-replacement entries that are "
+            "exactly that transition. An unchecked claim is 'not measured' being read as "
+            "'measured and fine', applied to the one asset that justifies the enterprise."))
+    try:
+        rec = json.loads(ASYM_RECORD.read_text("utf-8")) if ASYM_RECORD.exists() else {}
+    except (OSError, json.JSONDecodeError):
+        rec = {}
+    best = float(rec.get("best_realised", 0.0))
+    if realised > best + 1e-9:
+        rec["best_realised"] = realised
+        rec["updated"] = datetime.now(tz=UTC).isoformat()
+        rec["note"] = ("§39 ratchet on the asymmetry axis: realised = weight x depth, and it only "
+                       "grows. Depth is what has been BUILT, never what is planned.")
+        with contextlib.suppress(OSError):
+            ASYM_RECORD.write_text(json.dumps(rec, indent=1), "utf-8")
+    elif best > 0 and realised < best * 0.9:
+        defects.append((
+            "asymmetry-realised-fell",
+            f"§39(4) on the asymmetry axis: realised asymmetry fell to {realised:.2f} from a "
+            f"record of {best:.2f}. Weight x depth only grows -- a source demoted, a depth "
+            "regressed or a claim expired. Restore it or record what supersedes it."))
+
+
+CHECKS += [("asymmetry-ratchet", check_asymmetry_ratchet)]
+
+
+def check_data_decay(defects) -> None:
+    """A source going dark or going useless must raise a defect, not sit in a report.
+
+    `libs/data/decay.py` separates availability decay from usefulness decay and refuses to call
+    either one on a thin sample. Nothing consumed its verdicts, so a DECAYING source produced a
+    JSON file and no consequence -- and `daily_max` carried a "decay" remediation that could never
+    fire for want of a defect to match.
+    """
+    art = ROOT / "data/data_decay.json"
+    if not art.exists():
+        return                    # the monitor has never run here; production checks cover that
+    try:
+        d = json.loads(art.read_text("utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return
+    act = d.get("actionable") or []
+    if act:
+        names = ", ".join(f"{r.get('source')}({r.get('verdict')})" for r in act[:6])
+        defects.append((
+            "data-decay-actionable",
+            f"{len(act)} source(s) DECAYING or DEAD: {names}. Availability decay needs a new "
+            "endpoint and usefulness decay needs the source retired -- different remedies, which "
+            "is why they are never summed. NEVER-WORKED is excluded here on purpose: it is an "
+            "acquisition failure, not a decline."))
+
+
+CHECKS += [("data-decay", check_data_decay)]
+
+
+#: Library modules that legitimately have no importer. Each exemption is ARGUED here, never
+#: assumed by silence -- the same rule CHECKS uses.
+_UNWIRED_EXEMPT: set[str] = {
+    "libs.__init__",
+    # LIVE CONNECTORS, DORMANT UNTIL GATE-0 BY DESIGN. Wiring them now would mean an order path
+    # reachable from a desk with zero validated alphas, which is strictly worse than an unreachable
+    # one. They activate when the principal supplies keys; until then unreachable IS the safe state
+    # and pretending otherwise would be the one exemption that could lose money.
+    "libs.execution.binance_live",
+    "libs.execution.binance_spot_live",
+    "libs.execution.staging",
+}
+
+
+def check_unwired_modules(defects) -> None:
+    """A library module nothing imports is the desk's own "built but never runs" class.
+
+    THIS CHECK EXISTS BECAUSE A ONE-OFF GREP FOUND THREE OF THEM AT ONCE (2026-08-03):
+    `libs/data/wallet_graph.py`, `libs/portfolio/capacity_allocation.py` and -- earlier in the same
+    session -- the whole ICT detector family, which shipped with full test suites and no caller.
+    Tests passing is not the same as being reachable: a module with 20 green tests and no importer
+    produces exactly as much E[log W] as not having been written, and takes longer.
+
+    The sweep that caught them was a shell loop run by hand. A defect class found by hand once gets
+    found by hand never again, so it is mechanical from here.
+
+    TESTS DO NOT COUNT AS WIRING, deliberately. A test importing a module proves it works, not that
+    anything uses it -- and counting them would make every orphan look connected, which is the
+    precise failure being detected.
+    """
+    import ast
+
+    lib_root = ROOT / "libs"
+    if not lib_root.exists():
+        return
+    modules: set[str] = set()
+    for p in lib_root.rglob("*.py"):
+        if "__pycache__" in p.parts:
+            continue
+        rel = p.relative_to(ROOT).with_suffix("")
+        name = ".".join(rel.parts)
+        if name.endswith(".__init__"):
+            name = name[: -len(".__init__")]
+        modules.add(name)
+
+    imported: set[str] = set()
+    for area in ("scripts", "libs", "ops"):
+        base = ROOT / area
+        if not base.exists():
+            continue
+        for p in base.rglob("*.py"):
+            if "__pycache__" in p.parts:
+                continue
+            try:
+                tree = ast.parse(p.read_text("utf-8", errors="ignore"))
+            except (OSError, SyntaxError):
+                continue
+            parts = p.relative_to(ROOT).with_suffix("").parts
+            self_name = ".".join(parts)
+            pkg = ".".join(parts[:-1])          # the package a relative import resolves against
+            here: set[str] = set()
+            for node in ast.walk(tree):
+                if isinstance(node, ast.ImportFrom):
+                    # RELATIVE IMPORTS ARE THE MAJORITY INSIDE A PACKAGE, and resolving them is
+                    # what separates a useful check from a useless one. The first version recorded
+                    # `from .card import X` as the module "card", which matches nothing, and
+                    # reported 241 orphans out of 244 modules -- a check that loud is ignored
+                    # immediately, which is the crying-wolf failure this codebase names elsewhere.
+                    base = node.module or ""
+                    if node.level:
+                        up = pkg.split(".")
+                        up = up[: len(up) - (node.level - 1)] if node.level > 1 else up
+                        base = ".".join([*up, base]) if base else ".".join(up)
+                    if base:
+                        here.add(base)
+                        for alias in node.names:      # `from libs.ict import crypto`
+                            here.add(f"{base}.{alias.name}")
+                elif isinstance(node, ast.Import):
+                    for alias in node.names:
+                        here.add(alias.name)
+            # SELF-DISCARD IS PER FILE, AND GETTING THAT WRONG INVERTED THE WHOLE CHECK. The first
+            # version discarded `self_name` from the GLOBAL set, so processing libs/alpha/card.py
+            # erased the record that libs/self_improvement/controller.py had imported it -- every
+            # module deleted its own inbound edges and 241 of 244 modules reported as orphans. A
+            # check that loud is ignored on sight, which is the crying-wolf failure named
+            # elsewhere in this file.
+            here.discard(self_name)                   # a module importing itself is not a caller
+            imported |= here
+
+    # A PACKAGE IS REACHABLE IF ANY SUBMODULE IS: importing libs.alpha.card loads libs.alpha on
+    # the way. Counting package roots as orphans put 20 phantom entries in the list and buried the
+    # real ones, which is the same crying-wolf failure in a quieter register.
+    reachable = set(imported)
+    for name in imported:
+        parts = name.split(".")
+        for i in range(1, len(parts)):
+            reachable.add(".".join(parts[:i]))
+
+    orphans = sorted(
+        m for m in modules
+        if m not in reachable and m not in _UNWIRED_EXEMPT
+        and not m.endswith((".errors", ".models"))    # type/exception modules are imported by name
+    )
+    if orphans:
+        defects.append((
+            "unwired-modules",
+            f"{len(orphans)} library module(s) that NOTHING imports -- built, tested, and "
+            f"unreachable: {', '.join(orphans[:8])}"
+            + (f" (+{len(orphans) - 8} more)" if len(orphans) > 8 else "")
+            + ". Tests do not count as wiring: a module with green tests and no importer produces "
+              "as much E[log W] as not having been written. Give each a caller or argue it into "
+              "_UNWIRED_EXEMPT."))
+
+    # THE HOLE IN THE CHECK ABOVE, AND IT IS THE ONE I FELL INTO. A libs module counts as wired
+    # the moment ANY file imports it -- including a scripts/ entrypoint that nothing ever runs. So
+    # the honest fix for an orphan ("write it a caller") can be satisfied by a file that is itself
+    # an orphan, the check goes green, and the module is exactly as unreachable as before. It
+    # happened three times in one session: cluster_weak_signals.py, resolve_wallets.py and
+    # run_ict_cross_sectional.py were each written to wire a library module, and nothing ran any
+    # of them. A wiring fix one link short still reports success, which is worse than no fix.
+    #
+    # This closes the chain rather than auditing all 277 scripts: only scripts that are LOAD-
+    # BEARING for the check above -- the sole importer of some libs module -- must themselves be
+    # invoked by something that runs (a shell in ops/, a systemd unit, the cadence, or another
+    # script). Research one-shots stay unaudited on purpose: not every script needs a caller, and
+    # a check that said otherwise would produce 69 defects nobody could act on.
+    sole_importer: dict[str, str] = {}
+    for mod in modules:
+        importers = [
+            str(f.relative_to(ROOT))
+            for f in ROOT.joinpath("scripts").glob("*.py")
+            if mod in _imports_of(f)
+        ]
+        others = [
+            f for f in (ROOT / "libs").rglob("*.py")
+            if "__pycache__" not in f.parts and mod in _imports_of(f)
+            and ".".join(f.relative_to(ROOT).with_suffix("").parts) != mod
+        ]
+        if len(importers) == 1 and not others:
+            sole_importer[mod] = importers[0]
+
+    # A SCRIPT MUST NOT VOUCH FOR ITSELF. Every script names itself in its own usage line, so
+    # searching a blob that includes the file being judged makes every script look invoked. The
+    # candidate's own text is excluded from its own haystack -- the same self-discard bug that
+    # inverted the orphan check above, in a different costume.
+    invoker_files = [
+        f for pat in ("ops/*", "scripts/*.py", ".github/workflows/*", "docs/*.md")
+        for f in ROOT.glob(pat) if f.is_file()
+    ]
+    # Scripts that cannot run on this platform at all. `run_autodiscovery.py` imports MetaTrader5,
+    # a Windows-only broker bridge already carried in the optional-dependency allowlist -- wiring
+    # it into a Linux cadence would schedule a guaranteed ImportError every cycle, which is noise
+    # dressed as coverage. The module it keeps alive (libs.costs.mt5_calibration) is reachable the
+    # day the desk runs an MT5 leg, and not before.
+    _CALLER_EXEMPT = {"scripts/run_autodiscovery.py": "imports MetaTrader5 -- Windows-only"}
+
+    dead_links = []
+    for mod, script in sorted(sole_importer.items()):
+        if script in _CALLER_EXEMPT:
+            continue
+        base = script.rsplit("/", 1)[-1]
+        invoked = any(
+            base in f.read_text("utf-8", errors="ignore")
+            for f in invoker_files
+            if str(f.relative_to(ROOT)) != script
+        )
+        if not invoked:
+            dead_links.append(f"{script} (sole importer of {mod})")
+    dead_links = sorted(set(dead_links))
+    if dead_links:
+        defects.append((
+            "unwired-caller",
+            f"{len(dead_links)} script(s) are the ONLY importer of a library module and nothing "
+            f"invokes them -- so the module is unreachable and the orphan check above is green "
+            f"anyway: {'; '.join(dead_links[:6])}"
+            + (f" (+{len(dead_links) - 6} more)" if len(dead_links) > 6 else "")
+            + ". A wiring fix that is one link short still reports success. Put each in the "
+              "cadence, a shell or a unit."))
+
+
+def _imports_of(path: Path) -> set[str]:
+    """Dotted module names a file imports, relative imports resolved. Cached: the orphan check
+    walks every file twice and parsing 400 files twice per run is the difference between a check
+    that runs every cycle and one that gets switched off."""
+    import ast as _ast
+
+    key = str(path)
+    if key in _IMPORTS_CACHE:
+        return _IMPORTS_CACHE[key]
+    out: set[str] = set()
+    try:
+        tree = _ast.parse(path.read_text("utf-8", errors="ignore"))
+    except (OSError, SyntaxError):
+        _IMPORTS_CACHE[key] = out
+        return out
+    for node in _ast.walk(tree):
+        if isinstance(node, _ast.ImportFrom) and node.module and not node.level:
+            out.add(node.module)
+            for alias in node.names:
+                out.add(f"{node.module}.{alias.name}")
+        elif isinstance(node, _ast.Import):
+            for alias in node.names:
+                out.add(alias.name)
+    _IMPORTS_CACHE[key] = out
+    return out
+
+
+_IMPORTS_CACHE: dict[str, set[str]] = {}
+
+
+def check_silent_swallows_on_the_rails(defects) -> None:
+    """A BROAD `except Exception: pass` ON A RAIL MUST SAY WHY IT IS THERE.
+
+    Swept 2026-08-04: 39 of them across libs/ and scripts/, 32 with no explanatory comment. Most
+    are in research scripts where a swallowed error costs a wasted cycle and nothing else, so a
+    check demanding a comment on all 39 would be noise -- the crying-wolf failure this file names
+    in four other places.
+
+    On the RAILS it is different, and the two outcomes are opposite:
+
+      CORRECT   the recorder must not stop taping twenty-nine symbols because one fetch failed
+                (`fromId` resumes, so the gap is deferred and not dropped); the executor's
+                post-only fallback must return "no order rested" rather than crash; the pager
+                must not withhold pages it has already computed because a liveness ping failed
+      A DEFECT  the same construct hiding a failure on the primary path, where the caller then
+                proceeds believing the thing happened -- which is how `_market_max_qty` silently
+                cached its own failure and disabled the market-order cap for a whole process
+                lifetime, found the same day
+
+    The two look identical in a diff. The comment is the only thing that distinguishes a decision
+    from an oversight, so on these files it is required rather than encouraged.
+
+    scripts/run_deadman_switch.py is DELIBERATELY ABSENT. It is Tier-3 -- "may not be modified
+    autonomously, explicit principal sign-off only" -- and adding a comment is a modification. Its
+    two swallows were READ and are correct (a paging failure after the book is already flattened
+    must not crash the rail), but annotating them is the principal's call, not this file's.
+    """
+    import ast as _ast
+
+    rails = (
+        "libs/execution/binance_live.py", "libs/execution/binance_spot_live.py",
+        "libs/execution/binance_testnet.py", "libs/execution/binance_spot_testnet.py",
+        "libs/execution/staging.py",
+        "scripts/run_cashcarry_executor.py", "scripts/run_alerts.py",
+        "scripts/run_recorder.py", "scripts/run_recorder_spot.py",
+        "scripts/run_recorder_bybit.py",
+    )
+    bare: list[str] = []
+    for rel in rails:
+        p = ROOT / rel
+        if not p.exists():
+            continue
+        text = p.read_text("utf-8", errors="ignore")
+        lines = text.splitlines()
+        try:
+            tree = _ast.parse(text)
+        except SyntaxError:
+            continue
+        for n in _ast.walk(tree):
+            if not (isinstance(n, _ast.ExceptHandler) and len(n.body) == 1
+                    and isinstance(n.body[0], _ast.Pass)):
+                continue
+            if not (isinstance(n.type, _ast.Name) and n.type.id in ("Exception", "BaseException")):
+                continue
+            # A comment anywhere between the `except` line and the `pass` counts as the reason.
+            window = " ".join(lines[n.lineno - 1: n.body[0].lineno])
+            if "#" not in window:
+                bare.append(f"{rel}:{n.lineno}")
+    if bare:
+        defects.append((
+            "rail-silent-swallow",
+            f"{len(bare)} broad `except Exception: pass` on a RAIL with no stated reason -- "
+            f"{', '.join(bare[:6])}"
+            + (f" (+{len(bare) - 6} more)" if len(bare) > 6 else "")
+            + ". On these files a swallow is either load-bearing or a hidden failure on the "
+              "primary path, and the two are indistinguishable in a diff. Say which."))
+
+
+CHECKS += [("rail-silent-swallow", check_silent_swallows_on_the_rails)]
+
+CHECKS += [("unwired-modules", check_unwired_modules)]
+
+
+def check_moat_screened(defects) -> None:
+    """The EXCLUSIVE asset must be screened for survivors, not merely counted.
+
+    `mine_moat` records COVERAGE -- which (venue, symbol, day, mechanism) cells have been measured
+    -- and `extract_all` returns mean, std, p50, p95, max. For weeks that was the whole
+    relationship the desk had with the one asset a competitor cannot buy, scrape or backfill:
+    descriptive statistics and no verdict, at asymmetry depth 2 of 5.
+
+    Coverage without a verdict is the most expensive possible way to own an irreplaceable asset.
+    """
+    art = ROOT / "data/moat_screen.json"
+    if not art.exists():
+        defects.append((
+            "moat-never-screened",
+            "data/moat_screen.json absent -- the self-recorded L2 tape has never been screened "
+            "for predictive power. mine_moat measures COVERAGE; nothing asks whether any "
+            "proprietary mechanism predicts anything. Run scripts/screen_moat.py."))
+        return
+    try:
+        d = json.loads(art.read_text("utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return
+    if d.get("state") == "NO TAPE":
+        return                      # the recorders are the blocker; other checks own that
+    suspect = d.get("suspect_lookahead") or []
+    if len(suspect) > 0.5 * max(int(d.get("scored", 0)), 1):
+        defects.append((
+            "moat-screen-mostly-suspect",
+            f"{len(suspect)} of {d.get('scored')} scored hypotheses came back SUSPECT-LOOKAHEAD. "
+            "On a causally clean tape that is a statement about the HARNESS, not the features -- "
+            "alignment, horizon calibration or target construction. Four such bugs were found and "
+            "fixed on 2026-08-03; a fifth would look exactly like this."))
+
+    # THE RATE, NOT THE LEVEL (P18) -- APPLIED TO THE HUNT, NOT ONLY TO THE MINE. The miner has
+    # carried a closure check since it was built; the screen shipped with a coverage frontier and
+    # no equivalent, which means "we screen it continuously" could stay true while the frontier
+    # stood still. Those are opposite diagnoses: a rising number is exploration, a frozen one is a
+    # scheduler that keeps re-screening the same convenient cells, and a SNAPSHOT cannot tell them
+    # apart -- 41% is a triumph the run after 27% and a scandal after a week at 41%.
+    hist = ROOT / "data/moat_screen_history.jsonl"
+    rows = []
+    if hist.exists():
+        for ln in hist.read_text("utf-8", errors="ignore").splitlines()[-40:]:
+            with contextlib.suppress(json.JSONDecodeError):
+                rows.append(json.loads(ln))
+    pcts = [float(r["coverage_pct"]) for r in rows if r.get("coverage_pct") is not None]
+    if len(pcts) >= 6 and pcts[-1] < 99.0 and pcts[-1] <= pcts[0]:
+        defects.append((
+            "moat-screen-not-converging",
+            f"screen coverage has not risen over the last {len(pcts)} runs "
+            f"({pcts[0]:.1f}% -> {pcts[-1]:.1f}%) and is not complete. The frontier is supposed to "
+            "spend every run on the cells owing the most mechanisms, so a flat series means the "
+            "scheduler is re-screening ground it has already covered while holes stand open -- "
+            "the exact failure hole-first ordering was built to prevent. Check the coverage "
+            "record is being persisted and that the file budget is not smaller than one cell."))
+
+    # A HUNT WHOSE FINDINGS NOTHING READS IS A DIARY. The registry accumulates survivors with
+    # their misses; `promote_moat_survivors.py` is the only thing that converts persistence into a
+    # forward clock. If survivors exist and no promotion artifact does, the desk is finding edges
+    # on its irreplaceable asset and dropping them on the floor.
+    reg = ROOT / "data/moat_survivors.json"
+    promo = ROOT / "data/moat_promotion.json"
+    if reg.exists() and not promo.exists():
+        with contextlib.suppress(OSError, json.JSONDecodeError):
+            entries = json.loads(reg.read_text("utf-8"))
+            if isinstance(entries, dict) and any(
+                    int(e.get("times_survived", 0)) > 0 for e in entries.values()):
+                defects.append((
+                    "moat-survivors-unexploited",
+                    f"{sum(1 for e in entries.values() if int(e.get('times_survived', 0)) > 0)} "
+                    "triple(s) have survived a screening pass and data/moat_promotion.json does "
+                    "not exist -- nothing has adjudicated whether any of them beats the sweep's "
+                    "own false-positive rate. A survivor nobody reads is worth what a survivor "
+                    "nobody found is worth. Run scripts/promote_moat_survivors.py."))
+
+    # A CLOCK NOBODY READS IS A WAITING ROOM WITH NO DOOR. Promotion buys forward days; the only
+    # out-of-sample question in the whole pipeline is whether the candidate still predicts on tape
+    # recorded AFTER it was named. Everything upstream -- including the persistence test -- is
+    # answered on tape that already existed when the candidate was chosen.
+    prereg = ROOT / "data/moat_preregistered.json"
+    review = ROOT / "data/moat_clock_review.json"
+    if prereg.exists() and not review.exists():
+        with contextlib.suppress(OSError, json.JSONDecodeError):
+            pending = json.loads(prereg.read_text("utf-8"))
+            if isinstance(pending, dict) and pending:
+                defects.append((
+                    "moat-clocks-unread",
+                    f"{len(pending)} candidate(s) are pre-registered with forward clocks and "
+                    "data/moat_clock_review.json does not exist -- nothing has asked whether any "
+                    "of them still predicts on tape recorded AFTER it was named. That is the only "
+                    "out-of-sample evidence this pipeline can produce, and the days are being "
+                    "paid whether or not anyone reads them. Run scripts/review_moat_clocks.py."))
+
+
+CHECKS += [("moat-screened", check_moat_screened)]
+
+
 def check_registry_complete(defects) -> None:
     """A written check that is never registered is a law the desk believes it is enforcing.
 
@@ -3607,40 +4567,65 @@ CHECKS += [("check-registry", check_registry_complete)]
 
 
 def main() -> None:
-    defects: list[tuple[str, str]] = []
+    defects: list[tuple] = []
     for label, fn in CHECKS:
         _fenced(fn, defects, label)
 
     acks = _j(ACKS, {})
     live, acked = [], []
-    for did, msg in defects:
+    for did, msg, scope, tr, un in defects:
         a = acks.get(did)
         if a and a.get("until", "") > datetime.now(tz=UTC).isoformat():
             acked.append((did, a.get("reason", "")))
         else:
-            live.append((did, msg))
+            live.append((did, msg, scope, tr, un))
 
     prev = _j(REPORT, {})
     first_seen = prev.get("first_seen", {})
     now_iso = datetime.now(tz=UTC).isoformat()
-    first_seen = {d: t for d, t in first_seen.items() if d in {x for x, _ in live}}
-    for did, _ in live:
+    first_seen = {d: t for d, t in first_seen.items() if d in {x[0] for x in live}}
+    for did, *_ in live:
         first_seen.setdefault(did, now_iso)
+    by_scope: dict[str, int] = {}
+    for _, _, s, _, _ in live:
+        by_scope[s] = by_scope.get(s, 0) + 1
     REPORT.write_text(json.dumps(
-        {"ran": now_iso, "live": [{"id": d, "msg": m} for d, m in live],
-         "acked": [d for d, _ in acked], "first_seen": first_seen}, indent=1), "utf-8")
+        {"ran": now_iso,
+         "live": [{"id": d, "msg": m, "scope": s, "evidence_tracked": tr,
+                   "evidence_untracked": un} for d, m, s, tr, un in live],
+         "by_scope": by_scope,
+         "acked": [d for d, _ in acked], "first_seen": first_seen,
+         "scope_note": (
+             "REPO: the check consulted a git-tracked file, so the defect is verifiable and "
+             "closable from any checkout. RUNTIME: it consulted only untracked paths (data/, "
+             "web/ are gitignored), so a clone can neither confirm nor close it -- real on the "
+             "machine that runs the organ, unresolvable here. UNSCOPED: read no files; escalated "
+             "as REPO so unknown provenance never becomes an excuse. Scope is derived from the "
+             "paths each check ACTUALLY READ, not from its wording, and a check touching both "
+             "kinds is scored REPO -- misfiling a runtime defect as mine costs an investigation, "
+             "misfiling mine as the machine's lets it live forever behind 'needs the VPS'."),
+         }, indent=1), "utf-8")
 
-    print(f"MAX-AUDIT {now_iso[:16]}  live defects: {len(live)}  acked: {len(acked)}")
-    for did, msg in live:
+    print(f"MAX-AUDIT {now_iso[:16]}  live defects: {len(live)}  acked: {len(acked)}"
+          f"  | by scope: {by_scope}")
+    for did, msg, scope, _, _ in live:
         age_h = (datetime.now(tz=UTC) - datetime.fromisoformat(first_seen[did])
                  ).total_seconds() / 3600
-        print(f"  [{age_h:>5.1f}h] {did}: {msg}")
+        print(f"  [{age_h:>5.1f}h] [{scope:<8}] {did}: {msg}")
     for did, reason in acked:
         print(f"  [ acked] {did}: {reason}")
 
-    overdue = [(d, m) for d, m in live
-               if (datetime.now(tz=UTC) - datetime.fromisoformat(first_seen[d])
-                   ).total_seconds() / 3600 > ESCALATE_H]
+    # ESCALATION IS SCOPED. Paging the principal about an artifact that is absent because data/ is
+    # gitignored is crying wolf in the same way the stale RESOLVED line was, and it buries the
+    # defects he can actually act on. RUNTIME defects are still reported above, in full, every run.
+    overdue = [(d, m) for d, m, s, _, _ in live
+               if s != "RUNTIME"
+               and (datetime.now(tz=UTC) - datetime.fromisoformat(first_seen[d])
+                    ).total_seconds() / 3600 > ESCALATE_H]
+    runtime_overdue = sum(
+        1 for d, _, s, _, _ in live
+        if s == "RUNTIME" and (datetime.now(tz=UTC) - datetime.fromisoformat(first_seen[d])
+                               ).total_seconds() / 3600 > ESCALATE_H)
     # DELIVERY FIX (2026-07-24 external audit): the pager reads only PRINCIPAL_ACTION line 1.
     # The old code appended the escalation BELOW existing content (a stale RESOLVED line stayed
     # at line 1) AND only wrote once ever (one-shot latch), so 24 live defects never paged. Now
@@ -3651,12 +4636,16 @@ def main() -> None:
     # strip any prior escalation block so it never stacks / goes stale
     body = existing.split("\n" + _MARK)[0].split(_MARK)[0].rstrip()
     if overdue:
-        head = (f"{_MARK}: {len(overdue)} below-max state(s) >48h unfixed/unacked -- "
+        head = (f"{_MARK}: {len(overdue)} REPO-scope below-max state(s) >48h unfixed/unacked -- "
                 + "; ".join(f"{d}" for d, _ in overdue[:6])
                 + (" ..." if len(overdue) > 6 else "") + "\n"
-                + "".join(f"  - {d}: {m}\n" for d, m in overdue[:8]))
+                + "".join(f"  - {d}: {m}\n" for d, m in overdue[:8])
+                + (f"  ({runtime_overdue} further RUNTIME-scope defect(s) rest only on untracked "
+                   "artifacts and cannot be confirmed or closed from a checkout -- see "
+                   "data/max_audit_report.json)\n" if runtime_overdue else ""))
         PA.write_text(head + "\n" + body, "utf-8")   # escalation OWNS line 1
-        print(f"ESCALATED to principal page (line 1): {len(overdue)} defect(s) >48h")
+        print(f"ESCALATED to principal page (line 1): {len(overdue)} REPO defect(s) >48h"
+              + (f" (+{runtime_overdue} RUNTIME, not paged)" if runtime_overdue else ""))
     elif existing != body + ("\n" if body else ""):
         PA.write_text(body + ("\n" if body else ""), "utf-8")  # cleared: drop stale escalation
         print("escalation cleared: no overdue defects")

@@ -32,6 +32,7 @@ from __future__ import annotations
 import hashlib
 from collections import defaultdict
 from dataclasses import dataclass, field
+from typing import Any
 
 __all__ = [
     "BREEDING_MIN_STAGE",
@@ -123,7 +124,7 @@ class Lineage:
         return len(self.ancestors(sid))
 
 
-def fertility(lineage: Lineage, *, key: str = "family") -> list[dict]:
+def fertility(lineage: Lineage, *, key: str = "family") -> list[dict[str, Any]]:
     """Which ancestral lines actually produce, RATE-ADJUSTED.
 
     THE ADJUSTMENT IS THE POINT. Ranking lines by raw survivor count hands the top spot to
@@ -161,7 +162,7 @@ def fertility(lineage: Lineage, *, key: str = "family") -> list[dict]:
     return sorted(out, key=lambda d: (-d["fertility"], -d["n"]))
 
 
-def lineage_report(lineage: Lineage) -> dict:
+def lineage_report(lineage: Lineage) -> dict[str, Any]:
     """The whole graph, with the honest headline when there is nothing to be proud of yet."""
     n = len(lineage.specimens)
     survivors = [s for s in lineage.specimens.values() if s.survived]
@@ -202,7 +203,7 @@ def _child_id(a: Specimen, b: Specimen, terms: tuple[str, ...]) -> str:
 
 def breed(parents: list[Specimen], *, max_children: int = 20,
           incest_max: float = INCEST_MAX,
-          min_stage: int = BREEDING_MIN_STAGE) -> dict:
+          min_stage: int = BREEDING_MIN_STAGE) -> dict[str, Any]:
     """Cross eligible parents into candidate offspring. Returns children AND every rejection.
 
     REJECTIONS ARE RETURNED, NOT DROPPED. "We bred 4 children" and "we bred 4 children from 190
@@ -215,7 +216,7 @@ def breed(parents: list[Specimen], *, max_children: int = 20,
     """
     eligible = [p for p in parents if p.stage >= min_stage]
     children: list[Specimen] = []
-    rejected: list[dict] = []
+    rejected: list[dict[str, Any]] = []
     seen: set[str] = set()
 
     for i, a in enumerate(eligible):
@@ -278,7 +279,7 @@ def breed(parents: list[Specimen], *, max_children: int = 20,
 
 
 def induce_theory(specimens: list[Specimen],
-                  *, minimum: int = THEORY_MIN_SURVIVORS) -> dict:
+                  *, minimum: int = THEORY_MIN_SURVIVORS) -> dict[str, Any]:
     """DORMANT until enough survivors share a mechanism class. Arms from a data condition.
 
     "What is the general principle behind our edges, and what ELSE does it predict?" is the

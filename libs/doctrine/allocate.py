@@ -36,6 +36,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass, field
+from typing import Any
 
 from libs.doctrine.estimate import ADMIT_Z, Estimate, adjusted
 
@@ -89,7 +90,7 @@ class Ledger:
 
 
 def allocate(actions: list[Action], budget: float, *, brier: float | None = None,
-             ledger: Ledger | None = None) -> dict:
+             ledger: Ledger | None = None) -> dict[str, Any]:
     """Global optimum first, then everyone else to their maximum feasible point.
 
     SIMULTANEOUS, NOT PAIRWISE. Every admissible action competes against every other in one
@@ -122,7 +123,7 @@ def allocate(actions: list[Action], budget: float, *, brier: float | None = None
 
     funded: list[Action] = []
     spent = 0.0
-    deferred: list[dict] = []
+    deferred: list[dict[str, Any]] = []
     for a in ranked:
         if spent + a.cost <= budget:
             funded.append(a)
@@ -163,7 +164,7 @@ def allocate(actions: list[Action], budget: float, *, brier: float | None = None
 
 
 def elasticity_shift(marginal: Mapping[str, Estimate],
-                     second_derivative: Mapping[str, float]) -> dict:
+                     second_derivative: Mapping[str, float]) -> dict[str, Any]:
     """Diminishing returns move MORE resource, never ALL of it.
 
     THE WORD "MORE" IS THE ENTIRE DESIGN. A subsystem whose second derivative has gone negative
@@ -190,7 +191,7 @@ def elasticity_shift(marginal: Mapping[str, Estimate],
     }
 
 
-def bottleneck_expansion(discovery_rate: float, conversion_rate: float) -> dict:
+def bottleneck_expansion(discovery_rate: float, conversion_rate: float) -> dict[str, Any]:
     """When discovery outruns conversion, the target is max Q_C. NEVER min Q_D.
 
     ZERO ARTIFICIAL THROTTLING. No subsystem may reduce mining, hypothesis generation, feature
@@ -219,7 +220,7 @@ def bottleneck_expansion(discovery_rate: float, conversion_rate: float) -> dict:
     }
 
 
-def meta_learning_rate(history: list[float]) -> dict:
+def meta_learning_rate(history: list[float]) -> dict[str, Any]:
     """d/dt of Ê[log W] -- optimise how fast the desk improves, not only where it stands.
 
     THE SECOND-ORDER TERM, and the one a first-order objective silently drops. A desk at 0.02

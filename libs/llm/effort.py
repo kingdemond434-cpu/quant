@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any
 
 __all__ = [
     "DEFAULT_EFFORT",
@@ -87,7 +88,7 @@ def effort_for(model: str, *, path: Path | str = ROSTER_CAPS) -> tuple[str, str]
     return best, (f"{model} advertises {advertised}; asking for the deepest rung '{best}'")
 
 
-def reasoning_payload(model: str, *, path: Path | str = ROSTER_CAPS) -> dict:
+def reasoning_payload(model: str, *, path: Path | str = ROSTER_CAPS) -> dict[str, Any]:
     """The `reasoning` block to put in a chat/completions body.
 
     A dict rather than a bare string so a seat that advertises a different shape can be handled
@@ -97,7 +98,7 @@ def reasoning_payload(model: str, *, path: Path | str = ROSTER_CAPS) -> dict:
     return {"effort": effort}
 
 
-def coverage(models: list[str], *, path: Path | str = ROSTER_CAPS) -> dict:
+def coverage(models: list[str], *, path: Path | str = ROSTER_CAPS) -> dict[str, Any]:
     """How much of the roster is running on measured capability versus on the fallback.
 
     THE NUMBER THAT MATTERS is the fallback count, not the recorded one: every seat on the

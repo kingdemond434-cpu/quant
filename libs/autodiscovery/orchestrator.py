@@ -32,6 +32,7 @@ from libs.costs.execution_gap import ExecutionGap, survives_execution_gap
 from libs.store.audit import AuditLog
 from libs.store.connection import Database
 from libs.validation.dsr import sharpe_ratio
+from libs.validation.per_candidate import per_candidate_pbo, romano_wolf
 
 DataProvider = Callable[[str], MarketSeries | None]
 CostProvider = Callable[[str], float]  # symbol -> per-turnover (per-side) cost fraction
@@ -167,9 +168,15 @@ class AutoDiscoveryLab:
         sharpe_estimates = np.array([sharpe_ratio(r) for _, r, _ in prepared], dtype="float64")
         # PBO + Reality Check depend only on the matrix -> compute once, not per candidate (Nx).
         pbo_once, rc_once = campaign_pbo_rc(matrix)
+        # REGISTER #71. Per-CANDIDATE statistics, computed ONCE for the whole matrix: Romano-Wolf
+        # stepdown replaces the single reality-check p-value and per-strategy CSCV replaces the
+        # campaign PBO scalar. Both are already vectorised across strategies, so this costs one
+        # pass, not N -- the campaign version's speed argument was right, its statistic was not.
+        _rw = romano_wolf(matrix) if matrix.shape[1] >= 2 else None
+        _pcb = per_candidate_pbo(matrix) if matrix.shape[1] >= 2 else None
 
         counts = dict.fromkeys(CandidateStatus, 0)
-        for hyp, rets, stressed in prepared:
+        for _cand_i, (hyp, rets, stressed) in enumerate(prepared):
             _f = str(hyp.family)
             # The FIXED WALL is the family-scoped TRIAL COUNT. The sharpe array is only the
             # dispersion input for the DSR variance term: a family contributing a single
@@ -184,6 +191,12 @@ class AutoDiscoveryLab:
                 n_trials=_fam_trials.get(_f, n_trials),
                 sharpe_estimates=_sh,
                 returns_matrix=matrix, pbo=pbo_once, rc=rc_once,
+                # REGISTER #71. Passing the candidate's column index switches `pbo` and
+                # `reality_check` from the campaign scalar -- one verdict shared by every
+                # candidate -- to Romano-Wolf stepdown and per-strategy CSCV. pbo_once/rc_once
+                # stay for the metrics record and the O(N) saving they were added for.
+                pc_pbo=_pcb.pbo_for(_cand_i) if _pcb is not None else None,
+                pc_p=_rw.p_for(_cand_i) if _rw is not None else None,
             )
             status = promote(rets, validation_survived=verdict.survived)
             reason = verdict.rejection_reason

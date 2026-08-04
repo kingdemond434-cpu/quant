@@ -1,5 +1,10 @@
 # Starting the recorders — the one action that unblocks everything downstream
 
+> **This document covers the DATA side only.** For the whole desk — the cadence engine, the pager,
+> the process supervisor and the ruin rail, none of which had a launcher until 2026-08-03 — see
+> **[VPS_BRINGUP.md](VPS_BRINGUP.md)**, and prefer `bash ops/deploy_vps.sh` over the manual steps
+> below. This file remains the reference for what the recorders themselves do and how to debug them.
+
 **Why this document exists.** The desk has a moat miner, an EVIG ranking that prefers owned data
 3× on replication cost, a 30% reserved slot floor for moat candidates, and a constitutional law
 (P26) making under-exploration a breach. All of it is running. All of it is waiting on data that
@@ -24,8 +29,9 @@ cannot fix afterwards.
 | `quant-recorder-spot` | Binance spot L2 depth + aggTrades | depth 4s, trades 20s |
 | `quant-recorder-bybit` | Bybit linear L2 depth + trades + funding/OI/mark, 20 symbols | depth 1.5s, trades 10s |
 | `quant-moat-miner` | *Reads* the above and extracts the seven latent series | continuous |
+| `quant-moat-screen` | *Interrogates* the mine: does any of the eleven mechanisms actually predict? | continuous |
 
-All four are **public market data only** — no API keys, no order paths, no ability to touch the
+All five are **public market data only** — no API keys, no order paths, no ability to touch the
 book. Recording is not trading: the *connector* is Gate-0-gated because it moves money; the
 *tape* is gated by nothing.
 
@@ -45,6 +51,7 @@ sudo cp ops/quant-recorder-fut.service \
         ops/quant-recorder-spot.service \
         ops/quant-recorder-bybit.service \
         ops/quant-moat-miner.service \
+        ops/quant-moat-screen.service \
         /etc/systemd/system/
 sudo systemctl daemon-reload
 
@@ -55,9 +62,15 @@ sudo systemctl enable --now quant-recorder-fut quant-recorder-spot quant-recorde
 ls -la data/moat/fut/*/ | head
 ls -la data/moat/bybit/*/ | head
 
-# 4. Start the dedicated continuous miner
-sudo systemctl enable --now quant-moat-miner
+# 4. Start the dedicated continuous miner AND the continuous survivor hunt
+sudo systemctl enable --now quant-moat-miner quant-moat-screen
 ```
+
+The screen is a separate unit for the same reason the miner is: the miner DESCRIBES the tape and
+the screen ASKS it whether anything predicts. Running the first continuously and the second on a
+daily cadence meant the desk's one irreplaceable asset was measured around the clock and
+interrogated once a day. Both now carry a persisted coverage frontier, so both converge on the
+whole archive instead of re-grinding the newest slice.
 
 `enable --now` is deliberate: `enable` survives reboot, `--now` starts it immediately. A recorder
 that only starts on the next reboot is a recorder that loses everything until then.
@@ -113,6 +126,15 @@ date -r data/recorder_heartbeat; date -r data/recorder_bybit_heartbeat
 # Is the miner converting tape into coverage?
 python3 scripts/mine_moat.py && jq '.cumulative_coverage' data/moat_mine.json
 
+# Is the hunt converting coverage into verdicts -- and is IT converging?
+jq '{coverage_pct, cells_on_disk, hypotheses, tally}' data/moat_screen.json
+
+# Anything that survived on more than one independent cell? (the only stage-A evidence there is)
+jq '.persistent_candidates' data/moat_screen.json
+
+# And did any of it beat the sweep's OWN false-positive rate -- i.e. earn a forward clock?
+jq '{stats, promoted: [.promoted[].key], refused: [.refused[].refused]}' data/moat_promotion.json
+
 # Is the constitutional breach clearing?
 python3 scripts/enforce_constitution.py
 ```
@@ -164,6 +186,16 @@ Nothing else needs starting. Everything downstream is already wired and running:
    symbol.
 2. **`scripts/mine_moat.py`** also fires every cadence cycle as the floor, so coverage advances
    even if the continuous miner is down.
+2c. **`promote_moat_survivors.py`** fires every cadence cycle and is the only thing that converts
+   persistence into a **forward clock** — never capital. Its bar is *derived*: a candidate must
+   beat the sweep's own measured promotion rate under a binomial tail test, on ≥2 independent
+   cells, with a stable IC sign. Romano-Wolf controls error *within* a screening pass; across
+   thousands of passes only this does.
+2b. **`quant-moat-screen`** hunts survivors hole-first over the same grid, so a cell that is mined
+   but never screened is a visible hole rather than an invisible one. Survivors persist to
+   `data/moat_survivors.json` **with their misses** — Romano-Wolf controls family-wise error
+   inside one pass and nothing controls it across thousands, so a one-pass survivor is expected
+   noise and only the hit rate over independent cells is evidence.
 3. **EVIG** ranks moat-derived candidates ~3× public ones on replication cost, and **30% of the
    ranked head is reserved** for them so public-data volume can never starve them.
 4. **`enforce_constitution.py`** checks the coverage gap is *closing* every cycle, and a gap that

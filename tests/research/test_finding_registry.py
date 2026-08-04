@@ -229,7 +229,19 @@ class TestRegisterHealth:
         h = register_health("# GAP REGISTER\n\nnothing here\n", today=date(2026, 7, 25))
         assert h.n_rows == 0 and "drives nothing" in h.verdict
 
-    def test_missing_stamp_does_not_crash(self) -> None:
+    def test_a_register_never_re_ranked_is_the_WORST_state_not_the_cleanest(self) -> None:
+        """This test previously asserted the bug it was named after. `age` is -1.0 when no stamp
+        was ever written, -1.0 fails every `age > bar` comparison, and the register therefore
+        reported "re-rank current (-1d)" -- so never having been driven ONCE was the healthiest
+        possible reading, and the only way to trip the check was to have driven it before and
+        then stopped.
+
+        Absence of evidence was being read as evidence of compliance: the same shape as a NaN
+        measurement counting as a filled coverage cell, on the organ every other law depends on.
+        """
         h = register_health(_REG.replace("_Re-ranked 2026-07-20T09:30Z._", ""),
                             today=date(2026, 7, 25))
-        assert h.rerank_age_days == -1.0 and h.rerank_stale is False
+        assert h.rerank_age_days == -1.0, "still reported distinctly, so the cause is legible"
+        assert h.rerank_stale is True
+        assert h.rerank_breach is True
+        assert "has not been driven once" in h.verdict

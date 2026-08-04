@@ -30,6 +30,7 @@ that random-walks is just another price.
 
 Free public endpoints. Stage-A, zero promotion authority. Run from repo root.
 """
+
 from __future__ import annotations
 
 import json
@@ -43,15 +44,22 @@ OUT = Path("data/structural_spreads.json")
 
 
 def _get(u, t=35):
-    return json.loads(urllib.request.urlopen(
-        urllib.request.Request(u, headers={"User-Agent": "q/1.0"}), timeout=t).read().decode())
+    return json.loads(
+        urllib.request.urlopen(
+            urllib.request.Request(u, headers={"User-Agent": "q/1.0"}), timeout=t
+        )
+        .read()
+        .decode()
+    )
 
 
 def binance_daily(sym: str, n: int = 400) -> dict[str, float]:
     try:
         rows = _get(f"https://api.binance.com/api/v3/klines?symbol={sym}&interval=1d&limit={n}")
-        return {datetime.fromtimestamp(int(r[0]) / 1000, tz=UTC).date().isoformat(): float(r[4])
-                for r in rows}
+        return {
+            datetime.fromtimestamp(int(r[0]) / 1000, tz=UTC).date().isoformat(): float(r[4])
+            for r in rows
+        }
     except Exception:
         return {}
 
@@ -61,10 +69,14 @@ def coingecko_ratio(num: str, den: str, days: int = 365) -> dict[str, float]:
     out = {}
     series = {}
     for cid in (num, den):
-        d = _get(f"https://api.coingecko.com/api/v3/coins/{cid}/market_chart"
-                 f"?vs_currency=usd&days={days}&interval=daily")
-        series[cid] = {datetime.fromtimestamp(p[0] / 1000, tz=UTC).date().isoformat(): float(p[1])
-                       for p in d.get("prices", [])}
+        d = _get(
+            f"https://api.coingecko.com/api/v3/coins/{cid}/market_chart"
+            f"?vs_currency=usd&days={days}&interval=daily"
+        )
+        series[cid] = {
+            datetime.fromtimestamp(p[0] / 1000, tz=UTC).date().isoformat(): float(p[1])
+            for p in d.get("prices", [])
+        }
     for k in set(series[num]) & set(series[den]):
         if series[den][k]:
             out[k] = series[num][k] / series[den][k]
@@ -89,16 +101,30 @@ def analyse(name: str, spread: dict[str, float], constraint: str, centre: float 
     frac_nonzero = float((np.abs(x) > sd * 0.25).mean())
 
     harvestable = (abs(mean) > sd * 0.25 or frac_nonzero > 0.5) and hl < 30 and tail < 12
-    verdict = ("HARVESTABLE-CANDIDATE" if harvestable
-               else "DRIFTS (no reversion)" if hl >= 30
-               else "VIOLENT (unbounded tail)" if tail >= 12
-               else "TOO TIGHT (nothing to capture)")
-    print(f"{name:<26} n={len(dates):<4} mean {mean*100:+7.3f}%  sd {sd*100:6.3f}%  "
-          f"half-life {hl:6.1f}d  tail {tail:5.1f}x  -> {verdict}")
-    return {"name": name, "constraint": constraint, "n": len(dates),
-            "mean_pct": round(mean * 100, 4), "sd_pct": round(sd * 100, 4),
-            "ar1_beta": round(beta, 4), "half_life_days": round(hl, 2) if hl != float("inf") else None,
-            "tail_ratio": round(tail, 2), "verdict": verdict}
+    verdict = (
+        "HARVESTABLE-CANDIDATE"
+        if harvestable
+        else "DRIFTS (no reversion)"
+        if hl >= 30
+        else "VIOLENT (unbounded tail)"
+        if tail >= 12
+        else "TOO TIGHT (nothing to capture)"
+    )
+    print(
+        f"{name:<26} n={len(dates):<4} mean {mean * 100:+7.3f}%  sd {sd * 100:6.3f}%  "
+        f"half-life {hl:6.1f}d  tail {tail:5.1f}x  -> {verdict}"
+    )
+    return {
+        "name": name,
+        "constraint": constraint,
+        "n": len(dates),
+        "mean_pct": round(mean * 100, 4),
+        "sd_pct": round(sd * 100, 4),
+        "ar1_beta": round(beta, 4),
+        "half_life_days": round(hl, 2) if hl != float("inf") else None,
+        "tail_ratio": round(tail, 2),
+        "verdict": verdict,
+    }
 
 
 def main() -> None:
@@ -107,18 +133,28 @@ def main() -> None:
     res = []
 
     # --- 2. STABLECOIN PEG SPREADS (redemption friction) --------------------------------
-    for sym, label in (("USDCUSDT", "peg USDC/USDT"), ("FDUSDUSDT", "peg FDUSD/USDT"),
-                       ("DAIUSDT", "peg DAI/USDT")):
+    for sym, label in (
+        ("USDCUSDT", "peg USDC/USDT"),
+        ("FDUSDUSDT", "peg FDUSD/USDT"),
+        ("DAIUSDT", "peg DAI/USDT"),
+    ):
         s = binance_daily(sym)
         if s:
-            res.append(analyse(label, {k: v - 1.0 for k, v in s.items()},
-                               "redemption friction: min sizes, KYC, banking hours"))
+            res.append(
+                analyse(
+                    label,
+                    {k: v - 1.0 for k, v in s.items()},
+                    "redemption friction: min sizes, KYC, banking hours",
+                )
+            )
         else:
             print(f"{label:<26} DATA-BLOCKED")
 
     # --- 1. LIQUID-STAKING DISCOUNT (validator exit queue) ------------------------------
-    for num, den, label in (("staked-ether", "ethereum", "LSD stETH/ETH"),
-                            ("msol", "solana", "LSD mSOL/SOL")):
+    for num, den, label in (
+        ("staked-ether", "ethereum", "LSD stETH/ETH"),
+        ("msol", "solana", "LSD mSOL/SOL"),
+    ):
         try:
             r = coingecko_ratio(num, den)
         except Exception as e:
@@ -126,11 +162,17 @@ def main() -> None:
             continue
         if r:
             base = 1.0 if num == "staked-ether" else float(np.median(list(r.values())))
-            res.append(analyse(label, {k: v - base for k, v in r.items()},
-                               "validator exit queue: unstaking takes days-weeks"))
+            res.append(
+                analyse(
+                    label,
+                    {k: v - base for k, v in r.items()},
+                    "validator exit queue: unstaking takes days-weeks",
+                )
+            )
 
-    Path(OUT).write_text(json.dumps({"updated": datetime.now(tz=UTC).isoformat(),
-                                     "results": res}, indent=1), "utf-8")
+    Path(OUT).write_text(
+        json.dumps({"updated": datetime.now(tz=UTC).isoformat(), "results": res}, indent=1), "utf-8"
+    )
     cands = [r for r in res if r.get("verdict") == "HARVESTABLE-CANDIDATE"]
     print(f"\n  HARVESTABLE CANDIDATES: {len(cands)}/{len(res)}")
     for c in cands:

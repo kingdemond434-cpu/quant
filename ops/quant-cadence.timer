@@ -1,0 +1,18 @@
+[Unit]
+Description=Run the quant cadence engine hourly
+
+[Timer]
+# HOURLY, NOT DAILY. The engine is internally gated -- each duty has its own interval and it fires
+# only what is actually due -- so running it hourly costs almost nothing and removes a whole class
+# of failure: a daily engine that misses its window owes every duty for another 24 hours, and the
+# moat screen, survivor promotion and clock review all hang off this tick.
+#
+# Persistent=true so a missed hour fires on the next boot rather than vanishing. A cadence that can
+# skip without saying so is not a cadence.
+OnBootSec=5min
+OnUnitActiveSec=1h
+Persistent=true
+RandomizedDelaySec=120
+
+[Install]
+WantedBy=timers.target

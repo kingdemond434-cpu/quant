@@ -213,7 +213,7 @@ ITEM 2 RESULTS — QUANTOPIAN ARCHIVE OPENED (session C's carried item, era-arch
   era code. `new-strategy-in-and-out` (2020, 100+ replies) → **graveyard
   `inout_early_warning_rotation_fragility`**: killed in-thread by the community's own perturbation
   test (constants 15/58→20/53 = "drastic drop"); residual general cross-asset lead-lag question →
-  **WS-005** (crypto analog, de-contam caveat declared). HN 15652997 (94 comments, walked to
+  **WS-006** (crypto analog, de-contam caveat declared). HN 15652997 (94 comments, walked to
   depth 5) + 24931089 + 24940644 → **graveyard `crowdsourced_backtest_selection_fund`**: the
   at-scale natural experiment (backtest Sharpe>2.5 selection → live −3% vs SPX +6.6% → investor
   capital RETURNED Feb 2020) = the historical evidence base for the two-stage law. WS-003
@@ -237,7 +237,7 @@ an OP's claim.
 STANDING TEST ("which artifact on disk is different because of what was mined?"):
 data/kaiko_true_constituent_rerun.json (21 trials); docs/graveyard.md +4 entries (3 new + 1
 restored); data_axis_watchlist cards #3/#8/#21 re-graded (verify-queue 2→0);
-search_operator_library +OP-034; weak_signal_registry +WS-005, WS-003 updated; recommendation
+search_operator_library +OP-034; weak_signal_registry +WS-006, WS-003 updated; recommendation
 ledger +R0018/R0019. Verify-queue state change is the run's conversion payload.
 
 ## SESSION NOTES — CN frontier miner

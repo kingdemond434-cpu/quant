@@ -7,6 +7,7 @@ Running total: **101 items triaged.**
 
 ## BUILT — already covered
 
+| 93 | **Adaptive Data Acquisition Agent** | **BUILT 2026-08-02 -> `scripts/acquire_data.py`, wired into run_cadence every cycle.** Scores acquisition candidates EVIG-shaped -- P(usable from the digger's own grade) x information_gain x replication_difficulty x region_priority / cost -- and the ADAPTIVE term is `ontology.priority`, which reads the desk's recorded attempts and survivors. Demonstrated: an on-chain source ranked #1 on a virgin desk falls to #3 once its regions are recorded worked-to-zero-survivors, and the self-recorded tape rises to #1. A hardcoded advantage table cannot do that, which is why building it on `research_cio.SOURCES` was refused -- that would have been one author's priors wearing the vocabulary of measurement. Ungraded sources rank below every graded one INCLUDING the rejected ones, or the ranking rewards not looking. **Previously: UNBLOCKED 2026-07-29,** Its stated blocker was "depends on Information Advantage Score (item 17) existing first" — and 17 shipped, so the blocker expired. Caught mechanically by `max_audit.check_triage_disposition`, not by anyone re-reading the row: a QUEUE verdict is a claim with an expiry date and nobody revisits a blocked item to ask whether it is still blocked. Buildable now against `research_cio.py` §1. |
 | # | Component | Where | Note |
 |---|---|---|---|
 | 92 | Research Reproducibility Engine | `experiment_registry.py` | commit sha + artifact set pinned per experiment; 569/569 artifacts present (100%) |
@@ -26,15 +27,25 @@ provenance record that dies with the working directory is not a record.
 
 ## BUILD — unblocked, cheap, next session
 
-| # | Component | Note |
-|---|---|---|
-| 93 | **Adaptive Data Acquisition Agent** | **UNBLOCKED 2026-07-29.** Its stated blocker was "depends on Information Advantage Score (item 17) existing first" — and 17 shipped, so the blocker expired. Caught mechanically by `max_audit.check_triage_disposition`, not by anyone re-reading the row: a QUEUE verdict is a claim with an expiry date and nobody revisits a blocked item to ask whether it is still blocked. Buildable now against `research_cio.py` §1. |
+_EMPTY as of 2026-08-03: #97 was the last open BUILD item and it shipped (`libs/data/decay.py` + `scripts/monitor_data_decay.py`); #93 shipped before it (`scripts/acquire_data.py`). An empty BUILD section is the correct state, not a missing one -- it means every unblocked item has been done rather than that the section was deleted._
 
-Items 86, 96, 99 and 82 were re-verdicted BUILT above on the same pass. Specs for them remain in
-git history; a register that keeps advertising work already done is as wrong as one that hides
-work still open.
 
----
+**#97 Data Decay Monitor — SHIPPED 2026-08-03.** `libs/data/decay.py` + `scripts/monitor_data_decay.py`.
+Its blocker ("needs dataset-usefulness history; nothing to trend yet") had expired: `canary_history.jsonl`
+carries per-source reachability and `acquisition_history.jsonl` carries per-candidate usefulness scores.
+
+The build kept the two decays SEPARATE and never sums them — a source going dark needs a new endpoint, a
+source going useless needs retiring, and an average of the two recommends neither. It also refuses three
+readings that all look like "low recent value": NEVER-WORKED is an acquisition failure rather than a
+decline, UNDERPOWERED means the sample cannot tell, and only DECAYING is decay.
+
+The sample-size rule is the load-bearing part and came straight from the live inputs:
+`instrumentation_coverage.jsonl` holds 164 rows written within a few seconds, all identical. Readings are
+collapsed to one per hour, so a burst buys exactly one observation. Run against this container it returns
+9 sources, all NEVER-WORKED — correct, and correctly not called decay.
+
+Written as prose rather than a `| N |` row: `check_triage_disposition` parses table rows as ITEMS, so a
+table describing a closed item would re-open it — a mistake this document has already made once.
 
 ## QUEUE — blocked, blocker named
 
@@ -45,7 +56,6 @@ work still open.
 | 88 | Market Participant Identity Graph | Tier 1 crypto-specific. Wallet → exchange / MM / treasury / early-investor / retail clustering. Pairs with item 48 (wallet **risk** features only). |
 | 89 | Information Velocity Tracker | Needs multi-source timestamped corpora to measure appearance → spread → price reaction. |
 | 94 | Market Ecology Map | Who provides / consumes liquidity, who gets liquidated. Overlaps 88. |
-| 97 | Data Decay Monitor | Needs dataset-usefulness history; nothing to trend yet. |
 
 **Blocked on ≥1 deployed alpha (currently 0):**
 | # | Component |
@@ -81,3 +91,46 @@ one by funding. Four are buildable now and total maybe two hours.
 
 That is the whole argument. The desk does not need more design — it needs unique data flowing in
 and one alpha flowing out. Aug 7 is the first date the second of those can change.
+
+## Re-verdict pass 2026-08-02 — all 13 blockers checked, not assumed
+
+_(This heading deliberately does NOT begin with a verdict keyword. The first draft was
+titled `## QUEUE RE-VERDICT ...`, and `check_triage_disposition` keys sections off the
+heading prefix -- so the log documenting the re-verdict was parsed as thirteen NEW queued
+items and the count rose from 13 to 14. A document that reports on a check must not be
+readable BY that check as its own subject matter.)_
+
+The register's own rule is that a QUEUE verdict is *a claim with an expiry date*, and nobody
+re-reads a blocked row to ask whether it is still blocked. `check_triage_blocker_stale` only
+catches blockers whose named dependency SHIPPED — it cannot catch one that expired because the
+world changed. So every remaining blocker was checked by hand against the desk's actual state.
+
+**ONE EXPIRED: #97** (moved to BUILD above). Its substrate now exists, and two pieces of it were
+built this cycle.
+
+**ELEVEN HOLD, and the reason each holds is recorded so the next check starts from evidence:**
+
+**ELEVEN HOLD**, and the reason each holds is recorded so the next check starts from evidence
+rather than from the label. Written as prose, not a numbered table: a `| N |` row is parsed by
+`check_triage_disposition` as an ITEM, so a table describing items becomes items — the first draft
+of this section did exactly that and produced two phantom undisposed entries.
+
+- **Items 91, 87, 98, 90 — "needs >=1 deployed alpha": STILL TRUE.** Zero deployed.
+  `desk_metrics:alpha_performance` is empty and only a library writes it.
+- **Items 83, 88, 94 — "needs on-chain AND venue trade data": PARTIALLY expired.** The venue half
+  arrived: 8.2GB of moat tape now carries aggTrades across three venues. The on-chain half has
+  not. Recorded as partial rather than cleared, deliberately — half a blocker is still a blocker,
+  and clearing it would queue work that stalls on arrival.
+- **Item 89 — "needs multi-source timestamped corpora": STILL TRUE on the side that matters.** The
+  desk now has multi-venue timestamped PRICE data, but "appearance -> spread -> price reaction"
+  needs the APPEARANCE half — news and social corpora — which it does not have.
+- **Item 85 — "missing feature->signal->trade edges": STILL TRUE.** The trade edge requires trading.
+- **Items 84, 95, 100 — not blocked on data at all.** Correctly QUEUED rather than promoted: they
+  are unblocked but larger than the BUILD tier, which exists for cheap next-session work. Moving
+  them would turn BUILD into a backlog and bury the genuinely cheap items — the same denominator
+  dishonesty §34 forbids for mining, applied to a work queue.
+
+**Honest scope of this pass:** it covers TRIAGE_ADDENDUM's 13. `SUBSYSTEM_TRIAGE.md`'s 46 were
+NOT individually re-verdicted this cycle and are not claimed to have been — asserting a check that
+did not happen is the failure §33 credits artifacts to prevent. That pass is owed.
+

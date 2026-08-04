@@ -38,5 +38,16 @@ jobs:
       - name: Types (mypy --strict)
         run: mypy
 
-      - name: Tests (pytest)
-        run: pytest
+      # COVERAGE IS MEASURED HERE OR IT IS NOT MEASURED AT ALL. pytest-cov has been a declared
+      # dev dependency and [tool.coverage.run] has carried branch=true for as long as either has
+      # existed, and this step ran bare `pytest` -- so the tooling was installed, configured, and
+      # never once invoked. First measurement, 2026-08-04: 88.1% repo-wide, and the money path at
+      # 41.6%, which is backwards from where the care belongs.
+      - name: Tests (pytest + branch coverage)
+        run: pytest --cov=libs --cov-branch --cov-report=term:skip-covered --cov-report=json:coverage.json
+
+      # Two floors, not one: a repo-wide average lets ORDER-PATH coverage fall while a wave of
+      # research tests keeps the aggregate up, which hides precisely the number worth watching.
+      # Floors only ever rise.
+      - name: Coverage floors (ratcheted)
+        run: python scripts/check_coverage_floors.py --report coverage.json

@@ -1,0 +1,23 @@
+[Unit]
+# CADENCE IS CODE, AND NOTHING RAN THE CODE. run_cadence.py fires the panel, tier-1, the moat
+# screen, survivor promotion, the forward-clock review and every other due duty, and it is what
+# checks the never-sleepier floors. It had no unit and no timer: on a fresh VPS every one of those
+# duties was owed forever and the floors were unenforced.
+Description=Quant cadence engine (fires what is due, enforces the floors)
+After=network-online.target
+
+[Service]
+User=quant
+WorkingDirectory=/home/quant/quant-platform
+Environment=PATH=/home/quant/.local/bin:/home/quant/quant-platform/.venv/bin:/usr/bin:/bin
+Type=oneshot
+TimeoutStartSec=1800
+ExecStart=/home/quant/quant-platform/.venv/bin/python scripts/run_cadence.py
+# An organ that fails must not take the timer down with it: the next tick is the retry, and a
+# disabled timer is a silence nobody notices.
+SuccessExitStatus=0 1
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/quant/quant-platform/data /home/quant/quant-platform/web /home/quant/quant-platform/docs
+NoNewPrivileges=true
+PrivateTmp=true

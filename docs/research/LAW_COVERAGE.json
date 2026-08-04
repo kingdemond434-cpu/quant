@@ -3,18 +3,18 @@
  "updated": "2026-08-04T08:05:49.804964+00:00",
  "high_water": {
   "mechanical_pct": 100.0,
-  "interactional_pct": 96.3,
-  "full_pct": 96.3
+  "interactional_pct": 100.0,
+  "full_pct": 100.0
  },
  "live": {
   "principles": 27,
-  "both": 26,
-  "mechanical_only": 1,
+  "both": 27,
+  "mechanical_only": 0,
   "interactional_only": 0,
   "unenforced": 0,
   "mechanical_pct": 100.0,
-  "interactional_pct": 96.3,
-  "full_pct": 96.3
+  "interactional_pct": 100.0,
+  "full_pct": 100.0
  },
  "gaps_worst_first": [],
  "next_ceiling": "every law mechanically enforced AND in every interaction. Reaching that is not completion -- the next ceiling is enforcement that catches SUBTLE violations, not only absent ones."

@@ -38,7 +38,9 @@ Pure functions over parsed rows. No network, no promotion authority, numpy only.
 from __future__ import annotations
 
 import math
+from collections.abc import Callable
 from dataclasses import dataclass, field
+from typing import Any
 
 import numpy as np
 
@@ -83,7 +85,7 @@ MECHANISMS: dict[str, tuple[str, str]] = {
 DEPTH_KINDS = frozenset({"d", "depth"})
 
 
-def _levels(side: list) -> tuple[np.ndarray, np.ndarray]:
+def _levels(side: list[Any] | None) -> tuple[np.ndarray, np.ndarray]:
     """Bybit levels arrive as [[price, size], ...] of STRINGS. Bad rows are dropped, never
     coerced to zero -- a zero size is a real and meaningful book state, so inventing one would
     manufacture a withdrawal event that never happened."""
@@ -99,7 +101,7 @@ def _levels(side: list) -> tuple[np.ndarray, np.ndarray]:
     return np.asarray(px, dtype="float64"), np.asarray(sz, dtype="float64")
 
 
-def _depth_snaps(rows: list[dict]) -> list[tuple[int, np.ndarray, np.ndarray,
+def _depth_snaps(rows: list[dict[str, Any]]) -> list[tuple[int, np.ndarray, np.ndarray,
                                                  np.ndarray, np.ndarray]]:
     out = []
     for r in rows:
@@ -125,7 +127,7 @@ def _depth_snaps(rows: list[dict]) -> list[tuple[int, np.ndarray, np.ndarray,
     return out
 
 
-def withdrawal_rate(rows: list[dict], *, top_n: int = 10) -> np.ndarray:
+def withdrawal_rate(rows: list[dict[str, Any]], *, top_n: int = 10) -> np.ndarray:
     """Per-snapshot fractional DROP in top-N resting size. Positive = liquidity leaving.
 
     Only the negative changes are kept as withdrawal. Netting additions against removals would
@@ -142,7 +144,7 @@ def withdrawal_rate(rows: list[dict], *, top_n: int = 10) -> np.ndarray:
     return np.maximum(drop, 0.0)
 
 
-def replenishment_halflife(rows: list[dict], *, top_n: int = 10) -> float:
+def replenishment_halflife(rows: list[dict[str, Any]], *, top_n: int = 10) -> float:
     """Median snapshots for depth to recover half of a withdrawal. NaN when nothing withdrew.
 
     NaN rather than 0.0 on absence, deliberately: zero half-life reads as instant replenishment,
@@ -165,7 +167,7 @@ def replenishment_halflife(rows: list[dict], *, top_n: int = 10) -> float:
     return float(np.median(lives)) if lives else float("nan")
 
 
-def book_slope(rows: list[dict], *, top_n: int = 20) -> np.ndarray:
+def book_slope(rows: list[dict[str, Any]], *, top_n: int = 20) -> np.ndarray:
     """Per-snapshot depth decay: log(cumulative size) regressed on distance from the touch.
 
     Steep slope = size concentrated at the touch (fragile). Flat = real depth behind the quote.
@@ -184,7 +186,7 @@ def book_slope(rows: list[dict], *, top_n: int = 20) -> np.ndarray:
     return np.asarray(out, dtype="float64")
 
 
-def imbalance(rows: list[dict], *, top_n: int = 10) -> np.ndarray:
+def imbalance(rows: list[dict[str, Any]], *, top_n: int = 10) -> np.ndarray:
     """(bid - ask) / (bid + ask) over top-N size. Bounded [-1, 1]."""
     out = []
     for _, _, bs, _, asz in _depth_snaps(rows):
@@ -194,7 +196,7 @@ def imbalance(rows: list[dict], *, top_n: int = 10) -> np.ndarray:
     return np.asarray(out, dtype="float64")
 
 
-def microprice_gap(rows: list[dict]) -> np.ndarray:
+def microprice_gap(rows: list[dict[str, Any]]) -> np.ndarray:
     """Size-weighted microprice minus mid, in bps. Where the book disagrees with the midpoint."""
     out = []
     for _, bp, bs, ap, asz in _depth_snaps(rows):
@@ -208,7 +210,7 @@ def microprice_gap(rows: list[dict]) -> np.ndarray:
     return np.asarray(out, dtype="float64")
 
 
-def effective_spread(rows: list[dict], *, notional: float = 500.0) -> np.ndarray:
+def effective_spread(rows: list[dict[str, Any]], *, notional: float = 500.0) -> np.ndarray:
     """Bps a marketable order of `notional` actually pays, walking the book. NaN if it cannot fill.
 
     The quoted spread is what the venue advertises; this is what the desk would be charged. The
@@ -237,7 +239,7 @@ def effective_spread(rows: list[dict], *, notional: float = 500.0) -> np.ndarray
     return np.asarray(out, dtype="float64")
 
 
-def resting_stability(rows: list[dict], *, top_n: int = 10) -> np.ndarray:
+def resting_stability(rows: list[dict[str, Any]], *, top_n: int = 10) -> np.ndarray:
     """1 - churn: fraction of top-N SIZE that persisted between consecutive snapshots.
 
     High = real resting liquidity. Low = a book being repainted, where displayed size is not
@@ -260,7 +262,10 @@ def resting_stability(rows: list[dict], *, top_n: int = 10) -> np.ndarray:
     return np.asarray(out, dtype="float64")
 
 
-_EXTRACTORS = {
+#: name -> reconstruction. Typed explicitly because the values have DIFFERENT return types --
+#: `replenishment_halflife` is a scalar and the rest are series -- and an inferred join of those
+#: signatures is `object`, which makes every call site uncheckable.
+_EXTRACTORS: dict[str, Callable[[list[dict[str, Any]]], float | np.ndarray]] = {
     "withdrawal_rate": withdrawal_rate,
     "replenishment_halflife": replenishment_halflife,
     "book_slope": book_slope,
@@ -271,7 +276,7 @@ _EXTRACTORS = {
 }
 
 
-def _summary(v) -> dict:
+def _summary(v: float | np.ndarray) -> dict[str, Any]:
     """Summarise a series without letting NaNs silently become zeros."""
     if isinstance(v, float):
         # n=0 ON NaN, and this is the same rule as the grid's. A scalar reconstruction that could
@@ -291,11 +296,11 @@ def _summary(v) -> dict:
             "max": round(float(ok.max()), 6)}
 
 
-def extract_all(sym: str, rows: list[dict]) -> dict:
+def extract_all(sym: str, rows: list[dict[str, Any]]) -> dict[str, Any]:
     """Run every reconstruction over one symbol's rows. Missing data yields an EMPTY cell, never
     a fabricated zero -- a coverage hole and a measured zero are different facts."""
     n_depth = sum(1 for r in rows if r.get("k") in DEPTH_KINDS)
-    out: dict = {"symbol": sym, "depth_snapshots": n_depth, "mechanisms": {}}
+    out: dict[str, Any] = {"symbol": sym, "depth_snapshots": n_depth, "mechanisms": {}}
     for name, fn in _EXTRACTORS.items():
         try:
             out["mechanisms"][name] = _summary(fn(rows))
@@ -322,7 +327,7 @@ class CoverageGrid:
     looked". Those demand opposite responses and the difference is the whole reason to track this.
     """
 
-    filled: set = field(default_factory=set)
+    filled: set[Any] = field(default_factory=set)
 
     def mark(self, sym: str, mech: str, day: str, *, n_obs: int) -> None:
         # ZERO OBSERVATIONS IS NOT COVERAGE. A run that produced nothing must leave the cell open,
@@ -332,7 +337,7 @@ class CoverageGrid:
             self.filled.add((sym, mech, day))
 
     def report(self, symbols: list[str], days: list[str],
-               mechanisms: list[str] | None = None) -> dict:
+               mechanisms: list[str] | None = None) -> dict[str, Any]:
         mechs = mechanisms or list(MECHANISMS)
         total = len(symbols) * len(mechs) * len(days)
         holes = [MoatCell(s, m, d) for s in symbols for m in mechs for d in days
@@ -355,7 +360,8 @@ class CoverageGrid:
         }
 
 
-def coverage_report(results: list[dict], symbols: list[str], days: list[str]) -> dict:
+def coverage_report(results: list[dict[str, Any]], symbols: list[str],
+                    days: list[str]) -> dict[str, Any]:
     """Build the grid from a set of extraction results."""
     g = CoverageGrid()
     for r in results:

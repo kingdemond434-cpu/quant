@@ -57,6 +57,18 @@ if [ -d data/moat ] && [ -n "$(ls -A data/moat 2>/dev/null)" ]; then
           >> data/moat_miner.log 2>&1 &
         echo "  STARTED moat-miner (continuous)"
     fi
+    # THE HUNT, NOT ONLY THE MINE. The miner DESCRIBES the tape; the screen ASKS it whether any
+    # mechanism actually predicts. Running the first continuously and the second on a daily
+    # cadence was the asymmetry: an irreplaceable asset measured around the clock and interrogated
+    # once a day. Both carry their own persisted coverage frontier, so both converge.
+    if pgrep -f "[s]cripts/screen_moat.py --loop" >/dev/null 2>&1; then
+        echo "  ok      moat-screen already running"
+    else
+        nohup "$PY" scripts/screen_moat.py --files "${MOAT_SCREEN_FILES:-24}" \
+          --loop --interval "${MOAT_SCREEN_INTERVAL:-30}" \
+          >> data/moat_screen.log 2>&1 &
+        echo "  STARTED moat-screen (continuous survivor hunt)"
+    fi
 else
     echo "  wait    moat-miner not started: data/moat is empty, nothing to mine yet"
 fi

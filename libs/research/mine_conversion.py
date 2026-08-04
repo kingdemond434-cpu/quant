@@ -686,24 +686,62 @@ def vanished(
     return tuple(sorted(was_owing - now_present - now_done))
 
 
-def ledger_regressed(ratchet: Ratchet, ledger: Sequence[LedgerRow]) -> tuple[bool, str]:
+def ledger_regressed(ratchet: Ratchet, ledger: Sequence[LedgerRow], *,
+                     local_n_prior: int | None = None) -> tuple[bool, str]:
     """Has the snapshot history been truncated or rewritten since the last recorded state?
 
     The ledger is the evidence base for latency, priors and the ratchet itself; erasing it resets
     every one of them. Snapshot count only ever grows and the earliest timestamp only ever moves
     BACKWARD (never forward), so either statistic going the wrong way is proof of tampering or of
     data loss -- both of which invalidate the record and must be seen, not silently absorbed.
+
+    THE TWO SIGNALS BELONG TO DIFFERENT SCOPES, which is why `local_n_prior` exists. The snapshot
+    COUNT is a property of one machine's ledger -- data/ is gitignored, so a clone's count starts
+    at zero and has nothing to do with the count the VPS reached. Comparing a clone against a
+    committed count reports "the ledger was truncated" on a machine that has deleted nothing.
+    `earliest_ts` is the cross-machine signal and stays on the committed ratchet.
+
+    So the caller passes THIS MACHINE's previously observed count as `local_n_prior`. Absent, the
+    count test falls back to the committed figure, preserving the original behaviour for callers
+    that have no machine-local state to offer.
     """
     if not ratchet.n_snapshots:
         return False, "no prior record -- nothing to compare"
     n = len(ledger)
     earliest = min((float(r["ts"]) for r in ledger), default=0.0)
-    if n < ratchet.n_snapshots:
-        return True, (f"snapshot count fell {ratchet.n_snapshots} -> {n}: the conversion ledger "
+
+    prior_n = ratchet.n_snapshots if local_n_prior is None else local_n_prior
+    if n < prior_n:
+        return True, (f"snapshot count fell {prior_n} -> {n}: the conversion ledger "
                       "has been truncated or deleted")
     if ratchet.earliest_ts and earliest > ratchet.earliest_ts + 1.0:
-        return True, ("the ledger's earliest snapshot moved forward in time: history was "
-                      "rewritten, not appended")
+        # AMBIGUOUS BY CONSTRUCTION, AND SAID SO RATHER THAN GUESSED.
+        #
+        # This fires in two situations that the ledger CANNOT distinguish: history genuinely
+        # rewritten, and a fresh checkout. data/ is gitignored, so a clone starts an empty ledger
+        # and fills it one row per audit invocation -- every row then postdates the recorded
+        # earliest, at an unchanged or higher count. Structurally identical to a rewrite that
+        # replaced old rows with new ones.
+        #
+        # A carve-out for "disjoint history" was written, and reverted, because the existing
+        # tamper test proved it silenced the real case: `n >= n_snapshots` is true of BOTH, so
+        # exempting it would have converted a false positive into a false negative on the only
+        # detector of the desk's evidence base being erased. Between the two errors this one is
+        # the cheap one -- an accusation that can be checked, rather than a deletion that cannot
+        # be noticed.
+        #
+        # So the verdict stands and the MESSAGE carries the ambiguity, which is what stops a
+        # reader (this one included, on 2026-08-02) filing an environment artifact as a desk
+        # defect without comparing the timestamps first.
+        return True, (
+            "the ledger's earliest snapshot moved forward in time: history was rewritten, not "
+            f"appended (local earliest {earliest:.0f} vs recorded {ratchet.earliest_ts:.0f}, "
+            f"{n} rows vs {ratchet.n_snapshots} recorded). CHECK THE ENVIRONMENT BEFORE THE "
+            "CONCLUSION: data/ is gitignored, so a fresh checkout builds its own ledger from "
+            "scratch and produces this signature having deleted nothing. On the machine that owns "
+            "the recorded history this is tampering; on a clone it is expected. The ledger alone "
+            "cannot tell them apart, and pretending otherwise in either direction is worse than "
+            "saying so.")
     return False, "ledger intact"
 
 
@@ -787,6 +825,29 @@ class LawEffectiveness(BaseModel):
     improving: bool
     conclusive: bool
     verdict: str
+    #: Distinct ITEMS behind each window's rate. The snapshot count says how often the ledger was
+    #: written; only this says how much evidence the rate rests on, and they can differ by orders
+    #: of magnitude.
+    n_early_items: int = 0
+    n_late_items: int = 0
+
+
+#: Distinct items each window needs before the two rates may be COMPARED. Matches
+#: libs.doctrine.estimate.MIN_N_FOR_ACTION, and for the same reason: below it a single item
+#: flipping moves the rate tens of percentage points, so "flat" and "improving" are the same
+#: measurement wearing different labels.
+MIN_ITEMS_PER_WINDOW = 5
+
+#: z for calling the change real. One-sided 80%, matching ADMIT_Z -- the cost of investigating a
+#: law that turns out fine is one cycle, the cost of never noticing a dead law is unbounded.
+_EFFECT_Z = 1.28
+
+
+def _rate_se(rate: float, n: int) -> float:
+    """Binomial standard error, floored so n=1 cannot report perfect precision."""
+    if n <= 0:
+        return 1.0
+    return float(max((rate * (1.0 - rate) / n) ** 0.5, 1.0 / n))
 
 
 def law_effectiveness(
@@ -810,7 +871,7 @@ def law_effectiveness(
             verdict=f"{n}/{min_snapshots} snapshots -- too early to judge the law itself")
     third = max(1, n // 3)
 
-    def _window(rows: Sequence[LedgerRow]) -> tuple[float, float]:
+    def _window(rows: Sequence[LedgerRow]) -> tuple[float, float, int]:
         first: dict[str, float] = {}
         conv: dict[str, float] = {}
         for row in rows:
@@ -824,19 +885,66 @@ def law_effectiveness(
                     conv[nm] = ts
         rate = (len(conv) / len(first)) if first else 0.0
         lat = sorted((conv[k] - first[k]) / 86400.0 for k in conv)
-        return round(rate, 3), (round(statistics.median(lat), 2) if lat else -1.0)
+        return round(rate, 3), (round(statistics.median(lat), 2) if lat else -1.0), len(first)
 
-    e_rate, e_lat = _window(ledger[:third])
-    l_rate, l_lat = _window(ledger[-third:])
+    e_rate, e_lat, e_n = _window(ledger[:third])
+    l_rate, l_lat, l_n = _window(ledger[-third:])
+
+    # THE SNAPSHOT COUNT IS NOT THE SAMPLE SIZE, and conflating them let this function call §33
+    # "ceremony with good telemetry" from two items. min_snapshots gates how often the ledger was
+    # WRITTEN; the rates rest on how many distinct ITEMS were seen, and the live ledger had 62 of
+    # the former and 2 of the latter. Below MIN_ITEMS_PER_WINDOW a single item flipping swings the
+    # rate by tens of points, so "flat" and "improving" are the same measurement with different
+    # labels -- and this is the organ that enforces the evidence standard on everything else. A
+    # law is not exempt from the bar it sets, which cuts both ways: it may not be convicted on
+    # evidence too thin to convict anything else.
+    if min(e_n, l_n) < MIN_ITEMS_PER_WINDOW:
+        return LawEffectiveness(
+            n_snapshots=n, early_rate=e_rate, late_rate=l_rate,
+            early_latency_days=e_lat, late_latency_days=l_lat,
+            n_early_items=e_n, n_late_items=l_n,
+            improving=False, conclusive=False,
+            verdict=(f"{n} snapshots but only {e_n}/{l_n} distinct items per window (bar "
+                     f"{MIN_ITEMS_PER_WINDOW}) -- the rate {e_rate:.0%} -> {l_rate:.0%} rests on "
+                     "too few conversions to distinguish a flat law from a working one. Snapshots "
+                     "measure how often the ledger was written, never how much evidence it holds."))
+
+    # THE LEVEL CONVICTS WITHOUT A TREND. A law under which NOTHING converts is failing whether or
+    # not the rate moved -- 0% to 0% is flat, and flatness is the least interesting thing about it.
+    # Requiring a significant DECLINE here would exonerate the worst possible state for being
+    # consistently the worst, which is the trap in judging a law only by its derivative.
+    if l_rate <= 0.0:
+        return LawEffectiveness(
+            n_snapshots=n, early_rate=e_rate, late_rate=l_rate,
+            early_latency_days=e_lat, late_latency_days=l_lat,
+            n_early_items=e_n, n_late_items=l_n,
+            improving=False, conclusive=True,
+            verdict=(f"conversion rate {e_rate:.0%} -> {l_rate:.0%} over {l_n} items -- NOTHING "
+                     "converts under §33. It is ceremony with good telemetry, and no trend "
+                     "argument can rescue a rate of zero: either the enforcement is not biting or "
+                     "the bottleneck is elsewhere. Find out which."))
+
+    # COMPARED WITH ITS UNCERTAINTY, not with `>`. Two proportions differing by a point are not a
+    # trend, and ranking on raw point estimates is precisely what libs/doctrine/estimate.py exists
+    # to stop the rest of the desk doing.
+    se = (_rate_se(e_rate, e_n) ** 2 + _rate_se(l_rate, l_n) ** 2) ** 0.5
+    rate_better = (l_rate - e_rate) > _EFFECT_Z * se
+    rate_worse = (e_rate - l_rate) > _EFFECT_Z * se
     faster = l_lat >= 0 and e_lat >= 0 and l_lat < e_lat
-    improving = bool(l_rate > e_rate or faster)
+    improving = bool(rate_better or (faster and not rate_worse))
+    indistinguishable = not rate_better and not rate_worse and not faster
     verdict = (
-        f"conversion rate {e_rate:.0%} -> {l_rate:.0%}, median latency {e_lat:.1f}d -> {l_lat:.1f}d"
+        f"conversion rate {e_rate:.0%} -> {l_rate:.0%} (n={e_n}/{l_n}, se {se:.0%}), "
+        f"median latency {e_lat:.1f}d -> {l_lat:.1f}d"
         + (" -- the law is working" if improving else
+           " -- the change is NOT distinguishable from flat at this sample size. That is a finding "
+           "about the evidence, not yet a verdict on the law: gather more before concluding either "
+           "way." if indistinguishable else
            " -- NO improvement while §33 has been in force. It is ceremony with good telemetry: "
            "either the enforcement is not biting or the bottleneck is elsewhere. Find out which.")
     )
     return LawEffectiveness(
         n_snapshots=n, early_rate=e_rate, late_rate=l_rate,
         early_latency_days=e_lat, late_latency_days=l_lat,
-        improving=improving, conclusive=True, verdict=verdict)
+        n_early_items=e_n, n_late_items=l_n,
+        improving=improving, conclusive=not indistinguishable, verdict=verdict)

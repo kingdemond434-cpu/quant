@@ -150,8 +150,22 @@ def main() -> None:
     agenda = json.loads(Path("research_agenda.json").read_text("utf-8"))
     dnr = agenda.setdefault("do_not_repeat", [])
     queue = agenda.setdefault("queue_ranked_by_expected_research_roi", [])
-    queued, rejected = [], []
+    # A PRE-REGISTRATION IS AN ACT, AND RE-RUNNING MUST NOT REPEAT IT. `queue.append` had no
+    # dedupe: every invocation added the same hypothesis again under a FRESH timestamp. Run once
+    # by hand that is a duplicate row; run from a cadence it is twenty-four fabricated
+    # pre-registration dates a day, forever -- and the pre-registration DATE is load-bearing under
+    # the two-stage law, because it is what makes forward evidence forward. The script would have
+    # quietly corrupted the evidence base it exists to populate.
+    #
+    # Caught when a smoke test of this file added a dated hypothesis to the live agenda, which is
+    # also the answer to why it stayed hidden: nothing ran it twice.
+    already = {str(q.get("id")) for q in queue if isinstance(q, dict)}
+    already |= {str(e).split(" ", 1)[0] for e in dnr}
+    queued, rejected, skipped = [], [], []
     for axis, name, mech, constr, r in results:
+        if name in already:
+            skipped.append(name)
+            continue
         if r["ev"] >= QUEUE_MIN or r["ev"] >= NEAR_MISS:
             rank = ("standard" if r["ev"] >= QUEUE_MIN
                     else "low-rank (near-miss; re-estimate at panel)")
@@ -171,6 +185,29 @@ def main() -> None:
             rejected.append(f"{name}({r['ev']})")
     Path("research_agenda.json").write_text(
         json.dumps(agenda, indent=1, ensure_ascii=False), "utf-8")
+
+    # A RUN THAT REGISTERED NOTHING DID NOT GENERATE, AND MUST NOT SAY IT DID. Wired into an
+    # hourly cadence, this rewrote the pre-registration doc's header to "generate run <now>" every
+    # hour while queueing nothing -- a tracked document asserting an act that did not happen, plus
+    # sixty commits a day of pure timestamp churn. The same class as the fabricated
+    # pre-registration this dedupe was written to stop, one file over: the doc is a RECORD of the
+    # last real generate run, so when there is nothing new it must keep the date of that run.
+    #
+    # gen_done_<axis> is a one-way latch the cadence tests for PRESENCE, so re-stamping it is
+    # harmless -- but it is skipped too, because writing "done at <now>" for work not done this
+    # run is the same lie in a quieter file.
+    if not queued and not rejected:
+        print(f"  nothing new to pre-register ({len(skipped)} already registered) -- "
+              "the doc and cadence state are LEFT ALONE. A run that generated nothing must not "
+              "stamp today onto a record of the last run that did.")
+        return
+
+    if skipped:
+        # SAID OUT LOUD, NOT SWALLOWED. "Nothing new to pre-register" and "the script did nothing"
+        # look identical from the outside, and only the first is a healthy cycle.
+        print(f"  already pre-registered, skipped: {len(skipped)} "
+              f"({', '.join(sorted(skipped)[:6])}"
+              f"{'...' if len(skipped) > 6 else ''})")
 
     cad_p = Path("data/cadence_state.json")
     cad = json.loads(cad_p.read_text("utf-8"))

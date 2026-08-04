@@ -14,17 +14,12 @@ LOG="data/cro_ai_logs/frontier_${REGION}_$(date -u +%Y%m%dT%H%M).log"
 # real log today is re-dug next invocation), so a mid-dig credit death costs nothing, and every
 # miner run on fable is Max-seat headroom preserved for the brain cycle and the deep sweep.
 export _BRAIN_MODEL_CHAIN="claude-fable-5 claude-opus-5 claude-opus-4-8"
+dig_dry_run "frontier-$REGION" "ops/frontier_${REGION}_prompt.txt" && exit 0
 brain_auth_check || exit 1
-# §33 MINED-TO-WIRED GATE: an organ producing faster than the desk converts is producing DEBT,
-# not value. The gate is RECOMPUTED here, never read from a flag -- `rm data/mining_suspended`
-# §33 CONVERSION PRIORITY (never a blocker -- mining is never throttled, principal
-# 2026-07-25): recompute the backlog and prepend it to this run's instructions so the
-# dig spends its FIRST effort converting, then mines on in the SAME run.
-_MINE_PRIORITY="$(.venv/bin/python scripts/mine_gate.py 2>/dev/null || true)"
-# §33 CONVERSION PRIORITY (NEVER a blocker -- mining is never throttled, principal
-# 2026-07-25). Recompute the backlog and prepend it to this run so the dig spends its FIRST
-# effort converting, then mines on in the SAME run. Acquisition is never cut to meet
-# extraction; extraction scales up to meet acquisition.
+# §33 CONVERSION PRIORITY. `dig_prompt` (ops/brain_env.sh) prepends the conversion duty
+# to this organ's brief so the run spends its FIRST effort disposing of the backlog, then
+# mines on in the SAME run -- mining is never throttled. It replaces a `_MINE_PRIORITY`
+# variable that was computed here and never referenced, under this exact comment.
 echo "=== frontier-$REGION start $(date -u) ===" >> "$LOG"
-claude --effort max --append-system-prompt "$_DOCTRINE" -p "$(cat ops/frontier_${REGION}_prompt.txt)" --dangerously-skip-permissions >> "$LOG" 2>&1
+claude --effort max --append-system-prompt "$_DOCTRINE" -p "$(dig_prompt ops/frontier_${REGION}_prompt.txt)" --dangerously-skip-permissions >> "$LOG" 2>&1
 echo "=== frontier-$REGION exit $? at $(date -u) ===" >> "$LOG"

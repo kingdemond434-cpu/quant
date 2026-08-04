@@ -31,6 +31,7 @@ from __future__ import annotations
 import math
 from collections import defaultdict
 from dataclasses import dataclass, field
+from typing import Any
 
 __all__ = [
     "EPS",
@@ -90,7 +91,7 @@ class InformationMarket:
     def settle(self, claim: str, outcome: bool) -> None:
         self.outcomes[claim] = bool(outcome)
 
-    def records(self) -> dict[str, dict]:
+    def records(self) -> dict[str, dict[str, Any]]:
         """Per-seat realised performance over SETTLED claims only."""
         acc: dict[str, list[tuple[float, bool]]] = defaultdict(list)
         for s in self.stakes:
@@ -131,7 +132,7 @@ class InformationMarket:
         tot = sum(full.values()) or 1.0
         return {s: round(w / tot, 6) for s, w in full.items()}
 
-    def consensus(self, claim: str, *, min_settled: int = MIN_SETTLED) -> dict:
+    def consensus(self, claim: str, *, min_settled: int = MIN_SETTLED) -> dict[str, Any]:
         """Calibration-weighted probability on one claim, with the dissent made visible."""
         rows = [s for s in self.stakes if s.claim == claim]
         if not rows:

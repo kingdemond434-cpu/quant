@@ -37,6 +37,7 @@ import math
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 __all__ = [
     "DOMAINS",
@@ -370,7 +371,7 @@ def exhaustion(attempts: int, survivors: int) -> float:
 
 
 def priority(q: Question, attempts: int = 0, survivors: int = 0,
-             state: dict | None = None) -> float:
+             state: dict[str, Any] | None = None) -> float:
     """What to explore NEXT: expected value x unexplored-ness x optionality.
 
     Multiplicative for the same reason EVIG is: a fully exhausted region is worth nothing however
@@ -398,10 +399,11 @@ def priority(q: Question, attempts: int = 0, survivors: int = 0,
 
 
 def rank_frontier(questions: tuple[Question, ...] | list[Question] = SEED_QUESTIONS,
-                  state: dict | None = None, limit: int | None = None) -> list[dict]:
+                  state: dict[str, Any] | None = None,
+                  limit: int | None = None) -> list[dict[str, Any]]:
     """The exploration frontier, highest priority first."""
     state = state or {}
-    rows = []
+    rows: list[dict[str, Any]] = []
     for q in questions:
         s = state.get(q.id, {})
         a, v = int(s.get("attempts", 0)), int(s.get("survivors", 0))
@@ -410,7 +412,7 @@ def rank_frontier(questions: tuple[Question, ...] | list[Question] = SEED_QUESTI
                      "coverage": round(coverage(a), 3),
                      "exhaustion": round(exhaustion(a, v), 3),
                      "priority": priority(q, a, v)})
-    rows.sort(key=lambda d: -d["priority"])
+    rows.sort(key=lambda d: -float(d["priority"]))
     return rows[:limit] if limit else rows
 
 
@@ -455,7 +457,7 @@ def spawn_second_order(parent: Question, discovery: str) -> tuple[Question, ...]
     )
 
 
-def record_outcome(state: dict, question_id: str, *, survived: bool) -> dict:
+def record_outcome(state: dict[str, Any], question_id: str, *, survived: bool) -> dict[str, Any]:
     """Every tested hypothesis updates the region it came from -- pass or fail.
 
     Failures are the more valuable update and the one a naive design drops: they are what turns
@@ -468,7 +470,7 @@ def record_outcome(state: dict, question_id: str, *, survived: bool) -> dict:
     return state
 
 
-def load_state(path: Path) -> dict:
+def load_state(path: Path) -> dict[str, Any]:
     try:
         d = json.loads(Path(path).read_text("utf-8"))
         return d.get("questions", d) if isinstance(d, dict) else {}
@@ -476,7 +478,7 @@ def load_state(path: Path) -> dict:
         return {}
 
 
-def save_state(path: Path, state: dict, spawned: list[Question] | None = None) -> None:
+def save_state(path: Path, state: dict[str, Any], spawned: list[Question] | None = None) -> None:
     p = Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(json.dumps({

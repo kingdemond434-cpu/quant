@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import contextlib
 import json
+import re
 import sqlite3
 import sys
 import time
@@ -55,6 +56,9 @@ OUT = ROOT / "data/allocator.json"
 LEDGER = ROOT / "data/allocator_ledger.json"
 CHASE = ROOT / "data/instrumentation_chase.json"
 HISTORY = ROOT / "data/instrumentation_coverage.jsonl"
+#: Written by scripts/estimate_contributions.py earlier in the same cycle. Read, never
+#: written here -- this organ ranks contributions, it does not author them.
+CONTRIBUTIONS = ROOT / "data/contributions.json"
 METRICS = ROOT / "data/desk_metrics.sqlite"
 
 #: subsystem -> (artifact that would carry its contribution estimate, what has to be in it).
@@ -145,18 +149,92 @@ _COST_NO_ORGAN = 8.0         # nothing writes this at all: build the organ first
 
 
 def _writers(artifact: str) -> list[str]:
-    """Scripts that reference this artifact path. Measured from the repo, never assumed."""
-    needle = (artifact.split(":", 1)[1] if artifact.startswith("desk_metrics:") else artifact)
+    """Files that actually WRITE this artifact. Mentions do not count.
+
+    THE BUG THIS REPLACES, CAUGHT ON THE FIRST LIVE RUN AGAINST REAL DATA. The previous version
+    matched any file CONTAINING the artifact string, so it reported "deep_review.py is already
+    scheduled and writes desk_metrics:fills" -- from a prose docstring reading "fills, rate limits,
+    or a 5xx mid-sequence". deep_review is a hostile code reviewer; it has never written a fill.
+
+    That mislabelled the gap cost-1 ("an organ already runs, add one estimate") when the truth is
+    that the only writer is a LIBRARY nothing currently calls, because nothing is trading. An
+    incorrect cost model sends the chase at the wrong gap first, which is precisely the failure
+    the ranking exists to prevent -- and it is the second time this shape has appeared here, after
+    the cadence scan that read only run_cadence.py and missed ops/*.sh.
+
+    So a write is now evidenced, not assumed: an INSERT for a table, a write call for a path. And
+    libs/ is scanned as well as scripts/, because the writer of record here lives in libs/store.
+
+    AND THE WRITE MUST BE BOUND TO THE ARTIFACT -- the third time this shape appeared. Requiring
+    "the path is mentioned somewhere" AND "a write call happens somewhere" leaves the two
+    unconnected, so any file that READS a set of paths and writes its own output is credited with
+    writing all of them. estimate_contributions.py reads twenty artifacts and writes one; on the
+    cycle it landed, the allocator reported it as the writer of every artifact it consumes. The
+    binding is now explicit: either the literal sits inside a write expression, or it is assigned
+    to a NAME and that name is the target of a write call.
+    """
+    is_table = artifact.startswith("desk_metrics:")
+    needle = artifact.split(":", 1)[1] if is_table else artifact
     out = []
-    for f in sorted((ROOT / "scripts").glob("*.py")):
-        if f.name == "run_allocator.py":
-            continue                      # this file names every artifact; it writes none of them
-        try:
-            if needle in f.read_text("utf-8", errors="ignore"):
-                out.append(f.name)
-        except OSError:
-            continue
+    roots = [ROOT / "scripts", ROOT / "libs"]
+    for root in roots:
+        for f in sorted(root.rglob("*.py")):
+            if f.name == "run_allocator.py":
+                continue                  # names every artifact; writes none of them
+            try:
+                src = f.read_text("utf-8", errors="ignore")
+            except OSError:
+                continue
+            if needle not in src:
+                continue
+            if is_table:
+                # A table is only written by an INSERT (or a REPLACE/UPSERT) naming it.
+                if not re.search(rf"(insert\s+(or\s+\w+\s+)?into|replace\s+into)\s+{needle}",
+                                 src, re.IGNORECASE):
+                    continue
+            elif not _writes_path(src, needle):
+                continue
+            out.append(str(f.relative_to(ROOT)))
     return out
+
+
+#: Method/function forms that actually PRODUCE a file. `.open(` is deliberately absent as a bare
+#: token: it is the single most common way to READ one, and admitting it is what let a reader be
+#: credited as a writer. Write modes are matched explicitly instead.
+_WRITE_CALLS = ("write_text(", "write_bytes(", "to_parquet(", "to_csv(", "savez(", "savefig(",
+                "dump(", "writer(")
+
+
+def _writes_path(src: str, needle: str) -> bool:
+    """Is there a write call BOUND to this specific path in this source?
+
+    Two admissible forms, and nothing else counts:
+
+      inline   the literal appears inside a write expression on the same logical line, e.g.
+               `(ROOT / "data/x.json").write_text(...)` or `open("data/x.json", "w")`
+      bound    the literal is assigned to a NAME and that name is the target of a write call,
+               e.g. `REPORT = ROOT / "data/x.json"` ... `REPORT.write_text(...)`
+
+    A path that merely appears in a dict of things to READ matches neither, which is the whole
+    point of the function.
+    """
+    for line in src.splitlines():
+        if needle in line and (any(w in line for w in _WRITE_CALLS)
+                               or re.search(r"open\([^)]*[\"'][wax]b?\+?[\"']", line)):
+            return True
+    names = set(re.findall(rf"^\s*([A-Za-z_]\w*)\s*=\s*[^\n=]*[\"'][^\"'\n]*{re.escape(needle)}",
+                           src, re.MULTILINE))
+    for name in names:
+        if re.search(rf"\b{name}\.(write_text|write_bytes|to_parquet|to_csv|savez)\(", src):
+            return True
+        # `NAME.open("w"/"a")` and `open(NAME, "w")` -- mode required, so a read cannot qualify.
+        if re.search(rf"\b{name}\.open\(\s*[\"'][wax]", src):
+            return True
+        if re.search(rf"\bopen\(\s*{name}\s*,\s*[\"'][wax]", src):
+            return True
+        if re.search(rf"\b(json|np|numpy|pickle)\.dump\([^)]*\b{name}\b", src):
+            return True
+    return False
 
 
 def _closure_cost(artifact: str, cadence_src: str) -> tuple[float, str]:
@@ -169,15 +247,22 @@ def _closure_cost(artifact: str, cadence_src: str) -> tuple[float, str]:
     """
     writers = _writers(artifact)
     if not writers:
-        return _COST_NO_ORGAN, "no script writes this artifact -- an organ has to be built first"
-    running = [w for w in writers if f"scripts/{w}" in cadence_src]
+        return _COST_NO_ORGAN, "nothing writes this artifact -- an organ has to be built first"
+    # A LIBRARY writer is not an organ. libs/store/trading.py holds the only INSERT INTO fills on
+    # this desk, and nothing calls it because nothing is trading -- so the gap is not "add an
+    # estimate", it is "the producing path has never executed". Reporting that as cost-1 would
+    # send the chase at a gap that no amount of estimate-writing can close.
+    if all(w.startswith("libs/") for w in writers):
+        return _COST_NO_ORGAN, (
+            f"only a LIBRARY writes this ({writers[0]}) and no scheduled organ calls it -- the "
+            "producing path has never executed, so no estimate can be added until it does")
+    running = [w for w in writers if w in cadence_src]
     if running:
         return _COST_ORGAN_RUNS, (
-            f"{running[0]} is already scheduled and writes this -- the gap is one estimate, "
+            f"{running[0]} is already scheduled and WRITES this -- the gap is one estimate, "
             "not an organ")
     return _COST_ORGAN_IDLE, (
-        f"{writers[0]} writes this but is NOT wired into the cadence -- wire it, then add the "
-        "estimate")
+        f"{writers[0]} writes this but is NOT scheduled -- wire it, then add the estimate")
 
 
 def _load_chase() -> dict[str, int]:
@@ -188,6 +273,35 @@ def _load_chase() -> dict[str, int]:
         return {str(k): int(v) for k, v in d.get("cycles_owed", {}).items()}
     except (OSError, json.JSONDecodeError, TypeError, ValueError):
         return {}
+
+
+def _load_contributions() -> list[dict]:
+    """The ranked contributions estimate_contributions.py wrote this cycle, or nothing.
+
+    ABSENCE IS NOT AN ERROR. When the file does not exist the allocator behaves exactly as it did
+    before this was wired -- it reports the instrumentation gap and offers no ranking. That is the
+    correct output for a desk with no evidence, and it means this reader can only ever ADD real
+    estimates rather than manufacture one.
+    """
+    try:
+        d = json.loads(CONTRIBUTIONS.read_text("utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return []
+    rows = d.get("ranked", [])
+    return rows if isinstance(rows, list) else []
+
+
+def _verdict_estimate(subsystem: str, measured: dict[str, dict]) -> Estimate:
+    """The Estimate a subsystem is judged on -- its measured contribution, or an explicitly
+    uninformative one.
+
+    n=0 is deliberate for the unmeasured case: the SAME code path that will classify real numbers
+    refuses to classify absent ones, so nobody downstream has to remember which mode it is in.
+    """
+    c = measured.get(subsystem)
+    if not c:
+        return Estimate(0.0, se=0.0, n=0, label=subsystem)
+    return Estimate(float(c["value"]), float(c["se_effective"]), int(c["n"]), subsystem)
 
 
 def _load_ledger() -> Ledger:
@@ -257,10 +371,29 @@ def main() -> int:
     # layer's own machinery then classifies as INSUFFICIENT-EVIDENCE rather than as a ranking.
     # That is the point: the same code path that will rank real numbers refuses to rank absent
     # ones, so nobody has to remember which mode it is in.
-    verdicts = [retirement_verdict(Estimate(0.0, se=0.0, n=0, label=s)) for s in instrumented]
+    # CONTRIBUTION ESTIMATES, IF ANY EXIST YET. estimate_contributions.py derives what it can from
+    # artifacts on disk; anything it could not derive comes back NEVER_EXECUTED with n=0, which
+    # cannot clear an action threshold by construction. So reading this file can only ever ADD
+    # real estimates -- it can never manufacture one -- and when the file is absent the allocator
+    # behaves exactly as it did before, reporting the instrumentation gap rather than a ranking.
+    contribs = _load_contributions()
+    measured = {c["subsystem"]: c for c in contribs if c.get("actionable")}
+
+    verdicts = [retirement_verdict(_verdict_estimate(s, measured)) for s in instrumented]
     unmeasured = [v for v in verdicts if v["verdict"] == "INSUFFICIENT-EVIDENCE"]
 
-    actions: list[Action] = []          # deliberately empty: no measured contribution exists
+    # ACTIONS ARE BUILT FROM MEASURED CONTRIBUTIONS ONLY. An empty list here is not a bug and not
+    # a placeholder: it is the correct output of a desk whose subsystems have no evidence yet, and
+    # it becomes non-empty the moment one of them earns an actionable estimate -- without this
+    # file changing again.
+    actions: list[Action] = [
+        Action(name=s,
+               contribution=Estimate(float(c["value"]), float(c["se_effective"]),
+                                     int(c["n"]), s),
+               cost=float(c.get("closure_cost", 1.0)),
+               subsystem=s)
+        for s, c in sorted(measured.items(), key=lambda kv: -float(kv[1]["density"]))
+    ]
     ledger = _load_ledger()
     alloc = allocate(actions, budget=0.0, ledger=ledger)
     LEDGER.parent.mkdir(parents=True, exist_ok=True)
@@ -283,10 +416,43 @@ def main() -> int:
                              "instrumented": len(instrumented),
                              "owed": len(uninstrumented)}, separators=(",", ":")) + "\n")
     series: list[float] = []
+    stamps: list[str] = []
     with contextlib.suppress(OSError, json.JSONDecodeError):
-        series = [float(json.loads(x)["coverage_pct"])
-                  for x in HISTORY.read_text("utf-8").strip().splitlines() if x][-60:]
+        rows = [json.loads(x) for x in HISTORY.read_text("utf-8").strip().splitlines() if x][-60:]
+        series = [float(r["coverage_pct"]) for r in rows]
+        stamps = [str(r.get("ts", "")) for r in rows]
     rate = meta_learning_rate(series)
+
+    # AN OBSERVATION COUNT IS NOT A SAMPLE SIZE. This file is appended once per ALLOCATOR RUN, so
+    # `n` counts how often the organ was invoked -- not how many cycles of real work happened
+    # between readings. On 2026-08-02 an engineer running the allocator while developing took n
+    # from 47 to 60 in an afternoon, and the verdict "the gap is NOT closing, n=60" borrowed all
+    # its authority from a number he had manufactured by looking. Same defect as §33's
+    # min_snapshots gate, in a second organ.
+    #
+    # The flat reading is still real -- coverage genuinely has not moved -- but the STRENGTH of
+    # that reading comes from elapsed time and distinct values, never from how many times somebody
+    # pressed the button. Both are reported so the claim can be weighed instead of taken on n.
+    distinct = len(set(series))
+    span_h = 0.0
+    if len(stamps) >= 2:
+        with contextlib.suppress(ValueError, TypeError):
+            span_h = max(0.0, (datetime.fromisoformat(stamps[-1])
+                               - datetime.fromisoformat(stamps[0])).total_seconds() / 3600.0)
+    rate = {
+        **rate,
+        "observations": len(series),
+        "distinct_values": distinct,
+        "span_hours": round(span_h, 1),
+        "evidence_note": (
+            f"{len(series)} observations over {span_h:.1f}h with {distinct} distinct value(s). "
+            + ("The reading is FLAT and the sample supports it: coverage held across a real "
+               "elapsed period."
+               if span_h >= 24.0 else
+               "SHORT WINDOW -- these observations are close together in time, so a flat reading "
+               "reflects how often this organ ran more than how the desk performed. An "
+               "observation count is not a sample size.")),
+    }
 
     CHASE.write_text(json.dumps({
         "_": ("cycles each instrumentation gap has stood open. Never reset except by CLOSING the "
@@ -348,7 +514,10 @@ def main() -> int:
           f"({coverage_pct}%) | bottleneck: {out['bottleneck']} | {out['seconds']}s")
     if rate.get("state") == "MEASURED":
         arrow = "closing" if rate["improving"] else "FLAT"
-        print(f"  closure rate {rate['rate']:+.2f} pp/cycle ({arrow}, n={rate['n']})")
+        print(f"  closure rate {rate['rate']:+.2f} pp/cycle ({arrow}, n={rate['n']} obs over "
+              f"{rate.get('span_hours', 0):.0f}h, {rate.get('distinct_values', 0)} distinct)")
+        if rate.get("span_hours", 0) < 24.0:
+            print(f"  {rate['evidence_note'].split('. ', 1)[-1]}")
         if not rate["improving"]:
             print("  THE GAP IS NOT CLOSING. Coverage is not distinguishable from flat over the "
                   "recorded history -- nobody is chasing this, and the constitution does not "

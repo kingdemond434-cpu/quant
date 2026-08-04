@@ -343,13 +343,25 @@ def register_health(
     # exists to forbid.
     undated = tuple(f"#{r.row_id} {r.title[:48]}" for r in open_rows if not r.plan_has_date)
     ownerless = tuple(f"#{r.row_id} {r.title[:48]}" for r in open_rows if not r.owner)
-    stale = age > rerank_bar_days
-    breach = age > escalate_days
+    # NEVER STAMPED IS THE WORST CASE, NOT THE BEST. `age` is -1.0 when no `Re-ranked` stamp has
+    # ever been written, and -1.0 fails every `age > bar` comparison -- so a register that had
+    # never been re-ranked once reported "re-rank current (-1d)" and passed clean. The absence of
+    # evidence was being read as evidence of compliance, which is the same shape as a NaN
+    # measurement counting as a filled coverage cell. Caught by a test written against a register
+    # carrying only the mechanical stamp.
+    never = age < 0
+    stale = never or age > rerank_bar_days
+    breach = never or age > escalate_days
 
     if not rows:
         verdict = ("register parsed ZERO rows -- either empty or the table shape changed. Its own "
                    "rule is 'never empty without written justification'; a register that cannot "
                    "be parsed drives nothing, and everything §35/§36 routes into it is lost.")
+    elif never:
+        verdict = (f"NO `Re-ranked` stamp has ever been written, with {len(open_rows)} open "
+                   "row(s). The register's own rule is 're-ranked at the START of every daily "
+                   "cycle'; an unstamped register has not been driven once, and reporting that as "
+                   "current would make never-having-run the healthiest possible state.")
     elif breach:
         verdict = (f"re-rank {age:.0f}d old, past the register's OWN {escalate_days:.0f}-day "
                    f"escalation bar, with {len(open_rows)} open row(s). The rule is written in the "

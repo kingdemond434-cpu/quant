@@ -32,6 +32,7 @@ from __future__ import annotations
 import hashlib
 import itertools
 from dataclasses import dataclass
+from typing import Any
 
 __all__ = [
     "PRIMITIVES",
@@ -161,7 +162,7 @@ def redundant_with(f: Feature, existing: list[Feature]) -> Feature | None:
 
 
 def invent(existing: list[Feature] | None = None, *, limit: int = 200,
-           include_interactions: bool = True) -> dict:
+           include_interactions: bool = True) -> dict[str, Any]:
     """Compose the space and return what SURVIVES the guards, plus what did not and why.
 
     Rejections are returned because "we invented 200 features" and "we invented 200 from 4,000
@@ -175,8 +176,8 @@ def invent(existing: list[Feature] | None = None, *, limit: int = 200,
     """
     have = list(existing or [])
     kept: list[Feature] = []
-    degenerate: list[dict] = []
-    redundant: list[dict] = []
+    degenerate: list[dict[str, Any]] = []
+    redundant: list[dict[str, Any]] = []
     n_composed = 0
 
     singles = [(p, "") for p in PRIMITIVES]

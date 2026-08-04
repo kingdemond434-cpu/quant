@@ -38,6 +38,7 @@ Pure scoring and proposal. Collects nothing, promotes nothing.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import Any
 
 __all__ = [
     "MODES",
@@ -72,7 +73,7 @@ class ManufactureSpec:
     #: Rough build cost in engineer-days. Denominator; small is better, but never the point.
     build_days: float = 1.0
     notes: str = ""
-    extra: dict = field(default_factory=dict)
+    extra: dict[str, Any] = field(default_factory=dict)
 
 
 def reverse_engineering_cost(spec: ManufactureSpec) -> float:
@@ -94,7 +95,7 @@ def reverse_engineering_cost(spec: ManufactureSpec) -> float:
     return round(base * depth * clock, 4)
 
 
-def score_spec(spec: ManufactureSpec) -> dict:
+def score_spec(spec: ManufactureSpec) -> dict[str, Any]:
     """Replication cost per engineer-day. Ranks what to build FIRST."""
     rc = reverse_engineering_cost(spec)
     days = max(0.25, float(spec.build_days))

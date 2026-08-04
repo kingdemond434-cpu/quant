@@ -3,6 +3,7 @@ illegal, a deferral expires, and a conversion CLAIM without a backing artifact n
 
 from __future__ import annotations
 
+import json
 import os
 from datetime import UTC, date, datetime
 from pathlib import Path
@@ -481,15 +482,147 @@ class TestLawSelfAudit:
         assert eff.conclusive is False and "too early" in eff.verdict
 
     def test_flat_conversion_indicts_the_law(self, tmp_path: Path) -> None:
-        # 12 snapshots, nothing ever converts -> §33 is ceremony and must say so
-        rows = [[(f"x{i}", 3, False) for i in range(3)] for _ in range(12)]
+        """Nothing ever converts. Widened from 3 to 6 items per window when the sample-size gate
+        landed -- the CLAIM is unchanged, it just now has enough evidence behind it to be made."""
+        rows = [[(f"x{i}", 3, False) for i in range(6)] for _ in range(12)]
         eff = law_effectiveness(load_ledger(self._ledger(tmp_path, rows)))
         assert eff.conclusive and eff.improving is False
         assert "ceremony with good telemetry" in eff.verdict
 
+    def test_a_zero_rate_is_convicted_on_its_LEVEL_without_needing_a_trend(
+            self, tmp_path: Path
+    ) -> None:
+        """A law under which nothing converts is failing whether or not the rate moved. Judging
+        only the derivative would exonerate the worst possible state for being CONSISTENTLY the
+        worst -- 0% to 0% is flat, and flatness is the least interesting thing about it."""
+        rows = [[(f"x{i}", 3, False) for i in range(6)] for _ in range(12)]
+        eff = law_effectiveness(load_ledger(self._ledger(tmp_path, rows)))
+        assert eff.late_rate == 0.0
+        assert eff.conclusive is True, "zero conversions must never report as inconclusive"
+        assert "no trend argument can rescue a rate of zero" in eff.verdict
+
     def test_rising_conversion_clears_the_law(self, tmp_path: Path) -> None:
-        early = [[(f"e{i}", 3, False) for i in range(3)] for _ in range(6)]
-        late = [[(f"l{i}", 3, True) for i in range(3)] for _ in range(6)]
+        early = [[(f"e{i}", 3, False) for i in range(6)] for _ in range(6)]
+        late = [[(f"l{i}", 3, True) for i in range(6)] for _ in range(6)]
         eff = law_effectiveness(load_ledger(self._ledger(tmp_path, early + late)))
         assert eff.conclusive and eff.improving is True
         assert "the law is working" in eff.verdict
+
+    def test_a_rate_built_on_two_items_cannot_convict_the_law(self, tmp_path: Path) -> None:
+        """THE LIVE BUG. min_snapshots gates how often the ledger was WRITTEN; the rate rests on
+        how many distinct ITEMS were seen, and the production ledger had 62 of the former and 2 of
+        the latter. It reported 40% -> 40% and called §33 "ceremony with good telemetry" from a
+        sample where one item flipping moves the rate fifty points -- committed by the organ that
+        enforces the evidence standard on everything else."""
+        early = [[("e1", 3, False), ("e2", 3, True)] for _ in range(6)]
+        late = [[("l1", 3, False), ("l2", 3, True)] for _ in range(6)]
+        eff = law_effectiveness(load_ledger(self._ledger(tmp_path, early + late)))
+        assert eff.conclusive is False
+        assert eff.n_early_items < 5 and eff.n_late_items < 5
+        assert "distinct items per window" in eff.verdict
+        assert "never how much evidence it holds" in eff.verdict
+
+    def test_a_one_point_move_is_not_a_trend(self, tmp_path: Path) -> None:
+        """Two proportions differing slightly are not evidence of improvement. Comparing raw point
+        estimates is exactly what libs/doctrine/estimate.py exists to stop the rest of the desk
+        doing, and this function was doing it with `>`."""
+        early = [[(f"e{i}", 3, i < 3) for i in range(8)] for _ in range(6)]
+        late = [[(f"l{i}", 3, i < 4) for i in range(8)] for _ in range(6)]
+        eff = law_effectiveness(load_ledger(self._ledger(tmp_path, early + late)))
+        assert eff.late_rate > eff.early_rate, "the point estimate really did rise -- the trap"
+        assert eff.improving is False, "a 12pp move on n=8 is noise, not a working law"
+
+
+class TestAmbiguousRewriteSignal:
+    """A fresh clone and a rewritten history are STRUCTURALLY IDENTICAL, and the check says so.
+
+    data/ is gitignored, so any fresh checkout starts an empty ledger and fills it one row per
+    audit invocation. Every row then postdates the recorded earliest at an unchanged or higher
+    count -- the same signature as a rewrite that replaced old rows with new ones.
+
+    A carve-out exempting "disjoint history" was written and REVERTED: `n >= n_snapshots` holds for
+    both cases, so exempting it converted a false positive into a false NEGATIVE on the only
+    detector of the desk's evidence base being erased. Between those two errors this one is the
+    cheap one -- an accusation can be checked, a silent deletion cannot be noticed. So the verdict
+    stands and the ambiguity moves into the message.
+    """
+
+    @staticmethod
+    def _rat(n, earliest):
+        return Ratchet(n_snapshots=n, earliest_ts=earliest)
+
+    def test_the_signal_still_fires_because_it_cannot_safely_be_suppressed(self) -> None:
+        led = [{"ts": 2000.0 + i, "items": []} for i in range(90)]
+        bad, _ = ledger_regressed(self._rat(89, 1000.0), led)
+        assert bad is True
+
+    def test_the_message_names_the_environment_explanation(self) -> None:
+        """What stops a reader -- this one, on 2026-08-02 -- filing a container artifact as a desk
+        defect. The check cannot resolve the ambiguity; it can refuse to hide it."""
+        led = [{"ts": 2000.0 + i, "items": []} for i in range(90)]
+        _, why = ledger_regressed(self._rat(89, 1000.0), led)
+        assert "CHECK THE ENVIRONMENT BEFORE THE CONCLUSION" in why
+        assert "gitignored" in why and "having deleted nothing" in why
+
+    def test_the_message_carries_the_numbers_needed_to_decide(self) -> None:
+        led = [{"ts": 2000.0 + i, "items": []} for i in range(90)]
+        _, why = ledger_regressed(self._rat(89, 1000.0), led)
+        assert "2000" in why and "1000" in why and "90 rows" in why
+
+    def test_a_genuinely_truncated_history_is_STILL_caught(self) -> None:
+        led = [{"ts": 1000.0 + i, "items": []} for i in range(10)]
+        bad, why = ledger_regressed(self._rat(89, 1000.0), led)
+        assert bad is True and "truncated or deleted" in why
+
+    def test_an_intact_ledger_still_reads_intact(self) -> None:
+        led = [{"ts": 1000.0 + i, "items": []} for i in range(120)]
+        bad, why = ledger_regressed(self._rat(89, 1000.0), led)
+        assert bad is False and why == "ledger intact"
+
+
+class TestSnapshotCountIsMachineLocal:
+    """THE AUDITOR WAS MANUFACTURING ITS OWN DEFECT, ONCE PER RUN, FOREVER.
+
+    `append_snapshot` adds one ledger row per max_audit invocation, so `n_snapshots` advanced on
+    every sweep. The ratchet -- a GIT-TRACKED file -- was rewritten unconditionally, so the working
+    tree was dirty after every run and the next check duly reported `dig-output-uncommitted`. The
+    only way to keep it green was to commit after every audit. A defect that can only be cleared by
+    ceremony is noise, and it was crowding out the defects that matter.
+
+    The count is also the wrong thing to commit on its own terms: data/ is gitignored, so a clone's
+    ledger starts empty and its count has nothing to do with the count the VPS reached. Comparing
+    the two reports truncation on a machine that has deleted nothing.
+    """
+
+    def _led(self, tmp_path, names, ts=1000.0):
+        p = tmp_path / "led.jsonl"
+        with p.open("w", encoding="utf-8") as fh:
+            for i, n in enumerate(names):
+                fh.write(json.dumps({"ts": ts + i, "items": [{"n": n, "s": "x", "d": "owing",
+                                                              "t": 1}]}) + "\n")
+        return p
+
+    def test_a_clone_is_not_accused_of_truncating_the_vps_ledger(self, tmp_path) -> None:
+        """The committed ratchet says 113 snapshots; this machine's ledger holds 2. Judged against
+        the committed figure that is 'the ledger was truncated'. Judged against THIS machine's own
+        previous count -- which is what the sweep now passes -- it is a clone doing its second run.
+        """
+        led = load_ledger(self._led(tmp_path, ["A", "B"]))
+        committed = Ratchet(n_snapshots=113, earliest_ts=1000.0)
+        assert ledger_regressed(committed, led)[0] is True          # the old, cross-machine test
+        assert ledger_regressed(committed, led, local_n_prior=1)[0] is False
+
+    def test_a_genuine_local_truncation_still_fires(self, tmp_path) -> None:
+        """The false positive is removed WITHOUT removing the detector. This machine recorded 5
+        snapshots and now holds 2: rows were deleted here, and that must still be seen."""
+        led = load_ledger(self._led(tmp_path, ["A", "B"]))
+        r = Ratchet(n_snapshots=113, earliest_ts=1000.0)
+        bad, why = ledger_regressed(r, led, local_n_prior=5)
+        assert bad is True
+        assert "5 -> 2" in why
+
+    def test_omitting_local_state_preserves_the_original_behaviour(self, tmp_path) -> None:
+        """Callers with no machine-local state must be unaffected -- the parameter is additive."""
+        led = load_ledger(self._led(tmp_path, ["A", "B"]))
+        r = Ratchet(n_snapshots=5, earliest_ts=1000.0)
+        assert ledger_regressed(r, led) == ledger_regressed(r, led, local_n_prior=None)

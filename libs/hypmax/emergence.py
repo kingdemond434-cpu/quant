@@ -35,6 +35,7 @@ from __future__ import annotations
 import math
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
+from typing import Any
 
 __all__ = [
     "CLUSTER_MIN",
@@ -72,7 +73,8 @@ class Observation:
     strength: float = 0.3          # individually weak by definition; 1.0 would not be "weak"
 
 
-def cluster_weak_signals(obs: list[Observation], *, min_size: int = CLUSTER_MIN) -> list[dict]:
+def cluster_weak_signals(obs: list[Observation], *,
+                         min_size: int = CLUSTER_MIN) -> list[dict[str, Any]]:
     """Group weak observations by shared tag and promote CONVERGING clusters.
 
     A cluster's strength is SUPER-ADDITIVE in its member count -- sum(strength) x sqrt(n) --
@@ -124,7 +126,7 @@ class PropagationRule:
     measured_lift: float | None = None
 
 
-def propagate(rules: list[PropagationRule], fleet: list[str]) -> dict:
+def propagate(rules: list[PropagationRule], fleet: list[str]) -> dict[str, Any]:
     """Map each rule onto the diggers that do not yet have it.
 
     THE POINT IS THE FLEET, NOT THE RULE. One digger discovering a better search operator is a
@@ -161,7 +163,8 @@ def propagate(rules: list[PropagationRule], fleet: list[str]) -> dict:
     }
 
 
-def opportunity_cost_of_ignorance(evig_score: float, *, days_deferred: float = 1.0) -> dict:
+def opportunity_cost_of_ignorance(evig_score: float, *,
+                                  days_deferred: float = 1.0) -> dict[str, Any]:
     """The cost of NOT testing something -- the question a "what should we test?" list omits.
 
     A queue ranked only by what to test treats deferral as free. It is not: a hypothesis with real
@@ -182,7 +185,7 @@ def opportunity_cost_of_ignorance(evig_score: float, *, days_deferred: float = 1
     }
 
 
-def counterfactual_ready(n_discoveries: int, *, minimum: int = 1) -> dict:
+def counterfactual_ready(n_discoveries: int, *, minimum: int = 1) -> dict[str, Any]:
     """DORMANT until there is a discovery to be counterfactual about. Arms from a data condition.
 
     "Was this discovery inevitable, or did it need our specific language, region, operator or
@@ -211,11 +214,11 @@ class WeakSignalRegistry:
     def add(self, o: Observation) -> None:
         self.observations.append(o)
 
-    def clusters(self, *, min_size: int = CLUSTER_MIN) -> list[dict]:
+    def clusters(self, *, min_size: int = CLUSTER_MIN) -> list[dict[str, Any]]:
         return cluster_weak_signals(self.observations, min_size=min_size)
 
-    def tag_counts(self) -> Counter:
-        c: Counter = Counter()
+    def tag_counts(self) -> Counter[str]:
+        c: Counter[str] = Counter()
         for o in self.observations:
             c.update(o.tags or ("untagged",))
         return c

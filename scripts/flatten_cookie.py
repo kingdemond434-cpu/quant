@@ -16,6 +16,7 @@ SCOPE, DELIBERATELY MINIMAL AND APPROVED AS SUCH:
 
 Verifies before and after. Aborts if the position is not a long, or is not COOKIEUSDT.
 """
+
 from __future__ import annotations
 
 import sys
@@ -56,11 +57,14 @@ def main() -> None:
     before = pos_amt(creds)
     print(f"BEFORE  {SYM} positionAmt = {before:+,.1f}")
     if before == 0:
-        print("  already flat -- nothing to do"); return
+        print("  already flat -- nothing to do")
+        return
     if before < 0:
-        raise SystemExit(f"position is SHORT ({before:+,.1f}) -- that is the CORRECT direction "
-                         f"for a carry. Refusing to touch it; this script only unwinds the "
-                         f"inverted LONG it was written for.")
+        raise SystemExit(
+            f"position is SHORT ({before:+,.1f}) -- that is the CORRECT direction "
+            f"for a carry. Refusing to touch it; this script only unwinds the "
+            f"inverted LONG it was written for."
+        )
 
     # MARKET_LOT_SIZE maxQty = 150,000 on COOKIEUSDT. A single 916,772 order is rejected -4005
     # "Quantity greater than max quantity" -- AND THAT IS THE ROOT CAUSE OF THE INCIDENT ITSELF:
@@ -80,9 +84,19 @@ def main() -> None:
         n += 1
         print(f"  [{n}] reduceOnly MARKET SELL {chunk:,.0f}  (position now {cur:+,.1f})")
         try:
-            D._signed(D._FUT_BASE, "/fapi/v1/order", creds,
-                      {"symbol": SYM, "side": "SELL", "type": "MARKET",
-                       "quantity": chunk, "reduceOnly": "true"}, method="POST")
+            D._signed(
+                D._FUT_BASE,
+                "/fapi/v1/order",
+                creds,
+                {
+                    "symbol": SYM,
+                    "side": "SELL",
+                    "type": "MARKET",
+                    "quantity": chunk,
+                    "reduceOnly": "true",
+                },
+                method="POST",
+            )
         except Exception as e:
             print(f"      CHUNK FAILED: {e!r} -- stopping. Position left at {pos_amt(creds):+,.1f}")
             print("      Not retrying blindly; blind retries created this incident.")
@@ -94,9 +108,11 @@ def main() -> None:
     after = pos_amt(creds)
     print(f"AFTER   {SYM} positionAmt = {after:+,.1f}")
     acct = D._signed(D._FUT_BASE, "/fapi/v2/account", creds)
-    print(f"  margin_balance={float(acct['totalMarginBalance']):.2f}  "
-          f"available={float(acct['availableBalance']):.2f}  "
-          f"unrealized={float(acct['totalUnrealizedProfit']):.2f}")
+    print(
+        f"  margin_balance={float(acct['totalMarginBalance']):.2f}  "
+        f"available={float(acct['availableBalance']):.2f}  "
+        f"unrealized={float(acct['totalUnrealizedProfit']):.2f}"
+    )
     print("\n  REMAINING venue futures positions:")
     for p in D._signed(D._FUT_BASE, "/fapi/v2/positionRisk", creds):
         a = float(p.get("positionAmt", 0.0))

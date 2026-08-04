@@ -23,6 +23,7 @@ in descending order of how much money they are worth:
 
 Read-only. Touches no orders, no keys, no config. Run from repo root.
 """
+
 from __future__ import annotations
 
 import json
@@ -37,7 +38,7 @@ COST = ROOT / "data/cost_model.json"
 CFG = ROOT / "data/cashcarry_config.json"
 OUT = ROOT / "data/execution_bottleneck.json"
 
-DEFAULT_RT_BPS = 39.5      # matches the live executor after the P0 fix
+DEFAULT_RT_BPS = 39.5  # matches the live executor after the P0 fix
 FUNDING_PERIOD_H = 8
 
 
@@ -84,26 +85,41 @@ def main() -> None:
     hold_h = float(cfg.get("min_hold_h", cfg.get("MIN_HOLD_H", 24)))
 
     print("=== EXECUTION BOTTLENECK -- live book vs live gate ===")
-    print("    REALITY FEEDBACK: no backtest or model score overrides contradictory live evidence\n")
+    print(
+        "    REALITY FEEDBACK: no backtest or model score overrides contradictory live evidence\n"
+    )
 
     # ---------------------------------------------------------------- Q1
     print("Q1  WOULD THE OPEN BOOK PASS THE CURRENT ENTRY GATE?")
-    print(f"    gate: funding_bps_per_period x periods > round_trip_bps   "
-          f"(hold {hold_h:.0f}h = {hold_h/FUNDING_PERIOD_H:.0f} periods)\n")
+    print(
+        f"    gate: funding_bps_per_period x periods > round_trip_bps   "
+        f"(hold {hold_h:.0f}h = {hold_h / FUNDING_PERIOD_H:.0f} periods)\n"
+    )
     periods = max(1.0, hold_h / FUNDING_PERIOD_H)
     rows, n_fail = [], 0
-    print(f"    {'symbol':<16}{'funding/period':>15}{'earns':>9}{'needs':>9}{'cost src':>11}  verdict")
-    for sym, p in (pos.items() if isinstance(pos, dict) else []):
+    print(
+        f"    {'symbol':<16}{'funding/period':>15}{'earns':>9}{'needs':>9}{'cost src':>11}  verdict"
+    )
+    for sym, p in pos.items() if isinstance(pos, dict) else []:
         f = float(p.get("funding", 0.0))
         earns = f * 1e4 * periods
         rt, measured = _rt_bps(cm, sym)
         ok = earns > rt
-        n_fail += (not ok)
-        print(f"    {sym:<16}{f*1e4:>13.2f}bp{earns:>8.1f}{rt:>9.1f}"
-              f"{'measured' if measured else 'DEFAULT':>11}  {'PASS' if ok else 'FAIL'}")
-        rows.append({"symbol": sym, "funding_bps": round(f * 1e4, 3),
-                     "earns_bps": round(earns, 2), "needs_bps": round(rt, 2),
-                     "cost_measured": measured, "passes_gate": ok})
+        n_fail += not ok
+        print(
+            f"    {sym:<16}{f * 1e4:>13.2f}bp{earns:>8.1f}{rt:>9.1f}"
+            f"{'measured' if measured else 'DEFAULT':>11}  {'PASS' if ok else 'FAIL'}"
+        )
+        rows.append(
+            {
+                "symbol": sym,
+                "funding_bps": round(f * 1e4, 3),
+                "earns_bps": round(earns, 2),
+                "needs_bps": round(rt, 2),
+                "cost_measured": measured,
+                "passes_gate": ok,
+            }
+        )
     if rows:
         print(f"\n    {n_fail}/{len(rows)} open positions FAIL the gate that is now live.")
         if n_fail == len(rows):
@@ -129,8 +145,10 @@ def main() -> None:
             continue
         fb = sum(v for k, v in c.items() if "taker" in str(k))
         print(f"    {label}: {dict(c)}")
-        print(f"              taker_fallback {fb}/{tot} = {fb/tot*100:.1f}% of legs crossed "
-              f"the spread")
+        print(
+            f"              taker_fallback {fb}/{tot} = {fb / tot * 100:.1f}% of legs crossed "
+            f"the spread"
+        )
     tot_s, fb_s = sum(spot.values()), sum(v for k, v in spot.items() if "taker" in str(k))
     if tot_s and fb_s / tot_s > 0.25:
         print("\n    THIS IS THE CONTROLLABLE COST. A delta-neutral carry earns a few bps per")
@@ -142,11 +160,13 @@ def main() -> None:
     print("\nQ3  WHAT IS MISSING TO ATTRIBUTE COST?  (measurement doctrine, adopted today)\n")
     sample = trades[-1] if trades else {}
     have = set(sample)
-    need = {"fill_price": "actual average fill price of the leg",
-            "mid_at_decision": "mid quote when the order was sent -> slippage = fill - mid",
-            "fee_usd": "fee actually charged (maker rebate vs taker fee)",
-            "attempts": "how many maker re-quotes before fallback",
-            "wait_s": "seconds waited before crossing"}
+    need = {
+        "fill_price": "actual average fill price of the leg",
+        "mid_at_decision": "mid quote when the order was sent -> slippage = fill - mid",
+        "fee_usd": "fee actually charged (maker rebate vs taker fee)",
+        "attempts": "how many maker re-quotes before fallback",
+        "wait_s": "seconds waited before crossing",
+    }
     print(f"    trade record currently has: {sorted(have)}")
     missing = [k for k in need if k not in have]
     for k in missing:
@@ -161,11 +181,23 @@ def main() -> None:
     print("    to costs on a signal already CONFIRMED (funding persistence IC +0.432). Fixing")
     print("    what converts a confirmed signal into negative PnL dominates finding a second one.")
 
-    OUT.write_text(json.dumps({"updated": datetime.now(tz=UTC).isoformat(),
-                               "hold_h": hold_h, "periods": periods,
-                               "positions": rows, "n_fail_gate": n_fail,
-                               "spot_modes": dict(spot), "fut_modes": dict(fut),
-                               "events": dict(ev), "missing_fields": missing}, indent=1), "utf-8")
+    OUT.write_text(
+        json.dumps(
+            {
+                "updated": datetime.now(tz=UTC).isoformat(),
+                "hold_h": hold_h,
+                "periods": periods,
+                "positions": rows,
+                "n_fail_gate": n_fail,
+                "spot_modes": dict(spot),
+                "fut_modes": dict(fut),
+                "events": dict(ev),
+                "missing_fields": missing,
+            },
+            indent=1,
+        ),
+        "utf-8",
+    )
     print(f"\n  -> {OUT}")
 
 

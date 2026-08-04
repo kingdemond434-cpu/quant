@@ -21,6 +21,7 @@ annualise. The winner is the H with the highest NET annualised capture.
 
 Free Binance funding + the desk's own measured cost model. Stage-A. Run from repo root.
 """
+
 from __future__ import annotations
 
 import json
@@ -31,18 +32,25 @@ from pathlib import Path
 import numpy as np
 
 OUT = Path("data/optimal_hold.json")
-HOLDS_H = [8, 16, 24, 32, 48, 72, 120, 168]      # 1 period .. 1 week
+HOLDS_H = [8, 16, 24, 32, 48, 72, 120, 168]  # 1 period .. 1 week
 N_HIST = 500
 
 
 def _get(u, t=30):
-    return json.loads(urllib.request.urlopen(
-        urllib.request.Request(u, headers={"User-Agent": "q/1.0"}), timeout=t).read().decode())
+    return json.loads(
+        urllib.request.urlopen(
+            urllib.request.Request(u, headers={"User-Agent": "q/1.0"}), timeout=t
+        )
+        .read()
+        .decode()
+    )
 
 
 def universe(n: int = 40) -> list[str]:
     d = _get("https://fapi.binance.com/fapi/v1/ticker/24hr")
-    rows = [(float(x.get("quoteVolume", 0)), x["symbol"]) for x in d if x["symbol"].endswith("USDT")]
+    rows = [
+        (float(x.get("quoteVolume", 0)), x["symbol"]) for x in d if x["symbol"].endswith("USDT")
+    ]
     rows.sort(reverse=True)
     return [s for _, s in rows[:n]]
 
@@ -72,25 +80,29 @@ def main() -> None:
     syms = universe()
     ser = {s: f for s in syms if len(f := funding(s)) >= 200}
     if len(ser) < 15:
-        print(f"only {len(ser)} usable symbols"); return
+        print(f"only {len(ser)} usable symbols")
+        return
     grid = sorted(set.intersection(*[set(v) for v in ser.values()]))
     costs = cost_bps()
     med_cost = float(np.median(list(costs.values()))) if costs else 5.7
     print("=== OPTIMAL HOLDING PERIOD (optimising the alpha that works) ===")
-    print(f"    {len(ser)} symbols, {len(grid)} funding periods (~{len(grid)/3:.0f} days)")
-    print(f"    round-trip cost: median measured {med_cost:.2f} bps"
-          f" ({len(costs)} symbols priced)\n")
-    print(f"  {'hold':>6} {'gross %/yr':>11} {'cost %/yr':>10} {'NET %/yr':>10} {'rotations/yr':>13}")
+    print(f"    {len(ser)} symbols, {len(grid)} funding periods (~{len(grid) / 3:.0f} days)")
+    print(
+        f"    round-trip cost: median measured {med_cost:.2f} bps ({len(costs)} symbols priced)\n"
+    )
+    print(
+        f"  {'hold':>6} {'gross %/yr':>11} {'cost %/yr':>10} {'NET %/yr':>10} {'rotations/yr':>13}"
+    )
 
     res = []
     for H in HOLDS_H:
-        k = max(1, H // 8)                      # funding periods per hold
+        k = max(1, H // 8)  # funding periods per hold
         gross, used = [], 0
-        for i in range(0, len(grid) - k, k):    # non-overlapping rotations
+        for i in range(0, len(grid) - k, k):  # non-overlapping rotations
             t = grid[i]
             cur = np.array([ser[s][t] for s in ser])
             names = list(ser)
-            top = np.argsort(cur)[-max(2, len(cur) // 10):]
+            top = np.argsort(cur)[-max(2, len(cur) // 10) :]
             picked = [names[j] for j in top]
             # funding actually realised over the hold, per picked symbol
             realised = [sum(ser[s][grid[i + j]] for j in range(1, k + 1)) for s in picked]
@@ -98,16 +110,23 @@ def main() -> None:
             used += 1
         if not gross:
             continue
-        per_rot = float(np.mean(gross))                       # fraction, per rotation
+        per_rot = float(np.mean(gross))  # fraction, per rotation
         rots = 365 * 24 / H
         gross_ann = per_rot * rots * 100
         # cost: one round trip per rotation, weighted to the picked (liquid) names
         cost_ann = (med_cost / 1e4) * rots * 100
         net_ann = gross_ann - cost_ann
         print(f"  {H:>5}h {gross_ann:>10.2f}% {cost_ann:>9.2f}% {net_ann:>9.2f}% {rots:>12.0f}")
-        res.append({"hold_h": H, "gross_pct_yr": round(gross_ann, 3),
-                    "cost_pct_yr": round(cost_ann, 3), "net_pct_yr": round(net_ann, 3),
-                    "rotations_yr": round(rots, 1), "n_rotations_tested": used})
+        res.append(
+            {
+                "hold_h": H,
+                "gross_pct_yr": round(gross_ann, 3),
+                "cost_pct_yr": round(cost_ann, 3),
+                "net_pct_yr": round(net_ann, 3),
+                "rotations_yr": round(rots, 1),
+                "n_rotations_tested": used,
+            }
+        )
 
     if res:
         best = max(res, key=lambda r: r["net_pct_yr"])
@@ -116,13 +135,25 @@ def main() -> None:
         if cur24:
             d = best["net_pct_yr"] - cur24["net_pct_yr"]
             print(f"  CURRENT _MIN_HOLD_H = 24h -> net {cur24['net_pct_yr']:+.2f}%/yr")
-            print(f"  IMPROVEMENT AVAILABLE: {d:+.2f} %/yr by moving 24h -> {best['hold_h']}h"
-                  if abs(d) > 0.5 else "  24h is at/near the optimum -- leave it alone")
+            print(
+                f"  IMPROVEMENT AVAILABLE: {d:+.2f} %/yr by moving 24h -> {best['hold_h']}h"
+                if abs(d) > 0.5
+                else "  24h is at/near the optimum -- leave it alone"
+            )
         print("\n  CAVEAT: gross uses the LIQUID top-40 universe and the MEDIAN measured cost.")
         print("  A book trading unmeasured illiquid names pays far more than this and its true")
         print("  optimum is LONGER (cost amortises over more periods). Re-run per-universe.")
-    OUT.write_text(json.dumps({"updated": datetime.now(tz=UTC).isoformat(),
-                               "median_cost_bps": med_cost, "results": res}, indent=1), "utf-8")
+    OUT.write_text(
+        json.dumps(
+            {
+                "updated": datetime.now(tz=UTC).isoformat(),
+                "median_cost_bps": med_cost,
+                "results": res,
+            },
+            indent=1,
+        ),
+        "utf-8",
+    )
     print(f"  -> {OUT}")
 
 

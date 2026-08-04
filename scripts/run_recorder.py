@@ -155,6 +155,11 @@ def main() -> None:
                                              "p": tr["p"], "q": tr["q"],
                                              "m": bool(tr["m"])})
                 except Exception:
+                    # ONE SYMBOL'S FETCH MUST NOT KILL THE LOOP FOR THE OTHER TWENTY-NINE.
+                    # Raising here stops recording every symbol over a transient failure on
+                    # one, and unrecorded seconds are permanently unbuyable. Nothing is lost
+                    # by continuing: `fromId` resumes from the last id actually seen, so the
+                    # next tick collects the gap. Deferred, not dropped.
                     pass
         for sym in _SYMBOLS:
             if len(buf[sym]) >= _FLUSH_ROWS:

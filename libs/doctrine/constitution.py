@@ -74,6 +74,7 @@ from __future__ import annotations
 import re
 from collections.abc import Mapping
 from dataclasses import dataclass
+from typing import Any
 
 __all__ = [
     "CAUSAL_CHAIN",
@@ -653,7 +654,7 @@ def aggression_map() -> dict[str, int]:
     return {p.id: p.aggression for p in PRINCIPLES}
 
 
-def governance_balance(principles: tuple[Principle, ...] = PRINCIPLES) -> dict:
+def governance_balance(principles: tuple[Principle, ...] = PRINCIPLES) -> dict[str, Any]:
     """P24, measured. Do the mechanisms push this desk forward or hold it back?
 
     THE DIAGNOSIS THIS EXISTS TO PREVENT A REPEAT OF. A constitution can state an aggressive
@@ -963,6 +964,18 @@ OBJECTIVE_PREAMBLE = (
     "pager may notify without repairing -- and a plumber fixes the PIPE, never the water: a market "
     "loss is not a defect, and switching off a working strategy to stop a drawdown makes it "
     "permanent.\n"
+    # P8's interactional cover, added 2026-08-04. It was the LAST law with mechanical enforcement
+    # and no clause in the preamble -- the one number keeping interactional cover at 96.3%. The
+    # mechanical checks catch a lowered bar AFTER a candidate has been waved through; this is the
+    # only thing that reaches the model BEFORE it decides to lower one, and of all 27 laws it is
+    # the one an organ under throughput pressure is most tempted to break.
+    # TIGHT BY OBLIGATION. The length test says in as many words that the correct response to a
+    # preamble outgrowing its bound is to CUT, never to raise the number a third time. So this
+    # clause was written long, measured at 77 characters over, and cut to fit rather than being
+    # allowed to buy itself room -- which is the same discipline it is asking the reader to apply.
+    "  THROUGHPUT COMES FROM SCREENING MORE, NEVER FROM PASSING MORE:  a survivor waved through "
+    "at a lowered bar is NEGATIVE discovery -- it consumes capital and corrupts the prior. Empty "
+    "funnel means GENERATE, never loosen. The bar is a constant for life.\n"
     "  UNDER-EXPLORATION IS A BREACH:  any owned dataset below 100% explored is a breach, and the "
     "breach is the gap NOT CLOSING rather than the gap itself. Unmined proprietary data is edge "
     "already paid for and declined. Never propose exploring LESS; propose mining faster.\n"

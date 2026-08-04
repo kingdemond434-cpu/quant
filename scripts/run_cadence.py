@@ -61,6 +61,9 @@ _STATE_FLOORS_D = {"last_panel": 4.0, "last_tier1": 16.0, "last_prompt_review": 
                    "last_prospector": 35.0, "last_blind_rediscovery": 100.0,
                    "last_model_upgrade": 45.0, "last_meta_research": 3.0,
                    "last_fill_quality": 10.0,
+                   # Both are DAILY organs with a 1.0d gate; the floor is the outer bound past
+                   # which a skipped duty stops being a quiet cycle and becomes a defect.
+                   "last_breadth_expansion": 3.0, "last_hypothesis_generation": 3.0,
                    "last_lit_deepdive": 35.0, "last_decision_scoring": 35.0,
                    "last_memory_consolidation": 100.0}
 
@@ -271,6 +274,46 @@ def main() -> None:
         else:
             print(f"cadence: meta-research produced nothing rc={_r.returncode} -- duty stays OWED")
 
+    # BREADTH EXPANSION + HYPOTHESIS GENERATION (daily). BOTH SHIPPED UNSCHEDULED, and the
+    # allocator only surfaced it once its writer-attribution was corrected: an organ that writes
+    # an artifact nothing calls is indistinguishable, in every report, from an organ that does not
+    # exist. breadth_expander is the desk's only GENERATIVE source discovery ("here is territory
+    # you have not looked at") and hypothesis_generator is the only generator that can see the
+    # graveyard -- the one that stops the desk re-proposing the dead, which is exactly how the
+    # principal's 50-hypothesis slate arrived three-quarters already-refuted.
+    #
+    # PRODUCTION, NOT EXIT CODE. Both are LLM organs against a shared wallet. A half-funded
+    # roster 402s mid-run, the sanitiser drops the partial result, and the process exits clean --
+    # the precise shape that let cadence_state claim a panel ran while nothing had been appended
+    # for five days. So the duty is stamped on the ARTIFACT GROWING, never on the return code,
+    # and their own budget guards handle the money.
+    for _name, _script, _artifact, _key in (
+            ("breadth-expansion", "scripts/breadth_expander.py",
+             "data/breadth_expansion.jsonl", "last_breadth_expansion"),
+            ("hypothesis-generation", "scripts/hypothesis_generator.py",
+             "data/hypothesis_queue.jsonl", "last_hypothesis_generation")):
+        if _days_since(state, _key) < 1.0:
+            continue
+        _p = Path(_artifact)
+        try:
+            _before = _p.stat().st_size
+        except OSError:
+            _before = -1
+        _r = subprocess.run([sys.executable, _script],
+                            capture_output=True, text=True, timeout=900, check=False)
+        try:
+            _after = _p.stat().st_size
+        except OSError:
+            _after = -1
+        _tail = (_r.stdout or _r.stderr or "").strip().splitlines()[-1:] or [""]
+        if _after > _before:
+            state[_key] = now.isoformat()
+            fired.append(_name)
+            print(f"cadence: {_name} +{_after - _before}b | {_tail[0][:110]}")
+        else:
+            print(f"cadence: {_name} rc={_r.returncode} appended NOTHING -- duty stays OWED "
+                  f"| {_tail[0][:110]}")
+
     # FILL QUALITY (weekly). The ledger ordered "re-measure WEEKLY until >60%" after the
     # patient-opens fix; that order never became code, so the fix has been unverified since it
     # shipped. Cheap, read-only, no keys.
@@ -381,6 +424,52 @@ def main() -> None:
         fired.append("moat-mine")
         print(f"cadence: {_tail[0][:150]}")
 
+    # MOAT SCREENING AND SURVIVOR EXPLOITATION (EVERY CYCLE). Mining DESCRIBES the tape; screening
+    # ASKS it whether any mechanism predicts, and promotion turns a persistent answer into a
+    # forward clock. Running the first every cycle and the other two never was the asymmetry that
+    # left the desk's one irreplaceable asset measured everywhere and exploited nowhere.
+    #
+    # The order is load-bearing: screen writes the registry, promote reads it. Promotion runs even
+    # when screening produced nothing this pass, because persistence accumulates ACROSS passes and
+    # a candidate can cross the bar on a cycle that found no new survivor at all.
+    for _organ, _script, _artifact in (
+            ("moat-screen", "scripts/screen_moat.py", "data/moat_screen.json"),
+            ("moat-promote", "scripts/promote_moat_survivors.py", "data/moat_promotion.json"),
+            # And the only OUT-OF-SAMPLE question in the whole pipeline: does a candidate that was
+            # pre-registered still predict on tape recorded AFTER it was named? Everything above
+            # this line is answered on tape that already existed when the candidate was chosen.
+            ("moat-clocks", "scripts/review_moat_clocks.py", "data/moat_clock_review.json"),
+            # THE CALLERS THAT WERE THEMSELVES ORPHANS. Each of these was written to make a
+            # library module reachable -- emergence, wallet_graph, ict.cross_sectional -- and then
+            # nothing ran the caller. The libs orphan check went green because the import existed,
+            # which is how a wiring fix can be one link short and still report success. Each exits
+            # cleanly naming its own blocker when its input is absent, so running them every cycle
+            # costs seconds and turns "no data yet" into a dated statement rather than a silence.
+            ("weak-signals", "scripts/cluster_weak_signals.py", "data/weak_signal_clusters.json"),
+            ("wallet-graph", "scripts/resolve_wallets.py", "data/wallet_entities.json"),
+            ("ict-xsec", "scripts/run_ict_cross_sectional.py", "data/ict_cross_sectional.json"),
+            # SOLE IMPORTERS THAT NOTHING RAN -- found by the same sweep, pre-existing rather than
+            # mine. run_axis_generate keeps libs.research.alpha_economics reachable and completes
+            # in seconds; run_prediction_markets keeps libs.data.prediction_markets reachable and
+            # now reports an empty fetch instead of dying on a pandas KeyError, so a cycle where
+            # the venue is unreachable costs a line of output rather than a traceback.
+            ("axis-generate", "scripts/run_axis_generate.py", "data/cadence_state.json"),
+            ("prediction-markets", "scripts/run_prediction_markets.py", "data/cadence_state.json"),
+            # The failed-breakout study. Runs its MECHANISM stage every cycle and halts there when
+            # open interest is unavailable, so "we cannot yet test this hypothesis" is a dated
+            # statement rather than a silence. It synthesises nothing and has no authority; the
+            # kill criteria are pre-registered and binding before it ever sees data.
+            ("failed-breakout", "scripts/run_failed_breakout_study.py",
+             "data/failed_breakout_study.json")):
+        _r = subprocess.run([sys.executable, _script],
+                            capture_output=True, text=True, timeout=420, check=False)
+        _tail = (_r.stdout or _r.stderr or "").strip().splitlines()[-1:] or [""]
+        if _r.returncode != 0 or not Path(_artifact).exists():
+            print(f"cadence: {_organ} rc={_r.returncode} NO ARTIFACT | {_tail[0][:110]}")
+        else:
+            fired.append(_organ)
+            print(f"cadence: {_tail[0][:150]}")
+
     # GAUNTLET CALIBRATION (EVERY CYCLE). 420 candidates tested, 420 died -- and "the candidates
     # were worthless" and "the screen cannot detect an edge it is handed" fit that observation
     # equally well while demanding opposite responses. Live data can never separate them because
@@ -410,6 +499,97 @@ def main() -> None:
         print(f"cadence: ancestors rc={_r.returncode} NO ARTIFACT | {_tail[0][:110]}")
     else:
         fired.append("ancestors")
+        for _ln in (_r.stdout or "").strip().splitlines()[:1]:
+            print(f"cadence: {_ln[:150]}")
+
+    # TAPE -> BARS (EVERY CYCLE, BEFORE THE SCREEN). The recorders write 15s L2+trades; every
+    # screen, feature and label on this desk eats OHLCV bars, and nothing converted between them --
+    # so the ICT family reported NO BARS while 8.2GB of its input sat on disk in the wrong shape.
+    # Ordered before screen_ict deliberately: screening last cycle's bars would silently evaluate
+    # a stale window and report it as current.
+    _r = subprocess.run([sys.executable, "scripts/build_bars.py"],
+                        capture_output=True, text=True, timeout=900, check=False)
+    _tail = (_r.stdout or _r.stderr or "").strip().splitlines()[:1] or [""]
+    if Path("data/build_bars.json").exists():
+        fired.append("build-bars")
+        print(f"cadence: {_tail[0][:150]}")
+    else:
+        print(f"cadence: build-bars rc={_r.returncode} NO ARTIFACT | {_tail[0][:110]}")
+
+    # ICT SCREEN (EVERY CYCLE). The second strategy family landed with full test suites and NO
+    # CALLER -- the desk's own "built but never runs" class, committed while fixing instances of it
+    # elsewhere. Cheap (seconds, no network) and it refuses to synthesise bars when there are none,
+    # so a fresh checkout reports NO BARS rather than screening a generator.
+    _r = subprocess.run([sys.executable, "scripts/screen_ict.py"],
+                        capture_output=True, text=True, timeout=300, check=False)
+    _tail = (_r.stdout or _r.stderr or "").strip().splitlines()[:1] or [""]
+    if Path("data/ict_screen.json").exists():
+        fired.append("ict-screen")
+        print(f"cadence: {_tail[0][:150]}")
+    else:
+        print(f"cadence: ict-screen rc={_r.returncode} NO ARTIFACT | {_tail[0][:110]}")
+
+    # CANARIES (EVERY CYCLE). Charter §21 promised "re-run every 4 days" and nothing ran them:
+    # the file was seeded 2026-07-19 with placeholder baselines and never executed, so no shift was
+    # detectable in principle for two weeks. Cheap -- nine HTTP calls, seconds -- and the one that
+    # matters (C9) guards a LIVE data path rather than merely informing a digger.
+    _r = subprocess.run([sys.executable, "scripts/run_canaries.py"],
+                        capture_output=True, text=True, timeout=300, check=False)
+    _tail = (_r.stdout or _r.stderr or "").strip().splitlines()[:1] or [""]
+    if Path("data/canary_run.json").exists():
+        fired.append("canaries")
+        print(f"cadence: {_tail[0][:150]}")
+    else:
+        print(f"cadence: canaries rc={_r.returncode} NO ARTIFACT | {_tail[0][:110]}")
+
+    # ACQUISITION PLAN (EVERY CYCLE). Triage #93, unblocked 2026-07-29 and unbuilt until now.
+    # Ranks what data to acquire NEXT on measured terms rather than on research_cio's hardcoded
+    # advantage table -- the adaptive term is the ontology's own attempts/survivors record, so a
+    # class of data this desk has worked to exhaustion falls from EVIDENCE. Ranks only; it spends
+    # nothing and starts no collector.
+    _r = subprocess.run([sys.executable, "scripts/acquire_data.py"],
+                        capture_output=True, text=True, timeout=120, check=False)
+    _tail = (_r.stdout or _r.stderr or "").strip().splitlines()[:1] or [""]
+    if Path("data/acquisition_plan.json").exists():
+        fired.append("acquisition")
+        print(f"cadence: {_tail[0][:150]}")
+    else:
+        print(f"cadence: acquisition rc={_r.returncode} NO ARTIFACT | {_tail[0][:110]}")
+
+    # GAP-REGISTER MECHANICAL PASS (EVERY CYCLE). The register is, by the doctrine's own words,
+    # "the only organ that DRIVES work" -- and its stated cadence ("re-ranked at the START of
+    # every daily cycle") was executed by an LLM remembering to do it, which is precisely the
+    # reliability hole this module's docstring exists to close. Seven days and fifty open rows.
+    #
+    # This is the MECHANICAL half only: deadlines, parked rows, ownership and starvation, all
+    # computable and none of them opinions. It writes a stamp that deliberately does NOT match the
+    # `Re-ranked` regex, so it cannot discharge the judgment duty -- an organ that cleared a check
+    # it had not satisfied would stop the defect being reported and the work being done at the
+    # same moment, and only the first of those is visible.
+    _r = subprocess.run([sys.executable, "scripts/rerank_gaps.py"],
+                        capture_output=True, text=True, timeout=120, check=False)
+    _tail = (_r.stdout or _r.stderr or "").strip().splitlines()[-1:] or [""]
+    if _r.returncode != 0 or not Path("data/gap_rerank.json").exists():
+        print(f"cadence: gap-rerank rc={_r.returncode} NO ARTIFACT | {_tail[0][:110]}")
+    else:
+        fired.append("gap-rerank")
+        for _ln in (_r.stdout or "").strip().splitlines()[:1]:
+            print(f"cadence: {_ln[:150]}")
+
+    # CONTRIBUTION ESTIMATES (EVERY CYCLE, BEFORE THE ALLOCATOR). run_allocator has reported the
+    # same binding constraint on every cycle it has ever run -- "CONTRIBUTION ESTIMATES" -- and
+    # P4 says the marginal resource goes to argmax_i |dE[log W]/dC_i|, an argmax that was being
+    # taken over an empty set. This organ derives what it can from artifacts ON DISK and emits
+    # NEVER_EXECUTED for the rest, so absence stays ranked and costed rather than being silently
+    # read as zero. Ordered before the allocator deliberately: the allocator consumes its output,
+    # and a stale contributions file would rank this cycle on last cycle's evidence.
+    _r = subprocess.run([sys.executable, "scripts/estimate_contributions.py"],
+                        capture_output=True, text=True, timeout=120, check=False)
+    _tail = (_r.stdout or _r.stderr or "").strip().splitlines()[-1:] or [""]
+    if _r.returncode != 0 or not Path("data/contributions.json").exists():
+        print(f"cadence: contributions rc={_r.returncode} NO ARTIFACT | {_tail[0][:110]}")
+    else:
+        fired.append("contributions")
         for _ln in (_r.stdout or "").strip().splitlines()[:1]:
             print(f"cadence: {_ln[:150]}")
 

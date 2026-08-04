@@ -38,6 +38,7 @@ import sys
 import time
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
@@ -134,6 +135,25 @@ _RESOLUTION: dict[str, tuple[str, str]] = {
         PATCH_READY, "start the dedicated continuous miner (ops/run_moat_miner.sh) and confirm "
                      "coverage is RISING. A standing coverage number is edge already paid for and "
                      "declined; the breach is the gap not closing, never the gap itself"),
+    "tape-recording-stopped": (
+        BLOCKED, "the RECORDERS are the only thing that closes this, and no mining action does. "
+                 "Check they are alive and not disk-paused (the heartbeat carries a DISK-PAUSED "
+                 "marker while staying fresh, so liveness alone will report healthy). Until the "
+                 "tape grows again, every coverage number is measuring a frozen denominator"),
+    "tape-disk-deadline": (
+        PATCH_READY, "BUY STORAGE and move cold tape onto it. Deleting mined tape is not a fix -- "
+                     "the seven reconstructions are the first seven, not the last, so raw tape "
+                     "must stay re-readable as mechanisms are added. Recompression buys a "
+                     "multiple; storage changes the slope"),
+    "exploration-outpaced-by-recording": (
+        PATCH_READY, "raise MINER THROUGHPUT -- shorter --interval, larger per-run file budget, or "
+                     "a second miner process. The miner is already running and the archive is "
+                     "growing faster than it mines; treating this as neglect chases a motivation "
+                     "problem the desk has not got"),
+    "exploration-rate-unmeasured": (
+        PATCH_READY, "run the miner until at least three coverage observations exist. The LEVEL "
+                     "alone cannot distinguish a gap converging in hours from one that has stood "
+                     "still for a week, and P26 breaches on the second, not the first"),
     "exploration-blocked-upstream": (
         BLOCKED, "no mining action closes this -- the named producer (the recorders) is the only "
                  "thing that can write the data. Start them where the network permits; every "
@@ -178,6 +198,17 @@ def _autofix(key: str) -> dict:
     return {"applied": False, "action": f"no autofix implemented for '{key}'"}
 
 
+def _scope(audit: Any, tracked: list[str], untracked: list[str]) -> str:
+    """Delegate to max_audit. ONE definition of scope, deliberately.
+
+    This briefly carried its own copy of the evidence-outranks-remedy rule. Two definitions of the
+    same judgement drift, and the one that matters becomes whichever module happened to run --
+    which is the defect class this desk keeps finding in itself. The rule now lives in
+    `max_audit.scope_of` and both callers read it there.
+    """
+    return str(audit.scope_of(tracked, untracked))
+
+
 def main() -> int:
     t0 = time.time()
     import scripts.max_audit as audit
@@ -208,8 +239,22 @@ def main() -> int:
                             "NO RESOLUTION DECLARED for this defect key. A constitutional check "
                             "that ships without a fix path is itself a P25 violation -- add an "
                             "entry to _RESOLUTION naming the exact repair.")
-        breaches.append(Leak(id=key, what=msg[:400], evidence="max_audit constitutional check",
-                             tier=tier, action=action,
+        # SCOPE, FROM THE DEFECT'S OWN CITED EVIDENCE. A breach whose evidence is a MISSING
+        # GITIGNORED ARTIFACT is a fact about THIS MACHINE, not about the repository: data/ is
+        # gitignored, so `data/coexistence.json absent` is true on every fresh checkout by
+        # construction and no commit can pre-satisfy it. Tiering it PATCH_READY says the desk is
+        # in a breach it controls and has not fixed, which is a false accusation against any clone
+        # -- and it is the same REPO/RUNTIME distinction max_audit already derives, so it is
+        # imported rather than re-invented (two definitions would drift and the one that mattered
+        # would be whichever ran).
+        #
+        # The action is UNCHANGED: on the machine that owns the desk, running the named script is
+        # still exactly the fix. Only the claim about whose fault it is gets corrected.
+        tracked, untracked = audit.cited_evidence(msg)
+        scope = _scope(audit, tracked, untracked)
+        breaches.append(Leak(id=key, what=msg[:400],
+                             evidence=f"max_audit constitutional check [{scope}]",
+                             tier=tier, action=action, scope=scope,
                              verify="the same check returns clean on the next cycle"))
 
     ledger = LeakLedger.load(BREACHES)

@@ -115,7 +115,66 @@ checkable, not a slogan: the Glassnode/CryptoQuant watchlist card (improvement_i
 "burn down §7 next") still carries search-summary provenance; register #4's `_DEPTH_MULT` is still
 hand-set; register #59's fee model is still two hardcoded VIP0 constants.
 
-### WS-005 cross-asset early-warning rotation may have a crypto analog [observations: 1]
+### WS-005 the desk's DETECTORS read "not measured" as "measured and fine" [observations: 5 across 5 subsystems]
+first-seen: 2026-08-02 · moat closure verdict (frozen grid races coverage to 100%)
+latest: 2026-08-02 · law_effectiveness (a law convictable by observing it)
+direction: when a detector on this desk meets ABSENCE — no stamp, no sample, no growth, a NaN —
+its default resolves to the CLEAN verdict. So the least-instrumented state of any subsystem is
+also its healthiest-looking one, and the only way to trip a check is to have been measured before
+and then regressed. A subsystem that never started is invisible to the organ built to watch it.
+independence: YES — five unrelated subsystems, five separate authors, found on five different days:
+(a) REGISTER: `register_health` sets age = -1.0 when no `Re-ranked` stamp was ever written; -1.0
+fails every `age > bar` comparison, so a register never driven ONCE reported "re-rank current".
+(b) §33 SELF-AUDIT: `law_effectiveness` gated conclusiveness on `min_snapshots`, which counts how
+often the AUDITOR RAN — measured at exactly +1 per `max_audit` invocation. The bar was reachable
+in one afternoon with no mining at all: a law convictable by observing it.
+(c) MOAT COVERAGE: coverage is filled/total and total only grows while the recorders write, so a
+paused recorder freezes the denominator and the miner closes the last holes to 100% — a GREEN
+number produced by the exact event that ends the asset.
+(d) MOAT CELLS (2026-08-01): a NaN scalar was summarised as n=1, marking a coverage cell FILLED on
+a measurement never taken.
+(e) CEILING CHECK: `check_no_ceiling` only interrogated organs whose source contained the string
+"coverage", so two organs escaped the law by not mentioning it.
+promotion-check: **CONVERGED -> PROMOTED 2026-08-02.** Five independent instances of one
+mechanism is past any reasonable bar. Promoted to a STANDING SCREEN rather than a hypothesis,
+because it is a process defect and not a market claim:
+
+  > Any detector whose input can be ABSENT must state its verdict for absence EXPLICITLY, and that
+  > verdict may not be the clean one. "Never measured" is a third state — not a pass, not a fail —
+  > and collapsing it into pass is the single most repeated defect in this desk's history.
+
+Already applied this cycle in five places: never-stamped is now both stale and breach; thin
+evidence yields `mine-law-unjudgeable` rather than silence; a frozen tape yields
+`RECORDING-STOPPED` with `coverage_is_meaningful: false`; a NaN leaves the cell open; membership
+rather than a keyword triggers the ceiling check. Next targets, named so this is checkable rather
+than a slogan: every remaining `if not X: return` early-exit in scripts/max_audit.py — each one is
+a detector deciding that missing input means nothing to report.
+
+RELATION TO WS-004, AND THE DIRECTIONS ARE OPPOSITE — which is why this is a separate record and
+not another observation under it. WS-004 says the desk's ASSUMPTIONS err conservative (too
+pessimistic, costing growth while looking like prudence). WS-005 says the desk's DETECTORS err
+permissive (too optimistic, reporting health it never observed). Same root habit — substituting a
+default for a measurement — pointing in opposite directions depending on whether the substitution
+happens in an estimate or in a check. Filing them together would average out a sign that matters:
+the fix for one is "measure it", and the fix for the other is "refuse to conclude".
+
+
+### 2026-08-02 — convergence check (records examined: 5; promotions fired: 1)
+Examined WS-001..WS-004 against evidence produced this cycle, and added WS-005.
+
+- **WS-005 PROMOTED** on five independent instances of one mechanism, three of them found today
+  (register never-stamped, §33 convictable-by-observation, moat frozen-grid) and two earlier
+  (NaN-as-observation, ceiling keyword escape). Independence is genuine: five subsystems, five
+  authors, five days. Recorded as a standing screen, with its opposite-signed relation to WS-004
+  stated rather than merged away.
+- **WS-002 unchanged at 2 paths, one weak.** Today's canary run measured 0/9 endpoints reachable,
+  which is NOT evidence of free-tier enclosure — it is this container's egress proxy, a fact about
+  the observer. Counting it would have inflated a real signal with a self-inflicted one, which is
+  the exact error WS-005 describes. Explicitly declined.
+- WS-001, WS-003, WS-004 already PROMOTED 2026-07-26; no new evidence this cycle, so no re-weighing.
+  Re-litigating promoted records without new evidence is how a convergence check becomes a ritual.
+
+### WS-006 cross-asset early-warning rotation may have a crypto analog [observations: 1]
 first-seen: 2026-08-04 · EN frontier miner, Quantopian In&Out thread (mechanism: early-value-chain
 assets — base metals, industrials, short-rate yields — lead broad risk assets at ~3mo horizons)
 latest: same

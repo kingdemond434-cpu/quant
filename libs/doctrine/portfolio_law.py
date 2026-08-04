@@ -41,6 +41,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Mapping
+from typing import Any
 
 from libs.doctrine.estimate import ADMIT_Z, Estimate
 from libs.risk.kelly_shrink import shrink_fraction
@@ -68,7 +69,7 @@ _CONCENTRATION_BASE = 0.5
 def robust_kelly(kelly: float, *, sharpe_ann: float, n_days: float,
                  regime_stability: float = 1.0,
                  execution_confidence: float = 1.0,
-                 model_confidence: float = 1.0) -> dict:
+                 model_confidence: float = 1.0) -> dict[str, Any]:
     """f = f_Kelly x gamma_estimation x gamma_regime x gamma_execution x gamma_model.
 
     MULTIPLICATIVE, because the uncertainties compound rather than average. An edge measured over
@@ -101,7 +102,7 @@ def robust_kelly(kelly: float, *, sharpe_ann: float, n_days: float,
     }
 
 
-def significance_gate(mu: float, se: float, *, z: float = SIGNIFICANCE_Z) -> dict:
+def significance_gate(mu: float, se: float, *, z: float = SIGNIFICANCE_Z) -> dict[str, Any]:
     """Allocation is ZERO unless the edge clears z standard errors. Not small -- zero.
 
     "Size it small to keep learning" is the argument this refuses, and it is a real argument with
@@ -135,7 +136,8 @@ def concentration_cap(regime_stability: float, *, base: float = _CONCENTRATION_B
     return round(base * max(0.0, min(1.0, float(regime_stability))), 4)
 
 
-def marginal_contribution(with_all: Estimate, without_i: Estimate, name: str = "") -> dict:
+def marginal_contribution(with_all: Estimate, without_i: Estimate,
+                          name: str = "") -> dict[str, Any]:
     """MC_i = Ê[log W | S] - Ê[log W | S\\{i}]. Standalone performance is not the question.
 
     A weaker standalone strategy that raises portfolio compounding through diversification is
@@ -158,7 +160,7 @@ def marginal_contribution(with_all: Estimate, without_i: Estimate, name: str = "
     }
 
 
-def coexistence_verdict(contributions: Mapping[str, dict]) -> dict:
+def coexistence_verdict(contributions: Mapping[str, dict[str, Any]]) -> dict[str, Any]:
     """Whether the families can coexist, and what to do FIRST when they cannot.
 
     ORTHOGONALISATION BEFORE RETIREMENT, in that order and without exception. When systematic and
@@ -184,7 +186,7 @@ def coexistence_verdict(contributions: Mapping[str, dict]) -> dict:
     }
 
 
-def portfolio_entropy(weights: Mapping[str, float]) -> dict:
+def portfolio_entropy(weights: Mapping[str, float]) -> dict[str, Any]:
     """Shannon entropy of the capital split -- how many INDEPENDENT bets are really on.
 
     Maximised subject to Ê[log W], never instead of it. The purpose is to discourage
@@ -211,7 +213,7 @@ def portfolio_entropy(weights: Mapping[str, float]) -> dict:
 
 
 def dynamic_risk_budget(*, calibration_brier: float | None, regime_stability: float,
-                        portfolio_correlation: float, execution_quality: float) -> dict:
+                        portfolio_correlation: float, execution_quality: float) -> dict[str, Any]:
     """R_t = f(calibration, regime stability, correlation, execution quality).
 
     Risk is an OPTIMISED VARIABLE, not a static limit. A fixed percentage is wrong in both
@@ -244,7 +246,7 @@ def dynamic_risk_budget(*, calibration_brier: float | None, regime_stability: fl
 
 
 def deploy_or_wait(e_log_w_deploy: Estimate, e_log_w_wait: Estimate,
-                   execution_cost: float = 0.0) -> dict:
+                   execution_cost: float = 0.0) -> dict[str, Any]:
     """Deploy iff Ê[log W | deploy] - C_exec > Ê[log W | wait]. Cash is a position.
 
     WAITING IS NOT NEUTRAL and this is where most desks lose quietly. Holding cash is a short

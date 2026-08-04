@@ -9,6 +9,7 @@ passed a weaker gate is not validated -- it is unexamined. This re-runs each LIV
 KIMCHI IS THE PRIORITY: it uses Upbit daily candles, and bithumb -- another KRW venue -- died of
 exactly this (KST day-open timestamps sat ~1.6d ahead of Binance UTC closes).
 Read-only diagnostic. Run from repo root."""
+
 from __future__ import annotations
 
 import json
@@ -29,15 +30,20 @@ def _get(url, timeout=35):
 
 def binance(sym="BTCUSDT", n=900):
     rows = _get(f"https://api.binance.com/api/v3/klines?symbol={sym}&interval=1d&limit={n}")
-    return {datetime.fromtimestamp(int(r[0]) / 1000, tz=UTC).date().isoformat(): float(r[4])
-            for r in rows}
+    return {
+        datetime.fromtimestamp(int(r[0]) / 1000, tz=UTC).date().isoformat(): float(r[4])
+        for r in rows
+    }
 
 
 def yahoo(sym):
     r = _get(f"https://query1.finance.yahoo.com/v8/finance/chart/{sym}?interval=1d&range=300d")
     res = r["chart"]["result"][0]
-    return {datetime.fromtimestamp(int(t), tz=UTC).date().isoformat(): float(c)
-            for t, c in zip(res["timestamp"], res["indicators"]["quote"][0]["close"], strict=False) if c}
+    return {
+        datetime.fromtimestamp(int(t), tz=UTC).date().isoformat(): float(c)
+        for t, c in zip(res["timestamp"], res["indicators"]["quote"][0]["close"], strict=False)
+        if c
+    }
 
 
 def upbit():
@@ -63,7 +69,8 @@ def shift_ic(signal: dict, gb: dict, shift: int, fx: dict | None = None) -> floa
         return float("nan")
     {d: i for i, d in enumerate(dates)}
     btc = np.array([gb[d] for d in dates])
-    ret = np.zeros(len(btc)); ret[1:] = btc[1:] / btc[:-1] - 1.0
+    ret = np.zeros(len(btc))
+    ret[1:] = btc[1:] / btc[:-1] - 1.0
     fwd = np.roll(ret, -1)
     sig, rr = [], []
     for i, d in enumerate(dates):
@@ -71,11 +78,13 @@ def shift_ic(signal: dict, gb: dict, shift: int, fx: dict | None = None) -> floa
         if 0 <= j < len(dates):
             dj = dates[j]
             v = signal[dj] / fx[d] / gb[d] - 1.0 if fx else signal[dj]
-            sig.append(v); rr.append(fwd[i])
+            sig.append(v)
+            rr.append(fwd[i])
     sig, rr = np.array(sig, float), np.array(rr, float)
     z = np.zeros(len(sig))
     for t in range(20, len(sig)):
-        w = sig[t - 20:t]; sd = w.std()
+        w = sig[t - 20 : t]
+        sd = w.std()
         z[t] = (sig[t] - w.mean()) / sd if sd > 0 else 0.0
     zv, fv = z[20:-1], rr[20:-1]
     return float(np.corrcoef(zv, fv)[0, 1]) if zv.std() and fv.std() else 0.0
@@ -91,14 +100,22 @@ def main() -> None:
         dates = sorted(set(kb) & set(gb) & set(fx))
         prem = np.array([kb[d] / fx[d] / gb[d] - 1.0 for d in dates])
         btc = np.array([gb[d] for d in dates])
-        ret = np.zeros(len(btc)); ret[1:] = btc[1:] / btc[:-1] - 1.0
+        ret = np.zeros(len(btc))
+        ret[1:] = btc[1:] / btc[:-1] - 1.0
         r = stage_a_screen(prem, ret, name="kimchi_premium", zwin=20)
         s = {k: shift_ic(kb, gb, k, fx) for k in (-1, 0, 1)}
-        print(f"KIMCHI n={len(dates)} | IC {r.get('ic'):+.4f} same {r.get('same_period_corr'):+.3f} "
-              f"resid {r.get('residual_ic'):+.4f} | {r['verdict']}")
+        print(
+            f"KIMCHI n={len(dates)} | IC {r.get('ic'):+.4f} same {r.get('same_period_corr'):+.3f} "
+            f"resid {r.get('residual_ic'):+.4f} | {r['verdict']}"
+        )
         print(f"  SHIFT TEST  -1d {s[-1]:+.3f} | 0d {s[0]:+.3f} | +1d {s[1]:+.3f}")
         fwd_leak = abs(s[1]) > abs(s[0]) * 1.5 and abs(s[1]) > 0.3
-        print(f"  -> {'*** FORWARD-SHIFT LEAK SUSPECTED ***' if fwd_leak else 'no lookahead pattern (shift0 not dominated by +1d)'}\n")
+        print(
+            "  -> "
+            + ("*** FORWARD-SHIFT LEAK SUSPECTED ***" if fwd_leak
+               else "no lookahead pattern (shift0 not dominated by +1d)")
+            + "\n"
+        )
     except Exception as e:
         print(f"KIMCHI: ERROR {type(e).__name__}: {e}\n")
 
@@ -108,13 +125,22 @@ def main() -> None:
         dates = sorted(set(sup) & set(gb))
         sig = np.array([sup[d] for d in dates])
         btc = np.array([gb[d] for d in dates])
-        ret = np.zeros(len(btc)); ret[1:] = btc[1:] / btc[:-1] - 1.0
+        ret = np.zeros(len(btc))
+        ret[1:] = btc[1:] / btc[:-1] - 1.0
         r = stage_a_screen(sig, ret, name="stablecoin_supply", zwin=20)
         s = {k: shift_ic(sup, gb, k) for k in (-1, 0, 1)}
-        print(f"STABLECOIN SUPPLY n={len(dates)} | IC {r.get('ic'):+.4f} "
-              f"same {r.get('same_period_corr'):+.3f} resid {r.get('residual_ic'):+.4f} | {r['verdict']}")
+        print(
+            f"STABLECOIN SUPPLY n={len(dates)} | IC {r.get('ic'):+.4f} "
+            f"same {r.get('same_period_corr'):+.3f} "
+            f"resid {r.get('residual_ic'):+.4f} | {r['verdict']}"
+        )
         print(f"  SHIFT TEST  -1d {s[-1]:+.3f} | 0d {s[0]:+.3f} | +1d {s[1]:+.3f}")
-        print(f"  -> {'*** FORWARD-SHIFT LEAK SUSPECTED ***' if abs(s[1])>abs(s[0])*1.5 and abs(s[1])>0.3 else 'no lookahead pattern'}\n")
+        print(
+            "  -> "
+            + ("*** FORWARD-SHIFT LEAK SUSPECTED ***"
+               if abs(s[1]) > abs(s[0]) * 1.5 and abs(s[1]) > 0.3 else "no lookahead pattern")
+            + "\n"
+        )
     except Exception as e:
         print(f"STABLECOIN: ERROR {type(e).__name__}\n")
 
@@ -123,9 +149,15 @@ def main() -> None:
     if p.exists():
         rows = [json.loads(x) for x in p.read_text("utf-8").splitlines() if x.strip()]
         nz = [r for r in rows if r.get("z20") is not None]
-        print(f"CNY PREMIUM clock: {len(rows)} rows, {len(nz)} with usable z20 "
-              f"(needs ~20 for warmup)")
-        print(f"  -> {'ACCRUING but z still null -- forward evidence has NOT started' if not nz else 'z live'}\n")
+        print(
+            f"CNY PREMIUM clock: {len(rows)} rows, {len(nz)} with usable z20 (needs ~20 for warmup)"
+        )
+        print(
+            "  -> "
+            + ("ACCRUING but z still null -- forward evidence has NOT started"
+               if not nz else "z live")
+            + "\n"
+        )
 
     # ---- 4. clock row counts (is forward evidence actually accruing?) ----
     print("=== FORWARD CLOCK ACCRUAL (are rows landing daily?) ===")
@@ -134,7 +166,10 @@ def main() -> None:
         if fp.exists():
             rows = [json.loads(x) for x in fp.read_text("utf-8").splitlines() if x.strip()]
             ds = sorted({r.get("date") for r in rows if r.get("date")})
-            print(f"  {f:22s} rows={len(rows):3d} span {ds[0] if ds else '-'} .. {ds[-1] if ds else '-'}")
+            print(
+                f"  {f:22s} rows={len(rows):3d} "
+                f"span {ds[0] if ds else '-'} .. {ds[-1] if ds else '-'}"
+            )
         else:
             print(f"  {f:22s} MISSING")
 

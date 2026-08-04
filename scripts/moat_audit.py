@@ -24,6 +24,7 @@ actually vary.
 
 Read-only. Samples rather than reading 4.4GB. Run from repo root.
 """
+
 from __future__ import annotations
 
 import gzip
@@ -37,8 +38,8 @@ import numpy as np
 ROOT = Path(__file__).resolve().parent.parent
 MOAT = ROOT / "data/moat"
 OUT = ROOT / "data/moat_quality.json"
-SAMPLE_FILES = 6          # hourly files per symbol
-SAMPLE_ROWS = 250         # snapshots per file
+SAMPLE_FILES = 6  # hourly files per symbol
+SAMPLE_ROWS = 250  # snapshots per file
 
 
 def parse(line: str):
@@ -56,8 +57,11 @@ def parse(line: str):
     if not b or not a:
         return None
     try:
-        bp, bq = float(b[0][0]), float(b[0][1])
-        ap, aq = float(a[0][0]), float(a[0][1])
+        # The quantity parse is the VALIDATION, not a value: a row whose size will not parse
+        # must reject HERE rather than reach the spread maths. The name is `_` because the
+        # call is used for the exception it raises, which is exactly what it is for.
+        bp, _ = float(b[0][0]), float(b[0][1])
+        ap, _ = float(a[0][0]), float(a[0][1])
     except (TypeError, ValueError, IndexError):
         return None
     if bp <= 0 or ap <= 0:
@@ -66,8 +70,15 @@ def parse(line: str):
     # depth within 1% of touch, both sides
     db = sum(float(p) * float(q) for p, q in b if float(p) >= mid * 0.99)
     da = sum(float(p) * float(q) for p, q in a if float(p) <= mid * 1.01)
-    return {"bp": bp, "ap": ap, "mid": mid, "spread_bps": (ap - bp) / mid * 1e4,
-            "db": db, "da": da, "t": d.get("t") or d.get("E") or d.get("ts")}
+    return {
+        "bp": bp,
+        "ap": ap,
+        "mid": mid,
+        "spread_bps": (ap - bp) / mid * 1e4,
+        "db": db,
+        "da": da,
+        "t": d.get("t") or d.get("E") or d.get("ts"),
+    }
 
 
 def audit(sym_dir: Path):
@@ -80,7 +91,7 @@ def audit(sym_dir: Path):
     for f in sorted(pick):
         try:
             with gzip.open(f, "rt", encoding="utf-8", errors="ignore") as fh:
-                lines = fh.readlines()   # scan all; depth rows are ~10% of the stream
+                lines = fh.readlines()  # scan all; depth rows are ~10% of the stream
         except Exception:
             continue
         for ln in lines:
@@ -103,31 +114,36 @@ def audit(sym_dir: Path):
     sp = np.array([r["spread_bps"] for r in rows])
     dep = np.array([r["db"] + r["da"] for r in rows])
     imb = np.array([r["db"] / max(r["db"] + r["da"], 1e-9) for r in rows])
-    # hours covered vs span
-    hrs = sorted({f.stem for f in files})
     span_h = len(files)
     q = 100.0
-    q -= min(40, crossed / max(1, n) * 100 * 4)         # crossed books are fatal
-    q -= min(25, stale / max(1, len(rows)) * 100)       # stale = recorder echoing
-    q -= min(20, bad / max(1, n) * 100 * 2)             # unparseable
+    q -= min(40, crossed / max(1, n) * 100 * 4)  # crossed books are fatal
+    q -= min(25, stale / max(1, len(rows)) * 100)  # stale = recorder echoing
+    q -= min(20, bad / max(1, n) * 100 * 2)  # unparseable
     if np.median(sp) > 100:
-        q -= 15                                          # absurd median spread
+        q -= 15  # absurd median spread
     if dep.std() == 0:
-        q -= 20                                          # depth never varies = not real
-    return {"snapshots": len(rows), "files": span_h, "bad": bad, "crossed": crossed,
-            "stale": stale, "stale_pct": round(stale / max(1, len(rows)) * 100, 2),
-            "spread_bps_med": round(float(np.median(sp)), 3),
-            "spread_bps_p95": round(float(np.percentile(sp, 95)), 3),
-            "depth_usd_med": round(float(np.median(dep)), 0),
-            "depth_cv": round(float(dep.std() / max(dep.mean(), 1e-9)), 3),
-            "imbalance_sd": round(float(imb.std()), 4),
-            "quality": round(max(0.0, q), 1)}
+        q -= 20  # depth never varies = not real
+    return {
+        "snapshots": len(rows),
+        "files": span_h,
+        "bad": bad,
+        "crossed": crossed,
+        "stale": stale,
+        "stale_pct": round(stale / max(1, len(rows)) * 100, 2),
+        "spread_bps_med": round(float(np.median(sp)), 3),
+        "spread_bps_p95": round(float(np.percentile(sp, 95)), 3),
+        "depth_usd_med": round(float(np.median(dep)), 0),
+        "depth_cv": round(float(dep.std() / max(dep.mean(), 1e-9)), 3),
+        "imbalance_sd": round(float(imb.std()), 4),
+        "quality": round(max(0.0, q), 1),
+    }
 
 
 def main() -> None:
     random.seed(7)
     if not MOAT.exists():
-        print("no data/moat"); return
+        print("no data/moat")
+        return
     print("=== MOAT PHASE 1: validate before mining ===")
     print("    clustering unvalidated books manufactures regimes from gaps -- this stops that\n")
     out = {}
@@ -137,35 +153,55 @@ def main() -> None:
             continue
         syms = sorted(p for p in base.iterdir() if p.is_dir())
         print(f"--- {side}: {len(syms)} symbols")
-        print(f"  {'symbol':<14}{'snaps':>7}{'files':>7}{'stale%':>8}{'sprd_med':>10}"
-              f"{'depth$':>12}{'depthCV':>9}{'imbSD':>8}{'Q':>6}")
+        print(
+            f"  {'symbol':<14}{'snaps':>7}{'files':>7}{'stale%':>8}{'sprd_med':>10}"
+            f"{'depth$':>12}{'depthCV':>9}{'imbSD':>8}{'Q':>6}"
+        )
         for sd in syms:
             a = audit(sd)
             if not a:
                 print(f"  {sd.name:<14} (unreadable / too few snapshots)")
                 continue
             out[f"{side}/{sd.name}"] = a
-            print(f"  {sd.name:<14}{a['snapshots']:>7}{a['files']:>7}{a['stale_pct']:>8.1f}"
-                  f"{a['spread_bps_med']:>10.2f}{a['depth_usd_med']:>12,.0f}"
-                  f"{a['depth_cv']:>9.2f}{a['imbalance_sd']:>8.3f}{a['quality']:>6.0f}")
+            print(
+                f"  {sd.name:<14}{a['snapshots']:>7}{a['files']:>7}{a['stale_pct']:>8.1f}"
+                f"{a['spread_bps_med']:>10.2f}{a['depth_usd_med']:>12,.0f}"
+                f"{a['depth_cv']:>9.2f}{a['imbalance_sd']:>8.3f}{a['quality']:>6.0f}"
+            )
         print()
 
     if out:
         qs = np.array([v["quality"] for v in out.values()])
         cvs = np.array([v["depth_cv"] for v in out.values()])
         good = [k for k, v in out.items() if v["quality"] >= 80]
-        print(f"  {len(out)} symbol-sides audited | median quality {np.median(qs):.0f} "
-              f"| {len(good)} pass (Q>=80)")
+        print(
+            f"  {len(out)} symbol-sides audited | median quality {np.median(qs):.0f} "
+            f"| {len(good)} pass (Q>=80)"
+        )
         print(f"  depth coefficient-of-variation: median {np.median(cvs):.2f}")
-        print(f"  -> {'STATES VARY ENOUGH for regime discovery' if np.median(cvs) > 0.25 else 'DEPTH BARELY VARIES -- regime clustering would be fitting noise'}")
+        print(
+            "  -> "
+            + ("STATES VARY ENOUGH for regime discovery" if np.median(cvs) > 0.25
+               else "DEPTH BARELY VARIES -- regime clustering would be fitting noise")
+        )
         worst = sorted(out.items(), key=lambda kv: kv[1]["quality"])[:3]
         print("\n  lowest quality (exclude from any regime model):")
         for k, v in worst:
-            print(f"    {k:<20} Q={v['quality']:.0f}  stale {v['stale_pct']:.1f}%  "
-                  f"crossed {v['crossed']}  bad {v['bad']}")
-    OUT.write_text(json.dumps({"updated": datetime.now(tz=UTC).isoformat(),
-                               "sample_files_per_symbol": SAMPLE_FILES,
-                               "symbols": out}, indent=1), "utf-8")
+            print(
+                f"    {k:<20} Q={v['quality']:.0f}  stale {v['stale_pct']:.1f}%  "
+                f"crossed {v['crossed']}  bad {v['bad']}"
+            )
+    OUT.write_text(
+        json.dumps(
+            {
+                "updated": datetime.now(tz=UTC).isoformat(),
+                "sample_files_per_symbol": SAMPLE_FILES,
+                "symbols": out,
+            },
+            indent=1,
+        ),
+        "utf-8",
+    )
     print(f"\n  -> {OUT}")
 
 
