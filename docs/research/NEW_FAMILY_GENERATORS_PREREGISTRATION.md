@@ -76,3 +76,22 @@ ladder is closed: NO-GO at all three intervals.
 **C. The pre-registered conditional executes**: 15m continuation did NOT clear costs, therefore
 **H9 ORB is dead without being built**, per the rule fixed above before the data existed.
 H4/H5 remain blocked on the moat tape (operator).
+
+---
+
+## DECLARED 2026-08-04, before the run — universe expansion for pooled power
+
+The pooled certification test's power scales with symbols per mechanism (m/(1+(m−1)ρ)). The
+campaign universe expands 10 → 25 USDT-perps (adding BNB, TRX, DOT, NEAR, ATOM, UNI, FIL, APT,
+ARB, OP, INJ, ETC, XLM, ALGO, AAVE), fetched uniformly from the Binance Vision daily archive
+with REAL volume, venue recorded in the report. Mechanism set and grids UNCHANGED; n_trials
+grows mechanically with symbols and is priced in full as always. At the measured ρ=0.348 the
+effective-observation multiplier rises 2.42× → 3.15× (t-gain 1.56× → 1.77×); min detectable
+pooled Sharpe drops ~0.77 → ~0.68 — inside the real-edge band with margin.
+
+**1m fill verification: closed as NOT-RUN, with the reason on record.** Its pre-registered role
+was fill realism for GO-candidate configs; every interval returned NO-GO with the conservative
+(stop-first, level-fill) assumptions, which only *understate* performance. A 1m pass can raise a
+negative number toward zero; it cannot flip a sign. Running it would spend compute to make a
+NO-GO slightly less negative — no decision changes, so it is recorded here instead of run. It
+revives automatically if any future intraday config reaches the gate's neighbourhood.
