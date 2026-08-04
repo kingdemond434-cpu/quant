@@ -80,7 +80,22 @@ _MIN_SLICE_FRACTION = 0.10            # an edge must hold >=10% of the book to b
 # the desk's capacity bar for every candidate it screened, so "retained only for" described a
 # second, stricter, unconstitutional rule quietly outranking the one above it. There is now ONE
 # band: capacity_status().
-_VENUE_MIN_NOTIONAL_USD = 10.0        # Binance-class minimum order notional
+# CAPACITY SINGLE-SOURCE (R0218). The venue minimum notional is MEASURED -- it lives in
+# data/capacity_floor.json, written by scripts/capacity_simulator.py off the live exchangeInfo
+# endpoints -- and this file used to RESTATE it as a private `= 10.0` literal: the same
+# one-policy-many-copies defect §42 records for the capacity band itself. It is now READ from
+# that artifact through the capacity-policy leaf, with two deliberate properties:
+#   * FALLBACK to the historical 10.0 ONLY when the canonical source is ABSENT or unreadable (e.g. a
+#     checkout where the simulator has never run -- venue_min_notional_usd() then returns None). An
+#     unmeasured venue must not zero the floor: that would admit dust-sized edges, making an
+#     unreadable file the loosest possible answer -- the exact failure _desk_equity_usd documents.
+#   * TIGHTEN-ONLY: a measured value may RAISE this floor, never lower it below the fallback. The
+#     recorded truth (spot_min 5.0) sits BELOW 10.0, and adopting it outright would LOOSEN the
+#     SUB-VIABLE gate. This change is de-duplication of a constant, not a threshold change, so the
+#     effective values are unchanged today: $10 venue minimum, $200 viability floor.
+_VENUE_MIN_NOTIONAL_FALLBACK_USD = 10.0   # Binance-class minimum order notional
+_VENUE_MIN_NOTIONAL_USD = max(venue_min_notional_usd() or _VENUE_MIN_NOTIONAL_FALLBACK_USD,
+                              _VENUE_MIN_NOTIONAL_FALLBACK_USD)
 _EXEC_VIABILITY_FLOOR_USD = 20.0 * _VENUE_MIN_NOTIONAL_USD   # ~$200: a handful of economic trips
 
 

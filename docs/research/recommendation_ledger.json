@@ -2679,8 +2679,8 @@
    "summary": "[renumbered R0212->R0218 at merge: concurrent session took R0212] CAPACITY SINGLE-SOURCE: libs/autodiscovery/validation.py:69 hardcodes _VENUE_MIN_NOTIONAL_USD=10.0 and derives a $200 _EXEC_VIABILITY_FLOOR_USD from it, while data/capacity_floor.json carries MEASURED venue truth (spot_min 5.0, fut_min 5.0, per_carry_median 15.0, recorded 2026-07-27 off live endpoints). Per L1.44 the read should source the artifact with the constant as a fallback that may only TIGHTEN. Also the 3 other exchangeInfo parsers still omit the notional filter (futures key is 'notional', not 'minNotional').",
    "roi_bps": 45.0,
    "raised": "2026-07-31T21:00:42.010440+00:00",
-   "status": "scheduled",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=10 effort_h=2: Unchanged: libs/autodiscovery/validation.py:83-84 still hardcodes _VENUE_MIN_NOTIONAL_USD=10.0 and derives _EXEC_VIABILITY_FLOOR_USD from it; zero reads of capacity_floor.json anywhere (grep). Futures exchangeInfo parsers binance_testnet.py / binance_live.py have NO notional/minNotional parse at all (grep 0 hits) while spot parsers do (binance_spot_live.py:119, whose comment at :106 documents the futures 'notional' key). tests/execution/test_filter_parity.py:89-106 already pins the key-name trap. Conservative direction today, so low rank, but small and unblocked.",
+   "status": "implemented",
+   "reason": "[wave1 2026-08-04] venue-min-notional de-duplicated onto the canonical capacity_policy.venue_min_notional_usd() leaf: measured truth read at import, TIGHTEN-ONLY vs the historical 10.0 fallback (measured 5.0 may never loosen the SUB-VIABLE gate), absent artifact falls back rather than zeroing the floor. Effective values unchanged today.",
    "commit": null,
    "due": "2026-08-05",
    "disposed": "2026-07-31T21:06:31.730049+00:00"
