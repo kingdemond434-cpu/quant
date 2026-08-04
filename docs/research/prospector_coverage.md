@@ -483,3 +483,33 @@ OPEN QUESTION CARRIED (diaspora, standing): unchanged from s1, now with the 94-e
 conversion moved to PRIVATE QQ/WeChat groups within 48h of the ban — the public-ground thinness is
 structural, so the probe should target overseas-hosted CN communities (OKX/Gate CN boards, CN X),
 not mainland mirrors.
+
+## SESSION NOTES — RU frontier miner
+
+### 2026-08-04 session 1-on-this-branch (RU frontier miner) — IN PROGRESS (write-first note; updated as items resolve)
+BRANCH CONTEXT (read this before judging continuity): this working tree forked from master at
+3bf89cd (07-29). RU seat s1 (2026-08-01) was written to the DIVERGED master ledger and is NOT in
+this tree; its laws are carried here by seat memory: (a) BARRIER MIGRATES — never hunt a
+friendlier jurisdiction, its premium is already zero; (b) RU premium axis CLOSED — OFAC-sanctioned
+venues are a charter s13 HARD STOP, never a data source, never carded; (c) crypto statarb capacity
+$3–11k/pair sits in our band; (d) OP-039 (habr comments API) exists on master — referenced by
+master id, never renumbered here; new OPs on this branch number from OP-049 (per the CN-s3/EN-s4
+fork convention at library line ~536). Pre-fork RU state in THIS tree = cyberleninka.ru API row in
+universe map + the арбитраж=arbitration lexical trap (OP library line ~300). At merge: union +
+renumber-once, ratchet-max.
+BACKLOG (resume mandate step 1): 0 pending technical verification. 3 pending LEGITIMACY/POLICY
+decisions (Upbit Historical portal, Glassnode/CryptoQuant vendor-replacement, NAVER DataLab) — all
+KR-ground/vendor-spend licence questions; ROUTED to the KR seat (licence reading in Korean) and
+the desk brain (vendor spend is principal-gated), not decidable from the RU seat. Not silence:
+routing recorded here.
+ITEMS THIS RUN (bounded scope, depth-maxed):
+  1. bits.media ERA-ARCHAEOLOGY (dark-forest #1; region era target). Wayback CDX map per OP-034
+     (propagated from EN s4 — charter s14 parity in action) + OP-033 windows-1251 decode
+     discipline. Hunt: pre-sanctions LocalBitcoins/EXMO era premium+arb mechanics, MM lore,
+     exchange-microstructure notes. STATUS: pending
+  2. DIASPORA (dark-forest #3, standing question): 2022 sanctions-exodus — where did the RU crypto
+     crowd GO (P2P/USDT rails, which platforms, which languages). s13-clean framing: public
+     threads only; sanctioned venues are never carded as sources; the deliverable is mechanism
+     knowledge + new PUBLIC grounds, not sanctioned-venue data. STATUS: pending
+  3. (stretch) habr.com quant long-reads at comment depth via the two-step comments endpoint
+     (library line ~202). STATUS: pending
