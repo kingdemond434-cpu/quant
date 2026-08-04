@@ -186,6 +186,22 @@ def main() -> None:
     Path("research_agenda.json").write_text(
         json.dumps(agenda, indent=1, ensure_ascii=False), "utf-8")
 
+    # A RUN THAT REGISTERED NOTHING DID NOT GENERATE, AND MUST NOT SAY IT DID. Wired into an
+    # hourly cadence, this rewrote the pre-registration doc's header to "generate run <now>" every
+    # hour while queueing nothing -- a tracked document asserting an act that did not happen, plus
+    # sixty commits a day of pure timestamp churn. The same class as the fabricated
+    # pre-registration this dedupe was written to stop, one file over: the doc is a RECORD of the
+    # last real generate run, so when there is nothing new it must keep the date of that run.
+    #
+    # gen_done_<axis> is a one-way latch the cadence tests for PRESENCE, so re-stamping it is
+    # harmless -- but it is skipped too, because writing "done at <now>" for work not done this
+    # run is the same lie in a quieter file.
+    if not queued and not rejected:
+        print(f"  nothing new to pre-register ({len(skipped)} already registered) -- "
+              "the doc and cadence state are LEFT ALONE. A run that generated nothing must not "
+              "stamp today onto a record of the last run that did.")
+        return
+
     if skipped:
         # SAID OUT LOUD, NOT SWALLOWED. "Nothing new to pre-register" and "the script did nothing"
         # look identical from the outside, and only the first is a healthy cycle.
