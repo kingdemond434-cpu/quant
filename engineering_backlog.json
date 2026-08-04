@@ -1,5 +1,5 @@
 {
-  "generated": "2026-08-01T08:24:00.866498+00:00",
+  "generated": "2026-08-02T08:36:07.972201+00:00",
   "roi_formula": "impact * p_success / effort_hours",
   "open": [
     {

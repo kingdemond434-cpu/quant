@@ -28,6 +28,7 @@ import re
 import subprocess
 import sys
 import time
+from collections.abc import Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -716,6 +717,30 @@ def check_generation(defects) -> None:
                     break
     if last_verdict and (not last_gen or last_verdict > last_gen):
         last_gen = last_verdict
+    # THIRD STORE (2026-08-01). The 07-28 fix established the right principle -- credit the
+    # PRODUCT, not the flag -- but wired only two of the three places a screen actually lands. A
+    # screen run through libs.research.axis_screen directly (rather than via stage_a_executor)
+    # writes reports/axis_screens/<axis>.json and NOTHING else, so this check called generation
+    # "skipped" on days real screens ran. Measured: it had been firing for 5.8d and was walked
+    # past by 10 awake cycles -- while R0069's decisive 38-asset / 84,891-asset-day panel screen
+    # was written to reports/axis_screens/ that very afternoon. Same shape as the §37 ack bug
+    # fixed in this commit: an organ judging the desk from a partial view of the evidence, then
+    # escalating. Newest of {flag, verdict row, screen report} wins.
+    # L1.44: content `updated` OUTRANKS mtime -- a deploy or checkout rewrites files and mtime
+    # then lies FRESH, which is the dangerous direction here (it would credit generation that
+    # never happened). Fall back to mtime only for the reports whose schema carries no stamp.
+    screens = ROOT / "reports/axis_screens"
+    if screens.is_dir():
+        for p in screens.glob("*.json"):
+            with contextlib.suppress(Exception):
+                stamp = None
+                blob = json.loads(p.read_text("utf-8"))
+                if isinstance(blob, dict):
+                    stamp = blob.get("updated") or blob.get("generated")
+                iso = str(stamp) if stamp else datetime.fromtimestamp(
+                    p.stat().st_mtime, tz=UTC).isoformat()
+                if not last_gen or iso > last_gen:
+                    last_gen = iso
     # successful cycles since a fixed watch baseline
     base_f = ROOT / "data/generation_watch_baseline"
     if not base_f.exists():
@@ -1045,17 +1070,24 @@ def check_prompt_layer(defects) -> None:
     # cannot become a second 95k doctrine file. But overflow still means the desk paid for a
     # lesson it is no longer telling anyone, so it must be visible rather than quietly ranked out.
     # The fix is to retire a lesson whose falsifier arrived, NOT to raise the budget.
+    # A GRADUATED LESSON IS NOT AN UNREACHED ONE. Counting the whole overflow reported 31 lessons
+    # "reaching NO organ" when 20 were enforced by a verified test and demoted on purpose -- 2.8x
+    # overstated, which buries the 11 real losses in noise and teaches the reader to skip the line.
     try:
-        from libs.research.desk_memory import BUDGET_CHARS, corpus
-        _text, over = corpus()
-        if over:
+        from libs.research.desk_memory import BUDGET_CHARS, unreached
+        lost, demoted = unreached()
+        if lost:
+            tail = (f" [{len(demoted)} further lesson(s) ranked out but enforced by a verified "
+                    "test -- demoted by design, not lost]" if demoted else "")
             defects.append(("desk-memory-overflow",
-                            f"{len(over)} paid-for lesson(s) exceed the {BUDGET_CHARS}-char "
+                            f"{len(lost)} paid-for lesson(s) exceed the {BUDGET_CHARS}-char "
                             f"memory budget and reach NO organ: "
-                            f"{', '.join(o.id for o in over)} -- retire a lesson whose falsifier "
-                            "arrived (scripts/learn.py audit)"))
-    except Exception:
-        pass
+                            f"{', '.join(o.id for o in lost)} -- retire a lesson whose falsifier "
+                            f"arrived, or graduate one to a test (scripts/learn.py audit).{tail}"))
+    except Exception as exc:  # never silently OK on absent input (L1.41)
+        defects.append(("desk-memory-unmeasured",
+                        f"the lesson corpus could not be read ({type(exc).__name__}: {exc}) -- "
+                        "what reaches an organ is UNKNOWN, which is not the same as healthy"))
     try:
         cad = json.loads((ROOT / "data/cadence_state.json").read_text("utf-8"))
         last_rev = datetime.fromisoformat(cad["last_prompt_review"]).timestamp()
@@ -1457,15 +1489,79 @@ def check_review_risks_tracked(defects) -> None:
                             "tracked row so a named risk cannot silently escape the discipline."))
 
 
-#: The desk's working book. Capacity-bound edges are the ONE structural advantage a book this
-#: size has, so the reference is explicit rather than implied.
-DESK_BOOK_USD = 50_000.0
+#: DELETED 2026-08-01 (R0079): `DESK_BOOK_USD = 50_000.0`. It was the audit's private copy of the
+#: desk's book size, and its last reader now calls `capacity_policy.live_book_usd()` like every
+#: other scorer. Left as a comment rather than silently removed because the constant is exactly
+#: the shape L1.28a warns about -- a plausible literal standing in for a measured quantity, which
+#: reads as prudent determinism and behaves as a permanent 2.7x mis-statement of the denominator
+#: every capacity band divides by. If a fallback is ever wanted again, it belongs in
+#: capacity_policy (which already has one, DEFAULT_BOOK_USD), never re-inlined here.
 
 
 #: Neither band may fall below this share of the screened funnel. SYMMETRIC on purpose: a funnel
 #: that is 100% niche is as defective as one that is 100% fund-shaped, because both mean a whole
 #: class of alpha is going unhunted and the objective is the MAXIMUM NUMBER of them.
 _BAND_MIN_SHARE = 0.25
+
+#: THE LAB CANDIDATE STORE. Both capacity checks below read it, and until 2026-08-01 (R0079) both
+#: named `data/research_memory.db` -- a path nothing in this repo has EVER written. One constant
+#: now, because two copies of a path is how one of them gets repointed and the other does not.
+_CANDIDATE_DB = ROOT / "data/sor_research.sqlite"
+
+
+def _rel(p: Path) -> str:
+    """Repo-relative display that never raises.
+
+    `Path.relative_to` throws ValueError for anything outside ROOT, which would have made the
+    REFUSAL PATH ITSELF the thing that crashed -- the failure handler failing on exactly the
+    unusual input it exists to describe. Found by the test written for it, not by reading it.
+    """
+    try:
+        return p.relative_to(ROOT).as_posix()
+    except ValueError:
+        return str(p)
+
+
+def _scored_capacities() -> tuple[list[float], list[str], str]:
+    """Every scored candidate's capacity, plus the reason the read produced nothing.
+
+    REFUSAL IS AN OUTCOME WITH ITS OWN VOCABULARY (L1.41 condition 1). Both callers previously
+    wrapped this read in a bare `contextlib.suppress(Exception)` and then returned early on
+    `len(caps) < 5`, so THREE different situations were indistinguishable and all three read as a
+    passing check: (a) the desk genuinely has few scored candidates, (b) the db is absent because
+    this is not the research box, and (c) the read RAISED -- which it did, on every run since the
+    checks were written, because `CandidateStore(Path)` is a type error (`CandidateStore` takes a
+    `Database`, and a `PosixPath` has no `.execute`). Two §42 audits therefore reported OK for
+    their entire existence without ever having read a single candidate, and the exception that
+    would have said so was swallowed one line above.
+
+    Returns (capacities, subtype-names, error) -- `error` empty when the read succeeded.
+    """
+    if not _CANDIDATE_DB.exists():
+        return [], [], f"{_rel(_CANDIDATE_DB)} absent (not the research box)"
+    try:
+        from libs.autodiscovery.memory import CandidateStore
+        from libs.store.connection import Database
+        store = CandidateStore(Database(_CANDIDATE_DB, read_only=True))
+        caps, names = [], []
+        for c in store.all():
+            cap = float(getattr(c.metrics, "capacity_usd", 0.0) or 0.0)
+            if cap > 0:
+                caps.append(cap)
+                names.append(str(getattr(getattr(c, "hypothesis", None), "subtype", "") or ""))
+    except Exception as exc:                                    # reported, never hidden
+        return [], [], f"{type(exc).__name__}: {exc}"
+    return caps, names, ""
+
+
+def _capacity_unreadable(defects, where: str, err: str) -> None:
+    """A capacity audit that cannot READ its input has not passed -- it has not run."""
+    defects.append((
+        "capacity-store-unreadable",
+        f"§42/L1.28a: {where} could not read {_rel(_CANDIDATE_DB)} -- {err}. This "
+        "check is NOT green; it is UNMEASURED, which is the state that looked identical to green "
+        "for as long as the reader was broken. Repair the store or the reader before trusting any "
+        "capacity-band verdict."))
 
 
 def check_capacity_hunt(defects) -> None:
@@ -1485,29 +1581,39 @@ def check_capacity_hunt(defects) -> None:
     defect. Small edges expire first -- that is arithmetic, and it is handled by
     `check_capacity_runway`, not by preferring them here.
     """
-    caps: list[float] = []
-    names: list[str] = []
-    with contextlib.suppress(Exception):
-        from libs.autodiscovery.memory import CandidateStore
-        store = CandidateStore(ROOT / "data/research_memory.db")
-        for c in store.all():
-            cap = float(getattr(c.metrics, "capacity_usd", 0.0) or 0.0)
-            if cap > 0:
-                caps.append(cap)
-                names.append(str(getattr(getattr(c, "hypothesis", None), "subtype", "") or ""))
+    caps, names, err = _scored_capacities()
+    if err:
+        _capacity_unreadable(defects, "check_capacity_hunt", err)
+        return
     if len(caps) < 5:
         return  # too few scored candidates to judge where the hunt is pointed
-    from libs.research.capacity_policy import DEFAULT_SLEEVES, capacity_band, declared_allocation
+    from libs.research.capacity_policy import (
+        capacity_band,
+        declared_allocation,
+        live_book_usd,
+        live_sleeves,
+    )
     # Whole-book figure -> must be divided by the sleeve count: no single edge is filled with the
-    # entire desk. Judging candidates against all $50k would inflate the requirement 8x and mark
-    # perfectly tradeable small edges "unfillable" -- the flat-floor bug wearing a new hat.
+    # entire desk. Judging candidates against the whole book would inflate the requirement 8x and
+    # mark perfectly tradeable small edges "unfillable" -- the flat-floor bug wearing a new hat.
     #
     # A DECLARED sleeve is banded at its declaration, because that is how every scorer judges it.
     # Banding at equal weight here would have the audit call an edge UNFILLABLE while the scorer
     # calls the same edge NICHE -- two answers to one question, and the audit is meant to be the
     # thing that catches that class of disagreement, not a source of it.
-    bands = [capacity_band(c, DESK_BOOK_USD, DEFAULT_SLEEVES,
-                           allocation_usd=declared_allocation(name))
+    #
+    # THE LIVE BOOK, NOT A LITERAL (2026-08-01, R0079). This banded against the module constant
+    # DESK_BOOK_USD = $50,000 while its sibling `check_capacity_runway` banded the SAME candidates
+    # against `live_book_usd()` = $18,811 -- two answers to the one number every capacity band is a
+    # ratio to, in adjacent functions, which is the precise defect L1.28a's first run found in the
+    # opposite direction. It is also self-inflicted in the expensive direction: a book pinned 2.7x
+    # too large inflates `capacity_required` and marks small edges UNFILLABLE, which is §42's named
+    # structural advantage being audited away by a constant. Doctrine is explicit -- "a ratio
+    # measured against a hardcoded number is the flat-floor bug one step removed" -- and
+    # live_book_usd() already falls back to the constant when the NAV chain is missing or stale,
+    # so this is strictly better-founded than the literal it replaces, never looser.
+    book, sleeves = live_book_usd(), live_sleeves()
+    bands = [capacity_band(c, book, sleeves, allocation_usd=declared_allocation(name))
              for c, name in zip(caps, names, strict=True)]
     in_niche = sum(1 for b in bands if b == "NICHE")
     larger = sum(1 for b in bands if b in ("SCALABLE", "FUND-SCALE"))
@@ -1517,7 +1623,7 @@ def check_capacity_hunt(defects) -> None:
         defects.append((
             "capacity-hunt-unfillable",
             f"§42: {unfillable}/{len(caps)} scored candidates cannot absorb the required headroom "
-            f"on a ${DESK_BOOK_USD:,.0f} book at all -- the desk would BE the edge. Small is the "
+            f"on a ${book:,.0f} book at all -- the desk would BE the edge. Small is the "
             "advantage; too small to fill is not. These should be screened out before scoring, "
             "not carried as candidates."))
     if fillable < 5:
@@ -1684,12 +1790,10 @@ def check_capacity_runway(defects) -> None:
         from having no deployable inventory and no notice that it is coming.
     """
     from libs.research.capacity_policy import growth_runway, live_book_usd, live_sleeves
-    caps: list[float] = []
-    with contextlib.suppress(Exception):
-        from libs.autodiscovery.memory import CandidateStore
-        store = CandidateStore(ROOT / "data/research_memory.db")
-        caps = [float(getattr(c.metrics, "capacity_usd", 0.0) or 0.0) for c in store.all()]
-    caps = [c for c in caps if c > 0]
+    caps, _names, err = _scored_capacities()
+    if err:
+        _capacity_unreadable(defects, "check_capacity_runway", err)
+        return
     if len(caps) < 5:
         return
     book, sleeves = live_book_usd(), live_sleeves()
@@ -1862,6 +1966,19 @@ _FINDING_DOCS_EXCLUDED = {
     "docs/research/cn_oss_extraction_20260731.md": "dig extraction card -- its 5 finds are "
                                                    "rowed as R0100 (ingest+screen) by the "
                                                    "authoring session; §33 governs the cards",
+    "docs/research/search_operator_library.md": "versioned REFERENCE library, not a findings "
+                                                "backlog: its 'numbered items' are OP-nnn search "
+                                                "OPERATORS (charter 15/16), each a reusable "
+                                                "technique with its own status lifecycle "
+                                                "(active/watch/archived) and its own retirement "
+                                                "rule -- 'retired entries move to the ARCHIVE "
+                                                "section, never deleted'. An operator is a tool a "
+                                                "digger DRAWS from, not a defect owing a "
+                                                "disposition, and rowing 25 of them would inflate "
+                                                "the open-finding count with items that can never "
+                                                "close. The doc is still governed: 36 covers it "
+                                                "via _PRODUCER_CADENCE, so a library that stops "
+                                                "being contributed to fires",
     "docs/research/blind_rediscovery_log.md": "monthly blind-rediscovery run log -- each run's "
                                               "cards are rowed into the RECOMMENDATION ledger by "
                                               "the authoring session (run 1 2026-07-31 -> "
@@ -1940,6 +2057,12 @@ _FINDING_DOCS_EXCLUDED = {
         "GENERATED dossier -- its numbered block is a copy of the register table; original panel "
         "findings enter via panel_inbox -> panel_rulings, which are in scope",
     # trailing slash = class entry, same design as deep_sweep/ above
+    "docs/research/ARTIFACT_GOVERNANCE.md":
+        "THE LAW ITSELF (§36). The register that says which law claims which artifact cannot be claimed by another register without circularity -- it is the root of that tree.",
+    "docs/research/META_RESEARCH_DIRECTIVE.md":
+        "L1.22 self-improvement. States how the desk researches its own research; enforced by the cycle's meta duty, not by an artifact-freshness clock.",
+    "docs/research/UNREACHABLE_LAYER_TRIAGE.md":
+        "§36 orphan-code triage. The standing record of which modules are unreachable and why, with each carrying an explicit wire/defer/retire verdict -- self-disposing, like the other triage registers.",
     "docs/research/capability_hunt/":
         "daily L1.31 hunt records -- dated per-slot snapshots whose findings are ROWED IN THE\n"
         "SAME RUN by the hunt's own duty (L1.31/L1.39; 2026-07-31 proof: s5 -> R0153-R0173,\n"
@@ -2518,7 +2641,162 @@ _ONESHOT_SCRIPTS = frozenset({
     "hl_filter_test.py",           # elite-trader premise experiment (kernel of the 26-layer spec
     "screen_smart_dumb.py",        # decision) -- both ran once, verdicts recorded in data/hl_*.log
     "verify_fixes.py",             # dated live-code verification of the a1bcd86 fixes, ran once
+    # classified 2026-08-01: R0069's named DECISIVE EXPERIMENT -- a one-shot full-depth panel
+    # backfill whose whole purpose is to settle one axis permanently. It ran and produced
+    # reports/axis_screens/kr_perasset_premium_depth.json (38 assets, 84,891 asset-days). A
+    # decisive experiment is by definition not a cadence: re-running it on unchanged history
+    # would re-test dead ground and burn multiplicity budget for nothing.
+    "screen_kr_perasset_depth.py",
 })
+
+
+#: Path literals that are legitimately absent -- each with the reason, so "known gap" is
+#: distinguishable from "nobody noticed". Anything not here and not on disk is a phantom.
+_PHANTOM_ALLOWED = {
+    "data/principal_replies.jsonl": "the principal's reply channel -- absent because he has not "
+                                    "replied yet, not because nothing writes it. Its emptiness is "
+                                    "itself the signal several organs read.",
+    "data/mining_suspended": "a FLAG file: present only while §33 backlog is owed. Absence is the "
+                             "healthy state, and creating it would suspend mining.",
+    "data/LIVE_ENABLE": "arming flag -- absence is the safe state by design.",
+    "data/kill_switch": "rail flag -- absence is the healthy state.",
+    # OPERATOR-SUPPLIED CREDENTIALS. These are never written by desk code by design -- a repo that
+    # can WRITE its own secrets is a repo that can leak them. They are placed by hand (or by the
+    # deploy) and are gitignored, so "no writer in the tree" is the correct and intended state.
+    # Their absence is a FUNDING/PROVISIONING fact, already surfaced by the organs that need them
+    # (alert_channels degrades to log-only; the KR collector reports its key as missing).
+    "data/secrets/alert_channels.json": "operator-provisioned credential; desk code must never "
+                                        "write a secret, and its absence is reported by the "
+                                        "alert channel itself as degraded delivery.",
+    "data/secrets/binance_live_spot.json": "operator-provisioned live spot credential -- absence "
+                                           "is the SAFE state and is what keeps the spot leg "
+                                           "un-armed until a human provisions it.",
+    "data/secrets/naver.json": "operator-provisioned free NAVER API key (GAP #69, unclaimed). "
+                               "The KR collector reports the missing key rather than failing.",
+}
+
+#: Extensions worth auditing: durable stores a reader can be wrong about. Logs are excluded --
+#: they are written by redirection from cron, not by python, so they would all read as phantoms.
+_PHANTOM_EXTS = (".json", ".jsonl", ".db", ".sqlite", ".csv", ".pkl", ".parquet")
+
+_PATH_LIT = re.compile(r'["\'](?P<p>(?:data|reports)/[A-Za-z0-9_./-]+'
+                       r'(?:\.json|\.jsonl|\.db|\.sqlite|\.csv|\.pkl|\.parquet))["\']')
+
+#: Verbs that indicate the line PRODUCES the path rather than consuming it.
+_WRITE_VERBS = ("write_text", "write_bytes", "open(", "json.dump", "to_csv", "to_json",
+                "savefig", "copyfile", "copy2", "dump(", "mkdir", "touch", "backup(",
+                "to_parquet", "np.save", "pickle.dump", "connect(")
+
+
+def _resolve_writers(lines: list[str], bound: dict[str, str]) -> set[str]:
+    """Paths written THROUGH A VARIABLE, which is how almost all of them are actually written.
+
+    THE FALSE-POSITIVE THIS FIXES (2026-08-01). The original test was LINE-LOCAL: a path counted as
+    written only if a write verb appeared on the same line as the string literal. But the ordinary
+    Python idiom is a module constant written later through its name --
+
+        QUAR = ROOT / "data/defi_lending_quarantine.json"     # literal here, no write verb
+        ...
+        QUAR.write_text(json.dumps(...))                      # writer here, no literal
+
+    -- so the detector could not see the writer and reported perfectly correct code as
+    READ-WITHOUT-WRITER. Measured on this tree: of 53 reported phantoms, the majority were this
+    shape (collect_defi_lending.py:62, protective_stops.py:143, collect_oi_ls_live.py, ...). That
+    matters more than the miscount: a fence that fires on healthy code gets acknowledged into
+    silence, and an acknowledged fence enforces nothing. The narrowness the docstring claims was
+    real in intent and absent in implementation.
+
+    ALIASES TOO. A constant is frequently passed as a default and written through the parameter
+    name (`def append(*, path: Path = LEDGER): path.write_text(...)`), so a name bound to a known
+    path as a default argument inherits that path for the purposes of this check.
+
+    Deliberately still textual rather than a full dataflow analysis. The remaining blind spot is a
+    path written through a name this never sees bound; that direction fails toward REPORTING a
+    phantom, which is the safe direction for a detector whose entire job is to notice absence.
+    """
+    if not bound:
+        return set()
+    written: set[str] = set()
+    # `def f(..., path: Path = LEDGER)` -> `path` also refers to LEDGER's target.
+    alias = dict(bound)
+    for line in lines:
+        for name, p in bound.items():
+            for m in re.finditer(rf"(\w+)\s*(?::[^=,)]+)?=\s*{re.escape(name)}\b", line):
+                if m.group(1).isidentifier():
+                    alias.setdefault(m.group(1), p)
+    for line in lines:
+        for name, p in alias.items():
+            if not re.search(rf"\b{re.escape(name)}\b", line):
+                continue
+            if any(v in line for v in _WRITE_VERBS) or re.search(
+                    rf"\b{re.escape(name)}\s*\.\s*(unlink|rename|replace|parent)\b", line):
+                written.add(p)
+    return written
+
+
+def check_phantom_paths(defects) -> None:
+    """READ-WITHOUT-WRITER: a path some organ reads that NOTHING on this desk ever writes.
+
+    THE DESK'S MOST PROLIFIC DEFECT CLASS, and it had no detector. A reader pointed at a path no
+    producer creates does not crash -- it takes the empty/missing branch and returns a plausible
+    zero, so the organ reports HEALTHY on data that does not exist. Live instances found by hand
+    rather than by any fence: data/research_memory.db had FOUR readers and no writer and sat in
+    the moat backup's store list, where it recorded ABSENT on every run and padded the denominator
+    so 4/4 coverage read as 4/6; cost_ratio, slippage_ks_p and calibration_mae_falling_months were
+    ramp step-up conditions with zero producers anywhere while the ramp sat pinned at its floor.
+
+    THE TEST IS DELIBERATELY NARROW so it does not cry wolf. A path is a phantom only if it is
+    referenced in code, does NOT exist on disk, AND no line anywhere pairs it with a write verb.
+    A path that exists is fine (something made it, whatever that was). A path with a writer is
+    fine (it will exist when the producer runs). Logs are out of scope entirely -- cron writes
+    them by shell redirection, so every one would read as a phantom and the check would be
+    switched off within a week.
+    """
+    root = ROOT
+    refs: dict[str, set[str]] = {}
+    writers: set[str] = set()
+    for py in list((root / "scripts").rglob("*.py")) + list((root / "libs").rglob("*.py")):
+        try:
+            text = py.read_text("utf-8", errors="ignore")
+        except OSError:
+            continue
+        rel_py = str(py.relative_to(root))
+        lines = text.splitlines()
+        # NAME -> path, for module-constant style bindings. See _resolve_writers.
+        bound: dict[str, str] = {}
+        for line in lines:
+            # A path named only in a COMMENT is not read by anything. This check reported
+            # `data/x.json` -- a placeholder inside two explanatory comments, one of them in this
+            # very function -- as a phantom store with two readers.
+            if line.lstrip().startswith("#"):
+                continue
+            for m in _PATH_LIT.finditer(line):
+                p = m.group("p")
+                refs.setdefault(p, set()).add(rel_py)
+                if any(v in line for v in _WRITE_VERBS):
+                    writers.add(p)
+                lhs = line.split("=", 1)[0].strip() if "=" in line else ""
+                if lhs.isidentifier():
+                    bound[lhs] = p
+        writers |= _resolve_writers(lines, bound)
+
+    phantoms = sorted(
+        p for p, _ in refs.items()
+        if p not in _PHANTOM_ALLOWED
+        and p.endswith(_PHANTOM_EXTS)
+        and not (root / p).exists()
+        and p not in writers
+    )
+    if phantoms:
+        shown = "; ".join(f"{p} (read by {', '.join(sorted(refs[p])[:2])})" for p in phantoms[:5])
+        defects.append((
+            "phantom-paths",
+            f"READ-WITHOUT-WRITER: {len(phantoms)} path(s) are read by code, do NOT exist on "
+            f"disk, and NOTHING writes them: {shown}{'...' if len(phantoms) > 5 else ''}. A "
+            "reader on a phantom path does not crash -- it takes the empty branch and reports a "
+            "plausible zero, so the organ reads HEALTHY on data that was never produced. Point "
+            "the reader at the real store, build the producer, or record the path in "
+            "_PHANTOM_ALLOWED with the reason it is legitimately absent."))
 
 
 def check_orphan_scripts(defects) -> None:
@@ -2776,7 +3054,7 @@ def check_decision_ledger_matures(defects) -> None:
     rows = [r for r in rows if isinstance(r, dict)]
     if not rows:
         return
-    h = _health(rows, _date.today())
+    h = _health(rows, _date.today())  # noqa: DTZ011 -- calendar date for a filename/stamp, never compared to an instant
     if h.no_review_date:
         defects.append((
             "decision-ledger-undated",
@@ -2861,6 +3139,16 @@ _DIG_DOCS_EXCLUDED = {
     "docs/research/micro_audit_inbox.md":
         "audit findings, not mined finds -- own rotting-findings check",
     "docs/research/panel_inbox.md": "external panel output -- own rulings/scoring loop",
+    "docs/research/ADVERSARIAL_REVIEW_RUBRIC.md":
+        "a rubric of DEFECT CLASSES, not mined finds. Each 'card' defines a recurring failure "
+        "shape with the real instance that produced it -- reference material a reviewer reads "
+        "BEFORE looking at code. A class is permanent and cannot be 'disposed'; the instances it "
+        "cites were rowed when they were found. Governed by 36 via _PRODUCER_CADENCE",
+    "docs/research/improvement_inbox.md":
+        "already in _FINDING_DOCS, so 35 drives every item in it. Counting the same cards against "
+        "33 as well would double-charge one backlog to two laws and make both conversion rates "
+        "wrong -- the same precedent as blind_rediscovery_log.md. Its items are improvements "
+        "owing a RECOMMENDATION row, not dig finds owing a screen",
 }
 #: Committed-state is checked over the whole research surface, including the excluded docs above:
 #: a graveyard entry is self-dispositioning but still has to reach git to exist.
@@ -3476,6 +3764,7 @@ CHECKS = [("carryover-skipped", check_carryover_skipped),
                       ("book-collapse", check_book_collapse),
                       ("mine-evidence-base", check_mine_evidence_base),
                       ("orphan-scripts", check_orphan_scripts),
+                      ("phantom-paths", check_phantom_paths),
                       ("law-numbers", check_law_numbers_unique),
                       ("mine-conversion", check_mine_conversion),
                       ("mine-flow", check_mine_flow),
@@ -3898,19 +4187,56 @@ def check_constitution(defects) -> None:
 CHECKS += [("constitution", check_constitution)]   # registered BELOW its definition
 
 
+def split_acked(
+    defects: Sequence[tuple[str, str]], *, now_iso: str | None = None
+) -> tuple[list[tuple[str, str]], list[tuple[str, str]], str]:
+    """Split raw defects into LIVE and ACKED against the one ack registry.
+
+    THE ONE DEFINITION (2026-08-01). ``CHECKS`` is module-level precisely so other organs can
+    enumerate the same defects "instead of keeping a second copy that silently drifts" -- but the
+    ack filter that runs immediately after it lived inside ``main()``, so §37's carry-over brief
+    enumerated CHECKS and never saw the acks. It therefore filed all 26 dated, reasoned, expiring
+    acks under "shown the work and not done", and the 12 items it put in front of the brain FIRST
+    were 12/12 acked -- several of them blocked on principal-only actions the brain cannot take.
+    A brief whose top of queue is 100% false gets walked past, which the brief then counted as
+    avoidance and escalated. Sharing this function is what stops that drift for good.
+
+    Returns ``(live, acked, ack_state)``. ``ack_state`` is the REFUSAL PATH (L1.41): "known" when
+    the registry was genuinely read, "unknown" when it exists but could not be parsed. An ABSENT
+    registry is known-empty -- "nothing has been acked" is a fact, not an unknown. Callers that
+    write history must record "unknown" rather than guessing, because guessing "nothing is acked"
+    writes a permanent false accusation and guessing "all acked" buries real work.
+    """
+    now_iso = now_iso or datetime.now(tz=UTC).isoformat()
+    if not ACKS.exists():
+        acks: Any = {}
+        state = "known"
+    else:
+        try:
+            acks = json.loads(ACKS.read_text("utf-8"))
+            state = "known"
+        except Exception:
+            acks, state = {}, "unknown"
+    if not isinstance(acks, dict):
+        acks, state = {}, "unknown"
+
+    live: list[tuple[str, str]] = []
+    acked: list[tuple[str, str]] = []
+    for did, msg in defects:
+        a = acks.get(did)
+        if isinstance(a, dict) and a.get("until", "") > now_iso:
+            acked.append((did, a.get("reason", "")))
+        else:
+            live.append((did, msg))
+    return live, acked, state
+
+
 def main() -> None:
     defects: list[tuple[str, str]] = []
     for label, fn in CHECKS:
         _fenced(fn, defects, label)
 
-    acks = _j(ACKS, {})
-    live, acked = [], []
-    for did, msg in defects:
-        a = acks.get(did)
-        if a and a.get("until", "") > datetime.now(tz=UTC).isoformat():
-            acked.append((did, a.get("reason", "")))
-        else:
-            live.append((did, msg))
+    live, acked, _ack_state = split_acked(defects)
 
     prev = _j(REPORT, {})
     first_seen = prev.get("first_seen", {})

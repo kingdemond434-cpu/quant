@@ -29,6 +29,7 @@ from __future__ import annotations
 import gzip
 import json
 import random
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -36,17 +37,32 @@ from typing import Any
 import numpy as np
 
 ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from libs.research import clock_provenance as cp  # noqa: E402
+
 MOAT = ROOT / "data/moat"
 OUT = ROOT / "data/moat_quality.json"
 SAMPLE_FILES = 6          # hourly files per symbol
 SAMPLE_ROWS = 250         # snapshots per file
 
 
-def parse(line: str):
+def parse(line: str, venue: str = ""):
     """Parse a DEPTH record only. The moat is a MIXED stream: k='d' depth records interleaved
     with k='t' TRADE records (~8x more numerous). The first audit read the first N lines of each
     file -- almost all trades -- and counted them as corrupt books, producing 82-99% 'stale' and
-    a verdict that the dataset was unusable. It is not; the parser was."""
+    a verdict that the dataset was unusable. It is not; the parser was.
+
+    L1.46: the stream is mixed in its CLOCKS as well as its kinds, and this parser used to read
+
+        "t": d.get("t") or d.get("E") or d.get("ts")
+
+    -- three different clocks coalesced into one field, silently preferring whichever was present.
+    That is the same class of defect as the kind bug above, one layer down: the kind filter was
+    fixed and the clock was left. `t_recv` is now OUR receipt instant explicitly, resolved through
+    the single module that knows which clock stamped which row, and it is USED (see audit) rather
+    than computed and discarded."""
     try:
         d = json.loads(line)
     except json.JSONDecodeError:
@@ -68,13 +84,15 @@ def parse(line: str):
     db = sum(float(p) * float(q) for p, q in b if float(p) >= mid * 0.99)
     da = sum(float(p) * float(q) for p, q in a if float(p) <= mid * 1.01)
     return {"bp": bp, "ap": ap, "mid": mid, "spread_bps": (ap - bp) / mid * 1e4,
-            "db": db, "da": da, "t": d.get("t") or d.get("E") or d.get("ts")}
+            "db": db, "da": da, "t_recv": cp.recv_ms(d, venue),
+            "clock": cp.clock_of(d, venue)}
 
 
 def audit(sym_dir: Path):
     files = sorted(sym_dir.glob("*.jsonl.gz"))
     if not files:
         return None
+    venue = cp.venue_of_path(sym_dir)
     pick = files if len(files) <= SAMPLE_FILES else random.sample(files, SAMPLE_FILES)
     rows, crossed, stale, bad = [], 0, 0, 0
     prev = None
@@ -84,13 +102,22 @@ def audit(sym_dir: Path):
                 lines = fh.readlines()   # scan all; depth rows are ~10% of the stream
         except Exception:
             continue
+        parsed = []
         for ln in lines:
-            r = parse(ln)
+            r = parse(ln, venue)
             if r == "skip":
                 continue
             if r is None:
                 bad += 1
                 continue
+            parsed.append(r)
+        # L1.46: order by RECEIPT before comparing consecutive books. "stale" is defined as two
+        # adjacent snapshots with an identical top of book, so it is a statement about ORDER --
+        # and nothing here guaranteed one. A mis-ordered pair reads as either a spurious stale
+        # (two equal books that were never adjacent) or a missed one, and `stale` costs up to 25
+        # quality points, which is what gates a symbol into Phase 2.
+        parsed.sort(key=lambda r: (r["t_recv"] is None, r["t_recv"] or 0))
+        for r in parsed:
             if r["bp"] >= r["ap"]:
                 crossed += 1
                 continue

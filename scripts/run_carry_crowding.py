@@ -29,6 +29,7 @@ from libs.data.crypto_source import list_liquid_perps
 from libs.data.instruments import AssetClass, InstrumentSpec, register_instrument
 from libs.data.lake import Layer, ParquetLake
 from libs.data.timeframe import Timeframe
+from libs.data.universe import RESEARCH_TOP_N
 
 _CRYPTO = Path("data/lake/bronze/crypto")
 _METRICS = Path("data/crypto_metrics.parquet")
@@ -41,7 +42,7 @@ _SUSTAIN_DAYS = 14
 def _panels() -> tuple[pd.DataFrame, pd.DataFrame]:
     lake = ParquetLake("data/lake")
     fundings, bases = {}, {}
-    for s in list_liquid_perps(top_n=120):
+    for s in list_liquid_perps(top_n=RESEARCH_TOP_N):
         if not (_CRYPTO / s / Timeframe.D1.value).exists():
             continue
         register_instrument(InstrumentSpec(symbol=s, asset_class=AssetClass.CRYPTO, description=s))

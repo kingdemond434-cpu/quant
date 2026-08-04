@@ -751,6 +751,20 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # retune it (the agent will then leave it alone because it is already scheduled).
 # Every entry here was proven: runnable main(), no money-path import, no spend
 # capability, no writes outside data/ + web/. CONFIDENCE: auto-wired.
+# scripts/build_return_panel.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
+49 5 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/build_return_panel.py >> data/cro_ai_logs/build_return_panel.log 2>&1
+# scripts/meta_research_review.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
+47 3 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/meta_research_review.py >> data/cro_ai_logs/meta_research_review.log 2>&1
+# scripts/run_geometric_review.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
+43 4 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_geometric_review.py >> data/cro_ai_logs/run_geometric_review.log 2>&1
+# scripts/fill_quality_monitor.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
+12 3 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/fill_quality_monitor.py >> data/cro_ai_logs/fill_quality_monitor.log 2>&1
+# scripts/slot_budget_analysis.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
+18 3 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/slot_budget_analysis.py >> data/cro_ai_logs/slot_budget_analysis.log 2>&1
+# scripts/record_desk_metrics.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
+1 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/record_desk_metrics.py >> data/cro_ai_logs/record_desk_metrics.log 2>&1
+# scripts/run_portfolio_risk.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
+36 3 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_portfolio_risk.py >> data/cro_ai_logs/run_portfolio_risk.log 2>&1
 # scripts/report_gate_audit.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
 34 5 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/report_gate_audit.py >> data/cro_ai_logs/report_gate_audit.log 2>&1
 # scripts/run_kama_squeeze_backtest.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
@@ -1265,3 +1279,153 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # CONFIDENCE: committed-script (measured 2026-08-01: 196 candidates over 2,018-2,439 OKX daily
 # bars; admitted set correlation 0.247 vs pool 0.047, 5.2x a random subset, p=0.002)
 0 6 * * 0 cd "$QUANT_ROOT" && flock -n data/.cron_realcamp.lock .venv/bin/python scripts/run_real_campaign.py >> data/cro_ai_logs/real_campaign.log 2>&1
+# --- L1.46 CLOCK PROVENANCE (capability hunt s0, 2026-08-01) --------------------------------
+# CEILING TYPE (L1.28c): DATA-ARRIVAL bound, and the arrival granularity is EXACTLY ONE HOUR --
+# the moat tape rotates hourly (data/moat/<venue>/<SYMBOL>/YYYYMMDD_HH.jsonl.gz), so the fence's
+# unit of observation is one file per stream. Denser re-reads a file it has already judged;
+# sparser lets a whole file be written wrong unseen, and an hour recorded without the venue stamp
+# is a Delta hour that cannot be bought back at any price (L1.28b(f): the collector never
+# throttles, so the detector must not either). Hourly is therefore the ceiling AND the floor.
+# PHASE :40 -- mid-file, deliberately. At :05 the newest file holds ~5 minutes and the achieved-
+# period estimate is thin; at :40 it holds ~40 minutes, which is a solid median over ~300 depth
+# rows, while still catching a bad hour inside that hour rather than after it.
+# Pure CPU: samples 4 symbols per venue and reads the FRONT of each gzip, so it stops early
+# instead of decompressing 7.5GB -- the cost of running it is a rounding error.
+# EVIDENCE: scripts/check_clock_provenance.py -> data/clock_provenance_status.json; CONSTITUTION L1.46
+# CONFIDENCE: committed-script (new this cycle; first run fired MIXED-CLOCK and named fut/* and
+# spot/* as interleaving two clocks under one field name, and independently reproduced the
+# achieved-vs-configured period gap on both Binance recorders -- 8.28s and 7.84s against 5.0s)
+40 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_clockprov.lock .venv/bin/python scripts/check_clock_provenance.py --report-only >> data/cro_ai_logs/clock_provenance.log 2>&1
+
+# --- L1.47 FUNDING CAPTURE (capability hunt s1, 2026-08-01) ---------------------------------
+# CEILING TYPE (L1.28c): DATA-ARRIVAL bound. The unit of observation is ONE CLOSED CARRY -- the
+# fence's inputs change only when the executor completes a round trip, which on the current book
+# is a few per hour. Denser re-reads a tape it has already judged; sparser lets a whole funding
+# cycle's worth of forfeits pass unseen, and a settlement walked away from cannot be re-earned.
+# Hourly is therefore the ceiling AND the floor. Pure CPU over a 523-row JSONL: the cost of
+# running it is a rounding error, so cadence is bounded by information arrival and nothing else.
+# PHASE :43 -- deliberately NOT aligned to a funding stamp (00/08/16 UTC). The fence measures the
+# historical phase DISTRIBUTION of closes, so its own firing phase must not correlate with the
+# thing it measures; :43 also sits just after clock provenance (:40) in the fence cluster and
+# reads an artifact no other :4x organ writes.
+# EVIDENCE: scripts/check_funding_capture.py -> data/funding_capture.json; CONSTITUTION L1.47
+# CONFIDENCE: committed-script (new this cycle; first run fired FOUR breaches at once -- UNMEASURED
+# (265 closes booked $93.58 of estimated funding, not one differenced against venue truth),
+# FORFEITING (59/265 closes inside 1h of a settlement, z=+4.8), MIS-MARKED (41.5% of closes wrong
+# by >=0.5 settlement) and PHASE-BLIND (close rows carry no rail/reason field))
+43 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_fundcap.lock .venv/bin/python scripts/check_funding_capture.py --report-only >> data/cro_ai_logs/funding_capture.log 2>&1
+
+# FORECAST SCORER (L1.29 calibration). The desk had a forecast LOGGER and no SCORER, so
+# check_calibration sat OVERDUE with 7 unscored predictions -- the worst asymmetry available,
+# since logging a probability feels like rigour while only the scoring turns it into calibration.
+# Resolves "SYMBOL trades above X at +Nh" claims against the CLOSE of the 1m candle containing
+# resolve_by (one defined instant, so the answer cannot drift with when the scorer runs).
+# Claims it cannot parse unambiguously are left OVERDUE by design and named -- a guessed outcome
+# corrupts the measurement the fence exists to protect.
+# Hourly at :50 -- the quiz/probe organs log on the hour with 4h and 12h deadlines, so an hourly
+# pass grades each one within the hour it matures; denser buys nothing, sparser lets them pile up.
+# EVIDENCE: scripts/score_forecasts.py -> data/forecast_log.json (outcomes via fc.resolve)
+# CONFIDENCE: committed-script (first run graded 6 of 7, Brier 0.2484, and left the one ambiguous
+# conviction claim unresolved rather than guessing it)
+50 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_fcscore.lock .venv/bin/python scripts/score_forecasts.py --write >> data/cro_ai_logs/forecast_scoring.log 2>&1
+
+# NET-PROFIT OPTIMISER (principal 2026-08-01: "net profits must always be set to maximum possible
+# -- carry holding longer or shorter, size, lower fees"). Measures net PnL per hour held from the
+# desk's OWN closed fills, bucketed against the 8h funding grid, with the funding/price/fee
+# decomposition INSIDE each bucket -- so a bucket that "wins" on directional drift is visible
+# rather than mistaken for carry on a book that is supposed to be delta-neutral.
+# Buckets under 12 trades report UNDERPOWERED and are never ranked: ranking thin cells is how a
+# book talks itself into a worse parameter.
+# Daily 05:25 -- after the 8h settlements land, before the cycle reads state.
+# EVIDENCE: scripts/optimise_net_profit.py -> data/net_profit_optimum.json
+# CONFIDENCE: committed-script. First run on 254 trades: 24-48h is the ONLY positive net/hour band
+# (+0.00346/h, n=68, 52.9% win); funding rises monotonically with hold (0.039 -> 0.487) exactly as
+# theory says, while the price column bleeds -0.155 -> -0.650 -> -1.796 -- a delta leak that SCALES
+# with holding time on a book whose price legs should cancel. That leak, not the hold period, is
+# the dominant lever. Caveat recorded with the number: the 254-trade sample spans the 07-27 churn
+# incident, whose rail-forced closes distort the hold distribution, so the verdict must be re-read
+# on post-fix fills before any parameter moves.
+25 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_netopt.lock .venv/bin/python scripts/optimise_net_profit.py >> data/cro_ai_logs/net_profit_optimum.log 2>&1
+
+# POINT-IN-TIME UNIVERSE SNAPSHOT (R0239). list_perp_symbols filters exchangeInfo to
+# status == TRADING and discards the rest, so every backfilled panel is conditioned on the symbol
+# SURVIVING to the day the backfill ran -- textbook survivorship bias. First capture (2026-08-01)
+# found 851 symbols of which 124 were NOT trading (123 SETTLING, 1 PENDING): 14.6% of the universe
+# was invisible to every cross-sectional study the desk has ever run.
+# WHY DAILY AND WHY IT CANNOT SLIP: a point-in-time snapshot not taken today cannot be taken
+# tomorrow. Unlike almost every other job here, a missed run is not stale data -- it is a
+# permanent hole. The value is continuity, so the series only becomes worth something by being
+# unbroken. The exchangeInfo call already happens on every ingest and was being thrown away.
+# SCOPE, honestly: this fixes the panel FORWARD. It does NOT restore LUNA/UST/FTT/SRM to the
+# seven-year history -- that reconstruction from binance.vision delisted archives is a separate,
+# larger job and should be scoped once rather than implied here.
+# 00:20 UTC: early enough that the snapshot describes the day it is named for, clear of midnight.
+# EVIDENCE: scripts/snapshot_universe.py -> data/universe_snapshots.jsonl.gz (append-only)
+# CONFIDENCE: committed-script (first run recorded 851 symbols across 3 statuses)
+20 0 * * * cd "$QUANT_ROOT" && flock -n data/.cron_universe.lock .venv/bin/python scripts/snapshot_universe.py >> data/cro_ai_logs/universe_snapshot.log 2>&1
+
+# RECOMMENDATION WORKER (principal 2026-08-01: "make claude keep up with recommendation
+# implementations, immediate, automated"). §41 made every recommendation reach a disposition and
+# the desk then generated them faster than anything consumed them: 132 open, 51 past the 24h
+# grace, oldest 39h, and ZERO cron organs touching the ledger. Generation without a consumer is
+# not throughput -- it is a queue that grows until nobody reads it, which is the failure §41
+# exists to stop arriving one layer up. The brain triages the ledger among a dozen duties and
+# loses to them every cycle.
+# CADENCE: 3 rows/run hourly = 72/day against ~50/day generated, so the backlog DRAINS rather
+# than holds. Batch stays small on purpose: one bad row then poisons a short run, not a long one,
+# and each diff stays reviewable.
+# OWN FLOCK, NOT brain_mutex: the frontier miners took the mutex, deferred every time their timer
+# hit a live cycle, and produced nothing for ~12 days. A consumer that yields to a busy producer
+# never runs. Two claude processes at ~190MB against 1.6GB available is affordable.
+# EVIDENCE: ops/run_recommendation_worker.sh -> data/cro_ai_logs/recommendation_worker_*.log
+#   and the ledger's own implemented/rejected counts, which are the real proof.
+# CONFIDENCE: committed-script (new this cycle)
+*/20 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_recworker.lock /bin/bash ops/run_recommendation_worker.sh >> data/cro_ai_logs/recommendation_worker.log 2>&1
+
+# CROSSASSET SHADOW CLOCK (2026-08-01). slot_registry counts `crossasset` in the concurrent Holm
+# cohort on the strength of data/crossasset_shadow_state.json -- which had not been written since
+# 2026-06-21, 977h, flagged STALLED. The script works (verified: live cross-asset returns across
+# equity and energy legs) but appeared in no cron and no timer: it ran once at inception and never
+# again.
+# WHY IT IS NOT MERELY UNTIDY: the forward-slot cohort is CAPPED at MAX_FORWARD_SLOTS=12 and the
+# desk is AT 12. A clock accruing nothing still consumes a slot, so a dead entry blocks a live
+# candidate on the only path from research to capital. The registry deliberately counts dormant
+# clocks until an explicit ledgered retirement -- over-counting m only tightens the bar, the safe
+# error -- but that trade is only correct if someone then fixes or retires the clock.
+# SCHEDULE RATHER THAN RETIRE: the axis is genuinely orthogonal to everything else accruing, so
+# retiring a working cross-asset clock to free a slot would discard the diversification the cohort
+# exists to build. If it still shows nothing in a fortnight, retirement becomes correct and the
+# evidence will say so.
+# 06:40 UTC: after the US session settles into the prior close (both legs are daily bars), clear
+# of the 06:00 cluster.
+# EVIDENCE: scripts/run_crossasset_shadow.py -> data/crossasset_shadow_state.json
+# CONFIDENCE: committed-script (verified running by hand this cycle)
+40 6 * * * cd "$QUANT_ROOT" && flock -n data/.cron_crossasset.lock .venv/bin/python scripts/run_crossasset_shadow.py >> data/cro_ai_logs/crossasset_shadow.log 2>&1
+
+# COMMIT AUDIT (L1.31/L1.43, principal 2026-08-01: "no independent validation, no second pair of
+# eyes -- every check was written by the same mind that wrote the code"). The desk owns 13 seats
+# across 11 labs and pointed NONE of them at its own commits: seats reviewed research findings and
+# code on rotation, and nobody ever reviewed the CHANGES. A checker written by the author encodes
+# the author's wrong model exactly as faithfully as the code does, so a second checker by the same
+# mind inherits the first one's blind spot -- which is why this is a DIFFERENT model family and not
+# another in-house fence.
+# BUILT 2026-08-01 by a session that died before landing it: ops/run_commit_audit.sh and
+# prompts/panel_missions/commit_audit.txt sat UNTRACKED for ~1h with no scheduler line, which is
+# the built-never-wired defect (§42 "an orphan is fixed by a caller, not by deletion") plus the
+# L1.28c defect underneath it -- an organ whose cadence was never DECIDED runs at zero forever.
+# CEILING TYPE: INFORMATION-ARRIVAL. The payload is `git log --since=24.hours`, so a daily fire
+# tiles the window exactly -- no gap, no overlap. Firing 2x/day against an unchanged 24h window
+# would re-review 12h of already-reviewed commits and spend a second full 13-seat panel (~$2.93)
+# for zero new information, which is the ceiling, not a budget choice.
+# LIFTING CONDITION, stated so this is a DECISION and not an inherited default: narrow --since to
+# 12h and go 2x/day if measured finding-yield per run justifies the seat spend; the L1.28c end
+# state is event-driven firing on push, which removes the window question entirely.
+# DEGRADES HONESTLY: OpenRouter is at -$0.59, so every seat 402s and the run reports BLOCKED
+# rather than pretending. It is scheduled NOW precisely so the loop works the day credit lands
+# with nothing further to wire.
+# 10:10 UTC: after the 09:30 capability hunt, clear of the 06:xx-07:xx governance block and of the
+# 10:00 data-axis dig, and late enough that the overnight commit flow is inside the 24h window.
+# EVIDENCE: ops/run_commit_audit.sh -> data/cro_ai_logs/commit_audit_*.log + a panel-sourced
+#   ledger row per run (the row is the proof it converted; the log alone is not).
+# CONFIDENCE: committed-script (new this cycle)
+10 10 * * * cd "$QUANT_ROOT" && flock -n data/.cron_commit_audit.lock /bin/bash ops/run_commit_audit.sh >> data/cro_ai_logs/commit_audit.log 2>&1

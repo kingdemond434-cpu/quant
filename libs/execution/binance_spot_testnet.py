@@ -20,7 +20,7 @@ from typing import Any
 
 _BASE = "https://testnet.binance.vision"        # PINNED spot testnet -- never live
 _KEY_ENV = "BINANCE_SPOT_TESTNET_KEY"
-_SECRET_ENV = "BINANCE_SPOT_TESTNET_SECRET"
+_SECRET_ENV = "BINANCE_SPOT_TESTNET_SECRET"  # noqa: S105 -- this is the NAME of an env var the code looks up, not a secret value
 _KEYFILE = Path("data/secrets/binance_spot_testnet.json")
 
 

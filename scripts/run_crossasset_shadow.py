@@ -116,8 +116,16 @@ def main() -> None:
     state = json.loads(_STATE.read_text("utf-8")) if _STATE.exists() else {}
     if "shadow_start" not in state:
         state["shadow_start"] = dates[-1].isoformat()
-        _STATE.parent.mkdir(parents=True, exist_ok=True)
-        _STATE.write_text(json.dumps(state), "utf-8")
+    # RECORD THE RUN, every pass. The file used to be written only on the first run, so a clock
+    # scheduled daily left no trace of having run and check_organ_liveness -- which reads this
+    # artifact's mtime against the declared cadence -- reported STALE even immediately after a
+    # successful pass. That is how this clock sat dead for 42 days while still consuming one of
+    # the 12 capped Holm slots. shadow_start is NOT touched: it anchors the forward/backtest
+    # split, so rewriting it would silently move the in-sample boundary.
+    state["last_run"] = datetime.now(tz=UTC).isoformat()
+    state["last_run_rows"] = len(dates)
+    _STATE.parent.mkdir(parents=True, exist_ok=True)
+    _STATE.write_text(json.dumps(state, indent=1), "utf-8")
     shadow_start = pd.Timestamp(state["shadow_start"])
     is_fwd = dates >= shadow_start
     bt_sharpe, fwd_sharpe = _ann(r_combo[~is_fwd]), _ann(r_combo[is_fwd])

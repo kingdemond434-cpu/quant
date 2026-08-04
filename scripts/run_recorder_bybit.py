@@ -95,6 +95,22 @@ def _universe(http=None) -> tuple[str, ...]:
 
 _DEPTH_EVERY_S = 4.0
 _TRADES_EVERY_S = 20.0
+_SYMBOLS = ("BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT",
+            "DOGEUSDT", "ADAUSDT", "AVAXUSDT", "LINKUSDT", "LTCUSDT",
+            "TRXUSDT", "DOTUSDT", "BCHUSDT", "NEARUSDT", "SUIUSDT",
+            "UNIUSDT", "APTUSDT", "FILUSDT", "ARBUSDT", "OPUSDT")
+# SAMPLING RESOLUTION. Was depth@4.0s / trades@20.0s = 6.0 req/s against a self-imposed cap of
+# 20.0 -- i.e. the recorder ran at 30% of its OWN conservative limit, and that limit is itself
+# far under what the venue allows. The moat is the desk's only unreplicable asset and every
+# unrecorded moment is permanently unavailable, so unused headroom here is the one ceiling whose
+# cost is irreversible: it cannot be bought back later at any price.
+#
+# depth@1.5s + trades@10s over 20 symbols = 20/1.5 + 20/10 = 15.3 req/s, still inside the cap
+# with margin. That is 2.7x the depth resolution -- microstructure withdrawal happens on second
+# scales, so this is resolution the M_LIQUIDITY_WITHDRAWAL mechanism can actually use.
+# _assert_rate_budget() below still enforces the cap, so this cannot silently exceed it.
+_DEPTH_EVERY_S = 1.5
+_TRADES_EVERY_S = 10.0
 _REQ_PER_S_CAP = 20.0            # bybit allows far more; stay modest and neighbourly
 
 
@@ -149,22 +165,37 @@ def main() -> None:
             d = _get("/v5/market/orderbook", f"category=linear&symbol={sym}&limit=25")
             if d:
                 r = d["result"]
-                buf[sym].append({"t": int(time.time() * 1000), "k": "depth",
+                # L1.46: until now a Bybit depth row carried NO venue identifier of any kind --
+                # no time, no sequence -- so it could not be joined to the free first-party Bybit
+                # archive (200 levels / 100ms / 345d) and a dropped poll was indistinguishable
+                # from a quiet book. "vt" is result.ts (the venue's stamp, renamed to avoid
+                # colliding with our `t`), "u"/"sq" are the update id and sequence.
+                buf[sym].append({"t": int(time.time() * 1000), "k": "depth", "c": "recv",
+                                 "vt": r.get("ts"), "u": r.get("u"), "sq": r.get("seq"),
                                  "b": r.get("b", [])[:25], "a": r.get("a", [])[:25]})
         now = time.time()
         if now - last_trades >= _TRADES_EVERY_S:
             for sym in _SYMBOLS:
                 d = _get("/v5/market/recent-trade", f"category=linear&symbol={sym}&limit=200")
                 if d:
-                    buf[sym].append({"t": int(now * 1000), "k": "trades",
+                    # L1.46: stamp each batch at ITS OWN receipt, not at `now`. `now` is captured
+                    # once above, before this 20-symbol serial loop, so every symbol after the
+                    # first carried a receipt stamp EARLIER than the moment we received it -- a
+                    # look-ahead in our own receipt axis, and the same defect class as the R0060
+                    # leaky Upbit copies. Measured on the archive before this fix: 32.8% of
+                    # 877,314 batches had a receipt stamp PRECEDING the newest trade in them.
+                    buf[sym].append({"t": int(time.time() * 1000), "k": "trades", "c": "recv",
                                      "v": d["result"].get("list", [])})
             f = _get("/v5/market/tickers", "category=linear")
+            # L1.46: one call serves every symbol, so a shared stamp is correct here -- but it
+            # must be the receipt of THAT call, not the pre-loop `now` from ~20 requests ago.
+            meta_recv = int(time.time() * 1000)
             if f:
                 tk = {x["symbol"]: {"fr": x.get("fundingRate"), "oi": x.get("openInterest"),
                                     "mp": x.get("markPrice")}
                       for x in f["result"].get("list", []) if x["symbol"] in _SYMBOLS}
                 for sym, v in tk.items():
-                    buf[sym].append({"t": int(now * 1000), "k": "meta", **v})
+                    buf[sym].append({"t": meta_recv, "k": "meta", "c": "recv", **v})
             last_trades = now
 
         if now - last_flush >= 60:

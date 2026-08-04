@@ -3538,6 +3538,33 @@
       "review_due": "2026-09-01",
       "review_due_source": "forecast resolve_by 20260801-stratified-campaign-yields-a-survivor",
       "verified_by_fresh_read": true
+    },
+    {
+      "id": "2026-08-01-cycle-carryover-ack-blindness-and-generation-third-store",
+      "ts": "2026-08-01T15:03:54.789150+00:00",
+      "decision": "Two organs that judge the desk were reading a PARTIAL view of the evidence and escalating on it. (1) \u00a737 carry-over brief: scripts/carryover_brief.py enumerated max_audit.CHECKS directly and recorded EVERY defect as owed, because the ack filter lived inside max_audit.main() rather than beside the module-level CHECKS list that was shared precisely to stop this drift. Measured: 26 of 47 reported items carried unexpired dated acks and 1 was already fixed (57% false positive), and because the brief sorts by age x sightings the OLDEST acks floated to the top -- the 12 items placed in front of the brain FIRST were 12/12 acked, several blocked on principal-only actions (Tier-3 gate flip, manual re-arm) or on cron dates not yet reached. Self-amplifying: every cycle that correctly walked past an acked item incremented seen_by_live_brain, making the accusation louder. FIX: extracted max_audit.split_acked as the ONE definition; carryover_brief now records live ids as owed and acked ids separately, with an explicit ack_state refusal path (corrupt registry -> 'unknown' and the brief says so; ABSENT registry -> 'known', since nothing-acked is a fact). Deferral is NOT muted: a new TREADMILL signal fires when an item has been continuously deferred past the doctrine's 30d burial line, which is enforcement the desk did not previously have. (2) ADJACENCY, same failure shape: max_audit.check_generation credited generation from only 2 of the 3 stores a Stage-A screen lands in, so it reported the desk's PRIMARY duty skipped for 5.8d while R0069's 38-asset / 84,891-asset-day panel screen was written to reports/axis_screens/ that afternoon. Added the third store, preferring content 'updated' over mtime per L1.44.",
+      "expected_benefit": "The brain seat is the desk's scarcest resource (L1.28c) and its FIRST-priority queue was 57% noise, ranked anti-correlated with real work. Post-fix the queue surfaced generation-skipped -- the constitution's own PRIMARY duty -- at rank #1 after 10 awake cycles at rank ~13+. No capital effect; the effect is on what every future cycle works on first.",
+      "confidence": 0.9,
+      "assumptions": [
+        "max_audit.main()'s ack semantics (unexpired 'until' = acked) are the desk's intended definition",
+        "an unexpired dated ack with a reason is a disposition, not avoidance (doctrine: a settled decision with ledgered reasoning and a falsifier is NOT a defect)",
+        "reports/axis_screens/ mtime-or-updated is a truthful signal that a screen ran"
+      ],
+      "neighbours": [
+        "scripts/max_audit.py main() -- now consumes split_acked; live/acked partition unchanged, verified 21 live / 28 acked before and after",
+        "max_audit.check_carryover_skipped -- reads the same ledger, so its 'carryover-skipped' defect now counts only genuinely-live items; this closes a feedback loop where the false positives fed a defect that fed itself",
+        "ops/run_cro_ai.sh:22 -- injects the brief into every CRO prompt; output shape changed (new deferred-count line, optional ACK-STATE and TREADMILL blocks), still exits 0, never blocks",
+        "data/carryover_sweeps.jsonl -- append-only; new rows carry 'acked'/'ack_state'; legacy rows lack them and are read as ack_state='unknown' (tested), so no history is invalidated",
+        "scripts/check_build_standard.py -- carryover_brief now calls libs.ops.lawful.guard() (L1.42)",
+        "data/max_audit_acks.json -- read by one more caller; unchanged in content, verified 36 acks present after the refusal-path test restored it",
+        "check_generation's third store touches nothing that writes reports/axis_screens/"
+      ],
+      "success_metric": "The \u00a737 brief's top-12 contains ZERO currently-acked items on the next 5 cycles (was 12/12), and check_generation does not fire on a day a screen report was written.",
+      "reversal_condition": "If a genuinely-owed item is found hidden in the deferred list without a valid unexpired ack, or if the treadmill signal never fires on an item deferred >30d, revert to recording all defects as owed and fix forward from there -- a noisy brief beats a blind one.",
+      "independence": "Both edits are in the AUDIT/GOVERNANCE subsystem, not the risk/execution/sizing path, and they are causally linked (same failure shape, second found by the first). Non-interaction argument: split_acked is a pure function over (defects, ack registry) with max_audit.main()'s partition verified byte-identical before/after; the check_generation edit only widens an OR over timestamp sources and was positive/negative-control tested (fires when screens are hidden, silent when present). Neither touches a rail, a gate threshold, or any capital path.",
+      "review_due": "2026-08-08",
+      "review_due_source": "cycle+7d",
+      "verified_by_fresh_read": true
     }
   ]
 }

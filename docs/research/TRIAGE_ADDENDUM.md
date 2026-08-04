@@ -11,17 +11,28 @@ Running total: **101 items triaged.**
 |---|---|---|---|
 | 92 | Research Reproducibility Engine | `experiment_registry.py` | commit sha + artifact set pinned per experiment; 569/569 artifacts present (100%) |
 | 101 | Decision Audit Trail | `experiment_registry.jsonl` + commit messages + `suggestion_ledger` | why-funded / why-promoted / why-killed already recorded per experiment |
+| 86 | Feature Novelty Detector | `alpha_lifecycle.py` §3 | Jaccard + dead-mechanism match. Verified live: flags "social attention momentum" against FAMILY KILL M_ATTENTION_DELAY and "RSI oversold bounce" against M_PRICE_PATTERN |
+| 96 | Research Experiment Scheduler | `research_erv.py` | orders the queue by `prior × information_gain ÷ cost` (arch/moat/mech/cost). Ordering only — no autonomy, no promotion authority, exactly as the item specified |
+| 99 | Market Anomaly Memory | `alpha_lifecycle.py` §4 → `data/anomaly_memory.jsonl` | append-only; seeded with INC-006 (cash-carry hedge inverted short→long, twice) |
+| 82 | Data Provenance extension | `measurement_gate.py` `check_provenance` + `docs/research/data_provenance.json` | **built 2026-07-29.** Sixth gate family: source / collection_method / manipulation_risk / survivorship. HIGH manipulation risk and CONTAMINATED survivorship BLOCK; a declaration contradicted by the rows' own venue field is a FAIL; undeclared WARNs and is counted so it can ratchet down |
+
+**Re-verdicted 2026-07-29.** Items 86, 96 and 99 had shipped and were still filed under BUILD;
+each was confirmed by RUNNING its producer, not by matching a name. Item 82 was the only one of
+the nine open BUILD items across both triage docs that was genuinely unbuilt, and it was built
+the same day. Register kept in `docs/`, not `data/`, because `data/` is gitignored and a
+provenance record that dies with the working directory is not a record.
 
 ---
 
 ## BUILD — unblocked, cheap, next session
 
-| # | Component | Spec | Why it earns a slot |
-|---|---|---|---|
-| 86 | **Feature Novelty Detector** | Jaccard + mechanism-overlap of a candidate against `feature_library` and the graveyard. The dedupe already written in `research_exchange.py intake` generalises directly. | Prevents renamed factors. The desk's own history: RSI / stochastic / Williams %R are one mechanism wearing three names, and `M_PRICE_PATTERN` died once but was re-proposed repeatedly. |
-| 96 | **Research Experiment Scheduler** | Order the 447 enumerated constructions by `prior × information_gain ÷ cost`. Pure ordering — no autonomy, no promotion authority. | **Corrects my earlier rejection.** I rejected the *Autonomous Research Governor* (premature at 0 alphas) and wrongly swept the scheduler in with it. Ordering a queue that already exists is not autonomy, and the queue is 447 deep with no ordering today. |
-| 99 | **Market Anomaly Memory** | Append-only log of rare events: crashes, squeezes, exchange incidents, protocol failures, desk incidents. Seed with incident #6 (hedge inverted twice, 07-27). | Costs almost nothing and only accrues value with time. Starting it late is the only way to lose. Becomes the stress-test library items 87/93 need. |
-| 82 | **Data Provenance extension** | Add source / collection-method / manipulation-risk / survivorship fields to the `measurement_gate` per-dataset record. | Gate already does missingness, stability, timestamp integrity, reproducibility. Provenance is the missing column, not a new engine. |
+| # | Component | Note |
+|---|---|---|
+| 93 | **Adaptive Data Acquisition Agent** | **UNBLOCKED 2026-07-29.** Its stated blocker was "depends on Information Advantage Score (item 17) existing first" — and 17 shipped, so the blocker expired. Caught mechanically by `max_audit.check_triage_disposition`, not by anyone re-reading the row: a QUEUE verdict is a claim with an expiry date and nobody revisits a blocked item to ask whether it is still blocked. Buildable now against `research_cio.py` §1. |
+
+Items 86, 96, 99 and 82 were re-verdicted BUILT above on the same pass. Specs for them remain in
+git history; a register that keeps advertising work already done is as wrong as one that hides
+work still open.
 
 ---
 
@@ -50,7 +61,7 @@ Running total: **101 items triaged.**
 | 84 | Causal Discovery Engine | **Deterministic core already exists**: `leakage_detector.py` does reverse-causality and orthogonalisation-to-confound — the two tests that separate "X causes Y" from "Y causes X" and from "Z causes both". Remaining work is the graph layer, not the statistics. |
 | 85 | Data Lineage Graph | Partial: registry already pins source→commit→artifact. Missing the feature→signal→trade edges. |
 | 95 | Alpha Causal Graph | Supersedes Alpha Genome (item 76) — build one, not both. |
-| 93 | Adaptive Data Acquisition Agent | Depends on Information Advantage Score (BUILD item 17) existing first. |
+
 
 **Blocked on OpenRouter funding:**
 | # | Component |

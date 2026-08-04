@@ -1,0 +1,68 @@
+{
+  "_doc": "DATA PROVENANCE REGISTER -- triage item #82, the sixth measurement-gate family. Families 1-5 interrogate the data; none of them can see the one thing that invalidates a dataset without leaving a trace in it: where it came from. A venue's self-reported volume is regular, non-null, stable and fabricable. A universe picked on today's membership and applied backwards is clean by every distributional test and manufactures returns anyway. Both pass families 1-5 untouched.",
+  "_fields": {
+    "source": "who produced the bytes. Corroborated against any source/venue/exchange field in the rows themselves -- a CONTRADICTED declaration is a FAIL, because a wrong provenance claim is trusted where an absent one invites a check.",
+    "collection_method": "OUR_CAPTURE | VENDOR_API | PUBLIC_API | SCRAPED | DERIVED | MANUAL. Decides whether a rerun reproduces it: OUR_CAPTURE can be re-run, VENDOR_API can be revoked or silently revised, SCRAPED breaks without notice, DERIVED inherits every weakness of its parents.",
+    "manipulation_risk": "LOW | MEDIUM | HIGH. HIGH is a FAIL. The test is not 'could someone lie' but 'does the counterparty to our trade choose this number'.",
+    "survivorship": "CLEAN | UNKNOWN | CONTAMINATED. CONTAMINATED is a FAIL. UNKNOWN is a WARN and is honest; do not write CLEAN to silence it."
+  },
+  "_rule": "Undeclared is a WARN, never a silent pass, and the undeclared COUNT is reported so it can be ratcheted down. Blocking every undeclared dataset on day one converts a real control into an outage, and an outage is how controls get switched off.",
+  "datasets": {
+    "nav_attestation.jsonl": {
+      "source": "this desk (signed NAV attestations)",
+      "collection_method": "OUR_CAPTURE",
+      "manipulation_risk": "LOW",
+      "survivorship": "CLEAN",
+      "note": "Self-produced and append-only. The only .jsonl tracked in git; everything else under data/ is runtime output."
+    },
+    "anomaly_memory.jsonl": {
+      "source": "this desk (alpha_lifecycle.py, triage item #99)",
+      "collection_method": "OUR_CAPTURE",
+      "manipulation_risk": "LOW",
+      "survivorship": "CLEAN",
+      "note": "Append-only rare-event log. Seeded with INC-006 (cash-carry hedge inverted twice, 2026-07-27)."
+    },
+    "mine_conversion_log.jsonl": {
+      "source": "this desk (libs/research/mine_conversion.py snapshots)",
+      "collection_method": "OUR_CAPTURE",
+      "manipulation_risk": "LOW",
+      "survivorship": "CLEAN",
+      "note": "The §33 evidence base for conversion latency and the ratchet. Truncating it hands back an easier bar, which is why conversion_record.json holds the high-water marks separately."
+    },
+    "model_upgrade_log.jsonl": {
+      "source": "this desk (scripts/model_upgrade.py gauntlet results)",
+      "collection_method": "OUR_CAPTURE",
+      "manipulation_risk": "LOW",
+      "survivorship": "CLEAN",
+      "note": "Records every 4-probe gauntlet outcome, adopted or rejected. Rejections are the more valuable half."
+    },
+    "moat_depth.jsonl": {
+      "source": "bybit",
+      "collection_method": "OUR_CAPTURE",
+      "manipulation_risk": "LOW",
+      "survivorship": "CLEAN",
+      "note": "Order-book depth snapshotted at OUR timestamps by run_recorder_bybit.py. This is the desk's top-scored information advantage (1.03) precisely because it is observed rather than reported: the venue publishes the book, it does not publish this series."
+    },
+    "moat_trades.jsonl": {
+      "source": "bybit",
+      "collection_method": "OUR_CAPTURE",
+      "manipulation_risk": "LOW",
+      "survivorship": "CLEAN",
+      "note": "Public trade prints, captured directly. Prints are executions, not a venue statistic."
+    },
+    "funding_history.jsonl": {
+      "source": "exchange funding endpoints",
+      "collection_method": "PUBLIC_API",
+      "manipulation_risk": "LOW",
+      "survivorship": "UNKNOWN",
+      "note": "Funding is settled cash between counterparties, so the venue cannot costlessly choose it. Survivorship UNKNOWN and left that way: the endpoint returns history for LISTED symbols, so delisted perps are absent by construction and the size of that hole has not been measured. Do not upgrade to CLEAN without measuring it."
+    },
+    "exchange_volume.jsonl": {
+      "source": "exchange reported volume",
+      "collection_method": "PUBLIC_API",
+      "manipulation_risk": "HIGH",
+      "survivorship": "UNKNOWN",
+      "note": "BLOCKS BY DESIGN. Self-reported venue volume is the canonical manipulable series -- the counterparty to our trade chooses the number, and wash volume has a long documented history in this asset class. Use trade prints (moat_trades) or observed book depth instead. Kept in the register rather than deleted so the FAIL is a recorded decision, not an omission."
+    }
+  }
+}

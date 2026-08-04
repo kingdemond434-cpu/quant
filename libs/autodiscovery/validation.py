@@ -18,8 +18,11 @@ from libs.autodiscovery.models import Hypothesis, ValidationMetrics, ValidationV
 from libs.discovery.capacity import capacity_estimate
 from libs.discovery.tail_risk import tail_risk
 
-# re-exported for tests/autodiscovery/test_capacity_relative.py; validate()'s own gate below
-# uses _min_capacity_usd() instead.
+# re-exported for tests/autodiscovery/test_capacity_relative.py. validate()'s own capacity gate
+# calls capacity_status() below -- the 10%-slice band (L1.18a). It used to call a local
+# _min_capacity_usd() implementing a 2x-of-book multiple; that rule and its constant were deleted
+# 2026-08-01 (R0080) rather than left dead, because a spare capacity bar sitting in the file is
+# precisely how the desk ended up running two of them at once.
 from libs.research.capacity_policy import capacity_required  # noqa: F401
 from libs.validation.baselines import baseline_scorecard
 from libs.validation.campaign_window import (
@@ -72,7 +75,11 @@ _DESK_EQUITY_FALLBACK_USD = 1.0e3     # used only when live equity is unreadable
 # INCLUSIVE at the small end forever -- at $1k everything from ~$200 up is in; at $50k a
 # $300-capacity edge has finally become a rounding error and retires by OUTGROWTH.
 _MIN_SLICE_FRACTION = 0.10            # an edge must hold >=10% of the book to be worth a quota
-_CAPACITY_MULTIPLE_OF_EQUITY = 2.0    # RETAINED only for the gauntlet's own headroom bar
+# DELETED 2026-08-01 (R0080): `_CAPACITY_MULTIPLE_OF_EQUITY = 2.0`, "RETAINED only for the
+# gauntlet's own headroom bar". That retention is the whole defect -- the gauntlet's own bar WAS
+# the desk's capacity bar for every candidate it screened, so "retained only for" described a
+# second, stricter, unconstitutional rule quietly outranking the one above it. There is now ONE
+# band: capacity_status().
 _VENUE_MIN_NOTIONAL_USD = 10.0        # Binance-class minimum order notional
 _EXEC_VIABILITY_FLOOR_USD = 20.0 * _VENUE_MIN_NOTIONAL_USD   # ~$200: a handful of economic trips
 
@@ -120,10 +127,6 @@ def _desk_equity_usd() -> float:
             if isinstance(v, (int, float)) and v > 0:
                 return float(v)
     return _DESK_EQUITY_FALLBACK_USD
-
-
-def _min_capacity_usd() -> float:
-    return max(_desk_equity_usd() * _CAPACITY_MULTIPLE_OF_EQUITY, _EXEC_VIABILITY_FLOOR_USD)
 
 
 def capacity_status(capacity_usd: float, *, equity_usd: float | None = None) -> str:
@@ -463,15 +466,19 @@ def validate(
     n_trials: int,
     sharpe_estimates: np.ndarray,
     returns_matrix: np.ndarray,
-    adv_usd: float = 1.0e11,
+    # PER-SYMBOL DOLLAR ADV. Was `adv_usd: float = 1.0e11` until 2026-08-01 (R0080), and that
+    # default is why every capacity figure this desk has ever stored is a fiction: NO production
+    # caller passes it, so all 1,673 candidates in the lab store were sized against a HUNDRED
+    # BILLION DOLLAR daily volume -- two to four orders of magnitude above any real crypto pair.
+    #
+    # It is now None-by-default and the capacity gate reports UNMEASURED when it is absent, which
+    # is the same treatment `beats_baselines` and `sample_adequacy` already get. A default that
+    # silently manufactures a number is strictly worse than no number: it cannot be distinguished
+    # from a measurement downstream, and 966 of those 1,673 stored capacities are the identical
+    # constant 5.04e-13 -- the arithmetic signature of edge~0 against adv=1e11, sitting in the
+    # store looking like 966 independent capacity measurements.
+    adv_usd: float | None = None,
     edge_bps: float | None = None,
-    # What the desk ACTUALLY deploys. The capacity gate is a ratio to this, not a fixed dollar
-    # figure -- see capacity_required(). None means "read the live book from the NAV chain", which
-    # is what makes the ratio self-scaling as the desk grows. The old default of 0.0 was a hole:
-    # it collapsed the gate to the $2k absolute floor and passed essentially any capacity, so the
-    # ratio that was supposed to protect the desk protected nothing whenever a caller omitted it.
-    deployed_equity_usd: float | None = None,
-    n_sleeves: int | None = None,
     pbo: PBOResult | None = None,
     rc: RealityCheckResult | None = None,
     benchmark_returns: np.ndarray | None = None,
@@ -551,8 +558,13 @@ def validate(
     # Candidate-aware capacity: use the strategy's OWN realized per-bar edge (bps), so a no-edge
     # strategy gets ~zero capacity (fails) while a real edge on a liquid market passes -- instead
     # of the old fixed edge_bps that made this gate a constant veto for every candidate.
+    #
+    # NO ADV, NO CAPACITY NUMBER (R0080). capacity_estimate is linear in adv_usd, so inventing an
+    # ADV does not produce an approximate capacity -- it produces an arbitrary one, scaled by
+    # whatever constant was chosen. There is no honest capacity without a volume measurement.
     eff_edge_bps = edge_bps if edge_bps is not None else max(0.0, float(arr.mean()) * 1.0e4)
-    cap = capacity_estimate(adv_usd=adv_usd, edge_bps=max(eff_edge_bps, 1.0e-9))
+    cap = (capacity_estimate(adv_usd=adv_usd, edge_bps=max(eff_edge_bps, 1.0e-9))
+           if adv_usd is not None and adv_usd > 0 else None)
     tail = tail_risk(arr)
 
     metrics = ValidationMetrics(
@@ -562,7 +574,7 @@ def validate(
         dsr=dsr.dsr,
         pbo=pbo_value,
         reality_p=reality_value,
-        capacity_usd=cap.capacity_usd,
+        capacity_usd=cap.capacity_usd if cap is not None else 0.0,
         fragility=tail.tail_risk_score,
     )
 
@@ -574,9 +586,6 @@ def validate(
         "dsr": dsr.passed,
         "pbo": pbo_ok,
         "reality_check": sig_ok,
-        # capacity parity: relative to the desk's OWN size (see _min_capacity_usd), never a
-        # fixed institutional floor. Small edges are admitted and exploited to their own quota.
-        "capacity": cap.capacity_usd >= _min_capacity_usd(),
         "fragility": tail.acceptable,
         # skipped-as-True when no benchmark is supplied (see the constant block above); when
         # one IS supplied the candidate must beat buy-and-hold and equal-weight outright.
@@ -603,6 +612,32 @@ def validate(
         gates["sample_adequacy"] = sample_adequacy(n_trades).passed
     if benchmark_returns is None:
         unmeasured.append("beats_baselines")
+    # CAPACITY: THE 10%-SLICE BAND, NOT A MULTIPLE OF THE BOOK (R0080, L1.18a).
+    #
+    # This gate read `cap.capacity_usd >= _min_capacity_usd()`, i.e. capacity >= 2x desk equity.
+    # L1.18a names that exact shape as the defect -- "THE BAND IS A MINIMUM SLICE (>=10% of book),
+    # NEVER A MULTIPLE OF IT" -- and this file's own comment block has said since 2026-07-30 that
+    # the multiple "was wrong and measurably so": at $1,000 equity it marked $300, $800 and $1,500
+    # capacities OUTGROWN, edges able to hold 30%, 80% and 150% of the entire book. The band was
+    # already implemented correctly in capacity_status() directly above; validate() simply never
+    # called it, so the desk ran TWO capacity bars at once and the stricter, unconstitutional one
+    # owned the gauntlet.
+    #
+    # BOTH HALVES LAND TOGETHER ON PURPOSE, because either alone misfires in opposite directions.
+    # Swapping the band alone loosens the bar while capacity is still computed from a $100bn ADV
+    # fiction. Plumbing real ADV alone shrinks every capacity by 3-4 orders of magnitude while the
+    # 2x-multiple bar is still in place, which would fail essentially every candidate -- turning a
+    # measurement fix into a systematic killer of exactly the small edges §42 calls this desk's
+    # structural advantage.
+    #
+    # UNMEASURED, NEVER PASSED, when no ADV was supplied. This does not block survival (same rule
+    # as sample_adequacy and beats_baselines: a screen with zero promotion authority must not fail
+    # a candidate for an input its caller does not have). The honesty gain is the point -- a
+    # missing ADV previously produced a confident capacity verdict computed from a constant.
+    if cap is None:
+        unmeasured.append("capacity")
+    else:
+        gates["capacity"] = capacity_status(cap.capacity_usd) == "ADMIT"
 
     failed = [name for name, ok in gates.items() if not ok]
     reason = "" if not failed else "failed: " + ", ".join(failed)
@@ -612,3 +647,119 @@ def validate(
         survived=not failed, gates=gates, rejection_reason=reason,
         metrics=metrics, unmeasured=tuple(unmeasured),
     )
+
+
+def gate_discrimination(gate_results: list[dict[str, bool]]) -> dict[str, dict[str, Any]]:
+    """GAP #71 INSTRUMENTATION -- which gates actually DISCRIMINATE, and which are constants.
+
+    THE MEASURED PROBLEM. `pbo` and `reality_check` are computed ONCE per campaign (they are
+    properties of the returns matrix, not of any candidate) and then applied as PER-CANDIDATE
+    gates. So when campaign PBO is 0.6159 against a 0.50 bar, that gate reads False for every
+    candidate in the campaign -- all 420 of them -- no matter how good any individual one is. The
+    desk's own numbers: 420 candidates tested, ZERO survivors, while the genuinely per-candidate
+    gates discriminated normally (walk_forward 58.1%, fragility 47.9%).
+
+    WHY THIS REPORTS RATHER THAN FIXES. Turning a campaign veto into a rank would LOWER a
+    statistical bar, and this desk's standing research directive is explicit -- *"Never reduce
+    statistical standards. Only improve efficiency."* The gap register dates the redesign and
+    marks it as needing a principal ruling on RANK-not-VETO. So this measures the mechanism
+    instead of quietly relaxing it: a gate that passes everything or fails everything carries
+    zero information about any individual candidate, and the desk should be able to SEE that
+    rather than infer it from an empty survivor list.
+
+    A constant gate is not necessarily wrong. A campaign really can be overfit end to end. What
+    is wrong is not knowing which of the two you are looking at.
+    """
+    if not gate_results:
+        return {}
+    names = list(gate_results[0])
+    n = len(gate_results)
+    out: dict[str, dict[str, Any]] = {}
+    for g in names:
+        passed = sum(1 for r in gate_results if r.get(g))
+        rate = passed / n
+        constant = passed in (0, n)
+        out[g] = {
+            "pass_rate": round(rate, 4), "passed": passed, "n": n,
+            "discriminates": not constant,
+            "note": ("" if not constant else
+                     (f"CONSTANT: this gate {'passed' if passed else 'FAILED'} for all {n} "
+                      f"candidates, so it carries zero information about any individual one. "
+                      + ("A gate failing everything is a campaign-level verdict wearing a "
+                         "per-candidate costume -- the whole campaign is being rejected, not "
+                         "these candidates." if not passed else
+                         "A gate passing everything is not filtering; confirm it is still "
+                         "wired to anything."))),
+        }
+    return out
+
+
+def blocking_constant_gates(gate_results: list[dict[str, bool]]) -> list[str]:
+    """Gates that FAILED every candidate -- the ones that make promotion arithmetically
+    impossible regardless of candidate quality. Empty is the healthy state."""
+    return [g for g, d in gate_discrimination(gate_results).items()
+            if not d["discriminates"] and d["passed"] == 0]
+
+
+def counterfactual_survivors(
+    gate_results: list[dict[str, bool]], waive: list[str] | tuple[str, ...],
+) -> dict[str, Any]:
+    """GAP #71, THE QUESTION A RULING ACTUALLY NEEDS: if these gates were waived, who survives?
+
+    "Should we relax the campaign veto?" is unanswerable in the abstract and trivially answerable
+    from the gate matrix -- but only if someone computes it. It was computed ONCE, by hand, and
+    the result lives in a recommendation-ledger entry nobody re-reads. This makes it an output of
+    every campaign, so the ruling is made against current evidence rather than a remembered one.
+
+    THE MEASURED ANSWER ON THE REAL 420: zero. Waiving `pbo` and `reality_check` produces no
+    survivors, because every candidate ALSO failed at least one genuinely per-candidate gate --
+    which is precisely what the register's "sole-cause failures EMPTY" was recording. Relaxing
+    the veto would not have promoted anything; it would only have changed which failure was
+    reported first.
+
+    That is worth knowing in both directions. It says the campaign veto is not, today, the thing
+    standing between the desk and a validated alpha -- so relaxing it buys nothing and costs a
+    statistical standard. It also says the structural objection to the veto stands on its own
+    merits (campaign PBO rises with generation volume, which contradicts the Two-Stage Discovery
+    Law's "the confirmation bar never rises with generation") rather than on a promise of
+    survivors it cannot keep.
+
+    `independent_estimate` is included as the naive counterfactual for contrast: multiply the
+    surviving gates' pass rates as if they were independent. On the real campaign it predicts
+    ~9 survivors (0.581 x 0.479 x 0.433 x 0.433 x 0.402 = 2.1% of 420) where the true count is
+    ZERO.
+
+    THAT DIRECTION IS THE INFORMATIVE PART, and it is easy to get backwards. Observed BELOW the
+    independent estimate means gate PASSES are negatively associated: a candidate that clears one
+    gate tends to fail another. Which is what a well-designed battery should look like -- the
+    gates are penalising genuinely different failure modes rather than re-measuring one latent
+    "quality" score. (If they were positively associated, the good candidates would sweep every
+    gate and survivors would EXCEED the independent estimate, which would mean the battery is
+    largely one gate wearing five hats.) Across 420 candidates, not one was simultaneously
+    profitable, walk-forward-stable, capacity-viable and tail-acceptable.
+
+    Quoting the independent number as an expected yield would badly oversell any relaxation, so
+    it is reported beside the true count, never instead of it.
+    """
+    if not gate_results:
+        return {"n": 0, "waived": list(waive), "survivors": 0, "survivor_indices": [],
+                "independent_estimate": 0.0, "note": "no candidates -- nothing to counterfact"}
+    waived = set(waive)
+    n = len(gate_results)
+    survivors = [i for i, row in enumerate(gate_results)
+                 if all(ok for g, ok in row.items() if g not in waived)]
+    remaining = [g for g in gate_results[0] if g not in waived]
+    est = 1.0
+    for g in remaining:
+        est *= sum(1 for r in gate_results if r.get(g)) / n
+    return {
+        "n": n, "waived": sorted(waived), "survivors": len(survivors),
+        "survivor_indices": survivors[:20],
+        "independent_estimate": round(est * n, 2),
+        "note": ("waiving these gates promotes NOBODY -- every candidate also fails at least one "
+                 "gate that genuinely discriminates, so the relaxation buys no survivors and "
+                 "costs a statistical standard"
+                 if not survivors else
+                 f"{len(survivors)}/{n} would survive the waiver; this is a PROMOTION-BAR change "
+                 f"and belongs to the principal, not to a screen"),
+    }

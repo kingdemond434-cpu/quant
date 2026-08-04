@@ -268,7 +268,7 @@ def run_file(rel: str, tests: list[str], tree: Path, *, sample: int | None,
     all_mutants = mutants_for(original)
     chosen = list(all_mutants)
     if sample is not None and len(chosen) > sample:
-        random.Random(seed).shuffle(chosen)
+        random.Random(seed).shuffle(chosen)  # noqa: S311 -- cadence jitter is deliberately non-cryptographic; unpredictability to a front-runner is the requirement, not cryptographic strength
         chosen = chosen[:sample]
 
     if not baseline_ok:

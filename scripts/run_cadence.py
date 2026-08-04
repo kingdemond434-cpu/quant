@@ -22,6 +22,7 @@ CADENCE FLOORS below enforce the never-sleepier invariant; violations are paged.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import subprocess
 import sys
@@ -36,6 +37,7 @@ _DUE_NOTE = Path("docs/research/cadence_duties.md")
 _VIOLATION = Path("data/cadence_violation.json")
 _PANEL_EVERY_D = 3
 _TIER1_EVERY_D = 14
+_MODEL_UPGRADE_D = 30            # monthly, matching the roster-governance cadence
 _PROMPT_REVIEW_D = 28
 _CLOCK_MATURITY_D = 40
 
@@ -150,6 +152,7 @@ def _assert_floors(state: dict[str, Any], stage: str) -> None:
 
 _ROOT_DIR = Path(__file__).resolve().parent.parent
 _FREEZE_STATUS = Path("data/freeze_exit_status.json")
+_FUNDING_STATE = Path("data/panel_funding_state.json")
 
 #: criterion -> (artifact it reads, the module/script that WRITES that artifact).
 #: The second element is the whole point. A deployment criterion reading a file with no writer is
@@ -234,6 +237,67 @@ def _freeze_exit_met() -> tuple[bool, str]:
     return met, ", ".join(f"{k}={v}" for k, v in checks.items())
 
 
+def _funding_restored() -> bool:
+    """True when the panel has been funded since the last flagship sweep ran.
+
+    A 30-day clock is the right cadence for "has a better model shipped?" -- catalogs move
+    slowly. It is the WRONG cadence for "the desk just got paid". Without this, credits landing
+    on a Friday could be followed by up to a month of running the previous roster on the new
+    money, and the whole point of funding the panel is the panel it funds.
+
+    The flag is latched by run_external_panel on the unfunded->funded edge and cleared here only
+    after a sweep actually produced, so a cadence run that skipped the upgrade leaves the debt
+    standing rather than consuming it.
+    """
+    try:
+        return bool(json.loads(_FUNDING_STATE.read_text("utf-8")).get("upgrade_owed"))
+    except (OSError, json.JSONDecodeError, TypeError, ValueError):
+        return False
+
+
+def _run_model_upgrade() -> bool:
+    """Monthly: roll back regressed promotions, then auto-upgrade both model surfaces.
+
+    ROLLBACK RUNS FIRST AND UNCONDITIONALLY. It costs nothing (it reads blank telemetry, makes
+    no API call), and a seat that regressed must be healed before we consider adding another
+    change on top of it.
+
+    PRODUCTION, NOT EXIT CODE -- the same lesson _run_panel records above. Both engines exit 0
+    when the catalog is unreachable or the balance is too low to run a gauntlet, so an exit code
+    would stamp the duty done for a check that never actually looked at anything. The honest
+    signal is a FRESH `checked` timestamp in the engine's own state file: only a run that
+    genuinely evaluated the catalog writes one, so a skipped run correctly leaves the duty OWED.
+    """
+    subprocess.run([sys.executable, "scripts/model_upgrade.py", "--rollback", "--apply"],
+                   capture_output=True, text=True, timeout=300, check=False)
+    produced = 0
+    for script, state_file in (("scripts/model_upgrade.py", "data/model_upgrade.json"),
+                               ("scripts/brain_model_upgrade.py",
+                                "data/brain_model_upgrade.json")):
+        r = subprocess.run([sys.executable, script, "--apply"],
+                           capture_output=True, text=True, timeout=1800, check=False)
+        tail = (r.stdout or r.stderr or "").strip().splitlines()[-1:] or [""]
+        fresh = False
+        try:
+            checked = json.loads(Path(state_file).read_text("utf-8")).get("checked")
+            fresh = bool(checked) and _days_since({"c": checked}, "c") < 1.0
+        except (OSError, json.JSONDecodeError, TypeError, ValueError):
+            fresh = False
+        produced += int(fresh)
+        print(f"cadence: {Path(script).stem} rc={r.returncode} "
+              f"{'evaluated' if fresh else 'DID NOT EVALUATE'} | {tail[0][:110]}")
+    return produced == 2
+
+
+def _clear_funding_debt() -> None:
+    """Clear the latch -- ONLY after a sweep genuinely evaluated the catalog."""
+    with contextlib.suppress(OSError, json.JSONDecodeError, TypeError, ValueError):
+        d = json.loads(_FUNDING_STATE.read_text("utf-8"))
+        d["upgrade_owed"] = False
+        d["upgrade_ran"] = datetime.now(tz=UTC).isoformat()
+        _FUNDING_STATE.write_text(json.dumps(d, indent=1), "utf-8")
+
+
 def main() -> None:
     now = datetime.now(tz=UTC)
     state = _load(_STATE, {})
@@ -248,6 +312,21 @@ def main() -> None:
     elif _days_since(state, "last_panel") >= _PANEL_EVERY_D and _run_panel(None):
         state["last_panel"] = now.isoformat()
         fired.append("panel")
+
+    # FUNDING IS ALSO A TRIGGER, not just the calendar. Credits landing is exactly when the
+    # question "what is the best model available?" becomes worth money, and the monthly clock
+    # would otherwise sit on the answer for up to 30 days after payment.
+    _funded_now = _funding_restored()
+    if ((_days_since(state, "last_model_upgrade") >= _MODEL_UPGRADE_D or _funded_now)
+            and _run_model_upgrade()):
+        state["last_model_upgrade"] = now.isoformat()
+        fired.append("model-upgrade" + (" (FUNDING-TRIGGERED)" if _funded_now else ""))
+        _clear_funding_debt()
+    elif _funded_now:
+        # Debt deliberately NOT cleared: a sweep that could not evaluate the catalog has not
+        # answered the question, and an unanswered question must stay owed.
+        print("cadence: funding restored, flagship sweep OWED but DID NOT EVALUATE -- "
+              "debt retained for the next run")
 
     # generation triggers -> flagged for the brain (scoped runs are a judgment task)
     due: list[str] = []

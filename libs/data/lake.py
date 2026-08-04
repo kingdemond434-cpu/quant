@@ -50,7 +50,11 @@ class ParquetLake:
         out["year"] = out[TIMESTAMP].dt.year.astype("int32")
         out["month"] = out[TIMESTAMP].dt.month.astype("int32")
         table = pa.Table.from_pandas(out, preserve_index=False)
-        ds.write_dataset(
+        # pyarrow>=24 ships partial type info, so these become `no-untyped-call` rather than
+        # resolving to Any as they did when pyarrow was fully untyped. The module is already
+        # declared untyped-third-party in pyproject's ignore_missing_imports list; this keeps
+        # that same decision at the two call sites the new stubs reach.
+        ds.write_dataset(  # type: ignore[no-untyped-call]
             table,
             base_dir=str(path),
             format="parquet",
@@ -74,7 +78,7 @@ class ParquetLake:
         path = self.path(layer, symbol, timeframe)
         if not path.exists() or not any(path.rglob("*.parquet")):
             return empty_bars()
-        table = ds.dataset(
+        table = ds.dataset(  # type: ignore[no-untyped-call]
             str(path), format="parquet", partitioning="hive"
         ).to_table()
         df = table.to_pandas()

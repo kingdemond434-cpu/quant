@@ -39,7 +39,7 @@ from typing import Any
 import numpy as np
 
 _ROOT = Path(__file__).resolve().parent.parent
-_CACHE = Path("/tmp/claude-0/-home-user-quant/1c87bc3b-ab99-5043-86ff-5b38ad12af2a/scratchpad/cot")
+_CACHE = Path("/tmp/claude-0/-home-user-quant/1c87bc3b-ab99-5043-86ff-5b38ad12af2a/scratchpad/cot")  # noqa: S108 -- session scratchpad path, not a shared world-writable location
 _PARQUET = _ROOT / "data/cot_zcache.parquet"
 _OUT = _ROOT / "data/cot_screen_summary.json"
 _DOC = _ROOT / "docs/research/COT_SCREEN_RESULT.md"

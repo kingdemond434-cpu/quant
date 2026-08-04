@@ -69,23 +69,17 @@ def verify_cross_engine(
 
     Returns the per-key (relative) differences when within tolerance.
     """
-    diffs: dict[str, float] = {}
-    breaches: list[str] = []
-    for key in keys:
-        a = float(ours[key])
-        b = float(reference[key])
-        diff = abs(a - b)
-        denom = max(abs(b), 1e-9) if relative else 1.0
-        rel = diff / denom
-        diffs[key] = rel
-        if rel > tolerance:
-            breaches.append(f"{key}: ours={a:.8g} ref={b:.8g} rel_diff={rel:.3g}")
-    if breaches:
-        raise VerificationError(
-            "cross-engine divergence beyond tolerance "
-            f"{tolerance:g}: " + "; ".join(breaches)
-        )
-    return diffs
+    # DELEGATES to the canonical comparator in libs.metrics.verified so the heavy engine path
+    # and the ~20 light screens can never drift apart in what "verified" means. That module is
+    # dependency-free on purpose (see its docstring): this import adds nothing to the engine's
+    # already-heavy footprint, and gives the screens a comparator they can afford to call.
+    from libs.metrics.verified import MetricsVerificationError, compare_metrics
+
+    try:
+        return compare_metrics(ours, reference, keys=keys, tolerance=tolerance,
+                               relative=relative)
+    except MetricsVerificationError as exc:       # re-raise in this layer's own error type
+        raise VerificationError(str(exc)) from exc
 
 
 def verify_against_vectorized(

@@ -23,6 +23,7 @@ from libs.data.crypto_source import list_liquid_perps
 from libs.data.instruments import AssetClass, InstrumentSpec, register_instrument
 from libs.data.lake import Layer, ParquetLake
 from libs.data.timeframe import Timeframe
+from libs.data.universe import RESEARCH_TOP_N
 from libs.research.crypto_xsec import adv_tier_cost
 from libs.validation.dsr import deflated_sharpe_ratio, sharpe_ratio
 
@@ -65,7 +66,7 @@ def _sharpe(r: np.ndarray) -> float:
 def main() -> None:
     lake = ParquetLake("data/lake")
     closes, adv = {}, {}
-    for s in list_liquid_perps(top_n=120):
+    for s in list_liquid_perps(top_n=RESEARCH_TOP_N):
         if not (_CRYPTO / s / Timeframe.D1.value).exists():
             continue
         register_instrument(InstrumentSpec(symbol=s, asset_class=AssetClass.CRYPTO, description=s))

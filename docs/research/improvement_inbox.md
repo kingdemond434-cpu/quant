@@ -1348,3 +1348,228 @@ Three things that change how other work is read:
   Zero T1 rows now remain; the parser returns 22 queued items.
 - **A missing log is NOT evidence an organ never ran** (reaper deletes ~68 organs' logs 3x/day,
   found independently by two seats). Every prior conclusion of that shape must be re-derived.
+
+## 2026-08-01 EN frontier miner session E -> LEDGER (pointer only; this file is write-only by design)
+
+Rowed as **R0286** (growth_leverage mixes two year-conventions in one output row — cagr/ann_vol at
+ppy=365 beside risk_of_ruin at its default horizon=252, understating annual ruin on the L1.23 rail)
+and **R0287** (return-on-capital-utilized as a reporting invariant; the desk has hit the
+equity-basis shape three times already — R0234/R0235/the 13,155-vs-4,500 split).
+
+One measured fact that changes how other cross-sectional work should be read:
+- **Crypto is NOT raw-material-limited for cross-sectional strategies.** Same estimator over both
+  universes: idiosyncratic share of daily return variance is 0.513 (crypto top-8) / 0.467 (top-30)
+  vs **0.492 for the 8 sector SPDRs**, while cross-sectional dispersion is **3.3–3.8× higher**
+  (0.0283/0.0324 vs 0.0085 daily). The standing intuition that crypto alts are "just leveraged
+  BTC" and therefore offer no cross-section is FALSE at daily frequency on our own data
+  (`data/olps_era_mechanism_test.json`). Cross-sectional kills in the graveyard
+  (`short_term_reversal`, `xsec_lowvol`, `lit_crypto_xsec_size_and_volume`) must be attributed to
+  payoff SHAPE and cost, never to absent dispersion — and `era_olps_olmar_portfolio_selection`
+  says so explicitly in its own lesson field so the row cannot be miscited later.
+[§33: wired -> docs/research/recommendation_ledger.json R0286/R0287]
+
+---
+
+## RU frontier miner, session 1 (2026-08-01) — one DEMONSTRATED defect, one design inversion
+
+_All ledgered: #1=**R0294**, #2=**R0295**, #3 design-note (no row; the ledgered engine work is #1/#2), plus **R0297** for the silent-except. (R0296 is the statarb family prior, filed on the watchlist.)_
+_Prior text said R0294/R0296/R0297 — this inbox is write-only, a row here is not tracking._
+
+### 1. [DEMONSTRATED] `libs/data/multiexchange.py:okx_inst()` silently drops 5 liquid perps
+`okx_inst()` maps `BTCUSDT → BTC-USDT-SWAP` by string surgery (`symbol[:-4]`) with no verification
+that the OKX instrument is the same underlying. **Probed live against both venues' instrument
+lists (2026-08-01):**
+- Join resolves **260 / 653** Binance USDT perps.
+- **The two venues put the re-denomination multiplier in different places.** Binance encodes it in
+  the **ticker** (`1000SHIBUSDT`); OKX encodes it in the **contract size** (`SHIB-USDT-SWAP`,
+  `ctVal=1,000,000 SHIB`). So the desk's join looks for `1000SHIB-USDT-SWAP`, which does not exist,
+  and concludes OKX does not list SHIB.
+- **5 liquid names are listed on OKX and silently missed: SHIB, PEPE, FLOKI, BONK, SATS.**
+  (`1000XEC/1000LUNC/1000RATS/1MBABYDOGE/1000CAT/1000X/1000CHEEMS/1000WHY/1000000MOG/1000000BOB`
+  are genuinely absent from OKX — correctly unresolved, not defects.)
+
+**HONEST SEVERITY — it is a COVERAGE loss, NOT a corruption, and it is currently LATENT.**
+- Funding is a **dimensionless rate**, so the contract multiplier does **not** corrupt any number.
+  I checked this before writing the row; the tempting "1000x scaling bug" headline would be wrong.
+- **The only live caller** (`scripts/run_crossexchange_backtest.py:36`) hardcodes a **14-symbol
+  large-cap `_UNIVERSE`** containing no re-denominated tickers, so **the defect does not bite
+  today.** It is a latent blocker on any universe expansion — which is the point, because the
+  expansion is exactly what §42 asks for (see #2).
+- The failure is **silent**: `fetch_okx_funding` returns an empty DataFrame on a miss, and the
+  caller does `if ... ok.empty: continue` under a bare `except Exception: continue`, with **no
+  counter**. A venue delisting shrinks the panel invisibly. (Desk lesson class: SILENT-EXCEPT.)
+
+### 2. [DESIGN INVERSION — the more valuable finding] the cross-venue dispersion signal is measured
+### on the cohort where cross-venue dispersion is structurally smallest
+`run_crossexchange_backtest.py` computes **venue-relative funding dispersion** — a signal whose
+entire content is *venues disagreeing* — over a hardcoded universe of the **14 most heavily
+cross-venue-arbitraged large caps** (BTC, ETH, SOL, XRP, DOGE, BNB, ADA, AVAX, LINK, LTC, DOT, TRX,
+BCH, NEAR). These are the names where venue funding converges *by construction*, because they carry
+the deepest cross-venue arb. **The signal is being sampled where its variance is minimised.**
+
+This is the direct opposite of §42's named ground, which lists **"thin-pair cross-venue funding"**
+as one of the four structural niches a ~$50k book owns. It is also what the RU thread independently
+names: the venues that *«люфтят курсом»* (let the quote drift loosely) on shitcoins by 1–4% for
+15–45 minutes are the thin ones, never the majors. **A null from this backtest is therefore not
+evidence about the mechanism** — it is evidence about a cohort chosen to have the least of it.
+Fixing #1 (R0294) is the enabling ingredient for testing the cohort where the mechanism should live.
+
+### 3. [ENGINE, from RU practitioner code] two-stage bulk-then-deep venue scan
+Reusable collector pattern from habr 911056, verified as the author's actual architecture:
+**stage 1** — one bulk REST call per venue returns *all* tickers (bid/ask, no depth); filter on
+bid≤ask; the survivor set is tiny. **stage 2** — fetch full order book only for survivors.
+Result: **16 venues × 2,870 pairs in under a minute** under standard rate limits. Also: CCXT ships
+per-venue rate-limit timing and serves cache rather than erroring when polled too fast — so a
+scanner built on it degrades to *stale data*, not to an exception, which is a silent-staleness
+hazard worth knowing before adopting (L1.44). Recorded as a design note; **no third-party tooling
+installed or run** (supply-chain rule — mined as text only).
+
+## 2026-08-01 — KR frontier miner session 1 (engine/process, rowed to the ledger; inbox is the narrative copy)
+1. **`scripts/collect_announcements.py` is DEGRADED and its two broken sources are both exchange
+   feeds** (Binance HTTP 400 signed-context, Bybit CloudFront-blocked-by-egress-country), leaving
+   OKX + DefiLlama + two RSS wires. **It carries zero Korean venues.** Upbit's
+   `api-manager.upbit.com/api/v1/announcements` is keyless, first-party, 5,685 events deep to
+   2017-10-24, and works from this box today. This is a **repair of a degraded organ**, not new
+   surface. Its own `why_latency_matters` note is satisfied better than by any current source:
+   Upbit publishes **both** `first_listed_at` and `listed_at`, so publish-time is a venue clock
+   rather than our poll clock. **→ R0298.**
+2. **A generalisable defect class: `needs-legitimacy-review` is a verdict that never resolves.**
+   Four sources sat in it for three rounds. §13 is a gate, and **a gate never actually run on a
+   candidate rejects by default** — indistinguishable downstream from a reasoned rejection. One
+   `curl robots.txt` each settled all four and **reversed two of them**. Every placeholder verdict
+   in any watchlist should carry an owner and a date, or it is a silent permanent no. **→ OP-041.**
+3. **Selector defects are instrument defects (L1.25) and they hide as small numbers.** My own
+   era-fitted title classifier dropped **49% of a 737-row archive** and undercounted the primary
+   event class **5.6×** — no error, no exception, just a smaller number that looked plausible. Any
+   classifier run over an archive spanning years must report **UNCLASSIFIED as a first-class
+   figure**. **→ OP-035 extension.**
+
+## 2026-08-01 — JP frontier miner session 1 (engine/process; rowed to the ledger, inbox is the narrative copy)
+
+_Source: the richmanbtc JP botter lineage. The **mechanism** is graveyarded
+(`jp_mlbot_atr_limit_reversion` — a maker-rebate artifact). These three **tools** survive it, and all
+three repos are **CC0-1.0, verified via the GitHub API** (`mlbot_tutorial` 519★, `crypto_data_fetcher`
+83★, `bot_snippets` 7★), so there is no licence friction on adoption._
+
+### 1. [ENGINE — VALIDATION] p平均法 (p-mean): an ORDER-SENSITIVE significance bar our DSR/PSR structurally cannot express — **and the published error-rate formula is broken, verified**
+
+**The gap it fills, and it is a real one.** t-test, PSR and DSR are all **order-invariant**. The
+author's framing: 「3年前はすごいプラスだったけど、直近1年はマイナスで、期間全体で見るとプラスの場合…
+これらの手法はサンプルの順番を考慮しないので、直近1年がマイナスということを、知り得ない」 — *great three
+years ago, losing for the last year, positive overall: these tests cannot see the decay because they
+discard sample order.* **Our entire promotion stack has this blind spot.** Given L1.30 (edges die on
+a months-scale half-life), a bar that is *specifically* sensitive to late-window decay is
+directly on-objective.
+
+**The construction** (`tutorial.ipynb` cell 16): split returns into `n` equal-count sub-periods; run
+a one-sided `ttest_1samp` on each; **a sub-period with `t <= 0` is coerced to `p = 1`** (maximally
+penalised, not merely unhelpful); score = `mean(ps)`. Because one bad sub-period injects a `1.0`
+into an `n=5` mean, **the score cannot fall below 0.2 unless every sub-period is profitable**. That
+is a strictly stronger and cheaper bar than PSR/DSR for the decay case.
+
+**THE DEFECT, REPRODUCED ON THIS BOX — do not adopt the formula as published:**
+```
+calc_p_mean_type1_error_rate(p_mean, n) = (p_mean * n) ** n / factorial(n)
+```
+This is the **Irwin–Hall lower tail, valid only for `p_mean <= 1/N`.** Measured, N=5:
+`p_mean=0.5 -> 0.8138`; **`p_mean=0.8 -> 8.533`**; **`p_mean=1.0 -> 26.04`** — i.e. it returns
+"probabilities" of 853% and 2604%. It is unbounded above 1 and has no guard.
+**And the tutorial's own headline run is already outside the valid region:** its published
+`p_mean = 0.2004701053921813` gives `N·p_mean = 1.00235 > 1`. (Our reproduction returns exactly its
+published `0.008431733454943706`, confirming the transcription is right and the *formula* is the
+problem, not our reading of it.)
+**Second, subtler defect:** the one-sided `t>0 → p, else 1` coercion means the p-values are **not
+iid U(0,1) under the null** — roughly half the mass is atomised at exactly 1.0 — so the iid-uniform
+null the closed form assumes is not the null actually being tested.
+**⇒ If adopted: implement the full alternating Irwin–Hall sum, guard the domain, and calibrate the
+null by simulation rather than trusting the closed form.**
+
+**THE ADOPTION CONDITION, and it is non-negotiable — there is a worked exploit in the wild.**
+opecry (`note.com/opecry/n/nc064da3a68b8`, 2022-03-02) improved p-mean **0.2 → 0.04** and the error
+rate **0.008 → 6.4e-7** — four orders of magnitude — **purely by deleting the sub-period where the
+equity curve dipped** (`df = df[df.index > '2019-08-01']`). A metric whose entire design is
+order-sensitivity is trivially defeated by choosing the start date *after* seeing the curve.
+**So: the window is pre-registered before the metric is ever computed, and every window tried enters
+the multiplicity count.** (The tutorial warns about exactly this researcher-degrees-of-freedom
+failure two cells above the code that enables it.)
+
+### 2. [ENGINE — FEATURES] richman非定常性スコア: adversarial validation with TIME as the label
+
+**Construction** (`work/non_stationarity_score.ipynb`): fit LGBM on the feature matrix with target
+**`np.arange(n)` — the sample index itself**; score = mean `r2` across folds; lower is better;
+`feature_importances_` then *names* the offending features. Author's own framing: this is
+**Adversarial Validation with time substituted for train/test membership** — if your features can
+predict *when* you are, their distribution is time-dependent and the future is out-of-support.
+**Production version ships as a drop-in sklearn transformer**: `bot_snippets/nonstationary_feature_remover.py`
+(`BaseEstimator, TransformerMixin`, drops top-`remove_count`/`remove_ratio` by importance).
+
+**Our critique, which changes how we would use it.** It uses `KFold(n_splits=2, shuffle=True)`, which
+makes index-prediction nearly trivial — for any slow-moving feature, temporal nearest-neighbours sit
+in the training fold, so R² is **inflated by construction**. The stated 0.3 threshold is
+unjustified, and the author's own baseline scores **0.4556** and ships anyway. So it is **not a
+stationarity test in any statistical sense**. As a *cheap ranking* of which features will not survive
+a regime change it is sound and costs one LGBM fit. **The variant worth building is `shuffle=False`
+/ grouped-ordered folds, which converts it from an interpolation test into a genuine extrapolation
+test.** Relevant to us because our own dist_shift work (R0229/R0230) is the same family from the
+other end — that one guards *inputs at inference*, this one screens *features at fit time*.
+
+**Independent corroboration that this is the binding constraint:** pip_pip_pip_p
+(`qiita.com/pip_pip_pip_p/items/3b86e36ca536e99d26e0`) ranks four properties a base rule must have
+for an ML filter to add any value, and names **label-distribution stability across periods as the
+most important** — which is precisely what this score measures. Two independent practitioners
+closing the same loop from opposite directions.
+
+### 3. [ENGINE — UNIVERSE, directly relevant to R0239] `publicGetExpiredFutures`: survivorship-free universe construction, solved venue-side in three lines
+
+`crypto_data_fetcher` builds its FTX universe as the union of `publicGetMarkets` +
+`publicGetFutures` + **`publicGetExpiredFutures`** — an explicit **venue-side list of dead
+instruments**. The desk is currently building a point-in-time universe record (R0239) precisely
+because delisted/expired instruments vanish from live endpoints; this is the same problem solved in
+2021 by asking the venue for its own graveyard. **Action: for every venue we collect, check whether
+an expired/delisted-instrument endpoint exists before building a point-in-time record by
+observation.** Asking is cheaper than remembering, and it recovers history we never recorded.
+(Related, cruder, from the same repo: `store_warmup_bybit.py` discriminates perps from dated futures
+with `if re.search(r'\d', symbol): continue`.)
+
+**Cross-reference to the CN seat's finding:** the KR seat measured Upbit **purging candles on
+delisting** (treatment group erased). Same defect class, and this is the venue-side mitigation.
+
+---
+
+## BR frontier miner, session 1 (2026-08-01) — three engine ideas, all verified on a live artifact this run
+
+### #A — A VINTAGE STORE: the desk has no concept of "what was knowable on date D" for revised data
+**Directly extends the entry immediately above** (`publicGetExpiredFutures` / R0239 point-in-time
+universe). That entry solves *which instruments existed*; this one solves *what the values were*, and
+they are the same defect in two coordinates.
+
+Measured on the RFB crypto panel this run: **42 of 42 common months revised** between vintages, worst
+**+40.9%**, revisions **systematically upward**, and still moving on a month **2.4 years old**.
+Any backtest reading today's file applies knowledge that did not exist — a look-ahead **in the
+conditioning variable**, which is the R0289 class and which **every return-series leak check passes
+cleanly**, because the returns are fine. It fails toward a FALSE POSITIVE, so it costs a Holm slot.
+
+**Proposal:** a general `vintage` store keying every observation by `(reference_period, vintage_date)`
+plus an `as_of(d)` reader that returns only what was published on or before `d`. Applies to any
+revised source — tax/regulator data, central-bank series, exchange volume restatements, on-chain
+indexers that reorg. **This is a MULTIPLIER (L2.7): it does not add a signal, it makes a whole class
+of slow-moving axes usable that are currently unusable-or-leaky.** Cheap: the vintages are free files.
+
+### #B — Land a stdlib `.xls` reader (the `.doc`/`.xls` twin of GAP_REGISTER #70's `pdf_text.py`)
+`pandas.read_excel` cannot open a legacy `.xls` without xlrd, which this box does not have and cannot
+install. Government, regulator, central-bank and exchange publications are **disproportionately
+legacy `.xls`** — which is exactly why they stay under-mined. A ~200-line stdlib OLE2+BIFF8 reader
+(prototype `/tmp/xls_stdlib.py`, technique preserved as **OP-046**) removes the blocker permanently.
+**Note the same landing failure as OP-025:** its PDF prototype has sat in `/tmp` as GAP #70 since
+07-26 and every later run re-derives it. Two prototypes now rot in `/tmp`; landing both is one small
+commit and the research freeze on this seat is why I cannot do it.
+
+### #C — Promote "conservation-law validation" to a standing requirement for any hand-rolled extractor
+Rather than trust the `.xls` parser, its output was checked against **arithmetic identities inside the
+data** (PF+PJ=Subtotal; Subtotal₁+Subtotal₂+Domestic=TotalGeral): **78/78 rows, worst residual exactly
+0.00e+00**. That is strictly stronger than diffing a PDF twin, because it spans three independent
+column groups **and both RK- and NUMBER-encoded cells**, so a decoder bug could not cancel.
+It also caught a real bug first: cells keyed on `(row,col)` silently **merged all five sheets** into
+one plausible-looking grid. **Proposal: any extractor feeding a research artifact must ship with an
+in-data invariant check, and "it looks right" is refused as validation (OP-025's own warning, now
+with a cheap general mechanism).**

@@ -259,7 +259,13 @@ def main() -> int:
             flatten_note = (f"rung {rung.name} requires flatten -- NOT executed "
                             f"(armed={venue is not None}, --allow-flatten={allow_flatten})")
 
-    effective_size = size_fraction * rung.size_multiplier * mode.size_multiplier
+    # SCOPED AT THE COMPUTATION, not just in the report (2026-08-01). The canary attests the
+    # LIVE path and is deliberately SKIPPED while the connector is unarmed, so it can never
+    # clear at S0 -- a verdict whose own probe refuses to run must not size a PAPER book.
+    # Scoping only the emitted JSON left this line still halving the book while the artifact
+    # claimed 1.0: artifact and behaviour disagreeing is worse than the original bug.
+    _canary_mult = mode.size_multiplier if venue is not None else 1.0
+    effective_size = size_fraction * rung.size_multiplier * _canary_mult
 
     report = {
         "ts": datetime.now(tz=UTC).isoformat(),
@@ -274,8 +280,27 @@ def main() -> int:
                    "size_multiplier": rung.size_multiplier,
                    "requires_manual_rearm": rung.requires_manual_rearm,
                    "unacked_since": lad.oldest_unacked_ts},
-        "canary": {"mode": "limit_only" if mode.limit_only else "normal",
-                   "size_multiplier": mode.size_multiplier, "reason": mode.reason,
+        # SCOPED TO THE PATH IT PROVES (2026-08-01). The canary attests the LIVE venue path --
+        # signed reads, key validity, clock skew, IP whitelisting. When the connector is unarmed
+        # _canary() skips WITHOUT recording an attempt (by design: an unarmed desk has no
+        # execution path to prove), so last_ok_ts stays None forever and mode() reads limit_only
+        # forever. That verdict was reaching the PAPER book and suppressing its taker fallbacks
+        # (run_cashcarry_executor:1128), so the desk could not accrue the very forward evidence
+        # its own Gate-0 net_of_fees criterion demands -- observed as OPEN-FAIL on candidates the
+        # entry gate had passed. Applying a live-path verdict to a paper book is a category error,
+        # not caution. The moment the connector IS armed the probe runs for real and this binds
+        # again unchanged; a canary that RUNS and FAILS still returns limit_only immediately.
+        "canary": {"mode": ("limit_only" if (mode.limit_only and venue is not None) else "normal"),
+                   # Scoped exactly as the mode is: a probe that attests the LIVE path and is
+                   # deliberately skipped at S0 cannot justify halving a PAPER book. Leaving
+                   # it at 0.5 held effective size at 0.05 (ramp 0.1 x canary 0.5), so the
+                   # desk opened ~1 carry and accrued ~1 close/day -- too slow to reach a
+                   # decidable sample. Binds in full the moment the connector arms.
+                   "size_multiplier": (mode.size_multiplier if venue is not None else 1.0),
+                   "reason": (mode.reason if venue is not None else
+                              mode.reason + " -- NOT BINDING at S0: the probe attests the LIVE "
+                              "path and is deliberately skipped while the connector is unarmed, "
+                              "so it can never clear here. Binds in full the moment S1 arms."),
                    "consecutive_failures": can.consecutive_failures, "note": canary_note},
         "ramp": {"size_fraction": size_fraction, "why": ramp_why, "checks": ramp_checks},
         "effective_size_fraction": round(effective_size, 4),

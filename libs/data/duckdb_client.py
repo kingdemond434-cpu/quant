@@ -23,8 +23,12 @@ class DuckDBClient:
 
     def read_parquet(self, glob: str | Path) -> pd.DataFrame:
         """Read a parquet glob (hive-partitioned) into a DataFrame."""
+
+        # The glob is desk-internal (the local lake), never external input. If a caller-supplied
+        # path ever reaches here, this becomes a real injection site -- keep that in mind.
         sql = (
-            f"SELECT * FROM read_parquet('{Path(glob).as_posix()}', hive_partitioning=true) "
+            f"SELECT * FROM read_parquet('{Path(glob).as_posix()}', "  # noqa: S608
+            "hive_partitioning=true) "
             "ORDER BY timestamp"
         )
         return self.query(sql)

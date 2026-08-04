@@ -140,14 +140,28 @@ def _test_exists(ref: str, root: Path | None = None) -> bool:
     a renamed test or a deleted file silently drops a paid-for lesson out of every organ's
     context while the ledger still claims it is handled. That is the exact failure this whole
     module exists to prevent, reintroduced one level down.
+
+    CLASS-QUALIFIED REFS RESOLVE TOO (2026-08-01). This split on the FIRST `::` and treated the
+    whole remainder as a function name, so `test_x.py::TestGroup::test_case` -- pytest's standard
+    form and the dominant style in this repo (tests/ops/test_carryover.py is entirely classes) --
+    could never resolve. The failure was silent and pointed the wrong way: a lesson genuinely
+    covered by a class-based test was REFUSED graduation, kept full weight, and was then squeezed
+    out of the char budget by newer lessons, reaching no organ at all. Fail-closed protected the
+    weight but not the outcome.
     """
     if "::" not in ref:
         return False
-    rel, name = ref.split("::", 1)
+    parts = [s.strip() for s in ref.split("::")]
+    rel, name = parts[0], parts[-1]
     p = (root or _ROOT) / rel
     if not p.exists():
         return False
-    return f"def {name.strip()}(" in p.read_text("utf-8", errors="ignore")
+    src = p.read_text("utf-8", errors="ignore")
+    # Every intermediate segment must be a real class, so a typo'd container cannot pass on the
+    # strength of a same-named method elsewhere in the file.
+    if any(f"class {seg}" not in src for seg in parts[1:-1]):
+        return False
+    return f"def {name}(" in src
 
 
 def load(path: Path | None = None) -> list[Lesson]:
@@ -260,6 +274,30 @@ def corpus(budget: int = BUDGET_CHARS, path: Path | None = None) -> tuple[str, l
         return "", dropped
     body = "\n".join(item.render() for item in kept)
     return _HEADER + body + _FOOTER, dropped
+
+
+def unreached(budget: int = BUDGET_CHARS,
+              path: Path | None = None) -> tuple[list[Lesson], list[Lesson]]:
+    """Split the overflow into what is genuinely LOST and what is merely DEMOTED.
+
+    NOT EVERY DROPPED LESSON IS A LOSS, and conflating the two is how this fence dies. A lesson
+    that has graduated to a test is enforced MECHANICALLY on every CI run; ranking it out of the
+    char budget is precisely what ENFORCED_WEIGHT exists to cause, so its absence from an organ's
+    context costs nothing. Measured 2026-08-01: 31 lessons overflowed and 20 of them were
+    graduated, so the raw count overstated the real loss by 2.8x. A number that cries wolf like
+    that trains its reader to skip it, and a fence nobody reads is a fence that has been switched
+    off -- the expensive failure, because the 11 genuine losses hide inside the noise.
+
+    THE DISCOUNT IS SAFE ONLY BECAUSE `enforced_verified` IS EARNED, NEVER CLAIMED. load() sets it
+    by RESOLVING the named test on disk and fails closed, so a typo, a renamed test or a deleted
+    file leaves the lesson at full weight and it lands here in `lost` where it belongs. Without
+    that check this split would be a way to smuggle a paid-for lesson out of every organ's context
+    by writing a path that points at nothing.
+    """
+    _text, over = corpus(budget, path)
+    lost = [item for item in over if not item.enforced_verified]
+    demoted = [item for item in over if item.enforced_verified]
+    return lost, demoted
 
 
 _HEADER = """

@@ -161,7 +161,62 @@ _Superseded original grading below (kept for the record):_
   failure modes: non-uniform start dates per data type (do not assume uniform depth).
 - **Grade: verified-clean** (portal existence + categories), pending format/auth confirmation.
 
-### 3. bitFlyer getexecutions + self-recorded candles — grade: needs-legitimacy-review (mechanism verified-clean, destroyed-at-source residual confirmed; ToS host WAF-blocked so licence is unread, re-graded 2026-07-25) [§33: deferred(2026-08-09) tier:2]
+### 3. bitFlyer getexecutions + self-recorded candles — grade: **RESTRICTED-BY-LICENCE — CLOSED 2026-08-01, DO NOT BUILD** [§33: killed -> docs/graveyard.md `jp_bitflyer_direct_recording`]
+
+> **§33 DISPOSITION 2026-08-01 (JP frontier miner session 1) — THE DEFERRAL IS OVER. THE LICENCE HAS
+> BEEN READ AND IT FORBIDS THE USE. The human page-read dependency below is DISCHARGED — nobody
+> needs to open anything.**
+>
+> The blocker was never the licence's *existence*, it was four probes that all varied the same
+> thing. Corrections to the record below, each against an artifact fetched 2026-08-01:
+> - **"403 / WAF-blocked" is wrong.** TLS completes, cert verifies (`O="bitFlyer, Inc."`), the HTTP/2
+>   stream OPENS, then `INTERNAL_ERROR (err 2)`; over HTTP/1.1 and IPv4 it **hangs to timeout**
+>   (`code=000`). An Akamai tarpit, not a status code.
+> - **"the block is not egress-specific" is right but was read backwards.** It is not about egress
+>   because it is **per-hostname**: `api.bitflyer.com` and `lightning.bitflyer.com` both return
+>   **200 from the identical edge IP `2a02:26f0:e80:588::2644`** that tarpits the apex. Only the
+>   marketing/legal host is bot-managed. (⇒ **OP-043**.)
+> - **"never usefully archived" is refuted — the CDX query used the wrong host AND the wrong slug.**
+>   Pre-migration host is **`bitflyer.jp`**; slug is **`terms-of-use`**, not `terms`. Corrected query
+>   returned `https://bitflyer.jp/en-eu/terms-of-use` (2019-06-01, **200**) on the first attempt.
+>   (⇒ **OP-044**.)
+>
+> **THE OPERATIVE CLAUSE (verbatim, capture `20190601153535`):** *"The bitFlyer API is the copyrighted
+> technology of bitFlyer and may not be copied, imitated or used, in whole or in part, outside of the
+> API's intended use. bitFlyer retains all its rights related to its databases, websites, … **including
+> chat text, the content of bitFlyer emails, and data such as transaction prices** — developed or
+> provided by bitFlyer or its affiliates **which can be acquired by various external APIs**. bitFlyer
+> may demand any third party stop using bitFlyer's API for any purposes not authorized by bitFlyer."*
+> Reinforced by *"only for your internal purposes and solely as necessary for your use of the Service"*
+> and a bar on *"any robot, spider, crawler, scraper, script … not authorized by us to access the
+> Services, extract data"*.
+>
+> **VERDICT: `restricted-by-licence`. §13 is a HARD STOP. Do not build a bitFlyer direct-recording
+> collector.** The same clause pre-emptively kills two endpoints verified live and keyless this run
+> before either could be carded: **`/v1/getchats`** (real JP retail chat — clause names *"chat text"*)
+> and **`/v1/getfundingratehistory`** (8-hourly JP funding — the desk's only repeat-surviving family,
+> and the one most wanted). It also blocks the run's biggest find, **not carded on purpose**:
+> `bitflyer.jp/api/chart/btc_jpy?start=&end=`, an undocumented keyless 15-minute BTC/JPY series, dead
+> live (302) but **Wayback-captured 200 from 2015-08 (414,675 B ≈ 10 months per capture, back to
+> 2014-10-16)**. Reading bitFlyer's data out of a third-party archive does not extinguish bitFlyer's
+> stated rights in it — **"the Internet Archive had a copy" is not a licence.**
+>
+> **HONEST RESIDUAL:** the document read is the **EU entity's 2019** ToS, not the JP entity's current
+> 利用規約 (JP-side `terms-of-use` paths have no CDX captures; the live host is tarpitted). This is
+> bitFlyer *group's* stated position, strongly against — not a JP-entity ruling. §13 asks whether a
+> licence forbids the use; the only bitFlyer terms document the desk has ever read says yes. Grading a
+> restriction on the evidence we have beats a fifth deferral on evidence we cannot get.
+>
+> **L1.16a RE-ENTRY CONDITION:** a bitFlyer **JP-entity** ToS, or an explicit bitFlyer data-use
+> permission, that does **not** retain rights in transaction prices.
+>
+> **LICENSED SUBSTITUTE, ALREADY OWNED:** Tardis.dev covers `bitflyer` **since 2019-08-30**, free
+> first-of-month, internal research use **PERMITTED** (see entry 1's licence read). Residual gap is
+> granularity (1 day/month), not availability. **Unrestricted JP alternatives found the same run:
+> entry 27 (GMO Coin, free tick tape 2018-09-05→, 40 symbols) and entry 28 (bitbank).**
+
+<details><summary>Superseded record (2026-07-25/26 deferral, kept for provenance — its factual claims are corrected above)</summary>
+
 > **§33 DISPOSITION 2026-08-09 — DATED DEFERRAL, BLOCKER NAMED. A THIRD AND FOURTH INDEPENDENT
 > ROUTE TO THE ToS FAILED 2026-07-26. The licence is genuinely unread, so no verdict is written:
 > fabricating one would be exactly the hand-wave §13 exists to stop.**
@@ -230,6 +285,8 @@ _Superseded original grading below (kept for the record):_
 >   failed routes now logged (direct = WAF/geo-block; archive = no snapshots). Lifting
 >   condition: fetch the ToS from any non-blocked egress (different IP/organ or human) — one
 >   page-read closes the field and starts the clock on the ~32-minute backfill.**
+
+</details>
 
 _Superseded original grading below (kept for the record):_
 ### 3-OLD. bitFlyer getexecutions + self-recorded candles — grade: needs-monitoring
@@ -995,10 +1052,30 @@ Verified same-day out of a principal-supplied survey of 10 CN-ecosystem OSS proj
 1 hallucinated, 1 proprietary — verdicts in the extraction record; MINE-NEVER-ADOPT applies).
 Each axis carries a stated mechanism and awaits screen-on-discovery by the seat that ingests it:
 
-1. **CN A-share flow microstructure (Eastmoney/AkShare/Tushare, free)** — northbound Stock
-   Connect flows, dragon-tiger lists, **margin balances**. Mechanism: mainland retail leverage
+1. **CN A-share flow microstructure (Eastmoney/AkShare/Tushare, free)** — ~~northbound Stock
+   Connect flows~~, dragon-tiger lists, **margin balances**. Mechanism: mainland retail leverage
    appetite propagates into crypto via the CN-retail channel Card 9 validated (contrarian sign);
    margin balance is a direct leverage-cycle observable orthogonal to everything collected.
+   > **⛔ CORRECTION 2026-08-01 (CN miner session 3) — NORTHBOUND FLOW IS DEAD. STRUCK, not
+   > de-prioritised.** Confirmed by **two independent digs on the same day**: (a) 400 trading
+   > sessions probed 2024-11-20→2026-07-31 — `hk2sh` all zeros, `hk2sz`/`s2n` one non-zero each;
+   > (b) `RPT_MUTUAL_DEAL_HISTORY` returns `FUND_INFLOW/NET_DEAL_AMT/BUY_AMT/SELL_AMT/
+   > HOLD_MARKET_CAP` all **null**, and the realtime `push2/kamt` endpoint returns empty. Cause is
+   > not a broken route: **HKEX/SSE/SZSE ceased daily net-purchase disclosure on 2024-08-16.** Any
+   > post-2024 use is impossible, incl. the `/northbound` route in the claw402 catalog.
+   > **SURVIVING WORKAROUND:** per-stock northbound *holdings* are still published daily
+   > (`RPT_MUTUAL_HOLD_DET`: `HOLD_NUM`, `HOLD_SHARES_RATIO`, `HOLD_MARKET_CAP` + 1/5/10d deltas),
+   > so flow must be **reconstructed by differencing levels**, never read directly.
+   > **SECOND, INDEPENDENT REASON TO DOWN-WEIGHT:** the CN sell-side reproduction repo
+   > `hugo2046/QuantsPlaybook` contains a native study titled **北向资金交易能力一定强吗**
+   > ("is northbound money actually smart?") — the premise this axis rests on is questioned in its
+   > own literature. Dead feed *and* contested prior: down-weighted twice over.
+   > **§13 STATUS OF THE REST OF THIS ROW IS UNRESOLVED — do not build yet.** Eastmoney
+   > `datacenter-web` is a commercial aggregator with **no stated terms** (decision owed, **R0290**).
+   > Where a first-party exchange route exists, **prefer it**: margin balances are published
+   > directly by SSE (`query.sse.com.cn/marketdata/tradedata/queryMargin.do`, epoch **2010-03-31**,
+   > 16.3y, per-security `rzye/rzmre/rzche/rqyl/rqmcl/rqchl`), SZSE and BSE — statutory public
+   > disclosure, which is far cleaner provenance than an aggregator.
 2. **Liquidation-heatmap / cost-basis reconstruction** — rebuild free from the Coinalyze lead +
    OI/funding already collected; never buy the proprietary (Claw402) feed. Mechanism: clustered
    liquidation prices are pre-committed forced flow; cascade fuel measurable ex-ante.
@@ -1131,3 +1208,298 @@ NOT mean capital (L1.6 -- a candidate is not an edge). R-rows: R0115-R0118.
   for a problem it does not have, and the two-stage law already says screening volume carries no
   promotion authority. Revisit when there are >=3 orthogonal validated sleeves — that is the
   lifting condition, recorded so it is not re-litigated.
+
+---
+
+## AXIS — `token_unlock_forced_supply` (DefiLlama unlocks) — SCREENED IN-RUN, UNMEASURED AT THE THRESHOLD THAT MATTERS
+_CN frontier miner session 3, 2026-08-01. Screen-on-discovery duty discharged in the same run.
+Artifact: `data/unlock_event_screen.json` · research-memory `rm-20260801T125319-a95125` · ledger `R0288`._
+
+**HOW A CN LEXICON DIG ENDED ON A DATASET WE ALREADY OWNED.** Verifying the 控盘 (*kòngpán*,
+"float control") term surfaced quantitative CN practitioner lore with THRESHOLDS attached: an
+operator needs roughly **10% of float** to move a thin book short-term, **30%** medium-term and
+**50%+** to run a full cycle, and *"low-circulation coins are particularly vulnerable... many newly
+issued coins have highly concentrated chips, and large-scale makers can manipulate at very low
+cost."* That is a stated economic mechanism with numbers, which is the class that actually converts
+here (measured: from spoken/forum sources MECHANISMS convert 0/13, NUMBERS 4/4). It maps directly
+onto `data/unlock_events.json` — **24,201 events, 5.2MB, s13-passed, and ZERO python readers.**
+
+**MECHANISM (who is forced, and why they cannot stop):** insider and private-sale vesting releases
+tokens to a holder with a ~zero cost basis on a **contractually fixed, publicly published date**.
+They cannot sell before receipt, and fund lifecycles force distribution. Immutable schedule, forced
+seller — structurally the same shape as funding/carry, this desk's only repeat survivor, and
+explicitly NOT a price pattern (the 420/0-refuted class).
+**FALSIFIER:** abnormal return to a short from unlock close D to close D+N is indistinguishable
+from zero once multiplicity is priced.
+
+**RESULT: 0 of 27 pre-registered cells pass.** All 27 cells reported, not just the best — every
+category × threshold × window combination is a counted trial (`n_cohort=27`, Holm bars 2.24–2.90).
+Powered cells are a genuine null (best |t| = 1.32 at `ALL/≥10%/N=10`, mean +6.09% to the short,
+bar 2.24). Clock alignment declared (L1.46): DefiLlama date = UTC calendar day, bronze D1 = Binance
+UTC close, entry at close of D so the whole return is strictly post-event. Survivorship biases a
+SHORT study *against* an edge — the safe direction.
+
+**TWO MEASUREMENT DEFECTS, and together they fully explain the empty buckets — this is the find:**
+1. **The denominator has the wrong as-of date.** `pct_circ_now` is a percentage of **TODAY's**
+   (2026-07-24) circulating supply, applied to events going back to 2016. Circulating supply grows,
+   so an unlock that was a *huge* share of float at the time is recorded as a *small* share of
+   today's float. The historical high-threshold bucket is therefore structurally emptied —
+   insiders ≥10% has **14 events**, ≥30% has **0** — and the conditioning variable is not knowable
+   at event time. **The field is clean prospectively and contaminated historically.**
+2. **It is a snapshot, not a series.** One-shot scrape with no collector: the forward calendar spans
+   only 2026-07-25 → **2026-08-23** (171 events, 45 symbols) and contains **zero** events at ≥10%.
+   So the forward test the mechanism actually needs cannot be run from this artifact, and the file
+   expires in three weeks.
+
+**VERDICT: NOT REFUTED, NOT SUPPORTED — UNMEASURED where the mechanism lives.** Under L1.25 the
+absence of a survivor here is a data/instrument limitation, not a fact about the market, and it is
+recorded as such rather than as a kill. Not graveyarded: nothing was refuted, and a false kill would
+poison the novelty gate against a live mechanism.
+**RE-ENTRY CONDITION (L1.16a), narrow and named:** a recurring collector snapshotting the forward
+calendar so unlocks accrue prospectively, PLUS circulating-supply-at-event-date to replace the
+contaminated denominator. Re-test only when ≥20 insider events at ≥10% of *contemporaneous* float
+exist. **A new window or threshold on this same snapshot is NOT an enabling change and would be
+re-litigating** (L1.17). Collector rowed as **R0288**.
+
+**GENERALISED LESSON (the part that transfers past this axis):** before conditioning on any
+ratio-to-supply / ratio-to-total metric from any vendor, check the **as-of date of the DENOMINATOR**
+separately from the numerator. A `_now` suffix on a field joined to historical events is a silent
+look-ahead in the conditioning variable even when the return series is perfectly clean — and it
+fails in the direction that manufactures a *false null*, which no gate on this desk would catch.
+
+### ⚠ SAME-RUN CORRECTION — I TESTED THE WRONG WINDOW, and external evidence says so
+_Added hours after the screen above, from the parallel Gitee/CN-GitHub dig. Recorded as a correction
+to my own construction rather than quietly folded in._
+Three independent external bodies — **Tokenomist (236 events)**, **Keyrock (16,000+ events)** and a
+**PolyU study of 52 Binance listings** — agree that the unlock drawdown **concentrates in [T−30d, T],
+i.e. BEFORE the unlock date, not after it.** The schedules are public, so the market front-runs them;
+by the unlock date the supply is already priced.
+**Every one of my 27 cells tested a POST-event window (D → D+N).** So the null above is *consistent
+with* the external finding rather than contradicting it — but it is a null about the wrong window,
+and reporting it without this caveat would have understated how much remains untested. My screen
+does not test the hypothesis the outside evidence actually supports.
+**The re-entry condition is amended accordingly:** the pre-registered construction is a **SHORT over
+[T−30d, T]**, conditioned on unlock size vs float and on liquidity — not a short on the unlock date.
+Note this ALSO partly sidesteps defect (1) above: a pre-event window still needs a
+contemporaneous-float denominator, but the *timing* no longer depends on it.
+**A naive short-on-unlock-date should FAIL — and mine did.** That makes the run above a cheap,
+unplanned **positive control on the desk's own wiring**: our panel reproduced the externally-reported
+null in the window where a null is expected. Weak evidence the instrument is sound (L1.25 diagnostic
+step 1), obtained for free.
+
+### 26. KR venue-state layer — Upbit + Bithumb event archive, market flags and rail state — grade: needs-monitoring (verified live, ingest STARTED, screen owed) [§33: screened -> data/upbit_trade_announcements.jsonl]
+_Discovered and verified by the KR frontier miner, session 1, 2026-08-01. All endpoints keyless,
+first-party, §13-clean (public documented venue APIs, no login, no paywall, no scraping)._
+
+- **Provides — four distinct surfaces, all free:**
+  1. `api-manager.upbit.com/api/v1/announcements` — **5,685 dated, categorised announcements back
+     to Upbit's open-beta day, 2017-10-24.** `category=trade` → **737** listing/delisting/
+     trading-support events. *Caps: `per_page<=20` (30 → 429, 100 → 400); needs ≥3s between pages.
+     The category filter key is **English** (`trade`); the Korean literal `거래` returns HTTP 400.*
+  2. `api.upbit.com/v1/market/all?isDetails=true` — per-asset `market_event.warning` (유의종목) plus
+     `caution{PRICE_FLUCTUATIONS, TRADING_VOLUME_SOARING, DEPOSIT_AMOUNT_SOARING,
+     GLOBAL_PRICE_DIFFERENCES, CONCENTRATION_OF_SMALL_ACCOUNTS}`.
+  3. `api.bithumb.com/v1/market/all?isDetails=true` — second KR venue, same `market_warning` field.
+  4. `api.bithumb.com/public/assetsstatus/ALL` — **per-asset deposit / withdrawal open-closed state.**
+- **Mechanism (why this is not just more data):** Korean retail is a large, concentrated,
+  KRW-rail-captive flow cohort, and these endpoints are **the venue's own labels on that cohort**.
+  `CONCENTRATION_OF_SMALL_ACCOUNTS` is computed from Upbit's internal account-level book and is
+  **structurally unbuyable** — no vendor sells it. The Bithumb rail state is an **independent
+  measure of barrier height**, which breaks the circularity in which every prior KR premium study
+  here inferred the barrier *from the premium itself*.
+- **Measured live 2026-08-01T13:34Z (base rates, because a flag that never fires carries nothing):**
+  Upbit 803 markets / 277 KRW — `warning` 6 KRW (2.2%), `TRADING_VOLUME_SOARING` 14 (5.1%),
+  `DEPOSIT_AMOUNT_SOARING` 3 (1.1%), `GLOBAL_PRICE_DIFFERENCES` 1 (0.4%),
+  `CONCENTRATION_OF_SMALL_ACCOUNTS` 0. Bithumb 487 markets → 470 NONE / **17 CAUTION**;
+  `assetsstatus` 506 assets → withdrawal closed 4 (0.8%), **deposit closed 51 (10.1%)**.
+  Cross-venue: **ZIL, STORJ, TT, BONK warned at BOTH**; Bithumb flags 17 vs Upbit's 6, so the
+  **13-name disagreement set** is itself a candidate. ZIL is the live full-syndrome case (warned at
+  both + deposit AND withdrawal closed).
+- **THREE TRAPS, all measured, all of which would have produced a confident wrong answer:**
+  1. **`GLOBAL_PRICE_DIFFERENCES` fires on 175/803 (22%) of ALL markets and 1/277 (0.4%) of KRW.**
+     The 22% is thin USDT/BTC-book illiquidity, **not** a fiat premium. The biggest number on the
+     page is the artifact. *Split by quote currency before reading any rate.*
+  2. **Key events on `first_listed_at`, never `listed_at`** — they differ on 42.5% of rows (median
+     2.08d, p90 9.30d, max 14.7d). Mechanism now known: Upbit *amends* the trading-start time after
+     publishing (`(거래지원 개시 시점 변경 안내)`), and the amendment rewrites `listed_at`.
+  3. **Announcements are KST (+09:00); Upbit daily candles close at 24:00 UTC** (proven from primary
+     hourly data, PROSPECTOR 2026-07-30). A 17:00 KST announcement is 08:00 UTC *inside* that UTC
+     day — the window must start at the **next** UTC close or it is look-ahead.
+- **Event classes (in the 360 rows classified so far, 2023-02-15 →):** new listing 151;
+  **KRW market addition 41** — asset *already* on Upbit's BTC/USDT books, KRW rail added, which
+  **isolates rail access from discovery** and is the cleanest natural experiment in the set;
+  warning ON 47; warning OFF 9; delisting 40.
+- **Feasibility gate PASSED, measured with zero price data** (each delisting title carries its own
+  effective timestamp): notice window **min 14.0d, median 30.9d, max 36.0d, 40/40 parsed** — a
+  month-long, pre-announced, precisely-dated forced-unwind window. §42 names *"delisting unwinds"*
+  as our ground.
+- **Screen status — HONEST:** the pre-registered Upbit-KRW delisting event study is **IMPOSSIBLE**
+  and that is a reported result, not a skip. The declared survivorship threat **fired 6/6**: Upbit
+  returns HTTP 404 on `/v1/candles/days` for every delisted market, so the treatment group is
+  **erased, not merely biased**. Scoped to the route: the *event dates* survive intact, and the
+  study is **re-runnable on global prices** (the assets trade elsewhere with history intact) — which
+  tests the sharper question of whether a KR delisting moves the asset's *global* price. Owed next
+  run. **`axis_screen` is the WRONG instrument here** (~2 non-zero days in 30 reads as noise on
+  every continuous statistic); this goes through `libs/validation/event_study.py`, `n_cohort=1`.
+- **Irreplaceability — this is the part with a deadline.** Surfaces 2–4 are **snapshot-only, no
+  history endpoint**, so the series can only ever begin the day recording begins. Worse, the purge
+  means **the entire KRW price history of any asset is destroyed when it delists**, at ~**11.4
+  markets/year**. **KRW-AQT and KRW-AERGO halt 2026-08-03; KRW-SPURS 2026-08-18; the desk holds
+  history for none of them** (the 07-30 panel's `>=120 aligned days` filter excludes exactly the
+  thin/new names that delist — **our own construction filter stacks with the venue's purge**).
+- **Legitimacy (§13): clean.** Public, documented, unauthenticated first-party venue APIs. Rate
+  limits observed and respected throughout (the 429s in this run were backed off, never evaded).
+- **Routed:** `data/upbit_trade_announcements.jsonl`, `data/upbit_announcements.jsonl`,
+  `data/data_universe_map.json` (4 entries), R0298–R0301, **R0303 (dated 08-03)**.
+
+---
+
+### 27. GMO Coin free tick-trade archive (JP venue, keyless, 2018-09-05 →) — grade: **verified-technically-clean, LICENCE UNREAD (reachable, not blocked)** [§33: screened -> docs/research/prospector_coverage.md JP-s1] 
+_Found by JP frontier miner session 1, 2026-08-01, as the licensed replacement for the §13-restricted bitFlyer axis._
+
+- **What it is.** GMO Coin (GMOコイン, a listed-group JP venue) publishes **daily tick-by-tick trade
+  CSVs, gzipped, keyless, no account**, at:
+  `https://api.coin.z.com/data/trades/{SYMBOL}/{YYYY}/{MM}/{YYYYMMDD}_{SYMBOL}.csv.gz`
+- **VERIFIED THIS RUN, not inferred.** `20210301_BTC_JPY.csv.gz` → **200, 1,746,370 B**;
+  `20210301_BTC.csv.gz` → **200, 97,373 B**. Decompressed header + rows:
+  `symbol,side,size,price,timestamp` / `BTC,SELL,0.0100,4788420.000,2021-02-28 21:00:00.833`.
+  **Millisecond timestamps, signed side, tick granularity.**
+- **START DATE BINARY-SEARCHED to the day: 2018-09-05.** `20180904` → **403**, `20180905` → **200**,
+  for BOTH the spot (`BTC`) and leveraged (`BTC_JPY`) products. (403-not-404 is the S3 object-absent
+  shape, so the boundary is the data start, not an auth wall.) ⇒ **~7.9 years of JP tick tape.**
+- **Universe (from the service's own index page):** 28 spot symbols —
+  `BTC ETH BCH LTC XRP XEM XLM BAT OMG XTZ QTUM ENJ DOT ATOM MKR DAI XYM MONA FCR ADA LINK DOGE SOL
+  ASTR NAC WILD SUI` — plus 12 margin pairs (`BTC/JPY ETH/JPY BCH/JPY LTC/JPY XRP/JPY DOT/JPY
+  ATOM/JPY ADA/JPY LINK/JPY DOGE/JPY SOL/JPY SUI/JPY`). 8 of these spot-checked live at 200.
+- **WHY THIS IS A MOAT AXIS AND NOT JUST MORE PRICE DATA (L1.11a standing test).** The interesting
+  part is *not* BTC. It is **`MONA` (Monacoin), `XYM`, `FCR`, `NAC`, `WILD`, `XEM`** — JP-listing-
+  specific assets with thin or absent coverage on global venues, at **tick** resolution, **free**.
+  A competitor reconstructing this pays for a JP venue feed or does not have it. It is also the
+  **spot ⊕ leveraged pair on the same venue** (`BTC` and `BTC_JPY` are separate books), which is a
+  clean same-venue basis series most aggregators flatten away.
+- **`robots.txt`: EXPLICITLY PERMISSIVE.** `coin.z.com/robots.txt` = `User-agent: * / Allow: /` with
+  7 unrelated `Disallow`s (signup, LP pages, chart generator). **No ClaudeBot/AI-agent block.**
+  `api.coin.z.com/robots.txt` → 404 (no directives).
+- **§13 RESIDUAL — READ THIS BEFORE ANY COLLECTOR IS BUILT.** The service's own docs page carries
+  **no terms, no licence, no disclaimer** (checked). The governing document is GMO Coin's site
+  規約 at `coin.z.com/jp/corp/policy/terms/` and `/jp/corp/policy/` — both return **200 and are NOT
+  bot-blocked**, but the body is **JS-rendered** (86,604 B / 64,607 B of shell; the 規約 text is not
+  in the raw HTML). **LICENCE THEREFORE UNREAD.**
+  **This is a materially better state than bitFlyer and must not be conflated with it:** bitFlyer's
+  terms host *refuses us*; GMO's *serves us* and we simply have not rendered the body. Next action
+  is an OP-038-class fetch of the JSON/API behind the JS shell, **not** a human page-read and **not**
+  a proxy purchase.
+- **NEXT ACTION (dated):** render `coin.z.com/jp/corp/policy/terms/`, grep for the IP/データ/
+  再配布/API clause, and re-grade. **Owed by 2026-08-05.** Until then: **no collector, no ingest.**
+  Technically verified ≠ cleared.
+
+---
+
+### 28. bitbank public candlestick API (JP venue, keyless, whole-year-per-call) — grade: **verified-technically-clean WITH A CONFIRMED PHANTOM-HISTORY TRAP, licence unread** [§33: screened -> docs/research/prospector_coverage.md JP-s1]
+_Found by JP frontier miner session 1, 2026-08-01._
+
+- **What it is.** `https://public.bitbank.cc/{pair}/candlestick/{type}/{YYYY}` returns **an entire
+  year of OHLCV in one keyless call**. Payload: `[open, high, low, close, volume, timestamp_ms]`.
+  Verified live at 200 for `btc_jpy/1day/{2014,2015,2016,2017,2018}`.
+- **THE TRAP, AND IT IS THE ACTUAL DELIVERABLE HERE (see OP-045).** For **2014, 2015 and 2016** the
+  endpoint returns `success: 1` with **362 / ~365 / 363 daily bars of populated, MOVING OHLC** —
+  and **volume `0.0000` on every single bar.** Measured: `2014 bars=362 nonzero_vol=0`,
+  `2016 bars=363 nonzero_vol=0`, `2017 bars=365 nonzero_vol=317 first_nz=1487030400000`
+  (**2017-02-14**, bitbank's real BTC/JPY launch), `2018 bars=365 nonzero_vol=364`.
+  ⇒ **~1,090 untradeable phantom bars are served ahead of the venue's own existence, flagged as
+  success.** The price path moves, so no visual sanity-check catches it; **only the volume column
+  does**. Any collector taking "bitbank since 2014" at face value poisons its earliest regime.
+- **TRUE USABLE START: 2017-02-14.** Anything earlier is a reference/index backfill, not bitbank's
+  tape, and must not enter a backtest.
+- **Granularity caveat:** the year-per-call form works for `1day`; `1hour/2017` returned
+  `{"success":0,"data":{"code":10000}}` — finer types need the `YYYYMMDD` form. Do not assume the
+  year form generalises across `type`.
+- **§13:** `bitbank.cc/robots.txt` → 200, **no ClaudeBot block**; `public.bitbank.cc/robots.txt` →
+  404. The API docs repo `github.com/bitbankinc/bitbank-api-docs` (126★) carries **no LICENSE file**
+  (`license: None` via the GitHub API), so the docs are unlicensed and the governing document is the
+  site 規約 (`bitbank.cc/error/terms`, 200, 6,500 B — body not yet extracted). **LICENCE UNREAD.**
+- **NEXT ACTION (dated):** extract the 規約 body and re-grade. **Owed by 2026-08-05.** No ingest until
+  then.
+- **Standing value even if the licence fails:** the phantom-history finding is venue-independent
+  knowledge and is already generalised into **OP-045**.
+
+---
+
+### 29. RFB "Criptoativos — Dados Abertos" (Brazil, national MANDATORY crypto-reporting panel, 2019-08 → 2025-12) — grade: **verified-live, extracted, arithmetically self-validated; UNDERPOWERED FOR STAGE-A BY CONSTRUCTION (n=77 monthly) — catalogued, NOT screened, and the reason is stated** [§33: screened -> docs/research/prospector_coverage.md BR-s1]
+_BR frontier miner session 1, 2026-08-01. Fetched, parsed and cross-checked this run — every number
+below was read off the artifact, not a summary._
+
+**WHAT IT IS.** Under **IN RFB 1888/2019** (now superseded by **DeCripto, IN RFB 2291/2025**) every
+exchange domiciled in Brazil must report **every crypto operation with no minimum value**, and every
+resident person/company must report operations on **foreign** exchanges or **peer-to-peer** above
+R$30k/month. Receita Federal publishes the aggregate as a free `.xls`/`.pdf`:
+`https://www.gov.br/receitafederal/pt-br/assuntos/orientacao-tributaria/declaracoes-e-demonstrativos/criptoativos/arquivos/criptoativos_dados_abertos_20260415.xls`
+(576,000 B, HTTP 200, keyless, no auth). Five sheets:
+| Sheet | Content | Extracted |
+|---|---|---|
+| Relatorio1 | monthly R$mn split **foreign-exchange (PF/PJ) / no-exchange P2P (PF/PJ) / domestic exchanges** | **77 months, Ago-2019 → Dez-2025** |
+| Relatorio2 | monthly **unique CPF (individuals) / CNPJ (companies)** | 77 months; Dez-2025 = **3,544,986 CPF / 67,324 CNPJ** |
+| Relatorio3 | monthly **gender split** of operation count and value | 77 months |
+| Relatorio4 | **per-asset per-month**: n operations, total R$, mean R$ | **4,206 rows, 66 assets** |
+
+**SCALE (Dez-2025):** foreign-exchange R$6,906mn · P2P/no-exchange R$10,121mn · domestic exchanges
+R$26,076mn · **Total R$43,103mn (~US$8bn) in one month.**
+**ALL-TIME BY ASSET:** USDT **R$1.004 trillion** (44.9M ops) ≫ BTC R$269bn (150.7M ops) > USDC R$80bn
+> ETH R$61bn > XRP R$42.8bn > **BRZ R$38bn on 92.4M operations** (the highest op-count of any asset).
+
+**MECHANISM (stated before any screen, per SCREEN-ON-DISCOVERY (2)).** USDT declared value is **3.7×
+BTC's**. Brazilians are overwhelmingly buying a **dollar proxy**, not a speculative asset — so
+`declared_stablecoin_value / declared_BTC_value` is an **EM dollarization / capital-flight** measure
+on a compelled-reporting basis. Who is forced to trade against it: residents hedging BRL debasement
+who cannot cheaply access USD deposits. Testable against **BCB PTAX** (verified keyless this run:
+`api.bcb.gov.br/dados/serie/bcdata.sgs.1/dados?formato=json`).
+
+**WHY IT IS NOT SCREENED THIS RUN, AND WHY THAT IS THE HONEST CALL.** n = **77 monthly** observations
+with a **~3.5-month publication lag** (the 2026-04-15 file ends at Dez-2025). The desk's screen
+requires ~4,268 independent observations (R0030). Running `axis_screen` here would produce a null
+whose power is ~0 — **a manufactured false null on a genuinely novel axis, which L1.25 names as the
+failure mode, and which would burn multiplicity budget for zero information.** Same call the CN seat
+made on `unlock_events.json` (0/27 → *UNMEASURABLE, not dead*). Reported as **UNDERPOWERED**, not as
+*no edge*. It is a **regime/conditioning variable and a validation ground-truth**, never a timing signal.
+**ENABLING CHANGE that would make it screenable:** use it cross-sectionally (66 assets × 77 months =
+4,206 asset-months) as a **retail-attention conditioner** on the desk's existing perp universe, where
+breadth rather than length supplies the observations.
+
+**THE REAL PRIZE — A FREE POINT-IN-TIME VINTAGE STACK (verified, not asserted).** RFB republishes the
+whole file monthly under a **dated filename**, so every release is a **vintage**. Measured this run:
+- 2023-05-03 vs 2023-08-07 vintages: **39 of 42** common months revised **within 3 months**.
+- 2023-05-03 vs 2026-04-15: **42 of 42 revised.** Largest **Março-2023 R$15,828mn → R$22,308mn (+40.9%)**.
+- 2022-01-04 vs 2026-04-15: Ago-2019 Total Geral **3,940.3 → 4,036.9 (+2.5%)** and unique CPF
+  **160,589 → 182,935 (+13.9%)** — i.e. revisions still accrue on a month **2.4 years old**.
+- Revisions are **systematically upward** (late and amended filings).
+⇒ **Backtesting the CURRENT file is a look-ahead leak of up to +41% in the conditioning variable** —
+the R0289 defect class exactly (a value whose as-of date ≠ its event date), and it fails toward a
+FALSE result. The vintage stack is the fix and it is free. **23+ distinct publication dates recovered
+from Wayback CDX**; a vintage that is **404 on the live server** (`..._04012022.xls`) was fully
+recovered at 282,624 B via the raw-replay modifier
+`https://web.archive.org/web/20220115123532id_/<url>` — **so point-in-time reconstruction back to
+2021-09 is PROVEN feasible, not hoped for.**
+
+**THE TRAP FOR WHOEVER BUILDS IT — a fixed-cell scraper silently produces a wrong series.** Across
+eras the file changes **row offset** (data starts row 10 in 2022, row 8 in 2026), **column ORDER**
+(2022 `MÊS/ANO | CNPJ | CPF` vs 2026 `MÊS/ANO | CPF | CNPJ` — **swapped**, so a fixed reader takes
+CNPJ ≈ 2k as CPF ≈ 160k, an ~80× error that still *looks* like a plausible count), **number type**
+(2022 = text with Brazilian thousands separators `160.589`; 2026 = native numerics) and **labels**
+(`Exchanges / Somente PJ` → `Exchanges no Brasil*`). Parse by **header semantics per vintage**, never
+by cell address. Generalised as the OP-035 BR extension.
+**And the filename convention itself flips:** `DDMMYYYY` up to 2023-09 (`02092021`, `07082023`,
+`25092023`) then **`YYYYMMDD`** from 2024-10 (`20241007`, `20250115`, `20260415`). A regex for one era
+silently zero-hits the other. There is also a real **publication hiatus 2023-09 → 2024-10**.
+
+**BR-ONLY TOKENIZED-RWA UNIVERSE (incidental discovery, in a government dataset).** Of the 66 assets:
+`MBPRK02/03/04` (**tokenized *precatórios* — court-ordered Brazilian government debt**), `MBCONS02`
+(*consórcio* credit), `IMOB01` (real estate), `CBRL`/`BRLT`/`BRZ`/`BRZX` (BRL stablecoins), `MCO2`
+(tokenized carbon), `WBX`. These exist nowhere in the desk's universe and are not in any global
+vendor's crypto taxonomy.
+
+**§13:** `gov.br/robots.txt` — `User-agent: *` with **no AI-crawler block and no relevant Disallow**;
+files are published under Brazil's open-data policy (LAI 12.527/2011). **CLEAN — no restriction.**
+**VERIFICATION STATUS:** endpoint live ✓ · parsed ✓ · **arithmetic self-validated ✓** (OP-024: all
+78 monthly rows satisfy PF+PJ=Subtotal and Subtotal₁+Subtotal₂+Domestic=TotalGeral with worst
+residual **exactly 0.00**) · licence clean ✓ · **ingest NOT started** · **screen deliberately withheld
+as underpowered, with the enabling change named above.**

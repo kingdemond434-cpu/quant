@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import json
 import statistics
-from datetime import UTC, date, datetime
+from datetime import UTC, datetime
 from pathlib import Path
 
 from libs.data.onchain_flows import exchange_reserves, stablecoin_supply
@@ -37,7 +37,7 @@ def _load(p: Path, d: object) -> object:
 def main() -> None:
     res = exchange_reserves()                              # live keyless read
     sup = stablecoin_supply()                              # global supply (orthogonal signal)
-    today = date.today().isoformat()
+    today = datetime.now(UTC).date().isoformat()
     arch = _load(_ARCHIVE, [])
     if not isinstance(arch, list):
         arch = []

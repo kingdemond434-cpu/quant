@@ -102,6 +102,7 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("check_organ_liveness.py", ()),           # L1.28c -- every organ actually produces
     ("check_promotion_gate.py", ()),           # L1.6 -- expansion is bought with evidence
     ("check_excitation.py", ()),               # L1.45 -- no absorbing set, no dead experiment
+    ("check_clock_provenance.py", ()),         # L1.46 -- the tape declares which clock stamped it
 )
 
 

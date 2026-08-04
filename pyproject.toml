@@ -11,14 +11,14 @@ requires-python = ">=3.11"
 license = { text = "Proprietary" }
 authors = [{ name = "Solo Quant" }]
 dependencies = [
-    "pydantic>=2.6",
-    "pydantic-settings>=2.2",
-    "pyyaml>=6.0",
-    "numpy>=1.26",
-    "pandas>=2.2",
-    "pyarrow>=16.0",
-    "duckdb>=1.0",
-    "scipy>=1.13",
+    "pydantic>=2.13.4",
+    "pydantic-settings>=2.14.1",
+    "pyyaml>=6.0.3",
+    "numpy>=2.4.6",
+    "pandas>=2.3.3",
+    "pyarrow>=24.0.0",
+    "duckdb>=1.5.3",
+    "scipy>=1.17.1",
     "scikit-learn>=1.4",  # libs/regime (GMM/HMM probabilistic regimes) — a LIVE entrypoint dep
     # scripts/reconcile_venue.py imports certifi at module scope and calls certifi.where() at
     # import time to build its SSL context, so the venue reconciler cannot even be imported
@@ -31,11 +31,11 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "ruff>=0.5",
-    "mypy>=1.10",
-    "pytest>=8.0",
-    "pytest-cov>=5.0",
-    "hypothesis>=6.100",
+    "ruff>=0.15.17",
+    "mypy>=2.1.0",
+    "pytest>=9.1.0",
+    "pytest-cov>=7.1.0",
+    "hypothesis>=6.155.2",
     "types-PyYAML>=6.0",
     "pre-commit>=3.7",
 ]
@@ -72,6 +72,19 @@ select = [
     "SIM", # simplify
     "TID", # tidy imports
     "RUF",
+    "DTZ", # flake8-datetimez -- naive datetime construction. The desk is timestamp-governed
+           # (forward clocks, 8h funding boundaries, freshness SLAs, §33 deferral expiry): a
+           # naive/aware mix is either a TypeError or, worse, silently wrong arithmetic.
+    # flake8-bandit, HIGH-SIGNAL SUBSET ONLY. Full `S` is 2458 hits dominated by S101 (asserts in
+    # tests, pure noise) plus large S310/S603/S607 families that need a dedicated triage pass, not
+    # a blanket suppression -- suppressing a rule wholesale is how security linting becomes
+    # decorative. These are the ones that flag real, actionable things today:
+    "S104", # bind-all-interfaces  (caught both 0.0.0.0 dashboards)
+    "S105", "S106", "S107", # hardcoded credentials
+    "S108", # insecure /tmp path
+    "S301", "S302", # pickle / marshal deserialization
+    "S311", # non-crypto RNG where crypto is implied
+    "S608", # hardcoded SQL expression
 ]
 ignore = ["B008"]
 
@@ -104,6 +117,19 @@ ignore = ["B008"]
     "E701",  # multiple-statements-on-one-line-colon
     "E702",  # multiple-statements-on-one-line-semicolon
 ]
+# Test fixtures deliberately construct the things these rules forbid: naive datetimes to prove
+# the aware/naive distinction is enforced, non-crypto RNG to prove determinism, a fixed tmp path
+# to assert on it. Flagging a test for exercising the hazard it guards is pure noise.
+"tests/**" = ["DTZ", "S311", "S108", "S105", "S106"]
+# Table/column IDENTIFIERS are module constants and every call site passes a literal (verified
+# 2026-07-25); values are always bound with `?`. SQL identifiers cannot be parameterised, so an
+# f-string here is the only option, not a shortcut.
+"app/dashboard.py" = ["S608"]
+"libs/alpha_factory/research_memory.py" = ["S608"]
+"libs/autodiscovery/memory.py" = ["S608"]
+# Cadence jitter is deliberately non-cryptographic: a fixed 600s beat is detectable at size, and
+# unpredictability-to-a-front-runner is the requirement, not cryptographic strength.
+"scripts/run_cashcarry_executor.py" = ["S311"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["libs", "app"]

@@ -179,6 +179,29 @@ def backlog(items: Iterable[MinedItem], *, as_of: date) -> tuple[MinedItem, ...]
     return tuple(i for i in items if not is_disposed(i, as_of=as_of))
 
 
+#: ``path`` optionally followed by a backtick-quoted anchor naming WHICH entry inside it.
+_ARTIFACT_RE = re.compile(r"^(?P<path>\S+)(?:\s+`(?P<anchor>[^`]+)`)?\s*$")
+
+
+def _split_anchor(artifact: str) -> tuple[str, str]:
+    """Split ``path `anchor``` into the file assertion and the entry assertion.
+
+    THE PARSER USED TO SWALLOW THE ANCHOR INTO THE FILENAME, so a card citing its evidence MORE
+    precisely scored WORSE than one naming a bare path. Measured 2026-08-01: the bitFlyer kill
+    wrote ``-> docs/graveyard.md `jp_bitflyer_direct_recording```, which parsed as a single
+    47-character "path" that can never exist, so the claim read as unbacked permanently and no
+    amount of doing the actual work could ever clear it. A convention that punishes precision
+    trains everyone back to the vaguest form the checker still accepts.
+
+    Returns (path, anchor); anchor is "" when none was given, which preserves the old behaviour
+    for every bare-path card.
+    """
+    m = _ARTIFACT_RE.match(artifact.strip())
+    if not m:
+        return artifact.strip(), ""
+    return m.group("path"), (m.group("anchor") or "").strip()
+
+
 def unbacked(
     items: Iterable[MinedItem],
     *,
@@ -207,9 +230,16 @@ def unbacked(
         if i.disposition not in _CLAIMS_ARTIFACT:
             continue
         if i.artifact:
-            p = base / i.artifact
+            path_s, anchor = _split_anchor(i.artifact)
+            p = base / path_s
             try:
                 ok = p.is_file() and p.stat().st_size > 0
+                # AN ANCHOR IS AN EXTRA ASSERTION, NEVER A DISCOUNT. `-> docs/graveyard.md
+                # `jp_bitflyer_direct_recording`` names WHICH entry, which is strictly better
+                # evidence than naming the file -- a 388-line graveyard is non-empty no matter
+                # what you failed to write in it. So the anchor must actually APPEAR in the file.
+                if ok and anchor:
+                    ok = anchor.lower() in p.read_text("utf-8", errors="ignore").lower()
                 # ...and it must POSTDATE the find. Exact was not enough: `-> pyproject.toml`
                 # named a real non-empty file and was credited, so any pre-existing file in the
                 # repo was a valid receipt for any claim. A file that has not been touched since

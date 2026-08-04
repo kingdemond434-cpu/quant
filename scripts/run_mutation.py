@@ -45,7 +45,7 @@ _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:          # `import libs` works without an editable install
     sys.path.insert(0, str(_ROOT))
 _OUT = _ROOT / "data/mutation_score.json"
-_WORK = Path("/tmp/claude-0/-home-user-quant/1c87bc3b-ab99-5043-86ff-5b38ad12af2a/scratchpad/mut")
+_WORK = Path("/tmp/claude-0/-home-user-quant/1c87bc3b-ab99-5043-86ff-5b38ad12af2a/scratchpad/mut")  # noqa: S108 -- session scratchpad path, not a shared world-writable location
 
 # The measured set. Order is priority order: the gate fix pending a principal decision first
 # (measuring whether its 13 tests CONSTRAIN it is load-bearing for that decision), then the

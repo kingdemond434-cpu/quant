@@ -50,7 +50,7 @@ def _hyp(fam: str, sub: str, sym: str) -> Hypothesis:
 def main() -> int:
     t0 = time.time()
     with open(_PKL, "rb") as fh:
-        prepared = pickle.load(fh)
+        prepared = pickle.load(fh)  # noqa: S301 -- pickle of a corpus this desk wrote itself; never an untrusted input
     _log(f"loaded {len(prepared)} candidates from {_PKL}")
 
     lens = np.array([len(e[-1]) for e in prepared])

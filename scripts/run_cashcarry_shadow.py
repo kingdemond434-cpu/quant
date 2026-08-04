@@ -21,6 +21,7 @@ from libs.data.crypto_source import list_liquid_perps
 from libs.data.instruments import AssetClass, InstrumentSpec, register_instrument
 from libs.data.lake import Layer, ParquetLake
 from libs.data.timeframe import Timeframe
+from libs.data.universe import RESEARCH_TOP_N
 from libs.research.cashcarry import cashcarry_returns
 from libs.validation.dsr import sharpe_ratio
 from libs.validation.forward_stats import autocorr_factor, nw_tstat
@@ -34,7 +35,7 @@ _PPY = 365.0
 def _panels() -> tuple[pd.DataFrame, pd.DataFrame]:
     lake = ParquetLake("data/lake")
     fundings, bases = {}, {}
-    for s in list_liquid_perps(top_n=120):
+    for s in list_liquid_perps(top_n=RESEARCH_TOP_N):
         if not (_CRYPTO / s / Timeframe.D1.value).exists():
             continue
         register_instrument(InstrumentSpec(symbol=s, asset_class=AssetClass.CRYPTO, description=s))

@@ -173,6 +173,16 @@ _MAP: dict[str, list[str]] = {
     # back. It also owns the producer for the three ramp_gate step-up conditions that had none.
     "L1.45": ["scripts/check_excitation.py", "scripts/run_cost_identification.py",
               "libs/execution/excitation.py"],
+    # L1.46: clock provenance. Every other data fence asks whether the COLLECTOR RAN -- gapless
+    # collection was verified GOOD on the same corpus that is not monotonic in its own `t` field.
+    # This one asks whether the TIMESTAMPS MEAN WHAT THE SCHEMA IMPLIES, which is the defect class
+    # behind kimchi_premium, coinbase_premium_timing and R0060 alike.
+    "L1.46": ["scripts/check_clock_provenance.py", "libs/research/clock_provenance.py"],
+    # L1.47: funding capture. Funding is a DISCRETE payment booked as a CONTINUOUS accrual, and
+    # the accrual is UNBIASED IN EXPECTATION -- which is why it survived every review while being
+    # wrong on 41.5% of individual closes. The fence differences the two models, measures the
+    # PHASE coordinate the desk has never used, and refuses to call an undifferenced estimate OK.
+    "L1.47": ["scripts/check_funding_capture.py", "libs/research/funding_clock.py"],
     # R0122 LLM discretionary sleeve: paper-only candidate generator whose calls are scored
     # forecasts. Governed by L1.6 (zero promotion authority) and L1.29 (it grades itself).
     "L1.6-llm": ["scripts/run_llm_trader.py"],
@@ -278,6 +288,15 @@ _MAP: dict[str, list[str]] = {
 # These are appended into _MAP rather than written inline above so the read direction stays clean:
 # above answers "what enforces this law", below answers "why does this check exist at all".
 _FENCE_OWNERS: dict[str, str] = {
+    # --- READ-WITHOUT-WRITER (L1.40): the defect lens L1.40 names FIRST and calls this desk's most
+    # prolific class -- "the capital-event equity bug was exactly this". check_phantom_paths is its
+    # detector: a path read by code, absent from disk, written by nothing. Such a reader does not
+    # crash; it takes the empty branch and returns a plausible zero, so the organ reports HEALTHY on
+    # data that does not exist. Live instances were all found BY HAND before it existed
+    # (research_memory.db with four readers and no writer; cost_ratio, slippage_ks_p and
+    # calibration_mae_falling_months as ramp step-up conditions with no producer while the ramp sat
+    # pinned at its floor), which is exactly the hand-is-not-a-mechanism gap L1.41 exists to close.
+    "check_phantom_paths": "L1.40",
     # --- conversion parity (L1.28b): the repair wire's two halves. check_conversion measures the
     # daily flow (arrival vs disposition, FLATLINE on silence); check_recommendation_rows (§42 X1,
     # built independently by the box the same day) applies per-row carry-over pressure so old

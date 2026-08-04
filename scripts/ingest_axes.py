@@ -53,7 +53,7 @@ def curl(url: str, timeout: int = 90) -> bytes:
 
 
 def fetch(url: str, timeout: int = 60) -> bytes:
-    last = None
+    last: Exception | None = None
     for attempt in (1, 2):                       # one retry -- transient read timeouts
         try:
             r = urllib.request.Request(url, headers=UA)
@@ -62,7 +62,9 @@ def fetch(url: str, timeout: int = 60) -> bytes:
         except Exception as e:
             last = e
             time.sleep(3 * attempt)
-    raise last
+    # `raise None` is a TypeError that MASKS the real network failure -- found by the type gate
+    # when scripts/ entered it (2026-07-25).
+    raise last if last is not None else RuntimeError(f"fetch failed with no exception: {url}")
 
 
 # ---------------- 1. Fed net-liquidity ----------------
@@ -146,7 +148,7 @@ def ingest_fed() -> None:
 def ingest_binance_metrics(max_files: int | None = None) -> None:
     base = "https://data.binance.vision/data/futures/um/daily/metrics"
     got = skipped = missing = 0
-    end = date.today() - timedelta(days=1)
+    end = datetime.now(UTC).date() - timedelta(days=1)
     for sym in SYMBOLS:
         out = BRONZE / "binance_metrics" / sym
         out.mkdir(parents=True, exist_ok=True)

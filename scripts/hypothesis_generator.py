@@ -28,12 +28,16 @@ from __future__ import annotations
 import json
 import re
 import ssl
+import sys
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+from scripts import seats  # noqa: E402 -- after the sys.path bootstrap above
+
 KEYS = ROOT / "data/secrets/llm_panel.json"
 GRAVE = ROOT / "docs/graveyard.md"
 MECH = ROOT / "docs/research/MECHANISM_GRAPH.md"
@@ -74,26 +78,10 @@ SYSTEM = (
 )
 
 
-
-def _doctrine(role: str = "") -> str:
-    """Runtime doctrine preamble. One source (scripts/doctrine.py); never a pasted copy."""
-    try:
-        from scripts.doctrine import preamble
-        return preamble(role)
-    except Exception:  # blind-except intentional (BLE001)
-        try:
-            import sys as _s
-            _s.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent))
-            from doctrine import preamble  # type: ignore
-            return preamble(role)
-        except Exception:  # blind-except intentional (BLE001)
-            return ""          # never break a caller over a preamble
-
-
 def _ask(base, key, model, system, user, timeout=240.0):
-    body = json.dumps({"model": model, "max_tokens": 16000, "temperature": 1.05,
+    body = json.dumps({"model": model, "max_tokens": 3000, "temperature": 0.95,
                        "reasoning": {"effort": "high"},
-                       "messages": [{"role": "system", "content": _doctrine("hypothesis_generator") + system},
+                       "messages": [{"role": "system", "content": system},
                                     {"role": "user", "content": user}]}).encode()
     req = urllib.request.Request(base.rstrip("/") + "/chat/completions", data=body, method="POST",
                                  headers={"Authorization": f"Bearer {key}",
@@ -122,37 +110,64 @@ def main() -> None:
     if not KEYS.exists():
         print("no panel keys")
         return
-    provs = {p["model"]: p for p in json.loads(KEYS.read_text("utf-8"))["providers"]
-             if isinstance(p, dict)}
+    # Live-roster resolution: an upgraded-away seat is substituted (same lab first), not lost.
+    provs = {p["model"]: p for p in seats.resolve(SEATS, n=len(SEATS), role="hypothesis_gen")}
+    seated = list(provs)
     dead_txt, dead_tok = refuted()
     mech = MECH.read_text("utf-8")[:3000] if MECH.exists() else ""
-    day = datetime.now(tz=UTC).toordinal()
-    lens_name, lens_txt = LENSES[day % len(LENSES)]
 
-    user = (f"LENS -- {lens_name}\n{lens_txt}\n\n"
-            f"ALREADY REFUTED ON THIS DESK (do not propose these or close variants):\n{dead_txt}\n\n"
-            f"MECHANISM MAP (what is already observed):\n{mech}\n\n"
-            "Give 10-15 hypotheses through THIS lens that are NOT in the refuted list.")
-    print(f"=== HYPOTHESIS GENERATOR | lens: {lens_name} | {len(SEATS)} seats ===")
+    # ALL LENSES EVERY RUN (was: LENSES[day % len(LENSES)] -- one lens per day).
+    #
+    # The one-lens rotation put a 5x throttle on the desk's PRIMARY output and took five days to
+    # sweep the hypothesis space once. It also contradicted its own sibling: breadth_expander
+    # runs every lens daily and states exactly why --
+    #
+    #     "ALL LENSES DAILY -- one prompt reshuffled would converge; six orthogonal framings
+    #      cannot."                                        -- breadth_expander.py
+    #
+    # That argument is about ORTHOGONALITY OF FRAMING, not about which organ is asking, so it
+    # applies here identically. Rotating lenses does not merely slow generation down: on any
+    # given day the desk can only see the space through one framing, so a hypothesis that needs
+    # PARTICIPANT CONSTRAINT thinking is invisible on a SECOND ORDER day and is never generated
+    # at all unless the idea survives four days of nobody looking for it.
+    #
+    # Cost: len(LENSES) x len(seats) calls (5 x 3 = 15) at ~$0.22 = ~$3.30/run against a stated
+    # $10-30/mo envelope. Generation is objective #2 of two co-equal supreme objectives; this is
+    # the cheapest available purchase of discovery rate on the desk.
+    print(f"=== HYPOTHESIS GENERATOR | FULL SWEEP: {len(LENSES)} lenses x {len(seated)} seats ===")
     print("    *** UNTESTED SCRIPT -- verify output before trusting it ***")
     print(f"    graveyard supplied: {len(dead_tok)} refuted tokens (prevents re-proposing dead)\n")
 
-    def run(seat):
+    def _user_for(lens_name: str, lens_txt: str) -> str:
+        return (f"LENS -- {lens_name}\n{lens_txt}\n\n"
+                f"ALREADY REFUTED ON THIS DESK (do not propose these or close variants):\n"
+                f"{dead_txt}\n\n"
+                f"MECHANISM MAP (what is already observed):\n{mech}\n\n"
+                "Give 10-15 hypotheses through THIS lens that are NOT in the refuted list.")
+
+    jobs = [(ln, lt, seat) for ln, lt in LENSES for seat in seated]
+
+    def run(job):
+        lens_name, lens_txt, seat = job
         p = provs.get(seat)
         if not p:
-            return seat, "", "not in roster"
+            return lens_name, seat, "", "not in roster"
         try:
-            return seat, _ask(p["base_url"], p["key"], seat, SYSTEM, user), None
+            return (lens_name, seat,
+                    _ask(p["base_url"], p["key"], seat, SYSTEM, _user_for(lens_name, lens_txt)),
+                    None)
         except Exception as e:
-            return seat, "", f"{type(e).__name__} {getattr(e, 'code', '')}"
+            return lens_name, seat, "", f"{type(e).__name__} {getattr(e, 'code', '')}"
 
-    with ThreadPoolExecutor(max_workers=3) as ex:
-        answers = list(ex.map(run, SEATS))
+    # Fanned out because the sweep is now len(LENSES)x bigger and must still fit its cadence
+    # window -- the same reason breadth_expander parallelises its full sweep.
+    with ThreadPoolExecutor(max_workers=6) as ex:
+        answers = list(ex.map(run, jobs))
 
     rows = []
-    for seat, txt, err in answers:
+    for lens_name, seat, txt, err in answers:
         if err:
-            print(f"  {seat.split('/')[-1]:<22} FAILED ({err})")
+            print(f"  {lens_name[:22]:<22} {seat.split('/')[-1]:<22} FAILED ({err})")
             continue
         kept = dup = 0
         for ln in txt.splitlines():
@@ -171,7 +186,8 @@ def main() -> None:
                          "data": parts[2][:140], "test": parts[3][:200],
                          "kill": parts[4][:160] if len(parts) > 4 else ""})
             kept += 1
-        print(f"  {seat.split('/')[-1]:<22} +{kept} new, {dup} rejected as already-refuted")
+        print(f"  {lens_name[:22]:<22} {seat.split('/')[-1]:<22} "
+              f"+{kept} new, {dup} rejected as already-refuted")
 
     if rows:
         with OUT.open("a", encoding="utf-8") as fh:

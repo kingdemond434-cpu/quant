@@ -19,9 +19,12 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
+from libs.execution.collateral import STABLE_COLLATERAL
+from libs.execution.idempotency import client_order_id
+
 _BASE = "https://testnet.binancefuture.com"   # PINNED testnet -- never live
 _KEY_ENV = "BINANCE_TESTNET_KEY"
-_SECRET_ENV = "BINANCE_TESTNET_SECRET"
+_SECRET_ENV = "BINANCE_TESTNET_SECRET"  # noqa: S105 -- env-var name, not the secret
 # Convenience: keys may live in env (preferred) OR a local untracked file (set once). NOT in code.
 _KEYFILE = Path("data/secrets/binance_testnet.json")
 
@@ -161,7 +164,8 @@ def account_balance() -> float:
     return 0.0
 
 
-_STABLE_COLLATERAL = ("USDT", "USDC", "FDUSD", "TUSD", "BUSD", "DAI")
+# the tuple lives in libs/execution/collateral.py -- two copies would drift
+_STABLE_COLLATERAL = STABLE_COLLATERAL
 
 
 def account_summary() -> dict[str, float]:
@@ -350,7 +354,7 @@ def _market_max_qty(symbol: str) -> float:
 
 
 def place_market(symbol: str, side: str, qty: float,
-                 reduce_only: bool = False) -> dict[str, Any]:
+                 reduce_only: bool = False, cycle: str | None = None) -> dict[str, Any]:
     """Market order, SPLIT to respect the venue MARKET_LOT_SIZE cap.
 
     ``reduce_only=True`` makes the order arithmetically incapable of crossing zero into the
@@ -358,9 +362,14 @@ def place_market(symbol: str, side: str, qty: float,
     """
     cap = _market_max_qty(symbol)
     remaining, last, n = float(qty), None, 0
+    # GAP #49: mirrors binance_live exactly. The testnet connector is the one the executor
+    # actually imports today, so an idempotency guarantee that exists only on the live module
+    # is a guarantee the desk does not have.
+    intent = "close" if reduce_only else "open"
     while remaining > 0 and n < 50:
         chunk = min(cap, remaining) if cap != float("inf") else remaining
-        params = {"symbol": symbol, "side": side, "type": "MARKET", "quantity": chunk}
+        params = {"symbol": symbol, "side": side, "type": "MARKET", "quantity": chunk,
+                  "newClientOrderId": client_order_id(symbol, side, intent, chunk=n, cycle=cycle)}
         if reduce_only:
             params["reduceOnly"] = "true"
         last = _signed("/fapi/v1/order", params, method="POST")
@@ -369,7 +378,8 @@ def place_market(symbol: str, side: str, qty: float,
     return dict(last) if isinstance(last, dict) else {"raw": last}
 
 
-def place_post_only(symbol: str, side: str, qty: float, price: float) -> dict[str, Any]:
+def place_post_only(symbol: str, side: str, qty: float, price: float,
+                    cycle: str | None = None) -> dict[str, Any]:
     """Post-only LIMIT order (timeInForce=GTX) -- guaranteed MAKER (rejected if it would cross).
 
     Pays the maker fee (~half the taker fee on Binance futures) instead of crossing the spread.
@@ -378,6 +388,9 @@ def place_post_only(symbol: str, side: str, qty: float, price: float) -> dict[st
     res = _signed("/fapi/v1/order", {
         "symbol": symbol, "side": side, "type": "LIMIT", "timeInForce": "GTX",
         "quantity": qty, "price": price,
+        # GAP #49. Resting orders are MORE dangerous to duplicate, not less: incident #6 was
+        # accumulated resting fills walking a short through zero into a +916,772 long.
+        "newClientOrderId": client_order_id(symbol, side, "postonly", cycle=cycle),
     }, method="POST")
     return dict(res) if isinstance(res, dict) else {"raw": res}
 

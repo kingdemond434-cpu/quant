@@ -204,11 +204,46 @@ def _realised_pnl() -> float:
         return 0.0
 
 
+#: Where the live epoch baseline is recorded. See _live_epoch_pnl.
+_LIVE_EPOCH = Path("data/live_compound_epoch.json")
+
+
+def _live_epoch_pnl() -> float:
+    """Realised PnL already on the books when this desk FIRST went live.
+
+    R0235: the NAV chain does not distinguish testnet from live, and at the S0->S1 flip it carried
+    2,930.43 of TESTNET profit. Compounding a real deposit by that figure sized a 200 USD deposit
+    as 800 -- 4x, on money that does not exist at the venue -- and Gate 0's capital_fraction cap is
+    evaluated on the pre-multiplied number, so it never saw the size actually traded.
+
+    The first live read stamps the then-current realised figure as an EPOCH, and all later growth
+    counts only PnL ABOVE it. Live compounding therefore begins at exactly 1.0x, which is the
+    truth: no live PnL has been earned yet. The testnet record stays intact and the hash-chained
+    NAV file is never rewritten.
+    """
+    try:
+        if _LIVE_EPOCH.exists():
+            return float(json.loads(_LIVE_EPOCH.read_text("utf-8")).get("epoch_realised", 0.0))
+    except Exception:
+        return _realised_pnl()        # unreadable epoch -> subtract everything => 1.0x, fail-safe
+    stamp = _realised_pnl()
+    # best-effort persist: if it fails we still RETURN the stamp, so this tick computes 1.0x and
+    # the next tick re-stamps. Failing to write can never widen the size.
+    with contextlib.suppress(Exception):
+        _LIVE_EPOCH.write_text(json.dumps(
+            {"epoch_realised": stamp, "stamped_at": datetime.now(tz=UTC).isoformat(),
+             "why": "R0235: realised PnL on the books at the first live read. Growth counts only "
+                    "PnL above this, so live compounding starts at 1.0x instead of inheriting "
+                    "testnet profit as live size."}), "utf-8")
+    return stamp
+
+
 def _compounded_capital(default: float) -> float:
-    """Operator capital grown by REALISED PnL, hard-clamped, inert until live."""
+    """Operator capital grown by REALISED PnL earned LIVE, hard-clamped, inert until live."""
     if not _is_live():
         return default                                   # pre-Gate-0: frozen base, unchanged
-    grown = default + _realised_pnl() * _COMPOUND_FRACTION
+    live_pnl = _realised_pnl() - _live_epoch_pnl()        # R0235: exclude pre-live (testnet) PnL
+    grown = default + live_pnl * _COMPOUND_FRACTION
     lo, hi = default * _COMPOUND_MIN_FACTOR, default * _COMPOUND_MAX_FACTOR
     return float(min(max(grown, lo), hi))
 
@@ -401,6 +436,43 @@ def _structurally_bleeding(sym: str) -> bool:
     return False
 
 
+#: Fewer realised pairs than this and the sample is an anecdote; the gate keeps using the model.
+_MIN_FILLS_FOR_REALISED = 3
+
+
+def _realised_rt_bps(sym: str) -> float | None:
+    """Median round-trip slippage this desk ACTUALLY PAID on this symbol, or None if too few.
+
+    L1.11(b): our own order flow is the one execution dataset no competitor has, and it disagreed
+    with the cost surface by roughly fifty times -- surface said 0.35bps for BNB, our fills said
+    ~16bps combined (spot +18.1 mean / +7.0 median, futures -1.7). The gate was admitting trades
+    that needed twelve days of funding to repay one entry, which is why every post-fix hold bucket
+    came back negative while the gate believed it was selecting winners.
+
+    Median rather than mean: one catastrophic fill should cost a trade, not blacklist a symbol
+    forever (mean +18.1 vs median +7.0 here -- the gap is a single outlier).
+    """
+    try:
+        rows = json.loads(_TRADES.read_text("utf-8"))
+    except Exception:
+        return None
+    slips = []
+    for r in rows:
+        if str(r.get("symbol")) != sym:
+            continue
+        sp, ft = r.get("spot_slip_bps"), r.get("fut_slip_bps")
+        if sp is None:
+            continue
+        try:
+            slips.append(abs(float(sp)) + abs(float(ft or 0.0)))
+        except (TypeError, ValueError):
+            continue
+    if len(slips) < _MIN_FILLS_FOR_REALISED:
+        return None
+    slips.sort()
+    return slips[len(slips) // 2]
+
+
 def _rt_bps(sym: str) -> float:
     """This symbol's MEASURED round-trip cost, else the desk median. Self-improving: as the
     recorder accrues the traded names, the gate automatically tightens on expensive books
@@ -415,9 +487,14 @@ def _rt_bps(sym: str) -> float:
         # it. max() keeps a proven-expensive name (KNC -211bps) expensive when the model
         # freezes, and stops a stale "cheap" reading from admitting opens the current book
         # would refuse. New opens only, as ever -- this can never force-close a held carry.
-        return float(v) if fr.fresh else max(float(v), _DEFAULT_RT_BPS)
+        modelled = float(v) if fr.fresh else max(float(v), _DEFAULT_RT_BPS)
     except (KeyError, TypeError, ValueError):
-        return _DEFAULT_RT_BPS
+        modelled = _DEFAULT_RT_BPS
+    # REALITY FLOORS THE MODEL (L1.11b). MAX, never average: this may only TIGHTEN the gate, the
+    # same direction the stale-model rule above already enforces. A bad realised sample can cost
+    # us a trade; it can never admit one.
+    real = _realised_rt_bps(sym)
+    return max(modelled, real) if real is not None else modelled
 
 
 def _entry_gate(sym: str, funding: float, min_hold_h: float = _MIN_HOLD_H) -> bool:
@@ -1316,6 +1393,22 @@ def _exc_fields(arm: excitation.Arm, spot_side: str) -> dict[str, Any]:
     if "last_jitter" in _EXC_CADENCE:
         out["exc_cadence_jitter"] = _EXC_CADENCE["last_jitter"]
     return out
+#: GAP #49. How long one pair-execution identity stays live. 300s comfortably spans an
+#: ambiguous timeout plus its retries and a restart-and-reconcile pass, which are the two
+#: paths that re-place an order, while staying far short of the next rebalance.
+_CYCLE_S = 300
+
+
+def _pair_cycle(sym: str, spot_side: str, qty: float) -> str:
+    """Stable identity for ONE logical pair execution, used to make order IDs idempotent.
+
+    Quantity is included because two carries on the same symbol in the same direction and the
+    same rebalance differ by size, and merging them under one ID would suppress the second as a
+    duplicate -- trading a duplicate-fill risk for a missing-fill risk rather than removing it.
+    The coarse time term still bounds how long an ID stays live, so a genuinely new pass tomorrow
+    is never confused with today's.
+    """
+    return f"{sym}:{spot_side}:{qty:.10g}:{int(time.time() // _CYCLE_S)}"
 
 
 def _execute_pair_impl(sym: str, qty: float, spot_side: str, fut_side: str) -> dict[str, Any]:
@@ -1355,10 +1448,17 @@ def _execute_pair_impl(sym: str, qty: float, spot_side: str, fut_side: str) -> d
     # walked COOKIEUSDT through zero into a +916,772 long. reduceOnly makes that impossible.
     # Opens (spot BUY / futures SELL) must NOT be reduceOnly -- they establish the short.
     _reduce_only_leg = spot_side == "SELL"
+    # GAP #49: one cycle token per logical pair execution. Retries of THIS pair reproduce the
+    # same client order IDs regardless of how long the retry took, so the venue dedupes them.
+    # A wall-clock bucket alone would not: an order placed just before a bucket rolls has a
+    # sub-second retry window, after which the duplicate is placed -- and a duplicated leg on a
+    # delta-neutral book is an unhedged directional position.
+    _cycle = _pair_cycle(sym, spot_side, qty)
     with _safe():
         spot_res = spot.place_market(sym, spot_side, qty)
     with _safe():
-        fut_res = fut.place_market(sym, fut_side, qty, reduce_only=_reduce_only_leg)
+        fut_res = fut.place_market(sym, fut_side, qty, reduce_only=_reduce_only_leg,
+                                   cycle=_cycle)
     spot_ok, fut_ok = _filled(spot_res), _filled(fut_res)
     if not (spot_ok and fut_ok):
         with contextlib.suppress(Exception):

@@ -407,6 +407,63 @@ COROLLARY (2026-07-28): on PLATFORM archives (Quantopian, BigQuant, FMZ, Quantia
 INVERTS — there the era vocabulary is strategy names and author handles, so search the STRATEGY
 and follow the HANDLE across platforms.
 
+### OP-039 habr comments API — the full nested tree in one keyless call      [active]
+class: community-discovery / operator
+origin: RU frontier miner (2026-08-01)   validated-gain: on habr 911056 returned 66 comments to
+  depth 7 in one call; the three highest-value findings of the session were ALL at depth>=1 and
+  NONE were in the article body — incl. the cross-venue ticker-collision mechanism that a desk-side
+  probe then DEMONSTRATED against our own join code.
+technique: OP-003/OP-022's two-step shape, now runnable for RU. The library previously said only
+  "habr comments endpoint" as an OP-003 adaptation and never gave a URL, so it was unexecutable.
+  (1) DISCOVER: normal web/Yandex search for habr.com/ru/articles/<id>/
+  (2) MINE DEPTH — ONE keyless GET, no auth, no JS wall:
+      curl -H "User-Agent: Mozilla/5.0" https://habr.com/kek/v2/articles/<id>/comments/
+      -> {"comments": {"<id>": {"parentId":..., "level":<depth>, "score":..., "message":"<html>"}}}
+      `level` IS the depth, precomputed — no tree walk needed to satisfy the >=2 depth mandate.
+      Strip HTML, then rank by MECHANISM-KEYWORD DENSITY, never by `score`: on 911056 the single
+      most valuable comment (ticker collision + no-spot-short-on-MEXC + a 25-40 Mbit/s bandwidth
+      figure) had score=0, and the top-voted comment carried nothing.
+  NOTE the host is habr.com/kek/v2/ (not /api/), which is why it is not found by guessing.
+adaptations: RU=habr (verified 2026-08-01). Same two-step shape as HN Algolia (OP-022), Reddit
+  .json, Discourse /t/<id>.json, Zhihu answer API. CN/KR/JP equivalents already listed in OP-003.
+counterfactual: LOW — the endpoint is undocumented publicly and the depth+density ranking is the
+  part that actually surfaces the value; a reader of the article alone gets the debunking headline
+  and none of the four mechanisms.
+
+### OP-040 the venue that re-denominates in the TICKER vs in the CONTRACT SIZE   [active]
+class: verification / reconstruction
+origin: RU frontier miner (2026-08-01)   validated-gain: found 5 liquid perps (SHIB/PEPE/FLOKI/
+  BONK/SATS) that OKX lists and the desk's string join silently drops
+technique: before trusting ANY cross-venue symbol join, test the re-denomination convention, which
+  differs BY VENUE for the same underlying: Binance puts the multiplier in the TICKER
+  (`1000SHIBUSDT`), OKX puts it in the CONTRACT SIZE (`SHIB-USDT-SWAP`, ctVal=1,000,000 SHIB).
+  A `symbol[:-4]` style join therefore MISSES the asset entirely rather than mismatching it.
+  Probe: pull both venues' instrument lists, strip any leading numeric multiplier, and check the
+  stripped form as well as the literal one; compare ctVal/contractSize before declaring a match.
+adaptations: universal — any venue pair. Bybit/Binance mostly agree on the 1000 prefix; OKX does
+  not; Bitget/Gate/HTX conventions unverified and are the next probe.
+counterfactual: MED — a coverage gap is invisible by construction (the symbol just is not there),
+  so nothing surfaces it until someone counts the join's hit rate.
+
+## LEXICON — RU crypto-trading jargon (dark-forest search keys)
+_Seeded by the RU frontier miner 2026-08-01. Terms VERIFIED in situ (seen in a real RU thread this
+session) are marked [V]; terms carried in from the seat brief and NOT yet seen in the wild are
+marked [UNVERIFIED] and must be negative-controlled before budget is spent on them (OP-037)._
+
+| term | gloss | era | status | example query |
+|---|---|---|---|---|
+| перелив / переливать | "pouring over" — moving funds between venues to harvest a spread; the standard RU term for inter-exchange arb, and it does NOT translate as "arbitrage" | 2018- | [V] habr 911056/599551 | `перелив между биржами криптовалюта` |
+| стакан | order book (lit. "glass") — the RU word; `orderbook` returns EN content, `стакан` returns RU practitioner content | perennial | [V] habr 911056 comments | `стакан глубина ликвидность бот` |
+| щиткоин / щиток | shitcoin (transliterated + diminutive) | 2017- | [V] habr 911056 comments | `щиткоины арбитраж спред` |
+| люфтить (курсом) | "to have play/slack" (mechanical term) — a venue whose quote drifts loosely vs consensus; names the thin-venue divergence cohort exactly | 2020s | [V] habr 911056 comment | `биржи которые люфтят курсом` |
+| токсичные сделки | "toxic trades" — the VENUE's term for flow it bans; the binding constraint on retail cross-venue arb | 2020s | [V] habr 911056 comment | `бан за токсичные сделки биржа вывод` |
+| спалиться | "to get burned/spotted" — to be detected by the venue's surveillance | perennial | [V] habr 911056 comment | `как не спалиться арбитраж биржа` |
+| хомяк | "hamster" = retail bagholder (the RU equivalent of CN 韭菜) | 2017- | [UNVERIFIED] seat brief | `хомяки закупились памп` |
+| памп / слив | pump / dump-and-drain | perennial | [UNVERIFIED] seat brief | `памп слив схема телеграм` |
+| физлицо / физик | "natural person" — the P2P/tax-rail term for a retail individual counterparty | perennial | [UNVERIFIED] seat brief | `физлицо P2P лимиты банк` |
+| календарный арбитраж | calendar spread arb (near vs far future) — the dominant RU statarb form on MOEX | perennial | [V] smart-lab 707565 | `календарный арбитраж фьючерс проскальзывание` |
+| проскальзывание | slippage — the RU practitioner's named killer of statarb | perennial | [V] smart-lab 707565 | `статарбитраж проскальзывание не работает` |
+
 ## ARCHIVED
 (none yet)
 
@@ -481,6 +538,20 @@ marked ✓ were CONFIRMED IN USE this run (2026-07-26) against live CN pages/API
 | 梭哈 | suoha | all-in (from "show hand") | retail sentiment marker |
 | 合约党 | heyue dang | the perp-contract crowd | finds derivatives-retail cohort discussion |
 | 走势图 | zoushitu | trend chart | pairs with 历史 to find chart pages that have a data endpoint behind them |
+| 大饼 | dabing | "big pancake" = BTC. **Born after 2017-09-04** as WeChat keyword-filter evasion (see OP-036) | ✓✓ two independent sources on the origin; THE key for post-94 group/forum layer |
+| 二饼 / 姨太 | erbing / yitai | "second pancake" / "auntie" = ETH (both coexist) | ✓ GTokenTool, udn, cngold, jb51 |
+| 太子 / 末日战车 / 柚子 / 辣条 | taizi / moriz. / youzi / latiao | BCH / ETC / EOS / LTC | ✓ the coin-nickname euphemism class — finds text that never types the ticker |
+| 薄饼 | baobing | "thin pancake" = **PancakeSwap, NOT bitcoin** | ✗ TRAP: looks like 大饼's sibling, is a DEX. Do not treat as a BTC key |
+| 糖果 / 撸糖果 / 薅羊毛 | tangguo / lu tangguo / hao yangmao | airdrop / farming airdrops | ✓ finds the airdrop-aggregator layer (see venue finds) |
+| 空气币 / 山寨币 / 传销币 / 韭菜币 | kongqibi / shanzhaibi / chuanxiaobi / jiucaibi | air-coin / altcoin / Ponzi-coin / leek-coin | ✓ all four organic in live text; 韭菜币 is new to this table |
+| 狗庄 | gouzhuang | pejorative for 庄家, the manipulating operator | ✓ live 2025-09 usage (Gate square, Toutiao, Foresight) — **the term is 狗庄, never 狗商** |
+| 大鳄 | da'e | "big alligator" = the wealthy big player | ✓ People's Daily 2021 — **never 大鳄鱼** |
+| 小白 / 新韭菜 | xiaobai / xin jiucai | genuine newbie terms | ✓ — **never 新葱** |
+| 猴市 | houshi | "monkey market" = choppy/range-bound regime (vs 牛市/熊市) | ✓ a REGIME term — the CN key for range-vs-trend discussion |
+| 山寨季 / 山寨币季节 | shanzhai ji | altseason | ✓ — **never 牛季节** |
+| 插针 / 瀑布 / 阴跌 / 腰斩 | chazhen / pubu / yindie / yaozhan | wick / waterfall dump / grinding decline / halved | ✓ price-action lore keys |
+| 洗盘 / 控盘 / 诱多 / 诱空 / 砸盘 | xipan / kongpan / youduo / youkong / zapan | shakeout / float-control / bull trap / bear trap / dumping | ✓ **the manipulation-mechanics key set** — 控盘 (float control) is the mechanism-bearing one |
+| 套牢 / 踏空 / 割肉 / 装死 / 纸手 / 钻石手 | taolao / takong / gerou / zhuangsi / zhishou / zuanshishou | trapped / missed the rally / cut losses / play dead / paper hands / diamond hands | ✓ retail POSITIONING/sentiment keys |
 
 ### OP-033 legacy regional forums are NOT UTF-8 — decode before you judge     [active]
 class: extraction
@@ -552,6 +623,50 @@ CONFIRMED IN LIVE USE this run (search results + tracker-site names), not assume
 | 코인별 / 종목별 | coinbyeol / jongmokbyeol | "per-coin / per-ticker" qualifier | ✓ 코인별 김프 = per-asset premium — the exact key that surfaced 6 live per-coin trackers |
 | 재정거래 | jaejeong-georae | arbitrage (formal/textbook register) | finds analytical/academic KR content vs retail chatter |
 | 잡코인 | japkoin | "junk coins"/alts (retail register) | KR alt-frenzy threads — the dispersion axis's behavioral layer |
+| 유의종목 | yuui-jongmok | "investment-warning designation" — Upbit/Bithumb's formal caution label | ✓ CONFIRMED live in the venue API (`market_event.warning`); the KR delisting-risk event word |
+| 상장 / 신규 거래지원 | sangjang / singyu georaejiwon | listing. 상장 = retail register; **신규 거래지원 안내 = the exact phrase Upbit titles its listing notices** | ✓ CONFIRMED in 737 `category=trade` announcements — use the formal phrase to hit the venue archive, the slang to hit retail threads |
+| 거래지원 종료 | georaejiwon jongryo | "trading-support termination" = **delisting**, the venue's own euphemism | ✓ the KR delisting event key; 상장폐지/상폐 is the retail word for the same thing |
+| 상폐 | sangpye | delisting (retail contraction of 상장폐지) | retail panic threads around a 유의종목 designation |
+| 입출금 | ipchulgeum | deposit/withdrawal — the **rail-state** word | ✓ CONFIRMED as an Upbit announcement category; the barrier-height key |
+| 유의 촉구 | yuui chokgu | "caution URGED" — a softer tier BELOW formal designation | ✓ CONFIRMED in the Upbit archive; the early-warning tier most people miss |
+| 유의 종목 지정 기간 연장 | ...gigan yeonjang | designation period EXTENDED = the venue saying it is still unresolved | ✓ a distinct, informative event; modelling 유의종목 as binary discards it |
+| 원화 / 원화마켓 | wonhwa | "won" — **the EARLY register for what is now written KRW** | ✓ CONFIRMED: `원화 마켓 신규 상장` (18) + `원화마켓 신규 상장` (12, NO SPACE) + `원화 마켓 디지털 자산 추가` (7). Search BOTH spellings AND both spacings or you lose half the KRW-rail events |
+| 코인 추가 → 디지털 자산 추가 | ...chuga | "coin added" (2018 register) became "digital asset added" (2020+) | ✓ the same event renamed; an era-blind selector zero-hits 75 rows of it |
+
+### OP-035 platform archives change their MARKUP between eras — a selector validated on one era silently zero-hits another   [active]
+class: extraction
+origin: EN frontier miner session E (2026-08-01), mining the Quantopian OLMAR cluster
+validated-gain: OP-034's selectors were derived from LATE-2020 captures. Applied unchanged to the
+  SAME SITE's 2014 captures they returned **0 posts on a 79KB page that contains 7** — a silent
+  false negative that reads exactly like "this capture is empty/corrupt". Generalised selector
+  recovered 7/7, then 65 posts on the 2014 implementation thread and 40 on the 2019 comparison
+  thread first try.
+technique:
+  (1) NEVER anchor on the START of a class attribute. Quantopian 2020 emits
+      `class='post-container'`; Quantopian 2014 emits `class='container bg-white margin_15t
+      post-container'` — the SAME token, last instead of first. Match the token ANYWHERE:
+      `<div class=['\"][^'\"]*post-container[^'\"]*['\"]` (and accept both quote styles, OP-034 trap 3).
+  (2) FIELD NAMES DRIFT TOO, so resolve each field through an ERA-ORDERED FALLBACK CHAIN rather
+      than one name: body = `body-text-container` (2014) -> `response-text` (2020) -> `body-text`;
+      date = `quanto-date` (2014) -> `posted-at` (2020). Take the first that hits.
+  (3) DIAGNOSE ZERO-HITS BY CLASS CENSUS, never by eye: `grep -o "class=['\"][a-z0-9_ -]*['\"]"
+      FILE | sort | uniq -c | sort -rn | head -30` names the era's real selectors in one command.
+      This is the OP-030 negative-control discipline applied to EXTRACTION rather than to search.
+  (4) KNOW WHAT THE CAPTURE CANNOT CONTAIN: Quantopian's backtest stat tables (`top-level-stat` /
+      `stat-value` / `stat-label`) are AJAX-loaded, so every captured value is the placeholder
+      `--`. 21-77 stat fields per thread, ALL empty. **Published performance numbers survive in
+      that archive only as TEXT claims inside reply bodies, never as the platform's own computed
+      stats** — so an era performance claim there is unverifiable at source by construction, and
+      must be treated as a CLAIM (and is exactly why the era's own recomputations in the reply
+      chain, e.g. the margin catch, are the most valuable objects in the thread).
+adaptations: applies to ANY long-lived platform archive spanning a redesign — BigQuant, FMZ,
+  JoinQuant, Xueqiu, note.com, old vBulletin/Discourse boards. Before declaring a stratum thin,
+  re-run the class census on ONE page from THAT stratum. Pair with OP-034 (the Quantopian recipe)
+  and OP-033 (encoding) — the three are one family: **encoding, compression and MARKUP-ERA are
+  three independent layers at which a rich ground silently reads as empty.**
+counterfactual: HIGH. The 2014 stratum is the ORIGINAL OLMAR wave and contains the paper author's
+  own in-thread admission; a run that trusted the zero-hit would have concluded "the 2014 captures
+  are login-walled/empty" and closed the era's most load-bearing evidence on a selector artifact.
 
 ### OP-026a Fed/Man-family 403-bypass routes (amendment to the OP-026 ladder)   [active]
 class: source-expansion
@@ -569,3 +684,407 @@ validated-gain: 4 primary reads this run that would otherwise have been SUMMARY-
   that produced watchlist cards (23, 25) and one that landed the −58% decay prior numerically.
 propagation (§16): every digger adopts its own-domain equivalent — author self-archive pages and
   institutional medialibrary/mirror paths BEFORE grading any 403'd paper SUMMARY-ONLY.
+
+### OP-036 censorship-evasion slang has a BIRTH DATE — pick the key by ERA      [active]
+class: search / lexicon
+origin: CN frontier miner session 3 (2026-08-01), verifying the principal's unverified-slang block
+validated-gain: resolved 7/7 unverified terms and produced an era-dating rule that changes which
+  key is correct for which decade of archive. CONFIRMED by two independent CN sources, verbatim:
+  "最开始叫大饼的是比特天空的群，自从去年94事件之后，为防止敏感词语导致群被封，比特天空让大家把比特币称之为大饼"
+  — BTC came to be called 大饼 ("big pancake") specifically so WeChat groups would not be banned
+  for typing a filtered word, DATED to the 2017-09-04 "94" ban.
+technique: censorship-evasion vocabulary is not timeless slang — it is BORN at a regulatory event
+  and spreads afterwards. So the search key is a function of the ERA of the ground:
+  (1) searching POST-2017-09 CN group/forum text for 比特币 systematically under-recalls the exact
+      layer that matters, because that layer deliberately stopped typing it;
+  (2) searching PRE-2017-09 archives for 大饼 returns near-zero — the term did not exist yet, and
+      that zero is a FALSE NEGATIVE about the era, not evidence the ground is empty;
+  (3) therefore date the ground FIRST, then choose the key. For a ground spanning the event, run
+      BOTH keys and treat the union as the recall set.
+  The coin-nickname class is the highest-value instance because it is the layer that never types a
+  ticker: 大饼 BTC, 二饼/姨太 ETH, 太子 BCH, 末日战车 ETC, 柚子 EOS, 辣条 LTC. Trap: 薄饼 is
+  PancakeSwap, NOT bitcoin — a near-homograph of 大饼 that means something unrelated.
+adaptations (§16 — the mechanism is language-general, only the trigger event changes): KR — the
+  2017-12/2018-01 exchange crackdown and the real-name-account rule; RU — post-2022 sanctions
+  vocabulary; TR — post-2021 payment ban; any region whose community moved under legal pressure.
+  The standing question for every region seat: WHAT REGULATORY EVENT HIT THIS GROUND, AND WHAT DID
+  THE VOCABULARY DO ON THAT DATE? The diaspora mandate already asks where they went; this asks
+  what they started calling things when they got there.
+counterfactual: HIGH for era-archaeology. The desk's CN era ground (8btc/ChainNode/Tieba, 2011-2021)
+  straddles the 94 event, so a single-key search of it was guaranteed to half-miss regardless of
+  effort — and would have read as "the archive is thin" rather than "the key was wrong for the era".
+  Pairs permanently with OP-030 (a zero is a claim about your query) and OP-032 (search native first).
+
+### OP-037 negative-control a SUPPLIED glossary before spending budget on it     [active]
+class: search / instrument hygiene
+origin: CN frontier miner session 3 (2026-08-01)
+validated-gain: **0 of 7** supplied unverified terms survived contact with live sources — a 100%
+  noise rate on that block. Killed with the real form named in 6 cases: 牛季节→牛市/山寨季,
+  蜡烛猴→蜡烛图 (chart) or 猴市 (choppy regime, a real and useful term), 新葱→小白/新韭菜,
+  韭菜盒→not crypto at all (韭菜盒子 is a FOOD; the real adjacent term is 韭菜币), 狗商→狗庄,
+  大鳄鱼→大鳄. "Kuisancle" is not pinyin and stayed unresolvable (亏损 kuisun = loss is the
+  probable intent, but it is standard financial vocabulary, so it carries no search-key value).
+technique: a glossary handed to a seat — by a principal, an LLM, a blog, a "top 50 terms" post — is
+  a LEAD LIST, never a fact list, and it must be negative-controlled BEFORE any budget is spent
+  querying it. Method: (a) run a VERIFIED term first as a positive control on your own search
+  method, so a later zero is attributable to the term and not to the pipeline; (b) query each
+  candidate quoted, in a native-language context; (c) on a zero, hunt the NEAREST REAL FORM rather
+  than just deleting the row — that is where the value is, since a garbled term usually orbits a
+  real one; (d) record kills permanently so the same bad row is never re-queried by the next run.
+  WHY THIS IS NOT PEDANTRY: querying invented slang does not merely waste the query. It returns a
+  clean zero, and a clean zero on a native term reads as "this ground has no coverage" — so bad
+  vocabulary makes a RICH ground look picked clean, and the seat rationally deprioritises it
+  forever. A wrong glossary is therefore worse than no glossary: it manufactures false exhaustion.
+adaptations: every region seat, and every future principal-supplied or LLM-generated list of any
+  kind (venues, endpoints, repos, forums) — same discipline: positive control, quote the query,
+  hunt the near form, record the kill. Pair with OP-030 and OP-027.
+counterfactual: HIGH — the block shipped in this seat's own prompt with an explicit warning that it
+  might be invented, so every CN run until now either spent budget on noise or skipped the terms
+  and left the instrument un-repaired. This closes it permanently for the whole fleet.
+
+### OP-038 a JS anti-bot wall on the HTML is not a wall on the API      [active]
+class: extraction / repo-discovery
+origin: CN frontier miner session 3 (2026-08-01), first real session on the Gitee chain
+validated-gain: unblocked a ground CARRIED AND NEVER STARTED across 3 prior sessions. Gitee HTML is
+  behind a JS shim (`nox_*.js`): WebFetch returns **HTTP 405**, plain curl returns an empty `<body>`,
+  and the API *search* endpoint returns `[]` without a token — four separate signals that all read
+  as "this ground is walled". It is not. Three keyless routes work and carried the whole session.
+technique: when a site's HTML is bot-walled, do NOT record the GROUND as walled — test its API and
+  raw-content routes separately, because they are usually governed by different infrastructure.
+  For Gitee specifically (copy-runnable):
+    gitee.com/api/v5/repos/{owner}/{repo}                              -> metadata incl. LICENCE + fork parent
+    gitee.com/api/v5/repos/{owner}/{repo}/git/trees/{branch}?recursive=1 -> full file tree
+    gitee.com/{owner}/{repo}/raw/{branch}/{path}   (curl -sL; 302s without -L) -> raw source text
+  Discovery pattern that composes with it: find repos via a SEARCH ENGINE (they index Gitee fine),
+  then READ them via the API — i.e. split discovery and retrieval across two different systems
+  rather than abandoning the ground when one of them refuses.
+  NOTE the boundary this does NOT cross (§13): this uses the platform's own public, documented,
+  unauthenticated API. It is not defeating an access control and it never touches a closed group —
+  a login wall, a paid wall or a private repo remains a HARD STOP. Discovery widens WHERE you look,
+  never HOW you get in.
+adaptations: universal. Any bot-walled host — check `/api/`, `/raw/`, `?format=json`, an RSS/Atom
+  feed, a sitemap, or the mobile endpoint before grading it WALLED. KR/JP/RU/CN portals commonly
+  serve clean JSON behind a JS-rendered front. Pair with OP-030 (a zero is a claim about your
+  method) and the §9 rule that a negative result is about the ROUTE, never the CAPABILITY.
+counterfactual: HIGH — this ground had been deferred three sessions running and would plausibly have
+  been graded "Gitee is walled from this VPS", which is exactly the false-exhaustion class OP-037
+  describes, arrived at by a different door.
+
+### OP-041 read robots.txt BEFORE you dig — the ground list is not an authorisation   [active]
+class: legitimacy / ground-selection
+origin: KR frontier miner session 1 (2026-08-01), first run on the KR ground
+validated-gain: **three of the five grounds named in that seat's own brief refuse this agent family
+  by name**, and nobody had ever checked. `cafe.naver.com` is `Disallow: /` to everyone plus a prose
+  header forbidding RAG use; `blog.naver.com` names `ClaudeBot` and `Claude-SearchBot`;
+  `gall.dcinside.com` names `ClaudeBot`, `anthropic-ai` and `Claude-Web` under the header
+  `# ----- AI 학습 크롤러 차단 -----`. In the same pass it **REVERSED** the desk's standing guess in
+  the other direction: `coinpan.com`, which `data_axis_watchlist.md` had excluded as "ToS-grey",
+  denies only `/inquiry/`. Cost: five `curl` calls, under a minute.
+technique: `curl -s https://HOST/robots.txt` on every ground **before** spending a query on it, and
+  read THREE things, not one:
+    (a) the `User-agent: *` block — what a generic collector may do;
+    (b) **any block naming an AI/LLM crawler** (`ClaudeBot`, `Claude-Web`, `Claude-SearchBot`,
+        `anthropic-ai`, `GPTBot`, `OAI-SearchBot`, `PerplexityBot`, `Google-Extended`, `CCBot`,
+        `Bytespider`, `cohere-ai`, `meta-externalagent`) — this is the one aimed at YOU;
+    (c) prose comment headers, which increasingly carry the operator's stated intent in plain
+        language and are not machine-readable at all.
+  **THE RULE THAT MATTERS: a permissive `User-agent: *` is NOT a loophole around a block that names
+  your family.** Choosing a different UA to slip past a directive aimed at you by name is precisely
+  the "routing around a venue's own access control" that §13 forbids. Where the two sections
+  disagree, that gap is a PRINCIPAL DECISION, not something a miner grants itself in either
+  direction — record the ambiguity rather than inventing a verdict.
+adaptations: universal, and the AI-crawler block is spreading fastest through **consumer-web
+  portals** (KR: Naver, DCInside; JP: Yahoo/note; CN: Zhihu/Weibo) while **developer and venue
+  infrastructure stays wide open** (velog.io has zero rules; bithumb.com has no `Disallow` at all;
+  exchange APIs are unrestricted). Expect the community layer to close and the API layer to stay
+  open — and aim the seat accordingly instead of reporting the ground as thin.
+counterfactual: HIGH and BIDIRECTIONAL — without it this seat would have scraped three grounds it is
+  named-blocked from, and would have gone on skipping the one KR forum that is actually clean.
+
+### OP-042 a venue's own state flags are a free proprietary axis — and the biggest flag is the artifact   [active]
+class: data-axis discovery
+origin: KR frontier miner session 1 (2026-08-01)
+validated-gain: `api.upbit.com/v1/market/all?isDetails=true` publishes, keylessly and per asset, the
+  venue's own `warning` designation plus `caution{PRICE_FLUCTUATIONS, TRADING_VOLUME_SOARING,
+  DEPOSIT_AMOUNT_SOARING, GLOBAL_PRICE_DIFFERENCES, CONCENTRATION_OF_SMALL_ACCOUNTS}`.
+  `CONCENTRATION_OF_SMALL_ACCOUNTS` is a **retail-crowding measure computed from the venue's
+  internal account-level book** — structurally unbuyable from any vendor. Bithumb publishes the
+  same warning field plus `public/assetsstatus/ALL`, a per-asset deposit/withdrawal open-closed
+  state = **an independent measure of barrier height**.
+technique: on every venue, ask what STATE it publishes about its own market, not just prices —
+  `isDetails=true`, `assetsstatus`, `system_status`, announcement categories, risk/caution labels.
+  Then run the two checks that decide whether it is worth anything:
+    1. **DOES IT FIRE?** A flag that is always false or always true carries zero information
+       (L1.43). Measure the base rate before believing anything about it.
+    2. **SPLIT BY QUOTE CURRENCY BEFORE READING ANY RATE.** `GLOBAL_PRICE_DIFFERENCES` fires on
+       **175/803 (22%)** of all Upbit markets and on **1/277 (0.4%)** of KRW markets. The 22% is
+       thin USDT/BTC-book illiquidity, not a fiat premium. **The biggest number on the page was the
+       artifact**, and only the split catches it.
+  And check for a history endpoint: these are **SNAPSHOT-ONLY**, so the series can only ever begin
+  the day you start recording (L1.46) — which makes starting cheap and starting late irreversible.
+adaptations: universal. Every venue with a retail-protection or risk-labelling regime publishes
+  something like this (KR 유의종목; JP JVCEA designations; EU MiCA disclosures). Regulated retail
+  venues are the richest ground because the labels are compliance obligations, so they are
+  published on a schedule and cannot quietly stop.
+counterfactual: HIGH — this seat's assigned community ground was 100% closed, and this is the axis
+  that replaced it. Found only by asking a venue API what it publishes BESIDES prices.
+
+### OP-038 REFINEMENT (KR frontier miner, 2026-08-01): the wall can be at the CDN EDGE
+OP-038 says a JS wall on the HTML is not a wall on the API, and it is right — but it has a boundary
+that cost this run its only clean KR forum. **`coinpan.com` returns Cloudflare's `Just a moment...`
+interstitial on `/`, `/free`, `/rss` AND `/index.php?mid=X&act=rss` alike — HTTP 403 on every
+content route, with only `/sitemap.xml` serving.** When the challenge sits at the CDN edge rather
+than in the page renderer, the API and feed routes are behind the SAME wall and OP-038's split does
+not apply. **Diagnostic:** if the JSON/RSS route returns the same interstitial HTML as the page,
+the wall is at the edge — stop, and grade the venue WALLED. Solving the challenge is defeating an
+access control (§13 HARD STOP), and it stays walled no matter how good the scraper gets.
+
+### OP-035 EXTENSION (KR frontier miner, 2026-08-01): the CONVENTION changes, not just the markup
+OP-035 warns that a selector validated on one era zero-hits another because the **markup** changed.
+The same failure arrives through **the source's own vocabulary**, and it is harder to see because
+nothing errors — you simply get a smaller number and believe it. **Measured on Upbit's own
+announcement archive: 332/680 rows (49%) fell through a selector fitted on modern titles.** In eight
+years the venue renamed its event classes at least five times — `코인 추가` → `디지털 자산 추가`,
+`원화 마켓` → `KRW 마켓`, `상장` → `신규 거래지원` — **and shipped a whitespace variant of its own
+term** (`원화 마켓` vs `원화마켓`). The pure rail-access event class was **43 by modern keys and
+~83+ in truth**.
+**TECHNIQUE — do this before trusting any count off an archive you did not write:**
+  1. Bucket rows **per year** and check the per-class count against total volume. A class that
+     starts abruptly mid-archive (`신규 거래지원`: zero before 2024-04-23) is a **rename**, never a
+     behaviour change — the events did not begin then, the words did.
+  2. **Strip parentheticals and symbols, then histogram the title TAILS** (`title[-28:]`). Recurring
+     stems fall out immediately and hand you the era forms you never guessed.
+  3. Report **UNCLASSIFIED as a first-class number.** A classifier that silently drops half the
+     archive looks exactly like a classifier that works.
+  4. Search the OLD register AND the new one AND their spacing variants — non-segmenting scripts
+     (KR/JP/CN) make whitespace optional, so one term is genuinely two search keys.
+**Why this matters beyond hygiene:** an era-fitted selector biases coverage toward the RECENT era,
+which is the crowded one. The dark-forest premium is in the old era, and this defect silently
+deletes it while the run still reports a healthy count.
+
+---
+
+### OP-043 diagnose a block by varying ONE thing against the SAME edge IP   [active]
+_Added by JP frontier miner, session 1, 2026-08-01._
+
+**Problem it solves.** A digger hits a host, gets nothing, and writes "our IP is blocked" or
+"WAF 403" in the card. That verdict then propagates as fact, downgrades the source, and — worst
+case — creates a *human dependency* ("someone please open this page for us"). It is usually a guess,
+because the probe varied nothing.
+
+**The operator.** Before recording ANY block verdict, run the 2x2 against the same target:
+1. **Sibling hostname** on the same service (`api.`, `docs.`, `lightning.`, `public.`, `static.`)
+2. **IP family** (`curl -4` vs `-6`) — and **record `%{remote_ip}`**, always
+3. **HTTP version** (`--http1.1` vs h2)
+4. **Exact failure shape**: `curl -sv` and read whether it is a status code, a TLS failure, a
+   silent hang (`code=000`), or a stream error. **A tarpit and a 403 are different findings.**
+
+**Worked instance, and it overturned a standing card.** `bitflyer.com/ja-jp/terms` was recorded as
+"403, WAF-blocked, cannot be defeated, needs a human". Actual: TLS completes, cert verifies,
+HTTP/2 stream opens, then `INTERNAL_ERROR (err 2)`; on HTTP/1.1 and on IPv4 it **hangs to timeout**
+(`code=000`) — an Akamai tarpit, never a 403. And **`api.bitflyer.com` + `lightning.bitflyer.com`
+both return 200 from the identical edge IP `2a02:26f0:e80:588::2644` that tarpits the apex.** Same
+node, same TLS, different `Host` header. So the policy was **per-hostname on the marketing/legal
+site**; the API and docs hosts were open the whole time.
+
+**Why it matters beyond one card.** "Our IP is banned" and "this one hostname is bot-managed" imply
+opposite next moves: the first says give up or buy a proxy, the second says *use another hostname*.
+Getting it wrong bought a 4-session deferral and a paid-proxy argument that was never needed.
+Same family as OP-038 (a JS wall on the HTML is not a wall on the API) one layer down the stack.
+
+**Per-region adaptation.** CN/KR/JP venues commonly bot-manage the *retail marketing* domain hard
+while leaving `api.*` / `public.*` wide open, because the API host must serve their own trading
+clients. Always try the API host before declaring a venue unreachable.
+
+---
+
+### OP-044 a negative CDX result is a statement about your QUERY, not about the archive   [active]
+_Added by JP frontier miner, session 1, 2026-08-01._
+
+**Problem it solves.** "Wayback has nothing" is one of the cheapest false negatives in the digger's
+repertoire, and it is almost always a wrong *query*, not an empty archive. It reads as thorough
+because a CDX call was genuinely made.
+
+**The operator.** Before concluding a page was never archived, vary — in this order:
+1. **HOST, including the pre-migration domain.** Companies migrate ccTLD → .com and Wayback keys on
+   the host that existed *then*. Check the old domain even if it no longer resolves today.
+2. **SLUG.** `terms` / `terms-of-use` / `tos` / `agreement` / `kiyaku` / `規約` / `legal` / `policy`
+   are not interchangeable and CDX prefix-matching will not bridge them.
+3. **Drop to `matchType=domain`** and grep the whole key list, rather than guessing paths.
+4. **Locale segment**: `/ja-jp/`, `/en-jp/`, `/en-eu/`, `/en-us/`, bare.
+
+**Worked instance.** A card recorded: "CDX domain queries for `bitflyer.com/{en-jp,ja-jp}/*` return
+no terms captures — bitFlyer's JS app was never usefully archived", and deferred the item on it.
+The pre-migration host is **`bitflyer.jp`** and the slug is **`terms-of-use`**, not `terms`. The
+corrected query returned `https://bitflyer.jp/en-eu/terms-of-use` (2019-06-01, **200**) plus
+`bitflyer.jp/pub/terms-comparison-table-201711-ja.pdf` on the first try — and that capture contained
+the exact IP clause the desk had been deferring on for four sessions.
+
+**Bonus that falls out of step 3.** The full-domain key dump is itself a find: the same sweep
+surfaced `bitflyer.jp/api/chart/btc_jpy?start=&end=`, an **undocumented keyless price endpoint, dead
+on the live site, captured 200 from 2015**. You cannot discover an endpoint you never listed —
+so run the domain dump even when you are hunting something else.
+
+---
+
+### OP-045 `success: 1` is not `data: real` — structural-zero test before trusting pre-launch history   [active]
+_Added by JP frontier miner, session 1, 2026-08-01._
+
+**Problem it solves.** A venue endpoint that answers `success:1` with well-formed, *moving* OHLC for
+dates **before the venue existed**. Nothing in the response says so. A collector ingests it, a
+backtest trades it, and the phantom era silently sets the in-sample regime.
+
+**The operator.** For every historical series, before ingesting: pull the **earliest** window and
+count rows where a *liquidity* column (volume, trade count, notional) is **exactly zero**. If there
+is a contiguous leading block of structural zeros, the venue is serving a **reference/index series**,
+not its own tape. Find the first non-zero bar and treat that as the true start — never the API's.
+Cross-check against the venue's publicly-known launch date.
+
+**Worked instance.** `public.bitbank.cc/btc_jpy/candlestick/1day/{YYYY}` returns
+`success:1` for **2014, 2015 and 2016** — 362, ~365 and 363 daily bars, OHLC populated and moving
+(`79324, 79546, 78476, 79516`). **Volume is `0.0000` on every single one of those bars.** First
+non-zero volume is `1487030400000` = **2017-02-14**, bitbank's actual BTC/JPY launch. So the
+endpoint hands you **~1,100 untradeable phantom bars** with a success flag on top.
+The price path is *not* flat, so no eyeball sanity-check catches it — only the volume column does.
+
+**Generalises past candles.** Any series where the venue backfills from a third-party index:
+funding rates before the perp launched, open interest before the product listed, "since inception"
+marks on a relisted ticker. **The tell is always a liquidity column that is structurally zero while
+a price column moves.**
+
+---
+
+### OP-041 REFINEMENT (JP frontier miner, 2026-08-01): the ClaudeBot block is CLOUDFLARE-MANAGED, so treat it as a PLATFORM rollout, not a site decision
+
+OP-041 (read robots.txt before you dig) fired again on a second region in two days: **5ch.net and
+every sister host (`itest.`, `egg.`, `kizuna.`) carry `User-agent: ClaudeBot` → `Disallow: /`.**
+Two refinements the fleet should carry:
+
+1. **READ THE DELIMITERS.** The 5ch block sits inside
+   `# BEGIN Cloudflare Managed content` … `# END Cloudflare Managed Content`, emitting a *standard*
+   AI-crawler list (`ClaudeBot`, `GPTBot`, `CCBot`, `Google-Extended`, `Applebot-Extended`,
+   `Bytespider`, `meta-externalagent`, `CloudflareBrowserRenderingCrawler`). This is **not a
+   judgement 5ch made about us** — it is a toggle in a CDN dashboard. So the correct prior is no
+   longer "some sites block us" but **"any Cloudflare-fronted community site is likely to refuse
+   this agent by name"**, and the robots check is therefore *cheapest first, per ground*.
+   Corollary: this list will keep growing as the feature rolls out. A ground that was clean last
+   month is not known-clean today — **re-check on entry, do not cache the verdict**.
+2. **A PERMISSIVE `User-agent: *` IS NOT A PERMISSION.** The same 5ch file grants
+   `Content-Signal: search=yes, ai-train=no, use=reference` and `Allow: /` to `*`, which read alone
+   would have produced a clean "reference use is fine" verdict. The **named-agent `Disallow: /`
+   overrides it.** The KR seat warned of exactly this loophole on 2026-08-01; this is the
+   independent second-region confirmation. Always grep the file for the agent BY NAME before
+   reading the generic block.
+
+### OP-046 stdlib-only .xls (OLE2 + BIFF8) extraction — the xlrd blocker is false   [active]
+class: verification / extraction
+origin: BR frontier miner session 1 (2026-08-01), on the Receita Federal crypto open-data file
+validated-gain: the desk's box has **no xlrd, no openpyxl, no olefile** and installs are frozen, so
+  `pandas.read_excel` cannot open a `.xls` at all. That would have reduced a **576 KB national
+  mandatory-reporting dataset** (77 months × 4 report tables + a 4,206-row per-asset panel) to a
+  screenshot-grade citation. Written from the format specs in ~200 lines of pure stdlib (`struct`
+  only) and it read every sheet correctly on the first validated pass.
+technique: exactly the OP-025 premise one format across — do NOT conclude "this box cannot read
+  `.xls`" from a missing library. A legacy `.xls` is two documented layers and both are byte-level:
+    (1) **OLE2 / Compound File**: header at 0x1E→sector shift, 0x2C→#FAT sectors, 0x30→dir start,
+        0x3C→miniFAT, 0x44/0x48→DIFAT. Sector *n* lives at `(n+1)*sectorsize`. Walk DIFAT→FAT→chain.
+        Directory entries are 128 B (UTF-16LE name, type at 0x42, start 0x74, size 0x78).
+        **Streams < 4096 B live in the miniFAT inside the root entry's stream** — miss that and small
+        sheets vanish silently.
+    (2) **BIFF8 records** in the `Workbook` stream: `<HH>` opcode+length, then walk. Cells:
+        `0x00FD` LABELSST (index into SST), `0x0203` NUMBER (f64), `0x027E` RK, `0x00BD` MULRK,
+        `0x0204` LABEL. `0x0085` BOUNDSHEET names each sheet. **RK decoding**: bit0 ⇒ ÷100,
+        bit1 ⇒ signed int `v>>2`, else the top 30 bits are the HIGH half of an IEEE double
+        (`(v & 0xFFFFFFFC) << 32`).
+  **THE TWO BUGS THAT PRODUCE PLAUSIBLE-BUT-WRONG OUTPUT, both hit live in this run:**
+  **(a) SHEET COLLISION.** Keying cells on `(row, col)` merges every sheet into one grid. It does not
+  crash and it does not look wrong — it produced a row reading `CRIPTOATIVO | MÊS/ANO | ... | 899.79
+  | 990.46`, a header spliced onto another report's numbers. **Cells carry no sheet id; the only
+  attribution is the record's absolute stream OFFSET compared against the BOUNDSHEET positions.**
+  **(b) SST CONTINUE BOUNDARIES.** The shared-string table spans `0x003C` CONTINUE records and **the
+  1-byte compressed/wide flag REPEATS at every continuation boundary, mid-string**. Ignore it and
+  strings silently become mojibake from the boundary onward.
+  **THEN VALIDATE WITH OP-024 BEFORE TRUSTING ANY NUMBER** — see the counterfactual.
+adaptations: universal and language-independent (byte-level). Government, regulator, central-bank and
+  exchange publications are **disproportionately legacy `.xls`** precisely because they are old
+  institutional pipelines — which is the same reason they are under-mined. Same move applies to `.doc`
+  (OLE2 + WordDocument stream) and `.ppt`. `.xlsx` needs none of this: it is a zip of XML.
+counterfactual: HIGH, and the **validation** is the transferable half. Rather than diff the PDF twin
+  (whose text layer is CID-encoded and would have needed its own unvalidated extractor), the file's
+  own **arithmetic identities** were used: PF+PJ=Subtotal and Subtotal₁+Subtotal₂+Domestic=TotalGeral
+  across **78 monthly rows → 0 violations, worst residual exactly 0.00e+00**. That is a far stronger
+  proof than text agreement, because it spans three independent column groups **and both RK- and
+  NUMBER-encoded cells**, so a decoder bug in either could not cancel. **Pair every hand-rolled
+  binary extractor with a conservation law from inside the data (OP-024); an extractor validated only
+  by "it looks right" is a phantom-evidence factory (OP-025's own warning).**
+
+### OP-047 a dated-filename publication series is a FREE POINT-IN-TIME PANEL — and its latest file is a look-ahead trap   [active]
+class: data-axis discovery / leak-prevention
+origin: BR frontier miner session 1 (2026-08-01), Receita Federal `criptoativos_dados_abertos_<date>`
+validated-gain: **measured, not argued.** Three vintages of the same series were parsed and diffed:
+  **39 of 42** common months changed within **3 months**; **42 of 42** changed by the latest vintage;
+  worst **Março-2023 R$15,828mn → R$22,308mn (+40.9%)**; and a month **2.4 years old** at first
+  publication still moved (+2.5% value, **+13.9% unique-taxpayer count**). Revisions are
+  **systematically upward** — late and amended filings accrue for years.
+technique: whenever an institution republishes a whole dataset under a **dated filename or URL**
+  (`..._20260415.xls`, `report_2024Q3.pdf`, `data_v7.csv`), you are not looking at one dataset. You
+  are looking at a **stack of vintages**, and:
+    1. **THE CURRENT FILE IS THE LEAKY ONE.** Its historical rows carry information that did not
+       exist on those dates. Backtesting it embeds a look-ahead **in the conditioning variable** —
+       the R0289 class (a value whose as-of date ≠ its event date), which fails toward a **false
+       result** and is invisible to every return-series leak check, because the RETURNS are spotless.
+    2. **THE FIX IS FREE.** Enumerate the vintages (Wayback CDX + the live directory), download each,
+       and key every observation by `(reference_month, vintage_date)`. You now hold what was
+       *actually knowable* on each date — the thing vendors charge for and mostly do not have.
+    3. **RECOVER DEAD VINTAGES WITH THE RAW-REPLAY MODIFIER.** Publishers delete old files: 2 of 4
+       tried were **404 on the live server**. `https://web.archive.org/web/<timestamp>id_/<url>`
+       returns the **unrewritten original bytes** — verified here recovering a 282,624 B `.xls` with
+       an intact `d0cf11e0` OLE2 magic. Without `id_`, Wayback injects its banner and corrupts binaries.
+    4. **THE REVISION IS ITSELF A SERIES** — `revision(t, v)` measures reporting completeness and lag,
+       and is a candidate axis in its own right, not just a hazard to neutralise.
+  **AND THE COST OF NOT DOING IT IS ASYMMETRIC:** a revised-data backtest overstates, so it produces
+  FALSE POSITIVES that survive to a forward clock and waste a Holm slot.
+adaptations: universal, and richest where reporting is **compelled and late-arriving** — tax
+  authorities, central banks, regulators, statistical offices, exchange volume reports, on-chain
+  indexers that reorg. Macro desks call this a real-time/vintage database (ALFRED, OECD); crypto has
+  essentially none, so building one from a government file series is a genuine asymmetry (L1.11a).
+counterfactual: HIGH. The axis reads as an ordinary monthly macro series; only diffing two vintages
+  reveals that **every single historical value is wrong by construction** in the obvious build.
+
+### OP-035 EXTENSION (BR frontier miner, 2026-08-01): the SCHEMA changes between eras, not just the markup — and column ORDER is the silent one
+OP-035 (a selector validated on one era zero-hits another) and its KR extension (the *convention*
+changes) both describe failures that **produce nothing**, so you notice. The BR instance is the
+dangerous inversion: **it produces a full, plausible, wrong series.** Across vintages of one
+government file the following all moved:
+| What changed | 2022 vintage | 2026 vintage | Failure if unhandled |
+|---|---|---|---|
+| **Column ORDER** | `MÊS/ANO \| CNPJ \| CPF` | `MÊS/ANO \| CPF \| CNPJ` | **~80× error** — CNPJ ≈2k read as CPF ≈160k, still a plausible count |
+| Row offset of first data row | 10 | 8 | header parsed as data, or 2 months dropped |
+| Number encoding | **text** `160.589` (BR thousands sep `.`) | native numeric | `float("160.589")` = **160.589**, not 160,589 — a **1000× silent error** |
+| Column label | `Exchanges / Somente PJ` | `Exchanges no Brasil*` | label-matching parser zero-hits |
+| Filename date code | `DDMMYYYY` (`07082023`) | **`YYYYMMDD`** (`20260415`) | enumerator silently misses a whole era |
+**THE RULE: parse by HEADER SEMANTICS per vintage, never by cell address — and re-derive the header
+for every vintage rather than once.** A fixed-offset reader over a multi-vintage series is not a
+scraper, it is a random number generator with good manners. **The `160.589` case is the one to fear:
+locale-dependent decimal separators mean a wrong-but-parseable float, and no exception is ever raised.**
+
+### OP-041 CORRECTION (BR frontier miner, 2026-08-01): the AI-crawler block is REGIONAL, not global — do not carry a region's verdict forward as a prior
+OP-041 fired on two consecutive first-run seats (KR: 3 of 5 grounds named-blocked; JP: 5ch + all
+sister hosts), and its adaptation note generalised that to *"expect the community layer to close and
+the API layer to stay open."* **A third region falsifies the general form.** An 18-host full-file
+sweep of the BR ground (bastter, InfoMoney, MQL5, Investing BR, bitcointalk, YouTube, Telegram,
+SmarttBot, Nelogica, Clear, B3, BCB, gov.br, Mercado Bitcoin) found **zero blocks naming any AI
+crawler**. The KR/JP result is a property of **those regions' consumer-web portals** (Naver,
+DCInside, 5ch behind Cloudflare's managed list), **not a platform-wide rollout**.
+**THE OPERATIVE CORRECTION:** run the sweep **per region, every time**, and treat a prior region's
+verdict as **zero evidence** about the next. Carrying "the community layer is closed" forward would
+have made this seat abandon an open ground and report it as thin — the exact failure L1.25a names
+(a statement about your attention dressed as a statement about the world).
+**AND THE INVERSION WORTH KNOWING:** BR's only hard stop is **`reddit.com` (`User-agent: *` →
+`Disallow: /`)**, a **global platform** decision that happens to bite regions whose retail community
+lives on Reddit. So the axis that predicts a block is **platform**, not **geography** — sweep the
+hosts, never the country.
+**PROCEDURAL NOTE, learned by nearly getting it wrong:** grep the **whole** robots.txt, not a
+truncated head. My first pass cut at 1,200 bytes; GitHub's and MQL5's files are longer than that and
+a by-name block further down would have been invisible. A truncated read that finds nothing is
+**not** a clean verdict.

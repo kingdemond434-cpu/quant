@@ -65,11 +65,26 @@ _FAMILY: dict[str, tuple[str, float, str]] = {
                          "information-class probes (weekly)"),
     "kimi_hunter": ("data/kimi_hunt.json", 12,
                     "mechanism hunting by an INDEPENDENT model family (8x/day)"),
-    "hunt_coverage": ("data/hunt_coverage.json", 24 * 8,
-                      "which regions of the hunt space have been covered"),
     "deep_sweep_meta": ("docs/research/deep_sweep", 24 * 8,
                         "the meta-and-blindspots audit seat (weekly 9-seat sweep)"),
 }
+
+
+# SECONDARY ARTIFACTS ARE NOT ORGANS, and the classification lives in ONE place. run_organ_er
+# already records that hunt_coverage.json is written by kimi_hunter and by nothing else; this
+# fence used to carry its own copy that said otherwise, so the same file read as a DARK ORGAN here
+# and as "not an organ" there. Importing the map means a future reclassification lands in both
+# fences or in neither -- the duplicate-registry failure this desk has now paid for twice.
+try:
+    import importlib.util as _u
+    _spec = _u.spec_from_file_location("_oer", str(Path(__file__).resolve().parent / "run_organ_er.py"))
+    _m = _u.module_from_spec(_spec)
+    _spec.loader.exec_module(_m)
+    _secondary = getattr(_m, "_SECONDARY", {})
+except Exception:
+    _secondary = {}      # organ ER unreadable: fall back to the local map rather than dying
+for _k in _secondary:    # NOT inside the try -- a wrong name here must raise, not vanish
+    _FAMILY.pop(_k, None)
 
 
 def _age_hours(p: Path, now: datetime) -> float | None:

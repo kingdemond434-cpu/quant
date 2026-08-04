@@ -88,10 +88,33 @@ def test_unmeasured_does_not_silently_block_a_candidate():
     assert a.survived == b.survived
 
 
+#: An unmeasured gate is only legitimate if a caller could HAVE supplied its input. The point of
+#: the list is that "unmeasured" cannot become a dumping ground for gates nobody intends to feed:
+#: each name here maps to a real, nameable argument of validate().
+_SUPPLIABLE_UNMEASURED = {
+    "sample_adequacy": "n_trades",
+    "beats_baselines": "benchmark_returns",
+    # R0080: adv_usd defaulted to 1.0e11, so this gate was always "measured" -- from a fiction.
+    # No production caller passed it, and the same strategy scores $114,947 of capacity on a real
+    # $50m ADV against $229,894,902 on that default: a 2,000x difference, and the larger number is
+    # the one every stored candidate carries. Unmeasured-and-said-so beats confidently wrong.
+    "capacity": "adv_usd",
+}
+
+
 def test_every_unmeasured_name_is_a_gate_someone_could_actually_supply():
+    import inspect
+
+    from libs.autodiscovery.validation import validate as _validate
+    params = inspect.signature(_validate).parameters
     v = _run(_cohort())
     for name in v.unmeasured:
-        assert name in ("sample_adequacy", "beats_baselines"), f"unknown unmeasured gate {name}"
+        assert name in _SUPPLIABLE_UNMEASURED, f"unknown unmeasured gate {name}"
+        # Stronger than membership: the input really is an argument of validate(). A hardcoded
+        # allow-list can drift into blessing a gate whose input no caller can actually provide.
+        assert _SUPPLIABLE_UNMEASURED[name] in params, (
+            f"{name} is listed as suppliable via {_SUPPLIABLE_UNMEASURED[name]}, "
+            "but validate() has no such parameter")
 
 
 # ------------------------------------------------------------- the walk-forward IS statistics

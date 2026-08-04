@@ -21,11 +21,18 @@ import numpy as np
 import pandas as pd
 
 from libs.autodiscovery.models import Family, Hypothesis
-from libs.autodiscovery.validation import campaign_gate_stats, validate
+from libs.autodiscovery.validation import (
+    blocking_constant_gates,
+    campaign_pbo_rc,
+    counterfactual_survivors,
+    gate_discrimination,
+    validate,
+)
 from libs.data.crypto_source import list_liquid_perps
 from libs.data.instruments import AssetClass, InstrumentSpec, register_instrument
 from libs.data.lake import Layer, ParquetLake
 from libs.data.timeframe import Timeframe
+from libs.data.universe import RESEARCH_TOP_N
 from libs.research.crossasset import trend_basket_returns, xsec_momentum_returns
 from libs.research.crypto_sleeves import (
     basis_carry_returns,
@@ -34,7 +41,6 @@ from libs.research.crypto_sleeves import (
     xsec_lowvol_returns,
 )
 from libs.research.crypto_xsec import adv_tier_cost, xsec_funding_returns
-from libs.research.pre_filter import pre_filter
 from libs.validation.dsr import sharpe_ratio
 from libs.validation.economic_prior import MechanismType
 
@@ -55,7 +61,7 @@ _PENDING = [
 def _panels() -> tuple[pd.DataFrame, ...]:
     lake = ParquetLake("data/lake")
     closes, funding, basis, taker, adv = {}, {}, {}, {}, {}
-    for s in list_liquid_perps(top_n=120):
+    for s in list_liquid_perps(top_n=RESEARCH_TOP_N):
         if not (_CRYPTO / s / Timeframe.D1.value).exists():
             continue
         register_instrument(InstrumentSpec(symbol=s, asset_class=AssetClass.CRYPTO, description=s))
@@ -127,47 +133,6 @@ def _measured_side_cost(sym: str, adv_usd: float) -> float:
         return adv_tier_cost(adv_usd)
 
 
-def _graveyard() -> dict:
-    """Mirror the FULL graveyard into the discovery surface (R0009).
-
-    discovery.json carried sleeve results only, so every consumer of the web surface saw a
-    handful of live tests and none of the ~50+ buried hypotheses -- the exact amnesia the
-    do_not_repeat discipline exists to prevent. Sources: the graveyard table in
-    docs/graveyard.md (human record) and research_agenda.json's do_not_repeat (machine record).
-    Read-only best effort: a missing source is reported absent, never fabricated empty.
-    """
-    entries: list[dict[str, str]] = []
-    sources: dict[str, str] = {}
-    gy = Path("docs/graveyard.md")
-    if gy.exists():
-        rows = [ln for ln in gy.read_text("utf-8").splitlines()
-                if ln.startswith("|") and not set(ln) <= {"|", "-", " ", ":"}]
-        for ln in rows[1:]:                                   # first | row is the header
-            cells = [c.strip() for c in ln.strip("|").split("|")]
-            if cells and cells[0]:
-                entries.append({"name": cells[0][:80],
-                                "reason": (cells[1] if len(cells) > 1 else "")[:160],
-                                "source": "docs/graveyard.md"})
-        sources["docs/graveyard.md"] = f"{max(0, len(rows) - 1)} table rows"
-    else:
-        sources["docs/graveyard.md"] = "ABSENT"
-    try:
-        agenda = json.loads(Path("research_agenda.json").read_text("utf-8"))
-        dnr = agenda.get("do_not_repeat", [])
-        for item in dnr:
-            if isinstance(item, dict):
-                entries.append({"name": str(item.get("hypothesis") or item.get("name"))[:80],
-                                "reason": str(item.get("reason", ""))[:160],
-                                "source": "research_agenda.do_not_repeat"})
-            else:
-                entries.append({"name": str(item)[:80], "reason": "",
-                                "source": "research_agenda.do_not_repeat"})
-        sources["research_agenda.do_not_repeat"] = str(len(dnr))
-    except (OSError, json.JSONDecodeError):
-        sources["research_agenda.do_not_repeat"] = "UNREADABLE"
-    return {"n": len(entries), "sources": sources, "entries": entries}
-
-
 def main() -> None:
     close, funding, basis, taker, adv = _panels()
     if close.shape[1] < 12:
@@ -183,32 +148,20 @@ def main() -> None:
     corr = df.replace(0.0, np.nan).corr()
     matrix = np.column_stack([lib[k] for k in lib])
     sharpes = np.array([sharpe_ratio(lib[k][lib[k] != 0.0]) for k in lib])
-    # per-candidate gates (gap #87 flip, principal-ruled 2026-07-29); thresholds unchanged
-    campaign = campaign_gate_stats(matrix)
+    pbo, rc = campaign_pbo_rc(matrix)
 
     results = []
-    for col, (name, r) in enumerate(lib.items()):
+    gate_rows: list[dict[str, bool]] = []          # gap #71: per-gate discrimination evidence
+    for name, r in lib.items():
         active = r[r != 0.0]
         sh = _ann(r)
         others = corr[name].drop(labels=[name], errors="ignore").abs()
         max_corr = round(float(others.max()), 2) if not others.empty else 0.0
         orthogonal = max_corr < _ORTHO
-        # Tiered pre-filter (HYPOTHESIS_MAX #1, 2026-07-29): cheap unambiguous rejects skip the
-        # heavy gauntlet but STILL count in n_trials -- the filter saves compute, never
-        # multiplicity budget. Borderline always escalates; the bar itself is unchanged.
-        med_cost = float(np.median(list(cost.values()))) if cost else None
-        pf = pre_filter(r, name=name,
-                        rt_cost_per_trade=(2 * med_cost) if med_cost is not None else None)
-        if pf["verdict"] == "REJECT":
-            results.append({"sleeve": name, "sharpe": sh, "gates": "pre-filter",
-                            "max_corr": max_corr, "orthogonal": orthogonal,
-                            "status": f"REJECTED (pre-filter: {pf['reason']})"})
-            continue
         v = (validate(active, hypothesis=Hypothesis(
             family=Family.CARRY, subtype=name, symbol="CRYPTO", params={},
             mechanism=MechanismType.RISK_PREMIUM, edge_source=name, failure_modes=_FAIL),
-            n_trials=len(lib), sharpe_estimates=sharpes, returns_matrix=matrix,
-            campaign=campaign, column=col)
+            n_trials=len(lib), sharpe_estimates=sharpes, returns_matrix=matrix, pbo=pbo, rc=rc)
             if len(active) >= 250 else None)
         gates = f"{sum(v.gates.values())}/{len(v.gates)}" if v else "n<250"
         survived = bool(v.survived) if v else False
@@ -222,6 +175,8 @@ def main() -> None:
             status = "REJECTED"
         results.append({"sleeve": name, "sharpe": sh, "gates": gates, "max_corr": max_corr,
                         "orthogonal": orthogonal, "status": status})
+        if v is not None:
+            gate_rows.append(dict(v.gates))
 
     def _rank(d: dict[str, object]) -> tuple[bool, float]:
         promoted = str(d["status"]).startswith(("SHADOW", "DEPLOY"))
@@ -235,7 +190,7 @@ def main() -> None:
     shadow = [r["sleeve"] for r in results if r["status"].startswith(("SHADOW", "DEPLOY"))]
     payload = {"updated": datetime.now(tz=UTC).isoformat(), "tested": len(results),
                "shadow_eligible": shadow, "results": results, "pending": pending,
-               "ortho_threshold": _ORTHO, "graveyard": _graveyard()}
+               "ortho_threshold": _ORTHO}
     _WEB.parent.mkdir(parents=True, exist_ok=True)
     _WEB.write_text(json.dumps(payload, indent=2, default=str), "utf-8")
     print(f"discovery: tested {len(results)} sleeves; shadow-eligible (orthogonal +edge): {shadow}")
@@ -243,6 +198,38 @@ def main() -> None:
         print(f"  {r['sleeve']:18} sharpe~{r['sharpe']:5} gates={r['gates']:5} "
               f"corr={r['max_corr']:5} {r['status']}")
     print(f"pending (data-gated): {[p['sleeve'] for p in pending]} (archive {archive_days}d)")
+
+    # GAP #71: ZERO SURVIVORS IS AMBIGUOUS, AND THE AMBIGUITY IS THE PROBLEM. It reads either
+    # "nothing here was good enough" or "a campaign-level gate vetoed everything regardless of
+    # merit". Those demand opposite responses -- generate better candidates, versus fix the
+    # gate -- and the desk was reporting the first while (per its own numbers: 420 tested, 0
+    # survivors, campaign PBO 0.6159) living the second. Reports only; no bar is moved.
+    disc = gate_discrimination(gate_rows)
+    blocking = blocking_constant_gates(gate_rows)
+    payload["gate_discrimination"] = disc
+    payload["blocking_constant_gates"] = blocking
+    _WEB.write_text(json.dumps(payload, indent=2, default=str), "utf-8")
+    if disc:
+        print("\ngate discrimination (gap #71):")
+        for g, d in sorted(disc.items(), key=lambda kv: kv[1]["pass_rate"]):
+            flag = "  <-- CONSTANT" if not d["discriminates"] else ""
+            print(f"  {g:20} pass {d['passed']}/{d['n']} ({d['pass_rate']:.0%}){flag}")
+    if blocking:
+        # AND THE QUESTION A RULING ACTUALLY NEEDS: would waiving them promote anyone? Measured
+        # on the desk's real 420 the answer was ZERO -- every candidate also failed a gate that
+        # genuinely discriminates ("sole-cause failures EMPTY"). Computing it every run means the
+        # ruling is made against current evidence, not a probe someone ran once.
+        cf = counterfactual_survivors(gate_rows, blocking)
+        payload["counterfactual_if_waived"] = cf
+        _WEB.write_text(json.dumps(payload, indent=2, default=str), "utf-8")
+        print(f"\n  {len(blocking)} gate(s) FAILED EVERY CANDIDATE: {', '.join(blocking)}")
+        print(f"  IF WAIVED -> {cf['survivors']} survivor(s) of {cf['n']} "
+              f"(naive independent estimate {cf['independent_estimate']})")
+        print(f"  {cf['note']}")
+        print("  A gate that rejects all N carries zero information about any individual one --")
+        print("  that is a campaign-level verdict wearing a per-candidate costume. Whether it is")
+        print("  correct (the campaign really is overfit) or miscalibrated is a PRINCIPAL ruling;")
+        print("  the standing directive forbids relaxing a statistical bar to make it pass.")
 
 
 if __name__ == "__main__":

@@ -1,17 +1,17 @@
 # Desk digest (auto-generated daily -- do not hand-edit)
-_updated 2026-08-01T08:01Z · companion to [[institutional_knowledge]]_
+_updated 2026-08-02T08:20Z · companion to [[institutional_knowledge]]_
 
 ## Book
-- Molded net: **$3810.84** | funding **$113.06** | run-rate APR 0.0% | day 30.11
-- Root cause: **unknown_novel** (pause_and_page) | tracking error $3570.28
+- Molded net: **$-1709.88** | funding **$113.06** | run-rate APR 0.0% | day 31.12
+- Root cause: **unknown_novel** (pause_and_page) | tracking error $-1978.94
 
 ## Validation clocks
-- **carry (DEPLOYED)**: 36/90d | bt 2.71 fwd 14.11
-- **perp L/S**: 28/90d | bt 0.49 fwd 1.62
-- **trend**: 29/90d | bt 1.17 fwd -3.23
-- **trend regime-gated**: 24/90d | bt 1.11 fwd 0.0
-- **OI/LS data**: 34/40d
-- **stablecoin data**: 30/40d
+- **carry (DEPLOYED)**: 37/90d | bt 3.28 fwd 15.44
+- **perp L/S**: 30/90d | bt 0.58 fwd 3.87
+- **trend**: 30/90d | bt 1.27 fwd -4.25
+- **trend regime-gated**: 25/90d | bt 1.27 fwd 0.0
+- **OI/LS data**: 35/40d
+- **stablecoin data**: 31/40d
 
 ## Open decisions (ledger)
 - `2026-07-04-cashcarry-top10-4500` -- review 2026-08-04: funding/day rises ~50% without new drift losses by 2026-08-04
@@ -225,6 +225,8 @@ _updated 2026-08-01T08:01Z · companion to [[institutional_knowledge]]_
 - `2026-07-31-cycle5-repairmode-conversion-batch` -- review 2026-08-02: max_audit stays 0 live defects through 08-01 noon except acks expiring on their stated fal
 - `2026-07-31-cycle6-r0206-carry-attribution-and-inert-moneypath-fix` -- review 2026-08-31: R0206: the ~66 bps gap decomposes with execution as the DOMINANT term when measured agains
 - `2026-08-01-cycle-calibration-sign-inversion-and-asserted-forward-clocks` -- review 2026-09-01: (a) calibration bias stays positive over pre-registered-only forecasts at the 2026-09-01 g
+- `2026-08-01-cycle-stratified-campaign-window-ends-min-len-truncation` -- review 2026-09-01: (a) HONESTY, checkable now: the next campaign's audit-log campaign_strata row shows strata
+- `2026-08-01-cycle-carryover-ack-blindness-and-generation-third-store` -- review 2026-08-08: The §37 brief's top-12 contains ZERO currently-acked items on the next 5 cycles (was 12/12
 
 ## Executive KPI snapshot
 - CRO: {"hypotheses_tested_lifetime": 20, "validated_survivors": 1, "survivor_note": "cash-carry (fwd 8/90); trend candidate gauntlet-passed (fwd 1/90); all else graveyarded", "survival_r

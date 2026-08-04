@@ -32,6 +32,7 @@ import json
 import re
 import subprocess
 import sys
+from collections import Counter
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -201,17 +202,34 @@ def _norm(line: str, roots: list[str]) -> str:
     return s.replace('"<ROOT>"', "<ROOT>")
 
 
-def diff_live(root: Path, man: Manifest, live: str) -> tuple[list[str], list[str]]:
-    """(c) both-direction drift: (missing_in_live, extra_in_live), normalized."""
+def diff_live(root: Path, man: Manifest, live: str) -> tuple[list[str], list[str], list[str]]:
+    """(c) both-direction drift: (missing_in_live, extra_in_live, duplicated_in_live), normalized.
+
+    COMPARED AS A MULTISET, AND THAT IS THE WHOLE POINT. This compared `set`s until 2026-08-01, so
+    a job scheduled TWICE was invisible: set subtraction collapses the copies and both differences
+    come back empty. Measured on this box the day it was fixed -- 154 live job lines against 137
+    manifest entries, and the fence printed "matches manifest (normalized)" and exited OK while 17
+    jobs ran twice. The legacy pre-marker block was an exact duplicate of the managed block, which
+    is precisely the shape a set cannot see; 14 of the 17 were saved from real concurrency only by
+    `flock -n`, and the other 3 genuinely double-ran.
+
+    A fence that reports OK on a real breach is worse than no fence: it is the breach plus a
+    certificate saying there isn't one.
+    """
     roots = ["${QUANT_ROOT}", "$QUANT_ROOT", _VPS_ROOT, man.root_default, str(root)]
-    want = {_norm(f"{c.schedule} {c.command}", roots) for c in man.cron}
-    have: set[str] = set()
+    want = Counter(_norm(f"{c.schedule} {c.command}", roots) for c in man.cron)
+    have: Counter[str] = Counter()
     for line in live.splitlines():
         s = line.strip()
         if not s or s.startswith("#") or _ENV_LINE.match(s):
             continue
-        have.add(_norm(s, roots))
-    return sorted(want - have), sorted(have - want)
+        have[_norm(s, roots)] += 1
+    missing_in_live = sorted(want - have)          # in manifest, not (enough) on the box
+    extra_in_live = sorted(set(have) - set(want))  # on the box, unknown to the manifest
+    # Scheduled more times than the manifest declares -- the case set-difference erased.
+    duplicated = sorted(f"{k} (live x{have[k]}, manifest x{want[k]})"
+                        for k in want if have[k] > want[k])
+    return missing_in_live, extra_in_live, duplicated
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -234,8 +252,9 @@ def main(argv: list[str] | None = None) -> int:
     live = read_live_crontab()
     drift_missing: list[str] = []
     drift_extra: list[str] = []
+    drift_dupes: list[str] = []
     if live is not None:
-        drift_missing, drift_extra = diff_live(root, man, live)
+        drift_missing, drift_extra, drift_dupes = diff_live(root, man, live)
 
     print(f"scheduler-manifest check | {len(man.cron)} cron entries, "
           f"{len(man.systemd)} systemd entries, {len(referenced_paths(man))} scripts referenced")
@@ -253,13 +272,15 @@ def main(argv: list[str] | None = None) -> int:
             print(f"  DRIFT   manifest-only (box does not run it): {d}")
         for d in drift_extra:
             print(f"  DRIFT   live-only (repo cannot reconstitute it): {d}")
-        if not (drift_missing or drift_extra):
-            print("  live crontab: matches manifest (normalized)")
+        for d in drift_dupes:
+            print(f"  DUPE    scheduled more often than declared: {d}")
+        if not (drift_missing or drift_extra or drift_dupes):
+            print("  live crontab: matches manifest (normalized, multiset)")
 
     exit_code = 0
     if missing or structural:
         exit_code = 2
-    elif (drift_missing or drift_extra) and not args.report_only:
+    elif (drift_missing or drift_extra or drift_dupes) and not args.report_only:
         exit_code = 1
 
     if args.json:
@@ -278,6 +299,7 @@ def main(argv: list[str] | None = None) -> int:
                     "note": None if live is not None else "no live crontab readable",
                     "missing_in_live": drift_missing,
                     "extra_in_live": drift_extra,
+                    "duplicated_in_live": drift_dupes,
                 },
             },
             "exit_code": exit_code,

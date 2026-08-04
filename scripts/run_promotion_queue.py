@@ -44,19 +44,37 @@ if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
 _OUT = _ROOT / "data/promotion_queue.json"
-_DB = _ROOT / "data/research_memory.db"
+#: The lab candidate store. Was `data/research_memory.db` until 2026-08-01 (R0079) -- a path
+#: NOTHING in this repo has ever written. `_DB.exists()` was therefore always False, this returned
+#: [], and the queue reported a structural `n_candidates: 0` on every 6-hourly run while looking
+#: perfectly healthy: the READ-WITHOUT-WRITER class (L1.40), which does not crash, it takes the
+#: empty branch and reports a plausible zero.
+_DB = _ROOT / "data/sor_research.sqlite"
 
 
 def _candidates() -> list[dict[str, Any]]:
-    """Scored candidates with a capacity. Empty (not fatal) when the lab db is absent -- this box
-    may not be the research box, and an empty queue is a fact worth reporting."""
+    """SURVIVORS with a capacity. Empty (not fatal) when the lab db is absent -- this box may not
+    be the research box, and an empty queue is a fact worth reporting.
+
+    SURVIVORS ONLY, NEVER A FALLBACK TO `all()` (R0079, 2026-08-01). This read
+    `store.survivors() or store.all()`, which is a silent substitution the two-stage law forbids:
+    the store holds 1,673 candidates and every one is `survived = 0`, so the instant the path above
+    was repointed at the real db that `or` would have fed 1,673 GAUNTLET-REJECTED candidates into
+    the forward-slot queue as promotion inventory. The bug was invisible for exactly as long as the
+    phantom path was, and repointing without removing it would have converted a dormant defect into
+    a live phantom-edge factory -- which is why the two land in one commit.
+
+    An empty survivor set is a SUPPLY problem upstream (discovery/gauntlet) and is reported as
+    such. Ranking rejects is not a degraded answer to "what should get a forward slot", it is a
+    wrong one, and 0 is the honest number.
+    """
     if not _DB.exists():
         return []
     try:
         from libs.autodiscovery.memory import CandidateStore
         from libs.store.connection import Database
         store = CandidateStore(Database(_DB, read_only=True))
-        rows = store.survivors() or store.all()
+        rows = store.survivors()
     except (ImportError, OSError, ValueError, AttributeError, TypeError):
         return []
     out = []

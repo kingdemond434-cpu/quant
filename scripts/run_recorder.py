@@ -229,7 +229,12 @@ def main() -> None:
         for sym in symbols:
             try:
                 d = _get("/fapi/v1/depth", f"symbol={sym}&limit=20")
-                buf[sym].append({"t": int(time.time() * 1000), "k": "d",
+                # L1.46: `t` is OUR receipt (taken after _get returned), "E"/"T" are the VENUE's
+                # own stamps, and "c" declares which clock `t` came from. Retaining both makes
+                # Delta = t - E a measured series instead of an assumption; dropping E was
+                # discarding the one number no vendor can sell us and no backfill can recover.
+                buf[sym].append({"t": int(time.time() * 1000), "k": "d", "c": "recv",
+                                 "E": d.get("E"), "T": d.get("T"),
                                  "u": d.get("lastUpdateId"),
                                  "b": d.get("bids"), "a": d.get("asks")})
             except Exception:
@@ -246,7 +251,11 @@ def main() -> None:
                     if isinstance(trades, list) and trades:
                         last_trade_id[sym] = int(trades[-1]["a"])
                         for tr in trades:
-                            buf[sym].append({"t": int(tr["T"]), "k": "t", "a": int(tr["a"]),
+                            # L1.46: `t` here is the VENUE's clock, unlike the depth rows above.
+                            # Same field, same file, different clock -- now declared rather than
+                            # inferable only by reading this source.
+                            buf[sym].append({"t": int(tr["T"]), "k": "t", "c": "venue",
+                                             "a": int(tr["a"]),
                                              "p": tr["p"], "q": tr["q"],
                                              "m": bool(tr["m"])})
                 except Exception:

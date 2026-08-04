@@ -140,6 +140,32 @@ class TestUnbacked:
         assert unbacked([killed], backing={}) == (killed,)
         assert unbacked([killed], backing={"killed": ["x -- mechanism: no counterparty"]}) == ()
 
+    def test_an_anchor_names_which_entry_and_is_verified_not_ignored(self, tmp_path) -> None:
+        """CITING MORE PRECISELY MUST NOT SCORE WORSE. `-> docs/graveyard.md `some_entry`` used to
+        parse as one 40-character filename that could never exist, so the claim read as unbacked
+        permanently and doing the work could not clear it. The anchor is now a SECOND assertion:
+        the file must exist AND actually contain the named entry -- a 388-line graveyard is
+        non-empty whatever you failed to write in it."""
+        (tmp_path / "docs").mkdir()
+        g = tmp_path / "docs" / "graveyard.md"
+        g.write_text("## `jp_bitflyer_direct_recording`\nmechanism: licence forbids it\n", "utf-8")
+        it = MinedItem(source="d", name="bitFlyer", disposition="killed",
+                       artifact="docs/graveyard.md `jp_bitflyer_direct_recording`")
+        assert unbacked([it], backing={}, root=tmp_path) == (), "named entry present -> backed"
+
+        missing = MinedItem(source="d", name="other", disposition="killed",
+                            artifact="docs/graveyard.md `never_written`")
+        assert unbacked([missing], backing={}, root=tmp_path) == (missing,), (
+            "the file exists and is non-empty, but the entry it points at was never written -- "
+            "that must NOT be credited, or the anchor is decoration")
+
+    def test_a_bare_path_still_behaves_exactly_as_before(self, tmp_path) -> None:
+        (tmp_path / "a.json").write_text("{}", "utf-8")
+        ok = MinedItem(source="d", name="X", disposition="wired", artifact="a.json")
+        assert unbacked([ok], backing={}, root=tmp_path) == ()
+        gone = MinedItem(source="d", name="Y", disposition="wired", artifact="nope.json")
+        assert unbacked([gone], backing={}, root=tmp_path) == (gone,)
+
     def test_deferred_is_never_artifact_checked(self) -> None:
         items = [MinedItem(source="d", name="Y", disposition="deferred",
                            deferred_until="2026-09-01")]

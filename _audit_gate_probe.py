@@ -44,7 +44,9 @@ def rebuild() -> list:
 
 if __name__ == "__main__":
     if CACHE.exists():
-        prepared = pickle.loads(CACHE.read_bytes())
+        # S301 suppressed deliberately: CACHE is written by this same script two lines below
+        # and never leaves the box, so these bytes are our own, not untrusted input.
+        prepared = pickle.loads(CACHE.read_bytes())  # noqa: S301
     else:
         prepared = rebuild()
         CACHE.write_bytes(pickle.dumps(prepared))

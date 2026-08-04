@@ -50,7 +50,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--port", type=int, default=8090)
     args = parser.parse_args()
-    server = HTTPServer(("0.0.0.0", args.port), Handler)
+    server = HTTPServer(("0.0.0.0", args.port), Handler)  # noqa: S104 -- deliberate LAN bind; read-only, and the HOST FIREWALL is the control (gap register: exposure surface)
     print(f"ops dashboard live -> http://localhost:{args.port}")
     server.serve_forever()
 

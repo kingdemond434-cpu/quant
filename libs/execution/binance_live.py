@@ -33,6 +33,8 @@ from pathlib import Path
 from typing import Any
 
 from libs.core.logging import get_logger
+from libs.execution.collateral import STABLE_COLLATERAL
+from libs.execution.idempotency import client_order_id
 
 # OBSERVABILITY (gap #56, 2026-07-29). The desk already OWNED a structured logger with
 # correlation ids and secret redaction (libs/core/logging.py) and NOTHING below the script
@@ -183,9 +185,20 @@ def account_balance() -> float:
 def account_summary() -> dict[str, float]:
     """Equity, wallet, unrealized PnL, available, and margin used (the live P&L snapshot)."""
     a = _signed("/fapi/v2/account", {})
+    # EQUITY is the MAX of two venue-derived measures: totalMarginBalance, and the face-value sum
+    # of per-asset marginBalance across stable collateral. Under multiAssetsMargin=False
+    # totalMarginBalance is USDT-ONLY -- on 2026-07-30 it hid $5,000 of USDC, sized the book at
+    # 1/25th of true wealth and fed the dead-man a high-water below its dust floor, disarming the
+    # ruin rail at every equity. Under multiAssetsMargin=True the venue's own USD-marked total
+    # includes non-stables the stable sum cannot price, and wins the max. Max never reads below
+    # either truth; a depegged stable can overstate by its depeg, second-order next to $5,000 of
+    # blindness. Copied from the audited testnet client, NOT re-derived (R0234).
+    eq = max(sum(float(x.get("marginBalance", 0.0)) for x in a.get("assets", [])
+                 if x.get("asset") in STABLE_COLLATERAL),
+             float(a.get("totalMarginBalance", 0.0)))
     return {
         "wallet": float(a.get("totalWalletBalance", 0.0)),
-        "equity": float(a.get("totalMarginBalance", 0.0)),
+        "equity": eq,
         "unrealized_pnl": float(a.get("totalUnrealizedProfit", 0.0)),
         "available": float(a.get("availableBalance", 0.0)),
         "margin_used": float(a.get("totalInitialMargin", 0.0)),
@@ -316,7 +329,7 @@ def _market_max_qty(symbol: str) -> float:
 
 
 def place_market(symbol: str, side: str, qty: float,
-                 reduce_only: bool = False) -> dict[str, Any]:
+                 reduce_only: bool = False, cycle: str | None = None) -> dict[str, Any]:
     """Place a market order, SPLIT to respect the venue MARKET_LOT_SIZE cap.
 
     ``reduce_only=True`` makes the order arithmetically incapable of passing through zero and
@@ -326,9 +339,18 @@ def place_market(symbol: str, side: str, qty: float,
     _log.info("place_market symbol=%s side=%s qty=%s reduce_only=%s chunk_cap=%s",
               symbol, side, qty, reduce_only, cap)
     remaining, last, n = float(qty), None, 0
+    # GAP #49: intent distinguishes a close from an open, so a cover and an entry on the same
+    # symbol/side never share an ID inside one bucket.
+    intent = "close" if reduce_only else "open"
     while remaining > 0 and n < 50:
         chunk = min(cap, remaining) if cap != float("inf") else remaining
-        params = {"symbol": symbol, "side": side, "type": "MARKET", "quantity": chunk}
+        params = {"symbol": symbol, "side": side, "type": "MARKET", "quantity": chunk,
+                  # GAP #49: without this, an ambiguous timeout is indistinguishable from a
+                  # failure, and the retry places a SECOND leg -- which on a delta-neutral book
+                  # is an unhedged directional position. The chunk index is in the ID because
+                  # chunks are distinct orders; sharing one ID would have the venue reject
+                  # chunks 2..n as duplicates and silently under-fill the leg.
+                  "newClientOrderId": client_order_id(symbol, side, intent, chunk=n, cycle=cycle)}
         if reduce_only:
             params["reduceOnly"] = "true"
         last = _signed("/fapi/v1/order", params, method="POST")
@@ -343,11 +365,15 @@ def place_market(symbol: str, side: str, qty: float,
     return dict(last) if isinstance(last, dict) else {"raw": last}
 
 
-def place_post_only(symbol: str, side: str, qty: float, price: float) -> dict[str, Any]:
+def place_post_only(symbol: str, side: str, qty: float, price: float,
+                    cycle: str | None = None) -> dict[str, Any]:
     """Post-only LIMIT order (timeInForce=GTX) -- guaranteed MAKER (rejected if it would cross)."""
     res = _signed("/fapi/v1/order", {
         "symbol": symbol, "side": side, "type": "LIMIT", "timeInForce": "GTX",
         "quantity": qty, "price": price,
+        # GAP #49. A resting post-only order is MORE dangerous to duplicate than a market order,
+        # not less: incident #6 was accumulated resting fills walking a short through zero.
+        "newClientOrderId": client_order_id(symbol, side, "postonly", cycle=cycle),
     }, method="POST")
     _log.info("place_post_only symbol=%s side=%s qty=%s price=%s order_id=%s",
               symbol, side, qty, price,
