@@ -56,8 +56,11 @@ def fetch(base: str, pages: int = 30) -> dict[str, np.ndarray] | None:
     if len(good) < 400:
         return None
     good.sort(key=lambda r: int(r[0]))
+    # REAL VOLUME (2026-08-04): index 5 is base-currency volume in OKX's candle schema. The
+    # flat 1e9 placeholder made every volume-reading mechanism an SMA in costume; none of the
+    # incumbent 20 read volume, so this changes nothing recorded.
     return {k: np.array([float(r[i]) for r in good], dtype="float64")
-            for k, i in (("open", 1), ("high", 2), ("low", 3), ("close", 4))}
+            for k, i in (("open", 1), ("high", 2), ("low", 3), ("close", 4), ("volume", 5))}
 
 
 def _count_trades(pos: np.ndarray) -> int:
@@ -103,7 +106,7 @@ def main(argv: list[str] | None = None) -> int:
             n = m
         ser = MarketSeries(
             close=raw["close"], high=raw["high"], low=raw["low"],
-            volume=np.full(n, 1e9),
+            volume=raw.get("volume", np.full(n, 1e9)),
             hour=np.zeros(n),
             ref_close=ref["close"] if ref else None,
             ref_high=ref["high"] if ref else None,

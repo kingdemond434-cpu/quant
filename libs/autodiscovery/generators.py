@@ -220,6 +220,164 @@ GENERATORS: tuple[GeneratorSpec, ...] = (
 )
 
 
+# --- 2026-08-04 CONTENT EXPANSION (docs/research/NEW_FAMILY_GENERATORS_PREREGISTRATION.md) ----
+#
+# Seven families pre-registered BEFORE running. The ICT three reuse libs/ict's lag-honest
+# detectors verbatim (confirmed swings, settled-on-the-firing-bar semantics) rather than
+# re-deriving them -- one definition, one place. Every function here is causal by construction:
+# nothing reads past its own bar, and the truncation-invariance test in
+# tests/autodiscovery/test_new_family_generators.py pins that mechanically.
+
+def _hold_positions(signal: np.ndarray, hold: int) -> np.ndarray:
+    """Event signal (+1/-1 on the firing bar) -> position held `hold` bars; refire refreshes."""
+    pos = np.zeros(len(signal))
+    cur, left = 0.0, 0
+    for i, sig in enumerate(signal):
+        if sig != 0 and not np.isnan(sig):
+            cur, left = float(np.sign(sig)), hold
+        if left > 0:
+            pos[i] = cur
+            left -= 1
+        else:
+            cur = 0.0
+    return pos
+
+
+def _prior_extrema(high: np.ndarray, low: np.ndarray, w: int) -> tuple[np.ndarray, np.ndarray]:
+    """N-bar high/low EXCLUDING the current bar (same discipline as the intraday engine)."""
+    from numpy.lib.stride_tricks import sliding_window_view
+    hi = np.full(len(high), np.nan)
+    lo = np.full(len(low), np.nan)
+    if len(high) > w:
+        hi[w:] = sliding_window_view(high, w)[:-1].max(axis=1)
+        lo[w:] = sliding_window_view(low, w)[:-1].min(axis=1)
+    return hi, lo
+
+
+def _wyckoff(s: MarketSeries, p: dict[str, float]) -> np.ndarray:
+    """Spring: pierce the N-range low, close back inside -> long. Upthrust mirrored short.
+    Distinct from ict_sweep_reversal on purpose: the level here is the RANGE extreme, not a
+    confirmed swing point -- two different definitions of where the resting liquidity sat."""
+    w, hold = int(p["window"]), int(p["hold"])
+    hi_n, lo_n = _prior_extrema(s.high, s.low, w)
+    with np.errstate(invalid="ignore"):
+        spring = (s.low < lo_n) & (s.close > lo_n)
+        upthrust = (s.high > hi_n) & (s.close < hi_n)
+    return _hold_positions(np.where(spring, 1.0, np.where(upthrust, -1.0, 0.0)), hold)
+
+
+def _rolling_vwap(s: MarketSeries, w: int) -> np.ndarray:
+    tp = (s.high + s.low + s.close) / 3.0
+    v = s.volume if s.volume is not None else np.ones(len(tp))
+    pv, vv = np.cumsum(tp * v), np.cumsum(v)
+    out = np.full(len(tp), np.nan)
+    out[w:] = (pv[w:] - pv[:-w]) / np.maximum(vv[w:] - vv[:-w], 1e-12)
+    return out
+
+
+def _vwap_reversion(s: MarketSeries, p: dict[str, float]) -> np.ndarray:
+    """Fade a z-stretched deviation from rolling VWAP; flat inside the band. State, not event:
+    the position persists while the stretch does, which is what the mechanism claims."""
+    import pandas as pd
+    w, z = int(p["window"]), float(p["z"])
+    dev = s.close - _rolling_vwap(s, w)
+    sd = pd.Series(dev).rolling(w).std().to_numpy()
+    with np.errstate(invalid="ignore"):
+        sig = np.where(dev > z * sd, -1.0, np.where(dev < -z * sd, 1.0, 0.0))
+    return np.nan_to_num(sig)
+
+
+def _vwap_trend(s: MarketSeries, p: dict[str, float]) -> np.ndarray:
+    w = int(p["window"])
+    with np.errstate(invalid="ignore"):
+        return np.nan_to_num(np.sign(s.close - _rolling_vwap(s, w)))
+
+
+def _supply_demand(s: MarketSeries, p: dict[str, float]) -> np.ndarray:
+    """Impulsive departure (range > k*ATR20, directional body) marks the prior bar as the base;
+    the FIRST retest of that base zone within 60 bars re-enters in the departure direction."""
+    import pandas as pd
+    k, hold = float(p["k"]), int(p["hold"])
+    n = len(s.close)
+    prev = np.concatenate([[s.close[0]], s.close[:-1]])
+    tr = np.maximum(s.high - s.low, np.maximum(np.abs(s.high - prev), np.abs(s.low - prev)))
+    a = pd.Series(tr).rolling(20).mean().to_numpy()
+    rng = s.high - s.low
+    body = s.close - prev
+    with np.errstate(invalid="ignore"):
+        imp_up = (rng > k * a) & (body > 0)
+        imp_dn = (rng > k * a) & (body < 0)
+    sig = np.zeros(n)
+    for i in np.flatnonzero(imp_up | imp_dn):
+        if i < 1 or i + 2 >= n:
+            continue
+        zlo, zhi = float(s.low[i - 1]), float(s.high[i - 1])
+        d = 1.0 if imp_up[i] else -1.0
+        for j in range(i + 2, min(i + 62, n)):
+            touched = (s.low[j] <= zhi) if d > 0 else (s.high[j] >= zlo)
+            if touched:
+                sig[j] = d
+                break
+    return _hold_positions(sig, hold)
+
+
+def _ict_frame(s: MarketSeries):
+    import pandas as pd
+    return pd.DataFrame({"high": s.high, "low": s.low, "close": s.close})
+
+
+def _ict_fvg(s: MarketSeries, p: dict[str, float]) -> np.ndarray:
+    from libs.ict.patterns import fair_value_gap
+    return _hold_positions(fair_value_gap(_ict_frame(s)).to_numpy(), int(p["hold"]))
+
+
+def _ict_sweep(s: MarketSeries, p: dict[str, float]) -> np.ndarray:
+    from libs.ict.patterns import liquidity_sweep
+    return _hold_positions(
+        liquidity_sweep(_ict_frame(s), confirm=int(p["confirm"])).to_numpy(), int(p["hold"]))
+
+
+def _ict_mss(s: MarketSeries, p: dict[str, float]) -> np.ndarray:
+    from libs.ict.patterns import market_structure_shift
+    return _hold_positions(
+        market_structure_shift(_ict_frame(s), confirm=int(p["confirm"])).to_numpy(),
+        int(p["hold"]))
+
+
+NEW_FAMILY_GENERATORS: tuple[GeneratorSpec, ...] = (
+    GeneratorSpec(Family.LIQUIDITY, "wyckoff_spring", _wyckoff, _S,
+                  "absorption at a failed range break (spring/upthrust)",
+                  ["genuine breakout regimes", "thin ranges"],
+                  [{"window": w, "hold": h} for w in (20, 40) for h in (5, 10)]),
+    GeneratorSpec(Family.MEAN_REVERSION, "vwap_reversion", _vwap_reversion, _L,
+                  "inventory pressure reverts stretched VWAP deviation",
+                  ["trending markets", "volume droughts"],
+                  [{"window": w, "z": z} for w in (20, 50) for z in (1.5, 2.5)]),
+    GeneratorSpec(Family.TREND, "vwap_trend", _vwap_trend, _S,
+                  "side of VWAP = side of institutional inventory",
+                  ["chop around VWAP", "regime flips"],
+                  [{"window": w} for w in (20, 50)]),
+    GeneratorSpec(Family.LIQUIDITY, "supply_demand_retest", _supply_demand, _S,
+                  "unfilled orders at the base of an impulsive departure",
+                  ["zone invalidation", "stale zones"],
+                  [{"k": k, "hold": h} for k in (1.5, 2.0) for h in (5, 10)]),
+    GeneratorSpec(Family.MOMENTUM, "ict_fvg_follow", _ict_fvg, _S,
+                  "three-bar imbalance marks displacement; follow it",
+                  ["gap fills against", "low-vol microstructure"],
+                  [{"hold": h} for h in (3, 8)]),
+    GeneratorSpec(Family.LIQUIDITY, "ict_sweep_reversal", _ict_sweep, _L,
+                  "raid through equal highs/lows that closes back is engineered liquidity",
+                  ["real breakouts", "cascading stops"],
+                  [{"confirm": c, "hold": h} for c in (2, 3) for h in (5, 10)]),
+    GeneratorSpec(Family.TREND, "ict_mss_follow", _ict_mss, _S,
+                  "market-structure shift starts the new leg",
+                  ["false shifts in chop", "late entries"],
+                  [{"confirm": c, "hold": h} for c in (2, 3) for h in (10, 20)]),
+)
+
+GENERATORS = (*GENERATORS, *NEW_FAMILY_GENERATORS)
+
+
 def planned_hypotheses(
     symbols: Sequence[str], *, families: Sequence[Family] | None = None
 ) -> list[tuple[Hypothesis, GeneratorSpec]]:

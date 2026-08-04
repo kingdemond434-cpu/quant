@@ -44,6 +44,11 @@ _CACHE = _ROOT / "data" / "binance_vision"
 _OUT = _ROOT / "reports" / "intraday_rotation.json"
 _PLOTS = _ROOT / "reports"
 SYMBOLS = ("BTCUSDT", "ETHUSDT", "SOLUSDT")
+# --interval generalisation (2026-08-04, pre-registered follow-up): the walk-forward is defined
+# in CALENDAR terms (6m train / 2m test) and converts to bars per interval. The grid stays in
+# BARS by registration, so N/K/M mean longer clock-spans at coarser intervals -- that is the
+# point: wider structures, wider stops, smaller cost-in-R.
+_BPD = {"5m": 288, "15m": 96, "1h": 24}
 BARS_PER_DAY = 288
 TRAIN = 182 * BARS_PER_DAY
 TEST = 61 * BARS_PER_DAY
@@ -58,8 +63,8 @@ CONT_GRID = [("continuation", n, k, m, v)
 N_CONFIGS_TOTAL = (len(ROT_GRID) + len(CONT_GRID)) * len(SYMBOLS)   # deflation denominator
 
 
-def _load(sym: str) -> dict[str, np.ndarray]:
-    f = next(_CACHE.glob(f"{sym}-5m-*.npz"))
+def _load(sym: str, interval: str = "5m") -> dict[str, np.ndarray]:
+    f = next(_CACHE.glob(f"{sym}-{interval}-*.npz"))
     with np.load(f, allow_pickle=True) as z:
         return {k: z[k] for k in z.files}
 
@@ -94,7 +99,16 @@ def _null_run(data: dict[str, np.ndarray], cfg: tuple, n_trades: int, lo: int, h
     return float(np.mean(rs)) if rs else 0.0
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
+    import argparse
+    global BARS_PER_DAY, TRAIN, TEST, _OUT
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--interval", default="5m", choices=sorted(_BPD))
+    args = ap.parse_args(argv)
+    BARS_PER_DAY = _BPD[args.interval]
+    TRAIN, TEST = 182 * BARS_PER_DAY, 61 * BARS_PER_DAY
+    if args.interval != "5m":
+        _OUT = _ROOT / "reports" / f"intraday_rotation_{args.interval}.json"
     oos: dict[str, list[Trade]] = {"rotation": [], "continuation": []}
     oos_meta: dict[str, list[dict[str, Any]]] = {"rotation": [], "continuation": []}
     selections: list[dict[str, Any]] = []
@@ -105,7 +119,7 @@ def main() -> int:
     rng = np.random.default_rng(2026)
 
     for sym in SYMBOLS:
-        data = _load(sym)
+        data = _load(sym, args.interval)
         n_bars = len(data["close"])
         w = 0
         while TRAIN + (w + 1) * TEST <= n_bars:
@@ -154,6 +168,7 @@ def main() -> int:
         "generated_utc": datetime.now(UTC).isoformat(timespec="seconds"),
         "status": "MEASURED",
         "preregistration": "docs/research/INTRADAY_ROTATION_PREREGISTRATION.md",
+        "interval": args.interval,
         "protocol": {"train_bars": TRAIN, "test_bars": TEST, "symbols": list(SYMBOLS),
                      "n_configs_deflation": N_CONFIGS_TOTAL,
                      "oos_only": True},
@@ -280,7 +295,7 @@ def _plots(oos: dict[str, list[Trade]], doc: dict[str, Any]) -> None:
         ax[2].hist(r, bins=40)
         ax[2].set_title("R-multiple distribution (net)")
         fig.tight_layout()
-        fig.savefig(_PLOTS / f"intraday_{strat}.png", dpi=110)
+        fig.savefig(_PLOTS / f"intraday_{strat}_{doc.get('interval', '5m')}.png", dpi=110)
         plt.close(fig)
 
 
