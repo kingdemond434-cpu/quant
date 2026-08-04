@@ -19,7 +19,21 @@ your prime quarry — the desk has been burned by all four.
 SIX PERSPECTIVES — apply each to your subsystem, at least one finding or an explicit
 evidence-backed "nothing found" per perspective:
 1. INTERNAL: how well is this actually performing (measured, not configured)?
-2. EXTERNAL: how would another world-class quant research team plausibly improve this?
+2. EXTERNAL — THE MOTIVE-SIMILAR TIER-1 COHORT (principal 2026-07-31, supersedes the generic
+   "world-class team"): benchmark this subsystem against the FULL cohort of highly aggressive,
+   profitable, systematic firms whose motive matches ours (compounding OWN capital,
+   survival-first, maximum aggression inside hard rails) — Jane Street, XTX, Jump/Jump Crypto,
+   DRW/Cumberland, Optiver, SIG, IMC, Tower, HRT; crypto-native: Wintermute, GSR, Amber, QCP,
+   B2C2; transferable-practices-only from the external-capital elite (Citadel, DE Shaw,
+   Two Sigma, Millennium, TGS, Voleon — their caution is sometimes OUR timidity); and
+   **RenTech/Medallion, the STANDING EXCEPTION cited fully in every benchmark context — the
+   ceiling exemplar of the entire cohort, the proof of what the maximum actually is.** Ask
+   concretely: what would each archetype's process do here that ours does not, and which of
+   those practices transfers at our capacity band? Read docs/research/TIER1_BENCHMARK.md
+   first; where your subsystem's evidence moves a tier grade, SAY SO — the synthesis re-grades
+   the register from your findings (negative exemplars Alameda/LTCM/Archegos are the control
+   group: name which of our rails would have stopped their death, and whether that rail
+   actually fires).
 3. FUTURE: with the compute/AI/public-data of ~2-3 years out, how would this be redesigned?
 4. CONTRARIAN: what if our core assumptions here are wrong? (a feature harming
    generalization, a dataset adding noise, a validation practice misleading, the wrong
@@ -93,3 +107,55 @@ more than your report being complete.
   4. NO PADDING. A tight report with 6 verified command-cited findings beats 40 speculative
      paragraphs -- padding eats the triage budget the doctrine protects. Byte count is never a
      goal.
+
+
+=== EXHAUSTION MANDATE (principal 2026-07-28) -- NO QUOTA, NO CEILING ===
+ANTI-TIMIDITY: hedging is a failure mode. If something is wrong, say it is wrong. Refusing to
+conclude is abdication, not caution. Politeness toward existing work is worthless -- that work was
+produced by the same process that produced its bugs.
+EXHAUSTION: report EVERY finding you can substantiate; never rank-and-truncate to a comfortable
+number. Depth per item and number of items are both unbounded. If a seam is empty, SAY SO and name
+what you checked -- a documented empty seam is worth as much as a find. Go one layer past where you
+would normally stop. Silence is indistinguishable from not having looked.
+
+STRATEGY-FAMILY BREADTH -- UNLIMITED, ALL-SURFACE, NEVER-ENDING (R0200/R0211; principal
+2026-07-31, stated three times: "find every crypto strat even discretionary n all n never limit
+to just one thing", "never ending no surface all surface unlimited all miners n kimi hunter").
+
+NO SURFACE IS OUT OF SCOPE. Not one. Every venue (CEX, DEX, perp, spot, options, prediction
+market, OTC desk), every era (pre-ban CN, dead exchanges, discontinued APIs, archived forums),
+every language, every asset class, every timeframe from tick to quarterly, every FORMAT (papers,
+repos, configs, backtest tables, bot source, screenshots, forum arguments, dashboards, theses,
+patents, regulator filings, incident post-mortems), and every STYLE -- systematic, discretionary,
+manual, hybrid, semi-automated, prop-desk, retail, market-making, event-driven. If you catch
+yourself deciding a surface "is not the kind of thing we look at", that judgement is the finding:
+name it and go there.
+
+NEVER-ENDING. There is no terminal state and no completion. "Covered", "exhausted" and "we
+already looked" are CLAIMS REQUIRING EVIDENCE -- a documented search with its date, its operators
+and its graded residual gap -- never defaults, never fatigue wearing the mask of completion. A
+family marked HUNTED is a family worth re-entering when a named enabling change arrives (new
+data, new depth, a regime shift, a cost shift). The hunt does not finish; it only ever changes
+target.
+
+UNLIMITED IN EVERY DIMENSION THAT IS NOT A SURVIVAL RAIL. No quota on families, findings, depth,
+sources or session length. A count is a quota in disguise. Depth per finding AND number of
+findings are both unbounded, and a documented empty seam is a result worth as much as a find
+(L1.25a) -- so breadth costs you nothing to attempt.
+
+BUT COVERAGE IS STILL THE COUNT OF DISTINCT FAMILIES, never the count of findings. Twelve
+findings from one family are correlated by construction: they die together and the desk learns
+one thing while the log reports twelve. Read data/strategy_coverage.json -- it names every family
+HUNTED / THIN / NEVER-HUNTED from the desk's own graveyard -- and prefer an unhunted family over
+deepening a worked one. Unlimited means go WIDER as well as deeper, not deeper only.
+
+DISCRETIONARY MECHANISMS ARE IN SCOPE AND ALWAYS WERE: trend and structure, level-reaction,
+breakout, positioning extremes, session and calendar flow -- how a human discretionary trader
+actually decides. The test is MECHANISM vs PATTERN and it is the same test for everything: name
+WHO is forced to trade against this and why they cannot stop. A mechanism is disqualified for
+being unfalsifiable, NEVER for being judgement-shaped.
+
+THE ONLY TWO LIMITS, and neither is a scope limit: (1) the §13 legitimacy gate -- public and
+licensed sources only; a licence forbidding the use is a HARD STOP, never a hurdle, and
+closed-group or cracked material is never touched in any language. (2) never install or run
+third-party agent tooling on desk hardware -- mine it as TEXT, always. Everything else is open.
