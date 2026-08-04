@@ -3790,7 +3790,7 @@
    "roi_bps": 10.0,
    "raised": "2026-08-01T14:10:32.619346+00:00",
    "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=10 effort_h=0.5: Still undone: docs/research/data_axis_watchlist.md:1398/1420 entry 28 (bitbank) still 'verified-technically-clean ... licence unread', 'body not yet extracted' -- a 6,500-byte page fetch + read + re-grade. Same agent-doable class as R0309; the watchlist entry already documents the phantom-history trap (true usable start 2017-02-14), so only the licence read gates ingest.",
+   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=10 effort_h=0.5: Still undone: docs/research/data_axis_watchlist.md:1398/1420 entry 28 (bitbank) still 'verified-technically-clean ... licence unread', 'body not yet extracted' -- a 6,500-byte page fetch + read + re-grade. Same agent-doable class as R0309; the watchlist entry already documents the phantom-history trap (true usable start 2017-02-14), so only the licence read gates ingest. || ATTEMPTED 2026-08-04: terms body unreachable from this container (JS shell to curl; connection reset to rendered fetch). Executable only from direct-egress box (VPS). Stays queued for the JP miner/VPS.",
    "commit": null,
    "due": null,
    "disposed": null

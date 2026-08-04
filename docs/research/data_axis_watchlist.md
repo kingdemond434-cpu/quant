@@ -1395,7 +1395,7 @@ _Found by JP frontier miner session 1, 2026-08-01, as the licensed replacement f
 
 ---
 
-### 28. bitbank public candlestick API (JP venue, keyless, whole-year-per-call) — grade: **verified-technically-clean WITH A CONFIRMED PHANTOM-HISTORY TRAP, licence unread** [§33: screened -> docs/research/prospector_coverage.md JP-s1]
+### 28. bitbank public candlestick API (JP venue, keyless, whole-year-per-call) — grade: **verified-technically-clean WITH A CONFIRMED PHANTOM-HISTORY TRAP, licence unread — ATTEMPTED 2026-08-04 from the research container: bitbank.cc/error/terms serves a JS shell to curl (200, no body) and resets rendered fetches (Chromium+proxy ERR_CONNECTION_RESET); support.bitbank.cc same. The licence body is only reachable from a box with direct egress — VPS or the JP miner session. Grade stays licence-unread; ingest stays gated.** [§33: screened -> docs/research/prospector_coverage.md JP-s1]
 _Found by JP frontier miner session 1, 2026-08-01._
 
 - **What it is.** `https://public.bitbank.cc/{pair}/candlestick/{type}/{YYYY}` returns **an entire
