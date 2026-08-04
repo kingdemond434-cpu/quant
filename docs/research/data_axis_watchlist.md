@@ -270,6 +270,16 @@ _Superseded original grading below (kept for the record):_
   before a recorder start date.
 
 ### 4. Bithumb (spot + futures) — grade: **spot VERIFIED-CLEAN-MECHANISM, DEEPEST free Korean-venue minute archive known to the desk (re-graded 2026-07-25); futures lead DEAD**
+> **⚠️ DATA FENCE ADDED 2026-08-04 (KR frontier miner, primary-source event record): Bithumb
+> mis-credit incident 2026-02-06 — an event reward was paid in BTC UNITS instead of KRW units
+> (~620,000 BTC ≈ 60조원 phantom-credited at 19:00 KST; trading+withdrawals frozen 19:35–19:40;
+> 1,788 BTC actually SOLD into the KRW book before the freeze and later covered from company
+> assets; FSS on-site inspection 02-07). Consequences for any Bithumb-sourced series: (a) prints
+> in the 2026-02-06 19:00–19:40 KST window contain a phantom-supply dump — fence them; (b) the
+> freeze creates a stale/gap window through 02-07 on KRW pairs; (c) the withdrawal freeze is a
+> BARRIER SPIKE — kimchi-premium constructions with a Bithumb leg will show a mechanical premium
+> move that is venue-operational, not flow. Sources: Bithumb notice feed.bithumb.com/notice/1651924
+> + namu.wiki incident page (velog @rivkode timeline, archived in data/velog_kr_quant_posts.jsonl).**
 > **RE-VERIFIED 2026-07-25 (EN frontier miner, backlog burn-down). Live API probed directly —
 > the "no free bulk archive, paid-Amberdata-only" gap is REFUTED, and by a wide margin.**
 >

@@ -237,6 +237,18 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0020",
+   "source": "cycle",
+   "summary": "KR seat: re-price GAP_REGISTER #69 (NAVER key, due 08-09) on this branch \u2014 key unlocks 3 grounds not 1 axis: /v1/search/blog.json + /v1/search/cafearticle.json are the ONLY s13-licensed route into blog.naver.com + cafe.naver.com (both robots-refuse Claude by name; direct crawl closed). Master-side KR s1 evidence, settled; do not re-verify the 401 again. Watchlist card #21 already carries the line; only the register row under-prices. One-line edit to docs/GAP_REGISTER.md row 69 by an organ with docs/ scope.",
+   "roi_bps": null,
+   "raised": "2026-08-04T16:23:04.572439+00:00",
+   "status": "scheduled",
+   "reason": "one-line docs/GAP_REGISTER.md edit; register is outside KR-seat freeze scope (docs/research+data only) \u2014 next brain cycle owns docs/; row self-obsoletes if NAVER key lands by 08-09",
+   "commit": null,
+   "due": "2026-08-05",
+   "disposed": "2026-08-04T16:23:37.095600+00:00"
   }
  ]
 }

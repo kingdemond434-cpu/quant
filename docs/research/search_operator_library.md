@@ -180,7 +180,11 @@ technique: legacy forums list topics NEWEST-FIRST, so the founding era sits at t
   which is what lets a dead-forum ground be honestly marked EXHAUSTED.
   Measured: Bitcointalk board 8 (Trading Discussion) = 18,640 topics, 2011-2014 era = offsets
   14480-18640; board 78 (Securities) = 2,376 topics TOTAL (whole board is era material, fully finite).
-adaptations: universal to any paginated forum/board. Pair with OP-020 for the thread reads. For boards
+adaptations: universal to any paginated forum/board. Pair with OP-020 for the thread reads. KR
+  (2026-08-04): Ppomppu zboard — robots FORBIDS /search_bbs.php, so era-seek is the ONLY legal path;
+  seek by post `no` binary-search (view.php?id=<board>&no=<n> → date), not page offset: ~190k posts,
+  no=150 = 2014-07, live head 2026-08; decode cp949 errors=replace (strict euc-kr dies on stray bytes).
+  For boards
   that expose `;sort=replies`, sort AFTER era-slicing, never before (sorting destroys the era window).
 counterfactual: LOW -- the crowd searches; searching cannot reach unindexed tail pages at all.
 
@@ -620,3 +624,44 @@ _OP-034 field note (RU s1-on-branch, 08-04): Wayback REPLAY of querystring URLs 
 `index.php?/topic/...`) 302s to the canonical capture timestamp — curl WITHOUT -L writes 0
 bytes, which looks exactly like a dead capture. It is the route, not the archive. Always `-L`
 on replay; CDX hit + 0-byte replay = redirect trap until proven otherwise (pairs with OP-030)._
+
+### OP-050 Apollo-SSR platforms: the API lies politely, the page tells the truth   [active]
+class: operator
+origin: KR frontier miner (2026-08-04, velog.io) — but the pattern is platform-class-general
+  (any Apollo-GraphQL + SSR site: velog, some Medium clones, many Next.js community platforms).
+what: velog's keyless GraphQL (`v3.velog.io/graphql`, introspection OPEN) has FOUR silent-failure
+  modes that each look like "no data" and are actually route defects:
+  (1) INVALID FIELD → HTTP 200 with EMPTY BODY, not a GraphQL error object (bare `username` vs
+      correct `user { username }` cost 8 queries before bisection found it). Bisect the field list
+      before concluding an endpoint is dead — same law as OP-034's gzip-sniff: 200 ≠ content.
+  (2) STRICT-AND search: compound native phrases 0-hit while single folk terms hit
+      (업비트 자동매매=0 but 업비트 API=486; 호가창=157). Search SINGLE terms, intersect client-side.
+  (3) NO-MATCH FALLBACK: an unmatched query returns the GENERIC corpus with count=10000 sentinel —
+      a plausible-looking result set with zero relevance. Treat count=10000 as "no match".
+  (4) STALE INDEX: search returns DELETED posts (the best kimchi-arb-bot lead 404'd on read, no
+      Wayback capture). 404-check before carding anything from a search index.
+  RECOVERY ROUTE: when GraphQL `post.body` is null but the post is live, the SSR page embeds the
+  full content in `window.__APOLLO_STATE__` — `json.JSONDecoder().raw_decode()` past the trailing
+  JS. Comments, user objects and series structure ride in the same cache.
+validated-gain: 6-post deep-read corpus (data/velog_kr_quant_posts.jsonl) including 2 bodies the
+  API refused; the 486/207/157/55/20 term-count map of the KR practitioner corpus.
+adaptations: KR=velog (this entry); CN=check Gitee Pages/juejin for the same Apollo pattern;
+  ALL=any `__APOLLO_STATE__` / `__NEXT_DATA__` / `__NUXT__` blob outranks the public API when the
+  two disagree. Pair with OP-038 (HTML-vs-API split) — this is its inverse: API walled, page open.
+
+## LEXICON — KR crypto-trading jargon (dark-forest search keys)
+_Charter dark-forest deliverable #2, KR seat. Convention per EN/CN lexicons: term | gloss | era |
+example query. OBSERVED = verified in a real search/post this session; SEED = from the seat brief,
+not yet field-verified — verify before building queries on them._
+| term | gloss | era | note / example query |
+|---|---|---|---|
+| 김프 | kimchi premium (김치 프리미엄 abbrev) | 2017→live | OBSERVED — **COLLISION: also the KR transliteration of GIMP** (image editor); "김프 설치하기" = installing GIMP. Disambiguate: search 김치프리미엄, or 김프 with 코인/바낸/역프 context. velog: 김치프리미엄=55 |
+| 역프 | REVERSE premium (KR below global) | 2018→live | SEED (seen in passing this run, not yet used as a key) — the sign-flip regime the CN premium-SIGN law predicts for coin-leg barriers |
+| 오지급 | mis-credit / erroneous payout | live | OBSERVED — venue-incident search key; found the Bithumb 2026-02-06 620k-BTC event (data fence now on watchlist card #4). Query: <venue> 오지급 |
+| 호가창 | order book (lit. quote window) | all | OBSERVED — velog 157 hits; the KR word for L2/orderbook content, finds microstructure builds that "orderbook" never will |
+| 펀딩비 | funding rate/fee | 2020→live | OBSERVED — velog 20 hits; perp-funding content key |
+| 자동매매 | auto-trading | all | OBSERVED in titles — pair with venue name as SINGLE terms (OP-050 strict-AND) |
+| 재정거래 | arbitrage (formal/textbook term) | all | OBSERVED 0-hit as compound on velog — KR retail says 김프/갭 for the premium trade, NOT 재정거래; the formal term finds textbooks, the folk term finds practice (OP-030 lexical-zero class) |
+| 한강 수온 | "Han river water temperature" — rekt/despair meme (한강 = where blown-up traders go) | 2017→live | OBSERVED live: coincoin.kr ships a real-time Han-river water-temp widget as a joke; 한강 posts = capitulation-sentiment marker in era archaeology |
+| 떡상 / 떡락 | moon / crash (tteoksang/tteokrak) | 2017→live | SEED — era boards; not yet used as a key this run |
+| 존버 | diamond-hands / hold through pain (jonbeo) | 2017→live | SEED — era boards; not yet used as a key this run |

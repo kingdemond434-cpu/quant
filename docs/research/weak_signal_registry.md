@@ -223,3 +223,41 @@ public premium series across EM pairs.
 promotion-check: none. Promotable the day two independent premium series (licensed, public,
 non-sanctioned venues) show dispersion compression coinciding with corridor-tech spread; until
 then this is structure knowledge, not a hypothesis.
+
+## 2026-08-04 — KR corridor: per-coin premium DISPERSION is retail-tooled, and the route layer is open-source (KR miner s1-on-branch)
+first-seen: 2026-08-04 · velog @hansanghun "코코아 제작기" (coincoin.kr, OSS github.com/joshephan/cocoa,
+built live on YouTube Feb-2025, 3,128 views) — a public route-optimizer computing WHICH coin to send
+KRW→overseas with least (per-coin kimchi premium + fees). Archived: data/velog_kr_quant_posts.jsonl.
+direction: the KR corridor's rent-collection layer is now productized RETAIL tooling (the KR twin of
+the RU corridor-tech-export signal one section up — two regions, same shape, same day). If retail
+route-optimizes across transfer coins, per-coin premium DISPERSION should compress toward fees faster
+than the LEVEL compresses, and flow should concentrate in the cheapest-route coins (XRP/TRX class).
+Desk hook: the live kimchi axis reads the LEVEL; dispersion-across-coins is an untested second moment
+with a stated mechanism and a named counterparty (route-optimizing retail).
+independence: single instance (one tool, one region) — but the RU export signal is an independent
+second region for the CLASS (barrier-rent tooling productization).
+promotion-check: pre-registerable once a per-coin KR premium panel exists (Upbit/Bithumb keyless REST
+already provide the legs; construction must declare FX timestamp alignment per the standing trap).
+Note the tool itself crawls Google Finance USD-KRW — retail's FX leg is a DIFFERENT timestamp than
+any daily FX fix, i.e. the crowd's own premium number is not the desk's number.
+
+## 2026-08-04 — KR retail order-flow stack is COMMODITIZED at 10s–1m resolution, and its folk liquidation-long is self-refuted (KR miner s1-on-branch)
+first-seen: 2026-08-04 · velog @vividbaek CoinWhale series (12 parts, 2026-04→07): Kafka 18-topic +
+ClickHouse + Binance Vision S3 backfill pipeline, signal taxonomy CVD_BULL/LIQ_CASCADE/FUNDING_EXTREME/
+OI_SPIKE, shadow-mode + promotion criteria (DD, fees, latency) — a retail mini two-stage discovery.
+Archived: data/velog_kr_quant_posts.jsonl.
+direction: (a) CROWDING — the short-horizon order-flow family (CVD/OI/liquidation/funding follow) is
+now retail-commoditized in KR on the exact free sources the desk holds; treat naive constructions in
+this family as crowded, demand orthogonality. (b) FREE PRIOR — his own backtests: folk "long the
+liquidation cascade" = 45% WR (BTC, 10s bars, 10d, costless) — the KR folk belief INVERTED on its
+believer's own data; CVD>threshold long = 50.2%→60.9% WR moving threshold 50→300 (threshold-regime
+fragility); OI-drop short 57.6%. All screen-grade, one symbol, 10 days, no costs — priors, not results.
+(c) GENRE-EVOLUTION (3rd region after RU/CN): KR retail writeups now ship exit-reason attribution,
+single-factor WR discipline, backtest-live parity, survivorship/look-ahead/cost checks (velog @papapat
+ran an honest 0-for-6 falsification of KR-equity folk beliefs as a NON-developer using Claude Code) —
+the "pink backtest" tell is obsolete; source-audit must move to meta-level defects, and the marginal
+retail participant's methodological competence is rising fast (tooling democratization).
+independence: two authors, one platform, one region; genre claim corroborated by RU s1-on-branch +
+CN s3 independently.
+promotion-check: none as-is (crowding/prior knowledge, not a hypothesis). The liquidation-echo prior
+becomes testable only inside the desk's own liquidation-listener clock (GAP row 76 forward clock).

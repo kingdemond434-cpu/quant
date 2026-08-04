@@ -11,7 +11,7 @@ _Seeded 2026-07-18; every family unvisited -- the first run biases per the rotat
 | Code (GitHub/Kaggle) | 2026-07-19 | 1 | operator-named dig: ai_quant_trade, Qbot, QuantDinger, Vibe-Trading (READMEs+issues) + Hummingbot/Freqtrade issues — all infra/framework shells or equity factor zoos, 0 crypto-perp strategy logic; 0 cards but confirmed funding-arb is now commoditized into hummingbot's v2_funding_rate_arb.py (crowding evidence) |
 | Academic (SSRN/arXiv) | never | 0 | untouched this session (RSRS is sell-side research, not SSRN/arXiv) — priority next run |
 | Records (contests/CTA) | 2026-08-04 | 2 | s1 (07-25): Bitcointalk "Automated Trading Contest" (CryptoTrader.org rounds #1-#5) → in-sample-vs-forward natural experiment entry. **s2 (08-04): the Quantopian FUND record mined via HN trees → graveyard `crowdsourced_backtest_selection_fund` (backtest-Sharpe>2.5 selection → −3% live vs SPX +6.6% → capital returned Feb-2020) — the at-scale companion to s1's entry.** Kaggle G-Research + Numerai post-mortems + HN 9152332 contest-winner tree still untouched |
-| Non-English forums | 2026-08-04 | 3 | s1 (07-19): Chinese RSRS + funding-arb (CSDN/VeighNa/BigQuant/Zhihu/FMZ) + JP note.com — RSRS EV-killed, ML-funding-rate graveyard-matched. s2 (07-26, CN frontier miner): axis #76 usdt-cny-otc-premium UN-PARKED — "no clean free API" REFUTED, 3 keyless routes, 591d history reconstructed (OP-031), Stage-A 4/4 cells → no promotable edge but SIGN and MAGNITUDE priors falsified. New: OP-031, OP-032, CN lexicon. **s3 (08-04, CN frontier miner): era-archaeology STARTED at depth — 8btc board CDX-mapped (993 urls, 39 boards), 3 era windows (2013 ban / 2017 freeze / 94 exodus) mined to reply-depth ≥2 → graveyard 5th instance adds the premium-SIGN law (coin-leg frozen → domestic discount; fiat-leg frozen → premium) + primary-source 94 diaspora record; LTW-2022 momentum "non-replication" REVERSED by code forensics (pd.cut fat-tail trap → OP-047); Gitee access-mapped (discovery-walled/content-open → OP-048); +12 lexicon rows. Board 233 (BitMEX 合约党, ~1000pp) surveyed, unmined.** **s4 (08-04, RU frontier miner s1-on-branch): forum.btcsec.com era corpus OPENED — 48 CDX pages, 1,570 topics mapped, 283 trading-tagged (data/btcsec_trading_topics.json); 3 threads reply-depth → grid-bot SECOND instance (correlated-outage failure mode) + barrier-rent SIXTH instance (Sep-2013 fee-ladder: ~12% route dispersion, Bitstamp anchor, "мы не в РФ" jurisdiction-arb); live successor forum.bits.media censused (sections 74/166/110) → 2022 diaspora ANSWERED (offshore-venue RU-language trading vs obnal-Telegram rails, double barrier) + corridor-tech-export weak signal + volume-profile POC watchlist card (novelty-clean). RU seat s1 proper lives on diverged master ledger.** |
+| Non-English forums | 2026-08-04 | 3 | s1 (07-19): Chinese RSRS + funding-arb (CSDN/VeighNa/BigQuant/Zhihu/FMZ) + JP note.com — RSRS EV-killed, ML-funding-rate graveyard-matched. s2 (07-26, CN frontier miner): axis #76 usdt-cny-otc-premium UN-PARKED — "no clean free API" REFUTED, 3 keyless routes, 591d history reconstructed (OP-031), Stage-A 4/4 cells → no promotable edge but SIGN and MAGNITUDE priors falsified. New: OP-031, OP-032, CN lexicon. **s3 (08-04, CN frontier miner): era-archaeology STARTED at depth — 8btc board CDX-mapped (993 urls, 39 boards), 3 era windows (2013 ban / 2017 freeze / 94 exodus) mined to reply-depth ≥2 → graveyard 5th instance adds the premium-SIGN law (coin-leg frozen → domestic discount; fiat-leg frozen → premium) + primary-source 94 diaspora record; LTW-2022 momentum "non-replication" REVERSED by code forensics (pd.cut fat-tail trap → OP-047); Gitee access-mapped (discovery-walled/content-open → OP-048); +12 lexicon rows. Board 233 (BitMEX 合约党, ~1000pp) surveyed, unmined.** **s4 (08-04, RU frontier miner s1-on-branch): forum.btcsec.com era corpus OPENED — 48 CDX pages, 1,570 topics mapped, 283 trading-tagged (data/btcsec_trading_topics.json); 3 threads reply-depth → grid-bot SECOND instance (correlated-outage failure mode) + barrier-rent SIXTH instance (Sep-2013 fee-ladder: ~12% route dispersion, Bitstamp anchor, "мы не в РФ" jurisdiction-arb); live successor forum.bits.media censused (sections 74/166/110) → 2022 diaspora ANSWERED (offshore-venue RU-language trading vs obnal-Telegram rails, double barrier) + corridor-tech-export weak signal + volume-profile POC watchlist card (novelty-clean). RU seat s1 proper lives on diverged master ledger.** **s5 (08-04, KR frontier miner s1-on-branch): the 3 routed legitimacy items RESOLVED (none seat-decidable; #67/#69 live+dated in GAP register; one gap — #69 priced at 1 axis vs 3 grounds — routed via recommendations R0020, scheduled 08-05); velog.io OPENED as ground (robots clean, GraphQL keyless) → OP-050 (Apollo-SSR route + 4 silent-failure traps), 6-post deep-read lake data/velog_kr_quant_posts.jsonl, Bithumb 2026-02-06 mis-credit DATA FENCE onto watchlist card #4, 2 weak signals (per-coin premium dispersion retail-tooled = KR twin of RU corridor-export, same day; order-flow stack commoditized + folk liquidation-long self-refuted at 45% WR), KR lexicon section STARTED (김프/GIMP collision the load-bearing entry); Ppomppu 가상화폐 board BOOTSTRAPPED as the era ground (robots-clean legal twin of hard-stopped DCInside: ~190k posts, 2014-07→live, no purge, universe row 91) — era-seek of the 2017-12/2018-01 mania+ban window is next run's first item. KR seat s1 proper lives on diverged master ledger.** |
 | AI/HF documentation | 2026-07-19 | 1 | touched only incidentally via Vibe-Trading (AI trading-agent platform) + ai_quant_trade (LLM module) — both infra, not alpha-discovery-process documentation; weak coverage, revisit properly next run |
 
 ## COVERAGE REALITY vs DIRECTIVE (honesty record, 2026-07-20)
@@ -620,8 +620,62 @@ ITEMS THIS RUN (bounded per completion contract):
 2. **velog.io first dig** (zero robots rules, re-verified this run; the one briefed ground never
    touched). Target: code-included KR practitioner posts — Upbit/Bithumb API mechanics, 김프
    constructions, 자동매매/펀딩비 lore; comment layer where it exists; OP-002 native queries.
-   STATUS: pending.
+   STATUS: DONE (ground OPENED, not exhausted — universe row 92). Route: keyless GraphQL
+   (v3.velog.io) + SSR __APOLLO_STATE__ fallback → **OP-050** with 4 silent-failure traps
+   (invalid-field empty-200; strict-AND; count=10000 no-match sentinel; stale index serving
+   deleted posts — the best lead, a 2026-01 kimchi-arb-bot build log, 404'd with no Wayback
+   capture: honest dead end, recorded). Corpus map: 업비트 API 486 / 빗썸 API 207 / 호가창 157 /
+   김치프리미엄 55 / 펀딩비 20. 6 posts deep-read into data/velog_kr_quant_posts.jsonl (83KB):
+   (a) @rivkode Bithumb 2026-02-06 mis-credit timeline → **DATA FENCE on watchlist card #4**
+   (620k phantom BTC 19:00 KST, 1,788 BTC sold pre-freeze 19:35-40, FSS 02-07 — fence prints +
+   stale window + barrier spike on any Bithumb leg); (b) @hansanghun Cocoa (coincoin.kr, OSS) =
+   per-coin premium ROUTE OPTIMIZER → weak signal (dispersion retail-tooled; KR twin of RU
+   corridor-export, logged same day independently); (c) @vividbaek CoinWhale 12-part order-flow
+   stack → weak signal (CVD/OI/liq family commoditized on our own free sources; folk
+   liquidation-long 45% WR self-refuted; CVD threshold 50→300 flips 50.2→60.9% — screen-grade
+   priors only); (d) @papapat honest 0-for-6 falsification of KR-equity folk beliefs by a
+   NON-developer via Claude Code → genre-evolution 3rd-region confirmation (audit must move to
+   meta-defects; crowding rate rising). Zero tradeable cards — honest result; the value was one
+   fence, one ground map, two weak signals, one operator. [§33: wired -> data/velog_kr_quant_posts.jsonl]
 3. **Ppomppu era-archaeology bootstrap** (region era target; robots UNREAD — read first, dig
    only if clean; if blocked, record and fall back to bithumb.com notice archive as era ground).
    Bounded: robots verdict + CDX map as durable artifact; era windows next runs.
-   STATUS: pending.
+   STATUS: DONE (bootstrap only, zero threads mined — declared). robots: `User-agent: *` +
+   `Allow: /zboard/`, NO bot-name blocks; Disallows = marketplace boards + /search_bbs.php →
+   **s13 PASS for board/thread reads; site search FORBIDDEN → era-seek by post-no binary search
+   is the only legal path** (OP-021 KR adaptation added). Board 가상화폐: ~190,481 posts /
+   ~6,300 pages, **2014-07 → live, NO purge** (no=1..18 still served) — spans pre-mania,
+   2017-12 mania (>40% premium), 2018-01 Park Sang-ki shock + real-name-law, everything since.
+   The robots-clean LEGAL TWIN of hard-stopped DCInside. cp949 errors=replace (strict euc-kr
+   dies). Universe map row 91. [§33: wired -> data/data_universe_map.json]
+DEPTH LINE (mandate report, honest): velog = 6 posts read FULL-BODY (42KB Korean prose + code),
+comment layer checked on all 6 — thin everywhere (≤4, best was 1 spam + 1 cheer): on velog the
+yield is post+linked-repo, NOT comment chains (regional counter-instance to WS-003; the depth
+rule holds but the LAYER differs by platform). Forks/citations: Cocoa GitHub repo + papapat's
+playbook site NOT fetched this run — next-run queue per OP-001/OP-005. Ppomppu: 3 probe fetches
+(p1, p6300, no=150), zero threads — bootstrap by design, not breadth-theater: the bounded
+contract spent the thread budget on velog full-reads. Zero-hit lexical checks logged: 재정거래
+compound 0-hit (folk term ≠ formal term, OP-030 class), 김프 collision documented.
+PROACTIVE BATTERY (moves run): #2 ADJACENCY — RU's 0-byte Wayback trap generalized: velog's
+empty-200-on-invalid-field is the same "route fails, capability lives" shape, now OP-050(1);
+also the RU corridor-productization signal deliberately hunted in KR ground and FOUND (Cocoa) —
+two regions, same day, independent instances. #9 SCOPE-THE-NEGATIVE — GraphQL body=null was the
+ROUTE not the post (SSR carried it); fool030 404 was the POST not the platform. #3
+CONFIG-VS-OUTCOME — every s13 verdict cites a robots.txt fetched THIS session (velog re-verified
+despite s1 verdict; Ppomppu first-read); no cached verdicts (JP Cloudflare lesson). #8
+NEGATIVE-SPACE — Ppomppu was on the region's era list since 07-24 and no organ had ever read its
+robots; one fetch turned "unknown ground" into the region's best legal era corpus. Moves
+producing nothing: #5 COST-INVERSION (nothing paid touched; the 3 vendor items resolved to
+register rows, not spend). #1 CONTINGENCY named: if velog ever walls the GraphQL, the SSR
+Apollo route is the standing replacement (both documented in OP-050).
+NEXT RUN (in order): (1) Ppomppu era-seek: binary-search post-no → date map, land on 2017-11 →
+2018-02 window (mania peak + Park Sang-ki + real-name-law), mine threads to reply-depth ≥2 —
+graveyard-check each mechanism (premium family is at 6 instances; expect KR instances of the
+same laws, hunt the KR-SPECIFIC residue: real-name-law microstructure, Upbit-Bithumb basis
+lore, 원화마켓 vs BTC마켓 routing); (2) Cocoa repo chain (OP-001: code + issues + author's
+other repos) — the premium/fee calc internals are the mechanism document; (3) velog CoinWhale-9
+(capital mgmt) + @garine 김프 자동매매 series if still live (404-check first per OP-050); (4)
+NAVER key status check (#69 due 08-09 — if landed, the 3 unlocked grounds change this seat's
+whole frontier).
+PUSH RECORD: pre-push hook expected ENOENT on this fork (law gate lives on master) — verified by
+running the hook manually before pushing; --no-verify per the standing fork corollary if so.
