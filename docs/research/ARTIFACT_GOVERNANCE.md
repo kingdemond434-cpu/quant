@@ -69,7 +69,13 @@ no-sudo path when `sudo -n` fails.
 directing operators to `VPS_BRINGUP.md` first. It stays because it is still the reference for what
 the recorders do and how to debug them; what it no longer is, is the entry point.
 
-**Net: 3 cadenced, 5 doctrine, 5 terminal. Zero remain ungoverned.**
+### Added 2026-08-04 (a pre-registration is a distinct class and needed saying so)
+
+| Artifact | Class | Rationale |
+|---|---|---|
+| `docs/research/FAILED_BREAKOUT_PREREGISTRATION.md` | **TERMINAL** | A pre-registration is terminal **by definition, and that is the whole point of one**. It records kill criteria and a trial budget fixed BEFORE the data existed; refreshing it, re-ranking it, or converting it would destroy the only property that makes it worth anything. It is superseded by exactly one thing: the study running to a verdict, at which point this document becomes the record the verdict is judged against and still must not change. If the hypothesis is re-opened on new evidence, that is a NEW pre-registration with its own date, never an edit to this one — an edited pre-registration is a backtest wearing a timestamp. |
+
+**Net: 3 cadenced, 5 doctrine, 6 terminal. Zero remain ungoverned.**
 
 A note on why this row was written the same day the artifact was: an artifact classified late is
 an artifact that was ungoverned for however long "late" was, and the register's own rationale for

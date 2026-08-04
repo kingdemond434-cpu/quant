@@ -454,7 +454,13 @@ def main() -> None:
             # now reports an empty fetch instead of dying on a pandas KeyError, so a cycle where
             # the venue is unreachable costs a line of output rather than a traceback.
             ("axis-generate", "scripts/run_axis_generate.py", "data/cadence_state.json"),
-            ("prediction-markets", "scripts/run_prediction_markets.py", "data/cadence_state.json")):
+            ("prediction-markets", "scripts/run_prediction_markets.py", "data/cadence_state.json"),
+            # The failed-breakout study. Runs its MECHANISM stage every cycle and halts there when
+            # open interest is unavailable, so "we cannot yet test this hypothesis" is a dated
+            # statement rather than a silence. It synthesises nothing and has no authority; the
+            # kill criteria are pre-registered and binding before it ever sees data.
+            ("failed-breakout", "scripts/run_failed_breakout_study.py",
+             "data/failed_breakout_study.json")):
         _r = subprocess.run([sys.executable, _script],
                             capture_output=True, text=True, timeout=420, check=False)
         _tail = (_r.stdout or _r.stderr or "").strip().splitlines()[-1:] or [""]
