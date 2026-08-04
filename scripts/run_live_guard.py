@@ -32,6 +32,7 @@ SAFETY, by construction:
 from __future__ import annotations
 
 import json
+import os
 import sys
 import time
 from datetime import UTC, datetime
@@ -312,7 +313,14 @@ def main() -> int:
         "flatten": flatten_note,
     }
     _REPORT.parent.mkdir(parents=True, exist_ok=True)
-    _REPORT.write_text(json.dumps(report, indent=2), "utf-8")
+    # ATOMIC write (R0164): this file has TWO writers (the flock'd cadence path and this one) and
+    # several readers (run_cashcarry_executor, run_alerts). Plain write_text is truncate-then-
+    # write, so a reader landing mid-write -- or a crash in that window -- sees empty/partial
+    # JSON. Same-directory temp + `os.replace` (the run_deadman_switch.py idiom): readers see
+    # either the whole old report or the whole new one, never a torn file.
+    _tmp = _REPORT.with_suffix(".json.tmp")
+    _tmp.write_text(json.dumps(report, indent=2), "utf-8")
+    os.replace(_tmp, _REPORT)
 
     # A green S1 gate is the one thing here that needs a HUMAN, so it goes down the existing
     # principal-action channel rather than into a report nobody opens.

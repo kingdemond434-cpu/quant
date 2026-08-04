@@ -5,7 +5,8 @@ churn drag (-8.1%/yr in sub-8h holds), baseline-funding entries (-92.7 bps, ~80%
 and concentrated leg-thrash losses. All three were visible in ONE artifact the desk already owned
 -- data/cashcarry_trades.json -- bucketed three ways. Per the RECURSION RULE, that analysis is now
 a standing daily check: pure python, quota-free, runs even when the brain is auth-dead (as it was
-the day this was written). Writes web/trade_forensics.json; run_alerts pages on any bleeding class.
+the day this was written). Writes web/trade_forensics.json (the executor's denylist source) plus a
+tracked copy at docs/research/trade_forensics_latest.json; run_alerts pages on any bleeding class.
 
     python scripts/run_trade_forensics.py
 """
@@ -19,6 +20,10 @@ from typing import Any
 
 _TRADES = Path("data/cashcarry_trades.json")
 _OUT = Path("web/trade_forensics.json")
+# web/ is untracked runtime state: evidence that exists ONLY there is invisible to any checkout
+# and unciteable by an audit (R0160). _TRACKED is the governed, reports-parallel copy of the same
+# doc; run_cashcarry_executor keeps reading _OUT -- the denylist read path must not move.
+_TRACKED = Path("docs/research/trade_forensics_latest.json")
 _MIN_N = 15            # a class needs this many trades before its verdict is trusted
 _WINDOW_D = 14.0       # ROLLING window: all-history flags would re-page forever even
                        # after fixes work; the question is "is it bleeding NOW"
@@ -284,6 +289,11 @@ def main() -> None:
     }
     _OUT.parent.mkdir(parents=True, exist_ok=True)
     _OUT.write_text(json.dumps(out, indent=1), "utf-8")
+    # same doc plus a "written" stamp: a checkout must be able to cite WHEN the evidence was
+    # captured, not merely that it exists
+    _TRACKED.parent.mkdir(parents=True, exist_ok=True)
+    _TRACKED.write_text(
+        json.dumps({**out, "written": datetime.now(tz=UTC).isoformat()}, indent=1), "utf-8")
     print(f"trade forensics: {len(closes)} closes | flags: {len(flags)}")
     for fl in flags:
         print("  !", fl)
