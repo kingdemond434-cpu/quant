@@ -75,7 +75,9 @@ the recorders do and how to debug them; what it no longer is, is the entry point
 |---|---|---|
 | `docs/research/FAILED_BREAKOUT_PREREGISTRATION.md` | **TERMINAL** | A pre-registration is terminal **by definition, and that is the whole point of one**. It records kill criteria and a trial budget fixed BEFORE the data existed; refreshing it, re-ranking it, or converting it would destroy the only property that makes it worth anything. It is superseded by exactly one thing: the study running to a verdict, at which point this document becomes the record the verdict is judged against and still must not change. If the hypothesis is re-opened on new evidence, that is a NEW pre-registration with its own date, never an edit to this one — an edited pre-registration is a backtest wearing a timestamp. |
 
-**Net: 3 cadenced, 5 doctrine, 6 terminal. Zero remain ungoverned.**
+| `docs/research/THREE_MECHANISM_PREREGISTRATION.md` | **TERMINAL** | Same class and the same reasoning as the row above: a pre-registration is terminal by definition. It fixes the three mechanisms the desk will run, their shared trial budget, and the crucial distinction between a TRIAL (can be promoted, deflates the Sharpe) and a CONTROL (pre-declared expected-to-fail, cannot promote anything, measures the harness's false-positive rate instead). Editing it to add a fourth mechanism would void the shared deflation, which is the whole thing it exists to protect. Superseded only by a NEW pre-registration with its own date. |
+
+**Net: 3 cadenced, 5 doctrine, 7 terminal. Zero remain ungoverned.**
 
 A note on why this row was written the same day the artifact was: an artifact classified late is
 an artifact that was ungoverned for however long "late" was, and the register's own rationale for

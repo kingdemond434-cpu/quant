@@ -40,6 +40,7 @@ if str(ROOT) not in sys.path:
 
 from libs.research.failed_breakout import LevelParams, find_events  # noqa: E402
 from libs.research.liquidation_mechanism import mechanism_evidence  # noqa: E402
+from libs.research.oi_divergence import classify, quadrant_evidence  # noqa: E402
 
 BARS = ROOT / "data/bars"
 REPORT = ROOT / "data/failed_breakout_study.json"
@@ -183,7 +184,18 @@ def main() -> int:
             oi=_series(df, "open_interest", "oi", "sum_open_interest"),
             funding=_series(df, "funding", "funding_rate", "fr"),
             liq=_series(df, "liquidation_notional", "liq_notional", "liquidations"))
-        per_symbol.append({"symbol": sym, "n_events": len(events), **ev.as_dict()})
+        row = {"symbol": sym, "n_events": len(events), **ev.as_dict()}
+
+        # OI DIVERGENCE, MEASURED ON THE SAME PASS. It asks the same question the sweep study
+        # asks -- who paid for the move -- but needs neither a level nor a sweep, so it resolves
+        # on strictly less data and its failure is more informative: if the quadrants do not
+        # separate at all, no rule built on top of them can create the effect.
+        oi_s = _series(df, "open_interest", "oi", "sum_open_interest")
+        if oi_s is not None:
+            fwd = df["close"].pct_change().shift(-1)          # return AFTER the bar, never before
+            q = classify(df["close"], oi_s, window=12, price_eps=1e-4, oi_eps=1e-4)
+            row["oi_quadrants"] = quadrant_evidence(q, fwd).as_dict()
+        per_symbol.append(row)
 
     unmeasurable = [r for r in per_symbol if r["verdict"] == "UNMEASURABLE"]
     out = {
