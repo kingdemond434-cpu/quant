@@ -31,6 +31,10 @@ MIN_SPREAD_ANNUAL = 0.10
 #: OUT rather than ranked first -- the biggest number in a noisy panel is the likeliest artifact,
 #: and a screen that sorts by magnitude finds its own worst data every single day.
 MAX_CREDIBLE_ANNUAL = 5.00
+#: R0293: a print at or beyond this fraction of its venue clamp is CENSORED -- the venue is saying
+#: "at least this much", not "this much". 99% rather than 100% because the clamp arithmetic on the
+#: venue side rounds, and a print one float-tick under the wall is pinned in every way that matters.
+CENSOR_FRACTION = 0.99
 
 
 class VenueQuote(BaseModel):
@@ -42,6 +46,10 @@ class VenueQuote(BaseModel):
     venue: str
     funding_rate: float               # per 8h interval
     open_interest_usd: float = 0.0
+    #: ABSOLUTE clamp binding a print of this sign on this venue (caller resolves sidedness for
+    #: asymmetric caps -- see libs/data/funding_caps.FundingCaps.clamp_for). None = unknown, and
+    #: unknown NEVER labels: a censor flag must be evidence, not a guess.
+    funding_cap: float | None = None
 
 
 class Divergence(BaseModel):
@@ -55,12 +63,26 @@ class Divergence(BaseModel):
     spread_annual: float
     min_oi_usd: float                 # the BINDING side -- capacity is the thinner leg
     credible: bool
+    #: R0293: True when either recorded leg sits at >= CENSOR_FRACTION of its venue's funding
+    #: clamp. A censored print is a measurement CEILING, not an extreme signal: the spread is a
+    #: LOWER BOUND on the true gap, and funding pinned at its cap can no longer pull perp to
+    #: index. Readers of the recorded artifact must EXCLUDE or separately bucket censored rows --
+    #: never average them into the uncensored panel.
+    censored: bool = False
     note: str = ""
 
 
 def annualise(rate_per_interval: float) -> float:
     """A per-8h funding rate as an annual fraction."""
     return float(rate_per_interval) * _INTERVALS_PER_YEAR
+
+
+def is_censored(rate: float, cap: float | None, *, fraction: float = CENSOR_FRACTION) -> bool:
+    """Is this print pinned at (>= ``fraction`` of) its venue clamp? Unknown clamp is False:
+    the label is only ever applied on evidence, and rows are never dropped for it (R0293)."""
+    if cap is None or cap <= 0:
+        return False
+    return abs(float(rate)) >= fraction * float(cap)
 
 
 def tail_universe(quotes: list[VenueQuote], *, quantile: float = 0.5) -> set[str]:
@@ -114,16 +136,29 @@ def divergences(
         if spread < min_spread_annual:
             continue
         credible = spread <= MAX_CREDIBLE_ANNUAL
+        # R0293: label, never drop. A pinned leg means the recorded spread is a LOWER BOUND on
+        # the true gap AND that funding has stopped doing its job of pulling perp to index --
+        # both facts belong in the row, neither justifies deleting it.
+        pinned = [q for q in (cheap, rich) if is_censored(q.funding_rate, q.funding_cap)]
+        notes = [] if credible else [
+            f"spread {spread:.0%} annual exceeds the {MAX_CREDIBLE_ANNUAL:.0%} credibility "
+            "ceiling -- treat as a stale quote or a symbol in trouble until a second "
+            "observation confirms it, NOT as the best opportunity in the panel"]
+        notes += [
+            f"CENSORED: {q.venue} print {q.funding_rate:+.4%} is at >={CENSOR_FRACTION:.0%} of "
+            f"its {q.funding_cap:.2%} funding clamp -- the venue's clamp binds, so this is a "
+            "measurement ceiling (true rate is AT LEAST this extreme), not an extreme signal "
+            "(R0293)" for q in pinned]
         out.append(Divergence(
             symbol=symbol, long_venue=cheap.venue, short_venue=rich.venue,
             spread_annual=round(spread, 4),
             min_oi_usd=round(min(cheap.open_interest_usd, rich.open_interest_usd), 2),
             credible=credible,
-            note="" if credible else (
-                f"spread {spread:.0%} annual exceeds the {MAX_CREDIBLE_ANNUAL:.0%} credibility "
-                "ceiling -- treat as a stale quote or a symbol in trouble until a second "
-                "observation confirms it, NOT as the best opportunity in the panel"),
+            censored=bool(pinned),
+            note=" | ".join(notes),
         ))
-    # Credible first, then widest. Never magnitude alone: the biggest number in a noisy cross-venue
-    # panel is the likeliest artifact, and sorting on it surfaces the desk's own worst data daily.
-    return sorted(out, key=lambda d: (not d.credible, -d.spread_annual))
+    # Credible first, then UNCENSORED within each credibility bucket, then widest. Never magnitude
+    # alone: the biggest number in a noisy cross-venue panel is the likeliest artifact, and a
+    # censored "extreme" is the clamp's number, not the market's -- it must never outrank a
+    # genuinely measured gap.
+    return sorted(out, key=lambda d: (not d.credible, d.censored, -d.spread_annual))

@@ -11,17 +11,21 @@ from __future__ import annotations
 import pytest
 
 from libs.research.tail_funding import (
+    CENSOR_FRACTION,
     MAX_CREDIBLE_ANNUAL,
     Divergence,
     VenueQuote,
     annualise,
     divergences,
+    is_censored,
     tail_universe,
 )
 
 
-def _q(sym: str, venue: str, rate: float, oi: float = 1e6) -> VenueQuote:
-    return VenueQuote(symbol=sym, venue=venue, funding_rate=rate, open_interest_usd=oi)
+def _q(sym: str, venue: str, rate: float, oi: float = 1e6,
+       cap: float | None = None) -> VenueQuote:
+    return VenueQuote(symbol=sym, venue=venue, funding_rate=rate, open_interest_usd=oi,
+                      funding_cap=cap)
 
 
 class TestAnnualise:
@@ -91,6 +95,35 @@ class TestDivergences:
         qs = [_q("A", "binance", 0.0010, 1_000), _q("A", "bybit", 0.0001, 1_000),
               _q("B", "binance", 0.0020, 900), _q("B", "bybit", 0.0001, 900)]
         assert divergences(qs) == divergences(qs)
+
+    def test_a_pinned_print_is_labelled_censored_never_dropped(self) -> None:
+        # R0293: a print AT its clamp is the clamp's number, not the market's. The row must still
+        # be recorded (dropping it hides the saturation regime) but must say so.
+        qs = [_q("PIN", "binance", 0.0010, 1_000, cap=0.0010), _q("PIN", "bybit", 0.0, 1_000)]
+        got = divergences(qs)
+        assert len(got) == 1, "a censored row was silently dropped -- the label IS the fix"
+        assert got[0].censored is True and "CENSORED" in got[0].note
+        # the label lands in the recorded artifact rows, not just in memory
+        assert got[0].model_dump()["censored"] is True
+
+    def test_the_line_is_99_percent_of_the_clamp(self) -> None:
+        assert is_censored(0.0099, 0.01) is True          # exactly 99% -- pinned
+        assert is_censored(0.0098, 0.01) is False
+        assert is_censored(-0.0099, 0.01) is True         # negative pins count the same
+
+    def test_an_unknown_clamp_never_guesses_a_label(self) -> None:
+        # None = we do not know this venue's clamp; a censor flag must be evidence, not a guess
+        assert is_censored(0.05, None) is False
+        assert (CENSOR_FRACTION,) == (0.99,), "the 99% line moved -- move the tests knowingly"
+        qs = [_q("X", "binance", 0.0010, 1_000), _q("X", "bybit", 0.0, 1_000)]
+        assert divergences(qs)[0].censored is False
+
+    def test_a_censored_row_never_outranks_a_measured_one(self) -> None:
+        # both credible; the censored one is WIDER but must sort after the genuinely measured gap
+        qs = [_q("MEAS", "binance", 0.0004, 1_000), _q("MEAS", "bybit", 0.0, 1_000),
+              _q("PIN", "binance", 0.0008, 1_000, cap=0.0008), _q("PIN", "bybit", 0.0, 1_000)]
+        got = divergences(qs)
+        assert [d.symbol for d in got] == ["MEAS", "PIN"]
 
     def test_a_divergence_is_frozen(self) -> None:
         import pydantic
