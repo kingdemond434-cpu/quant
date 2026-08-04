@@ -583,3 +583,45 @@ PUSH RECORD (L1.37 --no-verify, sanctioned): pre-push fence execs scripts/run_la
 does not exist on this forked branch (ENOENT verified by running the hook manually — same class
 as EN s4's 08-04 record; the law gate lives on master, 419 ahead). Pushed ccfa013 + priors with
 --no-verify per the standing fork corollary; nothing was bypassed that exists here to run.
+
+## SESSION NOTES — KR frontier miner
+
+### 2026-08-04 session 1-on-this-branch (KR frontier miner) — IN PROGRESS (write-first note; updated as items resolve)
+BRANCH CONTEXT (per the RU/EN fork convention): this tree forked from master at 3bf89cd (07-29).
+KR seat s1 (2026-08-01, master commit bc93838) is NOT in this tree; its laws carried by seat
+memory: (a) READ robots.txt BEFORE digging — cafe.naver.com `Disallow: /` + anti-RAG prose,
+blog.naver.com names ClaudeBot/Claude-SearchBot, gall.dcinside.com names ClaudeBot/anthropic-ai/
+Claude-Web — 3/5 briefed grounds refuse this agent family BY NAME; a seed list is not
+authorisation, a permissive `*` is no loophole, and per the fleet convention (RU btcsec ruling:
+origin-domain robots governs Wayback mining too) their ARCHIVES are equally closed; (b) coinpan
+Cloudflare-walled at CDN edge (OP-038 split does not rescue it); (c) velog.io + bithumb.com
+CLEAN and untouched — this run's ground; (d) venue-API layer findings (Upbit announcements
+5,685 events to 2017-10-24, English `trade` filter key; `first_listed_at` never `listed_at`,
+42.5% differ; Upbit purges candles on delisting 6/6 — treatment group ERASED; Bithumb
+assetsstatus = independent barrier regressor; GLOBAL_PRICE_DIFFERENCES 22% is USDT/BTC
+illiquidity not fiat premium — split by quote currency) live on master's ledger, cited here so
+this branch never re-derives them wrong. New OPs number from OP-050 (RU took 049).
+BACKLOG (resume step 1): 0 pending technical verification; the 3 "pending legitimacy" items are
+the KR/vendor rows ROUTED TO THIS SEAT by RU/CN/EN — resolved this run as item 1 below.
+ITEMS THIS RUN (bounded per completion contract):
+1. **Legitimacy-decision sweep of the 3 routed items** (Upbit portal / Coin Metrics CC BY-NC /
+   NAVER DataLab). STATUS: RESOLVED — none is KR-seat-decidable, and NONE IS STUCK: all three
+   carry §33 dispositions AND live GAP_REGISTER rows with owners and deadlines (#67 principal,
+   rule by 08-15, both licence questions bundled one-session; #69 operator, by 08-09, free NAVER
+   key). The escalation organ is driving (rerank_gaps.py cycle-stamped; register row 83 closed
+   the never-ranked hole). The seat's licence-reading duty is ALREADY DONE upstream: Upbit's
+   guide is translated verbatim in card #1 including the 초봉/분봉 mistranslation fix; nothing
+   left to read in Korean. ONE GAP FOUND: this branch's #69 row prices the key at 1 axis;
+   master-side s1 established it unlocks 3 grounds (/v1/search/blog + /v1/search/cafearticle =
+   the only §13-licensed route into the two robots-hard-stopped grounds; identical errorCode
+   024, settled — do not re-verify the 401 a 6th time). Card #21 on this branch already carries
+   the 3-grounds line (EN synced 08-04); register row correction routed via recommendations.py
+   (GAP register is outside this seat's freeze scope). [§33: n/a — no new find carded]
+2. **velog.io first dig** (zero robots rules, re-verified this run; the one briefed ground never
+   touched). Target: code-included KR practitioner posts — Upbit/Bithumb API mechanics, 김프
+   constructions, 자동매매/펀딩비 lore; comment layer where it exists; OP-002 native queries.
+   STATUS: pending.
+3. **Ppomppu era-archaeology bootstrap** (region era target; robots UNREAD — read first, dig
+   only if clean; if blocked, record and fall back to bithumb.com notice archive as era ground).
+   Bounded: robots verdict + CDX map as durable artifact; era windows next runs.
+   STATUS: pending.
