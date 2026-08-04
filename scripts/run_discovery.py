@@ -23,7 +23,7 @@ import pandas as pd
 from libs.autodiscovery.models import Family, Hypothesis
 from libs.autodiscovery.validation import (
     blocking_constant_gates,
-    campaign_pbo_rc,
+    campaign_gate_stats,
     counterfactual_survivors,
     gate_discrimination,
     validate,
@@ -148,11 +148,21 @@ def main() -> None:
     corr = df.replace(0.0, np.nan).corr()
     matrix = np.column_stack([lib[k] for k in lib])
     sharpes = np.array([sharpe_ratio(lib[k][lib[k] != 0.0]) for k in lib])
-    pbo, rc = campaign_pbo_rc(matrix)
+    # PER-CANDIDATE campaign statistics (R0044, closing defect #71 on this path). campaign_pbo_rc
+    # broadcast ONE matrix-level PBO/RC verdict to every sleeve regardless of merit -- and this
+    # file is the row's top-EV target (the only DEPLOYABLE tier). campaign_gate_stats keeps the
+    # SAME thresholds but each sleeve earns its verdict on its own column: CSCV candidate-PBO +
+    # Romano-Wolf stepdown, family-wise error still controlled over all N (multiplicity paid once,
+    # per R0224). Power-restoring, not bar-moving.
+    campaign = campaign_gate_stats(matrix)
 
     results = []
     gate_rows: list[dict[str, bool]] = []          # gap #71: per-gate discrimination evidence
-    for name, r in lib.items():
+    for i, (name, r) in enumerate(lib.items()):
+        # R0044 ACCEPTANCE TEST (mandatory per file): column i must be THIS sleeve's own series
+        # under the column_stack order above (dict insertion order both times) -- a mis-mapped
+        # index hands one candidate another's verdict, which is worse than the weld it replaces.
+        assert np.array_equal(matrix[:, i], r), f"column {i} is not {name}'s own series"
         active = r[r != 0.0]
         sh = _ann(r)
         others = corr[name].drop(labels=[name], errors="ignore").abs()
@@ -161,7 +171,8 @@ def main() -> None:
         v = (validate(active, hypothesis=Hypothesis(
             family=Family.CARRY, subtype=name, symbol="CRYPTO", params={},
             mechanism=MechanismType.RISK_PREMIUM, edge_source=name, failure_modes=_FAIL),
-            n_trials=len(lib), sharpe_estimates=sharpes, returns_matrix=matrix, pbo=pbo, rc=rc)
+            n_trials=len(lib), sharpe_estimates=sharpes, returns_matrix=matrix,
+            campaign=campaign, column=i)
             if len(active) >= 250 else None)
         gates = f"{sum(v.gates.values())}/{len(v.gates)}" if v else "n<250"
         survived = bool(v.survived) if v else False

@@ -22,7 +22,7 @@ import pandas as pd
 from scipy.stats import spearmanr
 
 from libs.autodiscovery.models import Family, Hypothesis
-from libs.autodiscovery.validation import campaign_pbo_rc, validate
+from libs.autodiscovery.validation import campaign_gate_stats, validate
 from libs.data.crypto_source import fetch_klines
 from libs.data.deribit import fetch_dvol
 from libs.validation.dsr import sharpe_ratio
@@ -74,14 +74,35 @@ def main() -> None:
     book = asset_mat.mean(axis=1)                          # equal-weight VRP book
     ann = round(float(sharpe_ratio(book[book != 0.0]) * np.sqrt(_PPY)), 2) if n > 5 else 0.0
     mean_ic = round(float(np.mean(ics)), 4)
-    sharpes = np.array([sharpe_ratio(asset_mat[:, i][asset_mat[:, i] != 0.0])
-                        for i in range(asset_mat.shape[1])])
-    pbo, rc = campaign_pbo_rc(asset_mat) if asset_mat.shape[1] >= 2 else (None, None)
+
+    # R0044 (defect #71), the flagged do-by-hand case -- resolved by CONSTRUCTING the proper
+    # per-candidate matrix, not by dropping to single-candidate. The validated series is the
+    # ROW-MEAN of asset_mat, so it had no column there, and the old code welded the book to a
+    # campaign-constant pbo/rc computed once from its own legs: one broadcast verdict whatever
+    # the book's merit. The data allows the proper matrix: stack the per-asset legs AND the
+    # equal-weight book as its own (last) column -- exactly the shape run_crossasset_shadow.py
+    # already uses (combo book = column 2 beside its two sub-books). The book then EARNS its
+    # verdict on its own column (CSCV candidate-PBO + Romano-Wolf stepdown) while family-wise
+    # error is controlled over ALL series this script examines -- legs included, so the
+    # multiplicity of having looked at each leg's IC/Sharpe is paid, not waived. Thresholds
+    # unchanged. Degenerate single-asset case (one DVOL feed down): the book IS the lone leg, so
+    # the matrix is the book alone, campaign_gate_stats correctly returns None, and validate
+    # fails the pbo/reality_check gates CLOSED -- the same fail-closed verdict the old
+    # (None, None) branch produced; no campaign constant is ever recomputed from peers.
+    matrix = (np.column_stack([asset_mat, book]) if asset_mat.shape[1] >= 2
+              else book.reshape(-1, 1))
+    book_col = matrix.shape[1] - 1
+    # R0044 ACCEPTANCE TEST (mandatory per file): the column index must map to THIS series under
+    # the column_stack order above -- a mis-mapped index hands the book a leg's verdict.
+    assert np.array_equal(matrix[:, book_col], book), "book_col is not the book's own column"
+    sharpes = np.array([sharpe_ratio(matrix[:, i][matrix[:, i] != 0.0])
+                        for i in range(matrix.shape[1])])
+    campaign = campaign_gate_stats(matrix)            # None when the matrix is the book alone
     v = validate(book[book != 0.0], hypothesis=Hypothesis(
         family=Family.CARRY, subtype="options_vrp", symbol="CRYPTO", params={},
         mechanism=MechanismType.RISK_PREMIUM, edge_source="options_vrp", failure_modes=_FAIL),
-        n_trials=asset_mat.shape[1], sharpe_estimates=sharpes, returns_matrix=asset_mat,
-        pbo=pbo, rc=rc) if n >= 250 else None
+        n_trials=matrix.shape[1], sharpe_estimates=sharpes, returns_matrix=matrix,
+        campaign=campaign, column=book_col) if n >= 250 else None
 
     out = {
         "updated": datetime.now(tz=UTC).isoformat(),

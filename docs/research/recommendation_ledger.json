@@ -542,8 +542,8 @@
    "summary": "Migrate the remaining 18 welded pbo/rc validation paths to campaign_gate_stats + validate(campaign=,column=), EV order: run_discovery.py (only DEPLOYABLE tier, 3 sleeves at 8/9), run_xsec_funding_max.py (sh 0.96 sole failing gate reality_check), then the second tier. run_options_vrp_backtest.py LAST and by hand -- its validated series is a row-mean that is not any column of the matrix, so no column index exists.",
    "roi_bps": 0.0,
    "raised": "2026-07-30T07:25:55.512029+00:00",
-   "status": "scheduled",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=9 effort_h=3: 17 of 19 paths migrated; exactly 2 remain welded (verified by running the max_audit weld-detector logic over the tree): scripts/run_discovery.py -- campaign_pbo_rc(matrix) at :151 fed to validate(..., pbo=pbo, rc=rc) at :164, and it is the row's own top-EV target (only DEPLOYABLE tier) -- and scripts/run_options_vrp_backtest.py, the flagged do-by-hand case (row-mean series has no matrix column). The row's stated gate is cleared: R0017 is implemented (libs/validation/positive_control.py + scripts/certify_gauntlet.py + tests/validation/test_positive_control.py), so a migrated path can now be proven to admit known-GOOD and reject known-NULL. Mandatory per-file column-index assertion per the row; thresholds untouched.",
+   "status": "implemented",
+   "reason": "[wave2 2026-08-04] last 2 of 19 welded paths migrated; weld count now 0 (max_audit detector: WELDED NONE). run_discovery on campaign_gate_stats/column with a column-identity assertion; VRP book stacked as its own matrix column beside its legs (crossasset precedent), earning its own verdict with leg multiplicity paid. Degenerate paths fail closed bit-for-bit. ~575 tests green.",
    "commit": null,
    "due": "2026-08-02",
    "disposed": "2026-07-30T07:28:47.830314+00:00"
