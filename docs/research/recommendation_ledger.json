@@ -3101,8 +3101,8 @@
    "summary": "FORECAST SELF-GRADING WRITER: find and fix whatever logged 30 eng:* forecasts and resolved them TRUE a median 18ms later (all outcome=1.0, no resolve_by). The estimator now excludes them (libs/self_improvement/forecast_calibration._scoreable), but the WRITER still produces them -- every new one is another retrospective row. Either give it a real resolve_by or stop calling log_forecast from a state-assertion path.",
    "roi_bps": 3000.0,
    "raised": "2026-08-01T07:50:32.305403+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=8 effort_h=1: Writer found, still producing: scripts/research_cycle.py:396-398 logs fc.log_forecast(f'eng:{id}', p, 'engineering') with NO resolve_by then immediately resolves completed items TRUE ('a completed task = forecast realised'); it runs daily as the 'state_files' step (daily_research_cycle.py:55) under cron 02:00Z + systemd 08:01 (ops/crontab.manifest:616,:754). The estimator already excludes no-resolve_by rows (forecast_calibration.py:109-131) but every run appends more retrospective rows. Give the writer a real resolve_by or stop logging from the state-assertion path.",
+   "status": "implemented",
+   "reason": "[wave1 2026-08-04] engineering forecasts are now genuine pre-registrations: logged once with a pinned resolve_by=+30d, graded both directions (overdue-open -> False; post-deadline completion -> False), state assertions never logged, legacy rows inert. Calibration record receives zero degenerate rows; 105 calibration/forecast tests pass. (Diff rode in with the R0297 commit -- flagged and verified.)",
    "commit": null,
    "due": null,
    "disposed": null
