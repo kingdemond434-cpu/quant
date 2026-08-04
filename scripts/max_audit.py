@@ -2508,6 +2508,18 @@ _PRODUCER_CADENCE = {
 #: Artifacts that are terminal by nature: templates, forensic write-ups, protocol libraries. They
 #: accumulate no inventory, so they owe no cadence -- recorded here so "no law" is a DECISION.
 _TERMINAL_ARTIFACTS = {
+    "docs/research/INTRADAY_ROTATION_PREREGISTRATION.md":
+        "PRE-REGISTRATION (2026-08-04, committed before data), same immutability rationale as "
+        "the other preregistrations: thresholds fixed before the backtest are the only kind "
+        "that constrain one. Its conversion happened same-day: the walk-forward ran and the "
+        "verdict is recorded in INTRADAY_ROTATION_RESULT.md. Editing it now would destroy the "
+        "instrument.",
+    "docs/research/INTRADAY_ROTATION_RESULT.md":
+        "dated measurement record (25,036 + 565 OOS trades, NO-GO both strategies, cost-in-R "
+        "1.1 at 5m scale, half-Kelly zero). Regenerable from scripts/run_intraday_rotation.py "
+        "into reports/intraday_rotation.json; the one follow-up it names (15m/1h re-test, new "
+        "trial count) is carried as a hypothesis in the campaign pipeline, not as inventory "
+        "here. NOTHING in it licenses moving a threshold.",
     "docs/RECORDER_DEPLOY.md":
         "deploy runbook (recorder systemd units + debug reference), not inventory. Consumed by "
         "being EXECUTED on the VPS -- ops/deploy_vps.sh supersedes its manual steps and the "
