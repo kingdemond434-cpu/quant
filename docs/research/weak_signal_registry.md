@@ -261,3 +261,22 @@ independence: two authors, one platform, one region; genre claim corroborated by
 CN s3 independently.
 promotion-check: none as-is (crowding/prior knowledge, not a hypothesis). The liquidation-echo prior
 becomes testable only inside the desk's own liquidation-listener clock (GAP row 76 forward clock).
+
+## 2026-08-04 — hours-band reversion pockets MIGRATE across timeframes, and 2024-03 closed one (JP miner s1-on-branch)
+observation (n=1 lineage, 3 corroborating deaths): the richmanbtc ATR-limit reversion family
+did not die once — it died PER TIMEFRAME. 15m incarnation dead ~2022-23 (community consensus +
+desk C62 kill); a 12H incarnation then worked 2022-mid→2024-03 with positive-fee modeling and
+3 months of live confirmation including a 90%-WR month, dying 2024-03 (chanta, Advent Calendar
+2024 d22 — graveyard jp_atr_limit_reversion_timeframe_migration). Same-dated deaths: SFD
+abolished 2024-03; desk's own H8 screen this run shows the 24h-lag contrarian's sign FLIPPED
+to momentum post-2024-04 (SCREEN-WEAK both directions). Pattern claim: the reversion band
+relocates across bar sizes as each incarnation crowds/decays, and 2024-03 is a JP-documented
+regime boundary where the hours-band pocket closed.
+independence: chanta (live-traded), Hoheto lineage (published anomalies), desk screen — three
+routes, one region's corpus + own data.
+promotion-check: NONE as-is — no mechanism predicts WHICH timeframe hosts the band next, so
+there is nothing pre-registrable; the signal's use is as a PRIOR: (a) any revived
+ATR-limit/reversion claim must name bar size + post-2024-03 evidence; (b) if a future screen
+finds an hours-band reversion cell alive, check whether it is this band relocated before
+calling it new. Converges with the desk's low-pass lesson (daily price alpha dead ≠ all price
+alpha dead) from the opposite side: the fast pocket existed, and it CLOSES too.

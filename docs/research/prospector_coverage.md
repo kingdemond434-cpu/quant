@@ -11,7 +11,7 @@ _Seeded 2026-07-18; every family unvisited -- the first run biases per the rotat
 | Code (GitHub/Kaggle) | 2026-07-19 | 1 | operator-named dig: ai_quant_trade, Qbot, QuantDinger, Vibe-Trading (READMEs+issues) + Hummingbot/Freqtrade issues — all infra/framework shells or equity factor zoos, 0 crypto-perp strategy logic; 0 cards but confirmed funding-arb is now commoditized into hummingbot's v2_funding_rate_arb.py (crowding evidence) |
 | Academic (SSRN/arXiv) | never | 0 | untouched this session (RSRS is sell-side research, not SSRN/arXiv) — priority next run |
 | Records (contests/CTA) | 2026-08-04 | 2 | s1 (07-25): Bitcointalk "Automated Trading Contest" (CryptoTrader.org rounds #1-#5) → in-sample-vs-forward natural experiment entry. **s2 (08-04): the Quantopian FUND record mined via HN trees → graveyard `crowdsourced_backtest_selection_fund` (backtest-Sharpe>2.5 selection → −3% live vs SPX +6.6% → capital returned Feb-2020) — the at-scale companion to s1's entry.** Kaggle G-Research + Numerai post-mortems + HN 9152332 contest-winner tree still untouched |
-| Non-English forums | 2026-08-04 | 3 | s1 (07-19): Chinese RSRS + funding-arb (CSDN/VeighNa/BigQuant/Zhihu/FMZ) + JP note.com — RSRS EV-killed, ML-funding-rate graveyard-matched. s2 (07-26, CN frontier miner): axis #76 usdt-cny-otc-premium UN-PARKED — "no clean free API" REFUTED, 3 keyless routes, 591d history reconstructed (OP-031), Stage-A 4/4 cells → no promotable edge but SIGN and MAGNITUDE priors falsified. New: OP-031, OP-032, CN lexicon. **s3 (08-04, CN frontier miner): era-archaeology STARTED at depth — 8btc board CDX-mapped (993 urls, 39 boards), 3 era windows (2013 ban / 2017 freeze / 94 exodus) mined to reply-depth ≥2 → graveyard 5th instance adds the premium-SIGN law (coin-leg frozen → domestic discount; fiat-leg frozen → premium) + primary-source 94 diaspora record; LTW-2022 momentum "non-replication" REVERSED by code forensics (pd.cut fat-tail trap → OP-047); Gitee access-mapped (discovery-walled/content-open → OP-048); +12 lexicon rows. Board 233 (BitMEX 合约党, ~1000pp) surveyed, unmined.** **s4 (08-04, RU frontier miner s1-on-branch): forum.btcsec.com era corpus OPENED — 48 CDX pages, 1,570 topics mapped, 283 trading-tagged (data/btcsec_trading_topics.json); 3 threads reply-depth → grid-bot SECOND instance (correlated-outage failure mode) + barrier-rent SIXTH instance (Sep-2013 fee-ladder: ~12% route dispersion, Bitstamp anchor, "мы не в РФ" jurisdiction-arb); live successor forum.bits.media censused (sections 74/166/110) → 2022 diaspora ANSWERED (offshore-venue RU-language trading vs obnal-Telegram rails, double barrier) + corridor-tech-export weak signal + volume-profile POC watchlist card (novelty-clean). RU seat s1 proper lives on diverged master ledger.** **s5 (08-04, KR frontier miner s1-on-branch): the 3 routed legitimacy items RESOLVED (none seat-decidable; #67/#69 live+dated in GAP register; one gap — #69 priced at 1 axis vs 3 grounds — routed via recommendations R0020, scheduled 08-05); velog.io OPENED as ground (robots clean, GraphQL keyless) → OP-050 (Apollo-SSR route + 4 silent-failure traps), 6-post deep-read lake data/velog_kr_quant_posts.jsonl, Bithumb 2026-02-06 mis-credit DATA FENCE onto watchlist card #4, 2 weak signals (per-coin premium dispersion retail-tooled = KR twin of RU corridor-export, same day; order-flow stack commoditized + folk liquidation-long self-refuted at 45% WR), KR lexicon section STARTED (김프/GIMP collision the load-bearing entry); Ppomppu 가상화폐 board BOOTSTRAPPED as the era ground (robots-clean legal twin of hard-stopped DCInside: ~190k posts, 2014-07→live, no purge, universe row 91) — era-seek of the 2017-12/2018-01 mania+ban window is next run's first item. KR seat s1 proper lives on diverged master ledger.** |
+| Non-English forums | 2026-08-04 | 6 | s1 (07-19): Chinese RSRS + funding-arb (CSDN/VeighNa/BigQuant/Zhihu/FMZ) + JP note.com — RSRS EV-killed, ML-funding-rate graveyard-matched. s2 (07-26, CN frontier miner): axis #76 usdt-cny-otc-premium UN-PARKED — "no clean free API" REFUTED, 3 keyless routes, 591d history reconstructed (OP-031), Stage-A 4/4 cells → no promotable edge but SIGN and MAGNITUDE priors falsified. New: OP-031, OP-032, CN lexicon. **s3 (08-04, CN frontier miner): era-archaeology STARTED at depth — 8btc board CDX-mapped (993 urls, 39 boards), 3 era windows (2013 ban / 2017 freeze / 94 exodus) mined to reply-depth ≥2 → graveyard 5th instance adds the premium-SIGN law (coin-leg frozen → domestic discount; fiat-leg frozen → premium) + primary-source 94 diaspora record; LTW-2022 momentum "non-replication" REVERSED by code forensics (pd.cut fat-tail trap → OP-047); Gitee access-mapped (discovery-walled/content-open → OP-048); +12 lexicon rows. Board 233 (BitMEX 合约党, ~1000pp) surveyed, unmined.** **s4 (08-04, RU frontier miner s1-on-branch): forum.btcsec.com era corpus OPENED — 48 CDX pages, 1,570 topics mapped, 283 trading-tagged (data/btcsec_trading_topics.json); 3 threads reply-depth → grid-bot SECOND instance (correlated-outage failure mode) + barrier-rent SIXTH instance (Sep-2013 fee-ladder: ~12% route dispersion, Bitstamp anchor, "мы не в РФ" jurisdiction-arb); live successor forum.bits.media censused (sections 74/166/110) → 2022 diaspora ANSWERED (offshore-venue RU-language trading vs obnal-Telegram rails, double barrier) + corridor-tech-export weak signal + volume-profile POC watchlist card (novelty-clean). RU seat s1 proper lives on diverged master ledger.** **s5 (08-04, KR frontier miner s1-on-branch): the 3 routed legitimacy items RESOLVED (none seat-decidable; #67/#69 live+dated in GAP register; one gap — #69 priced at 1 axis vs 3 grounds — routed via recommendations R0020, scheduled 08-05); velog.io OPENED as ground (robots clean, GraphQL keyless) → OP-050 (Apollo-SSR route + 4 silent-failure traps), 6-post deep-read lake data/velog_kr_quant_posts.jsonl, Bithumb 2026-02-06 mis-credit DATA FENCE onto watchlist card #4, 2 weak signals (per-coin premium dispersion retail-tooled = KR twin of RU corridor-export, same day; order-flow stack commoditized + folk liquidation-long self-refuted at 45% WR), KR lexicon section STARTED (김프/GIMP collision the load-bearing entry); Ppomppu 가상화폐 board BOOTSTRAPPED as the era ground (robots-clean legal twin of hard-stopped DCInside: ~190k posts, 2014-07→live, no purge, universe row 91) — era-seek of the 2017-12/2018-01 mania+ban window is next run's first item. KR seat s1 proper lives on diverged master ledger.** **s6 (08-04, JP frontier miner s1-on-branch): Qiita 仮想通貨botter Advent Calendar OPENED+MAPPED — 187 entries / 5 years to data/jp_botter_advent_calendar.jsonl (note.com 91/qiita 45/zenn 24, robots-clean; adventar.org HARD STOP ClaudeBot-named, 3rd region hit by the Cloudflare rollout); 5 deep-reads → graveyard ×3: `jp_sfd_boundary_game` (SFD dead-at-source 2024-03 with full dated 2017→2024 lifecycle; venue-CLOCK boundary-game class extracted → SFD-class cadence-probe watchlist card), `jp_intraday_anomaly_pair` (hourly-mark reversal died 2022-04 community-documented; 24h-lag contrarian desk-screened SCREEN-WEAK powered BOTH cells at H8, sign flipped to momentum post-2024-04, 2 trials logged), `jp_atr_limit_reversion_timeframe_migration` (12H variant positive-fee lived 2022-mid→2024-03 then died — family migrates across timeframes; 2024-03 = triple JP era boundary); funding-mechanics fences → R0021 (FR is quantized/clamped/capped/lagged PI; read PI not FR; Binance premiumIndexKlines keyless catalogued, FR-vs-PI screen deferred 08-11); JP LEXICON started (13 rows, 2/4 s1 seeds verified: 養分+イナゴ; ガチホ unobserved stays SEED) + OP-051 annual-series-as-finite-corpus + OP-050 react-on-rails addendum; diaspora QUANTIFIED: on-chain topic share 4%→26% (2021→2024) but community consolidated on one venue — diaspora of TOPIC, not PLACE. JP seat s1 proper lives on diverged master ledger.** |
 | AI/HF documentation | 2026-07-19 | 1 | touched only incidentally via Vibe-Trading (AI trading-agent platform) + ai_quant_trade (LLM module) — both infra, not alpha-discovery-process documentation; weak coverage, revisit properly next run |
 
 ## COVERAGE REALITY vs DIRECTIVE (honesty record, 2026-07-20)
@@ -682,7 +682,14 @@ running the hook manually before pushing; --no-verify per the standing fork coro
 
 ## SESSION NOTES — JP frontier miner
 
-### 2026-08-04 session 1-on-this-branch (JP frontier miner) — IN PROGRESS (write-first note; updated as items resolve)
+### 2026-08-04 session 1-on-this-branch (JP frontier miner) — COMPLETE (write-first note, finalized end of run)
+§33 STANDING TEST ("which artifact on disk is different because of what was mined?"):
+data/jp_botter_advent_calendar.jsonl (new, 187 rows), docs/graveyard.md (+3 entries),
+docs/research/prospector_watchlist.md (+1 card), docs/research/improvement_inbox.md (+1 entry
+→ R0021 in recommendations ledger), docs/research/data_axis_watchlist.md (+2 rows),
+data/data_universe_map.json (rows 93-95), docs/research/search_operator_library.md (+OP-051,
++OP-050 addendum, +JP lexicon 13 rows), docs/research/weak_signal_registry.md (+1),
+research_memory ×3 rows, data/lake screen results logged. Not "none" — cycle converts.
 BRANCH CONTEXT (fork convention per RU/KR/EN): tree forked from master at 3bf89cd (07-29). JP
 seat s1 (2026-08-01) is NOT in this tree; its laws carried by seat memory and partially synced
 by EN s4: (a) bitFlyer `restricted-by-licence` IS on this branch (graveyard
@@ -710,22 +717,91 @@ KR-routed vendor items already RESOLVED by KR s1-on-branch (R0020, GAP #67/#69) 
 JP-owed. §33 header: backlog clear, mining authorised.
 ITEMS THIS RUN (bounded per completion contract):
 1. **Qiita 仮想通貨botter Advent Calendar series (2021–2025) — the s1-designated primary
-   ground, never touched by any organ.** Map every Qiita-hosted year (finite era artifact),
-   deep-read highest-mechanism entries richmanbtc-lineage-first; the JP record is structurally
-   a POST-MORTEM archive (botters publish exhausted edges) → mine for deaths, decay dates,
-   method defects as graveyard material; route mechanisms via EV gate. STATUS: in progress.
-2. **Era-archaeology: bitFlyer-FX SFD band (2018–2020) via robots-clean grounds ONLY**
-   (note.com/Qiita/GitHub; 5ch and its archives closed, adventar closed). SFD = fee
-   discontinuity at ±10% FX-spot premium — candidate 7th instance of the barrier-rent/
-   fee-discontinuity family (6 instances). Graveyard-check first; era provenance = free
-   falsification context. Deliverable: mechanism understanding + graveyard or watchlist
-   routing. NOTE the licence fence: any tradeable construction needs non-bitFlyer data or
-   Tardis-licensed bitflyer (2019-08-30+). STATUS: in progress.
-3. **JP lexicon bootstrap (bounded):** negative-control the 4 s1 seeds
-   (okuribito/gachiho/inago/yobun) against real usage observed in items 1–2 (CN OP-037 lesson:
-   0/7 seed terms survived); start the JP lexicon section in the operator library with
-   VERIFIED-ONLY terms + contribute any new operator as OP-051. STATUS: in progress.
-STANDING DUTIES THIS RUN: §39 registry read (top OPEN advanceable = CryptoQuant flows/label
-corpora — watch for JP-ground label sets or paid-vendor mentions to add); §26 Stage-A screen
-in-run IF a new axis with stated mechanism + data-in-hand surfaces; universe map rows for any
-data source; commit+push with fork-corollary record.
+   ground, never touched by any organ.** STATUS: DONE (ground OPENED + fully MAPPED, not
+   exhausted — universe row 93). All 5 Qiita-hosted years fetched (server-rendered
+   react-on-rails JSON → OP-050 addendum); **187 entries mapped** to
+   data/jp_botter_advent_calendar.jsonl (hosts: note.com 91 / qiita 45 / zenn 24, all
+   robots-clean this session). 5 entries deep-read full-body: (a) Hoheto SFD anatomy 2023-12 +
+   (b) Ros SFD memoir 2024-12 → item 2's evidence base; (c) Hoheto anomaly-decay 2022-12 →
+   hourly-mark reversal DIED 2022-04 pre-LUNA cause-unknown after surviving COVID (community-
+   documented, harvested per §9), 24h-lag contrarian alive 2022-11 at 1h-6h cells → DESK
+   Stage-A at the 8h cell THIS RUN (only bar size in our lake; exact-ts 24h shift, single-
+   source Binance-UTC H8): full-sample n=7407 IC +0.0073 → SCREEN-WEAK powered; post-2024-04
+   n=2412 IC +0.0275 with sign FLIPPED to momentum → SCREEN-WEAK powered; both cells logged
+   (research_memory rm-...bb09ce/ea7de6), novelty retro-checked 0.96 vs branch graveyard, no
+   clock. → graveyard `jp_intraday_anomaly_pair_hourly_mark_and_24hlag`; (d) muzineco
+   funding-mechanics 2023 → **visible FR is a quantized/clamped/capped/lagged transform of PI**
+   (clamp dead-band; IMN heterogeneity Bybit BTC $880k vs HNT ~$120; 8h→4h→2h ad-hoc switches;
+   OKX/BitMEX pay one period LATE — join look-ahead; discretionary unannounced cap changes) →
+   improvement_inbox entry + **R0021** + Binance premiumIndexKlines keyless catalogued
+   (universe row 95, Stage-A FR-vs-PI deferred(2026-08-11) tier:2); (e) chanta vanished-edge
+   2024 → 12H ATR-limit variant (positive-fee modeled, NOT the C62 artifact) lived
+   2022-mid→2024-03 incl. live 90%-WR month, dead since → graveyard
+   `jp_atr_limit_reversion_timeframe_migration` + weak signal (timeframe migration).
+   [§33: wired -> data/jp_botter_advent_calendar.jsonl]
+2. **Era-archaeology: bitFlyer-FX SFD band via robots-clean grounds ONLY.** STATUS: DONE —
+   evidence COMPLETE from two independent practitioner post-mortems (better than 5ch could
+   have given: mechanism + code + dated lifecycle). Full dated arc 2017-12 (~30% divergence)
+   → 2018-02 SFD v1 flawed (lossless open/close loops) → 2018-03 fix ("SFD sandwich" regime)
+   → 2019-04 lev 15x→4x → 2021-04 4x→2x → **2024-03 ABOLISHED with Lightning FX** (successor
+   Crypto CFD). NOT a barrier-rent 7th instance — a DISTINCT class: venue-clock boundary game
+   (SFD price propagates on bitFlyer's internal ~1s jittery ticker cadence, uncorrelated with
+   market activity; winners modeled the VENUE'S clock; late ecology = bots farming bots via
+   delay-cancels; new-build-only rewards exploited by standing-short inventory accounting;
+   both counter-strategy cohorts — 現物操作組/現物板観測組 — failed per the practitioners).
+   → graveyard `jp_sfd_boundary_game` (dead at source) + transferable SFD-CLASS probe card on
+   prospector_watchlist (throttled derived-reference cadence audit: mark/index/premium-index/
+   liquidation-trigger reads; card names its own strongest spurious argument). Misattribution
+   instance #2 banked (Hoheto: "won by prediction, actually delay-tuning" — C62's twin).
+   [§33: wired -> docs/graveyard.md]
+3. **JP lexicon bootstrap.** STATUS: DONE — JP LEXICON section started in operator library,
+   VERIFIED-ONLY convention: 13 rows, of the 4 s1 seeds **2 verified in live text** (養分
+   Hoheto+Ros; イナゴ Hoheto), 1 weak-verified (億り人 via 億ウォレ pun in a 2024 title),
+   1 NOT observed (ガチホ — kept SEED, no queries built on it; okuribito's canonical form IS
+   億り人). Era-specific high-precision keys banked: 買い抜け, SFD焦らし, ドテン君 (the
+   publish-then-farmed incident meme), 現物操作組/現物板観測組, C級/S級botter ladder, 乖離
+   (the JP premium search key). + OP-051 (annual-series-as-finite-corpus, per-region
+   adaptations) + OP-050 react-on-rails addendum. [§33: wired -> docs/research/search_operator_library.md]
+STANDING DUTIES DONE: §39 registry read (no new paid vendor encountered in JP ground this run
+— calendar corpus is all free/community; nothing added, honest null); §26 satisfied (2 Stage-A
+cells run+logged in-run on the surfaced mechanism; PI-klines axis catalogued with dated
+deferral since it needs a polite multi-day pull — Binance 429 ban only expired 08-02);
+universe rows 93-95; R0021 rowed; research_memory ×3.
+DEPTH LINE (mandate report): 5 posts read FULL-BODY (~30k chars JP prose + embedded code);
+comment layer: note.com comments are API-only (/api/* robots-disallowed → out of bounds per s1
+ruling) — the yield layer on note.com is post+embedded-tweets+linked-repos, structurally like
+KR velog (regional counter-instance to WS-003 confirmed 2nd region); qiita comments checked on
+chanta post (0 comments). Forks/citations: Hoheto's SFD post cites his own 2020 note + 2
+bitFlyer PDFs (both quoted in-post, PDF fetch not needed); chanta links his repo (queued next
+run, OP-001 chain). Era-seek: N/A this run (the calendar IS date-indexed). Zero-hit lexical
+checks: ガチホ absent from all 5 read posts (kept SEED, not carded as verified).
+PROACTIVE BATTERY (moves run): #2 ADJACENCY — the RU/KR "corridor productization" hunt has no
+JP instance in the read set (JP premium graveyarded near-zero + free capital flows: the
+barrier the corridor tools monetize doesn't exist here — the ADJACENT find is the venue-clock
+class instead, which is the JP-specific rent surface); also EN-seat's fee-artifact class
+deliberately hunted → chanta's positive-fee 12H variant is the counter-case that REFINES it
+(death by regime, not by fee modeling — the family entry now carries both death modes). #3
+CONFIG-VS-OUTCOME — every robots verdict cites a fetch THIS session; adventar's block found by
+reading the FULL file after a clean-looking head (the 5ch lesson mechanically applied). #9
+SCOPE-THE-NEGATIVE — "5ch is closed" (route) did NOT become "era-archaeology is closed"
+(capability): the SFD era was mined to better depth via note.com practitioner post-mortems
+than thread archaeology would have reached. #10 RATCHET — the 24h-contrarian screen result is
+floor-stamped: any future claim it works must beat SCREEN-WEAK at H8 or bring the 1h-6h cells
+with data. HONEST SLIP recorded: novelty gate ran AFTER the screen, not before (retro-passed
+0.96; ordering corrected in next-run checklist). Moves producing nothing: #5 COST-INVERSION
+(nothing paid touched; no vendor mentions in the corpus read).
+DIASPORA (standing question, quantified from the map): on-chain/DEX topic share of the
+calendar 4% (2021) → 21% (2022, FTX year) → 14% (2023) → 26% (2024) → 16% (2025), crude
+keyword count; 2024's own title "絶滅危惧種(CEX botter)" is the community self-describing.
+Reading: PARTIAL pivot on-chain/Hyperliquid post-FTX+SFD-decay, but the JP community remains
+CONSOLIDATED on the calendar itself (s1 finding reconfirmed: it did not scatter — 187 entries,
+5 years, one venue — the diaspora is of TOPIC, not of PLACE).
+NEXT RUN (in order): (1) calendar deep-read queue: 2023 s2d21 domestic-vs-overseas
+short-horizon dynamics (note.com/kashihara1) + 2025 s2d19 GMO-Bybit pair study (touches our
+LICENSED GMO ticks — potential Stage-A on owned+licensed data), then 2022 s1d3+s1d21
+regression-bias pair, 2023 s1d24 limit-optimization under jumps, 2024 s2d3 venue-characteristics;
+(2) chanta repo chain (OP-001); (3) PI-klines deferral due 08-11 (tier:2) — hand to carry-family
+owner or pull gently if still un-run; (4) マケデコ (market-making) Advent Calendar same-platform
+sweep (OP-051 lists it, untouched); (5) run novelty gate BEFORE any screen (this run's slip).
+PUSH RECORD: pre-push hook expected ENOENT on this fork (law gate lives on master) — verify by
+running the hook manually; --no-verify per the standing fork corollary if so, recorded here.

@@ -147,3 +147,46 @@ series = supply/demand zone scoring, multi-TF, pinbar entry). Mined to reply dep
    pullback-in-trend filter; after de-contamination against momentum/vol regime the POC
    conditioning may add nothing — the 148-trade PF 1.63 is ~1.5-2σ from noise BEFORE counting
    the ~20-parameter search space, i.e. consistent with a tuned sample.
+
+## 2026-08-04 — JP miner s1-on-branch: SFD-class venue-boundary cadence probe (throttled derived-reference games)
+SOURCE: era-archaeology of the bitFlyer SFD game, 2018-2024 (graveyard `jp_sfd_boundary_game`
+holds the dated lifecycle; primary sources Hoheto 2023-12 + Ros 2024-12, both practitioner
+post-mortems with mechanism detail the English crowd never read).
+1. **Mechanism (transferable, extracted from a dead game):** wherever a venue computes a
+   threshold-triggered fee/transfer from a THROTTLED derived reference price (SFD price then;
+   mark price, index price, premium index, liquidation trigger price now), two exploitable
+   surfaces exist BY CONSTRUCTION: (a) the reference updates on the venue's internal cadence
+   (SFD: ~1s jittery ticker, load-varying, uncorrelated with market activity) → a predictable
+   propagation LAG between the input (spot/index components) and the boundary; the game is won
+   by modeling the VENUE'S CLOCK; (b) reward/penalty asymmetries keyed to order TYPE (SFD paid
+   new-builds only → standing-inventory accounting converted closes into rewarded opens).
+2. **Novelty vs graveyard:** the SFD instance itself is dead at source (2024-03); the CLASS is
+   novel — no graveyard entry tests a venue-cadence lag game. Distinct from barrier-rent
+   (persistent premium = rent) and fee-artifact (backtest fee modeling) families.
+3. **Where it would live today (concrete probe list, cheapest first):** (a) Binance/Bybit
+   premium-index + mark-price update cadence vs their own component feeds — measurable from
+   public websockets, keyless; (b) liquidation-trigger reads (mark-price cadence at cascade
+   moments — pairs with the desk's liquidation listener); (c) funding interval switches
+   8h→4h→2h on hot alts (muzineco documents these as discretionary + laggy); (d) dated-futures
+   settlement-price windows (TWAP windows are published rules — boundary order-flow games).
+4. **Evidence grade:** VERIFIED mechanism for the dead instance (two independent practitioner
+   post-mortems + venue announcements); CLAIM for every live instance (nobody in the read
+   sources demonstrates a live-venue lag game — which is exactly why it is worth a cheap probe
+   before the crowd's tooling improves).
+5. **Why edge might exist NOW:** mark/index cadences are infrastructure trivia no vendor sells
+   and few measure; the SFD record proves venue clocks stay exploitable for YEARS when the
+   crowd models the market instead of the venue. Why NOT: top-venue engineering is far better
+   than 2018 bitFlyer (per-execution index recomputation would close the lag to ~0); HFT firms
+   likely already own any residual at the venues where it pays.
+6. **Cheapest falsification (bounded, no capital):** record mark-price + premium-index + trade
+   streams for BTC on one venue for 48h; measure update-interval distribution + input→reference
+   propagation delay. If the reference is per-execution (lag ≈ transport), the class dies at
+   that venue → graveyard with the measured number. If throttled (SFD-like), THEN design the
+   Stage-A question. Zero promotion authority; EV gate + pre-registration decide anything more.
+7. **≤4-week observable:** measured cadence table for 1-2 venues (one 48h recording session).
+8. **Strongest spurious argument (written first):** SFD's lag was harvestable because a RETAIL
+   game formed around a 5% boundary with queue-position mechanics; a bare mark-price lag with
+   no fee cliff at a known level may have NO monetizable surface even if measured — a lag is
+   only an edge where a discontinuity turns timing into money. The probe must name the
+   discontinuity before the recording, or it is cadence trivia.
+[§33: wired -> docs/graveyard.md]

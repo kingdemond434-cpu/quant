@@ -1077,3 +1077,37 @@ implied otherwise. Open question worth a cycle: does that make the connector's e
 than #2's current rank reflects, given it unblocks three derivative terms at once rather than one
 sleeve?
 
+
+## 2026-08-04 — JP miner s1-on-branch: funding-pipeline mechanics fences (visible FR is a transformed PI)
+
+Source: muzineco, Advent Calendar 2023 day 8 (note.com/muzineco/n/n2e27c4b8c5fd) — a
+venue-mechanics primer on how funding is actually computed, carrying five fence-grade facts the
+desk's live carry family should encode. The core: **the visible FR series is a QUANTIZED
+(clamp dead-band), CLAMPED (interest anchor), CAPPED (discretionary ceilings), LAGGED
+(payment timing) transform of the underlying premium index (PI); wherever PI is readable,
+read PI, not FR.**
+1. **Clamp dead-band differs by venue:** Bybit/Binance-style FR = clamp(0.01%, PI±0.05%) — any
+   PI in (−0.04%, +0.06%) prints identically as 0.01%, so an FR=0.01% print carries a 0.1%-wide
+   hidden PI range (hedged-carry performance spread of up to 0.1% per period between its
+   edges). OKX has NO interest term and NO clamp (FR=PI); dYdX FR=PI+0.00125%/1h. Cross-venue
+   FR comparisons mix differently-quantized series — normalize to PI or condition on venue.
+2. **Impact-margin-notional heterogeneity:** impact bid/ask read a fixed-notional book slice —
+   Bybit BTCUSDT IMN=20 BTC (~$880k) vs HNT IMN=21 HNT (~$120). Thin-alt FR extremes can be
+   book-microstructure artifacts, not positioning; any FR-extreme signal should condition on
+   IMN-scaled depth before believing the print (stated by the source as a driver of −0.56%-class
+   alt prints).
+3. **Interval switching:** 8h→4h→2h switches are applied to hot alts ad-hoc; a funding time
+   series naive-joined on an 8h grid corrupts carry estimates exactly in the extreme windows
+   that matter most.
+4. **Payment-timing split:** most venues apply FR immediately after its computation window;
+   OKX and BitMEX apply ONE PERIOD LATE. A funding⋈return join that ignores this is a
+   look-ahead (or look-behind) of a full period, per venue — §26(4) alignment-declaration
+   material for every funding screen.
+5. **Caps are discretionary and unannounced:** ±0.375/0.75/1.5/3% ladders, RAISED ad-hoc when
+   predicted FR pins ("FR変更指示おじさん" — a human changes them, no notice). Cap-change
+   moments are regime events for any carry position sized against the capped print; dYdX (and
+   FTX historically) had no cap.
+Concrete free upgrade surfaced: Binance serves premium-index klines keyless (finer-resolution
+PI under the FR) — routed to data_axis_watchlist + universe map this run. Recommendation rowed
+via scripts/recommendations.py (fence checklist into the carry pipeline's verification layer).
+[§33: wired -> docs/research/data_axis_watchlist.md]

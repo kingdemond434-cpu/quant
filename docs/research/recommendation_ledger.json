@@ -249,6 +249,18 @@
    "commit": null,
    "due": "2026-08-05",
    "disposed": "2026-08-04T16:23:37.095600+00:00"
+  },
+  {
+   "id": "R0021",
+   "source": "cycle",
+   "summary": "JP miner 2026-08-04: encode 5 funding-mechanics fences in the carry pipeline (clamp dead-band -> read PI not FR where readable; IMN-scaled depth conditioning on FR extremes; 8h->4h->2h interval-switch handling; per-venue payment-timing alignment incl OKX/BitMEX one-period-late; discretionary cap-change events). Source: muzineco advent-calendar mechanics primer; details docs/research/improvement_inbox.md 2026-08-04 entry. Free upgrade: Binance premiumIndexKlines keyless as the PI read.",
+   "roi_bps": 5.0,
+   "raised": "2026-08-04T17:02:25.748174+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

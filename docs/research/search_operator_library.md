@@ -665,3 +665,61 @@ not yet field-verified — verify before building queries on them._
 | 한강 수온 | "Han river water temperature" — rekt/despair meme (한강 = where blown-up traders go) | 2017→live | OBSERVED live: coincoin.kr ships a real-time Han-river water-temp widget as a joke; 한강 posts = capitulation-sentiment marker in era archaeology |
 | 떡상 / 떡락 | moon / crash (tteoksang/tteokrak) | 2017→live | SEED — era boards; not yet used as a key this run |
 | 존버 | diamond-hands / hold through pain (jonbeo) | 2017→live | SEED — era boards; not yet used as a key this run |
+
+### OP-051 community annual series (advent calendars / year-end retrospectives) as finite era-stratified corpora   [active]
+class: source-expansion
+origin: JP frontier miner s1-on-branch (2026-08-04, Qiita 仮想通貨botter Advent Calendar)
+validated-gain: 187 practitioner entries across 5 years mapped in 5 fetches (data/
+  jp_botter_advent_calendar.jsonl); 5 deep-reads yielded 3 graveyard entries (one with a full
+  dated 2017→2024 venue-rule lifecycle), a live-family fence checklist (R0021), 1 watchlist
+  card, and a dated triple era boundary (2024-03: SFD abolished + 12H ATR-reversion died +
+  regime shift) — density far above ambient blog mining.
+technique: developer platforms run ANNUAL themed series (JP: Qiita/Adventar advent calendars —
+  25 slots/day/series, community-curated; analogues elsewhere). These are the highest-yield
+  entry point into a regional practitioner community because they are (1) FINITE and countable
+  — a mapped calendar is an exhaustible ground with honest progress tracking, unlike an open
+  blog firehose; (2) DATED — era stratification for free (compare the same community's topics
+  across years to read diaspora/pivot: JP 2021 CEX-bot-heavy → 2024-25 DEX/atomic/Hyperliquid-
+  heavy); (3) CURATED BY THE COMMUNITY — the year's respected voices self-select; (4) in
+  post-mortem cultures (JP botters publish EXHAUSTED edges, never live ones) the series is a
+  decay-date mine: hunt "その後/消えた/思い出/振り返り" (what-happened-after / vanished /
+  memories / retrospective) titles FIRST. Extraction: the calendar page embeds the full entry
+  table machine-readably (Qiita: react-on-rails `data-component-name` JSON block — largest
+  application/json script tag carries adventCalendars.tableAdventCalendars[].items[] with
+  url/title/author/day); one fetch per year replaces per-entry discovery.
+adaptations: JP=Qiita `advent-calendar/<year>/botter` (+ マケデコ market-making calendar, same
+  platform, untouched); KR=velog/tistory 회고 (year-end retrospective) tag sweeps; CN=Zhihu
+  年终总结/复盘 + juejin 年度征文 collections; RU=habr "итоги года" tag; EN=r/algotrading
+  year-in-review threads + QuantConnect yearly writeup roundups. Adventar.org itself is
+  ClaudeBot-blocked (universe row 94) — platform robots gate each instance, check per ground.
+counterfactual: LOW-MED — English-language quant research never reads these (language moat,
+  OP-017), and even JP-fluent crawlers read entries individually; treating the SERIES as a
+  finite mapped corpus with decay-title triage is desk discipline.
+
+_OP-050 addendum (JP miner, 08-04): the Rails equivalent of `__APOLLO_STATE__`/`__NEXT_DATA__`
+is react-on-rails `<script type="application/json" data-component-name="...">` blocks — on
+Qiita the CALENDAR component carries the full data table, but ARTICLE bodies live in a
+server-rendered `div#personal-public-article-body` NOT in the component JSON: on hybrid-SSR
+platforms check BOTH the state blob and the rendered DOM before concluding content is
+API-only. note.com bodies: `div.note-common-styles__textnote-body` in plain HTML (robots-legal
+page route; its /api/* is disallowed)._
+
+## LEXICON — JP crypto-trading jargon (dark-forest search keys)
+_Charter dark-forest deliverable #2, JP seat. Convention per EN/CN/KR tables. OBSERVED =
+verified in a real post/text this session (CN OP-037 lesson: 0/7 unverified seeds survived —
+only observed terms enter as active keys; unobserved seeds stay marked SEED)._
+| term | gloss | era | note / example query |
+|---|---|---|---|
+| 養分 | "nutrients" = exit liquidity, prey | 2018→live | OBSERVED (Hoheto: 養分にされてしまう; Ros: 他人の爆益で退場). Seed VERIFIED. Query: <strategy> 養分 finds farmed-bot post-mortems |
+| イナゴ | swarm-chasers (locusts) | 2017→live | OBSERVED (Hoheto: イナゴ参加者 as hourly-anomaly mechanism prior). Seed VERIFIED. イナゴタワー = pump spike |
+| 乖離 | divergence/premium (formal) | all | OBSERVED throughout SFD corpus — THE JP term for spot-deriv premium; 乖離率 = premium %. JP twin of KR 김프 search role |
+| SFD / SFD焦らし / SFDファクター | the bitFlyer boundary fee; "SFD teasing" (boundary stall); received/paid ratio | 2018-2024 DEAD | OBSERVED (era-specific). Era-archaeology keys for 2018-2024 bitFlyer content; mechanism graveyarded jp_sfd_boundary_game |
+| 買い抜け | escaping a short at boundary−1 tick without paying SFD | 2018-2024 DEAD | OBSERVED (Hoheto's coinage) — appears in SFD-bot writeups only; high-precision era key |
+| 現物操作組 / 現物板観測組 | spot-manipulation vs spot-book-watcher bot cohorts | 2018-2024 | OBSERVED (Hoheto) — venue-game ecology vocabulary |
+| 担がれる | getting squeezed against a short | all | OBSERVED (both SFD posts) — finds squeeze post-mortems |
+| ドテン君 | THE published-then-farmed reversal bot (2018); リメンバードテンくん = cautionary meme | 2018→ | OBSERVED (Hoheto) — era incident marker; query ドテン君 finds the publish-your-logic-get-farmed literature |
+| 老人会 / bF民 | "elders' club" (2018-era veterans) / bitFlyer folk | 2020→live | OBSERVED (both posts self-describe) — finds era memoirs |
+| C級/A級/S級botter | botter class ladder (C ≈ ¥10k/mo … S = professional) | 2021→live | OBSERVED (multiple calendar titles) — S級 finds the serious-capital cohort's writeups |
+| 億り人 | "100-millionaire" (made ≥¥100M) | 2017→live | OBSERVED in derived form only (億ウォレ pun, 2024 calendar title). Seed WEAK-VERIFIED |
+| ガチホ | hard hold (gachi-hold) | 2017→live | SEED — NOT observed this run; do not build queries on it yet |
+| 爆益 / 退場 | explosive profit / blown-out exit | 2017→live | OBSERVED (Ros) — 退場 finds ruin post-mortems |

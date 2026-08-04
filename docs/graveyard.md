@@ -353,3 +353,82 @@ MODEL (posts 15-16): asked about FSB requests, the exchanger answers "Физич
 sits OUTSIDE the barrier's jurisdiction, always. Standing implication unchanged and
 strengthened: persistent premium = barrier rent, harvestable only by rail-access holders;
 usable as information/timing, never sized as arb.
+
+## `jp_sfd_boundary_game` — bitFlyer Lightning FX Swap-For-Difference boundary game (2018–2024)
+
+**DEAD AT SOURCE 2024-03 (JP frontier miner s1-on-branch, 2026-08-04, era-archaeology).**
+Lightning FX and SFD were ABOLISHED end-March 2024 (successor product: bitFlyer Crypto CFD);
+the game cannot be re-implemented. Primary sources, both practitioner-authored on robots-clean
+ground: Hoheto's full game anatomy (note.com/hht/n/ne27d41e3e5a2, 2023-12) and Ros's era
+memoir with dated timeline (note.com/ros_1224/n/n2d586b9fed53, 2024-12). **The dated lifecycle
+of a venue-rule edge, end to end:** 2017-12 bubble divergence ~30% (FX had "almost no price
+linkage" to spot) → 2018-02 SFD v1 FLAWED (closing orders also earned SFD → lossless open/close
+loops; divergence re-expanded) → 2018-03 rule fix (widening closes penalized; "SFD sandwich"
+5%-stuck regime emerges) → 2019-04 leverage 15x→4x (elasticity lost; 7-10% punch-throughs burn
+boundary bots) → 2021-04 4x→2x (>15% divergences; SFD "no longer functioning" in hot markets) →
+2023-04 rate change → 2023-12-01 Lightning Futures termination notice → 2024-03 abolition.
+**Mechanics banked (transferable, the reason this entry exists):** (1) SFD price propagated
+from spot with a LAG set by bitFlyer's internal ticker cadence (~1s, jittery, load-varying,
+UNCORRELATED with spot/FX execution volume — i.e., venue infrastructure latency, not market
+activity); winning bots modeled the VENUE'S CLOCK (next-ticker-timestamp prediction, delay-
+tuned order/cancel around the reflection instant), not the market. (2) Late-stage ecology:
+after retail flow dried up, surviving bots switched TARGET to other SFD bots (delay-cancel
+feeding: leave the stale-priced order up until just before the new SFD price lands, so
+mistimed competitors eat it) — a boundary game converges to bot-vs-bot predation, and
+published-logic copies died first (Hoheto: note-copied bots "stopped with losses early";
+リメンバードテンくん). (3) Rule-asymmetry exploit: rewards paid on NEW-position orders only →
+hold a standing SHORT and trade pseudo-long via 両建て so closes become rewarded opens —
+when a venue rewards only new-builds, inventory accounting converts flow type. (4) Both
+documented counter-strategies FAILED per the practitioners themselves: spot-manipulation bots
+(現物操作組) and spot-book-watcher bots (現物板観測組) "never profited much and withdrew"
+(fills too rare, inventory PnL dominated); anti-observer spoof bots (0.001-lot flicker on the
+spot book) existed just to poison them. (5) Attribution humility, SECOND JP instance of the
+misattributed-edge class (after C62's ML-vs-ATR-limit): Hoheto's own verdict — "the profit
+source was probably not the prediction model but the delay-tuning asymmetry" (cut it fine when
+receiving, leave margin when escaping). **Standing implication:** the transferable residue is
+the SFD-CLASS PROBE — wherever a venue computes a threshold fee/trigger from a THROTTLED
+derived reference (mark price, index, premium index, liquidation trigger), the boundary carries
+a venue-clock lag game and a reward-asymmetry surface; audit the CADENCE, not the formula
+(→ prospector_watchlist card 2026-08-04). Era lexicon banked to operator library. Any future
+"SFD revival" claim is pre-falsified: the product is gone.
+
+## `jp_intraday_anomaly_pair_hourly_mark_and_24hlag` — Hoheto's two BTC intraday anomalies
+
+**ONE COMMUNITY-DOCUMENTED DEATH + ONE DESK-SCREENED WEAK (JP frontier miner s1-on-branch,
+2026-08-04).** Source: Hoheto's own decay analysis (note.com/hht/n/nb0aa4844014b, 2022-12,
+Binance BTCUSDT minute bars). (a) **HOURLY-MARK REVERSAL** ("enter at :01 against the prior
+5-min move, close +25min" — mechanism prior: on-the-hour position cycling by large players +
+inago followers): worked ≥2019 through 2022-03 — SURVIVED the 2019-20 doldrums AND the COVID
+crash — then DIED ~2022-04, before LUNA (not the crash's fault); :01 entry now negative,
+:02-:05 marginal. Author's honest cause: unknown ("fuzzy in, fuzzy out"). Free falsification
+harvested per charter §9 — do not spend a desk test slot re-deriving this without minute data
+and a NEW mechanism reason. (b) **24H-LAG BAR CONTRARIAN** (bar return negatively correlated
+with same bar 24h prior; Hoheto validated at 1h/2h/4h/6h bars, still alive 2022-11): DESK
+Stage-A SCREENED this run at the 8h-bar cell (the only bar size in our lake; exact-timestamp
+24h shift, single-source Binance-UTC H8, no cross-source alignment risk). BOTH pre-declared
+cells logged, both POWERED: full-sample 2019-09→2026-06 n=7407 IC +0.0073 reversal-Sharpe 0.1
+→ SCREEN-WEAK; post-2024-04 n=2412 IC +0.0275 momentum-Sharpe 0.3 (SIGN FLIPPED vs the 2022
+contrarian reading, still under every floor) → SCREEN-WEAK. No clock. HONEST BOUNDARY: the
+1h-6h cells Hoheto validated remain UNTESTED here (no hourly lake); this entry kills the 8h
+construction and records the finer cells as open-but-unpromising (the post-2024 sign flip is
+evidence the family decayed, consistent with (a) and with 12H ATR-reversion dying 2024-03).
+
+## `jp_atr_limit_reversion_timeframe_migration` — the richmanbtc ATR-limit family's dated decay chain
+
+**FAMILY DECAY CHAIN COMPLETED 2026-08-04 (JP frontier miner s1-on-branch; extends the
+fee-artifact-class C62 kill with the community's own post-mortem).** Source: chanta
+(qiita.com/chanta/items/158f0d2b63afa2e6935b, Advent Calendar 2024 day 22) — a LIVE-TRADED
+decay record with dates. The original 15m-bar richmanbtc ATR×0.5 limit-reversion: community
+consensus "no longer works" by 2023 (and the desk's C62 kill showed its tutorial-era profit
+was maker-rebate + KFold leakage anyway). chanta's 12H-BAR VARIANT (ATR(6)×0.21-0.25 both-side
+limits, Bybit, POSITIVE fees 0.02-0.04% modeled — so NOT the C62 fee artifact): backtest
+profitable 2022-mid→2024-03, run LIVE 2023-12→2024-03 including a 90%-win-rate month
+(2024-01), then "the market completely changed from 2024-03" — dead since. **The family
+MIGRATES ACROSS TIMEFRAMES rather than dying globally (15m→12H→?), and each incarnation's
+death is a dated regime marker. 2024-03 is now a TRIPLE JP era boundary: SFD abolished + 12H
+ATR-reversion died + pre-halving regime shift.** Standing implication: (1) any "revived
+richmanbtc-style" claim must name its bar size and post-2024-03 evidence or it is pre-falsified;
+(2) the migration pattern itself is weak-signal-registered (NOT a card — no mechanism for
+WHICH timeframe hosts the band next); (3) corroborates the desk's low-pass lesson from the
+other side — the hours-band reversion pocket existed for years AFTER daily-resolution price
+alpha died, and closed ~2024-03.

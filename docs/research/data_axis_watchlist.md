@@ -996,3 +996,37 @@ on this evidence.**
 undocumented. The desk's own recorder must stay primary; btc126 is backfill, not a dependency.
 
 [§33: screened -> data/cny_otc_premium_history.jsonl]
+
+## 2026-08-04 — JP miner s1-on-branch: two rows
+
+### binance premium-index klines (the PI under the FR) — free keyless resolution upgrade on an OWNED axis
+- WHAT: Binance futures serves premium-index candles keyless (`/fapi/v1/premiumIndexKlines`,
+  1m→1d intervals) — the minute-sampled divergence series FR is COMPUTED from. The desk's
+  funding axis currently reads settled FR (8h prints, clamp-quantized: any PI in
+  (−0.04%,+0.06%) prints as 0.01%; see improvement_inbox 2026-08-04). PI restores the
+  information the clamp destroys and reveals intra-window sign flips the settled print hides.
+- MECHANISM PRIOR (stated): carry/positioning signals built on FR inherit a quantizer;
+  PI-based construction should dominate FR-based construction wherever the dead-band binds —
+  testable as a screen-vs-screen comparison on the SAME windows (§26 construction-logging:
+  both cells count).
+- STATUS: catalogued + routed; Stage-A comparison NOT run this run (bounded-scope: this run's
+  screen budget went to the 24h-lag contrarian cells, both logged SCREEN-WEAK; Binance 429 ban
+  expired 08-02 so pulls must be gentle). [§33: deferred(2026-08-11) — blocker: needs a
+  polite multi-day PI pull + carry-family owner's window choice; tier:2]
+- ALIGNMENT NOTE for whoever runs it: OKX/BitMEX apply FR one period LATE; Binance immediate —
+  declare per venue before any join (§26(4)).
+
+### qiita 仮想通貨botter advent calendar 2021-2025 — JP practitioner post-mortem corpus, mapped
+- WHAT: 187 entries across 5 years mapped to data/jp_botter_advent_calendar.jsonl (year,
+  series, day, title, author, url, host; hosts: note.com 91 / qiita 45 / zenn 24, all
+  robots-clean this session). The JP record is structurally a POST-MORTEM archive (botters
+  publish exhausted edges) → mine for deaths, decay dates, method defects. Adventar-hosted
+  earlier years HARD-STOPPED (ClaudeBot named in robots, Cloudflare managed block).
+- YIELD THIS RUN (5 full reads): graveyard ×3 (SFD boundary game dead-at-source w/ transferable
+  class probe; intraday anomaly pair; ATR-limit timeframe-migration chain), funding-mechanics
+  fence checklist (R0021), watchlist card ×1, JP lexicon seeded from observed usage.
+  [§33: wired -> data/jp_botter_advent_calendar.jsonl]
+- REMAINING: ~180 entries unread; highest-priority queue in prospector_coverage JP session
+  note (next-run first items: 2023 s2d21 domestic-vs-overseas short-horizon dynamics;
+  2025 s2d19 GMO-Bybit pair study — touches our LICENSED GMO tick source; 2022 s1d3+s1d21
+  regression-bias pair; 2023 s1d24 limit-optimization under jumps).
