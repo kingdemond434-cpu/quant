@@ -63,6 +63,29 @@ def fetch(base: str, pages: int = 30) -> dict[str, np.ndarray] | None:
             for k, i in (("open", 1), ("high", 2), ("low", 3), ("close", 4), ("volume", 5))}
 
 
+#: Symbols with Binance USD-M listings <= 2020-12, so the panel carries ~5.6 YEARS at m=21.
+#: Depth beats breadth at the margin (t = SR*sqrt(years); the pooling multiplier is sublinear in
+#: m) -- the corrected-run declaration in NEW_FAMILY_GENERATORS_PREREGISTRATION.md has the
+#: arithmetic. APT/ARB/OP/INJ are excluded for youth, not merit.
+_BINANCE_UNIVERSE = ("BTC", "ETH", "SOL", "DOGE", "LINK", "AVAX", "ADA", "XRP", "LTC", "BCH",
+                     "BNB", "TRX", "DOT", "NEAR", "ATOM", "UNI", "FIL",
+                     "ETC", "XLM", "ALGO", "AAVE")
+
+
+def fetch_binance_daily(base: str) -> dict[str, np.ndarray] | None:
+    """Uniform-venue daily panel from the Binance Vision archive, REAL volume included.
+
+    Declared in NEW_FAMILY_GENERATORS_PREREGISTRATION.md before first use: the pooled test's
+    power scales with symbols per mechanism, and Vision serves full-depth daily history where
+    fapi is 451-blocked. Venue is recorded in the report; OKX remains the default path."""
+    from scripts.fetch_binance_vision import load_or_fetch
+    d = load_or_fetch(f"{base}USDT", "1d", "2020-12", "2026-07")
+    if len(d.get("open_time", ())) < 400:
+        return None
+    return {k: np.asarray(d[k], dtype="float64")
+            for k in ("open", "high", "low", "close", "volume")}
+
+
 def _count_trades(pos: np.ndarray) -> int:
     return int(np.sum(np.abs(np.diff(pos)) > 1e-12))
 
@@ -72,14 +95,17 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--symbols", default=",".join(_UNIVERSE))
     ap.add_argument("--bars", type=int, default=0, help="0 = use every bar the venue has")
     ap.add_argument("--out", default=str(_OUT))
+    ap.add_argument("--venue", default="okx", choices=("okx", "binance-vision"))
     args = ap.parse_args(argv)
+    if args.venue == "binance-vision" and args.symbols == ",".join(_UNIVERSE):
+        args.symbols = ",".join(_BINANCE_UNIVERSE)
 
     symbols = [s.strip().upper() for s in str(args.symbols).split(",") if s.strip()]
     panel: dict[str, dict[str, np.ndarray]] = {}
     blocked: dict[str, str] = {}
     for s in symbols:
         try:
-            got = fetch(s)
+            got = fetch_binance_daily(s) if args.venue == "binance-vision" else fetch(s)
             if got is None:
                 blocked[s] = "fewer than 400 confirmed daily bars"
             else:
@@ -297,7 +323,8 @@ def main(argv: list[str] | None = None) -> int:
     doc = {
         "generated_utc": datetime.now(UTC).isoformat(timespec="seconds").replace("+00:00", "Z"),
         "status": "MEASURED",
-        "source": "okx:history-candles:1D:confirmed",
+        "source": ("binance-vision:1d:monthly-archive" if args.venue == "binance-vision"
+                   else "okx:history-candles:1D:confirmed"),
         "symbols": sorted(panel), "blocked_symbols": blocked,
         "bars_per_symbol": {s: len(v["close"]) for s, v in sorted(panel.items())},
         "min_admission_bars": MIN_ADMISSION_BARS,

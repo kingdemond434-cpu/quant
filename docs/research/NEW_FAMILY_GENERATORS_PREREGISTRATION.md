@@ -95,3 +95,11 @@ was fill realism for GO-candidate configs; every interval returned NO-GO with th
 negative number toward zero; it cannot flip a sign. Running it would spend compute to make a
 NO-GO slightly less negative — no decision changes, so it is recorded here instead of run. It
 revives automatically if any future intraday config reaches the gate's neighbourhood.
+
+**CORRECTION, declared 2026-08-04 before the corrected run**: the first 25-symbol run used the
+fetcher's 2023-08 default start — a fetch artifact, not a design choice — halving elapsed-time
+evidence (t ∝ √years) and costing more power than the extra symbols added (×1.5 lost vs ×1.13
+gained). Corrected panel: the 21 of 25 symbols with Binance perp listings ≤ 2020-12 (drop APT,
+ARB, OP, INJ), fetched from 2020-12 → T≈5.6 years AND m=21, which strictly dominates both prior
+configurations. The 3-year run's numbers stand as recorded; the corrected run supersedes it for
+certification. n_trials priced in full as always.
