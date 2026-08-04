@@ -479,10 +479,49 @@ def _realised_rt_bps(sym: str) -> float | None:
     return slips[len(slips) // 2]
 
 
-def _rt_bps(sym: str) -> float:
-    """This symbol's MEASURED round-trip cost, else the desk median. Self-improving: as the
-    recorder accrues the traded names, the gate automatically tightens on expensive books
-    (NOMUSDT realised -149 bps, KNCUSDT -211 bps -- thin books where slippage dominates)."""
+def _cost_bucket_key(pair: Any, notional: float | None) -> str:
+    """R0247: the cost-model size bucket that COVERS the intended per-leg notional.
+
+    run_cost_model measures FIVE buckets (100/250/500/1000/2500 USDT per leg -- its `_SIZES`,
+    same units as the executor's per-leg allocation) but this gate read only '500', discarding
+    the d(cost)/d(size) slope every capacity verdict is a statement about. Selection rounds UP
+    to the smallest bucket >= notional: on a fixed book, VWAP slippage is monotone in size, so
+    the covering bucket can overstate but never understate the order's cost. A notional past
+    the largest bucket takes the largest (best measured floor of its true cost -- still tighter
+    than the old fixed '500'). Every unknown input -- no notional, non-positive notional, a
+    pair map without a usable multi-bucket set -- returns '500', i.e. EXACTLY the pre-R0247
+    lookup: the fallback is current behaviour, never looser."""
+    if notional is None or not isinstance(pair, dict):
+        return "500"
+    try:
+        n = float(notional)
+    except (TypeError, ValueError):
+        return "500"
+    if not n > 0:
+        return "500"
+    sizes: list[tuple[float, str]] = []
+    for k, v in pair.items():
+        if not isinstance(v, dict):
+            continue
+        try:
+            sizes.append((float(k), k))
+        except (TypeError, ValueError):
+            continue
+    if len(sizes) < 2:                    # bucket set absent/degenerate -> current behaviour
+        return "500"
+    sizes.sort()
+    for s, k in sizes:
+        if s >= n:
+            return k
+    return sizes[-1][1]
+
+
+def _rt_bps(sym: str, notional: float | None = None) -> float:
+    """This symbol's MEASURED round-trip cost AT THE INTENDED ORDER SIZE, else the desk median.
+    Self-improving: as the recorder accrues the traded names, the gate automatically tightens on
+    expensive books (NOMUSDT realised -149 bps, KNCUSDT -211 bps -- thin books where slippage
+    dominates). `notional` is the per-leg USDT size the caller intends to send; None (and every
+    caller that predates R0247) keeps the historical fixed-'500' lookup."""
     # R0159 EMPTY floor (min_rows=1): a truncated cost_model.json ({}) has a young mtime, so it
     # passed the age gate as FRESH while dropping every measured name -- proven-expensive books
     # (KNC -211bps) silently fall to the default with no record. A legitimate model always
@@ -492,15 +531,33 @@ def _rt_bps(sym: str) -> float:
     fr = read_fresh(_COST_MODEL, max_age_h=48.0, min_rows=1,
                     caller="run_cashcarry_executor._rt_bps")
     try:
-        m = fr.data["symbols"][sym]["pair"]["500"]
-        v = m.get("pair_roundtrip_bps")
+        pair = fr.data["symbols"][sym]["pair"]
+        key = _cost_bucket_key(pair, notional)              # R0247: bucket covering the order
+        m = pair[key]
+        v = m.get("pair_roundtrip_bps") if isinstance(m, dict) else None
+        if v is None and key != "500":
+            # Chosen bucket unmeasured (book exhausted at that size in every snapshot) ->
+            # fall back to the legacy '500' read, NOT straight to the default: fallback is
+            # current behaviour, never looser -- and never cheaper than today for a book the
+            # model has priced at the legacy size.
+            key, m = "500", pair["500"]
+            v = m.get("pair_roundtrip_bps") if isinstance(m, dict) else None
         if v is None:
             return _DEFAULT_RT_BPS
+        v = float(v)
+        if float(key) > 500.0:
+            # R0247 tighten-only clamp: per-size medians exclude exhausted snapshots, so a
+            # LARGER bucket can survive only on its deep-book hours and read CHEAPER than
+            # '500'. A bigger order may never gate cheaper than the legacy lookup did.
+            m500 = pair.get("500")
+            v500 = m500.get("pair_roundtrip_bps") if isinstance(m500, dict) else None
+            if v500 is not None:
+                v = max(v, float(v500))
         # L1.44 stale degrade: a stale measured cost may only TIGHTEN this gate, never loosen
         # it. max() keeps a proven-expensive name (KNC -211bps) expensive when the model
         # freezes, and stops a stale "cheap" reading from admitting opens the current book
         # would refuse. New opens only, as ever -- this can never force-close a held carry.
-        modelled = float(v) if fr.fresh else max(float(v), _DEFAULT_RT_BPS)
+        modelled = v if fr.fresh else max(v, _DEFAULT_RT_BPS)
     except (KeyError, TypeError, ValueError):
         modelled = _DEFAULT_RT_BPS
     # REALITY FLOORS THE MODEL (L1.11b). MAX, never average: this may only TIGHTEN the gate, the
@@ -510,16 +567,19 @@ def _rt_bps(sym: str) -> float:
     return max(modelled, real) if real is not None else modelled
 
 
-def _entry_gate(sym: str, funding: float, min_hold_h: float = _MIN_HOLD_H) -> bool:
+def _entry_gate(sym: str, funding: float, min_hold_h: float = _MIN_HOLD_H,
+                notional: float | None = None) -> bool:
     """True => ALLOW opening this carry.
 
     Requires expected funding capture over the MINIMUM HOLD to beat this symbol's measured
-    round-trip. Applied to NEW OPENS ONLY -- never to the hold/target set, so raising the bar
-    can never force-close existing carries (that would itself be a churn event)."""
+    round-trip AT THE SIZE THE OPEN WOULD ACTUALLY SEND (R0247: `notional` = intended per-leg
+    USDT; None keeps the historical fixed-'500' bucket). Applied to NEW OPENS ONLY -- never to
+    the hold/target set, so raising the bar can never force-close existing carries (that would
+    itself be a churn event)."""
     if _structurally_bleeding(sym):
         return False                      # proven money-loser: never re-open it
     periods = max(1.0, min_hold_h / 8.0)
-    return funding * 1e4 * periods > _rt_bps(sym)
+    return funding * 1e4 * periods > _rt_bps(sym, notional)
 
 
 def _mkt_or_limit(conn: Any, sym: str, side: str, qty: float) -> str:
@@ -795,7 +855,23 @@ def _rebalance(top: int, hold_top: int, capital: float, *, dry: bool) -> dict[st
     # ENTRY GATE (gap #43): opens only -- never filters hold_set/target, so raising the
     # bar cannot force-close existing carries.
     _pre = len(cands)
-    cands = [c for c in cands if _entry_gate(c[0], c[1])]
+    # R0247: gate each candidate AT THE NOTIONAL THE OPEN PATH BELOW WOULD ACTUALLY SEND --
+    # the same free-capital, funding-weighted, concentration-capped allocation the sizing
+    # block computes (pos is not mutated between here and there, so `free` is the same
+    # number). Iterated to a fixed point because removing a name ENLARGES the survivors'
+    # allocations (same free capital over fewer names), which can only select an equal-or-
+    # costlier size bucket: each pass only removes candidates, so the loop terminates and is
+    # tighten-only. Zero free capital gates at notional 0 -> the historical '500' bucket.
+    _deployed_gate = sum(float(p["spot_qty"]) * float(p["spot_cost"]) for p in pos.values())
+    _free_gate = max(0.0, capital - _deployed_gate)
+    while cands:
+        _int = _alloc(cands, _free_gate)
+        _per_gate = _free_gate / max(1, len(cands))
+        _kept = [c for c in cands
+                 if _entry_gate(c[0], c[1], notional=_int.get(c[0], _per_gate))]
+        if len(_kept) == len(cands):
+            break
+        cands = _kept
     if len(cands) < _pre:
         actions_gate = f"entry-gate: {_pre - len(cands)} cand(s) below funding/cost bar"
     else:

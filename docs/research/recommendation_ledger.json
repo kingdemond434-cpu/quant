@@ -3029,8 +3029,8 @@
    "summary": "L1.45 follow-on: _rt_bps reads only cost_model['pair']['500'] while run_cost_model computes 5 size buckets (100/250/500/1000/2500). 80% of a computed curve is discarded, and the discarded part is the d(cost)/d(size) SLOPE that every L1.18a capacity band, runway and REACHES-LIVE/TIGHT/DOA verdict is a statement about. Verified 2026-08-01. Fix is a lookup change, not new measurement -- the numbers are already on disk.",
    "roi_bps": 40.0,
    "raised": "2026-08-01T06:03:37.370225+00:00",
-   "status": "scheduled",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=9 effort_h=2: Unchanged and past due (2026-08-04): scripts/run_cashcarry_executor.py:482 still reads only fr.data['symbols'][sym]['pair']['500'], discarding the other 4 size buckets run_cost_model already computes -- the d(cost)/d(size) slope every capacity verdict is about. Per the row's own disposal reason this must ship as its own diff with its own test (it moves the entry gate on every symbol); it is a lookup change, no new measurement, numbers already on disk.",
+   "status": "implemented",
+   "reason": "[wave2 2026-08-04] entry gate now reads the cost bucket COVERING the intended notional (round-up selection; oversize takes largest; unknown input reproduces legacy '500'), with tighten-only guards: unmeasured bucket falls back to '500' not the loose default, and >500 buckets clamp to max(v, v500) so a bigger order can never gate cheaper. Rebalance gates at the actual alloc, iterated to fixed point. 8 new tests; 617 execution tests green.",
    "commit": null,
    "due": "2026-08-04",
    "disposed": "2026-08-01T06:04:02.383275+00:00"
