@@ -52,3 +52,27 @@ are never pooled across timeframes post hoc.
 These are hypotheses. The expected outcome for most is death — on this desk a measured death
 retires search space and is paid for once. Any survivor must clear the pooled gauntlet at α=0.05
 with everything above declared. No result from this batch may be quoted without its trial count.
+
+---
+
+## MEASURED 2026-08-04 (same day) — outcomes against this registration
+
+**A. New families through the expanded pooled campaign** (436 candidates, 44 pooled mechanisms):
+still **0 clearing every gate**. The new families' pooled in-sample Sharpes land in the same
+0.4–0.7 band as the incumbents (vwap_trend 0.67, ict_fvg_follow 0.60, ict_mss_follow 0.63) and
+collapse OOS to +0.00–0.03 — the crowded-space result replicates on fresh mechanism classes.
+Two genuine gains: (1) pool independence improved dramatically — mean pairwise correlation fell
+0.047 → 0.010, effective bets 19.4 → **80.5** — the new families are near-orthogonal to the
+incumbents, exactly what a portfolio-of-mechanisms wants; (2) the admission screen refreshed the
+shadow book with 7 new-family entries (SOL ict_fvg, DOGE ict_mss ×4, AVAX vwap_trend, SOL
+supply_demand_retest), which now accrue forward evidence.
+
+**B. Intraday timeframe ladder, completed**: rotation cost-in-R improved monotonically exactly as
+predicted (5m −0.44R → 15m −0.25R → 1h −0.09R net) **and never crossed zero** — the gross edge is
+~0 at every interval, so shrinking costs converges to breakeven, not to profit. Continuation
+signals thin out to n=13 (15m) and n=0 (1h) OOS — too rare to certify at coarser bars. The
+ladder is closed: NO-GO at all three intervals.
+
+**C. The pre-registered conditional executes**: 15m continuation did NOT clear costs, therefore
+**H9 ORB is dead without being built**, per the rule fixed above before the data existed.
+H4/H5 remain blocked on the moat tape (operator).
