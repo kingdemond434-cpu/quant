@@ -246,6 +246,16 @@ _MAP: dict[str, list[str]] = {
     # as two statuses -- DEBT-GROWING (convert faster) and ARRIVALS-COLLAPSED (find harder).
     "L1.53": ["scripts/check_conversion.py",
               "tests/governance/test_conversion_fence.py"],
+    # L1.54: a shut door is a routing problem. kimi_hunter is both the fence and the proving
+    # instance -- its MODEL_CHAIN, per-wave failure isolation and BLOCKED artifact are the law in
+    # code. source_alternatives + the hunter are the same rule for data sources: a registered
+    # substitute BEFORE the outage, and source_health's unproven_sources is what notices a lane
+    # that went quiet without ever failing.
+    "L1.54": ["scripts/kimi_hunter.py", "libs/research/source_alternatives.py",
+              "scripts/hunt_source_alternatives.py",
+              "libs/research/source_health.py:unproven_sources",
+              "tests/scripts/test_kimi_hunter_no_giving_up.py",
+              "scripts/check_llm_routing.py", "libs/ops/llm_route.py"],
     # R0123 decline grading: L1.29 says an ungraded prediction is a BELIEF that inflates the
     # apparent hit-rate by never counting its misses -- and a sleeve scored only on the trades it
     # CHOOSES to be graded on is that defect with a dominant strategy attached. Nine consecutive

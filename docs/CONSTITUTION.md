@@ -1612,3 +1612,55 @@ a measurement of conversion; it is an invitation to stop working.
    utilisation, mutation kill rate, screen breadth. **Whenever a gauge can be improved by doing
    less of the thing it exists to encourage, its denominator is a first-class measurement and is
    fenced separately.**
+
+## L1.54 NO GIVING UP -- A SHUT DOOR IS A ROUTING PROBLEM, NOT A VERDICT
+
+Principal standing order, 2026-08-05: *"make sure billibilli and others always fully work work ur
+ways around sources which aren't working... and the desk always finds some sort of ways to access
+things and sources etc not working. No giving up protocol laws."*
+
+**What this is not.** It is NOT a licence to fabricate, to loosen a bar, or to report an
+unavailable thing as available. L1.44 and L1.52 stand: unknown reads as unknown. This law governs
+the step BEFORE that — how many doors the desk tries before it is entitled to write UNAVAILABLE,
+and what it must leave behind when it does.
+
+**The proving instance, and the number is the argument.** `scripts/kimi_hunter.py` is the desk's
+widest non-Claude lens, scheduled every three hours plus two deep runs a week — 56 firings a week.
+It had produced **exactly nothing since it was built**: no `data/kimi_hunt.json`, no
+`data/hunt_coverage.json`, no ledger row. The protocol was sound. It named ONE model string, and
+every way past that string was an exit:
+
+    absent from the roster -> SystemExit(2)      out of credit -> SystemExit(3)
+    any transport error mid-wave -> SystemExit(3), discarding completed waves held only in memory
+
+A weapon with one firing pin is not an aggressive weapon. And the failure was SILENT in the worst
+way available: no artifact was written, so an organ firing 56 times a week was indistinguishable
+from an organ nobody had scheduled — the desk could not tell a bill to pay from a thing to build.
+
+**Operative.**
+
+1. **A CHAIN, NEVER A SINGLE NAME.** Any external dependency — model, endpoint, source, venue,
+   vantage — is reached through an ordered list of routes, tried in turn. One route failing ends
+   that ATTEMPT and nothing else. Free and degraded tiers belong at the END of the chain, never
+   absent from it: a free-tier hunt is worth immeasurably more than no hunt, and "the account is
+   unfunded" is a reason to hunt cheaper, never a reason to stop hunting.
+2. **DEGRADATION IS NEVER LENIENCY.** A fallback buys ATTEMPTS, not a lower bar. Whatever a
+   fallback route produces passes the identical gate, and carries the route that produced it so
+   the result is attributable and re-runnable on the preferred route later.
+3. **PARTIAL WORK IS KEPT.** A stage that fails must not discard the stages that succeeded, and
+   accumulated memory (coverage, territory, provenance) is persisted after EACH stage rather than
+   on completion. A late failure that erases early success re-runs the same ground forever, which
+   is the most expensive way there is to lose depth.
+4. **A BLOCKED ATTEMPT LEAVES EVIDENCE.** Every blocked organ writes an artifact naming the
+   blocker, the routes tried, and what each answered. An exit code and a log line are not
+   evidence: an absent artifact is indistinguishable from an organ nobody scheduled.
+5. **THE SUBSTITUTE IS REGISTERED BEFORE THE OUTAGE, NOT AFTER.** The cost of losing a source is
+   proportional to what it YIELDS, so the lanes most deserving a registered alternative are the
+   ones still working — and the moment one dies is the moment nobody has time to research a
+   replacement. A PRODUCING source with no registered substitute is a defect in its own right.
+6. **"BLOCKED" NAMES A ROUTE, NOT A SOURCE.** HTTP 412 meant *unsigned*, not *forbidden*, and cost
+   this desk a Chinese video corpus until someone implemented WBI signing. 403 meant *bot-filtered
+   User-Agent* (L0052). A datacenter-IP block is a fact about a VANTAGE, not about a site. Before
+   any source is recorded dead, the desk states which ROUTE failed and what would change the
+   answer — signing, a header, a mobile endpoint, a different vantage, a browser session, an RSS
+   mirror, a cross-post platform. A recorded death with no such statement is not a measurement.

@@ -217,3 +217,47 @@ class TestL152AndL153TheStandingOrdersOf20260805:
         src = _CONSTITUTION.read_text("utf-8")
         assert "341 raised against 157" in src, "L1.53's proving measurement was dropped"
         assert "did not exist at all" in src, "L1.52's proving instance was dropped"
+
+
+class TestL154NoGivingUp:
+    """L1.54, pinned like its siblings. The clause most likely to be softened is clause 2 --
+    because every OTHER clause makes the desk try harder, and clause 2 is the one that stops
+    'try harder' from quietly becoming 'accept less'."""
+
+    def test_l1_54_is_present_with_its_operative_clauses(self) -> None:
+        src = _CONSTITUTION.read_text("utf-8")
+        assert "L1.54" in src and "NO GIVING UP" in src
+        assert "A CHAIN, NEVER A SINGLE NAME" in src
+        assert "PARTIAL WORK IS KEPT" in src
+        assert "A BLOCKED ATTEMPT LEAVES EVIDENCE" in src
+        assert "BEFORE THE OUTAGE, NOT AFTER" in src
+
+    def test_it_is_not_a_licence_to_fabricate(self) -> None:
+        """The reading that would invert the law: 'never give up' as permission to report an
+        unavailable thing as available. It is bounded explicitly and the bound must survive."""
+        src = _CONSTITUTION.read_text("utf-8")
+        assert "It is NOT a licence to fabricate" in src
+        assert "unknown reads as unknown" in src
+
+    def test_degradation_is_never_leniency(self) -> None:
+        src = _CONSTITUTION.read_text("utf-8")
+        assert "DEGRADATION IS NEVER LENIENCY" in src
+        assert "buys ATTEMPTS" in src, (
+            "the distinction between more tries and a lower bar is the whole safety of this law")
+
+    def test_blocked_names_a_route_not_a_source(self) -> None:
+        """The clause with the most historical evidence behind it: 412 meant unsigned, 403 meant
+        a bot-filtered User-Agent, and each cost the desk a corpus until someone re-read it."""
+        src = _CONSTITUTION.read_text("utf-8")
+        assert "BLOCKED\" NAMES A ROUTE, NOT A SOURCE" in src or "NAMES A ROUTE" in src
+        assert "412" in src and "403" in src
+        assert "A recorded death with no such statement is not a measurement" in src
+
+    def test_the_proving_measurement_stays_attached(self) -> None:
+        src = _CONSTITUTION.read_text("utf-8")
+        assert "56 firings a week" in src or "56 times a week" in src, (
+            "strip the number and the law degrades into an opinion nobody can falsify")
+
+    def test_the_law_is_enforced_rather_than_prose(self) -> None:
+        src = (_ROOT / "scripts" / "build_enforcement_matrix.py").read_text("utf-8")
+        assert '"L1.54"' in src and "scripts/kimi_hunter.py" in src

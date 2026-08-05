@@ -1894,3 +1894,19 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # EVIDENCE: scripts/screen_vol_risk_premium.py -> data/vol_risk_premium_screen.json
 # CONFIDENCE: committed-script (cadence taken from the script's own header request)
 37 10 * * * cd "$QUANT_ROOT" && flock -n data/.cron_vrp.lock nice -n 19 .venv/bin/python scripts/screen_vol_risk_premium.py >> data/cro_ai_logs/vol_risk_premium.log 2>&1
+
+# ---------------------------------------------------------------------------------------------
+# LLM ROUTING EXPOSURE (L1.54 clause 1). Twelve-plus organs read the panel roster and, measured
+# on 2026-08-05, only 2 of 18 resolve routes through libs/ops/llm_route -- the rest pick ONE model
+# and stop. kimi_hunter proved the cost: scheduled 56 times a week, one unavailable model string,
+# and it had produced literally nothing since it was built, silently, with no artifact to notice.
+# This counts the remaining exposure so it is a ranked conversion backlog rather than an
+# assumption. Read-only AST scan of scripts/, no network, no keys, sub-second.
+# CADENCE CEILING (L1.28c) is COMMIT-ARRIVAL and daily is at it: the number moves only when
+# someone edits an organ, so a denser cadence would re-parse an unchanged tree.
+# --report-only semantics by construction: exit 0 always. A STATE fence (L1.37) -- failing the
+# build here would block every push until eleven unrelated organs were rewritten, which is how a
+# fence gets disabled rather than satisfied.
+# EVIDENCE: scripts/check_llm_routing.py -> data/llm_routing.json; CONSTITUTION L1.54
+# CONFIDENCE: committed-script (new this cycle; first run measured 2/18 routed, 15 SINGLE-ROUTE)
+44 6 * * * cd "$QUANT_ROOT" && flock -n data/.cron_llmroute.lock .venv/bin/python scripts/check_llm_routing.py >> data/cro_ai_logs/llm_routing.log 2>&1
