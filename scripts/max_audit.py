@@ -25,6 +25,7 @@ from __future__ import annotations
 import contextlib
 import importlib.util
 import json
+import os
 import re
 import subprocess
 import sys
@@ -500,6 +501,92 @@ def _import_closure(entry: Path, seen: set[Path] | None = None) -> set[Path]:
     return seen
 
 
+def _proc_start(pid: int) -> float:
+    """Wall-clock epoch a process actually started. THE ONLY CORRECT SOURCE ON LINUX.
+
+    `Path("/proc/<pid>").stat().st_mtime` LOOKS like a process start time and is not one. It is
+    the procfs DIRECTORY inode's mtime, which the kernel refreshes as the directory is walked --
+    so it reads ~now for any process something is polling, and only coincides with the true start
+    for a process nobody looks at. Measured on this box: pid 1, which nothing polls, matched its
+    real start (595.08h vs 595.1h), while EVERY supervised daemon read 0.0167h against true ages
+    of 6.9h, 139.8h and 180.1h. The population it is wrong about is exactly the population this
+    check exists to audit: monitored daemons.
+
+    That is what welded `check_stale_daemons` shut. `stale = files newer than started` with
+    `started ~= now` can only ever match a file edited in the last minute, so the detector for
+    "a committed fix did not ship" could not fire -- and the `up {age}h` it printed into every
+    unsupervised-daemon defect was ~0.0h always, a fabricated number handed to a human.
+
+    Field 22 of /proc/<pid>/stat is starttime in clock ticks since boot; /proc/stat's `btime` is
+    the boot epoch. comm (field 2) can contain spaces and parens, so the split starts after the
+    LAST ')' -- the standard parse, and the reason this is a helper rather than four inline
+    copies. Raises OSError/ValueError on an exited pid, which every caller already handles.
+    """
+    st = Path(f"/proc/{pid}/stat").read_text("utf-8")
+    starttime = int(st[st.rindex(")") + 2:].split()[19])
+    btime = next(int(ln.split()[1]) for ln in Path("/proc/stat").read_text("utf-8").splitlines()
+                 if ln.startswith("btime "))
+    return btime + starttime / os.sysconf("SC_CLK_TCK")
+
+
+def _sources_changed_since(paths: set[Path], since: float) -> list[Path]:
+    """Files whose CONTENT changed since `since` -- a committed change or an uncommitted edit.
+
+    NOT mtime, which is the second half of what welded this check. `git checkout`, `merge`,
+    `rebase` and worktree operations rewrite the mtime of every file they touch WITHOUT changing
+    a byte. Measured 2026-08-05 on this box: scripts/run_deadman_switch.py and
+    scripts/serve_dashboard.py both carried mtime 02:53:48 from ONE bulk git operation while
+    their last real commits were 6 and 11 days earlier and both were byte-identical to HEAD. On
+    mtime alone the Tier-3 RUIN RAIL reads as running stale code after every git operation --
+    and this check's own docstring already knows the ending: "a check that always fires is a
+    check nobody reads". Fixing the clock without fixing the signal would have swapped a
+    detector that never fires for one that always does, which is not an improvement.
+
+    So: committed files are judged by COMMIT DATE (one `git log` for the whole set), and only
+    files with real uncommitted edits fall back to mtime -- where mtime IS the evidence, because
+    an uncommitted edit is a content change by definition. A file git does not know about is
+    treated the same way: unknown provenance, mtime is all there is.
+    """
+    if not paths:
+        return []
+    rels = {p.relative_to(ROOT).as_posix() for p in paths if p.is_relative_to(ROOT)}
+    clean_tracked: set[str] = set()
+    committed: set[str] = set()
+    try:
+        tracked = {ln.strip() for ln in subprocess.run(
+            ["git", "ls-files", "--", *sorted(rels)], cwd=ROOT, capture_output=True,
+            text=True, timeout=30, check=False).stdout.splitlines() if ln.strip()}
+        dirty = {ln[3:].strip().split(" -> ")[-1] for ln in subprocess.run(
+            ["git", "status", "--porcelain", "--", *sorted(rels)], cwd=ROOT,
+            capture_output=True, text=True, timeout=30, check=False).stdout.splitlines()
+            if len(ln) > 3}
+        clean_tracked = tracked - dirty
+        committed = {ln.strip() for ln in subprocess.run(
+            ["git", "log", f"--since=@{int(since)}", "--name-only", "--format=", "--",
+             *sorted(rels)], cwd=ROOT, capture_output=True, text=True, timeout=30,
+            check=False).stdout.splitlines() if ln.strip()}
+    except (OSError, subprocess.SubprocessError):
+        # git unavailable -> we cannot tell a checkout from an edit. Everything falls to mtime:
+        # over-reporting is the safe direction for "did my fix ship", and the alternative is
+        # reporting nothing at all.
+        clean_tracked = set()
+    out = []
+    for p in sorted(paths):
+        rel = p.relative_to(ROOT).as_posix() if p.is_relative_to(ROOT) else str(p)
+        try:
+            # TRACKED AND CLEAN -> the commit date is the truth and mtime is noise.
+            # ANYTHING ELSE (locally edited, untracked, gitignored, outside the repo) -> git has
+            # no committed version to compare against, so mtime IS the evidence. Defaulting the
+            # unknown case to "unchanged" would be the silent-swallow this whole fix exists to
+            # remove, one layer down.
+            changed = rel in committed if rel in clean_tracked else p.stat().st_mtime > since
+            if changed:
+                out.append(p)
+        except OSError:
+            continue
+    return out
+
+
 def _worker_pids(rel: str) -> list[int]:
     """PIDs actually running an entry script, discovered WITHOUT asking systemd.
 
@@ -576,8 +663,12 @@ def check_stale_daemons(defects) -> None:
             continue                                  # not running -- check_organs owns that
         # OWNERSHIP first: a fix cannot ship into a process the supervisor does not control.
         if sd_pid not in {str(p) for p in workers}:
-            oldest = min(workers, key=lambda p: Path(f"/proc/{p}").stat().st_mtime)
-            age = (NOW - Path(f"/proc/{oldest}").stat().st_mtime) / 3600.0
+            try:
+                oldest = min(workers, key=_proc_start)
+                age = (NOW - _proc_start(oldest)) / 3600.0
+            except (OSError, ValueError, StopIteration, IndexError):
+                continue                              # exited mid-audit; next run sees it
+
             storm = (" and the unit is stuck in auto-restart, respawning against it"
                      if state == "activating" else "")
             defects.append((f"daemon-unsupervised-{svc}",
@@ -587,12 +678,16 @@ def check_stale_daemons(defects) -> None:
                             "replace this process, so fixes do not ship and crash-recovery is "
                             "an illusion. Stop the unit, kill the orphan, start the unit, and "
                             "verify MainPID matches the worker."))
-        for pid in sorted(workers, key=lambda p: Path(f"/proc/{p}").stat().st_mtime)[:1]:
+        try:
+            eldest = sorted(workers, key=_proc_start)[:1]
+        except (OSError, ValueError, StopIteration, IndexError):
+            continue
+        for pid in eldest:
             try:
-                started = Path(f"/proc/{pid}").stat().st_mtime
-            except OSError:
+                started = _proc_start(pid)
+            except (OSError, ValueError, StopIteration, IndexError):
                 continue
-            stale = sorted(p for p in _import_closure(entry) if p.stat().st_mtime > started)
+            stale = _sources_changed_since(_import_closure(entry), started)
             if stale:
                 age = (NOW - started) / 3600.0
                 names = ", ".join(p.relative_to(ROOT).as_posix() for p in stale[:4])
@@ -2373,6 +2468,39 @@ _FINDING_DOCS_EXCLUDED = {
                                               "fires. If a future run's cards are ever NOT "
                                               "ledgered, move this into _FINDING_DOCS",
     "docs/research/panel_inbox.md": "raw panel transcript -- rulings are the distilled output",
+    "docs/research/deep_review_inbox.md": "RAW ADVERSARIAL-MODEL TRANSCRIPT, verbatim and "
+                                          "UNVERIFIED AT WRITE TIME -- deep_review.py appends "
+                                          "each seat's unedited response, hallucinated items "
+                                          "included (one block reads '35% further drawdown "
+                                          "required' against nothing). Its numbered items are "
+                                          "model CLAIMS awaiting triage, not desk findings, and "
+                                          "the file's own auto-written header states the "
+                                          "protocol: verify each claim against the code, then "
+                                          "record accepted ones via scripts/track_findings.py. "
+                                          "That loop demonstrably ran for this content -- F0024 "
+                                          "(staging.py bool(str) consent gate) and F0025 "
+                                          "(dead-man blind-feed guard) were raised minutes after "
+                                          "the reviews and accepted, F0025 -> R0401 -- and "
+                                          "track_findings carries its own 14-day "
+                                          "accepted-but-unfixed clock, so dispositions ARE "
+                                          "enforced, one layer down. Rowing the raw transcript "
+                                          "too would charge the same claim to two backlogs and "
+                                          "seed the register with unverified model output: same "
+                                          "precedent as panel_inbox.md and "
+                                          "blind_rediscovery_log.md. MEASURED at exclusion time: "
+                                          "in-scope would read 213 findings / coverage 0.991 "
+                                          "against a 1.000 ratchet floor, i.e. trading three "
+                                          "defects for two. If a future run's accepted claims "
+                                          "are ever NOT routed to track_findings, move this into "
+                                          "_FINDING_DOCS",
+    "docs/CONSTITUTION.md": "LAW TEXT, and the 10 matches are false positives: _PROSE_RE keys on "
+                            "'N. **Bold**', which is how the constitution numbers the sub-clauses "
+                            "of L1.49 (3), L1.53 (1) and L1.54 (6). A law clause binds organs "
+                            "permanently and can never CLOSE, so rowing one would inflate the "
+                            "open-finding denominator with items designed to stay open forever. "
+                            "Same argument already accepted for MEASUREMENT_DOCTRINE.md and "
+                            "TWO_STAGE_DISCOVERY_LAW.md. Excluding here touches max_audit only -- "
+                            "the L1.x hash seal is not engaged",
     "docs/research/feed_inbox.md": "literature feed, not desk findings",
     "docs/research/data_axis_watchlist.md": "source cards -- governed by §33 dispositions",
     "docs/research/discovery_hypotheses.md": "hypotheses -- governed by §33 / the trial ledger",
@@ -4017,6 +4145,13 @@ _DIG_DOCS_EXCLUDED = {
         "improvement_inbox precedent",
     "docs/research/micro_audit_inbox.md":
         "audit findings, not mined finds -- own rotting-findings check",
+    "docs/research/deep_review_inbox.md":
+        "RAW ADVERSARIAL-MODEL REVIEW TRANSCRIPT, not mined finds. deep_review.py appends each "
+        "seat's verbatim response over the money-path files; its numbered items are unverified "
+        "model CLAIMS about code that already exists, never SOURCES or data axes, so they have "
+        "no dig -> disposition lifecycle to owe. The claim -> verify -> accept path is "
+        "scripts/track_findings.py, named in the file's own header and demonstrably used for "
+        "this content (F0024, F0025 -> R0401). Same class as panel_inbox.md directly below",
     "docs/research/panel_inbox.md": "external panel output -- own rulings/scoring loop",
     "docs/research/PREMORTEM_20260805.md":
         "already in _FINDING_DOCS as of 2026-08-05, so 35 drives every item in it. Counting the "
