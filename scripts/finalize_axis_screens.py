@@ -37,10 +37,64 @@ from __future__ import annotations
 import json
 import math
 import re
+import sys
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import Any
 
-OUT = Path(__file__).resolve().parent.parent / "reports" / "axis_screens"
+_ROOT = Path(__file__).resolve().parent.parent
+OUT = _ROOT / "reports" / "axis_screens"
 SHARPE_MIN, IC_MIN = 0.5, 0.03
+
+#: Horizon for a Stage-A forecast. 30d matches research_cycle's engineering horizon: long enough
+#: for a survivor to actually reach a forward slot, short enough that the check_calibration OVERDUE
+#: fence still bites inside a quarter.
+_FORECAST_HORIZON_DAYS = 30
+#: Pre-registered probability that a Stage-A survivor reaches Stage-B. LOW ON PURPOSE, and the
+#: number is the desk's own history: 420 price-family hypotheses, zero survivors. L1.6 says a
+#: screen hit is not an edge and screens carry zero promotion authority -- this forecast is the
+#: measurement of exactly how little a screen hit is worth, so that the claim stops being folklore.
+_P_SCREEN_REACHES_STAGE_B = 0.15
+
+
+def _log_screen_forecasts(axis: str, survivors: list[dict[str, Any]]) -> None:
+    """PRE-REGISTER what a SCREEN-INTERESTING verdict is implicitly predicting (R0112, L1.29a).
+
+    Stage A publishes verdicts and spends the desk's attention on them, but no screen has ever been
+    logged as a forecast -- so "screens have zero promotion authority" stayed an assertion nobody
+    could score. Every survivor here is an implicit claim that this hit is one of the few that
+    goes somewhere; this writes that claim down BEFORE the answer is known, with a resolve_by.
+
+    NEVER RESOLVED HERE. A forecast graded in the pass that logged it is the degenerate all-TRUE
+    row forecast_calibration._scoreable exists to exclude (30 such rows once inverted the desk's
+    measured bias into kelly_leverage). This function only ever pre-registers, and the outcome is
+    genuinely unknown today -- the 30 days have not passed.
+
+    One row per (axis, trial), resolve_by FIXED at first assertion: get_forecast() short-circuits
+    re-runs, so re-finalizing an axis cannot roll the deadline forward (a rolling deadline never
+    goes overdue, which would blind the check_calibration fence) or mint duplicate rows for what
+    is arithmetically one observation.
+    """
+    if not survivors:
+        return
+    if str(_ROOT) not in sys.path:
+        sys.path.insert(0, str(_ROOT))
+    try:
+        from libs.self_improvement import forecast_calibration as fc
+    except ImportError:
+        return
+    now = datetime.now(tz=UTC)
+    resolve_by = (now + timedelta(days=_FORECAST_HORIZON_DAYS)).isoformat()
+    for t in survivors:
+        key = f"screen:{axis}:{t['name']}"
+        if fc.get_forecast(key) is not None:
+            continue                                    # pre-registered already
+        fc.log_forecast(
+            key, _P_SCREEN_REACHES_STAGE_B, "screen_promotion", resolve_by=resolve_by,
+            claim=(f"Stage-A survivor {axis}/{t['name']} (corrected Sharpe "
+                   f"{t.get('sharpe_best_corrected')}, IC t={t.get('ic_t_stat')}) reaches a "
+                   f"Stage-B forward slot within {_FORECAST_HORIZON_DAYS}d of "
+                   f"{now.date().isoformat()}"))
 
 
 def _step(name: str) -> int:
@@ -230,6 +284,7 @@ def main() -> None:
         p.write_text(json.dumps(rep, indent=1, default=str), "utf-8")
 
         surv = [t for t in screened if t["verdict_adjusted"].startswith("SCREEN-INTERESTING")]
+        _log_screen_forecasts(axis, surv)
         summary.append((axis, len(screened), len(surv)))
         print(f"\n=== {axis}: {len(screened)} trials, {len(surv)} survive correction+multiplicity "
               f"(axis bar t>{axis_bar}, campaign t>{CAMPAIGN_BAR}) ===")
