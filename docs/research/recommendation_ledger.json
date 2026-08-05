@@ -3409,11 +3409,11 @@
    "summary": "GROWTH AUDIT CANNOT TELL TIMIDITY FROM A LATCHED KILL SWITCH. web/growth_audit.json (regenerated 09:00 today) reports carry_capital_utilization as a CONSERVATISM DEFECT -- '$0 deployed / $200 authorized', justified_by NONE -- while data/CASHCARRY_KILL has been latched since 07-31 08:35Z and data/live_guard.json reads ladder.rung=full_flatten_disarmed, requires_manual_rearm=true. REARM is principal-only, so $0 is a survival rail doing its job, not under-deployment, and no cycle can close it. The audit does not read the kill file or the guard's ladder rung. This fires EVERY DAY until REARM and its own rule says 'every NONE-gap is a DEFECT: close it same-cycle' -- so the daily check trains its reader to ignore its only defect line, which is how a gate dies (L1.43: a gate that cries wolf gets acknowledged into silence). FIX: read the kill file + ladder rung and emit RAIL-LATCHED (with the latch timestamp and that REARM is a human step) as a distinct verdict from GAP. The distinction is the point -- L1.28a's own carve-out is that headroom held by a survival rail is legitimate idle, and the audit currently cannot express it.",
    "roi_bps": 3.0,
    "raised": "2026-08-01T09:23:05.835057+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=5 effort_h=1.5: Unchanged. scripts/run_growth_audit.py:56-79 still computes carry_capital_utilization purely from deployed/authorized and emits GAP with justified_by NONE -- zero reads of the kill file or ladder rung (grep kill/latch/rung/rearm in the file: only an unrelated 'ladder' string at :99); no RAIL-LATCHED verdict exists. The latch machinery to read is libs/ops/derisk_ladder.py (requires_manual_rearm at :13,:45,:62). Small, stops a daily false alarm from training its reader to ignore the only defect line.",
-   "commit": null,
+   "status": "implemented",
+   "reason": null,
+   "commit": "8026283",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-05T22:57:18.101345+00:00"
   },
   {
    "id": "R0275",
@@ -5198,6 +5198,78 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0423",
+   "source": "cycle",
+   "summary": "SHARED-TREE COMMIT SWEEP: a sibling session ran a broad commit between my 'git add' and my 'git commit', sweeping 4 staged money-path files (libs/execution/carry_accounting.py, run_cashcarry_executor.py, run_live_combined.py, tests/execution/test_carry_accounting.py) into its own commit d971a08, whose message is about R0261 discovery-rank and says NOTHING about the $4,807 futures-leg reporting repair those files contain. The CODE survived; the RATIONALE was destroyed -- and per L1.16 an edge/repair is only durable if its mechanism is understood, which is what a commit message is for. git blame on that repair now points a future reader at an unrelated subject line. This is the third recorded instance of the shared-checkout class (memory: 'sibling commit -a swept my staged ledger', 'a sibling git checkout'd the tree off my branch MID-TASK'). Per-instance fix each time = re-commit; the GENERALISATION is that concurrent sessions must not share a worktree: each takes 'git worktree add -b <branch>' at session start and merges back. Proposed: make that the documented default in ops/ and have a cheap check fire when two live claude processes resolve the same git common-dir.",
+   "roi_bps": 3.0,
+   "raised": "2026-08-05T22:49:43.088832+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0424",
+   "source": "cycle",
+   "summary": "L1.28b(d) ACTUATOR BUILT AND WIRED (commit 483b374): the conversion queue's drain mechanism was legislated, fenced and had NO consumer that changed any behaviour -- repair_mode was published every run and read only by run_max_push.py:249 to pick an advice string. That is why rec-ledger-backlog recurred 3x/5.2d: servicing the rows a queue names cannot drain a queue with arrivals 54.4/day against dispositions 30.0/day. libs/ops/repair_mode.py now emits the duty and ops/brain_env.sh injects it into _DOCTRINE at every organ spawn (VERIFIED live: the block with named rows is inside the 82,225-char doctrine string). Also fixed a live INVERSION: repair_mode was 'status != OK' so it was TRUE for ARRIVALS-COLLAPSED -- redirecting the brain AWAY from finding exactly when the fence says finding has collapsed. Duplicate-inflation hypothesis tested and REFUTED first (0 near-dup pairs at Jaccard>=0.5 over 203 rows), which is what makes 'raise capacity' honest rather than convenient.",
+   "roi_bps": 8.0,
+   "raised": "2026-08-05T22:49:54.197478+00:00",
+   "status": "implemented",
+   "reason": null,
+   "commit": "483b374",
+   "due": null,
+   "disposed": "2026-08-05T22:50:04.048533+00:00"
+  },
+  {
+   "id": "R0425",
+   "source": "cycle",
+   "summary": "run_cadence.py HAS NO ARGPARSE AND SILENTLY IGNORES EVERY FLAG. '.venv/bin/python scripts/run_cadence.py --help' does not print help -- it executes a full cadence run (measured 2026-08-05: still running at 3m13s, having checked panel funding and found balance -0.59). Any operator or organ reaching for --help, --dry-run, --report-only or --json on this script gets a REAL RUN of the engine that fires the weekly panel and monthly tier1. The desk has a documented instinct to probe a script with --help before invoking it (that is how several organs were verified this week), so the one habit meant to make invocation SAFE is, on this script, the thing that invokes it. This is the same class as the Windows-only generation entry point found by EXECUTING it: the signature is not what the caller assumes. FIX: add an argparse with --report-only/--json, or at minimum reject unknown argv with a non-zero exit and a usage line. Neighbour: ops/ callers and cron entries pass no flags today, so adding argparse is additive and cannot change scheduled behaviour.",
+   "roi_bps": 2.0,
+   "raised": "2026-08-05T22:54:46.276639+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0426",
+   "source": "cycle",
+   "summary": "STERILE COCKPIT HAS NO PER-COMMIT GRANULARITY, so a REPAIR cannot be deployed without also deploying every withheld IMPROVEMENT. L1.38 freezes money-path improvements inside the launch window and always allows repairs -- but the unit of deployment is a PROCESS RESTART, not a commit. Live instance today: commit 483b374 (a repair -- the futures leg published $4,807 of a signed re-base as profit, and scripts/hurdle_rate.py:97 reads that exact net_pnl to judge whether the carry beats T-bills) sits behind f7becef, an improvement a prior session deliberately withheld under L1.38 with a reasoned, unexpired ack. Restarting the executor to land the repair also lands the withheld improvement; not restarting leaves the repair INERT (verified: web/cashcarry_live.json still publishes net_pnl 2935.65 with no net_pnl_basis key, i.e. the running pid predates the fix -- desk lesson L0004). NOT restarted this cycle, and that is a decision not an oversight: the book is FLAT and killed (CASHCARRY_KILL present since 08-01T21:55), so nothing is being sized on the corrupt number right now, and the re-arm -- a principal decision -- will restart the process anyway. THE GAP TO CLOSE: check_change_window.py judges a WINDOW, never a DIFF, so it cannot tell an operator which pending commits are repairs and which are frozen improvements. It should classify the commits between the running process's start and HEAD, so 'can I restart?' becomes answerable instead of argued.",
+   "roi_bps": 4.0,
+   "raised": "2026-08-05T22:54:59.704915+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0427",
+   "source": "cycle",
+   "summary": "MAX_AUDIT FENCE WIRING IS A TRAP THAT HAS NOW REFUSED PUSHES TWICE IN FOUR COMMITS. A max_audit fence is a FUNCTION inside scripts/max_audit.py, so it is wired by adding the function NAME to _FENCE_OWNERS in build_enforcement_matrix.py. Adding the SCRIPT PATH to _MAP looks equivalent and reads equivalent in review, but does nothing -- there is no script path for a function. Miss it and build_enforcement_matrix exits 1 with 'fences with no governing principle', which is one of the 10 law fences in the L1.37 pre-push hook, so EVERY push on the branch is refused for everyone sharing it. Instances: c8983b1 (check_paywalls_registered) and cc28734 (check_blocked_routes_hunted + check_verified_alternatives_promoted), three commits apart, different authors. The per-instance fix is to map the fence; the GENERALISATION is that the author should not have to remember which registry: make build_enforcement_matrix's failure message NAME the registry and the exact line to add (it currently prints only the unmapped fence names), and/or have check_build_standard require a law mapping in the same commit that adds a max_audit check_* function -- L1.41 already requires LAW-MAPPED as a build condition, it just cannot see max_audit's internal functions.",
+   "roi_bps": 3.0,
+   "raised": "2026-08-05T23:00:03.754345+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0428",
+   "source": "cycle",
+   "summary": "CADENCE ENGINE HAD A SINGLE POINT OF FAILURE IN AN UNFUNDED EXTERNAL API -- FIXED (dfdffcd). run_cadence.py fires run_external_panel.py with timeout=720; OpenRouter balance -0.59 so the panel hung the full 720s, TimeoutExpired escaped main() uncaught, and since cadence state is written ONCE at the end of main() the artifact was never rewritten (mtime stayed 07:13 while the run ended 23:03). Every duty completed that cycle was forgotten and every timestamp stayed stale -- indistinguishable from 'the cadence engine is not running'. Fixed both halves: _run_panel catches TimeoutExpired and returns False (duty stays OWED, strictly stricter, no floor touched), and main() persists state in a finally so a later failure cannot erase earlier work. _assert_floors still raises through the finally -- pinned by a test. STILL OPEN AND NOT FIXED BY THIS: the panel is fired even though the funding pre-check has ALREADY recorded funded=false in data/panel_funding_state.json seconds earlier (checked 2026-08-05T22:51:20, balance -0.59). A measured 'unfunded' is written down and then ignored, costing 720s per cadence run. That is a separate defect -- an artifact produced and not consumed, one hop from the L1.28b(d) actuator defect fixed earlier this cycle -- and the fix is to gate the panel branch on the funding state the engine already computed.",
+   "roi_bps": 6.0,
+   "raised": "2026-08-05T23:06:00.030577+00:00",
+   "status": "implemented",
+   "reason": null,
+   "commit": "dfdffcd",
+   "due": null,
+   "disposed": "2026-08-05T23:06:11.574781+00:00"
   }
  ]
 }
