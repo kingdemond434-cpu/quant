@@ -3307,10 +3307,41 @@ def check_test_suite_collectable(defects) -> None:
     Two teeth: collection must SUCCEED, and the collected count is RATCHETED. The ratchet is the
     important half -- a suite can rot one deleted file at a time without ever failing, and
     "tests pass" stays true the whole way down.
+
+    A THIRD STATE, ADDED 2026-08-05 (R0407b). `rc != 0` folded a probe the KERNEL KILLED into a
+    collection error, and the two have nothing in common. A negative returncode means this child
+    never finished collecting anything, so the message below -- "install the missing dependency"
+    -- named a dependency that does not exist and sent the reader hunting a test failure that was
+    never there. Measured twice on 2026-08-05: rc=-9 raised `test-suite-uncollectable` with an
+    EMPTY `why` list, while a full collection seconds later returned rc=0 in 19s at 326MB peak.
+    The box is a 3.8GB swapless VPS shared with the live daemons and several agent sessions, and
+    `/tmp` is a tmpfs, so the scratch of a previous run is itself resident RAM (513ba24).
+
+    NOTHING IS LOOSENED BY THE SPLIT. A killed probe still raises a defect -- on a safety gate
+    "unknown" reads as NOT-PROVEN-GREEN, never as fine -- and it is never re-run, because
+    re-running a memory-killed probe under the same pressure doubles the shortage it is reporting
+    (the same rule run_ci.py's HUNG and KILLED branches already follow). What changes is only what
+    the alarm SAYS, and that the ratchet's silence is now stated out loud instead of being an
+    invisible early return: a partial count from a truncated run would fire a FALSE
+    `test-suite-shrank`, so the honest report is that the count is UNMEASURED this cycle.
     """
+    from libs.ops.host_resources import pressure_note
+
     r = subprocess.run([sys.executable, "-m", "pytest", "tests/", "--collect-only", "-q"],
                        cwd=str(ROOT), capture_output=True, text=True, timeout=300, check=False)
     out = (r.stdout or "") + (r.stderr or "")
+    if r.returncode < 0:
+        defects.append((
+            "test-suite-probe-killed",
+            f"the collection probe was KILLED by signal {-r.returncode} before it could report "
+            f"({pressure_note()}). This is a verdict on the BOX, not on the tests: nothing here "
+            "says a single test is broken, and re-running it under the same pressure would only "
+            "double the shortage. It still counts as a defect because an unmeasured suite is "
+            "NOT a green one. Two consequences to act on: the collected-module ratchet could not "
+            "be evaluated this cycle, so a genuine suite shrink would be invisible right now; and "
+            "the first move is to free host memory (check tmpfs occupancy under /tmp -- it is RAM "
+            "no process owns) and re-run when the box is quiet, NOT to hunt a failing test."))
+        return
     if r.returncode != 0 or "error" in out.lower().split("short test summary")[0]:
         why = [ln for ln in out.splitlines() if "ERROR" in ln or "ModuleNotFound" in ln][:4]
         defects.append((

@@ -28,6 +28,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import IO
 
+from libs.ops.host_resources import mem_available_mb, pressure_note
 from libs.ops.platform_paths import venv_python
 
 _ROOT = Path(__file__).resolve().parent.parent
@@ -199,17 +200,11 @@ def _attribute(failed: list[str]) -> tuple[list[str], list[str]]:
 def _mem_available_mb() -> int | None:
     """MemAvailable in MB, or None where /proc is absent or unreadable.
 
-    Read at the moment a step dies so the diagnosis is CHECKABLE rather than asserted. None and 0
-    are different answers and are kept different: "we could not measure" must never render as
-    "there was no memory".
+    Delegates to the shared reader so this gate and max_audit's collection probe cannot drift into
+    two different opinions about how much memory the box had when they died. None and 0 stay
+    different answers there: "we could not measure" must never render as "there was no memory".
     """
-    try:
-        for line in Path("/proc/meminfo").read_text("utf-8").splitlines():
-            if line.startswith("MemAvailable:"):
-                return int(line.split()[1]) // 1024
-    except (OSError, ValueError, IndexError):
-        return None
-    return None
+    return mem_available_mb()
 
 
 def _run_steps() -> int:
@@ -247,11 +242,15 @@ def _run_steps() -> int:
             # under the same pressure would double the shortage it is reporting, exactly the
             # reason the HUNG branch refuses a re-run.
             sig = -r.returncode
-            avail = _mem_available_mb()
-            eno = "unknown" if avail is None else f"{avail}MB"
-            print(f"[KILLED] {label}: died on signal {sig} with {eno} MemAvailable -- counted as "
-                  "FAILED, but this is a verdict on the BOX, not on the code")
-            failed.append(f"{label} (KILLED sig{sig}, MemAvailable {eno} -- box ran out of "
+            # tmpfs occupancy rides along with MemAvailable because on this box it is the usual
+            # CULPRIT and is invisible to every other memory check the desk owns: `/tmp` is a
+            # tmpfs, so a previous run's leftover scratch is resident RAM belonging to no process.
+            # Without it the operator reads "MemAvailable 189MB", finds no process holding the
+            # rest, and has nowhere to go next.
+            note = pressure_note()
+            print(f"[KILLED] {label}: died on signal {sig} ({note}) -- counted as FAILED, but "
+                  "this is a verdict on the BOX, not on the code")
+            failed.append(f"{label} (KILLED sig{sig}, {note} -- box ran out of "
                           "resources mid-step, NOT a code failure; re-run when quiet)")
             continue
         ok = r.returncode == 0
