@@ -1526,3 +1526,89 @@ against a rail.
 **Binding on future work.** Any new constraint on capital deployment ships with its lifting
 condition and its cost, or it is a defect a reviewer must raise without waiting to be asked. Fenced
 by `scripts/check_idle_cost.py` over `libs/research/idle_yield.py`.
+
+## L1.52 THE UNKNOWN-UNKNOWN HUNT IS RESOURCED LIKE THE ALPHA HUNT, AND IT REPORTS ITS OWN HEALTH
+
+Principal standing order, 2026-08-05: *"unknowns of unknowns and blind spots maximisation and these
+families similar too are our biggest hope, they could discover and change our quant drastically
+without us expecting, so those aspects discoveries etc should be maximised in every single way
+every audit sweep llm gpt all ways to hunt it just as much as we try to hunt alpha."*
+
+**Why it outranks its apparent size.** A known edge decays; the desk knows roughly how fast, and
+the E[log W] contribution of one more screened hypothesis is boundable in advance. An unknown
+unknown has no such bound in either direction — it is the only class of finding that can
+re-price the whole book, and by construction the desk cannot enumerate what it would be worth.
+An expected value that cannot be bounded above is not a small one; it is the reason the hunt
+exists. So exploration is never the residual claimant on attention after the alpha hunt is fed.
+
+**The proving instance, and it is the sharpest form of the failure this desk keeps finding.**
+`check_self_sufficiency` asks the one question that decides whether any of this is working: is
+the desk finding its own gaps, or is the principal still doing it? It opened with `if not
+lg.exists(): return` — so the route to a clean reading was to **skip the logging duty**, at
+which point no ledger existed, no defect fired, and the desk read as self-sufficient. An organ
+that stopped performing a duty thereby switched off the check on that duty. On 2026-08-05
+`data/blind_spot_ledger.jsonl` did not exist at all, while L2.5 had mandated an origin-tagged row
+for every gap since 2026-07-21. **The meta-check could not fire while the apparatus it judges was
+failing** — which is the only circumstance in which anyone needed it.
+
+**The general rule it generalises to, stated as a question every organ must ask of itself: WHAT
+DOES THE ABSENCE OF MY INPUT LOOK LIKE?** If the answer is "the same as health", the check is
+decoration. Absence, staleness, unparseability and thinness are each a NAMED finding, and none of
+them may be reported as a pass. Note the honest direction: such a finding never claims the desk
+is failing to find gaps — it claims the desk **cannot show** that it is, which is a different
+statement and the only one the evidence supports.
+
+**Operative.**
+1. Every audit sweep, every LLM cycle, every panel mission and every scheduled review asks, of
+   its own subject, *what else could be here that nobody has thought to look for* — in addition
+   to its checklist, never instead of it (L1.50 clause 3). A sweep that ran its list and stopped
+   has not hunted; it has audited.
+2. The blind-spot origin ledger is written on every cycle in which a gap is found, tagged
+   `self` / `guard` / `principal`. **PRINCIPAL-FOUND IS THE FAILURE SIGNAL**, and attributing a
+   principal-directed finding to `self` is a governance breach, not a bookkeeping preference —
+   the desk's own flagship metric is the first thing it would be tempted to inflate.
+3. Exploration organs are never throttled to fund extraction. Repair-mode redirects
+   discretionary engineering attention only (L1.28b(f)); it never reduces the hunt.
+4. A dead or unreachable exploration source is hunted for alternatives with the same urgency as
+   a dead price feed, and a lane that merely STOPPED BEING PROBED counts as unproven, never as
+   healthy — a hunt that cannot see its own blind lanes is measuring its own reach, not the world.
+
+## L1.53 CONVERSION CATCHES UP; A RATIO IS NEVER MET BY SHRINKING ITS DENOMINATOR
+
+Principal standing order, 2026-08-05: *"conversion maximised is also mandatory in every way
+without ruining output of anything else it's converting or reducing it to match it, conversion
+should automatically aggressively always catch up to recommendations data alphas every single
+overall thing and always utilised never behind that's also defect."*
+
+**The first half — behind is a defect.** Finding without fixing is half a deliverable (L1.28b),
+and the debt is not static: an unconverted row ages at the ROI it states, so a desk that falls
+behind is not merely untidy, it is compounding a liability it has already priced. Conversion is
+therefore measured as a RATE against arrivals, not as a backlog against a line.
+
+**The proving instance.** The conversion fence computed `arrivals_7d` and `dispositions_7d`,
+printed both into its own artifact, and never compared them. Status asked only *is anything
+moving* and *is the pile big*, so on 2026-08-05 a live ledger of **341 raised against 157
+dispositioned in seven days** — a 184-row shortfall at a 0.46 conversion ratio — reported no
+conversion failure, and would have gone on doing so for as long as the backlog stayed under an
+unrelated threshold. The evidence was in the fence's own output, unread.
+
+**The second half, and it is the one that matters more, because it is the direction a desk drifts
+in without ever deciding to.** EVERY reading in that fence improved when arrivals FELL. Stop
+finding things and the backlog shrinks, dispositions keep pace trivially, and the gauge goes
+green. **The cheapest route to a perfect conversion score was to look less hard, and the result
+would have been indistinguishable from success.** A ratio whose denominator nobody guards is not
+a measurement of conversion; it is an invitation to stop working.
+
+**Operative.**
+1. Conversion is scored against ARRIVALS. Dispositions materially below arrivals is a named
+   failure whose required move is CONVERT FASTER.
+2. **ACQUISITION IS NEVER CUT TO MEET EXTRACTION** (L1.28b(f), now measured rather than merely
+   written). A fall in the finding rate against its own trailing baseline is a defect in its own
+   right, reported even when every other gauge is green — which is exactly when it is invisible.
+3. The two failures are NEVER merged into one number. *Convert faster* and *find harder* are
+   opposite instructions, and a single ratio holding both lets each mask the other; that is
+   precisely how such a ratio becomes gameable.
+4. This generalises beyond the recommendation ledger to every ratio the desk reports — coverage,
+   utilisation, mutation kill rate, screen breadth. **Whenever a gauge can be improved by doing
+   less of the thing it exists to encourage, its denominator is a first-class measurement and is
+   fenced separately.**
