@@ -1326,6 +1326,21 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # achieved-vs-configured period gap on both Binance recorders -- 8.28s and 7.84s against 5.0s)
 40 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_clockprov.lock .venv/bin/python scripts/check_clock_provenance.py --report-only >> data/cro_ai_logs/clock_provenance.log 2>&1
 
+# KERNEL-LOG READABILITY FENCE (R0350) -- the same L1.40 "unmeasured must never read as OK"
+# doctrine as check_clock_provenance above, applied to the input every kill/OOM diagnosis starts
+# from. Readability drifts under this environment: dmesg was denied outright on 2026-08-01, and on
+# the current box dmesg reads while `journalctl -k` returns no journal files at all. When no
+# channel is readable, "no OOM found" is not a finding -- it is a measurement that did not happen,
+# and this fence says so instead of letting silence read as health.
+# Daily, not hourly: readability changes on reboots and image swaps, not within a day, and the
+# probe shells out to dmesg.
+# EVIDENCE: scripts/check_kernel_log.py -> data/kernel_log_status.json; ledger R0350 (unblocked
+# 2026-08-04 when the box became root-capable, which is itself the drift the fence guards).
+# CONFIDENCE: committed-script (first run on this box: dmesg readable with 354 lines, journalctl-k
+# rc 0 but ZERO lines -> correctly recorded unreadable, since an empty successful read proves
+# nothing; verdict READABLE on the surviving channel)
+25 5 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_kernel_log.py --json --report-only >> data/cro_ai_logs/kernel_log.log 2>&1
+
 # --- L1.47 FUNDING CAPTURE (capability hunt s1, 2026-08-01) ---------------------------------
 # CEILING TYPE (L1.28c): DATA-ARRIVAL bound. The unit of observation is ONE CLOSED CARRY -- the
 # fence's inputs change only when the executor completes a round trip, which on the current book

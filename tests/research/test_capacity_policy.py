@@ -125,6 +125,7 @@ class TestLiveBookMakesTheRatioSelfScaling:
     def _ledger(self, tmp_path, equity: float, n: int, ts: str | None = None):
         import json
         from datetime import UTC, datetime
+        tmp_path.mkdir(parents=True, exist_ok=True)
         p = tmp_path / "nav.jsonl"
         p.write_text(json.dumps({
             "date": "2026-07-25", "ts": ts or datetime.now(tz=UTC).isoformat(),
@@ -145,6 +146,23 @@ class TestLiveBookMakesTheRatioSelfScaling:
         from libs.research.capacity_policy import live_book_usd
         led = self._ledger(tmp_path, 999.0, 3, ts="2020-01-01T00:00:00+00:00")
         assert live_book_usd(ledger=led) == DEFAULT_BOOK_USD
+
+    def test_the_staleness_bound_is_48h_not_a_week(self, tmp_path) -> None:
+        """R0163: 7 days let every capacity ratio be steered by a week-old book. The bound is
+        now 48h -- long enough to span a weekend gap in the attestation chain, short enough
+        that a funding week cannot pass unnoticed. Both directions are asserted: tightening a
+        freshness bound is only real if the fresh side still reads."""
+        from datetime import UTC, datetime, timedelta
+
+        from libs.research.capacity_policy import live_book_usd
+        now = datetime.now(tz=UTC)
+        fresh = self._ledger(tmp_path / "a", 14_773.14, 10,
+                             ts=(now - timedelta(hours=24)).isoformat())
+        assert live_book_usd(ledger=fresh) == 14_773.14, "a 1-day-old book must still steer"
+        stale = self._ledger(tmp_path / "b", 14_773.14, 10,
+                             ts=(now - timedelta(days=3)).isoformat())
+        assert live_book_usd(ledger=stale) == DEFAULT_BOOK_USD, (
+            "a 3-day-old book was accepted under the old 7-day bound and must now read unknown")
 
     def test_corrupt_json_falls_back(self, tmp_path) -> None:
         from libs.research.capacity_policy import live_book_usd

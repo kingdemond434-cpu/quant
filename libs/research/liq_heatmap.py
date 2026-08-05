@@ -168,8 +168,11 @@ def fuel_series(price: np.ndarray, oi: np.ndarray, *, half_life_bars: float,
             lo_a.append(-s_short)
             hi_a.append(-s_short + off_hi)
             wts.append(wt)
-    lo_b, hi_b = np.array(lo_b), np.array(hi_b)
-    lo_a, hi_a = np.array(lo_a), np.array(hi_a)
+    # Distinct names rather than rebinding the accumulator lists: the list-to-ndarray rebind
+    # read as a type error under the pinned mypy, and the two kinds are genuinely different
+    # things -- one is being built, one is being indexed with.
+    lo_b_i, hi_b_i = np.array(lo_b), np.array(hi_b)
+    lo_a_i, hi_a_i = np.array(lo_a), np.array(hi_a)
     # weight matrix folding tier weights into per-proximity rows: feature = W @ window_sums
     weight = np.zeros((npx, len(wts)))
     for j, wt in enumerate(wts):
@@ -202,8 +205,8 @@ def fuel_series(price: np.ndarray, oi: np.ndarray, *, half_life_bars: float,
         # 3. features: windowed sums via one cumsum, tier-weighted, in quote notional at p[t].
         cs = hist.cumsum()
         mass[t] = cs[nm1]                    # exact histogram total -- the tested OI invariant
-        sums_b = cs[np.clip(bt + hi_b, 0, nm1)] - cs[np.clip(bt + lo_b, 0, nm1)]
-        sums_a = cs[np.clip(bt + hi_a, 0, nm1)] - cs[np.clip(bt + lo_a, 0, nm1)]
+        sums_b = cs[np.clip(bt + hi_b_i, 0, nm1)] - cs[np.clip(bt + lo_b_i, 0, nm1)]
+        sums_a = cs[np.clip(bt + hi_a_i, 0, nm1)] - cs[np.clip(bt + lo_a_i, 0, nm1)]
         below_m[:, t] = weight @ sums_b
         above_m[:, t] = weight @ sums_a
     below_m *= p

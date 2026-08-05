@@ -244,7 +244,12 @@ def capacity_band(capacity_usd: float, deployed_equity_usd: float = DEFAULT_BOOK
 
 
 #: Days after which the NAV ledger is too old to steer a gate. Beyond this we do NOT know the book.
-_NAV_STALE_DAYS = 7.0
+#: TIGHTENED 7.0 -> 2.0 on 2026-08-05 (R0163). Seven days let every capacity ratio be steered by
+#: a book a full week out of date, on a desk whose equity can move materially in one funding day;
+#: 48h is the shortest window that still spans a weekend gap in the attestation chain. The
+#: FALLBACK is deliberately unchanged -- this only moves the line at which the reading is called
+#: unknown, and unknown already routes to the conservative constant below.
+_NAV_STALE_DAYS = 2.0
 _NAV_LEDGER = Path(__file__).resolve().parents[2] / "data/nav_attestation.jsonl"
 
 
