@@ -131,6 +131,23 @@ def _clock_rows(path: Path) -> list[dict]:
     return out
 
 
+#: Dated rows required before "this clock yields nothing" is a statement about the INSTRUMENT
+#: rather than about a clock that simply started yesterday.
+_DEGENERATE_MIN_ROWS = 3
+
+
+def _payload(row: dict[str, object]) -> str:
+    """A row minus its date key -- what has to change for a new day to be new evidence.
+
+    R0257. A deriver that runs on the desk's cron cadence while its SOURCE publishes on a slower
+    one re-emits the same measurement under today's date. That is one observation recorded twice,
+    not two observations, and it is invisible to every staleness check the desk owns because the
+    artifact really is fresh and the row count really did grow (L1.46: a configured cadence is not
+    evidence of a cadence).
+    """
+    return json.dumps({k: v for k, v in row.items() if k != "date"}, sort_keys=True)
+
+
 def _e_shortfall(arr: np.ndarray, e: float, thr: float) -> int:
     """Extra OBSERVATIONS the e-process needs to reach `thr` at the current effect size.
 
@@ -232,19 +249,53 @@ def _evaluate(name: str, clock: str, symbol: str, field: str, direction: int, m:
 
     closes = _closes(symbol)
     rets, used = [], []
+    restamped = flat = unusable = 0
     for i in range(len(rows) - 1):
         d0, d1 = rows[i].get("date"), rows[i + 1].get("date")
         c0, c1 = closes.get(d0), closes.get(d1)
         z = rows[i].get(field)
         if None in (c0, c1, z) or c0 == 0:
+            unusable += 1
+            continue
+        # R0257, the two ways a dated row is not an observation. Both SUBTRACT evidence and can
+        # never add any, which is what makes this safe to apply to a live promotion path.
+        #   RE-STAMP: rows[i] repeats rows[i-1] verbatim, so the position at d0 is the same
+        #   measurement already counted -- betting one signal value on two days is one observation
+        #   with autocorrelation, not two independent ones.
+        if i > 0 and _payload(rows[i]) == _payload(rows[i - 1]):
+            restamped += 1
             continue
         pos = float(np.sign(float(z))) * direction     # position taken AT d0 close
+        #   FLAT: sign(0) == 0, so no position was taken. A day the signal declined to bet is not
+        #   an observation OF the signal; counting it walks `n` toward MIN_OBS while dragging the
+        #   t-stat toward zero -- loosening the power gate and tightening the statistic at once,
+        #   and both are wrong.
+        if pos == 0.0:
+            flat += 1
+            continue
         rets.append(pos * (c1 / c0 - 1.0))             # realised over d0 -> d1 (no lookahead)
         used.append(d1)
 
     n = len(rets)
+    # A clock that keeps producing dated rows while yielding no usable observation -- or throwing
+    # away at least as many as it keeps -- is a broken INSTRUMENT, and the desk must never read it
+    # as a weak or refuted EFFECT. Measured 2026-08-05: walcl_reserve_impulse re-stamped one
+    # 2026-07-29 observation (3 rows, 1 distinct payload) and read ACCRUING 2/20; defi_utilisation
+    # took no position on 4 of 5 days and read ACCRUING 5/20; cny_premium collected 14 dated rows
+    # whose signal field was null in every one and read ACCRUING 0/20. The dangerous case is not
+    # the flattering one: an all-zero return series is ACCRUING only below MIN_OBS and turns
+    # FAILING at n>=20 via the `t <= 0` branch, so a clock that has never once measured anything
+    # would have retired its own research ground as a refuted hypothesis (L1.25: the ordered
+    # diagnostic starts at the INSTRUMENT, and a killed axis raises no alarm).
+    diag = {"dated_rows": len(rows), "distinct_observations": n, "restamped": restamped,
+            "flat_position": flat, "unusable": unusable}
+    if len(rows) >= _DEGENERATE_MIN_ROWS and (n == 0 or (restamped + flat) >= n):
+        return {"axis": name, "verdict": "DEGENERATE", "forward_days": n, "need": MIN_OBS, **diag,
+                "note": (f"{len(rows)} dated rows yielded {n} distinct observation(s) "
+                         f"({restamped} re-stamped, {flat} flat, {unusable} unusable) -- this is "
+                         "an instrument fault, NOT evidence about the hypothesis")}
     if n < 2:
-        return {"axis": name, "verdict": "ACCRUING", "forward_days": n, "need": MIN_OBS,
+        return {"axis": name, "verdict": "ACCRUING", "forward_days": n, "need": MIN_OBS, **diag,
                 "note": "not enough aligned forward days yet"}
 
     arr = np.asarray(rets, dtype="float64")
@@ -256,9 +307,11 @@ def _evaluate(name: str, clock: str, symbol: str, field: str, direction: int, m:
 
     verdict, need, suff = _stage_b_verdict(arr, t, bar, alpha=alpha)
     e = float(e_value(arr))
-    # `forward_days` has always counted aligned forward OBSERVATIONS (nonzero usable rows), not
-    # calendar days -- the key name is kept for its readers (revalidate_clocks, claim_verifier).
-    return {"axis": name, "verdict": verdict, "forward_days": n, "need": int(need),
+    # `forward_days` counts aligned forward OBSERVATIONS, not calendar days -- the key name is kept
+    # for its readers (revalidate_clocks, claim_verifier). Until R0257 this comment claimed the
+    # count excluded degenerate rows and it did not: the claim was the documentation, the exclusion
+    # was nowhere. The diagnostics are published beside it so the gap can never re-open silently.
+    return {"axis": name, "verdict": verdict, "forward_days": n, "need": int(need), **diag,
             "obs_short": int(suff.obs_short), "evidence": suff.reason,
             "cum_return": round(cum, 5), "ann_sharpe": round(sharpe, 2),
             "nw_t": round(t, 3), "holm_bar": round(bar, 3), "m_concurrent": m,
