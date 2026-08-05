@@ -15,6 +15,7 @@ Pure numpy. import from libs.research.axis_screen.
 from __future__ import annotations
 
 import json
+from collections.abc import Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -100,7 +101,25 @@ def stage_a_screen(signal: np.ndarray, target_ret: np.ndarray, *, name: str,
     # panel_width divides out cross-sectional stacking: a 139-symbol panel passed as one flat array
     # has n = symbol-days, and treating those as independent inflates every t-stat by
     # sqrt(panel_width) (~11.8x at 139 -- an apparent t=3.5 is really t=0.35).
-    n_eff = max(len(zv) / max(float(horizon_days) * max(int(panel_width), 1), 1e-9), 1.0)
+    #
+    # THE DEFLATOR ONLY EVER DEFLATES. Both corrections above model DEPENDENCE between rows, so
+    # each can only ever remove independent observations -- n_eff must never exceed the number of
+    # observations that actually exist. The divisor was taken raw, so a SUB-DAILY horizon (
+    # horizon_days < 1, which is how every tape screen calls this: screen_moat.py passes
+    # h/86400.0) made it a MULTIPLIER: at 60s bars horizon_days=6.9e-4, so n=10k was reported as
+    # n_eff=14.4M and min_detectable_ic=0.0005. `powered` then came back true for free, which is
+    # the exact inverse of the failure this block was written to prevent -- it was built so an
+    # underpowered null could not be recorded as a refutation, and instead it was certifying
+    # every sub-daily cell as powered no matter how little data stood behind it. Clamping at 1.0
+    # makes non-overlapping bars carry n independent observations, which is what they are.
+    #
+    # CLAMP THE TWO FACTORS SEPARATELY, NEVER THEIR PRODUCT. They are independent corrections for
+    # independent kinds of dependence, and clamping the product lets one cancel the other: at 60s
+    # bars over a 45-symbol panel, horizon_days*panel_width = 0.031, which clamps to 1.0 and
+    # silently discards the 45x cross-sectional stacking correction entirely. Each factor floors
+    # at "no correction" on its own, then they compose.
+    deflator = max(float(horizon_days), 1.0) * max(int(panel_width), 1)
+    n_eff = max(len(zv) / deflator, 1.0)
     min_detectable_ic = float(1.96 / np.sqrt(n_eff))
     # 'powered' asks whether the SAMPLE could have detected an effect worth caring about (ic_min),
     # NOT whether the observed IC happens to be large. Only under the former does a null mean
@@ -165,3 +184,141 @@ def stage_a_screen(signal: np.ndarray, target_ret: np.ndarray, *, name: str,
                 fh.write(json.dumps({"date": today, "z20": out["current_z"],
                                      "screen": out}) + "\n")
     return out
+
+
+# --------------------------------------------------------------- target/horizon sweep ----------
+#: The mandated sweep grid. Targets and horizons are BOTH swept because the constitution's
+#: TARGET/HORIZON SWEEP DUTY forbids the next-day-absolute reflex: an asset-SELECTION signal is
+#: mechanically a cross-sectional claim and can read as pure noise against an absolute target,
+#: which is how the dev-momentum episode lost a real mechanism.
+DEFAULT_HORIZONS: tuple[int, ...] = (1, 5, 20)
+DEFAULT_TARGETS: tuple[str, ...] = ("absolute", "cross_sectional")
+
+
+def _period_returns(prices: np.ndarray, h: int) -> np.ndarray:
+    """h-period returns in the alignment `stage_a_screen` CONTRACTS FOR, shape (T, N).
+
+    THE HARNESS SHIFTS THE TARGET ITSELF -- `fwd = np.roll(r, -1)` -- so its argument is the
+    return realised over period t (contemporaneous with signal[t]), and it predicts r[t+1]. Handing
+    it an already-forward return double-shifts, testing signal[t] against the return from t+1 to
+    t+1+h and leaving a one-period hole that no data ever fills. That is not merely lossy: it
+    destroyed a true IC of ~0.45 into 0.004 in this module's own synthetic test, so a real
+    mechanism would have been graveyarded as noise.
+
+    So row t holds the return over the h periods ENDING at t (i.e. from t-h to t), which makes the
+    harness's r[t+1] exactly the return from t to t+h -- strictly future relative to signal[t].
+    Overlapping and daily-sampled is deliberate: it is what the harness's power model assumes, and
+    it deflates n by horizon_days to recover the independent count.
+    """
+    out = np.full(prices.shape, np.nan, dtype="float64")
+    if h < len(prices):
+        out[h:] = prices[h:] / prices[:-h] - 1.0
+    return out
+
+
+def target_horizon_sweep(
+    signal: np.ndarray, prices: np.ndarray, *, name: str,
+    horizons: Sequence[int] = DEFAULT_HORIZONS,
+    targets: Sequence[str] = DEFAULT_TARGETS,
+    min_cross_section: int = 5,
+    **screen_kwargs: Any,
+) -> dict[str, Any]:
+    """Screen one signal across the FULL {target} x {horizon} grid, counting every cell as a trial.
+
+    THE WHOLE POINT IS THE DENOMINATOR. Running six cells and reporting the best one is a
+    garden-of-forking-paths search with the forks left out of the write-up -- the single easiest
+    way to manufacture a phantom edge while believing you found one. So this returns every cell it
+    ran, and `n_trials` is the count of cells ATTEMPTED, not the count that produced a verdict:
+    a cell dropped for thin data was still a fork in the path and still costs multiplicity budget.
+    Feed `n_trials` straight to `deflated_sharpe_ratio`.
+
+    signal, prices: aligned (T, N) panels -- rows are periods, columns are instruments. A 1-D
+    array is treated as a single-instrument panel, for which the cross_sectional target is
+    undefined and is skipped with a reason rather than silently returning noise.
+
+    targets:
+      "absolute"        -- the instrument's own forward return. A TIMING claim.
+      "cross_sectional" -- forward return minus the cross-sectional mean of that period. A
+                           SELECTION claim, and the mechanism-appropriate target for any signal
+                           that ranks instruments against each other.
+
+    Cells are stacked panel-wise and screened as one flat sample with panel_width=N, so the
+    cross-sectional correlation that would otherwise inflate every t-stat by sqrt(N) is deflated
+    out inside the harness.
+    """
+    sig = np.asarray(signal, dtype="float64")
+    px = np.asarray(prices, dtype="float64")
+    if sig.ndim == 1:
+        sig = sig.reshape(-1, 1)
+    if px.ndim == 1:
+        px = px.reshape(-1, 1)
+    if sig.shape != px.shape:
+        raise ValueError(f"signal {sig.shape} and prices {px.shape} must be the same panel shape")
+    n_inst = sig.shape[1]
+
+    cells: list[dict[str, Any]] = []
+    skipped: list[dict[str, Any]] = []
+    attempted = 0
+    for target in targets:
+        for h in horizons:
+            attempted += 1
+            cell = f"{name}|{target}|{h}d"
+            if target == "cross_sectional" and n_inst < min_cross_section:
+                # NOT a quiet drop: a skipped cell is still a fork that was considered, so it is
+                # named, and it still counts in n_trials above.
+                skipped.append({"cell": cell, "target": target, "horizon_days": h,
+                                "reason": f"cross-section of {n_inst} < min {min_cross_section}"})
+                continue
+            fwd = _period_returns(px, h)
+            if target == "cross_sectional":
+                # Sum/count rather than nanmean: the trailing h rows are all-NaN by construction,
+                # and nanmean warns ("Mean of empty slice") on exactly those rows. They are then
+                # masked out below anyway, so the warning is pure noise -- but a warning that is
+                # always present is a warning nobody reads when it starts meaning something.
+                ok = np.isfinite(fwd)
+                valid = ok.sum(axis=1)
+                total = np.where(ok, fwd, 0.0).sum(axis=1)
+                mean = total / np.maximum(valid, 1)
+                tgt = fwd - mean[:, None]
+                tgt[valid < min_cross_section] = np.nan   # too thin a cross-section to demean
+            else:
+                tgt = fwd
+            # FLATTEN INSTRUMENT-MAJOR (order="F"), never row-major. `stage_a_screen` z-scores
+            # with a ROLLING TIME-SERIES window, so each instrument's history must be contiguous
+            # in the flat array. C-order flattening interleaves them -- at 12 instruments a
+            # zwin=20 window then spans under two periods and silently becomes a CROSS-SECTIONAL
+            # z-score, which is a different statistic against a different null. Caught by
+            # test_cross_sectional_target_finds_a_selection_signal_absolute_misses, where it
+            # dragged a true IC of ~0.45 down to noise. Residual: the first `zwin` points of each
+            # instrument are normalised partly against the previous instrument's tail --
+            # zwin/T per instrument (0.4% at T=5000), and it cannot induce a spurious lead
+            # because the contaminating values are unrelated to this instrument's target.
+            mask = np.isfinite(sig) & np.isfinite(tgt)
+            s_flat = sig.ravel(order="F")[mask.ravel(order="F")]
+            t_flat = tgt.ravel(order="F")[mask.ravel(order="F")]
+            if len(s_flat) < 3:
+                skipped.append({"cell": cell, "target": target, "horizon_days": h,
+                                "reason": f"only {len(s_flat)} aligned finite observations"})
+                continue
+            res = stage_a_screen(s_flat, t_flat, name=cell, horizon_days=float(h),
+                                 panel_width=n_inst, **screen_kwargs)
+            res.update({"target": target, "n_instruments": n_inst})
+            cells.append(res)
+
+    interesting = [c for c in cells if c["verdict"] == "SCREEN-INTERESTING"]
+    return {
+        "name": name,
+        "grid": {"targets": list(targets), "horizons": [int(h) for h in horizons]},
+        "n_trials": attempted,
+        "n_screened": len(cells),
+        "n_skipped": len(skipped),
+        "skipped": skipped,
+        "cells": cells,
+        "n_interesting": len(interesting),
+        # NAMED, not returned alone -- the caller still gets every cell, so a reader can always
+        # see how many forks the winner beat.
+        "best_cell": max(cells, key=lambda c: abs(c["ic"]))["name"] if cells else None,
+        "dsr_note": (f"feed n_trials={attempted} to deflated_sharpe_ratio; reporting any single "
+                     "cell without this denominator is a forking-paths result, not an edge"),
+        "stage": "A (zero promotion authority -- a pass earns a forward clock, never capital)",
+    }

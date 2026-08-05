@@ -66,6 +66,40 @@ def test_panel_width_deflates_effective_n():
     assert flat["ic"] == panel["ic"]  # power only -- never touches the estimate
 
 
+def test_sub_daily_horizon_cannot_manufacture_effective_observations():
+    """THE INVERSE BUG, found by the moat L2 screen (R0003) on 2026-08-04.
+
+    The deflator was applied raw, and every tape screen passes a sub-daily horizon
+    (screen_moat.py: ``hd = h / 86400.0``). At 60s bars horizon_days is 6.9e-4, so dividing by it
+    MULTIPLIED n by 1440: n=800 was reported as n_eff=1.15M with min_detectable_ic=0.0018, and
+    ``powered`` came back true for free. That is precisely what this power block exists to
+    prevent, running backwards -- it was built so an underpowered null could not be recorded as a
+    refutation, and instead it certified every sub-daily cell as powered on any amount of data.
+
+    Both corrections model DEPENDENCE between rows, so both can only ever REMOVE independent
+    observations. n_eff may never exceed the number of observations that actually exist.
+    """
+    sig, ret = _noise(n=800)
+    r = stage_a_screen(sig, ret, name="60s", horizon_days=60 / 86400.0)
+    daily = stage_a_screen(sig, ret, name="1d")
+    assert r["n_eff"] <= 800                           # never more than the observations that exist
+    assert r["n_eff"] == daily["n_eff"]                # sub-daily earns no power bonus
+    assert r["min_detectable_ic"] == daily["min_detectable_ic"]
+
+
+def test_sub_daily_and_panel_width_still_deflate_together():
+    """The clamp must floor the two factors SEPARATELY, never their product.
+
+    Caught while fixing the above: ``max(horizon_days * panel_width, 1.0)`` reads 0.031 for a
+    45-symbol tape panel at 60s bars, clamps it to 1.0, and silently throws the whole 45x
+    cross-sectional correction away -- trading one power inflation for another.
+    """
+    sig, ret = _noise(n=900)
+    flat = stage_a_screen(sig, ret, name="flat", horizon_days=60 / 86400.0)
+    panel = stage_a_screen(sig, ret, name="tape-panel", horizon_days=60 / 86400.0, panel_width=45)
+    assert np.isclose(flat["n_eff"] / panel["n_eff"], 45, rtol=0.01)
+
+
 def test_whole_period_shift_is_caught_as_lookahead():
     """The macro failure mode: shifting the signal a full period gives strong forward IC AND
     near-zero same-period corr, so the angle-20 gate sees nothing and a global ic_ceiling of 0.35
