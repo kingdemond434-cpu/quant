@@ -161,6 +161,11 @@ def derive_slots() -> dict[str, Any]:
                 continue
             slots.append({"name": str(row.get("axis", "?")), "kind": "axis",
                           "source": _AXIS_STATE, "state": str(row.get("verdict", "ACCRUING")),
+                          # `started` is the clock's DECLARED birth date, carried as a first-class
+                          # field so libs.research.promotion_history never has to parse it back out
+                          # of the `state` prose. None where the artifact does not declare one --
+                          # an absent start is UNKNOWN, never today (L1.30 phantom-birth rule).
+                          "started": row.get("shadow_start") or row.get("start"),
                           **_evidence(str(row.get("axis", "?")), now,
                                       days=row.get("forward_days", row.get("n", 0)),
                                       updated=row.get("updated")
@@ -174,7 +179,8 @@ def derive_slots() -> dict[str, Any]:
             continue
         if isinstance(doc, dict) and doc.get("shadow_start"):
             slots.append({"name": name, "kind": "standing", "source": rel,
-                          "state": f"since {doc['shadow_start']}", **_evidence(name, now)})
+                          "state": f"since {doc['shadow_start']}",
+                          "started": str(doc["shadow_start"]), **_evidence(name, now)})
 
     roster = _read_json(_SLEEVE_ROSTER)
     if roster is None:
@@ -184,8 +190,13 @@ def derive_slots() -> dict[str, Any]:
         extras = [str(x) for x in roster if str(x).strip()] if isinstance(roster, list) else []
         names = sorted({*_DERIVATIVE_BUILTIN, *extras})
     for name in names:
+        # The roster carries names only, so a derivative sleeve declares no start. `started` is
+        # None on purpose: web/derivative_shadow.json publishes `days_accumulated`, and a start
+        # back-derived from an accrual counter is an UPPER bound on the birth date (a stalled
+        # clock accrues nothing while ageing), so it would push births EARLIER-looking and
+        # over-count them. UNKNOWN is the honest answer until the roster carries a date.
         slots.append({"name": name, "kind": "derivative", "source": _SLEEVE_ROSTER,
-                      "state": "roster", **_evidence(name, now)})
+                      "state": "roster", "started": None, **_evidence(name, now)})
 
     # m is deliberately UNCHANGED by any of this: a stalled clock stays in the cohort until it is
     # RETIRED by an explicit ledgered decision, because dropping it would SHRINK m and loosen every
