@@ -17,7 +17,6 @@ from __future__ import annotations
 from typing import Any
 
 import pytest
-
 from scripts.run_trade_review import file_lesson
 
 _IMPORTED = {"at": "2026-07-01T00:00:00Z", "authority": "SEED", "imported_from": "institutional",
