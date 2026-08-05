@@ -1381,6 +1381,35 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # by >=0.5 settlement) and PHASE-BLIND (close rows carry no rail/reason field))
 43 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_fundcap.lock .venv/bin/python scripts/check_funding_capture.py --report-only >> data/cro_ai_logs/funding_capture.log 2>&1
 
+# CROSS-SECTIONAL FUNDING SNAPSHOT (R0119 producer -- the crowding denominator).
+# `current_funding()` returns all ~855 USD-M perps at ONE instant and five production callers
+# fetch it, rank it, trade off it and DISCARD it. Without the universe at the same instant there
+# is no residual to take, so "are our own names being crowded?" is structurally unanswerable.
+# CADENCE CEILING: DATA-ARRIVAL. `premiumIndex` is a SNAPSHOT endpoint serving no history, so an
+# uncollected hour is permanently unbuyable (L1.28b(f)) -- but the underlying rate only moves
+# meaningfully across settlement stamps, the fastest of which on this venue is 4h. Hourly
+# over-samples that deliberately: it costs one keyless REST call, it clears the fence's 8-snapshot
+# floor within 8h of a position opening, and a FIXED minute keeps every snapshot at a consistent
+# funding phase so a drift measure is not reading its own sampling phase.
+# PHASE :07 -- not aligned to any funding stamp (00/04/08/12/16/20 UTC), and clear of the :4x
+# fence cluster so the tape is already written when check_crowding reads it at :46.
+# EVIDENCE: scripts/collect_funding_cross_section.py -> data/funding_cross_section.jsonl; §42
+7 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_fundxs.lock .venv/bin/python scripts/collect_funding_cross_section.py >> data/cro_ai_logs/funding_cross_section.log 2>&1
+
+# CROWDING FENCE (R0119 -- §42 capacity parity / L1.19 information decay).
+# The desk's capacity assumption is that its carry names are too small for funds to bother with,
+# and that assumption had never been instrumented. The incumbent organ run_carry_crowding.py
+# measures the top-20 AVERAGE -- our own names are INSIDE it, so a competitor compressing exactly
+# our book is diluted ~4:1 and partly subtracted as its own benchmark, making a regime and an
+# adversary the same number. This fence takes the RESIDUAL (our rate minus the cross-section at
+# the same instant) plus the unit-free rank, and alarms only when BOTH tells agree.
+# CADENCE CEILING: DATA-ARRIVAL, keyed to its producer -- it can say nothing the tape has not
+# already recorded, so hourly-after-the-collector is its maximum useful rate.
+# PHASE :46 -- inside the fence cluster (:40 clock provenance, :43 funding capture, :45), and 39
+# minutes after the collector so a snapshot is always on tape before it is read.
+# EVIDENCE: scripts/check_crowding.py -> data/crowding_status.json; CONSTITUTION L1.19 / §42
+46 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_crowding.lock .venv/bin/python scripts/check_crowding.py --report-only >> data/cro_ai_logs/crowding.log 2>&1
+
 # FORECAST SCORER (L1.29 calibration). The desk had a forecast LOGGER and no SCORER, so
 # check_calibration sat OVERDUE with 7 unscored predictions -- the worst asymmetry available,
 # since logging a probability feels like rigour while only the scoring turns it into calibration.

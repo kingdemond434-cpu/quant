@@ -186,6 +186,15 @@ _MAP: dict[str, list[str]] = {
     # wrong on 41.5% of individual closes. The fence differences the two models, measures the
     # PHASE coordinate the desk has never used, and refuses to call an undifferenced estimate OK.
     "L1.47": ["scripts/check_funding_capture.py", "libs/research/funding_clock.py"],
+    # R0119 crowding: the desk's capacity assumption is that its carry names are too small for
+    # funds to bother with, and that assumption had never been INSTRUMENTED. The incumbent organ
+    # (run_carry_crowding.py) measures the top-20 AVERAGE, which contains our own names -- so a
+    # competitor compressing exactly our book is diluted and partly subtracted as its own
+    # benchmark, and a regime is indistinguishable from an adversary. This measures the RESIDUAL.
+    # The collector ships with the fence because premiumIndex serves no history: an uncollected
+    # hour of cross-section is permanently unbuyable (L1.28b(f)).
+    "L1.19-r0119": ["scripts/check_crowding.py", "libs/research/crowding.py",
+                    "scripts/collect_funding_cross_section.py"],
     # R0100 axis collectors (2026-08-05): three free, keyless raw-information axes the desk did
     # not hold. Under L1.11 (the moat is the transformation pipeline, never the purchased dataset)
     # and L1.8 (acquisition runs at maximum). collect_perpdex_funding carries the screen-on-
