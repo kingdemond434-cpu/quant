@@ -783,7 +783,7 @@
    "roi_bps": null,
    "raised": "2026-07-30T17:32:56.119657+00:00",
    "status": "implemented",
-   "reason": "Implemented 2026-08-05. run_trade_forensics' maker denominator now filters no-order legs via leg_modes.placed_order(), so 'already-flat' legs -- where the venue reported the leg already closed and NO ORDER WAS PLACED -- stop counting as non-maker fills and deflating maker_share below the 0.60 target. The 0.60 bar and the n>=20 flag condition are untouched: this changes what is counted, not what is required. 23 tests assert both organs agree to the same 0.25 on one known trade set.",
+   "reason": "Implemented 2026-08-05. run_trade_forensics counted 'already-flat' legs -- where the venue reported the leg already closed and NO ORDER WAS PLACED -- as non-maker, deflating maker_share below the 0.60 target and sending the integrity watch after a defect that existed on no placed order. Those legs now leave the denominator via the shared leg_modes vocabulary. The 0.60 target and n>=20 flag condition are untouched: this changes what is COUNTED, not what is required.",
    "commit": "86c7501",
    "due": "2026-08-08",
    "disposed": "2026-08-05T00:00:00+00:00"
@@ -1378,8 +1378,8 @@
    "summary": "L1.29 FORECAST INSTRUMENTATION (the fence is live and reports UNFORECASTING -- now feed it): log_forecast with resolve_by at the real decision points -- alpha survival p at Stage-A screen (resolve at forward-clock end), promotion success p at Stage-B, deep-sweep auditor stated confidence per finding (resolve when the row is disposed), R-row ROI estimates. Then wire calibrated_confidence into the EV ranker and sizing so the measured bias shrinks live decisions",
    "roi_bps": 30.0,
    "raised": "2026-07-31T10:38:10.383113+00:00",
-   "status": "implemented",
-   "reason": "Decision point D built and live: libs/research/recommendation_forecast.py + hooks in scripts/recommendations.py (on_add pre-registers once, settle() grades every past-due rec:* forecast on every CLI invocation). Self-closing by construction, which was the precondition for adding a fifth writer to a log already failing its OVERDUE fence. The horizon-matched estimator replaced a survivorship one that read 0.9514 on the live ledger; it now honestly returns COLD-START because the ledger is younger than the forecast horizon. Found and fixed two live defects on the first real call: recommendations.py never put the repo root on sys.path (libs unimportable under python3), and libs/self_improvement/__init__.py drags pydantic so its pure-stdlib submodule was unreachable from a stdlib host. 11 tests. Decision points A (Stage-A screen), B (Stage-B promotion) and C (deep-sweep confidence) are DIFFERENT work and are re-rowed as R0363 with the file-and-line analysis: B is ready now (promote_moat_survivors.py:186 already computes p_persistence, a real varying probability with a natural resolve_by), A needs a probability that does not exist at the screen moment, C needs the LLM auditor to emit machine-readable confidence before any hook is possible.",
+   "status": "scheduled",
+   "reason": "PARTIAL 2026-08-05, deliberately not marked implemented. Stage-A screens now pre-register their implicit forecast in finalize_axis_screens.py with a fixed resolve_by, logged BEFORE the outcome is known and deduped on a stable key so re-runs cannot mint duplicates or resolve in the same pass (the degenerate all-TRUE failure). REMAINING: the Stage-B promotion seam in run_promotion_queue.py is not wired, and the R-row-ROI seam was scoped out as having no clean single writer. Half a calibration loop is still an uncalibrated desk, so the row stays open at its remaining scope rather than being closed on the easy half.",
    "commit": "ba283fa",
    "due": null,
    "disposed": "2026-08-05T08:59:20.684522+00:00"
@@ -1391,10 +1391,10 @@
    "roi_bps": 25.0,
    "raised": "2026-07-31T10:44:26.686724+00:00",
    "status": "implemented",
-   "reason": "Built. libs/research/promotion_history.py (append-only writer, 3 date provenances: DECLARED/OBSERVED/UNKNOWN so a bootstrap run cannot manufacture 12 births), wired at scripts/run_promotion_queue.py:_merge_history, consumed by check_replacement_rate. Fence moved UNMEASURED-BIRTHS -> OK (>=6 births vs 1 death in 90d, 6 rows undated and flagged as a floor). 12 tests in tests/governance/test_promotion_history.py.",
+   "reason": "Implemented 2026-08-05. libs/research/promotion_history.py + wiring in run_promotion_queue.py give check_replacement_rate.py the append-only store it has been reading for and reporting UNMEASURED-BIRTHS without. Schema was written to match the READER first, not invented and then adapted.",
    "commit": "0fdcabf",
    "due": null,
-   "disposed": "2026-08-05T08:36:41.088354+00:00"
+   "disposed": "2026-08-05T00:00:00+00:00"
   },
   {
    "id": "R0114",
@@ -3910,7 +3910,7 @@
    "roi_bps": 0.0,
    "raised": "2026-08-01T15:02:22.687475+00:00",
    "status": "implemented",
-   "reason": "Implemented 2026-08-05. RULING (tightening only, in the capital_events docstring): the drawdown rail measures equity NET OF POST-INCEPTION EXTERNAL FLOWS against a flow-adjusted high-water that carries ACROSS events. A deposit raises the high-water ADDITIVELY by exactly the dollars deposited, never proportionally, so it can neither reduce measured drawdown nor un-trip a live pause; a withdrawal lowers it by at most the dollars removed and never below flow-adjusted equity. The high-water is monotone non-decreasing in the rail's space -- the property it lacked. The proportional re-base is refused explicitly (a $1,000 loss against a peak a $5,000 deposit inflated would read -3.3% instead of -20%). effective_start_equity keeps its old meaning: inception for P&L and the ruin rail.",
+   "reason": "Implemented 2026-08-05. Ruling: the drawdown rail measures equity NET of post-inception external flows -- a deposit raises the baseline/high-water additively by exactly the deposit, never proportionally, and a withdrawal lowers peak by at most the withdrawal and never below flow-adjusted equity. A capital event can therefore never reduce measured drawdown or reset the high-water downward, which was the live hazard: a re-baseline moved the DENOMINATOR under the pause rail. effective_start_equity is kept for PnL reporting; the rail uses the flow-adjusted high-water that carries ACROSS events. Tightening only.",
    "commit": "16fa6c0",
    "due": "2026-08-08",
    "disposed": "2026-08-05T00:00:00+00:00"
@@ -3922,7 +3922,7 @@
    "roi_bps": 0.0,
    "raised": "2026-08-01T15:02:22.790849+00:00",
    "status": "implemented",
-   "reason": "Implemented 2026-08-05. Wallet-wide sweep for fully untracked spot longs added to run_cashcarry_executor (:823), outside the `for sym, p in pos.items()` loop that made the old scan structurally unable to see an orphan with no pos entry -- the OPEN-FAIL half-fill case. Respects the existing dust threshold. DETECTS AND PAGES ONLY: it places no orders, because the safe response to an unexplained position is to say so loudly, not to trade on it.",
+   "reason": "Implemented 2026-08-05. The SPOT-EXCESS scan lived inside `for sym, p in pos.items()`, so it could never fire on a FULLY untracked orphan -- an OPEN-FAIL half-fill leaves a spot wallet long with no pos entry, invisible to both that scan and hedge_integrity (which detects untracked FUTURES shorts). A wallet-wide sweep over balances absent from pos now raises the same action path. Detect-and-page only: the new scan places no orders.",
    "commit": "16fa6c0",
    "due": "2026-08-09",
    "disposed": "2026-08-05T00:00:00+00:00"
@@ -3934,7 +3934,7 @@
    "roi_bps": 0.0,
    "raised": "2026-08-01T15:02:22.986123+00:00",
    "status": "implemented",
-   "reason": "Implemented 2026-08-05. run_live_combined now reads capital_events.effective_start_equity instead of raw st['start_futures_equity'], so the executor's book and the published portfolio.json can no longer measure from two different inceptions. Sequenced on the R0320 semantics as the row required.",
+   "reason": "Implemented 2026-08-05. run_live_combined.py (the portfolio.json producer) read raw st['start_futures_equity'] with no capital_events import while the executor used effective_start_equity -- two PUBLISHED books measuring from different inceptions, so the dashboard and the rail could disagree about the same desk. Both now resolve the same capital-events-aware baseline under the R0320 semantics.",
    "commit": "16fa6c0",
    "due": "2026-08-05",
    "disposed": "2026-08-05T00:00:00+00:00"
@@ -3958,7 +3958,7 @@
    "roi_bps": 0.0,
    "raised": "2026-08-01T15:02:23.299790+00:00",
    "status": "implemented",
-   "reason": "Implemented 2026-08-05. fill_quality_monitor now does per-LEG maker parsing of spot_mode/fut_mode (up to two observations per trade row) with 'already-flat' legs excluded from the denominator, replacing the UNMEASURED guard that had left the highest-leverage money-path metric reading NO DATA. Shares libs/execution/leg_modes.py with run_trade_forensics so the two organs cannot drift. Unknown modes fail CLOSED (kept in the denominator, scored non-maker), so an unreadable leg can only push the share down, never over target; an all-no-order set returns None, never 0.0.",
+   "reason": "Implemented 2026-08-05. Per-LEG maker parsing of spot_mode/fut_mode replaces the stopgap that routed the whole schema to UNMEASURED ('THIS IS THE GUARD, NOT THE FIX'), so the highest-leverage money-path metric is measured on the only tape that carries it. Shares libs/execution/leg_modes.py with run_trade_forensics so the two organs cannot drift apart again. Unknown modes fail CLOSED (stay in the denominator, scored non-maker), so an unreadable leg can only push the share DOWN, never over target. All-no-order sets return None, never 0.0.",
    "commit": "86c7501",
    "due": "2026-08-08",
    "disposed": "2026-08-05T00:00:00+00:00"
@@ -4066,8 +4066,8 @@
    "roi_bps": null,
    "raised": "2026-08-01T16:15:42.852809+00:00",
    "status": "implemented",
-   "reason": "Implemented 2026-08-05. All four readers (record_capital_event, check_change_window, check_mechanism_attribution, check_gate0_ready) repointed from the phantom data/cashcarry_state.json -- which nothing in the tree has ever written -- to the executor's real data/cashcarry_positions.json. Broad excepts replaced with named ones so absent / unparseable / schema-missing-key stop collapsing into one shrug; a check that cannot tell them apart cannot say which to go fix. check_gate0_ready's _ruin_rail can now actually reach READY. UNMEASURED still never reads as OK.",
-   "commit": "f731347",
+   "reason": "Implemented 2026-08-05. Four organs (record_capital_event, check_change_window, check_mechanism_attribution, check_gate0_ready) read data/cashcarry_state.json, which NOTHING has ever written; check_gate0_ready caught broadly and reported 'state unreadable on this box', so its _ruin_rail criterion could never reach READY. All four repointed to the real artifact with the executor's actual schema, and the broad excepts replaced by named ones giving DISTINCT verdicts -- absent, unparseable and schema-missing-key are different facts and only one of them is a bug.",
+   "commit": "fe01edc",
    "due": null,
    "disposed": "2026-08-05T00:00:00+00:00"
   },
