@@ -41,12 +41,15 @@ from libs.autodiscovery.models import (
 from libs.autodiscovery.prioritization import prioritize
 from libs.autodiscovery.regime import regime_robust
 from libs.autodiscovery.validation import (
+    CRYPTO_DAYS_PER_YEAR,
+    bars_per_year,
     campaign_fdr,
     stratified_campaign_gates,
     validate,
 )
 from libs.core.ids import generate_id
 from libs.costs.execution_gap import ExecutionGap, survives_execution_gap
+from libs.data.timeframe import Timeframe
 from libs.store.audit import AuditLog
 from libs.store.connection import Database
 from libs.validation.campaign_window import CAMPAIGN_ALPHA
@@ -71,6 +74,17 @@ class AutoDiscoveryLab:
         db: Database,
         data_provider: DataProvider,
         *,
+        # THE BAR INTERVAL THE PROVIDER SERVES, and it is REQUIRED (R0086, 2026-08-05). The lab is
+        # the seam where the frequency is actually known -- whoever built the provider read the
+        # bars -- and it was the one seam that never said so, which is why every candidate this
+        # lab has ever stored carries an annual_sharpe annualised with an HOURLY constant
+        # (4.135x too large on the D1 crypto default). It feeds two things that must agree:
+        # validate()'s annualisation, and the timeframe recorded beside each stored return series.
+        bar: Timeframe,
+        # The trading calendar the interval sits on: 365 for crypto perps (24/7), ~252 for MT5
+        # FX/CFD sessions. Separate from `bar` because they are independent facts -- bar LENGTH and
+        # how many days a year the market is open -- not two sources for one number.
+        days_per_year: float = CRYPTO_DAYS_PER_YEAR,
         cost: float = 0.0003,
         cost_provider: CostProvider | None = None,
         families: Sequence[Family] | None = None,
@@ -80,6 +94,10 @@ class AutoDiscoveryLab:
     ) -> None:
         self.db = db
         self.data_provider = data_provider
+        self.bar = bar
+        # Derived ONCE, here, so the number validate() annualises with and the interval stored
+        # beside the series cannot drift apart.
+        self.periods_per_year = bars_per_year(bar, days_per_year=days_per_year)
         self.store = CandidateStore(db)
         self.audit = AuditLog(db)
         self.cost = cost
@@ -332,6 +350,7 @@ class AutoDiscoveryLab:
             _gates, _col = _stratum
             verdict = validate(
                 research, hypothesis=hyp,
+                periods_per_year=self.periods_per_year,
                 n_trials=_fam_trials.get(_f, n_trials),
                 sharpe_estimates=_sh,
                 returns_matrix=matrix, campaign=_gates, column=_col,
@@ -402,8 +421,15 @@ class AutoDiscoveryLab:
                 campaign_id=campaign_id, hyp=hyp, status=status, metrics=verdict.metrics,
                 survived=status is CandidateStatus.REGISTRY, reason=reason,
                 book_usd=_book, n_sleeves=_sleeves,
+                # THE BAR INTERVAL RIDES WITH THE EVIDENCE (R0086). This wrote NULL until
+                # 2026-08-05 -- honestly, because nothing told the lab its own frequency -- and
+                # that NULL is now what separates the two populations of stored candidates: a row
+                # with a declared timeframe had its annual_sharpe annualised on THIS clock, a row
+                # without one was annualised with the deleted hourly constant and is inflated
+                # (4.135x on D1). Nothing rewrites the old rows; they are made recognisable.
                 series=CandidateSeries(net=rets, stressed=stressed,
-                                       epoch_key=epochs[hyp.symbol]),
+                                       epoch_key=epochs[hyp.symbol],
+                                       timeframe=self.bar.value),
             ) is not None:
                 n_banked += 1
                 continue

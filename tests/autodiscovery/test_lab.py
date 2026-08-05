@@ -16,6 +16,7 @@ from libs.autodiscovery.reports import (
     research_report,
 )
 from libs.autodiscovery.validation import validate
+from libs.data.timeframe import Timeframe
 from libs.store.audit import verify_audit_chain
 from libs.store.connection import Database
 from libs.validation.economic_prior import MechanismType
@@ -33,8 +34,8 @@ def test_validate_rejects_pure_noise() -> None:
     rng = np.random.default_rng(1)
     rets = rng.normal(0.0, 0.01, size=1500)
     matrix = np.column_stack([rets, rng.normal(0.0, 0.01, size=1500)])
-    verdict = validate(rets, hypothesis=_hyp(), n_trials=2, sharpe_estimates=np.array([0.0, 0.0]),
-                       returns_matrix=matrix)
+    verdict = validate(rets, hypothesis=_hyp(), periods_per_year=365.0, n_trials=2,
+                       sharpe_estimates=np.array([0.0, 0.0]), returns_matrix=matrix)
     assert verdict.survived is False
     assert verdict.rejection_reason  # names the failed gates
     assert set(verdict.gates) >= {"cpcv", "dsr", "pbo", "reality_check", "walk_forward",
@@ -68,7 +69,7 @@ def test_memory_dedup_and_checkpoint(db: Database) -> None:
 
 
 def test_orchestrator_cycle_archives_and_is_idempotent(db: Database) -> None:
-    lab = AutoDiscoveryLab(db, noise_provider())
+    lab = AutoDiscoveryLab(db, noise_provider(), bar=Timeframe.D1)
     first = lab.cycle(["EURUSD", "XAUUSD"])
     assert first.tested > 0
     assert first.survivors == 0          # pure noise -> zero survivors (honest)
@@ -82,7 +83,7 @@ def test_orchestrator_cycle_archives_and_is_idempotent(db: Database) -> None:
 
 
 def test_reports_and_dashboard_section(db: Database) -> None:
-    lab = AutoDiscoveryLab(db, noise_provider())
+    lab = AutoDiscoveryLab(db, noise_provider(), bar=Timeframe.D1)
     lab.cycle(["EURUSD"])
     assert research_report(lab.store)["total_candidates"] > 0
     assert discovery_efficiency_report(lab.store)["survivors"] == 0
@@ -95,7 +96,7 @@ def test_reports_and_dashboard_section(db: Database) -> None:
 
 def test_append_only_candidates(db: Database) -> None:
     import pytest
-    lab = AutoDiscoveryLab(db, noise_provider())
+    lab = AutoDiscoveryLab(db, noise_provider(), bar=Timeframe.D1)
     lab.cycle(["EURUSD"])
     rec = lab.store.all()[0]
     with pytest.raises(Exception, match="append-only"), db.transaction() as conn:

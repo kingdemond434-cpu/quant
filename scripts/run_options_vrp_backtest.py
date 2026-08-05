@@ -101,6 +101,7 @@ def main() -> None:
     v = validate(book[book != 0.0], hypothesis=Hypothesis(
         family=Family.CARRY, subtype="options_vrp", symbol="CRYPTO", params={},
         mechanism=MechanismType.RISK_PREMIUM, edge_source="options_vrp", failure_modes=_FAIL),
+        periods_per_year=_PPY,            # 12h DVOL bars, 730/yr (R0086)
         n_trials=matrix.shape[1], sharpe_estimates=sharpes, returns_matrix=matrix,
         campaign=campaign, column=book_col) if n >= 250 else None
 

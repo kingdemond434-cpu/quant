@@ -29,6 +29,9 @@ _CRYPTO = Path("data/lake/bronze/crypto")
 _OUT = Path("reports/xsec_funding")
 _COST = 5e-4               # per-side perp taker + slippage
 _MIN_NAMES = 12            # need a real cross-section each day
+# D1 crypto bars, and perps trade 24/7 -- so 365 bars a year, not the 6240 hourly constant this
+# script's verdicts were annualised with until R0086 (a 4.135x inflation of ann_sharpe_metric).
+_PPY = 365.0
 _FAIL = ["funding dispersion compresses", "alt de-listings / illiquidity",
          "short borrow constraints", "correlated crypto crash overwhelms neutrality"]
 
@@ -103,6 +106,7 @@ def main() -> None:
                 family=Family.CARRY, subtype=f"xsec_funding_{name}", symbol="CRYPTO_XSEC",
                 params={}, mechanism=MechanismType.RISK_PREMIUM,
                 edge_source="cross-sectional funding dispersion", failure_modes=_FAIL),
+                periods_per_year=_PPY,
                 n_trials=len(series), sharpe_estimates=sharpes,
                 returns_matrix=matrix, campaign=campaign, column=col)
             survived, reason, metrics = v.survived, v.rejection_reason, v.metrics

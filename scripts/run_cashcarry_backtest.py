@@ -87,6 +87,7 @@ def main() -> None:
     v = validate(cc[cc != 0.0], hypothesis=Hypothesis(
         family=Family.CARRY, subtype="cash_and_carry", symbol="CRYPTO", params={},
         mechanism=MechanismType.RISK_PREMIUM, edge_source="cash_and_carry", failure_modes=_FAIL),
+        periods_per_year=_PPY,            # D1 crypto bars, 24/7 (R0086)
         n_trials=2, sharpe_estimates=sharpes, returns_matrix=matrix,
         campaign=campaign, column=0)  # cc = matrix column 0 (fc is the peer baseline, column 1)
 

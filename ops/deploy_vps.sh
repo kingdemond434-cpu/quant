@@ -99,16 +99,32 @@ fi
 
 # A deploy that installs a broken tree is worse than no deploy: it looks finished. The gates are
 # cheap and they are the same three CI runs, so there is no excuse for skipping them here.
+#
+# EVERY GATE IS WALL-CLOCK BOUNDED, and that is not belt-and-braces. A gate that can hang has no
+# failure mode a human ever sees: `pytest -q` stalling on a socket read (which it does -- see the
+# timeout block in pyproject.toml) leaves this script sitting at step 1 indefinitely, and an
+# operator who ran the deploy and walked away comes back to a box that is neither deployed nor
+# reported as failed. Silence reads as progress. The suite-level per-test timeout catches the
+# common case from inside; these bounds catch what it cannot -- a hang during collection, an
+# import that blocks, or a box where the plugin is missing entirely. Belt outside the braces,
+# because the thing being protected against is precisely the gate's own machinery not running.
 say "1. gates (the same three CI runs -- a broken tree must not reach a live box)"
-if ! .venv/bin/ruff check . >/dev/null 2>&1; then
-    echo "  FAIL: ruff. Fix before deploying."; exit 1; fi
-echo "  ok   ruff"
-if ! .venv/bin/mypy >/dev/null 2>&1; then
-    echo "  FAIL: mypy --strict. Fix before deploying."; exit 1; fi
-echo "  ok   mypy --strict"
-if ! .venv/bin/pytest -q >/dev/null 2>&1; then
-    echo "  FAIL: pytest. Fix before deploying."; exit 1; fi
-echo "  ok   pytest"
+gate() {  # gate <seconds> <label> <cmd...>
+    local secs="$1" label="$2"; shift 2
+    timeout --kill-after=30 "$secs" "$@" >/dev/null 2>&1
+    local rc=$?
+    if [ $rc -eq 124 ] || [ $rc -eq 137 ]; then
+        echo "  FAIL: $label HUNG (>${secs}s, killed). A hang is a failure, not a slow pass."
+        echo "     Reproduce with:  .venv/bin/pytest -q --timeout=150 --timeout-method=signal"
+        echo "     A network-blocked test on a filtered-egress box is the usual cause."
+        exit 1
+    fi
+    [ $rc -ne 0 ] && { echo "  FAIL: $label. Fix before deploying."; exit 1; }
+    echo "  ok   $label"
+}
+gate 300  "ruff"        .venv/bin/ruff check .
+gate 900  "mypy --strict" .venv/bin/mypy
+gate 2700 "pytest"      .venv/bin/pytest -q
 
 # ---------------------------------------------------------------- 1. install the units
 say "2. install unit files"

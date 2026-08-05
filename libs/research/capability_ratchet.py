@@ -33,13 +33,35 @@ high-water mark and no longer measures is not neutral -- the capability it evide
 unevidenced, so the aspect is scored as having FALLEN with WENT-DARK named as the cause. Otherwise
 deleting the measurement would be the trivial way around the entire mechanism.
 
+THE TAXONOMY IS EXHAUSTIVE BY INTENT AND IT ONLY WIDENS. "Every aspect" is not the four anyone
+would think to grade. It is also the pager between incidents, cost-model freshness, the tape's
+clock provenance, seat credentials, dependency drift against the deployed pins, backup restore
+drills, mutation BREADTH as a distinct question from kill rate, scheduler manifest drift, and
+permission hygiene -- the minor surface, which is precisely where a desk rots, because nobody
+grades it. Every one of them is read from an artifact another organ already writes: this module
+measures NOTHING itself, since a scorer that measures is a scorer that can be gamed by rewriting
+the scorer, and it re-derives no threshold another organ owns.
+
+MEASURING MORE IS NOT REGRESSING, and getting this wrong would have destroyed the instrument.
+Widening an aspect lowers its mean against a mark earned over fewer components, and reporting that
+as a fall makes the gate permanently red -- the exact failure check_ratchets.py already fixed by
+giving each mutation target its own floor ("a fence that fires when the desk measures MORE trains
+everyone to ignore it"). So a fall whose mark the CURRENT component set could not have produced
+even at every component's own best is WIDENED, not FELL: the mark is kept, the gap is printed, and
+the instruction is to beat it over the wider set. It cannot launder a regression -- component marks
+are per component, so anything that actually dropped names itself as a cause first.
+
 WHAT IT CANNOT DO, stated plainly because a control that overstates itself is worse than none. The
 map from artifact to 0-10 is a JUDGEMENT -- the ladders and fractions below are written down so
 they can be argued with, but they are not discovered facts, and a component scoring 8 does not
 mean the desk is 80% of the way to excellent at it. What the artifact does claim is narrower and
 worth having: the score cannot fall without a named cause, the aspect list cannot quietly shrink,
-an unmeasured aspect cannot read as a healthy one, and every reading carries the specific next
-thing that would raise it.
+an unmeasured aspect cannot read as a healthy one, every reading cites the artifact it came from,
+and every reading carries the specific next thing that would raise it. One further limit is worth
+naming: the desk-wide binding constraint ranks only MEASURED components, so a desk with large
+unmeasured holes will keep pointing at a real but possibly not-worst defect. The unmeasured list
+sits directly beside it for exactly that reason, and its instruction is always the same: measure
+it, then the ranking means more.
 """
 
 from __future__ import annotations
@@ -57,6 +79,7 @@ __all__ = [
     "ARTIFACT_PATH",
     "ASPECT_KEYS",
     "AT_CEILING",
+    "CANARY_MAX_AGE_H",
     "FELL",
     "FLATLINE",
     "MEASURED",
@@ -71,6 +94,8 @@ __all__ = [
     "Component",
     "Marks",
     "Verdict",
+    "age_hours",
+    "attainable",
     "binary_component",
     "build_artifact",
     "desk_binding_constraint",
@@ -82,6 +107,7 @@ __all__ = [
     "ratchet",
     "read_capability",
     "score_aspect",
+    "stale_gate",
     "unmeasured_component",
 ]
 
@@ -177,6 +203,12 @@ class Marks:
     Component marks are what make a cause NAMEABLE. With aspect marks alone the artifact could
     only say "governance fell to 6.4", which is a fact nobody can act on; with component marks it
     says which measurement regressed, by how much, and out of which file.
+
+    They are also what keeps an aspect mark MEANINGFUL as the taxonomy grows. A mark higher than
+    the mean of the current components' own bests cannot have been earned over the current set
+    (see `attainable`), so the marks carry their own evidence about whether a comparison is even
+    valid -- no remembered component list, and no migration for records written before the rule
+    existed.
     """
 
     aspect_high_water: dict[str, float]
@@ -403,6 +435,57 @@ def binary_component(key: str, artifact: str, ok: bool | None, *, detail: str, f
         else fix)
 
 
+def age_hours(doc: dict[str, Any] | None, field: str, now: datetime) -> float | None:
+    """How old is this artifact's own stamp, in hours? None when it cannot be established.
+
+    None covers three cases that must NOT be told apart by the caller, because they license the
+    same conclusion and nothing weaker: no document, no stamp field, and a stamp that will not
+    parse. The last one is the sharpest form of the fail-open this exists to close -- a timestamp
+    that can never be shown to be OLD can never be shown to be old, so trusting the artifact
+    beside it is trusting something that has no expiry at all.
+
+    Negative ages (a stamp in the future, an NTP step) come back as written rather than clamped;
+    callers compare against a positive bound, so a future stamp reads as fresh, which is the right
+    failure direction for a clock that just moved.
+    """
+    stamped = _parse_ts(doc.get(field)) if doc is not None else None
+    if stamped is None:
+        return None
+    return round((now - stamped).total_seconds() / 3600.0, 2)
+
+
+def stale_gate(key: str, artifact: str, doc: dict[str, Any] | None, field: str, now: datetime, *,
+               max_age_h: float, owner: str, what: str) -> Component | None:
+    """THE AGE CHECK, as one call, so that skipping it is a visible omission rather than a habit.
+
+    Returns an UNMEASURED component when the artifact is absent, unstamped, unparseable or OLDER
+    than `max_age_h`; returns None when it is fresh enough to be read. A caller that wants to score
+    a state artifact writes this line first, and the reviewer can see whether they did.
+
+    WHY A GATE RATHER THAN A FRESHER `_read_json`. A silent "return None when stale" would collapse
+    stale into absent, and those are different findings with different repairs: nothing was ever
+    written versus something stopped writing. The gate keeps them distinguishable in the reason
+    string while making the CHECK itself a single unmissable statement.
+
+    `owner` names where the bound came from. This module owns no cadences: the number is the one
+    the producing organ already declares, cited so the two cannot drift into disagreeing.
+    """
+    age = age_hours(doc, field, now)
+    if age is None:
+        return unmeasured_component(
+            key, artifact,
+            f"{artifact} carries no usable `{field}` stamp -- {what} cannot be shown to be "
+            "current, and an artifact with no readable age can never be shown to be STALE either, "
+            "which is the state in which a dead monitor reads exactly like a live one")
+    if age > max_age_h:
+        return unmeasured_component(
+            key, artifact,
+            f"{artifact} is {age:g}h old against a {max_age_h:g}h bound ({owner}) -- {what}. A "
+            "stale reading is not a bad reading and not a good one: it is last week's observation "
+            "wearing today's date, and scoring it either way invents information")
+    return None
+
+
 #: The desk's per-organ liveness roster: which scheduled organ produced, how long ago, and against
 #: what tolerance. Read by many aspects below, because "is the thing that measures X still running"
 #: is a precondition for believing anything X publishes.
@@ -535,7 +618,7 @@ def mutation_components(root: Path, key: str, prefixes: tuple[str, ...]) -> list
 _CALIBRATION = "data/calibration_status.json"
 
 
-def _statistical_validation(root: Path) -> list[Component]:
+def _statistical_validation(root: Path, _now: datetime) -> list[Component]:
     out = mutation_components(root, "mutation_kill_validation_stack",
                               ("libs/validation/", "libs/autodiscovery/"))
 
@@ -571,7 +654,7 @@ def graveyard_kills(text: str) -> int:
                if _GRAVE_ENTRY.search(m.group("title")) is not None)
 
 
-def _research_discipline(root: Path) -> list[Component]:
+def _research_discipline(root: Path, _now: datetime) -> list[Component]:
     out: list[Component] = []
 
     suite = _read_json(root / _SUITE)
@@ -639,7 +722,7 @@ def _gate0_rows(root: Path) -> list[dict[str, Any]]:
     return [r for r in raw if isinstance(r, dict)] if isinstance(raw, list) else []
 
 
-def _risk_rails(root: Path) -> list[Component]:
+def _risk_rails(root: Path, _now: datetime) -> list[Component]:
     out = mutation_components(root, "mutation_kill_risk_stack", ("libs/risk/",))
 
     # THE RUIN RAIL IS BINARY AND ITS THIRD STATE IS THE INTERESTING ONE. gate0 records
@@ -705,7 +788,7 @@ def _audit_defects(root: Path, prefix: str) -> float | None:
     return float(sum(1 for r in live if str(r.get("id") or "").startswith(prefix)))
 
 
-def _governance(root: Path) -> list[Component]:
+def _governance(root: Path, _now: datetime) -> list[Component]:
     out: list[Component] = []
     gate = _read_json(root / _LAW_GATE)
     n_fences = _num(_field(gate, "n_fences"))
@@ -761,7 +844,7 @@ _PROVENANCE = "docs/research/data_provenance.json"
 _ANNOUNCE = "data/announcement_collector.json"
 
 
-def _data_coverage(root: Path) -> list[Component]:
+def _data_coverage(root: Path, _now: datetime) -> list[Component]:
     out: list[Component] = []
     assets = _read_json(root / _ASSETS)
     raw = _field(assets, "counts")
@@ -803,7 +886,7 @@ _COVERAGE = "docs/research/COVERAGE_RATCHET.json"
 _FORENSICS = "docs/research/trade_forensics_latest.json"
 
 
-def _execution_path(root: Path) -> list[Component]:
+def _execution_path(root: Path, _now: datetime) -> list[Component]:
     doc = _read_json(root / _GATE0)
     out: list[Component] = [fraction_component(
         "gate0_readiness", _GATE0, _num(_field(doc, "n_ready")), _num(_field(doc, "n_criteria")),
@@ -858,7 +941,7 @@ _CHASE = "data/instrumentation_chase.json"
 TERMINAL_STATUSES = frozenset({"implemented", "rejected", "retired", "done", "screened"})
 
 
-def _self_improvement(root: Path) -> list[Component]:
+def _self_improvement(root: Path, _now: datetime) -> list[Component]:
     out: list[Component] = []
     doc = _read_json(root / _LEDGER)
     raw = _field(doc, "recommendations")
@@ -927,7 +1010,7 @@ _ORGAN_ER = "data/organ_er.json"
 _KERNEL_LOG = "data/kernel_log_status.json"
 
 
-def _ops_autonomy(root: Path) -> list[Component]:
+def _ops_autonomy(root: Path, _now: datetime) -> list[Component]:
     live = _read_json(root / _LIVENESS)
     dark = _field(live, "never_produced")
     stale = _field(live, "stale")
@@ -977,7 +1060,7 @@ _QUEUE = "data/promotion_queue.json"
 _PROMOTION = "data/promotion_gate.json"
 
 
-def _alpha_output(root: Path) -> list[Component]:
+def _alpha_output(root: Path, _now: datetime) -> list[Component]:
     out: list[Component] = []
     queue = _read_json(root / _QUEUE)
     raw = _field(queue, "slots")
@@ -1013,8 +1096,17 @@ _ALERT_LEDGER = "data/alert_delivery.jsonl"
 _ALERT_SILENT = "data/ALERT_CHANNELS_SILENT"
 _ALERT_CANARY = "data/alert_canary_state.json"
 
+#: How old the canary's last run may be before its verdict stops counting. NOT a number this
+#: module invented: it is the canary's OWN throttle -- `--interval-h` defaults to 6.0 in
+#: scripts/run_alert_canary.py:49, which is that organ's statement of how often it intends to run
+#: (its cron line is tighter still, so 6h is several missed ticks and comfortably past "the box
+#: was busy"). Lifting it rather than picking one keeps the desk from holding two different
+#: opinions about when the canary is late.
+CANARY_MAX_AGE_H = 6.0
+_CANARY_OWNER = "scripts/run_alert_canary.py --interval-h default"
 
-def _alerting(root: Path) -> list[Component]:
+
+def _alerting(root: Path, now: datetime) -> list[Component]:
     """Does the pager provably deliver BETWEEN incidents?
 
     The failure this scores is on the record twice: quota exhaustion left the pager dead five
@@ -1040,33 +1132,56 @@ def _alerting(root: Path) -> list[Component]:
                    f"{last.get('channel')} ok={last.get('ok')} -- {str(last.get('detail'))[:90]}"))
 
     # THE SILENCE FLAG IS THE CANARY'S OWN VERDICT, written using ITS lookback window, not one
-    # invented here. But the flag's ABSENCE only means something if the canary has run: an unrun
-    # canary and a healthy pager leave the same empty directory, so with no canary state this is
-    # UNMEASURED rather than a clean bill of health.
+    # invented here. But that verdict is only worth anything while the canary is ALIVE, and the
+    # two directions are not symmetric:
+    #
+    #   FLAG PRESENT is a positive assertion of silence that only a successful delivery clears. It
+    #       is scored 0 whatever the canary's age -- the last thing anyone established was that the
+    #       pager was dead, and nothing since has said otherwise. Downgrading that to UNMEASURED
+    #       because the canary later died would be the flattering reading of a monitor dying while
+    #       reporting a fault, which is the worst moment to stop counting it.
+    #   FLAG ABSENT proves nothing on its own -- an unrun canary, a dead canary and a healthy pager
+    #       all leave the same empty directory. So absence is only a 10 while the canary is FRESH,
+    #       and otherwise UNMEASURED.
+    #
+    # WITHOUT THE AGE CHECK this component read 10/10 AT CEILING forever off ONE observation
+    # receding into the past: run the canary once, clear the flag, let the canary die, and a dead
+    # pager scores identically to a live one while looking more confident every day. That is the
+    # same shape as the five-day dead pager this whole aspect exists to catch. A monitor that
+    # cannot report its own death is not a monitor.
+    flag = root / _ALERT_SILENT
+    note = ""
+    if flag.exists():
+        try:
+            note = flag.read_text("utf-8").strip()
+        except (OSError, UnicodeDecodeError):
+            note = "(flag present, unreadable)"
     canary = _read_json(root / _ALERT_CANARY)
-    if canary is None:
-        out.append(unmeasured_component(
-            "alert_channels_not_silent", _ALERT_SILENT,
-            f"{_ALERT_CANARY} absent -- the canary has never recorded a run, so the ABSENCE of "
-            "the silence flag proves nothing. An unrun canary and a live pager are "
-            "indistinguishable from here, and that ambiguity is the failure, not the flag"))
+    age = age_hours(canary, "last_canary", now)
+    stale = stale_gate("alert_channels_not_silent", _ALERT_CANARY, canary, "last_canary", now,
+                       max_age_h=CANARY_MAX_AGE_H, owner=_CANARY_OWNER,
+                       what="the canary's own liveness, which is what makes the silence flag's "
+                            "ABSENCE mean anything")
+    if flag.exists():
+        out.append(Component(
+            key="alert_channels_not_silent", state=MEASURED, score=0.0, artifact=_ALERT_SILENT,
+            detail=f"SILENCE FLAG PRESENT: {note[:150]} (canary last ran "
+                   f"{age if age is not None else '?'}h ago)",
+            constraint="ARM A CHANNEL and deliver one page: the canary's own audit found no "
+                       "delivery on ANY channel inside its lookback, which is the state that hid "
+                       "a dead pager for five days. The flag clears itself on the next successful "
+                       "delivery -- nothing else clears it"))
+    elif stale is not None:
+        out.append(stale)
     else:
-        flag = root / _ALERT_SILENT
-        note = ""
-        if flag.exists():
-            try:
-                note = flag.read_text("utf-8").strip()
-            except (OSError, UnicodeDecodeError):
-                note = "(flag present, unreadable)"
         out.append(binary_component(
-            "alert_channels_not_silent", _ALERT_SILENT, not flag.exists(),
-            detail=(f"SILENCE FLAG PRESENT: {note[:170]}" if note else
-                    f"no silence flag; last canary {canary.get('last_canary')}"),
-            fix="ARM A CHANNEL and deliver one page: the canary's own audit found no delivery on "
-                "ANY channel inside its lookback, which is the state that hid a dead pager for "
-                "five days",
-            held="AT CEILING -- a page has landed inside the canary's own lookback; HOLDING it "
-                 "means keeping the canary on its cadence"))
+            "alert_channels_not_silent", _ALERT_SILENT, True,
+            detail=f"no silence flag, and the canary ran {age}h ago (bound {CANARY_MAX_AGE_H:g}h) "
+                   "-- a live canary that is not complaining",
+            fix="",
+            held="AT CEILING -- a page has landed inside the canary's own lookback AND the canary "
+                 "is itself alive; HOLDING it means keeping the canary on its cadence, because a "
+                 "silent canary and a working pager look identical from here"))
     return out
 
 
@@ -1078,7 +1193,7 @@ _ECONOMICS = "data/execution_economics.json"
 _NOT_READABLE = "NOT-READABLE-HERE"
 
 
-def _cost_model(root: Path) -> list[Component]:
+def _cost_model(root: Path, _now: datetime) -> list[Component]:
     """Is the cost model FRESH, and is the realised-versus-modelled residual measurable at all?
 
     Cost is the only input that decides whether an edge survives contact with a venue, and it is
@@ -1121,7 +1236,7 @@ def _cost_model(root: Path) -> list[Component]:
 _REPLACEMENT = "data/replacement_rate.json"
 
 
-def _forward_clock(root: Path) -> list[Component]:
+def _forward_clock(root: Path, _now: datetime) -> list[Component]:
     """Do the desk's forward clocks MEAN anything -- measured latency, countable births?
 
     A forward clock is the desk's only honest evidence generator, and its hygiene is separate from
@@ -1184,7 +1299,7 @@ _BACKUP = "data/backup_status.json"
 _CLOCK_REFUSALS = ("NO-DATA", "UNMEASURED")
 
 
-def _recorder_tape(root: Path) -> list[Component]:
+def _recorder_tape(root: Path, _now: datetime) -> list[Component]:
     """Is the desk's OWN tape being recorded, and does its time axis mean what the schema implies?
 
     Three of the largest kills in the graveyard (kimchi_premium, coinbase_premium_timing, the
@@ -1263,7 +1378,7 @@ _RUNWAY = "data/miner_runway.json"
 _SEAT_OK = "ok"
 
 
-def _llm_seats(root: Path) -> list[Component]:
+def _llm_seats(root: Path, _now: datetime) -> list[Component]:
     """Are the desk's LLM seats WIRED, CREDENTIALLED and PRODUCING -- three different facts.
 
     The three are kept apart deliberately, because collapsing them is how a desk convinces itself
@@ -1316,7 +1431,7 @@ def _llm_seats(root: Path) -> list[Component]:
 _UTILISATION = "data/utilisation.json"
 
 
-def _dependency_env(root: Path) -> list[Component]:
+def _dependency_env(root: Path, _now: datetime) -> list[Component]:
     """Does the environment the suite runs in match the environment that runs the money?
 
     A green suite here is not evidence about production unless the deps match: `ruff>=0.5`
@@ -1353,7 +1468,7 @@ def _ceiling_row(root: Path, name: str) -> dict[str, Any] | None:
     return None
 
 
-def _capital_utilisation(root: Path) -> list[Component]:
+def _capital_utilisation(root: Path, _now: datetime) -> list[Component]:
     """Is paid-for capacity actually being USED -- capital, slots, wired capability?
 
     Unused headroom is not safety, it is an unbooked loss (L1.28a). The aggregate is deliberately
@@ -1407,7 +1522,7 @@ _PLAYBOOK = "data/trading_playbook.json"
 _LESSONS = "docs/desk_lessons.jsonl"
 
 
-def _knowledge_currency(root: Path) -> list[Component]:
+def _knowledge_currency(root: Path, _now: datetime) -> list[Component]:
     """Is what the desk has LEARNED retrievable, or does every cycle start from nothing?
 
     The expensive failure here is re-testing a dead hypothesis: compute spent to rediscover a
@@ -1458,7 +1573,7 @@ _DRILLS = "data/drill_report.json"
 _SIZING = "data/sizing_derivation.json"
 
 
-def _backup_dr(root: Path) -> list[Component]:
+def _backup_dr(root: Path, _now: datetime) -> list[Component]:
     """Could the desk be REBUILT -- and has anyone proved it by actually restoring?
 
     A backup nobody has restored from is a hypothesis, so the restore drill is scored separately
@@ -1503,7 +1618,7 @@ def _backup_dr(root: Path) -> list[Component]:
     return out
 
 
-def _mutation_breadth(root: Path) -> list[Component]:
+def _mutation_breadth(root: Path, _now: datetime) -> list[Component]:
     """How much of the tree is mutation-tested AT ALL -- a different question from the kill rate.
 
     A desk can hold a 100% kill rate forever by mutation-testing one small file. Breadth is the
@@ -1582,7 +1697,7 @@ def _mutation_breadth(root: Path) -> list[Component]:
 _SCHEDULER = "data/scheduler_manifest_report.json"
 
 
-def _scheduler_integrity(root: Path) -> list[Component]:
+def _scheduler_integrity(root: Path, _now: datetime) -> list[Component]:
     """Does the scheduler MANIFEST describe the machine, and does the machine agree?
 
     A watchdog died and left the pager silent and the forward clocks frozen for 11.5 days while
@@ -1628,7 +1743,7 @@ def _scheduler_integrity(root: Path) -> list[Component]:
     return out
 
 
-def _secret_permission(root: Path) -> list[Component]:
+def _secret_permission(root: Path, _now: datetime) -> list[Component]:
     """Can the desk WRITE what it must write and READ what it must read -- and is it credentialled?
 
     Permission faults are the quietest class of outage on this box: an unwritable log directory
@@ -1673,7 +1788,7 @@ _BUILD_STANDARD = "data/build_standard.json"
 _WIRING = "data/wiring_agent.json"
 
 
-def _engineering_standard(root: Path) -> list[Component]:
+def _engineering_standard(root: Path, _now: datetime) -> list[Component]:
     """Does new work enter above the standard, and is what was built actually REACHABLE?
 
     Two failure directions, both measured by organs that already exist: work entering below the
@@ -1719,7 +1834,7 @@ _SOURCE_ALTERNATIVES = "data/source_alternatives_report.json"
 _SOURCE_HEALTH = "data/source_health.jsonl"
 
 
-def _source_resilience(root: Path) -> list[Component]:
+def _source_resilience(root: Path, _now: datetime) -> list[Component]:
     """When a source dies, does the desk already know where else to look?
 
     A dead source with no registered alternative is a research seam that closes silently. The
@@ -1767,7 +1882,7 @@ def _source_resilience(root: Path) -> list[Component]:
 _BLINDSPOT = "data/blindspot_max.json"
 
 
-def _blind_spots(root: Path) -> list[Component]:
+def _blind_spots(root: Path, _now: datetime) -> list[Component]:
     """Is the desk conditioning on the slices it KNOWS exist, and reading the fields it has?
 
     A blind spot is not an unknown unknown once it has been enumerated -- it is a known gap being
@@ -1802,7 +1917,7 @@ _CONSTITUTION = "docs/research/CONSTITUTION_RATCHET.json"
 _LAW_COVERAGE = "docs/research/LAW_COVERAGE.json"
 
 
-def _constitutional_aggression(root: Path) -> list[Component]:
+def _constitutional_aggression(root: Path, _now: datetime) -> list[Component]:
     """How aggressive is the constitution the desk actually operates under, and is it enforced?
 
     The aggression marks are the sibling ratchet's record (libs/doctrine/ratchet.py) -- already on
@@ -1856,7 +1971,7 @@ _RETURN_TARGETING = "data/return_targeting.json"
 _TIMIDITY = "data/timidity_audit.json"
 
 
-def _ambition_discipline(root: Path) -> list[Component]:
+def _ambition_discipline(root: Path, _now: datetime) -> list[Component]:
     """Is restraint DECLARED as evidence/risk restraint, or is it timidity wearing prudence?
 
     L1.28 scores timidity as a defect, and the audit that enforces it makes the distinction
@@ -1901,7 +2016,14 @@ def _ambition_discipline(root: Path) -> list[Component]:
 #: the desk stopped being graded on, which is the deletion loophole one level up from a component.
 #: `ceiling` states what 10/10 would MEAN, because a score with no stated ceiling drifts into
 #: meaning "as good as we currently know how to be".
-ASPECTS: tuple[tuple[str, str, Callable[[Path], list[Component]]], ...] = (
+#: EVERY BUILDER TAKES THE CLOCK, including the ones that do not use it (they name it `_now`).
+#: THAT IS DELIBERATE. Reading a state artifact without checking its age is a fail-open in the
+#: FLATTERING direction -- a stale monitor reads exactly like a healthy one, and the longer it
+#: stays dead the more confident the number looks. Threading `now` in unconditionally means the
+#: clock is always in reach, so age-checking is a decision each builder makes rather than a
+#: capability it lacks; and taking it as an argument rather than calling datetime.now() inside
+#: keeps every builder testable against a fixed instant.
+ASPECTS: tuple[tuple[str, str, Callable[[Path, datetime], list[Component]]], ...] = (
     ("statistical_validation",
      "the validation stack's own tests kill every mutant of it, over complete (never truncated) "
      "runs -- the desk cannot fool itself about whether an edge is real",
@@ -2040,9 +2162,17 @@ def score_aspect(key: str, ceiling: str, components: list[Component]) -> Aspect:
                   components=tuple(components), binding_constraint=constraint)
 
 
-def read_capability(root: Path) -> tuple[Aspect, ...]:
-    """Score every aspect from the artifacts on disk. Pure read -- nothing here measures."""
-    return tuple(score_aspect(key, ceiling, build(root)) for key, ceiling, build in ASPECTS)
+def read_capability(root: Path, now: datetime | None = None) -> tuple[Aspect, ...]:
+    """Score every aspect from the artifacts on disk. Pure read -- nothing here measures.
+
+    `now` is the instant every staleness judgement is made against, threaded in rather than read
+    from the system clock inside a builder: a component that calls datetime.now() itself cannot be
+    tested against a fixed instant, and an age check nobody can test is an age check nobody should
+    trust. Defaulting it here keeps the read-only callers (dashboards, the CRO dossier) working
+    unchanged.
+    """
+    at = now if now is not None else datetime.now(tz=UTC)
+    return tuple(score_aspect(key, ceiling, build(root, at)) for key, ceiling, build in ASPECTS)
 
 
 def desk_binding_constraint(aspects: tuple[Aspect, ...]) -> dict[str, Any]:
@@ -2136,17 +2266,59 @@ def _component_marks(aspect: Aspect, marks: Marks) -> dict[str, float]:
     return {k: v for k, v in marks.component_high_water.items() if k.startswith(prefix)}
 
 
-def _new_components(aspect: Aspect, marks: Marks) -> list[str]:
-    """Components carrying a reading today that have NO high-water mark of their own yet.
+def attainable(aspect: Aspect, marks: Marks) -> float | None:
+    """What this aspect would score if EVERY component it grades today stood at its own best.
 
-    Two shapes count as new and both are the desk measuring MORE: a component that did not exist
-    on the last run, and one that existed but was UNMEASURED (an unmeasured component never sets a
-    mark, so it has none). The reverse direction -- measured yesterday, unmeasured today -- is a
-    FALL and is caught in _fall_causes, never here.
+    A component's best is its recorded mark, or today's reading when it has no mark yet -- a
+    component measured for the first time has no history, so today IS its best-so-far. Taking the
+    MAX of the two is what keeps the number safe: a component that regressed still contributes its
+    old mark here, so a regression can never make an aspect look merely "wider".
+
+    None when the aspect grades nothing measurable -- there is then nothing to compare with.
     """
     prior = _component_marks(aspect, marks)
-    return [c.key for c in aspect.components
-            if c.state == MEASURED and f"{aspect.key}.{c.key}" not in prior]
+    bests: list[float] = []
+    for c in aspect.components:
+        if c.state != MEASURED or c.score is None:
+            continue
+        bests.append(max(prior.get(f"{aspect.key}.{c.key}", c.score), c.score))
+    if not bests:
+        return None
+    return _round(sum(bests) / len(bests))
+
+
+def _widening(aspect: Aspect, marks: Marks) -> tuple[bool, list[str], str]:
+    """Is the aspect's mark still COMPARABLE to today's reading, or was it earned over less?
+
+    THE TEST IS ATTAINABILITY, and it is deliberately stateless -- derived from the marks
+    themselves rather than from a remembered component list. If the aspect's mark is higher than
+    the mean of the CURRENT components' own best-ever scores, then no arrangement of today's
+    components could ever have produced that mark: it was earned over a different, narrower set.
+    Comparing today's mean against it is therefore not a comparison at all, and reporting the gap
+    as a regression asserts something the record cannot support.
+
+    WHY NOT REMEMBER THE SET INSTEAD. A remembered basis has to be reconstructed for every record
+    written before it existed, and the reconstruction is a guess. This needs no history, no
+    migration, and it SELF-CORRECTS: the moment the aspect beats its old mark over the wider set,
+    the mark rises, attainability catches up, and the aspect is comparable again forever after.
+
+    IT CANNOT LAUNDER A REGRESSION. Every component mark is a high-water mark, so a component that
+    dropped still sits at its old best in `prior` and does not lower attainability -- it produces a
+    NAMED CAUSE in _fall_causes and the aspect is FELL before this is consulted. Deleting a strong
+    component is a WENT-DARK cause for the same reason. The only way to reach this branch is for
+    the current component set to be genuinely incapable of the recorded mark, which is exactly what
+    "the mark was measured over less" means.
+    """
+    mark = marks.aspect_high_water.get(aspect.key)
+    reach = attainable(aspect, marks)
+    if mark is None or reach is None or reach >= mark - EPS:
+        return False, [], ""
+    prior = _component_marks(aspect, marks)
+    added = sorted(c.key for c in aspect.components
+                   if c.state == MEASURED and f"{aspect.key}.{c.key}" not in prior)
+    return True, added, (
+        f"with every component of today's set at its OWN best the aspect would reach {reach:.1f}, "
+        f"below the recorded {mark:.1f} -- so that mark cannot have been earned over this set")
 
 
 def _fall_causes(aspect: Aspect, marks: Marks) -> list[str]:
@@ -2200,30 +2372,34 @@ def ratchet(aspects: tuple[Aspect, ...], marks: Marks,
 
         score = a.score if a.score is not None else 0.0
         fell_aspect = mark is not None and score < mark - EPS
-        added = _new_components(a, marks)
+        widened, added, why_basis = _widening(a, marks)
         if causes:
             movement, cause = FELL, "; ".join(causes)
-        elif fell_aspect and mark is not None and added:
+        elif fell_aspect and mark is not None and widened:
             # THE DESK IS GRADING ITSELF ON MORE, and nothing that was already graded got worse.
             # Every prior component still holds its own mark (or this branch would be unreachable
             # -- `causes` is built from exactly that comparison), so the drop is arithmetic from a
             # wider denominator, not a capability going backwards. The old mark is KEPT and printed
             # beside today's reading, because the honest statement is "9.0 was measured over less".
+            # THIS PERSISTS until the aspect beats its mark over the WIDER set, which is the point:
+            # a one-run amnesty would leave an unexplained fall reported every day forever after,
+            # and a gate that is permanently red is a gate that is permanently ignored.
             movement = WIDENED
-            cause = (f"aspect mean {mark:.1f} -> {score:.1f} because the aspect now grades "
-                     f"{len(a.components)} component(s), {len(added)} of them newly measured "
-                     f"({', '.join(added)}). NO component that already had a mark is below it. "
-                     f"The high-water mark STAYS at {mark:.1f}: it was earned over a narrower set "
-                     f"and today's {score:.1f} is the wider, truer reading. Next: "
+            first_seen = f" First graded this run: {', '.join(added)}." if added else ""
+            cause = (f"aspect mean {mark:.1f} -> {score:.1f} while grading "
+                     f"{len(a.components)} component(s) -- {why_basis}. NO component that already "
+                     f"had a mark is below it, so nothing got worse: the mark was earned over a "
+                     f"NARROWER set and is not comparable to today's reading. It STAYS at "
+                     f"{mark:.1f}; beating it OVER THE WIDER SET is the work.{first_seen} Next: "
                      f"{a.binding_constraint}")
         elif fell_aspect and mark is not None:
-            # A fall the component marks cannot explain AND no new component to explain it. It is
-            # a fall and it needs a cause -- saying so is the check refusing to accept an
-            # unexplained regression rather than quietly logging one.
+            # A fall the component marks cannot explain, over EXACTLY the set the mark was earned
+            # over. It is a fall and it needs a cause -- saying so is the check refusing to accept
+            # an unexplained regression rather than quietly logging one.
             movement = FELL
-            cause = (f"aspect mean {mark:.1f} -> {score:.1f} with no component below its own "
-                     "mark and no component newly added -- the component SET changed some other "
-                     "way. NAME the cause in the diff; an unexplained fall is never accepted.")
+            cause = (f"aspect mean {mark:.1f} -> {score:.1f} over the SAME component set the mark "
+                     "was earned on, with no component below its own mark. NAME the cause in the "
+                     "diff; an unexplained fall is never accepted.")
         elif mark is None:
             movement, cause = NEW, f"first reading recorded at {score:.1f}: {a.binding_constraint}"
             raised_any = True

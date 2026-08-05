@@ -194,7 +194,11 @@ def score_cohort(matrix: np.ndarray, flags: np.ndarray, *, n_trials: int | None 
     for k in range(matrix.shape[1]):
         kw: dict[str, Any] = {"campaign": gates, "column": k} if per_candidate else {
             "pbo": gates.legacy_pbo, "rc": gates.legacy_rc}
-        v = validate(matrix[:, k], hypothesis=_HYP, n_trials=n_tr, sharpe_estimates=sh,
+        # PPY (365, D1 crypto) is the clock the cohort was SIMULATED on a few lines up --
+        # `mu = true_ann_sharpe * sd / sqrt(PPY)` -- so the verdict must be annualised with it
+        # too, or the audit's injected Sharpe and the measured one are on different scales.
+        v = validate(matrix[:, k], hypothesis=_HYP, periods_per_year=PPY,
+                     n_trials=n_tr, sharpe_estimates=sh,
                      returns_matrix=matrix, **kw)
         rows.append({
             "is_true": bool(flags[k]),
