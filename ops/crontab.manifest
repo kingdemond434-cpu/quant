@@ -445,6 +445,20 @@ QUANT_ROOT=/home/quant/quant-platform
 # CONFIDENCE: committed-script (new this cycle)
 52 * * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_freshness.py >> data/cro_ai_logs/freshness.log 2>&1
 
+# TRANSITIVE FRESHNESS (L1.54). check_freshness asks "is the file I am reading current?" -- one
+# hop, age only. This asks the question one level down: was the PRODUCER of that file able to read
+# ITS inputs, or did it default them? run_live_guard published SIZE_STEPS[0] and six
+# never-evaluated conditions as a measurement, from data/ramp_state.json -- a path that has never
+# existed -- and the executor consumed it FRESH and sized the book on it. Verdicts: DECLARED /
+# HONEST-GAP (absence declared, defect is upstream) / FABRICATED (declared-absent published as
+# measured -- the failing state) / UNDECLARED / MISSING. Zero examinable artifacts reads
+# UNMEASURED, never OK. CADENCE: hourly, phased off check_freshness -- it walks the same
+# self-building consumer registry, so it is data-arrival bound on the same input (L1.28c) and is
+# pure-CPU over a handful of artifacts.
+# EVIDENCE: scripts/check_input_provenance.py -> data/input_provenance.json; CONSTITUTION L1.54
+# CONFIDENCE: committed-script (new this cycle)
+57 * * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_input_provenance.py >> data/cro_ai_logs/input_provenance.log 2>&1
+
 # CAPABILITY HUNT (L1.31, principal order 2026-07-31): "chatgpt and claude both hunt for what to
 # add, what's missing, and IMPLEMENT it" -- what this session did by hand, every day, unprompted.
 # TWO INDEPENDENT FAMILIES on purpose: a Claude seat and the GPT-9 seat propose the missing

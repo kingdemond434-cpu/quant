@@ -223,6 +223,12 @@ _MAP: dict[str, list[str]] = {
     # `_capital()`'s numerator was the first rung inside its own denominator.
     "L1.51": ["scripts/check_idle_cost.py", "libs/research/idle_yield.py",
               "scripts/check_utilisation.py"],
+    # L1.44 asks "is the file I am reading current?" -- one hop, age only. It cannot ask whether
+    # the PRODUCER of that file could read ITS inputs, so run_live_guard published a ladder
+    # constant and six never-evaluated conditions as a measurement, from a path that has never
+    # existed, and every gate in the chain reported green. Freshness does not compose.
+    "L1.54": ["scripts/check_input_provenance.py", "libs/ops/input_provenance.py",
+              "scripts/run_live_guard.py"],
     # R0123 decline grading: L1.29 says an ungraded prediction is a BELIEF that inflates the
     # apparent hit-rate by never counting its misses -- and a sleeve scored only on the trades it
     # CHOOSES to be graded on is that defect with a dominant strategy attached. Nine consecutive

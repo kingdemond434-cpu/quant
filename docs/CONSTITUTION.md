@@ -1526,3 +1526,71 @@ against a rail.
 **Binding on future work.** Any new constraint on capital deployment ships with its lifting
 condition and its cost, or it is a defect a reviewer must raise without waiting to be asked. Fenced
 by `scripts/check_idle_cost.py` over `libs/research/idle_yield.py`.
+
+## L1.54 AN ARTIFACT IS ONLY AS MEASURED AS THE INPUTS IT WAS BUILT FROM
+
+Capability hunt s5, 2026-08-05, SOLO (the second family was unavailable -- HTTP 400 -- so this law
+is UNCONFIRMED by an independent family and must not be cited later as cross-family corroborated).
+
+**The class, and why the freshness layer was structurally unable to see it.** L1.44 put a max-age
+contract at every decision-path READ. That answers one question, one hop down: *is the file I am
+reading current?* It cannot answer the question one level below that -- *was the producer of this
+file able to read ITS inputs, or did it default them?* So an artifact may be young, well-formed,
+pass every `min_rows` floor, satisfy its freshness contract, and be FABRICATED END TO END.
+**Freshness does not compose, and nothing on this desk checked that it did.**
+
+**The proving instance, live at the time of writing.** `scripts/run_live_guard.py` read
+`data/ramp_state.json` -- a file that has NEVER EXISTED on this box -- through a `_load(path, {})`
+that returns its default for a missing file exactly as for an empty one. The absent dict flowed
+into `state.get("size_fraction", SIZE_STEPS[0])`, so `data/live_guard.json` published `"ramp":
+{"size_fraction": 0.1, "why": "blocked by: a_cost_le_1_25x, ...", "checks": {six keys, all
+false}}`: a ladder constant rendered as a MEASUREMENT and six conditions rendered as EVALUATED
+that were evaluated against nothing. The executor consumed it at `read_fresh(max_age_h=0.25,
+min_rows=1)` -- FRESH -- and sized the book on it. `check_freshness.py` reported OK over the whole
+registry. **Every gate in the chain was green about an artifact built from a file that does not
+exist.**
+
+**The direction is not the point, and that is why it survived every review.** The ramp's own gate
+is fail-closed, so the fabrication held the book at its FLOOR rather than opening it -- conservative,
+not loss-making, and nobody audits a number that is already small. But under L1.51 a clamp carries a
+LIFTING CONDITION, and this clamp's condition was unevaluable: its evidence file has no producer
+that has ever run (L1.45). *"Held at the floor because the evidence failed"* and *"held at the floor
+because there is no evidence"* are different claims about this desk, and only one was true.
+Publishing the second as the first is how a clamp becomes permanent without anyone deciding it
+should. The same absent file fed the S1/Gate-0 promotion evidence, whose green verdict writes a
+principal-action file telling a human the preconditions for LIVE CAPITAL are met.
+
+**Operative.** Every decision-path producer declares the inputs it read, and the declaration is
+published beside the numbers: `[{path, status, age_h, max_age_h}]` with a sibling `measured` flag.
+Five states, and each distinction is one this desk has paid for -- READ, STALE, **ABSENT**,
+**UNREADABLE**, **DEFAULTED**. ABSENT and UNREADABLE stay DISTINCT: the idiom this replaces
+(`except (OSError, JSONDecodeError): return default`) collapses them, and they demand opposite
+responses -- ABSENT means no producer has ever run, UNREADABLE means one ran and wrote garbage.
+A desk that cannot tell them apart debugs the wrong organ. DEFAULTED is recorded even when the
+substitution looks harmless, because "harmless" is a judgement that ages badly. **The rollup fails
+loud: any ABSENT/UNREADABLE/DEFAULTED required input, OR NO INPUTS DECLARED AT ALL, reads
+UNMEASURED** -- an organ that forgets to declare is indistinguishable from one with nothing to
+declare, and the safe reading of that ambiguity is the noisy one (L1.28a).
+
+**Scope comes from the consumer registry, never a sixth hand list.** `libs/ops/fresh.py` already
+builds `data/freshness_contracts.jsonl` from actual reads, so the set of artifacts that steer
+decisions is known and self-maintaining. The fence walks that set and asks each member the next
+question down. A hand-enumerated list would rot exactly as the desk's five producer-side registries
+rotted.
+
+**Honesty is not punished.** An artifact that declares an absent input AND says `measured: false`
+is CORRECT -- the defect is upstream, and it is named rather than hidden (`HONEST-GAP`). The
+failing state is the CONTRADICTION: a declared-absent input still presented as measured
+(`FABRICATED`). Coverage below 100% reports `PARTIAL` and exits 0, because coverage is a ratchet
+(L1.0) whose gap is the work queue, and a fence that fails red from its first day gets switched
+off (L1.43).
+
+**Anti-timidity reading, and it is the entire purpose.** This law LIFTS NOTHING, TIGHTENS NOTHING
+and SIZES NOTHING -- the first run changed not one number, and `effective_size_fraction` was
+bit-identical before and after. It is a MEASUREMENT duty in exactly L1.51's sense: it makes an
+absent input ARGUABLE instead of invisible. Nothing here can make the desk more timid; it can only
+make the desk honest about which of its restraints were chosen and which were inherited from a
+missing file. An unexamined clamp is the more expensive error (L1.27).
+
+**Binding on future work.** Any new decision-path producer declares its inputs in the same commit
+that creates it. Fenced by `scripts/check_input_provenance.py` over `libs/ops/input_provenance.py`.

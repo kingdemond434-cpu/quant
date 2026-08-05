@@ -59,6 +59,7 @@ _GOVERNED: tuple[str, ...] = (
     "run_law_gate.py", "run_moat_backup.py", "run_capability_hunt.py",
     "screen_funding_spread.py", "screen_collateral_allocation.py",
     "check_build_standard.py",                              # this fence holds itself to it
+    "check_input_provenance.py",                            # L1.54 transitive freshness
     "check_fence_yield.py",
     "derive_walcl_clock.py",                                # R0031 forward clock (2026-07-31)
     "run_llm_trader.py",

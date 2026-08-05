@@ -43,6 +43,7 @@ from libs.execution import canary as canary_mod
 from libs.execution import protective_stops as stops
 from libs.execution import ramp_gate, staging
 from libs.ops.derisk_ladder import LadderState, unacked_since
+from libs.ops.input_provenance import Inputs
 
 _ROOT = Path(__file__).resolve().parent.parent
 _REPORT = _ROOT / "data" / "live_guard.json"
@@ -50,6 +51,10 @@ _ALERTS = _ROOT / "data" / ".last_alerts.json"
 _ACK = _ROOT / "data" / "PAGE_ACK"
 _KILL = _ROOT / "data" / "CASHCARRY_KILL"
 _RAMP = _ROOT / "data" / "ramp_state.json"
+#: The ramp's step-up conditions require an 8-week trailing window, so evidence older than a week
+#: is describing a book the desk no longer has. Declared here rather than at the read so the
+#: tolerance is a reviewable constant and not a magic number inside a call (L1.44).
+_RAMP_MAX_AGE_H = 168.0
 _PRINCIPAL = _ROOT / "data" / "PRINCIPAL_ACTION.md"
 
 
@@ -163,8 +168,23 @@ def _canary(venue: Any, now: float) -> tuple[canary_mod.CanaryState, str]:
         return st, f"probe FAILED: {e!r}"
 
 
-def _ramp(now: float) -> tuple[float, str, dict[str, bool]]:
-    state = _load(_RAMP, {})
+def _ramp(now: float) -> tuple[float, str, dict[str, bool], Inputs]:
+    """The size ladder, AND the provenance of the evidence it was decided on (L1.54).
+
+    `data/ramp_state.json` has never existed on this box -- `run_cost_identification.py` is its
+    only producer and has never published. The old `_load(_RAMP, {})` returned its default for
+    that absence exactly as for an empty file, so the floor constant `SIZE_STEPS[0]` and six
+    never-evaluated conditions were published as a MEASUREMENT and consumed by the executor
+    through a freshness contract that reported FRESH. The number is unchanged here -- absence
+    must keep the ramp at its floor -- but the artifact now says WHICH of the two reasons it is
+    at the floor, because "the evidence failed" and "there is no evidence" are different claims
+    and only one of them is true (L1.51: a clamp carries a lifting condition).
+    """
+    inp = Inputs("run_live_guard._ramp")
+    state = inp.read_json(_RAMP, default={}, max_age_h=_RAMP_MAX_AGE_H)
+    if not isinstance(state, dict):
+        inp.defaulted(str(_RAMP.name), "artifact is not a JSON object")
+        state = {}
     current = float(state.get("size_fraction", ramp_gate.SIZE_STEPS[0]))
     evidence = state.get("evidence", {}) if isinstance(state.get("evidence"), dict) else {}
     nxt, why = ramp_gate.next_step(current, evidence)
@@ -175,7 +195,7 @@ def _ramp(now: float) -> tuple[float, str, dict[str, bool]]:
             {"ts": now, "from": current, "to": nxt, "why": why})
         state["history"] = state["history"][-200:]
         _RAMP.write_text(json.dumps(state, indent=2), "utf-8")
-    return nxt, why, checks
+    return nxt, why, checks, inp
 
 
 def main() -> int:
@@ -209,7 +229,7 @@ def main() -> int:
     mode = can.mode(now)
 
     # 4. §6 ramp gate --------------------------------------------------------------------
-    size_fraction, ramp_why, ramp_checks = _ramp(now)
+    size_fraction, ramp_why, ramp_checks, ramp_inp = _ramp(now)
 
     # 5. stage machine: DEMOTE on tripwire, never self-promote ---------------------------
     fut_armed, spot_armed, half_armed = _arming()
@@ -232,8 +252,13 @@ def main() -> int:
     # promotion is EVALUATED and REPORTED only. principal_signoff is a human act; this script
     # reads the flag and never writes it, so a green gate here is a prompt for the principal,
     # not a transition.
+    # THE SAME ABSENT FILE FEEDS THE PROMOTION GATE (L1.54). A green S1 gate writes a
+    # principal-action file telling a human the preconditions for LIVE CAPITAL are met, so the
+    # provenance of the evidence behind it is published beside the verdict and never assumed.
+    promo_inp = Inputs("run_live_guard.promo_evidence")
     promo_evidence = {
-        **(_load(_RAMP, {}).get("evidence", {}) or {}),
+        **((promo_inp.read_json(_RAMP, default={}, max_age_h=_RAMP_MAX_AGE_H) or {})
+           .get("evidence", {}) or {}),
         "keys_present": venue is not None,
         "connector_verified": can.last_ok_ts is not None,
         "capital_fraction": size_fraction,
@@ -303,12 +328,29 @@ def main() -> int:
                               "path and is deliberately skipped while the connector is unarmed, "
                               "so it can never clear here. Binds in full the moment S1 arms."),
                    "consecutive_failures": can.consecutive_failures, "note": canary_note},
-        "ramp": {"size_fraction": size_fraction, "why": ramp_why, "checks": ramp_checks},
+        # L1.54: the numbers AND where they came from. `checks` is None -- not six `false`
+        # values -- when the evidence file is absent, because an unevaluated condition rendered
+        # as a failed one is the fabrication this law exists to stop. check_idle_cost reads
+        # `why` as this clamp's lifting condition, so the absence has to reach it in words.
+        "ramp": {"size_fraction": size_fraction,
+                 "measured": ramp_inp.measured(),
+                 "provenance": ramp_inp.block(),
+                 "checks": ramp_checks if ramp_inp.measured() else None,
+                 "why": ramp_why if ramp_inp.measured() else (
+                     f"{ramp_inp.why()} -- ramp held at floor {size_fraction:.2f} BY ABSENCE, "
+                     f"not by evaluation. Its only producer is "
+                     f"scripts/run_cost_identification.py, which has never published (L1.45).")},
         "effective_size_fraction": round(effective_size, 4),
         "tripwires": tripwires,
         "demoted_to": demoted,
         "stage_gate": {"target": "S1" if stage == "S0" else "S2",
-                       "met": gate_met, "why": gate_why},
+                       "met": gate_met, "why": gate_why,
+                       # `measured` is the ONE sibling key of `provenance`, deliberately the same
+                       # name the ramp block uses: the desk already carries a five-way stamp-key
+                       # zoo (generated/ts/checked/measured/updated) that costs it a lookup every
+                       # time, and this fence caught the second name being coined on day one.
+                       "measured": promo_inp.measured(),
+                       "provenance": promo_inp.block()},
         "freeze": freeze_note,
         "flatten": flatten_note,
     }

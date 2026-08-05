@@ -4788,6 +4788,90 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0393",
+   "source": "cycle",
+   "summary": "MAX_AUDIT ACKS ARE GITIGNORED, SO A REPO-LEVEL DEFECT CAN NEVER BE ACKED WHERE IT PAGES. data/max_audit_acks.json is untracked (.gitignore data/*, and it carries none of the ! exceptions that data/decision_ledger.json, data/constitution_core.lock, data/gate0_signoff.json and 6 others do), and it has never appeared in git log. Acks are therefore PER-BOX. That is defensible for a runtime-state defect, whose truth genuinely differs per machine -- and wrong for a REPO-level one, whose truth is identical everywhere: prompt-doctrine-oversized is a property of a committed file, so acking it here leaves it firing on the VPS, where the doctrine's own escalation rule ('defects persisting >48h un-acked ESCALATE to the principal page') will page the principal for a defect that HAS a full reasoned disposition sitting in another checkout. That is the exact failure mode the ack mechanism exists to prevent, and it fires hardest on the desk's most carefully dispositioned items. max_audit already distinguishes RUNTIME from REPO scope internally (see the _fenced evidence-recording comment at scripts/max_audit.py:166 and the scope-aware tuple width at :6368), so the distinction needed to fix this is already computed and simply not applied to ack storage. FIX: split the ack file by scope -- REPO-scope acks tracked via a ! exception so they travel with the commit that reasons about them, RUNTIME-scope acks left local where they belong. Found while acking prompt-doctrine-oversized (R0391).",
+   "roi_bps": null,
+   "raised": "2026-08-05T17:50:33.164312+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0394",
+   "source": "cycle",
+   "summary": "THE L1.29 CALIBRATION FENCE IS WELDED RED BY 44 FORECASTS ABOUT A SYMBOL THAT DOES NOT EXIST -- and R0367's fix, now committed, was necessary but NOT sufficient. Measured 2026-08-05: check_calibration.py reports OVERDUE with 44 forecasts past deadline; every one is the claim 'Will S2USDT trade ABOVE 102.0 in 24 hours time?'. S2USDT returns HTTP 400 from BOTH api.binance.com/api/v3/klines and fapi.binance.com/fapi/v1/klines while BTCUSDT returns rows from both, so the symbol is not delisted, it never existed -- 'S2' is a placeholder/hallucinated ticker (and 102.0 a placeholder price) emitted by the calibration probe. With R0367's alphabet fix in place score_forecasts.py now PARSES the symbol and reports '0 resolvable, 44 skipped -- no venue price for S2USDT', so the row moves from unparseable to unresolvable and the fence stays red either way. THIS IS THE EXPENSIVE DIRECTION: L1.29 exists because a Kelly bettor sized on over-confident estimates converges to ruin with probability one, and an ungraded forecast never counts its miss, so the measured hit-rate can only rise. A fence that can never go green gets ignored (L1.43), which disables the desk's only detector of being confidently wrong. TIES TO AN UNDISPOSED ROW: R0254 (undisposed 4.4d) already found this probe re-logs ONE identical claim 17x in 14h -- same probe, same claim; that is why the count is 44 rather than 1. FIX, TWO HALVES: (1) validate the symbol against a venue exchangeInfo AT LOG TIME so an unpriceable claim is refused rather than banked -- a forecast nothing can resolve is not a forecast; (2) dispose the existing 44 as UNRESOLVABLE-BY-CONSTRUCTION with the reason recorded, explicitly NOT as hits or misses, since scoring a placeholder either way corrupts the calibration term that feeds calibrated_confidence and from there Kelly leverage. Found while running the law gate for owed-work batch 3.",
+   "roi_bps": null,
+   "raised": "2026-08-05T18:00:39.651959+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0395",
+   "source": "cycle",
+   "summary": "L1.54 follow-up: run_max_push._refresh() runs every producer with check=False, capture_output=True and except (OSError, TimeoutExpired): return -- a producer that crashes, exits non-zero or blows the 300s timeout is silently skipped, and build() then reads whatever stale file is on disk and stamps the merged queue generated:now. Widest blast radius on the desk: this is the DAILY WORK QUEUE. _item() already carries a measured flag and _UNMEASURED_PRIORITY, so the fix is to record the producer exit status as an input state (libs.ops.input_provenance) rather than discard it. Verified live 2026-08-05 at scripts/run_max_push.py:111-118.",
+   "roi_bps": 0.0,
+   "raised": "2026-08-05T18:01:38.650125+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0396",
+   "source": "cycle",
+   "summary": "L1.54 follow-up: check_excitation._bleeding_symbols() returns [] when web/trade_forensics.json is unreadable, so the fence publishes execution_denylist: [] -- breaking the promise its own docstring makes three lines above (read from the same artifact the executor reads, so the fence and the gate can never disagree about who is blocked). An unreadable forensics file makes the fence report NOBODY is blocked while the executor keeps blocking. Fail-open, and it is the L1.45 excitation fence. Fix: route through libs.ops.input_provenance and publish UNMEASURED rather than an empty denylist. Verified live 2026-08-05 at scripts/check_excitation.py:59-69.",
+   "roi_bps": 0.0,
+   "raised": "2026-08-05T18:01:48.962516+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0397",
+   "source": "cycle",
+   "summary": "MONEY PATH, STAGED BY L1.38 STERILE COCKPIT (a rail is live, CASHCARRY_KILL present, book unwinding). run_cashcarry_executor sizes on _GUARD size_frac which DEFAULTS TO 1.0 (full size) at :1471 and :1475, and every guard-read failure path returns leaving it there: a stale guard, a non-dict payload, or any exception. The R0159 comment calls this neutral as ever, but neutral here means UNCLAMPED, not floored. Also :1491 float(fr.data.get(effective_size_fraction, 1.0)) defaults a MISSING KEY to full size, though a legitimate guard artifact always carries it. Direction is loosening on the money path. Fix is tightening (floor, or refuse), so it is safe during an unwind, but it CHANGES EXECUTOR SIZING BEHAVIOUR and is an improvement rather than a repair -- staged until the change window opens. Verified live 2026-08-05.",
+   "roi_bps": 0.0,
+   "raised": "2026-08-05T18:02:02.026454+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0398",
+   "source": "cycle",
+   "summary": "L1.54 follow-up: check_freshness.py folds MISSING into STALE-UNREAD at :160-161 and exits 0 for it (:210 returns 2 only for STALE-CONSUMED, UNWIRED, UNMEASURED). So a decision-path artifact that a consumer declared a contract for and that DOES NOT EXIST passes the L1.44 fence green. Coverage is also 5 of ~279 artifacts with 494 of 781 registry rows being pytest temp paths. Two fixes: make MISSING a non-zero verdict, and widen _WIRED beyond run_cashcarry_executor and run_alerts. Verified live 2026-08-05.",
+   "roi_bps": 0.0,
+   "raised": "2026-08-05T18:02:12.573118+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0399",
+   "source": "cycle",
+   "summary": "L1.54 coverage ratchet: 4 of 5 decision-path-consumed artifacts publish NO input provenance (data/cost_hunt.json, data/cost_model.json, data/stage_state.json, web/trade_forensics.json) -- coverage 20% at first measurement, floored in data/input_provenance.json. Also two generalisations the first run surfaced but did not close: (a) THE STAMP-KEY ZOO -- generated/ts/checked/measured/updated across decision artifacts while fresh.py _age_of recognises only generated, which is why 4 of 5 contracts resolve age from mtime and mtime lies FRESH after a deploy; (b) EVERY DECISION-PATH .get(key, default) IS AN UNRECORDED ASSUMPTION and the ones found all default in the LOOSENING direction (entries_allowed=True, frac=1.0, denylist=[], size_fraction=0.10-as-measured). Sweep them and require each to declare a degrade direction the way read_fresh already requires mode=.",
+   "roi_bps": 0.0,
+   "raised": "2026-08-05T18:02:25.023119+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

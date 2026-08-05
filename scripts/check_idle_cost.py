@@ -64,8 +64,13 @@ if str(_ROOT) not in sys.path:
 
 # L1.42 LAWFUL ENTRY: TTL-cached, pages but does not block. A governance fault must never silence
 # the only fence that prices the desk's own caution.
+from libs.ops.input_provenance import Inputs  # noqa: E402
 from libs.ops.lawful import guard as _law_guard  # noqa: E402
 from libs.research import idle_yield as iy  # noqa: E402
+
+#: live_guard runs every few minutes; a guard artifact older than an hour is describing a desk
+#: state that has since moved, and its clamps must not be priced as current (L1.44).
+_GUARD_MAX_AGE_H = 1.0
 
 _OUT = _ROOT / "data/idle_cost.json"
 
@@ -127,23 +132,29 @@ def _clamps(root: Path, floor_annual: float | None, idle_usd: float,
     """
     out: list[dict[str, Any]] = []
 
-    def add(name: str, live: bool, since: str | None, holds: float, lifting: str,
-            kind: str, note: str = "") -> None:
-        if not live:
+    def add(name: str, live: bool, since: str | None, holds: float | None, lifting: str,
+            kind: str, note: str = "", *, unmeasured: bool = False) -> None:
+        # `unmeasured` exists because `live=False` DELETES the row, and a clamp whose input could
+        # not be read is not an absent clamp -- it is an unknown one (L1.54). holds_usd stays None
+        # rather than 0.0: a zero holding prices the clamp as FREE, which is the one direction
+        # L1.51 forbids ("an unmeasured floor is NEVER 0%").
+        if not live and not unmeasured:
             return
         days = _days_since(since)
-        per_day = (holds * floor_annual / 365.0) if (floor_annual is not None) else None
+        per_day = (holds * floor_annual / 365.0) if (
+            floor_annual is not None and holds is not None) else None
         out.append({
             "clamp": name,
             "kind": kind,                     # "rail" = L1.23 legitimate; "gate"/"policy" = argue
             "since": since,
             "days_live": round(days, 2) if days is not None else None,
-            "holds_usd": round(holds, 2),
+            "holds_usd": None if holds is None else round(holds, 2),
             "usd_per_day": round(per_day, 4) if per_day is not None else None,
             "cumulative_usd": (round(per_day * days, 2)
                                if (per_day is not None and days is not None) else None),
             "lifting_condition": lifting,
             "priced": per_day is not None and days is not None,
+            "unmeasured": unmeasured,
             "note": note,
         })
 
@@ -186,24 +197,39 @@ def _clamps(root: Path, floor_annual: float | None, idle_usd: float,
         f"the drawdown ratio it keys on cannot recover on its own.")
 
     # --- Live-guard ladder and ramp -----------------------------------------------------------
-    try:
-        lg = json.loads((root / "data/live_guard.json").read_text("utf-8"))
-    except (OSError, ValueError):
+    # L1.54: an UNREADABLE live_guard.json used to ERASE both clamps below rather than unmeasure
+    # them -- `entries_allowed` defaulted True (so `not True` = "no ladder clamp") and `frac`
+    # defaulted 1.0 ("no ramp clamp"). Both are the loosening direction inside the fence built to
+    # price the cost of caution, so a dead guard read as a FREER desk than a live one. The
+    # provenance decides which of "no clamp" and "cannot tell" gets published.
+    lg_inp = Inputs("check_idle_cost.live_guard")
+    lg = lg_inp.read_json(root / "data/live_guard.json", default={}, max_age_h=_GUARD_MAX_AGE_H)
+    if not isinstance(lg, dict):
+        lg_inp.defaulted("data/live_guard.json", "artifact is not a JSON object")
         lg = {}
+    guard_measured = lg_inp.measured()
     ladder = lg.get("ladder") or {}
     unacked = ladder.get("unacked_since")
     ladder_since = None
     if isinstance(unacked, (int, float)) and unacked > 0:
         ladder_since = datetime.fromtimestamp(float(unacked), tz=UTC).isoformat()
-    add("guard_ladder_" + str(ladder.get("rung") or "unknown"),
-        not ladder.get("entries_allowed", True), ladder_since, idle_usd,
-        "manual re-arm" if ladder.get("requires_manual_rearm") else "ladder rung recovery",
-        "rail", f"size_multiplier {ladder.get('size_multiplier')}")
+    if not guard_measured:
+        # ONE row for both guard clamps: their state is unknown, which is neither "clamped" nor
+        # "free". Emitted UNPRICED so it reads as a defect to close, not as a zero cost.
+        add("guard_clamps", False, None, None,
+            f"{lg_inp.why()} -- the ladder and ramp clamps cannot be priced until "
+            f"data/live_guard.json is readable (producer: scripts/run_live_guard.py)",
+            "gate", "ladder and ramp state UNKNOWN -- not zero (L1.54)", unmeasured=True)
+    else:
+        add("guard_ladder_" + str(ladder.get("rung") or "unknown"),
+            not ladder.get("entries_allowed", True), ladder_since, idle_usd,
+            "manual re-arm" if ladder.get("requires_manual_rearm") else "ladder rung recovery",
+            "rail", f"size_multiplier {ladder.get('size_multiplier')}")
 
     ramp = lg.get("ramp") or {}
     # Absent/unparseable reads as 1.0 (no clamp), but a genuine 0.0 must SURVIVE as 0.0 -- a fully
     # disarmed ramp is the largest clamp on the board, and `float(x or 1.0)` would erase exactly
-    # that case while looking correct.
+    # that case while looking correct. The absent-file case is handled by `guard_measured` above.
     raw = ramp.get("size_fraction")
     frac = 1.0
     if isinstance(raw, (int, float, str)):
@@ -211,11 +237,12 @@ def _clamps(root: Path, floor_annual: float | None, idle_usd: float,
             frac = float(raw)
         except ValueError:
             frac = 1.0
-    add("ramp_size_fraction", frac < 1.0, lg.get("ts"), idle_usd * (1.0 - frac),
-        ramp.get("why") or "UNNAMED -- no lifting condition on record", "gate",
-        f"pinned at {frac:.2f}; holds the fraction of the book the ramp will not yet size. "
-        f"Its step-up inputs are produced by scripts/run_cost_identification.py -- the gate "
-        f"cannot advance by waiting (L1.45).")
+    if guard_measured:
+        add("ramp_size_fraction", frac < 1.0, lg.get("ts"), idle_usd * (1.0 - frac),
+            ramp.get("why") or "UNNAMED -- no lifting condition on record", "gate",
+            f"pinned at {frac:.2f}; holds the fraction of the book the ramp will not yet size. "
+            f"Its step-up inputs are produced by scripts/run_cost_identification.py -- the gate "
+            f"cannot advance by waiting (L1.45).")
 
     if paper:
         for c in out:
