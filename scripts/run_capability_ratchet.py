@@ -10,7 +10,17 @@ mark per aspect, exactly as libs/doctrine/ratchet.py does for constitutional agg
 WHAT IT PRINTS AND WHY THAT IS THE PRODUCT. The number is the cheap part. Every aspect carries a
 BINDING CONSTRAINT -- the specific, quantified next thing that buys one more point ("+5 organs
 producing (19 -> 24 of 42)") -- because "what is stopping this aspect from being one point higher"
-is the only output a reader can act on the same morning.
+is the only output a reader can act on the same morning. Above them all sits ONE desk-wide binding
+constraint: the single lowest-scoring component anywhere on the desk, named with its artifact. A
+list of thirty constraints is a list nobody works; one is an instruction.
+
+THE TAXONOMY IS DELIBERATELY WIDE, and it only ever widens. The headline aspects (validation, risk,
+execution, alpha) are the ones anybody would think to grade. The rest -- the pager between
+incidents, cost-model freshness, tape clock provenance, seat credentials, dependency drift, backup
+restore drills, mutation BREADTH as distinct from kill rate, scheduler manifest drift, permission
+hygiene -- are the ones that actually take desks down, precisely because nobody grades them. The
+standing order says every aspect; a taxonomy that stops at the interesting ones is the order being
+followed where it is comfortable.
 
 STATUSES (fail LOUD, never advisory):
   REGRESSED  an aspect scored below its own high-water mark, or a component that used to measure
@@ -21,6 +31,11 @@ STATUSES (fail LOUD, never advisory):
   STALLED    no aspect has set a new best in STALL_DAYS. Exit 2. The order is daily; a week of
              nothing is the order not being followed. Every flatlined aspect prints its binding
              constraint, so the fix is already on the screen.
+  WIDENED    an aspect's mean fell purely because it now grades MORE components, with nothing that
+             was already graded getting worse. Exit 0, and NOT a defect: a gate that fires when
+             the desk measures more trains everyone to ignore it (the lesson check_ratchets.py
+             already learned with per-target mutation floors). The old high-water mark is KEPT and
+             printed beside today's reading -- it was earned over a narrower set.
   FLATLINE   no movement this run, which is normal for a single day. Exit 0, and every aspect
              still names its constraint -- that list IS the day's queue.
   RAISED     at least one aspect set a new best. Exit 0.
@@ -95,6 +110,19 @@ def _table(rep: dict[str, object]) -> str:
             f"{('  --' if score is None else f'{float(score):5.1f}'):>5} "
             f"{('  --' if best is None else f'{float(best):5.1f}'):>5}  "
             f"{r.get('movement')!s:<10} {str(r.get('cause'))[:74]}")
+    bind = rep.get("binding_constraint")
+    if isinstance(bind, dict):
+        out.append("")
+        if bind.get("state") == "MEASURED":
+            out.append(
+                f"DESK BINDING CONSTRAINT -- work this first: {bind.get('aspect')}."
+                f"{bind.get('component')} at {float(bind.get('score') or 0.0):.1f}/10 "
+                f"[{bind.get('artifact')}]")
+            out.append(f"  {bind.get('constraint')}")
+            out.append(f"  ({bind.get('n_unmeasured_components')} component(s) UNMEASURED and "
+                       "therefore not eligible to be this minimum -- see the block below)")
+        else:
+            out.append(f"DESK BINDING CONSTRAINT: {bind.get('constraint')}")
     unmeasured = rep.get("unmeasured_components")
     if isinstance(unmeasured, list) and unmeasured:
         out.append("")
@@ -103,6 +131,15 @@ def _table(rep: dict[str, object]) -> str:
             if isinstance(u, dict):
                 out.append(f"  {u.get('aspect')}.{u.get('component')} [{u.get('artifact')}] "
                            f"{str(u.get('why'))[:88]}")
+    widened = rep.get("widened")
+    if isinstance(widened, list) and widened:
+        out.append("")
+        out.append(f"WIDENED ({len(widened)}) -- NOT a defect: the aspect now grades more, and "
+                   "nothing already graded got worse. The mark is kept:")
+        for w in widened:
+            if isinstance(w, dict):
+                out.append(f"  {w.get('aspect')} {w.get('score')} (mark {w.get('high_water')}) "
+                           f"{str(w.get('detail'))[:150]}")
     defects = rep.get("defects")
     if isinstance(defects, list) and defects:
         out.append("")

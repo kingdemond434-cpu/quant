@@ -66,15 +66,23 @@ __all__ = [
     "STALL_DAYS",
     "UNMEASURED",
     "WENT_DARK",
+    "WIDENED",
     "Aspect",
     "Component",
     "Marks",
     "Verdict",
+    "binary_component",
     "build_artifact",
+    "desk_binding_constraint",
+    "fraction_component",
+    "inverse_ladder_component",
+    "ladder_component",
+    "liveness_component",
     "load_marks",
     "ratchet",
     "read_capability",
     "score_aspect",
+    "unmeasured_component",
 ]
 
 #: Where the desk's capability record lives. data/, not docs/: it is rewritten daily by cron and a
@@ -97,13 +105,27 @@ FELL = "FELL"
 WENT_DARK = "WENT-DARK"
 NEW = "NEW"
 
+#: WIDENED -- the aspect mean fell because the desk started grading itself on MORE, while every
+#: component that already had a mark still holds it. This is not a defect and must not be reported
+#: as one, for the reason check_ratchets.py:60-64 already learned the hard way: a single aggregate
+#: across targets meant MEASURING A NEW FILE looked like a regression, and "a fence that fires when
+#: the desk measures MORE trains everyone to ignore it -- the opposite of L1.0".
+#:
+#: IT CANNOT HIDE A REGRESSION, and that is why it is safe to distinguish. Component high-water
+#: marks are held per component, so any pre-existing component that dropped, or went dark, or
+#: stopped measuring, produces a NAMED CAUSE and the aspect is FELL regardless of what was added
+#: beside it. WIDENED is reachable only when NOTHING that was already measured got worse. The
+#: aspect's own high-water mark is still not lowered -- the record keeps saying 9.0 while today
+#: says 4.5, and the gap is the honest statement that the old 9.0 was measured over less.
+WIDENED = "WIDENED"
+
 #: Float comparison slack. Scores are rounded to 0.1 so that FLATLINE means something -- with raw
 #: floats every reading differs in the twelfth decimal and "no movement" could never be reported.
 EPS = 1e-9
 
 #: Days with no aspect setting a new best before the ratchet itself reports a defect. The order is
 #: DAILY, so a week of nothing is the order not being followed, not a quiet patch. Deliberately not
-#: 1 day: nine aspects cannot each move every day, and a gate that fires every morning gets
+#: 1 day: the aspect list cannot each move every day, and a gate that fires every morning gets
 #: acknowledged into silence, which is worse than no gate.
 STALL_DAYS = 7.0
 
@@ -212,6 +234,51 @@ def _read_json(path: Path) -> dict[str, Any] | None:
     return data if isinstance(data, dict) else None
 
 
+def _read_jsonl(path: Path) -> list[dict[str, Any]] | None:
+    """Append-only ledgers, as a list of objects. None means NO LEDGER -- same contract as
+    _read_json. An unparseable LINE is skipped (a half-written tail row is normal in a file being
+    appended to); an unreadable FILE is the absent case and becomes UNMEASURED at the call site."""
+    try:
+        text = path.read_text("utf-8")
+    except (OSError, UnicodeDecodeError):
+        return None
+    rows: list[dict[str, Any]] = []
+    for line in text.splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+        try:
+            obj = json.loads(stripped)
+        except (json.JSONDecodeError, ValueError):
+            continue
+        if isinstance(obj, dict):
+            rows.append(obj)
+    return rows
+
+
+def _rows(doc: dict[str, Any] | None, key: str) -> list[dict[str, Any]] | None:
+    """A list-of-objects field, or None for "the artifact did not carry one"."""
+    raw = doc.get(key) if doc is not None else None
+    if not isinstance(raw, list):
+        return None
+    return [r for r in raw if isinstance(r, dict)]
+
+
+def _mapping(doc: dict[str, Any] | None, key: str) -> dict[str, Any] | None:
+    """An object-valued field, or None for "the artifact did not carry one"."""
+    raw = doc.get(key) if doc is not None else None
+    return raw if isinstance(raw, dict) else None
+
+
+def _len_or_none(value: object) -> float | None:
+    """len() of a list/dict field, or None when the field is absent or the wrong shape.
+
+    Used wherever a defect COUNT is published as the defect LIST. An absent list must not read as
+    zero defects -- that is the shape in which "nobody checked" impersonates "nothing wrong".
+    """
+    return float(len(value)) if isinstance(value, list | dict) else None
+
+
 def _num(value: object) -> float | None:
     """A number, or None. `True` is not 1 here -- a bool arriving where a count belongs is a bug
     upstream, and silently scoring it would hide that."""
@@ -318,6 +385,87 @@ def inverse_ladder_component(key: str, artifact: str, count: float | None,
                      constraint=constraint)
 
 
+def binary_component(key: str, artifact: str, ok: bool | None, *, detail: str, fix: str,
+                     held: str = "") -> Component:
+    """A capability that is either EVIDENCED or not: 10 or a MEASURED 0, never a hedge.
+
+    `ok is None` is the third state and it is the one that matters: it means the artifact never
+    made the claim either way, so the component is UNMEASURED rather than being pushed to whichever
+    end of the scale the caller finds convenient. Callers pass None deliberately -- a missing flag
+    is not a False. Note the explicit `is None` / `is True` tests: a truthiness test would read an
+    absent field and a False field as the same fact, which is the entire failure this guards.
+    """
+    if ok is None:
+        return unmeasured_component(key, artifact, detail)
+    return Component(
+        key=key, state=MEASURED, score=SCALE_MAX if ok else 0.0, artifact=artifact, detail=detail,
+        constraint=(held or "AT CEILING -- evidenced, and the work is now HOLDING it") if ok
+        else fix)
+
+
+#: The desk's per-organ liveness roster: which scheduled organ produced, how long ago, and against
+#: what tolerance. Read by many aspects below, because "is the thing that measures X still running"
+#: is a precondition for believing anything X publishes.
+_LIVENESS = "data/organ_liveness.json"
+
+#: The verdict vocabulary of check_organ_liveness.py, read rather than restated. FRESH means the
+#: organ produced inside ITS OWN declared cadence; the two failure words are kept apart because
+#: they need different repairs -- NEVER-PRODUCED is wiring, STALE is something that stopped.
+_LIVENESS_FRESH = "FRESH"
+_LIVENESS_DEAD = ("STALE", "NEVER-PRODUCED")
+
+
+def _liveness_row(root: Path, script: str) -> dict[str, Any] | None:
+    for row in _rows(_read_json(root / _LIVENESS), "organs") or []:
+        if row.get("script") == script:
+            return row
+    return None
+
+
+def liveness_component(root: Path, key: str, script: str) -> Component:
+    """Is ONE named organ producing inside its own cadence, per the organ that owns cadences?
+
+    THE THRESHOLD IS NOT SET HERE, deliberately. check_organ_liveness.py declares every organ's
+    cadence and tolerance and publishes a per-row verdict; this reads that verdict. Re-deriving
+    "how old is too old" here would give the desk two disagreeing answers about one organ, and the
+    one this module invented would be the one nobody maintains.
+
+    An organ ABSENT FROM THE ROSTER is UNMEASURED, never a zero: nothing is watching it, which is
+    a different (and more actionable) fact than it being late.
+    """
+    row = _liveness_row(root, script)
+    if row is None:
+        return unmeasured_component(
+            key, _LIVENESS,
+            f"{_LIVENESS} carries no row for {script} -- the organ is not on the liveness roster, "
+            "so NOTHING measures whether it produces. Add it there; an unwatched organ reads the "
+            "same as a healthy one from here")
+    state = str(row.get("state") or "")
+    raw = row.get("artifacts")
+    evidence = ", ".join(str(a) for a in raw) if isinstance(raw, list) and raw else "?"
+    age, tol = _num(row.get("age_h")), _num(row.get("tolerance_h"))
+    detail = (f"{script} is {state or 'UNSTATED'} "
+              f"(age {age if age is not None else 'never'}h against its own "
+              f"{tol if tol is not None else '?'}h tolerance); evidence {evidence}")
+    if state == _LIVENESS_FRESH:
+        return Component(key=key, state=MEASURED, score=SCALE_MAX, artifact=_LIVENESS,
+                         detail=detail,
+                         constraint="AT CEILING -- producing inside its own declared cadence, and "
+                                    "the work is now HOLDING it")
+    if state in _LIVENESS_DEAD:
+        fix = (f"WIRE IT -- {script} has NEVER produced {evidence}; that is a path/venv/lock "
+               "fault, not a late run" if state == "NEVER-PRODUCED" else
+               f"RESTART IT -- {script} last produced {age if age is not None else '?'}h ago "
+               f"against a {tol if tol is not None else '?'}h tolerance; something STOPPED "
+               "(auth, quota, upstream), which is a different repair from never wired")
+        return Component(key=key, state=MEASURED, score=0.0, artifact=_LIVENESS, detail=detail,
+                         constraint=fix)
+    return unmeasured_component(
+        key, _LIVENESS,
+        f"{script} carries liveness state {state or 'EMPTY'!r}, which is neither FRESH nor a "
+        "declared failure -- an unrecognised verdict is not scored in either direction")
+
+
 # --------------------------------------------------------------------------------------------
 # COMPONENT BUILDERS. Each reads ONE artifact this desk already produces. Nothing here computes a
 # fresh measurement: a scorer that measures is a scorer that can be gamed by rewriting the scorer.
@@ -384,14 +532,31 @@ def mutation_components(root: Path, key: str, prefixes: tuple[str, ...]) -> list
     return out
 
 
+_CALIBRATION = "data/calibration_status.json"
+
+
 def _statistical_validation(root: Path) -> list[Component]:
-    return mutation_components(root, "mutation_kill_validation_stack",
-                               ("libs/validation/", "libs/autodiscovery/"))
+    out = mutation_components(root, "mutation_kill_validation_stack",
+                              ("libs/validation/", "libs/autodiscovery/"))
+
+    # A DESK THAT CANNOT SCORE ITS OWN FORECASTS CANNOT KNOW IT IS CALIBRATED. n_resolved/
+    # n_forecasts is the completeness of the scoring loop, not the Brier score -- scoring the
+    # Brier of zero resolved forecasts would be the 0/0 lie, and check_calibration already refuses
+    # it by publishing status BLIND.
+    cal = _read_json(root / _CALIBRATION)
+    out.append(fraction_component(
+        "forecasts_resolved", _CALIBRATION, _num(_field(cal, "n_resolved")),
+        _num(_field(cal, "n_forecasts")), unit="logged forecasts scored against an outcome",
+        detail=f"status {_field(cal, 'status')}: {_field(cal, 'detail')}; brier "
+               f"{_field(cal, 'brier')}, {_field(cal, 'n_overdue')} overdue"))
+    return out
 
 
 _SUITE = "docs/research/test_suite_record.json"
 _GRAVEYARD = "docs/graveyard.md"
 _BREADTH = "data/strategy_coverage.json"
+_CENSUS = "data/mechanism_census.json"
+_SURFACES = "data/strategy_breadth.json"
 
 #: A graveyard heading is an ENTRY (a killed hypothesis or a retired capability) rather than a
 #: section banner when it names a thing: a backticked path or a snake_case identifier. Counting
@@ -431,6 +596,37 @@ def _research_discipline(root: Path) -> list[Component]:
         detail=f"{_field(breadth, 'n_hunted')}/{_field(breadth, 'n_families')} distinct families "
                f"worked; thin {_field(breadth, 'n_thin')}, unhunted "
                f"{_field(breadth, 'n_unhunted')}"))
+
+    # MECHANISM DIVERSITY, from the census that owns the taxonomy. Counting candidates would
+    # reward reparameterising one idea 40 times; classes occupied cannot be bought that way.
+    census = _read_json(root / _CENSUS)
+    div = _mapping(census, "diversity") or {}
+    out.append(fraction_component(
+        "mechanism_classes_occupied", _CENSUS, _num(div.get("n_classes_occupied")),
+        _num(div.get("n_classes_in_taxonomy")), unit="taxonomy classes with a live candidate",
+        detail=f"{div.get('n_classes_occupied')}/{div.get('n_classes_in_taxonomy')} classes "
+               f"occupied over {div.get('n_candidates')} candidates; top class "
+               f"{div.get('top_class')} at {div.get('top_class_share')} share"))
+    out.append(fraction_component(
+        "mechanism_diversity", _CENSUS, _num(div.get("diversity")), 1.0,
+        unit="of the census's own normalised diversity index",
+        detail=f"diversity {div.get('diversity')} (hhi {div.get('hhi')}, effective classes "
+               f"{div.get('effective_classes')}); the CAMPAIGN is narrower still at "
+               f"{(_mapping(census, 'campaign_diversity') or {}).get('diversity')}"))
+
+    # HUNTING SURFACES CARRYING THE BREADTH MANDATE. `breadth.state` is checked because the
+    # organ runs in a surfaces-only mode on a clean checkout: a partial run must not be scored as
+    # a complete one, so the widened count is read and the live breadth measurement is not.
+    surfaces = _read_json(root / _SURFACES)
+    n_surf = _num(_field(surfaces, "n_surfaces"))
+    unwidened = _len_or_none(_field(surfaces, "unwidened_surfaces"))
+    out.append(fraction_component(
+        "surfaces_carrying_the_mandate", _SURFACES,
+        None if n_surf is None or unwidened is None else n_surf - unwidened, n_surf,
+        unit="hunting surfaces carrying the breadth mandate",
+        detail=f"status {_field(surfaces, 'status')}; live breadth state "
+               f"{(_mapping(surfaces, 'breadth') or {}).get('state')} -- the live measurement is "
+               "NOT scored here when it did not run"))
     return out
 
 
@@ -464,11 +660,49 @@ def _risk_rails(root: Path) -> list[Component]:
             artifact=_GATE0, detail=f"ruin_rail_clear={status}: {detail}",
             constraint=("AT CEILING -- the rail is clear and the work is HOLDING it" if clear
                         else f"clear the ruin rail: {row.get('action') or detail}")))
+
+    # EVERY NUMBER THAT MOVES MONEY CARRIES A CITED DERIVATION. Four money-path constants were
+    # found defective in one session, all of them round numbers picked by analogy (L1.41/L2.4).
+    sizing = _read_json(root / _SIZING)
+    n_modules = _num(_field(sizing, "n_modules"))
+    unjustified = _num(_field(sizing, "n_unjustified"))
+    out.append(fraction_component(
+        "sizing_constants_derived", _SIZING,
+        None if n_modules is None or unjustified is None else n_modules - unjustified, n_modules,
+        unit="money-path modules with every constant derived",
+        detail=f"status {_field(sizing, 'status')}: {_field(sizing, 'detail')}"))
+
+    # THE RAILS ARE ONLY AS GOOD AS THE LAST TIME THEY WERE FIRED IN ANGER. run_drills exercises
+    # ruin re-entry, the derisk ladder and the naked-clock rail against temp-copy state.
+    drills = _read_json(root / _DRILLS)
+    out.append(fraction_component(
+        "drills_passing", _DRILLS, _num(_field(drills, "passed")), _num(_field(drills, "n_drills")),
+        unit="rail drills passing",
+        detail=f"{_field(drills, 'passed')}/{_field(drills, 'n_drills')} drills passed at "
+               f"{_field(drills, 'at')}; {_field(drills, 'critical_drill_failures')} CRITICAL "
+               "failure(s)"))
+    out.append(liveness_component(root, "drill_cadence", "scripts/run_drills.py"))
     return out
 
 
 _LAW_GATE = "data/law_gate.json"
 _AUDIT = "data/max_audit_report.json"
+_ENFORCEMENT = "data/enforcement_matrix.json"
+_LAW_FAMILIES = "data/law_families.json"
+_FENCE_YIELD = "data/fence_yield.json"
+
+
+def _audit_defects(root: Path, prefix: str) -> float | None:
+    """Live audit defects whose id starts with `prefix`, or None when there is no audit at all.
+
+    NO REPORT IS NOT ZERO DEFECTS. The distinction is the whole point of counting them here: an
+    absent max_audit_report means nobody looked, and returning 0.0 would score that as a clean
+    bill of health -- the exact inversion this module exists to prevent.
+    """
+    live = _rows(_read_json(root / _AUDIT), "live")
+    if live is None:
+        return None
+    return float(sum(1 for r in live if str(r.get("id") or "").startswith(prefix)))
 
 
 def _governance(root: Path) -> list[Component]:
@@ -488,11 +722,43 @@ def _governance(root: Path) -> list[Component]:
         "audit_defects_live", _AUDIT, n_live, DEFECT_LADDER, unit="live audit defects",
         detail=f"{n_live} unacknowledged defects at {_field(audit, 'ran')}; "
                f"by scope {_field(audit, 'by_scope')}"))
+
+    # A PRINCIPLE WITH NO FENCE IS A WISH. The enforcement matrix is the register of which
+    # constitutional principles are held up by machinery rather than by attention.
+    matrix = _read_json(root / _ENFORCEMENT)
+    counts = _mapping(matrix, "counts") or {}
+    out.append(fraction_component(
+        "principles_mechanically_enforced", _ENFORCEMENT, _num(counts.get("ENFORCED")),
+        _num(_field(matrix, "n_principles")), unit="principles held up by a fence",
+        detail=f"{counts.get('ENFORCED')}/{_field(matrix, 'n_principles')} enforced over "
+               f"{_field(matrix, 'n_fences')} fences; counts {counts}; unenforced "
+               f"{_field(matrix, 'unenforced')}"))
+
+    families = _read_json(root / _LAW_FAMILIES)
+    n_fam = _num(_field(families, "n_families"))
+    failing = _len_or_none(_field(families, "failing"))
+    out.append(fraction_component(
+        "law_families_enforced", _LAW_FAMILIES,
+        None if n_fam is None or failing is None else n_fam - failing, n_fam,
+        unit="law families fully enforced",
+        detail=f"status {_field(families, 'status')}: {_field(families, 'detail')} over "
+               f"{_field(families, 'n_laws_governed')} governed laws"))
+
+    # A FENCE THAT HAS NEVER CAUGHT ANYTHING IS EITHER GUARDING NOTHING OR NOT LOOKING. Both are
+    # worth a point of governance; check_fence_yield is the organ that decides which.
+    yield_doc = _read_json(root / _FENCE_YIELD)
+    out.append(fraction_component(
+        "fences_earning_their_place", _FENCE_YIELD, _num(_field(yield_doc, "n_fired")),
+        _num(_field(yield_doc, "n_fences")), unit="fences that have caught something real",
+        detail=f"status {_field(yield_doc, 'status')}: {_field(yield_doc, 'detail')}; never run "
+               f"{_field(yield_doc, 'n_never_run')}"))
     return out
 
 
 _ASSETS = "data/data_assets.json"
 _EXPLORATION = "data/exploration_status.json"
+_PROVENANCE = "docs/research/data_provenance.json"
+_ANNOUNCE = "data/announcement_collector.json"
 
 
 def _data_coverage(root: Path) -> list[Component]:
@@ -512,10 +778,29 @@ def _data_coverage(root: Path) -> list[Component]:
         _num(_field(expl, "n_organs")), unit="unknown-unknown organs fresh",
         detail=f"status {_field(expl, 'status')}: {_field(expl, 'n_fresh')} fresh, "
                f"{_field(expl, 'n_stale')} stale, {_field(expl, 'n_dark')} dark"))
+
+    # PROVENANCE IS PART OF THE DATA. A series whose collection method, survivorship and
+    # manipulation risk are unrecorded cannot be reasoned about, only used.
+    prov = _read_json(root / _PROVENANCE)
+    out.append(ladder_component(
+        "datasets_with_declared_provenance", _PROVENANCE,
+        _len_or_none(_field(prov, "datasets")), COUNT_LADDER,
+        unit="datasets carrying source/method/survivorship",
+        detail=f"{_len_or_none(_field(prov, 'datasets'))} datasets declared in the provenance "
+               "register -- collection method, manipulation risk and survivorship per series"))
+
+    # A COLLECTOR WITH A DEAD SOURCE IS A DARK CORNER WEARING A GREEN LIGHT.
+    ann = _read_json(root / _ANNOUNCE)
+    out.append(inverse_ladder_component(
+        "announcement_sources_failing", _ANNOUNCE, _len_or_none(_field(ann, "source_errors")),
+        DEFECT_LADDER, unit="announcement sources erroring",
+        detail=f"status {_field(ann, 'status')}: {_field(ann, 'detail')}; median latency "
+               f"{_field(ann, 'median_latency_minutes')}min"))
     return out
 
 
 _COVERAGE = "docs/research/COVERAGE_RATCHET.json"
+_FORENSICS = "docs/research/trade_forensics_latest.json"
 
 
 def _execution_path(root: Path) -> list[Component]:
@@ -537,11 +822,36 @@ def _execution_path(root: Path) -> list[Component]:
                f"(repo {measured.get('repo_pct')}%)"))
 
     out += mutation_components(root, "mutation_kill_execution_stack", ("libs/execution/",))
+
+    # MAKER SHARE AGAINST THE DESK'S OWN TARGET, which is carried IN the forensics artifact --
+    # 0.6 is trade forensics' number, not this module's, and lifting it keeps one target rather
+    # than two. Fees are the dominant carry cost, so this is the live unit-economics lever.
+    fore = _read_json(root / _FORENSICS)
+    tape = _mapping(fore, "maker_fill") or {}
+    out.append(fraction_component(
+        "maker_fill_share", _FORENSICS, _num(tape.get("maker_share")), _num(tape.get("target")),
+        unit="of the desk's own maker-share target",
+        detail=f"maker share {tape.get('maker_share')} over {tape.get('n_legs')} legs "
+               f"(spot {tape.get('spot')}, fut {tape.get('fut')}) against target "
+               f"{tape.get('target')}; measured {_field(fore, 'updated')}"))
+
+    # FEE ATTRIBUTION COMPLETENESS. An unattributed fee is money leaving the desk for a reason
+    # nobody has named -- and the artifact states its own scope limit (futures only, a LOWER
+    # BOUND), which is carried into the detail rather than dropped.
+    fees = _mapping(fore, "fee_attribution") or {}
+    out.append(fraction_component(
+        "fees_attributed", _FORENSICS, _num(fees.get("attributed")),
+        _num(fees.get("venue_commission")), unit="of billed commission attributed to a cause",
+        detail=f"{fees.get('attributed')} of {fees.get('venue_commission')} attributed over "
+               f"{fees.get('n_events')} events ({fees.get('unattributed')} unattributed); scope "
+               f"{fees.get('scope')}"))
     return out
 
 
 _LEDGER = "docs/research/recommendation_ledger.json"
 _CONVERSION = "data/conversion_status.json"
+_INSTRUMENTATION = "data/instrumentation_coverage.jsonl"
+_CHASE = "data/instrumentation_chase.json"
 
 #: Terminal ledger statuses, read from scripts/check_conversion.py so the two organs cannot drift
 #: into disagreeing about what "converted" means on the same file.
@@ -584,11 +894,37 @@ def _self_improvement(root: Path) -> list[Component]:
             detail=f"status {_field(conv, 'status')}: {disposals} dispositioned vs {arrivals} "
                    f"raised in 7d; backlog {_field(conv, 'backlog')}, oldest "
                    f"{_field(conv, 'oldest_backlog_age_days')}d"))
+
+    # THE DESK CANNOT IMPROVE WHAT IT CANNOT SEE ITSELF DOING. instrumentation_coverage is the
+    # ledger of how much of the desk's own behaviour is instrumented at all; the chase counter
+    # beside it never resets except by CLOSING a gap.
+    rows = _read_jsonl(root / _INSTRUMENTATION)
+    if not rows:
+        out.append(unmeasured_component(
+            "instrumentation_coverage", _INSTRUMENTATION,
+            f"{_INSTRUMENTATION} absent or empty -- nothing records how much of the desk's own "
+            "behaviour is instrumented, and an uninstrumented desk cannot tell improvement from "
+            "drift"))
+    else:
+        last = rows[-1]
+        out.append(fraction_component(
+            "instrumentation_coverage", _INSTRUMENTATION, _num(last.get("coverage_pct")), 100.0,
+            unit="% of declared instrumentation points wired",
+            detail=f"{last.get('instrumented')} instrumented, {last.get('owed')} owed at "
+                   f"{last.get('ts')} over {len(rows)} recorded sweeps"))
+
+    chase = _read_json(root / _CHASE)
+    out.append(inverse_ladder_component(
+        "instrumentation_gaps_owed", _CHASE, _len_or_none(_field(chase, "cycles_owed")),
+        DEFECT_LADDER, unit="instrumentation gaps standing open across cycles",
+        detail=f"{_len_or_none(_field(chase, 'cycles_owed'))} gap(s) carrying a cycle counter at "
+               f"{_field(chase, 'updated')} -- the counter never resets except by closing the gap"))
     return out
 
 
-_LIVENESS = "data/organ_liveness.json"
 _READINESS = "data/organ_readiness.json"
+_ORGAN_ER = "data/organ_er.json"
+_KERNEL_LOG = "data/kernel_log_status.json"
 
 
 def _ops_autonomy(root: Path) -> list[Component]:
@@ -610,6 +946,30 @@ def _ops_autonomy(root: Path) -> list[Component]:
         "organs_ready", _READINESS, n_ready, total, unit="organs assembling a lawful prompt",
         detail=f"{n_ready}/{total} organs ready at {_field(ready, 'ts')} "
                f"(gate_ok={_field(ready, 'gate_ok')})"))
+
+    # THE ER IS THE ESCALATION LAYER: an organ that stopped is SICK, one that stopped for >24h is
+    # in COMA, and an UNTREATED coma is the state where autonomy has actually failed.
+    er = _read_json(root / _ORGAN_ER)
+    out.append(fraction_component(
+        "organs_healthy", _ORGAN_ER, _num(_field(er, "n_healthy")), _num(_field(er, "n_organs")),
+        unit="organs healthy under the ER's own triage",
+        detail=f"status {_field(er, 'status')}: {_field(er, 'detail')}; untreated comas "
+               f"{_field(er, 'untreated_comas')}"))
+    out.append(inverse_ladder_component(
+        "organ_comas_untreated", _ORGAN_ER, _len_or_none(_field(er, "untreated_comas")),
+        DEFECT_LADDER, unit="comatose organs with no treatment applied",
+        detail=f"{_len_or_none(_field(er, 'untreated_comas'))} untreated coma(s) after "
+               f"{_field(er, 'coma_hours')}h; treatments {_field(er, 'treatments')}"))
+
+    # CAN THE BOX SEE ITS OWN KILLS? A 'no OOM' conclusion is only a measurement if a kernel event
+    # was provably readable first (R0350/L1.40) -- the fraction of channels that read is that
+    # proof, and check_kernel_log owns the probe.
+    kern = _read_json(root / _KERNEL_LOG)
+    out.append(fraction_component(
+        "kernel_log_channels_readable", _KERNEL_LOG,
+        _len_or_none(_field(kern, "readable_channels")), _len_or_none(_field(kern, "channels")),
+        unit="kernel-log channels provably readable",
+        detail=f"verdict {_field(kern, 'verdict')}: {_field(kern, 'detail')}"))
     return out
 
 
@@ -639,6 +999,901 @@ def _alpha_output(root: Path) -> list[Component]:
         detail=f"granted '{_field(gate, 'granted')}' at rung {_field(gate, 'granted_rung')}, "
                f"blocked at {_field(gate, 'blocked_at_rung')} over "
                f"{_field(gate, 'n_closed')} closed trades"))
+    return out
+
+
+# --------------------------------------------------------------------------------------------
+# THE MINOR ASPECTS. The standing order is "every aspect", not "the nine headline ones", and the
+# surface below is where a desk actually rots: the pager that died between incidents, the cost
+# model nobody refreshed, the seat with no credential, the backup nobody restored. None of these
+# is glamorous and every one of them has taken a desk down.
+# --------------------------------------------------------------------------------------------
+
+_ALERT_LEDGER = "data/alert_delivery.jsonl"
+_ALERT_SILENT = "data/ALERT_CHANNELS_SILENT"
+_ALERT_CANARY = "data/alert_canary_state.json"
+
+
+def _alerting(root: Path) -> list[Component]:
+    """Does the pager provably deliver BETWEEN incidents?
+
+    The failure this scores is on the record twice: quota exhaustion left the pager dead five
+    days, and a latin-1 header encode killed 39/39 pushes for 29h across a live dead-man fire.
+    Alerts only fire on incidents, so a broken alert path looks exactly like a quiet desk -- which
+    is why the DELIVERY LEDGER, not the alerting code, is the artifact that settles it.
+    """
+    out: list[Component] = []
+    rows = _read_jsonl(root / _ALERT_LEDGER)
+    if rows is None:
+        out.append(unmeasured_component(
+            "pager_deliveries_ok", _ALERT_LEDGER,
+            f"{_ALERT_LEDGER} absent -- there is no delivery ledger, so 'the pager works' is an "
+            "assumption. libs/ops/alert_channels writes one row per attempt per channel; that "
+            "file is what would settle it"))
+    else:
+        delivered = float(sum(1 for r in rows if r.get("ok") is True))
+        last = rows[-1] if rows else {}
+        out.append(fraction_component(
+            "pager_deliveries_ok", _ALERT_LEDGER, delivered, float(len(rows)),
+            unit="logged page attempts that DELIVERED",
+            detail=f"{delivered:g}/{len(rows)} ledger attempts delivered; last row channel "
+                   f"{last.get('channel')} ok={last.get('ok')} -- {str(last.get('detail'))[:90]}"))
+
+    # THE SILENCE FLAG IS THE CANARY'S OWN VERDICT, written using ITS lookback window, not one
+    # invented here. But the flag's ABSENCE only means something if the canary has run: an unrun
+    # canary and a healthy pager leave the same empty directory, so with no canary state this is
+    # UNMEASURED rather than a clean bill of health.
+    canary = _read_json(root / _ALERT_CANARY)
+    if canary is None:
+        out.append(unmeasured_component(
+            "alert_channels_not_silent", _ALERT_SILENT,
+            f"{_ALERT_CANARY} absent -- the canary has never recorded a run, so the ABSENCE of "
+            "the silence flag proves nothing. An unrun canary and a live pager are "
+            "indistinguishable from here, and that ambiguity is the failure, not the flag"))
+    else:
+        flag = root / _ALERT_SILENT
+        note = ""
+        if flag.exists():
+            try:
+                note = flag.read_text("utf-8").strip()
+            except (OSError, UnicodeDecodeError):
+                note = "(flag present, unreadable)"
+        out.append(binary_component(
+            "alert_channels_not_silent", _ALERT_SILENT, not flag.exists(),
+            detail=(f"SILENCE FLAG PRESENT: {note[:170]}" if note else
+                    f"no silence flag; last canary {canary.get('last_canary')}"),
+            fix="ARM A CHANNEL and deliver one page: the canary's own audit found no delivery on "
+                "ANY channel inside its lookback, which is the state that hid a dead pager for "
+                "five days",
+            held="AT CEILING -- a page has landed inside the canary's own lookback; HOLDING it "
+                 "means keeping the canary on its cadence"))
+    return out
+
+
+_COST_HUNT = "data/cost_hunt.json"
+_ECONOMICS = "data/execution_economics.json"
+
+#: execution_economics' own sentinel for an input it could not read on this box. Read, not
+#: restated: it is that organ's vocabulary for "absent", and it deliberately never writes 0.0.
+_NOT_READABLE = "NOT-READABLE-HERE"
+
+
+def _cost_model(root: Path) -> list[Component]:
+    """Is the cost model FRESH, and is the realised-versus-modelled residual measurable at all?
+
+    Cost is the only input that decides whether an edge survives contact with a venue, and it is
+    the input most prone to silent staleness: a model fitted once and never refreshed reports the
+    same confident number forever while the venue's fees, funding and depth all move.
+    """
+    hunt = _read_json(root / _COST_HUNT)
+    out = [fraction_component(
+        "funding_rates_measured", _COST_HUNT, _num(_field(hunt, "n_measured")),
+        _num(_field(hunt, "n_symbols")), unit="universe symbols with a measured funding rate",
+        detail=f"status {_field(hunt, 'status')}: {_field(hunt, 'detail')}")]
+    out.append(liveness_component(root, "cost_hunt_freshness", "scripts/run_cost_hunt.py"))
+    out.append(liveness_component(root, "cost_surface_identified",
+                                  "scripts/run_cost_identification.py"))
+
+    # INPUT READABILITY, NOT THE RESIDUAL. A residual computed over inputs that were mostly
+    # unreadable is a partial measurement, and scoring it as a whole one is precisely the failure
+    # the truncated-mutation rule forbids. What IS complete and scoreable is how many of the
+    # model's declared inputs this box can read at all.
+    econ = _read_json(root / _ECONOMICS)
+    inputs = _mapping(econ, "inputs")
+    if inputs is None or not inputs:
+        out.append(unmeasured_component(
+            "cost_inputs_readable", _ECONOMICS,
+            f"{_ECONOMICS} carries no inputs map -- the cost model's own account of what it could "
+            "read is what makes its residual believable, and without it the residual is a number "
+            "with no denominator"))
+    else:
+        readable = float(sum(1 for v in inputs.values() if str(v) != _NOT_READABLE))
+        out.append(fraction_component(
+            "cost_inputs_readable", _ECONOMICS, readable, float(len(inputs)),
+            unit="declared cost-model inputs readable from this box",
+            detail=f"status {_field(econ, 'status')}: {readable:g}/{len(inputs)} inputs readable "
+                   f"({', '.join(k for k, v in inputs.items() if str(v) == _NOT_READABLE)} are "
+                   f"{_NOT_READABLE}); thresholds read from "
+                   f"{(_mapping(econ, 'thresholds_read_not_declared') or {}).get('sources')}"))
+    return out
+
+
+_REPLACEMENT = "data/replacement_rate.json"
+
+
+def _forward_clock(root: Path) -> list[Component]:
+    """Do the desk's forward clocks MEAN anything -- measured latency, countable births?
+
+    A forward clock is the desk's only honest evidence generator, and its hygiene is separate from
+    how many slots are full (that is alpha_output). What is scored here is whether the clock's own
+    numbers are measurements: a promotion latency assembled from DESIGN and ESTIMATED terms is a
+    plan, not an observation, and a birth rate nobody can count cannot be compared to a death rate.
+    """
+    out: list[Component] = []
+    latency = _mapping(_read_json(root / _QUEUE), "latency") or {}
+    terms = _mapping(latency, "components")
+    if terms is None or not terms:
+        out.append(unmeasured_component(
+            "promotion_latency_measured", _QUEUE,
+            f"{_QUEUE} carries no latency component breakdown -- a single total with no "
+            "provenance per term cannot be told apart from a guess"))
+    else:
+        measured = float(sum(1 for v in terms.values()
+                             if isinstance(v, dict) and v.get("provenance") == "MEASURED"))
+        provenance = ", ".join(f"{k}={v.get('provenance')}"
+                               for k, v in sorted(terms.items()) if isinstance(v, dict))
+        out.append(fraction_component(
+            "promotion_latency_measured", _QUEUE, measured, float(len(terms)),
+            unit="latency terms MEASURED rather than designed or estimated",
+            detail=f"total {latency.get('total_days')}d, fully_measured="
+                   f"{latency.get('fully_measured')}; {provenance}"))
+
+    rep = _read_json(root / _REPLACEMENT)
+    births_flag = rep.get("births_measured") if rep is not None else None
+    out.append(binary_component(
+        "births_countable", _REPLACEMENT, births_flag if isinstance(births_flag, bool) else None,
+        detail=f"status {_field(rep, 'status')}: {_field(rep, 'detail')}",
+        fix="RECORD A DATED PROMOTION HISTORY -- births are UNCOUNTABLE, so the desk cannot say "
+            "whether validated births keep pace with deaths (L1.30). Never loosen a validation "
+            "bar to manufacture one: that turns a real countdown into a fake reprieve",
+        held="AT CEILING -- births are counted from a dated promotion history; HOLDING it means "
+             "keeping that history append-only"))
+
+    rate = _num(_field(rep, "replacement_rate"))
+    if rate is None:
+        out.append(unmeasured_component(
+            "replacement_rate", _REPLACEMENT,
+            f"{_REPLACEMENT} publishes a null replacement rate ({_field(rep, 'status')}) -- with "
+            "births uncountable the ratio is undefined, and an undefined ratio is not a 1.0"))
+    else:
+        out.append(fraction_component(
+            "replacement_rate", _REPLACEMENT, rate, 1.0,
+            unit="of one-for-one replacement over the window",
+            detail=f"{_field(rep, 'births')} births vs {_field(rep, 'deaths')} deaths in "
+                   f"{_field(rep, 'window_days')}d; {_field(rep, 'live_forward_clocks')} live "
+                   "forward clocks"))
+    return out
+
+
+_CLOCK_PROVENANCE = "data/clock_provenance_status.json"
+_BACKUP = "data/backup_status.json"
+
+#: check_clock_provenance's two REFUSAL verdicts. They are not defects of the tape -- they are the
+#: fence saying it had nothing to look at, and the one thing that fence may never do is report OK
+#: because it found nothing. Scoring them as zero would invent a defect out of an absent corpus.
+_CLOCK_REFUSALS = ("NO-DATA", "UNMEASURED")
+
+
+def _recorder_tape(root: Path) -> list[Component]:
+    """Is the desk's OWN tape being recorded, and does its time axis mean what the schema implies?
+
+    Three of the largest kills in the graveyard (kimchi_premium, coinbase_premium_timing, the
+    leaky Upbit copies) are ONE defect class: a timestamp whose clock was never declared. Delta =
+    t_recv - t_venue is structurally unbuyable and cannot be backfilled, so a day not recorded is
+    a day gone permanently -- which is why tape health is scored beside the fancier aspects.
+    """
+    out: list[Component] = []
+    doc = _read_json(root / _CLOCK_PROVENANCE)
+    status = str(_field(doc, "status"))
+    if doc is None:
+        out.append(unmeasured_component(
+            "tape_clock_declared", _CLOCK_PROVENANCE,
+            f"{_CLOCK_PROVENANCE} absent -- scripts/check_clock_provenance.py has never produced "
+            "it, so nothing has asked whether the tape's timestamps mean what its schema implies"))
+    elif status in _CLOCK_REFUSALS:
+        out.append(unmeasured_component(
+            "tape_clock_declared", _CLOCK_PROVENANCE,
+            f"the clock fence returned {status} -- {_field(doc, 'detail')}. That is the fence "
+            "refusing to grade an absent or unclassifiable corpus, and a refusal is not a defect "
+            "of the tape any more than it is a clean bill"))
+    else:
+        streams = _mapping(doc, "streams") or {}
+        bad = ((_len_or_none(_field(doc, "mixed_clock_streams")) or 0.0)
+               + (_len_or_none(_field(doc, "unknown_streams")) or 0.0))
+        out.append(fraction_component(
+            "tape_clock_declared", _CLOCK_PROVENANCE, float(len(streams)) - bad,
+            float(len(streams)), unit="tape streams declaring the clock that stamped them",
+            detail=f"status {status}: {_field(doc, 'detail')}; {_field(doc, 'rows_sampled')} rows "
+                   f"sampled over {_field(doc, 'files_read')} files"))
+
+    # THE TAPE STORE ITSELF, per the backup organ that inventories the desk's durable stores.
+    stores = _mapping(_read_json(root / _BACKUP), "stores")
+    tape = (stores or {}).get("execution_tape")
+    tape_status = str((tape or {}).get("status") or "") if isinstance(tape, dict) else ""
+    if not isinstance(tape, dict):
+        out.append(unmeasured_component(
+            "execution_tape_store", _BACKUP,
+            f"{_BACKUP} carries no execution_tape store row -- the tape is the desk's proprietary "
+            "moat and nothing is inventorying whether it exists"))
+    else:
+        out.append(binary_component(
+            "execution_tape_store", _BACKUP, tape_status == "REPLICATED",
+            detail=f"execution_tape is {tape_status} at {tape.get('path')}: "
+                   f"{tape.get('note') or 'replicated'}",
+            fix=f"RUN THE RECORDER -- the execution tape reads {tape_status} at "
+                f"{tape.get('path')}. Delta between venue and receipt clocks cannot be "
+                "backfilled, so every day it is absent is a day gone permanently",
+            held="AT CEILING -- the tape exists and is replicated; HOLDING it is the recorder "
+                 "staying up"))
+
+    # THE RECORDING WINDOW ITSELF: forensics reports whether the retained buffer is squeezing the
+    # analysis window, which is the early warning before a tape gap becomes a measurement gap.
+    tape_stats = _mapping(_read_json(root / _FORENSICS), "execution_tape")
+    squeeze = (tape_stats or {}).get("buffer_squeezing_window")
+    out.append(binary_component(
+        "tape_buffer_not_squeezing", _FORENSICS,
+        (not squeeze) if isinstance(squeeze, bool) else None,
+        detail=(f"{(tape_stats or {}).get('taped')} taped rows over "
+                f"{(tape_stats or {}).get('tape_days')}d; buffer "
+                f"{(tape_stats or {}).get('buffer_days')}d, window margin "
+                f"{(tape_stats or {}).get('window_margin_days')}d"
+                if tape_stats else
+                f"{_FORENSICS} carries no execution_tape block -- retention pressure on the "
+                "analysis window is not being watched"),
+        fix="EXTEND RETENTION -- the retained buffer is squeezing the analysis window, so the "
+            "next forensics pass will silently narrow rather than fail",
+        held="AT CEILING -- the retained buffer clears the analysis window with margin"))
+    return out
+
+
+_RUNWAY = "data/miner_runway.json"
+
+#: The seat verdict check_ratchets._miner_productive counts as productive. Lifted from there so
+#: the ratchet floor and this score cannot disagree about what a working seat is.
+_SEAT_OK = "ok"
+
+
+def _llm_seats(root: Path) -> list[Component]:
+    """Are the desk's LLM seats WIRED, CREDENTIALLED and PRODUCING -- three different facts.
+
+    The three are kept apart deliberately, because collapsing them is how a desk convinces itself
+    it has a research bench: prompts and runners can all exist while every seat is unfunded, and
+    an unreadable log directory means the productivity question cannot be answered AT ALL from
+    this box. miner_runway states its own observability, and that state is honoured here.
+    """
+    doc = _read_json(root / _RUNWAY)
+    seats = _mapping(doc, "seats")
+    if seats is None or not seats:
+        why = f"{_RUNWAY} carries no seat roster -- nothing enumerates the desk's LLM bench"
+        return [unmeasured_component(k, _RUNWAY, why)
+                for k in ("seats_wired", "seats_credentialled", "seats_productive")]
+
+    rows = [s for s in seats.values() if isinstance(s, dict)]
+    total = float(len(rows))
+    wired = float(sum(1 for s in rows if s.get("prompt") and s.get("runner") and s.get("unit")))
+    creds = float(sum(1 for s in rows if s.get("creds") is True))
+    out = [fraction_component(
+        "seats_wired", _RUNWAY, wired, total,
+        unit="seats with prompt + runner + unit all present",
+        detail=f"{wired:g}/{total:g} seats wired at {_field(doc, 'checked')}"),
+        fraction_component(
+        "seats_credentialled", _RUNWAY, creds, total, unit="seats carrying a credential",
+        detail=f"{creds:g}/{total:g} seats credentialled (creds_present="
+               f"{_field(doc, 'creds_present')}); a wired seat with no key is a bench that "
+               "cannot sit down")]
+
+    # OBSERVABILITY IS THE PRECONDITION, and this organ publishes it. `observable: false` means
+    # the log directory could not be read, so seat productivity is UNKNOWN -- and 0 productive
+    # seats out of 11 would be a fabricated defect rather than a measurement.
+    if doc is not None and doc.get("observable") is not True:
+        blockers = _rows(doc, "blockers") or []
+        out.append(unmeasured_component(
+            "seats_productive", _RUNWAY,
+            f"{_RUNWAY} reports observable={_field(doc, 'observable')} -- "
+            f"{(blockers[0].get('blocker') if blockers else 'run history unreadable here')}. The "
+            "report says NOTHING about whether the seats ran, and an unreadable log is not an "
+            "idle seat"))
+    else:
+        productive = float(sum(1 for s in rows if s.get("status") == _SEAT_OK))
+        out.append(fraction_component(
+            "seats_productive", _RUNWAY, productive, total,
+            unit="seats producing inside their own max_age_h",
+            detail=f"{productive:g}/{total:g} seats ok at {_field(doc, 'checked')}; by_status "
+                   f"{_field(doc, 'by_status')}"))
+    return out
+
+
+_UTILISATION = "data/utilisation.json"
+
+
+def _dependency_env(root: Path) -> list[Component]:
+    """Does the environment the suite runs in match the environment that runs the money?
+
+    A green suite here is not evidence about production unless the deps match: `ruff>=0.5`
+    resolving to 0.15.8 produced 36 errors production never saw, and a mypy minor-version gap
+    made the same file clean on one box and red on another. max_audit owns the drift check and
+    check_utilisation owns the importability ceiling; both are read, neither is re-derived.
+    """
+    out = [inverse_ladder_component(
+        "dependency_drift_defects", _AUDIT, _audit_defects(root, "dependency-"), DEFECT_LADDER,
+        unit="live dependency/pin defects raised by the audit",
+        detail="max_audit's dependency checks: major-version drift vs the deployed pin set, "
+               "pinned packages absent here, and pyproject floors sitting BELOW production")]
+
+    ceiling = _ceiling_row(root, "optional_test_deps")
+    if ceiling is None:
+        out.append(unmeasured_component(
+            "optional_test_deps_importable", _UTILISATION,
+            f"{_UTILISATION} carries no optional_test_deps ceiling -- nothing measures whether "
+            "declared optional dependencies import, and a test that skips on a missing dep prints "
+            "one grey line and exits 0"))
+    else:
+        out.append(fraction_component(
+            "optional_test_deps_importable", _UTILISATION, _num(ceiling.get("used")),
+            _num(ceiling.get("limit")), unit="declared optional test deps importable here",
+            detail=f"{ceiling.get('used')}/{ceiling.get('limit')} importable "
+                   f"({ceiling.get('status')}): {ceiling.get('binding_constraint')}"))
+    return out
+
+
+def _ceiling_row(root: Path, name: str) -> dict[str, Any] | None:
+    for row in _rows(_read_json(root / _UTILISATION), "ceilings") or []:
+        if row.get("name") == name:
+            return row
+    return None
+
+
+def _capital_utilisation(root: Path) -> list[Component]:
+    """Is paid-for capacity actually being USED -- capital, slots, wired capability?
+
+    Unused headroom is not safety, it is an unbooked loss (L1.28a). The aggregate is deliberately
+    computed over the MEASURED ceilings only and the unmeasured ones are listed by name: the
+    utilisation organ's own convention scores an unmeasured ceiling as zero, which is right for a
+    fence that must not reward ignorance but wrong for a capability score that must not invent a
+    defect out of one. Both readings are published rather than merged.
+    """
+    doc = _read_json(root / _UTILISATION)
+    rows = _rows(doc, "ceilings")
+    if rows is None or not rows:
+        return [unmeasured_component(
+            "ceiling_utilisation", _UTILISATION,
+            f"{_UTILISATION} carries no ceilings -- nothing enumerates the desk's paid-for "
+            "capacity, so idle capacity cannot be told from absent capacity")]
+
+    measured = [r for r in rows if r.get("measured") is True]
+    out: list[Component] = [fraction_component(
+        "ceilings_measured", _UTILISATION, float(len(measured)), float(len(rows)),
+        unit="declared ceilings actually measurable here",
+        detail=f"{len(measured)}/{len(rows)} ceilings measured; UNMEASURED "
+               f"{_field(doc, 'unmeasured')}")]
+    for row in rows:
+        if row.get("measured") is not True:
+            out.append(unmeasured_component(
+                f"ceiling::{row.get('name')}", _UTILISATION,
+                f"ceiling {row.get('name')} reports measured=false "
+                f"({row.get('binding_constraint') or 'no reason given'}) -- it is excluded from "
+                "the aggregate rather than folded in as a zero"))
+    utilisations = [u for u in (_num(r.get("utilisation")) for r in measured) if u is not None]
+    if not utilisations:
+        out.append(unmeasured_component(
+            "ceiling_utilisation", _UTILISATION,
+            "no measured ceiling carries a utilisation figure -- the aggregate would be a mean "
+            "over nothing"))
+        return out
+    mean = sum(utilisations) / len(utilisations)
+    expect = _num(_field(doc, "expect_fraction"))
+    out.append(fraction_component(
+        "ceiling_utilisation", _UTILISATION, round(mean, 4), expect,
+        unit="of the desk's own expected utilisation fraction",
+        detail=f"mean {mean:.3f} over {len(utilisations)} MEASURED ceilings against an expected "
+               f"{expect}; the organ's own headline (which counts unmeasured as zero) is "
+               f"{_field(doc, 'mean_utilisation')}; idle_unexplained "
+               f"{_field(doc, 'idle_unexplained')}"))
+    return out
+
+
+_KNOWLEDGE = "data/knowledge_engine.json"
+_PLAYBOOK = "data/trading_playbook.json"
+_LESSONS = "docs/desk_lessons.jsonl"
+
+
+def _knowledge_currency(root: Path) -> list[Component]:
+    """Is what the desk has LEARNED retrievable, or does every cycle start from nothing?
+
+    The expensive failure here is re-testing a dead hypothesis: compute spent to rediscover a
+    result already in the graveyard. The knowledge engine is the retrieval layer that answers
+    "has this effectively already been tested?" BEFORE the compute is spent, and the lesson
+    ledgers are the desk's record of what an incident actually taught it.
+    """
+    doc = _read_json(root / _KNOWLEDGE)
+    if doc is None:
+        out = [unmeasured_component(
+            "knowledge_corpus", _KNOWLEDGE,
+            f"{_KNOWLEDGE} absent -- scripts/knowledge_engine.py has not produced it, so the "
+            "'has this already been tested?' query has no index to run against and the graveyard "
+            "is a document rather than a memory")]
+    else:
+        out = [ladder_component(
+            "knowledge_corpus", _KNOWLEDGE, _num(doc.get("corpus_size")), COUNT_LADDER,
+            unit="retrievable documents in the research memory",
+            detail=f"corpus {doc.get('corpus_size')} at {doc.get('updated')}; "
+                   f"{_len_or_none(doc.get('causal_edges'))} causal edges, blind-validation "
+                   f"consistent={doc.get('blind_validation_consistent')}")]
+
+    play = _read_json(root / _PLAYBOOK)
+    out.append(ladder_component(
+        "playbook_lessons", _PLAYBOOK, _len_or_none(_field(play, "lessons")), COUNT_LADDER,
+        unit="playbook lessons distilled from closed trades",
+        detail=f"{_len_or_none(_field(play, 'lessons'))} lesson(s) over "
+               f"{_field(play, 'reviewed_keys')} reviewed keys, updated "
+               f"{_field(play, 'updated')}"))
+
+    lessons = _read_jsonl(root / _LESSONS)
+    if lessons is None:
+        out.append(unmeasured_component(
+            "desk_lessons_recorded", _LESSONS,
+            f"{_LESSONS} absent -- the desk's incident ledger is where a defect becomes a lesson "
+            "instead of a recurrence; with no ledger, recurrence cannot even be counted"))
+    else:
+        out.append(ladder_component(
+            "desk_lessons_recorded", _LESSONS, float(len(lessons)), COUNT_LADDER,
+            unit="recorded desk lessons, each with its cost and recurrence count",
+            detail=f"{len(lessons)} lesson(s); most recent "
+                   f"{lessons[-1].get('id') if lessons else '?'} learned "
+                   f"{lessons[-1].get('learned') if lessons else '?'}"))
+    return out
+
+
+_DRILLS = "data/drill_report.json"
+_SIZING = "data/sizing_derivation.json"
+
+
+def _backup_dr(root: Path) -> list[Component]:
+    """Could the desk be REBUILT -- and has anyone proved it by actually restoring?
+
+    A backup nobody has restored from is a hypothesis, so the restore drill is scored separately
+    from the replication count. The disk fuse is read from the artifact rather than restated here:
+    run_moat_backup owns the percentage at which it refuses to keep writing.
+    """
+    doc = _read_json(root / _BACKUP)
+    stores = _mapping(doc, "stores")
+    if stores is None or not stores:
+        out = [unmeasured_component(
+            "stores_replicated", _BACKUP,
+            f"{_BACKUP} carries no store inventory -- nothing enumerates what would have to "
+            "survive a host loss, so 'we have backups' is untested in both directions")]
+    else:
+        rows = [s for s in stores.values() if isinstance(s, dict)]
+        replicated = float(sum(1 for s in rows if s.get("status") == "REPLICATED"))
+        absent = [k for k, s in stores.items()
+                  if isinstance(s, dict) and s.get("status") != "REPLICATED"]
+        out = [fraction_component(
+            "stores_replicated", _BACKUP, replicated, float(len(rows)),
+            unit="durable stores replicated off the host",
+            detail=f"{replicated:g}/{len(rows)} stores replicated at {_field(doc, 'generated')}; "
+                   f"NOT replicated: {', '.join(absent) or 'none'}")]
+
+    drill = doc.get("restore_drill_passed") if doc is not None else None
+    out.append(binary_component(
+        "restore_drill_passed", _BACKUP, drill if isinstance(drill, bool) else None,
+        detail=f"restore_drill_passed={drill}; status {_field(doc, 'status')}",
+        fix="RESTORE FROM THE BACKUP AND PROVE IT -- an unrestored backup is a hypothesis, and "
+            "the first restore attempt is not the moment to discover the archive is unreadable",
+        held="AT CEILING -- a restore has actually been exercised; HOLDING it means re-running "
+             "the drill, not trusting the last one"))
+
+    free = _num(_field(doc, "disk_free_pct"))
+    fuse = _num(_field(doc, "fuse_pct"))
+    out.append(fraction_component(
+        "disk_headroom_over_fuse", _BACKUP, free, fuse,
+        unit="of the backup organ's own disk fuse",
+        detail=f"disk free {free}% against a {fuse}% fuse (status {_field(doc, 'status')}); "
+               f"uncovered {_field(doc, 'not_covered_note')}"))
+    out.append(liveness_component(root, "backup_cadence", "scripts/run_moat_backup.py"))
+    return out
+
+
+def _mutation_breadth(root: Path) -> list[Component]:
+    """How much of the tree is mutation-tested AT ALL -- a different question from the kill rate.
+
+    A desk can hold a 100% kill rate forever by mutation-testing one small file. Breadth is the
+    denominator that stops that: how many money-path files carry a COMPLETE run, and how many
+    targets exist. Truncated targets are excluded from the numerator exactly as they are from the
+    kill rate -- a budget-truncated run has not covered the file, so counting it as covered would
+    let the desk buy breadth by running less, which is the same trick one level up.
+    """
+    doc = _read_json(root / _MUTATION)
+    if doc is None:
+        why = f"{_MUTATION} absent -- nothing records which of the tree has been mutation-tested"
+        return [unmeasured_component(k, _MUTATION, why)
+                for k in ("money_path_files_mutated", "mutation_targets_complete",
+                          "mutation_targets_at_bar")]
+
+    targets = _rows(doc, "targets") or []
+    complete = [t for t in targets
+                if t.get("budget_truncated") is not True and isinstance(t.get("target"), str)]
+    truncated = [str(t.get("target")) for t in targets if t.get("budget_truncated") is True]
+    names = {str(t["target"]) for t in complete}
+
+    # THE DENOMINATOR IS THE MONEY PATH THE COVERAGE RATCHET ALREADY DECLARES. Inventing a file
+    # list here would let the breadth score be raised by editing this module.
+    cov = _read_json(root / _COVERAGE)
+    money = _field(cov, "money_path_files")
+    money_files = [str(f) for f in money] if isinstance(money, list) else None
+    if money_files is None:
+        out = [unmeasured_component(
+            "money_path_files_mutated", _COVERAGE,
+            f"{_COVERAGE} declares no money_path_files list -- without the desk's own definition "
+            "of the money path there is no honest denominator for breadth, and one invented here "
+            "could be edited to raise the score")]
+    else:
+        hit = float(sum(1 for f in money_files if f in names))
+        missing = [f for f in money_files if f not in names]
+        out = [fraction_component(
+            "money_path_files_mutated", _MUTATION, hit, float(len(money_files)),
+            unit="money-path files carrying a COMPLETE mutation run",
+            detail=f"{hit:g}/{len(money_files)} money-path files mutated; NOT mutated: "
+                   f"{', '.join(missing) or 'none'}")]
+
+    out.append(ladder_component(
+        "mutation_targets_complete", _MUTATION, float(len(complete)), COUNT_LADDER,
+        unit="modules with a complete (never truncated) mutation run",
+        detail=f"{len(complete)} complete target(s) measured {_field(doc, 'measured')}; "
+               f"{len(truncated)} truncated and excluded: {', '.join(truncated) or 'none'}"))
+    for name in truncated:
+        out.append(unmeasured_component(
+            f"mutation_targets_complete::{Path(name).name}", _MUTATION,
+            f"{name} ran BUDGET-TRUNCATED -- a truncated run has not covered the file, so it "
+            "counts toward neither breadth nor strength"))
+
+    # AT-BAR SHARE, with the bar READ from the artifact (check_ratchets holds the same rule) --
+    # a scorer that owns its own bar is a scorer that can lower it.
+    bar = _num(doc.get("bar"))
+    rates: list[float] = []
+    for t in complete:
+        rate = _num(t.get("adjusted_kill_rate"))
+        rate = rate if rate is not None else _num(t.get("kill_rate"))
+        if rate is not None:
+            rates.append(rate)
+    if bar is None or not rates:
+        out.append(unmeasured_component(
+            "mutation_targets_at_bar", _MUTATION,
+            f"{_MUTATION} carries no bar or no complete target with a kill rate -- the at-bar "
+            "share is undefined and must not read as full marks"))
+    else:
+        at_bar = float(sum(1 for r in rates if r >= bar))
+        out.append(fraction_component(
+            "mutation_targets_at_bar", _MUTATION, at_bar, float(len(rates)),
+            unit=f"complete targets meeting the artifact's own {bar:g} bar",
+            detail=f"{at_bar:g}/{len(rates)} complete targets at bar {bar:g}"))
+    return out
+
+
+_SCHEDULER = "data/scheduler_manifest_report.json"
+
+
+def _scheduler_integrity(root: Path) -> list[Component]:
+    """Does the scheduler MANIFEST describe the machine, and does the machine agree?
+
+    A watchdog died and left the pager silent and the forward clocks frozen for 11.5 days while
+    every timer looked healthy. The manifest checks are what make that detectable, and the
+    live-crontab comparison is the half that actually proves the box matches the file -- which is
+    why its unreadability is reported as UNMEASURED rather than folded into the passing checks.
+    """
+    doc = _read_json(root / _SCHEDULER)
+    checks = _mapping(doc, "checks")
+    if checks is None or not checks:
+        return [unmeasured_component(
+            "manifest_checks_passing", _SCHEDULER,
+            f"{_SCHEDULER} absent or carries no checks -- nothing verifies that every scheduled "
+            "line points at a script that exists, parses, and locks coherently")]
+
+    verdicts = {k: v for k, v in checks.items() if isinstance(v, dict) and "ok" in v}
+    passing = float(sum(1 for v in verdicts.values() if v.get("ok") is True))
+    failing = [k for k, v in verdicts.items() if v.get("ok") is not True]
+    out = [fraction_component(
+        "manifest_checks_passing", _SCHEDULER, passing, float(len(verdicts)),
+        unit="manifest integrity checks passing",
+        detail=f"{passing:g}/{len(verdicts)} checks green over {_field(doc, 'cron_entries')} cron "
+               f"and {_field(doc, 'systemd_entries')} systemd entries; failing: "
+               f"{', '.join(failing) or 'none'}")]
+
+    live = checks.get("live_crontab")
+    live_map = live if isinstance(live, dict) else {}
+    if live_map.get("readable") is not True:
+        out.append(unmeasured_component(
+            "live_crontab_matches_manifest", _SCHEDULER,
+            f"the live crontab is not readable from this box ({live_map.get('note') or 'no note'})"
+            " -- so manifest-versus-machine DRIFT is unmeasured. A manifest that agrees with "
+            "itself is not evidence the box runs what it says"))
+    else:
+        drift = sum((_len_or_none(live_map.get(k)) or 0.0)
+                    for k in ("missing_in_live", "extra_in_live", "duplicated_in_live"))
+        out.append(inverse_ladder_component(
+            "live_crontab_matches_manifest", _SCHEDULER, drift, DEFECT_LADDER,
+            unit="manifest/live crontab discrepancies",
+            detail=f"missing {live_map.get('missing_in_live')}, extra "
+                   f"{live_map.get('extra_in_live')}, duplicated "
+                   f"{live_map.get('duplicated_in_live')}"))
+    return out
+
+
+def _secret_permission(root: Path) -> list[Component]:
+    """Can the desk WRITE what it must write and READ what it must read -- and is it credentialled?
+
+    Permission faults are the quietest class of outage on this box: an unwritable log directory
+    turns every organ's evidence into nothing, and an absent credential turns a wired seat into a
+    silent one. Desk code deliberately never WRITES a secret (a repo that can write its own
+    secrets is a repo that can leak them), so the score here is about provisioning and access,
+    never about the desk manufacturing keys for itself.
+    """
+    ready = _read_json(root / _READINESS)
+    writable = ready.get("log_dir_writable") if ready is not None else None
+    out = [binary_component(
+        "log_dir_writable", _READINESS, writable if isinstance(writable, bool) else None,
+        detail=f"log_dir_writable={writable}, gate_ok={_field(ready, 'gate_ok')}, doctrine "
+               f"{_field(ready, 'doctrine_bytes')} bytes at {_field(ready, 'ts')}",
+        fix="FIX THE LOG DIRECTORY PERMISSIONS -- an organ that cannot write its evidence "
+            "produces nothing, and 'produced nothing' is indistinguishable from 'never ran'",
+        held="AT CEILING -- the desk can write its own evidence")]
+
+    runway = _read_json(root / _RUNWAY)
+    creds = runway.get("creds_present") if runway is not None else None
+    out.append(binary_component(
+        "llm_credentials_provisioned", _RUNWAY, creds if isinstance(creds, bool) else None,
+        detail=f"creds_present={creds} at {_field(runway, 'checked')}; log dir "
+               f"{_field(runway, 'log_dir')}",
+        fix="PROVISION THE CREDENTIAL -- it is an operator step by design (desk code must never "
+            "write a secret). Until it lands, every seat is wired and unfunded",
+        held="AT CEILING -- the seats are credentialled by the operator, as designed"))
+
+    # THE AUDIT'S OWN PHANTOM-PATH CHECK is the closest thing the desk has to a filesystem-
+    # hygiene fence: paths read by code that nothing writes. It names secrets explicitly as the
+    # legitimately-absent class, so what remains is genuine read-without-writer.
+    out.append(inverse_ladder_component(
+        "phantom_path_defects", _AUDIT, _audit_defects(root, "phantom-"), DEFECT_LADDER,
+        unit="read-without-writer path defects live in the audit",
+        detail="paths code reads that nothing on this desk writes; operator-provisioned secrets "
+               "are excluded by the audit's own allowlist, so these are real wiring faults"))
+    return out
+
+
+_MYPY = "data/mypy_ratchet.json"
+_BUILD_STANDARD = "data/build_standard.json"
+_WIRING = "data/wiring_agent.json"
+
+
+def _engineering_standard(root: Path) -> list[Component]:
+    """Does new work enter above the standard, and is what was built actually REACHABLE?
+
+    Two failure directions, both measured by organs that already exist: work entering below the
+    build standard (no refusal path, untested, unscheduled, unmapped to a law), and work that
+    entered fine and is now unreachable -- engineering already paid for that returns zero forever
+    and rots into a liability.
+    """
+    build = _read_json(root / _BUILD_STANDARD)
+    governed = _num(_field(build, "n_governed"))
+    failing = _num(_field(build, "n_failing"))
+    out = [fraction_component(
+        "organs_meeting_build_standard", _BUILD_STANDARD,
+        None if governed is None or failing is None else governed - failing, governed,
+        unit="governed organs meeting the build standard",
+        detail=f"status {_field(build, 'status')}: {failing} failing of {governed} governed; "
+               f"unreadable inputs {_field(build, 'unreadable_inputs')}")]
+
+    mypy = _read_json(root / _MYPY)
+    out.append(fraction_component(
+        "strict_typing_clean_share", _MYPY, _num(_field(mypy, "clean_fraction")), 1.0,
+        unit="of scanned files carrying ZERO strict-mode errors",
+        detail=f"clean fraction {_field(mypy, 'clean_fraction')} over "
+               f"{_len_or_none(_field(mypy, 'per_file'))} files, {_field(mypy, 'total_errors')} "
+               f"errors total, measured {_field(mypy, 'generated')}"))
+
+    wiring = _mapping(_read_json(root / _WIRING), "counts")
+    proposals = _num((wiring or {}).get("PROPOSE"))
+    out.append(inverse_ladder_component(
+        "unwired_proposals_open", _WIRING, proposals, DEFECT_LADDER,
+        unit="open wiring proposals (built, not reachable)",
+        detail=f"counts {wiring} over {_field(_read_json(root / _WIRING), 'n_scripts_scanned')} "
+               "scripts scanned -- each proposal is capability already paid for and returning "
+               "zero"))
+    out.append(inverse_ladder_component(
+        "unwired_module_defects", _AUDIT, _audit_defects(root, "unwired-"), DEFECT_LADDER,
+        unit="live unwired-module defects in the audit",
+        detail="library modules nothing imports, and scripts that are the only importer of a "
+               "module nothing invokes -- built, tested and unreachable"))
+    return out
+
+
+_SOURCE_ALTERNATIVES = "data/source_alternatives_report.json"
+_SOURCE_HEALTH = "data/source_health.jsonl"
+
+
+def _source_resilience(root: Path) -> list[Component]:
+    """When a source dies, does the desk already know where else to look?
+
+    A dead source with no registered alternative is a research seam that closes silently. The
+    vantage caveat is carried, not dropped: a probe from this container says something about THIS
+    egress path, and a candidate failing here may be fine on the box that collects.
+    """
+    doc = _read_json(root / _SOURCE_ALTERNATIVES)
+    if doc is None:
+        out = [unmeasured_component(
+            "dead_sources_without_alternatives", _SOURCE_ALTERNATIVES,
+            f"{_SOURCE_ALTERNATIVES} absent -- nothing tracks whether a dead source has a "
+            "registered replacement, so a closing seam is invisible until someone notices the "
+            "silence")]
+    else:
+        out = [inverse_ladder_component(
+            "dead_sources_without_alternatives", _SOURCE_ALTERNATIVES,
+            _len_or_none(doc.get("dead_without_registered_alternatives")), DEFECT_LADDER,
+            unit="dead sources with NO registered alternative",
+            detail=f"{_len_or_none(doc.get('dead_sources'))} dead of "
+                   f"{_len_or_none(doc.get('registry'))} registered, mode {doc.get('mode')}, "
+                   f"vantage {doc.get('vantage')} -- {str(doc.get('vantage_note'))[:80]}")]
+
+    rows = _read_jsonl(root / _SOURCE_HEALTH)
+    if not rows:
+        out.append(unmeasured_component(
+            "sources_healthy", _SOURCE_HEALTH,
+            f"{_SOURCE_HEALTH} absent or empty -- no per-source verdict ledger, so 'the "
+            "collectors are fine' rests on nobody having complained"))
+    else:
+        latest: dict[str, dict[str, Any]] = {}
+        for row in rows:
+            name = row.get("source")
+            if isinstance(name, str):
+                latest[name] = row
+        healthy = float(sum(1 for r in latest.values() if r.get("verdict") == "HEALTHY"))
+        degraded = sorted(k for k, r in latest.items() if r.get("verdict") != "HEALTHY")
+        out.append(fraction_component(
+            "sources_healthy", _SOURCE_HEALTH, healthy, float(len(latest)),
+            unit="registered sources whose latest verdict is HEALTHY",
+            detail=f"{healthy:g}/{len(latest)} healthy on their most recent probe; not healthy: "
+                   f"{', '.join(degraded) or 'none'}"))
+    return out
+
+
+_BLINDSPOT = "data/blindspot_max.json"
+
+
+def _blind_spots(root: Path) -> list[Component]:
+    """Is the desk conditioning on the slices it KNOWS exist, and reading the fields it has?
+
+    A blind spot is not an unknown unknown once it has been enumerated -- it is a known gap being
+    left open, which is a different and much cheaper defect to close.
+    """
+    doc = _read_json(root / _BLINDSPOT)
+    slices = _rows(doc, "slices")
+    if slices is None or not slices:
+        out = [unmeasured_component(
+            "slices_conditioned", _BLINDSPOT,
+            f"{_BLINDSPOT} carries no slice list -- nothing enumerates the conditioning axes, so "
+            "'we condition on regime' is a claim rather than a measurement")]
+    else:
+        done = float(sum(1 for s in slices if s.get("conditioned") is True))
+        out = [fraction_component(
+            "slices_conditioned", _BLINDSPOT, done, float(len(slices)),
+            unit="enumerated slices the desk actually conditions on",
+            detail=f"{done:g}/{len(slices)} slices conditioned "
+                   f"({', '.join(str(s.get('slice')) for s in slices)}) at "
+                   f"{_field(doc, 'updated')}")]
+    out.append(inverse_ladder_component(
+        "unread_fields", _BLINDSPOT, _num(_field(doc, "unread_fields")), DEFECT_LADDER,
+        unit="collected fields nothing reads",
+        detail=f"{_field(doc, 'unread_fields')} unread field(s), "
+               f"{_len_or_none(_field(doc, 'unmodelled_entities'))} unmodelled entities, "
+               f"{_len_or_none(_field(doc, 'uncrossed_pairs'))} uncrossed pairs -- data bought "
+               "and never asked a question of"))
+    return out
+
+
+_CONSTITUTION = "docs/research/CONSTITUTION_RATCHET.json"
+_LAW_COVERAGE = "docs/research/LAW_COVERAGE.json"
+
+
+def _constitutional_aggression(root: Path) -> list[Component]:
+    """How aggressive is the constitution the desk actually operates under, and is it enforced?
+
+    The aggression marks are the sibling ratchet's record (libs/doctrine/ratchet.py) -- already on
+    the same 0-10 scale the standing order is stated on, so they are read straight rather than
+    re-scored. Institutions drift toward timidity one reasonable amendment at a time, and this is
+    the number that makes each one visible.
+    """
+    doc = _read_json(root / _CONSTITUTION)
+    marks = _mapping(doc, "high_water")
+    if marks is None or not marks:
+        out = [unmeasured_component(
+            "principle_aggression", _CONSTITUTION,
+            f"{_CONSTITUTION} carries no high-water marks -- the constitution's aggression is "
+            "unrecorded, which is the state that lets it be softened without anyone noticing")]
+    else:
+        graded: list[tuple[float, str]] = []
+        for name, raw in marks.items():
+            value = _num(raw)
+            if value is not None:
+                graded.append((value, str(name)))
+        if not graded:
+            out = [unmeasured_component(
+                "principle_aggression", _CONSTITUTION,
+                f"{_CONSTITUTION} high_water carries no numeric marks")]
+        else:
+            mean = sum(v for v, _ in graded) / len(graded)
+            weakest_score, weakest_name = min(graded)
+            out = [fraction_component(
+                "principle_aggression", _CONSTITUTION, round(mean, 3), SCALE_MAX,
+                unit="of full aggression, meaned over the constitution's own marks",
+                detail=f"mean {mean:.2f}/10 over {len(graded)} principles; weakest "
+                       f"{weakest_name} at {weakest_score:g}, updated {_field(doc, 'updated')}")]
+
+    live = _mapping(_read_json(root / _LAW_COVERAGE), "live")
+    if live is None:
+        out.append(unmeasured_component(
+            "law_enforcement_coverage", _LAW_COVERAGE,
+            f"{_LAW_COVERAGE} carries no live block -- the share of principles enforced both "
+            "mechanically and interactionally is unrecorded"))
+    else:
+        out.append(fraction_component(
+            "law_enforcement_coverage", _LAW_COVERAGE, _num(live.get("full_pct")), 100.0,
+            unit="% of principles enforced BOTH mechanically and in every interaction",
+            detail=f"{live.get('both')}/{live.get('principles')} principles fully enforced "
+                   f"(mechanical {live.get('mechanical_pct')}%, interactional "
+                   f"{live.get('interactional_pct')}%); {live.get('unenforced')} unenforced"))
+    return out
+
+
+_RETURN_TARGETING = "data/return_targeting.json"
+_TIMIDITY = "data/timidity_audit.json"
+
+
+def _ambition_discipline(root: Path) -> list[Component]:
+    """Is restraint DECLARED as evidence/risk restraint, or is it timidity wearing prudence?
+
+    L1.28 scores timidity as a defect, and the audit that enforces it makes the distinction
+    machine-checkable: every scope restraint must state its non-timid reading, and every
+    evidence-or-risk restraint must be declared as such and stay strict. An UNCLASSIFIED restraint
+    is the interesting one -- nobody has said which kind it is.
+    """
+    doc = _read_json(root / _TIMIDITY)
+    rows = _rows(doc, "rows")
+    unclassified = _len_or_none(_field(doc, "unclassified"))
+    if rows is None or unclassified is None:
+        out = [unmeasured_component(
+            "restraints_classified", _TIMIDITY,
+            f"{_TIMIDITY} carries no restraint rows -- nothing separates a declared evidence bar "
+            "from an undeclared flinch, and the two look identical in a diff")]
+    else:
+        out = [fraction_component(
+            "restraints_classified", _TIMIDITY, float(len(rows)) - unclassified, float(len(rows)),
+            unit="restraints classified as scope, evidence or risk",
+            detail=f"{len(rows)} restraint(s), {unclassified:g} unclassified; counts "
+                   f"{_field(doc, 'counts')}")]
+    out.append(inverse_ladder_component(
+        "prompt_timidity_hits", _TIMIDITY, _len_or_none(_field(doc, "prompt_timid_hits")),
+        DEFECT_LADDER, unit="timid instructions found in live prompt surfaces",
+        detail=f"{_len_or_none(_field(doc, 'prompt_timid_hits'))} hit(s) across "
+               f"{_field(doc, 'prompt_surfaces_scanned')} prompt surfaces; doctrine injected="
+               f"{_field(doc, 'doctrine_injected')}"))
+
+    ret = _read_json(root / _RETURN_TARGETING)
+    scoped = _num(_field(ret, "n_scoped"))
+    flagged = _num(_field(ret, "n_flagged"))
+    out.append(fraction_component(
+        "surfaces_free_of_return_targets", _RETURN_TARGETING,
+        None if scoped is None or flagged is None else scoped - flagged, scoped,
+        unit="governed surfaces with no return NUMBER bound to goal language",
+        detail=f"status {_field(ret, 'status')}: {_field(ret, 'detail')}; unreadable "
+               f"{_field(ret, 'unreadable')}"))
     return out
 
 
@@ -681,8 +1936,79 @@ ASPECTS: tuple[tuple[str, str, Callable[[Path], list[Component]]], ...] = (
      _ops_autonomy),
     ("alpha_output",
      "the forward cohort full of live clocks and the promotion ladder climbed on closed-trade "
-     "evidence -- the aspect the other eight exist to serve",
+     "evidence -- the aspect every other one exists to serve",
      _alpha_output),
+    # THE MINOR ASPECTS, which is to say the ones that actually take desks down. Everything below
+    # is measured from an artifact another organ already writes; none of it was worth a headline
+    # until it failed, and the standing order says EVERY aspect, not the interesting ones.
+    ("alerting_pager",
+     "the pager provably delivers between incidents, on more than one channel, with the canary "
+     "auditing the ledger rather than the code",
+     _alerting),
+    ("cost_model_fidelity",
+     "the cost model refreshed on its own cadence over the whole universe, with every declared "
+     "input readable so the realised-versus-modelled residual is a measurement",
+     _cost_model),
+    ("forward_clock_hygiene",
+     "promotion latency MEASURED end to end rather than designed, births countable from a dated "
+     "history, and replacement keeping pace with death",
+     _forward_clock),
+    ("recorder_tape",
+     "the desk's own tape recording continuously, every stream declaring the clock that stamped "
+     "it, replicated off the host, with retention clearing the analysis window",
+     _recorder_tape),
+    ("llm_seat_coverage",
+     "every research seat wired, credentialled AND observably producing -- three facts, none of "
+     "them allowed to stand in for the others",
+     _llm_seats),
+    ("dependency_environment",
+     "the environment that runs the tests is the environment that runs the money: no major drift "
+     "from the deployed pins, no declared dependency missing",
+     _dependency_env),
+    ("knowledge_currency",
+     "everything the desk has learned is retrievable BEFORE compute is spent -- a graveyard that "
+     "is a memory rather than a document",
+     _knowledge_currency),
+    ("backup_dr",
+     "every durable store replicated off the host and a restore actually EXERCISED, with disk "
+     "headroom clear of the backup organ's own fuse",
+     _backup_dr),
+    ("mutation_breadth",
+     "every money-path file carrying a COMPLETE mutation run -- breadth, so a perfect kill rate "
+     "on one small file can never stand in for a tested tree",
+     _mutation_breadth),
+    ("scheduler_integrity",
+     "every scheduled line pointing at a script that exists, parses and locks coherently, AND the "
+     "live crontab provably matching the manifest",
+     _scheduler_integrity),
+    ("secret_permission_hygiene",
+     "the desk can write every artifact it must write and read every credential it was given, "
+     "with no path read by code that nothing writes",
+     _secret_permission),
+    ("engineering_standard",
+     "nothing enters below the build standard, the tree is strict-clean, and nothing built is "
+     "left unreachable",
+     _engineering_standard),
+    ("capital_utilisation",
+     "every paid-for ceiling measured and saturated -- unused headroom is not safety, it is an "
+     "unbooked loss",
+     _capital_utilisation),
+    ("source_resilience",
+     "every registered source healthy on its latest probe, and every dead one already carrying a "
+     "registered alternative",
+     _source_resilience),
+    ("blind_spot_coverage",
+     "every enumerated slice conditioned on and every collected field read -- an enumerated blind "
+     "spot left open is the cheapest defect on the board",
+     _blind_spots),
+    ("constitutional_aggression",
+     "the constitution held at full aggression and every principle enforced BOTH mechanically and "
+     "in every interaction",
+     _constitutional_aggression),
+    ("ambition_discipline",
+     "every restraint declared as scope, evidence or risk; no timid instruction in a live prompt; "
+     "no return NUMBER bound to goal language",
+     _ambition_discipline),
 )
 
 ASPECT_KEYS: tuple[str, ...] = tuple(k for k, _, _ in ASPECTS)
@@ -717,6 +2043,54 @@ def score_aspect(key: str, ceiling: str, components: list[Component]) -> Aspect:
 def read_capability(root: Path) -> tuple[Aspect, ...]:
     """Score every aspect from the artifacts on disk. Pure read -- nothing here measures."""
     return tuple(score_aspect(key, ceiling, build(root)) for key, ceiling, build in ASPECTS)
+
+
+def desk_binding_constraint(aspects: tuple[Aspect, ...]) -> dict[str, Any]:
+    """THE ONE LINE A WEEKLY SWEEP ACTS ON FIRST: the lowest-scoring component on the whole desk.
+
+    Per-aspect constraints are a queue of thirty-odd items, which is a queue nobody works. This
+    picks the single desk-wide minimum and names the artifact, the reading and the specific next
+    thing that raises it.
+
+    IT IS THE MINIMUM OVER MEASURED COMPONENTS ONLY, and the count of unmeasured ones is published
+    beside it rather than folded in. An unmeasured component has no score to be the minimum OF --
+    treating it as a zero would make "the thing nobody measures" permanently the top priority,
+    which sounds rigorous and is actually how a board full of absent measurements out-shouts a
+    real defect. Unmeasured work has its own list, and its own instruction: measure it.
+
+    The tie-break is (score, aspect key, component key) -- deterministic, so the same desk state
+    always produces the same instruction and a reader can tell a real change of priority from
+    dictionary ordering.
+    """
+    scored = [(a, c, c.score) for a in aspects for c in a.components
+              if c.state == MEASURED and c.score is not None]
+    unmeasured = [(a, c) for a in aspects for c in a.components if c.state == UNMEASURED]
+    if not scored:
+        return {
+            "state": UNMEASURED,
+            "aspect": None, "component": None, "score": None, "artifact": None,
+            "n_unmeasured_components": len(unmeasured),
+            "constraint": ("NOTHING IS MEASURED. There is no desk-wide minimum because there is "
+                           "no reading -- the binding constraint is the measurement itself. Start "
+                           "with the unmeasured_components list; every row names the artifact that "
+                           "would settle it."),
+        }
+    worst_aspect, worst, score = min(scored, key=lambda t: (t[2] or 0.0, t[0].key, t[1].key))
+    return {
+        "state": MEASURED,
+        "aspect": worst_aspect.key,
+        "component": worst.key,
+        "score": score,
+        "artifact": worst.artifact,
+        "n_unmeasured_components": len(unmeasured),
+        "detail": worst.detail,
+        "constraint": worst.constraint,
+        "_": (f"LOWEST-SCORING COMPONENT DESK-WIDE: {worst_aspect.key}.{worst.key} at "
+              f"{score:.1f}/10 out of {worst.artifact}. This is the line to work first. "
+              f"{len(unmeasured)} component(s) are UNMEASURED and are NOT eligible to be this "
+              "minimum -- an absent measurement has no score, and letting it win here would bury "
+              "every real defect under things nobody has looked at yet."),
+    }
 
 
 # --------------------------------------------------------------------------------------------
@@ -760,6 +2134,19 @@ def load_marks(path: Path) -> Marks:
 def _component_marks(aspect: Aspect, marks: Marks) -> dict[str, float]:
     prefix = f"{aspect.key}."
     return {k: v for k, v in marks.component_high_water.items() if k.startswith(prefix)}
+
+
+def _new_components(aspect: Aspect, marks: Marks) -> list[str]:
+    """Components carrying a reading today that have NO high-water mark of their own yet.
+
+    Two shapes count as new and both are the desk measuring MORE: a component that did not exist
+    on the last run, and one that existed but was UNMEASURED (an unmeasured component never sets a
+    mark, so it has none). The reverse direction -- measured yesterday, unmeasured today -- is a
+    FALL and is caught in _fall_causes, never here.
+    """
+    prior = _component_marks(aspect, marks)
+    return [c.key for c in aspect.components
+            if c.state == MEASURED and f"{aspect.key}.{c.key}" not in prior]
 
 
 def _fall_causes(aspect: Aspect, marks: Marks) -> list[str]:
@@ -813,16 +2200,30 @@ def ratchet(aspects: tuple[Aspect, ...], marks: Marks,
 
         score = a.score if a.score is not None else 0.0
         fell_aspect = mark is not None and score < mark - EPS
-        if fell_aspect or causes:
-            cause = "; ".join(causes)
-            if not cause:
-                # A fall the component marks cannot explain means the COMPONENT SET changed. It is
-                # still a fall and it still needs a cause -- saying so is the check refusing to
-                # accept an unexplained regression rather than quietly logging one.
-                cause = (f"aspect mean {mark:.1f} -> {score:.1f} with no component below its own "
-                         "mark -- the component SET changed. NAME the cause in the diff; an "
-                         "unexplained fall is never accepted.")
+        added = _new_components(a, marks)
+        if causes:
+            movement, cause = FELL, "; ".join(causes)
+        elif fell_aspect and mark is not None and added:
+            # THE DESK IS GRADING ITSELF ON MORE, and nothing that was already graded got worse.
+            # Every prior component still holds its own mark (or this branch would be unreachable
+            # -- `causes` is built from exactly that comparison), so the drop is arithmetic from a
+            # wider denominator, not a capability going backwards. The old mark is KEPT and printed
+            # beside today's reading, because the honest statement is "9.0 was measured over less".
+            movement = WIDENED
+            cause = (f"aspect mean {mark:.1f} -> {score:.1f} because the aspect now grades "
+                     f"{len(a.components)} component(s), {len(added)} of them newly measured "
+                     f"({', '.join(added)}). NO component that already had a mark is below it. "
+                     f"The high-water mark STAYS at {mark:.1f}: it was earned over a narrower set "
+                     f"and today's {score:.1f} is the wider, truer reading. Next: "
+                     f"{a.binding_constraint}")
+        elif fell_aspect and mark is not None:
+            # A fall the component marks cannot explain AND no new component to explain it. It is
+            # a fall and it needs a cause -- saying so is the check refusing to accept an
+            # unexplained regression rather than quietly logging one.
             movement = FELL
+            cause = (f"aspect mean {mark:.1f} -> {score:.1f} with no component below its own "
+                     "mark and no component newly added -- the component SET changed some other "
+                     "way. NAME the cause in the diff; an unexplained fall is never accepted.")
         elif mark is None:
             movement, cause = NEW, f"first reading recorded at {score:.1f}: {a.binding_constraint}"
             raised_any = True
@@ -856,8 +2257,13 @@ def ratchet(aspects: tuple[Aspect, ...], marks: Marks,
 
 
 def _status(verdicts: list[Verdict], marks: Marks, now: datetime, raised_any: bool) -> str:
-    """REGRESSED > STALLED > RAISED > FLATLINE. A fall outranks everything: it is the one state
-    the ratchet exists to make impossible to reach quietly."""
+    """REGRESSED > STALLED > RAISED > WIDENED > FLATLINE. A fall outranks everything: it is the one
+    state the ratchet exists to make impossible to reach quietly.
+
+    WIDENED sits BELOW stalled deliberately. Grading yourself on more is good, but it is not a
+    RAISE and must never reset the stall clock -- otherwise "add another component" would be the
+    cheap way to look busy for another seven days without any capability moving.
+    """
     if any(v.movement in (FELL, WENT_DARK) for v in verdicts):
         return "REGRESSED"
     if raised_any:
@@ -865,6 +2271,8 @@ def _status(verdicts: list[Verdict], marks: Marks, now: datetime, raised_any: bo
     last = _parse_ts(marks.last_raise_at)
     if last is not None and now - last > timedelta(days=STALL_DAYS):
         return "STALLED"
+    if any(v.movement == WIDENED for v in verdicts):
+        return WIDENED
     return "FLATLINE"
 
 
@@ -907,6 +2315,9 @@ def build_artifact(aspects: tuple[Aspect, ...], marks: Marks, verdicts: list[Ver
         "last_raise_at": marks.last_raise_at,
         "days_since_raise": days_since_raise(marks, now),
         "n_raises": marks.n_raises,
+        # THE WEEKLY SWEEP'S FIRST LINE. Everything else on this page is a list; this is an
+        # instruction.
+        "binding_constraint": desk_binding_constraint(aspects),
         "high_water": marks.aspect_high_water,
         "component_high_water": marks.component_high_water,
         "aspects": [
@@ -933,6 +2344,11 @@ def build_artifact(aspects: tuple[Aspect, ...], marks: Marks, verdicts: list[Ver
                       for v in verdicts if v.movement in (FLATLINE, AT_CEILING)],
         "raised": [{"aspect": v.aspect, "score": v.score, "detail": v.cause}
                    for v in verdicts if v.movement in (RAISED, NEW)],
+        # NOT a defect list. An aspect whose mean fell purely because it now grades MORE, with
+        # nothing that was already graded getting worse. The old mark is kept beside it.
+        "widened": [{"aspect": v.aspect, "score": v.score, "high_water": v.high_water,
+                     "detail": v.cause}
+                    for v in verdicts if v.movement == WIDENED],
         "unmeasured": [{"aspect": v.aspect, "why": v.cause}
                        for v in verdicts if v.movement == UNMEASURED],
         "unmeasured_components": unmeasured_components,
