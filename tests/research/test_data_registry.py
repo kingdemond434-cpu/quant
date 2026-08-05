@@ -12,12 +12,19 @@ history with no consumer must be surfaced, not silently carried.
 from __future__ import annotations
 
 import json
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 import pytest
+from scripts.build_data_registry import main as build_registry
 
+from libs.research.capability_ratchet import read_capability
 from libs.research.data_registry import (
+    NOT_READABLE_HERE,
+    _days_from_epoch,
+    _iso_day,
     REPL_PERISHABLE,
     REPL_PROPRIETARY,
     REPL_REFETCHABLE,
@@ -25,9 +32,12 @@ from libs.research.data_registry import (
     DataAsset,
     build,
     classify_replication,
+    measure_gaps,
     measure_span,
     score,
 )
+
+REPO = Path(__file__).resolve().parents[2]
 
 
 def _parquet(p: Path, days: int, rows: int, symbols: int = 1) -> None:
@@ -218,3 +228,361 @@ class TestTheRealRepo:
         for a in absent:
             assert a.span.days is None, f"{a.id}: absent must never read as a zero-day span"
             assert any("NOT PRESENT" in n for n in a.notes)
+
+
+# ------------------------------------------------------------------------------------------
+# 2026-08-05: SPANS CARRY THEIR HOLES, AND ABSENCE CARRIES AN ADDRESS.
+#
+# Row #77's overstatement had a second home the original fix did not close: `first..last` is
+# ELAPSED time, and an organ choosing what to test deeply reads it as EVIDENCE. `t = SR*sqrt(years)`
+# is the only lever gate_power_audit.md found moves power, and 119 of 228 recorded negatives are
+# already UNDERPOWERED, so a span quoted 60x too long (data/exchange_announcements.jsonl reads 6.45
+# elapsed years over 38 observed days) is not a cosmetic error -- it is a test that was never
+# powered being planned as though it were.
+# ------------------------------------------------------------------------------------------
+
+
+def _jsonl(p: Path, days: list[str], per_day: int = 1) -> None:
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text("".join(json.dumps({"ts": d, "v": i}) + "\n"
+                         for d in days for i in range(per_day)), "utf-8")
+
+
+def _repo(root: Path, *, asset: str = "data/feed.jsonl", days: list[str] | None = None) -> None:
+    """A minimal checkout: one collector that WRITES an asset, one organ that READS it."""
+    (root / "scripts").mkdir(parents=True, exist_ok=True)
+    (root / "scripts/collector.py").write_text(
+        f'import json\n\ndef go(rec):\n    open("{asset}", "a").write(json.dumps(rec))\n', "utf-8")
+    (root / "scripts/organ.py").write_text(f'PATH = "{asset}"\n', "utf-8")
+    if days is not None:
+        _jsonl(root / asset, days)
+
+
+class TestAnInternalGapIsSubtractedFromEvidence:
+    """A 5-year span with a 2-year hole is 3 years of evidence and must never be quoted as 5."""
+
+    def test_a_hole_is_reported_with_its_size_and_its_dates(self, tmp_path: Path) -> None:
+        p = tmp_path / "gappy.jsonl"
+        _jsonl(p, ["2026-01-01", "2026-01-02", "2026-02-01", "2026-02-02"])
+        span = measure_span(p)[0]
+        assert span.measured and span.days == 33, "elapsed time is still reported"
+        assert span.gapped and span.gap_days == 29
+        assert span.n_gaps == 1
+        assert span.largest_gap_days == 29
+        assert span.largest_gap_from == "2026-01-03" and span.largest_gap_to == "2026-01-31"
+
+    def test_evidence_years_is_observed_time_not_elapsed_time(self, tmp_path: Path) -> None:
+        p = tmp_path / "gappy.jsonl"
+        # 2 years elapsed, ~10 days of it observed: the exact shape that oversizes a t-stat
+        _jsonl(p, ["2024-01-01", "2024-01-02", "2024-01-03", "2025-12-30", "2025-12-31"])
+        span = measure_span(p)[0]
+        assert span.years is not None and span.years > 1.9, "elapsed is ~2y"
+        assert span.evidence_years is not None
+        assert span.evidence_years < 0.02, "5 observed days is 0.014y of evidence, never 2y"
+        assert span.evidence_years < span.years
+
+    def test_gap_days_and_observed_days_can_never_quietly_disagree(self, tmp_path: Path) -> None:
+        p = tmp_path / "g.jsonl"
+        _jsonl(p, ["2026-03-01", "2026-03-05", "2026-03-06", "2026-03-20"])
+        span = measure_span(p)[0]
+        assert span.days is not None and span.observed_days is not None
+        assert span.gap_days == span.days - span.observed_days, "the identity IS the guard"
+
+    def test_a_contiguous_series_reports_zero_gap_and_full_evidence(self, tmp_path: Path) -> None:
+        p = tmp_path / "clean.jsonl"
+        _jsonl(p, [f"2026-01-0{i}" for i in range(1, 10)])
+        span = measure_span(p)[0]
+        assert span.gap_days == 0 and span.n_gaps == 0 and not span.gapped
+        assert span.evidence_years == span.years, "no holes means elapsed IS evidence"
+
+    def test_many_rows_on_few_days_cannot_manufacture_evidence(self, tmp_path: Path) -> None:
+        """Row #77's own overstatement, restated against the new field: rows are not days."""
+        p = tmp_path / "dense.jsonl"
+        _jsonl(p, ["2026-01-01", "2026-06-30"], per_day=5_000)
+        span, rows, _ = measure_span(p)
+        assert rows == 10_000
+        assert span.observed_days == 2, "10k rows over 2 days is 2 days"
+        assert span.evidence_years is not None and span.evidence_years < 0.01
+
+    def test_the_row_says_the_overstatement_out_loud(self, tmp_path: Path) -> None:
+        _repo(tmp_path, days=["2020-01-01", "2026-01-01"])
+        a = next(x for x in build(tmp_path) if x.id == "feed")
+        note = "\n".join(a.notes)
+        assert "GAPPED" in note, "a reader must not have to join two fields to see the hole"
+        assert "of evidence, NOT" in note
+
+    def test_a_sampled_span_leaves_gaps_unmeasured_rather_than_clean(self, tmp_path: Path) -> None:
+        """UNMEASURED and MEASURED-AND-CONTINUOUS are the pair this module refuses to conflate."""
+        for s in range(9):
+            _parquet(tmp_path / f"data/lake/bronze/crypto/S{s}/D1/p.parquet", days=30, rows=30)
+        sampled = next(x for x in build(tmp_path) if x.id == "lake_crypto")
+        assert sampled.span.measured
+        assert sampled.span.gap_days is None, "a 3-of-9 sample cannot prove the other 6 are whole"
+        assert sampled.span.evidence_years is None
+        assert not sampled.span.gapped, (
+            "'gapped' means holes were FOUND, never merely never looked for")
+        deep = next(x for x in build(tmp_path, deep=True) if x.id == "lake_crypto")
+        assert deep.span.gap_days == 0, "reading every member CAN prove it"
+
+
+class TestARaggedPanelIsNotItsUnion:
+    """25 symbols whose union spans 5.7 years is not a 25-symbol 5.7-year panel."""
+
+    def _panel(self, root: Path, long_syms: int, short_syms: int) -> None:
+        for s in range(long_syms):
+            _parquet(root / f"data/lake/bronze/crypto/L{s}/D1/p.parquet", days=400, rows=400)
+        for s in range(short_syms):
+            p = root / f"data/lake/bronze/crypto/S{s}/D1/p.parquet"
+            p.parent.mkdir(parents=True, exist_ok=True)
+            dates = pd.date_range("2026-06-01", periods=60, freq="D")
+            pd.DataFrame([{"date": d.date().isoformat(), "v": 1.0} for d in dates]).to_parquet(p)
+
+    def test_the_balanced_window_is_the_one_every_partition_covers(self, tmp_path: Path) -> None:
+        self._panel(tmp_path, long_syms=3, short_syms=2)
+        a = next(x for x in build(tmp_path, deep=True) if x.id == "lake_crypto")
+        assert a.span.days == 400, "the union is still reported"
+        assert a.span.balanced_days is not None and a.span.balanced_days < a.span.days
+        assert a.span.balanced_first == "2026-06-01"
+
+    def test_a_ragged_panel_says_so(self, tmp_path: Path) -> None:
+        self._panel(tmp_path, long_syms=3, short_syms=2)
+        a = next(x for x in build(tmp_path, deep=True) if x.id == "lake_crypto")
+        assert any("RAGGED PANEL" in n for n in a.notes)
+
+    def test_a_square_panel_is_not_flagged(self, tmp_path: Path) -> None:
+        self._panel(tmp_path, long_syms=4, short_syms=0)
+        a = next(x for x in build(tmp_path, deep=True) if x.id == "lake_crypto")
+        assert a.span.balanced_days == a.span.days
+        assert not any("RAGGED PANEL" in n for n in a.notes)
+
+
+class TestNotReadableHereNeverCountsAsMeasured:
+    """The moat tape and the recorder output live on the VPS. This box must say so, with a path."""
+
+    def test_an_absent_path_is_flagged_unreadable_and_names_itself(self, tmp_path: Path) -> None:
+        span = measure_span(tmp_path / "data/moat/execution_tape/trades.jsonl")[0]
+        assert not span.readable_here
+        assert span.missing_path is not None
+        assert span.missing_path.endswith("data/moat/execution_tape/trades.jsonl")
+        assert not span.measured and span.days is None and span.observed_days is None
+
+    def test_the_note_carries_the_exact_missing_path(self, tmp_path: Path) -> None:
+        _repo(tmp_path, asset="data/moat/execution_tape/cashcarry_trades.jsonl")
+        a = next(x for x in build(tmp_path) if x.id == "cashcarry_trades")
+        note = "\n".join(a.notes)
+        assert NOT_READABLE_HERE in note
+        assert "data/moat/execution_tape/cashcarry_trades.jsonl" in note, "an address, not a shrug"
+        assert a.span.missing_path == "data/moat/execution_tape/cashcarry_trades.jsonl"
+
+    def test_it_is_never_counted_among_the_measured(self, tmp_path: Path) -> None:
+        _repo(tmp_path, asset="data/gone.jsonl")
+        assets = build(tmp_path)
+        assert assets, "the asset is still DECLARED -- it must appear, just not as measured"
+        assert not any(a.span.measured for a in assets)
+        assert all(a.span.days is None for a in assets), "absent is never a zero-day span"
+
+    def test_zero_is_never_substituted_for_unknown(self, tmp_path: Path) -> None:
+        _repo(tmp_path, asset="data/gone.jsonl")
+        a = next(x for x in build(tmp_path) if x.id == "gone")
+        for value in (a.span.days, a.span.years, a.span.observed_days, a.span.gap_days,
+                      a.span.evidence_years, a.rows, a.bytes):
+            assert value is None, "a guess of 0 is the failure this whole module exists to prevent"
+
+
+class TestTheNpzPanelIsDiscoveredAndMeasured:
+    """Row #77's understatement, third instance. ``data/binance_vision`` is 55 files of USD-M perp
+    history -- the LONGEST thing this checkout can measure -- and both existing sweeps were blind
+    to it: the flat scan only knows parquet/jsonl, the lake sweep only walks data/lake/bronze."""
+
+    def _npz(self, p: Path, days: list[str]) -> None:
+        import numpy as np
+        p.parent.mkdir(parents=True, exist_ok=True)
+        ms = [datetime.fromisoformat(d).replace(tzinfo=UTC).timestamp() * 1000.0 for d in days]
+        np.savez_compressed(p, open_time=np.asarray(ms, dtype="float64"),
+                            close=np.ones(len(ms), dtype="float64"))
+
+    def _days(self, first: str, n: int, skip: set[str] | None = None) -> list[str]:
+        start = date.fromisoformat(first)
+        out = [(start + timedelta(days=i)).isoformat() for i in range(n)]
+        return [d for d in out if d not in (skip or set())]
+
+    def test_a_cache_dir_becomes_one_asset_per_interval(self, tmp_path: Path) -> None:
+        self._npz(tmp_path / "data/binance_vision/BTCUSDT-1d-2020-12-2026-07.npz",
+                  self._days("2020-12-01", 60))
+        self._npz(tmp_path / "data/binance_vision/BTCUSDT-5m-2023-08-2026-07.npz",
+                  self._days("2023-08-01", 30))
+        ids = [a.id for a in build(tmp_path)]
+        assert "binance_vision_1d" in ids and "binance_vision_5m" in ids, (
+            "a daily panel and a 5-minute panel bound different studies -- one span for both "
+            "would be the same conflation row #77 was about")
+
+    def test_a_partition_hole_survives_into_the_note(self, tmp_path: Path) -> None:
+        """The union span HIDES a per-symbol hole: BTC's dead month is covered by the other 24."""
+        hole = {(date(2021, 1, 1) + timedelta(days=i)).isoformat() for i in range(31)}
+        self._npz(tmp_path / "data/binance_vision/BTCUSDT-1d-2020-12-2026-07.npz",
+                  self._days("2020-12-01", 120, skip=hole))
+        self._npz(tmp_path / "data/binance_vision/ETHUSDT-1d-2020-12-2026-07.npz",
+                  self._days("2020-12-01", 120))
+        a = next(x for x in build(tmp_path) if x.id == "binance_vision_1d")
+        assert a.span.gap_days == 0, "the UNION really is whole -- ETH covers BTC's dead month"
+        assert any("PARTITION HOLES" in n for n in a.notes), (
+            "and that is exactly why the per-partition holes must be named separately")
+        assert any("BTCUSDT" in n for n in a.notes)
+
+    def test_breadth_is_the_symbol_count_and_rows_are_real(self, tmp_path: Path) -> None:
+        for sym in ("BTCUSDT", "ETHUSDT", "SOLUSDT"):
+            self._npz(tmp_path / f"data/binance_vision/{sym}-1d-2023-08-2026-07.npz",
+                      self._days("2023-08-01", 40))
+        a = next(x for x in build(tmp_path) if x.id == "binance_vision_1d")
+        assert a.breadth == 3
+        assert a.rows == 120, "every npz member is opened, so the row total is real, not sampled"
+        assert a.span.observed_days == 40
+
+
+class TestMeasureGapsIsHonestAtTheEdges:
+    def test_a_single_day_has_no_measurable_gap(self) -> None:
+        assert measure_gaps(["2026-01-01"]) is None, "one point cannot prove or disprove a hole"
+
+    def test_an_empty_day_set_is_none_not_zero(self) -> None:
+        assert measure_gaps([]) is None
+
+    def test_unparseable_days_do_not_fabricate_a_gap(self) -> None:
+        assert measure_gaps(["not-a-date", "also-not"]) is None
+
+    def test_the_largest_run_is_the_one_reported(self) -> None:
+        g = measure_gaps(["2026-01-01", "2026-01-03", "2026-01-20"])
+        assert g is not None
+        assert g.n_gaps == 2 and g.gap_days == 17
+        assert g.largest_gap_days == 16
+        assert g.largest_gap_from == "2026-01-04" and g.largest_gap_to == "2026-01-19"
+
+
+class TestTheArtifactSchemaIsStable:
+    """The registry is read by the capability ratchet, knowledge_engine and check_utilisation.
+    Its top-level shape is a contract, and new fields may only be ADDED beside the old ones."""
+
+    #: keys the artifact carried before the span work, none of which may disappear
+    LEGACY = ("generated", "deep", "counts", "longest_span_days", "widest_breadth",
+              "proprietary", "unread_long_history", "unscheduled_collectors", "assets")
+    #: the ratchet's own contract: libs/research/capability_ratchet._data_coverage reads exactly
+    #: counts.measured over counts.assets, and nothing else in this file
+    RATCHET = ("assets", "measured", "absent")
+
+    def _payload(self, tmp_path: Path) -> dict[str, Any]:
+        _repo(tmp_path, days=["2026-01-01", "2026-01-02", "2026-03-01"])
+        (tmp_path / "scripts/ghost.py").write_text('P = "data/vanished.jsonl"\n', "utf-8")
+        assert build_registry(["--root", str(tmp_path)]) == 0
+        return json.loads((tmp_path / "data/data_assets.json").read_text("utf-8"))
+
+    def test_every_legacy_key_survives(self, tmp_path: Path) -> None:
+        doc = self._payload(tmp_path)
+        for key in self.LEGACY:
+            assert key in doc, f"{key} is read by an organ that this pass does not own"
+
+    def test_the_ratchets_counts_contract_is_intact(self, tmp_path: Path) -> None:
+        counts = self._payload(tmp_path)["counts"]
+        for key in self.RATCHET:
+            assert isinstance(counts[key], int)
+        assert counts["measured"] <= counts["assets"]
+        assert counts["absent"] + counts["measured"] <= counts["assets"]
+
+    def test_measured_and_absent_are_disjoint_and_add_up(self, tmp_path: Path) -> None:
+        doc = self._payload(tmp_path)
+        rows = doc["assets"]
+        assert doc["counts"]["assets"] == len(rows)
+        assert doc["counts"]["measured"] == sum(1 for r in rows
+                                                if r["span"]["status"] == "measured")
+        assert doc["counts"]["absent"] == sum(1 for r in rows if not r["span"]["readable_here"])
+
+    def test_every_span_row_carries_the_depth_fields(self, tmp_path: Path) -> None:
+        doc = self._payload(tmp_path)
+        assert doc["spans"], "at least one asset is measurable in the fixture"
+        for row in doc["spans"]:
+            for key in ("id", "years", "evidence_years", "days", "observed_days", "gap_days",
+                        "n_gaps", "largest_gap_days", "rows", "first", "last"):
+                assert key in row
+
+    def test_every_unreadable_row_names_its_missing_path(self, tmp_path: Path) -> None:
+        doc = self._payload(tmp_path)
+        assert doc["not_readable_here"], "the fixture declares a path that is not on disk"
+        for row in doc["not_readable_here"]:
+            assert row["status"] == NOT_READABLE_HERE
+            assert row["missing_path"], "a count with no address is not actionable"
+
+    def test_the_artifact_is_valid_json_and_ranked_deepest_first(self, tmp_path: Path) -> None:
+        spans = self._payload(tmp_path)["spans"]
+        years = [r["evidence_years"] or 0.0 for r in spans]
+        assert years == sorted(years, reverse=True), (
+            "'which source is long enough to test on' must be answerable by reading the top row")
+
+
+class TestTheRatchetCountActuallyRises:
+    """The point of the whole pass: data_coverage.assets_with_measured_span must be able to move,
+    and it must move BECAUSE spans were measured -- never because the denominator was trimmed."""
+
+    def _artifact(self, root: Path, *, measured: int, assets: int) -> None:
+        (root / "data").mkdir(parents=True, exist_ok=True)
+        (root / "data/data_assets.json").write_text(json.dumps({
+            "generated": "2026-08-05T00:00:00+00:00", "deep": True,
+            "counts": {"assets": assets, "measured": measured,
+                       "absent": assets - measured, "not_readable_here": assets - measured},
+            "assets": [], "spans": [], "not_readable_here": []}), "utf-8")
+
+    def _score(self, root: Path) -> float:
+        aspect = next(a for a in read_capability(root) if a.key == "data_coverage")
+        comp = next(c for c in aspect.components if c.key == "assets_with_measured_span")
+        return comp.score
+
+    def test_measuring_more_assets_raises_the_component(self, tmp_path: Path) -> None:
+        before, after = tmp_path / "before", tmp_path / "after"
+        self._artifact(before, measured=2, assets=46)
+        self._artifact(after, measured=16, assets=46)
+        assert self._score(after) > self._score(before)
+
+    def test_the_score_is_ten_times_the_measured_fraction(self, tmp_path: Path) -> None:
+        self._artifact(tmp_path, measured=16, assets=98)
+        assert self._score(tmp_path) == pytest.approx(10.0 * 16 / 98, abs=0.05)
+
+    def test_the_real_artifact_on_this_box_is_readable_by_the_ratchet(self) -> None:
+        """End to end: what build_data_registry writes is what the ratchet counts."""
+        doc = json.loads((REPO / "data/data_assets.json").read_text("utf-8"))
+        aspect = next(a for a in read_capability(REPO) if a.key == "data_coverage")
+        comp = next(c for c in aspect.components if c.key == "assets_with_measured_span")
+        assert comp.state == "MEASURED"
+        assert comp.score == pytest.approx(
+            10.0 * doc["counts"]["measured"] / doc["counts"]["assets"], abs=0.06)
+
+    def test_an_unreadable_asset_cannot_inflate_the_numerator(self, tmp_path: Path) -> None:
+        """The one way this score could be faked: counting declared-but-absent rows as measured."""
+        _repo(tmp_path, asset="data/gone.jsonl")
+        assert build_registry(["--root", str(tmp_path)]) == 0
+        counts = json.loads(
+            (tmp_path / "data/data_assets.json").read_text("utf-8"))["counts"]
+        assert counts["measured"] == 0 and counts["assets"] >= 1
+        assert self._score(tmp_path) == 0.0
+
+
+class TestTheFastAndSlowClockReadersAgree:
+    """The npz path reads its clock vectorised; the jsonl path reads it per element. Two readers
+    of the same instant are two chances to disagree, so the agreement is asserted, not assumed."""
+
+    def test_they_return_the_same_days_across_every_epoch_unit(self) -> None:
+        import numpy as np
+
+        base = datetime(2024, 3, 1, 12, 0, tzinfo=UTC).timestamp()
+        stamps = [base + 3600.0 * i for i in range(0, 24 * 40, 7)]
+        for mult in (1.0, 1e3, 1e6, 1e9):     # seconds, ms, us, ns -- all legal in this desk's data
+            arr = np.asarray([s * mult for s in stamps], dtype="float64")
+            fast = _days_from_epoch(arr)
+            slow = {d for d in (_iso_day(v) for v in arr.tolist()) if d}
+            assert fast == slow, f"the two clock readers disagree at x{mult:g}"
+
+    def test_a_non_numeric_clock_falls_back_rather_than_reading_dateless(self) -> None:
+        import numpy as np
+
+        assert _days_from_epoch(np.asarray(["2026-01-01", "2026-01-02"], dtype=object)) is None
+
+    def test_an_empty_clock_is_an_empty_day_set_not_a_failure(self) -> None:
+        import numpy as np
+
+        assert _days_from_epoch(np.asarray([], dtype="float64")) == set()
