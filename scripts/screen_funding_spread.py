@@ -31,7 +31,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -46,6 +46,7 @@ if str(_ROOT) not in sys.path:
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 from libs.ops.lawful import guard as _law_guard  # noqa: E402
+from libs.research.funding_mechanics import settlement_lag_periods  # noqa: E402
 
 #: venue -> (jsonl path, timestamp field candidates, symbol field candidates, rate field
 #: candidates). Collectors were written independently and do NOT share a schema, so the reader
@@ -78,9 +79,23 @@ def _norm_symbol(raw: object) -> str:
     return {"XBT": "BTC"}.get(s.strip("-_"), s.strip("-_"))
 
 
-def _hour_key(raw: object) -> str | None:
+#: Nominal settlement interval used to convert a venue's payment LAG into hours. BitMEX XBTUSD
+#: measures 11,126 of 11,147 gaps at exactly 8.0h, so 8h is the right nominal for the lag shift;
+#: per-symbol interval switching is a separate fence (funding_mechanics.detect_interval_switches).
+_NOMINAL_INTERVAL_H = 8.0
+
+
+def _hour_key(raw: object, shift_h: float = 0.0) -> str | None:
     """Bucket to the hour -- funding stamps differ by seconds across venues; joining on exact
-    timestamps yields near-zero overlap and a fake null."""
+    timestamps yields near-zero overlap and a fake null.
+
+    ``shift_h`` moves the stamp to the hour the rate is actually PAID. OKX and BitMEX apply a rate
+    ONE PERIOD AFTER the window that computed it, so bucketing BitMEX on its computation stamp and
+    joining it to Binance -- which pays immediately -- compared a rate already settled against one
+    that had not settled yet, a full 8h of cross-venue misalignment on the exact series this screen
+    is built from. §26(4): the alignment is now DECLARED (see `alignment` in the report), not
+    inferred by whoever reads the output.
+    """
     s = str(raw or "")
     try:
         if s.replace(".", "", 1).isdigit():
@@ -91,12 +106,29 @@ def _hour_key(raw: object) -> str | None:
             dt = dt if dt.tzinfo else dt.replace(tzinfo=UTC)
     except (ValueError, OSError, OverflowError):
         return None
+    if shift_h:
+        dt += timedelta(hours=shift_h)
     return dt.strftime("%Y-%m-%dT%H")
 
 
+def venue_alignment(venue: str) -> tuple[float, str]:
+    """(hours to shift, provenance) for ``venue``'s payment timing.
+
+    REFUSES TO GUESS. A venue whose mechanics this desk has not read gets a 0.0 shift and says so
+    as UNREAD -- it does NOT silently inherit Binance's immediate-payment convention, which is the
+    assumption that produced the misalignment in the first place. Same discipline as the absent-file
+    branch above: report the gap, never paper over it.
+    """
+    lag = settlement_lag_periods(venue)
+    if lag is None:
+        return 0.0, "UNREAD"
+    return _NOMINAL_INTERVAL_H * lag, ("PAYMENT-LAGGED" if lag else "IMMEDIATE")
+
+
 def load_venue(root: Path, venue: str) -> dict[tuple[str, str], float]:
-    """(symbol, hour) -> funding rate. Missing file -> empty dict (reported by the caller)."""
+    """(symbol, PAYMENT hour) -> funding rate. Missing file -> empty dict (reported by caller)."""
     rel, tsk, symk, ratek = _VENUES[venue]
+    shift_h, _ = venue_alignment(venue)
     out: dict[tuple[str, str], float] = {}
     try:
         lines = (root / rel).read_text("utf-8", errors="ignore").splitlines()
@@ -111,8 +143,8 @@ def load_venue(root: Path, venue: str) -> dict[tuple[str, str], float]:
             continue
         if not isinstance(row, dict):
             continue
-        hour, sym, rate = _hour_key(_first(row, tsk)), _norm_symbol(_first(row, symk)), \
-            _first(row, ratek)
+        hour, sym, rate = _hour_key(_first(row, tsk), shift_h), \
+            _norm_symbol(_first(row, symk)), _first(row, ratek)
         if hour and sym and isinstance(rate, (int, float)):
             out[(sym, hour)] = float(rate)
     return out
