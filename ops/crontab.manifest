@@ -1689,6 +1689,23 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # CONFIDENCE: measured (cohort 12/12 read from libs/research/slot_registry.derive_slots).
 45 8 * * * cd "$QUANT_ROOT" && flock -n data/.cron_paper_spawner.lock .venv/bin/python scripts/run_paper_sleeve_spawner.py >> data/cro_ai_logs/paper_sleeve_spawner.log 2>&1
 
+# PAPER-SLEEVE FORWARD RUNNER -- the organ that makes a spawned clock BREATHE, and the last link
+# in the chain between mining and a survivor. On 2026-08-05 the desk spawned ten forward clocks for
+# the first time in its life and every one read `evidence: UNMEASURED`, because nothing ran them:
+# slot_registry._EVIDENCE mapped eight hardcoded names to eight hardcoded artifacts, so any sleeve
+# spawned afterwards could never publish a day count, never accrue, and NEVER RESOLVE -- born,
+# registered, charged its multiplicity, structurally unable to finish.
+# CEILING TYPE (L1.28c) is DATA-ARRIVAL: a sleeve accrues only when its SOURCE SCREEN regenerates,
+# and the sources are daily at most (primary_market_flow 00:17, vol_risk_premium 10:37, unlock
+# series Mon 06:25). 11:15 is the first slot after the LAST of them lands, so a run always sees the
+# day's new rows; running earlier would read yesterday's VRP and record a false NO-EVIDENCE.
+# EVIDENCE: scripts/run_paper_sleeve_forward.py -> web/paper_sleeve_forward.json + the append-only
+# ledger data/paper_sleeve_forward.jsonl. First live run 2026-08-05: 10 sleeves, all NO-EVIDENCE
+# (correct -- spawned minutes earlier, no source had regenerated), each carrying its own
+# n_needed_for_forward_rejection: 116 rows for the fastest, 7,796 for the slowest.
+# CONFIDENCE: measured (row counts and n_needed read from the artifact, not estimated).
+15 11 * * * cd "$QUANT_ROOT" && flock -n data/.cron_paper_forward.lock .venv/bin/python scripts/run_paper_sleeve_forward.py >> data/cro_ai_logs/paper_sleeve_forward.log 2>&1
+
 # R0104 CAPABILITY RATCHET (owed-work, 2026-08-05). The principal's standing order -- every aspect
 # of the desk pushed toward 10/10 every day, non-exhaustively -- had NO INSTRUMENT: the per-aspect
 # rating existed only in conversation, so it could not ratchet, a fall left no trace, and nothing

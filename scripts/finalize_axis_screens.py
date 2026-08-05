@@ -232,6 +232,23 @@ NEXT = {
 
 
 def main() -> None:
+    # CONVERT FIRST. Every screen that writes its own schema is translated into the canonical
+    # `trials` shape before the correction layer looks at the directory, so a newer screen stops
+    # being INCOMPATIBLE-forever and starts being corrected like anything else. Measured
+    # 2026-08-05: 120 scored cells across four artifacts were sitting unreadable here while the
+    # desk reported "no survivors" -- output produced, never converted, never utilised.
+    if str(_ROOT) not in sys.path:
+        sys.path.insert(0, str(_ROOT))
+    from libs.research.screen_conversion import write_converted
+    conv = write_converted(_ROOT)
+    if conv["written"]:
+        print(f"converted {conv['n_cells']} scored cell(s) from {conv['n_artifacts']} artifact(s) "
+              f"into the canonical shape: {', '.join(conv['written'])}")
+    if conv["removed_stale"]:
+        print(f"  removed stale conversions (source gone): {', '.join(conv['removed_stale'])}")
+    for s in conv["skipped"]:
+        print(f"  NOT CONVERTED {s['path']}#{s['key']}: {s['why']}")
+
     summary = []
     missing: list[str] = []
     incompatible: list[str] = []
@@ -294,12 +311,28 @@ def main() -> None:
             # SHIFT_*_plus1d feeds the signal from the FUTURE; a strong score there is evidence of
             # contemporaneous co-movement (an ARTIFACT), which rule 8 says is never an edge.
             nm = t["name"]
-            is_ctrl = ("DENOM-CONTROL" in nm or "LOOKAHEAD-CONTROL" in nm
-                       or "SHIFT_" in nm or "_LAG1d" in nm)
-            if is_ctrl:
-                kind = ("future-peeking shift diagnostic" if "plus1d" in nm else
-                        "denomination artifact control" if "DENOM-CONTROL" in nm else
-                        "look-ahead control" if "LOOKAHEAD-CONTROL" in nm else
+            up = nm.upper().replace("_", "-")
+            # CASE- AND SEPARATOR-INSENSITIVE, and it must be. The original test matched the exact
+            # uppercase-hyphen spellings this layer's first three screens happened to use. The
+            # converted screens spell the same thing `lookahead_control`, so the match missed,
+            # execution fell to the `else` branch below, and that branch set is_candidate=True --
+            # which SPAWNED TWO DECLARED LOOK-AHEAD CONTROLS AS FORWARD CLOCKS on 2026-08-05
+            # (etf_creation_pressure|lookahead_control, stablecoin_net_mint_usdc|lookahead_control).
+            # A control exists to MEASURE a leak; promoting one is the rule-8 artifact-as-edge
+            # failure, and it would have spent two of twelve Holm slots confirming that the future
+            # predicts the present.
+            is_ctrl = any(k in up for k in ("DENOM-CONTROL", "LOOKAHEAD-CONTROL", "SHIFT-",
+                                            "-LAG1D", "-CONTROL"))
+            # A CONVERTER'S EXPLICIT DISQUALIFICATION IS NEVER UPGRADED HERE. Upstream knows things
+            # this name-matcher cannot see -- `alignment.is_lookahead_control`, a diagnostic build
+            # form -- so `is_candidate: False` arriving on the row is a decision, not a default,
+            # and no branch below may overwrite it with True.
+            pre_disqualified = t.get("is_candidate") is False
+            if is_ctrl or pre_disqualified:
+                kind = (str(t.get("conversion_disqualified")) if pre_disqualified and not is_ctrl
+                        else "future-peeking shift diagnostic" if "plus1d" in nm.lower() else
+                        "denomination artifact control" if "DENOM-CONTROL" in up else
+                        "look-ahead control" if "LOOKAHEAD-CONTROL" in up else
                         "conservative-lag robustness check")
                 t["is_candidate"] = False
                 t["verdict_adjusted"] = (

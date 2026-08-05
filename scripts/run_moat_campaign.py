@@ -46,6 +46,7 @@ from libs.research.moat_microstructure import (  # noqa: E402
     read_partition,
     resample,
 )
+from libs.validation.campaign_design import preflight  # noqa: E402
 from libs.validation.dsr import sharpe_ratio  # noqa: E402
 from libs.validation.economic_prior import MechanismType  # noqa: E402
 
@@ -139,6 +140,23 @@ def main() -> int:
     sh = np.array([sharpe_ratio(m[:, i]) for i in range(m.shape[1])])
     ppy = 365.0 * 24.0 * 3600_000.0 / args.bar_ms      # bars per year at this cadence
 
+    # CAN THIS CAMPAIGN SEE AN EDGE AT ALL -- asked BEFORE the compute is spent, not after.
+    # `n_trials` here is `m.shape[1]`, an ACCIDENT OF GENERATION VOLUME rather than a design
+    # decision, and until now nothing computed what that N did to the campaign's resolving power.
+    # The measured consequence is on the record: at T=310 / N=420 the DSR hurdle is an annualised
+    # Sharpe of 5.04 and the power against a TRUE annual Sharpe of 3 is 2.98%. The desk's
+    # 420-tested / 0-survivors history has been read repeatedly as a fact about the market; it is
+    # substantially a fact about the INSTRUMENT. `informative_null()` is what makes that
+    # difference readable in the artifact instead of arguable after the fact.
+    #
+    # IT NEVER BLOCKS. An UNDERPOWERED verdict LABELS the result; it does not veto the run,
+    # shrink the candidate set, or move a gate.
+    design = preflight(int(m.shape[1]), int(m.shape[0]), ppy=ppy)
+    print(f"design: {design.verdict} -- hurdle annSR {design.hurdle_annual_sharpe:.2f}, "
+          f"power at target {design.power_at_target:.1%}, "
+          f"a zero-survivor result {'IS' if design.informative_null() else 'is NOT'} "
+          "evidence about the market", flush=True)
+
     rows: list[dict[str, Any]] = []
     for i, nm in enumerate(names):
         # `ppy` is derived from the recorded bar width above -- the same number the row's own
@@ -163,6 +181,19 @@ def main() -> int:
                        "column that decides whether this was worth doing is oos_sharpe: the "
                        "2026-08-01 daily-bar campaign topped out at 0.100 across 129 textbook "
                        "mechanisms."),
+           # THE DESIGN, ON THE ARTIFACT. Without it a zero-survivor campaign reads as a verdict
+           # on the market when it may only be a verdict on the sample -- the first branch of the
+           # L1.25 diagnostic, and the reason this desk hand-ran a certification script weeks late
+           # to discover its own blindness.
+           "design": {"verdict": design.verdict,
+                      "n_trials": design.n_trials, "n_obs": design.n_obs,
+                      "hurdle_annual_sharpe": float(design.hurdle_annual_sharpe),
+                      "power_at_target": float(design.power_at_target),
+                      "target_true_sharpe": float(design.target_true_sharpe),
+                      "blind_below_annual_sharpe": design.blind_below_annual_sharpe,
+                      "cheapest_fix": design.cheapest_fix,
+                      "informative_null": bool(design.informative_null()),
+                      "note": design.note},
            "rows": rows}
     _OUT.write_text(json.dumps(report, indent=2), "utf-8")
 
