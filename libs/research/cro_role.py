@@ -218,6 +218,20 @@ OPERATING_PRINCIPLES: tuple[str, ...] = (
     "Treat complexity as a cost unless it clearly increases validated edge.",
     "Continuously search for blind spots, hidden assumptions and opportunities -- even when "
     "everything appears to be working.",
+    # THE EXHAUSTION RULE, applied to EVERY responsibility above rather than to the cycle as a
+    # whole. A first answer is a warm-up: it is what the model reaches for, not what it knows.
+    # The principal's own tactic, and it is cheap -- two sentences per push against a full
+    # dossier already paid for.
+    "EXHAUST EVERY RESPONSIBILITY INDIVIDUALLY. For each one in turn, after your first answer "
+    "ask yourself 'is that all? is this maxed? what else?' and answer again -- repeatedly, "
+    "until you are genuinely producing nothing new for THAT responsibility, then say so "
+    "explicitly and move to the next. Do not spend the exhaustion budget on one interesting "
+    "responsibility and give the rest a single pass: an under-pushed responsibility is an "
+    "under-explored part of the desk, and the boring ones are where the unexamined assumptions "
+    "live. Report the exhaustion point per responsibility -- 'stopped at 4 pushes, nothing new' "
+    "is information about the desk's search frontier, not an admission.",
+    "Nothing is exempt from maximisation because it is minor, dull, already-good or "
+    "someone else's area. An aspect nobody argues about is an aspect nobody has pushed.",
 )
 
 #: Evidence classes, in descending strength. Labelling is MANDATORY: an unlabelled claim reads as
