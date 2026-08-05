@@ -156,8 +156,29 @@ def build(*, equity_usd: float | None = None, growth: float = 1.0) -> dict[str, 
     # bootstrap signal and is deliberately distinct from `[]` (a history that exists and is empty).
     history, hist_summary = _merge_history(derived)
 
+    # R0265 DISPLACEMENT. Until now `free` was the whole story, so once the cohort read 12/12 every
+    # survivor was told to WAIT -- including behind clocks that had failed as INSTRUMENTS and could
+    # never resolve to let anyone through. Reclaiming those is not a relaxation and cannot be
+    # turned into one: it never touches an accruing clock, and it swaps one-for-one so the Holm
+    # cohort m is unchanged and no bar moves.
+    displacement = None
+    if derived is not None:
+        try:
+            from libs.research.slot_displacement import plan_displacement
+            displacement = plan_displacement(
+                list(derived.get("slots", []) or []),
+                [{"name": r.get("name", "?"), "runway": r.get("runway_days")} for r in queue],
+                cap=cap_slots)
+        except (ImportError, OSError, ValueError, KeyError, TypeError):
+            displacement = None
+
+    reclaimed = {d.challenger for d in displacement.displaced} if displacement else set()
     for i, r in enumerate(queue):
-        r["slot_action"] = "ADMIT-NOW" if i < free else f"WAIT (position {i - free + 1} in queue)"
+        if str(r.get("name", "?")) in reclaimed:
+            r["slot_action"] = "ADMIT-NOW (displacing a slot that cannot resolve)"
+        else:
+            r["slot_action"] = ("ADMIT-NOW" if i < free
+                                else f"WAIT (position {i - free + 1} in queue)")
 
     counts: dict[str, int] = {}
     for r in rows:
@@ -174,6 +195,20 @@ def build(*, equity_usd: float | None = None, growth: float = 1.0) -> dict[str, 
         "latency": latency.as_dict(),
         "latency_is_measured": latency.fully_measured,
         "slots": {"occupied": occupied, "cap": cap_slots, "free": free},
+        # UNMEASURED, not empty, when the registry could not be read: "no slot can be reclaimed"
+        # and "nobody looked" are different claims and only one of them is evidence.
+        "displacement": ({
+            "displaced": [{"slot": d.slot, "challenger": d.challenger,
+                           "requeue_as": d.requeue_as, "why": d.why}
+                          for d in displacement.displaced],
+            "protected": list(displacement.protected),
+            "blocked_unmeasured": list(displacement.blocked),
+            "waiting": list(displacement.waiting),
+            "m_before": displacement.m_before, "m_after": displacement.m_after,
+            "count_neutral": displacement.count_neutral,
+            "notes": list(displacement.notes),
+        } if displacement is not None else {"status": "UNMEASURED",
+                                            "why": "slot registry unreadable"}),
         "n_candidates": len(cands), "admission_counts": admissions, "race_counts": counts,
         "promotion_history": history,
         "promotion_history_summary": hist_summary,
