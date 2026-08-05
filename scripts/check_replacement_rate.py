@@ -53,7 +53,16 @@ _ROOT = Path(__file__).resolve().parent.parent
 # window) and pages-but-does-not-block, so a governance fault never silences an organ.
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
+from libs.ops.fence_exit import fence_exit  # noqa: E402
 from libs.ops.lawful import guard as _law_guard  # noqa: E402
+
+#: BOOTSTRAPPING passes on purpose and it is the one judgement call in this file: births == 0 AND
+#: deaths == 0 is a MEASURED fact about a desk that has not yet promoted or buried anything, not a
+#: blind spot -- exactly the distinction L1.30 was rebuilt around ("we cannot count births" and
+#: "there are no births" are different claims). It stops passing the moment either counter moves.
+#: UNMEASURED and UNMEASURED-BIRTHS are the blind states and now fail, which is the fix: the fence
+#: previously reported green whenever it could not count, i.e. precisely when it was useless.
+_PASSING = frozenset({"OK", "BOOTSTRAPPING"})
 
 _DATE = re.compile(r"(20\d\d)-(\d\d)-(\d\d)")
 
@@ -236,7 +245,7 @@ def main() -> int:
           f"replacement rate (L1.30): {rep['status']} -- {rep['detail']}\n-> {out}")
     if args.report_only:
         return 0
-    return 2 if rep["status"] == "DYING" else 0
+    return fence_exit(rep["status"], _PASSING)
 
 
 if __name__ == "__main__":

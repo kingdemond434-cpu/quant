@@ -53,7 +53,13 @@ if not _ROOT.exists():
     _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
+from libs.ops.fence_exit import fence_exit  # noqa: E402
 from libs.ops.lawful import guard as _law_guard  # noqa: E402
+
+#: ATTRIBUTED is this fence's OK. UNMEASURED -- no rows, or every sleeve's mechanism term
+#: unreadable -- previously exited 0, so "we cannot tell whether any edge is attributed" was
+#: reported to cron as "every edge is attributed" (L1.16, L1.28a).
+_PASSING = frozenset({"ATTRIBUTED"})
 
 _OUT = "data/mechanism_attribution.json"
 
@@ -221,7 +227,7 @@ def main() -> int:
                 print(f"  {r['sleeve']}: {r['state']} -- {r['why']}")
     if args.report_only:
         return 0
-    return 2 if rep["status"] == "UNATTRIBUTED" else 0
+    return fence_exit(rep["status"], _PASSING)
 
 
 if __name__ == "__main__":

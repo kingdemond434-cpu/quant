@@ -52,6 +52,13 @@ if not _ROOT.exists():
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
+from libs.ops.fence_exit import fence_exit  # noqa: E402
+
+#: UNMEASURED here means every governed surface was unreadable -- so the doctrine is UNCHECKED,
+#: which the report body already says in prose and the exit code used to contradict by returning
+#: 0. The docstring at the status site calls it "NOT a pass"; now the exit code agrees.
+_PASSING = frozenset({"OK"})
+
 #: Where a return target does damage: the desk's own doctrine, its money-path organs, and the
 #: prompt surfaces that reach a model. Scoped deliberately -- the ledger and research notes RECORD
 #: what the principal asked for verbatim, and rewriting a quotation to satisfy a fence would be
@@ -164,7 +171,7 @@ def main() -> int:
                 print(f"      ...{h['context'][:150]}")
     if args.report_only:
         return 0
-    return 2 if rep["status"] == "RETURN-TARGETING" else 0
+    return fence_exit(rep["status"], _PASSING)
 
 
 if __name__ == "__main__":

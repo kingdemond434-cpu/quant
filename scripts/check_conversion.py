@@ -55,7 +55,15 @@ _ROOT = Path(__file__).resolve().parent.parent
 # window) and pages-but-does-not-block, so a governance fault never silences an organ.
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
+from libs.ops.fence_exit import fence_exit  # noqa: E402
 from libs.ops.lawful import guard as _law_guard  # noqa: E402
+
+#: REPAIR-MODE passes DELIBERATELY. It is not a failure but a designed MODE SIGNAL: L1.28b(d)
+#: has it flip the next audit/brain window from finding to fixing, and run_max_push reads the
+#: artifact to do exactly that. Failing the build on it would make the desk permanently red at
+#: today's backlog and get the fence switched off (L1.43) -- turning the fix into the outage.
+#: FLATLINE (dispositions stopped entirely) stays the failure, and any status added later fails.
+_PASSING = frozenset({"OK", "REPAIR-MODE"})
 
 # The deep-sweep backpressure line: open+past-due above this flips audit windows to repair.
 REPAIR_MODE_BACKLOG = 25
@@ -178,7 +186,7 @@ def main() -> int:
         print(f"-> {out}")
     if args.report_only:
         return 0
-    return 2 if rep["status"] == "FLATLINE" else 0
+    return fence_exit(rep["status"], _PASSING)
 
 
 if __name__ == "__main__":

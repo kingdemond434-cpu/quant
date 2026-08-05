@@ -50,7 +50,14 @@ _ROOT = Path(__file__).resolve().parent.parent
 # window) and pages-but-does-not-block, so a governance fault never silences an organ.
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
+from libs.ops.fence_exit import fence_exit  # noqa: E402
 from libs.ops.lawful import guard as _law_guard  # noqa: E402
+
+#: This one gates on `verdict`, which is computed as a strict ALLOW/BLOCK binary, so it did not
+#: have the fall-through hole the other seven had. Routed through the same helper anyway so that
+#: a THIRD verdict value added later fails closed instead of joining the `else 0` branch -- the
+#: property is that no future editor has to remember this file. Zero behaviour change today.
+_PASSING = frozenset({"ALLOW"})
 
 #: The money path: code whose defects can only be discovered by losing money.
 MONEY_PATH = (
@@ -208,7 +215,7 @@ def main() -> int:
             print(f"  {rep['verdict']}   money-path files: {rep['money_path_files_in_change']}")
     if args.report_only:
         return 0
-    return 2 if rep["verdict"] == "BLOCK" else 0
+    return fence_exit(rep["verdict"], _PASSING)
 
 
 if __name__ == "__main__":

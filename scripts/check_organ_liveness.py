@@ -53,7 +53,13 @@ if not _ROOT.exists():
     _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
+from libs.ops.fence_exit import fence_exit  # noqa: E402
 from libs.ops.lawful import guard as _law_guard  # noqa: E402
+
+#: Only a MEASURED clean sweep passes. UNMEASURED (manifest unreadable, or no organ declared an
+#: artifact at all) used to fall down the `else 0` branch and report green while this fence had
+#: audited nothing whatsoever -- L1.28a: unmeasured counts as zero, never as fine.
+_PASSING = frozenset({"OK"})
 
 #: 3 consecutive missed cadences before an organ is called dead. One miss is a hiccup; three is a
 #: pattern. Loose on purpose -- a board that is red most mornings is a board nobody reads.
@@ -215,7 +221,7 @@ def main() -> int:
                       f"age={o['age_h']} tol={o['tolerance_h']}h")
     if args.report_only:
         return 0
-    return 2 if rep["status"] == "DARK" else 0
+    return fence_exit(rep["status"], _PASSING)
 
 
 if __name__ == "__main__":

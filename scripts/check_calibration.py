@@ -44,7 +44,14 @@ if str(_ROOT) not in sys.path:
 # window) and pages-but-does-not-block, so a governance fault never silences an organ.
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
+from libs.ops.fence_exit import fence_exit  # noqa: E402
 from libs.ops.lawful import guard as _law_guard  # noqa: E402
+
+#: OVERDUE was the only status that failed, so BLIND (logged a lot, scored almost none),
+#: MISCALIBRATED (the measured bias this fence exists to surface) and UNFORECASTING (zero
+#: forecasts -- the state the file's own comment calls 'NOT "OK"') all exited 0. A desk whose
+#: confidence is measurably wrong reported green to CI while over-sizing every Kelly bet (L1.29).
+_PASSING = frozenset({"OK"})
 from libs.self_improvement import forecast_calibration as fc  # noqa: E402
 
 
@@ -107,7 +114,7 @@ def main() -> int:
         print(f"-> {out}")
     if args.report_only:
         return 0
-    return 2 if rep["status"] == "OVERDUE" else 0
+    return fence_exit(rep["status"], _PASSING)
 
 
 if __name__ == "__main__":

@@ -54,7 +54,14 @@ _ROOT = Path(__file__).resolve().parent.parent
 # window) and pages-but-does-not-block, so a governance fault never silences an organ.
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
+from libs.ops.fence_exit import fence_exit  # noqa: E402
 from libs.ops.lawful import guard as _law_guard  # noqa: E402
+
+#: L1.32 names all four verdicts -- DARK / STALE / THIN / OK -- as this fence's output, but only
+#: DARK failed, so the family could decay to STALE or THIN (organs running but producing almost
+#: nothing) and still report green. That is the exact one-at-a-time decay L1.32 was written to
+#: catch, surviving inside its own fence.
+_PASSING = frozenset({"OK"})
 
 #: organ -> (artifact, max_age_hours implied by its own cadence, what it hunts)
 _FAMILY: dict[str, tuple[str, float, str]] = {
@@ -162,7 +169,7 @@ def main() -> int:
           f"exploration family (L1.32): {rep['status']} -- {rep['detail']}\n-> {out}")
     if args.report_only:
         return 0
-    return 2 if rep["status"] == "DARK" else 0
+    return fence_exit(rep["status"], _PASSING)
 
 
 if __name__ == "__main__":
