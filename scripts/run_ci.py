@@ -196,6 +196,22 @@ def _attribute(failed: list[str]) -> tuple[list[str], list[str]]:
     return failed_tracked, inflight
 
 
+def _mem_available_mb() -> int | None:
+    """MemAvailable in MB, or None where /proc is absent or unreadable.
+
+    Read at the moment a step dies so the diagnosis is CHECKABLE rather than asserted. None and 0
+    are different answers and are kept different: "we could not measure" must never render as
+    "there was no memory".
+    """
+    try:
+        for line in Path("/proc/meminfo").read_text("utf-8").splitlines():
+            if line.startswith("MemAvailable:"):
+                return int(line.split()[1]) // 1024
+    except (OSError, ValueError, IndexError):
+        return None
+    return None
+
+
 def _run_steps() -> int:
     failed: list[str] = []
     for label, cmd, budget in _STEPS:
@@ -208,6 +224,35 @@ def _run_steps() -> int:
             # reads this line should not have to guess which one they are looking at.
             print(f"[HUNG] {label}: exceeded {budget}s budget -- killed and counted as FAILED")
             failed.append(f"{label} (HUNG >{budget}s)")
+            continue
+        if r.returncode < 0:
+            # KILLED BY A SIGNAL IS NOT A VERDICT ON THE CODE -- it is the same distinction the
+            # HUNG branch above already draws, for the resource this box actually runs out of.
+            # A negative returncode means the kernel (or an operator) killed the child before it
+            # could report anything, so `failed.append(label)` below would file "the tests are
+            # broken" on the strength of a process that never finished a test. Several agent
+            # sessions share this 3.8GB box with the live daemons and there is NO SWAP, so a
+            # concurrent run is enough for the OOM killer to take whichever pytest it likes;
+            # measured 2026-08-05, max_audit's own probe recorded rc=-9 while the full suite
+            # collected cleanly seconds later (rc=0, peak RSS 326MB, 19s).
+            #
+            # NOTHING IS LOOSENED. The step still enters `failed`, so the gate still exits
+            # non-zero and the marker still writes ok=false; and because the suffixed label does
+            # not match `_STEPS`, `_attribute` puts it straight into `failed_tracked` (line 195),
+            # keeping tracked_ok False so max_audit's ci-gate-red still fires. On a safety gate
+            # "unknown" reads as NOT-PROVEN-GREEN, never as fine. What changes is only WHAT THE
+            # ALARM SAYS: max_audit prints failed_tracked verbatim, so the operator now reads the
+            # cause and the first move instead of hunting a test failure that does not exist.
+            # The suffix also means the step is never re-run -- re-running a memory-killed step
+            # under the same pressure would double the shortage it is reporting, exactly the
+            # reason the HUNG branch refuses a re-run.
+            sig = -r.returncode
+            avail = _mem_available_mb()
+            eno = "unknown" if avail is None else f"{avail}MB"
+            print(f"[KILLED] {label}: died on signal {sig} with {eno} MemAvailable -- counted as "
+                  "FAILED, but this is a verdict on the BOX, not on the code")
+            failed.append(f"{label} (KILLED sig{sig}, MemAvailable {eno} -- box ran out of "
+                          "resources mid-step, NOT a code failure; re-run when quiet)")
             continue
         ok = r.returncode == 0
         tail = (r.stdout or r.stderr or "").strip().splitlines()[-1:] or [""]
@@ -231,9 +276,15 @@ def _run_steps() -> int:
             # is untouched; `tracked_ok`/`failed_tracked`/`inflight` are ADDITIVE. Nothing is
             # swallowed -- scratch-file breakage is recorded here and printed above; it is just no
             # longer allowed to claim the desk-wide gate is down.
+            # `killed` is ADDITIVE and carries no authority: the steps in it are already inside
+            # `failed`/`failed_tracked`, so no existing reader changes behaviour and the gate
+            # cannot be read as greener than it is. It exists so a future check can ask "did this
+            # step report a verdict, or was it killed before it could?" structurally, instead of
+            # matching on the label text.
             json.dumps({"ok": not failed, "ts": datetime.now(tz=UTC).isoformat(),
                         "failed": failed, "tracked_ok": not failed_tracked,
-                        "failed_tracked": failed_tracked, "inflight": inflight}), "utf-8")
+                        "failed_tracked": failed_tracked, "inflight": inflight,
+                        "killed": [s for s in failed if "(KILLED sig" in s]}), "utf-8")
     return 1 if failed else 0
 
 
