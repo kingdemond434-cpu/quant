@@ -35,6 +35,7 @@ from libs.research.crossasset import (
     xsec_momentum_returns,
     xsec_momentum_weights,
 )
+from libs.research.event_density import forward_verdict
 from libs.validation.dsr import sharpe_ratio
 from libs.validation.economic_prior import MechanismType
 
@@ -78,13 +79,8 @@ def _ann(r: np.ndarray) -> float:
 
 
 def _verdict(fwd_days: int, fwd: float, bt: float) -> str:
-    if fwd_days < 90:
-        return f"ACCUMULATING ({fwd_days}/90+ days of forward evidence)"
-    if fwd < 0:
-        return "FAILING FORWARD -> kill candidate"
-    if fwd >= 0.5 and fwd >= 0.5 * bt:
-        return "ON TRACK -> eligible for TINY live on human approval (governance gate)"
-    return "WEAK forward -> continue shadow, do not deploy"
+    """EVIDENCE, NOT CALENDAR (L1.48) -- shared gate, so five runners cannot drift apart."""
+    return forward_verdict(fwd_days, fwd, bt, periods_per_year=_PPY)
 
 
 def main() -> None:

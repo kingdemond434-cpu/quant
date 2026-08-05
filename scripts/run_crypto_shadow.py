@@ -27,6 +27,7 @@ from libs.data.universe import RESEARCH_TOP_N
 from libs.research.crossasset import trend_basket_returns, xsec_momentum_returns
 from libs.research.crypto_sleeves import basis_carry_returns, taker_flow_returns
 from libs.research.crypto_xsec import adv_tier_cost, xsec_funding_returns
+from libs.research.event_density import forward_verdict
 from libs.validation.dsr import sharpe_ratio
 
 _CRYPTO = Path("data/lake/bronze/crypto")
@@ -82,13 +83,8 @@ def _ann(r: np.ndarray) -> float:
 
 
 def _verdict(days: int, fwd: float, bt: float) -> str:
-    if days < 90:
-        return f"ACCUMULATING ({days}/90+ days of forward evidence)"
-    if fwd < 0:
-        return "FAILING FORWARD -> kill candidate"
-    if fwd >= 0.5 and fwd >= 0.5 * bt:
-        return "ON TRACK -> eligible for TINY live on human approval (governance gate)"
-    return "WEAK forward -> continue shadow, do not deploy"
+    """EVIDENCE, NOT CALENDAR (L1.48) -- shared gate, so five runners cannot drift apart."""
+    return forward_verdict(days, fwd, bt, periods_per_year=_PPY)
 
 
 def main() -> None:
