@@ -74,17 +74,45 @@ def test_non_escalation_bullets_are_preserved():
     assert "another" in body
 
 
-@pytest.mark.parametrize("marker", ["URGENT 2026-07-28", "URGENT 2026-01-01"])
-def test_urgent_ttl_governs_line_one(marker):
+#: MIRROR of max_audit.main()'s local `_URGENT_TTL_D`; pinned by the test below.
+_URGENT_TTL_D = 7.0
+
+
+@pytest.mark.parametrize("age_days,expect_fresh", [(0, True), (6, True), (8, False), (200, False)])
+def test_urgent_ttl_governs_line_one(age_days, expect_fresh):
     """A FRESH urgent page outranks the routine sweep; a stale one is demoted.
 
     The date is mandatory for exactly this reason -- an undated urgent marker would rot back into
     the stale-line-1 bug the 2026-07-24 delivery fix removed.
+
+    THIS TEST USED TO ROT, AND DID. It hard-coded "URGENT 2026-07-28" and asserted that stamp was
+    within the 7-day window -- true when written, false from 2026-08-04 onward, and permanently
+    red thereafter. Three separate agents reported it on 2026-08-05 as someone else's failure. A
+    test whose verdict depends on the wall clock rather than on the code is a time-bomb, and it
+    is the same defect class as L1.48's calendar gates: a date standing in for the property
+    actually being asserted. Ages are now RELATIVE to now, so the window is exercised at its
+    boundary (6 fresh, 8 stale) and no future date can make it lie.
     """
-    from datetime import UTC, datetime
-    stamp = marker.split("URGENT ", 1)[1]
+    from datetime import UTC, datetime, timedelta
+    stamp = (datetime.now(tz=UTC) - timedelta(days=age_days)).date().isoformat()
     age_d = (datetime.now(tz=UTC) - datetime.fromisoformat(stamp).replace(tzinfo=UTC)).days
-    assert (age_d <= 7) == (stamp == "2026-07-28")
+    assert (age_d <= _URGENT_TTL_D) is expect_fresh
+
+
+def test_the_urgent_ttl_constant_still_matches_production():
+    """The link to production, and an honest statement of how weak it is.
+
+    max_audit's `_URGENT_TTL_D = 7.0` is a LOCAL inside main(), so it cannot be imported and the
+    test above necessarily re-implements the comparison rather than calling the real thing. That
+    is a genuine gap: the arithmetic could stay green while the production carve-out changed. A
+    source-level pin is the strongest available link until the constant is lifted to module
+    scope, and this test exists to fail loudly on the day someone edits it -- so the two are
+    changed together or not at all.
+    """
+    src = (ma.ROOT / "scripts" / "max_audit.py").read_text("utf-8")
+    assert "_URGENT_TTL_D = 7.0" in src, (
+        "the urgent TTL moved or changed value; update _URGENT_TTL_D in this test to match, and "
+        "consider lifting the constant to module scope so it can simply be imported")
 
 
 def test_page_on_disk_is_not_empty_and_leads_with_the_urgent_ask():
