@@ -137,8 +137,18 @@ def test_finished_rows_are_not_backlog_forever(tmp_path):
 
 def test_law_is_enforced_in_matrix():
     # The law must be mapped to its fence, or it is prose (L2.0).
-    src = Path("scripts/build_enforcement_matrix.py").read_text("utf-8")
-    assert '"L1.28b": ["scripts/check_conversion.py"]' in src
+    # ASSERT THE MAPPING, NOT THE LITERAL. This was `'"L1.28b": ["scripts/check_conversion.py"]'
+    # in src`, which pins the list to EXACTLY one enforcer -- so adding the L1.28b(d) actuator
+    # (libs/ops/repair_mode.py, the thing that finally made the law's remedy reach an organ) broke
+    # a test whose stated purpose is that the law be enforced. A test that fails when enforcement
+    # is STRENGTHENED is pointed the wrong way; it should pin the fence's presence, not the
+    # absence of colleagues.
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "_matrix", Path("scripts/build_enforcement_matrix.py"))
+    matrix = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(matrix)
+    assert "scripts/check_conversion.py" in matrix._MAP["L1.28b"]
 
 
 def test_artifact_feeds_max_push_queue():
