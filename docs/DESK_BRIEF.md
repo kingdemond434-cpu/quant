@@ -1,4 +1,4 @@
-# DESK BRIEF -- 2026-08-05 03:03Z
+# DESK BRIEF -- 2026-08-05 03:21Z
 
 Machine-generated from measured desk state. Every number traces to an artifact in
 `data/`. Nothing here is an argument. Respond to the evidence, not to another model.
@@ -13,8 +13,8 @@ Machine-generated from measured desk state. Every number traces to an artifact i
    forward clocks promote.
 
 ## Experiment record (45d, harvested from git -- one row per commit)
-- experiments: **976**; decided: 544
-- survival rate: **7.0%** (38 survived / 473 refuted / 33 inconclusive)
+- experiments: **979**; decided: 545
+- survival rate: **7.0%** (38 survived / 474 refuted / 33 inconclusive)
 - unclassified commit decisions: 62 (commit-discipline defect)
 
 | mechanism | tested | survived | rate |
@@ -22,7 +22,7 @@ Machine-generated from measured desk state. Every number traces to an artifact i
 | M_UNMAPPED | 424 | 31 | 7% |
 | M_ATTENTION_DELAY | 37 | 2 | 5% |
 | M_LIQUIDITY_WITHDRAWAL | 28 | 1 | 4% |
-| M_FORCED_DELEVERAGE | 25 | 3 | 12% |
+| M_FORCED_DELEVERAGE | 26 | 3 | 12% |
 | M_STRUCTURAL_BARRIER | 25 | 0 | 0% |
 | M_SKILL_PERSISTENCE | 8 | 0 | 0% |
 | M_FUNDAMENTAL_PROXY | 8 | 0 | 0% |
@@ -31,32 +31,33 @@ Machine-generated from measured desk state. Every number traces to an artifact i
 
 ### Why experiments died (45d)
 
-- `E_DATA_QUALITY` 240 (34%)
+- `E_DATA_QUALITY` 241 (34%)
 - `B_WRONG_MEASUREMENT` 124 (17%)
 - `H_OVERFIT` 120 (17%)
-- `G_TOO_EXPENSIVE` 106 (15%)
+- `G_TOO_EXPENSIVE` 107 (15%)
 - `C_WRONG_TIMING` 60 (8%)
 - `F_REGIME_DEPENDENT` 41 (6%)
 - `D_ALREADY_ARBITRAGED` 15 (2%)
 - `A_NO_MECHANISM` 5 (1%)
 
-**364/711 = 51% of refutations are MEASUREMENT failures (data quality + wrong construction), not absent alpha.**
+**365/713 = 51% of refutations are MEASUREMENT failures (data quality + wrong construction), not absent alpha.**
 
 ## FAMILY KILLS -- mechanisms closed by evidence
 
-`M_PRICE_PATTERN`, `M_ATTENTION_DELAY`, `M_SKILL_PERSISTENCE`, `M_FLOW_PRESSURE`
+`M_PRICE_PATTERN`, `M_ATTENTION_DELAY`, `M_FLOW_PRESSURE`, `M_SKILL_PERSISTENCE`
 
 Every future variant inherits this evidence.
 
 ## Transferable lessons (family -> dominant failure mode)
 
-- **price-only/TA** -> `C_WRONG_TIMING` (n=41)
-- **regional premium** -> `A_NO_MECHANISM` (n=20)
-- **funding/positioning** -> `E_DATA_QUALITY` (n=16)
+- **price-only/TA** -> `C_WRONG_TIMING` (n=48)
+- **regional premium** -> `A_NO_MECHANISM` (n=28)
+- **funding/positioning** -> `G_TOO_EXPENSIVE` (n=27)
+- **on-chain/flow** -> `C_WRONG_TIMING` (n=22)
+- **attention/social** -> `C_WRONG_TIMING` (n=19)
 - **trader/behavioural** -> `C_WRONG_TIMING` (n=15)
-- **on-chain/flow** -> `C_WRONG_TIMING` (n=13)
-- **attention/social** -> `A_NO_MECHANISM` (n=9)
-- **other** -> `UNCLASSIFIED` (n=4)
+- **other** -> `UNCLASSIFIED` (n=7)
+- **developer** -> `C_WRONG_TIMING` (n=6)
 
 ## Proprietary moat (4.4GB order books, 30 symbols, top-20 snapshots)
 

@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import json
 import os
+import shlex
 import subprocess
 import sys
 from datetime import UTC, datetime
@@ -139,7 +140,10 @@ _STEPS = [
 
 def _run(script: str, timeout: int) -> dict[str, object]:
     try:
-        r = subprocess.run([_PY, script], cwd=str(_ROOT), timeout=timeout,
+        # R0094: entries may carry args ("research_exchange.py brief", "--report-only").
+        # Passing the whole string as one argv element made python treat it as a filename
+        # containing a space -> rc=2 every run, swallowed by the best-effort chain.
+        r = subprocess.run([_PY, *shlex.split(script)], cwd=str(_ROOT), timeout=timeout,
                            capture_output=True, text=True, check=False)
         tail = (r.stdout or r.stderr or "").strip().splitlines()[-1:] or [""]
         return {"ok": r.returncode == 0, "rc": r.returncode, "tail": tail[0][:160]}

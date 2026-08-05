@@ -23,6 +23,7 @@ Rules of the sweep:
 from __future__ import annotations
 
 import contextlib
+import importlib.util
 import json
 import re
 import subprocess
@@ -5716,6 +5717,66 @@ def check_data_decay(defects) -> None:
 
 
 CHECKS += [("data-decay", check_data_decay)]
+
+
+def check_dormancy_disarm(defects) -> None:
+    """A guard fed by a ROLLING WINDOW of our OWN activity disarms itself during a pause.
+
+    Probe angle 15 (self_interrogation_patterns.md), coined 2026-08-05 after it found a live
+    money-path no-op. `_structurally_bleeding` -- the gate blocking new opens in proven-loser
+    symbols -- read only `worst_symbols`, a 14-day rolling window over the carry book's own
+    closes. The book paused 2026-08-01 on a -17.6% drawdown, the window emptied, and the gate
+    returned False for COOKIEUSDT and 1000CATUSDT, the two incident-#6 symbols the executor's own
+    comment calls "currently-blocked", while a `REARM` that auto-executes sat on the principal's
+    page. Self-reinforcing: a pause is CAUSED by losses, so the guard is guaranteed to be disarmed
+    exactly when it matters.
+
+    OUTCOME, NOT CONFIG. This calls the real gate on the real recorded denials rather than
+    grepping for a wiring marker: "the branch is present" and "the symbol is actually blocked" are
+    different claims, and only the second is the one the money depends on. An empty list with a
+    young mtime is indistinguishable from health to every staleness fence on this desk.
+    """
+    ledger = ROOT / "data/execution_reentry.json"
+    if not ledger.exists():
+        return
+    try:
+        rows = json.loads(ledger.read_text("utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return
+    denied = [k for k, v in rows.items() if not k.startswith("_") and isinstance(v, dict)]
+    if not denied:
+        return                     # nothing was ever denylisted, so nothing can be forgotten
+    try:
+        spec = importlib.util.spec_from_file_location(
+            "_dormancy_probe", ROOT / "scripts/run_cashcarry_executor.py")
+        if spec is None or spec.loader is None:
+            return
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        gate = mod._structurally_bleeding
+    except Exception:              # unimportable executor is other checks' job
+        return
+    leaked = []
+    for sym in denied:
+        try:
+            if gate(sym) is False and not mod.excitation.reentry_allowed(
+                    sym, rows, mod.execution_tape.read())[0]:
+                leaked.append(sym)
+        except Exception:          # a probe that cannot run is not a pass
+            continue
+    if leaked:
+        defects.append((
+            "dormancy-disarm",
+            f"{len(leaked)} recorded execution denial(s) are NOT being enforced: "
+            f"{', '.join(leaked[:6])}. Each has a row in data/execution_reentry.json whose "
+            "re-entry conditions are NOT met, yet `_structurally_bleeding` allows the symbol -- "
+            "so the denylist has forgotten a denial it still records. The usual cause is the "
+            "14-day rolling `worst_symbols` window emptying while the book is paused, which is "
+            "exactly when the guard is most needed. Repair UPWARD (persist the denial), never by "
+            "deleting the row: a denial that forgets itself is not a denial."))
+
+
+CHECKS += [("dormancy-disarm", check_dormancy_disarm)]
 
 
 #: Library modules that legitimately have no importer. Each exemption is ARGUED here, never

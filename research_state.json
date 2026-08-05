@@ -1,5 +1,5 @@
 {
-  "generated": "2026-08-05T03:03:17.206125+00:00",
+  "generated": "2026-08-05T03:19:58.686801+00:00",
   "master_objective": "maximize expected lifetime geometric growth (log wealth), survival-c",
   "deployed": {
     "sleeves": [
@@ -7,13 +7,13 @@
       "perp_ls (paper)"
     ],
     "start_capital": 15000.0,
-    "equity": 13151.84,
-    "net_pnl": -1848.16,
-    "return_pct": -12.321,
-    "days_live": 33.91,
+    "equity": 13149.32,
+    "net_pnl": -1850.68,
+    "return_pct": -12.338,
+    "days_live": 33.92,
     "winrate_pct": 43.1,
     "n_closed_trades": 253,
-    "deployed_sharpe": -10.09,
+    "deployed_sharpe": -10.15,
     "funding": 113.06,
     "funding_measured": true,
     "n_carries": 0,
@@ -68,7 +68,7 @@
   ],
   "retirement_note": "SIGNAL ONLY \u2014 marginal-Sharpe swings ~\u00b10.15 between runs, so a single negative sign is within noise. Retire only on PERSISTENT negative contribution across runs, with promotion-grade rigor. No whipsaw.",
   "architecture_review_due": false,
-  "cycles_logged": 65,
+  "cycles_logged": 66,
   "completed_this_cycle": [
     "archive_integrity_ok",
     "watchdog_run_logged_off",
