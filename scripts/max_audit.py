@@ -1051,20 +1051,80 @@ def check_generation(defects) -> None:
                         "is being crowded out by meta-duties. Generation-first duty not honored."))
 
 
+#: How long the origin ledger may go unwritten before silence becomes a finding. The desk finds
+#: gaps continuously -- every cycle, every sweep -- so a week of no rows does not mean a week
+#: without gaps; it means a week without logging them.
+_BLINDSPOT_STALE_D = 7.0
+
+
+def _parse_iso(raw: object) -> float | None:
+    """An ISO stamp as epoch seconds, or None. None is a real answer: a row that cannot date
+    itself cannot bound the ledger's freshness, and must never be counted as recent."""
+    if not isinstance(raw, str) or not raw:
+        return None
+    try:
+        ts = datetime.fromisoformat(raw)
+    except ValueError:
+        return None
+    return (ts if ts.tzinfo is not None else ts.replace(tzinfo=UTC)).timestamp()
+
+
 def check_self_sufficiency(defects) -> None:
     """The meta-check: is the desk finding its own gaps, or is the principal still doing it?
     Reads the blind-spot ledger; if over the recent window the principal is the primary finder,
     the whole maximization apparatus is not yet working -- the top-level defect."""
+    # THE CHECK USED TO BE DISABLED BY THE ABSENCE OF ITS OWN INPUT (fixed 2026-08-05).
+    #
+    # Both early returns below were silent, and together they made this -- the desk's ONLY measure
+    # of whether it or the principal is finding the gaps -- reward non-compliance exactly:
+    #
+    #     skip the logging duty  ->  no ledger  ->  no defect  ->  the desk looks self-sufficient
+    #
+    # An organ that stops performing a duty thereby switched off the check on that duty. The
+    # cheapest way to a clean self-sufficiency reading was to never log anything, and on this box
+    # that is precisely the state found: data/blind_spot_ledger.jsonl DOES NOT EXIST, while L2.5
+    # has mandated origin-tagging every gap since 2026-07-21.
+    #
+    # It is the same fail-open as the CI marker and the source-health verdicts -- unknown reading
+    # as fine -- but it is the most expensive instance of it, because this is the meta-check. It
+    # is the one that would have told the desk that its whole maximisation apparatus was not
+    # working, and it could not fire while the apparatus was not working.
+    #
+    # So absence, emptiness and thinness are each a NAMED defect now. Note the direction: none of
+    # them claims the desk is failing to find gaps. They claim the desk CANNOT SHOW that it is,
+    # which is a different and honest statement, and the only one the evidence supports.
     lg = ROOT / "data/blind_spot_ledger.jsonl"
     if not lg.exists():
+        defects.append(("self-sufficiency-unlogged",
+                        "data/blind_spot_ledger.jsonl does not exist -- L2.5 mandates an "
+                        "origin-tagged row for EVERY gap found, and not one has been written. "
+                        "The desk cannot show whether it or the principal is finding its gaps, "
+                        "and skipping the duty is what silenced the check. "
+                        "Log via scripts/blind_spot.py log --origin self|guard|principal"))
         return
     rows = []
     for line in lg.read_text("utf-8").splitlines():
         with contextlib.suppress(Exception):
             rows.append(json.loads(line))
     live = [r for r in rows if not r.get("baseline")]  # judge post-baseline gaps only
+    # STALENESS, same reasoning as the CI marker: a ledger that stopped being written is a duty
+    # that stopped being performed, and its last rows keep describing a desk that no longer
+    # exists. Measured on the ledger's own newest stamp, never the file mtime -- any organ that
+    # touches the file would otherwise reset the clock without a gap having been logged.
+    newest = max((_parse_iso(r.get("ts")) for r in rows if r.get("ts")), default=None)
+    if newest is not None and (NOW - newest) / 86400.0 > _BLINDSPOT_STALE_D:
+        defects.append(("self-sufficiency-stale",
+                        f"blind-spot ledger last written {(NOW - newest) / 86400.0:.1f}d ago "
+                        f"(>{_BLINDSPOT_STALE_D:.0f}d) -- gaps are still being found (this sweep "
+                        "found some) and none are being logged, so the origin accounting has "
+                        "quietly stopped. A frozen ledger reads as a settled one."))
     if len(live) < 8:
-        return                                          # not enough signal yet
+        defects.append(("self-sufficiency-unproven",
+                        f"blind-spot ledger holds {len(live)} post-baseline row(s); 8 are needed "
+                        "before the self/guard/principal split means anything. This is NOT a "
+                        "clean bill of health -- it is too little evidence to give one, and it "
+                        "used to be reported as silence, which reads identically to passing."))
+        return
     by = {"self": 0, "guard": 0, "principal": 0}
     for r in live:
         by[r.get("origin", "principal")] = by.get(r.get("origin", "principal"), 0) + 1
