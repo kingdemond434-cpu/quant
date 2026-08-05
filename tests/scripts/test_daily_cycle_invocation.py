@@ -22,7 +22,7 @@ _ROOT = Path(dc.__file__).resolve().parent.parent
 def test_run_splits_args_into_argv() -> None:
     captured: dict[str, list[str]] = {}
 
-    def fake_run(cmd, **kwargs):  # noqa: ANN001, ANN003 - signature mirrors subprocess.run
+    def fake_run(cmd, **kwargs):  # signature mirrors subprocess.run
         captured["cmd"] = list(cmd)
         return mock.Mock(returncode=0, stdout="ok", stderr="")
 
@@ -31,7 +31,7 @@ def test_run_splits_args_into_argv() -> None:
 
     assert out["ok"] is True
     assert captured["cmd"][1:] == ["scripts/research_exchange.py", "brief"], (
-        "args must be separate argv elements, not one filename: %r" % (captured["cmd"],)
+        f"args must be separate argv elements, not one filename: {captured['cmd']!r}"
     )
 
 

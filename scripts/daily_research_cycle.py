@@ -182,6 +182,22 @@ def _load(p: Path, d: object) -> object:
         return d
 
 
+def _nav_equity() -> dict[str, object]:
+    """E-12/R0095: equity for the cycle log comes from the NAV attestation chain, the desk's
+    single hash-chained equity record. web/portfolio.json was a THIRD source of truth and the
+    two had already diverged. The chain row carries `mode` (PAPER until Gate-0), so a consumer
+    can never mistake a paper sleeve for live capital."""
+    try:
+        last = (_ROOT / "data" / "nav_attestation.jsonl").read_text("utf-8").strip().splitlines()[-1]
+        rec = json.loads(last)
+        return {"equity": rec.get("equity_marked"), "equity_date": rec.get("date"),
+                "mode": rec.get("mode"), "n_carries": rec.get("n_carries"),
+                "source": "nav_attestation_chain"}
+    except (OSError, IndexError, json.JSONDecodeError) as e:
+        # honest absence beats a silent fallback to the source this exists to retire
+        return {"equity": None, "source": f"nav-chain-unreadable: {e!r:.100}"}
+
+
 def main() -> None:
     steps: dict[str, dict[str, object]] = {}
     for label, script, timeout in _STEPS:
@@ -204,7 +220,10 @@ def main() -> None:
         "binding_constraint": state.get("binding_constraint"),
         "next_highest_roi_task": ({"id": nxt.get("id"), "roi": nxt.get("roi")} if nxt else None),
         "open_backlog": [i.get("id") for i in eng.get("open", [])],
-        "deployed": {k: port.get(k) for k in ("equity", "net_pnl", "days_live", "deployed_sharpe")},
+        # equity from the NAV chain (E-12); portfolio.json survives only for the sleeve
+        # ratios it alone computes -- it is no longer an equity source here.
+        "deployed": {**_nav_equity(),
+                     **{k: port.get(k) for k in ("net_pnl", "days_live", "deployed_sharpe")}},
         "calibration": {k: cal.get(k) for k in ("n_resolved", "brier", "bias_label")},
         "data_clocks": [p.get("status") for p in disc.get("pending", [])],
     }

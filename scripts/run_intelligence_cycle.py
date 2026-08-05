@@ -143,18 +143,34 @@ def _research_priority() -> dict[str, Any]:
     brief = _read("data/executive_kpis.json") or {}
     # Decay pressure per mechanism family, from the desk's own family-kill record when present.
     decay = {}
+    source = ""
     fams = brief.get("family_survival") if isinstance(brief, dict) else None
     if isinstance(fams, dict):
         for fam, st in fams.items():
             if isinstance(st, dict) and isinstance(st.get("rate"), (int, float)):
                 decay[str(fam)] = max(0.0, 1.0 - float(st["rate"]))
+        if decay:
+            source = "executive_kpis.family_survival"
     if not decay:
-        # Fall back to the DESK_BRIEF family kills, which are always present in the repo.
-        decay = {"price_only": 1.0, "attention_social": 1.0, "trader_behavioural": 1.0,
-                 "funding_positioning": 0.5, "onchain_flow": 0.8, "regional_premium": 0.9}
+        # R0095/E-13: the real family-kill record is the mechanism board (refreshed daily by
+        # mechanism_board.py). Verdict -> decay pressure: a killed family is dead ground (1.0),
+        # untested is unknown-leaning-dead (0.8), alive earns continued attention (0.5).
+        board = _read("data/mechanism_board.json") or {}
+        verdicts = board.get("verdicts") if isinstance(board, dict) else None
+        if isinstance(verdicts, dict) and verdicts:
+            vmap = {"FAMILY KILL": 1.0, "UNTESTED": 0.8, "ALIVE": 0.5}
+            decay = {str(f): vmap.get(str(v).upper(), 0.8) for f, v in verdicts.items()}
+            kills = sum(1 for v in verdicts.values() if str(v).upper() == "FAMILY KILL")
+            source = f"mechanism_board verdicts ({kills} family kills of {len(verdicts)})"
+    if not decay:
+        # The old fallback ranked HARDCODED constants while reporting ACTIVE -- a search-steering
+        # organ navigating by fiction. A ranking of constants carries zero information; refuse it.
+        return _cap("research_priority", "NO-INPUT",
+                    "DATA-FREE: no measured family-kill record (executive_kpis.family_survival "
+                    "and mechanism_board.json both absent/empty); refusing to rank constants")
     ranked = ResearchPriorityEngine().prioritize(decaying_by_category=decay)
     return _cap("research_priority", "ACTIVE",
-                f"ranked {len(ranked)} research categories by decay pressure",
+                f"ranked {len(ranked)} families by decay pressure from {source}",
                 top=[{"category": p.category, "score": round(p.priority_score, 3),
                       "reason": p.reason} for p in ranked[:5]])
 
@@ -205,7 +221,10 @@ def _subprocess_cap(name: str, script: str, timeout_s: float = 240.0,
     except subprocess.TimeoutExpired:
         return _cap(name, "ERROR", f"{script} exceeded {timeout_s:.0f}s")
     tail = (p.stdout or p.stderr or "").strip().splitlines()
-    return _cap(name, "ACTIVE" if p.returncode == 0 else "NO-INPUT",
+    # R0095: a nonzero exit is a CRASH, not an absent input. Labelling it NO-INPUT hid the
+    # label factory's daily ValueError for weeks -- NO-INPUT is reserved for capabilities
+    # that ran and honestly reported nothing to consume.
+    return _cap(name, "ACTIVE" if p.returncode == 0 else "ERROR",
                 f"{script} exit={p.returncode}: {tail[-1][:180] if tail else 'no output'}")
 
 

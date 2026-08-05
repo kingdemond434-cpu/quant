@@ -44,6 +44,7 @@ REG = ROOT / "data/experiment_registry.jsonl"
 MECH = ROOT / "data/mechanism_board.json"
 LIFE = ROOT / "data/alpha_lifecycle.json"
 REGIME = ROOT / "data/crypto_regime.json"
+REGISTRY = ROOT / "data/data_assets.json"          # build_data_registry.py --deep, daily cron
 OUT = ROOT / "data/knowledge_engine.json"
 
 _STOP = {"the", "a", "an", "of", "to", "in", "for", "and", "or", "with", "is", "are", "be", "this", "that", "it", "as", "by", "from", "at", "on", "not", "no", "we", "you", "our", "their", "its", "more", "most", "less", "than", "then", "when", "what", "which", "who", "how", "why"}
@@ -144,6 +145,29 @@ REVIVAL = [
 ]
 
 
+def data_genome(assets: list[dict]) -> dict:
+    """DI-16 (R0094): the DATA side of the genome, GENERATED from the registry rather than
+    hand-written. The hand-written version covered 4 of ~60 sources; anything the registry
+    measures is covered here by construction. Lineage is KNOWN for an asset when the desk can
+    name either the collector that writes it or at least one consumer that reads it -- an
+    asset with neither is an orphan: paid-for bytes nothing feeds and nothing reads (L1.28a).
+    """
+    rows = []
+    for a in assets:
+        consumers = a.get("consumers") or []
+        span = a.get("span") or {}
+        rows.append({"id": a.get("id"), "collector": a.get("collector"),
+                     "n_consumers": len(consumers),
+                     "dependencies": a.get("dependencies") or [],
+                     "span_days": span.get("days"), "span_status": span.get("status"),
+                     "lineage_known": bool(a.get("collector") or consumers)})
+    known = sum(1 for r in rows if r["lineage_known"])
+    return {"assets": len(rows), "lineage_known": known,
+            "coverage": round(known / len(rows), 3) if rows else 0.0,
+            "orphans": [r["id"] for r in rows if not r["lineage_known"]],
+            "rows": rows}
+
+
 def main() -> None:
     docs = _corpus()
     idf = _idf(docs)
@@ -205,6 +229,21 @@ def main() -> None:
     print("  for an alpha that has never held capital -- stating it any other way would be")
     print("  inventing a number.")
 
+    # ------------------------------------------------------------ C2: data genome
+    print("\n=== C2. DATA GENOME -- lineage generated from the registry, never hand-written ===\n")
+    if REGISTRY.exists():
+        reg = json.loads(REGISTRY.read_text("utf-8"))
+        dg = data_genome(reg.get("assets") or [])
+        print(f"  {dg['assets']} registry assets; lineage known for {dg['lineage_known']} "
+              f"(coverage {dg['coverage']:.0%}, was 4/60 hand-written)")
+        if dg["orphans"]:
+            print(f"  ORPHANS (no collector, no consumer): {', '.join(dg['orphans'][:10])}"
+                  + (" ..." if len(dg["orphans"]) > 10 else ""))
+    else:
+        dg = {"assets": 0, "coverage": 0.0,
+              "note": "data_assets.json absent -- build_data_registry.py has not fired"}
+        print("  registry absent: build_data_registry.py has not produced data_assets.json")
+
     # ---------------------------------------------------------------- D
     print("\n=== D. BLIND VALIDATION -- does the verdict survive hiding the label? ===\n")
     cases = [
@@ -261,7 +300,8 @@ def main() -> None:
                                "corpus_size": len(docs), "memory_queries": mem,
                                "causal_edges": [{"cause": c, "effect": e, "state": s,
                                                  "evidence": v} for c, e, s, v in CAUSAL],
-                               "genome": genome, "blind_validation_consistent": agree,
+                               "genome": genome, "data_genome": dg,
+                               "blind_validation_consistent": agree,
                                "revival": REVIVAL}, indent=1), "utf-8")
     print(f"\n  -> {OUT}")
 

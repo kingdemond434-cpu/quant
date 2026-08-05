@@ -288,12 +288,17 @@ def _mutate_from(bars: pd.DataFrame, cols: list[str], start: int, seed: int = 0)
     """
     rng = np.random.default_rng(seed)
     out = bars.copy()
-    idx = out.index[start:]
-    if not len(idx):
+    n_tail = len(out) - start
+    if n_tail <= 0:
         return out
-    factors = rng.lognormal(0.0, 1.5, size=len(idx))       # wildly different returns AND levels
+    factors = rng.lognormal(0.0, 1.5, size=n_tail)         # wildly different returns AND levels
+    # POSITIONAL, never label-based: the bronze panel carries duplicate timestamps, and
+    # ``.loc[index[start:]]`` on a duplicated index fans out to every matching row
+    # (measured: 9,956 labels -> 1,218,352 rows), crashing the broadcast. R0095.
     for c in cols:
-        out.loc[idx, c] = out.loc[idx, c].to_numpy() * factors
+        vals = out[c].to_numpy(copy=True).astype(float)
+        vals[start:] *= factors
+        out[c] = vals
     return out
 
 

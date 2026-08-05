@@ -255,3 +255,30 @@ class TestTheCatalogue:
     def test_every_record_is_json_serialisable(self, bars: pd.DataFrame) -> None:
         import json
         json.dumps(build_catalogue(bars))
+
+
+class TestDuplicatedIndexPanels:
+    """The bronze panel carries duplicate timestamps, and the factory crashed on it daily
+    (label_factory.log: broadcast (1218352,) vs (9956,)) -- .loc on a duplicated index fans
+    out to every matching row. Everything here must be POSITIONAL. R0095."""
+
+    @pytest.fixture
+    def dup_bars(self, bars: pd.DataFrame) -> pd.DataFrame:
+        out = bars.copy()
+        half = out.index[: len(out) // 2]
+        out.index = half.append(half)          # every label appears twice, row count unchanged
+        return out
+
+    def test_mutate_from_is_positional(self, dup_bars: pd.DataFrame) -> None:
+        cols = ["close", "high", "low", "volume", "open_interest"]
+        mutated = lf._mutate_from(dup_bars, cols, start=10, seed=1)
+        assert len(mutated) == len(dup_bars), "row count must be preserved"
+        head = mutated["close"].to_numpy()[:10]
+        assert np.allclose(head, dup_bars["close"].to_numpy()[:10]), "pre-start rows untouched"
+        tail_changed = mutated["close"].to_numpy()[10:] != dup_bars["close"].to_numpy()[10:]
+        assert tail_changed.all(), "every post-start row must be scrambled exactly once"
+
+    def test_validate_survives_a_duplicated_index(self, dup_bars: pd.DataFrame) -> None:
+        for spec in default_specs():
+            v = validate(spec, dup_bars)
+            assert v.verdict, "a verdict, not an exception"
