@@ -299,9 +299,48 @@ def _brain_seat() -> Ceiling:
         "been raising cadences blind. Deferrals are the only honest signal of which is true.")
 
 
+def _book_vol() -> Ceiling:
+    """RISK-TAKING ITSELF: realized book volatility against the Kelly-implied ceiling (R0107).
+
+    THE CEILING THAT WAS MISSING, and it is the one closest to the objective. Every other
+    ceiling here measures an INPUT -- slots, capital, organs, data. None measured the thing
+    those inputs exist to produce: risk actually carried. The desk could run at a third of the
+    volatility its own rails permit for a month and no artifact would have said so.
+
+    The limit is not a hand-set number. At fraction ``f`` of full Kelly on an edge of annualized
+    Sharpe ``S``, book volatility is exactly ``f * S`` -- so the ceiling falls out of the rails
+    (KellyLimits.hard_max, half-Kelly, the absolute maximum ever) and the demonstrated Sharpe.
+    It self-scales in the direction the objective wants: the permitted volatility RISES as
+    validated edges accrue, automatically, with no rail touched and no bar loosened.
+
+    BOTH DIRECTIONS ARE DEFECTS, which is why this is a ceiling and not a limit. Below it with
+    no named constraint is L1.28a idleness -- risk the evidence supports and the desk declined.
+    Above it is an over-Kelly breach, where expected log-growth FALLS while ruin rises: worse on
+    both axes at once, and the only reading here whose honest answer is to cut.
+
+    UNMEASURED TODAY, AND CORRECTLY SO. Every row in the NAV chain is paper/testnet and the
+    recent ones are an explicitly MOLDED curve. Deriving a risk ceiling from a simulated
+    equity series would publish a number the desk then sizes against -- the L1.45 failure of
+    stepping the book up on fiction, which is strictly worse than leaving it pinned. It reads
+    ZERO with the blocker named, and it starts measuring the moment real fills exist.
+    """
+    try:
+        from libs.risk.vol_headroom import from_nav_chain
+        h = from_nav_chain(_ROOT / "data/nav_attestation.jsonl")
+        used, limit, measured, why = (h.realized_vol_ann, h.ceiling_vol_ann, h.measured, h.reason)
+    except (ImportError, OSError, ValueError) as exc:
+        used, limit, measured, why = 0.0, 0.0, False, f"vol headroom unavailable: {exc}"
+    return Ceiling(
+        "book_vol_vs_kelly_ceiling", limit, used, "annualized vol", measured,
+        "" if (measured and limit > 0 and used >= limit * _EXPECT) else why,
+        "The risk budget is the ceiling nearest the objective: under-risking a demonstrated "
+        "edge forfeits compounding exactly as idle capital does, and over-risking it lowers "
+        "E[log W] while raising ruin. Unmeasured, the desk cannot tell the two apart.")
+
+
 def collect() -> list[Ceiling]:
     return [_capital(), _forward_slots(), _capability(), _data_assets(), _organs(), _mutation(),
-            _test_suites_runnable(), _brain_seat()]
+            _test_suites_runnable(), _brain_seat(), _book_vol()]
 
 
 def build() -> dict[str, Any]:
