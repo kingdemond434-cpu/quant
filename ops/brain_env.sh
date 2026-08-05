@@ -37,6 +37,47 @@ _brain_page() {
     fi
     return 0
 }
+# RESET-AWARE RETRY (work order run-reset-aware-retry). Seconds to wait for a session limit's
+# STATED reset time, or empty when there is nothing safe to wait for.
+#
+# WHY THIS EXISTS. Scheduled organs die at second zero on a session limit and the whole slot is
+# lost -- 10 organ runs died at birth in 48h on this box. The CLI tells us exactly when the wall
+# lifts ("You've hit your session limit - resets 1am (UTC)"), and the diggers/miners fire
+# post-cycle, so a single reset-aware sleep recovers most of them instead of skipping a day.
+#
+# PURE TEXT -> NUMBER, deliberately: it is the whole decision, and keeping it free of side effects
+# means it can be smoke-tested exhaustively without burning a single call. Prints nothing when the
+# message has no parseable reset, when the wait exceeds the cap, or when the clock is unusable --
+# the caller then pages exactly as it did before, so an unparseable message can only ever leave
+# behaviour unchanged. NEVER an unbounded sleep: the cap defaults to 3600s, half of systemd's
+# TimeoutStartSec=7200, so a woken organ still has an hour to do real work.
+brain_reset_wait_s() {
+    local text="$1" cap="${2:-${_BRAIN_RESET_CAP_S:-3600}}"
+    local frag hh mm ampm now target wait
+    frag="$(printf '%s' "$text" \
+        | grep -oiE 'resets[[:space:]]+[0-9]{1,2}(:[0-9]{2})?[[:space:]]*(am|pm)' | head -1)"
+    [ -n "$frag" ] || return 0
+    hh="$(printf '%s' "$frag" | grep -oE '[0-9]{1,2}' | head -1)"
+    mm="$(printf '%s' "$frag" | grep -oE ':[0-9]{2}' | head -1 | tr -d ':')"
+    ampm="$(printf '%s' "$frag" | grep -oiE '(am|pm)' | head -1 | tr '[:upper:]' '[:lower:]')"
+    [ -n "$hh" ] && [ -n "$ampm" ] || return 0
+    [ -n "$mm" ] || mm=00
+    hh=$((10#$hh)); mm=$((10#$mm))
+    [ "$hh" -le 12 ] && [ "$mm" -le 59 ] || return 0
+    # 12am is midnight and 12pm is noon -- the two cases a naive +12 gets exactly backwards.
+    [ "$ampm" = "pm" ] && [ "$hh" -ne 12 ] && hh=$((hh + 12))
+    [ "$ampm" = "am" ] && [ "$hh" -eq 12 ] && hh=0
+    now="$(date -u +%s)" || return 0
+    target="$(date -u -d "today $(printf '%02d:%02d' "$hh" "$mm")" +%s 2>/dev/null)" || return 0
+    [ -n "$target" ] || return 0
+    # A reset already past today means tomorrow -- which is ~23h away and so will exceed the cap
+    # and correctly decline to wait, rather than sleeping through the next scheduled slot.
+    [ "$target" -le "$now" ] && target=$((target + 86400))
+    wait=$((target - now + 60))            # +60s so we wake just AFTER the wall lifts, not on it
+    [ "$wait" -gt 0 ] && [ "$wait" -le "$cap" ] || return 0
+    printf '%s' "$wait"
+}
+
 brain_auth_check() {
     # Cheap auth self-test at cycle start: fail LOUD (page), never silently no-op.
     # MODEL FALLBACK CHAIN (principal 2026-07-24): a STARVED MODEL must never kill the organ.
@@ -62,6 +103,23 @@ brain_auth_check() {
         if printf '%s' "$out" | grep -q "PING-OK"; then
             _brain_page "Brain hit subscription quota -- FELL BACK to metered API key; cycles continue on metered spend"
             return 0
+        fi
+    fi
+    # LAST RESORT BEFORE GIVING THE SLOT AWAY: if the failure names its own reset time, wait for
+    # it once and re-run the whole chain. Strictly after every existing fallback has been tried,
+    # so this can only convert an abort into an attempt -- never pre-empt a model fallback that
+    # would have worked immediately. Guarded to ONE retry per process: the recursive call sees
+    # _BRAIN_RESET_RETRIED=1 and falls straight through to the page, so a wall that does not
+    # actually lift costs one wait, not a loop.
+    if [ "${_BRAIN_RESET_RETRIED:-0}" != "1" ]; then
+        local _wait
+        _wait="$(brain_reset_wait_s "$out")"
+        if [ -n "$_wait" ]; then
+            _BRAIN_RESET_RETRIED=1
+            _brain_page "session limit -- sleeping ${_wait}s to the stated reset, then ONE retry"
+            sleep "$_wait"
+            brain_auth_check && return 0
+            return 1
         fi
     fi
     _brain_page "BRAIN AUTH DOWN, cycle aborted: $(printf '%s' "$out" | head -1 | cut -c1-140)"
