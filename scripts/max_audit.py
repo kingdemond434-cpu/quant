@@ -2522,6 +2522,17 @@ _PRODUCER_CADENCE = {
 #: Artifacts that are terminal by nature: templates, forensic write-ups, protocol libraries. They
 #: accumulate no inventory, so they owe no cadence -- recorded here so "no law" is a DECISION.
 _TERMINAL_ARTIFACTS = {
+    "docs/research/PREMORTEM_20260805.md":
+        "DATED PRE-MORTEM RECORD (run 1, 2026-08-05, R0105) -- the first time that mission has "
+        "ever fired. Terminal because it is an immutable transcript of ONE dated adversarial "
+        "pass, not an inventory: it accumulates nothing, and the work it implies is tracked "
+        "OUTSIDE it by a gate rather than by a disposition on the file. The funded re-run it "
+        "still owes is enforced by check_gate0_ready's premortem_completed criterion, which "
+        "reads 1/8 NOT-READY and blocks the deposit until 8 distinct seats answer -- so the "
+        "obligation cannot be lost by nobody re-reading this doc. It exists as a file only "
+        "because run_external_panel write_text's docs/research/panel_inbox.md on EVERY run, so "
+        "the next mission of any kind destroys the readable copy; the raw response survives in "
+        "the append-only panel log but unread. Superseded by the funded re-run, never edited.",
     "docs/research/axis_generation_20260805.md":
         "DATED GENERATE-RUN RECORD (batch 2, the 9 stale Bronze axes, 2026-08-05). Terminal "
         "because every outcome was ROUTED BY THE GATE IN THE SAME RUN that wrote the file, so "

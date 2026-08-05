@@ -1065,8 +1065,7 @@ def ensemble_consensus(reads: list[dict[str, Any] | None]) -> tuple[dict[str, An
     Imposing a filter without keeping what it rejected makes that unanswerable."""
     got = [r for r in reads if r]
     if not got:
-        return None, {"state": "NO-READS", "n": 0,
-                      "why": "no parseable read (auth/quota/refusal)"}
+        return None, {"state": "NO-READS", "n": 0, "why": _no_read_why()}
     votes: dict[tuple[str, str], list[dict[str, Any]]] = {}
     for r in got:
         if r.get("action") == "PASS":
@@ -1354,14 +1353,42 @@ _LENSES: tuple[str, ...] = (
 )
 
 
+#: Whatever the shell last actually reported, for the NO-CALL path to cite. Same fix as
+#: run_llm_trader._LAST_CALL_FAILURE -- both organs guessed at their own failure identically.
+_LAST_CALL_FAILURE = ""
+
+
 def _ask(prompt: str, timeout: int = 600) -> str:
+    """Ask the brain, and KEEP the evidence when it refuses.
+
+    This dropped stderr and the return code and returned `r.stdout or ""`, so both NO-CALL sites
+    below reported the hardcoded guess "(auth/quota/refusal)" -- three causes named, none checked.
+    Worse, it put the literal word "auth" into the log of an organ whose real problem was an empty
+    CREDIT BALANCE, which is what made the stub-death fence report a quota outage as an auth
+    failure and would have sent anyone debugging it at the credentials instead of the billing.
+    With ENSEMBLE_N lens calls per run this also silently converted N transport failures into
+    "the models disagreed", which is a completely different and much more interesting claim.
+    """
+    global _LAST_CALL_FAILURE
     r = subprocess.run(
         ["bash", "-c",
          'source ops/brain_env.sh && brain_auth_check || exit 90 && '
          'claude --effort xhigh --append-system-prompt "$_DOCTRINE" -p "$0" '
          '--dangerously-skip-permissions', prompt],
         cwd=_ROOT, capture_output=True, text=True, timeout=timeout)
+    if r.returncode != 0:
+        err = (r.stderr or r.stdout or "").strip().replace("\n", " ")[:300]
+        # 90 is brain_auth_check's own exit code -- the ONE case where auth is established.
+        _LAST_CALL_FAILURE = (
+            f"brain_auth_check refused before the model was reached (exit 90): {err}"
+            if r.returncode == 90 else f"claude exited {r.returncode}: {err}")
     return r.stdout or ""
+
+
+def _no_read_why() -> str:
+    """Why there was no usable read -- the measured cause where we have one, never a guess."""
+    return (f"call FAILED -- {_LAST_CALL_FAILURE}" if _LAST_CALL_FAILURE else
+            "models ran but returned no parseable JSON (a refusal or malformed answers)")
 
 
 def parse(raw: str) -> dict[str, Any] | None:
@@ -1418,7 +1445,7 @@ def main() -> int:
     reads = [parse(_ask(base + _LENSES[i % len(_LENSES)])) for i in range(ENSEMBLE_N)]
     call, consensus = ensemble_consensus(reads)
     if call is None:
-        state = {"status": "NO-CALL", "why": "no parseable JSON (auth/quota/refusal)",
+        state = {"status": "NO-CALL", "why": _no_read_why(),
                  "at": datetime.now(tz=UTC).isoformat()}
     else:
         noise = None
