@@ -7,10 +7,10 @@
    "roi_bps": 0.0,
    "raised": "2026-07-26T11:26:08.435892+00:00",
    "status": "scheduled",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: REFUTED as partial coverage. 3 of the 4 named components are genuinely wired and verified: real CPCV (libs/autodiscovery/validation.py:257-262 using libs/validation/cpcv.py, feeding the 'cpcv' gate in validate()'s gates dict), campaign_fdr (validation.py:295) called on the production orchestrator FDR pass over tested candidates, and the LockedHoldout lockbox opened exactly once at the promotion decision (libs/autodiscovery/orchestrator.py:238-308; tests/autodiscovery/test_campaign_fdr_and_lockbox.py exists). But SPA -- explicitly named in the row's ask -- is still dead code: hansen_spa's only caller is Gauntlet.run (libs/validation/gauntlet.py:176), and Gauntlet( is constructed nowhere outside tests (repo-wide grep; the desk's own deep_sweep 20260801_validation-stats.md:1458 row V13 confirms 'hansen_spa is reachable only from the dead gauntlet'). The original complaint -- validation code",
+   "reason": "Blanket claim REFUTED by fresh reads: 3 of 4 named components are wired AND reached from a scheduled script. Real CPCV at libs/autodiscovery/validation.py:624 via :274-277; campaign_fdr :310 called at orchestrator.py:328-330; LockedHoldout constructed orchestrator.py:290, opened once at :354-359 -- all reached in production by scripts/run_moat_campaign.py:40,144 (cron manifest:1260, artifact reports/moat_campaign.json stamped 2026-08-05T04:10:14Z). SPA alone is dead: hansen_spa (reality_check.py:57) is reachable only via Gauntlet.run (gauntlet.py:176) and Gauntlet is instantiated nowhere outside tests. Owed work is ONE decision -- wire hansen_spa into the reachable validate() path, or retire libs/validation/gauntlet.py -- and that same decision settles R0008, whose only trials_ledger writer lives in the same dead class.",
    "commit": null,
-   "due": "2026-08-03",
-   "disposed": "2026-07-30T02:30:50.815362+00:00"
+   "due": "2026-08-12",
+   "disposed": "2026-08-05T09:02:40.262291+00:00"
   },
   {
    "id": "R0002",
@@ -53,10 +53,10 @@
    "roi_bps": null,
    "raised": "2026-07-26T11:45:42.077509+00:00",
    "status": "scheduled",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: REFUTED as partial coverage. The novelty gate IS wired in production (PriorIdea constructed at scripts/screen_idle_axes.py:61-96 compiling every docs/graveyard.md table row plus a live-sleeve roster and calling hypothesis_novelty; scripts/screen_fred_macro_axis.py:187-189 adds pre-registration priors; libs/autodiscovery/generation_roi.py:76 wires the gate into generation ROI). Two named parts of the ask are missing. (1) The row required 'validate first via E2 recall replay on the 420 campaign' -- the E2 spec (docs/research/deep_sweep/20260726_data-moat.md:304-311: compile priors from the FIRST 210 candidates, replay the LAST 210, require recall>=25% with 0 false blocks BEFORE wiring) has no artifact anywhere in the tree (repo-wide grep for the replay finds only the spec and the ledger row); the gate was wired without its pre-registered validation, so its recall and false-block rate are u",
+   "reason": "WELDED GATE, and worse than the row states. hypothesis_novelty is wired at FIVE production sites (screen_idle_axes.py:61,95-96; screen_fred_macro_axis.py:188-189; screen_exchange_netflow.py:93; run_axis_generate_20260805.py:404; generation_roi.py:76-79) while carrying measurably ZERO bits: measured title-only recall 0/44 = 0.0%, paraphrase 0/10, Youden J 0.000 (deep_sweep/20260801_research-engine.md:439-462) against its own pre-registered E2 bar of >=25% recall, whose spec says 'recall <10% -> DO NOT wire it'. It is plain Jaccard at 0.7 (hypothesis_novelty.py:60-63,:87), unchanged since f290d8a. data/graveyard_priors.json exists (198 priors) with ZERO producers and ZERO consumers repo-wide, so it cannot be regenerated and the three duplicate prior-builders it was meant to replace are all still live. Work: replace Jaccard with the TF-IDF cosine already in knowledge_engine.py:81-102, then give the artifact one producer and three readers.",
    "commit": null,
-   "due": "2026-08-02",
-   "disposed": "2026-07-31T07:20:52.497283+00:00"
+   "due": "2026-08-15",
+   "disposed": "2026-08-05T09:02:44.971800+00:00"
   },
   {
    "id": "R0005",
@@ -77,10 +77,10 @@
    "roi_bps": null,
    "raised": "2026-07-26T11:45:42.213912+00:00",
    "status": "scheduled",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=4 effort_h=1.5: scripts/classify_regime.py:20 still writes only data/crypto_regime.json (overwrite); zero references to crypto_regime_history.jsonl anywhere in the tree (repo-wide grep), so the daily regime fingerprint (including hmm_gmm_agree disagreement states) is still destroyed every day. The fix is the row's stated 3-line append plus deterministic backfill; unblocked, data-preservation aligned.",
+   "reason": "CONFIRMED undone by fresh read. classify_regime.py:20 _OUT=data/crypto_regime.json and :46 write_text is a FULL OVERWRITE and the file's only write; repo-wide grep for crypto_regime_history returns zero .py hits. ~500 daily regime labels destroyed since first flagged 07-26. The hmm_gmm_agree disagreement bit is computed daily at libs/regime/engine.py:109 and merged by run_regime_engine.py:50,55, then discarded with the rest of the label. One sub-premise HAS been fixed since (confidence no longer reads 1.0 under model disagreement) -- which makes the disagreement series more worth keeping, not less. Work: append one JSON line per run carrying trend/vol/hmm_gmm_agree/confidence, plus the deterministic backfill from bars.",
    "commit": null,
-   "due": "2026-08-02",
-   "disposed": "2026-07-31T07:20:52.647542+00:00"
+   "due": "2026-08-08",
+   "disposed": "2026-08-05T09:02:47.709814+00:00"
   },
   {
    "id": "R0007",
@@ -101,10 +101,10 @@
    "roi_bps": null,
    "raised": "2026-07-26T11:45:42.344528+00:00",
    "status": "scheduled",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: trials_ledger still has no production writer: the only appender is the Gauntlet class (libs/validation/gauntlet.py:89-102) which nothing in scripts/libs instantiates, and its no-ledger fallback n_trials=2 remains at gauntlet.py:102. The populate-or-retire ruling was never recorded; scripts/experiment_registry.py (harvester writing data/experiment_registry.jsonl from git history) exists as the de-facto alternative write path, and max_audit.py:130-148 reads trials_ledger tolerantly, degrading to []. The decision (retire the table in favour of the harvester, or wire a writer) is still owed.",
+   "reason": "HALF-BUILT AND WIRED TO THE WRONG SOURCE. Measured live: trials_ledger has 0 rows in sor_research.sqlite, alpha_registry.sqlite AND sor_crypto.sqlite. Its only writer is libs/store/trials.py:102, whose only caller is the dead Gauntlet._resolve_n_trials (gauntlet.py:93-101). The audit view WAS built -- max_audit.py:1553-1555 calls effective_trial_count -- but its input _trial_mechanisms() (max_audit.py:130-149) reads the empty table's family column and returns [], so max_audit.py:1558 'if eff.raw' is ALWAYS falsy and the inflation string is permanently blank. The gate-optimality duty is structurally unauditable while 3043 research_candidates rows (1799 + 1244) sit unread. Same decision as R0001: retiring gauntlet.py removes the ledger's only writer, at which point _trial_mechanisms must repoint at research_candidates or the table be dropped.",
    "commit": null,
-   "due": "2026-08-04",
-   "disposed": "2026-07-31T07:20:52.731718+00:00"
+   "due": "2026-08-12",
+   "disposed": "2026-08-05T09:02:49.873700+00:00"
   },
   {
    "id": "R0009",
@@ -243,10 +243,10 @@
    "roi_bps": 15.0,
    "raised": "2026-07-28T15:15:15.590903+00:00",
    "status": "scheduled",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=5 effort_h=2: scripts/run_growth_audit.py:64-77 still verdicts carry_capital_utilization 'OK ... fully deployed to the authorized ceiling' purely on util >= _UTIL_TARGET; grep for hedge/kill/RAIL_BREACH/unhedged across the file returns zero hits, so the audit can certify utilization on an unhedged or killed book exactly as the row describes. Small guard + test; change window is OPEN (data/change_window.json verdict ALLOW).",
+   "reason": "CONFIRMED PRESENT with no compensating predicate anywhere in the file, and independently re-observed by this cycle's integrity watch. run_growth_audit.py:64-76 computes carry_capital_utilization purely as util = dep/authorized (:63) against _UTIL_TARGET=0.75 (:25); a case-insensitive grep for hedge|kill|halt|breach|flatten|pause_opens|unhedged|freeze across all 129 lines returns ZERO hits. It also FAILS OPEN -- util is None verdicts OK. Live today it published verdict GAP justified_by NONE on a book whose opens are paused by a drawdown rail at -17.63%, i.e. it reported a survival rail as a conservatism defect. Runs every 30min into the anti-conservatism chain (crontab.manifest:980). Work: gate the OK branch on hedge integrity and kill/flatten state, both already persisted by the executor.",
    "commit": null,
-   "due": "2026-08-02",
-   "disposed": "2026-07-31T07:20:53.004559+00:00"
+   "due": "2026-08-08",
+   "disposed": "2026-08-05T09:02:52.032414+00:00"
   },
   {
    "id": "R0020",
@@ -255,10 +255,10 @@
    "roi_bps": 10.0,
    "raised": "2026-07-28T15:15:15.668610+00:00",
    "status": "scheduled",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=8 effort_h=3: Defect present verbatim: scripts/run_cashcarry_executor.py:582-586 -- _do() calls _mkt_or_limit and clears the reconcile-fail counter the moment `how` is truthy, and 'limit' means a post-only order RESTED, not filled (:512-541). Each tick re-places and re-clears, so a never-filling leg can sit unhedged forever without reaching the x3 RECONCILE-FAIL alarm. The close path already has the goal-state pattern to copy (_close_goal_state :1316-1341). Money-path, unblocked (change window OPEN).",
+   "reason": "LIVE MONEY-PATH SURVIVAL GAP, confirmed verbatim in current code (only line numbers moved). run_cashcarry_executor.py:679-682: _do calls _mkt_or_limit at :680 and clears the counter with fails.pop(sym, None) at :682 the moment how is truthy; _mkt_or_limit returns 'limit' at :631 after place_post_only at :630, and its own docstring at :613-616 says the order 'rests as maker, fills when liquidity returns' -- a RESTED ORDER, NOT A FILL. So the x3 RECONCILE-FAIL alarm at :687-692 is reachable only on outright rejection, and a leg that never fills can sit UNHEDGED indefinitely while each tick re-places and re-clears. Work: make _do's success predicate goal-state, mirroring the _close_goal_state per-leg venue check already at :1435-1460.",
    "commit": null,
-   "due": "2026-08-01",
-   "disposed": "2026-07-31T07:20:22.859017+00:00"
+   "due": "2026-08-07",
+   "disposed": "2026-08-05T09:02:54.239220+00:00"
   },
   {
    "id": "R0021",
@@ -302,11 +302,11 @@
    "summary": "libs/data/onchain_flows.py produces no artifact, making the documented verify-don't-trust diff against 15y CM backfill unexecutable. Either wire it to write a netflow series or retire the doc's NEXT STEP and grade the CM backfill's residual honestly.",
    "roi_bps": 5.0,
    "raised": "2026-07-28T15:24:55.959473+00:00",
-   "status": "scheduled",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: libs/data/onchain_flows.py still exposes only ERC20 stablecoin reads (stablecoin_supply :88, exchange_reserves :103) consumed by scripts/run_stablecoin_flows.py (netflow_1d/7d :56-57) -- a stablecoin series, not the BTC exchange-netflow series the 15y CM diff-verify needs, so that diff remains unexecutable. Weakened premise: the exchange-netflow axis itself was since killed as a TIMING-ARTIFACT by the residual-IC gate (R0043 record), so the honest remaining work is likely the row's second disjunct (retire the doc's NEXT STEP and grade the CM residual), still undone.",
+   "status": "rejected",
+   "reason": "PREMISE FALSE and the requested diff is INCOHERENT BY CONSTRUCTION. libs/data/onchain_flows.py does feed a dated artifact: run_stablecoin_flows.py:23 writes data/stablecoin_flows_archive.json (:52, 14KB, Aug 5 02:14) with netflow_1d/7d at :56-57, wired into the daily chain at daily_research_cycle.py:43. The asked-for diff compares USD-denominated USDT+USDC ERC-20 exchange balances (:29-32, :103-119) against CoinMetrics FlowInExNtv/FlowOutExNtv, which are BTC NATIVE-UNIT flows -- not two constructions of one quantity, so it could never have verified anything. Verification exists in strictly stronger form: collect_coinmetrics_flows.py (cron manifest:589) runs an internal SplyExNtv reconciliation AND an external Binance diff over 3,265 days, and the residual is graded honestly (reports/screen_exchange_netflow.json, best BTC cell SCREEN-WEAK ic -0.0074 residual_ic -0.0073 n=5553). Only residue is a stale NEXT STEP line at data_axis_watchlist.md:477 -- bookkeeping, not a research obligation.",
    "commit": null,
-   "due": "2026-08-03",
-   "disposed": "2026-07-31T07:20:53.077764+00:00"
+   "due": null,
+   "disposed": "2026-08-05T09:02:56.488261+00:00"
   },
   {
    "id": "R0025",
@@ -1378,11 +1378,11 @@
    "summary": "L1.29 FORECAST INSTRUMENTATION (the fence is live and reports UNFORECASTING -- now feed it): log_forecast with resolve_by at the real decision points -- alpha survival p at Stage-A screen (resolve at forward-clock end), promotion success p at Stage-B, deep-sweep auditor stated confidence per finding (resolve when the row is disposed), R-row ROI estimates. Then wire calibrated_confidence into the EV ranker and sizing so the measured bias shrinks live decisions",
    "roi_bps": 30.0,
    "raised": "2026-07-31T10:38:10.383113+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=9 effort_h=4: Half built: consumption side done (forecast_calibration.calibrated_confidence applied to Kelly sizing, scripts/run_conviction_trader.py:1249-1272; scripts/check_calibration.py:11,20 'computes AND applies'). Missing half is the row's named decision points: log_forecast with resolve_by exists only for traders/probes/engineering rows (research_cycle.py:396 has no resolve_by; run_llm_trader.py:237; run_conviction_trader.py:1316; run_calibration_probe.py:162) -- nothing at Stage-A screens, Stage-B promotion, deep-sweep findings, or R-row ROI estimates.",
-   "commit": null,
+   "status": "implemented",
+   "reason": "Decision point D built and live: libs/research/recommendation_forecast.py + hooks in scripts/recommendations.py (on_add pre-registers once, settle() grades every past-due rec:* forecast on every CLI invocation). Self-closing by construction, which was the precondition for adding a fifth writer to a log already failing its OVERDUE fence. The horizon-matched estimator replaced a survivorship one that read 0.9514 on the live ledger; it now honestly returns COLD-START because the ledger is younger than the forecast horizon. Found and fixed two live defects on the first real call: recommendations.py never put the repo root on sys.path (libs unimportable under python3), and libs/self_improvement/__init__.py drags pydantic so its pure-stdlib submodule was unreachable from a stdlib host. 11 tests. Decision points A (Stage-A screen), B (Stage-B promotion) and C (deep-sweep confidence) are DIFFERENT work and are re-rowed as R0363 with the file-and-line analysis: B is ready now (promote_moat_survivors.py:186 already computes p_persistence, a real varying probability with a natural resolve_by), A needs a probability that does not exist at the screen moment, C needs the LLM auditor to emit machine-readable confidence before any hook is possible.",
+   "commit": "ba283fa",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-05T08:59:20.684522+00:00"
   },
   {
    "id": "R0113",
@@ -1598,11 +1598,11 @@
    "summary": "oi-ls-oos-alignment-fix (match aggregation window + label convention to crypto_metrics, re-verify corr, chain to 06:20 cron) -- scheduled 2026-08-03, lookahead-sensitive",
    "roi_bps": 45.0,
    "raised": "2026-07-31T13:43:42.562205+00:00",
-   "status": "scheduled",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Not done: scripts/backfill_oi_ls_oos.py untouched since the 07-30 typing pass (git log); its misalignment ABORT at ETHUSDT is still the recorded state (:74,:122) and the aggregation/label match to crypto_metrics has not been re-verified. ops/run_oils_chain.sh exists but is referenced nowhere in ops/crontab.manifest (grep: zero hits), so the 06:20 chain is unwired. Code edit is possible here, but the re-verify-corr step needs data/crypto_metrics.parquet + the OI/LS archive, which live only on the box -- lookahead-sensitive, do not ship unverified.",
-   "commit": null,
-   "due": "2026-08-03",
-   "disposed": "2026-07-31T13:43:55.841862+00:00",
+   "status": "implemented",
+   "reason": "Fix landed 2026-07-26, FIVE DAYS BEFORE this row was raised, and the re-verify is measured not asserted. backfill_oi_ls_oos.py:92-96 stores point-in-time oi_first/ls_first and :105-106 correlates forward against those columns; :121-124 thresholds 0.90/0.60 UNCHANGED; :46 HOLDOUT_END frozen at 2026-05-31. Artifact reports/reconstructed_oos/oi_ls_cross_sectional.json records compared_against 'archive point-in-time' with worst oi_corr 0.9609 / ls_corr 0.8622, and the run completed to verdicts (oi_divergence net SR -2.815 t=-5.74 OOS-FAILS; ls_contrarian 0.207 t=0.42 OOS-FAILS). The 0.8403 figure both the row and the 08-04 triage cite as current is now the file's own drift diagnostic oi_corr_vs_daily_mean; the row was raised off stale narrative in build_axis_screen_reports.py:194-214, not off code. The 'chain to cron' clause stays correctly UNWIRED: re-running a frozen-window pre-registered OOS daily is the repeated-peeking pathology quarantined elsewhere.",
+   "commit": "f7cc022",
+   "due": null,
+   "disposed": "2026-08-05T09:02:59.035547+00:00",
    "note": "renumbered twice 2026-07-31 (two concurrent sessions allocating ids; origin rows kept theirs both times)"
   },
   {
@@ -1624,11 +1624,11 @@
    "summary": "welded-gate migration: run_options_vrp_backtest.py to campaign_gate_stats()+validate(campaign,column) with column-mapping verification -- scheduled 2026-08-02, before options-VRP resurrection re-screen",
    "roi_bps": 30.0,
    "raised": "2026-07-31T13:43:42.743087+00:00",
-   "status": "scheduled",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=6 effort_h=2: Not done and overdue (due 08-02): scripts/run_options_vrp_backtest.py:25 still imports campaign_pbo_rc and calls it at :79 -- the welded campaign-constant path measured at 420/420 identical verdicts. Target machinery is ready: libs/autodiscovery/validation.py:395 campaign_gate_stats + validate(campaign=,column=) (:456-464), already wired for the main campaign in 8da8acd. The live max_audit escalation names this exact file (data/PRINCIPAL_ACTION.md welded-gate-campaign-constant, with the column-mapping warning). Mechanical migration; per-candidate is the stricter corrected path, no gate loosened.",
-   "commit": null,
-   "due": "2026-08-02",
-   "disposed": "2026-07-31T13:43:56.232989+00:00",
+   "status": "implemented",
+   "reason": "Migration DONE and in the stricter direction. run_options_vrp_backtest.py:25 imports campaign_gate_stats+validate and no longer imports or calls campaign_pbo_rc anywhere; :92-94 stacks the matrix with book_col, :100 computes campaign stats, :101-105 calls validate(campaign=campaign, column=book_col) so the book earns its verdict on its OWN column while Romano-Wolf still pays multiplicity over every series examined. The column-mapping verification the row demanded is a mandatory in-file acceptance assert at :97 (np.array_equal(matrix[:, book_col], book)), so a mis-mapped index cannot silently hand the book a leg's verdict. Degenerate single-asset case fails closed exactly as the old (None, None) branch did. max_audit.py:1583-1606 carries a rot-fence flagging any call site that recomputes campaign_pbo_rc, so this cannot regress.",
+   "commit": "0fcdecf",
+   "due": null,
+   "disposed": "2026-08-05T09:03:01.436832+00:00",
    "note": "renumbered twice 2026-07-31 (two concurrent sessions allocating ids; origin rows kept theirs both times)"
   },
   {
@@ -1938,10 +1938,10 @@
    "roi_bps": 20.0,
    "raised": "2026-07-31T17:55:38.739879+00:00",
    "status": "scheduled",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=3 effort_h=2: Still open, scheduled due today: scripts/run_cashcarry_executor.py:404-415 -- _structurally_bleeding uses read_fresh so a STALE denylist now still denies (docstring :407-410), but when the forensics file is unreadable/corrupt fr.data has no worst_symbols list and :414-415 'return False' ALLOWS new opens; no last-good cache exists anywhere (grep). Cache the last good worst_symbols (write-through file) so corruption can never re-open proven bleeders -- small, money-path, deny-direction only (strictly restrictive, no gate loosened).",
+   "reason": "STILL OPEN and the hole is SHARPER than the row states. run_cashcarry_executor.py:417-421: an unreadable/corrupt forensics read returns None and takes an early 'return False' that ALLOWS opens AND bypasses the 2026-08-05 persistent-graveyard branch at :442-467 -- so the newest denial layer is unreachable on exactly the path that most needs it. Verified live: web/trade_forensics.json currently parses to an EMPTY worst_symbols list, which DOES reach the graveyard and correctly denies both incident-#6 symbols (data/execution_reentry.json holds 1000CATUSDT and COOKIEUSDT) -- so the protection depends entirely on the file staying parseable, and repo-wide grep confirms no last-good cache exists anywhere. Work, DENY-DIRECTION ONLY: consult the persistent graveyard BEFORE the unreadable-file early return, and add a write-through last-good cache consulted when the read fails.",
    "commit": null,
-   "due": "2026-08-04",
-   "disposed": "2026-07-31T17:56:02.284382+00:00"
+   "due": "2026-08-12",
+   "disposed": "2026-08-05T09:03:03.915649+00:00"
   },
   {
    "id": "R0159",
@@ -1973,11 +1973,11 @@
    "summary": "flock-skip observability for all ~40 cron lines: a leaked lock means an organ runs-per-cron forever while executing never; R0136 fixed CI only (adjacency: same failure shape everywhere) -- count skips per lock, page on streaks",
    "roi_bps": 25.0,
    "raised": "2026-07-31T17:55:39.007920+00:00",
-   "status": "scheduled",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: NOT built: 87 'flock -n' lines in ops/crontab.manifest and zero skip-counting anywhere (no skip-per-lock code in scripts/ or ops/; watchdog.py only resurrects daemons; check_scheduler_manifest.py:214 discusses flock but counts nothing). Partial mitigation: producer-side liveness fences (check_organ_liveness.py, max_audit organ registry) surface a starved organ via its dead artifact, so a leaked lock is not fully silent. Real medium-sized work (wrapper + fence + 87 manifest edits).",
+   "status": "rejected",
+   "reason": "Counter is dominated by machinery already built, wired and ENFORCED. check_organ_liveness.py detects the exact consequence this row names -- a cron line that fires while its work never executes -- by comparing ARTIFACT mtime (:155-170) against the cadence parsed from the organ's own cron schedule (:24-36, :66), which is immune to the log-mtime trap that makes leaked locks look alive, and it does so failure-mode-agnostically (leaked lock, expired auth, quota, wrong path) with zero manifest edits. It runs hourly (crontab.manifest:1079) and its verdict is a real L1.28c gate in run_law_gate.py:102 _STATE_FENCES, not a report. The proposal buys only attribution-of-cause while costing a wrapper on 80 cron lines, a new counter artifact, and a further fence to prove the counter ran. Genuine residual is 14 flock'd lines lacking an EVIDENCE comment -- 14 one-line manifest additions to the EXISTING detector, not a per-lock skip counter.",
    "commit": null,
-   "due": "2026-08-03",
-   "disposed": "2026-07-31T17:56:02.498284+00:00"
+   "due": null,
+   "disposed": "2026-08-05T09:03:06.572234+00:00"
   },
   {
    "id": "R0162",
@@ -2034,10 +2034,10 @@
    "roi_bps": 20.0,
    "raised": "2026-07-31T17:55:39.435334+00:00",
    "status": "scheduled",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: REFUTED ALREADY-BUILT (partial coverage): the row asks to audit 'except-return/pass on executor+connectors', but commit 423ccad's sweep denominator was 39 `except Exception: pass` handlers only, and check_silent_swallows_on_the_rails (scripts/max_audit.py:5974-5977) matches only single-statement Pass bodies -- `except ... : return <default>` is invisible to it. AST scan of the ten rail files finds ~19 uncommented broad `except Exception: return` silent swallows still on the money path: run_cashcarry_executor.py:194,203,457,1168,1192,1273; libs/execution/binance_live.py:151,167,288; binance_spot_live.py:142,155; binance_testnet.py:116,132,149,312; binance_spot_testnet.py:135,151,169; run_alerts.py:177,406. That return-shaped class is exactly the one that produced the _market_max_qty cap-disable bug (fixed same day, aef203e). The pass-half is done and fenced (test_enforcement.py:537,565 pi",
+   "reason": "PREMISE VERIFIED: both silent-swallow detectors require a Pass body (max_audit.py:6122-6124 and check_build_standard.py:157-165 _has_silent_swallow), so 'except Exception: return <default>' -- the shape that produced the _market_max_qty cap-disable bug -- is INVISIBLE to enforcement on the money path. Own AST scan of the fence's own ten rail files found 29 broad single-return handlers, 20 with no comment in the fence's window, including run_cashcarry_executor.py:194,203,487,1281,1311,1392 and binance_live.py:158,174,295. The naive count overstates it -- several are load-bearing fail-safe reads explained in an enclosing docstring the except-to-body comment window cannot see. The dangerous subset is the LOOSENING-direction returns, clearest at run_cashcarry_executor.py:1311 inside _refresh_guard where the swallow leaves the guard at the full-size/takers-allowed neutral value reset at :1293. Work: direction-aware classification of the 29, fix the fail-open ones, extend the fence to single-Return bodies with a docstring-aware window.",
    "commit": null,
-   "due": "2026-08-04",
-   "disposed": "2026-07-31T17:56:02.844510+00:00"
+   "due": "2026-08-15",
+   "disposed": "2026-08-05T09:03:08.958205+00:00"
   },
   {
    "id": "R0167",
@@ -2070,10 +2070,10 @@
    "roi_bps": 35.0,
    "raised": "2026-07-31T17:55:39.697233+00:00",
    "status": "scheduled",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: NOT built, premise intact: run_cashcarry_executor.py:1174-1189 documents fail-open by design ('Stale/absent guard = neutral (full size, takers allowed)... stale guard is no guard'). Mitigations since raised: run_alerts.py:287-306 pages live_guard_missing/live_guard_dead, and the read is contracted (0.25h) leaving stale_read records. The guard-must-affirm-or-executor-TIGHTENS inversion remains unbuilt design work interacting with KILL-file authority, exactly as the row itself flags.",
+   "reason": "FAIL-OPEN CONFIRMED PRESENT AND REACHED, not merely documented. run_cashcarry_executor.py:1292-1293 _refresh_guard OPENS by resetting _GUARD to {size_frac 1.0, limit_only False} before attempting the read, and both the not-fresh branch (:1307-1308) and the bare except (:1311-1312) return leaving it there -- so a stale, empty or unreadable live_guard.json leaves the tick at MAXIMUM permitted size with takers allowed, via the caller at :867. Mitigations landed since the row was raised are DETECT-ONLY: run_alerts.py:301/:305 page live_guard_missing/live_guard_dead and the read leaves a stale_read record, none of which tightens the executor -- and a dead guard cannot write its own KILL file. Note tests/execution/test_money_path_wiring.py asserts the fail-open as INTENDED, so that test changes with the design. Work: affirmative-liveness contract where absence of a fresh affirmation TIGHTENS (reduced size_frac and/or limit_only), resolved against KILL-file authority. Restrictive direction only; must land before REARM.",
    "commit": null,
-   "due": "2026-08-04",
-   "disposed": "2026-07-31T17:56:03.055546+00:00"
+   "due": "2026-08-19",
+   "disposed": "2026-08-05T09:03:11.213794+00:00"
   },
   {
    "id": "R0170",
@@ -2135,11 +2135,11 @@
    "summary": "Session edit-mutex for the shared working tree: two live Claude sessions editing one checkout raced today (uncommitted R0060 edits swept by the sibling's merge prep; recovered from checkpoint). R0135 protects against the puller only. Spec: advisory lock (data/.session_edit.lock) held while a session has uncommitted tracked edits + a cycle-prompt duty to check git status for a sibling's dirty files before editing them; rollback_guard checkpoint stays the recovery layer (proved today).",
    "roi_bps": 40.0,
    "raised": "2026-07-31T18:08:07.564381+00:00",
-   "status": "scheduled",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=6 effort_h=2: NOT built: no data/.session_edit.lock, no advisory-lock code, no cycle-prompt duty anywhere (repo-wide grep returns only GAP_REGISTER.md:89 naming this row). Multi-session days demonstrably continue -- the 2026-08-04 merge 9d456b7 resolved 60 conflicts from a concurrent sibling account. The fence is cheap (advisory lock + prompt duty) and rollback_guard stays the recovery layer; due date 08-02 already passed.",
+   "status": "rejected",
+   "reason": "The proposed mechanism CANNOT STOP THE INCIDENT IT WAS RAISED FOR. An advisory lock is cooperative and file-scoped, but two sessions in one checkout share a single git index and a single HEAD, so a sibling's checkout, stash or merge-prep rewrites the tree underneath you without ever consulting a JSON lock -- which is precisely how the R0060 edits were swept. STRICTLY DOMINANT ALTERNATIVE, NAMED: per-session 'git worktree add', which gives non-cooperative OS-level isolation (separate files, separate index, separate HEAD), requires no discipline, and has nothing to leak or rot; it is already the desk's de facto practice via branch-per-session (claude/wonderful-darwin-7uiobi, claude/llm-auto-upgrade-verify-gcjac3, claude/panel-asymmetry-dissent... integrated by merge 9d456b7, d69fcc7, f3ceafb). Recovery via rollback_guard checkpoint and the puller refusal (pull_deploy.sh:83, max_audit.py:2246) remain in place, so rejecting this costs no enforcement the lock would actually have provided.",
    "commit": null,
-   "due": "2026-08-02",
-   "disposed": "2026-07-31T18:08:14.280994+00:00"
+   "due": null,
+   "disposed": "2026-08-05T09:03:13.560453+00:00"
   },
   {
    "id": "R0175",
@@ -2668,10 +2668,10 @@
    "roi_bps": 90.0,
    "raised": "2026-07-31T21:00:41.902240+00:00",
    "status": "scheduled",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=2 effort_h=3: Still inert: libs/execution/binance_testnet.py defines only place_market (:366) and place_post_only (:391) -- no place_stop_market; scripts/run_cashcarry_executor.py:1131 still silently returns [] ('if not fut.has_keys() or not hasattr(fut, \"place_stop_market\"): return []'); the method exists only in libs/execution/binance_live.py:394. GAP_REGISTER.md:55-62 carries it as REARM blocker #1a. Due 2026-08-02, now overdue. Adding a testnet place_stop_market (or making the missing-capability branch page) is pure code work, unblocked, and must land before REARM.",
+   "reason": "CONFIRMED STILL INERT with the full chain walked, and it is a REARM BLOCKER. run_cashcarry_executor.py:30 binds 'from libs.execution import binance_testnet as fut' and grep finds NO rebinding anywhere in the file; _reconcile_protective_stops is genuinely called every tick at :1149, but :1238-1244 returns [] unless hasattr(fut,'place_stop_market') -- and binance_testnet defines only place_market (:373) and place_post_only (:398). place_stop_market exists SOLELY at binance_live.py:401. So the host-death-survival stop is never placed in the environment actually being validated. The green test is what keeps this invisible: test_money_path_wiring.py:90-108 monkeypatches ex.fut with a STUB CLASS that defines place_stop_market, so the suite exercises reconcile logic that cannot run against the real module. Work: add place_stop_market to binance_testnet (paper-safe), make the missing-capability branch PAGE rather than silently return [], and assert the REAL bound connector satisfies the capability.",
    "commit": null,
-   "due": "2026-08-02",
-   "disposed": "2026-07-31T21:06:31.621210+00:00"
+   "due": "2026-08-12",
+   "disposed": "2026-08-05T09:03:15.823778+00:00"
   },
   {
    "id": "R0218",
