@@ -1456,6 +1456,32 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # CONFIDENCE: fence and aggregation are measured (21 tests); the panel itself is BLOCKED in this
 # checkout with no OPENROUTER_API_KEY, which the artifact states rather than hiding.
 40 6 * * 0 cd "$QUANT_ROOT" && flock -n data/.cron_survivor_panel.lock .venv/bin/python scripts/run_survivor_panel.py >> data/cro_ai_logs/survivor_panel.log 2>&1
+
+# WEEKLY WHOLE-DESK GRADE -- 100% coverage PROVEN, scored harshly, every aspect pushed at once.
+# The daily capability ratchet grades 26 aspects and names ONE binding constraint, which is right
+# for a daily cadence. It has two limits a weekly grade must not inherit:
+#   1. ITS ASPECT LIST IS ASSERTED, NOT PROVEN -- a hardcoded tuple of 26. An aspect nobody wrote
+#      into it is invisible: scores nothing, drags no number down. This organ DERIVES the surface
+#      (every cron organ, every libs package, every data artifact, every L1.x law) and reports what
+#      NO aspect claims. FIRST LIVE RUN: 59 of 327 rated, 268 UNRATED -- including ALL NINE laws,
+#      150 of 158 organs and 29 of 30 subsystems. The 26 numbers were grading 18% of the desk.
+#   2. ITS HEADLINE IS AN ARITHMETIC MEAN -- 5.82 while alerting_pager sits at 0.0. An average lets
+#      two 10s pay for a zero; capability is a CHAIN. Headline is the HARMONIC mean (0.98 on the
+#      same numbers) MULTIPLIED by coverage, because a score computed over 18% of the surface is
+#      worth 18% of its face value. First live grade: 0.17/10.
+# Coverage is a MULTIPLIER, not another term -- as a term it diluted to 4.09 on a desk with nine of
+# ten surfaces unrated, which would say a desk nobody has measured is middling.
+# OUTPUT IS THE FULL WORKLIST, not the minimum: every aspect below 10 with its distance-to-ceiling
+# and its own next action, with UNRATED surfaces ranked ABOVE every low score -- a part of the desk
+# nobody grades cannot even be KNOWN to be broken.
+# CEILING TYPE (L1.28c) is INFORMATION-ARRIVAL: it re-runs the daily ratchet first (grading last
+# week's artifact would report a week-old desk as this week's) and the surface moves on the scale
+# of commits, not minutes. Sunday 07:10, after the survivor panel at 06:40 so the week's plan is
+# written once with both in hand.
+# AUTHORITY: MEASUREMENT ONLY. Grades nothing into existence, promotes nothing, moves no threshold.
+# EVIDENCE: scripts/run_weekly_desk_grade.py -> reports/weekly_desk_grade.json +
+# data/weekly_desk_grade.jsonl. CONFIDENCE: measured (counts above read from the first live run).
+10 7 * * 0 cd "$QUANT_ROOT" && flock -n data/.cron_deskgrade.lock .venv/bin/python scripts/run_weekly_desk_grade.py >> data/cro_ai_logs/weekly_desk_grade.log 2>&1
 # RESEARCH MINER (principal 2026-08-01, "max frequency everyday"). Discovers and RANKS quant
 # research across YouTube, Bilibili, Juejin, WeChat/Sogou, arXiv, SSRN, OpenReview, HN and GitHub.
 # Captions are blocked on both video platforms, so the video half is a QUEUE for a human and the
