@@ -2811,11 +2811,11 @@
    "summary": "scripts/run_intelligence_cycle.py:86 reads web/regime.json which DOES NOT EXIST (real path web/regime_engine.json), so meta-learning has labelled every observation 'unlabelled' on a 4-hourly cron since 2026-07-30 (L1.44 phantom-path read).",
    "roi_bps": null,
    "raised": "2026-08-01T01:55:35.245818+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=3 effort_h=0.5: Phantom path still live: scripts/run_intelligence_cycle.py:87 reads web/regime.json; the only producer writes web/regime_engine.json (run_regime_engine.py:19; run_leverage_opt.py:73 reads the real path). Grep shows no writer of web/regime.json anywhere. Meta-learning has labelled every observation 'unlabelled' on its 4-hourly cadence since 07-30. One-line fix.",
-   "commit": null,
+   "status": "implemented",
+   "reason": "Fixed in 9dcad50. Defect confirmed: no writer of web/regime.json exists anywhere; the regime engine writes web/regime_engine.json. The row's IMPACT claim is CORRECTED, not repeated -- the series gate above it returns NO-INPUT first (web/cashcarry_shadow.json has never carried returns[]), so line 86 never executed and the bug was LATENT, not mislabelling 4-hourly since 07-30. Generalising the rule found a second instance in the same file: data/alpha_registry.json is also written nowhere, and _health_monitor laundered that absence into 'registry holds 0 -- the binding constraint is validated alphas', a claim about the DESK built from a claim about this BOX. Both now route through _absent() and report NO-INPUT naming the artifact. Standing gate: tests/scripts/test_intelligence_cycle_honesty.py asserts every artifact-shaped literal in the module has a producer in scripts/ or libs/; verified it FAILS when either phantom is reintroduced, and two blind spots in the gate's own first draft (argument-only AST scan, bare substring match) were found and fixed the same way.",
+   "commit": "9dcad50",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-05T17:32:13.316441+00:00"
   },
   {
    "id": "R0229",
@@ -2835,11 +2835,11 @@
    "summary": "LIVE FINDING: stablecoin_supply_momentum (Holm forward slot, ACCRUING 8/40d) returns dist_shift SHIFT on its z-scored signal, corroborated independently by its own clock z20 = -3.12/-2.81/-3.19 (sustained ~3 sigma supply contraction). Screen also reads SCREEN-UNDERPOWERED. Needs a decision: the world it was screened in has moved.",
    "roi_bps": null,
    "raised": "2026-08-01T01:55:35.659139+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Decision still owed: data/decision_ledger.json contains no ruling on the stablecoin_supply_momentum SHIFT (grep across all decisions), and the axis's live clock/screen artifacts needed to decide (web/axis shadows, dist_shift output) are VPS runtime, absent from this checkout. Machinery is in place (revalidate_clocks maps SHIFT to a hard trigger) but the rescreen-vs-retire judgement the row demands has not been recorded.",
-   "commit": null,
+   "status": "implemented",
+   "reason": "Decision made and logged: data/decision_ledger.json id 2026-08-05-stablecoin-supply-momentum-shift-keep-accruing -- KEEP ACCRUING, production capital STAYS BLOCKED (it already was: production_capital_allowed=false, revalidation_status=pending). The triage carded this BLOCKED-OPERATOR on 'artifacts absent from this checkout'; that was FALSE -- axis_shadow_state.json, clock_revalidation.json and promotion_queue.json are all present and were read. SHIFT VERIFIED, not assumed: an independent clean re-fetch of DefiLlama's 3172-day history reproduced ks_d=0.4273/var_ratio=2.346/level_move_mads=3.206 to the digit. But it does not mean what the row read it as: dist_shift splits at recent_frac=0.25 of the WHOLE history, so 'recent' is 220 observations against the prior 660 and the break PREDATES the 13-observation forward window rather than occurring inside it -- the forward sample is not a mixture. What SHIFT retires is the SCREEN's authority, which under the two-stage law is zero. Retiring would cost 13 irreplaceable forward observations to free a slot that n_candidates=0 leaves idle. The row's second claim -- z20 -3.12/-2.81/-3.19 as INDEPENDENT corroboration -- is only half right: those three reproduce on clean data, but 08-02/08-03 were overstated (-3.715/-3.518 stored vs -2.295/-2.100 clean) because DefiLlama silently REVISES history, and 07-27 was outright corrupt at -239.803. Collector plausibility gate + tests shipped in 4756a10.",
+   "commit": "4756a10",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-05T17:38:14.670099+00:00"
   },
   {
    "id": "R0231",
@@ -4735,6 +4735,54 @@
    "summary": "DEFECT ON ORIGIN, pre-existing and not mine -- found when it refused my push: commit 6f96ac3 (sibling session, branch claude/wonderful-darwin-7uiobi) added ops/crontab.manifest entries for TWO scripts that exist NOWHERE -- scripts/check_prompt_ratchet.py and scripts/screen_venue_subsidy.py are absent from origin and from every working tree on this box. check_scheduler_manifest.py therefore reports MISSING ... scheduled by the manifest but absent from the repo (dead cron) and the whole check goes rc=2 BROKEN, which HARD-REFUSES every push to this branch via the L1.37 pre-push hook -- so the breach is not merely cosmetic, it blocks the branch for every other session until it is closed. THE LIKELY CAUSE, and it is a recognisable shape: the sibling committed the manifest WIRING but left the scripts themselves uncommitted in a working tree (exactly as libs/validation/campaign_design.py and tests/validation/test_campaign_design.py are sitting uncommitted right now) -- the manifest half of a two-part change got pushed and the code half did not. THE FIX IS THE SIBLING'S TO MAKE, in this order: commit the two scripts (preferred -- the wiring is already correct and the cadence is already declared), or remove the two manifest lines if the scripts were abandoned. DO NOT close this by deleting the manifest entries without checking with that session first: the entries are the only surviving record of the intended cadence, and deleting them silently discards a design decision. VERIFY WITH: .venv/bin/python scripts/check_scheduler_manifest.py -- it must leave BROKEN and return to DRIFT (drift is box state, BROKEN is a repo-integrity failure and the two are graded differently on purpose).",
    "roi_bps": 25.0,
    "raised": "2026-08-05T17:00:28.549846+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0389",
+   "source": "cycle",
+   "summary": "VENDOR-REVISION LOOK-AHEAD on every DefiLlama-sourced axis (found closing R0230). DefiLlama silently REVISES its published history: for the SAME dates, our point-in-time data/stablecoin_supply.jsonl holds z20 -3.715/-3.518 on 2026-08-02/03 while a clean re-fetch today yields -2.295/-2.100, and 2026-07-27 moved 122.37bn -> 307.96bn. Both scripts/collect_stablecoin_supply.py (stage_a_screen on the full re-fetched series) and scripts/revalidate_clocks.py (stablesupply() re-fetch, then _z + split_and_check) recompute on the REVISED series every run, so the screen and the SHIFT verdict are computed on numbers that DID NOT EXIST at decision time. This is the as-of-date class from desk memory (a *_now denominator joined to historical events) pointed at the SIGNAL rather than the conditioning variable, and it fails toward a FALSE verdict in either direction with nothing to catch it. defi_utilisation is the same vendor and presumed exposed. The desk already HOLDS the as-of record (the per-day jsonl each collector appends) and nothing anywhere compares the two. FIX: diff the point-in-time series against a re-fetch on every collector run and record the revision delta as a first-class series, exactly as L1.46 makes t_recv - t_venue first-class; where they disagree the point-in-time value is the one a screen may use.",
+   "roi_bps": null,
+   "raised": "2026-08-05T17:38:39.620742+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0390",
+   "source": "cycle",
+   "summary": "GENERALISE THE COLLECTOR PLAUSIBILITY GATE (found closing R0230; the specific instance is fixed in 4756a10). scripts/collect_stablecoin_supply.py stored a 60% one-day collapse in aggregate stablecoin supply with z20=-239.803 into the live input of a Holm forward slot, and NOTHING fired -- there was no plausibility check of any kind between the vendor API and the artifact. That collector now refuses moves past 10%, but the other axis clocks feeding run_axis_shadows.py have the same shape and no such gate: data/defi_util_axis.jsonl, data/cny_premium.jsonl, data/walcl_impulse.jsonl. The damage in the measured instance was zero ONLY because run_axis_shadows.py:241 takes np.sign(z), so the corrupt -239.803 and the true -0.950 gave the same position; a bad read in the other direction flips the sign and books that day's forward return inverted, in the one artifact whose whole purpose is to be unpolluted forward evidence. Sign-preserving corruption is luck, not a control. FIX: one shared plausibility helper applied at every axis collector's write, with a per-axis bar derived from that series' own measured history rather than a copied constant.",
+   "roi_bps": null,
+   "raised": "2026-08-05T17:38:42.431329+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0391",
+   "source": "cycle",
+   "summary": "DOCTRINE SIZE CEILING IS ON A COLLISION COURSE WITH MONOTONIC LAW GROWTH -- needs a principal decision on the INSTRUMENT, not another compression pass. Measured 2026-08-05: ops/principal_doctrine.txt is 62,807c / 863 commitments = 72.8 chars per commitment against max_audit's bloat bar of 400, so the file is 5.5x denser than 'bloated' and the prompt-doctrine-oversized ceiling (60,000, breached by 2,807c) is the only thing red. Mechanical slack measured at ~126c total (one repeated phrase >=45c, zero repeated sentences, zero overlap with docs/CONSTITUTION.md, zero trailing whitespace). The redundancy harvest already happened: 469be48 took the file 113,210 -> 59,884c with commitments RISING 823 -> 832, and the ceiling was evidently pinned to that achieved value. Everything added since is legislated law (L1.48, L1.51). So the structure is: law count only ever rises, density is at floor, ceiling is fixed => this defect will re-fire permanently and each firing demands either cutting law or raising the guard, both forbidden. THE FENCE'S OWN REMEDY IS BLOCKED BY L1.36: 'split law out to a referenced document' collides with REACHING, which requires law ids to be in the file brain_env.sh:183 injects at organ spawn, and ~10 governance tests assert exact ids are present. A referenced doc nothing injects is a recall-based control (the ADVERSARIAL_REVIEW_RUBRIC failure). OPTIONS NEEDING A RULING: (a) re-derive the ceiling from a MEASURED context cost per organ call rather than the last consolidation's high-water mark, (b) a two-tier injection where the operative imperative stays and the proving-instance narrative moves to a doc that is ALSO injected but only to organs that can act on it, (c) actually retire superseded laws so the count can fall. Acked to 2026-09-04 in data/max_audit_acks.json with the full measurement.",
+   "roi_bps": null,
+   "raised": "2026-08-05T17:46:30.105109+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0392",
+   "source": "cycle",
+   "summary": "A 6,400-CHAR BLOCK LABELLED 'CONSTITUTION (immutable, governs every answer you give)' IS COVERED BY NO SEAL. ops/principal_doctrine.txt carries a block delimited '=== CONSTITUTION (immutable ...) ===' / '=== END CONSTITUTION ===' whose 28 substantive lines appear NOWHERE in docs/CONSTITUTION.md (checked whitespace-normalised, 0/28 matched). scripts/check_constitution_core.py seals docs/CONSTITUTION.md ONLY (_CONST at line 42) and reports 'core intact (5 clauses verified)' while this text is unwatched. So the desk holds two disjoint bodies of self-declared immutable constitutional text, one sealed and one not, and the unsealed one is the copy that is actually injected into every organ at spawn (brain_env.sh:183) -- the one that steers behaviour. Any agent editing principal_doctrine.txt can silently alter text that calls itself immutable and no seal fires; L2.8a bars core edits in EITHER direction but has no instrument here. This is the desk's own 'a duty with no instrument is a wish' class pointed at its own constitutional core. FIX: either seal the doctrine's constitution block by hash in check_constitution_core.py alongside docs/CONSTITUTION.md, or reconcile the two documents so there is exactly one sealed core and the doctrine references it. Found while measuring the prompt-doctrine-oversized defect.",
+   "roi_bps": null,
+   "raised": "2026-08-05T17:46:32.895904+00:00",
    "status": "open",
    "reason": null,
    "commit": null,
