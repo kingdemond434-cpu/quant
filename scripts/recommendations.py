@@ -25,11 +25,18 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
+# `python3 scripts/recommendations.py` puts scripts/ on sys.path[0], NOT the repo root, so `libs`
+# is unimportable however sound the code is. The L1.29 hook's refusal path caught this on its first
+# live call and printed rather than swallowed -- which is the only reason it was a one-line fix and
+# not a permanently silent no-op wearing a green tick.
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 LEDGER = ROOT / "docs/research/recommendation_ledger.json"
 
 # A recommendation may sit undisposed for one cycle -- long enough to be triaged in the next
@@ -96,6 +103,43 @@ def _next_id(d: dict) -> str:
     return f"R{(max(nums) if nums else 0) + 1:04d}"
 
 
+def _forecast_add(rid: str, rows: list) -> dict | None:
+    """Pre-register the L1.29 forecast for a new row. NEVER fatal to the ledger write.
+
+    The ledger is the organ; the calibration hook is instrumentation ON it. If the forecast log is
+    unwritable, the recommendation must still be ledgered -- losing a row to a broken side-effect
+    would trade the thing §42 exists to guarantee for the thing measuring it. The failure is
+    printed, not swallowed (L2.4): a silent except here would make an unwritable forecast log look
+    exactly like a healthy one.
+    """
+    try:
+        from libs.research.recommendation_forecast import on_add
+        return on_add(rid, rows)
+    except (ImportError, OSError, ValueError, KeyError, TypeError) as e:
+        print(f"  WARNING: L1.29 forecast not logged for {rid}: {type(e).__name__}: {e}")
+        return None
+
+
+def _settle_forecasts(rows: list) -> None:
+    """Grade every past-due `rec:*` forecast. Runs on EVERY invocation of this CLI.
+
+    Cheap (one small JSON read) and unconditional, because the alternative is a cron line that can
+    silently stop -- and an ungraded forecast inflates the desk's apparent hit-rate by never
+    counting its misses. This CLI is invoked constantly, so hanging the resolver off it makes the
+    forecasts self-closing by construction rather than by schedule.
+    """
+    try:
+        from libs.research.recommendation_forecast import settle
+        done = settle(rows)
+    except (ImportError, OSError, ValueError, KeyError, TypeError) as e:
+        print(f"  WARNING: L1.29 forecasts not settled: {type(e).__name__}: {e}")
+        return
+    if done:
+        hit = sum(1 for x in done if x["outcome"])
+        print(f"  L1.29: graded {len(done)} past-due forecast(s) -- {hit} implemented, "
+              f"{len(done) - hit} not")
+
+
 def add(a: argparse.Namespace) -> None:
     d = _load()
     # DEDUPE on (source, summary): organs re-read the same audit report every cycle, and a ledger
@@ -112,6 +156,10 @@ def add(a: argparse.Namespace) -> None:
         "status": "open", "reason": None, "commit": None, "due": None, "disposed": None})
     _save(d)
     print(f"{rid} ledgered from {a.source} -- OPEN, disposition owed within {GRACE_H:.0f}h")
+    fx = _forecast_add(rid, d["recommendations"])
+    if fx:
+        print(f"  L1.29 forecast {fx['key']} p={fx['p']} [{fx['provenance']}] "
+              f"resolve_by {fx['resolve_by'][:10]}")
 
 
 def dispose(a: argparse.Namespace) -> None:
@@ -235,6 +283,7 @@ def main() -> None:
     p = sub.add_parser("report", help="orphans and overdue -- both are defects, not backlog")
     p.set_defaults(func=report)
     a = ap.parse_args()
+    _settle_forecasts(_load()["recommendations"])
     a.func(a)
 
 

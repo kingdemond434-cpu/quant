@@ -1354,11 +1354,11 @@
    "summary": "POST-TWIN FREQUENCY RAISES (armed, fire when the research twin's first artifacts land on master): (1) brain 4->6 slots/day on the primary (the twin removes the 15-19pct audit load + all mining from its seat -- conversion capacity is the binding constraint and this raises it 50pct); (2) deep sweep full-8 from weekly to 2x/week on the twin's free seat, gated on measured marginal-new-finding yield (X8 rule); (3) kimi 8->12x/day once OpenRouter funded IF month-one metering shows marginal sessions still yield (hunter frequency is budget-bound not information-bound -- external space always has more)",
    "roi_bps": 30.0,
    "raised": "2026-07-31T09:28:53.248726+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Arming condition (1) fired 2026-08-04: twin artifacts landed on master (merges f4c22d5/9d456b7). No raise executed: kimi still 8x/day and 'cannot RUN until OpenRouter is funded' (ops/crontab.manifest:87,77 -- raise 3 is operator-gated on funding + month-one metering); deep sweep still weekly (manifest:652, 0 4 * * 0 -- raise 2 gated on measured X8 marginal-yield, unmeasured); brain still 4 slots/day under a measured quota of '4 cycles/day + 7 miners/day' (manifest:654-655). Real, sequenced, partly measurement-gated work.",
+   "status": "scheduled",
+   "reason": "ALL THREE RAISES SHARE ONE MEASURED BINDING CONSTRAINT, AND IT IS NOT THE SCHEDULE: it is LLM budget. The arming condition did fire (twin artifacts on master 2026-08-04), so this is not a wait on the twin. Measured today: data/cro_ai_logs/recommendation_worker_20260805.log carries TWO credit-exhaustion events ('out of usage credits - resets 6am (UTC)' at 03:43, 'Run /usage-credits to keep using Fable 5' at 06:36), and the desk's own scripts/quota_verdict.py:100 states the CURRENT cadence is already unsustainable -- 'the full schedule (4 cycles/day + 7 miners/day at xhigh) is quota-starved on Pro -- organs are dying at the auth-check, not running'. Raising brain 4->6 against a quota that empties before its reset converts 2 extra cycles into 2 extra stub-deaths and LOWERS conversion; that is the bottleneck law (L1.13), not timidity -- the raise is right and wanted, the resource is absent. Raise (3) is worse off still: kimi cannot run at its CURRENT 8x/day (OpenRouter balance -/bin/bash.59, BLOCKED-OPERATOR), so 12x is meaningless. Raise (2) is the one non-budget item and it is genuinely unmeasured: the manifest carries a dated 2026-07-31 ruling that 2x/wk 'would re-audit unchanged state at enormous quota cost', and this row's own X8 marginal-new-finding gate has never been computed. PER THE CONSTITUTION, THE PURCHASE IS SURFACED RATHER THAN THE CADENCE DECLINED: the unblocker is R0360 -- either upgrade the subscription or place the metered API key at data/secrets/anthropic_api_key, which I verified does NOT exist while ops/brain_env.sh:98 gates the entire fallback on it, so a credit outage currently takes down every LLM organ with no escape. Due 2026-08-19; fires on the funding decision, and raise (2) additionally needs the X8 yield measured from the per-sweep new-finding counts in docs/research/deep_sweep/.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-19",
+   "disposed": "2026-08-05T08:57:59.784867+00:00"
   },
   {
    "id": "R0111",
@@ -1366,11 +1366,11 @@
    "summary": "GENERALIZED EVENT DISPATCHER (the structural end-state of max frequency): a single artifact-watcher that fires organs on STATE CHANGE instead of clock -- sweep synthesis lands -> director reads it; screen returns SCREEN-INTERESTING -> fusion re-plans + paper sleeve spawns; conversion fence flips repair-mode -> brain brief updates; ledger row disposed -> queue rebuilds. Fixed grids are inherently sub-max: events ARE information arrival. Extends R0108 from one organ to the desk",
    "roi_bps": 35.0,
    "raised": "2026-07-31T09:28:53.293137+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Not built: no dispatcher/artifact-watcher module in tree (grep event_dispatcher|artifact_watcher|on_state_change across *.py: zero hits); every organ is cron/systemd-grid driven (ops/crontab.manifest throughout). Real architectural work touching many organs -- the structural end-state, not a small patch; subsumes R0108.",
+   "status": "scheduled",
+   "reason": "NOT BUILT, AND NOT HONESTLY BUILDABLE IN THIS BATCH -- scheduled rather than half-shipped. Confirmed absent this session: grep for event_dispatcher|artifact_watcher|on_state_change across scripts/ and libs/ returns zero, and every organ remains cron/systemd-grid driven; R0111 subsumes R0108, which was already marked dead as its duplicate. The row is CORRECT -- fixed grids re-read unchanged state and events ARE the information arrival (L1.28c names event-driven firing as the way past an information-arrival ceiling) -- so this is a scheduling decision, not a rejection. The specific reason not to ship a partial one now: a dispatcher that fires 4 organs on state change while 60 stay on cron creates a SECOND scheduling plane, and this desk has already paid for exactly that failure mode (a manifest wired into the role-unselected file scheduled nothing while check_build_standard still read green). A dispatcher that silently does not fire is indistinguishable from a quiet desk. DESIGN THE NEXT WORKER SHOULD BUILD TO, so this does not restart from zero: (1) one declarative trigger table mapping artifact path -> consumer organ, content-HASH keyed not mtime keyed (data/rollback/ copies and log-reaper churn make mtime a liar here, and the desk has been burned by mtime-as-liveness twice); (2) the four edges this row names -- sweep synthesis lands -> director, screen returns SCREEN-INTERESTING -> fusion re-plan, conversion fence flips repair-mode -> brain brief, ledger row disposed -> queue rebuild; (3) every dispatched organ keeps its cron line as the FALLBACK during bring-up, with the dispatcher recording which plane actually fired it, so the second plane proves itself before the first is removed; (4) libs/ops/lawful.guard() at entry and _FENCE_OWNERS registration, or L1.37 refuses the push. Due 2026-09-02. Note the sequencing: most high-value edges terminate in LLM organs, which are budget-blocked behind R0360, so the non-LLM edges (fence -> brief, ledger -> queue) are the ones to build first.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-09-02",
+   "disposed": "2026-08-05T08:58:17.754885+00:00"
   },
   {
    "id": "R0112",
@@ -1426,11 +1426,11 @@
    "summary": "ALPHA HUNT R2: POST-LIQUIDATION-CASCADE REVERSION (regime-gated) -- liquidation_listener.py feed owned, no reversion screen exists. Forced participant: liq engines market-close at any price, overshooting fair value transiently. Screen: 5-30min after liquidation-intensity z-score spike >k, does price revert a measurable fraction? Regime gate = the z-score, trades only when forced flow present. Data owned, cheap to screen.",
    "roi_bps": 40.0,
    "raised": "2026-07-31T11:49:32.470372+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] BLOCKED-OPERATOR: Blocker: VPS-side data transport. The mechanism harness exists (libs/research/liquidation_mechanism.py -- OI-collapse/liq-burst/funding-extremity, causal-only) and the cascade study is pre-registered (THREE_MECHANISM_PREREGISTRATION.md:71), but the doc's own transport-gap section (:9-31) states the liquidation tape accumulates on the VPS while every research clone has no data (data/* gitignored): 'research runs where there is no data'. Fix it names -- run the study ON the VPS or ship periodic snapshots -- is a box/operator bringup action; commit a07bad already recorded the sibling study 'BLOCKED on data'.",
-   "commit": null,
+   "status": "implemented",
+   "reason": "SCREENED, negative -- a first-class deliverable under the screen-on-discovery duty. The carded BLOCKED-OPERATOR blocker was false on this box: data/liquidations.parquet holds 57,507 Bybit events since 07-09 and the Bybit trade tape is under data/moat/bybit. scripts/screen_liquidation_reversion.py runs the audited harness over 6 declared cells (3 horizons x 2 side-field mappings, all reported): 5m SCREEN-WEAK (powered negative, n_eff 4294 vs min_detectable 0.030, |IC| 0.0172); 15m SCREEN-UNDERPOWERED (undetermined, not refuted); 30m TIMING-ARTIFACT (same-period corr 0.205 above the 0.20 angle-20 gate). Contamination rising with horizon is the coincident-flow signature, which is mechanically what a market-close does. Logged rejected to research memory rm-20260805T084557-a0825e. Screening it also exposed and fixed a live harness defect affecting screen_moat and collect_perpdex_funding (n_eff inflated 1/horizon-fold below a day).",
+   "commit": "d10a8b4",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-05T08:47:32.312554+00:00"
   },
   {
    "id": "R0117",
@@ -4401,6 +4401,30 @@
    "summary": "VERIFY (do not assume) whether claude-opus-5 is a servable model id before touching the model chain. It sits at rung 2 of _BRAIN_MODEL_CHAIN in ops/model_chain.env:8, ops/brain_env.sh:88 and :146, libs/ops/model_chain.py:47 _FALLBACK_CHAIN, is pinned as the CRO seat model in ops/CRO_CONSTITUTION.md:4 (whose .bak carries opus-4-8), and is asserted by tests/ops/test_model_chain.py and tests/scripts/test_model_upgrade.py. A reconnaissance pass this cycle claimed the id does not exist, which would mean a dead middle rung burning a CLI startup and round-trip on every brain_auth_check and a CRO seat with no chain behind it. That claim is NOT verified and CONFLICTS with the running session's own reported model, so it is recorded as a question, not a finding -- and it is one command to settle. Settle it with an actual call before editing anything: the auth path is load-bearing and libs/ops/model_chain.is_upgrade ranks (5,)>(4,8), so a wrong edit here is self-reinforcing in either direction.",
    "roi_bps": 15.0,
    "raised": "2026-08-05T08:09:25.767525+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0362",
+   "source": "owed-work-batch7",
+   "summary": "INTRADAY RE-SCREEN OF LIQUIDATION REVERSION AT 15m, the one cell R0116 could not resolve: n_eff 1417 against a min_detectable_ic of 0.052 with |IC|=0.0299 -- undetermined, NOT refuted, and the only honest accelerant is more observations (the Bybit overlap was 15.0d because the moat tape starts 07-21 while the liquidation tape starts 07-09). Re-run scripts/screen_liquidation_reversion.py when the overlap passes ~45d (approx 2026-09-05); the construction, burst threshold and trailing window are frozen in that file and may not be tuned at re-screen time. Also extend it past BTCUSDT -- the tape carries SOL/WLD and others, and per-symbol cells are additional DSR-counted trials that must be declared before the run, not selected after.",
+   "roi_bps": 20.0,
+   "raised": "2026-08-05T08:47:32.476258+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0363",
+   "source": "owed-work-batch7",
+   "summary": "L1.29 FORECAST INSTRUMENTATION, remaining decision points A/B/C (R0112 covered D). B IS READY AND SHOULD GO FIRST: scripts/promote_moat_survivors.py:186 already computes p_persistence = binom_tail(k,n,p_base) and stores it on the promoted row at :187, and start_clock(:201-210) stamps the date -- so a real, VARYING, model-derived probability with a natural resolve_by (clock start + MIN_OBS from evidence_clock) needs only a log_forecast call plus a resolver reading the clock outcome. NOTHING has to be invented. A (Stage-A screen, libs/research/axis_screen.py:178) needs a probability that does not exist at that moment -- the dict carries ic/n_eff/powered but no p, and p_survive lives in alpha_economics at hypothesis-GENERATION time -- so it must either be threaded through by name from the generate step or mapped from ic/n_eff, and axis_screen is pure numpy today so a hook adds a dependency edge on libs.self_improvement. C (deep-sweep auditor confidence) is the hard one: run_deep_sweep.run_auditor returns bool and the findings exist only as free-text markdown graded by a STATUS sentinel; prompts/deep_sweep_core.txt:64,73,81 REQUESTS confidence and finding_registry.Finding has no field for it, so it needs a machine-readable sidecar from the prompt before any hook is possible. EVERY hook must ship its resolver in the same commit: check_calibration is already OVERDUE on 44 ungraded rows, and an ungraded prediction inflates the apparent hit-rate by never counting its misses.",
+   "roi_bps": 25.0,
+   "raised": "2026-08-05T08:51:28.463958+00:00",
    "status": "open",
    "reason": null,
    "commit": null,
