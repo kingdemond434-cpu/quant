@@ -3015,11 +3015,11 @@
    "summary": "SYNTH0801 P3-14 [moat DM8-10]: one line x2 -- point the liquidation readers at the file that exists. data/liquidations.parquet holds 50,301 rows over 22 days from a live systemd service; run_conviction_trader.py:1102 and run_llm_trader.py:145 both read data/liquidations.jsonl, which has never existed, inside a try: that swallows FileNotFoundError -- so both briefs are silently built without liquidation context and the failure is invisible. Highest value-per-line on the sweep.",
    "roi_bps": 2000.0,
    "raised": "2026-08-01T03:34:09.957940+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=4 effort_h=1: Still broken, still the best value-per-line: scripts/run_conviction_trader.py:1102 and scripts/run_llm_trader.py:145 both read ('liquidations', 'data/liquidations.jsonl', ...) inside swallow-on-missing context blocks, while the producer liquidation_listener.py:33 writes data/liquidations.parquet (the jsonl has never existed). Point both readers at the parquet (plus the trivial read-format change) and both LLM briefs regain 22+ days of liquidation context.",
-   "commit": null,
+   "status": "implemented",
+   "reason": "IMPLEMENTED in fb8f3b9, and NOT as the one-line path swap the row specified -- the row's own framing would have closed it while leaving both sleeves no better off. Both readers named data/liquidations.jsonl (never written) inside except OSError while the producer wrote data/liquidations.parquet (58,783 events since 2026-07-09), exactly as the row says. But tail -n 6 of that tape is six consecutive BTCUSDT prints worth 65 to 3,261 dollars inside two seconds: a technically-wired feed carrying no information, since nothing in six rows separates a cascade from background. Forced flow is legible only in aggregate, so libs/research/liquidation_brief.summarize reports the window against the tape's own hourly baseline. Live at commit time: 382,621 dollars across 86 events in 60m, 1.5x the 24h hourly median. THE SIDE FIELD IS DELIBERATELY NOT TRANSLATED: the desk's own screen_liquidation_reversion records that Bybit allLiquidation carried ORDER side in one stream generation and POSITION side in another, that the two are exact opposites, and that it counts both mappings as separate trials -- so the brief names the raw venue side and states the mapping is uncalibrated rather than handing a sleeve a coin-flip as a direction. A DEFECT THE NEW TESTS FOUND IN THE FIX ITSELF: the baseline first included the window it was judging, so a short tape read 1.0x BY CONSTRUCTION -- normal, on a tape with no history (the L1.51 shape, a ratio sharing a source with its own reference). Baseline now excludes the window and refuses below 6h of prior tape. 11 tests; the regression that would have caught the original bug asserts neither sleeve names liquidations.jsonl again and that the module path still matches the listener's own _OUT string.",
+   "commit": "fb8f3b9",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-05T19:41:43.484046+00:00"
   },
   {
    "id": "R0246",

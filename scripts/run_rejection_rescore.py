@@ -20,6 +20,7 @@ import json
 from pathlib import Path
 
 from libs.autodiscovery.memory import CandidateStore
+from libs.core.time import from_iso8601, utcnow
 from libs.store.connection import Database
 from libs.validation.reject_rescore import plan_rescore
 
@@ -28,7 +29,20 @@ _SCORES = _ROOT / "data/reject_forward_scores.json"
 
 # Lazy per-run caches: lake frames are read once per symbol, the BTC reference once.
 _FRAMES: dict[str, object] = {}
+
+#: FORWARD OBSERVATIONS a reject needs before ``_forward_score`` will return a number rather than
+#: None. This is the REAL requirement -- everything below is derived from it.
 _MIN_FWD_BARS = 30
+
+#: L1.48 EXEMPTION: DATA-WINDOW DEFINITION, not a probation, cooldown or grace period. The
+#: planner sees only ``(id, rejected_at, nearness)``; it cannot count bars, so it converts the
+#: observation requirement into the only unit a timestamp affords. The number is DERIVED from
+#: _MIN_FWD_BARS x the bar's calendar length, so the two can never drift: the old bare
+#: ``default=30.0`` looked like a chosen waiting period and would have been silently wrong on any
+#: other bar (30 H8 bars arrive in 10 days, not 30). Evidence is still the clock -- what is
+#: demanded is OBSERVATIONS, and days are the unit they are counted in on D1.
+_D1_BAR_DAYS = 1.0
+_MIN_AGE_DAYS = _MIN_FWD_BARS * _D1_BAR_DAYS
 
 
 def _frame(symbol: str):
@@ -91,11 +105,26 @@ def _forward_score(rec: object) -> float | None:
         return None  # unreadable inputs surface as unscored, never as a fabricated number
 
 
+def _ages(rejects: list[tuple[str, str, float]]) -> list[tuple[str, float]]:
+    """(id, age_days) for every reject whose stamp parses. Unparseable stamps are DROPPED rather
+    than defaulted to 0.0: a reject the planner could not date must not be reported as the one
+    closest to eligibility."""
+    now = utcnow()
+    out: list[tuple[str, float]] = []
+    for cid, at, _ in rejects:
+        try:
+            out.append((cid, (now - from_iso8601(at)).total_seconds() / 86400.0))
+        except (TypeError, ValueError):
+            continue
+    return out
+
+
 def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("--db", default="data/sor_crypto.sqlite")
     p.add_argument("--limit", type=int, default=50)
-    p.add_argument("--min-age-days", type=float, default=30.0)
+    p.add_argument("--min-age-days", type=float, default=_MIN_AGE_DAYS,
+                   help=f"derived: {_MIN_FWD_BARS} forward D1 bars (see _MIN_AGE_DAYS)")
     a = p.parse_args()
 
     db_path = _ROOT / a.db if not Path(a.db).is_absolute() else Path(a.db)
@@ -141,9 +170,23 @@ def main() -> None:
         _SCORES.parent.mkdir(parents=True, exist_ok=True)
         _SCORES.write_text(json.dumps(scores, indent=1), "utf-8")
         print(f"wrote {n_new} new forward score(s) -> {_SCORES}")
+    elif not plan.selected:
+        # THE MESSAGE MUST NAME THE ORGAN THAT ACTUALLY STOPPED (R0241c). With nothing selected,
+        # the re-eval loop never ran, so BOTH causes the old line offered were false -- and the
+        # one it named first sends a reader to debug the lake and the crypto adapter, which are
+        # fine. This is the L1.55 shape one layer up: a downstream message reporting a
+        # downstream cause for an upstream refusal. Shortfall is stated in OBSERVATIONS (L1.48).
+        newest = max((age for _, age in _ages(rejects)), default=None)
+        short = "" if newest is None else (
+            f" The nearest reject has ~{newest / _D1_BAR_DAYS:.0f} of the {_MIN_FWD_BARS} forward "
+            f"D1 bars a score needs.")
+        print(f"nothing was SELECTED, so no re-eval was attempted -- {plan.verdict}.{short} "
+              "This is an input shortfall, NOT a re-eval failure: the lake and the adapter were "
+              "never asked.")
     else:
-        print("no new forward scores produced (re-eval hook not wired on this host, or all "
-              "selected already scored) -- the shadow audit will report unscored, honestly")
+        print(f"{len(plan.selected)} reject(s) selected but no new forward score produced "
+              "(re-eval hook not wired on this host, or all selected already scored) -- "
+              "the shadow audit will report unscored, honestly")
 
 
 if __name__ == "__main__":

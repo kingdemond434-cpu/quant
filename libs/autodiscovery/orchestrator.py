@@ -173,7 +173,8 @@ class AutoDiscoveryLab:
         if scr is not None:
             bank_append(build_bank_record(
                 candidate_id=generate_id("cand"), family=hyp.family.value, subtype=hyp.subtype,
-                symbol=hyp.symbol, params=dict(hyp.params), content_hash=content_hash(hyp),
+                symbol=hyp.symbol, params=dict(hyp.params),
+                content_hash=content_hash(hyp, self.bar),
                 mechanism=hyp.mechanism.value, hypothesis_text=hyp.edge_source,
                 failure_modes=list(hyp.failure_modes), capacity_usd=metrics.capacity_usd,
                 book_usd=book_usd, n_sleeves=n_sleeves, metrics=metrics.model_dump(),
@@ -182,7 +183,8 @@ class AutoDiscoveryLab:
             ), bank=self.capacity_bank)
             return scr
         self.store.record(campaign_id=campaign_id, hyp=hyp, status=status, metrics=metrics,
-                          survived=survived, rejection_reason=reason, series=series)
+                          survived=survived, rejection_reason=reason, series=series,
+                          bar=self.bar)
         return None
 
     def cycle(self, symbols: Sequence[str]) -> CycleResult:
@@ -205,7 +207,11 @@ class AutoDiscoveryLab:
         # is a named, deliberate act (L1.16a), never a re-generation.
         _banked = banked_hashes(self.capacity_bank)
         for hyp, spec in plan:
-            if self.store.exists(hyp) or content_hash(hyp) in _banked:
+            # DEDUP IS PER-BAR (R0241a). Without `self.bar` here the D1 store answers for every
+            # timeframe: `planned_hypotheses` takes no timeframe, so the H8 plan is the SAME
+            # tuples as the D1 plan and hashed the same, and every H8 candidate this desk has
+            # ever generated was counted as skipped_duplicate before it could be tested.
+            if self.store.exists(hyp, self.bar) or content_hash(hyp, self.bar) in _banked:
                 skipped += 1
                 continue
             if hyp.symbol not in series_cache:

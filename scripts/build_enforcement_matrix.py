@@ -75,7 +75,14 @@ _MAP: dict[str, list[str]] = {
                "libs/autodiscovery/validation.py:capacity_status",
                "scripts/run_promotion_queue.py", "libs/research/promotion_latency.py"],
     "L1.16a": ["negative_knowledge.py", "check_findings_ratchet"],
-    "L1.19": ["revalidate_clocks.py", "libs/research/dist_shift.py"],
+    # L1.19 is "hunt replacements BEFORE advantages die". probe_bybit_archive is that rule applied
+    # to an advantage the desk has not yet TAKEN: a free 349-day first-party L2 archive that may
+    # or may not be on rolling retention. Whether free history is expiring is a decay question,
+    # and it was answered by INFERENCE in a sweep doc until the probe measured it (FIXED, boundary
+    # 2025-08-21 unmoved 08-01 -> 08-05 while the span grew 345 -> 349 days).
+    "L1.19": ["revalidate_clocks.py", "libs/research/dist_shift.py",
+              "scripts/probe_bybit_archive.py",
+              "tests/scripts/test_bybit_archive_probe.py"],
     "L1.20": ["check_post_gate0_activation", "check_production"],
     "L1.21": ["check_depth_parity", "check_coverage"],
     "L1.22": ["run_intelligence_cycle.py", "check_self_application", "check_self_sufficiency"],

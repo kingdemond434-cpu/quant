@@ -40,6 +40,12 @@ data/*
 # reason the constitution ratchet requires a hand-edited dated file to weaken. Committed so a
 # regression has to survive review rather than a lost file.
 !data/CAPABILITY_RATCHET.json
+# THE BASELINE IS THE MEASUREMENT. probe_bybit_archive answers "is the free 345-day Bybit L2
+# archive expiring?" by comparing today's earliest-available date to the one it recorded LAST
+# time. Untracked, a fresh clone or a wiped data/ has no prior, every run reports BASELINE, and
+# the rolling-retention alarm the file exists to raise can never fire -- a detector that cannot
+# fire is the class L0070 is named for. The seeded BTCUSDT prior carries its own provenance.
+!data/bybit_archive_retention.json
 web/*
 !web/index.html
 reports/

@@ -2051,3 +2051,31 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 #   liquidation_reversion_BTCUSDT, 6 trials, 0 surviving -- and the spawner then reported
 #   NO-CANDIDATES, which is the honest state rather than a refusal)
 8 7 * * * cd "$QUANT_ROOT" && flock -n data/.cron_finalize_axis.lock .venv/bin/python scripts/finalize_axis_screens.py >> data/cro_ai_logs/finalize_axis_screens.log 2>&1
+
+# ---------------------------------------------------------------------------------------------
+# BYBIT L2 ARCHIVE RETENTION ALARM -- is the free 349-day backfill EXPIRING while we wait?
+#
+# quote-saver.bycsi.com is Bybit's first-party publication of its own L2 book at 200 levels /
+# 100ms / 24h -- 8x the depth and 41x the resolution of our own recorder, which makes the desk's
+# headline "irreplaceable Bybit L2" claim false: our copy is a strictly-worse subsample of a free
+# file. The 2026-08-01 data-moat sweep measured the earliest available BTCUSDT date at 2025-08-21
+# and INFERRED that retention might be ROLLING, in which case every day of delay destroys a day
+# of free history permanently. That inference set R0243's entire urgency and nothing tested it.
+#
+# The row's own remedy was "run three HEAD probes on 2026-08-08" -- a diary entry. This is the
+# probe as an organ: it bisects the earliest available date (~11 HEAD requests/symbol, no body
+# transferred) and FAILS LOUD (exit 2) only when the boundary has ADVANCED since the last run.
+# First real verdict 2026-08-05: FIXED. Boundary 2025-08-21 unmoved against the sweep's own
+# 2026-08-01 measurement while the span GREW 345 -> 349 days from the recent end.
+#
+# CEILING TYPE (L1.28c) is DATA-ARRIVAL and daily is at it: the archive publishes T+1 (measured
+# last-modified 00:03:45 UTC for the prior day), so the boundary can move at most once a day and
+# firing more often re-reads an unchanged answer. 03:20 -- after publication, before the morning
+# research block that would act on a ROLLING verdict.
+# A network failure reports UNREACHABLE and exits 0 by design: a probe that cannot see is not
+# evidence of a change, and a fence red on every blip gets switched off (L1.43).
+# EVIDENCE: scripts/probe_bybit_archive.py -> data/bybit_archive_retention.json (committed, so a
+#   wiped data/ cannot silently disarm the baseline the alarm is measured against)
+# CONFIDENCE: committed-script + 10 tests, including the partial-outage case that would otherwise
+#   converge on a too-recent boundary and shout ROLLING
+20 3 * * * cd "$QUANT_ROOT" && flock -n data/.cron_bybit_archive.lock .venv/bin/python scripts/probe_bybit_archive.py >> data/cro_ai_logs/bybit_archive.log 2>&1

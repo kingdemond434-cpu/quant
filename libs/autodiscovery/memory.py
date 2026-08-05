@@ -46,6 +46,7 @@ from libs.autodiscovery.models import (
 )
 from libs.core.ids import generate_id
 from libs.core.time import from_iso8601, to_iso8601, utcnow
+from libs.data.timeframe import Timeframe
 from libs.store.connection import Database
 from libs.store.hashchain import canonical_json, sha256_hex
 
@@ -209,9 +210,31 @@ def decode_series(blob: bytes) -> np.ndarray:
     return np.frombuffer(blob, dtype=_DTYPE).astype("float64", copy=True)
 
 
-def content_hash(hyp: Hypothesis) -> str:
-    """Stable identity of a hypothesis (family+subtype+symbol+params) for dedup."""
-    payload = [hyp.family.value, hyp.subtype, hyp.symbol, sorted(hyp.params.items())]
+def content_hash(hyp: Hypothesis, bar: Timeframe | str = Timeframe.D1) -> str:
+    """Stable identity of a hypothesis (family+subtype+symbol+params+BAR) for dedup.
+
+    THE BAR IS PART OF THE IDENTITY, AND ITS ABSENCE MADE H8 UNREACHABLE (R0241a). ``Hypothesis``
+    carries no timeframe -- ``planned_hypotheses`` takes none -- so a D1 campaign and an H8
+    campaign expand to the SAME family/subtype/symbol/params tuples and hashed identically. The
+    orchestrator dedups on that hash via :meth:`CandidateStore.exists`, globally, across every
+    campaign ever run. So the first D1 campaign banked all 48 hypotheses per symbol and every H8
+    twin thereafter was skipped as a duplicate: H8 has been structurally untestable since
+    inception, silently, reported as ``skipped_duplicate``.
+
+    It is not a bookkeeping distinction. The same generator on 8h bars is a different experiment
+    with a different answer: a lookback of 20 means twenty days or six-and-two-thirds, and 8h is
+    the desk's own named remedy for the daily low-pass filter its price-only work keeps hitting.
+
+    D1 KEEPS ITS LEGACY PAYLOAD, DELIBERATELY. Appending the bar unconditionally would re-key the
+    1,244 candidates already in the store and every hash in the capacity bank, so `exists` would
+    return False for all of them and the factory would re-test its entire history -- inflating the
+    cumulative trial count that deflates every future DSR. Omitting D1 keeps those hashes
+    bit-identical while giving every other bar its own namespace, and the two payloads cannot
+    collide because they differ in length before they differ in content.
+    """
+    payload: list[object] = [hyp.family.value, hyp.subtype, hyp.symbol, sorted(hyp.params.items())]
+    if str(bar) != str(Timeframe.D1):
+        payload.append(str(bar))
     return sha256_hex(canonical_json(payload))
 
 
@@ -285,8 +308,10 @@ class CandidateStore:
     def __init__(self, db: Database) -> None:
         self.db = db
 
-    def exists(self, hyp: Hypothesis) -> bool:
-        chash = content_hash(hyp)
+    def exists(self, hyp: Hypothesis, bar: Timeframe | str = Timeframe.D1) -> bool:
+        """Has this hypothesis been scored ON THIS BAR before? See :func:`content_hash` -- the
+        bar argument is what stops a D1 campaign from marking every H8 twin a duplicate."""
+        chash = content_hash(hyp, bar)
         row = self.db.execute(
             "SELECT 1 FROM research_candidates WHERE content_hash = ?", (chash,)
         ).fetchone()
@@ -295,7 +320,7 @@ class CandidateStore:
     def record(
         self, *, campaign_id: str, hyp: Hypothesis, status: CandidateStatus,
         metrics: ValidationMetrics, survived: bool, rejection_reason: str | None,
-        series: CandidateSeries | None = None,
+        series: CandidateSeries | None = None, bar: Timeframe | str = Timeframe.D1,
     ) -> CandidateRecord:
         """Persist one scored candidate — verdict AND evidence, atomically.
 
@@ -310,7 +335,7 @@ class CandidateStore:
             id=generate_id("cand"), created_at=now, updated_at=now, campaign_id=campaign_id,
             family=hyp.family.value, subtype=hyp.subtype, symbol=hyp.symbol,
             params=dict(hyp.params),
-            content_hash=content_hash(hyp), status=status, mechanism=hyp.mechanism.value,
+            content_hash=content_hash(hyp, bar), status=status, mechanism=hyp.mechanism.value,
             metrics=metrics, survived=survived, rejection_reason=rejection_reason,
         )
         with self.db.transaction() as conn:
