@@ -1432,6 +1432,30 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # EVIDENCE: scripts/run_cro.py -> data/cro_review.json + docs/research/cro_recommendations.jsonl
 # CONFIDENCE: committed-script (new; runs dark until OPENAI_API_KEY is exported, and says so)
 20 5,11,17,23 * * * cd "$QUANT_ROOT" && flock -n data/.cron_cro.lock .venv/bin/python scripts/run_cro.py >> data/cro_ai_logs/cro.log 2>&1
+
+# SURVIVOR BOTTLENECK PANEL -- every seat argues about why nothing has ever survived.
+# The desk's root-cause finding (52 of 350 recorded negatives, 14.9%, were powered enough to mean
+# anything) was produced by ONE reasoner, and a finding from one reasoner is exactly the thing most
+# worth attacking. This puts the same measured artifacts in front of the GPT/CRO brain and every
+# reachable OpenRouter family and makes them argue: round one alone, round two refuting each other
+# ANONYMISED, then ranked by agreement that survived forced contradiction. Agreement between
+# parallel monologues is a shared prior; agreement after refutation is evidence.
+# GPT IS AN ADDITION, NEVER THE BRAIN: nothing here is executed, every response is DATA parsed into
+# structured proposals, and the output is a ranked list for a person.
+# EVERY PROPOSAL IS FENCED. A model asked "how do we get survivors" has one overwhelmingly easy
+# answer -- lower the bar -- and it will find it. Anything loosening a gate, raising size, touching
+# the deadman switch, selecting post hoc, or removing a validation stage is REFUSED and recorded
+# with its reason (the refusal is kept, because a seat proposing it is information about the seat).
+# CEILING TYPE (L1.28c) is INFORMATION-ARRIVAL: the dossier only moves when the screens, the
+# type-II report or the forward clocks move, which is daily at most. Weekly, because a panel re-run
+# against an unchanged dossier returns the same argument at full token cost. Sunday 06:40 sits
+# after the week's screens and before the Monday research cycle reads them.
+# SPEND: checked BEFORE any call against the monthly cap; a missing key writes a BLOCKED artifact
+# naming what to export rather than an empty report that reads like the panel had no opinions.
+# EVIDENCE: scripts/run_survivor_panel.py -> reports/survivor_panel.json + data/survivor_panel.jsonl
+# CONFIDENCE: fence and aggregation are measured (21 tests); the panel itself is BLOCKED in this
+# checkout with no OPENROUTER_API_KEY, which the artifact states rather than hiding.
+40 6 * * 0 cd "$QUANT_ROOT" && flock -n data/.cron_survivor_panel.lock .venv/bin/python scripts/run_survivor_panel.py >> data/cro_ai_logs/survivor_panel.log 2>&1
 # RESEARCH MINER (principal 2026-08-01, "max frequency everyday"). Discovers and RANKS quant
 # research across YouTube, Bilibili, Juejin, WeChat/Sogou, arXiv, SSRN, OpenReview, HN and GitHub.
 # Captions are blocked on both video platforms, so the video half is a QUEUE for a human and the
@@ -1699,6 +1723,30 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # rows (aster 50,974 / lighter 131,299 / klines 50,757) + screen-on-discovery in the same run.
 # CONFIDENCE: measured (row counts above are from the runs, not estimates).
 15 8 * * * cd "$QUANT_ROOT" && flock -n data/.cron_dexscreener.lock .venv/bin/python scripts/collect_dexscreener.py >> data/cro_ai_logs/collect_dexscreener.log 2>&1
+
+# CIRCULATING-SUPPLY HISTORY -- the half of the unlock screen that can ONLY be built forward.
+# screen_unlock_supply_series is blocked on two inputs and they are NOT symmetric: the unlock
+# CALENDAR is a published schedule that can be obtained later with its history intact, while the
+# circulating-supply SERIES is a point-in-time observation nobody sells a trustworthy history of.
+# Every day this does not run is a day that can never be recovered, so it starts first even though
+# it does not on its own unblock the screen. Starting the recoverable half first is the order a
+# desk drifts into precisely because that half shows progress sooner.
+# THE DEFECT IT AVOIDS is the screen's own defect_1: dividing a HISTORICAL release by the CURRENT
+# float. Plausible number, right units, wrong in the direction that makes unlocks look smaller.
+# Every row carries `known_from` = the observation instant and is never back-dated.
+# CEILING TYPE (L1.28c) is DATA-ARRIVAL: circulating supply moves on unlock events, so daily is at
+# the ceiling. 05:10 is off the 08:xx collector block so the CoinGecko free tier is not competing
+# with anything else this desk runs.
+# PACE IS MEASURED: at 2.5s the first live run lost 2 of 5 ids to HTTP 429, and a 429 here is an
+# unrecoverable row rather than a retryable one. 7s + a 20s retry; ~3 minutes for 24 ids.
+# STILL BLOCKED, AND RECORDED: DefiLlama /emissions and /emission/<protocol> both answer HTTP 402
+# Payment Required and defillama.com/api/emissions answers 403 -- the calendar is behind a paid
+# tier. NOT purchased: a licensed vendor feed is the principal's decision, never a collector's.
+# EVIDENCE: scripts/collect_circulating_supply.py -> data/circulating_supply.jsonl +
+# data/circulating_supply_status.json (reports days_covered, never row count -- a thousand rows
+# collected in one afternoon is not a series).
+# CONFIDENCE: measured (6 of 6 ids written across two live runs 2026-08-05).
+10 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_circsupply.lock .venv/bin/python scripts/collect_circulating_supply.py >> data/cro_ai_logs/circulating_supply.log 2>&1
 25 8 * * * cd "$QUANT_ROOT" && flock -n data/.cron_holderconc.lock .venv/bin/python scripts/collect_holder_concentration.py >> data/cro_ai_logs/collect_holder_concentration.log 2>&1
 35 8 * * * cd "$QUANT_ROOT" && flock -n data/.cron_perpdex.lock .venv/bin/python scripts/collect_perpdex_funding.py >> data/cro_ai_logs/collect_perpdex_funding.log 2>&1
 
@@ -1711,6 +1759,32 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # (NO-CANDIDATES: 37 corrected trials, 0 qualifying survivors -- the honest idle state).
 # CONFIDENCE: measured (cohort 12/12 read from libs/research/slot_registry.derive_slots).
 45 8 * * * cd "$QUANT_ROOT" && flock -n data/.cron_paper_spawner.lock .venv/bin/python scripts/run_paper_sleeve_spawner.py >> data/cro_ai_logs/paper_sleeve_spawner.log 2>&1
+
+# THE LAW POLICE -- who watches the watchmen. Every other check on this desk answers "are the laws
+# being broken today?"; this answers the question that decides whether their answers mean anything:
+# IS THE AUDIT STILL LOOKING? Three ways a law silently stops being enforced, none of which raises
+# a defect today -- a check deleted from CHECKS (its defects stop appearing and the report gets
+# BETTER), a check passing VACUOUSLY (it returns early because its artifact is gone, which is
+# indistinguishable from a clean pass), and a defect that disappears because the detector went
+# blind rather than because anything was fixed.
+# FOUND ON ITS FIRST TWO PASSES: `bnb-funded` and `fee-carry-ratio` both swallowed their own
+# failure (`except Exception: pass` / `return`) and reported all-clear having measured NOTHING --
+# so the §40 fee ratchet and the BNB rack-rate detector were unenforced for exactly as long as the
+# venue was unreachable, silently. Both now report UNKNOWN. It also cried wolf on four checks in
+# its first version (they consult the network, git and module globals rather than files); the
+# metric now counts any external consultation, because an alarm that is mostly false is an alarm
+# nobody hears, and this desk has already lost eleven and a half days to that.
+# CEILING TYPE (L1.28c) is INFORMATION-ARRIVAL: it grades the audit, so it runs once per audit
+# cycle and no more. 55 past the hour puts it AFTER max_audit's own daily pass, since grading a
+# sweep before it has run would measure yesterday's roster against yesterday's evidence.
+# AUTHORITY: repairs ONLY by re-running idempotent measurement organs from an explicit per-defect
+# allowlist, each additionally screened against a never-touch token list (deadman switch,
+# thresholds, gates, sizing, promotion, deletion). Everything else is reported for a person -- a
+# police force that can rewrite the law is not enforcing it.
+# EVIDENCE: scripts/run_law_police.py -> data/LAW_POLICE.json + reports/law_police.json. First
+# clean run 2026-08-05: WATCHING, 95 checks, 95 evaluating, 0 blind spots, 44 distinct defects.
+# CONFIDENCE: measured (counts read from the artifact). rc 1 on an unexplained fall pages.
+55 9 * * * cd "$QUANT_ROOT" && flock -n data/.cron_law_police.lock .venv/bin/python scripts/run_law_police.py >> data/cro_ai_logs/law_police.log 2>&1
 
 # PAPER-SLEEVE FORWARD RUNNER -- the organ that makes a spawned clock BREATHE, and the last link
 # in the chain between mining and a survivor. On 2026-08-05 the desk spawned ten forward clocks for
