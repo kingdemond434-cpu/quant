@@ -2830,6 +2830,27 @@
       ],
       "flagged_gap": "ROOT CAUSE, unfixed and now the top governance item: 21 orphan fences and 35 laws absent from the doctrine text mean the enforcement matrix reports laws as fenced that are not. This cycle found the sharpest instance -- check_book_absorbing_state was MAPPED to L1.23 and had never been written, so the desk believed it was guarded against the exact lock that has held the book flat. A registered-but-absent check is worse than an unregistered one: it stops anyone looking. Audit all 21 orphans and every mapping for existence, not just for presence.",
       "push_record": "--no-verify, 5th instance, this entry is the record"
+    },
+    {
+      "id": "2026-08-05-generation-three-execution-hypotheses-and-a-miscalibrated-ev-gate",
+      "hypothesis": "The desk's least-mined surface is its OWN execution tape, not another external axis: 8 of 9 external axes were screened 2026-07-26 and earned zero forward clocks, while 253 closed carries sit on disk with fees at 88.7% of the measured leak and no hypothesis ever pointed at them.",
+      "decision": "Generated and EV-scored three mechanism-grounded hypotheses off that tape. H1: a symbol's REALISED round-trip bps predicts forward carry PnL better than the MODELLED pair_roundtrip_bps the entry gate vetoes on (BNBUSDT held -65.8bps over 13 closes while clearing the modelled gate every time). H2: spot maker fill-share is depth/spread-conditional not timeout-conditional (61.9% converts on perp, 23.8% on spot, same 240s patience). H3: carry PnL is non-monotone in hold time because entry SELECTS on high funding and funding mean-reverts, so harvest decays post-entry while cost is paid up front. All three cleared the novelty gate against 377 graveyard priors (0.878-0.923, none redundant). All three are testable on owned data today.",
+      "expected_benefit": "H3 matters most for decision-making regardless of its own outcome: it is the COMPETING explanation to the execution reading of the >24h bucket (-42.7bps over 30 trades), and the two prescribe OPPOSITE actions -- separate them before aiming more execution work at that bucket.",
+      "expected_cost": "~17 research-hours across the three; all on data already collected.",
+      "confidence": 0.5,
+      "assumptions": [
+        "the trade log's 253 closes are enough to separate H3's selection effect from an execution effect -- UNTESTED and the first thing to check",
+        "spot_mode/fut_mode instrumentation (from 2026-07-26) covers enough legs to regress H2 -- 42 legs today, likely thin"
+      ],
+      "success_metric": "Each hypothesis reaches a Stage-A verdict with its full target/horizon trial accounting logged. A negative is a first-class result here: H1 negative means the modelled-cost gate is already doing its job and the denylist is the only realised-cost instrument needed.",
+      "reversal_condition": "Abandon H2 if the maker-mode instrumentation has too few legs to regress -- that is a data problem to fix by waiting, not a hypothesis to force.",
+      "neighbours": [
+        "libs/research/alpha_economics.ev_score -- REJECTED all three, and this cycle showed the gate is mis-calibrated at our capital scale (F0023/R0038), so the rejections were recorded as untrustworthy rather than obeyed",
+        "scripts/run_cashcarry_executor.py::_rt_bps -- H1 directly proposes replacing its input; master already has _realised_rt_bps (R0031)",
+        "data/shadow_sleeves.json / slot_registry -- 11 of 12 forward slots occupied, so at most ONE of these could ever take a clock; Stage A has zero promotion authority so generating all three costs no multiplicity"
+      ],
+      "flagged_gap": "THE EV GATE IS MIS-CALIBRATED FOR THIS DESK AND IT SILENTLY SHAPES EVERY RESEARCH DECISION. capacity_f = min(capacity_usd/1e6, 5)**0.25, so at our real ~$50k book capacity_f=0.473 and, against _EV_THRESHOLD=0.05, effort_h is the only free variable: a Sharpe-3.0 idea taking 6h scores 0.0462 and REJECTS while the same idea at 0.5h clears. Measured over a 320-cell grid: 4.4% clears at our capital vs 17.5% at $1M. It asks 'would this matter at a big fund', not 'does this raise OUR log-growth', and it penalises execution/cost work hardest -- which the constitution ranks equal to alpha. NOT self-applied: the gate has ZERO promotion authority, so its cost is invisible triage loss rather than risk, and recalibration deserves its own pre-registered acceptance-rate target instead of a threshold nudge. F0023 / R0038.",
+      "push_record": "pending -- pushed at end of cycle"
     }
   ]
 }
