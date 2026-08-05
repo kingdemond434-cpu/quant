@@ -1349,3 +1349,63 @@ must carry a comment naming which of the three exemptions it claims, or it is a 
 
 **Binding on future work.** This applies to code not yet written. A reviewer, auditor or panel seat
 encountering a calendar gate in new work must raise it as a defect without waiting to be asked.
+
+## L1.49 WEAK IS NOT DEAD -- A CANDIDATE THAT CANNOT STAND ALONE IS NOT THEREBY REFUTED
+
+Principal law, 2026-08-05: *"it should never reject weak real edges it should have medallion's
+philosophy of tons of weak uncorrelated edges, this is a flaw."* The desk's gate asks **"does
+candidate i clear the bar standing alone?"** That is the correct question for finding one strong
+strategy and the WRONG question for the architecture this desk actually wants, in which many
+individually-weak, mutually-uncorrelated edges are combined. Under the standalone question a
+Sharpe-0.2 component is rejected forever no matter how many exist and no matter how orthogonal
+they are, so the desk was structurally incapable of finding the exact edge class it most wants.
+
+**The arithmetic that makes this a law rather than a preference.** N uncorrelated edges of Sharpe
+`s` give portfolio Sharpe `s*sqrt(N_eff)`, with `N_eff = N/(1+(N-1)*rho)`
+(`libs/research/cohort_independence.effective_bets`). Two consequences bind:
+
+* **Weakness is not the disqualifier -- redundancy is.** Portfolio Sharpe 2.0 from Sharpe-0.2
+  components needs `N_eff = 100`, i.e. mean pairwise `rho <= 0.01`. The components may be as weak
+  as you like; they may not be similar.
+* **Correlation caps the stack absolutely.** `N_eff -> 1/rho` as `N -> inf`. At the desk's measured
+  same-mechanism cross-symbol `rho = 0.348`, stacking a THOUSAND candidates buys `N_eff = 2.87`, a
+  1.70x Sharpe multiple and no more. Adding candidates to a correlated pile is not diversification,
+  it is bookkeeping.
+
+**The rule.** Failing the standalone-significance bar is NOT a kill. It reclassifies the candidate
+as an ENSEMBLE COMPONENT, and three duties follow:
+
+1. **Its evidence is retained.** The candidate's return series is persisted, survivors and rejects
+   alike. This is the load-bearing clause: on 2026-08-05 the desk was found to compute every
+   candidate's series, validate on it in memory, and store only SCALARS -- the verdict was kept and
+   the evidence discarded, for all 420+ hypotheses ever tested. A weak edge's entire value is what
+   it contributes IN COMBINATION, so destroying the series destroys the edge retroactively and
+   irreversibly. **Discarding a rejected candidate's returns is a breach of this law.**
+2. **It is ranked by MARGINAL CONTRIBUTION, not standalone Sharpe.** The correct object already
+   exists in `libs/doctrine/portfolio_law` as `MC_i = E[log W|S] - E[log W|S\{i}]`. A weak but
+   orthogonal candidate outranks a stronger but redundant one, and any ranking that inverts that is
+   in breach. This is the direct E[log W] link: the desk maximises log-growth, and log-growth is
+   bought with independent bets, not with individually impressive ones.
+3. **Rejection reasons must distinguish three states that are not the same claim.**
+   FAILED-ON-MERIT (powered, looked, not there) is a kill. TOO-WEAK-TO-STAND-ALONE is not a kill,
+   it is an ensemble component. UNDERPOWERED (could not have seen it) is not a verdict at all.
+   Collapsing these into one "rejected" is what made the flaw invisible for so long.
+
+**THIS IS NOT A ROUTE TO ADMIT NOISE, and any use of it as one is itself a breach.** Nothing here
+lowers a bar. The ensemble is a NEW hypothesis facing the SAME rigor -- deflated Sharpe, CPCV/PBO,
+and its own multiplicity charge -- with the per-candidate path unchanged beside it. Because
+searching over combination rules until one passes is the garden-of-forking-paths wearing a
+portfolio costume, the composition and weighting rule MUST be pre-registered before the result is
+seen, every rule tried counts as a trial in the deflation, and an ensemble whose membership was
+chosen after seeing outcomes must be REFUSED. A weak edge admitted individually to capital on the
+strength of this law is a violation of it.
+
+**What legitimately remains a kill**, so this is never used to strip a real fence: a candidate
+refuted on MERIT at adequate power; a TIMING-ARTIFACT or look-ahead failure (contamination is not
+weakness, it is invalidity, and no amount of stacking rescues it); a mechanism with no stated
+economic prior; and anything failing the fraud/robustness checks. Weakness alone is the only
+ground this law removes.
+
+**Binding on future work.** Applies to code not yet written. Any new rejection path that discards a
+candidate's series, or that ranks weak candidates by standalone strength, is a defect a reviewer
+must raise without waiting to be asked.
