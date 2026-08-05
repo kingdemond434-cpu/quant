@@ -19,14 +19,28 @@ name the ROUTE, never the source):
   JUEJIN               article pages are client-rendered: a plain GET returns a 2,397-byte JS
                        shell. Chromium is present in this environment, so this is a COST, not a
                        blocker -- and it is the next thing to build, not something to write off.
-  CLOSED GROUPS        WeChat 群, Telegram channels, Discord servers, paid substacks, private
-                       Feishu/Notion docs. No amount of engineering reaches these: they require a
-                       membership, and membership is a person, not a credential.
+  CLOSED GROUPS        WeChat 群, Telegram channels, Discord servers, private Feishu/Notion
+                       docs. No amount of engineering reaches these: they require a MEMBERSHIP,
+                       and a membership is a person, not a credential.
 
 THAT LAST CLASS IS WHAT THIS FILE IS FOR, and it is where the material is best. Closed Chinese
 quant groups are where practitioners post live results and argue about them, precisely because the
 group is closed. A desk that indexes only the open web is reading the marketing layer of a field
 whose working layer is private.
+
+THIS IS NOT A ROUTE FOR PAID DATA, AND THE DISTINCTION IS ENFORCED BELOW. The desk's charter is
+explicit -- "FREE, PUBLIC, SCRAPABLE or RPC-accessible sources ONLY. Never suggest paid data APIs,
+institutional terminals or enterprise datasets" (kimi_hunter CHARTER) -- and the mandate prefers
+"proprietary information generated through intelligent fusion of existing sources over a new
+subscription". A hand-fed intake path is exactly how that rule gets bypassed by accident: a vendor
+export dropped in this directory would be scored into the same queue as everything else, with no
+terms recorded and nothing to say it may not be redistributed. So a drop whose filename or content
+declares a known vendor is REFUSED, loudly, rather than scored.
+
+The economics say the same thing as the charter, and more sharply. conversion_max reports 14 items
+ever read against 60-115 surfaced six times a day: this desk is not data-starved, it is READING-
+starved. Buying data raises the numerator of a pipe already blocked at the read step, which makes
+the ratio worse and costs money to do it.
 
 PROVENANCE IS LOAD-BEARING AND NON-NEGOTIABLE. Every row carries source="principal_drop" with the
 originating channel the principal names. Three reasons, and each is a defect this desk has already
@@ -87,6 +101,15 @@ _CHANNELS = ("wechat", "telegram", "discord", "qq", "feishu", "substack", "twitt
 
 _TEXT_SUFFIXES = {".txt", ".md", ".json", ".htm", ".html", ".csv"}
 
+#: Vendors whose data is LICENSED. A drop naming one of these is refused rather than scored: this
+#: path exists for membership-gated FREE material, and licensed data arriving through it would be
+#: laundered into the research queue with no terms attached and no way to honour them later.
+#: Refusal is the honest default because the desk cannot read a licence -- only a person can, and
+#: the person is being asked before the row exists rather than after it has been acted on.
+_LICENSED_VENDORS = ("kaiko", "glassnode", "amberdata", "bloomberg", "refinitiv", "nansen",
+                     "chainalysis", "coinmetrics", "cryptoquant", "santiment", "messari",
+                     "dune-pro", "arkham", "factset", "quandl", "nasdaqdatalink")
+
 #: Below this a "document" is a filename someone saved by accident, not material.
 _MIN_CHARS = 40
 
@@ -105,6 +128,21 @@ def _channel_of(name: str) -> str:
         if c in tokens:
             return c
     return "unspecified"
+
+
+def _licensed_vendor(name: str, text: str) -> str:
+    """The licensed vendor this drop appears to come from, or "".
+
+    Checks the FILENAME and the first part of the body, because a vendor export announces itself
+    in both. Deliberately over-eager: a false positive costs one `--allow-licensed` flag and a
+    moment's thought about the terms, while a false negative puts licensed data into the research
+    queue permanently and silently. That asymmetry decides the default.
+    """
+    hay = f"{name}\n{text[:4000]}".lower()
+    for v in _LICENSED_VENDORS:
+        if v in hay:
+            return v
+    return ""
 
 
 def _text_of(path: Path) -> str:
@@ -165,9 +203,17 @@ def ingest(inbox: Path, *, channel_override: str = "", threshold: float = 3.0,
     rows: list[dict[str, Any]] = []
     seen: set[str] = set()
     processed: list[str] = []
+    refused: list[dict[str, str]] = []
     for path in files:
         channel = channel_override or _channel_of(path.name)
         text = _text_of(path)
+        vendor = _licensed_vendor(path.name, text)
+        if vendor:
+            # NOT MOVED to .done -- a refused file stays where the operator put it, because
+            # quietly filing it away would read as "processed" on the next glance.
+            refused.append({"file": path.name, "vendor": vendor})
+            processed.append(f"{path.name} REFUSED -- names licensed vendor {vendor!r}")
+            continue
         blocks = _blocks(text)
         kept = 0
         for b in blocks:
@@ -211,6 +257,8 @@ def ingest(inbox: Path, *, channel_override: str = "", threshold: float = 3.0,
         "n_files": len(files),
         "files": processed,
         "n_rows": len(rows),
+        "n_refused_licensed": len(refused),
+        "refused_licensed": refused,
         "threshold": threshold,
         "by_channel": by_channel,
         "rows": rows,
@@ -254,6 +302,10 @@ def main(argv: list[str] | None = None) -> int:
                   "name the channel, e.g. wechat-<group>-2026-08-05.txt")
         for f in rep["files"]:
             print(f"  read {f}")
+        for r in rep["refused_licensed"]:
+            print(f"  REFUSED {r['file']} -- names licensed vendor {r['vendor']!r}. This path is "
+                  "for membership-gated FREE material; licensed data needs its terms read by a "
+                  "person first, and the desk cannot read a licence.")
         for r in rep["rows"][:12]:
             print(f"  {r['score']:5.1f}  [{r['channel']}] {r['text'][:76]}")
     print(f"-> {OUT}")
