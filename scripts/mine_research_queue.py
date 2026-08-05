@@ -41,7 +41,7 @@ from pathlib import Path
 from typing import Any
 
 from libs.data import bilibili, cn_sources, papers
-from libs.research import conversion_ledger
+from libs.research import conversion_ledger, source_health
 from libs.research.video_triage import SURFACE_THRESHOLD, score_title, triage
 
 _ROOT = Path(__file__).resolve().parent.parent
@@ -510,6 +510,15 @@ def main(argv: list[str] | None = None) -> int:
 
     yield_row = _yield_row(doc, seen=seen, only=sorted(only) or ["all"])
     _append_yield(yield_row)
+
+    # SOURCE HEALTH. This report already knows which sources worked and which did not; until
+    # 2026-08-05 that knowledge died with the file it was written into, so a source could be
+    # blocked for weeks, be re-probed every run, report the same failure every run, and never
+    # accumulate into anything the desk could act on. One call folds this run's blocked/ok status
+    # into an append-only per-source ledger; scripts/hunt_source_alternatives.py reads it and goes
+    # looking for in-class substitutes for whatever has been dead N runs running. Purely additive
+    # -- it reads the finished report and changes nothing about what was mined.
+    source_health.record_from_report(doc)
 
     if not args.all:
         _save_seen(seen | all_ids)

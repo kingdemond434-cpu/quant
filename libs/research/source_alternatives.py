@@ -115,6 +115,12 @@ class Candidate:
     needs_browser: bool = False
     #: Module path when the parser ALREADY EXISTS and passes here. Worth more than any URL.
     in_tree: str | None = None
+    #: The name this candidate carries in the HEALTH LEDGER, when it differs from its registry
+    #: name. Only meaningful alongside ``in_tree``: an already-built candidate's status is read
+    #: off the miner's own daily measurement rather than re-probed, and that lookup has to hit
+    #: the right key -- "wechat_via_sogou" is filed as "wechat", "hackernews_algolia" as "hn".
+    #: Getting this wrong reports a working source as UNKNOWN, which is a silent downgrade.
+    ledger_key: str | None = None
     #: Which vantage can settle this candidate. VANTAGE_DIRECT means "only the unproxied VPS can
     #: test it" -- probing it from this container would produce an answer to a different question.
     verify_from: str = "any"
@@ -181,7 +187,7 @@ _REGISTRY: Final[tuple[Replacements, ...]] = (
                "https://weixin.sogou.com/weixin?type=2&query=%E9%87%8F%E5%8C%96",
                "NONE -- already built and already mined. If Zhihu is retired, raise this "
                "source's query breadth in CN_ARTICLE_QUERIES to absorb the lost volume",
-               in_tree="libs/data/cn_sources.sogou_weixin",
+               in_tree="libs/data/cn_sources.sogou_weixin", ledger_key="wechat",
                note="微信公众号 via Sogou. The closest in-class match the desk has: long-form "
                     "practitioner essays, and it is ALREADY PARSING here (10 results on the "
                     "2026-08-05 probe). Rate-limits with an anti-bot page, which is transient"),
@@ -215,7 +221,7 @@ _REGISTRY: Final[tuple[Replacements, ...]] = (
                "https://api.juejin.cn/search_api/v1/search?query=%E9%87%8F%E5%8C%96&id_type=0",
                "NONE -- already built and already mined. CSDN's information class is fully "
                "covered here today; the open question is coverage breadth, not reachability",
-               in_tree="libs/data/cn_sources.juejin",
+               in_tree="libs/data/cn_sources.juejin", ledger_key="juejin",
                note="掘金 -- clean JSON search API, err_no 0, ~20 results/query, measured working "
                     "on 2026-08-05. This is why CSDN's death has cost the desk very little"),
             _c("cnblogs", CN_TECH_WRITEUP,
@@ -254,7 +260,8 @@ _REGISTRY: Final[tuple[Replacements, ...]] = (
                note="搜狗 -- the desk already parses its WeChat vertical successfully"),
             _c("so360", CN_WEB_SEARCH,
                "https://www.so.com/s?q=%E9%87%8F%E5%8C%96%E4%BA%A4%E6%98%93",
-               "same generic web_search parser",
+               "same generic web_search parser, third engine -- three independent CN indexes is "
+               "what turns the discovery layer from a single point of failure into a quorum",
                note="360搜索 -- third CN general index"),
             _c("duckduckgo_html", CN_WEB_SEARCH,
                "https://html.duckduckgo.com/html/?q=%E9%87%8F%E5%8C%96%E4%BA%A4%E6%98%93",
@@ -303,7 +310,7 @@ _REGISTRY: Final[tuple[Replacements, ...]] = (
                "https://www.youtube.com/results?search_query=%E9%87%8F%E5%8C%96%E4%BA%A4%E6%98%93",
                "NONE -- already built. SEARCH_QUERIES in mine_research_queue already carries CN "
                "terms through the YouTube parser; if Bilibili dies, widen those",
-               in_tree="scripts/mine_research_queue.search_youtube",
+               in_tree="scripts/mine_research_queue.search_youtube", ledger_key="youtube",
                note="CN quant creators cross-post to YouTube; the miner's own docstring says "
                     "those results never surface from English queries, which is why the CN "
                     "queries are already in SEARCH_QUERIES"),
@@ -365,7 +372,7 @@ _REGISTRY: Final[tuple[Replacements, ...]] = (
             _c("hackernews_algolia", EN_PRACTITIONER_FORUM,
                "https://hn.algolia.com/api/v1/search?query=quant%20trading%20backtest",
                "NONE -- already built and already mined via papers.hackernews",
-               in_tree="libs/data/papers.hackernews",
+               in_tree="libs/data/papers.hackernews", ledger_key="hn",
                note="HN is thinner on trading specifics than r/algotrading but it is in-class, "
                     "open, and working"),
             _c("quant_stackexchange", EN_PRACTITIONER_FORUM,
@@ -459,6 +466,7 @@ def candidate_to_row(candidate: Candidate) -> dict[str, Any]:
         "needs_js": candidate.needs_js,
         "needs_browser": candidate.needs_browser,
         "in_tree": candidate.in_tree,
+        "ledger_key": candidate.ledger_key,
         "verify_from": candidate.verify_from,
         "note": candidate.note,
         "next_action": candidate.next_action,

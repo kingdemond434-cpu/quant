@@ -483,6 +483,28 @@ QUANT_ROOT=/home/quant/quant-platform
 # CONFIDENCE: committed-script (new this cycle)
 23 */2 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_reality_gap.py >> data/cro_ai_logs/reality_gap.log 2>&1
 
+# DAILY EXECUTION ECONOMICS: the one page that adds the desk's execution costs UP -- net APR
+# decomposed (gross funding - futures comm - SPOT comm - slippage - funding paid), churn (round
+# trips/position/day vs the entry gate's own minimum hold), per-symbol cost-model drift on
+# run_reality_gap's OWN 1.5x/3.0x bands, and carry_accounting's unexplained residual promoted from
+# footnote to a thresholded DEFECT. Read-only: places no orders, writes only
+# data/execution_economics.json. Missing inputs exit 0 as NOT-READABLE-HERE (never a fabricated
+# zero); an actionable defect (DEFECT residual / CHURN / cost BREAK) exits 1 so a bleeding day
+# leaves a non-zero trace in this log instead of a quiet success.
+# PHASE IS THE POINT -- it must read FRESH inputs, so it sits downstream of all three producers:
+# the 02:00 daily cycle runs run_trade_forensics (scripts/daily_research_cycle.py:61) and
+# run_cost_model, the */2h reality gap has just fired at 03:23, and fill_quality_monitor lands at
+# 03:12. 03:30 is clear of every one of them and of the 03:36/:38/:40 block.
+# CEILING TYPE (L1.28c) is INFORMATION-ARRIVAL and daily is AT it: the trailing-day window and
+# every artifact it reads (forensics, cost model, live book) turn over once per day, so a second
+# run would re-read the same numbers.
+# EVIDENCE: scripts/run_execution_economics.py + libs/execution/economics.py (built 2026-08-05,
+# closes R0027's spot-fee hole by wiring binance_spot_testnet.my_trades commission per fill --
+# the sum run_deadman_reconciliation.py:108-110 already performs). First run on this checkout:
+# status UNMEASURED with every term NOT-READABLE-HERE (no runtime state here), exit 0.
+# CONFIDENCE: committed-script (new this cycle -- cadence chosen here, not observed on the box)
+30 3 * * * cd "$QUANT_ROOT" && flock -n data/.cron_exec_economics.lock .venv/bin/python scripts/run_execution_economics.py >> data/cro_ai_logs/execution_economics.log 2>&1
+
 # DATA ASSET REGISTRY + LABEL FACTORY (EXECUTION_QUEUE.md RANK 4 + RANK 6). Both also run inside
 # run_intelligence_cycle (every 6h) because the organs there navigate by the registry; these daily
 # slots exist so the artifacts are fresh even if a cycle is quota-killed, and because --deep is too
@@ -1574,3 +1596,23 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # a weak-edge portfolio needs).
 # CONFIDENCE: committed-script (new this cycle; 20 classes, 124 readable records, 0 unclassified)
 35 9 * * * cd "$QUANT_ROOT" && flock -n data/.cron_mechcensus.lock .venv/bin/python scripts/run_mechanism_census.py >> data/cro_ai_logs/mechanism_census.log 2>&1
+
+# SOURCE-ALTERNATIVES HUNT (2026-08-05). The miner PROBED every source honestly and then did
+# nothing with the answer: xueqiu WAF-blocked, zhihu 403, csdn read-timeout, baidu anti-bot shell,
+# joinquant/bigquant/ricequant JS shells -- all re-measured daily, all re-reported identically,
+# no substitute ever looked for. Noticing death without acting on it is a diary. This reads the
+# health ledger the miner now writes (libs/research/source_health) and, for every source DEAD N
+# runs running, probes the substitutes registered IN THE SAME INFORMATION CLASS
+# (libs/research/source_alternatives) -- the desk does not need another website, it needs another
+# source of the same information. Unprobed candidates stay UNVERIFIED; a failed probe records its
+# reason; a candidate that can only be settled from the VPS's unproxied egress is NOT written off
+# from inside this container.
+# 13:40 UTC is 40 minutes after the 13:00 miner, so it hunts on THIS morning's ledger rather than
+# yesterday's, and it is clear of the 13:00 litminer seat and the 13:30 capability hunt.
+# CEILING TYPE (L1.28c) is INFORMATION-ARRIVAL and daily is AT it: the ledger advances at most one
+# run per source per UTC day (idempotent per day by construction), so a second run would re-probe
+# the same candidates against unchanged verdicts.
+# EVIDENCE: scripts/hunt_source_alternatives.py -> data/source_alternatives_report.json; first
+# live sweep 2026-08-05 probed 33 registered candidates across 9 information classes.
+# CONFIDENCE: committed-script (measured: the probe results in that report are from the run).
+40 13 * * * cd "$QUANT_ROOT" && flock -n data/.cron_srcalt.lock .venv/bin/python scripts/hunt_source_alternatives.py >> data/cro_ai_logs/hunt_source_alternatives.log 2>&1

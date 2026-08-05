@@ -294,8 +294,7 @@ def record_run(observations: Sequence[Observation], *, path: Path | None = None,
     day add three to the counter.
     """
     p = LEDGER_PATH if path is None else path
-    stamp = (datetime.now(tz=UTC) if now is None else now).astimezone(UTC)
-    iso = stamp.isoformat(timespec="seconds")
+    iso = _utc(now).isoformat(timespec="seconds")
     day = iso[:10]
 
     wanted = {canonical(o.source) for o in observations}
@@ -355,8 +354,7 @@ def mark_replaced(source: str, replacement: str, *, path: Path | None = None,
     made after reading a hunt report, not something a probe can conclude on its own.
     """
     p = LEDGER_PATH if path is None else path
-    stamp = (datetime.now(tz=UTC) if now is None else now).astimezone(UTC)
-    iso = stamp.isoformat(timespec="seconds")
+    iso = _utc(now).isoformat(timespec="seconds")
     day = iso[:10]
     name = canonical(source)
 
@@ -384,6 +382,21 @@ def mark_replaced(source: str, replacement: str, *, path: Path | None = None,
     return state
 
 
+def _utc(now: datetime | None) -> datetime:
+    """Now, in UTC. A NAIVE datetime is rejected rather than localised.
+
+    Silently reading a naive stamp as local time would put the wrong UTC day on a ledger row, and
+    the day IS the idempotency key -- two runs an hour apart could land on different days, or two
+    different days collapse onto one. That is a corrupted history that looks perfectly healthy.
+    """
+    if now is None:
+        return datetime.now(tz=UTC)
+    if now.tzinfo is None or now.tzinfo.utcoffset(now) is None:
+        raise ValueError("naive datetime rejected: the health ledger is keyed by UTC day, so an "
+                         "ambiguous stamp would corrupt the idempotency key")
+    return now.astimezone(UTC)
+
+
 def _add(existing: Sequence[str], vantage: str) -> tuple[str, ...]:
     return tuple(existing) if vantage in existing else (*existing, vantage)
 
@@ -397,11 +410,20 @@ def _write(path: Path, lines: Sequence[str]) -> None:
 
 # ------------------------------------------------------- deriving observations from a miner run
 
-#: Report keys whose values are {lane: fetched_count} for a source group, and the platform each
-#: lane belongs to. A lane present here means the miner ACTUALLY FETCHED from it this run.
-_LANE_COUNTS: Final[tuple[str, ...]] = (
-    "channels_scanned", "search_discovered", "bilibili_discovered",
-    "cn_article_discovered", "academic_discovered",
+#: Report keys whose values are {lane: fetched_count}. A lane present in one of these means the
+#: miner ACTUALLY FETCHED from it this run, which is the strongest evidence a source is usable.
+#: The second element is the platform when the report key alone determines it, and None when the
+#: platform must be read off the lane key -- and that difference is NOT cosmetic: the keys of
+#: `bilibili_discovered` and `search_discovered` are bare query strings ("量化交易 策略"), while
+#: the keys of `cn_article_discovered` and `academic_discovered` are prefixed ("juejin:量化",
+#: "arxiv:q-fin.TR"). Deriving the platform from the lane key in all five cases files every
+#: Bilibili query under a platform named after the query.
+_LANE_COUNTS: Final[tuple[tuple[str, str | None], ...]] = (
+    ("channels_scanned", "youtube"),        # keys are channel handles
+    ("search_discovered", "youtube"),       # keys are bare search queries
+    ("bilibili_discovered", "bilibili"),    # keys are bare search queries
+    ("cn_article_discovered", None),        # keys are "juejin:<kw>" / "wechat:<kw>"
+    ("academic_discovered", None),          # keys are "arxiv:<cat>" / "ssrn:..." / "hn"
 )
 
 
@@ -485,9 +507,9 @@ def observations_from_miner_report(doc: Mapping[str, Any]) -> list[Observation]:
         if not ok and reason is not None and key not in reasons:
             reasons[key] = reason
 
-    for key in _LANE_COUNTS:
+    for key, fixed in _LANE_COUNTS:
         for lane in _mapping(doc, key):
-            _note(_platform_of(str(lane)), True, None)
+            _note(fixed if fixed is not None else _platform_of(str(lane)), True, None)
     for lane, why in _mapping(doc, "channels_blocked").items():
         _note(_platform_of(str(lane)), False, str(why)[:200])
 
