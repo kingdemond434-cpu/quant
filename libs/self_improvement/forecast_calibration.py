@@ -19,27 +19,39 @@ from typing import Any
 _LOG = Path("data/forecast_log.json")
 
 
-def _load() -> dict[str, Any]:
+def _load(store: Path | None = None) -> dict[str, Any]:
     try:
-        data: dict[str, Any] = json.loads(_LOG.read_text("utf-8"))
+        data: dict[str, Any] = json.loads((store or _LOG).read_text("utf-8"))
         return data
     except (OSError, json.JSONDecodeError):
         return {"forecasts": {}}
 
 
-def _save(d: dict[str, Any]) -> None:
-    _LOG.parent.mkdir(parents=True, exist_ok=True)
-    _LOG.write_text(json.dumps(d, indent=2), "utf-8")
+def _save(d: dict[str, Any], store: Path | None = None) -> None:
+    path = store or _LOG
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(d, indent=2), "utf-8")
 
 
 def log_forecast(key: str, p: float, kind: str, resolve_by: str | None = None,
-                 claim: str | None = None) -> None:
+                 claim: str | None = None, store: Path | None = None) -> None:
     """Record (or refresh, while unresolved) a probability forecast keyed by a stable id.
 
     resolve_by (ISO date/datetime, optional) is the deadline by which the outcome must be scored
     -- an unresolved forecast past it is the 'never score yourself' defect check_calibration.py
-    hunts: a desk that predicts but never grades its predictions has beliefs, not forecasts."""
-    d = _load()
+    hunts: a desk that predicts but never grades its predictions has beliefs, not forecasts.
+
+    ``store`` overrides the module-level store, and exists because R0254 measured what happens
+    without it. An organ that takes a ``root`` and writes SOME of its outputs under that root
+    while writing the rest through a module global is only half-parameterised: the caller thinks
+    it has redirected the organ and has redirected half of it. run_calibration_probe.pose() was
+    exactly that shape, so a unit test handing it a tmp_path got its questions file isolated and
+    injected the matching forecast into the LIVE calibration store -- 68 fabricated rows, and all
+    44 forecasts holding the L1.29 fence OVERDUE on 2026-08-05 were test fixtures. Isolation that
+    depends on each caller remembering to monkeypatch a global is not isolation; passing the path
+    the caller already supplied is.
+    """
+    d = _load(store)
     f = d["forecasts"].get(key, {})
     if f.get("resolved"):
         return                                            # never overwrite a scored forecast
@@ -50,7 +62,7 @@ def log_forecast(key: str, p: float, kind: str, resolve_by: str | None = None,
     if claim is not None:
         f["claim"] = claim
     d["forecasts"][key] = f
-    _save(d)
+    _save(d, store)
 
 
 def get_forecast(key: str) -> dict[str, Any] | None:
@@ -105,16 +117,20 @@ def calibrated_confidence(raw_p: float) -> dict[str, Any]:
                    "resolved forecasts"}
 
 
-def resolve(key: str, outcome: bool) -> None:
-    """Mark a forecast's outcome (True = the predicted event happened). Idempotent."""
-    d = _load()
+def resolve(key: str, outcome: bool, store: Path | None = None) -> None:
+    """Mark a forecast's outcome (True = the predicted event happened). Idempotent.
+
+    ``store`` carries the same meaning as in :func:`log_forecast` -- a scorer handed a root must
+    grade in the same store its writer logged into, or it grades a different desk's book.
+    """
+    d = _load(store)
     f = d["forecasts"].get(key)
     if not f or f.get("resolved"):
         return
     f["resolved"] = True
     f["outcome"] = 1.0 if outcome else 0.0
     f["resolved_at"] = datetime.now(tz=UTC).isoformat()
-    _save(d)
+    _save(d, store)
 
 
 def _scoreable(forecasts: dict[str, Any]) -> list[dict[str, Any]]:
