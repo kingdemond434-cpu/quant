@@ -166,3 +166,15 @@ def test_the_live_2026_08_05_cohort_yields_three_reclaimable_slots():
     assert len(plan.displaced) == 1                    # one challenger offered, one slot opened
     assert plan.displaced[0].slot == "defi_utilisation"
     assert plan.count_neutral
+
+
+def test_an_empty_cohort_is_unmeasured_not_wide_open():
+    """derive_slots builds from hardcoded names, so it cannot legitimately return zero slots.
+    An empty list means a read failure, and handing out `cap` clocks on the strength of a failure
+    is the vacuous-pass shape: honest arithmetic over nothing (L1.57)."""
+    plan = plan_displacement([], [{"name": "c", "runway": 1.0}], cap=12)
+
+    assert plan.displaced == ()
+    assert plan.waiting == ("c",)
+    assert plan.m_before == plan.m_after == 0
+    assert any("UNMEASURED" in n for n in plan.notes)

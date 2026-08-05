@@ -185,6 +185,20 @@ def plan_displacement(slots: list[dict[str, Any]], challengers: list[dict[str, A
     unmeasured runway is not an urgent one, and letting it jump the queue would make declaring
     nothing the fastest way in.
     """
+    # AN EMPTY COHORT IS UNMEASURED, NOT WIDE OPEN (L1.57). `derive_slots` builds from hardcoded
+    # standing and derivative names, so it cannot legitimately return zero slots -- an empty list
+    # means the registry failed to read, and treating that as `cap` free seats would hand every
+    # challenger a clock on the strength of a failure. A verdict computed over nothing is vacuous
+    # however honest its arithmetic.
+    if not slots:
+        return DisplacementPlan(
+            waiting=tuple(str(c.get("name", "?")) for c in challengers),
+            m_before=0, m_after=0,
+            notes=("UNMEASURED: the slot cohort is empty, which the registry cannot produce "
+                   "legitimately -- it is built from hardcoded standing and derivative names. "
+                   "Treating this as free capacity would admit challengers on the strength of a "
+                   "read failure, so nothing is placed until the registry is readable",))
+
     states = [(s, *classify_slot(s)) for s in slots]
     reclaimable = [(str(s.get("name", "?")), why) for s, st, why in states if st == RECLAIMABLE]
     protected = tuple(str(s.get("name", "?")) for s, st, _ in states if st == PROTECTED)
