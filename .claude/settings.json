@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "model": "claude-fable-5",
+  "fallbackModel": ["claude-opus-5"],
+  "effortLevel": "xhigh",
+  "alwaysThinkingEnabled": true
+}
