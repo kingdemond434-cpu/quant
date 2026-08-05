@@ -543,7 +543,7 @@
    "roi_bps": 0.0,
    "raised": "2026-07-30T07:25:55.512029+00:00",
    "status": "implemented",
-   "reason": "[wave2 2026-08-04] last 2 of 19 welded paths migrated; weld count now 0 (max_audit detector: WELDED NONE). run_discovery on campaign_gate_stats/column with a column-identity assertion; VRP book stacked as its own matrix column beside its legs (crossasset precedent), earning its own verdict with leg multiplicity paid. Degenerate paths fail closed bit-for-bit. ~575 tests green.",
+   "reason": "[wave2 2026-08-04] last two welded paths migrated: run_discovery on campaign_gate_stats per-candidate (top-EV DEPLOYABLE path), run_options_vrp handled per its no-matrix-column shape. Repo weld count 19 -> 0. Autodiscovery+validation suites green.",
    "commit": null,
    "due": "2026-08-02",
    "disposed": "2026-07-30T07:28:47.830314+00:00"
