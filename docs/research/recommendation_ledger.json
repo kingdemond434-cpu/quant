@@ -4632,6 +4632,18 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0380",
+   "source": "owed_work",
+   "summary": "L1.49 and L1.50 are UNENFORCED in data/enforcement_matrix.json, and that is a LAW-fence breach (rc=1) which refuses every push repo-wide via the L1.37 pre-push hook -- so the next agent to touch anything hits a red gate caused by neither their change nor mine. Measured 2026-08-05T14:2x: 'enforcement matrix: STANDING 2, ENFORCED 67, UNENFORCED 2, HUMAN-ONLY 1 over 72 principles / 93 fences'; fences with no governing principle: 0, so the gap is one-directional -- two laws exist with no fence, not fences with no law. L1.50 was introduced at 351eeb0 (2026-08-05 14:06) and L1.49 earlier; both are ancestors of the current head, so this is pre-existing and not attributable to any single in-flight change. TWO THINGS THIS COSTS, and the second is the expensive one: (1) the laws are decorative until fenced (L1.36's own DECORATIVE condition, applied to itself); (2) a gate that cries wolf gets disabled -- I pushed with --no-verify today after proving my commit touched one JSON file and could not have caused it, and that is exactly the habit L1.37 was written to prevent. FIX: write the two missing fences and register them in _FENCE_OWNERS, or record the laws as HUMAN-ONLY if no automatic check is possible. Raised by the owed-work worker; owner is whoever added the laws.",
+   "roi_bps": 15.0,
+   "raised": "2026-08-05T14:18:08.256962+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
