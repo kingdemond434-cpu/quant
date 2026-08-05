@@ -2302,6 +2302,13 @@ _FINDING_DOCS = (
     "docs/research/SUBSYSTEM_TRIAGE.md",
     "docs/research/TRIAGE_ADDENDUM.md",
     "docs/GATE0_QUEUE.md",
+    # 2026-08-05: the preserved dated copy of the FIRST premortem run. Classified IN SCOPE after
+    # checking rather than by analogy: the sibling artifact panel_inbox.md is excluded because the
+    # panel's own triage loop governs it, but that loop has NOT run for this mission -- grep
+    # 'premortem' over data/panel_verdicts.jsonl returns 0 and its newest rows are 07-31/tier1.
+    # Excluding it on the panel-loop precedent while the panel loop holds none of its findings is
+    # exactly the denominator trick 35 forbids, so it is scanned until those verdicts exist.
+    "docs/research/PREMORTEM_20260805.md",
 )
 #: Finding-bearing docs deliberately out of scope, with the reason -- so the scope check can tell
 #: "consciously excluded" from "quietly unmonitored".
@@ -4000,6 +4007,10 @@ _DIG_DOCS_EXCLUDED = {
     "docs/research/micro_audit_inbox.md":
         "audit findings, not mined finds -- own rotting-findings check",
     "docs/research/panel_inbox.md": "external panel output -- own rulings/scoring loop",
+    "docs/research/PREMORTEM_20260805.md":
+        "already in _FINDING_DOCS as of 2026-08-05, so 35 drives every item in it. Counting the "
+        "same panel findings against 33 as well would double-charge one backlog to two laws and "
+        "depress both conversion rates -- the improvement_inbox precedent directly below",
     "docs/research/ADVERSARIAL_REVIEW_RUBRIC.md":
         "a rubric of DEFECT CLASSES, not mined finds. Each 'card' defines a recurring failure "
         "shape with the real instance that produced it -- reference material a reviewer reads "
