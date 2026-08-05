@@ -117,6 +117,91 @@ class TestVocabularyIsShared:
                    "already-flat", "mkt", "limit"}
         assert stamped <= leg_modes.KNOWN_MODES
 
+
+#: THE WIDEST REAL SCHEMA, not the narrowest. Every fixture above stamps a leg mode on every row,
+#: which is why they all passed while the live tape was being mis-measured by 16.9x: the real
+#: `data/cashcarry_trades.json` carries `spot_mode`/`fut_mode` on 25 of 500 rows and NOTHING
+#: liquidity-shaped on the other 475. A fixture that cannot express the unpriced, unstamped row is
+#: structurally incapable of revealing what the reader does with it.
+_MIXED_TAPE: list[dict[str, Any]] = [
+    {"symbol": "BNBUSDT", "spot_mode": "maker", "fut_mode": "maker", "notional": 100.0},
+    {"symbol": "OPUSDT", "spot_mode": "taker", "notional": 100.0},
+    # ...and the rows the executor wrote before the patient-maker path existed:
+    *({"symbol": "OLDUSDT", "event": "close", "qty": 1.0, "notional": 100.0} for _ in range(50)),
+]
+
+
+class TestUnstampedRowsLeaveTheDenominator:
+    """A row that records no liquidity is UNMEASURABLE -- never a taker (measured 2026-08-05).
+
+    The live tape read 18/505 = 3.6% because 475 rows with no liquidity field at all were each
+    scored a taker fill, while the 30 legs that actually recorded a mode read 18/30 = 60.0% and
+    `run_trade_forensics` -- same tape, same vocabulary -- published 0.60.
+    """
+
+    def test_bare_rows_are_not_counted_as_takers(self) -> None:
+        m = measure(_MIXED_TAPE)
+        assert m["measured_legs"] == 3, "2 maker legs + 1 taker leg; the 50 bare rows are silent"
+        assert m["unmeasurable_rows"] == 50
+        assert m["maker_rate"] == round(2 / 3, 4)
+
+    def test_the_organs_still_agree_on_a_tape_that_is_mostly_unstamped(self) -> None:
+        # Compared at the COARSER organ's precision: the monitor rounds to 4dp and forensics to
+        # 3dp, so an exact `==` only holds for shares that terminate at 3dp. `_EXPECTED_SHARE`
+        # (0.25) does; 2/3 does not. That is a fixture artifact, not a disagreement -- but it is
+        # why the agreement assertion above never had to survive a repeating decimal.
+        assert round(measure(_MIXED_TAPE)["maker_rate"], 3) == _forensics_share(_MIXED_TAPE)
+
+    def test_coverage_travels_with_the_rate(self) -> None:
+        """A rate over 4% of the tape must never be readable as a rate for the tape."""
+        m = measure(_MIXED_TAPE)
+        assert m["coverage"] == round(2 / 52, 4)
+        assert m["fills"] == 52, "row count unchanged; only the denominator moved"
+
+    def test_a_liquidity_field_still_fails_closed(self) -> None:
+        """The narrowing must not reach rows that DO record liquidity -- those still score taker."""
+        assert measure([{"maker": False, "notional": 10.0}])["maker_rate"] == 0.0
+        assert measure([{"role": "taker", "notional": 10.0}])["maker_rate"] == 0.0
+
+
+class TestUnpricedTapeReportsUnmeasuredCost:
+    """0 of 500 live rows carry a fee field, so the tape cannot price a round trip at all."""
+
+    def test_bps_per_rt_is_none_not_zero(self) -> None:
+        m = measure(_MIXED_TAPE)
+        assert m["bps_per_rt"] is None, "0.0 bps on a book paying $1750.88 commission is fabricated"
+        assert m["fees_usd"] is None
+        assert m["fee_concentration"] is None
+        assert m["priced_rows"] == 0
+        assert "UNMEASURED" in m["fee_note"]
+
+    def test_a_priced_tape_still_reports_a_cost(self) -> None:
+        """The refusal must be about ABSENT fee fields, never about a genuinely free fill."""
+        m = measure([{"spot_mode": "taker", "notional": 1000.0, "fee": 0.5}])
+        assert m["priced_rows"] == 1
+        assert m["bps_per_rt"] == 10.0          # 0.5/1000 = 5bps one-way, x2 for the round trip
+
+
+class TestVerdictRespectsSampleSize:
+    """PASS sizes real confidence and STALLED calls a shipped fix defective -- neither on n=30."""
+
+    def test_point_estimate_on_the_bar_is_underpowered_not_pass(self) -> None:
+        v, why = verdict({"maker_rate": 0.6, "maker_fills": 18, "measured_legs": 30,
+                          "coverage": 0.05}, None)
+        assert v == "UNDERPOWERED"
+        assert "42" in why and "75" in why, "the interval must be shown, not just asserted"
+
+    def test_a_genuinely_powered_pass_still_passes(self) -> None:
+        v, _ = verdict({"maker_rate": 0.8, "maker_fills": 800, "measured_legs": 1000,
+                        "coverage": 1.0}, None)
+        assert v == "PASS"
+
+    def test_a_powered_failure_still_stalls(self) -> None:
+        v, why = verdict({"maker_rate": 0.1, "maker_fills": 100, "measured_legs": 1000,
+                          "coverage": 1.0}, {"maker_rate": 0.1})
+        assert v == "STALLED"
+        assert "DEFECT" in why
+
     def test_only_already_flat_leaves_the_denominator(self) -> None:
         for mode in leg_modes.KNOWN_MODES:
             expected = mode not in ("already-flat", "")

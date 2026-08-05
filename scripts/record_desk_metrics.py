@@ -85,8 +85,12 @@ def collect() -> dict[str, float]:
     out: dict[str, float] = {}
 
     fq = _j("data/fill_quality.json", {}).get("current") or {}
+    # `coverage` rides along with the rate DELIBERATELY: on 2026-08-05 the maker rate was measured
+    # over 5.0% of the tape (30 legs of 500 rows), and a rate stored without its coverage is a
+    # narrow measurement that reads as a book-wide one for as long as the store remembers it.
     for src, dst in (("maker_rate", "fill.maker_rate"), ("bps_per_rt", "fill.bps_per_rt"),
-                     ("fee_concentration", "fill.fee_concentration")):
+                     ("fee_concentration", "fill.fee_concentration"),
+                     ("coverage", "fill.maker_coverage")):
         if isinstance(fq.get(src), (int, float)):
             out[dst] = float(fq[src])
 

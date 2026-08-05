@@ -108,6 +108,37 @@ def _leg_maker_flags(r: dict) -> list[bool] | None:
     return flags
 
 
+def _row_flags(r: dict) -> list[bool] | None:
+    """Maker observations contributed by ONE row, or None when the row records no liquidity at all.
+
+    THE SILENT-TAKER DEFECT THIS CLOSES (measured 2026-08-05 on the live tape). `_is_maker` fails
+    CLOSED, and that is right for a row that HAS a liquidity field carrying something unexpected.
+    It is catastrophic for a row that has no such field at all: `_is_maker({}) is False` is not a
+    measured taker, it is a fabricated one. The cash-carry tape stamps `spot_mode`/`fut_mode` only
+    on rows written by the patient-maker path, so 475 of 500 rows carried NO liquidity information
+    whatsoever -- and every one of them was counted as a taker fill. The published rate was 3.6%
+    (18/505) while the 30 legs that actually record a mode read 18/30 = 60.0%, and
+    `run_trade_forensics._leg_share`, reading the SAME tape through `leg_modes`, reported 0.60.
+    Two organs, one tape, one fact, 16.9x apart -- the exact failure `libs/execution/leg_modes`
+    was written to make impossible.
+
+    `_schema_understood` did not catch it because it is ALL-OR-NOTHING: one readable row anywhere
+    in the tape flips the whole file to "understood", after which every unreadable row is scored
+    rather than skipped. The guard protected against an unreadable TAPE and had nothing to say
+    about an unreadable ROW.
+
+    The rule, stated once so it generalises: a row leaves the denominator when we cannot tell what
+    it was, exactly as `already-flat` leaves it when there was nothing to tell. Absence of evidence
+    is not evidence of taker.
+    """
+    flags = _leg_maker_flags(r)
+    if flags is not None:
+        return flags
+    if any(k in r for k in _LIQUIDITY_FIELDS):
+        return [_is_maker(r)]          # a liquidity field IS present -- fail closed, as before
+    return None                        # nothing recorded: unmeasurable, NOT a taker
+
+
 def _schema_understood(rows: list[dict]) -> bool:
     """Does ANY row carry a field that could express maker-vs-taker?
 
@@ -133,8 +164,13 @@ def _schema_understood(rows: list[dict]) -> bool:
     return any(_leg_maker_flags(r) is not None for r in rows)
 
 
+#: EXACTLY the fields `_fee` consults -- same lockstep rule as `_LIQUIDITY_FIELDS`. `measure` uses
+#: this to tell "the tape prices its fills at zero" from "the tape does not price its fills".
+_FEE_FIELDS = ("fee", "commission", "fee_usd")
+
+
 def _fee(r: dict) -> float:
-    for k in ("fee", "commission", "fee_usd"):
+    for k in _FEE_FIELDS:
         if k in r:
             try:
                 return abs(float(r[k]))
@@ -170,14 +206,18 @@ def measure(rows: list[dict]) -> dict[str, Any]:
                          "UNMEASURED rather than a false 0%.")}
     # One entry per MEASURED observation. A cash-carry row contributes one flag per leg that
     # actually placed an order (R0324); every other schema stays one flag per row, `_is_maker`
-    # failing closed exactly as before.
+    # failing closed exactly as before. A row recording NO liquidity information contributes
+    # NOTHING -- it is counted separately as unmeasurable, never scored taker.
     units: list[bool] = []
     takers: list[dict] = []
+    n_unmeasurable = 0
     for r in rows:
-        flags = _leg_maker_flags(r)
-        row_flags = [_is_maker(r)] if flags is None else flags
+        row_flags = _row_flags(r)
+        if row_flags is None:
+            n_unmeasurable += 1
+            continue
         units.extend(row_flags)
-        if not all(row_flags):      # a row bearing ANY non-maker leg is a row that paid taker
+        if row_flags and not all(row_flags):  # a row bearing ANY non-maker leg paid taker
             takers.append(r)
     n_units = len(units)
     if n_units == 0:
@@ -190,39 +230,88 @@ def measure(rows: list[dict]) -> dict[str, Any]:
                          " -- no order was placed, so there is no maker denominator. Reporting "
                          "UNMEASURED rather than a false 0%.")}
     makers = [u for u in units if u]
-    fee_all = sum(_fee(r) for r in rows)
-    fee_taker = sum(_fee(r) for r in takers)
-    notional = sum(_notional(r) for r in rows)
-    return {
+    # A FEE FIELD MUST EXIST BEFORE A FEE NUMBER MAY BE PUBLISHED. `_fee` returns 0.0 for a row
+    # carrying no fee key, so summing over a tape that records none yields a total of 0.0 -- and
+    # `bps_per_rt` then publishes a realised round-trip cost of 0.0 bps for a book whose own
+    # leak_attribution names $1750.88 of futures commission. That is the module's stated failure
+    # mode ("an implausible 0% gets investigated, a believable 43% gets believed") applied to the
+    # fee fields instead of the maker field: the guard was built for one number and never
+    # generalised to its siblings. Measured 2026-08-05: 0 of 500 rows carry fee/commission/fee_usd.
+    priced = [r for r in rows if any(k in r for k in _FEE_FIELDS)]
+    fee_all = sum(_fee(r) for r in priced)
+    fee_taker = sum(_fee(r) for r in takers if any(k in r for k in _FEE_FIELDS))
+    notional = sum(_notional(r) for r in priced)
+    out: dict[str, Any] = {
         "fills": n,
         "measured_legs": n_units,
+        "unmeasurable_rows": n_unmeasurable,
+        # COVERAGE TRAVELS WITH THE RATE, ALWAYS. A maker share computed over 6% of the tape is a
+        # real measurement of that 6% and says nothing about the rest; publishing the rate without
+        # the coverage beside it is how a narrow number gets read as a book-wide one.
+        "coverage": round((n - n_unmeasurable) / n, 4) if n else None,
         "maker_fills": len(makers),
         "maker_rate": round(len(makers) / n_units, 4),
-        "fees_usd": round(fee_all, 4),
-        # The 96.5% statistic: what share of all fees the taker MINORITY is responsible for.
-        "fee_concentration": round(fee_taker / fee_all, 4) if fee_all > 0 else None,
         "taker_share_of_fills": round((n_units - len(makers)) / n_units, 4),
-        # One-way bps; x2 for a round trip, which is the unit the growth ladder prices.
-        "bps_per_rt": round((fee_all / notional) * 1e4 * 2, 3) if notional > 0 else None,
+        "priced_rows": len(priced),
     }
+    if not priced:
+        out.update({"fees_usd": None, "fee_concentration": None, "bps_per_rt": None,
+                    "fee_note": (f"0 of {n} row(s) carry a fee field {_FEE_FIELDS} -- cost per "
+                                 "round trip is UNMEASURED, not zero.")})
+        return out
+    out["fees_usd"] = round(fee_all, 4)
+    # The 96.5% statistic: what share of all fees the taker MINORITY is responsible for.
+    out["fee_concentration"] = round(fee_taker / fee_all, 4) if fee_all > 0 else None
+    # One-way bps; x2 for a round trip, which is the unit the growth ladder prices.
+    out["bps_per_rt"] = round((fee_all / notional) * 1e4 * 2, 3) if notional > 0 else None
+    return out
+
+
+def wilson(k: int, n: int, z: float = 1.96) -> tuple[float, float]:
+    """Wilson score interval for a binomial share -- the honest error bar on `maker_rate`.
+
+    Chosen over the normal approximation because n here is small (30 legs at first measurement)
+    and the share sits near the 0.60 bar, exactly where the naive interval misbehaves. Pure
+    arithmetic, no scipy: this module must stay importable by a read-only monitor.
+    """
+    if n <= 0:
+        return (0.0, 1.0)
+    p = k / n
+    d = 1 + z * z / n
+    centre = (p + z * z / (2 * n)) / d
+    half = z * ((p * (1 - p) / n + z * z / (4 * n * n)) ** 0.5) / d
+    return (max(0.0, centre - half), min(1.0, centre + half))
 
 
 def verdict(now: dict, prior: dict | None) -> tuple[str, str]:
     rate = now.get("maker_rate")
     if rate is None:
         return "NO DATA", "no fills recorded -- the loop cannot answer whether the fix works"
-    if rate >= TARGET_MAKER_RATE:
-        return "PASS", f"maker rate {rate:.1%} >= target {TARGET_MAKER_RATE:.0%}"
+    k, n = now.get("maker_fills", 0), now.get("measured_legs", 0)
+    lo, hi = wilson(int(k), int(n))
+    ci = f"{n} measured leg(s), 95% CI [{lo:.1%}, {hi:.1%}]"
+    cov = now.get("coverage")
+    cov_s = f", coverage {cov:.1%} of rows" if isinstance(cov, (int, float)) else ""
+    # A POINT ESTIMATE IS NOT A VERDICT. PASS moves real capital-sizing confidence and STALLED
+    # declares an accepted fix defective; neither may rest on a sample that cannot distinguish
+    # them. The bar is the CONFIDENCE INTERVAL clearing the target, never the point estimate
+    # touching it -- the same rule the desk applies to an edge, applied to its own metric.
+    if lo >= TARGET_MAKER_RATE:
+        return "PASS", f"maker rate {rate:.1%} >= target {TARGET_MAKER_RATE:.0%} ({ci}{cov_s})"
+    if hi >= TARGET_MAKER_RATE > lo:
+        return "UNDERPOWERED", (f"maker rate {rate:.1%} straddles the {TARGET_MAKER_RATE:.0%} "
+                                f"target -- {ci}{cov_s}. Neither PASS nor STALLED is supported; "
+                                "the answer is more measured legs, not a louder verdict.")
     prev = (prior or {}).get("maker_rate")
     if prev is None:
-        return "BASELINE", f"maker rate {rate:.1%} recorded; trend needs a second measurement"
+        return "BASELINE", f"maker rate {rate:.1%} recorded ({ci}{cov_s}); trend needs a second"
     delta = rate - prev
     if delta > 0.02:
         return "IMPROVING", (f"maker rate {rate:.1%} (+{delta:.1%}) but below "
-                             f"{TARGET_MAKER_RATE:.0%}")
+                             f"{TARGET_MAKER_RATE:.0%} ({ci}{cov_s})")
     return "STALLED", (f"maker rate {rate:.1%} ({delta:+.1%}) -- patient-opens shipped "
-                       f"{FIX_SHIPPED} and the rate is not climbing. An accepted fix that did "
-                       "not move its own metric is a DEFECT, not a note.")
+                       f"{FIX_SHIPPED} and the rate is not climbing ({ci}{cov_s}). An accepted "
+                       "fix that did not move its own metric is a DEFECT, not a note.")
 
 
 def main() -> None:
