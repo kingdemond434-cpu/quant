@@ -5294,6 +5294,30 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0431",
+   "source": "cycle",
+   "summary": "ABSORPTION COST IS HORIZON-DEPENDENT AND THE 1-YEAR FRAMING INVERTS ITS SIGN. Found by R0266's study (scripts/study_absorbing_kelly.py, docs/research/absorbing_kelly_study.json). Modelling absorption as the account FREEZING at the barrier -- correct for a venue minimum, since the money is still there -- floors terminal log-wealth at log(barrier) while the upside stays unbounded. Over a ONE-YEAR horizon that bounded downside makes E[logW] CONVEX in leverage once mu is uncertain: mu-dispersion pays like a call option, more spread puts more mass in the unbounded good tail while the bad tail is capped, and the measured optimum came out ABOVE full Kelly (f* 1.05 to 3.00). The first version of the study read that as 'the two shrinks double-count in 12/12 cells' and would have shipped a confident wrong number; it was caught only because a positive control and a no-barrier control were added. THE FIX IS THE HORIZON, NOT THE MODEL: this desk's objective is LIFETIME E[log W_T], and over a lifetime absorption forfeits ALL future compounding rather than settling at 0.2x book -- the very floor that creates the convexity is what a long horizon removes. WORK: re-run the study with multi-year horizons (or an explicit continuation value for the non-absorbed state) and confirm f*_joint falls below f*_absorbing as the horizon grows, which is the direction theory predicts. LOW PRIORITY and say so: the boundary shrink at the desk's real barrier measured <=10% (gamma_boundary 0.90-1.00 at the 00-on-k viability floor), an order of magnitude below the estimation shrink already applied, so nothing about deployed sizing turns on it. This row exists so the artifact's own caveat is tracked rather than living only in a docstring.",
+   "roi_bps": 8.0,
+   "raised": "2026-08-05T23:28:25.564804+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0432",
+   "source": "cycle",
+   "summary": "THE KELLY SHRINK IS THE RIGHT FORMULA WITH THE WRONG RATIONALE ATTACHED, AND THE TWO CALIBRATE DIFFERENTLY. Measured by R0266's study (CONTROL A, 12/12 cells): with an UNBIASED mu, estimation noise ALONE leaves the growth optimum at exactly full Kelly, f* = 1.00. That is not a simulation artifact -- E[log W_T] = T(L*mu - L^2 sigma^2/2) is LINEAR in mu, so averaging over symmetric unbiased parameter noise cannot move the argmax. The rationale carried in libs/risk/kelly_shrink.py and echoed in the constitution -- 'Kelly's penalty is asymmetric, so shrinkage RAISES expected log growth on an estimated edge' -- does not survive that test: the asymmetry is already inside the quadratic term, and symmetric noise about a correct mean does not shift the optimum. THE SHRINK IS STILL CORRECT, and this row must not be read as an argument to bet more. What justifies it is that mu-hat is NOT unbiased for the quantity the desk bets on: candidates are selected BECAUSE they measured well, so mu-hat carries a winner's curse, and the correct input is the POSTERIOR MEAN under a prior that most candidates have no edge. S^2/(S^2+SE^2) is exactly the James-Stein / normal-posterior shrinkage factor toward a zero-edge prior, so the FORM is right. WHY IT MATTERS PRACTICALLY: the two stories calibrate differently. A posterior-mean shrink should be tuned to (a) how strong the zero-edge prior is -- this desk has 420 tested / 0 survivors of evidence for a very strong one -- and (b) how SELECTED the particular candidate was, i.e. how many trials it won against. Neither is an input today; the shrink sees only S and N, so it applies the same haircut to an edge picked from 1 trial and one picked from 420, when the winner's curse differs enormously between them. WORK: restate the docstring rationale, then decide whether to feed the trial count (already tracked for DSR multiplicity) into the shrink. Direction of any change is TIGHTER for heavily-selected candidates, never looser.",
+   "roi_bps": 12.0,
+   "raised": "2026-08-05T23:28:45.668521+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
