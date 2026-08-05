@@ -926,7 +926,8 @@ def _venue_equity(equity: float) -> tuple[dict[str, float], str | None]:
     # pass the age gate carrying no venue information at all.
     fr = read_fresh(_VENUE_FEED, max_age_h=_VENUE_FEED_MAX_AGE_H, min_rows=1,
                     caller="run_cashcarry_executor._venue_equity")
-    concentrated = {_VENUE: max(0.0, float(equity))}
+    eq = max(0.0, float(equity))
+    concentrated = {_VENUE: eq}
     if fr.fresh and isinstance(fr.data, dict):
         split = fr.data.get("venues")
         if isinstance(split, dict):
@@ -935,6 +936,21 @@ def _venue_equity(equity: float) -> tuple[dict[str, float], str | None]:
                 if isinstance(held, int | float) and not isinstance(held, bool):
                     book[str(name)] = max(0.0, float(held))
             if book:
+                # A published split that does not ACCOUNT FOR the whole book leaves a remainder
+                # sitting somewhere unnamed, and an unnamed remainder must never be allowed to
+                # dilute every fraction toward zero -- that is the unreachable-cap defect all
+                # over again, this time wearing a fresh timestamp instead of an absent file.
+                # The shortfall is attributed to the venue this executor actually routes to: the
+                # known counterparty, which is the worst case AND the likeliest place for it.
+                # `_RSP_TOL` is this file's existing dollar-noise floor (no new threshold), so
+                # rounding between two measures does not manufacture a PARTIAL every tick.
+                named = sum(book.values())
+                if eq - named > _RSP_TOL:
+                    book[_VENUE] = book.get(_VENUE, 0.0) + (eq - named)
+                    return book, (
+                        f"venue-split PARTIAL: {_VENUE_FEED} names ${named:,.2f} of ${eq:,.2f} "
+                        f"equity, so the unattributed ${eq - named:,.2f} is charged to {_VENUE} "
+                        f"-- an unnamed remainder must never dilute the cap toward zero")
                 return book, None
         # Scalar-only feed: today's publication, and NOT a failure -- one venue holds the whole
         # book, which is precisely what `concentrated` says. Measured, so no note.
