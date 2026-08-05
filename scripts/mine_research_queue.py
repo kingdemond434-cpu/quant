@@ -40,7 +40,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from libs.data import bilibili, cn_sources, papers
+from libs.data import bilibili, cn_sources, foreign_sources, papers
 from libs.research import conversion_ledger, source_health
 from libs.research.video_triage import SURFACE_THRESHOLD, score_title, triage
 
@@ -331,7 +331,7 @@ _YIELD_LOG = _ROOT / "data" / "miner_yield.jsonl"
 #: Which report key holds the per-query fetch counts for each source group.
 _FETCH_KEYS = {"bilibili": "bilibili_discovered", "cn": "cn_article_discovered",
                "search": "search_discovered", "academic": "academic_discovered",
-               "youtube": "channels_scanned"}
+               "youtube": "channels_scanned", "foreign": "foreign_discovered"}
 
 
 def _yield_row(doc: dict[str, Any], *, seen: set[str], only: list[str]) -> dict[str, Any]:
@@ -384,14 +384,14 @@ def main(argv: list[str] | None = None) -> int:
     # dedicated Bilibili run would drag every other source along at Bilibili's cadence, which is
     # exactly the over-polling that took Juejin to 0 new from 80 fetched.
     ap.add_argument("--only", default="", metavar="SRC[,SRC...]",
-                    help="restrict to sources: bilibili, cn, youtube, academic, search "
-                         "(default: all)")
+                    help="restrict to sources: bilibili, cn, foreign, youtube, "
+                         "academic, search (default: all)")
     ap.add_argument("--bili-pages", type=int, default=3, metavar="N",
                     help="Bilibili search pages per query (20 rows/page); depth for a "
                          "dedicated run")
     args = ap.parse_args(argv)
 
-    _valid = {"bilibili", "cn", "youtube", "academic", "search"}
+    _valid = {"bilibili", "cn", "youtube", "academic", "search", "foreign"}
     only = {s.strip().lower() for s in str(args.only).split(",") if s.strip()}
     unknown = only - _valid
     if unknown:                      # fail loud: a typo'd source must not silently mine nothing
@@ -460,6 +460,38 @@ def main(argv: list[str] | None = None) -> int:
             # 1.2s, raised from 0.5 when CN_ARTICLE_QUERIES went 4 -> 22. Sogou rate-limits hard
             # and serves an anti-bot page when pushed, so widening the sweep without slowing it
             # would trade the desk's best-scoring lane for coverage of it.
+            time.sleep(1.2)
+
+    # --- NON-CHINESE FOREIGN FORESTS: Japanese, Korean, Russian.
+    #
+    # A SIBLING OF THE CHINESE LOOP, NOT A SPECIAL CASE. The argument for a Chinese lane -- large,
+    # practitioner-authored, invisible to English search -- is language-agnostic, and it was being
+    # made for exactly one language while three other crypto-native communities went unindexed.
+    # Korean is the sharpest omission: this desk MEASURES the Upbit/Bithumb premium as a mechanism
+    # class and had never read a word written by the people creating it.
+    #
+    # Driven by foreign_sources.SOURCES and .LANGUAGES rather than a hardcoded list, so a fourth
+    # language is a table entry and its queries -- never a new branch here.
+    foreign_hits: dict[str, int] = {}
+    for name, (fn, lang) in (foreign_sources.SOURCES.items() if _runs("foreign") else ()):
+        for kw in foreign_sources.LANGUAGES[lang]:
+            arts, e = fn(kw)
+            if e:
+                blocked[f"{name}:{kw}"] = e
+                continue
+            foreign_hits[f"{name}:{kw}"] = len(arts)
+            for a in arts:
+                key = f"{a.source}:{a.ident}"
+                all_ids.add(key)
+                if key in seen:
+                    continue
+                s_, hits = score_title(a.searchable)
+                if s_ >= args.threshold:
+                    queue.append({"channel": f"{a.source}:{kw}", "video_id": key,
+                                  "title": a.title[:160], "score": round(s_, 1), "url": a.url,
+                                  "author": a.author, "why": hits})
+            # 1.2s, matching the CN loop. Five sources x ~17 queries is ~85 requests; paced so
+            # breadth does not cost the desk a lane it just opened.
             time.sleep(1.2)
 
     # --- Academic + code. The only sources whose CONTENT is readable: abstracts come back in the
@@ -536,6 +568,8 @@ def main(argv: list[str] | None = None) -> int:
         "search_discovered": discovered,
         "bilibili_discovered": bili,
         "cn_article_discovered": cn_hits,
+        "foreign_discovered": foreign_hits,
+        "foreign_source_probe": foreign_sources.probe_all() if _runs("foreign") else [],
         "cn_source_probe": cn_sources.probe_all(),
         "academic_discovered": acad,
         "academic_probe": papers.probe_all(),

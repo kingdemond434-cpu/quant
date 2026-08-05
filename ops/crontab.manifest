@@ -1960,3 +1960,27 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # CONFIDENCE: committed-script (new this cycle; verified on a synthetic WeChat export -- two
 #   substantive messages scored 7.0/5.0, weather chatter correctly dropped)
 19 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_drop.lock .venv/bin/python scripts/ingest_principal_drop.py >> data/cro_ai_logs/principal_drop.log 2>&1
+
+# ---------------------------------------------------------------------------------------------
+# JOIN-LINK HARVEST -- the miner finds the doors, the principal walks through them.
+#
+# The miners index the OPEN web; the material that converts lives in CLOSED rooms no engineering
+# reaches, because a membership is a person and not a credential. But those rooms ADVERTISE on the
+# open web -- a t.me link in a DCInside thread, a discord.gg in a Qiita post -- and the miners were
+# already fetching those pages and discarding the links. This closes the loop:
+#   miner -> invite link -> ntfy push -> PRINCIPAL JOINS -> drops content -> ingest_principal_drop
+# The desk cannot join anything and never will; it can say which door looks worth a person's time.
+#
+# RANKED BY CONTEXT, because most invite links on the open web advertise paid-signal groups --
+# that is WHY they advertise. A link is scored by the surrounding text through the same
+# video_triage ranker as everything else, and only links clearing the miner's own threshold push.
+# ONE push per batch, never one per link, and de-duplicated permanently against
+# data/join_links.jsonl: a pager that re-sends the same invite every cycle gets muted, and this
+# desk has already lost 11.5 days of alerting to a pager nobody was reading.
+# 07:31 -- after the 06:xx-07:xx mining and governance block, so it reads the morning's queue.
+# CEILING TYPE (L1.28c) is INPUT-ARRIVAL and daily is at it: links appear only when a fetched page
+# happens to carry one, and re-scanning an unchanged queue finds the same nothing.
+# EVIDENCE: scripts/harvest_join_links.py -> reports/join_links.json
+# CONFIDENCE: committed-script (new this cycle; detector verified on t.me/discord.gg/open.kakao
+#   shapes, 0 false positives on bare-domain junk)
+31 7 * * * cd "$QUANT_ROOT" && flock -n data/.cron_joinlinks.lock .venv/bin/python scripts/harvest_join_links.py >> data/cro_ai_logs/join_links.log 2>&1
