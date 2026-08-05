@@ -329,6 +329,18 @@ def _save_seen(seen: set[str]) -> None:
 _YIELD_LOG = _ROOT / "data" / "miner_yield.jsonl"
 
 #: Which report key holds the per-query fetch counts for each source group.
+#: source GROUP -> the queue-channel prefixes its producers actually write. A group whose name is
+#: not itself a producer needs an entry here or its `new_above_threshold` is structurally ZERO
+#: forever: the count matches on channel prefix, and "foreign" never appears in a channel because
+#: the producers are qiita/zenn/hatena/dcinside/habr. `cn` was special-cased for exactly this and
+#: `foreign` was not, so its first three surfaced rows logged as 0 new against 1,601 fetched --
+#: a yield of 0.0 on a source that had just produced. This is the instrument CADENCE is read off,
+#: so a producing lane reporting zero would argue for cutting the one sweep worth keeping.
+_GROUP_PRODUCERS: dict[str, tuple[str, ...]] = {
+    "cn": ("juejin", "wechat"),
+    "foreign": ("qiita", "zenn", "hatena", "dcinside", "habr"),
+}
+
 _FETCH_KEYS = {"bilibili": "bilibili_discovered", "cn": "cn_article_discovered",
                "search": "search_discovered", "academic": "academic_discovered",
                "youtube": "channels_scanned", "foreign": "foreign_discovered"}
@@ -348,8 +360,11 @@ def _yield_row(doc: dict[str, Any], *, seen: set[str], only: list[str]) -> dict[
         if not isinstance(counts, dict):
             continue
         fetched = sum(int(v) for v in counts.values() if isinstance(v, int | float))
-        # cn covers two producers; queue channels are prefixed by the producer, not the group
-        prefixes = ("juejin", "wechat") if src == "cn" else (src,)
+        # A GROUP is not a producer. Queue channels are prefixed by whoever wrote the row, so a
+        # multi-producer group must name its members or it counts none of them (see
+        # _GROUP_PRODUCERS). Falls back to the source's own name, which is correct for the
+        # single-producer groups (bilibili, search, academic, youtube).
+        prefixes = _GROUP_PRODUCERS.get(src, (src,))
         new = sum(1 for r in doc.get("queue", [])
                   if str(r.get("channel", "")).split(":")[0] in prefixes)
         if fetched == 0 and new == 0 and src not in only and only != ["all"]:
