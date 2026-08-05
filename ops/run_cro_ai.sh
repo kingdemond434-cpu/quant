@@ -94,5 +94,15 @@ fi
 echo "=== cro-ai start $(date -u) ===" >> "$LOG"
 claude --effort max --append-system-prompt "$_DOCTRINE" -p "$PROMPT" --dangerously-skip-permissions >> "$LOG" 2>&1
 echo "=== cro-ai exit $? at $(date -u) ===" >> "$LOG"
-# keep last 30 logs
-ls -1t data/cro_ai_logs/*.log | tail -n +31 | xargs -r rm -f
+# Keep the last 30 CYCLE logs -- the dated YYYYMMDD_HHMM.log files this script writes.
+#
+# SCOPE THE GLOB, OR THE REAPER EATS THE EVIDENCE. This was `*.log`, i.e. every file in the
+# directory. Most of them are shared high-frequency organ logs (venue_divergence_cron.log and
+# friends) that get rewritten every few minutes, so they permanently occupy the 30 newest slots
+# and the dated cycle logs were evicted within hours: 60 files in the directory, of which 2 were
+# cycle logs. max_audit's `cron-cycle` producer check reads exactly this glob, so the retention
+# was deleting the record that check exists to read -- and a missing cycle log is indistinguishable
+# from an organ that never ran. Anchored to 8 digits + _ + 4 digits so it stays year-agnostic and
+# can never widen to another producer's log again.
+ls -1t data/cro_ai_logs/[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]_[0-9][0-9][0-9][0-9].log \
+    2>/dev/null | tail -n +31 | xargs -r rm -f

@@ -2814,6 +2814,22 @@ def _mine_items():
     return items
 
 
+def _carded_total() -> int:
+    """TOTAL cards standing in the dig docs -- the mining-VOLUME number.
+
+    Deliberately not `len(_mine_items())`: that returns cards still OWING a disposition, so it
+    falls every time a card is resolved. Volume is what was mined; the backlog is what is unworked.
+    """
+    total = 0
+    for rel in _DIG_DOCS:
+        p = ROOT / rel
+        if not p.exists():
+            continue
+        with contextlib.suppress(Exception):
+            total += len(re.findall(r"^### \d+\.\s+\S", p.read_text("utf-8"), re.M))
+    return total
+
+
 def _mine_backing() -> dict:
     """Artifact-only credit, per disposition. `killed` is backed by the GRAVEYARD -- which is what
     makes mass-killing the backlog cost more than converting it, rather than less."""
@@ -2863,7 +2879,7 @@ def check_mine_conversion(defects) -> None:
             "delete the obligation: the ledger remembers. Restore the item and dispose of it "
             "properly, or record the deletion as a `killed` with its graveyard mechanism."))
     with contextlib.suppress(OSError):
-        append_snapshot(MINE_LEDGER, items)
+        append_snapshot(MINE_LEDGER, items, carded=_carded_total())
 
     # the gate file IS the enforcement -- a reported backlog that stops nothing is a wish
     try:
@@ -3227,9 +3243,17 @@ def check_mining_nonregression(defects) -> None:
             continue
     if len(rows) < 3:
         return                                    # not enough history to call a trend
-    counts = [len(r.get("items", [])) for r in rows if isinstance(r.get("items"), list)]
+    # MEASURE VOLUME, NOT BACKLOG. This read `len(r["items"])`, which is the count of cards still
+    # OWING a disposition -- so DISPOSING of a card lowered it, and finishing the work the desk
+    # mandates registered as "mining regressed". Exactly backwards: §33 orders conversion, and the
+    # metric guarding acquisition punished it. Two cards being re-graded terminal (bitFlyer to
+    # destroyed-at-source, Kaiko to verified-clean) took the snapshot 5 -> 3 with nothing un-mined.
+    # `carded` is the total standing in the dig docs and only moves when mining actually moves.
+    # Rows predating the field are skipped rather than mixed in: comparing a backlog count against
+    # a volume count is what produced the false alarm in the first place.
+    counts = [int(r["carded"]) for r in rows if isinstance(r.get("carded"), int)]
     if len(counts) < 3:
-        return
+        return                                    # not enough history ON THE VOLUME METRIC yet
     best = max(counts)
     recent = counts[-1]
     try:
@@ -3240,8 +3264,10 @@ def check_mining_nonregression(defects) -> None:
     if record > int(rec.get("best_finds", 0)):
         MINING_RECORD.write_text(json.dumps(
             {"best_finds": record, "updated": datetime.now(tz=UTC).isoformat(),
-             "note": "desk's best-ever carded-find count in one snapshot; ratchets UP only -- "
-                     "mining volume may never regress (principal 2026-07-25)"}, indent=1), "utf-8")
+             "metric": "carded",
+             "note": "desk's best-ever TOTAL carded-find count in one snapshot (mining VOLUME, "
+                     "not the un-dispositioned backlog); ratchets UP only -- mining volume may "
+                     "never regress (principal 2026-07-25)"}, indent=1), "utf-8")
     # a genuine regression: latest materially below the all-time record
     if record >= 5 and recent < record * 0.6:
         defects.append((

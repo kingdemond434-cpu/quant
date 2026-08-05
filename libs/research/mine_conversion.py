@@ -344,15 +344,23 @@ def conversion_report(
 # report: fed back as per-class priors, they steer what gets mined next.
 # --------------------------------------------------------------------------------------------
 
-def append_snapshot(path: Path, items: Sequence[MinedItem], *, now: datetime | None = None) -> None:
+def append_snapshot(path: Path, items: Sequence[MinedItem], *, now: datetime | None = None,
+                    carded: int | None = None) -> None:
     """Append one line recording every item's disposition as of now (jsonl, one line per run).
 
     First-seen and converted-at are DERIVED from consecutive snapshots rather than demanded from
     the miners: a timestamp a human has to remember to write is a timestamp that goes missing.
+
+    ``carded`` is the TOTAL number of cards standing in the dig docs, which is a different number
+    from ``len(items)``: items are the cards still OWING a disposition, so a card that gets
+    resolved leaves items and stays in carded. The mining-volume ratchet must read this one --
+    see the note in max_audit.check_mining_nonregression for what went wrong when it did not.
     """
     ts = (now or datetime.now(UTC)).timestamp()
     row = {"ts": ts, "items": [{"n": i.name, "s": i.source, "d": i.disposition, "t": i.tier}
                                for i in items]}
+    if carded is not None:
+        row["carded"] = int(carded)
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as fh:
         fh.write(json.dumps(row, ensure_ascii=False) + "\n")
