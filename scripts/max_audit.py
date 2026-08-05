@@ -5105,7 +5105,12 @@ def check_paid_target_registry(defects) -> None:
         rec["updated"] = datetime.now(tz=UTC).isoformat()
         rec.setdefault("note", "§42 ratchet: registry size and holdings only grow; a fall is a "
                                "regression defect, never a new normal")
-        HOLDINGS_RECORD.write_text(json.dumps(rec, indent=1), "utf-8")
+        # Trailing newline, because this file is GIT-TRACKED. Without it every write produces a
+        # "\ No newline at end of file" diff that touches the last line whether or not the last
+        # line changed, so a one-field ratchet bump reads as a two-line edit and a reviewer
+        # scanning for real changes learns to skip this file. Same family as R0272 (tracked-JSON
+        # format), one file over.
+        HOLDINGS_RECORD.write_text(json.dumps(rec, indent=1) + "\n", "utf-8")
     elif n < best:
         defects.append(("paid-registry-shrank",
                         f"§42: paid-dataset registry fell to {n} entries from a record of {best} "
