@@ -81,6 +81,7 @@ if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 from libs.ops.fence_exit import FAIL, fence_exit  # noqa: E402
 from libs.ops.lawful import guard as _law_guard  # noqa: E402
+from libs.ops.repair_mode import DIRECTION_FOR_STATUS  # noqa: E402  (L1.28b(d): one mapping)
 
 #: REPAIR-MODE passes DELIBERATELY. It is not a failure but a designed MODE SIGNAL: L1.28b(d)
 #: has it flip the next audit/brain window from finding to fixing, and run_max_push reads the
@@ -252,9 +253,26 @@ def build_report(root: Path, now: datetime | None = None) -> dict[str, Any]:
         status = "DEBT-GROWING"
     else:
         status = "OK"
+    # THE DIRECTION IS NOT THE STATUS, AND CONFLATING THEM INVERTED THE REMEDY (2026-08-05).
+    # `repair_mode` was `status != "OK"`, so it read TRUE for ARRIVALS-COLLAPSED -- and its
+    # documented meaning, in L1.28b(d) and in run_max_push's own action string, is "flip the next
+    # audit/brain window from FINDING to FIXING". That is precisely backwards for a status whose
+    # entire content is that the desk is finding too little; line 215 of this file already said so
+    # ("ARRIVALS-COLLAPSED means find harder") 42 lines above the code that contradicted it. The
+    # flag was inert at the time -- its only consumer selected an advice string -- so the inversion
+    # cost nothing until libs/ops/repair_mode.py gave it an actuator, which is exactly when a
+    # latent inversion becomes an automated L1.25a fatigue-by-null defect.
+    #
+    # The mapping lives in ONE place (libs.ops.repair_mode.DIRECTION_FOR_STATUS) because a second
+    # derivation of it is the bug. An unrecognised status maps to UNMEASURED, which OWES work.
+    direction = DIRECTION_FOR_STATUS.get(status, "UNMEASURED")
     return {
         "generated": now.isoformat(), "status": status,
-        "repair_mode": status != "OK",
+        # DRAIN / FIND-HARDER / STEADY / UNMEASURED -- what the next brain window should DO.
+        "direction": direction,
+        # Kept, and now meaning exactly what it says: this window owes the QUEUE its time.
+        # ARRIVALS-COLLAPSED deliberately does NOT set it; that state owes the HUNT its time.
+        "repair_mode": direction == "DRAIN",
         "law": "L1.28b -- conversion hunts 100% daily; a found-unfixed defect is unbooked "
                "loss aging at its stated ROI",
         "backlog": len(backlog), "past_due": len(past_due),

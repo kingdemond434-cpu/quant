@@ -122,7 +122,11 @@ _MAP: dict[str, list[str]] = {
     "L1.28a": ["scripts/check_utilisation.py", "check_idle_capability", "check_clock_saturation",
                "check_capacity_runway"],
     # L1.28b: conversion hunts 100% daily -- FLATLINE (7d of silence on a non-empty queue) fails.
-    "L1.28b": ["scripts/check_conversion.py"],
+    # The fence DETECTS the debt; the actuator is what makes the law's own remedy -- (d) "flips
+    # the next audit/brain window from finding to fixing" -- actually reach an organ (L1.36).
+    # Both are listed because a law enforced only by a detector is half-enforced: the flag was
+    # published for weeks with no consumer that changed any behaviour.
+    "L1.28b": ["scripts/check_conversion.py", "libs/ops/repair_mode.py", "ops/brain_env.sh"],
     # L1.28c: every cadence hunts its own ceiling. The manifest fence requires a decided cadence
     # with evidence per line; brain_seat_throughput measures the resource they all compete for,
     # so "raise the cron" vs "buy a second seat" is settled by measurement.
