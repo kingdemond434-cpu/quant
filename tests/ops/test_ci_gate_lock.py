@@ -101,9 +101,20 @@ def test_old_marker_without_attribution_still_escalates():
     assert 'ci.get("tracked_ok", ci.get("ok"))' in src
 
 
-def test_puller_invokes_strict_and_guards_the_revert():
-    # the shell half: pull_deploy must ask for the strict verdict AND refuse a revert when the
-    # tree moved during its CI window (the 2026-07-31 destroyed-work class, R0144).
+def test_puller_invokes_strict_and_guards_the_tree():
+    # The shell half. `--fail-on-lock` is unchanged: pull_deploy must still demand the strict
+    # verdict, because "another gate is mid-run" is not "green" for a deploy decision.
+    #
+    # THE SECOND ASSERTION MOVED UP, NOT AWAY (R0246, 2026-08-05). It used to require
+    # `refused-revert-tree-moved` -- the guard that stopped an unconditional `git reset --hard`
+    # from destroying a session's only copy of its work (2026-07-31, R0144). The gate now runs in
+    # a detached worktree and the live tree is merged ONLY on green, so there is no revert left to
+    # guard: the destroyed-work class is gone by construction rather than by a check. What is
+    # pinned here now is the stronger property that replaced it -- the refusal is on the MERGE,
+    # and refusing costs nothing because the tree was never touched. tests/ops/
+    # test_pull_deploy_gate.py proves the ordering end-to-end against a real scratch repo.
     src = (run_ci._ROOT / "deploy/pull_deploy.sh").read_text("utf-8")
     assert "run_ci.py\" --fail-on-lock" in src
-    assert "refused-revert-tree-moved" in src
+    assert "refused-merge-tree-moved" in src
+    code = [ln for ln in src.splitlines() if not ln.lstrip().startswith("#")]
+    assert not [ln for ln in code if "reset --hard" in ln]

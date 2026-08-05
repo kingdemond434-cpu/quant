@@ -2441,10 +2441,20 @@ def check_deploy_path(defects) -> None:
                         "blind spot the inbound path was built to close"))
     if status == "ci-red":
         defects.append(("deploy-blocked-ci-red",
-                        f"pull_deploy REVERTED {st.get('to', '?')} because the CI gate was red; "
-                        f"the box is parked on {st.get('from', '?')}. Correct refusal, but it is a "
-                        "HOLD: master and the desk disagree about what is running until the red is "
-                        "fixed. Fix the gate, do not bypass the puller"))
+                        f"pull_deploy did NOT merge {st.get('to', '?')} because the CI gate was "
+                        f"red; the box is still on {st.get('from', '?')}. Correct refusal, but it "
+                        "is a HOLD: master and the desk disagree about what is running until the "
+                        "red is fixed. Fix the gate, do not bypass the puller"))
+    # Since R0246 the gate runs in a detached worktree and the live tree is merged only on green,
+    # so there is no revert and no window in which the box sits on red code. The wording above was
+    # updated with it: an alarm that describes an action the script can no longer take sends the
+    # reader looking for a rollback that never happened.
+    if status == "refused-merge-tree-moved":
+        defects.append(("deploy-blocked-tree-moved",
+                        f"pull_deploy gated {st.get('to', '?')} GREEN but refused to merge it: the "
+                        "tree moved mid-gate, so a session is committing here. Nothing was lost "
+                        "and the next tick re-gates -- but if this repeats the box is being held "
+                        "behind master by continuous local commits, which no tick will resolve"))
     if status == "deployed-action-owed":
         defects.append(("deploy-action-owed",
                         f"pull_deploy landed {st.get('to', '?')} but a supervised process was NOT "
