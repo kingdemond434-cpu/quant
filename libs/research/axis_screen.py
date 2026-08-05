@@ -100,7 +100,18 @@ def stage_a_screen(signal: np.ndarray, target_ret: np.ndarray, *, name: str,
     # panel_width divides out cross-sectional stacking: a 139-symbol panel passed as one flat array
     # has n = symbol-days, and treating those as independent inflates every t-stat by
     # sqrt(panel_width) (~11.8x at 139 -- an apparent t=3.5 is really t=0.35).
-    n_eff = max(len(zv) / max(float(horizon_days) * max(int(panel_width), 1), 1e-9), 1.0)
+    # ...and it can NEVER EXCEED THE ROWS ACTUALLY OBSERVED. The divisor above is an OVERLAP
+    # deflator: it exists to shrink n when horizon_days>1 sampled daily. At horizon_days<1 it
+    # inverts and MULTIPLIES -- measured 2026-08-05 on the first intraday caller: 4,314 five-minute
+    # bars reported n_eff=1,236,384, which drives min_detectable_ic to ~0.002 and makes `powered`
+    # unconditionally True. That is the phantom-edge direction (a null gets recorded as
+    # SCREEN-WEAK/graveyard-grade, and a noise cell can clear the power gate on the way to
+    # SCREEN-INTERESTING and burn one of twelve Holm-corrected slots). screen_moat.py has been
+    # passing horizon_days=6.9e-4 since it was written -- n_eff inflated ~1449x -- and
+    # collect_perpdex_funding passes 1/3. Bounding by len(zv) can only ever LOWER n_eff, so it can
+    # only ever tighten the screen; at horizon_days>=1 the bound is inactive and nothing changes.
+    n_eff = max(min(float(len(zv)),
+                    len(zv) / max(float(horizon_days) * max(int(panel_width), 1), 1e-9)), 1.0)
     min_detectable_ic = float(1.96 / np.sqrt(n_eff))
     # 'powered' asks whether the SAMPLE could have detected an effect worth caring about (ic_min),
     # NOT whether the observed IC happens to be large. Only under the former does a null mean
@@ -131,8 +142,22 @@ def stage_a_screen(signal: np.ndarray, target_ret: np.ndarray, *, name: str,
     excess = abs(ic) - max(abs(same), ic_min) * 1.5
     resolved = excess > 1.96 * float(np.sqrt(2.0 / n_eff))
 
+    # THE SHARPE RAIL IS CALIBRATED FOR DAILY DATA AND DOES NOT TRANSFER -- SO IT IS RESCALED HERE,
+    # NOT AT EACH CALLER. `sharpe_ceiling=6.0` assumes horizon_days=1, and _sh ANNUALISES by
+    # sqrt(365/horizon_days), so at 60s the factor is ~725 and PURE NOISE scored sharpe_reversal
+    # 53.4 -> SUSPECT-LOOKAHEAD on six hypotheses whose ICs were 0.01-0.08. screen_moat.py found
+    # that and fixed it in its own call site; the liquidation-reversion screen then hit the
+    # identical wall from scratch, which is the tell that a correction living in one caller's
+    # comment is not a control (it fires on recall). Rescaling by the same sqrt(1/horizon) the
+    # annualisation applies keeps the rail at CONSTANT PER-PERIOD STRICTNESS instead of tightening
+    # it 725-fold by accident. The IC ceiling is left ALONE at every horizon: a correlation does
+    # not annualise, so 0.35 means the same thing at 60s as at a day.
+    eff_sharpe_ceiling = float(sharpe_ceiling)
+    if float(horizon_days) < 1.0:
+        eff_sharpe_ceiling *= float(np.sqrt(1.0 / max(float(horizon_days), 1e-9)))
+
     decontam_fail = abs(same) > contam_max or abs(ic_res) < 0.5 * abs(ic)
-    implausible = abs(ic) > ic_ceiling or best > sharpe_ceiling    # alignment/lookahead rail
+    implausible = abs(ic) > ic_ceiling or best > eff_sharpe_ceiling   # alignment/lookahead rail
     if implausible or (ic_exceeds_contemporaneous and resolved and shift_translates):
         verdict = "SUSPECT-LOOKAHEAD"                  # bithumb-class: too strong to be real
     elif best < sharpe_min or abs(ic) < ic_min:
@@ -166,6 +191,7 @@ def stage_a_screen(signal: np.ndarray, target_ret: np.ndarray, *, name: str,
            "same_period_corr": round(same, 3), "residual_ic": round(ic_res, 4),
            "decontam_passed": not decontam_fail, "implausible_leak": implausible,
            "horizon_days": float(horizon_days), "panel_width": int(panel_width),
+           "sharpe_ceiling_applied": round(eff_sharpe_ceiling, 2),
            "n_eff": round(n_eff, 1),
            "min_detectable_ic": round(min_detectable_ic, 4), "powered": powered,
            "ic_exceeds_contemporaneous": ic_exceeds_contemporaneous,

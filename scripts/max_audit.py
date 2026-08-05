@@ -2385,6 +2385,13 @@ _FINDING_DOCS_EXCLUDED = {
     "docs/research/DIGGER_TARGET_ROADMAP.md": "target list -- §33 governs what it yields",
     "docs/research/STRUCTURAL_EDGE_IDEAS.md": "idea list -- §33 / trial ledger governs",
     "docs/research/AXIS_PREREGISTRATIONS.md": "pre-registrations -- the trial ledger governs",
+    # Batch 2 of the same artifact (scripts/run_axis_generate_20260805.py:53), same class, same
+    # governing organ. Classified as a DECISION rather than left to default: each card in it is a
+    # frozen, DSR-counted trial, so the trial ledger governs it exactly as it governs batch 1, and
+    # the one QUEUE verdict is carried in research_agenda.json. Named per-file (not by prefix)
+    # because the producer is a dated one-shot debt-clearer with no cron line -- a prefix claim
+    # would silently pre-govern docs nobody has written or reviewed.
+    "docs/research/axis_generation_20260805.md": "pre-registrations batch 2 -- trial ledger governs",
     "docs/DIGGING_CHARTER.md": "the law itself",
     "docs/OPERATOR_COMPACT.md": "operator agreement, not findings",
     "docs/GO_LIVE_CHECKLIST.md": "checklist -- gated by GAP #2",
