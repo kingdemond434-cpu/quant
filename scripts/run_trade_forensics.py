@@ -58,10 +58,41 @@ def _buckets(closes: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
     return out
 
 
+_NON_ATTEMPT = {"already-flat"}      # the leg was already square: no order was ever placed
+
+
+def _maker_attempts(trades: list[dict[str, Any]], key: str) -> list[str]:
+    """Legs where a post-only quote was actually ATTEMPTED -- the only valid fill-rate denominator.
+
+    The raw counts put non-events in the denominator of a conversion rate, and it mattered: the
+    published figures were spot 23.8% / fut 61.9%, which is what R0029 was written from. Of 21
+    legs each side, 4 spot and 8 fut are `already-flat` -- the leg was square, nothing was sent --
+    and 4 spot legs are closes, which BYPASS the maker path deliberately
+    (run_cashcarry_executor: `_CLOSE_IS_MARKET_ONLY`, after post-only closes accumulated resting
+    fills that bought a short through zero into a long, twice, at +916,772 and +1,138,985 units).
+
+    Counting a policy and a non-event as failed maker conversions understated both legs and
+    understated them UNEQUALLY -- futures carries twice as many already-flat legs, so the metric
+    flattered spot's relative position while making the absolute number look like a shared
+    problem. On genuine attempts it is futures 13/13 and spot 5/13: the perp leg converts
+    perfectly and the spot leg is the entire gap.
+    """
+    out = []
+    for x in trades:
+        m = x.get(key)
+        if not m or m in _NON_ATTEMPT or x.get("event") == "close":
+            continue
+        out.append(str(m))
+    return out
+
+
+def _share(modes: list[str]) -> float | None:
+    return round(sum(m == "maker" for m in modes) / len(modes), 3) if modes else None
+
+
 def _leg_share(trades: list[dict[str, Any]], key: str) -> float | None:
     """Maker share of one leg. None when no record carries the field yet (pre-instrumentation)."""
-    modes = [x[key] for x in trades if x.get(key)]
-    return round(sum(m == "maker" for m in modes) / len(modes), 3) if modes else None
+    return _share(_maker_attempts(trades, key))
 
 
 def _tape_sync(trades: list[dict[str, Any]]) -> dict[str, Any]:
@@ -164,21 +195,40 @@ def main() -> None:
     # organ (run_crypto_testnet) whose web/binance.json last updated 2026-06-28. A fix whose effect
     # cannot be measured is a fix on trust. Legs are counted independently: a pair can rest maker
     # on spot and cross taker on futures, and that asymmetry is exactly the cost detail we need.
-    legs = [m for x in trades for m in (x.get("spot_mode"), x.get("fut_mode")) if m]
+    raw_legs = [m for x in trades for m in (x.get("spot_mode"), x.get("fut_mode")) if m]
+    legs = _maker_attempts(trades, "spot_mode") + _maker_attempts(trades, "fut_mode")
     maker = {
         "n_legs": len(legs),
-        "maker_share": round(sum(m == "maker" for m in legs) / len(legs), 3) if legs else None,
+        "maker_share": _share(legs),
         "spot": _leg_share(trades, "spot_mode"),
         "fut": _leg_share(trades, "fut_mode"),
         "target": 0.60,
+        # The uncorrected figures stay in the payload: a correction that deletes the number it
+        # corrects cannot be audited, and this one moved the headline a long way.
+        "raw_all_legs": {"n_legs": len(raw_legs), "maker_share": _share(raw_legs),
+                         "excluded": len(raw_legs) - len(legs),
+                         "why": "already-flat legs placed no order; close legs are market-only by "
+                                "design (_CLOSE_IS_MARKET_ONLY) -- neither is a failed maker fill"},
         "note": ("instrumented 2026-07-26; records written before that carry no mode, so n_legs "
                  "climbs from 0 as new fills land -- a null share is thin data, not a regression"),
     }
     share, n_legs = maker["maker_share"], len(legs)
     if isinstance(share, float) and n_legs >= 20 and share < 0.60:
         flags.append(f"maker fill-rate {share:.1%} below the 60% target over "
-                     f"{n_legs} legs -- patient-maker opens are not converting; fees are "
-                     "the dominant carry cost, so this is the primary unit-economics lever")
+                     f"{n_legs} attempted legs -- patient-maker opens are not converting; fees "
+                     "are the dominant carry cost, so this is the primary unit-economics lever")
+    # THE LEGS ARE NOT SYMMETRIC AND THE BLENDED NUMBER HIDES IT. Opens quote spot BUY at the bid
+    # and perp SELL at the ask, and the entry gate only opens when funding >= _MIN_FUNDING -- a
+    # perp-premium regime, where aggressive flow lifts asks. The resting perp SELL gets hit; the
+    # resting spot BUY sits. _maker_pair places each quote ONCE and never re-pegs (grep: no
+    # repricing on the execution path), so after _MAKER_WAIT_OPEN it cancels and crosses. This
+    # flag names the asymmetric leg so the fix is aimed at the spot quote, not at "maker share".
+    sp, ft = maker["spot"], maker["fut"]
+    if isinstance(sp, float) and isinstance(ft, float) and len(legs) >= 10 and ft - sp >= 0.25:
+        flags.append(f"maker conversion is LEG-ASYMMETRIC: fut {ft:.1%} vs spot {sp:.1%} on the "
+                     "same paired executions -- a one-shot passive quote with no re-peg, resting "
+                     "on the side the entry regime does not lift. Fix the spot quote (re-peg to "
+                     "the touch), not the blended rate")
 
     if tape.get("buffer_squeezing_window"):
         flags.append(f"trade-log buffer holds {tape['buffer_days']}d < the {_WINDOW_D}d forensics "
