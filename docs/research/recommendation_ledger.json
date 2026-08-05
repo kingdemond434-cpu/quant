@@ -4932,6 +4932,30 @@
    "commit": "38ec6e2",
    "due": null,
    "disposed": "2026-08-05T19:04:21.106728+00:00"
+  },
+  {
+   "id": "R0405",
+   "source": "cycle",
+   "summary": "SHARED-BOX CONTENTION IS THE SECOND HALF OF ci-gate-red, AND ONLY THE FIRST HALF WAS EVER GENERALISED. run_ci._run_steps reduced every non-zero exit to ok=(returncode==0), so a step the kernel SIGKILLed before it ran a single test was filed identically to one that ran to completion and reported real failures. The file already draws this distinction for the CLOCK ([HUNG] 'wedged and broken have different first moves') but never for the resource this box runs out of. Measured 2026-08-05 twice: max_audit's pytest probe recorded rc=-9 and raised test-suite-uncollectable with an EMPTY reason and advice to install a missing dependency that does not exist (full collection: rc=0, 326MB peak, 19s, flat in dir count); then a full run launched this session was killed at 2% mid-write, no traceback, no summary. 3.8GB VPS, NO SWAP, several agent sessions plus live daemons; journalctl -k is unreadable here so the desk can NEVER confirm OOM from the log -- rc=-9 is all it will ever see, which is why the memory figure must be captured at the moment of death. FIXED 75cdb2c: signal deaths named distinctly with their evidence, still counted FAILED (gate exits non-zero, ok=false, tracked_ok stays False so ci-gate-red still fires -- unknown is NOT-PROVEN-GREEN), never re-run (re-running a memory-killed step doubles the shortage it reports), additive killed[] in the marker. 7 tests, all FAIL against pre-fix HEAD.",
+   "roi_bps": 25.0,
+   "raised": "2026-08-05T20:04:19.775562+00:00",
+   "status": "implemented",
+   "reason": "Shipped and verified this cycle: 7 tests pass here and all 7 FAIL against pre-fix HEAD in a detached worktree; the suite writes its marker to tmp_path so it can never fabricate a verdict into the real one. Non-loosening direction is pinned by test_killed_step_still_fails_the_gate.",
+   "commit": "75cdb2c",
+   "due": null,
+   "disposed": "2026-08-05T20:04:32.308301+00:00"
+  },
+  {
+   "id": "R0406",
+   "source": "deep_sweep",
+   "summary": "R0241b SUCCESSOR -- UNCAP THE CRYPTO RESEARCH UNIVERSE ONCE THE CAMPAIGN STOPS HOLDING EVERY CANDIDATE SERIES AT ONCE. crypto_adapter.load_universe caps at 30 of 285 eligible lake symbols, excluding 12,240 candidates at ZERO acquisition cost. R0241b's economic rationale is RETIRED (a capacity tilt, forbidden by section 42 parity) and its multiplicity rationale is MEASURED AND INSUFFICIENT: preflight at full depth gives 30 symbols N=1440 hurdle annSR 1.41 power 98.2 percent versus 285 symbols N=13680 hurdle 1.57 power 93.5 percent -- both POWERED, so 9.5x the supply costs 4.7 points of power and the desk should take that trade. THE ONE REAL BLOCKER IS MEMORY, measured 2026-08-05: profiling stratified_campaign_gates over 13,680 candidate series OOM-killed this box (MemAvailable 296MB, SIGKILL, and it took the CI pytest step with it). The fix is not a bigger box, it is that _validate_and_archive holds every prepared return array simultaneously and column_stacks a legacy min_len matrix it only uses for diagnostics. Chunk or stream the strata (they are already partitioned BY LENGTH, so each stratum is a natural chunk and the partition sees lengths only), drop the legacy diagnostic matrix, then raise the cap and re-measure. Success test: a 285-symbol campaign completes inside the box's memory with alpha/stratum and E[discoveries] recorded against the 30-symbol baseline (32 strata, alpha/stratum 0.00156, 912 of 1440 tested).",
+   "roi_bps": 1200.0,
+   "raised": "2026-08-05T20:07:20.117068+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
