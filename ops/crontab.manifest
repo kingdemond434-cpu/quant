@@ -151,7 +151,20 @@ QUANT_ROOT=/home/quant/quant-platform
 # while the brain wakes 02:45/08:45/14:45/20:45 -- every cycle opened a ~2h-stale queue. Same
 # 4/day cost, re-phased to land a FRESH ranked queue ~1h before each brain slot. Frequency was
 # never the defect here; PHASE was -- alignment is free signal.
-41 1,7,13,19 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_max_push.py >> data/cro_ai_logs/max_push.log 2>&1
+#
+# EVERY 12 HOURS (principal, 2026-08-05, explicit: "make the execution que thing every 12 hrs
+# when I said twice a day"). 4/day -> 2/day, and the PHASE PROPERTY ABOVE IS PRESERVED: 01:41 and
+# 13:41 still land ~1h before the 02:45 and 14:45 brain slots, so both surviving firings keep
+# feeding a fresh queue to a waking brain. Dropping 07:41/19:41 costs the 08:45 and 20:45 slots
+# their pre-refresh -- those two read a queue up to 12h old and must treat its numbers as such.
+#
+# NOT A THROTTLE ON THE WORK, and the distinction is the whole point (L1.28b(f)): this line
+# refreshes a RANKING. The queue's CONTENTS -- every defect, every unmeasured aspect, every
+# below-ceiling component -- are produced by their own organs on their own cadences and are
+# untouched. Nothing is found less often; the ranked view of it is rebuilt twice a day instead of
+# four times. A cadence cut that reduced what the desk FINDS would be the denominator trick
+# L1.53 forbids, and this is not that.
+41 1,13 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_max_push.py >> data/cro_ai_logs/max_push.log 2>&1
 
 # UTILISATION (L1.28a, principal order 2026-07-30: "idleness is also timid -- never leave any
 # ceiling or capital idle"). Unused headroom is not safety, it is an unbooked loss. A wrong trade
@@ -1910,3 +1923,26 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # EVIDENCE: scripts/check_llm_routing.py -> data/llm_routing.json; CONSTITUTION L1.54
 # CONFIDENCE: committed-script (new this cycle; first run measured 2/18 routed, 15 SINGLE-ROUTE)
 44 6 * * * cd "$QUANT_ROOT" && flock -n data/.cron_llmroute.lock .venv/bin/python scripts/check_llm_routing.py >> data/cro_ai_logs/llm_routing.log 2>&1
+
+# ---------------------------------------------------------------------------------------------
+# PRINCIPAL DROP -- the one intake route the desk's organs structurally cannot build for
+# themselves. conversion_max reports mined_research total 14: FOURTEEN mined items have ever been
+# READ, against a miner surfacing 60-115 rows six times a day. The chain mine -> rank -> [nobody
+# reads] -> hypothesis -> screen -> survivor breaks at the read step, which is the whole answer to
+# why the Chinese miner has produced no survivors while working perfectly.
+#
+# Reading is blocked differently per source and only one class is unbuildable: video is genuinely
+# unreadable here (0 of 14 expose captions unauthenticated), Juejin bodies need browser rendering
+# (a COST -- Chromium is present), and CLOSED GROUPS need a membership, which is a person and not
+# a credential. This organ covers the third and says so.
+#
+# Hourly because the input is a human dropping a file: the cost is a directory listing on an empty
+# inbox (microseconds, no network, no keys), and the alternative is material sitting unscored until
+# tomorrow. CEILING TYPE (L1.28c) is INPUT-ARRIVAL and hourly is comfortably at it.
+# PRIVACY: data/inbox and reports/principal_drop.json are BOTH gitignored, explicitly and
+# separately from the blanket data/* rule, because publishing a closed group's contents to a
+# remote cannot be undone by a later commit. A test asserts both entries survive.
+# EVIDENCE: scripts/ingest_principal_drop.py -> reports/principal_drop.json
+# CONFIDENCE: committed-script (new this cycle; verified on a synthetic WeChat export -- two
+#   substantive messages scored 7.0/5.0, weather chatter correctly dropped)
+19 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_drop.lock .venv/bin/python scripts/ingest_principal_drop.py >> data/cro_ai_logs/principal_drop.log 2>&1

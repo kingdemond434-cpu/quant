@@ -198,11 +198,51 @@ BILIBILI_QUERIES = (
     "私募 量化 研究",
 )
 
+# 4 -> 22 (2026-08-05). THE HIGHEST-YIELDING FAMILY HAD THE NARROWEST SWEEP, which is exactly
+# backwards. Bilibili carried 24 queries while the ARTICLE sources carried 4 -- and on 2026-08-05
+# WeChat/Juejin supplied 3 of the 5 new rows INCLUDING THE TOP THREE BY SCORE (18.0/13.0/9.0).
+# Article sources also carry what video cannot: a procedure written down, which is the form the
+# desk's own conversion record says actually converts.
+#
+# WIDTH HERE IS TERRITORY, NOT SYNONYMS. Four rephrasings of "quant backtest" return one forest
+# four times; each line below is a DIFFERENT economic or operational subject, chosen so a single
+# platform's SEO cluster cannot satisfy several at once. The order runs from the desk's confirmed
+# edge outward toward material it has never indexed.
+#
+# PACED, because breadth that kills a lane is not breadth. Sogou rate-limits hard and answers an
+# anti-bot page when pushed; cn_sources.sogou_weixin already reports that verdict rather than
+# mistaking it for an empty result, and the loop's inter-query sleep is raised alongside this so
+# 22 queries do not arrive faster than 4 did. L1.54: the point is to keep the door open, not to
+# prove it can be slammed.
 CN_ARTICLE_QUERIES = (
+    # -- validation and self-deception: the class the desk's own record says converts
     "量化 回测 陷阱",
     "量化策略 过拟合",
+    "样本外 检验 失效",
+    "幸存者偏差 回测",
+    "未来函数 前视偏差",
+    # -- factor work
     "因子 挖掘 回测",
-    "加密货币 量化 策略",
+    "因子 失效 衰减",
+    "多因子 组合 优化",
+    # -- the desk's confirmed edge and its neighbours
+    "资金费率 套利 实盘",
+    "期现套利 基差 收敛",
+    "永续合约 资金费率 机制",
+    "跨交易所 套利 成本",
+    # -- microstructure and execution, where cost decides the verdict
+    "做市 策略 库存 风险",
+    "高频 交易 撮合 机制",
+    "滑点 冲击成本 测算",
+    "限价单 排队 优先级",
+    # -- mechanisms the taxonomy names and the miner never asked about
+    "清算 级联 强平",
+    "期权 波动率 曲面 套利",
+    "链上 数据 分析 策略",
+    "矿工 抛压 链上",
+    # -- the honest failure literature, which is where the graveyard entries live
+    "网格 马丁 爆仓 复盘",
+    "实盘 与 回测 差异",
 )
 
 SEARCH_QUERIES = (
@@ -417,7 +457,10 @@ def main(argv: list[str] | None = None) -> int:
                     queue.append({"channel": f"{a.source}:{kw}", "video_id": key,
                                   "title": a.title[:160], "score": round(s, 1), "url": a.url,
                                   "author": a.author, "why": hits})
-            time.sleep(0.5)
+            # 1.2s, raised from 0.5 when CN_ARTICLE_QUERIES went 4 -> 22. Sogou rate-limits hard
+            # and serves an anti-bot page when pushed, so widening the sweep without slowing it
+            # would trade the desk's best-scoring lane for coverage of it.
+            time.sleep(1.2)
 
     # --- Academic + code. The only sources whose CONTENT is readable: abstracts come back in the
     # API response, so these can produce a finding rather than only a queue entry.

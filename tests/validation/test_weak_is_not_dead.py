@@ -261,3 +261,23 @@ class TestL154NoGivingUp:
     def test_the_law_is_enforced_rather_than_prose(self) -> None:
         src = (_ROOT / "scripts" / "build_enforcement_matrix.py").read_text("utf-8")
         assert '"L1.54"' in src and "scripts/kimi_hunter.py" in src
+
+    def test_the_scope_is_desk_wide_not_routing_only(self) -> None:
+        """The law was WRITTEN against a routing failure, and the narrow reading -- "this is about
+        model fallbacks" -- is the one a future reader reaches for, because the proving instance is
+        a model chain. The principal widened it explicitly: it binds every organ, sweep, screen,
+        miner, hunter, panel, audit and cycle."""
+        src = _CONSTITUTION.read_text("utf-8")
+        assert "SCOPE: EVERYWHERE, WITHOUT EXCEPTION" in src
+        assert "NOT limited to routing" in src
+        for organ in ("miner", "hunter", "panel", "audit", "screen"):
+            assert organ in src.split("SCOPE: EVERYWHERE")[1][:1400], (
+                f"the scope clause stopped naming {organ}")
+
+    def test_the_only_legitimate_stop_requires_an_enumeration(self) -> None:
+        """Without this the law is unfalsifiable in the wrong direction: anyone can claim they
+        tried everything. The enumeration is what makes 'genuinely none' checkable, and it is the
+        clause that would be softened first because producing it is work."""
+        src = _CONSTITUTION.read_text("utf-8")
+        assert "ENUMERATED" in src
+        assert "laziness wearing a verdict" in src

@@ -1615,6 +1615,8 @@ a measurement of conversion; it is an invitation to stop working.
 
 ## L1.54 NO GIVING UP -- A SHUT DOOR IS A ROUTING PROBLEM, NOT A VERDICT
 
+**SCOPE: EVERYWHERE, WITHOUT EXCEPTION** *(principal, 2026-08-05: "Nothing should ever give up anywhere in quant this is a massive rule and protocol and law always hunt for max ROI no laziness no giving up always trying unless there's genuinely none")*. This law was written against a routing failure and it is NOT limited to routing. It binds every organ, sweep, screen, miner, hunter, panel, audit and cycle on this desk: a source that will not answer, a model that will not respond, a dataset that will not parse, a screen that returns nothing, a gate that refuses, a cycle with no obvious next move. In every one of those the desk tries the next route before it writes UNAVAILABLE, and "there is nothing left" is a CONCLUSION requiring the same evidence as any other -- it is never a starting assumption and never a resting place. **The one legitimate stop is genuine exhaustion, ENUMERATED**: the routes tried, what each answered, and what would change the answer. A stop without that enumeration is laziness wearing a verdict's clothes.
+
 Principal standing order, 2026-08-05: *"make sure billibilli and others always fully work work ur
 ways around sources which aren't working... and the desk always finds some sort of ways to access
 things and sources etc not working. No giving up protocol laws."*
