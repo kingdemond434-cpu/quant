@@ -4956,6 +4956,18 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0407",
+   "source": "cycle",
+   "summary": "TMPFS IS MEMORY THAT BELONGS TO NO PROCESS, AND NOTHING ON THIS DESK WATCHES IT. /tmp is a tmpfs, so pytest's tmp_path scratch is RESIDENT RAM on a 3.8GB swapless box carrying the live executor, three recorders and several agent sessions. Measured 2026-08-05: 35 orphaned pytest run dirs holding 1021MB (26% of the machine) against 189MB available; reclaiming took available to 1555MB. CLOSED LOOP, which is why it never self-corrected: an OOM-killed run never reaches its own cleanup, its stale lock makes pytest's GC skip the orphan, orphans accumulate, RAM falls, the next run is likelier to be killed. Prevention shipped (513ba24, tmp_path_retention_policy=failed) and the orphans cleared by hand. WHAT IS STILL OPEN AND IS THE REASON FOR THIS ROW: (a) no fence measures tmpfs occupancy or free RAM on this box at all -- every memory check watches PROCESS RSS, so this class is invisible by construction and 149MB of other stale /tmp artifacts remain uninspected; (b) max_audit's own _check_test_suite still mis-reads rc<0 as a collection error AND returns early past the test-suite-shrank ratchet, so a genuine suite shrink during a contended window is invisible -- deliberately not edited this cycle because scripts/max_audit.py was dirty under a concurrent session; (c) a whole-suite pytest verdict is STILL UNOBTAINED -- two full runs died and a batched run was in flight at cycle end, with one F sighted at 14% that has not been identified.",
+   "roi_bps": 30.0,
+   "raised": "2026-08-05T20:18:22.789807+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
