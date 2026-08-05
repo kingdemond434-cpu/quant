@@ -4968,6 +4968,18 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0408",
+   "source": "cycle",
+   "summary": "CI-RED ON COMMITTED CODE, ATTRIBUTED AND FIXED (eb74f48). tests/execution/test_llm_trader.py::test_brief_reports_absent_feeds_rather_than_empty demanded exact equality v=='ABSENT on this host' for every source; fb8f3b9 (R0245) added a liquidations source returning the richer 'ABSENT on this host -- nothing has written data/liquidations.parquet', turning the money-path test directory red. The TEST was the wrong side: liquidation_brief.py's own docstring says the bare string is 'indistinguishable from a genuinely dead collector', which is how a read-without-writer bug hid for months while the producer held ~59k events under a different spelling. Equality -> prefix; verified the guard still catches a silently-empty source. This failure was only findable AFTER the two shared-box causes (signal-death misattribution, tmpfs starvation) were separated out, which is the concrete payoff of 75cdb2c/513ba24: ci-gate-red recurred 8x in 10.8d and buried this.",
+   "roi_bps": 20.0,
+   "raised": "2026-08-05T20:24:35.409227+00:00",
+   "status": "implemented",
+   "reason": "Fixed and verified: tests/execution/ 265 passed (was rc=1), ruff clean, and the guard demonstrably still catches the regression it exists for -- injecting an empty source is caught as {'liquidations': ''}.",
+   "commit": "eb74f48",
+   "due": null,
+   "disposed": "2026-08-05T20:24:44.047067+00:00"
   }
  ]
 }
