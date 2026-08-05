@@ -74,6 +74,13 @@ _DERIVATION_WORDS = (
     # STATISTICAL derivations -- the third false-positive class this fence produced. A threshold
     # placed a standard error below a breakeven IS derived; the vocabulary simply lacked the words.
     "standard error", "binomial", "sigma", "power", "breakeven", "posterior", "variance",
+    # SCHEDULE derivations -- the fourth false-positive class (2026-08-05). A staleness threshold
+    # set from a producer's known firing rate is derived from a fact you can look up in the
+    # manifest, exactly as a fee schedule is: CHART_STALE_H=2.0 because the builder's cron cadence
+    # is 20 minutes, so 2h is five consecutive missed builds -- the organ has STOPPED, not
+    # hiccuped. Widening is the sanctioned response here (this list's own rule, three classes
+    # above); rewording run_conviction_trader to hit the vocabulary would be gaming the fence.
+    "cadence", "cron", "consecutive", "schedule",
 )
 
 #: Constants that are pure plumbing, not sizing. Naming them is a DECISION, same as the schedule
