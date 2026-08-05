@@ -14,7 +14,9 @@ achievable ~12-15) are "the single biggest live drag", which makes this the high
 measurable on the money path.
 
 WHAT IT MEASURES, from exchange ground truth (data/cashcarry_trades.json), never an accumulator:
-  maker_rate        share of fills that were maker
+  maker_rate        share of fills that were maker. On the cash-carry tape the unit is a LEG,
+                    not a row (a pair can rest maker on spot and cross taker on futures), and a
+                    leg that placed no order at all -- `already-flat` -- is not in the denominator
   fee_concentration share of total fees paid by the taker minority -- the 96.5% number
   bps_per_rt        realised round-trip cost in bps, the quantity the ladder prices
   trend             week-over-week direction, because a level without a trend cannot answer
@@ -32,11 +34,17 @@ from __future__ import annotations
 import argparse
 import contextlib
 import json
+import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:                      # importable as a script, no packaging step
+    sys.path.insert(0, str(ROOT))
+
+from libs.execution import leg_modes  # noqa: E402  (path bootstrap must precede the import)
+
 TRADES = ROOT / "data/cashcarry_trades.json"
 OUT = ROOT / "data/fill_quality.json"
 TARGET_MAKER_RATE = 0.60          # the ledger's own bar
@@ -71,6 +79,35 @@ def _is_maker(r: dict) -> bool:
 _LIQUIDITY_FIELDS = ("maker", "isMaker", "is_maker", "m", "role", "liquidity")
 
 
+#: The cash-carry tape's own schema: ONE mode string per LEG, up to two legs per trade row.
+_LEG_FIELDS = ("spot_mode", "fut_mode")
+
+
+def _leg_maker_flags(r: dict) -> list[bool] | None:
+    """Per-LEG maker verdicts for one cash-carry row, or None when this row's legs are unreadable.
+
+    THE FIX R0324 ASKED FOR. The row carries `spot_mode`/`fut_mode` -- a pair can rest maker on
+    spot and cross taker on futures, so the row is worth up to TWO observations, not one. Legs that
+    placed no order (`already-flat`: the venue said the leg was already flat, so nothing was quoted
+    and nothing was filled) are DROPPED, not scored taker: they never had the chance to be maker
+    and counting them would deflate the very share this monitor polices.
+
+    Returns [] for a row whose legs are all no-order -- readable, but contributing no denominator.
+    Returns None when the row carries no leg fields at all, or carries a mode string outside the
+    known vocabulary: an unrecognised schema must reach the guard below, never a plausible number.
+    """
+    present = [r[k] for k in _LEG_FIELDS if k in r]
+    if not present:
+        return None
+    flags: list[bool] = []
+    for mode in present:
+        if not leg_modes.is_known(mode):
+            return None                            # tape grew a mode we were never taught
+        if leg_modes.placed_order(mode):
+            flags.append(leg_modes.is_maker(mode))
+    return flags
+
+
 def _schema_understood(rows: list[dict]) -> bool:
     """Does ANY row carry a field that could express maker-vs-taker?
 
@@ -83,14 +120,17 @@ def _schema_understood(rows: list[dict]) -> bool:
     as a measured finding. Refusing is the only honest output: "we could not read it" and "it was
     0%" are different claims and only one of them is evidence.
 
-    THIS IS THE GUARD, NOT THE FIX (R0324, due 2026-08-02). Teaching `_is_maker` to read
-    `spot_mode`/`fut_mode` is the real repair, and it is deliberately NOT done here because those
-    rows carry TWO legs each ('maker' / 'taker' / 'taker_fallback' / 'already-flat') against a
-    one-verdict-per-row reader, and `already-flat` is not a fill at all so it must not enter the
-    denominator. Getting that wrong yields a plausible WRONG rate, which is worse than an obvious
-    refusal: an implausible 0% gets investigated, a believable 43% gets believed.
+    THE FIX LANDED (R0324, 2026-08-05); THE GUARD STAYS. `_leg_maker_flags` now reads the
+    cash-carry schema per LEG and drops `already-flat` from the denominator, so that tape is
+    measured instead of refused. The guard was NOT deleted with it: it still fires for a tape
+    carrying neither a liquidity field nor a known leg mode. The repair NARROWS what counts as
+    unmeasured -- it never widens what counts as understood, because a plausible WRONG rate is
+    worse than an obvious refusal (an implausible 0% gets investigated, a believable 43% gets
+    believed).
     """
-    return any(k in r for r in rows for k in _LIQUIDITY_FIELDS)
+    if any(k in r for r in rows for k in _LIQUIDITY_FIELDS):
+        return True
+    return any(_leg_maker_flags(r) is not None for r in rows)
 
 
 def _fee(r: dict) -> float:
@@ -128,19 +168,40 @@ def measure(rows: list[dict]) -> dict[str, Any]:
                 "note": (f"{n} row(s) carry no recognised liquidity field "
                          f"{_LIQUIDITY_FIELDS} -- cannot tell maker from taker. Reporting "
                          "UNMEASURED rather than a false 0%.")}
-    makers = [r for r in rows if _is_maker(r)]
-    takers = [r for r in rows if not _is_maker(r)]
+    # One entry per MEASURED observation. A cash-carry row contributes one flag per leg that
+    # actually placed an order (R0324); every other schema stays one flag per row, `_is_maker`
+    # failing closed exactly as before.
+    units: list[bool] = []
+    takers: list[dict] = []
+    for r in rows:
+        flags = _leg_maker_flags(r)
+        row_flags = [_is_maker(r)] if flags is None else flags
+        units.extend(row_flags)
+        if not all(row_flags):      # a row bearing ANY non-maker leg is a row that paid taker
+            takers.append(r)
+    n_units = len(units)
+    if n_units == 0:
+        # Readable, but nothing to measure: every leg was `already-flat` (no order placed, so no
+        # fill could have been maker). UNMEASURED -- reporting 0.0 here would be a fabricated
+        # zero built entirely out of legs that never traded.
+        return {"fills": n, "maker_rate": None, "fee_concentration": None, "bps_per_rt": None,
+                "measured_legs": 0, "no_order_legs_only": True,
+                "note": (f"{n} row(s) carry only no-order legs {sorted(leg_modes.NO_ORDER_MODES)}"
+                         " -- no order was placed, so there is no maker denominator. Reporting "
+                         "UNMEASURED rather than a false 0%.")}
+    makers = [u for u in units if u]
     fee_all = sum(_fee(r) for r in rows)
     fee_taker = sum(_fee(r) for r in takers)
     notional = sum(_notional(r) for r in rows)
     return {
         "fills": n,
+        "measured_legs": n_units,
         "maker_fills": len(makers),
-        "maker_rate": round(len(makers) / n, 4),
+        "maker_rate": round(len(makers) / n_units, 4),
         "fees_usd": round(fee_all, 4),
         # The 96.5% statistic: what share of all fees the taker MINORITY is responsible for.
         "fee_concentration": round(fee_taker / fee_all, 4) if fee_all > 0 else None,
-        "taker_share_of_fills": round(len(takers) / n, 4),
+        "taker_share_of_fills": round((n_units - len(makers)) / n_units, 4),
         # One-way bps; x2 for a round trip, which is the unit the growth ladder prices.
         "bps_per_rt": round((fee_all / notional) * 1e4 * 2, 3) if notional > 0 else None,
     }

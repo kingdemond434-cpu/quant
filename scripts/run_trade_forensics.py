@@ -18,6 +18,8 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+from libs.execution import leg_modes
+
 _TRADES = Path("data/cashcarry_trades.json")
 _OUT = Path("web/trade_forensics.json")
 # web/ is untracked runtime state: evidence that exists ONLY there is invisible to any checkout
@@ -131,9 +133,14 @@ def _fee_attribution(closes: list[dict[str, Any]], since_ms: int) -> dict[str, A
 
 
 def _leg_share(trades: list[dict[str, Any]], key: str) -> float | None:
-    """Maker share of one leg. None when no record carries the field yet (pre-instrumentation)."""
-    modes = [x[key] for x in trades if x.get(key)]
-    return round(sum(m == "maker" for m in modes) / len(modes), 3) if modes else None
+    """Maker share of one leg. None when no record carries a measurable mode for it.
+
+    Legs that placed no order (`already-flat`) are excluded from the denominator -- see the R0064
+    note at the `maker` block below; `libs.execution.leg_modes` owns the vocabulary for both this
+    organ and scripts/fill_quality_monitor.
+    """
+    modes = [x[key] for x in trades if leg_modes.placed_order(x.get(key))]
+    return round(sum(leg_modes.is_maker(m) for m in modes) / len(modes), 3) if modes else None
 
 
 def _tape_sync(trades: list[dict[str, Any]]) -> dict[str, Any]:
@@ -246,15 +253,29 @@ def main() -> None:
     # organ (run_crypto_testnet) whose web/binance.json last updated 2026-06-28. A fix whose effect
     # cannot be measured is a fix on trust. Legs are counted independently: a pair can rest maker
     # on spot and cross taker on futures, and that asymmetry is exactly the cost detail we need.
-    legs = [m for x in trades for m in (x.get("spot_mode"), x.get("fut_mode")) if m]
+    #
+    # R0064 (2026-08-05): the denominator used to be EVERY truthy mode string, which swept in
+    # `already-flat` -- the mode `_close_goal_state` writes when the venue says the leg is already
+    # flat. No order was placed and no fill happened, so such a leg cannot be maker; counting it
+    # scored it non-maker and pushed `maker_share` under the 0.60 target on arithmetic alone. That
+    # is a FALSE INTEGRITY FLAG: the desk gets paged about maker conversion by legs that never
+    # traded. The vocabulary now lives in `libs.execution.leg_modes`, shared with
+    # scripts/fill_quality_monitor so both organs measure the same tape the same way (R0324).
+    # Exclusion is limited to the no-order markers: every mode that DID place an order still counts
+    # against the target, so this can only remove phantom legs, never soften the bar.
+    legs = [m for x in trades for m in (x.get("spot_mode"), x.get("fut_mode"))
+            if leg_modes.placed_order(m)]
     maker = {
         "n_legs": len(legs),
-        "maker_share": round(sum(m == "maker" for m in legs) / len(legs), 3) if legs else None,
+        "maker_share": (round(sum(leg_modes.is_maker(m) for m in legs) / len(legs), 3)
+                        if legs else None),
         "spot": _leg_share(trades, "spot_mode"),
         "fut": _leg_share(trades, "fut_mode"),
         "target": 0.60,
         "note": ("instrumented 2026-07-26; records written before that carry no mode, so n_legs "
-                 "climbs from 0 as new fills land -- a null share is thin data, not a regression"),
+                 "climbs from 0 as new fills land -- a null share is thin data, not a regression. "
+                 "n_legs counts only legs that PLACED AN ORDER: no-order legs "
+                 f"{sorted(leg_modes.NO_ORDER_MODES)} are excluded from the denominator (R0064)"),
     }
     # Narrowed out of the heterogeneous dict before comparing: `maker` holds str values too, so
     # mypy reads these operands as `str | float | None` and rejects the ordering comparisons.

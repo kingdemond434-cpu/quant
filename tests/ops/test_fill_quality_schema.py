@@ -31,15 +31,35 @@ _CASHCARRY_TAPE = [
 ]
 
 
-class TestUnreadableSchemaRefuses:
-    def test_cashcarry_tape_reports_unmeasured_not_zero(self) -> None:
+class TestCashCarryTapeIsNowRead:
+    """R0324 (2026-08-05): the cash-carry schema is READ per leg now, no longer merely refused.
+
+    The refusal above was the honest interim answer to "we cannot parse this"; the repair is to
+    parse it. What must survive the change is the property the guard existed to protect -- the
+    monitor still never publishes a rate it did not measure -- so these assertions moved from
+    "it refuses" to "it measures, and it measures the RIGHT denominator".
+    """
+
+    def test_the_tape_is_measured_per_leg(self) -> None:
         m = measure(_CASHCARRY_TAPE)
+        assert not m.get("unreadable_schema"), "this schema is understood now"
+        # 4 mode strings; `already-flat` placed no order, so 3 legs and 1 of them maker.
+        assert m["measured_legs"] == 3
+        assert m["maker_rate"] == round(1 / 3, 4)
+        assert m["fills"] == len(_CASHCARRY_TAPE), "row count still reports rows, not legs"
+
+    def test_already_flat_never_deflates_the_rate(self) -> None:
+        """Counting the no-order leg would read 1/4 -- a fill-quality claim about a leg that
+        never placed an order."""
+        assert measure(_CASHCARRY_TAPE)["maker_rate"] > round(1 / 4, 4)
+
+    def test_a_still_unreadable_tape_keeps_refusing(self) -> None:
+        m = measure([{"symbol": "BNBUSDT", "spot_mode": "teleported", "notional": 5.79}])
         assert m["maker_rate"] is None, "an unreadable schema must never publish a rate"
         assert m["unreadable_schema"] is True
-        assert m["fills"] == len(_CASHCARRY_TAPE), "it saw the rows; it just cannot judge them"
 
     def test_the_false_zero_never_reaches_a_verdict(self) -> None:
-        v, why = verdict(measure(_CASHCARRY_TAPE), {"maker_rate": 0.242})
+        v, why = verdict(measure([{"symbol": "X", "notional": 1.0}]), {"maker_rate": 0.242})
         assert v == "NO DATA"
         assert "DEFECT" not in why, "a measurement failure must not page as a performance finding"
 
