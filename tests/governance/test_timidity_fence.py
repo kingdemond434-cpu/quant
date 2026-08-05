@@ -82,3 +82,43 @@ def test_the_live_constitution_has_no_unclassified_restraint():
         f"unclassified scope restraint in force: {rep['unclassified']} -- each defaults to the "
         "timid reading in practice")
     assert rep["counts"].get("CLASSIFIED", 0) >= 10, "the L1.28 table lost rows"
+
+
+# ---------------------------------------------------------------------------------------------
+# DELEGATED PROMPT SURFACES. A doc a prompt ORDERS an organ to read binds that organ exactly as
+# hard as an inline instruction, and until 2026-08-05 none of them were swept: PROSPECTOR_SPEC.md
+# carried "invent up to 5 mechanisms" while the fence reported green, because _prompt_surfaces()
+# globbed ops/*prompt*.txt and stopped at the first hop.
+# ---------------------------------------------------------------------------------------------
+
+def test_delegated_instruction_docs_are_swept():
+    """The docs the dig prompts delegate to are prompt surfaces, not background reading."""
+    swept = {str(p.relative_to(tl._ROOT)) for p in tl._prompt_surfaces()}
+    for rel in ("docs/DIGGING_CHARTER.md", "docs/research/PROSPECTOR_SPEC.md"):
+        assert rel in swept, f"{rel} is ordered read by a dig prompt but is not swept"
+
+
+def test_records_are_not_swept_so_the_fence_keeps_its_credibility():
+    """Coverage/watchlist RECORDS stay out: the draft that globbed them fired QUOTA-CAP on
+    'up to 26 years' -- a data span, not a bound on effort. A gate that cries wolf gets
+    switched off, and a switched-off gate enforces nothing."""
+    swept = {str(p.relative_to(tl._ROOT)) for p in tl._prompt_surfaces()}
+    for rel in ("docs/research/prospector_coverage.md", "docs/research/prospector_watchlist.md"):
+        assert rel not in swept, f"{rel} is a record, not an instruction surface"
+
+
+def test_a_quota_cap_in_a_delegated_doc_is_caught(tmp_path, monkeypatch):
+    """The exact defect that survived: the cap lived one delegation hop from the prompt."""
+    doc = tmp_path / "PROSPECTOR_SPEC.md"
+    doc.write_text("Using only what the desk has learned, invent up to 5 mechanisms.\n", "utf-8")
+    monkeypatch.setattr(tl, "_prompt_surfaces", lambda: [doc])
+    monkeypatch.setattr(tl, "_ROOT", tmp_path)
+    hits = tl.audit_prompts()
+    assert [h["kind"] for h in hits] == ["QUOTA-CAP"], hits
+
+
+def test_the_live_prompt_surfaces_carry_no_quota_cap():
+    """The real artifact, including the delegated docs -- this is what went red on 2026-08-05."""
+    hits = tl.audit_prompts()
+    caps = [f"{h['file']}:{h['line']} {h['text']}" for h in hits if h["kind"] == "QUOTA-CAP"]
+    assert not caps, f"numeric quota caps in force on a prompt surface: {caps}"

@@ -712,3 +712,65 @@ monotonic, origin's 199 untouched. Recorded here because a renumber that is not 
 identical to a dropped row, and dropping an inconvenient row is the one thing the ledger forbids.
 
 _Session closed 2026-07-31. Next scheduled run: 2026-08-31, or earlier on due-by-state._
+
+---
+
+# APPENDED 2026-08-05 — R0210 RESOLVED: option (b), and every card now has an owner
+
+_Appended, not edited. The integrity rule above forbids quiet edits to a card, so this is a dated
+correction that leaves the 2026-07-31 record exactly as it was written._
+
+**The conflict, restated in one line:** this seat is frozen to RESEARCH ONLY and may not run a
+screen, while L1.39 requires every finding to advance its next pipeline stage in the same run, and
+for an invented mechanism that stage is the Stage-A screen. Five days on, the cost of leaving it
+unresolved is measurable rather than hypothetical: of the nine cards, four had reached a screen
+(BR-03 under R0121 SCREEN-CONDITIONAL, BR-04 under R0204, BR-07 under R0203, BR-08 screened and
+refuted-reversed under R0206) and **four had no owner, no clock and no artifact at all**.
+
+**RESOLUTION: option (b) — keep the freeze, make the handoff explicit.** Option (a), granting this
+seat read-only `axis_screen` execution, was not taken, and the reason is specific rather than
+cautious: this seat's entire value is that it reasons from the desk's own artifacts *without* the
+desk's own conclusions, and the 12-month originality measurement (R0209) is only interpretable if
+the seat stayed blind. Screen execution means reading screen output, which is the desk's
+conclusions arriving by the back door. The freeze is not overhead here — it is the instrument.
+
+**What makes (b) real rather than a promise.** The obvious implementation — an "owner" column in
+the table above — is a write-only inbox, the failure this desk has paid for repeatedly. Instead
+every card leaves the seat as a **row in the recommendation ledger**, which is chased:
+`recommendations.owed()` treats a scheduled row past its due date exactly like an undisposed
+orphan, and `carryover_brief.py:77` imports that function directly rather than restating it, so an
+unowned card surfaces at the top of every cycle until disposed. This is inside the freeze — the
+ledger lives under `docs/research/*` and adding a row runs a sanctioned CLI, touching neither
+`scripts/` nor `libs/`. Bound into the seat's own instructions at
+`ops/blindrediscovery_dig_prompt.txt` (OUTPUTS / ROUTING) and into the companion section of
+`docs/research/PROSPECTOR_SPEC.md`, so it binds the next run rather than this note.
+
+**The four unowned cards, now owned:**
+
+| card | mechanism | screening owner | row |
+|---|---|---|---|
+| BR-01 | funding × OI (dollar burden) as deleveraging pressure and carry-selection variable | cycle org | **R0381** |
+| BR-02 | cross-sectional funding half-life → select on expected funding over the hold | cycle org | **R0382** |
+| BR-06 | measured μ(σ) → Kelly f*(σ) instead of flat sizing | cycle org (L1.38-fenced) | **R0383** |
+| BR-09 | pre-settlement dodge flow above a cost-derived threshold | cycle org | **R0384** |
+
+BR-06 carries an extra fence and it is stated on its row: it touches the only deployed sleeve, so
+it faces the L1.38 change window, and under the two-stage law a measured μ(σ) earns a measurement
+and a forward clock, never a size change.
+
+**Found while resolving this, fixed in the same commit — the seat was being throttled by a
+sentence nobody could see.** `PROSPECTOR_SPEC.md:124` still read *"invent up to 5 mechanisms"*.
+The principal's 2026-07-19 exhaustion order removed that cap from
+`ops/blindrediscovery_dig_prompt.txt` and never followed it through the delegation, and
+`check_timidity_language.py` could not catch it because `_prompt_surfaces()` globbed
+`ops/*prompt*.txt` and stopped there — while the prompt's own first line orders the organ to *read
+the spec*. **A doc a prompt orders an organ to read is a prompt surface**; instructions reached by
+one hop of indirection bind exactly as hard as inline ones. That is the same transitive-
+reachability blindness `check_orphan_code` was fixed for, in a different costume, and it is the
+L1.36 REACHING condition failing in the one direction the fence was built to prevent: the law was
+enforced, the surface was unreached. The cap is gone and the four delegated instruction docs are
+now swept. Records (`prospector_coverage.md`, `prospector_watchlist.md`) are deliberately **not**
+swept — the draft that globbed them fired QUOTA-CAP on "up to 26 years", a data span in a coverage
+record, and a gate that cries wolf gets switched off.
+
+_R0210 closed 2026-08-05._

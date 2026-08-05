@@ -66,7 +66,10 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # means the same in CI, a fresh clone and on the box. Caught dist_shift.py (cited for L1.19 and
     # L2.10, importer count outside its own test: zero) on its first run.
     ("check_enforcement_execution.py", ()),
-    ("check_timidity_language.py", ()),        # L1.28 -- incl. all 18 prompt surfaces
+    # L1.28 -- every prompt surface, INCLUDING the charters/specs a dig prompt orders the organ to
+    # read (one delegation hop still binds the organ; the count is read from the artifact, not
+    # asserted here, because a hardcoded "all N surfaces" goes stale the first time one is added).
+    ("check_timidity_language.py", ()),
     # --report-only: the LAW half is manifest<->repo integrity (exit 2). Live-crontab DRIFT
     # (exit 1) is BOX STATE -- on a red-parked box the manifest is *supposed* to be ahead of
     # the installed crontab until the puller vets the commit, so drift failing CI/pre-push

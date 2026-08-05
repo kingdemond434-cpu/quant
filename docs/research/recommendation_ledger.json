@@ -2529,11 +2529,11 @@
    "summary": "BLIND-REDISCOVERY 2026-07-31 / IDLENESS+REPLACEMENT-RATE: forward_slots.json shows m_concurrent 12 / cap 12 / idle_slots 0 (cohort FULL) while promotion_queue.json shows n_candidates 0 (queue EMPTY) and new-candidate latency ~181 days (90 clock + 90 queue + 1 decision). Every slot occupied with NOTHING staged behind them: when a slot frees the desk waits a full pipeline latency to discover it has no inventory. L1.30 countdown nobody is watching; L1.28a idle capacity with a non-empty candidate space. ACTION: stage the 8 QUEUE-verdict blind-rediscovery cards (BR-01,02,03,05,06,07,08,09) into promotion_queue.json -- costs no slot, no capital. Stage-A screens need no slot and BR-01/02/06/08 are runnable today on data already on disk.",
    "roi_bps": 150.0,
    "raised": "2026-07-31T20:16:50.696054+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=1 effort_h=8: Queue still empty: data/promotion_queue.json has n_candidates 0, queue [], no BR-* entries (run_promotion_queue.py _candidates() has no blind-rediscovery source). Progress since raised proves the cards convert: BR-08 was screened AND refuted-reversed by test (data/decision_ledger.json:3470 -- scripts/screen_carry_basis_path.py on bronze D1, 164 symbols; graveyard row written) and BR-07's apparatus is the shipped moat pipeline. BR-01/02/06 remain runnable today on on-disk data through the existing pooled/axis_screen harness; staging costs no slot and no capital, exactly as the row says.",
-   "commit": null,
+   "status": "implemented",
+   "reason": "IMPLEMENTED at the durable half, and the stated ACTION is corrected rather than performed -- both stated plainly. WHAT WAS FIXED (e73c122): the desk had NO instrument for this condition. check_utilisation._forward_slots scored 12/12 as SATURATED with an empty binding_constraint and exit 0, and capability_ratchet._alpha_output scored the same state 10/10 AT CEILING. Occupancy and pipeline DEPTH are two different ceilings and the desk fenced only the first, so the artifacts healthiest-looking row described a pipeline with zero throughput staged. New forward_queue_depth ceiling: used = promotion_queue n_candidates + paper_sleeve_queue queued, limit = one full cohort (MAX_FORWARD_SLOTS, self-scaling, not hand-set). It names NO binding constraint when empty, deliberately -- an empty queue is neither a survival rail nor an external blocker, the only two things L1.28a admits, so it reads IDLE-UNEXPLAINED and the fence exits 1. Verified: exit 1, and run_max_push now ranks it 0.85, second of ten, under evidence_throughput. Also fixed the numerator: occupancy is not utilisation, and a slot in derive_slots not_accruing (cny_premium, NO-EVIDENCE) was counted as fully utilised while paying multiplicity and returning nothing -- now 11/12, with the binding-constraint text matched to the shortfall so a dormant clock no longer reads as a candidate-supply problem. 9 tests. WHY THE STATED ACTION WAS NOT PERFORMED, and this is the substantive finding: staging the 8 BR cards into promotion_queue.json is NOT IMPLEMENTABLE AS WRITTEN. That artifact is a pure derived view over survived=1 rows in data/sor_research.sqlite (run_promotion_queue._candidates, R0079 refuses the store.all fallback); writing BR cards into it would mint gauntlet survivors that passed no gauntlet -- the phantom-edge factory L1.39 bans by name. The correct staging register for Stage-A cards is paper_sleeve_queue.json, fed by run_paper_sleeve_spawner from reports/axis_screens/*.json, so the way to stage a BR card is to RUN ITS SCREEN. Two of them were wired into the cadence today in 017912a (announcement diffusion daily, unlock supply weekly), which stages them automatically and permanently rather than once by hand. NOT FIXED, left visible: both 181-day latency legs are one calendar constant, promotion_latency.DESIGN_CLOCK_DAYS=90.0, already on check_calendar_gates list of 59 untagged L1.48 violations -- its own row, not a side effect of this one.",
+   "commit": "e73c122304851fd5108cd85675069bbf339558a4",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-05T14:37:11.836543+00:00"
   },
   {
    "id": "R0206",
@@ -2565,11 +2565,11 @@
    "summary": "BLIND-REDISCOVERY 2026-07-31 / L1.16a RE-OPEN CANDIDATE (declared, not unilaterally re-opened): vpin_ofi_microstructure, do_not_repeat #13, REJECTED 2026-07-03 for 'gross +59.4bps decaying 2024->+82bps to 2026->+12bps; REQUIRES L2 TICK INFRA; IC decay kills expected ROI'. NAMED ENABLING CHANGE: the L2 tick infrastructure now exists and runs at ZERO MARGINAL COST -- 7.1 GB across three venues since 2026-07-17, recorded for other reasons. The kill was half economic (IC decay) and half INFRASTRUCTURE COST; the infrastructure half is now free and sunk. The economic half STANDS and must be re-tested honestly: +12 bps against a measured 3.8-5 bps round-trip is thin but no longer obviously negative. ACTION: re-score through the EV gate with effort_h reflecting zero infra cost; proceed only if it clears on its own merits.",
    "roi_bps": 80.0,
    "raised": "2026-07-31T20:16:50.993822+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=4 effort_h=2: Enabling change verified in-tree: the L2 infra runs at zero marginal cost and is consumed by screen_moat.py/mine_moat.py/calibrate_impact.py; the re-open is properly declared (blind_rediscovery_log.md:551-563). But NO EV re-score has been recorded: do_not_repeat #13 stands (prospector_coverage.md:655 still cites the 2026-07-03 rejection) and no vpin re-score appears in the decision ledger. The re-score through the EV gate with effort_h at zero infra cost is small paperwork; proceed to a screen only if it clears on its own merits -- the economic half of the kill stays binding.",
+   "status": "rejected",
+   "reason": "REJECTED, and the named enabling change is refuted on measurement -- the re-open is replaced with a STRONGER and more re-usable kill than the unsourced bps decay on the card. L1.16a requires a named enabling change addressing the ORIGINAL MECHANISM OF DEATH; the change named (L2 tick infra now free and sunk) is half false and half irrelevant, and not the half the row claims. (1) OFI IS UNCOMPUTABLE FROM THIS TAPE, mechanism-level, not power-level. data/moat is not L2 tick infrastructure: it is REST /fapi/v1/depth?limit=20 POLLED at a MEASURED median 5.24s today and 8.33s on 2026-07-27 (p90 16.8s) -- a top-20 snapshot, not an event stream. Measured on one hour of fut/BTCUSDT (20260805_13): 563 depth snapshots against 66,318 trades, so a median 40 and mean 118 trades fall BETWEEN consecutive frames, and the best bid changed 77.8pct of the time between them. Cont-Kukanov-Stoikov OFI is a sum over CONSECUTIVE BOOK EVENTS; at roughly 1:100 aliasing the intermediate contributions ARE the quantity. No number of extra days, symbols or estimators repairs that, and it cannot be backfilled -- the quantity was never recorded. Corroborating: the only OFI-shaped thing already built, withdrawal_asymmetry, is exactly this aliased proxy and its sibling withdrawal_rate scores IC -0.0207 SCREEN-UNDERPOWERED. L1.46 compounds it -- depth rows carry clock=recv, and spot depth is permanently recv_only because /api/v3/depth returns no venue stamp. (2) VPIN IS COMPUTABLE, BUT NEVER NEEDED THE DEPTH TAPE, so the enabling change is not its input. Trades are gapless and venue-stamped (contiguous_frac 1.0000, max_gap 1) and carry the isBuyerMaker aggressor label, so Bulk Volume Classification is not needed at all -- which matters because BVC is precisely the defect Andersen and Bondarenko (JFM 17:1-46, 2014) identify as the source of VPINs illusory forecast power, already read in primary text at LIT_b_forgotten_literature.md:579-624. The desks own adjudication there routes what survives to RISK (volatility, liquidation-cascade prediction), NOT to an alpha stream. (3) THE ECONOMIC HALF STAYS BINDING AND IS ALREADY RE-TESTED BY PROXY. The clean-signed construction has been screened: idle_axis_screen taker_flow_absorption C2_return_residualised_taker_buy, h1d n=136,931, IC 0.0111 against min_detectable_ic 0.0474, SCREEN-UNDERPOWERED; h20d IC -0.005. moat_screen over 11 microstructure mechanisms at 60/300/900s returns survivors: []. Note for the record: the +59.4bps decay on the do_not_repeat card has NO provenance in this tree (no artifact, no source, zero decisions dated 2026-07-03) -- it is cited three times and sourced nowhere, so it was never evidence to re-litigate against. The kill now rests on a measured property of our own tape instead. Two separate defects found while establishing this are rowed independently and do NOT depend on this verdict.",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-05T14:37:45.602578+00:00"
   },
   {
    "id": "R0209",
@@ -2577,11 +2577,11 @@
    "summary": "BLIND-REDISCOVERY 2026-07-31 / SCHEDULED OBLIGATION: the 12-month literature comparison for the 9 blind-invented mechanisms BR-01..BR-09 (logged in docs/research/blind_rediscovery_log.md) falls due 2027-07-31. On that date search external literature for each mechanism and record: published AFTER our date = genuine independent invention (the engine originates); published BEFORE and we missed it = the engine is a summariser with a coverage gap AND the external diggers failed to surface it; never published = novel or too weak to publish. Verdict must come from a search performed ON the check-back date, and no card may be silently edited in the interim (corrections are appended with their own date). This is the desk's ONLY direct measurement of research-engine originality.",
    "roi_bps": 40.0,
    "raised": "2026-07-31T20:16:51.079543+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Correctly dormant until 2027-07-31, and the record is armored: blind_rediscovery_log.md:584-592 holds the per-card comparison table (BR-01..09, check-back 2027-07-31, verdicts _pending_) with pre-committed reading rules; the quarterly cadence duty names the 12-month comparison (run_cadence.py:783-787). Nothing may execute before the date by design (verdict must come from a search ON the check-back date). Keep the row as the standing clock; a dated one-shot reminder is minutes of optional hardening.",
+   "status": "scheduled",
+   "reason": "SCHEDULED to 2027-07-31, the check-back date the row itself pre-commits to, and the schedule is ENFORCED rather than noted. VERIFIED THE CLOCK IS REAL, which is the only thing that makes scheduling a completed disposition rather than a write-only act: recommendations.owed() classes a scheduled row past its due date exactly like an undisposed orphan (recommendations.py:233-239, and an unparseable due date counts as overdue too -- fail-firm), and carryover_brief.py:77 imports owed() directly (not a restatement) so the row lands in the SS37 carry-over brief that opens every cycle from 2027-07-31 onward. VERIFIED THE RECORD IS ARMORED so the future search has something to score against: blind_rediscovery_log.md:582-592 holds the per-card table BR-01..BR-09, each with invented-date 2026-07-31, a one-line mechanism, check-back 2027-07-31 and verdict _pending_, above a PRE-COMMITTED reading rule (published AFTER our date = the engine originates; published BEFORE and missed = summariser with a coverage gap AND the external diggers failed; never published = novel or too weak) and an integrity rule barring quiet edits (corrections appended with their own date). run_cadence.py:782-787 names the 12-month comparison as a standing duty. WHY THIS MAY NOT BE IMPLEMENTED EARLY, and the distinction is the whole value of the row: the verdict must come from a search performed ON the check-back date. Searching today would measure whether the literature had published by 2026-08-05, five days after invention -- a different and near-vacuous claim, and it would burn the one measurement the desk owns of its own research-engine originality. This is one of the three legitimate calendar clocks L1.48 admits (a data-window definition: the 12-month gap IS the measurement), not an evidence-substituting delay, so L1.48 does not bite. NOT SCHEDULED, and left visible rather than silently absorbed: nothing binds a SCREENING owner to the nine cards, which is a different obligation on a different clock -- that is R0210, disposed separately in this batch.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2027-07-31",
+   "disposed": "2026-08-05T16:28:15.475481+00:00"
   },
   {
    "id": "R0210",
@@ -4644,6 +4644,54 @@
    "commit": "fc73eb3",
    "due": null,
    "disposed": "2026-08-05T14:20:44.060229+00:00"
+  },
+  {
+   "id": "R0381",
+   "source": "cycle",
+   "summary": "BR-01 SCREEN OWED (R0210 handoff, blind-rediscovery 2026-07-31): funding rate x open interest -- the DOLLAR burden of the carry, not its rate -- as forced-deleveraging pressure and as a carry-SELECTION variable. Screening owner: the cycle org. Stage-A harness: libs.research.axis_screen (artifact gate baked in). Data already on disk: data/lake/bronze/crypto/{SYM}/D1 carries funding and basis columns across 285 symbols, and OI is collected by scripts/collect_binance_metrics.py -> reports/axis_screens/binance_metrics.json. Mechanism prior: rate-ranked selection is the desk's deployed rule and ignores notional, so two perps at identical funding carry different liquidation pressure. Screen the residual IC of funding*OI against funding alone -- if it adds nothing over the rate the card dies cheaply.",
+   "roi_bps": 70.0,
+   "raised": "2026-08-05T16:31:41.547959+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0382",
+   "source": "cycle",
+   "summary": "BR-02 SCREEN OWED (R0210 handoff, blind-rediscovery 2026-07-31): cross-sectional heterogeneity of funding HALF-LIFE -- select on expected funding over the intended HOLD, not on the funding printed at entry. Screening owner: the cycle org. Stage-A harness: libs.research.axis_screen. Data on disk: data/funding_settlements/*.parquet (42 symbols, 3553 rows for 1000PEPEUSDT, span 2023-05-05 to 2026-08-01) plus the funding column of bronze D1 across 285 symbols. Mechanism prior: the deployed sleeve ranks on instantaneous funding, which is the value most likely to mean-revert before the hold ends -- this is the same adverse-selection geometry BR-08 established and had refuted-reversed by test, so it inherits a real prior rather than a hopeful one. NOTE THE DEPENDENCY: half-life is estimated per symbol, so per-symbol n is the binding constraint and an underpowered estimate must return SCREEN-UNDERPOWERED, never a ranked list.",
+   "roi_bps": 60.0,
+   "raised": "2026-08-05T16:32:03.638806+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0383",
+   "source": "cycle",
+   "summary": "BR-06 SCREEN OWED (R0210 handoff, blind-rediscovery 2026-07-31): measured mu(sigma) for carry -> Kelly f*(sigma), instead of flat sizing or vol targeting. Screening owner: the cycle org. Data on disk: the desk's own fill and funding history under data/ plus bronze D1. THIS ONE IS SIZING-ADJACENT AND THEREFORE FENCED HARDER THAN THE OTHERS: it touches the only deployed sleeve, so it faces the L1.38 change-window rule, and under the two-stage law a measured mu(sigma) earns a MEASUREMENT and a forward clock, never a size change -- the screen publishes the curve and the Kelly denominator it implies, and any re-sizing is a separate gated act with its own row. Screen it as a research finding about the sleeve, not as a parameter change to it.",
+   "roi_bps": 90.0,
+   "raised": "2026-08-05T16:32:07.393178+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0384",
+   "source": "cycle",
+   "summary": "BR-09 SCREEN OWED (R0210 handoff, blind-rediscovery 2026-07-31): pre-settlement dodge flow appears only ABOVE a cost-derived threshold -- traders exit before a funding stamp only when the settlement they would pay exceeds their round-trip cost, so the flow is a threshold effect, not a linear one. Screening owner: the cycle org. Harness: libs/research/funding_clock.py (the single module that knows when a perp actually pays, installed under L1.47) joined to the desk's measured cost curve. Data on disk: data/funding_settlements/*.parquet and the L1.47 phase instrumentation. Mechanism prior is unusually strong here because L1.47's first run already MEASURED the phase concentration it predicts -- opens and closes cluster in the final hour before a settlement -- while explicitly refuting cron alignment, signal coupling and min-hold aliasing as explanations. A measured fact with a refuted story is still a measured fact; this card is the hypothesis that would explain it, and it is testable against a threshold the cost curve fixes in advance rather than a swept one.",
+   "roi_bps": 50.0,
+   "raised": "2026-08-05T16:32:11.600524+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

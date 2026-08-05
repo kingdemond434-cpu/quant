@@ -152,6 +152,28 @@ def _prompt_surfaces() -> list[Path]:
         p = _ROOT / rel
         if p.exists():
             out.append(p)
+    # A DOC A PROMPT ORDERS THE ORGAN TO READ *IS* A PROMPT SURFACE. The sweep above covers the
+    # files the desk hands an organ directly and stopped there, but every dig prompt opens by
+    # delegating: blindrediscovery_dig_prompt.txt:1 says "Read the Blind-Rediscovery companion
+    # section of docs/research/PROSPECTOR_SPEC.md and docs/DIGGING_CHARTER.md". Instructions
+    # reached by one hop of indirection bind the organ exactly as hard as inline ones and were
+    # invisible here -- the same transitive-reachability blindness check_orphan_code was fixed
+    # for. Measured on the day this was added: PROSPECTOR_SPEC.md:124 carried "invent up to 5
+    # mechanisms", a QUOTA-CAP that survived the principal's 2026-07-19 exhaustion order because
+    # that order was applied to the prompt and never followed through the delegation.
+    #
+    # NAMED EXPLICITLY, NOT GLOBBED, and the distinction is what keeps this fence trusted: the
+    # first draft derived this list by regexing prompt text for *SPEC*/*CHARTER* paths, which
+    # also swept docs/research/prospector_coverage.md and fired QUOTA-CAP on "up to 26 years" --
+    # a DATA SPAN in a coverage RECORD, not a bound on effort. Records describe what was found;
+    # only charters and specs instruct. A gate that cries wolf gets switched off, and a switched-
+    # off gate enforces nothing (L1.43), so records stay out until one is shown to instruct.
+    for rel in ("docs/DIGGING_CHARTER.md", "docs/research/PROSPECTOR_SPEC.md",
+                "docs/research/LITERATURE_SPEC.md",
+                "docs/research/FREE_DATA_ALTERNATIVES_SPEC.md"):
+        p = _ROOT / rel
+        if p.exists():
+            out.append(p)
     return out
 
 

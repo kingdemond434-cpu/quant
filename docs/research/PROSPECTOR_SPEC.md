@@ -121,11 +121,29 @@ path to the ledger. Coverage breadth serves card QUALITY — never card volume (
 
 Once per quarter the run does NOT search externally. Using only what the desk has learned —
 graveyard, decision ledger, knowledge base, gap register, calibration/shadow records —
-invent up to 5 mechanisms nobody has published. Pre-register them through the standard
+invent every mechanism that genuinely survives scrutiny, with **no numeric cap** (principal
+exhaustion order 2026-07-19): quality gates the output, never a count, and the no-padding
+discipline does the bounding. Pre-register them through the standard
 gauntlet like any candidate. Log them dated in `docs/research/blind_rediscovery_log.md`;
 twelve months later, compare against external literature to measure whether the research
 engine is becoming genuinely creative rather than an excellent summarizer. Results feed the
 meta-research review.
+
+**EVERY CARD LEAVES THIS SEAT WITH A NAMED SCREENING OWNER AND A DATE (R0210, resolution (b)).**
+This seat is frozen to RESEARCH ONLY — it may not run a screen — while L1.39 requires every
+finding to advance its next pipeline stage in the same run, and for an invented mechanism that
+stage is the Stage-A screen. The freeze is kept and the handoff is made **explicit instead of
+implicit**: at pre-registration, each surviving card gets a row in the recommendation ledger via
+`scripts/recommendations.py add`, naming the screening owner and carrying a due date. That is
+inside the freeze — the ledger lives at `docs/research/recommendation_ledger.json`, under
+`docs/research/*`, and adding a row runs a sanctioned CLI rather than editing `scripts/`.
+
+Why a ledger row and **not** an "owner" column in the log: a markdown column is a promise nothing
+reads, which is the write-only-inbox failure this desk has paid for repeatedly. A ledger row is
+chased — `recommendations.owed()` treats a scheduled row past its due date exactly like an
+undisposed orphan, and `carryover_brief.py` imports that function directly, so the obligation
+appears at the top of every cycle until it is disposed. Cards without a row are invisible the day
+the run ends; that is the found-never-fixed state L1.28b exists to kill.
 
 ## DIVERGENT SEARCH-PLANNING (anti-blind-spot, 2026-07-18)
 STEP -1, before any digging: (a) read the coverage map AND the latest panel outputs
