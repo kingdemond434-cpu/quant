@@ -2291,11 +2291,11 @@
    "summary": "inbox #85: rebuild quarantined anytime_valid as e-process (wealth M_t=prod(1-l+l*X), confirm at M>=1/alpha; Ville) -- daily Stage-B peeking becomes valid by construction, cures measured x4.9 alpha inflation; recipes: e-backtesting arXiv 2209.00991, AV t-test 2310.03722; caveat t-test non-Gaussian unconfirmed, default bounded e-process (litminer run4 W1)",
    "roi_bps": 80.0,
    "raised": "2026-07-31T19:17:29.083237+00:00",
-   "status": "scheduled",
-   "reason": "HIGH VALUE AND CORRECTLY NOT RUSHED. This cures a MEASURED x4.9 alpha inflation from daily Stage-B peeking, which is a validation-integrity defect on the promotion path -- the single place where getting it wrong manufactures phantom edges rather than merely wasting time. An e-process (M_t = prod(1-l+l*X), confirm at M >= 1/alpha, Ville) makes optional stopping valid BY CONSTRUCTION, which is the right shape. Deliberately not built at cycle end: the row itself flags the AV t-test's non-Gaussian behaviour as unconfirmed, so the default must be the bounded e-process, and choosing l and the confirmation boundary wrongly either loosens the bar (forbidden) or welds it shut (the gate-optimality failure). Wants a session with the quarantined module read side by side with the two arXiv recipes.",
-   "commit": null,
-   "due": "2026-08-26",
-   "disposed": "2026-08-05T13:54:58.682733+00:00",
+   "status": "implemented",
+   "reason": "CORRECTION, and the correction itself is the finding. I disposed this SCHEDULED at 13:53 with the reason 'deliberately not built at cycle end'; a concurrent session in this shared tree had already built it and committed at 13:59 as 8cec675, with the measurement my scheduling reason said still needed doing: on 1200 true-null paths, m=12, 180d, daily peeking at first holm_bar crossing runs 0.0367 actual alpha against 0.00417 nominal -- 8.8x -- and the e-process gate brings it to 0.0017 (0.4x). run_axis_shadows sits on the desk's ONLY research-to-capital path and was taking optional stopping for free. My disposition was stale within six minutes of being written, which is a measured instance of the shared-working-tree hazard already rowed as R0315: two sessions in one checkout produce dispositions about each other's in-flight work. Leaving the SCHEDULED tag would have recorded a built-and-measured validation fix as future work.",
+   "commit": "8cec675",
+   "due": null,
+   "disposed": "2026-08-05T13:59:52.803752+00:00",
    "note": "renumbered from R0176 after sibling-session ID race, merge 2026-07-31"
   },
   {
