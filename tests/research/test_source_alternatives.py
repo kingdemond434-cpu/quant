@@ -162,6 +162,13 @@ class TestProbeClassification:
         assert status == alt.STATUS_REACHABLE
         assert "JSON" in detail
 
+    def test_an_empty_json_result_set_is_a_shell_not_a_replacement(self) -> None:
+        # Measured live on Gitee's v5 search: 200 OK, 2 bytes, `[]`. Filing that as REACHABLE
+        # emits a NEXT ACTION telling someone to parse a source that returned nothing.
+        status, detail = hunt._classify_body(b"[]", "application/json")
+        assert status == alt.STATUS_SHELL
+        assert "EMPTY result set" in detail
+
     def test_unparseable_json_is_a_shell(self) -> None:
         status, _ = hunt._classify_body(b'{"items": ', "application/json")
         assert status == alt.STATUS_SHELL

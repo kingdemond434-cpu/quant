@@ -292,11 +292,17 @@ def record_run(observations: Sequence[Observation], *, path: Path | None = None,
     advanced from the state as of the last day BEFORE today -- not from the row this run is about
     to overwrite. Without that second half, replacement alone would still let three runs in one
     day add three to the counter.
+
+    ONE ROW PER SOURCE PER DAY, unconditionally. Two observations of the same source in one call
+    are FOLDED (usable if either was usable, the first failure's reason kept) rather than written
+    as two rows -- the same "any lane up means the platform is up" rule the report deriver uses,
+    applied here so the invariant holds no matter who calls this.
     """
     p = LEDGER_PATH if path is None else path
     iso = _utc(now).isoformat(timespec="seconds")
     day = iso[:10]
 
+    observations = _fold(observations)
     wanted = {canonical(o.source) for o in observations}
     kept: list[str] = []
     prior: dict[str, SourceState] = {}
@@ -380,6 +386,27 @@ def mark_replaced(source: str, replacement: str, *, path: Path | None = None,
     kept.append(json.dumps(_state_to_row(state, day=day), ensure_ascii=False))
     _write(p, kept)
     return state
+
+
+def _fold(observations: Sequence[Observation]) -> list[Observation]:
+    """Collapse repeats of one source within a single run into one observation."""
+    order: list[str] = []
+    ok_by: dict[str, bool] = {}
+    err_by: dict[str, str | None] = {}
+    van_by: dict[str, str | None] = {}
+    for obs in observations:
+        name = canonical(obs.source)
+        if name not in ok_by:
+            order.append(name)
+            ok_by[name] = obs.ok
+            err_by[name] = obs.error
+            van_by[name] = obs.vantage
+        else:
+            ok_by[name] = ok_by[name] or obs.ok
+            if err_by[name] is None and not obs.ok:
+                err_by[name] = obs.error
+    return [Observation(source=n, ok=ok_by[n], error=None if ok_by[n] else err_by[n],
+                        vantage=van_by[n]) for n in order]
 
 
 def _utc(now: datetime | None) -> datetime:

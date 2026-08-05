@@ -238,6 +238,27 @@ def test_gapped_bars_are_dropped_not_priced():
     assert m.tolist() == [False, True, False]
 
 
+def test_a_recorder_outage_never_becomes_a_period(tmp_path):
+    """Two non-adjacent stretches of tape must not be joined by a period that spans the outage.
+
+    One twelve-hour "60-second" return would both dominate an IC computed over hundreds AND drag
+    the expanding beta that every later residual is built from -- which is why the gap is blanked
+    BEFORE the orthogonalisation, not merely masked out of the correlation afterwards.
+    """
+    state, ret = _series(300, lead=False)
+    first = _write_tape(tmp_path / "a.jsonl.gz", state[:150], ret[:150])
+    second = _write_tape(tmp_path / "b.jsonl.gz", state[150:], ret[150:],
+                         t0=T0 + 400 * BAR_MS)               # a 250-bar hole in the recording
+    recs = list(read_partition(first)) + list(read_partition(second))
+
+    rows = S.screen_cell("fut:BTCUSDT@20260101", recs, decision_lag_ms=0)
+    row = _pick(rows, "obi_touch", "raw")
+    assert row["gap_breaks"] == 1
+    # 300 bars, minus the first (no preceding period) and minus the one that would have spanned
+    # the outage. Nothing else is lost, so the drop is surgical rather than a truncation.
+    assert row["n_paired"] == 298
+
+
 def test_alignment_is_echoed_and_declares_its_lookahead_risk():
     d = Alignment(bar_ms=BAR_MS).as_dict()
     assert d["excludes_current_bar"] is True
@@ -279,6 +300,14 @@ def test_a_leading_book_state_is_detected(tmp_path):
 
     survivors, _ = S.classify([r for r in rows if isinstance(r.get("ic"), (int, float))])
     assert any(s["construction"] == "obi_deep" and s["bar_ms"] == BAR_MS for s in survivors)
+
+    # A survivor is not one of this run's recorded NEGATIVES, so the power headline -- which is a
+    # statement about what the nulls know -- must not count it as an underpowered one.
+    rep = S.build_report(rows, alignment=Alignment(bar_ms=BAR_MS), files_read=1,
+                         files_on_disk=1, cells_screened=1, cells_on_disk=1)
+    assert (rep["power_counts_at_family_charge"]["negatives"]
+            == rep["scored"] - len(rep["survivors"]))
+    assert rep["survivors"], "the leader must reach the artifact, not only classify()"
 
 
 def test_a_merely_coincident_book_state_is_killed_as_an_artifact(tmp_path):
@@ -402,6 +431,11 @@ def test_end_to_end_run_over_a_present_tape_writes_a_screened_artifact(tmp_path,
     assert doc["pre_registration"]["primary_form"] == "residualised"
     assert doc["stage"].startswith("A ")
     assert doc["authority"].startswith("NONE")
-    # Power is reported ALONGSIDE the verdict, so a null is distinguishable from blindness.
-    assert doc["power_headline"] and doc["power_counts"]["negatives"] > 0
+    # Power is reported ALONGSIDE the verdict, so a null is distinguishable from blindness -- on
+    # BOTH bases, each named, because a cell routinely clears the unadjusted floor and not the
+    # family-wise one and an unlabelled pair of counts would read as a contradiction.
+    assert doc["power_headline_at_family_charge"]
+    assert doc["power_counts_at_family_charge"]["negatives"] > 0
+    assert "powered_cells_unadjusted" in doc
+    assert "interesting_but_failed_multiplicity" in doc
     assert all("alignment" in r for r in doc["rows"])

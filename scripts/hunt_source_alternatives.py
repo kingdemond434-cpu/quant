@@ -86,6 +86,13 @@ def _classify_body(raw: bytes, ctype: str) -> tuple[str, str]:
             return alt.STATUS_SHELL, f"{n} bytes, declared JSON but unparseable: {exc}"
         shape = (f"{len(parsed)} top-level keys" if isinstance(parsed, dict)
                  else f"{len(parsed)} elements" if isinstance(parsed, list) else "scalar")
+        if isinstance(parsed, dict | list) and len(parsed) == 0:
+            # An endpoint that answers `[]` is up and is not carrying anything. Filing it as
+            # REACHABLE would emit a NEXT ACTION telling someone to write a parser against a
+            # source that returned nothing -- measured live 2026-08-05 on Gitee's v5 search,
+            # which answered 200 with a 2-byte empty array.
+            return alt.STATUS_SHELL, (f"JSON, {n} bytes, {shape} -- the endpoint answered but "
+                                      "returned an EMPTY result set for this query")
         return alt.STATUS_REACHABLE, f"JSON, {n} bytes, {shape}"
 
     if n < alt.CONTENT_BYTES:
@@ -222,7 +229,8 @@ def main(argv: list[str] | None = None) -> int:
                          "does not, so a probe result here is a fact about THIS BOX; a candidate "
                          "that fails here may be fine there and vice versa"),
         "dead_after_consecutive_failures": health.DEAD_AFTER_CONSECUTIVE_FAILURES,
-        "mode": "all-registered" if args.all or args.source else "dead-only",
+        "mode": ("single-source" if args.source else
+                 "all-registered" if args.all else "dead-only"),
         "dead_sources": sorted(dead),
         "dead_without_registered_alternatives": unregistered,
         "registry": alt.summary(),

@@ -279,7 +279,14 @@ def _spot_commission_term(per_symbol: dict[str, Any] | None, start_ms: int, end_
     note = (f"{n_fills} spot fill(s) across {covered}/{queried} symbol(s); R0027 records the "
             "measured spot commission on this venue as $0.00 per reconciled leg -- a real zero "
             "backed by fills, which is why the fill count is published beside it")
-    if other_asset:
+    if n_fills == 0:
+        # No fills AND no closed round trips: the venue was asked and returned nothing to bill.
+        # That is a measured $0.00, distinguishable from the failed-read branch above only
+        # because there was no trading in the window for a fee to have attached to.
+        bound = economics.LOWER_BOUND
+        note = (f"no spot fills and no round trips closed in this window across {queried} "
+                "symbol(s) -- $0.00 is what the venue returned, not what this reader assumed")
+    elif other_asset:
         bound = economics.LOWER_BOUND
         note = (f"{n_fills} spot fill(s); {other_asset} fill(s) billed in an asset outside "
                 f"{USDT_ASSETS} are COUNTED but not valued in USDT -> LOWER BOUND")
@@ -296,8 +303,9 @@ def _spot_commission_term(per_symbol: dict[str, Any] | None, start_ms: int, end_
 # ---------------------------------------------------------------------------------------------
 def _build_window(label: str, days: float, now: datetime, rows: list[dict[str, Any]],
                   rows_source: str, income_rows: list[dict[str, Any]] | None,
-                  income_summary: dict[str, float] | None, spot_fills: dict[str, Any] | None,
-                  deployed_now: float | None, cost_model: Any) -> economics.WindowReport:
+                  income_summary: dict[str, float] | None, summary_covers_window: bool,
+                  spot_fills: dict[str, Any] | None, deployed_now: float | None,
+                  cost_model: Any) -> economics.WindowReport:
     start, end = economics.window_bounds(now, days)
     start_ms, end_ms = int(start.timestamp() * 1000), int(end.timestamp() * 1000)
     trips = economics.in_window(economics.parse_trips(rows), start, end)
@@ -320,14 +328,23 @@ def _build_window(label: str, days: float, now: datetime, rows: list[dict[str, A
                 if commission is not None
                 else unmeasured_term("futures_commission", comm_src,
                                      "futures income ledger not readable here"))
-    # WINDOWED vs INCEPTION: income_summary is anchored at `since_ms`, so for the trailing-week
-    # read it IS the window. It is used only as the cross-check / fallback for the split.
-    net_fund = (Term("funding_net", float(income_summary["funding"]), MEASURED,
-                     "binance_testnet.income_summary funding (signed sum)",
-                     note="net of captured and paid; used whole when the row split is unavailable")
-                if income_summary is not None and "funding" in income_summary
-                else unmeasured_term("funding_net", "binance_testnet.income_summary",
-                                     "venue income read failed (carry_accounting.read_income)"))
+    # SCOPE DISCIPLINE. `income_summary` is anchored at ONE `since_ms` -- the longest window's
+    # start -- so it is window-scoped for that window and for NO OTHER. Serving it to the
+    # trailing-day row would publish a WEEK of funding as a DAY's harvest and inflate the day's
+    # APR sevenfold; the shorter window therefore reads NOT-READABLE-HERE unless the row-level
+    # split (which IS filtered by fill time) supplied the harvest itself.
+    summary_src = "binance_testnet.income_summary funding (signed sum)"
+    if income_summary is not None and "funding" in income_summary and summary_covers_window:
+        net_fund = Term("funding_net", float(income_summary["funding"]), MEASURED, summary_src,
+                        note="net of captured and paid; used whole when the row split is absent")
+    elif income_summary is not None and "funding" in income_summary:
+        net_fund = unmeasured_term(
+            "funding_net", summary_src,
+            f"income_summary is anchored at the longest window's start, not this {days:g}-day "
+            "one -- using it here would report a longer period's harvest as this window's")
+    else:
+        net_fund = unmeasured_term("funding_net", summary_src,
+                                   "venue income read failed (carry_accounting.read_income)")
 
     slip_usd, slip_cov = economics.slippage_usd(trips)
     slip_src = "cashcarry tape spot_slip_bps + fut_slip_bps x notional (the executor's own _tca)"
@@ -444,19 +461,25 @@ def _actions(day: economics.WindowReport, week: economics.WindowReport,
     maker = forensics.get("maker_fill") if isinstance(forensics, dict) else None
     if isinstance(maker, dict):
         share, target = maker.get("maker_share"), maker.get("target")
-        fut_comm = next((t for t in week.decomposition.terms
-                         if t.name == "futures_commission" and t.measured), None)
+        # BOTH legs' fees, now that the spot leg is measured (R0027) -- a maker-conversion estimate
+        # built on the futures bill alone would understate its own prize.
+        fee_terms = [t for t in week.decomposition.terms
+                     if t.name in ("futures_commission", "spot_commission")
+                     and t.measured and t.usd is not None]
+        fee_bill = sum(t.usd or 0.0 for t in fee_terms)
         base = week.decomposition.capital_usd
-        if isinstance(share, (int, float)) and isinstance(target, (int, float)) \
-                and share < target and fut_comm is not None and fut_comm.usd is not None \
+        if isinstance(share, (int, float)) and not isinstance(share, bool) \
+                and isinstance(target, (int, float)) and not isinstance(target, bool) \
+                and share < target and fee_terms and fee_bill > 0.0 \
                 and base is not None and base > 0:
             # First-order ESTIMATE, labelled: the taker shortfall against the desk's own target,
             # applied to the fee bill actually paid. The target is READ from the forensics
             # artifact, not restated here.
+            legs = " + ".join(t.name for t in fee_terms)
             out.append(Action(
                 label="maker conversion shortfall (ESTIMATE)",
-                bps=1e4 * fut_comm.usd * (float(target) - float(share)) / base,
-                basis="deployed capital; = fee bill x (target - actual) maker share",
+                bps=1e4 * fee_bill * (float(target) - float(share)) / base,
+                basis=f"deployed capital; = ({legs}) x (target - actual) maker share",
                 fix=("raise maker share toward the desk's own target -- patient-maker opens are "
                      "shipped; scripts/fill_quality_monitor.py owns the verification loop and "
                      "reports STALLED when the fix did not move its metric"),
@@ -601,7 +624,7 @@ def main() -> int:
         deployed_now = float(raw) if isinstance(raw, (int, float)) else None
 
     windows = [_build_window(label, days, now, rows, rows_source, income_rows, income_summary,
-                             spot_fills, deployed_now, cost_model)
+                             days == longest, spot_fills, deployed_now, cost_model)
                for label, days in WINDOWS]
     day, week = windows[0], windows[-1]
 

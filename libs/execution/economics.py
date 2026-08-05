@@ -235,11 +235,18 @@ def build_decomposition(
         harvest = (g - p) if (g is not None and p is not None) else None
         crosscheck = _crosscheck_split(harvest, funding_net_fallback)
     else:
+        # Explain the split's absence by WHAT ELSE READ. If the netted aggregate is available the
+        # split is the only thing missing and the harvest survives whole; if nothing read at all,
+        # saying "the split failed" would imply an aggregate that never arrived.
         why = ("row-level FUNDING_FEE split unavailable -- the venue's income_summary nets "
-               "received against paid, so the harvest is carried whole")
+               "received against paid, so the harvest is carried whole"
+               if funding_net_fallback.measured else
+               "no funding read at all: neither the row-level split nor the netted aggregate")
         harvest_terms = (
-            unmeasured_term(gross_funding.name, gross_funding.source, why),
-            unmeasured_term(funding_paid.name, funding_paid.source, why),
+            unmeasured_term(gross_funding.name, gross_funding.source,
+                            gross_funding.note or why if not gross_funding.measured else why),
+            unmeasured_term(funding_paid.name, funding_paid.source,
+                            funding_paid.note or why if not funding_paid.measured else why),
         )
         harvest = funding_net_fallback.usd if funding_net_fallback.measured else None
         crosscheck = ("split UNMEASURED -- net funding used whole"

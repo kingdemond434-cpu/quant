@@ -310,7 +310,12 @@ def pre_registration(alignment: Alignment) -> dict[str, Any]:
         ),
         "ic_min": IC_MIN,
         "sharpe_min": SHARPE_MIN,
-        "alignment": alignment.as_dict(),
+        # The RULE, shown once with a representative bar width. It is identical at every horizon --
+        # only `bar_ms` changes -- and each row carries the exact alignment it was screened under,
+        # so a reader never has to infer which width produced a given number.
+        "alignment": {**alignment.as_dict(),
+                      "applies_at_each_horizon_ms": list(HORIZONS_MS),
+                      "bar_ms_shown_is_representative": True},
         "contamination_hazard": (
             "book state is CONCURRENT with price -- the side that just got hit is the thin one -- "
             "so a raw forward IC is very largely a restatement of the bar that just finished. The "
@@ -435,16 +440,22 @@ def screen_cell(label: str, rows: list[dict[str, Any]], *,
     for bar_ms in HORIZONS_MS:
         al = Alignment(bar_ms=bar_ms, decision_lag_ms=decision_lag_ms)
         edges, closes = bar_close_states(snap_ms, states, alignment=al)
-        ret = period_returns(boundary_prices(t_ms, t_px, edges, alignment=al))
         contig = contiguous_mask(edges, alignment=al)
         breaks = int((~contig[1:]).sum()) if contig.size > 1 else 0
+        # A GAP IS NOT A PERIOD, AND IT IS BLANKED BEFORE THE ORTHOGONALISATION, NOT AFTER. A
+        # recorder outage makes one nominal 60-second period span hours; masking it out of the IC
+        # alone would still let it into the expanding beta, where a single enormous "same-period
+        # return" would drag the fit and contaminate EVERY residual after it. Blanking here means
+        # the gap cannot enter either computation.
+        ret = np.where(contig, period_returns(
+            boundary_prices(t_ms, t_px, edges, alignment=al)), np.nan)
 
         for cname, fn in sorted(CONSTRUCTIONS.items()):
             raw = np.asarray(fn(closes), dtype="float64")
             forms = {"raw": raw, "residualised": residualise(raw, ret)}
             for form in FORMS:
                 sig = forms[form]
-                ok = np.isfinite(sig) & np.isfinite(ret) & contig
+                ok = np.isfinite(sig) & np.isfinite(ret)
                 name = f"{label}|{cname}|{form}|{bar_ms}ms"
                 base: dict[str, Any] = {
                     "cell": label, "construction": cname, "form": form, "bar_ms": bar_ms,
@@ -490,14 +501,20 @@ def _significance(rows: list[dict[str, Any]], *, n_family: int) -> None:
         r["clears_family_wise"] = bool(abs(float(ic)) >= need)
 
 
-def _type2(rows: list[dict[str, Any]], *, n_family: int) -> list[Type2Cost]:
-    """Attach the Type-II reading to every scored row, in place; return the costs for the headline.
+def _type2(rows: list[dict[str, Any]], *,
+           n_family: int) -> list[tuple[dict[str, Any], Type2Cost]]:
+    """Attach the Type-II reading to every scored row, in place; return (row, cost) pairs.
+
+    Pairs rather than bare costs because the HEADLINE is a statement about recorded NEGATIVES, and
+    the caller cannot know which rows those are until `classify` has run. Labelling a survivor as
+    an underpowered negative would be a category error -- its detection floor is still the right
+    number to publish per row, but it is not part of "how much do this run's nulls know".
 
     A zero without a power figure is unfalsifiable: it cannot be told apart from "we could not have
     seen anything even if it were there", and those two statements retire opposite things -- a
     hypothesis class in the first case, an INSTRUMENT in the second.
     """
-    costs: list[Type2Cost] = []
+    costs: list[tuple[dict[str, Any], Type2Cost]] = []
     for r in rows:
         n = r.get("n")
         if not isinstance(n, (int, float)) or float(n) <= 0:
@@ -525,7 +542,7 @@ def _type2(rows: list[dict[str, Any]], *, n_family: int) -> list[Type2Cost]:
         )
         r["type2"] = cost.as_dict()
         r["type2_label"] = cost.label
-        costs.append(cost)
+        costs.append((r, cost))
     return costs
 
 
@@ -615,8 +632,14 @@ def build_report(rows: list[dict[str, Any]], *, alignment: Alignment, files_read
     scored = [r for r in rows if isinstance(r.get("ic"), (int, float))]
     n_family = max(PREREGISTERED_FAMILY, len(scored))
     _significance(scored, n_family=n_family)
-    costs = _type2(scored, n_family=n_family)
+    pairs = _type2(scored, n_family=n_family)
     survivors, graveyard = classify(scored)
+    # The power headline is a statement about this run's RECORDED NEGATIVES. A survivor is not one
+    # of them, and counting it as an underpowered null would understate the run twice over.
+    surv_keys = {(s["cell"], s["construction"], s["bar_ms"]) for s in survivors}
+    costs = [c for r, c in pairs
+             if not (str(r.get("form")) == "residualised"
+                     and (r.get("cell"), r.get("construction"), r.get("bar_ms")) in surv_keys)]
 
     tally: dict[str, int] = {}
     for r in rows:
@@ -624,6 +647,7 @@ def build_report(rows: list[dict[str, Any]], *, alignment: Alignment, files_read
         tally[v] = tally.get(v, 0) + 1
 
     powered = sum(1 for r in scored if bool(r.get("powered")))
+    desk = headline(costs) if costs else None
     return {
         "schema_version": SCHEMA_VERSION,
         "generated_utc": datetime.now(tz=UTC).isoformat(),
@@ -638,16 +662,28 @@ def build_report(rows: list[dict[str, Any]], *, alignment: Alignment, files_read
         "family_size_charged": n_family,
         "family_z_critical": round(float(critical_z(DEFAULT_ALPHA, n_family, two_sided=True)), 4),
         "declared_effects": list(DECLARED_CORRELATION_EFFECTS),
-        "powered_cells": powered,
-        # THE NULL'S CREDENTIALS. Reported even (especially) when there are no survivors: it is the
-        # difference between "we looked and it is not there" and "we could not have seen it".
-        "power_headline": headline(costs).summary() if costs else "no scored cell to power-label",
-        "power_counts": {
-            "negatives": headline(costs).n_negatives if costs else 0,
-            "powered": headline(costs).n_powered if costs else 0,
-            "underpowered": headline(costs).n_underpowered if costs else 0,
-            "indeterminate": headline(costs).n_indeterminate if costs else 0,
+        # THE NULL'S CREDENTIALS, ON BOTH BASES, EACH NAMED. Reported even -- especially -- when
+        # there are no survivors: it is the difference between "we looked and it is not there" and
+        # "we could not have seen it". The two counts below are NOT in conflict and the key names
+        # say why: the first is the UNADJUSTED (N=1) floor the harness's own SCREEN-WEAK /
+        # SCREEN-UNDERPOWERED split encodes and the basis on which a cell may be graveyarded; the
+        # second is the floor at the family-wise charge, i.e. the bar a FIND had to clear. A cell
+        # routinely clears the first and not the second, and that gap is the price of 30 cells.
+        "powered_cells_unadjusted": powered,
+        "power_headline_at_family_charge": (
+            desk.summary() if desk is not None else "no scored cell to power-label"),
+        "power_counts_at_family_charge": {
+            "negatives": desk.n_negatives if desk is not None else 0,
+            "powered": desk.n_powered if desk is not None else 0,
+            "underpowered": desk.n_underpowered if desk is not None else 0,
+            "indeterminate": desk.n_indeterminate if desk is not None else 0,
         },
+        # A cell the harness liked that the multiplicity charge removed. Reported explicitly so a
+        # reader is never left comparing a SCREEN-INTERESTING tally against an empty survivor list
+        # and guessing which gate intervened.
+        "interesting_but_failed_multiplicity": sum(
+            1 for r in scored if str(r.get("verdict")) == "SCREEN-INTERESTING"
+            and not bool(r.get("clears_family_wise"))),
         "tally": tally,
         "survivors": survivors,
         "graveyard": graveyard,
@@ -712,7 +748,9 @@ def main(argv: list[str] | None = None) -> int:
     print(f"orderbook-state: {report['hypotheses']} pre-registered hypotheses over "
           f"{used} cell(s), {report['files_read']}/{len(files)} partitions")
     print(f"  family charged {report['family_size_charged']} at alpha {DEFAULT_ALPHA} "
-          f"(z_crit {report['family_z_critical']}), powered cells {report['powered_cells']}")
+          f"(z_crit {report['family_z_critical']}), "
+          f"powered cells {report['powered_cells_unadjusted']} unadjusted / "
+          f"{report['power_counts_at_family_charge']['powered']} at the family charge")
     for v, c in sorted(report["tally"].items(), key=lambda kv: -kv[1]):
         print(f"  {v:<24} {c}")
     if report["survivors"]:
@@ -722,7 +760,10 @@ def main(argv: list[str] | None = None) -> int:
                   f"(needed {s['ic_needed_family_wise']}), raw twin same-corr "
                   f"{s['raw_twin_same_period_corr']}")
     else:
-        print("  NO SURVIVORS -- the expected outcome and a publishable one")
+        print("  NO SURVIVORS -- the expected outcome and a publishable one"
+              + (f" ({report['interesting_but_failed_multiplicity']} cell(s) cleared the harness "
+                 "and were removed by the multiplicity charge)"
+                 if report["interesting_but_failed_multiplicity"] else ""))
     if report["graveyard"]:
         print(f"  GRAVEYARD-GRADE NEGATIVES ({len(report['graveyard'])}) -- each with its reason "
               "and detection floor")

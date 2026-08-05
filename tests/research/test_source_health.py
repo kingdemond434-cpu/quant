@@ -183,6 +183,20 @@ class TestLedgerDurability:
         assert {r["source"] for r in lines} == {"zhihu", "csdn"}
         assert sh.state_of("csdn", p).consecutive_failed_runs == 1
 
+    def test_one_source_observed_twice_in_one_run_writes_one_row(self, tmp_path: Path) -> None:
+        # The invariant is one row per source per UTC day no matter who calls this; a caller that
+        # passes the same source twice must not advance the streak twice either.
+        p = tmp_path / "health.jsonl"
+        sh.record_run([_fail("zhihu"), _fail("zhihu")], path=p, now=_T0)
+        lines = [ln for ln in p.read_text("utf-8").splitlines() if ln.strip()]
+        assert len(lines) == 1
+        assert sh.state_of("zhihu", p).consecutive_failed_runs == 1
+
+    def test_folding_uses_any_lane_up(self, tmp_path: Path) -> None:
+        p = tmp_path / "health.jsonl"
+        sh.record_run([_fail("juejin"), _ok("juejin")], path=p, now=_T0)
+        assert sh.state_of("juejin", p).verdict == sh.VERDICT_HEALTHY
+
     def test_unparseable_lines_are_preserved(self, tmp_path: Path) -> None:
         # History is evidence. A line this parser cannot read may still be readable by a human,
         # and silently dropping it would destroy the only record of whatever wrote it.

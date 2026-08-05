@@ -1612,7 +1612,15 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # CEILING TYPE (L1.28c) is INFORMATION-ARRIVAL and daily is AT it: the ledger advances at most one
 # run per source per UTC day (idempotent per day by construction), so a second run would re-probe
 # the same candidates against unchanged verdicts.
-# EVIDENCE: scripts/hunt_source_alternatives.py -> data/source_alternatives_report.json; first
-# live sweep 2026-08-05 probed 33 registered candidates across 9 information classes.
+# RUNS --all, NOT dead-only, and that is a deliberate reading of the standing order. Dead-only
+# starts hunting the morning a source dies, which is the morning the desk least wants to be
+# discovering that its substitute is ALSO blocked. --all keeps a standing map of which
+# in-class substitutes were alive yesterday, so a death converts to a NEXT ACTION the same
+# run. It costs ~43 requests a day, and the flapping is itself information -- 360搜索 and
+# Sogou each flipped between REACHABLE and a challenge shell across two sweeps an hour apart
+# on 2026-08-05, which a once-per-death probe would have read as a permanent verdict.
+# EVIDENCE: scripts/hunt_source_alternatives.py -> data/source_alternatives_report.json;
+# first live sweep 2026-08-05 probed 43 registered candidates for 12 sources across 10
+# information classes and returned 21 REACHABLE with a named parser action each.
 # CONFIDENCE: committed-script (measured: the probe results in that report are from the run).
-40 13 * * * cd "$QUANT_ROOT" && flock -n data/.cron_srcalt.lock .venv/bin/python scripts/hunt_source_alternatives.py >> data/cro_ai_logs/hunt_source_alternatives.log 2>&1
+40 13 * * * cd "$QUANT_ROOT" && flock -n data/.cron_srcalt.lock .venv/bin/python scripts/hunt_source_alternatives.py --all >> data/cro_ai_logs/hunt_source_alternatives.log 2>&1

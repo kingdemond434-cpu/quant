@@ -92,9 +92,11 @@ INFORMATION_CLASSES: Final[tuple[str, ...]] = (
 STATUS_UNVERIFIED: Final[str] = "UNVERIFIED"
 STATUS_REACHABLE: Final[str] = "REACHABLE"
 STATUS_FAILED: Final[str] = "FAILED"
-#: Probed, answered, but what came back was a shell / challenge page rather than content. Its own
-#: status because "200 OK, 1.4KB of anti-bot JavaScript" is neither reachable-and-usable nor a
-#: network failure, and calling it either one sends the next reader down the wrong path.
+#: Probed, answered, and carried NO USABLE CONTENT -- an anti-bot challenge, a redirect stub, or
+#: an endpoint that returned an empty result set. Its own status because "200 OK, 1.4KB of
+#: anti-bot JavaScript" is neither reachable-and-usable nor a network failure, and calling it
+#: either one sends the next reader down the wrong path: FAILED says fix the network, REACHABLE
+#: says write the parser, and for a shell both are wrong.
 STATUS_SHELL: Final[str] = "SHELL"
 
 #: Below this a search-results page is a challenge/redirect shell, not results. Same number the

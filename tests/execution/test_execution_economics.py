@@ -541,6 +541,19 @@ def test_spot_commission_partial_symbol_coverage_is_a_lower_bound() -> None:
     assert term.coverage == pytest.approx(0.5)
 
 
+def test_spot_commission_with_no_fills_and_no_trips_is_a_measured_zero() -> None:
+    """Asked and answered: no trading in the window means $0.00 of spot fees, not a refusal.
+
+    The distinction from the failed-read case above is `n_trips`: zero fills against round trips
+    the tape says happened is a hole; zero fills against zero round trips is an idle window.
+    """
+    term = SCRIPT._spot_commission_term({"AAA": []}, 0, 10_000, n_trips=0)
+    assert term.status == MEASURED
+    assert term.usd == 0.0
+    assert term.bound == economics.LOWER_BOUND
+    assert "not what this reader assumed" in term.note
+
+
 def test_income_split_separates_funding_captured_from_funding_paid() -> None:
     rows = [{"incomeType": "FUNDING_FEE", "income": "12.0", "time": 100},
             {"incomeType": "FUNDING_FEE", "income": "-4.0", "time": 200},
@@ -549,6 +562,30 @@ def test_income_split_separates_funding_captured_from_funding_paid() -> None:
     captured, paid, commission = SCRIPT._income_split(rows, 0, 1_000)
     assert (captured, paid, commission) == (12.0, 4.0, 3.0)
     assert SCRIPT._income_split(None, 0, 1_000) == (None, None, None)
+
+
+def test_the_week_anchored_aggregate_is_refused_by_the_shorter_window() -> None:
+    """A WEEK of funding served as a DAY's harvest would inflate the day's APR sevenfold.
+
+    `income_summary` is anchored at ONE `since_ms` -- the longest window's start -- so it is
+    window-scoped for that window and for no other. The shorter window must read
+    NOT-READABLE-HERE rather than borrow it.
+    """
+    now = NOW
+    summary = {"funding": 108.0}
+    kwargs: dict[str, Any] = {
+        "rows": [], "rows_source": "fixture", "income_rows": None, "income_summary": summary,
+        "spot_fills": None, "deployed_now": 5000.0, "cost_model": None,
+    }
+    day = SCRIPT._build_window("trailing_day", 1.0, now, summary_covers_window=False, **kwargs)
+    week = SCRIPT._build_window("trailing_week", 7.0, now, summary_covers_window=True, **kwargs)
+    day_net = next(t for t in day.decomposition.terms if t.name == "funding_net")
+    week_net = next(t for t in week.decomposition.terms if t.name == "funding_net")
+    assert day_net.status == economics.UNMEASURED
+    assert "anchored at the longest window" in day_net.note
+    assert week_net.usd == pytest.approx(108.0)
+    assert day.decomposition.net_usd is None            # no harvest -> no net, never a zero
+    assert week.decomposition.net_status == economics.UPPER_BOUND
 
 
 def test_the_script_self_test_proves_its_own_arithmetic() -> None:
