@@ -25,6 +25,7 @@ import numpy as np
 
 from libs.autodiscovery.memory import CandidateStore
 from libs.autodiscovery.models import CycleResult, Family, MarketSeries
+from libs.autodiscovery.novelty import NoveltyGate
 from libs.autodiscovery.orchestrator import AutoDiscoveryLab
 from libs.data.instruments import AssetClass, InstrumentSpec, register_instrument
 from libs.data.lake import Layer, ParquetLake
@@ -159,12 +160,19 @@ def build_lab(
     families: Sequence[Family] | None = DEFAULT_FAMILIES,
     cost_per_side: float = COST_PER_SIDE,
 ) -> AutoDiscoveryLab:
-    """Wire a crypto-fed :class:`AutoDiscoveryLab` (flat per-side cost, family-restricted)."""
+    """Wire a crypto-fed :class:`AutoDiscoveryLab` (flat per-side cost, family-restricted).
+
+    The graveyard novelty gate is ON here because this is a PRODUCTION generation path (cron
+    01:30 / 03:30 via ops/run_crypto_factory.sh). `from_corpus` returns None when the corpus is
+    absent, so a host without data/graveyard_priors.json degrades to the previous behaviour
+    rather than failing the cycle.
+    """
     return AutoDiscoveryLab(
         db,
         provider,
         cost_provider=lambda _s: cost_per_side,
         families=list(families) if families is not None else None,
+        novelty=NoveltyGate.from_corpus(),
     )
 
 

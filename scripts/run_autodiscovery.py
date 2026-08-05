@@ -22,6 +22,7 @@ from migrations import MIGRATIONS
 
 from libs.autodiscovery.memory import CandidateStore
 from libs.autodiscovery.models import MarketSeries
+from libs.autodiscovery.novelty import NoveltyGate
 from libs.autodiscovery.orchestrator import AutoDiscoveryLab
 from libs.autodiscovery.reports import (
     discovery_efficiency_report,
@@ -131,7 +132,8 @@ def main() -> None:
     import MetaTrader5 as mt5  # already initialized by _mt5_provider
 
     lab = AutoDiscoveryLab(
-        db, provider, cost_provider=_mt5_cost_provider(mt5), families=families
+        db, provider, cost_provider=_mt5_cost_provider(mt5), families=families,
+        novelty=NoveltyGate.from_corpus(),   # graveyard screen before compute (constitution duty)
     )
     print("net-of-cost: per-symbol cost calibrated from live MT5 symbol_info")
     if families:

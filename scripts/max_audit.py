@@ -668,6 +668,12 @@ def check_model_freshness(defects) -> None:
             elif r.get("action") == "apply":
                 for old in (r.get("promotions") or {}):
                     passed.pop(str(old), None)
+            elif r.get("action") == "already-adopted":
+                # The candidate already sits ABOVE this incumbent in the chain, so the promotion
+                # landed long ago and the incumbent is only the retained fallback the upgrade
+                # rule deliberately keeps. Counting that as unadopted made this fence permanent:
+                # the rewrite dedups to a no-op, no `apply` is ever logged, and it fires forever.
+                passed.pop(str(r.get("incumbent")), None)
             elif r.get("action") == "rollback":
                 passed.clear()          # a rollback is a deliberate NO on that promotion
         if passed:

@@ -24,6 +24,7 @@ from libs.autodiscovery.models import (
     Hypothesis,
     MarketSeries,
 )
+from libs.autodiscovery.novelty import NoveltyGate
 from libs.autodiscovery.prioritization import prioritize
 from libs.autodiscovery.regime import regime_robust
 from libs.autodiscovery.validation import campaign_pbo_rc, validate
@@ -52,6 +53,7 @@ class AutoDiscoveryLab:
         families: Sequence[Family] | None = None,
         execution_gap: ExecutionGap | None = None,
         family_trial_budget: int = 120,
+        novelty: NoveltyGate | None = None,
     ) -> None:
         self.db = db
         self.data_provider = data_provider
@@ -67,6 +69,10 @@ class AutoDiscoveryLab:
         self.execution_gap = execution_gap or ExecutionGap()
         # pre-registered per-family search size -> the FIXED wall (see _family_trials)
         self.family_trial_budget = int(family_trial_budget)
+        # NOVELTY GATE (constitution duty; wired 2026-08-04). Screens each planned hypothesis
+        # against the compiled graveyard BEFORE compute. None = no gate, which is the default so
+        # that a caller which never opts in behaves exactly as it did before.
+        self.novelty = novelty
 
     def _cost_for(self, symbol: str) -> float:
         return self.cost_provider(symbol) if self.cost_provider is not None else self.cost
@@ -106,11 +112,20 @@ class AutoDiscoveryLab:
         # 1) Backtest every NEW (non-duplicate) hypothesis for which data is available.
         prepared: list[tuple[Hypothesis, np.ndarray, np.ndarray]] = []
         skipped = 0
+        redundant: list[tuple[Hypothesis, Any]] = []
         series_cache: dict[str, MarketSeries | None] = {}
         for hyp, spec in plan:
             if self.store.exists(hyp):
                 skipped += 1
                 continue
+            # Graveyard screen, BEFORE the data fetch and the backtest -- the whole value of this
+            # gate is that it spends nothing on ground already bought. `exists` above is an exact
+            # content-hash match, so it cannot see the same dead mechanism on another symbol.
+            if self.novelty is not None:
+                verdict = self.novelty.screen(hyp)
+                if verdict.is_redundant:
+                    redundant.append((hyp, verdict))
+                    continue
             if hyp.symbol not in series_cache:
                 series_cache[hyp.symbol] = self.data_provider(hyp.symbol)
             series = series_cache[hyp.symbol]
@@ -127,12 +142,30 @@ class AutoDiscoveryLab:
                 prepared.append((hyp, rets, stressed))
 
         result = self._validate_and_archive(campaign_id, prepared, skipped)
+        if redundant:
+            # NAME WHAT WAS SUPPRESSED. A gate that drops candidates without a record is
+            # un-measurable, and an un-measurable gate is where real edge goes missing: this row
+            # is what a later gate-optimality audit reads to ask whether the bar is too tight.
+            result = result.model_copy(update={"skipped_redundant": len(redundant)})
+            self.audit.append(
+                "novelty_gate_suppressed", actor="autodiscovery_lab",
+                inputs={"campaign_id": campaign_id, "n": len(redundant),
+                        "threshold": self.novelty.threshold if self.novelty else None,
+                        "items": [
+                            {"family": h.family.value, "subtype": h.subtype, "symbol": h.symbol,
+                             "params": dict(h.params), "nearest_id": v.nearest_id,
+                             "similarity": round(v.nearest_similarity, 4)}
+                            for h, v in redundant[:200]
+                        ]},
+                outcome=f"{len(redundant)} redundant hypotheses not backtested",
+            )
         self.store.set_checkpoint("last_campaign", campaign_id)
         self.audit.append(
             "autodiscovery_cycle", actor="autodiscovery_lab",
             inputs={"campaign_id": campaign_id, "generated": result.generated,
                     "tested": result.tested, "survivors": result.survivors,
-                    "skipped_duplicate": result.skipped_duplicate},
+                    "skipped_duplicate": result.skipped_duplicate,
+                    "skipped_redundant": result.skipped_redundant},
             outcome=f"{result.survivors} survivors / {result.tested} tested",
         )
         return result

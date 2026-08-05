@@ -751,6 +751,8 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # retune it (the agent will then leave it alone because it is already scheduled).
 # Every entry here was proven: runnable main(), no money-path import, no spend
 # capability, no writes outside data/ + web/. CONFIDENCE: auto-wired.
+# scripts/check_coverage_floors.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
+22 5 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_coverage_floors.py >> data/cro_ai_logs/check_coverage_floors.log 2>&1
 # scripts/build_return_panel.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
 49 5 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/build_return_panel.py >> data/cro_ai_logs/build_return_panel.log 2>&1
 # scripts/meta_research_review.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
@@ -959,7 +961,13 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # store whose 57 rejects have no lake bars on this host and can never score here -- ledgered).
 # First scoreable cohort matures ~2026-08-10 (30d min forward window + 30 min forward bars).
 # Chain: reject_forward_scores.json -> run_rejection_shadow -> web/reject_shadow.json -> max_audit.
-# EVIDENCE: _forward_score smoke-tested 10/10 on backdated cutoffs this cycle (log in ledger)
+# EVIDENCE (corrected 2026-08-04): the 07-31 note claimed _forward_score was "wired via the crypto
+# adapter" and smoke-tested 10/10. It was not -- the hook was `return None` unconditionally, and
+# BOTH scripts still defaulted to sor_autodiscovery, so the store named above was never the one
+# read. Implemented 2026-08-04: lake-backed replay, defaults moved to sor_crypto on both scripts,
+# 9 unit tests in tests/scripts/test_rejection_rescore.py, and a 60-reject probe scoring 44 with
+# real forward Sharpes (BTCUSDT +2.96, ZECUSDT +4.21) at a probe window; the production 30d bar is
+# unchanged, so the loop stays honestly empty until the cohort matures.
 # CONFIDENCE: committed-script
 50 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_rejection_rescore.py >> data/cro_ai_logs/reject_rescore.log 2>&1 && .venv/bin/python scripts/run_rejection_shadow.py >> data/cro_ai_logs/reject_rescore.log 2>&1
 

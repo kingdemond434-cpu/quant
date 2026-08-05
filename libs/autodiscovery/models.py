@@ -122,6 +122,10 @@ class CycleResult(BaseModel):
     generated: int = 0
     tested: int = 0
     skipped_duplicate: int = 0
+    # Screened out by the graveyard novelty gate BEFORE any backtest compute. Counted apart from
+    # skipped_duplicate because they are a different claim: a duplicate is provably the same
+    # hypothesis, a redundant one is a re-proposal of a mechanism already killed elsewhere.
+    skipped_redundant: int = 0
     survivors: int = 0
     rejected: int = 0
     promoted_to_shadow: int = 0

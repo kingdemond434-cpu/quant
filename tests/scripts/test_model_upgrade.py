@@ -11,6 +11,7 @@ uncorrelated with Claude, or a chain being reordered onto the wrong credit pool.
 from __future__ import annotations
 
 from scripts.brain_model_upgrade import (
+    already_adopted,
     best_candidate,
     newer,
     parse_model,
@@ -258,6 +259,40 @@ def test_rewrite_is_a_noop_without_approved_upgrades():
     body = 'export _BRAIN_MODEL_CHAIN="claude-opus-5 claude-opus-4-8"\n'
     out, changes = rewrite_text(body, {})
     assert out == body and changes == []
+
+
+def test_retained_fallback_is_not_reported_as_an_unadopted_upgrade():
+    """The desk's live state on 2026-08-04, and the reason this fence fired forever.
+
+    ops/model_chain.env pins `claude-fable-5 claude-opus-5 claude-opus-4-8`. That trailing
+    opus-4-8 is not a stale pin -- it is exactly what `opus-4-8 -> opus-5` LOOKS LIKE after it
+    lands, because the rule demotes rather than deletes. Probing it approves a rewrite that
+    `upgrade_chain` then correctly dedups to nothing, so no apply is ever logged and
+    `model-upgrade-unadopted` can never be satisfied.
+    """
+    body = 'export _BRAIN_MODEL_CHAIN="claude-fable-5 claude-opus-5 claude-opus-4-8"\n'
+    assert already_adopted([body], "claude-opus-4-8", "claude-opus-5")
+    # ...and the no-op it would have produced, which is what made the gate permanent.
+    assert rewrite_text(body, {"claude-opus-4-8": "claude-opus-5"})[1] == []
+
+
+def test_a_genuinely_stale_pin_is_still_offered():
+    """The guard must not swallow real upgrades: opus-6 is in no chain, so it is pending."""
+    body = 'export _BRAIN_MODEL_CHAIN="claude-fable-5 claude-opus-5 claude-opus-4-8"\n'
+    assert not already_adopted([body], "claude-opus-5", "claude-opus-6")
+
+
+def test_one_files_chain_never_suppresses_another_files_stale_pin():
+    """Why this asks 'would the rewrite change anything?' instead of a global `taken` set.
+
+    run_frontier_miner keeps its own chain, so a model can be current in one file and stale in
+    another. A set-membership test would read opus-5 as `taken` and silently freeze the second
+    file's pin -- the drift this engine exists to end, reintroduced by its own guard.
+    """
+    current = 'export _BRAIN_MODEL_CHAIN="claude-opus-5 claude-opus-4-8"\n'
+    stale = 'export ANTHROPIC_MODEL="${ANTHROPIC_MODEL:-claude-opus-4-8}"\n'
+    assert already_adopted([current], "claude-opus-4-8", "claude-opus-5")
+    assert not already_adopted([current, stale], "claude-opus-4-8", "claude-opus-5")
 
 
 def test_inline_shell_default_chain_is_upgraded_too():

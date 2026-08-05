@@ -19,6 +19,7 @@ from typing import Any
 import numpy as np
 
 from libs.autodiscovery.models import Family, MarketSeries
+from libs.autodiscovery.novelty import NoveltyGate
 from libs.autodiscovery.orchestrator import AutoDiscoveryLab
 from libs.data.instruments import AssetClass, InstrumentSpec, register_instrument
 from libs.data.lake import Layer, ParquetLake
@@ -162,7 +163,8 @@ def make_lake_executor(lake_dir: str = "data/lake") -> CampaignExecutor:
         def cost_provider(symbol: str) -> float:
             return _COST_PER_SIDE.get(available.get(symbol, AssetClass.FX), 1e-4)
 
-        lab = AutoDiscoveryLab(db, provider, cost_provider=cost_provider, families=families)
+        lab = AutoDiscoveryLab(db, provider, cost_provider=cost_provider, families=families,
+                               novelty=NoveltyGate.from_corpus())
         res = lab.cycle(symbols)
         return {"campaign_id": res.campaign_id, "tested": res.tested,
                 "survivors": res.survivors, "rejected": res.rejected}

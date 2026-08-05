@@ -116,6 +116,27 @@ def best_candidate(available: list[str], incumbent: str) -> str | None:
     return max(ups, key=lambda m: (parse_model(m) or ("", ()))[1])
 
 
+def already_adopted(bodies: list[str], incumbent: str, candidate: str) -> bool:
+    """True iff promoting `incumbent` to `candidate` would change nothing anywhere. Pure.
+
+    THE RETAINED FALLBACK IS NOT A STALE PIN. This script's own promotion rule demotes the
+    displaced incumbent to the next chain slot rather than deleting it -- that retention IS the
+    rollback path. So the post-promotion state of `opus-4-8 -> opus-5` is literally the chain
+    `... opus-5 opus-4-8`, with opus-4-8 sitting below as the fallback. Re-reading that trailing
+    fallback as an un-upgraded pin makes the promotion permanently pending: the candidate is
+    already above it, `upgrade_chain` correctly dedups the rewrite to a no-op, nothing is ever
+    written, and `model-upgrade-unadopted` fires forever on an upgrade that already happened.
+
+    A gate that can never be satisfied carries no information, and each pass also burned a live
+    probe call on a promotion that could not land. The panel surface already had this guard
+    (`model_upgrade.candidates(..., taken=...)` refuses to offer a model the roster holds); this
+    is the same guard on the brain surface, phrased as the question that actually decides it --
+    would the rewrite change any file? -- rather than a set membership test, so a slot that
+    genuinely still needs promoting in SOME file is never suppressed by another file's chain.
+    """
+    return not any(rewrite_text(b, {incumbent: candidate})[1] for b in bodies)
+
+
 def upgrade_chain(chain: list[str], available: list[str],
                   approved: dict[str, str]) -> list[str]:
     """Apply approved per-slot promotions, DEMOTING each incumbent to the next slot. Pure.
@@ -191,18 +212,28 @@ def chain_files() -> list[Path]:
 
 
 def pinned_models(paths: list[Path]) -> list[str]:
-    """Distinct model ids pinned across all chain files, in first-seen order."""
+    """Distinct model ids pinned across all chain files, in first-seen order.
+
+    Only PARSEABLE ids count. `_INLINE_CHAIN_RE` deliberately matches a bare `${...:-default}`
+    expansion, which also matches one written inside PROSE -- max_audit.py's own comment about
+    this regex was being read as a chain file pinning a model literally named "...". Harmless
+    while it stays unparseable, but it is the same shape as prose being rewritten into config,
+    so an id this engine cannot parse is not treated as a pin at all.
+    """
     seen: list[str] = []
+
+    def _add(mid: str) -> None:
+        if mid not in seen and parse_model(mid) is not None:
+            seen.append(mid)
+
     for p in paths:
         body = p.read_text("utf-8")
         for m in _CHAIN_RE.finditer(body):
             for mid in m.group(3).split():
-                if mid not in seen:
-                    seen.append(mid)
+                _add(mid)
         for m in _INLINE_CHAIN_RE.finditer(body):
             for mid in m.group(2).split():
-                if mid not in seen:
-                    seen.append(mid)
+                _add(mid)
         for m in _DEFAULT_RE.finditer(body):
             if m.group(2) not in seen:
                 seen.append(m.group(2))
@@ -289,11 +320,20 @@ def main() -> None:
         return
     print(f"  catalog: {len(avail)} model(s) reachable by this account")
 
+    bodies = [p.read_text("utf-8") for p in paths]
     approved: dict[str, str] = {}
+    adopted: dict[str, str] = {}
     for inc in incumbents:
         cand = best_candidate(avail, inc)
         if not cand:
             print(f"  {inc:<22} already newest in its family")
+            continue
+        if already_adopted(bodies, inc, cand):
+            # Retained fallback, not a stale pin -- see already_adopted(). Skip the probe: it
+            # costs a live call and can only ever approve a rewrite that dedups to nothing.
+            adopted[inc] = cand
+            print(f"  {inc:<22} -> {cand:<22} already in chain above it (retained fallback)")
+            _log({"action": "already-adopted", "incumbent": inc, "candidate": cand})
             continue
         ok, detail = probe(cand)
         print(f"  {inc:<22} -> {cand:<22} probe={'PASS' if ok else 'FAIL'} ({detail})")
@@ -302,10 +342,20 @@ def main() -> None:
         if ok:
             approved[inc] = cand
 
-    STATE.parent.mkdir(parents=True, exist_ok=True)
+    # STATE records that the CHECK RAN, on every path that reached a verdict -- including the
+    # dry run that found something. Recording it only on the two write paths meant a successful
+    # check which located a real upgrade was indistinguishable from one that never ran, so
+    # `model-upgrade-never-brain` kept firing at the exact moment the loop was working.
+    def _save(**extra: Any) -> None:
+        STATE.parent.mkdir(parents=True, exist_ok=True)
+        rec = {"checked": datetime.now(tz=UTC).isoformat(), "pinned": incumbents}
+        if adopted:
+            rec["already_adopted"] = adopted
+        rec.update(extra)
+        STATE.write_text(json.dumps(rec, indent=1), "utf-8")
+
     if not approved:
-        STATE.write_text(json.dumps({"checked": datetime.now(tz=UTC).isoformat(),
-                                     "pinned": incumbents}, indent=1), "utf-8")
+        _save()
         print("  no verified upgrade available -- pins unchanged")
         return
 
@@ -321,6 +371,7 @@ def main() -> None:
             print(f"    {c}")
 
     if not args.apply:
+        _save(pending=approved)
         print("\n  dry-run (add --apply to write)")
         return
 
@@ -338,8 +389,7 @@ def main() -> None:
                 continue
         print(f"  wrote {p.relative_to(ROOT)} (backup -> {p.name}{p.suffix}.bak)")
 
-    STATE.write_text(json.dumps({"checked": datetime.now(tz=UTC).isoformat(),
-                                 "promoted": approved, "pinned": incumbents}, indent=1), "utf-8")
+    _save(promoted=approved)
     _log({"action": "apply", "promotions": approved,
           "files": [p.name for p, _, _ in planned]})
     print(f"\n  APPLIED {len(approved)} promotion(s) across {len(planned)} file(s). "

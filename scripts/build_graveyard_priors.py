@@ -52,6 +52,19 @@ sys.path.insert(0, str(ROOT))
 
 from libs.alpha_factory.hypothesis_novelty import PriorIdea  # noqa: E402
 
+# The renderer is SHARED with live generation (libs/autodiscovery/novelty.py). Both sides of the
+# similarity comparison must render identically or the gate silently decays to 0% recall, so
+# there is exactly one implementation and it lives where a lib can import it.
+from libs.alpha_factory.hypothesis_render import (  # noqa: E402
+    candidate_features,
+    candidate_statement,
+    params_keys,
+    params_text,
+)
+
+_params_keys = params_keys      # retained: the module's own internal call sites
+_params_text = params_text
+
 GRAVEYARD_MD = ROOT / "docs/graveyard.md"
 RESEARCH_DB = ROOT / "data/sor_research.sqlite"
 OUT = ROOT / "data/graveyard_priors.json"
@@ -146,48 +159,6 @@ def research_memory_priors(db: Path = RESEARCH_DB) -> list[PriorIdea]:
 
 
 # --------------------------------------------------------------- C: research_candidates ---------
-def _params_keys(params_json: str) -> tuple[str, ...]:
-    try:
-        params = json.loads(params_json or "{}")
-    except json.JSONDecodeError:
-        return ()
-    return tuple(sorted(str(k) for k in params)) if isinstance(params, dict) else ()
-
-
-def _params_text(params_json: str) -> str:
-    try:
-        params = json.loads(params_json or "{}")
-    except json.JSONDecodeError:
-        return ""
-    if not isinstance(params, dict):
-        return ""
-    return " ".join(f"{k}={params[k]:g}" if isinstance(params[k], (int, float))
-                    else f"{k}={params[k]}" for k in sorted(params))
-
-
-def candidate_features(family: str, subtype: str, mechanism: str, params_json: str) -> tuple[str, ...]:
-    """The MECHANISM SIGNATURE of a structured candidate -- symbol and param values excluded."""
-    feats = [f"family:{family}", f"subtype:{subtype}"]
-    if mechanism:
-        feats.append(f"mech:{mechanism}")
-    feats.extend(f"param:{k}" for k in _params_keys(params_json))
-    return tuple(feats)
-
-
-def candidate_statement(
-    family: str, subtype: str, mechanism: str, params_json: str, symbols: Sequence[str]
-) -> str:
-    """Human/text form of a collapsed mechanism -- carries the detail the signature drops."""
-    sym = ", ".join(sorted(symbols)[:12])
-    more = f" and {len(symbols) - 12} more" if len(symbols) > 12 else ""
-    ptxt = _params_text(params_json)
-    return (
-        f"{family} {subtype} rule ({mechanism} mechanism)"
-        + (f" with {ptxt}" if ptxt else "")
-        + f", backtested and rejected on {len(symbols)} instrument-instances: {sym}{more}"
-    )[:4000]
-
-
 def candidate_priors(
     dbs: Iterable[str] = CANDIDATE_DBS,
     *,
