@@ -2508,6 +2508,12 @@ _PRODUCER_CADENCE = {
 #: Artifacts that are terminal by nature: templates, forensic write-ups, protocol libraries. They
 #: accumulate no inventory, so they owe no cadence -- recorded here so "no law" is a DECISION.
 _TERMINAL_ARTIFACTS = {
+    "docs/research/VPS_STATE_20260805.md":
+        "dated runtime-truth record read live off the VPS (recorders up, 10GB moat tape, the "
+        "two moat screen survivors' OOS collapse to the 0.10 ceiling, the carry fast-track's "
+        "regime-evidence blocker). It accumulates no inventory: each finding is either a "
+        "correction already applied to this repo's claims or an operator action named in the "
+        "text. Superseded by the next live read, never edited to look better.",
     "docs/research/NEW_FAMILY_GENERATORS_PREREGISTRATION.md":
         "PRE-REGISTRATION (2026-08-04) of the seven new generator families + the 15m/1h "
         "intraday re-test, committed before any of them ran. Immutable by design; conversions "
