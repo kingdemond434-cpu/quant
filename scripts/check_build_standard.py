@@ -100,6 +100,7 @@ _GOVERNED: tuple[str, ...] = (
     "collect_funding_cross_section.py",     # R0119 producer: the crowding denominator
     "screen_funding_interval_mismatch.py",  # R0121 Stage-A settlement-calendar screen (2026-08-05)
     "resolve_llm_trader_book.py",           # R0123 decline grader (2026-08-05)
+    "run_natural_experiment.py",            # R0207 first causal study, DiD (2026-08-05)
 )
 
 #: Organs that legitimately owe no cron line, with the reason. "No schedule" must be a DECISION.

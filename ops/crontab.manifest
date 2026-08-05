@@ -1787,3 +1787,20 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 #   libs/research/unlock_supply_series.py
 # CONFIDENCE: committed-script (pre-registration frozen in the library docstring, untouched here)
 27 6 * * 1 cd "$QUANT_ROOT" && .venv/bin/python scripts/screen_unlock_supply_series.py >> data/cro_ai_logs/unlock_supply_series_screen.log 2>&1
+
+# NATURAL EXPERIMENT -- the desk's first CAUSAL study (R0207, 2026-08-05). Every hypothesis this
+# desk had ever tested was OBSERVATIONAL: an IC or a Sharpe on a correlational panel, defended by
+# de-contamination and multiplicity control. Both defences establish that a relationship is not an
+# ARTIFACT; neither establishes that it is CAUSAL. This is difference-in-differences over dated
+# token unlocks against a matched control cohort, with the identification rails (parallel trends,
+# placebo, SUTVA) that separate identification from a correlation with better vocabulary.
+# STAGE A, ZERO PROMOTION AUTHORITY: it can earn a pre-registered forward clock, never a cent.
+# CADENCE CEILING: DATA-ARRIVAL. The input is a vesting calendar, which changes when a new token
+# or a new schedule lands -- days-to-weeks, never intra-day. Weekly is the honest rate; the panel
+# rebuild costs ~30s and the three pre-registered designs ~4min, so cost is not the binding
+# constraint here, information arrival is. Phased off the Monday 07:25 screen so the two do not
+# contend for the lake.
+# EVIDENCE: scripts/run_natural_experiment.py -> data/natural_experiment.json; row R0207
+# CONFIDENCE: committed-script (new this cycle; first run REFUSED on all three designs at the
+#   parallel-trends rail -- a refusal is a first-class result and no clock was opened)
+50 7 * * 1 cd "$QUANT_ROOT" && flock -n data/.cron_natexp.lock choom -n 1000 -- nice -n 19 .venv/bin/python scripts/run_natural_experiment.py >> data/cro_ai_logs/natural_experiment.log 2>&1

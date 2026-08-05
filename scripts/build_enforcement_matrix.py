@@ -235,6 +235,14 @@ _MAP: dict[str, list[str]] = {
     # the PREMISE before the economics: nested grids make the trade geometrically impossible at
     # any funding level, and only a genuine phase offset creates a capture window.
     "L1.6-r0121": ["scripts/screen_funding_interval_mismatch.py"],
+    # R0207 the desk's first CAUSAL study. L1.16 (an edge is durable only when its MECHANISM is
+    # understood) is the law this serves: every prior hypothesis was observational, and
+    # de-contamination plus multiplicity control establish that a relationship is not an ARTIFACT,
+    # never that it is CAUSAL. L1.6 governs its authority -- Stage A, zero promotion, a refusal is
+    # a first-class result. The rails (parallel trends, placebo, SUTVA) are what separate
+    # identification from a correlation with better vocabulary.
+    "L1.16-r0207": ["libs/research/natural_experiment.py",
+                    "scripts/run_natural_experiment.py"],
     # R0100 axis collectors (2026-08-05): three free, keyless raw-information axes the desk did
     # not hold. Under L1.11 (the moat is the transformation pipeline, never the purchased dataset)
     # and L1.8 (acquisition runs at maximum). collect_perpdex_funding carries the screen-on-
