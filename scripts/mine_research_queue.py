@@ -154,6 +154,18 @@ def _unescape(raw: str) -> str:
 #: knew about; search is what makes the miner exploratory. Multilingual on purpose -- the
 #: Chinese-language quant scene publishes to YouTube too, and those results never surface from
 #: English queries.
+#: WIDENED 6 -> 24 on 2026-08-05. Bilibili is the ONLY mined source clearing its weight: on the
+#: 2026-08-05 sweep it produced 15 of the 31 new above-threshold rows, while Juejin returned 0 new
+#: from 80 fetched. So depth and breadth go HERE rather than into more frequency everywhere -- the
+#: other sources are publication-rate-limited (arXiv announces once a weekday; polling it four
+#: times cannot mint papers), whereas B站 has a genuinely deep back-catalogue that query breadth,
+#: not poll rate, is what reaches.
+#: The added terms are deliberately spread across STRATEGY CLASS (grid/arb/HFT/market-making/CTA/
+#: trend/mean-reversion/options), VALIDATION vocabulary (out-of-sample, walk-forward, overfit),
+#: FACTOR work, CRYPTO-NATIVE venue language (perpetuals, funding rate, Binance), and PRACTITIONER
+#: framing (live-traded, fund-side) -- because a query set clustered in one register returns one
+#: corpus repeatedly, which is the same redundancy trap L1.49 names for candidates: breadth of
+#: SEARCH, not volume of fetching, is what finds something new.
 BILIBILI_QUERIES = (
     "量化交易 策略",
     "量化 回测 python",
@@ -161,6 +173,29 @@ BILIBILI_QUERIES = (
     "量化投资 因子",
     "程序化交易 策略",
     "期货 量化 策略",
+    # validation vocabulary -- the desk's highest-converting register (L0038)
+    "量化 样本外 测试",
+    "量化 过拟合",
+    "策略 回测 陷阱",
+    "walk forward 量化",
+    # strategy classes
+    "网格交易 策略",
+    "统计套利 策略",
+    "高频交易 策略",
+    "做市 策略",
+    "CTA 趋势跟踪",
+    "均值回归 策略",
+    "期权 波动率 策略",
+    # factor / alpha work
+    "多因子模型 选股",
+    "因子 有效性 检验",
+    # crypto-native venue language
+    "永续合约 资金费率",
+    "币安 合约 量化",
+    "数字货币 套利",
+    # practitioner framing
+    "量化 实盘 复盘",
+    "私募 量化 研究",
 )
 
 CN_ARTICLE_QUERIES = (
@@ -243,13 +278,87 @@ def _save_seen(seen: set[str]) -> None:
     _LEDGER.write_text(json.dumps({"seen": sorted(seen)}, indent=0), "utf-8")
 
 
+#: R0088's missing instrument. "Should this miner run more often?" was an OPINION for as long as
+#: nobody logged what a run actually returned, and opinions default to "more" because more feels
+#: like effort. One run measured by hand on 2026-08-05 settled it instantly: Juejin fetched 80 rows
+#: across four queries and produced ZERO new candidates (108 already in the seen-ledger) while
+#: Bilibili produced 15 of the 31 new rows. Six-times-a-day was re-reading the same corpus six
+#: times. This makes that arithmetic automatic and per-source, so cadence is READ rather than
+#: argued -- and so a source that quietly saturates shows up as a falling new/fetched ratio instead
+#: of as a full-looking report.
+_YIELD_LOG = _ROOT / "data" / "miner_yield.jsonl"
+
+#: Which report key holds the per-query fetch counts for each source group.
+_FETCH_KEYS = {"bilibili": "bilibili_discovered", "cn": "cn_article_discovered",
+               "search": "search_discovered", "academic": "academic_discovered",
+               "youtube": "channels_scanned"}
+
+
+def _yield_row(doc: dict[str, Any], *, seen: set[str], only: list[str]) -> dict[str, Any]:
+    """Per-source fetched / new-above-threshold for THIS run.
+
+    `new` counts queue rows whose channel carries the source prefix, so it is the number that
+    matters -- rows that survived BOTH the seen-ledger and the score threshold. A source can look
+    busy on `fetched` and still be worth nothing, which is exactly Juejin's shape and exactly what
+    a fetch-count-only report would hide.
+    """
+    per: dict[str, dict[str, Any]] = {}
+    for src, key in _FETCH_KEYS.items():
+        counts = doc.get(key) or {}
+        if not isinstance(counts, dict):
+            continue
+        fetched = sum(int(v) for v in counts.values() if isinstance(v, int | float))
+        # cn covers two producers; queue channels are prefixed by the producer, not the group
+        prefixes = ("juejin", "wechat") if src == "cn" else (src,)
+        new = sum(1 for r in doc.get("queue", [])
+                  if str(r.get("channel", "")).split(":")[0] in prefixes)
+        if fetched == 0 and new == 0 and src not in only and only != ["all"]:
+            continue                 # not run this invocation -- absent, not zero (L1.41)
+        per[src] = {"fetched": fetched, "new_above_threshold": new,
+                    "yield": round(new / fetched, 4) if fetched else None}
+    return {"ts": datetime.now(tz=UTC).isoformat(), "only": only,
+            "threshold": doc.get("threshold"), "seen_ledger_size": len(seen),
+            "n_new_total": len(doc.get("queue", [])), "per_source": per}
+
+
+def _append_yield(row: dict[str, Any], path: Path | None = None) -> None:
+    """Append-only; a reporting failure must never take down the miner that produced the data."""
+    p = path if path is not None else _YIELD_LOG
+    try:
+        p.parent.mkdir(parents=True, exist_ok=True)
+        with p.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(row, ensure_ascii=False) + "\n")
+    except OSError:
+        pass
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--channels", default=",".join(YOUTUBE_CHANNELS))
     ap.add_argument("--threshold", type=float, default=SURFACE_THRESHOLD)
     ap.add_argument("--all", action="store_true", help="ignore the seen-ledger (full backlog)")
     ap.add_argument("--out", default=str(_OUT))
+    # SOURCE SELECTOR (2026-08-05). Sources do NOT deserve equal cadence, because they do not
+    # publish at equal rates. arXiv announces once a weekday, so polling it four times cannot
+    # mint papers; B站 has a deep back-catalogue that query breadth reaches. Without this flag a
+    # dedicated Bilibili run would drag every other source along at Bilibili's cadence, which is
+    # exactly the over-polling that took Juejin to 0 new from 80 fetched.
+    ap.add_argument("--only", default="", metavar="SRC[,SRC...]",
+                    help="restrict to sources: bilibili, cn, youtube, academic, search "
+                         "(default: all)")
+    ap.add_argument("--bili-pages", type=int, default=3, metavar="N",
+                    help="Bilibili search pages per query (20 rows/page); depth for a "
+                         "dedicated run")
     args = ap.parse_args(argv)
+
+    _valid = {"bilibili", "cn", "youtube", "academic", "search"}
+    only = {s.strip().lower() for s in str(args.only).split(",") if s.strip()}
+    unknown = only - _valid
+    if unknown:                      # fail loud: a typo'd source must not silently mine nothing
+        ap.error(f"unknown --only source(s): {sorted(unknown)}; valid: {sorted(_valid)}")
+
+    def _runs(src: str) -> bool:
+        return not only or src in only
 
     seen = set() if args.all else _load_seen()
     channels = [c.strip() for c in str(args.channels).split(",") if c.strip()]
@@ -262,12 +371,12 @@ def main(argv: list[str] | None = None) -> int:
     # --- Bilibili (B站): WBI-signed search. Scores title+description+tags, which is several
     # times more signal per candidate than a YouTube title alone.
     bili: dict[str, int] = {}
-    for kw in BILIBILI_QUERIES:
+    for kw in BILIBILI_QUERIES if _runs("bilibili") else ():
         # PAGED. Search returns 20 rows a page and its ranking rotates, so one page re-sampled
         # often is mostly the same corpus seen again; three pages is depth rather than repetition.
         vids: list = []
         err = None
-        for pg in (1, 2, 3):
+        for pg in range(1, max(1, int(args.bili_pages)) + 1):
             got, e = bilibili.search(kw, page=pg)
             if e:
                 err = e if not vids else None
@@ -291,7 +400,7 @@ def main(argv: list[str] | None = None) -> int:
 
     # --- Chinese article sources: Juejin (掘金) and WeChat via Sogou.
     cn_hits: dict[str, int] = {}
-    for kw in CN_ARTICLE_QUERIES:
+    for kw in CN_ARTICLE_QUERIES if _runs("cn") else ():
         for name, fn in (("juejin", cn_sources.juejin), ("wechat", cn_sources.sogou_weixin)):
             arts, e = fn(kw)
             if e:
@@ -318,7 +427,7 @@ def main(argv: list[str] | None = None) -> int:
                    + [("ssrn:fin-econ", lambda: papers.ssrn(count=40)),
                       ("openreview", lambda: papers.openreview("quantitative trading")),
                       ("hn", lambda: papers.hackernews("quant trading backtest"))])
-    for label, call in paper_calls:
+    for label, call in paper_calls if _runs("academic") else ():
         items, e = call()
         if e:
             blocked[label] = e
@@ -337,7 +446,7 @@ def main(argv: list[str] | None = None) -> int:
         time.sleep(0.4)
 
     discovered: dict[str, int] = {}
-    for q in SEARCH_QUERIES:
+    for q in SEARCH_QUERIES if _runs("search") else ():
         vids, err = search_youtube(q)
         if err:
             blocked[f"search:{q}"] = err
@@ -350,7 +459,7 @@ def main(argv: list[str] | None = None) -> int:
                           "score": round(c.score, 1), "url": c.url, "why": list(c.hits)})
         time.sleep(0.8)
 
-    for handle in channels:
+    for handle in channels if _runs("youtube") else ():
         vids, err = fetch_channel(handle)
         if err:
             blocked[handle] = err
@@ -398,6 +507,9 @@ def main(argv: list[str] | None = None) -> int:
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(doc, indent=2, ensure_ascii=False), "utf-8")
+
+    yield_row = _yield_row(doc, seen=seen, only=sorted(only) or ["all"])
+    _append_yield(yield_row)
 
     if not args.all:
         _save_seen(seen | all_ids)
