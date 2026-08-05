@@ -196,6 +196,24 @@ BILIBILI_QUERIES = (
     # practitioner framing
     "量化 实盘 复盘",
     "私募 量化 研究",
+    # 24 -> 34 (2026-08-05), and the WIDENING lever was chosen off the yield ratio rather than
+    # argued. Measured on like-for-like dedicated 4-page runs six hours apart: 0.1135 -> 0.0223, a
+    # 5.1x fall, while the seen-ledger went 1,443 -> 3,018. That is SATURATION OF A FIXED QUERY
+    # SET, not a dying source: 24 queries x 4 pages re-reads the same ~950 videos every run, so
+    # once the ledger has them the yield decays to the publication rate of that corpus and nothing
+    # else. Only two levers move it -- new TERRITORY or more time between runs -- and this is the
+    # first. Territory again, never synonyms: every line below names a subject none of the 24
+    # above can return, so it reaches videos the sweep has literally never fetched.
+    "订单簿 深度 分析",            # order-book depth -- the desk records L2 and never searched it
+    "滑点 冲击成本 实测",          # measured slippage / impact cost
+    "资金费率 套利 实盘",          # funding arb, LIVE results rather than backtests
+    "跨交易所 价差 套利",          # cross-venue spread
+    "爆仓 清算 数据 分析",         # liquidation-cascade data work
+    "链上 数据 交易 策略",         # on-chain driven strategies
+    "矿工 抛压 链上 指标",         # miner sell pressure -- the treasury_cost_base class
+    "期现 基差 收敛 交易",         # basis convergence
+    "波动率 择时 模型",            # vol timing
+    "回测 幸存者偏差",             # survivorship bias -- VALIDATION register
 )
 
 # 4 -> 22 (2026-08-05). THE HIGHEST-YIELDING FAMILY HAD THE NARROWEST SWEEP, which is exactly
