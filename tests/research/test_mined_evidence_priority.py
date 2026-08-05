@@ -38,3 +38,19 @@ def test_every_miner_prompt_carries_the_mined_evidence_priority_block(prompt: Pa
     assert "NUMBERS OVER MECHANISMS" in src                       # L0038
     assert "Z-SCORE when it is expensive to move" in src          # L0048
     assert "mean-reversion families rank LAST" in src             # L0054
+
+
+@pytest.mark.parametrize("prompt", _PROMPTS, ids=lambda p: p.name)
+def test_no_prefilter_before_the_gauntlet(prompt: Path) -> None:
+    """L0017, graduated: a pre-filter's false negatives are structurally invisible while its
+    false positives cost one paragraph — so a miner reads everything and lets the MEASURED
+    gauntlet reject. The scam filter was struck from all miner prompts on that reasoning
+    (principal 2026-08-01); this keeps it struck. A prompt that reacquires a discard-before-
+    reading rule silently reintroduces an unauditable filter."""
+    src = prompt.read_text("utf-8")
+    # Matched on the rule, not one prose form: the CN prompt says "let the GAUNTLET do the
+    # rejecting", the others "let the GAUNTLET reject". Pinning one wording would fail on
+    # a legitimate edit while a real pre-filter slipped past under different words.
+    assert "let the GAUNTLET" in src, (
+        f"{prompt.name} lost the read-it-all rule — a pre-filter can creep back in and its "
+        "misses leave no trace to audit (L0017)")
