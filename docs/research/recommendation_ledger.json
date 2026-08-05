@@ -76,11 +76,11 @@
    "summary": "O4 data-moat: append-only crypto_regime_history.jsonl (3 lines in classify_regime.py + deterministic backfill); desk destroys its own daily regime fingerprint by overwrite; hmm_gmm_agree=false with confidence=1.0 currently invisible",
    "roi_bps": null,
    "raised": "2026-07-26T11:45:42.213912+00:00",
-   "status": "scheduled",
-   "reason": "CONFIRMED undone by fresh read. classify_regime.py:20 _OUT=data/crypto_regime.json and :46 write_text is a FULL OVERWRITE and the file's only write; repo-wide grep for crypto_regime_history returns zero .py hits. ~500 daily regime labels destroyed since first flagged 07-26. The hmm_gmm_agree disagreement bit is computed daily at libs/regime/engine.py:109 and merged by run_regime_engine.py:50,55, then discarded with the rest of the label. One sub-premise HAS been fixed since (confidence no longer reads 1.0 under model disagreement) -- which makes the disagreement series more worth keeping, not less. Work: append one JSON line per run carrying trend/vol/hmm_gmm_agree/confidence, plus the deterministic backfill from bars.",
-   "commit": null,
-   "due": "2026-08-08",
-   "disposed": "2026-08-05T09:02:47.709814+00:00"
+   "status": "implemented",
+   "reason": "SUPERSEDED MID-CYCLE by a concurrent session: my earlier disposition today scheduled this to 2026-08-08 after verifying the overwrite at classify_regime.py:46, and commit 66bdd77 ('The daily regime fingerprint stops being destroyed every morning') landed the append-only history while this cycle was running. Verified after merge, not assumed: scripts/classify_regime.py:33 now defines _HIST = data/crypto_regime_history.jsonl, and tests/scripts/test_regime_history.py (115 lines) ships with it. NOTE FOR THE NEXT READER -- the artifact data/crypto_regime_history.jsonl does NOT exist yet, because the appender only runs on the organ's next fire; this is 'implemented' on the CODE, and the completion evidence to check tomorrow is that the file exists and is growing by one line per run. If it is still absent after the next scheduled fire, reopen rather than assume.",
+   "commit": "66bdd77",
+   "due": null,
+   "disposed": "2026-08-05T09:16:31.651496+00:00"
   },
   {
    "id": "R0007",
