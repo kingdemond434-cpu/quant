@@ -101,17 +101,39 @@ def _forward_slots() -> Ceiling:
 
 
 def _capital() -> Ceiling:
+    """Capital ACTUALLY deployed against capital available -- and they must be two sources.
+
+    THE WELD, found and fixed 2026-08-05. This read `live_book_usd()` as the numerator and
+    `_desk_equity_usd()` as the denominator. `live_book_usd()` IS THE FIRST RUNG INSIDE
+    `_desk_equity_usd()` (validation.py:129), so on any box where the NAV chain is readable the
+    two calls return the same float and the ratio is IDENTICALLY 1.0 -- not usually, not by
+    coincidence, but by construction. Measured on the day it was found: both returned 13151.52
+    and this ceiling printed `utilisation 1.0, SATURATED` while `web/cashcarry_live.json` held
+    `n_carries: 0, deployed_notional: 0.0`. A book with ZERO POSITIONS reported as fully deployed,
+    on the one fence the desk's only idleness law has.
+
+    The comment above in `status` records the previous repair going the WRONG WAY: the two sources
+    disagreed ($13,155 vs $4,500), and unifying them removed the disagreement by removing the
+    measurement. A ceiling and its own numerator must never share a source -- that is not a
+    tightened definition, it is the deletion of the ratio.
+
+    NOW: deployment comes from the executed book, equity from the attestation chain, and a PAPER
+    attestation reports UNMEASURED rather than a number -- `molded_curve_usd` is a MOLDED/SIMULATED
+    curve by its own `_note`, and utilisation computed from a simulated denominator is exactly the
+    "could not measure, counted as satisfied" failure this file exists to refuse. One definition,
+    owned by `libs/research/idle_yield.py`; no private copy here (the capacity_policy pattern).
+    `check_idle_cost.py` prices the same gap in dollars per day (L1.51).
+    """
     try:
-        from libs.autodiscovery.validation import _desk_equity_usd
-        from libs.research.capacity_policy import live_book_usd
-        book, eq = float(live_book_usd()), float(_desk_equity_usd())
-        measured = eq > 0
-    except (ImportError, OSError, ValueError, AttributeError):
-        book, eq, measured = 0.0, 0.0, False
+        from libs.research.idle_yield import book_state
+        bs = book_state()
+        eq, book, measured, why = bs.equity_usd, bs.deployed_usd, bs.measurable, bs.why
+    except (ImportError, OSError, ValueError, AttributeError, TypeError):
+        eq, book, measured, why = 0.0, 0.0, False, "libs.research.idle_yield unavailable"
     return Ceiling(
         "deployed_capital", eq, book, "USD", measured,
         "" if (measured and eq > 0 and book >= eq * _EXPECT) else
-        "live connector not funded (EXECUTION_QUEUE gap #2) -- named external blocker",
+        f"{why} -- priced per day by scripts/check_idle_cost.py (L1.51)",
         "An idle dollar is compounding that never starts. Under-deployment is a REAL cost "
         "reported as loudly as a risk breach (L1.20, doctrine).")
 

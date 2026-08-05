@@ -202,6 +202,15 @@ _MAP: dict[str, list[str]] = {
     # clamped so the arithmetic can remove evidence and never invent it.
     "L1.48": ["libs/research/evidence_clock.py", "libs/research/event_density.py",
               "scripts/check_calendar_gates.py"],
+    # L1.51: a clamp without a price. Every risk breach is priced to the cent and NOT ONE CLAMP
+    # ever carried a dollar figure, so the doctrine's "timidity is a REAL COMPOUNDING COST" and
+    # L1.27's "protecting capital, or avoiding uncertainty?" were rhetorical every time. It is
+    # fenced separately from L1.28a because that fence publishes a RATIO, and a ratio cannot be
+    # weighed against a ruin probability -- dollars can. Its own proving instance was L1.28a's
+    # gate reporting SATURATED at utilisation 1.0 on a book holding zero positions, because
+    # `_capital()`'s numerator was the first rung inside its own denominator.
+    "L1.51": ["scripts/check_idle_cost.py", "libs/research/idle_yield.py",
+              "scripts/check_utilisation.py"],
     # R0123 decline grading: L1.29 says an ungraded prediction is a BELIEF that inflates the
     # apparent hit-rate by never counting its misses -- and a sleeve scored only on the trades it
     # CHOOSES to be graded on is that defect with a dominant strategy attached. Nine consecutive
@@ -357,6 +366,17 @@ _FENCE_OWNERS: dict[str, str] = {
     # two incident-#6 symbols its own comment calls "currently-blocked". A pause is CAUSED by
     # losses, so the guard was guaranteed to be disarmed exactly when it was needed.
     "check_dormancy_disarm": "L1.40",
+    # --- UNMEASURED-REPORTED-AS-OK (L1.40), on the idleness law itself. check_idle_cost prices
+    # what check_utilisation could only ratio. The pair is deliberate and they are NOT redundant:
+    # the ratio fence answers "how much of the ceiling is used", the price fence answers "what is
+    # the unused part costing per day" -- and only the second can be weighed against the ruin
+    # probability a clamp claims to reduce. Built after L1.28a's own gate was found reporting
+    # `deployed_capital SATURATED, utilisation 1.0` on a book with n_carries 0: its numerator
+    # (live_book_usd) is the FIRST RUNG INSIDE its denominator (_desk_equity_usd), so the ratio
+    # was identically 1.0 by construction. A ceiling and its own numerator may never share a
+    # source -- and the previous repair unified them, deleting the measurement to end the
+    # disagreement.
+    "check_idle_cost": "L1.51",
     # --- conversion parity (L1.28b): the repair wire's two halves. check_conversion measures the
     # daily flow (arrival vs disposition, FLATLINE on silence); check_recommendation_rows (§42 X1,
     # built independently by the box the same day) applies per-row carry-over pressure so old

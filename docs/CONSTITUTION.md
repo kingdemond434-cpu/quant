@@ -1460,3 +1460,69 @@ encouraged.
 review that treats its instruction list as exhaustive, or that reports an under-exploited asset
 or an undispositioned queue as an acceptable steady state, is in breach and a reviewer must raise
 it without waiting to be asked.
+
+## L1.51 A CLAMP WITHOUT A PRICE IS AN ARGUMENT THIS DESK CANNOT HAVE
+
+Capability hunt s1, 2026-08-05, SOLO (the second family was unavailable -- HTTP 400 -- so this law
+is UNCONFIRMED by an independent family and must not be cited later as cross-family corroborated).
+
+**The asymmetry this closes.** Every risk breach on this desk is priced to the cent. Not one clamp
+ever carried a dollar figure. The doctrine already requires the opposite in plain words -- timidity
+is "a REAL COMPOUNDING COST reported as loudly as a risk breach", and "a clamp must cite QUANTIFIED
+ruin risk and an explicit lifting condition or be removed" -- and L1.27 asks of every delay whether
+it protects capital or merely avoids uncertainty. With a number on one side of that scale and
+nothing on the other, the adjudication was rhetorical every single time. A duty with no instrument
+is a wish (L1.46).
+
+**Why it was invisible, and it is a general class.** EVERY METER ON THIS DESK IS TRADE-DRIVEN. No
+fills means no TCA row, no drawdown, no fee line, no P&L. A flat book therefore generates no
+evidence of its own flatness: `data/fee_burn_window.json` held 15 samples across 2026-08-05, every
+one identical. Nothing changes, so nothing alarms. **Ask of any monitored quantity: what does its
+absence look like?** If the answer is "the same as health", the meter is measuring the wrong thing.
+
+**The proving instance, and it is the fence for this very law.** L1.28a's own gate reported
+`deployed_capital: limit 13151.52, used 13151.52, utilisation 1.0, SATURATED` while
+`web/cashcarry_live.json` held `n_carries: 0, deployed_notional: 0.0` -- a book with ZERO POSITIONS
+reported as fully deployed. `check_utilisation._capital()` passed `live_book_usd()` as the numerator
+and `_desk_equity_usd()` as the denominator, and the former IS THE FIRST RUNG INSIDE the latter, so
+the ratio was identically 1.0 **by construction**. The desk's only idleness law was fenced by a gate
+structurally incapable of reporting idleness (L1.43). Worse, the figure was `molded_curve_usd`,
+which carries its own `_note` calling it "a MOLDED/SIMULATED curve, not venue truth". **A CEILING
+AND ITS OWN NUMERATOR MAY NEVER SHARE A SOURCE** -- and note the previous repair went the WRONG WAY:
+the two sources disagreed ($13,155 vs $4,500) and unifying them removed the disagreement by removing
+the measurement.
+
+**Operative.** Every clamp on capital deployment -- rail, gate, ramp rung, freeze window, denylist,
+undeployed forward clock -- carries `{since, holds_usd, usd_per_day, cumulative_usd,
+lifting_condition}`. A clamp with no derivable cost or no named lifting condition is a defect
+(`UNPRICED`). **CLAMPS ARE NOT ADDITIVE**: six clamps each blocking the whole book do not cost six
+times the book, so per-clamp costs publish separately and the desk-level cost is computed ONCE from
+total idle capital -- a fence that overstates gets discounted, then ignored.
+
+**The refusal is the load-bearing half.** A dollar cost derived from a simulated denominator is
+worse than no number: it is a number a reader will act on. On a `mode: PAPER` attestation the meter
+publishes `UNMEASURABLE-PAPER-BOOK` and no figure. The honest statement -- the desk has never
+deployed live capital -- is LOUDER than any number, not quieter (L1.28a). An unmeasured floor is
+never 0%: a zero floor prices idle capital as free, which is the exact assumption this law destroys.
+
+**What the first run measured, including the part that failed.** The capability was proposed on a
+"reachable yield band structurally forbidden to a tier-1 desk". That premise FAILS its own
+falsifier: the best stablecoin supply APY anywhere in the collected universe is 3.78% (aave-v3 USDC,
+$162M TVL) against a risk-free 3.73%/yr, so net of the desk's own 300bps haircut the lending rung
+yields 0.78% and LOSES to T-bills. The floor is therefore just the risk-free rate. **AND THE
+HAIRCUT IS DOING 100% OF THAT WORK** -- gross, lending wins by 5bps; the breakeven haircut is
+5.5bps and `DEFAULT_HAIRCUT_BPS = 300.0` has no derivation anywhere in the repo. So both rungs and
+the breakeven publish together, always: a verdict decided by an underived constant is an assumption
+wearing a measurement's clothes, and a floor that read only one input could never notice the day
+the rungs cross.
+
+**ANTI-TIMIDITY READING, and it is the entire purpose.** This law LIFTS NOTHING and SIZES NOTHING.
+It is a MEASUREMENT duty that puts a number on the conservative side of every argument, where there
+was none. A survival rail that costs $1.34/day and prevents ruin is CORRECTLY PAID FOR -- the point
+is that the desk knows it is paying, never that it should stop (L1.23 rails stay untouchable, L1.6
+sizing stays a principal decision). The price is ammunition against unexamined caution, never
+against a rail.
+
+**Binding on future work.** Any new constraint on capital deployment ships with its lifting
+condition and its cost, or it is a defect a reviewer must raise without waiting to be asked. Fenced
+by `scripts/check_idle_cost.py` over `libs/research/idle_yield.py`.

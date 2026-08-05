@@ -1710,3 +1710,27 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # information classes and returned 21 REACHABLE with a named parser action each.
 # CONFIDENCE: committed-script (measured: the probe results in that report are from the run).
 40 13 * * * cd "$QUANT_ROOT" && flock -n data/.cron_srcalt.lock .venv/bin/python scripts/hunt_source_alternatives.py --all >> data/cro_ai_logs/hunt_source_alternatives.log 2>&1
+
+# IDLE COST FENCE (L1.51) -- the price of every undeployed dollar and every clamp. Its sibling
+# check_utilisation publishes a RATIO; a ratio cannot be weighed against the ruin probability a
+# clamp claims to reduce, and dollars can. Not redundant with it: the two answer different
+# questions and the pair is mapped as one law family in build_enforcement_matrix.
+# CADENCE CEILING: INFORMATION-ARRIVAL (L1.28c), and it binds at roughly an hour. The clamp
+# register's inputs are live_guard.json (rewritten every few minutes) and web/cashcarry_live.json
+# (continuous), so a NEW clamp appearing is the event worth catching promptly -- an unpriced clamp
+# is a doctrine breach accruing from the moment it engages. The yield floor moves far slower:
+# hurdle_rate is daily and defi_lending is hourly, so firing denser would re-read an unchanged
+# floor against a barely-changed book. Hourly catches a new clamp inside the hour it engages.
+# PHASE :27 -- off the :00 and :30 crush, and after defi_lending's hourly write at :17 so the
+# lending rung reads the current cross-section rather than the previous one.
+# --report-only, DELIBERATELY: this is a STATE fence, not a LAW fence (L1.37). It reports red for
+# as long as the book is pre-Gate-0, which is the honest reading and not a repo defect -- wiring
+# it as a blocking gate would make it cry wolf on every push and get it disabled.
+# Pure CPU: reads five small artifacts and the tail cross-section of defi_lending.jsonl.
+# EVIDENCE: scripts/check_idle_cost.py -> data/idle_cost.json; CONSTITUTION L1.51
+# CONFIDENCE: committed-script (new this cycle; first run returned UNMEASURABLE-PAPER-BOOK against
+# 13/13 PAPER attestation rows with data/LIVE_ENABLE absent, and enumerated 5 live clamps -- the
+# longest, risk_pause_opens, 7.47d live. It also killed its own premise: best stablecoin APY
+# 3.78% vs risk-free 3.73%/yr, so net of the 300bps haircut the lending rung loses; breakeven
+# haircut is 5.5bps, so that underived constant decides the verdict single-handed)
+27 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_idlecost.lock .venv/bin/python scripts/check_idle_cost.py --report-only >> data/cro_ai_logs/idle_cost.log 2>&1

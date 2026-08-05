@@ -1522,11 +1522,21 @@
    "summary": "EXTERNAL CRITIQUE -- QUEUED, ranked by evidence-per-effort: (a) EVENT ANALOGUE MEMORY (GPT's top pick): embed every event, retrieve N most similar historical ones with their realised 1h/4h/24h/7d reactions, so the LLM reasons from OUR evidence not its pretraining -- also the strongest moat item since nobody else has our first_seen stamps; (b) BLINDING EXPERIMENT: hide asset/exchange names behind placeholders -- if performance collapses it was brand recognition, not reasoning. Cheapest decisive test of whether the edge is real; (c) SHADOW KEYWORD BOT running alongside: if a trivial rules engine matches the LLM, the LLM is not earning its keep; (d) EV-per-opportunity scoring alongside Brier (55pct with a big payoff beats 85pct with a tiny one); (e) ADVERSARIAL CRITIC before each call; (f) bull/bear/judge triad with disagreement logged; (g) per-mechanism decay curves. DELIBERATELY NOT QUEUED: the ~40 remaining suggestions -- the critique's own closing warning is that complexity accumulation is the failure mode, and this desk already owns regime conditioning, a multi-model panel, blind-spot organs and mechanism fingerprints",
    "roi_bps": 35.0,
    "raised": "2026-07-31T13:10:30.967019+00:00",
-   "status": "scheduled",
-   "reason": "SPLIT, and the split is the point. (b) the BLINDING EXPERIMENT (hide asset/exchange names behind placeholders; if performance collapses it was brand recognition, not reasoning) is the cheapest decisive test the row names and it is OpenRouter-blocked (-0.59 USD, no seats can respond). (a) EVENT ANALOGUE MEMORY -- embed every event, retrieve the N most similar historical ones with their realised 1h/4h/24h/7d reactions -- is genuinely the strongest moat item in the row, because it makes an LLM reason from OUR first_seen stamps rather than its pretraining, and nobody else holds those stamps. It is NOT fully blocked (the retrieval index is ours to build) but it is a real build, not a patch. Scheduled together because the blinding test is what tells us whether the analogue memory is even being used once it exists.",
-   "commit": null,
-   "due": "2026-08-26",
-   "disposed": "2026-08-05T13:55:18.477814+00:00"
+   "status": "implemented",
+   "reason": "Item (b) BLINDING EXPERIMENT -- the row's own 'cheapest decisive test of whether the edge is real' -- is BUILT and committed at 4e1e65d, after the prior disposition's blocker was verified false (run_llm_trader.py:310 uses the Claude CLI via ops/brain_env.sh; only run_external_panel.py spends OpenRouter). Two-arm design pre-registered in code BEFORE the data: blind_arm() assigns BLIND/CLEAR off the UTC 4h window index, alternating, measured 270/270 over 90 days, so the arm cannot be chosen after seeing the brief and is reproducible from the row's own timestamp. _blind_brief() masks tickers, prose asset names and venue names to positional placeholders; _unmask_symbol() restores the instrument BEFORE validate_call so a blinded answer faces the unchanged write-time bar, and an unrecognised placeholder is returned unchanged so the gate refuses it rather than a symbol being invented. blind_audit() is the experiment's own falsifier, runs at call time and rides on the row, reporting whole-word leaks (must be empty) separately from substring residual (CBBTC, declared not suppressed). 12 tests in tests/execution/test_llm_trader_blinding.py, and they earned their keep: the first draft leaked 'Bitcoin', 'Bitcoin's memory pool' and XBTUSD into a supposedly blinded brief, which would have scored both arms the same and reported 'blinding changes nothing, so the edge is real' -- a leaky blind manufactures evidence for the conclusion the desk would prefer. A test then caught a second leak inside the fix. REMAINING ITEMS AND WHY THEY ARE NOT CLOSED HERE: (a) event-analogue memory needs a reaction panel (ret_1h/4h/24h/7d per event) that does not exist and is a real build, though retrieval itself is free via knowledge_engine.retrieve/_idf; (d) EV-per-opportunity is unblocked and cheap (decline_value.forgone_bps already computes signed bps beside the Brier loop at score_forecasts.py:172-187); (c),(e),(f),(g) remain queued. THE BINDING CONSTRAINT ON ALL OF THEM IS NEITHER CREDITS NOR CODE: the sleeve is 9/9 PASS with ZERO calls, so reports/llm_trader_decline_value.json reads ALL-PASS/UNMEASURED and every performance-comparison item has nothing to compare. Blinding was the right one to build first precisely because its PASS-RATE arm is observable with zero calls, and because an arm cannot be assigned retroactively -- recording it from now is what makes the eventual comparison possible at all. Successor row raised for the remaining six items.",
+   "commit": "4e1e65d",
+   "due": null,
+   "disposed": "2026-08-05T14:12:44.495244+00:00",
+   "corrections": [
+    {
+     "was": "scheduled",
+     "was_reason": "SPLIT, and the split is the point. (b) the BLINDING EXPERIMENT (hide asset/exchange names behind placeholders; if performance collapses it was brand recognition, not reasoning) is the cheapest decisive test the row names and it is OpenRouter-blocked (-0.59 USD, no seats can respond). (a) EVENT ANALOGUE MEMORY -- embed every event, retrieve the N most similar historical ones with their realised 1h/4h/24h/7d reactions -- is genuinely the strongest moat item in the row, because it makes an LLM reason from OUR first_seen stamps rather than its pretraining, and nobody else holds those stamps. It is NOT fully blocked (the retrieval index is ours to build) but it is a real build, not a patch. Scheduled together because the blinding test is what tells us whether the analogue memory is even being used once it exists.",
+     "was_commit": null,
+     "was_due": "2026-08-26",
+     "corrected": "2026-08-05T14:06:13.148075+00:00",
+     "why": "CORRECTION to the 13:55 disposition, which is factually wrong on its blocker and therefore removes buildable work from view. That reason says item (b) BLINDING is 'OpenRouter-blocked (-0.59 USD, no seats can respond)'. VERIFIED FALSE: the OpenRouter balance blocks the EXTERNAL PANEL, not this sleeve. run_llm_trader.py does not touch OpenRouter -- scripts/run_llm_trader.py:310-311 shells out to the Claude CLI via 'source ops/brain_env.sh && brain_auth_check || exit 90 && claude --effort xhigh'. Only scripts/run_external_panel.py reads data/secrets/llm_panel.json and openrouter.ai/api/v1/credits (:47, :257). Two different LLM backends were conflated, so a -0.59 USD balance was cited against a sleeve that does not spend it. CONSEQUENCE: item (b) -- the row's own 'cheapest decisive test of whether the edge is real' -- is NOT blocked and is buildable today; it is a string substitution over the brief built at run_llm_trader.py:140-174 plus an unmask before validate_call at :357, with the mask token set already enumerated as _KNOWN in collect_announcements.py:82-90. Item (d) EV-per-opportunity is likewise unblocked and cheaper still: decline_value.forgone_bps() already computes the signed bps magnitude on every graded row, so EV is an accumulator beside the existing Brier loop at score_forecasts.py:172-187. THE REAL CONSTRAINT ON THIS ROW IS NEITHER CREDITS NOR CODE: the sleeve has made 9/9 PASS and ZERO calls, so reports/llm_trader_decline_value.json reads ALL-PASS/UNMEASURED and every performance-comparison item ((d),(g), and the measurement half of (b),(c),(e),(f)) has nothing to compare. Blinding and the shadow keyword bot (c) are the two that yield signal WITHOUT waiting for a call, which is exactly why the external critique ranked them where it did. Keeping SCHEDULED 2026-08-26, but the reason must not record a false blocker: this is a capacity choice, not an external block."
+    }
+   ]
   },
   {
    "id": "R0125",
@@ -4533,6 +4543,90 @@
    "summary": "CARRY REGIME CHANGE IN THE YEAR THE DESK DEPLOYED, measured not asserted: 2026 YTD BitMEX XBTUSD funding is -1.23pct/yr with 49.4pct of settlements negative (n=634 through 07-31), against a 2016-2025 mean of +11pct/yr. BTC carry is currently a coin flip. The alt tail is NOT compressed -- live 855-symbol Binance USDM cross-section shows median 5.47pct/yr and a top-decile mean of 34.39pct/yr over 87 symbols, with 40.8pct of the universe at or below zero. IMPLICATION FOR SIZING PRIORS: the carry sleeve's edge is concentrated in the section-42 small-cap tail and is roughly absent in majors this year, so a majors-weighted carry book is sized on a decade average that no longer describes its own universe. This is the sizing-prior half of R0192, deliberately rowed separately rather than claimed as done.",
    "roi_bps": null,
    "raised": "2026-08-05T13:54:29.020656+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0373",
+   "source": "cro",
+   "summary": "R0349 NARROWED WITH NEW EVIDENCE: the local test gate does not fail because the suite is LARGE, it fails because something HANGS inside tests/research|scripts|ops. Two independent attempts this cycle both died without producing a report: (1) scripts/run_ci.py under a 1800s timeout wrote only '[PASS] lint (ruff)' -- 39 bytes, no CI_EXIT line; (2) a BOUNDED run of just three directories (pytest tests/research tests/scripts tests/ops) under 1500s stalled at 6pct (~268 tests in) and was killed with no summary and no exit code. A bounded subset stalling at the same place as the full run means the binding problem is a hanging test or an unbounded network/subprocess call, NOT suite size -- which is a different and much cheaper fix than it has been treated as. NEXT ACTION: bisect with -p no:cacheprovider --collect-only to confirm collection is clean, then run the three directories separately with --durations=20 to name the hang. NOTE the desk lesson this cycle re-proved twice: 'cmd | tail; echo dollar-question' reports TAIL's status, so both attempts initially looked like exit 0; and pytest-timeout is NOT installed, so --timeout is rejected as an unrecognised argument (a --timeout run silently does nothing).",
+   "roi_bps": null,
+   "raised": "2026-08-05T14:04:35.860635+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0374",
+   "source": "cycle",
+   "summary": "L1.50 falsifier (a), OPEN and highest-value: where does the principal-signed 5757.08 USD actually sit, and is it already earning at or above the reachable floor (3.73%/yr) there? If YES, check_idle_cost is a constant zero and should be RETIRED per its own falsifier. If NO, it prices roughly 215-490 USD/yr forgone. One question to the principal, costs nothing, and it decides whether a just-built organ lives. Blocks nothing else.",
+   "roi_bps": 40.0,
+   "raised": "2026-08-05T14:10:31.967481+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0375",
+   "source": "cycle",
+   "summary": "Derive DEFAULT_HAIRCUT_BPS from measured depeg/exploit base rates. Measured 2026-08-05 by check_idle_cost: the lending-vs-T-bill verdict is decided 55x over by this one underived constant -- best stablecoin APY 3.78% (aave-v3 USDC, 162M TVL) vs risk-free 3.73%/yr, so the BREAKEVEN haircut is 5.5bps against an assumed 300.0bps. Gross, lending WINS by 5bps. The constant has no derivation anywhere in the repo and it single-handedly closes a yield band. Derive it or the collateral-allocation screen (R0120) and the L1.50 floor both rest on an assumption wearing a measurement's clothes.",
+   "roi_bps": 25.0,
+   "raised": "2026-08-05T14:10:40.710508+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0376",
+   "source": "cycle",
+   "summary": "L1.50 cascade, BLOCKED on Gate 0 not skipped: carry each clamp's usd_per_day from data/idle_cost.json into its GAP_REGISTER deferred(DATE) row and its SCHEDULED ledger row, so every delay is argued against an accruing dollar figure (L1.27). Built the meter and the clamp register this run; the cascade is deliberately not wired because the book is mode PAPER, so there is no honest number to cascade and a hypothetical one propagated into 85 past-due rows would be worse than none. Unblocks the moment data/LIVE_ENABLE exists.",
+   "roi_bps": 20.0,
+   "raised": "2026-08-05T14:10:48.175570+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0377",
+   "source": "owed_work",
+   "summary": "stageb_capacity.py:52 defines its OWN two-sided holm_bar(m) = |z(1 - ALPHA/(2m))| while libs/validation/forward_stats.holm_bar is ONE-sided (alpha/m). Two different numbers under one name, and the script prints them SIDE BY SIDE with the desk's observed one-sided bar read out of data/axis_shadow_state.json (:62, :74 'observed holm_bar ... desk own state file'). At m=12 the local version returns 2.88 against the real 2.64, so every capacity recommendation is computed against a bar that is not the one any clock faces. Direction is conservative (it understates how many slots are affordable, so it under-fills forward capacity rather than over-promoting), which is why it has survived unnoticed -- but it is exactly the drift that libs/validation/forward_stats.holm_alpha was added on 2026-08-05 to make impossible. FIX: delete the local _z/holm_bar and import holm_bar/holm_alpha from forward_stats; the local Acklam-style _z inverse-normal approximation goes with it. Found while wiring R0187.",
+   "roi_bps": 25.0,
+   "raised": "2026-08-05T14:13:00.030101+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0378",
+   "source": "owed_work",
+   "summary": "scripts/screen_orderbook_state.py cannot complete on this box: peak RSS 510-650MB and essentially FLAT in --files (580MB at 24 files, 652MB at 240), so the cost is the LOAD PATH, not the budget. Measured 2026-08-05: SIGKILLed by the kernel OOM killer at --files 48/96/160/240 in four consecutive probes with ~490-530MB available (3.8GB box, ~3.2GB resident in desk processes, no swap). It was wired into ops/crontab.manifest and the live crontab the same day with choom -n 1000 so it self-nominates as the OOM victim rather than risking the six cashcarry_executor processes that live here -- that makes the line SAFE, not PRODUCTIVE. At a budget small enough to survive it screens 2 of 1356 cells on disk and both report NO-INPUT, so the highest-ranked untested mechanism class in run_mechanism_census (orderbook_microstructure_state, gap 0.396, ~10GB of L2 tape, 29020 partitions) is still effectively unscreened. FIX: a bounded-memory load path -- stream partitions and accumulate per-cell statistics incrementally instead of holding the parsed tape, so peak RSS is O(1) in --files. That is the difference between a scheduled organ and a scheduled organ that produces. NOTE the pre-registration docstring is frozen and must not be edited to accommodate the fix.",
+   "roi_bps": 30.0,
+   "raised": "2026-08-05T14:13:16.545294+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0379",
+   "source": "owed_work",
+   "summary": "R0124 successor: six of the seven external-critique items remain unbuilt after item (b) BLINDING landed at 4e1e65d. Ranked by evidence-per-effort against what already exists: (d) EV-PER-OPPORTUNITY is cheapest and unblocked -- decline_value.forgone_bps() already computes the signed bps magnitude on every graded row and filter_verdict() already aggregates mean/total, so EV is an accumulator beside the existing Brier loop at score_forecasts.py:172-187 plus a field on Decline. (c) SHADOW KEYWORD BOT is next -- the rules engine already exists as _TIER1/_TIER2/_KNOWN/_tier()/_symbols() in collect_announcements.py:71-120; the work is a book-path parameter on resolve_llm_trader_book.py:55 (currently a module-level constant) so the same grader scores both books, and the pre-registered comparison metric is the  field already on every row. (a) EVENT ANALOGUE MEMORY is the strongest moat item and the real build: retrieval is free (knowledge_engine.retrieve/_idf/_toks, a complete TF-IDF cosine retriever), but the REACTION PANEL does not exist -- no ret_1h/4h/24h/7d field anywhere -- and needs crypto_source.fetch_price_at over data/exchange_announcements.jsonl cached to disk. State the data limit on the record when built: only 42 of 224 rows carry a symbol, 31 are tradeable, and genuine first_seen spans 5 days, so the pre-2026 published_at tail was collected retroactively and has no true first_seen. (g) per-mechanism decay curves are near-free GIVEN (a) and blocked without it (mechanism_class is already a controlled 9-value vocabulary; libs/validation/event_study.py MIN_EVENTS=20 is the honest bar). (e) adversarial critic is cheap code but doubles latency and spend on a 4-hourly cron. (f) bull/bear/judge triad is most expensive and only worth having across DIFFERENT providers via libs/ops/llm_seat.py, which is a budget decision. THE SHARED CONSTRAINT, and it is not credits: the sleeve is 9/9 PASS with ZERO calls, so every performance-comparison item has nothing to compare until it trades.",
+   "roi_bps": 20.0,
+   "raised": "2026-08-05T14:13:33.995089+00:00",
    "status": "open",
    "reason": null,
    "commit": null,
