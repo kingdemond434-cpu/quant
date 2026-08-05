@@ -1723,6 +1723,30 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # rows (aster 50,974 / lighter 131,299 / klines 50,757) + screen-on-discovery in the same run.
 # CONFIDENCE: measured (row counts above are from the runs, not estimates).
 15 8 * * * cd "$QUANT_ROOT" && flock -n data/.cron_dexscreener.lock .venv/bin/python scripts/collect_dexscreener.py >> data/cro_ai_logs/collect_dexscreener.log 2>&1
+
+# CIRCULATING-SUPPLY HISTORY -- the half of the unlock screen that can ONLY be built forward.
+# screen_unlock_supply_series is blocked on two inputs and they are NOT symmetric: the unlock
+# CALENDAR is a published schedule that can be obtained later with its history intact, while the
+# circulating-supply SERIES is a point-in-time observation nobody sells a trustworthy history of.
+# Every day this does not run is a day that can never be recovered, so it starts first even though
+# it does not on its own unblock the screen. Starting the recoverable half first is the order a
+# desk drifts into precisely because that half shows progress sooner.
+# THE DEFECT IT AVOIDS is the screen's own defect_1: dividing a HISTORICAL release by the CURRENT
+# float. Plausible number, right units, wrong in the direction that makes unlocks look smaller.
+# Every row carries `known_from` = the observation instant and is never back-dated.
+# CEILING TYPE (L1.28c) is DATA-ARRIVAL: circulating supply moves on unlock events, so daily is at
+# the ceiling. 05:10 is off the 08:xx collector block so the CoinGecko free tier is not competing
+# with anything else this desk runs.
+# PACE IS MEASURED: at 2.5s the first live run lost 2 of 5 ids to HTTP 429, and a 429 here is an
+# unrecoverable row rather than a retryable one. 7s + a 20s retry; ~3 minutes for 24 ids.
+# STILL BLOCKED, AND RECORDED: DefiLlama /emissions and /emission/<protocol> both answer HTTP 402
+# Payment Required and defillama.com/api/emissions answers 403 -- the calendar is behind a paid
+# tier. NOT purchased: a licensed vendor feed is the principal's decision, never a collector's.
+# EVIDENCE: scripts/collect_circulating_supply.py -> data/circulating_supply.jsonl +
+# data/circulating_supply_status.json (reports days_covered, never row count -- a thousand rows
+# collected in one afternoon is not a series).
+# CONFIDENCE: measured (6 of 6 ids written across two live runs 2026-08-05).
+10 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_circsupply.lock .venv/bin/python scripts/collect_circulating_supply.py >> data/cro_ai_logs/circulating_supply.log 2>&1
 25 8 * * * cd "$QUANT_ROOT" && flock -n data/.cron_holderconc.lock .venv/bin/python scripts/collect_holder_concentration.py >> data/cro_ai_logs/collect_holder_concentration.log 2>&1
 35 8 * * * cd "$QUANT_ROOT" && flock -n data/.cron_perpdex.lock .venv/bin/python scripts/collect_perpdex_funding.py >> data/cro_ai_logs/collect_perpdex_funding.log 2>&1
 
