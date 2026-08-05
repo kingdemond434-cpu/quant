@@ -314,11 +314,11 @@ def _build_window(label: str, days: float, now: datetime, rows: list[dict[str, A
                  if paid is not None
                  else unmeasured_term("funding_paid", income_src,
                                       "futures income ledger not readable here"))
-    fut_comm = (Term("futures_commission", commission, MEASURED, income_src,
-                     note="COMMISSION rows -- the venue's exact futures fee bill")
+    comm_src = "binance_testnet._income_rows COMMISSION (paginated income ledger)"
+    fut_comm = (Term("futures_commission", commission, MEASURED, comm_src,
+                     note="COMMISSION rows -- the venue's exact FUTURES fee bill (spot is separate)")
                 if commission is not None
-                else unmeasured_term("futures_commission",
-                                     "binance_testnet.income_summary / _income_rows COMMISSION",
+                else unmeasured_term("futures_commission", comm_src,
                                      "futures income ledger not readable here"))
     # WINDOWED vs INCEPTION: income_summary is anchored at `since_ms`, so for the trailing-week
     # read it IS the window. It is used only as the cross-check / fallback for the split.
@@ -497,23 +497,23 @@ def _print(report: dict[str, Any]) -> None:
         print(f"  funding split cross-check: {dec['funding_split_crosscheck']}")
 
         if window["churn"]:
-            print(f"  {'churn':<14}{'rt/day':>8}{'avg hold':>10}{'floor':>8}{'reopen<floor':>14}"
-                  f"{'cost bps':>10}  verdict")
+            print(f"  {'churn':<14}{'rt/day':>8}{'avg hold':>18}{'floor':>8}{'reopen<floor':>14}"
+                  f"{'cost bps':>18}  verdict")
             for row in window["churn"]:
                 print(f"  {row['symbol']:<14}{row['round_trips_per_day']:>8.2f}"
-                      f"{row['avg_hold_reads']!s:>10}{row['gate_min_hold_h']:>8.0f}"
+                      f"{row['avg_hold_reads']!s:>18}{row['gate_min_hold_h']:>8.0f}"
                       f"{row['reopens_inside_min_hold']:>14}"
-                      f"{row['churn_cost_reads']!s:>10}  {row['verdict']}")
+                      f"{row['churn_cost_reads']!s:>18}  {row['verdict']}")
         else:
             print(f"  churn: {NOT_READABLE} (no closed round trips, or the gate's minimum hold "
                   "could not be read from the executor)")
 
         drifted = [d for d in window["cost_model_drift"] if d["verdict"] != "NO-DATA"]
         if drifted:
-            print(f"  {'drift':<14}{'modelled':>12}{'realised':>12}{'ratio':>8}  verdict")
+            print(f"  {'drift':<14}{'modelled':>18}{'realised':>18}{'ratio':>8}  verdict")
             for row in drifted:
-                print(f"  {row['symbol']:<14}{row['modelled_reads']!s:>12}"
-                      f"{row['realised_reads']!s:>12}{row['ratio']!s:>8}  {row['verdict']}")
+                print(f"  {row['symbol']:<14}{row['modelled_reads']!s:>18}"
+                      f"{row['realised_reads']!s:>18}{row['ratio']!s:>8}  {row['verdict']}")
         else:
             print(f"  cost-model drift: {NOT_READABLE} "
                   f"({len(window['cost_model_drift'])} symbol(s), none with both sides readable)")
@@ -652,7 +652,13 @@ def main() -> int:
         print(json.dumps(report, indent=1))
     else:
         _print(report)
-    print(f"\n-> {OUT.relative_to(ROOT)}")
+    # `relative_to` is cosmetic and OUT is configurable in tests -- a report organ must never
+    # die on its own last print line.
+    try:
+        where: object = OUT.relative_to(ROOT)
+    except ValueError:
+        where = OUT
+    print(f"\n-> {where}")
     # An actionable defect must leave a non-zero trace in the cron log. Missing inputs must NOT:
     # a checkout with no runtime state is an honest UNMEASURED, not a failure.
     return 1 if status in ("DEFECT", "CHURN", "BREAK") else 0

@@ -575,7 +575,12 @@ def churn_report(
         cost_usd: float | None = None
         cost_bps: float | None = None
         notional_all = sum(t.notional for t in group if t.notional is not None)
-        if churning:
+        # A ZERO HERE IS A REAL ZERO, and the distinction is the whole doctrine of this module
+        # read in the OTHER direction. If the holds were readable and none of them churned, the
+        # cost of churn is $0.00 -- a measured fact backed by a measured predicate, and reporting
+        # it as NOT-READABLE-HERE would understate a clean symbol exactly as badly as a fabricated
+        # zero overstates a blind one. Only an unreadable hold leaves the cost unmeasured.
+        if holds:
             acc = 0.0
             for t in churning:
                 if t.notional is None:

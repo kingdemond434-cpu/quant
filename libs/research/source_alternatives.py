@@ -77,9 +77,15 @@ EN_PRACTITIONER_FORUM: Final[str] = "en_practitioner_forum"
 EN_PREPRINT: Final[str] = "en_academic_preprint"
 """English-language preprints and working papers with readable abstracts. arXiv / SSRN."""
 
+CODE_REPOSITORY: Final[str] = "public_code_repository_search"
+"""Searchable public source code -- runnable implementations rather than prose about them.
+GitHub. Distinct from CN_QUANT_PLATFORM, which is specifically strategy code written against one
+CN backtest engine plus the community arguing about it."""
+
 INFORMATION_CLASSES: Final[tuple[str, ...]] = (
     CN_RETAIL_SENTIMENT, CN_LONGFORM_QA, CN_TECH_WRITEUP, CN_QUANT_PLATFORM,
     CN_WEB_SEARCH, CN_VIDEO, VIDEO_TRANSCRIPT, EN_PRACTITIONER_FORUM, EN_PREPRINT,
+    CODE_REPOSITORY,
 )
 
 # --------------------------------------------------------------------------------- statuses
@@ -148,6 +154,30 @@ def probed(candidate: Candidate, *, status: str, detail: str | None) -> Candidat
 def _c(name: str, ic: str, url: str, next_action: str, **kw: Any) -> Candidate:
     return Candidate(name=name, information_class=ic, url=url, next_action=next_action, **kw)
 
+
+#: JoinQuant, BigQuant and RiceQuant are one information class with one failure mode (JS shell,
+#: listings need Chromium), so they share one candidate list rather than three drifting copies.
+_CN_QUANT_CANDIDATES: Final[tuple[Candidate, ...]] = (
+    _c("vnpy_forum", CN_QUANT_PLATFORM, "https://www.vnpy.com/forum/",
+       "add libs/data/cn_sources.vnpy_forum() parsing thread title + author + reply "
+       "count into Article(source='vnpy'); forum software renders server-side",
+       note="vn.py 社区 -- the largest open-source CN quant framework's own forum; "
+            "carries live-trading write-ups against a real engine"),
+    _c("gitee_search", CN_QUANT_PLATFORM,
+       "https://search.gitee.com/?q=%E9%87%8F%E5%8C%96&type=repository",
+       "parse repo name + description + stars into Article(source='gitee'); mirrors the "
+       "GitHub path libs/data/papers.github already implements, so reuse its scoring",
+       note="码云 -- where CN quant code that never reaches GitHub lives"),
+    _c("myquant", CN_QUANT_PLATFORM, "https://www.myquant.cn/",
+       "check whether the strategy/community listing has a JSON route before committing "
+       "to the Chromium path",
+       needs_js=True,
+       note="掘金量化 -- same platform class as JoinQuant, same JS-shell risk"),
+    _c("uqer", CN_QUANT_PLATFORM, "https://uqer.datayes.com/",
+       "probe first; historically gated behind a login for anything beyond the shell",
+       needs_auth=True, needs_js=True,
+       note="优矿 -- institutional-leaning CN quant platform"),
+)
 
 #: THE REGISTRY. Order within a group is priority: already-built first, then plain-HTML hosts,
 #: then anything needing JS or auth -- the miner's fetch path is urllib, so a server-rendered page
@@ -276,26 +306,55 @@ _REGISTRY: Final[tuple[Replacements, ...]] = (
         information_class=CN_QUANT_PLATFORM,
         recorded_reason=("reachable but JS-rendered (6KB shell); listings require Chromium, and "
                          "the API 404s or needs auth -- scripts/mine_research_queue.CN_SOURCES"),
+        candidates=_CN_QUANT_CANDIDATES,
+    ),
+    # bigquant and ricequant share JoinQuant's information class AND its exact failure mode, so
+    # they share its candidate list. Registered separately rather than aliased because each is
+    # its own ledger row: one recovering does not un-kill the other, and the hunt report must be
+    # able to say which of the three is dead.
+    Replacements(
+        source="bigquant",
+        information_class=CN_QUANT_PLATFORM,
+        recorded_reason=("reachable but JS-rendered; listings require Chromium. Its shell "
+                         "measures 27,705 bytes, which CLEARS the miner's 20KB content bar while "
+                         "carrying zero listings -- the reason source_health refuses to let a "
+                         "byte count refute a recorded needs_browser finding"),
+        candidates=_CN_QUANT_CANDIDATES,
+    ),
+    Replacements(
+        source="ricequant",
+        information_class=CN_QUANT_PLATFORM,
+        recorded_reason=("reachable but JS-rendered (3,010-byte shell); listings require "
+                         "Chromium -- scripts/mine_research_queue.CN_SOURCES"),
+        candidates=_CN_QUANT_CANDIDATES,
+    ),
+    Replacements(
+        source="github",
+        information_class=CODE_REPOSITORY,
+        recorded_reason=("HTTP 403 unauthenticated on the 2026-08-05 sweep -- GitHub's search "
+                         "API is token-gated and libs/data/papers.github_token() found none. "
+                         "That is a CREDENTIAL gap, not a dead source, and the fix may simply be "
+                         "exporting GITHUB_TOKEN; the alternatives below need no token at all"),
         candidates=(
-            _c("vnpy_forum", CN_QUANT_PLATFORM, "https://www.vnpy.com/forum/",
-               "add libs/data/cn_sources.vnpy_forum() parsing thread title + author + reply "
-               "count into Article(source='vnpy'); forum software renders server-side",
-               note="vn.py 社区 -- the largest open-source CN quant framework's own forum; "
-                    "carries live-trading write-ups against a real engine"),
-            _c("gitee_search", CN_QUANT_PLATFORM,
-               "https://search.gitee.com/?q=%E9%87%8F%E5%8C%96&type=repository",
-               "parse repo name + description + stars into Article(source='gitee'); mirrors the "
-               "GitHub path libs/data/papers.github already implements, so reuse its scoring",
-               note="码云 -- where CN quant code that never reaches GitHub lives"),
-            _c("myquant", CN_QUANT_PLATFORM, "https://www.myquant.cn/",
-               "check whether the strategy/community listing has a JSON route before committing "
-               "to the Chromium path",
-               needs_js=True,
-               note="掘金量化 -- same platform class as JoinQuant, same JS-shell risk"),
-            _c("uqer", CN_QUANT_PLATFORM, "https://uqer.datayes.com/",
-               "probe first; historically gated behind a login for anything beyond the shell",
-               needs_auth=True, needs_js=True,
-               note="优矿 -- institutional-leaning CN quant platform"),
+            _c("gitlab_search", CODE_REPOSITORY,
+               "https://gitlab.com/api/v4/projects?search=quant%20trading&per_page=5",
+               "add libs/data/papers.gitlab(query) mapping the project list's name + description "
+               "+ star_count + web_url into the same Item shape papers.github returns, so "
+               "score_title and the queue need no change",
+               note="Public projects are readable without a token, which is exactly the "
+                    "constraint that has GitHub returning 403 here"),
+            _c("codeberg_search", CODE_REPOSITORY,
+               "https://codeberg.org/api/v1/repos/search?q=quant&limit=5",
+               "add libs/data/papers.gitea(base_url, query); the Gitea API shape is shared by "
+               "Codeberg and every self-hosted Gitea, so one parser covers a family of hosts",
+               note="Gitea API, no auth for public repos"),
+            _c("gitee_api", CODE_REPOSITORY,
+               "https://gitee.com/api/v5/search/repositories?q=%E9%87%8F%E5%8C%96&per_page=5",
+               "add libs/data/papers.gitee(query) against the v5 API; note this is the API "
+               "endpoint, distinct from the gitee_search WEB surface registered under "
+               "cn_quant_platform_community for JoinQuant",
+               note="码云 -- the same host serves two information classes here: CN quant "
+                    "STRATEGY code (that entry) and general public code (this one)"),
         ),
     ),
     Replacements(

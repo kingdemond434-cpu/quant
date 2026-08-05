@@ -243,7 +243,11 @@ def test_churn_is_quiet_on_a_normal_hold_with_no_fast_reentry() -> None:
     assert rows_out[0].verdict == "OK"
     assert rows_out[0].reopens_inside_min_hold == 0
     assert rows_out[0].short_hold_trips == 0
-    assert rows_out[0].churn_cost_usd is None            # nothing churned -> no fabricated cost
+    # A MEASURED ZERO, not NOT-READABLE-HERE. The holds were readable and none of them churned,
+    # so $0.00 is a fact backed by a predicate -- refusing to state it would understate a clean
+    # symbol exactly as badly as a fabricated zero overstates a blind one.
+    assert rows_out[0].churn_cost_usd == 0.0
+    assert rows_out[0].as_dict()["churn_cost_reads"] == 0.0
 
 
 def test_churn_fires_on_a_hold_shorter_than_the_gate_floor() -> None:
@@ -290,6 +294,9 @@ def test_a_symbol_with_no_readable_hold_reads_not_readable_here() -> None:
     assert row.verdict == NOT_READABLE
     assert row.avg_hold_h is None
     assert row.as_dict()["avg_hold_reads"] == NOT_READABLE
+    # ... and with no readable hold the churn COST is unmeasured too, never a comforting zero
+    assert row.churn_cost_usd is None
+    assert row.as_dict()["churn_cost_reads"] == NOT_READABLE
 
 
 # ---------------------------------------------------------------------------------------------

@@ -33,6 +33,13 @@ data/*
 # probe window and the falsifier for every symbol on the execution denylist. Untracked, a symbol
 # could be quietly re-admitted with no record of what change justified it.
 !data/execution_reentry.json
+# A HIGH-WATER MARK STORED WHERE `rm` RESETS IT IS NOT A FLOOR. data/* is ignored wholesale, so
+# the capability ratchet -- which exists precisely so no aspect can silently fall -- would have
+# had its own history live only on whichever box last ran it. That is the failure mode the
+# coverage ratchet already avoids by living in docs/ (see the note further down), and the
+# reason the constitution ratchet requires a hand-edited dated file to weaken. Committed so a
+# regression has to survive review rather than a lost file.
+!data/CAPABILITY_RATCHET.json
 web/*
 !web/index.html
 reports/

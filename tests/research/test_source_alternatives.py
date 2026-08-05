@@ -62,8 +62,24 @@ class TestRegistryShape:
         # Everything the tree currently records as blocked/needs_browser must have somewhere to
         # go, or the hunter would find a DEAD source it cannot even name a substitute for.
         registered = {e.source for e in alt.registry()}
-        for measured_blocked in ("xueqiu", "zhihu", "csdn", "baidu", "joinquant"):
+        for measured_blocked in ("xueqiu", "zhihu", "csdn", "baidu", "joinquant", "bigquant",
+                                 "ricequant", "github"):
             assert measured_blocked in registered
+
+    def test_every_source_the_miner_can_record_as_failing_has_a_registry_entry(self) -> None:
+        # Closes the loop the hunter exits 2 on: replay the desk's own last miner report through
+        # the observation deriver and require that anything it can mark failing has somewhere to
+        # go. Without this the registry gap is only discovered N runs later, in a cron log.
+        import json
+
+        report = Path(__file__).resolve().parent.parent.parent / "reports/research_queue.json"
+        if not report.is_file():
+            pytest.skip("no miner report in the tree to replay")
+        doc = json.loads(report.read_text("utf-8"))
+        failing = {o.source for o in sh.observations_from_miner_report(doc) if not o.ok}
+        registered = {e.source for e in alt.registry()}
+        assert failing <= registered, (
+            f"no registered alternatives for {sorted(failing - registered)}")
 
     def test_known_good_in_tree_parsers_are_listed_first(self) -> None:
         # An alternative that is already built and already passing beats four aspirational URLs.

@@ -247,10 +247,19 @@ MIN_PAIRED = 60
 
 FILE_BUDGET = 240
 
-#: Verdicts the harness returns that constitute graveyard-grade negative knowledge. Anything
-#: UNDERPOWERED is deliberately absent: "could not tell" is not "it is dead", and the graveyard is
-#: permanent.
-_KILL_VERDICTS = ("SCREEN-WEAK", "TIMING-ARTIFACT", "SUSPECT-LOOKAHEAD")
+#: Verdicts the harness returns that constitute graveyard-grade negative knowledge, each with the
+#: reason it is filed under. Anything UNDERPOWERED is deliberately absent: "could not tell" is not
+#: "it is dead", and the graveyard is permanent.
+_KILL_REASONS = {
+    "SCREEN-WEAK": ("powered and below the floors: |IC| < 0.03 or best timing Sharpe < 0.5 on a "
+                    "sample that could have resolved an effect at 0.03"),
+    "TIMING-ARTIFACT": ("angle-20 de-contamination FAILED: |same-period corr| > 0.20 or residual "
+                        "IC collapsed below half the raw IC -- the coinbase/turkey/kimchi failure "
+                        "mode, and the one this class was always most exposed to"),
+    "SUSPECT-LOOKAHEAD": ("too strong to be credible at this horizon -- read as misalignment, "
+                          "never as edge; NEVER earns a clock"),
+}
+_KILL_VERDICTS = tuple(_KILL_REASONS)
 
 
 def _rel(p: Path) -> str:
@@ -562,44 +571,41 @@ def classify(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], list[dic
             continue
         floor = ((r.get("type2") or {}).get("min_detectable_effect")
                  if isinstance(r.get("type2"), dict) else None)
-        if verdict in _KILL_VERDICTS and bool(r.get("powered")):
-            why = {
-                "SCREEN-WEAK": ("powered and below the floors: |IC| < 0.03 or best timing Sharpe "
-                                "< 0.5 on a sample that could have resolved an effect at 0.03"),
-                "TIMING-ARTIFACT": ("angle-20 de-contamination FAILED: |same-period corr| > 0.20 "
-                                    "or residual IC collapsed below half the raw IC -- the "
-                                    "coinbase/turkey/kimchi failure mode, and the one this class "
-                                    "was always most exposed to"),
-                "SUSPECT-LOOKAHEAD": ("too strong to be credible at this horizon -- read as "
-                                      "misalignment, never as edge; NEVER earns a clock"),
-            }[verdict]
+        # CONCURRENT-ONLY IS CHECKED FIRST, and the ordering is the point. A residualised cell whose
+        # raw twin scored would otherwise land on the generic SCREEN-WEAK row, which records THAT
+        # it died without recording WHY -- and "why" is the entire finding for this mechanism class:
+        # the forecast was a restatement of a bar that had already happened. Clause 6 asks for the
+        # reason, not merely the verdict. It still requires `powered`, so an underpowered residual
+        # never gets to claim the raw twin was concurrency.
+        concurrent_only = (
+            form == "residualised" and verdict == "SCREEN-WEAK" and bool(r.get("powered"))
+            and twin is not None and str(twin.get("verdict")) == "SCREEN-INTERESTING"
+        )
+        base = {
+            "cell": r.get("cell"), "construction": r.get("construction"),
+            "bar_ms": r.get("bar_ms"), "ic": r.get("ic"),
+            "n": r.get("n"), "n_eff": r.get("n_eff"),
+            # BOTH floors, because a kill without one is unfalsifiable and a kill quoting only the
+            # family-wise one understates what the sample could actually see.
+            "detection_floor_ic_unadjusted": r.get("min_detectable_ic"),
+            "detection_floor_ic_family_wise": floor,
+            "type2_label": r.get("type2_label"),
+        }
+        if concurrent_only and twin is not None:
             graveyard.append({
-                "cell": r.get("cell"), "construction": r.get("construction"),
-                "form": r.get("form"), "bar_ms": r.get("bar_ms"), "verdict": verdict,
-                "ic": r.get("ic"), "same_period_corr": r.get("same_period_corr"),
-                "residual_ic": r.get("residual_ic"), "n": r.get("n"), "n_eff": r.get("n_eff"),
-                # BOTH floors, because a kill without one is unfalsifiable and a kill quoting only
-                # the family-wise one understates what the sample could actually see.
-                "detection_floor_ic_unadjusted": r.get("min_detectable_ic"),
-                "detection_floor_ic_family_wise": floor,
-                "type2_label": r.get("type2_label"),
-                "reason": why,
-            })
-        elif form == "residualised" and verdict in ("SCREEN-WEAK", "SCREEN-UNDERPOWERED") \
-                and twin is not None and str(twin.get("verdict")) == "SCREEN-INTERESTING":
-            graveyard.append({
-                "cell": r.get("cell"), "construction": r.get("construction"),
-                "form": "raw-vs-residualised", "bar_ms": r.get("bar_ms"),
-                "verdict": "CONCURRENT-ONLY",
-                "ic": r.get("ic"), "raw_ic": twin.get("ic"),
+                **base, "form": "raw-vs-residualised", "verdict": "CONCURRENT-ONLY",
+                "raw_ic": twin.get("ic"),
                 "raw_same_period_corr": twin.get("same_period_corr"),
-                "n": r.get("n"), "n_eff": r.get("n_eff"),
-                "detection_floor_ic_unadjusted": r.get("min_detectable_ic"),
-                "detection_floor_ic_family_wise": floor,
-                "type2_label": r.get("type2_label"),
                 "reason": ("the raw state scored and the orthogonalised state did not: the "
                            "apparent forecast was a restatement of the bar that had already "
                            "happened. This is the class's pre-registered null, confirmed."),
+            })
+        elif verdict in _KILL_VERDICTS and bool(r.get("powered")):
+            graveyard.append({
+                **base, "form": r.get("form"), "verdict": verdict,
+                "same_period_corr": r.get("same_period_corr"),
+                "residual_ic": r.get("residual_ic"),
+                "reason": _KILL_REASONS[verdict],
             })
     return survivors, graveyard
 
