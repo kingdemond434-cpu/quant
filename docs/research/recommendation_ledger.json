@@ -3237,11 +3237,11 @@
    "summary": "ORPHANED FORECAST NAMESPACE pins the desk's #1 max_push item permanently. 4 rows keyed calib-quiz-20260731-q1/q2/q4/q5 are past their resolve_by, and grep finds NO writer and NO resolver for 'calib-quiz' anywhere in scripts/ or libs/ -- run_calibration_probe.py --resolve owns only the 'probe:' namespace (it graded 2 this cycle, n 5->7, bias +0.176 -> +0.121). So calibration::forecast_reliability stays UNMEASURED at rank 1 forever regardless of how well the probe organ performs. Either give calib-quiz a resolver (they are ordinary market-direction claims with explicit thresholds and passed deadlines: BTCUSDT>63216.2 +4h, ETHUSDT>1874.22 +12h, PAXGUSDT>4051.35 +4h, BNBUSDT>589.28 +12h) or migrate the namespace into run_calibration_probe. NOT hand-graded this cycle on purpose -- rushing judgement work fabricates calibration data, which is the exact failure the L1.29 fix addressed.",
    "roi_bps": 2500.0,
    "raised": "2026-08-01T08:05:56.329253+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: KILL REFUTED. The calib-quiz namespace is indeed gone (repo grep matches only the ledger row; data/forecast_log.json holds 42 exclusively 'probe:'-keyed forecasts), but the kill leans on the successor organ 'already running' -- and it is not. Measured 2026-08-04: 0 of 42 forecasts carry resolved/outcome/resolved_at (libs/self_improvement/forecast_calibration.py:97-106 writes resolution in place, so nothing has ever been resolved); 39 of 42 sit past resolve_by (heaviest cohort due 2026-08-01); calibration_status.json's n_overdue=0 is a stale 2026-08-01T13:53 snapshot. The resolve path is inert on this box: no crontab is installed (ops/crontab.manifest:1053 is manifest-only), data/calibration_probe.json -- written unconditionally by every run_calibration_probe main() -- does not exist, and data/calibration_probe.jsonl, the open-questions file resolve_due() iterates (scripts/run_calibration",
-   "commit": null,
+   "status": "implemented",
+   "reason": "IMPLEMENTED 233596c. The row's literal ask is closed and its thesis is confirmed by a DIFFERENT mechanism than diagnosed. (1) calib-quiz: all 6 rows were graded 2026-08-01 by score_forecasts.py's price parser (scheduled hourly, crontab.manifest:1620) -- the namespace has a resolver and is dead. (2) The fence WAS pinned, by a denominator category error: n_resolved (42) is drawn from the scoreable population while check_calibration divided by the raw store (172), of which 43 rows can never enter the numerator; 42 < 172//4 = 43 fired BLIND and exited 2, while 42 < 129//4 = 32 on the matched population does not. Every exclusion hit the ratio twice, so the retrospective-row hygiene that fixed the calibration sign inversion pushed this fence toward BLIND. eligible() now shares _claim_signature with _scoreable so numerator-inside-denominator is structural; n_eligible and n_resolved_raw published; an empty population reads UNSCOREABLE not OK. (3) The class defect is live and now instrumented: 13 hand-logged judgement forecasts have a deadline and no grader, earliest due 2026-08-14; unowned() names them before the deadline, log_forecast(resolver=) is the escape. 16 tests green, ruff and mypy clean.",
+   "commit": "233596c",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-05T22:17:09.883441+00:00"
   },
   {
    "id": "R0261",
@@ -3249,11 +3249,11 @@
    "summary": "The discovery objective is ORPHANED, found by actually following up a principal-supplied video transcript instead of just reading it. libs/discovery/objective.py::discovery_score composes log growth, survival probability, diversification_contribution, average_correlation, failure_dependency_score, half_life_days, capacity, fragility, tail risk and parameter_plateau_score into 'a composite rank score that maximizes sustainable geometric growth under robustness' -- and it has ZERO production callers. Only tests and the libs/discovery/__init__ re-export touch it. scripts/run_discovery.py ranks with _rank = (promoted, sharpe) -- raw Sharpe descending. So every portfolio-aware term the desk deliberately built (diversification, correlation, failure dependency) is inert, and the desk ranks candidates by exactly the single-strategy statistic those terms exist to correct. parameter_plateau_score compounds it: the argument is REQUIRED by discovery_score and nothing in the repo computes it, so the objective could not be wired even if a caller wanted to. This matters against the measured portfolio arithmetic: 5 uncorrelated legs at true Sharpe 1.0 each combine to 2.24, but P(one leg clears the gate) is 0.01% at the campaign shape so P(all five clear) is ~9e-21 -- the desk gates each leg alone against a bar only the assembled book could clear, then ranks the survivors by the metric that ignores combination. Filed DH-003/004/005 in discovery_hypotheses.md. NOT FIXED: wiring discovery_score changes what the desk PROMOTES and must be measured before it lands, exactly as the DSR change was; it changes ORDERING, never admission, so no gate is relaxed by it.",
    "roi_bps": null,
    "raised": "2026-08-01T09:00:32.255495+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Partially engaged, core ask undone. discovery_score gained a report-only caller: scripts/run_geometric_review.py:160-164 calls it with hardcoded neutral placeholders (fragility_score=50.0, tail_risk_score=50.0, parameter_plateau_score=50.0) and declares ZERO PROMOTION AUTHORITY. scripts/run_discovery.py:181-183 still ranks with _rank=(promoted, raw sharpe); parameter_plateau_score is still produced nowhere. The row's own condition -- wire into promotion ordering only behind a measurement -- remains the open work.",
-   "commit": null,
+   "status": "implemented",
+   "reason": "IMPLEMENTED d971a08 for the half that is real; the row's core premise is REFUTED by measurement. (1) PREMISE REFUTED: run_discovery.py's _rank (now :193-196) has ZERO promotion authority -- 'shadow' is a FILTER on status computed BEFORE the sort and is order-independent; nothing in the repo reads results[0] or any rank position (web/index.html renders file order; daily_research_cycle and research_cycle read only disc['pending']; run_reality_gap reads a top-level key the payload never writes). So wiring discovery_score into _rank would change the display order of web/discovery.json and nothing else -- the row's own condition, 'it changes what the desk PROMOTES and must be measured before it lands', is unmet because there is no promotion to change. (2) BLOCKED, not deferred: 3 of discovery_score's 10 REQUIRED inputs have no producer anywhere in the repo -- failure_dependency_score, parameter_plateau_score, and a per-sleeve diversification_contribution -- and libs/discovery/failure_dependency.py and parameter_stability.py were retired to the graveyard. Wiring it with placeholders is not a partial fix, it is the defect. (3) THE REAL LIVE DEFECT, FIXED: the one production call site (run_geometric_review.py:160) passes NINE of ten inputs as neutral literals, so the score is exactly log_growth*K -- measured 0.1253 to 0.00696 and 0.4068 to 0.02258, K identical to four figures -- and it was published as a bare float, claiming portfolio-aware content it does not contain (L1.55 FABRICATED). It now publishes value/measured:false/inputs_measured/inputs_defaulted/why, pinned by two tests. Residual rowed separately.",
+   "commit": "d971a08",
    "due": null,
-   "disposed": null,
+   "disposed": "2026-08-05T22:22:02.578279+00:00",
    "renumbered_from": "R0226",
    "renumber_note": "allocator race with the VPS lineage; origin keeps its ids by convention. Origin's R0226 is an unrelated check_orphan_code finding. No code references this row."
   },
@@ -3372,11 +3372,11 @@
    "summary": "MIN-LEN TRUNCATION, SIBLING SCRIPTS: 8 more campaign builders still align with r[-min_len:] (run_campaign.py:95, certify_gauntlet.py:100, run_carry_harvest.py:89, run_xsec_funding.py:90, run_xsec_funding_max.py:68, run_funding_8h.py:63, run_mt5_crossasset.py:87, run_mt5_funding_bridge.py:109, run_prediction_markets.py:100). orchestrator.py is now stratified via stratified_campaign_gates; these are not. certify_gauntlet is the sharpest: the desk CERTIFIES its own gate on a 82.9%-truncated matrix, so the certification measures the truncated instrument, not the one now in production.",
    "roi_bps": 40.0,
    "raised": "2026-08-01T09:01:49.122364+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=6 effort_h=6: All nine sites still truncate with r[-min_len:]: run_campaign.py:95-96, certify_gauntlet.py:100-101 (the certifier still certifies the gate on the min-len matrix), run_carry_harvest.py:89-90, run_xsec_funding.py:90-91, run_xsec_funding_max.py:68-69, run_funding_8h.py:63-64, run_mt5_crossasset.py:87-88, run_mt5_funding_bridge.py:109-110, run_prediction_markets.py:114-115. orchestrator is stratified; these are not. Note the two run_mt5_* scripts are candidates for retirement instead (MT5 abandoned per run_daily_research.py:23).",
-   "commit": null,
+   "status": "implemented",
+   "reason": "IMPLEMENTED 6fb3ee8 for the one site where the truncation was real and live; the other eight are dispositioned by measurement. SURVEYED all nine: only THREE stack series of DIFFERING length (run_campaign, certify_gauntlet, run_carry_harvest). The other six build every variant from a single shared panel, so min_len is a STRUCTURAL NO-OP costing zero observations today (run_xsec_funding, run_xsec_funding_max, run_funding_8h, run_prediction_markets, both MT5). MIGRATED run_carry_harvest (scheduled daily, CARRY is the desk's only repeat survivor): 30 candidates over 10 symbols at 6291-7432 bars, min-length retained 188730/206679 obs (91.3%), stratified retains 201456/206679 (97.5%) in 2 strata with 30/30 tested -- +12726 observations recovered, reality_check rejections 28 to 25, survivors still 0. NOT migrated, with reasons: certify_gauntlet's truncating branch is UNREACHABLE (_audit_prepared.pkl absent -- 3 readers, 0 writers, per its own docstring), so it always runs the SYNTHETIC path at equal lengths where stratification is a no-op; the row's 'certifies on a 82.9%-truncated matrix' claim is refuted on this box. run_campaign, run_xsec_funding_max, run_funding_8h and both MT5 scripts are ORPHANS (no cron line, no importer, REPO_MAP-deprecated). Two residuals rowed separately.",
+   "commit": "6fb3ee8",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-05T22:21:49.894186+00:00"
   },
   {
    "id": "R0272",
@@ -5169,6 +5169,30 @@
    "summary": "Money-path defect cluster from capability hunt s2, STAGED not applied -- check_change_window reports STERILE (4.4d into the 7d launch window, a rail live, book unwinding) and L1.38 freezes money-path IMPROVEMENTS inside the window. Each verified by hand: run_cashcarry_executor.py:1077 wraps the risk-rail block in _safe() whose __exit__ returns True, so one signed-endpoint raise deletes ruin switch + DD breaker + exposure + concentration + fee-burn for the tick with risk=None and cands uncleared -- new carries open, and web/index.html:338 renders it as green OK; _reconcile returns [] on venue read failure (:693), byte-identical to \"already hedged\"; binance_live.py:293 force_orders returns {} on error so the ADL check re-shorts into the squeeze; the dead-man combined_equity None-on-missing-keys makes should_fire False forever AND gates its own stale-feed pager on eq is not None; protective stops are written to state OUTSIDE the _safe() that swallows place_stop_market. Highest-dollar item is a _safe(critical=True) variant that re-raises, ~10 lines.",
    "roi_bps": null,
    "raised": "2026-08-05T22:02:33.437815+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0421",
+   "source": "cycle",
+   "summary": "RETIRE THE MT5 PAIR, or say why not. scripts/run_mt5_crossasset.py and scripts/run_mt5_funding_bridge.py are dead by three independent measures: run_daily_research.py:48 ends its step-list comment with the literal sentence 'MT5 abandoned.' and _STEPS is crypto-only; ops/crontab.manifest has ZERO entries for either; no Python importer at any depth. REPO_MAP.md:99-104 already lists both under 'DEPRECATED scripts (MT5/old stack)'. They still carry live imports of validate/campaign_gate_stats, so every future validation-API change pays maintenance on two scripts nothing can run. Found while surveying R0271's nine truncation sites -- both were cited as work, and the correct disposition is deletion, not migration. NOTE the same survey found run_daily_research.py's module docstring at :5 still advertises '(4) the MT5 alpha-portfolio campaign', contradicting its own step list -- a stale docstring is how a dead path keeps looking alive.",
+   "roi_bps": 15.0,
+   "raised": "2026-08-05T22:22:12.518753+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0422",
+   "source": "cycle",
+   "summary": "THIRTEEN FORECASTS HAVE A DEADLINE AND NO GRADER -- earliest due 2026-08-14. Surfaced by unowned() built for R0260 (233596c) and now published in data/calibration_status.json as n_unowned/unowned_next_due. They are hand-logged judgement claims (kinds fence-yield, risk, diagnosis, engineering, research, capability) whose keys sit in no organ namespace and whose text score_forecasts.auto_resolvable cannot parse, so on 2026-08-14 check_calibration goes OVERDUE and NO organ on this desk can clear it -- a permanently-red fence, which is how a fence gets switched off (L1.43). MOST ARE CHEAPLY GRADEABLE FROM ARTIFACTS THE DESK ALREADY WRITES: 20260801-conversion-repair-mode-still-correct reads the backlog count in data/conversion_status.json; 20260731-filter-parity-holds reads whether tests/execution/test_filter_parity.py passes; 20260801-L1.45-cost-ratio-exceeds-1.25 reads the cost_ratio artifact. THE FIX IS PER-ROW, NOT A NEW ORGAN: set forecast_calibration.log_forecast(resolver=...) naming the artifact each answer is read off, then grade them on the date. Two (the 2026-09-30 blind-rediscovery originality check and the 2027-07-31 literature check-back) are genuinely judgement calls and need a declared human grader, not a script.",
+   "roi_bps": 30.0,
+   "raised": "2026-08-05T22:22:28.221603+00:00",
    "status": "open",
    "reason": null,
    "commit": null,
