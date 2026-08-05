@@ -3225,11 +3225,11 @@
    "summary": "recommendations.py:223 restricts --status to implemented|rejected|scheduled, so the 15 rows written as done/screened came from organs bypassing the CLI, carry disposed=None, and are terminal-without-a-timestamp. check_conversion now counts them terminal and reports terminal_unstamped=15, but the vocabulary drift remains: either teach the CLI these statuses or migrate the rows to implemented.",
    "roi_bps": 1500.0,
    "raised": "2026-08-01T07:50:32.971850+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=3 effort_h=1: Still open. scripts/recommendations.py:223 still restricts --status to implemented|rejected|scheduled, and the ledger currently holds 14 'done' + 1 'screened' rows with disposed=None (measured now: R0133-R0144, R0170, R0171, R0173 = the same 15 terminal-unstamped rows). Teach the CLI the statuses or migrate the rows.",
-   "commit": null,
+   "status": "implemented",
+   "reason": "Implemented in 20f82d9. Measuring first changed the diagnosis: 35 terminal rows carried disposed=None, not 15. The extra 20 had CLI-LEGAL statuses and still arrived unstamped, from bulk triage workflows writing the JSON directly -- so teaching the CLI new words fixes 15 of 35 and prevents zero recurrences; the hole is the WRITE PATH. Took the migrate option but not as written: collapsing screened into implemented destroys information (a screened axis is not an implemented recommendation and the conversion record would then lie about which work was done), so every row keeps its status and gains the timestamp it lacked, recovered from the ledger's own git history -- the commit that first recorded it terminal, 35/35 recovered, none invented, each marked disposed_source so a reconstructed stamp is never mistaken for a live one. terminal_unstamped 35 -> 0; the 7d window went from 173 dispositions to 209, correcting an understatement check_conversion documents. Invariant now enforced in tests/governance/test_tracked_json_integrity.py, verified failing against HEAD's ledger with all 35 ids. CLI-vocabulary half deliberately not duplicated: a concurrent session has scripts/recommendations.py open with done/screened already added. Write-path bypass rowed as R0416.",
+   "commit": "20f82d9",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-05T21:38:28.551126+00:00"
   },
   {
    "id": "R0260",
@@ -5109,6 +5109,18 @@
    "summary": "THE GROWTH AUDIT'S ONLY CONSERVATISM DEFECT IS EXPLAINED, AND THE EXPLANATION WAS BURIED BY 476 FALSE ALARMS. web/growth_audit.json 2026-08-05T21:00Z reports carry_capital_utilization GAP, 0 deployed of 200 authorized, justified_by NONE -- the one item the cycle contract requires be closed or justified same-cycle. The answer is in web/cashcarry_live.json last_actions and it is the LAST of 477 entries: 'live_guard: sizing scaled to 0%'. The other 476 are ALL SPOT-EXCESS lines -- one per symbol, spanning the whole alphabet from 0GUSDT to ZRXUSDT plus the joke ticker \u5e01\u5b89\u4eba\u751fUSDT -- each declaring an untracked naked spot long and each ordering 'verify/flatten by hand'. They total 363,127 dollars of claimed naked exposure against 200 dollars of authorized capital, which is arithmetically impossible. VERIFIED CAUSE: libs/execution/binance_spot_testnet.py:21 pins _BASE to testnet.binance.vision, so the wallet the detector is reading is the TESTNET FAUCET's pre-seeded balances, which cluster at ~500 dollars per symbol across every listed pair. The detector's false-positive rate on this account is ~100 percent, so per L1.43 it carries zero information, and per the 2026-07-31 CI lesson a gate that cries wolf gets ignored -- this one does worse than get ignored, it CONSUMES the action feed and pushes the single true line to the end. TWO SEPARATE FIXES OWED: (1) SPOT-EXCESS must exclude wallet balances the desk never bought -- reconcile against our own fill history rather than against tracked carries alone, or the testnet faucet is permanently indistinguishable from a stranded leg, which also means a REAL stranded leg would be invisible in the noise on day one of live trading; (2) run_growth_audit must read the live_guard clamp so a deployment gap that IS explained stops being reported as justified_by NONE -- an unexplained-looking defect that has a known cause trains the reader to discount the whole report. Also note data/cashcarry_error.log 21:07:41Z shows the genuine asymmetry live: 'unfilled leg MOVEUSDT spot_ok=True fut_ok=False' -- spot filled, futures did not, the gap-41 class that CREATES real stranded legs, which is exactly what fix (1) must stay able to see.",
    "roi_bps": 300.0,
    "raised": "2026-08-05T21:12:00.269114+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0416",
+   "source": "cycle",
+   "summary": "LEDGER WRITE-PATH BYPASS: dispose() is the only writer that stamps a time, and it is not the only writer. Found while measuring R0259: 35 terminal rows carried disposed=None, and only 15 were the done/screened vocabulary drift that row was raised about. The other 20 had CLI-LEGAL statuses (implemented/rejected) and still arrived unstamped -- from bulk triage workflows ([triage 2026-08-04 wf_8e81833d-78a], [wave1/wave2 2026-08-04]) opening docs/research/recommendation_ledger.json and setting status directly. Several ids are recent (R0337/R0347/R0348), so the bypass is ONGOING, not historical. Cost is measurable: check_conversion differences arrivals against dispositions over a trailing window, so an unstamped terminal row is completed work no rate can see -- the 7d window read 173 dispositions where 209 had happened, biasing the queue verdict toward RUNNING AWAY and manufacturing repair-mode pressure out of work already done. R0259 backfilled the 35 from git history and tests/governance/test_tracked_json_integrity.py now fails loudly if any reappear, but that is a DETECTOR: nothing stops the next direct write. Nine modules import the ledger path (run_capability_hunt, run_strategy_coverage, max_audit, research_cycle, strategic_director, capability_ratchet, conversion_max, cro_role, funding_caps). FIX: give the ledger ONE write path -- a libs-level module owning load/mutate/save that stamps disposed on any terminal transition -- and make the direct writers call it, so the stamp is structural rather than a convention every future organ must remember. Same shape as R0254's half-parameterised store: isolation (or here, invariants) that depend on every caller remembering are not invariants.",
+   "roi_bps": 900.0,
+   "raised": "2026-08-05T21:38:16.175188+00:00",
    "status": "open",
    "reason": null,
    "commit": null,
