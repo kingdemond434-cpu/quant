@@ -18,8 +18,8 @@
    "summary": "prompt-doctrine-bloat: principal_doctrine.txt is 27k chars against a 16k guard; consolidate the pre-existing stacked axiom blocks (supreme objective / no-ceiling / principal doctrine restate each other) preserving every commitment -- every organ pays this context on every call",
    "roi_bps": null,
    "raised": "2026-07-26T11:34:30.251443+00:00",
-   "status": "scheduled",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=8 effort_h=6: ops/principal_doctrine.txt is now 113,210 chars vs the merged _DOCTRINE_HARD_CEILING=60,000 (scripts/max_audit.py:1303) and measures 16,173 chars per extracted commitment vs the 400 bar (max_audit.py:1299; libs/doctrine/commitments.extract returns 7 commitments on the live file) -- both prompt-doctrine-bloat and prompt-doctrine-oversized fire. The consolidation never happened (27k -> 54k -> 113k), but the safety tooling to do it now exists: libs/doctrine/commitments.py diff() fails on any lost commitment. Every organ pays this context on every call; unblocked editorial surgery.",
+   "status": "implemented",
+   "reason": "[wave1 2026-08-04] doctrine consolidated 113,210 -> 59,884 chars (under the 60k hard ceiling) with ZERO commitments lost -- 823 -> 832, the gain being the new standing rule 'IMPLEMENT-NOW dispositions are executed immediately, never queued behind a cadence'. check_prompt_layer and check_constitution both silent; grep literals (docs/CONSTITUTION.md, E[log W_T], ABSORBED LAWS) byte-intact. Every organ now pays 47% less context per call.",
    "commit": null,
    "due": "2026-08-01",
    "disposed": "2026-07-31T07:29:03.385201+00:00"
