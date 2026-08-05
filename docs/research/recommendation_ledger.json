@@ -4992,6 +4992,18 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0410",
+   "source": "max_audit",
+   "summary": "DESK-MEMORY OVERFLOW WILL BECOME A PERMANENTLY-RED FENCE, AND THE CAUSE IS A DESIGN TENSION NOBODY HAS PRICED. learn.py's docstring says graduation is the escape from saturation and that the lessons LEFT in the corpus are exactly the judgement calls a machine cannot make. But desk-memory-overflow fires on ANY un-graduated overflow. Those two statements cannot both hold at a FIXED 12000-char budget with a monotonically growing ledger: un-graduatable judgement-call lessons accumulate, and once their total exceeds the budget the fence is red forever through nobody's fault. That is a welded gate (L1.43) -- a fence that always fires carries zero information and gets acked into silence, which is how a real loss will hide. MEASURED 2026-08-05: 69 active lessons, 11528/12000 chars injected, 44 over budget, 43 graduated, 1 genuinely lost (L0068, cost=hygiene, a worktree-vs-env diagnostic procedure). Graduating L0071 and L0010 this session took the loss from 3 to 1, so the mechanism DOES work -- the question is only what happens at steady state. TWO CANDIDATE FIXES, both needing evidence before either is chosen: (a) a corpus-wide retirement sweep of all 69 lessons for arrived falsifiers, which is the fence's own first remedy and has never once been run -- this is the cheap one and should be tried first; (b) if a sweep leaves un-graduatable lessons still over budget, the fence should distinguish 'overflowed because nobody pruned' from 'overflowed because the un-testable residue exceeds the budget', because only the first is actionable. DO NOT fix this by raising BUDGET_CHARS: that is how the doctrine reached 95k and the docstring names it as the wrong reflex. Acked 21d (expires 2026-08-26) pending this.",
+   "roi_bps": 20.0,
+   "raised": "2026-08-05T20:35:59.632924+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
