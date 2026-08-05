@@ -55,9 +55,17 @@ sys.path.insert(0, str(_ROOT))
 _DB = _ROOT / "data/sor_research.sqlite"
 
 #: Every entry point that writes this store (single writer: CandidateStore.record, called only by
-#: the orchestrator; these are the scripts that construct it). Matched with a `.venv/bin/python`
-#: prefix so a sibling Claude session whose prompt merely MENTIONS these names cannot self-match
-#: (the pgrep -f trap, desk memory 2026-08-04).
+#: the orchestrator; these are the scripts that construct it).
+#:
+#: THE MATCH IS DELIBERATELY BROAD, AND THE COMMENT USED TO OVERCLAIM IT. It requires only that
+#: the line contain "python" plus "scripts/<writer>" -- NOT a `.venv/bin/python` prefix, which an
+#: earlier version of this note asserted. Tightening it to that prefix would be the UNSAFE
+#: direction: a writer launched as bare `python3 scripts/run_autodiscovery.py` would stop
+#: matching, and this script would then mutate rows underneath a live writer. Over-matching costs
+#: a spurious rc-4 refusal (re-run later); under-matching risks store corruption.
+#: The residual cost of that breadth is the pgrep -f trap (desk memory 2026-08-04): a sibling
+#: Claude session whose PROMPT merely names one of these scripts can self-match and block a run.
+#: That is accepted on purpose -- it fails toward refusing, never toward retiring.
 _WRITER_SCRIPTS = ("run_autodiscovery.py", "run_research_tick.py", "run_worker.py",
                    "run_supervisor.py", "daily_research_cycle.py", "smoke_orchestration.py")
 _BUSY_RETRIES = 5
