@@ -3276,11 +3276,11 @@
    "summary": "STRATIFIED CAMPAIGN RUNTIME: Romano-Wolf's bootstrap is linear in retained observations, so the stratified campaign does ~5x the work of the truncated one (measured 96.9s for a 60-candidate 2-stratum fixture; the real 420-candidate campaign retains 698,655 obs across 24 strata). Not a reason to keep a broken instrument (NO-COST-DRIVEN-DEGRADATION), but the wall-clock is now unmeasured on the real campaign -- measure it and, if it binds the cycle, parallelise per-stratum rather than cutting n_boot.",
    "roi_bps": 5.0,
    "raised": "2026-08-01T09:01:49.331906+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Runtime still unmeasured: no timing or per-stratum parallelisation anywhere (grep ProcessPool/concurrent.futures/perf_counter over libs/autodiscovery + campaign scripts: none); stratified path still live at libs/autodiscovery/orchestrator.py:187. Mitigating: the full-history campaign that actually runs completed same-day (reports/real_campaign.json status MEASURED, generated 2026-08-04T21:01Z), so wall-clock is demonstrably not binding today. Low-priority measurement still owed.",
-   "commit": null,
+   "status": "implemented",
+   "reason": "MEASURED, and the answer is that it does not bind. stratified_campaign_gates now times each stratum with perf_counter and fills StrataPlan.seconds/.stratum_seconds; plan_strata (which costs a campaign without running one) reports None rather than 0.0, because zero reads as instant -- the flattering direction. Measured at full campaign shape (420 candidates, 28 strata, 679,490 of 753,811 obs retained, 345 tested): total 198.6s, slowest stratum 10.8s. Against a 180.8x gain in expected discoveries, 3.3 minutes once per campaign is not a constraint. The row's proposed remedy is now quantified rather than assumed: parallel_speedup 18.3x, because the strata are independent bootstraps, so a per-stratum pool would land at ~11s giving up no statistical resolution -- and cutting n_boot stays off the table since it is the resolution of the multiplicity correction. The frozen prose figure it replaces (~97s for a 60-candidate two-stratum fixture) was the only cost number in the repo and nothing could read it. Also flows into the campaign_strata audit event. 3 tests added.",
+   "commit": "9a21455",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-05T23:23:07.281042+00:00"
   },
   {
    "id": "R0264",
@@ -3300,11 +3300,11 @@
    "summary": "FORWARD-SLOT DISPLACEMENT POLICY IS MISSING (feed_inbox 2607.28577 'Shadow Before Swap', Binance perps, 48 UTC weeks/8 underlyings). The desk has slot ADMISSION (EV-rank from screen survivors) but NO DISPLACEMENT rule: MAX_FORWARD_SLOTS=12 currently reads 12/12 occupied, so a new survivor -- exactly what this cycle's 180.8x power fix is built to produce -- has nowhere to go and silently waits. SBS is the incumbent-relative form: warm-refit the challenger OFF the serving path, score challenger vs maintained incumbent on the SAME next window of delayed labels, promote only on a fixed PAIRED advantage. Paired-on-identical-labels is the key property -- it removes the period effect that makes an absolute-threshold comparison between differently-aged clocks meaningless. Connects L1.30 (replacement rate: births must keep pace with deaths) and R0262 (top-K). CAUTION: displacement must never become a way to reset a losing clock -- the incumbent's kill must be on its own pre-registered terms, not on a challenger's arrival.",
    "roi_bps": 15.0,
    "raised": "2026-08-01T09:08:34.074218+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Displacement policy still missing. screen_admission.admit() fills IDLE slots only and explicitly treats a saturated forward stage as 'the intended steady state and the correct reason to admit nothing' (libs/validation/screen_admission.py:365-367). grep displace/incumbent/challenger: the only mechanism is libs/signal_engine/champion_challenger.py, recommend-only and orphaned (sole reference libs/signal_engine/__init__.py). The paired-on-identical-labels Shadow-Before-Swap rule is unbuilt.",
-   "commit": null,
+   "status": "implemented",
+   "reason": "BUILT libs/research/slot_displacement.py and wired it into run_promotion_queue (cron every 6h), which is exactly where survivors were being told to WAIT. The row's premise verified live: derive_slots reads 12/12 with idle_slots 0, but three occupants -- defi_utilisation, cny_premium, walcl_reserve_impulse -- carry the DEGENERATE verdict, which run_axis_shadows issues for an INSTRUMENT FAULT and labels 'NOT evidence about the hypothesis'. A quarter of the multiplicity budget was held by clocks that cannot resolve. Two of the three publish evidence=ACCRUING because their artifacts are rewritten on schedule, so a rule keyed on liveness would have protected precisely the slots worth reclaiming: this keys on the VERDICT. The row's CAUTION is the design constraint, honoured in code and pinned by tests: an accruing clock is PROTECTED and can never be displaced however good the challenger, so an incumbent still dies only on its own pre-registered terms; plans are COUNT-NEUTRAL (one out, one in, m unchanged, no Holm bar moves in either direction); UNMEASURED slots are BLOCKED rather than reclaimed because wrongly evicting destroys forward evidence nothing can re-earn. Queue ordered by expiry, shortest runway first (L1.18a), with undeclared runway sorting LAST so declaring nothing is not a shortcut. Reclaimed hypotheses requeue as UNTESTED, never REFUTED (L1.17). Live run: 3 reclaimable, 9 protected, count-neutral. PARTIAL, and named as such: the Shadow-Before-Swap paired test against a HEALTHY incumbent is NOT built -- it needs the incumbent's pre-registered decision point as a readable field, and champion_challenger.py is not that mechanism since it differences two absolute Sharpes over each variant's own window, the exact period-effect confound. Follow-up rowed separately. 12 tests added.",
+   "commit": "52b24e0",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-05T23:23:25.780543+00:00"
   },
   {
    "id": "R0266",
@@ -5270,6 +5270,30 @@
    "commit": "dfdffcd",
    "due": null,
    "disposed": "2026-08-05T23:06:11.574781+00:00"
+  },
+  {
+   "id": "R0429",
+   "source": "cycle",
+   "summary": "RUIN THRESHOLD IS PASSED AS A LEVEL BUT NAMED AND DOCUMENTED AS A DROP, and the mismatch runs in the LOOSENING direction. libs/risk/dynamic_leverage.py:91 declares 'drawdown_ruin: float = 0.35,  # equity drop treated as ruin' and passes it at :54 as risk_of_ruin(..., threshold=drawdown_ruin). But risk_of_ruin's own docstring (libs/risk/growth_leverage.py:49-53) is explicit that threshold is an equity LEVEL: 'threshold=0.2 means an 80% drawdown is treated as ruin', and the body computes mean(eq.min(axis=1) < threshold) on eq starting at 1.0. So the sizer believes it caps P(35% drawdown) <= 2% and actually caps P(65% drawdown) <= 2%. A 65% drawdown is far rarer, so _ruin_cap binds much less and PERMITS HIGHER LEVERAGE THAN INTENDED. docs/research/GROWTH_UNLOCK_LADDER.md states the desk's intent as a '35%-drawdown ruin definition', which points at the VALUE being wrong (0.35 should be 0.65) rather than the comment -- but the two readings change a survival rail's strictness in opposite directions, so this needs a decision, not a drive-by edit. NOT CURRENTLY SIZING LIVE MONEY: run_cashcarry_executor._dynamic_capital is quarantined (:140-155) and ignores data/leverage_target.json in both directions, so today the defect reaches the dashboard and run_capital_plan only -- it becomes live the moment that quarantine is lifted, which is exactly when nobody will re-read this constant. FIX: pick the branch (almost certainly threshold=1.0-drawdown_ruin at the call site, preserving the documented 35%-drawdown intent), add a test pinning the equity-level-vs-drop semantics, and confirm the tightening is intended before the quarantine lifts. Found while measuring R0266.",
+   "roi_bps": 12.0,
+   "raised": "2026-08-05T23:18:33.120286+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0430",
+   "source": "cycle",
+   "summary": "SHADOW-BEFORE-SWAP: the PAIRED half of R0265 is still unbuilt, and it is blocked on a missing field rather than on design. R0265 delivered dead-slot reclamation (libs/research/slot_displacement.py: a clock that cannot resolve is reclaimable, an accruing one is PROTECTED). The other half -- displacing a HEALTHY incumbent on a paired comparison scored on the SAME next window of delayed labels -- is deliberately not built, because it needs something that does not exist: the incumbent's PRE-REGISTERED DECISION POINT as a readable field. Without it a challenger would be scored against a horizon nobody wrote down, which is optional stopping with extra steps. THE PREREQUISITE IS THE WORK: forward clocks currently publish forward_days/verdict but no pre-registered end date or decision rule per slot, so nothing can say whether an incumbent has reached a legitimate decision point. Add that field to the slot registry first (the standing states already carry shadow_start, so the end date is the natural sibling), THEN the paired test becomes safe to build: warm-refit the challenger off the serving path, score challenger vs maintained incumbent on identical labels, swap only on a fixed paired advantage AND only once the incumbent's own terms allow a decision. DO NOT WIRE libs/signal_engine/champion_challenger.py for this -- it differences two absolute Sharpes each measured over its own window, which is precisely the period-effect confound the paired construction exists to remove; it is also orphaned (sole reference libs/signal_engine/__init__.py) and about signal-engine variants, not forward slots.",
+   "roi_bps": 10.0,
+   "raised": "2026-08-05T23:23:41.203798+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
