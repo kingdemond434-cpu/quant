@@ -549,6 +549,18 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0046",
+   "source": "cycle",
+   "summary": "PRINCIPAL SIGN-OFF NEEDED: re-seal CONSTITUTION L1.6 with the cohort-source amendment. The s3 hunt appended a paragraph to L1.6's SEALED core ('THE BAR IS A FUNCTION OF THE COHORT, SO THE COHORT HAS ONE SOURCE... every degraded path floors UP to the cap... Fenced by scripts/check_cohort_integrity.py'). check_constitution_core FAILED on it (sealed b986eb8d15ea != 08e30b891242). REVERTED 2026-08-05 rather than resealed, because --reseal is principal-only by that script's own words ('the organism may not reseal itself as part of an amendment') and L2.8a bars the organism touching the core in EITHER direction -- a tightening amendment is still an amendment. NOTHING WAS LOST: the enforcement it describes shipped as code in 601ac7a (cohort_m_for_bar + check_cohort_integrity.py + 16 tests) and runs whether or not the text lands. The ask is only whether the law TEXT should carry it. Exact paragraph recoverable from 601ac7a docs/CONSTITUTION.md. Principal runs: scripts/check_constitution_core.py --reseal",
+   "roi_bps": null,
+   "raised": "2026-08-05T02:16:20.038965+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
