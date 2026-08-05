@@ -72,6 +72,17 @@ VIDEO_TRANSCRIPT: Final[str] = "video_transcript_text"
 caption path is blocked from this IP, so the miner ranks videos it cannot read."""
 
 EN_PRACTITIONER_FORUM: Final[str] = "en_practitioner_forum"
+
+#: THE NON-CHINESE LOCAL FORESTS. One class per LANGUAGE's candid register -- the forum, not the
+#: blog platform. Kept distinct from the polished venues (Qiita, Zenn, Habr, Velog) because they
+#: carry different material: a publication venue selects for competence on display, a forum
+#: selects for people arguing about fills and posting their losses. Substituting one for the other
+#: is not a replacement, it is a change of subject.
+JA_PRACTITIONER_FORUM: Final[str] = "ja_practitioner_forum"
+KO_PRACTITIONER_FORUM: Final[str] = "ko_practitioner_forum"
+RU_PRACTITIONER_FORUM: Final[str] = "ru_practitioner_forum"
+VI_PRACTITIONER_FORUM: Final[str] = "vi_practitioner_forum"
+TR_PRACTITIONER_FORUM: Final[str] = "tr_practitioner_forum"
 """English-language practitioner discussion -- traders arguing about live results. Reddit."""
 
 EN_PREPRINT: Final[str] = "en_academic_preprint"
@@ -86,6 +97,11 @@ INFORMATION_CLASSES: Final[tuple[str, ...]] = (
     CN_RETAIL_SENTIMENT, CN_LONGFORM_QA, CN_TECH_WRITEUP, CN_QUANT_PLATFORM,
     CN_WEB_SEARCH, CN_VIDEO, VIDEO_TRANSCRIPT, EN_PRACTITIONER_FORUM, EN_PREPRINT,
     CODE_REPOSITORY,
+    # The non-Chinese local forests. Added when the desk built forum lanes for Japanese, Korean,
+    # Russian, Vietnamese and Turkish -- until then every non-CN lane was a polished publication
+    # venue, which selects against exactly the failure literature worth mining.
+    JA_PRACTITIONER_FORUM, KO_PRACTITIONER_FORUM, RU_PRACTITIONER_FORUM,
+    VI_PRACTITIONER_FORUM, TR_PRACTITIONER_FORUM,
 )
 
 # --------------------------------------------------------------------------------- statuses
@@ -562,6 +578,102 @@ _REGISTRY: Final[tuple[Replacements, ...]] = (
                "requirement observed",
                note="博客园 -- long-tail and older material, which is where procedure-heavy "
                     "writeups tend to survive after platform churn"),
+        ),
+    ),
+    Replacements(
+        source="note",
+        information_class=JA_PRACTITIONER_FORUM,
+        recorded_reason=("note.com/api/v3/searches answers HTTP 403 to urllib with a browser UA, "
+                         "Referer and X-Requested-With -- an anti-bot layer, not a missing route: "
+                         "the sibling path /searchs 404s, so the endpoint NAME is right and only "
+                         "the client is refused. foreign_sources.probe_all(), 2026-08-05"),
+        candidates=(
+            _c("note_via_chromium", JA_PRACTITIONER_FORUM, "https://note.com/search?q=",
+               "render the search page with the Chromium already installed at "
+               "PLAYWRIGHT_BROWSERS_PATH and parse the server-sent note cards -- the API is "
+               "blocked but the HTML page is a normal SSR route",
+               needs_js=True,
+               note="note.com is where Japan's botter community publishes post-mortems, "
+                    "including the losses, which Qiita systematically lacks"),
+            _c("note_hashtag_rss", JA_PRACTITIONER_FORUM,
+               "https://note.com/hashtag/botter/rss",
+               "probe whether note still serves per-hashtag RSS; a hashtag feed is a narrower "
+               "but keyless route to the same authors",
+               note="lower coverage than search, but needs no render path"),
+        ),
+    ),
+    Replacements(
+        source="coinpan",
+        information_class=KO_PRACTITIONER_FORUM,
+        recorded_reason=("HTTP 403 Forbidden to urllib with a browser UA -- an edge WAF. "
+                         "foreign_sources.probe_all(), 2026-08-05"),
+        candidates=(
+            _c("coinpan_via_chromium", KO_PRACTITIONER_FORUM, "https://coinpan.com/",
+               "render with Chromium; XpressEngine serves results server-side once the WAF "
+               "challenge is cleared by a real browser",
+               needs_js=True,
+               note="the kimchi-premium and Upbit listing-mechanics forest, discussed in a "
+                    "detail that never reaches English"),
+            _c("clien_bitcoin", KO_PRACTITIONER_FORUM,
+               "https://www.clien.net/service/board/cm_bitcoin",
+               "parse the Clien bitcoin board listing; plain server-rendered HTML, no WAF seen",
+               note="older and more technical than Coinpan, same candid register"),
+        ),
+    ),
+    Replacements(
+        source="smartlab",
+        information_class=RU_PRACTITIONER_FORUM,
+        recorded_reason=("search results are rendered by script -- the HTML carries only sidebar "
+                         "/company/*/blog promos, which a naive link regex returned as RESULTS, "
+                         "so a backtesting query yielded Russian corporate news and the lane "
+                         "looked healthy while indexing noise. The parser now refuses. 2026-08-05"),
+        candidates=(
+            _c("smartlab_via_chromium", RU_PRACTITIONER_FORUM, "https://smart-lab.ru/search/?q=",
+               "render the search page with Chromium and parse the result list",
+               needs_js=True,
+               note="Russia's densest concentration of people running systematic strategies "
+                    "who post the equity curve when it breaks"),
+            _c("smartlab_section_rss", RU_PRACTITIONER_FORUM, "https://smart-lab.ru/rss/",
+               "poll the section RSS and filter locally against the RU query territory -- "
+               "loses keyword targeting, needs no render path and no auth",
+               note="a keyless route to the same corpus at lower precision"),
+        ),
+    ),
+    Replacements(
+        source="tinhte",
+        information_class=VI_PRACTITIONER_FORUM,
+        recorded_reason=("page fetched but no /thread/ links parsed AND no Vietnamese "
+                         "no-results marker present -- a challenge page or a changed shell, "
+                         "which is distinct from an empty forest. 2026-08-05"),
+        candidates=(
+            _c("tinhte_via_chromium", VI_PRACTITIONER_FORUM, "https://tinhte.vn/search/?q=",
+               "render with Chromium and parse the thread list",
+               needs_js=True,
+               note="Vietnam runs one of the highest crypto-adoption rates on earth and its "
+                    "retail derivatives community argues in Vietnamese only"),
+            _c("voz_forum", VI_PRACTITIONER_FORUM, "https://voz.vn/f/tai-chinh-chung-khoan.33/",
+               "parse the XenForo thread listing directly -- XenForo renders server-side",
+               note="the deeper Vietnamese forest; its finance board is the one that "
+                    "discusses domestic exchange mechanics"),
+        ),
+    ),
+    Replacements(
+        source="eksisozluk",
+        information_class=TR_PRACTITIONER_FORUM,
+        recorded_reason=("HTTP 404 to the ?q= search shape -- the route moved, and the site "
+                         "additionally fronts an anti-bot layer. 2026-08-05"),
+        candidates=(
+            _c("eksisozluk_via_chromium", TR_PRACTITIONER_FORUM, "https://eksisozluk.com/?q=",
+               "confirm the current search route in a rendered session, then parse entries",
+               needs_js=True,
+               note="Turkish retail crypto volume is enormous relative to the economy, and "
+                    "lira-pair microstructure is a mechanism family the English forests "
+                    "barely discuss"),
+            _c("donanimhaber", TR_PRACTITIONER_FORUM,
+               "https://forum.donanimhaber.com/kripto-para--142",
+               "parse the crypto forum listing; classic server-rendered forum software",
+               note="the larger Turkish technical forum -- less literary than Eksi and "
+                    "easier to reach"),
         ),
     ),
 )
