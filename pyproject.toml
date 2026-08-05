@@ -43,6 +43,14 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# DEV TOOL VERSIONS ARE PART OF THE GATE, not incidental. A range wide enough to hold two
+# minor versions is a range wide enough for them to DISAGREE about whether the tree is clean:
+# mypy 2.1 cannot narrow Optional out of a membership test where 2.3 can, so the same file was
+# clean on a dev box and red on the VPS (2026-08-05, cost one deploy cycle; L0065 is the same
+# defect on pyarrow). The floors are NOT raised here -- forcing an upgrade mid-deploy on a live
+# box is the larger risk -- so the standing rule is instead: write code that does not depend on
+# version-specific inference (explicit None checks, never membership narrowing), and treat the
+# VPS gate as the arbiter when the two disagree.
 dev = [
     "ruff>=0.15.17,<0.16",
     "mypy>=2.1.0,<3",

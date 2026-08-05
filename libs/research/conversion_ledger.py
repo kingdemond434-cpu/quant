@@ -109,8 +109,14 @@ def calibration(path: Path | None = None, *, threshold: float = 6.0) -> dict[str
         out[cohort] = {
             "n": len(sub), "n_high": len(hi), "n_low": len(lo),
             "convert_rate_high": hi_rate, "convert_rate_low": lo_rate,
-            "lift": (None if hi_rate is None or lo_rate in (None, 0.0)
-                     else round(hi_rate / lo_rate, 2)),
+            # EXPLICIT NARROWING, not `lo_rate in (None, 0.0)`: mypy 2.1 (the VPS) cannot
+            # narrow Optional out of a membership test and calls the division unsafe, while 2.3
+            # (dev boxes) can. Both satisfy the pin, so the ambiguous form makes the two
+            # environments disagree about whether this file is clean -- the same straddle that
+            # cost a deploy cycle on pyarrow (L0065). Spell the guard out and both agree.
+            "lift": (round(hi_rate / lo_rate, 2)
+                     if hi_rate is not None and lo_rate is not None and lo_rate != 0.0
+                     else None),
         }
     oos = out["out_of_sample"]
     if oos["n"] < 10:
