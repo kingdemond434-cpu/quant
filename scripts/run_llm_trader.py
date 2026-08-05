@@ -55,6 +55,7 @@ if not _ROOT.exists():
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 from libs.ops.lawful import guard as _law_guard  # noqa: E402
+from libs.research import liquidation_brief  # noqa: E402
 
 _BOOK = "data/llm_trader_book.jsonl"
 _STATE = "data/llm_trader.json"
@@ -140,9 +141,15 @@ FIELDS REQUIRED ON EVERY CALL, in addition to the above:
 def build_brief(root: Path) -> dict[str, Any]:
     """Market state + the unstructured feeds this sleeve actually trades on."""
     brief: dict[str, Any] = {"generated": datetime.now(tz=UTC).isoformat(), "sources": {}}
+    # FORCED FLOW COMES FROM THE FILE THAT EXISTS (R0245). This entry used to name
+    # data/liquidations.jsonl, a path nothing has ever written, inside the except OSError below --
+    # so the sleeve recorded "ABSENT on this host" every run while the producer's
+    # data/liquidations.parquet held ~59k events. It is not in the tuple because it is not a
+    # line-oriented tail: six raw prints cannot distinguish a cascade from noise, so the reader
+    # returns a windowed summary against the tape's own hourly baseline.
+    brief["sources"]["liquidations"] = liquidation_brief.for_brief(root, window_min=60)
     for label, rel, n in (("funding", "data/bitmex_funding.jsonl", 5),
                           ("defi_lending", "data/defi_lending.jsonl", 2),
-                          ("liquidations", "data/liquidations.jsonl", 8),
                           ("announcements", "data/exchange_announcements.jsonl", 10),
                           ("news", "data/news_feed.jsonl", 10)):
         try:

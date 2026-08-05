@@ -118,6 +118,7 @@ if str(_ROOT) not in sys.path:
 from scripts.run_trade_review import N_SUPPORT  # noqa: E402
 
 from libs.ops.lawful import guard as _law_guard  # noqa: E402
+from libs.research import liquidation_brief  # noqa: E402
 
 _BOOK = "data/conviction_book.jsonl"
 _STATE = "data/conviction_trader.json"
@@ -1179,8 +1180,12 @@ def ensemble_consensus(reads: list[dict[str, Any] | None]) -> tuple[dict[str, An
 
 def build_brief(root: Path) -> dict[str, Any]:
     brief: dict[str, Any] = {"generated": datetime.now(tz=UTC).isoformat(), "context": {}}
+    # See run_llm_trader.build_brief -- same defect, same cure (R0245). The old entry read
+    # data/liquidations.jsonl, which has never existed, inside the except OSError below, so this
+    # sleeve has built every conviction brief of its life with no liquidation context and said so
+    # in a string that reads identically to a dead collector.
+    brief["context"]["liquidations"] = liquidation_brief.for_brief(root, window_min=60)
     for label, rel, n in (("funding", "data/bitmex_funding.jsonl", 4),
-                          ("liquidations", "data/liquidations.jsonl", 6),
                           ("tradeable_events", "data/exchange_announcements.jsonl", 6)):
         try:
             lines = (root / rel).read_text("utf-8", errors="ignore").splitlines()
