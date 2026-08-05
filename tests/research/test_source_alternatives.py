@@ -232,7 +232,15 @@ class TestHuntReport:
                             lambda url, timeout=25.0: (alt.STATUS_REACHABLE, "JSON, 9000 bytes"))
         monkeypatch.setattr(hunt.time, "sleep", lambda _s: None)
         ledger, out = tmp_path / "h.jsonl", tmp_path / "report.json"
-        sh.record_run([sh.Observation(source="arxiv", ok=True)], path=ledger, now=_T0)
+        # RECORDED AT THE CURRENT INSTANT, not at the fixed _T0 (2026-08-05). hunt.main() is a
+        # CLI and reads the ledger with the wall clock, so an observation stamped _T0 aged past
+        # source_health.STALE_AFTER_HOURS and correctly decayed HEALTHY -> UNKNOWN. That was a
+        # true reading of the fixture, not a bug in the hunter: this test means "a source that is
+        # CURRENTLY healthy", and under the staleness rule healthy requires recent evidence. The
+        # old form was also a time-bomb independent of that rule -- the write-read gap grew by one
+        # real day per real day, waiting on the calendar rather than on anyone's edit.
+        sh.record_run([sh.Observation(source="arxiv", ok=True)], path=ledger,
+                      now=datetime.now(tz=UTC))
         hunt.main(["--source", "arxiv", "--ledger", str(ledger), "--out", str(out)])
         doc = json.loads(out.read_text("utf-8"))
         assert doc["hunted"][0]["health"]["verdict"] == sh.VERDICT_HEALTHY
