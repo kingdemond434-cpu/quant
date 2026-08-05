@@ -1734,3 +1734,56 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # 3.78% vs risk-free 3.73%/yr, so net of the 300bps haircut the lending rung loses; breakeven
 # haircut is 5.5bps, so that underived constant decides the verdict single-handed)
 27 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_idlecost.lock .venv/bin/python scripts/check_idle_cost.py --report-only >> data/cro_ai_logs/idle_cost.log 2>&1
+
+# SCHEDULED-EVENT INFORMATION DIFFUSION SCREEN (max_audit defect `unwired-caller`, 2026-08-05,
+# second instance of the same one-link-short failure the orderbook screen fixed at :258). The
+# script carried its intended cron line as a COMMENT -- "ops/crontab.manifest is owned by another
+# pass" (scripts/screen_announcement_diffusion.py:9-13) -- and that request, like the orderbook
+# one before it, was never picked up. So libs/research/announcement_diffusion.py had exactly one
+# importer and that importer had no caller: the module was unreachable while check_orphan_code
+# read green. Census gap #6 (`scheduled_event_diffusion`, gap_score 0.315, coverage NO-CANDIDATE
+# -- zero candidates ever tested). Stage A only, ZERO promotion authority.
+# CADENCE CEILING: DATA-ARRIVAL, and it binds hard. The screen refuses to read until >= 20
+# instant-bearing announcements land on a symbol that also has sub-daily bars; collect_announcements
+# ticks every 15 min (:344) but accumulates ~a handful of usable rows a day, so a sub-daily cadence
+# would re-read an unchanged corpus. Daily is the fastest cadence that can see a new verdict.
+# PHASE :43 -- 06:40 already carries three jobs (screen_funding_spread, ingest_axes,
+# run_crossasset_shadow); :43 is empty and still lands after the collector's :30/:45 ticks.
+# MEASURED ON THIS BOX 2026-08-05: 2.0s wall, 116 MB peak RSS -- no flock, no choom needed; this
+# is nothing like the orderbook screen's 650 MB load path.
+# HONEST STATE, ROWED not hidden: first run returns NOT-READABLE-HERE. The instant IS recoverable
+# (202/227 rows) but 167 instant-bearing rows name no resolvable base asset -- the collector's
+# regex mostly extracts the QUOTE currency -- and the sub-daily lake holds no bars for the newly
+# listed assets the announcements name. That is a COLLECTOR gap, not a screen defect, and the
+# screen states it as a missing input rather than screening a date and manufacturing a same-bar
+# artifact. Wiring it means the verdict appears the day the input does, with no human in the loop.
+# EVIDENCE: scripts/screen_announcement_diffusion.py -> reports/axis_screens/announcement_diffusion.json
+#   (verified status=NOT-READABLE-HERE, exit 0, 2026-08-05); libs/research/announcement_diffusion.py
+# CONFIDENCE: committed-script (cadence and phase measured on this box; mechanism pre-registration
+# is frozen in the library docstring and was NOT touched by this wiring)
+43 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/screen_announcement_diffusion.py >> data/cro_ai_logs/announcement_diffusion_screen.log 2>&1
+
+# MECHANICAL SUPPLY RELEASE AS A SCHEDULE-SERIES (max_audit defect `unwired-caller`, 2026-08-05,
+# third instance). Same failure: scripts/screen_unlock_supply_series.py:9-13 carried its cron line
+# as a comment and nothing installed it, leaving libs/research/unlock_supply_series.py with one
+# importer and no caller. Census gap #3 (`mechanical_supply_release`, gap_score 0.360, coverage
+# TESTED-SHALLOW). Stage A only, ZERO promotion authority.
+# CADENCE CEILING: DATA-ARRIVAL, and WEEKLY IS A MULTIPLICITY ARGUMENT, not timidity (L1.28c). The
+# mechanism is a 7-30 day forward window, so a daily re-read re-tests the SAME overlapping window
+# and charges the trial ledger for evidence that is not independent. Firing faster here would buy
+# nothing and cost DSR budget -- the one place a slower cadence is the aggressive choice.
+# PHASE :27 Monday -- 06:25 and 06:20 are taken (check_replacement_rate, dl_oi_ls_universe); :27
+# is empty on this box.
+# MEASURED ON THIS BOX 2026-08-05: ~2s, small RSS. No flock needed at weekly cadence.
+# HONEST STATE: returns NOT-READABLE-HERE and names three missing inputs, the load-bearing one
+# being data/circulating_supply.jsonl, which does not exist in any form -- the only supply
+# collector present (collect_stablecoin_supply.py) covers no unlocking token. Without a DATED
+# float there is no honest denominator, and the only substitute is the current-day snapshot that
+# IS the look-ahead defect this module was written to replace. The screen refuses rather than
+# substituting it. That refusal is the point: it is why wiring this now is safe, and why the
+# verdict will be real on the day a supply collector lands.
+# EVIDENCE: scripts/screen_unlock_supply_series.py -> reports/axis_screens/unlock_supply_series.json
+#   (verified status=NOT-READABLE-HERE, exit 0, 36 cells declared, 2026-08-05);
+#   libs/research/unlock_supply_series.py
+# CONFIDENCE: committed-script (pre-registration frozen in the library docstring, untouched here)
+27 6 * * 1 cd "$QUANT_ROOT" && .venv/bin/python scripts/screen_unlock_supply_series.py >> data/cro_ai_logs/unlock_supply_series_screen.log 2>&1
