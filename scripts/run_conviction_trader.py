@@ -1110,8 +1110,17 @@ def _chart_brief(root: Path, heat: dict[str, Any] | None = None, *, max_chars: i
             raw = json.loads((root / "data/chart_context.json").read_text("utf-8"))
             rebuilt = f"chart context was STALE at spawn ({age_note}); rebuilt inline"
             age_h, age_note = _chart_age(raw)
-        except (OSError, ValueError):
-            pass
+        except (OSError, ValueError) as reread:
+            # NOT SWALLOWED (L2.4). The MISSING branch twenty lines up treats this exact failure
+            # loudly -- "build reported success but re-read failed" -- and leaving its STALE twin
+            # on `pass` made a builder that claims success and then writes an unreadable file
+            # indistinguishable from a builder that simply has not run. Only the first is a defect
+            # the desk can act on, and it was the one being erased. The stale copy stays in hand
+            # and the stale WARNING below still fires on the unchanged age, so this can only add
+            # information, never hide any.
+            rebuilt = (f"chart context was STALE at spawn ({age_note}); the inline rebuild "
+                       f"reported SUCCESS but its output could not be re-read "
+                       f"({type(reread).__name__}) -- the levels below are the STALE copy")
     held = set((heat or {}).get("symbols") or [])
     charts = {k: v for k, v in (raw.get("charts") or {}).items() if k not in held}
     head = f"(chart context {age_note}, {raw.get('status')}: {raw.get('detail')})\n"
