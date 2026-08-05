@@ -2919,11 +2919,11 @@
    "summary": "SYNTH0801 P1-6 [infra G28]: eleven fences exit 0 on absent input -- change the single-status exit map to != 'OK'. check_organ_liveness/mechanism_attribution/return_targeting/replacement_rate/calibration each map exactly ONE status string to a nonzero exit; UNMEASURED falls through to else 0, so to cron, systemd and CI they are green while measuring nothing. The model implementation is already in-repo at check_law_families.py:143 and fixes five of the eleven immediately. ALSO add exit-code assertions to the fence test template -- asserting the status field and never the exit code is why this survived.",
    "roi_bps": 4500.0,
    "raised": "2026-08-01T03:34:09.231523+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=1 effort_h=2: All five named fences still single-status, UNMEASURED exits 0: check_organ_liveness.py:218 ('return 2 if DARK else 0'), check_mechanism_attribution.py:184 (UNATTRIBUTED), check_return_targeting.py:167 (RETURN-TARGETING), check_replacement_rate.py:178 (DYING), check_calibration.py:110 (OVERDUE). The in-repo model the row names is intact at check_law_families.py:178 ('return 2 if rep[\"status\"] != \"OK\" else 0'). Cheap, wide, and closes a whole green-while-blind class; also add exit-code assertions to fence tests as the row asks.",
-   "commit": null,
+   "status": "implemented",
+   "reason": "Inverted the exit map in all eight single-status fences via new libs/ops/fence_exit.py: each declares its PASS set, everything else (including any status added later) fails closed. Measured: exit codes today unchanged 2,2,0,0,2,0,2,0 (zero new reds, so the fence does not get switched off) while UNMEASURED / UNMEASURED-BIRTHS / UNFORECASTING / MISCALIBRATED / STALE / THIN go 0 -> 2. Second half of the row done too: tests/governance/test_fence_exit_map.py is the first test in the repo to assert a fence EXIT CODE, drives all eight end to end against the artifact each publishes, and adds a repo-wide source scan that fails if the single-status idiom returns. Went beyond the five named fences to all eight carrying the idiom (also check_conversion, check_exploration, check_change_window).",
+   "commit": "c6fd4f6",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-05T18:39:32.893112+00:00"
   },
   {
    "id": "R0238",
@@ -4879,11 +4879,11 @@
    "summary": "CI GATE COULD NOT ATTRIBUTE ITS OWN RED VERDICT. run_ci.py lints/tests/types the WORKING TREE (scripts libs tests), and this box runs 2-3 concurrent agent sessions against ONE tree, so a sibling's untracked half-written files fail the gate exactly like committed breakage -- belonging to no commit, unfixable by the observer, and clearing on their own. This is why ci-gate-red RECURRED 8x in 10.7d: each cycle fixed an instance and bought exactly one cycle. The expensive half is not the noise but the burial: on 2026-08-05 all 5 ruff errors and every pytest failure were a sibling's untracked input_provenance files, while TWO GENUINE mypy errors in committed libs/research/natural_experiment.py sat inside the same red verdict, indistinguishable. Fixed both halves: the real mypy errors, and the attribution itself (run_ci now re-runs only the FAILED steps with the untracked set excluded and records tracked_ok/failed_tracked/inflight; max_audit escalates on the tracked verdict, falling back to ok when the key is absent so old markers still escalate).",
    "roi_bps": 0.0,
    "raised": "2026-08-05T18:07:58.552276+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "Both halves shipped and verified on the remote (8798cd9, merged as bf4ba9d, ancestor of origin a8f2620): the two genuine mypy errors fixed version-robustly (mypy 517 files, 0 issues) and the attribution built into run_ci + max_audit with 7 passing tests. Merged as a UNION with a concurrent session's timeout work rather than overwriting it.",
+   "commit": "8798cd9",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-05T18:39:15.622895+00:00"
   },
   {
    "id": "R0401",
@@ -4891,6 +4891,30 @@
    "summary": "TIER-3, PRINCIPAL SIGN-OFF REQUIRED: the dead-man switch pages when the equity feed is STALE but not when it is ABSENT. scripts/run_deadman_switch.py:295 guards its blindness detector with the condition \"eq is not None and state.get(has_positions)\", so the 12-consecutive-identical-readings pager (written for 'the missed-fire scenario is a venue returning stale-but-valid data during the exact outage the rail exists for') cannot see the case where combined_equity() returns None outright -- venue 5xx, DNS failure, auth error, JSON parse, maintenance, all funnelled into the bare \"except Exception: return None\" at line 172. should_fire correctly neither fires nor resets on None (the review seat that surfaced this claimed it resets breaches; that is false, verified at line 180), so the rail does not DISARM -- it goes silently BLIND, with open positions, and run_alerts.py has a deadman_latched pager for the rail having FIRED and no counterpart for it being unable to read. Desk memory names this exact class: a heartbeat proves the loop is alive, never that the pipe is. PROPOSAL: count consecutive None reads while has_positions and page once at a threshold, mirroring the existing same_count/stale_paged pattern; do NOT auto-fire on unreadability, since firing on a network blip is its own ruin path and the existing 'never auto-fire on it' rule for the stale detector is the right precedent. NOT IMPLEMENTED HERE: run_deadman_switch.py is Tier-3 and untouchable without principal sign-off. Surfaced by the first successful run of scripts/deep_review.py (R0231) and verified against the code.",
    "roi_bps": null,
    "raised": "2026-08-05T18:08:22.966873+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0402",
+   "source": "cycle",
+   "summary": "THE LAWS-ONLY GATE JUDGES THE DIRTY WORKING TREE, AND ITS OWN TEST NAME SAYS IT SHOULD NOT. tests/governance/test_law_families.py::test_laws_only_gate_passes_in_a_fresh_checkout asserts a property of a FRESH CHECKOUT but evaluates full_gate(laws_only=True) against the shared working tree. PROVEN 2026-08-05: in the shared tree the gate returns rc=2 (9 scripts 'scheduled by the manifest but absent from the repo'), and every one of those manifest lines exists ONLY in the working tree -- git show HEAD:ops/crontab.manifest has 0 occurrences of check_llm_routing/check_prompt_ratchet/run_moat_utilisation/screen_vol_risk_premium while the worktree has 2 each, because a concurrent session is mid-build on L1.54 and declares cron entries before writing the scripts. Run against a pristine 'git worktree add --detach HEAD', the SAME gate on the SAME commit returns 'LAW GATE -- 10 fences: PASS', rc=0. CONSEQUENCE: the pre-push hook (L1.37) refuses EVERY push on this box for a breach owned by somebody else's uncommitted files, so the only way to commit is --no-verify, which trains the desk to bypass its own law gate -- the exact 'gate that cries wolf gets disabled' failure L1.37 rule 1 was written to prevent. This is the SAME defect class as R0400 one layer up: a gate claiming to judge committed state while reading a mutable shared surface. FIX DIRECTION (deliberately not done at the end of this cycle, and this is a named defer not a skip): make the laws-only path judge HEAD in a detached worktree, or at minimum make the test do what its name says. That change decides what may block every push on a live box while sibling sessions are actively pushing, so it wants a deliberate decision, not a drive-by patch.",
+   "roi_bps": 0.0,
+   "raised": "2026-08-05T18:39:43.515726+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0403",
+   "source": "cycle",
+   "summary": "CONCURRENT SESSIONS DUPLICATED THE SAME FIX WITHIN ONE HOUR, WITH NO CLAIM MECHANISM. On 2026-08-05 two sessions on this box independently (a) fixed the SAME two mypy errors in libs/research/natural_experiment.py, (b) diagnosed the SAME leaked flock handle in run_ci.main, and (c) reached the SAME try/finally-around-an-extracted-_run_steps structure -- discovered only when my push was rejected and the merge conflicted in exactly the three files I had touched. The duplicated engineering is the cheap part; the expensive part is that the two fixes DISAGREED on a safety-relevant detail and a blind merge would have silently picked one: they deleted the type:ignore[arg-type] (correct on mypy 2.1, wrong on other in-pin versions -- the pyarrow straddle pyproject already had to paper over with a scoped override) while I replaced the call with model_validate (version-independent). Whoever merged second by reflex would have shipped the fragile one. NOTE THE ASYMMETRY THAT MAKES THIS WORTH FIXING RATHER THAN ACCEPTING: the union of the two CI fixes is strictly better than either -- their per-step timeouts catch a wedge, my attribution catches the shared-tree false alarm, and neither session knew the other half existed. So the defect is not that two agents worked at once, it is that nothing publishes WHAT IS BEING WORKED ON, so collision is discovered at merge time and complementary work is found by accident. Cheapest candidate: a claims file written at task start and read at task start, checked the way data/mining_suspended already gates the diggers.",
+   "roi_bps": 0.0,
+   "raised": "2026-08-05T18:40:00.918921+00:00",
    "status": "open",
    "reason": null,
    "commit": null,
