@@ -2306,6 +2306,19 @@ _FINDING_DOCS = (
 #: Finding-bearing docs deliberately out of scope, with the reason -- so the scope check can tell
 #: "consciously excluded" from "quietly unmonitored".
 _FINDING_DOCS_EXCLUDED = {
+    "docs/research/DATA_UNIVERSE_TAXONOMY.md":
+        "the STANDING HUNTING MAP (principal 2026-08-04), not a findings backlog: its 30 "
+        "numbered blocks are domain rows of the universe every breadth organ diffs against "
+        "daily, each a permanent hunting ground that can never 'close'. Rowing them would "
+        "inflate the open-finding count with items whose whole design is to stay open. The "
+        "file is governed twice already: _PRODUCER_CADENCE holds it to its own weekly re-sweep "
+        "promise, and the daily coverage DIFF runs inside breadth_expander/run_cro",
+    "docs/research/INTRADAY_ROTATION_RESULT.md":
+        "dated MEASURED-RESULT record (2026-08-04, pre-registered NO-GO at 5m; DSR-priced over "
+        "540 configs). Its numbered blocks are the study's conclusions, converted at write "
+        "time: the verdict is cited by the ledger's resolution-diagnostic row (commit bc28e2a) "
+        "and the 15m/1h ladder re-test completed same day. A closed study's write-up is the "
+        "record, not a backlog -- same precedent as CYCLE_20260729_CLOSURE.md",
     "docs/CYCLE_20260729_CLOSURE.md": "dated closure snapshot -- every numbered item was rowed "
                                       "via track_findings/recommendations at write time; the "
                                       "register drives them, the snapshot is the record",
@@ -3932,6 +3945,14 @@ _DIG_DOCS = (
 #: Card-bearing docs deliberately OUT of §33 scope, each with its reason. Kept explicit so the
 #: scope check below can tell "consciously excluded" from "quietly unmonitored".
 _DIG_DOCS_EXCLUDED = {
+    "docs/research/THREE_MECHANISM_PREREGISTRATION.md":
+        "PRE-REGISTRATION document (2026-08-04), not mined finds: its three cards are study "
+        "designs named IN ADVANCE precisely so the trial count is honest, and each lives the "
+        "pre-registration -> run -> verdict lifecycle, not the dig -> disposition one. Card 1 "
+        "(funding carry) is the deployed sleeve; the cascade/basis studies are ledgered "
+        "BLOCKED-OPERATOR on the VPS transport gap the doc itself documents (:9-31). Rowing "
+        "the cards against §33 would double-charge one backlog to two laws -- the "
+        "improvement_inbox precedent",
     "docs/research/micro_audit_inbox.md":
         "audit findings, not mined finds -- own rotting-findings check",
     "docs/research/panel_inbox.md": "external panel output -- own rulings/scoring loop",

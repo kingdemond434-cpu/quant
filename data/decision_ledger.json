@@ -15,7 +15,7 @@
       "success_metric": "funding/day rises ~50% without new drift losses by 2026-08-04",
       "reversal_condition": "buffer < $800 or drift losses exceed added funding",
       "review_due": "2026-08-04",
-      "outcome": null
+      "outcome": "SCORED 2026-08-05 (1d late): INCORRECT -- the expensive kind. 'Funding/day rises ~50% without new drift losses' inverted: by 08-05 the book shows funding +$113.06 vs commission -$1,750.88 (fees 15.5x the harvest; 70.5bps/one-way vs ~5bps venue max), churn incidents #5/#6 occurred inside the window, and the book paused 08-01 at -17.6% DD. The scale-up widened the surface the close-loop and fee bleed burned on. Stated 0.75 confidence graded as substantially overconfident; this row is primary calibration evidence for L1.29 shrinkage."
     },
     {
       "id": "2026-07-04-levered-lab-3x",
@@ -62,7 +62,7 @@
       "success_metric": "zero stranded orphans > 24h by 2026-08-04",
       "reversal_condition": "fallback orders cause duplicate/oversized covers",
       "review_due": "2026-08-04",
-      "outcome": null
+      "outcome": "SCORED 2026-08-05 (1d late): INCORRECT on its metric. The post-only fallback shipped, but 'zero stranded orphans >24h by 08-04' was not reached: the close-retry loop (07-25..28) and incident #6 runaway longs (07-27) are the same stranded-exposure class in worse form, and data/stranded_recovery_log.json still carries recoverable_est $381.57. The fallback was necessary, not sufficient -- the binding defect was the close path itself (fixed 07-27/08-05)."
     },
     {
       "id": "2026-07-09-trend-unblend-and-regime-challenger",
@@ -517,7 +517,8 @@
       "success_metric": "14d: >=1 benchmark-mission plan or micro-audit missing-action survives code verification and ships; gap register shows re-rank timestamps + zero items stale >7d",
       "reversal_condition": "mission v2 outputs degrade into generic advice (2 weeks of zero verified findings) -> revert to v1 prompts; gap-register duty skipped 3 cycles -> escalate to principal",
       "review_due": "2026-07-30",
-      "review_due_source": "success_metric"
+      "review_due_source": "success_metric",
+      "outcome": "SCORED 2026-08-05 (6d late): PARTIAL, failing its own steady-state bar. Micro-audit v2 + benchmark mission + gap register all shipped and produce verified findings; re-rank stamps are daily. But 'zero items stale >7d' failed decisively and durably: 43 open rows past the 7-day bar today (oldest 20d), gap-register-rows-stale is a live defect. The structure converts principal energy into rows; row ESCALATION is the unfixed half."
     },
     {
       "id": "2026-07-16-fred-macro-collector-wired",
@@ -565,7 +566,8 @@
       "success_metric": "external heartbeat pings green within 48h of operator signup; live-connector spec review includes all four absorbed requirements; recorder go/no-go decided by the brain within 7 days with disk/CPU numbers",
       "reversal_condition": "if the pilot or live phase shows idea-flow (not data) became the bottleneck, re-open the OSINT lane at its 8.14.8 actionability-gated design",
       "review_due": "2026-07-23",
-      "review_due_source": "success_metric"
+      "review_due_source": "success_metric",
+      "outcome": "SCORED 2026-08-05 (13d late): PARTIAL. The triage call itself is vindicated (no second deadman was built; single-writer invariant intact) and the recorder half validated decisively: the data moat is now the desk's largest data asset (spot recorder alone: 10,512 hourly gz partitions under data/moat/spot/, 897 written in the last ~30h). FAILED half: 'external heartbeat pings green within 48h of operator signup' -- GAP_REGISTER #3 (pager delivery unverified) is still OPEN at 20d, and the reply channel was found severed 3 days on 2026-08-05. Scope verdict: build-side promises kept, operator-loop promises not."
     },
     {
       "id": "2026-07-17-tier1-scorecard-rider",
@@ -796,7 +798,8 @@
       "success_metric": "5 specs complete within 5 cycles; liquidation-cascade hypothesis pre-registered within 2 weeks",
       "reversal_condition": "inbox items rot >14d unprocessed -> escalate to principal",
       "review_due": "2026-07-31",
-      "review_due_source": "success_metric"
+      "review_due_source": "success_metric",
+      "outcome": "SCORED 2026-08-05 (5d late): PARTIAL. The triage held (approx. 24 already-live items correctly not rebuilt -- no duplicate organs appeared). Timing failed: '5 specs in 5 cycles' did not land; the liquidation-cascade pre-registration arrived 2026-08-04 (THREE_MECHANISM_PREREGISTRATION.md), ~2.5 weeks past the 2-week bar, and the study is ledgered BLOCKED-OPERATOR on the VPS data-transport gap. Funding term structure did land (BitMEX funding decade, 07-31)."
     },
     {
       "id": "2026-07-17-deadman-reset-2-principal-approved",
@@ -1755,7 +1758,8 @@
       "success_metric": "diversity KPIs visible in scorecard within 2 cycles; zero silent-collapse windows >1 week once live",
       "reversal_condition": "if thresholds spam false diversity audits, widen them on evidence (instrumentation stays)",
       "review_due": "2026-07-27",
-      "review_due_source": "success_metric"
+      "review_due_source": "success_metric",
+      "outcome": "SCORED 2026-08-05 (9d late): PARTIAL. Diversity KPIs shipped and live: data/panel_scorecard.json gen_diversity (mechanism_entropy 0.5066, cross_generator_dup_rate 0.0717, n=200, verdict OK). But the one collapse that actually happened -- generation at steady-state ZERO for ~a week after the 420/0 campaign (the L1.25a proving instance) -- was structurally invisible to a per-batch detector: no batches means no KPI row, so 'zero silent-collapse windows >1 week' was breached in exactly the blind spot the design carries. The absence-of-batches clause now lives in L1.25a/check_exploration, not in this detector."
     },
     {
       "id": "2026-07-20-max-cadence-everything",
@@ -1771,7 +1775,8 @@
       "success_metric": "7 days: cycles-completed/day >= 3, zero silent no-ops, dig logs full-size, panel cadence 3d honored",
       "reversal_condition": "quota pages recur daily -> step cron back one notch (comment lines) + page principal with the measured ceiling",
       "review_due": "2026-07-27",
-      "review_due_source": "success_metric"
+      "review_due_source": "success_metric",
+      "outcome": "SCORED 2026-08-05 (9d late): INCORRECT. The named success ('zero silent no-ops, dig logs full-size') is the precise thing that failed: research-engine audit 07-31 found 6+ organs double-scheduled and HTTP 402 idling 6+ organs with crashes laundered as NO-INPUT; the 08-04 sweep found 75/133 scheduled scripts ENOENT while their logs stayed fresh (branch fork). Cadence rose on paper; the 'paged degradation instead of silent death' mechanism did not exist in practice. Stated confidence 0.70 was materially overconfident on the observability half."
     },
     {
       "id": "2026-07-20-addenda-bcd-integrated",
@@ -1786,7 +1791,8 @@
       "success_metric": "within 2 weeks: >=5 addenda sources verified + Bronze-archived + feeding features; dev-activity factor computed cross-sectionally",
       "reversal_condition": "sources failing verification get graded honestly in the map (never silently dropped)",
       "review_due": "2026-08-03",
-      "review_due_source": "success_metric"
+      "review_due_source": "success_metric",
+      "outcome": "SCORED 2026-08-05 (2d late): PARTIAL. Breadth half exceeded the bar: 9+ addenda-family axes are Bronze-archived (cme, crossasset, energy, equity, etf_flows, fed, metal, mining, wikipedia) and each carried a pre-registered hypothesis in the 07-23 generate batch. Named deliverable failed: the dev-activity factor was never computed (zero repo references to dev_activity today)."
     },
     {
       "id": "2026-07-20-miners-activated-carveout-deadline",
@@ -1846,7 +1852,8 @@
       "success_metric": "book redeploys and runs 7 days without a false fire; if one occurs, GAP #34 fix becomes top priority",
       "reversal_condition": "any recurrence -> latch holds automatically (rail unchanged); investigate before next reset",
       "review_due": "2026-07-27",
-      "review_due_source": "success_metric"
+      "review_due_source": "success_metric",
+      "outcome": "SCORED 2026-08-05 (9d late): CORRECT. The reset stood: data/deadman_state.json breaches=0, disarmed_live=false, and the book ran 07-20 through the 08-01 halt with zero dead-man fires (the 08-01 stop was the drawdown rail, a different organ). The measurement-artifact diagnosis of incident #4 held; stated 0.95 confidence was calibrated."
     },
     {
       "id": "2026-07-20-flagship-roster-max",
@@ -1877,7 +1884,8 @@
       "success_metric": "coverage % rises every run; zero never-audited risk-path files within 14 days; >=1 finding per month that could ONLY have come from raw code access",
       "reversal_condition": "if payload size degrades finding quality (models skim), cut CODE_BUDGET_CHARS and lengthen the sweep -- never revert to dossier-only",
       "review_due": "2026-08-03",
-      "review_due_source": "success_metric"
+      "review_due_source": "success_metric",
+      "outcome": "SCORED 2026-08-05 (2d late): PARTIAL-CORRECT. The risk-path promise held: 33 RISK-class files sit under the 14d review floor and the coverage-risk-stale fence is quiet today; the commit-audit organ is cron-live. Raw-code-only findings occurred repeatedly (novelty-gate 0% recall 07-30; rc=2 filename laundering R0094 08-05). Whole-repo ever-audited coverage is still 4.9% of 1172 files -- rising, but the 1% -> full-coverage ambition remains mostly ahead."
     },
     {
       "id": "2026-07-20-openrouter-exhausted-purchase-page",
@@ -2041,7 +2049,8 @@
       "success_metric": "data/moat/spot/ accumulates continuous hourly partitions for >=1 week with <5% gap; spot-leg slippage curves become computable per carry name; recorder_spot_heartbeat stays <10min stale (cron self-heal). Lands in the next micro-audit brief within 24h (auto via diff feed).",
       "reversal_condition": "If spot recording triggers an IP rate-limit event (429/ban) on the shared VPS IP that impairs the futures recorder or executor market-data reads -> widen spot intervals or reduce symbols first; if that fails, stop the spot process (rm cron line + kill) -- fully reversible, no risk-path/state touched. Revert lint fixes trivially if any script regresses (none observed).",
       "review_due": "2026-07-28",
-      "review_due_source": "success_metric"
+      "review_due_source": "success_metric",
+      "outcome": "SCORED 2026-08-05 (8d late): CORRECT. data/moat/spot/ holds 10,512 hourly gzip partitions across the symbol set with 897 written in the last ~30h -- continuous accumulation well past the >=1 week bar; recorder process live (ps 2026-08-05); spot-leg cost numbers became computable and were used (per-symbol round-trip costs incl. COOKIEUSDT 66.489bps at $500 in the executor's cost model)."
     },
     {
       "id": "2026-07-21-redteam-protocol",
@@ -2056,7 +2065,8 @@
       "success_metric": "next funded deep audit: all responding models deliver 3 parts; >=1 part-2/part-3 item implemented within a week; zero unbuilt-validated-ROI defects age >14d",
       "reversal_condition": "if part 3 produces only repetition across consecutive deep audits, fold it into maximization-mission-only (part 1+2 stay everywhere)",
       "review_due": "2026-08-04",
-      "review_due_source": "success_metric"
+      "review_due_source": "success_metric",
+      "outcome": "SCORED 2026-08-05 (1d late): INSUFFICIENT-EVIDENCE. The protocol's own test condition -- 'next funded deep audit' -- never executed funded: the external panel seats were dead on HTTP 402 through the window and run_external_panel exits 0 with all seats dead (found 08-01), so no 3-part red-team delivery ever ran. The enforcement clause (zero unbuilt-validated-ROI defects >14d) is independently failing desk-wide (conversion backlog). Action is instrumentation (funded seats + the seat-death fence), not a verdict on the protocol."
     },
     {
       "id": "2026-07-21-no-compromise-principle",
@@ -2393,7 +2403,8 @@
       "success_metric": "blind-spot ledger origin=principal rate falls toward zero over the next 2 weeks of cycles",
       "reversal_condition": "if the principal again finds a gap these angles should have caught, the battery execution (not the angles) is the defect -- escalate to anti-rubber-stamp enforcement",
       "review_due": "2026-08-05",
-      "review_due_source": "success_metric"
+      "review_due_source": "success_metric",
+      "outcome": "SCORED 2026-08-05 (0d late): INSUFFICIENT-EVIDENCE -- instrumentation failure. The success metric (blind-spot origin=principal rate falling toward zero) was unmeasurable for the entire window: the origin gauge was welded off (0 principal rows recorded against 24 principal orders, found 08-01) and the order channel was only wired into the gauge on 08-05 (R0093). The angles themselves are installed and cited by later sessions; the METRIC restarts from 08-05. Re-window: grade origin-rate over 08-05..08-19."
     },
     {
       "id": "2026-07-22-dual-objective-growth-ladder",
@@ -3123,7 +3134,8 @@
       "reversal_condition": "If positions retire while inventory is still held (stranded spot reappears), _close_goal_state is wrong and reverts immediately -- that failure is strictly worse than the churn. If flatten_only ever leaves a leg unhedged while the book is NOT under a flatten order, the gating condition is too broad. Checkpoint 20260728T150640_carry-churn-loop-fix.",
       "flagged_gap": "NEIGHBOURS: (1) run_live_combined.py consumes the same carry_bleed_report and reads the same book -- its published PnL was contaminated by this loop too; (2) risk_controls.evaluate fired 'flatten' at -42.3% DD on equity that includes the churn losses, so a ruin rail was acting on a corrupted input -- the rail behaved correctly given its input, which is the point; (3) growth_audit reported carry_capital_utilization 0.941 'OK -- fully deployed' on a book that was unhedged, under a kill order, and burning: it counts deployed notional with no hedge-integrity or kill-state predicate, so it can certify a burning book as healthy (logged as a finding); (4) _mkt_or_limit returns 'limit' when it merely PLACES a post-only order, so _do() clears its failure counter on an order that may never fill -- the SAME receipt-vs-goal-state shape as the primary defect, on the reconciler's path (logged, not fixed this cycle).",
       "review_due": "2026-08-04",
-      "review_due_source": "success_metric"
+      "review_due_source": "success_metric",
+      "outcome": "SCORED 2026-08-05 (1d late): PARTIAL-CORRECT. The named mechanism was real and its fix held -- no repeating CLOSE-FAIL pattern in the post-fix evidence available on this box (direct journal access denied; weak-positive evidence, stated as such) and the carry-churn-loop defect is not firing today. But 'root cause' was overclaimed: the 08-05 /fapi reconciliation shows the residual fee bleed is per-symbol microstructure (4 symbols at 150-488bps = 85.9% of the bill), and the ratio target (63.42x -> 6.84x) went untestable when the 08-01 pause zeroed both sides of the ratio. Loop = A cause, stopped; not THE cause."
     },
     {
       "id": "2026-07-28-fee-blind-pnl-and-page-destruction",
@@ -3462,7 +3474,8 @@
       "reversal_condition": "If the retraction tags break any signal_halflife consumer, restore from checkpoint 20260731T175735_r0060-upbit-single-source; if capability_hunt exclusion ever hides an un-rowed finding, move the class into _FINDING_DOCS (the honest direction).",
       "review_due": "2026-08-02",
       "review_due_source": "R0058 due 08-01 + R0174 due 08-02 + ack expiries",
-      "verified_by_fresh_read": true
+      "verified_by_fresh_read": true,
+      "outcome": "SCORED 2026-08-05 (3d late): PARTIAL. Held: the permanent fence test exists and is green (tests/governance/test_upbit_single_source.py); R0058's destruction-stopping TCA half is in the executor tree and the pre-REARM condition is unviolated (no REARM has occurred; row SCHEDULED). Failed: 'max_audit stays 0 live defects through 08-01 noon' -- 08-01 morning surfaced pytest-collection-dead (#1c, repo-wide zero tests collected) and the 08:35Z book freeze fired the bleed alarm."
     },
     {
       "id": "2026-07-31-cycle6-r0206-carry-attribution-and-inert-moneypath-fix",

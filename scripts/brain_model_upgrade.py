@@ -67,6 +67,11 @@ _DEFAULT_RE = re.compile(r'(export ANTHROPIC_MODEL="\$\{ANTHROPIC_MODEL:-)([a-z0
 # against that export (fable-first vs opus-first), which is precisely how a dormant fallback
 # becomes a surprise: the day it fires, it runs a model nobody chose.
 _INLINE_CHAIN_RE = re.compile(r'(\$\{_BRAIN_MODEL_CHAIN:-)([^}]+)(\})')
+# Seat definitions pin a model in markdown frontmatter (`model: claude-opus-4-8`). ops/
+# CRO_CONSTITUTION.md sat outside the .sh/.py scan for its whole life, so the 2026-08-04
+# opus-4-8 -> opus-5 probe PASSED and the promotion had no surface to land on: the one file
+# actually running the incumbent was invisible to the organ built to upgrade it.
+_SEAT_MODEL_RE = re.compile(r"(^model:\s*)(claude-[a-z0-9.\-]+)(\s*$)", re.MULTILINE)
 _PROBE = "Reply with exactly: UPGRADE-OK"
 
 
@@ -167,9 +172,17 @@ def rewrite_text(text: str, approved: dict[str, str]) -> tuple[str, list[str]]:
             changes.append(f"inline chain default: {' '.join(chain)}  ->  {' '.join(new)}")
         return f"{m.group(1)}{' '.join(new)}{m.group(3)}"
 
+    def _seat_sub(m: re.Match[str]) -> str:
+        cur = m.group(2)
+        new = approved.get(cur, cur)
+        if new != cur:
+            changes.append(f"seat frontmatter model: {cur} -> {new}")
+        return f"{m.group(1)}{new}{m.group(3)}"
+
     out = _CHAIN_RE.sub(_chain_sub, text)
     out = _DEFAULT_RE.sub(_default_sub, out)
     out = _INLINE_CHAIN_RE.sub(_inline_chain_sub, out)
+    out = _SEAT_MODEL_RE.sub(_seat_sub, out)
     return out, changes
 
 
@@ -179,32 +192,44 @@ def chain_files() -> list[Path]:
     out = []
     for d in ("ops", "scripts"):
         for p in sorted((ROOT / d).glob("*")):
-            if p.suffix not in (".sh", ".py") or p.name == Path(__file__).name:
+            if p.suffix not in (".sh", ".py", ".md") or p.name == Path(__file__).name:
                 continue
             try:
                 body = p.read_text("utf-8")
             except (OSError, UnicodeDecodeError):
                 continue
-            if "_BRAIN_MODEL_CHAIN" in body or _DEFAULT_RE.search(body):
+            if ("_BRAIN_MODEL_CHAIN" in body or _DEFAULT_RE.search(body)
+                    or _SEAT_MODEL_RE.search(body)):
                 out.append(p)
     return out
 
 
 def pinned_models(paths: list[Path]) -> list[str]:
-    """Distinct model ids pinned across all chain files, in first-seen order."""
+    """Distinct model ids pinned across all chain files, in first-seen order.
+
+    Tokens are validated as model ids before they count: _CHAIN_RE on brain_env.sh's
+    `"${_BRAIN_MODEL_CHAIN:-a b c}"` form splits into `${_BRAIN_MODEL_CHAIN:-a` and `c}`,
+    and on 2026-08-05 the trailing-brace token parsed as a real incumbent and burned a
+    live probe on `claude-opus-4-8}`. Unknown tokens stay in the FILES (rewrite preserves
+    them); they just never reach the probe.
+    """
+    _id = re.compile(r"claude-[a-z0-9.\-]+\Z")
     seen: list[str] = []
     for p in paths:
         body = p.read_text("utf-8")
         for m in _CHAIN_RE.finditer(body):
             for mid in m.group(3).split():
-                if mid not in seen:
+                if _id.fullmatch(mid) and mid not in seen:
                     seen.append(mid)
         for m in _INLINE_CHAIN_RE.finditer(body):
             for mid in m.group(2).split():
-                if mid not in seen:
+                if _id.fullmatch(mid) and mid not in seen:
                     seen.append(mid)
         for m in _DEFAULT_RE.finditer(body):
-            if m.group(2) not in seen:
+            if _id.fullmatch(m.group(2)) and m.group(2) not in seen:
+                seen.append(m.group(2))
+        for m in _SEAT_MODEL_RE.finditer(body):
+            if _id.fullmatch(m.group(2)) and m.group(2) not in seen:
                 seen.append(m.group(2))
     return seen
 
