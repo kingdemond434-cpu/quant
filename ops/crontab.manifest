@@ -765,6 +765,10 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # retune it (the agent will then leave it alone because it is already scheduled).
 # Every entry here was proven: runnable main(), no money-path import, no spend
 # capability, no writes outside data/ + web/. CONFIDENCE: auto-wired.
+# scripts/retire_unfillable_candidates.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
+38 3 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/retire_unfillable_candidates.py >> data/cro_ai_logs/retire_unfillable_candidates.log 2>&1
+# scripts/check_coverage_floors.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
+22 5 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_coverage_floors.py >> data/cro_ai_logs/check_coverage_floors.log 2>&1
 # scripts/build_return_panel.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
 49 5 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/build_return_panel.py >> data/cro_ai_logs/build_return_panel.log 2>&1
 # scripts/meta_research_review.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
@@ -1472,3 +1476,31 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # mechanical half. EVIDENCE: the 2026-08-04 triage (241 rows -> 24 implemented flips, 100
 # IMPLEMENT-NOW queued, wave execution same-day). CONFIDENCE: inferred (slot chosen here).
 0 9 * * 1 cd "$QUANT_ROOT" && flock -n data/.cron_weekly_triage.lock .venv/bin/python scripts/rerank_gaps.py >> data/cro_ai_logs/weekly_triage.log 2>&1
+
+# R0100 AXIS COLLECTORS + R0102 PAPER-SLEEVE SPAWNER (owed-work batch 3, 2026-08-05).
+# Hour 8 is near-empty (only page_digest at :30), so these four land without contending with the
+# 06:xx research block or the 13:xx/21:xx hunt seats. Phase is deliberate: the three collectors
+# run FIRST and the spawner LAST, so a survivor screened this morning is queued the same morning
+# rather than waiting a full day (L1.28c -- re-phasing is a free cadence raise).
+#
+# CEILING TYPE (L1.28c) for the collectors is DATA-ARRIVAL, and daily is under it by design: all
+# three serve HISTORY endpoints with paging, so a daily run backfills the intervening 24h with no
+# gap (Aster funding prints 8h, Lighter hourly, DexScreener/holder snapshots are point-in-time).
+# Running hourly would re-fetch mostly-unchanged history for no new information.
+# EVIDENCE: first live runs 2026-08-05 -- dexscreener 108 new rows of 114 fetched, 0 errors;
+# holder_concentration 21 new rows (DEGRADED, 1 token error of 22); perpdex_funding 233,030 new
+# rows (aster 50,974 / lighter 131,299 / klines 50,757) + screen-on-discovery in the same run.
+# CONFIDENCE: measured (row counts above are from the runs, not estimates).
+15 8 * * * cd "$QUANT_ROOT" && flock -n data/.cron_dexscreener.lock .venv/bin/python scripts/collect_dexscreener.py >> data/cro_ai_logs/collect_dexscreener.log 2>&1
+25 8 * * * cd "$QUANT_ROOT" && flock -n data/.cron_holderconc.lock .venv/bin/python scripts/collect_holder_concentration.py >> data/cro_ai_logs/collect_holder_concentration.log 2>&1
+35 8 * * * cd "$QUANT_ROOT" && flock -n data/.cron_perpdex.lock .venv/bin/python scripts/collect_perpdex_funding.py >> data/cro_ai_logs/collect_perpdex_funding.log 2>&1
+
+# Spawner CEILING TYPE is INFORMATION-ARRIVAL: it converts corrected Stage-A survivors into paper
+# sleeves, and both of its inputs move at most daily -- screen verdicts (a screen campaign is a
+# daily-at-most event) and forward-slot retirements (ledgered decisions). The cohort is 12/12 at
+# the Holm cap today, so its steady state is QUEUED-AT-CAP; it drains as retirements free slots,
+# which is exactly why it must poll daily rather than fire once.
+# EVIDENCE: scripts/run_paper_sleeve_spawner.py first live run 2026-08-05 -> data/paper_sleeve_queue.json
+# (NO-CANDIDATES: 37 corrected trials, 0 qualifying survivors -- the honest idle state).
+# CONFIDENCE: measured (cohort 12/12 read from libs/research/slot_registry.derive_slots).
+45 8 * * * cd "$QUANT_ROOT" && flock -n data/.cron_paper_spawner.lock .venv/bin/python scripts/run_paper_sleeve_spawner.py >> data/cro_ai_logs/paper_sleeve_spawner.log 2>&1

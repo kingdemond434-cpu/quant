@@ -33,6 +33,7 @@ from pathlib import Path
 
 import numpy as np
 
+from libs.research.evidence_clock import MIN_OBS, Sufficiency, sufficient
 from libs.research.slot_registry import concurrent_m
 from libs.validation.forward_stats import holm_bar, nw_tstat
 
@@ -40,7 +41,6 @@ _ROOT = Path(__file__).resolve().parent.parent
 _OUT = _ROOT / "web" / "axis_shadows.json"
 _STATE = _ROOT / "data" / "axis_shadow_state.json"
 
-_MIN_DAYS = 40          # pre-registered minimum forward window before eligibility
 _BINANCE = "https://fapi.binance.com/fapi/v1/klines"
 
 # axis registry: name -> (clock file, target symbol, signal field, direction)
@@ -119,11 +119,42 @@ def _clock_rows(path: Path) -> list[dict]:
     return out
 
 
+def _stage_b_verdict(arr: np.ndarray, t: float, bar: float) -> tuple[str, int, Sufficiency]:
+    """L1.48: eligibility asks the EVIDENCE (sample size + t-stat), never a flat day count.
+
+    Replaced `_MIN_DAYS = 40` (2026-08-05) -- the exact constant evidence_clock's docstring names
+    as the habit being killed. The statistical bar is UNTOUCHED: ELIGIBLE still requires the
+    Newey-West t to clear the Holm-corrected cohort bar, and additionally requires
+    evidence_clock's own sufficiency (observation floor + plain-t at the same bar), so this is a
+    strict tightening on the t axis. What changed is the WAITING: a strong axis no longer idles
+    behind a 40-observation wall it has already out-argued, and a non-positive effect
+    (t <= 0 at >= MIN_OBS observations) is called FAILING at the point where evidence_clock says
+    "more data will not fix it" instead of after an arbitrary 40. A weakly-positive axis is
+    ACCRUING with its shortfall stated in OBSERVATIONS (obs_short), never in days -- that is the
+    reporting form L1.48 mandates, and it is actionable (open slots, widen the universe) where
+    "wait N days" was not.
+
+    Returns (verdict, need, sufficiency) where `need` is the total observations currently
+    required: the trust floor below MIN_OBS, n + obs_short while short of the bar at the current
+    effect size, and n once the question is decided either way (readers compute progress as
+    forward_days/need, which now measures evidence rather than elapsed time).
+    """
+    n = int(arr.size)
+    stdev = float(arr.std(ddof=1)) if n >= 2 else 0.0
+    suff = sufficient(float(arr.mean()), stdev, n, min_t=bar)
+    if suff.sufficient and t >= bar:
+        return "ELIGIBLE", n, suff
+    if n >= MIN_OBS and t <= 0.0:
+        return "FAILING", n, suff
+    need = MIN_OBS if n < MIN_OBS else n + max(int(suff.obs_short), 1)
+    return "ACCRUING", need, suff
+
+
 def _evaluate(name: str, clock: str, symbol: str, field: str, direction: int, m: int) -> dict:
     rows = _clock_rows(_ROOT / clock)
     if len(rows) < 2:
         return {"axis": name, "verdict": "ACCRUING", "forward_days": len(rows),
-                "need": _MIN_DAYS, "note": "clock just started -- forward evidence begins now"}
+                "need": MIN_OBS, "note": "clock just started -- forward evidence begins now"}
 
     closes = _closes(symbol)
     rets, used = [], []
@@ -139,7 +170,7 @@ def _evaluate(name: str, clock: str, symbol: str, field: str, direction: int, m:
 
     n = len(rets)
     if n < 2:
-        return {"axis": name, "verdict": "ACCRUING", "forward_days": n, "need": _MIN_DAYS,
+        return {"axis": name, "verdict": "ACCRUING", "forward_days": n, "need": MIN_OBS,
                 "note": "not enough aligned forward days yet"}
 
     arr = np.asarray(rets, dtype="float64")
@@ -148,13 +179,11 @@ def _evaluate(name: str, clock: str, symbol: str, field: str, direction: int, m:
     t = float(nw_tstat(arr)) if n >= 3 else 0.0
     bar = float(holm_bar(m, rank=1))
 
-    if n < _MIN_DAYS:
-        verdict = "ACCRUING"
-    elif t >= bar:
-        verdict = "ELIGIBLE"                            # bar met -- decision may now be taken
-    else:
-        verdict = "FAILING"                             # forward evidence does not support it
-    return {"axis": name, "verdict": verdict, "forward_days": n, "need": _MIN_DAYS,
+    verdict, need, suff = _stage_b_verdict(arr, t, bar)
+    # `forward_days` has always counted aligned forward OBSERVATIONS (nonzero usable rows), not
+    # calendar days -- the key name is kept for its readers (revalidate_clocks, claim_verifier).
+    return {"axis": name, "verdict": verdict, "forward_days": n, "need": int(need),
+            "obs_short": int(suff.obs_short), "evidence": suff.reason,
             "cum_return": round(cum, 5), "ann_sharpe": round(sharpe, 2),
             "nw_t": round(t, 3), "holm_bar": round(bar, 3), "m_concurrent": m,
             "first_forward_day": used[0] if used else None, "last": used[-1] if used else None,
@@ -166,18 +195,19 @@ def main() -> None:
     # concurrent-m, and re-deriving per axis would let the bar drift mid-run.
     m = concurrent_m()
     results = [_evaluate(k, *v, m) for k, v in _AXES.items()]
-    payload = {"updated": datetime.now(tz=UTC).isoformat(), "min_forward_days": _MIN_DAYS,
+    payload = {"updated": datetime.now(tz=UTC).isoformat(), "min_observations": MIN_OBS,
                "axes": results,
                "note": ("Forward-only Stage-B tracking. P&L starts at the clock's first row, never "
                         "the screen sample. ELIGIBLE means the evidence bar is met and a promotion "
-                        "decision may be taken -- it is NOT an automatic deployment.")}
+                        "decision may be taken -- it is NOT an automatic deployment. Eligibility "
+                        "asks evidence_clock (L1.48): observations + t-stat, never elapsed days.")}
     _OUT.parent.mkdir(parents=True, exist_ok=True)
     _OUT.write_text(json.dumps(payload, indent=1), "utf-8")
     _STATE.write_text(json.dumps(payload, indent=1), "utf-8")
     for r in results:
         extra = f"t={r.get('nw_t')} bar={r.get('holm_bar')}" if "nw_t" in r else r.get("note", "")
         print(f"axis-shadow | {r['axis']}: {r['verdict']} "
-              f"({r['forward_days']}/{r['need']}d) {extra}")
+              f"({r['forward_days']}/{r['need']} obs) {extra}")
     print(f"-> {_OUT}")
 
 

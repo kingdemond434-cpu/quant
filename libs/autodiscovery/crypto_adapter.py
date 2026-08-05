@@ -199,7 +199,9 @@ def web_payload(
         for r in store.survivors()
     ]
     rejection_hist: dict[str, int] = {}
-    for rec in store.all():
+    # Full history on purpose: a cumulative gate-kill tally must not shrink when candidates are
+    # later retired for capacity (status -> archived); their gate history really happened.
+    for rec in store.all(include_retired=True):
         if rec.survived or not rec.rejection_reason:
             continue
         body = rec.rejection_reason.removeprefix("failed: ")

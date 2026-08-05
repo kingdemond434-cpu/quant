@@ -1150,11 +1150,11 @@
    "summary": "SYNTH0731 P1-8c [meta X6/M6]: principal_doctrine.txt diff triggers auto blind-spot row origin=principal \u2014 the failure-signal gauge logged 0 principal rows across 6+ doctrine orders since 07-26",
    "roi_bps": 20.0,
    "raised": "2026-07-31T03:45:46.509584+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=4 effort_h=2: Confirmed unbuilt: ops/principal_doctrine.txt exists and is consumed by ~14 organs (enforce_constitution.py, run_law_gate.py, max_audit.py...) but NO diff/hash trigger exists anywhere -- zero grep hits for principal_doctrine in blindspot_max.py/blindspot_prober.py and zero hits for any doctrine_hash/doctrine_diff machinery repo-wide. The nearest thing, max_audit.py:1405-1416, only compares doctrine mtime against the 28d prompt-review cadence -- it does not write a blind-spot row with origin=principal. Small: hash-compare on the doctrine file + auto-append a blind-spot row on change. Closes a measured gap (0 principal-origin rows across 6+ doctrine orders).",
-   "commit": null,
+   "status": "implemented",
+   "reason": "Built check_doctrine_diff.py to the full L1.41 standard: sha256-compare with prev-copy diff summaries, one blind-spot row origin=principal per doctrine change via the existing blind_spot.log writer (no duplicate schema), loud re-baseline on corrupt state, exit-2 refusal on unreadable doctrine. Wired as a daily _STEPS line beside doctrine_guard (information-arrival ceiling: doctrine changes are order-events, daily diff catches every one exactly once), L2.5 matrix entry, _GOVERNED registration; build-standard gate 43/43 green. Live first run BASELINED at sha a98b4f95bc08/186 lines.",
+   "commit": "a818915",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-05T03:42:14.489891+00:00"
   },
   {
    "id": "R0094",
@@ -1162,11 +1162,11 @@
    "summary": "SYNTH0731 P3-24 [DI-14/DI-16]: fix malformed daily-cycle invocations (research_exchange.py brief/score passed as one filename, rc=2 every run); wire build_data_registry output into knowledge-engine genome (4/60 lineage coverage); artifact-grade the three first-fire organs",
    "roi_bps": 20.0,
    "raised": "2026-07-31T03:45:46.577504+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=6 effort_h=1: The named bug is CONFIRMED STILL LIVE and trivially fixable: scripts/daily_research_cycle.py:136-138 _run() executes subprocess.run([_PY, script]) with the whole string as ONE argv element, while _STEPS passes 'scripts/research_exchange.py brief' (:100) and 'scripts/research_exchange.py score' (:109) -- python receives a filename containing a space, rc=2 every run, and the chain's best-effort design swallows it. Fix is shlex.split(script) or a tuple form. The other legs are middling: build_data_registry IS cron-scheduled (crontab.manifest:494 --deep daily) but genome lineage wiring into knowledge_engine and artifact-grading the three first-fire organs remain to verify/do. The rc=2 fix alone justifies the verdict.",
-   "commit": null,
+   "status": "implemented",
+   "reason": "All three legs: (1) _run shlex-splits -- the named brief/score bug plus FOUR more arg-carrying steps (check_ratchets --ratchet, miner_runway/scheduler_manifest/mypy_ratchet --report-only) were rc=2 every cycle; test pins argv shape and that every step file exists. (2) build_data_registry output wired into knowledge_engine as generated data_genome: lineage coverage 4/60 hand-written -> 70/78 (89.7%) measured, 8 lake orphans surfaced in the artifact. (3) T7 first-fire grading done 4 days late: data_assets.json PASS (78 assets), utilisation.json PASS (ceilings enumerated), label_registry.json FAIL (absent since birth) -> root cause was the dup-index crash fixed under R0095; registry now materialized (40 records, 126KB).",
+   "commit": "ee665fc",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-05T03:38:33.886198+00:00"
   },
   {
    "id": "R0095",
@@ -1174,11 +1174,11 @@
    "summary": "SYNTH0731 P1-8d [E-6/E-8/E-12/E-13]: intelligence-cycle honesty \u2014 nonzero exit = ERROR not NO-INPUT in _subprocess_cap; fix label_factory.py:296 (.iloc/reset_index) + dup-index regression test; point research layer at NAV-chain equity (third equity source); research_priority wired to real family kills or labeled DATA-FREE",
    "roi_bps": 55.0,
    "raised": "2026-07-31T03:45:46.643172+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=6 effort_h=3: Leg (a) CONFIRMED STILL LIVE: scripts/run_intelligence_cycle.py:208 returns _cap(name, 'ACTIVE' if p.returncode == 0 else 'NO-INPUT', ...) -- a crash is labelled as absent input, the exact honesty defect the row names; two-line fix. Leg (b) partially superseded: label_factory got a different repair (58e3e1b _mask helper, 24/24 green) and the truncation path uses .iloc (label_factory.py:341), but no dup-index regression test exists (zero grep hits in tests/). Legs (c)/(d) (NAV-chain equity as the research layer's source; research_priority wired to real family kills) remain unverified-as-built and belong in the same pass. ROI 55bps, unblocked.",
-   "commit": null,
+   "status": "implemented",
+   "reason": "All four legs: (a) _subprocess_cap nonzero exit = ERROR, never NO-INPUT (test: TestSubprocessCapStatus). (b) the dup-index bug was NOT fully fixed by 58e3e1b -- _mutate_from still selected by label and the duplicated bronze index fanned 9,956 rows into 1,218,352, crashing build_labels DAILY (log traceback reproduced); now positional, dup-index regression tests added, label_registry.json produced for the first time. (c) daily cycle deployed-equity now reads data/nav_attestation.jsonl (hash-chained, carries mode=PAPER) -- third equity source retired. (d) research_priority ranks from data/mechanism_board.json verdicts (real family kills, refreshed daily) and refuses DATA-FREE constants under an ACTIVE banner (tests pin both paths).",
+   "commit": "ee665fc",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-05T03:38:34.140985+00:00"
   },
   {
    "id": "R0096",
@@ -4286,6 +4286,18 @@
    "commit": "888f9a4",
    "due": null,
    "disposed": "2026-08-05T03:28:54.031252+00:00"
+  },
+  {
+   "id": "R0352",
+   "source": "max_audit",
+   "summary": "CARRY BLEED ALARM IS ABSORBING -- it measures a CUMULATIVE LIFETIME ratio, so it can never clear and therefore carries zero information (L1.43 welded gate). Chain confirmed on live artifacts 2026-08-05: the drawdown rail set risk.action=pause_opens at -17.6% (correct -- do NOT touch the rail), so n_carries=0 and deployed_notional=0.0; with opens paused no new funding can accrue, which FREEZES both terms of bleed = non_funding_pnl(-1971.80) / funding_harvested(+113.06). max_audit fires carry-bleed-alarm every cycle on a number that is arithmetically incapable of moving. The attribution the alarm demands is ALREADY on disk (web/cashcarry_live.json leak_attribution: fut_fees 1750.88 = 88.8% of the loss, basis -231.92, residual 11.0) and both root causes are implemented (R0018 churn loop, R0025 windowed cost-rate breaker). FIX (do NOT loosen the bleed threshold -- that is the forbidden direction): make the alarm WINDOWED over recent closes, the same shape R0025 already established for the circuit breaker, so it separates 'bleeding NOW' from 'bled once, fixed, now flat'; and give it a distinct FLAT/NO-EXPOSURE verdict so a zero-position book cannot read as a bleeding one. Same absorbing-state class as the pause_opens defect in desk memory.",
+   "roi_bps": 18.0,
+   "raised": "2026-08-05T07:00:04.098456+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

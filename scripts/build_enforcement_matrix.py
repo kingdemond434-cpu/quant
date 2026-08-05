@@ -186,6 +186,25 @@ _MAP: dict[str, list[str]] = {
     # wrong on 41.5% of individual closes. The fence differences the two models, measures the
     # PHASE coordinate the desk has never used, and refuses to call an undifferenced estimate OK.
     "L1.47": ["scripts/check_funding_capture.py", "libs/research/funding_clock.py"],
+    # R0100 axis collectors (2026-08-05): three free, keyless raw-information axes the desk did
+    # not hold. Under L1.11 (the moat is the transformation pipeline, never the purchased dataset)
+    # and L1.8 (acquisition runs at maximum). collect_perpdex_funding carries the screen-on-
+    # discovery duty in-organ -- it screens what it ingests in the SAME run, so an axis cannot be
+    # catalogued and abandoned, and it declares clock provenance per L1.46 (venue stamp + receipt).
+    "L1.11-r0100": ["scripts/collect_dexscreener.py",
+                    "scripts/collect_holder_concentration.py",
+                    "scripts/collect_perpdex_funding.py"],
+    # R0102 paper-sleeve auto-spawn: converts corrected Stage-A survivors into costless paper
+    # sleeves. L1.6 bounds it (zero promotion authority, zero capital) and L1.18a orders its queue
+    # (deployment race -- shortest capacity runway first). It NEVER spawns over the Holm cap: a
+    # concurrent clock tightens every standing candidate's bar, so it queues behind retirements.
+    "L1.6-r0102": ["scripts/run_paper_sleeve_spawner.py", "libs/research/paper_sleeves.py"],
+    # §42 capacity retirement (2026-08-05): 1051 of 1799 scored candidates could not be filled by
+    # a $13,151 book at all. Retirement banks the full mechanism (L1.17 research debt, with a
+    # named L1.16a resurrection condition) and archives the row; the factory boundary in
+    # AutoDiscoveryLab._record_scored stops the backlog re-forming.
+    "L1.18a-capacity": ["scripts/retire_unfillable_candidates.py",
+                        "libs/autodiscovery/capacity_screen.py"],
     # R0122 LLM discretionary sleeve: paper-only candidate generator whose calls are scored
     # forecasts. Governed by L1.6 (zero promotion authority) and L1.29 (it grades itself).
     "L1.6-llm": ["scripts/run_llm_trader.py"],

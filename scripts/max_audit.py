@@ -3746,8 +3746,22 @@ def check_orphan_code(defects) -> None:
                     f.read_text("utf-8", errors="ignore") for f in d.rglob("*.py"))
 
     reached: set[str] = set()
-    frontier = _pkgs_in("\n".join(f.read_text("utf-8", errors="ignore")
-                                  for f in scripts.glob("*.py")))
+    # ENTRY POINTS ARE scripts/ + app/ + api/, and the walk is RECURSIVE. Two bugs lived here:
+    # a non-recursive glob (a package reached only from scripts/sub/x.py read as orphaned) and a
+    # root set one directory too narrow -- _module_reachability() 70 lines below already declares
+    # the production frontier as ("scripts", "app", "api"), so ONE file held two reachability
+    # walkers that disagreed. That disagreement produced a live false positive: stage14(13
+    # modules) is reached by scripts/check_readiness.py -> app/readiness.py -> libs.stage14.engine
+    # (which calls PortfolioConstructionEngine().construct), and nothing under scripts/ mentions
+    # libs.stage14 textually. Widening the roots REMOVES a false accusation; it cannot hide a real
+    # orphan, because adding entry points can only ever grow `reached`.
+    entry_text: list[str] = []
+    for entry in ("scripts", "app", "api"):
+        d = ROOT / entry
+        if not d.is_dir():
+            continue
+        entry_text.extend(f.read_text("utf-8", errors="ignore") for f in d.rglob("*.py"))
+    frontier = _pkgs_in("\n".join(entry_text))
     while frontier:                       # BFS from the entry points, not a single hop
         nxt = frontier.pop()
         if nxt in reached or nxt not in pkg_text:
@@ -5846,6 +5860,24 @@ def check_unwired_modules(defects) -> None:
         modules.add(name)
 
     imported: set[str] = set()
+    # A `python -m libs.x.y` IN A SHELL IS A CALLER, and an AST scan of .py files cannot see one.
+    # Measured false positive: libs.ops.deploy_plan is invoked by deploy/pull_deploy.sh every 10
+    # minutes (`"$PY" -m libs.ops.deploy_plan --directives`) and this fence called it unwired --
+    # "retire on the record" would have deleted the module that computes which systemd units a
+    # pulled commit invalidates. Scanning the shell/cron surface for -m targets closes that hole.
+    # This can only ADD real callers, never hide a genuine orphan.
+    for area in ("scripts", "ops", "deploy"):
+        base = ROOT / area
+        if not base.is_dir():
+            continue
+        for sh in (*base.rglob("*.sh"), *base.rglob("*.manifest")):
+            with contextlib.suppress(OSError):
+                for hit in re.findall(r"-m\s+(libs\.[A-Za-z0-9_.]+)",
+                                      sh.read_text("utf-8", errors="ignore")):
+                    parts = hit.split(".")
+                    # register the module AND its parent packages, matching the AST roll-up
+                    for i in range(2, len(parts) + 1):
+                        imported.add(".".join(parts[:i]))
     for area in ("scripts", "libs", "ops"):
         base = ROOT / area
         if not base.exists():

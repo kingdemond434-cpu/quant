@@ -10,13 +10,20 @@ is testable offline; in production it pulls from MT5.
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
+from pathlib import Path
 from typing import Any
 
 import numpy as np
 
+from libs.autodiscovery.capacity_screen import (
+    bank_append,
+    banked_hashes,
+    build_bank_record,
+    screen_reason,
+)
 from libs.autodiscovery.generators import net_returns, planned_hypotheses
 from libs.autodiscovery.lifecycle import promote
-from libs.autodiscovery.memory import CandidateStore
+from libs.autodiscovery.memory import CandidateStore, content_hash
 from libs.autodiscovery.models import (
     CandidateStatus,
     CycleResult,
@@ -64,6 +71,7 @@ class AutoDiscoveryLab:
         families: Sequence[Family] | None = None,
         execution_gap: ExecutionGap | None = None,
         family_trial_budget: int = 120,
+        capacity_bank: Path | None = None,
     ) -> None:
         self.db = db
         self.data_provider = data_provider
@@ -79,6 +87,9 @@ class AutoDiscoveryLab:
         self.execution_gap = execution_gap or ExecutionGap()
         # pre-registered per-family search size -> the FIXED wall (see _family_trials)
         self.family_trial_budget = int(family_trial_budget)
+        # Retirement bank for the pre-scoring capacity screen (None = the repo default,
+        # data/capacity_retired_bank.jsonl). Injectable so tests never touch the real bank.
+        self.capacity_bank = capacity_bank
 
     def _cost_for(self, symbol: str) -> float:
         return self.cost_provider(symbol) if self.cost_provider is not None else self.cost
@@ -110,6 +121,35 @@ class AutoDiscoveryLab:
         exactly the meta-overfitting the cumulative counter existed to catch."""
         return max(self.family_trial_budget, n_new_in_family + int(prior.get(str(family), 0)))
 
+    def _record_scored(self, *, campaign_id: str, hyp: Hypothesis, status: CandidateStatus,
+                       metrics: ValidationMetrics, survived: bool, reason: str | None,
+                       book_usd: float, n_sleeves: int) -> str | None:
+        """Persist a scored candidate -- unless the capacity screen banks it first.
+
+        THE FACTORY BOUNDARY (§42, 2026-08-05). Returns None when the candidate was stored, else
+        the retirement reason it was banked under. A candidate with a MEASURED positive capacity
+        the live book cannot fill is appended to the retirement bank (full mechanism, band,
+        runway, named resurrection condition -- L1.17) and never persisted as a scored candidate,
+        so the store's ranked population cannot re-accumulate unfillable inventory. Unknown
+        capacity (0.0) is NOT screened: unmeasured is not unfillable (R0080).
+        """
+        scr = screen_reason(metrics.capacity_usd, hyp.subtype,
+                            book_usd=book_usd, n_sleeves=n_sleeves)
+        if scr is not None:
+            bank_append(build_bank_record(
+                candidate_id=generate_id("cand"), family=hyp.family.value, subtype=hyp.subtype,
+                symbol=hyp.symbol, params=dict(hyp.params), content_hash=content_hash(hyp),
+                mechanism=hyp.mechanism.value, hypothesis_text=hyp.edge_source,
+                failure_modes=list(hyp.failure_modes), capacity_usd=metrics.capacity_usd,
+                book_usd=book_usd, n_sleeves=n_sleeves, metrics=metrics.model_dump(),
+                campaign_id=campaign_id, status_at_retirement="never-stored (screened at scoring)",
+                survived=survived, rejection_reason=reason, reason=scr,
+            ), bank=self.capacity_bank)
+            return scr
+        self.store.record(campaign_id=campaign_id, hyp=hyp, status=status, metrics=metrics,
+                          survived=survived, rejection_reason=reason)
+        return None
+
     def cycle(self, symbols: Sequence[str]) -> CycleResult:
         campaign_id = generate_id("camp")
         # highest-priority families first; optionally restricted to a focused set (T0)
@@ -119,8 +159,13 @@ class AutoDiscoveryLab:
         prepared: list[tuple[Hypothesis, np.ndarray, np.ndarray]] = []
         skipped = 0
         series_cache: dict[str, MarketSeries | None] = {}
+        # BANKED IS TESTED (§42 capacity screen). A candidate the screen banked was never stored,
+        # so `exists` cannot dedup it -- without this rung the factory would re-backtest and
+        # re-bank the same unfillable hypothesis every cycle, forever. Resurrection from the bank
+        # is a named, deliberate act (L1.16a), never a re-generation.
+        _banked = banked_hashes(self.capacity_bank)
         for hyp, spec in plan:
-            if self.store.exists(hyp):
+            if self.store.exists(hyp) or content_hash(hyp) in _banked:
                 skipped += 1
                 continue
             if hyp.symbol not in series_cache:
@@ -288,6 +333,11 @@ class AutoDiscoveryLab:
 
         # ---------------------------------------------------------------- PASS 2: promote
         counts = dict.fromkeys(CandidateStatus, 0)
+        # ONE book, ONE sleeve count for the whole campaign's capacity screen -- read once, like
+        # check_capacity_hunt does, so every candidate in a cycle is banded against the same desk.
+        from libs.research.capacity_policy import live_book_usd, live_sleeves
+        _book, _sleeves = live_book_usd(), live_sleeves()
+        n_banked = 0
         for i, (hyp, rets, stressed, verdict, box) in enumerate(evaluated):
             status = promote(rets, validation_survived=verdict.survived)
             reason = verdict.rejection_reason
@@ -316,11 +366,25 @@ class AutoDiscoveryLab:
             elif status is CandidateStatus.REGISTRY and not regime_robust(rets):
                 status = CandidateStatus.PAPER
                 reason = "failed: regime_robustness (edge confined to one volatility regime)"
-            counts[status] += 1
-            self.store.record(
+            # PRE-SCORING CAPACITY SCREEN (§42, 2026-08-05): the ONLY exit that does not persist.
+            # An UNFILLABLE candidate is banked with its full mechanism instead of stored --
+            # "screened out before scoring, not carried as candidates".
+            if self._record_scored(
                 campaign_id=campaign_id, hyp=hyp, status=status, metrics=verdict.metrics,
-                survived=status is CandidateStatus.REGISTRY,
-                rejection_reason=reason,
+                survived=status is CandidateStatus.REGISTRY, reason=reason,
+                book_usd=_book, n_sleeves=_sleeves,
+            ) is not None:
+                n_banked += 1
+                continue
+            counts[status] += 1
+
+        if n_banked:
+            self.audit.append(
+                "capacity_screen", actor="autodiscovery_lab",
+                inputs={"campaign_id": campaign_id, "banked": n_banked,
+                        "book_usd": _book, "n_sleeves": _sleeves},
+                outcome=(f"{n_banked} candidate(s) unfillable on a ${_book:,.0f} book -> "
+                         "retirement bank, never persisted as scored"),
             )
 
         reached_shadow = counts[CandidateStatus.SHADOW] + counts[CandidateStatus.PAPER] + \

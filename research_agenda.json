@@ -4,7 +4,7 @@
  "primary_bottleneck": {
   "name": "calendar-time data accumulation",
   "evidence": "oi_divergence / ls_contrarian / liquidation_reversal at 7/40 forward days (ETA 2026-08-05); stablecoin_flows at 1/40 forward days (ETA 2026-08-12)",
-  "action": "WAIT \u2014 flywheel stall fixed 2026-07-03 (perp executor death moved to cash-carry executor). Both clocks now advancing. Next major information event ~33 days out.",
+  "action": "WAIT — flywheel stall fixed 2026-07-03 (perp executor death moved to cash-carry executor). Both clocks now advancing. Next major information event ~33 days out.",
   "expected_value_of_acceleration": "0 (physically impossible to shorten calendar time); the bottleneck was an engineering stall, now fixed"
  },
  "secondary_bottleneck": {
@@ -114,7 +114,7 @@
    "data_need": "none (already have order book / filters)",
    "p_positive_ev": 0.9,
    "cost_effort_h": 3.0,
-   "expected_research_roi": "HIGH \u2014 near-certain positive EV, compounds via the validation gate",
+   "expected_research_roi": "HIGH — near-certain positive EV, compounds via the validation gate",
    "decision": "BUILT (live + tested 2026-07-02: maker-first both legs, taker fallback, market fallback on error)"
   },
   {
@@ -130,7 +130,7 @@
    "data_need": "40 forward days for oi_divergence/ls_contrarian (have 13). liquidation_reversal RESET 2026-07-09: the prior 12-13/40d was fake progress -- Binance mainnet WS silently delivered zero data for 14 days (network/geo block, handshake succeeds but no frames; verified via direct probe). Swapped source to Bybit public allLiquidation (verified reachable); real clock restarts 2026-07-09T07:40Z, ETA ~2026-08-22 if it holds.",
    "p_positive_ev": 0.35,
    "cost_effort_h": 0.0,
-   "expected_research_roi": "PENDING \u2014 clock-gated, zero marginal effort",
+   "expected_research_roi": "PENDING — clock-gated, zero marginal effort",
    "decision": "WAIT (oi/ls at 13/40d; liquidation_reversal restarted from day 0 on a verified-working source)"
   },
   {
@@ -146,7 +146,7 @@
    "data_need": "FREE via public Ethereum RPC (no API key). Both signals live.",
    "p_positive_ev": 0.3,
    "cost_effort_h": 0.0,
-   "expected_research_roi": "PENDING \u2014 accumulating 2/40d.",
+   "expected_research_roi": "PENDING — accumulating 2/40d.",
    "decision": "UPGRADED 2026-07-04: (1) Added Coinbase Prime 1 wallet (0xcd531ae9..., $16.7M USDT+USDC) -- Kraken/OKX L1 checked, hold <$3K stablecoins (use L2/internal). (2) Added USDT+USDC totalSupply() as second orthogonal signal -- $147.2B total supply; supply_1d available from day 3. (3) Architecture: exchange reserve day 1 is Binance-only (structural break); day 2+ includes Coinbase Prime. Both clocks: 2/40d, ETA 2026-08-13."
   },
   {
@@ -159,7 +159,7 @@
    "data_need": "250 obs (have 1)",
    "p_positive_ev": 0.25,
    "cost_effort_h": 0.0,
-   "expected_research_roi": "PENDING \u2014 long clock, zero effort",
+   "expected_research_roi": "PENDING — long clock, zero effort",
    "decision": "WAIT"
   },
   {
@@ -172,7 +172,7 @@
    "breadth": "LOW (2 assets)",
    "crowding": "high",
    "p_positive_ev": 0.15,
-   "expected_research_roi": "LOW \u2014 same low-breadth failure (IR=IC*sqrt(breadth)) that already killed options_vrp",
+   "expected_research_roi": "LOW — same low-breadth failure (IR=IC*sqrt(breadth)) that already killed options_vrp",
    "decision": "REJECT (would repeat disproven research)"
   },
   {
@@ -196,6 +196,19 @@
    "ev": 0.0139,
    "verdict": "REJECT (EV below thresh)",
    "preregistered": "2026-07-22T23:56:55.068378+00:00"
+  },
+  {
+   "id": "etf_flow_price_divergence_absorption",
+   "axis": "etf_flows",
+   "mechanism": "Spot-ETF net creations are NON-DISCRETIONARY realized demand: APs must create when the fund trades rich (arbitrage obligation) and advisor model-portfolio allocations execute on mandate schedules -- neither can stop. When strong net creations coincide with flat/down BTC over the same window, a finite discretionary seller is absorbing a mechanical bid; the mechanical flow persists after the seller exhausts, so the DIVERGENCE state (flow-price interaction) should predict, where the flow LEVEL alone does not. Batch-1's etf_flow_pressure was the level/momentum form (EV-rejected, later re-opened); the divergence construction conditions on the interaction and is the genuinely different cell. The 07-26 screen could not run at all (22 flow-days < the 51-row floor) -- this pre-registration is dated NOW so the evidence that accrues is forward.",
+   "construction": "Construction: divergence state = 5d net-flow z > +1 while 5d BTC return z < 0 (and the symmetric redemption state) -> BTC absolute 5d forward. NOT SCREENABLE until the farside history clears 51 rows (22 on disk, ~1/day accruing -> screen executes ~2026-09). Falsify at screen: 40 fwd days; conditional NW-t <=0 kills; UNDERPOWERED if <8 divergence events in sample -> re-ledger at 120 rows, never widen the state definition to make events.",
+   "cell": "target=BTC absolute timing return, divergence-conditional; horizon=5d",
+   "ev": 0.0091,
+   "p_survive": 0.24,
+   "rank": "standard",
+   "novelty": 0.886,
+   "preregistered": "2026-08-05T06:55:14.555702+00:00",
+   "decision": "QUEUED by 2026-08-05 axis generate batch 2 (gate verdict at the recalibrated 0.002 bar); screen build -> Stage-A -> slot by EV order"
   }
  ],
  "do_not_repeat": [
@@ -210,8 +223,8 @@
   "options_vrp",
   "single_venue_carry",
   "F&G_contrarian",
-  "ls_contrarian(as DEPLOYABLE \u2014 Sharpe 10 artifact, fails DSR)",
-  "vpin_ofi_microstructure (REJECTED 2026-07-03: gross +59.4bps decaying 2024\u2192+82bps to 2026\u2192+12bps; requires L2 tick infra; IC decay kills expected ROI)",
+  "ls_contrarian(as DEPLOYABLE — Sharpe 10 artifact, fails DSR)",
+  "vpin_ofi_microstructure (REJECTED 2026-07-03: gross +59.4bps decaying 2024→+82bps to 2026→+12bps; requires L2 tick infra; IC decay kills expected ROI)",
   "liquidation_heatmap_cascade_predict (DEFERRED 2026-07-03: overlaps liquidation_reversal in pipeline; breadth limited to BTC/ETH; paid CoinGlass history; wait for existing clock)",
   "miner_flows (REJECTED 2026-07-04: CryptoQuant paid tier only; no free API; mechanism crowded)",
   "social_sentiment_nlp (REJECTED 2026-07-04: NLP complex; paid data; crowded; not orthogonal)",
@@ -240,7 +253,15 @@
   "miner_margin_squeeze (REJECTED 2026-07-22 by EV gate: ev 0.0011, new_orthogonal_data+narrow_breadth; axis=energy. Energy price spikes squeeze miner margins -> forced BTC treasury selling with a lag -- a supply-pressure channel (works jointly with the min... REVISIT if the mechanism gains breadth, a cheaper construction, or the priors move on evidence -- axis stays ingested, kill is screen-level not economic-final.",
   "hashrate_capitulation (REJECTED 2026-07-22 by EV gate: ev 0.0003, crowded_known+narrow_breadth; axis=mining. Hash-ribbon style: sustained hashrate/difficulty decline marks miner capitulation, historically near local bottoms (published; the crowding ... REVISIT if the mechanism gains breadth, a cheaper construction, or the priors move on evidence -- axis stays ingested, kill is screen-level not economic-final.",
   "net_liquidity_impulse (REJECTED 2026-07-22 by EV gate: ev 0.0026, crowded_known; axis=fed. Standalone (NOT overlay -- the 07-17 overlay class is dead): 4w impulse of WALCL-TGA-RRP as a direct directional signal for the crypto compl... REVISIT if the mechanism gains breadth, a cheaper construction, or the priors move on evidence -- axis stays ingested, kill is screen-level not economic-final. [REOPENED 2026-07-31 under L1.16a: named enabling change = EV-gate recalibration 0.05->0.002 (R0023/R0034, measured 5x miscalibration); original death mechanism WAS the miscalibrated bar. Moved to Stage-A screening queue -- kill history preserved here.]",
-  "crossasset_carry_confirm (REJECTED 2026-07-22 by EV gate: ev 0.0023, crowded_known; axis=crossasset. Cross-asset trend/carry agreement (FX carry, commodity trend, equity trend all risk-on) as a breadth-100 conditioning state for crypto sleev... REVISIT if the mechanism gains breadth, a cheaper construction, or the priors move on evidence -- axis stays ingested, kill is screen-level not economic-final. [REOPENED 2026-07-31 under L1.16a: named enabling change = EV-gate recalibration 0.05->0.002 (R0023/R0034, measured 5x miscalibration); original death mechanism WAS the miscalibrated bar. Moved to Stage-A screening queue -- kill history preserved here.]"
+  "crossasset_carry_confirm (REJECTED 2026-07-22 by EV gate: ev 0.0023, crowded_known; axis=crossasset. Cross-asset trend/carry agreement (FX carry, commodity trend, equity trend all risk-on) as a breadth-100 conditioning state for crypto sleev... REVISIT if the mechanism gains breadth, a cheaper construction, or the priors move on evidence -- axis stays ingested, kill is screen-level not economic-final. [REOPENED 2026-07-31 under L1.16a: named enabling change = EV-gate recalibration 0.05->0.002 (R0023/R0034, measured 5x miscalibration); original death mechanism WAS the miscalibrated bar. Moved to Stage-A screening queue -- kill history preserved here.]",
+  "cme_roll_window_spread_pressure (REJECTED 2026-08-05 by EV gate: ev 0.0002, funding_family+crowded_known+narrow_breadth; axis=cme; cell=target=CME next-minus-front calendar-spread change (carry, direction-agnostic); horizon=5d event window. CME monthly expiry FORCES every holder of the dying front contract to roll inside a compressed calendar window: futures-... REVISIT: REVISIT only if CME crypto OI composition shifts to a structurally forced-long regime (e.g. futures-ETF AUM regrowth) -- that raises the forced cohort's size, the mechanism's one free parameter.)",
+  "bill_yield_carry_hurdle_passthrough (REJECTED 2026-08-05 by EV gate: ev 0.0017, funding_family+crowded_known; axis=crossasset; cell=target=20d change in median perp funding level (carry, direction-agnostic); horizon=20d. Perp funding equilibrium = risk-free rate + crypto leverage premium. The marginal SUPPLIER of perp shorts (the basis arb... REVISIT: REVISIT if a passive read of the desk's own funding archive shows a stable funding-to-bill-yield beta (no research-hours needed to watch it) -- that moves est_sharpe on evidence.)",
+  "miner_curtailment_supply_relief (REJECTED 2026-08-05 by EV gate: ev 0.0001, crowded_known+narrow_breadth; axis=energy; cell=target=BTC absolute timing return, event-conditional; horizon=5d. Post-2022 large US miners hold interruptible-power/demand-response contracts: a gas/power spike triggers CONTRACTUAL cur... REVISIT: REVISIT only if the precondition test finds hashrate DOES respond but the price cell was underpowered (<12 events) -- then re-ledger at 20 events, never re-fish the same window.)",
+  "credit_stress_degross_transmission (REJECTED 2026-08-05 by EV gate: ev 0.001, crowded_known; axis=equity; cell=target=BTC absolute timing return; horizon=5d. LQD-minus-IEF excess return isolates the corporate CREDIT premium from duration. Credit deterioration tightens financing... REVISIT: REVISIT only on a credit-regime break (IG OAS > 200bps era) where the haircut channel carries observable variance -- the 2023-2026 sample is credit-calm and biases power down.)",
+  "tga_announced_path_anticipation (REJECTED 2026-08-05 by EV gate: ev 0.0004, crowded_known; axis=fed; cell=target=BTC absolute timing return; horizon=20d. The Treasury PUBLISHES its target end-of-quarter TGA balance in the quarterly refunding statement: the future reserve dr... REVISIT: None within the macro-liquidity family -- the family's exhaustion is the pre-committed outcome of this reject. A genuinely new fed-axis mechanism class re-opens the axis.)",
+  "flight_to_safety_rotation_lag (REJECTED 2026-08-05 by EV gate: ev 0.0001, crowded_known+narrow_breadth; axis=metal; cell=target=BTC absolute timing return, event-conditional; horizon=5d. On flight-to-safety EVENT days (gold 1d z >= +2 while equities fall), mandate-driven rebalancers -- target-vol and risk-... REVISIT: REVISIT only if the event count reaches 30+ with the sign consistently positive but underpowered -- more history is the only honest power increase.)",
+  "hashrate_capex_overshoot_fade (REJECTED 2026-08-05 by EV gate: ev 0.0001, crowded_known+narrow_breadth; axis=mining; cell=target=BTC absolute timing return (fade); horizon=20d. Hashrate arriving today embodies ASIC capex committed 6-9 months ago (fabrication, delivery, racking are physical lags).... REVISIT: REVISIT only on a structural break in the capex lag (e.g. hosting capacity glut making energization discretionary) -- that severs the forced-energization premise.)",
+  "attention_breadth_regime_fade (REJECTED 2026-08-05 by EV gate: ev 0.0008, crowded_known; axis=wikipedia; cell=target=BTC absolute timing return (fade); horizon=20d. Cross-ARTICLE attention BREADTH -- how many of the 7 tracked coin articles spike simultaneously -- measures how WIDE the... REVISIT: None within the attention family if killed -- family exhaustion is this card's pre-committed downside. New articles/languages are parameter variants, not re-openers.)"
  ],
  "next_information_event": "day 40 on oi/ls/liq forward archives (~28 days out from 2026-07-04); day 40 on stablecoin flows (~38 days out from 2026-07-04)",
  "reopened_20260731": {
