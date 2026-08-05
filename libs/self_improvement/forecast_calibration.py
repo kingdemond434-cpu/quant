@@ -34,12 +34,19 @@ def _save(d: dict[str, Any], store: Path | None = None) -> None:
 
 
 def log_forecast(key: str, p: float, kind: str, resolve_by: str | None = None,
-                 claim: str | None = None, store: Path | None = None) -> None:
+                 claim: str | None = None, store: Path | None = None,
+                 resolver: str | None = None) -> None:
     """Record (or refresh, while unresolved) a probability forecast keyed by a stable id.
 
     resolve_by (ISO date/datetime, optional) is the deadline by which the outcome must be scored
     -- an unresolved forecast past it is the 'never score yourself' defect check_calibration.py
     hunts: a desk that predicts but never grades its predictions has beliefs, not forecasts.
+
+    ``resolver`` names WHO will grade this row -- a script path, or a one-line statement of the
+    artifact the answer will be read off. Optional so no existing writer breaks, but supplying it
+    is the only way a HAND-LOGGED forecast (no organ owns its namespace, claim not in the price
+    shape the automatic scorer parses) escapes :func:`unowned`. A deadline with no grader is a
+    row that will pin the L1.29 fence the day it comes due and can never be cleared -- R0260.
 
     ``store`` overrides the module-level store, and exists because R0254 measured what happens
     without it. An organ that takes a ``root`` and writes SOME of its outputs under that root
@@ -61,6 +68,8 @@ def log_forecast(key: str, p: float, kind: str, resolve_by: str | None = None,
         f["resolve_by"] = resolve_by
     if claim is not None:
         f["claim"] = claim
+    if resolver is not None:
+        f["resolver"] = resolver
     d["forecasts"][key] = f
     _save(d, store)
 
@@ -92,6 +101,64 @@ def overdue(now: datetime | None = None) -> list[dict[str, Any]]:
         if due < now:
             out.append({"key": key, "p": f.get("p"), "resolve_by": rb,
                         "claim": f.get("claim", "")})
+    return out
+
+
+#: Key namespace (text before the first ':') -> the organ that grades it. R0260 named the failure
+#: this exists to surface: a forecast namespace with a WRITER and no RESOLVER ages past its
+#: deadline, `check_calibration` fires OVERDUE, and no organ on the desk can ever clear it -- so
+#: the desk's #1 max_push item is pinned by construction and a permanently-red fence gets switched
+#: off (L1.43). The four `calib-quiz-*` rows the row was raised for were eventually graded by
+#: score_forecasts' price parser, but 13 hand-logged judgement forecasts now sit in the store with
+#: the same shape and the earliest comes due 2026-08-14.
+#:
+#: A namespace ABSENT from this map is UNOWNED, never assumed fine -- the map can only ever
+#: subtract from the orphan count for a namespace someone explicitly vouched for, so a new writer
+#: cannot quietly inherit a grader it does not have. The paths are checked against disk by
+#: :func:`unowned`, because a resolver that was deleted is exactly the regression worth catching.
+ORGAN_RESOLVERS: dict[str, str] = {
+    "probe": "scripts/run_calibration_probe.py",
+    "rec": "scripts/recommendations.py",
+    "eng": "scripts/research_cycle.py",
+    "llm_trader": "scripts/resolve_llm_trader_book.py",
+    "conviction": "scripts/score_forecasts.py",
+}
+
+
+def unowned(is_auto_resolvable: Any = None, root: Path | None = None,
+            store: Path | None = None) -> list[dict[str, Any]]:
+    """Unresolved forecasts that NOTHING on this desk can grade -- the orphan check.
+
+    A row is owned if any of three things is true: it declares its own ``resolver``; its key
+    namespace maps to a resolver script that still EXISTS on disk; or its claim is shaped so the
+    automatic price scorer can parse it (``is_auto_resolvable``, supplied by the caller that owns
+    those patterns -- omitted, every claim counts as unparseable, which over-reports rather than
+    under-reports).
+
+    Reported BEFORE the deadline on purpose. OVERDUE already fails once the date passes, and at
+    that point the desk has no move left; this names the same rows while grading is still
+    possible, with the days remaining, so the queue is actionable instead of terminal.
+    """
+    root = root or Path(".")
+    out: list[dict[str, Any]] = []
+    for key, f in _load(store)["forecasts"].items():
+        if f.get("resolved") or not f.get("resolve_by"):
+            continue
+        if f.get("resolver"):
+            continue
+        ns = key.split(":")[0] if ":" in key else ""
+        owner = ORGAN_RESOLVERS.get(ns)
+        if owner and (root / owner).exists():
+            continue
+        claim = str(f.get("claim") or "")
+        if is_auto_resolvable is not None and is_auto_resolvable(claim):
+            continue
+        out.append({"key": key, "kind": f.get("kind"), "resolve_by": f.get("resolve_by"),
+                    "claim": claim[:110],
+                    "why": (f"namespace {ns!r} maps to {owner} which is MISSING" if owner else
+                            "no declared resolver, no organ owns this namespace, and the claim "
+                            "is not in a shape the automatic price scorer can parse")})
+    out.sort(key=lambda r: str(r["resolve_by"]))
     return out
 
 
@@ -133,6 +200,46 @@ def resolve(key: str, outcome: bool, store: Path | None = None) -> None:
     _save(d, store)
 
 
+def _claim_signature(f: dict[str, Any]) -> str:
+    """The identity a duplicate-claim collapses on. ONE definition, used by both the numerator
+    and the denominator, because two parallel filter chains over the same store is how they came
+    to describe different populations in the first place (see :func:`eligible`)."""
+    return " ".join(str(f.get("claim") or f["_key"]).split()).lower()
+
+
+def eligible(forecasts: dict[str, Any]) -> list[dict[str, Any]]:
+    """Rows that COULD ever enter the calibration numerator -- resolved or not.
+
+    THE DENOMINATOR THIS EXISTS TO BE. `_scoreable` draws the numerator from a filtered
+    population (has resolve_by, kind is sizing, claim not already counted); `check_calibration`
+    compared that numerator against the RAW store size. Measured 2026-08-05: 42 scoreable against
+    a denominator of 172, of which 43 rows -- 33 retrospective `eng:*`, 9 non-sizing declines, 1
+    deduped duplicate -- can never enter the numerator by construction. `42 < 172//4` fired BLIND
+    and exited 2; on the matched population it is `42 < 129//4 = 32`, which does not fire. The
+    L1.29 fence, the desk's own #1 max_push item, was pinned red by a category error.
+
+    The direction is what makes it a defect rather than a quirk: every exclusion lowers the
+    numerator AND raises the denominator, so the ratio is hit twice. Filtering retrospective rows
+    was the fix for the calibration SIGN INVERSION that fed 6.00x leverage -- so the arithmetic
+    punished the desk for the hygiene it was told to adopt. That is L1.53(4)'s named failure: a
+    gauge improvable by doing less of the thing it exists to encourage.
+
+    Numerator-inside-denominator is guaranteed structurally, not by inspection: `_scoreable`'s
+    rows satisfy strictly more predicates than these, and both dedup on `_claim_signature`.
+    """
+    rows = [{**f, "_key": k} for k, f in forecasts.items() if f.get("resolve_by")]
+    rows.sort(key=lambda f: str(f.get("updated") or ""))
+    seen: set[str] = set()
+    out: list[dict[str, Any]] = []
+    for f in rows:
+        sig = _claim_signature(f)
+        if sig in seen:
+            continue
+        seen.add(sig)
+        out.append(f)
+    return out
+
+
 def _scoreable(forecasts: dict[str, Any]) -> list[dict[str, Any]]:
     """The resolved forecasts that carry real calibration information.
 
@@ -160,7 +267,7 @@ def _scoreable(forecasts: dict[str, Any]) -> list[dict[str, Any]]:
     seen: set[str] = set()
     out: list[dict[str, Any]] = []
     for f in res:
-        sig = " ".join(str(f.get("claim") or f["_key"]).split()).lower()
+        sig = _claim_signature(f)
         if sig in seen:
             continue
         seen.add(sig)
@@ -191,6 +298,10 @@ def report(*, exclude_kinds: tuple[str, ...] = NON_SIZING_KINDS) -> dict[str, An
     resolved = [f for f in forecasts.values() if f.get("resolved")]
     res = _scoreable(forecasts)
     n = len(res)
+    #: The population `n` is drawn from. Published so every consumer divides by the SAME
+    #: population it counted (L1.57) instead of reaching for len(store) -- which is what pinned
+    #: this fence BLIND. n_eligible >= n holds by construction; see :func:`eligible`.
+    n_eligible = len(eligible(forecasts))
     excluded = {"retrospective": sum(1 for f in resolved if not f.get("resolve_by")),
                 "duplicate_claim": len(resolved) - n
                 - sum(1 for f in resolved if not f.get("resolve_by")),
@@ -198,7 +309,7 @@ def report(*, exclude_kinds: tuple[str, ...] = NON_SIZING_KINDS) -> dict[str, An
                                        if f.get("resolved")
                                        and str(f.get("kind") or "") in exclude_kinds)}
     if n < 5:
-        return {"n_resolved": n, "n_excluded": excluded,
+        return {"n_resolved": n, "n_eligible": n_eligible, "n_excluded": excluded,
                 "status": (f"insufficient outcomes ({n}/5) -- accumulating; "
                            f"{excluded['retrospective']} retrospective + "
                            f"{excluded['duplicate_claim']} duplicate row(s) are not scoreable"),
@@ -209,7 +320,7 @@ def report(*, exclude_kinds: tuple[str, ...] = NON_SIZING_KINDS) -> dict[str, An
     # Beta(1,1) prior updated with hits/misses -> posterior mean hit-rate
     a, b = 1 + hits, 1 + (n - hits)
     return {
-        "n_resolved": n, "n_excluded": excluded, "status": "calibrated",
+        "n_resolved": n, "n_eligible": n_eligible, "n_excluded": excluded, "status": "calibrated",
         "brier": round(brier, 4), "reliability": round(1 - brier, 4),
         "bias": round(bias, 4),
         "bias_label": ("over-confident" if bias > 0.05 else
