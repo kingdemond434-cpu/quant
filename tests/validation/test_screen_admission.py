@@ -344,3 +344,31 @@ def test_an_undeclared_bar_count_is_reported_unmeasured_not_passed():
 def test_the_bar_floor_is_the_two_standard_error_arithmetic_not_a_taste():
     """T >= 4 * PPY / SR^2 puts a true annualised Sharpe of 1.0 two standard errors above zero."""
     assert pytest.approx(4.0 * PPY_DAILY / 1.0 ** 2, rel=0.01) == MIN_ADMISSION_BARS
+
+
+class TestICIsNotPnL:
+    """L0013, graduated: positive IC is not a profitable strategy.
+
+    MEASURED: reversal and leadlag both posted positive Spearman IC and NEGATIVE gross Sharpe —
+    IC lives mid-distribution while the tradeable top and bottom buckets do not carry it. The
+    admission screen is where that lesson has to bite, so the ranking must key on realised
+    net-of-cost performance and never on a correlation statistic.
+    """
+
+    def test_ranking_is_driven_by_oos_sharpe_not_a_correlation_field(self) -> None:
+        """A row carrying a flattering `ic` must not outrank one with better OOS P&L."""
+        g = dict.fromkeys(STATISTICAL_GATES, True)
+        good_pnl = rank_score(g, oos_sharpe=0.80, dsr=0.9, reality_p=0.01, cost_basis="net")
+        flattering_ic = rank_score({**g, "ic": True}, oos_sharpe=0.20, dsr=0.9,
+                                   reality_p=0.01, cost_basis="net")
+        assert good_pnl > flattering_ic
+
+    def test_gross_numbers_are_charged_and_net_numbers_are_not(self) -> None:
+        """The lesson's operative half: a candidate quoted GROSS pays the turnover charge, so a
+        high-turnover signal cannot present its pre-cost number as if it were tradeable."""
+        g = dict.fromkeys(STATISTICAL_GATES, True)
+        gross = rank_score(g, oos_sharpe=1.0, dsr=0.9, reality_p=0.01,
+                           turnover=0.60, cost_basis="gross")
+        net = rank_score(g, oos_sharpe=1.0, dsr=0.9, reality_p=0.01,
+                         turnover=0.60, cost_basis="net")
+        assert gross < net, "a gross-quoted candidate must be charged for its turnover"
