@@ -43,8 +43,10 @@ _CONFIG = Path("data/secrets/alert_channels.json")
 _LEDGER = Path("data/alert_delivery.jsonl")
 _SILENT_FLAG = Path("data/ALERT_CHANNELS_SILENT")
 
+_HEARTBEAT = Path("data/secrets/heartbeat_url.json")
+
 _TIMEOUT = 12.0
-_KINDS = ("ntfy", "telegram", "webhook", "email")
+_KINDS = ("ntfy", "telegram", "webhook", "email", "hc")
 
 
 def _log(channel: str, ok: bool, detail: str, title: str, ledger: Path = _LEDGER) -> None:
@@ -116,16 +118,53 @@ def _send_ntfy(cfg: dict[str, Any], title: str, body: str) -> str:
         return f"http {r.status}"
 
 
+def _send_hc(cfg: dict[str, Any], title: str, body: str, *, canary: bool = False) -> str:
+    """healthchecks.io -- the one independent provider this box can arm with NO new credential.
+
+    Arming has sat "owed to a human step" since 2026-07-29 while a perfectly good second provider
+    was already configured on the box for the box-liveness heartbeat: different company, different
+    network path, and its ping URL is the only credential needed. `run_alerts._second_channel`
+    has quietly relied on it for real pages since gap #38; this makes the SAME route visible to
+    the registry, so its deliveries land in the ledger and `all_silent_since` can finally see two
+    channels instead of one.
+
+    /fail marks the check down and fires whatever notification is configured there; the next
+    3-minute heartbeat ping clears it automatically. THE CANARY MUST NOT USE IT: a synthetic probe
+    every 6h that cries "box is dead" would train the principal to ignore the one signal that says
+    the machine is gone. /log records the event and notifies nobody, which is exactly what proving
+    reachability calls for -- so the canary tests the route without spending its credibility.
+
+    `url` is optional and normally absent: defaulting to the heartbeat file keeps ONE copy of the
+    secret, so a rotated URL cannot leave this channel silently pointing at a dead check. Set it
+    explicitly once a dedicated alert check exists -- see the semantics note in status().
+    """
+    url = str(cfg.get("url") or "").strip()
+    if not url:
+        url = str(json.loads(_HEARTBEAT.read_text("utf-8")).get("url", "")).strip()
+    if not url:
+        raise ValueError("hc channel: no url in config and no data/secrets/heartbeat_url.json")
+    endpoint = url.rstrip("/") + ("/log" if canary else "/fail")
+    data = f"{title}\n{body}".encode("utf-8", "ignore")[:9000]
+    with urllib.request.urlopen(urllib.request.Request(endpoint, data=data),
+                                timeout=_TIMEOUT) as r:
+        return f"http {r.status} {'log' if canary else 'fail'}"
+
+
 _SENDERS = {"ntfy": _send_ntfy, "telegram": _send_telegram,
-            "webhook": _send_webhook, "email": _send_email}
+            "webhook": _send_webhook, "email": _send_email, "hc": _send_hc}
+_CANARY_AWARE = frozenset({"hc"})     # kinds with a non-notifying probe endpoint
 
 
 def send_all(title: str, body: str, *, config: Path = _CONFIG,
-             ledger: Path = _LEDGER) -> dict[str, Any]:
+             ledger: Path = _LEDGER, canary: bool = False) -> dict[str, Any]:
     """Fire EVERY armed channel; one channel's failure can never stop another's.
 
     Returns {"armed": n, "delivered": n, "results": [...]}. When nothing is armed the result says
     so and a row is written -- an unarmed pager is a recorded state, not silence.
+
+    `canary=True` marks the send as a synthetic reachability probe. Channels that can distinguish
+    the two use the non-notifying variant, so proving the route works never costs the principal an
+    alert they have to read and dismiss -- a canary that pages is a canary that gets muted.
     """
     channels = load_channels(config)
     if not channels:
@@ -138,10 +177,12 @@ def send_all(title: str, body: str, *, config: Path = _CONFIG,
     for cfg in channels:
         kind = str(cfg.get("kind"))
         try:
-            detail = _SENDERS[kind](cfg, title, body)
+            sender = _SENDERS[kind]
+            detail = (sender(cfg, title, body, canary=canary) if kind in _CANARY_AWARE
+                      else sender(cfg, title, body))
             ok = True
         except (urllib.error.URLError, urllib.error.HTTPError, OSError, KeyError,
-                smtplib.SMTPException, ValueError) as e:
+                json.JSONDecodeError, smtplib.SMTPException, ValueError) as e:
             ok, detail = False, f"{type(e).__name__}: {e}"[:200]
         _log(kind, ok, detail, title, ledger)
         results.append({"channel": kind, "ok": ok, "detail": detail})

@@ -55,9 +55,13 @@ def main() -> int:
 
     sent = None
     if args.force or _due(args.interval_h):
+        # canary=True: channels with a non-notifying probe endpoint use it. Proving the route is
+        # alive must not cost a page every 6h -- a canary that pages is a canary that gets muted,
+        # and then it is protecting nothing.
         sent = send_all("quant canary",
                         f"synthetic canary {datetime.now(tz=UTC).isoformat()} -- "
-                        "no action needed; this proves the alert path can deliver")
+                        "no action needed; this proves the alert path can deliver",
+                        canary=True)
         _stamp()
 
     silent = all_silent_since(args.lookback_h)
