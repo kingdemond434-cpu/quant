@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """RESEARCH MEMORY CLI (2026-07-24) -- the conversion loop's ledger, made one-line writable.
 
 The external audit and the desk's own fence agree: research_memory had 0 rows EVER while every

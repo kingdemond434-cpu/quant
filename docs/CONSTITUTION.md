@@ -39,6 +39,17 @@ Below that bar it is rejected, whatever its gross statistics.
 reduce statistical rigor; never confuse interesting research with deployable alpha. Evidence
 always overrides intuition. The two-stage discovery law stands: screens have zero promotion
 authority; only pre-registered forward evidence promotes; the confirmation bar never loosens.
+THE BAR IS A FUNCTION OF THE COHORT, SO THE COHORT HAS ONE SOURCE. The forward bar is
+holm_bar(m), and m is the number of CONCURRENTLY ACCRUING clocks desk-wide -- never the roster of
+whichever script is asking. Every bar site reads `libs.research.slot_registry.cohort_m_for_bar()`
+and records the m it used in its own artifact, because a bar is only auditable if its artifact
+says what it was computed against. UNDERSTATING m LOOSENS EVERY BAR, so every degraded path floors
+UP to the cap: an unreadable cohort source, or an unusable registry, yields the TIGHTEST legal bar
+and never a smaller number. Over-counting costs a real edge a few days of clock; under-counting
+admits noise as edge and sizes capital on it, and those are not symmetric. Measured 2026-08-05:
+the axis clocks ran at holm_bar(3)=2.13 against a true cohort of 11 (bar 2.61) -- alpha 0.0167 per
+clock against a designed 0.0045, a family-wise error rate 3.67x the design, on the desk's only
+path from research to capital. Fenced by `scripts/check_cohort_integrity.py`.
 
 **L1.7 ADVERSARIAL VALIDATION.** Every success triggers attempts to disprove it. The organism
 continuously tries to falsify its own beliefs, models, doctrines, architectures and decisions.

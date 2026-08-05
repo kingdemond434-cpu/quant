@@ -1976,6 +1976,22 @@ _FINDING_DOCS_EXCLUDED = {
     "docs/EXTERNAL_PANEL_DOSSIER.md":
         "GENERATED dossier -- its numbered block is a copy of the register table; original panel "
         "findings enter via panel_inbox -> panel_rulings, which are in scope",
+    # SURFACED 2026-08-05. The SAME class is claimed in _TERMINAL_ARTIFACTS, and it has to be
+    # claimed TWICE because the two checks read different dicts: check_artifact_governance unions
+    # _TERMINAL_ARTIFACTS in, check_findings_scope does not. Dual entry is the established pattern
+    # here (EXTERNAL_PANEL_DOSSIER.md, just above, is in both for the same reason) -- the two
+    # answer different questions: "which law claims this file" vs "why do its numbered lines owe
+    # no register row". The asymmetry itself is rowed, not silently worked around.
+    # VERIFIED on the 2026-08-05 s3 instance before excluding, rather than assumed: all 10 of its
+    # numbered items converted in-run -- 32/33/34/39/40 landed as committed code with tests
+    # (slot_registry.cohort_m_for_bar + check_cohort_integrity.py + 16 tests), and 31/35/36/37/38
+    # landed as §41 rows R0039-R0043. Nothing was left for a register row to drive.
+    "docs/research/capability_hunt/":
+        "CAPABILITY-HUNT SESSION RECORD (L1.31) -- dated per-slot snapshots whose numbered items "
+        "are CONVERTED IN THE SAME RUN: each is either committed code with tests or a §41 "
+        "recommendation row carrying a forced disposition. The ledger drives them; the snapshot "
+        "is the audit trail of that conversion, never inventory awaiting it. A hunt that writes a "
+        "record and rows nothing is caught by §41's 24h undisposed-row defect, not by this scope.",
     # SURFACED 2026-07-29, the moment check_findings_scope stopped being blind. These three
     # carried 106 numbered items outside the §35 scan. They are NOT findings owing register rows:
     "docs/research/MEASUREMENT_DOCTRINE.md":
@@ -2082,6 +2098,21 @@ _TERMINAL_ARTIFACTS = {
         "EXTERNAL_PANEL_DOSSIER, terminal by construction. NOTE for whoever reunifies the fork: "
         "the producer scripts/build_audit_shards.py is one of the master-only files missing from "
         "this branch (GAP #88 / R0023), so the shards on disk currently have no regenerator here.",
+    # SURFACED 2026-08-05 by the s3 hunt's own session record, which arrived ungoverned and fired
+    # this check the same day -- §36 working exactly as designed. Trailing slash claims the CLASS:
+    # the hunt emits two dated instances per slot (proposals + record), several times a day, so
+    # exact-path claims could never keep up.
+    "docs/research/capability_hunt/":
+        "CAPABILITY-HUNT SESSION RECORD -- one `<date>_s<N>_proposals.md` (the two families' "
+        "proposals, written by the harness) plus one `<date>_s<N>_hunt.md` (what was adjudicated, "
+        "built, refused, and what the first run said) per slot. TERMINAL because the hunt's "
+        "conversion is not the document: every capability it adjudicates lands as COMMITTED CODE "
+        "with tests, and every capability it declines lands as a §41 row in "
+        "data/recommendations.json carrying a forced disposition. The record is the audit trail of "
+        "that conversion, never inventory awaiting it -- converting it again would convert the "
+        "same work twice, which is the audit_shards/dossier reasoning. THE CHECK THAT KEEPS THIS "
+        "HONEST is §41: an undisposed row past 24h is a defect, so a hunt that writes a record and "
+        "ledgers nothing is caught by the recommendation ledger, not by this claim.",
     "docs/research/recent_changes.md":
         "GENERATED commit-audit payload -- ops/run_commit_audit.sh rewrites it from "
         "`git log --since=24.hours` every run (cron 10:10 daily), patches truncated to 400 lines. "

@@ -453,6 +453,102 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0038",
+   "source": "cycle",
+   "summary": "Recalibrate alpha_economics.ev_score's capacity term to the desk's ACTUAL deployable capital instead of a hardcoded 1e6 (read it from cashcarry_config/live equity), or equivalently re-derive _EV_THRESHOLD at current scale. Evidence: 4.4% of a 320-cell idea grid clears at our $50k book vs 17.5% at $1M, and a Sharpe-3.0/6-hour idea rejects. Do it as a calibration pass with a pre-registered acceptance-rate target, not a threshold nudge -- and note the gate has zero promotion authority, so the risk of loosening is triage-only.",
+   "roi_bps": 4.0,
+   "raised": "2026-08-05T01:54:52.418687+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0039",
+   "source": "cycle",
+   "summary": "Wire the five inert 'FAILING FORWARD -> kill' verdicts (run_crypto_shadow:88, run_crossasset_shadow:84, run_shadow_forward:75, run_trend_shadow:65, run_trend_regime_shadow:69) to an actual reader so a dead clock VACATES its Holm seat. Written by 5 scripts, read by nothing: the desk wrote the kill verdict and never wired the killer. Now unblocked -- cohort m is trustworthy as of 2026-08-05.",
+   "roi_bps": null,
+   "raised": "2026-08-05T02:01:00.900590+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0040",
+   "source": "cycle",
+   "summary": "slot_registry.py:160 filters axis rows on verdict=='RETIRED' but NOTHING in the repo ever writes that string -- the one documented exit from the Holm cohort is a dead branch. Either wire a writer or delete it; an exit path that cannot be taken is worse than an acknowledged absence.",
+   "roi_bps": null,
+   "raised": "2026-08-05T02:01:01.293942+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0041",
+   "source": "cycle",
+   "summary": "Cashcarry is Holm-EXEMPT (run_cashcarry_shadow.py:126-128, judged alone as a pre-registered primary) yet occupies a seat counted inside the 12, so it imposes multiplicity on its neighbours without paying it. Decide: pay the bar or vacate the seat. Needs a principal ruling, not a unilateral change.",
+   "roi_bps": null,
+   "raised": "2026-08-05T02:01:01.620307+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0042",
+   "source": "cycle",
+   "summary": "Build the futility instrument (conditional power / days_to_graduation->None at anytime_valid.py:88 is an unconsumed futility signal already on disk). DEFERRED not skipped: its ordering constraint -- a trustworthy cohort m -- was the blocker and is now closed.",
+   "roi_bps": null,
+   "raised": "2026-08-05T02:01:01.974022+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0043",
+   "source": "cycle",
+   "summary": "TWO_STAGE_DISCOVERY_LAW.md:44 asserts 'slots recycle as clocks resolve (~40-90d)' against 0 deaths in 90d, and CONSTITUTION.md:293 asserts 'forward slots are fed daily from the resurrection queue' with no code implementing it (scripts/run_resurrection.py specified at STRUCTURAL_EDGE_IDEAS.md:68, never built). Two laws describing absent machinery.",
+   "roi_bps": null,
+   "raised": "2026-08-05T02:01:02.485581+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0044",
+   "source": "cycle",
+   "summary": "21 fences have no governing principle in build_enforcement_matrix _FENCE_OWNERS (check_asymmetry_ratchet, check_coexistence, check_data_decay, check_dependency_drift, check_dig_log_disposition, +16). Pre-existing and unchanged by this cycle; the matrix's own ratchet says a new unclaimed fence is a defect, so the backlog needs clearing before that ratchet can bite.",
+   "roi_bps": null,
+   "raised": "2026-08-05T02:01:02.888716+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0045",
+   "source": "cycle",
+   "summary": "check_scheduler_manifest reports BROKEN yet exits 0 -- three systemd timers (quant-alerts, quant-cadence, quant-daily-max) run scripts absent from the manifest. A gate that reports BROKEN and exits 0 cannot fail a build.",
+   "roi_bps": null,
+   "raised": "2026-08-05T02:01:03.322898+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

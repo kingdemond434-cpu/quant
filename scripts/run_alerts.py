@@ -341,14 +341,25 @@ def _checks() -> list[tuple[str, str]]:
     try:
         # TWO-STAGE LAW: confirmation slots are the ONLY multiplicity that matters; the
         # bar stays fixed for life only while the concurrent count stays <= 12.
-        _reg = json.loads(Path("data/shadow_sleeves.json").read_text("utf-8"))
-        _standing = 6      # carry, perp_ls, oi_div, ls_contrarian, liq_reversal, stables
-        if len(_reg) + _standing > 12:
+        #
+        # This counted `len(data/shadow_sleeves.json) + a hardcoded 6`. That file is `[]` and the
+        # six were named in a COMMENT (carry, perp_ls, oi_div, ls_contrarian, liq_reversal,
+        # stables) that had drifted from the registry's actual six, so the test was `6 > 12` --
+        # structurally unreachable, a guard on the desk's fixed-for-life bar that could never fire.
+        from libs.research.slot_registry import MAX_FORWARD_SLOTS, derive_slots
+        _snap = derive_slots()
+        _m = int(_snap["m_concurrent"])
+        if _m > MAX_FORWARD_SLOTS:
             out.append(("slot_budget_exceeded",
-                        f"{len(_reg) + _standing} concurrent confirmation slots > 12 -- "
+                        f"{_m} concurrent confirmation slots > {MAX_FORWARD_SLOTS} -- "
                         "the fixed forward bar is only fixed while the cohort is capped; "
                         "recycle or EV-evict before enrolling more"))
-    except (OSError, json.JSONDecodeError):
+        if not _snap["complete"]:
+            out.append(("slot_cohort_incomplete",
+                        f"{len(_snap['unknown_sources'])} cohort source(s) unreadable "
+                        f"({', '.join(_snap['unknown_sources'][:3])}) -- m is a LOWER bound and "
+                        "every Stage-B bar is floored at the cap until they are readable"))
+    except (OSError, json.JSONDecodeError, ImportError, KeyError):
         pass
     if _auth_broken():
         out.append(("auth_broken",

@@ -1390,3 +1390,37 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 #   ledger row per run (the row is the proof it converted; the log alone is not).
 # CONFIDENCE: committed-script (new this cycle)
 10 10 * * * cd "$QUANT_ROOT" && flock -n data/.cron_commit_audit.lock /bin/bash ops/run_commit_audit.sh >> data/cro_ai_logs/commit_audit.log 2>&1
+
+# --- L1.6 FORWARD-COHORT INTEGRITY (capability hunt s3, 2026-08-05) --------------------------
+# THE DEFECT THIS CLOSES. The Holm cohort size m is the only multiplicity the two-stage law
+# recognises, and the forward bar is "fixed for life" only while m is counted correctly. It was
+# counted by four disagreeing producers, had zero tests, and `concurrent_m()` -- the function whose
+# entire purpose is to supply it -- had zero callers. Measured on the first run of the fence: the
+# axis clocks were judged at holm_bar(3)=2.13 against a true cohort of 11 (bar 2.61), an alpha of
+# 0.0167 per clock against a designed 0.0045 -- a family-wise error rate 3.67x the design, running
+# in the PHANTOM-EDGE direction, on the desk's only path from research to capital.
+#
+# FIRST: run the Stage-B clocks. run_axis_shadows.py was scheduled NOWHERE -- not in this manifest
+# and not in the live crontab -- so the axis forward evidence was evaluated only when a human
+# happened to run it. That is the clock-saturation duty failing silently: the clocks accrued rows
+# and nothing computed a verdict on them. 03:20 UTC, after the overnight collectors and before
+# meta_research_review at 03:47 reads the slot occupancy.
+# CEILING TYPE (L1.28c): DATA-ARRIVAL bound. One aligned forward observation per UTC day, so a
+# daily fire tiles the window exactly; firing more often re-evaluates an unchanged row set.
+# EVIDENCE: scripts/run_axis_shadows.py -> web/axis_shadows.json + data/axis_shadow_state.json
+#   (each row carries the m it was judged against and that m's provenance); CONSTITUTION L1.6
+# CONFIDENCE: committed-script (existing script, newly scheduled and newly correct -- its bar
+#   moved 2.13 -> 2.61 on the live clocks the moment it read the registry instead of len(_AXES))
+20 3 * * * cd "$QUANT_ROOT" && flock -n data/.cron_axis_shadows.lock .venv/bin/python scripts/run_axis_shadows.py >> data/cro_ai_logs/axis_shadows.log 2>&1
+
+# THEN: fence it. Runs at 04:05, after run_axis_shadows (03:20) and meta_research_review (03:47),
+# so it validates artifacts written this morning rather than yesterday's fossils. Pure stdlib and
+# pure CPU: reads two JSON artifacts and AST-parses scripts/ + libs/ -- under a second.
+# It is a RAIL, not a detector: BAR-TOO-LOOSE means a promotion decision could be taken on
+# evidence the law calls insufficient, which is the one direction that manufactures edge.
+# EVIDENCE: scripts/check_cohort_integrity.py -> data/cohort_integrity_status.json; CONSTITUTION L1.6
+# CONFIDENCE: committed-script (new this cycle; first run fired BAR-TOO-LOOSE and independently
+#   reproduced the m=3-vs-11 gap on both axis artifacts, plus the meta_research_review divergence
+#   reporting 0 slots used / 12 free against the registry's 11 -- and caught a BOM in
+#   scripts/research_memory.py that had been hiding it from every AST tool on the desk)
+5 4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_cohort_integrity.lock .venv/bin/python scripts/check_cohort_integrity.py --report-only >> data/cro_ai_logs/cohort_integrity.log 2>&1

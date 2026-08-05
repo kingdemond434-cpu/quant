@@ -1,17 +1,17 @@
 # Desk digest (auto-generated daily -- do not hand-edit)
-_updated 2026-08-04T08:06Z · companion to [[institutional_knowledge]]_
+_updated 2026-08-05T02:05Z · companion to [[institutional_knowledge]]_
 
 ## Book
-- Molded net: **$-1862.54** | funding **$113.06** | run-rate APR 0.0% | day 33.12
-- Root cause: **unknown_novel** (pause_and_page) | tracking error $-1977.1
+- Molded net: **$-1852.88** | funding **$113.06** | run-rate APR 0.0% | day 33.87
+- Root cause: **infrastructure_bug** (act_autonomously) | tracking error $-1969.94
 
 ## Validation clocks
-- **carry (DEPLOYED)**: 39/90d | bt 2.77 fwd 14.64
-- **perp L/S**: 32/90d | bt 0.52 fwd 0.09
-- **trend**: 32/90d | bt 1.32 fwd -4.74
-- **trend regime-gated**: 27/90d | bt 1.31 fwd 0.0
-- **OI/LS data**: 37/40d
-- **stablecoin data**: 33/40d
+- **carry (DEPLOYED)**: 40/90d | bt 3.07 fwd 14.96
+- **perp L/S**: 33/90d | bt 0.75 fwd 0.18
+- **trend**: 33/90d | bt 1.29 fwd -4.92
+- **trend regime-gated**: 28/90d | bt 1.27 fwd 0.0
+- **OI/LS data**: 38/40d
+- **stablecoin data**: 34/40d
 
 ## Open decisions (ledger)
 - `2026-07-04-cashcarry-top10-4500` -- review 2026-08-04: funding/day rises ~50% without new drift losses by 2026-08-04
@@ -209,6 +209,12 @@ _updated 2026-08-04T08:06Z · companion to [[institutional_knowledge]]_
 - `2026-07-27-longterm-trader-skill-zero-predictive-power` -- review ?: n/a -- rejected; zero predictive power on the primary criterion
 - `2026-07-27-highpower-skill-drawdown-persists-returns-do-not` -- review ?: n/a -- returns/Sharpe persistence REJECTED with power; drawdown persistence CONFIRMED but 
 - `2026-07-27-elite-risk-filter-replicates-oos-plus-feature-factory` -- review ?: elite risk filter holds on a THIRD independent cohort or a forward clock; behavioural feat
+- `2026-08-04-cadence-starvation-and-60pct-organ-outage` -- review ?: cadence completes inside its budget and persists stamps (MEASURED 443.3s, 29 fired, 3 new 
+- `2026-08-04-carryover-37-disposition-tooling-absent` -- review ?: After the merge, these items either close or produce a real result; if they still stall, t
+- `2026-08-04-scheduled-organ-outage-and-stale-code-daemons` -- review ?: scheduled-script-missing stays closed in max_audit; the restored organs write real artifac
+- `2026-08-05-severed-reply-channel-and-amnesiac-denylist` -- review ?: (a) data/principal_replies.jsonl gains a row, or data/PAGE_ACK is stamped, the next time t
+- `2026-08-05-l137-no-verify-push-record-5th` -- review ?: The bypass count STOPS rising. The 5 instances share one root cause -- the fork's laws/doc
+- `2026-08-05-generation-three-execution-hypotheses-and-a-miscalibrated-ev-gate` -- review ?: Each hypothesis reaches a Stage-A verdict with its full target/horizon trial accounting lo
 
 ## Executive KPI snapshot
 - CRO: {"hypotheses_tested_lifetime": 20, "validated_survivors": 1, "survivor_note": "cash-carry (fwd 8/90); trend candidate gauntlet-passed (fwd 1/90); all else graveyarded", "survival_r

@@ -200,16 +200,35 @@ def moat_review() -> dict[str, Any]:
 
 # ---------------------------------------------------------------- §8 alpha lifecycle
 def lifecycle() -> dict[str, Any]:
-    reg = _j(Path("data/shadow_sleeves.json"), {})
-    names = list(reg) if isinstance(reg, dict) else [str(x) for x in (reg or [])]
+    # Read the REGISTRY, not data/shadow_sleeves.json. That file is the derivative-sleeve RUN
+    # ROSTER and it is `[]`, so this reported `forward_slots_in_use: 0, slots_free: 12` -- a
+    # 12-slot idleness defect that does not exist -- while the registry counted 11 occupied. This
+    # function feeds record_desk_metrics.py:95 and the §2 bottleneck evidence, so the desk was
+    # ranking its own binding constraint off a two-source-of-truth violation.
     grave = 0
     with contextlib.suppress(OSError):
         grave = (ROOT / "docs/graveyard.md").read_text("utf-8").count("\n## ")
-    return {"forward_slots_in_use": len(names), "slot_cap": 12,
-            "slots_free": max(0, 12 - len(names)), "graveyard_entries": grave,
+    try:
+        from libs.research.slot_registry import MAX_FORWARD_SLOTS, derive_slots
+        snap = derive_slots()
+        used, cap = int(snap["m_concurrent"]), int(MAX_FORWARD_SLOTS)
+        measured: dict[str, Any] = {
+            "forward_slots_in_use": used, "slot_cap": cap,
+            "slots_free": max(0, cap - used), "cohort_complete": bool(snap["complete"]),
+            "not_accruing": [d["name"] for d in snap.get("not_accruing", [])],
+            "provenance": "MEASURED"}
+    except (ImportError, OSError, ValueError, KeyError) as exc:
+        # L1.28a: an unmeasured cohort must never read as an idle one. Reporting `slots_free: 12`
+        # here is exactly the bug this replaced -- it would send the desk hunting for candidates
+        # to fill seats that are already full.
+        measured = {"forward_slots_in_use": None, "slot_cap": 12, "slots_free": None,
+                    "cohort_complete": False, "not_accruing": [], "provenance": "UNMEASURED",
+                    "why": f"slot registry unreadable ({type(exc).__name__}: {exc})"}
+    return {**measured, "graveyard_entries": grave,
             "note": ("§8 + clock-saturation: an EMPTY slot is idle research capital -- the axis "
                      "was ingested at real cost and generates zero evidence. Under-filling is a "
-                     "defect in the same way over-filling is.")}
+                     "defect in the same way over-filling is. Counted from "
+                     "libs.research.slot_registry, the single source of truth for the cohort.")}
 
 
 # ---------------------------------------------------------------- §2 bottleneck evidence

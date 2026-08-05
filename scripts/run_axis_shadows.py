@@ -15,8 +15,15 @@ ZERO PROMOTION AUTHORITY of its own: it reports ACCRUING / ELIGIBLE / FAILING. E
 evidence bar is met and a promotion decision may now be TAKEN by the normal gauntlet + principal
 path -- never an automatic deployment of capital.
 
-Multiplicity: m = number of concurrently-tracked axes, Holm-corrected via forward_stats.holm_bar,
-so running many shadows in parallel does not inflate the family-wise error rate.
+Multiplicity: m = the FULL concurrent forward cohort from libs.research.slot_registry, NOT the
+number of axes this script happens to track. Holm-corrected via forward_stats.holm_bar.
+
+  This was wrong until 2026-08-05 and it was wrong in the dangerous direction. `holm_bar(len(_AXES))`
+  charged these clocks m=3 (bar 2.13) while 11 forward clocks were accruing concurrently (bar 2.61)
+  -- alpha 0.0167 per clock against a designed 0.0045, a family-wise error rate 3.67x the design.
+  An axis is not its own family: every OTHER clock racing beside it is what makes a lucky t-stat
+  likely, so the multiplicity a clock pays is a property of the DESK, never of the script that
+  happens to run it. slot_registry.cohort_m_for_bar() is the only source of that number.
 
     python scripts/run_axis_shadows.py
 """
@@ -29,6 +36,7 @@ from pathlib import Path
 
 import numpy as np
 
+from libs.research.slot_registry import cohort_m_for_bar
 from libs.validation.forward_stats import holm_bar, nw_tstat
 
 _ROOT = Path(__file__).resolve().parent.parent
@@ -84,7 +92,8 @@ def _clock_rows(path: Path) -> list[dict]:
     return out
 
 
-def _evaluate(name: str, clock: str, symbol: str, field: str, direction: int) -> dict:
+def _evaluate(name: str, clock: str, symbol: str, field: str, direction: int,
+              *, cohort) -> dict:
     rows = _clock_rows(_ROOT / clock)
     if len(rows) < 2:
         return {"axis": name, "verdict": "ACCRUING", "forward_days": len(rows),
@@ -111,7 +120,7 @@ def _evaluate(name: str, clock: str, symbol: str, field: str, direction: int) ->
     cum = float(np.prod(1.0 + arr) - 1.0)
     sharpe = float(arr.mean() / arr.std() * np.sqrt(365)) if arr.std() > 0 else 0.0
     t = float(nw_tstat(arr)) if n >= 3 else 0.0
-    bar = float(holm_bar(len(_AXES), rank=1))
+    bar = float(holm_bar(cohort.m, rank=1))
 
     if n < _MIN_DAYS:
         verdict = "ACCRUING"
@@ -121,18 +130,27 @@ def _evaluate(name: str, clock: str, symbol: str, field: str, direction: int) ->
         verdict = "FAILING"                             # forward evidence does not support it
     return {"axis": name, "verdict": verdict, "forward_days": n, "need": _MIN_DAYS,
             "cum_return": round(cum, 5), "ann_sharpe": round(sharpe, 2),
-            "nw_t": round(t, 3), "holm_bar": round(bar, 3), "m_concurrent": len(_AXES),
+            "nw_t": round(t, 3), "holm_bar": round(bar, 3), "m_concurrent": cohort.m,
+            "m_provenance": cohort.provenance, "m_detail": cohort.detail,
             "first_forward_day": used[0] if used else None, "last": used[-1] if used else None,
             "stage": "B (forward-only; eligibility != deployment)"}
 
 
 def main() -> None:
-    results = [_evaluate(k, *v) for k, v in _AXES.items()]
+    # Derived ONCE, and BEFORE _STATE is rewritten below -- derive_slots() reads that same file to
+    # count the axis clocks, so deriving per-axis would both re-read it 3x and let this run's own
+    # write feed back into its own bar.
+    cohort = cohort_m_for_bar()
+    results = [_evaluate(k, *v, cohort=cohort) for k, v in _AXES.items()]
     payload = {"updated": datetime.now(tz=UTC).isoformat(), "min_forward_days": _MIN_DAYS,
                "axes": results,
+               "m_concurrent": cohort.m, "m_provenance": cohort.provenance,
+               "m_detail": cohort.detail,
                "note": ("Forward-only Stage-B tracking. P&L starts at the clock's first row, never "
                         "the screen sample. ELIGIBLE means the evidence bar is met and a promotion "
-                        "decision may be taken -- it is NOT an automatic deployment.")}
+                        "decision may be taken -- it is NOT an automatic deployment. m is the FULL "
+                        "desk cohort (slot_registry), never len(_AXES) -- see the module docstring "
+                        "for the 3.67x error-rate inflation that cost.")}
     _OUT.parent.mkdir(parents=True, exist_ok=True)
     _OUT.write_text(json.dumps(payload, indent=1), "utf-8")
     _STATE.write_text(json.dumps(payload, indent=1), "utf-8")
@@ -140,6 +158,7 @@ def main() -> None:
         extra = f"t={r.get('nw_t')} bar={r.get('holm_bar')}" if "nw_t" in r else r.get("note", "")
         print(f"axis-shadow | {r['axis']}: {r['verdict']} "
               f"({r['forward_days']}/{r['need']}d) {extra}")
+    print(f"holm cohort m={cohort.m} [{cohort.provenance}] {cohort.detail}")
     print(f"-> {_OUT}")
 
 

@@ -64,6 +64,9 @@ _FENCES: dict[str, tuple[str, str, tuple[str, ...], str]] = {
     "clock_provenance": ("data/clock_provenance_status.json", "status",
                          ("NO-DATA", "UNMEASURED", "MIXED-CLOCK", "RECV-ONLY", "PERIOD-DRIFT"),
                          "DETECTOR"),
+    "cohort_integrity": ("data/cohort_integrity_status.json", "status",
+                         ("NO-DATA", "UNMEASURED", "BAR-TOO-LOOSE", "COHORT-INCOMPLETE",
+                          "DIVERGENT"), "RAIL"),
     "law_gate": ("data/law_gate.json", "ok", ("False", "false"), "RAIL"),
     "change_window": ("data/change_window.json", "status", ("STERILE", "UNMEASURED"), "RAIL"),
     "moat_backup": ("data/backup_status.json", "status",
@@ -90,6 +93,11 @@ _SEEDED: dict[str, tuple[str, str]] = {
                                          "mapping) + 2 unmapped screens (commit 57a4f48)"),
     "utilisation": ("OVER-LIMIT", "2026-07-30 first run: deployed capital read 13,155/4,500 -- "
                                   "OVER 100% -- exposing two sources of truth for desk equity"),
+    "cohort_integrity": ("BAR-TOO-LOOSE", "2026-08-05 first run: the axis clocks were judged at "
+                                          "holm_bar(3)=2.13 against a true cohort of 11 (bar "
+                                          "2.61) -- alpha 0.0167/clock against a designed 0.0045, "
+                                          "a 3.67x family-wise error rate on the only path from "
+                                          "research to capital; repaired in the same run"),
 }
 
 
