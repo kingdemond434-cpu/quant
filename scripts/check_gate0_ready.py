@@ -31,6 +31,10 @@ if str(_ROOT) not in sys.path:
 
 _OUT = _ROOT / "data/gate0_readiness.json"
 
+#: The executor's published book state (run_cashcarry_executor.py:43). NOT cashcarry_state.json,
+#: which no organ has ever written -- see _load_state.
+_STATE_REL = "data/cashcarry_positions.json"
+
 #: who can clear a criterion. The split is the whole point of the board on launch day.
 DESK = "desk"            # the organism can close this by working
 PRINCIPAL = "principal"  # only a human with money/credentials can close this
@@ -132,28 +136,76 @@ def _principal_signoff() -> dict[str, Any]:
                 "record the go/no-go decision once the rows above are green")
 
 
+def _load_state() -> tuple[dict[str, Any] | None, str]:
+    """The executor's published book state, with the failure NAMED (R0333).
+
+    This board read data/cashcarry_state.json -- a path nothing writes -- inside one broad
+    `except (ImportError, OSError, ValueError, TypeError, KeyError)` that reported the single
+    detail "state unreadable on this box". Every box on earth hit it, so `_ruin_rail` could
+    never reach READY and the one board the desk consults on launch day had a criterion that was
+    structurally unmeasurable. Absent / unparseable / schema-missing-key are now three distinct
+    verdicts -- all still BLOCKED-UNKNOWN, because UNMEASURED never reads as OK.
+    """
+    p = _ROOT / _STATE_REL
+    try:
+        raw = p.read_text("utf-8")
+    except FileNotFoundError:
+        return None, f"absent: {_STATE_REL} has never been written on this box"
+    except OSError as exc:
+        return None, f"unreadable: {type(exc).__name__} on {_STATE_REL}"
+    try:
+        loaded = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        return None, (f"unparseable: {_STATE_REL} is not valid JSON "
+                      f"(line {exc.lineno} col {exc.colno}) -- torn write, not an empty book")
+    if not isinstance(loaded, dict):
+        return None, f"unparseable: {_STATE_REL} holds a {type(loaded).__name__}, not an object"
+    state: dict[str, Any] = loaded
+    return state, "ok"
+
+
 def _ruin_rail() -> dict[str, Any]:
     """Not an S1 criterion, but it is the thing that actually stops the book trading, and on
     2026-07-30 it was in an absorbing state that no amount of good performance could clear."""
     try:
         from libs.risk import capital_events, risk_controls
-        st = json.loads((_ROOT / "data/cashcarry_state.json").read_text("utf-8"))
-        raw = float(st.get("start_futures_equity", 0.0))
-        eff = capital_events.effective_start_equity(raw)
-        eq = float(st.get("last_combined_equity", raw))
-        if eff <= 0:
-            return _row("ruin_rail_clear", None, "no inception recorded yet (fresh book)",
-                        DESK, "data/cashcarry_state.json", "")
-        d = risk_controls.evaluate(eq, eff, max(eff, eq), 0.0, ruin_cap_lev=8.0)
-        ok = d.action != "flatten"
-        return _row("ruin_rail_clear", ok,
-                    f"{eq / eff - 1.0:+.1%} from inception ${eff:,.0f} -> {d.action.upper()}",
-                    PRINCIPAL, "data/capital_events.jsonl",
-                    "" if ok else "record the funding deposit: "
-                                  "scripts/record_capital_event.py --deposit <usd> --by ... ")
-    except (ImportError, OSError, ValueError, TypeError, KeyError):
-        return _row("ruin_rail_clear", None, "state unreadable on this box",
-                    DESK, "data/cashcarry_state.json", "run from the box that holds the state")
+    except ImportError as exc:
+        return _row("ruin_rail_clear", None, f"risk libraries unimportable: {exc}",
+                    DESK, _STATE_REL, "run from a checkout with libs/risk importable")
+    st, verdict = _load_state()
+    if st is None:
+        return _row("ruin_rail_clear", None, f"executor state {verdict}",
+                    DESK, _STATE_REL, "run from the box that holds the executor state")
+    try:
+        raw = float(st["start_futures_equity"])
+        # SAME RULER (R0333). `last_combined_equity` is combined futures+spot equity and
+        # `peak_combined_equity` is ITS high-water mark; the old read fell back to the inception
+        # for equity and passed max(eff, eq) as the peak -- an inception standing in for a peak,
+        # which understates every drawdown the book has already taken. A state that publishes an
+        # inception but no combined equity is UNMEASURED, not "equity == inception".
+        eq = float(st["last_combined_equity"])
+        peak = max(float(st.get("peak_combined_equity", raw)), raw, eq)
+    except KeyError as exc:
+        return _row("ruin_rail_clear", None,
+                    f"schema-missing-key: {exc.args[0]!r} absent from {_STATE_REL} -- the "
+                    "executor has not published this book's equity ruler yet",
+                    DESK, _STATE_REL, "let the executor complete one tick on this box")
+    except (TypeError, ValueError) as exc:
+        return _row("ruin_rail_clear", None,
+                    f"non-numeric equity in {_STATE_REL}: {exc}",
+                    DESK, _STATE_REL, "restore the executor state from the live box")
+    eff = float(capital_events.effective_start_equity(raw))
+    if eff <= 0:
+        return _row("ruin_rail_clear", None, "no inception recorded yet (fresh book)",
+                    DESK, _STATE_REL, "")
+    d = risk_controls.evaluate(eq, eff, peak, 0.0, ruin_cap_lev=8.0)
+    ok = d.action != "flatten"
+    return _row("ruin_rail_clear", ok,
+                f"{eq / eff - 1.0:+.1%} from inception ${eff:,.0f} "
+                f"({eq / peak - 1.0:+.1%} from peak ${peak:,.0f}) -> {d.action.upper()}",
+                PRINCIPAL, "data/capital_events.jsonl",
+                "" if ok else "record the funding deposit: "
+                              "scripts/record_capital_event.py --deposit <usd> --by ... ")
 
 
 def _net_of_fees_positive() -> dict[str, Any]:

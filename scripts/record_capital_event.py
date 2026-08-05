@@ -38,15 +38,41 @@ if str(_ROOT) not in sys.path:
 from libs.risk import capital_events as CE  # noqa: E402
 from libs.risk import risk_controls  # noqa: E402
 
-_STATE = _ROOT / "data/cashcarry_state.json"
+# THE EXECUTOR'S OWN STATE FILE (R0333). This read pointed at data/cashcarry_state.json, which
+# NO organ has ever written -- the recorder therefore saw an empty dict on every box, on the one
+# command that runs on launch day. `run_cashcarry_executor.py:43` publishes the book state here.
+_STATE = _ROOT / "data/cashcarry_positions.json"
+
+#: keys this reader consumes, all written by run_cashcarry_executor._rebalance:
+#:   start_futures_equity   inception, written ONCE at first tick, never re-based
+#:   last_combined_equity   + last_combined_equity_at -- venue-truth combined equity + stamp
+#:   peak_combined_equity   the running high-water mark ON THE SAME COMBINED RULER
+#:   realized_spot_pnl      banked spot P&L, re-anchored to exchange truth each rebalance
 
 
-def _state() -> dict[str, Any]:
+def _load_state() -> tuple[dict[str, Any] | None, str]:
+    """Read the executor state, NAMING which failure occurred (R0333).
+
+    "absent", "unparseable" and "schema-missing-key" are three different verdicts about the book
+    and only one of them ("ok") means the numbers below can be trusted. The previous read caught
+    (OSError, ValueError) and returned {}, so a corrupt file, a missing file and a healthy empty
+    book were indistinguishable -- and all three read as "inception $0.00".
+    """
     try:
-        loaded: dict[str, Any] = json.loads(_STATE.read_text("utf-8"))
-        return loaded
-    except (OSError, ValueError):
-        return {}
+        raw = _STATE.read_text("utf-8")
+    except FileNotFoundError:
+        return None, f"absent: {_STATE.name} has never been written on this box"
+    except OSError as exc:                                   # permissions, EIO, a dangling link
+        return None, f"unreadable: {type(exc).__name__} on {_STATE.name}"
+    try:
+        loaded = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        return None, (f"unparseable: {_STATE.name} is not valid JSON "
+                      f"(line {exc.lineno} col {exc.colno}) -- a torn write, do not guess past it")
+    if not isinstance(loaded, dict):
+        return None, f"unparseable: {_STATE.name} holds a {type(loaded).__name__}, not an object"
+    state: dict[str, Any] = loaded
+    return state, "ok"
 
 
 _FRESH_S = 6 * 3600
@@ -62,13 +88,16 @@ def _live_equity(st: dict[str, Any]) -> tuple[float | None, str]:
     (2) a direct venue read; (3) refusal. An unverifiable equity is a refusal, never a zero --
     a VERIFIED zero (fresh empty account) passes; a fabricated one cannot."""
     ts = st.get("last_combined_equity_at")
-    if "last_combined_equity" in st and isinstance(ts, str):
+    eq_persisted = st.get("last_combined_equity")
+    if eq_persisted is not None and isinstance(ts, str):
         try:
-            age = (datetime.now(tz=UTC) - datetime.fromisoformat(ts)).total_seconds()
+            stamped = datetime.fromisoformat(ts)
+            stamped = stamped if stamped.tzinfo is not None else stamped.replace(tzinfo=UTC)
+            age = (datetime.now(tz=UTC) - stamped).total_seconds()
         except ValueError:
             age = float("inf")
         if age <= _FRESH_S:
-            return (float(st["last_combined_equity"]),
+            return (float(eq_persisted),
                     f"executor venue-truth persist, {age / 60:.0f}m old")
     try:
         from libs.execution import binance_live as fut
@@ -83,11 +112,20 @@ def _live_equity(st: dict[str, Any]) -> tuple[float | None, str]:
 
 
 def _show() -> int:
-    st = _state()
-    raw_start = float(st.get("start_futures_equity", 0.0))
+    st, verdict = _load_state()
+    if st is None:
+        print(f"executor state            UNREADABLE -- {verdict}")
+        st = {}
+    try:
+        raw_start = float(st["start_futures_equity"])
+    except KeyError:
+        raw_start = 0.0
+        print("inception (raw state)     schema-missing-key: `start_futures_equity` is absent "
+              f"from {_STATE.name} -- the executor has not published an inception yet")
+    else:
+        print(f"inception (raw state)     ${raw_start:,.2f}")
     eff = CE.effective_start_equity(raw_start)
     eq, src = _live_equity(st)
-    print(f"inception (raw state)     ${raw_start:,.2f}")
     print(f"inception (effective)     ${eff:,.2f}"
           + ("   <- re-based by a recorded capital event" if eff != raw_start else ""))
     if eq is None:
@@ -96,8 +134,16 @@ def _show() -> int:
     else:
         print(f"combined equity           ${eq:,.2f}   [{src}]")
     if eff > 0:
-        d = risk_controls.evaluate(eq, eff, max(eff, eq), 0.0, ruin_cap_lev=8.0)
+        # SAME RULER AS THE EXECUTOR (R0333). The rail's peak argument used to be max(eff, eq) --
+        # an INCEPTION value standing in for a HIGH-WATER MARK. That understates every drawdown
+        # the book has already taken and makes this view read cleaner than the executor's own
+        # verdict. `peak_combined_equity` is the executor's published peak, on the same combined
+        # (futures + spot) ruler as `last_combined_equity`; it is only floored by eff/eq so a
+        # state file that has not published a peak yet cannot report a peak BELOW the book.
+        peak = max(float(st.get("peak_combined_equity", eff)), eff, eq)
+        d = risk_controls.evaluate(eq, eff, peak, 0.0, ruin_cap_lev=8.0)
         print(f"drawdown from inception   {eq / eff - 1.0:+.1%}")
+        print(f"drawdown from peak        {eq / peak - 1.0:+.1%}   (peak ${peak:,.2f})")
         print(f"rail verdict              {d.action.upper()}  ({'; '.join(d.reasons)})")
     h = CE.history()
     print(f"\ncapital events recorded: {len(h)}")
@@ -118,8 +164,9 @@ def main() -> int:
                     help="combined equity BEFORE the deposit (default: read from state)")
     ap.add_argument("--start", type=float, default=None,
                     help="override the inception being replaced (default: effective inception "
-                         "from state + ledger). Needed to verify the refusal path on a box whose "
-                         "state file is absent, where inception would otherwise default to equity")
+                         "from state + ledger). REQUIRED on a box whose executor state is absent "
+                         "or publishes no start_futures_equity -- the inception is never "
+                         "defaulted to current equity, that would re-base the rail to the book")
     ap.add_argument("--by", default="", help='who authorises this (or "PRINCIPAL-OVERRIDE <name>")')
     ap.add_argument("--reason", default="", help="what happened and why, in a sentence")
     ap.add_argument("--kind", default="DEPOSIT", choices=["DEPOSIT", "WITHDRAWAL", "RESTART"])
@@ -128,7 +175,10 @@ def main() -> int:
     if args.show or (not args.by and not args.reason and args.deposit == 0.0):
         return _show()
 
-    st = _state()
+    st, verdict = _load_state()
+    if st is None:
+        print(f"executor state is not readable -- {verdict}")
+        st = {}
     if args.equity is not None:
         eq, src = float(args.equity), "explicit --equity from the principal"
     else:
@@ -142,8 +192,22 @@ def main() -> int:
               "is legitimate; an assumed one is how a rail gets re-based ~89% below truth.")
         return 2
     print(f"equity source: {src}")
-    start = (args.start if args.start is not None
-             else CE.effective_start_equity(float(st.get("start_futures_equity", eq))))
+    if args.start is not None:
+        start = args.start
+    else:
+        try:
+            raw_start = float(st["start_futures_equity"])
+        except KeyError:
+            # REFUSAL, not a default (R0333). The old fallback was `st.get(..., eq)`: a
+            # schema-missing key silently made the inception EQUAL to current equity, which
+            # re-bases the survival rail to wherever the book happens to be -- the loosening
+            # this command exists to make impossible without a signature.
+            print(f"REFUSED: {_STATE.name} publishes no `start_futures_equity` "
+                  "(schema-missing-key), so the inception being replaced is UNKNOWN. "
+                  "Defaulting it to current equity would silently re-base the rail to wherever "
+                  "the book is now. Pass --start <usd> with the inception you are replacing.")
+            return 2
+        start = CE.effective_start_equity(raw_start)
     try:
         ev = CE.rebase(equity_now=eq, start_equity=start, deposit_usd=args.deposit,
                        authorised_by=args.by, reason=args.reason, kind=args.kind)

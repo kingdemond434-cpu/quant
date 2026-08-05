@@ -14,7 +14,9 @@ def _launch(root: Path, days_ago: float, fills: int = 50) -> None:
     (root / "data/moat/execution_tape").mkdir(parents=True, exist_ok=True)
     (root / "data/moat/execution_tape/cashcarry_trades.jsonl").write_text(
         "\n".join('{"x":1}' for _ in range(fills)), "utf-8")
-    (root / "data/cashcarry_state.json").write_text('{"last_risk_action": "normal"}', "utf-8")
+    # R0333: the executor publishes its book state here, not to the phantom cashcarry_state.json.
+    (root / "data/cashcarry_positions.json").write_text(
+        '{"last_risk_action": "normal", "positions": {}}', "utf-8")
     at = (NOW - timedelta(days=days_ago)).isoformat()
     (root / "data/capital_events.jsonl").write_text(
         json.dumps({"at": at, "kind": "DEPOSIT"}) + "\n", "utf-8")
@@ -50,7 +52,8 @@ def test_first_fills_window_blocks(tmp_path):
 
 def test_rail_breach_window_blocks(tmp_path):
     _launch(tmp_path, days_ago=30, fills=100)
-    (tmp_path / "data/cashcarry_state.json").write_text('{"last_risk_action": "flatten"}', "utf-8")
+    (tmp_path / "data/cashcarry_positions.json").write_text(
+        '{"last_risk_action": "flatten", "positions": {}}', "utf-8")
     rep = build_report(tmp_path, NOW, paths=["scripts/run_cashcarry_executor.py"])
     assert rep["verdict"] == "BLOCK"
     assert any("RAIL_BREACH" in w for w in rep["windows_active"])
