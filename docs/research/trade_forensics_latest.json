@@ -1,0 +1,100 @@
+{
+ "updated": "2026-08-05T03:03:22.990528+00:00",
+ "n_closes": 41,
+ "hold_buckets": {
+  "<2h": {
+   "n": 5,
+   "notional": 1102.33,
+   "net": -1.65,
+   "bps": -14.97
+  },
+  "2-8h": {
+   "n": 3,
+   "notional": 456.25,
+   "net": -8.32,
+   "bps": -182.36
+  },
+  "8-24h": {
+   "n": 4,
+   "notional": 1339.98,
+   "net": -27.18,
+   "bps": -202.84
+  },
+  ">24h": {
+   "n": 29,
+   "notional": 22664.93,
+   "net": -96.43,
+   "bps": -42.55
+  }
+ },
+ "hold_buckets_net_of_fees": {
+  "<2h": {
+   "n": 5,
+   "notional": 1102.33,
+   "fee": 2.27,
+   "net": -3.92,
+   "bps": -35.56
+  },
+  "2-8h": {
+   "n": 3,
+   "notional": 456.25,
+   "fee": 0.32,
+   "net": -8.64,
+   "bps": -189.34
+  },
+  "8-24h": {
+   "n": 4,
+   "notional": 1339.98,
+   "fee": 1.5,
+   "net": -28.68,
+   "bps": -214.01
+  },
+  ">24h": {
+   "n": 29,
+   "notional": 22664.93,
+   "fee": 1566.2,
+   "net": -1662.63,
+   "bps": -733.57
+  }
+ },
+ "fee_attribution": {
+  "venue_commission": 1581.78,
+  "attributed": 1570.28,
+  "unattributed": 11.5,
+  "unattributed_share": 0.007,
+  "n_events": 9110,
+  "fee_bps_of_logged_notional": 618.76,
+  "scope": "futures commission only (/fapi income); spot-leg fees not visible -> LOWER BOUND"
+ },
+ "baseline_funding_class": {
+  "n": 22,
+  "net": -30.44,
+  "bps": -34.39
+ },
+ "post_gate_baseline_opens": 2,
+ "maker_fill": {
+  "n_legs": 42,
+  "maker_share": 0.429,
+  "spot": 0.238,
+  "fut": 0.619,
+  "target": 0.6,
+  "note": "instrumented 2026-07-26; records written before that carry no mode, so n_legs climbs from 0 as new fills land -- a null share is thin data, not a regression"
+ },
+ "execution_tape": {
+  "taped": 531,
+  "tape_days": 2404.91,
+  "backfilled": 0,
+  "buffer_days": 25.06,
+  "window_margin_days": 11.06,
+  "buffer_squeezing_window": false
+ },
+ "worst_symbols": [],
+ "flags": [
+  "hold-class >24h bleeding: -42.55 bps over 29 trades (net $-96.43)",
+  "FEE INTENSITY hold-class >24h: $1566.2 on $22665 = 691 bps, 69x the ~10 bps a futures round-trip should bill -- the venue is charging for fills this book did not intend (churn-loop fingerprint; see max_audit check_close_retry_loop)",
+  "ENTRY-GATE REGRESSION: 2 open(s) at baseline funding 0.0001 AFTER the gate shipped -- gate is not filtering",
+  "maker fill-rate 42.9% below the 60% target over 42 legs -- patient-maker opens are not converting; fees are the dominant carry cost, so this is the primary unit-economics lever"
+ ],
+ "origin": "recursion rule 2026-07-22: mechanization of the principal-supplied probes that found gaps #42/#43/#34",
+ "written": "2026-08-05T03:03:22.991192+00:00"
+}

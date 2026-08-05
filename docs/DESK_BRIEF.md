@@ -1,4 +1,4 @@
-# DESK BRIEF -- 2026-07-27 20:38Z
+# DESK BRIEF -- 2026-08-05 03:03Z
 
 Machine-generated from measured desk state. Every number traces to an artifact in
 `data/`. Nothing here is an argument. Respond to the evidence, not to another model.
@@ -13,34 +13,34 @@ Machine-generated from measured desk state. Every number traces to an artifact i
    forward clocks promote.
 
 ## Experiment record (45d, harvested from git -- one row per commit)
-- experiments: **369**; decided: 156
-- survival rate: **9.6%** (15 survived / 131 refuted / 10 inconclusive)
-- unclassified commit decisions: 25 (commit-discipline defect)
+- experiments: **976**; decided: 544
+- survival rate: **7.0%** (38 survived / 473 refuted / 33 inconclusive)
+- unclassified commit decisions: 62 (commit-discipline defect)
 
 | mechanism | tested | survived | rate |
 |---|---:|---:|---:|
-| M_UNMAPPED | 102 | 10 | 10% |
-| M_ATTENTION_DELAY | 22 | 2 | 9% |
-| M_FORCED_DELEVERAGE | 10 | 2 | 20% |
-| M_STRUCTURAL_BARRIER | 10 | 0 | 0% |
-| M_LIQUIDITY_WITHDRAWAL | 9 | 0 | 0% |
-| M_FUNDAMENTAL_PROXY | 7 | 0 | 0% |
-| M_SKILL_PERSISTENCE | 6 | 0 | 0% |
-| M_PRICE_PATTERN | 4 | 1 | 25% |
-| M_FLOW_PRESSURE | 2 | 0 | 0% |
+| M_UNMAPPED | 424 | 31 | 7% |
+| M_ATTENTION_DELAY | 37 | 2 | 5% |
+| M_LIQUIDITY_WITHDRAWAL | 28 | 1 | 4% |
+| M_FORCED_DELEVERAGE | 25 | 3 | 12% |
+| M_STRUCTURAL_BARRIER | 25 | 0 | 0% |
+| M_SKILL_PERSISTENCE | 8 | 0 | 0% |
+| M_FUNDAMENTAL_PROXY | 8 | 0 | 0% |
+| M_FLOW_PRESSURE | 6 | 0 | 0% |
+| M_PRICE_PATTERN | 5 | 1 | 20% |
 
 ### Why experiments died (45d)
 
-- `E_DATA_QUALITY` 61 (30%)
-- `B_WRONG_MEASUREMENT` 46 (23%)
-- `G_TOO_EXPENSIVE` 28 (14%)
-- `C_WRONG_TIMING` 27 (13%)
-- `H_OVERFIT` 24 (12%)
-- `F_REGIME_DEPENDENT` 10 (5%)
-- `D_ALREADY_ARBITRAGED` 4 (2%)
-- `A_NO_MECHANISM` 1 (0%)
+- `E_DATA_QUALITY` 240 (34%)
+- `B_WRONG_MEASUREMENT` 124 (17%)
+- `H_OVERFIT` 120 (17%)
+- `G_TOO_EXPENSIVE` 106 (15%)
+- `C_WRONG_TIMING` 60 (8%)
+- `F_REGIME_DEPENDENT` 41 (6%)
+- `D_ALREADY_ARBITRAGED` 15 (2%)
+- `A_NO_MECHANISM` 5 (1%)
 
-**107/201 = 53% of refutations are MEASUREMENT failures (data quality + wrong construction), not absent alpha.**
+**364/711 = 51% of refutations are MEASUREMENT failures (data quality + wrong construction), not absent alpha.**
 
 ## FAMILY KILLS -- mechanisms closed by evidence
 
@@ -61,7 +61,7 @@ Every future variant inherits this evidence.
 ## Proprietary moat (4.4GB order books, 30 symbols, top-20 snapshots)
 
 M_LIQUIDITY_WITHDRAWAL, construction = negative z of near-touch depth vs 24h roll:
-- raw lead rho pooled: +0.3032
+- raw lead rho pooled: +0.1100
 - **after orthogonalising forward RV against current RV: residual rho +0.0154 (t +0.28), sign 1/5 -> the lead was vol clustering.**
 - ONE construction tested only. The mechanism is NOT refuted. Untested: replenishment rate, one-sided withdrawal, book shape, migration, recovery half-life, d(book)/dt.
 
@@ -83,32 +83,4 @@ M_LIQUIDITY_WITHDRAWAL, construction = negative z of near-touch depth vs 24h rol
 
 - OpenRouter 402: 4 written LLM roles have NEVER executed (code auditor, blind researcher, hypothesis generator, architecture board).
 - `health.json` reports all_ok=True against 14 stub vs 13 real logs (fail-open).
-- First forward-clock verdict: 2026-09-01 (OI/LS). Confirmed alphas to date: 0.
-
-## RATCHET BOARD (constitution L1.0 -- value, floor, distance to 100%)
-
-Refreshed by `scripts/check_ratchets.py --ratchet`; floors live in `data/ratchet_floors.json` and
-can only rise. **The largest gap IS the top of the work queue.**
-
-| metric | value | floor | gap to 100% | proving command |
-|---|---:|---:|---:|---|
-| findings_coverage | **100.0%** | 100.0% | 0.0% | `max_audit.check_findings_tracked` |
-| test_strength (min kill rate) | **90.0%** | 90.0% | 10.0% | `python scripts/run_mutation.py` |
-| scripts mypy-clean | **40.7%** | 40.7% | 59.3% | `python scripts/check_mypy_ratchet.py` |
-| miner seats productive | **0.0%** | 0.0% | 100.0% | `python scripts/check_miner_runway.py` |
-| pager delivered <24h | **0.0%** | 0.0% | 100.0% | `python scripts/run_alert_canary.py` |
-
-The two 0% rows are the same shape and neither is an engineering gap: **miner seats** are blocked on
-one unarmed credential (blast radius 11 seats, `ops/setup_brain_token.sh`) and **pager delivery** is
-0% because this sandbox has no channel armed -- on the VPS the ntfy path is live and the canary will
-populate the ledger on its first run. Both are recorded rather than excused.
-
-## WHAT THE 420/0 RECORD ACTUALLY MEANS NOW (revised 2026-07-29)
-
-The line "420 candidates tested, 0 survivors" appears throughout this desk's documents as evidence
-about crypto. It is not. Two of the nine gauntlet gates (`pbo`, `reality_check`) were CAMPAIGN
-CONSTANTS -- neither took the candidate's own returns -- so all 420 were rejected identically at any
-quality (measured: campaign PBO 0.6159, White RC p 0.4220). The per-candidate replacement is now
-live at all 19 call sites. **The honest status is UNKNOWN, not exhausted**, until the campaign is
-re-run through the corrected gates. Per L1.25, zero survivors is a diagnostic trigger, never a
-verdict on the world.
+- First forward-clock verdict: 2026-08-07 (OI/LS). Confirmed alphas to date: 0.

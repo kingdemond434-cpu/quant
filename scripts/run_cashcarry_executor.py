@@ -439,6 +439,30 @@ def _structurally_bleeding(sym: str) -> bool:
                 return True
         except (TypeError, ValueError):
             continue
+    # PERSISTENT EXECUTION GRAVEYARD (2026-08-05). Everything above reads `worst_symbols` -- a
+    # 14-DAY ROLLING window over this book's OWN closes -- so it EMPTIES while the book is
+    # paused. A pause is CAUSED by losses, so the denylist is wiped exactly when it is most
+    # needed. Measured this cycle on a freshly-regenerated artifact (not a stale one):
+    # worst_symbols == [] and `_structurally_bleeding` returned False for COOKIEUSDT and
+    # 1000CATUSDT -- the two incident-#6 symbols the comment above calls "currently-blocked" --
+    # so a re-arm would have re-opened them at FULL size, ten days before the 2026-08-15 /
+    # $100 / 3-probe ceiling their re-entry rows exist to impose. The careful protocol in
+    # data/execution_reentry.json was unreachable code: it is only consulted for symbols the
+    # rolling window still happens to carry.
+    #
+    # A denial that forgets itself is not a denial. A recorded re-entry row is therefore an
+    # INDEPENDENT, PERSISTENT denial in its own right, released only through the same L1.16a
+    # probe protocol used above. TIGHTEN-ONLY: this branch can add denials, never remove one --
+    # symbols in the rolling window are decided before it, and symbols in neither source are
+    # allowed exactly as before.
+    row = _reentry_conditions().get(sym)
+    if isinstance(row, dict):
+        allowed, why = excitation.reentry_allowed(sym, _reentry_conditions(),
+                                                  execution_tape.read())
+        if allowed:
+            print(f"re-entry probe {sym} (persistent graveyard): {why}")
+            return False
+        return True
     return False
 
 
