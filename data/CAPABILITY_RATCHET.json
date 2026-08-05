@@ -1,28 +1,28 @@
 {
  "_": "HIGH-WATER MARKS for desk CAPABILITY, one score per named aspect on the 0-10 scale the principal's standing order is stated on. Raised automatically; NEVER lowered by code. A FALL is a defect reported with a NAMED CAUSE, a FLATLINE is reported with the binding constraint that is holding the aspect down, and UNMEASURED is its own state -- never silently a 0 and never silently a 10.",
  "law": "R0104 -- every aspect is pushed toward 10/10 every day, non-exhaustively. A rating nobody records cannot ratchet, and a score that can silently fall is not a standard.",
- "generated": "2026-08-05T14:41:18.723575+00:00",
+ "generated": "2026-08-05T20:27:16.923018+00:00",
  "status": "REGRESSED",
  "scale_max": 10.0,
  "stall_days": 7.0,
  "n_aspects": 26,
  "n_measured": 26,
  "n_unmeasured": 0,
- "measured_mean": 5.8,
+ "measured_mean": 5.82,
  "first_recorded": "2026-08-05T12:09:08.679174+00:00",
- "last_raise_at": "2026-08-05T13:45:43.243853+00:00",
- "days_since_raise": 0.04,
- "n_raises": 4,
+ "last_raise_at": "2026-08-05T20:27:16.923018+00:00",
+ "days_since_raise": 0.0,
+ "n_raises": 5,
  "binding_constraint": {
   "state": "MEASURED",
   "aspect": "alerting_pager",
   "component": "alert_channels_not_silent",
   "score": 0.0,
   "artifact": "data/ALERT_CHANNELS_SILENT",
-  "n_unmeasured_components": 9,
-  "detail": "SILENCE FLAG PRESENT: 2026-07-30T02:35:50.206522+00:00 no alert delivery on ANY channel in 24h (armed: NONE -- arming owed) (canary last ran 156.09h ago)",
+  "n_unmeasured_components": 7,
+  "detail": "SILENCE FLAG PRESENT: 2026-07-30T02:35:50.206522+00:00 no alert delivery on ANY channel in 24h (armed: NONE -- arming owed) (canary last ran 161.86h ago)",
   "constraint": "ARM A CHANNEL and deliver one page: the canary's own audit found no delivery on ANY channel inside its lookback, which is the state that hid a dead pager for five days. The flag clears itself on the next successful delivery -- nothing else clears it",
-  "_": "LOWEST-SCORING COMPONENT DESK-WIDE: alerting_pager.alert_channels_not_silent at 0.0/10 out of data/ALERT_CHANNELS_SILENT. This is the line to work first. 9 component(s) are UNMEASURED and are NOT eligible to be this minimum -- an absent measurement has no score, and letting it win here would bury every real defect under things nobody has looked at yet."
+  "_": "LOWEST-SCORING COMPONENT DESK-WIDE: alerting_pager.alert_channels_not_silent at 0.0/10 out of data/ALERT_CHANNELS_SILENT. This is the line to work first. 7 component(s) are UNMEASURED and are NOT eligible to be this minimum -- an absent measurement has no score, and letting it win here would bury every real defect under things nobody has looked at yet."
  },
  "high_water": {
   "alerting_pager": 0.0,
@@ -35,13 +35,13 @@
   "cost_model_fidelity": 2.4,
   "data_coverage": 4.5,
   "dependency_environment": 4.5,
-  "engineering_standard": 6.5,
+  "engineering_standard": 6.8,
   "execution_path": 7.6,
   "forward_clock_hygiene": 1.6,
   "governance": 8.3,
   "knowledge_currency": 7.7,
   "llm_seat_coverage": 5.0,
-  "mutation_breadth": 5.0,
+  "mutation_breadth": 6.1,
   "ops_autonomy": 7.2,
   "recorder_tape": 5.0,
   "research_discipline": 6.6,
@@ -49,7 +49,7 @@
   "scheduler_integrity": 10.0,
   "secret_permission_hygiene": 6.3,
   "self_improvement": 4.0,
-  "source_resilience": 7.3,
+  "source_resilience": 7.5,
   "statistical_validation": 9.0
  },
  "component_high_water": {
@@ -82,7 +82,7 @@
   "dependency_environment.optional_test_deps_importable": 0.0,
   "engineering_standard.organs_meeting_build_standard": 10.0,
   "engineering_standard.strict_typing_clean_share": 4.1,
-  "engineering_standard.unwired_module_defects": 8.0,
+  "engineering_standard.unwired_module_defects": 9.0,
   "engineering_standard.unwired_proposals_open": 4.0,
   "execution_path.fees_attributed": 9.9,
   "execution_path.gate0_readiness": 5.0,
@@ -101,9 +101,9 @@
   "knowledge_currency.playbook_lessons": 3.0,
   "llm_seat_coverage.seats_credentialled": 0.0,
   "llm_seat_coverage.seats_wired": 10.0,
-  "mutation_breadth.money_path_files_mutated": 6.0,
+  "mutation_breadth.money_path_files_mutated": 10.0,
   "mutation_breadth.mutation_targets_at_bar": 7.5,
-  "mutation_breadth.mutation_targets_complete": 4.0,
+  "mutation_breadth.mutation_targets_complete": 5.0,
   "ops_autonomy.kernel_log_channels_readable": 5.0,
   "ops_autonomy.organ_comas_untreated": 8.0,
   "ops_autonomy.organs_healthy": 3.3,
@@ -130,7 +130,7 @@
   "self_improvement.instrumentation_gaps_owed": 5.0,
   "self_improvement.ledger_dispositioned": 5.3,
   "source_resilience.dead_sources_without_alternatives": 10.0,
-  "source_resilience.sources_healthy": 4.7,
+  "source_resilience.sources_healthy": 5.0,
   "statistical_validation.forecasts_resolved": 0.0,
   "statistical_validation.mutation_kill_validation_stack": 9.0
  },
@@ -138,11 +138,11 @@
   {
    "key": "statistical_validation",
    "state": "MEASURED",
-   "score": 4.5,
+   "score": 3.5,
    "high_water": 9.0,
-   "movement": "WIDENED",
-   "cause": "aspect mean 9.0 -> 4.5 while grading 3 component(s) -- with every component of today's set at its OWN best the aspect would reach 4.5, below the recorded 9.0 -- so that mark cannot have been earned over this set. NO component that already had a mark is below it, so nothing got worse: the mark was earned over a NARROWER set and is not comparable to today's reading. It STAYS at 9.0; beating it OVER THE WIDER SET is the work. Next: forecasts_resolved at 0.0 -- +4 logged forecasts scored against an outcome (0 -> 4 of 37) buys the next point [+1 UNMEASURED component(s): mutation_kill_validation_stack::validation.py -- the score above covers only 2 of 3 components]",
-   "binding_constraint": "forecasts_resolved at 0.0 -- +4 logged forecasts scored against an outcome (0 -> 4 of 37) buys the next point [+1 UNMEASURED component(s): mutation_kill_validation_stack::validation.py -- the score above covers only 2 of 3 components]",
+   "movement": "FELL",
+   "cause": "statistical_validation.mutation_kill_validation_stack 9.0 -> 6.9 (data/mutation_score.json): 2 target(s) at bar 0.9: validation.py 0.48, stepwise.py 0.90; measured 2026-08-05T15:23:17Z",
+   "binding_constraint": "forecasts_resolved at 0.0 -- +4 logged forecasts scored against an outcome (0 -> 4 of 37) buys the next point",
    "ceiling": "the validation stack's own tests kill every mutant of it, over complete (never truncated) runs -- the desk cannot fool itself about whether an edge is real",
    "artifacts": [
     "data/mutation_score.json",
@@ -152,18 +152,10 @@
     {
      "key": "mutation_kill_validation_stack",
      "state": "MEASURED",
-     "score": 9.0,
+     "score": 6.9,
      "artifact": "data/mutation_score.json",
-     "detail": "1 target(s) at bar 0.9: stepwise.py 0.90; measured 2026-08-05T14:37:33Z",
-     "constraint": "+10 % mutants killed (90 -> 100 of 100) buys the next point"
-    },
-    {
-     "key": "mutation_kill_validation_stack::validation.py",
-     "state": "UNMEASURED",
-     "score": null,
-     "artifact": "data/mutation_score.json",
-     "detail": "libs/autodiscovery/validation.py ran BUDGET-TRUNCATED (14 of 137 sites) -- a truncated run samples the mutants it reached, so its kill rate is not a strength measurement and is refused rather than scored",
-     "constraint": "MEASURE IT -- libs/autodiscovery/validation.py ran BUDGET-TRUNCATED (14 of 137 sites) -- a truncated run samples the mutants it reached, so its kill rate is not a strength measurement and is refused rather than scored. Unmeasured is neither a 0 nor a 10; it is the state of not knowing, and it stays that until an artifact says otherwise."
+     "detail": "2 target(s) at bar 0.9: validation.py 0.48, stepwise.py 0.90; measured 2026-08-05T15:23:17Z",
+     "constraint": "+10.18 % mutants killed (68.82 -> 79 of 100) buys the next point"
     },
     {
      "key": "forecasts_resolved",
@@ -197,8 +189,8 @@
      "state": "MEASURED",
      "score": 9.0,
      "artifact": "docs/research/test_suite_record.json",
-     "detail": "high-water suite size 473.0 as of 2026-08-05T14:35:39.294546+00:00",
-     "constraint": "+27 collectable test modules (473 -> 500, the next rung) buys the next point"
+     "detail": "high-water suite size 491.0 as of 2026-08-05T18:35:35.922416+00:00",
+     "constraint": "+9 collectable test modules (491 -> 500, the next rung) buys the next point"
     },
     {
      "key": "hypotheses_killed",
@@ -264,7 +256,7 @@
      "state": "MEASURED",
      "score": 9.3,
      "artifact": "data/mutation_score.json",
-     "detail": "2 target(s) at bar 0.9: gate.py 1.00, sizing.py 0.86; measured 2026-08-05T14:37:33Z",
+     "detail": "2 target(s) at bar 0.9: gate.py 1.00, sizing.py 0.86; measured 2026-08-05T15:23:17Z",
      "constraint": "+6.9 % mutants killed (93.1 -> 100, the whole remaining gap) is the last +0.7 to 10/10"
     },
     {
@@ -307,8 +299,8 @@
    "score": 8.3,
    "high_water": 8.3,
    "movement": "FLATLINE",
-   "cause": "audit_defects_live at 4.0 -- -19 live audit defects (50 -> 31, back under the 32 rung) buys the next point",
-   "binding_constraint": "audit_defects_live at 4.0 -- -19 live audit defects (50 -> 31, back under the 32 rung) buys the next point",
+   "cause": "audit_defects_live at 4.0 -- -20 live audit defects (51 -> 31, back under the 32 rung) buys the next point",
+   "binding_constraint": "audit_defects_live at 4.0 -- -20 live audit defects (51 -> 31, back under the 32 rung) buys the next point",
    "ceiling": "every law fence green and ZERO live audit defects -- the laws are enforced by machinery rather than by attention",
    "artifacts": [
     "data/law_gate.json",
@@ -331,16 +323,16 @@
      "state": "MEASURED",
      "score": 4.0,
      "artifact": "data/max_audit_report.json",
-     "detail": "50.0 unacknowledged defects at 2026-08-05T14:38:24.969295+00:00; by scope {'REPO': 25, 'RUNTIME': 24, 'UNSCOPED': 1}",
-     "constraint": "-19 live audit defects (50 -> 31, back under the 32 rung) buys the next point"
+     "detail": "51.0 unacknowledged defects at 2026-08-05T19:25:13.494608+00:00; by scope {'REPO': 26, 'RUNTIME': 25}",
+     "constraint": "-20 live audit defects (51 -> 31, back under the 32 rung) buys the next point"
     },
     {
      "key": "principles_mechanically_enforced",
      "state": "MEASURED",
      "score": 9.6,
      "artifact": "data/enforcement_matrix.json",
-     "detail": "65/68 enforced over 94 fences; counts {'STANDING': 2, 'ENFORCED': 65, 'HUMAN-ONLY': 1}; unenforced []",
-     "constraint": "+3 principles held up by a fence (65 -> 68, the whole remaining gap) is the last +0.4 to 10/10"
+     "detail": "73/76 enforced over 94 fences; counts {'STANDING': 2, 'ENFORCED': 73, 'HUMAN-ONLY': 1}; unenforced []",
+     "constraint": "+3 principles held up by a fence (73 -> 76, the whole remaining gap) is the last +0.4 to 10/10"
     },
     {
      "key": "law_families_enforced",
@@ -413,10 +405,10 @@
   {
    "key": "execution_path",
    "state": "MEASURED",
-   "score": 7.1,
+   "score": 7.2,
    "high_water": 7.6,
    "movement": "FELL",
-   "cause": "execution_path.mutation_kill_execution_stack 10.0 -> 7.2 (data/mutation_score.json): 3 target(s) at bar 0.9: binance_spot_live.py 0.76, binance_spot_testnet.py 0.40, staging.py 1.00; measured 2026-08-05T14:37:33Z",
+   "cause": "execution_path.mutation_kill_execution_stack 10.0 -> 7.8 (data/mutation_score.json): 5 target(s) at bar 0.9: binance_live.py 0.55, binance_spot_live.py 0.87, binance_spot_testnet.py 0.84, binance_testnet.py 0.66, staging.py 1.00; measured 2026-08-05T15:23:17Z",
    "binding_constraint": "gate0_readiness at 5.0 -- +1 S1-entry criteria ready (3 -> 4 of 6) buys the next point",
    "ceiling": "Gate 0 fully ready, the money path covered like the money path, and libs/execution mutation-proof",
    "artifacts": [
@@ -445,10 +437,10 @@
     {
      "key": "mutation_kill_execution_stack",
      "state": "MEASURED",
-     "score": 7.2,
+     "score": 7.8,
      "artifact": "data/mutation_score.json",
-     "detail": "3 target(s) at bar 0.9: binance_spot_live.py 0.76, binance_spot_testnet.py 0.40, staging.py 1.00; measured 2026-08-05T14:37:33Z",
-     "constraint": "+10.14 % mutants killed (71.86 -> 82 of 100) buys the next point"
+     "detail": "5 target(s) at bar 0.9: binance_live.py 0.55, binance_spot_live.py 0.87, binance_spot_testnet.py 0.84, binance_testnet.py 0.66, staging.py 1.00; measured 2026-08-05T15:23:17Z",
+     "constraint": "+9.621 % mutants killed (78.38 -> 88.001 of 100) buys the next point"
     },
     {
      "key": "maker_fill_share",
@@ -471,10 +463,10 @@
   {
    "key": "self_improvement",
    "state": "MEASURED",
-   "score": 4.0,
+   "score": 3.9,
    "high_water": 4.0,
-   "movement": "FLATLINE",
-   "cause": "instrumentation_coverage at 1.0 -- +10 % of declared instrumentation points wired (10 -> 20 of 100) buys the next point",
+   "movement": "FELL",
+   "cause": "self_improvement.ledger_dispositioned 5.3 -> 5.1 (docs/research/recommendation_ledger.json): 208 dispositioned of 404 raised (196 still open or scheduled) -- a reasoned rejection counts, silence does not",
    "binding_constraint": "instrumentation_coverage at 1.0 -- +10 % of declared instrumentation points wired (10 -> 20 of 100) buys the next point",
    "ceiling": "every ledger row reaching a terminal verdict and 7-day conversion keeping pace with 7-day arrivals -- found equals fixed",
    "artifacts": [
@@ -487,25 +479,25 @@
     {
      "key": "ledger_dispositioned",
      "state": "MEASURED",
-     "score": 5.3,
+     "score": 5.1,
      "artifact": "docs/research/recommendation_ledger.json",
-     "detail": "196 dispositioned of 372 raised (176 still open or scheduled) -- a reasoned rejection counts, silence does not",
-     "constraint": "+39 ledger rows reaching a terminal verdict (196 -> 235 of 372) buys the next point"
+     "detail": "208 dispositioned of 404 raised (196 still open or scheduled) -- a reasoned rejection counts, silence does not",
+     "constraint": "+39 ledger rows reaching a terminal verdict (208 -> 247 of 404) buys the next point"
     },
     {
      "key": "conversion_flow_7d",
      "state": "MEASURED",
      "score": 4.6,
      "artifact": "data/conversion_status.json",
-     "detail": "status REPAIR-MODE: 153.0 dispositioned vs 333.0 raised in 7d; backlog 177, oldest 10.09d",
-     "constraint": "+34 of the last 7 days' arrivals dispositioned (153 -> 187 of 333) buys the next point"
+     "detail": "status DEBT-GROWING: 157.0 dispositioned vs 341.0 raised in 7d; backlog 182, oldest 10.22d",
+     "constraint": "+34 of the last 7 days' arrivals dispositioned (157 -> 191 of 341) buys the next point"
     },
     {
      "key": "instrumentation_coverage",
      "state": "MEASURED",
      "score": 1.0,
      "artifact": "data/instrumentation_coverage.jsonl",
-     "detail": "2 instrumented, 18 owed at 2026-08-05T14:40:58.650686+00:00 over 115 recorded sweeps",
+     "detail": "2 instrumented, 18 owed at 2026-08-05T19:22:33.108428+00:00 over 157 recorded sweeps",
      "constraint": "+10 % of declared instrumentation points wired (10 -> 20 of 100) buys the next point"
     },
     {
@@ -513,7 +505,7 @@
      "state": "MEASURED",
      "score": 5.0,
      "artifact": "data/instrumentation_chase.json",
-     "detail": "18.0 gap(s) carrying a cycle counter at 2026-08-05T14:40:58.651445+00:00 -- the counter never resets except by closing the gap",
+     "detail": "18.0 gap(s) carrying a cycle counter at 2026-08-05T19:22:33.108937+00:00 -- the counter never resets except by closing the gap",
      "constraint": "-3 instrumentation gaps standing open across cycles (18 -> 15, back under the 16 rung) buys the next point"
     }
    ]
@@ -547,7 +539,7 @@
      "state": "MEASURED",
      "score": 10.0,
      "artifact": "data/organ_readiness.json",
-     "detail": "11.0/11.0 organs ready at 2026-08-05T14:33:11.638181+00:00 (gate_ok=True)",
+     "detail": "11.0/11.0 organs ready at 2026-08-05T19:26:16.827959+00:00 (gate_ok=True)",
      "constraint": "AT CEILING (11/11 organs assembling a lawful prompt) -- the work is now HOLDING it"
     },
     {
@@ -635,7 +627,7 @@
      "state": "MEASURED",
      "score": 0.0,
      "artifact": "data/ALERT_CHANNELS_SILENT",
-     "detail": "SILENCE FLAG PRESENT: 2026-07-30T02:35:50.206522+00:00 no alert delivery on ANY channel in 24h (armed: NONE -- arming owed) (canary last ran 156.09h ago)",
+     "detail": "SILENCE FLAG PRESENT: 2026-07-30T02:35:50.206522+00:00 no alert delivery on ANY channel in 24h (armed: NONE -- arming owed) (canary last ran 161.86h ago)",
      "constraint": "ARM A CHANNEL and deliver one page: the canary's own audit found no delivery on ANY channel inside its lookback, which is the state that hid a dead pager for five days. The flag clears itself on the next successful delivery -- nothing else clears it"
     }
    ]
@@ -877,8 +869,8 @@
      "state": "MEASURED",
      "score": 10.0,
      "artifact": "docs/desk_lessons.jsonl",
-     "detail": "65 lesson(s); most recent L0065 learned 2026-08-05",
-     "constraint": "AT CEILING (65 recorded desk lessons, each with its cost and recurrence count, top rung 50) -- the ladder is exhausted and the next point needs a HARDER ladder, argued for in the diff"
+     "detail": "70 lesson(s); most recent L0070 learned 2026-08-05",
+     "constraint": "AT CEILING (70 recorded desk lessons, each with its cost and recurrence count, top rung 50) -- the ladder is exhausted and the next point needs a HARDER ladder, argued for in the diff"
     }
    ]
   },
@@ -933,11 +925,11 @@
   {
    "key": "mutation_breadth",
    "state": "MEASURED",
-   "score": 5.0,
-   "high_water": 5.0,
+   "score": 6.1,
+   "high_water": 6.1,
    "movement": "FELL",
-   "cause": "mutation_breadth.mutation_targets_at_bar 7.5 -> 5.0 (data/mutation_score.json): 3/6 complete targets at bar 0.9",
-   "binding_constraint": "mutation_targets_complete at 4.0 -- +2 modules with a complete (never truncated) mutation run (6 -> 8, the next rung) buys the next point [+1 UNMEASURED component(s): mutation_targets_complete::validation.py -- the score above covers only 3 of 4 components]",
+   "cause": "mutation_breadth.mutation_targets_at_bar 7.5 -> 3.3 (data/mutation_score.json): 3/9 complete targets at bar 0.9",
+   "binding_constraint": "mutation_targets_at_bar at 3.3 -- +1 complete targets meeting the artifact's own 0.9 bar (3 -> 4 of 9) buys the next point",
    "ceiling": "every money-path file carrying a COMPLETE mutation run -- breadth, so a perfect kill rate on one small file can never stand in for a tested tree",
    "artifacts": [
     "data/mutation_score.json"
@@ -946,34 +938,26 @@
     {
      "key": "money_path_files_mutated",
      "state": "MEASURED",
-     "score": 6.0,
+     "score": 10.0,
      "artifact": "data/mutation_score.json",
-     "detail": "3/5 money-path files mutated; NOT mutated: libs/execution/binance_live.py, libs/execution/binance_testnet.py",
-     "constraint": "+1 money-path files carrying a COMPLETE mutation run (3 -> 4 of 5) buys the next point"
+     "detail": "5/5 money-path files mutated; NOT mutated: none",
+     "constraint": "AT CEILING (5/5 money-path files carrying a COMPLETE mutation run) -- the work is now HOLDING it"
     },
     {
      "key": "mutation_targets_complete",
      "state": "MEASURED",
-     "score": 4.0,
+     "score": 5.0,
      "artifact": "data/mutation_score.json",
-     "detail": "6 complete target(s) measured 2026-08-05T14:37:33Z; 1 truncated and excluded: libs/autodiscovery/validation.py",
-     "constraint": "+2 modules with a complete (never truncated) mutation run (6 -> 8, the next rung) buys the next point"
-    },
-    {
-     "key": "mutation_targets_complete::validation.py",
-     "state": "UNMEASURED",
-     "score": null,
-     "artifact": "data/mutation_score.json",
-     "detail": "libs/autodiscovery/validation.py ran BUDGET-TRUNCATED -- a truncated run has not covered the file, so it counts toward neither breadth nor strength",
-     "constraint": "MEASURE IT -- libs/autodiscovery/validation.py ran BUDGET-TRUNCATED -- a truncated run has not covered the file, so it counts toward neither breadth nor strength. Unmeasured is neither a 0 nor a 10; it is the state of not knowing, and it stays that until an artifact says otherwise."
+     "detail": "9 complete target(s) measured 2026-08-05T15:23:17Z; 0 truncated and excluded: none",
+     "constraint": "+3 modules with a complete (never truncated) mutation run (9 -> 12, the next rung) buys the next point"
     },
     {
      "key": "mutation_targets_at_bar",
      "state": "MEASURED",
-     "score": 5.0,
+     "score": 3.3,
      "artifact": "data/mutation_score.json",
-     "detail": "3/6 complete targets at bar 0.9",
-     "constraint": "+1 complete targets meeting the artifact's own 0.9 bar (3 -> 4 of 6) buys the next point"
+     "detail": "3/9 complete targets at bar 0.9",
+     "constraint": "+1 complete targets meeting the artifact's own 0.9 bar (3 -> 4 of 9) buys the next point"
     }
    ]
   },
@@ -1028,7 +1012,7 @@
      "state": "MEASURED",
      "score": 10.0,
      "artifact": "data/organ_readiness.json",
-     "detail": "log_dir_writable=True, gate_ok=True, doctrine 59846 bytes at 2026-08-05T14:33:11.638181+00:00",
+     "detail": "log_dir_writable=True, gate_ok=True, doctrine 66435 bytes at 2026-08-05T19:26:16.827959+00:00",
      "constraint": "AT CEILING -- the desk can write its own evidence"
     },
     {
@@ -1052,10 +1036,10 @@
   {
    "key": "engineering_standard",
    "state": "MEASURED",
-   "score": 6.5,
-   "high_water": 6.5,
-   "movement": "FLATLINE",
-   "cause": "unwired_proposals_open at 4.0 -- -3 open wiring proposals (built, not reachable) (34 -> 31, back under the 32 rung) buys the next point",
+   "score": 6.8,
+   "high_water": 6.8,
+   "movement": "RAISED",
+   "cause": "6.5 -> 6.8. Next: unwired_proposals_open at 4.0 -- -3 open wiring proposals (built, not reachable) (34 -> 31, back under the 32 rung) buys the next point",
    "binding_constraint": "unwired_proposals_open at 4.0 -- -3 open wiring proposals (built, not reachable) (34 -> 31, back under the 32 rung) buys the next point",
    "ceiling": "nothing enters below the build standard, the tree is strict-clean, and nothing built is left unreachable",
    "artifacts": [
@@ -1070,8 +1054,8 @@
      "state": "MEASURED",
      "score": 10.0,
      "artifact": "data/build_standard.json",
-     "detail": "status OK: 0.0 failing of 52.0 governed; unreadable inputs []",
-     "constraint": "AT CEILING (52/52 governed organs meeting the build standard) -- the work is now HOLDING it"
+     "detail": "status OK: 0.0 failing of 55.0 governed; unreadable inputs []",
+     "constraint": "AT CEILING (55/55 governed organs meeting the build standard) -- the work is now HOLDING it"
     },
     {
      "key": "strict_typing_clean_share",
@@ -1092,10 +1076,10 @@
     {
      "key": "unwired_module_defects",
      "state": "MEASURED",
-     "score": 8.0,
+     "score": 9.0,
      "artifact": "data/max_audit_report.json",
      "detail": "library modules nothing imports, and scripts that are the only importer of a module nothing invokes -- built, tested and unreachable",
-     "constraint": "-1 live unwired-module defects in the audit (2 -> 1, back under the 2 rung) buys the next point"
+     "constraint": "-1 live unwired-module defects in the audit (1 -> 0, back under the 1 rung) buys the next point"
     }
    ]
   },
@@ -1149,11 +1133,11 @@
   {
    "key": "source_resilience",
    "state": "MEASURED",
-   "score": 7.3,
-   "high_water": 7.3,
-   "movement": "FLATLINE",
-   "cause": "sources_healthy at 4.7 -- +2 registered sources whose latest verdict is HEALTHY (7 -> 9 of 15) buys the next point",
-   "binding_constraint": "sources_healthy at 4.7 -- +2 registered sources whose latest verdict is HEALTHY (7 -> 9 of 15) buys the next point",
+   "score": 7.5,
+   "high_water": 7.5,
+   "movement": "RAISED",
+   "cause": "7.3 -> 7.5. Next: sources_healthy at 5.0 -- +2 registered sources whose latest verdict is HEALTHY (9 -> 11 of 18) buys the next point",
+   "binding_constraint": "sources_healthy at 5.0 -- +2 registered sources whose latest verdict is HEALTHY (9 -> 11 of 18) buys the next point",
    "ceiling": "every registered source healthy on its latest probe, and every dead one already carrying a registered alternative",
    "artifacts": [
     "data/source_alternatives_report.json",
@@ -1171,10 +1155,10 @@
     {
      "key": "sources_healthy",
      "state": "MEASURED",
-     "score": 4.7,
+     "score": 5.0,
      "artifact": "data/source_health.jsonl",
-     "detail": "7/15 healthy on their most recent probe; not healthy: baidu, bigquant, csdn, github, joinquant, ricequant, xueqiu, zhihu",
-     "constraint": "+2 registered sources whose latest verdict is HEALTHY (7 -> 9 of 15) buys the next point"
+     "detail": "9/18 healthy on their most recent probe; not healthy: bigquant, csdn, dcinside, github, hatena, joinquant, ricequant, xueqiu, zhihu",
+     "constraint": "+2 registered sources whose latest verdict is HEALTHY (9 -> 11 of 18) buys the next point"
     }
    ]
   },
@@ -1268,7 +1252,7 @@
      "state": "MEASURED",
      "score": 10.0,
      "artifact": "data/timidity_audit.json",
-     "detail": "0.0 hit(s) across 18 prompt surfaces; doctrine injected=True",
+     "detail": "0.0 hit(s) across 22 prompt surfaces; doctrine injected=True",
      "constraint": "AT CEILING (0 timid instructions found in live prompt surfaces) -- the work is now HOLDING it"
     },
     {
@@ -1284,11 +1268,25 @@
  ],
  "defects": [
   {
+   "aspect": "statistical_validation",
+   "movement": "FELL",
+   "score": 3.5,
+   "high_water": 9.0,
+   "cause": "statistical_validation.mutation_kill_validation_stack 9.0 -> 6.9 (data/mutation_score.json): 2 target(s) at bar 0.9: validation.py 0.48, stepwise.py 0.90; measured 2026-08-05T15:23:17Z"
+  },
+  {
    "aspect": "execution_path",
    "movement": "FELL",
-   "score": 7.1,
+   "score": 7.2,
    "high_water": 7.6,
-   "cause": "execution_path.mutation_kill_execution_stack 10.0 -> 7.2 (data/mutation_score.json): 3 target(s) at bar 0.9: binance_spot_live.py 0.76, binance_spot_testnet.py 0.40, staging.py 1.00; measured 2026-08-05T14:37:33Z"
+   "cause": "execution_path.mutation_kill_execution_stack 10.0 -> 7.8 (data/mutation_score.json): 5 target(s) at bar 0.9: binance_live.py 0.55, binance_spot_live.py 0.87, binance_spot_testnet.py 0.84, binance_testnet.py 0.66, staging.py 1.00; measured 2026-08-05T15:23:17Z"
+  },
+  {
+   "aspect": "self_improvement",
+   "movement": "FELL",
+   "score": 3.9,
+   "high_water": 4.0,
+   "cause": "self_improvement.ledger_dispositioned 5.3 -> 5.1 (docs/research/recommendation_ledger.json): 208 dispositioned of 404 raised (196 still open or scheduled) -- a reasoned rejection counts, silence does not"
   },
   {
    "aspect": "ops_autonomy",
@@ -1300,9 +1298,9 @@
   {
    "aspect": "mutation_breadth",
    "movement": "FELL",
-   "score": 5.0,
-   "high_water": 4.2,
-   "cause": "mutation_breadth.mutation_targets_at_bar 7.5 -> 5.0 (data/mutation_score.json): 3/6 complete targets at bar 0.9"
+   "score": 6.1,
+   "high_water": 5.0,
+   "cause": "mutation_breadth.mutation_targets_at_bar 7.5 -> 3.3 (data/mutation_score.json): 3/9 complete targets at bar 0.9"
   }
  ],
  "flatlined": [
@@ -1314,17 +1312,12 @@
   {
    "aspect": "governance",
    "score": 8.3,
-   "binding_constraint": "audit_defects_live at 4.0 -- -19 live audit defects (50 -> 31, back under the 32 rung) buys the next point"
+   "binding_constraint": "audit_defects_live at 4.0 -- -20 live audit defects (51 -> 31, back under the 32 rung) buys the next point"
   },
   {
    "aspect": "data_coverage",
    "score": 4.5,
    "binding_constraint": "assets_with_measured_span at 1.9 -- +10 registered assets carrying a measured span (19 -> 29 of 100) buys the next point"
-  },
-  {
-   "aspect": "self_improvement",
-   "score": 4.0,
-   "binding_constraint": "instrumentation_coverage at 1.0 -- +10 % of declared instrumentation points wired (10 -> 20 of 100) buys the next point"
   },
   {
    "aspect": "alpha_output",
@@ -1382,19 +1375,9 @@
    "binding_constraint": "llm_credentials_provisioned at 0.0 -- PROVISION THE CREDENTIAL -- it is an operator step by design (desk code must never write a secret). Until it lands, every seat is wired and unfunded"
   },
   {
-   "aspect": "engineering_standard",
-   "score": 6.5,
-   "binding_constraint": "unwired_proposals_open at 4.0 -- -3 open wiring proposals (built, not reachable) (34 -> 31, back under the 32 rung) buys the next point"
-  },
-  {
    "aspect": "capital_utilisation",
    "score": 7.2,
    "binding_constraint": "ceiling_utilisation at 6.9 -- +0.0942 of the desk's own expected utilisation fraction (0.6178 -> 0.712 of 0.9) buys the next point [+2 UNMEASURED component(s): ceiling::scheduler_cadence, ceiling::brain_seat_throughput -- the score above covers only 2 of 4 components]"
-  },
-  {
-   "aspect": "source_resilience",
-   "score": 7.3,
-   "binding_constraint": "sources_healthy at 4.7 -- +2 registered sources whose latest verdict is HEALTHY (7 -> 9 of 15) buys the next point"
   },
   {
    "aspect": "blind_spot_coverage",
@@ -1412,14 +1395,19 @@
    "binding_constraint": "10/10 held. restraints_classified at 10.0 -- AT CEILING (68/68 restraints classified as scope, evidence or risk) -- the work is now HOLDING it"
   }
  ],
- "raised": [],
- "widened": [
+ "raised": [
   {
-   "aspect": "statistical_validation",
-   "score": 4.5,
-   "high_water": 9.0,
-   "detail": "aspect mean 9.0 -> 4.5 while grading 3 component(s) -- with every component of today's set at its OWN best the aspect would reach 4.5, below the recorded 9.0 -- so that mark cannot have been earned over this set. NO component that already had a mark is below it, so nothing got worse: the mark was earned over a NARROWER set and is not comparable to today's reading. It STAYS at 9.0; beating it OVER THE WIDER SET is the work. Next: forecasts_resolved at 0.0 -- +4 logged forecasts scored against an outcome (0 -> 4 of 37) buys the next point [+1 UNMEASURED component(s): mutation_kill_validation_stack::validation.py -- the score above covers only 2 of 3 components]"
+   "aspect": "engineering_standard",
+   "score": 6.8,
+   "detail": "6.5 -> 6.8. Next: unwired_proposals_open at 4.0 -- -3 open wiring proposals (built, not reachable) (34 -> 31, back under the 32 rung) buys the next point"
   },
+  {
+   "aspect": "source_resilience",
+   "score": 7.5,
+   "detail": "7.3 -> 7.5. Next: sources_healthy at 5.0 -- +2 registered sources whose latest verdict is HEALTHY (9 -> 11 of 18) buys the next point"
+  }
+ ],
+ "widened": [
   {
    "aspect": "risk_rails",
    "score": 7.3,
@@ -1429,12 +1417,6 @@
  ],
  "unmeasured": [],
  "unmeasured_components": [
-  {
-   "aspect": "statistical_validation",
-   "component": "mutation_kill_validation_stack::validation.py",
-   "artifact": "data/mutation_score.json",
-   "why": "libs/autodiscovery/validation.py ran BUDGET-TRUNCATED (14 of 137 sites) -- a truncated run samples the mutants it reached, so its kill rate is not a strength measurement and is refused rather than scored"
-  },
   {
    "aspect": "risk_rails",
    "component": "ruin_rail_clear",
@@ -1458,12 +1440,6 @@
    "component": "seats_productive",
    "artifact": "data/miner_runway.json",
    "why": "data/miner_runway.json reports observable=False -- log directory /home/user/quant/data/cro_ai_logs is absent -- run history is UNREADABLE here. The report says NOTHING about whether the seats ran, and an unreadable log is not an idle seat"
-  },
-  {
-   "aspect": "mutation_breadth",
-   "component": "mutation_targets_complete::validation.py",
-   "artifact": "data/mutation_score.json",
-   "why": "libs/autodiscovery/validation.py ran BUDGET-TRUNCATED -- a truncated run has not covered the file, so it counts toward neither breadth nor strength"
   },
   {
    "aspect": "scheduler_integrity",
