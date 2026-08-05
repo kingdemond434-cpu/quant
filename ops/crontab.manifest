@@ -1432,6 +1432,30 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # EVIDENCE: scripts/run_cro.py -> data/cro_review.json + docs/research/cro_recommendations.jsonl
 # CONFIDENCE: committed-script (new; runs dark until OPENAI_API_KEY is exported, and says so)
 20 5,11,17,23 * * * cd "$QUANT_ROOT" && flock -n data/.cron_cro.lock .venv/bin/python scripts/run_cro.py >> data/cro_ai_logs/cro.log 2>&1
+
+# SURVIVOR BOTTLENECK PANEL -- every seat argues about why nothing has ever survived.
+# The desk's root-cause finding (52 of 350 recorded negatives, 14.9%, were powered enough to mean
+# anything) was produced by ONE reasoner, and a finding from one reasoner is exactly the thing most
+# worth attacking. This puts the same measured artifacts in front of the GPT/CRO brain and every
+# reachable OpenRouter family and makes them argue: round one alone, round two refuting each other
+# ANONYMISED, then ranked by agreement that survived forced contradiction. Agreement between
+# parallel monologues is a shared prior; agreement after refutation is evidence.
+# GPT IS AN ADDITION, NEVER THE BRAIN: nothing here is executed, every response is DATA parsed into
+# structured proposals, and the output is a ranked list for a person.
+# EVERY PROPOSAL IS FENCED. A model asked "how do we get survivors" has one overwhelmingly easy
+# answer -- lower the bar -- and it will find it. Anything loosening a gate, raising size, touching
+# the deadman switch, selecting post hoc, or removing a validation stage is REFUSED and recorded
+# with its reason (the refusal is kept, because a seat proposing it is information about the seat).
+# CEILING TYPE (L1.28c) is INFORMATION-ARRIVAL: the dossier only moves when the screens, the
+# type-II report or the forward clocks move, which is daily at most. Weekly, because a panel re-run
+# against an unchanged dossier returns the same argument at full token cost. Sunday 06:40 sits
+# after the week's screens and before the Monday research cycle reads them.
+# SPEND: checked BEFORE any call against the monthly cap; a missing key writes a BLOCKED artifact
+# naming what to export rather than an empty report that reads like the panel had no opinions.
+# EVIDENCE: scripts/run_survivor_panel.py -> reports/survivor_panel.json + data/survivor_panel.jsonl
+# CONFIDENCE: fence and aggregation are measured (21 tests); the panel itself is BLOCKED in this
+# checkout with no OPENROUTER_API_KEY, which the artifact states rather than hiding.
+40 6 * * 0 cd "$QUANT_ROOT" && flock -n data/.cron_survivor_panel.lock .venv/bin/python scripts/run_survivor_panel.py >> data/cro_ai_logs/survivor_panel.log 2>&1
 # RESEARCH MINER (principal 2026-08-01, "max frequency everyday"). Discovers and RANKS quant
 # research across YouTube, Bilibili, Juejin, WeChat/Sogou, arXiv, SSRN, OpenReview, HN and GitHub.
 # Captions are blocked on both video platforms, so the video half is a QUEUE for a human and the
@@ -1711,6 +1735,32 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # (NO-CANDIDATES: 37 corrected trials, 0 qualifying survivors -- the honest idle state).
 # CONFIDENCE: measured (cohort 12/12 read from libs/research/slot_registry.derive_slots).
 45 8 * * * cd "$QUANT_ROOT" && flock -n data/.cron_paper_spawner.lock .venv/bin/python scripts/run_paper_sleeve_spawner.py >> data/cro_ai_logs/paper_sleeve_spawner.log 2>&1
+
+# THE LAW POLICE -- who watches the watchmen. Every other check on this desk answers "are the laws
+# being broken today?"; this answers the question that decides whether their answers mean anything:
+# IS THE AUDIT STILL LOOKING? Three ways a law silently stops being enforced, none of which raises
+# a defect today -- a check deleted from CHECKS (its defects stop appearing and the report gets
+# BETTER), a check passing VACUOUSLY (it returns early because its artifact is gone, which is
+# indistinguishable from a clean pass), and a defect that disappears because the detector went
+# blind rather than because anything was fixed.
+# FOUND ON ITS FIRST TWO PASSES: `bnb-funded` and `fee-carry-ratio` both swallowed their own
+# failure (`except Exception: pass` / `return`) and reported all-clear having measured NOTHING --
+# so the §40 fee ratchet and the BNB rack-rate detector were unenforced for exactly as long as the
+# venue was unreachable, silently. Both now report UNKNOWN. It also cried wolf on four checks in
+# its first version (they consult the network, git and module globals rather than files); the
+# metric now counts any external consultation, because an alarm that is mostly false is an alarm
+# nobody hears, and this desk has already lost eleven and a half days to that.
+# CEILING TYPE (L1.28c) is INFORMATION-ARRIVAL: it grades the audit, so it runs once per audit
+# cycle and no more. 55 past the hour puts it AFTER max_audit's own daily pass, since grading a
+# sweep before it has run would measure yesterday's roster against yesterday's evidence.
+# AUTHORITY: repairs ONLY by re-running idempotent measurement organs from an explicit per-defect
+# allowlist, each additionally screened against a never-touch token list (deadman switch,
+# thresholds, gates, sizing, promotion, deletion). Everything else is reported for a person -- a
+# police force that can rewrite the law is not enforcing it.
+# EVIDENCE: scripts/run_law_police.py -> data/LAW_POLICE.json + reports/law_police.json. First
+# clean run 2026-08-05: WATCHING, 95 checks, 95 evaluating, 0 blind spots, 44 distinct defects.
+# CONFIDENCE: measured (counts read from the artifact). rc 1 on an unexplained fall pages.
+55 9 * * * cd "$QUANT_ROOT" && flock -n data/.cron_law_police.lock .venv/bin/python scripts/run_law_police.py >> data/cro_ai_logs/law_police.log 2>&1
 
 # PAPER-SLEEVE FORWARD RUNNER -- the organ that makes a spawned clock BREATHE, and the last link
 # in the chain between mining and a survivor. On 2026-08-05 the desk spawned ten forward clocks for

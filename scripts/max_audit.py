@@ -1641,8 +1641,18 @@ def check_bnb_funded(defects) -> None:
                             "fee-burn is ON (feeBurn:True) but BNB balance is 0 -- the ~25% "
                             "discount is INERT and commissions are paid at rack rate. Fund a small "
                             "BNB balance (or accept it as a testnet limitation and ledger why)."))
-    except Exception:
-        pass
+    except Exception as exc:
+        # UNKNOWN IS NOT "NO BREACH". This was `except Exception: pass`, so whenever the venue was
+        # unreachable or the credentials were absent the check reported a clean bill of health
+        # having measured nothing -- which is precisely the state it was written to catch, since
+        # the 2026-07-24 incident was a desk paying rack rate while believing the discount was
+        # live. Found by scripts/run_law_police.py on its first pass: raised nothing, consulted
+        # nothing, graded CANNOT-EVALUATE.
+        defects.append(("bnb-burn-unmeasured",
+                        f"BNB fee-burn funding could not be read ({type(exc).__name__}: "
+                        f"{str(exc)[:120]}). This is UNKNOWN, not healthy: the ~25% discount is "
+                        "inert unless a BNB balance is actually held, and a silent pass here is "
+                        "how the desk once paid rack rate for weeks believing otherwise."))
 
 
 def _git_age_h(rel: str) -> float:
@@ -2682,14 +2692,6 @@ _FINDING_DOCS_EXCLUDED = {
         "L1.22 self-improvement. States how the desk researches its own research; enforced by the cycle's meta duty, not by an artifact-freshness clock.",
     "docs/research/UNREACHABLE_LAYER_TRIAGE.md":
         "§36 orphan-code triage. The standing record of which modules are unreachable and why, with each carrying an explicit wire/defer/retire verdict -- self-disposing, like the other triage registers.",
-    "docs/research/deep_review_inbox.md":
-        "CADENCED PRODUCER (§36) -- scripts/deep_review.py appends one panel pass per risk-path\n"
-        "module (LIVE_CONNECTOR_SPEC section 7 bar). It is an INBOX, so its own conversion rule\n"
-        "is the one its header states: every accepted finding is rowed via\n"
-        "scripts/track_findings.py in the same run, and the file is the transcript, not the\n"
-        "backlog. Unclaimed it read as an orphan, which is exactly the inventory-accumulates\n"
-        "failure §36 exists to catch -- the claim names the conversion path rather than\n"
-        "exempting the file from having one.",
     "docs/research/capability_hunt/":
         "daily L1.31 hunt records -- dated per-slot snapshots whose findings are ROWED IN THE\n"
         "SAME RUN by the hunt's own duty (L1.31/L1.39; 2026-07-31 proof: s5 -> R0153-R0173,\n"
@@ -5135,8 +5137,18 @@ def check_fee_carry_ratio(defects) -> None:
         # helper and is the ONLY sanctioned way to read this endpoint (institutional_knowledge:
         # "paginate every venue history endpoint... truncation never throws an error").
         inc = _fut.income_summary(int((_t.time() - 7 * 86400) * 1000))
-    except Exception:
-        return                                    # venue unreachable is not a fee defect
+    except Exception as exc:
+        # "Venue unreachable is not a fee defect" is true, and returning SILENTLY still made the
+        # §40 fee ratchet unenforced for exactly as long as the venue stayed unreachable, with
+        # nothing anywhere saying so. The ratchet is the thing that stops a worsened fee ratio
+        # becoming the new normal, so an unmeasured window is the window in which that happens.
+        # Reported as UNMEASURED -- a distinct, lower-severity fact than a breached ratio, and
+        # NOT a defect about fees (found by run_law_police.py: raised nothing, consulted nothing).
+        defects.append(("fee-carry-unmeasured",
+                        f"the §40 fee/carry ratchet could not read venue income "
+                        f"({type(exc).__name__}: {str(exc)[:120]}). Not a fee breach -- an "
+                        "unmeasured window, and the ratchet cannot hold a floor it cannot see."))
+        return
     funding = float(inc.get("funding", 0.0))
     commission = abs(float(inc.get("commission", 0.0)))
     if funding < 5.0:
