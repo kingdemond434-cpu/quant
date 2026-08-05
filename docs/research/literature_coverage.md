@@ -523,3 +523,54 @@ for the singleton-discarding panel filter. Confirmatory null: debate cancellatio
 4. LIT-c carry-overs: appendix deltas (2606.03032/2509.08713/2606.03437), MemAgents workshop
    ground, Search-Time Contamination (2606.05241), NeurIPS eval-of-agents deadline 08-29.
 5. The three [SUMMARY-ONLY] strandings above, via OP-026a.
+
+---
+
+## SESSION NOTE 2026-08-05 (literature deep-miner — run 5; STANDING DAILY)
+
+_Written BEFORE any searching (completion contract §1). Updated as each item resolves. If this
+run is killed, what stands below is the durable progress._
+
+### State at run start (recomputed, not remembered)
+- `source_backlog_next.py` → **21 catalogued, 10 resolved, 9 pending VERIFICATION, 2 pending a
+  legitimacy/policy decision.** The backlog GREW since run 4 (which left it at 1 pending) — and it
+  grew **because of this organ**: 5 of the 9 pending items are run 4's own cards 23–25 + KR/JP
+  venue-state loot. **An organ that catalogues faster than it verifies is on the arrival side of
+  its own queue (L1.28b).** Verification is therefore ITEM 1, not an afterthought.
+- `mine_gate.py` → BACKLOG-CLEAR, all 11 carded finds disposed; mining authorised.
+- Rotation rule (≥40% to least-recently-covered) binds to the four families last touched
+  2026-07-26: **arXiv q-fin full sweep (carried THREE runs — the standing debt), SSRN via OP-026a,
+  journals, theses layer B (weakest relative to its thesis).**
+- `data/strategy_coverage.json` → **STATISTICAL-ARBITRAGE is the desk's ONE
+  `MENTIONED-NEVER-TESTED` family (n=0)**; THIN: attention-sentiment, market-making/execution,
+  vol-and-options, event-and-calendar, level-reaction, lead-lag. Coverage is the count of
+  FAMILIES, so this run's literature aim is **pointed at the unhunted/thin families**, not at
+  another carry or trend paper (those are HUNTED at n=4 and n=7).
+
+### ITEMS TAKEN THIS RUN (bounded breadth; depth MAXED per item)
+1. **[BACKLOG — the desk's stated bottleneck]** Verify the 6 named pending items
+   (NAVER DataLab · BIS WP1087 carry↔liquidation + COT-BTC · regulatory-event timeline ·
+   stablecoin run signature · KR venue-state layer · bitFlyer getexecutions) and RULE on the 2
+   policy items (Upbit portal · Glassnode/CryptoQuant vendor-replacement). — STATUS: below.
+2. **[ROTATION-BOUND, carried 3 runs] arXiv q-fin FULL subcategory sweep** — every subcategory
+   (q-fin.TR/PM/RM/ST/MF/CP/PR/GN), aimed at STATISTICAL-ARBITRAGE (never-tested) and the THIN
+   families. Carries the three [SUMMARY-ONLY] strandings for OP-026a resolution. — STATUS: below.
+3. **[ROTATION-BOUND, weakest layer] Theses layer (B)** — DiVA / theses.fr / DART-Europe /
+   EThOS-successors, plus the non-English thesis repositories (CyberLeninka, J-STAGE/CiNii,
+   SciELO, KCI/RISS open subsets). The one genre contractually obliged to report what FAILED =
+   free graveyard + free hypotheses in one document. — STATUS: below.
+4. **[LIT-c + ≥25% SEARCH-SPACE EXPANSION] AI / autonomous-research METHODS frontier** — run 4's
+   named carry-overs (MemAgents workshop ground, Search-Time Contamination 2606.05241, appendix
+   deltas 2606.03032/2509.08713/2606.03437) + NEW venues never visited. Aimed at the desk's LIVE
+   wounds. — STATUS: below.
+
+### NEXT RUN PICKS UP AT (written now, so a kill mid-run still hands off; updated at close)
+- Whatever of items 1–4 this run leaves open, named precisely at close.
+- Practitioner residuals still unmined: Two Sigma depth, DE Shaw, ECB/BoE crypto notes.
+- Journals family (last touched 07-26).
+
+### DISCIPLINE FOR THIS RUN (concurrency safety — learned, not guessed)
+Parallel ground-diggers are **READ-ONLY on every shared ledger** (`recommendations.py` has no
+locking; ID races have already cost this desk a renumber). Each writes ONLY its own file under
+`docs/research/deep_sweep/`. The parent does ALL routing serially at close.
+

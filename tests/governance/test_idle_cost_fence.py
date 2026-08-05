@@ -64,9 +64,9 @@ def _live_book(root: Path, *, equity: float = 10_000.0, deployed: float = 0.0,
     _live(root, deployed=deployed, n=1 if deployed else 0, action=action, reasons=reasons)
     _yield_inputs(root)
     (root / "data/LIVE_ENABLE").write_text("1", "utf-8")
-    # A READABLE, UNCLAMPED GUARD (L1.54). These fixtures used to omit live_guard.json and rely on
+    # A READABLE, UNCLAMPED GUARD (L1.55). These fixtures used to omit live_guard.json and rely on
     # `entries_allowed` defaulting True and `frac` defaulting 1.0 -- i.e. on an unreadable guard
-    # reading as "no clamps". That default WAS the defect L1.54 removed, so the fixture now states
+    # reading as "no clamps". That default WAS the defect L1.55 removed, so the fixture now states
     # what it means: a funded book whose guard is running and currently clamping nothing.
     (root / "data/live_guard.json").write_text(json.dumps({
         "ts": datetime.now(tz=UTC).isoformat(),

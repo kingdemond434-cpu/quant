@@ -1872,3 +1872,706 @@ Then replace the direct conversions.
 | **5** | Type‑conversion errors (ValueError) | Crashes can be masked as “gate refusal”, hiding configuration bugs. |
 
 If the file is otherwise sound, the **single riskiest remaining assumption** is the **non‑atomic read‑modify‑write of `data/stage_state.json`**, which opens the door to race conditions and silent state corruption. Adding proper file locking or atomic write semantics removes that exposure.
+
+
+# DEEP REVIEW -- libs/execution/binance_spot_live.py -- 2026-08-05T17:59:39.337872+00:00
+2/4 seats responded on the FREE roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+## nvidia/nemotron-3-ultra-550b-a55b:free
+
+**libs/execution/binance_spot_live.py — Hostile Review**
+
+---
+
+### 1. SILENT FAILURE — `cancel_all` swallows *every* exception and returns success-like payload
+
+**Lines 198–204**
+```python
+def cancel_all(symbol: str) -> dict[str, Any]:
+    try:
+        res = _signed("/api/v3/openOrders", {"symbol": symbol}, method="DELETE")
+        return {"code": 200, "res": res}
+    except Exception as e:  # nothing to cancel / transient -- non-fatal
+        return {"code": 0, "msg": repr(e)[:80]}
+```
+
+**What breaks:** Caller believes orders were cancelled (or "nothing to cancel"). In reality the request may have hit a 5xx, a rate-limit ban, a signature mismatch, or a network partition. The desk keeps quoting / sending new orders while stale orders sit on the book — **open exposure the strategy thinks is flat**.
+
+**Concrete sequence:**
+1. Strategy decides to pull quote, calls `cancel_all("BTCUSDT")`.
+2. Binance returns 502 (gateway timeout) or 429 (IP ban) or 418 (signature mismatch due to clock drift).
+3. `cancel_all` catches `Exception`, returns `{"code": 0, "msg": "..."}`.
+4. Caller treats this as "done", immediately places fresh maker orders.
+5. Original orders fill *against* the new quotes → unintended position, double exposure, or self-trade.
+
+**Minimal fix:**  
+- Re-raise on any HTTP error ≥ 500 or 429 (retryable) and on 4xx that indicates auth/param failure.  
+- Only return `{"code": 0, ...}` for *explicit* "no open orders" responses (Binance returns empty list with 200).  
+- Add `X-MBX-USED-WEIGHT` parsing and back-off.
+
+---
+
+### 2. SILENT FAILURE — `avg_fill`, `quote_depth`, `balances`, `usdt_balance`, `account_value_usdt` return `None` / `0.0` / empty dict on *any* exception
+
+**Lines 155–158 (`avg_fill`), 144–152 (`quote_depth`), 168–171 (`balances`), 173–175 (`usdt_balance`), 177–187 (`account_value_usdt`)**
+
+**What breaks:** Downstream risk logic (position sizing, stop-loss, margin checks) receives "zero balance" or "no fills" and **assumes flat/clean state**. The desk continues trading with stale or missing data.
+
+**Concrete sequence:**
+1. `balances()` hits a 500 → returns `{}`.
+2. `usdt_balance()` → `0.0`.
+3. Position sizer thinks "no USDT free", sizes next order at 0 → **strategy stalls silently** (no alert, no retry).
+4. Or `avg_fill` returns `None` → execution quality monitor sees "no data" → marks trade as "unfilled" → recovery logic re-enters → **duplicate order**.
+
+**Minimal fix:**  
+- Raise a typed exception (`ExchangeError`, `AuthError`, `RateLimitError`) on non-2xx / network failure.  
+- Caller *must* handle; no defaulting to zero.
+
+---
+
+### 3. WRONG-DIRECTION FAILURE — `_signed` fails **OPEN** on arming check, but **CLOSED** on credential load
+
+**Lines 56–58 (`_creds`), 67–72 (`is_armed`), 85–88 (`_signed`)**
+
+```python
+def _creds() -> tuple[str | None, str | None]:
+    if not _KEYFILE.exists():
+        return None, None
+    try:
+        d = json.loads(_KEYFILE.read_text("utf-8"))
+        return d.get("key"), d.get("secret")
+    except (json.JSONDecodeError, OSError):
+        return None, None
+```
+
+**What breaks:** If `binance_live_spot.json` exists but is **corrupt / unreadable / missing keys**, `_creds()` returns `(None, None)`. `has_keys()` → `False`. `is_armed()` → `False`. `_signed` raises `RuntimeError("not armed")`. **Correct so far.**
+
+**BUT:** If the file *disappears* between `is_armed()` check and `_creds()` call inside `_signed` (TOCTOU), `_creds()` returns `(None, None)`, the `assert key is not None` triggers `AssertionError` — **uncaught, crashes the process**. That is **fail-closed** (good), but the error message is useless and the crash may leave orders stranded.
+
+**Worse:** If the file exists, is valid JSON, but `key` or `secret` is an **empty string**, `_creds()` returns `("", "")`. `has_keys()` → `True` (non-empty strings are truthy). `is_armed()` → `True`. `_signed` proceeds, sends `X-MBX-APIKEY: ""` → Binance returns 401. `_signed` does **not** catch 401 → `urllib.request.urlopen` raises `HTTPError` → propagates up. Caller may catch `Exception` and treat as transient → **retry loop with bad creds, burning rate limits, locking IP**.
+
+**Minimal fix:**  
+- In `_creds`: validate non-empty strings; raise `ValueError` if missing/empty.  
+- In `_signed`: catch `HTTPError`, inspect code; on 401/403 raise `AuthError` (non-retryable).  
+- Remove `assert`; explicit `if not key or not secret: raise AuthError`.
+
+---
+
+### 4. ARITHMETIC / PRECISION — `_prec_of` and `exchange_filters` produce wrong precision for small tick sizes
+
+**Lines 117–120 (`_prec_of`), 130 (`price_prec`)**
+
+```python
+def _prec_of(step: float) -> int:
+    s = f"{step:.10f}".rstrip("0")
+    return len(s.split(".")[1]) if "." in s and step < 1 else 0
+```
+
+**What breaks:**  
+- `step = 0.00000001` (1e-8) → `f"{step:.10f}"` = `"0.0000000100"` → `rstrip("0")` → `"0.00000001"` → split → `"00000001"` → length 8 ✓  
+- `step = 0.000000001` (1e-9) → `f"{step:.10f}"` = `"0.0000000010"` → `rstrip("0")` → `"0.000000001"` → length 9 ✓  
+- `step = 1e-10` → `f"{step:.10f}"` = `"0.0000000001"` → length 10 ✓  
+- **`step = 1e-11`** → `f"{step:.10f}"` = `"0.0000000000"` → `rstrip("0")` → `"0."` → split → `["0", ""]` → `IndexError` or returns 0 **wrong**.
+
+Binance tick sizes go down to 1e-8 for most symbols, but **some leveraged tokens / new listings use 1e-9 or 1e-10**. The function silently returns 0 for anything < 1e-10.
+
+**Also:** `price_prec = _prec_of(tick) if tick else 8` — if `tick == 0.0` (missing filter), defaults to 8. That may be wrong for symbols with integer pricing (e.g. `1000SHIBUSDT` tick = 0.0001 → prec 4, but default 8 → order price rounded to 8 decimals → **rejected by exchange**).
+
+**Minimal fix:** Use `decimal.Decimal` `as_tuple().exponent` for exact precision:
+```python
+from decimal import Decimal
+def _prec_of(step: float) -> int:
+    d = Decimal(str(step)).normalize()
+    return -d.as_tuple().exponent if d.as_tuple().exponent < 0 else 0
+```
+And fetch `pricePrecision` from `symbol` object (Binance provides it directly in `exchangeInfo`).
+
+---
+
+### 5. UNBOUNDED ACTION — No idempotency key, no retry cap, no rate-limit handling on **any** signed call
+
+**Lines 85–113 (`_signed`), all callers (`place_market`, `place_post_only`, `cancel_all`, `open_orders`, `balances`, `avg_fill`)**
+
+**What breaks:**  
+- Network blip → `place_market` raises → caller retries immediately → **duplicate order** (no `newClientOrderId` / idempotency).  
+- 429 / 418 → immediate retry → IP ban.  
+- 5xx → immediate retry → thundering herd.  
+- No `X-MBX-USED-WEIGHT` tracking → desk unknowingly exceeds weight limit → 418 ban.
+
+**Concrete sequence (real venue):**
+1. `place_market("BTCUSDT", "BUY", 0.1)` → POST sent, TCP ACK received, but response lost (middlebox).
+2. Caller catches `timeout`, retries → **second order placed**.
+3. Both fill → 0.2 BTC bought, risk limit breached.
+
+**Minimal fix:**  
+- Generate `newClientOrderId` = `uuid4()` or monotonic counter + hash; pass on every order.  
+- Implement retry with exponential backoff + jitter, max 3 attempts, **only on 5xx / 429 / timeout**.  
+- Parse `X-MBX-USED-WEIGHT-*` headers; enforce local rate limiter.
+
+---
+
+### 6. STATE RACE — `prices()`, `book_ticker()`, `balances()` are **uncached, unversioned snapshots** used in sizing logic
+
+**Lines 100–103 (`prices`), 154–158 (`book_ticker`), 168–171 (`balances`)**
+
+**What breaks:**  
+- `account_value_usdt()` calls `prices()` then `balances()` — **two separate HTTP calls, seconds apart**. Prices move; balances change. The returned "total" is a **fictional number** that never existed atomically.  
+- Strategy reads `prices()` → computes size → calls `place_market` → price moved → order rejected for `MIN_NOTIONAL` or `MAX_NOTIONAL` or fills at worse price.
+
+**Minimal fix:**  
+- Accept that perfect atomicity is impossible; but **document** the staleness window.  
+- For critical sizing, fetch `bookTicker` + `account` in rapid succession and **validate** post-trade via `myTrades`.  
+- Add `timestamp` to returned dicts so caller can measure staleness.
+
+---
+
+### 7. AUTH/CAPABILITY — No withdrawal/transfer functions (good), **but** `_signed` is generic and **could** call any signed endpoint if imported
+
+**Lines 85–113 (`_signed`)**
+
+```python
+def _signed(path: str, params: dict[str, Any], *, method: str = "GET") -> Any:
+    ...
+    with urllib.request.urlopen(req, timeout=20) as r:
+        return json.loads(r.read())
+```
+
+**What breaks:** Another module imports `_signed` and calls `/sapi/v1/asset/transfer` or `/sapi/v1/capital/withdraw/apply`. The arming check passes (same flags), credentials have the permission → **unauthorized capability executed**.
+
+**Minimal fix:**  
+- Make `_signed` **private** (`__signed`) and **not exported** (`__all__ = [...]` without it).  
+- Or add an allowlist of permitted paths inside `_signed`; raise on others.
+
+---
+
+### 8. WHAT A TEST WOULD MISS — `recvWindow = 5000` hardcoded; **clock drift > 2.5s causes permanent 401**
+
+**Line 93:** `"recvWindow": 5000`
+
+Binance rejects requests where `|server_time - timestamp| > recvWindow`. If the VPS clock drifts > 2.5s (common on overloaded VMs, no NTP, or after suspend/resume), **every signed request fails with 401**. The module has **no clock-sync logic**, no `timeOffset` tracking (unlike the futures module which may have it — parity warning).
+
+**Concrete sequence:**  
+1. VPS clock drifts +3s.  
+2. All signed calls (`place_market`, `balances`, `cancel_all`) → 401.  
+3. `_signed` propagates `HTTPError` → caller treats as transient → retries → **infinite 401 loop**, rate limit exhausted, IP banned.  
+4. Desk is **dead in water** until manual intervention.
+
+**Minimal fix:**  
+- On startup, hit `/api/v3/time`, compute `time_offset = server_ms - local_ms`.  
+- Use `int((time.time() + time_offset/1000) * 1000)` for timestamp.  
+- Re-sync every 5 min or on 401 with code -1021.
+
+---
+
+### 9. PARITY / MAINTENANCE RISK — `exchange_filters` is **one of four near-duplicate parsers** (docstring admits it)
+
+**Lines 122–142**
+
+The comment says: *"tests/execution/test_filter_parity.py pins the spot pair's key set so that divergence fails a test instead of shipping inert."*
+
+**What breaks:** If a new filter type appears (e.g. `TRAILING_DELTA`, `PERCENT_PRICE_BY_SIDE`), only *one* parser gets updated → the other three return stale/zero values → **sizing errors on live vs testnet**. The test only checks *key set equality*, not *semantic correctness*.
+
+**Minimal fix:**  
+- Extract a **single shared parser** in `libs/execution/binance_filters.py` used by all four modules.  
+- Test against recorded `exchangeInfo` snapshots.
+
+---
+
+### 10. ARITHMETIC — `quote_depth` uses `float` for price × qty summation; **precision loss on deep books**
+
+**Lines 144–152**
+
+```python
+return sum(float(p) * float(q) for p, q in levels if float(p) <= touch * (1.0 + pct))
+```
+
+On symbols with 1000+ levels, `float` accumulation error can be **several USDT** — not catastrophic but **systematic bias** in liquidity measurement → maker quoting may over/under-estimate fill probability.
+
+**Minimal fix:** Use `decimal.Decimal` for the summation, or `math.fsum`.
+
+---
+
+### 11. MISSING TIMEOUT HANDLING — `urllib.request.urlopen(req, timeout=20)` **does not distinguish connect vs read timeout**
+
+**Lines 77, 112**
+
+`timeout=20` applies to **both** connection and read. A slow response (e.g. 30s for `myTrades` under load) → `socket.timeout` → caught as generic `Exception` in callers → silent failure (see #2).
+
+**Minimal fix:** Use `urllib.request.urlopen(req, timeout=(connect_timeout, read_timeout))` (Python 3.11+) or `http.client` with separate timeouts.
+
+---
+
+### 12. NO RESPONSE VALIDATION — `_signed` returns `json.loads(r.read())` **without checking `code`/`msg` fields**
+
+**Line 112**
+
+Binance returns `{"code": -1013, "msg": "Filter failure: MIN_NOTIONAL"}` with **HTTP 200**. `_signed` returns that dict. Callers (`place_market`, etc.) return it verbatim. **No exception raised** → caller thinks order placed → **order rejected silently**.
+
+**Concrete sequence:**  
+1. `place_market("BTCUSDT", "BUY", 0.00001)` → qty below `minQty`.  
+2. Binance returns 200 + `{"code": -1013, "msg": "Filter failure: MIN_QTY"}`.  
+3. `place_market` returns that dict.  
+4. Strategy records "order sent", waits for fill → never fills → **position gap**.
+
+**Minimal fix:** In `_signed`, after `json.loads`, if `isinstance(data, dict) and "code" in data and data["code"] != 200`: raise `ExchangeError(data["code"], data["msg"])`.
+
+---
+
+### 13. `place_market_quote` uses `quoteOrderQty` — **only works for BUY** (quote asset spent); for SELL it means "sell base to receive exactly quoteOrderQty quote" which is **not "sell $X worth"**
+
+**Lines 183–190**
+
+Binance docs: `quoteOrderQty` on **SELL** means "sell enough base to receive this much quote" — i.e. you specify the *proceeds*, not the *notional*. If price moves, the base qty changes. Most strategies want "sell $X notional at market" → must compute qty client-side.
+
+**Minimal fix:** Document clearly; or add `place_market_notional(symbol, side, notional_usdt)` that fetches bookTicker, computes qty, sends `quantity`.
+
+---
+
+### 14. `account_value_usdt` uses `prices()` which returns **all symbols** — **O(n) HTTP + O(n) memory** for a single balance call
+
+**Lines 177–187**
+
+```python
+def account_value_usdt() -> float:
+    px = prices()  # hits /api/v3/ticker/price (all symbols)
+    total = 0.0
+    for asset, qty in balances().items():
+        ...
+```
+
+If desk holds 5 assets, it downloads 1500+ prices. **Wasteful, slow, rate-limit heavy.**
+
+**Minimal fix:** Fetch only needed symbols: `symbols = [f"{a}USDT" for a in balances() if a != "USDT"]` → `prices(symbols)` (if endpoint supports multi-symbol) or loop `/api/v3/ticker/price?symbol=...`.
+
+---
+
+### 15. `_BASE` pinned to `https://api.binance.com` — **no fallback to `api1/2/3.binance.com`** on DNS/routing failure
+
+**Line 17**
+
+Single endpoint. Real venue: DNS hijack, regional outage, Cloudflare block → **total outage**.
+
+**Minimal fix:** Maintain a list `["https://api.binance.com", "https://api1.binance.com", "https://api2.binance.com", "https://api3.binance.com"]`; try next on connection error / 5xx.
+
+---
+
+## RANKING BY EXPECTED LOSS
+
+| Rank | Finding | Expected Loss Mechanism |
+|------|---------|-------------------------|
+| 1 | `cancel_all` swallows all exceptions | Stale orders + new orders = unbounded exposure |
+| 2 | `avg_fill`/`balances`/etc. return zeros on error | Risk engine flies blind → wrong sizing, no stops |
+| 3 | No idempotency / retry policy on orders | Duplicate fills → position breach |
+| 4 | `recvWindow` + no clock sync | Permanent 401 → desk dead |
+| 5 | `_signed` doesn't raise on Binance error codes (200 + code≠200) | Rejected orders treated as filled |
+| 6 | `place_market_quote` SELL semantics mismatch | Wrong notional on sell side |
+| 7 | `_prec_of` breaks on tick < 1e-10 | Price precision wrong → order reject |
+| 8 | `exchange_filters` parity risk | Live vs testnet sizing divergence |
+| 9 | `account_value_usdt` fetches all prices | Rate limit exhaustion, latency |
+| 10 | No endpoint failover | Single-point outage |
+| 11 | Float summation in `quote_depth` | Systematic liquidity bias |
+| 12 | `_signed` exported → capability leak | Accidental withdrawal/transfer call |
+| 13 | TOCTOU on keyfile | Crash with `AssertionError` |
+| 14 | No connect/read timeout split | Misdiagnosed timeouts |
+
+---
+
+## SINGLE RISKIEST REMAINING ASSUMPTION (if all above fixed)
+
+**"The VPS clock stays within 2.5s of Binance server time without active synchronization."**  
+Even with NTP, a suspended/resumed VM, a kernel tickless idle, or a hypervisor time steal can drift >2.5s in seconds. **Clock sync must be continuous and verified on every signed request.**
+
+## nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free
+
+**1. SILENT FAILURE – `cancel_all` swallows any exception and pretends the delete succeeded**  
+- **Lines:** 84‑90 (the whole `cancel_all` function)  
+- **What breaks:** The caller receives `{"code": 200, "res": …}` even when the DELETE request fails (network error, 429, auth problem, etc.). The application believes the order‑cancellation succeeded, so open orders remain live and can be filled later, potentially exposing the desk to unwanted positions or margin calls.  
+- **Concrete trigger sequence:**  
+  1. A maker quote is still open on `symbol`.  
+  2. The strategy calls `cancel_all("BTCUSDT")`.  
+  3. The HTTP DELETE to `/api/v3/openOrders` fails (e.g., Binance returns 429 or the connection drops).  
+  4. The broad `except Exception` catches the exception, returns `{"code": 0, "msg": "..."}`.  
+  5. The strategy proceeds as if the orders were cancelled, leaving them active.  
+- **Minimal fix:** Do not hide the exception; return a failure indicator or re‑raise.  
+  ```python
+  def cancel_all(symbol: str) -> dict[str, Any]:
+      try:
+          res = _signed("/api/v3/openOrders", {"symbol": symbol}, method="DELETE")
+          return {"code": 200, "res": res}
+      except Exception as e:
+          # propagate the error or return a clear failure code/message
+          return {"code": 400, "msg": f"cancel_all failed: {e}"}
+  ```
+
+**2. SILENT FAILURE – `quote_depth` returns 0.0 on any exception, masking real connectivity or JSON errors**  
+- **Lines:** 48‑61 (the entire `quote_depth` function)  
+- **What breaks:** Any network glitch, HTTP error, or malformed JSON response causes the function to swallow the exception and return `0.0`. The strategy thinks there is no liquidity on the asked side and may skip profitable trades, resulting in missed P&L.  
+- **Concrete trigger sequence:**  
+  1. The strategy requests `quote_depth("ETHUSDT", "BUY")` while the Binance endpoint is temporarily throttled (429) or the response is corrupted.  
+  2. `_get` raises an exception (e.g., `urllib.error.HTTPError`).  
+  3. The generic `except Exception:` clause returns `0.0`.  
+  4. The strategy decides not to place a BUY order, losing potential profit.  
+- **Minimal fix:** Catch only expected, non‑fatal errors (e.g., JSON decode) and re‑raise or handle them explicitly; otherwise let the exception propagate.  
+  ```python
+  def quote_depth(symbol: str, side: str, pct: float = 0.01) -> float:
+      try:
+          d = _get("/api/v3/depth", {"symbol": symbol, "limit": 100})
+          ...
+      except (urllib.error.URLError, json.JSONDecodeError) as e:
+          # log if needed, but do not silently mask the problem
+          raise RuntimeError(f"quote_depth failed: {e}") from e
+  ```
+
+**3. WRONG‑DIRECTION FAILURE – `place_market` (and similar order functions) treat Binance error responses as successful trades**  
+- **Lines:** 66‑70 (`place_market`) and analogous functions (`place_market_quote`, `place_post_only`)  
+- **What breaks:** Binance may respond with an error dict (e.g., `{"code":-1013,"msg":"Insufficient balance"}`). The code returns that dict unchanged, so the caller believes the order was placed and may continue to size‑scale, double‑trade, or ignore the failure, leading to capital loss or margin violations.  
+- **Concrete trigger sequence:**  
+  1. The desk calls `place_market("BTCUSDT", "BUY", 0.1)` while the account balance is low.  
+  2. Binance rejects the market order with a JSON error containing `code: -1013`.  
+  3. `_signed` parses the response as a normal dict; `place_market` returns `dict(res)` → caller sees a “successful” order.  
+  4. The strategy proceeds to size additional positions, assuming the first order filled, but it never did.  
+- **Minimal fix:** Inspect the response for an error code before treating it as success.  
+  ```python
+  def place_market(symbol: str, side: str, qty: float) -> dict[str, Any]:
+      res = _signed("/api/v3/order", {
+          "symbol": symbol, "side": side, "type": "MARKET", "quantity": qty,
+      }, method="POST")
+      if isinstance(res, dict) and res.get("code") != 200:
+          raise RuntimeError(f"order rejected: {res}")
+      return dict(res) if isinstance(res, dict) else {"raw": res}
+  ```
+
+**Ranking by expected loss**  
+1. `cancel_all` silent failure – can leave large open positions alive, directly endangering capital.  
+2. `quote_depth` silent failure – causes missed trading opportunities, but impact is generally smaller than an un‑cancelled order.  
+3. `place_market` wrong‑direction handling – may lead to failed orders being ignored, but the desk usually notices the rejection; still a notable risk.
+
+**Overall assessment:** The file is **not** genuinely sound; the three issues above constitute concrete, high‑impact bugs that a test suite run against a mock or simulated environment would likely miss (network latency, partial fills, HTTP error codes). Immediate remediation of `cancel_all` and proper error handling in order‑placement and liquidity queries is required before the desk can safely trade live.
+
+
+# DEEP REVIEW -- scripts/run_deadman_switch.py -- 2026-08-05T17:59:39.337872+00:00
+2/4 seats responded on the FREE roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+## nvidia/nemotron-3-ultra-550b-a55b:free
+
+## HOSTILE REVIEW: `scripts/run_deadman_switch.py`
+
+**Verdict: UNSAFE FOR PRODUCTION USE.** Three critical fail-open paths that disable the ruin rail exactly when it is most needed. Two high-severity flattening defects that can leave directional risk exposed after a fire. Multiple silent-swallow paths.
+
+---
+
+### 1. CRITICAL — Fail-open on ANY equity read error
+**Lines 134-135, 176-177**
+
+```python
+# L134-135 combined_equity()
+except Exception:
+    return None
+
+# L176-177 should_fire()
+if equity is None or equity <= 0:
+    return False
+```
+
+**What breaks:** Network timeout, DNS failure, Binance 5xx, invalid API key, JSON parse error, missing response keys, venue maintenance — **all** return `None` → `should_fire` returns `False` → rail disarms itself silently.
+
+**Concrete sequence:**
+1. Binance API returns 502 for 10 minutes during a flash crash
+2. `combined_equity` catches exception, returns `None` every poll
+3. `should_fire` sees `None`, returns `False`, resets `breaches = 0`
+4. Book drops 50% — rail never fires, principal never paged
+5. Operator discovers ruin next morning; rail logs show "equity read failed" but no alert fired
+
+**Minimal fix:** Fail **CLOSED**. On read error with **open positions**, increment a `read_failures` counter; after `N` consecutive failures (e.g., 3), page principal and **fire the rail** (conservative: assume worst case). On read error with **no positions**, current behavior (skip) is acceptable.
+
+```python
+# In should_fire(), add:
+if equity is None:
+    if state.get("has_positions"):
+        state["read_failures"] = int(state.get("read_failures", 0)) + 1
+        if state["read_failures"] >= 3:
+            return True  # fail closed: assume ruin if blind with positions
+    else:
+        state["read_failures"] = 0
+    return False
+state["read_failures"] = 0
+```
+
+---
+
+### 2. CRITICAL — Silent flattening failures, no alerting, no backoff
+**Lines 237-239, 250-251**
+
+```python
+# L237-239 futures flatten
+except Exception:
+    pass  # retried next poll while positions remain
+
+# L250-251 spot sell
+except Exception:
+    pass
+```
+
+**What breaks:** Rate limit (429/418), network partition, API 5xx, signature error, insufficient balance — `_flatten` swallows the exception, returns, and **retries next poll (60s later) with zero visibility**.
+
+**Concrete sequence:**
+1. Rail fires, `_flatten` called
+2. Futures flatten loop hits rate limit on 3rd symbol → `Exception` caught → loop exits early
+3. Remaining 5 futures positions **never sent flatten orders**
+4. Spot sell loop same failure mode
+5. Next poll: rail still fired, `_flatten` called again, same rate limit hit
+6. Principal never paged ( `_page` also swallows exceptions L256)
+7. Positions remain open for hours/days; delta-neutral book becomes directional
+
+**Minimal fix:** 
+- Collect failures, **page principal with details** after each `_flatten` call
+- Add **exponential backoff** between retry attempts (not just 60s poll)
+- Use **idempotency keys** (`clientOrderId`) on every order
+- Respect `X-MBX-USED-WEIGHT` headers, throttle accordingly
+
+```python
+def _flatten() -> None:
+    failures = []
+    # ... futures flatten ...
+    except Exception as e:
+        failures.append(f"futures {p['symbol']}: {e}")
+    # ... spot sell ...
+    except Exception as e:
+        failures.append(f"spot {sym}: {e}")
+    if failures:
+        _page("DEADMAN FLATTEN PARTIAL/FAILED: " + "; ".join(failures))
+```
+
+---
+
+### 3. HIGH — Spot quantity hardcoded to 6 decimals (LOT_SIZE violation)
+**Line 252**
+
+```python
+"quantity": f"{amt:.6f}"
+```
+
+**What breaks:** Binance spot `LOT_SIZE` filter varies per symbol (e.g., `BTCUSDT` stepSize 0.00001, `DOGEUSDT` stepSize 1). Hardcoded 6dp causes `Filter failure: LOT_SIZE` → order rejected → leg not sold.
+
+**Concrete sequence:**
+1. Rail fires, carry leg is `DOGEUSDT` (stepSize 1.0)
+2. Spot balance 12345.678 DOGE → quantity `"12345.678000"` sent
+3. Binance rejects: `Filter failure: LOT_SIZE`
+4. Exception caught, swallowed, leg remains
+5. Futures short flattened → book now **net short DOGE** with no hedge
+6. DOGE rallies 20% → unrealized loss on unhedged short
+
+**Minimal fix:** Query `/api/v3/exchangeInfo` once at startup, cache `stepSize` per symbol, format quantity to correct precision. Or use `python-binance` helper. At minimum, strip trailing zeros and respect symbol precision.
+
+---
+
+### 4. HIGH — Futures quantity precision not respected (stepSize)
+**Line 234**
+
+```python
+"quantity": abs(amt)
+```
+
+**What breaks:** Futures `positionAmt` may have more decimals than `stepSize` allows. Order rejected → position not flattened.
+
+**Minimal fix:** Same as above — cache `stepSize` from `/fapi/v1/exchangeInfo`, quantize `abs(amt)` down to stepSize.
+
+---
+
+### 5. HIGH — No idempotency keys on emergency orders
+**Lines 232-238, 248-253**
+
+**What breaks:** Request timeout (client doesn't receive response) → retry next poll → **duplicate order sent**. Futures `reduceOnly: "true"` prevents opening opposite side, but spot sells **can double-sell** (sell more than balance → reject, or partial fill then retry sells remainder twice).
+
+**Concrete sequence:**
+1. Rail fires, spot sell `BTCUSDT` 0.5 BTC sent
+2. Network latency >15s timeout (urllib default), Binance fills order
+3. Client times out, exception caught, loop continues
+4. Next poll (60s): rail still fired, same spot sell sent again
+5. If balance still shows 0.5 BTC (delayed balance update), second order fills → **oversold**
+
+**Minimal fix:** Generate deterministic `clientOrderId` per symbol per fire event (e.g., `dm_{fire_timestamp}_{symbol}`). Include in every order. Binance will reject duplicates.
+
+---
+
+### 6. MEDIUM — State corruption loses high-water mark, silently re-arms at wrong level
+**Lines 300-304**
+
+```python
+try:
+    state = json.loads(_STATE.read_text("utf-8")) if _STATE.exists() else {}
+except (json.JSONDecodeError, OSError):
+    state = {}
+```
+
+**What breaks:** Disk corruption, partial write (despite atomic replace), manual edit, OOM kill during write → JSON decode error → state reset to `{}` → `high_water = 0` → rail disarmed until 3 confirmations build new high-water.
+
+**Concrete sequence:**
+1. Host OOM kills process mid-write (tmp file renamed but incomplete)
+2. Watchdog restarts process
+3. `_STATE` reads as invalid JSON → `state = {}`
+4. `high_water = 0`, `breaches = 0`, `version` reset
+5. Equity $10,000 → new high-water confirmed after 3 polls at $10,000
+6. Fire line now at $6,500 (65% of $10k) instead of $65,000 (65% of $100k)
+7. **35% further drawdown required** before rail fires again
+
+**Minimal fix:** On JSON decode error, **page principal immediately** and **refuse to run** until operator intervenes (delete `_STATE` manually after verifying equity). Do not silently reset.
+
+```python
+except (json.JSONDecodeError, OSError) as e:
+    _page(f"DEADMAN STATE CORRUPT: {e}. Manual intervention required. Rail HALTED.")
+    raise SystemExit(1)
+```
+
+---
+
+### 7. MEDIUM — Stale feed detector uses exact float equality
+**Line 318**
+
+```python
+if eq == state.get("last_eq"):
+```
+
+**What breaks:** Floating-point rounding means identical venue prices rarely produce bit-identical equity. Detector **never triggers** on real stale feed. Conversely, coincidental same equity (e.g., flat market) triggers false page.
+
+**Minimal fix:** Use relative epsilon: `abs(eq - last_eq) / max(abs(eq), 1) < 1e-6`.
+
+---
+
+### 8. MEDIUM — Heartbeat race condition allows dual writers
+**Lines 289-296**
+
+```python
+if _HB.exists() and time.time() - _HB.stat().st_mtime < 150:
+    return
+# ...
+if _foreign_writer_alive():
+    return
+```
+
+**What breaks:** Two processes both see stale heartbeat (>150s), both pass first check. Both call `_foreign_writer_alive()` which reads mtime < 90s — but mtime updated by *first* process's write hasn't propagated (NFS, container fs) or both read before either writes. Both proceed, both write state, high-water corrupted.
+
+**Minimal fix:** Use **file locking** (`fcntl.flock` or `portalocker`) on `_STATE` or a dedicated lock file. Or write PID to `_HB` **atomically** (same `os.replace` pattern) and verify ownership before proceeding.
+
+---
+
+### 9. MEDIUM — No rate limit handling in `_flatten`
+**Lines 227-253**
+
+**What breaks:** Emergency flatten sends N orders sequentially with zero delay. Binance testnet: 1200 weight/min. Flattening 20 positions + 10 spot legs = 30 orders → weight exceeded → 418/429 → all subsequent orders fail silently.
+
+**Minimal fix:** Track `X-MBX-USED-WEIGHT-*` headers, sleep when >80% limit. Or batch with 100ms delay between orders.
+
+---
+
+### 10. LOW — Version bump resets high-water (intentional but dangerous)
+**Lines 306-309**
+
+```python
+if state.get("version") != _VERSION:
+    state = {"version": _VERSION}
+```
+
+Any code change that increments `_VERSION` disarms rail until new high-water confirmed. Documented, but operator must know to manually set high-water after deploy.
+
+---
+
+### 11. LOW — `_page` failures silent
+**Line 256**
+
+```python
+except Exception:
+    pass
+```
+
+Principal never knows if ntfy.sh down, DNS fails, network partitioned. No fallback (email, SMS, PagerDuty).
+
+---
+
+### 12. LOW — Clock drift not monitored
+**Line 93**
+
+```python
+"timestamp": int(time.time() * 1000), "recvWindow": 5000
+```
+
+5s recvWindow. If local clock drifts >2.5s from Binance, all signed requests rejected → equity reads fail → rail disarms (fail-open per #1). No NTP check, no drift alert.
+
+---
+
+## SINGLE RISKIEST REMAINING ASSUMPTION (if all above fixed)
+
+> **The venue (Binance) remains reachable and returns accurate account/position data during a ruin event.**
+
+If the exchange itself is the failure mode (insolvency, API manipulation, forced liquidation engine cascade, "maintenance" during crash), this rail trusts the venue's own endpoints as ground truth. A compromised venue can report healthy equity while positions are being liquidated. **No code fix mitigates this** — requires independent settlement verification (on-chain, multi-venue) which is out of scope for this file.
+
+---
+
+## PRIORITY FIX ORDER
+
+| Rank | Finding | Expected Loss | Effort |
+|------|---------|---------------|--------|
+| 1 | Fail-open on read error | Unbounded (total ruin) | Low |
+| 2 | Silent flattening failures | Unbounded (positions stay open) | Low |
+| 3 | Spot LOT_SIZE hardcoded | High (delta break on fire) | Medium |
+| 4 | Futures stepSize ignored | High (positions not flattened) | Medium |
+| 5 | No idempotency keys | Medium (double-sell risk) | Low |
+| 6 | State corruption silent reset | Medium (wrong fire line) | Low |
+| 7 | Stale feed detector broken | Low (missed blind rail) | Low |
+| 8 | Heartbeat race | Low (dual writer corruption) | Medium |
+| 9 | No rate limit in flatten | Medium (API ban during fire) | Medium |
+| 10 | Version bump disarms | Low (operational) | Doc |
+| 11 | Page failures silent | Low (no alert) | Low |
+| 12 | Clock drift | Low (fail-open) | Low |
+
+**Do not deploy until #1 and #2 are fixed.** The rail must fail **CLOSED** and **ALERT** on any ambiguity.
+
+## nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free
+
+**Rank 1 – Silent failure that lets the rail fire but never actually flattens positions**  
+- **Lines:** ~115‑124 in `_flatten()` (the three `try/except` blocks that swallow any `Exception` after the Binance order calls).  
+- **What breaks:** If the market‑order request to `/fapi/v1/order` (or `/api/v3/order` for spot) fails – e.g. network glitch, insufficient margin, Binance rate‑limit, or a temporary 5xx response – the exception is caught and `pass`ed. The script then returns, leaving the short futures position and the corresponding spot leg **still open**. The dead‑man’s switch therefore thinks it has “flattened” the book, writes the kill file and pages the principal, but the trader remains exposed to the ruin‑level drawdown.  
+- **Concrete trigger:** A fire is caused by five consecutive 65 %‑of‑high‑water readings. As soon as `_flatten()` is invoked, the first order that cannot be placed (e.g. because the testnet endpoint is throttled) raises an exception, which is silently ignored; the loop proceeds to the next poll, re‑enters the same fire condition (because `_FIRED` remains true) and tries again, potentially endless.  
+- **Minimal fix:** Remove the blanket `except Exception: pass` and either (a) **re‑raise** the exception after logging it, or (b) implement a **retry‑with‑back‑off** that stops after a bounded number of attempts and then **exits the fire state** (clears `_FIRED` and sets `state["fired"]=False`). The order‑placement code must verify that the position is truly reduced (e.g. by re‑reading the positionRisk endpoint) before considering the rail “done”.
+
+---
+
+**Rank 2 – Wrong‑direction failure: the rail can stay “disarmed” while the book is live, so positions keep trading instead of being closed**  
+- **Lines:** `should_fire()` and the surrounding `if state.get("disarmed_live") …` block in `main()` (≈ 150‑170).  
+- **What breaks:** When equity falls below the dust‑floor threshold (`_MIN_HW`) while **open positions exist**, the script sets `state["disarmed_live"] = True` and pages the principal, but **does not set `fire = True`**. The condition `fire or state.get("fired") or _FIRED.exists()` therefore remains false, and the rail never invokes `_flatten()`. Trading continues unabated even though the high‑water mark is far below the 35 % ruin level.  
+- **Concrete trigger:** A rapid draw‑down that pushes equity under the dust floor while the position‑risk endpoint still reports a non‑zero `has_positions`. The rail pages the human, but because the equity never drops below `_RUIN_FACTOR * high_water` (the high‑water may be inflated by a sustained high‑water reading), the fire never becomes true and the positions stay open.  
+- **Minimal fix:** Add an explicit check that **if `disarmed_live` is true and equity < _RUIN_FACTOR × high_water**, set `fire = True` (or call `_flatten()` directly) before the normal fire‑logic. This guarantees that a live book that is below the ruin threshold triggers an immediate, irreversible flatten.
+
+---
+
+**Rank 3 – State‑reset race / stale “fired” flag**  
+- **Lines:** Version‑mismatch handling in `main()` (≈ 115‑120) and the persistence of `state["fired"]` after a reset.  
+- **What breaks:** If a new version of the script is introduced (or the data directory is corrupted) the code replaces the entire `state` dict with `{"version": _VERSION}` **without clearing** flags such as `"fired"` or `"disarmed_live"`. Consequently a previously‑fired state can survive a version reset, causing the next loop to think the rail is already active and repeatedly call `_flatten()` (or keep the kill file active) even though the book may be in a completely different condition.  
+- **Concrete trigger:** A hot‑restart of the dead‑man process (e.g., after a container recreation) while the old `_FIRED` file still exists on disk. The script reads the old state, sees `"fired": True`, sets `state["fired"]=True` again, and immediately attempts to flatten a book that may already be flat or may have changed equity dramatically.  
+- **Minimal fix:** When resetting state because of a version mismatch, **explicitly wipe all transient flags** (`fired`, `disarmed_live`, `disarmed_paged`, `stale_paged`, etc.) and start from a clean slate. Example: `state = {"version": _VERSION}` → `state = {"version": _VERSION, "fired": False, "disarmed_live": False, "disarmed_paged": False, "stale_paged": False}`.
+
+---
+
+**Rank 4 – Unbounded retry / lack of back‑off in order placement**  
+- **Lines:** Same `_flatten()` blocks (115‑124) – the `except Exception: pass` prevents any back‑off or limit on retries.  
+- **What breaks:** If the Binance API is intermittently unreachable, the script will keep trying to place the same market order on every poll (once per minute) without any delay. This can trigger Binance rate‑limit bans, temporary lock‑outs, or even permanent API key restrictions, effectively **nullifying the dead‑man’s ability to ever flatten** the positions.  
+- **Concrete trigger:** A network partition or a temporary 429/5xx response from the testnet endpoint. Because the exception is swallowed, the loop sleeps 60 s, re‑enters `_flatten()`, and the same failing order is attempted again, potentially many times before the underlying issue resolves.  
+- **Minimal fix:** Introduce a **retry counter** (e.g., max 3 attempts) with exponential back‑off (e.g., 5 s, 10 s, 20 s). After the final failed attempt, **abort the fire sequence**, clear the `"fired"` flag, and let the operator intervene.
+
+---
+
+**Rank 5 – Minor arithmetic / unit concerns**  
+- **Lines:** Leg‑value calculation in `combined_equity()` (≈ 95‑105) and the spot‑order quantity formatting (≈ 119‑122).  
+- **What breaks:** The code treats a spot balance’s “free+locked” amount as the total quantity to sell, then multiplies by a USDT‑pair price (`sym = b["asset"] + "USDT"`). If a non‑stable‑coin leg is mistakenly included (e.g., a token that does not have a USDT market), the conversion may produce a **zero or wildly incorrect USDT value**, under‑crediting the leg and potentially keeping the rail from firing. Additionally, formatting the quantity with only six decimal places may truncate large‑scale positions, causing an **under‑execution** that leaves a residual exposure.  
+- **Concrete trigger:** A sudden surge in a volatile leg (e.g., a newly added BTC‑USDT future) that inflates `legs_v`; the imprecise conversion may make the rail think the book is healthier than it really is, delaying fire.  
+- **Minimal fix:** Validate that every `asset` used in `legs_v` truly has a USDT market before multiplying, and use a **dynamic precision** (e.g., `Decimal` or enough significant digits) for the quantity string to avoid truncation.
+
+---
+
+### Verdict  
+
+The **most dangerous defect** is the **silent swallowing of order‑placement errors** (`_flatten`’s `except Exception: pass`). If the rail fires but cannot actually close the positions, the trader remains exposed to a total‑loss scenario, which directly violates the survival rail (log(0) = –∞).  
+
+The **second‑most critical** issue is the **disarmed‑live false negative**, where the rail pages but never fires, again leaving the book open while the ruin threshold is breached.  
+
+Both must be patched before any production deployment; the other findings are secondary but still warrant attention.

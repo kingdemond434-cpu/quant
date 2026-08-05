@@ -1,4 +1,4 @@
-"""Tests for the transitive-freshness fence (L1.54).
+"""Tests for the transitive-freshness fence (L1.55).
 
 THE WIRING TESTS ARE THE POINT, for the reason the idle-cost suite gives: a suite that only
 checked this fence's arithmetic would leave the original class free to come back. The class is
@@ -198,14 +198,14 @@ def test_idle_cost_unmeasured_clamp_is_unpriced_not_zero() -> None:
 
 def test_law_is_in_the_constitution_and_the_doctrine() -> None:
     con = (_ROOT / "docs/CONSTITUTION.md").read_text("utf-8")
-    assert "L1.54" in con
+    assert "L1.55" in con
     doc = (_ROOT / "ops/principal_doctrine.txt").read_text("utf-8")
-    assert "L1.54" in doc, "a law that never reaches an organ cannot change behaviour (L1.36)"
+    assert "L1.55" in doc, "a law that never reaches an organ cannot change behaviour (L1.36)"
 
 
 def test_fence_is_mapped_in_the_enforcement_matrix() -> None:
     src = (_ROOT / "scripts/build_enforcement_matrix.py").read_text("utf-8")
-    assert "check_input_provenance.py" in src and "L1.54" in src
+    assert "check_input_provenance.py" in src and "L1.55" in src
 
 
 def test_fence_is_scheduled() -> None:
@@ -230,4 +230,4 @@ def test_fence_runs_clean_end_to_end() -> None:
     assert r.returncode == 0, r.stderr[-2000:]
     rep = json.loads(r.stdout)
     assert rep["status"] in ("OK", "PARTIAL", "FABRICATED", "UNMEASURED")
-    assert rep["law"] == "L1.54"
+    assert rep["law"] == "L1.55"
