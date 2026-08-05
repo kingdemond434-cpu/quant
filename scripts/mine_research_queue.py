@@ -384,6 +384,42 @@ _FETCH_KEYS = {"bilibili": "bilibili_discovered", "cn": "cn_article_discovered",
                "youtube": "channels_scanned", "foreign": "foreign_discovered"}
 
 
+#: Channel-label prefix -> the host a route hunt would actually target. Derived where possible and
+#: stated where not: a hunt aimed at "hatena:some query" is aimed at nothing, while one aimed at
+#: hatena.ne.jp has named routes (render path, RSS, mirrors, regional hosts).
+_CHANNEL_HOSTS: dict[str, str] = {
+    "bilibili": "bilibili.com", "juejin": "juejin.cn", "wechat": "weixin.qq.com",
+    "qiita": "qiita.com", "zenn": "zenn.dev", "hatena": "hatena.ne.jp",
+    "dcinside": "dcinside.com", "habr": "habr.com", "note": "note.com",
+    "velog": "velog.io", "coinpan": "coinpan.com", "smartlab": "smart-lab.ru",
+    "tinhte": "tinhte.vn", "eksisozluk": "eksisozluk.com", "vcru": "vc.ru",
+    "search": "duckduckgo.com",
+}
+
+
+def _open_route_hunts(blocked: dict[str, str]) -> list[dict[str, Any]]:
+    """One route-hunt row per blocked HOST. Never raises -- a sweep must survive its bookkeeping."""
+    try:
+        from libs.data.paywall import record as _record
+    except Exception:
+        return []
+    by_host: dict[str, str] = {}
+    for label, reason in (blocked or {}).items():
+        host = _CHANNEL_HOSTS.get(str(label).split(":")[0], "")
+        if not host:
+            continue
+        by_host.setdefault(host, str(reason))            # first reason per host is enough
+    opened: list[dict[str, Any]] = []
+    for host, reason in sorted(by_host.items()):
+        # `declared=False` on purpose: a miner block is a ROUTING problem by default, and calling
+        # it a paywall would put a WAF into the paid-vendor registry -- the exact pollution the
+        # 402/403 split exists to prevent.
+        row = _record(f"https://{host}/", status=403,
+                      unlocks=f"mined research rows from {host} (blocked: {reason[:90]})")
+        opened.append({"host": host, "verdict": row["verdict"], "reason": reason[:120]})
+    return opened
+
+
 def _yield_row(doc: dict[str, Any], *, seen: set[str], only: list[str]) -> dict[str, Any]:
     """Per-source fetched / new-above-threshold for THIS run.
 
@@ -629,6 +665,13 @@ def main(argv: list[str] | None = None) -> int:
         "github_token_present": papers.github_token() is not None,
         "ranker_calibration": conversion_ledger.calibration(),
         "channels_blocked": blocked,
+        # EVERY BLOCK IS ROUTED TO THE ROUTE-HUNT LEDGER, not just printed. A blocked channel that
+        # only ever appears in this run's report is a source the desk wanted, could not reach, and
+        # then forgot -- which is how a temporary block quietly becomes an accepted loss (L1.54).
+        # `unresolved_blocks()` turns each into owed work and max_audit's `blocked-routes` fence
+        # escalates it once it outlives a miner cycle. Recorded per HOST, so seventeen blocked
+        # queries against one site are one routing problem rather than seventeen.
+        "route_hunts_opened": _open_route_hunts(blocked),
         "threshold": args.threshold,
         "n_new_surfaced": len(queue),
         "queue": queue,   # NOT capped: a cap silently hides the tail of a daily backlog
