@@ -693,6 +693,18 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0058",
+   "source": "proactive_battery",
+   "summary": "FALSE-RED GUARD that manufactures --no-verify bypasses: .git/hooks/pre-push does ROOT=$(git rev-parse --show-toplevel); PY=\"$ROOT/.venv/bin/python\"; [ -x \"$PY\" ] || PY=python3. Run from a git WORKTREE, --show-toplevel is the worktree, $ROOT/.venv does not exist (the venv lives only in the main checkout), and it silently degrades to system python3 -- which lacks the repo's deps, so every law fence needing a third-party import fails. Measured 2026-08-05: identical HEAD refused the push from /home/quant/qp-owed with 6 breaches (incl. check_strategy_breadth ModuleNotFoundError: pydantic) and PASSED 10/10 from the main tree. A session that did not test both would have recorded a 7th L1.37 bypass for a gate that was actually green -- eroding the ratchet the 6th record explicitly said must STOP at 6. This is the exact inverse of the R0024 defect: that guard was welded green, this one goes false-red. Fix: resolve the venv from the COMMON dir, e.g. ROOT=$(dirname $(git rev-parse --path-format=absolute --git-common-dir)), and make the python3 fallback LOUD (print that it is degrading) rather than silent. Same one-line class in deploy/pull_deploy.sh, which installs the hook.",
+   "roi_bps": null,
+   "raised": "2026-08-05T03:17:42.169536+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
