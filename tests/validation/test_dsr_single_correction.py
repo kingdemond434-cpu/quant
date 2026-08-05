@@ -40,8 +40,8 @@ def test_the_per_candidate_path_does_not_deflate_and_the_legacy_path_does():
     gates = campaign_gate_stats(m)
     assert gates is not None
     sh = np.array([sharpe_ratio(m[:, i]) for i in range(m.shape[1])])
-    common = {"hypothesis": _HYP, "n_trials": m.shape[1], "sharpe_estimates": sh,
-              "returns_matrix": m}
+    common = {"hypothesis": _HYP, "periods_per_year": 365.0, "n_trials": m.shape[1],
+              "sharpe_estimates": sh, "returns_matrix": m}
     col = int(np.argmax(flags))               # a genuine alpha
 
     per = validate(m[:, col], campaign=gates, column=col, **common)
@@ -81,8 +81,8 @@ def test_the_moment_aware_half_is_retained():
     assert gates is not None
     sh = np.array([sharpe_ratio(m[:, i]) for i in range(m.shape[1])])
     worst = int(np.argmin(sh))
-    v = validate(m[:, worst], hypothesis=_HYP, n_trials=m.shape[1], sharpe_estimates=sh,
-                 returns_matrix=m, campaign=gates, column=worst)
+    v = validate(m[:, worst], hypothesis=_HYP, periods_per_year=365.0, n_trials=m.shape[1],
+                 sharpe_estimates=sh, returns_matrix=m, campaign=gates, column=worst)
     assert v.gates["dsr"] is False, "DSR became a rubber stamp -- it must still reject a loser"
 
 

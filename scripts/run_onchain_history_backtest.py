@@ -31,6 +31,9 @@ from libs.validation.dsr import sharpe_ratio
 from libs.validation.economic_prior import MechanismType
 
 _FAIL = ["flow signal crowds/decays", "regime shift", "thin sample", "cost exceeds edge"]
+# DAILY BTC bars on the crypto 24/7 clock. Stated once and used for BOTH the reported Sharpe
+# and validate()'s annualisation, so the report and the stored verdict cannot disagree (R0086).
+_PPY = 365.0
 
 _OUT = Path("web/onchain_history_backtest.json")
 _DATE_COLS = ("date", "time", "timestamp", "t", "datetime", "day")
@@ -102,11 +105,12 @@ def main() -> None:
     results = {}
     # enumerate order == column_stack order over `strat`, so `col` is the strategy's matrix column
     for col, (name, r) in enumerate(strat.items()):
-        sh = round(float(sharpe_ratio(r) * np.sqrt(365)), 2)
+        sh = round(float(sharpe_ratio(r) * np.sqrt(_PPY)), 2)
         hyp = Hypothesis(family=Family.LIQUIDITY, subtype=name, symbol="CRYPTO", params={},
                          mechanism=MechanismType.BEHAVIORAL, edge_source="exchange_flow",
                          failure_modes=_FAIL)
-        v = validate(r, hypothesis=hyp, n_trials=2, sharpe_estimates=[sh, -sh],
+        v = validate(r, hypothesis=hyp, periods_per_year=_PPY,
+                     n_trials=2, sharpe_estimates=[sh, -sh],
                      returns_matrix=matrix, campaign=campaign, column=col)
         gates = f"{sum(v.gates.values())}/{len(v.gates)}" if v else "n<250"
         results[name] = {"ann_sharpe": sh, "gates": gates,

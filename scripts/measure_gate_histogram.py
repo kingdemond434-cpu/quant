@@ -26,6 +26,11 @@ from libs.validation.dsr import sharpe_ratio
 from libs.validation.economic_prior import MechanismType
 
 _PKL = "_audit_prepared.pkl"
+# The reconstructed campaign is the lab's own D1 crypto run (crypto_adapter defaults to D1 and
+# perps trade 24/7), so 365 bars a year. The histogram this script writes was measured while
+# validate() annualised the same series at 6240/yr -- the R0086 inflation. Gate verdicts are
+# unaffected (no gate reads annual_sharpe); the reported metric is.
+_PPY = 365.0
 
 
 def _log(msg: str) -> None:
@@ -120,7 +125,7 @@ def main() -> int:
             if _sh is None or len(_sh) < 2:
                 _sh = sharpe_estimates
             v = validate(
-                rets, hypothesis=_hyp(fam, sub, sym),
+                rets, hypothesis=_hyp(fam, sub, sym), periods_per_year=_PPY,
                 n_trials=fam_counts[fam], sharpe_estimates=_sh,
                 returns_matrix=matrix, **kwargs_fn(i),
             )

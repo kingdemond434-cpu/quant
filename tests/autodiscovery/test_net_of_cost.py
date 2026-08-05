@@ -7,6 +7,7 @@ import numpy as np
 from libs.autodiscovery.generators import net_returns
 from libs.autodiscovery.models import MarketSeries
 from libs.autodiscovery.orchestrator import AutoDiscoveryLab
+from libs.data.timeframe import Timeframe
 from libs.store.connection import Database
 
 
@@ -27,7 +28,7 @@ def test_net_returns_is_cost_sensitive() -> None:
 
 def test_lab_uses_cost_provider_when_present(db: Database) -> None:
     lab = AutoDiscoveryLab(
-        db, lambda _s: None, cost=0.0003,
+        db, lambda _s: None, bar=Timeframe.D1, cost=0.0003,
         cost_provider=lambda sym: 0.9 if sym == "XAUUSD" else 0.01,
     )
     assert lab._cost_for("XAUUSD") == 0.9      # per-symbol calibrated cost
@@ -35,5 +36,5 @@ def test_lab_uses_cost_provider_when_present(db: Database) -> None:
 
 
 def test_lab_falls_back_to_flat_cost(db: Database) -> None:
-    lab = AutoDiscoveryLab(db, lambda _s: None)  # no provider
+    lab = AutoDiscoveryLab(db, lambda _s: None, bar=Timeframe.D1)  # no provider
     assert lab._cost_for("ANYTHING") == 0.0003

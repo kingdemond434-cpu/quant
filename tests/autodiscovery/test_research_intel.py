@@ -10,6 +10,7 @@ from libs.autodiscovery.models import CandidateStatus, Family, ValidationMetrics
 from libs.autodiscovery.orchestrator import AutoDiscoveryLab
 from libs.autodiscovery.prioritization import family_rank, prioritize
 from libs.autodiscovery.research_roi import ResearchROIMonitor
+from libs.data.timeframe import Timeframe
 from libs.store.connection import Database
 
 
@@ -34,7 +35,7 @@ def test_data_opportunity_ranks_by_roi() -> None:
 
 
 def test_research_roi_monitor_on_zero_survivors(db: Database) -> None:
-    lab = AutoDiscoveryLab(db, noise_provider())
+    lab = AutoDiscoveryLab(db, noise_provider(), bar=Timeframe.D1)
     lab.cycle(["EURUSD"])
     report = ResearchROIMonitor(lab.store).report()
     assert report.total_tested > 0

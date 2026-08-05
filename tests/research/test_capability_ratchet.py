@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import itertools
 import json
+import re
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -31,6 +32,7 @@ from scripts.run_capability_ratchet import run
 from libs.research.capability_ratchet import (
     ARTIFACT_PATH,
     ASPECT_KEYS,
+    CANARY_MAX_AGE_H,
     MEASURED,
     SCALE_MAX,
     UNMEASURED,
@@ -252,7 +254,9 @@ def _desk() -> dict[str, Any]:
             '{"ts":"2026-08-05T02:00:00+00:00","channel":"ntfy","ok":true,"detail":"202"}\n'
             '{"ts":"2026-08-05T03:00:00+00:00","channel":"none","ok":false,"detail":"NOT-ARMED"}\n'
         ),
-        "data/alert_canary_state.json": {"last_canary": "2026-08-05T02:00:00+00:00"},
+        # inside CANARY_MAX_AGE_H of NOW, so the baseline exercises the LIVE-canary branch; the
+        # stale branch is driven explicitly by the tests that own it
+        "data/alert_canary_state.json": {"last_canary": "2026-08-05T11:00:00+00:00"},
         "data/cost_hunt.json": {"n_measured": 17, "n_symbols": 18, "status": "PARTIAL",
                                 "detail": "17/18 funding rates measured"},
         "data/execution_economics.json": {
@@ -361,8 +365,18 @@ def _build(root: Path, tree: dict[str, Any]) -> None:
         p.write_text(obj if isinstance(obj, str) else json.dumps(obj), "utf-8")
 
 
-def _cycle(root: Path, at: datetime) -> dict[str, Any]:
-    """One full organ run, persisted exactly as the script persists it."""
+def _cycle(root: Path, at: datetime, *, canary_alive: bool = True) -> dict[str, Any]:
+    """One full organ run, persisted exactly as the script persists it.
+
+    `canary_alive` models the ONE piece of desk state that moves with the clock rather than with
+    the tree: the alert canary re-stamps itself every cadence, so on a healthy desk its age never
+    grows. Without this a multi-day fixture would drift into "the canary died" on day two and
+    every unrelated test would be reading a pager outage. Tests that want a DEAD canary say so.
+    """
+    state = root / "data/alert_canary_state.json"
+    if canary_alive and state.exists():
+        state.write_text(json.dumps({"last_canary": (at - timedelta(hours=1)).isoformat()}),
+                         "utf-8")
     rep = run(root, at)
     out = root / ARTIFACT_PATH
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -635,7 +649,8 @@ class TestTheMinorAspectsReadTheRightThing:
         tree = _desk()
         del tree["data/alert_canary_state.json"]
         _build(tmp_path, tree)
-        comp = _component(_cycle(tmp_path, NOW), "alerting_pager", "alert_channels_not_silent")
+        comp = _component(_cycle(tmp_path, NOW, canary_alive=False),
+                          "alerting_pager", "alert_channels_not_silent")
         assert comp["state"] == UNMEASURED
         assert comp["score"] is None
 
@@ -646,6 +661,64 @@ class TestTheMinorAspectsReadTheRightThing:
         assert comp["state"] == MEASURED
         assert comp["score"] == 0.0
         assert "SILENCE FLAG PRESENT" in comp["detail"]
+
+    def test_a_live_canary_with_no_flag_is_the_only_route_to_full_marks(self, tmp_path):
+        _build(tmp_path, _desk())
+        comp = _component(_cycle(tmp_path, NOW), "alerting_pager", "alert_channels_not_silent")
+        assert comp["state"] == MEASURED
+        assert comp["score"] == SCALE_MAX
+
+    def test_a_DEAD_canary_cannot_hold_a_ten_off_one_receding_observation(self, tmp_path):
+        # THE FAIL-OPEN THIS CLOSES, in the flattering direction: run the canary once, let it clear
+        # the flag, then let the canary die. Without an age check the component reports 10/10
+        # AT CEILING forever on one observation receding into the past, and a dead pager scores
+        # exactly like a live one -- the same shape as the five-day outage this aspect exists to
+        # catch. A monitor that cannot report its own death is not a monitor.
+        _build(tmp_path, _desk())                      # no silence flag: the pager "looks fine"
+        fresh = _component(_cycle(tmp_path, NOW), "alerting_pager", "alert_channels_not_silent")
+        assert fresh["score"] == SCALE_MAX
+
+        later = _component(_cycle(tmp_path, NOW + timedelta(days=6), canary_alive=False),
+                           "alerting_pager", "alert_channels_not_silent")
+        assert later["state"] == UNMEASURED          # not 10, and not a manufactured 0 either
+        assert later["score"] is None
+        assert "stale" in later["detail"].lower() or "old" in later["detail"]
+
+    @pytest.mark.parametrize("state", [
+        {},                                            # stamped with nothing
+        {"last_canary": ""},                           # empty stamp
+        {"last_canary": "whenever"},                   # unparseable stamp
+        {"last_canary": 1754400000},                   # a number, not a timestamp
+    ])
+    def test_a_canary_stamp_that_can_never_be_shown_old_is_refused(self, tmp_path, state):
+        # THE SHARPEST FORM OF THE SAME BUG: a timestamp that will not parse can never be shown to
+        # be stale, so it would license full marks forever. It lands in the same branch as an old
+        # one, deliberately.
+        tree = _desk()
+        tree["data/alert_canary_state.json"] = state
+        _build(tmp_path, tree)
+        comp = _component(_cycle(tmp_path, NOW, canary_alive=False),
+                          "alerting_pager", "alert_channels_not_silent")
+        assert comp["state"] == UNMEASURED
+        assert comp["score"] is None
+
+    def test_a_flag_raised_before_the_canary_died_still_counts_against_the_desk(self, tmp_path):
+        # The asymmetry that keeps the fix from failing open the OTHER way. A present flag is a
+        # positive assertion of silence that only a successful delivery clears; a monitor dying
+        # while reporting a fault is the worst possible moment to stop counting the fault.
+        _build(tmp_path, _desk())
+        (tmp_path / "data/ALERT_CHANNELS_SILENT").write_text("no delivery in 24h\n", "utf-8")
+        comp = _component(_cycle(tmp_path, NOW + timedelta(days=6), canary_alive=False),
+                          "alerting_pager", "alert_channels_not_silent")
+        assert comp["state"] == MEASURED
+        assert comp["score"] == 0.0
+
+    def test_the_canary_bound_is_the_canarys_own_throttle_not_one_invented_here(self):
+        # scripts/run_alert_canary.py:49 -- `--interval-h` defaults to 6.0. Two organs holding two
+        # different opinions about when the canary is late is how they end up disagreeing on air.
+        source = (REPO / "scripts/run_alert_canary.py").read_text("utf-8")
+        assert re.search(rf'"--interval-h".*?default={CANARY_MAX_AGE_H:g}', source, re.S), \
+            "the canary's own default moved; lift the new one rather than keeping a stale copy"
 
     def test_unobservable_seats_are_refused_rather_than_scored_zero(self, tmp_path):
         # miner_runway states its own observability. 0 productive of 11 would be a FABRICATED
@@ -877,6 +950,48 @@ class TestTheMarkNeverDecreases:
         assert [d["aspect"] for d in second["defects"]] == []
         assert [w["aspect"] for w in second["widened"]] == ["llm_seat_coverage"]
         assert second["status"] != "REGRESSED"
+
+    def test_a_widened_aspect_stays_widened_rather_than_falling_the_next_morning(self, tmp_path):
+        # THE ONE-RUN-AMNESTY BUG THIS CLOSES: if "widened" only meant "a component appeared since
+        # yesterday", the very next run would find nothing new and report an unexplained FALL --
+        # every day, forever, from a mark the current component set cannot reach. A permanently
+        # red gate is a gate that is permanently ignored.
+        tree = _desk()
+        tree["data/miner_runway.json"] = dict(tree["data/miner_runway.json"], observable=False)
+        _build(tmp_path, tree)
+        _cycle(tmp_path, NOW)
+
+        _build(tmp_path, _desk())
+        moves = [_aspect(_cycle(tmp_path, NOW + timedelta(days=d)),
+                         "llm_seat_coverage")["movement"] for d in (1, 2, 3)]
+        assert moves == ["WIDENED"] * 3
+
+    def test_the_mark_becomes_comparable_again_once_it_is_beaten_over_the_wider_set(self,
+                                                                                    tmp_path):
+        # WIDENED is not a permanent excuse. Beat the old mark over the wider set and the aspect
+        # is an ordinary comparable aspect again -- after which a fall is a FALL.
+        tree = _desk()
+        tree["data/miner_runway.json"] = dict(tree["data/miner_runway.json"], observable=False)
+        _build(tmp_path, tree)
+        _cycle(tmp_path, NOW)
+        _build(tmp_path, _desk())
+        assert _aspect(_cycle(tmp_path, NOW + timedelta(days=1)),
+                       "llm_seat_coverage")["movement"] == "WIDENED"
+
+        strong = dict(_desk()["data/miner_runway.json"])
+        strong["seats"] = {k: {"prompt": True, "runner": True, "unit": True, "creds": True,
+                               "status": "ok"} for k in strong["seats"]}
+        tree["data/miner_runway.json"] = strong
+        _build(tmp_path, tree)
+        third = _aspect(_cycle(tmp_path, NOW + timedelta(days=2)), "llm_seat_coverage")
+        assert third["movement"] == "RAISED"
+        assert third["score"] == SCALE_MAX
+
+        tree["data/miner_runway.json"] = _desk()["data/miner_runway.json"]
+        _build(tmp_path, tree)
+        fourth = _aspect(_cycle(tmp_path, NOW + timedelta(days=3)), "llm_seat_coverage")
+        assert fourth["movement"] == "FELL"
+        assert fourth["high_water"] == SCALE_MAX           # and the mark held at the new best
 
     def test_widening_can_never_launder_a_real_fall(self, tmp_path):
         # The loophole this closes: add a fresh 10/10 component beside a collapsing one and hope

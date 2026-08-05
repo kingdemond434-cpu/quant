@@ -128,7 +128,8 @@ class TestGateWiring:
 
         def _gate(col: int, name: str) -> bool:
             v = validate(
-                m[:, col], hypothesis=hyp, n_trials=m.shape[1], sharpe_estimates=sharpes,
+                m[:, col], hypothesis=hyp, periods_per_year=365.0, n_trials=m.shape[1],
+                sharpe_estimates=sharpes,
                 returns_matrix=m, campaign=gates, column=col,
             )
             return bool(v.gates[name])
@@ -152,7 +153,8 @@ class TestGateWiring:
         )
         sharpes = np.array([c.mean() / c.std(ddof=1) for c in m.T])
         v = validate(
-            m[:, 0], hypothesis=hyp, n_trials=8, sharpe_estimates=sharpes,
+            m[:, 0], hypothesis=hyp, periods_per_year=365.0, n_trials=8,
+            sharpe_estimates=sharpes,
             returns_matrix=m, pbo=pbo, rc=rc,
         )
         assert v.gates["pbo"] is (pbo is not None and not pbo.overfit)

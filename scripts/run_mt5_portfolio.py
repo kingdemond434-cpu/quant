@@ -271,6 +271,7 @@ def _validate(name: str, r: np.ndarray, matrix: np.ndarray, sharpes: np.ndarray,
     v = validate(active, hypothesis=Hypothesis(
         family=fam, subtype=name, symbol="MT5_PORT", params={},
         mechanism=MechanismType.RISK_PREMIUM, edge_source=name, failure_modes=_FAIL),
+        periods_per_year=_PPY,            # D1 MT5 session bars, 252/yr (R0086)
         n_trials=matrix.shape[1], sharpe_estimates=sharpes, returns_matrix=matrix,
         campaign=campaign, column=column)
     return {"sleeve": name, "ann_sharpe": _ann(r), "survived": bool(v.survived),

@@ -83,6 +83,7 @@ def _score_per_candidate(control: np.ndarray, peers: np.ndarray) -> ValidationVe
     )
     return validate(
         control, campaign=gates, column=m.shape[1] - 1, hypothesis=_HYP,
+        periods_per_year=365.0,
         n_trials=max(400, m.shape[1]), sharpe_estimates=sh, returns_matrix=m,
     )
 

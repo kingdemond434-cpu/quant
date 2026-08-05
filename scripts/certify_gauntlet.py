@@ -142,8 +142,12 @@ def _score(rets: np.ndarray, matrix: np.ndarray,
     sh = np.append(peer_sharpes, sharpe_ratio(rets))
     n_trials = max(_FAMILY_TRIAL_BUDGET, m.shape[1])
 
+    # PPY is libs.validation.positive_control's D1-crypto clock (365) -- the SAME number this
+    # script already uses for its hurdle/SE tables. Passing it into validate() is what makes the
+    # certification's hurdle and the verdict it certifies share one annualiser (R0086).
     common = {
-        "hypothesis": _HYP, "n_trials": n_trials, "sharpe_estimates": sh, "returns_matrix": m,
+        "hypothesis": _HYP, "periods_per_year": PPY, "n_trials": n_trials,
+        "sharpe_estimates": sh, "returns_matrix": m,
     }
     legacy = validate(rets, pbo=gates.legacy_pbo, rc=gates.legacy_rc, **common)
     percand = validate(rets, campaign=gates, column=col, **common)

@@ -35,6 +35,7 @@ from libs.autodiscovery.reports import (
     survivor_report,
 )
 from libs.autodiscovery.research_roi import ResearchROIMonitor
+from libs.autodiscovery.validation import SESSION_DAYS_PER_YEAR
 from libs.data.instruments import AssetClass, InstrumentSpec, register_instrument
 from libs.data.lake import Layer, ParquetLake
 from libs.data.timeframe import Timeframe
@@ -135,7 +136,12 @@ def main() -> None:
     families = [Family(f.strip()) for f in args.families.split(",") if f.strip()] or None
     db = Database(Path(args.db))
     run_migrations(db, MIGRATIONS)
-    lab = AutoDiscoveryLab(db, provider, cost_provider=cost_provider, families=families)
+    # D1 FX bars on the SESSION calendar (~252 tradeable days): this runner is the 26-year FX
+    # daily history, not crypto, so its clock is 252/yr -- not the 6240 hourly constant that
+    # annualised it until R0086 (libs/autodiscovery/validation.py), which was 4.976x too large.
+    lab = AutoDiscoveryLab(db, provider, bar=Timeframe.D1,
+                           days_per_year=SESSION_DAYS_PER_YEAR,
+                           cost_provider=cost_provider, families=families)
 
     fam_names = [f.value for f in (families or [])]
     print(f"lake symbols available: {len(available)} | testing {len(requested)}: {requested}")

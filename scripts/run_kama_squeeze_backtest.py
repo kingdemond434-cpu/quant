@@ -36,6 +36,7 @@ from libs.validation.economic_prior import MechanismType
 _CRYPTO = Path("data/lake/bronze/crypto")
 _OUT = Path("web/kama_squeeze_backtest.json")
 _TOP = 15
+_PPY = 365.0            # D1 crypto bars; perps trade 24/7 (R0086)
 _KAMA_N, _KAMA_F, _KAMA_S = 10, 2, 30                 # canonical Kaufman params
 _BB_N, _BB_K, _KC_N, _KC_K = 20, 2.0, 20, 1.5        # canonical TTM squeeze params
 _FAIL = ["crowded retail signal", "price-only", "regime artifact", "cost exceeds edge"]
@@ -125,11 +126,12 @@ def main() -> None:
     # enumerate order == column_stack order over `strat`, so `col` is the strategy's matrix column
     for col, (name, r) in enumerate(strat.items()):
         active = r[r != 0.0]
-        sh = round(float(sharpe_ratio(active) * np.sqrt(365)), 2) if len(active) > 5 else 0.0
+        sh = round(float(sharpe_ratio(active) * np.sqrt(_PPY)), 2) if len(active) > 5 else 0.0
         hyp = Hypothesis(family=Family.BREAKOUT, subtype=name, symbol="CRYPTO", params={},
                          mechanism=MechanismType.BEHAVIORAL, edge_source="vol_compression",
                          failure_modes=_FAIL)
-        v = validate(active, hypothesis=hyp, n_trials=2, sharpe_estimates=[sh, -sh],
+        v = validate(active, hypothesis=hyp, periods_per_year=_PPY,
+                     n_trials=2, sharpe_estimates=[sh, -sh],
                      returns_matrix=matrix, campaign=campaign, column=col
                      ) if len(active) >= 250 else None
         gates = f"{sum(v.gates.values())}/{len(v.gates)}" if v else "n<250"

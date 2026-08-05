@@ -145,6 +145,7 @@ def main() -> None:
         v = (validate(active, hypothesis=Hypothesis(
             family=Family.CARRY, subtype=name, symbol="CRYPTO", params={},
             mechanism=MechanismType.RISK_PREMIUM, edge_source=name, failure_modes=_FAIL),
+            periods_per_year=_PPY,        # 8h funding bars, 1095/yr (R0086)
             n_trials=2, sharpe_estimates=sharpes, returns_matrix=matrix,
             campaign=campaign, column=col)
             if len(active) >= 250 else None)
