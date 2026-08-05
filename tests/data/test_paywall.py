@@ -91,3 +91,63 @@ class TestRecordingIsAutomaticAndSurvives:
         row = record("https://v.com/x", status=402, unlocks="u", root=Path("/nonexistent"))
         assert "primary-source reconstruction first" in row["hunt_order"].lower()
         assert "principal" in row["authority"].lower(), "buying is never the collector's call"
+
+
+class TestABlockedRouteIsNeverParked:
+    """THE OVER-RECORDING FENCE MUST NOT BECOME AN UNDER-ACTING ONE.
+
+    Keeping a bare 403 out of the PAID-VENDOR registry is right -- a registry full of WAFs buries
+    the vendors somebody actually sells. But the first version then let those rows SIT, and parking
+    is accepting in a quieter form. A 403 is a source the desk WANTED, could not reach, and has no
+    verdict on, with named routes available. The two verdicts go to different registries with the
+    SAME urgency (L1.54).
+    """
+
+    def test_a_maybe_paywall_becomes_owed_work_immediately(self, tmp_path: Path) -> None:
+        from libs.data.paywall import unresolved_blocks
+        record("https://waf.example/x", status=403, unlocks="forum threads", root=tmp_path)
+        owed = unresolved_blocks(tmp_path)
+        assert [b["vendor"] for b in owed] == ["waf.example"]
+        assert "ROUTE hunt" in owed[0]["owed"]
+
+    def test_it_goes_idle_once_it_outlives_a_miner_cycle(self, tmp_path: Path) -> None:
+        from datetime import UTC, datetime, timedelta
+
+        from libs.data.paywall import BLOCK_STALE_H, unresolved_blocks
+        record("https://waf.example/x", status=403, unlocks="u", root=tmp_path)
+        assert not unresolved_blocks(tmp_path)[0]["idle"], "fresh is owed, not yet failed"
+        later = datetime.now(tz=UTC) + timedelta(hours=BLOCK_STALE_H + 1)
+        assert unresolved_blocks(tmp_path, now=later)[0]["idle"], (
+            "a block that outlives a full miner cycle has been ACCEPTED, not solved")
+
+    def test_an_enumerated_unreachable_closes_it_and_giving_up_silently_does_not(
+            self, tmp_path: Path) -> None:
+        """UNREACHABLE is legal -- it is the enumerated exhaustion L1.54 requires. What is NOT
+        legal is the row simply ageing out of attention."""
+        from libs.data.paywall import resolve_block, unresolved_blocks
+        record("https://waf.example/x", status=403, unlocks="u", root=tmp_path)
+        resolve_block("waf.example", status="UNREACHABLE",
+                      detail="render path + 2 mirrors + archive tried, all challenged",
+                      root=tmp_path)
+        assert unresolved_blocks(tmp_path) == []
+
+    def test_a_confirmed_paywall_is_not_double_counted_as_a_blocked_route(
+            self, tmp_path: Path) -> None:
+        """A 402 owes a free-REPLACEMENT hunt, not a route hunt. Mixing them would put paid
+        vendors into the routing backlog and hide the ones needing a reconstruction."""
+        from libs.data.paywall import unresolved_blocks
+        record("https://vendor.com/x", status=402, unlocks="u", root=tmp_path)
+        assert unresolved_blocks(tmp_path) == []
+        assert "vendor.com" in vendors_encountered(tmp_path)
+
+    def test_many_blocked_queries_on_one_host_are_one_routing_problem(self) -> None:
+        """Seventeen 429s from Hatena is one route to fix, not seventeen work items -- and a
+        backlog that inflates by query count trains the desk to ignore it."""
+        import scripts.mine_research_queue as M
+        rows = M._open_route_hunts({f"hatena:q{i}": "HTTP 429" for i in range(17)})
+        assert [r["host"] for r in rows] == ["hatena.ne.jp"]
+
+    def test_an_unmapped_channel_opens_no_hunt_rather_than_a_meaningless_one(self) -> None:
+        """A hunt aimed at 'unknownsrc:some query' is aimed at nothing."""
+        import scripts.mine_research_queue as M
+        assert M._open_route_hunts({"unknownsrc:q": "x"}) == []

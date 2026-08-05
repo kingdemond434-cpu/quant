@@ -7032,3 +7032,105 @@ def check_paywalls_registered(defects) -> None:
 
 
 CHECKS += [("paywalls-registered", check_paywalls_registered)]
+
+
+def check_verified_alternatives_promoted(defects) -> None:
+    """A verified better alternative that never REPLACES the incumbent is cataloguing, not hunting.
+
+    The desk had two thirds of a loop: `source_alternatives` holds candidates, `paywall` records
+    paid datasets and demands a hunt. Neither could SWAP anything, so a genuinely better free route
+    could be found, verified, written into a registry row -- and the desk would keep calling the
+    old one forever. This fence closes the loop from the other end: it fails when the evidence for
+    a replacement exists and the replacement has not happened.
+
+    It never demands a swap on unmeasured evidence. INSUFFICIENT is a legitimate resting state and
+    is reported as owed WORK (go and measure the missing field), never as an owed decision.
+    """
+    import json as _json
+
+    try:
+        sys.path.insert(0, str(ROOT))
+        from libs.data.paywall import vendors_encountered
+        from libs.data.source_promotion import ACTIVE_ROUTES
+    except Exception as exc:
+        defects.append(("promotion-unimportable",
+                        f"libs.data.source_promotion / paywall could not be imported ({exc}) -- a "
+                        "verified alternative can no longer replace anything, so hunting silently "
+                        "degrades to cataloguing"))
+        return
+
+    routes_path = ROOT / ACTIVE_ROUTES
+    try:
+        routes = _json.loads(routes_path.read_text("utf-8"))
+    except (OSError, ValueError):
+        routes = {}
+
+    # A PAID ROUTE MUST NEVER BE THE LIVE ONE. Buying is the principal's decision; if a paid vendor
+    # is what the desk actually calls, that decision was made by drift rather than by a person.
+    paid_live = sorted(k for k, v in routes.items()
+                       if isinstance(v, dict) and v.get("is_paid") is True)
+    if paid_live:
+        defects.append(("promotion-paid-route-live",
+                        f"{len(paid_live)} information class(es) are served by a PAID route: "
+                        f"{', '.join(paid_live)}. Buying is the principal's decision -- a paid "
+                        "vendor becoming the live route without one is a purchase made by drift."))
+
+    # EVERY CONFIRMED PAYWALL SHOULD EVENTUALLY HAVE A FREE ROUTE, or an honest record that the
+    # hunt ran and failed. Silence is neither.
+    seen = vendors_encountered(ROOT)
+    unresolved = sorted(v for v, r in seen.items()
+                        if str(r.get("free_replacement_status", "")).upper()
+                        in ("UNHUNTED", "HUNTED-OPEN"))
+    if unresolved and not routes:
+        defects.append(("promotion-no-routes-registered",
+                        f"{len(unresolved)} paywall(s) hunted and data/active_routes.json holds NO "
+                        "route at all -- nothing records what the desk actually calls for anything, "
+                        "so no replacement can ever be evaluated against an incumbent."))
+
+
+CHECKS += [("alternatives-promoted", check_verified_alternatives_promoted)]
+
+
+def check_blocked_routes_hunted(defects) -> None:
+    """A blocked route the desk stopped chasing is an accepted loss. L1.54 forbids accepting it.
+
+    The 402/403 split keeps a WAF out of the PAID-VENDOR registry, which is right -- a registry
+    full of bot blocks buries the vendors somebody actually sells. But the first version then let
+    those rows SIT, and parking is accepting in a quieter form. A bare 403 is a source the desk
+    WANTED, could not reach, and has no verdict on, with named routes available (render path,
+    mirrors, regional hosts, archives, primary-source reconstruction).
+
+    So the two verdicts go to different registries with the SAME urgency. UNREACHABLE is a legal
+    resting state and stops this fence -- but only once recorded WITH what was tried, which is the
+    enumerated exhaustion L1.54 demands rather than silence.
+    """
+    try:
+        sys.path.insert(0, str(ROOT))
+        from libs.data.paywall import BLOCK_STALE_H, unresolved_blocks
+    except Exception as exc:
+        defects.append(("blocked-routes-unreadable",
+                        f"libs.data.paywall could not be imported ({exc}) -- blocked routes can no "
+                        "longer be tracked, so a source the desk cannot reach silently becomes a "
+                        "source the desk stopped trying to reach"))
+        return
+
+    owed = unresolved_blocks(ROOT)
+    if not owed:
+        return
+    idle = [b for b in owed if b.get("idle")]
+    names = ", ".join(f"{b['vendor']}({b.get('age_h')}h)" for b in owed[:5])
+    if idle:
+        defects.append(("blocked-routes-idle",
+                        f"{len(idle)} blocked route(s) have gone unhunted for more than "
+                        f"{BLOCK_STALE_H}h: {names}. A block is a verdict about the ROUTE the desk "
+                        "tried, never about the source -- and one that outlives a full miner cycle "
+                        "has been accepted rather than solved. Hunt a render path, mirror, regional "
+                        "host, archive or primary-source reconstruction, or record UNREACHABLE "
+                        "WITH what was tried (L1.54: exhaustion must be enumerated, never assumed)."))
+    else:
+        defects.append(("blocked-routes-unhunted",
+                        f"{len(owed)} blocked route(s) awaiting a route hunt: {names}. Recorded "
+                        "while fresh -- this is owed work, not yet a failure."))
+
+
+CHECKS += [("blocked-routes", check_blocked_routes_hunted)]
