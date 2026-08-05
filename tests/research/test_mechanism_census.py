@@ -243,6 +243,23 @@ def test_a_missing_runtime_artifact_is_not_readable_here_not_zero(tmp_path: Path
     assert blind.class_id in {g.class_id for g in report.unrankable}
 
 
+def test_an_empty_tree_reports_ignorance_not_failure(tmp_path: Path) -> None:
+    """The extreme case: nothing on disk must produce nothing-known, never nothing-works."""
+    report = census(tmp_path)
+    counts = report.coverage_counts()
+
+    assert str(Coverage.TESTED_DEEP) not in counts
+    assert str(Coverage.TESTED_SHALLOW) not in counts
+    assert counts[str(Coverage.NO_CANDIDATE)] + counts[str(Coverage.NOT_READABLE_HERE)] == len(
+        report.classes)
+    assert all(c.n_tested == 0 and c.best_oos_sharpe is None for c in report.classes)
+    assert all(not c.verdicts for c in report.classes)
+    assert report.diversity.diversity == 0.0
+    # every class with a declared screen artifact says it cannot see it, and is left unranked
+    assert {g.class_id for g in report.unrankable} == {
+        c.class_id for c in report.classes if c.coverage is Coverage.NOT_READABLE_HERE}
+
+
 def test_a_kill_note_cannot_talk_a_candidate_into_the_survivor_column(tmp_path: Path) -> None:
     """A real graveyard row reports that "4 survived manual review" -- of 15,256 arb SIGNALS."""
     doc = tmp_path / "docs/graveyard.md"

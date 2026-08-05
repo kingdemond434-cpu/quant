@@ -52,6 +52,21 @@ HONESTY RAILS, all three enforced mechanically and all three visible in the outp
     that produced it, and any record matching no signature lands in ``unclassified`` where it is
     reported -- never silently dropped, never assigned to the nearest plausible class.
 
+WHERE THIS SITS AMONG THE MACHINERY THAT ALREADY EXISTS, since none of it is duplicated here.
+``libs/hypmax/invention.py`` refuses an interaction when both primitives share an INFORMATION
+CLASS -- "same observation read twice" -- and that veto is the same idea one level down: this
+module applies it to whole hypotheses instead of feature pairs, and asks about the PAYER rather
+than the observation. ``libs/research/mechanism_fingerprint.py`` buckets an idea as
+family/transform/horizon to catch trivial reparameterisation, and ``collapse_detector.py`` takes
+entropy over those fingerprints per BATCH; both are correct and both are blind to the question
+here, because a fingerprint's family axis is a FEATURE family -- ``trend`` and ``breakout``
+fingerprint apart while being one economic mechanism. ``hypothesis_novelty`` answers "is this a
+near-duplicate of a prior?", which is a different question from "which mechanism is it?", so it
+is not imported: a candidate can be perfectly novel against every prior and still be the four
+hundredth member of a class the desk has exhausted. The graveyard table parse is the same one
+``scripts/screen_idle_axes.py`` uses for its novelty priors, hardened for the rows that grew in
+after it.
+
 ZERO AUTHORITY. This is a measurement instrument. It promotes nothing, blocks nothing, and
 changes no gate, threshold or bar anywhere in the desk. Its own depth and scoring constants
 (``DEPTH_MIN_*``, per-class plausibility/orthogonality, the availability ladder) are REPORTING
