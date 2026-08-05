@@ -126,7 +126,13 @@ _MAP: dict[str, list[str]] = {
     # the next audit/brain window from finding to fixing" -- actually reach an organ (L1.36).
     # Both are listed because a law enforced only by a detector is half-enforced: the flag was
     # published for weeks with no consumer that changed any behaviour.
-    "L1.28b": ["scripts/check_conversion.py", "libs/ops/repair_mode.py", "ops/brain_env.sh"],
+    # ship_restart is the REPAIR half of the desk's most expensive detection. max_audit's
+    # check_stale_daemons has fired correctly on all three stale-code instances (2026-07-10,
+    # 07-26, 08-05) and every one shipped only when a human happened to look, because the
+    # restart needs a systemctl this box denies. Detection without an actuator IS the L1.28b
+    # defect; this is the actuator.
+    "L1.28b": ["scripts/check_conversion.py", "libs/ops/repair_mode.py", "ops/brain_env.sh",
+               "scripts/ship_restart.py"],
     # L1.28c: every cadence hunts its own ceiling. The manifest fence requires a decided cadence
     # with evidence per line; brain_seat_throughput measures the resource they all compete for,
     # so "raise the cron" vs "buy a second seat" is settled by measurement.

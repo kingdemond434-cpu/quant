@@ -296,11 +296,23 @@ if [ -n "$PLAN" ]; then
             elif systemctl restart "$target" >/dev/null 2>&1; then
                 say "restarted $target   [$why]"
                 echo restarted >> "$OUTCOMES"
+            elif $PY "$ROOT/scripts/ship_restart.py" "$target" >/dev/null 2>&1; then
+                # This box denies systemctl to the quant user (scripts/watchdog.py:78). Printing
+                # the command used to be the whole deliverable, and the claimed backstop -- "the
+                # watchdog's 3-min heartbeat respawn" -- DOES NOT COVER THIS CASE: watchdog's
+                # _systemd_owns() deliberately refuses to spawn while systemd has a live MainPID,
+                # so it rescues a DEAD process and never an alive-but-STALE one. That is the
+                # entire failure mode here, and it left a money-path fix inert for 11.8h on
+                # 2026-08-05 ($4,805.61 misreported to hurdle_rate.py:97).
+                # ship_restart performs the restart deploy_plan ALREADY authorises for this tier,
+                # via SIGTERM + Restart=always, and refuses when the unit would not come back.
+                say "restarted $target via ship_restart (systemctl denied)   [$why]"
+                say "  RESTARTED is not FIXED -- confirm the new behaviour in the producer's own"
+                say "  output, against a key only the new code can write."
+                echo restarted >> "$OUTCOMES"
             else
-                # This box denies systemctl to the quant user (scripts/watchdog.py:78), so
-                # printing the exact command IS the deliverable -- and the watchdog's 3-min
-                # heartbeat respawn is the backstop until the operator runs it.
-                say "OWED (permission denied): sudo systemctl restart $target   [$why]"
+                say "OWED (permission denied, ship_restart refused): sudo systemctl restart $target   [$why]"
+                say "  reason:  $PY scripts/ship_restart.py $target"
                 echo owed >> "$OUTCOMES"
             fi
             ;;
