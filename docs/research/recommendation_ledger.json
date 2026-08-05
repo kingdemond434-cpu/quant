@@ -4728,6 +4728,18 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0388",
+   "source": "cycle",
+   "summary": "DEFECT ON ORIGIN, pre-existing and not mine -- found when it refused my push: commit 6f96ac3 (sibling session, branch claude/wonderful-darwin-7uiobi) added ops/crontab.manifest entries for TWO scripts that exist NOWHERE -- scripts/check_prompt_ratchet.py and scripts/screen_venue_subsidy.py are absent from origin and from every working tree on this box. check_scheduler_manifest.py therefore reports MISSING ... scheduled by the manifest but absent from the repo (dead cron) and the whole check goes rc=2 BROKEN, which HARD-REFUSES every push to this branch via the L1.37 pre-push hook -- so the breach is not merely cosmetic, it blocks the branch for every other session until it is closed. THE LIKELY CAUSE, and it is a recognisable shape: the sibling committed the manifest WIRING but left the scripts themselves uncommitted in a working tree (exactly as libs/validation/campaign_design.py and tests/validation/test_campaign_design.py are sitting uncommitted right now) -- the manifest half of a two-part change got pushed and the code half did not. THE FIX IS THE SIBLING'S TO MAKE, in this order: commit the two scripts (preferred -- the wiring is already correct and the cadence is already declared), or remove the two manifest lines if the scripts were abandoned. DO NOT close this by deleting the manifest entries without checking with that session first: the entries are the only surviving record of the intended cadence, and deleting them silently discards a design decision. VERIFY WITH: .venv/bin/python scripts/check_scheduler_manifest.py -- it must leave BROKEN and return to DRIFT (drift is box state, BROKEN is a repo-integrity failure and the two are graded differently on purpose).",
+   "roi_bps": 25.0,
+   "raised": "2026-08-05T17:00:28.549846+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
