@@ -5126,6 +5126,54 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0417",
+   "source": "deep_sweep",
+   "summary": "L1.57 coverage ratchet: wire scanned= into the remaining 38 fences, highest blast radius first -- check_utilisation.py:548 (every ceiling UNMEASURED leaves idle_unexplained empty, so a fully dark board exits 0) and check_mypy_ratchet.py:89 (uncheckable files are popped from the denominator, so mypy uninstalled yields total_errors 0 / n_files_checked 0 / exit 0, and a file that becomes uncheckable can never regress again). Coverage is at 4/42; data/denominators.json next_action names the queue.",
+   "roi_bps": null,
+   "raised": "2026-08-05T22:02:07.285052+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0418",
+   "source": "deep_sweep",
+   "summary": "Liveness layer per-row fix (capability hunt s2 Proposal A headline, NOT built): check_organ_liveness.py:168-173 takes age = min(fresh) over SURVIVING artifacts, so one live file hides every absent sibling in the same block and the row reads FRESH; max_audit.check_organs:388 continues past 8 organs sharing 1 artifact whose mtime is written by git. Refused a fourth central instrument -- these need the per-row fix, not a rewrite. Feeds capability_ratchet ops_autonomy.",
+   "roi_bps": null,
+   "raised": "2026-08-05T22:02:19.266866+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0419",
+   "source": "deep_sweep",
+   "summary": "Validation-layer welded-gate audit (capability hunt s2, NOT built -- separable work): screen_admission.py:296 uses g in gates, so an ABSENT structural gate cannot appear in blocked_list and cannot block; break_even_win_rate is declared structural at :70 and is written by NOTHING in the repo -- a structural gate that has never once evaluated; and measure_admission_power.py:143 uses all(gates.get(g, True)), so the harness that produced the \"structural gates pass 73-100pct of true alphas\" evidence reproduces the bug it would have caught. Until re-measured, every claim that the screen is calibrated is unsupported. Needs the per-gate accept/reject histogram the gate-optimality duty demands and admit() does not have.",
+   "roi_bps": null,
+   "raised": "2026-08-05T22:02:21.877204+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0420",
+   "source": "deep_sweep",
+   "summary": "Money-path defect cluster from capability hunt s2, STAGED not applied -- check_change_window reports STERILE (4.4d into the 7d launch window, a rail live, book unwinding) and L1.38 freezes money-path IMPROVEMENTS inside the window. Each verified by hand: run_cashcarry_executor.py:1077 wraps the risk-rail block in _safe() whose __exit__ returns True, so one signed-endpoint raise deletes ruin switch + DD breaker + exposure + concentration + fee-burn for the tick with risk=None and cands uncleared -- new carries open, and web/index.html:338 renders it as green OK; _reconcile returns [] on venue read failure (:693), byte-identical to \"already hedged\"; binance_live.py:293 force_orders returns {} on error so the ADL check re-shorts into the squeeze; the dead-man combined_equity None-on-missing-keys makes should_fire False forever AND gates its own stale-feed pager on eq is not None; protective stops are written to state OUTSIDE the _safe() that swallows place_stop_market. Highest-dollar item is a _safe(critical=True) variant that re-raises, ~10 lines.",
+   "roi_bps": null,
+   "raised": "2026-08-05T22:02:33.437815+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

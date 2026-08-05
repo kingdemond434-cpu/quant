@@ -276,6 +276,13 @@ _MAP: dict[str, list[str]] = {
     # below; the law arrived mapped in neither and the matrix correctly called it UNENFORCED.
     "L1.56": ["check_survivor_pipeline", "tests/research/test_survivor_pipeline.py",
               "scripts/finalize_axis_screens.py", "scripts/run_paper_sleeve_spawner.py"],
+    # L1.57: fence_exit fixed the map from status to exit code; it cannot see a status that is
+    # honestly OK because the fence examined NOTHING. 18 of 40 fences passed vacuously and 10
+    # more published len(<hardcoded literal>) as a denominator. The refusal lives in fence_exit
+    # (scanned=), the registry self-builds, and the meta-fence is subject to its own law.
+    "L1.57": ["scripts/check_denominators.py", "libs/ops/denominator.py",
+              "libs/ops/fence_exit.py", "tests/governance/test_denominators.py",
+              "scripts/check_exploration.py", "scripts/check_calendar_gates.py"],
     # R0123 decline grading: L1.29 says an ungraded prediction is a BELIEF that inflates the
     # apparent hit-rate by never counting its misses -- and a sleeve scored only on the trades it
     # CHOOSES to be graded on is that defect with a dominant strategy attached. Nine consecutive

@@ -60,6 +60,7 @@ _GOVERNED: tuple[str, ...] = (
     "screen_funding_spread.py", "screen_collateral_allocation.py",
     "check_build_standard.py",                              # this fence holds itself to it
     "check_input_provenance.py",                            # L1.55 transitive freshness
+    "check_denominators.py",                                # L1.57 the denominator of a verdict
     "check_fence_yield.py",
     "derive_walcl_clock.py",                                # R0031 forward clock (2026-07-31)
     "run_llm_trader.py",

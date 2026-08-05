@@ -36,7 +36,11 @@ _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
+from libs.ops.fence_exit import fence_exit  # noqa: E402
 from libs.ops.llm_route import chain_is_sound  # noqa: E402
+
+#: BACKLOG passes by design (see "EXIT 0 ALWAYS"); UNMEASURED does not.
+_PASSING = frozenset({"OK", "BACKLOG"})
 
 _OUT = _ROOT / "data/llm_routing.json"
 #: The roster FILENAME a script must mention to be an LLM organ. Not a credential --
@@ -96,6 +100,13 @@ def audit(root: Path | None = None) -> dict[str, Any]:
     return {
         "generated": datetime.now(tz=UTC).isoformat(),
         "law": "L1.54 clause 1 -- a chain, never a single name",
+        # BACKLOG is a PASSING state and stays one -- see "EXIT 0 ALWAYS" above; the conversion
+        # queue owns it, not the build. UNMEASURED is a different claim: the roster scan found no
+        # organs at all, which means the discovery walk broke (moved scripts/, renamed roster,
+        # unreadable dir), not that the LLM layer is clean. Those two were byte-identical here
+        # until L1.57 -- both printed a green line and exited 0.
+        "status": "UNMEASURED" if not organs else "BACKLOG" if unsound or routed_n < len(organs)
+                  else "OK",
         "n_organs": len(organs),
         "n_routed": routed_n,
         "n_single_route": len(organs) - routed_n,
@@ -126,7 +137,10 @@ def main(argv: list[str] | None = None) -> int:
         for s in rep["unsound_chains"]:
             print(f"  UNSOUND CHAIN {s}")
     print(f"-> {_OUT}")
-    return 0
+    # Still exit 0 for the backlog (STATE fence, L1.37 -- unchanged). The ONLY new failure is a
+    # zero denominator: a run that examined no organs has not certified anything (L1.57).
+    return fence_exit(rep["status"], _PASSING, scanned=rep["n_organs"],
+                      of="roster-referencing scripts", fence="check_llm_routing.py")
 
 
 if __name__ == "__main__":

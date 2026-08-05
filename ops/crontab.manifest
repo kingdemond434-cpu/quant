@@ -472,6 +472,21 @@ QUANT_ROOT=/home/quant/quant-platform
 # CONFIDENCE: committed-script (new this cycle)
 57 * * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_input_provenance.py >> data/cro_ai_logs/input_provenance.log 2>&1
 
+# DENOMINATOR FENCE (L1.57). fence_exit fixed the map from STATUS to exit code; it cannot see a
+# status that is honestly OK because the fence examined NOTHING -- an empty rglob yields zero
+# violations NECESSARILY, and "I checked 900 files and found nothing" and "I checked nothing"
+# printed the same line and returned the same code. Measured at build time: 18 of 40 fences pass
+# vacuously, 10 more publish len(<hardcoded literal>) as a denominator. The proving instance was
+# live: check_exploration reported OK with n_organs 0 because `len(fresh) < n / 2` is `0 < 0.0`.
+# Verdicts: DECLARED / VACUOUS (a pass over an empty scan set -- the failing state) / UNDECLARED
+# (counted against a coverage ratchet, not a failure). Zero declarations reads UNMEASURED, never
+# OK; the fence is subject to its own law via scanned=n_fences. CADENCE: hourly, phased off
+# check_input_provenance -- it reads a registry that only changes when another fence exits, so it
+# is data-arrival bound on those runs (L1.28c) and is pure-CPU over one small JSONL.
+# EVIDENCE: scripts/check_denominators.py -> data/denominators.json; CONSTITUTION L1.57
+# CONFIDENCE: committed-script (new this cycle)
+2 * * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_denominators.py >> data/cro_ai_logs/denominators.log 2>&1
+
 # CAPABILITY HUNT (L1.31, principal order 2026-07-31): "chatgpt and claude both hunt for what to
 # add, what's missing, and IMPLEMENT it" -- what this session did by hand, every day, unprompted.
 # TWO INDEPENDENT FAMILIES on purpose: a Claude seat and the GPT-9 seat propose the missing
