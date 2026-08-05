@@ -1021,19 +1021,43 @@ def setup_features(call: dict[str, Any], charts: dict[str, Any] | None) -> dict[
     return f
 
 
-def _chart_brief(root: Path, heat: dict[str, Any] | None = None, *, max_chars: int = 9000) -> str:
-    """The charts, trimmed to what fits and honest about what did not.
+#: Bound on the spawn-time inline chart rebuild (R0148). The chart organ normally runs from box
+#: cron every 20 minutes (ops/crontab.manifest); this ceiling exists only so a wedged venue call
+#: cannot stall the trader indefinitely when it has to build its own chart. Generous, because the
+#: alternative to waiting is reasoning blind on structure.
+CHART_BUILD_TIMEOUT_S: float = 240.0
+#: Age beyond which chart structure is treated as stale. The builder's cron cadence is 20
+#: minutes, so 2h means at least five consecutive missed builds -- the organ has STOPPED, not
+#: hiccuped. Same threshold the stale warning always used, now named so the rebuild trigger and
+#: the warning cannot drift apart.
+CHART_STALE_H: float = 2.0
 
-    Instruments already live are dropped: heat is capped and the same-symbol trade is refused
-    anyway, so spending brief on them buys nothing. STALE and MISSING are stated -- a trader
-    reasoning over yesterday's structure while believing it is today's is worse than one who
-    knows it is blind."""
+
+def _build_charts_inline(root: Path, *, timeout: float = CHART_BUILD_TIMEOUT_S) -> str | None:
+    """R0148 spawn-time fallback: run build_chart_context.py HERE, bounded, when the cron organ
+    has not. Returns None on success, else a short reason string for the caller to degrade with.
+
+    The live incident behind the row: box cron was not running the chart builder, the context
+    file was absent, and every spawn degraded straight to "CHARTS UNAVAILABLE ... trading BLIND"
+    -- a leveraged directional sleeve reasoning with no price structure at all. The manifest-side
+    fix reschedules the organ (ops/crontab.manifest, */20); THIS is the in-repo closure: the
+    trader builds the chart it is about to reason over, so no box-cron state can make it open a
+    position blind. Failure here is REPORTED, never swallowed -- the degraded path must say why
+    it is degraded."""
     try:
-        raw = json.loads((root / "data/chart_context.json").read_text("utf-8"))
-    except (OSError, ValueError) as exc:
-        return (f"CHARTS UNAVAILABLE ({type(exc).__name__}) -- build_chart_context.py has not run "
-                "on this host. You are trading BLIND on structure: do not name a swing level you "
-                "cannot see, and PASS unless the non-chart evidence alone is compelling.")
+        r = subprocess.run(
+            [sys.executable, str(root / "scripts/build_chart_context.py"), "--json"],
+            cwd=root, capture_output=True, text=True, timeout=timeout)
+    except (OSError, subprocess.SubprocessError) as exc:
+        return f"{type(exc).__name__}: {exc}"[:300]
+    if r.returncode != 0:
+        tail = " ".join((r.stderr or r.stdout or "no output").split())[-240:]
+        return f"builder exit {r.returncode}: {tail}"
+    return None
+
+
+def _chart_age(raw: dict[str, Any]) -> tuple[float | None, str]:
+    """Age of the chart snapshot in hours, and the note the brief carries about it."""
     try:
         age_h: float | None = (datetime.now(tz=UTC)
                                - datetime.fromisoformat(raw["generated"])).total_seconds() / 3600.0
@@ -1042,13 +1066,62 @@ def _chart_brief(root: Path, heat: dict[str, Any] | None = None, *, max_chars: i
         # NOT swallowed: an unreadable timestamp means the trader cannot tell fresh structure from
         # a stale snapshot, and that must reach the trader rather than vanish into a default.
         age_h, age_note = None, f"age UNMEASURED ({type(exc).__name__}) -- treat as possibly STALE"
+    return age_h, age_note
+
+
+def _chart_brief(root: Path, heat: dict[str, Any] | None = None, *, max_chars: int = 9000) -> str:
+    """The charts, trimmed to what fits and honest about what did not.
+
+    Instruments already live are dropped: heat is capped and the same-symbol trade is refused
+    anyway, so spending brief on them buys nothing. STALE and MISSING are stated -- a trader
+    reasoning over yesterday's structure while believing it is today's is worse than one who
+    knows it is blind.
+
+    R0148: MISSING or STALE context now triggers ONE bounded inline build and a re-read before
+    any degradation. The blind path below still exists -- it is the honest state when even the
+    inline build fails -- but it is reachable only THROUGH a failed build, and the failure is
+    named in the same brief the model reads rather than implied by silence."""
+    rebuilt: str | None = None
+    try:
+        raw = json.loads((root / "data/chart_context.json").read_text("utf-8"))
+    except (OSError, ValueError) as exc:
+        build_err = _build_charts_inline(root)
+        if build_err is None:
+            try:
+                raw = json.loads((root / "data/chart_context.json").read_text("utf-8"))
+                rebuilt = "chart context was MISSING at spawn; rebuilt inline"
+            except (OSError, ValueError) as reread:
+                build_err = f"build reported success but re-read failed ({type(reread).__name__})"
+        if build_err is not None:
+            # The pre-R0148 degraded path, kept verbatim in its instruction -- but now reachable
+            # only through a FAILED inline build, and that failure is recorded loudly here.
+            return (f"CHARTS UNAVAILABLE ({type(exc).__name__}) -- build_chart_context.py has not "
+                    f"run on this host AND the spawn-time inline rebuild failed ({build_err}). "
+                    "You are trading BLIND on structure: do not name a swing level you "
+                    "cannot see, and PASS unless the non-chart evidence alone is compelling.")
+    age_h, age_note = _chart_age(raw)
+    # STALE is MISSING arriving slowly -- the same stopped-cron defect -- so it gets the same
+    # cure: one bounded rebuild (short-circuit: the build only runs when actually stale). On
+    # failure the stale copy stays in hand and the stale warning below still fires, so this can
+    # only tighten, never hide.
+    if (rebuilt is None and (age_h is None or age_h > CHART_STALE_H)
+            and _build_charts_inline(root) is None):
+        try:
+            raw = json.loads((root / "data/chart_context.json").read_text("utf-8"))
+            rebuilt = f"chart context was STALE at spawn ({age_note}); rebuilt inline"
+            age_h, age_note = _chart_age(raw)
+        except (OSError, ValueError):
+            pass
     held = set((heat or {}).get("symbols") or [])
     charts = {k: v for k, v in (raw.get("charts") or {}).items() if k not in held}
     head = f"(chart context {age_note}, {raw.get('status')}: {raw.get('detail')})\n"
-    if age_h is None or age_h > 2:
+    if age_h is None or age_h > CHART_STALE_H:
         head = ("WARNING -- CHART STRUCTURE MAY BE STALE"
                 + (f" ({age_h:.1f}h old)" if age_h is not None else "")
                 + ", treat levels as approximate.\n") + head
+    if rebuilt is not None:
+        head = (f"NOTE -- {rebuilt}. The scheduled chart organ (ops/crontab.manifest) had not "
+                "run; the desk should check the box cron.\n") + head
     body = json.dumps(charts, separators=(",", ":"))
     if len(body) > max_chars:
         body = body[:max_chars] + f'... [TRUNCATED at {max_chars} chars of {len(body)}]'

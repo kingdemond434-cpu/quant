@@ -190,3 +190,50 @@ class TestCheckerContract:
                 ".venv/bin/python scripts/real_job.py >> data/x.log 2>&1\n")
         missing_live, extra_live, dupes = c.diff_live(root, man, live)
         assert missing_live == [] and extra_live == [] and dupes == []
+
+
+# ---------------------------------------------------------------------------------------------
+# (d) same-script-different-lock (R0326)
+# ---------------------------------------------------------------------------------------------
+
+_TWO_LOCKS = """# fixture manifest: one script, two lines, two DIFFERENT lock files
+30 1 * * * cd "$QUANT_ROOT" && flock -n data/.a.lock bash scripts/real_job.py
+30 3 * * * cd "$QUANT_ROOT" && flock -n /tmp/b.lock bash scripts/real_job.py
+"""
+
+_ONE_LOCK = """# fixture manifest: one script, two lines, the SAME lock file
+30 1 * * * cd "$QUANT_ROOT" && flock -n data/.a.lock bash scripts/real_job.py
+30 3 * * * cd "$QUANT_ROOT" && flock -n data/.a.lock bash scripts/real_job.py
+"""
+
+
+class TestLockCoherence:
+    """R0326: ops/crontab.manifest scheduled run_crypto_factory.sh twice under two different
+    lock paths. Both lines said `flock -n`, so the duplication LOOKED serialized -- but flock
+    only excludes holders of the same lock file, so the two runs could overlap freely. This is
+    mutual exclusion that reads as present and is not, which is worse than none at all."""
+
+    def test_same_script_under_two_locks_is_structural(self, tmp_path: Path,
+                                                       monkeypatch: pytest.MonkeyPatch) -> None:
+        root = _fixture_repo(tmp_path, _TWO_LOCKS)
+        monkeypatch.setattr(c, "read_live_crontab", lambda: None)
+        man = c.parse_manifest(root / "ops/crontab.manifest")
+        problems = c.check_lock_coherence(man)
+        assert len(problems) == 1 and "different locks" in problems[0]
+        # structural, so --report-only must NOT tolerate it (same class as a dead cron)
+        assert c.main(["--root", str(root)]) == 2
+        assert c.main(["--root", str(root), "--report-only"]) == 2
+
+    def test_same_script_under_one_lock_is_clean(self, tmp_path: Path,
+                                                 monkeypatch: pytest.MonkeyPatch) -> None:
+        """Duplication itself is not the defect -- INCOHERENT duplication is."""
+        root = _fixture_repo(tmp_path, _ONE_LOCK)
+        monkeypatch.setattr(c, "read_live_crontab", lambda: None)
+        man = c.parse_manifest(root / "ops/crontab.manifest")
+        assert c.check_lock_coherence(man) == []
+        assert c.main(["--root", str(root)]) == 0
+
+    def test_the_real_manifest_is_lock_coherent(self) -> None:
+        """The live regression this row closed: keeps it closed."""
+        man = c.parse_manifest(ROOT / "ops/crontab.manifest")
+        assert c.check_lock_coherence(man) == []

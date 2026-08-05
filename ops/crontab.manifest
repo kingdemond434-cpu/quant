@@ -970,13 +970,16 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 40 4 * * 0 cd "$QUANT_ROOT" && .venv/bin/python scripts/graveyard_resurrect.py >> data/cro_ai_logs/graveyard_resurrect.log 2>&1
 
 # ADOPTED FROM LIVE CRONTAB 2026-07-31 (drift-to-zero pass): these organs were live-only, so a
-# DR reconstitution would silently drop them. crypto_factory is the daily autodiscovery factory
-# run; growth_audit refreshes web/growth_audit.json (the conservatism-defect feed the pager and
-# daily cycle read). max_audit + quota_verdict live lines were NOT adopted -- the manifest
-# already schedules both (0 7 daily / 0 */3) and adopting the live twins double-scheduled them
-# for ~1h on 2026-07-31 before the dup check caught it.
+# DR reconstitution would silently drop them. growth_audit refreshes web/growth_audit.json
+# (the conservatism-defect feed the pager and daily cycle read). max_audit + quota_verdict live
+# lines were NOT adopted -- the manifest already schedules both (0 7 daily / 0 */3) and adopting
+# the live twins double-scheduled them for ~1h on 2026-07-31 before the dup check caught it.
+# The crypto_factory live twin (30 3, /tmp/crypto_factory.lock) was adopted here by mistake and
+# removed 2026-08-05 (R0326): the manifest already schedules the factory at 30 1 under
+# data/.cron_crypto_factory.lock, and the twin ran the SAME script under a DIFFERENT lock file,
+# so flock provided no mutual exclusion between the two -- exactly the max_audit/quota_verdict
+# class. check_scheduler_manifest now fences same-script-different-lock structurally.
 # CONFIDENCE: adopted-live (cadences observed, not re-derived).
-30 3 * * * cd "$QUANT_ROOT" && flock -n /tmp/crypto_factory.lock bash ops/run_crypto_factory.sh >/dev/null 2>&1
 */30 * * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_growth_audit.py >/dev/null 2>&1
 
 # REJECT RECOVERY LOOP (wired 2026-07-31, closes rejection-shadow-unscored): rescore matured
