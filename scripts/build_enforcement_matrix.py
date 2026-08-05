@@ -262,6 +262,13 @@ _MAP: dict[str, list[str]] = {
     # existed, and every gate in the chain reported green. Freshness does not compose.
     "L1.55": ["scripts/check_input_provenance.py", "libs/ops/input_provenance.py",
               "scripts/run_live_guard.py"],
+    # L1.56: a screen may not gate its own promotion. The proving instance is the whole point --
+    # 120 scored cells, 12 forward slots, ZERO clocks ever started, four breaks each failing
+    # CLOSED and each silent, and the accumulated silence read as "no edges exist". The fence is
+    # a max_audit check rather than a standalone script, so it ALSO needs its _FENCE_OWNERS row
+    # below; the law arrived mapped in neither and the matrix correctly called it UNENFORCED.
+    "L1.56": ["check_survivor_pipeline", "tests/research/test_survivor_pipeline.py",
+              "scripts/finalize_axis_screens.py", "scripts/run_paper_sleeve_spawner.py"],
     # R0123 decline grading: L1.29 says an ungraded prediction is a BELIEF that inflates the
     # apparent hit-rate by never counting its misses -- and a sleeve scored only on the trades it
     # CHOOSES to be graded on is that defect with a dominant strategy attached. Nine consecutive
@@ -495,6 +502,7 @@ _FENCE_OWNERS: dict[str, str] = {
     "check_naive_datetime": "L1.41",          # tz-naive stamps are the build standard's silent-corruption class
     "check_no_ceiling": "L1.28",              # anti-timidity: nothing capped below its measured maximum
     "check_silent_swallows_on_the_rails": "L1.41",  # a bare except on the money path is a refusal-path hole
+    "check_survivor_pipeline": "L1.56",       # zero results is a claim about the INSTRUMENT until it is shown to work
     "check_test_suite_collectable": "L2.2",   # a suite that cannot collect enforces nothing
     "check_triage_disposition": "L1.17",      # self-dispositioning registers stay honest or lose the exclusion
     "check_under_exploration": "L1.32",       # under-exploration is a breach, not a preference
