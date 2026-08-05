@@ -1,10 +1,19 @@
 """Reject re-score PLANNING -- the ROI decision of the rejection-shadow feeder.
 
 The feeder that closes the gate-leak loop must re-score rejected candidates on data that arrived
-AFTER their rejection. Re-scoring ALL rejects is wasteful: the 420 picked-clean price rejects are
-almost all genuinely dead, and burning compute confirming that recovers nothing. The ROI is in the
-NEAR-MISSES -- rejects whose in-sample edge was strong but that failed a multiplicity/robustness
-gate; those are the ones a drifted-over-strict gate most plausibly killed by mistake.
+AFTER their rejection. Re-scoring ALL rejects is wasteful, so the ROI is in the NEAR-MISSES --
+rejects whose in-sample edge was strong but that failed a multiplicity/robustness gate; those are
+the ones a drifted-over-strict gate most plausibly killed by mistake.
+
+PREMISE CORRECTED 2026-08-05 (R0244). This docstring used to justify the ordering with "the 420
+picked-clean price rejects are almost all genuinely dead". That claim was RETRACTED by the gate
+re-certification: the campaign path now gates per-candidate (cscv PBO + Romano-Wolf stepdown via
+campaign_gate_stats) rather than on the welded campaign-wide constants the 420 were judged under,
+so "already known dead" is not something this module is entitled to assume about them. The
+ordering survives the retraction on its own merits -- near-miss-first is the right spend under a
+batch cap whatever the base rate -- and, importantly, the code never encoded the refuted premise:
+there is no branch excluding the 420, only a nearness ranking and a cap. They compete for the
+batch like everything else, and a high-nearness price reject outranks a low-nearness new one.
 
 So the feeder's intelligence is: take only rejects OLD ENOUGH to have accrued forward data, rank
 them by how CLOSE they came to passing (near-miss first), and cap the batch so compute goes to the
