@@ -754,3 +754,27 @@ hypotheses and EV-score them; only the top few enter research.
   `indent=2`) turned a 26-line append into 7,056 changed lines — content verified identical, but no
   reviewer could have seen that, and it is indistinguishable at a glance from the ledger corruption
   R0175 exists to catch. Match the existing format, then diff to confirm insertions-only.
+- **A guard built on a rolling window of our OWN activity disarms itself during a pause — and the
+  pause is usually caused by the thing it guards against (2026-08-05).** `_structurally_bleeding`,
+  the carry book's structural-bleed denylist, read only `worst_symbols`: a 14-day rolling window
+  over this book's own closes. The book paused 2026-08-01 on a −17.6% drawdown, the window emptied,
+  and on a **freshly regenerated** artifact the gate returned `False` for COOKIEUSDT and
+  1000CATUSDT — the two incident-#6 symbols its own comment calls "currently-blocked" — while a
+  re-arm sat pending on the principal's page. The dated $100 / 3-probe re-entry protocol in
+  `data/execution_reentry.json`, built for exactly these two symbols, was **unreachable code**:
+  consulted only for symbols the window still happened to carry. This is IK's "alarm without an
+  enforcement arm is a log line" (2026-07-28) one turn deeper — here the arm *existed*, was
+  *correct*, and had silently become a no-op, which is harder to see than an arm that was never
+  built. It also silently voided part of R0057, which deleted the absolute per-8h funding floor on
+  2026-07-31 reasoning that "the cost gate plus the structural-bleed denylist carry all of its
+  protection". Fix: a recorded re-entry row is now an independent PERSISTENT denial, released only
+  through the same L1.16a probe protocol. **Ask of every guard: what fills its evidence source, and
+  what happens when that stops? An empty list and a young mtime look exactly like health.**
+- **The carry book's loss was 88.3% fees, not thesis (2026-08-05, independent reconciliation).**
+  Attributing `/fapi` income since inception against the trade log: basis slippage −$231.92 over 253
+  closes (**the hedge is good**, ≈−9.3 bps), funding **+$113.06**, commission **−$1,750.88** — 70.5
+  bps of logged one-way notional against a ~5 bps venue taker max, i.e. **14×**. Four symbols carry
+  85.9% of the bill at 150–488 bps while healthy names run 8–11 bps. A shared-account collision was
+  hypothesised and **refuted**: only 0.8% of fees sit on symbols the book never traded. Reconcile
+  the venue income ledger against the trade log before trusting any per-trade verdict — and note the
+  trade log is capped at `log[-500:]`, so "all-time" forensics silently truncates once it fills.

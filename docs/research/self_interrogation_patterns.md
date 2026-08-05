@@ -185,3 +185,25 @@ recursion rule), so the desk needs him to supply an angle exactly once.
     TIGHTENED must re-verdict what it previously ADMITTED (nothing live today enters that way,
     but forward slots admitted under a looser bar would be the instance). A fixed gate that never
     revisits its verdicts keeps its old miscalibration alive in the record forever.
+
+15. DORMANCY DISARM: DOES THIS GUARD READ A ROLLING WINDOW OF OUR OWN ACTIVITY?
+    (added 2026-08-05, found a live money-path no-op the day it was coined)
+    For every guard, denylist, gate or rail, ask "what FILLS its evidence source, and what happens
+    when that stops?" A guard conditioned on a rolling window of the desk's OWN recent activity
+    DISARMS ITSELF during any pause -- and the pause is very often CAUSED by the thing the guard
+    exists to prevent, so the protection is guaranteed absent exactly when it is most needed. The
+    artifact still looks healthy: a young mtime, a well-formed file, and an EMPTY list.
+    Proving instance: `_structurally_bleeding` read only `worst_symbols`, a 14-day rolling window
+    over the carry book's own closes. The book paused 2026-08-01 on a -17.6% drawdown; on a FRESHLY
+    REGENERATED artifact the list was empty and the gate returned False for COOKIEUSDT and
+    1000CATUSDT -- the two incident-#6 symbols its own comment calls "currently-blocked" -- while a
+    re-arm sat pending on the principal's page. The dated $100/3-probe re-entry protocol built for
+    exactly these symbols was unreachable code, consulted only for symbols the window still carried.
+    THE TEST IS NOT "is the file fresh" BUT "is the file NON-EMPTY FOR THE REASON IT SHOULD BE":
+    absence of a row means either "nothing qualifies" or "nothing was measured", and only one of
+    those is safe. Where a denial must outlive the activity that proved it, persist the denial and
+    release it through an explicit dated re-entry condition -- never through forgetting.
+    GENERALISES TO: any n>=K threshold whose n is fed by the very activity the guard can stop
+    (self-sealing verdicts), staleness fences that pass on an empty producer, and every
+    accept-side gate that is invisible in a rejection tally (L1.49's twin -- L1.49 covers gates
+    that NEVER ran, this covers gates that ran and were emptied).

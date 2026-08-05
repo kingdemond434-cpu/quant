@@ -3565,6 +3565,30 @@
       "review_due": "2026-08-08",
       "review_due_source": "cycle+7d",
       "verified_by_fresh_read": true
+    },
+    {
+      "id": "2026-08-05-carry-denylist-forgot-itself-while-paused",
+      "ts": "2026-08-05T03:09:51.013984+00:00",
+      "decision": "The carry book's structural-bleed denylist had silently become a NO-OP, and a re-arm would have re-opened the desk's two proven-loser symbols at full size. `_structurally_bleeding` read only `worst_symbols`, which run_trade_forensics.py computes over a 14-DAY ROLLING window of this book's own closes. The book paused 2026-08-01 on a -17.6% drawdown; measured this cycle on a FRESHLY REGENERATED artifact (not a stale one), worst_symbols == [] and the gate returned False for COOKIEUSDT and 1000CATUSDT -- the two incident-#6 symbols the function's own comment calls 'currently-blocked'. The dated $100 / 3-probe re-entry protocol in data/execution_reentry.json was UNREACHABLE CODE: it is only consulted for symbols the rolling window still happens to carry. FIX (tighten-only): a recorded re-entry row is now an INDEPENDENT, PERSISTENT denial, released only through the same L1.16a probe protocol. Verified: 1000CATUSDT/COOKIEUSDT False->True, controls (BTC/ETH/GTC) unchanged False, and the door still opens -- allowed=True on 2026-08-16, so the exclusion is not absorbing.",
+      "expected_benefit": "Prevents re-opening two symbols that cost the book ~$1,036 of the $1,750.88 fee fire, ten days before their own probe date. The failure is self-reinforcing: a pause is CAUSED by losses, so this guard was guaranteed to be disarmed exactly when it was most needed. Compounds with R0057, which DELETED the absolute per-8h funding floor on 2026-07-31 reasoning that 'the cost gate plus the structural-bleed denylist carry all of its protection' -- one of those two was already a no-op.",
+      "assumptions": [
+        "data/execution_reentry.json remains the single record of execution denials",
+        "reentry_allowed keeps DENY as its default for rows lacking a named_change / usable probe_after / probes"
+      ],
+      "confidence": 0.93,
+      "success_metric": "On the next re-arm, zero opens in COOKIEUSDT/1000CATUSDT before 2026-08-15, and after that date at most 3 probes each capped at $100 notional.",
+      "reversal_condition": "If the persistent branch ever denies a symbol with NO row in the re-entry ledger, or blocks a probe the ledger grants, revert scripts/run_cashcarry_executor.py::_structurally_bleeding to the worst_symbols-only read. Tests/execution/test_structural_bleed_persistence.py pins both directions.",
+      "neighbours": [
+        "scripts/run_cashcarry_executor.py:579 -- the sole caller; gates NEW OPENS only and never force-closes, so a wider denial cannot strand a hedge leg or touch an open carry",
+        "scripts/check_excitation.py::_bleeding_symbols -- its docstring promises the fence and the gate 'can never disagree about who is blocked'; this change would have broken that invariant, so the fence now reads BOTH sources. `absorbing` is unaffected because ledger symbols by construction have a re-entry row",
+        "libs/execution/excitation.reentry_allowed + data/execution_reentry.json -- unchanged, but reachable for the first time; this fix makes an existing protocol live rather than adding a new rail",
+        "scripts/run_trade_forensics.py -- still the producer of worst_symbols; NOT changed. Its 14d window is correct for ALERTS and wrong as the sole memory of a denial. Its tracked evidence copy docs/research/trade_forensics_latest.json had NEVER been written before this cycle",
+        "R0057 entry-gate (tests/execution/test_entry_gate.py) -- the deleted funding floor was justified partly by this denylist; its protection is only now actually present"
+      ],
+      "independence": "Single subsystem (execution entry path), single causal change, plus one measurement-only edit to the fence that audits it. Non-interaction argument: the fence edit is read-only and cannot influence the executor; the executor edit is strictly tighten-only (symbols in the rolling window are decided before the new branch, and symbols in neither source are allowed exactly as before), so it cannot loosen any existing denial.",
+      "review_due": "2026-08-12T03:09:51.014009+00:00",
+      "review_due_source": "cycle+7d",
+      "verified_by_fresh_read": true
     }
   ]
 }
