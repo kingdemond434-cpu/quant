@@ -128,6 +128,19 @@ RESPONSIBILITIES: tuple[tuple[str, str], ...] = (
     ("Continuous self-improvement",
      "What is idle, duplicated, unnecessary, missing, weak, fragile, outdated, low-ROI? What has "
      "the highest expected ROI? What would an elite quantitative research lab do differently?"),
+    ("Per-aspect maximisation -- WALK EVERY ASPECT, NO EXCEPTIONS",
+     "data/CAPABILITY_RATCHET.json scores every aspect of this desk 0-10 and names each one's "
+     "binding constraint. For EVERY aspect and EVERY component in it -- not the headline ones, "
+     "not the interesting ones, ALL of them, including the ones already at 9 -- give the "
+     "concrete next action that would raise it, what it would cost, and what evidence would "
+     "prove it moved. An aspect you skip is one the desk will not push this week. Where an "
+     "aspect is UNMEASURED, the deliverable is the measurement that would make it scorable; "
+     "where it is at ceiling, say so and say what a HIGHER ceiling would require. "
+     "Rank your whole answer by expected points-per-hour so the desk works it top-down. "
+     "NEVER propose raising a score by changing how it is counted: the ratchet already refuses "
+     "truncated measurements so the desk cannot buy points by running less, and a recommendation "
+     "that games the instrument is worse than no recommendation because it destroys the "
+     "instrument."),
     ("Capital efficiency",
      "Better expected log wealth, capital allocation, sizing discipline, diversification, "
      "portfolio construction, deployment, turnover, opportunity selection."),
@@ -223,6 +236,17 @@ DOSSIER_SOURCES: dict[str, str] = {
     "permutation_null": "reports/permutation_null.json",
     "recommendation_ledger": "docs/research/recommendation_ledger.json",
     "gap_register": "docs/GAP_REGISTER.md",
+    # THE FOUR INSTRUMENTS BUILT 2026-08-05, and the reason they are priority reads rather than
+    # inventory lines: they are the only artifacts that state the desk's BINDING CONSTRAINTS as
+    # numbers. Without them the seat reasons about a desk that sounds healthy; with them it can
+    # see that capability sits at 5.78/10, that the maximum-power campaign covered 2.787 effective
+    # mechanism classes, that cross-mechanism N_eff is 4.08 against the ~100 a weak-edge portfolio
+    # needs, and that 78% of the desk's recorded negatives could not have detected anything. A
+    # recommendation made without those four numbers is a recommendation about a different desk.
+    "capability_ratchet": "data/CAPABILITY_RATCHET.json",
+    "mechanism_census": "data/mechanism_census.json",
+    "type2_cost": "data/type2_cost.json",
+    "cross_mechanism_corr": "data/cross_mechanism_corr.json",
 }
 
 #: Measured findings this desk owns that a public model has never seen. THE ACTUAL EDGE of the
