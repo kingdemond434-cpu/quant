@@ -297,6 +297,16 @@ _FENCE_OWNERS: dict[str, str] = {
     # calibration_mae_falling_months as ramp step-up conditions with no producer while the ramp sat
     # pinned at its floor), which is exactly the hand-is-not-a-mechanism gap L1.41 exists to close.
     "check_phantom_paths": "L1.40",
+    # --- SAME LENS, ONE TURN LATER (L1.40): check_phantom_paths catches a reader whose source was
+    # NEVER written; check_dormancy_disarm catches a reader whose source WENT EMPTY. Both take the
+    # empty branch and return a plausible healthy answer, but the second is harder to see because
+    # the file exists, parses, and carries a young mtime -- only the list inside is empty, so every
+    # staleness fence on this desk reads it as fresh. Live instance 2026-08-05: the carry book's
+    # structural-bleed denylist read `worst_symbols`, a 14-day rolling window over the book's own
+    # closes; the book paused on a drawdown, the window emptied, and the gate began allowing the
+    # two incident-#6 symbols its own comment calls "currently-blocked". A pause is CAUSED by
+    # losses, so the guard was guaranteed to be disarmed exactly when it was needed.
+    "check_dormancy_disarm": "L1.40",
     # --- conversion parity (L1.28b): the repair wire's two halves. check_conversion measures the
     # daily flow (arrival vs disposition, FLATLINE on silence); check_recommendation_rows (§42 X1,
     # built independently by the box the same day) applies per-row carry-over pressure so old
