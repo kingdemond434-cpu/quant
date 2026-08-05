@@ -1659,6 +1659,26 @@ def check_gate_optimality(defects) -> None:
     if tested < 30 or not hist:
         return
     pegged = [g for g, n in hist.items() if tested and (int(n) / tested) >= 0.98]
+    # THE ACCEPT SIDE, which this docstring promised and the code did not deliver. `hist` counts
+    # REJECTIONS, so a gate accepting ~100pct has count 0 and is not a key -- it could never be
+    # flagged by iterating `hist`, however degenerate it was. The declared roster comes from the
+    # source, so a gate that filtered nothing is visible for the first time (L1.49).
+    try:
+        from scripts.check_gate_reachability import declared_gates
+        accept_pegged = sorted(
+            g for g, kind in declared_gates(ROOT).items()
+            if kind == "unconditional" and (int(hist.get(g, 0)) / tested) <= 0.02
+        )
+    except (ImportError, OSError, ZeroDivisionError):
+        accept_pegged = []
+    if accept_pegged:
+        defects.append((
+            "gate-optimality-accept-side",
+            f"gate(s) rejecting <=2pct of {tested} candidates: {', '.join(accept_pegged)} -- "
+            "declared unconditionally and filtering nothing, so they carry zero information "
+            "about any individual candidate. A rejection histogram cannot see this: the gate is "
+            "absent from it precisely BECAUSE it never fired. Confirm each is still wired to a "
+            "real input rather than passing by construction."))
     if pegged:
         # Reconciliation rule 3: COMPUTE effective-vs-raw n_trials instead of only asking a human
         # to "audit" it. A raw tally that inflates far past the independent-mechanism count sets

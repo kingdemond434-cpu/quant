@@ -1349,3 +1349,44 @@ must carry a comment naming which of the three exemptions it claims, or it is a 
 
 **Binding on future work.** This applies to code not yet written. A reviewer, auditor or panel seat
 encountering a calendar gate in new work must raise it as a defect without waiting to be asked.
+
+**L1.49 A GATE THAT NEVER RAN IS A CLAIM THE DESK CANNOT CASH** *(2026-08-05, self-applying)*.
+Reachability is measured from the DECLARATION SITE, never from a tally, because a gate that never
+executed emits no row to tally. Every gate instrument on this desk reads a per-gate TALLY -- `rejection_by_gate`, or a list of
+evaluated `gate_results` rows. `max_audit.check_gate_optimality`, `validation.gate_discrimination`,
+`blocking_constant_gates` and `check_fence_yield` (L1.43) all share one flaw and none of them can
+see past it:
+
+> **A gate that never ran emits no row, so it is not a key in the tally, so no check that iterates
+> the tally can ever flag it. It is invisible BY CONSTRUCTION, not by oversight.**
+
+Measured 2026-08-05 across 434 candidates and 0 survivors: `execution_gap` and `regime_robustness`
+sit behind `if status is CandidateStatus.REGISTRY`, a precondition that has never once held, so
+neither has executed a single time; and all eight `GovernanceVerdict` fields are AND-ed into a
+required-True gate that nothing outside `tests/` can set. The desk believed it enforced live-cost
+stress, two-regime robustness and an eight-gate signal gauntlet. It enforced none of them.
+
+**The rule.** Reachability is measured from the DECLARATION SITE, not from the tally. Every
+declared gate must be shown either to have been exercised, or to be reported as one of:
+`DEAD-BRANCH` (its precondition has provably never held), `UNSATISFIABLE` (a required-True field
+with no production setter), or `ZERO-BIT` (declared unconditionally, evaluated, never once
+rejected). `scripts/check_gate_reachability.py` is the producer; `data/gate_reachability.json` is
+the artifact.
+
+**Absence from a rejection tally is AMBIGUOUS and may never be read as health.** It means either
+*never evaluated* or *evaluated and passed every time*. Both carry zero information; only one is a
+wiring defect, and separating them requires the declaration site. A rejection-only histogram
+therefore cannot audit the accept side at all -- which is why `check_gate_optimality` promised
+accept-side detection in its docstring for weeks while the code could not deliver it.
+
+**THE REPAIR IS UPWARD, NEVER DOWNWARD.** An unreachable gate is a claim the desk cannot cash, not
+a bar to lower. Repair it by making its precondition REACHABLE, or by recording out loud that it
+cannot run and why. Deleting the gate and calling the gauntlet smaller lowers a bar, which L1.6
+forbids absolutely; a smaller gauntlet that runs is not an improvement on a larger one that does
+not. This fence moves no threshold and grants no promotion authority.
+
+**UNMEASURED is a real answer.** Below a non-trivial sample the fence cannot distinguish "never
+ran" from "small sample" and must refuse to grade rather than manufacture a verdict (L1.28a).
+
+**Binding on future work.** Any new gate, verdict field or acceptance boolean must appear in the
+reachability roster on the day it is written. A gate nobody can fail is not a standard.

@@ -573,6 +573,90 @@
    "commit": null,
    "due": "2026-08-09",
    "disposed": "2026-08-05T02:30:31.969375+00:00"
+  },
+  {
+   "id": "R0048",
+   "source": "cycle",
+   "summary": "L1.49 dead branches: execution_gap + regime_robustness have never executed once in 434 candidates (both behind 'status is CandidateStatus.REGISTRY', never held). Repair UPWARD -- make REGISTRY reachable or record why it is not. NEVER by deleting the gates (lowers a bar, L1.6).",
+   "roi_bps": null,
+   "raised": "2026-08-05T02:45:14.626033+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0049",
+   "source": "cycle",
+   "summary": "All 8 GovernanceVerdict fields (libs/signal_engine/governance.py) are required-True, default False, and set True nowhere outside tests/. engine.py:148 only consults the verdict when governance_verdict is not None, which production never sets -- the 8-gate signal gauntlet is simultaneously unsatisfiable AND never enforced.",
+   "roi_bps": null,
+   "raised": "2026-08-05T02:45:14.942029+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0050",
+   "source": "cycle",
+   "summary": "Extend check_gate_reachability to the other 5 gate families (promotion ladder, alpha_governance_gate, alpha_acceptance, portfolio_acceptance, portfolio_governance_gate). ~9 of ~54 gates are audited today.",
+   "roi_bps": null,
+   "raised": "2026-08-05T02:45:15.399175+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0051",
+   "source": "cycle",
+   "summary": "Enforcement-matrix parser requires a single-line '**L1.x TITLE**' header, so any law whose bold header wraps is SILENTLY absent from the matrix. L1.46, L1.47 and L1.48 are all unregistered right now.",
+   "roi_bps": null,
+   "raised": "2026-08-05T02:45:15.853215+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0052",
+   "source": "cycle",
+   "summary": "libs/discovery/factory.py:256 aliases cpcv_pass=wf_pass -- CPCV is never computed and the gate is walk-forward wearing a second hat.",
+   "roi_bps": null,
+   "raised": "2026-08-05T02:45:16.229236+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0053",
+   "source": "cycle",
+   "summary": "GAP #88 branch fork: scripts/measure_gate_histogram.py, scripts/audit_gate_power.py and campaign_gate_stats exist on origin/master and not here, so certify_gauntlet.py and run_moat_campaign.py die at import and 2 daily cron jobs have never produced output.",
+   "roi_bps": null,
+   "raised": "2026-08-05T02:45:16.572409+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0054",
+   "source": "cycle",
+   "summary": "REFUSED this cycle (Proposal A core): regime-conditional edge estimator + retiring regime_robust(). The fence has never rejected a candidate (0 observations / 434), so retiring it changes nothing; falsifier undecided at n=4 forward observations; 7pct prior stands; 3 regime overlays already EV-rejected in research_agenda.json.",
+   "roi_bps": null,
+   "raised": "2026-08-05T02:45:16.921787+00:00",
+   "status": "rejected",
+   "reason": "Adjudicated on primary evidence and refused deliberately. regime_robust() has ZERO observations across 434 candidates (it sits behind 'status is CandidateStatus.REGISTRY', which has never held), so it has never rejected a candidate and retiring it would change nothing -- the evidence campaign Proposal A priced would buy a change in a gate that never fires. The falsifier it named as decisive is undecided: the forward window holds 4 usable observations (8-day-sampled equity), and its direction (+4.09pp FOR the gate) is opposite to what the proposal assumed. The 7pct p_survive prior stands and 3 regime overlays are already EV-rejected in research_agenda.json. The reachability arithmetic that replaced it was built and shipped instead (L1.49).",
+   "commit": null,
+   "due": null,
+   "disposed": "2026-08-05T02:45:33.054061+00:00"
   }
  ]
 }

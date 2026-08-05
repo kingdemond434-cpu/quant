@@ -184,6 +184,12 @@ _MAP: dict[str, list[str]] = {
     # wrong on 41.5% of individual closes. The fence differences the two models, measures the
     # PHASE coordinate the desk has never used, and refuses to call an undifferenced estimate OK.
     "L1.47": ["scripts/check_funding_capture.py", "libs/research/funding_clock.py"],
+    # L1.49: gate reachability. Every OTHER gate instrument reads a per-gate tally, so a gate that
+    # never ran emits no row and is invisible to all of them by construction. This one measures
+    # from the DECLARATION SITE: dead branches (precondition never held), unsatisfiable verdict
+    # fields (no production setter), and zero-bit gates (declared, evaluated, never rejected --
+    # the accept side a rejection histogram structurally cannot see).
+    "L1.49": ["scripts/check_gate_reachability.py"],
     # R0122 LLM discretionary sleeve: paper-only candidate generator whose calls are scored
     # forecasts. Governed by L1.6 (zero promotion authority) and L1.29 (it grades itself).
     "L1.6-llm": ["scripts/run_llm_trader.py"],

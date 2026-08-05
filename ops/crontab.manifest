@@ -1424,3 +1424,21 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 #   reporting 0 slots used / 12 free against the registry's 11 -- and caught a BOM in
 #   scripts/research_memory.py that had been hiding it from every AST tool on the desk)
 5 4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_cohort_integrity.lock .venv/bin/python scripts/check_cohort_integrity.py --report-only >> data/cro_ai_logs/cohort_integrity.log 2>&1
+
+# GATE REACHABILITY (L1.49). Every OTHER gate instrument on this desk reads a per-gate TALLY --
+# max_audit.check_gate_optimality, validation.gate_discrimination, blocking_constant_gates and
+# check_fence_yield (L1.43) all iterate rejection counts. A gate that never RAN emits no row, so
+# it is not a key, so none of them can flag it: invisible by construction, not by oversight. This
+# fence measures from the DECLARATION SITE instead (ast-parsed), which is the only way to see a
+# dead branch or an unsatisfiable verdict field.
+# Runs at 04:15, after check_cohort_integrity (04:05) and before the 05:34 gate-audit report, so
+# a dead branch is on disk before anything reads gate statistics. Pure stdlib, read-only sqlite,
+# no network: ast-parses three modules and reads two artifacts -- well under a second.
+# It is a DETECTOR, not a rail: it moves no threshold and grants no promotion authority (L1.6).
+# EVIDENCE: scripts/check_gate_reachability.py -> data/gate_reachability.json; CONSTITUTION L1.49
+# CONFIDENCE: committed-script (new this cycle; first run fired DEAD-BRANCH and found that
+#   execution_gap and regime_robustness have never executed once in 434 candidates -- both sit
+#   behind `status is CandidateStatus.REGISTRY`, which has never held -- plus all 8
+#   GovernanceVerdict fields unsatisfiable outside tests/, and economic_mechanism zero-bit at
+#   0/434 rejections, which a rejection-only histogram structurally cannot see)
+15 4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_gate_reachability.lock .venv/bin/python scripts/check_gate_reachability.py --report-only >> data/cro_ai_logs/gate_reachability.log 2>&1
