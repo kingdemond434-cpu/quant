@@ -482,6 +482,11 @@ def _boot_ts() -> float:
 
 _BOOT_TS = _boot_ts()
 _ORGAN_MIN_UP_H = 1.0                         # below this it is a one-shot CLI run, not an organ
+# /proc starttime is quantised to clock ticks (10ms) and rounds DOWN, and writing a file
+# immediately before exec'ing its interpreter is ordinary deploy ordering. Without a little slop
+# a perfectly fresh start races into a false "stale" verdict. 0.5s sits far below any real
+# deploy-then-restart gap, so nothing genuinely stale hides under it.
+_START_SLOP_S = 0.5
 
 
 def _proc_start(pid: int) -> float | None:
@@ -715,7 +720,7 @@ def check_stale_daemons(defects) -> None:
                                 "an illusion. Stop the unit, kill the orphan, start the unit, and "
                                 "verify MainPID matches the worker."))
         closure = _import_closure(entry)
-        stale = sorted(p for p in closure if p.stat().st_mtime > started)
+        stale = sorted(p for p in closure if p.stat().st_mtime > started + _START_SLOP_S)
         if not stale:
             continue
         names = ", ".join(p.relative_to(ROOT).as_posix() for p in stale[:4])

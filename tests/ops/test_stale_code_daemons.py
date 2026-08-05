@@ -74,7 +74,7 @@ def test_a_running_organ_outside_the_systemd_roster_is_discovered() -> None:
     probe = _probe(".organ_probe_discovery.py")
     proc = subprocess.Popen([sys.executable, str(probe)])
     try:
-        time.sleep(1.0)
+        time.sleep(1.2)
         organs = _M._live_organs()
         rel = probe.relative_to(_ROOT).as_posix()
         assert rel in organs, f"{rel} not discovered; got {sorted(organs)}"
@@ -93,7 +93,7 @@ def test_stale_code_actually_raises_a_defect(monkeypatch) -> None:
     probe = _probe(".organ_probe_stale.py")
     proc = subprocess.Popen([sys.executable, str(probe)])
     try:
-        time.sleep(1.0)
+        time.sleep(1.2)
         probe.touch()                          # the fix lands AFTER the process loaded the module
         monkeypatch.setattr(_M, "_ORGAN_MIN_UP_H", 0.0)   # no waiting an hour for the verdict
         defects: list[tuple] = []
@@ -112,7 +112,7 @@ def test_a_freshly_started_organ_is_not_stale(monkeypatch) -> None:
     probe = _probe(".organ_probe_fresh.py")
     proc = subprocess.Popen([sys.executable, str(probe)])
     try:
-        time.sleep(1.0)
+        time.sleep(1.2)
         monkeypatch.setattr(_M, "_ORGAN_MIN_UP_H", 0.0)
         defects: list[tuple] = []
         _M.check_stale_daemons(defects)
