@@ -858,19 +858,62 @@ def check_self_application(defects) -> None:
     if not (ROOT / "scripts/run_recorder_bybit.py").exists():
         defects.append(("bybit-recorder-gone", "second-venue (bybit) recorder script removed -- "
                         "cross-venue tape breadth lost"))
-    # CI GATE must be GREEN -- a red desk-wide gate is the safety net down for everyone and
-    # sat UNDETECTED for 81h (2026-07-22..23: a stale deadman test failed at HEAD while the
-    # brain cycle that runs run_ci was quota-dead, so nothing surfaced the red). run_ci writes
-    # data/.ci_last_run.json on every run; surface a red result mechanically so it enters the
-    # 48h escalation path instead of hiding until a human notices.
+
+#: Staleness bound for the CI marker. daily_research_cycle runs the gate once a day, so 48h is
+#: two consecutive missed cycles -- comfortably past "the box was busy", squarely at "it stopped".
+_CI_STALE_H = 48.0
+
+
+def check_ci_gate(defects) -> None:
+    """The desk-wide gate must be GREEN, and must be PROVABLY RUNNING.
+
+    Extracted from check_self_application (2026-08-05) so the fail-closed behaviour below can be
+    exercised directly by a test. A safety check whose only coverage is a source grep is a check
+    whose logic nobody has ever run.
+
+    CI GATE must be GREEN -- a red desk-wide gate is the safety net down for everyone and
+    sat UNDETECTED for 81h (2026-07-22..23: a stale deadman test failed at HEAD while the
+    brain cycle that runs run_ci was quota-dead, so nothing surfaced the red). run_ci writes
+    data/.ci_last_run.json on every run; surface a red result mechanically so it enters the
+    48h escalation path instead of hiding until a human notices.
+    """
+    # AND A STALE MARKER IS A DEFECT TOO -- fail-closed (2026-08-05). Reading `ok is False` alone
+    # catches a gate that RAN and failed, and is blind to the more dangerous case: a gate that
+    # stopped running. run_ci holds a flock for its whole run, so any step that wedges leaves the
+    # lock held; every later run then takes the "another run holds the lock -- skipping (marker
+    # left untouched)" path and returns 0 by design. The marker freezes at its last value, and a
+    # frozen marker is never False. The desk would report its safety gate green, with nothing
+    # behind it, for as long as the wedge lasted -- which is the same blindness as the 81h above,
+    # only quieter, because this version never produces a red anything to notice.
+    #
+    # The timestamp was already being written and already being read; only its AGE went unchecked.
+    # An unreadable, absent or unparseable marker is treated the same way as an old one: on a
+    # safety gate the honest reading of "unknown" is "not proven green", never "fine".
     ci_marker = ROOT / "data/.ci_last_run.json"
-    if ci_marker.exists():
-        with contextlib.suppress(OSError, json.JSONDecodeError):
+    if not ci_marker.exists():
+        defects.append(("ci-gate-unproven",
+                        "data/.ci_last_run.json absent -- the desk-wide gate has no recorded "
+                        "result at all. Unknown is NOT green. Run scripts/run_ci.py"))
+    else:
+        try:
             ci = json.loads(ci_marker.read_text("utf-8"))
             if ci.get("ok") is False:
                 defects.append(("ci-gate-red",
                                 f"last CI run ({ci.get('ts')}) was RED -> {ci.get('failed')}; "
                                 "the desk-wide safety gate is down. Run scripts/run_ci.py + fix"))
+            # NOW is epoch seconds (time.time()), not a datetime -- compare in epoch space.
+            age_h = (NOW - datetime.fromisoformat(str(ci.get("ts"))).timestamp()) / 3600.0
+            if age_h > _CI_STALE_H:
+                defects.append(("ci-gate-stale",
+                                f"last CI run was {age_h:.0f}h ago (>{_CI_STALE_H:.0f}h) -- the "
+                                "gate has STOPPED RUNNING, which a green marker cannot show. "
+                                "Usual cause: a wedged run_ci still holding data/.ci_run.lock, "
+                                "so every later run exits 0 'skipping'. Check for a stuck "
+                                "process, then run scripts/run_ci.py"))
+        except (OSError, json.JSONDecodeError, TypeError, ValueError):
+            defects.append(("ci-gate-unproven",
+                            "data/.ci_last_run.json unreadable or has no parseable timestamp -- "
+                            "cannot prove the desk-wide gate ran. Unknown is NOT green."))
 
 
 def check_dig_depth(defects) -> None:
@@ -4689,6 +4732,12 @@ CHECKS = [("carryover-skipped", check_carryover_skipped),
                       ("directives", check_directives), ("verify", check_verify_lag),
                       ("blind", check_blind_trigger),
                       ("self-application", check_self_application),
+                      # First-class rather than a line inside self-application (2026-08-05): the
+                      # desk-wide gate being green AND provably still running deserves its own
+                      # named entry, not a sentence buried among thirty organ probes. Registered
+                      # here and removed from check_self_application's body -- one caller, so it
+                      # reports once.
+                      ("ci-gate", check_ci_gate),
                       ("dig-depth", check_dig_depth),
                       ("interrogation", check_interrogation),
                       ("generation", check_generation),

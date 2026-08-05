@@ -585,6 +585,29 @@ QUANT_ROOT=/home/quant/quant-platform
 27 4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_data_registry.lock .venv/bin/python scripts/build_data_registry.py --deep >> data/cro_ai_logs/data_registry.log 2>&1
 52 4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_labels.lock .venv/bin/python scripts/build_labels.py >> data/cro_ai_logs/label_factory.log 2>&1
 
+# KNOWLEDGE ENGINE (2026-08-05). The one consumer of the registry's SPAN column that nothing ever
+# ran: scripts/knowledge_engine.py:47 names data/data_assets.json and annotates itself "--deep,
+# daily cron", but the script had ZERO scheduler references -- the registry has been measuring a
+# map since 2026-07-30 with no organ reading it on any cadence. That is the wiring class the desk
+# already has a fence for (scripts/wiring_audit.py), on the artifact this pass just widened.
+# WHY IT MATTERS NOW: the registry stopped reporting elapsed span as if it were evidence. It now
+# carries observed_days, the gap runs between them and evidence_years, and this is the organ that
+# turns those into "has this effectively already been tested?" before compute is spent -- which is
+# the same question t = SR*sqrt(years) answers from the other end. First measurement to hand:
+# data/exchange_announcements.jsonl reads 6.45 elapsed YEARS over 38 observed days (33 gaps,
+# largest 616d), and binance_vision_1d's 25-symbol union spans 2069d while only 1096d is covered
+# by all 25 -- both numbers an organ would otherwise have sized a study on.
+# 05:14 is after the 04:27 registry --deep and the 04:52 label factory, so it reads THIS morning's
+# map rather than yesterday's, and it is clear of the 05:05/05:10/05:22 slots either side.
+# CEILING TYPE (L1.28c) is INPUT-ARRIVAL and daily is AT it: every artifact it reads (graveyard,
+# experiment registry, mechanism board, alpha lifecycle, the registry itself) advances at most
+# once a day, so a second run would re-derive the same retrieval over the same corpus.
+# Read-only apart from its own artifact: no keys, no network, no LLM (scripts/knowledge_engine.py:30).
+# EVIDENCE: scripts/knowledge_engine.py -> data/knowledge_engine.json; first run on this checkout
+# exited 0 and reported 4 graveyard entries with revival triggers, 2 of them PERMANENT.
+# CONFIDENCE: committed-script (new this cycle -- cadence chosen here, not observed on the box)
+14 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_knowledge_engine.lock .venv/bin/python scripts/knowledge_engine.py >> data/cro_ai_logs/knowledge_engine.log 2>&1
+
 # FUSION SEARCH (RANK 5): combinatorial dataset search, GATED so it cannot mine noise. Cheap by
 # design -- it plans, and today it correctly REFUSES because no axis has earned breadth. Daily is
 # ample: the eligible set only changes when a single-axis screen returns SCREEN-INTERESTING.
@@ -1734,3 +1757,86 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # 3.78% vs risk-free 3.73%/yr, so net of the 300bps haircut the lending rung loses; breakeven
 # haircut is 5.5bps, so that underived constant decides the verdict single-handed)
 27 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_idlecost.lock .venv/bin/python scripts/check_idle_cost.py --report-only >> data/cro_ai_logs/idle_cost.log 2>&1
+# PROMPT RATCHET (2026-08-05). Prompts are the desk's highest-leverage artifacts -- 30 governed
+# files (11 miner/dig prompts, 13 panel missions, the doctrine, the CRO constitution, the two
+# inline scheduled-Routine prompts) that every organ pays on every call -- and they were the one
+# high-leverage surface with NO non-regression control. max_audit actively pushes for them to be
+# cut down (`prompt-doctrine-bloat`: "cut the exhortation, keep every obligation"), and nothing
+# checked the second half of that sentence: a concision rewrite that silently drops the
+# never-loosen-a-gate rule, the responses-are-DATA rule or the let-the-gauntlet-reject rule reads
+# as an improvement and is a pure opportunity-cost regression. This compares each prompt against
+# docs/research/PROMPT_RATCHET.json -- the high-water mark of which RULES it asserts, matched on
+# the rule rather than one prose form, so a sharper rewrite passes and a silent deletion fails
+# with the words that used to carry it. A gained rule raises the mark automatically and commits
+# nothing else; retiring one needs a dated, signed entry in PROMPT_RATCHET_WAIVERS.json.
+# 22:12 is ~1.5h after the 20:45 CRO cycle -- the last prompt-touching organ of the UTC day, and
+# the monthly prompt self-improvement review runs inside it -- so a rule dropped today is red
+# today rather than at the next hand-run. Clear of the :20 hourly pair and of 22:40.
+# CEILING TYPE (L1.28c) is INPUT-ARRIVAL: the corpus changes only when an organ or a human edits
+# a prompt, which is a per-cycle event, so daily is AT the ceiling rather than under it.
+# Repo-only, read-only apart from its own record: no keys, no network, no LLM, seconds to run.
+# EVIDENCE: scripts/check_prompt_ratchet.py -> docs/research/PROMPT_RATCHET.json (+ --json to
+# data/prompt_ratchet_report.json); first run on this checkout recorded 331 invariant assertions
+# across 30 prompts and 29 defined invariants, and a deletion test on frontier_en_prompt.txt
+# exited 1 naming `gauntlet-only-rejects` and quoting the sentence it lost.
+# CONFIDENCE: committed-script (new this cycle -- cadence chosen here, not observed on the box)
+12 22 * * * cd "$QUANT_ROOT" && flock -n data/.cron_prompt_ratchet.lock .venv/bin/python scripts/check_prompt_ratchet.py --json >> data/cro_ai_logs/prompt_ratchet.log 2>&1
+
+# MOAT UTILISATION (2026-08-05). The desk records ~10 GB of L2 depth across ~28,361 hourly
+# partitions on the VPS -- the ONE asset here that cannot be bought, re-fetched or replicated,
+# because it accrues only in calendar time -- and nothing measured how much of it has ever been
+# READ. moat_audit scores book QUALITY; mine_moat/screen_moat track their OWN coverage grids
+# (denominated in the cells those organs chose to enumerate); data_registry scores span and moat.
+# None of them answers the question that decides whether the recorders are an asset or a cost
+# centre: what fraction of the recorded bytes, symbol-hours, symbols and depth LEVELS reached a
+# screen. An asset you record and do not read is a cost centre wearing an asset's name.
+# WHAT THE FIRST RUN ALREADY MEASURED IN THIS CHECKOUT, with no tape present: bybit requests 25
+# book levels while the deepest consumer on the desk reads 20, so five levels have been paid for
+# in request weight, disk and supervision and have never entered a statistic; and 10 names the
+# daily cross-section screens (ATOM, AAVE, LDO, MKR, INJ, TIA, XLM, ETC, ZEC, XTZ) appear in NO
+# recorder universe -- a hole that widens every hour and can never be backfilled at any price.
+# 05:56 is after every organ that reads the tape or its artifacts (03:55 moat backup, 04:10 moat
+# campaign, 04:27 registry --deep, 05:14 knowledge engine, 05:30 micro_factory), so it reads THIS
+# morning's consumption records rather than yesterday's; it is clear of the hourly :35/:40/:43/:50
+# lines and of every */3 and */5 tick.
+# CEILING TYPE (L1.28c) is INPUT-ARRIVAL and daily is AT it: the consumption artifacts it reads
+# advance at most once per organ per day, and the tape's own growth is a monotone daily fact.
+# Read-only, stdlib, no network, no keys, no tape parsing of its own (partition inventory is
+# filesystem metadata; every content question goes through the existing audited readers).
+# ON A BOX WITHOUT THE TAPE it exits 0 with status NOT-READABLE-HERE and the exact missing paths
+# named -- never 0%, never simulated. "0% utilised" is a measurement and it is damning; "cannot
+# measure utilisation here" is the absence of one, and the artifact keeps them apart by design.
+# EVIDENCE: scripts/run_moat_utilisation.py -> data/moat_utilisation.json; first run on this
+# checkout reported NOT-READABLE-HERE with 4 missing paths, 10 screened-but-unrecorded names, 5
+# unread bybit depth levels and 14 scripts that open the tape and record nothing they read.
+# CONFIDENCE: committed-script (new this cycle -- cadence chosen here, not observed on the box)
+56 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_moat_util.lock .venv/bin/python scripts/run_moat_utilisation.py >> data/cro_ai_logs/moat_utilisation.log 2>&1
+
+# ---------------------------------------------------------------------------------------------
+# THREE STAGE-A SCREENS THAT WERE BUILT AND THEN NOT RUN (2026-08-05).
+#
+# Each of these shipped with an "INTENDED CADENCE (NOT wired here -- the manifest is owned by
+# another pass)" comment in its own header. Every one of those comments was correct about the
+# ownership and wrong about the outcome: the request was written, the wave ended, and nobody
+# converted it. check_unwired_modules found all three at once -- each the SOLE importer of a
+# library module, so the module was unreachable and the orphan check stayed green anyway.
+#
+# That is the conversion defect in its purest form. The research was done, the pre-registration
+# was sealed, the code passed its gates, and the desk received EXACTLY NOTHING, because the last
+# link was left as a note. A screen that is never scheduled is indistinguishable from a screen
+# that was never written, except that it cost more. The cadences below are the ones each script
+# asked for, in its own header, verbatim -- there is no new judgement here, only the conversion.
+#
+# CEILING TYPE (L1.28c) is INPUT-ARRIVAL for all three and each is AT it: the diffusion screen
+# advances only as announcements land (daily collector), and both weekly screens read inputs that
+# move on a venue's or a project's announcement, not on a market clock.
+# ---------------------------------------------------------------------------------------------
+# EVIDENCE: scripts/screen_announcement_diffusion.py -> data/announcement_diffusion_screen.json
+# CONFIDENCE: committed-script (cadence taken from the script's own header request)
+40 6 * * * cd "$QUANT_ROOT" && flock -n data/.cron_anndiff.lock nice -n 19 .venv/bin/python scripts/screen_announcement_diffusion.py >> data/cro_ai_logs/announcement_diffusion.log 2>&1
+# EVIDENCE: scripts/screen_unlock_supply_series.py -> data/unlock_supply_series_screen.json
+# CONFIDENCE: committed-script (cadence taken from the script's own header request)
+25 6 * * 1 cd "$QUANT_ROOT" && flock -n data/.cron_unlockseries.lock nice -n 19 .venv/bin/python scripts/screen_unlock_supply_series.py >> data/cro_ai_logs/unlock_supply_series.log 2>&1
+# EVIDENCE: scripts/screen_venue_subsidy.py -> data/venue_subsidy_screen.json
+# CONFIDENCE: committed-script (cadence taken from the script's own header request)
+53 6 * * 1 cd "$QUANT_ROOT" && flock -n data/.cron_venuesub.lock nice -n 19 .venv/bin/python scripts/screen_venue_subsidy.py --probe-venues >> data/cro_ai_logs/venue_subsidy.log 2>&1

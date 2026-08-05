@@ -170,7 +170,16 @@ _MAP: dict[str, list[str]] = {
     # L1.44: consumption-time freshness -- every decision-path read declares its max tolerated
     # age at the read site; the fence fails on STALE-CONSUMED (a live decision steered by a
     # frozen input) and on UNWIRED (a bootstrap contract deleted from the executor/alerts).
-    "L1.44": ["scripts/check_freshness.py", "libs/ops/fresh.py"],
+    # L1.44's own class, found four more times on 2026-08-05 and all in the same direction: a
+    # state artifact whose AGE nobody checked, where staleness therefore read as health. The CI
+    # marker (a wedged run_ci holds the lock, every later run exits 0 "skipping", the marker
+    # freezes at ok=true and max_audit only ever raised on ok=false); the alert canary (a canary
+    # that dies after a clean run leaves no silence flag, so the pager scored 10/10 for ever);
+    # and source_health (a lane probed once successfully and never again read HEALTHY, so the
+    # alternatives hunter never hunted it). Every one is a producer-side "did it run?" question
+    # that no CONSUMER was asking -- which is precisely what this law was written for.
+    "L1.44": ["scripts/check_freshness.py", "libs/ops/fresh.py", "check_ci_gate",
+              "libs/research/source_health.py:stale_verdict"],
     # L1.45: execution excitation. Every other fence walks NODES and EDGES; this one looks for a
     # CYCLE (traded -> recorded -> measured -> cheap -> traded) and for exclusions with no path
     # back. It also owns the producer for the three ramp_gate step-up conditions that had none.
