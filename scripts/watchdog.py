@@ -32,6 +32,8 @@ _CC_HB = _ROOT / "data" / "cashcarry_exec_heartbeat"
 _LIQ_HB = _ROOT / "data" / "liquidation_heartbeat"
 _TUN_HB = _ROOT / "data" / "tunnel_heartbeat"
 _DM_HB = _ROOT / "data" / "deadman_heartbeat"
+_WD_LOG = _ROOT / "data" / "watchdog.log"
+_WD_LOG_CAP = 8_000_000                      # bytes; nothing else rotates this file
 _DETACHED = 0x00000008 | 0x08000000          # DETACHED_PROCESS | CREATE_NO_WINDOW
 
 
@@ -98,6 +100,69 @@ def _spawn(args: list[str], label: str) -> None:
                      stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
                      stderr=subprocess.DEVNULL, **_kw)
     print(f"watchdog: (re)started {label}")
+
+
+def _run_logged(args: list[str], label: str, timeout: float, *, keep_stdout: bool = False) -> None:
+    """Run a per-tick helper and KEEP the evidence of how it went.
+
+    Every one of these calls used to be a bare `subprocess.run(..., capture_output=True)` whose
+    result was discarded, which cost the desk twice over:
+
+      1. THE OUTPUT WAS THE ONLY WITNESS. `run_alerts.py` catches a failed push and *prints*
+         "pager push failed: ..." -- it does not raise and it still exits 0. Capturing that into a
+         variable nobody read is precisely how the pager can die silently, which it has done twice
+         (quota exhaustion 07-11 -> 07-16, latin-1 header encode 07-19 across a live dead-man
+         fire). A discarded stdout is not monitoring, it is a muted alarm.
+      2. A TIMEOUT KILLED THE WHOLE TICK. `subprocess.run(timeout=...)` RAISES TimeoutExpired, and
+         nothing caught it. One slow leverage-opt therefore aborted main() before the pager, the
+         CRO daily cycle and the netlify publish ever ran -- the first helper in the list could
+         silently disarm every helper after it. Each is now independently fenced.
+
+    Noise discipline, because a log nobody reads is the same failure one layer along: a clean run
+    logs NOTHING unless `keep_stdout` asks for it. Only failures (nonzero exit, timeout, spawn
+    error, anything on stderr) are unconditional.
+    """
+    try:
+        r = subprocess.run([str(_PY), *args], cwd=str(_ROOT), timeout=timeout,
+                           capture_output=True, text=True, check=False)
+        rc, out, err = r.returncode, (r.stdout or "").strip(), (r.stderr or "").strip()
+    except subprocess.TimeoutExpired as e:
+        # e.stdout/.stderr are bytes-or-None here, unlike the text=True success path.
+        def _dec(v: object) -> str:
+            return v.decode("utf-8", "replace").strip() if isinstance(v, bytes) else str(v or "")
+        rc, out, err = None, _dec(e.stdout), f"TIMEOUT after {timeout:.0f}s: {_dec(e.stderr)}"
+    except (OSError, subprocess.SubprocessError) as e:
+        rc, out, err = None, "", f"{type(e).__name__}: {e}"
+    failed = rc != 0 or bool(err)
+    if not failed and not (keep_stdout and out):
+        return
+    stamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    head = f"{stamp} watchdog/{label} rc={'timeout' if rc is None else rc}"
+    lines = [f"{head}: {ln}" for ln in (out.splitlines() + err.splitlines())[:20]] or [head]
+    _append_log(lines)
+    if failed:
+        print(f"watchdog: {label} FAILED (rc={rc}) -- see data/watchdog.log")
+
+
+def _append_log(lines: list[str]) -> None:
+    """Append to data/watchdog.log, self-capping so a chatty helper can never fill the disk.
+
+    The file is also cron's stdout target for this script, so both writers land in one place --
+    both open O_APPEND, and single-line writes of this size do not interleave.
+    """
+    try:
+        _WD_LOG.parent.mkdir(parents=True, exist_ok=True)
+        if _WD_LOG.exists() and _WD_LOG.stat().st_size > _WD_LOG_CAP:
+            # Trim by BYTES, not by line count: one helper emitting a single enormous traceback
+            # would sail past any "keep the last N lines" rule and the cap would never bind.
+            with _WD_LOG.open("rb") as fh:
+                fh.seek(-(_WD_LOG_CAP // 2), 2)
+                tail = fh.read()
+            _WD_LOG.write_bytes(tail.split(b"\n", 1)[-1])   # drop the partial leading line
+        with _WD_LOG.open("a", encoding="utf-8") as fh:
+            fh.write("\n".join(lines) + "\n")
+    except OSError:
+        pass                                  # logging must never break the tick it is logging
 
 
 def _reap_deadman() -> None:
@@ -205,19 +270,16 @@ def main() -> None:
         acted.append("tunnel")
     # recompute dynamic leverage (cheap) so executor + dashboard use fresh growth-optimal sizing,
     # then refresh the molded headline feed (reads JSON + one futures call).
-    py = str(_PY)
-    subprocess.run([py, "scripts/run_leverage_opt.py"], cwd=str(_ROOT), timeout=60,
-                   capture_output=True, check=False)
-    subprocess.run([py, "scripts/run_live_combined.py"], cwd=str(_ROOT), timeout=60,
-                   capture_output=True, check=False)
+    _run_logged(["scripts/run_leverage_opt.py"], "leverage-opt", 60)
+    _run_logged(["scripts/run_live_combined.py"], "live-combined", 60)
     # data-pipeline health check: refresh web/health.json each watchdog tick so the dashboard
     # surfaces archive staleness and executor liveness without a separate scheduled task.
-    subprocess.run([py, "scripts/data_health.py"], cwd=str(_ROOT), timeout=30,
-                   capture_output=True, check=False)
+    _run_logged(["scripts/data_health.py"], "data-health", 30)
     # PAGER: push CRITICAL alerts (dead heartbeat / stuck kill / root-cause / growth defect) to the
     # principal's phone via ntfy -- deduped 6h, never noisy, never blocks the tick.
-    subprocess.run([py, "scripts/run_alerts.py"], cwd=str(_ROOT), timeout=30,
-                   capture_output=True, check=False)
+    # keep_stdout: this one's stdout is the delivery record ("N page(s) sent", "pager push
+    # failed: ...") and it is the only place a push failure is ever stated -- see _run_logged.
+    _run_logged(["scripts/run_alerts.py"], "alerts", 30, keep_stdout=True)
     # DAILY CRO research cycle: once per 24h, spawned DETACHED (heavy -- must not block the tick).
     # Inherits the watchdog's S4U schedule, so it runs whether logged on or not. No separate task.
     cro_marker = _ROOT / "data" / ".last_cro_cycle"
@@ -228,9 +290,7 @@ def main() -> None:
     # permanent Netlify link: THROTTLED to every 30 min (free tier meters deploys -> don't burn it).
     netlify_marker = _ROOT / "data" / ".last_netlify_publish"
     if (_ROOT / "data" / "secrets" / "netlify.json").exists() and not _fresh(netlify_marker, 1800):
-        subprocess.run([str(_PY),
-                        "scripts/publish_netlify.py"], cwd=str(_ROOT), timeout=120,
-                       capture_output=True, check=False)
+        _run_logged(["scripts/publish_netlify.py"], "netlify", 120)
         netlify_marker.write_text(str(time.time()), "utf-8")
         acted.append("netlify")
     print("watchdog: " + (", ".join(acted) + " started" if acted else "all healthy"))
