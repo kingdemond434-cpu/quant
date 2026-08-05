@@ -46,6 +46,7 @@ from libs.research.moat_microstructure import (  # noqa: E402
     read_partition,
     resample,
 )
+from libs.validation.campaign_design import preflight  # noqa: E402
 from libs.validation.dsr import sharpe_ratio  # noqa: E402
 from libs.validation.economic_prior import MechanismType  # noqa: E402
 
@@ -139,6 +140,19 @@ def main() -> int:
     sh = np.array([sharpe_ratio(m[:, i]) for i in range(m.shape[1])])
     ppy = 365.0 * 24.0 * 3600_000.0 / args.bar_ms      # bars per year at this cadence
 
+    # RESOLVING POWER, PRICED BEFORE THE VERDICTS ARE READ (L1.25 branch 1: "is the INSTRUMENT
+    # broken?"). N here is m.shape[1] -- an accident of how many candidates generation happened to
+    # emit, never a design decision -- and nothing used to compute what that N did to the
+    # campaign's ability to see anything. The desk's 420-tested/0-survivors record was read for
+    # weeks as a fact about the market when it was substantially a fact about this: at T=310,
+    # N=420 the DSR hurdle is an annualised Sharpe of 5.04 and power against a TRUE Sharpe of 3 is
+    # 2.98%. LABEL ONLY, NEVER A GATE -- an UNDERPOWERED campaign still runs and still reports, in
+    # full (L1.25a: null streaks throttle nothing; L1.28b(f): acquisition is never cut). What
+    # changes is that a zero-survivor result now arrives with the reader's first question already
+    # answered: could this campaign have SEEN a survivor at all?
+    design = preflight(m.shape[1], m.shape[0], ppy=ppy)
+    print(f"design: {design.verdict} -- {design.note}", flush=True)
+
     rows: list[dict[str, Any]] = []
     for i, nm in enumerate(names):
         v = validate(m[:, i], hypothesis=_HYP, n_trials=m.shape[1], sharpe_estimates=sh,
@@ -160,6 +174,7 @@ def main() -> int:
                        "column that decides whether this was worth doing is oos_sharpe: the "
                        "2026-08-01 daily-bar campaign topped out at 0.100 across 129 textbook "
                        "mechanisms."),
+           "design": design.as_dict(),
            "rows": rows}
     _OUT.write_text(json.dumps(report, indent=2), "utf-8")
 
