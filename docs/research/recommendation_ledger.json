@@ -494,11 +494,11 @@
    "summary": "ADJACENCY SWEEP: migrate the 19 remaining welded validation paths (run_cashcarry_backtest, run_trend_gauntlet, run_xsec_funding, run_funding_8h, run_carry_harvest, run_crossasset_shadow/robust, run_onchain_history_backtest, run_crossexchange_backtest, run_kama_squeeze_backtest, run_options_vrp_backtest, run_prediction_markets, run_discovery, run_crypto_portfolio, run_derivative_backtest, run_xsec_funding_max, run_mt5_portfolio/crossasset/funding_bridge) from campaign_pbo_rc() to campaign_gate_stats()+column=. ACCEPTANCE TEST, mandatory per file: assert the column index maps to that file's own matrix column_stack order -- a mis-mapped index gives one candidate ANOTHER's passing verdict, worse than the weld. Standing detector already live: max_audit.check_welded_gates (19 -> 0 is the metric).",
    "roi_bps": null,
    "raised": "2026-07-30T02:31:04.491810+00:00",
-   "status": "dead",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] DUPLICATE of R0044: Identical ask to R0044 (migrate the welded campaign_pbo_rc paths to campaign_gate_stats+column with the per-file column-index acceptance test); R0044 is the later row carrying the measured evidence and EV ordering. The sweep is meanwhile 17/19 done: running the max_audit check_welded_gates detector logic (max_audit.py:1572-1620) against the tree flags only scripts/run_discovery.py and scripts/run_options_vrp_backtest.py, matching the live welded-gate-campaign-constant defect in data/PRINCIPAL_ACTION.md. Remaining work is triaged under R0044.",
+   "status": "rejected",
+   "reason": "[disposition sweep 2026-08-05, verified against the tree] DUPLICATE, superseder verified present and TERMINAL. R0044 ('migrate the remaining 18 welded pbo/rc validation paths to campaign_gate_stats + validate(campaign_...)') carries the identical ask and now reads status=implemented in this same file, so this row can only ever re-litigate a decision already recorded elsewhere. Declined on the merits of the ledger's own one-row-per-recommendation law: the work is tracked, and tracking it twice makes the backlog lie about its own size. Status moved from the non-vocabulary 'dead' to 'rejected' -- the verdict scripts/recommendations.py:271 actually sanctions -- with the original triage reason preserved verbatim below. ORIGINAL REASON (triage 2026-08-04 wf_8e81833d-78a): DUPLICATE of R0044: Identical ask to R0044 (migrate the welded campaign_pbo_rc paths to campaign_gate_stats+column with the per-file column-index acceptance test).",
    "commit": null,
    "due": "2026-08-02",
-   "disposed": "2026-07-30T02:31:12.375156+00:00"
+   "disposed": "2026-08-05T13:34:54.855331+00:00"
   },
   {
    "id": "R0041",
@@ -590,11 +590,11 @@
    "summary": "NO GUARD AGAINST A SECOND BRAIN IN THE SAME WORKING TREE. On 2026-07-30 this cycle and branch claude/wonderful-darwin-7uiobi wrote /home/quant/quant-platform concurrently; master moved from e77b4b8 to be6b3d5 mid-cycle and scripts/run_crypto_portfolio.py was rewritten at 12:15 while the cycle reasoned about it (two greps of one pattern disagreed minutes apart). rollback_guard checkpoints against a HEAD that can move, the INDEPENDENCE GATE cannot see the other agent's edits, and max_audit has no check for it. FIX: a cycle-start advisory lock (pid+branch+HEAD in data/, stale-cleared) that REFUSES to start a second brain, plus a HEAD-moved-under-me assertion before commit.",
    "roi_bps": 2.0,
    "raised": "2026-07-30T12:22:52.941003+00:00",
-   "status": "dead",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] DUPLICATE of R0174: The same ask was re-rowed with a fresher incident: R0174 (status scheduled/open) 'Session edit-mutex for the shared working tree: two live Claude sessions editing one checkout raced today (uncommitted R0060 edits swept by the sibling's merge prep)' covers R0048's advisory-lock/HEAD-moved guard. No lock exists yet in the tree (no cycle-lock/flock in cadence or brain scripts; rollback_guard has no HEAD-moved assertion), and R0047's adjacent CI-lock fix is ledgered implemented; the concurrency answer is being exercised de facto as branch-per-session (merge 9d456b7's 60-conflict semantic union). Consolidate under R0174.",
+   "status": "rejected",
+   "reason": "[disposition sweep 2026-08-05, verified against the tree] DUPLICATE, superseder verified present in this file. R0174 ('session edit-mutex for the shared working tree') carries the same ask on a fresher incident and has itself reached a terminal verdict (status=rejected). Declined on the merits: a second row for one mechanism inflates the backlog without adding a decision. Vocabulary migrated 'dead' -> 'rejected' (the only decline verb the CLI can write, scripts/recommendations.py:271); original triage reason preserved. ORIGINAL REASON (triage 2026-08-04 wf_8e81833d-78a): DUPLICATE of R0174: The same ask was re-rowed with a fresher incident -- R0174 'Session edit-mutex for the shared working tree: two live Claude sessions editing one checkout'. NOTE the concern itself is live and unclosed: R0355 and R0368 both re-measure it from the ledger-write side on 2026-08-05.",
    "commit": null,
    "due": "2026-08-02",
-   "disposed": "2026-07-30T12:23:04.673245+00:00"
+   "disposed": "2026-08-05T13:34:54.855331+00:00"
   },
   {
    "id": "R0049",
@@ -1186,11 +1186,11 @@
    "summary": "Per-venue exposure cap: one config number (MAX_VENUE_FRACTION) enforced in _alloc, live-tunable, inert at one venue, cheap now vs expensive retrofit the day venue #2 exists (panel MOVE 2, gap #54)",
    "roi_bps": 15.0,
    "raised": "2026-07-31T07:21:10.420879+00:00",
-   "status": "scheduled",
-   "reason": "Library, config number and tests are real, but THE BRANCH IS UNREACHABLE IN PRODUCTION: the sole executor call at run_cashcarry_executor.py:974 omits venue_equity, so the guard at risk_controls.py:318 short-circuits and only the test suite ever enters it; the other production callers (max_audit.py:5013, run_stress.py:66, record_capital_event.py:99, check_gate0_ready.py:211) are equally bare, and repo-wide grep finds venue_equity passed only in tests/risk/test_venue_cap.py. The row's own triage claim that per-venue equity is already produced is WRONG -- web/venue_equity.json (run_live_combined.py:310-321) is a SINGLE SCALAR dead-man value, not a per-exchange map. Work is therefore larger than a one-argument wire: emit a per-venue map and pass it. Low urgency and inert at VENUE_CAP=1.0 on a single-venue desk -- which is exactly the row's cheap-now argument.",
-   "commit": null,
+   "status": "implemented",
+   "reason": "[disposition sweep 2026-08-05, verified against the tree] VERIFIED BY READING THE EXECUTOR: the row's own named blocker -- 'emit a per-venue map and pass it' -- is delivered, so the branch is now REACHED in production rather than only in the suite. run_cashcarry_executor.py:883 binds _VENUE_FEED=web/venue_equity.json; :894-905 _venue_equity() returns a map that is NEVER None and NEVER empty, because both short-circuit risk_controls.evaluate's breach branch and would read exactly like 'no venue is over the cap' -- a dead feed instead degrades CONCENTRATED (every visible dollar attributed to the single venue), so at any cap below 1.0 an unreadable artifact PAUSES OPENS rather than waving them through; :1136-1138 passes venue_equity=venue_eq on the live tick, and :1141-1145 appends the UNMEASURED note into risk.reasons so a dead feed surfaces in web/cashcarry_live.json instead of degrading in silence. Enforcement half re-read: risk_controls.py:70 VENUE_CAP=1.0, :276 the venue_cap parameter, :340 the clamp, :346 the per-venue 'no new opens' reason. Tests at tests/risk/test_venue_cap.py. Commits f632226 (feed) then 3bd2dd6 (tests + remainder). SCOPE, stated so this is not read as more than it is: the cap is inert in EFFECT at VENUE_CAP=1.0 on a single-venue desk -- which is the row's own cheap-now argument, not an unmet condition -- and it pauses opens rather than flattening, by design.",
+   "commit": "3bd2dd6",
    "due": "2026-08-19",
-   "disposed": "2026-08-05T09:04:58.327770+00:00"
+   "disposed": "2026-08-05T13:34:54.855331+00:00"
   },
   {
    "id": "R0097",
@@ -1198,11 +1198,11 @@
    "summary": "Frankenstein synthesizer before/after check: compare gen_diversity metrics pre/post wiring commit 8da8acd; if flat across 28 cycles, retire it as complexity without evidence (panel rider, L2.9 exit)",
    "roi_bps": 5.0,
    "raised": "2026-07-31T07:21:10.492266+00:00",
-   "status": "dead",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] DUPLICATE of R0151: Identical ask tracked twice: R0151 (status scheduled, due 2026-08-05) reads 'Verify gen_diversity metrics before/after wiring commit 8da8acd; if flat, RETIRE it (L2.9 exit) -- complexity without evidence', which is R0097 verbatim with richer context (~30 logged cycles, output routes to a write-only inbox, tier1 panel rider + meta-blindspots agreement). Neither has run yet: data/gen_diversity.json (generated 07-31) shows n=0 / UNDER-SAMPLED, and data/panel_scorecard.json carries only the gen_diversity stamp. The synthesizer is the panel 'synthesize' mission (decision_ledger.json:458, run_external_panel.py rotation). Work it once, under R0151.",
+   "status": "rejected",
+   "reason": "[disposition sweep 2026-08-05, verified against the tree] DUPLICATE, superseder verified present and still tracked. R0151 (status=scheduled) states the identical ask -- verify gen_diversity before/after the synthesizer wiring commit 8da8acd and retire it if flat. Declined so the decision lives in exactly one place; R0151 keeps the clock. Vocabulary migrated 'dead' -> 'rejected'; original triage reason preserved. ORIGINAL REASON (triage 2026-08-04 wf_8e81833d-78a): DUPLICATE of R0151: Identical ask tracked twice -- R0151 (status scheduled, due 2026-08-05) reads 'Verify gen_diversity metrics before/after wiring commit 8da8acd'.",
    "commit": null,
    "due": "2026-08-04",
-   "disposed": "2026-07-31T07:29:03.533038+00:00"
+   "disposed": "2026-08-05T13:34:54.855331+00:00"
   },
   {
    "id": "R0098",
@@ -1330,11 +1330,11 @@
    "summary": "EVENT-DRIVEN STRATEGIC DIRECTOR (max-frequency mechanism beyond the 4x/day info-matched grid): fire the GPT-9 director immediately on state-changing events -- deep-sweep synthesis landing, gate-topology ruling, rail/ruin event, first live fills, capital event -- via a small event-watcher that invokes run_strategic_director.py with the triggering artifact named. Fixed grids re-read unchanged state; events ARE the information arrival",
    "roi_bps": 20.0,
    "raised": "2026-07-31T09:20:08.591409+00:00",
-   "status": "dead",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] DUPLICATE of R0111: Same ask as open row R0111, which by its own text 'Extends R0108 from one organ to the desk'. Director still fires on a fixed grid (ops/crontab.manifest:519, 40 4,10,16,22 * * * run_strategic_director.py); no event-watcher exists anywhere (grep event_dispatcher/artifact_watcher/watcher-invoking-director: zero hits). Building R0111's dispatcher fulfills R0108 as its first consumer.",
+   "status": "rejected",
+   "reason": "[disposition sweep 2026-08-05, verified against the tree] SUPERSEDED BY A STRICTLY LARGER ROW, verified present. R0111 (status=scheduled, the generalised event dispatcher) says in its own text that it 'extends R0108 from one organ to the desk', so closing R0108 loses nothing: the narrow ask is contained in the broad one and building the narrow one first would have to be undone. Declined on that merit. Re-read 2026-08-05: the director is still fired from a fixed grid in ops/crontab.manifest, i.e. the UNDERLYING work is genuinely open -- it is open under R0111, which is the point of this disposition. Vocabulary migrated 'dead' -> 'rejected'; original triage reason preserved. ORIGINAL REASON (triage 2026-08-04 wf_8e81833d-78a): DUPLICATE of R0111: Same ask as open row R0111, which by its own text 'Extends R0108 from one organ to the desk'.",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-05T13:34:54.855331+00:00"
   },
   {
    "id": "R0109",
@@ -2813,11 +2813,11 @@
    "summary": "dist_shift DRIFT verdict is overpowered at large n: KS 5pct crit ~0.106 at n_ref=659/n_recent=220, and financial autocorrelation violates its iid assumption -- a benign drifting random walk returns DRIFT. DRIFT is a member of _HARD_TRIGGERS (strips production_capital_allowed). revalidate_clocks deliberately maps ONLY SHIFT to a hard trigger; the bands themselves need re-calibration on measured evidence before any caller wires DRIFT to capital.",
    "roi_bps": null,
    "raised": "2026-08-01T01:55:35.460024+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Contained but not recalibrated: scripts/revalidate_clocks.py:113-131 deliberately wires only SHIFT as a hard trigger and documents DRIFT as advisory_only with the row's own overpowering argument verbatim; libs/research/dist_shift.py:34-41 bands (_VAR_BAND=2.0 etc.) are unchanged and justified by argument, not measured evidence. Re-calibration remains real work but is non-urgent while no caller wires DRIFT to capital -- and any recalibration must not loosen the SHIFT bar.",
+   "status": "scheduled",
+   "reason": "[disposition sweep 2026-08-05, verified against the tree] CONTAINED AT THE CONSUMER, RE-VERIFIED TODAY; the residual is a measurement, not a wiring fix. scripts/revalidate_clocks.py:128 sets `hard = verdict == \"SHIFT\"` and :131 stamps advisory_only for DRIFT, with the row's own overpowering argument written into :116-127 -- so DRIFT reaches no capital decision from this producer even though it remains a member of _HARD_TRIGGERS at libs/validation/revalidation.py:44, and tests/governance/ test_enforcement_execution.py:166 pins that behaviour against regression. What is NOT done is the row's actual remaining ask: libs/research/dist_shift.py:34-41 bands are still justified by argument rather than measured evidence. BLOCKER: recalibration needs a measured null distribution on the desk's own autocorrelated series -- the very autocorrelation that breaks the KS iid assumption is what makes the analytic critical value wrong, so this needs a block bootstrap, not a constant edit. UNBLOCKS: enough forward-clock history to bootstrap. Any recalibration may only tighten the SHIFT bar, never loosen it.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-09-01",
+   "disposed": "2026-08-05T13:34:54.855331+00:00"
   },
   {
    "id": "R0230",
@@ -2945,11 +2945,11 @@
    "summary": "SYNTH0801 P2-9 [val N22, SL-verified]: CPCV purge and embargo are INERT -- _cpcv_positive_fraction in libs/autodiscovery/validation.py references s.train ZERO times, so the consuming statistic cannot see the thing purge/embargo fix. Measured: cpcv_positive_fraction identical to six decimals (0.733333) across purge 0/2/50/500 and embargo 0.00/0.01/0.10/0.40 -- a 250x parameter range. Combined with walk_forward running at embargo=0 and neither PBO implementation having purge/embargo/block structure: NO GATE IN THE LIVE PATH HAS ANY LEAK PROTECTION. Distinct from R0001 (which says the code is never called); here it IS called and the statistic ignores the training fold.",
    "roi_bps": 6500.0,
    "raised": "2026-08-01T03:34:09.509598+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Defect confirmed still present: libs/autodiscovery/validation.py:262-263 scores only arr[s.test] (zero references to s.train), and libs/validation/cpcv.py:72-81 removes purge/embargo indices from TRAIN only -- so the consuming statistic is provably invariant to both, exactly the six-decimal invariance the row measured. walk_forward.py:24 default embargo=0 unchanged. The fix is a redesign of the gate statistic plus re-certification (and may only TIGHTEN), not a patch -- real, careful work, kept open rather than rushed.",
+   "status": "scheduled",
+   "reason": "[disposition sweep 2026-08-05, verified against the tree] DEFECT RE-VERIFIED FROM BOTH ENDS TODAY, and it is NOT the 'already fixed' it can look like. _cpcv_positive_fraction (libs/autodiscovery/validation.py:253-284) HAS been rewritten to use the real splitter -- it constructs CPCV(n_groups, n_test_groups, purge, embargo) and averages over combinatorial paths, falling back to a contiguous split only below _CPCV_MIN_OBS -- so the combinatorial half of the original complaint is genuinely closed. The row's actual claim survives that rewrite intact: the statistic scores `arr[s.test].mean() > 0` (:276-277) and references s.train ZERO times, while libs/validation/cpcv.py:71-76 shows test membership is fixed by the group combination and purge/embargo mutate ONLY train_set. The consuming statistic is therefore provably invariant to both parameters -- which is precisely the six-decimal invariance across purge 0/2/50/500 the row measured, and it is a property of the design, not a coincidence of one sample. Consumed live at validation.py:624. BLOCKER: the fix is a redesign of the gate statistic (score something that reads the purged training fold) plus re-certification of the gate's power, not a patch; it may only TIGHTEN. UNBLOCKS: a clean validation cycle with the power re-measurement budgeted, not a spare hour.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-19",
+   "disposed": "2026-08-05T13:34:54.855331+00:00"
   },
   {
    "id": "R0241",
@@ -3137,11 +3137,11 @@
    "summary": "CNY_PREMIUM clock pinned at 0/40 for 9 days: data/cny_premium.jsonl gains a row daily and the collector logs green, but EVERY row carries z20=null and run_axis_shadows.py:131 skips null z20, so n stays 0 permanently. Fix the z20 producer. Now surfaced as NO-EVIDENCE by derive_slots(), but the detector only names it -- the collector is still emitting nulls.",
    "roi_bps": 3500.0,
    "raised": "2026-08-01T07:50:32.631671+00:00",
-   "status": "dead",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KILLED (adversarially verified): VERIFIED ADVERSARIALLY: premise refuted by the producer's own code: z20=null is the DECLARED warm-up, not a defect -- collect_cny_premium.py:15-17 ('z20 is written null until 20 real observations exist', pre-registered as a forward-only clock because P2P quotes have no free history) and :80-84 compute z20 from the accruing series once len(prem_hist)>=20. The series gains one row per day via the cny_premium step in daily_research_cycle.py (~:119) and started 2026-07-23 (commit 8836444, verified), so at the row's raise date it had ~9 rows and z20 nulls were correct; n does NOT stay 0 permanently -- z20 begins flowing at observation 21 (~2026-08-12) with zero code change, and no backfillable P2P history exists for any faster 'fix'. run_axis_shadows.py:134-135 skipping null z during warm-up is likewise correct. The series jsonl itself is VPS runtime (absent here), which cannot refute the cod",
+   "status": "rejected",
+   "reason": "[disposition sweep 2026-08-05, verified against the tree] PREMISE REFUTED -- declined because the defect it reports is not a defect. The row claims every data/cny_premium.jsonl row carries z20=null and that the z20 producer must be fixed; the 2026-08-04 adversarial pass read the producer and found z20=null is the DECLARED WARM-UP of a 20-observation z-score, not a fault, so 'fix the z20 producer' has nothing to fix. The clock being pinned at 0/40 is therefore the same fact R0012 already tracks and has pre-registered correctly (re-screen at n>=400, due 2026-11-15): the constraint is observation count, and the only accelerant is time. Vocabulary migrated 'dead' -> 'rejected' so a refutation the desk actually performed counts as the decision it was. ORIGINAL REASON (triage 2026-08-04 wf_8e81833d-78a): KILLED (adversarially verified): premise refuted by the producer's own code -- z20=null is the DECLARED warm-up, not a defect.",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-05T13:34:54.855331+00:00"
   },
   {
    "id": "R0257",
@@ -3235,11 +3235,11 @@
    "summary": "UNREPRODUCIBLE AUDIT: docs/research/gate_power_audit.md cites 5 artifacts in its header (gate_power_audit / gate_subset_audit / gate_fattail_check / gate_topk_study / gate_power_after_fix .json) and ALL 5 ARE MISSING from disk; reports/ is gitignored (.gitignore:34) so they were never committed either. Its headline numbers -- the power curve that justified removing the duplicated multiplicity correction, the subset table, the fat-tail nulls, the top-K study -- currently have NO reproducible backing anywhere in the repo. Same SHAPE as R0063 (force-track reports/gauntlet_certification.json because reports/ is gitignored), which was fixed for ONE artifact and never generalised -- the adjacency was left. FIX: force-track the 5, or re-run scripts/audit_gate_power.py and commit. NOTE the audit's CONCLUSIONS were independently re-verified by code read this cycle (cpcv real splitter validation.py:247-250; dsr_trials=1 at validation.py:518), so this is a reproducibility defect, not a refutation.",
    "roi_bps": 12.0,
    "raised": "2026-08-01T09:06:49.263967+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=5 effort_h=0.5: Half-fixed: all 5 cited artifacts now EXIST on disk (reports/gate_power_audit.json 219KB generated 2026-08-01T00:17:45Z, plus gate_subset_audit.json, gate_fattail_check.json, gate_topk_study.json, gate_power_after_fix.json) but remain UNTRACKED -- git ls-files reports/ returns only 5 other force-tracked files and .gitignore:38 still ignores reports/. git ls-files --error-unmatch reports/gate_power_audit.json fails. Fix = force-track the five (R0063/gauntlet_certification precedent).",
+   "status": "scheduled",
+   "reason": "[disposition sweep 2026-08-05, verified against the tree] HALF THE DEFECT IS CLOSED AND THE REMAINING HALF IS ONE COMMAND, VERIFIED TODAY. All five cited artifacts now exist on disk -- reports/gate_power_audit.json, gate_subset_audit.json, gate_fattail_check.json, gate_topk_study.json, gate_power_after_fix.json -- so the audit's numbers are no longer unbacked. They are still UNCOMMITTED: `git ls-files reports/` returns exactly six force-tracked files (axis_screens/liquidation_reversion_BTCUSDT.json, carry_basis_path.json, gate_histogram.json, gauntlet_certification.json, matrix_window_measurement.json, screen_exchange_netflow.json) and none of the five is among them, while .gitignore:45 still ignores reports/ wholesale. So the reproducibility defect survives in its exact original shape: the artifacts live only on this box and die with it. BLOCKER: none technical -- this is `git add -f` on five files, the R0063/gauntlet_certification precedent. UNBLOCKS: a commit, which this pass is not permitted to make. Scheduled rather than left open so the one action is dated.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-08",
+   "disposed": "2026-08-05T13:34:54.855331+00:00"
   },
   {
    "id": "R0265",
@@ -3693,11 +3693,11 @@
    "summary": "R0239 capture half DONE (scripts/snapshot_universe.py, daily 00:20). REMAINING: reconstruct delisted history (LUNA/UST/FTT/SRM) from binance.vision delisted-symbol archives -- separate, larger job, scope once",
    "roi_bps": null,
    "raised": "2026-08-01T13:39:53.613525+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Capture half confirmed done (scripts/snapshot_universe.py + ops/crontab.manifest:1379 daily 00:20; the script's own docstring lines 18-21 says reconstruction is 'a separate and much larger job'). The remaining half is untouched: no delisted-symbol reconstruction exists -- grep for LUNA/FTTUSDT/SRMUSDT in scripts/*.py hits only prose, and the binance.vision consumers (fetch_binance_vision.py, dl_metrics_history.py, etc.) serve other jobs. Larger job, still needs scoping.",
+   "status": "scheduled",
+   "reason": "[disposition sweep 2026-08-05, verified against the tree] CAPTURE HALF CONFIRMED DONE FROM THE TREE; the remainder is correctly a separate, larger job. scripts/snapshot_universe.py exists, records deliveryDate/onboardDate per symbol at :68, and is scheduled daily 00:20 at ops/crontab.manifest:1429-1431 writing the append-only data/universe_snapshots.jsonl.gz -- so point-in-time universe truth accrues FORWARD from now. The script's own docstring at :19-20 states the exact remaining scope in the same terms as this row: 'It does not retroactively restore delisted history -- that is a reconstruction from binance.vision delisted-symbol archives, a separate and much larger job.' BLOCKER: the reconstruction needs a scoping pass (which archives cover LUNA/UST/FTT/SRM, at what granularity, and what the point-in-time join key is) before any code; the row asks for exactly that scoping, once. R0313 is the cheaper adjacent path and should be checked first -- a venue-side expired-instrument endpoint would shortcut most of this.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-26",
+   "disposed": "2026-08-05T13:34:54.855331+00:00"
   },
   {
    "id": "R0303",
@@ -4053,11 +4053,11 @@
    "summary": "COMMIT AUDIT 2026-08-01: independent seats reviewed the last 24h of desk commits -- triage every finding in data/cro_ai_logs/commit_audit_20260801T1559.log, row the real ones, and reject the rest with reasons",
    "roi_bps": null,
    "raised": "2026-08-01T16:02:53.643357+00:00",
-   "status": "dead",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KILLED (adversarially verified): The premise (independent seats reviewed the commits) is refuted and the input artifact is gone: data/cro_ai_logs/ is EMPTY, data/cro_ai_logs/commit_audit_20260801T1559.log was never committed (git cat-file -e HEAD:... fails; no commit in any branch touches data/cro_ai_logs), and the run that generated it returned ZERO substantive seat responses \u2014 sibling row R0341 from the same first run is dispositioned 'rejected: PHANTOM ROW -- manufactured by the bug it reports... got 0/4 substantive seats', corroborated by R0343 ('rowed a phantom finding (R0341) on its very first run') and R0344's 0/4 free-seat measurement. There are no findings to triage; the caller was already fixed to gate on panel_inbox mtime. Adversarial verification note: R0332's log (15:59Z) is strictly from the session 5920b60 records as having 'died before landing any of it', one hour before R0341's 16:58Z run \u2014 but this doe",
+   "status": "rejected",
+   "reason": "[disposition sweep 2026-08-05, verified against the tree] PREMISE REFUTED AND THE INPUT IS GONE -- unexecutable as written, declined rather than left to age. The row asks to triage every finding in data/cro_ai_logs/commit_audit_ 20260801T1559.log; re-checked 2026-08-05: data/cro_ai_logs/ exists and is EMPTY (no commit_audit_* file of any date), so the row's whole work-product is unreachable. Its premise -- that independent seats reviewed those commits -- was separately refuted by the 2026-08-04 adversarial pass. Rowing the same request again would need a fresh audit run, which is R0343/R0344's subject (the panel exits 0 with zero responses and the free fallback is dead), and those two are OPEN. Vocabulary migrated 'dead' -> 'rejected'. ORIGINAL REASON (triage 2026-08-04 wf_8e81833d-78a): KILLED (adversarially verified): The premise (independent seats reviewed the commits) is refuted and the input artifact is gone: data/cro_ai_logs/ is EMPTY.",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-05T13:34:54.855331+00:00"
   },
   {
    "id": "R0333",
@@ -4173,11 +4173,11 @@
    "summary": "MIGRATE 8 CALENDAR GATES TO libs/research/evidence_clock.sufficient() (principal: fix every grandma time habit, fast and adaptive). Each site currently asks elapsed-days and must instead ask whether evidence is sufficient, passing its own mean/stdev/n_obs from its own realised series. SITES: scripts/run_shadow_forward.py:72 (fwd_days<90), scripts/run_trend_shadow.py:62 (days<90), scripts/run_crypto_shadow.py:85 (days<90), scripts/run_crossasset_shadow.py:81 (fwd_days<90), scripts/run_capital_plan.py:42 (fwd_sharpe>0 and fwd_days>=30 -- worst offender, gates CAPITAL on 30 days plus a bare positive Sharpe with no t-stat), scripts/run_axis_shadows.py:43 (_MIN_DAYS=40), scripts/stageb_capacity.py:28 (MIN_DAYS=40), libs/research/promotion_latency.py:65 (DESIGN_CLOCK_DAYS=90), libs/risk/kelly_shrink.py:77 (live_days>=60). ALSO fixed-calendar cooldowns that should be condition-based: scripts/kimi_hunter.py:51 (_VECTOR_COOLDOWN_D=45), scripts/check_excitation.py:56 (REENTRY_GRACE_DAYS=30), scripts/run_allocation.py:39 (_REBALANCE_DAYS=7 -- rebalance on drift breaching a band, not on a weekly clock), scripts/module_justification.py:41 (PROBATION_DAYS=14), libs/ops/carryover.py:70 (TREADMILL_DAYS=30). DO NOT TOUCH: check_gate0_ready.py SOAK_DAYS=7 (principal law, measures unattended operation not statistical evidence), maker rest times, orphan cooldowns, rate limits, _RELEASE_LAG_DAYS=2, OOS split boundaries, collector lookbacks. Report the eligibility flip at each site before/after -- a site that becomes eligible immediately on migration was being held back for nothing, and a site that becomes INELIGIBLE was promoting on a technicality.",
    "roi_bps": null,
    "raised": "2026-08-01T17:07:51.086796+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Enforcement built, migration not done: scripts/check_calendar_gates.py (L1.48 scanner, commit cad4e43 'find 59 not 14') and libs/research/evidence_clock.sufficient (:74) both exist, but the scanner reports 62 UNTAGGED calendar gates today including the row's named sites unchanged \u2014 scripts/run_shadow_forward.py:72 fwd_days<90, scripts/run_capital_plan.py:38-42 fwd_sharpe>0 and fwd_days>=30, libs/risk/kelly_shrink.py:77 live_days>=60, libs/research/promotion_latency.py:65 DESIGN_CLOCK_DAYS=90, scripts/check_excitation.py:56, scripts/kimi_hunter.py:54. The migration with per-site eligibility-flip reporting is the outstanding work; SOAK_DAYS=7 correctly untouched.",
+   "status": "scheduled",
+   "reason": "[disposition sweep 2026-08-05, verified against the tree] RE-MEASURED TODAY BY RUNNING THE FENCE, and the number moved the WRONG way: check_ calendar_gates.py now reports 65 outstanding items, against the 62 recorded on 2026-08-04. One of the row's named sites HAS migrated -- scripts/run_axis_shadows.py no longer appears in the checklist, and :125-131 records the swap explicitly ('Replaced _MIN_DAYS = 40 (2026-08-05) ... asks evidence_clock (L1.48): observations + t-stat, never elapsed days') with the import at :36. Every other named site is unchanged in today's output: run_shadow_forward.py:72, run_trend_shadow.py:62, run_crypto_shadow.py:85, run_crossasset_shadow.py:81, run_capital_plan.py:42, stageb_capacity.py:28. CAVEAT ON THE DENOMINATOR, and it is the row's own instrument: R0366 (raised today) shows the scanner counts docstring prose, so ~4 of the 65 are unclosable noise -- the checklist is the work queue, so that must be fixed before the count is used to judge progress. BLOCKER: none technical; this is per-site work requiring the eligibility-flip report the row demands (a site that flips eligible was held back for nothing; a site that flips ineligible was promoting on a technicality), which is what makes it slow rather than hard. SOAK_DAYS=7 correctly untouched.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-19",
+   "disposed": "2026-08-05T13:34:54.855331+00:00"
   },
   {
    "id": "R0343",
@@ -4365,11 +4365,11 @@
    "summary": "GAP #70 -- LAND THE STDLIB PDF EXTRACTOR (deadline 2026-08-02 passed, prototype never committed). Two consecutive literature runs inherited the claim 'no PDF tooling on this box and the freeze forbids installs' and left five findings at ABSTRACT level. Run 3 verified the premise true but the CONCLUSION false: PDF text lives in FlateDecode streams and the stdlib ships zlib, so a ~90-line pure-stdlib extractor reads academic PDFs with zero installs. EVIDENCE IT MATTERS, already measured: the first paper extracted (Hou-Xue-Zhang) CORRECTED THREE NUMBERS the desk had recorded from a search summary a day earlier -- actual 65 pct fail at t>1.96, 82 pct at the 2.78 multiple-test hurdle, worst category trading frictions 102/106 = 96.2 pct, against a recorded 64 pct / 85 pct at t-cutoff 3 / liquidity 93 pct. The recorded prior was NARROWER than the truth, which is the dangerous direction for a desk that sizes on priors. DELIVERABLES: (1) land it as scripts/pdf_text.py, read-only, no deps; (2) add an interior_extracted field to the literature-card schema so ABSTRACT and PRIMARY are distinguishable AT THE EV GATE; (3) THE GENERALISABLE DEFECT, which is the real item -- a capability limit was asserted once and inherited verbatim across runs, silently defining what the desk could know. Adopt the standing rule: any recorded 'this box cannot X' carries a re-test date and is retried before it is inherited a second time. That is the no-ceiling axiom applied to the desk's own tooling claims, where it demonstrably was not being applied.",
    "roi_bps": 14.0,
    "raised": "2026-08-05T07:15:37.002745+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "[disposition sweep 2026-08-05, verified against the tree] DEADLINE PASSED AND THE ARTIFACT IS ABSENT -- verified: scripts/pdf_text.py does not exist on this tree, so gap #70 is genuinely undelivered three days past its 2026-08-02 due date. Taking the row at its word on the parts that are already evidence: the premise ('no PDF tooling and installs are frozen') is TRUE and its inherited conclusion ('therefore no PDF text') is FALSE, since PDF text lives in FlateDecode streams and zlib is stdlib; and the measured payoff is already recorded -- the first extracted paper corrected three numbers the desk had taken from a search summary, all in the NARROWER-than-truth direction, which is the dangerous one for a desk that sizes on priors. BLOCKER: none technical, ~90 lines with no dependencies; this slipped because it is nobody's organ. UNBLOCKS: one build slot. The row's third deliverable is the important one and is cheaper than the code -- the standing rule that any recorded 'this box cannot X' carries a re-test date and is retried before it is inherited a second time.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-12",
+   "disposed": "2026-08-05T13:34:54.855331+00:00"
   },
   {
    "id": "R0359",
@@ -4389,11 +4389,11 @@
    "summary": "BRAIN QUOTA FALLBACK IS UNREACHABLE CODE -- needs the principal. ops/brain_env.sh:86 documents that on a credit outage the desk falls back to a metered API key, but :98 gates that whole branch on [ -f $_BRAIN_KEYFILE ] where _BRAIN_KEYFILE=data/secrets/anthropic_api_key (:19) -- a file that does not exist; the directory holds only claude_oauth_token. So the fallback has NEVER been reachable and a subscription outage takes every claude-invoking organ down with no escape: measured 2026-08-05 as the recommendation_worker dying at 03:20 and 06:00, plus llm_trader and conviction NO-CALLs. PRINCIPAL DECISION: either supply the metered key at that path, or delete the dead branch and correct the comment at :86 so the desk stops believing it has a fallback it does not have. A documented fallback that cannot fire is worse than none, because nobody looks for it.",
    "roi_bps": 40.0,
    "raised": "2026-08-05T08:09:24.785327+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "[disposition sweep 2026-08-05, verified against the tree] PRINCIPAL DECISION OWED -- this cannot be closed by the desk, which is why it is dated rather than left open. Verified on this tree: ops/brain_env.sh:98 gates the entire metered-key fallback on `[ -f \"$_BRAIN_KEYFILE\" ]`, and the loop above it (:88-96) walks _BRAIN_MODEL_CHAIN and pages on any step past the head, so the model-fallback half IS live and reachable; only the metered-key branch below it is conditioned on a file. I could NOT verify the keyfile's absence from this checkout -- data/secrets/ is gitignored and does not exist here -- so the row's own 2026-08-05 measurement stands as the evidence and is not re-confirmed by me. BLOCKER: the principal must either supply the key at data/secrets/anthropic_api_key or authorise deleting the dead branch and correcting the comment at :86. Both are one-line changes; neither is the desk's call. A documented fallback that cannot fire is worse than none, because nobody looks for it -- so the delete-and-correct option is a real answer, not a surrender.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-12",
+   "disposed": "2026-08-05T13:34:54.855331+00:00"
   },
   {
    "id": "R0361",
@@ -4413,11 +4413,11 @@
    "summary": "INTRADAY RE-SCREEN OF LIQUIDATION REVERSION AT 15m, the one cell R0116 could not resolve: n_eff 1417 against a min_detectable_ic of 0.052 with |IC|=0.0299 -- undetermined, NOT refuted, and the only honest accelerant is more observations (the Bybit overlap was 15.0d because the moat tape starts 07-21 while the liquidation tape starts 07-09). Re-run scripts/screen_liquidation_reversion.py when the overlap passes ~45d (approx 2026-09-05); the construction, burst threshold and trailing window are frozen in that file and may not be tuned at re-screen time. Also extend it past BTCUSDT -- the tape carries SOL/WLD and others, and per-symbol cells are additional DSR-counted trials that must be declared before the run, not selected after.",
    "roi_bps": 20.0,
    "raised": "2026-08-05T08:47:32.476258+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "[disposition sweep 2026-08-05, verified against the tree] REAL WORK, BLOCKED ON OBSERVATIONS AND ON NOTHING ELSE -- the honest verdict is a date, not a build. Re-read scripts/screen_liquidation_reversion.py today: the construction is frozen in the file exactly as the row requires (:33 'TRIALS ARE DECLARED, NOT SELECTED', :130 the aligned signal/target builder, :190 the stage_a_screen call with horizon_days=minutes/1440, :217 horizons_min declared in the artifact header), so there is nothing to build and nothing that may be tuned at re-screen time. The blocker is the Bybit-vs-moat tape overlap: the moat tape starts 2026-07-21 and the liquidation tape 2026-07-09, giving 15.0d at screen time against the ~45d the row pre-registers. UNBLOCKS: calendar time alone, ~2026-09-05. Due set to that date. The per-symbol extension (SOL/WLD beyond BTCUSDT) is additional DSR-counted trials and must be declared in the same pre-registration, before the run.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-09-05",
+   "disposed": "2026-08-05T13:34:54.855331+00:00"
   },
   {
    "id": "R0363",

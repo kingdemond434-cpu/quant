@@ -224,6 +224,21 @@ class TestHuntReport:
         assert doc["next_actions"]
         assert all(a.startswith("[zhihu -> ") for a in doc["next_actions"])
 
+    def test_a_healthy_source_produces_standing_options_not_urgent_actions(
+            self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        # --all probes healthy sources too, which is the point -- but shouting "build a Crossref
+        # parser" every day while arXiv is fine is how a daily organ becomes noise and gets muted.
+        monkeypatch.setattr(hunt, "probe",
+                            lambda url, timeout=25.0: (alt.STATUS_REACHABLE, "JSON, 9000 bytes"))
+        monkeypatch.setattr(hunt.time, "sleep", lambda _s: None)
+        ledger, out = tmp_path / "h.jsonl", tmp_path / "report.json"
+        sh.record_run([sh.Observation(source="arxiv", ok=True)], path=ledger, now=_T0)
+        hunt.main(["--source", "arxiv", "--ledger", str(ledger), "--out", str(out)])
+        doc = json.loads(out.read_text("utf-8"))
+        assert doc["hunted"][0]["health"]["verdict"] == sh.VERDICT_HEALTHY
+        assert doc["next_actions"] == []
+        assert doc["standing_redundancy_options"]
+
     def test_a_failed_probe_never_becomes_a_working_source(
             self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(

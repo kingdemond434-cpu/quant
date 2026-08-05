@@ -128,6 +128,48 @@ RESPONSIBILITIES: tuple[tuple[str, str], ...] = (
     ("Continuous self-improvement",
      "What is idle, duplicated, unnecessary, missing, weak, fragile, outdated, low-ROI? What has "
      "the highest expected ROI? What would an elite quantitative research lab do differently?"),
+    ("Adversarial red team -- REFUTE, do not agree",
+     "Take the desk's most confident current finding and try to KILL it. Attack the alignment, "
+     "the multiplicity charge, the power, the survivorship, the sample window, the construction. "
+     "Agreeable review is worth nothing here: this desk has already had a celebrated IC +0.148 "
+     "collapse to +0.0148 at full depth, and a purchase cancelled on 12 cells that could not "
+     "have seen the effect. Assume the desk is fooling itself and say precisely how."),
+    ("Unknown-unknown naming -- the one job no instrument here can do",
+     "Every ranking organ on this desk can only rank what someone already NAMED. The mechanism "
+     "census ranks 20 classes because 20 were named; a 21st that nobody thought of is invisible "
+     "to it and always will be. Name mechanism classes, payer/payee structures, data axes and "
+     "failure modes that appear NOWHERE in the dossier. This is the single highest-value thing "
+     "a second, independent brain contributes, and it is worth more than any refinement of "
+     "something already listed."),
+    ("Prompt and governance sharpening -- additive only",
+     "Read the desk's prompts and laws as ARTIFACTS TO IMPROVE. Propose sharper wording, "
+     "missing clauses, and rules that would have caught a past incident. STRICT CONSTRAINT: a "
+     "proposal that REMOVES or WEAKENS an existing clause, check, gate or organ is rejected on "
+     "sight -- prompt changes are ratcheted (libs/doctrine/prompt_ratchet) and may only add. "
+     "Opportunity cost dressed as concision is the failure mode being guarded against."),
+    ("Second-opinion review of new work",
+     "Review recently shipped organs and screens as an independent reader who did not write "
+     "them: what does this measure that it claims not to, what does it claim that it does not "
+     "measure, what would a reader wrongly conclude from its output? A second reader catches "
+     "the class of error where the author's intent papers over what the code actually does."),
+    ("Pre-mortem -- the desk died, write the post-mortem",
+     "Assume the desk is dead twelve months from now. Write the causal chain, the earliest "
+     "warning sign that was visible and ignored, the rail that was missing, and why the current "
+     "rails would not have caught it. Rank the chains by probability. This runs BEFORE capital "
+     "is deployed, because after is too late for it to be worth anything."),
+    ("Per-aspect maximisation -- WALK EVERY ASPECT, NO EXCEPTIONS",
+     "data/CAPABILITY_RATCHET.json scores every aspect of this desk 0-10 and names each one's "
+     "binding constraint. For EVERY aspect and EVERY component in it -- not the headline ones, "
+     "not the interesting ones, ALL of them, including the ones already at 9 -- give the "
+     "concrete next action that would raise it, what it would cost, and what evidence would "
+     "prove it moved. An aspect you skip is one the desk will not push this week. Where an "
+     "aspect is UNMEASURED, the deliverable is the measurement that would make it scorable; "
+     "where it is at ceiling, say so and say what a HIGHER ceiling would require. "
+     "Rank your whole answer by expected points-per-hour so the desk works it top-down. "
+     "NEVER propose raising a score by changing how it is counted: the ratchet already refuses "
+     "truncated measurements so the desk cannot buy points by running less, and a recommendation "
+     "that games the instrument is worse than no recommendation because it destroys the "
+     "instrument."),
     ("Capital efficiency",
      "Better expected log wealth, capital allocation, sizing discipline, diversification, "
      "portfolio construction, deployment, turnover, opportunity selection."),
@@ -176,6 +218,20 @@ OPERATING_PRINCIPLES: tuple[str, ...] = (
     "Treat complexity as a cost unless it clearly increases validated edge.",
     "Continuously search for blind spots, hidden assumptions and opportunities -- even when "
     "everything appears to be working.",
+    # THE EXHAUSTION RULE, applied to EVERY responsibility above rather than to the cycle as a
+    # whole. A first answer is a warm-up: it is what the model reaches for, not what it knows.
+    # The principal's own tactic, and it is cheap -- two sentences per push against a full
+    # dossier already paid for.
+    "EXHAUST EVERY RESPONSIBILITY INDIVIDUALLY. For each one in turn, after your first answer "
+    "ask yourself 'is that all? is this maxed? what else?' and answer again -- repeatedly, "
+    "until you are genuinely producing nothing new for THAT responsibility, then say so "
+    "explicitly and move to the next. Do not spend the exhaustion budget on one interesting "
+    "responsibility and give the rest a single pass: an under-pushed responsibility is an "
+    "under-explored part of the desk, and the boring ones are where the unexamined assumptions "
+    "live. Report the exhaustion point per responsibility -- 'stopped at 4 pushes, nothing new' "
+    "is information about the desk's search frontier, not an admission.",
+    "Nothing is exempt from maximisation because it is minor, dull, already-good or "
+    "someone else's area. An aspect nobody argues about is an aspect nobody has pushed.",
 )
 
 #: Evidence classes, in descending strength. Labelling is MANDATORY: an unlabelled claim reads as
@@ -223,6 +279,17 @@ DOSSIER_SOURCES: dict[str, str] = {
     "permutation_null": "reports/permutation_null.json",
     "recommendation_ledger": "docs/research/recommendation_ledger.json",
     "gap_register": "docs/GAP_REGISTER.md",
+    # THE FOUR INSTRUMENTS BUILT 2026-08-05, and the reason they are priority reads rather than
+    # inventory lines: they are the only artifacts that state the desk's BINDING CONSTRAINTS as
+    # numbers. Without them the seat reasons about a desk that sounds healthy; with them it can
+    # see that capability sits at 5.78/10, that the maximum-power campaign covered 2.787 effective
+    # mechanism classes, that cross-mechanism N_eff is 4.08 against the ~100 a weak-edge portfolio
+    # needs, and that 78% of the desk's recorded negatives could not have detected anything. A
+    # recommendation made without those four numbers is a recommendation about a different desk.
+    "capability_ratchet": "data/CAPABILITY_RATCHET.json",
+    "mechanism_census": "data/mechanism_census.json",
+    "type2_cost": "data/type2_cost.json",
+    "cross_mechanism_corr": "data/cross_mechanism_corr.json",
 }
 
 #: Measured findings this desk owns that a public model has never seen. THE ACTUAL EDGE of the
