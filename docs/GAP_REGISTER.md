@@ -6,6 +6,29 @@ the newest overall, and the owner of the current RANK list — sits below the pr
 paragraph. That line's rows 81-87 are recorded here as 96-102; see the renumber notes at the
 foot of the register._
 
+_Re-ranked 2026-08-05T03:40Z (daily cycle)._ **#1 stays PRINCIPAL REARM + A/B/C** (human-gated;
+`web/cashcarry_live.json` read fresh this cycle: `n_carries 0`, `deployed_notional 0.0`,
+`risk.action pause_opens`, `dd_from_peak_pct -17.61`). **#1b ENTERS AND IS CLOSED THIS CYCLE, and
+it outranked every open row because it was a precondition of #1 itself:** the structural-bleed
+denylist had silently become a **no-op**, so replying `REARM` — which auto-executes, with nothing
+human reviewing the denylist — would have re-opened the two incident-#6 symbols at full size.
+`_structurally_bleeding` read only `worst_symbols`, a **14-day rolling window over the book's own
+closes**; the book paused 2026-08-01, the window emptied, and on a *freshly regenerated* artifact
+the gate returned `False` for COOKIEUSDT and 1000CATUSDT — the two symbols its own comment calls
+"currently-blocked". The dated **$100 / 3-probe / after-2026-08-15** re-entry protocol written for
+exactly those two was unreachable code. Fixed tighten-only (`36f6f28`, code in `9e3ff47`);
+verified both symbols now block, controls unchanged, and the door still opens 2026-08-16
+(`allowed=True, probe 1/3`), so the exclusion is not absorbing.
+
+**THE RANKING LESSON: a guard fed by a rolling window of our OWN activity disarms itself during a
+pause — and the pause is usually caused by the thing it guards against.** This re-weights every
+row that credits a guard with protection: the guard's *evidence source* is now part of the claim.
+It also silently voided half of **R0057**, which deleted the absolute per-8h funding floor on
+2026-07-31 reasoning that "the cost gate plus the structural-bleed denylist carry all of its
+protection" — one of those two was already a no-op. Encoded as standing probe angle **15 DORMANCY
+DISARM** and as `max_audit.check_dormancy_disarm` (governed by L1.40, proven falsifiable:
+pre-fix FIRES on both symbols, post-fix silent).
+
 _Re-ranked 2026-08-01T17:35Z (daily cycle, PM)._ **#1 stays PRINCIPAL REARM + A/B/C** (unchanged,
 human-gated; `live_guard.json` read fresh this cycle: `armed false`, `stage S0`, 0 positions).
 **#1c ENTERS AND IS IMMEDIATELY CLOSED, and it outranked everything the register held:** bare
