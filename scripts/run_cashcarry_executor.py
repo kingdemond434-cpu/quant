@@ -35,6 +35,7 @@ from libs.execution.carry_accounting import (
     dedup_basis,
     derive_spot_realized,
     read_income,
+    reconcile_futures_leg,
 )
 from libs.ops.fresh import read_fresh  # L1.44: decision-path reads carry freshness contracts
 from libs.ops.lawful import guard as _law_guard  # L1.42: no act exempt
@@ -1781,6 +1782,7 @@ def _execute_pair_impl(sym: str, qty: float, spot_side: str, fut_side: str) -> d
 def _mark(rb: dict[str, Any]) -> dict[str, float | None]:
     pos, spot_px, fut_px = rb["pos"], rb["spot_px"], rb["fut_px"]
     spot_pnl = perp_pnl = notional = 0.0
+    fut_realized: float | None = None
     for _sym, p in pos.items():
         spx = spot_px.get(_sym, p["spot_cost"])
         fpx = fut_px.get(_sym, p["perp_entry"])
@@ -1825,10 +1827,26 @@ def _mark(rb: dict[str, Any]) -> dict[str, float | None]:
                 if inc is not None:
                     funding = float(inc.get("funding", 0.0))
                     fut_commission = abs(float(inc.get("commission", 0.0)))
+                    # THE SECOND MEASUREMENT OF THE FUTURES LEG, and it was being thrown away.
+                    # `realized_pnl` came back in this same payload and only `_reconcile_spot_
+                    # realized` ever read it, so the equity-delta path above had nothing to be
+                    # checked against -- which is how a $4,807.75 inception leak published as
+                    # profit for four days (2026-08-05). One call, three numbers, all kept.
+                    fut_realized = float(inc.get("realized_pnl", 0.0))
+    # The gap a ledgered re-base would legitimately open between the two measurements. RAW state
+    # inception minus the rail's effective one: `_start_equity` honours capital events, and every
+    # dollar of that adjustment lands in the equity delta as fabricated P&L.
+    try:
+        raw_start = float(state.get("start_futures_equity", 0.0) or 0.0)
+        rebase_usd = round(raw_start - capital_events.effective_start_equity(raw_start), 2)
+    except (TypeError, ValueError):
+        rebase_usd = 0.0
     return {"spot_pnl": round(spot_pnl, 2), "perp_pnl": round(perp_pnl, 2),
             "spot_realized": round(spot_realized, 2), "fut_pnl": round(fut_pnl, 2),
             "funding": None if funding is None else round(funding, 2), "net_pnl": round(net, 2),
             "fut_commission": None if fut_commission is None else round(fut_commission, 2),
+            "fut_realized": None if fut_realized is None else round(fut_realized, 2),
+            "rebase_usd": rebase_usd, "perp_unrealized": round(perp_pnl, 2),
             "notional": round(notional, 2)}
 
 
@@ -1839,10 +1857,20 @@ def _emit(rb: dict[str, Any], marks: dict[str, float | None], dry: bool) -> None
     # this file -- shipped a dashboard with NO bleed alarm at all, which is exactly how a leak
     # runs for weeks unnoticed. Same function, same thresholds, now on the executed book.
     # spot side = open marks + realized of closed spot legs; fut side = futures-equity delta.
+    # CROSS-CHECK THE FUTURES LEG AGAINST ITSELF BEFORE JUDGING THE BOOK. The equity delta and the
+    # venue income ledger measure the same leg; only the former has a re-baseable input, so their
+    # disagreement is the accounting error rather than a market event. Computed BEFORE the bleed
+    # report so the alarm can name the cause instead of guessing at a naked leg (2026-08-05).
+    recon = reconcile_futures_leg(
+        equity_delta=marks.get("fut_pnl"), venue_realized=marks.get("fut_realized"),
+        funding=marks["funding"], commission=marks.get("fut_commission"),
+        unrealized=marks.get("perp_unrealized") or 0.0,
+        rebase_usd=float(marks.get("rebase_usd") or 0.0))
     bleed = carry_bleed_report(funding=marks["funding"],
                                spot_pnl=round((marks["spot_pnl"] or 0.0)
                                               + (marks["spot_realized"] or 0.0), 2),
-                               fut_pnl=marks.get("fut_pnl") or 0.0)
+                               fut_pnl=marks.get("fut_pnl") or 0.0,
+                               open_legs=len(pos), recon=recon)
     # Attribute the leak ONLY when both terms are real measurements. With an unknown fee bill the
     # split would dump the entire commission into `residual`, manufacturing exactly the phantom
     # that `attribute_non_funding`'s own docstring warns against -- an unexplained quantity that
@@ -1859,7 +1887,20 @@ def _emit(rb: dict[str, Any], marks: dict[str, float | None], dry: bool) -> None
         "strategy": "delta-neutral cash-and-carry (long spot + short perp, positive funding)",
         "executed": not dry, "n_carries": len(pos),
         "deployed_notional": marks["notional"],
-        "net_pnl": marks["net_pnl"], "funding_harvested": marks["funding"],
+        # THE HEADLINE FIELD CARRIES THE HONEST NUMBER, and the wrong one loses the name it had.
+        # `hurdle_rate.py:97` reads exactly this key to ask whether the carry beats T-bills net of
+        # costs (L1.5), and on 2026-08-05 it was being handed +2937.28 for a book that had really
+        # lost 1869.74 -- a validation gate fed a $4.8k overstatement of the only sleeve it judges.
+        # Publishing the truth under a NEW name and leaving the old one wrong would have fixed the
+        # dashboard and left the gate corrupted, which is the more expensive half.
+        "net_pnl": (marks["net_pnl"] if recon.reporting_pnl is None
+                    else round((marks["spot_pnl"] or 0.0) + (marks["spot_realized"] or 0.0)
+                               + recon.reporting_pnl, 2)),
+        # The equity-delta reading, kept so the two never silently converge again.
+        "net_pnl_equity_delta": marks["net_pnl"],
+        "net_pnl_basis": ("venue-income-ledger" if recon.reporting_pnl is not None
+                          else "equity-delta (income UNMEASURED -- cross-check unavailable)"),
+        "funding_harvested": marks["funding"],
         "spot_leg_pnl": marks["spot_pnl"], "perp_leg_pnl": marks["perp_pnl"],
         "spot_realized_pnl": marks["spot_realized"],
         "fut_leg_net": marks.get("fut_pnl", 0.0),
@@ -1873,6 +1914,11 @@ def _emit(rb: dict[str, Any], marks: dict[str, float | None], dry: bool) -> None
         # WHERE the leak went, not just how big it is -- the alarm alone is unactionable and the
         # integrity watch is required to attribute it every cycle.
         "leak_attribution": leak,
+        # THE TWO MEASUREMENTS, PUBLISHED SIDE BY SIDE. `net_pnl` above is the equity-delta reading
+        # and is kept so the disagreement stays visible rather than being quietly overwritten --
+        # a number that silently changes meaning is how the first error survived. `net_pnl_reported`
+        # is the one downstream should size on: it has no re-baseable input.
+        "fut_leg_reconciliation": recon.model_dump(),
         "fut_commission": marks.get("fut_commission"),
         "carries": [{"symbol": s, "qty": p["spot_qty"], "funding_8h": p["funding"]}
                     for s, p in pos.items()],
