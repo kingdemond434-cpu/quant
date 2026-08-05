@@ -111,3 +111,97 @@ coefficient rising?" — a regime property, not a signal. Cheapest genuinely-new
 
 Unchanged pipeline. The graph only decides *which* hypotheses are worth generating, and makes
 "we already observe this process 7 ways" visible before someone builds an 8th sensor.
+
+---
+
+# ADDENDUM 2026-08-05 — the binding rule was being broken inside the generator library
+
+The rule above says every hypothesis must **name its mechanism node**, and that a hypothesis which
+cannot is a curve-fit. The autodiscovery lab appeared to satisfy it: every generator carries a
+`Family` label, and twelve families read as twelve mechanisms. They are not. Two instruments
+measured the gap on the desk's own tape.
+
+**`scripts/measure_cross_mechanism_corr.py`** — 21 symbols × 2,037 aligned bars, all 21 generator
+specs at every variant, net of costs:
+
+| pair | declared families | measured ρ |
+|---|---|---|
+| `shock_fade` vs `zscore_fade` | `liquidity` vs `mean_reversion` | **+0.953** |
+| `time_series_mom` vs `vwap_trend` | `momentum` vs `trend` | **+0.955** |
+
+Different families, one trade. The library is two blocs — continuation and fade — correlated
+within and anti-correlated across, so the near-zero *mean* off-diagonal ρ (+0.005) is cancellation,
+not independence. The participation ratio reads **N_eff = 4.08**, ceiling **2.02×**, against the
+~100 effective bets Sharpe 2.0 from Sharpe-0.2 components would need.
+
+**`scripts/run_mechanism_census.py`** — the 44-candidate maximum-power campaign resolves to **four**
+economic classes: `price_continuation` 20, `liquidity_provision_immediacy` 19,
+`relative_value_convergence` 4, `market_risk_premium` 1. Effective classes **2.787**, diversity
+**0.139**. Eleven declared families, four payers.
+
+## The call: `Family` is NOT renamed, because it is a gate input
+
+`Family` is the pre-registered **search-budget partition**, and moving a spec between families is a
+gate change rather than a rename:
+
+| consumer | what the family string does there |
+|---|---|
+| `orchestrator._family_trials` | the DSR trial wall is per-family — moving one spec re-prices the bar for every other spec in the donor and receiving family |
+| `orchestrator._fam_sharpes` | the Sharpe **dispersion sample** fed to `deflated_sharpe_ratio` is the family's own column set |
+| `memory.content_hash` | `family+subtype+symbol+params` — every persisted candidate's dedup identity, and the key behind `store.family_counts()` |
+| `prioritization.prioritize` | orders the campaign by `FAMILY_PRIORITY` |
+| `planned_hypotheses(families=…)` | selects the generation universe; `scripts/smoke_orchestration.py` asks for carry/cross_asset/momentum **by name** |
+
+Relabelling `drift_proxy` from `carry` to `momentum` would have emptied `Family.CARRY`, added a
+column to the momentum DSR dispersion sample and shifted the momentum trial wall — changing how a
+gate treats candidates *other than the one relabelled*. So the labels stand and the two axes are
+separated instead: **a family names the feature construction and the error budget it is charged to;
+it never names the payer.** `libs/research/mechanism_census.CONSTRUCTION_CLASS` is the single
+authority for the payer, and `libs/autodiscovery/generators.py` now defers to it in code
+(`census_class`, `mechanism_class_counts`, `FAMILY_MECHANISM_DIVERGENCE`).
+
+## THE DESK HAS RUN **ZERO TRUE CARRY TESTS** IN ITS MAXIMUM-POWER CAMPAIGN
+
+`Family.CARRY` holds exactly one generator. `drift_proxy` is `momentum_positions(lookback=200)` on
+OHLC bars — no funding rate, no swap rate, no basis anywhere in its inputs, which is why the census
+files it under `price_continuation`. A true carry test is `derivative_carry_basis`: the leveraged
+long who pays funding every interval to hold exposure he will not fund with cash. The single
+`carry`-family row in the 44-candidate campaign is a momentum test.
+
+Scoped precisely, because the opposite overstatement is just as bad: the desk **does** hold real
+`derivative_carry_basis` evidence elsewhere — funding/basis screen artifacts and a live
+cash-and-carry book, which the census reads and marks TESTED-DEEP. The zero is about the generator
+campaign, the run whose "44 mechanisms" figure was being quoted.
+
+## Corrected counts — the full 21-spec library
+
+| census class | specs |
+|---|---|
+| `price_continuation` | **11** — `ma_cross`, `time_series_mom`, `donchian`, `squeeze_breakout`, `vol_trend`, `session_open_mom`, `drift_proxy`, `vol_onset_trend`, `vwap_trend`, `ict_fvg_follow`, `ict_mss_follow` |
+| `liquidity_provision_immediacy` | **6** — `zscore_fade`, `shock_fade`, `wyckoff_spring`, `vwap_reversion`, `supply_demand_retest`, `ict_sweep_reversal` |
+| `relative_value_convergence` | **2** — `inverse_reference`, `intermarket_difference` |
+| `positioning_crowding_unwind` | **1** — `funding_stress_reversal` (the only spec drawing on non-price data) |
+| `market_risk_premium` | **1** — `persistent_long` |
+
+**21 specs, 12 families, 5 mechanisms.** The campaign is four, because `session_open_mom` and
+`funding_stress_reversal` never ran on that tape (no intraday clock, no funding series).
+
+## What changed, and what did not
+
+Labels and docs only — no signal logic, no parameters, no gate, no threshold, no verdict.
+`drift_proxy`'s declared prior moved `RISK_PREMIUM → BEHAVIORAL` (it shares an implementation with
+`time_series_mom`), its `edge_source`/`failure_modes` now say plainly that it is momentum and not
+carry, and its implementing function was renamed `_carry` → `_drift_proxy`. `MechanismType` carries
+no gate — `validation.validate` reads only `bool(hypothesis.failure_modes)` from the hypothesis and
+`content_hash` excludes the mechanism value — so that correction is free of behavioural effect.
+`funding_stress_reversal` records its true class in its failure modes. Both keep their family.
+
+## The fence
+
+`tests/autodiscovery/test_generator_taxonomy_fence.py` — every generator must be classified by the
+census or it cannot ship; the computed family/mechanism divergence set must match the register in
+`generators.py` **exactly** (a new mislabel fails unrecorded, a fixed one fails stale); a
+`RISK_PREMIUM` prior is admissible only where the census's payer is actually shedding a risk; the
+two ρ > 0.95 cross-family pairs must stay inside one census class; and the zero-carry claim is
+asserted **both ways**, so it must be removed the day a real carry generator ships. A legitimate new
+family passes and a mislabel fails — both directions proved on synthetic specs, not asserted.

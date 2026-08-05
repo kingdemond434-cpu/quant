@@ -101,6 +101,7 @@ def main() -> None:
         v = (validate(active, hypothesis=Hypothesis(
             family=Family.TREND, subtype=name, symbol="CRYPTO-MAJORS", params={},
             mechanism=MechanismType.BEHAVIORAL, edge_source=name, failure_modes=_FAIL),
+            periods_per_year=_PPY,        # D1 crypto bars, 24/7 (R0086)
             n_trials=len(_LOOKBACKS), sharpe_estimates=sharpes, returns_matrix=matrix,
             campaign=campaign, column=col) if len(active) >= 250 else None)
         gates = f"{sum(v.gates.values())}/{len(v.gates)}" if v else "n<250"

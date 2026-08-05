@@ -116,8 +116,8 @@ def test_the_promotion_path_can_now_PROMOTE() -> None:
     m = _planted()
     hyp = SimpleNamespace(failure_modes=["regime shift", "crowding"], family="ict")
     sh = np.array([r.mean() / max(r.std(), 1e-9) for r in m.T])
-    v = validate(m[:, 7], hypothesis=hyp, n_trials=m.shape[1], sharpe_estimates=sh,
-                 returns_matrix=m,
+    v = validate(m[:, 7], hypothesis=hyp, periods_per_year=365.0, n_trials=m.shape[1],
+                 sharpe_estimates=sh, returns_matrix=m,
                  pc_pbo=per_candidate_pbo(m).pbo_for(7), pc_p=romano_wolf(m).p_for(7))
     assert v.gates["pbo"] and v.gates["reality_check"]
     assert v.survived, v.rejection_reason
@@ -129,8 +129,8 @@ def test_noise_still_dies_at_the_same_gate() -> None:
     m = _planted()
     hyp = SimpleNamespace(failure_modes=["regime shift"], family="ict")
     sh = np.array([r.mean() / max(r.std(), 1e-9) for r in m.T])
-    v = validate(m[:, 3], hypothesis=hyp, n_trials=m.shape[1], sharpe_estimates=sh,
-                 returns_matrix=m,
+    v = validate(m[:, 3], hypothesis=hyp, periods_per_year=365.0, n_trials=m.shape[1],
+                 sharpe_estimates=sh, returns_matrix=m,
                  pc_pbo=per_candidate_pbo(m).pbo_for(3), pc_p=romano_wolf(m).p_for(3))
     assert not v.gates["reality_check"]
     assert not v.survived
@@ -142,8 +142,8 @@ def test_omitting_the_per_candidate_values_keeps_the_old_campaign_behaviour() ->
     m = _planted()
     hyp = SimpleNamespace(failure_modes=["x"], family="ict")
     sh = np.array([r.mean() / max(r.std(), 1e-9) for r in m.T])
-    v = validate(m[:, 7], hypothesis=hyp, n_trials=m.shape[1], sharpe_estimates=sh,
-                 returns_matrix=m)
+    v = validate(m[:, 7], hypothesis=hyp, periods_per_year=365.0, n_trials=m.shape[1],
+                 sharpe_estimates=sh, returns_matrix=m)
     assert v.metrics.reality_p == pytest.approx(whites_reality_check(m).p_value, abs=0.05)
 
 

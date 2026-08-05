@@ -197,7 +197,10 @@ def main(argv: list[str] | None = None) -> int:
             params=c["params"], mechanism=c["mechanism"], edge_source=c["edge_source"],
             failure_modes=c["failure_modes"],
         )
-        v = validate(c["returns"], hypothesis=hyp, n_trials=n_trials,
+        # _PPY is this campaign's own clock (D1 crypto, 24/7) and it now reaches the STORE, not
+        # just this script's artifact: the report always computed its own honest figure while
+        # validate() annualised the same series with an hourly constant (R0086).
+        v = validate(c["returns"], hypothesis=hyp, periods_per_year=_PPY, n_trials=n_trials,
                      sharpe_estimates=sharpes, returns_matrix=matrix,
                      column=i, n_trades=c["n_trades"],
                      campaign=gates_stats)
@@ -278,7 +281,8 @@ def main(argv: list[str] | None = None) -> int:
                 params=p["params"], mechanism=p["mechanism"], edge_source=p["edge_source"],
                 failure_modes=p["failure_modes"],
             )
-            v = validate(p["returns"], hypothesis=hyp, n_trials=len(pooled),
+            v = validate(p["returns"], hypothesis=hyp, periods_per_year=_PPY,
+                         n_trials=len(pooled),
                          sharpe_estimates=p_sharpes, returns_matrix=p_matrix,
                          column=i, n_trades=p["n_trades"],
                          campaign=p_stats)

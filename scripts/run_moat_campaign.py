@@ -155,7 +155,10 @@ def main() -> int:
 
     rows: list[dict[str, Any]] = []
     for i, nm in enumerate(names):
-        v = validate(m[:, i], hypothesis=_HYP, n_trials=m.shape[1], sharpe_estimates=sh,
+        # `ppy` is derived from the recorded bar width above -- the same number the row's own
+        # ann_sharpe uses, so the artifact and the verdict can no longer disagree (R0086).
+        v = validate(m[:, i], hypothesis=_HYP, periods_per_year=ppy,
+                     n_trials=m.shape[1], sharpe_estimates=sh,
                      returns_matrix=m, campaign=gates, column=i)
         rows.append({"name": nm, "survived": bool(v.survived),
                      "ann_sharpe": float(sharpe_ratio(m[:, i]) * np.sqrt(ppy)),

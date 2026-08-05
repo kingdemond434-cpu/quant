@@ -26,70 +26,65 @@ import subprocess
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import IO
 
 from libs.ops.platform_paths import venv_python
 
 _ROOT = Path(__file__).resolve().parent.parent
 _PY = venv_python(_ROOT)
 
+# EVERY STEP IS WALL-CLOCK BOUNDED (2026-08-05). subprocess.run had no timeout, and on this gate
+# that is not merely a slow run -- it is the gate silently switching itself off, permanently:
+#
+#   a step blocks (a network-bound test on a filtered-egress box does exactly this)
+#     -> this process never exits, so it never releases the flock it holds
+#     -> every later run_ci finds the lock taken and returns 0, "skipping", by design
+#     -> .ci_last_run.json is never rewritten, so it stays frozen at its last value
+#     -> max_audit only raises on `ok is False`, and a FROZEN marker is never false
+#     -> the desk reports its safety gate GREEN, with nothing running behind it, indefinitely.
+#
+# That is the 2026-07-22 incident (81h of undetected red) through a different door, and the fix
+# applied then -- surface a red marker -- cannot catch it, because this failure never produces a
+# red marker. It produces a stale green one. Hence three independent repairs: bound the steps so
+# a hang becomes a named FAIL here; keep writing the marker on that path so it goes red; and make
+# max_audit treat a STALE marker as a defect in its own right (fail-closed -- unknown must never
+# read as "no breach"). Any one alone leaves the hole open.
+#
+# Budgets are per-step and generous -- a ruin rail, not a performance target. They are sized off
+# observed runtimes with a wide margin, so tripping one means "wedged", never "busy today".
+#
+# THE INNER BOUND MUST FIRE BEFORE THE OUTER ONE. daily_research_cycle.py runs this script under
+# its own per-step timeout, and if that outer bound wins the race the process is killed from the
+# outside: no [HUNG] line, no red marker written, nothing named -- which is the stale-green
+# failure again, merely relocated. So the invariant is sum(_STEPS budgets) < the cycle's ci_gate
+# budget, with the outer kept only as the backstop for what a Python-level timeout cannot catch
+# (this interpreter itself wedging). tests/ops/test_ci_gate_timeouts.py asserts the ordering
+# across both files, because it is exactly the kind of coupling that survives one edit and dies
+# on the next -- the two numbers live in different files and nothing else relates them.
 _STEPS = [
-    ("lint (ruff)", [_PY, "-m", "ruff", "check", "scripts", "libs", "tests"]),
+    ("lint (ruff)", [_PY, "-m", "ruff", "check", "scripts", "libs", "tests"], 300),
     # WHOLE TREE (2026-07-25): was 4 named files + tests/execution = ~147 of ~1099 tests, leaving
     # tests/risk (the ruin path) and tests/validation (the anti-false-positive path) ungated, and
     # every newly-shipped test ungated by default. GAP 31's stated blocker -- duplicate basenames
     # breaking collection -- EXPIRED once pyproject set --import-mode=importlib: the tree collects
     # and was run 100% GREEN this session (only optional-dep skips), so gating it is proven safe.
-    ("tests (pytest)", [_PY, "-m", "pytest", "tests/", "-q"]),
+    ("tests (pytest)", [_PY, "-m", "pytest", "tests/", "-q"], 1800),
     # TYPES (2026-07-25): mypy --strict was configured in pyproject and run by NOBODY -- the
     # strictest tool in the repo was not in the gate, so nothing stopped a type regression
     # landing. Added the same day scripts/ entered its `files` list, because a type gate that
     # covers the money path but is never executed is not a gate.
-    ("types (mypy)", [_PY, "-m", "mypy"]),
-    ("stress harness", [_PY, "scripts/run_stress.py"]),
+    ("types (mypy)", [_PY, "-m", "mypy"], 600),
+    ("stress harness", [_PY, "scripts/run_stress.py"], 600),
 ]
+#: Worst-case wall clock if every step wedges. Read by the cycle-budget invariant test rather
+#: than recomputed there, so the two cannot drift apart silently.
+STEP_BUDGET_TOTAL_S = sum(b for _, _, b in _STEPS)  # 3300s
 
 
 _LOCK = _ROOT / "data/.ci_run.lock"
 
 
-def _inflight_py() -> list[str]:
-    """Untracked .py files under the gated roots -- a concurrent session's work in progress.
-
-    This box runs several agent sessions against ONE working tree, so `ruff`/`pytest`/`mypy` over
-    `scripts libs tests` also judge whatever anyone happens to have half-written at that instant.
-    Those failures belong to NO COMMIT, the session that observes them cannot fix them, and they
-    clear on their own -- while a genuine failure in committed code sits inside the very same red
-    verdict, indistinguishable from the noise. That is why `ci-gate-red` recurred 8x in 10.7d and
-    why fixing the instance bought exactly one cycle (2026-08-05: all 5 lint errors were another
-    session's untracked files, and two REAL mypy errors in committed code were buried underneath).
-    """
-    r = subprocess.run(["git", "ls-files", "--others", "--exclude-standard", "--",
-                        "scripts", "libs", "tests"],
-                       cwd=str(_ROOT), capture_output=True, text=True, check=False)
-    if r.returncode != 0:
-        return []
-    return sorted(p for p in r.stdout.split() if p.endswith(".py"))
-
-
-def _scoped_to_tracked(label: str, cmd: list[str], inflight: list[str]) -> list[str] | None:
-    """`cmd` re-expressed to skip the in-flight files, or None if this step cannot be scoped.
-
-    None is the FAIL-SAFE answer: an unscopable step is attributed to committed code, so this
-    attribution can only ever retract an alarm it has positively PROVEN belongs to scratch files.
-    It can never hide a real one -- the direction that matters for a safety gate.
-    """
-    if not inflight:
-        return None
-    if label.startswith("lint"):
-        return [*cmd, "--extend-exclude", ",".join(inflight)]
-    if label.startswith("tests"):
-        return [*cmd, *(f"--ignore={p}" for p in inflight)]
-    if label.startswith("types"):
-        return [*cmd, "--exclude", "(" + "|".join(re.escape(p) for p in inflight) + ")"]
-    return None
-
-
-def _acquire() -> object | None:
+def _acquire() -> IO[str] | None:
     """Take the CI lock, or return None if another run already holds it.
 
     Non-blocking on purpose: a second concurrent gate tests the same tree, so it adds no
@@ -122,58 +117,124 @@ def main(argv: list[str] | None = None) -> int:
             return 3
         print("CI: another run holds the lock -- skipping (marker left untouched)")
         return 0
+    # RELEASE THE LOCK ON EVERY EXIT PATH. The handle was previously left open and reclaimed only
+    # by process teardown -- invisible in production, but it meant this function could not be
+    # called twice in one interpreter, which is why the gate's own failure paths had never been
+    # executed by a test. A gate whose error handling has never run is a gate with an untested
+    # ruin rail; closing the handle here is what made the [HUNG] path testable at all.
     try:
-        failed: list[str] = []
-        for label, cmd in _STEPS:
-            r = subprocess.run(cmd, cwd=str(_ROOT), capture_output=True, text=True, check=False)
-            ok = r.returncode == 0
-            tail = (r.stdout or r.stderr or "").strip().splitlines()[-1:] or [""]
-            print(f"[{'PASS' if ok else 'FAIL'}] {label}: {tail[0][:120]}")
-            if not ok:
-                failed.append(label)
-        # ATTRIBUTION (2026-08-05). Split "HEAD is broken" from "somebody is typing". Paid for
-        # only when a step already failed AND scratch files exist -- the normal case costs zero.
-        inflight = _inflight_py() if failed else []
-        failed_tracked = list(failed)
-        if inflight:
-            failed_tracked = []
-            for label, cmd in _STEPS:
-                if label not in failed:
-                    continue
-                scoped = _scoped_to_tracked(label, cmd, inflight)
-                if scoped is None:
-                    failed_tracked.append(label)
-                    continue
-                rr = subprocess.run(scoped, cwd=str(_ROOT), capture_output=True, text=True,
-                                    check=False)
-                if rr.returncode != 0:
-                    failed_tracked.append(label)
-            stale = [s for s in failed if s not in failed_tracked]
-            if stale:
-                print(f"CI: {stale} fail ONLY on uncommitted files -> {inflight}")
-                print("CI: not attributable to a commit; the author sees it, the desk does not")
-        print("CI:", "ALL GREEN" if not failed else f"FAILED -> {failed}")
-        if failed_tracked:
-            print(f"CI: committed-code failures -> {failed_tracked}")
-        # Freshest-truth CI status marker (2026-07-23): a red desk-wide gate sat undetected 81h
-        # because the brain cycle that runs run_ci was quota-dead; max_audit now surfaces this
-        # marker so a red gate always enters the escalation path. Never affects the gate itself.
-        with contextlib.suppress(OSError):
-            (_ROOT / "data/.ci_last_run.json").write_text(
-                # `ok`/`failed` keep their exact old meaning (whole tree) so every pre-existing
-                # reader is untouched; `tracked_ok`/`failed_tracked`/`inflight` are ADDITIVE.
-                # Nothing is swallowed -- scratch-file breakage is recorded here and printed
-                # above; it is just no longer allowed to claim the desk-wide gate is down.
-                json.dumps({"ok": not failed, "ts": datetime.now(tz=UTC).isoformat(),
-                            "failed": failed, "tracked_ok": not failed_tracked,
-                            "failed_tracked": failed_tracked, "inflight": inflight}), "utf-8")
-        return 1 if failed else 0
+        return _run_steps()
     finally:
-        # The handle was never closed, so the flock outlived the run for any IN-PROCESS caller
-        # (a test, or an organ that imports main): every later gate on this box then read
-        # "another run holds the lock -- skipping" and exited 0 -- a gate that silently stops
-        # gating. Release it with the run that took it.
         _fh.close()
+
+
+def _inflight_py() -> list[str]:
+    """Untracked .py files under the gated roots -- a concurrent session's work in progress.
+
+    This box runs several agent sessions against ONE working tree, so the steps above also judge
+    whatever anyone happens to have half-written at that instant. Those failures belong to NO
+    COMMIT, the session that observes them cannot fix them, and they clear on their own -- while a
+    genuine failure in committed code sits inside the very same red verdict, indistinguishable.
+    That is why `ci-gate-red` recurred 8x in 10.7d and why fixing the instance bought exactly one
+    cycle. 2026-08-05, measured: all 5 lint errors and every pytest failure were another session's
+    untracked files, while two REAL mypy errors in committed code sat buried underneath.
+    """
+    r = subprocess.run(["git", "ls-files", "--others", "--exclude-standard", "--",
+                        "scripts", "libs", "tests"],
+                       cwd=str(_ROOT), capture_output=True, text=True, check=False)
+    if r.returncode != 0:
+        return []
+    return sorted(p for p in r.stdout.split() if p.endswith(".py"))
+
+
+def _scoped_to_tracked(label: str, cmd: list[str], inflight: list[str]) -> list[str] | None:
+    """`cmd` re-expressed to skip the in-flight files, or None if this step cannot be scoped.
+
+    None is the FAIL-SAFE answer: an unscopable step is attributed to committed code, so this
+    attribution can only ever retract an alarm it has positively PROVEN belongs to scratch files.
+    It can never hide a real one -- the only direction that matters on a safety gate.
+    """
+    if not inflight:
+        return None
+    if label.startswith("lint"):
+        return [*cmd, "--extend-exclude", ",".join(inflight)]
+    if label.startswith("tests"):
+        return [*cmd, *(f"--ignore={p}" for p in inflight)]
+    if label.startswith("types"):
+        return [*cmd, "--exclude", "(" + "|".join(re.escape(p) for p in inflight) + ")"]
+    return None
+
+
+def _attribute(failed: list[str]) -> tuple[list[str], list[str]]:
+    """Split `failed` into (committed-code failures, in-flight files seen).
+
+    Paid for only when something already failed AND scratch files exist, so the normal green run
+    costs nothing. A HUNG step is never re-run: its label carries a suffix so it will not match
+    `_STEPS`, and re-running a step that just ate its whole budget to prove whose fault it is
+    would double the wedge it is reporting.
+    """
+    inflight = _inflight_py() if failed else []
+    if not inflight:
+        return list(failed), []
+    failed_tracked = []
+    for label, cmd, budget in _STEPS:
+        if label not in failed:
+            continue
+        scoped = _scoped_to_tracked(label, cmd, inflight)
+        if scoped is None:
+            failed_tracked.append(label)
+            continue
+        try:
+            rr = subprocess.run(scoped, cwd=str(_ROOT), capture_output=True, text=True,
+                                check=False, timeout=budget)
+        except subprocess.TimeoutExpired:
+            failed_tracked.append(label)
+            continue
+        if rr.returncode != 0:
+            failed_tracked.append(label)
+    failed_tracked += [s for s in failed if s not in {lab for lab, _, _ in _STEPS}]
+    return failed_tracked, inflight
+
+
+def _run_steps() -> int:
+    failed: list[str] = []
+    for label, cmd, budget in _STEPS:
+        try:
+            r = subprocess.run(cmd, cwd=str(_ROOT), capture_output=True, text=True,
+                               check=False, timeout=budget)
+        except subprocess.TimeoutExpired:
+            # A HANG IS A FAILURE, NOT A SLOW PASS. Naming it distinctly from an ordinary red
+            # matters: "wedged" and "broken" have different first moves, and the operator who
+            # reads this line should not have to guess which one they are looking at.
+            print(f"[HUNG] {label}: exceeded {budget}s budget -- killed and counted as FAILED")
+            failed.append(f"{label} (HUNG >{budget}s)")
+            continue
+        ok = r.returncode == 0
+        tail = (r.stdout or r.stderr or "").strip().splitlines()[-1:] or [""]
+        print(f"[{'PASS' if ok else 'FAIL'}] {label}: {tail[0][:120]}")
+        if not ok:
+            failed.append(label)
+    failed_tracked, inflight = _attribute(failed)
+    stale = [s for s in failed if s not in failed_tracked]
+    if stale:
+        print(f"CI: {stale} fail ONLY on uncommitted files -> {inflight}")
+        print("CI: not attributable to a commit; the author sees it, the desk does not")
+    print("CI:", "ALL GREEN" if not failed else f"FAILED -> {failed}")
+    if failed_tracked:
+        print(f"CI: committed-code failures -> {failed_tracked}")
+    # Freshest-truth CI status marker (2026-07-23): a red desk-wide gate sat undetected 81h
+    # because the brain cycle that runs run_ci was quota-dead; max_audit now surfaces this
+    # marker so a red gate always enters the escalation path. Additive; never affects the gate.
+    with contextlib.suppress(OSError):
+        (_ROOT / "data/.ci_last_run.json").write_text(
+            # `ok`/`failed` keep their exact old meaning (whole tree) so every pre-existing reader
+            # is untouched; `tracked_ok`/`failed_tracked`/`inflight` are ADDITIVE. Nothing is
+            # swallowed -- scratch-file breakage is recorded here and printed above; it is just no
+            # longer allowed to claim the desk-wide gate is down.
+            json.dumps({"ok": not failed, "ts": datetime.now(tz=UTC).isoformat(),
+                        "failed": failed, "tracked_ok": not failed_tracked,
+                        "failed_tracked": failed_tracked, "inflight": inflight}), "utf-8")
+    return 1 if failed else 0
 
 
 if __name__ == "__main__":

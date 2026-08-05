@@ -32,6 +32,7 @@ what a human should go and watch. It does not archive video content.
 from __future__ import annotations
 
 import hashlib
+import html
 import json
 import time
 import urllib.request
@@ -193,7 +194,19 @@ def subtitle_status(bvid: str) -> dict[str, Any]:
 
 
 def _strip(text: str) -> str:
-    """Search results wrap matched terms in <em> highlight tags."""
+    """Search results wrap matched terms in <em> highlight tags.
+
+    ENTITIES ARE DECODED AFTER TAG REMOVAL (2026-08-05), and the order is the whole point: unescape
+    first and an encoded `&lt;em&gt;` would BECOME a tag this stripper then eats, silently deleting
+    the text between two literal angle brackets that were never markup.
+
+    Why it matters beyond tidiness. The stripped title is what video_triage SCORES, so an entity
+    the ranker cannot read is a keyword the ranker cannot see. `&quot;` merely looks untidy in a
+    Latin title; a NUMERIC entity is the real hazard, because `&#x91CF;&#x5316;` is exactly how
+    `量化` arrives from some encoders -- the scorer would find no Chinese at all and rank a
+    perfectly relevant article at zero. That is the CJK `\\b` bug's failure mode reached through a
+    different door: a real edge made invisible to the gate rather than rejected by it.
+    """
     out: list[str] = []
     depth = 0
     for ch in text:
@@ -203,7 +216,7 @@ def _strip(text: str) -> str:
             depth = max(0, depth - 1)
         elif depth == 0:
             out.append(ch)
-    return "".join(out).strip()
+    return html.unescape("".join(out)).strip()
 
 
 def _dur(text: str) -> int:

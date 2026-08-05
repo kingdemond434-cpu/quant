@@ -56,7 +56,7 @@ def test_scratch_file_failure_does_not_claim_the_desk_gate_is_down(tmp_path, mon
     # a sibling has half-written. That breakage belongs to no commit and the observer cannot fix
     # it -- it must not raise the desk-wide alarm, but the author's exit code must still be red.
     _isolate(tmp_path, monkeypatch)
-    monkeypatch.setattr(run_ci, "_STEPS", [("lint (ruff)", ["sh", "-c", "exit 1"])])
+    monkeypatch.setattr(run_ci, "_STEPS", [("lint (ruff)", ["sh", "-c", "exit 1"], 60)])
     monkeypatch.setattr(run_ci, "_inflight_py", lambda: ["libs/ops/scratch.py"])
     monkeypatch.setattr(run_ci, "_scoped_to_tracked", lambda *_: ["sh", "-c", "exit 0"])
     rc = run_ci.main([])
@@ -73,7 +73,7 @@ def test_committed_failure_still_escalates_even_amid_scratch_files(tmp_path, mon
     # lint errors from a sibling's scratch files filled the same red verdict. A scratch file
     # present must never mask a genuine failure.
     _isolate(tmp_path, monkeypatch)
-    monkeypatch.setattr(run_ci, "_STEPS", [("types (mypy)", ["sh", "-c", "exit 1"])])
+    monkeypatch.setattr(run_ci, "_STEPS", [("types (mypy)", ["sh", "-c", "exit 1"], 60)])
     monkeypatch.setattr(run_ci, "_inflight_py", lambda: ["libs/ops/scratch.py"])
     monkeypatch.setattr(run_ci, "_scoped_to_tracked", lambda *_: ["sh", "-c", "exit 1"])
     assert run_ci.main([]) == 1

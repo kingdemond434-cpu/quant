@@ -23,6 +23,15 @@ constant is a declared policy number the test pins it AND says why that exact va
 load-bearing; where a constant has a behavioural consequence the test feeds data whose VERDICT
 flips when the constant is wrong. A pin with no reason is a change-detector that the next person
 deletes, and deleting it is the correct response to it.
+
+THREE OF THE NINE SURVIVORS NO LONGER HAVE A CONSTANT TO MUTATE (R0086, 2026-08-05).
+`_PERIODS_PER_YEAR = 24 * 260` is DELETED: it was applied to every series regardless of the bars
+in it, and `validate()` now requires the caller to declare `periods_per_year`. The mutants it
+carried (`Mult -> Div`, `24 -> 25`, `260 -> 261`) are killed at a better place than the constant --
+:class:`TestAnnualisationFactor` pins the multiplicative FORM against the argument, pins that the
+declared clock is the one used, and pins that a wrong clock is REFUSED. The old last test in that
+class deliberately asserted the DEFECT as R0086's falsifier, so this fix could not land silently;
+this is that fence re-derived, which is what it asked its successor to do.
 """
 
 from __future__ import annotations
@@ -38,9 +47,12 @@ import pytest
 
 from libs.autodiscovery import validation as V
 from libs.autodiscovery.models import Family, Hypothesis, ValidationVerdict
+from libs.autodiscovery.orchestrator import AutoDiscoveryLab
+from libs.data.timeframe import Timeframe
 from libs.validation.campaign_window import CAMPAIGN_ALPHA
 from libs.validation.dsr import sharpe_ratio
 from libs.validation.economic_prior import MechanismType
+from libs.validation.errors import ValidationError
 
 #: A synthetic candidate. `failure_modes` is non-empty so the `economic_mechanism` gate passes and
 #: the gate under test is the only thing deciding the assertion.
@@ -66,7 +78,13 @@ def _exact_sharpe_series(per_bar_sharpe: float, n: int = 300, seed: int = 11) ->
     return np.asarray(z * 0.01 + per_bar_sharpe * 0.01, dtype="float64")
 
 
-def _score(returns: np.ndarray, *, pc_pbo: float = 0.4, pc_p: float = 0.01) -> ValidationVerdict:
+#: The clock these synthetic series are DECLARED to be on: daily crypto bars, 24/7. Since R0086
+#: there is no default -- `validate()` refuses to guess -- so every call names it.
+_DAILY_PPY = 365.0
+
+
+def _score(returns: np.ndarray, *, pc_pbo: float = 0.4, pc_p: float = 0.01,
+           periods_per_year: float | None = _DAILY_PPY) -> ValidationVerdict:
     """Run the REAL `validate()` on the per-candidate seam.
 
     `pc_pbo`/`pc_p` select the per-candidate path, which is the one production campaigns take and
@@ -74,7 +92,8 @@ def _score(returns: np.ndarray, *, pc_pbo: float = 0.4, pc_p: float = 0.01) -> V
     is the plain PSR of this series and the brackets below are exactly reproducible.
     """
     return V.validate(
-        returns, hypothesis=_HYP, n_trials=1, sharpe_estimates=_SHARPE_ESTIMATES,
+        returns, hypothesis=_HYP, periods_per_year=periods_per_year, n_trials=1,
+        sharpe_estimates=_SHARPE_ESTIMATES,
         returns_matrix=returns.reshape(-1, 1), pc_pbo=pc_pbo, pc_p=pc_p,
     )
 
@@ -94,72 +113,152 @@ def isolated_equity(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator
 
 
 class TestAnnualisationFactor:
-    """`_PERIODS_PER_YEAR = 24 * 260` -- three survivors: `Mult -> Div`, `24 -> 25`, `260 -> 261`.
+    """THE ANNUALISER, R0086-FIXED (2026-08-05): declared per call, never a module constant.
 
-    The constant converts a PER-BAR Sharpe into an annual one at `validation.py:611`
-    (`sharpe_ratio(arr) * np.sqrt(_PERIODS_PER_YEAR)`). It is 24 hourly bars x 260 trading days,
-    and it is the ONLY frequency assumption in the validator -- `validate()` takes no frequency
-    argument, so this number decides every `annual_sharpe` the desk stores
-    (`libs/autodiscovery/memory.py:85`), reports and ranks rejects by
-    (`scripts/run_rejection_rescore.py:107`).
+    This class used to fence `_PERIODS_PER_YEAR = 24 * 260` against three mutation survivors
+    (`Mult -> Div`, `24 -> 25`, `260 -> 261`) and, in its last test, deliberately PINNED THE
+    DEFECT: `validate()` took no frequency argument, so a DAILY series was annualised with the
+    HOURLY factor and its Sharpe came out sqrt(6240/365) = 4.135x too large. That test was
+    R0086's falsifier and it did its job -- the fix could not land without landing here too.
 
-    R0086 SEPARATELY FLAGS THIS CONSTANT as inflating annual Sharpe ~4.1x when the input is DAILY
-    rather than hourly (sqrt(6240/365) = 4.135). That is a live, ledgered defect and it is NOT
-    fixed here -- these tests pin the constant's VALUE and its MULTIPLICATIVE FORM so the fix, when
-    it lands, is a deliberate visible change rather than the silent drift this module was open to.
+    WHAT REPLACES IT. The constant is deleted and `validate()` REQUIRES `periods_per_year`, so
+    there is no longer a single number to fence. The three properties that mattered survive the
+    move and are what these tests pin now:
+
+      * the FORM is multiplicative in sqrt(periods) -- the `Mult -> Div` survivor, restated
+        against the argument instead of the constant;
+      * the DECLARED clock is the one used -- a daily series annualises at sqrt(365), which is the
+        R0086 fix stated as an assertion rather than a ledger row;
+      * a wrong or absent clock is REFUSED, never silently substituted -- the property that makes
+        the defect unrepeatable, because reintroducing it now requires adding a default that these
+        tests fail.
     """
 
-    def test_periods_per_year_is_hours_times_trading_days(self) -> None:
-        """24 hourly bars x 260 trading days = 6240. Both factors are load-bearing and mean
-        different things: 24 is the bar frequency (crypto trades around the clock), 260 is the
-        annual trading-day count. Drift in either silently rescales every Sharpe the desk has ever
-        stored, and nothing downstream can detect a Sharpe that is uniformly wrong."""
-        assert V._PERIODS_PER_YEAR == 24 * 260
-        assert V._PERIODS_PER_YEAR == 6240
+    def test_the_hourly_constant_is_gone_not_merely_bypassed(self) -> None:
+        """R0086's first requirement, and the one a partial fix would skip. A module-level
+        annualiser left in place "for compatibility" is a loaded gun: the next caller to omit an
+        argument gets it back, silently, and no gate downstream can detect a Sharpe that is
+        uniformly 4.135x too large. It is deleted, so this asserts absence."""
+        assert not hasattr(V, "_PERIODS_PER_YEAR"), (
+            "the hard-coded hourly annualiser is back -- R0086 exists because a module constant "
+            "was applied to whatever series arrived"
+        )
 
-    def test_annualising_is_multiplication_not_division(self) -> None:
-        """THE `Mult -> Div` SURVIVOR, and the one with no plausible innocent reading. `24 / 260`
-        is 0.0923: annualisation would SHRINK a Sharpe by 3.3x instead of growing it by 79x, a
-        260x error in the reported number, and it would still be a perfectly valid float that
-        every gate accepts. Pinning the integer TYPE is what makes the form untouchable -- true
-        division always yields a float, so this assertion cannot be satisfied by a divided
-        constant however the operands are chosen."""
-        assert isinstance(V._PERIODS_PER_YEAR, int)
-        assert V._PERIODS_PER_YEAR > 24
-        assert V._PERIODS_PER_YEAR > 260
-        assert V._PERIODS_PER_YEAR == 24 * 260
-
-    def test_annual_sharpe_is_the_per_bar_sharpe_scaled_by_sqrt_6240(self) -> None:
-        """THE BEHAVIOURAL HALF: what the constant actually does to a verdict's metrics. The
-        literal 6240.0 here is deliberate -- deriving the expectation from `_PERIODS_PER_YEAR`
-        would make the assertion true for any value the module happens to hold, which is exactly
-        how these three mutants survived."""
+    def test_validate_requires_the_caller_to_declare_the_frequency(self) -> None:
+        """The seam. `periods_per_year` is a REQUIRED keyword argument with no default, so a
+        caller cannot inherit someone else's clock by omission -- which is precisely how every
+        stored annual_sharpe came to be annualised at 6240/yr regardless of its bars."""
+        params = inspect.signature(V.validate).parameters
+        assert "periods_per_year" in params
+        assert params["periods_per_year"].default is inspect.Parameter.empty, (
+            "periods_per_year has grown a default -- a default IS a frequency assumption, which "
+            "is the whole of R0086"
+        )
         arr = _exact_sharpe_series(0.10)
-        res = _score(arr)
+        with pytest.raises(TypeError):
+            V.validate(                                     # type: ignore[call-arg]
+                arr, hypothesis=_HYP, n_trials=1, sharpe_estimates=_SHARPE_ESTIMATES,
+                returns_matrix=arr.reshape(-1, 1), pc_pbo=0.4, pc_p=0.01,
+            )
+
+    def test_a_daily_series_is_annualised_at_sqrt_365_not_sqrt_6240(self) -> None:
+        """THE FIX ITSELF, on the exact case R0086 measured. Crypto perps trade 24/7, so a daily
+        bar is 1/365th of a year; the deleted constant was 24 hourly bars x 260 sessions. The
+        literals are deliberate -- deriving the expectation from the module would make the
+        assertion true for whatever the module happens to do, which is how the original three
+        mutants survived."""
+        arr = _exact_sharpe_series(0.10)
+        res = _score(arr, periods_per_year=365.0)
         assert res.metrics.annual_sharpe == pytest.approx(
+            sharpe_ratio(arr) * math.sqrt(365.0), rel=1e-12)
+        assert res.metrics.annual_sharpe != pytest.approx(
+            sharpe_ratio(arr) * math.sqrt(6240.0), rel=1e-6)
+
+    def test_the_old_constant_inflated_daily_sharpe_by_4_135x(self) -> None:
+        """THE BLAST RADIUS, as arithmetic rather than prose, because every `annual_sharpe` stored
+        before this fix carries it. sqrt(6240/365) = 4.135 on daily bars and sqrt(6240/1095) =
+        2.387 on the 8h funding clock -- the two frequencies the desk's cron-scheduled runners
+        actually feed (run_xsec_funding D1, run_carry_harvest 8h). A pre-fix stored row must be
+        divided by this factor before it can be compared with a post-fix one; nothing rewrites
+        history, which is why the factor is pinned here and stated in the module docstring."""
+        assert math.sqrt(6240.0 / 365.0) == pytest.approx(4.135, abs=0.001)
+        assert math.sqrt(6240.0 / 1095.0) == pytest.approx(2.387, abs=0.001)
+        arr = _exact_sharpe_series(0.10)
+        honest = _score(arr, periods_per_year=365.0).metrics.annual_sharpe
+        assert honest * math.sqrt(6240.0 / 365.0) == pytest.approx(
             sharpe_ratio(arr) * math.sqrt(6240.0), rel=1e-12)
 
-    def test_the_annualisation_is_frequency_blind_which_is_R0086(self) -> None:
-        """PINS THE DEFECT WHERE IT LIVES, rather than leaving it to a ledger row nobody re-reads.
+    def test_annualising_is_multiplication_not_division(self) -> None:
+        """THE `Mult -> Div` SURVIVOR, restated against the argument. Division would SHRINK a
+        Sharpe by sqrt(365) instead of growing it by that factor -- a 133,225x error in the
+        reported number, and still a perfectly valid float every gate accepts. Two clocks in a
+        known ratio pin the form: the annualised Sharpe must scale as sqrt(ppy), so a 3x faster
+        clock (8h vs daily) gives exactly sqrt(3)x the number, and a division would give
+        1/sqrt(3)x."""
+        arr = _exact_sharpe_series(0.10)
+        daily = _score(arr, periods_per_year=365.0).metrics.annual_sharpe
+        eight_hourly = _score(arr, periods_per_year=3 * 365.0).metrics.annual_sharpe
+        assert daily > 0.0
+        assert eight_hourly / daily == pytest.approx(math.sqrt(3.0), rel=1e-12)
+        assert eight_hourly > daily, "a faster clock must RAISE the annualised Sharpe"
+        assert daily == pytest.approx(sharpe_ratio(arr) * math.sqrt(365.0), rel=1e-12)
 
-        `validate()` has no frequency/periods parameter, so a DAILY return series is annualised
-        with the HOURLY factor and its reported Sharpe is sqrt(6240/365) = 4.135x too large. That
-        is live today: `libs/autodiscovery/crypto_adapter.py:54` defaults the lab to `Timeframe.D1`
-        and `scripts/run_xsec_funding.py:44` reads D1 bars straight into `validate()`.
+    @pytest.mark.parametrize("bad", [0.0, -365.0, 0.5, float("nan"), float("inf"), 1.0e9])
+    def test_a_wrong_frequency_is_refused_not_silently_used(self, bad: float) -> None:
+        """THE PROPERTY THAT MAKES R0086 UNREPEATABLE. Every one of these is a units error a real
+        caller could make -- zero, a sign flip, per-day instead of per-year, a NaN from an empty
+        panel, an unclamped ratio, a millisecond count -- and each of them would produce a
+        confident, wrong, storable number. The validator refuses instead. 1e9 is above the
+        one-minute-bar ceiling (525,600/yr), which is the finest grid the lake holds, so it cannot
+        be any bar clock this desk has."""
+        with pytest.raises(ValidationError):
+            _score(_exact_sharpe_series(0.10), periods_per_year=bad)
 
-        This test asserts the CURRENT behaviour, not the desired one. It is the falsifier for
-        R0086: the moment someone makes annualisation frequency-aware this goes red, which is
-        correct -- that fix must update this fence consciously, not slide past it.
-        """
-        params = inspect.signature(V.validate).parameters
-        assert not [p for p in params if "period" in p or "freq" in p or "annual" in p], (
-            "validate() has grown a frequency argument -- R0086 has been addressed and this "
-            "fence, plus the sqrt(6240) expectation above, must be re-derived deliberately"
-        )
-        daily_like = _exact_sharpe_series(0.10)
-        assert _score(daily_like).metrics.annual_sharpe == pytest.approx(
-            sharpe_ratio(daily_like) * math.sqrt(6240.0), rel=1e-12), (
-            "a daily series is still annualised with the hourly factor (R0086, ~4.135x)"
+    def test_no_clock_is_declarable_and_reports_unmeasured_rather_than_a_number(self) -> None:
+        """The one honest use of None: per-BET returns (run_prediction_markets), where
+        observations are settlements and no bars-per-year exists. It must not be a back door to
+        the old behaviour -- annual_sharpe is 0.0 AND the verdict says nobody measured it, which
+        is the R0080 `adv_usd`/`capacity` treatment applied to a metric."""
+        res = _score(_exact_sharpe_series(0.10), periods_per_year=None)
+        assert res.metrics.annual_sharpe == 0.0
+        assert "annual_sharpe" in res.unmeasured
+        assert "UNMEASURED" in res.rejection_reason
+
+    def test_bars_per_year_derives_the_clock_from_a_declared_interval(self) -> None:
+        """The sanctioned way for a caller to get the number, so call sites hold an INTERVAL (a
+        fact about the data they read) rather than an arithmetic opinion. The crypto calendar is
+        24/7; the MT5 session calendar is ~252 days, and the desk's own MT5 runners already
+        annualise at 252 -- the deleted constant's 260 was weekdays-with-no-holidays and is the
+        larger, looser of the two."""
+        assert V.bars_per_year(Timeframe.D1) == pytest.approx(365.0)
+        assert V.bars_per_year(Timeframe.H8) == pytest.approx(1095.0)
+        assert V.bars_per_year(Timeframe.H1) == pytest.approx(8760.0)
+        assert V.bars_per_year("D1") == pytest.approx(365.0)
+        assert V.bars_per_year(
+            Timeframe.D1, days_per_year=V.SESSION_DAYS_PER_YEAR) == pytest.approx(252.0)
+        assert V.bars_per_year(
+            Timeframe.H1, days_per_year=V.SESSION_DAYS_PER_YEAR) == pytest.approx(6048.0)
+
+    def test_an_unknown_interval_is_refused_rather_than_defaulted(self) -> None:
+        """`bars_per_year` has no fallback, deliberately. A lookup that quietly returned a default
+        for an interval it did not recognise would be the deleted constant wearing a function
+        signature."""
+        with pytest.raises(ValidationError):
+            V.bars_per_year("M30")          # a real MT5 interval this desk's enum does not carry
+        with pytest.raises(ValidationError):
+            V.bars_per_year("")
+
+    def test_the_lab_declares_its_clock_and_records_it_with_the_evidence(self) -> None:
+        """THE SEAM THAT FEEDS THE STORE. `AutoDiscoveryLab` is where the frequency is actually
+        known -- whoever built the provider read the bars -- and it is the path every row in
+        `research_candidates` came through. `bar` is required there for the same reason it is
+        required on `validate()`, and it is also what makes post-fix rows recognisable: the lab
+        now stamps the interval on each stored series, where it used to write NULL."""
+        params = inspect.signature(AutoDiscoveryLab.__init__).parameters
+        assert "bar" in params
+        assert params["bar"].default is inspect.Parameter.empty, (
+            "the lab's bar interval has grown a default -- one wrong default here silently "
+            "re-annualises every candidate the desk stores"
         )
 
 

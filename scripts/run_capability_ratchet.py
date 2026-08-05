@@ -81,7 +81,10 @@ def run(root: Path, now: datetime | None = None) -> dict[str, object]:
     read -- the caller decides whether to persist, so tests can run the whole organ on a tmp tree.
     """
     at = now if now is not None else datetime.now(tz=UTC)
-    aspects = read_capability(root)
+    # ONE instant for the whole run: the aspects' staleness judgements and the ratchet's stall
+    # clock must agree, or an artifact can be fresh to one half of the organ and stale to the
+    # other within the same report.
+    aspects = read_capability(root, at)
     marks = load_marks(root / ARTIFACT_PATH)
     new_marks, verdicts, status = ratchet(aspects, marks, at)
     # The artifact publishes the marks AFTER the raise, so today's reading and today's record are

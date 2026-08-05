@@ -171,13 +171,23 @@ def build_lab(
     db: Database,
     provider: DataProvider,
     *,
+    timeframe: Timeframe,
     families: Sequence[Family] | None = DEFAULT_FAMILIES,
     cost_per_side: float = COST_PER_SIDE,
 ) -> AutoDiscoveryLab:
-    """Wire a crypto-fed :class:`AutoDiscoveryLab` (flat per-side cost, family-restricted)."""
+    """Wire a crypto-fed :class:`AutoDiscoveryLab` (flat per-side cost, family-restricted).
+
+    ``timeframe`` is REQUIRED and must be the interval ``provider`` was built on
+    (:func:`lake_provider` / :func:`load_universe`). It is not defaulted to ``D1`` alongside them
+    on purpose: this is the argument that annualises every Sharpe the lab stores, and a D1 default
+    here would silently mis-annualise an H8 universe by sqrt(3) -- a smaller version of the exact
+    defect R0086 records (see libs/autodiscovery/validation.py). Crypto trades 24/7, so the lab's
+    365-day calendar default is the right one for every provider this module builds.
+    """
     return AutoDiscoveryLab(
         db,
         provider,
+        bar=timeframe,
         cost_provider=lambda _s: cost_per_side,
         families=list(families) if families is not None else None,
     )

@@ -86,3 +86,37 @@ search-plan: sweep each surviving candidate's parameters +/- one step, score the
   dispersion; produce the 0-100 figure discovery_score already expects
 confidence: 0.6
 outcome: —
+
+## CONVERTED FROM MINING — 2026-08-05 Bilibili deep sweep
+
+### DH-006 A liquidity-capped micro-cap size premium survives regime-split live testing [status: open]
+rationale: surfaced by the dedicated Bilibili sweep (score 7.0, query `统计套利 策略`) —
+  "分行情实测微盘市值策略：牛市年化 45% 震荡市 16%，流动性决定最终收益上限"
+  (regime-split live test of a micro-cap size strategy: 45%/yr bull, 16% chop, LIQUIDITY
+  determines the final return ceiling). Converted rather than queued because it is the one row in
+  this sweep carrying all three things a hypothesis needs: a NAMED mechanism (cross-sectional size
+  premium), STATED economics split by regime, and an explicitly named CAPACITY CONSTRAINT.
+mechanism-prior: `cross_sectional_risk_premium` (census), with a second leg in
+  `liquidity_provision_immediacy`. The forced participant is the marginal holder of an illiquid
+  small name who must exit into a thin book — which is also precisely why the edge is capped, so
+  the mechanism and its capacity limit are the SAME fact rather than two findings.
+expected-info-value: med-high — the capacity claim is directly testable against this desk's own
+  capacity-parity machinery (L1.18/L1.18a), and a size premium whose ceiling is set by liquidity
+  is the shape most likely to survive a backtest and die at the desk's actual size. That makes it
+  worth testing for the REFUTATION as much as the edge.
+supporting-evidence: NONE BEYOND A TITLE, and this is stated rather than glossed. The desk cannot
+  read Bilibili video content (measured: 0 of 14 quant videos expose a subtitle track to an
+  unauthenticated request), so the entire evidential basis is the 39 characters above. The 45%/16%
+  figures are the uploader's UNVERIFIED claim, carry no sample window, no cost model, no
+  multiplicity charge and no out-of-sample statement, and must never be quoted as measurements.
+search-plan: (1) restate the mechanism from public data alone, ignoring the video's numbers;
+  (2) build the cross-section on the desk's own D1 crypto lake, ranked by circulating market cap;
+  (3) pre-register the regime split BEFORE looking — a split chosen after seeing returns is a free
+  parameter, and "bull vs chop" is exactly the split a fitted story picks;
+  (4) charge the capacity test FIRST via capacity_status, because if the edge dies at the desk's
+  size the rest is unfalsifiable entertainment.
+confidence: 0.25 — the mechanism is real and well documented in equities; that it survives NET OF
+  COST at crypto micro-cap liquidity is the open question, and the source's own headline concedes
+  the ceiling.
+outcome: —
+

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from libs.autodiscovery.models import CandidateStatus, Family, Hypothesis, ValidationMetrics
 from libs.autodiscovery.orchestrator import AutoDiscoveryLab
+from libs.data.timeframe import Timeframe
 from libs.store.connection import Database
 from libs.validation.economic_prior import MechanismType
 
@@ -17,7 +18,7 @@ def _hyp(i: int) -> Hypothesis:
 
 
 def test_effective_trials_accumulates_across_campaigns(db: Database) -> None:
-    lab = AutoDiscoveryLab(db, lambda _s: None)
+    lab = AutoDiscoveryLab(db, lambda _s: None, bar=Timeframe.D1)
     assert lab._effective_trials(3) == 3  # empty ledger -> only this cycle's trials
 
     for i in range(5):  # simulate 5 trials recorded in prior campaigns

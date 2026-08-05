@@ -26,6 +26,7 @@ READ. Nothing archives article bodies.
 
 from __future__ import annotations
 
+import html
 import json
 import re
 import urllib.request
@@ -109,10 +110,13 @@ def sogou_weixin(keyword: str) -> tuple[list[Article], str | None]:
     """
     url = f"https://weixin.sogou.com/weixin?type=2&query={quote(keyword)}"
     try:
-        html = _get(url, referer="https://weixin.sogou.com/")
+        # NOT named `html`: that is the stdlib module this file now needs for entity decoding, and
+        # shadowing it here would leave `html.unescape` working in every OTHER function and dead
+        # in this one -- the kind of breakage that surfaces only when someone later moves a line.
+        page = _get(url, referer="https://weixin.sogou.com/")
     except Exception as exc:
         return [], f"{type(exc).__name__}: {str(exc)[:140]}"
-    if "antispider" in html or "请输入验证码" in html:
+    if "antispider" in page or "请输入验证码" in page:
         return [], "sogou served an anti-bot challenge (rate limited)"
 
     # PARSED BLOCK-WISE, and the summary is the whole reason. The first version scanned title
@@ -133,7 +137,7 @@ def sogou_weixin(keyword: str) -> tuple[list[Article], str | None]:
     # a block that does not is skipped rather than guessed at.
     out: list[Article] = []
     seen: set[str] = set()
-    blocks = re.split(r'<div class="txt-box">', html)[1:]
+    blocks = re.split(r'<div class="txt-box">', page)[1:]
     for block in blocks:
         art = _parse_wechat_block(block, seen)
         if art is not None:
@@ -143,7 +147,7 @@ def sogou_weixin(keyword: str) -> tuple[list[Article], str | None]:
     # degrading to weaker results beats degrading to none -- but the caller is told, because a
     # silent downgrade to title-only scoring is exactly the defect above coming back unnoticed.
     if not out:
-        for m in re.finditer(r'<a\b([^>]*uigs="article_title[^>]*)>(.*?)</a>', html, flags=re.S):
+        for m in re.finditer(r'<a\b([^>]*uigs="article_title[^>]*)>(.*?)</a>', page, flags=re.S):
             art = _wechat_article(m.group(1), m.group(2), "", seen)
             if art is not None:
                 out.append(art)
@@ -169,7 +173,12 @@ def _wechat_article(attrs: str, raw_title: str, raw_snippet: str,
     href_m = re.search(r'href="([^"]+)"', attrs)
     if not href_m:
         return None
-    href = href_m.group(1)
+    # THE HREF IS AN HTML ATTRIBUTE, SO ITS SEPARATORS ARE ENTITY-ENCODED. Sogou writes
+    # `?url=...&amp;type=2&amp;query=...`, and taking that literally produces a query parameter
+    # actually named `amp;type` -- so every WeChat link the miner surfaced was DEAD, and dead in
+    # the quiet way: the row looks complete, ranks normally, and only fails when a human finally
+    # clicks it. A candidate the desk cannot open is a candidate the desk did not find.
+    href = html.unescape(href_m.group(1))
     title = _text(raw_title)
     if not title or href in seen:
         return None
@@ -180,9 +189,22 @@ def _wechat_article(attrs: str, raw_title: str, raw_snippet: str,
 
 
 def _text(raw: str) -> str:
-    """Strip tags and collapse whitespace. Sogou wraps matched terms in <em> highlights, and an
-    unstripped '<em>回测</em>' would put markup into the text the ranker scores."""
-    return re.sub(r"\s+", " ", re.sub(r"<[^>]+>", "", raw)).strip()
+    """Strip tags, decode entities, collapse whitespace.
+
+    Sogou wraps matched terms in <em> highlights, and an unstripped '<em>回测</em>' would put
+    markup into the text the ranker scores.
+
+    THE UNESCAPE COMES AFTER TAG REMOVAL (2026-08-05) and the order is load-bearing: decode first
+    and an encoded `&lt;em&gt;` becomes a real tag that the next step then eats, deleting text
+    between two angle brackets that were never markup.
+
+    Entities were reaching the ranker undecoded. `&quot;` is merely untidy; a NUMERIC entity is
+    the real hazard, because `&#x91CF;&#x5316;` is how `量化` arrives from some encoders -- the
+    scorer would find no Chinese in the title at all and rank a relevant article zero. Same
+    failure mode as the CJK `\\b` bug, reached through a different door: a real edge made
+    invisible to the gate rather than rejected by it.
+    """
+    return html.unescape(re.sub(r"\s+", " ", re.sub(r"<[^>]+>", "", raw))).strip()
 
 
 def probe_all() -> list[dict[str, Any]]:

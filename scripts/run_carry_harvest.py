@@ -30,6 +30,10 @@ _CRYPTO = Path("data/lake/bronze/crypto")
 _OUT = Path("reports/carry_harvest")
 _FEE_PER_FLIP_LEG = 8e-4          # taker on perp+spot, one-way per unit |delta position|
 _THRESHOLDS = (0.0, 0.0001, 0.0003)  # harvest when |funding| exceeds (0, ~11%/yr, ~33%/yr)
+# NATIVE 8h FUNDING BARS -> 1095 a year. Until R0086 these verdicts were annualised with the
+# validator's hourly constant (6240), inflating every reported ann_sharpe by sqrt(6240/1095) =
+# 2.387x. The report below is regenerated on each run, so it self-corrects; nothing is rewritten.
+_PPY = 3 * 365.0
 _FAIL_MODES = ["basis blowout in crash", "funding regime flip negative", "exchange/counterparty"]
 
 
@@ -101,7 +105,8 @@ def main() -> None:
         hyp = Hypothesis(family=Family.CARRY, subtype=f"funding_carry_{sub}", symbol=sym,
                          params={}, mechanism=MechanismType.RISK_PREMIUM,
                          edge_source="perp funding carry delta-neutral", failure_modes=_FAIL_MODES)
-        v = validate(rets, hypothesis=hyp, n_trials=n_trials, sharpe_estimates=sharpes,
+        v = validate(rets, hypothesis=hyp, periods_per_year=_PPY,
+                     n_trials=n_trials, sharpe_estimates=sharpes,
                      returns_matrix=matrix, campaign=campaign, column=col)
         survivors += int(v.survived)
         for g, ok in v.gates.items():

@@ -40,6 +40,7 @@ ROOT = Path(__file__).resolve().parent.parent
 KEYS = ROOT / "data/secrets/llm_panel.json"
 
 from libs.doctrine.constitution import OBJECTIVE_PREAMBLE  # noqa: E402
+from libs.ops.llm_route import build_chain  # noqa: E402
 
 BUDGET = ROOT / "data/panel_budget.json"
 BSTATE = ROOT / "data/panel_budget_state.json"
@@ -49,6 +50,34 @@ OUT = ROOT / "data/kimi_hunt.json"
 CTX = ssl.create_default_context()
 
 MODEL = "moonshotai/kimi-k3"          # seated model; swarm-max reserved for quarterly deep dives
+
+#: THE HUNT DOES NOT STOP BECAUSE ONE DOOR IS SHUT (L1.54, 2026-08-05).
+#:
+#: Until today this file named ONE model and had no path past it. Absent from the roster ->
+#: SystemExit(2). Out of credit -> SystemExit(3). Any transport hiccup mid-wave -> SystemExit(3)
+#: with the completed waves discarded from memory unwritten. The desk's widest non-Claude lens --
+#: scheduled every three hours plus two deep runs a week -- had therefore produced EXACTLY NOTHING
+#: since it was built: no data/kimi_hunt.json, no data/hunt_coverage.json, no ledger rows. Not
+#: because the protocol is wrong (it is good) but because a single unavailable string ended it,
+#: silently, 56 times a week.
+#:
+#: A weapon with one firing pin is not an aggressive weapon. The chain below is tried IN ORDER and
+#: the first model that answers wins. Free variants are last rather than absent: a free-tier hunt
+#: is worth immeasurably more than no hunt, and "the account is unfunded" is a reason to hunt
+#: cheaper, never a reason to stop hunting.
+#:
+#: NOT A QUALITY COMPROMISE HIDDEN AS RESILIENCE: every finding carries the model that produced
+#: it into the ledger, so a fallback hunt is attributable and can be re-run on the seated model
+#: later. The gate it must pass is identical either way -- fallback buys ATTEMPTS, never leniency.
+MODEL_CHAIN: tuple[str, ...] = (
+    "moonshotai/kimi-k3",            # seated: the deep-forest hunter proper
+    "moonshotai/kimi-k2",            # same family, previous generation
+    "deepseek/deepseek-r1",          # different family: a genuinely different prior on what is
+    "qwen/qwen3-235b-a22b",          #   under-observed, which is the point of the hunt
+    "moonshotai/kimi-k2:free",       # free tier -- last, never omitted
+    "deepseek/deepseek-r1:free",
+    "qwen/qwen3-235b-a22b:free",
+)
 
 _COVERAGE = ROOT / "data/hunt_coverage.json"
 _VECTOR_COOLDOWN_D = 45      # a forest may be re-entered only after this long
@@ -264,8 +293,28 @@ def _budget_ok() -> tuple[bool, str]:
         return (True, "budget state unreadable -- proceeding, guard is advisory")
 
 
-def _ask(base, key, system, user, timeout=240.0) -> str:
-    body = json.dumps({"model": MODEL, "max_tokens": 16000, "temperature": 1.0,
+def _providers() -> list[tuple[str, str, str]]:
+    """Every (model, base_url, key) worth trying, in preference order.
+
+    Built by crossing MODEL_CHAIN with the seated roster: a roster entry naming a chain model is
+    used directly, and any other roster entry sharing that entry's base_url can also SERVE the
+    chain model, because OpenRouter routes by the `model` field rather than by the credential.
+    That second rule is what turns one dead string into a working hunt -- previously a roster
+    holding four OpenRouter seats none of which was literally `moonshotai/kimi-k3` produced
+    "not in the seated roster", exit 2, no hunt, no artifact, no complaint.
+
+    Returns [] when there is genuinely no credential anywhere. That is a BLOCKER to record, and
+    main() records it -- it is not a reason for this function to invent one.
+    """
+    # ONE implementation, in libs/ops/llm_route. Eleven other organs on this desk resolve a single
+    # model and stop; copying this logic into each would guarantee eleven slightly different
+    # versions and eleven separate regressions, so the routing lives in a library they can all
+    # adopt and check_llm_routing names the ones that have not.
+    return [(r.model, r.base_url, r.key) for r in build_chain(MODEL_CHAIN, KEYS)]
+
+
+def _ask(base, key, system, user, timeout=240.0, model: str = MODEL) -> str:
+    body = json.dumps({"model": model, "max_tokens": 16000, "temperature": 1.0,
                        "messages": [{"role": "system",
                                      "content": (OBJECTIVE_PREAMBLE + "\n"
                                                  + _doctrine("kimi_hunter") + system)},
@@ -438,22 +487,51 @@ def _mock() -> int:
     return 0
 
 
+def _blocked(reason: str, attempts: list[dict] | None = None) -> None:
+    """Record a hunt that could not run, as an ARTIFACT rather than as a log line and an exit code.
+
+    L1.44's rule applied to an organ that produces nothing: an absent artifact is indistinguishable
+    from an organ nobody scheduled, so the desk could not tell "the hunter is unfunded" from "the
+    hunter was never built" -- a bill to pay versus a thing to build. The `status` field is what
+    the capability ratchet and max_audit read; `blocker` is what a human acts on.
+    """
+    OUT.parent.mkdir(parents=True, exist_ok=True)
+    OUT.write_text(json.dumps({
+        "updated": datetime.now(tz=UTC).isoformat(),
+        "status": "BLOCKED",
+        "blocker": reason,
+        "attempts": attempts or [],
+        "model_chain": list(MODEL_CHAIN),
+        "waves": {}, "findings": [], "dropped": [],
+        "note": ("the Deep Forest protocol and its intake gates are INTACT. This records that the "
+                 "hunt could not be ATTEMPTED, which is a different fact from a hunt that found "
+                 "nothing -- and only the second is evidence about the world."),
+    }, indent=1), "utf-8")
+    print(f"  BLOCKED -> {OUT}\n    {reason}")
+
+
 def main() -> None:
+    attempts: list[dict] = []
+    models_used: list[str] = []
     ok, why = _budget_ok()
     print("=== KIMI HUNTER -- Deep Forest Protocol (Wave 1 -> 2 -> 3) ===")
     print(f"    budget: {why}\n")
     if not ok:
         raise SystemExit("envelope exhausted -- refusing to start (guard, not a failure)")
 
-    prov = None
-    if KEYS.exists():
-        for p in json.loads(KEYS.read_text("utf-8")).get("providers", []):
-            if isinstance(p, dict) and p.get("model") == MODEL:
-                prov = p
-                break
-    if not prov:
-        print(f"  {MODEL} not in the seated roster -- add it to llm_panel.json first")
+    # A BLOCKED HUNT MUST LEAVE EVIDENCE THAT IT WAS BLOCKED. The old code printed a line and
+    # exited 2, so an organ firing 56 times a week left no artifact at all -- and an artifact that
+    # is absent looks exactly like an organ nobody scheduled. The desk could not tell "the hunter
+    # is unfunded" from "the hunter was never built", which is the difference between a bill to
+    # pay and a thing to build.
+    chain = _providers()
+    if not chain:
+        _blocked("no usable credential: data/secrets/llm_panel.json is absent or holds no seat "
+                 "with both a base_url and a key. The Deep Forest protocol is INTACT and unrun -- "
+                 "this is a funding/credential blocker, not a defect in the hunt.")
         raise SystemExit(2)
+    print(f"  {len(chain)} model/seat combination(s) to try, in order: "
+          f"{', '.join(m for m, _, _ in chain[:4])}{' ...' if len(chain) > 4 else ''}")
 
     kills = set(json.loads(MECHB.read_text("utf-8")).get("family_kills", [])) \
         if MECHB.exists() else set()
@@ -466,18 +544,39 @@ def main() -> None:
         prior = "\n\n".join(f"WAVE {k} OUTPUT:\n{v[:2500]}" for k, v in transcript.items())
         user = f"{brief}\n\n{_exclusion_text(cov)}" + (f"\n\n{prior}" if prior else "")
         print(f"  WAVE {w} -- {name}")
-        try:
-            txt = _ask(prov["base_url"], prov["key"], CHARTER, user)
-        except Exception as e:  # blind-except intentional (BLE001)
-            code = getattr(e, "code", "")
-            print(f"    FAILED ({type(e).__name__} {code})")
-            if code == 402:
-                print("    OpenRouter is out of credit. The hunt is BLOCKED, not broken --")
-                print("    the harness is intact and fires on the next funded run.")
-            raise SystemExit(3) from e
+        # WALK THE CHAIN. One model being unavailable, rate-limited or out of credit ends that
+        # ATTEMPT, never the hunt. Failures accumulate into the artifact so a run that ends
+        # blocked says which doors it tried and what each one answered.
+        txt, used = "", ""
+        for model, base, key in chain:
+            try:
+                txt = _ask(base, key, CHARTER, user, model=model)
+            except Exception as e:  # blind-except intentional (BLE001)
+                code = getattr(e, "code", "")
+                attempts.append({"wave": w, "model": model, "error": f"{type(e).__name__} {code}"})
+                print(f"    {model}: FAILED ({type(e).__name__} {code})"
+                      + ("  [out of credit]" if code == 402 else ""))
+                continue
+            if txt.strip():
+                used = model
+                break
+            attempts.append({"wave": w, "model": model, "error": "empty response"})
+            print(f"    {model}: empty response")
+        if not used:
+            # EVERY door on this wave is shut. Keep whatever the earlier waves produced -- a
+            # completed Wave 1 map is worth having and re-deriving it costs a full run.
+            print(f"    wave {w} could not be run on any model; keeping {len(transcript)} "
+                  "completed wave(s)")
+            break
         transcript[w] = txt
+        models_used.append(used)
         _new_v = _record_vectors(cov, txt)
-        print(f"    {len(txt)} chars returned, {_new_v} new vector(s) recorded")
+        print(f"    [{used}] {len(txt)} chars returned, {_new_v} new vector(s) recorded")
+        # PERSIST AFTER EVERY WAVE. Coverage used to be written only after Wave 3 returned, so a
+        # hunt dying late threw away the territory memory of the waves that HAD succeeded and the
+        # next run re-hunted the same forest -- the cooldown silently defeated by its own failure
+        # path, which is the most expensive way to lose depth.
+        _COVERAGE.write_text(json.dumps(cov, indent=1), "utf-8")
 
         if w == 1:
             continue                       # Wave 1 is mapping only; findings are not permitted
@@ -507,10 +606,26 @@ def main() -> None:
     print("\n  ZERO PROMOTION AUTHORITY. These are raw ore. Next stops: mechanism board "
           "(family-kill rejection), measurement gate, Stage-A screening, forward clock.")
     _COVERAGE.write_text(json.dumps(cov, indent=1), "utf-8")
-    print(f"  coverage memory: {len(cov.get(chr(34)+chr(118)+chr(101)+chr(99)+chr(116)+chr(111)+chr(114)+chr(115)+chr(34), {}))} territories hunted to date")
-    OUT.write_text(json.dumps({"updated": datetime.now(tz=UTC).isoformat(), "model": MODEL,
+    # The key is `vectors`. This line read cov.get('"vectors"') -- chr(34) is a double quote, so
+    # the lookup asked for a key spelled WITH quotation marks, missed every time, and printed
+    # "0 territories hunted to date" unconditionally. The desk's only depth-accumulation readout
+    # was hardcoded to zero by an obfuscation, which is the worst place for one: a hunter whose
+    # depth always reads nothing gives nobody a reason to look at whether depth is accruing.
+    n_terr = len(cov.get("vectors", {}))
+    print(f"  coverage memory: {n_terr} territories hunted to date")
+    # PARTIAL is a first-class outcome. A run that mapped the herd and mined negative space but
+    # could not reach Wave 3 produced real work, and calling that a failure would throw it away.
+    status = "OK" if len(transcript) == 3 else ("PARTIAL" if transcript else "BLOCKED")
+    OUT.write_text(json.dumps({"updated": datetime.now(tz=UTC).isoformat(),
+                               "status": status,
+                               "models_used": models_used,
+                               "model_chain": list(MODEL_CHAIN),
+                               "waves_completed": sorted(transcript),
+                               "attempts": attempts,
+                               "territories_hunted": n_terr,
                                "waves": {str(k): v[:4000] for k, v in transcript.items()},
                                "findings": findings, "dropped": dropped}, indent=1), "utf-8")
+    print(f"  status {status} | waves {sorted(transcript)} | models {models_used}")
     print(f"  -> {OUT}")
 
 
