@@ -30,6 +30,38 @@ _STABLES = "https://stablecoins.llama.fi/stablecoincharts/all"
 _BINANCE = "https://api.binance.com/api/v3/klines"
 _SERIES = Path("data/stablecoin_supply.jsonl")
 
+#: Largest day-over-day move in AGGREGATE stablecoin supply this collector will accept as real.
+#: Measured, not chosen: over DefiLlama's full 3,172-day history the last |move| above 10% was
+#: 2020-04-03, back when the whole float was ~$7bn. At today's ~$306bn a 10% day is a $30bn mint
+#: or burn -- an event that would be the story of the year, not a Tuesday. So a breach is a bad
+#: READ with overwhelming prior, and the collector's job is to refuse it rather than store it.
+_MAX_DAILY_MOVE = 0.10
+
+
+def _implausible(latest: float, prev: float) -> str:
+    """Non-empty reason iff `latest` cannot be a real successor to `prev`.
+
+    WHY THIS EXISTS (found 2026-08-05 while deciding R0230). On 2026-07-27 this collector stored
+    supply_usd=122.37bn between two ~306bn days -- a 60% collapse and a full recovery the next
+    morning -- carrying z20=-239.803 into data/stablecoin_supply.jsonl, which is the live input
+    to a Holm forward slot. DefiLlama's own history now serves 307.96bn for that date, so it was
+    a transient bad read that the vendor itself has since corrected. Nothing fired: there was no
+    plausibility check of any kind between the API and the artifact.
+
+    THE DAMAGE WAS ZERO PURELY BY LUCK, WHICH IS NOT A CONTROL. run_axis_shadows takes
+    `np.sign(z)`, so -239.803 and the true -0.950 produce the identical position. Had the bad
+    read come back HIGH instead of low the sign would have flipped and that day's forward return
+    would have been booked inverted -- in the one artifact whose whole purpose is to be the
+    unpolluted forward evidence a promotion decision is made on.
+    """
+    if prev <= 0:
+        return ""
+    move = latest / prev - 1.0
+    if abs(move) > _MAX_DAILY_MOVE:
+        return (f"day-over-day move {move:+.1%} exceeds the {_MAX_DAILY_MOVE:.0%} plausibility "
+                f"bar (${prev/1e9:.2f}bn -> ${latest/1e9:.2f}bn)")
+    return ""
+
 
 def _get(url: str) -> object:
     req = urllib.request.Request(url, headers={"User-Agent": "quant-stablesupply/1.0"})
@@ -79,6 +111,14 @@ def main() -> None:
         z[t] = (sig[t] - w.mean()) / sd if sd > 0 else 0.0
 
     scr = stage_a_screen(sig, ret, name="stablecoin_supply_momentum")
+
+    # REFUSE AN IMPLAUSIBLE READ RATHER THAN STORE IT. The check runs against the API's OWN
+    # previous day, so it is independent of whatever this artifact happens to already hold, and
+    # it exits nonzero so a bad vendor day surfaces as a failed collector run instead of a
+    # silently poisoned row (L1.41: a refusal path, and no silent swallow).
+    if len(sig) >= 2 and (why := _implausible(float(sig[-1]), float(sig[-2]))):
+        raise SystemExit(f"REFUSED {dates[-1]}: {why} -- almost certainly a bad vendor read; "
+                         f"not writing to {_SERIES}")
 
     today = datetime.now(tz=UTC).date().isoformat()
     rec = {"date": today, "supply_usd": round(float(sig[-1]), 0),
