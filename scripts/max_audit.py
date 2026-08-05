@@ -6973,3 +6973,62 @@ def check_survivor_pipeline(defects) -> None:
 
 
 CHECKS += [("survivor-pipeline", check_survivor_pipeline)]
+
+
+def check_paywalls_registered(defects) -> None:
+    """§42: every paid dataset the desk WALKED INTO must reach the registry, not just a log.
+
+    The registry's standing rule already says every digger ADDS any paid dataset it encounters.
+    The rule was right and nothing mechanical enforced it, so it depended on whoever wrote the
+    collector remembering -- the by-hand step that runs at zero when nobody is looking. Measured
+    2026-08-05: a collector hit DefiLlama's emissions endpoint, got HTTP 402 Payment Required,
+    wrote it into its own status artifact and a cron comment, and DefiLlama never reached
+    docs/research/paid_dataset_targets.md.
+
+    Only confirmed PAYWALLs are demanded. A bare 403 is far more often a WAF than a price, and
+    requiring a registry row for every one would fill the list with bot blocks and bury the
+    vendors somebody actually sells -- a registry nobody trusts is a registry nobody consults.
+    """
+    try:
+        sys.path.insert(0, str(ROOT))
+        from libs.data.paywall import vendors_encountered
+    except Exception as exc:
+        defects.append(("paywall-ledger-unreadable",
+                        f"libs.data.paywall could not be imported ({exc}) -- paid datasets the "
+                        "desk walks into can no longer be recorded, so the registry silently "
+                        "stops growing while collectors keep hitting paywalls"))
+        return
+
+    seen = vendors_encountered(ROOT)
+    if not seen:
+        return                                                # nothing encountered is not a defect
+    try:
+        registry = PAID_TARGETS.read_text("utf-8", errors="ignore").lower()
+    except OSError:
+        registry = ""
+    if not registry:
+        defects.append(("paywall-registry-missing",
+                        f"{len(seen)} confirmed paywall(s) encountered and "
+                        "docs/research/paid_dataset_targets.md is absent -- every one is a paid "
+                        "dataset with no recorded free-replacement hunt"))
+        return
+    missing = sorted(v for v in seen if v.split(".")[0] not in registry)
+    if missing:
+        rows = "; ".join(f"{v} ({seen[v].get('unlocks', '')[:60]})" for v in missing[:4])
+        defects.append(("paywall-unregistered",
+                        f"§42: {len(missing)} paid dataset(s) encountered but NOT in the registry: "
+                        f"{rows}. Every paywall the desk walks into is a valuable dataset somebody "
+                        "sells -- it must be listed WITH a free-replacement hunt (primary-source "
+                        "reconstruction first; facts are not copyrightable), or the desk keeps "
+                        "hitting the same wall and never routes around it."))
+    unhunted = sorted(v for v, r in seen.items()
+                      if str(r.get("free_replacement_status", "")).upper() == "UNHUNTED"
+                      and v.split(".")[0] in registry)
+    if unhunted:
+        defects.append(("paywall-unhunted",
+                        f"{len(unhunted)} registered paywall(s) still carry no free-replacement "
+                        f"verdict in the encounter ledger: {', '.join(unhunted[:5])}. Listed is "
+                        "not hunted -- §42's deliverable is the REPLACEMENT, not the row."))
+
+
+CHECKS += [("paywalls-registered", check_paywalls_registered)]

@@ -45,6 +45,8 @@ if not _ROOT.exists():
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
+from libs.data.paywall import record as record_paywall  # noqa: E402
+
 OUT = "data/circulating_supply.jsonl"
 STATUS = "data/circulating_supply_status.json"
 
@@ -148,8 +150,22 @@ def run(root: Path | None = None, ids: tuple[str, ...] = DEFAULT_IDS) -> dict[st
     except (OSError, ValueError):
         pass
 
+    # THE PAYWALL IS RECORDED, NOT JUST NARRATED. Writing "402" into a status field and a cron
+    # comment is what happened the first time, and DefiLlama's paid tier never reached the §42
+    # registry -- the standing rule said to add it and nothing mechanical enforced the rule. One
+    # row per run is enough: the fence reads the LATEST encounter per vendor, and a hunt that
+    # succeeds flips the registry row rather than the ledger.
+    paywall = record_paywall(
+        "https://api.llama.fi/emissions", status=402,
+        unlocks=("dated token-unlock release rows with known_from -- the NUMERATOR of "
+                 "screen_unlock_supply_series (36 declared cells). The denominator "
+                 "(circulating-supply history) is already accruing free from CoinGecko, so this "
+                 "single feed is the whole remaining blocker on that screen."),
+        root=base)
+
     status = {
         "generated_utc": _now(),
+        "paywall_recorded": {k: paywall[k] for k in ("vendor", "status", "verdict", "unlocks")},
         "status": "OK" if rows else "BLOCKED",
         "n_written": len(rows), "n_requested": len(ids),
         "errors": errors,
