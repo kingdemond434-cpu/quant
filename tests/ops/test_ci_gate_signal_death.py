@@ -59,7 +59,7 @@ def _marker(tmp_path: Path) -> dict:
 
 def _fake_run(returncode: int):
     """A subprocess.run stand-in that reports `returncode` for the pytest step only."""
-    def _run(cmd, **kw):  # noqa: ANN001, ANN003
+    def _run(cmd, **kw):
         rc = returncode if any("pytest" in str(c) for c in cmd) else 0
         return subprocess.CompletedProcess(cmd, rc, stdout="", stderr="")
     return _run
@@ -68,7 +68,7 @@ def _fake_run(returncode: int):
 class TestSignalDeathIsNotACodeVerdict:
     def test_killed_step_is_named_distinctly_and_carries_its_evidence(
             self, monkeypatch, capsys, tmp_path):
-        """The label is the operator's whole diagnosis -- max_audit prints failed_tracked verbatim."""
+        """The label IS the diagnosis -- max_audit prints failed_tracked verbatim."""
         monkeypatch.setattr(run_ci.subprocess, "run", _fake_run(-9))
         monkeypatch.setattr(run_ci, "_inflight_py", lambda: [])
         run_ci._run_steps()
@@ -87,7 +87,8 @@ class TestSignalDeathIsNotACodeVerdict:
         """THE NON-LOOSENING DIRECTION. Unknown is not green; this must never become a pass."""
         monkeypatch.setattr(run_ci.subprocess, "run", _fake_run(-9))
         monkeypatch.setattr(run_ci, "_inflight_py", lambda: [])
-        assert run_ci._run_steps() == 1, "a killed step read as GREEN -- the gate switched itself off"
+        assert run_ci._run_steps() == 1, (
+            "a killed step read as GREEN -- the gate switched itself off")
         marker = _marker(tmp_path)
         assert marker["ok"] is False
         assert marker["tracked_ok"] is False, (
@@ -99,7 +100,7 @@ class TestSignalDeathIsNotACodeVerdict:
         """Re-running a memory-killed step under the same pressure doubles the shortage."""
         calls: list[list[str]] = []
 
-        def _counting(cmd, **kw):  # noqa: ANN001, ANN003
+        def _counting(cmd, **kw):
             calls.append([str(c) for c in cmd])
             rc = -9 if any("pytest" in str(c) for c in cmd) else 0
             return subprocess.CompletedProcess(cmd, rc, stdout="", stderr="")
