@@ -441,6 +441,18 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0037",
+   "source": "cycle",
+   "summary": "AUDIT ALL 21 ORPHAN FENCES FOR EXISTENCE, not just for a law mapping. check_book_absorbing_state was mapped to L1.23 in build_enforcement_matrix.py and had never been written -- the matrix reported the law fenced and nobody looked, while the live absorbing lock held the book flat. Add a build_enforcement_matrix assertion that every mapped fence RESOLVES to a real callable/script, so a registered-but-absent check is a hard error. Root cause of the recurring L1.37 --no-verify pushes (5 instances) is the same drift: 35 laws absent from ops/principal_doctrine.txt.",
+   "roi_bps": 0.0,
+   "raised": "2026-08-05T01:48:39.017072+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

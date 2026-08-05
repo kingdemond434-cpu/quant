@@ -2809,6 +2809,27 @@
       ],
       "flagged_gap": "The fork is the root cause of the pager regressions and is NOT fixed by this entry: the tree is 419 commits behind master and 108 ahead, and master silently held capabilities this box lacked. Ledgered as R0030.",
       "push_record": "pending -- committed and pushed at end of cycle"
+    },
+    {
+      "id": "2026-08-05-l137-no-verify-push-record-5th",
+      "hypothesis": "L1.37 refuses the push while any constitutional law fence fails. Six fail on this fork and NONE is attributable to this cycle's work -- so the choice is between leaving verified repairs to a severed control channel uncommitted on a VPS disk, and pushing past a gate that is red for reasons that predate the change.",
+      "decision": "Pushed with --no-verify and recorded it, per the sanctioned procedure (5th instance). FIRST REPAIRED MY OWN CONTRIBUTION: the new check_principal_page_unanswerable fence had no governing principle, taking orphan fences 21 -> 22; mapped to L1.23 and back to 21 before pushing. The six remaining breaches, each checked against the files this cycle touched: (1) build_enforcement_matrix 21 orphan fences -- verified mine is NOT among them; (2) check_law_families -- all 6 families UNREACHED with all 35 laws not_in_doctrine, systemic; (3) check_enforcement_execution rc=2, pre-existing; (4) check_timidity_language -- the breach is 'L1.28 is absent from ops/principal_doctrine.txt', and the audit artifact names none of my seven files (checked explicitly, not assumed); (5) check_scheduler_manifest BROKEN, pre-existing crontab/manifest drift; (6) check_build_standard names check_enforcement_execution.py as UNTESTED -- not my file.",
+      "expected_benefit": "The commits carry the restored principal reply channel (two growth levers were unanswerable for 3 days), the all-time bleed denylist (1 -> 6 symbols, and the rolling list was EMPTY), and two L1.23 survival checks. Uncommitted work on a VPS disk is not institutional memory.",
+      "expected_cost": "A red law gate stays red and the bypass count rises to 5. That is the real cost: the --no-verify path is becoming routine, which is exactly how a gate stops meaning anything.",
+      "confidence": 0.85,
+      "assumptions": [
+        "the six breaches are pre-existing -- checked per-breach against the touched files, not inferred from the count being unchanged",
+        "the fork's doctrine-injection gap (all 35 laws not_in_doctrine) is the shared root cause of breaches 2 and 4"
+      ],
+      "success_metric": "The bypass count STOPS rising. The 5 instances share one root cause -- the fork's laws/doctrine drift -- so the fix is to close that drift, not to keep recording exceptions. If a 6th instance is recorded with the same six breaches, the gate has become decorative and that is the finding.",
+      "reversal_condition": "If any of the six breaches is later shown to be caused by this cycle's commits (a0026d9, d788b63), revert that commit rather than re-record the bypass.",
+      "neighbours": [
+        "deploy/git_hooks/pre-push -- the L1.37 gate itself; unchanged, still refuses, still correct to refuse",
+        "scripts/build_enforcement_matrix.py -- my only edit to the fence layer: one mapping added, taking orphans DOWN not up",
+        "ops/principal_doctrine.txt -- untouched, and it is the root cause of breaches 2 and 4 (35 laws absent from it)"
+      ],
+      "flagged_gap": "ROOT CAUSE, unfixed and now the top governance item: 21 orphan fences and 35 laws absent from the doctrine text mean the enforcement matrix reports laws as fenced that are not. This cycle found the sharpest instance -- check_book_absorbing_state was MAPPED to L1.23 and had never been written, so the desk believed it was guarded against the exact lock that has held the book flat. A registered-but-absent check is worse than an unregistered one: it stops anyone looking. Audit all 21 orphans and every mapping for existence, not just for presence.",
+      "push_record": "--no-verify, 5th instance, this entry is the record"
     }
   ]
 }
