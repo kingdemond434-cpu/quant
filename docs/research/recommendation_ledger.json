@@ -292,11 +292,11 @@
    "summary": "Add a max_audit check for STALE-CODE DAEMONS: any long-lived organ process whose start time predates the last commit touching its script is running code the desk thinks it fixed. Found 5 live instances today incl. the executor and the bybit recorder. Mechanical to check (ps lstart vs git log -1 on the script path); this cycle's sweep is the prototype.",
    "roi_bps": 5.0,
    "raised": "2026-08-04T22:01:58.048735+00:00",
-   "status": "open",
+   "status": "implemented",
    "reason": null,
-   "commit": null,
+   "commit": "0cb670a",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-05T02:55:57.152222+00:00"
   },
   {
    "id": "R0025",
@@ -328,11 +328,11 @@
    "summary": "Arm the independent alert channel: data/secrets/alert_channels.json is ABSENT, so send_all is a no-op and ntfy remains a single point of failure for every page including dead-man fires (gap #38).",
    "roi_bps": 0.0,
    "raised": "2026-08-05T01:18:28.540784+00:00",
-   "status": "open",
+   "status": "implemented",
    "reason": null,
-   "commit": null,
+   "commit": "49fa958",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-05T03:00:19.103785+00:00"
   },
   {
    "id": "R0028",
@@ -352,11 +352,11 @@
    "summary": "Spot maker share is 23.8% vs a 60% target while futures is 61.9%; fut_commission is 88.7% of the entire carry leak ($1750.88 of -$1974.61) and 15.5x the funding harvested. Root-cause why patient-maker converts on the perp leg but not on spot.",
    "roi_bps": 3.0,
    "raised": "2026-08-05T01:18:28.856201+00:00",
-   "status": "open",
+   "status": "implemented",
    "reason": null,
-   "commit": null,
+   "commit": "4fb91e0",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-05T03:04:09.699052+00:00"
   },
   {
    "id": "R0030",
@@ -657,6 +657,42 @@
    "commit": null,
    "due": null,
    "disposed": "2026-08-05T02:45:33.054061+00:00"
+  },
+  {
+   "id": "R0055",
+   "source": "cycle",
+   "summary": "TIER-3, needs principal sign-off: run_deadman_switch.py:_page() pushes to ntfy ONLY, inside a bare except:pass, and writes no row to data/alert_delivery.jsonl. The single most important page this desk can send is single-channel and silently droppable -- precisely the shape that killed 39/39 ntfy pushes for 29h on 2026-07-19 ACROSS A LIVE DEAD-MAN FIRE. R0027 armed the hc second channel for send_all, but the dead-man does not route through it (it is deliberately isolated: no libs imports). Fix is ~8 stdlib lines: POST heartbeat_url + '/fail' before the ntfy push, mirroring run_alerts._second_channel, plus one ledger append. Cannot be done by a worker -- Tier-3 file.",
+   "roi_bps": null,
+   "raised": "2026-08-05T03:00:23.515480+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0056",
+   "source": "cycle",
+   "summary": "R0029 mechanism fix (LIVE ORDER PATH -- needs a cycle that can test against the venue): _maker_pair places each post-only quote ONCE and never re-pegs; the whole patience is time.sleep(2.0) in a poll loop, then cancel+place_market. Opens rest spot BUY at the bid in a regime _entry_gate selects for perp premium, so the perp SELL is hit and the spot BUY sits 240s then pays ~21bps to cross (FILUSDT 07-31: wait_s=247.0, spot_slip +21.05 vs fut_slip -11.24). Fix = re-peg the resting leg to the touch while staying post-only. RISKS to handle in the same change: fill is inferred from the symbol's whole open-orders book with no orderId tracking (cancel_all races, any unrelated resting order poisons it); _resting_quotes (protective-stop filter) is absent on this fork, so porting it flips the perp leg to permanent taker_fallback; and a GTX that would cross returns 200 + status=EXPIRED, which libs/execution/maker.py:43 assumes is a rejection.",
+   "roi_bps": null,
+   "raised": "2026-08-05T03:04:15.454574+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0057",
+   "source": "cycle",
+   "summary": "Instrument the reconcile/hedge path: _mkt_or_limit (run_cashcarry_executor.py:398) is MARKET-FIRST (place_market, post-only only as a PERCENT_PRICE-rejection fallback) and its 'mkt'|'limit' return is never written into cashcarry_trades.json. Three call sites on the reconcile path. So the maker metric sees 24 legs while ~1000 futures orders generate the $1,750.88 commission that is 88.7% of the carry leak and 15.5x the funding harvested -- the two numbers are not commensurable and the fee bill is the one with the money in it. Log the mode from all three call sites, then re-measure where the commission is actually created before optimising the 24-leg maker path further.",
+   "roi_bps": null,
+   "raised": "2026-08-05T03:04:23.845067+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
