@@ -440,6 +440,15 @@ _FENCE_OWNERS: dict[str, str] = {
     # calibration_mae_falling_months as ramp step-up conditions with no producer while the ramp sat
     # pinned at its floor), which is exactly the hand-is-not-a-mechanism gap L1.41 exists to close.
     "check_phantom_paths": "L1.40",
+    # --- L1.54 (a shut door is a routing problem, not a verdict). Both fences landed unmapped and
+    # therefore REFUSED EVERY PUSH on this branch -- the same failure my own check_paywalls_
+    # registered hit at c8983b1, which makes it a class rather than an accident: a max_audit fence
+    # is wired by adding the FUNCTION here, and adding the script to `_MAP` does not do it.
+    # Mapped from each fence's own docstring, which names L1.54 explicitly, not from a guess:
+    # "A blocked route the desk stopped chasing is an accepted loss. L1.54 forbids accepting it."
+    # and "the enumerated exhaustion L1.54 demands rather than silence."
+    "check_blocked_routes_hunted": "L1.54",
+    "check_verified_alternatives_promoted": "L1.54",
     # --- SAME LENS, ONE TURN LATER (L1.40): check_phantom_paths catches a reader whose source was
     # NEVER written; check_dormancy_disarm catches a reader whose source WENT EMPTY. Both take the
     # empty branch and return a plausible healthy answer, but the second is harder to see because
