@@ -1984,3 +1984,30 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # CONFIDENCE: committed-script (new this cycle; detector verified on t.me/discord.gg/open.kakao
 #   shapes, 0 false positives on bare-domain junk)
 31 7 * * * cd "$QUANT_ROOT" && flock -n data/.cron_joinlinks.lock .venv/bin/python scripts/harvest_join_links.py >> data/cro_ai_logs/join_links.log 2>&1
+
+# ---------------------------------------------------------------------------------------------
+# AXIS-SCREEN CORRECTION LAYER -- the single unrun organ standing between this desk and its first
+# forward clock, and it was never scheduled at all (0 cron lines before today).
+#
+# THE CHAIN IT BREAKS WHEN IT DOES NOT RUN, traced 2026-08-05:
+#   finalize_axis_screens CRASHES on a missing screen file (unguarded read_text)
+#     -> no report carries `verdict_adjusted`
+#     -> run_paper_sleeve_spawner REFUSES ("NONE carries verdict_adjusted")
+#     -> no Stage-A candidate can be admitted to a forward slot
+#     -> 0 clocks ever started; 10 of 12 Stage-B slots idle; accruing = 0
+#     -> NOTHING CAN EVER SURVIVE, because the two-stage law gives Stage B SOLE promotion
+#        authority and Stage B had never been fed.
+# Zero survivors was therefore structural, not statistical: no gate was too tight, the road to a
+# survivor had simply never been opened.
+#
+# Runs after the Stage-A screens land (announcement diffusion 06:40, unlock series Mon 06:25,
+# venue subsidy Mon 06:53) and BEFORE the spawner, so a corrected verdict is available the same
+# morning it is produced rather than a day later.
+# CEILING TYPE (L1.28c) is INPUT-ARRIVAL and daily is at it: corrections advance only when a
+# screen re-runs, and re-correcting an unchanged artifact rewrites the same numbers.
+# Pure CPU, stdlib, reads reports/axis_screens/*.json and rewrites them in place.
+# EVIDENCE: scripts/finalize_axis_screens.py -> reports/axis_screens/*.json (verdict_adjusted)
+# CONFIDENCE: committed-script (first successful run 2026-08-05: corrected
+#   liquidation_reversion_BTCUSDT, 6 trials, 0 surviving -- and the spawner then reported
+#   NO-CANDIDATES, which is the honest state rather than a refusal)
+8 7 * * * cd "$QUANT_ROOT" && flock -n data/.cron_finalize_axis.lock .venv/bin/python scripts/finalize_axis_screens.py >> data/cro_ai_logs/finalize_axis_screens.log 2>&1
