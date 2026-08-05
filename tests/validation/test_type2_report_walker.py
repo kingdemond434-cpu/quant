@@ -181,6 +181,29 @@ def test_screen_cells_reproduce_the_screens_own_powered_flag_on_this_checkout() 
     ]
 
 
+def test_declared_trials_are_reported_but_never_applied(tmp_path: Path) -> None:
+    """A cell powered only at N=1 while its artifact declares six trials must say so, and keep its
+    verdict. The label uses the multiplicity the SCREEN applied; the fragility is only a note.
+    """
+    cell = {
+        "name": "cell",
+        "n": 4294,
+        "horizon_days": 0.003472222222222222,
+        "panel_width": 1,
+        "powered": True,
+        "min_detectable_ic": 0.0299,
+        "verdict": "SCREEN-WEAK",
+    }
+    labelled = _MOD._screen_cell(cell, name="cell", source="s", n_tests=1, declared_trials=6)
+    assert labelled.label == POWERED, "the screen's N=1 verdict must be reproduced, not replaced"
+    assert "screen agrees" in labelled.note
+    assert "FRAGILE" in labelled.note and "NOT applied" in labelled.note
+
+    unchanged = _MOD._screen_cell(cell, name="cell", source="s", n_tests=1, declared_trials=1)
+    assert "FRAGILE" not in unchanged.note
+    assert unchanged.label == labelled.label
+
+
 def test_end_to_end_writes_a_strict_json_artifact(tmp_path: Path) -> None:
     _write(tmp_path, "docs/graveyard.md", _GRAVEYARD)
     _write(

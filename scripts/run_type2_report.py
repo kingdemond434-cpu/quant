@@ -222,6 +222,11 @@ def _campaign_costs(stem: str, d: dict[str, Any]) -> list[Type2Cost]:
     for row in pooled.get("rows") or []:
         syms = [str(s) for s in row.get("symbols") or []]
         n_units = int(row.get("n_symbols") or len(syms) or 1)
+        # THE SHORTEST CONSTITUENT HISTORY, because the artifact does not record the length of the
+        # pooled series itself. Taking the shortest is a LOWER bound on the elapsed evidence, so it
+        # can only under-state power and over-state how blind the test was -- the direction that
+        # claims less. Taking the longest would credit the pooled series with history that only
+        # some of its symbols have.
         n_bars = min((bars[s] for s in syms if s in bars), default=shortest)
         out.append(
             sharpe_negative(
@@ -272,6 +277,7 @@ def read_gauntlet_certification(root: Path) -> tuple[list[Type2Cost], list[dict[
             {"artifact": str(p), "status": "NOT-READABLE-HERE", "why": "absent or unparseable"}
         ]
     camp = d.get("campaign") or {}
+    design = d.get("design") or {}
     t = float(camp.get("T") or 0.0)
     n = int(camp.get("N") or 0)
     return [
@@ -282,10 +288,11 @@ def read_gauntlet_certification(root: Path) -> tuple[list[Type2Cost], list[dict[
             ppy=PPY,
             n_tests=max(1, n),
             note=(
-                "the desk's own certification records hurdle_annual_sharpe "
-                f"{d.get('design', {}).get('hurdle_annual_sharpe', float('nan')):.2f} and "
-                f"underpowered_below_annual_sharpe "
-                f"{d.get('design', {}).get('underpowered_below_annual_sharpe', float('nan'))}"
+                # This artifact is the MODEL for what the rest should look like: it already records
+                # its own blindness rather than reporting a bare zero.
+                "the certification records its own hurdle_annual_sharpe "
+                f"{design.get('hurdle_annual_sharpe')} and underpowered_below_annual_sharpe "
+                f"{design.get('underpowered_below_annual_sharpe')}"
             ),
         )
     ], []
@@ -295,14 +302,18 @@ def read_gauntlet_certification(root: Path) -> tuple[list[Type2Cost], list[dict[
 
 
 def _screen_cell(
-    cell: dict[str, Any], *, name: str, source: str, n_tests: int
+    cell: dict[str, Any], *, name: str, source: str, n_tests: int, declared_trials: int = 1
 ) -> Type2Cost:
     """Label one axis-screen-shaped cell, reproducing the screen's own n_eff and power convention.
 
-    The screen's `powered` flag is computed at N=1 with a two-sided 1.96, so this is computed the
-    same way and the agreement is recorded in the note. Re-judging the cell under a different
-    multiplicity would replace the screen's verdict instead of labelling it, which this instrument
-    is forbidden from doing.
+    The screen's `powered` flag is computed at N=1 with a two-sided 1.96, so `n_tests` is 1 here and
+    the agreement with the recorded flag is asserted in the note. Re-judging the cell under a
+    different multiplicity would REPLACE the screen's verdict instead of labelling it, which this
+    instrument is forbidden from doing.
+
+    `declared_trials` is therefore reported and never applied. When a cell clears its own power
+    floor at N=1 but would not clear it at the trial count the artifact itself declares, the note
+    says so -- the reader gets the fact, the screen keeps its verdict.
     """
     cost = correlation_negative(
         name,
@@ -320,11 +331,23 @@ def _screen_cell(
         if isinstance(rec_powered, bool) and rec_powered == (cost.label == POWERED)
         else "DISAGREES WITH THE SCREEN'S OWN FLAG -- inspect"
     )
+    fragile = ""
+    if cost.label == POWERED and declared_trials > 1:
+        at_declared = correlation_negative(
+            name, n_obs=cost.n_eff, n_tests=declared_trials, source=source
+        )
+        if at_declared.label != POWERED:
+            fragile = (
+                f". FRAGILE: powered only because the screen charges N=1; at the "
+                f"{declared_trials} trials this artifact itself declares the floor moves to "
+                f"{at_declared.min_detectable_effect:.4f} and the cell would not clear it. "
+                "Reported, NOT applied -- the screen's verdict is unchanged"
+            )
     return replace(
         cost,
         note=(
             f"screen verdict {cell.get('verdict')}; recorded powered={rec_powered}, "
-            f"recorded min_detectable_ic={rec_mdi}; {agree}"
+            f"recorded min_detectable_ic={rec_mdi}; {agree}{fragile}"
         ),
     )
 
@@ -348,6 +371,7 @@ def read_axis_screens(root: Path) -> tuple[list[Type2Cost], list[dict[str, Any]]
                 {"artifact": str(p), "status": "NOT-READABLE-HERE", "why": "unparseable JSON"}
             )
             continue
+        declared = int(d.get("trials_declared") or len(d.get("trials") or []) or 1)
         for cell in d.get("trials") or []:
             if not isinstance(cell, dict) or cell.get("verdict") == "SCREEN-INTERESTING":
                 continue
@@ -357,6 +381,7 @@ def read_axis_screens(root: Path) -> tuple[list[Type2Cost], list[dict[str, Any]]
                     name=str(cell.get("name") or p.stem),
                     source=f"reports/axis_screens/{p.name}",
                     n_tests=1,
+                    declared_trials=declared,
                 )
             )
     return out, unread
@@ -369,12 +394,14 @@ def read_exchange_netflow(root: Path) -> tuple[list[Type2Cost], list[dict[str, A
         return [], [
             {"artifact": str(p), "status": "NOT-READABLE-HERE", "why": "absent or unparseable"}
         ]
+    declared = int(d.get("n_trials") or len(d.get("cells") or []) or 1)
     out = [
         _screen_cell(
             cell,
             name=str(cell.get("name") or "netflow_cell"),
             source="reports/screen_exchange_netflow.json",
             n_tests=1,
+            declared_trials=declared,
         )
         for cell in d.get("cells") or []
         if isinstance(cell, dict) and cell.get("verdict") != "SCREEN-INTERESTING"
