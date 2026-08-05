@@ -4980,6 +4980,18 @@
    "commit": "eb74f48",
    "due": null,
    "disposed": "2026-08-05T20:24:44.047067+00:00"
+  },
+  {
+   "id": "R0409",
+   "source": "cycle",
+   "summary": "GROWTH-AUDIT LEDGER-JUSTIFICATION + a mis-signal in the desk's own anti-timidity instrument. web/growth_audit.json (updated 2026-08-05T20:00:02Z) reports carry_capital_utilization as the cycle's ONLY conservatism_defect: $0 deployed against $200 authorized, utilization 0.0, justified_by 'NONE'. JUSTIFIED HERE, per the contract's ledger-justify path: the book is frozen (web/cashcarry_live.json read this cycle: mode live-paper, n_carries 0, deployed_notional 0.0) and data/PRINCIPAL_ACTION.md names 'the S1 re-arm' as one of 4 decisions ONLY THE PRINCIPAL CAN MAKE. Deploying is not available to this seat, so this is a human-pending gap, not timidity -- exactly the class the audit's own live_deployment_path row already labels HUMAN-PENDING. THE ROW EXISTS FOR THE SECOND HALF, WHICH IS A REAL DEFECT: the audit renders justified_by NONE for a gap whose actual cause is a principal-gated freeze, and its own rule text says 'every NONE-gap is a DEFECT: close it same-cycle'. An instrument built to attack timidity is therefore instructing readers to re-deploy a book that a drawdown rail and a principal decision deliberately froze -- the one direction L1.23 forbids. It should read the freeze/arm state and emit HUMAN-PENDING (a state it already has) rather than NONE. NOT FIXED THIS CYCLE and deliberately not a drive-by: it decides what the desk is told about deploying capital.",
+   "roi_bps": 12.0,
+   "raised": "2026-08-05T20:27:17.909032+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
