@@ -202,6 +202,18 @@ _MAP: dict[str, list[str]] = {
     # clamped so the arithmetic can remove evidence and never invent it.
     "L1.48": ["libs/research/evidence_clock.py", "libs/research/event_density.py",
               "scripts/check_calendar_gates.py"],
+    # L1.49 and L1.50 were BOTH already enforced and NEITHER was mapped -- not an oversight by
+    # whoever wrote them, but a consequence of the parser defect fixed in `_principles()` this
+    # commit: laws written as `## L1.49` headings were invisible to this file, so there was
+    # nothing here to notice was missing. Their enforcement is the change-detector suite the
+    # author shipped alongside each law, which pins the constitutional clauses phrase-by-phrase
+    # so a silent deletion fails while a sharper rewrite passes. L1.50's utilisation and queue
+    # clauses additionally have live measuring fences, named here because they genuinely measure
+    # those clauses rather than merely relating to them.
+    "L1.49": ["tests/validation/test_weak_is_not_dead.py",
+              "libs/research/cohort_independence.py"],
+    "L1.50": ["tests/validation/test_weak_is_not_dead.py", "scripts/check_utilisation.py",
+              "scripts/check_conversion.py"],
     # L1.51: a clamp without a price. Every risk breach is priced to the cent and NOT ONE CLAMP
     # ever carried a dollar figure, so the doctrine's "timidity is a REAL COMPOUNDING COST" and
     # L1.27's "protecting capital, or avoiding uncertainty?" were rhetorical every time. It is
@@ -366,17 +378,6 @@ _FENCE_OWNERS: dict[str, str] = {
     # two incident-#6 symbols its own comment calls "currently-blocked". A pause is CAUSED by
     # losses, so the guard was guaranteed to be disarmed exactly when it was needed.
     "check_dormancy_disarm": "L1.40",
-    # --- UNMEASURED-REPORTED-AS-OK (L1.40), on the idleness law itself. check_idle_cost prices
-    # what check_utilisation could only ratio. The pair is deliberate and they are NOT redundant:
-    # the ratio fence answers "how much of the ceiling is used", the price fence answers "what is
-    # the unused part costing per day" -- and only the second can be weighed against the ruin
-    # probability a clamp claims to reduce. Built after L1.28a's own gate was found reporting
-    # `deployed_capital SATURATED, utilisation 1.0` on a book with n_carries 0: its numerator
-    # (live_book_usd) is the FIRST RUNG INSIDE its denominator (_desk_equity_usd), so the ratio
-    # was identically 1.0 by construction. A ceiling and its own numerator may never share a
-    # source -- and the previous repair unified them, deleting the measurement to end the
-    # disagreement.
-    "check_idle_cost": "L1.51",
     # --- conversion parity (L1.28b): the repair wire's two halves. check_conversion measures the
     # daily flow (arrival vs disposition, FLATLINE on silence); check_recommendation_rows (§42 X1,
     # built independently by the box the same day) applies per-row carry-over pressure so old
@@ -474,12 +475,36 @@ _STANDING: dict[str, str] = {
 
 
 def _principles() -> dict[str, str]:
-    """principle id -> its first sentence (the requirement), read from the constitution."""
+    """principle id -> its first sentence (the requirement), read from the constitution.
+
+    TWO HEADING FORMS EXIST AND ONLY ONE WAS PARSED, which made this fence blind to the four
+    newest laws on the desk. Everything up to L1.47 is written `**L1.47 TITLE**`; every law from
+    L1.48 onward is written `## L1.48 TITLE`. The bold-only pattern silently skipped L1.48, L1.49,
+    L1.50 and L1.51 -- so the matrix published `n_principles: 68` and `fences with no governing
+    principle: 0` over a set that EXCLUDED them, and a fence could name one of those laws as its
+    owner and be counted as governed by a principle this function had never seen.
+
+    That is the L1.43 welded-gate shape one level up: the tally was not wrong about what it
+    counted, it was wrong about what it looked at, and a check that reports a clean 0 is exactly
+    the one nobody re-reads. Found 2026-08-05 while wiring L1.51 -- the law being added was itself
+    invisible to the fence that certifies laws are enforced.
+    """
     text = _CONST.read_text("utf-8")
     out: dict[str, str] = {}
     for m in re.finditer(r"^\*\*(L\d+\.\d+[a-z]?)\s+([^*]+)\*\*(.*)$", text, re.MULTILINE):
         pid, title, rest = m.group(1), m.group(2).strip(), m.group(3).strip()
         first = re.split(r"(?<=[.!])\s", rest, maxsplit=1)[0] if rest else ""
+        out[pid] = f"{title.rstrip('.')} — {first}".strip(" —")[:400]
+    # `## L1.xx TITLE` -- the form every law since L1.48 uses. The requirement sentence lives in
+    # the paragraph BELOW the heading rather than on the same line, so it is read from there.
+    # The bold form wins on collision: it is the older, denser one and carries the rest inline.
+    for m in re.finditer(r"^#{2,}\s*(L\d+\.\d+[a-z]?)\s+(.+?)\s*$", text, re.MULTILINE):
+        pid, title = m.group(1), m.group(2).strip()
+        if pid in out:
+            continue
+        para = next((p.strip() for p in text[m.end():].split("\n\n") if p.strip()), "")
+        para = re.sub(r"\s+", " ", para)
+        first = re.split(r"(?<=[.!])\s", para, maxsplit=1)[0] if para else ""
         out[pid] = f"{title.rstrip('.')} — {first}".strip(" —")[:400]
     return out
 

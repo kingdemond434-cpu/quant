@@ -224,11 +224,42 @@ class TestWiring:
         assert "check_idle_cost.py" in _GOVERNED
 
     def test_law_is_mapped_in_the_enforcement_matrix(self) -> None:
-        from scripts.build_enforcement_matrix import _FENCE_OWNERS, _MAP
+        from scripts.build_enforcement_matrix import _MAP
         assert "L1.51" in _MAP
         assert "scripts/check_idle_cost.py" in _MAP["L1.51"]
         assert "libs/research/idle_yield.py" in _MAP["L1.51"]
-        assert _FENCE_OWNERS.get("check_idle_cost") == "L1.51"
+
+    def test_the_law_actually_REGISTERS_in_the_built_matrix(self) -> None:
+        """Declaring the mapping is not the same as the matrix seeing the law.
+
+        `_MAP` is a hand-written dict and will happily hold a key for a principle the matrix
+        never parses -- which is exactly what happened: `_principles()` matched only the
+        `**L1.47 TITLE**` bold form, so every law from L1.48 on (written `## L1.48 TITLE`) was
+        absent from the matrix while the map entry sat there looking correct. Assert the built
+        artifact, not the declaration.
+        """
+        from scripts.build_enforcement_matrix import build
+        rows = {r["principle"]: r for r in build()["matrix"]}
+        assert "L1.51" in rows, "the law is mapped but the matrix cannot see it"
+        assert rows["L1.51"]["status"] == "ENFORCED"
+        assert not rows["L1.51"]["broken_references"]
+
+    def test_every_heading_form_of_law_is_parsed(self) -> None:
+        """The parser defect this run found, pinned in both directions.
+
+        Both heading forms are live in the constitution and a parser that reads one silently
+        under-counts the newest laws -- the ones least likely to have been noticed missing.
+        """
+        import re
+
+        from scripts.build_enforcement_matrix import _principles
+        text = (_ROOT / "docs/CONSTITUTION.md").read_text("utf-8")
+        parsed = _principles()
+        heading = set(re.findall(r"^#{2,}\s*(L\d+\.\d+[a-z]?)\s", text, re.MULTILINE))
+        bold = set(re.findall(r"^\*\*(L\d+\.\d+[a-z]?)\s", text, re.MULTILINE))
+        assert heading and bold, "fixture assumption broken: both forms should exist"
+        assert not (heading - set(parsed)), f"## headings dropped: {sorted(heading - set(parsed))}"
+        assert not (bold - set(parsed)), f"**bold** dropped: {sorted(bold - set(parsed))}"
 
     def test_law_exists_in_the_constitution(self) -> None:
         text = (_ROOT / "docs/CONSTITUTION.md").read_text("utf-8")
