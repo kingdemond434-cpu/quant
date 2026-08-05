@@ -1712,6 +1712,32 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # CONFIDENCE: measured (cohort 12/12 read from libs/research/slot_registry.derive_slots).
 45 8 * * * cd "$QUANT_ROOT" && flock -n data/.cron_paper_spawner.lock .venv/bin/python scripts/run_paper_sleeve_spawner.py >> data/cro_ai_logs/paper_sleeve_spawner.log 2>&1
 
+# THE LAW POLICE -- who watches the watchmen. Every other check on this desk answers "are the laws
+# being broken today?"; this answers the question that decides whether their answers mean anything:
+# IS THE AUDIT STILL LOOKING? Three ways a law silently stops being enforced, none of which raises
+# a defect today -- a check deleted from CHECKS (its defects stop appearing and the report gets
+# BETTER), a check passing VACUOUSLY (it returns early because its artifact is gone, which is
+# indistinguishable from a clean pass), and a defect that disappears because the detector went
+# blind rather than because anything was fixed.
+# FOUND ON ITS FIRST TWO PASSES: `bnb-funded` and `fee-carry-ratio` both swallowed their own
+# failure (`except Exception: pass` / `return`) and reported all-clear having measured NOTHING --
+# so the §40 fee ratchet and the BNB rack-rate detector were unenforced for exactly as long as the
+# venue was unreachable, silently. Both now report UNKNOWN. It also cried wolf on four checks in
+# its first version (they consult the network, git and module globals rather than files); the
+# metric now counts any external consultation, because an alarm that is mostly false is an alarm
+# nobody hears, and this desk has already lost eleven and a half days to that.
+# CEILING TYPE (L1.28c) is INFORMATION-ARRIVAL: it grades the audit, so it runs once per audit
+# cycle and no more. 55 past the hour puts it AFTER max_audit's own daily pass, since grading a
+# sweep before it has run would measure yesterday's roster against yesterday's evidence.
+# AUTHORITY: repairs ONLY by re-running idempotent measurement organs from an explicit per-defect
+# allowlist, each additionally screened against a never-touch token list (deadman switch,
+# thresholds, gates, sizing, promotion, deletion). Everything else is reported for a person -- a
+# police force that can rewrite the law is not enforcing it.
+# EVIDENCE: scripts/run_law_police.py -> data/LAW_POLICE.json + reports/law_police.json. First
+# clean run 2026-08-05: WATCHING, 95 checks, 95 evaluating, 0 blind spots, 44 distinct defects.
+# CONFIDENCE: measured (counts read from the artifact). rc 1 on an unexplained fall pages.
+55 9 * * * cd "$QUANT_ROOT" && flock -n data/.cron_law_police.lock .venv/bin/python scripts/run_law_police.py >> data/cro_ai_logs/law_police.log 2>&1
+
 # PAPER-SLEEVE FORWARD RUNNER -- the organ that makes a spawned clock BREATHE, and the last link
 # in the chain between mining and a survivor. On 2026-08-05 the desk spawned ten forward clocks for
 # the first time in its life and every one read `evidence: UNMEASURED`, because nothing ran them:
