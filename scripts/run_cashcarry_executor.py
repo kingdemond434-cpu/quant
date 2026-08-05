@@ -337,9 +337,26 @@ _BLEED_MIN_N = 5          # minimum closed trades before the verdict is trusted
 
 
 def _structurally_bleeding(sym: str) -> bool:
-    """True => this symbol has PROVEN it loses money for the desk; block new opens."""
+    """True => this symbol has PROVEN it loses money for the desk; block new opens.
+
+    READS THE ALL-TIME KEY (2026-08-05). This used to read `worst_symbols`, which
+    run_trade_forensics computes over a 14-DAY ROLLING window -- correct for the pager (an
+    all-history flag re-pages forever after the fix works) and exactly wrong for a fence. A
+    symbol that proved it loses money does not stop having proved it because a fortnight passed,
+    so the denylist quietly emptied itself on a rolling cycle and the desk re-opened the names it
+    had already paid to learn about: on 2026-08-05 the rolling window held 42 of 253 all-time
+    closes and named ONE bleeder, while six qualified all-time -- and BNBUSDT (-65.8 bps over 13
+    closes, named as a proven loser in this file's own denylist comment above) was re-opened
+    2026-07-31 and 2026-08-01. `bleeding_symbols` is the same bar computed over the full record.
+
+    Falls back to `worst_symbols` when the new key is absent so an old artifact still fences
+    something rather than nothing -- a forensics run that has not happened yet must not silently
+    open the gate. Still strictly RESTRICTIVE and still new-opens-only: widening this set can
+    only ever REFUSE an open, never force-close a held carry.
+    """
     try:
-        rows = json.loads(_FORENSICS.read_text("utf-8")).get("worst_symbols", [])
+        doc = json.loads(_FORENSICS.read_text("utf-8"))
+        rows = doc.get("bleeding_symbols") or doc.get("worst_symbols", [])
     except (OSError, json.JSONDecodeError, TypeError, ValueError):
         return False
     for r in rows:

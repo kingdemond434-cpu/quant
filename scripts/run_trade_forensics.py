@@ -26,6 +26,24 @@ _BLEED_BPS = -1.0      # class net worse than this (bps of notional) = defect
 _BASELINE = 0.000100   # Binance default funding -- entry gate should keep these at zero
 # entry-gate ship time -- any open at baseline funding AFTER this is a gate regression
 _GATE_DATE = "2026-07-22T20:00:00+00:00"
+# THE EXECUTOR'S OWN FUNDING FLOOR, mirrored (2026-08-05). The regression check below used to
+# match funding EXACTLY at _BASELINE, so it saw the opens sitting ON the venue default and MISSED
+# every open BELOW it -- BNBUSDT went on at 3.0e-05 (07-31) and 6.6e-05 (08-01), both further
+# under the bar than the two it did report, and both invisible. A detector that under-counts the
+# defect it exists to catch is worse than no detector: it reports "2" and reads as bounded.
+# Mirrored rather than imported because importing the executor module opens venue connections;
+# tests/test_carry_entry_gate.py asserts the two constants stay equal, so drift fails CI instead
+# of silently re-blinding this check.
+_MIN_FUNDING = 0.00015
+# DENYLIST EVIDENCE IS ALL-TIME, ALERTS ARE ROLLING (2026-08-05). `worst_symbols` feeds two
+# consumers with opposite time requirements: the pager (which must forget, or it re-pages forever)
+# and the executor's structural-bleed denylist (which must NOT forget -- a symbol that PROVED it
+# loses money does not stop having proved it because 14 days passed). They shared one 14d-rolling
+# key, so the denylist quietly rehabilitated every proven loser on a fortnightly cycle and the
+# desk re-opened it. Split: `worst_symbols` stays rolling for flags, `bleeding_symbols` is the
+# all-time verdict the fence reads.
+_DENY_BPS = -20.0      # all-time realised net bps at which a symbol is structurally bleeding
+_DENY_MIN_N = 5        # minimum closed trades before that verdict is trusted
 
 
 def _buckets(closes: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
@@ -75,9 +93,10 @@ def _tape_sync(trades: list[dict[str, Any]]) -> dict[str, Any]:
 def main() -> None:
     trades = json.loads(_TRADES.read_text("utf-8")) if _TRADES.exists() else []
     tape = _tape_sync(trades)
-    closes = [x for x in trades if x.get("event") == "close" and x.get("held_hours") is not None]
+    all_closes = [x for x in trades
+                  if x.get("event") == "close" and x.get("held_hours") is not None]
     cutoff = (datetime.now(tz=UTC) - timedelta(days=_WINDOW_D)).isoformat()
-    closes = [x for x in closes if str(x.get("closed", "")) >= cutoff]
+    closes = [x for x in all_closes if str(x.get("closed", "")) >= cutoff]
     flags: list[str] = []
 
     hold = _buckets(closes)
@@ -90,14 +109,18 @@ def main() -> None:
     base = [x for x in closes if abs(float(x.get("funding_rate") or 0) - _BASELINE) < 1e-9]
     bn = sum(float(x.get("net") or 0) for x in base)
     bnot = sum(float(x.get("notional") or 0) for x in base)
-    # entry-gate regression check: NEW opens at the exchange-default rate after the gate shipped
+    # entry-gate regression check: NEW opens BELOW the executor's funding floor after the gate
+    # shipped. Below-the-floor, not equal-to-baseline: the floor is what the gate actually
+    # enforces, so anything under it is a bypass regardless of where it sits.
     post_gate_base = [x for x in trades
                       if x.get("event") == "open"
                       and str(x.get("opened", "")) > _GATE_DATE
-                      and abs(float(x.get("funding_rate") or 0) - _BASELINE) < 1e-9]
+                      and float(x.get("funding_rate") or 0) < _MIN_FUNDING]
     if post_gate_base:
-        flags.append(f"ENTRY-GATE REGRESSION: {len(post_gate_base)} open(s) at baseline funding "
-                     f"{_BASELINE} AFTER the gate shipped -- gate is not filtering")
+        worst_rate = min(float(x.get("funding_rate") or 0) for x in post_gate_base)
+        flags.append(f"ENTRY-GATE REGRESSION: {len(post_gate_base)} open(s) below the "
+                     f"{_MIN_FUNDING} funding floor AFTER the gate shipped (worst {worst_rate:g}) "
+                     "-- gate is not filtering")
 
     per_sym: dict[str, list[float]] = defaultdict(lambda: [0, 0.0, 0.0])
     for x in closes:
@@ -112,6 +135,27 @@ def main() -> None:
         if net < -25.0 and bps < -20.0:
             flags.append(f"symbol {s} structurally bleeding: ${net:.0f} over {n} trades "
                          f"({bps:.0f} bps)")
+
+    # THE DENYLIST'S EVIDENCE -- ALL-TIME, never windowed. Same bar as the executor's fence
+    # (n >= 5 closes, realised <= -20 bps), computed over the FULL closed-trade record.
+    # WHY THIS EXISTS: `worst_symbols` above is 14d-rolling and today holds 42 of 253 all-time
+    # closes, so it named ONE bleeder (1000CATUSDT) while six qualify all-time -- and the
+    # executor's fence, reading that key, therefore let BNBUSDT (-65.8 bps over 13 closes, and
+    # named as a proven loser in the executor's own source comment) back on 07-31 and 08-01.
+    # An exclusion whose path back is the passage of TIME is not evidence-driven; the path back
+    # here is a re-measurement that moves the all-time verdict, which is the only thing that
+    # should ever lift it.
+    all_sym: dict[str, list[float]] = defaultdict(lambda: [0, 0.0, 0.0])
+    for x in all_closes:
+        s = str(x.get("symbol"))
+        all_sym[s][0] += 1
+        all_sym[s][1] += float(x.get("net") or 0)
+        all_sym[s][2] += float(x.get("notional") or 0)
+    bleeding = sorted(({"symbol": s, "n": int(n), "net": round(net, 2),
+                        "bps": round(1e4 * net / nt, 1)}
+                       for s, (n, net, nt) in all_sym.items()
+                       if n >= _DENY_MIN_N and nt and 1e4 * net / nt <= _DENY_BPS),
+                      key=lambda r: r["bps"])
 
     # MAKER FILL-RATE ON THE PRIMARY BOOK (2026-07-26). The patient-maker opens shipped 07-24 to
     # cut a fee bill running ~2.5x the funding harvest, and the desk carried a standing duty to
@@ -152,6 +196,11 @@ def main() -> None:
         "execution_tape": tape,
         "worst_symbols": [{"symbol": s, "n": n, "net": round(net, 2), "bps": round(bps, 1)}
                           for s, n, net, bps in worst],
+        "bleeding_symbols": bleeding,
+        "bleeding_basis": {"window": "all-time", "n_closes": len(all_closes),
+                           "min_n": _DENY_MIN_N, "bleed_bps": _DENY_BPS,
+                           "note": "the executor's structural-bleed denylist reads THIS key; "
+                                   "worst_symbols is 14d-rolling and is for alerts only"},
         "flags": flags,
         "origin": "recursion rule 2026-07-22: mechanization of the principal-supplied probes "
                   "that found gaps #42/#43/#34",

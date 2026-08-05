@@ -1095,6 +1095,47 @@ def check_rubberstamp_enforcement(defects) -> None:
                         "specific file+value per probe angle, do not rubber-stamp."))
 
 
+def check_principal_page_unanswerable(defects) -> None:
+    """RETURN-PATH CHECK (self-interrogation angle 11, mechanised 2026-08-05).
+
+    A page is half a channel. This desk verified DELIVERY for weeks and never once verified that
+    the principal could ANSWER -- so when the branch fork deleted `_poll_replies` from
+    run_alerts.py, the pager went strictly one-way on 2026-08-02 and nothing noticed. Four
+    decisions, two of them gating the entire book and the entire promotion funnel, sat "awaiting
+    principal" across 33 sweeps; the `gate-optimality` ack read *"lifts on his reply"* while he
+    had no way to send one.
+
+    Fires when there is an open ask AND the reply poller has not run recently. Deliberately keyed
+    on the POLL STATE rather than on the presence of replies: silence is the expected state of a
+    healthy reply channel, so "no replies" can never be the trigger. What must never happen is the
+    desk waiting on an answer down a pipe that nobody is reading.
+    """
+    ask = ROOT / "data/PRINCIPAL_ACTION.md"
+    if not ask.exists() or not ask.read_text("utf-8", errors="ignore").strip():
+        return                                    # nothing is blocked on him
+    state = ROOT / "data/.reply_poll_state.json"
+    if not state.exists():
+        defects.append((
+            "principal-page-unanswerable",
+            "data/PRINCIPAL_ACTION.md carries an open ask but data/.reply_poll_state.json does "
+            "NOT EXIST -- nothing on this box is reading the reply channel, so the page cannot be "
+            "answered by any means. Restore _poll_replies in scripts/run_alerts.py."))
+        return
+    try:
+        polled = json.loads(state.read_text("utf-8")).get("polled")
+        age_h = (NOW - datetime.fromisoformat(str(polled)).timestamp()) / 3600.0
+    except Exception:
+        age_h = None
+    if age_h is None or age_h > 6:
+        shown = "unparsable" if age_h is None else f"{age_h:.1f}h"
+        defects.append((
+            "principal-page-unanswerable",
+            f"data/PRINCIPAL_ACTION.md carries an open ask but the reply poll last ran {shown} "
+            "ago (watchdog fires run_alerts every 3 min, so anything over ~6h means the poller is "
+            "dead). The desk is waiting on an answer down a pipe nobody is reading -- verify "
+            "_poll_replies still runs in scripts/run_alerts.py main()."))
+
+
 def check_clock_saturation(defects) -> None:
     """OBJECTIVE #2 CLOCK-SATURATION DUTY (principal 2026-07-23), made mechanical.
 
@@ -1121,26 +1162,87 @@ def check_clock_saturation(defects) -> None:
     axes = sorted(d.name for d in bronze.iterdir() if d.is_dir() and d.name not in _input_stores)
     if not axes:
         return
-    stale = []
+    # READ THE STAGE-A LEDGER, NOT JUST THE LATCH (2026-08-05). This check previously read ONLY
+    # cadence_state gen_done_*, which is a write-only latch stamped by one run_axis_generate.py
+    # batch -- so all 9 axes carried the SAME timestamp and the defect fired on the age of one
+    # stamp rather than on any measurement of research. Meanwhile reports/axis_screens/ held a
+    # completed, adversarially-reviewed Stage-A verdict for every one of them, all concluding NO
+    # CLOCK EARNED. The duty's own text allows exactly this ("or ledger why the axis is not yet
+    # testable"); the ledger existed and the check could not read it, so a satisfied duty reported
+    # as a breach for 10 days across 33 sweeps. A gate that cannot be satisfied by doing the work
+    # trains the desk to ignore it, which is how a real breach would later be missed.
+    #
+    # A SCREENED-AND-REJECTED AXIS IS NOT IDLE CAPITAL -- it is capital that already returned its
+    # answer, and the answer was no. What stays open is the NOT-SCREENABLE class: those are
+    # UNTESTED (etf_flows has 22 obs against a 51-row floor), so they still owe a screen the day
+    # their history clears the bar, and they are reported separately rather than folded into a
+    # count that reads as neglect.
+    _NO_CLOCK_SIGS = ("REJECTED", "NO SURVIVOR", "NEGATIVE", "NO FORWARD CLOCK",
+                      "NOT-AN-INDEPENDENT-AXIS", "NOT-SCREENABLE")
+
+    def _screen_verdict(ax: str) -> tuple[bool, bool]:
+        """(has a completed Stage-A verdict that earned no clock, is the NOT-SCREENABLE class)."""
+        p = ROOT / "reports/axis_screens" / f"{ax}.json"
+        if not p.exists():
+            return (False, False)
+        try:
+            d = json.loads(p.read_text("utf-8"))
+        except Exception:
+            return (False, False)
+        verdict = str(d.get("verdict") or "").upper()
+        untested = "NOT-SCREENABLE" in verdict
+        if d.get("forward_clock_earned") is False:
+            return (True, untested)
+        return (any(s in verdict for s in _NO_CLOCK_SIGS), untested)
+
+    stale, rejected, untestable = [], [], []
     for ax in axes:
         ts = cad.get(f"gen_done_{ax}") or cad.get(f"gen_done_{ax}_family")
-        if not ts:
-            stale.append(f"{ax}(never)")
+        fresh = False
+        if ts:
+            try:
+                fresh = (NOW - datetime.fromisoformat(ts).timestamp()) / 86400.0 <= 7
+            except Exception:
+                fresh = False
+        if fresh:
             continue
-        try:
-            age_d = (NOW - datetime.fromisoformat(ts).timestamp()) / 86400.0
-            if age_d > 7:
-                stale.append(f"{ax}({age_d:.0f}d)")
-        except Exception:
-            stale.append(f"{ax}(unparsable)")
+        judged, untested = _screen_verdict(ax)
+        if untested:
+            untestable.append(ax)
+        elif judged:
+            rejected.append(ax)
+        else:
+            age = f"{(NOW - datetime.fromisoformat(ts).timestamp()) / 86400.0:.0f}d" if ts \
+                else "never"
+            stale.append(f"{ax}({age})")
     if stale:
+        # NEVER ORDER A BREACH OF THE CAP. Two-Stage Discovery Law: promotion multiplicity IS the
+        # concurrent slot count, Holm-corrected at MAX_FORWARD_SLOTS. Demanding a pre-registration
+        # per idle axis while the cohort is full would order the desk to violate its own
+        # confirmation bar, so the free-slot count is stated and becomes the binding constraint.
+        try:
+            from libs.research.slot_registry import MAX_FORWARD_SLOTS, derive_slots
+            free = int(derive_slots().get("idle_slots", 0))
+            cap_note = (f" {free} of {MAX_FORWARD_SLOTS} forward slots are free, so at most {free} "
+                        "of these can be pre-registered without breaching the Holm cap -- if that "
+                        "is 0 the binding constraint is SLOT CAPACITY, and the action is to retire "
+                        "a non-accruing slot by ledgered decision, never to over-admit.")
+        except Exception:
+            cap_note = ""
         defects.append((
             "clock-saturation",
             f"OBJECTIVE #2 breach: {len(stale)}/{len(axes)} verified axes have NO hypothesis "
-            f"accruing within 7d -- {', '.join(stale[:8])}"
+            f"accruing within 7d and NO Stage-A verdict on record -- {', '.join(stale[:8])}"
             f"{' ...' if len(stale) > 8 else ''}. An empty forward clock is idle research "
-            "capital: pre-register a hypothesis on each, or ledger why the axis is not yet "
-            "testable (e.g. forward history under the gauntlet minimum)."))
+            "capital: screen each and pre-register, or ledger why the axis is not yet "
+            f"testable (e.g. forward history under the gauntlet minimum).{cap_note}"))
+    if untestable:
+        defects.append((
+            "axis-untested-awaiting-history",
+            f"{len(untestable)} axis(es) ledgered NOT-SCREENABLE -- {', '.join(sorted(untestable))}"
+            ". These are UNTESTED, not rejected: the hypothesis is owed the day history clears the "
+            "screen floor. Track the accrual and screen on the first day it does; a NOT-SCREENABLE "
+            "verdict left unrevisited becomes a silent permanent exclusion."))
 
 
 def check_vendor_replacement(defects) -> None:
@@ -3405,6 +3507,7 @@ CHECKS = [("carryover-skipped", check_carryover_skipped),
                       ("interrogation", check_interrogation),
                       ("generation", check_generation),
                       ("clock-saturation", check_clock_saturation),
+                      ("principal-page-unanswerable", check_principal_page_unanswerable),
                       ("vendor-replacement", check_vendor_replacement),
                       ("forensics-fresh", check_forensics_fresh),
                       ("carry-funding-measured", check_carry_funding_measured),

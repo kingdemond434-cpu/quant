@@ -153,3 +153,16 @@ recursion rule), so the desk needs him to supply an angle exactly once.
    worked all along.)
 10. RATCHET CHECK. For every metric that should only improve, ask "is today's value the floor, and
     what fires if it falls?" A number nobody ratchets drifts down unnoticed.
+11. RETURN-PATH CHECK. For anything BLOCKED ON SOMEONE ELSE, ask "does the reply path exist, and
+    when did it last carry a message?" Never re-carry a blocked-on-human item without proving the
+    channel back is alive. The two questions are different: "did my page arrive?" is delivery,
+    "can they answer?" is the return path — and a desk that only ever tests delivery will page
+    into a severed channel indefinitely, believing it is waiting on a person. (Origin 2026-08-05:
+    the fork deleted `_poll_replies` from run_alerts.py, so for three days the pager was strictly
+    ONE-WAY. Four principal decisions — two gating the whole book and the whole promotion funnel —
+    sat "awaiting principal" across 33 sweeps while an ack literally read "lifts on his reply."
+    He was never able to send one. Mechanised as max_audit's `principal-page-unanswerable`.)
+    COROLLARY — verify against the COUNTERPARTY's record, not your own: the desk's delivery ledger
+    claimed total silence while the provider's own store showed 199 accepted messages, because the
+    same fork had dropped the ledger write. Your instrument failing looks exactly like the world
+    being quiet.

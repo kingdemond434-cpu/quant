@@ -85,10 +85,104 @@ def _push(topic: str, title: str, body: str) -> None:
             pass
         if _PAGER_BACKOFF.exists():
             _PAGER_BACKOFF.unlink()
+        _ledger_ok("ntfy", "http 200", safe_title)
     except Exception as e:
         if getattr(e, "code", None) == 429:
             _PAGER_BACKOFF.write_text(str(_t.time() + 3600))
+        _ledger_ok("ntfy", f"{type(e).__name__}: {e}", safe_title, ok=False)
         raise
+
+
+def _ledger_ok(channel: str, detail: str, title: str, *, ok: bool = True) -> None:
+    """Record the PRIMARY path's outcome in the same ledger as the registry channels, so the
+    silence check sees one unified view. Never raises -- a logging failure must not kill a page.
+
+    RESTORED 2026-08-05. This branch forked from master before these two call sites existed, so
+    data/alert_delivery.jsonl recorded nothing after 2026-08-02T06:42:13Z while ntfy accepted 199
+    messages in the last 24h alone. The only instrument that answers "is the pager alive" was
+    therefore stuck reporting silence -- data/ALERT_CHANNELS_SILENT claims "no alert delivery on
+    ANY channel in 24h" against a topic that is busy. That is the 2026-07-19 blind-pager class
+    running inverted: an alarm that is always on cannot distinguish a real outage from today.
+    """
+    with contextlib.suppress(Exception):
+        from libs.ops.alert_channels import _log
+        _log(channel, ok, detail, title)
+
+
+# --- PRINCIPAL REPLY CHANNEL (2026-07-31; RESTORED 2026-08-05) -----------------------------
+# Pages have asked for replies ("reply YES/NO", "reply KILL-DIGEST") since 07-18, but nothing
+# ever READ the topic, and data/PAGE_ACK -- the derisk ladder's ack input -- had never been
+# created by anything: the ladder could latch (it froze the book) while the principal had no
+# phone-usable way to ack or re-arm. The ntfy app can PUBLISH to the topic it subscribes to, so
+# replies arrive as TITLELESS messages on the same channel; desk pushes always carry a Title
+# (_push sets one), which is the discriminator. REARM here is transport for the human's own act,
+# not an automated re-arm: it only ever runs off an explicit principal message. Trust boundary =
+# knowledge of the secret topic, identical to the pager itself (ledgered limitation; falsifier:
+# any suspected abuse moves this to authed ntfy).
+#
+# WHY IT IS BACK. This branch forked from master before the channel landed and deleted it, so on
+# this box the pager has been ONE-WAY since 2026-08-02T08:42:16Z (the last poll recorded in
+# data/.reply_poll_state.json). The 2026-08-04 22:03 page asking four YES/NO questions -- two of
+# which gate the entire book and the entire promotion funnel -- was delivered and could not be
+# answered by any means. A desk that pages for a decision it is incapable of receiving has not
+# escalated; it has only logged.
+_PAGE_ACK = Path("data/PAGE_ACK")
+_REPLIES = Path("data/principal_replies.jsonl")
+_REPLY_STATE = Path("data/.reply_poll_state.json")
+
+
+def _poll_replies(topic: str) -> None:
+    """Fail-quiet by design: paging must never break because reply-polling did."""
+    try:
+        st: dict = {}
+        with contextlib.suppress(Exception):
+            st = json.loads(_REPLY_STATE.read_text("utf-8"))
+        since = str(st.get("last_id") or "24h")
+        url = f"https://ntfy.sh/{topic}/json?poll=1&since={since}"
+        with urllib.request.urlopen(url, timeout=15) as resp:
+            lines = resp.read().decode("utf-8", "replace").splitlines()
+        last_id = st.get("last_id")
+        for ln in lines:
+            try:
+                m = json.loads(ln)
+            except json.JSONDecodeError:
+                continue
+            if m.get("event") != "message":
+                continue
+            last_id = m.get("id") or last_id
+            if m.get("title"):                      # desk's own page, not a reply
+                continue
+            body = str(m.get("message") or "").strip()
+            if not body or len(body) > 500:
+                continue
+            with contextlib.suppress(Exception):
+                _REPLIES.parent.mkdir(parents=True, exist_ok=True)
+                with _REPLIES.open("a", encoding="utf-8") as fh:
+                    fh.write(json.dumps({"ts": datetime.now(tz=UTC).isoformat(),
+                                         "msg_ts": m.get("time"), "body": body}) + "\n")
+            # ANY reply is operator contact: ack the pager (the derisk ladder's input).
+            _PAGE_ACK.write_text(
+                f"{datetime.now(tz=UTC).isoformat()} {body[:120]}\n", "utf-8")
+            cmd = body.split()[0].upper() if body.split() else ""
+            if cmd == "REARM":
+                out = subprocess.run(
+                    [sys.executable, "scripts/run_live_guard.py", "--rearm",
+                     "principal-ntfy"], capture_output=True, text=True, timeout=60,
+                ).stdout.strip()
+                kill = Path("data/CASHCARRY_KILL")
+                lifted = ""
+                if kill.exists() and kill.read_text("utf-8").startswith("live_guard freeze"):
+                    kill.unlink()   # completes the human's order; other writers' kills stay
+                    lifted = "; freeze lifted"
+                with contextlib.suppress(Exception):
+                    _push(topic, "Quant desk: REARM received",
+                          f"{out or 'ladder re-armed'}{lifted} -- book resumes next tick")
+        if last_id:
+            _REPLY_STATE.write_text(
+                json.dumps({"last_id": last_id,
+                            "polled": datetime.now(tz=UTC).isoformat()}), "utf-8")
+    except Exception:
+        return
 
 
 # --- SILENT-FAILURE DETECTION (2026-07-22) -------------------------------------------------
@@ -176,7 +270,17 @@ def _checks() -> list[tuple[str, str]]:
     try:
         pa = Path("data/PRINCIPAL_ACTION.md").read_text("utf-8").strip().splitlines()
         if pa:
-            out.append(("principal_action_needed", "the desk needs YOU: " + pa[0][:160]))
+            # CARRY THE REPLY INSTRUCTIONS (2026-08-05). Only `pa[0][:160]` was ever sent, so the
+            # 08-04 page -- four YES/NO decisions, two of them gating the whole book -- reached the
+            # phone with every "REPLY: ..." line cut off. The reply channel is a titleless message
+            # on this same topic, which nobody can guess from a truncated headline. ntfy accepts a
+            # ~4KB body, so the ask travels WITH the alert and the page is actionable where it is
+            # read. Bounded to keep the notification glanceable on a lock screen.
+            asks = [ln.strip() for ln in pa if ln.strip().upper().startswith(("REPLY:", "OPTIONAL:"))]
+            body = "the desk needs YOU: " + pa[0][:160]
+            if asks:
+                body += "\n\n" + "\n".join(asks[:6])[:600]
+            out.append(("principal_action_needed", body))
     except OSError:
         pass
     rec_hb = Path("data/recorder_heartbeat")
@@ -322,6 +426,9 @@ def main() -> None:
         state = {}
     now = time.time()
     sent = 0
+    # Read the topic BEFORE pushing: a reply that acks or re-arms should take effect on the tick
+    # it arrives, not one tick later behind a fresh page for the very thing it just answered.
+    _poll_replies(topic)
     checks = _checks()
     active = {k for k, _ in checks}
     paged = set(state.get("_paged", []))

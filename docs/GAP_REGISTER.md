@@ -4,6 +4,28 @@ _Principal override 2026-07-16. Reviewed + re-ranked at the START of every daily
 items stale >7 days MUST be escalated (implement / defer with deadline / retire with reason).
 Ranked by expected E[log wealth] impact. Never empty without written justification._
 
+_Re-ranked 2026-08-05T01:35Z (REAL re-rank). TWO MOVES, both from something MEASURED this cycle:
+
+(1) **NEW #89 enters at 1: THE CONTROL CHANNEL WAS SEVERED AND THE DESK KEPT PAGING INTO IT.** This
+outranks every capability gap below because it gates two others: the book is flat ($0 of $4,500
+authorized) and the funnel is welded (434 tested / 0 survivors), and BOTH were "awaiting principal"
+on decisions he had no way to answer. The fork deleted `_poll_replies` from `run_alerts.py`, so from
+2026-08-02T08:42Z the pager was strictly ONE-WAY; the page was additionally truncated at 160 chars,
+cutting off its own `REPLY:` lines, and buried under 180 undeduped robot pages sent after it. The
+`gate-optimality` ack literally read *"lifts on his reply"* through 33 sweeps. FIXED + verified this
+cycle (poll live 01:31:44Z, page re-sent 01:18:33Z, receipt `OwFuIXvwoNS5` against ntfy's own store,
+BRAIN pages 17/15min -> 0). **The generalised gap, which is what stays open: a blocked-on-human item
+must verify the REPLY PATH EXISTS before it may be re-carried.** Encoded as the standing question
+"has this recovery been SEEN to work, or only configured?"
+
+(2) **#88b (stale-code daemons) DROPS from 1 to 2 — same class, now with a second surface.** Yesterday
+measured stale *processes*; today measured stale *branches*: `run_cashcarry_executor.py` here is a
+strict SUBSET of master's function surface (11 functions missing, 0 unique, incl.
+`_reconcile_protective_stops`, `_stop_plan`, `_resting_quotes`, `_realised_rt_bps`), while this branch
+is simultaneously AHEAD of master on the validation gate. "The running code is not the committed code"
+and "the committed code is not the best code we have" are one defect with two faces. Port per-function
+under review (R0031) — a bulk merge in either direction destroys real work._
+
 _Re-ranked 2026-08-04T22:05Z (REAL re-rank). THREE MOVES, each from something MEASURED today:
 
 (1) **NEW #88b enters at 1: STALE-CODE DAEMONS — a committed fix is not a running fix.** A `--loop`

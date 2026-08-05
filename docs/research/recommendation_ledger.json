@@ -6,11 +6,11 @@
    "summary": "wire CPCV/SPA/FDR/lockbox: validation code exists but is never called by any gauntlet path",
    "roi_bps": 0.0,
    "raised": "2026-07-26T11:26:08.435892+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "rejected",
+   "reason": "PREMISE REFUTED for 2 of 4, and the other 2 are redundant with a STRICTER existing control. CPCV is live: libs/autodiscovery/validation.py:67 constructs it with real settings (6 groups choose 2 = 15 purged paths, purge=2, embargo=0.01, min 60 obs, >=60pct folds positive). SPA is live: hansen_spa at validation.py:129 and libs/validation/gauntlet.py:23, whites_reality_check at validation.py:92,186 and scripts/run_campaign.py. So 'never called by any gauntlet path' is false. FDR and lockbox are genuinely test-only, and should stay that way. FDR (Benjamini-Hochberg) controls the false-discovery rate, which is WEAKER than the Holm FWER control the forward-promotion path already uses (libs/validation/forward_stats.py over MAX_FORWARD_SLOTS=12); swapping it in would loosen the promotion bar, which the constitution forbids outright. Lockbox is strictly weaker than the two-stage discovery law it would sit under -- promotion already requires pre-registered FORWARD evidence, which is real unseen time, whereas a historical holdout carved out of data the desk has already run 420+ campaigns across is not virgin and would supply false assurance. Sealing a lockbox only works BEFORE exposure; that moment has passed for this history. If a lockbox is ever wanted it must be sealed on data recorded after the seal date -- which is what the forward clocks already are.",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-05T01:23:49.130394+00:00"
   },
   {
    "id": "R0002",
@@ -30,11 +30,11 @@
    "summary": "O1 data-moat: screen the desk's own L2 tape \u2014 build depth-imbalance panel from data/moat (microstructure.py has zero callers) and stage_a_screen it; crown-jewel dataset has 0 research artifacts in ~1 month of recording (converges with data-intelligence sweep's moat-extraction pilot)",
    "roi_bps": null,
    "raised": "2026-07-26T11:45:41.959734+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "Full Stage-A screen of the self-recorded L2 tape landed: docs/research/moat_microstructure_screen.json, 450 cells over 45 symbols, 1567s runtime, 4 constructions x 2 bar sizes. Verdicts 402 SCREEN-WEAK / 36 SCREEN-INTERESTING / 12 TIMING-ARTIFACT, plus a 360-probe one-bar-lag leak check of which 105 collapse. Honest NEGATIVE headline: mean net bps/bar is negative on essentially every cell (only 1-6 of 45 symbols net-positive), so the tape carries no cost-surviving depth-imbalance edge at 60s/300s. Screen also surfaced a real power bug in the shared harness, fixed separately.",
+   "commit": "699ab9f",
    "due": null,
-   "disposed": null,
+   "disposed": "2026-08-05T01:23:18.050670+00:00",
    "corrections": [
     {
      "was": "rejected",
@@ -52,11 +52,11 @@
    "summary": "O2 data-moat: wire hypothesis_novelty into live generation + compile ONE canonical machine graveyard (data/graveyard_priors.json) from graveyard.md+research_memory+526 candidate rows; PriorIdea constructed nowhere in production; validate first via E2 recall replay on the 420 campaign",
    "roi_bps": null,
    "raised": "2026-07-26T11:45:42.077509+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "NoveltyGate wired into all 4 production generation entry points (orchestrator, crypto_adapter, research_daemon, run_autodiscovery); canonical corpus data/graveyard_priors.json (160KB) compiled from graveyard.md+research_memory+candidate rows via build_graveyard_priors.py. E2 recall replay validated FIRST as the row required: data/novelty_recall_replay.json shows content-hash dedupe 0/195 recall vs this gate 195/195, at 0/30 false positives on a held-out family. Suppressions are audit-logged with nearest prior + similarity.",
+   "commit": "699ab9f",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-05T01:23:05.321800+00:00"
   },
   {
    "id": "R0005",
@@ -64,11 +64,11 @@
    "summary": "O3 data-moat: mechanism-priored cross-axis interaction screen (kimchi x funding, stablecoin x breadth, OI x regime); extraction law demands cross-feature interactions and no implementation exists; every cell a logged trial, no pair without written mechanism prior",
    "roi_bps": null,
    "raised": "2026-07-26T11:45:42.148635+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "Positive-EV and orthogonality-expanding, but 8 of 9 single axes were screened 07-26 and ALL returned no-clock-earned; interactions of individually-dead axes are a weaker prior than the recommendation assumes, and each cell is a DSR-counted trial. Do it AFTER R0008 makes trial accounting auditable, or the multiplicity is unmeasurable.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-19",
+   "disposed": "2026-08-05T01:33:09.837112+00:00"
   },
   {
    "id": "R0006",
@@ -76,11 +76,11 @@
    "summary": "O4 data-moat: append-only crypto_regime_history.jsonl (3 lines in classify_regime.py + deterministic backfill); desk destroys its own daily regime fingerprint by overwrite; hmm_gmm_agree=false with confidence=1.0 currently invisible",
    "roi_bps": null,
    "raised": "2026-07-26T11:45:42.213912+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "Cheap (3 lines + deterministic backfill), append-only, and useful to every downstream regime-conditioned test. Low risk, small benefit, genuinely net-positive -- exactly the class the not-picky clause says must be built.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-12",
+   "disposed": "2026-08-05T01:33:10.255535+00:00"
   },
   {
    "id": "R0007",
@@ -88,11 +88,11 @@
    "summary": "O5 data-moat: event-study harness over owned event data (unlock_events, listings, liquidations + own tape around events); event-reconstruction moat class is empty while the data sits collected and idle",
    "roi_bps": null,
    "raised": "2026-07-26T11:45:42.272109+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "Genuinely positive-EV and the data is already paid for (unlock_events, listings, liquidations, own tape) -- an empty moat class over collected idle data is the DATA-UTILIZATION LAW's exact failure. Scheduled behind the two gate-integrity items above, which gate whether ANY survivor can be trusted.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-19",
+   "disposed": "2026-08-05T01:32:51.358813+00:00"
   },
   {
    "id": "R0008",
@@ -100,11 +100,11 @@
    "summary": "O6 data-moat: populate-or-retire the trials_ledger (0 rows in every DB while docstring claims nothing is validated without it; gauntlet no-ledger fallback n_trials=2) + build effective-vs-raw trial audit view from research_candidates rows (gate-optimality duty currently unauditable)",
    "roi_bps": null,
    "raised": "2026-07-26T11:45:42.344528+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "Directly blocks the GATE-OPTIMALITY DUTY, which requires auditing effective-vs-raw trial count every cycle and today cannot: 0 rows in every DB and the gauntlet silently falls back to n_trials=2, which UNDERSTATES multiplicity and makes the DSR bar too easy. That direction matters -- it is the one that admits noise.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-12",
+   "disposed": "2026-08-05T01:32:51.256884+00:00"
   },
   {
    "id": "R0009",
@@ -112,11 +112,11 @@
    "summary": "O7 data-moat hygiene: terminal-mark 340 phantom queued v1 campaign rows (frozen since 06-22) and regenerate web/discovery.json to actually mirror the full graveyard table (today it carries sleeve results only)",
    "roi_bps": null,
    "raised": "2026-07-26T11:45:42.421033+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "Hygiene with a real cost -- 340 phantom queued rows make the discovery table misreport what was actually tested, which corrupts the prior the novelty gate screens against. Not urgent enough to outrank gate integrity.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-19",
+   "disposed": "2026-08-05T01:32:51.580783+00:00"
   },
   {
    "id": "R0010",
@@ -136,11 +136,11 @@
    "summary": "ADJACENCY (proactive battery move 2): apply OP-031 (Wayback-CDX-replay the API path, not the HTML page) to every OTHER row-capped/rolling-window endpoint in data_universe_map.json. One instance is never one instance -- btc126's 177-row cap hid 414 recoverable days; any other capped free endpoint the desk catalogued is hiding history the same way.",
    "roi_bps": 0.0,
    "raised": "2026-07-26T15:27:35.842054+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "Correct adjacency call and cheap; one capped endpoint hid 414 recoverable days, so others likely do too. Behind the gate items because recovered history feeds a funnel that currently cannot promote.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-12",
+   "disposed": "2026-08-05T01:32:51.429426+00:00"
   },
   {
    "id": "R0012",
@@ -148,11 +148,11 @@
    "summary": "Re-screen usdt_cny_otc_premium (axis #76) when the live recorder data/cny_premium.jsonl reaches n>=400 rows (~2027-06), at which point min-detectable IC falls ~0.157->0.098 and the observed |IC|=0.075 becomes testable. Until then: no clock, no Holm slot, no capital. Keep the desk's own recorder PRIMARY -- ChaiNext (original publisher) is NXDOMAIN and btc126 is an undocumented single-point-of-failure mirror.",
    "roi_bps": 0.0,
    "raised": "2026-07-26T15:27:36.032282+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "Correctly deferred by ARITHMETIC, not preference: min-detectable IC does not fall below the observed |IC|=0.075 until n>=400 rows (~2027-06). Re-screening earlier would burn a Holm slot on an underpowered test. Due date is the data date.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2027-06-01",
+   "disposed": "2026-08-05T01:32:51.496190+00:00"
   },
   {
    "id": "R0013",
@@ -160,11 +160,11 @@
    "summary": "live_book.py:159 coerces a null funding_harvested to 0.0 via _num(), so the molded dashboard still shows a fabricated zero during a venue outage even though the executed book now emits funding_measured=false. Thread the measured flag through live_book.to_public().",
    "roi_bps": 0.0,
    "raised": "2026-07-26T20:26:09.605574+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "Real defect, unchanged, and cheap -- a null funding_harvested coerced to 0.0 fabricates a clean number on the molded dashboard, which is the phantom class this desk has paid for twice. Not done this cycle because the cycle's budget went to a severed principal-reply channel and an amnesiac denylist, both of which gate more money. Scheduled tight.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-08",
+   "disposed": "2026-08-05T01:30:15.394877+00:00"
   },
   {
    "id": "R0014",
@@ -184,11 +184,11 @@
    "summary": "docs/research/deep_sweep/ now hosts TWO producers' output (the weekly deep cold audit AND the literature deep-miner's LIT_* files) under a single _FINDING_DOCS_EXCLUDED claim whose stated reason describes only the former. The routing argument happens to hold for both (LIT findings do reach improvement_inbox, e.g. #72 -> GAP row #79), but the exclusion should say so explicitly rather than covering a second organ by directory accident.",
    "roi_bps": 0.0,
    "raised": "2026-07-26T20:32:01.490912+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "rejected",
+   "reason": "REJECTED as written: the recommendation itself records that the routing argument HOLDS for both producers (LIT findings do reach improvement_inbox, e.g. #72 -> GAP row #79). The defect is a stale REASON STRING, not a governance hole, and rewriting a claim that is already true is documentation churn. Re-open if a LIT finding is ever shown to be dropped -- that is the falsifier.",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-05T01:32:51.696408+00:00"
   },
   {
    "id": "R0016",
@@ -196,11 +196,11 @@
    "summary": "GATE-OPTIMALITY ANSWERED (probe run this cycle): pbo and reality_check reject 420/420 (100.0%) because they are CAMPAIGN-level statistics applied as PER-CANDIDATE vetoes. campaign_pbo_rc's own docstring states they are 'identical for every candidate in a campaign', and validate() lines 102-103 assign each candidate the campaign verdict. Measured: campaign PBO 0.6159 (gate <=0.50), campaign White RC p 0.4220 (gate <0.05) -> every candidate vetoed regardless of individual merit. The genuinely per-candidate gates DO discriminate (walk_forward 58.1%, fragility 47.9%, cpcv 43.3%, capacity 43.3%, expected_value 40.2%) and sole-cause failures is EMPTY, so no gate is uniquely killing good candidates today. THE STRUCTURAL PROBLEM: campaign PBO rises with generation volume, so a large mostly-noise campaign mechanically vetoes a genuinely good candidate submitted alongside it -- which CONTRADICTS the desk's own TWO_STAGE_DISCOVERY_LAW ('generation volume is unbounded and can never create a phantom edge there'; 'the confirmation bar never rises with generation'). NOT FIXED AUTONOMOUSLY: any change here relaxes validation-gate strictness, which constitution point 5 forbids the cycle from touching. Needs a principal/panel ruling on whether the screen should RANK on campaign PBO/RC (per the law) rather than VETO on them.",
    "roi_bps": 0.0,
    "raised": "2026-07-26T20:40:57.273613+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "CONFIRMED INDEPENDENTLY THIS CYCLE and the blocker is now correctly identified. libs/autodiscovery/validation.py:211-214 shows production falls back to campaign-scalar pbo/rc whenever pc_pbo/pc_p are absent, and gate_discrimination()'s own docstring records campaign PBO 0.6159 / RC p 0.4220 failing all 420. The flip is Tier-3 (validation-gate strictness, non-negotiable #5) so it stays principal-gated -- but the reason it sat 10 days was NOT his silence: the reply channel was deleted by this fork and he could not answer. Restored this cycle, page re-sent 01:18:33Z with the REPLY lines carried (receipt OwFuIXvwoNS5). Due 08-12 = one week to a human answer.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-12",
+   "disposed": "2026-08-05T01:30:15.010089+00:00"
   },
   {
    "id": "R0017",
@@ -208,11 +208,11 @@
    "summary": "Gate-optimality probe's SYNTHETIC arm is mis-wired: injecting SR_true=+0.5 realises SR=-2.32 and SR_true=+1.0 realises -1.76 (sign/magnitude inconsistent with the injected truth). Until fixed, the synthetic sweep CANNOT answer 'can the funnel ever promote a genuinely good candidate' -- a synthetic that realises -2.32 should fail every gate, so its failure is uninformative. Anyone reading those rows at face value would wrongly conclude the gate rejects good strategies. Fix the injection/alignment, then re-run; the campaign-level half of the probe (per-gate histogram) is sound and already answered the main question.",
    "roi_bps": 0.0,
    "raised": "2026-07-26T20:42:08.934795+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "HIGHEST-VALUE OF THIS BATCH and now on the critical path: it invalidates the evidence behind the Tier-3 gate flip the principal is being asked to decide. A synthetic injected at SR_true=+1.0 that realises -1.76 SHOULD fail every gate, so 'the funnel rejects it' proves nothing about the funnel. Note reports/gauntlet_certification.json is a DIFFERENT instrument and does discriminate (per-candidate path admits from SR 5, 0 null false-passes) -- so the flip's case does not rest on this broken probe. Fix before the probe is cited again.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-08",
+   "disposed": "2026-08-05T01:32:51.157563+00:00"
   },
   {
    "id": "R0018",
@@ -269,10 +269,10 @@
    "roi_bps": null,
    "raised": "2026-08-04T21:19:46.981869+00:00",
    "status": "scheduled",
-   "reason": "Two-sided merge over a money-path file (libs/execution/binance_live.py): master is 419 commits ahead with 473 files this tree lacks, and the branch itself changed 150 code files. Needs its own session with CI on the result -- unresolved uncertainty, the valid deferral reason under DEFERRAL DISCIPLINE, not session length. Bounded and dated to the next cycle as its first item; it unblocks gap #88 AND a large share of the 27-item carry-over queue (certify_gauntlet/report_gate_audit/run_max_push/check_exploration/run_organ_er are all absent from this tree). No money at risk meanwhile: executor is testnet-pinned, stage S0, both verified by fresh read.",
+   "reason": "RE-PRICED WITH NEW EVIDENCE THIS CYCLE, and the merge is NOT a simple catch-up. The fork is AHEAD on the validation gate (per-candidate pc_pbo/pc_p wiring exists here at orchestrator.py:208-232 and NOT on master) and BEHIND on the money path (run_cashcarry_executor.py is a strict SUBSET of master's function surface -- 11 missing, 0 unique, incl. _reconcile_protective_stops/_stop_plan/_resting_quotes/_realised_rt_bps). A naive merge in either direction destroys real work. Port per-function under review (R0031), do not bulk-merge. This cycle proved the cost of the drift: the fork had silently deleted the principal's reply channel.",
    "commit": null,
-   "due": "2026-08-05",
-   "disposed": "2026-08-04T21:22:33.645460+00:00"
+   "due": "2026-08-08",
+   "disposed": "2026-08-05T01:33:10.761174+00:00"
   },
   {
    "id": "R0023",
@@ -321,6 +321,126 @@
    "commit": null,
    "due": "2026-08-06",
    "disposed": "2026-08-04T22:13:52.212559+00:00"
+  },
+  {
+   "id": "R0027",
+   "source": "cycle",
+   "summary": "Arm the independent alert channel: data/secrets/alert_channels.json is ABSENT, so send_all is a no-op and ntfy remains a single point of failure for every page including dead-man fires (gap #38).",
+   "roi_bps": 0.0,
+   "raised": "2026-08-05T01:18:28.540784+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0028",
+   "source": "cycle",
+   "summary": "watchdog.py:219 runs run_alerts with capture_output=True and discards it, throwing away the only place a pager push failure surfaces. Append its stdout/stderr to data/watchdog.log.",
+   "roi_bps": 0.0,
+   "raised": "2026-08-05T01:18:28.715821+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0029",
+   "source": "cycle",
+   "summary": "Spot maker share is 23.8% vs a 60% target while futures is 61.9%; fut_commission is 88.7% of the entire carry leak ($1750.88 of -$1974.61) and 15.5x the funding harvested. Root-cause why patient-maker converts on the perp leg but not on spot.",
+   "roi_bps": 3.0,
+   "raised": "2026-08-05T01:18:28.856201+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0030",
+   "source": "cycle",
+   "summary": "MERGE THE FORK: this tree is 419 commits behind master and 108 ahead. The fork silently deleted the reply channel, the delivery ledger, and 301 lines across 3 pager files. Every day unmerged is another chance for a master capability to be absent here without anyone noticing.",
+   "roi_bps": 0.0,
+   "raised": "2026-08-05T01:18:29.018593+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0031",
+   "source": "cycle",
+   "summary": "PORT master's 11 missing executor functions under scoped review, highest-value first: _reconcile_protective_stops/_stop_plan/_stop_matches (makes F0016's inert rail real), then _resting_quotes (spot maker share 23.8% vs 60% target; fees are 88.7% of the carry leak), then _realised_rt_bps (entry gate currently vetoes on MODELLED cost only). One function per change, each with its own neighbour argument -- not a bulk merge.",
+   "roi_bps": 8.0,
+   "raised": "2026-08-05T01:26:16.009247+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0032",
+   "source": "cycle",
+   "summary": "web/growth_audit.json reports carry_capital_utilization as justified_by=NONE (a conservatism defect) when the true causes are two gates it does not read: live_guard stage=S0/armed=False (human-pending) AND risk.action=pause_opens at dd -17.65% (an absorbing rail state). Make run_growth_audit read data/live_guard.json and web/cashcarry_live.json risk.action so a rail-paused book is classified HUMAN-PENDING/RAIL rather than as timidity -- a false conservatism defect trains the desk to discount the real ones.",
+   "roi_bps": 1.0,
+   "raised": "2026-08-05T01:29:42.012570+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0033",
+   "source": "max_audit",
+   "summary": "moat coverage metric cannot represent a third state: SCREEN-UNDERPOWERED enters neither the numerator (its verdict dict has no 'ic' key so it never reaches `scored`, screen_moat.py:470) nor the unscreenable exclusion set (screen_moat.py:529), so an all-underpowered window pins coverage_pct at exactly 0.0 while the frontier IS advancing -- this fired moat-screen-not-converging for 283 runs to 2026-08-04T23:33Z and can re-pin any time the recorders thin. FIX: record underpowered_pairs in data/moat_screen_coverage.json and stop check_moat_screened calling a flat series non-convergence when underpowered cells explain the flatness. 'Asked and not yet answerable' != 'never asked'.",
+   "roi_bps": null,
+   "raised": "2026-08-05T01:34:13.894187+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0034",
+   "source": "max_audit",
+   "summary": "screen_moat.py is UNMANIFESTED and UNSUPERVISED: no entry in ops/crontab.manifest, and its committed unit quant-moat-screen is not installed on this box (systemctl reports it cannot be found), yet it is alive as a bare '.venv/bin/python scripts/screen_moat.py --files 24 --loop --interval 30' daemon. Nothing restarts it if it dies and check_scheduler_manifest cannot see it. FIX: install the unit or add the manifest entry so the moat frontier has a supervisor and the manifest stops lying about what runs here.",
+   "roi_bps": null,
+   "raised": "2026-08-05T01:34:19.239735+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0035",
+   "source": "max_audit",
+   "summary": "The Stage-A lookahead rail cannot pass a signal that LEADS without also co-moving contemporaneously. stage_a_screen flags SUSPECT-LOOKAHEAD when |IC| exceeds |same_period_corr|, on the reasoning that a genuine lead is normally weaker than the contemporaneous relationship. That holds for price/flow-derived signals but rejects by construction any signal whose whole mechanism is to know the future without reflecting the present -- scheduled events (unlocks, listings, expiries), announcement timing, or a queue-position signal. Observed while building target_horizon_sweep: a synthetic with zero same-period correlation and a true forward IC of 0.18 was flagged SUSPECT-LOOKAHEAD. Quantify the false-positive rate on event-shaped signals and gate the rail on signal class rather than applying it universally; a rail that rejects a whole legitimate alpha family is a silent permanent exclusion.",
+   "roi_bps": null,
+   "raised": "2026-08-05T01:34:24.815471+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0036",
+   "source": "cycle",
+   "summary": "Repair tests/scripts/test_screen_moat.py::test_survivors_persist_with_their_misses by lengthening the synthetic tape so it is powered under the corrected n_eff deflator (commit 13cd116). Do NOT weaken the power rule to make it pass -- that would reinstate the 1440x power inflation the commit fixed.",
+   "roi_bps": 0.0,
+   "raised": "2026-08-05T01:38:44.004885+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

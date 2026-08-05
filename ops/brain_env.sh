@@ -29,12 +29,31 @@ fi
 # --- D3 self-healing (founders directive, principal 2026-07-19) ---
 _brain_page() {
     # page the principal via the desk pager topic (ntfy.sh); never fails the caller
-    local topic
+    #
+    # PER-MESSAGE DEDUPE (2026-08-05). This bypassed run_alerts' entire dedupe discipline -- no
+    # state, no throttle -- and sent 191 near-identical "LAW GUARD: DOCTRINE-GAP" pages in 24h,
+    # ~1/min for hours. 180 of them landed AFTER the 22:03 principal page that asked four
+    # decisions gating the book, burying it. Two costs, both already paid once: a pager that
+    # cries wolf is worse than none (run_alerts.py:36-38), and sustained volume on free ntfy.sh
+    # is exactly what exhausted the quota 07-11 -> 07-16 and silently dropped EVERY page for five
+    # days including a dead-man fire (run_alerts.py:332-335). Same 6h window run_alerts uses for
+    # slow-moving conditions; identical text inside it is dropped, changed text pages immediately.
+    local topic stampdir stamp
     topic="$(python3 -c "import json;d=json.load(open('/home/quant/quant-platform/data/secrets/ntfy.json'));print(d.get('topic') or d.get('ntfy_topic') or '')" 2>/dev/null)"
-    if [ -n "$topic" ]; then
-        curl -fsS -m 10 -H "Title: BRAIN" -H "Priority: high" -H "Tags: robot" \
-            -d "$1" "https://ntfy.sh/$topic" >/dev/null 2>&1 || true
+    [ -n "$topic" ] || return 0
+    stampdir="/home/quant/quant-platform/data/.brain_page_stamps"
+    mkdir -p "$stampdir" 2>/dev/null || true
+    stamp="$stampdir/$(printf '%s' "$1" | sha1sum | cut -c1-16)"
+    # -mmin -360 = pushed within the last 6h; suppress the repeat, keep the caller's contract
+    if [ -n "$(find "$stamp" -mmin -360 2>/dev/null)" ]; then
+        return 0
     fi
+    if curl -fsS -m 10 -H "Title: BRAIN" -H "Priority: high" -H "Tags: robot" \
+        -d "$1" "https://ntfy.sh/$topic" >/dev/null 2>&1; then
+        : > "$stamp" 2>/dev/null || true    # stamp ONLY on success, so a failed page retries
+    fi
+    # prune stamps older than a week so the dir cannot grow without bound
+    find "$stampdir" -type f -mmin +10080 -delete 2>/dev/null || true
     return 0
 }
 # RESET-AWARE RETRY (work order run-reset-aware-retry). Seconds to wait for a session limit's
