@@ -1601,8 +1601,8 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # nothing with the answer: xueqiu WAF-blocked, zhihu 403, csdn read-timeout, baidu anti-bot shell,
 # joinquant/bigquant/ricequant JS shells -- all re-measured daily, all re-reported identically,
 # no substitute ever looked for. Noticing death without acting on it is a diary. This reads the
-# health ledger the miner now writes (libs/research/source_health) and, for every source DEAD N
-# runs running, probes the substitutes registered IN THE SAME INFORMATION CLASS
+# health ledger the miner now writes (libs/research/source_health), reports each source's verdict
+# (DEAD = N consecutive failed runs), and probes the substitutes registered IN THE SAME CLASS
 # (libs/research/source_alternatives) -- the desk does not need another website, it needs another
 # source of the same information. Unprobed candidates stay UNVERIFIED; a failed probe records its
 # reason; a candidate that can only be settled from the VPS's unproxied egress is NOT written off

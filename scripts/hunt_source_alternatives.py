@@ -221,7 +221,17 @@ def main(argv: list[str] | None = None) -> int:
         hunted.append(hunt_one(entry, state, timeout=args.timeout, vantage=vantage,
                                states=states))
 
-    actions = [a for block in hunted for a in block["next_actions"]]
+    # ACTIONS ARE SPLIT BY WHETHER ANYTHING IS ACTUALLY BROKEN. Running --all means healthy
+    # sources get their substitutes probed too, which is the point (a standing map beats a
+    # scramble on the morning of a death) -- but printing "build a Crossref parser" every day
+    # while arXiv is fine is how a daily organ becomes noise and then gets ignored. Only sources
+    # the ledger says are failing produce URGENT actions; the rest are redundancy the desk can
+    # buy when it wants to, recorded and not shouted.
+    urgent = {health.VERDICT_DEAD, health.VERDICT_DEGRADED}
+    actions = [a for block in hunted for a in block["next_actions"]
+               if block["health"]["verdict"] in urgent]
+    standing = [a for block in hunted for a in block["next_actions"]
+                if block["health"]["verdict"] not in urgent]
     doc: dict[str, Any] = {
         "generated_utc": datetime.now(tz=UTC).isoformat(timespec="seconds"),
         "vantage": vantage,
@@ -236,6 +246,7 @@ def main(argv: list[str] | None = None) -> int:
         "registry": alt.summary(),
         "hunted": hunted,
         "next_actions": actions,
+        "standing_redundancy_options": standing,
     }
     if not dead and not (args.all or args.source):
         # The honest idle state, stated rather than implied by an empty file.
@@ -258,6 +269,9 @@ def main(argv: list[str] | None = None) -> int:
             print(f"      {row['status']:<11} {row['name']:<28} [{flags}] {row['probe_detail']}")
     for a in actions:
         print(f"  NEXT ACTION {a}")
+    if standing:
+        print(f"  ({len(standing)} further in-class option(s) recorded for sources that are NOT "
+              f"currently failing -- see standing_redundancy_options)")
     for u in unregistered:
         print(f"  REGISTRY GAP {u} is DEAD with no registered alternatives -- "
               f"name an in-class substitute in libs/research/source_alternatives.py")

@@ -105,8 +105,8 @@ def _write_tape(path: Path, state: np.ndarray, ret: np.ndarray, *,
     return path
 
 
-def _cell_rows(path: Path, label: str) -> list[dict[str, object]]:
-    rows = S.screen_cell(label, list(read_partition(path)), decision_lag_ms=0)
+def _cell_rows(path: Path, label: str, *, decision_lag_ms: int = 0) -> list[dict[str, object]]:
+    rows = S.screen_cell(label, list(read_partition(path)), decision_lag_ms=decision_lag_ms)
     scored = [r for r in rows if isinstance(r.get("ic"), (int, float))]
     S._significance(scored, n_family=S.PREREGISTERED_FAMILY)
     S._type2(scored, n_family=S.PREREGISTERED_FAMILY)
@@ -308,6 +308,20 @@ def test_a_leading_book_state_is_detected(tmp_path):
     assert (rep["power_counts_at_family_charge"]["negatives"]
             == rep["scored"] - len(rep["survivors"]))
     assert rep["survivors"], "the leader must reach the artifact, not only classify()"
+
+
+def test_charging_latency_weakens_the_reading(tmp_path):
+    """THE DECLARED LOOK-AHEAD RISK, exercised rather than merely stated. decision_lag_ms=0 assumes
+    a zero-latency fill and is an UPPER BOUND; charging a realistic round trip must move the number
+    DOWN, which is what makes "re-run any survivor at the measured latency" a real control rather
+    than a sentence in a docstring."""
+    state, ret = _series(1500, lead=True)
+    tape = _write_tape(tmp_path / "fut/BTCUSDT/20260101_00.jsonl.gz", state, ret)
+    optimistic = _pick(_cell_rows(tape, "c"), "obi_deep", "residualised")
+    charged = _pick(_cell_rows(tape, "c", decision_lag_ms=30_000), "obi_deep", "residualised")
+
+    assert abs(float(charged["ic"])) < abs(float(optimistic["ic"]))
+    assert charged["alignment"]["decision_lag_ms"] == 30_000
 
 
 def test_a_merely_coincident_book_state_is_killed_as_an_artifact(tmp_path):
