@@ -52,7 +52,7 @@ DOSSIER_SOURCES: dict[str, str] = {
     "dormancy": "web/intelligence_cycle.json",
     "data_registry": "data/data_assets.json",
     "enforcement_matrix": "data/enforcement_matrix.json",
-    "gate_histogram": "data/gate_histogram.json",
+    "gate_histogram": "reports/gate_histogram.json",
     "reality_gap": "web/reality_gap.json",
     "desk_brief": "data/executive_kpis.json",
     "execution_intel": "web/execution_intel.json",

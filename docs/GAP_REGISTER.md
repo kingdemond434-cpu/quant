@@ -20,6 +20,13 @@ exactly those two was unreachable code. Fixed tighten-only (`36f6f28`, code in `
 verified both symbols now block, controls unchanged, and the door still opens 2026-08-16
 (`allowed=True, probe 1/3`), so the exclusion is not absorbing.
 
+_Deadline decisions 2026-08-05T07:20Z (owed-work batch 3) — the three DEADLINE-PASSED rows the mechanical pass flagged (#70, #74, #75) each get an exit here, per the register's own rule that a passed deadline owes implement / defer-with-a-deadline / retire-with-reason:_
+
+- **#70 — DEFERRED to 2026-08-12 AND ESCALATED into the recommendation ledger as R0358.** The register was not driving it (deadline 2026-08-02 passed with the prototype still uncommitted), so it now sits in the ledger, which carries a 24h disposition clock and feeds max_audit. Not retired: its value is already MEASURED, not estimated — the extractor corrected three recorded numbers on the first paper it read, and each correction widened a prior the desk had recorded too narrowly.
+- **#74 — DEFERRED to 2026-08-19.** A diagnostic, not a build, and it ranks 35th on the register's own list. It is genuinely blocked behind the same evidence #75 needs (the deep_sweep tree), so sequencing it after #75 is real ordering, not avoidance.
+- **#75 — DEFERRED to 2026-08-19, paired with #74.** Governing `docs/research/deep_sweep/` is an artifact-governance change of the same shape as the `_TERMINAL_ARTIFACTS` / findings-scope split already carried this week; doing it alongside #74 means one pass over that tree rather than two.
+
+
 **THE RANKING LESSON: a guard fed by a rolling window of our OWN activity disarms itself during a
 pause — and the pause is usually caused by the thing it guards against.** This re-weights every
 row that credits a guard with protection: the guard's *evidence source* is now part of the claim.

@@ -1234,11 +1234,11 @@
    "summary": "CN OSS extraction 2026-07-31: ingest+screen the 5 verified new axes (CN margin/northbound flows, liquidation-heatmap reconstruction, DexScreener long-tail, holder-concentration deltas, perp-DEX funding Aster/Lighter) per data_axis_watchlist batch; engine ideas (AST purity gates, factor lifecycle triage, PnL-selected prompt evolution) evaluated AFTER the R0077 gate repair -- full record docs/research/cn_oss_extraction_20260731.md",
    "roi_bps": 25.0,
    "raised": "2026-07-31T08:14:54.594292+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: None of the 5 axes has an ingest script yet (zero scripts matching dexscreener/northbound/heatmap/holder/aster) -- they sit as watchlist cards at docs/research/data_axis_watchlist.md:1055-1090 'awaiting screen-on-discovery'. Material premise updates recorded in the tree: the northbound-flow sub-leg is STRUCK, not deprioritised (watchlist :1059-1065 -- HKEX/SSE/SZSE ceased daily net-purchase disclosure 2024-08-16; two independent digs confirmed all-null feeds; surviving workaround is differencing RPT_MUTUAL_HOLD_DET holdings levels), and the Eastmoney licence read is an owed decision (R0290) blocking that card under section 13. The other four axes (liquidation-heatmap reconstruction, DexScreener, holder-concentration deltas, Aster/Lighter perp-DEX funding) remain live, free, and unstarted. Engine ideas stay gated behind the R0077 gate repair evaluation as the row states.",
-   "commit": null,
-   "due": null,
-   "disposed": null
+   "status": "scheduled",
+   "reason": "3 OF 5 AXES NOW LIVE AND SCREENED (commit 4a1093d), 1 STRUCK, 1 REMAINING -- scheduled on the remainder, not closed on a partial. DONE, artifacts on disk: (3) DexScreener long-tail -- collect_dexscreener.py, 108 new rows of 114 fetched, 0 endpoint errors; screen DEFERRED with a dated computation, not skipped (harness floor is 51 aligned daily obs -> screenable 2026-09-24). (4) holder-concentration deltas -- collect_holder_concentration.py, 21 new rows, DEGRADED honestly reported (1 token error of 22). (5) perp-DEX funding Aster/Lighter -- collect_perpdex_funding.py, 233,030 new rows (aster 50,974 / lighter 131,299 / klines 50,757) WITH screen-on-discovery in the SAME run per the duty: 5 SCREEN-WEAK, 1 SCREEN-INTERESTING (aster_BTCUSDT_level_rate::8h, n=5364 over 2021-09..2026-08), 6 SCREEN-UNDERPOWERED, every construction logged including the nulls. All three declare clock provenance per L1.46 and are in _GOVERNED, the enforcement matrix (L1.11-r0100), ops/crontab.manifest and the LIVE crontab. STRUCK: (1) CN margin/northbound -- HKEX/SSE/SZSE ceased daily net-purchase disclosure 2024-08-16 and the Eastmoney licence read is blocked behind R0290 under section 13; external cause, not a failed dig. OWED BY 2026-08-19: (2) liquidation-heatmap reconstruction -- libs/research/liq_heatmap.py is built and tested (reconstructs cost-basis and liquidation bands from the desk's OWN OI archive, never buying the Coinglass/Hyblock feed) but has NO screen caller, so the axis is built-never-run; it needs a screen script feeding libs.research.axis_screen exactly as the perpdex collector does. Engine ideas (AST purity gates, factor lifecycle triage, PnL-selected prompt evolution) remain gated behind the R0077 gate repair as the row itself states.",
+   "commit": "4a1093d",
+   "due": "2026-08-19",
+   "disposed": "2026-08-05T07:11:43.359395+00:00"
   },
   {
    "id": "R0101",
@@ -1246,11 +1246,11 @@
    "summary": "R0101 portfolio-construction tier gap (TIER1_BENCHMARK): multi-sleeve risk model + correlation-budgeted allocation, activates when n_sleeves >= 3; design can start now against paper sleeves -- the benchmark register queues this daily until T1",
    "roi_bps": 15.0,
    "raised": "2026-07-31T08:39:11.913098+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: The design substrate this row wanted to start on now EXISTS via the merge: libs/doctrine/portfolio_law.py carries robust Kelly (four multiplied shrinkage terms), the 80%-confidence significance gate, marginal-contribution law MC_i = E[log W|S] - E[log W|S\\{i}] and the correlation limit (:132 'the cap is not a growth limit but a correlation limit'), with a real caller (scripts/run_allocator.py, which honestly reports INSUFFICIENT-EVIDENCE rather than faking priors). But the tier gap itself is unclosed: docs/research/TIER1_BENCHMARK.md:66 still rows portfolio_construction as T3 / 'no', and the activation condition (n_sleeves >= 3 live sleeves) does not exist yet -- the desk has zero live sleeves pre-Gate-0. Design work against paper sleeves can proceed on the merged substrate; not yet top priority.",
+   "status": "scheduled",
+   "reason": "WAITS ON SLEEVES EXISTING, and that dependency is now MECHANISED rather than merely asserted. The row's own activation condition is n_sleeves >= 3, and it proposed designing against PAPER sleeves in the meantime. As of commit 4a1093d that substrate is automated: R0102's spawner converts every corrected Stage-A survivor into a paper sleeve on a daily cadence. But it produces ZERO sleeves today and says so honestly -- the forward cohort is 12/12 at the Holm cap and the corrected-verdict store holds 37 trials with no qualifying survivor. So there are still no paper sleeves to design a multi-sleeve risk model against, and building a correlation-budgeted allocator over an empty or single-element sleeve set would produce a correlation matrix with nothing to correlate: untestable code that reads as delivered capability, which is the built-never-exercised defect this desk pays for repeatedly. The design substrate the 2026-08-04 triage identified is unchanged and real -- libs/doctrine/portfolio_law.py carries robust Kelly with four multiplied shrinkage terms, the 80%-confidence significance gate, the marginal-contribution law MC_i = E[log W|S] - E[log W|S minus i] and the correlation limit, with a live caller in scripts/run_allocator.py that honestly reports INSUFFICIENT-EVIDENCE rather than faking priors. NOT a timidity decline: nothing here is deferred for being large or hard, and the enabling condition is external (sleeve supply gated by Holm-cap retirements and Gate 0), not a matter of appetite. RE-EXAMINE when the spawner's queue drains a first sleeve or n_sleeves reaches 3, whichever is sooner; docs/research/TIER1_BENCHMARK.md:66 keeps rowing portfolio_construction as T3 until then.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-09-30",
+   "disposed": "2026-08-05T07:11:56.886023+00:00"
   },
   {
    "id": "R0102",
@@ -1258,11 +1258,11 @@
    "summary": "PAPER-SLEEVE AUTO-SPAWN: every Stage-A SCREEN-INTERESTING axis automatically gets a paper sleeve (costless execution-path testing + forward evidence accrual) -- drives forward slots toward 12/12 and tests the executor breadth-first before capital ever touches a new edge",
    "roi_bps": 30.0,
    "raised": "2026-07-31T08:46:45.654292+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: No auto-spawn machinery exists: SCREEN-INTERESTING verdicts are produced (finalize_axis_screens.py:200-232, collect_kimchi_premium.py:120) but nothing spawns a paper sleeve from one -- no spawner script, no hook in the screen finalizers. A real design constraint surfaced by the tree: forward slots are already 12/12 occupied at the Holm cap (libs/research/slot_registry.py:37 MAX_FORWARD_SLOTS=12; R0083's disposition measured idle_slots 0), so naive auto-spawn would immediately push over_cap and raise every candidate's bar -- the mechanism must queue behind slot retirements, not just spawn. Real standing work (it is how the executor gets breadth-tested pre-capital), but the binding constraint today is slot supply, not spawn automation.",
-   "commit": null,
+   "status": "implemented",
+   "reason": "BUILT, TESTED, WIRED, SCHEDULED AND RUN (commit 4a1093d). libs/research/paper_sleeves.py (pure logic) + scripts/run_paper_sleeve_spawner.py (organ); 30 tests green; in _GOVERNED, in the enforcement matrix (L1.6-r0102), in ops/crontab.manifest at 45 8 * * *, and INSTALLED in the live crontab (verified present). First live run produced data/paper_sleeve_queue.json and honestly reported NO-CANDIDATES: 37 corrected trials across 3 verdict-bearing reports, zero qualifying SCREEN-INTERESTING survivors -- the spawner being idle IS the correct state of that store, and it says so rather than manufacturing a sleeve. THE TRIAGE CONSTRAINT IS HONOURED BY CONSTRUCTION, not by luck: the cohort is 12/12 at the Holm cap (derive_slots, complete=true), free_slots() returns 0 at/over cap AND returns 0 on an INCOMPLETE cohort (m is then a lower bound), so the organ QUEUES behind retirements and can never spawn over cap and raise every standing candidate's bar. Queue order is the L1.18a deployment race -- shortest capacity runway first, unknown capacity sorting LAST at runway inf so a capacity-less screen cannot cut the line. Zero promotion authority, zero capital (L1.6). KNOWN GAP, rowed not hidden: the axis_screen harness writes screen_outputs[].verdict while the spawner requires trials[].verdict_adjusted from the correction layer, so a raw SCREEN-INTERESTING is not visible to it -- deliberately, since uncorrected Sharpe is inflated up to 4.47x at 20d and lowering that bar is the forbidden direction. The perpdex survivor is NOT stranded: it accrues on its own forward clock (data/perpdex_funding_clock.jsonl).",
+   "commit": "4a1093d",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-05T07:11:28.783129+00:00"
   },
   {
    "id": "R0103",
@@ -4293,6 +4293,78 @@
    "summary": "CARRY BLEED ALARM IS ABSORBING -- it measures a CUMULATIVE LIFETIME ratio, so it can never clear and therefore carries zero information (L1.43 welded gate). Chain confirmed on live artifacts 2026-08-05: the drawdown rail set risk.action=pause_opens at -17.6% (correct -- do NOT touch the rail), so n_carries=0 and deployed_notional=0.0; with opens paused no new funding can accrue, which FREEZES both terms of bleed = non_funding_pnl(-1971.80) / funding_harvested(+113.06). max_audit fires carry-bleed-alarm every cycle on a number that is arithmetically incapable of moving. The attribution the alarm demands is ALREADY on disk (web/cashcarry_live.json leak_attribution: fut_fees 1750.88 = 88.8% of the loss, basis -231.92, residual 11.0) and both root causes are implemented (R0018 churn loop, R0025 windowed cost-rate breaker). FIX (do NOT loosen the bleed threshold -- that is the forbidden direction): make the alarm WINDOWED over recent closes, the same shape R0025 already established for the circuit breaker, so it separates 'bleeding NOW' from 'bled once, fixed, now flat'; and give it a distinct FLAT/NO-EXPOSURE verdict so a zero-position book cannot read as a bleeding one. Same absorbing-state class as the pause_opens defect in desk memory.",
    "roi_bps": 18.0,
    "raised": "2026-08-05T07:00:04.098456+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0353",
+   "source": "max_audit",
+   "summary": "FALSELY-GREEN PROMOTION GATE: the eight-gate barrier has NEVER judged a candidate and reports success every cycle. scripts/promotion_gate.py:44 reads data/gauntlet_survivors.json, which NOTHING writes; :106-108 catches the absence, prints 'unavailable -- no candidates' and returns rc 0. scripts/run_cadence.py:417-421 then tests Path('data/promotion_gate.json').exists() -- true, but written hourly by a DIFFERENT script (scripts/check_promotion_gate.py:61, keys granted_rung/ladder, not verdicts) -- so cadence records fired.append('promotion-gate') every cycle. A no-op is laundered into a green step by a filename collision. FIX: give promotion_gate.py its own output name so it stops colliding with check_promotion_gate.py, make run_cadence assert the artifact promotion_gate ACTUALLY writes, and build a producer for the survivor list. This is the L1.43 welded-gate class in its most expensive form -- a gate that accepts 0% AND reports OK.",
+   "roi_bps": 30.0,
+   "raised": "2026-08-05T07:13:55.704465+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0354",
+   "source": "max_audit",
+   "summary": "TWO LIVE LLM SLEEVES ARE TOLD A LIVE FEED IS ABSENT: scripts/run_conviction_trader.py:1102 (hourly cron) and scripts/run_llm_trader.py:145 (4-hourly cron) read data/liquidations.jsonl and, on OSError, write 'ABSENT on this host' into the decision brief. The feed is NOT absent -- scripts/liquidation_listener.py:33 writes data/liquidations.parquet, 1.29MB, mtime today, daemon up since Jul 29. Both sleeves are making decisions told there is no liquidation data while the desk owns it. FIX: read the .parquet (or have the listener also append jsonl). One line each. NOTE the historical trap on this same feed (desk memory): the listener once held a fresh heartbeat while archiving ZERO events for 14 days, so verify row COUNT and max timestamp, never just file existence.",
+   "roi_bps": 20.0,
+   "raised": "2026-08-05T07:13:56.054437+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0355",
+   "source": "max_audit",
+   "summary": "DEPLOYS ARE STRUCTURALLY BLOCKED: pull_deploy refuses on 'refused-dirty' every 10 minutes because TRACKED files are rewritten by organs on a cadence -- docs/research/recommendation_ledger.json (every recommendations.py call), backups/moat/* (run_moat_backup, cron 55 3 * * *), reports/*, data/*_record.json. The working tree is therefore dirty almost always, so 'every merge to master is a no-op' is the steady state, not an incident, and the box can run arbitrarily far behind master. Observed 2026-08-05: refused-dirty on every tick 00:50 through 07:10. FIX (choose one, do not just re-clean the box by hand -- it re-dirties within minutes): either move organ-written state out of git into an ignored path with an explicit publish step, or teach pull_deploy to distinguish ORGAN-WRITTEN tracked artifacts (a declared allowlist it may stash/reset) from genuine operator edits (which must still refuse). The refusal itself is correct behaviour and must not be weakened -- deploying over real local edits is the failure it exists to prevent.",
+   "roi_bps": 12.0,
+   "raised": "2026-08-05T07:13:56.355736+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0356",
+   "source": "max_audit",
+   "summary": "PHANTOM-PATHS FENCE IS 50 PERCENT NOISE, which is how a fence gets acknowledged into silence (its own docstring at max_audit.py:3514 says exactly this). Measured 2026-08-05 over all 26 reported paths: 7 genuine, 11 false positives, 2 dead readers, 8 optional-by-design. Four structural blind spots, each verified in the wild: (1) SPLIT LITERALS -- _ROOT / 'data' / 'x.json' never matches _PATH_LIT (:3491) which needs data/ inside ONE string, so the name is never bound and its writer is invisible (this alone explains ramp_state.json, research_chain_status.json, live_book_concentration.json, permutation_null.json, real_campaign.json); (2) a path handed to a constructor and written via self.attr.write_text, or passed POSITIONALLY to a helper that writes through a parameter; (3) the alias regex requires the RHS to START with the name, so out = root / _REPORT_REL is not seen as an alias; (4) a path-shaped string counts as a READ even when it is only a provenance label never opened (audit_reality_check.py:201). FIX in yield order: bind names built from split literals, match aliases where the bound name appears anywhere on the RHS, treat self.<attr>.write_text as a writer when <attr> comes from a constructor parameter, and stop counting dict-value labels as reads.",
+   "roi_bps": 10.0,
+   "raised": "2026-08-05T07:14:13.092151+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0357",
+   "source": "max_audit",
+   "summary": "LIVE CAPITAL LAW EXISTS ONLY IN DEAD CODE: the principal's 2026-08-01 evidence-dependent ceiling ladder (UNPROVEN/STRONG/DURABLE tiers with conjunctive statistical rungs) is implemented ONLY in libs/risk/sleeve_allocation.py, which NOTHING imports. The organ that actually writes data/sleeve_allocation.json -- read live by scripts/check_promotion_gate.py:179 and scripts/run_discretionary_max.py:112,180 -- is scripts/run_sleeve_allocator.py, whose own allocate() at :137 contains NONE of it (grep count of STRONG/DURABLE/UNPROVEN: lib 9, script 0). So the ladder governs nothing while appearing implemented and tested. FIX: make run_sleeve_allocator.py:137 delegate to libs.risk.sleeve_allocation.allocate/evidence_tier/marginal_ir and delete the local copy. RELATED unwired safety module: libs/execution/event_guard.py is fail-closed by construction (returns allowed=False on EMPTY/STALE/BLACKOUT, refusing entries -30/+15min around high-impact releases) with ZERO callers and no data/event_calendar.json, so the hourly conviction sleeve opens into FOMC/CPI windows with a stop a gap jumps straight through. Populate the calendar FIRST, then wire -- until the file exists the guard blocks everything.",
+   "roi_bps": 22.0,
+   "raised": "2026-08-05T07:14:13.225523+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0358",
+   "source": "cycle",
+   "summary": "GAP #70 -- LAND THE STDLIB PDF EXTRACTOR (deadline 2026-08-02 passed, prototype never committed). Two consecutive literature runs inherited the claim 'no PDF tooling on this box and the freeze forbids installs' and left five findings at ABSTRACT level. Run 3 verified the premise true but the CONCLUSION false: PDF text lives in FlateDecode streams and the stdlib ships zlib, so a ~90-line pure-stdlib extractor reads academic PDFs with zero installs. EVIDENCE IT MATTERS, already measured: the first paper extracted (Hou-Xue-Zhang) CORRECTED THREE NUMBERS the desk had recorded from a search summary a day earlier -- actual 65 pct fail at t>1.96, 82 pct at the 2.78 multiple-test hurdle, worst category trading frictions 102/106 = 96.2 pct, against a recorded 64 pct / 85 pct at t-cutoff 3 / liquidity 93 pct. The recorded prior was NARROWER than the truth, which is the dangerous direction for a desk that sizes on priors. DELIVERABLES: (1) land it as scripts/pdf_text.py, read-only, no deps; (2) add an interior_extracted field to the literature-card schema so ABSTRACT and PRIMARY are distinguishable AT THE EV GATE; (3) THE GENERALISABLE DEFECT, which is the real item -- a capability limit was asserted once and inherited verbatim across runs, silently defining what the desk could know. Adopt the standing rule: any recorded 'this box cannot X' carries a re-test date and is retried before it is inherited a second time. That is the no-ceiling axiom applied to the desk's own tooling claims, where it demonstrably was not being applied.",
+   "roi_bps": 14.0,
+   "raised": "2026-08-05T07:15:37.002745+00:00",
    "status": "open",
    "reason": null,
    "commit": null,

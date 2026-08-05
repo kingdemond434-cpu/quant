@@ -211,7 +211,7 @@ DOSSIER_SOURCES: dict[str, str] = {
     "discretionary_edges": "data/discretionary_edges.json",
     "trade_review": "data/trade_review.json",
     "executive_kpis": "data/executive_kpis.json",
-    "gate_histogram": "data/gate_histogram.json",
+    "gate_histogram": "reports/gate_histogram.json",
     "max_push_queue": "data/max_push_queue.json",
     "strategy_coverage": "data/strategy_coverage.json",
     "data_assets": "data/data_assets.json",
