@@ -153,7 +153,11 @@ def _from_utilisation() -> list[dict[str, Any]]:
     for c in d.get("ceilings", []) or []:
         name = str(c.get("name"))
         source = ("capital_utilisation" if "capital" in name else
-                  "evidence_throughput" if "slot" in name else
+                  # "queue" as well as "slot": forward_queue_depth (R0205) measures what is
+                  # STAGED BEHIND the cohort, which is evidence throughput and not capital. The
+                  # default branch below is capital_utilisation, so an unmatched research ceiling
+                  # is silently filed against the wrong bottleneck rather than left unrouted.
+                  "evidence_throughput" if ("slot" in name or "queue" in name) else
                   "dormant_capability" if "capability" in name else
                   "measurement_quality" if "kill_rate" in name else "capital_utilisation")
         out.append(_item(

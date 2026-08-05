@@ -58,6 +58,12 @@ class Ceiling:
     measured: bool
     binding_constraint: str      # "" = none named; required when utilisation < _EXPECT
     why_it_matters: str
+    #: Live composition of the reading -- the numbers behind `used`, not a static explanation.
+    #: Separate from `binding_constraint` ON PURPOSE: writing the diagnosis there would name a
+    #: constraint, which flips IDLE-UNEXPLAINED to IDLE-EXPLAINED and silences the fence. A
+    #: shortfall the desk caused itself is exactly what must stay UNEXPLAINED (L1.28a: the only
+    #: legitimate idle headroom is a survival rail or an EXTERNAL blocker on the register).
+    detail: str = ""
 
     @property
     def utilisation(self) -> float:
@@ -83,21 +89,115 @@ class Ceiling:
 
 
 def _forward_slots() -> Ceiling:
-    """The single most load-bearing ceiling on the desk's only path from research to capital."""
+    """The single most load-bearing ceiling on the desk's only path from research to capital.
+
+    OCCUPANCY IS NOT UTILISATION, and this counted the wrong thing. `used` was
+    `len(snap["slots"])` -- a head-count of slots that are TAKEN. But a forward slot exists to
+    accrue evidence, and `derive_slots()` already publishes which of them actually are:
+    `accruing` against `not_accruing`, the latter documented in the registry's own note as "the
+    slots paying multiplicity while returning no evidence". A dormant clock is the worst reading
+    available -- it consumes cohort capacity, charges every other candidate's Holm bar, and
+    returns nothing -- and counting it as utilised capacity made it indistinguishable from a
+    healthy one. Measured when this was fixed: 12 slots occupied, 11 accruing, `cny_premium` at
+    NO-EVIDENCE, and the fence read a clean 100% SATURATED.
+
+    The head-count remains the fallback for snapshots written before `accruing` existed; it is
+    never the preferred numerator.
+    """
+    dormant: list[str] = []
     try:
         from libs.research.slot_registry import MAX_FORWARD_SLOTS, derive_slots
         snap = derive_slots()
-        used, cap = float(len(snap.get("slots", []) or [])), float(MAX_FORWARD_SLOTS)
-        measured = True
-    except (ImportError, OSError, ValueError, KeyError):
+        occupied = len(snap.get("slots", []) or [])
+        accruing = snap.get("accruing")
+        used = float(accruing if isinstance(accruing, int) else occupied)
+        dormant = [str(d.get("name", "?")) for d in (snap.get("not_accruing") or [])
+                   if isinstance(d, dict)]
+        cap, measured = float(MAX_FORWARD_SLOTS), True
+        detail = f"{occupied}/{int(cap)} slots occupied, {used:.0f} accruing evidence" + (
+            f"; dormant: {', '.join(dormant[:4])}" if dormant else "")
+    except (ImportError, OSError, ValueError, KeyError, TypeError) as exc:
         used, cap, measured = 0.0, 12.0, False
+        detail = f"cohort unreadable: {type(exc).__name__}"
+    # THE CONSTRAINT MUST MATCH THE SHORTFALL. "Candidate supply" is the right diagnosis for an
+    # EMPTY slot and the wrong one for an occupied slot that has gone quiet -- those are fixed at
+    # opposite ends of the pipeline, and naming the wrong one sends the next reader upstream to
+    # generate candidates for a cohort that has no room.
+    if used >= cap * _EXPECT:
+        binding = ""
+    elif dormant:
+        binding = (f"{len(dormant)} occupied slot(s) accruing NO evidence ({', '.join(dormant[:4])})"
+                   " -- retire or repair the clock; the slot is held either way")
+    else:
+        binding = "candidate supply into the forward queue -- see scripts/run_promotion_queue.py"
     return Ceiling(
-        "forward_confirmation_slots", cap, float(used), "concurrent clocks", measured,
-        "" if used >= cap * _EXPECT else
-        "candidate supply into the forward queue -- see scripts/run_promotion_queue.py",
+        "forward_confirmation_slots", cap, float(used), "accruing clocks", measured, binding,
         "An empty slot accrues NO evidence while every candidate's capacity decays against a "
         "growing book. Idle slots are the direct mechanism by which an edge arrives already "
-        "outgrown (L1.18a runway).")
+        "outgrown (L1.18a runway).", detail)
+
+
+def _forward_queue_depth() -> Ceiling:
+    """WHAT IS STAGED BEHIND THE COHORT -- the ceiling nothing on this desk was measuring (R0205).
+
+    THE BLIND SPOT, EXACTLY. Slot OCCUPANCY and pipeline DEPTH are two different ceilings, and
+    the desk owned a fence for one and nothing for the other. At 12/12 occupied with ZERO
+    candidates staged, `_forward_slots` above returned SATURATED with no binding constraint, and
+    `capability_ratchet._alpha_output` scored the same state 10/10 "AT CEILING ... the work is
+    now HOLDING it". Both are true statements about occupancy and both are the wrong question:
+    the desk's throughput through this pipeline is slots x (1 / clock duration), and when nothing
+    is staged, a slot that frees idles for a FULL pipeline latency before it can restart --
+    measured on the live artifact at 181 days (90 clock + 90 queue + 1 decision).
+
+    So the healthiest-looking reading on the artifact was the one describing a pipeline with zero
+    throughput staged. That is the L1.28a failure in its purest form: idle capacity costs its
+    entire forward output stream and announces nothing, and here it announced SATURATED.
+
+    THE LIMIT IS ONE FULL COHORT, and it is not a hand-set number: a queue stocked to
+    MAX_FORWARD_SLOTS can refill every slot the moment it frees, which is the only depth at which
+    queue wait contributes zero to promotion latency. It self-scales with the cap.
+
+    NO BINDING CONSTRAINT IS NAMED WHEN THE QUEUE IS EMPTY, and that is deliberate rather than an
+    omission. An empty queue is not an external blocker and not a survival rail -- the two things
+    L1.28a admits as legitimate idle headroom. It is the desk's own screening throughput, so it
+    reads IDLE-UNEXPLAINED and this fence exits non-zero, which is what L1.25a means by a null
+    streak triggering escalation rather than rest. The live composition goes in `detail` instead,
+    so the reading is diagnostic without being self-excused.
+    """
+    n_promo, n_paper, sources, why = 0, 0, [], ""
+    try:
+        from libs.research.slot_registry import MAX_FORWARD_SLOTS
+        cap = float(MAX_FORWARD_SLOTS)
+    except (ImportError, ValueError):
+        cap = 12.0
+    # Two independent staging registers feed the cohort and BOTH count. run_promotion_queue reads
+    # gauntlet survivors out of the candidate store; run_paper_sleeve_spawner queues corrected
+    # Stage-A verdicts behind a full cohort. Reading only one would understate the depth.
+    try:
+        q = json.loads((_ROOT / "data/promotion_queue.json").read_text("utf-8"))
+        n_promo = int(q.get("n_candidates") or 0)
+        sources.append("promotion_queue")
+    except (OSError, ValueError, TypeError):
+        pass
+    try:
+        p = json.loads((_ROOT / "data/paper_sleeve_queue.json").read_text("utf-8"))
+        n_paper = len(p.get("queued") or [])
+        why = str(p.get("why") or "")
+        sources.append("paper_sleeve_queue")
+    except (OSError, ValueError, TypeError):
+        pass
+    measured = bool(sources)
+    used = float(n_promo + n_paper)
+    detail = (f"{n_promo} gauntlet survivor(s) + {n_paper} paper-sleeve candidate(s) staged "
+              f"[{', '.join(sources)}]" + (f"; upstream says: {why[:120]}" if why else "")
+              ) if measured else "neither queue artifact is readable"
+    return Ceiling(
+        "forward_queue_depth", cap, used, "candidates staged", measured, "",
+        "A full cohort with an empty queue is not saturation, it is a stall waiting to happen: "
+        "when a slot frees, the desk waits a FULL pipeline latency (measured 181d) before "
+        "evidence can start accruing in it again. Occupancy measures what is running; this "
+        "measures whether anything can replace it (L1.28a idleness, L1.30 replacement rate).",
+        detail)
 
 
 def _capital() -> Ceiling:
@@ -361,8 +461,8 @@ def _book_vol() -> Ceiling:
 
 
 def collect() -> list[Ceiling]:
-    return [_capital(), _forward_slots(), _capability(), _data_assets(), _organs(), _mutation(),
-            _test_suites_runnable(), _brain_seat(), _book_vol()]
+    return [_capital(), _forward_slots(), _forward_queue_depth(), _capability(), _data_assets(),
+            _organs(), _mutation(), _test_suites_runnable(), _brain_seat(), _book_vol()]
 
 
 def build() -> dict[str, Any]:
@@ -397,6 +497,8 @@ def main() -> int:
         for r in rep["ceilings"]:
             bar = f"{r['used']:,.0f}/{r['limit']:,.0f} {r['unit']}"
             print(f"  {r['status']:17} {r['name']:26} {r['utilisation']:6.1%}  {bar}")
+            if r.get("detail"):
+                print(f"  {'':17} └─ {r['detail'][:140]}")
             if r["binding_constraint"]:
                 print(f"  {'':17} └─ bound by: {r['binding_constraint'][:100]}")
         print(f"-> {_OUT.relative_to(_ROOT)}")
