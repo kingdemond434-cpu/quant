@@ -131,6 +131,29 @@ def fetch_klines(symbol: str, *, interval: str = "1d", start_ms: int = 0) -> pd.
     return _klines(_FAPI, "/fapi/v1/klines", symbol, interval, start_ms, limit=1500)
 
 
+def fetch_price_at(symbol: str, when_ms: int) -> float | None:
+    """Close of the 1m PERP candle containing ``when_ms`` -- one defined instant, never 'now'.
+
+    A POINT QUERY, deliberately not `fetch_klines(interval="1m")`: that paginates forward from
+    start_ms to the present, so asking what BTCUSDT was worth eight hours ago would pull every
+    minute since. This asks for the three candles around the instant and takes the nearest.
+
+    Returns None rather than a nearby price when the venue has no candle there. A grader that
+    silently substitutes a different instant's price is worse than one that refuses: the
+    substitution is invisible in the output and biases every outcome it touches.
+    """
+    url = (f"{_FAPI}/fapi/v1/klines?symbol={symbol}&interval=1m"
+           f"&startTime={when_ms - 60_000}&endTime={when_ms + 60_000}&limit=3")
+    try:
+        rows = _get(url)
+    except (RuntimeError, urllib.error.URLError, json.JSONDecodeError, OSError):
+        return None
+    if not isinstance(rows, list) or not rows:
+        return None
+    best = min(rows, key=lambda r: abs(int(r[0]) - when_ms))
+    return float(best[4])
+
+
 def fetch_spot_klines(symbol: str, *, interval: str = "1d", start_ms: int = 0) -> pd.DataFrame:
     """Paginated klines for the SPOT pair (spot API caps limit at 1000 -- must paginate)."""
     return _klines(_SPOT, "/api/v3/klines", symbol, interval, start_ms, limit=1000)

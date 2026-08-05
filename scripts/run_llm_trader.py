@@ -222,21 +222,65 @@ def validate_call(call: dict[str, Any]) -> tuple[bool, str]:
 
 
 def record_call(root: Path, call: dict[str, Any]) -> dict[str, Any]:
-    """Append to the paper book AND log the forecast so L1.29 scores it automatically."""
+    """Append to the paper book AND log the forecast so L1.29 scores it automatically.
+
+    A PASS IS LOGGED TOO, which is the whole of R0123's remaining scope. The brief promises the
+    model that "a PASS is also scored ... marked against the same horizon as a real call", and
+    until now the code kept that promise only for CALLs -- so the sleeve wrote nine consecutive
+    PASSes and logged zero scoreable forecasts. A filter nobody grades is a filter that maximises
+    its record by never deciding.
+
+    A decline is logged under its OWN kind, never `discretionary`. forecast_calibration.report()
+    excludes those kinds by default, so the bias that shrinks live Kelly sizing keeps meaning what
+    it meant; the declines are scored in libs.research.decline_value, where the question is whether
+    the FILTER adds value. Mixing the two pools would move position size on trades never taken.
+
+    A decline the model left ungradeable -- no symbol, or no LONG/SHORT -- is stamped as such on
+    the row and NOT logged. Logging one would create a forecast nothing can ever resolve, and an
+    unresolved forecast past its deadline is a hard FAILURE of check_calibration (exit 2): the fix
+    for an ungradeable decline is a better decline, never a fence that stops looking.
+    """
     now = datetime.now(tz=UTC)
     row = {**call, "at": now.isoformat(),
            "resolve_by": (now + timedelta(hours=float(call.get("horizon_hours", 8)))).isoformat(),
            "paper": True}
+    is_pass = call.get("action") == "PASS"
+    key = f"llm_trader:{now.isoformat()}"
+    try:
+        from libs.research.decline_value import scoreable
+        ok, why = scoreable(row) if is_pass else (True, "call")
+    except Exception as exc:                                # never lose the row to a grader import
+        ok, why = False, f"scoreability check failed: {exc}"
+    if is_pass:
+        row["decline_scoreable"], row["decline_scoreable_why"] = ok, why
+    if ok:
+        row["forecast_key"] = key
+
+    # THE BOOK IS WRITTEN FIRST, AND THE ORDER IS THE RECOVERY STORY. If the forecast log fails
+    # after the row lands, resolve_llm_trader_book.py re-registers it from the row itself and
+    # nothing is lost. The reverse order loses the opposite way and it is the expensive one: a
+    # forecast whose book row never landed can never be graded, and an ungradeable forecast past
+    # its deadline fails check_calibration permanently.
     p = root / _BOOK
     p.parent.mkdir(parents=True, exist_ok=True)
     with p.open("a", encoding="utf-8") as fh:
         fh.write(json.dumps(row) + "\n")
-    if call.get("action") == "CALL":
+
+    if ok:
         try:
             from libs.self_improvement import forecast_calibration as fc
-            fc.log_forecast(f"llm_trader:{now.isoformat()}", float(call["probability"]),
-                            "discretionary", resolve_by=row["resolve_by"],
-                            claim=f"{call['direction']} {call['symbol']}: {call['mechanism'][:120]}")
+            if is_pass:
+                fc.log_forecast(
+                    key, float(row["probability"]), "discretionary_pass",
+                    resolve_by=row["resolve_by"],
+                    claim=(f"DECLINED {row['direction']} {row['symbol']} over "
+                           f"{row.get('horizon_hours', 8)}h "
+                           f"({str(row.get('pass_reason'))[:40]}) @ {now.isoformat()}"))
+            else:
+                fc.log_forecast(key, float(call["probability"]), "discretionary",
+                                resolve_by=row["resolve_by"],
+                                claim=f"{call['direction']} {call['symbol']}: "
+                                      f"{call['mechanism'][:120]}")
         except Exception as exc:                            # never lose the call
             row["calibration_log_error"] = str(exc)
     return row

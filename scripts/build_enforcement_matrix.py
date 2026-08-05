@@ -195,6 +195,25 @@ _MAP: dict[str, list[str]] = {
     # hour of cross-section is permanently unbuyable (L1.28b(f)).
     "L1.19-r0119": ["scripts/check_crowding.py", "libs/research/crowding.py",
                     "scripts/collect_funding_cross_section.py"],
+    # R0118 event-density promotion clock: L1.48 says evidence is the clock, and evidence_clock
+    # reached exactly ONE promotion-path file while a `fwd_days >= 30` gate scaled DEPLOYABLE
+    # CAPITAL on a bare positive Sharpe (measured 2026-08-05: validated=True at t=0.105). The
+    # module counts EFFECTIVE observations -- raw event counts discounted for serial dependence,
+    # clamped so the arithmetic can remove evidence and never invent it.
+    "L1.48": ["libs/research/evidence_clock.py", "libs/research/event_density.py",
+              "scripts/check_calendar_gates.py"],
+    # R0123 decline grading: L1.29 says an ungraded prediction is a BELIEF that inflates the
+    # apparent hit-rate by never counting its misses -- and a sleeve scored only on the trades it
+    # CHOOSES to be graded on is that defect with a dominant strategy attached. Nine consecutive
+    # PASSes, zero scoreable forecasts. The grader ships with the logging because check_calibration
+    # fails on any forecast past its deadline: logging without grading would turn a green survival
+    # fence permanently red.
+    "L1.29-r0123": ["libs/research/decline_value.py", "scripts/resolve_llm_trader_book.py",
+                    "scripts/check_calibration.py"],
+    # R0121 settlement-calendar screen (§42 capacity lens, L1.6 zero promotion authority). Tests
+    # the PREMISE before the economics: nested grids make the trade geometrically impossible at
+    # any funding level, and only a genuine phase offset creates a capture window.
+    "L1.6-r0121": ["scripts/screen_funding_interval_mismatch.py"],
     # R0100 axis collectors (2026-08-05): three free, keyless raw-information axes the desk did
     # not hold. Under L1.11 (the moat is the transformation pipeline, never the purchased dataset)
     # and L1.8 (acquisition runs at maximum). collect_perpdex_funding carries the screen-on-

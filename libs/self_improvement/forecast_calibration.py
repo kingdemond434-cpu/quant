@@ -152,15 +152,35 @@ def _scoreable(forecasts: dict[str, Any]) -> list[dict[str, Any]]:
     return out
 
 
-def report() -> dict[str, Any]:
-    """Calibration over resolved forecasts: Brier, hit-rate posterior, bias. N-gated (honest)."""
+#: Kinds that are NOT decisions the desk sized capital on. THIRD exclusion, same logic as the two
+#: in _scoreable and the same failure mode if it were missing. A DECLINE -- the llm_trader sleeve's
+#: counterfactual "what I would have done had I traded" -- is graded (R0123, so passing on
+#: everything can no longer farm a clean record), but it must not enter THIS pool: report()'s bias
+#: is consumed by calibrated_confidence, which shrinks the probability run_conviction_trader hands
+#: to kelly_leverage. Declines are asserted mostly at p=0.50 and would swamp the handful of real
+#: calls, moving LIVE POSITION SIZE on trades the desk never took. Scored in
+#: libs.research.decline_value instead, where the statistic answers a question about the filter.
+NON_SIZING_KINDS: tuple[str, ...] = ("discretionary_pass", "discretionary_pass_backfill")
+
+
+def report(*, exclude_kinds: tuple[str, ...] = NON_SIZING_KINDS) -> dict[str, Any]:
+    """Calibration over resolved forecasts: Brier, hit-rate posterior, bias. N-gated (honest).
+
+    ``exclude_kinds`` defaults to the non-sizing kinds so the number that reaches live sizing keeps
+    meaning what it has always meant. Pass ``exclude_kinds=()`` to see the whole store.
+    """
     d = _load()
-    resolved = [f for f in d["forecasts"].values() if f.get("resolved")]
-    res = _scoreable(d["forecasts"])
+    forecasts = {k: f for k, f in d["forecasts"].items()
+                 if str(f.get("kind") or "") not in exclude_kinds}
+    resolved = [f for f in forecasts.values() if f.get("resolved")]
+    res = _scoreable(forecasts)
     n = len(res)
     excluded = {"retrospective": sum(1 for f in resolved if not f.get("resolve_by")),
                 "duplicate_claim": len(resolved) - n
-                - sum(1 for f in resolved if not f.get("resolve_by"))}
+                - sum(1 for f in resolved if not f.get("resolve_by")),
+                "non_sizing_kind": sum(1 for f in d["forecasts"].values()
+                                       if f.get("resolved")
+                                       and str(f.get("kind") or "") in exclude_kinds)}
     if n < 5:
         return {"n_resolved": n, "n_excluded": excluded,
                 "status": (f"insufficient outcomes ({n}/5) -- accumulating; "

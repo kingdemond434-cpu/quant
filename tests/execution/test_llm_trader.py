@@ -78,6 +78,66 @@ def test_call_is_logged_as_a_scored_forecast(tmp_path, monkeypatch):
     assert entry["p"] == 0.62 and entry["resolve_by"]      # scored, with a deadline
 
 
+def _pass(**kw):
+    base = {"action": "PASS", "symbol": "BTCUSDT", "direction": "LONG", "horizon_hours": 8,
+            "probability": 0.55, "pass_reason": "already priced",
+            "passed_on": "a listing notice with no forced flow"}
+    base.update(kw)
+    return base
+
+
+def test_a_pass_is_logged_as_a_scored_forecast_too(tmp_path, monkeypatch):
+    """R0123. The brief PROMISES the model 'a PASS is also scored ... marked against the same
+    horizon as a real call'; record_call kept that promise only for CALLs, so the sleeve wrote
+    nine consecutive PASSes and logged ZERO scoreable forecasts. A model graded only on the trades
+    it chooses to be graded on has a dominant strategy, and it had already found it."""
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "data").mkdir()
+    import libs.self_improvement.forecast_calibration as fc
+    monkeypatch.setattr(fc, "_LOG", tmp_path / "data/forecast_log.json")
+
+    row = record_call(tmp_path, _pass())
+    assert row["decline_scoreable"] is True and row["forecast_key"]
+    logged = json.loads((tmp_path / "data/forecast_log.json").read_text())["forecasts"]
+    entry = logged[row["forecast_key"]]
+    # Logged under its OWN kind: report() excludes it from the pool that sizes live capital.
+    assert entry["kind"] == "discretionary_pass"
+    assert entry["p"] == 0.55 and entry["resolve_by"] == row["resolve_by"]
+    assert entry["claim"].startswith("DECLINED LONG BTCUSDT")
+
+
+def test_an_ungradeable_pass_is_stamped_and_NOT_logged(tmp_path, monkeypatch):
+    """Logging a decline nothing can ever grade would create a forecast that goes overdue and
+    STAYS overdue -- and check_calibration FAILS (exit 2) on exactly that. The fix for an
+    ungradeable decline is a better decline, never a fence that stops looking."""
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "data").mkdir()
+    import libs.self_improvement.forecast_calibration as fc
+    monkeypatch.setattr(fc, "_LOG", tmp_path / "data/forecast_log.json")
+
+    row = record_call(tmp_path, _pass(symbol=None, direction=None))
+    assert row["decline_scoreable"] is False and "no symbol" in row["decline_scoreable_why"]
+    assert "forecast_key" not in row
+    assert not (tmp_path / "data/forecast_log.json").exists()   # nothing logged at all
+
+
+def test_every_decision_reaches_the_book_gradeable_or_not(tmp_path, monkeypatch):
+    """The book is the recovery story: it is written BEFORE the forecast log, so a logging failure
+    is repairable from the row. An ungradeable decline still lands -- unmeasured counts as zero,
+    never as absent (L1.28a)."""
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "data").mkdir()
+    import libs.self_improvement.forecast_calibration as fc
+    monkeypatch.setattr(fc, "_LOG", tmp_path / "data/forecast_log.json")
+
+    record_call(tmp_path, _pass())
+    record_call(tmp_path, _pass(symbol=None, direction=None))
+    record_call(tmp_path, _call())
+    lines = (tmp_path / "data/llm_trader_book.jsonl").read_text().strip().splitlines()
+    assert len(lines) == 3
+    assert [json.loads(x)["action"] for x in lines] == ["PASS", "PASS", "CALL"]
+
+
 def test_brief_reports_absent_feeds_rather_than_empty(tmp_path):
     b = build_brief(tmp_path)
     assert all(v == "ABSENT on this host" for v in b["sources"].values())
