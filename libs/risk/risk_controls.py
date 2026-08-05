@@ -180,7 +180,7 @@ def load_fee_burn_window(
             if ts is not None and _is_num(s.get("funding")) and _is_num(s.get("commission")):
                 samples.append((ts, float(s["funding"]), abs(float(s["commission"]))))
     samples.sort(key=lambda x: x[0])
-    new = (t, float(fund), abs(float(comm)))
+    new = (t, float(fund or 0.0), abs(float(comm or 0.0)))
     if samples and new[0] <= samples[-1][0]:
         pass                                # same artifact tick re-read -- nothing new to record
     elif samples and new[2] < samples[-1][2] - 1e-6:

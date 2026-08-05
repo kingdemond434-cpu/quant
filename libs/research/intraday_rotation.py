@@ -76,7 +76,7 @@ def atr(high: np.ndarray, low: np.ndarray, close: np.ndarray, window: int = ATR_
     if len(tr) >= window:
         c = np.cumsum(tr)
         out[window - 1:] = (c[window - 1:] - np.concatenate([[0.0], c[:-window]])) / window
-    return out
+    return np.asarray(out)
 
 
 def efficiency_ratio(close: np.ndarray, window: int = ER_WINDOW) -> np.ndarray:
@@ -309,7 +309,7 @@ def bootstrap_sizing(r: np.ndarray, *, risk_fracs: tuple[float, ...],
         return out
     paths = np.empty((n_paths, n))
     for p in range(n_paths):
-        seq = []
+        seq: list[float] = []
         while len(seq) < n:
             s = int(rng.integers(0, n))
             ln = int(rng.geometric(1.0 / block))

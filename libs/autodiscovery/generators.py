@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
+from typing import Any
 
 import numpy as np
 
@@ -290,7 +291,7 @@ def _vwap_reversion(s: MarketSeries, p: dict[str, float]) -> np.ndarray:
 def _vwap_trend(s: MarketSeries, p: dict[str, float]) -> np.ndarray:
     w = int(p["window"])
     with np.errstate(invalid="ignore"):
-        return np.nan_to_num(np.sign(s.close - _rolling_vwap(s, w)))
+        return np.asarray(np.nan_to_num(np.sign(s.close - _rolling_vwap(s, w))))
 
 
 def _supply_demand(s: MarketSeries, p: dict[str, float]) -> np.ndarray:
@@ -313,7 +314,7 @@ def _supply_demand(s: MarketSeries, p: dict[str, float]) -> np.ndarray:
             continue
         zlo, zhi = float(s.low[i - 1]), float(s.high[i - 1])
         d = 1.0 if imp_up[i] else -1.0
-        for j in range(i + 2, min(i + 62, n)):
+        for j in range(int(i) + 2, min(int(i) + 62, n)):
             touched = (s.low[j] <= zhi) if d > 0 else (s.high[j] >= zlo)
             if touched:
                 sig[j] = d
@@ -321,7 +322,10 @@ def _supply_demand(s: MarketSeries, p: dict[str, float]) -> np.ndarray:
     return _hold_positions(sig, hold)
 
 
-def _ict_frame(s: MarketSeries):
+def _ict_frame(s: MarketSeries) -> Any:
+    """OHLC frame for the libs/ict detectors. `Any` rather than pd.DataFrame: pandas is imported
+    lazily here (the autodiscovery import path stays numpy-only for callers that never touch
+    ICT), so the annotation must not force a module-scope pandas import."""
     import pandas as pd
     return pd.DataFrame({"high": s.high, "low": s.low, "close": s.close})
 
