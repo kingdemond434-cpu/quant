@@ -1551,3 +1551,26 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # highest) and named 2 UNMEASURED components -- the budget-truncated autodiscovery mutation target
 # and the BLOCKED-UNKNOWN ruin rail. CONFIDENCE: measured (that reading is from the run itself).
 50 9 * * * cd "$QUANT_ROOT" && flock -n data/.cron_capratchet.lock .venv/bin/python scripts/run_capability_ratchet.py >> data/cro_ai_logs/capability_ratchet.log 2>&1
+
+# TYPE-II COST REPORT (built 2026-08-05). Labels every recorded NEGATIVE with the power it was
+# measured at, so "we found nothing" stops being unfalsifiable: COULD-NOT-HAVE-SEEN-IT
+# (underpowered) and LOOKED-AND-IT-IS-NOT-THERE are different claims, and a desk with 0 survivors
+# across 420 hypotheses needs to know which kind it has been producing. Runs after the research
+# cycle so it reads that day's fresh verdicts.
+# EVIDENCE: scripts/run_type2_report.py -> data/type2_cost.json; libs/validation/type2_cost.py.
+# Measured basis: docs/research/gate_power_audit.md (power flat at N=420/100/30/5 -- only sample
+# LENGTH moved it) and REALITY_CHECK_POWER.md (pooling 5% -> ~70% at SR 1.0).
+# CONFIDENCE: committed-script (new this cycle)
+15 9 * * * cd "$QUANT_ROOT" && flock -n data/.cron_type2.lock .venv/bin/python scripts/run_type2_report.py >> data/cro_ai_logs/type2_cost.log 2>&1
+
+# MECHANISM CENSUS (built 2026-08-05). Counts distinct ECONOMIC mechanisms rather than candidates,
+# which is the number that actually bounds this desk: its first run measured the 44-candidate
+# MAXIMUM-POWER campaign occupying only 4 of 20 classes -- effective classes 2.787, diversity
+# 0.139, one class holding 45.5%. So 0/44 was never 44 tests. Diversity is exp(Shannon) and
+# VOLUME-INVARIANT, so more candidates inside occupied classes cannot move it; only new mechanism
+# classes can. Also emits the ranked gap list of untested classes and the data each needs.
+# EVIDENCE: scripts/run_mechanism_census.py -> data/mechanism_census.json; corroborated
+# independently by scripts/measure_cross_mechanism_corr.py (cross-mechanism N_eff 4.08 vs the ~100
+# a weak-edge portfolio needs).
+# CONFIDENCE: committed-script (new this cycle; 20 classes, 124 readable records, 0 unclassified)
+35 9 * * * cd "$QUANT_ROOT" && flock -n data/.cron_mechcensus.lock .venv/bin/python scripts/run_mechanism_census.py >> data/cro_ai_logs/mechanism_census.log 2>&1
