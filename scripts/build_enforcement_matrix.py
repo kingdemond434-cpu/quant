@@ -92,7 +92,10 @@ _MAP: dict[str, list[str]] = {
     "L2.2": ["scripts/max_audit.py (all 57 fences)"],
     "L2.3": ["recommendations.py", "check_directives"],
     "L2.4": ["check_rubberstamp_detector", "check_rubberstamp_enforcement"],
-    "L2.5": ["blind_spot.py", "check_self_sufficiency"],
+    "L2.5": ["blind_spot.py", "check_self_sufficiency",
+             # R0093: the principal's order channel feeds the origin gauge mechanically --
+             # a doctrine edit IS a principal-found gap, logged the day it lands.
+             "scripts/check_doctrine_diff.py"],
     "L2.6": ["run_trade_forensics.py", "check_forensics_fresh", "research_autopsy.py"],
     "L2.7": ["recommendations.py", "check_directives"],
     "L2.9": ["libs/self_improvement/dormancy.py", "run_intelligence_cycle.py",

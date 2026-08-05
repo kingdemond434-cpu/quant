@@ -90,6 +90,7 @@ _STEPS = [
     ("principle_audit",   "scripts/principle_audit.py", 30),  # STRICT: all 15 principles must reach models
     ("blindspot_max",     "scripts/blindspot_max.py", 120),  # 4 classes of mechanical unknown-unknown
     ("doctrine_guard",      "scripts/doctrine.py", 30),  # STRICT: fails if any LLM caller runs without doctrine
+    ("doctrine_diff",       "scripts/check_doctrine_diff.py", 30),  # R0093: principal order -> blind-spot row
     ("unobserved",          "scripts/unobserved.py", 90),  # unknown-unknowns we already own and never read
     ("module_justify",      "scripts/module_justification.py", 120),  # would I build this today -- merit audit of existing code
     ("coverage_audit",      "scripts/coverage_audit.py", 60),  # one honest coverage number per surface

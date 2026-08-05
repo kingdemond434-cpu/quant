@@ -89,6 +89,7 @@ _GOVERNED: tuple[str, ...] = (
     "run_principal_benchmark.py",
     "run_organ_er.py",
     "check_enforcement_execution.py",       # L1.43 execution-vs-existence (capability hunt s3)
+    "check_doctrine_diff.py",               # R0093: doctrine order -> blind-spot row (L2.5)
 )
 
 #: Organs that legitimately owe no cron line, with the reason. "No schedule" must be a DECISION.
@@ -107,6 +108,11 @@ _SCHEDULE_EXEMPT: dict[str, str] = {
                              "chain, immediately after collect_fred_macro refreshes its input "
                              "(phase-correct by construction); a separate cron line would race "
                              "the archive it reads",
+    "check_doctrine_diff.py": "runs as the doctrine_diff step of daily_research_cycle's _STEPS "
+                              "chain, beside doctrine_guard; doctrine edits arrive at most a "
+                              "few per week, so the daily chain IS the information-arrival "
+                              "ceiling (L1.28c) and a second cron line would re-read unchanged "
+                              "state",
 }
 
 #: Organs that legitimately do not call guard(), with the reason. The gate organs THEMSELVES
