@@ -175,6 +175,15 @@ files = ["libs", "app", "migrations",
          "scripts/run_deadman_stranded_sweep.py",
          "scripts/reconcile_venue.py", "scripts/run_trade_forensics.py"]
 
+# PYARROW VERSION STRADDLE (2026-08-05). libs/data/lake.py carries two
+# `type: ignore[no-untyped-call]`s that are REQUIRED on the pinned pyarrow (>=24,<25) and read
+# as unused on 25.x. Without this override the two environments disagree about whether the file
+# is clean, and the disagreement surfaced as a deploy-gate failure rather than as a type error.
+# Scoped to the one module: warn_unused_ignores stays on everywhere else.
+[[tool.mypy.overrides]]
+module = ["libs.data.lake"]
+warn_unused_ignores = false
+
 [[tool.mypy.overrides]]
 module = [
     "numpy.*",
