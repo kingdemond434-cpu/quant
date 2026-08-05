@@ -488,6 +488,9 @@ _FENCE_OWNERS: dict[str, str] = {
     "check_source_backlog": "L1.9",      # a catalogue that grows faster than it is verified
     "check_dig_uncommitted": "L1.9",     # VPS disk is not institutional memory
     "check_paid_target_registry": "L1.11a",
+    # Same duty from the other end: the registry fence above asks whether a KNOWN paid target is
+    # tracked, this one whether a paywall the desk actually WALKED INTO ever reached the registry.
+    "check_paywalls_registered": "L1.11a",
     "check_holdings_never_shrink": "L1.24",  # information advantage measured as a holding, not act
     # --- remaining singletons.
     "check_panel": "L1.7",               # adversarial review capability being DOWN is a defect
