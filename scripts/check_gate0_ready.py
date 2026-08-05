@@ -164,6 +164,70 @@ def _load_state() -> tuple[dict[str, Any] | None, str]:
     return state, "ok"
 
 
+#: A pre-mortem clears this gate only at the panel's OWN non-degraded bar. run_external_panel
+#: stamps a run DEGRADED below 8 seats and tells the reader to "re-run on the full roster once
+#: funded before acting on anything structural" -- so admitting a 4-seat free run here would let
+#: advisory-weak findings unlock real capital, which is the one thing this criterion exists to stop.
+_PREMORTEM_SEATS = 8
+
+#: Same substantive-response bar the panel uses for coverage accounting (run_external_panel:454).
+#: A seat that returned a stub answered nothing, and counting it would be padding the quorum.
+_PREMORTEM_MIN_CHARS = 400
+
+
+def _premortem_completed() -> dict[str, Any]:
+    """Has the adversarial pre-mortem actually FIRED before the deposit (R0105)?
+
+    THE GAP THIS CLOSES. prompts/panel_missions/premortem.txt has existed and sat in the weekly
+    rotation since 2026-07-12, and has never once run: tallying the mission field across all of
+    data/external_panel_log.jsonl gives audit 60, tier1 53, verify 26, maximization 16, benchmark
+    13, synthesize 11, commit_audit 8 -- and premortem ZERO. The rotation is week-modulo over 8
+    missions, so index 4 simply never landed on a funded run. A capability that exists, is
+    scheduled, and has never fired is built-never-wired (L1.43 NEVER-RUN), and relying on the
+    rotation to produce it before launch day demonstrably does not work.
+
+    WHY IT IS A GATE-0 ROW RATHER THAN A REMINDER. The pass is one-shot insurance against exactly
+    the failures the readiness board cannot enumerate, because the board only ever checks things
+    someone already thought of. Its value is entirely front-loaded: fired after the deposit it is
+    a post-mortem. Making it a criterion is the only construction where "we never got round to it"
+    cannot happen quietly.
+
+    WHAT IT READS, AND WHY NOT THE OBVIOUS FILE. docs/research/panel_inbox.md is the human-readable
+    output and would be the natural thing to check -- but run_external_panel writes it with
+    write_text on EVERY run, so the next audit mission silently clobbers the pre-mortem and this
+    gate would flip back to NOT-READY (or, worse, be satisfied by an unrelated mission's inbox).
+    data/external_panel_log.jsonl is append-only and stamps every row with its mission, so it is
+    the only artifact that can answer "did the pre-mortem specifically run".
+    """
+    log = _ROOT / "data/external_panel_log.jsonl"
+    action = ("fire it once: PANEL_MISSION=premortem .venv/bin/python "
+              "scripts/run_external_panel.py  (needs a funded roster -- a free-seat run is "
+              "stamped DEGRADED and deliberately does NOT clear this row)")
+    try:
+        seats: set[str] = set()
+        for ln in log.read_text("utf-8").splitlines():
+            if not ln.strip() or '"premortem"' not in ln:
+                continue
+            try:
+                r = json.loads(ln)
+            except json.JSONDecodeError:
+                continue                       # a corrupt line is skipped, never counted
+            if r.get("mission") != "premortem":
+                continue
+            if len((r.get("response") or "").strip()) >= _PREMORTEM_MIN_CHARS:
+                seats.add(str(r.get("provider") or r.get("model") or ""))
+    except OSError:
+        # FAIL CLOSED. An unreadable panel log is "could not measure", never "satisfied".
+        return _row("premortem_completed", None, "panel log unreadable -- cannot verify", DESK,
+                    "data/external_panel_log.jsonl", action)
+
+    n = len(seats)
+    return _row("premortem_completed", n >= _PREMORTEM_SEATS,
+                f"{n}/{_PREMORTEM_SEATS} seats returned a substantive pre-mortem"
+                + ("" if n else " -- the mission has NEVER run"),
+                DESK, "data/external_panel_log.jsonl", action)
+
+
 def _ruin_rail() -> dict[str, Any]:
     """Not an S1 criterion, but it is the thing that actually stops the book trading, and on
     2026-07-30 it was in an absorbing state that no amount of good performance could clear."""
@@ -328,7 +392,7 @@ def _soak_clean_7d() -> dict[str, Any]:
 def build() -> dict[str, Any]:
     rows = [_principal_signoff(), _capital_fraction(), _symbol_count(),
             _keys_present(), _connector_verified(), _ruin_rail(),
-            _net_of_fees_positive(), _soak_clean_7d()]
+            _net_of_fees_positive(), _soak_clean_7d(), _premortem_completed()]
     blocking = [r for r in rows if r["status"] != "READY"]
     desk_owes = [r for r in blocking if r["owner"] == DESK]
     principal_owes = [r for r in blocking if r["owner"] == PRINCIPAL]

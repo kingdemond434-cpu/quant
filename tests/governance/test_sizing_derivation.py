@@ -72,3 +72,25 @@ def test_the_live_money_path_is_fully_derived():
     rep = build_report()
     assert rep["status"] == "OK", rep["detail"]
     assert rep["n_unjustified"] == 0
+
+
+def test_a_schedule_derived_threshold_is_not_flagged(tmp_path):
+    """FOURTH FALSE-POSITIVE CLASS (2026-08-05). A staleness threshold set from a producer's known
+    firing rate is derived from a fact you can look up in the manifest, exactly as a published fee
+    schedule is: CHART_STALE_H=2.0 because the chart builder's cron cadence is 20 minutes, so 2h
+    is five consecutive missed builds -- the organ has STOPPED, not hiccuped. Widening the
+    vocabulary is this list's own documented response to a false positive; rewording
+    run_conviction_trader to hit the words would be gaming the fence."""
+    src = ("#: Age beyond which chart structure is stale. The builder's cron cadence is 20\n"
+           "#: minutes, so 2h means five consecutive missed builds -- the organ has STOPPED.\n"
+           "CHART_STALE_H: float = 2.0\n")
+    (tmp_path / "mod.py").write_text(src, "utf-8")
+    rep = audit_module(tmp_path, "mod.py")
+    assert rep["state"] == "OK", rep["undocumented"]
+
+
+def test_a_bare_number_with_no_reason_is_still_flagged(tmp_path):
+    """The widening must not weld the gate open: a constant with a comment carrying neither a
+    derivation word nor a number is exactly what this fence exists to catch."""
+    (tmp_path / "mod.py").write_text("#: Seems about right.\nSOME_LIMIT: float = 3.0\n", "utf-8")
+    assert audit_module(tmp_path, "mod.py")["state"] == "UNJUSTIFIED-CONSTANTS"

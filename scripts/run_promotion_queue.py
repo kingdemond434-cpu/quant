@@ -88,6 +88,37 @@ def _candidates() -> list[dict[str, Any]]:
     return out
 
 
+def _merge_history(derived: dict[str, Any] | None) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Fold the observed forward cohort into the append-only birth record (L1.30, R0113).
+
+    REFUSAL PATH, and it is the whole point: when the cohort could not be derived at all, this
+    returns the PRIOR history untouched with `retirement_checked: False`. An unreadable registry
+    means "we do not know which clocks are live", never "no clocks are live" -- retiring the whole
+    book on a failed import would book twelve deaths and then twelve births on the next good run.
+    """
+    from libs.research.promotion_history import update
+
+    try:
+        prior = json.loads(_OUT.read_text("utf-8"))
+    except (OSError, ValueError):
+        prior = {}
+    previous = prior.get("promotion_history") if isinstance(prior, dict) else None
+    previous = previous if isinstance(previous, list) else None
+
+    if derived is None:
+        return (previous or []), {
+            "rows": len(previous or []), "born_this_run": [], "retired_this_run": [],
+            "undated_rows": sum(1 for r in (previous or [])
+                                if isinstance(r, dict) and r.get("provenance") == "UNKNOWN"),
+            "bootstrap": previous is None, "retirement_checked": False,
+            "note": "slot registry unreadable -- history carried forward unchanged, nothing "
+                    "retired (an unreadable cohort is unknown, never empty)",
+        }
+    return update(list(derived.get("slots") or []),
+                  complete=bool(derived.get("complete")),
+                  now=datetime.now(tz=UTC), previous=previous)
+
+
 def build(*, equity_usd: float | None = None, growth: float = 1.0) -> dict[str, Any]:
     from libs.autodiscovery.validation import capacity_race, capacity_status
     from libs.research.promotion_latency import measure
@@ -111,11 +142,19 @@ def build(*, equity_usd: float | None = None, growth: float = 1.0) -> dict[str, 
 
     try:
         from libs.research.slot_registry import MAX_FORWARD_SLOTS, derive_slots
-        occupied = len(derive_slots().get("slots", []) or [])
+        derived = derive_slots()
+        occupied = len(derived.get("slots", []) or [])
         cap_slots = int(MAX_FORWARD_SLOTS)
     except (ImportError, OSError, ValueError, KeyError):
-        occupied, cap_slots = 0, 12
+        derived, occupied, cap_slots = None, 0, 12
     free = max(cap_slots - occupied, 0)
+
+    # L1.30 BIRTHS. Merge the observed cohort into the append-only history BEFORE the report is
+    # written, because this function's return value is what overwrites the file -- rebuilding the
+    # payload without carrying the prior history forward would truncate the record on every run,
+    # which is the same defect as never writing it. `previous is None` (key absent) is the
+    # bootstrap signal and is deliberately distinct from `[]` (a history that exists and is empty).
+    history, hist_summary = _merge_history(derived)
 
     for i, r in enumerate(queue):
         r["slot_action"] = "ADMIT-NOW" if i < free else f"WAIT (position {i - free + 1} in queue)"
@@ -136,12 +175,18 @@ def build(*, equity_usd: float | None = None, growth: float = 1.0) -> dict[str, 
         "latency_is_measured": latency.fully_measured,
         "slots": {"occupied": occupied, "cap": cap_slots, "free": free},
         "n_candidates": len(cands), "admission_counts": admissions, "race_counts": counts,
+        "promotion_history": history,
+        "promotion_history_summary": hist_summary,
         "queue": queue,
         "excluded": [r for r in rows if r["admission"] != "ADMIT"],
     }
 
 
 def main() -> int:
+    # L1.42 LAWFUL ENTRY: this organ ran on a cron line that passed through no gate. guard() is
+    # TTL-cached and pages-but-does-not-block, so a governance fault never silences the queue.
+    from libs.ops.lawful import guard as _law_guard
+    _law_guard()
     ap = argparse.ArgumentParser()
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--equity", type=float, default=None, help="override desk equity (USD)")
@@ -163,6 +208,11 @@ def main() -> int:
         print(f"    {name:11} {c['days']:>6.1f}d  [{c['provenance']}] {c['detail'][:78]}")
     print(f"  candidates {rep['n_candidates']} | admission {rep['admission_counts']} | "
           f"race {rep['race_counts']}")
+    h = rep["promotion_history_summary"]
+    print(f"  births (L1.30) | {h['rows']} row(s), {h['undated_rows']} undated"
+          f"{' [BOOTSTRAP]' if h['bootstrap'] else ''}"
+          f" | +{len(h['born_this_run'])} born, -{len(h['retired_this_run'])} retired"
+          f"{'' if h['retirement_checked'] else ' (retirement NOT checked: incomplete read)'}")
     for r in rep["queue"][:args.top]:
         print(f"  {r['verdict']:13} {r['slot_action']:26} runway {r['runway_days']:>7.0f}d  "
               f"${r['capacity_usd']:>12,.0f}  {str(r['family'])[:18]:20} {r['symbol']}")

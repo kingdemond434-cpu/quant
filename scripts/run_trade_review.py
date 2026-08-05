@@ -143,18 +143,27 @@ def file_lesson(pb: dict[str, Any], lesson: dict[str, Any], trade_key: str,
         return {"action": "no-lesson", "why": "review found no transferable rule"}
     key = _norm(text)[:120]
     for lv in pb["lessons"]:
-        if lv["key"] == key or _norm(lv["text"])[:60] == _norm(text)[:60]:
+        # TWO RECORD SHAPES LIVE HERE, and assuming one of them crashed the organ every day.
+        # Lessons written by THIS function carry {key, text}; lessons IMPORTED from elsewhere
+        # carry {lesson, origin, imported_from} and neither of the two fields this loop indexed.
+        # All four records in data/trading_playbook.json are the imported shape, so `lv["key"]`
+        # raised KeyError on the first iteration -- the review died before it could file anything,
+        # which is why the playbook has sat at exactly those 4 imported lessons and never grew.
+        # Read both shapes; keep WRITING one.
+        lv_text = str(lv.get("text") or lv.get("lesson") or "")
+        lv_key = str(lv.get("key") or _norm(lv_text)[:120])
+        if lv_key == key or _norm(lv_text)[:60] == _norm(text)[:60]:
             if lesson.get("contradicts"):
                 lv["status"] = "RETIRED"
                 lv.setdefault("contradicted_by", []).append(trade_key)
-                return {"action": "retired", "lesson": lv["text"]}
-            lv["support"] += 1
-            lv["trades"].append(trade_key)
+                return {"action": "retired", "lesson": lv_text}
+            lv["support"] = int(lv.get("support", 0)) + 1
+            lv.setdefault("trades", []).append(trade_key)
             lv["last_seen_at_trade"] = n_closed
-            if lv["status"] == "PROVISIONAL" and lv["support"] >= N_SUPPORT:
+            if lv.get("status") == "PROVISIONAL" and lv["support"] >= N_SUPPORT:
                 lv["status"] = "SUPPORTED"
-                return {"action": "promoted", "lesson": lv["text"], "support": lv["support"]}
-            return {"action": "reinforced", "lesson": lv["text"], "support": lv["support"]}
+                return {"action": "promoted", "lesson": lv_text, "support": lv["support"]}
+            return {"action": "reinforced", "lesson": lv_text, "support": lv["support"]}
     pb["lessons"].append({
         "key": key, "text": text, "falsifier": lesson.get("lesson_falsifier", ""),
         "applies_when": lesson.get("applies_when", ""), "cause": lesson.get("cause"),

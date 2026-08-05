@@ -1,4 +1,10 @@
 {
+  "capability_wired": {
+    "artifact": "data/utilisation.json",
+    "proving_command": "python scripts/check_utilisation.py",
+    "recorded": "2026-08-05T08:02:21Z",
+    "value": 0.804
+  },
   "findings_coverage": {
     "artifact": "docs/research/findings_coverage_record.json",
     "proving_command": "python scripts/max_audit.py (check_findings_tracked)",
@@ -20,7 +26,7 @@
   "scripts_mypy_clean": {
     "artifact": "data/mypy_ratchet.json",
     "proving_command": "python scripts/check_mypy_ratchet.py",
-    "recorded": "2026-08-05T07:07:01Z",
+    "recorded": "2026-08-05T08:02:21Z",
     "value": 0.406844
   },
   "test_strength::libs/execution/staging.py": {

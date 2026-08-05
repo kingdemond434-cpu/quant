@@ -132,3 +132,19 @@ def test_inline_build_timeout_is_bounded(tmp_path):
     elapsed = time.monotonic() - t0
     assert err is not None and "TimeoutExpired" in err
     assert elapsed < 15, f"timeout did not bound the build ({elapsed:.1f}s)"
+
+
+def test_a_builder_that_lies_about_success_is_reported_not_swallowed(tmp_path):
+    """L2.4: the STALE branch caught the re-read failure and `pass`ed it, so a builder that exits
+    0 and writes an UNREADABLE file looked exactly like a builder that never ran. Only the first
+    is a defect the desk can act on, and it was the one being erased. The MISSING branch has
+    always reported this case loudly; its twin now does too."""
+    _write_stale_context(tmp_path, hours_old=9)
+    _plant_builder(tmp_path, "import pathlib\n"
+                             "pathlib.Path('data/chart_context.json').write_text('{not json')\n"
+                             "pathlib.Path('BUILT').write_text('x')\n")
+    txt = _chart_brief(tmp_path)                     # must not raise
+    assert "reported SUCCESS but its output could not be re-read" in txt
+    assert "STALE copy" in txt
+    # tighten-only: the stale warning still fires on the unchanged age, and the old copy is served
+    assert "MAY BE STALE" in txt and "ETHUSDT" in txt

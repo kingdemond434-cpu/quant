@@ -2302,6 +2302,13 @@ _FINDING_DOCS = (
     "docs/research/SUBSYSTEM_TRIAGE.md",
     "docs/research/TRIAGE_ADDENDUM.md",
     "docs/GATE0_QUEUE.md",
+    # 2026-08-05: the preserved dated copy of the FIRST premortem run. Classified IN SCOPE after
+    # checking rather than by analogy: the sibling artifact panel_inbox.md is excluded because the
+    # panel's own triage loop governs it, but that loop has NOT run for this mission -- grep
+    # 'premortem' over data/panel_verdicts.jsonl returns 0 and its newest rows are 07-31/tier1.
+    # Excluding it on the panel-loop precedent while the panel loop holds none of its findings is
+    # exactly the denominator trick 35 forbids, so it is scanned until those verdicts exist.
+    "docs/research/PREMORTEM_20260805.md",
 )
 #: Finding-bearing docs deliberately out of scope, with the reason -- so the scope check can tell
 #: "consciously excluded" from "quietly unmonitored".
@@ -2385,6 +2392,13 @@ _FINDING_DOCS_EXCLUDED = {
     "docs/research/DIGGER_TARGET_ROADMAP.md": "target list -- §33 governs what it yields",
     "docs/research/STRUCTURAL_EDGE_IDEAS.md": "idea list -- §33 / trial ledger governs",
     "docs/research/AXIS_PREREGISTRATIONS.md": "pre-registrations -- the trial ledger governs",
+    # Batch 2 of the same artifact (scripts/run_axis_generate_20260805.py:53), same class, same
+    # governing organ. Classified as a DECISION rather than left to default: each card in it is a
+    # frozen, DSR-counted trial, so the trial ledger governs it exactly as it governs batch 1, and
+    # the one QUEUE verdict is carried in research_agenda.json. Named per-file (not by prefix)
+    # because the producer is a dated one-shot debt-clearer with no cron line -- a prefix claim
+    # would silently pre-govern docs nobody has written or reviewed.
+    "docs/research/axis_generation_20260805.md": "pre-registrations batch 2 -- trial ledger governs",
     "docs/DIGGING_CHARTER.md": "the law itself",
     "docs/OPERATOR_COMPACT.md": "operator agreement, not findings",
     "docs/GO_LIVE_CHECKLIST.md": "checklist -- gated by GAP #2",
@@ -2522,6 +2536,17 @@ _PRODUCER_CADENCE = {
 #: Artifacts that are terminal by nature: templates, forensic write-ups, protocol libraries. They
 #: accumulate no inventory, so they owe no cadence -- recorded here so "no law" is a DECISION.
 _TERMINAL_ARTIFACTS = {
+    "docs/research/PREMORTEM_20260805.md":
+        "DATED PRE-MORTEM RECORD (run 1, 2026-08-05, R0105) -- the first time that mission has "
+        "ever fired. Terminal because it is an immutable transcript of ONE dated adversarial "
+        "pass, not an inventory: it accumulates nothing, and the work it implies is tracked "
+        "OUTSIDE it by a gate rather than by a disposition on the file. The funded re-run it "
+        "still owes is enforced by check_gate0_ready's premortem_completed criterion, which "
+        "reads 1/8 NOT-READY and blocks the deposit until 8 distinct seats answer -- so the "
+        "obligation cannot be lost by nobody re-reading this doc. It exists as a file only "
+        "because run_external_panel write_text's docs/research/panel_inbox.md on EVERY run, so "
+        "the next mission of any kind destroys the readable copy; the raw response survives in "
+        "the append-only panel log but unread. Superseded by the funded re-run, never edited.",
     "docs/research/axis_generation_20260805.md":
         "DATED GENERATE-RUN RECORD (batch 2, the 9 stale Bronze axes, 2026-08-05). Terminal "
         "because every outcome was ROUTED BY THE GATE IN THE SAME RUN that wrote the file, so "
@@ -3982,6 +4007,10 @@ _DIG_DOCS_EXCLUDED = {
     "docs/research/micro_audit_inbox.md":
         "audit findings, not mined finds -- own rotting-findings check",
     "docs/research/panel_inbox.md": "external panel output -- own rulings/scoring loop",
+    "docs/research/PREMORTEM_20260805.md":
+        "already in _FINDING_DOCS as of 2026-08-05, so 35 drives every item in it. Counting the "
+        "same panel findings against 33 as well would double-charge one backlog to two laws and "
+        "depress both conversion rates -- the improvement_inbox precedent directly below",
     "docs/research/ADVERSARIAL_REVIEW_RUBRIC.md":
         "a rubric of DEFECT CLASSES, not mined finds. Each 'card' defines a recurring failure "
         "shape with the real instance that produced it -- reference material a reviewer reads "

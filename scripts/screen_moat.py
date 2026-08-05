@@ -333,21 +333,16 @@ def screen_symbol(sym: str, rows: list[dict]) -> list[dict]:
                             "verdict": "SCREEN-UNDERPOWERED", "n": int(ok.sum()),
                             "why": "too few paired observations to resolve the question"})
                 continue
-            # THE SCREEN'S SHARPE RAIL IS CALIBRATED FOR DAILY DATA AND DOES NOT TRANSFER.
-            # `sharpe_ceiling=6.0` assumes horizon_days=1; the screen ANNUALISES, so at 60s the
-            # factor is sqrt(365/0.00069) ~ 725 and pure noise reported sharpe_reversal=53.4 --
-            # SUSPECT-LOOKAHEAD on six hypotheses that had ICs of 0.01 to 0.08. That is a fact
-            # about the calibration, not the features, and this desk is the first caller to point
-            # the screen at microstructure frequencies.
-            #
-            # The IC ceiling is left ALONE: a correlation does not annualise, so 0.35 means the
-            # same thing at 60s as at a day. Only the Sharpe bar is rescaled, by the same
-            # sqrt(1/horizon) the annualisation applies -- which keeps the rail at a constant
-            # PER-PERIOD strictness instead of tightening it 725-fold by accident.
+            # THE SHARPE-RAIL RESCALE THAT USED TO LIVE HERE NOW LIVES IN THE HARNESS
+            # (libs/research/axis_screen.py), applied automatically whenever horizon_days<1. It was
+            # correct, but a correction that lives in ONE caller's comment fires on recall, not on
+            # wiring: the liquidation-reversion screen hit the identical 725x wall from scratch on
+            # 2026-08-05. Passing it explicitly here now would DOUBLE-rescale, so the argument is
+            # gone and the harness owns the rule. The same commit bounded n_eff by the row count --
+            # this call site had been inflating it ~1449x at 60s, which made `powered`
+            # unconditionally True and let noise clear the power gate.
             hd = h / 86400.0
-            res = stage_a_screen(fv[ok], ret[ok], name=f"{sym}:{name}:{h}s",
-                                 horizon_days=hd,
-                                 sharpe_ceiling=6.0 * float(np.sqrt(1.0 / hd)))
+            res = stage_a_screen(fv[ok], ret[ok], name=f"{sym}:{name}:{h}s", horizon_days=hd)
             # PER-PERIOD TIMING P&L, KEPT FOR ROMANO-WOLF. An earlier version handed the stepdown
             # a SUMMARY STATISTIC broadcast to a constant column -- `ic_se` was not a key the
             # screen returns, so the divisor was always 1.0. A constant has zero bootstrap

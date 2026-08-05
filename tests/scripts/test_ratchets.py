@@ -130,3 +130,46 @@ def test_real_desk_metrics_are_all_declared_with_commands() -> None:
     for name, entry in declared.items():
         artifact, _fn, _max_age, cmd = entry
         assert artifact and cmd, f"{name} missing artifact or proving command"
+
+
+# --------------------------------------------------------------------- R0104: capability ratchet
+
+
+def test_capability_wired_reads_the_utilisation_ceiling() -> None:
+    """R0104: the engine's own strength is a floored, fenced metric like everything else."""
+    from scripts.check_ratchets import _capability_wired
+    doc = {"ceilings": [{"name": "deployed_capital", "measured": True, "utilisation": 1.0},
+                        {"name": "capability_wired", "measured": True, "utilisation": 0.804}]}
+    assert _capability_wired(doc) == 0.804
+
+
+def test_capability_wired_refuses_an_unmeasured_ceiling() -> None:
+    """UNMEASURED must not install a ZERO floor -- a zero floor is a ratchet that permits anything.
+
+    This is the trap the whole registration turns on. L1.28a says unmeasured counts as zero, and
+    check_utilisation reports it that way; but feeding that zero to --ratchet would record a floor
+    of 0.0, after which capability could collapse to nothing and the fence would still read OK.
+    'No reading' and 'a reading of zero' must stay different claims here.
+    """
+    from scripts.check_ratchets import _capability_wired
+    doc = {"ceilings": [{"name": "capability_wired", "measured": False, "utilisation": 0.0}]}
+    assert _capability_wired(doc) is None
+
+
+def test_capability_wired_is_none_when_absent_or_malformed() -> None:
+    from scripts.check_ratchets import _capability_wired
+    assert _capability_wired({"ceilings": []}) is None
+    assert _capability_wired({"ceilings": [{"name": "other", "measured": True}]}) is None
+    assert _capability_wired("not a dict") is None
+    assert _capability_wired({"ceilings": [{"name": "capability_wired", "measured": True,
+                                           "utilisation": "eighty"}]}) is None
+
+
+def test_capability_wired_is_registered_and_carries_a_staleness_bound() -> None:
+    """A metric whose producer died must read STALE, never green on a frozen artifact (L1.44)."""
+    from scripts.check_ratchets import _METRICS
+    assert "capability_wired" in _METRICS
+    artifact, _fn, max_age, cmd = _METRICS["capability_wired"]
+    assert artifact == "data/utilisation.json"
+    assert max_age is not None and max_age > 0
+    assert "check_utilisation" in cmd

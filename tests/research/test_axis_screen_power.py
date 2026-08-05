@@ -101,3 +101,50 @@ def test_real_lead_still_screens_interesting():
     r = stage_a_screen(sig, ret, name="real-lead")
     assert r["verdict"] == "SCREEN-INTERESTING"
     assert r["powered"] is True
+
+
+# --- sub-daily horizons (2026-08-05): the harness's first intraday callers ---------------------
+
+def test_n_eff_can_never_exceed_the_rows_observed():
+    """THE BUG. The horizon divisor is an OVERLAP deflator; below a day it inverts and MULTIPLIES.
+    Measured on the first intraday caller: 4,314 five-minute bars reported n_eff=1,236,384, which
+    drives min_detectable_ic to ~0.002 and pins `powered` True whatever the sample really was."""
+    sig, ret = _noise(n=600)
+    r = stage_a_screen(sig, ret, name="5m", horizon_days=5 / 1440.0)
+    assert r["n_eff"] <= r["n"], f"n_eff {r['n_eff']} exceeds the {r['n']} rows it came from"
+    assert r["min_detectable_ic"] > 0.05          # a 600-row sample cannot resolve a 0.002 IC
+
+
+def test_the_bound_is_inactive_at_daily_and_slower():
+    """Pure tightening: at horizon_days>=1 the deflator already shrinks n, so nothing changes."""
+    sig, ret = _noise(n=800)
+    for hd in (1.0, 5.0, 20.0):
+        r = stage_a_screen(sig, ret, name=f"h{hd}", horizon_days=hd)
+        # `n` is the PAIRED count the harness actually screens (input minus zwin minus the
+        # forward shift), not the input length -- the deflator divides that, and the new bound
+        # caps at that same number, so at hd>=1 the two agree exactly.
+        assert r["n_eff"] == round(max(r["n"] / hd, 1.0), 1)
+
+
+def test_intraday_noise_is_not_branded_a_lookahead_leak():
+    """POSITIVE CONTROL, run because a rail that has only ever been observed REJECTING has not been
+    validated. sqrt(365/horizon) is ~725 at 60s, so pure noise annualises past a ceiling meant for
+    daily data and six honest hypotheses came back SUSPECT-LOOKAHEAD. Rescaling by the same factor
+    the annualisation applies keeps the rail at constant per-period strictness."""
+    sig, ret = _noise(n=1500, seed=7)
+    r = stage_a_screen(sig, ret, name="60s", horizon_days=60 / 86400.0)
+    assert r["verdict"] != "SUSPECT-LOOKAHEAD"
+    assert r["sharpe_ceiling_applied"] > 6.0              # rescaled, and reported
+    assert r["implausible_leak"] is False
+
+
+def test_the_ic_ceiling_is_never_rescaled():
+    """A correlation does not annualise, so 0.35 means the same thing at 60s as at a day. Only the
+    Sharpe bar moves with the sampling rate -- a leak this large must still be caught intraday."""
+    rng = np.random.default_rng(3)
+    ret = rng.normal(0, 0.01, size=1200)
+    sig = ret.copy()                                      # signal IS the next return: a real leak
+    sig[:-1] = ret[1:]
+    r = stage_a_screen(sig, ret, name="leak60s", horizon_days=60 / 86400.0)
+    assert abs(r["ic"]) > 0.35 and r["implausible_leak"] is True
+    assert r["verdict"] == "SUSPECT-LOOKAHEAD"

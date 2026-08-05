@@ -18,9 +18,12 @@ last edge dies. A book earning 30% with a replacement rate above 1.0 compounds f
 
 STATUSES:
   DYING             deaths > births -- the countdown is running. Fence FAILS.
-  UNMEASURED-BIRTHS no dated promotion history exists, so births cannot be counted. Reported as
-                    a defect, NEVER as DYING: "cannot count births" and "there are no births"
-                    are different claims and only one is evidence.
+  UNMEASURED-BIRTHS births cannot be counted DECISIVELY. Two ways in: no dated promotion history
+                    exists at all, or the dated count is a lower bound (undated rows for clocks
+                    already running when the record opened) that sits BELOW deaths and could
+                    therefore flip the verdict. Reported as a defect, NEVER as DYING: "cannot
+                    count births" and "there are no births" are different claims and only one is
+                    evidence. A lower bound at or above deaths needs no such care -- OK stands.
   UNMEASURED        no birth/death records at all -- counts as zero (L1.28a), never as fine.
   BOOTSTRAPPING  no deaths yet AND no births yet: pre-Gate-0 state, honestly named.
   OK             births >= deaths.
@@ -65,34 +68,28 @@ def _dates_in(text: str) -> list[datetime]:
     return out
 
 
-def _count_graveyard_deaths(root: Path, since: datetime) -> tuple[int, int]:
-    """(deaths_in_window, total_entries). Entries are '### <name> -- KILLED/RETIRED <date>'."""
+def _graveyard(root: Path, since: datetime) -> tuple[int, int, list[str]]:
+    """(deaths_in_window, total_entries, windowed_entry_lines).
+
+    Entries are '### <name> -- KILLED/RETIRED <date>'. The lines come back so that a forward
+    clock retired in the same window can be deduped against its own graveyard entry rather than
+    counted twice.
+    """
     p = root / "docs/graveyard.md"
     if not p.exists():
-        return 0, 0
+        return 0, 0, []
     entries = [ln for ln in p.read_text("utf-8", errors="ignore").splitlines()
                if ln.startswith("### ")]
-    n_win = 0
+    in_win = []
     for ln in entries:
         ds = _dates_in(ln)
         if ds and max(ds) >= since:
-            n_win += 1
-    return n_win, len(entries)
+            in_win.append(ln)
+    return len(in_win), len(entries), in_win
 
 
-def _count_births(root: Path, since: datetime) -> tuple[int | None, int]:
-    """(births_in_window | None if unmeasurable, live_forward_clocks).
-
-    A BIRTH is an edge reaching forward-evidence status -- never a screen hit (L1.6).
-
-    HONESTY NOTE, and this fence's own first-run defect: the promotion queue records CURRENT
-    slot occupancy, not a DATED history of entries, so births are not derivable from it. The
-    first draft read absent list-keys, got [], and reported births=0 -- a phantom-key read
-    published as a measurement, which is exactly the class this desk has been burned by. An
-    unmeasurable birth count returns None and the status becomes UNMEASURED-BIRTHS; it must
-    NEVER print DYING, because "we cannot count births" and "there are no births" are different
-    claims and only one of them is evidence. Closing this needs an append-only promotion history
-    (rowed) -- until then the fence reports what it can and refuses what it cannot."""
+def _history(root: Path) -> tuple[list[dict[str, Any]] | None, int]:
+    """(promotion history | None when it has never been written, live_forward_clocks)."""
     p = root / "data/promotion_queue.json"
     try:
         d = json.loads(p.read_text("utf-8"))
@@ -100,17 +97,55 @@ def _count_births(root: Path, since: datetime) -> tuple[int | None, int]:
         return None, 0
     slots = d.get("slots", {}) if isinstance(d.get("slots"), dict) else {}
     live = int(slots.get("occupied", 0) or 0)
-    history = d.get("promotion_history")            # the append-only store, once it exists
-    if not isinstance(history, list):
-        return None, live
-    births = 0
+    history = d.get("promotion_history")            # the append-only store (libs.research.
+    if not isinstance(history, list):               # promotion_history, written by
+        return None, live                           # scripts/run_promotion_queue.py)
+    return [r for r in history if isinstance(r, dict)], live
+
+
+def _count_births(history: list[dict[str, Any]], since: datetime) -> tuple[int, int]:
+    """(dated births in window, undated rows).
+
+    A BIRTH is an edge reaching forward-evidence status -- never a screen hit (L1.6).
+
+    UNDATED ROWS ARE NOT ZERO-DATED ROWS. A clock already running when the history was first
+    written carries no derivable start, so `promoted_at` is None and it is excluded here. That
+    makes the count a LOWER BOUND, and the caller is handed `undated` so it can refuse to
+    publish DYING on a bound that the undated rows could flip. Treating an undated row as
+    "born now" would be the phantom-birth bug in the complacent direction; treating the
+    resulting shortfall as evidence of death would be the same bug pointed the other way.
+    """
+    births, undated = 0, 0
     for r in history:
-        if not isinstance(r, dict):
+        raw = str(r.get("promoted_at") or r.get("at") or "")
+        ds = _dates_in(raw)
+        if not ds:
+            undated += 1
             continue
-        ds = _dates_in(str(r.get("promoted_at") or r.get("at") or ""))
-        if ds and max(ds) >= since:
+        if max(ds) >= since:
             births += 1
-    return births, live
+    return births, undated
+
+
+def _count_retirements(history: list[dict[str, Any]], since: datetime,
+                       graveyard_lines: list[str]) -> int:
+    """Forward clocks retired in the window and NOT already counted as a graveyard entry.
+
+    Deaths are 'graveyard kills + retirements + forward clocks that failed out'. Counting the
+    graveyard alone understates deaths, which OVERSTATES the replacement rate -- the complacent
+    direction, and the one this fence exists to prevent. Deduped by name against the windowed
+    graveyard lines so a clock that was both retired and graveyarded dies once.
+    """
+    n = 0
+    for r in history:
+        ds = _dates_in(str(r.get("retired_at") or ""))
+        if not ds or max(ds) < since:
+            continue
+        edge = str(r.get("edge", "")).strip()
+        if edge and any(edge in ln for ln in graveyard_lines):
+            continue
+        n += 1
+    return n
 
 
 def build_report(root: Path | None = None, window_days: int = 90,
@@ -118,12 +153,29 @@ def build_report(root: Path | None = None, window_days: int = 90,
     root = root or _ROOT
     now = now or datetime.now(tz=UTC)
     since = now - timedelta(days=window_days)
-    deaths, graveyard_total = _count_graveyard_deaths(root, since)
-    births, live_clocks = _count_births(root, since)
+    graveyard_deaths, graveyard_total, graveyard_lines = _graveyard(root, since)
+    history, live_clocks = _history(root)
+
+    births: int | None
+    undated = 0
+    if history is None:
+        births, deaths, retired = None, graveyard_deaths, 0
+    else:
+        births, undated = _count_births(history, since)
+        retired = _count_retirements(history, since, graveyard_lines)
+        deaths = graveyard_deaths + retired
 
     if births is None:
         # Cannot count births -> cannot claim the book is dying. Unmeasured ranks as a defect
         # (L1.28a) but never masquerades as a measured verdict.
+        status = "UNMEASURED-BIRTHS"
+    elif births < deaths and undated:
+        # THE BOUND COULD FLIP THE VERDICT, so the verdict is not established. `births` here is a
+        # LOWER bound (undated rows are real clocks with unknown start dates), and a lower bound
+        # below `deaths` is consistent with both DYING and OK. Publishing DYING off it would be
+        # the same error as the phantom-key births=0 this fence was rebuilt to stop, pointed the
+        # other way -- and "the book is dying" is not a claim to make on an incomplete count.
+        # When births >= deaths the bound already clears the bar and OK stands regardless.
         status = "UNMEASURED-BIRTHS"
     elif graveyard_total == 0 and live_clocks == 0:
         status = "UNMEASURED"
@@ -145,14 +197,23 @@ def build_report(root: Path | None = None, window_days: int = 90,
         "replacement_rate": (None if rate is None or rate == float("inf")
                              else round(rate, 3)),
         "births_measured": births is not None,
+        # A count that excludes undated rows is a FLOOR, not the number. Published as its own
+        # field so no consumer has to infer completeness from a bare integer (L1.28a).
+        "births_are_lower_bound": bool(undated),
+        "births_undated": undated,
+        "deaths_graveyard": graveyard_deaths,
+        "deaths_retired_clocks": retired,
         "live_forward_clocks": live_clocks,
         "graveyard_entries_total": graveyard_total,
         "detail": (
             f"births UNCOUNTABLE (no dated promotion history) vs {deaths} death(s) in "
              f"{window_days}d; {live_clocks} live forward clock(s) occupied of 12"
              if births is None else
-             f"{births} birth(s) vs {deaths} death(s) in {window_days}d; "
-             f"{live_clocks} live forward clock(s)"),
+             f"{'>=' if undated else ''}{births} birth(s) vs {deaths} death(s) "
+             f"({graveyard_deaths} graveyard + {retired} retired clock(s)) in {window_days}d; "
+             f"{live_clocks} live forward clock(s)"
+             + (f"; {undated} history row(s) undated (clocks already running when the record "
+                f"opened) -> births is a FLOOR" if undated else "")),
         "next_action": (
             "raise BIRTHS upstream -- more axes screened, more forward slots filled, "
             "resurrection queue consumed (L1.25a). NEVER loosen a validation bar to "

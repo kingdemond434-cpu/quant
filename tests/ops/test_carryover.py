@@ -218,3 +218,68 @@ class TestAckStateRefusal:
         st = carryover_state(load_sweeps(p), now=time.time())
         assert [i.defect_id for i in st.items] == ["a"]
         assert st.ack_state == "unknown"
+
+
+class TestRecurrenceIsNotASkip:
+    """A defect FIXED and later re-fired is not a defect nobody touched.
+
+    Measured live 2026-08-05: `findings-scope-unmonitored` alternated present/absent across 5 of
+    the last 12 sweeps -- it was closed every time and fired again on a newly-written doc -- and
+    the brief still printed "age 10.3d, 12 sweeps with the brain awake, shown the work and not
+    done". Section 37 makes this brief the FIRST thing every organ reads, so a false skip
+    accusation misdirects the most valuable slot of every cycle onto a treadmill while genuinely
+    untouched rows rank below it.
+    """
+
+    def test_fixed_then_refired_is_recurring_not_skipped(self, tmp_path: Path) -> None:
+        now = time.time()
+        p = _ledger(tmp_path, [(["x"], now - 5 * _DAY, True),   # owed
+                               (["x"], now - 4 * _DAY, True),   # owed
+                               ([], now - 3 * _DAY, True),      # FIXED -- the run breaks here
+                               (["x"], now - _DAY, True)])      # fired again on new input
+        st = carryover_state(load_sweeps(p), now=now)
+        item = st.items[0]
+        assert st.skipped_items == (), "a fixed-then-refired defect was never walked past"
+        assert item.recurring and item.recurrences == 2
+        assert st.recurring_items and st.recurring_items[0].defect_id == "x"
+        assert "RECURRING" in st.verdict
+
+    def test_age_and_survival_measure_the_current_run_only(self, tmp_path: Path) -> None:
+        now = time.time()
+        p = _ledger(tmp_path, [(["x"], now - 10 * _DAY, True),
+                               ([], now - 9 * _DAY, True),      # fixed
+                               (["x"], now - 2 * _DAY, True)])  # back
+        item = carryover_state(load_sweeps(p), now=now).items[0]
+        assert item.age_days == 2.0, "owed-since dates from the re-appearance, not the first ever"
+        assert item.sweeps_survived == 1, "one unbroken sweep, not two sightings"
+        assert item.age_days_ever == 10.0, "the full history is kept, never dropped"
+        assert item.total_occurrences == 2
+
+    def test_continuously_owed_still_reports_full_age_and_skip(self, tmp_path: Path) -> None:
+        """The fix must not soften a genuine skip -- no gap means nothing changes."""
+        now = time.time()
+        p = _ledger(tmp_path, [(["x"], now - 6 * _DAY, True),
+                               (["x"], now - 4 * _DAY, True),
+                               (["x"], now - 2 * _DAY, True)])
+        item = carryover_state(load_sweeps(p), now=now).items[0]
+        assert item.skipped and not item.recurring
+        assert item.age_days == 6.0 and item.sweeps_survived == 3
+
+    def test_untouched_rows_outrank_the_treadmill(self, tmp_path: Path) -> None:
+        """Ordering decides which row a cycle works first -- neglect must beat recurrence."""
+        now = time.time()
+        p = _ledger(tmp_path, [(["neglected", "churn"], now - 6 * _DAY, True),
+                               (["neglected"], now - 4 * _DAY, True),
+                               (["neglected", "churn"], now - _DAY, True)])
+        items = carryover_state(load_sweeps(p), now=now).items
+        assert [i.defect_id for i in items] == ["neglected", "churn"]
+
+    def test_brief_labels_a_recurrence_and_keeps_its_history(self, tmp_path: Path) -> None:
+        now = time.time()
+        p = _ledger(tmp_path, [(["x"], now - 9 * _DAY, True),
+                               ([], now - 5 * _DAY, True),
+                               (["x"], now - _DAY, True)])
+        out = brief(carryover_state(load_sweeps(p), now=now))
+        assert "[RECURRING]" in out
+        assert "RECURRED 2x over 9.0d" in out, "the long history is stated, never hidden"
+        assert "generalise the rule" in out.lower()

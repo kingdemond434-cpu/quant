@@ -242,13 +242,38 @@ def record_call(root: Path, call: dict[str, Any]) -> dict[str, Any]:
     return row
 
 
+#: Set by _ask_claude to whatever the shell actually reported. Read when the call yields no
+#: parseable JSON, so the recorded status names the REAL cause instead of guessing at three.
+_LAST_CALL_FAILURE = ""
+
+
 def _ask_claude(prompt: str, timeout: int = 600) -> str:
+    """Ask the brain, and KEEP the evidence when it refuses.
+
+    THE BUG THIS FIXES: this returned `r.stdout or ""` and dropped stderr and the return code on
+    the floor, so a failed call was indistinguishable from a model that simply answered nothing.
+    The caller then recorded the hardcoded string "(auth, quota, or a refusal)" -- a three-way
+    guess that was never once checked against the actual error. It also made data/cro_ai_logs/
+    llm_trader.log match the stub-death fence's bare "auth" marker, so a pure QUOTA outage was
+    reported to the desk as an auth failure and would have sent anyone debugging it at the
+    credentials rather than the credit balance. A flag computed and dropped is evidence destroyed
+    at zero saving.
+    """
+    global _LAST_CALL_FAILURE
+    _LAST_CALL_FAILURE = ""
     r = subprocess.run(
         ["bash", "-c",
          'source ops/brain_env.sh && brain_auth_check || exit 90 && '
          'claude --effort xhigh --append-system-prompt "$_DOCTRINE" -p "$0" '
          '--dangerously-skip-permissions', prompt],
         cwd=_ROOT, capture_output=True, text=True, timeout=timeout)
+    if r.returncode != 0:
+        err = (r.stderr or r.stdout or "").strip().replace("\n", " ")[:300]
+        # 90 is brain_auth_check's own exit code -- the ONE case where "auth" is established
+        # rather than assumed. Everything else reports the code and the venue's own words.
+        _LAST_CALL_FAILURE = (
+            f"brain_auth_check refused before the model was reached (exit 90): {err}"
+            if r.returncode == 90 else f"claude exited {r.returncode}: {err}")
     return r.stdout or ""
 
 
@@ -280,8 +305,9 @@ def main() -> int:
                                          parts=" | ".join(PARTICIPANTS)))
     call = parse_call(raw)
     if call is None:
-        state = {"status": "NO-CALL", "why": "model returned no parseable JSON (auth, quota, or "
-                                             "a refusal) -- recorded, never treated as a PASS",
+        why = (f"call FAILED -- {_LAST_CALL_FAILURE}" if _LAST_CALL_FAILURE else
+               "model ran but returned no parseable JSON (a refusal or a malformed answer)")
+        state = {"status": "NO-CALL", "why": f"{why} -- recorded, never treated as a PASS",
                  "at": datetime.now(tz=UTC).isoformat()}
     else:
         ok, why = validate_call(call)

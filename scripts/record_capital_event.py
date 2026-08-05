@@ -115,15 +115,17 @@ def _show() -> int:
     st, verdict = _load_state()
     if st is None:
         print(f"executor state            UNREADABLE -- {verdict}")
-        st = {}
-    try:
-        raw_start = float(st["start_futures_equity"])
-    except KeyError:
-        raw_start = 0.0
-        print("inception (raw state)     schema-missing-key: `start_futures_equity` is absent "
-              f"from {_STATE.name} -- the executor has not published an inception yet")
+        print("inception (raw state)     UNKNOWN (no state to read)")
+        raw_start, st = 0.0, {}
     else:
-        print(f"inception (raw state)     ${raw_start:,.2f}")
+        try:
+            raw_start = float(st["start_futures_equity"])
+        except KeyError:
+            raw_start = 0.0
+            print("inception (raw state)     schema-missing-key: `start_futures_equity` is absent "
+                  f"from {_STATE.name} -- the executor has not published an inception yet")
+        else:
+            print(f"inception (raw state)     ${raw_start:,.2f}")
     eff = CE.effective_start_equity(raw_start)
     eq, src = _live_equity(st)
     print(f"inception (effective)     ${eff:,.2f}"

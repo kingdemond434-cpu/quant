@@ -1,3 +1,31 @@
+# PRE-MORTEM, RUN 1 -- 2026-08-05 (R0105, Gate-0 criterion `premortem_completed`)
+
+**THE FIRST TIME THIS MISSION HAS EVER FIRED.** `prompts/panel_missions/premortem.txt` sat in the
+weekly panel rotation from 2026-07-12 and produced ZERO rows in `data/external_panel_log.jsonl`
+until this run -- the rotation is week-modulo over 8 missions and index 4 never landed on a funded
+run. It fired here because R0105 forced it (`PANEL_MISSION=premortem`), not because the rotation
+reached it.
+
+**DEGRADED -- THIS RUN DOES NOT CLEAR GATE 0, BY DESIGN.** The panel was unfunded (balance
+-$0.59), so it ran the 4 free seats; 3 of those returned HTTP errors and 1 answered substantively
+(nvidia/nemotron-3-ultra, 49,711 chars). `scripts/check_gate0_ready.py:_premortem_completed`
+requires 8 distinct seats at the panel's own non-degraded quorum and correctly reads **1/8
+NOT-READY**. A single model's opinion is not the multi-seat adversarial pass the row asked for and
+must not unlock capital. THE FUNDED RE-RUN IS STILL OWED, and the gate now enforces it.
+
+**WHY THIS FILE EXISTS AT ALL.** `run_external_panel.py` writes `docs/research/panel_inbox.md` with
+`write_text` on EVERY run, so the next mission of any kind destroys the readable copy. The raw
+response survives in the append-only panel log, but buried in JSONL nobody reads it -- which would
+defeat the entire point of pre-deposit insurance. This is the preserved, dated copy.
+
+**ONE FINDING IS ALREADY CROSS-VALIDATED, and it is the desk's live top blocker.** POST-MORTEM 3
+("Execution Cost Reality Gap -- The Sleeve Loses Money on Every Fill") was reached independently by
+the seat from the source, and it names exactly what `data/gate0_readiness.json` reports today:
+`net_of_fees_positive` NOT-READY, all 4 hold buckets NEGATIVE net of fees over 41 closes. Treat
+that one as corroborated. Treat the rest as SINGLE-SEAT and advisory-weak until the funded re-run.
+
+---
+
 # Panel inbox -- 2026-08-05T07:52:34.246829+00:00
 **DEGRADED RUN -- FREE SEATS ONLY (credits unfunded). Treat findings as advisory-weak: fewer and less capable models than the funded roster. Re-run on the full roster once funded before acting on anything structural.**
 **Mission this week: PREMORTEM**  |  1/4 models responded.
