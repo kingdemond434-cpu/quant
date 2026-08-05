@@ -65,3 +65,29 @@ def test_no_conflict_markers_in_tracked_sources() -> None:
                     bad.append(str(p.relative_to(_ROOT)))
                     break
     assert not bad, f"tracked files carrying merge-conflict markers: {bad}"
+
+
+def test_every_terminal_ledger_row_carries_a_disposition_timestamp() -> None:
+    """R0259. A row that reached a verdict must record WHEN, or the verdict is unauditable.
+
+    Same class as the corruption fence above and the same reason it belongs here: the damage is
+    silent by construction. `dispose` stamps `disposed`; an organ that opens the JSON and sets
+    `status` directly does not, and nothing downstream can tell the two apart -- the row simply
+    stops being counted as a disposition. check_conversion measures the queue by differencing
+    arrivals against dispositions in a trailing window, so every unstamped row biases that
+    verdict toward RUNNING AWAY and manufactures backlog pressure out of work already done.
+
+    Measured 2026-08-05, before the backfill: 35 terminal rows with no timestamp -- and only 15
+    of them were the `done`/`screened` vocabulary drift the row was raised about. The other 20
+    carried perfectly CLI-legal statuses and still arrived unstamped, all from bulk triage
+    workflows writing the file directly. That is the finding: teaching the CLI new words fixes
+    the 15 and prevents none of the 20, because the defect is the WRITE PATH, not the vocabulary.
+    Making the invariant loud here is what stops it drifting back while that path is unfixed.
+    """
+    rows = json.loads((_ROOT / "docs/research/recommendation_ledger.json").read_text("utf-8"))
+    unstamped = [r["id"] for r in rows["recommendations"]
+                 if r.get("status") not in ("open", "scheduled") and not r.get("disposed")]
+    assert not unstamped, (
+        f"{len(unstamped)} terminal ledger row(s) carry no `disposed` stamp: {unstamped[:12]}. "
+        "Dispose through scripts/recommendations.py rather than writing the JSON directly -- an "
+        "unstamped verdict is invisible to every rate the conversion fence computes.")

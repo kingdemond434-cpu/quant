@@ -1406,7 +1406,8 @@
    "reason": "[wave2 2026-08-04] second-family consultation extracted to libs/llm/second_opinion.consult_second_family and wired into blindspot_prober + run_deep_sweep (was blindspot_max-only). Bonus production find: the inline import was silently SKIPPING under cron (missing sys.path root) -- committed blindspot_max.json carried no second_family key; guard added, dark-mode SOLO verified live. Governance fence strengthened to cover all three organs. 12 tests pass.",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-04T22:42:23Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in e6a00daa7)"
   },
   {
    "id": "R0115",
@@ -1548,7 +1549,8 @@
    "reason": "[triage 2026-08-04 wf_8e81833d-78a] VERIFIED against the tree. Sleeve + all buildable owed stages exist: scripts/run_conviction_trader.py on hourly cron (ops/crontab.manifest:250), sizing fractional-Kelly on calibrated probability (calibrated_p :1234-1259 feeding kelly_leverage :1269-1272), heat-capped, PAPER-only; owed stage 1 (paper P&L with leverage + stop logic) = scripts/resolve_paper_book.py walking the stop/trail/pyramid ladder bar-by-bar adverse-first with leverage-scaled fees/slippage/funding (:249-317), on its own hourly cron (manifest:266-280); owed drawdown sub-rail = sleeve_drawdown (:950-972) halting the trader in main() (:1388-1397); every call scored via log_forecast (:1316, raw claim scored, adjusted sized -- pinned by test_conviction_trader.py:599-611). The 30-trade calibration+EV review has its machinery standing (pre-registered kill_check at 50 closed trades resolve_paper_book.py:101-105,526-549; run_tr",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-04T22:04:47Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in 5f1452988)"
   },
   {
    "id": "R0126",
@@ -1651,7 +1653,9 @@
    "reason": "built, scheduled hourly, 12 tests, verified live against OKX; renumbered from R0126 after the VPS session allocated that id concurrently",
    "commit": "d3d4c27",
    "due": null,
-   "note": "owed next: 30-call calibration+EV review that graveyards the sleeve if uncalibrated"
+   "note": "owed next: 30-call calibration+EV review that graveyards the sleeve if uncalibrated",
+   "disposed": "2026-07-31T14:06:12Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in a9666b54e)"
   },
   {
    "id": "R0134",
@@ -1663,7 +1667,9 @@
    "reason": "built, scheduled, 52 tests across the two organs, 18/18 instruments charted live",
    "commit": null,
    "due": null,
-   "note": "the gap-stress leverage cap is now INERT at a 6pct budget and is labelled as such in code rather than counted as protection; owed next: wire measured calibration into the probability before Kelly so size scales UP as evidence arrives, not only down"
+   "note": "the gap-stress leverage cap is now INERT at a 6pct budget and is labelled as such in code rather than counted as protection; owed next: wire measured calibration into the probability before Kelly so size scales UP as evidence arrives, not only down",
+   "disposed": "2026-07-31T14:23:06Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in e8fe1212f)"
   },
   {
    "id": "R0135",
@@ -1675,7 +1681,9 @@
    "reason": "built, in the law gate, 9 tests; money path 23/23 constants derived",
    "commit": null,
    "due": null,
-   "note": "the fence cannot check that a cited derivation is CORRECT, only that one exists and is specific -- stated in its docstring rather than implied"
+   "note": "the fence cannot check that a cited derivation is CORRECT, only that one exists and is specific -- stated in its docstring rather than implied",
+   "disposed": "2026-07-31T14:53:01Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in fbeedad04)"
   },
   {
    "id": "R0136",
@@ -1687,7 +1695,9 @@
    "reason": "built, tested, in the law gate",
    "commit": null,
    "due": null,
-   "note": "both changes raise net return without adding risk; neither is fitted to an outcome"
+   "note": "both changes raise net return without adding risk; neither is fitted to an outcome",
+   "disposed": "2026-07-31T15:21:24Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in f5812b544)"
   },
   {
    "id": "R0137",
@@ -1699,7 +1709,9 @@
    "reason": "built, tested, in the law gate",
    "commit": null,
    "due": null,
-   "note": "an unattributed WIN is as disqualifying as a loss -- the exposure that made it is still on, still unhedged, and will reverse"
+   "note": "an unattributed WIN is as disqualifying as a loss -- the exposure that made it is still on, still unhedged, and will reverse",
+   "disposed": "2026-07-31T15:21:24Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in f5812b544)"
   },
   {
    "id": "R0138",
@@ -1711,7 +1723,9 @@
    "reason": "built, 55 conviction tests + 17 resolver tests, law gate PASS",
    "commit": null,
    "due": null,
-   "note": "sizing fence flagged MIN_TRADE_RISK on first run; vocabulary widened rather than the organ reworded, per its own stated rule"
+   "note": "sizing fence flagged MIN_TRADE_RISK on first run; vocabulary widened rather than the organ reworded, per its own stated rule",
+   "disposed": "2026-07-31T15:30:25Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in 9fa18af15)"
   },
   {
    "id": "R0139",
@@ -1723,7 +1737,9 @@
    "reason": "built, 10 review tests, 21/21 build standard, registered as a \u00a736 producer",
    "commit": null,
    "due": null,
-   "note": "weights are fixed and nothing here fine-tunes -- what improves is evidence-weighted knowledge of which setups pay, the way a journal improves a human trader"
+   "note": "weights are fixed and nothing here fine-tunes -- what improves is evidence-weighted knowledge of which setups pay, the way a journal improves a human trader",
+   "disposed": "2026-07-31T15:43:38Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in 574a823f3)"
   },
   {
    "id": "R0140",
@@ -1735,7 +1751,9 @@
    "reason": "Stage A run live; H1 abandoned on measurement, H2 on a forward clock",
    "commit": null,
    "due": null,
-   "note": "two bugs found by checking my own numbers: the crowding gauge reported an outlier-dominated -0.97 as its centre when the median was -0.078, and posSide 'net' (46pct of margin) was being silently dropped from the long/short skew"
+   "note": "two bugs found by checking my own numbers: the crowding gauge reported an outlier-dominated -0.97 as its centre when the median was -0.078, and posSide 'net' (46pct of margin) was being silently dropped from the long/short skew",
+   "disposed": "2026-07-31T15:55:59Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in ef9d512cd)"
   },
   {
    "id": "R0141",
@@ -1747,7 +1765,9 @@
    "reason": "built, 8 tests, in the manifest; 23/23 build standard",
    "commit": null,
    "due": null,
-   "note": "first version normalised shares to 1, so two perfect duplicates received the same total heat as two independent sleeves -- the exact failure the organ exists to prevent, committed inside the organ itself and caught by its own demonstration"
+   "note": "first version normalised shares to 1, so two perfect duplicates received the same total heat as two independent sleeves -- the exact failure the organ exists to prevent, committed inside the organ itself and caught by its own demonstration",
+   "disposed": "2026-07-31T16:10:04Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in 3843eb898)"
   },
   {
    "id": "R0142",
@@ -1759,7 +1779,9 @@
    "reason": "built, 8 tests, every 6h; feeds L1.29 which the conviction sizer already reads",
    "commit": null,
    "due": null,
-   "note": "the ordering was wrong and this makes it explicit: the sizer that consumes p was built before anything checked p was meaningful"
+   "note": "the ordering was wrong and this makes it explicit: the sizer that consumes p was built before anything checked p was meaningful",
+   "disposed": "2026-07-31T16:25:43Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in c0d06bcef)"
   },
   {
    "id": "R0143",
@@ -1771,7 +1793,9 @@
    "reason": "built, 8 tests, in the law gate's portable battery; 25/25 build standard",
    "commit": null,
    "due": null,
-   "note": "principal's own framing: the existing mandates (L1.28/L1.28a/L1.28b/L1.28c/L1.25a) already enforce maximum growth, so a stated number is redundant AND distorting -- removing it removes the one instruction pointing away from those laws"
+   "note": "principal's own framing: the existing mandates (L1.28/L1.28a/L1.28b/L1.28c/L1.25a) already enforce maximum growth, so a stated number is redundant AND distorting -- removing it removes the one instruction pointing away from those laws",
+   "disposed": "2026-07-31T16:36:49Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in 21ea19e0f)"
   },
   {
    "id": "R0144",
@@ -1783,7 +1807,9 @@
    "reason": "built, 6 tests, in the law gate's state battery; 26/26 build standard",
    "commit": null,
    "due": null,
-   "note": "three self-inflicted defects caught before it shipped: a ';' separator that made most organs read NEVER-PRODUCED (false red -> fence gets disabled), docs/*.md counting as an artifact so any organ citing a law read FRESH forever (false GREEN -- worse), and its own except-pass plus missing lawful entry, both caught by the build standard"
+   "note": "three self-inflicted defects caught before it shipped: a ';' separator that made most organs read NEVER-PRODUCED (false red -> fence gets disabled), docs/*.md counting as an artifact so any organ citing a law read FRESH forever (false GREEN -- worse), and its own except-pass plus missing lawful entry, both caught by the build standard",
+   "disposed": "2026-07-31T16:42:58Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in 90d618b1b)"
   },
   {
    "id": "R0145",
@@ -1819,7 +1845,8 @@
    "reason": "[triage 2026-08-04 wf_8e81833d-78a] VERIFIED. scripts/max_audit.py:4409-4425 -- comment reads 'RATCHET GRACE (R0147)' verbatim: check_dig_uncommitted grants tracked files whose last COMMIT is <6h old a grace window ('by end of cycle' = snapshotted this cycle, not a perpetually clean tree), untracked (??) files excluded from grace (:4416), grace-unreadable counted fail-firm (:4425). The row's named artifacts are covered: conversion_record.json and holdings_record.json live in docs/research/, inside _DIG_TRACKED (:3944), so the grace applies to exactly the files whose ~15min cron re-ticks caused the perpetual re-fire. This is the row's first proposed fix implemented (grace window variant: last-commit-age rather than mtime, which is the correct form since mtime is dirty within seconds of any commit).",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-04T22:04:47Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in 5f1452988)"
   },
   {
    "id": "R0148",
@@ -2097,7 +2124,9 @@
    "due": null,
    "note": "reviewable once the hit rate is measured -- far above breakeven the trade-off reverses and frequency wins again, so this is not permanent",
    "renumbered_from": "R0149",
-   "notes": " [renumbered from R0149 on merge 2026-07-31: concurrent allocation collision, second round -- local lineage had already taken the id]"
+   "notes": " [renumbered from R0149 on merge 2026-07-31: concurrent allocation collision, second round -- local lineage had already taken the id]",
+   "disposed": "2026-07-31T17:59:06Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in 9b198c624)"
   },
   {
    "id": "R0171",
@@ -2111,7 +2140,9 @@
    "due": null,
    "note": "a blazing week grants rung 1 at most, and rung 1 is still paper -- which is the whole point of writing it down before the week happens",
    "renumbered_from": "R0150",
-   "notes": " [renumbered from R0150 on merge 2026-07-31: concurrent allocation collision, second round -- local lineage had already taken the id]"
+   "notes": " [renumbered from R0150 on merge 2026-07-31: concurrent allocation collision, second round -- local lineage had already taken the id]",
+   "disposed": "2026-07-31T17:59:06Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in 9b198c624)"
   },
   {
    "id": "R0172",
@@ -2137,7 +2168,9 @@
    "due": null,
    "note": "first run correctly names EVIDENCE as binding: the sleeve is not producing yet, which check_organ_liveness independently confirms",
    "renumbered_from": "R0151",
-   "notes": " [renumbered from R0151 on merge 2026-07-31: concurrent allocation collision; local lineage had already taken the id]"
+   "notes": " [renumbered from R0151 on merge 2026-07-31: concurrent allocation collision; local lineage had already taken the id]",
+   "disposed": "2026-07-31T18:01:50Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in 3ac76b3f7)"
   },
   {
    "id": "R0174",
@@ -2318,8 +2351,9 @@
    "reason": "[triage 2026-08-04 wf_8e81833d-78a] De-welding delivered by direct Monte Carlo instead of a 2PL fit, same deliverable: scripts/audit_gate_power.py (2026-08-01) measures per-gate Type I/II, leave-one-out, ROC and calibration on the REAL validate(); reports/gate_power_audit.json carries per_gate passes_null/blocks_true (= measured discrimination; e.g. economic_mechanism passes 100% of null = zero discrimination); reports/gate_subset_audit.json (787620a) scores gate SUBSETS; certify_gauntlet.py --targets 2,3,5,7,10,15 is the synthetic true-SR ladder; the welded->per-candidate seam landed (libs/validation/per_candidate.py + validation.py pc_pbo/pc_p in merge 9d456b7); REALITY_CHECK_POWER.md's pooled redesign moved power at true SR 1.0 from 5% to 70% with alpha untouched -- the max-information ask, delivered without loosening anything. ADVERSARIALLY VERIFIED 2026-08-04: every citation checked in-tree and holds -- per_gate passe",
    "commit": null,
    "due": null,
-   "disposed": null,
-   "note": "renumbered from R0177 after sibling-session ID race, merge 2026-07-31"
+   "disposed": "2026-08-04T22:04:47Z",
+   "note": "renumbered from R0177 after sibling-session ID race, merge 2026-07-31",
+   "disposed_source": "git-history-backfill R0259 (first terminal in 5f1452988)"
   },
   {
    "id": "R0189",
@@ -2497,7 +2531,8 @@
    "reason": "[triage 2026-08-04 wf_8e81833d-78a] The resolution diagnostic was run and MEASURED after this row was raised: docs/research/REALITY_CHECK_POWER.md measures the screen's power at its own resolution and proves bar count is not evidence (t = SR_ann*sqrt(YEARS)), then fixes the design via pooling (power at true SR 1.0: 5% -> 70%, alpha untouched); the pooled campaign shipped and ran (commits 27162b9/7cc800d, then ae8be98: 0/20 then 0/44 mechanisms -- the zero is now informative); and sub-daily resolution was tested DIRECTLY: 5m measured NO-GO (INTRADAY_ROTATION_RESULT.md, bc28e2a 08-04) and the pre-registered 15m/1h re-test completed same day -- NEW_FAMILY_GENERATORS_PREREGISTRATION.md 'Intraday timeframe ladder, completed... NO-GO at all three intervals' (cost-in-R -0.44 -> -0.25 -> -0.09, gross ~0 at every interval). The daily-resolution zero is now scoped by measurement, not by the angle-20 filter alone. ADVERSARIALLY VERIF",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-07-31T20:30:55Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in 10619ddc0)"
   },
   {
    "id": "R0203",
@@ -2755,7 +2790,8 @@
    "reason": "[triage 2026-08-04 wf_8e81833d-78a] VERIFIED ADVERSARIALLY: the shape fix landed with every gate unchanged: scripts/run_real_campaign.py:223-310 pools each mechanism's returns equal-weight across symbols and validates ONE hypothesis per mechanism with n_trials=len(pooled) (:281) ('Alpha untouched, gates untouched... power at SR 1.0 goes 5%->70%', :225-236), emitted as pooled_by_mechanism (:344); reports/real_campaign.json (generated 2026-08-04T21:01:01Z) carries the pooled doc (n_mechanisms=44, 0 clearing); commits 27162b9/7cc800d/ae8be98 all exist and measured 0/20 then 0/44 pooled at 70% power. Screen stays unwired exactly as the row concluded it should.",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-04T22:04:47Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in 5f1452988)"
   },
   {
    "id": "R0224",
@@ -2791,7 +2827,8 @@
    "reason": "[triage 2026-08-04 wf_8e81833d-78a] VERIFIED ADVERSARIALLY: module-granular reachability exists and is wired: scripts/max_audit.py:3774 _module_reachability() (transitive module-level BFS over ALL libs modules from scripts/, app/, api/; tests explicitly not entry points per docstring), :3886 check_orphan_modules (census of every individually-unreachable libs module against _ORPHAN_MODULE_BUDGET=45, :3910, with a ratchet-down-only comment), :3861 check_money_path_wired (blocking, law-independent), registered in the sweep at :4637-4639. Covers orphaned modules no law cites, which was the residual gap named by the row.",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-04T22:04:47Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in 5f1452988)"
   },
   {
    "id": "R0227",
@@ -2803,7 +2840,8 @@
    "reason": "[wave1 2026-08-04] disagreement dampening shipped: conf *= GMM posterior mass on the HMM's label -- strictly conservative, agreement path unchanged, unfitted-GMM excluded. The live pathology (confidence 1.0 with hmm_gmm_agree false) now expresses as ~0. 53 regime tests pass.",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-04T22:25:42Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in b7657c3f7)"
   },
   {
    "id": "R0228",
@@ -2983,7 +3021,8 @@
    "reason": "[triage 2026-08-04 wf_8e81833d-78a] VERIFIED ADVERSARIALLY (one count corrected: 21 tables, not 22): fixed by commit a845970 ('the backup drill compared the copy to itself'): run_moat_backup.py:114-149 snapshot now integrity-checks AND compares replica to SOURCE table-by-table row counts, raising on mismatch; :152-173 file digests taken from the SOURCE ('SOURCE, never `out`'); :244-256+:282-286 ABSENT -> DEGRADED joins the exit-2 failing set and the phantom research_memory.db was removed from _STORES (:59). backups/moat/manifest.json (2026-08-02, status OK) shows sor_research REPLICATED at 1,929,216 bytes with 21 table_rows; the replica sqlite verifies 21 tables. tests/ops/test_moat_backup.py pins both the DEGRADED status and the drill failing on a half-written copy.",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-04T22:04:47Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in 5f1452988)"
   },
   {
    "id": "R0243",
@@ -3115,7 +3154,8 @@
    "reason": "[wave1 2026-08-04] engineering forecasts are now genuine pre-registrations: logged once with a pinned resolve_by=+30d, graded both directions (overdue-open -> False; post-deadline completion -> False), state assertions never logged, legacy rows inert. Calibration record receives zero degenerate rows; 105 calibration/forecast tests pass. (Diff rode in with the R0297 commit -- flagged and verified.)",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-04T22:26:21Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in 4b4209d4a)"
   },
   {
    "id": "R0254",
@@ -3123,11 +3163,11 @@
    "summary": "CALIBRATION PROBE re-logs ONE identical claim: 'Will S2USDT trade ABOVE 102.0 in 24 hours' time?' appeared 17x in 14h (6x in the 06:01-06:14 window) at a FROZEN 102.0 threshold and constant p=0.61. Two defects: (a) the probe fires far more often than its 6-hourly cron line implies -- find the extra caller; (b) S2USDT's reference price looks stuck, which is the silent-stale-instrument class. Dedup now neutralises the calibration damage (17 copies score as 1) but the loop still burns quota and the stale price is unexplained.",
    "roi_bps": 2500.0,
    "raised": "2026-08-01T07:50:32.408193+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Both named asks are VPS-runtime forensics: run_calibration_probe.py is untouched since the row (git log empty since 08-01) and contains no open-question dedup, and the only scheduled caller in the tree is ops/crontab.manifest:1053 (6-hourly) -- the extra caller can only be found in the VPS crontab/journal, and the stuck S2USDT reference price needs the live price source. Calibration damage is already neutralised by estimator dedup per the row itself, so this is contained investigation work, not urgent.",
-   "commit": null,
+   "status": "implemented",
+   "reason": "Both halves answered by one root cause and fixed in ce5d37a. (a) The extra caller is the TEST SUITE, not a rogue cron line: pose() honoured its root for data/calibration_probe.jsonl but logged the forecast through forecast_calibration's module-level path, so tests/execution/test_calibration_probe.py's parsing case (which passes no monkeypatch) injected one fabricated row into the live L1.29 store on every run. (b) REFUTED -- S2USDT is not a stale instrument: _charts() names symbols S{i}USDT at price 100.0+i and 0.61 is the literal in that test's ask lambda, so the frozen 102.0/p=0.61 is a test constant, not a stuck price feed. Cost: 69 fabricated rows, and ALL 44 forecasts holding check_calibration OVERDUE were this fixture, zero were real -- the fence that detects the desk being confidently wrong was pinned red by its own tests. log_forecast/resolve now take an optional store and pose/resolve_due pass the root they already had (no-op in production). Purge changed no scored number (Brier 0.241 / bias +0.0886 / n=42 bit-identical); n_overdue 44 -> 0. New test verified failing without the fix.",
+   "commit": "ce5d37a",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-05T21:29:15.940413+00:00"
   },
   {
    "id": "R0255",
@@ -3139,7 +3179,8 @@
    "reason": "[triage 2026-08-04 wf_8e81833d-78a] VERIFIED ADVERSARIALLY: the demanded WIRE-or-RETIRE decision was taken and shipped: ops/crontab.manifest:1399-1418 (stamped 2026-08-01) schedules run_crossasset_shadow daily at 06:40Z ('40 6 * * *') with the full ledgered rationale -- names the 977h stall since 2026-06-21, the MAX_FORWARD_SLOTS=12 Holm cohort slot cost, chooses 'SCHEDULE RATHER THAN RETIRE' because the axis is orthogonal, and pre-commits retirement 'in a fortnight' if the clock still shows nothing. Exactly the explicit decision the row required.",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-04T22:04:47Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in 5f1452988)"
   },
   {
    "id": "R0256",
@@ -3159,11 +3200,11 @@
    "summary": "DEGENERATE-OBSERVATION clocks that a staleness check CANNOT catch: walcl_reserve_impulse re-stamps one 2026-07-29 observation under a new date key daily (byte-identical payload, asof frozen), and defi_utilisation's z20 series is [0,0,0,0,1.80] where position=sign(z) makes all 4 realized returns exactly 0.0 (std=0, t-stat uncomputable). Both look ACCRUING to the new evidence probe because their artifacts ARE fresh and days>0. Extend the probe to read the RETURN SERIES, not just the day count.",
    "roi_bps": 2000.0,
    "raised": "2026-08-01T07:50:32.740678+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=8 effort_h=3: Still open. scripts/run_axis_shadows.py:122-160 _evaluate reads the return series but counts any date-keyed row as a forward day: a zero-variance series just yields sharpe=0.0 (line 147) with no DEGENERATE verdict, and nothing detects byte-identical re-stamps (repo grep for degenerate/byte-identical/payload-hash probes: none). scripts/derive_walcl_clock.py still stamps a fresh date key daily with frozen asof (line 91; untouched since commit 1428442). Extend the probe to flag std==0 realized-return series and asof-frozen re-stamped observations.",
-   "commit": null,
+   "status": "implemented",
+   "reason": "Implemented in 3ea1fca, and the probe found the problem is wider and worse than the row stated. forward_days counted any date-keyed pair (its own comment falsely claimed it excluded degenerate rows). THREE of four live clocks were faulty, not two: walcl_reserve_impulse 3 rows/1 distinct payload (daily cron vs weekly FRED release) read 2/20; defi_utilisation took no position on 4 of 5 days (sign(0)==0) read 5/20 -- and its payloads are all DISTINCT so de-dup alone would miss it; cny_premium had 14 dated rows with a null signal field in every one and read 0/20 forever. WORSE THAN 'looks ACCRUING': an all-zero series is ACCRUING only below MIN_OBS and turns FAILING at n>=20 via the t<=0 branch, so a clock that never measured anything would have retired its own research ground as a REFUTED hypothesis -- a false null, the direction nothing here alarms on. Fix: a dated row counts only if it is not a verbatim re-stamp and it took a position; both filters SUBTRACT only, so an axis can move further from ELIGIBLE and never closer. New DEGENERATE verdict is neither ACCRUING nor FAILING; consumers special-case only ELIGIBLE so it maps to PENDING/OK safely. 7 tests incl. the pre-fix FAILING masquerade and a can-only-subtract property.",
+   "commit": "3ea1fca",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-05T21:35:22.838592+00:00"
   },
   {
    "id": "R0258",
@@ -3175,7 +3216,8 @@
    "reason": "[wave2 2026-08-04] research-chain failures now leave evidence and page: both runners write data/research_chain_status.json atomically every run (empty failed list on clean -> RESOLVED flow works), run_daily_research exits 1 on step failure with names in the tail, run_alerts pages via the existing dedupe/backoff machinery with 24h override. Stubbed incident reproduced end-to-end. No gate weakened; exit-code change strengthens.",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-04T22:40:09Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in c7cdc433c)"
   },
   {
    "id": "R0259",
@@ -3225,7 +3267,8 @@
    "reason": "[triage 2026-08-04 wf_8e81833d-78a] libs/validation/screen_admission.py implements exactly the ranked screen: rank_score() (lines 236-260, OOS Sharpe + DSR + cleared statistical gates) and admit() (lines 271-367) fill idle forward slots top-K by rank with structural gates as hard blocks. Wired: scripts/run_real_campaign.py:34 imports admit and :216 calls admit(..., idle_slots=12); power measured by scripts/measure_admission_power.py. The absolute campaign verdict was also replaced per-candidate (libs/validation/per_candidate.py; libs/autodiscovery/validation.py:526-564 dsr_trials=1 on the per-candidate path). [Adversarial verification 2026-08-04: CONFIRMED -- rank_score at :236-259 and admit at :270-369 as cited; admit called at run_real_campaign.py:220 with idle_slots=12, cost_basis='net'; reports/admission_power.json exists; the 08-04 MEASURED run admitted 12 of 82 structurally-sound candidates, so the forward stage is n",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-04T22:04:47Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in 5f1452988)"
   },
   {
    "id": "R0263",
@@ -3357,7 +3400,8 @@
    "reason": "[triage 2026-08-04 wf_8e81833d-78a] The capability landed by another route and RAN: scripts/run_real_campaign.py:29-34 feeds the full generator set (libs.autodiscovery.generators.GENERATORS) through the real validate() and screen_admission.admit() over OKX full history, building MarketSeries at :129 -- and reports/real_campaign.json is status MEASURED, generated 2026-08-04T21:01:01Z, 10 symbols at 2,021-2,442 daily bars, with per-gate death attribution. The Lab also has a crypto entry point (libs/autodiscovery/crypto_adapter.py build_lab/load_universe + scripts/run_crypto_research.py). run_autodiscovery.py remains MT5-bound but is no longer the only path; the 'generation cannot start on this box' premise is refuted by the 08-04 measured artifacts (commits b96bb10, ae8be98). [Adversarial verification 2026-08-04: CONFIRMED -- crypto_adapter.py defines DataProvider = Callable[[str], MarketSeries|None], builds MarketSeries at ",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-04T22:04:47Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in 5f1452988)"
   },
   {
    "id": "R0274",
@@ -3381,9 +3425,10 @@
    "reason": "[triage 2026-08-04 wf_8e81833d-78a] All adopted items are in the tree: libs/validation/robustness_filters.py:37 REAL_EDGE_OOS_SHARPE_BAND=(0.5,1.5), :57 sample_adequacy (the min-trades gate), :77 studentised not_too_lucky (z against sqrt(PPY/n_is+PPY/n_oos), replacing the fixed 30% ratio). Wired: libs/validation/screen_admission.py:167,179 (structural/statistical gate lists), libs/validation/revalidation.py:68-69,147; libs/validation/brain_calibration.py:69,190 consumes the band. Tests: tests/validation/test_robustness_filters.py. Row should be disposed implemented. [Adversarial verification 2026-08-04: CONFIRMED -- additionally the filters are computed live in the production gauntlet, not just listed: libs/autodiscovery/validation.py:41 imports both, :631 computes not_too_lucky, :643 computes sample_adequacy, and the 08-04 MEASURED campaign's deaths_by_gate shows sample_adequacy killing 20 candidates.]",
    "commit": null,
    "due": null,
-   "disposed": null,
+   "disposed": "2026-08-04T22:04:47Z",
    "renumbered_from": "R0262",
-   "renumber_note": "allocator race with the VPS lineage; origin keeps its ids by convention. No code references this row."
+   "renumber_note": "allocator race with the VPS lineage; origin keeps its ids by convention. No code references this row.",
+   "disposed_source": "git-history-backfill R0259 (first terminal in 5f1452988)"
   },
   {
    "id": "R0276",
@@ -3599,7 +3644,8 @@
    "reason": "[wave2 2026-08-04] funding-clamp censoring shipped: per-symbol caps via live fundingInfo -> cached -> documented static tiers (each source labelled), prints >=99% of clamp marked censored=true -- labelled never dropped, ranked below measured extremes, excluded from the opportunity showcase. Bybit caps from instruments-info. Live fetch 451/403-blocked from this box (verified per-mirror); VPS daily run refreshes the cache. 119 funding tests green.",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-04T22:43:52Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in 5116d566d)"
   },
   {
    "id": "R0294",
@@ -3647,7 +3693,8 @@
    "reason": "[wave1 2026-08-04] refusal path shipped (L1.41): every venue-fetch failure recorded+printed as blocked, <2-venue panel exits UNMEASURED, artifact carries measured venues + panel_accounting (attempted/resolved/blocked). Width gate kept at 6, not weakened. 4-scenario stubbed smoke passed.",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-04T22:24:28Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in 9b136febf)"
   },
   {
    "id": "R0298",
@@ -4127,7 +4174,8 @@
    "reason": "[triage 2026-08-04 wf_8e81833d-78a] All four named failures are green (pytest 2026-08-04): the jsonl fence was taught the ledger's own '#' header convention (tests/governance/test_tracked_json_integrity.py:42-44, merge 9d456b7 'jsonl integrity fence taught the lessons ledger's own # header convention'); test_every_docs_artifact_is_claimed passes \u2014 ops/run_commit_audit.sh landed in 5920b60 with docs/research/recent_changes.md deliberately GITIGNORED (425KB regenerable payload; \u00a736 governance applies to what is committed, per that commit's message); and both test_desk_memory invariants pass after the merge's graduations/retirement (L0024 retired, L0038/L0051 graduated \u2014 see R0327/R0348).",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-04T22:04:47Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in 5f1452988)"
   },
   {
    "id": "R0338",
@@ -4247,7 +4295,8 @@
    "reason": "[triage 2026-08-04 wf_8e81833d-78a] Fixed mapping and test together, exactly as asked (merge 9d456b7, 'L0061 graduated by BUILDING its fix... 260/653 -> full resolution, SHIB/PEPE/FLOKI/BONK/SATS recovered'): libs/data/multiexchange.py:43 okx_inst strips ('1000000','10000','1000','1M') prefixes because the multiplier lives in Binance's ticker vs OKX's ctVal (:28-40, incl. the no-rate-rescaling note); tests/data/test_multiexchange.py:14 now asserts okx_inst('1000PEPEUSDT')=='PEPE-USDT-SWAP' ('CORRECTED 2026-08-04 (R0294/L0061)'), with SHIB/SATS/MOG/BABYDOGE cases at :26-30.",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-04T22:04:47Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in 5f1452988)"
   },
   {
    "id": "R0348",
@@ -4259,7 +4308,8 @@
    "reason": "[triage 2026-08-04 wf_8e81833d-78a] Both tests pass on this tree (pytest 2026-08-04). The close came by the research decision the row demanded, not a false enforcement claim: docs/desk_lessons.jsonl records L0024 retired='2026-08-04: ABSORBED into L0038' (falsifier-style retirement, absorbed duplicate), L0038 enforced_by=tests/research/test_mined_evidence_priority.py::test_every_miner_prompt_carries_the_mined_evidence_priority_block, and L0051 enforced_by=tests/stage14/test_survival_calibration.py::test_the_default_drawdown_limit_rejects_the_entire_real_edge_band \u2014 a genuine behavioural test of the inert-gate property, NOT the okx test R0347 flagged as pinning the bug.",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-04T22:04:47Z",
+   "disposed_source": "git-history-backfill R0259 (first terminal in 5f1452988)"
   },
   {
    "id": "R0349",
@@ -5028,6 +5078,42 @@
    "commit": null,
    "due": "2026-08-08",
    "disposed": "2026-08-05T21:00:13.193890+00:00"
+  },
+  {
+   "id": "R0413",
+   "source": "cycle",
+   "summary": "CARRY BOOK REPORTED A PROFIT WHILE IT HAD LOST 1869.74 -- the ruin rail's re-based inception leaked into P&L reporting. web/cashcarry_live.json published net_pnl +2938.01; the venue income ledger (realized -3153.27 + funding +113.06 - commission 1750.88) says the futures leg is -4791.09. Gap +4807.75 = the 2026-08-01 principal-signed RESTART re-base 10547.78->5757.08 (+4790.70) plus 17.05 honest slack. Cause: fut_pnl = fut_eq - capital_events.effective_start_equity(), which is the RUIN RAIL inception -- correct for the rail, wrong for reporting, and one number served both. R0322 had pinned the executor and molded books to that same inception, so portfolio.json inherited it: pinning two books to one number made them agree without making them right. Consumers were reading the inflated field: hurdle_rate.py:97 feeds cc.net_pnl into the beats-T-bills gate (L1.5) on the desk's ONLY deployed sleeve, whose own note says it builds the forward track record the gate sizes on. It survived four days because the desk HAD already computed the exact error and filed it as leak_attribution.residual=4807.75 while the bleed alarm asserted a NAKED/UNTRACKED leg and ordered reconcile spot vs perp qty against a book holding ZERO open positions -- a remedy impossible to perform, so the search closed. FIXED: libs/execution/carry_accounting.reconcile_futures_leg publishes both measurements of the futures leg (equity delta = one re-baseable input; venue income ledger = none) plus their gap, verdicts AGREE / REBASE-LEAK / PHANTOM / UNMEASURED; net_pnl now carries the income-ledger number and the equity-delta reading keeps its own key so the two cannot silently re-converge; the bleed alarm can no longer assert a naked leg on a flat book. 8 new tests pin the live numbers.",
+   "roi_bps": 4000.0,
+   "raised": "2026-08-05T21:04:56.386595+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0414",
+   "source": "cycle",
+   "summary": "THE SECTION-42 FENCE WAS WELDED SHUT AND THAT IS WHY rec-ledger-backlog RECURRED 3x IN 5.1 DAYS. Measured over the ledger's entire life: the fence ('any row open past GRACE_H=24h is a DEFECT') read RED for 226 of its 226 informative hours -- the only 24 GREEN hours were before any row could age past grace. Median disposition latency is 37.8h against that 24h bar and only 41.8% of rows ever cleared it, so the bar sits below the desk's own demonstrated service time: unclearable in practice, exactly what GATE-OPTIMALITY DUTY says to investigate. It is MIS-APPLIED, not mis-calibrated: it puts a per-row deadline on a QUEUE, so a backlog being drained (2026-08-05: 61 in, 116 out) and one running away (2026-08-01: 131 in, 48 out) produce the identical verdict, and 3 quota-dead days age every row without showing it to anybody. The desk ALREADY had the discriminating measurement and this fence never read it: data/carryover_sweeps.jsonl carries an alive:true/false flag per sweep and the section-37 brief uses it to say 'survived N sweeps, N with the brain awake' -- two organs measuring ONE backlog, only one with the discipline. FIXED, and it is a net TIGHTENING: sweeps_shown() denominates the SKIP test in live sweeps per L1.48 (report shortfalls in observations, never days), and drain() adds a detector the desk did not have at all -- arrivals vs dispositions over a trailing window, the property a level cannot express. Every row still owes a disposition and every owed row is still printed; GRACE_H is untouched and now carries its L1.48 exemption as the DUTY horizon rather than the skip test. Report goes from an undifferentiated 70 DEFECTs to '70 owe a disposition; 10 of them are SKIPS', which agrees with the section-37 brief's independent count of 13. 8 tests including an explicit anti-loosening test.",
+   "roi_bps": 800.0,
+   "raised": "2026-08-05T21:09:21.537901+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0415",
+   "source": "cycle",
+   "summary": "THE GROWTH AUDIT'S ONLY CONSERVATISM DEFECT IS EXPLAINED, AND THE EXPLANATION WAS BURIED BY 476 FALSE ALARMS. web/growth_audit.json 2026-08-05T21:00Z reports carry_capital_utilization GAP, 0 deployed of 200 authorized, justified_by NONE -- the one item the cycle contract requires be closed or justified same-cycle. The answer is in web/cashcarry_live.json last_actions and it is the LAST of 477 entries: 'live_guard: sizing scaled to 0%'. The other 476 are ALL SPOT-EXCESS lines -- one per symbol, spanning the whole alphabet from 0GUSDT to ZRXUSDT plus the joke ticker \u5e01\u5b89\u4eba\u751fUSDT -- each declaring an untracked naked spot long and each ordering 'verify/flatten by hand'. They total 363,127 dollars of claimed naked exposure against 200 dollars of authorized capital, which is arithmetically impossible. VERIFIED CAUSE: libs/execution/binance_spot_testnet.py:21 pins _BASE to testnet.binance.vision, so the wallet the detector is reading is the TESTNET FAUCET's pre-seeded balances, which cluster at ~500 dollars per symbol across every listed pair. The detector's false-positive rate on this account is ~100 percent, so per L1.43 it carries zero information, and per the 2026-07-31 CI lesson a gate that cries wolf gets ignored -- this one does worse than get ignored, it CONSUMES the action feed and pushes the single true line to the end. TWO SEPARATE FIXES OWED: (1) SPOT-EXCESS must exclude wallet balances the desk never bought -- reconcile against our own fill history rather than against tracked carries alone, or the testnet faucet is permanently indistinguishable from a stranded leg, which also means a REAL stranded leg would be invisible in the noise on day one of live trading; (2) run_growth_audit must read the live_guard clamp so a deployment gap that IS explained stops being reported as justified_by NONE -- an unexplained-looking defect that has a known cause trains the reader to discount the whole report. Also note data/cashcarry_error.log 21:07:41Z shows the genuine asymmetry live: 'unfilled leg MOVEUSDT spot_ok=True fut_ok=False' -- spot filled, futures did not, the gap-41 class that CREATES real stranded legs, which is exactly what fix (1) must stay able to see.",
+   "roi_bps": 300.0,
+   "raised": "2026-08-05T21:12:00.269114+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
