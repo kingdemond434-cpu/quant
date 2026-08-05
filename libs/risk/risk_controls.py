@@ -277,6 +277,7 @@ def evaluate(
     fee_burn: FeeBurnWindow | None = None,          # gap #98: None -> read the income artifact
     fee_harvest_frac: float = FEE_HARVEST_PAUSE_FRAC,
     burn_floor_frac: float = BURN_FLOOR_EQUITY_FRAC,
+    flow_adjusted_equity: float | None = None,      # R0320: DD channel measured net of flows
 ) -> RiskDecision:
     """Evaluate the book against growth-positive, ruin-boundary limits.
 
@@ -284,11 +285,31 @@ def evaluate(
     WITHOUT an executor edit) the windowed fee/harvest measurement is read defensively from the
     executor's own published income artifact -- unreadable input degrades to a recorded
     UNMEASURED, never an exception, never a phantom pause.
+
+    R0320 -- `flow_adjusted_equity`. The DD-from-peak channel exists to answer "how far is this
+    book below the best it ever managed", and RAW wallet equity cannot answer it across a capital
+    event: a deposit lifts equity to a fresh high-water and a live pause evaporates without a
+    single position changing. Pass equity net of post-inception external flows here, with
+    `peak_equity` in that SAME flow-adjusted space (`capital_events.flow_adjusted_rail` returns
+    both), and the pause rail measures the book instead of the cash-flow. `start_equity` is
+    untouched by this -- the ruin rail keeps measuring raw equity against the ledgered inception,
+    which is the authorised, signed way back from a stop.
+
+    `None` (every pre-R0320 caller) is the identity: the DD channel reads `equity` exactly as it
+    always did, including the `max(start, ...)` floor on the peak.
     """
     eq = max(0.0, float(equity))
     start = max(1e-9, float(start_equity))
-    peak = max(start, float(peak_equity), eq)
-    dd_peak = eq / peak - 1.0
+    if flow_adjusted_equity is None:
+        dd_eq = eq
+        peak = max(start, float(peak_equity), eq)
+    else:
+        # `start` is deliberately NOT a floor here: it lives in raw dollars (and a re-base moves
+        # it to today's equity), so folding it into a flow-adjusted peak would compare two
+        # different rulers and manufacture a drawdown out of the deposit itself.
+        dd_eq = max(0.0, float(flow_adjusted_equity))
+        peak = max(1e-9, float(peak_equity), dd_eq)
+    dd_peak = dd_eq / peak - 1.0
     dd_start = eq / start - 1.0
     max_notional = max(0.0, ruin_cap_lev) * eq
     reasons: list[str] = []

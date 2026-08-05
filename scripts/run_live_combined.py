@@ -21,6 +21,7 @@ from libs.execution.carry_accounting import (
     read_income,
 )
 from libs.portfolio.live_book import LivePortfolio
+from libs.risk import capital_events
 
 _CC = Path("web/cashcarry_live.json")
 _STATE = Path("data/cashcarry_positions.json")
@@ -88,13 +89,32 @@ def _curve_winrate(feed: dict[str, Any]) -> float | None:
     return round(100.0 * wins / n, 1)
 
 
+def _start_equity(st: dict[str, Any], fut_eq: float) -> float:
+    """R0322: the inception THIS book measures from -- the same one the executor measures from.
+
+    This file publishes portfolio.json; scripts/run_cashcarry_executor.py publishes
+    cashcarry_live.json. Both report "net PnL since start", and this one read the raw
+    `start_futures_equity` while the executor had already moved to the capital-events-aware
+    baseline (R0071b). A single ledgered deposit therefore split the desk into two published
+    books measuring from two different inceptions -- and the molded book, the one that reads as
+    the account of record, would have shown the whole deposit as fabricated P&L. One function,
+    one inception, both books.
+
+    Reporting only: `effective_start_equity` is the INCEPTION (P&L + ruin rail). The pause rail's
+    baseline is the flow-adjusted high-water (R0320, `capital_events.flow_adjusted_rail`), which
+    lives in the executor because it is the organ that computes combined equity from venue truth.
+    """
+    return float(capital_events.effective_start_equity(_num(st.get("start_futures_equity"),
+                                                            fut_eq)))
+
+
 def main() -> None:
     cc, st = _load(_CC), _load(_STATE)
 
     fa = fut.account_summary() if fut.has_keys() else {}
     fut_eq = round(_num(fa.get("equity")), 2)
     fut_unrl = round(_num(fa.get("unrealized_pnl")), 2)
-    fut_start_real = _num(st.get("start_futures_equity"), fut_eq)
+    fut_start_real = _start_equity(st, fut_eq)
     # `funding` is None until MEASURED, for the same reason `venue_realized` already was: a venue
     # read that fails must not decay into a zero harvest. The old `0.0` seed plus an
     # `except (ValueError, TypeError)` that could not even catch the venue's HTTPError meant this

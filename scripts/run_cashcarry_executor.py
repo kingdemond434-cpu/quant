@@ -638,6 +638,26 @@ def _mkt_or_limit(conn: Any, sym: str, side: str, qty: float) -> str:
     return ""
 
 
+def _start_equity(state: dict[str, Any], fallback: float) -> float:
+    """The book's INCEPTION -- for P&L reporting and the ruin rail -- honouring any capital event.
+
+    ONE function for both of this file's reader sites (the risk rail and `_mark`), and the same
+    computation run_live_combined._start_equity performs on the same state key: R0322 pins the two
+    published books to a single inception, because they had already drifted to two (this file was
+    capital-events-aware, portfolio.json was not, so one ledgered deposit would have made the
+    molded book report the deposit itself as P&L).
+
+    Unreadable input falls back instead of raising: the previous inline `float(...)` would throw on
+    a null key and take the whole risk block down with it (swallowed by `_safe()`), i.e. NO rail
+    evaluation at all that tick. A rail that degrades to its fallback beats a rail that vanishes.
+    """
+    try:
+        raw = float(state.get("start_futures_equity", fallback))
+    except (TypeError, ValueError):
+        raw = float(fallback)
+    return float(capital_events.effective_start_equity(raw))
+
+
 def _reconcile(pos: dict[str, dict[str, Any]], *, dry: bool,
                cooldown: dict[str, float] | None = None,
                fail_counts: dict[str, int] | None = None,
@@ -800,6 +820,38 @@ def _reconcile(pos: dict[str, dict[str, Any]], *, dry: bool,
                 # the tracked size. Surfaced in last_actions + the dashboard feed.
                 acts.append(f"SPOT-EXCESS {sym}: wallet {held:.6g} vs tracked {want:.6g} "
                             f"(+{held - want:.6g}) -- untracked naked long, verify/flatten by hand")
+        # R0321 -- WALLET-WIDE SWEEP FOR FULLY UNTRACKED SPOT LONGS. DETECT AND PAGE ONLY.
+        # The loop above can only speak about symbols the tracker already knows: it is keyed on
+        # `pos`, so `want` exists only for a tracked carry. An OPEN-FAIL half-fill
+        # (`spot_ok=True fut_ok=False`) that never landed a `pos` entry leaves a BOUGHT spot leg
+        # with NO tracked symbol at all -- and that orphan is invisible to every existing scan:
+        # the futures orphan cover above walks `fut.positions()` (venue SHORTS only), and
+        # scripts/hedge_integrity.py's ORPHAN class walks the same futures map. Nothing in the
+        # desk ever looked at the spot WALLET for balances the book does not carry, which is the
+        # exact shape of the inventory that stranded on 2026-07-19 (~$2,150 of real spot).
+        # PLACES NO ORDERS, deliberately: selling spot is a money path, and the futures orphan
+        # cover carries confirm/cap/cooldown/circuit bounds precisely because an automatic one
+        # fires live ammo into thin books. This one pages a human and stops.
+        # DUST FLOOR: the venue's own published `min_notional` (already fetched here as `sfl` --
+        # a balance under it cannot even be sold, so paging on it is unactionable noise), floored
+        # at the file's existing dollar-noise constant `_RSP_TOL`. No new threshold is minted.
+        # Only assets with a tradeable `*USDT` spot market count -- the book buys nothing else,
+        # so nothing else can be its orphan.
+        spx: dict[str, float] = {}
+        with _safe():
+            spx = spot.prices()
+        for _asset, _free in sorted(bal.items()):
+            osym = f"{_asset}USDT"
+            ofl = sfl.get(osym)
+            if osym in pos or ofl is None or float(_free) <= 0.0:
+                continue
+            opx = float(spx.get(osym, 0.0) or 0.0)
+            oval = float(_free) * opx
+            if opx <= 0.0 or oval < max(float(ofl.get("min_notional", 0.0) or 0.0), _RSP_TOL):
+                continue                                   # dust / below the venue's own minimum
+            acts.append(f"SPOT-EXCESS {osym}: wallet {float(_free):.6g} (${oval:,.0f}) with NO "
+                        f"tracked carry -- untracked naked long (half-filled open or manual "
+                        f"balance), verify/flatten by hand")
     return acts
 
 
@@ -965,13 +1017,32 @@ def _rebalance(top: int, hold_top: int, capital: float, *, dry: bool) -> dict[st
             # argument unchanged when no capital event has ever been recorded, so behaviour on an
             # un-deposited box is byte-identical. Only a signed, ledgered deposit or an explicit
             # principal restart moves the inception -- the desk cannot clear its own stop.
-            start_eq = float(capital_events.effective_start_equity(
-                float(state.get("start_futures_equity", eq))))
-            peak = max(float(state.get("peak_combined_equity", start_eq)), eq_c)
-            state["peak_combined_equity"] = peak
+            start_eq = _start_equity(state, eq)
+            # R0320 -- THE PAUSE RAIL'S BASELINE, AND IT MUST NOT MOVE WHEN MONEY DOES.
+            # This line was `peak = max(peak_combined_equity, eq_c)` on RAW equity: a deposit
+            # lifts eq_c, eq_c becomes the new high-water, and a LIVE -15% pause clears in one
+            # tick with nothing about the book's positions improved -- the denominator moving
+            # under the rail (journal-verified 2026-08-01). The rail now measures equity NET of
+            # ledgered external flows against a high-water carried ACROSS events: a deposit
+            # raises it additively by exactly the cash deposited, a withdrawal lowers it by at
+            # most the cash removed, and no event resets it downward. With no capital-event
+            # ledger `flow_adjusted_rail` is the identity -- `rail.equity == eq_c` and
+            # `rail.peak == max(stored_peak, eq_c)` -- so this is byte-identical arithmetic on
+            # any box that has never had an event. `peak_combined_equity` keeps carrying the RAW
+            # high-water its other readers (max_audit, record_capital_event) expect.
+            _stored_adj = state.get("peak_combined_equity_flow_adj")
+            rail = capital_events.flow_adjusted_rail(
+                eq_c,
+                None if _stored_adj is None else float(_stored_adj),
+                float(state.get("peak_combined_equity", start_eq)))
+            state["peak_combined_equity_flow_adj"] = rail.peak
+            state["peak_combined_equity"] = rail.peak_raw
             gross = sum(float(p["spot_qty"]) * spot_px.get(s, float(p["spot_cost"]))
                         for s, p in pos.items())
-            risk = risk_controls.evaluate(eq_c, start_eq, peak, gross, ruin_cap_lev=8.0)
+            # Ruin rail: raw equity vs the ledgered inception (unchanged -- the signed way back
+            # from a stop). Pause rail: the flow-adjusted pair. Two rails, two rulers, on purpose.
+            risk = risk_controls.evaluate(eq_c, start_eq, rail.peak, gross, ruin_cap_lev=8.0,
+                                          flow_adjusted_equity=rail.equity)
             state["last_risk_action"] = risk.action   # latches flatten into next tick's reconcile
             if risk.action == "flatten":
                 target, cands = set(), []                   # close all, open nothing (survival)
@@ -1624,8 +1695,7 @@ def _mark(rb: dict[str, Any]) -> dict[str, float | None]:
             # raw inception after the rail site was fixed, so the first post-deposit dashboard
             # tick would have shown the whole deposit as fabricated P&L -- the exact two-sites/
             # one-truth class the equity bug came from.
-            start_eq = float(capital_events.effective_start_equity(
-                float(state.get("start_futures_equity", fut_eq))))
+            start_eq = _start_equity(state, fut_eq)
             fut_pnl = fut_eq - start_eq                   # futures leg (realized+funding+fees+unrl)
             net = spot_pnl + spot_realized + fut_pnl
         # SEPARATE guard from the equity read above. Sharing one `_safe()` made the failure
