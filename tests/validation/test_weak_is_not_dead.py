@@ -117,3 +117,37 @@ class TestTheLawItselfCannotBeQuietlyDropped:
         assert "NOT A ROUTE TO ADMIT NOISE" in src
         assert "pre-registered" in src, "the pre-registration requirement was dropped"
         assert "Nothing here\nlowers a bar" in src or "lowers a bar" in src
+
+
+class TestL150UnexploitedIsADefect:
+    """L1.50, pinned the same way L1.49 is: a constitutional clause no test reads is a clause
+    the next edit deletes for free.
+
+    The five clauses are matched on their load-bearing phrases rather than exact prose, so a
+    sharper rewrite passes while a silent removal fails -- the prompt-ratchet principle applied
+    to the constitution itself.
+    """
+
+    def test_l1_50_is_present_with_all_five_clauses(self) -> None:
+        src = _CONSTITUTION.read_text("utf-8")
+        assert "L1.50" in src and "UNEXPLOITED ASSET IS A DEFECT" in src
+        assert "UNDER-EXPLOITATION IS A DEFECT" in src, "clause 1 (utilisation) dropped"
+        assert "THE QUEUE IS THE DEFECT" in src, "clause 2 (conversion) dropped"
+        assert "NOTHING IS HARDCODED" in src, "clause 3 (no checklist) dropped"
+        assert "NO CEILINGS" in src, "clause 4 dropped"
+        assert "E[log W]" in src, "clause 5 -- the growth-objective justification -- dropped"
+
+    def test_the_checklist_clause_keeps_its_teeth(self) -> None:
+        """The clause most likely to be softened into a suggestion, because it is the one that
+        makes an organ's own judgement mandatory rather than optional."""
+        src = _CONSTITUTION.read_text("utf-8")
+        assert "FAILED" in src and "checklist" in src.lower()
+        assert "floor" in src.lower() and "ceiling" in src.lower()
+
+    def test_the_moat_arithmetic_that_motivates_clause_1(self) -> None:
+        """An unread tape is not merely untidy: the moat accrues only in calendar time, so the
+        loss is unrecoverable rather than deferred. Pinned so the motivating measurement stays
+        attached to the rule it justifies."""
+        src = _CONSTITUTION.read_text("utf-8")
+        assert "1,065" in src, "the measured under-utilisation was dropped from the law"
+        assert "calendar time" in src

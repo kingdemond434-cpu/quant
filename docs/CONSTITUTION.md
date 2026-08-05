@@ -1409,3 +1409,54 @@ ground this law removes.
 **Binding on future work.** Applies to code not yet written. Any new rejection path that discards a
 candidate's series, or that ranks weak candidates by standalone strength, is a defect a reviewer
 must raise without waiting to be asked.
+
+## L1.50 AN UNEXPLOITED ASSET IS A DEFECT, AND A CHECKLIST IS NOT A SWEEP
+
+Principal law, 2026-08-05: *"the moat unmaxxed always in every way is a quant defect and failure
+and must always be maximised and pushed in every way... same with creative proprietary and
+asymmetric data and every other data universe... there is no ceilings... nothing should be
+hardcoded, the sweeps should always explore and judge extra things themselves too using their
+brains."*
+
+**Clause 1 — UNDER-EXPLOITATION IS A DEFECT, NOT A BACKLOG ITEM.** Recording an asset and not
+reading it is not neutral, and it is not "not yet done": it is spend with no return, and for the
+moat it is worse than that. The L2 depth tape accrues ONLY in calendar time, so an unrecorded
+hour is permanently unrecoverable and an unread hour is an hour of storage, bandwidth and
+attention bought for nothing. The desk measured the shape of this on 2026-08-05: a ~10 GB /
+~28,000-file tape against a moat campaign of `n_obs 1,065`. Every data universe carries the same
+duty -- proprietary, asymmetric, creative, public, purchased. **Utilisation is a scored aspect and
+a fall in it is a defect with a named cause, exactly like a fall in a validation bar.**
+
+**Clause 2 — THE QUEUE IS THE DEFECT.** A recommendation, candidate, screen, dataset or finding
+that sits undispositioned is not "in progress". Work that is queued rather than converted is
+work the desk paid to discover and refused to use, and a backlog is therefore a measured failure
+of conversion, never a neutral inventory. Rows are dispositioned by READING THE CODE -- a ledger
+that lies is worse than one that is behind (2026-08-05: 66 rows dispositioned, exactly ONE marked
+implemented, because three that looked done died on a second read).
+
+**Clause 3 — NOTHING IS HARDCODED AND NO LIST IS THE SCOPE.** Every sweep, audit, cycle and organ
+prompt states a FLOOR, never a ceiling. The named steps are the minimum; the agent running them
+MUST use its own judgement, explore what the list does not mention, question the list itself, and
+implement improvements nobody asked for. A sweep that executed its checklist and stopped has
+FAILED, however cleanly it executed -- because the entire category this desk cannot rank is the
+category nobody thought to name, and a checklist can only ever contain what was already thought
+of. Where an organ finds the instructions wrong, it fixes the instructions and says so.
+
+**Clause 4 — NO CEILINGS.** "Maxed" is a floor with a ratchet, never a destination. An aspect at
+its ceiling must state what a HIGHER ceiling would require. An aspect nobody argues about is an
+aspect nobody has pushed, and an aspect that has not moved in a month is under-prioritised even
+at 9/10 -- so neglect is ranked and worked alongside lowness (`days_since_raise`, not just score).
+
+**Clause 5 — WHY THIS IS AN E[log W] LAW AND NOT AN ENTHUSIASM.** The desk maximises expected log
+wealth. Log wealth is bought with INDEPENDENT BETS (L1.49), independent bets come from distinct
+mechanisms, distinct mechanisms come from data axes the desk has actually exploited -- so an
+unexploited axis is a term missing from the growth objective itself, not a tidiness failure. This
+is also the whole justification for the CRO seat: GPT maximising the desk's coverage every day
+raises the probability of finding a survivor, and survivors are the only route to E[log W] > 0.
+The chain is indirect and it is real, which is why "no ceilings" is enforced rather than
+encouraged.
+
+**Binding on future work.** Applies to code and prompts not yet written. Any organ, sweep or
+review that treats its instruction list as exhaustive, or that reports an under-exploited asset
+or an undispositioned queue as an acceptable steady state, is in breach and a reviewer must raise
+it without waiting to be asked.
