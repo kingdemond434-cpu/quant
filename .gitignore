@@ -60,3 +60,14 @@ docs/audit_shards/
 
 # per-box role (primary|research) -- R0107: never committed, each box declares its own
 ops/role
+
+# STRAY-CWD ARTIFACTS. libs/ops/fresh.py and every organ write cwd-RELATIVE paths BY DESIGN --
+# see the _root() docstring: guessing an install root was itself a bug of this module's class,
+# and all 151 cron lines pin `cd "$QUANT_ROOT"`. So a data/ tree under scripts/ can only be
+# litter from something invoked with the wrong cwd (observed 2026-08-05 from a test run:
+# scripts/data/freshness_contracts.jsonl + .fresh_markers/). It is ignored rather than
+# committed because committing one would make a phantom SECOND freshness ledger permanent --
+# exactly the two-sources-of-truth failure fresh.py exists to close.
+# NARROW ON PURPOSE: libs/data/ is real source (28 tracked files) and tests/data/ holds
+# fixtures, so a `**/data/` rule would hide both.
+/scripts/data/
