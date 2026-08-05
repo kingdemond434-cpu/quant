@@ -42,6 +42,61 @@ fi
 PY=.venv/bin/python
 echo "  python: $($PY --version)"
 
+# ---------------------------------------------------------------- 0.5 WHICH CODE IS THIS?
+# A deploy that installs a STALE tree is the same failure class as one that installs a broken tree:
+# it looks finished. On 2026-08-05 the operator's `git pull --rebase` died on "cannot pull with
+# rebase: You have unstaged changes" (organs rewrite generated JSON as they run), and this script
+# then deployed the un-pulled tree and reported success -- roughly 100 commits of work silently
+# absent from a box that had just been told it was up to date. The gates below all passed, because
+# the stale tree was internally consistent; nothing here asked WHICH code it was gating.
+#
+# So: state the provenance out loud, and refuse by default when the tree is not what the operator
+# thinks it is. --allow-stale exists because deploying a known-stale tree is sometimes deliberate
+# (rolling back, or a box deliberately pinned) -- but it must be a decision someone TYPED, not the
+# silent default it was.
+ALLOW_STALE=0
+for a in "$@"; do [ "$a" = "--allow-stale" ] && ALLOW_STALE=1; done
+
+say "0.5 code provenance -- which commit is about to become the desk?"
+if git rev-parse --git-dir >/dev/null 2>&1; then
+    BRANCH="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo '?')"
+    HEAD_SHA="$(git rev-parse --short HEAD 2>/dev/null || echo '?')"
+    DIRTY="$(git status --porcelain 2>/dev/null | wc -l | tr -d ' ')"
+    echo "  branch: $BRANCH    head: $HEAD_SHA    locally-modified tracked files: $DIRTY"
+    # Fetch is read-only and cannot touch the working tree, so it is safe even mid-incident.
+    if git fetch origin "$BRANCH" >/dev/null 2>&1; then
+        BEHIND="$(git rev-list --count "HEAD..origin/$BRANCH" 2>/dev/null || echo 0)"
+        AHEAD="$(git rev-list --count "origin/$BRANCH..HEAD" 2>/dev/null || echo 0)"
+        echo "  vs origin/$BRANCH: $BEHIND behind, $AHEAD ahead"
+    else
+        BEHIND=0; AHEAD=0
+        echo "  vs origin/$BRANCH: UNKNOWN (fetch failed -- offline or no remote access)"
+    fi
+    if [ "$BEHIND" -gt 0 ] || [ "$DIRTY" -gt 0 ]; then
+        echo ""
+        echo "  ================================================================"
+        echo "  STALE OR DIRTY TREE -- this deploy would NOT be today's code."
+        [ "$BEHIND" -gt 0 ] && echo "    $BEHIND commit(s) exist on origin/$BRANCH that are not here."
+        [ "$DIRTY" -gt 0 ] && echo "    $DIRTY tracked file(s) modified locally (organs rewrite generated JSON)."
+        echo ""
+        echo "  To sync (stash keeps the generated files recoverable -- 'git stash list'):"
+        echo "    git stash push -m vps-generated && git pull --rebase origin $BRANCH"
+        echo ""
+        echo "  NEVER use 'git stash -u' or '-a' on this box: the moat tape under data/ is the"
+        echo "  one un-replicable asset here, and -a would try to pack it."
+        echo ""
+        echo "  To deploy this tree anyway, deliberately:  bash ops/deploy_vps.sh --allow-stale"
+        echo "  ================================================================"
+        if [ "$ALLOW_STALE" -eq 0 ]; then
+            echo "  FAIL: refusing to deploy a stale/dirty tree without --allow-stale."; exit 1; fi
+        echo "  --allow-stale given: proceeding on the operator's explicit decision."
+    else
+        echo "  ok   tree matches origin/$BRANCH and is clean"
+    fi
+else
+    echo "  WARN: not a git checkout -- provenance UNVERIFIABLE, continuing"
+fi
+
 # A deploy that installs a broken tree is worse than no deploy: it looks finished. The gates are
 # cheap and they are the same three CI runs, so there is no excuse for skipping them here.
 say "1. gates (the same three CI runs -- a broken tree must not reach a live box)"
