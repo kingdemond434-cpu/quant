@@ -280,11 +280,11 @@
    "summary": "Reunify the fork with master (419 commits, ~88 master-only test files, 256 conflicted paths). The 113-file restore closed the OUTAGE but not the divergence: pyproject alone showed both sides had ratcheted different axes (our dep upper-bounds vs master's lint rules), so the merge must be a per-file UNION, not a take-theirs. Until it lands, every cycle widens the gap and deploy/pull_deploy.sh cannot self-resync.",
    "roi_bps": 8.0,
    "raised": "2026-08-04T22:01:57.971104+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "SCOPE CORRECTED BY MEASUREMENT, and the row's premise is wrong in our favour. `git merge-base --is-ancestor origin/master claude/wonderful-darwin-7uiobi` returns TRUE and master-only=0: the 419-commit master fork is ALREADY fully reunified, on the branch the live tree is now checked out to. The 419-commit/256-path union merge the row describes does not need doing. What actually remains is 54 commits on claude/llm-auto-upgrade-verify-gcjac3 that wonderful-darwin lacks. Trial-merged in an isolated worktree (git worktree add, aborted cleanly): 65 conflicted paths -- 31 .py, 10 append-only ledger/record JSON, 14 docs. Resolution rule per class: ledgers/records are ROW-UNION (taking either side silently drops the other's entries and resets a ratchet); .py needs per-file union because both sides ratcheted different axes on the SAME files (run_trade_forensics.py is the type case -- we added the maker-attempt denominator, they added venue fee attribution, both wanted). BLOCKER, why this is scheduled and not done now: it needs EXCLUSIVE control of the tree and the target branch, and neither is available. A sibling session is actively committing to wonderful-darwin -- it moved the shared checkout off my branch mid-task during this very run -- so any resolution is stale before it finishes. And merging into MY branch does not reunify anything: the live tree runs wonderful-darwin, so it would create a fourth divergent head instead of removing one. The merge must land on the branch the desk actually runs. Specific danger if rushed: libs/autodiscovery/validation.py conflicts and our side is AHEAD on the validation gate, so a careless take-theirs LOOSENS A VALIDATION BAR. Do NOT persist the conflict list -- it is derived and goes stale on the next sibling commit; regenerate with: git merge --no-commit --no-ff <target>; git diff --name-only --diff-filter=U.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-08",
+   "disposed": "2026-08-05T03:06:45.556171+00:00"
   },
   {
    "id": "R0024",
