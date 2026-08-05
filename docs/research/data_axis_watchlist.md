@@ -1354,8 +1354,26 @@ first-party, §13-clean (public documented venue APIs, no login, no paywall, no 
 
 ---
 
-### 27. GMO Coin free tick-trade archive (JP venue, keyless, 2018-09-05 →) — grade: **verified-technically-clean, LICENCE UNREAD (reachable, not blocked)** [§33: screened -> docs/research/prospector_coverage.md JP-s1] 
+### 27. GMO Coin free tick-trade archive (JP venue, keyless, 2018-09-05 →) — grade: **verified-technically-clean, LICENCE UNREAD (reachable, not blocked)** [§33: deferred(2026-08-12) tier:3]
 _Found by JP frontier miner session 1, 2026-08-01, as the licensed replacement for the §13-restricted bitFlyer axis._
+
+> **§33 DISPOSITION 2026-08-12 — CORRECTED FROM `screened`, WHICH THIS CARD NEVER WAS.** The tag
+> read `screened -> docs/research/prospector_coverage.md JP-s1` and was counted unbacked. Both
+> halves were wrong, and only one of them was a formatting problem:
+> - **The citation was malformed.** `path JP-s1` (bare space) parses as a single 47-character
+>   filename that can never exist. The anchor form the checker accepts is a **backtick-quoted**
+>   anchor — `` path `anchor` `` — and the anchor must actually appear in the file. `JP-s1` does
+>   not appear anywhere in `prospector_coverage.md` (grepped this cycle: zero `XX-sN` matches).
+> - **The disposition was wrong on the facts, and that is the part that mattered.** This card's own
+>   grade says **LICENCE UNREAD**. §13 legitimacy is absolute and unresolved here, so a screen was
+>   never run and could not legitimately have been run. Re-pointing the citation string would have
+>   laundered a false claim into a passing one — the exact failure §33 credits artifacts to prevent.
+> **ATTEMPTED THIS CYCLE, not deferred on assumption:** `coin.z.com/jp/corp/policy/terms/` returns
+> an INDEX OF PDF LINKS (サービス基本約款 etc.), not clause text — so the substantive automated-access
+> and data-reuse terms sit one layer deeper, in the linked PDFs, and were not read. That is the
+> named blocker, and it is one fetch deep rather than a wall.
+> **Driven by R0309** (READ THE GMO COIN LICENCE, then re-grade). Ingest stays gated until §13 is
+> settled. Deferral is short deliberately: this is one PDF read, not an open-ended condition.
 
 - **What it is.** GMO Coin (GMOコイン, a listed-group JP venue) publishes **daily tick-by-tick trade
   CSVs, gzipped, keyless, no account**, at:
@@ -1395,8 +1413,18 @@ _Found by JP frontier miner session 1, 2026-08-01, as the licensed replacement f
 
 ---
 
-### 28. bitbank public candlestick API (JP venue, keyless, whole-year-per-call) — grade: **verified-technically-clean WITH A CONFIRMED PHANTOM-HISTORY TRAP, licence unread — ATTEMPTED 2026-08-04 from the research container: bitbank.cc/error/terms serves a JS shell to curl (200, no body) and resets rendered fetches (Chromium+proxy ERR_CONNECTION_RESET); support.bitbank.cc same. The licence body is only reachable from a box with direct egress — VPS or the JP miner session. Grade stays licence-unread; ingest stays gated.** [§33: screened -> docs/research/prospector_coverage.md JP-s1]
+### 28. bitbank public candlestick API (JP venue, keyless, whole-year-per-call) — grade: **verified-technically-clean WITH A CONFIRMED PHANTOM-HISTORY TRAP, licence unread — ATTEMPTED 2026-08-04 from the research container: bitbank.cc/error/terms serves a JS shell to curl (200, no body) and resets rendered fetches (Chromium+proxy ERR_CONNECTION_RESET); support.bitbank.cc same. The licence body is only reachable from a box with direct egress — VPS or the JP miner session. Grade stays licence-unread; ingest stays gated.** [§33: deferred(2026-08-12) tier:3]
 _Found by JP frontier miner session 1, 2026-08-01._
+
+> **§33 DISPOSITION 2026-08-12 — CORRECTED FROM `screened`, WHICH CONTRADICTED THIS CARD'S OWN
+> GRADE.** The tag claimed a screen while the grade in the same heading reads *licence unread,
+> ingest stays gated*. A card cannot simultaneously be screened and be gated against ingest. The
+> citation was malformed in the same way as card 27 (`path JP-s1`, bare space, parses as a filename
+> that cannot exist; the accepted form is a backtick-quoted anchor that must appear in the target).
+> **THE BLOCKER IS EGRESS AND IT IS ALREADY MEASURED** — recorded in the grade above: the licence
+> body is reachable only from a box with direct egress. A genuine external constraint, named.
+> **Driven by R0310.** The confirmed phantom-history trap (volume 0.0000 pre-2017-02) is a SECOND,
+> independent gate that stands regardless of how §13 resolves.
 
 - **What it is.** `https://public.bitbank.cc/{pair}/candlestick/{type}/{YYYY}` returns **an entire
   year of OHLCV in one keyless call**. Payload: `[open, high, low, close, volume, timestamp_ms]`.
@@ -1425,9 +1453,27 @@ _Found by JP frontier miner session 1, 2026-08-01._
 
 ---
 
-### 29. RFB "Criptoativos — Dados Abertos" (Brazil, national MANDATORY crypto-reporting panel, 2019-08 → 2025-12) — grade: **verified-live, extracted, arithmetically self-validated; UNDERPOWERED FOR STAGE-A BY CONSTRUCTION (n=77 monthly) — catalogued, NOT screened, and the reason is stated** [§33: screened -> docs/research/prospector_coverage.md BR-s1]
+### 29. RFB "Criptoativos — Dados Abertos" (Brazil, national MANDATORY crypto-reporting panel, 2019-08 → 2025-12) — grade: **verified-live, extracted, arithmetically self-validated; UNDERPOWERED FOR STAGE-A BY CONSTRUCTION (n=77 monthly) — catalogued, NOT screened, and the reason is stated** [§33: deferred(2026-09-05) tier:2]
 _BR frontier miner session 1, 2026-08-01. Fetched, parsed and cross-checked this run — every number
 below was read off the artifact, not a summary._
+
+> **§33 DISPOSITION 2026-09-05 — CORRECTED FROM `screened`, WHICH THIS CARD'S OWN GRADE DENIES IN
+> THE SAME SENTENCE.** The heading reads *"catalogued, NOT screened, and the reason is stated"* and
+> the tag read `screened`. That is not a citation problem; a re-pointed artifact string would have
+> converted an explicitly-disclaimed screen into a credited one. This is the mis-disposition the
+> 2026-08-05 max_audit ack predicted would be found here, and it is confirmed.
+> **THE SHORTFALL IS IN OBSERVATIONS, NOT IN DAYS (L1.48).** n=77 monthly points with a ~3.5-month
+> reporting lag. The axis is not dead and it is not screened — it is **underpowered by construction
+> for a standalone Stage-A screen**, and it accrues at 12 observations/year, so no realistic wait
+> makes it powered as a standalone series.
+> **THE DEFERRAL HAS A DECISION IN IT, NOT A WAIT.** By the date above, re-grade it for the use it
+> can actually support — a low-frequency **conditioning / regime variable** joined to a
+> higher-frequency target, or an event-study cut around the IN RFB 1888→2291 regime change — rather
+> than re-attempting the standalone screen that its own n forbids. If that re-grade also fails, the
+> honest next tag is `killed` with a graveyard entry, not another deferral.
+> **CARRIES A KNOWN LOOK-AHEAD HAZARD** (desk lesson, BR seat): the RFB panel is REVISED — 42/42
+> months revised, worst +40.9%. Any use must read point-in-time vintages (R0316), never the current
+> published series, or the conditioning variable itself leaks the future.
 
 **WHAT IT IS.** Under **IN RFB 1888/2019** (now superseded by **DeCripto, IN RFB 2291/2025**) every
 exchange domiciled in Brazil must report **every crypto operation with no minimum value**, and every

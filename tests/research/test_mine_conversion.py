@@ -13,6 +13,7 @@ from libs.research.mine_conversion import (
     MinedItem,
     Ratchet,
     append_snapshot,
+    backing_reason,
     backlog,
     class_priors,
     conversion_report,
@@ -28,6 +29,7 @@ from libs.research.mine_conversion import (
     priors_payload,
     tier_calibration,
     unbacked,
+    unbacked_reasons,
     update_ratchet,
     vanished,
 )
@@ -171,6 +173,82 @@ class TestUnbacked:
         items = [MinedItem(source="d", name="Y", disposition="deferred",
                            deferred_until="2026-09-01")]
         assert unbacked(items, backing={}) == ()
+
+
+class TestBareAnchorIsParsedNotSwallowed:
+    """The backtick fix taught ONE precise form; every other attempt at precision scored worse.
+
+    Measured 2026-08-05: three JP/BR cards wrote the anchor BARE --
+    `docs/research/prospector_coverage.md JP-s1` -- which matched neither branch, so the whole
+    string became a path that can never exist and the claims read as unbacked permanently. Same
+    defect as the backtick case, one costume later.
+    """
+
+    def test_a_bare_anchor_is_checked_against_the_file(self, tmp_path) -> None:
+        (tmp_path / "cov.md").write_text("...JP-s1 section...\n", "utf-8")
+        it = MinedItem(source="d", name="X", disposition="screened", artifact="cov.md JP-s1")
+        assert unbacked([it], backing={}, root=tmp_path) == (), "anchor present -> backed"
+
+    def test_a_bare_anchor_that_is_absent_is_still_refused(self, tmp_path) -> None:
+        """The whole point: parsing it must not CREDIT it. It must CHECK it."""
+        (tmp_path / "cov.md").write_text("nothing relevant here\n", "utf-8")
+        it = MinedItem(source="d", name="X", disposition="screened", artifact="cov.md JP-s1")
+        assert unbacked([it], backing={}, root=tmp_path) == (it,)
+
+    def test_a_real_path_containing_a_space_is_not_reinterpreted(self, tmp_path) -> None:
+        """The bare reading is tried ONLY when the literal string is not itself a file."""
+        (tmp_path / "my report.md").write_text("x\n", "utf-8")
+        it = MinedItem(source="d", name="X", disposition="wired", artifact="my report.md")
+        assert unbacked([it], backing={}, root=tmp_path) == (), "the literal path wins"
+
+
+class TestBackingReasonSeparatesTypoFromFabrication:
+    """A count is not a diagnosis, and these two need OPPOSITE actions.
+
+    A mis-typed citation is fixed by correcting a string; an untrue claim must NEVER be fixed by
+    correcting a string. Reported as one number they are indistinguishable to whoever picks them up.
+    """
+
+    def test_missing_path_says_so_and_teaches_the_anchor_form(self, tmp_path) -> None:
+        it = MinedItem(source="d", name="X", disposition="wired", artifact="nope.json")
+        why = backing_reason(it, backing={}, root=tmp_path)
+        assert why.startswith("path-not-found")
+        assert "path `anchor`" in why, "the message must name the form that would have worked"
+
+    def test_absent_anchor_is_a_different_reason_from_a_missing_file(self, tmp_path) -> None:
+        (tmp_path / "g.md").write_text("some other entry\n", "utf-8")
+        it = MinedItem(source="d", name="X", disposition="killed", artifact="g.md `never_written`")
+        assert backing_reason(it, backing={}, root=tmp_path).startswith("anchor-absent")
+
+    def test_empty_file_is_its_own_reason(self, tmp_path) -> None:
+        (tmp_path / "e.json").write_text("", "utf-8")
+        it = MinedItem(source="d", name="X", disposition="wired", artifact="e.json")
+        assert backing_reason(it, backing={}, root=tmp_path).startswith("path-empty")
+
+    def test_stale_evidence_is_named_as_stale(self, tmp_path) -> None:
+        p = tmp_path / "old.json"
+        p.write_text("{}", "utf-8")
+        os.utime(p, (1000, 1000))
+        it = MinedItem(source="d", name="X", disposition="wired", artifact="old.json")
+        why = backing_reason(it, backing={}, root=tmp_path, first_seen={"X": 2_000_000.0})
+        assert why.startswith("stale-evidence")
+
+    def test_a_backed_claim_has_no_reason(self, tmp_path) -> None:
+        (tmp_path / "a.json").write_text("{}", "utf-8")
+        it = MinedItem(source="d", name="X", disposition="wired", artifact="a.json")
+        assert backing_reason(it, backing={}, root=tmp_path) == ""
+
+    def test_reasons_and_the_tally_never_disagree(self, tmp_path) -> None:
+        """One source of truth: `unbacked` is now derived from the reasons, not computed twice."""
+        (tmp_path / "a.json").write_text("{}", "utf-8")
+        items = [MinedItem(source="d", name="A", disposition="wired", artifact="a.json"),
+                 MinedItem(source="d", name="B", disposition="wired", artifact="gone.json"),
+                 MinedItem(source="d", name="C", disposition="screened", artifact="also-gone.md")]
+        flagged = unbacked(items, backing={}, root=tmp_path)
+        reasons = unbacked_reasons(items, backing={}, root=tmp_path)
+        assert tuple(i for i, _ in reasons) == flagged
+        assert len(flagged) == 2
+        assert all(w for _, w in reasons)
 
 
 class TestReport:

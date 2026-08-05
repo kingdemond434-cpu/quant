@@ -196,10 +196,45 @@ def _split_anchor(artifact: str) -> tuple[str, str]:
     Returns (path, anchor); anchor is "" when none was given, which preserves the old behaviour
     for every bare-path card.
     """
-    m = _ARTIFACT_RE.match(artifact.strip())
+    s = artifact.strip()
+    m = _ARTIFACT_RE.match(s)
     if not m:
-        return artifact.strip(), ""
+        return s, ""
     return m.group("path"), (m.group("anchor") or "").strip()
+
+
+def _readings(artifact: str) -> tuple[tuple[str, str], ...]:
+    """Every defensible (path, anchor) reading of a citation, STRONGEST FIRST.
+
+    THE SAME BUG, ONE COSTUME LATER (2026-08-05). The backtick fix taught the parser exactly ONE
+    precise form and left every other attempt at precision scoring WORSE than vagueness. Three
+    JP/BR cards wrote the anchor BARE -- `docs/research/prospector_coverage.md JP-s1` -- which
+    matches neither branch, so the whole 47-character string became a "path" that can never exist
+    and the claims read as unbacked permanently, exactly as the backtick cards had. Per the
+    section-37 rule, a per-instance fix buys one cycle; the rule has to generalise or it returns
+    in a third costume.
+
+    PURE ON PURPOSE. An earlier draft resolved the filesystem in here and got it wrong in a way
+    worth recording: this function has no `root`, so it tested paths against the process CWD while
+    every caller resolves them against `base`. A parser that silently disagrees with its caller
+    about which file it is talking about is a worse defect than the one being fixed. Resolution
+    belongs where `base` is known; this returns candidates and judges nothing.
+
+    SAFE BY CONSTRUCTION, and the ORDER is the whole argument: the literal reading is offered
+    first, so a real path that happens to contain a space can never be reinterpreted. The bare
+    reading is only ever reached when the literal one does not resolve, and every assertion still
+    applies to whatever it produces -- exists, non-empty, POSTDATES the find, and CONTAINS the
+    anchor. It can only convert "unbacked, reason unknown" into a fully-checked claim; it cannot
+    credit anything the stricter reading rejected. The three cards that motivated it still fail,
+    because `JP-s1` appears nowhere in the file they name.
+    """
+    path, anchor = _split_anchor(artifact)
+    if anchor:                                   # explicit backtick form -- nothing to guess
+        return ((path, anchor),)
+    head, _, tail = artifact.strip().partition(" ")
+    if tail.strip():
+        return ((path, ""), (head, tail.strip()))
+    return ((path, ""),)
 
 
 def unbacked(
@@ -224,40 +259,86 @@ def unbacked(
     rename silently breaks credit and a coincidental substring silently grants it -- so the report
     counts how many claims still rely on it, making the drift toward EXACT visible and pressurable.
     """
+    return tuple(i for i, _ in unbacked_reasons(items, backing=backing, root=root,
+                                                first_seen=first_seen))
+
+
+def backing_reason(
+    item: MinedItem,
+    *,
+    backing: Mapping[str, Sequence[str]],
+    root: Path | None = None,
+    first_seen: Mapping[str, float] | None = None,
+) -> str:
+    """WHY this claim could not be corroborated -- "" when it can.
+
+    A COUNT IS NOT A DIAGNOSIS, AND THESE TWO NEED OPPOSITE ACTIONS. `unbacked` reported a bare
+    tally, so a card whose citation was mis-typed and a card whose claim was simply untrue arrived
+    at the reader as one number. The first is fixed by correcting a string; the second must NEVER be
+    fixed by correcting a string -- that is laundering, and section 33 credits artifacts on disk
+    precisely to stop it. Measured 2026-08-05: 3 cards read as "no backing artifact", which looked
+    like three fabricated claims; two were malformed citations AND mis-dispositioned, and one was a
+    card whose own grade said "catalogued, NOT screened". Reporting the reason makes the difference
+    visible instead of leaving it to whoever picks the item up.
+    """
     base = root or Path()
-    out = []
-    for i in items:
-        if i.disposition not in _CLAIMS_ARTIFACT:
-            continue
-        if i.artifact:
-            path_s, anchor = _split_anchor(i.artifact)
+    if item.disposition not in _CLAIMS_ARTIFACT:
+        return ""
+    if item.artifact:
+        # Readings are ordered strongest-first; the FIRST one that resolves to a real file is the
+        # one judged. Its verdict is final -- a later reading may not rescue a claim whose named
+        # file exists but fails a check, or "anchor absent" would silently downgrade to a bare path.
+        why = ""
+        for path_s, anchor in _readings(item.artifact):
             p = base / path_s
             try:
-                ok = p.is_file() and p.stat().st_size > 0
-                # AN ANCHOR IS AN EXTRA ASSERTION, NEVER A DISCOUNT. `-> docs/graveyard.md
-                # `jp_bitflyer_direct_recording`` names WHICH entry, which is strictly better
-                # evidence than naming the file -- a 388-line graveyard is non-empty no matter
-                # what you failed to write in it. So the anchor must actually APPEAR in the file.
-                if ok and anchor:
-                    ok = anchor.lower() in p.read_text("utf-8", errors="ignore").lower()
-                # ...and it must POSTDATE the find. Exact was not enough: `-> pyproject.toml`
-                # named a real non-empty file and was credited, so any pre-existing file in the
-                # repo was a valid receipt for any claim. A file that has not been touched since
-                # before the discovery cannot be evidence OF that discovery. Doing the actual
-                # work satisfies this for free -- including a graveyard entry, which touches
-                # graveyard.md. Skipped when the find has no ledger history yet.
-                if ok and first_seen and i.name in first_seen:
-                    ok = p.stat().st_mtime > first_seen[i.name]
-                if ok:
+                if not p.exists():
+                    why = why or (f"path-not-found: {path_s!r} does not exist. If you meant to "
+                                  "name an entry INSIDE a file, the checked form is: path `anchor`")
                     continue
-            except OSError:
-                pass
-            out.append(i)
-            continue
-        n = i.name.lower()
-        cands = [b.lower() for b in backing.get(i.disposition, ()) if b]
-        if not any(b in n or n in b for b in cands):
-            out.append(i)
+                if not p.is_file():
+                    return f"path-not-a-file: {path_s!r} is a directory"
+                if p.stat().st_size == 0:
+                    return f"path-empty: {path_s!r} exists but is 0 bytes"
+                # AN ANCHOR IS AN EXTRA ASSERTION, NEVER A DISCOUNT. Naming WHICH entry is strictly
+                # better evidence than naming the file -- a 388-line graveyard is non-empty no
+                # matter what you failed to write in it -- so the anchor must APPEAR in the file.
+                if anchor and anchor.lower() not in p.read_text("utf-8", errors="ignore").lower():
+                    return f"anchor-absent: {path_s!r} does not contain {anchor!r}"
+                # ...and it must POSTDATE the find. Exact was not enough on its own:
+                # `-> pyproject.toml` named a real non-empty file and was credited, so any
+                # pre-existing file in the repo was a valid receipt for any claim. Doing the actual
+                # work satisfies this for free -- including a graveyard entry, which touches
+                # graveyard.md.
+                if (first_seen and item.name in first_seen
+                        and p.stat().st_mtime <= first_seen[item.name]):
+                    return (f"stale-evidence: {path_s!r} has not been modified since before this "
+                            "find was first carded, so it cannot be evidence OF it")
+            except OSError as exc:
+                return f"unreadable: {path_s!r} ({type(exc).__name__})"
+            return ""
+        return why
+    n = item.name.lower()
+    cands = [b.lower() for b in backing.get(item.disposition, ()) if b]
+    if not any(b in n or n in b for b in cands):
+        return ("no-artifact-named: no path was cited and no fuzzy name match was found. Name the "
+                "evidence explicitly: -> path `anchor`")
+    return ""
+
+
+def unbacked_reasons(
+    items: Iterable[MinedItem],
+    *,
+    backing: Mapping[str, Sequence[str]],
+    root: Path | None = None,
+    first_seen: Mapping[str, float] | None = None,
+) -> tuple[tuple[MinedItem, str], ...]:
+    """Every uncorroborated terminal claim paired with the reason it failed."""
+    out = []
+    for i in items:
+        why = backing_reason(i, backing=backing, root=root, first_seen=first_seen)
+        if why:
+            out.append((i, why))
     return tuple(out)
 
 
@@ -321,7 +402,8 @@ def conversion_report(
     backing = backing or {}
     bl = backlog(items, as_of=as_of)
     illegal = tuple(i for i in items if i.illegal_reason)
-    ub = unbacked(items, backing=backing, root=root, first_seen=first_seen)
+    ub_why = unbacked_reasons(items, backing=backing, root=root, first_seen=first_seen)
+    ub = tuple(i for i, _ in ub_why)
     fuzzy = fuzzy_credited(items)
     counts = {v: sum(1 for i in items if i.disposition == v and is_disposed(i, as_of=as_of))
               for v in LEGAL}
@@ -363,7 +445,12 @@ def conversion_report(
         kill_share=round(kill_share, 3), priority_inversion=inversion,
         backlog_names=tuple(f"T{i.tier} {i.name}" for i in bl[:max_shown]),
         illegal_names=tuple(f"{i.name} ({i.illegal_reason})" for i in illegal[:max_shown]),
-        unbacked_names=tuple(f"{i.name} [{i.disposition}]" for i in ub[:max_shown]),
+        # THE REASON TRAVELS WITH THE NAME. A bare tally cannot distinguish a mis-typed citation
+        # (fix the string) from an untrue claim (never fix the string -- that is laundering), and
+        # the reader is the one who has to choose. Measured 2026-08-05: 3 names looked like 3
+        # fabrications; two were malformed AND mis-dispositioned, one was a card whose own grade
+        # said "catalogued, NOT screened".
+        unbacked_names=tuple(f"{i.name} [{i.disposition}] -- {w}" for i, w in ub_why[:max_shown]),
         suspend_mining=suspend, verdict=verdict,
     )
 
