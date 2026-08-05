@@ -874,6 +874,77 @@ def _ranked() -> list[tuple[str, float]]:
     return sorted(cands, key=lambda x: -x[1])
 
 
+# -----------------------------------------------------------------------------------------
+# GAP #54 / R0096 -- THE VENUE CAP'S PRODUCTION INPUT. The cap, its constant and its 12 tests
+# have existed since 2026-07-29 and the branch was UNREACHABLE outside the suite: this file's
+# sole `risk_controls.evaluate` call omitted `venue_equity`, it defaulted to None, and the
+# breach branch is guarded by `if venue_equity and eq > 0`. A cap nothing feeds is not a cap.
+# -----------------------------------------------------------------------------------------
+_VENUE_FEED = Path("web/venue_equity.json")
+# The ONE counterparty this book is executed against. `binance_spot_testnet` and
+# `binance_testnet` are a spot account and a futures account AT THE SAME EXCHANGE, so for
+# counterparty purposes they are one venue, not two -- an FTX-class failure takes both
+# sub-accounts together. Naming them separately would halve every measured concentration
+# fraction and turn the cap into decoration.
+_VENUE = "binance-testnet"
+# Max age of the venue-truth feed. REUSED, not minted: it is the desk's own cadence floor for
+# this exact artifact (`run_cadence._FLOORS_S0["web/venue_equity.json"] = 1.0`), so the executor
+# and the pager agree on when this feed is dead instead of disagreeing by a private constant.
+_VENUE_FEED_MAX_AGE_H = 1.0
+
+
+def _venue_equity(equity: float) -> tuple[dict[str, float], str | None]:
+    """Per-venue equity map for the gap-#54 cap, plus an UNMEASURED note when the feed is dead.
+
+    NEVER RETURNS None OR AN EMPTY MAP -- that is the entire point of this function. Both
+    short-circuit `risk_controls.evaluate`'s breach branch, so an absent artifact would read
+    exactly like "no venue is over the cap": the failure mode this row exists to remove, arrived
+    at by a different route. Unknown is not zero (L1.41), and for a CONCENTRATION measurement
+    the honest unknown is the WORST case, so the degrade direction here is CONCENTRATED: every
+    dollar the executor can see is attributed to the single venue it is executed against. At any
+    cap below 1.0 a dead feed therefore PAUSES OPENS instead of waving them through, and the
+    note returned alongside is recorded in the decision's own reasons -- the same
+    quiet-but-recorded convention `fee_burn_triggers` already uses for an unmeasured input.
+
+    That fallback is not a pessimistic guess today, it is the literal truth: this book runs on
+    one venue, so 100% is where the money actually is. Which is also why nothing changes at
+    VENUE_CAP = 1.0 -- 100% is AT the cap, not over it, exactly as the one-venue cap intends.
+
+    The numerator is the caller's own `equity` -- the SAME combined-book ruler `evaluate`
+    divides by -- and deliberately NOT the feed's `equity` scalar, which measures the dead-man's
+    FUTURES scope ("fut margin + tracked spot legs + USDT delta"). Dividing one scope by the
+    other is the unit error scripts/claim_verifier.py records as a 175% phantom; here it would
+    manufacture a venue breach out of an accounting definition.
+
+    A REAL SPLIT IS HONOURED THE MOMENT ONE EXISTS. R0096 asks for a per-venue map; a `venues`
+    object of {venue: equity} in the feed is consumed verbatim, so the day the producer emits
+    one this executor needs no second edit and no second review.
+    """
+    # L1.44 contract: this is a decision-path read, and its fail direction is TIGHTEN (see
+    # above), so a stale feed leaves a stale_read record for the fence AND still constrains.
+    # R0159 EMPTY floor (min_rows=1): a truncated `{}` has a young mtime and would otherwise
+    # pass the age gate carrying no venue information at all.
+    fr = read_fresh(_VENUE_FEED, max_age_h=_VENUE_FEED_MAX_AGE_H, min_rows=1,
+                    caller="run_cashcarry_executor._venue_equity")
+    concentrated = {_VENUE: max(0.0, float(equity))}
+    if fr.fresh and isinstance(fr.data, dict):
+        split = fr.data.get("venues")
+        if isinstance(split, dict):
+            book: dict[str, float] = {}
+            for name, held in split.items():
+                if isinstance(held, int | float) and not isinstance(held, bool):
+                    book[str(name)] = max(0.0, float(held))
+            if book:
+                return book, None
+        # Scalar-only feed: today's publication, and NOT a failure -- one venue holds the whole
+        # book, which is precisely what `concentrated` says. Measured, so no note.
+        return concentrated, None
+    return (concentrated,
+            f"venue-split UNMEASURED ({fr.why}): {_VENUE_FEED} carries no readable per-venue "
+            f"map, so 100% of equity is attributed to {_VENUE} -- the worst case, never a "
+            f"waved-through 'no breach' (L1.41: unknown is not zero)")
+
+
 def _rebalance(top: int, hold_top: int, capital: float, *, dry: bool) -> dict[str, Any]:
     # Close-only mode (top=0, hold_top=0: the KILL/flatten path) needs no market ranks --
     # closing reads `pos`, not funding. Decoupled so the kill can execute during a public-
@@ -1041,9 +1112,33 @@ def _rebalance(top: int, hold_top: int, capital: float, *, dry: bool) -> dict[st
                         for s, p in pos.items())
             # Ruin rail: raw equity vs the ledgered inception (unchanged -- the signed way back
             # from a stop). Pause rail: the flow-adjusted pair. Two rails, two rulers, on purpose.
+            # GAP #54 / R0096 -- the venue cap's production input, previously omitted (so the
+            # breach branch short-circuited on every live tick). `_venue_equity` never returns
+            # None or {}: an unreadable feed degrades CONCENTRATED, never to "no map", because
+            # "no map" and "no breach" are the same value to `evaluate`.
+            venue_eq, venue_note = _venue_equity(eq_c)
             risk = risk_controls.evaluate(eq_c, start_eq, rail.peak, gross, ruin_cap_lev=8.0,
+                                          venue_equity=venue_eq,
                                           flow_adjusted_equity=rail.equity)
+            if venue_note is not None:
+                # Recorded in the DECISION, not just logged: `risk.to_dict()` is published into
+                # web/cashcarry_live.json every cycle, so a dead venue feed is visible to the
+                # dashboard and the alerting path instead of degrading in silence (L1.41).
+                risk.reasons.append(venue_note)
             state["last_risk_action"] = risk.action   # latches flatten into next tick's reconcile
+            # PER-VENUE PAUSE, NOT ONLY THE GLOBAL ONE (R0096 names this explicitly). `evaluate`
+            # does set pause_opens on a breach, but the executor must gate on the BREACHING
+            # VENUE it routes to rather than inherit a global verdict: on a multi-venue desk a
+            # breach at venue A must not blanket-stop opens at venue B, and a breach at the
+            # venue this book trades must stop opens HERE even if a future caller changes what
+            # the global action means. OPENS ONLY -- `target` is untouched, so a concentration
+            # breach can never force-close a carry (yanking capital off an exchange in a panic
+            # realises losses and converts a concentration problem into a solvency one).
+            state["venue_breaches"] = list(risk.venue_breaches)
+            if _VENUE in risk.venue_breaches:
+                cands = []
+                actions.append(f"VENUE-CAP {_VENUE}: over {risk_controls.VENUE_CAP:.0%} of "
+                               f"equity at one counterparty -- no new opens on this venue")
             if risk.action == "flatten":
                 target, cands = set(), []                   # close all, open nothing (survival)
                 actions.append("RISK-FLATTEN " + "; ".join(risk.reasons))
