@@ -47,7 +47,7 @@ def test_the_baseline_gate_is_skipped_not_passed_when_no_benchmark_is_supplied()
     rng = np.random.default_rng(0)
     m = rng.normal(0, 0.01, (400, 3))
     hyp = SimpleNamespace(failure_modes=["chop"])
-    v = validate(m[:, 0], hypothesis=hyp, n_trials=3,
+    v = validate(m[:, 0], hypothesis=hyp, periods_per_year=365.0, n_trials=3,
                  sharpe_estimates=np.zeros(3), returns_matrix=m)
     assert "beats_baselines" in v.unmeasured
 
@@ -114,7 +114,7 @@ def test_a_missing_stats_backend_skips_rather_than_passes(monkeypatch) -> None:
     rng = np.random.default_rng(1)
     m = rng.normal(0, 0.01, (400, 3))
     hyp = SimpleNamespace(failure_modes=["chop"], requires_stationarity=True)
-    v = validate(m[:, 0], hypothesis=hyp, n_trials=3,
+    v = validate(m[:, 0], hypothesis=hyp, periods_per_year=365.0, n_trials=3,
                  sharpe_estimates=np.zeros(3), returns_matrix=m)
     assert "stationary" not in v.gates
     assert "stationary" in v.unmeasured

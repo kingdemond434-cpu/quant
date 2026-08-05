@@ -17,6 +17,19 @@ import pytest
 from libs.research import source_health as sh
 
 _T0 = datetime(2026, 8, 1, 13, 0, tzinfo=UTC)
+#: Every read below is anchored HERE, not to the wall clock. These tests write ledger rows stamped
+#: _T0 and then read them back; reading with datetime.now() meant the gap between write and read
+#: grew by one real day per real day, so any assertion sensitive to that gap was a time-bomb
+#: waiting on the calendar rather than on anything the code does. Anchoring makes the gap a
+#: constant the test states.
+#:
+#: One hour after _T0, the fixture epoch -- NOT after each test's last write. Multi-day fixtures
+#: (`_run_days`) write out to _T0+4d, so those rows are read at a NEGATIVE age. That is harmless
+#: and deliberate: the staleness decay only touches HEALTHY, and every multi-day fixture here is
+#: building a DEGRADED or DEAD verdict. A single anchor cannot be both "just after a one-run
+#: fixture" and "just after a five-day one" without falling outside STALE_AFTER_HOURS for the
+#: first, and the one-run fixtures are precisely the staleness-sensitive ones.
+_READ = _T0 + timedelta(hours=1)
 
 
 def _fail(source: str = "zhihu", *, vantage: str = sh.VANTAGE_PROXIED) -> sh.Observation:
@@ -38,7 +51,7 @@ class TestDeadThreshold:
         p = tmp_path / "health.jsonl"
         n = sh.DEAD_AFTER_CONSECUTIVE_FAILURES
         _run_days(p, [_fail() for _ in range(n)])
-        st = sh.state_of("zhihu", p)
+        st = sh.state_of("zhihu", p, now=_READ)
         assert st.consecutive_failed_runs == n
         assert st.verdict == sh.VERDICT_DEAD
 
@@ -49,7 +62,7 @@ class TestDeadThreshold:
         p = tmp_path / "health.jsonl"
         n = sh.DEAD_AFTER_CONSECUTIVE_FAILURES
         _run_days(p, [_fail() for _ in range(n - 1)])
-        st = sh.state_of("zhihu", p)
+        st = sh.state_of("zhihu", p, now=_READ)
         assert st.consecutive_failed_runs == n - 1
         assert st.verdict == sh.VERDICT_DEGRADED
         assert not st.dead_here
@@ -57,14 +70,14 @@ class TestDeadThreshold:
     def test_first_failure_is_degraded_not_dead(self, tmp_path: Path) -> None:
         p = tmp_path / "health.jsonl"
         sh.record_run([_fail()], path=p, now=_T0)
-        assert sh.state_of("zhihu", p).verdict == sh.VERDICT_DEGRADED
+        assert sh.state_of("zhihu", p, now=_READ).verdict == sh.VERDICT_DEGRADED
 
     def test_single_failure_after_a_success_does_not_flip(self, tmp_path: Path) -> None:
         # A long healthy history followed by one bad day is a blip, and treating it as death
         # would be the churn the threshold exists to prevent.
         p = tmp_path / "health.jsonl"
         _run_days(p, [_ok() for _ in range(10)] + [_fail()])
-        st = sh.state_of("zhihu", p)
+        st = sh.state_of("zhihu", p, now=_READ)
         assert st.consecutive_failed_runs == 1
         assert st.verdict == sh.VERDICT_DEGRADED
 
@@ -72,7 +85,7 @@ class TestDeadThreshold:
         p = tmp_path / "health.jsonl"
         n = sh.DEAD_AFTER_CONSECUTIVE_FAILURES
         _run_days(p, [_fail() for _ in range(n - 1)] + [_ok()] + [_fail()])
-        st = sh.state_of("zhihu", p)
+        st = sh.state_of("zhihu", p, now=_READ)
         assert st.consecutive_failed_runs == 1
         assert st.verdict == sh.VERDICT_DEGRADED
         assert st.last_ok_utc is not None
@@ -82,13 +95,13 @@ class TestDeadThreshold:
         n = sh.DEAD_AFTER_CONSECUTIVE_FAILURES
         _run_days(p, [_fail("zhihu") for _ in range(n)])
         sh.record_run([_fail("csdn"), _ok("juejin")], path=p, now=_T0 + timedelta(days=99))
-        assert [s.source for s in sh.dead_sources(p)] == ["zhihu"]
+        assert [s.source for s in sh.dead_sources(p, now=_READ)] == ["zhihu"]
 
 
 class TestUnknownIsNotDead:
     def test_source_never_probed_is_unknown(self, tmp_path: Path) -> None:
         p = tmp_path / "health.jsonl"
-        st = sh.state_of("never_touched", p)
+        st = sh.state_of("never_touched", p, now=_READ)
         assert st.verdict == sh.VERDICT_UNKNOWN
         assert st.scope == sh.SCOPE_UNKNOWN
         assert not st.dead_here
@@ -98,7 +111,7 @@ class TestUnknownIsNotDead:
     def test_unknown_on_an_empty_ledger_with_other_sources_present(self, tmp_path: Path) -> None:
         p = tmp_path / "health.jsonl"
         _run_days(p, [_fail("zhihu") for _ in range(sh.DEAD_AFTER_CONSECUTIVE_FAILURES)])
-        assert sh.state_of("bigquant", p).verdict == sh.VERDICT_UNKNOWN
+        assert sh.state_of("bigquant", p, now=_READ).verdict == sh.VERDICT_UNKNOWN
 
     def test_verdict_for_refuses_to_score_an_unchecked_source(self) -> None:
         verdict, scope = sh.verdict_for(consecutive_failed_runs=99, last_checked_utc=None,
@@ -122,7 +135,7 @@ class TestBlockedHereIsNotDeadGlobally:
         p = tmp_path / "health.jsonl"
         n = sh.DEAD_AFTER_CONSECUTIVE_FAILURES
         _run_days(p, [_fail(vantage=sh.VANTAGE_PROXIED) for _ in range(n)])
-        st = sh.state_of("zhihu", p)
+        st = sh.state_of("zhihu", p, now=_READ)
         assert st.verdict == sh.VERDICT_DEAD
         assert st.scope == sh.SCOPE_THIS_VANTAGE
         assert st.dead_here
@@ -135,7 +148,7 @@ class TestBlockedHereIsNotDeadGlobally:
         obs = [_fail(vantage=sh.VANTAGE_PROXIED) for _ in range(n - 1)]
         obs.append(_fail(vantage=sh.VANTAGE_DIRECT))
         _run_days(p, obs)
-        st = sh.state_of("zhihu", p)
+        st = sh.state_of("zhihu", p, now=_READ)
         assert st.verdict == sh.VERDICT_DEAD
         assert st.scope == sh.SCOPE_GLOBAL
         assert st.dead_globally
@@ -146,7 +159,7 @@ class TestBlockedHereIsNotDeadGlobally:
         # the proxy's egress may be exactly what a geo/IP rule is letting through.
         p = tmp_path / "health.jsonl"
         sh.record_run([_ok("juejin", vantage=sh.VANTAGE_PROXIED)], path=p, now=_T0)
-        st = sh.state_of("juejin", p)
+        st = sh.state_of("juejin", p, now=_READ)
         assert st.verdict == sh.VERDICT_HEALTHY
         assert st.scope == sh.SCOPE_THIS_VANTAGE
 
@@ -172,7 +185,7 @@ class TestLedgerDurability:
             sh.record_run([_fail()], path=p, now=_T0.replace(hour=hour))
         lines = [ln for ln in p.read_text("utf-8").splitlines() if ln.strip()]
         assert len(lines) == 1
-        assert sh.state_of("zhihu", p).consecutive_failed_runs == 1
+        assert sh.state_of("zhihu", p, now=_READ).consecutive_failed_runs == 1
 
     def test_same_day_rerun_supersedes_only_that_source(self, tmp_path: Path) -> None:
         p = tmp_path / "health.jsonl"
@@ -181,7 +194,7 @@ class TestLedgerDurability:
         lines = [json.loads(ln) for ln in p.read_text("utf-8").splitlines() if ln.strip()]
         assert len(lines) == 2
         assert {r["source"] for r in lines} == {"zhihu", "csdn"}
-        assert sh.state_of("csdn", p).consecutive_failed_runs == 1
+        assert sh.state_of("csdn", p, now=_READ).consecutive_failed_runs == 1
 
     def test_one_source_observed_twice_in_one_run_writes_one_row(self, tmp_path: Path) -> None:
         # The invariant is one row per source per UTC day no matter who calls this; a caller that
@@ -190,12 +203,12 @@ class TestLedgerDurability:
         sh.record_run([_fail("zhihu"), _fail("zhihu")], path=p, now=_T0)
         lines = [ln for ln in p.read_text("utf-8").splitlines() if ln.strip()]
         assert len(lines) == 1
-        assert sh.state_of("zhihu", p).consecutive_failed_runs == 1
+        assert sh.state_of("zhihu", p, now=_READ).consecutive_failed_runs == 1
 
     def test_folding_uses_any_lane_up(self, tmp_path: Path) -> None:
         p = tmp_path / "health.jsonl"
         sh.record_run([_fail("juejin"), _ok("juejin")], path=p, now=_T0)
-        assert sh.state_of("juejin", p).verdict == sh.VERDICT_HEALTHY
+        assert sh.state_of("juejin", p, now=_READ).verdict == sh.VERDICT_HEALTHY
 
     def test_unparseable_lines_are_preserved(self, tmp_path: Path) -> None:
         # History is evidence. A line this parser cannot read may still be readable by a human,
@@ -214,7 +227,7 @@ class TestLedgerDurability:
     def test_timestamps_are_timezone_aware_utc(self, tmp_path: Path) -> None:
         p = tmp_path / "health.jsonl"
         sh.record_run([_ok()], path=p, now=_T0)
-        stamp = sh.state_of("zhihu", p).last_ok_utc
+        stamp = sh.state_of("zhihu", p, now=_READ).last_ok_utc
         assert stamp is not None
         assert datetime.fromisoformat(stamp).tzinfo is not None
 
@@ -232,14 +245,14 @@ class TestReplaced:
         st = sh.mark_replaced("zhihu", "wechat", path=p, now=_T0 + timedelta(days=30))
         assert st.verdict == sh.VERDICT_REPLACED
         assert st.replaced_by == "wechat"
-        assert sh.state_of("zhihu", p).verdict == sh.VERDICT_REPLACED
-        assert sh.dead_sources(p) == []   # replaced sources are no longer hunted
+        assert sh.state_of("zhihu", p, now=_READ).verdict == sh.VERDICT_REPLACED
+        assert sh.dead_sources(p, now=_READ) == []   # replaced sources are no longer hunted
 
     def test_replacement_survives_a_later_probe(self, tmp_path: Path) -> None:
         p = tmp_path / "health.jsonl"
         sh.mark_replaced("zhihu", "wechat", path=p, now=_T0)
         sh.record_run([_fail()], path=p, now=_T0 + timedelta(days=1))
-        assert sh.state_of("zhihu", p).replaced_by == "wechat"
+        assert sh.state_of("zhihu", p, now=_READ).replaced_by == "wechat"
 
 
 class TestObservationsFromMinerReport:
@@ -331,5 +344,129 @@ class TestObservationsFromMinerReport:
                "cn_article_discovered": {"juejin:量化": 20}}
         touched = sh.record_from_report(doc, path=p, now=_T0)
         assert set(touched) == {"zhihu", "juejin"}
-        assert sh.state_of("zhihu", p).verdict == sh.VERDICT_DEGRADED
-        assert sh.state_of("juejin", p).verdict == sh.VERDICT_HEALTHY
+        assert sh.state_of("zhihu", p, now=_READ).verdict == sh.VERDICT_DEGRADED
+        assert sh.state_of("juejin", p, now=_READ).verdict == sh.VERDICT_HEALTHY
+
+
+class TestAHealthyVerdictIsAClaimAboutThePresent:
+    """A source probed once, successfully, and then never probed again reported HEALTHY forever
+    (found 2026-08-05). The write side was honest -- it recorded what it saw -- and the read side
+    quoted that record as though it described today, with no one ever asking how old it was.
+
+    ``verdict_for`` already refused to score a source with ``last_checked_utc=None``, which closes
+    the NEVER-probed hole and leaves the STOPPED-BEING-probed one open. They are the same hole at
+    different ages, and only the first one had a test.
+
+    Why this is the expensive version of the bug: scripts/hunt_source_alternatives.py hunts
+    replacements for whatever ``dead_sources()`` returns, and a stale HEALTHY never enters that
+    list. So a lane that quietly stopped being probed is never hunted, never replaced, and never
+    reported -- miner breadth collapses with every artifact still showing green.
+    """
+
+    def _aged(self, path: Path, hours: float) -> sh.SourceState:
+        """One successful probe, then the clock moves on and nothing probes again."""
+        sh.record_run([_ok("zhihu")], path=path, now=_T0)
+        return sh.state_of("zhihu", path, now=_T0 + timedelta(hours=hours))
+
+    def test_a_fresh_success_is_healthy(self, tmp_path: Path) -> None:
+        st = self._aged(tmp_path / "h.jsonl", 1.0)
+        assert st.verdict == sh.VERDICT_HEALTHY, (
+            "a check that fires on the healthy case is a check that gets deleted")
+
+    def test_a_success_just_inside_the_window_is_still_healthy(self, tmp_path: Path) -> None:
+        st = self._aged(tmp_path / "h.jsonl", sh.STALE_AFTER_HOURS - 0.1)
+        assert st.verdict == sh.VERDICT_HEALTHY
+
+    def test_a_success_past_the_window_decays_to_unknown(self, tmp_path: Path) -> None:
+        st = self._aged(tmp_path / "h.jsonl", sh.STALE_AFTER_HOURS + 0.1)
+        assert st.verdict == sh.VERDICT_UNKNOWN
+        assert st.scope == sh.SCOPE_UNKNOWN, (
+            "an aged-out claim cannot keep the scope of the observation that is no longer current")
+
+    def test_the_decay_says_why_rather_than_just_changing_the_answer(self, tmp_path: Path) -> None:
+        st = self._aged(tmp_path / "h.jsonl", 500.0)
+        assert "STALE" in (st.last_error or "")
+        assert "not a failure" in (st.last_error or ""), (
+            "the reason must distinguish 'we stopped looking' from 'it broke' -- they have "
+            "different first moves and the operator must not have to guess which happened")
+
+    def test_a_stale_success_is_never_reported_as_dead(self, tmp_path: Path) -> None:
+        """The decay target is the load-bearing choice. An old success is the ABSENCE of recent
+        evidence, not evidence of failure; calling it DEAD would manufacture a failure nobody
+        observed and send the hunter chasing a source that may be perfectly fine."""
+        p = tmp_path / "h.jsonl"
+        st = self._aged(p, 10_000.0)
+        assert st.verdict != sh.VERDICT_DEAD
+        assert not st.dead_here
+        assert not sh.dead_sources(p, now=_T0 + timedelta(hours=10_000.0))
+
+    def test_a_dead_verdict_does_not_age_out(self, tmp_path: Path) -> None:
+        """The inverse error, and the more expensive one: ageing DEAD to UNKNOWN would drop the
+        source out of dead_sources() and silently CANCEL the alternatives hunt its failure
+        started -- while looking like the situation had improved."""
+        p = tmp_path / "h.jsonl"
+        _run_days(p, [_fail("zhihu") for _ in range(sh.DEAD_AFTER_CONSECUTIVE_FAILURES)])
+        late = _T0 + timedelta(days=400)
+        assert sh.state_of("zhihu", p, now=late).verdict == sh.VERDICT_DEAD
+        assert [s.source for s in sh.dead_sources(p, now=late)] == ["zhihu"]
+
+    def test_a_replaced_verdict_does_not_age_out(self, tmp_path: Path) -> None:
+        """A replacement is a desk DECISION, not an observation, so it does not decay with the
+        clock -- there is no probe whose absence makes it less true."""
+        p = tmp_path / "h.jsonl"
+        sh.record_run([_ok("zhihu")], path=p, now=_T0)
+        sh.mark_replaced("zhihu", "bigquant", path=p, now=_T0)
+        assert sh.state_of("zhihu", p, now=_T0 + timedelta(days=400)).verdict == sh.VERDICT_REPLACED
+
+    def test_a_healthy_row_with_an_unreadable_date_decays(self, tmp_path: Path) -> None:
+        """The sharpest form of the bug, not an edge case: a claim of health carrying no readable
+        date can NEVER be shown to be old, so exempting it would leave the original defect intact
+        for exactly the rows least able to justify themselves."""
+        p = tmp_path / "h.jsonl"
+        sh.record_run([_ok("zhihu")], path=p, now=_T0)
+        rows = [json.loads(ln) for ln in p.read_text("utf-8").splitlines() if ln.strip()]
+        rows[-1]["last_checked_utc"] = "not a date"
+        p.write_text("\n".join(json.dumps(r) for r in rows) + "\n", "utf-8")
+        st = sh.state_of("zhihu", p, now=_T0 + timedelta(hours=1))
+        assert st.verdict == sh.VERDICT_UNKNOWN
+        assert "no readable check timestamp" in (st.last_error or "")
+
+    def test_age_hours_reports_none_rather_than_zero_when_undatable(self) -> None:
+        """None must never collapse to 0.0. A row that cannot prove its age reading as 'fresh' is
+        the precise shape of the whole defect."""
+        assert sh.SourceState(source="x").age_hours(now=_T0) is None
+        assert sh.SourceState(source="x", last_checked_utc="garbage").age_hours(now=_T0) is None
+
+    def test_age_hours_measures_real_elapsed_time(self, tmp_path: Path) -> None:
+        p = tmp_path / "h.jsonl"
+        sh.record_run([_ok("zhihu")], path=p, now=_T0)
+        raw = sh.load_states(p, stale_after_h=float("inf"))["zhihu"]
+        assert raw.age_hours(now=_T0 + timedelta(hours=30)) == pytest.approx(30.0, abs=0.02)
+
+    def test_raw_rows_remain_reachable_but_only_on_purpose(self, tmp_path: Path) -> None:
+        """An escape hatch must exist -- forensics needs the stored row -- but it must be TYPED,
+        never the default, or the defect returns through the convenient path."""
+        p = tmp_path / "h.jsonl"
+        sh.record_run([_ok("zhihu")], path=p, now=_T0)
+        late = _T0 + timedelta(days=400)
+        assert sh.load_states(p, now=late)["zhihu"].verdict == sh.VERDICT_UNKNOWN
+        assert sh.load_states(p, now=late,
+                              stale_after_h=float("inf"))["zhihu"].verdict == sh.VERDICT_HEALTHY
+
+    def test_unproven_lists_the_lanes_nothing_else_was_responsible_for(self,
+                                                                      tmp_path: Path) -> None:
+        """dead_sources() answers 'what failed'. A lane that stopped being probed never fails, so
+        before this it appeared in no list at all and no organ owned it."""
+        p = tmp_path / "h.jsonl"
+        sh.record_run([_ok("zhihu"), _ok("bigquant")], path=p, now=_T0)
+        sh.record_run([_ok("bigquant")], path=p, now=_T0 + timedelta(days=30))
+        # 31 days after T0: zhihu's evidence is 31d old, bigquant's is 1d old.
+        names = [s.source for s in sh.unproven_sources(p, now=_T0 + timedelta(days=31))]
+        assert names == ["zhihu"], f"expected only the un-reprobed lane, got {names}"
+
+    def test_unproven_is_ordered_weakest_evidence_first(self, tmp_path: Path) -> None:
+        p = tmp_path / "h.jsonl"
+        sh.record_run([_ok("older")], path=p, now=_T0)
+        sh.record_run([_ok("newer")], path=p, now=_T0 + timedelta(days=5))
+        names = [s.source for s in sh.unproven_sources(p, now=_T0 + timedelta(days=40))]
+        assert names == ["older", "newer"], "oldest evidence must sort first"

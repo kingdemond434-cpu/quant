@@ -56,6 +56,10 @@ dev = [
     "mypy>=2.1.0,<3",
     "pytest>=9.1.0,<10",
     "pytest-cov>=7.1.0,<8",
+    # NOT optional: `timeout` in [tool.pytest.ini_options] is an unknown ini key without it, and
+    # an unrecognised key is a warning rather than an error -- so a box missing this plugin would
+    # silently run the suite UNBOUNDED again, which is the exact failure the timeout exists to end.
+    "pytest-timeout>=2.4.0,<3",
     "hypothesis>=6.155.2,<7",
     "types-PyYAML>=6.0",
     "pre-commit>=3.7",
@@ -217,6 +221,26 @@ testpaths = ["tests"]
 # vs tests/factory/test_registry.py) without __init__.py churn or basename collisions.
 addopts = "-ra -q --strict-markers --import-mode=importlib"
 filterwarnings = ["error"]
+# A HANG MUST BE A FAILURE, NOT A WAIT.
+#
+# Until 2026-08-05 nothing in this repository bounded a test's runtime, and the consequence was
+# not theoretical: a whole-repo `pytest` run stalls in tests/scripts on a socket read (20 threads
+# sleeping, network-bound), and ops/deploy_vps.sh gates a live deploy on exactly that command with
+# no timeout of its own. On a box whose egress is filtered -- which is the VPS's normal condition,
+# and the reason five diggers sit credit-blocked -- the deploy does not fail. It waits, forever,
+# looking like a slow but healthy gate. Nobody is paged by a process that is still running.
+#
+# The number is deliberately generous. This is a ruin rail, not a performance budget: it exists to
+# convert "hung" into "named failing test", and a bound so tight that honest Monte Carlo and
+# hypothesis campaigns trip it would be promptly raised or deleted by whoever it inconvenienced.
+# A genuinely slow test states its own cost with @pytest.mark.timeout(N) rather than relaxing the
+# floor for everything -- the ratchet rule: one test's need is never the whole suite's licence.
+#
+# signal (SIGALRM) rather than the thread method on purpose: it interrupts a blocking syscall and
+# gives the offending test's own traceback. The thread method cannot, and would report the hang
+# without saying where -- which is most of the diagnostic value.
+timeout = 300
+timeout_method = "signal"
 
 [tool.coverage.run]
 source = ["libs"]

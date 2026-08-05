@@ -15,6 +15,7 @@ from libs.autodiscovery.crypto_adapter import (
 )
 from libs.autodiscovery.models import Family
 from libs.autodiscovery.orchestrator import AutoDiscoveryLab
+from libs.data.timeframe import Timeframe
 from libs.store.connection import Database
 
 
@@ -43,7 +44,8 @@ def test_default_families_include_crypto_native_liquidity() -> None:
 
 
 def test_web_payload_shape_on_noise(db: Database) -> None:
-    lab = AutoDiscoveryLab(db, noise_provider(), cost_provider=lambda _s: COST_PER_SIDE)
+    lab = AutoDiscoveryLab(db, noise_provider(), bar=Timeframe.D1,
+                          cost_provider=lambda _s: COST_PER_SIDE)
     result = lab.cycle(["AAAUSDT", "BBBUSDT"])
     payload = web_payload(lab.store, result, timeframe="D1")
     assert payload["timeframe"] == "D1"

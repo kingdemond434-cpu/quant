@@ -1,0 +1,12 @@
+{
+ "_": "DELIBERATE RETIREMENT of a prompt invariant. This file is the ONLY way an invariant recorded in PROMPT_RATCHET.json may stop being required, and it exists because a rule CAN become genuinely wrong -- the scam pre-filter was struck from every miner prompt on 2026-08-01 by the principal, on the argument that a filter's false negatives are structurally invisible, and that was a real improvement. A ratchet with no exit would have blocked it or, worse, been deleted for being in the way. What the exit may NOT be is cheap: editing a prompt's prose retires nothing at all, it just turns scripts/check_prompt_ratchet.py red. Retirement costs one hand-written, dated, signed, argued line here -- a reviewable act, the same discipline CONSTITUTION_RATCHET.json applies to weakening a principle.",
+ "how": {
+  "file": "the governed prompt this retires the rule FROM, repo-relative; or \"*\" to retire it corpus-wide when the rule became wrong everywhere rather than in one seat",
+  "invariant": "the id from libs/doctrine/prompt_ratchet.INVARIANTS",
+  "retired": "ISO date, YYYY-MM-DD -- when the decision was made, not when it was typed",
+  "by": "who decided. A retirement is somebody's judgement, not the file's",
+  "reason": "at least 40 chars saying WHY the rule became wrong. Not why it is inconvenient -- 'we shortened the prompt' is the thing this file exists to refuse"
+ },
+ "note": "A malformed entry is FAIL-CLOSED: it retires nothing AND the check exits 2. A typo must never be the cheapest way to disable a rule.",
+ "waivers": []
+}

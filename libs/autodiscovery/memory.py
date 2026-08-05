@@ -113,8 +113,14 @@ class CandidateSeries:
     """The evidence to persist alongside a candidate's scalar verdict, in ONE transaction.
 
     ``epoch_key`` names the bar grid ``net``/``stressed`` were computed on (see :func:`bar_epoch`);
-    ``timeframe`` is the bar interval when the caller knows it and ``None`` when it does not — the
-    lab's ``MarketSeries`` carries no interval field, so it records NULL rather than a guess.
+    ``timeframe`` is the bar interval when the caller knows it and ``None`` when it does not.
+
+    THE LAB NOW KNOWS IT (R0086, 2026-08-05). This used to read "the lab's ``MarketSeries`` carries
+    no interval field, so it records NULL rather than a guess" — true at the time, and the same
+    hole that let ``validate()`` annualise every series with an hourly constant.
+    ``AutoDiscoveryLab`` takes a required ``bar`` and passes it here, so a NULL timeframe on a
+    lab-written row now means the row PREDATES that fix and its ``annual_sharpe`` is inflated
+    (4.135x on daily bars). See the module docstring of ``libs/autodiscovery/validation.py``.
     """
 
     net: np.ndarray

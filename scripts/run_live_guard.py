@@ -169,7 +169,7 @@ def _canary(venue: Any, now: float) -> tuple[canary_mod.CanaryState, str]:
 
 
 def _ramp(now: float) -> tuple[float, str, dict[str, bool], Inputs]:
-    """The size ladder, AND the provenance of the evidence it was decided on (L1.54).
+    """The size ladder, AND the provenance of the evidence it was decided on (L1.55).
 
     `data/ramp_state.json` has never existed on this box -- `run_cost_identification.py` is its
     only producer and has never published. The old `_load(_RAMP, {})` returned its default for
@@ -252,7 +252,7 @@ def main() -> int:
     # promotion is EVALUATED and REPORTED only. principal_signoff is a human act; this script
     # reads the flag and never writes it, so a green gate here is a prompt for the principal,
     # not a transition.
-    # THE SAME ABSENT FILE FEEDS THE PROMOTION GATE (L1.54). A green S1 gate writes a
+    # THE SAME ABSENT FILE FEEDS THE PROMOTION GATE (L1.55). A green S1 gate writes a
     # principal-action file telling a human the preconditions for LIVE CAPITAL are met, so the
     # provenance of the evidence behind it is published beside the verdict and never assumed.
     promo_inp = Inputs("run_live_guard.promo_evidence")
@@ -328,7 +328,7 @@ def main() -> int:
                               "path and is deliberately skipped while the connector is unarmed, "
                               "so it can never clear here. Binds in full the moment S1 arms."),
                    "consecutive_failures": can.consecutive_failures, "note": canary_note},
-        # L1.54: the numbers AND where they came from. `checks` is None -- not six `false`
+        # L1.55: the numbers AND where they came from. `checks` is None -- not six `false`
         # values -- when the evidence file is absent, because an unevaluated condition rendered
         # as a failed one is the fabrication this law exists to stop. check_idle_cost reads
         # `why` as this clamp's lifting condition, so the absence has to reach it in words.

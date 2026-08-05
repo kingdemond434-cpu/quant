@@ -130,6 +130,7 @@ def _validate(name: str, r: np.ndarray, matrix: np.ndarray, sharpes: np.ndarray,
     v = validate(active, hypothesis=Hypothesis(
         family=_FAMILY.get(name, Family.CARRY), subtype=name, symbol="CRYPTO", params={},
         mechanism=MechanismType.RISK_PREMIUM, edge_source=name, failure_modes=_FAIL),
+        periods_per_year=_PPY,            # D1 crypto bars, 24/7 (R0086)
         n_trials=matrix.shape[1], sharpe_estimates=sharpes, returns_matrix=matrix,
         campaign=campaign, column=column)
     return {"sleeve": name, "ann_sharpe": _ann(r), "survived": bool(v.survived),

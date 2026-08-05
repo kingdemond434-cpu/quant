@@ -120,7 +120,8 @@ def main() -> None:
             family=Family.CARRY, subtype=name, symbol="MT5_CRYPTO_CFD", params={},
             mechanism=MechanismType.RISK_PREMIUM,
             edge_source="Binance funding signal -> MT5 crypto-CFD price (financed)",
-            failure_modes=_FAIL), n_trials=len(variants), sharpe_estimates=sharpes,
+            failure_modes=_FAIL), periods_per_year=_PPY,   # D1 bars, 365/yr (R0086)
+            n_trials=len(variants), sharpe_estimates=sharpes,
             returns_matrix=matrix, campaign=campaign, column=col)
             if len(active) >= 250 else None)
         survived = bool(v.survived) if v else False

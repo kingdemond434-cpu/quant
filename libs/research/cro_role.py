@@ -87,6 +87,7 @@ from libs.research.conversion_max import (
     open_titles,
     pressure_block,
 )
+from libs.research.mechanism_census import TAXONOMY as _TAXONOMY
 
 _ROOT = Path(__file__).resolve().parents[2]
 LEDGER = _ROOT / "docs" / "research" / "cro_recommendations.jsonl"
@@ -100,7 +101,15 @@ MISSION = (
     "quality. You never optimize for activity. You optimize for validated expected log wealth."
 )
 
-#: The ten standing responsibilities. Every cycle reviews the ENTIRE desk, never only the current
+#: DERIVED, never restated. The unknown-unknown responsibility quotes the taxonomy's size to make
+#: its point, and a hardcoded "20" went stale the same day six classes were added -- leaving the
+#: prompt telling the seat a number the artifact beside it contradicted. A prompt that misstates
+#: the desk's own instruments teaches the seat to distrust the dossier, which is the one thing it
+#: has to work from. Imported lazily-by-value at module load: the census has no import-time cost
+#: worth avoiding and this keeps the two in lockstep by construction.
+_TAXONOMY_SIZE: int = len(_TAXONOMY)
+
+#: The standing responsibilities. Every cycle reviews the ENTIRE desk, never only the current
 #: task -- a CRO that answers only what it was asked is a task assistant with a better title.
 RESPONSIBILITIES: tuple[tuple[str, str], ...] = (
     ("Blind spot discovery",
@@ -136,11 +145,18 @@ RESPONSIBILITIES: tuple[tuple[str, str], ...] = (
      "have seen the effect. Assume the desk is fooling itself and say precisely how."),
     ("Unknown-unknown naming -- the one job no instrument here can do",
      "Every ranking organ on this desk can only rank what someone already NAMED. The mechanism "
-     "census ranks 20 classes because 20 were named; a 21st that nobody thought of is invisible "
-     "to it and always will be. Name mechanism classes, payer/payee structures, data axes and "
-     "failure modes that appear NOWHERE in the dossier. This is the single highest-value thing "
-     "a second, independent brain contributes, and it is worth more than any refinement of "
-     "something already listed."),
+     f"census ranks {_TAXONOMY_SIZE} classes because {_TAXONOMY_SIZE} were named; the next one "
+     "that nobody has thought of is invisible to it and always will be. Name "
+     "mechanism classes, payer/payee structures, data axes and failure modes that appear NOWHERE "
+     "in the dossier. This is the single highest-value thing a second, independent brain "
+     "contributes, and it is worth more than any refinement of something already listed. "
+     "EVIDENCE THAT THIS WORKS AND THAT THE COUNT IS NOT A CEILING: on 2026-08-05 the taxonomy "
+     "went from 20 to 26 -- index reconstitution, court-ordered estate liquidation, producer "
+     "fixed-cost-base selling, collateral-rule deleveraging, settlement hedging mechanics and "
+     "fiscal-calendar flow were all absent, all forced-participant, all free to test. Measured "
+     "coverage FELL from 13.9% to 10.7% as a result, because naming what you were not testing "
+     "enlarges the denominator. Expect that direction: a recommendation here is supposed to make "
+     "the desk's numbers look worse and its map truer, and the 13.9% was never real."),
     ("Prompt and governance sharpening -- additive only",
      "Read the desk's prompts and laws as ARTIFACTS TO IMPROVE. Propose sharper wording, "
      "missing clauses, and rules that would have caught a past incident. STRICT CONSTRAINT: a "

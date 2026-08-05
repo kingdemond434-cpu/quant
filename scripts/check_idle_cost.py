@@ -135,7 +135,7 @@ def _clamps(root: Path, floor_annual: float | None, idle_usd: float,
     def add(name: str, live: bool, since: str | None, holds: float | None, lifting: str,
             kind: str, note: str = "", *, unmeasured: bool = False) -> None:
         # `unmeasured` exists because `live=False` DELETES the row, and a clamp whose input could
-        # not be read is not an absent clamp -- it is an unknown one (L1.54). holds_usd stays None
+        # not be read is not an absent clamp -- it is an unknown one (L1.55). holds_usd stays None
         # rather than 0.0: a zero holding prices the clamp as FREE, which is the one direction
         # L1.51 forbids ("an unmeasured floor is NEVER 0%").
         if not live and not unmeasured:
@@ -197,7 +197,7 @@ def _clamps(root: Path, floor_annual: float | None, idle_usd: float,
         f"the drawdown ratio it keys on cannot recover on its own.")
 
     # --- Live-guard ladder and ramp -----------------------------------------------------------
-    # L1.54: an UNREADABLE live_guard.json used to ERASE both clamps below rather than unmeasure
+    # L1.55: an UNREADABLE live_guard.json used to ERASE both clamps below rather than unmeasure
     # them -- `entries_allowed` defaulted True (so `not True` = "no ladder clamp") and `frac`
     # defaulted 1.0 ("no ramp clamp"). Both are the loosening direction inside the fence built to
     # price the cost of caution, so a dead guard read as a FREER desk than a live one. The
@@ -219,7 +219,7 @@ def _clamps(root: Path, floor_annual: float | None, idle_usd: float,
         add("guard_clamps", False, None, None,
             f"{lg_inp.why()} -- the ladder and ramp clamps cannot be priced until "
             f"data/live_guard.json is readable (producer: scripts/run_live_guard.py)",
-            "gate", "ladder and ramp state UNKNOWN -- not zero (L1.54)", unmeasured=True)
+            "gate", "ladder and ramp state UNKNOWN -- not zero (L1.55)", unmeasured=True)
     else:
         add("guard_ladder_" + str(ladder.get("rung") or "unknown"),
             not ladder.get("entries_allowed", True), ladder_since, idle_usd,

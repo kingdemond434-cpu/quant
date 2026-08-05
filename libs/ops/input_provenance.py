@@ -1,4 +1,4 @@
-"""TRANSITIVE FRESHNESS (L1.54) -- an artifact is only as measured as the inputs it was built from.
+"""TRANSITIVE FRESHNESS (L1.55) -- an artifact is only as measured as the inputs it was built from.
 
 THE CLASS THIS CLOSES, AND WHY THE FRESHNESS LAYER COULD NOT SEE IT. L1.44 put a max-age
 contract at every decision-path READ, which answers "is the file I am reading current?" -- one

@@ -104,7 +104,8 @@ def main() -> None:
             family=Family.CROSS_ASSET, subtype="trend+momentum combo", symbol="MT5_XASSET",
             params={}, mechanism=MechanismType.RISK_PREMIUM,
             edge_source="cross-asset trend + x-sec momentum (equal risk, costed)",
-            failure_modes=_FAIL), n_trials=3, sharpe_estimates=sharpes,
+            failure_modes=_FAIL), periods_per_year=_PPY,   # D1 MT5 session bars, 252/yr (R0086)
+        n_trials=3, sharpe_estimates=sharpes,
         returns_matrix=matrix, campaign=campaign, column=2)  # r_combo = matrix column 2
 
     # Forward shadow split

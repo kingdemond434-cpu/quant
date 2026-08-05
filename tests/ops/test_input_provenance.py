@@ -1,4 +1,4 @@
-"""Tests for the transitive-freshness recorder (L1.54).
+"""Tests for the transitive-freshness recorder (L1.55).
 
 THE DISTINCTIONS ARE THE PRODUCT. This module exists because `_load(path, default)` collapsed
 four different situations -- read it, read something old, the file is missing, the file is

@@ -186,6 +186,9 @@ def _cross_sectional_t(x: np.ndarray) -> float:
     sd = float(np.std(x, ddof=1))
     if sd <= 1e-12 or not np.isfinite(sd):
         return 0.0
+    # float() wraps the WHOLE quotient, not just the numerator: np.sqrt(n) is a numpy scalar, so
+    # the division returns np.float64 and the declared `-> float` was satisfied only by the
+    # coincidence that np.float64 subclasses float.
     return float(np.mean(x) / (sd / np.sqrt(n)))
 
 

@@ -32,6 +32,7 @@ from libs.validation.economic_prior import MechanismType
 _CRYPTO = Path("data/lake/bronze/crypto")
 _OUT = Path("reports/xsec_funding_max")
 _MIN_NAMES = 12
+_PPY = 365.0               # D1 crypto bars; perps trade 24/7 (R0086)
 _FAIL = ["funding dispersion compresses", "liquidity/borrow constraints",
          "correlated crypto crash", "edge decay"]
 
@@ -79,7 +80,8 @@ def main() -> None:
         v = validate(active, hypothesis=Hypothesis(
             family=Family.CARRY, subtype=f"xsec_max_{name}", symbol="CRYPTO_XSEC", params={},
             mechanism=MechanismType.RISK_PREMIUM, edge_source="x-sec funding (risk-parity, costed)",
-            failure_modes=_FAIL), n_trials=len(series), sharpe_estimates=sharpes,
+            failure_modes=_FAIL), periods_per_year=_PPY,   # D1 crypto bars, 24/7 (R0086)
+            n_trials=len(series), sharpe_estimates=sharpes,
             returns_matrix=matrix, campaign=campaign, column=col,
             # REAL PER-SYMBOL ADV (R0080). This script already measured dollar ADV per name at
             # _panels() and fed it to the return model, then called validate() without it -- so
@@ -90,7 +92,7 @@ def main() -> None:
             adv_usd=float(sum(adv.values())) or None) if len(active) >= 250 else None
         survived = bool(v.survived) if v else False
         survivors += int(survived)
-        ann = round(float(spr) * np.sqrt(365), 2)
+        ann = round(float(spr) * np.sqrt(_PPY), 2)
         results.append({"variant": name, "days": len(active),
                         "ann_sharpe": ann, "survived": survived,
                         "reason": v.rejection_reason if v else "n<250"})

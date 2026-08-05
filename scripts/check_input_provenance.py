@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""TRANSITIVE FRESHNESS FENCE (L1.54) -- is a decision-path artifact's own input on record?
+"""TRANSITIVE FRESHNESS FENCE (L1.55) -- is a decision-path artifact's own input on record?
 
 WHAT THIS ASKS THAT check_freshness DOES NOT. L1.44 asks "is the file I am reading current?" --
 one hop, and only about AGE. It cannot see one level down: whether the producer of that file was
@@ -181,7 +181,7 @@ def build() -> dict[str, Any]:
 
     return {
         "generated": datetime.now(tz=UTC).isoformat(),
-        "law": "L1.54",
+        "law": "L1.55",
         "status": status,
         "n_consumed": len(rows),
         "n_examinable": len(examinable),
@@ -209,7 +209,7 @@ def main() -> int:
         print(json.dumps(rep, indent=2))
     else:
         cov = "n/a" if rep["coverage"] is None else f"{rep['coverage']:.0%}"
-        print(f"input provenance (L1.54): {rep['status']} -- {rep['n_consumed']} consumed, "
+        print(f"input provenance (L1.55): {rep['status']} -- {rep['n_consumed']} consumed, "
               f"coverage {cov}")
         for r in rep["artifacts"]:
             if r["verdict"] != "DECLARED":

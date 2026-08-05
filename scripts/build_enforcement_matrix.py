@@ -170,7 +170,16 @@ _MAP: dict[str, list[str]] = {
     # L1.44: consumption-time freshness -- every decision-path read declares its max tolerated
     # age at the read site; the fence fails on STALE-CONSUMED (a live decision steered by a
     # frozen input) and on UNWIRED (a bootstrap contract deleted from the executor/alerts).
-    "L1.44": ["scripts/check_freshness.py", "libs/ops/fresh.py"],
+    # L1.44's own class, found four more times on 2026-08-05 and all in the same direction: a
+    # state artifact whose AGE nobody checked, where staleness therefore read as health. The CI
+    # marker (a wedged run_ci holds the lock, every later run exits 0 "skipping", the marker
+    # freezes at ok=true and max_audit only ever raised on ok=false); the alert canary (a canary
+    # that dies after a clean run leaves no silence flag, so the pager scored 10/10 for ever);
+    # and source_health (a lane probed once successfully and never again read HEALTHY, so the
+    # alternatives hunter never hunted it). Every one is a producer-side "did it run?" question
+    # that no CONSUMER was asking -- which is precisely what this law was written for.
+    "L1.44": ["scripts/check_freshness.py", "libs/ops/fresh.py", "check_ci_gate",
+              "libs/research/source_health.py:stale_verdict"],
     # L1.45: execution excitation. Every other fence walks NODES and EDGES; this one looks for a
     # CYCLE (traded -> recorded -> measured -> cheap -> traded) and for exclusions with no path
     # back. It also owns the producer for the three ramp_gate step-up conditions that had none.
@@ -223,11 +232,35 @@ _MAP: dict[str, list[str]] = {
     # `_capital()`'s numerator was the first rung inside its own denominator.
     "L1.51": ["scripts/check_idle_cost.py", "libs/research/idle_yield.py",
               "scripts/check_utilisation.py"],
+    # L1.52: the unknown-unknown hunt reports its OWN health. check_self_sufficiency is the fence
+    # AND was the proving instance -- it returned silently on an absent ledger, so skipping the
+    # L2.5 logging duty switched off the check on that duty. blind_spot.py is the writer that
+    # makes the metric exist at all; the alternatives hunter is the arm that acts on a lane going
+    # dark, including one that merely stopped being probed rather than failing outright.
+    "L1.52": ["check_self_sufficiency", "scripts/blind_spot.py",
+              "scripts/hunt_source_alternatives.py",
+              "libs/research/source_health.py:unproven_sources",
+              "scripts/blindspot_max.py", "scripts/blindspot_prober.py"],
+    # L1.53: conversion measured against ARRIVALS, and the denominator fenced separately so the
+    # ratio cannot be improved by finding less. Both halves live in the one fence, deliberately
+    # as two statuses -- DEBT-GROWING (convert faster) and ARRIVALS-COLLAPSED (find harder).
+    "L1.53": ["scripts/check_conversion.py",
+              "tests/governance/test_conversion_fence.py"],
+    # L1.54: a shut door is a routing problem. kimi_hunter is both the fence and the proving
+    # instance -- its MODEL_CHAIN, per-wave failure isolation and BLOCKED artifact are the law in
+    # code. source_alternatives + the hunter are the same rule for data sources: a registered
+    # substitute BEFORE the outage, and source_health's unproven_sources is what notices a lane
+    # that went quiet without ever failing.
+    "L1.54": ["scripts/kimi_hunter.py", "libs/research/source_alternatives.py",
+              "scripts/hunt_source_alternatives.py",
+              "libs/research/source_health.py:unproven_sources",
+              "tests/scripts/test_kimi_hunter_no_giving_up.py",
+              "scripts/check_llm_routing.py", "libs/ops/llm_route.py"],
     # L1.44 asks "is the file I am reading current?" -- one hop, age only. It cannot ask whether
     # the PRODUCER of that file could read ITS inputs, so run_live_guard published a ladder
     # constant and six never-evaluated conditions as a measurement, from a path that has never
     # existed, and every gate in the chain reported green. Freshness does not compose.
-    "L1.54": ["scripts/check_input_provenance.py", "libs/ops/input_provenance.py",
+    "L1.55": ["scripts/check_input_provenance.py", "libs/ops/input_provenance.py",
               "scripts/run_live_guard.py"],
     # R0123 decline grading: L1.29 says an ungraded prediction is a BELIEF that inflates the
     # apparent hit-rate by never counting its misses -- and a sleeve scored only on the trades it

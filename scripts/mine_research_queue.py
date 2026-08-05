@@ -40,7 +40,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from libs.data import bilibili, cn_sources, papers
+from libs.data import bilibili, cn_sources, foreign_sources, papers
 from libs.research import conversion_ledger, source_health
 from libs.research.video_triage import SURFACE_THRESHOLD, score_title, triage
 
@@ -196,13 +196,71 @@ BILIBILI_QUERIES = (
     # practitioner framing
     "量化 实盘 复盘",
     "私募 量化 研究",
+    # 24 -> 34 (2026-08-05), and the WIDENING lever was chosen off the yield ratio rather than
+    # argued. Measured on like-for-like dedicated 4-page runs six hours apart: 0.1135 -> 0.0223, a
+    # 5.1x fall, while the seen-ledger went 1,443 -> 3,018. That is SATURATION OF A FIXED QUERY
+    # SET, not a dying source: 24 queries x 4 pages re-reads the same ~950 videos every run, so
+    # once the ledger has them the yield decays to the publication rate of that corpus and nothing
+    # else. Only two levers move it -- new TERRITORY or more time between runs -- and this is the
+    # first. Territory again, never synonyms: every line below names a subject none of the 24
+    # above can return, so it reaches videos the sweep has literally never fetched.
+    "订单簿 深度 分析",            # order-book depth -- the desk records L2 and never searched it
+    "滑点 冲击成本 实测",          # measured slippage / impact cost
+    "资金费率 套利 实盘",          # funding arb, LIVE results rather than backtests
+    "跨交易所 价差 套利",          # cross-venue spread
+    "爆仓 清算 数据 分析",         # liquidation-cascade data work
+    "链上 数据 交易 策略",         # on-chain driven strategies
+    "矿工 抛压 链上 指标",         # miner sell pressure -- the treasury_cost_base class
+    "期现 基差 收敛 交易",         # basis convergence
+    "波动率 择时 模型",            # vol timing
+    "回测 幸存者偏差",             # survivorship bias -- VALIDATION register
 )
 
+# 4 -> 22 (2026-08-05). THE HIGHEST-YIELDING FAMILY HAD THE NARROWEST SWEEP, which is exactly
+# backwards. Bilibili carried 24 queries while the ARTICLE sources carried 4 -- and on 2026-08-05
+# WeChat/Juejin supplied 3 of the 5 new rows INCLUDING THE TOP THREE BY SCORE (18.0/13.0/9.0).
+# Article sources also carry what video cannot: a procedure written down, which is the form the
+# desk's own conversion record says actually converts.
+#
+# WIDTH HERE IS TERRITORY, NOT SYNONYMS. Four rephrasings of "quant backtest" return one forest
+# four times; each line below is a DIFFERENT economic or operational subject, chosen so a single
+# platform's SEO cluster cannot satisfy several at once. The order runs from the desk's confirmed
+# edge outward toward material it has never indexed.
+#
+# PACED, because breadth that kills a lane is not breadth. Sogou rate-limits hard and answers an
+# anti-bot page when pushed; cn_sources.sogou_weixin already reports that verdict rather than
+# mistaking it for an empty result, and the loop's inter-query sleep is raised alongside this so
+# 22 queries do not arrive faster than 4 did. L1.54: the point is to keep the door open, not to
+# prove it can be slammed.
 CN_ARTICLE_QUERIES = (
+    # -- validation and self-deception: the class the desk's own record says converts
     "量化 回测 陷阱",
     "量化策略 过拟合",
+    "样本外 检验 失效",
+    "幸存者偏差 回测",
+    "未来函数 前视偏差",
+    # -- factor work
     "因子 挖掘 回测",
-    "加密货币 量化 策略",
+    "因子 失效 衰减",
+    "多因子 组合 优化",
+    # -- the desk's confirmed edge and its neighbours
+    "资金费率 套利 实盘",
+    "期现套利 基差 收敛",
+    "永续合约 资金费率 机制",
+    "跨交易所 套利 成本",
+    # -- microstructure and execution, where cost decides the verdict
+    "做市 策略 库存 风险",
+    "高频 交易 撮合 机制",
+    "滑点 冲击成本 测算",
+    "限价单 排队 优先级",
+    # -- mechanisms the taxonomy names and the miner never asked about
+    "清算 级联 强平",
+    "期权 波动率 曲面 套利",
+    "链上 数据 分析 策略",
+    "矿工 抛压 链上",
+    # -- the honest failure literature, which is where the graveyard entries live
+    "网格 马丁 爆仓 复盘",
+    "实盘 与 回测 差异",
 )
 
 SEARCH_QUERIES = (
@@ -289,9 +347,21 @@ def _save_seen(seen: set[str]) -> None:
 _YIELD_LOG = _ROOT / "data" / "miner_yield.jsonl"
 
 #: Which report key holds the per-query fetch counts for each source group.
+#: source GROUP -> the queue-channel prefixes its producers actually write. A group whose name is
+#: not itself a producer needs an entry here or its `new_above_threshold` is structurally ZERO
+#: forever: the count matches on channel prefix, and "foreign" never appears in a channel because
+#: the producers are qiita/zenn/hatena/dcinside/habr. `cn` was special-cased for exactly this and
+#: `foreign` was not, so its first three surfaced rows logged as 0 new against 1,601 fetched --
+#: a yield of 0.0 on a source that had just produced. This is the instrument CADENCE is read off,
+#: so a producing lane reporting zero would argue for cutting the one sweep worth keeping.
+_GROUP_PRODUCERS: dict[str, tuple[str, ...]] = {
+    "cn": ("juejin", "wechat"),
+    "foreign": ("qiita", "zenn", "hatena", "dcinside", "habr"),
+}
+
 _FETCH_KEYS = {"bilibili": "bilibili_discovered", "cn": "cn_article_discovered",
                "search": "search_discovered", "academic": "academic_discovered",
-               "youtube": "channels_scanned"}
+               "youtube": "channels_scanned", "foreign": "foreign_discovered"}
 
 
 def _yield_row(doc: dict[str, Any], *, seen: set[str], only: list[str]) -> dict[str, Any]:
@@ -308,8 +378,11 @@ def _yield_row(doc: dict[str, Any], *, seen: set[str], only: list[str]) -> dict[
         if not isinstance(counts, dict):
             continue
         fetched = sum(int(v) for v in counts.values() if isinstance(v, int | float))
-        # cn covers two producers; queue channels are prefixed by the producer, not the group
-        prefixes = ("juejin", "wechat") if src == "cn" else (src,)
+        # A GROUP is not a producer. Queue channels are prefixed by whoever wrote the row, so a
+        # multi-producer group must name its members or it counts none of them (see
+        # _GROUP_PRODUCERS). Falls back to the source's own name, which is correct for the
+        # single-producer groups (bilibili, search, academic, youtube).
+        prefixes = _GROUP_PRODUCERS.get(src, (src,))
         new = sum(1 for r in doc.get("queue", [])
                   if str(r.get("channel", "")).split(":")[0] in prefixes)
         if fetched == 0 and new == 0 and src not in only and only != ["all"]:
@@ -344,14 +417,14 @@ def main(argv: list[str] | None = None) -> int:
     # dedicated Bilibili run would drag every other source along at Bilibili's cadence, which is
     # exactly the over-polling that took Juejin to 0 new from 80 fetched.
     ap.add_argument("--only", default="", metavar="SRC[,SRC...]",
-                    help="restrict to sources: bilibili, cn, youtube, academic, search "
-                         "(default: all)")
+                    help="restrict to sources: bilibili, cn, foreign, youtube, "
+                         "academic, search (default: all)")
     ap.add_argument("--bili-pages", type=int, default=3, metavar="N",
                     help="Bilibili search pages per query (20 rows/page); depth for a "
                          "dedicated run")
     args = ap.parse_args(argv)
 
-    _valid = {"bilibili", "cn", "youtube", "academic", "search"}
+    _valid = {"bilibili", "cn", "youtube", "academic", "search", "foreign"}
     only = {s.strip().lower() for s in str(args.only).split(",") if s.strip()}
     unknown = only - _valid
     if unknown:                      # fail loud: a typo'd source must not silently mine nothing
@@ -417,7 +490,42 @@ def main(argv: list[str] | None = None) -> int:
                     queue.append({"channel": f"{a.source}:{kw}", "video_id": key,
                                   "title": a.title[:160], "score": round(s, 1), "url": a.url,
                                   "author": a.author, "why": hits})
-            time.sleep(0.5)
+            # 1.2s, raised from 0.5 when CN_ARTICLE_QUERIES went 4 -> 22. Sogou rate-limits hard
+            # and serves an anti-bot page when pushed, so widening the sweep without slowing it
+            # would trade the desk's best-scoring lane for coverage of it.
+            time.sleep(1.2)
+
+    # --- NON-CHINESE FOREIGN FORESTS: Japanese, Korean, Russian.
+    #
+    # A SIBLING OF THE CHINESE LOOP, NOT A SPECIAL CASE. The argument for a Chinese lane -- large,
+    # practitioner-authored, invisible to English search -- is language-agnostic, and it was being
+    # made for exactly one language while three other crypto-native communities went unindexed.
+    # Korean is the sharpest omission: this desk MEASURES the Upbit/Bithumb premium as a mechanism
+    # class and had never read a word written by the people creating it.
+    #
+    # Driven by foreign_sources.SOURCES and .LANGUAGES rather than a hardcoded list, so a fourth
+    # language is a table entry and its queries -- never a new branch here.
+    foreign_hits: dict[str, int] = {}
+    for name, (fn, lang) in (foreign_sources.SOURCES.items() if _runs("foreign") else ()):
+        for kw in foreign_sources.LANGUAGES[lang]:
+            arts, e = fn(kw)
+            if e:
+                blocked[f"{name}:{kw}"] = e
+                continue
+            foreign_hits[f"{name}:{kw}"] = len(arts)
+            for a in arts:
+                key = f"{a.source}:{a.ident}"
+                all_ids.add(key)
+                if key in seen:
+                    continue
+                s_, hits = score_title(a.searchable)
+                if s_ >= args.threshold:
+                    queue.append({"channel": f"{a.source}:{kw}", "video_id": key,
+                                  "title": a.title[:160], "score": round(s_, 1), "url": a.url,
+                                  "author": a.author, "why": hits})
+            # 1.2s, matching the CN loop. Five sources x ~17 queries is ~85 requests; paced so
+            # breadth does not cost the desk a lane it just opened.
+            time.sleep(1.2)
 
     # --- Academic + code. The only sources whose CONTENT is readable: abstracts come back in the
     # API response, so these can produce a finding rather than only a queue entry.
@@ -493,6 +601,8 @@ def main(argv: list[str] | None = None) -> int:
         "search_discovered": discovered,
         "bilibili_discovered": bili,
         "cn_article_discovered": cn_hits,
+        "foreign_discovered": foreign_hits,
+        "foreign_source_probe": foreign_sources.probe_all() if _runs("foreign") else [],
         "cn_source_probe": cn_sources.probe_all(),
         "academic_discovered": acad,
         "academic_probe": papers.probe_all(),

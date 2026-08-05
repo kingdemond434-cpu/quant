@@ -102,6 +102,7 @@ def main() -> None:
                     mechanism=MechanismType.RISK_PREMIUM,
                     edge_source="cross-asset diversified portfolio (costed)",
                     failure_modes=_FAIL),
+                periods_per_year=_PPY,    # D1 MT5 session bars, 252/yr (R0086)
                 n_trials=len(series), sharpe_estimates=sharpes,
                 returns_matrix=matrix, campaign=campaign, column=col)
             if len(active) >= 250 else None

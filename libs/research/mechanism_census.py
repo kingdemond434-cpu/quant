@@ -584,7 +584,7 @@ TAXONOMY: tuple[MechanismClass, ...] = (
             availability=DataAvailability.ON_DISK,
             note="Real and already available to anyone. Orthogonality ~0 by definition: it is "
                  "the benchmark, so testing it more cannot widen the hypothesis set."),
-        priority=17),
+        priority=23),
     MechanismClass(
         id="liquidity_provision_immediacy",
         name="liquidity provision / immediacy",
@@ -606,7 +606,7 @@ TAXONOMY: tuple[MechanismClass, ...] = (
             availability=DataAvailability.ON_DISK,
             note="Tested to exhaustion on price alone. The only untested escalation needs the "
                  "book, which is a different class (orderbook_microstructure_state)."),
-        priority=18),
+        priority=24),
     MechanismClass(
         id="price_continuation",
         name="price continuation / underreaction",
@@ -627,7 +627,181 @@ TAXONOMY: tuple[MechanismClass, ...] = (
             note="The desk's most-tested class by an order of magnitude and the one an "
                  "independent 2013-14 pre-registered natural experiment killed as well. Adding "
                  "candidates here cannot widen the hypothesis set."),
+        priority=25),
+    # ================================================================================ 2026-08-05
+    # SIX CLASSES THE TAXONOMY HAD NEVER NAMED. The census can only rank what it has named, so an
+    # absent class is not low-ranked -- it is INVISIBLE, and every coverage number the desk quotes
+    # is computed against a denominator that silently excludes it. With the binding constraint
+    # measured as DISTINCT MECHANISM SUPPLY (44 candidates covering 2.787 effective classes,
+    # cross-mechanism N_eff 4.08 against the ~100 a weak-edge portfolio needs), widening what can
+    # be ranked is worth more than another candidate inside an existing class.
+    #
+    # ADMISSION TEST APPLIED TO EACH, and it is the same one the charter uses: name a participant
+    # compelled by a BALANCE SHEET, A COURT OR A RULE -- never by an opinion -- and say why they
+    # cannot stop. A class whose "payer" is someone being wrong is a pattern, not a mechanism, and
+    # does not belong here however well it would backtest.
+    #
+    # Each was checked against all twenty existing classes for genuine distinctness rather than
+    # vocabulary overlap; the distinction is recorded in each entry because "isn't that just
+    # X?" is the first question any of these will face.
+    MechanismClass(
+        id="index_reconstitution_flow",
+        name="index reconstitution / rebalance flow",
+        payer="a tracking fund, ETP or structured product whose MANDATE forces it to hold the "
+              "index as published -- it must trade the reconstitution on the effective date at "
+              "whatever price clears, and a manager who declines is running tracking error they "
+              "are contractually not permitted to run",
+        economic_definition="An index change is a dated, pre-announced, price-insensitive order "
+                            "of known direction and approximately known size. Whoever supplies "
+                            "that liquidity is paid for immediacy by a buyer who cannot wait and "
+                            "cannot negotiate. The edge lives between announcement and effective "
+                            "date and dies with the flow -- it is compensation for absorbing a "
+                            "mandate, not a forecast of value.",
+        signatures=("index inclusion", "index exclusion", "reconstitution", "rebalance date",
+                    "index add", "index delete", "effective date", "tracking fund", "etp basket",
+                    "index methodology", "quarterly review", "free float adjustment"),
+        plausibility=0.80, orthogonality=0.75,
+        data=DataRequirement(
+            datasets=("index methodology documents with announcement and effective dates",
+                      "constituent lists before and after each review",
+                      "daily bars around the two dates for members and non-members"),
+            availability=DataAvailability.FREE_ACQUIRABLE,
+            note="NOT primary_market_creation_flow: that class is creation/redemption of wrapper "
+                 "SHARES (flow into the vehicle). This is the vehicle's INTERNAL rebalance, on a "
+                 "different date, with a different observable and an opposite sign convention. "
+                 "The canonical forced-participant mechanism in equities, with a direct crypto "
+                 "analogue in index products and exchange index composition; never screened."),
+        priority=17),
+    MechanismClass(
+        id="treasury_cost_base_liquidation",
+        name="producer treasury / fixed-cost-base liquidation",
+        payer="a miner or validator carrying a FIAT cost base -- power, hosting, leased hardware, "
+              "debt service -- against a coin-denominated revenue. Fiat obligations do not "
+              "reschedule for a drawdown, so coin must be sold on the operator's calendar rather "
+              "than on the market's, and hardest exactly when price is weakest",
+        economic_definition="A structurally price-INSENSITIVE seller whose supply rises as margin "
+                            "compresses. The flow is forced by a balance sheet, is observable "
+                            "on-chain before it reaches an exchange, and is uncorrelated with any "
+                            "view about value -- the seller would prefer not to sell.",
+        signatures=("miner outflow", "miner treasury", "hashprice", "hash price", "difficulty "
+                    "adjustment", "validator treasury", "staking reward sale", "producer "
+                    "selling", "mining pool payout", "coinbase output", "cost of production"),
+        plausibility=0.75, orthogonality=0.70,
+        data=DataRequirement(
+            datasets=("on-chain mining-pool payout addresses and their exchange-bound transfers",
+                      "network difficulty and block subsidy for a cost-of-production proxy",
+                      "public hashprice series"),
+            availability=DataAvailability.FREE_ACQUIRABLE,
+            note="NOT mechanical_supply_release: that is a SCHEDULE (vesting, emissions) known in "
+                 "advance. This is a BALANCE-SHEET constraint whose timing is driven by the "
+                 "operator's fiat obligations and margin, not by a calendar. NOT "
+                 "network_usage_demand, which is adoption. The desk's own VRP pre-registration "
+                 "already named this payer type -- 'a miner with a fixed fiat cost base' -- while "
+                 "the taxonomy had no class to file it under."),
+        priority=18),
+    MechanismClass(
+        id="estate_liquidation_distribution",
+        name="estate / court-ordered liquidation and distribution",
+        payer="a bankruptcy estate, receiver or liquidator under a COURT ORDER, and the creditors "
+              "who receive an in-kind distribution they did not choose the timing of. A trustee "
+              "sells because a court told them to and on the court's schedule; a creditor "
+              "receiving coin after years of illiquidity is a highly motivated seller",
+        economic_definition="A legally compelled, publicly docketed supply event with a knowable "
+                            "size and an approximately knowable date. The compulsion is judicial "
+                            "rather than economic, which is why it does not respond to price and "
+                            "why the schedule survives changes in market conditions.",
+        signatures=("estate", "bankruptcy", "trustee", "receiver", "liquidator", "creditor "
+                    "distribution", "in-kind distribution", "court order", "chapter 11",
+                    "civil rehabilitation", "mt gox", "ftx estate", "claims process"),
+        plausibility=0.70, orthogonality=0.80,
+        data=DataRequirement(
+            datasets=("court dockets and trustee announcements with distribution dates",
+                      "on-chain estate wallet balances and their outbound transfers",
+                      "daily bars around each announced and executed tranche"),
+            availability=DataAvailability.FREE_ACQUIRABLE,
+            note="Distinct from mechanical_supply_release (protocol emissions) and from "
+                 "holder_cost_basis_capitulation (a price-triggered decision). Here the trigger "
+                 "is a filing. Rare events, so the honest expectation is a SMALL n -- which makes "
+                 "it a class where the desk must state power before testing rather than after."),
         priority=19),
+    MechanismClass(
+        id="collateral_rule_deleveraging",
+        name="collateral rule change / forced deleveraging",
+        payer="a levered borrower whose position is closed by a RULE rather than by their own "
+              "decision -- a raised haircut, a lowered LTV ceiling, a collateral-eligibility "
+              "removal, an oracle re-mark or a liquidation-engine parameter change. The borrower "
+              "cannot opt out: the venue closes the position for them",
+        economic_definition="A supply or demand shock whose timing is set by a published "
+                            "governance or risk-parameter change, not by price. Because the "
+                            "parameter change is announced and the affected positions are visible "
+                            "on-chain, the flow is forecastable in direction and approximate size "
+                            "BEFORE it executes -- which is what distinguishes it from watching a "
+                            "cascade after the fact.",
+        signatures=("haircut", "loan to value", "ltv", "collateral factor", "liquidation "
+                    "threshold", "collateral eligibility", "risk parameter", "oracle update",
+                    "margin requirement change", "isolated mode", "debt ceiling"),
+        plausibility=0.70, orthogonality=0.65,
+        data=DataRequirement(
+            datasets=("lending-protocol governance logs with parameter values and effective "
+                      "blocks (Aave/Compound/Maker event logs via free RPC)",
+                      "position-level collateral and debt snapshots around each change"),
+            availability=DataAvailability.FREE_ACQUIRABLE,
+            note="NOT positioning_crowding_unwind: that class is crowding measured from "
+                 "positioning data and unwinding under its own weight. This one is RULE-DRIVEN "
+                 "and typically PRE-ANNOUNCED, so it is forecastable ex ante rather than "
+                 "diagnosable ex post -- the difference between a scheduled eviction and a fire."),
+        priority=20),
+    MechanismClass(
+        id="settlement_expiry_mechanics",
+        name="settlement / expiry hedging mechanics",
+        payer="a dealer or market maker who is short optionality into a DATED settlement and must "
+              "hedge to a fixing they do not control, plus every holder whose contract "
+              "cash-settles against that same print. Neither chooses the timing: the contract "
+              "specifies it",
+        economic_definition="Delta and gamma hedging demand concentrates mechanically as a dated "
+                            "expiry approaches, and its sign flips with strike placement. The "
+                            "flow is a function of open interest and time, both public, rather "
+                            "than of any view -- so it is predictable from the contract "
+                            "specification alone.",
+        signatures=("expiry", "expiration", "settlement fixing", "pin risk", "max pain",
+                    "gamma exposure", "dealer gamma", "open interest at strike", "quarterly "
+                    "settlement", "roll date", "final settlement price"),
+        plausibility=0.60, orthogonality=0.60,
+        data=DataRequirement(
+            datasets=("option open interest by strike and expiry (Deribit public API)",
+                      "settlement/fixing methodology and timestamps per venue",
+                      "sub-daily bars spanning the settlement window"),
+            availability=DataAvailability.FREE_ACQUIRABLE,
+            note="NOT volatility_risk_premium: that class prices the PREMIUM paid for insurance. "
+                 "This one is the mechanical HEDGING FLOW around a dated settlement, which exists "
+                 "whether the premium is rich or cheap. The desk already collects the Deribit "
+                 "chain for VRP, so the input largely exists and is unread for this purpose."),
+        priority=21),
+    MechanismClass(
+        id="fiscal_calendar_flow",
+        name="fiscal / tax calendar forced flow",
+        payer="a holder compelled by a TAX OR ACCOUNTING deadline -- loss harvesting before a "
+              "fiscal year end, a wash-sale window, a fund's reporting-date window dressing, a "
+              "corporate treasury marking to a quarter end. The deadline is set by a statute or "
+              "an accounting standard, so it does not move because the market did",
+        economic_definition="A recurring, date-anchored flow whose direction is predictable from "
+                            "the holder's prior-period P&L rather than from any forecast. It "
+                            "reverses after the deadline passes, which is the falsifiable part: "
+                            "no reversal means the flow was a preference, not a compulsion.",
+        signatures=("tax loss harvesting", "wash sale", "fiscal year end", "financial year end",
+                    "window dressing", "quarter end", "reporting date", "turn of the year",
+                    "january effect", "capital gains deadline"),
+        plausibility=0.55, orthogonality=0.70,
+        data=DataRequirement(
+            datasets=("jurisdiction fiscal-year-end and wash-sale rule dates",
+                      "daily bars with prior-period return to sign the expected flow",
+                      "a control cohort not subject to the same deadline"),
+            availability=DataAvailability.FREE_ACQUIRABLE,
+            note="The weakest payer story of the six and priced accordingly -- crypto's holder "
+                 "base is jurisdictionally mixed, so the compelled fraction is unknown and may be "
+                 "small. Recorded anyway: L1.49 says a weak mechanism is not a dead one, and an "
+                 "UNNAMED class cannot even be ranked as weak."),
+        priority=22),
 )
 
 CLASS_BY_ID: dict[str, MechanismClass] = {c.id: c for c in TAXONOMY}

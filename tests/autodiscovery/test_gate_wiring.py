@@ -33,8 +33,10 @@ def _cohort(seed: int = 0, t: int = 600, n: int = 6) -> np.ndarray:
 
 def _run(m: np.ndarray, **kw):
     sh = np.array([m[:, i].mean() / m[:, i].std() for i in range(m.shape[1])])
-    return validate(m[:, 0], hypothesis=_HYP, n_trials=m.shape[1], sharpe_estimates=sh,
-                    returns_matrix=m, **kw)
+    # Daily crypto bars, 24/7 (the lab's own default clock). REQUIRED since R0086 -- there is no
+    # default frequency to fall back on, which is the point of the fix.
+    return validate(m[:, 0], hypothesis=_HYP, periods_per_year=365.0, n_trials=m.shape[1],
+                    sharpe_estimates=sh, returns_matrix=m, **kw)
 
 
 # ------------------------------------------------------------------ the filters actually run
@@ -99,6 +101,12 @@ _SUPPLIABLE_UNMEASURED = {
     # $50m ADV against $229,894,902 on that default: a 2,000x difference, and the larger number is
     # the one every stored candidate carries. Unmeasured-and-said-so beats confidently wrong.
     "capacity": "adv_usd",
+    # R0086: not a gate but a METRIC, and it earns its place on this list for the same reason --
+    # a caller with per-BET returns (run_prediction_markets) declares periods_per_year=None
+    # because no number of bars-per-year exists, and annual_sharpe is then 0.0. A bare 0.0 is
+    # indistinguishable from a measured zero-edge candidate, which is exactly how a 4.135x
+    # annualisation error lived in this metric unnoticed.
+    "annual_sharpe": "periods_per_year",
 }
 
 
