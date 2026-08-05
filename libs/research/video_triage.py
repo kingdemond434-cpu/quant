@@ -100,6 +100,19 @@ NEGATIVE = {
     "(最全|天花板|强推|一条龙|白嫖|附源码|资料领取|私信)": -4.0,
     "(月入|暴富|翻倍|躺赚|稳赚|财富自由|割韭菜)": -6.0,
     "(培训|课程|报名|加微信|加群|领取)": -4.0,
+    # --- CJK HOMOGRAPH TRAPS, third of this family (after the missing-\b bug and the Sogou
+    # attribute-order bug). The CJK positives above are bare substrings, which is correct --
+    # Chinese has no word boundaries to anchor on -- but it means a term scores wherever its
+    # characters appear, including inside an unrelated compound. Measured 2026-08-05 on a live
+    # Juejin pull: "使用OATH Toolkit实现ssh登录时进行TOTP双因子认证" scored 6.0 and would have
+    # surfaced, because 因子 (factor) sits inside 双因子认证 (two-FACTOR authentication) and
+    # 验证 (validate) reads as "authenticate" in that domain. Same shape for 生长因子/转录因子
+    # in biology. These are domain disambiguators, not quality judgements: an authentication
+    # or biology article is not a weak quant article, it is a different subject entirely.
+    # Weighted to cancel the two positives it rides on (3+3) with margin, so the compound has to
+    # be outscored by genuine quant terms elsewhere in the text rather than merely tied.
+    "(双因子认证|双因素认证|二次验证|两步验证|身份验证|登录验证|otp|totp)": -8.0,
+    "(转录因子|生长因子|凝血因子|遗传因子|致病因子)": -8.0,
 }
 
 #: Below this, the queue does not surface it. Set so the batch's known non-converters fall out

@@ -97,3 +97,41 @@ def test_triage_records_the_channel():
     out = triage([("a" * 11, "permutation test walk forward backtest")], channel="@src")
     assert out and out[0].channel == "@src"
     assert out[0].url.endswith("a" * 11)
+
+
+class TestCJKHomographTraps:
+    """The third bug of this family, measured 2026-08-05 on a live Juejin pull.
+
+    The CJK positives are deliberately bare substrings (Chinese has no word boundaries to
+    anchor on -- that was bug one, where every \\b-anchored pattern silently scored 102
+    Bilibili videos at zero). The cost of that correctness is that a term also matches inside
+    unrelated compounds: 因子 (factor) sits inside 双因子认证 (two-FACTOR authentication), and
+    an SSH/TOTP article scored 6.0 and would have surfaced into the research queue.
+
+    These assertions are about SUBJECT, not quality: an authentication article is not a weak
+    quant article, it is a different field. The paired positive cases are the load-bearing
+    half -- a disambiguator that also suppresses real factor research would be a worse bug
+    than the one it fixes.
+    """
+
+    def test_authentication_compounds_do_not_read_as_factor_research(self) -> None:
+        trapped = "使用OATH Toolkit实现ssh登录时进行TOTP双因子认证"
+        assert score_title(trapped)[0] < SURFACE_THRESHOLD
+
+    def test_biology_compounds_do_not_read_as_factor_research(self) -> None:
+        assert score_title("肿瘤转录因子表达量分析")[0] < SURFACE_THRESHOLD
+
+    def test_real_factor_research_still_surfaces(self) -> None:
+        """The half that matters: the fix must cost nothing on genuine rows."""
+        # The fullwidth colon below is VERBATIM from the live Juejin row (hence the suppression
+        # on that line). Normalising it to ASCII would make the fixture something the source
+        # never emits, which is how a parser test passes on text the parser will never see.
+        for title in ("数据库交易回测系列二：多因子Alpha策略回测",  # noqa: RUF001
+                      "决策树特征筛选结果回测验证模板:从因子挖掘到策略实证",
+                      "从计算、建模到回测:因子挖掘的最佳实践"):
+            assert score_title(title)[0] >= SURFACE_THRESHOLD, title
+
+    def test_plain_validation_language_is_not_blanket_killed(self) -> None:
+        """验证 means 'authenticate' only in the auth compounds -- alone it is still the
+        desk's highest-value word, so the disambiguator must be compound-scoped."""
+        assert score_title("样本外验证")[0] >= SURFACE_THRESHOLD
