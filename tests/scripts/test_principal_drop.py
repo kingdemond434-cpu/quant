@@ -149,3 +149,50 @@ def test_private_material_can_never_be_committed() -> None:
     assert "data/inbox/" in ignore
     assert "reports/principal_drop.json" in ignore, (
         "the scored output quotes up to 600 chars of source material verbatim")
+
+
+class TestLicensedDataIsRefusedRatherThanLaundered:
+    """The hole this path could have become. It exists for membership-gated FREE material, and the
+    desk's charter is explicit that paid vendors are out of scope -- but a HAND-FED intake is
+    exactly how such a rule gets bypassed by accident rather than by decision. A vendor export
+    dropped here would have been scored into the same research queue as everything else, with no
+    terms recorded and nothing later to say it may not be redistributed.
+
+    Refusal is the default because the asymmetry is severe: a false positive costs one flag and a
+    moment's thought about the licence, a false negative puts licensed data in the queue
+    permanently and silently. And the desk cannot read a licence -- only a person can, so the
+    person is asked BEFORE the row exists rather than after it has been acted on.
+    """
+
+    def test_a_vendor_named_in_the_filename_is_refused(self, tmp_path: Path) -> None:
+        inbox = _drop(tmp_path, "glassnode-export-2026-08.csv", _SUBSTANTIVE)
+        rep = D.ingest(inbox, move=False)
+        assert rep["n_rows"] == 0
+        assert rep["refused_licensed"][0]["vendor"] == "glassnode"
+
+    def test_a_vendor_named_in_the_body_is_refused(self, tmp_path: Path) -> None:
+        """An export renamed to something innocuous still announces itself in its header."""
+        body = f"Source: Kaiko Market Data, licensed.\n\n{_SUBSTANTIVE}"
+        rep = D.ingest(_drop(tmp_path, "notes.txt", body), move=False)
+        assert rep["n_rows"] == 0 and rep["n_refused_licensed"] == 1
+
+    def test_a_refused_file_is_not_moved_to_done(self, tmp_path: Path) -> None:
+        """Filing it away would read as 'processed' at the next glance, which is precisely the
+        state a refusal must not be confusable with."""
+        inbox = _drop(tmp_path, "bloomberg-dump.txt", _SUBSTANTIVE)
+        D.ingest(inbox, move=True)
+        assert (inbox / "bloomberg-dump.txt").exists(), "a refused drop must stay put"
+        assert not (inbox / ".done" / "bloomberg-dump.txt").exists()
+
+    def test_ordinary_free_material_still_passes(self, tmp_path: Path) -> None:
+        """The fence must not eat the thing the organ is for -- an over-eager guard that blocks
+        closed-group material would quietly restore the gap this whole path was built to close."""
+        rep = D.ingest(_drop(tmp_path, "wechat-group.txt", _SUBSTANTIVE), move=False)
+        assert rep["n_rows"] >= 1 and rep["n_refused_licensed"] == 0
+
+    def test_the_charter_rule_is_still_in_the_hunter_prompt(self) -> None:
+        """This fence enforces a rule that lives in kimi_hunter's CHARTER. If the prompt clause
+        goes, the fence is enforcing a policy the desk no longer states -- and nobody would know."""
+        src = Path("scripts/kimi_hunter.py").read_text("utf-8")
+        assert "FREE, PUBLIC, SCRAPABLE" in src
+        assert "Never suggest paid data APIs" in src
