@@ -121,7 +121,9 @@ def analyze(
             "cagr": round(cagr(returns, lev, ppy), 4),
             "ann_vol": round(float(np.std(returns) * lev * np.sqrt(ppy)), 4),
             "max_dd": round(max_drawdown(returns, lev), 4),
-            "risk_of_ruin": round(risk_of_ruin(returns, lev), 4),
+            # R0286: the ruin horizon must cover the SAME year as cagr/ann_vol above -- a 365-day
+            # crypto book reported off the default 252-day horizon understates annual ruin.
+            "risk_of_ruin": round(risk_of_ruin(returns, lev, horizon=int(ppy)), 4),
         }
 
     return {

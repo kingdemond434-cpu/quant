@@ -52,3 +52,22 @@ def test_analyze_orders_leverage_points() -> None:
     rep = analyze(_edge(), kelly_fraction=0.5, governance_cap=3.0)
     assert rep["recommended_leverage"] <= rep["growth_optimal_leverage"]
     assert rep["points"]["aggressive"]["max_dd"] <= rep["points"]["recommended"]["max_dd"]
+
+
+def test_reported_ruin_covers_the_same_year_as_cagr() -> None:
+    """R0286: the ruin horizon must be the CALLER's year, not the function default.
+
+    analyze() reports cagr/ann_vol on the caller's ``ppy`` while risk_of_ruin defaulted to
+    horizon=252. scripts/run_crypto_portfolio.py passes ppy=365, so the published annual ruin
+    probability covered 252/365 = 69% of the year it was labelled with -- an understatement on
+    the L1.23 ruin rail. This pins the threading; the assertion is one-sided (365 >= 252)
+    because more days can only add ruin paths, never remove them.
+    """
+    r = _edge(n=2000)
+    assert risk_of_ruin(r, 8.0, horizon=365) >= risk_of_ruin(r, 8.0, horizon=252)
+    crypto = analyze(r, ppy=365, kelly_fraction=0.5, governance_cap=3.0)
+    calendar = analyze(r, ppy=252, kelly_fraction=0.5, governance_cap=3.0)
+    for point in ("recommended", "aggressive"):
+        wide, narrow = crypto["points"][point], calendar["points"][point]
+        assert wide["risk_of_ruin"] >= narrow["risk_of_ruin"], (
+            f"{point}: a 365-day book must not report a 252-day ruin probability")
