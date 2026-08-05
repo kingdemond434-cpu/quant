@@ -151,3 +151,69 @@ class TestL150UnexploitedIsADefect:
         src = _CONSTITUTION.read_text("utf-8")
         assert "1,065" in src, "the measured under-utilisation was dropped from the law"
         assert "calendar time" in src
+
+
+class TestL152AndL153TheStandingOrdersOf20260805:
+    """The two laws the principal issued on 2026-08-05, pinned the same way L1.49 and L1.50 are:
+    matched on load-bearing phrases rather than exact prose, so a sharper rewrite passes while a
+    silent removal fails.
+
+    Both encode the same underlying failure from opposite ends, which is why they are pinned
+    together. A gauge that improves when the desk does LESS of the thing the gauge exists to
+    encourage is not a measurement -- it is an incentive pointing the wrong way. L1.52 is that
+    failure in the exploration budget (the meta-check that could not fire while the apparatus it
+    judges was broken); L1.53 is it in the conversion ratio (a denominator nobody guarded).
+    """
+
+    def test_l1_52_is_present_with_its_operative_clauses(self) -> None:
+        src = _CONSTITUTION.read_text("utf-8")
+        assert "L1.52" in src and "UNKNOWN-UNKNOWN HUNT IS RESOURCED" in src
+        assert "WHAT\nDOES THE ABSENCE OF MY INPUT LOOK LIKE?" in src or \
+               "ABSENCE OF MY INPUT LOOK LIKE" in src, (
+            "the general rule -- absence must not look like health -- was dropped")
+        assert "PRINCIPAL-FOUND IS THE FAILURE SIGNAL" in src, (
+            "the origin-accounting duty was dropped")
+        assert "never throttled to fund extraction" in src, (
+            "the clause protecting the hunt from repair-mode was dropped")
+
+    def test_the_anti_inflation_clause_on_the_desks_own_metric_survives(self) -> None:
+        """The clause most likely to be softened, because softening it is convenient to whoever
+        is keeping the score: self-sufficiency is the one number the desk grades itself on."""
+        src = _CONSTITUTION.read_text("utf-8")
+        assert "governance breach" in src and "bookkeeping preference" in src
+
+    def test_l1_53_is_present_with_both_halves(self) -> None:
+        src = _CONSTITUTION.read_text("utf-8")
+        assert "L1.53" in src and "NEVER MET BY SHRINKING ITS DENOMINATOR" in src
+        assert "ACQUISITION IS NEVER CUT TO MEET EXTRACTION" in src
+        assert "CONVERT FASTER" in src and "find harder" in src.lower(), (
+            "the two required moves must stay distinguishable -- they are opposite instructions")
+
+    def test_the_two_failures_may_not_be_merged(self) -> None:
+        """Merging them is the natural simplification and it re-opens the exact hole: one number
+        holding both lets a halved finding rate read as an improved ratio."""
+        src = _CONSTITUTION.read_text("utf-8")
+        assert "NEVER merged into one number" in src
+
+    def test_the_generalisation_beyond_the_ledger_survives(self) -> None:
+        """The clause that makes L1.53 worth more than one fence: the same trap exists in every
+        coverage, utilisation, kill-rate and breadth figure the desk reports."""
+        src = _CONSTITUTION.read_text("utf-8")
+        assert "its denominator is a first-class measurement" in src
+        for gauge in ("coverage", "utilisation", "mutation kill rate"):
+            assert gauge in src, f"the {gauge} generalisation was dropped"
+
+    def test_both_laws_are_enforced_rather_than_prose(self) -> None:
+        """A law with no fence is decoration, and the enforcement matrix fails the build on one.
+        Pinned here too so the MAP cannot be quietly emptied while the matrix still passes on a
+        keyword hit."""
+        src = (_ROOT / "scripts" / "build_enforcement_matrix.py").read_text("utf-8")
+        assert '"L1.52"' in src and "check_self_sufficiency" in src
+        assert '"L1.53"' in src and "scripts/check_conversion.py" in src
+
+    def test_the_measured_instances_stay_attached_to_the_rules(self) -> None:
+        """A law that keeps its proving number is a law the next reader can falsify. Strip the
+        measurement and it degrades into an opinion nobody can argue with."""
+        src = _CONSTITUTION.read_text("utf-8")
+        assert "341 raised against 157" in src, "L1.53's proving measurement was dropped"
+        assert "did not exist at all" in src, "L1.52's proving instance was dropped"

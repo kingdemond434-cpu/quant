@@ -232,6 +232,20 @@ _MAP: dict[str, list[str]] = {
     # `_capital()`'s numerator was the first rung inside its own denominator.
     "L1.51": ["scripts/check_idle_cost.py", "libs/research/idle_yield.py",
               "scripts/check_utilisation.py"],
+    # L1.52: the unknown-unknown hunt reports its OWN health. check_self_sufficiency is the fence
+    # AND was the proving instance -- it returned silently on an absent ledger, so skipping the
+    # L2.5 logging duty switched off the check on that duty. blind_spot.py is the writer that
+    # makes the metric exist at all; the alternatives hunter is the arm that acts on a lane going
+    # dark, including one that merely stopped being probed rather than failing outright.
+    "L1.52": ["check_self_sufficiency", "scripts/blind_spot.py",
+              "scripts/hunt_source_alternatives.py",
+              "libs/research/source_health.py:unproven_sources",
+              "scripts/blindspot_max.py", "scripts/blindspot_prober.py"],
+    # L1.53: conversion measured against ARRIVALS, and the denominator fenced separately so the
+    # ratio cannot be improved by finding less. Both halves live in the one fence, deliberately
+    # as two statuses -- DEBT-GROWING (convert faster) and ARRIVALS-COLLAPSED (find harder).
+    "L1.53": ["scripts/check_conversion.py",
+              "tests/governance/test_conversion_fence.py"],
     # R0123 decline grading: L1.29 says an ungraded prediction is a BELIEF that inflates the
     # apparent hit-rate by never counting its misses -- and a sleeve scored only on the trades it
     # CHOOSES to be graded on is that defect with a dominant strategy attached. Nine consecutive
