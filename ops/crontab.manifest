@@ -1857,3 +1857,40 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # CONFIDENCE: committed-script (new this cycle; first run REFUSED on all three designs at the
 #   parallel-trends rail -- a refusal is a first-class result and no clock was opened)
 50 7 * * 1 cd "$QUANT_ROOT" && flock -n data/.cron_natexp.lock choom -n 1000 -- nice -n 19 .venv/bin/python scripts/run_natural_experiment.py >> data/cro_ai_logs/natural_experiment.log 2>&1
+# ---------------------------------------------------------------------------------------------
+# FOUR MORE ORGANS THAT ASKED TO BE SCHEDULED AND WERE NOT (2026-08-05, second batch).
+#
+# Same pattern as the three Stage-A screens above, and finding it twice in one day is the point:
+# every one of these shipped with "INTENDED CADENCE (NOT wired here -- the manifest is owned by
+# another agent this wave, so this comment is the REQUEST, not the installation)". The comment is
+# correct about ownership and, left alone, it is the whole failure -- the wave ends, the owner
+# never converts the request, and finished work sits unreachable at a higher cost than never
+# having been built. L1.53 names the general case; this is the acquisition side of it.
+#
+# The collector/screen PAIRS matter here. A screen wired without its collector reads an empty
+# ledger forever and reports NOT-READABLE-HERE truthfully while buying nothing, which is the
+# quietest way to look busy. Each pair is installed together and phased so the screen runs after
+# the collector has landed the day it will read.
+#
+# CEILING TYPE (L1.28c) is INPUT-ARRIVAL for all four, and each is AT it: ETF flow publishes once
+# per trading day, stablecoin aggregates roll once per UTC day, and the Deribit chain re-marks at
+# its own 08:00 UTC stamp. A denser cadence would re-fetch identical rows.
+# ---------------------------------------------------------------------------------------------
+# EVIDENCE: scripts/collect_primary_market_flow.py -> data/primary_market_flow.jsonl
+# CONFIDENCE: committed-script (cadence taken from the script's own header request)
+41 23 * * * cd "$QUANT_ROOT" && flock -n data/.cron_pmflow_c.lock nice -n 19 .venv/bin/python scripts/collect_primary_market_flow.py >> data/cro_ai_logs/primary_market_flow.log 2>&1
+# ...and its consumer, 36min later, so it reads the collection that just closed the trading day.
+# EVIDENCE: scripts/screen_primary_market_flow.py -> data/primary_market_flow_screen.json
+# CONFIDENCE: committed-script (cadence taken from the script's own header request)
+17 0 * * * cd "$QUANT_ROOT" && flock -n data/.cron_pmflow_s.lock nice -n 19 .venv/bin/python scripts/screen_primary_market_flow.py >> data/cro_ai_logs/primary_market_flow_screen.log 2>&1
+# The widened Deribit vol-market collector: daily snapshot is what accrues CALENDAR TIME on the
+# option chain, and calendar time is the binding constraint the gap-#5 screen measured (69 common
+# days against 1,068 needed). The weekly backfill widens history where a listed contract allows.
+# EVIDENCE: scripts/collect_deribit_vol_markets.py -> data/deribit_vol_markets.jsonl
+# CONFIDENCE: committed-script (cadence taken from the script's own header request)
+17 9 * * * cd "$QUANT_ROOT" && flock -n data/.cron_dvm.lock nice -n 19 .venv/bin/python scripts/collect_deribit_vol_markets.py --mode snapshot >> data/cro_ai_logs/deribit_vol_markets.log 2>&1
+41 3 * * 0 cd "$QUANT_ROOT" && flock -n data/.cron_dvm.lock nice -n 19 .venv/bin/python scripts/collect_deribit_vol_markets.py --mode backfill >> data/cro_ai_logs/deribit_vol_markets.log 2>&1
+# ...and its consumer, 80min after the snapshot lands.
+# EVIDENCE: scripts/screen_vol_risk_premium.py -> data/vol_risk_premium_screen.json
+# CONFIDENCE: committed-script (cadence taken from the script's own header request)
+37 10 * * * cd "$QUANT_ROOT" && flock -n data/.cron_vrp.lock nice -n 19 .venv/bin/python scripts/screen_vol_risk_premium.py >> data/cro_ai_logs/vol_risk_premium.log 2>&1
