@@ -1432,6 +1432,30 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # EVIDENCE: scripts/run_cro.py -> data/cro_review.json + docs/research/cro_recommendations.jsonl
 # CONFIDENCE: committed-script (new; runs dark until OPENAI_API_KEY is exported, and says so)
 20 5,11,17,23 * * * cd "$QUANT_ROOT" && flock -n data/.cron_cro.lock .venv/bin/python scripts/run_cro.py >> data/cro_ai_logs/cro.log 2>&1
+
+# SURVIVOR BOTTLENECK PANEL -- every seat argues about why nothing has ever survived.
+# The desk's root-cause finding (52 of 350 recorded negatives, 14.9%, were powered enough to mean
+# anything) was produced by ONE reasoner, and a finding from one reasoner is exactly the thing most
+# worth attacking. This puts the same measured artifacts in front of the GPT/CRO brain and every
+# reachable OpenRouter family and makes them argue: round one alone, round two refuting each other
+# ANONYMISED, then ranked by agreement that survived forced contradiction. Agreement between
+# parallel monologues is a shared prior; agreement after refutation is evidence.
+# GPT IS AN ADDITION, NEVER THE BRAIN: nothing here is executed, every response is DATA parsed into
+# structured proposals, and the output is a ranked list for a person.
+# EVERY PROPOSAL IS FENCED. A model asked "how do we get survivors" has one overwhelmingly easy
+# answer -- lower the bar -- and it will find it. Anything loosening a gate, raising size, touching
+# the deadman switch, selecting post hoc, or removing a validation stage is REFUSED and recorded
+# with its reason (the refusal is kept, because a seat proposing it is information about the seat).
+# CEILING TYPE (L1.28c) is INFORMATION-ARRIVAL: the dossier only moves when the screens, the
+# type-II report or the forward clocks move, which is daily at most. Weekly, because a panel re-run
+# against an unchanged dossier returns the same argument at full token cost. Sunday 06:40 sits
+# after the week's screens and before the Monday research cycle reads them.
+# SPEND: checked BEFORE any call against the monthly cap; a missing key writes a BLOCKED artifact
+# naming what to export rather than an empty report that reads like the panel had no opinions.
+# EVIDENCE: scripts/run_survivor_panel.py -> reports/survivor_panel.json + data/survivor_panel.jsonl
+# CONFIDENCE: fence and aggregation are measured (21 tests); the panel itself is BLOCKED in this
+# checkout with no OPENROUTER_API_KEY, which the artifact states rather than hiding.
+40 6 * * 0 cd "$QUANT_ROOT" && flock -n data/.cron_survivor_panel.lock .venv/bin/python scripts/run_survivor_panel.py >> data/cro_ai_logs/survivor_panel.log 2>&1
 # RESEARCH MINER (principal 2026-08-01, "max frequency everyday"). Discovers and RANKS quant
 # research across YouTube, Bilibili, Juejin, WeChat/Sogou, arXiv, SSRN, OpenReview, HN and GitHub.
 # Captions are blocked on both video platforms, so the video half is a QUEUE for a human and the
