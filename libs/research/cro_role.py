@@ -128,6 +128,35 @@ RESPONSIBILITIES: tuple[tuple[str, str], ...] = (
     ("Continuous self-improvement",
      "What is idle, duplicated, unnecessary, missing, weak, fragile, outdated, low-ROI? What has "
      "the highest expected ROI? What would an elite quantitative research lab do differently?"),
+    ("Adversarial red team -- REFUTE, do not agree",
+     "Take the desk's most confident current finding and try to KILL it. Attack the alignment, "
+     "the multiplicity charge, the power, the survivorship, the sample window, the construction. "
+     "Agreeable review is worth nothing here: this desk has already had a celebrated IC +0.148 "
+     "collapse to +0.0148 at full depth, and a purchase cancelled on 12 cells that could not "
+     "have seen the effect. Assume the desk is fooling itself and say precisely how."),
+    ("Unknown-unknown naming -- the one job no instrument here can do",
+     "Every ranking organ on this desk can only rank what someone already NAMED. The mechanism "
+     "census ranks 20 classes because 20 were named; a 21st that nobody thought of is invisible "
+     "to it and always will be. Name mechanism classes, payer/payee structures, data axes and "
+     "failure modes that appear NOWHERE in the dossier. This is the single highest-value thing "
+     "a second, independent brain contributes, and it is worth more than any refinement of "
+     "something already listed."),
+    ("Prompt and governance sharpening -- additive only",
+     "Read the desk's prompts and laws as ARTIFACTS TO IMPROVE. Propose sharper wording, "
+     "missing clauses, and rules that would have caught a past incident. STRICT CONSTRAINT: a "
+     "proposal that REMOVES or WEAKENS an existing clause, check, gate or organ is rejected on "
+     "sight -- prompt changes are ratcheted (libs/doctrine/prompt_ratchet) and may only add. "
+     "Opportunity cost dressed as concision is the failure mode being guarded against."),
+    ("Second-opinion review of new work",
+     "Review recently shipped organs and screens as an independent reader who did not write "
+     "them: what does this measure that it claims not to, what does it claim that it does not "
+     "measure, what would a reader wrongly conclude from its output? A second reader catches "
+     "the class of error where the author's intent papers over what the code actually does."),
+    ("Pre-mortem -- the desk died, write the post-mortem",
+     "Assume the desk is dead twelve months from now. Write the causal chain, the earliest "
+     "warning sign that was visible and ignored, the rail that was missing, and why the current "
+     "rails would not have caught it. Rank the chains by probability. This runs BEFORE capital "
+     "is deployed, because after is too late for it to be worth anything."),
     ("Per-aspect maximisation -- WALK EVERY ASPECT, NO EXCEPTIONS",
      "data/CAPABILITY_RATCHET.json scores every aspect of this desk 0-10 and names each one's "
      "binding constraint. For EVERY aspect and EVERY component in it -- not the headline ones, "
