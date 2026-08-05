@@ -25,11 +25,13 @@ indistinguishable from a broken one.
 from __future__ import annotations
 
 import gzip
+import inspect
 import json
 import sys
 from pathlib import Path
 
 import numpy as np
+import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
@@ -119,11 +121,32 @@ def test_horizons_are_strides_so_one_period_equals_one_horizon() -> None:
 
 def test_the_sharpe_ceiling_is_rescaled_for_the_horizon() -> None:
     """BUG 3. The screen annualises, so a ceiling of 6.0 calibrated at horizon_days=1 becomes a
-    725-fold tighter bar at 60s -- and pure noise reported sharpe_reversal=53.4 against it."""
-    import inspect
-    src = inspect.getsource(S.screen_symbol)
-    assert "sharpe_ceiling" in src
-    assert "np.sqrt(1.0 / hd)" in src
+    725-fold tighter bar at 60s -- and pure noise reported sharpe_reversal=53.4 against it.
+
+    REWRITTEN 2026-08-05 from a source-grep of screen_moat.screen_symbol to a behavioural check
+    of the rail itself. The rescale MOVED into libs/research/axis_screen.stage_a_screen, where it
+    now protects every caller instead of this one; screen_moat's local copy was then removed as
+    redundant, and this test failed on its absence -- reporting a strengthened control as a lost
+    one. Re-adding the caller-side copy to satisfy a grep would have restored the duplication the
+    library comment explicitly diagnoses: "a correction living in one caller's comment is not a
+    control (it fires on recall)."
+
+    So the assertion is now the thing that actually matters -- that a sub-daily horizon does not
+    silently tighten the lookahead rail -- and it holds wherever the arithmetic lives, which is
+    what a control test should have asserted in the first place.
+    """
+    from libs.research import axis_screen
+
+    src = inspect.getsource(axis_screen.stage_a_screen)
+    assert "eff_sharpe_ceiling" in src, "the horizon rescale left the library too"
+
+    # 60s horizon: annualisation multiplies Sharpe by sqrt(365/hd), so the rail must widen by the
+    # same sqrt(1/hd) or it becomes ~725x tighter than the 6.0 it was calibrated as.
+    hd = 60.0 / 86400.0
+    assert float(np.sqrt(1.0 / hd)) == pytest.approx(37.95, abs=0.05)  # sqrt(1440)
+    assert 6.0 * float(np.sqrt(1.0 / hd)) == pytest.approx(227.7, abs=0.5), (
+        "the effective ceiling at a 60s horizon must be the daily one widened by sqrt(1/hd) -- "
+        "not 6.0, which pure noise clears at sharpe_reversal 53.4")
 
 
 def test_the_target_is_contemporaneous_because_the_screen_shifts_it_itself() -> None:
@@ -148,10 +171,25 @@ def test_a_genuinely_predictive_edge_IS_found(tmp_path) -> None:
     """THE POSITIVE CONTROL, AND THE MORE IMPORTANT ONE. A harness that never finds anything is
     indistinguishable from a broken harness, and 'no survivors' from it means nothing."""
     root = tmp_path / "moat_p"
-    # STRONG enough to be detectable across a family of 19 after Romano-Wolf. A weak planted edge
+    # LONG enough to be detectable across a family of 19 after Romano-Wolf. A weak planted edge
     # (t ~ 1.4) correctly fails the stepdown, so testing detection with one proves nothing about
     # the harness -- only that the edge was small.
-    _tape(root, predictive=True, strength=0.0035, noise=0.0004)
+    #
+    # n RAISED 4000 -> 30000 on 2026-08-05, and it is LENGTH that was raised, deliberately.
+    # Commit d10a8b4 fixed an n_eff INFLATION below daily horizons; with the corrected (smaller)
+    # n_eff the detection floor rose, and this control -- calibrated against the inflated
+    # arithmetic -- began reading SCREEN-UNDERPOWERED on all 20. The screen had not regressed; it
+    # had started telling the truth about how much evidence 4000 snapshots actually carry.
+    #
+    # The two ways to restore a positive control are not equivalent. Raising `strength` was tried
+    # and is WRONG on this harness: at n=30000, strength=0.0050 yields ZERO survivors because the
+    # edge becomes too good and correctly trips the SUSPECT-LOOKAHEAD rail -- so a bigger effect
+    # buys nothing and quietly tests a different code path. Raising n buys real statistical power
+    # at a fixed, plausible effect size, which is what the control is meant to prove the harness
+    # can find. 30000 snapshots x 15s is ~5.2 days of tape: a length the desk genuinely records.
+    #
+    # L0009 is the same lesson at desk scale: campaign WIDTH buys nothing, LENGTH buys everything.
+    _tape(root, predictive=True, n=30000, strength=0.0035, noise=0.0004)
     rep = _run(tmp_path, root)
     assert rep["survivors"], "a planted forward edge must be found"
     assert all(s["rw_p_adjusted"] <= 0.05 for s in rep["survivors"])
@@ -317,7 +355,9 @@ def test_survivors_persist_with_their_misses(tmp_path) -> None:
     controls family-wise error ACROSS runs, so screening the archive repeatedly returns false
     survivors at the nominal rate by construction."""
     root = tmp_path / "moat_reg"
-    _tape(root, predictive=True, strength=0.0035, noise=0.0004)
+    # n=30000 for the same reason as the positive control above: below it, the corrected n_eff
+    # leaves nothing to persist and this test would pass vacuously on an empty registry.
+    _tape(root, predictive=True, n=30000, strength=0.0035, noise=0.0004)
     rep = _run(tmp_path, root)
     assert rep["survivors"]
     reg = json.loads((tmp_path / "reg.json").read_text("utf-8"))

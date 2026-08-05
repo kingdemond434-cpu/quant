@@ -326,17 +326,60 @@ def _mutation() -> Ceiling:
         # `kill_rate` lookup silently returned 0.0 and this ceiling read UNMEASURED while a real
         # measurement sat in the file. The aggregate is mutants-weighted, not a mean of rates:
         # a 10-mutant file at 100% must not cancel a 200-mutant file at 80%.
-        targets = d.get("targets") or []
+        # AN UNRUN SITE COUNTS AS SURVIVED (2026-08-05). run_mutation.py walks mutation sites in
+        # SOURCE ORDER, so a budget-truncated target has tested a PREFIX of a file, not a sample
+        # of it. Summing `killed` and `total` across targets therefore let truncation SHRINK the
+        # denominator: running less of a hard file raised this score. The harness had recorded
+        # `budget_truncated` and `n_sites` per target all along; this consumer read neither. That
+        # is L1.53's denominator trap sitting inside the desk's own test-strength gauge -- and the
+        # same mistake as reading a 14-of-137 prefix as a 35.7% result: a prefix is not a sample.
+        #
+        # DROPPING truncated targets was the obvious repair and it is WRONG -- it merely moves the
+        # exploit. Truncate a hard file entirely and it leaves the denominator altogether, so the
+        # score rises even faster. (A test asserts exactly this, because the fix looked right.)
+        #
+        # The honest treatment is fail-closed and uses the site count the harness already writes:
+        # every site that was NOT run is charged to the denominator as un-killed. Truncation can
+        # then only ever LOWER the score, which is the only incentive gradient that cannot be
+        # gamed -- you buy points by killing mutants, never by declining to inject them.
+        targets = [t for t in (d.get("targets") or []) if isinstance(t, dict)]
         killed = float(sum(float(t.get("killed", 0)) for t in targets))
-        total = float(sum(float(t.get("total", 0)) for t in targets))
-        score = killed / total if total > 0 else float(d.get("kill_rate", 0.0))
+        total = 0.0
+        skipped = 0
+        for t in targets:
+            run = float(t.get("total", 0))
+            sites = float(t.get("n_sites", 0) or 0)
+            if t.get("budget_truncated"):
+                skipped += 1
+                # n_sites is the honest denominator; fall back to what ran only if the harness
+                # did not record it, which under-counts rather than inventing a number.
+                total += max(run, sites)
+            else:
+                total += run
+        # No fallback to a top-level `kill_rate`: that key IS NEVER WRITTEN (the artifact is
+        # per-target, which the comment above already records as the original bug), so the old
+        # `else float(d.get("kill_rate", 0.0))` was a dead branch that turned "nothing ran" into
+        # a confident 0.0 -- and then `measured = score > 0` relabelled that 0.0 as UNMEASURED,
+        # so a run of zero mutants and a suite that kills nothing produced identical output.
+        score = killed / total if total > 0 else 0.0
         score = score / 100.0 if score > 1.0 else score
-        measured = score > 0
+        # MEASURED means the measurement HAPPENED, never that it came out well. `score > 0` made
+        # the single worst real result -- a suite that kills no mutants at all -- unreportable,
+        # because it read as "we did not look". Those are opposite facts and the desk acts on
+        # them differently: one is a catastrophe, the other is a chore.
+        measured = total > 0
     except (OSError, ValueError, TypeError, AttributeError):
-        score, measured = 0.0, False
+        score, measured, skipped, total = 0.0, False, 0, 0.0
     return Ceiling(
-        "test_kill_rate", 1.0, score, "mutants killed (fraction)", measured,
+        "test_kill_rate", 1.0, score,
+        f"mutants killed (fraction of {total:.0f} scored"
+        + (f"; {skipped} truncated target(s) EXCLUDED -- a prefix is not a sample)"
+           if skipped else ")"),
+        measured,
         "" if score >= _EXPECT else
+        (f"{skipped} target(s) were budget-truncated and are unscored: raise the budget or "
+         "narrow the target, because running less must never read as killing more. "
+         if skipped else "") +
         "surviving mutants in libs/execution/staging.py and libs/risk/gate.py -- the survivor "
         "list IS the work queue (L1.0c)",
         "An unkilled mutant is a real code change the suite cannot see. On the money path that "

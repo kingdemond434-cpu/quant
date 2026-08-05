@@ -55,7 +55,9 @@ def main() -> None:
     families = [Family(f.strip()) for f in args.families.split(",") if f.strip()] or None
     db = Database(Path(args.db))
     run_migrations(db, MIGRATIONS)
-    lab = build_lab(db, provider, families=families)
+    # `tf` is the interval `load_universe` read, so it is also the clock every stored
+    # annual_sharpe is annualised on: D1 -> 365/yr, H8 -> 1095/yr (R0086).
+    lab = build_lab(db, provider, timeframe=tf, families=families)
 
     print(f"crypto {tf.value}: {len(symbols)} liquid symbols (cap {limit}) | "
           f"families: {[f.value for f in (families or [])]}")

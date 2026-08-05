@@ -858,19 +858,62 @@ def check_self_application(defects) -> None:
     if not (ROOT / "scripts/run_recorder_bybit.py").exists():
         defects.append(("bybit-recorder-gone", "second-venue (bybit) recorder script removed -- "
                         "cross-venue tape breadth lost"))
-    # CI GATE must be GREEN -- a red desk-wide gate is the safety net down for everyone and
-    # sat UNDETECTED for 81h (2026-07-22..23: a stale deadman test failed at HEAD while the
-    # brain cycle that runs run_ci was quota-dead, so nothing surfaced the red). run_ci writes
-    # data/.ci_last_run.json on every run; surface a red result mechanically so it enters the
-    # 48h escalation path instead of hiding until a human notices.
+
+#: Staleness bound for the CI marker. daily_research_cycle runs the gate once a day, so 48h is
+#: two consecutive missed cycles -- comfortably past "the box was busy", squarely at "it stopped".
+_CI_STALE_H = 48.0
+
+
+def check_ci_gate(defects) -> None:
+    """The desk-wide gate must be GREEN, and must be PROVABLY RUNNING.
+
+    Extracted from check_self_application (2026-08-05) so the fail-closed behaviour below can be
+    exercised directly by a test. A safety check whose only coverage is a source grep is a check
+    whose logic nobody has ever run.
+
+    CI GATE must be GREEN -- a red desk-wide gate is the safety net down for everyone and
+    sat UNDETECTED for 81h (2026-07-22..23: a stale deadman test failed at HEAD while the
+    brain cycle that runs run_ci was quota-dead, so nothing surfaced the red). run_ci writes
+    data/.ci_last_run.json on every run; surface a red result mechanically so it enters the
+    48h escalation path instead of hiding until a human notices.
+    """
+    # AND A STALE MARKER IS A DEFECT TOO -- fail-closed (2026-08-05). Reading `ok is False` alone
+    # catches a gate that RAN and failed, and is blind to the more dangerous case: a gate that
+    # stopped running. run_ci holds a flock for its whole run, so any step that wedges leaves the
+    # lock held; every later run then takes the "another run holds the lock -- skipping (marker
+    # left untouched)" path and returns 0 by design. The marker freezes at its last value, and a
+    # frozen marker is never False. The desk would report its safety gate green, with nothing
+    # behind it, for as long as the wedge lasted -- which is the same blindness as the 81h above,
+    # only quieter, because this version never produces a red anything to notice.
+    #
+    # The timestamp was already being written and already being read; only its AGE went unchecked.
+    # An unreadable, absent or unparseable marker is treated the same way as an old one: on a
+    # safety gate the honest reading of "unknown" is "not proven green", never "fine".
     ci_marker = ROOT / "data/.ci_last_run.json"
-    if ci_marker.exists():
-        with contextlib.suppress(OSError, json.JSONDecodeError):
+    if not ci_marker.exists():
+        defects.append(("ci-gate-unproven",
+                        "data/.ci_last_run.json absent -- the desk-wide gate has no recorded "
+                        "result at all. Unknown is NOT green. Run scripts/run_ci.py"))
+    else:
+        try:
             ci = json.loads(ci_marker.read_text("utf-8"))
             if ci.get("ok") is False:
                 defects.append(("ci-gate-red",
                                 f"last CI run ({ci.get('ts')}) was RED -> {ci.get('failed')}; "
                                 "the desk-wide safety gate is down. Run scripts/run_ci.py + fix"))
+            # NOW is epoch seconds (time.time()), not a datetime -- compare in epoch space.
+            age_h = (NOW - datetime.fromisoformat(str(ci.get("ts"))).timestamp()) / 3600.0
+            if age_h > _CI_STALE_H:
+                defects.append(("ci-gate-stale",
+                                f"last CI run was {age_h:.0f}h ago (>{_CI_STALE_H:.0f}h) -- the "
+                                "gate has STOPPED RUNNING, which a green marker cannot show. "
+                                "Usual cause: a wedged run_ci still holding data/.ci_run.lock, "
+                                "so every later run exits 0 'skipping'. Check for a stuck "
+                                "process, then run scripts/run_ci.py"))
+        except (OSError, json.JSONDecodeError, TypeError, ValueError):
+            defects.append(("ci-gate-unproven",
+                            "data/.ci_last_run.json unreadable or has no parseable timestamp -- "
+                            "cannot prove the desk-wide gate ran. Unknown is NOT green."))
 
 
 def check_dig_depth(defects) -> None:
@@ -1008,20 +1051,80 @@ def check_generation(defects) -> None:
                         "is being crowded out by meta-duties. Generation-first duty not honored."))
 
 
+#: How long the origin ledger may go unwritten before silence becomes a finding. The desk finds
+#: gaps continuously -- every cycle, every sweep -- so a week of no rows does not mean a week
+#: without gaps; it means a week without logging them.
+_BLINDSPOT_STALE_D = 7.0
+
+
+def _parse_iso(raw: object) -> float | None:
+    """An ISO stamp as epoch seconds, or None. None is a real answer: a row that cannot date
+    itself cannot bound the ledger's freshness, and must never be counted as recent."""
+    if not isinstance(raw, str) or not raw:
+        return None
+    try:
+        ts = datetime.fromisoformat(raw)
+    except ValueError:
+        return None
+    return (ts if ts.tzinfo is not None else ts.replace(tzinfo=UTC)).timestamp()
+
+
 def check_self_sufficiency(defects) -> None:
     """The meta-check: is the desk finding its own gaps, or is the principal still doing it?
     Reads the blind-spot ledger; if over the recent window the principal is the primary finder,
     the whole maximization apparatus is not yet working -- the top-level defect."""
+    # THE CHECK USED TO BE DISABLED BY THE ABSENCE OF ITS OWN INPUT (fixed 2026-08-05).
+    #
+    # Both early returns below were silent, and together they made this -- the desk's ONLY measure
+    # of whether it or the principal is finding the gaps -- reward non-compliance exactly:
+    #
+    #     skip the logging duty  ->  no ledger  ->  no defect  ->  the desk looks self-sufficient
+    #
+    # An organ that stops performing a duty thereby switched off the check on that duty. The
+    # cheapest way to a clean self-sufficiency reading was to never log anything, and on this box
+    # that is precisely the state found: data/blind_spot_ledger.jsonl DOES NOT EXIST, while L2.5
+    # has mandated origin-tagging every gap since 2026-07-21.
+    #
+    # It is the same fail-open as the CI marker and the source-health verdicts -- unknown reading
+    # as fine -- but it is the most expensive instance of it, because this is the meta-check. It
+    # is the one that would have told the desk that its whole maximisation apparatus was not
+    # working, and it could not fire while the apparatus was not working.
+    #
+    # So absence, emptiness and thinness are each a NAMED defect now. Note the direction: none of
+    # them claims the desk is failing to find gaps. They claim the desk CANNOT SHOW that it is,
+    # which is a different and honest statement, and the only one the evidence supports.
     lg = ROOT / "data/blind_spot_ledger.jsonl"
     if not lg.exists():
+        defects.append(("self-sufficiency-unlogged",
+                        "data/blind_spot_ledger.jsonl does not exist -- L2.5 mandates an "
+                        "origin-tagged row for EVERY gap found, and not one has been written. "
+                        "The desk cannot show whether it or the principal is finding its gaps, "
+                        "and skipping the duty is what silenced the check. "
+                        "Log via scripts/blind_spot.py log --origin self|guard|principal"))
         return
     rows = []
     for line in lg.read_text("utf-8").splitlines():
         with contextlib.suppress(Exception):
             rows.append(json.loads(line))
     live = [r for r in rows if not r.get("baseline")]  # judge post-baseline gaps only
+    # STALENESS, same reasoning as the CI marker: a ledger that stopped being written is a duty
+    # that stopped being performed, and its last rows keep describing a desk that no longer
+    # exists. Measured on the ledger's own newest stamp, never the file mtime -- any organ that
+    # touches the file would otherwise reset the clock without a gap having been logged.
+    newest = max((_parse_iso(r.get("ts")) for r in rows if r.get("ts")), default=None)
+    if newest is not None and (NOW - newest) / 86400.0 > _BLINDSPOT_STALE_D:
+        defects.append(("self-sufficiency-stale",
+                        f"blind-spot ledger last written {(NOW - newest) / 86400.0:.1f}d ago "
+                        f"(>{_BLINDSPOT_STALE_D:.0f}d) -- gaps are still being found (this sweep "
+                        "found some) and none are being logged, so the origin accounting has "
+                        "quietly stopped. A frozen ledger reads as a settled one."))
     if len(live) < 8:
-        return                                          # not enough signal yet
+        defects.append(("self-sufficiency-unproven",
+                        f"blind-spot ledger holds {len(live)} post-baseline row(s); 8 are needed "
+                        "before the self/guard/principal split means anything. This is NOT a "
+                        "clean bill of health -- it is too little evidence to give one, and it "
+                        "used to be reported as silence, which reads identically to passing."))
+        return
     by = {"self": 0, "guard": 0, "principal": 0}
     for r in live:
         by[r.get("origin", "principal")] = by.get(r.get("origin", "principal"), 0) + 1
@@ -4689,6 +4792,12 @@ CHECKS = [("carryover-skipped", check_carryover_skipped),
                       ("directives", check_directives), ("verify", check_verify_lag),
                       ("blind", check_blind_trigger),
                       ("self-application", check_self_application),
+                      # First-class rather than a line inside self-application (2026-08-05): the
+                      # desk-wide gate being green AND provably still running deserves its own
+                      # named entry, not a sentence buried among thirty organ probes. Registered
+                      # here and removed from check_self_application's body -- one caller, so it
+                      # reports once.
+                      ("ci-gate", check_ci_gate),
                       ("dig-depth", check_dig_depth),
                       ("interrogation", check_interrogation),
                       ("generation", check_generation),

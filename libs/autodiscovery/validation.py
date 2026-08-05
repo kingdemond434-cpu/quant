@@ -5,6 +5,41 @@ CPCV (purged K-fold OOS consistency), PBO, Deflated Sharpe (trials-deflated), Wh
 Walk-Forward, capacity, fragility (tail risk), and an accelerated shadow check (final held-out
 segment). Reuses the existing validation / discovery primitives. Thresholds are constants here and
 never relaxed.
+
+ANNUALISATION IS DECLARED BY THE CALLER, NEVER ASSUMED (R0086, fixed 2026-08-05)
+-------------------------------------------------------------------------------
+This module used to hold ``_PERIODS_PER_YEAR = 24 * 260`` (6240 — HOURLY bars on a 260-session
+calendar) and apply ``sqrt(6240)`` to whatever series arrived, while ``validate()`` had no
+frequency parameter at all. Every caller that fed anything other than MT5 hourly bars therefore
+stored an inflated ``annual_sharpe``:
+
+    DAILY crypto bars (365/yr)   sqrt(6240/365)  = 4.135x too large
+    8h funding bars  (1095/yr)   sqrt(6240/1095) = 2.387x too large
+    12h bars         (730/yr)    sqrt(6240/730)  = 2.924x too large
+    DAILY FX bars    (252/yr)    sqrt(6240/252)  = 4.976x too large
+
+That number is not decoration: ``libs/autodiscovery/memory.py`` persists it for EVERY candidate,
+and ``scripts/run_rejection_rescore.py`` ranks the reject-recovery queue by
+``max(oos_sharpe, annual_sharpe)``. So the fix is a REQUIRED ``periods_per_year`` argument on
+``validate()`` — no default, because any default is a frequency assumption wearing a different
+hat, and the one this file used to hold was wrong for every production caller but one.
+
+``periods_per_year=None`` is the ONE thing a default could never be: an explicit declaration that
+the series has no bar clock (per-BET returns, e.g. scripts/run_prediction_markets.py). It reports
+``annual_sharpe`` as UNMEASURED rather than manufacturing a number — the same treatment
+``adv_usd``/``capacity`` got in R0080, and for the same reason.
+
+PRE-FIX STORED ROWS ARE INFLATED AND ARE NOT COMPARABLE TO POST-FIX ONES.
+Every ``research_candidates.annual_sharpe`` written before 2026-08-05 was produced by the hourly
+constant above, whatever bars the campaign actually ran on; the lab's own default path is
+``crypto_adapter``'s D1, so those rows carry the 4.135x inflation. History is NOT rewritten here —
+silently rescaling stored verdicts would destroy the ability to reproduce what the desk decided at
+the time — so the two populations are distinguished at the point of writing instead: since this
+fix, the lab records the bar interval it scored on in ``candidate_returns.timeframe`` (it used to
+write NULL because nothing told the lab its own frequency). A row whose series carries a declared
+timeframe was annualised honestly; a NULL is a pre-fix row and its ``annual_sharpe`` must be
+divided by ``sqrt(6240/ppy)`` before it can be compared with anything. Ranking the two together
+un-adjusted — which the reject queue does — orders old rows ~4x ahead of identical new ones.
 """
 
 from __future__ import annotations
@@ -15,6 +50,7 @@ from typing import Any
 import numpy as np
 
 from libs.autodiscovery.models import Hypothesis, ValidationMetrics, ValidationVerdict
+from libs.data.timeframe import Timeframe
 from libs.discovery.capacity import capacity_estimate
 from libs.discovery.tail_risk import tail_risk
 
@@ -47,7 +83,73 @@ from libs.validation.stepwise import (
     romano_wolf_stepdown,
 )
 
-_PERIODS_PER_YEAR = 24 * 260
+# DELETED 2026-08-05 (R0086): `_PERIODS_PER_YEAR = 24 * 260`. It was the desk's only frequency
+# assumption and it was applied to every series regardless of the bars in it (module docstring).
+# The constant is GONE rather than kept as a default, because a default is exactly how a frequency
+# assumption survives a fix: `validate()` now REQUIRES the caller to declare its clock, and
+# `bars_per_year()` below derives it from a declared bar interval so the declaration is a lookup
+# rather than an arithmetic opinion at each call site.
+#: Crypto perps trade 24/7 -- there is no weekend and no session, so a daily bar is 1/365th of a
+#: year, not 1/252nd. Both calendars are real and the caller picks: this one for crypto, ~252 for
+#: MT5 FX/CFD sessions (see `days_per_year`).
+CRYPTO_DAYS_PER_YEAR = 365.0
+#: MT5 FX/metal/index sessions: ~252 tradeable days a year. The deleted constant used 260, which
+#: is weekdays-with-no-holidays; 252 is the desk's own figure everywhere it already annualises MT5
+#: series (run_mt5_portfolio, run_crossasset_robust, run_crossasset_shadow, run_mt5_crossasset),
+#: and it is the SMALLER of the two, so adopting it here cannot inflate anything.
+SESSION_DAYS_PER_YEAR = 252.0
+_MINUTES_PER_DAY = 1440.0
+#: The admissible band for a declared clock. The ceiling is one-minute bars on a 24/7 year
+#: (525,600) -- the finest grid the lake holds -- and the floor is one observation a year, below
+#: which "annualising" has nothing to annualise. A value outside it is not a slow or fast clock,
+#: it is a units error (per-DAY instead of per-year, a millisecond count, a bar COUNT), and the
+#: whole point of R0086 is that a wrong frequency must be refused rather than silently used.
+_MIN_PERIODS_PER_YEAR = 1.0
+_MAX_PERIODS_PER_YEAR = CRYPTO_DAYS_PER_YEAR * _MINUTES_PER_DAY
+
+
+def bars_per_year(bar: Timeframe | str, *,
+                  days_per_year: float = CRYPTO_DAYS_PER_YEAR) -> float:
+    """Observations per year for a DECLARED bar interval — the annualiser's only sanctioned source.
+
+    ``bars_per_year(Timeframe.D1)`` is 365 (crypto, 24/7), ``Timeframe.H8`` is 1095 (the native
+    perp-funding clock), ``Timeframe.H1`` is 8760. Pass ``days_per_year=SESSION_DAYS_PER_YEAR``
+    for MT5 FX/CFD series, where the market is shut two days a week.
+
+    An unknown interval RAISES. That is the point: the failure this replaces was a validator that
+    accepted any series and annualised it with a constant, so the one behaviour this function must
+    never have is a fallback. The result is range-checked too, so a nonsense calendar is refused
+    HERE -- at the lab's construction, say -- rather than one campaign later inside validate().
+    """
+    try:
+        tf = bar if isinstance(bar, Timeframe) else Timeframe(str(bar).upper())
+    except ValueError as exc:
+        raise ValidationError(
+            f"unknown bar interval {bar!r}; declare one of "
+            f"{', '.join(t.value for t in Timeframe)} or pass periods_per_year directly"
+        ) from exc
+    return _checked_periods_per_year(float(days_per_year) * _MINUTES_PER_DAY / float(tf.minutes))
+
+
+def _checked_periods_per_year(periods_per_year: float) -> float:
+    """The declared clock, or a refusal. Never a repair, never a fallback."""
+    try:
+        ppy = float(periods_per_year)
+    except (TypeError, ValueError) as exc:
+        raise ValidationError(
+            f"periods_per_year={periods_per_year!r} is not a number; it is a COUNT of bars per "
+            "year, not a bar interval -- use bars_per_year(Timeframe.D1) to convert one"
+        ) from exc
+    if not np.isfinite(ppy) or not (_MIN_PERIODS_PER_YEAR <= ppy <= _MAX_PERIODS_PER_YEAR):
+        raise ValidationError(
+            f"periods_per_year={periods_per_year!r} is not a bar clock: it must be finite and in "
+            f"[{_MIN_PERIODS_PER_YEAR:g}, {_MAX_PERIODS_PER_YEAR:g}] (one bar a year to one-minute "
+            "bars 24/7). Use bars_per_year(Timeframe.D1) etc., or periods_per_year=None to declare "
+            "that this series has no bar clock and leave annual_sharpe UNMEASURED."
+        )
+    return ppy
+
+
 _DSR_THRESHOLD = 0.95
 _PBO_THRESHOLD = 0.5       # same bar as PBOResult.overfit; only the ATTRIBUTION changed
 # CAPACITY PARITY (principal order 2026-07-30; constitution L1.18/§42 made ARITHMETIC).
@@ -479,6 +581,17 @@ def stratified_campaign_gates(
 def validate(
     returns: np.ndarray,
     *,
+    # THE BAR CLOCK, DECLARED BY WHOEVER READ THE BARS (R0086, 2026-08-05). REQUIRED and
+    # deliberately without a default: the defect this replaces was a module-level constant
+    # (24 * 260) applied to every series that arrived, inflating stored annual Sharpe 4.135x on
+    # daily bars and 2.387x on 8h bars -- and a default here would be the same constant with a
+    # nicer name. `bars_per_year(Timeframe.D1)` is the sanctioned way to compute it.
+    #
+    # None is an explicit declaration that the series HAS no bar clock -- per-BET returns, where
+    # observations are settlements rather than bars (scripts/run_prediction_markets.py). It reports
+    # annual_sharpe as UNMEASURED instead of inventing a number, which is the R0080 treatment of
+    # adv_usd: a missing input must not be indistinguishable from a measured one downstream.
+    periods_per_year: float | None,
     hypothesis: Hypothesis,
     n_trials: int,
     sharpe_estimates: np.ndarray,
@@ -529,6 +642,10 @@ def validate(
     buy_hold_returns: np.ndarray | None = None,
     universe_returns: np.ndarray | None = None,
 ) -> ValidationVerdict:
+    # Refused BEFORE anything else, including the length check: a caller with a broken clock has a
+    # broken verdict whatever the series length, and raising here means the mistake surfaces at the
+    # call site that made it rather than as a quietly wrong number in a report.
+    ppy = _checked_periods_per_year(periods_per_year) if periods_per_year is not None else None
     arr = np.asarray(returns, dtype="float64")
     if len(arr) < 250:
         return ValidationVerdict(
@@ -608,7 +725,10 @@ def validate(
     tail = tail_risk(arr)
 
     metrics = ValidationMetrics(
-        annual_sharpe=float(sharpe_ratio(arr) * np.sqrt(_PERIODS_PER_YEAR)),
+        # MULTIPLICATIVE, and against the DECLARED clock: a per-bar Sharpe scales with the square
+        # root of the number of bars in a year. 0.0 when no clock was declared -- see `unmeasured`
+        # below, which is what stops a zero reading as "no edge".
+        annual_sharpe=(float(sharpe_ratio(arr) * np.sqrt(ppy)) if ppy is not None else 0.0),
         expected_value=float(arr.mean()),
         oos_sharpe=wf.oos_sharpe,
         dsr=dsr.dsr,
@@ -652,6 +772,13 @@ def validate(
     # NOT block survival (this is a screen with zero promotion authority, and failing a candidate
     # for an input its caller does not have would kill real alphas), but it is impossible to miss.
     unmeasured: list[str] = []
+    # NO CLOCK, NO ANNUAL NUMBER. `annual_sharpe` is 0.0 above when the caller declared
+    # periods_per_year=None, and a bare 0.0 in the store is indistinguishable from a measured
+    # zero-edge candidate -- which is precisely how a 4.135x inflation lived in the metric for
+    # months without anyone being able to see it. Saying "nobody looked" is the whole R0086
+    # lesson applied to the metric rather than to a gate.
+    if periods_per_year is None:
+        unmeasured.append("annual_sharpe")
     if n_trades is None:
         unmeasured.append("sample_adequacy")
     else:

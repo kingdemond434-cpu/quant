@@ -103,6 +103,17 @@ def main() -> None:
         print(f"no candidate ledger at {db_path} -- nothing to re-score")
         return
     store = CandidateStore(Database(db_path, read_only=True))
+    # NEARNESS MIXES TWO POPULATIONS OF `annual_sharpe` UNTIL THE STORE TURNS OVER (R0086).
+    # Rows written before 2026-08-05 were annualised with the validator's deleted hourly constant
+    # (24*260) whatever bars they ran on, so a D1 lab row carries sqrt(6240/365) = 4.135x its
+    # honest value; rows written since carry the clock their caller declared. Nothing rewrites
+    # history -- see libs/autodiscovery/validation.py -- so ranking them together puts inflated
+    # rows ahead of identical honest ones (measured on a 50-slot batch: ~47 slots to pre-fix
+    # rows, ~24/50 overlap with the queue an all-honest store would produce).
+    # Within ONE population the order is unaffected: the deflation is a single positive constant
+    # and `annual_sharpe` dominates the per-bar `oos_sharpe` on both sides of it.
+    # A pre-fix row is recognisable by its stored series carrying a NULL `timeframe`
+    # (candidate_returns.timeframe), which the lab has populated since the fix.
     rejects = [
         (r.id, r.created_at, max(r.metrics.oos_sharpe, r.metrics.annual_sharpe))
         for r in store.rejects()

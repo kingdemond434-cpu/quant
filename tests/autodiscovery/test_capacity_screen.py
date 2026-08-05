@@ -39,6 +39,7 @@ from libs.autodiscovery.models import (
     ValidationMetrics,
 )
 from libs.autodiscovery.orchestrator import AutoDiscoveryLab
+from libs.data.timeframe import Timeframe
 from libs.research.capacity_policy import capacity_required
 from libs.store.connection import Database
 from libs.validation.economic_prior import MechanismType
@@ -58,7 +59,7 @@ def _hyp(subtype: str = "capacity_screen_unit") -> Hypothesis:
 
 
 def _lab(db: Database, bank: Path) -> AutoDiscoveryLab:
-    return AutoDiscoveryLab(db, lambda _s: None, capacity_bank=bank)
+    return AutoDiscoveryLab(db, lambda _s: None, bar=Timeframe.D1, capacity_bank=bank)
 
 
 def _series() -> CandidateSeries:

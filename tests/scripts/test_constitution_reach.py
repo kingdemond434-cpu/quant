@@ -60,6 +60,10 @@ _NOT_ORGANS = {
     "model_upgrade":         "capability BENCHMARK -- its prompts test the model, and seeding "
                              "them with the desk's objective would contaminate the measurement",
     "max_audit":             "the auditor itself; it reads organs, it is not one",
+    "check_llm_routing":     "an AST scan OVER the organs, never one of them -- it holds the "
+                             "roster FILENAME as a search marker and has no model call, no "
+                             "network and no prompt, so there is no reasoning for an objective "
+                             "to steer. Exactly the over-inclusion this net accepts by design",
 }
 
 

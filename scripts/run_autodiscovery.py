@@ -31,6 +31,8 @@ from libs.autodiscovery.reports import (
     research_report,
     survivor_report,
 )
+from libs.autodiscovery.validation import SESSION_DAYS_PER_YEAR
+from libs.data.timeframe import Timeframe
 from libs.store.connection import Database
 from libs.store.migrations import run_migrations
 
@@ -130,8 +132,21 @@ def main() -> None:
     provider = _mt5_provider(args.timeframe, args.bars, args.expected_server)
     import MetaTrader5 as mt5  # already initialized by _mt5_provider
 
+    # THE ANNUALISER MUST BE THE BARS ACTUALLY FETCHED (R0086). `_mt5_provider` resolves the
+    # timeframe with getattr(..., mt5.TIMEFRAME_H1) -- a silent fallback -- so parse it strictly
+    # here first: an interval this desk cannot name is refused loudly rather than fetched as one
+    # thing and annualised as another. MT5 instruments are FX/metals/indices, so the session
+    # calendar (~252 days) applies, not crypto's 365.
+    try:
+        bar = Timeframe(str(args.timeframe).upper())
+    except ValueError:
+        raise SystemExit(
+            f"--timeframe {args.timeframe!r} is not a bar interval this desk can annualise; "
+            f"use one of {', '.join(t.value for t in Timeframe)}"
+        ) from None
     lab = AutoDiscoveryLab(
-        db, provider, cost_provider=_mt5_cost_provider(mt5), families=families
+        db, provider, bar=bar, days_per_year=SESSION_DAYS_PER_YEAR,
+        cost_provider=_mt5_cost_provider(mt5), families=families
     )
     print("net-of-cost: per-symbol cost calibrated from live MT5 symbol_info")
     if families:

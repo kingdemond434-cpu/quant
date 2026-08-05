@@ -35,6 +35,7 @@ from libs.autodiscovery.models import (
 )
 from libs.autodiscovery.orchestrator import AutoDiscoveryLab
 from libs.core.time import from_iso8601, to_iso8601
+from libs.data.timeframe import Timeframe
 from libs.store.connection import Database
 from libs.validation.economic_prior import MechanismType
 
@@ -152,7 +153,7 @@ def test_rejected_candidates_get_their_series_stored_too(db: Database) -> None:
 
 def test_a_full_cycle_persists_a_series_for_every_stored_candidate(db: Database) -> None:
     """End to end on pure noise: every candidate is rejected, and every one keeps its evidence."""
-    lab = AutoDiscoveryLab(db, noise_provider())
+    lab = AutoDiscoveryLab(db, noise_provider(), bar=Timeframe.D1)
     result = lab.cycle(["EURUSD"])
     assert result.tested > 0
     assert result.survivors == 0                      # noise: everything is rejected ...
@@ -173,7 +174,7 @@ def test_a_full_cycle_persists_a_series_for_every_stored_candidate(db: Database)
 
 def test_the_cycles_stored_series_are_usable_for_correlation(db: Database) -> None:
     """The reason the table exists: a cohort correlation matrix that could not be built before."""
-    lab = AutoDiscoveryLab(db, noise_provider())
+    lab = AutoDiscoveryLab(db, noise_provider(), bar=Timeframe.D1)
     lab.cycle(["EURUSD"])
     ids = [r.id for r in lab.store.all()]
     got = lab.store.returns_matrix(ids)

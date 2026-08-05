@@ -90,12 +90,14 @@ _SELF = "libs/research/data_registry.py"
 #: ``no-date-column`` and therefore counted as unmeasured: ``drill_log``/``copytrading_panel`` key
 #: their timestamp ``at``, ``exchange_announcements`` uses ``published_at``, ``model_upgrade_log``
 #: uses ``generated``. "The desk has no span for it" and "the desk did not look under the right
-#: key" are different findings and only one of them is about the data. ``at`` is LAST because it is
-#: the least specific: a record carrying both ``at`` and ``published_at`` must be read on the
-#: latter.
-_DATE_COLS = ("date", "day", "ts", "timestamp", "time", "open_time", "dt", "datetime",
-              "published_at", "first_seen", "generated", "created_at", "recorded_at",
-              "as_of", "run_at", "at")
+#: key" are different findings and only one of them is about the data. ORDER IS LOAD-BEARING and
+#: the rule is OBSERVATION TIME BEFORE INGEST TIME: the scan stops at the first key present, so a
+#: record carrying both ``stamp`` and ``first_seen_utc`` must be read on the stamp -- a backfilled
+#: feed's first_seen is TODAY on every row and would report a 3-month series as one day. ``at`` is
+#: LAST because it is the least specific of all.
+_DATE_COLS = ("date", "day", "ts", "ts_ms", "timestamp", "time", "open_time", "dt", "datetime",
+              "published_at", "stamp", "generated", "created_at", "recorded_at", "as_of",
+              "run_at", "first_seen", "first_seen_utc", "at")
 
 #: Array names inside an ``.npz`` cache that carry the observation clock, most-specific first.
 _NPZ_TIME_KEYS = ("open_time", "time", "ts", "timestamp", "date", "funding_time")
@@ -107,7 +109,7 @@ _LAKE = "data/lake/bronze"
 #: Flat directories of ``<SYM>-<INTERVAL>-<START>-<END>.npz`` caches. Same row-#77 shape as the
 #: lake -- a panel invisible to a flat scan -- but partitioned by FILENAME rather than by
 #: directory, which is why the lake sweep alone never saw it. ``data/binance_vision`` is the
-#: desk's longest measurable panel on this checkout and was absent from its own map entirely.
+#: longest PRICE history this checkout holds and was absent from the desk's own map entirely.
 _NPZ_CACHES = ("data/binance_vision",)
 
 #: Reported instead of a span when the declared path is not on this box. The house spelling
@@ -582,10 +584,14 @@ def score(asset: DataAsset) -> tuple[float, float]:
 
 # --------------------------------------------------------------------------- discovery
 
-#: ``"data/foo.jsonl"`` written as one literal.
+#: A data path written as ONE string literal, e.g. data slash name dot jsonl. Deliberately spelled
+#: out in prose rather than shown: this module is itself inside the corpus these patterns scan, and
+#: an EXAMPLE in a comment here was discovered as a declared asset and reported NOT-READABLE-HERE --
+#: the registry inflating its own denominator with a path nothing writes. ``_SELF`` now skips this
+#: file outright; the prose keeps the trap from being re-set by the next person to add an example.
 _SLASH_PATH = re.compile(r'["\']((?:data/)[A-Za-z0-9_./-]+\.(?:parquet|jsonl|ndjson|npz))["\']')
-#: ``_ROOT / "data" / "foo.jsonl"`` -- the SAME asset spelled as a Path join. Missing this form is
-#: the flat-hand-list defect wearing a different hat: ``data/source_health.jsonl`` is a live ledger
+#: The SAME asset spelled as a Path join of directory and filename. Missing this form is the
+#: flat-hand-list defect wearing a different hat: ``data/source_health.jsonl`` is a live ledger
 #: that ``scripts/hunt_source_alternatives.py`` reads every day and it was absent from the desk's
 #: own map because ``libs/research/source_health.py`` joins its path instead of spelling it.
 _JOIN_PATH = re.compile(
@@ -639,14 +645,16 @@ def _writers_and_readers(
         except OSError:
             continue
         rel = py.relative_to(root).as_posix()
+        if rel == _SELF:
+            # This module names data paths as PATTERNS and EXAMPLES, never as data it reads or
+            # writes. Scanning itself turned a comment's example into a declared-but-absent asset.
+            continue
         for m in _SLASH_PATH.finditer(src):
             # a writer names the path near a write call; everything else is a reader
             record(m.group(1), rel, src[max(0, m.start() - 220):m.end() + 220])
         for m in _JOIN_PATH.finditer(src):
             record(f"data/{m.group(1)}", rel, src[max(0, m.start() - 220):m.end() + 220])
         for d, pat in dir_pats:
-            if rel == _SELF:                       # naming an asset is not consuming it
-                continue
             for m in pat.finditer(src):
                 # A DIRECTORY asset defeats the proximity rule above: the fetcher binds the dir at
                 # module level and does its np.savez 90 lines later, while a reader passes the same
@@ -781,8 +789,8 @@ def _npz_panels(root: Path) -> list[_Panel]:
 
     ``data/binance_vision`` is 55 files of 5.7-year daily and 3-year intraday USD-M perp history and
     it was invisible to BOTH existing sweeps: the flat scan only knows parquet/jsonl, and the lake
-    sweep only walks ``data/lake/bronze``. It is the longest thing this checkout can measure, three
-    research scripts already load from it, and the desk's map did not carry a single row for it.
+    sweep only walks ``data/lake/bronze``. It is the longest PRICE history this checkout holds,
+    three research scripts already load from it, and the desk's map carried no row for it at all.
 
     Split by INTERVAL because a 5-minute panel and a daily panel bound completely different studies
     and merging them would report one span for two datasets. Every member is opened -- an npz reads
@@ -805,7 +813,7 @@ def _npz_panels(root: Path) -> list[_Panel]:
                 display=f"{cache}/*-{interval}-*.npz",
                 files=files, members=files, partitions=parts,
                 note=(f"{len(files)} cache file(s) across {len(parts)} symbol(s) at {interval}; "
-                      f"every member measured")))
+                      "every member measured")))
     return panels
 
 

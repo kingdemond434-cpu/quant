@@ -125,10 +125,17 @@ def main() -> None:
         n_bets = len(bets)
         # The gauntlet needs >=250 obs; below that we report descriptive stats, not a verdict.
         if n_bets >= 250:
+            # NO BAR CLOCK, DECLARED AS SUCH (R0086). An observation here is one SETTLED MARKET,
+            # not a bar: the series is per-BET, the markets resolve at irregular times and several
+            # can settle on the same day, so there is no honest number of observations per year to
+            # annualise by. `None` reports annual_sharpe as UNMEASURED rather than manufacturing
+            # one -- which is what the old hourly constant did, silently, at 79x per-bet Sharpe.
+            # The report below quotes sharpe_per_bet, which is the unit these returns are in.
             v = validate(bets, hypothesis=Hypothesis(
                 family=Family.LIQUIDITY, subtype=f"pm_{name}", symbol="POLYMARKET", params={},
                 mechanism=MechanismType.BEHAVIORAL, edge_source="favorite-longshot bias",
-                failure_modes=_FAIL), n_trials=len(series), sharpe_estimates=sharpes,
+                failure_modes=_FAIL), periods_per_year=None,
+                n_trials=len(series), sharpe_estimates=sharpes,
                 returns_matrix=matrix, campaign=campaign, column=col)
             survived, reason = v.survived, v.rejection_reason
         else:

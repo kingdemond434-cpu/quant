@@ -485,6 +485,85 @@ _REGISTRY: Final[tuple[Replacements, ...]] = (
                     "material"),
         ),
     ),
+    # ------------------------------------------------------------------ THE PRODUCTIVE LANES
+    # REGISTERED BECAUSE THEY WORK, NOT BECAUSE THEY FAILED (2026-08-05). Every entry above was
+    # written after a source went dark. WeChat and Juejin had NO alternatives at all -- and they
+    # are the two Chinese lanes currently PRODUCING: 3 of the 5 new rows on 2026-08-05 came from
+    # WeChat, including the day's top three by score (18.0 / 13.0 / 9.0).
+    #
+    # That is the wrong way round. The cost of losing a source is proportional to what it yields,
+    # so the lanes most worth a fallback are precisely the ones still working -- and the moment
+    # they stop is the moment nobody has time to research a replacement. Sogou in particular
+    # rate-limits hard and serves an anti-bot page (cn_sources.sogou_weixin already handles that
+    # verdict), so this is a live hazard rather than a hypothetical one.
+    Replacements(
+        source="wechat",
+        information_class=CN_TECH_WRITEUP,
+        recorded_reason=("WORKING and highest-yielding CN lane -- ok/10 results per query, 3 of "
+                         "5 new rows on 2026-08-05 including the top three by score. Registered "
+                         "AGAINST A FUTURE OUTAGE, and the outage is plausible: WeChat is a "
+                         "closed platform and Sogou is its only public index, so this lane rests "
+                         "on a single third-party gateway that already rate-limits aggressively"),
+        candidates=(
+            # FIRST because it is ALREADY BUILT and running: no parser to write, no probe to pass.
+            # Chinese quant authors commonly cross-post between 公众号 and Juejin, so the overlap
+            # is real though partial -- it narrows the loss, it does not erase it.
+            _c("juejin_cross", CN_TECH_WRITEUP,
+               "https://api.juejin.cn/search_api/v1/search?query=%E9%87%8F%E5%8C%96&id_type=0",
+               "NONE -- already built. cn_sources.juejin is live; widen CN_ARTICLE_QUERIES if "
+               "WeChat dies",
+               in_tree="libs/data/cn_sources.juejin", ledger_key="juejin",
+               note="Chinese quant authors commonly cross-post between 公众号 and Juejin, so the "
+                    "overlap is real but partial"),
+            _c("sogou_weixin_mobile", CN_TECH_WRITEUP,
+               "https://weixin.sogou.com/weixinwap?type=2&query=%E9%87%8F%E5%8C%96",
+               "point cn_sources._get at the wap endpoint and re-point the txt-box block regex; "
+               "the mobile view carries the same article list with lighter markup and is "
+               "frequently throttled separately from the desktop path",
+               ledger_key="wechat",
+               note="Same index, different door -- the cheapest fallback and the first to try"),
+            _c("wechat2rss_mirrors", CN_TECH_WRITEUP,
+               "https://wechat2rss.xlab.app/",
+               "public services that republish named 公众号 as RSS. Subscribe the quant accounts "
+               "the miner already surfaces by name, then parse feeds instead of searching -- "
+               "this trades DISCOVERY for RELIABILITY and is strictly a complement",
+               note="Does not replace search: it follows accounts already known to be worth "
+                    "reading, so it cannot find a new author. Pair with a discovery source."),
+            _c("toutiao_search", CN_TECH_WRITEUP,
+               "https://so.toutiao.com/search?keyword=%E9%87%8F%E5%8C%96%E5%9B%9E%E6%B5%8B",
+               "probe first, then parse the embedded state JSON as the ixigua candidate does "
+               "(same ByteDance shape) into an Article-shaped row",
+               needs_js=True,
+               note="今日头条 carries a large share of Chinese finance writing outside WeChat"),
+        ),
+    ),
+    Replacements(
+        source="juejin",
+        information_class=CN_TECH_WRITEUP,
+        recorded_reason=("WORKING -- clean JSON API, err_no 0, ~20 results per query, no auth. "
+                         "The most RELIABLE Chinese source the desk has, which is exactly why "
+                         "its silent loss would be noticed late: an API this well-behaved trains "
+                         "everyone to stop checking it"),
+        candidates=(
+            _c("csdn_search", CN_TECH_WRITEUP,
+               "https://so.csdn.net/api/v3/search?q=%E9%87%8F%E5%8C%96&t=blog&p=1",
+               "add libs/data/cn_sources.csdn(query) mapping result_vos[] title + description "
+               "into the Article shape",
+               ledger_key="csdn",
+               note="Same developer-writeup class. NOTE the ledger records csdn as read-timing-"
+                    "out FROM THIS BOX -- a vantage fact, not a death, and the VPS may reach it"),
+            _c("segmentfault", CN_TECH_WRITEUP,
+               "https://segmentfault.com/search?q=%E9%87%8F%E5%8C%96",
+               "parse the server-rendered result list into the Article shape; no auth observed",
+               note="思否 -- the other large CN developer community, smaller quant share"),
+            _c("cnblogs", CN_TECH_WRITEUP,
+               "https://zzk.cnblogs.com/s/blogpost?Keywords=%E9%87%8F%E5%8C%96%E5%9B%9E%E6%B5%8B",
+               "parse the server-rendered search page; cnblogs is old-web and stable, with no JS "
+               "requirement observed",
+               note="博客园 -- long-tail and older material, which is where procedure-heavy "
+                    "writeups tend to survive after platform churn"),
+        ),
+    ),
 )
 
 

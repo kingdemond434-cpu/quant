@@ -122,8 +122,8 @@ def test_the_screen_selection_is_computed_but_does_not_gate():
                      mechanism=MechanismType.LIQUIDITY, edge_source="fixture",
                      failure_modes=["decays"])
     sh = np.array([m[:, i].mean() / m[:, i].std() for i in range(m.shape[1])])
-    verdict = validate(m[:, 0], hypothesis=hyp, n_trials=5, sharpe_estimates=sh,
-                       returns_matrix=m)
+    verdict = validate(m[:, 0], hypothesis=hyp, periods_per_year=365.0, n_trials=5,
+                       sharpe_estimates=sh, returns_matrix=m)
     assert not [g for g in verdict.gates if "screen" in g], (
         f"the BY-FDR screen has become a survival gate: {sorted(verdict.gates)}")
     # ...and the FWER stepdown IS the one that decides, on the per-candidate path.

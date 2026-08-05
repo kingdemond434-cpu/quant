@@ -84,6 +84,8 @@ exogenous has not identified anything, and the type system now says so.
 
 from __future__ import annotations
 
+from typing import Any
+
 import numpy as np
 from pydantic import BaseModel, ConfigDict
 
@@ -186,7 +188,10 @@ def _cross_sectional_t(x: np.ndarray) -> float:
     sd = float(np.std(x, ddof=1))
     if sd <= 1e-12 or not np.isfinite(sd):
         return 0.0
-    return float(np.mean(x)) / (sd / np.sqrt(n))
+    # float() on the whole quotient, not just the numerator: np.sqrt(n) is a numpy scalar, so
+    # the division returns np.float64 and the declared -> float was satisfied only by
+    # coincidence of runtime duck-typing.
+    return float(float(np.mean(x)) / (sd / float(np.sqrt(n))))
 
 
 def difference_in_differences(
@@ -256,13 +261,19 @@ def difference_in_differences(
     share = round(peak / max(peak + pool, 1), 3)
 
     def _refuse(why: str, **kw: float | bool) -> DiDResult:
-        base: dict[str, object] = {
+        # dict[str, Any], not dict[str, object]: `**base` into a typed constructor is exactly the
+        # version-specific inference pyproject warns about -- one mypy demands a suppression here
+        # and the next flags that same suppression as unused, so the two environments disagree
+        # about whether the file is clean. Any removes the dependence rather than silencing
+        # whichever side loses. (A comment must not OPEN with the suppression keyword either:
+        # mypy parses that as a malformed directive, which is how this line first failed.)
+        base: dict[str, Any] = {
             "n_treated": n, "n_control_pool": pool, "treated_share": share, "effect": 0.0,
             "parallel_trends_t": 0.0, "parallel_trends_ok": False, "placebo_t": 0.0,
             "placebo_ok": False, "identified": False, "inference": None, "passed": False,
             "verdict": why, "exogeneity_note": exogeneity_note, "direction": direction}
         base.update(kw)
-        return DiDResult(**base)  # type: ignore[arg-type]
+        return DiDResult(**base)
 
     if n == 0:
         return _refuse("No treated units supplied -- nothing to identify.")

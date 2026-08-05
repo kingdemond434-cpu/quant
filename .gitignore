@@ -78,3 +78,14 @@ ops/role
 # NARROW ON PURPOSE: libs/data/ is real source (28 tracked files) and tests/data/ holds
 # fixtures, so a `**/data/` rule would hide both.
 /scripts/data/
+
+# PRINCIPAL DROP -- NEVER COMMIT. data/inbox holds material the principal supplies by hand from
+# CLOSED sources: private WeChat groups, Telegram channels, paid substacks, login-walled pages.
+# `data/*` above already covers it; this entry is explicit and separate because the failure here
+# is IRREVERSIBLE -- publishing a private group's contents to a git remote cannot be undone by a
+# later commit, and a future `!data/<something>` exception added in good faith for an artifact
+# could otherwise widen the hole silently. The scored OUTPUT (reports/principal_drop.json) is
+# ignored too: it quotes up to 600 characters of the source material verbatim.
+data/inbox/
+data/inbox/**
+reports/principal_drop.json

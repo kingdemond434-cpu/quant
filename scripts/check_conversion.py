@@ -30,7 +30,31 @@ STATUSES (fail LOUD, never advisory):
                collectors, recorders, miners, diggers, screens-on-discovery, forward clocks and
                every scheduled detector run at full cadence unconditionally. Acquisition is
                never cut to meet extraction.
-  OK           dispositions flowing and backlog under the line.
+  DEBT-GROWING materially more rows arrived than were dispositioned over the last 7 days (a
+               shortfall of >=5 AND a conversion ratio <0.75), with a non-empty backlog. Both
+               numbers were computed and printed here from the start and never compared, so a
+               desk raising 40 a week and dispositioning 3 read OK for as long as the backlog
+               stayed under the REPAIR-MODE line -- falling further behind every week with the
+               evidence sitting unread in its own artifact. The required move is CONVERT FASTER,
+               never raise less.
+               RANKS BELOW REPAIR-MODE as a headline, because the two prescribe the same action
+               and REPAIR-MODE is the signal downstream consumers already read; this status
+               covers what REPAIR-MODE cannot see, a backlog under the line that is still
+               growing. But `debt_growing` is recorded as a FACT and fails the fence (exit 2)
+               whichever status won -- a desk over the line AND falling further behind must not
+               exit 0 because the more urgent-sounding label got there first.
+  ARRIVALS-COLLAPSED
+               7-day arrivals fell below 40% of the trailing 28-day rate. Exit 2, and it outranks
+               every green status below it. This is the ANTI-GAMING status: every other reading
+               here improves when arrivals fall, so the cheapest route to a clean conversion
+               score is to stop looking -- and that would be indistinguishable from success. It
+               is reported even when everything else is green, because that is exactly when it is
+               invisible. L1.28b(f) forbade this in prose ("acquisition is never cut to meet
+               extraction") and nothing measured it until now. The required move is FIND HARDER.
+               Named separately from DEBT-GROWING on purpose: convert-faster and find-harder are
+               opposite instructions, and one number holding both would let each mask the other.
+  OK           dispositions keeping pace with arrivals, arrivals holding up, backlog under the
+               line. All three, or it is not OK.
 
 Artifact: data/conversion_status.json -- consumed by run_max_push.py so conversion debt ranks
 in the SAME daily queue as every other below-ceiling aspect (L1.28b: conversion hunts 100%
@@ -59,6 +83,28 @@ from libs.ops.lawful import guard as _law_guard  # noqa: E402
 
 # The deep-sweep backpressure line: open+past-due above this flips audit windows to repair.
 REPAIR_MODE_BACKLOG = 25
+
+#: A week's arrivals below this fraction of the trailing baseline is a COLLAPSE, not a quiet week.
+#: 0.4 is deliberately generous -- real finding rates are lumpy (a deep sweep raises twenty rows
+#: in an afternoon, the next week raises four), and a fence that fires on ordinary variance gets
+#: disabled, taking the real signal with it. What it must catch is the SUSTAINED quiet that means
+#: the desk stopped looking, which is the only way a conversion ratio can be gamed.
+ARRIVAL_COLLAPSE_FRACTION = 0.4
+#: Rows needed in the trailing 28d before a baseline means anything. Below it the comparison is
+#: reported UNMEASURED rather than computed -- a collapse detector built on three rows would fire
+#: on noise, and a detector that cries wolf is a detector nobody keeps.
+ARRIVAL_BASELINE_MIN = 8
+
+#: DEBT-GROWING needs BOTH a material shortfall and a materially poor rate. Either alone
+#: cries wolf: one row raised and not yet dispositioned is a desk keeping pace, not a desk losing
+#: ground, and a fence that fires on that gets switched off before it ever sees a real slide.
+#: Calibrated against the live ledger, where the slide is unambiguous -- 341 raised vs 157
+#: dispositioned in 7 days, a 184-row shortfall at a 0.46 conversion ratio.
+DEBT_GROWTH_MIN_ROWS = 5
+DEBT_GROWTH_MIN_RATIO = 0.75
+
+#: The statuses that FAIL the fence (exit 2) rather than merely colouring the artifact.
+_FENCE_FAILURES = frozenset({"FLATLINE", "DEBT-GROWING", "ARRIVALS-COLLAPSED"})
 # `done` and `screened` are written by organs that bypass the CLI (scripts/recommendations.py:223
 # only permits implemented|rejected|scheduled). They read "built, N tests, in the law gate" and
 # "Stage A run live" -- FINISHED WORK. Omitting them counted 15 completed rows as backlog forever
@@ -133,10 +179,64 @@ def build_report(root: Path, now: datetime | None = None) -> dict[str, Any]:
                  default=None)
     oldest_age = round((now - oldest).total_seconds() / 86400, 2) if oldest else 0.0
 
+    # CONVERSION MUST CATCH UP TO ARRIVALS, AND MUST NEVER CATCH UP BY REDUCING THEM.
+    #
+    # Both numbers below were already computed, already printed in the artifact, and NEVER
+    # COMPARED. Status asked only "is anything moving at all" (FLATLINE) and "is the pile big"
+    # (REPAIR-MODE), so a desk raising 40 rows a week and dispositioning 3 read OK for as long as
+    # the backlog stayed under the line -- falling 37 rows further behind every week, with the
+    # evidence of it sitting unread in its own artifact. Measured-but-unread, again.
+    #
+    # AND THE SECOND HALF IS THE ONE THAT MATTERS MORE, because it is the direction a desk drifts
+    # in without ever deciding to. Every status here improves when ARRIVALS FALL. Stop finding
+    # things and the backlog shrinks, dispositions keep pace trivially, and the fence goes green
+    # -- so the cheapest route to a clean conversion score is to look less hard. That is the
+    # opposite of what the fence is for, and it would be indistinguishable from success.
+    #
+    # L1.28b(f) already forbids it in prose ("acquisition is never cut to meet extraction") and
+    # nothing measured it. So arrivals are now compared against their own trailing baseline, and
+    # a COLLAPSE is a defect in its own right -- reported even when everything else is green,
+    # because that is exactly when it is invisible.
+    #
+    # The two failures are named separately on purpose: DEBT-GROWING means convert faster, and
+    # ARRIVALS-COLLAPSED means find harder. Merging them into one "conversion" number would let
+    # each mask the other, which is precisely how the ratio became gameable.
+    prior_start, prior_end = now - timedelta(days=35), now - timedelta(days=7)
+    arrivals_prior_28d = sum(
+        1 for r in rows
+        if (t := _parse_ts(r.get("raised"))) and prior_start <= t < prior_end)
+    baseline_7d = arrivals_prior_28d / 4.0          # prior 28 days expressed as a weekly rate
+    # Only meaningful once the baseline itself has enough mass; below that, say so rather than
+    # inventing a comparison out of three rows.
+    baseline_measurable = arrivals_prior_28d >= ARRIVAL_BASELINE_MIN
+    arrivals_collapsed = (baseline_measurable
+                          and arrivals_7d < ARRIVAL_COLLAPSE_FRACTION * baseline_7d)
+    debt_growth_7d = arrivals_7d - dispositions_7d
+    debt_growing = bool(
+        backlog
+        and debt_growth_7d >= DEBT_GROWTH_MIN_ROWS
+        and arrivals_7d
+        and dispositions_7d / arrivals_7d < DEBT_GROWTH_MIN_RATIO)
+
+    # PRECEDENCE, and REPAIR-MODE deliberately outranks DEBT-GROWING. The two prescribe the same
+    # action (convert more), but REPAIR-MODE is the already-wired admission signal that the
+    # max-push queue, sweep prompts and brain briefs read, and demoting it would change behaviour
+    # those consumers depend on for a headline that says the same thing. DEBT-GROWING exists to
+    # cover what REPAIR-MODE cannot see: a backlog UNDER the line that is nevertheless growing --
+    # the exact hole in the original logic, where a desk raising 40 a week and dispositioning 3
+    # read OK indefinitely.
+    #
+    # But `debt_growing` is a FACT, not a headline, so it is recorded and it fails the fence
+    # whichever status won. A desk that is over the line AND falling further behind must not exit
+    # 0 merely because the more urgent-sounding label got there first.
     if dispositions_7d == 0 and backlog:
         status = "FLATLINE"
+    elif arrivals_collapsed:
+        status = "ARRIVALS-COLLAPSED"
     elif len(backlog) > REPAIR_MODE_BACKLOG:
         status = "REPAIR-MODE"
+    elif debt_growing:
+        status = "DEBT-GROWING"
     else:
         status = "OK"
     return {
@@ -151,6 +251,25 @@ def build_report(root: Path, now: datetime | None = None) -> dict[str, Any]:
         "arrivals_7d": arrivals_7d, "dispositions_7d": dispositions_7d,
         "arrival_rate_per_day": round(arrivals_7d / 7, 3),
         "disposition_rate_per_day": round(dispositions_7d / 7, 3),
+        # The comparison the fence used to leave to the reader. Positive = the desk fell further
+        # behind this week; conversion owes the difference, and the debt compounds at the ROI
+        # each unconverted row states.
+        "debt_growth_7d": debt_growth_7d,
+        "debt_growing": debt_growing,
+        "conversion_ratio_7d": (round(dispositions_7d / arrivals_7d, 3)
+                                if arrivals_7d else None),
+        # The anti-gaming half. A ratio can always be improved by shrinking its denominator, so
+        # the denominator is watched on its own terms and against its own history.
+        "arrivals_prior_28d": arrivals_prior_28d,
+        "arrivals_baseline_7d": round(baseline_7d, 2) if baseline_measurable else None,
+        "arrivals_collapsed": arrivals_collapsed,
+        "arrivals_baseline_status": ("MEASURED" if baseline_measurable else
+                                     f"UNMEASURED -- only {arrivals_prior_28d} row(s) in the "
+                                     f"prior 28d, need {ARRIVAL_BASELINE_MIN} before a collapse "
+                                     "can be distinguished from a quiet month"),
+        "anti_gaming_note": ("conversion_ratio_7d must NEVER be raised by finding less. "
+                             "L1.28b(f): acquisition is never cut to meet extraction, and "
+                             "ARRIVALS-COLLAPSED outranks every green status below it."),
         "oldest_backlog_age_days": oldest_age,
         "queue_dispositioned": round(terminal / max(len(rows), 1), 4),
         "repair_mode_line": REPAIR_MODE_BACKLOG,
@@ -178,7 +297,12 @@ def main() -> int:
         print(f"-> {out}")
     if args.report_only:
         return 0
-    return 2 if rep["status"] == "FLATLINE" else 0
+    # DEBT-GROWING and ARRIVALS-COLLAPSED exit 2 alongside FLATLINE. The header's own rule is
+    # "fail LOUD, never advisory", and both are the fence's subject matter rather than context:
+    # one says conversion is losing ground, the other says the desk stopped finding things. An
+    # exit 0 on either would make this fence report the two failures it exists to catch in the
+    # same breath as success.
+    return 2 if (rep["status"] in _FENCE_FAILURES or rep.get("debt_growing")) else 0
 
 
 if __name__ == "__main__":

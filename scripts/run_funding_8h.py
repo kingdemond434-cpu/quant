@@ -73,7 +73,8 @@ def main() -> None:
         v = validate(active, hypothesis=Hypothesis(
             family=Family.CARRY, subtype=f"funding8h_{name}", symbol="CRYPTO_8H", params={},
             mechanism=MechanismType.RISK_PREMIUM, edge_source="funding carry @ native 8h",
-            failure_modes=_FAIL), n_trials=len(series), sharpe_estimates=sharpes,
+            failure_modes=_FAIL), periods_per_year=_PPY,   # native 8h bars, 1095/yr (R0086)
+            n_trials=len(series), sharpe_estimates=sharpes,
             returns_matrix=matrix, campaign=campaign, column=col) if len(active) >= 250 else None
         survived = bool(v.survived) if v else False
         survivors += int(survived)

@@ -197,10 +197,18 @@ def main(argv: list[str] | None = None) -> int:
     vantage = health.current_vantage()
 
     dead = {s.source for s in health.dead_sources(ledger)}
+    # A LANE THAT STOPPED BEING PROBED IS ALSO A LANE THE DESK IS NOT READING (2026-08-05).
+    # `dead_sources()` answers "what failed", and until today that was the hunter's whole input --
+    # so a source that quietly stopped being probed never failed, never appeared here, and never
+    # had an alternative hunted. Its absence from the report read exactly like health. That is the
+    # slower and more dangerous way to lose miner breadth, because nothing errors on the way down.
+    # source_health decays a stale HEALTHY to UNKNOWN rather than to DEAD (an old success is not
+    # evidence of failure), and this is the organ that has to act on the distinction.
+    unproven = {s.source for s in health.unproven_sources(ledger)}
     registered = {e.source for e in alt.registry()}
     # A DEAD source the registry has never heard of is the one thing this script cannot fix by
     # running: someone has to decide what carries the same information. Named, never swallowed.
-    unregistered = sorted(dead - registered)
+    unregistered = sorted((dead | unproven) - registered)
 
     if args.source:
         wanted = [args.source] if args.source in registered else []
@@ -210,7 +218,7 @@ def main(argv: list[str] | None = None) -> int:
     elif args.all:
         wanted = sorted(registered)
     else:
-        wanted = sorted(dead & registered)
+        wanted = sorted((dead | unproven) & registered)
 
     hunted: list[dict[str, Any]] = []
     for name in wanted:
@@ -227,11 +235,25 @@ def main(argv: list[str] | None = None) -> int:
     # while arXiv is fine is how a daily organ becomes noise and then gets ignored. Only sources
     # the ledger says are failing produce URGENT actions; the rest are redundancy the desk can
     # buy when it wants to, recorded and not shouted.
+    #
+    # UNPROVEN GETS ITS OWN BUCKET, and this is the load-bearing part rather than a formatting
+    # choice. Lumping it with URGENT would cry wolf: nothing is known to be broken, and a daily
+    # organ that shouts about sources which turn out to be fine is one that gets ignored, taking
+    # the real alarms down with it. Lumping it with STANDING REDUNDANCY would bury it: those are
+    # options the desk may buy at leisure, whereas this is a lane the desk currently believes it
+    # has and does not. Neither existing bucket carries "we stopped looking", so it gets a third
+    # -- and the required move is to PROBE, not to replace, because replacing a source that was
+    # only unobserved would retire a working lane on no evidence.
     urgent = {health.VERDICT_DEAD, health.VERDICT_DEGRADED}
     actions = [a for block in hunted for a in block["next_actions"]
                if block["health"]["verdict"] in urgent]
+    reprobe = [f"[{block['source']}] RE-PROBE FIRST -- {block['health']['claim']} "
+               f"({block['health']['last_error'] or 'no recent observation'}). "
+               f"{block['n_reachable']} alternative(s) stand ready if the re-probe confirms loss."
+               for block in hunted if block["health"]["verdict"] == health.VERDICT_UNKNOWN]
     standing = [a for block in hunted for a in block["next_actions"]
-                if block["health"]["verdict"] not in urgent]
+                if block["health"]["verdict"] not in urgent
+                and block["health"]["verdict"] != health.VERDICT_UNKNOWN]
     doc: dict[str, Any] = {
         "generated_utc": datetime.now(tz=UTC).isoformat(timespec="seconds"),
         "vantage": vantage,
@@ -242,10 +264,19 @@ def main(argv: list[str] | None = None) -> int:
         "mode": ("single-source" if args.source else
                  "all-registered" if args.all else "dead-only"),
         "dead_sources": sorted(dead),
+        # The lanes the desk believes it has and does not. Reported separately from `dead_sources`
+        # because the required move differs: a dead source needs a REPLACEMENT, an unproven one
+        # needs a PROBE, and treating the second as the first would retire a working lane on no
+        # evidence at all.
+        "unproven_sources": sorted(unproven),
+        "unproven_note": ("last probe SUCCEEDED but is older than "
+                          f"{health.STALE_AFTER_HOURS:.0f}h -- absence of recent evidence, NOT "
+                          "evidence of failure. Probe before replacing."),
         "dead_without_registered_alternatives": unregistered,
         "registry": alt.summary(),
         "hunted": hunted,
         "next_actions": actions,
+        "reprobe_first": reprobe,
         "standing_redundancy_options": standing,
     }
     if not dead and not (args.all or args.source):

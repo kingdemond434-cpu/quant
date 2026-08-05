@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import ClassVar
 
 import pytest
 
@@ -27,6 +28,7 @@ from libs.research.mechanism_census import (
     CensusReport,
     ClassCensus,
     Coverage,
+    DataAvailability,
     Verdict,
     _class_census,
     census,
@@ -382,3 +384,77 @@ def test_rank_gaps_helper_matches_the_full_report() -> None:
     ranked, unrankable = rank_gaps(report.classes, report.evidence)
     assert [g.class_id for g in ranked] == [g.class_id for g in report.gaps]
     assert [g.class_id for g in unrankable] == [g.class_id for g in report.unrankable]
+
+
+class TestTheSixClassesTheTaxonomyHadNeverNamed:
+    """Added 2026-08-05, answering the CRO brief's hardest question with the seat DARK.
+
+    The census can only rank what it has named, so an absent class is not low-ranked -- it is
+    INVISIBLE, and every coverage figure the desk quotes is computed against a denominator that
+    silently excludes it. With the binding constraint measured as DISTINCT MECHANISM SUPPLY (44
+    candidates covering 2.787 effective classes; cross-mechanism N_eff 4.08 against the ~100 a
+    weak-edge portfolio needs), widening what CAN be ranked is worth more than another candidate
+    inside a class already occupied.
+
+    THE ARITHMETIC RUNS THE UNFLATTERING WAY, which is the point: 2.787 of 20 reads 13.9%, and
+    2.787 of 26 reads 10.7%. Naming six classes the desk was not testing made its headline
+    coverage WORSE. A coverage ratio is trivially improved by declining to name things (L1.53),
+    so a taxonomy that only grows when a screen is ready is a denominator managed for appearance.
+
+    Each entry is pinned by ID and by the DISTINCTION it claims, because the failure mode is not
+    deletion -- it is somebody deciding a class is "just" an existing one and quietly merging it,
+    which restores the blind spot while the class count still looks healthy.
+    """
+
+    _NEW: ClassVar[dict[str, str]] = {
+        "index_reconstitution_flow": "primary_market_creation_flow",
+        "treasury_cost_base_liquidation": "mechanical_supply_release",
+        "estate_liquidation_distribution": "holder_cost_basis_capitulation",
+        "collateral_rule_deleveraging": "positioning_crowding_unwind",
+        "settlement_expiry_mechanics": "volatility_risk_premium",
+        "fiscal_calendar_flow": "attention_sentiment_overreaction",
+    }
+
+    def test_all_six_are_present(self) -> None:
+        missing = sorted(set(self._NEW) - {c.id for c in TAXONOMY})
+        assert not missing, f"class(es) removed from the taxonomy: {missing}"
+
+    def test_each_names_a_payer_compelled_by_something_other_than_an_opinion(self) -> None:
+        """The admission test. A payer who is merely WRONG is a pattern, not a mechanism, however
+        well it backtests -- so each of these must name a balance sheet, a court or a rule."""
+        compelled = ("cannot", "must", "forced", "mandate", "court", "statute", "obligation",
+                     "compelled", "rule", "contract", "does not")
+        for cid in self._NEW:
+            cls = CLASS_BY_ID[cid]
+            assert any(w in cls.payer.lower() for w in compelled), (
+                f"{cid}: the payer story does not name a compulsion")
+            assert len(cls.payer) > 120, f"{cid}: payer story too thin to be falsifiable"
+
+    def test_each_records_why_it_is_not_the_class_it_most_resembles(self) -> None:
+        """The merge guard. Every one of these will face 'isn't that just X?', and the answer must
+        live in the file rather than in whoever wrote it."""
+        for cid, resembles in self._NEW.items():
+            note = CLASS_BY_ID[cid].data.note.lower()
+            assert resembles.split("_")[0] in note or "not " in note, (
+                f"{cid} does not record how it differs from {resembles}")
+
+    def test_each_is_testable_on_free_data(self) -> None:
+        """A class the desk cannot afford to test widens the denominator without widening the
+        hunt -- honest, but it would make coverage unreachable rather than merely low."""
+        for cid in self._NEW:
+            cls = CLASS_BY_ID[cid]
+            assert cls.data.availability is DataAvailability.FREE_ACQUIRABLE, (
+                f"{cid} is not free-acquirable")
+            assert cls.data.datasets, f"{cid} names no datasets"
+
+    def test_the_specific_classes_still_outrank_the_generic_price_ones(self) -> None:
+        """Priority is tie-break ORDER: a promiscuous price word must never outbid a specific
+        economic one. The six are data-specific, so all must sort before the price-only tail."""
+        pri = {c.id: c.priority for c in TAXONOMY}
+        generic = max(pri["market_risk_premium"], pri["price_continuation"])
+        for cid in self._NEW:
+            assert pri[cid] < generic, f"{cid} sorts after a generic price class"
+
+    def test_priorities_remain_unique_after_the_insertion(self) -> None:
+        pris = [c.priority for c in TAXONOMY]
+        assert len(set(pris)) == len(pris), "ties must break deterministically"

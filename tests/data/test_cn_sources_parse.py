@@ -142,3 +142,62 @@ def test_a_genuinely_empty_page_says_so(monkeypatch) -> None:
     monkeypatch.setattr("libs.data.cn_sources._get", _fetch("<html><body></body></html>"))
     arts, err = sogou_weixin("量化")
     assert not arts and "markup changed or empty result" in err
+
+
+# ------------------------------------------------------------------ HTML entities (2026-08-05)
+#
+# THE THIRD PARSE BUG ON THIS SOURCE, after the CJK word-boundary bug and the attribute-order bug,
+# and it has the same shape as both: the fetch was healthy and the PARSE quietly degraded what
+# reached the ranker. Entities were never decoded, which cost two different things.
+#
+#   1. EVERY WECHAT URL WAS DEAD. Sogou writes hrefs as `?url=...&amp;type=2&amp;query=...`
+#      because an href is an HTML attribute. Taken literally that is a parameter named `amp;type`,
+#      so the link does not resolve -- and it fails in the quiet way: the row looks complete, ranks
+#      normally, and only breaks when a human finally clicks it.
+#   2. ENTITIES REACHED THE SCORER. `&quot;` is untidy; a NUMERIC entity is the hazard, because
+#      `&#x91CF;&#x5316;` is how `量化` arrives from some encoders. The ranker would find no
+#      Chinese in the title at all and score a relevant article zero -- a real edge made invisible
+#      to the gate rather than rejected by it, which is precisely the CJK `\b` failure again.
+
+_ENTITY_HTML = (
+    '<div class="txt-box">'
+    '<a href="/link?url=ABC&amp;type=2&amp;query=%E9%87%8F%E5%8C%96&amp;token=XYZ" '
+    'uigs="article_title_0">&#x91CF;&#x5316;&quot;&#x56DE;&#x6D4B;&quot;&#x9677;&#x9631;</a>'
+    '<p class="txt-info">&#x8FC7;&#x62DF;&#x5408; &amp; &#x6837;&#x672C;&#x5916;</p>'
+    "</div>"
+)
+
+
+def test_entities_in_the_href_are_decoded_so_the_link_resolves(monkeypatch) -> None:
+    monkeypatch.setattr("libs.data.cn_sources._get", _fetch(_ENTITY_HTML))
+    arts, err = sogou_weixin("量化")
+    assert err is None and len(arts) == 1
+    url = arts[0].url
+    assert "&amp;" not in url, "an un-decoded href yields a parameter named 'amp;type'"
+    assert "&type=2" in url and "&token=XYZ" in url
+
+
+def test_numeric_entities_are_decoded_so_the_ranker_can_see_the_chinese(monkeypatch) -> None:
+    """The expensive half. An encoded title is not merely ugly -- it is unscoreable, and an
+    unscoreable title is a candidate the miner discards without ever reporting a problem."""
+    monkeypatch.setattr("libs.data.cn_sources._get", _fetch(_ENTITY_HTML))
+    arts, _ = sogou_weixin("量化")
+    assert arts[0].title == '量化"回测"陷阱'
+    assert "&#x" not in arts[0].searchable and "&quot;" not in arts[0].searchable
+    assert "量化" in arts[0].searchable, "the keyword the ranker scores on must survive the parse"
+    assert arts[0].snippet == "过拟合 & 样本外"
+
+
+def test_decoding_happens_after_tag_stripping_not_before(monkeypatch) -> None:
+    """ORDER IS LOAD-BEARING. Unescape first and an encoded `&lt;em&gt;` becomes a real tag that
+    the stripper then eats, deleting text between two angle brackets that were never markup."""
+    html_doc = (
+        '<div class="txt-box">'
+        '<a href="/link?url=A" uigs="article_title_0">'
+        '&lt;em&gt;&#x91CF;&#x5316;&lt;/em&gt;</a>'
+        '<p class="txt-info">x</p></div>'
+    )
+    monkeypatch.setattr("libs.data.cn_sources._get", _fetch(html_doc))
+    arts, _ = sogou_weixin("量化")
+    assert arts[0].title == "<em>量化</em>", (
+        "decoding before stripping would have swallowed 量化 as if it were markup")

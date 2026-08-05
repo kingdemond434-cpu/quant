@@ -74,6 +74,33 @@ LEDGER_PATH: Final[Path] = _ROOT / "data" / "source_health.jsonl"
 #: week before anything is hunted, it is too high.
 DEAD_AFTER_CONSECUTIVE_FAILURES: Final[int] = 5
 
+#: How long a HEALTHY verdict remains a claim about the present (2026-08-05).
+#:
+#: THE DEFECT THIS CLOSES. A verdict is computed at WRITE time, from that run's observation, and
+#: then stored. Nothing on the read side ever asked how old it was. So a source probed once,
+#: successfully, and then never probed again reported HEALTHY forever -- and the longer the
+#: silence lasted the more settled the answer looked. `verdict_for` even takes `last_checked_utc`
+#: and tests it only for None, which closes the never-probed hole while leaving the
+#: stopped-being-probed one wide open. The two are the same hole at different ages.
+#:
+#: WHY IT MATTERS MORE HERE THAN ANYWHERE ELSE. scripts/hunt_source_alternatives.py hunts
+#: replacements for whatever `dead_sources()` returns. A stale HEALTHY never enters that list, so
+#: the hunt never fires, and the desk goes on believing it has a research lane it has not
+#: actually touched in months. Miner breadth would collapse silently -- which is precisely the
+#: failure the alternatives hunter exists to prevent, arriving through the hunter's own input.
+#:
+#: THE DECAY IS TO UNKNOWN, NEVER TO DEAD. An old success is not evidence of failure; it is the
+#: absence of recent evidence, and this module's honesty rule (1) already has a state for that.
+#: Calling it DEAD would manufacture a failure nobody observed and send the hunter chasing a
+#: source that may be perfectly fine.
+#:
+#: 72h against miner cadences measured in hours: long enough that a quiet weekend or a couple of
+#: skipped runs does not churn the ledger, short enough that a lane cannot go dark for a working
+#: week unnoticed. FALSIFIER: if sources start reading UNKNOWN while the miners are demonstrably
+#: running them on schedule, this is too low; if a lane stops being probed and nothing says so
+#: within a few days, it is too high.
+STALE_AFTER_HOURS: Final[float] = 72.0
+
 VERDICT_UNKNOWN: Final[str] = "UNKNOWN"
 VERDICT_HEALTHY: Final[str] = "HEALTHY"
 VERDICT_DEGRADED: Final[str] = "DEGRADED"
@@ -142,6 +169,20 @@ class SourceState:
     failing_vantages: tuple[str, ...] = ()
     ok_vantages: tuple[str, ...] = ()
     replaced_by: str | None = None
+
+    def age_hours(self, *, now: datetime | None = None) -> float | None:
+        """Hours since this source was last probed, or None if that cannot be established.
+
+        None is a real answer, not a failure to compute: a row with no readable check timestamp
+        cannot support a claim about the present, and callers must handle it as such rather than
+        defaulting it to 0 (fresh) -- which is the shape this whole staleness repair exists to
+        stop. Negative ages (a clock skew, or a row written ahead of the reader) are returned as
+        measured rather than clamped; hiding a skewed clock helps nobody.
+        """
+        parsed = _parse_utc(self.last_checked_utc)
+        if parsed is None:
+            return None
+        return (_utc(now) - parsed).total_seconds() / 3600.0
 
     @property
     def dead_here(self) -> bool:
@@ -253,9 +294,53 @@ def _parsed(line: str) -> dict[str, Any] | None:
     return obj if isinstance(obj, dict) else None
 
 
-def load_states(path: Path | None = None) -> dict[str, SourceState]:
-    """Latest state per source. Sources absent from the ledger are simply absent -- see
-    :func:`state_of` for the UNKNOWN default, which is deliberately not invented here."""
+def stale_verdict(state: SourceState, *, now: datetime | None = None,
+                  stale_after_h: float = STALE_AFTER_HOURS) -> SourceState:
+    """Decay a HEALTHY verdict whose evidence has gone old back to UNKNOWN.
+
+    Applied on the READ side, because that is where the lie was told: the write side records what
+    it genuinely saw, and the record only becomes a misstatement once it is quoted as though it
+    described today. See STALE_AFTER_HOURS for why this exists and why the decay target is
+    UNKNOWN rather than DEAD.
+
+    Left ALONE, deliberately:
+
+    * DEAD and DEGRADED. Ageing them to UNKNOWN would drop a source out of ``dead_sources()`` and
+      silently CANCEL the alternatives hunt that its failure started -- the error would be the
+      expensive one, and it would look like progress. A source that has stopped being probed
+      while failing keeps its failing verdict until something probes it again.
+    * REPLACED. That is a desk decision, not an observation, so it does not age.
+    * UNKNOWN. Already the state of not knowing.
+
+    An unparseable or missing ``last_checked_utc`` on a HEALTHY row decays too: a claim of health
+    that carries no date is one that can never be shown to be old, which is the strongest form of
+    this bug rather than an edge case exempt from it.
+    """
+    if state.verdict != VERDICT_HEALTHY:
+        return state
+    age = state.age_hours(now=now)
+    if age is not None and age <= stale_after_h:
+        return state
+    when = "no readable check timestamp" if age is None else f"last checked {age:.0f}h ago"
+    return replace(
+        state, verdict=VERDICT_UNKNOWN, scope=SCOPE_UNKNOWN,
+        last_error=(f"STALE: {when} (>{stale_after_h:.0f}h) -- the last probe SUCCEEDED, so this "
+                    "is not a failure; it is the absence of recent evidence. Probe it before "
+                    "relying on this lane."))
+
+
+def load_states(path: Path | None = None, *, now: datetime | None = None,
+                stale_after_h: float = STALE_AFTER_HOURS) -> dict[str, SourceState]:
+    """Latest state per source, with stale HEALTHY verdicts decayed to UNKNOWN.
+
+    Sources absent from the ledger are simply absent -- see :func:`state_of` for the UNKNOWN
+    default, which is deliberately not invented here.
+
+    The decay lives HERE rather than in each consumer so that no future caller has to remember
+    it. ``state_of`` and ``dead_sources`` both read through this function and inherit the repair;
+    a consumer that genuinely wants the raw stored rows passes ``stale_after_h=math.inf`` and has
+    to type that, which is the point.
+    """
     p = LEDGER_PATH if path is None else path
     out: dict[str, SourceState] = {}
     for line in _read_lines(p):
@@ -265,21 +350,51 @@ def load_states(path: Path | None = None) -> dict[str, SourceState]:
         name = str(row.get("source", "")).strip()
         if not name:
             continue
-        out[canonical(name)] = _row_to_state(row)
+        out[canonical(name)] = stale_verdict(
+            _row_to_state(row), now=now, stale_after_h=stale_after_h)
     return out
 
 
-def state_of(source: str, path: Path | None = None) -> SourceState:
-    """State for one source. A source the ledger has never seen is UNKNOWN, never DEAD."""
+def state_of(source: str, path: Path | None = None, *, now: datetime | None = None,
+             stale_after_h: float = STALE_AFTER_HOURS) -> SourceState:
+    """State for one source. A source the ledger has never seen is UNKNOWN, never DEAD -- and a
+    source last seen healthy too long ago is UNKNOWN too, for the same reason: no current
+    evidence either way."""
     name = canonical(source)
-    return load_states(path).get(name, SourceState(source=name))
+    return load_states(path, now=now, stale_after_h=stale_after_h).get(
+        name, SourceState(source=name))
 
 
-def dead_sources(path: Path | None = None) -> list[SourceState]:
+def dead_sources(path: Path | None = None, *, now: datetime | None = None,
+                 stale_after_h: float = STALE_AFTER_HOURS) -> list[SourceState]:
     """Every source whose verdict is DEAD, this-vantage or global. Both are worth hunting for:
-    a source this box cannot reach is a lane this box cannot mine, whatever the VPS sees."""
-    return sorted((s for s in load_states(path).values() if s.dead_here),
-                  key=lambda s: (-s.consecutive_failed_runs, s.source))
+    a source this box cannot reach is a lane this box cannot mine, whatever the VPS sees.
+
+    Unaffected by the staleness decay by construction -- it only touches HEALTHY -- but the
+    parameters are threaded through so a caller reasoning about one clock reasons about one
+    clock everywhere, rather than this function quietly reading a different `now`.
+    """
+    return sorted(
+        (s for s in load_states(path, now=now, stale_after_h=stale_after_h).values()
+         if s.dead_here),
+        key=lambda s: (-s.consecutive_failed_runs, s.source))
+
+
+def unproven_sources(path: Path | None = None, *, now: datetime | None = None,
+                     stale_after_h: float = STALE_AFTER_HOURS) -> list[SourceState]:
+    """Sources the desk cannot currently claim as usable: never probed, or probed too long ago.
+
+    THE LIST THAT DID NOT EXIST. ``dead_sources()`` answers "what failed", and the alternatives
+    hunter works from it -- but a lane that quietly stopped being probed never fails, so it never
+    appeared anywhere and no organ was responsible for it. This is the other half of the same
+    question, and it is the half that grows while nobody is looking: a source stops being mined,
+    nothing errors, and the desk's breadth shrinks with every artifact still reporting green.
+
+    Ordered oldest-evidence first, because that is the order in which the claims are weakest.
+    """
+    states = load_states(path, now=now, stale_after_h=stale_after_h).values()
+    unproven = [s for s in states if s.verdict == VERDICT_UNKNOWN]
+    return sorted(unproven, key=lambda s: (-(s.age_hours(now=now) or float("inf")), s.source))
 
 
 def record_run(observations: Sequence[Observation], *, path: Path | None = None,
@@ -407,6 +522,29 @@ def _fold(observations: Sequence[Observation]) -> list[Observation]:
                 err_by[name] = obs.error
     return [Observation(source=n, ok=ok_by[n], error=None if ok_by[n] else err_by[n],
                         vantage=van_by[n]) for n in order]
+
+
+def _parse_utc(raw: str | None) -> datetime | None:
+    """A stored ISO stamp as an aware UTC datetime, or None if it cannot be read as one.
+
+    Deliberately NOT symmetric with :func:`_utc`, which raises on a naive datetime. That strictness
+    is right on the WRITE path, where a bad stamp corrupts the ledger's idempotency key and must
+    stop the run. On the READ path an unparseable stamp is a fact about an old row, and refusing
+    to load the ledger because one historical line is malformed would take the desk's whole source
+    map down over a row nobody can fix. So: None, which every caller must then treat as "cannot
+    establish freshness" -- never as fresh.
+
+    A naive stored stamp is read as UTC rather than rejected: every writer in this module stamps
+    UTC, so a missing suffix is a serialisation slip, and the alternative is discarding a genuine
+    observation over punctuation.
+    """
+    if not raw:
+        return None
+    try:
+        parsed = datetime.fromisoformat(raw)
+    except (TypeError, ValueError):
+        return None
+    return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=UTC)
 
 
 def _utc(now: datetime | None) -> datetime:

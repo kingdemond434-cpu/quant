@@ -22,6 +22,7 @@ from scripts.build_data_registry import main as build_registry
 
 from libs.research.capability_ratchet import read_capability
 from libs.research.data_registry import (
+    _DATE_COLS,
     NOT_READABLE_HERE,
     REPL_PERISHABLE,
     REPL_PROPRIETARY,
@@ -543,10 +544,19 @@ class TestTheRatchetCountActuallyRises:
         self._artifact(tmp_path, measured=16, assets=98)
         assert self._score(tmp_path) == pytest.approx(10.0 * 16 / 98, abs=0.05)
 
-    def test_the_real_artifact_on_this_box_is_readable_by_the_ratchet(self) -> None:
-        """End to end: what build_data_registry writes is what the ratchet counts."""
-        doc = json.loads((REPO / "data/data_assets.json").read_text("utf-8"))
-        aspect = next(a for a in read_capability(REPO) if a.key == "data_coverage")
+    def test_the_real_artifact_on_this_box_is_readable_by_the_ratchet(self,
+                                                                     tmp_path: Path) -> None:
+        """End to end: what build_data_registry actually wrote is what the ratchet actually counts.
+
+        The live artifact is COPIED first rather than scored in place -- the desk rebuilds it on a
+        cron and inside run_intelligence_cycle, and a test that reads the file twice around a
+        rebuild would fail on a race instead of on the contract it is guarding.
+        """
+        raw = (REPO / "data/data_assets.json").read_text("utf-8")
+        (tmp_path / "data").mkdir(parents=True)
+        (tmp_path / "data/data_assets.json").write_text(raw, "utf-8")
+        doc = json.loads(raw)
+        aspect = next(a for a in read_capability(tmp_path) if a.key == "data_coverage")
         comp = next(c for c in aspect.components if c.key == "assets_with_measured_span")
         assert comp.state == "MEASURED"
         assert comp.score == pytest.approx(
@@ -586,3 +596,48 @@ class TestTheFastAndSlowClockReadersAgree:
         import numpy as np
 
         assert _days_from_epoch(np.asarray([], dtype="float64")) == set()
+
+
+class TestTheDateKeyListStaysMostSpecificFirst:
+    """_DATE_COLS grows every time a readable asset turns out to key its clock differently. Order
+    is load-bearing: the scan stops at the FIRST key present, so a generic name added ahead of a
+    specific one silently re-dates every asset that carries both."""
+
+    def test_a_record_with_two_clocks_is_read_on_the_specific_one(self, tmp_path: Path) -> None:
+        p = tmp_path / "two.jsonl"
+        p.write_text(json.dumps({"date": "2026-01-01", "at": "2020-05-05"}) + "\n"
+                     + json.dumps({"date": "2026-01-02", "at": "2020-05-06"}) + "\n", "utf-8")
+        span = measure_span(p)[0]
+        assert span.first == "2026-01-01", "'at' is the fallback, never the override"
+
+    def test_an_observation_stamp_beats_the_day_the_desk_first_saw_it(self,
+                                                                     tmp_path: Path) -> None:
+        """A backfilled feed's `first_seen_utc` is TODAY on every row -- reading the span off
+        it would report 1 day for a 3-month series."""
+        p = tmp_path / "flow.jsonl"
+        p.write_text("".join(
+            json.dumps({"stamp": d, "first_seen_utc": "2026-08-05T00:00:00+00:00"}) + "\n"
+            for d in ("2026-06-01", "2026-06-02", "2026-06-03")), "utf-8")
+        span = measure_span(p)[0]
+        assert span.first == "2026-06-01" and span.observed_days == 3
+
+    def test_every_key_in_the_list_is_actually_reachable(self) -> None:
+        assert len(set(_DATE_COLS)) == len(_DATE_COLS), "a duplicate key is dead configuration"
+
+
+class TestTheRegistryDoesNotDeclareItsOwnExamples:
+    """It greps the corpus it is IN. A path written as an example in this module's own comments was
+    discovered as a declared asset and reported NOT-READABLE-HERE -- the registry inflating its own
+    denominator with a path nothing writes and nothing reads."""
+
+    def test_no_asset_is_declared_solely_by_the_registry_module(self) -> None:
+        for a in build(REPO):
+            assert a.collector != "libs/research/data_registry.py"
+            assert "libs/research/data_registry.py" not in a.consumers
+
+    def test_a_module_that_only_names_a_path_in_prose_declares_nothing(self,
+                                                                      tmp_path: Path) -> None:
+        (tmp_path / "libs/research").mkdir(parents=True)
+        (tmp_path / "libs/research/data_registry.py").write_text(
+            'PAT = "data/example_only.jsonl"\n', "utf-8")
+        assert not [a for a in build(tmp_path) if a.id == "example_only"]
