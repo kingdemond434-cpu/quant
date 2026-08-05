@@ -67,11 +67,21 @@ _DEFAULT_OUT = Path("data/type2_cost.json")
 
 #: The measured-context documents this instrument is built on. Their EXISTENCE is verified and
 #: reported; their contents are cited, never re-derived here.
-_CITATIONS = (
-    "docs/research/gate_power_audit.md",
-    "docs/research/REALITY_CHECK_POWER.md",
-    "libs/research/axis_screen.py",
-    "reports/reality_check_audit.json",
+#: The measured context this report cites, each declared TRACKED or RUNTIME.
+#:
+#: THE DISTINCTION IS LOAD-BEARING AND WAS MISSING. A tracked citation that is absent is a
+#: DANGLING REFERENCE -- a doc deleted or renamed, and this report now cites nothing. A runtime
+#: citation that is absent is the ordinary state of any clean checkout, because reports/ is
+#: gitignored wholesale (.gitignore:51). Collapsing the two made "is this artifact present" a
+#: question about the BOX rather than the repo, and the walker's end-to-end test asserted all four
+#: present -- so it went red on every checkout that had not happened to run that producer. A
+#: verdict about the HOST is not a verdict about the DESK.
+_CITATIONS: tuple[tuple[str, bool], ...] = (
+    ("docs/research/gate_power_audit.md", False),
+    ("docs/research/REALITY_CHECK_POWER.md", False),
+    ("libs/research/axis_screen.py", False),
+    # reports/ is gitignored: produced by run_reality_check_audit on whichever box ran it.
+    ("reports/reality_check_audit.json", True),
 )
 
 #: Bars per year by artifact interval. The intraday runs differ ONLY in bar size and cover the same
@@ -539,13 +549,28 @@ def read_cot_screen(root: Path) -> tuple[list[Type2Cost], list[dict[str, Any]]]:
 
 
 def read_moat(root: Path) -> tuple[list[Type2Cost], list[dict[str, Any]]]:
-    """The moat screen. On this checkout it is BLOCKED with zero rows -- so it is reported, not read.
+    """The moat screen's recorded negatives, labelled with the power they were taken at.
 
-    docs/research/VPS_STATE_20260805.md cites a 2026-08-02 moat_campaign.json with 48 candidates,
-    n_obs 1,065 and two screen survivors whose OOS Sharpes (0.103, 0.098) sit at the same 0.100
-    ceiling every failed mechanism reached. That file is runtime state on the VPS and is NOT in
-    this checkout. Reconstructing its rows from the prose that cites them would fabricate exactly
-    the kind of record this instrument exists to demand, so it is reported as NOT-READABLE-HERE.
+    WHEN THIS READER WAS WRITTEN the artifact was BLOCKED with zero rows and this function
+    reported NOT-READABLE-HERE, correctly refusing to reconstruct rows from the prose in
+    docs/research/VPS_STATE_20260805.md that cites them. The campaign has since RUN
+    (2026-08-05T04:10, 48 candidates, 6 screen survivors), and the reader then reported
+    UNHANDLED-SHAPE -- honest, and still zero of 48 negatives labelled. Detect-implies-repair:
+    a reader that names the shape it cannot handle and stops is half a deliverable (L1.28b).
+
+    THE CLOCK IS THE ONE THING THAT COULD MAKE THIS LIE. ``sharpe_negative`` demands that
+    ``n_bars`` and ``ppy`` describe the SAME clock, and its docstring names that pair as the one
+    way to overstate power. This campaign runs on ``bar_ms`` 60,000 -- ONE-MINUTE bars -- so ppy
+    is 525,600, not the 365 every other reader here passes. Defaulting it would credit 4,980
+    minutes of tape with 13.6 YEARS of evidence and turn the desk's blindest campaign into its
+    best-powered one. ppy is therefore derived from the artifact's own declared interval and a
+    missing/implausible ``bar_ms`` is refused rather than defaulted.
+
+    PER-ROW ELAPSED TIME COMES FROM THE ROW'S OWN SYMBOL. Names are ``mechanism:SYMBOL`` and
+    ``bars_per_symbol`` carries the length each symbol actually had, which ranges 4,981 to 25,791
+    -- a 5.2x spread. Charging every row the campaign minimum would understate power for most of
+    the panel; charging the maximum would credit history a symbol does not have. A row whose
+    symbol is not in the map falls back to the campaign-wide ``n_obs``, and says so.
     """
     p = root / "reports/moat_campaign.json"
     d = _read_json(p)
@@ -553,7 +578,7 @@ def read_moat(root: Path) -> tuple[list[Type2Cost], list[dict[str, Any]]]:
         return [], [
             {"artifact": str(p), "status": "NOT-READABLE-HERE", "why": "absent or unparseable"}
         ]
-    rows = d.get("rows") or []
+    rows = [r for r in (d.get("rows") or []) if isinstance(r, dict)]
     if not rows:
         return [], [
             {
@@ -566,13 +591,61 @@ def read_moat(root: Path) -> tuple[list[Type2Cost], list[dict[str, Any]]]:
                 ),
             }
         ]
-    return [], [
-        {
-            "artifact": str(p),
-            "status": "UNHANDLED-SHAPE",
-            "why": f"{len(rows)} rows present but this reader was written against the empty shape",
-        }
-    ]
+
+    bar_ms = d.get("bar_ms")
+    if not isinstance(bar_ms, int | float) or not 0 < float(bar_ms) <= 86_400_000:
+        # REFUSED, NOT DEFAULTED. Without the interval there is no way to convert a bar count into
+        # elapsed time, and guessing daily bars is the single assumption that would make every
+        # label here wrong in the optimistic direction.
+        return [], [
+            {
+                "artifact": str(p),
+                "status": "NOT-READABLE-HERE",
+                "why": (f"{len(rows)} rows present but bar_ms is {bar_ms!r}: without the bar "
+                        "interval, n_bars cannot be converted to elapsed time and any power "
+                        "label would be a guess"),
+            }
+        ]
+    ppy = 365.0 * 24.0 * 3600.0 * 1000.0 / float(bar_ms)
+    bars = {str(k): float(v) for k, v in (d.get("bars_per_symbol") or {}).items()
+            if isinstance(v, int | float)}
+    n_obs = float(d.get("n_obs") or 0.0)
+    n_cand = int(d.get("n_candidates") or len(rows))
+    bar_note = f"{float(bar_ms) / 1000.0:g}s bars (ppy {ppy:,.0f} derived from bar_ms)"
+
+    out: list[Type2Cost] = []
+    n_surv = sum(1 for r in rows if r.get("survived"))
+    out.append(
+        sharpe_negative(
+            f"MOAT CAMPAIGN: {len(rows) - n_surv} of {len(rows)} candidates fail the screen",
+            source="reports/moat_campaign.json",
+            n_bars=min(bars.values()) if bars else n_obs,
+            ppy=ppy,
+            n_tests=max(1, n_cand),
+            note=("campaign-level: multiplicity at the recorded candidate count, elapsed time at "
+                  f"the SHORTEST symbol history in the panel; {bar_note}"),
+        )
+    )
+    for r in rows:
+        if r.get("survived"):
+            continue        # a screen survivor is not a recorded negative
+        name = str(r.get("name") or "moat")
+        sym = name.split(":")[-1]
+        n_bars = bars.get(sym, n_obs)
+        out.append(
+            sharpe_negative(
+                name,
+                source="reports/moat_campaign.json#rows",
+                n_bars=n_bars,
+                ppy=ppy,
+                n_tests=max(1, n_cand),
+                note=(f"failed {r.get('failed') or []}; oos_sharpe {r.get('oos_sharpe')}; "
+                      + (f"elapsed at {sym}'s own {n_bars:,.0f} bars" if sym in bars else
+                         f"symbol {sym!r} absent from bars_per_symbol -- campaign-wide n_obs used")
+                      + f"; {bar_note}"),
+            )
+        )
+    return out, []
 
 
 _READERS = (
@@ -624,8 +697,13 @@ def print_report(costs: list[Type2Cost], unread: list[dict[str, Any]], root: Pat
           f"{REFERENCE_SHARPE:g}, correlation {REFERENCE_CORRELATION_EFFECT:g}.")
 
     print("\nCITATIONS (existence verified, contents cited not re-derived)")
-    for c in _CITATIONS:
-        print(f"  {'OK     ' if (root / c).exists() else 'MISSING'} {c}")
+    for c, runtime in _CITATIONS:
+        if (root / c).exists():
+            mark = "OK          "
+        else:
+            # DANGLING is a repo defect; ABSENT-HERE is the ordinary state of a clean checkout.
+            mark = "ABSENT-HERE " if runtime else "DANGLING    "
+        print(f"  {mark} {c}{' (runtime-only)' if runtime else ''}")
 
     print(f"\n{'source':<40} {'negative':<52} {'label':<18} {'unit':<24} "
           f"{'min detect':>10} {'pow@ref':>8} {'P(rej|ref)':>10}")
@@ -697,7 +775,14 @@ def build_artifact(costs: list[Type2Cost], unread: list[dict[str, Any]], root: P
             "correlation": list(DECLARED_CORRELATION_EFFECTS),
             "standardised_mean_unlock_screen": list(_UNLOCK_EFFECTS),
         },
-        "citations": {c: (root / c).exists() for c in _CITATIONS},
+        "citations": {c: (root / c).exists() for c, _ in _CITATIONS},
+        # A citation that SHOULD be in every checkout and is not. Empty is the healthy state;
+        # non-empty means this report cites something that no longer exists, which is a defect in
+        # the repo rather than a fact about this box.
+        "citations_dangling": sorted(
+            c for c, runtime in _CITATIONS if not runtime and not (root / c).exists()),
+        "citations_runtime_absent": sorted(
+            c for c, runtime in _CITATIONS if runtime and not (root / c).exists()),
         "headline": {
             "n_negatives": h.n_negatives,
             "n_powered": h.n_powered,
@@ -734,9 +819,15 @@ def main(argv: list[str] | None = None) -> int:
     out.write_text(json.dumps(build_artifact(costs, unread, root), indent=2) + "\n", "utf-8")
     if not args.quiet:
         print(f"\nwrote {out}")
-    missing = [c for c in _CITATIONS if not (root / c).exists()]
-    if missing:
-        print(f"WARNING: cited context missing from this checkout: {missing}", file=sys.stderr)
+    dangling = [c for c, runtime in _CITATIONS if not runtime and not (root / c).exists()]
+    absent_here = [c for c, runtime in _CITATIONS if runtime and not (root / c).exists()]
+    if dangling:
+        print(f"WARNING: this report cites TRACKED files that no longer exist: {dangling}",
+              file=sys.stderr)
+    if absent_here:
+        # Not a warning. reports/ is gitignored, so this is the ordinary state of a checkout that
+        # has not run the producer -- saying it on stderr trains readers to ignore stderr.
+        print(f"note: runtime-only citations not present on this host: {absent_here}")
     return 0
 
 

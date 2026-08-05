@@ -2594,7 +2594,19 @@ _FINDING_DOCS_EXCLUDED = {
                                           "against a 1.000 ratchet floor, i.e. trading three "
                                           "defects for two. If a future run's accepted claims "
                                           "are ever NOT routed to track_findings, move this into "
-                                          "_FINDING_DOCS",
+                                          "_FINDING_DOCS. ALSO THE §36 CLAIM (merged 2026-08-05, "
+                                          "ruff F601): a second entry for this same key was "
+                                          "added lower in this dict, and Python kept only the "
+                                          "later one -- silently deleting everything above. It "
+                                          "said: CADENCED PRODUCER, deep_review.py appends one "
+                                          "panel pass per risk-path module (LIVE_CONNECTOR_SPEC "
+                                          "s7 bar); unclaimed it read as an orphan, which is the "
+                                          "inventory-accumulates failure §36 exists to catch, so "
+                                          "the claim names the conversion path rather than "
+                                          "exempting the file from having one. Both reasons are "
+                                          "true and neither replaces the other -- one answers "
+                                          "'why is this out of FINDINGS scope', the other 'which "
+                                          "law claims this artifact'",
     "docs/CONSTITUTION.md": "LAW TEXT, and the 10 matches are false positives: _PROSE_RE keys on "
                             "'N. **Bold**', which is how the constitution numbers the sub-clauses "
                             "of L1.49 (3), L1.53 (1) and L1.54 (6). A law clause binds organs "
@@ -2682,14 +2694,11 @@ _FINDING_DOCS_EXCLUDED = {
         "L1.22 self-improvement. States how the desk researches its own research; enforced by the cycle's meta duty, not by an artifact-freshness clock.",
     "docs/research/UNREACHABLE_LAYER_TRIAGE.md":
         "§36 orphan-code triage. The standing record of which modules are unreachable and why, with each carrying an explicit wire/defer/retire verdict -- self-disposing, like the other triage registers.",
-    "docs/research/deep_review_inbox.md":
-        "CADENCED PRODUCER (§36) -- scripts/deep_review.py appends one panel pass per risk-path\n"
-        "module (LIVE_CONNECTOR_SPEC section 7 bar). It is an INBOX, so its own conversion rule\n"
-        "is the one its header states: every accepted finding is rowed via\n"
-        "scripts/track_findings.py in the same run, and the file is the transcript, not the\n"
-        "backlog. Unclaimed it read as an orphan, which is exactly the inventory-accumulates\n"
-        "failure §36 exists to catch -- the claim names the conversion path rather than\n"
-        "exempting the file from having one.",
+    # deep_review_inbox.md's §36 claim was HERE and has been merged into its single entry above
+    # (ruff F601, 2026-08-05). A repeated dict-key literal is not a style nit: Python keeps the
+    # LAST binding, so this block was silently deleting the measured findings-scope exclusion --
+    # coverage numbers, the F0024/F0025 -> R0401 evidence and the "move this into _FINDING_DOCS"
+    # escape hatch -- and leaving the exclusion justified by the wrong argument entirely.
     "docs/research/capability_hunt/":
         "daily L1.31 hunt records -- dated per-slot snapshots whose findings are ROWED IN THE\n"
         "SAME RUN by the hunt's own duty (L1.31/L1.39; 2026-07-31 proof: s5 -> R0153-R0173,\n"

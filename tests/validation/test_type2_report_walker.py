@@ -251,16 +251,99 @@ def test_end_to_end_on_this_checkout_labels_every_row(tmp_path: Path) -> None:
     assert costs, "no recorded negatives found on this checkout"
     assert all(c.label in {POWERED, UNDERPOWERED, INDETERMINATE} for c in costs)
     assert all(c.source for c in costs), "every negative must name the artifact it came from"
-    assert any(u["status"] == "NOT-READABLE-HERE" for u in unread), (
-        "the blocked moat artifact must be reported as unreadable, not omitted"
-    )
+    # THE INVARIANT, NOT THE SNAPSHOT. This used to assert that SOME artifact reports
+    # NOT-READABLE-HERE, which was really an assertion that the moat campaign was still blocked on
+    # this checkout. It ran, the reader gained a real-shape branch, `unread` went empty, and the
+    # test went red on a repo that had just got BETTER -- a test coupled to live state rather than
+    # to behaviour. What must actually hold is that nothing is silently DROPPED: an artifact the
+    # readers could not turn into labelled costs appears in `unread` with a status and a reason.
+    for u in unread:
+        assert u.get("status"), f"an unread artifact with no status: {u}"
+        assert u.get("why"), f"{u.get('artifact')} is reported unread with no reason"
+        assert u.get("artifact"), f"an unread entry naming no artifact: {u}"
     doc = _MOD.build_artifact(costs, unread, _ROOT)
     json.dumps(doc, allow_nan=False)
-    assert doc["citations"] == dict.fromkeys(doc["citations"], True), (
-        f"cited measured context is missing from this checkout: {doc['citations']}"
+    # A DANGLING citation is a repo defect and still fails. A runtime-only citation absent from a
+    # clean checkout is not: reports/ is gitignored, so demanding all four citations be present
+    # asserted that this BOX had run a particular producer -- and turned the walker red on any
+    # checkout that had not. The two are now declared apart at the source.
+    assert doc["citations_dangling"] == [], (
+        f"this report cites tracked files that no longer exist: {doc['citations_dangling']}"
     )
 
 
 @pytest.mark.parametrize("label", [POWERED, UNDERPOWERED, INDETERMINATE])
 def test_the_three_labels_are_the_only_vocabulary(label: str) -> None:
     assert label in {"POWERED-NEGATIVE", "UNDERPOWERED", "INDETERMINATE"}
+
+
+class TestTheMoatReaderHandlesBothShapes:
+    """The reader was written when reports/moat_campaign.json was BLOCKED with zero rows. The
+    campaign then ran and it reported UNHANDLED-SHAPE -- honest, and 48 recorded negatives went
+    unlabelled anyway. These fix the shape it now reads to a FIXTURE, so the next environment
+    change breaks a fixture rather than the live-checkout test."""
+
+    @staticmethod
+    def _write(tmp_path: Path, doc: dict) -> Path:
+        (tmp_path / "reports").mkdir(parents=True, exist_ok=True)
+        (tmp_path / "reports/moat_campaign.json").write_text(json.dumps(doc), "utf-8")
+        return tmp_path
+
+    def test_a_blocked_artifact_is_still_reported_not_reconstructed(self, tmp_path: Path) -> None:
+        """The original behaviour, preserved: the prose in VPS_STATE cites rows this checkout does
+        not have, and inventing them would fabricate the exact record this instrument demands."""
+        root = self._write(tmp_path, {"status": "BLOCKED", "blocker": "no lake", "rows": []})
+        costs, unread = _MOD.read_moat(root)
+        assert costs == []
+        assert unread[0]["status"] == "NOT-READABLE-HERE"
+
+    def test_rows_are_labelled_on_the_bar_the_artifact_declares(self, tmp_path: Path) -> None:
+        """THE CLOCK BUG THIS GUARDS. sharpe_negative demands n_bars and ppy share a clock. The
+        moat campaign runs on 60,000ms bars, so passing the module-wide daily PPY would credit
+        4,980 minutes of tape with 13.6 YEARS and turn the desk's blindest campaign into its
+        best-powered one."""
+        root = self._write(tmp_path, {
+            "status": "COMPLETE", "bar_ms": 60000, "n_obs": 4980, "n_candidates": 2,
+            "bars_per_symbol": {"BTCUSDT": 25791},
+            "rows": [{"name": "flow:BTCUSDT", "survived": False, "oos_sharpe": 0.1,
+                      "failed": ["fragility"]}],
+        })
+        costs, unread = _MOD.read_moat(root)
+        assert unread == []
+        assert len(costs) == 2, "one campaign-level row plus one per non-survivor"
+        assert all(c.label == UNDERPOWERED for c in costs), (
+            "25,791 ONE-MINUTE bars is 18 days; anything but UNDERPOWERED means the clock was "
+            "read as daily")
+        assert all(c.power_at_reference < 0.05 for c in costs)
+
+    def test_a_screen_survivor_is_not_counted_as_a_negative(self, tmp_path: Path) -> None:
+        root = self._write(tmp_path, {
+            "status": "COMPLETE", "bar_ms": 60000, "n_obs": 4980, "n_candidates": 2,
+            "bars_per_symbol": {"BTCUSDT": 25791},
+            "rows": [{"name": "a:BTCUSDT", "survived": True},
+                     {"name": "b:BTCUSDT", "survived": False}],
+        })
+        costs, _ = _MOD.read_moat(root)
+        assert [c.name for c in costs if c.source.endswith("#rows")] == ["b:BTCUSDT"]
+
+    def test_a_missing_bar_interval_is_refused_rather_than_assumed(self, tmp_path: Path) -> None:
+        """No interval means no way to turn a bar count into elapsed time. Guessing daily is the
+        one assumption that makes every label wrong in the OPTIMISTIC direction."""
+        root = self._write(tmp_path, {
+            "status": "COMPLETE", "n_obs": 4980, "n_candidates": 1,
+            "rows": [{"name": "a:BTCUSDT", "survived": False}],
+        })
+        costs, unread = _MOD.read_moat(root)
+        assert costs == []
+        assert unread[0]["status"] == "NOT-READABLE-HERE"
+        assert "bar_ms" in unread[0]["why"]
+
+    def test_a_symbol_absent_from_the_bar_map_says_so(self, tmp_path: Path) -> None:
+        root = self._write(tmp_path, {
+            "status": "COMPLETE", "bar_ms": 60000, "n_obs": 4980, "n_candidates": 1,
+            "bars_per_symbol": {"BTCUSDT": 25791},
+            "rows": [{"name": "a:NOTINMAP", "survived": False}],
+        })
+        costs, _ = _MOD.read_moat(root)
+        row = next(c for c in costs if c.source.endswith("#rows"))
+        assert "absent from bars_per_symbol" in row.note

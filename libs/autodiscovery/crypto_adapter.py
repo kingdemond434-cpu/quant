@@ -143,13 +143,34 @@ def load_universe(
     """Select the TRADEABLE crypto universe (top-``limit`` by trailing dollar-volume) + a provider.
 
     Ranking is done OFFLINE from lake bars (median close*volume over the last ~180 bars) -- no live
-    API call, so no network/geo-block failure mode in the daily cycle. Capping to the liquid names
-    is economically honest AND statistically kinder: testing 200+ microcap perps is breadth-mining
-    that inflates the cumulative trial count (harshening the DSR deflation on the real hypotheses)
-    while adding near-zero-capacity candidates. It is also operationally robust -- the campaign-wide
-    Reality-Check bootstrap over an N-wide candidate matrix is memory-heavy, so an unbounded sweep
-    (~1000 candidates) OOM-crashes this box mid-cycle; ~30 liquid names keeps N bounded. The top ~30
-    perps hold essentially all real research capacity anyway. ``limit=None`` keeps every symbol.
+    API call, so no network/geo-block failure mode in the daily cycle.
+
+    WHY THE CAP EXISTS, RE-DERIVED 2026-08-05 (R0241b), because the reason on this docstring was
+    partly UNCONSTITUTIONAL and would have kept the cap forever.
+
+    RETIRED REASON -- "adds near-zero-capacity candidates". That is a capacity TILT, and §42
+    capacity parity is explicit that an edge is an edge: never prefer a large-capacity edge over a
+    small one, and "fund-shaped" and "niche-only" are the SAME defect pointed opposite ways. The
+    only legitimate capacity kill is SUB-VIABLE -- cannot support a handful of economic round-trips
+    at venue minimums -- which is a per-candidate test, not a universe filter. Small is the desk's
+    stated advantage (§42, L1.28a), so smallness may not be a reason to exclude.
+
+    THE REAL BINDING CONSTRAINT IS MEMORY, and it is now measured rather than asserted. 285 of the
+    lake's symbols clear ``min_bars`` today; at 48 hypotheses per symbol that is 13,680 candidates.
+    Profiling ``stratified_campaign_gates`` over exactly that many candidate series OOM-killed this
+    box (MemAvailable fell to 296 MB and took the CI pytest step down with it, SIGKILL). That is a
+    NAMED RESOURCE CEILING with a re-test condition -- raise the cap when the campaign holds
+    candidate series in a chunked/streaming form rather than all at once -- not a statistical or
+    economic preference.
+
+    THE MULTIPLICITY COST IS REAL BUT SMALL, AND IS NOT THE BLOCKER. Measured with the desk's own
+    preflight at full available depth: 30 symbols (N=1,440) gives hurdle annSR 1.41 at 98.2% power;
+    285 symbols (N=13,680) gives 1.57 at 93.5%. Both POWERED. So multiplicity alone would NOT
+    justify the cap -- 9.5x the candidate supply for 4.7 points of power is a trade the desk should
+    take, once the memory ceiling allows it.
+
+    ``limit=None`` keeps every symbol and is what the profiling above used; it is available for
+    deliberate, resourced runs, not for the daily cycle.
     """
     all_syms = crypto_symbols(timeframe, lake_root=lake_root)
     frames = _read_frames(all_syms, timeframe, lake_root)
