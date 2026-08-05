@@ -139,8 +139,24 @@ def test_every_decision_reaches_the_book_gradeable_or_not(tmp_path, monkeypatch)
 
 
 def test_brief_reports_absent_feeds_rather_than_empty(tmp_path):
+    """A missing feed must SAY it is missing -- never render as empty, blank or zero.
+
+    The assertion is a PREFIX, not an equality, and the difference is the whole point of R0245.
+    `liquidation_brief.for_brief` deliberately returns "ABSENT on this host -- nothing has written
+    data/liquidations.parquet", because the bare string this test used to demand is, in that
+    module's own words, "indistinguishable from a genuinely dead collector" -- which is how a
+    read-without-writer bug hid for months while the producer held ~59k events under a different
+    spelling. Demanding uniformity here would force the informative message back out again.
+
+    This does NOT weaken the guard. Everything it exists to catch -- "", None, 0, a silently empty
+    summary -- still fails the prefix. Only the over-specified tail is released, and a source that
+    names the artifact it could not find is strictly better evidence than one that does not.
+    """
     b = build_brief(tmp_path)
-    assert all(v == "ABSENT on this host" for v in b["sources"].values())
+    assert b["sources"], "no sources at all -- the brief must enumerate feeds even when all absent"
+    bad = {k: v for k, v in b["sources"].items()
+           if not (isinstance(v, str) and v.startswith("ABSENT on this host"))}
+    assert not bad, f"feed(s) did not report themselves ABSENT on an empty host: {bad}"
 
 
 def test_parse_tolerates_prose_around_json():
