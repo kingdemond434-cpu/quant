@@ -62,6 +62,12 @@ from libs.ops.model_chain import (  # noqa: E402
 )
 
 _LOG = _ROOT / "data/model_upgrade_log.jsonl"
+#: The PANEL surface's "the check ran" record, read by max_audit.check_model_freshness for its
+#: `checked` timestamp. The append-only _LOG above is a history, not a state: nothing ever read it
+#: for liveness, so this runner could reach a verdict on every scheduled pass and still be
+#: indistinguishable from one that had never run. Same shape as the brain surface's
+#: data/brain_model_upgrade.json -- see the _save() note in scripts/brain_model_upgrade.py.
+_STATE = _ROOT / "data/model_upgrade.json"
 _API = "https://api.anthropic.com/v1/models?limit=100"
 _PING = "Reply with exactly: PING-OK"
 
@@ -178,6 +184,22 @@ def main() -> int:
     _LOG.parent.mkdir(parents=True, exist_ok=True)
     with _LOG.open("a", encoding="utf-8") as f:
         f.write(json.dumps(rep) + "\n")
+
+    # RECORD THAT THE CHECK RAN, on EVERY path that reached a verdict -- including report-only,
+    # which is how the cron invokes it. Without this the panel arm of check_model_freshness had no
+    # `checked` key to read and `model-upgrade-never-panel` fired forever, on a runner that was
+    # in fact working: it discovers candidates fine with no credential at all (probe-only listing).
+    # A gate that cannot be satisfied by the working system carries no information.
+    _STATE.write_text(json.dumps({
+        "checked": rep["generated"],
+        "head": rep["head"],
+        "chain": rep["chain"],
+        "pinned": rep["chain"],
+        "listing_available": rep["listing_available"],
+        "upgrades": rep["upgrades"],
+        "adopted": rep["adopted"],
+        "mode": "apply" if args.apply else "report-only",
+    }, indent=1), "utf-8")
 
     if args.json:
         print(json.dumps(rep, indent=2))
