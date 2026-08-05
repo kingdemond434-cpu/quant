@@ -1095,6 +1095,62 @@ def check_rubberstamp_enforcement(defects) -> None:
                         "specific file+value per probe angle, do not rubber-stamp."))
 
 
+def check_book_absorbing_state(defects) -> None:
+    """L1.23 -- A RAIL THAT CAN NEVER RELEASE THE BOOK IS NOT SAFETY, IT IS A LATCH.
+
+    WRITTEN 2026-08-05, AND THE REASON IS THE POINT: this function was already mapped to L1.23 in
+    build_enforcement_matrix.py and HAD NEVER BEEN WRITTEN. The matrix therefore reported L1.23 as
+    fenced, the desk believed it was guarded against exactly this class, and the live instance was
+    found by hand instead. A registered check that does not exist is worse than an unregistered
+    one -- the first is a law believed-and-not-enforced, and belief is what stops anyone looking.
+
+    THE CLASS. `risk_controls` computes ``peak = max(start, peak_stored, eq)``, so the drawdown
+    denominator can never fall. When a drawdown rail pauses or flattens a book that holds NOTHING,
+    the book has no income, so equity cannot rise, so the rail can never release: it is absorbing
+    by arithmetic rather than by intent. Measured today: dd -17.65% against a -15% pause bar, 0
+    positions, and +$278.46 of equity needed to clear a bar that nothing can move. The -35% ruin
+    rail was NOT breached -- this is the new-open pause, not a survival event, and the distinction
+    matters because the ruin rail is untouchable while a stale pause baseline is a decision.
+
+    NOT A LICENCE TO MOVE A RAIL. This reports; re-baselining a drawdown denominator is a rail act
+    and belongs to the principal (a prior re-baseline silently dissolved a live DD rail -- the rail
+    is a ratio, so moving the denominator disables it). The defect is the SILENCE, not the pause.
+    """
+    live = ROOT / "web/cashcarry_live.json"
+    pos_p = ROOT / "data/cashcarry_positions.json"
+    if not live.exists() or not pos_p.exists():
+        return
+    try:
+        risk = (json.loads(live.read_text("utf-8")).get("risk") or {})
+        state = json.loads(pos_p.read_text("utf-8"))
+    except Exception:
+        return
+    action = str(risk.get("action") or "")
+    if action not in ("pause_opens", "flatten"):
+        return                                     # rail is not holding the book down
+    if len(state.get("positions") or {}):
+        return                                     # holds inventory -> funding can still move equity
+    try:
+        dd = float(risk.get("dd_from_peak_pct")) / 100.0
+        start = float(state.get("start_futures_equity") or 0.0)
+        peak = max(start, float(state.get("peak_combined_equity") or 0.0))
+        eq = (1.0 + dd) * peak
+        bar = 0.15 if action == "pause_opens" else 0.35
+        gap = (1.0 - bar) * peak - eq
+    except (TypeError, ValueError, ZeroDivisionError):
+        return
+    defects.append((
+        "book-absorbing-state",
+        f"ABSORBING: risk.action={action} at dd {dd:.2%} with ZERO positions. The book is barred "
+        f"from opening, so it earns nothing, so equity cannot rise the ${gap:,.2f} needed to clear "
+        f"the {bar:.0%} bar -- and peak is max()'d with start ({peak:,.2f}), so the denominator can "
+        "never fall either. This rail can never release itself; a re-arm does NOT touch it. Not a "
+        "ruin event and NOT a licence to move a rail: re-baselining a drawdown denominator is the "
+        "principal's call (a prior re-baseline dissolved a live DD rail -- the rail is a ratio). "
+        "Put the choice on data/PRINCIPAL_ACTION.md with the arithmetic, or ledger the decision to "
+        "sit flat. What is forbidden is neither."))
+
+
 def check_principal_page_unanswerable(defects) -> None:
     """RETURN-PATH CHECK (self-interrogation angle 11, mechanised 2026-08-05).
 
@@ -3508,6 +3564,7 @@ CHECKS = [("carryover-skipped", check_carryover_skipped),
                       ("generation", check_generation),
                       ("clock-saturation", check_clock_saturation),
                       ("principal-page-unanswerable", check_principal_page_unanswerable),
+                      ("book-absorbing-state", check_book_absorbing_state),
                       ("vendor-replacement", check_vendor_replacement),
                       ("forensics-fresh", check_forensics_fresh),
                       ("carry-funding-measured", check_carry_funding_measured),

@@ -329,6 +329,9 @@ _FENCE_OWNERS: dict[str, str] = {
     # --- survival rails (L1.23): states that read HEALTHY while being terminal.
     "check_book_collapse": "L1.23",
     "check_book_absorbing_state": "L1.23",   # a rail that can never release the book is not safety
+    # An item "awaiting principal" reads like patience and is terminal when he cannot reply: the
+    # fork deleted _poll_replies and four decisions gating the book sat unanswerable for 3 days.
+    "check_principal_page_unanswerable": "L1.23",
     # --- injection + fence integrity (L2.1 / L2.2): the enforcement layer auditing itself.
     "check_constitution": "L2.1",
     "check_universal_doctrine": "L2.1",
