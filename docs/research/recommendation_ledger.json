@@ -340,11 +340,11 @@
    "summary": "watchdog.py:219 runs run_alerts with capture_output=True and discards it, throwing away the only place a pager push failure surfaces. Append its stdout/stderr to data/watchdog.log.",
    "roi_bps": 0.0,
    "raised": "2026-08-05T01:18:28.715821+00:00",
-   "status": "open",
+   "status": "implemented",
    "reason": null,
-   "commit": null,
+   "commit": "619cf52",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-05T02:49:36.220554+00:00"
   },
   {
    "id": "R0029",
