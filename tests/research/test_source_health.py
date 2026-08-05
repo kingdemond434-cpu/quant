@@ -273,6 +273,28 @@ class TestObservationsFromMinerReport:
         assert obs["baidu"].error is not None
         assert "1438" in obs["baidu"].error
 
+    def test_a_byte_count_cannot_refute_a_recorded_needs_browser_finding(self) -> None:
+        # BigQuant's JS shell measures 27,705 bytes and clears the 20,000-byte content bar while
+        # carrying zero listings. A probe measures bytes, not rendering, so it is not evidence
+        # against the recorded finding -- marking it HEALTHY would be a dead lane wearing a green
+        # badge, which is worse than the silence it replaces.
+        doc = {"cn_sources": [{"name": "bigquant", "declared": "needs_browser",
+                               "reason": "reachable but JS-rendered; listings require Chromium",
+                               "reachable": True, "bytes": 27705, "looks_like_content": True}]}
+        obs = {o.source: o for o in sh.observations_from_miner_report(doc)}
+        assert not obs["bigquant"].ok
+        assert obs["bigquant"].error is not None
+        assert "needs_browser" in obs["bigquant"].error
+
+    def test_a_probe_still_refutes_a_declared_block(self) -> None:
+        # The other half of L0052: a recorded HTTP failure that turns out to be a header problem
+        # must be allowed to come back. A declared "blocked" IS a prior the probe can overturn.
+        doc = {"cn_sources": [{"name": "xueqiu", "declared": "blocked",
+                               "reason": "was 403 once", "reachable": True, "bytes": 110310,
+                               "looks_like_content": True}]}
+        obs = {o.source: o for o in sh.observations_from_miner_report(doc)}
+        assert obs["xueqiu"].ok
+
     def test_youtube_lanes_collapse_to_one_platform(self) -> None:
         doc = {"channels_scanned": {"@neurotrader888": 24},
                "search_discovered": {"quant backtest": 20},

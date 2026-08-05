@@ -459,7 +459,17 @@ def _is_measured(row: Mapping[str, Any]) -> bool:
 
 
 def _probe_ok(row: Mapping[str, Any]) -> tuple[bool, str | None]:
-    """(usable, reason) for one probe row, across the two probe shapes on this desk."""
+    """(usable, reason) for one probe row, across the two probe shapes on this desk.
+
+    WHAT A PROBE CAN AND CANNOT REFUTE. probe_cn() measures two things: did bytes come back, and
+    were there more than 20,000 of them. That is real evidence against a declared "blocked" --
+    the L0052 lesson is exactly that a recorded block can be wrong, so the declared status is a
+    prior and the probe is the evidence. It is NOT evidence against a declared "needs_browser",
+    because a client-rendered shell can be any size at all: BigQuant's shell measures 27,705 bytes
+    and sails over the content bar while carrying zero listings. Letting a byte count overturn a
+    rendering finding would mark a source HEALTHY that the miner cannot read a single row from,
+    which is worse than the silence it replaces -- a dead lane wearing a green badge.
+    """
     err = row.get("error")
     reason: str | None = str(err) if err is not None else None
     flag = row.get("ok")
@@ -467,6 +477,10 @@ def _probe_ok(row: Mapping[str, Any]) -> tuple[bool, str | None]:
         if flag:
             return True, None
         return False, reason if reason is not None else "probe reported ok=false, no reason given"
+    if str(row.get("declared", "")) == "needs_browser":
+        note = str(row.get("reason") or reason or "listings require a browser")
+        return False, (f"declared needs_browser and this probe cannot refute that (it measures "
+                       f"bytes, not rendering): {note}")
     if row.get("reachable") is not True:
         if reason is not None:
             return False, reason
