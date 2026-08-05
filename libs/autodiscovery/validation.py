@@ -44,6 +44,7 @@ un-adjusted — which the reject queue does — orders old rows ~4x ahead of ide
 
 from __future__ import annotations
 
+import time
 from collections.abc import Sequence
 from typing import Any
 
@@ -569,12 +570,30 @@ def stratified_campaign_gates(
     plan = plan_strata([len(r) for r in series])
     per_candidate: list[tuple[CampaignGates, int] | None] = [None] * len(series)
     k = max(1, len(plan.strata))
+    # R0263 TIMED, PER STRATUM. Romano-Wolf's bootstrap is linear in retained observations, so
+    # stratifying buys 180.8x the expected discoveries at roughly 5x the compute -- and that "5x"
+    # was a prose comment carrying one hand-measured fixture number (campaign_window.py's COST
+    # note), never a field anything could read. An unmeasured cost is the one a reader is free to
+    # imagine, in either direction: too cheap and nobody notices the cycle slipping, too dear and
+    # somebody "fixes" it by cutting n_boot, which is the resolution of the multiplicity
+    # correction and would loosen the bar to buy back seconds.
+    # perf_counter, not time.time: this is a DURATION, and a wall-clock that an NTP step can walk
+    # backwards is not one. The repo had no timing convention to match -- zero perf_counter calls
+    # existed anywhere -- so this picks the correct primitive rather than the nearest habit.
+    stratum_seconds: list[float] = []
+    t0 = time.perf_counter()
     for s in plan.strata:
+        t_s = time.perf_counter()
         gates = campaign_gate_stats(stratum_matrix(series, s), alpha=CAMPAIGN_ALPHA / k)
+        stratum_seconds.append(round(time.perf_counter() - t_s, 3))
         if gates is None:                      # cohort of <2 cannot carry multiplicity statistics
             continue
         for column, cand in enumerate(s.keep):  # keep is sorted, matching stratum_matrix's columns
             per_candidate[cand] = (gates, column)
+    # The TOTAL is measured independently of the per-stratum sum rather than derived from it, so
+    # any time spent between strata shows up as a gap instead of vanishing into the parts.
+    plan = plan._replace(seconds=round(time.perf_counter() - t0, 3),
+                         stratum_seconds=tuple(stratum_seconds))
     return per_candidate, plan
 
 
