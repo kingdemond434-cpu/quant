@@ -1270,11 +1270,11 @@
    "summary": "ORGAN GENOME EVOLUTION LOOP (NOFX practice, desk-adapted): per-organ prompt-fitness record (measured yield per session per prompt version), occasional challenger prompt/model A/B on the same brief, adopt by measured output -- generalises the deep sweep's recursive-meta to EVERY organ; prompts are versioned software, so evolve them by evidence",
    "roi_bps": 25.0,
    "raised": "2026-07-31T08:46:45.713152+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: The evolution loop is unbuilt: no per-organ prompt-fitness record or challenger-prompt A/B exists (zero code hits for prompt_fitness/prompt_version; 'challenger' hits are all the trend-regime shadow). What the merge DID land is the substrate: libs/llm push ladders with measured-exhaustion stopping (max_audit.py:2773 check_llm_exhaustion enforces push_rounds + roster-wide seats across all idea organs), plus prompt-layer hygiene checks (max_audit.py:1372 check_prompt_layer: doctrine density, state-triggered review, desk-memory budget). Measured yield-per-prompt-version telemetry -- the input the loop needs -- does not exist yet (same missing tagging as R0088). Right shape, not yet its turn.",
+   "status": "scheduled",
+   "reason": "Right idea, missing its input, and displaced right now. The loop adopts prompts BY MEASURED YIELD, and the desk cannot currently measure yield per organ per prompt version -- zero code hits for prompt_fitness/prompt_version. That telemetry is the core of R0088 (scheduled, due 2026-08-07: new-vs-repeat tagging plus brain-hours by organ). Building the A/B harness before the measurement exists would install a selector fed by a number nobody computes -- the same shape as the ramp gate that sat pinned at its floor because cost_ratio had no producer, and the ordering error the desk has already paid for (powering a gate before fixing its inputs). Displaced meanwhile under L1.26 by execution cost: net_of_fees_positive is NOT-READY with 4/4 hold buckets negative over 41 closes, and a boring execution fix with measured EV outranks tooling. Due 2026-09-01, after R0088's telemetry has run long enough to have something to select on.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-09-01",
+   "disposed": "2026-08-05T08:08:47.102782+00:00"
   },
   {
    "id": "R0104",
@@ -1282,11 +1282,11 @@
    "summary": "ENGINE-CAGR RATCHET: the weekly capability composite (sweep output G) becomes a ratcheted metric -- research engine must strengthen week-over-week or FLATLINE with a named cause; self-improvement itself gets a floor and a fence",
    "roi_bps": 20.0,
    "raised": "2026-07-31T08:46:45.762112+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: The ratchet PATTERN now covers several axes from the merge -- constitution aggression (libs/doctrine/ratchet.py + docs/research/CONSTITUTION_RATCHET.json: high-water mark, weakening requires a hand-edited dated file; deletion scored as weakening), findings coverage (max_audit.py:3232 check_findings_ratchet: coverage/open-count/docs-scanned ratchet UP together), asymmetry (max_audit.py:5622 check_asymmetry_ratchet with best_realised high-water + asymmetry-realised-fell defect), coverage (COVERAGE_RATCHET.json), conversion FLATLINE (check_conversion.py:21,97) -- but the SPECIFIC ask, ratcheting the weekly capability composite (sweep output G) week-over-week with FLATLINE-with-named-cause, is not built: no capability-composite ratchet artifact or check exists. Smaller than it was (the pattern is proven five times over and reusable); still open.",
-   "commit": null,
+   "status": "implemented",
+   "reason": "Registered capability_wired into scripts/check_ratchets.py _METRICS (floor recorded 80.4% in data/ratchet_floors.json, 12h staleness bound, proving command check_utilisation.py). Reused the proven ratchet machinery rather than building a new subsystem: it already FAILS on regression and on a metric with no floor, which is precisely the row's 'a floor and a fence'. Chose the composite that already HAS a producer (reachable/built units, refreshed 6-hourly) over minting a weekly 'sweep output G' number nothing computes -- a phantom metric is how the ramp gate sat pinned. Key guard: UNMEASURED returns None, never 0.0, because a zero floor is a ratchet that permits anything.",
+   "commit": "c8baf1a85b5ccc94bcdadc843ecb80058f31e72b",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-05T08:03:27.200387+00:00"
   },
   {
    "id": "R0105",
@@ -1294,11 +1294,11 @@
    "summary": "PRE-GATE-0 ADVERSARIAL PRE-MORTEM (one-shot, fires before the deposit): multi-seat 'the desk died in live week 1 -- write the post-mortem' pass; cheapest possible insurance on the launch-day unknowns the readiness seat hasn't imagined",
    "roi_bps": 40.0,
    "raised": "2026-07-31T08:46:45.809924+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=6 effort_h=3: The machinery exists but the one-shot has not fired and nothing forces it to fire BEFORE the deposit: prompts/panel_missions/premortem.txt is exactly the asked-for 'desk died -- write the post-mortem' multi-seat mission (ranked causal chains, earliest warning sign, missing rail, why current rails miss it) and sits in the panel rotation (run_external_panel.py:54, elevated 40k response budget :365), yet no premortem output artifact exists anywhere in data//docs/ and data/gate0_readiness.json's 6 S1 criteria do not include it. Gate 0 is close (3/6 READY; principal owes keys/connector), so the window is now: wire premortem-completed as a Gate-0 criterion and fire the pass with the funded brain + free seats. Cheapest insurance on launch-day unknowns, per the row.",
-   "commit": null,
+   "status": "implemented",
+   "reason": "Both halves done. WIRED: check_gate0_ready._premortem_completed is now a 9th Gate-0 criterion reading the append-only mission-stamped panel log (NOT panel_inbox.md, which every run clobbers), requiring the panel's own non-degraded quorum of 8 distinct substantive seats; unreadable log fails closed to BLOCKED-UNKNOWN. 23 tests incl. a positive control. FIRED (ad0a44c): the mission ran for the first time since it was written 2026-07-12 -- it had 0 rows in the panel log against audit 60/tier1 53, because the week-modulo rotation never landed on it. 10 ranked post-mortems preserved at docs/research/PREMORTEM_20260805.md. The run was DEGRADED (panel unfunded at -0.59; 4 free seats, 3 HTTP-errored) so the gate correctly reads 1/8 NOT-READY -- one model is not a multi-seat adversarial pass and must not unlock capital. The funded re-run is now structurally enforced instead of remembered. POST-MORTEM 3 is already cross-validated against the live board: the sleeve loses money on its own fills.",
+   "commit": "12b60df12b02b08566947786f4e6bf2ec1a4304e",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-05T08:08:10.091043+00:00"
   },
   {
    "id": "R0106",
@@ -1306,11 +1306,11 @@
    "summary": "PROBE CAPITAL (post-funding): auto-allocate $5-10 slices to Stage-B candidates purely to measure execution reality (true fills, slippage, funding timing) -- the only legitimate evidence-clock accelerant; capped by the rails, ledgered as capital events, activates on first deposit",
    "roi_bps": 35.0,
    "raised": "2026-07-31T08:52:53.264601+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] BLOCKED-OPERATOR: Blocker: first deposit + live API keys, principal-only. data/gate0_readiness.json: ready=false, principal_owes=[keys_present, connector_verified]; libs/execution/staging.py:1-16 desk is S0 (testnet/paper), S1 entry requires principal keys+signoff. No probe-capital module exists (grep probe_capital: only ledger + hunt docs). Row itself activates on first deposit; nothing to measure until real fills are possible.",
+   "status": "scheduled",
+   "reason": "Blocked on the first deposit, which is blocked on Gate 0 -- and the triage note on this row is now STALE in the desk's favour and against it. Its stated blocker (principal_owes=[keys_present, connector_verified]) is GONE: both read READY and data/gate0_readiness.json now reports principal_owes EMPTY. The gate is held entirely by four DESK-owned rows, and the binding one is net_of_fees_positive: all 4 hold buckets NEGATIVE net of fees over 41 closes -- the only deployed sleeve loses money on its own fills. Probe capital exists to measure execution reality, so deploying it before that is fixed would buy an expensive confirmation of a defect already measured for free. NOT built ahead of time on purpose: it is money-path code whose whole value is calibration against real fills, and shipping an untestable allocator into the executor tree pre-launch is exactly what L1.38 forbids. Re-check 2026-09-15 or on first deposit, whichever is first.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-09-15",
+   "disposed": "2026-08-05T08:08:46.785563+00:00"
   },
   {
    "id": "R0107",
@@ -1318,11 +1318,11 @@
    "summary": "VOL-TARGET HEADROOM FENCE (R0108): measure realized book vol vs the rail-implied fractional-Kelly ceiling every cycle -- BELOW ceiling with no named constraint = L1.28a idleness defect (raise sizing); ABOVE = over-Kelly breach (E[log] falling, ruin rising -- cut). Vol target becomes a measured ceiling held at its mathematical maximum daily, like every other ceiling; the optimum itself RISES automatically as validated edges/Sharpe/evidence accrue",
    "roi_bps": 30.0,
    "raised": "2026-07-31T09:02:06.464504+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=8 effort_h=3: Not built: scripts/check_utilisation.py collect() (:302-303) measures deployed_capital/forward_slots/capability/data/organs/mutation/tests/brain_seat -- no realized-book-vol-vs-Kelly-ceiling ceiling. Building blocks exist: libs/risk/vol_target.py:16 realized_volatility, and the Ceiling dataclass pattern (:56-70) already handles UNMEASURED-counts-as-zero and named binding constraints. Add one _book_vol() ceiling; measurement-only, no gate loosened.",
-   "commit": null,
+   "status": "implemented",
+   "reason": "Built as libs/risk/vol_headroom.py + a ninth ceiling _book_vol() in scripts/check_utilisation.py (already cron-scheduled 27 */6, law-mapped L1.28a). Ceiling = KellyLimits.hard_max * demonstrated_Sharpe, the exact f*S identity, so it self-scales as evidence accrues with no rail touched. Reads UNMEASURED=ZERO today with the blocker named: all 13 NAV rows are paper/testnet or an explicitly molded curve, and deriving a risk ceiling from a simulated equity series is the L1.45 step-up-on-fiction failure. 13 tests incl. a positive control (a fence only ever seen refusing is not validated).",
+   "commit": "0cb8562a39503c36f2acb9472a688db4fb6beaa4",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-05T07:49:02.284613+00:00"
   },
   {
    "id": "R0108",
@@ -4365,6 +4365,42 @@
    "summary": "GAP #70 -- LAND THE STDLIB PDF EXTRACTOR (deadline 2026-08-02 passed, prototype never committed). Two consecutive literature runs inherited the claim 'no PDF tooling on this box and the freeze forbids installs' and left five findings at ABSTRACT level. Run 3 verified the premise true but the CONCLUSION false: PDF text lives in FlateDecode streams and the stdlib ships zlib, so a ~90-line pure-stdlib extractor reads academic PDFs with zero installs. EVIDENCE IT MATTERS, already measured: the first paper extracted (Hou-Xue-Zhang) CORRECTED THREE NUMBERS the desk had recorded from a search summary a day earlier -- actual 65 pct fail at t>1.96, 82 pct at the 2.78 multiple-test hurdle, worst category trading frictions 102/106 = 96.2 pct, against a recorded 64 pct / 85 pct at t-cutoff 3 / liquidity 93 pct. The recorded prior was NARROWER than the truth, which is the dangerous direction for a desk that sizes on priors. DELIVERABLES: (1) land it as scripts/pdf_text.py, read-only, no deps; (2) add an interior_extracted field to the literature-card schema so ABSTRACT and PRIMARY are distinguishable AT THE EV GATE; (3) THE GENERALISABLE DEFECT, which is the real item -- a capability limit was asserted once and inherited verbatim across runs, silently defining what the desk could know. Adopt the standing rule: any recorded 'this box cannot X' carries a re-test date and is retried before it is inherited a second time. That is the no-ceiling axiom applied to the desk's own tooling claims, where it demonstrably was not being applied.",
    "roi_bps": 14.0,
    "raised": "2026-08-05T07:15:37.002745+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0359",
+   "source": "cycle",
+   "summary": "DORMANCY SCAN IS BLIND TO scripts/ CALLERS -- it has already deleted live code once. libs/self_improvement dormancy.py _external_importers() did not count scripts/ entry points, so commit 3be2e3e retired 14 libs/discovery modules asserting 'zero external importers'; that claim was FALSE for scripts/run_geometric_review.py, which imports cagr_optimizer AND portfolio_geometry and has been dead every day since 2026-07-30 (restored in b86cf5c). scripts/ is where nearly every ORGAN lives, so a reachability scan that skips it systematically under-counts exactly the callers that matter and will authorise the next false retirement the same way. Fix _external_importers to walk scripts/ (and transitively, per the check_orphan_code lesson that reachability is transitive and lazy imports hide it), then re-run it against the other 12 modules 3be2e3e deleted to find any other live caller it silently broke.",
+   "roi_bps": 35.0,
+   "raised": "2026-08-05T08:09:23.655922+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0360",
+   "source": "cycle",
+   "summary": "BRAIN QUOTA FALLBACK IS UNREACHABLE CODE -- needs the principal. ops/brain_env.sh:86 documents that on a credit outage the desk falls back to a metered API key, but :98 gates that whole branch on [ -f $_BRAIN_KEYFILE ] where _BRAIN_KEYFILE=data/secrets/anthropic_api_key (:19) -- a file that does not exist; the directory holds only claude_oauth_token. So the fallback has NEVER been reachable and a subscription outage takes every claude-invoking organ down with no escape: measured 2026-08-05 as the recommendation_worker dying at 03:20 and 06:00, plus llm_trader and conviction NO-CALLs. PRINCIPAL DECISION: either supply the metered key at that path, or delete the dead branch and correct the comment at :86 so the desk stops believing it has a fallback it does not have. A documented fallback that cannot fire is worse than none, because nobody looks for it.",
+   "roi_bps": 40.0,
+   "raised": "2026-08-05T08:09:24.785327+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0361",
+   "source": "cycle",
+   "summary": "VERIFY (do not assume) whether claude-opus-5 is a servable model id before touching the model chain. It sits at rung 2 of _BRAIN_MODEL_CHAIN in ops/model_chain.env:8, ops/brain_env.sh:88 and :146, libs/ops/model_chain.py:47 _FALLBACK_CHAIN, is pinned as the CRO seat model in ops/CRO_CONSTITUTION.md:4 (whose .bak carries opus-4-8), and is asserted by tests/ops/test_model_chain.py and tests/scripts/test_model_upgrade.py. A reconnaissance pass this cycle claimed the id does not exist, which would mean a dead middle rung burning a CLI startup and round-trip on every brain_auth_check and a CRO seat with no chain behind it. That claim is NOT verified and CONFLICTS with the running session's own reported model, so it is recorded as a question, not a finding -- and it is one command to settle. Settle it with an actual call before editing anything: the auth path is load-bearing and libs/ops/model_chain.is_upgrade ranks (5,)>(4,8), so a wrong edit here is self-reinforcing in either direction.",
+   "roi_bps": 15.0,
+   "raised": "2026-08-05T08:09:25.767525+00:00",
    "status": "open",
    "reason": null,
    "commit": null,
