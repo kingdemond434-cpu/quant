@@ -556,11 +556,11 @@
    "summary": "PRINCIPAL SIGN-OFF NEEDED: re-seal CONSTITUTION L1.6 with the cohort-source amendment. The s3 hunt appended a paragraph to L1.6's SEALED core ('THE BAR IS A FUNCTION OF THE COHORT, SO THE COHORT HAS ONE SOURCE... every degraded path floors UP to the cap... Fenced by scripts/check_cohort_integrity.py'). check_constitution_core FAILED on it (sealed b986eb8d15ea != 08e30b891242). REVERTED 2026-08-05 rather than resealed, because --reseal is principal-only by that script's own words ('the organism may not reseal itself as part of an amendment') and L2.8a bars the organism touching the core in EITHER direction -- a tightening amendment is still an amendment. NOTHING WAS LOST: the enforcement it describes shipped as code in 601ac7a (cohort_m_for_bar + check_cohort_integrity.py + 16 tests) and runs whether or not the text lands. The ask is only whether the law TEXT should carry it. Exact paragraph recoverable from 601ac7a docs/CONSTITUTION.md. Principal runs: scripts/check_constitution_core.py --reseal",
    "roi_bps": null,
    "raised": "2026-08-05T02:16:20.038965+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "AWAITING THE PRINCIPAL BY CONSTRUCTION -- scripts/check_constitution_core.py --reseal is principal-only ('the organism may not reseal itself as part of an amendment') so no organ can dispose this by building it. Queued behind the live PRINCIPAL_ACTION.md items (REARM decision, OpenRouter top-up) rather than paging separately for a text change that costs nothing while it waits: the enforcement already ships as code in 601ac7a and runs whether or not the law carries the words. Due 08-12 so it cannot drift; if unanswered it goes on the principal page as its own line.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-12",
+   "disposed": "2026-08-05T02:30:31.625800+00:00"
   },
   {
    "id": "R0047",
@@ -568,11 +568,11 @@
    "summary": "MOAT COVERAGE MAY BE STRUCTURALLY UNSATISFIABLE -- measure before anyone 'fixes' the miner. under-exploration reports moat 54.68% explored and 'not distinguishable from flat over 200 runs', and the remedy it names is 'verify ops/run_moat_miner.sh is running continuously'. VERIFIED IT IS: screen_moat.py --files 24 --loop --interval 30 has been live (PID 3214491) and data/moat_screen_coverage.json was rewritten 02:26 during this run, at runs=471. So the miner is NOT dead and restarting it changes nothing. THE ACTUAL ARITHMETIC: cells_total=1356, screened=585, unscreenable_cells=551 (40.6%), unscreenable_pairs=785. 585+551=1136 of 1356, so only ~220 cells are neither screened nor known-unscreenable -- the miner is grinding a nearly-exhausted frontier, and if unscreenable cells sit in the coverage DENOMINATOR then 100% is unreachable by construction and the 'gap not closing' defect can never close however well the miner works. That is the gate-optimality failure class: a metric that can never be satisfied carries zero information and gets acked into silence. WHAT TO DO, and what NOT to: do NOT remove unscreenable cells from the denominator to make the number rise -- that is the denominator trick the mining ratchet forbids. Instead (1) establish whether the 551 are permanently unscreenable or awaiting data, (2) if permanent, report coverage as screened/(total-permanently-unscreenable) WITH the excluded count stated beside it and the raw ratio retained, (3) re-point the under-exploration fence at the frontier that can actually move. Also note coverage_pct=14.84 and cells_covered_pct=17.18 in the artifact, neither of which is the 54.68% the fence reports -- a third denominator is in play and the three should be reconciled before either is trusted.",
    "roi_bps": null,
    "raised": "2026-08-05T02:28:08.399953+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "Scheduled rather than built because the first step is a MEASUREMENT with a trap in it, not a patch. Three denominators are live and disagree (fence 54.68%, artifact coverage_pct 14.84, cells_covered_pct 17.18) and the obvious 'fix' -- dropping the 551 unscreenable cells from the denominator -- is the exact denominator-shrink the mining ratchet forbids, so doing it fast is doing it wrong. Step 1 is establishing whether those 551 are PERMANENTLY unscreenable or merely awaiting data, which decides whether the metric is broken or the frontier is genuinely exhausted; only then can the fence be re-pointed. Due 08-09. The miner keeps running throughout -- nothing here throttles mining.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-09",
+   "disposed": "2026-08-05T02:30:31.969375+00:00"
   }
  ]
 }

@@ -1,9 +1,9 @@
 # Desk digest (auto-generated daily -- do not hand-edit)
-_updated 2026-08-05T02:05Z · companion to [[institutional_knowledge]]_
+_updated 2026-08-05T02:14Z · companion to [[institutional_knowledge]]_
 
 ## Book
-- Molded net: **$-1852.88** | funding **$113.06** | run-rate APR 0.0% | day 33.87
-- Root cause: **infrastructure_bug** (act_autonomously) | tracking error $-1969.94
+- Molded net: **$-1853.33** | funding **$113.06** | run-rate APR 0.0% | day 33.87
+- Root cause: **infrastructure_bug** (act_autonomously) | tracking error $-1970.39
 
 ## Validation clocks
 - **carry (DEPLOYED)**: 40/90d | bt 3.07 fwd 14.96
