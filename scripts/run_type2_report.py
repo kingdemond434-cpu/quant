@@ -326,11 +326,19 @@ def _screen_cell(
     )
     rec_powered = cell.get("powered")
     rec_mdi = cell.get("min_detectable_ic")
-    agree = (
-        "screen agrees"
-        if isinstance(rec_powered, bool) and rec_powered == (cost.label == POWERED)
-        else "DISAGREES WITH THE SCREEN'S OWN FLAG -- inspect"
-    )
+    # THREE STATES, NOT TWO. A screen that recorded NO `powered` flag has not disagreed with
+    # anything -- there is nothing to disagree with. Collapsing "no flag" into DISAGREES manufactures
+    # a finding out of a silence, and it fires on exactly the cells least able to defend themselves:
+    # the converted screens, whose sources report a verdict and a detection floor but never a
+    # boolean. Once every converted cell reads DISAGREES the label stops discriminating, and a REAL
+    # disagreement -- the thing this note exists to surface -- is buried among them.
+    if not isinstance(rec_powered, bool):
+        agree = ("screen recorded NO powered flag -- nothing to agree or disagree with; this "
+                 "instrument's own label stands alone for this cell")
+    elif rec_powered == (cost.label == POWERED):
+        agree = "screen agrees"
+    else:
+        agree = "DISAGREES WITH THE SCREEN'S OWN FLAG -- inspect"
     fragile = ""
     if cost.label == POWERED and declared_trials > 1:
         at_declared = correlation_negative(

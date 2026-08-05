@@ -157,10 +157,40 @@ class TestBreadthIsTerritoryAndParityWithChinese:
 
     def test_every_source_is_reachable_from_the_table(self) -> None:
         """The miner iterates SOURCES rather than a hardcoded list, so a source missing here is a
-        source that silently never runs."""
-        assert set(F.SOURCES) == {"qiita", "zenn", "hatena", "dcinside", "habr"}
-        for _name, (fn, lang) in F.SOURCES.items():
-            assert callable(fn) and lang in F.LANGUAGES
+        source that silently never runs.
+
+        STRUCTURAL, NOT A LITERAL SET. This asserted the exact five original names, which made it
+        a change-detector: adding a forest broke it, and the only way to "fix" that is to paste
+        the new name in, which tests nothing. What actually has to hold is that every source is
+        callable, declares a language the query table covers, and is reachable by iteration --
+        properties the NEXT forest inherits for free.
+        """
+        assert len(F.SOURCES) >= 5, "the foreign lane has lost sources"
+        for name, (fn, lang) in F.SOURCES.items():
+            assert callable(fn), f"{name} is not callable"
+            assert lang in F.LANGUAGES, f"{name} declares language {lang!r} with no query set"
+        # Every language with a query set must have at least one source that reads it, or the
+        # territory was written and nothing ever walks it.
+        covered = {lang for _, lang in F.SOURCES.values()}
+        assert covered == set(F.LANGUAGES), (
+            f"query territories with no source: {sorted(set(F.LANGUAGES) - covered)}; "
+            f"sources with no territory: {sorted(covered - set(F.LANGUAGES))}")
+
+    def test_every_language_has_a_candid_forum_lane_not_only_polished_venues(self) -> None:
+        """THE ASYMMETRY THIS FILE EXISTS TO CLOSE. Qiita, Zenn, Habr and Velog are PUBLICATION
+        venues: people write there to be seen being competent, so the failure literature -- the
+        part actually worth mining -- is systematically under-represented. The Chinese lane already
+        reaches the candid register through Bilibili comment culture; every non-Chinese lane was
+        polished-only, which is a breadth gap dressed as coverage.
+        """
+        forums = {"note", "dcinside", "coinpan", "smartlab", "tinhte", "eksisozluk"}
+        by_lang: dict[str, set[str]] = {}
+        for name, (_fn, lang) in F.SOURCES.items():
+            by_lang.setdefault(lang, set()).add(name)
+        missing = [lang for lang, names in by_lang.items() if not (names & forums)]
+        assert not missing, (
+            f"languages with no candid-register lane: {missing}. A polished venue is not a "
+            "substitute for a forum -- it is a change of subject.")
 
     def test_the_article_shape_matches_the_chinese_one(self) -> None:
         """Same shape means a new language costs a parser, not a pipeline. Diverge and every

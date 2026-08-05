@@ -354,9 +354,29 @@ _YIELD_LOG = _ROOT / "data" / "miner_yield.jsonl"
 #: `foreign` was not, so its first three surfaced rows logged as 0 new against 1,601 fetched --
 #: a yield of 0.0 on a source that had just produced. This is the instrument CADENCE is read off,
 #: so a producing lane reporting zero would argue for cutting the one sweep worth keeping.
+def _foreign_producers() -> tuple[str, ...]:
+    """The foreign group's producers, READ FROM THE SOURCE REGISTRY rather than restated here.
+
+    This list was hardcoded, and that is precisely how the yield instrument reported a structural
+    ZERO for the whole foreign lane once: `foreign` is a GROUP whose queue rows carry per-source
+    channels, so a producer missing from the list is a producer whose rows are never counted. The
+    lane logged 1,601 fetched / 0 new on a run that had just surfaced three rows, and a producing
+    lane reporting nothing forever is an argument to cut the one sweep worth keeping.
+
+    Restating the list was the fix LAST time and it did not survive contact with growth: the moment
+    seven more forests were added the copy went stale again. Deriving it means a forest added
+    tomorrow is counted the day it is added, with nothing to remember.
+    """
+    try:
+        from libs.data.foreign_sources import SOURCES as _FS
+        return tuple(sorted(_FS))
+    except Exception:
+        return ("qiita", "zenn", "hatena", "dcinside", "habr")
+
+
 _GROUP_PRODUCERS: dict[str, tuple[str, ...]] = {
     "cn": ("juejin", "wechat"),
-    "foreign": ("qiita", "zenn", "hatena", "dcinside", "habr"),
+    "foreign": _foreign_producers(),
 }
 
 _FETCH_KEYS = {"bilibili": "bilibili_discovered", "cn": "cn_article_discovered",

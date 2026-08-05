@@ -95,6 +95,22 @@ _ALIASES: dict[str, tuple[str, ...]] = {
     "min_detectable_ic": ("min_detectable_ic", "detection_floor_ic_unadjusted"),
 }
 
+#: HORIZON UNITS, converted to DAYS. Everything downstream prices a forward clock as
+#: `rows_needed * bar_length_days`, so a horizon in the wrong unit is not a cosmetic problem -- it
+#: silently makes the cell UNRANKABLE and drops it behind every candidate whose wait is known.
+#:
+#: This bit off the moat, which is the desk's ONLY proprietary dataset and the one it calls its
+#: largest unexploited asset. `screen_moat` reports `horizon_s` in SECONDS: a 30-second cell at
+#: |ic| 0.02 needs ~17,400 bars, which is SIX DAYS of tape -- by far the fastest resolution
+#: anything on this desk can offer, and it was arriving with no readable clock at all.
+_HORIZON_UNITS: dict[str, float] = {
+    "horizon_days": 1.0, "horizon_d": 1.0, "horizon_calendar_days": 1.0, "window_days": 1.0,
+    "horizon_h": 1.0 / 24.0,
+    "horizon_min": 1.0 / 1440.0, "interval_min": 1.0 / 1440.0, "horizon_m": 1.0 / 1440.0,
+    "horizon_s": 1.0 / 86400.0, "horizon_sec": 1.0 / 86400.0, "horizon_seconds": 1.0 / 86400.0,
+    "horizon_ms": 1.0 / 86_400_000.0, "bar_ms": 1.0 / 86_400_000.0,
+}
+
 #: A row is a SCORED CELL when it carries an effect estimate and a sample size. Deliberately
 #: narrow: a config block or a coverage table must never be mistaken for a screened hypothesis.
 _EFFECT_KEYS = frozenset({"ic", "ic_mean", "residual_ic", "t_stat", "ic_t_stat"})
@@ -333,6 +349,21 @@ def canonical_row(row: dict[str, Any], index: int, *,
         out[canon] = value
 
     out["name"] = _row_name(row, index)
+
+    # HORIZON IN DAYS, whatever unit the screen chose to report it in. Resolved here rather than
+    # left to the ranker, because the ranker cannot tell "no horizon" from "a horizon in seconds"
+    # and both would land in the same UNRANKED bucket -- which is where the moat's fastest cells
+    # were sitting. The unit ACTUALLY USED is recorded so a reader can audit the conversion.
+    if _num(out.get("horizon_days")) is None:
+        for field, scale in _HORIZON_UNITS.items():
+            raw = _num(row.get(field))
+            if raw is not None and raw > 0:
+                out["horizon_days"] = raw * scale
+                used["horizon_days"] = field
+                if scale != 1.0:
+                    out["horizon_converted_from"] = f"{field}={raw:g} x {scale:g} days/unit"
+                break
+
     n_eff = _num(out.get("n_eff"))
     n_raw = _num(out.get("n"))
     if n_eff is None and n_raw is not None:

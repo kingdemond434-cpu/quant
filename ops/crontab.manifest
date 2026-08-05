@@ -1390,6 +1390,29 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # EVIDENCE: scripts/run_moat_campaign.py -> reports/moat_campaign.json
 # CONFIDENCE: committed-script (new; first run may legitimately report BLOCKED on sample length)
 10 4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_moatcamp.lock .venv/bin/python scripts/run_moat_campaign.py >> data/cro_ai_logs/moat_campaign.log 2>&1
+
+# THE MOAT SCREEN AND ITS EXPLOIT LEG -- both were UNSCHEDULED, on the one dataset the desk owns
+# that the crowd cannot buy. `run_moat_campaign` (above) and `run_moat_utilisation` were in the
+# cadence; `screen_moat.py`, the organ that actually SCORES the proprietary L2 tape, and
+# `promote_moat_survivors.py`, the organ that converts a persistent finding into a pre-registered
+# forward clock, had no cron line anywhere. So the desk measured how little of its moat was being
+# used (moat_utilisation: NOT-READABLE-HERE) while the thing that would use it ran only by hand.
+# That is the built-never-wired defect on the highest-value asset on the desk.
+#
+# WHY THIS IS THE FASTEST ROAD TO A SURVIVOR. Moat cells carry SECOND-scale horizons. A 30-second
+# cell at |ic| 0.02 needs ~17,400 bars, which is SIX DAYS of tape -- against 116 days for the
+# fastest daily-bar candidate now standing. Nothing else the desk can screen resolves that fast.
+# CEILING TYPE (L1.28c) is DATA-ARRIVAL: the recorders append continuously, so a daily pass always
+# has new tape. 04:40 leaves the campaign above a clear half hour and lands well before
+# finalize_axis_screens at 08:08, so a survivor found this morning is converted the same morning.
+# AUTHORITY: screen_moat declares NONE; promote_moat_survivors buys a FORWARD CLOCK and nothing
+# else -- no capital, no weight, no order path (verified at both files' authority lines).
+# EVIDENCE: scripts/screen_moat.py -> data/moat_screen.json (results carry ic + n + horizon_s);
+# scripts/promote_moat_survivors.py -> the pre-registration ledger.
+# CONFIDENCE: measured for the resolution arithmetic (17,424 bars at Holm z=2.64, read from
+# libs/research/slot_admission); the tape's own volume is NOT readable in this checkout.
+40 4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_moatscreen.lock nice -n 19 .venv/bin/python scripts/screen_moat.py >> data/cro_ai_logs/moat_screen.log 2>&1
+55 4 * * * cd "$QUANT_ROOT" && flock -n data/.cron_moatpromote.lock .venv/bin/python scripts/promote_moat_survivors.py >> data/cro_ai_logs/moat_promote.log 2>&1
 # CHIEF RESEARCH OFFICER (principal 2026-08-01). The desk's SECOND BRAIN: a cross-family model
 # whose only job is to think, criticise, discover, prioritise and recommend -- never to implement.
 # Implementation agents execute what it validates; the separation is the point.

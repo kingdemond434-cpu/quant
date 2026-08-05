@@ -176,9 +176,16 @@ def test_screen_cells_reproduce_the_screens_own_powered_flag_on_this_checkout() 
         got, _ = reader(_ROOT)
         costs.extend(got)
     assert costs, "no Stage-A screen cells found on this checkout"
-    assert all("screen agrees" in c.note for c in costs), [
-        c.note for c in costs if "screen agrees" not in c.note
-    ]
+    # THREE STATES. A cell whose screen recorded NO powered flag has not disagreed with anything,
+    # and calling that a disagreement manufactures a finding out of a silence -- which is what
+    # started happening the moment converted screens (whose sources report a verdict and a
+    # detection floor but never a boolean) reached this directory. What must still FAIL is a real
+    # contradiction: the screen said powered and this module says otherwise, or vice versa.
+    contradictions = [c.note for c in costs if "DISAGREES" in c.note]
+    assert not contradictions, contradictions
+    assert any("screen agrees" in c.note for c in costs), (
+        "not one cell reproduced its screen's own flag -- the walker is no longer checking "
+        "anything, which is the quiet direction of failure")
 
 
 def test_declared_trials_are_reported_but_never_applied(tmp_path: Path) -> None:

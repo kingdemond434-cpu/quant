@@ -166,7 +166,21 @@ def main() -> int:
         v = validate(m[:, i], hypothesis=_HYP, periods_per_year=ppy,
                      n_trials=m.shape[1], sharpe_estimates=sh,
                      returns_matrix=m, campaign=gates, column=i)
+        # THE FIELDS THAT MAKE A ROW READABLE BY THE SURVIVOR PIPELINE, and their absence made
+        # this campaign's output unreachable. `screen_conversion.is_scored_row` requires an effect
+        # estimate AND a sample size; these rows carried neither in a recognised spelling, so the
+        # ONE dataset the desk owns that the crowd does not produced candidates that could never
+        # be admitted to a forward slot. `sharpe_per_period` is the effect in the same currency
+        # the resolution formula uses -- over n periods a strategy's t-stat is SR_period*sqrt(n),
+        # exactly as an IC's is IC*sqrt(n) -- so the two are interchangeable there and neither is
+        # rescaled to flatter the other.
         rows.append({"name": nm, "survived": bool(v.survived),
+                     "n": int(m.shape[0]), "n_eff": float(m.shape[0]),
+                     "sharpe_per_period": float(sharpe_ratio(m[:, i])),
+                     "ic": float(sharpe_ratio(m[:, i])),
+                     "ic_is_sharpe_per_period": True,
+                     "horizon_ms": int(args.bar_ms),
+                     "periods_per_year": float(ppy),
                      "ann_sharpe": float(sharpe_ratio(m[:, i]) * np.sqrt(ppy)),
                      "failed": [g for g, ok in v.gates.items() if not ok],
                      "dsr": float(v.metrics.dsr), "pbo": float(v.metrics.pbo),
