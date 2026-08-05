@@ -174,6 +174,175 @@ def build_brief(root: Path) -> dict[str, Any]:
     return brief
 
 
+#: BLINDING EXPERIMENT (R0124 item b, 2026-08-05) -- "hide asset/exchange names behind
+#: placeholders: if performance collapses it was brand recognition, not reasoning. Cheapest
+#: decisive test of whether the edge is real."
+#:
+#: WHY IT IS NOT BLOCKED, since the ledger recorded that it was. R0124 was disposed SCHEDULED on
+#: the grounds that this item is "OpenRouter-blocked (-0.59 USD, no seats can respond)". That
+#: balance blocks the EXTERNAL PANEL. This sleeve never touches OpenRouter -- _ask_claude below
+#: shells out to the Claude CLI through ops/brain_env.sh. Two different backends were conflated.
+#:
+#: THE DESIGN IS FROZEN HERE, BEFORE THE DATA, and it deliberately mirrors the excitation design
+#: of L1.45: the arm is assigned by a pre-registered deterministic rule over a knob the desk
+#: already owns, it varies HOW the sleeve is asked and never HOW MUCH it may risk, and there is no
+#: vocabulary for size anywhere in it. Arm = BLIND on odd 4-hour windows, CLEAR on even ones, keyed
+#: off the UTC window index so the assignment is reproducible from the row's own timestamp and
+#: cannot be chosen after seeing the brief. ~50/50 by construction on the 4-hourly cadence.
+#:
+#: WHAT IT CAN MEASURE TODAY, WITH ZERO CALLS ON THE BOOK. The sleeve is 9/9 PASS, so the
+#: performance comparison the critique wants genuinely has nothing to compare yet -- but the
+#: PASS RATE ITSELF is an observable that needs no call: if the model passes at a different rate
+#: when it cannot see WHICH asset an event names, that is brand recognition operating on the
+#: filter, and it is visible from the first pair of windows. Recording the arm from the start is
+#: what makes the eventual comparison possible at all; an arm cannot be assigned retroactively.
+_BLIND_TOKEN = "ASSET_{}"    # noqa: S105 -- a placeholder format string, not a credential
+_VENUE_TOKEN = "VENUE_{}"    # noqa: S105 -- ditto ("TOKEN" is the crypto sense, not the auth one)
+#: Venue names the feeds actually carry (collect_announcements's sources + the desk's venues).
+#: Held separately from tickers because a venue leak and an asset leak are different confounds.
+_VENUES = ("binance", "okx", "bybit", "coinbase", "kraken", "upbit", "bithumb", "bitmex",
+           "kucoin", "gate.io", "huobi", "mexc", "deribit", "bitflyer", "gmo", "hyperliquid",
+           "coindesk", "cointelegraph", "defillama", "bitfinex", "gemini", "crypto.com")
+
+#: PROSE NAMES -> ticker. THE FIRST DRAFT OF THIS BLINDER LEAKED, and the leak is worth recording
+#: because it is the failure mode that makes a blinding experiment produce a confidently WRONG
+#: answer rather than no answer. Masking `_KNOWN` tickers alone left "Bitcoin ETFs log inflows",
+#: "Bitcoin's memory pool" and "XBTUSD" fully legible in the first real brief -- the model would
+#: have read the brand in plain English, scored the same in both arms, and the experiment would
+#: have reported "blinding changes nothing, so the edge is real reasoning". A leaky blind is worse
+#: than no blind: it manufactures evidence for the conclusion the desk would prefer.
+#: Aliases resolve to the SAME placeholder as their ticker, or "Bitcoin" and "BTC" would appear as
+#: two unrelated assets and the brief would be incoherent rather than merely anonymous.
+_ALIASES: dict[str, str] = {
+    "bitcoin": "BTC", "xbt": "BTC", "ethereum": "ETH", "ether": "ETH", "solana": "SOL",
+    "ripple": "XRP", "dogecoin": "DOGE", "cardano": "ADA", "avalanche": "AVAX",
+    "chainlink": "LINK", "polkadot": "DOT", "litecoin": "LTC", "polygon": "POL",
+    "tether": "USDT", "binance coin": "BNB", "tron": "TRX", "uniswap": "UNI",
+    "cosmos": "ATOM", "stellar": "XLM", "filecoin": "FIL", "aptos": "APT", "arbitrum": "ARB",
+    "optimism": "OP", "near protocol": "NEAR", "hedera": "HBAR", "algorand": "ALGO",
+    "shiba inu": "SHIB", "bitcoin cash": "BCH", "ethereum classic": "ETC", "toncoin": "TON",
+}
+#: Quote/suffix forms that glue a ticker to another token and defeat a bare \b match: XBTUSD,
+#: BTCUSDT, ETH-PERP. Matched as part of the ticker pattern and re-emitted after the placeholder
+#: so the brief still reads as an instrument rather than a bare noun.
+_QUOTE_SUFFIXES = ("USDT", "USDC", "USD", "PERP", "-PERP", "-USD", "/USD", "/USDT")
+
+
+def _blind_brief(brief: dict[str, Any]) -> tuple[dict[str, Any], dict[str, str]]:
+    """Replace every asset and venue name with a stable placeholder. Returns (brief, unmask).
+
+    Stable WITHIN a window and meaningless ACROSS windows: ASSET_1 is whichever asset appeared
+    first in this brief and carries no identity the model could learn. The map is returned rather
+    than stored globally so the caller can turn a blinded answer back into a real symbol -- the
+    experiment hides the name from the REASONING, it does not hide it from the book.
+
+    Ticker matching reuses the collector's `_KNOWN` whitelist rather than a fresh regex. That set
+    exists because a naive uppercase-word pattern extracted ACROSS, BANKS and LED as tickers, and
+    a blinder with that bug would mask ordinary English into gibberish -- which is the same defect
+    as leaking, pointed the other way.
+    """
+    from scripts.collect_announcements import _KNOWN
+
+    text = json.dumps(brief)
+    suffix = "|".join(re.escape(s) for s in sorted(_QUOTE_SUFFIXES, key=len, reverse=True))
+    # ticker -> every string that names it, longest first so a longer alias is consumed before a
+    # shorter one it contains ("bitcoin cash" before "bitcoin", "ethereum classic" before "ether")
+    by_ticker: dict[str, list[str]] = {}
+    for alias, ticker in _ALIASES.items():
+        by_ticker.setdefault(ticker, []).append(alias)
+    for tok in _KNOWN:
+        # `_KNOWN` carries XBT as a ticker in its own right while _ALIASES maps xbt -> BTC. Adding
+        # it again as its own key would hand XBTUSD and BTCUSDT DIFFERENT placeholders, so the
+        # blinded brief would describe one asset as two -- anonymised into incoherence, which
+        # degrades the CLEAR-vs-BLIND comparison for a reason that has nothing to do with brand.
+        if _ALIASES.get(tok.lower(), tok) == tok:
+            by_ticker.setdefault(tok, []).append(tok)
+
+    def _pattern(alias: str) -> str:
+        esc = re.escape(alias)
+        # A single-token name may be glued to a quote currency (XBTUSD, BTCUSDT); a multi-word
+        # prose name never is. This keyed on `alias.isupper()` until a test caught it: aliases are
+        # stored LOWERCASE, so `xbt` fell to the no-suffix branch and XBTUSD stayed legible while
+        # BTCUSDT was masked -- the same leak the alias table was added to close, one layer in.
+        return rf"\b{esc}({suffix})?\b" if " " not in alias else rf"\b{esc}\b"
+
+    # order tickers by their longest alias so multi-word names are masked before their heads
+    order = sorted(by_ticker, key=lambda t: -max(len(a) for a in by_ticker[t]))
+    unmask: dict[str, str] = {}
+    n = 0
+    for ticker in order:
+        aliases = sorted(by_ticker[ticker], key=len, reverse=True)
+        if not any(re.search(_pattern(a), text, flags=re.IGNORECASE) for a in aliases):
+            continue
+        n += 1
+        ph = _BLIND_TOKEN.format(n)
+        for alias in aliases:
+            # keep the quote suffix so ASSET_1USDT still reads as an instrument, not a bare noun.
+            # `ph` is bound as a default argument rather than captured: the closure outlives this
+            # loop iteration inside re.sub, and a late-bound ph would stamp every alias with the
+            # LAST placeholder assigned.
+            text = re.sub(_pattern(alias),
+                          lambda m, _ph=ph: _ph + ((m.group(1) or "") if m.groups() else ""),
+                          text, flags=re.IGNORECASE)
+        unmask[ph] = ticker
+    for i, venue in enumerate(sorted(_VENUES, key=len, reverse=True), 1):
+        ph = _VENUE_TOKEN.format(i)
+        new = re.sub(rf"\b{re.escape(venue)}\b", ph, text, flags=re.IGNORECASE)
+        if new != text:
+            unmask[ph] = venue
+            text = new
+    return json.loads(text), unmask
+
+
+def blind_audit(blinded: dict[str, Any], unmask: dict[str, str] | None = None) -> dict[str, Any]:
+    """Grade the blind itself. Runs at CALL time, not only in tests.
+
+    A blind that leaks does not fail loudly -- it quietly answers the research question wrong, in
+    the direction the desk would prefer ("blinding changed nothing, so the edge is real"). So the
+    experiment carries its own falsifier and the verdict rides on the row.
+
+    TWO CLASSES, kept apart because only one is fixable by widening a list:
+      `leaks`    a name still legible as a WHOLE WORD. This is a defect; it must be empty.
+      `residual` a masked ticker surviving INSIDE a longer token -- CBBTC (Coinbase Wrapped BTC)
+                 is the measured real case. Not whole-word, so no vocabulary addition removes it,
+                 and a reader fluent in wrapped-token tickers can still infer the asset. Recorded
+                 rather than suppressed: an experiment that hides its own imperfect treatment is
+                 the thing this whole item exists to test for.
+    """
+    from scripts.collect_announcements import _KNOWN
+
+    text = json.dumps(blinded)
+    names = {*_ALIASES, *_VENUES, *(t.lower() for t in _KNOWN)}
+    leaks = sorted(nm for nm in names
+                   if re.search(rf"\b{re.escape(nm)}\b", text, re.IGNORECASE))
+    residual = sorted({tok for tok in (unmask or {}).values()
+                       if re.search(re.escape(tok), text, re.IGNORECASE)})
+    return {"leaks": leaks, "residual": residual, "clean": not leaks}
+
+
+def _unmask_symbol(symbol: str, unmask: dict[str, str]) -> str:
+    """Turn a blinded answer back into a real ticker. A placeholder the map does not know is
+    returned UNCHANGED so validate_call refuses it -- inventing a symbol to rescue a malformed
+    answer is how a paper sleeve books a trade on an asset nobody named."""
+    base = unmask.get(symbol.upper())
+    if base:
+        return f"{base}USDT" if not base.endswith(("USDT", "USD")) else base
+    for ph, tok in unmask.items():
+        if symbol.upper().startswith(ph):
+            return f"{tok}USDT"
+    return symbol
+
+
+def blind_arm(now: datetime) -> str:
+    """Pre-registered arm assignment: deterministic in the UTC 4-hour window index.
+
+    Not random at call time on purpose. A seed drawn when the brief is already in hand is a knob
+    someone can turn after seeing the data; an index derived from the clock is reproducible by any
+    later reader from the row's own timestamp, which is what makes the two arms comparable.
+    """
+    return "BLIND" if (now.timetuple().tm_yday * 6 + now.hour // 4) % 2 else "CLEAR"
+
+
 def validate_call(call: dict[str, Any]) -> tuple[bool, str]:
     """The write-time bar. A call that cannot state WHY is not a call (L1.16)."""
     if call.get("action") == "PASS":
@@ -337,10 +506,21 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--brief", action="store_true", help="build the brief and stop")
     ap.add_argument("--json", action="store_true")
+    ap.add_argument("--arm", choices=("BLIND", "CLEAR"), default=None,
+                    help="override the pre-registered arm (testing/inspection only; "
+                         "the scheduled run must let blind_arm() assign it)")
     args = ap.parse_args()
     brief = build_brief(_ROOT)
+    now = datetime.now(tz=UTC)
+    arm = args.arm or blind_arm(now)
+    unmask: dict[str, str] = {}
+    audit: dict[str, Any] = {}
+    if arm == "BLIND":
+        brief, unmask = _blind_brief(brief)
+        audit = blind_audit(brief, unmask)
     if args.brief:
-        print(json.dumps(brief, indent=2))
+        print(json.dumps({"arm": arm, "brief": brief, "unmask": unmask, "blind_audit": audit}
+                         if arm == "BLIND" else brief, indent=2))
         return 0
 
     raw = _ask_claude(_CALL_BRIEF.format(brief=json.dumps(brief, indent=1)[:6000],
@@ -348,6 +528,20 @@ def main() -> int:
                                          mechs=" | ".join(MECHANISMS),
                                          parts=" | ".join(PARTICIPANTS)))
     call = parse_call(raw)
+    if call is not None:
+        # The arm rides on the row so the eventual comparison is possible; it CANNOT be assigned
+        # retroactively, which is why it is recorded from the first window rather than from the
+        # first call. Unmasking happens BEFORE validate_call, so a blinded answer faces exactly
+        # the same write-time bar as a clear one -- the experiment must not change the gate.
+        call["blind_arm"] = arm
+        if arm == "BLIND":
+            # the blind's own grade rides on the row: a window whose treatment leaked must be
+            # excludable from the comparison later, and that is only possible if it was recorded
+            # at the time. `clean` is the field the analysis filters on.
+            call["blind_audit"] = audit
+            if call.get("symbol"):
+                call["symbol_as_answered"] = call["symbol"]
+                call["symbol"] = _unmask_symbol(str(call["symbol"]), unmask)
     if call is None:
         why = (f"call FAILED -- {_LAST_CALL_FAILURE}" if _LAST_CALL_FAILURE else
                "model ran but returned no parseable JSON (a refusal or a malformed answer)")
