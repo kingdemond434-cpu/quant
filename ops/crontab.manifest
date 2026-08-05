@@ -801,8 +801,16 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 34 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/compute_performance.py >> data/cro_ai_logs/compute_performance.log 2>&1
 # scripts/certify_gauntlet.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
 10 5 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/certify_gauntlet.py >> data/cro_ai_logs/certify_gauntlet.log 2>&1
-# scripts/run_autodiscovery.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
-20 3 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_autodiscovery.py >> data/cro_ai_logs/run_autodiscovery.log 2>&1
+# RETIRED 2026-08-05 (L2.9 capability audit -> RETIRE; stub-deaths defect). run_autodiscovery.py
+# imports MetaTrader5 at scripts/run_autodiscovery.py:64, which requirements-deploy.txt:5 itself
+# declares "Windows only; requires a running MT5 terminal + demo account". This box is Linux, so
+# the organ has ModuleNotFoundError'd on every single fire and has never once produced its report.
+# It is the last MT5-era scheduled entry: the libs/discovery factory it belonged to was retired in
+# 3be2e3e as "a complete, self-contained MT5-era predecessor to libs.autodiscovery", and
+# libs.autodiscovery (51 importers) re-implements the capability with its own validation stack.
+# NOT a denominator trick (L1.0/§34): this removes a cron line that could never execute, not a
+# working organ. Re-instate only on a host with an MT5 terminal.
+# 20 3 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_autodiscovery.py >> data/cro_ai_logs/run_autodiscovery.log 2>&1
 # scripts/research_alpha_optimizer.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
 24 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/research_alpha_optimizer.py >> data/cro_ai_logs/research_alpha_optimizer.log 2>&1
 # scripts/run_carry_crowding.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
