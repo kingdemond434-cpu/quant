@@ -1522,11 +1522,11 @@
    "summary": "EXTERNAL CRITIQUE -- QUEUED, ranked by evidence-per-effort: (a) EVENT ANALOGUE MEMORY (GPT's top pick): embed every event, retrieve N most similar historical ones with their realised 1h/4h/24h/7d reactions, so the LLM reasons from OUR evidence not its pretraining -- also the strongest moat item since nobody else has our first_seen stamps; (b) BLINDING EXPERIMENT: hide asset/exchange names behind placeholders -- if performance collapses it was brand recognition, not reasoning. Cheapest decisive test of whether the edge is real; (c) SHADOW KEYWORD BOT running alongside: if a trivial rules engine matches the LLM, the LLM is not earning its keep; (d) EV-per-opportunity scoring alongside Brier (55pct with a big payoff beats 85pct with a tiny one); (e) ADVERSARIAL CRITIC before each call; (f) bull/bear/judge triad with disagreement logged; (g) per-mechanism decay curves. DELIBERATELY NOT QUEUED: the ~40 remaining suggestions -- the critique's own closing warning is that complexity accumulation is the failure mode, and this desk already owns regime conditioning, a multi-model panel, blind-spot organs and mechanism fingerprints",
    "roi_bps": 35.0,
    "raised": "2026-07-31T13:10:30.967019+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: None of the 7 queued items exist in tree: no event-analogue memory (grep analogue: only PAXGUSDT gold-analogue prose), no blinding experiment, no shadow keyword bot, EV-per-opportunity absent (scripts/score_forecasts.py:173-181 computes Brier only), no adversarial critic/bull-bear-judge triad, no per-mechanism decay curves on the LLM sleeve. The deliberate not-queued list is a recorded decision. Real ranked backlog, correctly held behind the R0123 foundations that did land.",
+   "status": "scheduled",
+   "reason": "SPLIT, and the split is the point. (b) the BLINDING EXPERIMENT (hide asset/exchange names behind placeholders; if performance collapses it was brand recognition, not reasoning) is the cheapest decisive test the row names and it is OpenRouter-blocked (-0.59 USD, no seats can respond). (a) EVENT ANALOGUE MEMORY -- embed every event, retrieve the N most similar historical ones with their realised 1h/4h/24h/7d reactions -- is genuinely the strongest moat item in the row, because it makes an LLM reason from OUR first_seen stamps rather than its pretraining, and nobody else holds those stamps. It is NOT fully blocked (the retrieval index is ours to build) but it is a real build, not a patch. Scheduled together because the blinding test is what tells us whether the analogue memory is even being used once it exists.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-26",
+   "disposed": "2026-08-05T13:55:18.477814+00:00"
   },
   {
    "id": "R0125",
@@ -2291,11 +2291,11 @@
    "summary": "inbox #85: rebuild quarantined anytime_valid as e-process (wealth M_t=prod(1-l+l*X), confirm at M>=1/alpha; Ville) -- daily Stage-B peeking becomes valid by construction, cures measured x4.9 alpha inflation; recipes: e-backtesting arXiv 2209.00991, AV t-test 2310.03722; caveat t-test non-Gaussian unconfirmed, default bounded e-process (litminer run4 W1)",
    "roi_bps": 80.0,
    "raised": "2026-07-31T19:17:29.083237+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=5 effort_h=6: The e-process itself already exists -- libs/research/anytime_valid.py (wealth/capital process, Ville bound, mixture bounded e-values; commit 020b02a 2026-07-22) -- so 'rebuild' is done; the value is in the missing WIRING: its only consumers are display fields (run_shadow_8h.py:126, run_derivative_shadow.py:112-113) and the 2026-08-01 sweep confirms it 'gates nothing' while daily fixed-sample peeking continues (deep_sweep/20260801_validation-stats.md:845-849, ranked action #10 :1375). Wire e_value into Stage-B forward monitoring; Ville makes daily peeking valid at unchanged alpha -- nothing loosens.",
+   "status": "scheduled",
+   "reason": "HIGH VALUE AND CORRECTLY NOT RUSHED. This cures a MEASURED x4.9 alpha inflation from daily Stage-B peeking, which is a validation-integrity defect on the promotion path -- the single place where getting it wrong manufactures phantom edges rather than merely wasting time. An e-process (M_t = prod(1-l+l*X), confirm at M >= 1/alpha, Ville) makes optional stopping valid BY CONSTRUCTION, which is the right shape. Deliberately not built at cycle end: the row itself flags the AV t-test's non-Gaussian behaviour as unconfirmed, so the default must be the bounded e-process, and choosing l and the confirmation boundary wrongly either loosens the bar (forbidden) or welds it shut (the gate-optimality failure). Wants a session with the quarantined module read side by side with the two arXiv recipes.",
    "commit": null,
-   "due": null,
-   "disposed": null,
+   "due": "2026-08-26",
+   "disposed": "2026-08-05T13:54:58.682733+00:00",
    "note": "renumbered from R0176 after sibling-session ID race, merge 2026-07-31"
   },
   {
@@ -2317,11 +2317,11 @@
    "summary": "inbox #87: panel aggregation -> calibrated soft voting / Bayesian fusion; singletons kept as scored minority reports; cross-family confidences multiply (arXiv 2606.13591; debate cancellation CONFIRMED by ICLR25 MAD + 2511.07784 + 2606.03032 -- do not rebuild debate) (litminer run4 W4)",
    "roi_bps": 40.0,
    "raised": "2026-07-31T19:17:29.252822+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: PARTIAL: singletons-as-scored-minority-reports is built (run_external_panel.py:170-199, GAP #72) and a per-provider validated-hit-rate scorecard exists (scripts/score_panel.py -> data/panel_scorecard.json), but aggregation is still a keyword tally (_consensus, run_external_panel.py:159-167) -- no calibrated soft voting, no Bayesian fusion, no cross-family confidence multiplication. Debate correctly NOT rebuilt (no debate machinery anywhere). The fusion half remains real work.",
+   "status": "scheduled",
+   "reason": "BLOCKED ON A VERIFIED EXTERNAL CONSTRAINT, and the blocker is measured not assumed: OpenRouter balance is -0.59 USD against a ~2.93 USD single run, so zero panel seats can respond and there is no aggregation to calibrate. Item is a soft-voting/Bayesian-fusion layer OVER panel outputs; building it against a dead panel would ship an untested aggregator whose first real input arrives months later. The row's own strongest content is the NEGATIVE result (debate cancellation CONFIRMED -- do not rebuild debate), which is already preserved in the summary and costs nothing to retain. Fires when credits land (principal page item 3).",
    "commit": null,
-   "due": null,
-   "disposed": null,
+   "due": "2026-08-26",
+   "disposed": "2026-08-05T13:51:26.750443+00:00",
    "note": "renumbered from R0178 after sibling-session ID race, merge 2026-07-31"
   },
   {
@@ -2330,11 +2330,11 @@
    "summary": "inbox #88: verification protocol -- rubric-decomposed <=3 targeted checks per review; CAP review loops at 3-4 (gains plateau); budget for 12.8% verifier wrong-flip risk round 1 (DeepVerifier 2601.15808: F1 73.2 vs 61.5 agent-as-judge, +11.1pp end-task) (litminer run4 W5)",
    "roi_bps": 30.0,
    "raised": "2026-07-31T19:17:29.341133+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: PARTIAL: rubric-decomposed review is wired -- libs/research/review_rubric.py (c4a8d7b 2026-08-01) parses and injects ADVERSARIAL_REVIEW_RUBRIC.md's 10 shipped-defect classes into reviews. Missing: any review-loop cap at 3-4 rounds and any 12.8% verifier wrong-flip budget (repo-wide grep for wrong-flip/review-loop caps: nothing; llm/push.py MAX_ROUNDS=11 is the generation ladder, not review). The protocol half remains open.",
+   "status": "scheduled",
+   "reason": "Same measured blocker as R0189 (OpenRouter -0.59 USD, no seats). Rubric-decomposed verification with a capped review loop is a change to how PANEL review is conducted; with no panel it has no surface to act on. NOTE FOR WHOEVER PICKS IT UP: the 12.8pct verifier wrong-flip risk in round 1 is the load-bearing number -- a verification layer that flips correct findings is negative discovery (L1.25a), so this must ship with the flip rate measured on our own rulings, not adopted on the paper's F1 alone.",
    "commit": null,
-   "due": null,
-   "disposed": null,
+   "due": "2026-08-26",
+   "disposed": "2026-08-05T13:51:29.092157+00:00",
    "note": "renumbered from R0179 after sibling-session ID race, merge 2026-07-31"
   },
   {
@@ -2343,11 +2343,11 @@
    "summary": "inbox #89: calibration program config -- per-family per-task-type shrinkage, RE-BASELINE on every model upgrade (ConfidenceBench 2607.20526: Claude Brier 0.103 vs GPT-5 0.117-0.141, 5/15 models worse than calibrated-random; newer!=better); elicitation via self-critique+consistency (2606.03437); adopt per-claim confidence-minus-evidence-quality gap metric (2606.11851) (litminer run4 W2)",
    "roi_bps": 35.0,
    "raised": "2026-07-31T19:17:29.436348+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: PARTIAL: a calibration program exists (libs/self_improvement/forecast_calibration.py -- Brier + Beta posterior + bias applied as shrinkage via calibrated_confidence; scripts/check_calibration.py L1.29 fence), but none of the litminer specifics: shrinkage is global per forecast-kind (no per-family per-task-type), scripts/brain_model_upgrade.py auto-upgrades models with ZERO calibration re-baseline hook (no calibration/Brier reference in the file), and no confidence-minus-evidence-quality gap metric exists.",
+   "status": "scheduled",
+   "reason": "PARTLY SUPERSEDED, remainder blocked. The desk already has a live calibration organ (scripts/check_calibration.py + calibrated_confidence feeding Kelly shrinkage) and this cycle's own forecast log shows it operating (R0370 logged p=0.35 COLD-START, resolve_by 2026-08-19). What this row adds beyond that is per-family/per-task-type shrinkage and RE-BASELINE on every model upgrade -- and the re-baseline half is the genuinely valuable part, because model_upgrade.py can silently invalidate a calibration curve. The per-FAMILY half needs a second family, which is OpenRouter-blocked (-0.59 USD). Scheduled together so the re-baseline hook is not built twice.",
    "commit": null,
-   "due": null,
-   "disposed": null,
+   "due": "2026-08-26",
+   "disposed": "2026-08-05T13:51:31.637421+00:00",
    "note": "renumbered from R0180 after sibling-session ID race, merge 2026-07-31"
   },
   {
@@ -2356,11 +2356,11 @@
    "summary": "inbox #90: verify post-2024 funding-carry compression on desk decade archive (BIS WP1087 primary: ETF launch cut carry ~3pp/-36%; He et al 11%/yr decay; survey claims 2025 carry Sharpe NEGATIVE, summary-grade) and wire measured decay slope into funding-sleeve sizing priors; watch access events as compression triggers (litminer run4 LIT-e F2)",
    "roi_bps": 60.0,
    "raised": "2026-07-31T19:24:01.198219+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: NOT done: phase-1 collector exists (scripts/collect_bitmex_funding.py per BITMEX_DECADE_INGEST_SPEC.md) but data/bitmex_funding.jsonl is absent and no compression-decay study artifact exists anywhere (no WP1087/decay-slope analysis in reports/ or docs/research beyond the litminer cards); run_carry_crowding.py (2026-07-28) is a different instrument -- desk-panel percentile crowding detector, not decade-archive decay measurement -- and nothing wires a measured decay slope into funding-sleeve sizing priors.",
-   "commit": null,
+   "status": "implemented",
+   "reason": "MEASURED THIS CYCLE on the desk's own decade archive (research memory rm-20260805T135340-cb85e2). Compression CONFIRMED and slightly larger than the BIS primary: -4.51pp/yr, -41.3pct pre-vs-post ETF launch, against BIS WP1087's ~3pp/-36pct. The survey claim of a NEGATIVE 2025 carry Sharpe is REFUTED on our tape -- 2025 is the archive's most consistent year. Third finding neither source asked for and the one that matters operationally: 2026 YTD BTC funding is -1.23pct/yr with 49.4pct negative settlements, while the live 855-symbol alt cross-section still pays a 34.39pct/yr top decile -- so compression is a MAJORS phenomenon and the section-42 tail is intact. The row's second half (wire the decay slope into sleeve sizing priors) is NOT done here and is rowed separately rather than claimed.",
+   "commit": "2777e61",
    "due": null,
-   "disposed": null,
+   "disposed": "2026-08-05T13:53:56.287279+00:00",
    "note": "renumbered from R0181 after sibling-session ID race, merge 2026-07-31"
   },
   {
@@ -2369,11 +2369,11 @@
    "summary": "watchlist cards 23-25 build batch (litminer run4 LIT-e, dues 08-07/08-10): (23) BIS WP1087 carry->liquidation screen construction on ingested axes + COT-BTC contract extension via existing run_cot_screen.py (novelty-gated vs 41y COT kill: different construction); (24) regulatory-event timeline build for the existing event gate (pre-registered null classes: general warnings, CBDC); (25) stablecoin run-signature episodic conditioning variables (sr1073 primary; mint/burn pair + safe-coin premium). Screens themselves stay Stage-A, zero promotion",
    "roi_bps": 45.0,
    "raised": "2026-07-31T19:24:01.294036+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: NOT built, and not yet due (today 08-04): docs/research/data_axis_watchlist.md:1119 card 23 'COT runner exists, BTC contract unrun', deferred(2026-08-07); :1148 card 24 'event gate EXISTS; timeline dataset is the owed build', deferred(2026-08-10); :1168 card 25 'run-signature variables unbuilt', deferred(2026-08-10). scripts/run_cot_screen.py and libs/validation/event_study.py exist as the promised substrates; no card-23/24/25 build artifacts anywhere. Real Stage-A work on schedule.",
+   "status": "scheduled",
+   "reason": "The row carries its own dues (08-07/08-10) and was never given the ledger status that enforces them, which is why it read as undisposed rather than as on-clock. Scheduled to the LATER of its two stated dues so the row cannot outlive its own deadline. Cards 23-25 are build work on axes already ingested (COT extension via existing run_cot_screen.py, regulatory-event timeline for the existing event gate, stablecoin run-signature conditioning) -- no external dependency, so this is a genuine schedule and not a blocker.",
    "commit": null,
-   "due": null,
-   "disposed": null,
+   "due": "2026-08-10",
+   "disposed": "2026-08-05T13:51:02.283663+00:00",
    "note": "renumbered from R0182 after sibling-session ID race, merge 2026-07-31"
   },
   {
@@ -2382,11 +2382,11 @@
    "summary": "inbox #91: adopt sqrt-impact cost curve (spread/2 + c*sigma*sqrt(Q/ADV)) from AQR $1.7T live-trade record as the s42 growth-path capacity model; 85% of impact permanent; real costs ~10x smaller than academic estimates (litminer run4 buyside F1)",
    "roi_bps": 40.0,
    "raised": "2026-07-31T19:25:03.826035+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: REFUTED ALREADY-BUILT (built but never run -- no operative capacity model): the counter-design exists and dominates on paper (scripts/calibrate_impact.py + libs/execution/book_walk.py + libs/portfolio/capacity_allocation.py hard constraint + caller scripts/run_allocation.py, commit e911640), but data/impact_calibration.json has NEVER existed -- absent on disk and zero git history -- so no sqrt-impact coefficient k has ever been fitted on the desk's books and no per-symbol capacity has ever been emitted. run_allocation.load_capacity returns {} without that artifact and the hard-constraint design then zeroes every strategy: the on-disk data/allocation.json is a pytest leftover (source /tmp/pytest-of-root/..., all strategies in unmeasured_capacity, gross 0.0, note text itself saying 'run scripts/calibrate_impact.py'). Neither calibrate_impact.py nor run_allocation.py appears in ops/crontab.",
+   "status": "scheduled",
+   "reason": "PROMOTED IN RELEVANCE BY THIS CYCLE'S OWN MEASUREMENT, so scheduled rather than parked. The sqrt-impact curve (spread/2 + c*sigma*sqrt(Q/ADV)) is the capacity model for the section-42 growth path, and today's funding work makes execution cost the named binding constraint on the only deployed sleeve: top-decile carry 34.39pct/yr = 9.4bps/day against a realised -42.55bps per round trip. A calibrated cost curve is what turns that into a hold-time and size rule instead of a post-hoc attribution. PREREQUISITE THAT MUST NOT BE SKIPPED: it calibrates against OUR fills, and the tape currently carries NO fee field on any of 500 rows (fixed-to-refuse in a8b0625, but the data still is not there) -- so the fee-per-fill recording has to land first or the curve gets fitted to a fabricated zero.",
    "commit": null,
-   "due": null,
-   "disposed": null,
+   "due": "2026-08-19",
+   "disposed": "2026-08-05T13:53:59.861480+00:00",
    "note": "renumbered from R0183 after sibling-session ID race, merge 2026-07-31"
   },
   {
@@ -2395,11 +2395,11 @@
    "summary": "inbox #92: READ-ONLY cross-signal netting audit of order logs -- do carry+trend sleeves send offsetting trades same instrument same window; price the leak bps/yr; any fix respects L1.38 change window (AQR Craftsmanship primary; litminer run4 buyside F7)",
    "roi_bps": 25.0,
    "raised": "2026-07-31T19:25:03.971863+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: NOT built (no netting/offsetting audit code anywhere), but the leak it prices cannot exist yet: the ONLY live order path is the cashcarry executor (grep place_market/place_post_only across scripts/: executor + testnet harnesses + stranded-recovery rails; run_conviction_trader.py is an explicit paper book). Premise is forward-looking, not refuted -- the read-only audit becomes real and cheap the day a second live sleeve ships. Keep with that trigger.",
+   "status": "rejected",
+   "reason": "PRECONDITION ABSENT, not deprioritised. This audit hunts carry+trend sleeves sending offsetting trades on the same instrument in the same window. There is ONE sleeve: web/cashcarry_live.json reads n_carries=0, deployed_notional=0.0, opens paused by the -17.6% drawdown rail, and no trend sleeve has been promoted to capital (all forward slots still accruing, nothing promoted). An audit for inter-sleeve netting over a single paused sleeve cannot return a finding, and running it would produce a clean bill of health that means nothing. RE-OPEN CONDITION (L1.16a, named): the day a second sleeve trades live concurrently with carry.",
    "commit": null,
    "due": null,
-   "disposed": null,
+   "disposed": "2026-08-05T13:50:56.717043+00:00",
    "note": "renumbered from R0184 after sibling-session ID race, merge 2026-07-31"
   },
   {
@@ -2408,11 +2408,11 @@
    "summary": "inbox #93: trend-family doctrine pack -- (1) re-run Man TSMOM benchmarks on own tape, published-vs-OOS decay -58 to -65pct measured in crypto (McLean-Pontiff lands); (2) vol-targeting boundary law: sizing tool never alpha, slow/blended estimators, ETH fast-scaling HURTS; (3) trend-bleed attribution SR=a+b*|SR_mkt| -- check |move| before doubting efficacy; (4) costed breadth wall ~10-15 coins, desk liquid-perp universe IS the capacity-positive zone (litminer run4 buyside F2-F6)",
    "roi_bps": 35.0,
    "raised": "2026-07-31T19:25:04.097956+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Priors RECORDED but actions unbuilt: graveyard.md:104-116 logs the crypto TSMOM -58/-65% measured haircut instance and improvement_inbox.md:1312-1334 holds the four-part doctrine pack; however no TSMOM re-run on own tape exists (zero tsmom code), libs/risk/vol_target.py is untouched since the 2026-07-16 baseline (no boundary law), no SR=a+b|SR_mkt| bleed-attribution harness, and the ~10-15-coin breadth wall is not encoded. With no live trend book, correctly below the carry-path work in priority.",
+   "status": "scheduled",
+   "reason": "SPLIT ON PRECONDITION, and only the blocked half is deferred by that. Items 2-4 (vol-targeting boundary law, trend-bleed attribution, costed breadth wall) are doctrine for a trend sleeve that does not exist: nothing trend-family has reached capital, so they would be written against no live surface. Item 1 -- re-run Man TSMOM benchmarks on our own tape and measure published-vs-OOS decay -- is NOT blocked and is the one with independent value, because it prices whether the trend family is worth a forward slot at all before any of the doctrine matters. Scheduled as one row because splitting it into two would double the ledger's own bookkeeping for no research gain; item 1 is named here as the part that must actually run.",
    "commit": null,
-   "due": null,
-   "disposed": null,
+   "due": "2026-09-02",
+   "disposed": "2026-08-05T13:54:56.108147+00:00",
    "note": "renumbered from R0185 after sibling-session ID race, merge 2026-07-31"
   },
   {
@@ -2495,11 +2495,11 @@
    "summary": "BLIND-REDISCOVERY 2026-07-31 / DEFECT: data/moat/ is 7.1 GB (82% of all desk data on disk) of self-recorded Binance-fut + Binance-spot + Bybit L2 depth and full trade tape across 80 symbol-feeds since 2026-07-17, and it has ZERO return-predictive screens, NO entry in data/data_assets.json, and one consumer (micro_factory.py -> 1.8 KB micro_features.json, last written 2026-07-27). It is simultaneously the largest object on disk and the ONLY unreplicable asset the desk owns (L1.11 names it as the moat). Irreplaceable: the 07-17..07-31 book cannot be re-earned. Largest single unconverted denominator in the DATA-TO-ALPHA CONVERSION RATIO. ACTION: catalogue it in data_assets.json and run the first return-predictive screen against it (BR-07 is a ready-made design).",
    "roi_bps": 300.0,
    "raised": "2026-07-31T20:16:50.525751+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: REFUTED ALREADY-BUILT (partial coverage -- screen half done, catalogue half not): the screen pipeline is real, ran on tape, and is fenced (screen_moat/mine_moat/promote_moat_survivors/review_moat_clocks/run_moat_campaign all exist; commits 1595bd4/d866d9d/5d71ddc verified; ops/crontab.manifest:1248 cron; quant-moat-screen.service; max_audit.py:5998 check_moat_screened). But the row's other named ACTION -- 'catalogue it in data_assets.json' -- remains undone: data/data_assets.json has NO entry for the 7.1GB L2 depth/trade tape (its only data/moat path is execution_tape/cashcarry_trades.jsonl, a different asset, scored moat 0.0 public-refetchable), and the registry builder structurally cannot register it: libs/research/data_registry.py build() skips directories in the flat pass and _partitioned_assets enumerates only data/lake, so data/moat/<venue>/<sym> trees never enter the map on any bo",
+   "status": "scheduled",
+   "reason": "PARTIALLY ADDRESSED SINCE IT WAS WRITTEN, and the remainder is real. The 'ZERO return-predictive screens' half is no longer true: the moat L2 screen ran under R0003 (450 cells, 45 symbols) and data/moat_screen_coverage.json records runs=471 with cells_total=1356, screened=585. What genuinely remains: no entry in data/data_assets.json for the largest object the desk owns, and the coverage denominator is unreconciled (three different figures -- 54.68pct, 17.18pct, 14.84pct -- with 551 cells marked unscreenable, already rowed as R0047 with an explicit instruction NOT to close it by shrinking the denominator). Scheduled on the data_assets registration, which is the part that is small, unambiguous, and currently missing.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-19",
+   "disposed": "2026-08-05T13:55:24.395184+00:00"
   },
   {
    "id": "R0204",
@@ -2507,11 +2507,11 @@
    "summary": "BLIND-REDISCOVERY 2026-07-31 / GATE-OPTIMALITY: alpha_economics.ev_score cannot price RISK-SIDE candidates and silently rejects them. BR-04 (insurance-fund depletion -> ADL haircut on the carry sleeve's short-perp leg) scored ev 0.0009 vs the 0.002 bar, driven by est_sharpe and narrow_breadth -- but it generates NO return stream. Its value enters E[log W] through AVOIDED RUIN, for which ev_score has no term, so any left-tail-removal input is structurally rejected however valuable. Inputs were NOT tuned to pass (that would be gaming the gate). ACTION: either add a ruin-reduction term to ev_score or route risk-side candidates through a separate gate; today the EV gate is a return-alpha gate being applied to everything.",
    "roi_bps": 120.0,
    "raised": "2026-07-31T20:16:50.610310+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=2 effort_h=6: Premise CONFIRMED still true: libs/research/alpha_economics.py ev_score (:74) has no ruin/left-tail/avoided-loss term (zero grep hits; last touched 7f1b3b1 2026-07-31, before this row could be actioned) and BR-04 remains EV-REJECTED at 0.0009 (blind_rediscovery_log.md:300-336: 'est_sharpe is the wrong frame... generates no return stream'). Route risk-side candidates through a separate E[log W]/avoided-ruin gate (or add the term) -- this ADDS a path for a class the current gate structurally cannot price; no statistical gate loosens.",
+   "status": "scheduled",
+   "reason": "ACCEPTED AS A REAL GATE-OPTIMALITY DEFECT, scheduled rather than patched at the end of a cycle. ev_score has no term through which avoided ruin enters E[log W], so every left-tail-removal candidate is rejected on est_sharpe and narrow_breadth however valuable -- a gate that rejects ~100pct of a class carries zero information, which is the defect the gate-optimality duty names. NOT DONE AS A DRIVE-BY because this is the gate that decides what the desk researches at all: widening it wrongly admits noise into the multiplicity budget, and the correct shape (a separate risk-side path scored on ruin-probability reduction, NOT a fudge factor on the return-side score) needs the existing _PRIORS read alongside libs/risk before it is written. Blocking nothing meanwhile: BR-04 is a known concrete test case to re-score once the path exists.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-12",
+   "disposed": "2026-08-05T13:54:53.281185+00:00"
   },
   {
    "id": "R0205",
@@ -4497,6 +4497,42 @@
    "summary": "A DISPOSITION'S --commit SHA IS SILENTLY INVALIDATED BY ANY REBASE, AND THERE IS NO VERB TO RE-POINT IT. Hit live 2026-08-05: three rows were disposed implemented citing a4054a8/5b0cb81/3abe48b, then the branch had to be rebased onto origin (a sibling had pushed 13 commits to the same branch). Rebase rewrote all three SHAs. The cited commits survive only as orphaned local objects until gc and NEVER reach the remote, so the ledger's proof-of-work pointed at commits no other clone can resolve -- a false citation in exactly the dimension the --commit field exists to make true, and one that gets WORSE with time rather than announcing itself. scripts/recommendations.py:172 correctly refuses to re-dispose ('dispositions do not revert') and offers only 'correct', which re-OPENS the row and files the prior disposition as MISFILED. That is the wrong shape here: the disposition was right, only the pointer moved, and recording it as a misfiling would corrupt the correction history that verb exists to protect. Worked around this time by a surgical edit of the three commit fields, matching recommendations.py:69's exact serialization so the diff stayed at 6 lines. FIX, one of: (a) add a 'repoint --id --commit --reason' verb, which mutates only the commit field and appends to a repoints[] list -- cheap and exact; or (b) have dispose resolve the sha to a stable form at write time; or (c) a fence that walks implemented rows and reports any commit not reachable from the remote-tracking branch, which also catches the pre-existing rows nobody re-pointed. (c) is worth doing regardless of (a)/(b) because it MEASURES how many existing citations are already dangling -- currently unknown, and unmeasured counts as zero.",
    "roi_bps": 4.0,
    "raised": "2026-08-05T13:20:17.025660+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0370",
+   "source": "cro",
+   "summary": "FILL-QUALITY DENOMINATOR FABRICATION (fixed a8b0625). fill_quality_monitor scored 475 of 500 rows carrying NO liquidity field as taker fills, publishing maker_rate 3.56pct while run_trade_forensics read 0.60 off the same tape via the same leg_modes vocabulary -- 16.9x apart. Second fabricated zero same class: 0 of 500 rows carry a fee field, so bps_per_rt published 0.0 realised round-trip cost for a book paying 1750.88 of commission (88.7pct of its non-funding loss). Root pattern: a guard built for ONE field and never generalised to its siblings, plus an ALL-OR-NOTHING schema check that protects against an unreadable TAPE but not an unreadable ROW. Fixtures could not catch it because every one stamped a mode on every row.",
+   "roi_bps": null,
+   "raised": "2026-08-05T13:40:39.215770+00:00",
+   "status": "implemented",
+   "reason": null,
+   "commit": "a8b0625",
+   "due": null,
+   "disposed": "2026-08-05T13:41:42.066252+00:00"
+  },
+  {
+   "id": "R0371",
+   "source": "cro",
+   "summary": "MONEY-PATH MEASUREMENT GAP: the cash-carry tape records NO fee field on ANY fill. 0 of 500 rows in data/cashcarry_trades.json carry fee/commission/fee_usd, so cost-per-fill is structurally unmeasurable from the trade log -- while web/cashcarry_live.json attributes 1750.88 of futures commission = 88.7pct of the sleeve's entire -1973.82 non-funding loss. The desk can therefore see that fees are the dominant loss and CANNOT attribute them to a symbol, a leg, a mode, or a hold bucket. This blocks R0194 (sqrt-impact cost curve must calibrate on our own fills), blocks fee_concentration (the 96.5pct taker-minority statistic the fill monitor exists to track), and is why cost_drift reports 'only 0 trades carry TCA cost fields yet'. run_deadman_reconciliation.py:108-110 already sums commission per fill from binance_spot_testnet.my_trades, so the venue data is reachable -- the gap is that the executor does not stamp it onto the trade row at close time. FIX: stamp per-leg commission onto the close row, same place spot_mode/fut_mode are stamped.",
+   "roi_bps": null,
+   "raised": "2026-08-05T13:54:22.710150+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0372",
+   "source": "cro",
+   "summary": "CARRY REGIME CHANGE IN THE YEAR THE DESK DEPLOYED, measured not asserted: 2026 YTD BitMEX XBTUSD funding is -1.23pct/yr with 49.4pct of settlements negative (n=634 through 07-31), against a 2016-2025 mean of +11pct/yr. BTC carry is currently a coin flip. The alt tail is NOT compressed -- live 855-symbol Binance USDM cross-section shows median 5.47pct/yr and a top-decile mean of 34.39pct/yr over 87 symbols, with 40.8pct of the universe at or below zero. IMPLICATION FOR SIZING PRIORS: the carry sleeve's edge is concentrated in the section-42 small-cap tail and is roughly absent in majors this year, so a majors-weighted carry book is sized on a decade average that no longer describes its own universe. This is the sizing-prior half of R0192, deliberately rowed separately rather than claimed as done.",
+   "roi_bps": null,
+   "raised": "2026-08-05T13:54:29.020656+00:00",
    "status": "open",
    "reason": null,
    "commit": null,

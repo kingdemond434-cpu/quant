@@ -18,6 +18,8 @@ from libs.validation.forward_stats import nw_tstat
 ras = importlib.import_module("scripts.run_axis_shadows")
 
 _BAR = 2.64  # a realistic Holm bar for the 12-clock cohort; the tests pass it explicitly
+_ALPHA = 0.05 / 12  # the SAME family-wise level _BAR encodes -- R0187 made it explicit at
+                    # every call site so the two Stage-B gates can never drift apart.
 
 
 def test_strong_axis_is_eligible_before_the_old_forty_obs_wall():
@@ -27,7 +29,7 @@ def test_strong_axis_is_eligible_before_the_old_forty_obs_wall():
     arr = rng.normal(0.02, 0.005, 25)          # enormous per-obs effect
     t = float(nw_tstat(arr))
     assert t >= _BAR, "fixture must clear the bar on its own merits"
-    verdict, need, suff = ras._stage_b_verdict(arr, t, _BAR)
+    verdict, need, suff = ras._stage_b_verdict(arr, t, _BAR, alpha=_ALPHA)
     assert verdict == "ELIGIBLE"
     assert need == 25 and suff.sufficient
 
@@ -37,7 +39,7 @@ def test_nw_bar_still_binds_even_when_plain_t_passes():
     Newey-West t does not -- eligibility requires BOTH, so the bar never loosened."""
     rng = np.random.default_rng(11)
     arr = rng.normal(0.02, 0.005, 25)
-    verdict, _, suff = ras._stage_b_verdict(arr, 1.0, _BAR)   # NW t below bar
+    verdict, _, suff = ras._stage_b_verdict(arr, 1.0, _BAR, alpha=_ALPHA)   # NW t below bar
     assert suff.sufficient, "fixture: plain t clears the bar"
     assert verdict == "ACCRUING", "NW t under the bar must never grant ELIGIBLE"
 
@@ -49,7 +51,7 @@ def test_non_positive_effect_fails_at_the_trust_floor_not_at_forty():
     arr = rng.normal(-0.01, 0.008, MIN_OBS)
     t = float(nw_tstat(arr))
     assert t <= 0.0
-    verdict, need, _ = ras._stage_b_verdict(arr, t, _BAR)
+    verdict, need, _ = ras._stage_b_verdict(arr, t, _BAR, alpha=_ALPHA)
     assert verdict == "FAILING"
     assert need == MIN_OBS
 
@@ -64,7 +66,7 @@ def test_weakly_positive_axis_accrues_with_shortfall_in_observations():
     if t <= 0.0 or t >= _BAR:                   # keep the fixture honest about its own regime
         arr = np.abs(arr) * 0.02 + 0.0001       # tiny positive drift, huge noise
         t = float(nw_tstat(arr))
-    verdict, need, suff = ras._stage_b_verdict(arr, min(t, 1.0), _BAR)
+    verdict, need, suff = ras._stage_b_verdict(arr, min(t, 1.0), _BAR, alpha=_ALPHA)
     assert verdict == "ACCRUING"
     assert need > arr.size, "shortfall must be expressed as MORE observations needed"
     assert "observation" in suff.reason
@@ -72,7 +74,7 @@ def test_weakly_positive_axis_accrues_with_shortfall_in_observations():
 
 def test_below_trust_floor_is_always_accruing():
     arr = np.asarray([-0.01, -0.02, -0.015, -0.01, -0.02] * 2)   # n=10 < MIN_OBS, negative
-    verdict, need, _ = ras._stage_b_verdict(arr, float(nw_tstat(arr)), _BAR)
+    verdict, need, _ = ras._stage_b_verdict(arr, float(nw_tstat(arr)), _BAR, alpha=_ALPHA)
     assert verdict == "ACCRUING", "no verdict of failure below the observation trust floor"
     assert need == MIN_OBS
 

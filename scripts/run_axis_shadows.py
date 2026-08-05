@@ -22,20 +22,32 @@ holm_bar(4)=2.24 while 12 clocks were accruing (2.64): a bar ~3.2x too loose, in
 direction, on the desk's only path from research to capital. The cohort spans axis + standing +
 derivative clocks, so no single file may count it.
 
+OPTIONAL STOPPING: this script runs on a cron and the first crossing wins, so the Holm bar -- a
+ONE-LOOK threshold -- was being consulted ~daily for free. Measured on 1200 true-null paths at
+m=12 over 180 days: a single look realises 0.0042 against a nominal 0.00417, daily peeking 0.0367
+(8.8x nominal). Since R0187 (2026-08-05) ELIGIBLE additionally requires the anytime-valid
+e-process (libs.research.anytime_valid) to cross 1/alpha at the SAME Holm alpha, which by Ville's
+inequality is valid at every t simultaneously -- realised 0.0017. That is a strict tightening on
+top of an unchanged t bar, never a replacement for it and never a speedup (GAP #25-RESULT
+measured the e-process as SLOWER; it is adopted here as the stricter secondary check that ruling
+sanctioned).
+
     python scripts/run_axis_shadows.py
 """
 from __future__ import annotations
 
 import json
+import math
 import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
 
+from libs.research.anytime_valid import e_value
 from libs.research.evidence_clock import MIN_OBS, Sufficiency, sufficient
 from libs.research.slot_registry import concurrent_m
-from libs.validation.forward_stats import holm_bar, nw_tstat
+from libs.validation.forward_stats import holm_alpha, holm_bar, nw_tstat
 
 _ROOT = Path(__file__).resolve().parent.parent
 _OUT = _ROOT / "web" / "axis_shadows.json"
@@ -119,8 +131,63 @@ def _clock_rows(path: Path) -> list[dict]:
     return out
 
 
-def _stage_b_verdict(arr: np.ndarray, t: float, bar: float) -> tuple[str, int, Sufficiency]:
+def _e_shortfall(arr: np.ndarray, e: float, thr: float) -> int:
+    """Extra OBSERVATIONS the e-process needs to reach `thr` at the current effect size.
+
+    log-wealth accumulates roughly linearly in n (each observation contributes ~mu^2/2sigma^2), so
+    n_needed ~ n * log(thr)/log(e). Reported in observations, never days (L1.48). Returns -1 when
+    the series is not growing wealth at all -- there is no honest extrapolation from a bettor who
+    is losing money, and "more data will not fix it" is the truthful answer.
+    """
+    n = int(arr.size)
+    if e <= 1.0 or thr <= 1.0:
+        return -1
+    need = math.ceil(n * math.log(thr) / math.log(e))
+    return max(0, need - n)
+
+
+def _stage_b_verdict(arr: np.ndarray, t: float, bar: float, *,
+                     alpha: float) -> tuple[str, int, Sufficiency]:
     """L1.48: eligibility asks the EVIDENCE (sample size + t-stat), never a flat day count.
+
+    R0187 (2026-08-05): eligibility ALSO requires the anytime-valid e-process to cross 1/alpha.
+
+    WHY, MEASURED ON THIS GATE. Everything below is re-evaluated EVERY DAY by the cron line that
+    runs this script, and the first crossing wins -- which is optional stopping on a fixed-sample
+    statistic. `holm_bar` is calibrated for ONE look. Simulated on 1200 true-null paths at m=12
+    over a 180-day horizon (the reproduction is pinned in
+    tests/scripts/test_axis_shadows_anytime_valid.py):
+
+        nominal per-clock alpha                    0.00417
+        single look, NW t >= 2.64                  0.0042    <- correctly calibrated
+        DAILY peeking, first crossing              0.0367    <- 8.8x nominal, the status quo
+        daily peeking AND e >= 1/alpha             0.0017    <- 0.4x nominal, this change
+
+    So the desk was taking daily monitoring for free on the ONE path that reaches capital. Ville's
+    inequality is what makes it payable: the e-process is a non-negative supermartingale under
+    H0 (mean <= 0), so P(sup_t E_t >= 1/alpha) <= alpha holds at every t SIMULTANEOUSLY. Reading
+    it daily is valid by construction rather than by permission.
+
+    NOTHING LOOSENS, AND THAT IS STRUCTURAL, NOT A JUDGEMENT CALL. This is an AND: the Newey-West
+    t must still clear the Holm bar and evidence_clock must still be satisfied, exactly as before,
+    and the e-process is an additional hurdle on top. An AND of two gates is never looser than
+    either one alone whatever the second gate's own calibration -- which is also why the e-process
+    is safe here despite its two known weaknesses: it standardises by the full-sample sigma
+    (not strictly predictable) and it assumes independence across observations, where funding-like
+    series are autocorrelated. Both would make it anti-conservative ON ITS OWN; neither can make
+    the conjunction looser than the Newey-West leg that already corrects for autocorrelation.
+
+    THIS IS NOT A SPEEDUP AND IS NOT SOLD AS ONE. GAP_REGISTER #25-RESULT measured the e-process
+    as strictly SLOWER than the fixed clock and adopted it as "a stricter SECONDARY check for
+    high-stakes promotions" -- promotion to capital is the high-stakes promotion, and this is that
+    adoption. At the desk's alpha the e-bar is equivalent to a plain t of sqrt(2*ln(1/alpha))
+    ~ 3.31 against the fixed-sample 2.64, so ~57% more observations at the same effect size. It is
+    a real hurdle and NOT a welded gate (L1.43): measured over marginal-effect fixtures it admits
+    4-19% where the t-bar alone admits 19-57%, so it still carries information.
+
+    The e-process does NOT touch FAILING. A negative effect is called by evidence_clock at the
+    trust floor as before; asking a wealth process to certify failure would be a category error,
+    since e stays near zero both for an edge that is absent and for one merely not yet proven.
 
     Replaced `_MIN_DAYS = 40` (2026-08-05) -- the exact constant evidence_clock's docstring names
     as the habit being killed. The statistical bar is UNTOUCHED: ELIGIBLE still requires the
@@ -142,11 +209,18 @@ def _stage_b_verdict(arr: np.ndarray, t: float, bar: float) -> tuple[str, int, S
     n = int(arr.size)
     stdev = float(arr.std(ddof=1)) if n >= 2 else 0.0
     suff = sufficient(float(arr.mean()), stdev, n, min_t=bar)
-    if suff.sufficient and t >= bar:
+    e, thr = e_value(arr), 1.0 / alpha
+    if suff.sufficient and t >= bar and e >= thr:
         return "ELIGIBLE", n, suff
     if n >= MIN_OBS and t <= 0.0:
         return "FAILING", n, suff
-    need = MIN_OBS if n < MIN_OBS else n + max(int(suff.obs_short), 1)
+    if n < MIN_OBS:
+        return "ACCRUING", MIN_OBS, suff
+    # `need` states the BINDING constraint. Where the fixed-sample t already clears but the
+    # peek-safe process does not, the honest shortfall is the e-process's, and hiding it would
+    # report a clock as nearly-eligible when the gate it actually faces is far away.
+    e_short = _e_shortfall(arr, e, thr)
+    need = n + max(int(suff.obs_short), int(e_short), 1)
     return "ACCRUING", need, suff
 
 
@@ -178,14 +252,21 @@ def _evaluate(name: str, clock: str, symbol: str, field: str, direction: int, m:
     sharpe = float(arr.mean() / arr.std() * np.sqrt(365)) if arr.std() > 0 else 0.0
     t = float(nw_tstat(arr)) if n >= 3 else 0.0
     bar = float(holm_bar(m, rank=1))
+    alpha = float(holm_alpha(m, rank=1))
 
-    verdict, need, suff = _stage_b_verdict(arr, t, bar)
+    verdict, need, suff = _stage_b_verdict(arr, t, bar, alpha=alpha)
+    e = float(e_value(arr))
     # `forward_days` has always counted aligned forward OBSERVATIONS (nonzero usable rows), not
     # calendar days -- the key name is kept for its readers (revalidate_clocks, claim_verifier).
     return {"axis": name, "verdict": verdict, "forward_days": n, "need": int(need),
             "obs_short": int(suff.obs_short), "evidence": suff.reason,
             "cum_return": round(cum, 5), "ann_sharpe": round(sharpe, 2),
             "nw_t": round(t, 3), "holm_bar": round(bar, 3), "m_concurrent": m,
+            # The peek-safe leg, published so a reader can see WHICH gate is binding rather than
+            # inferring it. `e_short` is -1 when the e-process is not growing wealth at all.
+            "e_value": round(e, 4), "e_threshold": round(1.0 / alpha, 1),
+            "holm_alpha": round(alpha, 6), "e_short": _e_shortfall(arr, e, 1.0 / alpha),
+            "peek_safe": bool(e >= 1.0 / alpha),
             "first_forward_day": used[0] if used else None, "last": used[-1] if used else None,
             "stage": "B (forward-only; eligibility != deployment)"}
 

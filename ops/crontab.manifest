@@ -224,6 +224,39 @@ QUANT_ROOT=/home/quant/quant-platform
 # CONFIDENCE: committed-script (new this cycle)
 50 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/screen_collateral_allocation.py >> data/cro_ai_logs/collateral_allocation.log 2>&1
 
+# ORDER-BOOK MICROSTRUCTURE STATE SCREEN (max_audit defect `unwired-caller`, 2026-08-05). Stage A
+# only, zero promotion authority. The script carried its own intended cron line as a COMMENT --
+# "ops/crontab.manifest is owned by another agent this wave, so this comment is the request, not
+# the installation" (scripts/screen_orderbook_state.py:2-11) -- and the request was never picked
+# up, so libs/research/orderbook_state.py had exactly one importer and that importer had no
+# caller. The module was unreachable while the orphan check read green, which is the one-link-
+# short failure the defect names. run_mechanism_census ranks this class #1 of 20 (gap 0.396,
+# coverage NAMED-UNTESTED) against ~10 GB of L2 depth tape already on disk: the highest-value
+# distinct mechanism the desk has never run, untested for want of a SCREEN, not for want of data.
+# CADENCE CEILING: DATA-ARRIVAL. The pre-registered family is fixed and the tape only grows in
+# calendar time, so a faster cadence re-reads unchanged partitions. Six-hourly at :23 keeps it
+# off the recorders' rotation and off screen_moat.py.
+# WHY choom AND nice, MEASURED 2026-08-05 ON THIS BOX -- this is not belt-and-braces, it is the
+# only thing that makes the line safe to install here. Peak RSS is ~510-650 MB and essentially
+# FLAT in --files (580 MB at 24, 652 MB at 240): the cost is the load path, not the budget. This
+# box has 3.8 GB total with ~3.2 GB resident in desk processes, so ~500 MB free, and the screen
+# was SIGKILLed by the kernel OOM killer at --files 48/96/160/240 in four consecutive probes. Six
+# cashcarry_executor processes run here (oom_score 687-710, oom_score_adj 0), so an unguarded
+# 650 MB job is a MONEY-PATH hazard: the kernel picks by score and the executor is a candidate.
+# `choom -n 1000` makes the screen self-nominate as the preferred victim, so the worst case is
+# that the screen dies and the book is untouched -- never the other way round. It exits 0 with a
+# NOT-READABLE-HERE artifact on a box without data/moat, so the line is harmless anywhere.
+# HONEST LIMITATION, ROWED not hidden: with ~500 MB free this box will usually kill the run
+# before it finishes, so on THIS host the line is correct-but-starved rather than productive.
+# The real fix is a bounded-memory load path (stream partitions instead of accumulating), which
+# is beyond a wiring change -- see the ledger row raised with this commit. Wiring it guarded is
+# still strictly better than leaving the module unreachable, and it runs to completion wherever
+# the desk has ordinary headroom.
+# EVIDENCE: scripts/screen_orderbook_state.py -> data/orderbook_state_screen.json (verified
+#   status=SCREENED on a 24-file run 2026-08-05); libs/research/orderbook_state.py
+# CONFIDENCE: committed-script (cadence and budget as pre-registered by the script's own header)
+23 */6 * * * cd "$QUANT_ROOT" && flock -n data/.cron_obstate.lock choom -n 1000 -- nice -n 19 .venv/bin/python scripts/screen_orderbook_state.py --files 240 >> data/cro_ai_logs/orderbook_state_screen.log 2>&1
+
 # FUNDING-SPREAD SCREEN (R0115, L1.39 zero-idle: the candidate advances its next stage
 # AUTOMATICALLY rather than waiting for a human to run it). Stage A only -- measures whether the
 # cross-venue funding spread exceeds its round-trip cost often enough to be harvestable. A
