@@ -27,7 +27,7 @@
   {
    "id": "R0003",
    "source": "deep_sweep",
-   "summary": "O1 data-moat: screen the desk's own L2 tape — build depth-imbalance panel from data/moat (microstructure.py has zero callers) and stage_a_screen it; crown-jewel dataset has 0 research artifacts in ~1 month of recording (converges with data-intelligence sweep's moat-extraction pilot)",
+   "summary": "O1 data-moat: screen the desk's own L2 tape \u2014 build depth-imbalance panel from data/moat (microstructure.py has zero callers) and stage_a_screen it; crown-jewel dataset has 0 research artifacts in ~1 month of recording (converges with data-intelligence sweep's moat-extraction pilot)",
    "roi_bps": null,
    "raised": "2026-07-26T11:45:41.959734+00:00",
    "status": "implemented",
@@ -419,7 +419,7 @@
   {
    "id": "R0034",
    "source": "cycle",
-   "summary": "EV-GATE MISCALIBRATION IS UNFIXED AND IT BLOCKED THIS CYCLE'S GENERATION. The 07-28 cycle wrote the lesson ('_EV_THRESHOLD=0.05 needs est_sharpe>=1.6 at breadth 40; conservative honesty is auto-rejected, optimism rewarded, the many-small-decorrelated-sleeves class dies at the door') into institutional_knowledge.md and left the constant at 0.05. Measured today: 4 novel, mechanism-backed hypotheses on already-ingested axes scored ev=0.005-0.010 -> all REJECT. A finding written and not driven is the exact shape §35/§41 exist to stop. FIX NEEDS ITS OWN CAREFUL PASS: recalibrate against a known-good reference (carry 3.28 -> 0.1171) AND a known-marginal one, same method as the PBO/RC fix -- do NOT hand-tune the constant at the end of a long cycle.",
+   "summary": "EV-GATE MISCALIBRATION IS UNFIXED AND IT BLOCKED THIS CYCLE'S GENERATION. The 07-28 cycle wrote the lesson ('_EV_THRESHOLD=0.05 needs est_sharpe>=1.6 at breadth 40; conservative honesty is auto-rejected, optimism rewarded, the many-small-decorrelated-sleeves class dies at the door') into institutional_knowledge.md and left the constant at 0.05. Measured today: 4 novel, mechanism-backed hypotheses on already-ingested axes scored ev=0.005-0.010 -> all REJECT. A finding written and not driven is the exact shape \u00a735/\u00a741 exist to stop. FIX NEEDS ITS OWN CAREFUL PASS: recalibrate against a known-good reference (carry 3.28 -> 0.1171) AND a known-marginal one, same method as the PBO/RC fix -- do NOT hand-tune the constant at the end of a long cycle.",
    "roi_bps": 20.0,
    "raised": "2026-07-29T06:25:25.355470+00:00",
    "status": "implemented",
@@ -431,7 +431,7 @@
   {
    "id": "R0035",
    "source": "cycle",
-   "summary": "§35 coverage regression (100%->97%) resolved by DISPOSITION, not new work: of the 5 findings with no register trace, 4 were already decided and merely unrecorded -- #79 job-market data and #80 satellite/shipping carry written REJECT reasons, #26 competitor-simulation is blocked on the same $120 OpenRouter top-up already paged, and micro_audit_inbox #1 (carry-funding silent zero) was fixed 2026-07-26. Only #48 wallet behavioural fingerprinting is a live undriven finding (wallet RISK replicated OOS while wallet RETURNS were refuted at n=1400) -- rowed as GAP #88 with a mechanism-first screen plan.",
+   "summary": "\u00a735 coverage regression (100%->97%) resolved by DISPOSITION, not new work: of the 5 findings with no register trace, 4 were already decided and merely unrecorded -- #79 job-market data and #80 satellite/shipping carry written REJECT reasons, #26 competitor-simulation is blocked on the same $120 OpenRouter top-up already paged, and micro_audit_inbox #1 (carry-funding silent zero) was fixed 2026-07-26. Only #48 wallet behavioural fingerprinting is a live undriven finding (wallet RISK replicated OOS while wallet RETURNS were refuted at n=1400) -- rowed as GAP #88 with a mechanism-first screen plan.",
    "roi_bps": 8.0,
    "raised": "2026-07-29T06:26:50.644322+00:00",
    "status": "scheduled",
@@ -851,7 +851,7 @@
   {
    "id": "R0070",
    "source": "deep_sweep",
-   "summary": "SYNTH0731 P0-1 [DI-1=infraF1=E-7]: de-dup dual scheduler — migrate legacy-only jobs into ops/crontab.manifest, delete legacy block once, stagger 13-job 08:21 herd, dedup 2x rows since 07-30T23:00 (defi/oi_ls/venue_div), crontab-vs-manifest drift fence. ingest_axes collides 06:40Z daily w/ different args+locks; recorder double-spawn armed against moat",
+   "summary": "SYNTH0731 P0-1 [DI-1=infraF1=E-7]: de-dup dual scheduler \u2014 migrate legacy-only jobs into ops/crontab.manifest, delete legacy block once, stagger 13-job 08:21 herd, dedup 2x rows since 07-30T23:00 (defi/oi_ls/venue_div), crontab-vs-manifest drift fence. ingest_axes collides 06:40Z daily w/ different args+locks; recorder double-spawn armed against moat",
    "roi_bps": 80.0,
    "raised": "2026-07-31T03:45:44.935428+00:00",
    "status": "implemented",
@@ -863,7 +863,7 @@
   {
    "id": "R0071",
    "source": "deep_sweep",
-   "summary": "SYNTH0731 P0-2 [exec F1/F2/F8/F7/F9]: launch money path — record_capital_event+check_gate0_ready read cashcarry_positions.json, executor persists last_combined_equity, refuse zero-equity rebase; copy 3-line equity fix to binance_live.py:188; wire place_stop_market into open path; executor consumes live_guard effective_size+limit_only; live_guard minutes-cadence; THEN dispose R0057. Rail currently loosens ~89 pct at launch inception",
+   "summary": "SYNTH0731 P0-2 [exec F1/F2/F8/F7/F9]: launch money path \u2014 record_capital_event+check_gate0_ready read cashcarry_positions.json, executor persists last_combined_equity, refuse zero-equity rebase; copy 3-line equity fix to binance_live.py:188; wire place_stop_market into open path; executor consumes live_guard effective_size+limit_only; live_guard minutes-cadence; THEN dispose R0057. Rail currently loosens ~89 pct at launch inception",
    "roi_bps": 500.0,
    "raised": "2026-07-31T03:45:45.001121+00:00",
    "status": "implemented",
@@ -887,7 +887,7 @@
   {
    "id": "R0073",
    "source": "deep_sweep",
-   "summary": "SYNTH0731 P0-4 [DM-1=infraF5]: moat survivability — TODAY cp execution_tape+3 sqlites off-box; disk fence (<15pct page, <8pct hard) in check_ratchets; hourly rclone of closed moat/lake hours to Storage Box (EUR4/mo, principal line); monthly restore drill. ~29d fuse to 80pct guard, zero copies of irreplaceable L2",
+   "summary": "SYNTH0731 P0-4 [DM-1=infraF5]: moat survivability \u2014 TODAY cp execution_tape+3 sqlites off-box; disk fence (<15pct page, <8pct hard) in check_ratchets; hourly rclone of closed moat/lake hours to Storage Box (EUR4/mo, principal line); monthly restore drill. ~29d fuse to 80pct guard, zero copies of irreplaceable L2",
    "roi_bps": 200.0,
    "raised": "2026-07-31T03:45:45.135219+00:00",
    "status": "implemented",
@@ -911,7 +911,7 @@
   {
    "id": "R0075",
    "source": "deep_sweep",
-   "summary": "SYNTH0731 P1-6 [meta X1/X3/X4/X7 + val X10]: repair capacity — top-10 open/past-due R-rows into carry-over brief; max_audit recommendations-past-due gate; repair-mode backpressure at open+past-due>25; MTTR/P(fix)/stock-growth born-fenced; age-escalating priority; split roi_bps measured-vs-rank; disposition-in-same-commit duty. Queue at lambda/mu~4, P(fix|survives session)~5pct, no row >3.67d old ever implemented",
+   "summary": "SYNTH0731 P1-6 [meta X1/X3/X4/X7 + val X10]: repair capacity \u2014 top-10 open/past-due R-rows into carry-over brief; max_audit recommendations-past-due gate; repair-mode backpressure at open+past-due>25; MTTR/P(fix)/stock-growth born-fenced; age-escalating priority; split roi_bps measured-vs-rank; disposition-in-same-commit duty. Queue at lambda/mu~4, P(fix|survives session)~5pct, no row >3.67d old ever implemented",
    "roi_bps": 120.0,
    "raised": "2026-07-31T03:45:45.265843+00:00",
    "status": "implemented",
@@ -935,7 +935,7 @@
   {
    "id": "R0077",
    "source": "deep_sweep",
-   "summary": "SYNTH0731 P2-9 [val X1/X2/T2 + alpha F14/O2]: act on certification (SR-3 controls FAIL both paths all seeds, SR-5 passes percand — gate measured WELDED): make screen_select BY-FDR the decider, dsr/RW demoted to ranking stats (page the gate-topology ruling); re-score the 420 under fixed per-candidate gate as ONE pre-registered resurrection batch; standing gate-CI + scheduled histogram regen",
+   "summary": "SYNTH0731 P2-9 [val X1/X2/T2 + alpha F14/O2]: act on certification (SR-3 controls FAIL both paths all seeds, SR-5 passes percand \u2014 gate measured WELDED): make screen_select BY-FDR the decider, dsr/RW demoted to ranking stats (page the gate-topology ruling); re-score the 420 under fixed per-candidate gate as ONE pre-registered resurrection batch; standing gate-CI + scheduled histogram regen",
    "roi_bps": 250.0,
    "raised": "2026-07-31T03:45:45.409373+00:00",
    "status": "implemented",
@@ -947,7 +947,7 @@
   {
    "id": "R0078",
    "source": "deep_sweep",
-   "summary": "SYNTH0731 P2-10 [val V7/V8/X8]: Stage-B honesty — anytime_valid e-process as ELIGIBLE condition (or pre-committed looks 40/90d); ledgered RETIRED-with-reason writer so attrition never lowers survivor bars; append-only forward-verdict history JSONL. Realized alpha ~4.9x nominal on the only path to capital",
+   "summary": "SYNTH0731 P2-10 [val V7/V8/X8]: Stage-B honesty \u2014 anytime_valid e-process as ELIGIBLE condition (or pre-committed looks 40/90d); ledgered RETIRED-with-reason writer so attrition never lowers survivor bars; append-only forward-verdict history JSONL. Realized alpha ~4.9x nominal on the only path to capital",
    "roi_bps": 90.0,
    "raised": "2026-07-31T03:45:45.483084+00:00",
    "status": "scheduled",
@@ -971,7 +971,7 @@
   {
    "id": "R0080",
    "source": "deep_sweep",
-   "summary": "SYNTH0731 P2-13 [val V5/V6 + 0729F7]: capacity coherence — replace validate() 2x-book bar with 10pct-slice ADMIT band AND plumb real per-symbol ADV in the SAME change (either alone misfires); delete dead deployed_equity_usd/n_sleeves params",
+   "summary": "SYNTH0731 P2-13 [val V5/V6 + 0729F7]: capacity coherence \u2014 replace validate() 2x-book bar with 10pct-slice ADMIT band AND plumb real per-symbol ADV in the SAME change (either alone misfires); delete dead deployed_equity_usd/n_sleeves params",
    "roi_bps": 70.0,
    "raised": "2026-07-31T03:45:45.617318+00:00",
    "status": "implemented",
@@ -993,7 +993,7 @@
   {
    "id": "R0081",
    "source": "deep_sweep",
-   "summary": "SYNTH0731 P3-14 [DI-7/DI-13]: bronze owner — manifest job for full-universe daily klines + backfill 132 symbols frozen since 06-21 (Binance Vision free) + write-rate anomaly fence (learned rows/period +-50pct) on every appending collector, must retro-fire on current defi file",
+   "summary": "SYNTH0731 P3-14 [DI-7/DI-13]: bronze owner \u2014 manifest job for full-universe daily klines + backfill 132 symbols frozen since 06-21 (Binance Vision free) + write-rate anomaly fence (learned rows/period +-50pct) on every appending collector, must retro-fire on current defi file",
    "roi_bps": 60.0,
    "raised": "2026-07-31T03:45:45.682895+00:00",
    "status": "scheduled",
@@ -1027,7 +1027,7 @@
   {
    "id": "R0083",
    "source": "deep_sweep",
-   "summary": "SYNTH0731 P3-16 [DI-12 + alpha F2/O3]: options VRP unlock — Deribit surface hourly + 3-5 strikes/expiry; build the consumer for graveyard_resurrection_queue; pre-registered VRP re-screen at ~60 obs; refresh forward_slots snapshot + fill idle Holm slot",
+   "summary": "SYNTH0731 P3-16 [DI-12 + alpha F2/O3]: options VRP unlock \u2014 Deribit surface hourly + 3-5 strikes/expiry; build the consumer for graveyard_resurrection_queue; pre-registered VRP re-screen at ~60 obs; refresh forward_slots snapshot + fill idle Holm slot",
    "roi_bps": 45.0,
    "raised": "2026-07-31T03:45:45.822061+00:00",
    "status": "scheduled",
@@ -1039,7 +1039,7 @@
   {
    "id": "R0084",
    "source": "deep_sweep",
-   "summary": "SYNTH0731 P3-17 [DM-5/M4/M6/DM-12]: moat conversion — schedule micro_factory daily; tape records attempts/partials (open_fail rows) + TCA fields on all open paths + cashcarry_error.log fence; data_vitals globs cover execution_tape + lake. Micro-feature screening itself = existing R0003",
+   "summary": "SYNTH0731 P3-17 [DM-5/M4/M6/DM-12]: moat conversion \u2014 schedule micro_factory daily; tape records attempts/partials (open_fail rows) + TCA fields on all open paths + cashcarry_error.log fence; data_vitals globs cover execution_tape + lake. Micro-feature screening itself = existing R0003",
    "roi_bps": 55.0,
    "raised": "2026-07-31T03:45:45.886004+00:00",
    "status": "scheduled",
@@ -1051,7 +1051,7 @@
   {
    "id": "R0085",
    "source": "deep_sweep",
-   "summary": "SYNTH0731 P3-18 [DI-8/DI-11]: feed repairs — fix dead futclose path (+0 closes x139 symbols, 7d stale) + hole-drain tranche in dl_oi_ls_universe (312-1663d holes self-logged daily); revive COT via CFTC direct weekly CSV (free; MT5 transport dead since 06-21)",
+   "summary": "SYNTH0731 P3-18 [DI-8/DI-11]: feed repairs \u2014 fix dead futclose path (+0 closes x139 symbols, 7d stale) + hole-drain tranche in dl_oi_ls_universe (312-1663d holes self-logged daily); revive COT via CFTC direct weekly CSV (free; MT5 transport dead since 06-21)",
    "roi_bps": 30.0,
    "raised": "2026-07-31T03:45:45.950552+00:00",
    "status": "scheduled",
@@ -1063,7 +1063,7 @@
   {
    "id": "R0086",
    "source": "deep_sweep",
-   "summary": "SYNTH0731 P2-19 [val V11/V6/V14 + 0729F11]: validation small-fix bundle — DSR n_eff=n/autocorr_factor (3 lines, anti-conservative side); _PERIODS_PER_YEAR x4.1 annual_sharpe inflation; event_study bootstrap overlap conservatism",
+   "summary": "SYNTH0731 P2-19 [val V11/V6/V14 + 0729F11]: validation small-fix bundle \u2014 DSR n_eff=n/autocorr_factor (3 lines, anti-conservative side); _PERIODS_PER_YEAR x4.1 annual_sharpe inflation; event_study bootstrap overlap conservatism",
    "roi_bps": 50.0,
    "raised": "2026-07-31T03:45:46.017975+00:00",
    "status": "scheduled",
@@ -1075,7 +1075,7 @@
   {
    "id": "R0087",
    "source": "deep_sweep",
-   "summary": "SYNTH0731 P2-20 [val X4/U2]: implement the lake-backed _forward_score() stub in run_rejection_rescore — 57 rejects, 0 forward-scored, ~6 days; the desk s only false-negative instrument",
+   "summary": "SYNTH0731 P2-20 [val X4/U2]: implement the lake-backed _forward_score() stub in run_rejection_rescore \u2014 57 rejects, 0 forward-scored, ~6 days; the desk s only false-negative instrument",
    "roi_bps": 45.0,
    "raised": "2026-07-31T03:45:46.085918+00:00",
    "status": "implemented",
@@ -1099,7 +1099,7 @@
   {
    "id": "R0089",
    "source": "deep_sweep",
-   "summary": "SYNTH0731 P0-2b [exec F13]: dispose the 8-item carried execution table — venue_reconcile contradiction, CI phantom error-log stamps, SPOT-EXCESS page hook, reconcile retry cap, dup closes/atomic persist, hurdle consumer, BNB burn decision, web/tca.json writer",
+   "summary": "SYNTH0731 P0-2b [exec F13]: dispose the 8-item carried execution table \u2014 venue_reconcile contradiction, CI phantom error-log stamps, SPOT-EXCESS page hook, reconcile retry cap, dup closes/atomic persist, hurdle consumer, BNB burn decision, web/tca.json writer",
    "roi_bps": 40.0,
    "raised": "2026-07-31T03:45:46.237561+00:00",
    "status": "scheduled",
@@ -1123,7 +1123,7 @@
   {
    "id": "R0091",
    "source": "deep_sweep",
-   "summary": "SYNTH0731 P3-22 [DI-15 + DM M12/DM-8]: era archaeology — reconcile 69k-thread-catalog claim vs 713 rows on disk (sec33 credit from artifacts only); first thread-to-series-to-StageA conversion as the existence proof for the 8btc universe",
+   "summary": "SYNTH0731 P3-22 [DI-15 + DM M12/DM-8]: era archaeology \u2014 reconcile 69k-thread-catalog claim vs 713 rows on disk (sec33 credit from artifacts only); first thread-to-series-to-StageA conversion as the existence proof for the 8btc universe",
    "roi_bps": 20.0,
    "raised": "2026-07-31T03:45:46.375608+00:00",
    "status": "scheduled",
@@ -1147,7 +1147,7 @@
   {
    "id": "R0093",
    "source": "deep_sweep",
-   "summary": "SYNTH0731 P1-8c [meta X6/M6]: principal_doctrine.txt diff triggers auto blind-spot row origin=principal — the failure-signal gauge logged 0 principal rows across 6+ doctrine orders since 07-26",
+   "summary": "SYNTH0731 P1-8c [meta X6/M6]: principal_doctrine.txt diff triggers auto blind-spot row origin=principal \u2014 the failure-signal gauge logged 0 principal rows across 6+ doctrine orders since 07-26",
    "roi_bps": 20.0,
    "raised": "2026-07-31T03:45:46.509584+00:00",
    "status": "implemented",
@@ -1171,7 +1171,7 @@
   {
    "id": "R0095",
    "source": "deep_sweep",
-   "summary": "SYNTH0731 P1-8d [E-6/E-8/E-12/E-13]: intelligence-cycle honesty — nonzero exit = ERROR not NO-INPUT in _subprocess_cap; fix label_factory.py:296 (.iloc/reset_index) + dup-index regression test; point research layer at NAV-chain equity (third equity source); research_priority wired to real family kills or labeled DATA-FREE",
+   "summary": "SYNTH0731 P1-8d [E-6/E-8/E-12/E-13]: intelligence-cycle honesty \u2014 nonzero exit = ERROR not NO-INPUT in _subprocess_cap; fix label_factory.py:296 (.iloc/reset_index) + dup-index regression test; point research layer at NAV-chain equity (third equity source); research_priority wired to real family kills or labeled DATA-FREE",
    "roi_bps": 55.0,
    "raised": "2026-07-31T03:45:46.643172+00:00",
    "status": "implemented",
@@ -1450,11 +1450,11 @@
    "summary": "ALPHA HUNT R4: EVENT-DENSITY PROMOTION CLOCK -- event-driven edges (funding/liquidation/ETF) accrue evidence PER EVENT not per calendar day; the 28-day calendar clock under-credits them. Per-mechanism event-count clock promotes an event-driven survivor faster WITHOUT lowering the bar (same n_eff, reached sooner). Directly attacks bottleneck #1 calendar-time accrual.",
    "roi_bps": 25.0,
    "raised": "2026-07-31T11:49:32.551722+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Library half built, wiring not: libs/research/evidence_clock.py (2026-08-01) implements exactly the ask -- sufficiency from n_obs + t-stat instead of calendar days, 'a FAST book is punished for being fast' -- and scripts/check_calendar_gates.py enforces L1.48 mechanically. But grep shows evidence_clock imported by NOTHING except the scanner: the promotion/forward-clock paths still run calendar gates. Remaining work is the per-mechanism wiring (same n_eff bar, reached per-event -- no gate loosened).",
-   "commit": null,
+   "status": "implemented",
+   "reason": "Built libs/research/event_density.py and wired it: five shadow runners (crypto/trend/trend_regime/crossasset/shadow_forward) and run_capital_plan now gate on EVIDENCE, not elapsed days. The triage note was right that evidence_clock reached nothing on the promotion path. THE BAR DOES NOT MOVE -- MIN_T/MIN_OBS are IMPORTED from evidence_clock, so the module has no vocabulary in which to lower them; what changes is the unit the clock counts in. Currency is EFFECTIVE observations, n*(1-rho)/(1+rho) clamped to (0,n] one-directionally, because crediting 84 autocorrelated funding settlements as 84 independent draws would loosen every downstream bar by sqrt(3) while looking like an improvement -- the axis_screen n_eff inflation defect one layer up. It cuts both ways and is a TIGHTENING where it matters: run_capital_plan was publishing validated=True at t=0.105 (Sharpe 0.29 over 33 days) while run_crypto_shadow read the SAME artifact as ACCUMULATING. Sharpe->t inversion carries its annualisation explicitly (365 to match the producer; the 252 default would have inflated every t by 1.20x). 31 tests.",
+   "commit": "a4054a8",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-05T13:12:10.078678+00:00"
   },
   {
    "id": "R0119",
@@ -1462,11 +1462,11 @@
    "summary": "ALPHA HUNT R2-1 (adversary lens): CROWDING DETECTOR on our own deployed edges -- if a competitor finds our carry names, the tell arrives BEFORE the P&L does: funding compression on our specific held symbols vs the cross-sectional norm, our fill quality degrading at the same size, basis narrowing faster than the venue average. Nothing measures whether our own edges are being crowded; by the time it shows in returns the capacity is gone. Mechanism: per-held-symbol funding percentile vs universe + realized-slippage drift. Data owned (tape + funding). Routes to a fence, not a trade.",
    "roi_bps": 30.0,
    "raised": "2026-07-31T11:59:50.146393+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Not built: no crowding fence exists (grep crowding across *.py: prose in miners/audit only, no detector). Components exist separately -- scripts/fill_quality_monitor.py (realized fill quality), funding percentile data in the tape -- but nothing computes per-held-symbol funding compression vs universe or slippage drift as a fence. Also partially evidence-gated: needs the desk's own live fills accruing on the box to mean anything.",
-   "commit": null,
+   "status": "implemented",
+   "reason": "Built the residual measure and the denominator it needs. The triage note was right that nothing existed, but the binding gap was narrower and deeper than 'no detector': current_funding() returns all ~855 perps at one instant and five callers discard it, so crowding had no cross-section to be residual AGAINST. collect_funding_cross_section.py now persists it (L1.46 clock declared, venue stamp kept, thin-payload refusal, malformed elements counted); libs/research/crowding.py takes residual-bps + unit-free rank and requires BOTH tells to agree; check_crowding.py fences it with FLAT-BOOK kept distinct from OK. Distinct from the incumbent run_carry_crowding.py, which measures the top-20 AVERAGE that CONTAINS our names -- there a regime and an adversary are the same number. Slippage tell reported as coverage-bound (12/531 TCA rows), not skipped. 19 tests; scheduled in manifest+crontab together with no new drift.",
+   "commit": "257d5be",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-05T11:57:49.152287+00:00"
   },
   {
    "id": "R0120",
@@ -1486,11 +1486,11 @@
    "summary": "ALPHA HUNT R2-3 (capacity lens): FUNDING-INTERVAL ARBITRAGE ACROSS VENUES -- venues settle funding on DIFFERENT schedules (8h vs 1h vs 4h) and at different snapshot instants. A position held across venue A's settlement but exited before venue B's collects one funding payment while paying none, a structurally free carry leg that exists purely because the calendars differ. Mechanism: settlement-calendar mismatch, not a price view. Requires only the funding timestamps already collected. Screen owed: measure the achievable per-cycle capture net of two round trips.",
    "roi_bps": 30.0,
    "raised": "2026-07-31T11:59:50.228992+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=7 effort_h=5: Screen not built (grep funding-interval/settlement-calendar: only funding_clock, check_funding_capture, and R0115's screen_funding_spread -- a different, level/spread ask). All inputs are in-tree and public: libs/research/funding_clock.py (per-symbol intervals, settlements_in, refuses unknown intervals) + libs/data/multiexchange.py:50-95 (Bybit/OKX funding timestamps via keyless REST). Stage-A screen of per-cycle capture net of two round trips is well-scoped and operator-independent.",
-   "commit": null,
+   "status": "implemented",
+   "reason": "Stage-A screen built (scripts/screen_funding_interval_mismatch.py -> reports/screen_funding_interval_mismatch.json, weekly cron, zero promotion authority). It tests the PREMISE before the economics, which is what the row was actually asking: 'the calendars differ' has two meanings and only one supports the trade. NESTED (both venues on one anchor, one settling more often) makes the mechanism geometrically impossible at ANY funding level -- Binance's 4h grid is a strict superset of its 8h grid, measured across all 38 usable symbols at phase 0. OFFSET is the only case with a capture window: BitMEX settles 04/12/20 against Binance's grid, 100 pct consistent over 11,148 stamps since 2016. Intervals and phases are MEASURED from stamps, never read from docs (fundingIntervalHours is fetched nowhere in this repo). Verdict SCREEN-CONDITIONAL, NO forward clock: n=1 symbol, linear-vs-INVERSE legs are not delta-flat, and the claimed benefit (no funding on leg two) is already held unconditionally by the SPOT hedge the desk runs, at one fewer round trip. Refuses to price the BitMEX leg it has never executed -- publishes a breakeven threshold instead of a remembered fee schedule. Both trials reported including the refuting one. Two defects fixed in the screen: the phase-0 usability test discarded every OFFSET venue (it had already dropped BitMEX as NO-DATA), and offset was computed against a hardcoded midnight anchor rather than the measured reference grid. 11 tests.",
+   "commit": "5b0cb81",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-05T13:12:27.297311+00:00"
   },
   {
    "id": "R0122",
@@ -1510,11 +1510,11 @@
    "summary": "EXTERNAL CRITIQUE (GPT, 2026-07-31) -- SURVIVING ITEMS, built: (1) PASS-optimisation trap CLOSED -- scoring calibration alone rewards passing on everything; a PASS now requires pass_reason and is scored against the same horizon; (2) CONTROLLED MECHANISM TAXONOMY (9 families) replacing free text, so mechanism survival is measurable and weak families retire on evidence; (3) FORCED_PARTICIPANT required and enumerated -- NOBODY_FORCED is refused as 'a VIEW, not a mechanism'; (4) COMPRESSIBILITY self-report -- if an IF-THEN rule reproduces the call, replace the LLM with code",
    "roi_bps": 30.0,
    "raised": "2026-07-31T13:10:30.923290+00:00",
-   "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: REFUTED as ALREADY-BUILT -- partial coverage. Items 2-4 of the ask are built and test-pinned (MECHANISMS taxonomy scripts/run_llm_trader.py:75-85 + PARTICIPANTS :91-93; NOBODY_FORCED refused as 'a VIEW, not a mechanism' :218-220; compressible self-report :135-137; tests/execution/test_llm_trader.py:119-147), and pass_reason IS required (:182-185, tests :39,:113-116). But item 1's second half -- 'a PASS is scored against the same horizon' -- is prose only: record_call (:234-239) calls log_forecast ONLY for action=='CALL', resolve_paper_book.py:605 explicitly skips PASS rows ('if row.get(\"action\") == \"PASS\" ... continue'), and no other consumer of data/llm_trader_book.jsonl (run_sleeve_allocator.py, run_trade_review.py, score_forecasts.py -- greps show zero PASS handling) marks passed_on declines against the horizon. The brief promises it (:125-130) and the validator's return string says '",
-   "commit": null,
+   "status": "implemented",
+   "reason": "The remaining half (a PASS scored against the same horizon) is now code, not prose. Measured before the fix: NINE book rows since 07-31, all nine PASS, zero CALL, zero scoreable forecasts ever logged -- the trap was not hypothetical, the model had already found the dominant strategy. record_call now logs declines under their own kind; scripts/resolve_llm_trader_book.py grades the model's own stated direction against the realised move over its own window and reports whether the filter ADDS value or merely avoids deciding (a coin flip is the GOOD case: a 50/50 trade loses money once fees are paid). THE SAFETY PROPERTY IS THE POINT: report()'s bias feeds calibrated_confidence -> kelly_leverage, and declines at p=0.50 would have swamped the real calls and moved LIVE POSITION SIZE on trades never taken -- the same shape as the mis-pooled set that inverted the bias and sized a no-edge call at 6.00x. Declines are excluded by default and COUNTED in n_excluded, never hidden; proven on the live store (forecasts 153->159, resolved 38->38, overdue 44->44, bias 0.1253 unchanged). The grader ships in the same commit because check_calibration FAILS on any forecast past its deadline -- logging without grading would have turned a green survival fence permanently red within 8h. Ungradeable declines are stamped and NOT logged. First run: 6 declines graded, 67 pct would have been right, reported UNMEASURED because 6 is not 20. 48 tests; 97 calibration-consumer tests green; check_build_standard 52/52.",
+   "commit": "3abe48b",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-05T13:12:53.526472+00:00"
   },
   {
    "id": "R0124",
@@ -1710,7 +1710,7 @@
    "roi_bps": 0.0,
    "raised": "2026-07-31T18:00:00+00:00",
    "status": "done",
-   "reason": "built, 10 review tests, 21/21 build standard, registered as a §36 producer",
+   "reason": "built, 10 review tests, 21/21 build standard, registered as a \u00a736 producer",
    "commit": null,
    "due": null,
    "note": "weights are fixed and nothing here fine-tunes -- what improves is evidence-weighted knowledge of which setups pay, the way a journal improves a human trader"
@@ -3390,7 +3390,7 @@
   {
    "id": "R0277",
    "source": "principal",
-   "summary": "CN miner recall: seeded native slang, added grounds, installed an AI-quant scam filter. THE RECALL FINDING, which is more useful than the glossary that prompted it: Chinese crypto discussion uses coded vocabulary that developed IN PART TO EVADE KEYWORD FILTERING, so a miner querying translated terms is searching for exactly the words that get filtered rather than the words practitioners type. That is a concrete mechanical explanation for weak CN recall, not a claim the ground is empty. Verified against live sources before seeding: 大饼 dabing = BITCOIN (the highest-value token here -- it is how CN traders name BTC when they do not want to type BTC), 糖果 = airdrops, 韭菜/割韭菜 = retail who are harvested, 庄家/狗庄 = the manipulator (translated 'whale' finds nothing), 空气币 = air coin, 山寨币 = altcoin. EXPLICITLY REFUSED TO SEED the unverified half of the supplied glossary: 假币 does NOT mean shitcoin (it means counterfeit banknotes; 山寨币 is the term), 'Kuisancle' is not pinyin for anything (probably garbled 亏损 kuisun = loss), and 牛季节/蜡烛猴/新葱/韭菜盒/狗商/大鳄鱼 could not be confirmed. Querying invented slang burns budget AND returns null, which would make a rich ground read as picked clean -- strictly worse than not querying. They are recorded as UNVERIFIED with instructions to promote or disconfirm on sight, so the next run inherits the resolution either way. GROUNDS ADDED: Gate 广场, UQER 优矿, digtime.cn, 小红书 Xiaohongshu (manual traders moving into crypto -- discretionary process material the English crowd never reads), Binance Square CN, KuCoin CN research. BigQuant was already listed. SCAM FILTER, mandatory and ledger-protecting: AI量化 is simultaneously a legitimate frontier and the current favourite bait of CN investment fraud, with repeated regulator warnings. Stereotyped profile: 'AI量化每日1%', '月收益翻倍', fabricated dashboards, small early payouts then frozen withdrawals. A source promising a FIXED periodic return is disqualified as evidence on that basis alone -- no real strategy has one, and the claim is the tell. Confirmed scam patterns route to graveyard.md as pre-emptive falsification, never to the watchlist. The filter explicitly forbids retreating from 量化 as a ground: the legitimate BigQuant/UQER/JoinQuant practitioner layer sits under the same keyword.",
+   "summary": "CN miner recall: seeded native slang, added grounds, installed an AI-quant scam filter. THE RECALL FINDING, which is more useful than the glossary that prompted it: Chinese crypto discussion uses coded vocabulary that developed IN PART TO EVADE KEYWORD FILTERING, so a miner querying translated terms is searching for exactly the words that get filtered rather than the words practitioners type. That is a concrete mechanical explanation for weak CN recall, not a claim the ground is empty. Verified against live sources before seeding: \u5927\u997c dabing = BITCOIN (the highest-value token here -- it is how CN traders name BTC when they do not want to type BTC), \u7cd6\u679c = airdrops, \u97ed\u83dc/\u5272\u97ed\u83dc = retail who are harvested, \u5e84\u5bb6/\u72d7\u5e84 = the manipulator (translated 'whale' finds nothing), \u7a7a\u6c14\u5e01 = air coin, \u5c71\u5be8\u5e01 = altcoin. EXPLICITLY REFUSED TO SEED the unverified half of the supplied glossary: \u5047\u5e01 does NOT mean shitcoin (it means counterfeit banknotes; \u5c71\u5be8\u5e01 is the term), 'Kuisancle' is not pinyin for anything (probably garbled \u4e8f\u635f kuisun = loss), and \u725b\u5b63\u8282/\u8721\u70db\u7334/\u65b0\u8471/\u97ed\u83dc\u76d2/\u72d7\u5546/\u5927\u9cc4\u9c7c could not be confirmed. Querying invented slang burns budget AND returns null, which would make a rich ground read as picked clean -- strictly worse than not querying. They are recorded as UNVERIFIED with instructions to promote or disconfirm on sight, so the next run inherits the resolution either way. GROUNDS ADDED: Gate \u5e7f\u573a, UQER \u4f18\u77ff, digtime.cn, \u5c0f\u7ea2\u4e66 Xiaohongshu (manual traders moving into crypto -- discretionary process material the English crowd never reads), Binance Square CN, KuCoin CN research. BigQuant was already listed. SCAM FILTER, mandatory and ledger-protecting: AI\u91cf\u5316 is simultaneously a legitimate frontier and the current favourite bait of CN investment fraud, with repeated regulator warnings. Stereotyped profile: 'AI\u91cf\u5316\u6bcf\u65e51%', '\u6708\u6536\u76ca\u7ffb\u500d', fabricated dashboards, small early payouts then frozen withdrawals. A source promising a FIXED periodic return is disqualified as evidence on that basis alone -- no real strategy has one, and the claim is the tell. Confirmed scam patterns route to graveyard.md as pre-emptive falsification, never to the watchlist. The filter explicitly forbids retreating from \u91cf\u5316 as a ground: the legitimate BigQuant/UQER/JoinQuant practitioner layer sits under the same keyword.",
    "roi_bps": null,
    "raised": "2026-08-01T09:43:17.657823+00:00",
    "status": "open",
@@ -3606,7 +3606,7 @@
   {
    "id": "R0295",
    "source": "cycle",
-   "summary": "RU-02 [DESIGN INVERSION] scripts/run_crossexchange_backtest.py measures cross-venue funding DISPERSION over a hardcoded 14-symbol large-cap universe -- the cohort most heavily cross-venue arbitraged, where venue funding converges by construction, so the signal is sampled where its variance is minimised. Directly opposite to §42's named ground 'thin-pair cross-venue funding'. Corroborated independently by RU practitioners who name thin venues that drift 1-4% for 15-45min on shitcoins as where divergence lives. A null from this backtest is evidence about the cohort, not the mechanism. Needs R0294 fixed first as the enabling ingredient.",
+   "summary": "RU-02 [DESIGN INVERSION] scripts/run_crossexchange_backtest.py measures cross-venue funding DISPERSION over a hardcoded 14-symbol large-cap universe -- the cohort most heavily cross-venue arbitraged, where venue funding converges by construction, so the signal is sampled where its variance is minimised. Directly opposite to \u00a742's named ground 'thin-pair cross-venue funding'. Corroborated independently by RU practitioners who name thin venues that drift 1-4% for 15-45min on shitcoins as where divergence lives. A null from this backtest is evidence about the cohort, not the mechanism. Needs R0294 fixed first as the enabling ingredient.",
    "roi_bps": 40.0,
    "raised": "2026-08-01T13:20:49.380845+00:00",
    "status": "open",
@@ -3894,7 +3894,7 @@
   {
    "id": "R0319",
    "source": "cycle",
-   "summary": "§37 carry-over brief recorded ACKED defects as owed: 26 of 47 reported items carried dated acks, top-12 were 12/12 acked, so the brain's FIRST-priority queue was 57% false and anti-correlated with real work. Fixed by sharing max_audit.split_acked; deferral now tracked separately with a 30d TREADMILL detector.",
+   "summary": "\u00a737 carry-over brief recorded ACKED defects as owed: 26 of 47 reported items carried dated acks, top-12 were 12/12 acked, so the brain's FIRST-priority queue was 57% false and anti-correlated with real work. Fixed by sharing max_audit.split_acked; deferral now tracked separately with a 30d TREADMILL detector.",
    "roi_bps": 0.0,
    "raised": "2026-08-01T15:01:10.384705+00:00",
    "status": "implemented",
@@ -3970,7 +3970,7 @@
    "roi_bps": 0.0,
    "raised": "2026-08-01T15:15:19.794345+00:00",
    "status": "scheduled",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Unchanged: scripts/check_conversion.py:127-130 still counts dispositions_7d as rows reaching implemented/rejected; no crediting for a commit that closes a max_audit defect id and no require-row-then-close rule (git log since 2026-08-01 for the file: empty). Needs the decided crediting rule and must not be closed by loosening what counts as a disposition — correctly paired with R0330's conversion-accounting semantics.",
+   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Unchanged: scripts/check_conversion.py:127-130 still counts dispositions_7d as rows reaching implemented/rejected; no crediting for a commit that closes a max_audit defect id and no require-row-then-close rule (git log since 2026-08-01 for the file: empty). Needs the decided crediting rule and must not be closed by loosening what counts as a disposition \u2014 correctly paired with R0330's conversion-accounting semantics.",
    "commit": null,
    "due": "2026-08-05",
    "disposed": "2026-08-01T15:20:58.742223+00:00"
@@ -3994,7 +3994,7 @@
    "roi_bps": 0.0,
    "raised": "2026-08-01T15:19:30.741616+00:00",
    "status": "implemented",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] Both CI-blocking tests now PASS (run 2026-08-04): tests/test_desk_memory.py::test_graduation_actually_freed_budget and ::test_overflow_is_by_rank_and_stays_a_small_tail. The judgment work was done the chartered way, not by mass-graduation: docs/desk_lessons.jsonl shows L0024 retired ('2026-08-04: ABSORBED into L0038'), L0038 enforced_by=tests/research/test_mined_evidence_priority.py, L0051 enforced_by=tests/stage14/test_survival_calibration.py, L0057 enforced_by=tests/test_suite_collectable.py — merge 9d456b7 ('curation debt paid by graduation not budget').",
+   "reason": "[triage 2026-08-04 wf_8e81833d-78a] Both CI-blocking tests now PASS (run 2026-08-04): tests/test_desk_memory.py::test_graduation_actually_freed_budget and ::test_overflow_is_by_rank_and_stays_a_small_tail. The judgment work was done the chartered way, not by mass-graduation: docs/desk_lessons.jsonl shows L0024 retired ('2026-08-04: ABSORBED into L0038'), L0038 enforced_by=tests/research/test_mined_evidence_priority.py, L0051 enforced_by=tests/stage14/test_survival_calibration.py, L0057 enforced_by=tests/test_suite_collectable.py \u2014 merge 9d456b7 ('curation debt paid by graduation not budget').",
    "commit": null,
    "due": "2026-08-02",
    "disposed": "2026-08-01T15:20:58.825189+00:00"
@@ -4042,7 +4042,7 @@
    "roi_bps": 30.0,
    "raised": "2026-08-01T15:47:32.491132+00:00",
    "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: REFUTED ALREADY-BUILT — partial coverage. The cited evidence all exists (libs/ops/disk.py:38 PAUSE_FRAC=0.80, :43 WARN_DAYS=21.0, days_to_pause with UNKNOWN-not-never; mine_moat.py:56,258 consumes it each pass; max_audit.py:5524-5530 fires tape-disk-deadline on URGENT/PAUSED; run_recorder_bybit.py:35 imports PAUSE_FRAC; tests/libs/test_disk.py passes), but it covers only the alarm half of the row. The row's explicit build was 'disk_free_pct into check_ratchets with its floor, its measuring command and a check that fires when it falls or goes stale', against the L1.0/L2.0 premise 'nothing writes disk_free_pct into a COMMITTED floor artifact, so nobody can see the TREND' — and that half does not exist: scripts/check_ratchets.py contains zero disk entries (grep disk = 0 hits), the committed floor artifact data/ratchet_floors.json (git-tracked) carries no disk metric, COVERAGE_RATCHET.json n",
+   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: REFUTED ALREADY-BUILT \u2014 partial coverage. The cited evidence all exists (libs/ops/disk.py:38 PAUSE_FRAC=0.80, :43 WARN_DAYS=21.0, days_to_pause with UNKNOWN-not-never; mine_moat.py:56,258 consumes it each pass; max_audit.py:5524-5530 fires tape-disk-deadline on URGENT/PAUSED; run_recorder_bybit.py:35 imports PAUSE_FRAC; tests/libs/test_disk.py passes), but it covers only the alarm half of the row. The row's explicit build was 'disk_free_pct into check_ratchets with its floor, its measuring command and a check that fires when it falls or goes stale', against the L1.0/L2.0 premise 'nothing writes disk_free_pct into a COMMITTED floor artifact, so nobody can see the TREND' \u2014 and that half does not exist: scripts/check_ratchets.py contains zero disk entries (grep disk = 0 hits), the committed floor artifact data/ratchet_floors.json (git-tracked) carries no disk metric, COVERAGE_RATCHET.json n",
    "commit": null,
    "due": null,
    "disposed": null
@@ -4054,7 +4054,7 @@
    "roi_bps": null,
    "raised": "2026-08-01T16:02:53.643357+00:00",
    "status": "dead",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KILLED (adversarially verified): The premise (independent seats reviewed the commits) is refuted and the input artifact is gone: data/cro_ai_logs/ is EMPTY, data/cro_ai_logs/commit_audit_20260801T1559.log was never committed (git cat-file -e HEAD:... fails; no commit in any branch touches data/cro_ai_logs), and the run that generated it returned ZERO substantive seat responses — sibling row R0341 from the same first run is dispositioned 'rejected: PHANTOM ROW -- manufactured by the bug it reports... got 0/4 substantive seats', corroborated by R0343 ('rowed a phantom finding (R0341) on its very first run') and R0344's 0/4 free-seat measurement. There are no findings to triage; the caller was already fixed to gate on panel_inbox mtime. Adversarial verification note: R0332's log (15:59Z) is strictly from the session 5920b60 records as having 'died before landing any of it', one hour before R0341's 16:58Z run — but this doe",
+   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KILLED (adversarially verified): The premise (independent seats reviewed the commits) is refuted and the input artifact is gone: data/cro_ai_logs/ is EMPTY, data/cro_ai_logs/commit_audit_20260801T1559.log was never committed (git cat-file -e HEAD:... fails; no commit in any branch touches data/cro_ai_logs), and the run that generated it returned ZERO substantive seat responses \u2014 sibling row R0341 from the same first run is dispositioned 'rejected: PHANTOM ROW -- manufactured by the bug it reports... got 0/4 substantive seats', corroborated by R0343 ('rowed a phantom finding (R0341) on its very first run') and R0344's 0/4 free-seat measurement. There are no findings to triage; the caller was already fixed to gate on panel_inbox mtime. Adversarial verification note: R0332's log (15:59Z) is strictly from the session 5920b60 records as having 'died before landing any of it', one hour before R0341's 16:58Z run \u2014 but this doe",
    "commit": null,
    "due": null,
    "disposed": null
@@ -4090,7 +4090,7 @@
    "roi_bps": 40.0,
    "raised": "2026-08-01T16:31:15.445836+00:00",
    "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Unchanged: scripts/max_audit.py check_stale_daemons (:539-604) reports daemon-stale-code unconditionally — no consult of check_change_window, no DEFERRED-BY-L1.38 reporting when the stale import is money-path inside a live window, and no repair-vs-improvement split. The fence conflict stands as measured; not currently firing because live_guard is at S0 with no live window open, so it is real work but not today's top priority.",
+   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Unchanged: scripts/max_audit.py check_stale_daemons (:539-604) reports daemon-stale-code unconditionally \u2014 no consult of check_change_window, no DEFERRED-BY-L1.38 reporting when the stale import is money-path inside a live window, and no repair-vs-improvement split. The fence conflict stands as measured; not currently firing because live_guard is at S0 with no live window open, so it is real work but not today's top priority.",
    "commit": null,
    "due": null,
    "disposed": null
@@ -4102,7 +4102,7 @@
    "roi_bps": 35.0,
    "raised": "2026-08-01T16:34:34.836949+00:00",
    "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Both fences unchanged: scripts/max_audit.py:927-930 check_interrogation still greps for the magic words ('interrogat','probe','verified with a fresh read','self-interrog','angle'); :1103-1107 check_rubberstamp_enforcement still counts extension-bearing path regexes (cites<5). The row itself says the fix needs a considered substance-signal pass plus a prompt-side change, not a keyword patch — real work, not yet started.",
+   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Both fences unchanged: scripts/max_audit.py:927-930 check_interrogation still greps for the magic words ('interrogat','probe','verified with a fresh read','self-interrog','angle'); :1103-1107 check_rubberstamp_enforcement still counts extension-bearing path regexes (cites<5). The row itself says the fix needs a considered substance-signal pass plus a prompt-side change, not a keyword patch \u2014 real work, not yet started.",
    "commit": null,
    "due": null,
    "disposed": null
@@ -4110,11 +4110,11 @@
   {
    "id": "R0337",
    "source": "owed-work-worker",
-   "summary": "THREE PYTEST FAILURES THAT WERE STRUCTURALLY INVISIBLE UNTIL 2026-08-01, now visible and owned by nobody. tests/test_gate0_soak.py executed at import and raised SystemExit, killing pytest with INTERNALERROR exit 3, so the suite produced NO report at all and every failure behind it was hidden. Collection is now repaired (all 7 of its own Gate-0 soak cases pass and had never once run). Remaining, each verified not to be a side effect of that repair: (1) test_every_tracked_jsonl_parses_per_line -- docs/desk_lessons.jsonl:1 is a '#' comment header; the file is tracked and the header is byte-identical to 8ae06a7^, so this predates the repair. The desk's OWN loader (desk_memory.load) explicitly skips '#' lines, so the integrity test and the documented format disagree; decide which is authoritative and make one match the other rather than deleting the header. (2) test_every_docs_artifact_is_claimed -- docs/research/recent_changes.md is ungoverned under §36; it is a generated 24h commit digest whose producer ops/run_commit_audit.sh is also unlanded, so both should land together with a _PRODUCER_CADENCE entry. (3+4) the two test_desk_memory invariants, red because 7 unenforced 'wasted' lessons overflow the 12k char budget: L0009 L0010 L0013 L0024 L0028 L0038 L0051. The chartered fixes are graduation or retirement, NEVER raising the budget (that is how the doctrine reached 95k), and learn.py currently has no 'retire' verb at all, which may be the actual blocker -- the audit tells you to 'retire a lesson whose falsifier arrived' and gives you no way to do it. Candidate honest graduations to check against their assertions before claiming: L0028 vs tests/validation/test_robustness_filters.py (the luck filter's both-error calibration), L0013 vs test_transcript_candidates::test_costs_are_charged_on_every_turn.",
+   "summary": "THREE PYTEST FAILURES THAT WERE STRUCTURALLY INVISIBLE UNTIL 2026-08-01, now visible and owned by nobody. tests/test_gate0_soak.py executed at import and raised SystemExit, killing pytest with INTERNALERROR exit 3, so the suite produced NO report at all and every failure behind it was hidden. Collection is now repaired (all 7 of its own Gate-0 soak cases pass and had never once run). Remaining, each verified not to be a side effect of that repair: (1) test_every_tracked_jsonl_parses_per_line -- docs/desk_lessons.jsonl:1 is a '#' comment header; the file is tracked and the header is byte-identical to 8ae06a7^, so this predates the repair. The desk's OWN loader (desk_memory.load) explicitly skips '#' lines, so the integrity test and the documented format disagree; decide which is authoritative and make one match the other rather than deleting the header. (2) test_every_docs_artifact_is_claimed -- docs/research/recent_changes.md is ungoverned under \u00a736; it is a generated 24h commit digest whose producer ops/run_commit_audit.sh is also unlanded, so both should land together with a _PRODUCER_CADENCE entry. (3+4) the two test_desk_memory invariants, red because 7 unenforced 'wasted' lessons overflow the 12k char budget: L0009 L0010 L0013 L0024 L0028 L0038 L0051. The chartered fixes are graduation or retirement, NEVER raising the budget (that is how the doctrine reached 95k), and learn.py currently has no 'retire' verb at all, which may be the actual blocker -- the audit tells you to 'retire a lesson whose falsifier arrived' and gives you no way to do it. Candidate honest graduations to check against their assertions before claiming: L0028 vs tests/validation/test_robustness_filters.py (the luck filter's both-error calibration), L0013 vs test_transcript_candidates::test_costs_are_charged_on_every_turn.",
    "roi_bps": 60.0,
    "raised": "2026-08-01T16:43:55.926110+00:00",
    "status": "implemented",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] All four named failures are green (pytest 2026-08-04): the jsonl fence was taught the ledger's own '#' header convention (tests/governance/test_tracked_json_integrity.py:42-44, merge 9d456b7 'jsonl integrity fence taught the lessons ledger's own # header convention'); test_every_docs_artifact_is_claimed passes — ops/run_commit_audit.sh landed in 5920b60 with docs/research/recent_changes.md deliberately GITIGNORED (425KB regenerable payload; §36 governance applies to what is committed, per that commit's message); and both test_desk_memory invariants pass after the merge's graduations/retirement (L0024 retired, L0038/L0051 graduated — see R0327/R0348).",
+   "reason": "[triage 2026-08-04 wf_8e81833d-78a] All four named failures are green (pytest 2026-08-04): the jsonl fence was taught the ledger's own '#' header convention (tests/governance/test_tracked_json_integrity.py:42-44, merge 9d456b7 'jsonl integrity fence taught the lessons ledger's own # header convention'); test_every_docs_artifact_is_claimed passes \u2014 ops/run_commit_audit.sh landed in 5920b60 with docs/research/recent_changes.md deliberately GITIGNORED (425KB regenerable payload; \u00a736 governance applies to what is committed, per that commit's message); and both test_desk_memory invariants pass after the merge's graduations/retirement (L0024 retired, L0038/L0051 graduated \u2014 see R0327/R0348).",
    "commit": null,
    "due": null,
    "disposed": null
@@ -4126,7 +4126,7 @@
    "roi_bps": null,
    "raised": "2026-08-01T16:49:35.306648+00:00",
    "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Partially built, decision-point wiring still missing: scripts/build_return_panel.py:46,158 calls marginal_admission.evaluate on row-aligned realised returns, persists the verdicts (data/return_panel.json admission_audit) and re-runs the incumbents-vs-each-other audit — items (2)-(4) substantially delivered, cronned daily at ops/crontab.manifest:768-769. But item (1) is not done: libs/research/marginal_admission is imported by nothing on the promotion path — the forward-slot decision (libs/research/slot_registry.py / measure_admission_power.py) never consults it, so candidates are still admitted on standalone OOS Sharpe.",
+   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Partially built, decision-point wiring still missing: scripts/build_return_panel.py:46,158 calls marginal_admission.evaluate on row-aligned realised returns, persists the verdicts (data/return_panel.json admission_audit) and re-runs the incumbents-vs-each-other audit \u2014 items (2)-(4) substantially delivered, cronned daily at ops/crontab.manifest:768-769. But item (1) is not done: libs/research/marginal_admission is imported by nothing on the promotion path \u2014 the forward-slot decision (libs/research/slot_registry.py / measure_admission_power.py) never consults it, so candidates are still admitted on standalone OOS Sharpe.",
    "commit": null,
    "due": null,
    "disposed": null
@@ -4138,7 +4138,7 @@
    "roi_bps": null,
    "raised": "2026-08-01T16:49:35.397546+00:00",
    "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Standing principal programme, actively in motion but not disposable: leg (1) executed hard — seven new pre-registered mechanism families (1517419, b96bb10) measured 0/44 pooled with pool independence 19.4->80.5 effective bets (ae8be98); leg (4) measured and closed NO-GO x3 at 5m/15m/1h (bc28e2a, ae8be98); leg (2) maker-spot execution still open (fill quality unmeasured, see R0324) and leg (3) risk-parity sizing across admitted signals unwired (libs/risk/sleeve_allocation only in tests; run_sleeve_alloc HRP covers crypto sleeves, not the admitted-signal book).",
+   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Standing principal programme, actively in motion but not disposable: leg (1) executed hard \u2014 seven new pre-registered mechanism families (1517419, b96bb10) measured 0/44 pooled with pool independence 19.4->80.5 effective bets (ae8be98); leg (4) measured and closed NO-GO x3 at 5m/15m/1h (bc28e2a, ae8be98); leg (2) maker-spot execution still open (fill quality unmeasured, see R0324) and leg (3) risk-parity sizing across admitted signals unwired (libs/risk/sleeve_allocation only in tests; run_sleeve_alloc HRP covers crypto sleeves, not the admitted-signal book).",
    "commit": null,
    "due": null,
    "disposed": null
@@ -4150,7 +4150,7 @@
    "roi_bps": null,
    "raised": "2026-08-01T16:54:53.292127+00:00",
    "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Still unwired: libs/risk/sleeve_allocation.allocate is imported only by tests (tests/test_sleeve_allocation.py:20, tests/test_sleeve_ladder.py:20). data/sleeve_allocation.json is written by scripts/run_sleeve_allocator.py (R0141, discretionary conviction/event sleeves, artifact dated 2026-07-31) which does not call allocate() and does not model the carry base (is_base). Its required input — conviction R-multiples (R0334) — is also unbuilt, so wiring now would feed it nothing; keep behind R0334.",
+   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Still unwired: libs/risk/sleeve_allocation.allocate is imported only by tests (tests/test_sleeve_allocation.py:20, tests/test_sleeve_ladder.py:20). data/sleeve_allocation.json is written by scripts/run_sleeve_allocator.py (R0141, discretionary conviction/event sleeves, artifact dated 2026-07-31) which does not call allocate() and does not model the carry base (is_base). Its required input \u2014 conviction R-multiples (R0334) \u2014 is also unbuilt, so wiring now would feed it nothing; keep behind R0334.",
    "commit": null,
    "due": null,
    "disposed": null
@@ -4174,7 +4174,7 @@
    "roi_bps": null,
    "raised": "2026-08-01T17:07:51.086796+00:00",
    "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Enforcement built, migration not done: scripts/check_calendar_gates.py (L1.48 scanner, commit cad4e43 'find 59 not 14') and libs/research/evidence_clock.sufficient (:74) both exist, but the scanner reports 62 UNTAGGED calendar gates today including the row's named sites unchanged — scripts/run_shadow_forward.py:72 fwd_days<90, scripts/run_capital_plan.py:38-42 fwd_sharpe>0 and fwd_days>=30, libs/risk/kelly_shrink.py:77 live_days>=60, libs/research/promotion_latency.py:65 DESIGN_CLOCK_DAYS=90, scripts/check_excitation.py:56, scripts/kimi_hunter.py:54. The migration with per-site eligibility-flip reporting is the outstanding work; SOAK_DAYS=7 correctly untouched.",
+   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Enforcement built, migration not done: scripts/check_calendar_gates.py (L1.48 scanner, commit cad4e43 'find 59 not 14') and libs/research/evidence_clock.sufficient (:74) both exist, but the scanner reports 62 UNTAGGED calendar gates today including the row's named sites unchanged \u2014 scripts/run_shadow_forward.py:72 fwd_days<90, scripts/run_capital_plan.py:38-42 fwd_sharpe>0 and fwd_days>=30, libs/risk/kelly_shrink.py:77 live_days>=60, libs/research/promotion_latency.py:65 DESIGN_CLOCK_DAYS=90, scripts/check_excitation.py:56, scripts/kimi_hunter.py:54. The migration with per-site eligibility-flip reporting is the outstanding work; SOAK_DAYS=7 correctly untouched.",
    "commit": null,
    "due": null,
    "disposed": null
@@ -4186,7 +4186,7 @@
    "roi_bps": null,
    "raised": "2026-08-01T17:13:14.055306+00:00",
    "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=5 effort_h=2: Unfixed: scripts/run_external_panel.py:513 still prints 'panel: zero responses -- check keys/quotas...' and main() falls through to a clean exit 0 — no sys.exit/non-zero on total failure, no test on a total-failure fixture. Every exit-code-trusting caller remains exposed to the exact trap that produced phantom row R0341. Small: non-zero on zero substantive responses + audit callers + one fixture test.",
+   "reason": "[triage 2026-08-04 wf_8e81833d-78a] IMPLEMENT-NOW roi=5 effort_h=2: Unfixed: scripts/run_external_panel.py:513 still prints 'panel: zero responses -- check keys/quotas...' and main() falls through to a clean exit 0 \u2014 no sys.exit/non-zero on total failure, no test on a total-failure fixture. Every exit-code-trusting caller remains exposed to the exact trap that produced phantom row R0341. Small: non-zero on zero substantive responses + audit callers + one fixture test.",
    "commit": null,
    "due": null,
    "disposed": null
@@ -4198,7 +4198,7 @@
    "roi_bps": null,
    "raised": "2026-08-01T17:13:14.171558+00:00",
    "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Partially addressed, capability still unproven: refresh_panel_roster.py landed (drops dead 404 model ids from the live OpenRouter catalog, monthly) and run_canaries.py landed — but no canary fails when the FREE roster's substantive count is 0 (canary_searches.md C1-C9 are data-ecosystem checks; check_panel in max_audit.py:606 fires only on staleness), and the 4 free seat ids live in data/secrets/llm_panel_free.json (run_external_panel.py:348-350), a box-local secrets file absent from this tree, so their repair cannot be verified here. The NO-COST-DRIVEN-DEGRADATION promise remains unverified-false until a free-roster canary exists.",
+   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Partially addressed, capability still unproven: refresh_panel_roster.py landed (drops dead 404 model ids from the live OpenRouter catalog, monthly) and run_canaries.py landed \u2014 but no canary fails when the FREE roster's substantive count is 0 (canary_searches.md C1-C9 are data-ecosystem checks; check_panel in max_audit.py:606 fires only on staleness), and the 4 free seat ids live in data/secrets/llm_panel_free.json (run_external_panel.py:348-350), a box-local secrets file absent from this tree, so their repair cannot be verified here. The NO-COST-DRIVEN-DEGRADATION promise remains unverified-false until a free-roster canary exists.",
    "commit": null,
    "due": null,
    "disposed": null
@@ -4210,7 +4210,7 @@
    "roi_bps": null,
    "raised": "2026-08-01T17:13:14.291450+00:00",
    "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Not built: scripts/recommendations.py add() (:99-114) has only the (source,summary) dedupe — no refusal or splitting of compound multi-deliverable summaries — and the row's own pre-registered falsifier (compound vs atomic disposition latency, measurable from the existing ledger) has not been run. Check the falsifier before building, exactly as the row demands.",
+   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Not built: scripts/recommendations.py add() (:99-114) has only the (source,summary) dedupe \u2014 no refusal or splitting of compound multi-deliverable summaries \u2014 and the row's own pre-registered falsifier (compound vs atomic disposition latency, measurable from the existing ledger) has not been run. Check the falsifier before building, exactly as the row demands.",
    "commit": null,
    "due": null,
    "disposed": null
@@ -4246,7 +4246,7 @@
    "roi_bps": 20.0,
    "raised": "2026-08-01T17:27:49.388074+00:00",
    "status": "implemented",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] Both tests pass on this tree (pytest 2026-08-04). The close came by the research decision the row demanded, not a false enforcement claim: docs/desk_lessons.jsonl records L0024 retired='2026-08-04: ABSORBED into L0038' (falsifier-style retirement, absorbed duplicate), L0038 enforced_by=tests/research/test_mined_evidence_priority.py::test_every_miner_prompt_carries_the_mined_evidence_priority_block, and L0051 enforced_by=tests/stage14/test_survival_calibration.py::test_the_default_drawdown_limit_rejects_the_entire_real_edge_band — a genuine behavioural test of the inert-gate property, NOT the okx test R0347 flagged as pinning the bug.",
+   "reason": "[triage 2026-08-04 wf_8e81833d-78a] Both tests pass on this tree (pytest 2026-08-04). The close came by the research decision the row demanded, not a false enforcement claim: docs/desk_lessons.jsonl records L0024 retired='2026-08-04: ABSORBED into L0038' (falsifier-style retirement, absorbed duplicate), L0038 enforced_by=tests/research/test_mined_evidence_priority.py::test_every_miner_prompt_carries_the_mined_evidence_priority_block, and L0051 enforced_by=tests/stage14/test_survival_calibration.py::test_the_default_drawdown_limit_rejects_the_entire_real_edge_band \u2014 a genuine behavioural test of the inert-gate property, NOT the okx test R0347 flagged as pinning the bug.",
    "commit": null,
    "due": null,
    "disposed": null
@@ -4258,7 +4258,7 @@
    "roi_bps": null,
    "raised": "2026-08-01T17:31:36.204312+00:00",
    "status": "open",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: The structural decision is still owed: scripts/run_ci.py:41 still invokes the whole tests/ tree and .github/workflows/ci.yml:54 runs whole-tree pytest+coverage — no sharding or memory-cap decision landed (commit 207da72 recorded the finding only, and correctly refused to guess the kill cause: kernel log unreadable on the box, R0350). Severity has dropped — merge 9d456b7's verification records 'full pytest green (3 environment skips)' on 2026-08-04 and the previously hidden desk-memory failures are identified and fixed — but until CI's leg is sharded/capped the local gate can still be SIGKILLed into producing no verdict under memory pressure. Scope-narrowing remains forbidden per the row.",
+   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: The structural decision is still owed: scripts/run_ci.py:41 still invokes the whole tests/ tree and .github/workflows/ci.yml:54 runs whole-tree pytest+coverage \u2014 no sharding or memory-cap decision landed (commit 207da72 recorded the finding only, and correctly refused to guess the kill cause: kernel log unreadable on the box, R0350). Severity has dropped \u2014 merge 9d456b7's verification records 'full pytest green (3 environment skips)' on 2026-08-04 and the previously hidden desk-memory failures are identified and fixed \u2014 but until CI's leg is sharded/capped the local gate can still be SIGKILLed into producing no verdict under memory pressure. Scope-narrowing remains forbidden per the row.",
    "commit": null,
    "due": null,
    "disposed": null
@@ -4449,6 +4449,42 @@
    "summary": "GENERALISE THE RULE (proactive battery move 6): the gap register carries the SAME defect class fixed in the carry-over brief today, and its prior triage rejected the fix on an objection the new design answers. rerank_gaps.py:109 takes worst = min(deadlines) over every date in a row, so an ORIGINAL missed deadline permanently dominates any later deferral -- rows #70/#74/#75 were re-deferred to 2026-08-12 and 2026-08-19 by the 08-04 cycle and still print DEADLINE-PASSED today, exactly as libs/ops/carryover.py:181 printed a defect fixed 7 times as 'shown the work and not done'. THE PRIOR CYCLE'S OBJECTION WAS SOUND AND IS NOW OBSOLETE: it declined to clear the flag because 'overwriting the passed date erases the fact that the desk missed it -- the denominator trick section 34 forbids'. Correct, and that is precisely why min() is the wrong operator rather than the right one: the fix is NOT to overwrite the miss but to report BOTH facts, which is strictly more information than either alone. Design, mirroring the carry-over fix shipped this cycle: rank on the CURRENT (latest) deadline, and carry missed_deadlines as its own distinct field, so a row renders 'DEFERRED 2026-08-12 (1 deadline missed)' instead of a permanent DEADLINE-PASSED that cannot be cleared by any honest act. Preserves the full history, keeps the treadmill visible via the miss COUNT (a row on its fourth re-deferral is louder under this scheme, not quieter), and restores the register's ability to distinguish parked from re-committed. Cheap: one operator change, one field, one render line, plus tests asserting a re-deferred row shows its miss count and a never-deferred overdue row is unchanged. Precedent and test pattern: tests/ops/test_carryover.py::TestRecurrenceIsNotASkip.",
    "roi_bps": 0.0,
    "raised": "2026-08-05T09:11:51.517769+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0366",
+   "source": "self",
+   "summary": "check_calendar_gates.py counts DOCSTRING PROSE as calendar gates, inflating its own migration checklist. The scanner skips lines starting with '#' but not lines inside a triple-quoted string, so libs/research/evidence_clock.py:4,5,6,16 -- the module docstring DESCRIBING the habit it exists to kill ('days < 90', 'fwd_days >= 30', 'live_days >= 60', 'days >= 90') -- are reported as four untagged defects. Same trap caught libs/research/event_density.py:6,213 on 2026-08-05 (reworded to dodge it, which is a workaround, not a fix). Cost: the checklist IS the migration work queue, so ~4 of 58 items are noise that can never be closed, and the only ways to 'fix' a false positive are to reword correct prose or to tag it CLOCK-EXEMT, which would be a false exemption claim on a non-gate. Fix: track triple-quote state in scan() and skip string bodies -- code inside a docstring cannot execute, so nothing real is lost.",
+   "roi_bps": 3.0,
+   "raised": "2026-08-05T12:22:26.376041+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0367",
+   "source": "cycle",
+   "summary": "L1.29 FENCE HELD RED BY A SYMBOL-ALPHABET BUG: score_forecasts.py cannot parse any symbol containing a DIGIT, and 44/44 currently-overdue forecasts are that one symbol. scripts/score_forecasts.py:39-46 spells every symbol [A-Z]{2,12}USD[TC]? in _ABOVE, _CONVICTION and _CONVICTION_SHORT. 'S2USDT' has a digit in position 2, so _ABOVE.search('Will S2USDT trade ABOVE 102.0 in 24 hours time?') returns None, the scorer files it as 'claim not unambiguously parseable', and by its own (correct) design a skipped forecast STAYS OVERDUE rather than being guessed. Measured 2026-08-05: check_calibration = OVERDUE on exactly 44 rows, all 44 kind=calibration_probe, all 44 S2USDT; XRPUSDT parses fine. This is not confined to one odd ticker -- 1000PEPEUSDT and 1000SHIBUSDT are liquid Binance perps and fail identically, so the probe organ can silently lose any digit-bearing name it draws. EXACT PATCH: widen the three character classes from [A-Z]{2,12} to [A-Z0-9]{2,12}; the USD[TC]? suffix still anchors the match, and a bare decimal like '102.0 USD' cannot match it. VERIFY BEFORE CLAIMING: run score_forecasts.py dry-run and confirm the 44 move from SKIPPED to resolvable, then --write and confirm check_calibration leaves OVERDUE. NOTE THE SIZING CONSEQUENCE, which is why this is not a pure cleanup: resolving these moves report()'s bias, which calibrated_confidence feeds to kelly_leverage in run_conviction_trader -- the duplicate-claim exclusion in _scoreable collapses the 44 identical S2USDT claims to ONE observation, which is the designed behaviour and should be confirmed rather than assumed. Found while building R0123's decline grader, which is the adjacent path and is NOT the cause: the grader's 6 new rows resolved in-pass and left overdue at 44 unchanged.",
+   "roi_bps": 6.0,
+   "raised": "2026-08-05T13:14:34.367927+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0368",
+   "source": "cycle",
+   "summary": "LEDGER WRITES RE-ENCODE ~40 UNRELATED ROWS ON EVERY APPEND, making the one file two writers share unreviewable. scripts/recommendations.py:69 does json.dumps(d, indent=1) with ensure_ascii at its default True, but docs/research/recommendation_ledger.json was previously written with non-ASCII preserved. So the first recommendations.py write after any other writer flips every em-dash, section sign, arrow and CJK character in the file to a \\\\uXXXX escape -- measured 2026-08-05: a single 'add' produced a 104-line diff of which ~40 lines were pure re-encoding of rows nobody touched, burying the two real changes. Three costs, all real: (1) a reviewer cannot see what actually changed, which is how a bad disposition slips through; (2) the churn maximises merge-conflict surface on a file the desk has ALREADY corrupted once (R0175) and which parallel agents are told to treat as read-only precisely because it has no locking; (3) it oscillates -- whichever writer runs last wins, so the diff noise recurs indefinitely rather than settling. EXACT PATCH: json.dumps(d, indent=1, ensure_ascii=False) at scripts/recommendations.py:69, then one normalising commit that rewrites the file in that encoding so the escapes are gone for good. CHECK FIRST whether any other writer of this file also needs the flag (grep for recommendation_ledger.json writers) -- fixing one of two writers leaves the oscillation in place, which is the failure mode that makes this look fixed while it is not.",
+   "roi_bps": 2.0,
+   "raised": "2026-08-05T13:14:53.812384+00:00",
    "status": "open",
    "reason": null,
    "commit": null,
