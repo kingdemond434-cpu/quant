@@ -2522,6 +2522,18 @@ _PRODUCER_CADENCE = {
 #: Artifacts that are terminal by nature: templates, forensic write-ups, protocol libraries. They
 #: accumulate no inventory, so they owe no cadence -- recorded here so "no law" is a DECISION.
 _TERMINAL_ARTIFACTS = {
+    "docs/research/axis_generation_20260805.md":
+        "DATED GENERATE-RUN RECORD (batch 2, the 9 stale Bronze axes, 2026-08-05). Terminal "
+        "because every outcome was ROUTED BY THE GATE IN THE SAME RUN that wrote the file, so "
+        "it holds no un-converted inventory: 1 candidate queued to the research agenda "
+        "(etf_flow_price_divergence_absorption, ev=0.0091), 8 rejected below the EV threshold "
+        "and written to dnr, and 9 research_memory rows logged including every negative -- the "
+        "forgetting-factory guard. The honesty guard is why the rejects dominate and why that "
+        "is the CORRECT result, not a thin run: most SHOULD fail on base rates, and a "
+        "manufactured survivor is negative discovery. Nothing in this file awaits a "
+        "disposition; re-running it re-registers nothing (agenda dedupe) and a NO-CANDIDATES "
+        "pass leaves doc, memory and cadence state alone. Superseded by the next dated batch, "
+        "never edited to look better.",
     "docs/research/VPS_STATE_20260805.md":
         "dated runtime-truth record read live off the VPS (recorders up, 10GB moat tape, the "
         "two moat screen survivors' OOS collapse to the 0.10 ceiling, the carry fast-track's "
