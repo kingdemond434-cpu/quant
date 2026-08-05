@@ -513,3 +513,43 @@ hypotheses and EV-score them; only the top few enter research.
   process, because the injected doctrine quotes `run_cashcarry_executor.py` and
   `run_deadman_switch.py` in its risk-path duty — match argv elements, never a command-line
   substring, or the monitor reports the wrong process.
+
+## OPS LESSON 2026-08-05 — the pager's THIRD blackout, and the first one that was not about delivery
+
+This file already records two pager blackouts (IK:305, the 429 retry spiral that had alerting OFF
+during the 07-13 incident; IK:433, the single non-ASCII character that kept it dark 29h+). Both are
+DELIVERY failures, and every instrument the desk subsequently built asks the delivery question.
+The third was the other half of the channel and no instrument asked about it at all.
+
+- **A page is half a channel, and only half of it was ever tested.** This branch forked from master
+  before `_poll_replies` existed and deleted it, so from 2026-08-02T08:42Z the pager was strictly
+  ONE-WAY. Four principal decisions — two of them gating the entire book ($0 deployed of $4,500
+  authorized) and the entire promotion funnel (434 tested / 0 survivors) — sat "awaiting principal"
+  across 33 sweeps. The `gate-optimality` ack literally read *"lifts on his reply."* He was never
+  able to send one. **Before re-carrying anything blocked on a human, prove the return path is
+  alive.** "Did it arrive?" and "can they answer?" are different questions; a desk that only ever
+  asks the first will page into a severed channel indefinitely and call it patience. Now angle 11
+  of the interrogation battery and mechanised as `check_principal_page_unanswerable`.
+- **Verify against the COUNTERPARTY's record, never your own.** `data/alert_delivery.jsonl` had
+  recorded nothing since 08-02 (the same fork dropped the `_ledger_ok` write), so
+  `ALERT_CHANNELS_SILENT` claimed "no delivery on ANY channel in 24h" while ntfy's own store showed
+  **199 accepted messages**. Your instrument failing looks exactly like the world going quiet. The
+  provider's store settles it: `GET https://ntfy.sh/<topic>/json?poll=1&since=24h` returns real
+  receipts (id, time, title, body) and expires in ~12h, so fetch it while it exists.
+- **The 160-char truncation ate the instructions for using the channel.** `pa[0][:160]` sent only
+  the first line, so every `REPLY:` line was cut. The ask reached the phone in a form that could not
+  be acted on from the phone.
+- **A registered check that was never written is worse than an unregistered one.**
+  `check_book_absorbing_state` was mapped to L1.23 in `build_enforcement_matrix.py` and did not
+  exist anywhere in the repo. The matrix reported the law as fenced, so nobody looked — and the
+  live instance (a `pause_opens` rail that can never release itself: peak is `max()`'d with start,
+  0 positions means no income, so equity cannot rise the $277 needed to clear its own bar) was
+  found by hand. An unregistered check invites someone to write it; a registered-absent one stops
+  the search. **Assert that every mapped fence RESOLVES, not merely that it is mapped.**
+- **An exclusion whose path back is the passage of TIME is not evidence-driven.** The executor's
+  structural-bleed denylist read `worst_symbols`, computed over a 14-day ROLLING window — right for
+  the pager (which must forget or it re-pages forever), exactly wrong for a fence. At the moment of
+  the fix the rolling list was EMPTY, so the fence protected nothing, while six symbols qualified
+  all-time. BNBUSDT (-65.8 bps over 13 closes, named as a proven loser in the executor's own source
+  comment) was re-opened 07-31 and 08-01. **One artifact serving two consumers with opposite time
+  requirements will silently satisfy the louder one.**
