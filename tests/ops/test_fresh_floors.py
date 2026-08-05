@@ -155,8 +155,12 @@ def test_executor_optin_wiring_present_in_source():
     """Fails if an R0159 floor is deleted from an opted-in executor read site (the L1.41
     remove-the-wiring-and-go-red standard, same as the fence's _WIRED check)."""
     src = (_REPO / "scripts/run_cashcarry_executor.py").read_text("utf-8")
-    assert src.count("min_rows=1") >= 3, "executor R0159 floor opt-ins reduced below 3"
-    for caller in ("_rt_bps", "_structurally_bleeding", "_refresh_guard"):
+    assert src.count("min_rows=1") >= 4, "executor R0159 floor opt-ins reduced below 4"
+    # _venue_equity (GAP #54 / R0096) is the newest opt-in: a truncated venue_equity.json has a
+    # young mtime and carries no venue information, so without the floor it would pass the age
+    # gate and the venue cap would silently fall back to its unmeasured path wearing a fresh
+    # timestamp. Removing the wiring must go red here, not surface as a quiet degrade.
+    for caller in ("_rt_bps", "_structurally_bleeding", "_refresh_guard", "_venue_equity"):
         assert f"run_cashcarry_executor.{caller}" in src
 
 

@@ -23,7 +23,12 @@ from libs.autodiscovery.capacity_screen import (
 )
 from libs.autodiscovery.generators import net_returns, planned_hypotheses
 from libs.autodiscovery.lifecycle import promote
-from libs.autodiscovery.memory import CandidateStore, content_hash
+from libs.autodiscovery.memory import (
+    CandidateSeries,
+    CandidateStore,
+    bar_epoch,
+    content_hash,
+)
 from libs.autodiscovery.models import (
     CandidateStatus,
     CycleResult,
@@ -123,7 +128,8 @@ class AutoDiscoveryLab:
 
     def _record_scored(self, *, campaign_id: str, hyp: Hypothesis, status: CandidateStatus,
                        metrics: ValidationMetrics, survived: bool, reason: str | None,
-                       book_usd: float, n_sleeves: int) -> str | None:
+                       book_usd: float, n_sleeves: int,
+                       series: CandidateSeries) -> str | None:
         """Persist a scored candidate -- unless the capacity screen banks it first.
 
         THE FACTORY BOUNDARY (§42, 2026-08-05). Returns None when the candidate was stored, else
@@ -132,6 +138,17 @@ class AutoDiscoveryLab:
         runway, named resurrection condition -- L1.17) and never persisted as a scored candidate,
         so the store's ranked population cannot re-accumulate unfillable inventory. Unknown
         capacity (0.0) is NOT screened: unmeasured is not unfillable (R0080).
+
+        THE EVIDENCE RIDES WITH THE VERDICT (m0007). ``series`` carries the candidate's net and
+        stressed return series into the SAME transaction as the scalar row, for every outcome --
+        survivors and REJECTS alike. The rejects matter most: they are the weak-edge pool any
+        ensemble path has to draw on, and a weak edge is only judgeable in combination, which
+        needs its series and cannot be reconstructed from a Sharpe. The one exit that still
+        persists nothing is the capacity bank below, because it writes no candidate row at all --
+        a returns row with no candidate to hang off is not evidence, it is an orphan.
+
+        ``series`` is REQUIRED, not optional, so no future caller can quietly reintroduce the
+        scalar-only write this whole change exists to end.
         """
         scr = screen_reason(metrics.capacity_usd, hyp.subtype,
                             book_usd=book_usd, n_sleeves=n_sleeves)
@@ -147,7 +164,7 @@ class AutoDiscoveryLab:
             ), bank=self.capacity_bank)
             return scr
         self.store.record(campaign_id=campaign_id, hyp=hyp, status=status, metrics=metrics,
-                          survived=survived, rejection_reason=reason)
+                          survived=survived, rejection_reason=reason, series=series)
         return None
 
     def cycle(self, symbols: Sequence[str]) -> CycleResult:
@@ -159,6 +176,11 @@ class AutoDiscoveryLab:
         prepared: list[tuple[Hypothesis, np.ndarray, np.ndarray]] = []
         skipped = 0
         series_cache: dict[str, MarketSeries | None] = {}
+        # THE BAR GRID EVERY CANDIDATE ON THIS SYMBOL WAS SCORED ON (m0007). One MarketSeries per
+        # symbol serves the whole cycle, so one epoch key per symbol identifies the grid its
+        # return series live on -- and stored series may only be aligned against each other when
+        # those keys match. Computed here, where the array is known to be the one that was used.
+        epochs: dict[str, str] = {}
         # BANKED IS TESTED (§42 capacity screen). A candidate the screen banked was never stored,
         # so `exists` cannot dedup it -- without this rung the factory would re-backtest and
         # re-bank the same unfillable hypothesis every cycle, forever. Resurrection from the bank
@@ -173,6 +195,8 @@ class AutoDiscoveryLab:
             series = series_cache[hyp.symbol]
             if series is None or len(series) < _MIN_BARS:
                 continue
+            if hyp.symbol not in epochs:
+                epochs[hyp.symbol] = bar_epoch(hyp.symbol, series.close)
             try:
                 base_cost = self._cost_for(hyp.symbol)
                 positions = spec.fn(series, dict(hyp.params))
@@ -183,7 +207,7 @@ class AutoDiscoveryLab:
             if len(rets) >= _MIN_BARS:
                 prepared.append((hyp, rets, stressed))
 
-        result = self._validate_and_archive(campaign_id, prepared, skipped)
+        result = self._validate_and_archive(campaign_id, prepared, skipped, epochs)
         self.store.set_checkpoint("last_campaign", campaign_id)
         self.audit.append(
             "autodiscovery_cycle", actor="autodiscovery_lab",
@@ -199,6 +223,7 @@ class AutoDiscoveryLab:
         campaign_id: str,
         prepared: list[tuple[Hypothesis, np.ndarray, np.ndarray]],
         skipped: int,
+        epochs: dict[str, str],
     ) -> CycleResult:
         if not prepared:
             return CycleResult(campaign_id=campaign_id, generated=0, tested=0,
@@ -369,10 +394,16 @@ class AutoDiscoveryLab:
             # PRE-SCORING CAPACITY SCREEN (§42, 2026-08-05): the ONLY exit that does not persist.
             # An UNFILLABLE candidate is banked with its full mechanism instead of stored --
             # "screened out before scoring, not carried as candidates".
+            # EVERY candidate's series is persisted here -- rejected, shadow, paper, registry
+            # alike -- in the same transaction as its scalar row. `epochs[hyp.symbol]` cannot
+            # KeyError: a hypothesis only reaches `prepared` after its symbol's series was
+            # fetched, and the epoch is recorded on that same pass.
             if self._record_scored(
                 campaign_id=campaign_id, hyp=hyp, status=status, metrics=verdict.metrics,
                 survived=status is CandidateStatus.REGISTRY, reason=reason,
                 book_usd=_book, n_sleeves=_sleeves,
+                series=CandidateSeries(net=rets, stressed=stressed,
+                                       epoch_key=epochs[hyp.symbol]),
             ) is not None:
                 n_banked += 1
                 continue

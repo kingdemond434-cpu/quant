@@ -1530,3 +1530,24 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # (NO-CANDIDATES: 37 corrected trials, 0 qualifying survivors -- the honest idle state).
 # CONFIDENCE: measured (cohort 12/12 read from libs/research/slot_registry.derive_slots).
 45 8 * * * cd "$QUANT_ROOT" && flock -n data/.cron_paper_spawner.lock .venv/bin/python scripts/run_paper_sleeve_spawner.py >> data/cro_ai_logs/paper_sleeve_spawner.log 2>&1
+
+# R0104 CAPABILITY RATCHET (owed-work, 2026-08-05). The principal's standing order -- every aspect
+# of the desk pushed toward 10/10 every day, non-exhaustively -- had NO INSTRUMENT: the per-aspect
+# rating existed only in conversation, so it could not ratchet, a fall left no trace, and nothing
+# ever named what was holding an aspect down. This scores nine named aspects from artifacts other
+# organs already write, keeps a high-water mark per aspect AND per component, and prints the
+# quantified next thing that buys one more point. A FALL exits 2 with a NAMED CAUSE (which
+# component, from what to what, out of which file); a FLATLINE is reported with its binding
+# constraint; UNMEASURED is its own state and is never scored as 0 and never as 10.
+# 09:50 UTC: downstream of everything it reads -- the 06:xx-07:xx governance block, the 08:xx
+# collectors and the 09:30 capability hunt are all in by then -- and clear of the 10:00 data-axis
+# dig and the 10:10 commit audit. Deliberately NOT --report-only: a regression must leave a
+# non-zero exit in the log, which is the whole difference between a ratchet and a report.
+# CEILING TYPE (L1.28c) is INFORMATION-ARRIVAL and daily is AT it: every input (audit report, law
+# gate, gate0 readiness, mutation score, ledger, liveness) moves at most once a day, so a second
+# run would re-read the same numbers and record the same marks.
+# EVIDENCE: scripts/run_capability_ratchet.py -> data/CAPABILITY_RATCHET.json; first live reading
+# 2026-08-05 scored 9/9 aspects (mean 5.7/10, alpha_output 0.8 the lowest, risk_rails 9.3 the
+# highest) and named 2 UNMEASURED components -- the budget-truncated autodiscovery mutation target
+# and the BLOCKED-UNKNOWN ruin rail. CONFIDENCE: measured (that reading is from the run itself).
+50 9 * * * cd "$QUANT_ROOT" && flock -n data/.cron_capratchet.lock .venv/bin/python scripts/run_capability_ratchet.py >> data/cro_ai_logs/capability_ratchet.log 2>&1

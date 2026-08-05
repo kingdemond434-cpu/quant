@@ -15,7 +15,7 @@ def test_backup_creates_verifiable_manifest(db: Database, db_path: Path, tmp_pat
     mgr = BackupManager(source_db=db_path)
     dest = tmp_path / "backup"
     manifest = mgr.backup(dest)
-    assert manifest.db_version == 6
+    assert manifest.db_version == 7
     assert (dest / "sor.sqlite").exists()
     assert (dest / "manifest.json").exists()
     assert mgr.verify(dest, manifest) is True

@@ -16,6 +16,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import numpy as np
+
 from libs.autodiscovery.capacity_screen import (
     RESURRECT_CONDITION,
     bank_append,
@@ -24,7 +26,12 @@ from libs.autodiscovery.capacity_screen import (
     build_bank_record,
     screen_reason,
 )
-from libs.autodiscovery.memory import CandidateStore, content_hash
+from libs.autodiscovery.memory import (
+    CandidateSeries,
+    CandidateStore,
+    bar_epoch,
+    content_hash,
+)
 from libs.autodiscovery.models import (
     CandidateStatus,
     Family,
@@ -54,6 +61,13 @@ def _lab(db: Database, bank: Path) -> AutoDiscoveryLab:
     return AutoDiscoveryLab(db, lambda _s: None, capacity_bank=bank)
 
 
+def _series() -> CandidateSeries:
+    """The evidence every scored candidate now carries (m0007) -- required, never optional."""
+    return CandidateSeries(net=np.array([0.001, -0.002, 0.003], dtype="float64"),
+                           stressed=np.array([0.000, -0.003, 0.002], dtype="float64"),
+                           epoch_key=bar_epoch("UNITUSD", np.linspace(1.0, 1.1, 4)))
+
+
 def _required() -> float:
     """The policy's own equal-weight headroom requirement for this book/sleeve split."""
     return capacity_required(_BOOK, _SLEEVES)
@@ -77,10 +91,13 @@ def test_fillable_passes_through_to_store(db: Database, tmp_path: Path) -> None:
     banked = lab._record_scored(
         campaign_id="camp_t", hyp=_hyp(), status=CandidateStatus.REJECTED,
         metrics=ValidationMetrics(capacity_usd=_required() * 4.0), survived=False,
-        reason="failed: dsr", book_usd=_BOOK, n_sleeves=_SLEEVES)
+        reason="failed: dsr", book_usd=_BOOK, n_sleeves=_SLEEVES, series=_series())
     assert banked is None
     assert lab.store.total() == 1
     assert not bank.exists()
+    # ... and the verdict brought its evidence with it (m0007), rejected or not.
+    stored = lab.store.returns_for(lab.store.all()[0].id)
+    assert stored is not None and stored.n_obs == 3
 
 
 def test_unfillable_is_banked_not_stored(db: Database, tmp_path: Path) -> None:
@@ -90,9 +107,11 @@ def test_unfillable_is_banked_not_stored(db: Database, tmp_path: Path) -> None:
     banked = lab._record_scored(
         campaign_id="camp_t", hyp=hyp, status=CandidateStatus.REJECTED,
         metrics=ValidationMetrics(capacity_usd=_required() * 0.5), survived=False,
-        reason="failed: dsr", book_usd=_BOOK, n_sleeves=_SLEEVES)
+        reason="failed: dsr", book_usd=_BOOK, n_sleeves=_SLEEVES, series=_series())
     assert banked == "unfillable-at-scoring"
     assert lab.store.total() == 0                      # never persisted as a scored candidate
+    # ... and no series either: a returns row with no candidate row is an orphan, not evidence.
+    assert db.execute("SELECT COUNT(*) FROM candidate_returns").fetchone()[0] == 0
     rows = [json.loads(ln) for ln in bank.read_text("utf-8").splitlines()]
     assert len(rows) == 1
     rec = rows[0]
@@ -117,7 +136,8 @@ def test_unknown_capacity_passes_through(db: Database, tmp_path: Path) -> None:
     banked = lab._record_scored(
         campaign_id="camp_t", hyp=_hyp(), status=CandidateStatus.REJECTED,
         metrics=ValidationMetrics(capacity_usd=0.0), survived=False,
-        reason="failed: dsr | UNMEASURED: capacity", book_usd=_BOOK, n_sleeves=_SLEEVES)
+        reason="failed: dsr | UNMEASURED: capacity", book_usd=_BOOK, n_sleeves=_SLEEVES,
+        series=_series())
     assert banked is None
     assert lab.store.total() == 1
     assert not bank.exists()

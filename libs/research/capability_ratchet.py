@@ -270,8 +270,15 @@ def fraction_component(key: str, artifact: str, num: float | None, den: float | 
         target = (score + 1.0) / SCALE_MAX * den
         need = (float(math.ceil(target)) if float(num).is_integer() and float(den).is_integer()
                 else math.ceil(target * 1000) / 1000)
-        constraint = (f"+{need - num:g} {unit} ({num:g} -> {need:g} of {den:g}) buys the next "
-                      "point")
+        if need > den:
+            # The last fractional point costs less than a full point's worth of numerator, and
+            # printing "103 of 100" would be an instruction that cannot be followed. The honest
+            # constraint at this end of the scale is the whole remaining gap.
+            constraint = (f"+{den - num:g} {unit} ({num:g} -> {den:g}, the whole remaining gap) "
+                          f"is the last +{SCALE_MAX - score:.1f} to 10/10")
+        else:
+            constraint = (f"+{need - num:g} {unit} ({num:g} -> {need:g} of {den:g}) buys the next "
+                          "point")
     return Component(key=key, state=MEASURED, score=score, artifact=artifact, detail=detail,
                      constraint=constraint)
 
@@ -326,6 +333,11 @@ def mutation_components(root: Path, key: str, prefixes: tuple[str, ...]) -> list
     the mutants it happened to reach rather than the file. Scoring it would reward a SHORTER run,
     which is the denominator trick (§34) wearing a stopwatch. Truncated targets become UNMEASURED
     components naming themselves, so the gap is visible instead of averaged away.
+
+    The two reading rules -- skip truncated, prefer `adjusted_kill_rate` over the raw one where an
+    equivalence register applies -- are lifted verbatim from scripts/check_ratchets.py:78-84 rather
+    than re-derived. Two organs reading the same artifact by different rules is how a desk ends up
+    with two disagreeing truths about one file.
     """
     doc = _read_json(root / _MUTATION)
     if doc is None:

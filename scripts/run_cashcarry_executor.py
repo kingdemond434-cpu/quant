@@ -1126,13 +1126,13 @@ def _rebalance(top: int, hold_top: int, capital: float, *, dry: bool) -> dict[st
             state["peak_combined_equity"] = rail.peak_raw
             gross = sum(float(p["spot_qty"]) * spot_px.get(s, float(p["spot_cost"]))
                         for s, p in pos.items())
-            # Ruin rail: raw equity vs the ledgered inception (unchanged -- the signed way back
-            # from a stop). Pause rail: the flow-adjusted pair. Two rails, two rulers, on purpose.
             # GAP #54 / R0096 -- the venue cap's production input, previously omitted (so the
             # breach branch short-circuited on every live tick). `_venue_equity` never returns
             # None or {}: an unreadable feed degrades CONCENTRATED, never to "no map", because
             # "no map" and "no breach" are the same value to `evaluate`.
             venue_eq, venue_note = _venue_equity(eq_c)
+            # Ruin rail: raw equity vs the ledgered inception (unchanged -- the signed way back
+            # from a stop). Pause rail: the flow-adjusted pair. Two rails, two rulers, on purpose.
             risk = risk_controls.evaluate(eq_c, start_eq, rail.peak, gross, ruin_cap_lev=8.0,
                                           venue_equity=venue_eq,
                                           flow_adjusted_equity=rail.equity)

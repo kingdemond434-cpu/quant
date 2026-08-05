@@ -260,8 +260,10 @@ class TestABreachTripsPauseOpensThroughTheExecutor:
 
     def test_the_pause_is_named_per_venue_not_only_globally(self,
                                                             desk: SimpleNamespace) -> None:
-        """R0096 names this: the executor gates on the BREACHING venue it routes to, so on a
-        multi-venue desk a breach at A can never blanket-stop opens at B."""
+        """R0096 names this: the executor raises its OWN gate against the breaching venue it
+        routes to, rather than only inheriting a global verdict -- so the venue is named in the
+        actions and persisted in state, and opens stop here even if a future caller changes what
+        the global action means."""
         _feed(desk.root, {"updated": datetime.now(tz=UTC).isoformat(),
                           "venues": {ex._VENUE: 12_000.0}})
         rb = _tick()
@@ -270,15 +272,22 @@ class TestABreachTripsPauseOpensThroughTheExecutor:
         assert "no new opens on this venue" in hits[0]
         assert rb["state"]["venue_breaches"] == [ex._VENUE], "persisted for the next tick/pager"
 
-    def test_a_breach_somewhere_else_does_not_stop_this_venues_opens(
-            self, desk: SimpleNamespace) -> None:
-        """The per-venue half, proven by the case only it can decide: bybit is over the cap,
-        this executor routes elsewhere, so no VENUE-CAP line is raised against it."""
+    def test_a_breach_elsewhere_is_attributed_elsewhere(self, desk: SimpleNamespace) -> None:
+        """The per-venue gate is keyed on the venue, so a breach at bybit raises no VENUE-CAP
+        line against the venue this book routes to.
+
+        HONEST LIMIT, pinned deliberately: opens still stop, because `evaluate`'s GLOBAL
+        pause_opens is unchanged and this executor may only ADD to it. Declining a global pause
+        because the breach was at another venue would be a LOOSENING, and the per-venue gate
+        exists to tighten -- it names the breaching venue and stops opens there independently of
+        the global verdict; it never hands back opens the global verdict took away.
+        """
         _feed(desk.root, {"updated": datetime.now(tz=UTC).isoformat(),
                           "venues": {ex._VENUE: 1_000.0, "bybit": 12_000.0}})
         rb = _tick()
         assert rb["risk"]["venue_breaches"] == ["bybit"]
         assert not [a for a in rb["actions"] if a.startswith(f"VENUE-CAP {ex._VENUE}")]
+        assert rb["risk"]["action"] == "pause_opens" and rb["cands"] == []
 
     def test_a_breach_never_flattens_and_places_no_orders(self, desk: SimpleNamespace) -> None:
         """Yanking capital off an exchange in a panic realises losses and converts a
