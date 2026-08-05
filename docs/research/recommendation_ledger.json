@@ -4281,11 +4281,11 @@
    "summary": "Encode DORMANCY DISARM as a standing max_audit check: enumerate every guard whose evidence source is a rolling window over the desk's OWN activity (structural-bleed denylist, worst_symbols, 14d forensics classes) and fire when the window is empty while the guard is still credited with protecting the money path. Origin: _structurally_bleeding silently un-denied every symbol while the book was paused.",
    "roi_bps": 40.0,
    "raised": "2026-08-05T03:09:02.976163+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "check_dormancy_disarm added to max_audit. Outcome-based (calls the real gate on real recorded denials, not a wiring-marker grep). Falsifiability MEASURED by reconstructing the pre-fix gate: PRE-FIX leaked=['1000CATUSDT','COOKIEUSDT'] -> FIRES; POST-FIX leaked=[] -> silent. Probe angle 15 also added permanently to docs/research/self_interrogation_patterns.md.",
+   "commit": "888f9a4",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-05T03:28:54.031252+00:00"
   }
  ]
 }
